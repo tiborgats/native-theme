@@ -345,7 +345,7 @@ impl ThemeAtlas {
     /// The freedesktop icon-theme name the theme names for one colour scheme, for
     /// [`icons::IconKey::icon_theme`](crate::icons::IconKey::icon_theme); pass `ctx.theme()` for the scheme egui is drawing.
     /// Per scheme because the variants differ — `kde-breeze` names `breeze` for light and
-    /// `breeze-dark` for dark (`native-theme/src/presets/kde-breeze.toml:16`, `:410`) — and
+    /// `breeze-dark` for dark (`native-theme/src/presets/kde-breeze.toml:16`, `:601`) — and
     /// egui draws either style whenever the scheme changes, so one name would be wrong for the
     /// other. On the [`from_preset`](crate::from_preset) path it is each variant's `Resolved::icon_theme`
     /// (`native-theme/src/model/resolved.rs:283`, from `Theme::resolve` of that mode); on the
@@ -692,8 +692,8 @@ impl<'a> Builder<'a> {
     /// (`native-theme/src/lib.rs:716`) or, on the preset path,
     /// `AccessibilityPreferences::from_system()` (`native-theme/src/lib.rs:468`).
     /// Applied wherever egui has a sink, as the sibling connectors apply them: gpui scales its
-    /// theme's font sizes in `to_theme` (`connectors/native-theme-gpui/src/lib.rs:345`, `:347`)
-    /// and forwards reduced motion to gpui (`forward_reduce_motion`, `:1190-1202`); iced scales through `font_size` and
+    /// theme's font sizes in `to_theme` (`connectors/native-theme-gpui/src/lib.rs:349`, `:351`)
+    /// and forwards reduced motion to gpui (`forward_reduce_motion`, `:1235-1247`); iced scales through `font_size` and
     /// `mono_font_size` (`connectors/native-theme-iced/src/lib.rs:1799-1804`, `:1915-1920`).
     ///
     /// * **Text scaling.** Every text size the atlas writes — each `Style::text_styles` entry
@@ -751,7 +751,7 @@ impl<'a> Builder<'a> {
     /// [`ThemeAtlas::builder`] has none unless given one here. The OS's current mode is
     /// `if native_theme::detect::system_is_dark() { ColorMode::Dark } else { ColorMode::Light }`
     /// (`native-theme/src/detect.rs:211`), which reads `Light` wherever detection fails
-    /// (`detect_is_dark_inner`, `:765` on Linux). Without this call a builder atlas leaves the
+    /// (`detect_is_dark_inner`, `:557` on Linux). Without this call a builder atlas leaves the
     /// choice to egui's `Options::fallback_theme` on Linux.
     pub fn os_mode(mut self, mode: ColorMode) -> Self {
         self.os_mode = Some(mode);

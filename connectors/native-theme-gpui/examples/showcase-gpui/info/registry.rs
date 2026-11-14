@@ -4,13 +4,13 @@
 //!
 //! A frame need not run the code of everything it draws. GPUI Fast draws a
 //! view nothing changed for from what it drew in the last frame, copying
-//! its prepaint and paint (gpui-fast 0.1.12 src/fast/retained.rs:738-825,
-//! `reuse_retained_prepaint`; src/fast/splice.rs:608-757, `splice_prepaint`,
+//! its prepaint and paint (gpui-fast 0.1.15 src/fast/retained.rs:745-832,
+//! `reuse_retained_prepaint`; src/fast/splice.rs:749-919, `splice_prepaint`,
 //! for a view drawn around views built again), and gpui-pre does the same
-//! for a cached view (src/view.rs:546-562). A target inside such a view
+//! for a cached view (src/view.rs:552-568). A target inside such a view
 //! records nothing in that frame, yet it is drawn, at the bounds it was
 //! drawn at: a view is drawn from the last frame only where it is laid out
-//! as it was (retained.rs:630-638, `retained_context_matches`). Inside a
+//! as it was (retained.rs:637-645, `retained_context_matches`). Inside a
 //! scroll area that GPUI Fast composites while it scrolls, it is not: the
 //! area's content is drawn moved by the scroll, without its children's
 //! prepaint (src/fast/layers/paint.rs:233-235, src/fast/layers/reuse.rs:39),
@@ -22,12 +22,12 @@
 //! So the registry does not ask whether a target recorded in the frame,
 //! but whether the frame drew its element, the way gpui itself tells: an
 //! element's state lives on while each frame draws the element and goes
-//! with the first frame that does not (gpui-fast src/window.rs:1221-1231
-//! and :3561-3567, gpui-pre src/window.rs:1203-1210). A frame that copies a
-//! view copies the element states it used (gpui-fast window.rs:4079-4084 and
-//! :4163-4168, splice.rs:779-784, and for a composited scroll layer
+//! with the first frame that does not (gpui-fast src/window.rs:1217-1227
+//! and :3780-3786, gpui-pre src/window.rs:1199-1206). A frame that copies a
+//! view copies the element states it used (gpui-fast window.rs:4309-4314 and
+//! :4394-4399, splice.rs:942-946, and for a composited scroll layer
 //! src/fast/layers/reuse.rs:101-106 and :204-209; gpui-pre
-//! window.rs:4026-4031). Each record holds a weak handle to a [`Presence`]
+//! window.rs:4256-4261). Each record holds a weak handle to a [`Presence`]
 //! its recorder keeps in its element state ([`begin_record`]): the record
 //! stands for a drawn element while the handle is live.
 //!
@@ -36,15 +36,15 @@
 //! GPUI Fast counts an update of the registry as a change of what every
 //! view that records into it read: one made outside drawing has a view
 //! inside a notified view built again rather than drawn from the last
-//! frame (gpui-fast src/fast/dependencies.rs:757-797, `note_update`, and
-//! :513-527). So what only keeps track of the frames, which no view draws
+//! frame (gpui-fast src/fast/dependencies.rs:774-814, `note_update`, and
+//! :514-528). So what only keeps track of the frames, which no view draws
 //! from, is kept in cells and changed through reads, and the end of a frame
 //! updates the registry only when the frame changed what it decides.
 //!
 //! The records themselves are updates made while drawing, which GPUI Fast
 //! counts as writes: a retained subtree that read the registry and did not
-//! write it itself is built again in the next frame (dependencies.rs:757-797
-//! and :646-653, `written_since`), as a view that records before a view
+//! write it itself is built again in the next frame (dependencies.rs:774-814
+//! and :651-658, `written_since`), as a view that records before a view
 //! nested in it records is. That costs reuse, not correctness.
 
 use std::{
@@ -118,18 +118,18 @@ pub struct InfoRegistry {
     layout: HashMap<&'static str, Record>,
     /// The draws that recorded anything, counted, for the tests' check of
     /// two records under one id in one draw. A draw prepaints everything
-    /// before it paints anything (gpui-fast src/window.rs:3757-3821, gpui-pre
+    /// before it paints anything (gpui-fast src/window.rs:3975-4039, gpui-pre
     /// alike), so a record made after a target or a `record` box painted
     /// ([`painted`]) is the next draw's. That holds while every draw that
     /// records paints a target or a `record` box: one whose only records
     /// are `ListedExt::listed` boxes or part observers, which paint nothing,
     /// would count with the next, and a record under the same id there
     /// would be reported as two, a false alarm, never a miss. Several draws
-    /// can share one end of a frame: gpui-kit 0.8.1's `click` draws, then
+    /// can share one end of a frame: gpui-kit 0.9.1's `click` draws, then
     /// moves the pointer, presses and releases, each drawing again
     /// (src/test.rs:236-257, with :190, :212 and :233), as its `drag` does
     /// (:393-412), and the showcase's `draw` draws once in its update and
-    /// once more as the test flushes it (gpui-fast src/app.rs:2145-2159).
+    /// once more as the test flushes it (gpui-fast src/app.rs:2181-2195).
     #[cfg(test)]
     draw: u64,
     #[cfg(test)]
@@ -270,7 +270,7 @@ impl InfoRegistry {
         // The record it replaces stands for an element no longer drawn: the
         // target is drawn again as a new element after a frame that did not
         // draw it, which starts from not hovered (gpui-pre
-        // elements/div.rs:3213-3222), so the hover it had is over. A frame
+        // elements/div.rs:3215-3224), so the hover it had is over. A frame
         // that took it away and recorded nothing did not prune it
         // (`close_frame`).
         if self.bounds.get(&id).is_some_and(|record| !record.drawn()) {
@@ -353,9 +353,9 @@ impl InfoRegistry {
     ///
     /// A target that was not drawn is no longer hovered. gpui sends no hover
     /// end to an element it stopped drawing, and drops that element's state
-    /// with the frame (gpui-pre `window.rs:1203-1210`); drawn again under
+    /// with the frame (gpui-pre `window.rs:1199-1206`); drawn again under
     /// the pointer, it starts from not hovered and reports the hover anew
-    /// (`elements/div.rs:3213-3222`). Nor does a frame that only takes a
+    /// (`elements/div.rs:3215-3224`). Nor does a frame that only takes a
     /// target away send any hover change, so the choice is revisited here.
     /// Notifies when it cleared what was shown.
     ///
@@ -433,16 +433,16 @@ fn notify_after_draw(ui: &Entity<InfoRegistry>, window: &mut Window, cx: &mut Ap
 /// last frame was done, that frame's end scheduled ([`end_frame`]):
 /// `Window::defer` runs it as the effects the draw left are flushed, after
 /// the frame was swapped in and the states it did not use were dropped
-/// (gpui-fast src/window.rs:2645-2650; src/app.rs:1381-1396, an update
-/// flushes its effects when it ends, and :2133-2158; the platform's frame
-/// callback draws inside one, src/window.rs:1920-1938).
+/// (gpui-fast src/window.rs:2847-2852; src/app.rs:1446-1461, an update
+/// flushes its effects when it ends, and :2169-2194; the platform's frame
+/// callback draws inside one, src/window.rs:2049-2076).
 ///
 /// `key` tells apart the recorders that share their element's id path, as
 /// an `elements::record` beside another does. An element state is kept
-/// under its type as well as its id (gpui-fast src/window.rs:7424-7437), so
-/// the `unwrap` of `with_element_state`'s downcast (:4495) cannot fail; the
-/// `expect` (:4497) cannot either, since a box is only put back holding a
-/// state (:4501, :4513-4516).
+/// under its type as well as its id (gpui-fast src/window.rs:7672-7685), so
+/// the `unwrap` of `with_element_state`'s downcast (:4726) cannot fail; the
+/// `expect` (:4728) cannot either, since a box is only put back holding a
+/// state (:4732, :4744-4747).
 pub fn begin_record(
     ui: &Entity<InfoRegistry>,
     key: ElementId,

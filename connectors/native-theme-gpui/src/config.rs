@@ -18,8 +18,10 @@ use crate::colors::{hsla_to_hex, over, rgba_to_hsla, to_theme_color};
 /// Build a [`ThemeConfig`] from a [`ResolvedTheme`].
 ///
 /// Maps ResolvedDefaults font/geometry fields to font_family/mono_font_family/
-/// font_size/mono_font_size, radius/radius_lg/shadow. ResolvedFontSpec sizes are
-/// in logical pixels (conversion from platform points is handled by the resolution step).
+/// font_size/mono_font_size, radius/radius_lg/shadow, and the window's corner
+/// radius, `window.border.corner_radius`, to window_radius. ResolvedFontSpec
+/// sizes are in logical pixels (conversion from platform points is handled by
+/// the resolution step).
 ///
 /// Also populates the `colors` field with all 139 ThemeColor fields converted
 /// to hex strings, so the config can be serialized/deserialized losslessly.
@@ -38,6 +40,7 @@ pub fn to_theme_config(
 
     let radius = d.border.corner_radius.round() as usize;
     let radius_lg = d.border.corner_radius_lg.round() as usize;
+    let window_radius = resolved.window.border.corner_radius.round() as usize;
 
     // Issue 5: populate ThemeConfigColors from computed ThemeColor
     let tc = to_theme_color(resolved, is_dark, prefs.reduce_transparency);
@@ -50,31 +53,34 @@ pub fn to_theme_config(
     // both paths agree.
     let highlight = highlight_style(resolved, mode);
 
-    ThemeConfig {
-        name: SharedString::from(name.to_string()),
-        mode,
+    // is_default: false (via ThemeConfig::default()) — this is intentional.
+    // Connector-created themes are never the "default" theme; the application
+    // decides which theme is its default. ThemeConfig is #[non_exhaustive]
+    // since gpui-component 0.9.0, so it is built from its default.
+    let mut config = ThemeConfig::default();
+    config.name = SharedString::from(name.to_string());
+    config.mode = mode;
 
-        // Font sizes are in logical pixels (pt-to-px conversion handled during
-        // resolution). Scaled (§3.4, §5.3) so Theme::change reproduces the
-        // scaled sizes.
-        font_family: Some(crate::font_family(&d.font.family)),
-        font_size: Some(prefs.scaled(d.font.size)),
-        mono_font_family: Some(crate::font_family(&d.mono_font.family)),
-        mono_font_size: Some(prefs.scaled(d.mono_font.size)),
+    // Font sizes are in logical pixels (pt-to-px conversion handled during
+    // resolution). Scaled (§3.4, §5.3) so Theme::change reproduces the
+    // scaled sizes.
+    config.font_family = Some(crate::font_family(&d.font.family));
+    config.font_size = Some(prefs.scaled(d.font.size));
+    config.mono_font_family = Some(crate::font_family(&d.mono_font.family));
+    config.mono_font_size = Some(prefs.scaled(d.mono_font.size));
 
-        radius: Some(radius),
-        radius_lg: Some(radius_lg),
-        shadow: Some(d.border.shadow_enabled),
+    config.radius = Some(radius);
+    config.radius_lg = Some(radius_lg);
+    // Stated, not left None: Theme::change keeps the previous theme's window
+    // radius for a config without one (gpui-component
+    // src/theme/schema.rs:1117-1119).
+    config.window_radius = Some(window_radius);
+    config.shadow = Some(d.border.shadow_enabled);
 
-        colors,
+    config.colors = colors;
 
-        highlight: Some(highlight),
-
-        // is_default: false (via ThemeConfig::default()) — this is intentional.
-        // Connector-created themes are never the "default" theme; the application
-        // decides which theme is its default.
-        ..ThemeConfig::default()
-    }
+    config.highlight = Some(highlight);
+    config
 }
 
 /// The highlighter style for `mode` that [`crate::to_theme`] installs and
@@ -350,6 +356,10 @@ mod tests {
         assert_eq!(
             config.radius_lg,
             Some(resolved.defaults.border.corner_radius_lg.max(0.0).round() as usize)
+        );
+        assert_eq!(
+            config.window_radius,
+            Some(resolved.window.border.corner_radius.round() as usize)
         );
         assert_eq!(config.shadow, Some(resolved.defaults.border.shadow_enabled));
     }

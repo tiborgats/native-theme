@@ -28,7 +28,7 @@
 //! };
 //!
 //! gpui_kit::application().run(|cx| {
-//!     // Before `apply`: an `init` afterwards resets the theme to upstream's default.
+//!     // Before `apply`: an `init` afterwards switches to light and resets the scroll bar mode.
 //!     gpui_kit::init(cx);
 //!     match SystemTheme::from_system() {
 //!         // Both variants, so `Theme::sync_system_appearance` switches between them.
@@ -78,7 +78,10 @@
 //! runtime light/dark switching, call [`from_preset()`] once per mode and
 //! [`apply`] both: each `apply` stores its variant, and gpui-component's
 //! `Theme::change` / `sync_system_appearance` then switch between the two
-//! native palettes.
+//! native palettes, the observer [`apply`] installs restoring after each switch
+//! what the installed `ThemeConfig` cannot carry or gpui-component caps: the 12
+//! base-palette colours and the native `selection`, `list_active` and
+//! `table_active` ([`apply`], step 8).
 //!
 //! # What each flag does
 //!
@@ -97,8 +100,9 @@
 //! # Theme Field Coverage
 //!
 //! The connector maps [`ResolvedTheme`] onto gpui-component's `ThemeColor`
-//! (all 139 colour fields), `ThemeConfig` (fonts, radii, shadow, highlighter),
-//! the styled `Theme`'s `focus_ring`, `scrollbar_mode` and `highlight_theme`,
+//! (all 139 colour fields), `ThemeConfig` (fonts, radii, the window's corner
+//! radius, shadow, highlighter), the styled `Theme`'s `focus_ring`,
+//! `scrollbar_mode` and `highlight_theme`,
 //! and gpui-base's scrollbar and resize-handle styles.
 //!
 //! | Category | Mapped | Notes |
@@ -108,7 +112,7 @@
 //! | `button` | all 28 `button*` plus `primary*` / `secondary*` | solid native surfaces, the semantic colours each variant read in gpui-component 0.5.1, not upstream's tinted house style; flat buttons via [`variants::ghost_button`] |
 //! | `tab` | 5 of 10 colours | geometry is upstream work (`Tab`'s render writes its own height, radius and text size into the style bag the caller's setters fill, `tab/tab.rs:958-966`) |
 //! | `sidebar` | 5 of 6 | background, font.color, selection_background, selection_text_color, border.color |
-//! | `window` | 6 of 6 | background_color, title_bar_background, border colour; title_bar_font family, size, weight, style and colour via `geometry::title_bar`; the inactive title bar's fill and text via `geometry::title_bar_inactive` |
+//! | `window` | 6 of 6 | background_color, title_bar_background, border colour and corner radius (`window_radius`, the corners of a client-decorated window); title_bar_font family, size, weight, style and colour via `geometry::title_bar`; the inactive title bar's fill and text via `geometry::title_bar_inactive` |
 //! | `input` | 3 of 13 + geometry | border, caret, selection_background; height, line height, padding, radius, border, text and its colour via `geometry::input`; the fill, and a disabled field's fill and text colour, via `geometry::input_fill`; the code `Editor`'s fill, and where it is translucent its gutter's, the fill over `window.background_color`, through the highlight theme (its current line, line numbers and syntax colours stay upstream's scheme), and its line height via `geometry::editor` |
 //! | `scrollbar` | colours + geometry | track/thumb colours, widths, inset, min length via `base_layer` |
 //! | `status_bar` | 3 of 3 | background, border colour; the border's padding sides and the font's family, size, weight, style and colour via `geometry::status_bar` |
@@ -347,6 +351,10 @@ pub fn to_theme(
     theme.mono_font_size = px(prefs.scaled(d.mono_font.size));
     theme.radius = px(d.border.corner_radius);
     theme.radius_lg = px(d.border.corner_radius_lg);
+    // The corner radius of a client-decorated window, which gpui-component's
+    // WindowBorder, Root and TitleBar round (gpui-component
+    // src/window_border.rs:28-29): the window's own, `window.border`'s.
+    theme.window_radius = px(resolved.window.border.corner_radius);
     theme.shadow = d.border.shadow_enabled;
 
     // §8.3: the ring is drawn only when the theme gives it a width; its width
@@ -370,10 +378,9 @@ pub fn to_theme(
     } else {
         gpui_component::highlighter::HighlightTheme::default_light()
     };
-    theme.highlight_theme = std::sync::Arc::new(gpui_component::highlighter::HighlightTheme {
-        style: config::highlight_style(resolved, mode),
-        ..(*highlight).clone()
-    });
+    let mut highlight = (*highlight).clone();
+    highlight.style = config::highlight_style(resolved, mode);
+    theme.highlight_theme = std::sync::Arc::new(highlight);
 
     // Store config for gpui-component's theme switching
     let config: Rc<_> = Rc::new(config::to_theme_config(resolved, name, mode, prefs));
@@ -740,6 +747,26 @@ pub fn layer_over(base: Hsla, layer: Hsla) -> Hsla {
     colors::over(base, layer)
 }
 
+/// A colour of the theme as the `Hsla` gpui paints: the conversion the
+/// connector maps every colour of a [`ResolvedTheme`] with, so a colour an
+/// application converts for a widget of its own is the one the connector would
+/// give. Each channel, alpha included, is the byte over 255, through
+/// `gpui::Rgba`; nothing is premultiplied or rounded.
+///
+/// # Examples
+///
+/// ```
+/// use native_theme_gpui::{Rgba, to_hsla};
+///
+/// // An opaque colour stays opaque, a translucent one keeps its alpha.
+/// assert_eq!(to_hsla(Rgba::rgb(0x3d, 0xae, 0xe9)).a, 1.0);
+/// assert_eq!(to_hsla(Rgba::new(0, 0, 0, 0x80)).a, 128.0 / 255.0);
+/// ```
+#[must_use]
+pub fn to_hsla(rgba: Rgba) -> Hsla {
+    colors::rgba_to_hsla(rgba)
+}
+
 /// The family gpui is asked to draw `family` in. On macOS (`macos`), the
 /// system UI font's stated family — "SF Pro" caselessly,
 /// `native_theme::fonts::is_macos_system_ui_family` — becomes gpui's own
@@ -1063,11 +1090,12 @@ impl<'a> Native<'a> {
 ///    requires `gpui_component::init` before any component use; calling it
 ///    here only when the global is missing means it runs at most once);
 /// 3. writes the styled theme, keeping the application's own `notification`,
-///    `list`, `sheet` and `motion` settings of the installed one, as upstream's
+///    `list`, `sheet`, `motion` and `cursor_blink` settings of the installed
+///    one, as upstream's
 ///    `Theme::change` does; then installs a `ThemeConfig` for the *other*
 ///    stored variant (if any) under the same display name, so upstream's
 ///    `Theme::change` / `sync_system_appearance` reproduces native colours in
-///    either mode;
+///    either mode, all but the ones step 8 restores;
 /// 4. projects into gpui-base (`sync_base`);
 /// 5. writes the native scrollbar geometry/colours and resize-handle colours
 ///    onto gpui-base ([`base_layer::apply_overrides`]);
@@ -1081,18 +1109,24 @@ impl<'a> Native<'a> {
 ///    installed; where the theme states no delay, the application's comes back:
 ///    the one installed before the connector's first write, or set by the
 ///    application since (gpui-base's 500 ms where it set none);
-/// 8. installs, once per `App`, the observer that restores step 5 and the 12
-///    base-palette colours a `ThemeConfig` cannot carry (`red` … `cyan_light`,
-///    private in `ThemeConfigColors`), and installs step 7's delay for the
-///    mode then current, whenever upstream rebuilds the theme (a
-///    `Theme::change` or `sync_system_appearance` mode switch among them),
+/// 8. installs, once per `App`, the observer that, whenever upstream rebuilds
+///    the theme (a `Theme::change` or `sync_system_appearance` mode switch among
+///    them), restores the 12 base-palette colours a `ThemeConfig` cannot carry
+///    (`red` … `cyan_light`, private in `ThemeConfigColors`); restores
+///    `selection`, `list_active` and `table_active`, with their tokens, where each
+///    holds what gpui-component's alpha cap made of the stored variant's colour
+///    (0.3, 0.2 and 0.2, gpui-component src/theme/schema.rs:1039-1070), through
+///    `Theme::update`, which also rebuilds gpui-base's copies of `selection`;
+///    restores step 5; and installs step 7's delay for the mode then current;
 ///    together with one deferred repeat for the update that installs it (the
-///    subscription activates only at the end of that update's effect
-///    flush);
+///    subscription activates only at the end of that update's effect flush);
 /// 9. refreshes every window so the change paints at once.
 ///
 /// Call `gpui_component::init` (or `gpui_kit::init`) *before* `apply`: an
-/// `init` afterwards resets the theme to upstream's default. A single-variant
+/// `init` afterwards switches the theme to light mode (the stored light
+/// variant, or upstream's light constants when none is stored) and sets
+/// gpui-component's scroll bar mode from the platform (`Hover` on Linux), in
+/// place of the one `apply` chose. A single-variant
 /// `apply` of a theme whose other variant is not stored (none was, or another
 /// theme's was, which step 1 drops) leaves the other mode's config at
 /// `ThemeConfig::default()`, a light config with no colours and an empty name.
@@ -1104,7 +1138,9 @@ impl<'a> Native<'a> {
 /// replaces the theme's light config with the empty one: a later change back
 /// to light shows upstream's constants too, while the base palette,
 /// scrollbars, resize handles, tooltip delay and [`ActiveNativeTheme::native`]
-/// still follow the stored light variant, until the next `apply` or
+/// still follow the stored light variant (`selection`, `list_active` and
+/// `table_active` keep upstream's constants: they hold no cap of the light
+/// variant's colours), until the next `apply` or
 /// [`apply_accessibility`] rebuilds the theme from it. Call `apply` once per
 /// variant, or [`apply_system_theme`], to store both and avoid this.
 ///
@@ -1138,7 +1174,16 @@ pub fn apply(
 /// [`SystemThemeExt::to_gpui_theme`] builds it, and stores both variants
 /// with a `ThemeConfig` for each, so upstream's
 /// `Theme::sync_system_appearance` and `Theme::change` reproduce native
-/// colours in either mode.
+/// colours in either mode, with what a config cannot carry or gpui-component
+/// caps restored by [`apply`]'s observer (step 8).
+///
+/// It installs the mode the OS reports ([`SystemTheme::mode`]), so it needs no
+/// `Theme::sync_system_appearance` after it. Calling that right after it can show
+/// a dark desktop's application light for its first frames: on Linux GPUI
+/// reports a light appearance until the desktop portal answers (gpui-pre-linux
+/// src/linux/platform.rs:144, src/linux/xdg_desktop_portal.rs:49-51). Call
+/// `sync_system_appearance` on an appearance change, or follow the OS theme with
+/// `on_theme_change` (feature `watch`).
 pub fn apply_system_theme(sys: &SystemTheme, cx: &mut App) {
     let theme = system_gpui_theme(sys);
     apply_inner(
@@ -1290,6 +1335,7 @@ fn apply_inner(
     theme.list = installed.list.clone();
     theme.sheet = installed.sheet.clone();
     theme.motion = installed.motion.clone();
+    theme.cursor_blink = installed.cursor_blink;
     *installed = theme;
 
     // D34: the other mode's config from its stored variant, so Theme::change
@@ -1355,10 +1401,8 @@ fn base_overrides_for(
         geometry.thumb = styled.scrollbar_thumb;
         geometry.thumb_hover = styled.scrollbar_thumb_hover;
         geometry.thumb_active = styled.scrollbar_thumb_hover;
-        resizable = gpui_base::ResizableTheme {
-            handle: Some(styled.border),
-            active_handle: Some(styled.drag_border),
-        };
+        resizable.handle = Some(styled.border);
+        resizable.active_handle = Some(styled.drag_border);
     }
     Some((geometry, resizable))
 }
@@ -1412,8 +1456,15 @@ fn handles_hold_native_values(cx: &App) -> bool {
 /// `gpui_base::Theme` (`:473-478`) is the one write of it; its notification
 /// reaches the base-theme observer. Writes only when a field differs; the
 /// styled theme has no upstream observer, so the write triggers no rebuild.
-/// After `apply` the connector is the sole writer of these 12 fields: a value
-/// an application sets on them itself is replaced at the next rebuild.
+/// After `apply` the connector is the sole writer of these 12 fields: it
+/// writes them back on every notification of gpui-base's theme, so a value an
+/// application sets on them does not stay (its own `Theme::update` causes such a
+/// notification).
+///
+/// The three colours gpui-component caps (`selection`, `list_active`,
+/// `table_active`) are restored beside this repair by [`restore_capped_colors`],
+/// which, unlike it, writes through `Theme::update`: gpui-base keeps copies of
+/// `selection` that only `sync_base` refreshes.
 fn repair_base_palette(cx: &mut App) {
     let Some(nt) = cx.try_global::<NativeTheme>() else {
         return;
@@ -1433,17 +1484,67 @@ fn repair_base_palette(cx: &mut App) {
     }
 }
 
-/// Observe `gpui_base::Theme` (§3.3). Terminates because `global_mut` queues one
-/// deduplicated notification (gpui-pre `src/app.rs:2107-2109`), delivered
-/// after the pending mark is removed (`:2275-2279`): the observer's own write
-/// yields exactly one further delivery, absorbed by `reapplying`.
+/// Restore `selection`, `list_active` and `table_active` of the styled theme,
+/// with their tokens, from the stored variant for the current mode, where
+/// each holds what gpui-component's alpha cap made of it; `true` when any was
+/// restored.
 ///
-/// The subscription activates through a deferred effect (`src/app.rs:2585-2597`)
+/// gpui-component caps their alpha at 0.3, 0.2 and 0.2 whenever it applies a
+/// `ThemeConfig` (gpui-component 0.9.1 `src/theme/schema.rs:1039-1070`, a
+/// colour the config states included, `src/theme/color.rs:777-791`), so after
+/// every `Theme::change`, `sync_system_appearance` or registry reload they
+/// differ from what [`apply`] installed. A field is restored only when it holds
+/// exactly that cap of the native colour (`colors::restore_capped`); any other
+/// value is the application's and stays. A value the application sets to
+/// exactly the capped native colour cannot be told from the cap and is
+/// replaced too.
+///
+/// The write goes through `Theme::update`, which keeps the tokens in step and
+/// ends in `sync_base`: gpui-base keeps copies of `selection` in its colour
+/// tokens (gpui-component `src/theme/mod.rs:547`) and in the text view's
+/// defaults (`src/text/mod.rs:54`), and paints selected text from the first
+/// (gpui-base 0.9.1 `src/selectable_text.rs:221-223`). `sync_base` resets the
+/// base overrides, so a caller writes them after a restore. A copy is probed
+/// first, as in [`repair_base_palette`], because `Theme::update` notifies the
+/// base theme's observers even when nothing changed.
+fn restore_capped_colors(cx: &mut App) -> bool {
+    let Some(nt) = cx.try_global::<NativeTheme>() else {
+        return false;
+    };
+    let is_dark = nt.is_dark(cx);
+    let Some(resolved) = nt.variant(is_dark) else {
+        return false;
+    };
+    let native = colors::capped_natives(resolved);
+    let capped = cx.try_global::<GpuiTheme>().is_some_and(|styled| {
+        let mut probe = styled.clone();
+        colors::restore_capped(&native, &mut probe)
+    });
+    if !capped {
+        return false;
+    }
+    GpuiTheme::update(cx, |styled| colors::restore_capped(&native, styled))
+}
+
+/// Observe `gpui_base::Theme` (§3.3). On every delivery it repairs the base
+/// palette ([`repair_base_palette`]), installs the current mode's tooltip delay,
+/// and restores the three colours gpui-component caps ([`restore_capped_colors`]);
+/// a restore ends in `sync_base`, which resets the base overrides, so it is
+/// followed by a marked write of them and the delivery ends there. Otherwise the
+/// delivery that carries the observer's own write is absorbed by `reapplying`,
+/// and any other one is answered with a marked write. Terminates because
+/// `global_mut` and `set_global` queue one deduplicated notification
+/// (gpui-pre 0.3.12 `src/app.rs:2117-2131`, `:2555-2581`), delivered after the
+/// pending mark is removed (`:2292-2297`): the observer's writes yield exactly one
+/// further delivery, which finds nothing to restore and is absorbed.
+///
+/// The subscription activates through a deferred effect (`src/app.rs:2602-2615`)
 /// at the end of the flush that follows this call, so a base-theme write made by
 /// other code in the same update as the first `apply` (a
 /// `Theme::sync_system_appearance` right after it) would stand until the next
 /// rebuild. One deferred re-write, queued after the activation, closes that gap
-/// (D38); it is the first notification the active observer receives.
+/// (D38): its write is the first notification the active observer receives, and
+/// that delivery repairs the palette and restores the three as any other does.
 fn install_observer_once(cx: &mut App) {
     if cx
         .try_global::<NativeTheme>()
@@ -1461,6 +1562,16 @@ fn install_observer_once(cx: &mut App) {
         // changed delay, to `TooltipDefaults`, which this observer does not
         // watch.
         install_variant_tooltip_delay(cx);
+        // Before the branch below: a rebuild merged into the notification of
+        // this observer's own write caps the three too, and the flag alone
+        // would swallow it (spec §3.3, limit). The restore ended in
+        // `sync_base`, which reset the base overrides; this write's
+        // notification, merged with the sync's, is the one further delivery,
+        // and `reapplying` absorbs it.
+        if restore_capped_colors(cx) {
+            write_base_overrides(cx, true);
+            return;
+        }
         let Some(nt) = cx.try_global::<NativeTheme>() else {
             return;
         };
@@ -1495,12 +1606,15 @@ fn install_observer_once(cx: &mut App) {
 mod tests {
     use super::*;
 
-    /// Compile-time tripwire: `gpui_component::Theme` has exactly these 20
-    /// fields in 0.7.0. Upstream carried three `tile_*` fields through 0.6.0
-    /// and 0.6.1 that this connector never set, and nothing noticed until
-    /// 0.6.2 removed them again; a field *added* in a patch release would be
-    /// left at upstream's default just as silently. Naming every field here
-    /// turns either change into a compile error.
+    /// Tripwire: `gpui_component::Theme` has exactly these 22 fields in
+    /// 0.9.1. Upstream carried three `tile_*` fields through 0.6.0 and 0.6.1
+    /// that this connector never set, and nothing noticed until 0.6.2 removed
+    /// them again; a field *added* in a release would be left at upstream's
+    /// default just as silently. The struct is `#[non_exhaustive]` since
+    /// 0.9.0, so a pattern naming every field no longer compiles without `..`;
+    /// the names are read from its derived `Debug` instead, which prints every
+    /// field, `#[serde(skip)]` ones included, so either change fails here by
+    /// name.
     #[test]
     fn every_theme_field_is_named() {
         let theme = to_theme(
@@ -1509,38 +1623,54 @@ mod tests {
             true,
             &AccessibilityPreferences::default(),
         );
-        let GpuiTheme {
+        let named = [
             // Set by `to_theme` from the resolved native theme.
-            mode: _,
-            font_family: _,
-            font_size: _,
-            mono_font_family: _,
-            mono_font_size: _,
-            radius: _,
-            radius_lg: _,
-            shadow: _,
-            focus_ring: _,
-            scrollbar_mode: _,
-            highlight_theme: _,
+            "mode",
+            "font_family",
+            "font_size",
+            "mono_font_family",
+            "mono_font_size",
+            "radius",
+            "radius_lg",
+            "window_radius",
+            "shadow",
+            "focus_ring",
+            "scrollbar_mode",
+            "highlight_theme",
             // `to_theme` fills the slot for `mode` only; the other keeps
             // `Theme::from(&ThemeColor)`'s empty `ThemeConfig::default()` until
             // a later `apply` stores the other variant (D34).
-            light_theme: _,
-            dark_theme: _,
+            "light_theme",
+            "dark_theme",
             // Written by `Theme::from(&ThemeColor)`: the 139-field colour map,
             // the tokens upstream derives from it, and `transparent` (Issue 53).
-            colors: _,
-            tokens: _,
-            transparent: _,
+            "colors",
+            "tokens",
+            "transparent",
             // Left to the application: native-theme models no notification
-            // placement, list highlight default, sheet margin or motion tokens
-            // (`ResolvedTheme` has no such field), so `to_theme` leaves
-            // upstream's default and `apply` keeps the installed theme's.
-            notification: _,
-            list: _,
-            sheet: _,
-            motion: _,
-        } = theme;
+            // placement, list highlight default, sheet margin, motion tokens
+            // or caret blink (`ResolvedTheme` has no such field), so
+            // `to_theme` leaves upstream's default and `apply` keeps the
+            // installed theme's.
+            "notification",
+            "list",
+            "sheet",
+            "motion",
+            "cursor_blink",
+        ];
+        // `{:#?}` puts each top-level field on a line of its own, indented
+        // by four spaces; nested fields are indented further.
+        let debug = format!("{theme:#?}");
+        let mut fields: Vec<&str> = debug
+            .lines()
+            .filter_map(|line| line.strip_prefix("    "))
+            .filter(|rest| !rest.starts_with(' '))
+            .filter_map(|rest| rest.split_once(": ").map(|(name, _)| name))
+            .collect();
+        let mut expected = named.to_vec();
+        fields.sort_unstable();
+        expected.sort_unstable();
+        assert_eq!(fields, expected, "gpui_component::Theme's fields changed");
     }
 
     /// Issue 1: fixed to use into_variant(true) for catppuccin-mocha (dark theme).
@@ -1676,6 +1806,10 @@ mod tests {
         assert_eq!(
             theme.radius_lg,
             px(resolved.defaults.border.corner_radius_lg.max(0.0))
+        );
+        assert_eq!(
+            theme.window_radius,
+            px(resolved.window.border.corner_radius)
         );
         assert_eq!(theme.shadow, resolved.defaults.border.shadow_enabled);
     }
@@ -2083,6 +2217,27 @@ mod tests {
         );
     }
 
+    /// `to_hsla` is the conversion `to_theme` installs a theme's colours with.
+    #[test]
+    fn to_hsla_gives_the_colours_to_theme_installs() {
+        let prefs = AccessibilityPreferences::default();
+        for is_dark in [false, true] {
+            let loaded = from_preset("macos-tahoe", is_dark, &prefs);
+            assert!(
+                loaded.is_ok(),
+                "macos-tahoe should load: {:?}",
+                loaded.as_ref().err()
+            );
+            let Ok((_, r)) = loaded else {
+                return;
+            };
+            let theme = to_theme(&r, "Test", is_dark, &prefs);
+            assert_eq!(theme.background, to_hsla(r.window.background_color));
+            assert_eq!(theme.selection, to_hsla(r.input.selection_background));
+            assert_eq!(theme.list_active, to_hsla(r.list.selection_background));
+        }
+    }
+
     // -- Issue 25/32: helper function tests --
 
     #[test]
@@ -2257,6 +2412,7 @@ mod apply_tests {
     use super::*;
     use gpui::TestAppContext;
     use gpui_component::scroll::ScrollbarMode;
+    use std::cell::Cell;
 
     /// Spec v0.5.9 §5: `false` is the absence of a request. gpui-base 0.6.2+
     /// (or the application) may have switched the flag on; a preset applied
@@ -2511,12 +2667,448 @@ mod apply_tests {
         });
     }
 
+    /// macos-tahoe's light and dark variants, with the preconditions the tests
+    /// of the capped colours rely on: both variants share one display name (so
+    /// both are stored), the cap changes `selection` and `list_active` in each,
+    /// and the four colours are distinct (so a restore from the wrong variant
+    /// or the wrong field fails). A preset that does not load fails the
+    /// assertion, so the result is never `None`.
+    fn tahoe(
+        prefs: &AccessibilityPreferences,
+    ) -> Option<((GpuiTheme, ResolvedTheme), (GpuiTheme, ResolvedTheme))> {
+        let light = from_preset("macos-tahoe", false, prefs);
+        let dark = from_preset("macos-tahoe", true, prefs);
+        assert!(
+            light.is_ok() && dark.is_ok(),
+            "macos-tahoe should load: {:?} {:?}",
+            light.as_ref().err(),
+            dark.as_ref().err()
+        );
+        let (light, dark) = (light.ok()?, dark.ok()?);
+        assert_eq!(
+            light.0.theme_name(),
+            dark.0.theme_name(),
+            "precondition: one display name, so both variants are stored"
+        );
+        let [light_selection, light_list, _] = natives(&light.1, false);
+        let [dark_selection, dark_list, _] = natives(&dark.1, true);
+        for (selection, list) in [(light_selection, light_list), (dark_selection, dark_list)] {
+            assert!(selection.a > 0.3, "precondition: the cap changes selection");
+            assert!(list.a > 0.2, "precondition: the cap changes list_active");
+            assert_ne!(
+                selection, list,
+                "precondition: selection is not list_active"
+            );
+        }
+        assert_ne!(
+            light_selection, dark_selection,
+            "precondition: two selections"
+        );
+        assert_ne!(light_list, dark_list, "precondition: two list_actives");
+        Some((light, dark))
+    }
+
+    /// The `selection`, `list_active` and `table_active` `apply` installs.
+    fn natives(resolved: &ResolvedTheme, is_dark: bool) -> [Hsla; 3] {
+        let tc = colors::to_theme_color(resolved, is_dark, false);
+        [tc.selection, tc.list_active, tc.table_active]
+    }
+
+    /// The three capped fields of `styled`, each with its token.
+    fn three(styled: &GpuiTheme) -> [(&'static str, Hsla, gpui_component::theme::ThemeToken); 3] {
+        [
+            (
+                "selection",
+                styled.colors.selection,
+                styled.tokens.selection,
+            ),
+            (
+                "list_active",
+                styled.colors.list_active,
+                styled.tokens.list_active,
+            ),
+            (
+                "table_active",
+                styled.colors.table_active,
+                styled.tokens.table_active,
+            ),
+        ]
+    }
+
+    /// Each of the three fields is `expected`, with its solid token, and
+    /// gpui-base's selection token and the text view's selection are
+    /// `expected[0]`.
+    fn assert_three(cx: &App, expected: [Hsla; 3], what: &str) {
+        for ((name, color, token), want) in three(GpuiTheme::global(cx)).into_iter().zip(expected) {
+            assert_eq!(color, want, "{name}, {what}");
+            assert_eq!(
+                token,
+                gpui_component::theme::ThemeToken::from(want),
+                "the token of {name}, {what}"
+            );
+        }
+        assert_eq!(
+            gpui_base::Theme::global(cx).tokens.colors.selection,
+            expected[0],
+            "gpui-base's selection token, {what}"
+        );
+        assert_eq!(
+            gpui_base::text::editor_host::RenderContext::from_app(cx)
+                .style()
+                .selection(),
+            expected[0],
+            "the text view's selection, {what}"
+        );
+    }
+
+    /// Count the deliveries of `gpui_base::Theme` notifications. The
+    /// subscription activates at the end of this update's flush, so register
+    /// it in an update of its own, before the one it measures.
+    fn count_deliveries(cx: &mut App) -> Rc<Cell<usize>> {
+        let count = Rc::new(Cell::new(0));
+        let counter = count.clone();
+        cx.observe_global::<gpui_base::Theme>(move |_| counter.set(counter.get() + 1))
+            .detach();
+        count
+    }
+
+    /// The precondition of the restore and the exactness end to end: with no
+    /// observer, upstream's `Theme::change` leaves each of the three exactly
+    /// at the native colour with the cap's alpha, and its solid token, and
+    /// `colors::restore_capped` recognises that and writes the native colour
+    /// back. Once for macos-tahoe's opaque dark selections, once for a
+    /// translucent native above both caps (`#3daee980`, written `#rrggbbaa`
+    /// into the config).
+    #[gpui::test]
+    fn theme_change_caps_the_three_without_the_restore(cx: &mut TestAppContext) {
+        let prefs = AccessibilityPreferences::default();
+        let Some((_, (_, dark))) = tahoe(&prefs) else {
+            return;
+        };
+        let mut translucent = dark.clone();
+        let wash = Rgba::new(0x3d, 0xae, 0xe9, 0x80);
+        translucent.input.selection_background = wash;
+        translucent.list.selection_background = wash;
+        assert!(
+            natives(&translucent, true)
+                .iter()
+                .all(|n| n.a > 0.3 && n.a < 1.0),
+            "precondition: a translucent native above both caps"
+        );
+        cx.update(gpui_component::init);
+        for (what, variant) in [("macos-tahoe dark", &dark), ("#3daee980", &translucent)] {
+            let native = natives(variant, true);
+            cx.update(|cx| {
+                GpuiTheme::global_mut(cx).dark_theme = Rc::new(config::to_theme_config(
+                    variant,
+                    "Test",
+                    GpuiThemeMode::Dark,
+                    &prefs,
+                ));
+                GpuiTheme::change(GpuiThemeMode::Dark, None, cx);
+            });
+            cx.update(|cx| {
+                let fields = three(GpuiTheme::global(cx));
+                for ((name, color, token), (n, cap)) in fields
+                    .into_iter()
+                    .zip(native.into_iter().zip([0.3, 0.2, 0.2]))
+                {
+                    let capped = n.alpha(cap);
+                    assert_eq!(
+                        color, capped,
+                        "{what}: {name} is not the native colour at the cap"
+                    );
+                    assert_eq!(
+                        token,
+                        gpui_component::theme::ThemeToken::from(capped),
+                        "{what}: the token of {name} is not the capped solid colour"
+                    );
+                    assert_ne!(color, n, "{what}: precondition: the cap changed {name}");
+                }
+                let mut restored = GpuiTheme::global(cx).clone();
+                assert!(
+                    colors::restore_capped(&colors::capped_natives(variant), &mut restored),
+                    "{what}: the cap is recognised"
+                );
+                for ((name, color, token), n) in three(&restored).into_iter().zip(native) {
+                    assert_eq!(color, n, "{what}: {name} is not restored");
+                    assert_eq!(
+                        token,
+                        gpui_component::theme::ThemeToken::from(n),
+                        "{what}: the token of {name} is not restored"
+                    );
+                }
+            });
+        }
+    }
+
+    /// Sequence (a): a switch either way leaves the three native, with their
+    /// tokens and gpui-base's copies, in two deliveries.
+    #[gpui::test]
+    fn a_mode_switch_restores_the_three_capped_colours(cx: &mut TestAppContext) {
+        let prefs = AccessibilityPreferences::default();
+        let Some(((light_theme, light), (dark_theme, dark))) = tahoe(&prefs) else {
+            return;
+        };
+        let (native_light, native_dark) = (natives(&light, false), natives(&dark, true));
+        cx.update(|cx| {
+            apply(light_theme, &light, &prefs, cx);
+            apply(dark_theme, &dark, &prefs, cx);
+        });
+        cx.update(|cx| assert_three(cx, native_dark, "after both applys"));
+        let count = cx.update(count_deliveries);
+        cx.update(|cx| {
+            count.set(0);
+            GpuiTheme::change(GpuiThemeMode::Light, None, cx);
+        });
+        cx.update(|cx| {
+            assert!(!GpuiTheme::global(cx).is_dark());
+            assert_three(cx, native_light, "after the switch to light");
+            assert_eq!(count.get(), 2, "deliveries of the switch to light");
+        });
+        cx.update(|cx| {
+            count.set(0);
+            GpuiTheme::change(GpuiThemeMode::Dark, None, cx);
+        });
+        cx.update(|cx| {
+            assert!(GpuiTheme::global(cx).is_dark());
+            assert_three(cx, native_dark, "after the switch back to dark");
+            assert_eq!(count.get(), 2, "deliveries of the switch to dark");
+        });
+    }
+
+    #[gpui::test]
+    fn apply_system_theme_restores_the_three_after_a_switch(cx: &mut TestAppContext) {
+        let Ok(mut sys) = super::tests::system_theme() else {
+            return;
+        };
+        let Some(((_, light), (_, dark))) = tahoe(&AccessibilityPreferences::default()) else {
+            return;
+        };
+        let (native_light, native_dark) = (natives(&light, false), natives(&dark, true));
+        sys.light = light;
+        sys.dark = dark;
+        sys.mode = ColorMode::Dark;
+        cx.update(|cx| apply_system_theme(&sys, cx));
+        cx.update(|cx| GpuiTheme::change(GpuiThemeMode::Light, None, cx));
+        cx.update(|cx| assert_three(cx, native_light, "after the switch to light"));
+        cx.update(|cx| GpuiTheme::change(GpuiThemeMode::Dark, None, cx));
+        cx.update(|cx| assert_three(cx, native_dark, "after the switch back to dark"));
+    }
+
+    /// Sequence (e): a `sync_system_appearance` in the update of the first
+    /// `apply` is restored by the delivery the deferred re-write causes.
+    #[gpui::test]
+    fn sync_system_appearance_in_the_first_applys_update_is_restored(cx: &mut TestAppContext) {
+        let prefs = AccessibilityPreferences::default();
+        let Some(((light_theme, light), (dark_theme, dark))) = tahoe(&prefs) else {
+            return;
+        };
+        let native_light = natives(&light, false);
+        cx.update(|cx| {
+            assert_eq!(
+                cx.window_appearance(),
+                gpui::WindowAppearance::Light,
+                "precondition: the test platform reports a light appearance"
+            );
+            apply(light_theme, &light, &prefs, cx);
+            apply(dark_theme, &dark, &prefs, cx);
+            GpuiTheme::sync_system_appearance(None, cx);
+        });
+        cx.update(|cx| {
+            assert!(!GpuiTheme::global(cx).is_dark());
+            assert_three(cx, native_light, "after the same-update sync");
+        });
+    }
+
+    /// A rebuild merged into the notification of the observer's own write is
+    /// restored: the restore runs before the `reapplying` branch.
+    #[gpui::test]
+    fn a_rebuild_merged_into_the_observers_own_notification_is_restored(cx: &mut TestAppContext) {
+        let prefs = AccessibilityPreferences::default();
+        let Some(((light_theme, light), (dark_theme, dark))) = tahoe(&prefs) else {
+            return;
+        };
+        let native_light = natives(&light, false);
+        cx.update(|cx| {
+            apply(light_theme, &light, &prefs, cx);
+            apply(dark_theme, &dark, &prefs, cx);
+        });
+        cx.update(|cx| {
+            let _ = gpui_base::Theme::global_mut(cx);
+            cx.defer(|cx| GpuiTheme::change(GpuiThemeMode::Light, None, cx));
+        });
+        cx.update(|cx| assert_three(cx, native_light, "after the merged rebuild"));
+    }
+
+    /// Sequence (b): a value of the application's own stays through the
+    /// delivery its write causes, is replaced by the next rebuild, and stays
+    /// when written again in the update of the switch.
+    #[gpui::test]
+    fn an_applications_own_value_survives_the_delivery_after_its_write(cx: &mut TestAppContext) {
+        let prefs = AccessibilityPreferences::default();
+        let Some(((light_theme, light), (dark_theme, dark))) = tahoe(&prefs) else {
+            return;
+        };
+        let (native_light, native_dark) = (natives(&light, false), natives(&dark, true));
+        cx.update(|cx| {
+            apply(light_theme, &light, &prefs, cx);
+            apply(dark_theme, &dark, &prefs, cx);
+        });
+        let count = cx.update(count_deliveries);
+        let own = native_dark[2].alpha(0.25);
+        let assert_own = |cx: &App, what: &str| {
+            let styled = GpuiTheme::global(cx);
+            assert_eq!(styled.colors.table_active, own, "table_active, {what}");
+            assert_eq!(
+                styled.tokens.table_active,
+                gpui_component::theme::ThemeToken::from(own),
+                "the token of table_active, {what}"
+            );
+            assert_eq!(styled.colors.selection, native_dark[0], "selection, {what}");
+            assert_eq!(
+                styled.colors.list_active, native_dark[1],
+                "list_active, {what}"
+            );
+        };
+        cx.update(|cx| {
+            count.set(0);
+            GpuiTheme::update(cx, |t| t.table_active = t.table_active.alpha(0.25));
+        });
+        cx.update(|cx| {
+            assert_own(cx, "after the application's write");
+            assert_eq!(count.get(), 2, "deliveries of the application's write");
+        });
+        cx.update(|cx| GpuiTheme::change(GpuiThemeMode::Light, None, cx));
+        cx.update(|cx| assert_three(cx, native_light, "after the switch to light"));
+        cx.update(|cx| {
+            GpuiTheme::change(GpuiThemeMode::Dark, None, cx);
+            GpuiTheme::update(cx, |t| t.table_active = t.table_active.alpha(0.25));
+        });
+        cx.update(|cx| assert_own(cx, "written again in the update of the switch"));
+    }
+
+    /// Sequence (c): a value equal to the capped native colour cannot be told
+    /// from the cap and is replaced.
+    #[gpui::test]
+    fn a_value_equal_to_the_cap_is_replaced(cx: &mut TestAppContext) {
+        let prefs = AccessibilityPreferences::default();
+        let Some(((light_theme, light), (dark_theme, dark))) = tahoe(&prefs) else {
+            return;
+        };
+        let native_dark = natives(&dark, true);
+        cx.update(|cx| {
+            apply(light_theme, &light, &prefs, cx);
+            apply(dark_theme, &dark, &prefs, cx);
+        });
+        let count = cx.update(count_deliveries);
+        cx.update(|cx| {
+            count.set(0);
+            GpuiTheme::update(cx, |t| t.selection = t.selection.alpha(0.3));
+        });
+        cx.update(|cx| {
+            assert_three(cx, native_dark, "after a write of the capped colour");
+            assert_eq!(count.get(), 2, "deliveries of the write");
+        });
+    }
+
+    /// Sequence (d), the dark variant stored: a switch to light shows what
+    /// upstream's switch makes, and the switch back is restored.
+    #[gpui::test]
+    fn a_mode_without_a_stored_variant_keeps_upstreams_colours_dark_stored(
+        cx: &mut TestAppContext,
+    ) {
+        let prefs = AccessibilityPreferences::default();
+        let Some((_, (dark_theme, dark))) = tahoe(&prefs) else {
+            return;
+        };
+        let native_dark = natives(&dark, true);
+        cx.update(|cx| apply(dark_theme, &dark, &prefs, cx));
+        let expected = cx.update(|cx| {
+            let mut probe = GpuiTheme::global(cx).clone();
+            let cfg = probe.light_theme.clone();
+            probe.apply_config(&cfg);
+            GpuiTheme::change(GpuiThemeMode::Light, None, cx);
+            three(&probe)
+        });
+        cx.update(|cx| {
+            for ((name, color, token), (_, want, want_token)) in
+                three(GpuiTheme::global(cx)).into_iter().zip(expected)
+            {
+                assert_eq!(color, want, "{name} is not upstream's");
+                assert_eq!(token, want_token, "the token of {name} is not upstream's");
+            }
+            assert_eq!(
+                gpui_base::Theme::global(cx).tokens.colors.selection,
+                expected[0].1,
+                "gpui-base's selection token"
+            );
+            assert_eq!(
+                gpui_base::text::editor_host::RenderContext::from_app(cx)
+                    .style()
+                    .selection(),
+                expected[0].1,
+                "the text view's selection"
+            );
+        });
+        cx.update(|cx| GpuiTheme::change(GpuiThemeMode::Dark, None, cx));
+        cx.update(|cx| assert_three(cx, native_dark, "after the switch back to dark"));
+    }
+
+    /// Sequence (d), the light variant stored: a switch to dark installs the
+    /// empty light config, and the three keep upstream's colours.
+    #[gpui::test]
+    fn a_mode_without_a_stored_variant_keeps_upstreams_colours_light_stored(
+        cx: &mut TestAppContext,
+    ) {
+        let prefs = AccessibilityPreferences::default();
+        let Some(((light_theme, light), _)) = tahoe(&prefs) else {
+            return;
+        };
+        let native_light = natives(&light, false);
+        cx.update(|cx| apply(light_theme, &light, &prefs, cx));
+        let expected = cx.update(|cx| {
+            let mut probe = GpuiTheme::global(cx).clone();
+            let cfg = probe.dark_theme.clone();
+            probe.apply_config(&cfg);
+            let expected = three(&probe);
+            for ((name, color, _), (n, cap)) in expected
+                .into_iter()
+                .zip(native_light.into_iter().zip([0.3, 0.2, 0.2]))
+            {
+                assert_ne!(
+                    color,
+                    n.alpha(cap),
+                    "precondition: upstream's {name} is not the light native at its cap"
+                );
+            }
+            GpuiTheme::change(GpuiThemeMode::Dark, None, cx);
+            expected
+        });
+        cx.update(|cx| {
+            assert!(
+                !GpuiTheme::global(cx).is_dark(),
+                "the empty config is a light one"
+            );
+            for ((name, color, token), (_, want, want_token)) in
+                three(GpuiTheme::global(cx)).into_iter().zip(expected)
+            {
+                assert_eq!(color, want, "{name} is not upstream's");
+                assert_eq!(token, want_token, "the token of {name} is not upstream's");
+            }
+        });
+    }
+
     /// The `reapplying` flag cannot tell the observer's own notification from a
     /// rebuild another effect performs before that notification is delivered:
     /// GPUI merges the two (spec §3.3, limit). The observer therefore repairs
-    /// the handle colours when they no longer hold the native values. Without
-    /// that repair the deferred `Theme::change` below would leave upstream's
-    /// `drag_border` in `active_handle`.
+    /// the handle colours when they no longer hold the native values. The
+    /// deferred rebuild below is a bare `sync_base`, which applies no config
+    /// and so caps none of `selection`, `list_active`, `table_active`: the
+    /// delivery reaches the `reapplying` branch, and without that repair it
+    /// would leave upstream's `drag_border` in `active_handle`. (A merged
+    /// `Theme::change`, which caps them, is answered by the restore before
+    /// that branch: `a_rebuild_merged_into_the_observers_own_notification_is_restored`.)
     #[gpui::test]
     fn observer_repairs_a_rebuild_merged_into_its_own_notification(cx: &mut TestAppContext) {
         let prefs = AccessibilityPreferences::default();
@@ -2524,11 +3116,12 @@ mod apply_tests {
         let active = colors::rgba_to_hsla(resolved.splitter.hover_color);
         cx.update(|cx| apply(theme, &resolved, &prefs, cx)); // observer active after this flush
         cx.update(|cx| {
-            // Queue: [N_base (this write), Defer(change)]. The observer answers
-            // N_base with a marked write whose notification lands after the
-            // deferred change; the change's own notification is deduplicated.
+            // Queue: [N_base (this write), Defer(sync_base)]. The observer
+            // answers N_base with a marked write whose notification lands after
+            // the deferred rebuild; the rebuild's own notification is
+            // deduplicated.
             let _ = gpui_base::Theme::global_mut(cx);
-            cx.defer(|cx| GpuiTheme::change(GpuiThemeMode::Dark, None, cx));
+            cx.defer(GpuiTheme::sync_base);
         });
         cx.update(|cx| {
             assert_eq!(
@@ -2874,8 +3467,8 @@ mod apply_tests {
         });
     }
 
-    /// M6-01: `notification`, `list`, `sheet` and `motion` are the
-    /// application's settings, not theme data, so `apply` and
+    /// M6-01: `notification`, `list`, `sheet`, `motion` and `cursor_blink`
+    /// are the application's settings, not theme data, so `apply` and
     /// `apply_accessibility` keep the values the application set, as
     /// upstream's own `Theme::change` does.
     #[gpui::test]
@@ -2886,12 +3479,15 @@ mod apply_tests {
         assert_ne!(theme.notification.max_items, 3, "precondition");
         assert!(theme.list.active_highlight, "precondition");
         assert_ne!(theme.motion.duration_normal, Duration::ZERO, "precondition");
+        let steady = gpui_base::input::CursorBlink::steady();
+        assert_ne!(theme.cursor_blink, steady, "precondition");
         let assert_kept = |cx: &App| {
             let styled = GpuiTheme::global(cx);
             assert_eq!(styled.sheet.margin_top, px(40.));
             assert_eq!(styled.notification.max_items, 3);
             assert!(!styled.list.active_highlight);
             assert_eq!(styled.motion.duration_normal, Duration::ZERO);
+            assert_eq!(styled.cursor_blink, steady);
         };
         cx.update(|cx| {
             gpui_component::init(cx);
@@ -2900,6 +3496,7 @@ mod apply_tests {
             styled.notification.max_items = 3;
             styled.list.active_highlight = false;
             styled.motion.duration_normal = Duration::ZERO;
+            styled.cursor_blink = steady;
             apply(theme, &resolved, &prefs, cx);
             assert_kept(cx);
             let mut scaled = AccessibilityPreferences::default();

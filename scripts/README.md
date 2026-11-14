@@ -749,8 +749,8 @@ has:
   a host's `/etc/xdg/kdeglobals` does not reach the KDE reader (the egui
   showcase's `native` feature among its users), as the runner has none;
 - a `PATH` of `fc-match`, `sh`, `sleep`, `true` and the toolchain's `cargo`
-  and `rustc` only, none of the desktop readers `gsettings`, `xrdb`, `xrandr`
-  or `xfconf-query`;
+  and `rustc` only, none of the desktop readers `gsettings` or
+  `xfconf-query`;
 - the runner's icon themes alone, Adwaita, hicolor, Humanity and ubuntu-mono
   (the packages firefox's GTK 3 pulls in; no breeze), as the one
   `XDG_DATA_DIRS` entry;

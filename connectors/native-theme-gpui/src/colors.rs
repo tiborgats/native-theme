@@ -58,7 +58,7 @@ pub(crate) fn over(base: Hsla, layer: Hsla) -> Hsla {
 /// `src/color.rs:224-262`). Alpha is quantised to 8 bits like the channels.
 pub(crate) fn hsla_to_hex(c: Hsla) -> String {
     let rgba: gpui::Rgba = c.into();
-    let channel = |v: f32| (v.clamp(0.0, 1.0) * 255.0).round() as u8;
+    let channel = channel_byte;
     let (r, g, b, a) = (
         channel(rgba.r),
         channel(rgba.g),
@@ -84,8 +84,8 @@ struct ResolvedColors {
     fg: Hsla,
     accent: Hsla,
     // The item highlight gpui-component calls `accent` (menu, list, completion
-    // and calendar hover): the platform's menu hover pair, which is the
-    // selection colour on KDE and macOS and a subtle fill elsewhere.
+    // and calendar hover): the platform's menu hover pair, which is the selection
+    // colour on macOS, a tint of the focus colour on KDE, and a subtle fill elsewhere.
     menu_hover_bg: Hsla,
     menu_hover_fg: Hsla,
     sidebar_selection_bg: Hsla,
@@ -716,6 +716,75 @@ fn assign_base_colors(tc: &mut ThemeColor, c: &BasePaletteInputs, is_dark: bool)
     };
     tc.cyan = cyan;
     tc.cyan_light = light_variant(c.bg, cyan, is_dark);
+}
+
+/// One channel of [`hsla_to_hex`]: `v` clamped to `0.0..=1.0`, times 255,
+/// rounded to the nearest byte.
+pub(crate) fn channel_byte(v: f32) -> u8 {
+    (v.clamp(0.0, 1.0) * 255.0).round() as u8
+}
+
+/// The alpha gpui-component caps `selection` at whenever it applies a
+/// `ThemeConfig` (gpui-component 0.9.1 `src/theme/schema.rs:1065-1070`).
+pub(crate) const SELECTION_ALPHA_CAP: f32 = 0.3;
+
+/// The alpha gpui-component caps `list_active` and `table_active` at whenever
+/// it applies a `ThemeConfig` (gpui-component 0.9.1
+/// `src/theme/schema.rs:1053-1064`).
+pub(crate) const ROW_SELECTION_ALPHA_CAP: f32 = 0.2;
+
+/// The native colours of the three `ThemeColor` fields gpui-component caps, as
+/// [`to_theme_color`] assigns them: `selection` from
+/// `input.selection_background`, `list_active` and `table_active` from
+/// `list.selection_background`.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) struct CappedNatives {
+    selection: Hsla,
+    list_active: Hsla,
+    table_active: Hsla,
+}
+
+/// [`CappedNatives`] of `resolved`.
+pub(crate) fn capped_natives(resolved: &ResolvedTheme) -> CappedNatives {
+    let row = rgba_to_hsla(resolved.list.selection_background);
+    CappedNatives {
+        selection: rgba_to_hsla(resolved.input.selection_background),
+        list_active: row,
+        table_active: row,
+    }
+}
+
+/// Whether a field and its token hold what gpui-component's cap makes of
+/// `native`: `native` at alpha `cap`, and that colour as a solid token. Never
+/// where `native`'s alpha is at or below the cap, which leaves it as it is.
+fn holds_upstream_cap(color: Hsla, token: ThemeToken, native: Hsla, cap: f32) -> bool {
+    if native.a <= cap {
+        return false;
+    }
+    let capped = native.alpha(cap);
+    color == capped && token == ThemeToken::from(capped)
+}
+
+/// Write the native colour, and its token, into each of the three fields of
+/// `to` that holds gpui-component's cap of it ([`holds_upstream_cap`]); any
+/// other value is left alone. `true` when any field was written.
+pub(crate) fn restore_capped(native: &CappedNatives, to: &mut Theme) -> bool {
+    let mut restored = false;
+    macro_rules! restore {
+        ($($field:ident: $cap:expr),*) => {$(
+            if holds_upstream_cap(to.colors.$field, to.tokens.$field, native.$field, $cap) {
+                to.colors.$field = native.$field;
+                to.tokens.$field = ThemeToken::from(native.$field);
+                restored = true;
+            }
+        )*};
+    }
+    restore!(
+        selection: SELECTION_ALPHA_CAP,
+        list_active: ROW_SELECTION_ALPHA_CAP,
+        table_active: ROW_SELECTION_ALPHA_CAP
+    );
+    restored
 }
 
 #[cfg(test)]
@@ -1719,5 +1788,165 @@ mod tests {
             tc.table_active_border, expected_border,
             "table_active_border should equal list_active_border"
         );
+    }
+
+    #[test]
+    fn capped_natives_are_the_colours_to_theme_color_assigns() {
+        for info in Theme::list_presets() {
+            for mode in [ColorMode::Light, ColorMode::Dark] {
+                let resolved = resolved_preset(info.key, mode);
+                let tc = to_theme_color(&resolved, mode.is_dark(), false);
+                assert_eq!(
+                    capped_natives(&resolved),
+                    CappedNatives {
+                        selection: tc.selection,
+                        list_active: tc.list_active,
+                        table_active: tc.table_active,
+                    },
+                    "{} {mode:?}",
+                    info.key
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn restore_capped_undoes_the_cap_and_nothing_else() {
+        let tahoe = resolved_preset("macos-tahoe", ColorMode::Light);
+        let n = capped_natives(&tahoe);
+        let fresh = || gpui_component::theme::Theme::from(&to_theme_color(&tahoe, false, false));
+
+        // Each field and its token at the cap: all three restored, once.
+        let mut theme = fresh();
+        let selection = n.selection.alpha(SELECTION_ALPHA_CAP);
+        let list_active = n.list_active.alpha(ROW_SELECTION_ALPHA_CAP);
+        let table_active = n.table_active.alpha(ROW_SELECTION_ALPHA_CAP);
+        theme.colors.selection = selection;
+        theme.tokens.selection = ThemeToken::from(selection);
+        theme.colors.list_active = list_active;
+        theme.tokens.list_active = ThemeToken::from(list_active);
+        theme.colors.table_active = table_active;
+        theme.tokens.table_active = ThemeToken::from(table_active);
+        assert!(restore_capped(&n, &mut theme), "the three hold the cap");
+        for (name, color, token, native) in [
+            (
+                "selection",
+                theme.colors.selection,
+                theme.tokens.selection,
+                n.selection,
+            ),
+            (
+                "list_active",
+                theme.colors.list_active,
+                theme.tokens.list_active,
+                n.list_active,
+            ),
+            (
+                "table_active",
+                theme.colors.table_active,
+                theme.tokens.table_active,
+                n.table_active,
+            ),
+        ] {
+            assert_eq!(color, native, "{name} is not restored");
+            assert_eq!(
+                token,
+                ThemeToken::from(native),
+                "{name}'s token is not restored"
+            );
+        }
+        assert!(
+            !restore_capped(&n, &mut theme),
+            "a second call finds nothing"
+        );
+
+        // An alpha other than the cap is the application's.
+        let mut theme = fresh();
+        let own = n.table_active.alpha(0.25);
+        theme.colors.table_active = own;
+        theme.tokens.table_active = ThemeToken::from(own);
+        assert!(!restore_capped(&n, &mut theme));
+        assert_eq!(theme.colors.table_active, own);
+        assert_eq!(theme.tokens.table_active, ThemeToken::from(own));
+
+        // The field at the cap with a token that is not: both must hold it.
+        let mut theme = fresh();
+        theme.colors.selection = selection;
+        theme.tokens.selection = ThemeToken::from(n.selection);
+        assert!(!restore_capped(&n, &mut theme));
+        assert_eq!(theme.colors.selection, selection);
+        assert_eq!(theme.tokens.selection, ThemeToken::from(n.selection));
+
+        // A native colour at or below the cap has no cap to undo.
+        let windows = resolved_preset("windows-11", ColorMode::Light);
+        assert_eq!(
+            windows.list.selection_background,
+            native_theme::color::Rgba::new(0, 0, 0, 0x09),
+            "precondition: windows-11's row selection is #00000009"
+        );
+        let wn = capped_natives(&windows);
+        assert!(
+            wn.list_active.a < ROW_SELECTION_ALPHA_CAP,
+            "precondition: its alpha is below the cap"
+        );
+        let mut theme = gpui_component::theme::Theme::from(&to_theme_color(&windows, false, false));
+        let own = wn.list_active.alpha(ROW_SELECTION_ALPHA_CAP);
+        theme.colors.list_active = own;
+        theme.tokens.list_active = ThemeToken::from(own);
+        assert!(!restore_capped(&wn, &mut theme));
+        assert_eq!(theme.colors.list_active, own);
+        assert_eq!(theme.tokens.list_active, ThemeToken::from(own));
+    }
+
+    /// Every opaque 8-bit colour, and every alpha on one colour, comes back
+    /// from `Hsla` with its bytes through `channel_byte`, the rule
+    /// [`hsla_to_hex`] writes them with.
+    #[test]
+    fn every_8_bit_colour_survives_hsla_to_hex() {
+        let round_trip = |r: u8, g: u8, b: u8, a: u8| {
+            let back: gpui::Rgba = rgba_to_hsla(native_theme::color::Rgba::new(r, g, b, a)).into();
+            [
+                channel_byte(back.r),
+                channel_byte(back.g),
+                channel_byte(back.b),
+                channel_byte(back.a),
+            ]
+        };
+        for r in 0..=u8::MAX {
+            for g in 0..=u8::MAX {
+                for b in 0..=u8::MAX {
+                    assert_eq!(round_trip(r, g, b, u8::MAX), [r, g, b, u8::MAX]);
+                }
+            }
+        }
+        for a in 0..=u8::MAX {
+            assert_eq!(round_trip(0x3d, 0xae, 0xe9, a), [0x3d, 0xae, 0xe9, a]);
+        }
+    }
+
+    /// The colour upstream parses from the config's hex string is the native
+    /// colour bit for bit, so the restore's comparison with `native.alpha(cap)`
+    /// is exact for every preset.
+    #[test]
+    fn a_native_colour_survives_the_config_round_trip() {
+        for info in Theme::list_presets() {
+            for mode in [ColorMode::Light, ColorMode::Dark] {
+                let resolved = resolved_preset(info.key, mode);
+                let tc = to_theme_color(&resolved, mode.is_dark(), false);
+                for (name, native) in [
+                    ("selection", tc.selection),
+                    ("list_active", tc.list_active),
+                    ("table_active", tc.table_active),
+                ] {
+                    let hex = hsla_to_hex(native);
+                    assert_eq!(
+                        gpui_component::try_parse_color(&hex).ok(),
+                        Some(native),
+                        "{} {mode:?}: {name} {hex} does not parse back to itself",
+                        info.key
+                    );
+                }
+            }
+        }
     }
 }

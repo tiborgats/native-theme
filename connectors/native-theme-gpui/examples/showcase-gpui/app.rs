@@ -492,9 +492,13 @@ pub(crate) struct Showcase {
     pub(crate) color_picker_state: Entity<ColorPickerState>,
     /// The Inputs page's ColorSelect, empty until a colour is picked.
     pub(crate) color_select_state: Entity<ColorPickerState>,
-    /// The Inputs page's SpeechWaveform: a synthetic input and a recognizer
-    /// that hears nothing. It runs until Stop, whichever page is shown.
+    /// The Inputs page's SpeechWaveform and SpeechIndicator: a synthetic
+    /// input and a recognizer that hears nothing. It runs until Stop,
+    /// whichever page is shown.
     pub(crate) speech_state: Entity<SpeechState>,
+    /// The focus of the stop button the Inputs page's SpeechIndicator fills,
+    /// which shows the button's name instead while it has keyboard focus.
+    pub(crate) speech_stop_focus: FocusHandle,
     pub(crate) date_picker_state: Entity<gpui_component::date_picker::DatePickerState>,
     /// The Inputs page's TimeField (spec §8.3).
     pub(crate) time_field_state: Entity<TimeFieldState>,
@@ -1433,6 +1437,7 @@ impl Showcase {
                 .input(SyntheticAudio::default())
                 .system_fallback(false)
         });
+        let speech_stop_focus = cx.focus_handle();
 
         // Date picker state
         let date_picker_state =
@@ -1685,6 +1690,7 @@ impl Showcase {
             color_picker_state,
             color_select_state,
             speech_state,
+            speech_stop_focus,
             date_picker_state,
             time_field_state,
             token_input_state,
@@ -2365,10 +2371,18 @@ impl Render for Showcase {
         // gpui-component's `WindowState` plugin (gpui-base root.rs,
         // `Root::render`), so the showcase's actions are handled around both
         // by `host::ShowcaseHost`, where an action dispatched from inside an
-        // overlay still finds them.
+        // overlay still finds them. The view's fill touches the window's
+        // corners, so it rounds them as the window does, a client-decorated
+        // one by the theme's `window_radius` (gpui-component 0.9.1
+        // window_border.rs:19-27); the status bar rounds the bottom two.
+        let corners = gpui_component::window_corner_radii(window, cx);
         div()
             .relative()
             .size_full()
+            .rounded_tl(corners.top_left)
+            .rounded_tr(corners.top_right)
+            .rounded_bl(corners.bottom_left)
+            .rounded_br(corners.bottom_right)
             .bg(background)
             .text_color(foreground)
             .track_focus(&self.focus_handle)
@@ -2399,6 +2413,7 @@ impl Render for Showcase {
                         &environment,
                         environment_text,
                         shown,
+                        corners,
                     )),
             )
             // Deferred at the highest priority, so it is the topmost hitbox:

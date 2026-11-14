@@ -15616,7 +15616,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
     // The items are menu rows, as the window's menu bar's are (`menu_row`,
     // the titles `menu_title`), padded like the platform's menu items: the
     // sides menu.border.padding states, a button's own elsewhere. A theme
-    // that states no row height (KDE's items size to their font) leaves the
+    // that states no row height (KDE's items fit content, with a floor) leaves the
     // item its own height; a stated one grows above a text scale of 1 to
     // hold the row's line and padding, as the window's menu rows do
     // (`rows::scaled_height`). The text is drawn at the theme's line height,

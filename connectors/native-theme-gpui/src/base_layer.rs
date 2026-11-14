@@ -151,10 +151,10 @@ fn thumb_min_length(g: &ScrollbarGeometry) -> Pixels {
 /// (`src/setting/settings.rs:416`, `src/dock/dock.rs:142`).
 #[must_use]
 pub fn resizable_theme(resolved: &ResolvedTheme) -> ResizableTheme {
-    ResizableTheme {
-        handle: Some(rgba_to_hsla(resolved.splitter.divider_color)),
-        active_handle: Some(rgba_to_hsla(resolved.splitter.hover_color)),
-    }
+    let mut theme = ResizableTheme::default();
+    theme.handle = Some(rgba_to_hsla(resolved.splitter.divider_color));
+    theme.active_handle = Some(rgba_to_hsla(resolved.splitter.hover_color));
+    theme
 }
 
 /// Write both onto `gpui_base::Theme`, keeping the scrollbar `mode()` and

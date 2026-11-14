@@ -1539,7 +1539,7 @@ pub fn swatch(t: &Theme, token: ThemeToken, native: Option<Native<'_>>) -> Widge
             "label",
             "foreground",
             t.foreground,
-            "gpui-component/label.rs:211",
+            "gpui-component/label.rs:213",
         ))
         .not_themeable(
             "geometry",

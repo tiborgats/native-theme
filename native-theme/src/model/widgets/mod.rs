@@ -264,8 +264,8 @@ pub struct MenuTheme {
     #[theme(inherit_from = "defaults.border.color")]
     pub separator_color: Option<Rgba>,
     /// Height of a single menu item row. `None` where the platform states
-    /// no row height: KDE's menu items size to their font
-    /// (docs/platform-facts.md §2.6).
+    /// no fixed row height: KDE's menu items size to their content with a
+    /// floor, which this field cannot carry (docs/platform-facts.md §2.6).
     #[serde(rename = "row_height_px")]
     #[theme(category = "soft_option", check = "non_negative")]
     pub row_height: Option<f32>,

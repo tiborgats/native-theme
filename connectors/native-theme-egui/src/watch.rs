@@ -87,9 +87,9 @@ impl ThemeWatcher {
     /// subscription (`native-theme/src/watch/mod.rs:109-111`).
     ///
     /// # Errors
-    /// Propagates `native_theme::watch::on_theme_change` (`native-theme/src/watch/mod.rs:391`),
+    /// Propagates `native_theme::watch::on_theme_change` (`native-theme/src/watch/mod.rs:435`),
     /// which reports `Error::WatchUnavailable` on desktops and feature sets it cannot watch
-    /// (`:391-448`) and `Error::ReaderFailed` when a backend could not start. A `rebuild` error
+    /// (`:435-492`) and `Error::ReaderFailed` when a backend could not start. A `rebuild` error
     /// is not returned here; it is kept for [`ThemeWatcher::last_error`], and egui is woken with
     /// `ctx.request_repaint()` either way, so the next pass reads the new atlas or the error.
     pub fn start(
@@ -230,7 +230,7 @@ mod tests {
         assert!(handoff.last_error().is_none());
     }
 
-    /// T15 (c): `start` never panics, whatever the desktop (`native-theme/src/watch/mod.rs:391-448`):
+    /// T15 (c): `start` never panics, whatever the desktop (`native-theme/src/watch/mod.rs:435-492`):
     /// `Ok` or any error passes, and only a panic fails.
     #[test]
     fn start_never_panics_without_a_desktop() {

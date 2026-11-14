@@ -5,8 +5,8 @@
 //! its `widgets::` control, or the showcase helper that sets it -- or says
 //! "not reachable" with the upstream line that keeps it out. Where the
 //! showcase could apply a leaf and does not, the line says so and names what
-//! is drawn instead. Upstream citations are to gpui-component 0.8.1,
-//! gpui-base 0.8.1 and gpui-pre 0.3.10.
+//! is drawn instead. Upstream citations are to gpui-component 0.9.1,
+//! gpui-base 0.9.1 and gpui-pre 0.3.12.
 
 /// Each line as (element-id prefix, leaf, line). The first entry whose
 /// prefix the hovered element's id starts with and whose leaf matches wins;
@@ -94,7 +94,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.page_tabs.menu",
         "button.hover_text_color",
-        "not reachable: a Custom variant has no hover text colour (gpui-component/button/button.rs:102-142, ButtonCustomVariant; :1204, Custom; :1218-1223, text_color)",
+        "not reachable: a Custom variant has no hover text colour (gpui-component/button/button.rs:102-142, ButtonCustomVariant; :1209, Custom; :1223-1228, text_color)",
     ),
     (
         "chrome.page_tabs.menu",
@@ -145,7 +145,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.status_bar.toggle",
         "button.active_background",
-        "gpui: ghost_button's active, secondary_active; also its selected fill (gpui-component/button/button.rs:1332, active)",
+        "gpui: ghost_button's active, secondary_active; also its selected fill (gpui-component/button/button.rs:1337, active)",
     ),
     (
         "chrome.toolbar.",
@@ -180,17 +180,17 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.toolbar.",
         "button.hover_text_color",
-        "not reachable: a Custom variant has no hover text colour (gpui-component/button/button.rs:102-142, ButtonCustomVariant; :1204, Custom; :1218-1223, text_color)",
+        "not reachable: a Custom variant has no hover text colour (gpui-component/button/button.rs:102-142, ButtonCustomVariant; :1209, Custom; :1223-1228, text_color)",
     ),
     (
         "basic.icons.",
         "button.hover_text_color",
-        "not reachable: a Custom variant has no hover text colour (gpui-component/button/button.rs:102-142, ButtonCustomVariant; :1204, Custom; :1218-1223, text_color)",
+        "not reachable: a Custom variant has no hover text colour (gpui-component/button/button.rs:102-142, ButtonCustomVariant; :1209, Custom; :1223-1228, text_color)",
     ),
     (
         "chrome.status_bar.toggle",
         "button.hover_text_color",
-        "not reachable: a Custom variant has no hover text colour (gpui-component/button/button.rs:102-142, ButtonCustomVariant; :1204, Custom; :1218-1223, text_color)",
+        "not reachable: a Custom variant has no hover text colour (gpui-component/button/button.rs:102-142, ButtonCustomVariant; :1209, Custom; :1223-1228, text_color)",
     ),
     (
         "chrome.toolbar.",
@@ -286,7 +286,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "button.active_text_color",
-        "not reachable: a pressed Button keeps its variant's text colour (gpui-component/button/button.rs:1294-1298, text_color)",
+        "not reachable: a pressed Button keeps its variant's text colour (gpui-component/button/button.rs:1299-1303, text_color)",
     ),
     (
         "",
@@ -331,7 +331,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "button.border.shadow_enabled",
-        "not reachable: only a Custom variant takes a shadow (gpui-component/button/button.rs:1130-1135, shadow)",
+        "not reachable: only a Custom variant takes a shadow (gpui-component/button/button.rs:1135-1140, shadow)",
     ),
     (
         "",
@@ -366,7 +366,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "button.hover_text_color",
-        "not reachable: a hovered Button keeps its variant's text colour (gpui-component/button/button.rs:1218-1223, text_color)",
+        "not reachable: a hovered Button keeps its variant's text colour (gpui-component/button/button.rs:1223-1228, text_color)",
     ),
     (
         "",
@@ -555,7 +555,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.side_panel.settings.theme",
         "combo_box.font.color",
-        "not reachable: the Combobox's disabled colour lands before the caller's style (gpui-component/combobox.rs:991-998, refine_style)",
+        "not reachable: the Combobox's disabled colour lands before the caller's style (gpui-component/combobox.rs:1009-1016, refine_style)",
     ),
     // --- combo_box: a Select, and the Combobox's metrics ------------------------
     (
@@ -687,7 +687,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "defaults.font",
-        "gpui: the window's font, Theme::font_family and font_size (config.rs; gpui-component/root.rs:714, font_size; :722, font_family)",
+        "gpui: the window's font, Theme::font_family and font_size (config.rs; gpui-component/root.rs:714, font_size; :724, font_family)",
     ),
     (
         "basic.typography",
@@ -702,7 +702,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "defaults.font.color",
-        "gpui: the Label paints `foreground`, defaults.text_color (gpui-component/label.rs:211, foreground)",
+        "gpui: the Label paints `foreground`, defaults.text_color (gpui-component/label.rs:213, foreground)",
     ),
     (
         "basic.typography",
@@ -712,7 +712,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "defaults.font.family",
-        "gpui: the window's font, Theme::font_family (config.rs), set by gpui-component's WindowState root plugin (gpui-component/root.rs:722, font_family)",
+        "gpui: the window's font, Theme::font_family (config.rs), set by gpui-component's WindowState root plugin (gpui-component/root.rs:724, font_family)",
     ),
     (
         "basic.icons.large",
@@ -862,7 +862,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.menu.theme.preferences.shortcut",
         "defaults.line_height",
-        "gpui: the row's line height, which the plain Kbd text inherits (MenuLook; gpui-component/kbd.rs:234-236, appearance)",
+        "gpui: the row's line height, which the plain Kbd text inherits (MenuLook; gpui-component/kbd.rs:236-238, appearance)",
     ),
     (
         "chrome.menu.",
@@ -1079,12 +1079,12 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "input.disabled_text_color",
-        "gpui: geometry::input_fill's text colour for a disabled field, which gpui-base draws at half its alpha (gpui-base/input/base/element.rs:2716, opacity)",
+        "gpui: geometry::input_fill's text colour for a disabled field, which gpui-base draws at half its alpha (gpui-base/input/base/element.rs:3184, opacity)",
     ),
     (
         "",
         "input.focus_border_color",
-        "not reachable: a focused Input edges itself in `ring` after the caller's style (gpui-component/input/input.rs:751-754, ring)",
+        "not reachable: a focused Input edges itself in `ring` after the caller's style (gpui-component/input/input.rs:775-778, ring)",
     ),
     (
         "basic.text_area",
@@ -1099,7 +1099,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "input.font.color",
-        "gpui: geometry::input's text colour, over the window's `foreground` the field's text inherits (gpui-component/input/input.rs:691, input_style)",
+        "gpui: geometry::input's text colour, over the window's `foreground` the field's text inherits (gpui-component/input/input.rs:715, input_style)",
     ),
     (
         "basic.number_input",
@@ -1119,7 +1119,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "input.placeholder_color",
-        "not reachable: the placeholder is muted_foreground (gpui-component/input/input.rs:541, muted_foreground)",
+        "not reachable: the placeholder is muted_foreground (gpui-component/input/input.rs:565, muted_foreground)",
     ),
     // --- layout -------------------------------------------------------------------
     (
@@ -1455,7 +1455,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.menu.theme.preferences.shortcut",
         "menu.font",
-        "gpui: the row's font, which the plain Kbd text inherits (MenuLook; gpui-component/kbd.rs:234-236, appearance)",
+        "gpui: the row's font, which the plain Kbd text inherits (MenuLook; gpui-component/kbd.rs:236-238, appearance)",
     ),
     (
         "chrome.menu_bar.",

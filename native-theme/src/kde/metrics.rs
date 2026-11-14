@@ -75,12 +75,19 @@ pub(crate) fn populate_widget_sizing(variant: &mut crate::ThemeMode) {
 
     // Menu
     let border = variant.menu.border.get_or_insert_default();
-    // platform-facts.md:1261-1262 (§2.6)
+    // platform-facts.md:1261-1262 (§2.6): MenuItem_MarginWidth and
+    // MenuItem_MarginHeight, 4; kept although, in a menu without icons or
+    // checkable items, Breeze starts the text 16 from the highlight (:1261),
+    // and puts a 16 px icon's text 4 after the icon (:1267): the padding and
+    // the gap change together (docs/todo.md, KDE values that wait for a
+    // connector design)
     border.padding_left = Some(4.0); // MenuItem_MarginWidth
     border.padding_right = Some(4.0); // MenuItem_MarginWidth
     border.padding_top = Some(4.0); // MenuItem_MarginHeight
     border.padding_bottom = Some(4.0); // MenuItem_MarginHeight
-    variant.menu.icon_text_gap = Some(8.0); // MenuItem_TextLeftMargin
+    // Kept, see above: MenuItem_TextLeftMargin is the inset before the icon
+    // column, not this gap (platform-facts.md:1267)
+    variant.menu.icon_text_gap = Some(8.0);
 
     // Tooltip
     let border = variant.tooltip.border.get_or_insert_default();

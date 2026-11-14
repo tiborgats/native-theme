@@ -271,10 +271,10 @@ pub(crate) fn font_rows(app: &Showcase, cx: &gpui::App) -> Vec<(&'static str, St
 
 /// gpui's fallback stack, in its order: what `TextSystem::resolve_font` draws text in where
 /// its text system finds no face of the family asked for, the first family it finds a face of
-/// (gpui-pre 0.3.10 `src/text_system.rs:262-273`, gpui-fast 0.1.12 `src/text_system.rs:263-274`;
+/// (gpui-pre 0.3.12 `src/text_system.rs:261-272`, gpui-fast 0.1.15 `src/text_system.rs:262-273`;
 /// private in both). `.ZedMono` and `.ZedSans` are aliases, which the platform text systems
-/// load as Lilex and IBM Plex Sans (`gpui::font_name_with_fallbacks`, gpui-pre `:1453-1463`,
-/// gpui-fast `:1450-1460`). Held against both cores' lines by
+/// load as Lilex and IBM Plex Sans (`gpui::font_name_with_fallbacks`, gpui-pre `:1262-1272`,
+/// gpui-fast `:1259-1269`). Held against both cores' lines by
 /// `tests::the_fallback_stack_copy_is_gpuis`.
 pub(crate) const GPUI_FALLBACK_STACK: [&str; 10] = [
     ".ZedMono",
@@ -294,16 +294,17 @@ pub(crate) const GPUI_FALLBACK_STACK: [&str; 10] = [
 /// crate's `status::DrawnFamily`): the family gpui's text system resolves it
 /// to, which is the family itself where the text system finds a face of it
 /// and otherwise the first family of gpui's fallback stack it finds
-/// (`TextSystem::resolve_font`: gpui-pre 0.3.10 `src/text_system.rs:352-359` and `:570-630`, over
-/// the stack of `:262-273`; gpui-fast 0.1.12 `src/text_system.rs:354-356`, over `:263-274`, and
-/// `src/fast/text.rs:1086-1156`), read back from the face's id (`TextSystem::get_font_for_id`,
-/// gpui-pre `src/text_system.rs:336-344`, gpui-fast `:338-346`). It caches a family it finds a
+/// (`TextSystem::resolve_font`: gpui-pre 0.3.12 `src/text_system.rs:351-358` and `:569-629`, over
+/// the stack of `:261-272`; gpui-fast 0.1.15 `src/text_system.rs:353-355`, over `:262-273`, and
+/// `src/fast/text.rs:1085-1155`), read back from the face's id (`TextSystem::get_font_for_id`,
+/// gpui-pre `src/text_system.rs:335-343`, gpui-fast `:337-345`). It caches a family it finds a
 /// face of as `CachedFont::Direct` and one it finds none of as `Fallback`, holding the id of the
 /// stack family drawn, itself `Direct` (gpui-pre `:244-248`, gpui-fast `:245-249`, there with the
 /// features asked for); `get_font_for_id` reads `Direct` alone. The platform text systems give a
-/// face an id of its own per family asked for (gpui-pre-wgpu 0.3.10, gpui-fast-wgpu 0.1.12
+/// face an id of its own per family asked for (gpui-pre-wgpu 0.3.12, gpui-fast-wgpu 0.1.15
 /// `src/cosmic_text_system.rs:44-47`, `:400-443`; gpui-pre-apple `src/text_system.rs:382`,
-/// gpui-fast-apple `:385`; both windows crates' `src/direct_write.rs:332`), so it names the family.
+/// gpui-fast-apple `:370`; gpui-pre-windows `src/direct_write.rs:220`, gpui-fast-windows
+/// `:222`), so it names the family.
 /// Built once an install, with the panel's look (`PanelLook::of`), as the
 /// text system is read through the app.
 #[derive(Clone, Debug, PartialEq)]
@@ -320,7 +321,7 @@ impl DrawnFamilies {
     /// face (gpui-pre `src/platform.rs:1578-1584`), is not asked.
     /// `resolve_font` panics where its text system finds no face of the
     /// family asked for nor of any stack family (gpui-pre
-    /// `src/text_system.rs:621-628`, gpui-fast `:618-625`, reached from `src/fast/text.rs:1155`),
+    /// `src/text_system.rs:621-628`, gpui-fast `:618-625`, reached from `src/fast/text.rs:1182`),
     /// so the one case where this call panics is a family the text system
     /// finds no face of where every stack family it lists has no face it
     /// loads; there gpui's own layout of text in that family panics too,
@@ -471,10 +472,11 @@ pub(crate) fn window_rows(
     paddings: gpui::Edges<gpui::Pixels>,
 ) -> Vec<(&'static str, String)> {
     // gpui-component's `WindowState` root plugin wraps everything the window
-    // holds in `window_border()` (root.rs:728-736, `WindowState::decorate`).
-    // Its client-side arm alone sets the client inset (window_border.rs:169),
-    // lays hit zones and draws a frame; under server-side decorations it
-    // hands back the content itself (window_border.rs:148-153).
+    // holds in `window_border()` (gpui-component 0.9.1 root.rs:734-742,
+    // `WindowState::decorate`). Its client-side arm alone sets the client
+    // inset (window_border.rs:195), lays hit zones and draws a frame; under
+    // server-side decorations it hands back the content in a plain backdrop
+    // that draws nothing (window_border.rs:169-179).
     let inset = match inset {
         Some(inset) => format!("{}px, set by the WindowBorder", inset.as_f32()),
         None => "none: nothing has called set_client_inset".to_string(),
@@ -527,7 +529,12 @@ pub(crate) fn window_rows(
             ),
             (
                 "frame colour",
-                "a literal grey, l=0.2 dark / l=0.8 light, that no theme field reaches (window_border.rs, WindowBorder)"
+                "the theme's window_border, from window.border.color (window_border.rs, WindowBorder)"
+                    .to_string(),
+            ),
+            (
+                "frame corners",
+                "the theme's window_radius, from window.border.corner_radius, on each corner not next to a tiled edge, and on the root surface and the TitleBar under them (window_border.rs, window_corner_radii)"
                     .to_string(),
             ),
             (

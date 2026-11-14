@@ -12,7 +12,7 @@ section, and a `[v0.7.0]` item that would sit under Deferred (pre-1.0) is under 
 (v0.7.0). Closed items move to [`archive/todo_closed.md`](archive/todo_closed.md) as they
 close, under the headings they had, each with the commit that closed it. Cite an entry by
 its file, its `###` heading and its opening words, quoted, as many as make it unique
-under that heading (`docs/todo.md`, *Font DPI*, "Unverified: do the Linux readers'"): a
+under that heading (`docs/todo.md`, *Font DPI*, "An X11 client through Xwayland"): a
 `docs/todo.md:N` citation is valid at the commit that wrote it
 (`git show <commit>:docs/todo.md`), since entries move as they close. A preset
 value is cited by its TOML key path, which no preset edit shifts (`adwaita.toml`
@@ -36,9 +36,10 @@ cannot tell which file a bare number continues, so it does not look for one.
       `org.gnome.desktop.interface font-hinting` / `font-antialiasing`,
       Windows ClearType, macOS font smoothing.
 
-      We already read `Xft.dpi` for scaling (`detect::read_xft_dpi`,
-      `native-theme/src/detect.rs:459`, in the font-DPI chain the KDE reader shares),
-      but nothing reads the *rendering*
+      Since 0.7.1 native-theme reads no X resource: its font DPI is 96 on every Linux
+      desktop, where it read `Xft.dpi` before
+      (`docs/issues/0004_kde-hand-overrides-rationale.md` §4.1); and nothing reads the
+      *rendering*
       preferences. A Qt or GTK app obeys the user's hinting and antialiasing
       choice; an app built on our connectors silently ignores it. Reading OS
       appearance settings is exactly this crate's remit, so this is a real gap
@@ -450,6 +451,14 @@ cannot tell which file a bare number continues, so it does not look for one.
       (breezestyle.cpp:6402), filled at half that over the window
       (breezehelper.cpp:1284): give the cell that value for Breeze and Breeze
       Dark, then state it in kde-breeze in both modes.
+      - *Issue #4 (0.7.1, 2026-11-14, abb3b761):* the KDE half is done. §2.8's KDE
+        `thumb_color` cell (`docs/platform-facts.md:1305`) gives Breeze's resting
+        handle, `WindowText` at alpha 0.175 over the window (the 0.5, the 0.7 while the
+        pointer is off the bar, and the half alpha above), #cbcdcd / #46494b, measured
+        with Breeze 6.8.2 (`docs/evidence/breeze-offscreen/2026-11-13/`); kde-breeze
+        states it (`kde-breeze.toml` `[light.scrollbar] thumb_color`,
+        `[dark.scrollbar] thumb_color`) and the reader computes it. The macOS, Windows
+        and macos-tahoe parts above stay open.
 
 ### Fonts: find a system face by family, weight and style
 
@@ -492,7 +501,7 @@ cannot tell which file a bare number continues, so it does not look for one.
       Accent is mixed 85 % `accent`, 15 % `highlightedText` (`:114-130`). Map each class to its
       `ResolvedTheme` leaf. The KDE reader takes `text_color` from
       `[Colors:Window] ForegroundNormal` but the status colours from
-      `[Colors:View]` (`native-theme/src/kde/colors.rs:18`, `:23`, `:39-43`),
+      `[Colors:View]` (`native-theme/src/kde/colors.rs:477`, `:483`, `:499-503`),
       so check which group Qt's palette fills from. Then `FreedesktopLoader`
       takes those colours, not the one colour `color` takes, which would turn
       all eight classes into one colour
@@ -510,6 +519,12 @@ cannot tell which file a bare number continues, so it does not look for one.
       Research it per platform from
       source (Breeze's style, libadwaita's CSS, WinUI's templates, AppKit's
       measured rendering) with citations, then register the shape there.
+      *Issue #4 (2026-11-13):* KDE answered from Breeze `f0b1d753`: the keyboard-focus
+      band surrounds a line edit, text edit, spin box, combo box, push or tool button
+      whole, from 1 px inside to 1 px outside (`breezestyle.cpp:6642-6651`), and a check
+      box's or radio button's indicator or a slider's handle alone (`:6652-6708`); KDE's
+      ring values wait in *KDE: what a Qt application under Breeze shows that
+      native-theme does not (issue #4)*, "KDE values that wait for a connector design".
 - [ ] [1.0] Open question: does a Windows 11 text box show the system focus
       visual at all? `docs/platform-facts.md` §2.1.5 gives WinUI's focus
       visual (`focus_ring_*`) and §2.4 Text Input (`:1219`), for the
@@ -528,7 +543,8 @@ cannot tell which file a bare number continues, so it does not look for one.
 ### Selection: the text colour macOS pairs with the unemphasised selection
 
 - [ ] [1.0] `defaults.selection_inactive_background` is the selection fill of a
-      window that has lost focus. Only macOS states it
+      window that has lost focus. Only macOS's preset and reader state it
+      (since 0.7.1 the KDE cell gives a value too, which kde-breeze does not state)
       (`docs/platform-facts.md:1061`, `unemphasizedSelectedContentBackgroundColor`;
       the reader, `native-theme/src/macos.rs:107`), and `ResolvedTheme` has no
       text colour to pair with it: a toolkit that swapped the fill in on focus
@@ -557,6 +573,11 @@ cannot tell which file a bare number continues, so it does not look for one.
       `defaults.text_selection_background`, as `docs/platform-facts.md:1210`
       gives it. The research task above (the text colour on the unemphasised
       selection) stays open.
+      *Issue #4 (2026-11-13):* KDE has the same gap: its unfocused selection is #c2e0f5
+      / #1b4155 under the window text (`docs/platform-facts.md:1061`). Adding the text
+      colour for both platforms is *KDE: what a Qt application under Breeze shows that
+      native-theme does not (issue #4)*, "The selection of a view without the focus";
+      this entry keeps the macOS research.
 
 ### Presets: colours with no reproducible source
 
@@ -919,7 +940,7 @@ model, the platform presets and the three connectors
       fix round 1). So kde-breeze states the window text (`#232629`) and
       adwaita white (`#ffffff`) for the same field, and gpui maps it to
       `danger_fg`, the text on the fill
-      (`connectors/native-theme-gpui/src/colors.rs:182`). Give the model
+      (`connectors/native-theme-gpui/src/colors.rs:208`). Give the model
       one meaning per field (or two fields), then restate the presets.
       M8 T21 (2026-10-17): no longer for M3, which closed on 2026-10-12
       (ledger "## M3") without naming this entry, and no milestone of the
@@ -1033,7 +1054,7 @@ model, the platform presets and the three connectors
 ### GNOME: the reader's dark mode does not read `GTK_THEME`
 
 - [ ] [v0.7.x] From M4 T15 (ruled 2026-10-12): `detect::system_is_dark` checks
-      `GTK_THEME` first (`:dark` or `-dark`, `native-theme/src/detect.rs:766-771`),
+      `GTK_THEME` first (`:dark` or `-dark`, `native-theme/src/detect.rs:560-563`),
       while the GNOME reader takes its mode from the portal's colour scheme,
       then gsettings' `color-scheme` (`color_scheme_is_dark`,
       `native-theme/src/gnome/mod.rs:497`). A `GTK_THEME=Adwaita:dark` session
@@ -1098,10 +1119,11 @@ model, the platform presets and the three connectors
 
 ### Linux: button order and `detect_platform` decide by the raw desktop
 
-- [ ] [v0.7.x] From M4 T16 (2026-10-12): since 62c13acf the reader, the watcher,
-      the icon theme and the font DPI decide by the refined desktop
+- [ ] [v0.7.x] From M4 T16 (2026-10-12): since 62c13acf the reader, the watcher
+      and the icon theme decide by the refined desktop (the font DPI did too until
+      0.7.1 made it 96 on every Linux desktop)
       (`DetectionContext::refined_linux_desktop_sync`,
-      `native-theme/src/detect.rs:1355`), but `platform_button_order`
+      `native-theme/src/detect.rs:1150`), but `platform_button_order`
       (`native-theme/src/resolve/inheritance.rs:62-71`) and
       `presets::detect_platform` (`native-theme/src/presets.rs:129-142`) still
       read `XDG_CURRENT_DESKTOP` alone. On an unrecognised desktop refined to
@@ -1115,10 +1137,10 @@ model, the platform presets and the three connectors
       `refined_linux_desktop_sync` asks no portal and caches nothing until a
       system read (`from_system`, `from_system_async`,
       `AccessibilityPreferences::from_system`) has refined the desktop
-      (`native-theme/src/detect.rs:1344-1352`), so an application that resolves
+      (`native-theme/src/detect.rs:1139-1145`), so an application that resolves
       presets without one gets only the `kdeglobals` check: on an unrecognised
       desktop a KDE portal backend without `kdeglobals` stays `Unknown`. Also,
-      `invalidate_linux_desktop()` (`:1406`) clears the desktop but no slot
+      `invalidate_linux_desktop()` (`:1192`) clears the desktop but no slot
       derived from it. Decide whether the sync path may ask the portal (through
       `pollster`, bounded as the readers are) or whether the docs stay as they
       are; give `invalidate_linux_desktop` the line its doc needs.
@@ -1131,23 +1153,11 @@ model, the platform presets and the three connectors
       reader writes neither: a custom colour scheme keeps Breeze's thumb, and
       an icon theme whose `SmallDefault` differs keeps 16 (the reader reads
       `SmallDefault` into `defaults.icon_sizes.small` only,
-      `native-theme/src/kde/mod.rs:188`). Write both, citing the facts rows,
+      `native-theme/src/kde/mod.rs:166`). Write both, citing the facts rows,
       and run the `preset-validator` over kde-breeze.
       M8 T16c (2026-10-17): the reader writes `switch.thumb_background`, the
       Button set's background (`SwitchIndicator.qml:29` at qqc2-desktop-style
       v6.31.0; §2.21). `menu.icon_size` is still not read.
-
-### kde-breeze: the Qt Widgets menu fill
-
-- [ ] [v0.7.x] From M4 T36 and the kde-breeze validator after it (2026-10-13):
-      Breeze's Qt Widgets menu is filled with `frameBackgroundColor()`,
-      mix(Window, Base, 0.3) (breezestyle.cpp `drawPanelMenuPrimitive`;
-      breezehelper.cpp:200-203, as the T36 implementer read them), while
-      `docs/platform-facts.md:1253` gives KDE's `menu.background_color` as
-      `[Colors:Window] BackgroundNormal`, which qqc2-desktop-style's `Menu.qml`
-      uses (`Kirigami.Theme.backgroundColor`). The row depends on which toolkit
-      it describes. Cite both at v6.7.5 / v6.31.0 in the facts cell, decide
-      which one kde-breeze states, and correct the preset or the cell.
 
 ### kde-breeze: the header's "Verified on" date
 
@@ -1181,6 +1191,12 @@ model, the platform presets and the three connectors
       draw. A `menu_bar` fill leaf (registry, inheritance, the three
       connectors' menu bars), or the showcases' chrome taking the toolbar's
       fill for the menu-bar row, would close it.
+      *Issue #4 (0.7.1):* Breeze fills a hovered or open menu bar title with the opaque
+      hover or focus colour under `HighlightedText` (`breezestyle.cpp:5841-5948`); the
+      connectors drew it from `menu.hover_background` until 0.7.1, which now holds the
+      item's 30 % tint, so a title's fill joins *KDE: what a Qt application under Breeze
+      shows that native-theme does not (issue #4)*, "What Breeze draws that the model
+      has no field for".
 
 ### Presets: expander hover fills with no source
 
@@ -1307,6 +1323,12 @@ model, the platform presets and the three connectors
         and the popover's (§2.16: #c2c5c9 / #474c51, 1); `link.active_text_color`
         (§2.28: `Qt.darker`, #14405c / #0e4d79); the progress bar's padding
         (§2.10: 0).
+        *Issue #4 (0.7.1):* kde-breeze's `checkbox.hover_background`,
+        `slider.thumb_hover_color` and `combo_box.hover_background` wait for Breeze's
+        hover outlines, the step proposed after 0.7.1 (*KDE: what a Qt application under
+        Breeze shows that native-theme does not (issue #4)*, "What Breeze draws that the
+        model has no field for"): removing a hover fill first would remove the only
+        hover feedback.
       - windows-11: `button.disabled_background`, `input.disabled_background`
         and `combo_box.disabled_background` `#f9f9f900` / `#33333300`
         (`windows-11.toml` `[light.button] disabled_background`,
@@ -1567,16 +1589,6 @@ model, the platform presets and the three connectors
       *windows-11: what WinUI 3 draws* is closed, in
       `docs/archive/todo_closed.md`.
 
-### Linux font DPI: the `xrandr` fallback has no facts row
-
-- [ ] [v0.7.x] From the kde-breeze validator after M4 T34 (D3, deferred to Step
-      8): the font-DPI chain ends with the physical DPI `xrandr` reports
-      (`detect_physical_dpi`, `native-theme/src/detect.rs:473-485`, the last
-      step of `detect_system_font_dpi`, `:636`), and no
-      `docs/platform-facts.md` row says that any desktop uses it for fonts.
-      Find a source (Plasma, gnome-settings-daemon) and add the row, or drop
-      the step so the chain ends at 96.
-
 ### CI: the macOS and Windows legs and the strict-panic steps have not run
 
 - [ ] [v0.7.x] M4 added CI test legs for `macos,watch,system-icons` and
@@ -1618,12 +1630,62 @@ model, the platform presets and the three connectors
       checked", and lists nothing. Settle it with the zbus move, or replace the
       check with one that compares each direct dependency's requirement with
       crates.io's newest stable release without resolving the graph.
+      2026-11-14 (crates.io read that day): the condition above is met in
+      part. ashpd 0.14.0 (2026-11-05) requires zbus ^6.0.0, so native-theme's
+      own `portal` and `watch` can move (`native-theme/Cargo.toml:128`, `:136`;
+      `watch` then drops `zbus?/blocking-api`, `:43`, which zbus 6 does not
+      have: zbus 6 removed the blocking API, "Remove the blocking API" and
+      "Stop generating blocking proxies" in zbus 6.3.0's `CHANGELOG.md`, so
+      `native-theme/src/watch/gnome.rs`, which is written on
+      `zbus::blocking`'s `Connection` and `Proxy`, is ported to the async
+      API). Three costs keep it out of 0.7.1 and make it a maintainer's
+      decision, that port being the first: ashpd
+      0.14.0 and zbus 6.0.0 and 6.3.0 declare Rust 1.89, above the workspace's
+      1.88.0 (`Cargo.toml:20`); and accesskit_unix 0.24.1 (zbus ^5.19) and
+      atspi 0.30.0 (zbus ^5.5), the newest of each, are still on zbus 5, as is
+      the oo7 0.6.0 that GPUI Kit 0.9.1's graph locks (oo7 0.7.1 is on zbus
+      ^6.0), so every application that uses a connector would build zbus 5
+      and zbus 6 side by side, and the three `.cargo/audit.toml` entries would
+      stay. The check itself runs again: `--exclude zbus` no longer fails on
+      the GPUI graph, so `scripts/check_release.sh` passes it and prints that
+      zbus is not compared; what the check then listed is the next entry.
+
+### Dependencies: the newer releases the outdated check did not show (2026-11-14)
+
+- [ ] [v0.7.x] The "Outdated dependencies" check of `scripts/check_release.sh`
+      listed nothing from 2026-10-17 to 2026-11-14 (the entry above). Run with
+      `--exclude zbus` on 2026-11-14 it lists 20 direct dependencies. Ten need
+      only `Cargo.lock` to move, their requirements already take the newest
+      release, which the nightly dependency canary
+      (`.github/workflows/dependency-canary.yml`) builds and tests against, as
+      every application's own resolution does: arc-swap 1.9.5, inventory
+      0.3.25, jiff 0.2.43, notify 8.2.2, objc2 0.6.5, serde_json 1.0.154, syn
+      3.0.10, toml 1.2.1, unicase 2.10.0, xcap 0.9.10. The others need their
+      requirement changed, each a change of its own:
+      - egui, eframe, egui_extras and egui_kittest 0.37.0 (egui 0.37.0 is of
+        2026-10-15; the egui connector and its widgets crate are on 0.36.2,
+        and the requirement `egui = "0.36.2"` does not take 0.37). skrifa
+        (0.44.0, newest 0.50.0) and muda (0.20.0, newest 0.21.2) follow it:
+        their requirements are epaint's and eframe's own
+        (`connectors/native-theme-egui/Cargo.toml`, the comments above each).
+        An egui 0.37 application cannot use native-theme-egui until this is
+        done; it is a connector upgrade of the GPUI Kit kind, with its own
+        rationale.
+      - ashpd 0.14.0 with zbus 6: the entry above.
+      - resvg 0.50.0 (2026-11-11; `native-theme/Cargo.toml:74` has 0.48.1) and
+        fontdb 0.24.0 (2026-07-29; `:70` has 0.23). Before either moves, read
+        which resvg and fontdb the connectors' toolkits resolve, so the move
+        does not add a second copy to an application's build (`Cargo.lock`
+        already holds resvg 0.45.1, 0.46.0 and 0.48.1).
+      - windows-version 0.100.0 (2026-09-03; `native-theme/Cargo.toml:151` has
+        0.1.7). It declares Rust 1.95, above the workspace's 1.88.0, so it
+        waits for an MSRV decision.
 
 ### detect: `prefers_reduced_motion` and the reader's block are two caches of one read
 
 - [ ] [v0.7.x] From M4's final review (P2-2, 2026-10-13):
-      `detect::prefers_reduced_motion()` (`native-theme/src/detect.rs:905`) and
-      `accessibility_preferences().reduce_motion` (`:942`) cache one read
+      `detect::prefers_reduced_motion()` (`native-theme/src/detect.rs:699`) and
+      `accessibility_preferences().reduce_motion` (`:740`) cache one read
       apart; `from_system()` refreshes the second, not the first, so after a
       watched change without `invalidate_caches()` they disagree. T19's
       equality test runs both cold and cannot see it. Fill the reduced-motion
@@ -1635,7 +1697,7 @@ model, the platform presets and the three connectors
 - [ ] [v0.7.x] From M4's final review (P3-2, 2026-10-13): the KDE reader looks
       for the icon theme's `index.theme` in KIconTheme's order, the data home,
       the data dirs, then `~/.icons` (`kde_icon_base_dirs`,
-      `native-theme/src/kde/mod.rs:220`), and the icon lookup in the Icon
+      `native-theme/src/kde/mod.rs:198`), and the icon lookup in the Icon
       Theme Specification's, `~/.icons` first (`icon_base_dirs_in`,
       `native-theme/src/icons.rs:899`). Both orders are cited; with a copy of
       the theme in both `~/.icons` and `~/.local/share/icons`, the sizes and
@@ -1646,7 +1708,7 @@ model, the platform presets and the three connectors
 
 - [ ] [v0.7.x] From M4's final review (P7-1, 2026-10-13): on an unrecognised
       desktop with nothing cached yet, `refined_linux_desktop_sync`
-      (`native-theme/src/detect.rs:1355-1360`) checks that `kdeglobals` exists
+      (`native-theme/src/detect.rs:1150-1155`) checks that `kdeglobals` exists
       (a `stat`) on every call and caches nothing, and the `icon_name` that
       native-theme-build generates calls it per lookup (64a58f9f), an icon per
       widget per frame in egui. Low impact: a themed application has usually
@@ -1702,6 +1764,199 @@ model, the platform presets and the three connectors
       `breeze-mobile` were the only ones, and store.kde.org had none). Then
       write the spec; the rationale's §5 sketches the reader.
 
+### KDE: what a Qt application under Breeze shows that native-theme does not (issue #4)
+
+From issue #4's second comment, `docs/issues/0004_kde-hand-overrides-rationale.md`
+(2026-11-13). Breeze lines are at `f0b1d753` (every file cited is byte-identical at
+`v6.8.2`), KColorScheme at `27066d47`; "measured" is Breeze 6.8.2 under Qt 6.12,
+offscreen, `docs/evidence/breeze-offscreen/2026-11-13/`.
+
+- [ ] [v0.7.x] **What Breeze draws that the model has no field for.** First, as the next
+      0.7.x step, "Breeze's hover and focus outlines", with a rationale of its own:
+      Breeze shows hover on a button, a combo box, a check box and a slider handle by
+      recolouring the outline, never the fill (a non-flat button's pen turns `Highlight`
+      on hover, keyboard focus or press, `breezehelper.cpp:710-712`), and the model has
+      `hover_border_color` and `focus_border_color` for text inputs only, so on KDE a
+      connector's button shows no hover at all. The kde-breeze hover fills that stand in
+      for an outline wait for it, since removing them first would remove the only hover
+      feedback: `kde-breeze.toml` `[light.checkbox] hover_background`,
+      `[light.slider] thumb_hover_color`, `[light.combo_box] hover_background` and their
+      dark twins, listed in *Presets: values the M8 T15 platform-facts rows disagree
+      with*. The same step takes: a toolbar button's states (hover a 1 px `Highlight`
+      outline, pressed `Highlight` at 0.3, checked `ButtonText` at 0.125,
+      `breezehelper.cpp:665-712`); a hovered menu item's 1 px outline,
+      `mix(focusColor, WindowText, 0.15)` (`breezehelper.cpp:172-175`), #399acc /
+      #5abaec (measured); a hovered list row's 1 px outline, `Highlight` at alpha 0.8
+      (`breezestyle.cpp:4880-4884`); a menu bar title's fill, the opaque hover or focus
+      colour under `HighlightedText` (`drawMenuBarItemControl`,
+      `breezestyle.cpp:5841-5948`), which `menu.hover_background` stood in for until
+      0.7.1 (*Model: the menu bar has no fill of its own*); a header section's hover and
+      pressed fills, `mix(Button, hoverColor, 0.2)` and `mix(Button, focusColor, 0.2)`
+      (`breezestyle.cpp:6828-6837`), #d6ecf8 / #2d4655 (computed), and its separators.
+      Then the rest, each without a field: the pressed menu item, the opaque focus
+      colour under `HighlightedText` (`breezestyle.cpp:6021-6029`, `:6155`); the 4 px
+      gap between the menu panel's edge and the highlight (`PM_MenuHMargin` and
+      `PM_MenuVMargin` are `MenuItem_HighlightGap` 4, `breezestyle.cpp:649-651`;
+      measured); the menu row's minimum height, the larger of the text, the 20 px
+      columns and the icon, plus 1, plus 4 above and below
+      (`breezestyle.cpp:3663-3667`), 29 at Noto Sans 10 pt (measured;
+      `docs/platform-facts.md:1260`), which `menu.row_height`, a fixed height, cannot
+      carry; the scroll bar's 1 px line along its inner edge, `Text` at alpha
+      frameContrast (`breezestyle.cpp:8220-8227`), #d3d4d4 / #424445 in a list
+      (measured); the handle's outline, its colour at alpha frameContrast
+      (`breezehelper.cpp:1283`); the handle of the view that has the focus,
+      `focusColor()` (`breezehelper.cpp:298-299`), #b1d9ef / #2a546b (measured); the
+      handle while the pointer is on the bar but off it, `WindowText` at 0.25 over the
+      window, #bcbebf / #57595b (computed); a hovered row in a view without the focus,
+      the Inactive `Highlight`, #c2e0f5 / #1b4155, at 0.3 (`breezestyle.cpp:4832-4837`);
+      a selected and hovered row, `Highlight.lighter(110)`, #44bfff
+      (`breezestyle.cpp:4876`; measured); a list item's padding beyond the highlight's
+      margin. The parked 0.8.0 work traces some of these
+      (`docs/todo_v0.7.1_model-completeness-spec-trace-kde.md` on `v0.8.0-rc1`: K1.92
+      the focused handle, K1.172 the selected and hovered row, K1.177 the header's
+      fills). Not a missing field but a gap of the same kind: kde-breeze states
+      `list.hover_text_color`, #232629 / #fcfcfc (`kde-breeze.toml`
+      `[light.list] hover_text_color`, `[dark.list] hover_text_color`), and the KDE
+      reader never writes it (`native-theme/src/kde/colors.rs` writes only the button's
+      and the menu's hover text, `:541`, `:725`), so under a colour scheme whose View
+      text differs from Breeze's a hovered list row keeps Breeze's text colour, while
+      since 0.7.1 the hovered menu row follows the scheme's
+      `[Colors:Window] ForegroundNormal`; Breeze letters a hovered row in
+      `QPalette::Text`, the View set's `ForegroundNormal` (`docs/platform-facts.md:1436`).
+- [ ] [v0.7.x] **KDE values that wait for a connector design.** Each facts row below is
+      corrected in 0.7.1; kde-breeze and the reader keep their present values, which
+      disagree with it, until the readers named can take the platform's value without
+      another surface losing. (1) **The focus ring**,
+      `docs/platform-facts.md:1108-1110`: Breeze's keyboard-focus `QFocusFrame` is a
+      band 2 px wide of `Highlight` at alpha 0.3, #3daee94d in both schemes, from 1 px
+      inside a line edit's, spin box's, combo box's or button's rectangle to 1 px
+      outside it (offset −1), drawn only after Tab, Backtab or a shortcut; a pointer
+      focus only recolours a line edit's own frame (`focusColor()`), and a button's
+      frame turns `Highlight` on keyboard focus (`breezestyle.cpp:1648-1674`,
+      `:6614-6781`; `PM_FocusFrameHMargin` 2 measured). kde-breeze states #3daee9, width
+      1, offset 2 with no source (`kde-breeze.toml`
+      `[light.defaults] focus_ring_color, focus_ring_width_px, focus_ring_offset_px`,
+      `[dark.defaults] focus_ring_color, focus_ring_width_px, focus_ring_offset_px`). It
+      waits because gpui-component's one `ring` colour is both a focused element's
+      tinted border and the band, whose alpha it sets itself (`styled.rs:249-327`,
+      0.9.1): a translucent ring would make a focused text field's border faint, and
+      taking the input's focus border colour for `ring` would change Windows, whose two
+      colours differ; and because gpui-component's buttons, inputs and check boxes and
+      the iced and egui connectors' rings show on every focus, a click included. GPUI
+      can tell the two (`Window::last_input_was_keyboard`, gpui-pre 0.3.12
+      `src/window.rs:3641-3644`); whether iced or egui can was not read. A design over
+      every platform and three connectors, with *GPUI Kit, from issue #4*'s request (4).
+      When the ring takes #3daee94d, `docs/inheritance-rules.toml`'s KDE caret rule
+      (`[per_platform."input.caret_color"]`, `kde = "defaults.focus_ring_color"`) needs
+      another source: the caret is `DecorationFocus`, opaque
+      (`docs/platform-facts.md:1209`). Which part of a control the band surrounds:
+      *platform-facts: which part of a control the focus ring surrounds*. Until then an
+      application that wants no band on a click turns gpui's ring off (the gpui README's
+      overrides section).
+      (2) **The default button**, `docs/platform-facts.md:1188-1189`: Breeze fills the
+      active window's default button with `mix(Button, Highlight, 0.2)`, #d6ecf8 /
+      #2d4655, outlined #87c0dd / #4882a1, under the ordinary `ButtonText`, #232629 /
+      #fcfcfc (measured); `button.primary_background` and `primary_text_color` inherit
+      the accent pair, #3daee9 under #ffffff / #fcfcfc. It waits because gpui's
+      `primary` and `primary_foreground` tokens
+      (`connectors/native-theme-gpui/src/colors.rs:203-204`), which gpui-component's
+      widgets use as the theme's accent, and egui's selection fill
+      (`connectors/native-theme-egui/src/style/roles.rs:229`) read the two fields: one
+      button per dialog would gain, and every accent-coloured gpui-component widget and
+      every egui selection would turn pale. First the connectors stop reading the
+      primary button's fill as the accent. The model has no field for the default
+      button's outline.
+      (3) **The menu panel's colour**, `docs/platform-facts.md:1253`: Breeze's Qt
+      Widgets menu panel is `mix(Window, Base, 0.3)`, #f4f5f5 / #1c1f22 (measured), four
+      to five levels from the window colour `menu.background_color` inherits in
+      kde-breeze, #eff0f1 / #202326. It waits because egui's base style takes
+      `window_fill` from it (`connectors/native-theme-egui/src/style/base.rs:201`),
+      which fills every `egui::Window`, popup and tooltip, and iced_aw fills the menu
+      bar with it (`connectors/native-theme-iced/src/styles/aw.rs:152`), surfaces Breeze
+      paints in the window colour; gpui-component paints a menu in its `popover` token,
+      the window colour on KDE since 0.7.0, so gpui has no receiver. Changing the field
+      would move more surfaces away from Breeze than toward it. Read and cite
+      qqc2-desktop-style's `Menu` fill too, which M4 T36 read as
+      `Kirigami.Theme.backgroundColor` (from *kde-breeze: the Qt Widgets menu fill*,
+      closed into this item).
+      (4) **The table's grid**, `docs/platform-facts.md:1430`: `QPalette::Mid`, the
+      Window set's `MidShade` at the scheme's contrast, #c4c8cc / #1c1f21 under Breeze's
+      4 (measured; #bdc1c6 / #1c1e21 under KColorScheme's default 7, computed);
+      kde-breeze's `list.grid_color` inherits `defaults.border.color`, #bcc0bf /
+      #4d545b: close to Qt's in light, far brighter in dark, which the reporter saw. It
+      waits because egui's list role draws every separator and frame outline inside a
+      list with it (`connectors/native-theme-egui/src/style/roles.rs:776-779`; egui has
+      one stroke for both, and the role reads no `list.border.color`) and gpui's
+      `chart_grid` token reads it (`connectors/native-theme-gpui/src/colors.rs:446`): a
+      list's outline and a chart's grid would all but vanish in dark mode (#1c1f21 on
+      #202326). First egui's list role separates the frame from the grid. The derivation
+      exists on `v0.8.0-rc1`, written in a clean room and checked against KDE's code
+      (`native-theme/src/platform/kde_shade.rs`, with tables from `tools/kde-vectors`),
+      to be carried over. Until then an application sets gpui's `table_row_border` to
+      #c4c8cc / #1c1f21 (the gpui README's overrides section).
+      (5) **The menu item's radius, padding and icon gap**,
+      `docs/platform-facts.md:1261`, `:1265`, `:1267`: Breeze rounds a hovered item's
+      highlight at 4.5; kde-breeze states no menu corner radius, and
+      `menu.border.corner_radius` is read as the item's radius by egui's menu role
+      (`connectors/native-theme-egui/src/style/roles.rs:287`) and the showcases, and as
+      the panel's by iced (`connectors/native-theme-iced/src/styles.rs:1261`): one
+      field, two meanings. In a menu without icons or checkable items (check box or
+      radio items) Breeze starts an item's text 16 from the highlight's edge (4 + 8 + 4,
+      measured). In a menu with icons it puts a 16 px icon in a column 20 px wide, 12 px
+      in where the menu has no checkable items (their column comes first otherwise,
+      `breezestyle.cpp:6059-6065`, `:6077`), and starts the text 4 after the icon
+      (measured); kde-breeze and the reader state 4 and 8 (`kde-breeze.toml`
+      `[light.menu.border] padding_horizontal_px`, `[light.menu] icon_text_gap_px`, and
+      dark; `native-theme/src/kde/metrics.rs`). Both are wrong in directions that partly
+      cancel: correcting the gap alone moves the text further from where Breeze puts it,
+      so the two are one fix, with the question of what `padding_horizontal` means for a
+      row with and without an icon.
+- [ ] [v0.7.x] **The selection of a view without the focus, KDE and macOS, and its
+      missing text colour.** Breeze's schemes set
+      `[ColorEffects:Inactive] ChangeSelectionColor`, so a selected row in an unfocused
+      view is `KColorUtils::tint(Window, Selection, 0.4)`, #c2e0f5 / #1b4155, lettered
+      in the window text, #232629 / #fcfcfc (measured; `docs/platform-facts.md:1061`;
+      `kcolorscheme.cpp:304-321`, `:374-377`). The model has
+      `defaults.selection_inactive_background` and no text colour for it, and no
+      connector draws it (gpui and egui have an accessor only, iced records no
+      receiver), so stating it alone would change nothing on screen and would give an
+      application that pairs it with `selection_text_color` white text on a pale fill,
+      as macos-monterey already does (`macos-monterey.toml`
+      `[light.defaults] selection_inactive_background, selection_text_color`: #dcdcdc
+      with #ffffff). Add the text colour (registry, inheritance rules, facts, presets,
+      the KDE and macOS readers), then state the pair for KDE and draw it in the
+      connectors. macOS's text colour is researched in *Selection: the text colour macOS
+      pairs with the unemphasised selection*. The KDE derivation exists on `v0.8.0-rc1`,
+      written in a clean room and checked against KDE's code
+      (`native-theme/src/platform/kde_selection_inactive.rs`, `kcu_tint.rs`, with tables
+      from `tools/kde-vectors`), to be carried over. Continues item (3) of *Values the
+      v0.7.1 gap map found against their sources*, "**KDE.**".
+- [ ] [1.0] **Font sizes and the KDE button and dialog sizes.** (1) Qt Widgets rounds a
+      font's pixel size to a whole number before it scales (10 pt is 13 px, qtbase
+      v6.10.1 `src/gui/text/qfontdatabase.cpp:2838-2841`; measured 13 under Breeze,
+      `docs/evidence/breeze-offscreen/2026-11-13/`), where native-theme gives 13.33;
+      read whether Qt Quick rounds too, then decide whether the model follows. (2)
+      `SystemTheme::from_system()` takes no font DPI, so an application on a toolkit
+      that does not scale by `Xft.dpi` on X11 (none of the three connectors') gets 96
+      since 0.7.1 where the chain gave it Qt's text size; it re-derives its font sizes
+      from the resolved font's `defined_size`, which the text scale's sizes do not
+      carry. A way to pass another font DPI waits for such a consumer. (3) kde-breeze's
+      `button.min_height_px = 32` has no citation (`kde-breeze.toml`
+      `[light.button] min_height_px`), and `min_width` 80 and the 6 px padding are
+      Breeze's values before its 2 px frame margin: a button's size hint is text + 2 ×
+      (6 + 2), "OK" at Noto Sans 10 pt measures 84 × 34 (measured), and Breeze draws the
+      frame 1 px inside that, a visible box of 82 × 32 with 7 px between the border line
+      and the text, where the stated values give 80 × 32 with 6 px; decide what the
+      model's padding is measured from. (4) kde-breeze's dialog sizes have no citation
+      and the facts give KDE none (`kde-breeze.toml`
+      `[light.dialog] min_width_px, max_width_px, min_height_px, max_height_px`). (5) No
+      connector reads `dialog.icon_size`, 64 on KDE since 0.7.1
+      (`docs/platform-facts.md:1568`): iced records no receiver, and the gpui and egui
+      dialog icon helpers read `defaults.icon_sizes.dialog`, KDE's dialog icon group,
+      32, which is another size; a helper for the message icon's size. The reporter's 14
+      px button padding, 56 px icons, 1.25 line height and 50 % disabled opacity have no
+      source in Breeze.
+
 ### Dialog: the platform's vertical placement
 
 - [ ] [1.0] **Model where each platform places an in-window modal dialog.**
@@ -1752,6 +2007,16 @@ KColorScheme 8bb948c4, to be re-pinned to the release tags `platform-facts.md` u
       (9) `defaults.focus_ring_*`: Breeze's focus frame is a filled ring between two
       rounded rectangles, `Highlight` at `Blend_Value` 0.3 (`breezestyle.cpp:6770-6786`,
       `kstyle/breezemetrics.h:176`), not a 1.001 px stroke; its width is to read there.
+      *Issue #4 (0.7.1, 2026-11-14, abb3b761):* (1), (4) and (6) are fixed in the facts,
+      kde-breeze and the reader: the menu's hover is `focusColor` at alpha 0.3,
+      #3daee94d, under `[Colors:Window] ForegroundNormal`
+      (`docs/platform-facts.md:1269-1270`), the list header the Button set
+      (`:1428-1429`), the list's hover `Highlight` at alpha 0.3, #3daee94d (`:1435`),
+      each measured (`docs/evidence/breeze-offscreen/2026-11-13/`). (3) and (9) have
+      their facts corrected (`:1061`, `:1108-1110`) and continue in *KDE: what a Qt
+      application under Breeze shows that native-theme does not (issue #4)*, "The
+      selection of a view without the focus" and "KDE values that wait for a connector
+      design". (2), (5), (7) and (8) stay open here.
 - [ ] [v0.7.x] **GNOME** (libadwaita 1.10.0, `src/stylesheet/`; GTK 4.24.1). (1) The
       tooltip sets `box-shadow: none` (`widgets/_tooltip.scss:15`); the facts say it
       casts one. (2) Menu items are rounded, `$menu_radius` 9 (`widgets/_menus.scss:138`),
@@ -1789,6 +2054,10 @@ caeddd6b, each platform file's *Cross-check* section has the detail.
       (`MenuFlyout_themeresources.xaml:285`, `:309` at microsoft-ui-xaml 8463f45), Breeze's
       highlighted item is rounded, macOS 11+ rounds its hover highlight (gap map
       MAC-MN01), and libadwaita's is `$menu_radius` (the GNOME entry above).
+      *Issue #4 (0.7.1):* KDE's cell is corrected, 4.5 (`docs/platform-facts.md:1265`);
+      kde-breeze's value waits (*KDE: what a Qt application under Breeze shows that
+      native-theme does not (issue #4)*, "KDE values that wait for a connector design",
+      (5)).
 - [ ] [v0.7.x] **macOS.** (1) `platform-facts.md:1622` says the 12–15 pop-up button casts
       no shadow, and `:1644` the same of the selected segment; the gap map (MAC-X01,
       MAC-SG02) finds both, and the cells were likely read from the non-key render, which
@@ -1816,11 +2085,6 @@ caeddd6b, each platform file's *Cross-check* section has the detail.
       scrollbar component" (MAT-SC3†). Its `Text` also styles the links of rich text,
       `colorScheme.primary` and an underline (`Text.kt:673-695`), where
       `platform-facts.md` §2.28 states no Material link value.
-- [ ] [v0.7.x] **KDE's dialog icon.** `kde-breeze.toml` `[light.dialog] icon_size_px` and
-      `[dark.dialog] icon_size_px` are 32 and `platform-facts.md` §2.22 says "(none) —
-      per-dialog", but on Plasma Breeze's base class is KStyle, whose
-      `PM_MessageBoxIconSize` is `KIconLoader::SizeHuge`, 64 (KDE/frameworkintegration
-      v6.31.0 `src/kstyle/kstyle.cpp:449-451`; gap map K1.224†).
 - [ ] [v0.7.x] **ios-13 states values for things iOS does not draw**: the tooltip's
       (`UIToolTipInteraction`: "Tooltips appear when your app runs in macOS or visionOS";
       gap map TT-1 to TT-3†, withdrawn), hover colours,
@@ -2132,6 +2396,10 @@ caeddd6b, each platform file's *Cross-check* section has the detail.
       with `tokens.accent` (at half alpha in a dark theme) and labelled
       `accent_foreground`, gpui-component 0.8.1 `button/button.rs:1205-1212`, `:1221`
       (0.8.0 `:1191-1198`, `:1207`).
+      *Issue #4 (0.7.1):* on KDE `accent` is now the menu's 30 % tint under window text
+      (#3daee94d), so a hovered ghost button is that tint, not a selection-coloured
+      pill; Breeze draws a flat button's hover as an outline
+      (`breezehelper.cpp:665-712`).
 - [ ] [upstream] a menu-surface token. `PopupMenu` renders with `.popover_style(cx)`, i.e.
       `bg(theme.popover)` (`menu/popup_menu.rs:1476`, `styled.rs:193-199`), and
       there is no seam to override it. native-theme records
@@ -2205,10 +2473,12 @@ caeddd6b, each platform file's *Cross-check* section has the detail.
       half the `ring` colour's alpha from two module consts
       (`styled.rs:11-12`), so the platform's `focus_ring_width` -- modelled,
       and used by the connector only to switch the ring on or off
-      (`lib.rs:180`) -- has no receiver. A `Theme::focus_ring_width`.
+      (`lib.rs:362`) -- has no receiver. A `Theme::focus_ring_width`.
       M8 T21 fix round 1 (2026-10-17): the connector's own widgets draw the
       same ring: *gpui: the theme-drawn widgets' focus ring*, "The connector's
       `Checkbox`, `Radio`, `Slider` and `Switch`".
+      *Issue #4 (2026-11-13):* see *GPUI Kit, from issue #4* below, request (4),
+      keyboard-only bands; KDE's band is 2 px (`docs/platform-facts.md:1109`).
 - [ ] [upstream] gpui-component reads `tokens.tab`, `tokens.list`,
       `list_even`, `sidebar_primary` and `sidebar_primary_foreground`
       nowhere outside `theme/` in 0.8.0 (the connector's contract names
@@ -2262,6 +2532,9 @@ caeddd6b, each platform file's *Cross-check* section has the detail.
       a subtle fill, while those platforms' `segmented_control.active_background`
       is the accent colour. KDE and macOS are unaffected (both are the
       selection colour).
+      *Issue #4 (0.7.1):* KDE is affected now: kde-breeze's menu hover is the 30 % tint
+      #3daee94d under window text, so a KDE toggle's hover and checked fill are that
+      tint; macOS is still unaffected.
 - [ ] [upstream] `TabVariant::Outline` hovers with `tokens.secondary_hover`, the *button*
       hover (`tab/tab.rs:233` in gpui-component 0.8.0, `:187` in 0.7.3); every
       preset has a different
@@ -2315,7 +2588,7 @@ caeddd6b, each platform file's *Cross-check* section has the detail.
       "**`Theme::shadow` has one reader.**" (*native-theme-gpui connector*,
       *Follow-ups from the v0.5.9 showcase and contract work*; 6faef5b2):
       **`Theme::shadow` has one reader.** The connector sets it from
-      `border.shadow_enabled` (`lib.rs:176`); gpui-component reads it only at
+      `border.shadow_enabled` (`lib.rs:358`); gpui-component reads it only at
       `button/button.rs:612`, for a `ButtonVariant::Custom` built with
       `.shadow(true)`. The semantic shadow tokens it feeds have no reader
       outside `theme/`. So the platform's shadow preference reaches nothing
@@ -2349,7 +2622,7 @@ caeddd6b, each platform file's *Cross-check* section has the detail.
       both from the one token instead — `link.opacity(0.8)` hovered,
       `link.opacity(0.6)` pressed (`link.rs:80, 85`) — while the two tokens
       exist, the connector writes them from `link.hover_text_color` and
-      `link.active_text_color` (`colors.rs:277-278`), and a `Button::link()`
+      `link.active_text_color` (`colors.rs:258-259`, `:304-305`), and a `Button::link()`
       *does* read them (`button/button.rs:1139, 1215`). So the fix is two
       lines in one widget, and it is the narrowest upstream change this audit
       has found: not a missing token, an inconsistency between two readers of
@@ -2409,6 +2682,9 @@ caeddd6b, each platform file's *Cross-check* section has the detail.
       `Sheet` at `sheet.rs:222` (0.8.0 `:773`, `:215`), and 0.8.1's `Scrollable`, now
       a flex column (`scroll/scrollable.rs:203-207`), still lays the bar over the area
       (`:221`).
+      *Issue #4 (0.7.1):* kde-breeze's track is transparent (#00000000, Breeze paints
+      none), so the content under the 21 px bar shows through; the thumb and the bar's
+      hit area still lie over it, so the gutter is still needed.
 - [ ] [upstream] a right-clicked `Tree` row shows the hover text colour without the
       hover fill: gpui-component 0.7.3 marks the row right-clicked after the
       application's `render_item` closure built it
@@ -2463,6 +2739,29 @@ caeddd6b, each platform file's *Cross-check* section has the detail.
       wrapper (`:895-907`), no longer a gpui animation; a `Sheet`'s title row, padding
       and close button are `sheet.rs:174-252` (0.8.0 `:167-245`); `setting/page.rs`
       and `setting/group.rs` are unchanged.
+- [ ] [upstream] **GPUI Kit, from issue #4**
+      (`docs/issues/0004_kde-hand-overrides-rationale.md` §4.6, §4.7, §5.1; 2026-11-13).
+      Four requests, drafted for GPUI Kit's tracker in
+      `docs/issues/0004_kde-hand-overrides-upstream-requests.md`, with their sources;
+      none is posted without the maintainer's approval. (1) A table's scroll bar box
+      takes the themed track width, as every other scroll host does: gpui-component
+      0.9.1 sizes it with the fixed 16 px `Scrollbar::width()`, so under a theme with a
+      wider track (Breeze's is 21 px) the bar in a table is clipped, its thumb off
+      centre; gpui-base would have to make the themed width readable. The gpui README's
+      limits give the workaround, an overlay with `scrollbar.groove_width` 16. (2) A
+      selected cell's overlay is painted behind the cell's content, or gets a token of
+      its own: in cell-selection mode `table_active` is laid over a selected cell, so
+      the opaque native selection the connector restores hides the cell's text. (3) A
+      colour a `ThemeConfig` states is not capped, or the cap can be turned off:
+      applying a config caps `selection` at alpha 0.3 and `list_active` and
+      `table_active` at 0.2; the connector writes the native colours back after every
+      rebuild meanwhile. (4) The band outside a focused element is drawn only for a
+      focus from the keyboard, which GPUI can tell (`Window::last_input_was_keyboard`);
+      a text input keeps its tinted border on any focus, and a button's and a check
+      box's border tint is keyboard-only too, as Breeze draws them
+      (`docs/platform-facts.md:1108-1110`). See also *the focus ring's width* above, and
+      *KDE: what a Qt application under Breeze shows that native-theme does not
+      (issue #4)*, "KDE values that wait for a connector design", (1).
 
 #### native-theme-iced: the same audit (found 2026-09-20, fixed in v0.5.9)
 
@@ -2603,6 +2902,15 @@ What is still open on the iced side:
       presets*, "Presets (kde-breeze), found by M6 T16b's", and in *Presets:
       values the M8 T15 platform-facts rows disagree with* (kde-breeze,
       §2.25).
+      *Issue #4 (0.7.1, 2026-11-14, abb3b761):* the list half is fixed: `list.hover_background`
+      is Breeze's `Highlight` at alpha 0.3, #3daee94d in both modes
+      (`docs/platform-facts.md:1435`; `kde-breeze.toml` `[light.list] hover_background`,
+      `[dark.list] hover_background`), not #93cee9 / #2e4a5e. `sidebar.hover_background`
+      keeps #93cee9 / #2e4a5e: its source is Kirigami, which was not read. The
+      checkbox's, slider's and combo box's #93cee9 wait for Breeze's hover outlines
+      (*KDE: what a Qt application under Breeze shows that native-theme does not
+      (issue #4)*, "What Breeze draws that the model has no field for"). The solarized
+      and tokyo-night label contrasts stay this entry's.
 - [ ] [1.0] `button.hover_text_color` and `button.active_text_color` equal
       `button.font.color` in all 16 presets, so the per-status label rows of
       both contracts cannot tell hover or pressed from idle today. Either the
@@ -2701,7 +3009,7 @@ What is still open on the iced side:
       `ResolvedTheme` has no motion field at all; KDE exposes
       `AnimationDurationFactor` and GNOME `enable-animations`, which
       native-theme reads only as the boolean `reduce_motion`
-      (`native-theme/src/kde/mod.rs:42-52`, `src/detect.rs:674-685`). Decide
+      (`native-theme/src/kde/mod.rs:255-261`, `src/detect.rs:768-780`). Decide
       whether native-theme should model motion — durations, easings,
       distances — which is a core-type change.
       2026-10-15: since c1208377 (M6 T5, M6-01) `apply` no longer overwrites
@@ -3051,7 +3359,7 @@ the gap — closing it is a change, and each wants its own decision.
 - [ ] [1.0] **The showcase ignores its own `text_scale`.** `ResolvedTextScale` states
       four typographic roles — `caption`, `section_heading`, `dialog_title`,
       `display` — each with a size, a weight and a line height, and
-      `native_theme_gpui::text_scale()` is public (`lib.rs:412`). The Headings
+      `native_theme_gpui::text_scale()` is public (`lib.rs:711`). The Headings
       demo draws a six-step rem ladder of its own instead, and there is no
       `geometry::` builder for a text role, so an application that wants the
       platform's scale has to reach past the builders. Four roles do not map
@@ -3703,6 +4011,9 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       `src/command/state.rs:953`, `:869`, and `Diff`'s icons are at
       `src/diff/mod.rs:1014`, `:1021`, `:1027-1031`, `:1215-1219` and `:1567` (0.8.0
       `:998`, `:1005`, `:1011-1015`, `:1199-1203`, `:1551`).
+      *GPUI Kit 0.9.1 (2026-11-13):* `SpeechIndicator`, new and shown on the Inputs page,
+      adds its own: the stop glyph's Square, shown under the pointer
+      (`src/speech/indicator.rs:130`).
 - [ ] [1.0] Left open by the v0.5.9 showcase-layout work
       ([archive](archive/todo_v0.5.9_showcase-layout.md)):
       - `info::title_bar` (`examples/showcase-gpui/info/chrome.rs`) keeps
@@ -3983,8 +4294,6 @@ The `[v0.7.0]` items that sat under *Deferred (pre-1.0)*, in the order they had 
 ## Deferred (pre-1.0)
 
 ### Font DPI
-- [ ] [1.0] Unverified: do the Linux readers' `font_dpi` sources (`Xft.dpi`, KDE `forceFontDPI`) have the same logical-versus-physical question as Windows under Wayland fractional scaling? The Windows reader now reads its fonts at 96 DPI and reports a `font_dpi` of 96, because the model's sizes are logical pixels (`native-theme/src/windows.rs`, `LOGICAL_DPI`). If a Linux session at, say, 150 % sets `Xft.dpi` to 144 while the toolkit also applies the 1.5 scale factor, a 10pt font would resolve to device pixels and be scaled again. Not checked on a KDE or GNOME Wayland session. M2e (2026-10-11) answered it from source. GNOME: gnome-settings-daemon 51.0 sets `Xft.dpi` to 96 × `text-scaling-factor` × the X11 UI scale (`plugins/xsettings/gsd-xsettings-manager.c:583-595`, `:665-668`, `:797-798`), so it carried the text scale and the display scale; since M2e Step 7 the GNOME reader and `ResolutionContext::from_system()` on GNOME use 96, which applies the factor once on Wayland; X11 and Xwayland clients also get it through the toolkit's `Xft.dpi` scale factor (`docs/archive/todo_closed.md`, *Closed items from Font DPI*, "For M4 (connectors): on GNOME and Budgie X11"; its Xwayland half is the next entry). KDE: Plasma 6.7.5's krdb sets `Xft.dpi` on Wayland to `kwinrc [Xwayland] Scale` × 96 (`kcms/krdb/krdb.cpp:333-337`), and Plasma 6.8 always does (`startkde/plasma-setup-xwayland/main.cpp:47-58` at v6.7.91), so the KDE reader's `Xft.dpi` fallback on Wayland is the display scale: open, for M4, with Plasma 6.8's removal of `forceFontDPI`, which the KDE reader and `detect.rs` read first (ledger M2e-01 to M2e-03).
-  M4 (2026-10-12/13): one font-DPI chain in `detect`, cached in `DetectionContext` and shared by the KDE reader (9ed0ca92); `forceFontDPI` is read on X11 only (the plan's ruling) and from `kcmfonts`, the file Plasma opens (49e0067a, b42b1568), so on a Wayland session the chain starts at `Xft.dpi`. The Wayland question above is still unverified; re-check at Plasma 6.8.0 with M2e-01.
 - [ ] [upstream] An X11 client through Xwayland on a GNOME or Budgie Wayland session draws the text-scaling factor twice: it gets the `Xft.dpi` gnome-settings-daemon writes as 96 × `text-scaling-factor` × the window scale (gnome-settings-daemon 51.0 `plugins/xsettings/gsd-xsettings-manager.c:666-668`, `:742`, `:797-798`), winit 0.30.13 and gpui-pre-linux 0.3.9 take their X11 scale factor from it (`src/platform_impl/linux/x11/util/randr.rs:41-53`, `:145-146`; `src/linux/x11/client.rs:2671-2678`), and the GNOME reader, which sees a `wayland` session, reports the factor, which the connectors apply again. Core cannot see a client's backend, and the connectors' entry points take no window (M8 Step 6 ruling, 2026-10-16). The lengths winit and gpui scale by the factor on X11, which GTK does not, are theirs, not ours. The same holds for an X11 session started with `startx` from a text login: it runs in the text login's session, whose `XDG_SESSION_TYPE` is `tty` (one of pam_systemd's session types, `pam_systemd(8)` `type=`, systemd 262), so the reader reports the factor and the X11 toolkit's `Xft.dpi` scale carries it too. The rule stays `x11` exactly (Step 6 ruling); `DISPLAY` or `WAYLAND_DISPLAY` would guess the backend, not know it. Waits on a way for the reader to learn the backend the client actually uses (Xwayland, `startx`), which no toolkit exposes to a theme reader today.
   *GPUI Kit 0.8.1 (2026-10-27, G4):* still so: gpui-pre-linux 0.3.10 takes its X11 scale factor from `Xft.dpi` at `src/linux/x11/client.rs:2674-2681` (0.3.9 `:2671-2678`), and gpui-fast-linux 0.1.12 does the same (`:2711-2718`).
 
@@ -4110,6 +4419,8 @@ under *Closed items from M7 close (2026-10-16): items carried to M8, M9a and the
       (3) macos-tahoe and macos-monterey (`macos-tahoe.toml` and `macos-monterey.toml` `[light.defaults.border] line_width_px` 0.5): the scroll area lays its rows on whole pixels (egui `src/containers/scroll_area.rs:797-803`), half a point right of the frame's inside, so a filled row covers the frame's 0.5 pt right line along its height; at rest the selected Item 2 does.
       The controller's ruling of 2026-10-23 (M9c T9 fix round 1): no code now. A fix lays the list's content inside the frame's line so that nothing it paints crosses the line, for example a frame-flush `ScrollArea` clipped to the inside, its rows on the inside's own edges. Settle before 1.0 with a kittest over the three presets that reads the rail's, the thumb's and the rows' painted rects against the frame's inside and its arcs.
       (4) gpui on gpui-pre (from code and arithmetic, M9c T9b round 1; the iced showcase's bar keeps inside its frame since then, ledger M9-158): the Basic list is a `geometry::list` box, rounded and `overflow_hidden` (`connectors/native-theme-gpui/src/geometry.rs:699-706`), whose `List` fills it (`size_full`, gpui-component 0.8.0 `src/list/list.rs:544-549`) and lays gpui-base's `Scrollbar` over itself (`:612-614`; absolute and full size, gpui-base 0.8.0 `src/scrollbar.rs:1281-1285`). gpui-base paints the track as a square quad `scrollbar.groove_width` wide at the right edge, the full height (`:1422-1446`, painted at `:1625`). gpui-pre's content mask is the box's inside as a rectangle (gpui-pre 0.3.9 `src/style.rs:638-678`), so the track's square corners lie in the inside's corners, `ri·√2` from the inner arc's centre (`ri` = `list.border.corner_radius` − `line_width`). gpui-pre paints a box's border after its children (`src/style.rs:742-755`), so the line stays whole; what shows is a nub past the frame's outer edge `r`. Shown at rest (`ScrollbarMode::Always`, `connectors/native-theme-gpui/src/lib.rs:337-341`): material-3 15.56 against 12 (+3.56), the ten r 8 / w 1 presets 9.90 against 8 (+1.90), kde-breeze 5.66 against 5 (+0.66), windows-11 4.24 against 4 (+0.24, a transparent track). While scrolling only (`Scrolling`): adwaita 11.31 against 9 (+2.31), ios-13 13.44 against 10 (+3.44), macos-tahoe 7.78 against 6 and macos-monterey 6.36 against 5 (transparent tracks). The thumb, inset `(groove − thumb) / 2` from the right and the top and rounded by `defaults.border.corner_radius` clamped to half its width (`connectors/native-theme-gpui/src/base_layer.rs`, `scrollbar_geometry`; gpui-base `:1209-1240`, `:1603-1607`), crosses only on ios-13, while shown: 10.69 against 10. GPUI Fast clips the box's children to its curved padding edge, so none of this shows there. It is the List case of the [upstream] entry "File the gpui-kit issue: gpui-pre clips a rounded box's children to a rectangle"; no gpui code changes for it.
+      *Issue #4 (0.7.1):* kde-breeze's track is transparent now, as windows-11's is: its
+      +0.66 nub no longer shows.
 
 ### egui: the font plan reads the light variant's families only
 - [ ] [1.0] Latent: `from_preset`, `SystemThemeExt::to_egui_atlas` and the builders' documented route build the font plan from the light variant alone, `FontPlan::from_system(&light)` (`connectors/native-theme-egui/src/ext.rs:274`, `:420`), and the atlas draws both schemes in those two faces, so a dark variant whose `defaults.font.family` or `defaults.mono_font.family` is another family is drawn in the light variant's, and no `Note` says so. No bundled preset or OS reader gives the variants other families: every preset states the same two families in both, and the KDE, GNOME, Windows and macOS readers fill both variants from one source (the M9c T10 review, item 3c). The egui showcase names the face drawn in that case (`demo::DrawnFamilies::drawn_at`, M9c T10 fix round 1). Decide before 1.0 whether the plan loads the dark variant's families too, which the never-`Name` invariant (`docs/archive/todo_v0.6.0_egui-connector-spec.md` §8.1) leaves to egui's two families, so their faces would change with the scheme, or records a `Note` for a dark family it does not load.

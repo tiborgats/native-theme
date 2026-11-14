@@ -32,8 +32,8 @@ pub(crate) fn run_pipeline(reader: ReaderResult, preset_name: &str) -> crate::Re
     } = reader;
 
     // Build ONE resolution-time context for this theme-build. The reader
-    // may have supplied an authoritative font_dpi (e.g. KDE's, from `kcmfonts`' forceFontDPI);
-    // when it does, the context takes it and no DPI detection runs again.
+    // may have supplied its font_dpi (each platform reader does: 96 on Linux and
+    // Windows, 72 on macOS); when it does, the context takes it.
     // button_order + icon_theme are platform-detected as from_system()'s.
     let context = match font_dpi {
         Some(dpi) => crate::resolve::ResolutionContext::with_font_dpi(
@@ -2306,7 +2306,7 @@ accent_color = "#0066cc"
                 assert_eq!(
                     source,
                     (crate::IconSet::Freedesktop, Some(expected.to_owned())),
-                    "kde-breeze.toml:16 and :473 (active mode {active:?}, asked {mode:?})"
+                    "kde-breeze.toml:16 and :601 (active mode {active:?}, asked {mode:?})"
                 );
                 assert_eq!(theme.icon_theme_for(mode), Some(expected));
             }
@@ -2343,7 +2343,7 @@ accent_color = "#0066cc"
             assert_eq!(
                 theme.icon(role, crate::ColorMode::Dark, None),
                 FreedesktopLoader::new(role).theme("breeze-dark").load(),
-                "dark icon from breeze-dark, kde-breeze.toml:473 (active mode {active:?})"
+                "dark icon from breeze-dark, kde-breeze.toml:601 (active mode {active:?})"
             );
             assert_eq!(
                 theme.icon_indicator(crate::ColorMode::Dark),
@@ -2410,7 +2410,7 @@ accent_color = "#0066cc"
             assert_eq!(
                 theme.icon_theme_for(crate::ColorMode::Dark),
                 Some("breeze-dark"),
-                "kde-breeze.toml:473 names breeze-dark for dark (active mode {mode:?})"
+                "kde-breeze.toml:601 names breeze-dark for dark (active mode {mode:?})"
             );
             assert_eq!(
                 theme.icon_theme_for(mode),

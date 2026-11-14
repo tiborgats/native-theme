@@ -118,7 +118,7 @@ the default and all features, and the widget-coverage script against. The script
 writes the line; a hand-edited one fails a test:
 
 <!-- compat:begin -->
-Verified against ecolor 0.36.2, eframe 0.36.2, egui 0.36.2, egui-wgpu 0.36.2, egui-winit 0.36.2, egui_extras 0.36.2, egui_kittest 0.36.2, emath 0.36.2, epaint 0.36.2, epaint_default_fonts 0.36.2 and kittest 0.4.0 on 2026-10-27.
+Verified against ecolor 0.36.2, eframe 0.36.2, egui 0.36.2, egui-wgpu 0.36.2, egui-winit 0.36.2, egui_extras 0.36.2, egui_kittest 0.36.2, emath 0.36.2, epaint 0.36.2, epaint_default_fonts 0.36.2 and kittest 0.4.0 on 2026-11-14.
 <!-- compat:end -->
 
 ## Quick start
@@ -579,8 +579,15 @@ scroll-bar track there; a `ProgressBar` inside `Role::ProgressBar` takes
 transparent track (macOS), the groove's opacities are 0 and the slot takes the
 input background instead. A solid scroll bar's groove is painted at full
 opacity, so its track stays in the slot even when the theme states it
-transparent, as `windows-11` does: there a canvas frame and a progress bar
-outside its role have no fill.
+transparent, as `windows-11` and `kde-breeze` do: there a canvas frame and a
+progress bar outside its role have no fill.
+
+egui paints a scroll bar's handle at rest with `visuals.widgets.inactive.bg_fill`,
+so the base style puts `scrollbar.thumb_color` there; egui has no slot of its own
+for it. The same slot fills an unscoped slider's rail and handle, a check box and a
+radio button. Where the handle is pale, as Breeze's grey is (`kde-breeze`, #cbcdcd /
+#46494b), an unscoped slider's rail all but disappears on the window (1.4:1 /
+1.7:1). A slider inside `Role::Slider` takes `slider.track_color`.
 
 ## Semver
 

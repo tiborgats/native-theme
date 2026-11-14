@@ -18,8 +18,8 @@ use gpui::{App, Window};
 /// ([`SystemTheme::from_system()`](crate::SystemTheme::from_system), or
 /// [`SystemTheme::from_system_with_preset`](crate::SystemTheme::from_system_with_preset)
 /// for a pinned preset), then [`apply_system_theme`](crate::apply_system_theme):
-/// the reader's detection values (the font DPI, dark mode, the icon theme,
-/// the accessibility preferences) stay cached until the caches are cleared.
+/// the reader's detection values (dark mode, the icon theme, the
+/// accessibility preferences) stay cached until the caches are cleared.
 ///
 /// The subscription lives as long as the guard and the window it was
 /// registered on. Register it on the application's longest-lived window,

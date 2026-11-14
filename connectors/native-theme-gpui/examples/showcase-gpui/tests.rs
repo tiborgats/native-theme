@@ -1216,7 +1216,12 @@ fn the_theme_tabs_window_section_names_the_mode() {
             .is_some_and(|v| v.starts_with(crate::inspector::window_frame(std::env::consts::OS))),
         "the server-side rows do not name this platform's frame: {server:?}"
     );
-    for client_only in ["frame fill", "frame colour", "frame shadow"] {
+    for client_only in [
+        "frame fill",
+        "frame colour",
+        "frame corners",
+        "frame shadow",
+    ] {
         assert_eq!(
             value(&server, client_only),
             None,
@@ -1233,7 +1238,12 @@ fn the_theme_tabs_window_section_names_the_mode() {
         value(&client, "frame").is_some_and(|v| v.starts_with("the client frame")),
         "the client-side rows do not say the client frame is drawn: {client:?}"
     );
-    for client_only in ["frame fill", "frame colour", "frame shadow"] {
+    for client_only in [
+        "frame fill",
+        "frame colour",
+        "frame corners",
+        "frame shadow",
+    ] {
         assert!(
             value(&client, client_only).is_some(),
             "the client-side rows do not state {client_only}"
@@ -1677,7 +1687,7 @@ fn the_theme_settings_switch_the_preset(cx: &mut TestAppContext) {
 /// shows; ios-13 is offered on macOS too (its `platforms` are `macos` and
 /// `ios`), so it is resolved at 72. A colour-scheme preset, offered
 /// everywhere (no `platforms`), keeps the host's DPI (`None`), as
-/// `ResolutionContext::from_system` reads it.
+/// `ResolutionContext::from_system` gives it.
 fn side_panel_presets() -> Vec<(&'static str, Option<f32>)> {
     native_theme::theme::Theme::list_presets()
         .iter()
@@ -9256,7 +9266,8 @@ fn the_token_input_holds_its_token(cx: &mut TestAppContext) {
 /// chosen theme. The widgets are those whose shown configuration draws one
 /// (gpui-component 0.8.1): a DropdownButton's caret, a Clipboard's Copy, a
 /// NumberInput's steps, a Checkbox's check, a Rating's stars, a Select's,
-/// a Combobox's and a ColorSelect's caret, a DatePicker's Calendar, a
+/// a Combobox's and a ColorSelect's caret, a SpeechIndicator's stop glyph
+/// (gpui-component 0.9.1), a DatePicker's Calendar, a
 /// Calendar's month buttons, the command palette's Search, a Dialog's and a
 /// Sheet's close button, a Settings page's search and reset, a Pagination's
 /// arrows, the MessageScroller's jump button, an Alert's and a
@@ -9286,6 +9297,7 @@ fn a_widgets_own_icons_are_named_gpui_components(cx: &mut TestAppContext) {
         ("Rating", inputs::rating(&t, 3, false)),
         ("Select", inputs::select(&t, None)),
         ("ColorSelect", inputs::color_select(&t, false)),
+        ("SpeechIndicator", inputs::speech_indicator(&t, None, false)),
         ("DatePicker", inputs::date_picker(&t)),
         ("Calendar", inputs::calendar(&t)),
         ("preset Combobox", chrome::preset_combobox(&t, None)),
@@ -10711,8 +10723,8 @@ fn each_family_of_the_stack_is_named_where_it_is_drawn() {
 }
 
 /// The showcase's copy of gpui's fallback stack (`inspector::GPUI_FALLBACK_STACK`) is each
-/// core's, at the lines its doc cites: gpui-pre 0.3.10 `src/text_system.rs:262-273`, gpui-fast
-/// 0.1.12 `:263-274`, read from the sources `cargo metadata` names. The field is private in
+/// core's, at the lines its doc cites: gpui-pre 0.3.12 `src/text_system.rs:261-272`, gpui-fast
+/// 0.1.15 `:262-273`, read from the sources `cargo metadata` names. The field is private in
 /// both, so the source is the only place to read it whole.
 #[test]
 fn the_fallback_stack_copy_is_gpuis() {
@@ -10732,8 +10744,8 @@ fn the_fallback_stack_copy_is_gpuis() {
         .as_array()
         .expect("cargo metadata lists packages");
     for (core, version, first, last) in [
-        ("gpui-pre", "0.3.10", 262, 273),
-        ("gpui-fast", "0.1.12", 263, 274),
+        ("gpui-pre", "0.3.12", 261, 272),
+        ("gpui-fast", "0.1.15", 262, 273),
     ] {
         let manifest = packages
             .iter()
@@ -10791,10 +10803,10 @@ fn a_menu_popup_row_pads_each_side_as_the_theme_states_it() {
             accessibility: &prefs,
         };
         let p = r.menu.border.padding;
-        let side = |stated: Option<f32>, unstated: Option<Pixels>| {
-            stated.map(px).or(unstated).map(DefiniteLength::from)
+        let side = |stated: Option<f32>, unstated: Option<DefiniteLength>| {
+            stated.map(|v| DefiniteLength::from(px(v))).or(unstated)
         };
-        let x = Some(crate::demo::MENU_ROW_PADDING_X);
+        let x = Some(DefiniteLength::from(crate::demo::MENU_ROW_PADDING_X));
         let expected = (
             side(p.top, None),
             side(p.right, x),
@@ -10820,11 +10832,11 @@ fn a_menu_popup_row_pads_each_side_as_the_theme_states_it() {
 /// line's, under every bundled preset in both modes.
 #[test]
 fn the_menus_padding_line_names_what_pads_a_rows_unstated_sides() {
-    let sides = format!(
-        "an item's {}px at the sides (MENU_ROW_PADDING_X) and nothing above or below",
-        crate::info::px_text(crate::demo::MENU_ROW_PADDING_X.as_f32())
-    );
     for (name, r, t) in every_bundled_variant() {
+        let sides = format!(
+            "an item's {} at the sides (MENU_ROW_PADDING_X) and nothing above or below",
+            crate::info::rems_text(crate::demo::MENU_ROW_PADDING_X, &t)
+        );
         let info = crate::info::app_menus(&t, crate::info::MenuHost::Row, Some(&r));
         let line = info
             .config
@@ -13577,10 +13589,9 @@ fn a_widget_info_titles_itself_by_kind_and_variant() {
 
 #[test]
 fn to_text_prints_the_four_sections_in_order() {
-    let t = Theme::from(&gpui_component::theme::ThemeColor {
-        danger: gpui::hsla(0.0, 1.0, 0.5, 1.0),
-        ..Default::default()
-    });
+    let mut colors = gpui_component::theme::ThemeColor::default();
+    colors.danger = gpui::hsla(0.0, 1.0, 0.5, 1.0);
+    let t = Theme::from(&colors);
     let info = WidgetInfo::new("Tag")
         .variant("Danger")
         .color(claim("bg", "danger", t.danger, "gpui-component/tag.rs:31"))
@@ -15443,6 +15454,59 @@ fn the_synthetic_input_feeds_levels_and_stops_with_the_session(cx: &mut TestAppC
         blocks.get(),
         delivered,
         "the synthetic input kept running after stop"
+    );
+}
+
+/// The Inputs page's SpeechIndicator fills a stop button while the synthetic
+/// input captures, as its doc asks a caller to show it
+/// (speech/indicator.rs:45, :52-54): none at rest; while capturing, a square
+/// of the theme's `button.min_height` whose info is the indicator's, and a
+/// click on it stops the session and takes it away.
+#[gpui::test]
+fn the_speech_indicator_fills_a_stop_button_while_capturing(cx: &mut TestAppContext) {
+    use gpui_component::speech::SpeechStatus;
+
+    const STOP: &str = "inputs-speech-indicator";
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    use_preset(&mut cx, &showcase, "kde-breeze");
+    show(&mut cx, &showcase, Page::Inputs);
+    assert!(
+        cx.debug_bounds(STOP).is_none(),
+        "a stop button is shown while nothing captures"
+    );
+
+    let state = read(&mut cx, &showcase, |this, _| this.speech_state.clone());
+    cx.update(|_window, cx| state.update(cx, |s, cx| s.start(cx)));
+    cx.executor().advance_clock(Duration::from_secs(1));
+    cx.run_until_parked();
+    draw(&mut cx);
+    let stop = bounds_of(&mut cx, STOP);
+    let side = cx.update(|_window, cx| native_value(cx, |n| px(n.resolved.button.min_height)));
+    assert_eq!(
+        Some(stop.size.height),
+        side,
+        "the stop button is not as high as button.min_height"
+    );
+    assert_eq!(
+        stop.size.width, stop.size.height,
+        "the stop button is not square"
+    );
+    let info = settle_on(&mut cx, &showcase, STOP);
+    assert_eq!(
+        info.map(|info| info.kind),
+        Some("SpeechIndicator"),
+        "the inspector does not show the indicator's info on its stop button"
+    );
+
+    click(&mut cx, STOP);
+    assert_eq!(
+        cx.read(|cx| state.read(cx).status()),
+        SpeechStatus::Idle,
+        "a click on the stop button did not stop the session"
+    );
+    assert!(
+        cx.debug_bounds(STOP).is_none(),
+        "the stop button stays after the session stopped"
     );
 }
 

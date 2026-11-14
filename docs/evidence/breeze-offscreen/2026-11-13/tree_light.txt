@@ -1,0 +1,7 @@
+[light] tree hasFocus True currentIndex row 0 col 0 selected 0; viewport at 0,30; row0 rect 20,0,280x24; indentation 20 rootIsDecorated True
+[light] focused: row0 centre y=41 runs x=0..30: [(0, '#ffffff'), (9, '#c8c9ca'), (20, '#ffffff'), (27, '#5d5f61'), (28, '#b7b8b9'), (29, '#a4a6a7')]
+[light] focused: column x=60 runs: [(30, '#ffffff')]
+[light] focused: column x=9 (branch line candidate) runs: [(30, '#c8c9ca'), (162, '#ffffff')]
+[light] after clearFocus hasFocus False: column x=60 runs: [(30, '#ffffff')]
+[light] unfocused: row y=31 runs: [(0, '#ffffff'), (9, '#c8c9ca'), (10, '#ffffff')]
+[light] mix(Base, Text, 0.25) = #c8c9ca; Highlight.lighter(110) = #44bfff

@@ -65,31 +65,31 @@ pub fn data_table(
             "frame",
             "border",
             t.border,
-            "gpui-component/table/data_table.rs:225",
+            "gpui-component/table/data_table.rs:252",
         ))
         .color(claim(
             "bg",
             "table",
             t.table,
-            "gpui-component/table/data_table.rs:221",
+            "gpui-component/table/data_table.rs:248",
         ))
         .color(claim(
             "sort button icon",
             "secondary_foreground",
             t.secondary_foreground,
-            "gpui-component/table/state.rs:1841",
+            "gpui-component/table/state.rs:1920",
         ))
         .color(claim(
             "sort button hover",
             "secondary",
             t.secondary,
-            "gpui-component/table/state.rs:1833",
+            "gpui-component/table/state.rs:1912",
         ))
         .color(claim(
             "sort button pressed",
             "secondary_active",
             t.secondary_active,
-            "gpui-component/table/state.rs:1834",
+            "gpui-component/table/state.rs:1913",
         ))
         .config("border-radius", format!("radius: {}px", t.radius.as_f32()))
         .config(
@@ -116,11 +116,11 @@ pub fn data_table(
         info.not_themeable("row height", "upstream's Medium 32px: with no native theme installed nothing states list.row_height (sizing.rs, table_row_height)")
             .not_themeable("text", "text_sm, which a Medium cell sets on itself (sizing.rs, table_cell_size)")
     };
-    info.config("keyboard focus", "a focused DataTable takes `ring` while the last input was a key press, so a click alone shows none of it, an arrow key after the click does, and a mouse move takes it away: its edge in `ring`, with the focus ring outside it where the theme's focus_ring is on (gpui-component/styled.rs:250-271, focus_style); DataTable::new turns it on (table/data_table.rs:114, 228-235)")
+    info.config("keyboard focus", "a focused DataTable takes `ring` while the last input was a key press, so a click alone shows none of it, an arrow key after the click does, and a mouse move takes it away: its edge in `ring`, with the focus ring outside it where the theme's focus_ring is on (gpui-component/styled.rs:250-271, focus_style); DataTable::new turns it on (table/data_table.rs:114, 255-262)")
         .instance("rows", format!("{rows} rows of {columns} columns from the delegate, each reporting itself; a click selects a row"))
         .instance("columns", "a click on a header selects its column, whose cells then take table_active (table/state.rs, TableState::render_col_wrap)")
         .instance("sortable", "the Role column only: its button cycles descending, ascending and unsorted (table/state.rs, TableState::perform_sort), and the showcase sorts its rows to match")
-        .instance("right-clicked cell", "none: the outline, table_active_border at 50% (table/state.rs, render_table_row: lines 2311 and 2421), is drawn only round a right-clicked cell of a cell_selectable table, and this one keeps cell_selectable off (table/state.rs, TableState::new: line 329) because selecting cells instead of rows would change the row panels")
+        .instance("right-clicked cell", "none: the outline, table_active_border at 50% (table/state.rs, render_table_row: line 2485), is drawn only round a right-clicked cell of a cell_selectable table, and this one keeps cell_selectable off (table/state.rs, TableState::new: line 340) because selecting cells instead of rows would change the row panels")
 }
 
 /// The `DataTable`'s header row.
@@ -131,13 +131,13 @@ pub fn data_table_header(t: &Theme, columns: &str) -> WidgetInfo {
             "bg",
             "table_head",
             t.table_head,
-            "gpui-component/table/state.rs:2039",
+            "gpui-component/table/state.rs:2131",
         ))
         .color(claim(
             "text",
             "table_head_foreground",
             t.table_head_foreground,
-            "gpui-component/table/state.rs:2040",
+            "gpui-component/table/state.rs:2132",
         ))
         .instance("columns", columns.to_string())
 }
@@ -157,14 +157,14 @@ pub fn data_table_row(t: &Theme, row: DataTableRow, cells: Option<String>) -> Wi
                     "stripe",
                     "table_even",
                     t.table_even,
-                    "gpui-component/table/state.rs:2510",
+                    "gpui-component/table/state.rs:2583",
                 ))
             } else {
                 info.color(claim(
                     "bg, the table's",
                     "table",
                     t.table,
-                    "gpui-component/table/data_table.rs:221",
+                    "gpui-component/table/data_table.rs:248",
                 ))
             };
             return info
@@ -172,7 +172,7 @@ pub fn data_table_row(t: &Theme, row: DataTableRow, cells: Option<String>) -> Wi
                     "bottom border",
                     "table_row_border",
                     t.table_row_border,
-                    "gpui-component/table/state.rs:2509",
+                    "gpui-component/table/state.rs:2582",
                 ))
                 .not_themeable("purpose", "a row a striped table draws below its data to fill its height: no cells, and no hover (table/state.rs, TableState::render_table_row)");
         }
@@ -199,27 +199,27 @@ pub fn data_table_row(t: &Theme, row: DataTableRow, cells: Option<String>) -> Wi
     };
     // The selected fill is painted after the stripe, so it covers it. It is
     // table_active because gpui-base's ListSettings::active_highlight defaults
-    // to true (list_settings.rs:14) and the connector never sets it.
+    // to true (list_settings.rs:15) and the connector never sets it.
     let info = if shown {
         info.color(claim(
             "selected bg",
             "table_active",
             t.table_active,
-            "gpui-component/table/state.rs:2465",
+            "gpui-component/table/state.rs:2538",
         ))
     } else if body.striped {
         info.color(claim(
             "stripe",
             "table_even",
             t.table_even,
-            "gpui-component/table/state.rs:2243",
+            "gpui-component/table/state.rs:2377",
         ))
     } else {
         info.color(claim(
             "bg, the table's",
             "table",
             t.table,
-            "gpui-component/table/data_table.rs:221",
+            "gpui-component/table/data_table.rs:248",
         ))
     };
     // A cell is the delegate's plain text, and neither the table nor its
@@ -239,7 +239,7 @@ pub fn data_table_row(t: &Theme, row: DataTableRow, cells: Option<String>) -> Wi
             "hover",
             "table_hover",
             t.table_hover,
-            "gpui-component/table/state.rs:2249",
+            "gpui-component/table/state.rs:2383",
         ))
     };
     let info = if body.right_clicked {
@@ -247,7 +247,7 @@ pub fn data_table_row(t: &Theme, row: DataTableRow, cells: Option<String>) -> Wi
             "right-click frame",
             "selection",
             t.selection,
-            "gpui-component/table/state.rs:2481",
+            "gpui-component/table/state.rs:2554",
         ))
         .not_themeable("bottom border", "transparent while the row is right-clicked, under the frame drawn around it (table/state.rs, TableState::render_table_row)")
     } else {
@@ -255,7 +255,7 @@ pub fn data_table_row(t: &Theme, row: DataTableRow, cells: Option<String>) -> Wi
             "bottom border",
             "table_row_border",
             t.table_row_border,
-            "gpui-component/table/state.rs:2241",
+            "gpui-component/table/state.rs:2375",
         ));
         if body.last && !body.selected {
             info.not_themeable("last border", "the last row's bottom border is drawn only while the rows leave room below them or the row is selected (table/state.rs, TableState::render_table_row)")
@@ -506,7 +506,7 @@ fn grid_lines(info: WidgetInfo, r: &ResolvedTheme, where_drawn: &str) -> WidgetI
 }
 
 /// The fill of the page Button showing the current page: an outlined
-/// Default Button's `input_background()` (button/button.rs:939), the shared
+/// Default Button's `input_background()` (button/button.rs:944), the shared
 /// claim with a role that says whose fill it is.
 fn current_page_fill(t: &Theme) -> ColorClaim {
     ColorClaim {
@@ -538,25 +538,25 @@ pub fn pagination(t: &Theme, compact: bool, page: usize, pages: usize, gap: bool
                 "current page text",
                 "button_foreground",
                 t.button_foreground,
-                "gpui-component/button/button.rs:1029",
+                "gpui-component/button/button.rs:1034",
             ))
             .color(claim(
                 "current page edge",
                 "input",
                 t.input,
-                "gpui-component/button/button.rs:1081",
+                "gpui-component/button/button.rs:1086",
             ))
             .color(claim(
                 "current page hover, 50% input mixed with 50% transparent",
                 "input",
                 t.input.mix_oklab(t.transparent, 0.5),
-                "gpui-component/button/button.rs:940-944",
+                "gpui-component/button/button.rs:945-949",
             ))
             .color(claim(
                 "current page pressed, 70% input mixed with 30% transparent",
                 "input",
                 t.input.mix_oklab(t.transparent, 0.7),
-                "gpui-component/button/button.rs:945-949",
+                "gpui-component/button/button.rs:950-954",
             ))
             .not_themeable("buttons", "built by the widget as ghost/outline Button (gpui-component/pagination.rs, Pagination::render page items); no refinement reaches them")
             .not_themeable("other pages", "no fill until hovered: a ghost Button is transparent, and it then hovers with accent -- the menu highlight, halved in dark mode (button/button.rs, ButtonVariant::hovered Ghost arm)")
@@ -575,7 +575,7 @@ pub fn pagination(t: &Theme, compact: bool, page: usize, pages: usize, gap: bool
                 "disabled text, at 50%",
                 "muted_foreground",
                 t.muted_foreground.opacity(0.5),
-                "gpui-component/button/button.rs:1364",
+                "gpui-component/button/button.rs:1369",
             ))
             .instance("disabled", format!("{which}: there is no page beyond it (pagination.rs, Pagination::render_nav_button)")),
         None => info,
@@ -650,7 +650,7 @@ fn list_item(
         ListRowState::SelectedRightClicked => format!("{label}, selected and right-clicked"),
     });
     // list_active because gpui-base's ListSettings::active_highlight
-    // defaults to true (list_settings.rs:14) and the connector never sets it.
+    // defaults to true (list_settings.rs:15) and the connector never sets it.
     let info = match state {
         ListRowState::Idle => info.color(claim(
             "hover",
@@ -674,7 +674,7 @@ fn list_item(
                 "outline, 1px",
                 "selection",
                 t.selection,
-                "gpui-component/list/list_item.rs:272",
+                "gpui-component/list/list_item.rs:271",
             ))
             .not_themeable(
                 "fill",
@@ -691,7 +691,7 @@ fn list_item(
                 "outline, 1px, over the fill",
                 "selection",
                 t.selection,
-                "gpui-component/list/list_item.rs:272",
+                "gpui-component/list/list_item.rs:271",
             ))
             .not_themeable(
                 "hover",
@@ -885,7 +885,7 @@ fn bubble_colours(t: &Theme, kind: BubbleKind) -> Vec<ColorClaim> {
                 "gpui-component/bubble.rs:241",
             ),
         ],
-        // The semantic tokens name danger destructive (theme/mod.rs:534); the
+        // The semantic tokens name danger destructive (theme/mod.rs:542); the
         // Destructive arm reads it at a share picked by the mode
         // (bubble.rs:244-249).
         BubbleKind::Destructive => vec![
@@ -894,21 +894,21 @@ fn bubble_colours(t: &Theme, kind: BubbleKind) -> Vec<ColorClaim> {
                     "bg, destructive at 20% (bubble.rs:244)",
                     "danger",
                     t.danger.opacity(0.2),
-                    "gpui-component/theme/mod.rs:534",
+                    "gpui-component/theme/mod.rs:542",
                 )
             } else {
                 claim(
                     "bg, destructive at 10% (bubble.rs:244)",
                     "danger",
                     t.danger.opacity(0.1),
-                    "gpui-component/theme/mod.rs:534",
+                    "gpui-component/theme/mod.rs:542",
                 )
             },
             claim(
                 "text, destructive (bubble.rs:249)",
                 "danger",
                 t.danger,
-                "gpui-component/theme/mod.rs:534",
+                "gpui-component/theme/mod.rs:542",
             ),
         ],
     }
@@ -971,25 +971,25 @@ pub fn message_scroller(t: &Theme, messages: usize) -> WidgetInfo {
             "scrollbar",
             "scrollbar_thumb",
             t.scrollbar_thumb,
-            "gpui-component/theme/mod.rs:421",
+            "gpui-component/theme/mod.rs:430",
         ))
         .color(claim(
             "jump button",
             "background",
             t.background,
-            "gpui-component/message_scroller.rs:446",
+            "gpui-component/message_scroller.rs:476",
         ))
         .color(claim(
             "jump button edge",
             "border",
             t.border,
-            "gpui-component/message_scroller.rs:445",
+            "gpui-component/message_scroller.rs:475",
         ))
         .color(claim(
             "jump button icon",
             "foreground",
             t.foreground,
-            "gpui-component/message_scroller.rs:447",
+            "gpui-component/message_scroller.rs:477",
         ))
         .color(claim("frame", "border", t.border, "showcase"))
         .not_themeable("jump button", "appears once the user scrolls away from the tail, fading over a 200ms module const rather than the theme's motion tokens (message_scroller.rs, JUMP_BUTTON_TRANSITION)")
@@ -1023,32 +1023,32 @@ pub fn attachment(
             t.foreground,
             "gpui-component/attachment.rs:433",
         ));
-    // The semantic tokens name danger destructive (theme/mod.rs:534); a
+    // The semantic tokens name danger destructive (theme/mod.rs:542); a
     // failed card reads it at full strength and at 10%.
     let info = if status == AttachmentStatus::Failed {
         info.color(claim(
             "border, destructive (attachment.rs:426-427)",
             "danger",
             t.danger,
-            "gpui-component/theme/mod.rs:534",
+            "gpui-component/theme/mod.rs:542",
         ))
         .color(claim(
             "media bg, destructive at 10% (attachment.rs:841-842)",
             "danger",
             t.danger.opacity(0.1),
-            "gpui-component/theme/mod.rs:534",
+            "gpui-component/theme/mod.rs:542",
         ))
         .color(claim(
             "status glyph, upstream's Ban, destructive (attachment.rs:801, 846-847)",
             "danger",
             t.danger,
-            "gpui-component/theme/mod.rs:534",
+            "gpui-component/theme/mod.rs:542",
         ))
         .color(claim(
             "description, destructive (attachment.rs:1142-1143)",
             "danger",
             t.danger,
-            "gpui-component/theme/mod.rs:534",
+            "gpui-component/theme/mod.rs:542",
         ))
         .not_themeable("failed tint", "the semantic layer renames danger to destructive, and a failed card draws its border, status glyph and description in it (theme/mod.rs, color_tokens; attachment.rs, Attachment::render)")
     } else {

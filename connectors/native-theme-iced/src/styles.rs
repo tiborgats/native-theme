@@ -1241,7 +1241,7 @@ pub fn pick_list(
 /// Every color is `menu.*`: the panel, its border, the label, and the selected
 /// row's label and fill. A selected row is a row highlight, painted over a
 /// panel the widget also paints, so it is emitted as given rather than
-/// composited: the platform measured that fill as it shows, not as a layer.
+/// composited: a translucent fill (KDE, Windows) lays itself over the panel.
 ///
 /// `shadow` has no native source -- the model has `defaults.shadow_color` but
 /// no offset or blur -- and comes from `overlay::menu::default(theme)`.

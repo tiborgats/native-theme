@@ -5,7 +5,6 @@ edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
 repository.workspace = true
-homepage.workspace = true
 keywords.workspace = true
 categories.workspace = true
 readme = "README.md"
@@ -23,7 +22,7 @@ targets = [
 # No feature is needed to load, merge and resolve presets and TOML files.
 # Each OS-specific dependency is compiled only on its own target.
 
-# The KDE Plasma reader: kdeglobals and kcmfonts (Linux).
+# The KDE Plasma reader: kdeglobals (Linux).
 kde = ["dep:configparser"]
 # The GNOME and Budgie reader: the XDG Desktop Portal settings and gsettings;
 # with `kde`, the portal's accent colour on KDE too (Linux).
@@ -70,7 +69,7 @@ arc-swap = "1.9.2"
 async-trait = "0.1.92"
 fontdb = { version = "0.23", optional = true, default-features = false, features = ["fs", "fontconfig", "memmap"] }
 inventory = "0.3.24"
-native-theme-derive = { version = "0.7.0", path = "../native-theme-derive" }
+native-theme-derive = { version = "0.7.1", path = "../native-theme-derive" }
 pollster = "1.0"
 resvg = { version = "0.48.1", optional = true, default-features = false }
 serde.workspace = true

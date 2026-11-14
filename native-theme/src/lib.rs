@@ -61,7 +61,7 @@
 //!
 //! Watch for OS theme changes (the `watch` feature). The callback runs on a
 //! background thread and carries no theme: clear the detection caches, which
-//! hold the font DPI, dark mode and icon theme the reader uses, and read the
+//! hold the dark mode and icon theme the reader uses, and read the
 //! OS theme again. Keep the subscription alive; dropping it stops watching:
 //!
 //! ```no_run
@@ -102,7 +102,7 @@
 //!
 //! | Platform | Feature | Reads | Preset |
 //! |---|---|---|---|
-//! | KDE Plasma | `kde` | `kdeglobals`, `kcmfonts`; with `portal`, the portal's accent colour | `kde-breeze` |
+//! | KDE Plasma | `kde` | `kdeglobals`; with `portal`, the portal's accent colour | `kde-breeze` |
 //! | GNOME, Budgie | `portal` | the XDG Desktop Portal settings and gsettings | `adwaita` |
 //! | macOS 11 and later | `macos` | `NSColor` under both appearances, `NSFont`, the scroller style and the accessibility options | `macos-monterey` before 26 (it covers 12 to 15), `macos-tahoe` from 26 |
 //! | Windows | `windows` | `UISettings`, the system metrics and fonts | `windows-11` |
@@ -422,7 +422,7 @@ pub struct AccessibilityPreferences {
     /// 96 × `text-scaling-factor` × the window scale (gnome-settings-daemon
     /// 51.0 `plugins/xsettings/gsd-xsettings-manager.c:666-668`, `:742`,
     /// `:797-798`; winit 0.30.13 `src/platform_impl/linux/x11/util/randr.rs:41-53`,
-    /// `:145-146`; gpui-pre-linux 0.3.10 `src/linux/x11/client.rs:2674-2681`).
+    /// `:145-146`; gpui-pre-linux 0.3.12 `src/linux/x11/client.rs:2674-2681`).
     /// They do so only while `WINIT_X11_SCALE_FACTOR` and
     /// `GPUI_X11_SCALE_FACTOR` are unset (`randr.rs:112-154`,
     /// `client.rs:2623-2669`); with an override the application owns the
@@ -513,7 +513,7 @@ pub(crate) struct ReaderResult {
     pub(crate) icon_set: Option<IconSet>,
     /// Shared layout from reader.
     pub(crate) layout: LayoutTheme,
-    /// Font DPI captured at detection time (None = auto-detect).
+    /// The reader's font DPI (None = `ResolutionContext::from_system()`'s).
     pub(crate) font_dpi: Option<f32>,
     /// OS-detected accessibility preferences.
     pub(crate) accessibility: AccessibilityPreferences,

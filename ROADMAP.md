@@ -82,7 +82,34 @@ thumb outlines; and theme-change integrations in the iced and gpui connectors
 It also moves the gpui connector to GPUI Kit 0.8.1 on gpui-pre 0.3.10, with a
 `gpui-fast` feature that builds it on GPUI Kit's other core, GPUI Fast 0.1.12.
 
-## v0.7.1 — Model completeness: what native-theme does not carry
+## v0.7.1 — GPUI Kit 0.9.1, and the KDE fixes from issue #4
+
+**Delivered:** the gpui connector builds against GPUI Kit 0.9.1 and requires
+gpui-component, gpui-base and gpui-kit 0.9.1 on gpui-pre 0.3.12 (on the
+`gpui-fast` feature, GPUI Fast 0.1.14). gpui-component 0.9 gave its `Theme` a
+`window_radius`, the corner radius of a client-decorated window, which
+`to_theme` and `to_theme_config` set from `window.border.corner_radius`; its
+`WindowBorder` now draws the frame in the theme's border colour instead of a
+fixed grey; and `apply` keeps the application's `cursor_blink`, which
+native-theme does not model. The showcase shows 0.9.1's `SpeechIndicator`. It
+also fixes what a KDE application's author found overriding by hand (issue
+#4). The font DPI is 96 on every Linux desktop, so a scaled KDE session and an
+X11 session with `Xft.dpi` above 96 no longer draw text at the display's scale
+twice. A hovered menu item and a hovered list row are tinted as Breeze tints
+them, at 30 % under the normal text; the menu separator and the table header
+take Breeze's colours, the scroll bar's resting thumb is Breeze's grey with no
+track behind it, and the message box icon is 64 px. The gpui connector
+restores the three selection colours gpui-component caps after a mode switch,
+makes `to_hsla` public, and its README covers overriding theme values, the
+focus ring, and what only gpui-component can change. The platform facts for
+the focus ring, the default button, the menu panel and the table's grid are
+corrected too, and their values wait for a connector design; the selection of
+an unfocused view waits for a text colour the model does not have yet. The
+next step proposed is Breeze's hover outlines: Breeze shows hover on a button,
+a combo box, a check box and a slider handle by recolouring the outline, which
+the model can state for text inputs only.
+
+## Model completeness: what native-theme does not carry
 
 native-theme is to carry everything a platform draws visibly. It does not yet:
 the gap map lists, in 2,339 rows, what the six platforms draw that the model
@@ -94,8 +121,8 @@ behind them, the window's chrome, and over a hundred kinds of controls the
 model has no section for. A value no platform document states is measured on
 the platform, never left to a toolkit's default.
 
-v0.7.1 is three documents, for the model only (the connectors follow once
-the model changes):
+Three documents describe the gaps and one way to close them, for the model
+only:
 
 - the gap map, [`docs/todo_v0.7.1_model-completeness-gap-map.md`](docs/todo_v0.7.1_model-completeness-gap-map.md):
   every part, state, paint, geometry, text, motion, timing and accessibility
@@ -110,16 +137,22 @@ the model changes):
   [`docs/todo_v0.7.1_model-completeness-spec.md`](docs/todo_v0.7.1_model-completeness-spec.md), with its widget
   catalogue and one traceability file per platform mapping every row of the map.
 
-All three are done (2026-10-29). Next is the value phase: the facts for every preset, measured where no
-document states them, then the model's implementation and the 0.8.0 release.
+All three are done (2026-10-29). The specification replaces the model's shape,
+and with it the API the three connectors and the showcases are written
+against. That rebuild was started as 0.8.0 and stopped on 2026-11-13, with one
+widget, the button, on the new model: it is far more work than the releases
+that keep the connectors on their toolkits' current versions leave room for.
+Its branch (`v0.8.0-rc1`) keeps the work and the facts measured for it.
 
-Their implementation, the presets' values and the readers follow in the
-release the specification names.
+The gaps are closed in the 0.7.x releases instead, on the released model and
+in small steps: a field where a visible property has none, a value corrected
+where a verified fact shows it wrong. The gap map stays the list of what is
+missing; values the rebuild verified are taken over where they apply.
 
 ## Later — the connectors
 
-These wait for the model changes above, which change what each of them has
-to map.
+Each of these maps what the model carries, so it grows with the model's
+steps above.
 
 ### Full theme geometry in the iced connector
 
@@ -170,7 +203,7 @@ upstream lines that show it, in the connector's mapping contract.
   today, and a helper that sets iced's `Settings` default font and text size
   from the theme's font;
 - shadows: every style keeps iced's own `shadow` until the model carries
-  shadow geometry (v0.7.1).
+  shadow geometry.
 
 Detailed design: [`docs/todo_iced-full-theme-geometry.md`](docs/todo_iced-full-theme-geometry.md).
 
@@ -230,8 +263,7 @@ limits table: `docs/archive/todo_v0.5.8_gpui-component-0.6-spec.md` §14.
 
 [`docs/todo.md`](docs/todo.md) tags 29 open items `[v0.7.x]`, follow-ups of
 the v0.7.0 review that a 0.7 patch release takes beside the milestones
-above; an item that touches a property v0.7.1 changes waits for that
-change. Among them: the `ios-26` preset, iOS 26's Liquid Glass look, deferred
+above. Among them: the `ios-26` preset, iOS 26's Liquid Glass look, deferred
 while 38 of the values the resolver requires have no iOS 26 source;
 material-3's rewrite (the code-review plan's M2d), after which its display
 name becomes "Material 3"; the theme watchers' open questions on Windows and

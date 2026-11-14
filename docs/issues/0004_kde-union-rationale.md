@@ -26,8 +26,10 @@ Each fact was checked on 2026-10-22. Union is cited at its `master` commit
 
 - The KDE reader reads `kdeglobals`: the colour scheme (any scheme, not only
   Breeze's), fonts, the icon theme, and `[KDE] AnimationDurationFactor` for
-  reduced motion (0 means reduced); `kcmfonts` for the font DPI
-  (`native-theme/src/kde/mod.rs:1-28`, `read_kde_ini` at `:66-95`,
+  reduced motion (0 means reduced); until 0.7.1 also `kcmfonts` for the font
+  DPI, which is 96 on every Linux desktop since
+  ([`0004_kde-hand-overrides-rationale.md`](0004_kde-hand-overrides-rationale.md)
+  §4.1) (`native-theme/src/kde/mod.rs:1-28`, `read_kde_ini` at `:66-95`,
   `reduce_motion` at `:277-283`).
 - Widget sizes are Breeze's, whatever the user runs:
   `kde_metrics::populate_widget_sizing` writes constants from Breeze's
@@ -276,9 +278,9 @@ Only to show the plan is feasible; the spec gets written when §3.1 holds.
     `union-styletool` creates, installs, uninstalls, updates, packages, lists
     and inspects styles, `doc/working-with-styles.qdoc`). Union's own results,
     and Union is installed wherever it is the active style; but KDE would have
-    to provide it, and native-theme would run a program, as it already runs
-    `xrdb` and `xrandr` for the font DPI (`native-theme/src/detect.rs:460`,
-    `:484`).
+    to provide it, and native-theme would run a program, as it ran `xrdb` and
+    `xrandr` for the font DPI until 0.7.1 (`native-theme/src/detect.rs:460`,
+    `:484` at 387fc449).
 - **Fill** only what the style states. Open question for the spec: a value the
   style does not state — fall back to `kde-breeze` (today's pattern, but under a
   non-Breeze style it mixes two looks) or leave it unset (the toolkit's own
