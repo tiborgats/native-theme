@@ -1,0 +1,16 @@
+Xft.dpi 96
+platform xcb dpr 1.0 logicalDpi 96.0 physicalDpi 95.96
+family Noto Sans pixelSize 13 pointSizeF 9.75
+metrics height 17.6875 ascent 13.890625 -> physical px: pixelSize*dpr = 13.0  height*dpr = 17.6875
+Xft.dpi 120
+platform xcb dpr 1.25 logicalDpi 96.0 physicalDpi 76.77
+family Noto Sans pixelSize 13 pointSizeF 9.75
+metrics height 17.6875 ascent 13.890625 -> physical px: pixelSize*dpr = 16.25  height*dpr = 22.109375
+Xft.dpi 144
+platform xcb dpr 1.5 logicalDpi 96.0 physicalDpi 63.97
+family Noto Sans pixelSize 13 pointSizeF 9.75
+metrics height 17.6875 ascent 13.890625 -> physical px: pixelSize*dpr = 19.5  height*dpr = 26.53125
+Xft.dpi 192
+platform xcb dpr 2.0 logicalDpi 96.0 physicalDpi 47.98
+family Noto Sans pixelSize 13 pointSizeF 9.75
+metrics height 17.6875 ascent 13.890625 -> physical px: pixelSize*dpr = 26.0  height*dpr = 35.375
