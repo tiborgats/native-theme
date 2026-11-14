@@ -644,6 +644,14 @@ mod tests {
             );
             assert_eq!(opacities(&s), [0.0; 3], "{preset} {mode:?}");
         }
+        assert_eq!(
+            resolved("material-3", ColorMode::Light)
+                .scrollbar
+                .track_color
+                .a,
+            255,
+            "material-3: the opaque-track witness"
+        );
         for (preset, mode, scheme) in [
             ("kde-breeze", ColorMode::Light, egui::Theme::Light),
             ("windows-11", ColorMode::Light, egui::Theme::Light),

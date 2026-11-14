@@ -1599,6 +1599,9 @@ ForegroundNormal=239,240,241
         let v = populate_fixture("[Colors:Window]\nBackgroundNormal=239,240,241\n");
         assert!(v.menu.separator_color.is_none());
         assert!(v.scrollbar.thumb_color.is_none());
+        assert!(v.list.hover_background.is_none());
+        assert!(v.menu.hover_background.is_none());
+        assert!(v.menu.hover_text_color.is_none());
     }
 
     // === KDE-02: Link visited ===

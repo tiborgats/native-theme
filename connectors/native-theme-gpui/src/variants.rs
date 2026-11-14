@@ -11,7 +11,7 @@
 //! button hover the way the platform's buttons do: under KDE Breeze the first
 //! turns the menu's hover tint, the focus colour at 30 % (half that when dark),
 //! and the second a grey barely distinguishable from the field, while ordinary
-//! buttons keep their resting fill, as Breeze's do, marking hover by outline.
+//! buttons keep their resting fill, as Breeze's do; Breeze marks hover by outline.
 //!
 //! `ButtonVariants::custom` is upstream's supported seam for exactly this, and
 //! it reaches both widgets: a custom variant replaces `.ghost()` on a `Button`,
