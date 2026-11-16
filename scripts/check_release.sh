@@ -40,11 +40,15 @@
 # warnings) runs in --commit; the full run leaves them to --commit and CI.
 #
 # Speed in --commit, never in the full run (whose every step runs as it always
-# has, through `cargo test`):
+# has, through `cargo test`, with no cache):
 #   * cargo nextest, where installed, runs its test steps (cargo_tests,
 #     below), each test in a process of its own and every binary's tests in
 #     one pool; `cargo test --doc` keeps the doctests a step would run, and
 #     the showcases' tests in CI's runner environment stay on cargo test.
+#   * the step cache (scripts/step_cache.sh) skips a step whose declared
+#     inputs (CACHE_INPUTS, below), tool versions, environment and command
+#     are what they were when it last passed; the summary names each such
+#     step "unchanged since <commit>". --no-cache runs every step.
 #
 # Formatting: `cargo fmt --all` formats the tree in place rather than checking
 # it, by design: the per-commit gate formats what is about to be committed,
@@ -55,7 +59,7 @@ set -u  # Exit if an undefined variable is used
 
 usage() {
     cat <<'EOF'
-Usage: scripts/check_release.sh [--commit]
+Usage: scripts/check_release.sh [--commit] [--no-cache]
 
   (no argument)  the full pre-release check; required on the last commit of
                  every fix phase and before the release commit
@@ -67,22 +71,36 @@ Usage: scripts/check_release.sh [--commit]
                  ignored stem-index test, docs.rs emulation, packaging,
                  semver checks, outdated dependencies, and the visual-asset
                  and compatibility stamp checks
+  --no-cache     with --commit: run every step, no cache read or written
+                 (the full run never uses one)
   -h, --help     print this help and exit
 
 With --commit, cargo nextest runs the test steps where it is installed
 (cargo test --doc the doctests; the showcases' runner-environment tests
-stay on cargo test). The full run runs every step through cargo test.
+stay on cargo test), and a compile-only or documentation step, or
+native-theme-derive's tests, whose declared inputs, tools, environment and
+command are unchanged since it last passed is skipped, named in the summary
+"unchanged since <commit>". The full run runs every step through cargo test,
+with no cache.
 EOF
 }
 
 COMMIT_MODE=""
+NO_CACHE=""
 for arg in "$@"; do
     case "$arg" in
         --commit) COMMIT_MODE=1 ;;
+        --no-cache) NO_CACHE=1 ;;
         -h|--help) usage; exit 0 ;;
         *) printf "Unknown argument: %s\n\n" "$arg" >&2; usage >&2; exit 2 ;;
     esac
 done
+
+if [[ $NO_CACHE && ! $COMMIT_MODE ]]; then
+    printf -- "--no-cache goes with --commit\n\n" >&2
+    usage >&2
+    exit 2
+fi
 
 cd "$(dirname "$0")/.."  # every path below is relative to the repository root
 
@@ -169,6 +187,16 @@ print_skipped() {
     SKIPPED+=("$1")
 }
 
+# The steps the step cache skipped, each "unchanged since <commit>".
+print_cached() {
+    if [ "${#CACHED[@]}" -gt 0 ]; then
+        printf "\n${BOLD}Skipped, unchanged since their last pass (step cache; --no-cache runs them):${NC}\n"
+        for c in "${CACHED[@]}"; do
+            printf "   ${DIM}%s${NC}\n" "$c"
+        done
+    fi
+}
+
 # Human-friendly elapsed time: "1m 23s" or "5s".
 format_elapsed() {
     local secs="$1"
@@ -208,6 +236,8 @@ _run_check_impl() {
     local description="$1"
     local mode="$2"
     shift 2
+    local cache_key=""
+    step_cached "$description" cache_key "$@" && return 0
     local start=$SECONDS
     local output
     local status=0
@@ -220,6 +250,7 @@ _run_check_impl() {
 
     if [ "$status" -eq 0 ]; then
         print_ok "$description" "$elapsed"
+        step_passed "$description" "$cache_key" "$@"
     else
         # Failure: dump full output so the user sees what broke.
         printf "%s\n" "$output" >&2
@@ -241,6 +272,8 @@ _run_tests_impl() {
     local description="$1"
     local min_passed="$2"
     shift 2
+    local cache_key=""
+    step_cached "$description" cache_key "$@" && return 0
     local start=$SECONDS
     local output
     local status=0
@@ -286,9 +319,11 @@ _run_tests_impl() {
                 "$description" "$elapsed" "·$detail"
         else
             print_ok "$description" "$elapsed"
+            step_passed "$description" "$cache_key" "$@"
             return
         fi
         PASS_COUNT=$((PASS_COUNT + 1))
+        step_passed "$description" "$cache_key" "$@"
     else
         # Failure: dump filtered output so the user sees what broke.
         printf "%s\n" "$output" | grep -v -E "$TEST_NOISE_FILTER" >&2 || true
@@ -361,6 +396,66 @@ doctests_selected() {
         <<<"$WORKSPACE_METADATA" >/dev/null
 }
 
+# A step the cache skips ($1 its description, $2 the name of the caller's
+# variable for its key, $3... its command): returns 0, the step printed as
+# unchanged, where it last passed with the key its run has now; else 1, the
+# key in $2, empty where the cache is off or the step's inputs are not
+# declared (CACHE_INPUTS), cannot be resolved (a refused reach, whose reason
+# is printed once) or cannot be hashed. Each of those is tested as a
+# condition, so a key that cannot be computed runs the step.
+step_cached() {
+    local step_description="$1"
+    local key_variable="$2"
+    shift 2
+    printf -v "$key_variable" "%s" ""
+    [[ $STEP_CACHE && -n "${CACHE_INPUTS[$step_description]+set}" ]] || return 1
+    local step_inputs=() step_key step_label
+    if ! cache_inputs "$step_description" step_inputs; then
+        print_cache_notes
+        return 1
+    fi
+    if ! step_key=$(step_cache_key "$step_description" "${step_inputs[@]}" -- "$@"); then
+        return 1
+    fi
+    if step_label=$(step_cache_hit "$step_description" "$step_key"); then
+        printf "${DIM}↷  %-47s unchanged since %s${NC}\n" "$step_description" "$step_label"
+        CACHED+=("$step_description: unchanged since $step_label")
+        return 0
+    fi
+    printf -v "$key_variable" "%s" "$step_key"
+    return 1
+}
+
+# Records a step that passed ($1 its description, $2 its key from
+# step_cached, $3... its command), where its inputs still have the key they
+# had before it ran. A record that cannot be written is a warning.
+step_passed() {
+    local step_description="$1"
+    local step_key="$2"
+    shift 2
+    [ -n "$step_key" ] || return 0
+    local step_inputs=() passed_key
+    if ! cache_inputs "$step_description" step_inputs; then
+        return 0
+    fi
+    if ! passed_key=$(step_cache_key "$step_description" "${step_inputs[@]}" -- "$@"); then
+        return 0
+    fi
+    if [ "$passed_key" = "$step_key" ]; then
+        step_cache_record "$step_description" "$step_key" \
+            || print_warn "step cache: the pass of \"$step_description\" not recorded (its record could not be written)"
+    fi
+}
+
+# The step cache's notes (a reach refused, and why), each once.
+print_cache_notes() {
+    local note
+    for note in ${STEP_CACHE_NOTES[@]+"${STEP_CACHE_NOTES[@]}"}; do
+        print_info "step cache: $note"
+    done
+    STEP_CACHE_NOTES=()
+}
+
 # A cargo subcommand the full run needs. A missing one fails with its install
 # command and its section does not run; it is never installed (a check
 # installs nothing, and a prompt would end a run that has no terminal).
@@ -412,13 +507,156 @@ else
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Speed in --commit: cargo nextest (the header says what it does). The full
-# run leaves HAVE_NEXTEST empty, so cargo_tests is `cargo test` there,
-# whatever is installed.
+# Speed in --commit: cargo nextest and the step cache (the header says what
+# each does). The full run sets neither: HAVE_NEXTEST and STEP_CACHE stay
+# empty there, so cargo_tests is `cargo test` and step_cached skips nothing,
+# whatever the environment.
 # ─────────────────────────────────────────────────────────────────────────────
 HAVE_NEXTEST=""
-if [[ $COMMIT_MODE ]] && cargo nextest --version >/dev/null 2>&1; then
-    HAVE_NEXTEST=1
+STEP_CACHE=""
+CACHED=()
+if [[ $COMMIT_MODE ]]; then
+    if cargo nextest --version >/dev/null 2>&1; then
+        HAVE_NEXTEST=1
+    fi
+    if [[ ! $NO_CACHE ]]; then
+        STEP_CACHE=1
+    fi
+fi
+
+# The step cache's inputs, by step description (scripts/step_cache.sh). A
+# step with no entry always runs; an entry names every file, directory and
+# glob the step's command reads, `@rust:<crates>` standing for what a cargo
+# step on those crates reads (cache_inputs, in step_cache.sh). Only steps
+# whose reads are known are listed:
+#   * a cargo step on the host that compiles and runs nothing (check,
+#     clippy, the strict panic lints, rustdoc) reads what rustc and the build
+#     scripts read, as cache_inputs lists it; the strict panic lints read
+#     their script too. The cross-target steps are not listed: the reach is
+#     the host's, and a target's own dependencies may build C code. Neither
+#     are the feature combinations (one step over every crate, whose reach
+#     holds the connectors' host probes) and the examples, which link;
+#   * a test step also reads what its tests read: native-theme-derive's
+#     tests read no file. native-theme's (the desktop they run on),
+#     native-theme-build's (a `cargo check` of a fresh project against
+#     crates.io), showcase-support's (scripts/ at run time) and the
+#     connectors' (the desktop, `cargo metadata`) are not cached;
+#   * no Python check is cached: they read Cargo's registry, the connectors'
+#     sources or every README, which were not traced for this.
+# The reach of the gpui, iced and egui connectors holds the host probes cc
+# and pkg-config, so their steps are refused and run every time.
+# CACHE_HOST_PROBES are the registry build helpers that read the host's
+# libraries or compilers; CACHE_TRUSTED_BUILD_CODE the workspace packages
+# whose build script or procedural macro reads only its own directory
+# (native-theme's build.rs its icons/, native-theme-derive no file);
+# CACHE_REVIEWED_REGISTRY_CODE the registry packages with a build script or
+# a procedural macro that the cached steps' reaches hold, each by name and
+# version, each searched for the programs it runs, the files it reads and
+# the variables it reads: rustc run for its version or features (keyed by
+# `rustc -vV`), Cargo's variables, zerocopy reading its own pinned manifest,
+# libm's ENSURE_NO_PANIC, libc's WIND_RELEASE_ID, LIBC_CI,
+# LIBC_BUILD_VERBOSE, RUST_LIBC_UNSTABLE_* and RUSTC_WRAPPER (keyed with the
+# environment), libc running `emcc -dumpversion` (a cfg of the Emscripten
+# target's code alone) and `freebsd-version` under LIBC_CI, inotify-sys
+# running pkg-config on NetBSD and OpenBSD only, and rustversion's macros
+# reading the clock (for date comparisons a stable toolchain does not
+# evaluate). A reach holding such a package the list does not name is
+# refused, the package named: a Cargo.lock change that adds or moves one
+# runs its steps until the change's review lists it.
+CACHE_HOST_PROBES="pkg-config cc cmake bindgen system-deps vcpkg metadeps"
+CACHE_TRUSTED_BUILD_CODE="native-theme native-theme-derive"
+CACHE_REVIEWED_REGISTRY_CODE=(
+    # Build scripts.
+    "ahash v0.8.12" "async-io v2.6.0" "crc32fast v1.5.1" "crossbeam-utils v0.8.23"
+    "getrandom v0.4.3" "inotify-sys v0.1.8" "libc v0.2.189" "libm v0.2.16"
+    "num-traits v0.2.19" "parking_lot_core v0.9.12" "proc-macro2 v1.0.107" "quote v1.0.47"
+    "rustix v1.1.6" "rustversion v1.0.23" "serde_core v1.0.229" "serde_json v1.0.151"
+    "serde v1.0.229" "slotmap v1.1.1" "thiserror v1.0.69" "thiserror v2.0.20"
+    "unicode-general-category v1.1.0" "zerocopy v0.8.56" "zmij v1.0.23"
+    # Procedural macros (rustversion, above, has both).
+    "async-recursion v1.1.1" "async-trait v0.1.92" "bytemuck_derive v1.12.0" "darling_macro v0.23.0"
+    "enumflags2_derive v0.7.12" "futures-macro v0.3.34" "serde_derive v1.0.229" "serde_repr v0.1.21"
+    "serde_with_macros v3.22.0" "thiserror-impl v1.0.69" "thiserror-impl v2.0.20"
+    "tracing-attributes v0.1.31" "zbus_macros v5.19.0" "zvariant_derive v5.15.0"
+)
+STRICT_PANIC_INPUTS="scripts/check_strict_panic.sh"
+declare -A CACHE_INPUTS=(
+    ["clippy (native-theme, Linux features)"]="@rust:native-theme"
+    ["clippy (native-theme-gpui, native, watch)"]="@rust:native-theme-gpui"
+    ["clippy (native-theme-gpui, gpui-fast, native, watch)"]="@rust:native-theme-gpui"
+    ["clippy (native-theme-gpui, no features)"]="@rust:native-theme-gpui"
+    ["clippy (native-theme-iced, iced_aw, watch, native)"]="@rust:native-theme-iced"
+    ["clippy (native-theme-iced, the showcase's required features)"]="@rust:native-theme-iced"
+    ["clippy (native-theme-egui, all features)"]="@rust:native-theme-egui"
+    ["clippy (native-theme-egui-widgets, all features)"]="@rust:native-theme-egui-widgets"
+    ["strict-panic (native-theme, Linux features)"]="@rust:native-theme $STRICT_PANIC_INPUTS"
+    ["strict-panic (native-theme, no features)"]="@rust:native-theme $STRICT_PANIC_INPUTS"
+    ["strict-panic (native-theme-iced, iced_aw, watch, native)"]="@rust:native-theme-iced $STRICT_PANIC_INPUTS"
+    ["strict-panic (showcase-iced, iced_aw, watch, native)"]="@rust:native-theme-iced $STRICT_PANIC_INPUTS"
+    ["strict-panic (showcase-iced, default features)"]="@rust:native-theme-iced $STRICT_PANIC_INPUTS"
+    ["strict-panic (native-theme-gpui, native, watch)"]="@rust:native-theme-gpui $STRICT_PANIC_INPUTS"
+    ["strict-panic (native-theme-gpui, gpui-fast, native, watch)"]="@rust:native-theme-gpui $STRICT_PANIC_INPUTS"
+    ["strict-panic (showcase-gpui, native, watch)"]="@rust:native-theme-gpui $STRICT_PANIC_INPUTS"
+    ["strict-panic (showcase-gpui, gpui-fast, native, watch)"]="@rust:native-theme-gpui $STRICT_PANIC_INPUTS"
+    ["strict-panic (showcase-egui, all features)"]="@rust:native-theme-egui $STRICT_PANIC_INPUTS"
+    ["strict-panic (showcase-egui, no features)"]="@rust:native-theme-egui $STRICT_PANIC_INPUTS"
+    ["docs (native-theme)"]="@rust:native-theme"
+    ["docs, private items (native-theme, Linux features)"]="@rust:native-theme"
+    ["docs (native-theme-iced, all features)"]="@rust:native-theme-iced"
+    ["docs (native-theme-egui, all features)"]="@rust:native-theme-egui"
+    ["docs (native-theme-egui-widgets, all features)"]="@rust:native-theme-egui-widgets"
+    ["test (native-theme-derive)"]="@rust:native-theme-derive"
+)
+for crate in $WORKSPACE_CRATES; do
+    CACHE_INPUTS["check ($crate)"]="@rust:$crate"
+    CACHE_INPUTS["clippy ($crate)"]="@rust:$crate"
+    CACHE_INPUTS["strict-panic ($crate)"]="@rust:$crate $STRICT_PANIC_INPUTS"
+    CACHE_INPUTS["docs, private items ($crate)"]="@rust:$crate"
+done
+
+# The tool versions every key's base holds.
+cache_tool_versions() {
+    local nextest_version=""
+    if [[ $HAVE_NEXTEST ]]; then
+        nextest_version=$(cargo nextest --version 2>&1)
+    fi
+    rustc -vV 2>&1
+    cargo -vV 2>&1
+    cargo clippy -V 2>&1
+    rustdoc -V 2>&1
+    rustfmt -V 2>&1
+    python3 -VV 2>&1
+    printf "nextest %s\n" "$nextest_version"
+}
+
+# Every key's base: the tool versions, the gate's five scripts (the include
+# helper loads its lexer from check_panic_patterns.py; this script sources
+# msrv_checks.sh) and the environment (step_cache_environment). Returns 1
+# where a script cannot be read or the environment hashed.
+cache_base() {
+    cache_tool_versions
+    sha256sum scripts/check_release.sh scripts/step_cache.sh scripts/step_cache_includes.py \
+        scripts/check_panic_patterns.py scripts/msrv_checks.sh || return 1
+    step_cache_environment || return 1
+}
+
+if [[ $STEP_CACHE ]]; then
+    # shellcheck source=scripts/step_cache.sh
+    source scripts/step_cache.sh
+    cache_label=$(git rev-parse --short HEAD 2>/dev/null || printf "an unknown commit")
+    if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
+        cache_label="$cache_label with uncommitted changes"
+    fi
+    if ! cache_base_text=$(cache_base); then
+        print_info "step cache: off for this run, every step runs: its base could not be computed"
+        STEP_CACHE=""
+    elif ! step_cache_init "target/check-release-cache" "$cache_label" "$cache_base_text" \
+        || ! step_cache_full_metadata; then
+        print_info "step cache: off for this run, every step runs: $STEP_CACHE_OFF_REASON"
+        STEP_CACHE=""
+    else
+        print_info "step cache: on (target/check-release-cache; --no-cache runs every step)"
+    fi
 fi
 if [[ $HAVE_NEXTEST ]]; then
     print_info "test steps: cargo nextest (doctests: cargo test --doc)"
@@ -500,6 +738,12 @@ else
     exit 1
 fi
 run_check "panic-pattern scan: self-test" python3 scripts/check_panic_patterns.py --self-test
+# The step cache's self-test (scripts/step_cache.sh, the include helper's
+# among its cases), before the first step it could skip; --commit alone, as
+# the full run uses no cache.
+if [[ $COMMIT_MODE ]]; then
+    run_check "step cache: self-test" bash scripts/step_cache.sh --self-test
+fi
 
 # native-theme's Linux feature set: every feature with code on Linux
 # (`macos` and `windows` add none there; `linux` is `kde` + `portal`).
@@ -1461,8 +1705,14 @@ fi
 # ─────────────────────────────────────────────────────────────────────────────
 # Final summary
 # ─────────────────────────────────────────────────────────────────────────────
-TOTAL=$((PASS_COUNT + WARN_COUNT + FAIL_COUNT))
+TOTAL=$((PASS_COUNT + WARN_COUNT + FAIL_COUNT + ${#CACHED[@]}))
 ELAPSED_TOTAL=$(format_elapsed "$((SECONDS - SCRIPT_START))")
+# The count of unchanged steps where a cache was on; the full run's line
+# stays as it was.
+UNCHANGED_COUNT=""
+if [[ $STEP_CACHE ]]; then
+    UNCHANGED_COUNT=" · ${#CACHED[@]} unchanged"
+fi
 
 printf "\n${BOLD}═══════════════════════════════════════════════════════════════════${NC}\n"
 
@@ -1484,8 +1734,8 @@ else
     printf "${BOLD}${RED}${ICON_FAIL} FAILED${NC} · native-theme v%s NOT ready for release\n" "$CURRENT_VERSION"
 fi
 
-printf "   ${DIM}%d checks · ${GREEN}%d %s${NC}${DIM} · ${YELLOW}%d %s${NC}${DIM} · ${RED}%d %s${NC}${DIM} · %s total${NC}\n" \
-    "$TOTAL" "$PASS_COUNT" "$ICON_OK" "$WARN_COUNT" "$ICON_WARN" "$FAIL_COUNT" "$ICON_FAIL" "$ELAPSED_TOTAL"
+printf "   ${DIM}%d checks · ${GREEN}%d %s${NC}${DIM} · ${YELLOW}%d %s${NC}${DIM} · ${RED}%d %s${NC}${DIM}%s · %s total${NC}\n" \
+    "$TOTAL" "$PASS_COUNT" "$ICON_OK" "$WARN_COUNT" "$ICON_WARN" "$FAIL_COUNT" "$ICON_FAIL" "$UNCHANGED_COUNT" "$ELAPSED_TOTAL"
 
 if [ "$WARN_COUNT" -gt 0 ]; then
     printf "\n${BOLD}${YELLOW}Warnings (re-summarised):${NC}\n"
@@ -1500,6 +1750,8 @@ if [ "$FAIL_COUNT" -gt 0 ]; then
         printf "   ${RED}${ICON_FAIL}${NC} %s\n" "$f"
     done
 fi
+
+print_cached
 
 if [[ $COMMIT_MODE ]]; then
     printf "\n${BOLD}Skipped (--commit mode):${NC}\n"

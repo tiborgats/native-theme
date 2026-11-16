@@ -302,7 +302,8 @@ There is no verb that writes the stamp without the run.
 
 ## check_release.sh
 
-The workspace's quality gate: source hygiene, `cargo check`, CI's MSRV checks
+The workspace's quality gate: source hygiene, the step cache's self-test (in
+`--commit` only; `step_cache.sh`, below), `cargo check`, CI's MSRV checks
 (`ci.yml`'s `msrv` job, on its two toolchains) and the check that they are the
 job's (these two in `--commit` only; `msrv_checks.sh`, below), the feature
 combinations, the cross-target checks and clippy, fmt, clippy, the strict
@@ -328,15 +329,102 @@ The subset runs before every commit; the full run on the last commit of every
 fix phase and before the release commit. An unknown argument exits 2;
 `--help` prints the usage.
 
-Where `cargo-nextest` is installed, `--commit` runs its test steps through
-`cargo nextest run` (`cargo_tests` in the script), and through
+Two speed-ups apply to `--commit` alone; the full run runs every step through
+`cargo test`, with no cache. Where `cargo-nextest` is installed, the test
+steps run `cargo nextest run` (`cargo_tests` in the script), and
 `cargo test --doc` where `cargo test` would have run doctests too; the
-showcases' tests in CI's runner environment stay on `cargo test`, and the full
-run runs every step through `cargo test`.
+showcases' tests in CI's runner environment stay on `cargo test`. The step
+cache (`step_cache.sh`, below) skips a compile-only or documentation step, or
+native-theme-derive's tests, whose declared inputs are unchanged since it last
+passed; the summary lists each as `unchanged since <commit>`, and `--no-cache`
+runs every step (without `--commit` it exits 2).
 
 ```sh
 ./scripts/check_release.sh --commit
+./scripts/check_release.sh --commit --no-cache
 ./scripts/check_release.sh
+```
+
+## step_cache.sh
+
+The step cache of `check_release.sh --commit`, sourced by it. A step is
+skipped only when the SHA-256 key of its run equals the one recorded when it
+last passed: the base (the tool versions, `rustc -vV`, `cargo -vV`, clippy's,
+rustdoc's, rustfmt's, Python's and nextest's; the hashes of the gate's five
+scripts, `check_release.sh`, `step_cache.sh`, `step_cache_includes.py`,
+`check_panic_patterns.py`, whose lexer the include helper loads, and
+`msrv_checks.sh`; and the environment but `_`, `SHLVL`, `OLDPWD`), the step's
+description and command, and the content of its declared inputs
+(`CACHE_INPUTS` in `check_release.sh`: files, directories and globs by path
+and content, a missing one by name; `__pycache__` folders left out; paths
+sorted bytewise whatever the locale). A failed step records nothing, nor does
+one whose inputs changed while it ran; a step with no declaration always runs.
+The records are in `target/check-release-cache/`, one file per step; a record
+that cannot be written is a warning.
+
+The declared steps are every host-target cargo step that compiles and runs
+nothing (`cargo check`, clippy, the strict panic lints, rustdoc) and
+`native-theme-derive`'s tests. A cargo step's inputs (`@rust:<crates>`) are
+the workspace manifest, lock and tool configuration, nextest's configuration,
+every Cargo configuration file Cargo would read, clippy's configuration in
+each reached package's directory and its ancestors, the directory of each
+workspace package the crates reach on this host with every feature on
+(`cargo tree`), the files those packages include from outside their
+directories (`step_cache_includes.py`, below) and their target sources outside
+them. The reach is refused, and its steps run, where it holds a registry build
+helper that probes the host (`pkg-config`, `cc`, …), a registry package with a
+build script or a procedural macro that `CACHE_REVIEWED_REGISTRY_CODE` in
+`check_release.sh` does not list by name and version (read from `cargo
+metadata --locked` with the dependencies; a read that fails turns the cache
+off for the run), a path package outside the workspace, a workspace build
+script or procedural macro not reviewed for what it reads
+(`CACHE_TRUSTED_BUILD_CODE`), or an include the helper refuses; the run prints
+the reason once per crate set. The gpui, iced and egui connectors reach `cc`
+and `pkg-config`, so their steps run every time; the other seven crates' 34
+steps are skipped on an unchanged tree. A change of `Cargo.lock` that adds or moves
+a registry build script or procedural macro runs the steps whose reach holds
+it until the list names it, after a review of what it runs, reads and is
+configured by.
+
+`--self-test` shows that a declared file edited, added, renamed or removed, a
+glob's new match, the script edited, the command or the environment changed,
+re-run the step, and that a failure records nothing; that a record that
+cannot be written returns an error the caller goes past, that the locale does
+not change a key, and that an unreadable input fails the key in the gate's own
+shell options; it runs the include helper's self-test; and, on a synthetic
+workspace with a stub `cargo`, it shows an include outside its package
+hashed, each refusal of the reach above (a failing `cargo tree` among them), a
+step whose input changes while it runs recording nothing, and a full metadata
+that fails or lists no package keying no step. `check_release.sh --commit`
+runs it.
+
+```sh
+bash scripts/step_cache.sh --self-test
+```
+
+## step_cache_includes.py
+
+The step cache's include scan: given the reached packages' directories, it
+reads every `.rs` file under them (ignored files too, symbolic links
+followed) with comments and literals blanked by `check_panic_patterns.py`'s
+lexer, finds each `include_str!`, `include_bytes!`, `include!` and
+`#[path = …]`, and prints each target outside its including package with the
+including file and line. It accepts a string literal (resolved against the
+including file's directory), a `concat!` of string literals without `..`,
+optionally led by `env!("CARGO_MANIFEST_DIR")` or, in a package whose build
+script is reviewed, `env!("OUT_DIR")`, and, inside a `macro_rules!` body, a
+`concat!` whose other parts are metavariables declared `$name:literal`. An
+include in a macro body counts only where the macro is not exported, its name
+occurs in no other file of the package nor inside another macro's body nor
+in a `use` item, so that it is invoked beside its definition. Anything else
+is refused, as are a literal holding `\`, a `#[path]` or `include!` target
+outside the package, an `include!` of a file not ending in `.rs` and a
+`#[cfg_attr(…, path = …)]`; a refusal refuses the reach, so the step runs.
+Exits 1 on a refusal or a file it cannot read. Its docstring gives each rule's
+reason; `--self-test` checks each on synthetic packages under `target/`.
+
+```sh
+python3 scripts/step_cache_includes.py --self-test
 ```
 
 ## msrv_checks.sh

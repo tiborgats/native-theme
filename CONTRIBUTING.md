@@ -33,7 +33,9 @@ This is the canonical quality gate. In full, it runs, in order: a TODO/FIXME sca
 of every `.rs` file outside `target/`, the panic-pattern scan
 (`scripts/check_panic_patterns.py` and its `--self-test`) of each workspace
 member's `src/` outside its test modules and test-only files (not `build.rs`,
-`examples/`, `tests/` or `benches/`), per-crate `cargo check --all-targets`,
+`examples/`, `tests/` or `benches/`), the step cache's self-test
+(`scripts/step_cache.sh --self-test`; in `--commit` only: the full run uses no
+cache), per-crate `cargo check --all-targets`,
 CI's MSRV checks (`ci.yml`'s `msrv` job: the workspace's `rust-version` and the
 connectors' toolchain, with `RUSTFLAGS=-Dwarnings`; a toolchain not installed
 fails) and the check that they are the job's (`scripts/msrv_checks.sh`; these
@@ -115,8 +117,12 @@ that the audit did not run where no cached database loads. `--commit` needs
 `--commit` is faster than the steps it lists: where `cargo-nextest` is
 installed its test steps run through it (the doctests through
 `cargo test --doc`; the showcases' tests in CI's runner environment stay on
-`cargo test`). The full run does not: every step runs, as listed above,
-through `cargo test`.
+`cargo test`), and a compile-only or documentation step, or
+native-theme-derive's tests, whose declared inputs, tools, environment and
+command are unchanged since it last passed is skipped, the summary naming it
+`unchanged since <commit>` (`scripts/step_cache.sh`; `--no-cache` runs every
+step). The full run uses neither: every step runs, as listed above, through
+`cargo test`.
 
 The script runs the checks of the CI pipeline on the local platform, plus the
 packaging, semver, outdated-dependency and archive-index checks CI does not run.
