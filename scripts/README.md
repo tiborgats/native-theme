@@ -302,7 +302,9 @@ There is no verb that writes the stamp without the run.
 
 ## check_release.sh
 
-The workspace's quality gate: source hygiene, `cargo check`, the feature
+The workspace's quality gate: source hygiene, `cargo check`, CI's MSRV checks
+(`ci.yml`'s `msrv` job, on its two toolchains) and the check that they are the
+job's (these two in `--commit` only; `msrv_checks.sh`, below), the feature
 combinations, the cross-target checks and clippy, fmt, clippy, the strict
 panic lints, the tests, the connectors' other configurations, the showcases'
 tests in CI's runner environment (`run_in_runner_env.sh`, below), the examples,
@@ -330,6 +332,48 @@ fix phase and before the release commit. An unknown argument exits 2;
 ./scripts/check_release.sh --commit
 ./scripts/check_release.sh
 ```
+
+## msrv_checks.sh
+
+CI's MSRV checks, sourced by `check_release.sh`, which runs them in `--commit`
+right after its `cargo check` section; the full run leaves them to `--commit`
+and CI. Sourcing it defines the six checks' arguments and its functions and
+runs nothing. The toolchains are read when the section starts: the
+workspace's `rust-version` from the root `Cargo.toml`, and the connectors'
+toolchain, the second `dtolnay/rust-toolchain@<version>` of `ci.yml`'s `msrv`
+job; an empty read fails the run, naming the file. Then seven steps:
+
+- `MSRV: the six checks are ci.yml's msrv job` (`msrv_ci_check
+  .github/workflows/ci.yml`): the job, read from its header line `  msrv:` to
+  the next job's, may hold only the line shapes it has (`runs-on`, a job-level
+  `env` holding `RUSTFLAGS: -Dwarnings` alone, `steps`, the checkout, the
+  toolchain steps, `run: cargo check …` steps, the system-dependency step,
+  comments and blank lines), its `cargo check` lines must be the six below on
+  their toolchains, in order, the file's top-level keys `name`, `on`, `env`
+  and `jobs`, and its `env` `CARGO_TERM_COLOR: always` alone. A change of
+  `ci.yml` this file does not follow fails here, each difference printed. It
+  can be run on any copy: `bash -c 'source scripts/msrv_checks.sh &&
+  msrv_ci_check <path>'`, from the repository's root.
+- the six checks, `cargo +<toolchain> check …` under `RUSTFLAGS=-Dwarnings`,
+  as the job runs them: on the workspace's
+  `rust-version`, the workspace but the gpui and egui crates with all features,
+  and `native-theme` with its default features; on the connectors' toolchain,
+  the egui crates with all features, and `native-theme-gpui` with its default
+  features, with `native,watch` and with `gpui-fast,native,watch`.
+
+`rustup toolchain list` is read once before the six, each toolchain matched
+exactly as `<version>-<host>` (the host from `rustc -vV`); a toolchain it does
+not list fails its first check without running cargo, naming `rustup
+toolchain install <version>`, and a missing `rustup` fails the first check.
+None is skipped: CI runs them on every push.
+
+Cargo at the workspace's `rust-version` reads no `build.build-dir`, so its two
+checks build in a folder of their own, `<build_directory>/msrv-<major.minor>`
+(`build_directory` from `cargo metadata`, `target/` where it reports none),
+passed as `--target-dir`, the one argument the script adds to the job's. An
+EXIT trap set when the section starts prints the folder's `du -sb` and
+deletes it however the run ends, keeping the run's exit status; a folder a
+killed run left behind is removed before the first check.
 
 ## check_panic_patterns.py
 

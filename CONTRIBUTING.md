@@ -34,6 +34,10 @@ of every `.rs` file outside `target/`, the panic-pattern scan
 (`scripts/check_panic_patterns.py` and its `--self-test`) of each workspace
 member's `src/` outside its test modules and test-only files (not `build.rs`,
 `examples/`, `tests/` or `benches/`), per-crate `cargo check --all-targets`,
+CI's MSRV checks (`ci.yml`'s `msrv` job: the workspace's `rust-version` and the
+connectors' toolchain, with `RUSTFLAGS=-Dwarnings`; a toolchain not installed
+fails) and the check that they are the job's (`scripts/msrv_checks.sh`; these
+two in `--commit` only: the full run leaves them to `--commit` and CI),
 the feature-combination check (`scripts/check_features.sh`: every crate's
 library with no default features, with each feature alone and with all
 features — for `native-theme-gpui` all but `gpui-fast` — failing on a

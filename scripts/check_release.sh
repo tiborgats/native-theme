@@ -36,6 +36,9 @@
 #                  too, and offline falls back to the cached advisory
 #                  database with a warning (the section says how).
 #
+# CI's MSRV job (every `cargo check` it runs, each on its toolchain, -D
+# warnings) runs in --commit; the full run leaves them to --commit and CI.
+#
 # Formatting: `cargo fmt --all` formats the tree in place rather than checking
 # it, by design: the per-commit gate formats what is about to be committed,
 # and CI's `cargo fmt --all --check` refuses what was committed unformatted.
@@ -50,13 +53,13 @@ Usage: scripts/check_release.sh [--commit]
   (no argument)  the full pre-release check; required on the last commit of
                  every fix phase and before the release commit
   --commit       the per-commit subset: every lint, check, test, docs,
-                 widget-coverage, showcase-parity and archive-index gate and
-                 the security audit (offline: the cached advisory database,
-                 a warning); skips the release-tag check, the gpui
-                 connector's tests on GPUI Fast, native-theme's ignored
-                 stem-index test, docs.rs emulation, packaging, semver
-                 checks, outdated dependencies, and the visual-asset and
-                 compatibility stamp checks
+                 widget-coverage, showcase-parity and archive-index gate,
+                 CI's MSRV checks and the security audit (offline: the cached
+                 advisory database, a warning); skips the release-tag check,
+                 the gpui connector's tests on GPUI Fast, native-theme's
+                 ignored stem-index test, docs.rs emulation, packaging,
+                 semver checks, outdated dependencies, and the visual-asset
+                 and compatibility stamp checks
   -h, --help     print this help and exit
 EOF
 }
@@ -71,6 +74,8 @@ for arg in "$@"; do
 done
 
 cd "$(dirname "$0")/.."  # every path below is relative to the repository root
+
+source scripts/msrv_checks.sh
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Colour + icon vocabulary
@@ -426,6 +431,21 @@ print_section "cargo check"
 for crate in $WORKSPACE_CRATES; do
     run_check "check ($crate)" cargo check -p "$crate" --all-targets
 done
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Section: CI's MSRV job
+#
+# scripts/msrv_checks.sh runs every `cargo check` of ci.yml's `msrv` job, each
+# on its toolchain with warnings denied, after checking that they are the
+# job's; a toolchain rustup does not list fails, since a gate nobody runs is
+# not a gate. --commit only: the full run leaves them to --commit and CI. Its
+# EXIT trap deletes the workspace rust-version's build folder (the file's
+# header says why); a later EXIT trap here must be merged into it.
+# ─────────────────────────────────────────────────────────────────────────────
+if [[ $COMMIT_MODE ]]; then
+    print_section "MSRV (CI's msrv job)"
+    msrv_checks
+fi
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: feature combinations
