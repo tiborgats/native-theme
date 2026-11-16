@@ -39,6 +39,13 @@
 # CI's MSRV job (every `cargo check` it runs, each on its toolchain, -D
 # warnings) runs in --commit; the full run leaves them to --commit and CI.
 #
+# Speed in --commit, never in the full run (whose every step runs as it always
+# has, through `cargo test`):
+#   * cargo nextest, where installed, runs its test steps (cargo_tests,
+#     below), each test in a process of its own and every binary's tests in
+#     one pool; `cargo test --doc` keeps the doctests a step would run, and
+#     the showcases' tests in CI's runner environment stay on cargo test.
+#
 # Formatting: `cargo fmt --all` formats the tree in place rather than checking
 # it, by design: the per-commit gate formats what is about to be committed,
 # and CI's `cargo fmt --all --check` refuses what was committed unformatted.
@@ -61,6 +68,10 @@ Usage: scripts/check_release.sh [--commit]
                  semver checks, outdated dependencies, and the visual-asset
                  and compatibility stamp checks
   -h, --help     print this help and exit
+
+With --commit, cargo nextest runs the test steps where it is installed
+(cargo test --doc the doctests; the showcases' runner-environment tests
+stay on cargo test). The full run runs every step through cargo test.
 EOF
 }
 
@@ -240,25 +251,34 @@ _run_tests_impl() {
     local elapsed
     elapsed=$(format_elapsed "$((SECONDS - start))")
 
+    # cargo test's "test result: ok. N passed" per binary and nextest's
+    # "N tests run: N passed" summary (cargo_tests runs both where nextest is
+    # used: nextest the tests, cargo test --doc the doctests).
     local total_passed=0
     if [ "$status" -eq 0 ]; then
         total_passed=$(printf "%s\n" "$output" \
-            | grep -oE 'test result: ok\. [0-9]+ passed' \
-            | awk '{sum += $4} END {print sum+0}')
+            | grep -oE 'test result: ok\. [0-9]+ passed|[0-9]+ tests? run: [0-9]+ passed' \
+            | awk '{sum += $(NF - 1)} END {print sum+0}')
     fi
 
     if [ "$status" -eq 0 ] && [ "$total_passed" -ge "$min_passed" ]; then
         # Successful run: print compact summary (sum passed across binaries).
-        local total_ignored
+        # nextest counts an ignored test as skipped.
+        local total_ignored total_skipped
         total_ignored=$(printf "%s\n" "$output" \
             | grep -oE '[0-9]+ ignored' \
             | awk '{sum += $1} END {print sum+0}')
+        total_skipped=$(printf "%s\n" "$output" \
+            | grep -oE 'tests? run: [0-9]+ passed.*' | grep -oE '[0-9]+ skipped' \
+            | awk '{sum += $1} END {print sum+0}')
         local detail=""
-        if [ "$total_passed" -gt 0 ] || [ "$total_ignored" -gt 0 ]; then
+        if [ "$total_passed" -gt 0 ] || [ "$total_ignored" -gt 0 ] || [ "$total_skipped" -gt 0 ]; then
+            detail=" ${total_passed} passed"
             if [ "$total_ignored" -gt 0 ]; then
-                detail=" ${total_passed} passed, ${total_ignored} ignored"
-            else
-                detail=" ${total_passed} passed"
+                detail="${detail}, ${total_ignored} ignored"
+            fi
+            if [ "$total_skipped" -gt 0 ]; then
+                detail="${detail}, ${total_skipped} skipped"
             fi
         fi
         if [ -n "$detail" ]; then
@@ -284,6 +304,62 @@ _run_tests_impl() {
 
 run_tests()      { _run_tests_impl "$1" 1 "${@:2}"; }
 run_tests_min()  { _run_tests_impl "$2" "$1" "${@:3}"; }
+
+# `cargo test <args>` as a test step runs it. In --commit where cargo-nextest
+# is installed (HAVE_NEXTEST), `cargo nextest run <args>` instead, then
+# `cargo test <args> --doc` where `cargo test <args>` would run doctests (no
+# target selected, a package with a doctested library), so the step runs the
+# tests it ran before. `--no-tests=pass` leaves a run of no test to
+# run_tests' minimum, as with `cargo test`; `--status-level fail` lists the
+# failures alone, the summary line is run_tests' count, and `--color never`
+# keeps colour codes out of it whatever the terminal. RUST_TEST_THREADS caps
+# nextest's test processes as it caps cargo test's threads, unless
+# NEXTEST_TEST_THREADS, nextest's own variable, is set. Arguments for the
+# test binaries (after a `--`) fail the step: no step passes any, and
+# nextest takes libtest's forms differently (it ignores `--skip`).
+cargo_tests() {
+    if [[ ! $HAVE_NEXTEST ]]; then
+        cargo test "$@"
+        return
+    fi
+    local arg
+    for arg in "$@"; do
+        if [ "$arg" = "--" ]; then
+            printf "cargo_tests: no nextest form for test-binary arguments: %s\n" "$*" >&2
+            return 1
+        fi
+    done
+    local threads=()
+    if [ -n "${RUST_TEST_THREADS:-}" ] && [ -z "${NEXTEST_TEST_THREADS:-}" ]; then
+        threads=(--test-threads "$RUST_TEST_THREADS")
+    fi
+    cargo nextest run --no-tests=pass --status-level fail --final-status-level fail \
+        --color never ${threads[@]+"${threads[@]}"} "$@" || return
+    if doctests_selected "$@"; then
+        cargo test "$@" --doc
+    fi
+}
+
+# Whether `cargo test <args>` runs doctests: no target selected, and the
+# package `-p` names has a library target with doctests.
+doctests_selected() {
+    local arg package=""
+    local previous=""
+    for arg in "$@"; do
+        case "$arg" in
+            --lib | --bins | --bin | --bin=* | --tests | --test | --test=* | --examples | --example | \
+                --example=* | --benches | --bench | --bench=* | --all-targets | --doc) return 1 ;;
+        esac
+        if [ "$previous" = "-p" ]; then
+            package="$arg"
+        fi
+        previous="$arg"
+    done
+    [ -n "$package" ] || return 1
+    jq -e --arg name "$package" \
+        'any(.packages[] | select(.name == $name) | .targets[]; .doctest and any(.kind[]; . == "lib" or . == "proc-macro"))' \
+        <<<"$WORKSPACE_METADATA" >/dev/null
+}
 
 # A cargo subcommand the full run needs. A missing one fails with its install
 # command and its section does not run; it is never installed (a check
@@ -333,6 +409,19 @@ if [[ $COMMIT_MODE ]]; then
     printf "\n${BOLD}${ICON_ROCKET} native-theme v%s · per-commit checks (--commit)${NC}\n" "$CURRENT_VERSION"
 else
     printf "\n${BOLD}${ICON_ROCKET} native-theme v%s · pre-release checks${NC}\n" "$CURRENT_VERSION"
+fi
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Speed in --commit: cargo nextest (the header says what it does). The full
+# run leaves HAVE_NEXTEST empty, so cargo_tests is `cargo test` there,
+# whatever is installed.
+# ─────────────────────────────────────────────────────────────────────────────
+HAVE_NEXTEST=""
+if [[ $COMMIT_MODE ]] && cargo nextest --version >/dev/null 2>&1; then
+    HAVE_NEXTEST=1
+fi
+if [[ $HAVE_NEXTEST ]]; then
+    print_info "test steps: cargo nextest (doctests: cargo test --doc)"
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -684,15 +773,15 @@ print_section "Tests"
 # its test list is empty.
 for crate in $WORKSPACE_CRATES; do
     if [ "$crate" = "native-theme-gpui" ]; then
-        run_tests "test ($crate, native, watch)" cargo test -p "$crate" --features native,watch
+        run_tests "test ($crate, native, watch)" cargo_tests -p "$crate" --features native,watch
     elif [ "$crate" = "native-theme-os-probe" ]; then
         probe_min=1
         if ! cargo test -p "$crate" -- --list 2>/dev/null | grep -q ': test$'; then
             probe_min=0
         fi
-        run_tests_min "$probe_min" "test ($crate)" cargo test -p "$crate"
+        run_tests_min "$probe_min" "test ($crate)" cargo_tests -p "$crate"
     else
-        run_tests "test ($crate)" cargo test -p "$crate"
+        run_tests "test ($crate)" cargo_tests -p "$crate"
     fi
 done
 # native-theme with its Linux features ($NT_FEATURES): the loop above runs it
@@ -701,7 +790,7 @@ done
 # and tests/reader_kde.rs. On a host with Breeze and Adwaita installed the
 # tests that need them run too; elsewhere they skip themselves.
 run_tests "test (native-theme, Linux features)" \
-    cargo test -p native-theme --features "$NT_FEATURES"
+    cargo_tests -p native-theme --features "$NT_FEATURES"
 # The freedesktop stem index against freedesktop-icons' unfiltered lookup over
 # the host's installed Breeze and Adwaita themes: `#[ignore]`d for its run time
 # (~30-50 s), so the per-commit subset leaves it to the full run. On a host
@@ -722,7 +811,7 @@ fi
 # include `svg-rasterize`; its tests for the SVG path without rasterization only
 # compile without it.
 run_tests "test (native-theme-gpui, no features)" \
-    cargo test -p native-theme-gpui --lib --no-default-features
+    cargo_tests -p native-theme-gpui --lib --no-default-features
 # The gpui connector on GPUI Fast, with `native` and `watch` as above: a
 # second GPUI core and platform layer to build, so the per-commit subset
 # leaves it to the full run and CI. Doctests excluded: each is a crate of its
@@ -732,7 +821,7 @@ if [[ $COMMIT_MODE ]]; then
     print_skipped "test (native-theme-gpui, gpui-fast, native, watch)"
 else
     run_tests "test (native-theme-gpui, gpui-fast, native, watch)" \
-        cargo test -p native-theme-gpui --features gpui-fast,native,watch --all-targets
+        cargo_tests -p native-theme-gpui --features gpui-fast,native,watch --all-targets
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -754,9 +843,9 @@ fi
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "iced connector configurations"
 run_tests "test (native-theme-iced, no features)" \
-    cargo test -p native-theme-iced --no-default-features
+    cargo_tests -p native-theme-iced --no-default-features
 run_tests "test (native-theme-iced, iced_aw, watch, native)" \
-    cargo test -p native-theme-iced --features iced_aw,watch,native
+    cargo_tests -p native-theme-iced --features iced_aw,watch,native
 run_check "clippy (native-theme-iced, iced_aw, watch, native)" \
     cargo clippy -p native-theme-iced --all-targets --features iced_aw,watch,native -- -D warnings
 # The `Spinner` without the bundled icon sets: the showcase's required
@@ -777,9 +866,9 @@ run_check "clippy (native-theme-iced, the showcase's required features)" \
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "egui connector configurations"
 run_tests "test (native-theme-egui, no features)" \
-    cargo test -p native-theme-egui --no-default-features
+    cargo_tests -p native-theme-egui --no-default-features
 run_tests "test (native-theme-egui, all features)" \
-    cargo test -p native-theme-egui --all-features
+    cargo_tests -p native-theme-egui --all-features
 run_check "clippy (native-theme-egui, all features)" \
     cargo clippy -p native-theme-egui --all-targets --all-features -- -D warnings
 run_check "one skrifa (native-theme-egui)" \
@@ -787,9 +876,9 @@ run_check "one skrifa (native-theme-egui)" \
 # The companion widget crate forwards the connector's features one to one, so it
 # has the same two further configurations.
 run_tests "test (native-theme-egui-widgets, no features)" \
-    cargo test -p native-theme-egui-widgets --no-default-features
+    cargo_tests -p native-theme-egui-widgets --no-default-features
 run_tests "test (native-theme-egui-widgets, all features)" \
-    cargo test -p native-theme-egui-widgets --all-features
+    cargo_tests -p native-theme-egui-widgets --all-features
 run_check "clippy (native-theme-egui-widgets, all features)" \
     cargo clippy -p native-theme-egui-widgets --all-targets --all-features -- -D warnings
 

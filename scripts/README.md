@@ -328,6 +328,12 @@ The subset runs before every commit; the full run on the last commit of every
 fix phase and before the release commit. An unknown argument exits 2;
 `--help` prints the usage.
 
+Where `cargo-nextest` is installed, `--commit` runs its test steps through
+`cargo nextest run` (`cargo_tests` in the script), and through
+`cargo test --doc` where `cargo test` would have run doctests too; the
+showcases' tests in CI's runner environment stay on `cargo test`, and the full
+run runs every step through `cargo test`.
+
 ```sh
 ./scripts/check_release.sh --commit
 ./scripts/check_release.sh

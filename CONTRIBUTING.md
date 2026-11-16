@@ -112,6 +112,12 @@ audits against the cached database with a warning naming its date, or warns
 that the audit did not run where no cached database loads. `--commit` needs
 `cargo-audit` installed too.
 
+`--commit` is faster than the steps it lists: where `cargo-nextest` is
+installed its test steps run through it (the doctests through
+`cargo test --doc`; the showcases' tests in CI's runner environment stay on
+`cargo test`). The full run does not: every step runs, as listed above,
+through `cargo test`.
+
 The script runs the checks of the CI pipeline on the local platform, plus the
 packaging, semver, outdated-dependency and archive-index checks CI does not run.
 On Linux it tests `native-theme` with no features and with all its Linux
