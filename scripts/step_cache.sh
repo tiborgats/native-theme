@@ -1,7 +1,9 @@
 #!/bin/bash
 
 # The step cache of scripts/check_release.sh's --commit and --quick modes,
-# sourced by it; the full run never uses it, and --no-cache turns it off.
+# sourced by it in every mode; the full run and --no-cache read no record and
+# record no pass, and a failure in any mode still removes the step's --quick
+# record (step_cache_forget).
 #
 # A step is skipped only when the key of its run equals the key recorded when
 # it last passed. The strict key is a SHA-256 over:
@@ -30,22 +32,30 @@
 # packages are pinned by Cargo.lock; their build scripts and procedural
 # macros run code at compile time, so a reach is refused (the step runs, the
 # reason printed once per crate set) where it holds a registry package that
-# probes the host (CACHE_HOST_PROBES), a registry package with a build script
-# or a procedural macro that CACHE_REVIEWED_REGISTRY_CODE does not list by
-# name and version (read from the full metadata, step_cache_full_metadata), a
-# path package outside the workspace, or a workspace package with a build
-# script or a procedural macro that CACHE_TRUSTED_BUILD_CODE does not list.
-# A full metadata that cannot be read, or lists no package, keys no step.
+# probes the host (CACHE_HOST_PROBES), a crates.io package with a build
+# script or a procedural macro that CACHE_REVIEWED_REGISTRY_CODE does not
+# list by name and version (read from the full metadata,
+# step_cache_full_metadata), a build script or procedural macro from any
+# other source outside the workspace (a git fork, another registry, a
+# [patch]) whatever that list names, a path package outside the workspace, a
+# workspace package with a build script or a procedural macro that
+# CACHE_TRUSTED_BUILD_CODE does not list, or one with a target source outside
+# its directory (the workspace metadata's src_path), which the include scan
+# does not read; and where an input's path holds *, ? or [, which
+# step_cache_inputs would read as a glob. A full metadata that cannot be
+# read, or lists no package, keys no step.
 #
 # The included files: a reached package's code may include files from
-# outside it (include_str!, include_bytes!, include!, #[path]), which its
-# directory does not hold. step_cache_includes runs
+# outside it (include_str!, include_bytes!, include!, #[path], #![path]),
+# which its directory does not hold. step_cache_includes runs
 # scripts/step_cache_includes.py on the reached packages' directories, which
 # reads their code with comments and literals blanked and prints each such
-# target, and the reach adds them to the inputs, with each reached package's
-# target sources outside its directory (the workspace metadata's src_path);
-# an include the helper cannot resolve refuses the reach (its docstring has
-# the rules).
+# target, and the reach adds them to the inputs; an include the helper
+# cannot resolve refuses the reach, and so do a #[path] to a file not ending
+# in .rs, a `use` item naming include_str, include_bytes or include, another
+# include_<word>! macro, a macro invocation literal starting or ending with
+# ., a char literal in a macro invocation and, in a concat! with a
+# metavariable, a string literal ending with . (its docstring has the rules).
 #
 # The --quick key (step_cache_key --quick) is the key of a test or docs step
 # the strict key does not decide, and of the two MSRV checks at the
@@ -62,14 +72,16 @@
 #     matches, by path and content: the manifests, the lock, Cargo's
 #     configuration, docs/*.toml and every script, the gate's own among them;
 #   * the reach (rust_reach --quick): the strict one's, without its refusals
-#     for registry code that reads the host (CACHE_HOST_PROBES,
-#     CACHE_REVIEWED_REGISTRY_CODE), which --quick leaves to --commit; a path
-#     package outside the workspace, an unreviewed workspace build script or
-#     procedural macro and an include the helper refuses still refuse it.
+#     for build code outside the workspace (CACHE_HOST_PROBES,
+#     CACHE_REVIEWED_REGISTRY_CODE, the other sources), which --quick leaves
+#     to --commit; a path package outside the workspace, an unreviewed
+#     workspace build script or procedural macro, a target source outside
+#     its package, a path holding *, ? or [ and an include the helper refuses
+#     still refuse it.
 # It follows nothing outside the repository but the environment and the
 # tools: the host's desktop files, fonts, icon themes and libraries, the
 # network and the clock can change a skipped test's verdict, which the next
-# --commit checks.
+# --commit checks; so can a run-time read of a file QUICK_UNREAD matches.
 #
 # Every function here that pipes sees a failure inside the pipe, so that a
 # file that cannot be read, or a failing find or sha256sum, fails the key
@@ -87,8 +99,11 @@
 # step_cache_quick_inputs <crates> <array name>; step_cache_key [--quick]
 # <description> <inputs...> -- <command...> (prints the key), step_cache_hit
 # [--quick] <description> <key> (prints the label recorded, returns 1 on a
-# miss) and step_cache_record [--quick] <description> <key> (returns 1 where
-# the record cannot be written). The reach's refusals are queued in
+# miss), step_cache_record [--quick] <description> <key> (returns 1 where
+# the record cannot be written) and step_cache_forget [--quick]
+# <description> (removes its record; returns 1 where it cannot), which needs
+# no step_cache_init where the caller sets STEP_CACHE_DIR itself, as
+# check_release.sh does in every mode. The reach's refusals are queued in
 # STEP_CACHE_NOTES for the caller to print, each text once a run.
 #
 #   scripts/step_cache.sh --self-test
@@ -96,20 +111,34 @@
 # runs the self-test: a step re-runs after any declared input, the base (the
 # script's own hash among it), the command or the environment changes, and a
 # failed step records nothing; a record that cannot be written returns 1 and
-# the caller goes on; the locale does not change a key; a file that cannot be
-# read fails the inputs and the key, in the gate's own shell options; the
-# --quick environment follows every variable but the deny-list's, split at
-# NUL; the include helper's self-test; on a synthetic workspace, an include
-# outside its package is hashed in both keys, a non-literal one, a failing
-# `cargo tree`, an unreviewed workspace build script and a path package
-# outside the workspace refuse both reaches, a host probe and an unlisted
-# registry build script the strict one alone, the --quick base follows the
-# files outside the packages but QUICK_UNREAD's and fails where git cannot
-# list them, the two record sets are apart, a step whose input changes while
-# it runs records nothing in either, a full metadata that fails or lists no
-# package keys no step, and a command's crates are its -p crates or the
-# workspace's members but its --exclude ones.
+# the caller goes on; a record removed (step_cache_forget, STEP_CACHE_DIR
+# set alone) is a miss, no record to remove is no error, and one in a folder
+# that cannot be written returns 1 and stays; the locale does not change a
+# key; a file that cannot be read fails the inputs and the key, in the
+# gate's own shell options; the --quick environment follows every variable
+# but the deny-list's, split at NUL; the include helper's self-test; on a
+# synthetic workspace, an include outside its package is hashed in both
+# keys, a non-literal one, a failing `cargo tree`, an unreviewed workspace
+# build script (a jq failing on its query too), a path package outside the
+# workspace, a path holding [ (a package directory, an include target, a
+# configuration file) and a target source outside its package refuse both
+# reaches, a host probe, an unlisted registry build script (a listed one at
+# another version too) and build code from a git source refuse the strict
+# one and not the --quick one, which has no refusal for build code outside
+# the workspace, a strict refusal's note in --quick says what the --quick
+# key may still skip, or, the --quick set off, that the steps run, a
+# configuration file's edit changes the key, the gate's order of the two
+# reaches holds, the --quick base follows the files outside the packages but
+# QUICK_UNREAD's (a path holding [, a quote and a tab, or a newline, read as
+# itself) and fails where git cannot list them or lists no
+# Cargo.toml or scripts/step_cache.sh, the two record sets are apart, a step
+# whose input changes while it runs records nothing in either, a full
+# metadata that fails or lists no package keys no step, an empty base keys
+# none, and a command's crates are its -p crates or the workspace's members
+# but its --exclude ones, and none where it has neither.
 
+# The cache directory: step_cache_init sets it, or the caller, where it only
+# removes records (step_cache_forget).
 STEP_CACHE_DIR=""
 STEP_CACHE_LABEL=""
 STEP_CACHE_BASE=""
@@ -117,10 +146,17 @@ STEP_CACHE_BASE=""
 # empty otherwise, when no key is computed. STEP_CACHE_OFF_REASON says why.
 STEP_CACHE_STRICT=""
 STEP_CACHE_OFF_REASON=""
-STEP_CACHE_FULL_METADATA=""
-# The registry packages with a build script or a procedural macro, a line
+# The crates.io packages with a build script or a procedural macro, a line
 # "<name> v<version>" each, from the full metadata.
 STEP_CACHE_REGISTRY_BUILD_CODE=""
+# The same of every other source outside the workspace: a git fork, another
+# registry, a [patch] (CACHE_REVIEWED_REGISTRY_CODE matches none of them).
+STEP_CACHE_OTHER_BUILD_CODE=""
+# 1 where the caller looks the --quick set up (check_release.sh's --quick):
+# while that set is on (STEP_CACHE_QUICK), a strict reach's refusal then
+# says that no strict key is computed, since the --quick key may still skip
+# the crates' test and docs steps and the rust-version MSRV checks.
+STEP_CACHE_QUICK_LOOKUP=""
 STEP_CACHE_NOTES=()
 declare -gA STEP_CACHE_NOTED=()
 # 1 once step_cache_init_quick has succeeded; empty otherwise, when no
@@ -130,6 +166,8 @@ STEP_CACHE_QUICK_BASE=""
 STEP_CACHE_QUICK_OFF_REASON=""
 # The cargo every call here runs (the self-test puts a stub in its place).
 STEP_CACHE_CARGO=cargo
+# crates.io's source as cargo metadata names it, whichever protocol fetched it.
+STEP_CACHE_CRATES_IO="registry+https://github.com/rust-lang/crates.io-index"
 declare -gA RUST_REACH=()
 declare -gA RUST_REACH_QUICK=()
 declare -gA STEP_CACHE_TREE=()
@@ -220,28 +258,32 @@ step_cache_full_metadata() {
     step_cache_set_full_metadata "$metadata"
 }
 
-# Takes $1 as the full metadata and reads its registry packages with a build
-# script or a procedural macro. Returns 1, STEP_CACHE_STRICT emptied and the
+# Takes $1 as the full metadata and reads its packages outside the workspace
+# with a build script or a procedural macro: those from crates.io and those
+# from any other source apart. Returns 1, STEP_CACHE_STRICT emptied and the
 # reason in STEP_CACHE_OFF_REASON, where it lists no package or jq cannot
 # read it.
 step_cache_set_full_metadata() {
-    local build_code
-    STEP_CACHE_FULL_METADATA=""
+    local build_code other_build_code
+    local build_packages='.packages[] | select(.source != null)
+        | select(any(.targets[]; any(.kind[]; . == "custom-build" or . == "proc-macro")))'
     STEP_CACHE_REGISTRY_BUILD_CODE=""
+    STEP_CACHE_OTHER_BUILD_CODE=""
     if ! jq -e '(.packages | length) > 0' <<<"$1" >/dev/null 2>&1; then
         STEP_CACHE_STRICT=""
         STEP_CACHE_OFF_REASON="the full metadata (cargo metadata --locked) lists no package"
         return 1
     fi
-    if ! build_code=$(jq -r '.packages[] | select(.source != null)
-        | select(any(.targets[]; any(.kind[]; . == "custom-build" or . == "proc-macro")))
-        | "\(.name) v\(.version)"' <<<"$1"); then
+    if ! build_code=$(jq -r "$build_packages"' | select(.source == $crates_io) | "\(.name) v\(.version)"' \
+        --arg crates_io "$STEP_CACHE_CRATES_IO" <<<"$1") \
+        || ! other_build_code=$(jq -r "$build_packages"' | select(.source != $crates_io) | "\(.name) v\(.version)"' \
+            --arg crates_io "$STEP_CACHE_CRATES_IO" <<<"$1"); then
         STEP_CACHE_STRICT=""
         STEP_CACHE_OFF_REASON="the full metadata's registry packages could not be read"
         return 1
     fi
-    STEP_CACHE_FULL_METADATA="$1"
     STEP_CACHE_REGISTRY_BUILD_CODE="$build_code"
+    STEP_CACHE_OTHER_BUILD_CODE="$other_build_code"
 }
 
 # The environment as part of a base: every variable but those bash sets per
@@ -297,17 +339,34 @@ step_cache_quick_environment() {
 # (step_cache_quick_environment) and the content of every file `git ls-files
 # -co --exclude-standard` lists outside the workspace packages' directories
 # (WORKSPACE_METADATA) but those QUICK_UNREAD matches, by path and content
-# (step_cache_inputs), run from the repository's root. Where git cannot list
-# them (no git work tree), lists a path it has to quote (one holding a
-# control character, a quote or a backslash, which no file is read by), or a
-# file cannot be read, prints the reason and returns 1.
+# (step_cache_inputs --literal), run from the repository's root; the listing
+# read NUL-separated (`git ls-files -z`), so a path holding a quote, a
+# control character or a backslash is read as itself. Where git cannot list
+# them (no git work tree), lists no root Cargo.toml or no
+# scripts/step_cache.sh (a folder another repository ignores, where git
+# lists nothing and exits 0), or a file cannot be read, prints the reason
+# and returns 1.
 step_cache_quick_base() {
     local -
     set -o pipefail
-    local listing package_dirs path dir pattern environment files_hash base
-    local -a dirs=() files=()
-    if ! listing=$(git -c core.quotePath=off ls-files -co --exclude-standard 2>/dev/null); then
+    local package_dirs path dir pattern environment files_hash base status
+    local -a dirs=() files=() listing=()
+    # The listing's last entry is git's exit status: a process substitution's
+    # status is not the caller's.
+    mapfile -d '' -t listing < <(git ls-files -z -co --exclude-standard 2>/dev/null; printf 'status %s\0' "$?")
+    status="${listing[-1]-}"
+    unset 'listing[-1]'
+    if [ "$status" != "status 0" ]; then
         printf "git ls-files failed (no git work tree?)"
+        return 1
+    fi
+    local has_manifest="" has_script=""
+    for path in ${listing[@]+"${listing[@]}"}; do
+        [ "$path" = Cargo.toml ] && has_manifest=1
+        [ "$path" = scripts/step_cache.sh ] && has_script=1
+    done
+    if [[ ! $has_manifest || ! $has_script ]]; then
+        printf "git ls-files does not list Cargo.toml and scripts/step_cache.sh (not the repository's root?)"
         return 1
     fi
     if ! package_dirs=$(jq -r --arg root "$PWD/" \
@@ -317,27 +376,21 @@ step_cache_quick_base() {
         return 1
     fi
     mapfile -t dirs <<<"$package_dirs"
-    if [ -n "$listing" ]; then
-        while IFS= read -r path; do
-            if [[ $path == \"* ]]; then
-                printf "git ls-files lists a path it quotes: %s" "$path"
-                return 1
-            fi
-            for pattern in "${QUICK_UNREAD[@]}"; do
-                # shellcheck disable=SC2053  # the pattern is a glob
-                [[ $path == $pattern ]] && continue 2
-            done
-            for dir in "${dirs[@]}"; do
-                [[ $path == "$dir"/* ]] && continue 2
-            done
-            files+=("$path")
-        done <<<"$listing"
-    fi
+    for path in ${listing[@]+"${listing[@]}"}; do
+        for pattern in "${QUICK_UNREAD[@]}"; do
+            # shellcheck disable=SC2053  # the pattern is a glob
+            [[ $path == $pattern ]] && continue 2
+        done
+        for dir in "${dirs[@]}"; do
+            [[ $path == "$dir"/* ]] && continue 2
+        done
+        files+=("$path")
+    done
     if ! environment=$(step_cache_quick_environment); then
         printf "the environment could not be hashed"
         return 1
     fi
-    if ! files_hash=$(step_cache_inputs ${files[@]+"${files[@]}"}); then
+    if ! files_hash=$(step_cache_inputs --literal ${files[@]+"${files[@]}"}); then
         printf "a file outside the workspace packages could not be read"
         return 1
     fi
@@ -354,13 +407,19 @@ step_cache_quick_base() {
 
 # The content hash of the inputs $@: a directory's files (symbolic links
 # followed) by path and content, a file by path and content, a glob's
-# matches, a missing input by name. Returns 1 where an input cannot be read.
+# matches, a missing input by name. `--literal` first: every input is a
+# path, none a glob (the --quick base's paths, which git lists). Returns 1
+# where an input cannot be read.
 step_cache_inputs() {
     local -
     set -o pipefail
-    local input match matches sorted
+    local input match matches sorted literal=""
+    if [ "${1-}" = "--literal" ]; then
+        literal=1
+        shift
+    fi
     for input in "$@"; do
-        if [[ "$input" == *[*?[]* ]]; then
+        if [[ ! $literal && "$input" == *[*?[]* ]]; then
             mapfile -t matches < <(compgen -G "$input")
             if [ "${#matches[@]}" -eq 0 ]; then
                 printf 'missing %s\n' "$input"
@@ -465,6 +524,20 @@ step_cache_record() {
     fi
 }
 
+# Removes the record of the step $1, where there is one; returns 1 where it
+# cannot be removed. `--quick` first: in the --quick set. Nothing where no
+# cache directory is set (STEP_CACHE_DIR); no step_cache_init is needed.
+step_cache_forget() {
+    local file quick=()
+    if [ "$1" = "--quick" ]; then
+        quick=(--quick)
+        shift
+    fi
+    [ -n "$STEP_CACHE_DIR" ] || return 0
+    file=$(step_cache_file ${quick[@]+"${quick[@]}"} "$1") || return 1
+    rm -f "$file" 2>/dev/null && [ ! -e "$file" ]
+}
+
 # The inputs CACHE_INPUTS declares for the step $1, into the array named $2:
 # its paths and globs, each `@rust:<crate>[,<crate>...]` standing for what a
 # cargo step on those crates reads (rust_reach). Returns 1 where a reach is
@@ -524,15 +597,18 @@ rust_reach() {
     fi
     [[ $STEP_CACHE_STRICT ]] || return 1
     if [[ -z "${RUST_REACH[$1]+set}" ]]; then
-        local reach
+        local reach refused="not keyed, its steps run"
+        if [[ $STEP_CACHE_QUICK_LOOKUP && $STEP_CACHE_QUICK ]]; then
+            refused="no strict key is computed (the --quick key may still skip its test and docs steps and the rust-version MSRV checks)"
+        fi
         if ! step_cache_cargo_tree "$1"; then
             RUST_REACH[$1]="!"
-            step_cache_note "$1: not keyed, its steps run: cargo tree failed"
+            step_cache_note "$1: $refused: cargo tree failed"
         elif reach=$(rust_reach_resolve "$1"); then
             RUST_REACH[$1]="$reach"
         else
             RUST_REACH[$1]="!"
-            step_cache_note "$1: not keyed, its steps run: ${reach:-its reach could not be resolved}"
+            step_cache_note "$1: $refused: ${reach:-its reach could not be resolved}"
         fi
     fi
     [ "${RUST_REACH[$1]}" != "!" ]
@@ -618,14 +694,18 @@ step_cache_cargo_tree() {
 
 # Prints the inputs of the crates $1's reach, one per line: the
 # configuration (rust_config_inputs), the reached workspace packages'
-# directories, the files they include from outside them
-# (step_cache_includes) and their target sources outside their directories.
-# Refused (prints the reason, returns 1) where the tree (step_cache_cargo_tree)
-# holds a host probe, an unlisted registry build script or procedural macro,
-# a path package outside the workspace or an untrusted workspace build
-# script or procedural macro, or where an include cannot be resolved.
-# `--quick` first: the --quick key's form, which leaves the host probes and
-# the registry build code to --commit and refuses only for the others.
+# directories and the files they include from outside them
+# (step_cache_includes). Refused (prints the reason, returns 1) where the
+# tree (step_cache_cargo_tree) holds a host probe, build code (a build script
+# or a procedural macro) from a source other than crates.io, crates.io build
+# code CACHE_REVIEWED_REGISTRY_CODE does not list by name and version, a path
+# package outside the workspace, an untrusted workspace build script or
+# procedural macro, or a workspace package with a target source outside its
+# directory, which the include scan does not read; where an include cannot
+# be resolved; or where an input's path holds *, ? or [, which
+# step_cache_inputs would read as a glob. `--quick` first: the --quick key's
+# form, which leaves the host probes and the build code outside the
+# workspace to --commit and refuses only for the others.
 rust_reach_resolve() {
     local -
     set -o pipefail
@@ -635,7 +715,7 @@ rust_reach_resolve() {
         shift
     fi
     local tree="${STEP_CACHE_TREE[$1]#+}"
-    local found locals name path relative sources source includes
+    local found locals name path relative sources includes config line has_build_code
     local dirs=() helper_args=()
     if [[ ! $quick ]]; then
         if ! found=$(awk -v list="$CACHE_HOST_PROBES" \
@@ -646,6 +726,16 @@ rust_reach_resolve() {
         fi
         if [ -n "$found" ]; then
             printf "its reach holds the host probe(s) %s (CACHE_HOST_PROBES)" "$found"
+            return 1
+        fi
+        if ! found=$(awk -v code="$STEP_CACHE_OTHER_BUILD_CODE" \
+            'BEGIN {n = split(code, a, "\n"); for (i = 1; i <= n; i++) other[a[i]] = 1}
+            {p = $1 " " $2} (p in other) && !seen[p]++ {printf "%s%s", (c++ ? ", " : ""), p}' <<<"$tree"); then
+            printf "its tree could not be read"
+            return 1
+        fi
+        if [ -n "$found" ]; then
+            printf "its reach holds build code from a source other than crates.io: %s" "$found"
             return 1
         fi
         if ! found=$(awk -v code="$STEP_CACHE_REGISTRY_BUILD_CODE" \
@@ -682,9 +772,9 @@ rust_reach_resolve() {
         relative="${path#"$PWD"/}"
         if [[ " $CACHE_TRUSTED_BUILD_CODE " == *" $name "* ]]; then
             helper_args+=(--trusted "$relative")
-        elif jq -e --arg name "$name" \
+        elif ! has_build_code=$(jq --arg name "$name" \
             'any(.packages[] | select(.name == $name) | .targets[]; any(.kind[]; . == "custom-build" or . == "proc-macro"))' \
-            <<<"$WORKSPACE_METADATA" >/dev/null; then
+            <<<"$WORKSPACE_METADATA") || [ "$has_build_code" != false ]; then
             printf "its reach holds %s, whose build script or procedural macro CACHE_TRUSTED_BUILD_CODE does not list" \
                 "$name"
             return 1
@@ -699,16 +789,24 @@ rust_reach_resolve() {
             return 1
         fi
         if [ -n "$sources" ]; then
-            while IFS= read -r source; do
-                dirs+=("${source#"$PWD"/}")
-            done <<<"$sources"
+            sources="${sources%%$'\n'*}"
+            printf "its reach holds %s, whose target source %s lies outside its directory" "$name" "${sources#"$PWD"/}"
+            return 1
         fi
     done <<<"$locals"
     if ! includes=$(step_cache_includes "${helper_args[@]}"); then
         printf "%s" "$includes"
         return 1
     fi
-    rust_config_inputs "${dirs[@]}" || return 1
+    config=$(rust_config_inputs "${dirs[@]}") || return 1
+    for line in "${dirs[@]}" ${includes:+"$includes"} "$config"; do
+        if [[ $line == *[*?[]* ]]; then
+            line=$(grep -m 1 '[*?[]' <<<"$line")
+            printf "its reach holds a path with *, ? or [, which its inputs would read as a glob: %s" "$line"
+            return 1
+        fi
+    done
+    printf "%s\n" "$config"
     printf "%s\n" "${dirs[@]}"
     if [ -n "$includes" ]; then
         printf "%s\n" "$includes"
@@ -870,6 +968,41 @@ step_cache_self_test() {
         check "a cache folder that cannot be written: the record" "$found" "returned 1, went on" ran
     fi
     chmod u+w "$dir/locked-cache"
+    # An empty base: the strict set off with its reason, no key, the
+    # directory and the label set all the same (step_cache_init_quick reads
+    # the directory).
+    found=$(status=0; step_cache_init "$dir/empty-base-cache" "empty-label" "" || status=$?
+        printf "%s; %s; %s; %s; %s; " "$status" "${STEP_CACHE_STRICT:-off}" "$STEP_CACHE_OFF_REASON" \
+            "${STEP_CACHE_DIR#"$dir"/}" "$STEP_CACHE_LABEL"
+        step_cache_key "a step" -- true || printf "no key")
+    check "step_cache_init with an empty base: the strict set off, no key" "$found" \
+        "1; off; its base could not be computed; empty-base-cache; empty-label; no key" ran
+    # A failed step's --quick record removed (step_cache_forget), with
+    # STEP_CACHE_DIR set alone, as check_release.sh sets it in every mode: a
+    # record, forgotten, is a miss; with no record, nothing to remove; a
+    # folder that cannot be written returns 1, the record kept.
+    found=$(STEP_CACHE_DIR="$dir/forget-cache"; mkdir -p "$dir/forget-cache/quick"
+        step_cache_record --quick "a step" "k1" && step_cache_hit --quick "a step" "k1" >/dev/null && printf "recorded; "
+        status=0; step_cache_forget --quick "a step" || status=$?
+        printf "forgotten, status %s; " "$status"
+        if step_cache_hit --quick "a step" "k1" >/dev/null; then printf "found"; else printf "a miss"; fi)
+    check "step_cache_forget: a record, forgotten, is a miss" "$found" "recorded; forgotten, status 0; a miss" ran
+    found=$(STEP_CACHE_DIR="$dir/forget-cache"; status=0; step_cache_forget --quick "no such step" || status=$?
+        printf "status %s" "$status")
+    check "step_cache_forget with no record: status 0" "$found" "status 0" ran
+    mkdir -p "$dir/locked-forget/quick"
+    (STEP_CACHE_DIR="$dir/locked-forget"; step_cache_record --quick "a step" "k1")
+    chmod a-w "$dir/locked-forget/quick"
+    if [ -w "$dir/locked-forget/quick" ]; then
+        printf "  skip  step_cache_forget in a folder that cannot be written: this user writes it all the same\n"
+    else
+        found=$(set -e; STEP_CACHE_DIR="$dir/locked-forget"; step_cache_forget --quick "a step" \
+            || printf "returned %s, " "$?"
+            if step_cache_hit --quick "a step" "k1" >/dev/null; then printf "the record kept"; else printf "the record gone"; fi)
+        check "step_cache_forget in a folder that cannot be written: returns 1, the record kept" "$found" \
+            "returned 1, the record kept" ran
+    fi
+    chmod u+w "$dir/locked-forget/quick"
     # 2. The locale: B.txt and a.txt, which en_US.UTF-8 sorts otherwise than
     # C, give one hash under both.
     mkdir -p "$dir/locale"
@@ -1036,12 +1169,15 @@ step_cache_self_test_quick_environment() {
 # check_release.sh runs from the repository's root. Returns 1 on a failed
 # case.
 step_cache_self_test_reach() {
-    local dir="$1" failures=0 ws="$1/ws" package members="" full
-    mkdir -p "$ws/docs" "$dir/trees" "$dir/outside/g/src"
-    for package in a b c d e f; do
-        mkdir -p "$ws/$package/src"
-        printf '[package]\nname = "%s"\n' "$package" >"$ws/$package/Cargo.toml"
-        printf '\n' >"$ws/$package/src/lib.rs"
+    local dir="$1" failures=0 ws="$1/ws" package members="" full package_path
+    local packages=(a b c d e f h i j k)
+    local -A package_dir=([a]=a [b]=b [c]=c [d]=d [e]=e [f]=f [h]="h[1]" [i]=i [j]=j [k]=k)
+    mkdir -p "$ws/docs" "$ws/scripts" "$ws/shared" "$dir/trees" "$dir/outside/g/src"
+    for package in "${packages[@]}"; do
+        package_path="$ws/${package_dir[$package]}"
+        mkdir -p "$package_path/src"
+        printf '[package]\nname = "%s"\n' "$package" >"$package_path/Cargo.toml"
+        printf '\n' >"$package_path/src/lib.rs"
     done
     printf 'const NOTES: &str = include_str!("../../docs/notes.md");\n' >"$ws/a/src/lib.rs"
     printf 'notes\n' >"$ws/docs/notes.md"
@@ -1050,33 +1186,49 @@ step_cache_self_test_reach() {
     printf 'data = 1\n' >"$ws/docs/data.toml"
     printf 'const NOTES: &str = include_str!(NOTES_PATH);\n' >"$ws/b/src/lib.rs"
     printf 'fn main() {}\n' >"$ws/c/build.rs"
-    printf '[workspace]\nmembers = ["a", "b", "c", "d", "e", "f"]\n' >"$ws/Cargo.toml"
+    printf 'fn main() {}\n' >"$ws/shared/i.rs"
+    printf '# the self-test'"'"'s stand-in for the gate'"'"'s script\n' >"$ws/scripts/step_cache.sh"
+    printf '[workspace]\nmembers = ["a", "b", "c", "d", "e", "f", "h[1]", "i", "j", "k"]\n' >"$ws/Cargo.toml"
     printf '\n' >"$ws/Cargo.lock"
     printf '[package]\nname = "g"\n' >"$dir/outside/g/Cargo.toml"
     # The trees: a (an include outside it, a listed registry build script),
     # b (a non-literal include), c (its own build script, untrusted), d (the
     # probe cc), e (an unlisted registry build script), f (a path package
-    # outside the workspace).
+    # outside the workspace), h (its directory h[1] holding a glob
+    # character), i (a target source outside its directory), j (a build
+    # script from a git source, listed by name and version), k (the listed
+    # registry build script at another version).
     printf 'a v0.1.0 (%s/a)\nlisted v1.0.0\n' "$ws" >"$dir/trees/a"
     printf 'b v0.1.0 (%s/b)\n' "$ws" >"$dir/trees/b"
     printf 'c v0.1.0 (%s/c)\n' "$ws" >"$dir/trees/c"
     printf 'd v0.1.0 (%s/d)\ncc v1.0.0\n' "$ws" >"$dir/trees/d"
     printf 'e v0.1.0 (%s/e)\nunlisted v1.0.0\n' "$ws" >"$dir/trees/e"
     printf 'f v0.1.0 (%s/f)\ng v0.1.0 (%s/outside/g)\n' "$ws" "$dir" >"$dir/trees/f"
-    for package in a b c d e f; do
+    printf 'h v0.1.0 (%s/h[1])\n' "$ws" >"$dir/trees/h"
+    printf 'i v0.1.0 (%s/i)\n' "$ws" >"$dir/trees/i"
+    printf 'j v0.1.0 (%s/j)\nforked v1.0.0 (https://example.invalid/forked#0123abcd)\n' "$ws" >"$dir/trees/j"
+    printf 'k v0.1.0 (%s/k)\nlisted v1.0.1\n' "$ws" >"$dir/trees/k"
+    for package in "${packages[@]}"; do
+        package_path="$ws/${package_dir[$package]}"
         members="$members${members:+, }{\"name\": \"$package\", \"version\": \"0.1.0\", \"source\": null,"
-        members="$members \"manifest_path\": \"$ws/$package/Cargo.toml\","
-        members="$members \"targets\": [{\"kind\": [\"lib\"], \"src_path\": \"$ws/$package/src/lib.rs\"}"
+        members="$members \"manifest_path\": \"$package_path/Cargo.toml\","
+        members="$members \"targets\": [{\"kind\": [\"lib\"], \"src_path\": \"$package_path/src/lib.rs\"}"
         if [ "$package" = c ]; then
             members="$members, {\"kind\": [\"custom-build\"], \"src_path\": \"$ws/c/build.rs\"}"
+        fi
+        if [ "$package" = i ]; then
+            members="$members, {\"kind\": [\"bin\"], \"src_path\": \"$ws/shared/i.rs\"}"
         fi
         members="$members]}"
     done
     printf '{"packages": [%s]}\n' "$members" >"$dir/workspace.json"
-    full=$(printf '{"packages": [%s, %s, %s, %s]}\n' "$members" \
-        '{"name": "listed", "version": "1.0.0", "source": "registry+https://example.invalid", "targets": [{"kind": ["custom-build"]}]}' \
-        '{"name": "unlisted", "version": "1.0.0", "source": "registry+https://example.invalid", "targets": [{"kind": ["custom-build"]}]}' \
-        '{"name": "cc", "version": "1.0.0", "source": "registry+https://example.invalid", "targets": [{"kind": ["lib"]}]}')
+    local crates_io="registry+https://github.com/rust-lang/crates.io-index"
+    full=$(printf '{"packages": [%s, %s, %s, %s, %s, %s]}\n' "$members" \
+        "{\"name\": \"listed\", \"version\": \"1.0.0\", \"source\": \"$crates_io\", \"targets\": [{\"kind\": [\"custom-build\"]}]}" \
+        "{\"name\": \"listed\", \"version\": \"1.0.1\", \"source\": \"$crates_io\", \"targets\": [{\"kind\": [\"custom-build\"]}]}" \
+        "{\"name\": \"unlisted\", \"version\": \"1.0.0\", \"source\": \"$crates_io\", \"targets\": [{\"kind\": [\"custom-build\"]}]}" \
+        '{"name": "forked", "version": "1.0.0", "source": "git+https://example.invalid/forked#0123abcd", "targets": [{"kind": ["custom-build"]}]}' \
+        "{\"name\": \"cc\", \"version\": \"1.0.0\", \"source\": \"$crates_io\", \"targets\": [{\"kind\": [\"lib\"]}]}")
     printf '%s\n' "$full" >"$dir/full.json"
     printf '{"packages": []}\n' >"$dir/empty.json"
     printf 'full.json\n' >"$dir/metadata-file"
@@ -1101,6 +1253,18 @@ case "$1" in
 esac
 STUB
     chmod +x "$dir/cargo-stub"
+    mkdir -p "$dir/jq-fail"
+    command -v jq >"$dir/jq-fail/real-jq" || return 1
+    cat >"$dir/jq-fail/jq" <<'STUB'
+#!/bin/bash
+# The self-test's jq: a workspace package's build-code query fails; every
+# other query runs the real jq.
+for argument in "$@"; do
+    [[ $argument == *'select(.name == $name) | .targets[];'* ]] && exit 1
+done
+exec "$(cat "$(dirname "$0")/real-jq")" "$@"
+STUB
+    chmod +x "$dir/jq-fail/jq"
     local git_test=(step_cache_git -c user.name=step-cache -c user.email=step-cache@invalid
         -c commit.gpgsign=false -c core.hooksPath=/dev/null)
     "${git_test[@]}" init -q "$ws" && "${git_test[@]}" -C "$ws" add -A \
@@ -1120,9 +1284,9 @@ STUB
             # shellcheck disable=SC2034
             CACHE_TRUSTED_BUILD_CODE="a"
             # shellcheck disable=SC2034
-            CACHE_REVIEWED_REGISTRY_CODE=("listed v1.0.0")
+            CACHE_REVIEWED_REGISTRY_CODE=("listed v1.0.0" "forked v1.0.0")
             declare -A CACHE_INPUTS=()
-            for package in a b c d e f; do
+            for package in "${packages[@]}"; do
                 CACHE_INPUTS["check ($package)"]="@rust:$package"
             done
             STEP_CACHE_CARGO="$dir/cargo-stub"
@@ -1219,6 +1383,73 @@ STUB
             "none: c: not keyed, its steps run: its reach holds c, whose build script or procedural macro CACHE_TRUSTED_BUILD_CODE does not list"
         check_reach "the --quick reach: a path package outside the workspace refused" 'key_of_quick f' \
             "none: f: not keyed, its steps run: its reach holds the path package g ($dir/outside/g), outside the workspace"
+        # A path holding *, ? or [ (h's directory h[1]), which the inputs
+        # would read as a glob, a target source outside its package's
+        # directory (i's), which the include scan does not read, refuse both
+        # forms; build code from a git source refuses the strict form though
+        # CACHE_REVIEWED_REGISTRY_CODE lists its name and version (j's), and
+        # so does a listed registry package at another version (k's).
+        check_reach "a reach holding a path with a glob character refused" '
+            printf "%s | %s" "$(key_of h)" "$(key_of_quick h)"' \
+            "none: h: not keyed, its steps run: its reach holds a path with *, ? or [, which its inputs would read as a glob: h[1] | none: h: not keyed, its steps run: its reach holds a path with *, ? or [, which its inputs would read as a glob: h[1]"
+        check_reach "a reach holding a target source outside its package refused" '
+            printf "%s | %s" "$(key_of i)" "$(key_of_quick i)"' \
+            "none: i: not keyed, its steps run: its reach holds i, whose target source shared/i.rs lies outside its directory | none: i: not keyed, its steps run: its reach holds i, whose target source shared/i.rs lies outside its directory"
+        check_reach "a reach holding build code from a git source refused, its name and version listed" '
+            printf "%s | " "$(key_of j)"; k=$(key_of_quick j)
+            if [[ $k == none* ]]; then printf "%s" "$k"; else printf "the --quick form accepted"; fi' \
+            "none: j: not keyed, its steps run: its reach holds build code from a source other than crates.io: forked v1.0.0 | the --quick form accepted"
+        check_reach "a reach holding a listed registry build script at another version refused" '
+            printf "%s | " "$(key_of k)"; q=$(key_of_quick k)
+            if [[ $q == none* ]]; then printf "%s" "$q"; else printf "the --quick form accepted"; fi' \
+            "none: k: not keyed, its steps run: its reach holds registry build code CACHE_REVIEWED_REGISTRY_CODE does not list: listed v1.0.1 | the --quick form accepted"
+        # In --quick (STEP_CACHE_QUICK_LOOKUP), a strict refusal's note says
+        # what the --quick key may still skip while the --quick set is on,
+        # and that the steps run while it is off.
+        check_reach "in --quick, a strict refusal's note: what the --quick key may still skip, or, the --quick set off, that the steps run" '
+            STEP_CACHE_QUICK_LOOKUP=1; printf "%s | " "$(key_of d)"; STEP_CACHE_QUICK=""; key_of d' \
+            "none: d: no strict key is computed (the --quick key may still skip its test and docs steps and the rust-version MSRV checks): its reach holds the host probe(s) cc (CACHE_HOST_PROBES) | none: d: not keyed, its steps run: its reach holds the host probe(s) cc (CACHE_HOST_PROBES)"
+        # The glob check covers every input of the reach, not its package
+        # directories alone: an include target holding [ (a's include of
+        # docs/n[1].md), a configuration path holding [ (CARGO_HOME's).
+        check_reach "a reach whose include target holds [ refused" '
+            printf "n\n" >"docs/n[1].md"
+            printf "const N1: &str = include_str!(\"../../docs/n[1].md\");\n" >>a/src/lib.rs
+            k=$(key_of a); step_cache_git checkout -q -- a/src/lib.rs; rm -f "docs/n[1].md"; printf "%s" "$k"' \
+            "none: a: not keyed, its steps run: its reach holds a path with *, ? or [, which its inputs would read as a glob: docs/n[1].md"
+        check_reach "a reach whose configuration path holds [ refused (CARGO_HOME)" '
+            CARGO_HOME="$dir/home[1]" key_of a' \
+            "none: a: not keyed, its steps run: its reach holds a path with *, ? or [, which its inputs would read as a glob: $dir/home[1]/config"
+        # A jq that fails on a workspace package's build-code query refuses
+        # the reach (jq-fail/jq; every other query runs the real jq).
+        check_reach "a jq that fails on a workspace package's build-code query refuses the reach" '
+            PATH="$dir/jq-fail:$PATH"; key_of_quick e' \
+            "none: e: not keyed, its steps run: its reach holds e, whose build script or procedural macro CACHE_TRUSTED_BUILD_CODE does not list"
+        # A configuration file the reach reads: Cargo.lock edited, a
+        # clippy.toml added in the package, each changes the key.
+        check_reach "a configuration file edited changes the key (Cargo.lock, a new clippy.toml)" '
+            first=$(key_of a); printf "# edited\n" >>Cargo.lock; second=$(key_of a)
+            step_cache_git checkout -q -- Cargo.lock
+            printf "msrv = \"1.0\"\n" >a/clippy.toml; third=$(key_of a); rm -f a/clippy.toml
+            for k in "$second" "$third"; do
+                if [[ $first != none* && $k != none* && $first != "$k" ]]; then printf "changed; "
+                else printf "%s, %s; " "$first" "$k"; fi
+            done' "changed; changed; "
+        # The gate's order, in one shell as step_cached runs it: the strict
+        # reach first, then the --quick form. d's strict reach is refused,
+        # its --quick form accepted from the same cargo tree; a's accepted
+        # strict reach is reused as its --quick one (a marker added to it
+        # shows the reuse).
+        check_reach "the gate's order: a strict refusal, then the --quick form; an accepted strict reach reused" '
+            : >../cargo.log; strict=refused; quick=refused; reused=no
+            cache_inputs "check (d)" step_inputs && strict=accepted
+            step_cache_quick_inputs d step_inputs && quick=accepted
+            cache_inputs "check (a)" step_inputs
+            RUST_REACH[a]+=$'"'"'\nreused-marker'"'"'
+            step_cache_quick_inputs a step_inputs && [ "${step_inputs[-1]}" = reused-marker ] && reused=yes
+            printf "d: strict %s, --quick %s; a: strict reach reused %s; cargo tree runs %s" "$strict" "$quick" \
+                "$reused" "$(grep -c "^tree" ../cargo.log)"' \
+            "d: strict refused, --quick accepted; a: strict reach reused yes; cargo tree runs 2"
         # 8. The two sets: a step recorded in one is found in it and not in
         # the other.
         check_reach "the two sets: a strict record is no --quick one, a --quick record no strict one" '
@@ -1304,6 +1535,50 @@ STUB
             "$found" "none: git ls-files failed (no git work tree?)" ran
     fi
     chmod u+rwx "$ws/.git"
+    # The --quick base's commands $1 in the gate's own shell options, from
+    # the directory $2 (ws/ where empty), with base_of and compared as above.
+    quick_base_run() {
+        # shellcheck disable=SC2016  # the commands run in the child shell
+        step_cache_without_git_environment env GIT_CEILING_DIRECTORIES="$dir" \
+            bash -c 'set -e; set -u; set +o pipefail; source "$1"; cd "$2"
+            WORKSPACE_METADATA=$(cat "$3")
+            base_of() { if ! b=$(step_cache_quick_base "tools 1"); then printf "none: %s" "$b"; else printf "%s" "$b"; fi; }
+            compared() { if [[ $1 == none* || $2 == none* ]]; then printf "%s, %s" "$1" "$2"
+                elif [ "$1" = "$2" ]; then printf "equal"; else printf "changed"; fi; }
+            eval "$4"' _ "$STEP_CACHE_SELF" "${2:-$ws}" "$dir/workspace.json" "$1" 2>&1 \
+            || printf " (the shell ended)"
+    }
+    # A path git lists that holds a glob character, or a quote and a tab, is
+    # read as itself: an edit of either changes the base.
+    # shellcheck disable=SC2016
+    found=$(quick_base_run '
+        printf "x = 1\n" >"docs/x[1].toml"; first=$(base_of); printf "x = 2\n" >"docs/x[1].toml"; second=$(base_of)
+        rm -f "docs/x[1].toml"; printf "%s" "$(compared "$first" "$second")"')
+    check "the --quick base: a file whose path holds [ edited changes it" "$found" "changed" ran
+    # shellcheck disable=SC2016
+    found=$(quick_base_run '
+        name=$'"'"'docs/q"t\tx.toml'"'"'
+        printf "x = 1\n" >"$name"; first=$(base_of); printf "x = 2\n" >"$name"; second=$(base_of)
+        rm -f "$name"; printf "%s" "$(compared "$first" "$second")"')
+    check "the --quick base: a file whose path holds a quote and a tab edited changes it" "$found" "changed" ran
+    # shellcheck disable=SC2016
+    found=$(quick_base_run '
+        name=$'"'"'docs/n\nl.toml'"'"'
+        printf "x = 1\n" >"$name"; first=$(base_of); printf "x = 2\n" >"$name"; second=$(base_of)
+        rm -f "$name"; printf "%s" "$(compared "$first" "$second")"')
+    check "the --quick base: a file whose path holds a newline edited changes it" "$found" "changed" ran
+    # A tree inside another repository's ignored folder: git ls-files exits
+    # 0 and lists nothing, and there is no base.
+    mkdir -p "$dir/outer/ignored"
+    printf '/ignored/\n' >"$dir/outer/.gitignore"
+    "${git_test[@]}" init -q "$dir/outer" && "${git_test[@]}" -C "$dir/outer" add -A \
+        && "${git_test[@]}" -C "$dir/outer" commit -q -m "step cache self-test, the outer repository" || return 1
+    cp -r "$ws" "$dir/outer/ignored/ws"
+    rm -rf "$dir/outer/ignored/ws/.git"
+    # shellcheck disable=SC2016
+    found=$(quick_base_run 'base_of' "$dir/outer/ignored/ws")
+    check "the --quick base where git lists no Cargo.toml or no scripts/step_cache.sh (another repository's ignored folder): none" \
+        "$found" "none: git ls-files does not list Cargo.toml and scripts/step_cache.sh (not the repository's root?)" ran
 
     # 11. The command's crates (step_cache_command_crates, which keys the
     # rust-version MSRV checks), on a synthetic workspace a, b, c of its own,
@@ -1373,6 +1648,12 @@ STUB
     ) || found="the shell ended: $found"
     check "the command's crates: --workspace but its --exclude ones, or its -p ones" "$found" \
         "crates a,b; c edited: the same key; b edited: another key; --exclude b: crates a,c, another key; --exclude d: crates none, key none; -p a -p c: crates a,c" ran
+    found=$(
+        # shellcheck disable=SC2034  # read by step_cache_command_crates
+        WORKSPACE_CRATES=$'a\nb\nc'
+        step_cache_command_crates check --all-features --locked || printf "none (returned %s)" "$?"
+    )
+    check "a command with neither -p nor --workspace: no crates" "$found" "none (returned 1)" ran
     [ "$failures" -eq 0 ]
 }
 

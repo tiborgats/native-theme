@@ -32,6 +32,13 @@ MSRV_CHECK_ARGS_4=(-p native-theme-gpui --locked)
 MSRV_CHECK_ARGS_5=(-p native-theme-gpui --features native,watch --locked)
 MSRV_CHECK_ARGS_6=(-p native-theme-gpui --features gpui-fast,native,watch --locked)
 
+# Set only while a --quick-keyed check runs (msrv_check). One the environment
+# passes in would make every step before the first check an MSRV one to
+# quick_key_kind, and, exported, put the checks' own setting of it into the
+# environment their --quick key hashes: it is unset, export and all.
+unset MSRV_QUICK_TOOLCHAIN
+MSRV_QUICK_TOOLCHAIN=""
+
 # The workspace's rust-version, from the root Cargo.toml.
 msrv_rust_version() {
     grep -E '^rust-version\s*=' Cargo.toml | sed -E 's/.*"([^"]+)".*/\1/'
@@ -253,11 +260,20 @@ msrv_toolchain_installed() {
 }
 
 # One check: $1 = toolchain, $2 = description, $3... = the arguments after
-# `check`. A toolchain the listing lacks fails it without running cargo, and
-# before run_check computes a rust-version check's --quick key, which runs
-# `rustc <toolchain> -vV` (check_release.sh's quick_step_base): rustup may
-# install a toolchain it is asked for.
+# `check`; `--quick-keyed` first marks a check --quick keys (the two at the
+# workspace's rust-version): MSRV_QUICK_TOOLCHAIN holds its toolchain while
+# it runs, which check_release.sh's quick_key_kind and quick_step_base read.
+# A toolchain the listing lacks fails it without running cargo, and before
+# run_check computes a rust-version check's --quick key, which runs `rustc
+# <toolchain> -vV` (quick_step_base): rustup may install a toolchain it is
+# asked for. The check denies warnings through RUSTFLAGS, as the job does,
+# with CARGO_ENCODED_RUSTFLAGS unset, which Cargo would read in its place.
 msrv_check() {
+    local quick_keyed=""
+    if [ "$1" = "--quick-keyed" ]; then
+        quick_keyed=1
+        shift
+    fi
     local toolchain="$1"
     local description="$2"
     shift 2
@@ -267,7 +283,12 @@ msrv_check() {
         printf "${RED}   %s${NC}\n" "$reason" >&2
         exit 1
     fi
-    run_check "$description" env RUSTFLAGS=-Dwarnings cargo "$toolchain" check "$@"
+    MSRV_QUICK_TOOLCHAIN=""
+    if [[ $quick_keyed ]]; then
+        MSRV_QUICK_TOOLCHAIN="$toolchain"
+    fi
+    run_check "$description" env -u CARGO_ENCODED_RUSTFLAGS RUSTFLAGS=-Dwarnings cargo "$toolchain" check "$@"
+    MSRV_QUICK_TOOLCHAIN=""
 }
 
 # The section: the toolchains, the folder and its trap, the check against
@@ -291,9 +312,10 @@ msrv_checks() {
 
     run_check "MSRV: the six checks are ci.yml's msrv job" msrv_ci_check .github/workflows/ci.yml
     msrv_toolchain_list
-    msrv_check "$MSRV_TOOLCHAIN" "MSRV $MSRV_TOOLCHAIN, -D warnings (the workspace but the gpui and egui crates, all features)" \
+    msrv_check --quick-keyed "$MSRV_TOOLCHAIN" \
+        "MSRV $MSRV_TOOLCHAIN, -D warnings (the workspace but the gpui and egui crates, all features)" \
         "${MSRV_CHECK_ARGS_1[@]}" --target-dir "$MSRV_TARGET_DIR"
-    msrv_check "$MSRV_TOOLCHAIN" "MSRV $MSRV_TOOLCHAIN, -D warnings (native-theme, default features)" \
+    msrv_check --quick-keyed "$MSRV_TOOLCHAIN" "MSRV $MSRV_TOOLCHAIN, -D warnings (native-theme, default features)" \
         "${MSRV_CHECK_ARGS_2[@]}" --target-dir "$MSRV_TARGET_DIR"
     msrv_check "$CONNECTOR_TOOLCHAIN" "MSRV $CONNECTOR_TOOLCHAIN, -D warnings (the egui crates, all features)" \
         "${MSRV_CHECK_ARGS_3[@]}"

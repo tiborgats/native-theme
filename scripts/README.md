@@ -354,20 +354,22 @@ environment but its thread counts, output, location and speed settings and the
 per-session variables, the gate's scripts and the step's command; an MSRV
 check's key adds `rustc <toolchain> -vV`. It does not follow what a test reads
 outside the repository (the desktop, the installed fonts and icon themes, the
-system libraries, the network, the clock), nor what a registry build script
-or procedural macro reads: the next `--commit` checks those, as it runs every
-such step.
+system libraries, the network, the clock), a run-time read of a file in
+`QUICK_UNREAD`, nor what a registry build script or procedural macro reads:
+the next `--commit` checks those, as it runs every such step.
 
 Two speed-ups apply to `--commit` and `--quick` alone; the full run runs every
-step through `cargo test`, with no cache. Where `cargo-nextest` is installed,
+step through `cargo test`; it reads no record and records no pass, and a
+failure still removes the step's `--quick` record. Where `cargo-nextest` is installed,
 the test steps run `cargo nextest run` (`cargo_tests` in the script), and
 `cargo test --doc` where `cargo test` would have run doctests too; the
 showcases' tests in CI's runner environment stay on `cargo test`. The step
 cache (`step_cache.sh`, below) skips a compile-only or documentation step, or
 native-theme-derive's tests, whose declared inputs are unchanged since it last
 passed; the summary lists each as `unchanged since <commit>`, and `--no-cache`
-runs every step, neither key read or recorded (without `--commit` or `--quick`
-it exits 2).
+runs every step: it reads no record and records no pass; a failure still
+removes the step's `--quick` record (without `--commit` or `--quick` it exits
+2).
 
 ```sh
 ./scripts/check_release.sh --quick
@@ -378,7 +380,10 @@ it exits 2).
 
 ## step_cache.sh
 
-The step cache of `check_release.sh --commit` and `--quick`, sourced by it. A
+The step cache of `check_release.sh --commit` and `--quick`, sourced by it in
+every mode, so that a failure in the full run or with `--no-cache` removes the
+step's `--quick` record too (`step_cache_forget`, which needs only the cache
+folder, `STEP_CACHE_DIR`). A
 step is skipped only when the SHA-256 key of its run equals the one recorded
 when it last passed. The strict key's parts are the base (the tool versions,
 `rustc -vV`, `cargo -vV`, clippy's, rustdoc's, rustfmt's, Python's and nextest's; the hashes of the gate's five
@@ -400,17 +405,25 @@ the workspace manifest, lock and tool configuration, nextest's configuration,
 every Cargo configuration file Cargo would read, clippy's configuration in
 each reached package's directory and its ancestors, the directory of each
 workspace package the crates reach on this host with every feature on
-(`cargo tree`), the files those packages include from outside their
-directories (`step_cache_includes.py`, below) and their target sources outside
-them. The reach is refused, and its steps run, where it holds a registry build
-helper that probes the host (`pkg-config`, `cc`, …), a registry package with a
-build script or a procedural macro that `CACHE_REVIEWED_REGISTRY_CODE` in
-`check_release.sh` does not list by name and version (read from `cargo
-metadata --locked` with the dependencies; a read that fails turns the cache
-off for the run), a path package outside the workspace, a workspace build
-script or procedural macro not reviewed for what it reads
-(`CACHE_TRUSTED_BUILD_CODE`), or an include the helper refuses; the run prints
-the reason once per crate set. The gpui, iced and egui connectors reach `cc`
+(`cargo tree`) and the files those packages include from outside their
+directories (`step_cache_includes.py`, below). The reach is refused, and its
+steps run, where it holds a registry build helper that probes the host
+(`pkg-config`, `cc`, …), a crates.io package with a build script or a
+procedural macro that `CACHE_REVIEWED_REGISTRY_CODE` in `check_release.sh`
+does not list by name and version (read from `cargo metadata --locked` with
+the dependencies; a read that fails turns the cache off for the run), a build
+script or procedural macro from any other source outside the workspace (a git
+fork, another registry, a `[patch]`), whatever the list names, a path package
+outside the workspace, a workspace build script or procedural macro not
+reviewed for what it reads (`CACHE_TRUSTED_BUILD_CODE`), a workspace package
+with a target source outside its directory (which the include scan does not
+read), an include the helper refuses, or an input whose path holds `*`, `?`
+or `[`, which the inputs would read as a glob; the run prints the reason once
+per crate set (in `--quick`, while its `--quick` set is on, a strict
+refusal's note says that no strict key is computed: the `--quick` key may
+still skip the crates' test and docs steps and the two MSRV checks at the
+workspace's `rust-version`; with the `--quick` set off, it says that the
+steps run). The gpui, iced and egui connectors reach `cc`
 and `pkg-config`, so their steps run every time; the other seven crates' 34
 steps are skipped on an unchanged tree. A change of `Cargo.lock` that adds or moves
 a registry build script or procedural macro runs the steps whose reach holds
@@ -424,7 +437,10 @@ egui connectors' documentation steps among them), and of the two MSRV checks
 at the workspace's `rust-version` (`msrv_checks.sh`, below). Its records are a
 set of their own, `target/check-release-cache/quick/`: `--quick` looks them up,
 and `--commit` and `--quick` record each such step that passes, so a `--commit`
-lets the next `--quick` skip what nothing touched since. It is the strict
+lets the next `--quick` skip what nothing touched since; a step that fails in
+any mode, the full run and `--no-cache` included, loses its record, so the
+next `--quick` runs it. A tool whose version
+cannot be read turns both sets off for the run, each saying so. It is the strict
 key's form with another base and another reach. The base: the tool versions;
 the environment but a deny-list of what cannot change a verdict (`_`, `SHLVL`,
 `OLDPWD`; `RUST_TEST_THREADS`, `CARGO_BUILD_JOBS` and `NEXTEST_TEST_THREADS`
@@ -435,18 +451,22 @@ while each is a plain positive number; the output settings, `CARGO_TERM_*`,
 `CARGO_CACHE_RUSTC_INFO`; and the variables a new session, terminal or service
 gives each call, `CLAUDE_CODE_SESSION_ID`, `WINDOWID`, `INVOCATION_ID` and the
 others `step_cache_quick_environment` lists), so a variable no list foresaw
-makes the step run; and every file `git ls-files -co --exclude-standard` lists
-outside the workspace packages' directories but those `QUICK_UNREAD` matches
+makes the step run; and every file `git ls-files -z -co --exclude-standard`
+lists (read NUL-separated, each path as itself, none as a glob) outside the
+workspace packages' directories but those `QUICK_UNREAD` matches
 (`*.md`, `docs/archive/*`, `docs/issues/*`, `docs/assets/*`,
 `docs/evidence/*`, `.github/*`, `LICENSE-*`, `.gitignore`, `.gitattributes`,
 each `*` matching `/` too), by path and content: the manifests, the lock,
 Cargo's configuration, `docs/*.toml` and every script, the gate's own among
-them. Where git cannot list them, no `--quick` key is computed and the run says
+them. Where git cannot list them, or its listing lacks the root `Cargo.toml`
+or `scripts/step_cache.sh` (a folder another repository ignores, where git
+lists nothing and exits 0), no `--quick` key is computed and the run says
 why. The reach is the strict one without its refusals for a host probe and for
-registry build code the list does not name, which `--quick` leaves to
-`--commit`; a path package outside the workspace, an unreviewed workspace
-build script or procedural macro and an include the helper refuses still
-refuse it, and an include target stays in the key whatever `QUICK_UNREAD`
+build code outside the workspace, which `--quick` leaves to `--commit`; a path
+package outside the workspace, an unreviewed workspace build script or
+procedural macro, a target source outside its package, a path holding `*`,
+`?` or `[` and an include the helper refuses still refuse it, and an include
+target stays in the key whatever `QUICK_UNREAD`
 says (`docs/platform-facts.md`, which `native-theme` includes). A step names
 its crates with `-p`; a test or docs step that names none fails the run, and
 the workspace MSRV check keys every member it does not `--exclude`
@@ -455,16 +475,27 @@ the workspace MSRV check keys every member it does not `--exclude`
 `--self-test` shows that a declared file edited, added, renamed or removed, a
 glob's new match, the script edited, the command or the environment changed,
 re-run the step, and that a failure records nothing; that a record that
-cannot be written returns an error the caller goes past, that the locale does
+cannot be written returns an error the caller goes past; that a record
+removed (`step_cache_forget`, the cache folder alone set) is a miss, no
+record to remove is no error, and one in a folder that cannot be written
+returns an error and stays; that the locale does
 not change a key, and that an unreadable input fails the key in the gate's own
 shell options; that the `--quick` environment changes with a variable outside
 the deny-list, and not with a denied one (each per-session variable changed
 or unset), its entries split at NUL; it runs the include helper's self-test;
 and, on a synthetic workspace with a stub `cargo`, it shows an include outside
 its package hashed in both keys, each refusal of the reach above in the forms
-that have it (a failing `cargo tree` among them), the `--quick` base following
-a file outside the packages and no file `QUICK_UNREAD` matches, and failing
-where git cannot list the files, the two record sets kept apart, a step whose
+that have it (a failing `cargo tree` among them, a `jq` failing on a
+workspace package's build-code query, a path holding `[` in a package
+directory, an include target and a configuration path; build code outside the
+workspace refusing the strict form alone), a strict refusal's note in
+`--quick` with the `--quick` set on and off, a configuration file's edit
+changing the key, the gate's order of the two reaches, the `--quick` base
+following a file outside the packages, one whose path holds `[`, a quote
+and a tab, or a newline among them, and no file `QUICK_UNREAD` matches, and failing where
+git cannot list the files or lists no root `Cargo.toml` or
+`scripts/step_cache.sh`, the two record sets kept
+apart, a step whose
 input changes while it runs recording nothing in either, a full metadata that
 fails or lists no package keying no strict step, and a command's crates
 following its `-p` or `--workspace` and `--exclude` options.
@@ -479,19 +510,26 @@ bash scripts/step_cache.sh --self-test
 The step cache's include scan: given the reached packages' directories, it
 reads every `.rs` file under them (ignored files too, symbolic links
 followed) with comments and literals blanked by `check_panic_patterns.py`'s
-lexer, finds each `include_str!`, `include_bytes!`, `include!` and
-`#[path = …]`, and prints each target outside its including package with the
-including file and line. It accepts a string literal (resolved against the
-including file's directory), a `concat!` of string literals without `..`,
-optionally led by `env!("CARGO_MANIFEST_DIR")` or, in a package whose build
-script is reviewed, `env!("OUT_DIR")`, and, inside a `macro_rules!` body, a
-`concat!` whose other parts are metavariables declared `$name:literal`. An
-include in a macro body counts only where the macro is not exported, its name
-occurs in no other file of the package nor inside another macro's body nor
-in a `use` item, so that it is invoked beside its definition. Anything else
-is refused, as are a literal holding `\`, a `#[path]` or `include!` target
-outside the package, an `include!` of a file not ending in `.rs` and a
-`#[cfg_attr(…, path = …)]`; a refusal refuses the reach, so the step runs.
+lexer, finds each `include_str!`, `include_bytes!`, `include!`,
+`#[path = …]` and `#![path = …]`, and prints each target outside its
+including package with the including file and line. It accepts a string
+literal (resolved against the including file's directory), a `concat!` of
+string literals without `..`, optionally led by `env!("CARGO_MANIFEST_DIR")`
+or, in a package whose build script is reviewed, `env!("OUT_DIR")`, and,
+inside a `macro_rules!` body, a `concat!` whose other parts are metavariables
+declared `$name:literal`, none of its own string literals ending with `.`,
+every string literal its invocations pass free of `..` and `\` and neither
+starting nor ending with `.`, and no char literal among them (`concat!` joins
+`'.'` as `.`): with no part ending in `.`, no join makes `..`. An include in
+a macro body counts only where the macro is not
+exported, its name occurs in no other file of the package nor inside another
+macro's body nor in a `use` item, so that it is invoked beside its
+definition. Anything else is refused, as are a literal holding `\`, a
+`#[path]` or `include!` target outside the package, an `include!` or a
+`#[path]` of a file not ending in `.rs`, a `#[cfg_attr(…, path = …)]`, a
+`use` item naming `include_str`, `include_bytes` or `include` (renamed or
+not) and a call of any other `include_<word>!` macro; a refusal refuses the
+reach, so the step runs.
 Exits 1 on a refusal or a file it cannot read. Its docstring gives each rule's
 reason; `--self-test` checks each on synthetic packages under `target/`.
 
@@ -528,8 +566,9 @@ job; an empty read fails the run, naming the file. Then seven steps:
   `ci.yml` this file does not follow fails here, each difference printed. It
   can be run on any copy: `bash -c 'source scripts/msrv_checks.sh &&
   msrv_ci_check <path>'`, from the repository's root.
-- the six checks, `cargo +<toolchain> check …` under `RUSTFLAGS=-Dwarnings`,
-  as the job runs them: on the workspace's
+- the six checks, `cargo +<toolchain> check …` under `RUSTFLAGS=-Dwarnings`
+  with `CARGO_ENCODED_RUSTFLAGS` unset (Cargo reads it in `RUSTFLAGS`' place
+  where it is set), as the job runs them: on the workspace's
   `rust-version`, the workspace but the gpui and egui crates with all features,
   and `native-theme` with its default features; on the connectors' toolchain,
   the egui crates with all features, and `native-theme-gpui` with its default

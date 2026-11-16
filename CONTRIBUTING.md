@@ -142,8 +142,9 @@ counts, output, location and speed settings and the per-session variables,
 the gate's scripts and the step's command, and for an MSRV check its
 toolchain. It does not follow what a test reads outside the repository (the
 desktop, the installed fonts and icon themes, the system libraries, the
-network, the clock) or what a registry build script or procedural macro
-reads; the next `--commit` checks those.
+network, the clock), a run-time read of a file in `QUICK_UNREAD`, or what a
+registry build script or procedural macro reads; the next `--commit` checks
+those.
 
 `--commit` and `--quick` are faster than the steps they list: where
 `cargo-nextest` is installed their test steps run through it (the doctests
@@ -152,8 +153,10 @@ stay on `cargo test`), and a compile-only or documentation step, or
 native-theme-derive's tests, whose declared inputs, tools, environment and
 command are unchanged since it last passed is skipped, the summary naming it
 `unchanged since <commit>` (`scripts/step_cache.sh`; `--no-cache` runs every
-step). The full run uses neither: every step runs, as listed above, through
-`cargo test`.
+step: it reads no record and records no pass; a failure still removes the
+step's `--quick` record). The full run uses neither: every step runs, as
+listed above, through `cargo test`; it reads no record and records no pass,
+and a failure still removes the step's `--quick` record.
 
 The script runs the checks of the CI pipeline on the local platform, plus the
 packaging, semver, outdated-dependency and archive-index checks CI does not run.

@@ -20,9 +20,9 @@ compiles a `mod` file whether git ignores it or not, and rustc follows a
 link). A file belongs to the deepest directory given that holds it. Comments
 and literals are blanked with check_panic_patterns.py's `code_only`, loaded by
 path, so that an include written in a comment or in a generated string is
-not taken for one; each `include_str!`, `include_bytes!`, `include!` and
-`#[path = ...]` is found in the blanked text, its argument read from the
-original text at the same position.
+not taken for one; each `include_str!`, `include_bytes!`, `include!`,
+`#[path = ...]` and `#![path = ...]` is found in the blanked text, its
+argument read from the original text at the same position.
 
 Accepted
 --------
@@ -36,8 +36,9 @@ Accepted
   which adds no input;
 * inside a `macro_rules!` body, a `concat!` whose first part is a non-empty
   relative string literal and whose other parts are string literals or
-  metavariables the arm's matcher declares `$name:literal`; it lies under its
-  first part's directory, inside the package.
+  metavariables the arm's matcher declares `$name:literal`, none of its
+  string literals ending with `.`; it lies under its first part's directory,
+  inside the package.
 
 An include or `#[path]` inside a `macro_rules!` body, a literal one included,
 is resolved where the outermost macro is invoked, not where it is defined, so
@@ -47,7 +48,11 @@ the defining file alone (any occurrence), no occurrence there lies inside
 another `macro_rules!` body, and no `use` item there names it (a re-export,
 `use ... as` among them): then call site and definition share a directory.
 The metavariable form also needs every string literal of the macro's
-invocations free of `..` and `\\`.
+invocations free of `..` and `\\`, and neither starting nor ending with `.`
+(two such literals, `"."` and `"./x"`, would join into `..`), and no char
+literal in them (`concat!` joins `'.'` as `.`; the invocation's blanked code
+holds no `'`). With no part ending in `.`, a body literal or an invocation
+literal, an empty literal included, no join makes `..`.
 
 Refused
 -------
@@ -55,8 +60,10 @@ Any other argument (a `concat!` with another part, a metavariable outside
 that form, another macro call, an identifier), a literal holding `\\` (an
 escape or a Windows separator), a `#[path]` or `include!` whose target lies
 outside the including package (its own includes are code the scan does not
-follow), an `include!` of a file not ending in `.rs`, and every
-`#[cfg_attr(..., path = ...)]`.
+follow), an `include!` or a `#[path]` (`#![path]` too) of a file not ending
+in `.rs`, every `#[cfg_attr(..., path = ...)]`, a `use` item naming
+`include_str`, `include_bytes` or `include` (renamed or not: the scan finds
+the three by name), and a call of any other `include_<word>!` macro.
 
 Output
 ------
@@ -72,7 +79,10 @@ import re
 import sys
 
 INCLUDE = re.compile(r"(?<![A-Za-z0-9_])(include_str|include_bytes|include)\s*!\s*([\(\[\{])")
-PATH_ATTR = re.compile(r"#\s*\[\s*path\s*=\s*")
+OTHER_INCLUDE = re.compile(r"(?<![A-Za-z0-9_])(include_[A-Za-z0-9_]+)\s*!")
+INCLUDE_NAME = re.compile(r"(?<![A-Za-z0-9_])(include_str|include_bytes|include)(?![A-Za-z0-9_])")
+USE_ITEM = re.compile(r"(?<![A-Za-z0-9_])use(?![A-Za-z0-9_])[^;]*;")
+PATH_ATTR = re.compile(r"#\s*!?\s*\[\s*path\s*=\s*")
 CFG_ATTR = re.compile(r"#\s*!?\s*\[\s*cfg_attr\s*\(")
 CFG_ATTR_PATH = re.compile(r"(?<![A-Za-z0-9_])path\s*=")
 MACRO_RULES = re.compile(r"(?<![A-Za-z0-9_])macro_rules\s*!\s*([A-Za-z_][A-Za-z0-9_]*)\s*([\(\[\{])")
@@ -320,7 +330,7 @@ def macro_verdict(macro, path, code, package, macros):
             if reason:
                 break
     if not reason:
-        for m in re.finditer(r"(?<![A-Za-z0-9_])use(?![A-Za-z0-9_])[^;]*;", code):
+        for m in USE_ITEM.finditer(code):
             if pattern.search(code, m.start(), m.end()):
                 reason = "is named in a use item (a re-export)"
                 break
@@ -339,6 +349,18 @@ def invocation_literals(macro, text, code):
             continue
         values.extend(string_literals(text, code, open_at + 1, close_at))
     return values
+
+
+def invocation_char_literal(macro, code):
+    """Whether an invocation of `macro` in its defining file holds a char
+    literal: its blanked code holds a `'` (a lifetime too, which no literal
+    argument needs)."""
+    for m in re.finditer(r"(?<![A-Za-z0-9_])" + re.escape(macro.name) + r"\s*!\s*([\(\[\{])", code):
+        open_at = m.end() - 1
+        close_at = matching(code, open_at)
+        if close_at >= 0 and "'" in code[open_at + 1:close_at]:
+            return True
+    return False
 
 
 def classify(text, code, start, end, macro, package):
@@ -389,6 +411,8 @@ def classify(text, code, start, end, macro, package):
         first = whole_literal(text, code, parts[0][0], parts[0][1])
         if lead is not None or first is None or not first or first.startswith("/"):
             return "refused", "a concat! with a metavariable, not led by a relative string literal"
+        if any(value.endswith(".") for value in literals):
+            return "refused", "a concat! with a metavariable and a string literal ending with . (it joins into ..)"
         return "under", first, last_literal, metavariables
     tail = "".join(literals)
     if lead == "OUT_DIR":
@@ -465,6 +489,15 @@ def scan_file(path, text, code, package, targets, problems):
         if close_at < 0 or CFG_ATTR_PATH.search(code, m.end(), close_at):
             refuse(m.start(), "a #[cfg_attr(..., path = ...)]")
 
+    for m in USE_ITEM.finditer(code):
+        named = INCLUDE_NAME.search(code, m.start(), m.end())
+        if named:
+            refuse(m.start(), "a use item naming %s (a renamed include the scan cannot follow)" % named.group(1))
+
+    for m in OTHER_INCLUDE.finditer(code):
+        if m.group(1) not in ("include_str", "include_bytes"):
+            refuse(m.start(), "a %s! macro, which the scan does not read" % m.group(1))
+
     for m in PATH_ATTR.finditer(code):
         macro, ok = in_macro(m.start(), "a #[path]")
         if not ok:
@@ -477,6 +510,9 @@ def scan_file(path, text, code, package, targets, problems):
             refuse(m.start(), "a literal path holding \\")
             continue
         target = os.path.normpath(os.path.join(directory, found[1]))
+        if not target.endswith(".rs"):
+            refuse(m.start(), "a #[path] to a file not ending in .rs")
+            continue
         if not inside(target, package.directory):
             refuse(m.start(), "a #[path] to %s, outside its package" % shown(target))
 
@@ -519,8 +555,14 @@ def scan_file(path, text, code, package, targets, problems):
             if bad is not None:
                 refuse(m.start(), "%s!: the metavariable $%s is not declared $%s:literal" % (kind, bad, bad))
                 continue
-            if any(".." in value or "\\" in value for value in invocation_literals(macro, text, code)):
-                refuse(m.start(), "%s!: an invocation of %s! passes a literal holding .. or \\" % (kind, macro.name))
+            if any(".." in value or "\\" in value or value.startswith(".") or value.endswith(".")
+                   for value in invocation_literals(macro, text, code)):
+                refuse(m.start(), "%s!: an invocation of %s! passes a literal holding .. or \\, or starting or ending "
+                       "with . (two such literals join into ..)" % (kind, macro.name))
+                continue
+            if invocation_char_literal(macro, code):
+                refuse(m.start(), "%s!: an invocation of %s! passes a char literal, which concat! joins as a string"
+                       % (kind, macro.name))
                 continue
             if kind == "include" and (last is None or not last.endswith(".rs")):
                 refuse(m.start(), "an include! of a file not ending in .rs")
@@ -678,6 +720,29 @@ def self_test():
              {lib: macro.replace('"two" => "Two"', '"../two" => "Two"')}, ("refused", "holding .. or"))
         case("the metavariable form refused where an invocation passes a literal with \\",
              {lib: macro.replace('"two" => "Two"', '"t\\\\wo" => "Two"')}, ("refused", "holding .. or"))
+        pair = ('macro_rules! pair {\n    ($a:literal, $b:literal) => {\n'
+                '        const P: &str = include_str!(concat!("data/", $a, $b));\n    };\n}\n\n'
+                'pair!(".", "./secret.toml");\n')
+        case("the metavariable form refused where invocation literals starting or ending with . join into ..",
+             {lib: pair, "pkg/src/data/x.toml": ""}, ("refused", "starting or ending with ."))
+        case("the metavariable form refused where an invocation literal starts with . (none ends with .)",
+             {lib: pair.replace('pair!(".", "./secret.toml")', 'pair!("x", ".secret.toml")')},
+             ("refused", "starting or ending with ."))
+        case("the metavariable form refused where an invocation literal ends with . (none starts with .)",
+             {lib: pair.replace('pair!(".", "./secret.toml")', 'pair!("x.", "secret.toml")')},
+             ("refused", "starting or ending with ."))
+        up = ('macro_rules! up {\n    (%s) => {\n        const P: &str = include_str!(concat!(%s));\n    };\n}\n\n'
+              'up!(%s);\n')
+        case("the metavariable form refused where an invocation passes char literals ('.', '.')",
+             {lib: up % ("$a:literal, $b:literal", '"d/", $a, $b, "/", $a, $b, "/", $a, $b, "/secret.toml"',
+                         "'.', '.'")},
+             ("refused", "passes a char literal"))
+        case("the metavariable form refused where adjacent body literals join into .. (\"d/.\", \"./.\")",
+             {lib: up % ("$a:literal", '"d/.", "./.", "./.", "./", $a', '"secret.toml"')},
+             ("refused", "a string literal ending with ."))
+        case("the metavariable form refused where an empty invocation literal joins body literals into ..",
+             {lib: up % ("$a:literal", '"data/.", $a, "./.", $a, "./.", $a, "./secret.toml"', '""')},
+             ("refused", "a string literal ending with ."))
         literal_macro = ('macro_rules! data {\n    () => {\n        include_str!("data.txt")\n    };\n}\n')
         case("a literal include in a macro body refused where the macro is invoked from a second file",
              {"pkg/src/a/mod.rs": literal_macro + "pub(crate) use data;\n",
@@ -704,6 +769,17 @@ def self_test():
              {lib: 'const N: &str = include_str!("data\\\\notes.md");\n'}, ("refused", "holding \\"))
         case("a #[path] to a .rs outside the package refused",
              {lib: '#[path = "../../shared/m.rs"]\nmod m;\n', "shared/m.rs": ""}, ("refused", "outside its package"))
+        case("an inner #![path] to a .rs outside the package refused",
+             {lib: "mod m;\n", "pkg/src/m.rs": '#![path = "../../shared/m.rs"]\n', "shared/m.rs": ""},
+             ("refused", "outside its package"))
+        case("a #[path] to a file not ending in .rs refused",
+             {lib: '#[path = "data.txt"]\nmod m;\n', "pkg/src/data.txt": ""}, ("refused", "not ending in .rs"))
+        case("a use item naming include_str refused",
+             with_docs({lib: 'use std::include_str as text;\nconst N: &str = text!("../../docs/notes.md");\n'}),
+             ("refused", "a use item naming include_str"))
+        case("an include_<word>! macro other than the three refused",
+             with_docs({lib: 'const N: &[u8] = include_image!("../../docs/notes.md");\n'}),
+             ("refused", "include_image!"))
         case("an include! of a .rs outside the package refused",
              {lib: 'include!("../../shared/m.rs");\n', "shared/m.rs": ""}, ("refused", "outside its package"))
         case("an include! of a .txt refused",
