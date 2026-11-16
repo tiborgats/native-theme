@@ -16,7 +16,19 @@ Thank you for your interest in contributing.
 
 ## Pre-commit gate — `./scripts/check_release.sh`
 
-The script has two modes. Before every commit, run the per-commit subset:
+The script has three modes. At a task's end, run the per-task gate, which
+runs the per-commit subset's steps but leaves to it each test, documentation
+and workspace-MSRV step whose crates, what they build against and include,
+the other files outside the crates that a crate may read, the tools, the
+environment and the step's command are unchanged since that step last passed:
+
+```bash
+./scripts/check_release.sh --quick
+```
+
+Every third code task (unit), counted from the last `--commit`, on a
+release's last code task, after a lock or toolchain change and where a plan
+names a task structural, run the per-commit subset:
 
 ```bash
 ./scripts/check_release.sh --commit
@@ -34,12 +46,13 @@ of every `.rs` file outside `target/`, the panic-pattern scan
 (`scripts/check_panic_patterns.py` and its `--self-test`) of each workspace
 member's `src/` outside its test modules and test-only files (not `build.rs`,
 `examples/`, `tests/` or `benches/`), the step cache's self-test
-(`scripts/step_cache.sh --self-test`; in `--commit` only: the full run uses no
-cache), per-crate `cargo check --all-targets`,
+(`scripts/step_cache.sh --self-test`; in `--commit` and `--quick` only: the
+full run uses no cache), per-crate `cargo check --all-targets`,
 CI's MSRV checks (`ci.yml`'s `msrv` job: the workspace's `rust-version` and the
 connectors' toolchain, with `RUSTFLAGS=-Dwarnings`; a toolchain not installed
 fails) and the check that they are the job's (`scripts/msrv_checks.sh`; these
-two in `--commit` only: the full run leaves them to `--commit` and CI),
+two in `--commit` and `--quick` only: the full run leaves them to `--commit`
+and CI),
 the feature-combination check (`scripts/check_features.sh`: every crate's
 library with no default features, with each feature alone and with all
 features — for `native-theme-gpui` all but `gpui-fast` — failing on a
@@ -108,16 +121,34 @@ the docs.rs emulation (`scripts/check_docsrs.py`), packaging,
 `cargo semver-checks`, `cargo outdated`, and the PROVENANCE and
 compatibility stamp checks. Each of
 them prints `skipped (--commit mode)`, and the summary names them as skipped,
-not passed. `cargo audit` runs in both modes, as CI audits every pull request and every push to `main`; where
+not passed. `cargo audit` runs in every mode, as CI audits every pull request and every push to `main`; where
 the advisory database cannot be fetched, the full run fails, and `--commit`
 audits against the cached database with a warning naming its date, or warns
 that the audit did not run where no cached database loads. `--commit` needs
 `cargo-audit` installed too.
 
-`--commit` is faster than the steps it lists: where `cargo-nextest` is
-installed its test steps run through it (the doctests through
-`cargo test --doc`; the showcases' tests in CI's runner environment stay on
-`cargo test`), and a compile-only or documentation step, or
+`--quick` runs every step `--commit` runs, skipping the same checks (each
+printing `skipped (--quick mode)`), but it leaves to `--commit` each test step
+(the showcases' tests in CI's runner environment among them), each
+`cargo doc` step and the two MSRV checks at the workspace's `rust-version`
+whose key is unchanged since the step last passed in `--commit` or `--quick`,
+and its summary lists them. The key (`scripts/step_cache.sh`) follows the
+crates the step names, everything they build against in the workspace and
+the files their code includes, the files outside the crates but those
+`QUICK_UNREAD` lists (the Markdown documents, `.github/`, the licences, the
+git ignore and attribute files and the archived, issue, asset and evidence
+folders under `docs/`), the tool versions, the environment but its thread
+counts, output, location and speed settings and the per-session variables,
+the gate's scripts and the step's command, and for an MSRV check its
+toolchain. It does not follow what a test reads outside the repository (the
+desktop, the installed fonts and icon themes, the system libraries, the
+network, the clock) or what a registry build script or procedural macro
+reads; the next `--commit` checks those.
+
+`--commit` and `--quick` are faster than the steps they list: where
+`cargo-nextest` is installed their test steps run through it (the doctests
+through `cargo test --doc`; the showcases' tests in CI's runner environment
+stay on `cargo test`), and a compile-only or documentation step, or
 native-theme-derive's tests, whose declared inputs, tools, environment and
 command are unchanged since it last passed is skipped, the summary naming it
 `unchanged since <commit>` (`scripts/step_cache.sh`; `--no-cache` runs every

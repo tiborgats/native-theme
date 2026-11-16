@@ -34,21 +34,38 @@
 #                  checks), each printing "skipped (--commit mode)", and names
 #                  them in the final summary. The security audit runs in it
 #                  too, and offline falls back to the cached advisory
-#                  database with a warning (the section says how).
+#                  database with a warning (the section says how). Run every
+#                  third code task (unit), counted from the last --commit, on
+#                  a release's last code task, after a lock or toolchain
+#                  change and where a plan names a task structural.
+#   --quick        the per-task gate: --commit's steps, but a test, docs or
+#                  rust-version MSRV step is skipped where its key is
+#                  unchanged since it last passed in --commit or --quick: its
+#                  crates' reach and the files they include, the files
+#                  outside the crates but those QUICK_UNREAD lists, the
+#                  tools, the environment but its thread counts, its output,
+#                  location and speed settings and the per-session variables
+#                  of a terminal or session, the gate's scripts and its
+#                  command. Its summary names the steps it left to --commit.
+#                  Run at a task's end.
 #
 # CI's MSRV job (every `cargo check` it runs, each on its toolchain, -D
-# warnings) runs in --commit; the full run leaves them to --commit and CI.
+# warnings) runs in --commit and --quick (in --quick the rust-version checks
+# where anything their key follows changed: their crates' reach and included
+# files, the files outside the crates but QUICK_UNREAD, the tools, the
+# environment, their toolchain); the full run leaves them to --commit and CI.
 #
-# Speed in --commit, never in the full run (whose every step runs as it always
-# has, through `cargo test`, with no cache):
-#   * cargo nextest, where installed, runs its test steps (cargo_tests,
+# Speed in --commit and --quick, never in the full run (whose every step runs
+# as it always has, through `cargo test`, with no cache):
+#   * cargo nextest, where installed, runs their test steps (cargo_tests,
 #     below), each test in a process of its own and every binary's tests in
 #     one pool; `cargo test --doc` keeps the doctests a step would run, and
 #     the showcases' tests in CI's runner environment stay on cargo test.
 #   * the step cache (scripts/step_cache.sh) skips a step whose declared
 #     inputs (CACHE_INPUTS, below), tool versions, environment and command
 #     are what they were when it last passed; the summary names each such
-#     step "unchanged since <commit>". --no-cache runs every step.
+#     step "unchanged since <commit>". --quick's key is the step cache's too,
+#     with its records in a set of their own. --no-cache runs every step.
 #
 # Formatting: `cargo fmt --all` formats the tree in place rather than checking
 # it, by design: the per-commit gate formats what is about to be committed,
@@ -59,7 +76,7 @@ set -u  # Exit if an undefined variable is used
 
 usage() {
     cat <<'EOF'
-Usage: scripts/check_release.sh [--commit] [--no-cache]
+Usage: scripts/check_release.sh [--commit | --quick] [--no-cache]
 
   (no argument)  the full pre-release check; required on the last commit of
                  every fix phase and before the release commit
@@ -70,14 +87,24 @@ Usage: scripts/check_release.sh [--commit] [--no-cache]
                  the gpui connector's tests on GPUI Fast, native-theme's
                  ignored stem-index test, docs.rs emulation, packaging,
                  semver checks, outdated dependencies, and the visual-asset
-                 and compatibility stamp checks
-  --no-cache     with --commit: run every step, no cache read or written
-                 (the full run never uses one)
+                 and compatibility stamp checks; run every third code
+                 task (unit), counted from the last --commit, on a release's
+                 last code task, after a lock or toolchain change and where
+                 a plan names a task structural
+  --quick        the per-task gate: --commit's steps, but a test, docs or
+                 rust-version MSRV step is skipped where its crates, what
+                 they build against and include, the other files outside
+                 the crates but those QUICK_UNREAD lists (step_cache.sh),
+                 the tools, the environment and its command are unchanged
+                 since it last passed in --commit or --quick; the summary
+                 names what it left to --commit; run at a task's end
+  --no-cache     with --commit or --quick: run every step, no cache read or
+                 written (the full run never uses one)
   -h, --help     print this help and exit
 
-With --commit, cargo nextest runs the test steps where it is installed
-(cargo test --doc the doctests; the showcases' runner-environment tests
-stay on cargo test), and a compile-only or documentation step, or
+With --commit or --quick, cargo nextest runs the test steps where it is
+installed (cargo test --doc the doctests; the showcases' runner-environment
+tests stay on cargo test), and a compile-only or documentation step, or
 native-theme-derive's tests, whose declared inputs, tools, environment and
 command are unchanged since it last passed is skipped, named in the summary
 "unchanged since <commit>". The full run runs every step through cargo test,
@@ -86,20 +113,36 @@ EOF
 }
 
 COMMIT_MODE=""
+QUICK_MODE=""
 NO_CACHE=""
 for arg in "$@"; do
     case "$arg" in
         --commit) COMMIT_MODE=1 ;;
+        --quick) QUICK_MODE=1 ;;
         --no-cache) NO_CACHE=1 ;;
         -h|--help) usage; exit 0 ;;
         *) printf "Unknown argument: %s\n\n" "$arg" >&2; usage >&2; exit 2 ;;
     esac
 done
 
-if [[ $NO_CACHE && ! $COMMIT_MODE ]]; then
-    printf -- "--no-cache goes with --commit\n\n" >&2
+if [[ $COMMIT_MODE && $QUICK_MODE ]]; then
+    printf -- "--commit and --quick exclude each other\n\n" >&2
     usage >&2
     exit 2
+fi
+if [[ $NO_CACHE && ! $COMMIT_MODE && ! $QUICK_MODE ]]; then
+    printf -- "--no-cache goes with --commit or --quick\n\n" >&2
+    usage >&2
+    exit 2
+fi
+# --quick runs --commit's steps: every per-commit skip below holds for it, at
+# its condition (COMMIT_MODE). MODE_FLAG names the mode in the texts.
+MODE_FLAG=""
+if [[ $QUICK_MODE ]]; then
+    COMMIT_MODE=1
+    MODE_FLAG="--quick"
+elif [[ $COMMIT_MODE ]]; then
+    MODE_FLAG="--commit"
 fi
 
 cd "$(dirname "$0")/.."  # every path below is relative to the repository root
@@ -183,7 +226,7 @@ print_info() {
 
 print_skipped() {
     # $1 = section name, re-printed in the final summary
-    printf "${DIM}   skipped (--commit mode)${NC}\n"
+    printf "${DIM}   skipped (%s mode)${NC}\n" "$MODE_FLAG"
     SKIPPED+=("$1")
 }
 
@@ -192,6 +235,17 @@ print_cached() {
     if [ "${#CACHED[@]}" -gt 0 ]; then
         printf "\n${BOLD}Skipped, unchanged since their last pass (step cache; --no-cache runs them):${NC}\n"
         for c in "${CACHED[@]}"; do
+            printf "   ${DIM}%s${NC}\n" "$c"
+        done
+    fi
+}
+
+# The steps --quick left to --commit, their --quick key unchanged since their
+# last pass, each "unchanged since <commit>".
+print_quick_unchanged() {
+    if [ "${#QUICK_UNCHANGED[@]}" -gt 0 ]; then
+        printf "\n${BOLD}Left to --commit, unchanged since their last pass (--quick):${NC}\n"
+        for c in "${QUICK_UNCHANGED[@]}"; do
             printf "   ${DIM}%s${NC}\n" "$c"
         done
     fi
@@ -237,7 +291,7 @@ _run_check_impl() {
     local mode="$2"
     shift 2
     local cache_key=""
-    step_cached "$description" cache_key "$@" && return 0
+    step_cached "$description" cache_key check "$@" && return 0
     local start=$SECONDS
     local output
     local status=0
@@ -273,7 +327,7 @@ _run_tests_impl() {
     local min_passed="$2"
     shift 2
     local cache_key=""
-    step_cached "$description" cache_key "$@" && return 0
+    step_cached "$description" cache_key test "$@" && return 0
     local start=$SECONDS
     local output
     local status=0
@@ -340,12 +394,12 @@ _run_tests_impl() {
 run_tests()      { _run_tests_impl "$1" 1 "${@:2}"; }
 run_tests_min()  { _run_tests_impl "$2" "$1" "${@:3}"; }
 
-# `cargo test <args>` as a test step runs it. In --commit where cargo-nextest
-# is installed (HAVE_NEXTEST), `cargo nextest run <args>` instead, then
-# `cargo test <args> --doc` where `cargo test <args>` would run doctests (no
-# target selected, a package with a doctested library), so the step runs the
-# tests it ran before. `--no-tests=pass` leaves a run of no test to
-# run_tests' minimum, as with `cargo test`; `--status-level fail` lists the
+# `cargo test <args>` as a test step runs it. In --commit and --quick where
+# cargo-nextest is installed (HAVE_NEXTEST), `cargo nextest run <args>`
+# instead, then `cargo test <args> --doc` where `cargo test <args>` would run
+# doctests (no target selected, a package with a doctested library), so the
+# step runs the tests it ran before. `--no-tests=pass` leaves a run of no test
+# to run_tests' minimum, as with `cargo test`; `--status-level fail` lists the
 # failures alone, the summary line is run_tests' count, and `--color never`
 # keeps colour codes out of it whatever the terminal. RUST_TEST_THREADS caps
 # nextest's test processes as it caps cargo test's threads, unless
@@ -397,54 +451,178 @@ doctests_selected() {
 }
 
 # A step the cache skips ($1 its description, $2 the name of the caller's
-# variable for its key, $3... its command): returns 0, the step printed as
-# unchanged, where it last passed with the key its run has now; else 1, the
-# key in $2, empty where the cache is off or the step's inputs are not
-# declared (CACHE_INPUTS), cannot be resolved (a refused reach, whose reason
-# is printed once) or cannot be hashed. Each of those is tested as a
-# condition, so a key that cannot be computed runs the step.
+# variable for its key, $3 "test" for a test step or "check", $4... its
+# command): returns 0, the step printed as unchanged, where it last passed
+# with the key its run has now; else 1, the key in $2 ("<set> <kind> <key>"),
+# empty where no key is computed. The strict key decides for a step whose
+# inputs CACHE_INPUTS declares, where the strict set is on and its reach is
+# accepted. A test or docs step it does not decide, and a check at the
+# workspace's rust-version, take the --quick key (quick_key_kind), which --quick
+# looks up and both modes record. No key where a cache or a set is off, or
+# a step's inputs cannot be resolved (a refused reach, whose reason is
+# printed once) or hashed. Each of those is tested as a condition, so a key
+# that cannot be computed runs the step.
 step_cached() {
     local step_description="$1"
     local key_variable="$2"
-    shift 2
+    local step_kind="$3"
+    shift 3
     printf -v "$key_variable" "%s" ""
-    [[ $STEP_CACHE && -n "${CACHE_INPUTS[$step_description]+set}" ]] || return 1
+    [[ $STEP_CACHE ]] || return 1
     local step_inputs=() step_key step_label
-    if ! cache_inputs "$step_description" step_inputs; then
+    if [[ $STEP_CACHE_STRICT && -n "${CACHE_INPUTS[$step_description]+set}" ]]; then
+        if ! cache_inputs "$step_description" step_inputs; then
+            print_cache_notes
+        elif step_key=$(step_cache_key "$step_description" "${step_inputs[@]}" -- "$@"); then
+            if step_label=$(step_cache_hit "$step_description" "$step_key"); then
+                printf "${DIM}↷  %-47s unchanged since %s${NC}\n" "$step_description" "$step_label"
+                CACHED+=("$step_description: unchanged since $step_label")
+                return 0
+            fi
+            printf -v "$key_variable" "strict - %s" "$step_key"
+            return 1
+        fi
+    fi
+    local quick_kind crates step_base
+    if ! quick_kind=$(quick_key_kind "$step_kind" "$@"); then
+        return 1
+    fi
+    if [ "$quick_kind" != msrv ] && ! command_names_package "$@"; then
+        print_fail "a test or docs step names no crate with -p: $step_description"
+        exit 1
+    fi
+    [[ $STEP_CACHE_QUICK ]] || return 1
+    if ! crates=$(step_cache_command_crates "$@"); then
+        return 1
+    fi
+    if ! step_cache_quick_inputs "$crates" step_inputs; then
         print_cache_notes
         return 1
     fi
-    if ! step_key=$(step_cache_key "$step_description" "${step_inputs[@]}" -- "$@"); then
+    if ! step_base=$(quick_step_base "$quick_kind" "$STEP_CACHE_QUICK_BASE"); then
         return 1
     fi
-    if step_label=$(step_cache_hit "$step_description" "$step_key"); then
-        printf "${DIM}↷  %-47s unchanged since %s${NC}\n" "$step_description" "$step_label"
-        CACHED+=("$step_description: unchanged since $step_label")
+    if ! step_key=$(STEP_CACHE_QUICK_BASE="$step_base"
+        step_cache_key --quick "$step_description" "${step_inputs[@]}" -- "$@"); then
+        return 1
+    fi
+    if [[ $QUICK_MODE ]] && step_label=$(step_cache_hit --quick "$step_description" "$step_key"); then
+        printf "${DIM}↷  %-47s unchanged since %s (--quick)${NC}\n" "$step_description" "$step_label"
+        QUICK_UNCHANGED+=("$step_description: unchanged since $step_label")
         return 0
     fi
-    printf -v "$key_variable" "%s" "$step_key"
+    printf -v "$key_variable" "quick %s %s" "$quick_kind" "$step_key"
     return 1
 }
 
 # Records a step that passed ($1 its description, $2 its key from
 # step_cached, $3... its command), where its inputs still have the key they
-# had before it ran. A record that cannot be written is a warning.
+# had before it ran: the key computed again, for the --quick key with its
+# base computed again too. A record that cannot be written is a warning.
 step_passed() {
     local step_description="$1"
-    local step_key="$2"
+    local key_set key_kind step_key
+    read -r key_set key_kind step_key <<<"$2"
     shift 2
     [ -n "$step_key" ] || return 0
-    local step_inputs=() passed_key
-    if ! cache_inputs "$step_description" step_inputs; then
+    local step_inputs=() passed_key crates base step_base
+    if [ "$key_set" = strict ]; then
+        if ! cache_inputs "$step_description" step_inputs; then
+            return 0
+        fi
+        if ! passed_key=$(step_cache_key "$step_description" "${step_inputs[@]}" -- "$@"); then
+            return 0
+        fi
+        if [ "$passed_key" = "$step_key" ]; then
+            step_cache_record "$step_description" "$step_key" \
+                || print_warn "step cache: the pass of \"$step_description\" not recorded (its record could not be written)"
+        fi
         return 0
     fi
-    if ! passed_key=$(step_cache_key "$step_description" "${step_inputs[@]}" -- "$@"); then
+    if ! crates=$(step_cache_command_crates "$@"); then
+        return 0
+    fi
+    if ! step_cache_quick_inputs "$crates" step_inputs; then
+        return 0
+    fi
+    if ! base=$(step_cache_quick_base "$(cache_tool_versions)"); then
+        return 0
+    fi
+    if ! step_base=$(quick_step_base "$key_kind" "$base"); then
+        return 0
+    fi
+    if ! passed_key=$(STEP_CACHE_QUICK_BASE="$step_base"
+        step_cache_key --quick "$step_description" "${step_inputs[@]}" -- "$@"); then
         return 0
     fi
     if [ "$passed_key" = "$step_key" ]; then
-        step_cache_record "$step_description" "$step_key" \
-            || print_warn "step cache: the pass of \"$step_description\" not recorded (its record could not be written)"
+        step_cache_record --quick "$step_description" "$step_key" \
+            || print_warn "step cache: the --quick pass of \"$step_description\" not recorded (its record could not be written)"
     fi
+}
+
+# The kind of --quick key a step takes ($1 "test" for a test step, $2... its
+# command), printed: "test"; "docs" where the command's first `cargo` word
+# is followed by `doc`; "msrv" where it is followed by `$MSRV_TOOLCHAIN
+# check`, a check at the workspace's rust-version (msrv_checks.sh; the
+# connectors' toolchain's checks build in the shared build folder and keep
+# running, as every compile-only step does). Returns 1 for any other step.
+quick_key_kind() {
+    if [ "$1" = test ]; then
+        printf "test"
+        return 0
+    fi
+    shift
+    local i
+    local command=("$@")
+    for ((i = 0; i < ${#command[@]}; i++)); do
+        if [ "${command[$i]}" = cargo ]; then
+            if [ "${command[$((i + 1))]-}" = doc ]; then
+                printf "docs"
+                return 0
+            fi
+            if [ -n "${MSRV_TOOLCHAIN-}" ] && [ "${command[$((i + 1))]-}" = "$MSRV_TOOLCHAIN" ] \
+                && [ "${command[$((i + 2))]-}" = check ]; then
+                printf "msrv"
+                return 0
+            fi
+            return 1
+        fi
+    done
+    return 1
+}
+
+# Whether the command $@ names a crate with -p (or --package) before any `--`.
+command_names_package() {
+    local argument
+    for argument in "$@"; do
+        case "$argument" in
+            --) return 1 ;;
+            -p | --package | --package=*) return 0 ;;
+        esac
+    done
+    return 1
+}
+
+# The base of a --quick key of the kind $1, from the --quick base $2: that
+# base, and for a check at the workspace's rust-version a hash of it and
+# `rustc $MSRV_TOOLCHAIN -vV`, the toolchain the check runs (msrv_checks has
+# found it installed before its step starts). Returns 1 where rustc fails.
+quick_step_base() {
+    local -
+    set -o pipefail
+    if [ "$1" != msrv ]; then
+        printf "%s" "$2"
+        return 0
+    fi
+    local toolchain_version step_base
+    if ! toolchain_version=$(rustc "$MSRV_TOOLCHAIN" -vV 2>&1); then
+        return 1
+    fi
+    if ! step_base=$(printf 'base %s\ntoolchain\n%s\n' "$2" "$toolchain_version" | sha256sum | cut -d' ' -f1); then
+        return 1
+    fi
+    printf "%s" "$step_base"
 }
 
 # The step cache's notes (a reach refused, and why), each once.
@@ -500,21 +678,24 @@ fi
 
 CURRENT_VERSION=$(grep -E '^version\s*=' Cargo.toml | sed -E 's/.*"([^"]+)".*/\1/')
 
-if [[ $COMMIT_MODE ]]; then
+if [[ $QUICK_MODE ]]; then
+    printf "\n${BOLD}${ICON_ROCKET} native-theme v%s · per-task checks (--quick)${NC}\n" "$CURRENT_VERSION"
+elif [[ $COMMIT_MODE ]]; then
     printf "\n${BOLD}${ICON_ROCKET} native-theme v%s · per-commit checks (--commit)${NC}\n" "$CURRENT_VERSION"
 else
     printf "\n${BOLD}${ICON_ROCKET} native-theme v%s · pre-release checks${NC}\n" "$CURRENT_VERSION"
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Speed in --commit: cargo nextest and the step cache (the header says what
-# each does). The full run sets neither: HAVE_NEXTEST and STEP_CACHE stay
-# empty there, so cargo_tests is `cargo test` and step_cached skips nothing,
-# whatever the environment.
+# Speed in --commit and --quick: cargo nextest and the step cache (the header
+# says what each does). The full run sets neither: HAVE_NEXTEST and
+# STEP_CACHE stay empty there, so cargo_tests is `cargo test` and step_cached
+# skips nothing, whatever the environment.
 # ─────────────────────────────────────────────────────────────────────────────
 HAVE_NEXTEST=""
 STEP_CACHE=""
 CACHED=()
+QUICK_UNCHANGED=()
 if [[ $COMMIT_MODE ]]; then
     if cargo nextest --version >/dev/null 2>&1; then
         HAVE_NEXTEST=1
@@ -540,7 +721,8 @@ fi
 #     tests read no file. native-theme's (the desktop they run on),
 #     native-theme-build's (a `cargo check` of a fresh project against
 #     crates.io), showcase-support's (scripts/ at run time) and the
-#     connectors' (the desktop, `cargo metadata`) are not cached;
+#     connectors' (the desktop, `cargo metadata`) are not cached (the
+#     --quick key decides for them in --quick, step_cached);
 #   * no Python check is cached: they read Cargo's registry, the connectors'
 #     sources or every README, which were not traced for this.
 # The reach of the gpui, iced and egui connectors holds the host probes cc
@@ -640,6 +822,12 @@ cache_base() {
     step_cache_environment || return 1
 }
 
+# The step cache's two sets: the strict one (step_cache_init, the full
+# metadata) and the --quick one (step_cache_init_quick), each on or off for
+# the run on its own, each saying why where it is off. A step the strict set
+# would key runs while it is off; a test or docs step it declares then takes
+# the --quick key (step_cached). With the --quick set off, no --quick key is
+# looked up or recorded: --quick runs every step it would key.
 if [[ $STEP_CACHE ]]; then
     # shellcheck source=scripts/step_cache.sh
     source scripts/step_cache.sh
@@ -647,15 +835,20 @@ if [[ $STEP_CACHE ]]; then
     if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
         cache_label="$cache_label with uncommitted changes"
     fi
-    if ! cache_base_text=$(cache_base); then
-        print_info "step cache: off for this run, every step runs: its base could not be computed"
-        STEP_CACHE=""
-    elif ! step_cache_init "target/check-release-cache" "$cache_label" "$cache_base_text" \
+    cache_base_text=$(cache_base) || cache_base_text=""
+    if ! step_cache_init "target/check-release-cache" "$cache_label" "$cache_base_text" \
         || ! step_cache_full_metadata; then
-        print_info "step cache: off for this run, every step runs: $STEP_CACHE_OFF_REASON"
-        STEP_CACHE=""
-    else
+        print_info "step cache: the strict keys off for this run, every step they key runs: $STEP_CACHE_OFF_REASON"
+    fi
+    if ! quick_base=$(step_cache_quick_base "$(cache_tool_versions)"); then
+        print_info "step cache: the --quick keys off for this run, none looked up or recorded: its base could not be computed: $quick_base"
+    elif ! step_cache_init_quick "$quick_base"; then
+        print_info "step cache: the --quick keys off for this run, none looked up or recorded: $STEP_CACHE_QUICK_OFF_REASON"
+    fi
+    if [[ $STEP_CACHE_STRICT || $STEP_CACHE_QUICK ]]; then
         print_info "step cache: on (target/check-release-cache; --no-cache runs every step)"
+    else
+        STEP_CACHE=""
     fi
 fi
 if [[ $HAVE_NEXTEST ]]; then
@@ -739,8 +932,8 @@ else
 fi
 run_check "panic-pattern scan: self-test" python3 scripts/check_panic_patterns.py --self-test
 # The step cache's self-test (scripts/step_cache.sh, the include helper's
-# among its cases), before the first step it could skip; --commit alone, as
-# the full run uses no cache.
+# among its cases), before the first step it could skip; --commit and --quick
+# alone, as the full run uses no cache.
 if [[ $COMMIT_MODE ]]; then
     run_check "step cache: self-test" bash scripts/step_cache.sh --self-test
 fi
@@ -771,8 +964,9 @@ done
 # scripts/msrv_checks.sh runs every `cargo check` of ci.yml's `msrv` job, each
 # on its toolchain with warnings denied, after checking that they are the
 # job's; a toolchain rustup does not list fails, since a gate nobody runs is
-# not a gate. --commit only: the full run leaves them to --commit and CI. Its
-# EXIT trap deletes the workspace rust-version's build folder (the file's
+# not a gate. --commit and --quick only: the full run leaves them to --commit
+# and CI; --quick keys the two at the workspace's rust-version (step_cached).
+# Its EXIT trap deletes the workspace rust-version's build folder (the file's
 # header says why); a later EXIT trap here must be merged into it.
 # ─────────────────────────────────────────────────────────────────────────────
 if [[ $COMMIT_MODE ]]; then
@@ -1705,18 +1899,27 @@ fi
 # ─────────────────────────────────────────────────────────────────────────────
 # Final summary
 # ─────────────────────────────────────────────────────────────────────────────
-TOTAL=$((PASS_COUNT + WARN_COUNT + FAIL_COUNT + ${#CACHED[@]}))
+# The skipped steps of both sets count as checks, not as passes.
+TOTAL=$((PASS_COUNT + WARN_COUNT + FAIL_COUNT + ${#CACHED[@]} + ${#QUICK_UNCHANGED[@]}))
 ELAPSED_TOTAL=$(format_elapsed "$((SECONDS - SCRIPT_START))")
 # The count of unchanged steps where a cache was on; the full run's line
 # stays as it was.
 UNCHANGED_COUNT=""
 if [[ $STEP_CACHE ]]; then
-    UNCHANGED_COUNT=" · ${#CACHED[@]} unchanged"
+    UNCHANGED_COUNT=" · $((${#CACHED[@]} + ${#QUICK_UNCHANGED[@]})) unchanged"
 fi
 
 printf "\n${BOLD}═══════════════════════════════════════════════════════════════════${NC}\n"
 
-if [[ $COMMIT_MODE ]]; then
+if [[ $QUICK_MODE ]]; then
+    if [ "$FAIL_COUNT" -ne 0 ]; then
+        printf "${BOLD}${RED}${ICON_FAIL} FAILED${NC} · native-theme v%s per-task gate\n" "$CURRENT_VERSION"
+    elif [ "$WARN_COUNT" -eq 0 ]; then
+        printf "${BOLD}${GREEN}${ICON_PARTY} ALL PASS${NC} · native-theme v%s per-task gate (not a per-commit or release check)\n" "$CURRENT_VERSION"
+    else
+        printf "${BOLD}${GREEN}${ICON_PARTY} PASS WITH WARNINGS${NC} · native-theme v%s per-task gate (not a per-commit or release check)\n" "$CURRENT_VERSION"
+    fi
+elif [[ $COMMIT_MODE ]]; then
     if [ "$FAIL_COUNT" -ne 0 ]; then
         printf "${BOLD}${RED}${ICON_FAIL} FAILED${NC} · native-theme v%s per-commit subset\n" "$CURRENT_VERSION"
     elif [ "$WARN_COUNT" -eq 0 ]; then
@@ -1752,9 +1955,10 @@ if [ "$FAIL_COUNT" -gt 0 ]; then
 fi
 
 print_cached
+print_quick_unchanged
 
 if [[ $COMMIT_MODE ]]; then
-    printf "\n${BOLD}Skipped (--commit mode):${NC}\n"
+    printf "\n${BOLD}Skipped (%s mode):${NC}\n" "$MODE_FLAG"
     for s in ${SKIPPED[@]+"${SKIPPED[@]}"}; do
         printf "   ${DIM}%s${NC}\n" "$s"
     done
@@ -1762,7 +1966,15 @@ fi
 
 printf "${BOLD}═══════════════════════════════════════════════════════════════════${NC}\n"
 
-if [[ $COMMIT_MODE ]]; then
+if [[ $QUICK_MODE ]]; then
+    if [ "$FAIL_COUNT" -eq 0 ]; then
+        printf "\n   ${DIM}./scripts/check_release.sh --commit${NC} runs every third code task (unit), counted from\n"
+        printf "   the last --commit, on a release's last code task, after a lock or toolchain change and\n"
+        printf "   where a plan names a task structural; --quick at a task's end.\n\n"
+        exit 0
+    fi
+    exit 1
+elif [[ $COMMIT_MODE ]]; then
     if [ "$FAIL_COUNT" -eq 0 ]; then
         printf "\n   The full run (${DIM}./scripts/check_release.sh${NC}) is required on the last commit of\n"
         printf "   every fix phase and before the release commit.\n\n"

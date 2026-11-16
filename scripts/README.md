@@ -303,9 +303,10 @@ There is no verb that writes the stamp without the run.
 ## check_release.sh
 
 The workspace's quality gate: source hygiene, the step cache's self-test (in
-`--commit` only; `step_cache.sh`, below), `cargo check`, CI's MSRV checks
-(`ci.yml`'s `msrv` job, on its two toolchains) and the check that they are the
-job's (these two in `--commit` only; `msrv_checks.sh`, below), the feature
+`--commit` and `--quick`; `step_cache.sh`, below), `cargo check`, CI's MSRV
+checks (`ci.yml`'s `msrv` job, on its two toolchains) and the check that they
+are the job's (these two in `--commit` and `--quick`; `msrv_checks.sh`,
+below), the feature
 combinations, the cross-target checks and clippy, fmt, clippy, the strict
 panic lints, the tests, the connectors' other configurations, the showcases'
 tests in CI's runner environment (`run_in_runner_env.sh`, below), the examples,
@@ -320,26 +321,56 @@ With `--commit` it runs the per-commit subset: the release-tag check, the gpui
 connector's tests on GPUI Fast, native-theme's ignored stem-index test and the
 release-only sections are skipped, each
 printing `skipped (--commit mode)`, and the summary names them. `cargo audit`
-runs in both modes, as CI audits every pull request and every push to `main`. It fetches the advisory database
+runs in every mode, as CI audits every pull request and every push to `main`. It fetches the advisory database
 each time; where it cannot (no network), the full run fails, and the
 per-commit subset audits against the cached database (`cargo audit
 --no-fetch`, which checks no yanks) and warns with that database's date, or,
 where no cached database loads, warns that the audit did not run.
-The subset runs before every commit; the full run on the last commit of every
-fix phase and before the release commit. An unknown argument exits 2;
+`--commit` runs every third code task (unit), counted from the last
+`--commit`, on a release's last code task, after a lock or toolchain change
+and where a plan names a task structural; `--quick` at a task's end; the full
+run on the last commit of every fix phase and before the release commit.
+`--commit` and `--quick` exclude each other. An unknown argument exits 2;
 `--help` prints the usage.
 
-Two speed-ups apply to `--commit` alone; the full run runs every step through
-`cargo test`, with no cache. Where `cargo-nextest` is installed, the test
-steps run `cargo nextest run` (`cargo_tests` in the script), and
+With `--quick` it runs the per-task gate: every step of `--commit` (the panic
+scan and its self-test, the step cache's self-test, `cargo check`, the check
+against `ci.yml` and the four MSRV checks on the connectors' toolchain, the
+feature combinations, the cross-target checks, clippy and the strict lints,
+formatting, the connectors' other configurations, the examples, the Python
+checks and the audit), skipping the same release-only checks, each printing
+`skipped (--quick mode)`, but it leaves to `--commit` each test step (the
+showcases' tests in CI's runner environment among them), each `cargo doc`
+step and the two MSRV checks at the workspace's `rust-version` whose
+`--quick` key is unchanged since the step last passed in `--commit` or
+`--quick`: the summary lists each under `Left to --commit`. The key
+(`step_cache.sh`, below) follows the crates the step names with `-p` (a
+`--workspace` check: the members it does not `--exclude`), everything they
+build against in the workspace and the files their code includes, the files
+outside the crates but those `QUICK_UNREAD` lists (the Markdown documents,
+`.github/`, the licences, the git ignore and attribute files and the archived,
+issue, asset and evidence folders under `docs/`), the tool versions, the
+environment but its thread counts, output, location and speed settings and the
+per-session variables, the gate's scripts and the step's command; an MSRV
+check's key adds `rustc <toolchain> -vV`. It does not follow what a test reads
+outside the repository (the desktop, the installed fonts and icon themes, the
+system libraries, the network, the clock), nor what a registry build script
+or procedural macro reads: the next `--commit` checks those, as it runs every
+such step.
+
+Two speed-ups apply to `--commit` and `--quick` alone; the full run runs every
+step through `cargo test`, with no cache. Where `cargo-nextest` is installed,
+the test steps run `cargo nextest run` (`cargo_tests` in the script), and
 `cargo test --doc` where `cargo test` would have run doctests too; the
 showcases' tests in CI's runner environment stay on `cargo test`. The step
 cache (`step_cache.sh`, below) skips a compile-only or documentation step, or
 native-theme-derive's tests, whose declared inputs are unchanged since it last
 passed; the summary lists each as `unchanged since <commit>`, and `--no-cache`
-runs every step (without `--commit` it exits 2).
+runs every step, neither key read or recorded (without `--commit` or `--quick`
+it exits 2).
 
 ```sh
+./scripts/check_release.sh --quick
 ./scripts/check_release.sh --commit
 ./scripts/check_release.sh --commit --no-cache
 ./scripts/check_release.sh
@@ -347,10 +378,10 @@ runs every step (without `--commit` it exits 2).
 
 ## step_cache.sh
 
-The step cache of `check_release.sh --commit`, sourced by it. A step is
-skipped only when the SHA-256 key of its run equals the one recorded when it
-last passed: the base (the tool versions, `rustc -vV`, `cargo -vV`, clippy's,
-rustdoc's, rustfmt's, Python's and nextest's; the hashes of the gate's five
+The step cache of `check_release.sh --commit` and `--quick`, sourced by it. A
+step is skipped only when the SHA-256 key of its run equals the one recorded
+when it last passed. The strict key's parts are the base (the tool versions,
+`rustc -vV`, `cargo -vV`, clippy's, rustdoc's, rustfmt's, Python's and nextest's; the hashes of the gate's five
 scripts, `check_release.sh`, `step_cache.sh`, `step_cache_includes.py`,
 `check_panic_patterns.py`, whose lexer the include helper loads, and
 `msrv_checks.sh`; and the environment but `_`, `SHLVL`, `OLDPWD`), the step's
@@ -386,17 +417,58 @@ a registry build script or procedural macro runs the steps whose reach holds
 it until the list names it, after a review of what it runs, reads and is
 configured by.
 
+The `--quick` key is the key of each test step and `cargo doc` step the
+strict key does not decide (the strict key decides for a declared step whose
+reach it accepts; the others are 29 of the 39 on 0.7.x, the gpui, iced and
+egui connectors' documentation steps among them), and of the two MSRV checks
+at the workspace's `rust-version` (`msrv_checks.sh`, below). Its records are a
+set of their own, `target/check-release-cache/quick/`: `--quick` looks them up,
+and `--commit` and `--quick` record each such step that passes, so a `--commit`
+lets the next `--quick` skip what nothing touched since. It is the strict
+key's form with another base and another reach. The base: the tool versions;
+the environment but a deny-list of what cannot change a verdict (`_`, `SHLVL`,
+`OLDPWD`; `RUST_TEST_THREADS`, `CARGO_BUILD_JOBS` and `NEXTEST_TEST_THREADS`
+while each is a plain positive number; the output settings, `CARGO_TERM_*`,
+`RUST_LOG`, `RUST_BACKTRACE` and the like; the build locations
+`CARGO_HOME`, `CARGO_TARGET_DIR`, `CARGO_BUILD_TARGET_DIR`,
+`CARGO_BUILD_BUILD_DIR`; the speed settings `CARGO_INCREMENTAL`,
+`CARGO_CACHE_RUSTC_INFO`; and the variables a new session, terminal or service
+gives each call, `CLAUDE_CODE_SESSION_ID`, `WINDOWID`, `INVOCATION_ID` and the
+others `step_cache_quick_environment` lists), so a variable no list foresaw
+makes the step run; and every file `git ls-files -co --exclude-standard` lists
+outside the workspace packages' directories but those `QUICK_UNREAD` matches
+(`*.md`, `docs/archive/*`, `docs/issues/*`, `docs/assets/*`,
+`docs/evidence/*`, `.github/*`, `LICENSE-*`, `.gitignore`, `.gitattributes`,
+each `*` matching `/` too), by path and content: the manifests, the lock,
+Cargo's configuration, `docs/*.toml` and every script, the gate's own among
+them. Where git cannot list them, no `--quick` key is computed and the run says
+why. The reach is the strict one without its refusals for a host probe and for
+registry build code the list does not name, which `--quick` leaves to
+`--commit`; a path package outside the workspace, an unreviewed workspace
+build script or procedural macro and an include the helper refuses still
+refuse it, and an include target stays in the key whatever `QUICK_UNREAD`
+says (`docs/platform-facts.md`, which `native-theme` includes). A step names
+its crates with `-p`; a test or docs step that names none fails the run, and
+the workspace MSRV check keys every member it does not `--exclude`
+(`step_cache_command_crates`), its key adding `rustc +<rust-version> -vV`.
+
 `--self-test` shows that a declared file edited, added, renamed or removed, a
 glob's new match, the script edited, the command or the environment changed,
 re-run the step, and that a failure records nothing; that a record that
 cannot be written returns an error the caller goes past, that the locale does
 not change a key, and that an unreadable input fails the key in the gate's own
-shell options; it runs the include helper's self-test; and, on a synthetic
-workspace with a stub `cargo`, it shows an include outside its package
-hashed, each refusal of the reach above (a failing `cargo tree` among them), a
-step whose input changes while it runs recording nothing, and a full metadata
-that fails or lists no package keying no step. `check_release.sh --commit`
-runs it.
+shell options; that the `--quick` environment changes with a variable outside
+the deny-list, and not with a denied one (each per-session variable changed
+or unset), its entries split at NUL; it runs the include helper's self-test;
+and, on a synthetic workspace with a stub `cargo`, it shows an include outside
+its package hashed in both keys, each refusal of the reach above in the forms
+that have it (a failing `cargo tree` among them), the `--quick` base following
+a file outside the packages and no file `QUICK_UNREAD` matches, and failing
+where git cannot list the files, the two record sets kept apart, a step whose
+input changes while it runs recording nothing in either, a full metadata that
+fails or lists no package keying no strict step, and a command's crates
+following its `-p` or `--workspace` and `--exclude` options.
+`check_release.sh --commit` and `--quick` run it.
 
 ```sh
 bash scripts/step_cache.sh --self-test
@@ -430,8 +502,16 @@ python3 scripts/step_cache_includes.py --self-test
 ## msrv_checks.sh
 
 CI's MSRV checks, sourced by `check_release.sh`, which runs them in `--commit`
-right after its `cargo check` section; the full run leaves them to `--commit`
-and CI. Sourcing it defines the six checks' arguments and its functions and
+and `--quick` right after its `cargo check` section; the full run leaves them
+to `--commit` and CI. `--quick` runs the two at the workspace's `rust-version`
+only where their `--quick` key changed (`step_cache.sh`, above: their crates'
+reach and included files, the files outside the crates but those
+`QUICK_UNREAD` lists,
+the tools, the environment, and their toolchain, `rustc +<rust-version> -vV`,
+read only once the toolchain is found installed); the four on the connectors'
+toolchain build in the shared build folder, where Cargo's fingerprints make
+an unchanged crate cheap, and run every time, as the check against `ci.yml`
+does. Sourcing it defines the six checks' arguments and its functions and
 runs nothing. The toolchains are read when the section starts: the
 workspace's `rust-version` from the root `Cargo.toml`, and the connectors'
 toolchain, the second `dtolnay/rust-toolchain@<version>` of `ci.yml`'s `msrv`
@@ -480,8 +560,8 @@ check is the type-aware `check_strict_panic.sh`; this one also sees what that
 run's lint list does not name and code behind a cfg the clippy runs do not
 build. Exits 0 when nothing is found, 1 on a finding or on an input it cannot
 read (a missing directory, one with no `.rs` file, a file that is not UTF-8).
-`--self-test` runs its built-in scenarios. `scripts/check_release.sh` (both
-modes) runs it over every workspace member's `src/` and runs the self-test.
+`--self-test` runs its built-in scenarios. `scripts/check_release.sh` (every
+mode) runs it over every workspace member's `src/` and runs the self-test.
 
 Requires Python 3.
 
@@ -629,7 +709,7 @@ no one-field accessor found, a malformed exception file). `--self-test` runs its
 scenarios, a planted violation of each rule among them and an absent
 function of each class; `--root DIR` reads a scratch copy of the tree
 instead, to try a change; `-v` lists every function with its class and
-signature. `scripts/check_release.sh` (in the `--commit` subset too) runs
+signature. `scripts/check_release.sh` (in `--commit` and `--quick` too) runs
 the check and the self-test; `ci.yml` (and through it `publish.yml`'s CI
 run) runs the check and the self-test, and `dependency-canary.yml` the check.
 
@@ -680,8 +760,8 @@ import brings in or the block declares itself reads as a crate, and a path in
 a macro body as any other path; none occurs in a README today.
 `--self-test` runs its built-in scenarios, a README naming another minor,
 code naming an unstated crate and a doc example naming one among them; `--root DIR` reads a
-scratch copy of the tree. `scripts/check_release.sh` (in the `--commit`
-subset too) and `ci.yml`'s documentation job (and through it `publish.yml`'s
+scratch copy of the tree. `scripts/check_release.sh` (in `--commit` and
+`--quick` too) and `ci.yml`'s documentation job (and through it `publish.yml`'s
 CI run) run the check and the self-test.
 
 Requires Python 3.11+ (for `tomllib`); reads no network and runs no cargo.
@@ -719,8 +799,8 @@ groups) and the current groups, one group per set of reasons, listing the
 proposals it dropped and the differences none covers. With `--write` it also
 rewrites the exceptions file's `[parity]` section, from its `[parity]` line to
 the end, with those groups, every byte above that line unchanged; a second run
-over the same inputs changes nothing. `scripts/check_release.sh` (in the
-`--commit` subset too) and `ci.yml` run `--check-list` and `--self-test`,
+over the same inputs changes nothing. `scripts/check_release.sh` (in
+`--commit` and `--quick` too) and `ci.yml` run `--check-list` and `--self-test`,
 which need no display. `generate_assets_release.sh` runs the comparison
 itself over the rest run of the six captured presets: each Linux screenshot's
 run writes its layout dump, its capture and the capture's `.offset` into one
@@ -747,7 +827,7 @@ suffix, and a `border`, `font` or `icon_sizes` field part by part, the
 per-side paddings under their axis rows; the script's docstring states the
 whole rule. Prints one line per missing field (field, section, row name) and
 exits 0 when there is none, 1 when there are some, 2 on an input it cannot
-read. `--self-test` runs the rule on a synthetic registry and facts file. `check_release.sh` (both modes)
+read. `--self-test` runs the rule on a synthetic registry and facts file. `check_release.sh` (every mode)
 and `ci.yml`'s parity job run it and its self-test.
 
 Requires Python 3.
@@ -766,7 +846,7 @@ and an entry that is no `[uniform]` rule is inherited by `[font_inheritance]`
 or `[border_inheritance]`, or states `removed`; the script's docstring states
 the whole rule. Prints one line per finding and exits 0 when there is none, 1
 when there are some, 2 on an input it cannot read. `--self-test` runs the
-rule on a synthetic rules file. `check_release.sh` (both modes) and
+rule on a synthetic rules file. `check_release.sh` (every mode) and
 `ci.yml`'s parity job run it and its self-test.
 
 Requires Python 3.11+ (for `tomllib`).
@@ -786,7 +866,7 @@ heading); a lettered `§` or one after another `.md` file's name is another
 document's and is skipped, as the script's docstring states. Prints one line
 per dangling reference (file:line, reference) and exits 0 when there is none,
 1 when there are some, 2 on an input it cannot read. `--self-test` runs the
-rule on a synthetic document and facts file. `check_release.sh` (both modes)
+rule on a synthetic document and facts file. `check_release.sh` (every mode)
 and `ci.yml`'s parity job run it and its self-test.
 
 Requires Python 3.
@@ -808,7 +888,7 @@ every edit above it. The script's docstring states the whole rule. Prints
 one line per finding (file:line, citation, what is wrong) and exits 0 when
 there is none, 1 when there are some, 2 on an input it cannot read.
 `--self-test` runs the rule on a synthetic document and presets.
-`check_release.sh` (both modes) and `ci.yml`'s parity job run it and its
+`check_release.sh` (every mode) and `ci.yml`'s parity job run it and its
 self-test.
 
 Requires Python 3.11+ (for `tomllib`).
@@ -842,7 +922,7 @@ wrong) and the counts of every preset, and exits 0 when there is none, 1
 when there are some, 2 on an input it cannot read (not UTF-8 or TOML, or a
 preset citing `platform-facts.md:N` where the rule reads no citation).
 `--self-test` runs the rule on a synthetic facts file and preset.
-`check_release.sh` (both modes) and `ci.yml`'s parity job run it and its
+`check_release.sh` (every mode) and `ci.yml`'s parity job run it and its
 self-test.
 
 Requires Python 3.11+ (for `tomllib`).
@@ -906,9 +986,10 @@ all (whose `native` reads the desktop, which the environment hides), the iced
 showcase with its defaults and with `iced_aw,watch,native`, the gpui showcase
 with its defaults, with `native,watch` and on GPUI Fast with
 `gpui-fast,native,watch`. A test leg already builds each but the gpui
-showcase's defaults, which that leg compiles again. Both modes run them all
-but the GPUI Fast leg, which `--commit` skips, as it skips the gpui
-connector's other GPUI Fast tests. It runs `run_in_runner_env.sh --prepare`
+showcase's defaults, which that leg compiles again. Every mode runs them all
+but the GPUI Fast leg, which `--commit` and `--quick` skip, as they skip the
+gpui connector's other GPUI Fast tests; `--quick` skips a leg whose key is
+unchanged since it last passed. It runs `run_in_runner_env.sh --prepare`
 first, which builds the environment and runs nothing: where a package is not
 cached with its SHA-256 and neither server delivers it, one or both out of
 reach (no connection, a timeout, a transfer closed early) or answering

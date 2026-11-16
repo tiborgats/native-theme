@@ -2,8 +2,11 @@
 # scripts/check_release.sh: a lint can fire at the MSRV and not on stable, so
 # the job denies warnings, and it runs every command below, each on its
 # toolchain: the workspace's rust-version, then the connectors' (the job's
-# second toolchain, read from ci.yml). --commit runs them; the full run
-# leaves them to --commit and CI.
+# second toolchain, read from ci.yml). --commit and --quick run them, --quick
+# the two at the workspace's rust-version only where anything their key
+# follows changed (their crates' reach and included files, the files outside
+# the crates but QUICK_UNREAD, the tools, the environment, their toolchain);
+# the full run leaves them to --commit and CI.
 #
 # Sourcing this file defines the six checks' arguments and the functions
 # below and runs nothing. msrv_toolchains reads the two toolchains;
@@ -250,7 +253,10 @@ msrv_toolchain_installed() {
 }
 
 # One check: $1 = toolchain, $2 = description, $3... = the arguments after
-# `check`. A toolchain the listing lacks fails it without running cargo.
+# `check`. A toolchain the listing lacks fails it without running cargo, and
+# before run_check computes a rust-version check's --quick key, which runs
+# `rustc <toolchain> -vV` (check_release.sh's quick_step_base): rustup may
+# install a toolchain it is asked for.
 msrv_check() {
     local toolchain="$1"
     local description="$2"
