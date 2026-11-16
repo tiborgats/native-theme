@@ -3732,8 +3732,8 @@ the gap — closing it is a change, and each wants its own decision.
 - [ ] [1.0] **A machine-readable platform-facts.** The documented-sizes gate
       (`native-theme/src/presets/documented_sizes.rs`) copies each value it
       checks by hand from `docs/platform-facts.md` and cites the line; a
-      companion test checks the citation lands on the right row, but not
-      that the number is the one written there. With the facts in a
+      companion test checks that each row's section has the rows it names,
+      but not that the number is the one written there. With the facts in a
       structured form (per platform, per field, the value, its context and
       its source), every native value — not only padding and the toolbar —
       could be gated, and the Markdown tables generated from it.

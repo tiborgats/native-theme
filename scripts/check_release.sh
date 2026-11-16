@@ -1560,8 +1560,10 @@ run_check "showcase parity: comparator self-test" \
 # docs/new-os-version-guide.md that names no platform-facts section;
 # scripts/check_todo_citations.py on a preset key path in docs/todo.md that
 # names no key of its preset, or a preset line citation no commit dates;
-# scripts/check_preset_citations.py on a preset comment whose
-# `platform-facts.md:N` row is not the value below it. CI runs the same ten.
+# scripts/check_preset_citations.py reads the presets' platform-facts
+# citations of two forms, `platform-facts.md:N (§x.y)` and
+# `platform-facts.md (§x.y)`, and fails on a preset it cannot read; it no
+# longer compares a citation with the facts file. CI runs the same ten.
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "Data documents"
 run_check "data documents: every registry field has a platform-facts row" \
@@ -1580,7 +1582,7 @@ run_check "data documents: docs/todo.md cites preset values by key path" \
     python3 scripts/check_todo_citations.py
 run_check "data documents: todo citations self-test" \
     python3 scripts/check_todo_citations.py --self-test
-run_check "data documents: preset comments cite their platform-facts rows" \
+run_check "data documents: preset comments' platform-facts citations read" \
     python3 scripts/check_preset_citations.py
 run_check "data documents: preset citations self-test" \
     python3 scripts/check_preset_citations.py --self-test
