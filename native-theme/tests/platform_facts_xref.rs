@@ -21,6 +21,14 @@ use native_theme::theme::*;
 
 const PLATFORM_FACTS: &str = include_str!("../../docs/platform-facts.md");
 
+/// Whether one line of platform-facts.md holds every part: a row named by its
+/// own text and the value it must give, not by its position.
+fn facts_row_has(parts: &[&str]) -> bool {
+    PLATFORM_FACTS
+        .lines()
+        .any(|l| parts.iter().all(|p| l.contains(p)))
+}
+
 #[test]
 fn kde_breeze_matches_platform_facts() {
     let theme = Theme::preset("kde-breeze").unwrap();
@@ -240,12 +248,29 @@ fn macos_tahoe_matches_platform_facts() {
 /// the cells' "macOS 26:" values give.
 #[test]
 fn macos_tahoe_probe_sizes_match_platform_facts() {
-    let line = |n: usize| PLATFORM_FACTS.lines().nth(n - 1).unwrap_or("");
-    assert!(line(1183).contains("macOS 26: 24 **(API)**"));
-    assert!(line(1212).contains("macOS 26: 24 **(API)**"));
-    assert!(line(1616).contains("macOS 26: 24 **(API)**"));
-    assert!(line(1468).contains("macOS 26: same"));
-    assert!(line(1469).contains("macOS 26: same"));
+    assert!(
+        facts_row_has(&["NSButton intrinsic: 20 **(API)**", "macOS 26: 24 **(API)**"]),
+        "§2.3 min_height: no row gives NSButton 20 and macOS 26: 24"
+    );
+    assert!(
+        facts_row_has(&[
+            "NSTextField intrinsic: 21 **(API)**",
+            "macOS 26: 24 **(API)**"
+        ]),
+        "§2.4 min_height: no row gives NSTextField 21 and macOS 26: 24"
+    );
+    assert!(
+        facts_row_has(&["NSPopUpButton: 20 **(API)**", "macOS 26: 24 **(API)**"]),
+        "§2.24 min_height: no row gives NSPopUpButton 20 and macOS 26: 24"
+    );
+    assert!(
+        facts_row_has(&["NSSplitView divider: 9 **(API)**", "macOS 26: same"]),
+        "§2.17 divider_width: no row gives NSSplitView's 9 and macOS 26: same"
+    );
+    assert!(
+        facts_row_has(&["clear for the `.thick` style", "macOS 26: same"]),
+        "§2.17 divider_color: no row gives clear for `.thick` and macOS 26: same"
+    );
     let theme = Theme::preset("macos-tahoe").unwrap();
     for v in [theme.light.as_ref().unwrap(), theme.dark.as_ref().unwrap()] {
         assert_eq!(v.button.min_height, Some(24.0));
@@ -323,13 +348,24 @@ fn all_platform_presets_load_and_have_both_variants() {
 /// states the number its version's platform-facts cell gives.
 #[test]
 fn macos_probe_sizes_match_platform_facts() {
-    let line = |n: usize| PLATFORM_FACTS.lines().nth(n - 1).unwrap_or("");
-    // §2.17 (platform-facts.md:1468-1469): NSSplitView's thick divider, 9 wide and clear
-    assert!(line(1468).contains("NSSplitView divider: 9 **(API)**"));
-    assert!(line(1469).contains("clear for the `.thick` style"));
-    // §2.3 (platform-facts.md:1183) and §2.4 (:1212): the push button and the text field on 14-15
-    assert!(line(1183).contains("macOS 14–15: NSButton intrinsic: 20 **(API)**"));
-    assert!(line(1212).contains("macOS 14–15: NSTextField intrinsic: 21 **(API)**"));
+    // §2.17's divider_width and divider_color rows: NSSplitView's thick divider, 9 wide and clear
+    assert!(
+        facts_row_has(&["NSSplitView divider: 9 **(API)**"]),
+        "§2.17 divider_width: no row gives NSSplitView's divider 9"
+    );
+    assert!(
+        facts_row_has(&["clear for the `.thick` style"]),
+        "§2.17 divider_color: no row gives clear for the `.thick` style"
+    );
+    // §2.3's and §2.4's min_height rows: the push button and the text field on 14-15
+    assert!(
+        facts_row_has(&["macOS 14–15: NSButton intrinsic: 20 **(API)**"]),
+        "§2.3 min_height: no row gives macOS 14–15's NSButton 20"
+    );
+    assert!(
+        facts_row_has(&["macOS 14–15: NSTextField intrinsic: 21 **(API)**"]),
+        "§2.4 min_height: no row gives macOS 14–15's NSTextField 21"
+    );
     let theme = Theme::preset("macos-monterey").unwrap();
     for v in [theme.light.as_ref().unwrap(), theme.dark.as_ref().unwrap()] {
         assert_eq!(v.splitter.divider_width, Some(9.0));

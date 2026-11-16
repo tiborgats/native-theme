@@ -412,8 +412,8 @@ jobs:
       # The data documents' checks, as scripts/check_release.sh runs them: a
       # registry field without a platform-facts row, [wrong_safety_nets] and
       # its [uniform] marks, a § reference to no platform-facts section, a
-      # docs/todo.md preset citation that does not hold, a preset comment whose
-      # platform-facts row is not the value below it.
+      # docs/todo.md preset citation that does not hold, a preset whose
+      # platform-facts citations cannot be read.
       - run: python3 scripts/check_platform_facts_rows.py
       - run: python3 scripts/check_platform_facts_rows.py --self-test
       - run: python3 scripts/check_wrong_safety_nets.py

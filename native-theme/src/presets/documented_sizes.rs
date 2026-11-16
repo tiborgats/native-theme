@@ -555,19 +555,19 @@ fn source(preset: NativePreset, live: bool) -> String {
     }
 }
 
-/// Line `n` (1-based) of platform-facts.md, or "" past its end.
-fn facts_line(n: usize) -> &'static str {
-    PLATFORM_FACTS.lines().nth(n.wrapping_sub(1)).unwrap_or("")
-}
-
-/// The `### 2.` section heading line `n` of platform-facts.md sits under.
-fn facts_heading(n: usize) -> &'static str {
+/// The first row of platform-facts.md whose first cell is `` `key` `` inside
+/// the section whose heading starts with `### <section> `, up to the next
+/// `### ` heading (a `####` heading does not end it); `None` where there is no
+/// such section or row.
+fn facts_row(section: &str, key: &str) -> Option<&'static str> {
+    let title = format!("### {section} ");
+    let cell = format!("| `{key}`");
     PLATFORM_FACTS
         .lines()
-        .take(n)
-        .filter(|l| l.starts_with("### 2."))
-        .last()
-        .unwrap_or("")
+        .skip_while(|l| !l.starts_with(&title))
+        .skip(1)
+        .take_while(|l| !l.starts_with("### "))
+        .find(|l| l.starts_with(&cell))
 }
 
 fn cite(lines: &[usize]) -> String {
@@ -647,38 +647,21 @@ fn every_preset_and_widget_has_one_row() {
     assert_eq!(ROWS.len(), NativePreset::ALL.len() * WIDGETS.len());
 }
 
-/// Each cited line is the row it claims to be, inside the widget's section:
-/// a padding row, the section heading where a section has no padding row,
-/// or the named toolbar field.
+/// The widget's section has the rows each row reads, found by name: the two
+/// padding rows and each further field's row. The line numbers a row gives
+/// are citations, which no check compares with the file.
 #[test]
-fn every_citation_names_its_platform_facts_row() {
+fn every_row_names_rows_of_its_section() {
     for row in ROWS {
-        let title = format!("### {} ", section(row.widget));
-        let extra_lines = row.extra.iter().map(|&(_, _, n)| n);
-        for n in row.lines.iter().copied().chain(extra_lines) {
+        let section = section(row.widget);
+        let fields = row.extra.iter().map(|&(field, _, _)| field);
+        for key in ["border.padding_horizontal", "border.padding_vertical"]
+            .into_iter()
+            .chain(fields)
+        {
             assert!(
-                facts_heading(n).starts_with(&title),
-                "{:?} {}: platform-facts.md:{n} is outside §{}",
-                row.preset,
-                row.widget,
-                section(row.widget),
-            );
-        }
-        for &n in row.lines {
-            let text = facts_line(n);
-            assert!(
-                text.starts_with("| `border.padding_") || text.starts_with(&title),
-                "{:?} {}: platform-facts.md:{n} is neither a padding row nor the \
-                 section heading: {text:?}",
-                row.preset,
-                row.widget,
-            );
-        }
-        for &(field, _, n) in row.extra {
-            let text = facts_line(n);
-            assert!(
-                text.starts_with(&format!("| `{field}`")),
-                "{:?} {}.{field}: platform-facts.md:{n} is not the `{field}` row: {text:?}",
+                facts_row(section, key).is_some(),
+                "{:?} {}: §{section} has no `{key}` row",
                 row.preset,
                 row.widget,
             );
@@ -1177,25 +1160,17 @@ fn every_preset_and_field_has_one_row() {
     assert_eq!(FIELD_ROWS.len(), NativePreset::ALL.len() * FIELDS.len());
 }
 
-/// Each field row cites its own cell's line, inside the cell's section.
+/// Each field row's cell is a row of its section, found by name; the line a
+/// field row gives is a citation, which no check compares with the file.
 #[test]
-fn every_field_citation_names_its_platform_facts_row() {
+fn every_field_row_names_a_row_of_its_section() {
     for row in FIELD_ROWS {
         let (section, key) = field_cell(row.field).unwrap_or(("?", "?"));
         assert!(
-            facts_heading(row.line).starts_with(&format!("### {section} ")),
-            "{:?} {}: platform-facts.md:{} is outside §{section}",
+            facts_row(section, key).is_some(),
+            "{:?} {}: §{section} has no `{key}` row",
             row.preset,
             row.field,
-            row.line,
-        );
-        let text = facts_line(row.line);
-        assert!(
-            text.starts_with(&format!("| `{key}`")),
-            "{:?} {}: platform-facts.md:{} is not the `{key}` row: {text:?}",
-            row.preset,
-            row.field,
-            row.line,
         );
     }
 }
@@ -1256,8 +1231,8 @@ const EXPANDER_STRUCTURE: [(NativePreset, Option<crate::model::ArrowSide>, Optio
 /// gives them, static and live, and no other preset states either.
 #[test]
 fn native_themes_state_the_expanders_structure() {
-    assert!(facts_line(1683).starts_with("| `arrow_side`"));
-    assert!(facts_line(1686).starts_with("| `frame_enabled`"));
+    assert!(facts_row("2.27", "arrow_side").is_some());
+    assert!(facts_row("2.27", "frame_enabled").is_some());
     let mut failures = Vec::new();
     for (preset, side, frame) in EXPANDER_STRUCTURE {
         for variant in gate_variants(preset) {
@@ -1292,11 +1267,11 @@ fn native_themes_state_the_expanders_structure() {
     assert!(failures.is_empty(), "{}", failures.join("\n"));
 }
 
-/// One soft field per native preset against platform-facts' row at `line`,
+/// One soft field per native preset against the platform-facts row `row` names,
 /// static and live, and the unsourced presets stating none: the mismatches.
 fn soft_field_failures<T: Copy + PartialEq + std::fmt::Debug>(
     field: &str,
-    line: usize,
+    row: &str,
     want: &[(NativePreset, Option<T>)],
     resolved: fn(&ResolvedTheme) -> Option<T>,
     stated: fn(&ThemeMode) -> Option<T>,
@@ -1316,7 +1291,7 @@ fn soft_field_failures<T: Copy + PartialEq + std::fmt::Debug>(
                     if got != expected {
                         failures.push(format!(
                             "{source} {name}: {field} {got:?}, platform-facts gives \
-                             {expected:?} (docs/platform-facts.md:{line})"
+                             {expected:?} (docs/platform-facts.md {row})"
                         ));
                     }
                 }
@@ -1357,11 +1332,10 @@ const TOOLTIP_SHOW_DELAY: [(NativePreset, Option<u16>); 6] = [
 /// it, static and live, and no other preset states one.
 #[test]
 fn native_themes_state_the_tooltip_show_delay() {
-    assert!(facts_line(1290).starts_with("| `show_delay`"));
-    assert!(facts_heading(1277).starts_with("### 2.7 "));
+    assert!(facts_row("2.7", "show_delay").is_some());
     let failures = soft_field_failures(
         "tooltip.show_delay_ms",
-        1277,
+        "§2.7 show_delay",
         &TOOLTIP_SHOW_DELAY,
         |t| t.tooltip.show_delay,
         |v| v.tooltip.show_delay,
@@ -1385,11 +1359,10 @@ const DIALOG_ENTRANCE: [(NativePreset, Option<crate::model::DialogEntranceStyle>
 /// static and live, and no other preset states one.
 #[test]
 fn native_themes_state_the_dialog_entrance() {
-    assert!(facts_line(1569).starts_with("| `entrance`"));
-    assert!(facts_heading(1556).starts_with("### 2.22 "));
+    assert!(facts_row("2.22", "entrance").is_some());
     let failures = soft_field_failures(
         "dialog.entrance",
-        1556,
+        "§2.22 entrance",
         &DIALOG_ENTRANCE,
         |t| t.dialog.entrance,
         |v| v.dialog.entrance,

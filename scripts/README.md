@@ -820,28 +820,22 @@ python3 scripts/check_todo_citations.py --self-test
 
 ## check_preset_citations.py
 
-Checks the `docs/platform-facts.md` citations in the presets' comments. A
-citation (`platform-facts.md:N`, a range `N-M` or further `, :K` lines, each
-with its `(§x)`) cites the key its comment names (`no K:`, `K not stated:`,
-`K ← X`, ...), or else the value straight below the comment, and its row
-must name that key or value: the row's backticked name must be the key path
-inside its widget, `<sub-table>.<key>` without `_px`, `_ms` or `_pt`
-(`[light.button.border] color` is `border.color`), and the row must lie in
-the section the comment states; a citation of several rows for a value also
-needs each row of the value's section to name a value it covers. A line
-number drifts with every edit above it, which is how 52 of material-3's
-comments in each variant came to cite a neighbouring row. The stated
-cross-row citations pass by rules (a disabled colour citing
-`disabled_opacity`, an unchecked or hovered fill citing the widget's
-`background_color`, ..., each only where the section has no row of the
-value's own), and the rest by the script's `EXCEPTIONS` list, keyed by
-preset, key path and cited row, each with its reason; an exception no
-citation uses is a finding. The script's docstring states the whole rule.
-Prints one line per finding (preset:line, key path, cited line, what is
-wrong) and the counts of every preset, and exits 0 when there is none, 1
-when there are some, 2 on an input it cannot read (not UTF-8 or TOML, or a
-preset citing `platform-facts.md:N` where the rule reads no citation).
-`--self-test` runs the rule on a synthetic facts file and preset.
+Reads the `docs/platform-facts.md` citations in the presets' comments, of
+two forms: `platform-facts.md:N (§x.y)` (a range `N-M` or further `, :K`
+lines, each with its `(§x)`) and `platform-facts.md (§x.y)`, which names no
+line. A citation cites the key its comment names (`no K:`, `K not stated:`,
+`K ← X`, ...), or else the value straight below the comment, or else rows.
+The script no longer compares a citation with the facts file: a line number
+drifts with every edit above it, so the old citations are left to drift and
+a new one names its section alone. A third form,
+`# platform-facts.md §x.y <key>: ...`, with neither a number nor
+parentheses, is read by neither this script nor another. The script's
+docstring states the whole rule. Prints the counts of every preset, its
+citations by kind, and exits 0 when it reads every preset, 2 on an input it
+cannot read (not UTF-8 or TOML, a facts file with no Chapter 2 rows, or a
+preset citing the facts file in either form where the rule reads no
+citation). `--self-test` runs the rule on a synthetic facts file and
+preset.
 `check_release.sh` (both modes) and `ci.yml`'s parity job run it and its
 self-test.
 

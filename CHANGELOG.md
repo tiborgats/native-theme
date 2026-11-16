@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **native-theme-gpui**: requires gpui-component, gpui-base and gpui-kit 0.9.1 and gpui-pre 0.3.12; on the `gpui-fast` feature, GPUI Fast 0.1.14 (MSRV unchanged, 1.95.0). `clippy.toml`'s list of upstream functions that panic on their input follows: `WindowTextSystem::shape_line_by_hash` and `layout_line_by_hash` are gone upstream, and `PriorityQueueSender::send` and `spin_send`, which panic on `Priority::RealtimeAudio`, are added.
 - **All crates**: the manifests no longer state `homepage`, which was the repository's URL that `repository` already gives (Cargo 1.100 warns on the duplicate).
+- **Development**: no check reads `docs/platform-facts.md` by line number any more, so a row added above another no longer turns one red: native-theme's documented-size gate and macOS probe tests look a row up by its section, name and text, and `scripts/check_preset_citations.py` reads the presets' facts citations of the forms `platform-facts.md:N (§x.y)` and `platform-facts.md (§x.y)`, the second naming no line, without comparing them with the facts file's rows.
 
 ### Fixed
 
