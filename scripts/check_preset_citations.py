@@ -81,7 +81,7 @@ NAMED = (
     re.compile(rf"^({KEYS}) no source\b"),
     re.compile(rf"^({KEYS}) inherits? {KEY}"),
 )
-ARROW = re.compile(rf"(?:^|;\s*)({KEY}) ← {KEY}")
+ARROW = re.compile(rf"(?:^|;\s*){KEY} ← {KEY}")
 MARKER = re.compile(r"^(?:soft_option,?\s*)?(?:no (?:macOS 26 )?source(?: ❓)?\s*[:(]?\s*)?")
 HEADER = re.compile(r"\[([A-Za-z0-9_.-]+)\]")
 VALUE = re.compile(r"([A-Za-z0-9_.]+)\s*=")
@@ -122,18 +122,15 @@ def comment_text(line: str) -> str:
     return re.sub(r"^#\s*(?:❓\s*)?", "", line.strip())
 
 
-def named(text: str) -> list[str] | None:
-    """The keys a comment names as its subject: `no K / K:`, `K not stated`,
-    `K no source`, `K inherits X`, `K ← X`."""
+def named(text: str) -> bool:
+    """Whether a comment names keys as its subject: `no K / K:`,
+    `K not stated`, `K no source`, `K inherits X`, `K ← X`."""
     split = lambda keys: [k for k in re.split(r"\s*/\s*|,\s*|,? and ", keys) if k]
     for form in NAMED:
         m = form.match(text)
         if m and "source" not in split(m.group(1)):
-            return split(m.group(1))
-    arrows = ARROW.findall(text)
-    if arrows:
-        return arrows
-    return None
+            return True
+    return bool(ARROW.search(text))
 
 
 def check_preset(name: str, text: str) -> Counter:
@@ -162,12 +159,12 @@ def check_preset(name: str, text: str) -> Counter:
         value_below = bool(VALUE.match(below)) and not HEADER.fullmatch(below)
         text_ = comment_text(stripped)
         subject = named(text_)
-        if subject is None and i > block_start and not block_cited:
+        if not subject and i > block_start and not block_cited:
             subject = named(comment_text(lines[block_start]))
         leading = MARKER.sub("", text_, count=1).startswith(LEADING)
         for k in range(len(cites)):
             counts["citations"] += 1
-            if subject is not None:
+            if subject:
                 kind = "named"
             elif ((leading and k == 0) or not block_cited) and value_below:
                 kind = "value"
@@ -235,6 +232,15 @@ background_color = "#000000"
 border.color = "#000000"
 # the text's role (docs/platform-facts.md (§2.3))
 font.color = "#000000"
+# the hover fill (platform-facts.md:14), and
+# platform-facts.md (§2.3): a value, the line's first citation after another line's
+active_background = "#000000"
+# the pressed fill (platform-facts.md:14), and
+# no macOS 26 source (platform-facts.md (§2.3)): a marked value after another line's
+disabled_background = "#000000"
+# hover_text_color inherits font.color (linkColor,
+# platform-facts.md:9) a named key, from the comment's first line
+hover_text_color = "#000000"
 # platform-facts.md (§2.3): above a table header
 [light.link]
 # platform-facts.md (§2.3): above a blank line
@@ -251,7 +257,7 @@ def self_test() -> int:
     failures = []
     Facts(SELF_TEST_FACTS)
     counts = count_citations({"p.toml": SELF_TEST_PRESET})
-    want = {"citations": 11, "named": 3, "value": 5, "rows": 3}
+    want = {"citations": 16, "named": 4, "value": 9, "rows": 3}
     if dict(counts["p.toml"]) != want:
         failures.append(f"counts: got {dict(counts['p.toml'])}, want {want}")
     for label, preset in (
