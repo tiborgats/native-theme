@@ -347,7 +347,7 @@ pub(crate) const PAGE_ROOT: &str = "page-root";
 
 /// The debug selector the content pane's scrolled element carries. Its right
 /// edge is the scroll area's, which is where a vertical scrollbar's track ends
-/// (gpui-base `src/scrollbar.rs:1422-1446`), so
+/// (gpui-base `src/scrollbar.rs:1427-1451`), so
 /// `a_non_overlay_scrollbar_keeps_off_the_content` can see whether the page
 /// reaches under the bar.
 pub(crate) const CONTENT_SCROLL: &str = "content-scroll";
@@ -1157,7 +1157,7 @@ fn main() {
                 // application because a `#[gpui::test]` cannot ask:
                 // `TestAppContext::build` gives gpui's `NoopTextSystem`
                 // (gpui-pre 0.3.10 src/app/test_context.rs:136,
-                // src/platform/test/platform.rs:131-137).
+                // src/platform/test/platform.rs:136-142).
                 #[cfg(target_os = "macos")]
                 {
                     let mono = showcase_entity.read(cx).original_mono_font.family.clone();

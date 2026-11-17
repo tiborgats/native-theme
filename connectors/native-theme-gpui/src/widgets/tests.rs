@@ -2458,7 +2458,7 @@ fn a_switch_announces_its_accessibility_label(cx: &mut TestAppContext) {
 /// What gpui-kit's test API finds of sliders drawn one under another, each
 /// over a state of its own and built by its `build`, under `theme` (with no
 /// native theme where `None`): each looked up by gpui-base's slider id,
-/// `("slider", entity_id)` (gpui-base slider.rs:509-511).
+/// `("slider", entity_id)` (gpui-base slider.rs:610-612).
 fn slider_snapshots(
     cx: &mut TestAppContext,
     theme: Option<(&str, ColorMode)>,
@@ -2547,7 +2547,7 @@ fn a_slider_announces_its_accessibility_label(cx: &mut TestAppContext) {
 }
 
 /// G3 T7: a disabled themed slider's node is disabled, as gpui-base marks
-/// its own slider's (a11y_disabled.rs:130-135, slider.rs:558); an enabled
+/// its own slider's (a11y_disabled.rs:130-135, slider.rs:656); an enabled
 /// one's is not.
 #[gpui::test]
 fn a_disabled_slider_reports_itself_disabled(cx: &mut TestAppContext) {
@@ -3031,7 +3031,7 @@ fn a_range_slider_draws_a_thumb_at_each_end(cx: &mut TestAppContext) {
 
 /// M6-20: the start of a range moves by pointer: a press on the rail nearer
 /// the start moves the start, as gpui-base picks the nearer thumb
-/// (slider.rs:691-703), and the start thumb follows; dragging that thumb
+/// (slider.rs:789-801), and the start thumb follows; dragging that thumb
 /// moves the start, not the end.
 #[gpui::test]
 fn a_range_slider_moves_its_start_by_pointer(cx: &mut TestAppContext) {
@@ -3091,7 +3091,7 @@ fn a_range_slider_keeps_its_range_on_the_keys(cx: &mut TestAppContext) {
 }
 
 /// M6-20: along the vertical axis the rail stands up the widget, its minimum
-/// at the bottom, as gpui-base maps the pointer (slider.rs:367-371), and the
+/// at the bottom, as gpui-base maps the pointer (slider.rs:381-385), and the
 /// thumb travels it.
 #[gpui::test]
 fn a_vertical_slider_lays_its_rail_out_vertically(cx: &mut TestAppContext) {

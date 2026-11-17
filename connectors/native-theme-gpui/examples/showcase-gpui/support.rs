@@ -252,7 +252,7 @@ pub(crate) fn demo_border_width(cx: &App) -> Pixels {
 /// keeps an animated icon from blinking through its first pass; the price is
 /// that each one holds a tile in the window's sprite atlas until it is dropped
 /// there, and nothing releases it on its own (`App::drop_image`, gpui-pre
-/// `src/app.rs:3238-3248`). The showcase rebuilds these caches on every
+/// `src/app.rs:3217-3227`). The showcase rebuilds these caches on every
 /// icon-set change and on every colour change that re-colorizes the icons, so
 /// without this the atlas would grow for the life of the window. The other
 /// `ImageSource` variants are released through their own `remove_asset`, so a
@@ -316,7 +316,7 @@ pub(crate) fn with_gap<W: Styled>(widget: W, gap: Option<Pixels>) -> W {
 /// column, :203-207, and the `gpui_base::ScrollBounce` 0.8.1 wraps the area in, :209-215),
 /// on the application's own `handle`, so the content keeps `geometry::scrollbar_gutter`'s strip
 /// free only while it overflows the area. gpui-base hides the bar while the
-/// content fits (gpui-base src/scrollbar.rs:1416-1419), and the platform's
+/// content fits (gpui-base src/scrollbar.rs:1421-1424), and the platform's
 /// bar then takes no room either. The strip follows the last layout's
 /// overflow; a frame whose layout changes it calls `relayout`, which asks
 /// the view for another frame.
@@ -1067,7 +1067,7 @@ impl TableDelegate for SampleTableDelegate {
         cx: &mut Context<TableState<Self>>,
     ) -> Stateful<Div> {
         // `demo::data_table` stripes the table, which shades its odd rows
-        // (table/state.rs:2218).
+        // (table/state.rs:2339).
         let striped = !row_ix.is_multiple_of(2);
         let (row, cells) = match self.rows.get(row_ix) {
             Some(cells) => (
@@ -1099,7 +1099,7 @@ impl TableDelegate for SampleTableDelegate {
             .cloned()
             .unwrap_or_default();
         // Plain text, not a Label: `Label::render` paints foreground and
-        // this showcase's text_sm on its own element (label.rs:211), over what
+        // this showcase's text_sm on its own element (label.rs:213), over what
         // the table gives the row.
         text
     }
@@ -1216,7 +1216,7 @@ impl SearchableListItem for PresetItem {
     }
 }
 
-/// `Combobox` is generic over a `SearchableListDelegate` (`combobox.rs:750`),
+/// `Combobox` is generic over a `SearchableListDelegate` (`combobox.rs:768`),
 /// so the theme settings' preset switch takes a delegate: [`preset_items`],
 /// filtered as the user types.
 pub(crate) struct PresetDelegate {

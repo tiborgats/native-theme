@@ -152,7 +152,7 @@ struct ResolvedColors {
     list_hover_bg: Hsla,
     list_selection_bg: Hsla,
     // Upstream's `link_hover` and `link_active` are link *text* colours
-    // (`theme_color.rs:180-181`), so these are the platform's hover and
+    // (`theme_color.rs:182-183`), so these are the platform's hover and
     // pressed link text, not its hover fill.
     link_hover_fg: Hsla,
     link_active_fg: Hsla,
@@ -179,7 +179,7 @@ pub fn to_theme_color(
     let d = &resolved.defaults;
     // The window's own fill, which the model states and which inherits
     // `defaults.background_color`; upstream's `background` token is the window
-    // surface (`title_bar.rs:344`, `tab/tab.rs:301`).
+    // surface (`title_bar.rs:347`, `tab/tab.rs:301`).
     let bg = rgba_to_hsla(resolved.window.background_color);
     let fg = rgba_to_hsla(d.text_color);
 
@@ -213,7 +213,7 @@ pub fn to_theme_color(
         info: rgba_to_hsla(d.info_color),
         info_fg: rgba_to_hsla(d.info_text_color),
         // Upstream's `selection` is the *input* selection background
-        // (`theme_color.rs:228`, `input/input.rs:544`), which the model states
+        // (`theme_color.rs:230`, `input/input.rs:568`), which the model states
         // as `input.selection_background`; `defaults.selection_background` is
         // the row-selection colour `list_active` and `sidebar_accent` take.
         selection: rgba_to_hsla(resolved.input.selection_background),
@@ -281,9 +281,9 @@ fn assign_core(tc: &mut ThemeColor, c: &ResolvedColors) {
     tc.background = c.bg;
     tc.foreground = c.fg;
     // `accent` is upstream's item highlight, not the platform's accent colour
-    // (gpui-component `src/theme/schema.rs:254-255`); see `ResolvedColors`.
+    // (gpui-component `src/theme/schema.rs:268-269`); see `ResolvedColors`.
     // `Toggle` reads the same token for its pressed state
-    // (`src/button/toggle.rs:163, 210`), where Adwaita, Windows 11 and Material
+    // (`src/button/toggle.rs:163, 216`), where Adwaita, Windows 11 and Material
     // would want `segmented_control.active_background`; the menu family has
     // seven readers to its one, and no value serves both. Tier U.
     tc.accent = c.menu_hover_bg;
@@ -297,7 +297,7 @@ fn assign_core(tc: &mut ThemeColor, c: &ResolvedColors) {
     tc.link = c.link;
     // Both are text colours upstream, each the `fg` of a `Button::link` over
     // the transparent fill that variant paints in every state
-    // (`button/button.rs:1219, 1295, 1337` against `:1213, 1290, 1330`), so
+    // (`button/button.rs:1224, 1300, 1342` against `:1218, 1295, 1335`), so
     // they take the platform's hover and pressed link text. Feeding
     // `link.hover_background` into `link_hover` painted a ~9 % alpha fill as
     // a label.
@@ -355,7 +355,7 @@ fn assign_status(tc: &mut ThemeColor, c: &ResolvedColors, is_dark: bool) {
 }
 
 /// The 28 `button*` fields gpui-component reads for `Button`
-/// (`src/button/button.rs:1009-1074`) take the values the semantic fields their
+/// (`src/button/button.rs:1014-1079`) take the values the semantic fields their
 /// variant used in 0.5.1 (`0.5.1 src/button/button.rs:642-647, 936-941`), so a
 /// native theme's solid button surfaces render as before (spec §6.1). Nothing
 /// new is read; upstream's alternative is a tinted house style (rationale §2.4).
@@ -419,7 +419,7 @@ fn assign_list_table(tc: &mut ThemeColor, c: &ResolvedColors, _is_dark: bool) {
     tc.list_active_border = c.bg.blend(c.primary.opacity(0.6));
     tc.list_even = c.alternate_row;
     // The column header's own fill, which upstream paints as the header row
-    // (`table/column.rs:287`, `table/state.rs:1785, :2039`,
+    // (`table/column.rs:302`, `table/state.rs:1864, :2131`,
     // `table/table.rs:199`) and the model states as `list.header_background`.
     // The window background it used to take is the surface the header sits
     // on, not the header.
@@ -432,11 +432,11 @@ fn assign_list_table(tc: &mut ThemeColor, c: &ResolvedColors, _is_dark: bool) {
     tc.table_even = tc.list_even;
     tc.table_head = c.list_header_bg;
     // The header row's own text (`table/table.rs:200`,
-    // `table/state.rs:2040`): `list.header_font.color`, not the muted
-    // foreground upstream falls back to (`theme/schema.rs:1011`).
+    // `table/state.rs:2132`): `list.header_font.color`, not the muted
+    // foreground upstream falls back to (`theme/schema.rs:1025`).
     tc.table_head_foreground = c.list_header_fg;
     // The grid line between rows and columns (`table/table.rs:203`,
-    // `table/state.rs:1652`), which the model states as `list.grid_color`.
+    // `table/state.rs:1716`), which the model states as `list.grid_color`.
     tc.table_row_border = c.list_grid;
     // The grid of a chart (`chart/mod.rs:493`, `chart/bar_chart.rs:878`,
     // `chart/radar_chart.rs:507`): the model's grid-line colour, which
@@ -632,9 +632,9 @@ impl BasePaletteInputs {
 /// assigns them, on an otherwise default `ThemeColor`.
 ///
 /// `ThemeConfigColors` keeps these 12 private (gpui-component
-/// `src/theme/schema.rs:643-677`), so the config a stored variant installs
+/// `src/theme/schema.rs:657-691`), so the config a stored variant installs
 /// cannot carry them and `Theme::apply_config` resets them to upstream's
-/// constants on every rebuild (`:691-699`, `:1079-1083`). `apply`'s observer
+/// constants on every rebuild (`:705-713`, `:1093-1097`). `apply`'s observer
 /// copies this value back with [`copy_base_palette`] (D43).
 pub(crate) fn base_palette(resolved: &ResolvedTheme, is_dark: bool) -> ThemeColor {
     let mut tc = ThemeColor::default();
@@ -651,10 +651,10 @@ pub(crate) fn base_palette(resolved: &ResolvedTheme, is_dark: bool) -> ThemeColo
 /// plain fields' solid colours; `true` when any differed.
 ///
 /// gpui-component 0.8.1 keeps a token beside each of the 12
-/// (`Theme::tokens`, `src/theme/mod.rs:154`; `ThemeTokens`' fields `red` …
-/// `cyan_light`, `src/theme/theme_color.rs:533-544`), and a rebuild resets
+/// (`Theme::tokens`, `src/theme/mod.rs:158`; `ThemeTokens`' fields `red` …
+/// `cyan_light`, `src/theme/theme_color.rs:535-546`), and a rebuild resets
 /// both to its constants; a token is a colour's solid form
-/// (`From<Hsla> for ThemeToken`, `src/theme/theme_color.rs:30-37`).
+/// (`From<Hsla> for ThemeToken`, `src/theme/theme_color.rs:31-38`).
 pub(crate) fn copy_base_palette(from: &ThemeColor, to: &mut Theme) -> bool {
     let mut changed = false;
     macro_rules! copy {
@@ -1199,7 +1199,7 @@ mod tests {
 
         // The theme's selection color should be used as-is, not alpha-clamped to 0.3.
         // `selection` is upstream's *input* selection background
-        // (`theme_color.rs:228`), so the field is `input.selection_background`.
+        // (`theme_color.rs:230`), so the field is `input.selection_background`.
         let expected = rgba_to_hsla(resolved.input.selection_background);
         assert_eq!(
             tc.selection, expected,

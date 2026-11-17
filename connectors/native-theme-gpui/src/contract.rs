@@ -72,7 +72,7 @@ const ROWS: &[Row] = &[
         exceptions: &[],
     },
     // Upstream's `accent` is the item highlight, not the platform's accent
-    // colour (`theme/schema.rs:254-255`), so it takes the menu hover pair.
+    // colour (`theme/schema.rs:268-269`), so it takes the menu hover pair.
     Row {
         slot: "accent",
         native: |r| r.menu.hover_background,
@@ -110,12 +110,12 @@ const ROWS: &[Row] = &[
         exceptions: &[],
     },
     // Upstream documents `selection` as the *input* selection background
-    // (`theme_color.rs:228`), and its text readers are the input editor style
-    // (`input/input.rs:544`), the text view (`text/mod.rs:54`), the touch
+    // (`theme_color.rs:230`), and its text readers are the input editor style
+    // (`input/input.rs:568`), the text view (`text/mod.rs:54`), the touch
     // handle (`touch_selection/handle.rs:96`) and the time field's selected
     // segment (`time/time_field.rs:137`). It also fills a token input's chips
     // (`input/token.rs:50-51`) and outlines a table's or list's
-    // secondary-selected row (`table/state.rs:2481`, `list/list_item.rs:272`),
+    // secondary-selected row (`table/state.rs:2554`, `list/list_item.rs:271`),
     // so it is not only a text selection. The documented meaning decides the
     // model's counterpart: `input.selection_background`, which inherits
     // `defaults.text_selection_background` and in turn
@@ -127,7 +127,7 @@ const ROWS: &[Row] = &[
         get: |tc| tc.selection,
         exceptions: &[],
     },
-    // The link's own text (`link.rs:76`, `button/button.rs:1073`), which the
+    // The link's own text (`link.rs:76`, `button/button.rs:1078`), which the
     // model states as `link.font.color` -- the one font colour that inherits
     // `defaults.link_color` instead of `defaults.font.color`.
     Row {
@@ -137,10 +137,10 @@ const ROWS: &[Row] = &[
         exceptions: &[],
     },
     // `link_hover` and `link_active` are upstream's hovered and pressed link
-    // *text* colours ("Hover link text color", `theme_color.rs:179`, `:181`), and
+    // *text* colours ("Hover link text color", `theme_color.rs:181`, `:183`), and
     // their only reader takes each as the `fg` of a `Button::link`
-    // (`button/button.rs:1219, 1295, 1337`) over the transparent fill that
-    // variant paints in every state (`:1213, 1290, 1330`). Neither native
+    // (`button/button.rs:1224, 1300, 1342`) over the transparent fill that
+    // variant paints in every state (`:1218, 1295, 1335`). Neither native
     // field is a soft option, so both are plain rows.
     Row {
         slot: "link_hover",
@@ -372,9 +372,9 @@ const ROWS: &[Row] = &[
     // The header row's own fill: the model states it
     // (`list.header_background`, inheriting `defaults.surface_color`), and it
     // differs from the window background in nearly every preset. Upstream
-    // paints `table_head` as the header row (`table/column.rs:287`,
-    // `table/state.rs:1785, :2039`, `table/table.rs:199`); `list_head` has no
-    // reader in 0.8.1 beyond a schema fallback (`theme/schema.rs:972, 1010`),
+    // paints `table_head` as the header row (`table/column.rs:302`,
+    // `table/state.rs:1864, :2131`, `table/table.rs:199`); `list_head` has no
+    // reader in 0.8.1 beyond a schema fallback (`theme/schema.rs:986, 1024`),
     // but the mapping is the truth for the day it gets one.
     Row {
         slot: "list_head",
@@ -413,7 +413,7 @@ const ROWS: &[Row] = &[
         exceptions: &[],
     },
     // The header row's own text (`table/table.rs:200`,
-    // `table/state.rs:2040`), which the model states as `list.header_font`.
+    // `table/state.rs:2132`), which the model states as `list.header_font`.
     Row {
         slot: "table_head_foreground",
         native: |r| r.list.header_font.color,
@@ -421,7 +421,7 @@ const ROWS: &[Row] = &[
         exceptions: &[],
     },
     // The line between rows and columns (`table/table.rs:203, 343, 415`,
-    // `table/state.rs:1652, 1784, 2241, 2509`), which the model states as
+    // `table/state.rs:1716, 1863, 2375, 2582`), which the model states as
     // `list.grid_color` rather than as the generic border.
     Row {
         slot: "table_row_border",
@@ -918,25 +918,25 @@ const WRITE_ONLY: &[(&str, &str)] = &[
         "neither a `List` nor a `Tree` paints a fill, and a `ListItem` fills \
          only a hovered and a selected row (`list/list_item.rs:225-233, \
          257-265`); the token is read only as the schema fallback of \
-         `list_even`, `list_head` and `table` (`theme/schema.rs:971-972, \
-         1006`). `geometry::list` paints `list.background_color` instead",
+         `list_even`, `list_head` and `table` (`theme/schema.rs:985-986, \
+         1020`). `geometry::list` paints `list.background_color` instead",
     ),
     (
         "list_even",
         "read only as `table_even`'s schema fallback \
-         (`theme/schema.rs:1009`); the connector writes `table_even` itself \
+         (`theme/schema.rs:1023`); the connector writes `table_even` itself \
          from the same colour (`colors.rs`), which a `DataTable` paints",
     ),
     (
         "sidebar_primary",
         "no reader outside `theme/`, and no schema fallback reads it \
-         (its own falls back to `primary`, `theme/schema.rs:990`)",
+         (its own falls back to `primary`, `theme/schema.rs:1004`)",
     ),
     (
         "sidebar_primary_foreground",
         "no reader outside `theme/`, and no schema fallback reads it \
          (its own falls back to `primary_foreground`, \
-         `theme/schema.rs:991-994`)",
+         `theme/schema.rs:1005-1008`)",
     ),
 ];
 
@@ -963,12 +963,12 @@ const NO_RECEIVER: &[NoReceiver] = &[
         field: "link.hover_background",
         native: |r| r.link.hover_background,
         evidence: "`ButtonVariant::Link` paints `theme.transparent` as its \
-                   background in every state (`button/button.rs:1213` hovered, \
-                   `:1290` pressed, `:1330` selected) and the `Link` widget \
+                   background in every state (`button/button.rs:1218` hovered, \
+                   `:1295` pressed, `:1335` selected) and the `Link` widget \
                    paints none at all (`link.rs:70-90`); `transparent` lives \
                    on `Theme`, not on `ThemeColor`, and is not one of the 139. \
                    `link_hover` and `link_active` are the link's hover and \
-                   pressed *text* (`theme_color.rs:179`, `:181`), which is what \
+                   pressed *text* (`theme_color.rs:181`, `:183`), which is what \
                    their rows give them.",
         stated_none: &[
             ("kde-breeze", LINK_HOVER_NONE),
@@ -1075,7 +1075,7 @@ struct UnreadColour {
 /// colour: the selection is a fill behind it.
 #[cfg(feature = "widgets")]
 const SELECTED_TEXT: &str = "`InputEditorStyle` has a selection fill and no \
-     selected-text colour (`input/input.rs:538-545`), so a selected run is \
+     selected-text colour (`input/input.rs:562-569`), so a selected run is \
      drawn in the field's text colour";
 
 /// The colour leaves of `ResolvedTheme` that reach no sink in any of the 34
@@ -1162,7 +1162,7 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
         leaf: "defaults.mono_font.color",
         why: Unread::NoReceiver(
             "`Theme` has `mono_font_family` and `mono_font_size` and no mono \
-             colour (`theme/mod.rs:181-183`); an editor's text is the root's \
+             colour (`theme/mod.rs:185-187`); an editor's text is the root's \
              text colour or the highlight theme's",
         ),
     },
@@ -1170,7 +1170,7 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
         leaf: "defaults.selection_inactive_background",
         why: Unread::NoReceiver(
             "none of the 139 `ThemeColor` fields is an inactive selection \
-             (`theme/theme_color.rs:59-343`), and a selected `ListItem` fills \
+             (`theme/theme_color.rs:61-345`), and a selected `ListItem` fills \
              `list_active` or `accent` whatever the window's state \
              (`list/list_item.rs:257-264`)",
         ),
@@ -1187,7 +1187,7 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
         leaf: "button.hover_text_color",
         why: Unread::NoReceiver(
             "a hovered Default, Primary or Secondary button keeps its \
-             `text_color` (`button/button.rs:1218-1223`), and a \
+             `text_color` (`button/button.rs:1223-1228`), and a \
              `ButtonCustomVariant` has one foreground for every state \
              (`:40-45`)",
         ),
@@ -1196,7 +1196,7 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
         leaf: "combo_box.hover_background",
         why: Unread::NoReceiver(
             "neither trigger has a hover style (`select.rs:563-582`, \
-             `combobox.rs:981-998`), and a `StyleRefinement` has no hover \
+             `combobox.rs:999-1016`), and a `StyleRefinement` has no hover \
              state",
         ),
     },
@@ -1204,10 +1204,10 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
         leaf: "combo_box.border.color",
         why: Unread::NoReceiver(
             "the trigger's edge is `border_color(input)` (`select.rs:575`, \
-             `combobox.rs:993`) before the refinement (`select.rs:580`, \
-             `combobox.rs:998`), the only receiver, and a trigger built with \
+             `combobox.rs:1011`) before the refinement (`select.rs:580`, \
+             `combobox.rs:1016`), the only receiver, and a trigger built with \
              `appearance(false)` keeps `border_1()` in `transparent` \
-             (`select.rs:569-570`, `combobox.rs:987-988`), which an edge \
+             (`select.rs:569-570`, `combobox.rs:1005-1006`), which an edge \
              colour in the refinement would paint. The leaf equals \
              `input.border.color`, which the `input` row reads, in all 34 \
              combinations",
@@ -1217,9 +1217,9 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
         leaf: "text_area.border.color",
         why: Unread::NoReceiver(
             "a text area's edge is `border_color(input)` \
-             (`input/input.rs:779`) before the refinement (`:784`), the only \
+             (`input/input.rs:803`) before the refinement (`:808`), the only \
              receiver, and a field built with `bordered(false)` or \
-             `appearance(false)` draws no edge (`input/input.rs:776-780`), \
+             `appearance(false)` draws no edge (`input/input.rs:800-804`), \
              which an edge colour in the refinement would paint over the \
              width `geometry::text_area` sets. The leaf inherits \
              `input.border.color` (`docs/inheritance-rules.toml:181`), which \
@@ -1236,7 +1236,7 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
     UnreadColour {
         leaf: "input.focus_border_color",
         why: Unread::NoReceiver(
-            "a focused field's edge is `ring` (`input/input.rs:754`, `:787`), \
+            "a focused field's edge is `ring` (`input/input.rs:778`, `:811`), \
              the token every focus ring shares, which the `ring` row gives \
              `defaults.focus_ring_color`",
         ),
@@ -1245,15 +1245,15 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
         leaf: "input.hover_border_color",
         why: Unread::NoReceiver(
             "an `Input` has no hover style: its render \
-             (`input/input.rs:691-784`) sets no `.hover(`",
+             (`input/input.rs:715-808`) sets no `.hover(`",
         ),
     },
     UnreadColour {
         leaf: "input.placeholder_color",
         why: Unread::NoReceiver(
             "the placeholder is `editor_style.muted_foreground` (gpui-base \
-             `input/base/element.rs:2718-2722`), which is \
-             `theme.muted_foreground` (`input/input.rs:541`), the token all \
+             `input/base/element.rs:3186-3190`), which is \
+             `theme.muted_foreground` (`input/input.rs:565`), the token all \
              muted text shares",
         ),
     },
@@ -1282,7 +1282,7 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
     UnreadColour {
         leaf: "menu.background_color",
         why: Unread::NoReceiver(
-            "a `PopupMenu` paints `popover_style` (`menu/popup_menu.rs:1509` \
+            "a `PopupMenu` paints `popover_style` (`menu/popup_menu.rs:1610` \
              -> `styled.rs:190`) and is not `Styled`: its fill is the \
              `popover` token, which the `popover` row gives \
              `popover.background_color`",
@@ -1299,13 +1299,13 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
         leaf: "menu.disabled_text_color",
         why: Unread::NoReceiver(
             "a disabled `MenuItem` takes `muted_foreground` \
-             (`menu/menu_item.rs:131-133`), the token all muted text shares",
+             (`menu/menu_item.rs:148-150`), the token all muted text shares",
         ),
     },
     UnreadColour {
         leaf: "menu.font.color",
         why: Unread::NoReceiver(
-            "menu text is `popover_foreground` (`menu/popup_menu.rs:1510`), \
+            "menu text is `popover_foreground` (`menu/popup_menu.rs:1611`), \
              which the `popover_foreground` row gives `popover.font.color`",
         ),
     },
@@ -1313,7 +1313,7 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
         leaf: "menu.separator_color",
         why: Unread::NoReceiver(
             "the separator is a hairline in `border` \
-             (`menu/popup_menu.rs:1280-1286`), the token every edge shares",
+             (`menu/popup_menu.rs:1375-1381`), the token every edge shares",
         ),
     },
     UnreadColour {
@@ -2133,7 +2133,7 @@ const PAIRS: &[Pair] = &[
     },
     // The header row upstream paints: `table_head_foreground` on
     // `tokens.table_head` (`table/table.rs:199-200`,
-    // `table/state.rs:2039-2040`), over the window behind the table.
+    // `table/state.rs:2131-2132`), over the window behind the table.
     Pair {
         what: "table head text",
         native: |r, _| {
@@ -2194,7 +2194,7 @@ const PAIRS: &[Pair] = &[
         exceptions: &[],
     },
     // A `Button::link` paints no fill in any state
-    // (`button/button.rs:1213, 1290, 1330`) and takes `link_hover` and
+    // (`button/button.rs:1218, 1295, 1335`) and takes `link_hover` and
     // `link_active` as its text, so both pairs are that colour on the window.
     Pair {
         what: "hovered link text",
@@ -2220,7 +2220,7 @@ const PAIRS: &[Pair] = &[
 /// `geometry` refinement reaches, with the upstream lines. A documented limit:
 /// no test can observe it, as gpui's test support exposes laid-out bounds
 /// (`TestAppContext::debug_bounds`) and no painted scene (gpui-pre 0.3.10
-/// `src/window.rs:1258`, `rendered_frame` is crate-private), so neither a
+/// `src/window.rs:1254`, `rendered_frame` is crate-private), so neither a
 /// painted edge nor the ring outside it can be asserted. Recheck it on every
 /// gpui-component bump.
 #[expect(
@@ -2240,12 +2240,12 @@ const UPSTREAM_LIMITS: &[UpstreamLimit] = &[UpstreamLimit {
     what: "a focused text field's edge and focus ring",
     evidence: "gpui-component 0.8.1 draws a focused Input in its own way: \
                `border_1()` in the `ring` colour as a focus-state style \
-               (`src/input/input.rs:751-755`), which a `StyleRefinement` such \
+               (`src/input/input.rs:775-779`), which a `StyleRefinement` such \
                as `geometry::input` cannot reach, so a field the theme leaves \
                without a line (adwaita's 0) gains a 1px edge and its text moves \
                in a pixel; and its own ring, `FOCUS_RING_WIDTH` 3 outside that \
                edge (`src/styled.rs:11`, `:257-262`, `:301-327`, called at \
-               `src/input/input.rs:787`). It cannot draw the theme's inset ring \
+               `src/input/input.rs:811`). It cannot draw the theme's inset ring \
                in a focus state. The 1px edge is not forced: \
                `Input::focus_bordered(false)` (`src/input/input.rs:309-312`, \
                also `FocusableExt::focus_ring(false)`, `:162-165`) turns off \
@@ -2295,7 +2295,7 @@ const REPORTED: &[Reported] = &[
         what: "selected text",
         why: "ThemeColor has no foreground for selected text: `selection` is a \
               highlight upstream paints under text that keeps its own colour \
-              (input/input.rs:544), while the platform pairs \
+              (input/input.rs:568), while the platform pairs \
               input.selection_background with input.selection_text_color",
         native: |r| {
             (
@@ -2345,7 +2345,7 @@ const REPORTED: &[Reported] = &[
               window controls with `foreground` set on their own element \
               (title_bar.rs:219), out of reach of a refinement on the bar, \
               over a gradient from a 55/45 mix of title_bar and background to \
-              title_bar (:22-36, :342) -- measured at the worse end. The bar's \
+              title_bar (:22-36, :345) -- measured at the worse end. The bar's \
               own label does reach the platform's colour: geometry::title_bar \
               carries window.title_bar_font.color and upstream sets nothing \
               there to displace it (:331-346)",
@@ -2369,7 +2369,7 @@ const REPORTED: &[Reported] = &[
 /// The end of upstream's title-bar gradient that contrasts worse with `fg`.
 ///
 /// `TitleBar` fills itself with `default_title_bar_background(title_bar,
-/// background)` (`title_bar.rs:342`), a vertical gradient from a 55/45 mix of
+/// background)` (`title_bar.rs:345`), a vertical gradient from a 55/45 mix of
 /// the two tokens to `title_bar` alone (`:22-36`). The mix is upstream's
 /// arithmetic, reproduced here with its own factors so the reported ratio is
 /// the one a user can actually read at the worse end of the bar.

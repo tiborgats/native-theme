@@ -128,7 +128,7 @@ pub enum DrawnFamily<'a> {
     /// drawn because the text system finds no face of the family it was asked for: the stated
     /// one where `asked` is `None`, else `asked`, the platform's substitute for it or gpui's
     /// `.SystemUIFont` alias for the system UI font (gpui-pre 0.3.10 `src/text_system.rs`:
-    /// `TextSystem::resolve_font`, lines 352-359 and 570-630, over the stack of lines 262-273).
+    /// `TextSystem::resolve_font`, lines 351-358 and 569-629, over the stack of lines 261-272).
     FallbackStack {
         /// The toolkit, as the label names it (`gpui`).
         toolkit: &'a str,

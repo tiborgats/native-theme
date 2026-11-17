@@ -136,7 +136,7 @@ pub(crate) fn markers_heading() -> String {
 ///
 /// `secondary` is resolved with gpui's runtime OS (`save_tooltip`), and
 /// `Kbd::format` draws the keystroke by the compile target (gpui-component
-/// kbd.rs:105-223); the two agree on every native target.
+/// kbd.rs:107-225); the two agree on every native target.
 pub(crate) const SAVE_KEYS: &str = "secondary-s";
 
 /// The shortcut tooltip's text: [`SAVE_KEYS`] as a `Kbd` draws it on this

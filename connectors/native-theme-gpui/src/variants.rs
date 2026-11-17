@@ -3,7 +3,7 @@
 //!
 //! gpui-component paints a flat button's hover from a token that means something
 //! else. A standalone `.ghost()` button hovers with `tokens.accent`, the
-//! item-highlight colour of menus and lists (`src/button/button.rs:1205-1212`);
+//! item-highlight colour of menus and lists (`src/button/button.rs:1210-1217`);
 //! an [`InputGroupButton`](gpui_component::input::InputGroupButton) hovers with
 //! `muted`, the subdued-surface colour of `Kbd`, code blocks and chat bubbles
 //! (`src/input/group.rs:556-595`). Both readings are hardcoded, and both tokens

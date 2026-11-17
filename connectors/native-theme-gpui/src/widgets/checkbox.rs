@@ -246,7 +246,7 @@ impl Parts {
     /// the control's headless primitive, styled as the row the pointer hovers
     /// and the focus ring follows, the caller's style refined onto it after
     /// the widget's own, as gpui-component refines its checkbox's
-    /// (checkbox.rs:293). Without a native theme or a finite look it hands
+    /// (checkbox.rs:294). Without a native theme or a finite look it hands
     /// the parts back, for gpui-component's control.
     fn render<E>(
         mut self,
@@ -286,7 +286,7 @@ impl Parts {
             .items_center()
             .gap(look.label_gap)
             // The row the focus ring follows, as gpui-component rounds it
-            // (checkbox.rs:289).
+            // (checkbox.rs:290).
             .rounded(px(f32::from(cx.theme().radius) / 2.))
             .on_mouse_down(MouseButton::Left, |_, window, _| window.prevent_default())
             .opacity(look.opacity)

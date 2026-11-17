@@ -416,7 +416,7 @@ impl Switch {
             .gap(LABEL_GAP)
             .opacity(look.opacity)
             // The caller's style, refined onto the row after the widget's
-            // own, as gpui-component refines its checkbox's (checkbox.rs:293);
+            // own, as gpui-component refines its checkbox's (checkbox.rs:294);
             // its switch refines it onto a box round the row (switch.rs:228).
             .refine_style(&self.style)
             .child(track)

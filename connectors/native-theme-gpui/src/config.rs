@@ -48,7 +48,7 @@ pub fn to_theme_config(
 
     // D41: the highlighter style for this mode. Theme::change installs a
     // config's highlight as highlight_theme only when it is Some
-    // (gpui-component src/theme/schema.rs:1070-1077) and otherwise keeps
+    // (gpui-component src/theme/schema.rs:1084-1091) and otherwise keeps
     // the previous mode's; to_theme installs this same style directly, so
     // both paths agree.
     let highlight = highlight_style(resolved, mode);
@@ -88,17 +88,17 @@ pub fn to_theme_config(
 /// code editor's fill and its gutter's taken from the theme.
 ///
 /// A code editor is an `Input` in code mode, whose root upstream fills with
-/// `Theme::editor_background` (gpui-component `src/input/input.rs:691-693`):
+/// `Theme::editor_background` (gpui-component `src/input/input.rs:715-717`):
 /// the highlight theme's `editor_background`, a fixed `#ffffff` or `#0a0a0a`
 /// in the defaults, else `input_background()`, which is not the platform's
-/// field fill (`src/theme/mod.rs:485-499`). The fill is the field's,
+/// field fill (`src/theme/mod.rs:493-507`). The fill is the field's,
 /// `input.background_color`, as
 /// [`geometry::input_fill`](crate::geometry::input_fill) gives a text field.
 /// gpui-base paints the gutter as an overlay above text that scrolls under
 /// it, in `editor_gutter_background` or else the editor's fill, which it
 /// halves in a disabled editor as upstream halves the root's
-/// (gpui-base `src/input/base/element.rs:3255-3259`, `:3461-3467`;
-/// gpui-component `src/input/input.rs:697-701`). A translucent field fill,
+/// (gpui-base `src/input/base/element.rs:3832-3836`, `:4045-4051`;
+/// gpui-component `src/input/input.rs:721-725`). A translucent field fill,
 /// as windows-11 states, would show the text through, so there the gutter is
 /// that fill composited over `window.background_color`; an opaque one is
 /// left unset, and the gutter is the editor's fill, halved with it.
@@ -131,20 +131,20 @@ pub(crate) fn highlight_style(
 /// `overlay`, `drag_border` and `drop_target` survive `Theme::change`.
 ///
 /// `ThemeColor` has 139 fields (gpui-component 0.8.1
-/// `src/theme/theme_color.rs:59-343`) and `ThemeConfigColors` 140: the same
-/// 139 plus `group_box_title_foreground` (`src/theme/schema.rs:361`), which no
+/// `src/theme/theme_color.rs:61-345`) and `ThemeConfigColors` 140: the same
+/// 139 plus `group_box_title_foreground` (`src/theme/schema.rs:375`), which no
 /// `ThemeColor` field feeds. 127 are exported. The 12 base colours (`red`,
 /// `blue`, `green`, `yellow`, `magenta`, `cyan` and their `_light` variants)
-/// are private in `ThemeConfigColors` (`schema.rs:643-677`) and stay `None`,
+/// are private in `ThemeConfigColors` (`schema.rs:657-691`) and stay `None`,
 /// as does `group_box_title_foreground`.
 fn theme_color_to_config_colors(tc: &gpui_component::theme::ThemeColor) -> ThemeConfigColors {
     let h = |c: gpui::Hsla| -> Option<SharedString> { Some(SharedString::from(hsla_to_hex(c))) };
 
     // ThemeConfigColors keeps the 12 base-palette fields (red, blue, green,
     // yellow, magenta, cyan and their _light variants) private (gpui-component
-    // src/theme/schema.rs:643-677), so this config cannot carry them and
+    // src/theme/schema.rs:657-691), so this config cannot carry them and
     // Theme::apply_config resets them to ThemeColor::dark()/light() on every
-    // rebuild (:691-699, :1079-1083). `apply`'s observer restores them (D43).
+    // rebuild (:705-713, :1093-1097). `apply`'s observer restores them (D43).
     let mut colors = ThemeConfigColors::default();
     colors.accent = h(tc.accent);
     colors.accent_foreground = h(tc.accent_foreground);
@@ -152,7 +152,7 @@ fn theme_color_to_config_colors(tc: &gpui_component::theme::ThemeColor) -> Theme
     colors.background = h(tc.background);
     colors.border = h(tc.border);
     colors.group_box = h(tc.group_box);
-    // group_box_title_foreground: left None; declared at schema.rs:361 but read
+    // group_box_title_foreground: left None; declared at schema.rs:375 but read
     // nowhere in gpui-component (no apply_color! arm, no consumer).
     colors.group_box_foreground = h(tc.group_box_foreground);
     colors.caret = h(tc.caret);
@@ -366,7 +366,7 @@ mod tests {
 
     /// K4: `Theme::change` reinstalls this config, so it must carry the
     /// native grid colour, or upstream's `border × 0.6` fallback
-    /// (`theme/schema.rs:928`) replaces it.
+    /// (`theme/schema.rs:942`) replaces it.
     #[test]
     fn the_config_carries_the_native_chart_grid() {
         let resolved = test_resolved();

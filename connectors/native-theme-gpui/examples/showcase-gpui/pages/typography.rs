@@ -97,7 +97,7 @@ const DECORATIONS: [(&str, DecorationKind, &str); 4] = [
 ///
 /// `secondary` is resolved with gpui's runtime OS (`demo::kbd`), and
 /// `Kbd::format` draws the keystroke by the compile target (gpui-component
-/// kbd.rs:105-223); the two agree on every native target.
+/// kbd.rs:107-225); the two agree on every native target.
 pub(crate) const KBDS: [(&str, &str); 4] = [
     ("typography-kbd-copy", "secondary-c"),
     ("typography-kbd-paste", "secondary-v"),

@@ -433,8 +433,8 @@ pub(crate) struct Showcase {
     ///
     /// Its limit: an input method's commit of more than one character is no
     /// keystroke. gpui hands it straight to the focused field's input handler
-    /// (gpui-pre-linux 0.3.10 `src/linux/wayland/client.rs:2298-2320`,
-    /// `CommitString`; `src/linux/wayland/window.rs:1469-1479`, `handle_ime`),
+    /// (gpui-pre-linux 0.3.10 `src/linux/wayland/client.rs:2315-2337`,
+    /// `CommitString`; `src/linux/wayland/window.rs:1479-1489`, `handle_ime`),
     /// with no hook ahead of the handler, so where an input method runs, the
     /// Basic page's focused field, which keeps the focus for its focus border,
     /// still takes such a commit. A one-character commit comes as a keystroke

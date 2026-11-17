@@ -174,8 +174,8 @@ impl Inspector {
             )
             // A claim's value is the ThemeColor field it names, and upstream
             // paints many widgets from `Theme::tokens` instead, which a theme
-            // can set apart from its fields (theme/schema.rs:1018, and the
-            // test at :1308 asserting a pair that differs). Said only before
+            // can set apart from its fields (theme/schema.rs:1032, and the
+            // test at :1339 asserting a pair that differs). Said only before
             // the connector's `apply` has run, while gpui-component's own
             // theme is up.
             .when(cx.native_theme().is_none(), |tab| {

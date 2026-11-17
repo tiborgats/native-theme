@@ -306,7 +306,7 @@ fn scrollbar_of(cx: &mut VisualTestContext, showcase: &Entity<Showcase>) -> (Pix
 /// gpui-component overlays its scrollbar on the scroll area whatever the
 /// platform does (`src/scroll/scrollable.rs`, `Scrollable`), and gpui-base
 /// draws the vertical track flush with the area's right edge, at the width
-/// the connector installed (gpui-base `src/scrollbar.rs:1422-1446`). Where
+/// the connector installed (gpui-base `src/scrollbar.rs:1427-1451`). Where
 /// the platform's scrollbars are not overlays the connector also asks for
 /// an always-visible bar (`src/lib.rs`, `scrollbar_mode`), so that width
 /// has to be reserved beside the content or the bar sits on it.
@@ -343,7 +343,7 @@ fn a_non_overlay_scrollbar_keeps_off_the_content(cx: &mut TestAppContext) {
 }
 
 /// A page that fits its pane keeps no strip for a scrollbar: gpui-base
-/// draws none while the content fits (gpui-base src/scrollbar.rs:1416-1419),
+/// draws none while the content fits (gpui-base src/scrollbar.rs:1421-1424),
 /// so the Basic page takes the pane's whole width under kde-breeze, whose
 /// scrollbars are not overlays.
 #[gpui::test]
@@ -404,8 +404,8 @@ fn the_scroll_area_scrolls_inside_its_frame(cx: &mut TestAppContext) {
 }
 
 /// The page body lays gpui-component's `ScrollbarLayer` over its right edge
-/// (setting/page.rs:227-257, scroll/scrollable.rs:19-29) and reserves only the
-/// `px_4` each group's row is wrapped in, inside the list (setting/page.rs:241-245);
+/// (setting/page.rs:285-315, scroll/scrollable.rs:19-29) and reserves only the
+/// `px_4` each group's row is wrapped in, inside the list (setting/page.rs:299-303);
 /// kde-breeze's groove is 21px, wider than that, so without a gutter on the
 /// group the bar covers the rows.
 #[gpui::test]
@@ -473,10 +473,10 @@ type ScrolledTo = fn(&mut VisualTestContext, &Entity<Showcase>) -> String;
 
 /// The Diff's lines that the left line-number column holds a quarter, half
 /// and three quarters of the way down the Diff, which a click there selects
-/// (gpui-component `diff/mod.rs:1334-1343`, `begin_line_selection`):
+/// (gpui-component `diff/mod.rs:1400-1409`, `begin_line_selection`):
 /// `DiffState` has no public scroll offset, so the lines under fixed points
 /// stand for it. A point over a hunk separator selects none, as the row has
-/// nothing there to click (`render_hunk_separator`, `diff/mod.rs:951-956`),
+/// nothing there to click (`render_hunk_separator`, `diff/mod.rs:1017-1022`),
 /// so at least one of the three has to select a line. A file header and a
 /// fold row hold a button there instead, which a click presses: the
 /// header's collapse button (`:1212-1230`) or the fold's expand buttons
@@ -571,7 +571,7 @@ fn a_nested_scroller_keeps_the_wheel_to_itself(cx: &mut TestAppContext) {
         }),
         // The frame itself does not scroll: the Settings fills it. What
         // scrolls is the Settings' page list
-        // (gpui-component `setting/page.rs:229-257`), whose first group
+        // (gpui-component `setting/page.rs:287-315`), whose first group
         // holds the row probe.
         (Page::Layout, "settings-frame", |cx, _| {
             format!("{:?}", bounds_of(cx, PROBE_SETTINGS_ROW).top())
@@ -648,7 +648,7 @@ fn a_nested_scroller_keeps_the_wheel_to_itself(cx: &mut TestAppContext) {
 /// Table, List and Tree are framed alike, and by the list theme.
 ///
 /// The `DataTable` draws a frame of its own from `Theme::radius` and
-/// `Theme::border` (gpui-component `src/table/data_table.rs:221-225`); the
+/// `Theme::border` (gpui-component `src/table/data_table.rs:248-252`); the
 /// `List` and the `Tree` draw none — both only refine a plain `div()`
 /// (`src/list/list.rs`, `RenderOnce for List<D>`; `src/tree.rs`,
 /// `RenderOnce for Tree`) — so the box around them is the showcase's own
@@ -2387,7 +2387,7 @@ fn the_menus_run_actions(cx: &mut TestAppContext) {
 /// runtime OS, which the test platform reports as set here.
 ///
 /// It does not cover what is drawn: `Kbd::format` draws by the compile
-/// target, not by gpui's OS (gpui-component kbd.rs:105-223), and the macOS
+/// target, not by gpui's OS (gpui-component kbd.rs:107-225), and the macOS
 /// menu bar's own bindings are bound only under `cfg!(target_os = "macos")`
 /// (`app::init`, `the_macos_menus_keys_are_the_higs`).
 #[gpui::test]
@@ -4428,7 +4428,7 @@ fn the_status_bars_item_gap_note_names_the_widget_gap(cx: &mut TestAppContext) {
 
 /// The fill the panel toggle tagged `selector` paints with the pointer
 /// elsewhere: the ghost variant's active colour while it is selected
-/// (button/button.rs:1332, `colors.active`, which `variants::ghost_button`
+/// (button/button.rs:1337, `colors.active`, which `variants::ghost_button`
 /// fills with `secondary_active`), and none at rest -- the variant is
 /// transparent there.
 fn toggle_fill(cx: &mut VisualTestContext, selector: &'static str) -> Option<gpui::Hsla> {
@@ -4545,7 +4545,7 @@ const SIDEBAR_ICON_PRESETS: [&str; 7] = [
 /// Upstream gives no hook to measure the drawn icon: `SidebarMenuItem`
 /// places the `Icon` it is given itself (sidebar/menu.rs:321), and an `Icon`
 /// builds its `svg()` with nothing of it reachable but its style
-/// (icon.rs:175-183), so no debug selector gets there. What is checked:
+/// (icon.rs:213-221), so no debug selector gets there. What is checked:
 ///
 /// - the Icon `demo::sidebar_icon_sized` hands an item has the size
 ///   `geometry::icon_size_small` gives, read off its style;
@@ -5560,7 +5560,7 @@ fn settle_at(
 }
 
 /// A swatch shows the colour upstream paints, not the token it dims: the
-/// Text Button's label is foreground at 90% (button/button.rs:1074). A text
+/// Text Button's label is foreground at 90% (button/button.rs:1079). A text
 /// colour is not a quad of the scene, so the swatch is checked against that
 /// line, not against the frame.
 #[gpui::test]
@@ -6549,7 +6549,7 @@ fn input_fill(info: &Option<WidgetInfo>) -> Option<gpui::Hsla> {
 /// A refined Input is filled with the platform's `input.background_color`
 /// in either mode, through `geometry::input_fill` -- not with
 /// `Theme::input_background()`, which is the window background in light mode
-/// and input mixed toward transparent in dark (theme/mod.rs:485-490) -- and
+/// and input mixed toward transparent in dark (theme/mod.rs:493-498) -- and
 /// its info shows no swatch for the fill upstream no longer paints, but the
 /// builder's geometry line. The Basic page's disabled field is filled with
 /// `input.disabled_background`.
@@ -6615,7 +6615,7 @@ fn a_refined_input_is_filled_with_the_platforms_fill(cx: &mut TestAppContext) {
 
 /// The Basic page's disabled Button is filled with the platform's disabled
 /// fill, through `geometry::button_disabled` -- not with upstream's
-/// `input_background()` at half opacity (button/button.rs:1371-1375) -- in
+/// `input_background()` at half opacity (button/button.rs:1376-1380) -- in
 /// either mode, and its info names the builder.
 #[gpui::test]
 fn a_disabled_button_is_filled_with_the_platforms_disabled_fill(cx: &mut TestAppContext) {
@@ -6987,7 +6987,7 @@ fn sorted(mut rows: Vec<[String; 3]>, by: usize, descending: bool) -> Vec<[Strin
 }
 
 /// Click the sort button of the DataTable's column `col_ix`: upstream's
-/// `("icon-sort", col_ix)` (gpui-component 0.8.1 table/state.rs:1823, with
+/// `("icon-sort", col_ix)` (gpui-component 0.8.1 table/state.rs:1902, with
 /// `test_support()`).
 fn click_sort(cx: &mut VisualTestContext, col_ix: usize) {
     cx.update(|window, cx| {
@@ -7034,7 +7034,7 @@ fn the_tables_sort_button_sorts_its_rows(cx: &mut TestAppContext) {
 
 /// A header dragged to another place takes its cells with it
 /// (`SampleTableDelegate::move_column`, which upstream asks for in
-/// table/delegate.rs:155-165): the Role column dragged before the Name
+/// table/delegate.rs:173-183): the Role column dragged before the Name
 /// column holds the roles, and its sort button then sorts the rows by them.
 #[gpui::test]
 fn a_moved_column_keeps_its_data(cx: &mut TestAppContext) {
@@ -7687,7 +7687,7 @@ fn the_layout_page_draws_the_folder_tab_bar(cx: &mut TestAppContext) {
 
 /// The Folder TabBar paints its bar in `tab_bar` (gpui-component
 /// `tab/tab_bar.rs:424`) and the 1px separator between two unselected tabs
-/// in `border` (`tab/tab.rs:1025`), the colours its Widget Info claims, read
+/// in `border` (`tab/tab.rs:1028`), the colours its Widget Info claims, read
 /// off the painted scene under the first two bundled presets whose mapped
 /// `tab_bar` and `border` are opaque. The pointer is kept off the bar: a
 /// hovered tab hides the separators beside it (`tab/tab_bar.rs:499-528`).
@@ -10337,9 +10337,9 @@ fn a_listed_font_row_names_the_family_gpui_draws(cx: &mut TestAppContext) {
 /// A platform text system that holds the families `held` alone and lays text out as gpui's
 /// `NoopTextSystem`: a host that lacks a theme's family, for a test. The test platform's own,
 /// `NoopTextSystem`, resolves every family to one face and lists none (gpui-pre 0.3.10
-/// `src/platform.rs:1578-1584`). As gpui's platform text systems do, it loads a family asked
+/// `src/platform.rs:1601-1607`). As gpui's platform text systems do, it loads a family asked
 /// for by an alias under the family the alias names (`gpui::font_name_with_fallbacks`, with
-/// Linux's system UI font, gpui-pre-linux 0.3.10 `src/linux/platform.rs:126`, gpui-pre-wgpu
+/// Linux's system UI font, gpui-pre-linux 0.3.10 `src/linux/platform.rs:130`, gpui-pre-wgpu
 /// `src/cosmic_text_system.rs:386`), and gives each family asked for a face id of its own
 /// (`:44-47`, `:400-443`), `asked` holding them in their order.
 struct HeldFamilies {
@@ -10676,7 +10676,7 @@ fn label_of_absent(cx: &mut TestAppContext, stated: &str) -> String {
 }
 
 /// A text system that holds no family of gpui's fallback stack is not asked: `resolve_font`
-/// would panic there for a family it lacks (gpui-pre 0.3.10 `src/text_system.rs:622-628`), so
+/// would panic there for a family it lacks (gpui-pre 0.3.10 `src/text_system.rs:621-627`), so
 /// the label is the family asked for.
 #[test]
 fn a_text_system_without_a_stack_family_is_not_asked() {
@@ -14165,7 +14165,7 @@ fn twice(
 /// The hover and the settle come first, and a frame `draw` draws after
 /// them: in it GPUI Fast builds again a view whose hover changed, and one
 /// that read the registry since an update of it (gpui-fast
-/// src/fast/retained.rs:601-626), as settling the choice is.
+/// src/fast/retained.rs:608-633), as settling the choice is.
 #[gpui::test]
 fn a_reused_views_target_is_hovered_and_listed_after_a_partial_frame(cx: &mut TestAppContext) {
     let (host, ui, [host_renders, hosted_renders, _], cx) = open_host(cx, true, false);
@@ -14611,9 +14611,9 @@ fn fields_written(body: &str) -> Vec<(usize, &str)> {
 /// of its view calls `cx.notify()` (M9-017).
 ///
 /// `cx.listener` only updates the entity (gpui-pre 0.3.10
-/// `src/app/context.rs:246-256`). A mouse click is followed by a refresh of
-/// the window (`src/elements/div.rs:3145-3148`); a keyboard click calls the
-/// same listeners and refreshes nothing (`:3099-3130`), so a control
+/// `src/app/context.rs:241-251`). A mouse click is followed by a refresh of
+/// the window (`src/elements/div.rs:3147-3150`); a keyboard click calls the
+/// same listeners and refreshes nothing (`:3101-3132`), so a control
 /// activated from the keyboard by a listener that does not notify stays
 /// drawn as it was until something else redraws the window. gpui-component
 /// documents these values as controlled: the owner writes the value and calls
@@ -14686,7 +14686,7 @@ fn every_listener_that_writes_state_notifies() {
 /// alone. A drawn frame cannot show it: a test draws its frames itself, dirty
 /// window or not, and on GPUI Fast a view that is not cached is drawn again
 /// whenever an entity it read was written, notified or not (gpui-fast 0.1.12
-/// `src/fast/retained.rs:601-623`, `src/fast/dependencies.rs:513-527`), so
+/// `src/fast/retained.rs:608-630`, `src/fast/dependencies.rs:514-528`), so
 /// the frame after Space shows the new state on both backends either way.
 #[gpui::test]
 fn a_checkbox_toggled_from_the_keyboard_notifies_the_showcase(cx: &mut TestAppContext) {

@@ -420,7 +420,7 @@ pub(crate) const COMPATIBILITY_URL: &str = concat!(
 /// The width of the Preferences sheet. The model states no sheet, so no
 /// such width either (spec §1.3): this is the showcase's own layout default.
 /// It overrides upstream's 350px (sheet.rs:63) because the Settings inside
-/// starts its sidebar at 250px (setting/settings.rs:54): a 350px sheet, less
+/// starts its sidebar at 250px (setting/settings.rs:55): a 350px sheet, less
 /// its 1px left border (sheet.rs:193) and the body's 16px padding on each
 /// side (sheet.rs:154, 223-224), holds 317px, which would leave the
 /// preferences at most 67px beside the sidebar.

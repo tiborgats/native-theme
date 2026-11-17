@@ -149,7 +149,7 @@
 //! (checkbox and radio indicators, switch, slider, separator thickness,
 //! splitter width, button icon gap, popup-menu rows), and tab
 //! height, radius and text size, which `Tab`'s render writes into the same
-//! style bag the caller's setters fill (`tab/tab.rs:958-966`), stay upstream
+//! style bag the caller's setters fill (`tab/tab.rs:961-969`), stay upstream
 //! work; §14 of the v0.5.8 specification
 //! (<https://github.com/tiborgats/native-theme/blob/main/docs/archive/todo_v0.5.8_gpui-component-0.6-spec.md>)
 //! lists each item with the upstream line that makes it unreachable. For
@@ -810,7 +810,7 @@ pub(crate) fn ui_font_family(family: &std::sync::Arc<str>, macos: bool) -> Share
 /// native application of the system gets); else `family` as
 /// stated. gpui's own answer to a family its text system cannot find is a
 /// list of its own, `.ZedMono` first (gpui-pre 0.3.10 `src/text_system.rs`
-/// lines 262-273, 605-615), not the platform's. The platform is asked once
+/// lines 261-272, 604-614), not the platform's. The platform is asked once
 /// per family and the answer kept for the process, so a caller may ask
 /// every frame. The first ask for a family runs on the calling thread: on
 /// Linux and the other non-Apple, non-Android unix systems one `fc-match`
@@ -1131,7 +1131,7 @@ impl<'a> Native<'a> {
 /// theme's was, which step 1 drops) leaves the other mode's config at
 /// `ThemeConfig::default()`, a light config with no colours and an empty name.
 /// Upstream's `apply_config` takes the mode from the config and stores it in
-/// that mode's slot (gpui-component src/theme/schema.rs:1065-1069, :1108), so
+/// that mode's slot (gpui-component src/theme/schema.rs:1079-1083, :1125), so
 /// a `Theme::change` to the unstored mode shows upstream's built-in
 /// `ThemeColor::light()` constants, in light mode. Where the stored variant is
 /// the light one, a change to dark therefore leaves the window light and
@@ -1370,9 +1370,9 @@ fn apply_inner(
     // not wait for the next input event. The theme is written through
     // `Theme::global_mut` and `sync_base`, which refresh nothing -- upstream
     // leaves the refresh to such a caller (gpui-component
-    // src/theme/mod.rs:468-469), where its own `Theme::change` refreshes every
-    // window (`:334`) -- and `refresh_windows` schedules every window (gpui-pre
-    // src/app.rs:1373).
+    // src/theme/mod.rs:476-477), where its own `Theme::change` refreshes every
+    // window (`:343`) -- and `refresh_windows` schedules every window (gpui-pre
+    // src/app.rs:1420).
     cx.refresh_windows();
 }
 
@@ -1449,9 +1449,9 @@ fn handles_hold_native_values(cx: &App) -> bool {
 /// (D43).
 ///
 /// `ThemeConfigColors` keeps them private (gpui-component
-/// `src/theme/schema.rs:643-677`), so the config `apply` installs for a variant
+/// `src/theme/schema.rs:657-691`), so the config `apply` installs for a variant
 /// cannot carry them; every `Theme::change` / `sync_system_appearance` resets
-/// them to `ThemeColor::dark()` / `light()` (`:691-699`, `:1079-1083`) and
+/// them to `ThemeColor::dark()` / `light()` (`:705-713`, `:1093-1097`) and
 /// ends in `sync_base` (`theme/mod.rs:333`), whose `cx.set_global` of
 /// `gpui_base::Theme` (`:473-478`) is the one write of it; its notification
 /// reaches the base-theme observer. Writes only when a field differs; the
@@ -3511,7 +3511,7 @@ mod apply_tests {
     /// mode shows upstream's built-in palette, not the earlier theme's. The
     /// unstored config is `ThemeConfig::default()`, a light one: a change to
     /// an unstored dark mode keeps the window light (gpui-component
-    /// src/theme/schema.rs:1108), as the `apply` doc says.
+    /// src/theme/schema.rs:1125), as the `apply` doc says.
     #[gpui::test]
     fn a_one_variant_apply_of_another_theme_drops_the_earlier_themes_other_mode(
         cx: &mut TestAppContext,

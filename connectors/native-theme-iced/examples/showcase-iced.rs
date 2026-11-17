@@ -5339,7 +5339,7 @@ struct IconButton<'a> {
     /// at the window's bottom edge, where iced would pull the bubble back
     /// over the button (`snap_within_viewport`, iced_widget 0.14.2
     /// `src/tooltip.rs:525-545`), above, as gpui's own tooltip turns above
-    /// the pointer there (gpui-pre 0.3.10 `src/window.rs:3853-3862`).
+    /// the pointer there (gpui-pre 0.3.10 `src/window.rs:4070-4079`).
     tip: tooltip::Position,
 }
 
@@ -10092,9 +10092,9 @@ fn bubble_padding(resolved: &ResolvedTheme) -> f32 {
 /// compared with (the toolbar's, the status bar's side-panel toggle's and
 /// the Basic page's, `showcase-gpui/demo.rs:1379`, `:1603`, `:6076`) is
 /// gpui's own element tooltip, which gpui places off the pointer, a pixel
-/// right of and below it (gpui-pre 0.3.10 `src/window.rs:3834-3835`,
+/// right of and below it (gpui-pre 0.3.10 `src/window.rs:4051-4052`,
 /// `prepaint_tooltip`), and above it where the window's bottom edge leaves
-/// no room (`:3853-3862`); so the gpui bubble stands `m_3` and a pixel from
+/// no room (`:4070-4079`); so the gpui bubble stands `m_3` and a pixel from
 /// the pointer. The model states no gap (`docs/property-registry.toml`
 /// `[tooltip]`).
 const TOOLTIP_GAP_REMS: f32 = 0.75;
@@ -22414,7 +22414,7 @@ mod tests {
     /// bottom edge, iced's `snap_within_viewport` (on by default, iced_widget
     /// 0.14.2 `src/tooltip.rs:105`, `:525-545`) would pull the bubble back
     /// over the toggle, and gpui's own tooltip turns above the pointer there
-    /// (gpui-pre 0.3.10 `src/window.rs:3853-3862`). Under kde-breeze light.
+    /// (gpui-pre 0.3.10 `src/window.rs:4070-4079`). Under kde-breeze light.
     #[test]
     fn the_chrome_tooltips_stand_the_gap_from_their_control() {
         recording(|| {

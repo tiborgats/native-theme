@@ -184,7 +184,7 @@ impl Slider {
 
     /// The axis it lies along: `Axis::Horizontal`, its minimum at the left,
     /// or `Axis::Vertical`, its minimum at the bottom, as gpui-base maps the
-    /// pointer (slider.rs:367-371).
+    /// pointer (slider.rs:381-385).
     #[must_use]
     pub fn axis(mut self, axis: Axis) -> Self {
         self.axis = axis;

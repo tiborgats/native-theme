@@ -39,7 +39,7 @@ pub struct ScrollbarGeometry {
     pub thumb_width: Pixels,
     /// `((groove_width − thumb_width) / 2).max(0)`: centres the thumb, which
     /// gpui-base anchors `inset` from the track's outer edge
-    /// (gpui-base `src/scrollbar.rs:1209-1240`, painted at `:1520-1545`: 0.6.4
+    /// (gpui-base `src/scrollbar.rs:1214-1245`, painted at `:1525-1550`: 0.6.4
     /// moved the arithmetic into a private `ThumbGeometry`, which subtracts
     /// `2 × inset` from the thumb length and clamps the inset to half of it).
     /// [`scrollbar_styles`] therefore passes `min_thumb_length + 2 × inset` as
@@ -57,7 +57,7 @@ pub struct ScrollbarGeometry {
     /// `scrollbar.track_color`, all three track states (upstream uses one colour).
     pub track: Hsla,
     /// `defaults.border.color` for the active track border, mirroring upstream
-    /// (`src/theme/mod.rs:418`).
+    /// (`src/theme/mod.rs:427`).
     pub track_active_border: Hsla,
     /// `scrollbar.thumb_color`.
     pub thumb: Hsla,
@@ -65,7 +65,7 @@ pub struct ScrollbarGeometry {
     pub thumb_hover: Hsla,
     /// `scrollbar.thumb_active_color`, or `thumb_hover_color` when the theme
     /// leaves it unset (a soft option); upstream
-    /// itself puts the hover colour in the active slot (`theme/mod.rs:440-449`).
+    /// itself puts the hover colour in the active slot (`theme/mod.rs:449-458`).
     pub thumb_active: Hsla,
 }
 
@@ -126,7 +126,7 @@ pub fn scrollbar_styles(g: &ScrollbarGeometry) -> ScrollbarStyles {
 
 /// The `min_length` gpui-base takes for the thumb: `min_thumb_length` and the
 /// inset at both ends, which gpui-base takes off the clamped length
-/// (`src/scrollbar.rs:1220-1225`), so the drawn thumb is at least the stated
+/// (`src/scrollbar.rs:1225-1230`), so the drawn thumb is at least the stated
 /// minimum.
 fn thumb_min_length(g: &ScrollbarGeometry) -> Pixels {
     px(f32::from(g.min_thumb_length) + 2.0 * f32::from(g.thumb_inset))
@@ -148,7 +148,7 @@ fn thumb_min_length(g: &ScrollbarGeometry) -> Pixels {
 /// renderer (a `border` hairline and a `muted_foreground` pill,
 /// gpui-component `src/resizable.rs:28-31, 108, 119-126`), nor `Settings`'
 /// divider or the dock's edges, which install it internally
-/// (`src/setting/settings.rs:416`, `src/dock/dock.rs:142`).
+/// (`src/setting/settings.rs:465`, `src/dock/dock.rs:142`).
 #[must_use]
 pub fn resizable_theme(resolved: &ResolvedTheme) -> ResizableTheme {
     let mut theme = ResizableTheme::default();
@@ -160,7 +160,7 @@ pub fn resizable_theme(resolved: &ResolvedTheme) -> ResizableTheme {
 /// Write both onto `gpui_base::Theme`, keeping the scrollbar `mode()` and
 /// `motion()` upstream projected. Never panics: `gpui_base::Theme::global_mut`
 /// creates a default when the global is absent (gpui-base
-/// `src/theme.rs:32-37`).
+/// `src/theme.rs:40-45`).
 ///
 /// Public so an application that writes the base theme itself can restore the
 /// native values; the observer `crate::apply` installs calls the same function.
@@ -246,7 +246,7 @@ mod tests {
     }
 
     /// gpui-base clamps the thumb's length to `min_length` and then draws it
-    /// `2 × inset` shorter (`src/scrollbar.rs:1220-1225`), so the drawn
+    /// `2 × inset` shorter (`src/scrollbar.rs:1225-1230`), so the drawn
     /// minimum is the stated one only when `min_length` pays for both insets.
     #[test]
     fn the_drawn_thumb_is_at_least_the_stated_minimum() {

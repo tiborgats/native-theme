@@ -2259,7 +2259,7 @@ fn claim_literals<'a>(call: ClaimCall, args: &[&'a str]) -> Option<ClaimArgs<'a>
 ///   (`Showcase::icon_cache_fg`), with the alpha dropped as the SVG drops
 ///   it; that copy is passed in, not read off the theme where it is used.
 /// - `.input_background(`: upstream's `Theme::input_background()`, which
-///   paints input in dark mode and background in light (theme/mod.rs:485-490);
+///   paints input in dark mode and background in light (theme/mod.rs:493-498);
 ///   the one claim built with it (info/buttons.rs, `disabled_fill`) is the
 ///   dark-mode arm and names input.
 ///

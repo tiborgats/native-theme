@@ -311,7 +311,7 @@ pub(crate) fn title_bar(
 ) -> Stateful<Div> {
     let label: SharedString = label.into();
     // After `geometry::title_bar`: the inactive window's fill and text,
-    // over upstream's gradient (title_bar.rs:342-346).
+    // over upstream's gradient (title_bar.rs:345-349).
     let inactive = (!active)
         .then(|| native_geometry(cx, geometry::title_bar_inactive))
         .flatten();
@@ -332,7 +332,7 @@ pub(crate) fn title_bar(
         // draws its own controls.
         .on_close_window(|_, window, cx| window.dispatch_action(Box::new(Quit), cx))
         // Plain text, not a Label: `Label::render` sets `foreground` on its own
-        // element (label.rs:211), which would hide the title-bar font's colour
+        // element (label.rs:213), which would hide the title-bar font's colour
         // `geometry::title_bar` just gave the bar.
         .child(label)
         .when(cfg!(not(target_os = "macos")), |bar| {
@@ -360,7 +360,7 @@ pub(crate) const MENU_ROW_PADDING_X: Rems = rems(0.5);
 pub(crate) const MENU_ROW_HEIGHT: Rems = rems(1.625);
 
 /// What upstream's `PopupMenu` leaves round and between its rows, and
-/// between a row's label and its shortcut (menu/popup_menu.rs:1516-1518,
+/// between a row's label and its shortcut (menu/popup_menu.rs:1617-1619,
 /// `p_1`, `gap_y_0p5`, `min_w(rems(8.))`; :1354, `gap_3`); the model states
 /// none of them.
 const MENU_POPUP_PADDING: Rems = rems(0.25);
@@ -369,7 +369,7 @@ const MENU_POPUP_MIN_WIDTH: Rems = rems(8.);
 const MENU_SHORTCUT_GAP: Rems = rems(0.75);
 
 /// A menu separator's thickness without a native theme: upstream's
-/// `PopupMenu` separator (menu/popup_menu.rs:1285, `border_b(px(2.))`).
+/// `PopupMenu` separator (menu/popup_menu.rs:1380, `border_b(px(2.))`).
 /// With one, it is `separator.line_width`.
 const MENU_SEPARATOR: Pixels = px(2.);
 
@@ -479,7 +479,7 @@ impl MenuLook {
     /// nothing.
     pub(crate) fn row(&self, lit: bool) -> Div {
         // The shortcut is the plain text of a Kbd without its appearance
-        // (kbd.rs:234-236), which takes the row's font and line box.
+        // (kbd.rs:236-238), which takes the row's font and line box.
         let row = padded(
             h_flex().refine_style(&self.item),
             &self.padding,
@@ -1324,8 +1324,8 @@ pub(crate) struct ToolbarButton<'a> {
 ///
 /// The icon is the Button's child, not its `icon`: `Button::icon` resizes
 /// whatever it is given to a size derived from the Button's own
-/// (button/button.rs:638-641, 787-792), and the size an `Icon` is given last
-/// wins over its style (icon.rs:187-193).
+/// (button/button.rs:638-641, 789-794), and the size an `Icon` is given last
+/// wins over its style (icon.rs:225-231).
 pub(crate) fn toolbar_button(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -1648,7 +1648,7 @@ pub(crate) fn theme_settings<const N: usize>(
 /// A label of the side panel reading `text`, `id` its info's id and debug
 /// selector: plain text in `sidebar.font` ([`text_in`]) where a native
 /// theme is installed, in the colour the side panel sets. Not a `Label`:
-/// `Label::render` paints `foreground` on its own element (label.rs:211),
+/// `Label::render` paints `foreground` on its own element (label.rs:213),
 /// over the sidebar's text colour.
 fn sidebar_label(
     ui: &Entity<InfoRegistry>,
@@ -1792,7 +1792,7 @@ pub(crate) fn sidebar(ui: &Entity<InfoRegistry>, cx: &App, sample: SidebarSample
             set: set.clone(),
         });
     // Plain text, not a Label: `Label::render` sets `foreground` on its own
-    // element (label.rs:211), which would hide the sidebar_foreground the
+    // element (label.rs:213), which would hide the sidebar_foreground the
     // Sidebar gives its content.
     Sidebar::new(id)
         .collapsed(collapsed)
@@ -1878,7 +1878,7 @@ impl SidebarItem for SampleItem {
 /// (sidebar/mod.rs:28). `SidebarMenuItem` keeps the icon it is given
 /// (sidebar/menu.rs:321). The size goes on the Icon's style, which upstream
 /// lays out as it would the same size given through `with_size`
-/// (icon.rs:177-188), so a test can read it off the Icon this returns.
+/// (icon.rs:215-226), so a test can read it off the Icon this returns.
 ///
 /// It takes the Icon built: a public helper that builds one and does not
 /// report it fails `every_widget_reports_itself`, and the item it is handed
@@ -2375,7 +2375,7 @@ pub(crate) fn segmented_width(window: &Window, n: &Native<'_>, labels: &[&str]) 
     #[allow(
         clippy::disallowed_methods,
         reason = "shape_line's panic is a debug_assert! on a newline (gpui-pre 0.3.10 \
-                  src/text_system.rs:678-681): the one non-test caller passes BASIC_SEGMENTS \
+                  src/text_system.rs:679-682): the one non-test caller passes BASIC_SEGMENTS \
                   (pages/basic.rs), constants without one, and the showcase tests call it in \
                   debug builds, where a newline would fire the assert; its one run is the \
                   label's whole length, so no run splits a character or passes the text"
@@ -3369,7 +3369,7 @@ pub(crate) fn button(ui: &Entity<InfoRegistry>, cx: &App, spec: DemoButton) -> S
         &mut button_info,
     );
     // The platform's disabled pair, which upstream's disabled style replays
-    // the caller's refinement over (button/button.rs:828-834); a Button that
+    // the caller's refinement over (button/button.rs:830-836); a Button that
     // is not disabled must not take it, since it lands at rest too (:764).
     let disabled_pair = (state == ButtonState::Disabled)
         .then(|| native_geometry(cx, geometry::button_disabled))
@@ -3646,7 +3646,7 @@ fn text_field(
         InputField::Refined => {
             let input = native_info(input, cx, geometry::input, "input", &mut input_info);
             // The platform's fill for the state the field is built in, after
-            // upstream's (input/input.rs:776, then :784).
+            // upstream's (input/input.rs:800, then :808).
             let fill = native_geometry(cx, |n| geometry::input_fill(n, disabled));
             if fill.is_some() {
                 input_info = input_info.geometry("input_fill");
@@ -3678,7 +3678,7 @@ fn text_field(
             input
         }
         // Through the caller's style, which Input applies after its own
-        // height and line height (input/input.rs:764-768, then :784).
+        // height and line height (input/input.rs:788-792, then :808).
         InputField::HeightOnly => native_info(
             input,
             cx,
@@ -3701,10 +3701,10 @@ const INPUT_GROUP: &str = "input-surface";
 /// pointer. The caller leaves the field without a fill or an edge colour of
 /// its own, in upstream's `transparent` token (theme/schema.rs).
 ///
-/// `Input` is `Styled` only (input/input.rs:511) and its root's one state is
-/// `focused` (:750-757), so it has no hover edge of its own: the field is
+/// `Input` is `Styled` only (input/input.rs:535) and its root's one state is
+/// `focused` (:774-781), so it has no hover edge of its own: the field is
 /// left without a fill or an edge colour (its caller's style lands after its
-/// own, :784) and an absolute box under it, the field's size, paints them.
+/// own, :808) and an absolute box under it, the field's size, paints them.
 /// Focused, the field's own edge in `ring` shows over the surface's.
 fn input_surface(
     r: &native_theme_gpui::ResolvedTheme,
@@ -3738,7 +3738,7 @@ fn input_surface(
 /// unfaded.
 ///
 /// The fill is a box of its own inside the line, not under it: gpui fades
-/// each primitive it paints on its own (gpui-pre src/window.rs:4705-4713,
+/// each primitive it paints on its own (gpui-pre src/window.rs:4937-4945,
 /// `paint_quad`), and a quad draws its border over its own background
 /// (gpui-pre-wgpu src/shaders.wgsl:887, `fs_quad`), so a faded control whose
 /// fill lay under its line would show the fill through the faded line,
@@ -4486,7 +4486,7 @@ fn combo_fill(cx: &App) -> Option<StyleRefinement> {
 /// can be laid over it as the connector lays its layers
 /// (`native_theme_gpui::layer_over`), rounded as the trigger is
 /// (`combo_box.border.corner_radius`, `geometry::select`). Upstream's trigger
-/// sets no hover (select.rs:562-580; combobox.rs:981-998) and neither
+/// sets no hover (select.rs:562-580; combobox.rs:999-1016) and neither
 /// `Select` nor `Combobox` is an `InteractiveElement` (select.rs:832), so the
 /// hover fill is this element's. Before `apply` ran it is a plain box.
 fn combo_surface(cx: &App, trigger: impl IntoElement) -> Div {
@@ -4723,14 +4723,14 @@ pub(crate) enum DataTableRow {
 /// reported it to the delegate.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) struct BodyRow {
-    /// An odd row of a striped table (table/state.rs:2218).
+    /// An odd row of a striped table (table/state.rs:2339).
     pub striped: bool,
     /// The last of the delegate's rows.
     pub last: bool,
     /// The table's selected row.
     pub selected: bool,
     /// The table is selecting rows, so it paints its selected row as one
-    /// (table/state.rs:524, 2463); a column selection keeps the selected row but
+    /// (table/state.rs:540, 2536); a column selection keeps the selected row but
     /// not its fill.
     pub selection_shown: bool,
     pub right_clicked: bool,
@@ -4945,7 +4945,7 @@ pub(crate) enum ListRowState {
     Idle,
     Selected,
     /// Right-clicked and not selected: the `selection` outline and no fill
-    /// (list/list_item.rs:266-275).
+    /// (list/list_item.rs:265-274).
     RightClicked,
     /// Selected and right-clicked: the selected fill with the outline over
     /// it (list/list_item.rs:257-275).
@@ -5074,7 +5074,7 @@ fn list_row_item(item: ListItem, cx: &App, selected_text: Option<&StyleRefinemen
 /// read the colour it is laid out in through [`probed_label`].
 ///
 /// Plain text, not a Label: `Label::render` paints foreground on its own
-/// element (label.rs:211) over the list font the row carries. It has an id
+/// element (label.rs:213) over the list font the row carries. It has an id
 /// because a text takes its colour as it is laid out, and in layout the
 /// group hover is known only from the hover state an element with an id
 /// keeps between frames: the group's hitbox is made in paint (gpui-pre
@@ -8308,7 +8308,7 @@ pub(crate) fn menu_rows(
                 row_info = row_info.geometry("icon_size_small");
             }
             // Plain text, not a Label: a Label paints foreground on its
-            // own element (label.rs:211), over the frame's colour.
+            // own element (label.rs:213), over the frame's colour.
             let row = div()
                 .flex()
                 .items_center()
