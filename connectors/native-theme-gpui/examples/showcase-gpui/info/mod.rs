@@ -387,7 +387,7 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
     (
         "list_item_selected",
-        "list.selection_text_color on a selected ListItem's text, over the foreground upstream sets on every row before the refinement -- or geometry::list_item's list.item_font colour: upstream marks a selected row by its fill alone, painted after the refinement, and mutes a row that is not selectable after it too (list/list_item.rs, ListItem::render)",
+        "list.selection_text_color on a selected ListItem's text, over the foreground upstream sets on every row before the refinement -- or geometry::list_item's list.item_font colour: while list.active_highlight is on, gpui-component's default, upstream marks a selected row by its fill alone, painted after the refinement; with it off, it letters the row accent_foreground on accent after the refinement, so this colour does not reach it; and it mutes a row that is not selectable after the refinement too (list/list_item.rs, ListItem::render)",
     ),
     (
         "link",
@@ -434,16 +434,15 @@ pub fn native_info<W: Styled>(
 /// inside a widget on its own, `icons` naming them and where upstream draws
 /// them. An icon the showcase builds itself is the chosen icon theme's
 /// (`SampleIcon`), so this is for upstream's alone. They stay
-/// gpui-component's whichever icon theme is chosen: upstream loads them by
-/// asset path (icon.rs, `Icon::into_svg`), and gpui draws a path at a size
-/// once and keeps the result in the window's sprite atlas, which it never
-/// asks the asset source about again and which nothing outside gpui can
-/// clear (gpui-pre/window.rs, `Window::paint_svg`; the atlas field is
-/// private), so an asset source answering those paths from the chosen
-/// theme could not show a switch. `docs/todo.md` records it.
+/// gpui-component's whichever icon theme is chosen: upstream draws each by
+/// its asset path, which gpui-component 0.9 first hands to the resolver an
+/// application may set (gpui-component icon.rs, `set_icon_resolver` and
+/// `resolve_icon_path`), and the showcase sets none yet, so every path
+/// draws upstream's own icon. `docs/todo.md` records the work that sets one
+/// (*gpui: the widgets' own icons follow the theme's icon set*).
 pub fn own_icons(icons: &str) -> String {
     format!(
-        "{icons}: gpui-component's own icons whichever icon theme is chosen, so under any other they are not that theme's. Upstream builds them inside the widget and loads them by asset path (icon.rs, Icon::into_svg), and gpui draws a path at a size once and keeps it for the window, never asking the application's asset source again, with no call to drop it (gpui-pre/window.rs, Window::paint_svg), so the showcase cannot hand an icon upstream builds the chosen theme's and have a theme switch show"
+        "{icons}: gpui-component's own icons whichever icon theme is chosen, so under any other they are not that theme's. Upstream builds them inside the widget and draws each by its asset path, which it first hands to the application's icon resolver (gpui-component/icon.rs, resolve_icon_path), a hook gpui-component 0.9 added (gpui-component/icon.rs, set_icon_resolver); the showcase sets no resolver yet, so each path draws upstream's icon"
     )
 }
 

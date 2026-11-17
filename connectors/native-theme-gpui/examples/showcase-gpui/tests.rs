@@ -9476,9 +9476,9 @@ fn the_token_input_holds_its_token(cx: &mut TestAppContext) {
 
 /// Every sample whose gpui-component widget draws icons of its own says
 /// they are gpui-component's whichever icon theme is chosen (decision D1):
-/// upstream loads them by asset path, and gpui keeps the first SVG it drew
-/// for a path (Task 6's spike, `docs/todo.md`), so they cannot follow the
-/// chosen theme. The widgets are those whose shown configuration draws one
+/// gpui-component 0.9 has an icon resolver hook (`set_icon_resolver`) and
+/// the showcase does not set it yet, so they stay upstream's. The widgets
+/// are those whose shown configuration draws one
 /// (gpui-component 0.8.1): a DropdownButton's caret, a Clipboard's Copy, a
 /// NumberInput's steps, a Checkbox's check, a Rating's stars, a Select's,
 /// a Combobox's and a ColorSelect's caret, a SpeechIndicator's stop glyph

@@ -392,7 +392,10 @@ pub(super) fn popup_menu(info: WidgetInfo, t: &Theme) -> WidgetInfo {
     )
     .not_themeable(
         "menu items",
-        "PopupMenu builds its own; geometry::menu_item has no receiver here (geometry.rs, menu/menu_item.rs: MenuItemElement is pub(crate)). An item is 26px tall at the default Size, rounded with the theme radius up to 8px (menu/popup_menu.rs, RenderOptions)",
+        format!(
+            "PopupMenu builds its own; geometry::menu_item has no receiver here (geometry.rs, menu/menu_item.rs: MenuItemElement is pub(crate)). An item is {} tall at the default Size, a rem being the theme's font_size, which gpui-component makes the window's rem (gpui-component/menu/popup_menu.rs, PopupMenu::render_item; gpui-component/root.rs, WindowState::prepare), rounded with the theme radius up to 8px (menu/popup_menu.rs, RenderOptions)",
+            super::rems_text(crate::demo::MENU_ROW_HEIGHT, t)
+        ),
     )
     .instance(
         "menu shortcut",
@@ -925,6 +928,24 @@ pub fn preset_combobox(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo 
             "gpui-component/searchable_list/item.rs:115",
         ))
         .color(claim(
+            "row hover text",
+            "accent_foreground",
+            t.accent_foreground,
+            "gpui-component/searchable_list/item.rs:116",
+        ))
+        .color(claim(
+            "selected row",
+            "accent",
+            t.accent,
+            "gpui-component/searchable_list/item.rs:121",
+        ))
+        .color(claim(
+            "selected row text",
+            "accent_foreground",
+            t.accent_foreground,
+            "gpui-component/searchable_list/item.rs:122",
+        ))
+        .color(claim(
             "focused border",
             "ring",
             t.ring,
@@ -936,7 +957,7 @@ pub fn preset_combobox(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo 
         )
         .not_themeable(
             "rows",
-            "SearchableList's own, not ListItems: a hovered row is accent at 70% and a selected one accent in full (searchable_list/item.rs, SearchableListItemElement)",
+            "SearchableList's own, not ListItems: a hovered row is accent at 70% and a selected one accent in full, each lettered accent_foreground after the caller's style, and the check beside the chosen row takes the row's text colour (searchable_list/item.rs, SearchableListItemElement)",
         )
         .not_themeable(
             "caret",
