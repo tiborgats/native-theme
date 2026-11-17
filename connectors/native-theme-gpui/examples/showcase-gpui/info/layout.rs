@@ -43,7 +43,7 @@ pub fn spacing_box(
             .config("container_margin", layout_value(padding))
             .config("widget_gap", layout_value(gap)),
     };
-    let info = info.not_themeable("receivers", "none a theme can write: Theme::spacing_tokens() returns SpacingTokens::default() with no field behind it (theme/mod.rs, spacing_tokens), and its one reader, a Dialog's viewport margin, gets that default (dialog/dialog.rs, Dialog). So these four are the application's to apply (geometry.rs §9.5)");
+    let info = info.not_themeable("receivers", "none a theme can write: Theme::spacing_tokens() returns SpacingTokens::default() with no field behind it (gpui-component/theme/mod.rs, spacing_tokens), and its readers get that default: a Dialog's viewport margin (gpui-component/dialog/dialog.rs, Dialog), a GridLayout's gap (gpui-component/grid_layout.rs, grid_layout) and, through Theme::semantic_tokens, a Questionnaire's metrics (gpui-component/questionnaire/components.rs, QuestionnaireMetrics). So these four are the application's to apply (geometry.rs §9.5)");
     match kind {
         SpacingBox::Window => info.instance(
             "holds",

@@ -14,7 +14,7 @@ use crate::support::ChromeIcon;
 
 /// `c` as the colour an SVG recoloured with it is painted in: the connector
 /// writes it into the SVG as `#rrggbb`, which has no alpha
-/// (native-theme-gpui icons.rs:1326-1330).
+/// (native-theme-gpui icons.rs, `to_image_source` and `to_rgba`).
 fn opaque(c: Hsla) -> Hsla {
     Hsla { a: 1., ..c }
 }
