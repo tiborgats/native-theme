@@ -3737,6 +3737,10 @@ the gap — closing it is a change, and each wants its own decision.
       function (`text`, `button`) rather than a type. The script also cannot
       see `cfg`, so the `iced_aw` widgets count as shown in a build that
       omits them.
+      *GPUI Kit 0.9.1 (2026-11-17):* the gpui side also counts a free
+      function that returns a widget, each one a pattern in `GPUI_VIA` as an
+      extension method is (`grid_layout`, `h_resizable`, `resizable_panel`);
+      the iced side is unchanged.
 - [ ] [1.0] The repository's PreToolUse hook refuses `panic!` in files under
       `examples/`, although the project's rule exempts examples and tests by
       path; align the hook with the rule.

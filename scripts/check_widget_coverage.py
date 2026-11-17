@@ -13,7 +13,9 @@ Run from the repository root:
 
 `--self-test` runs the guards on synthetic crate roots, with no cargo: an
 empty discovery and a moved upstream file each fail (exit 2 in a real run),
-and one widget found and shown passes.
+and one widget found and shown passes. It also runs the gpui-base re-export
+rule on synthetic gpui-base and gpui-component roots, one case per part of
+the rule, and the free-function `GPUI_VIA` patterns.
 
 Exit 0 only when every discovered widget is either shown in the matching
 showcase or listed in docs/showcase-exceptions.toml with a non-empty reason,
@@ -41,10 +43,35 @@ gpui (`gpui-component`): every type with an `impl RenderOnce`/`IntoElement`,
 a `#[derive(IntoElement)]` or a `#[derive(IntoPlot)]`, outside `#[cfg(test)]`
 modules, that the crate also declares as a `pub struct`. `IntoPlot` is how
 the charts become elements: the derive writes their `impl IntoElement`
-(gpui-component-macros 0.8.1, derive_into_plot.rs:20). The `pub struct`
+(gpui-component-macros 0.9.1, derive_into_plot.rs:20). The `pub struct`
 gate is the crate's own public-widget line: it discards private helpers
 (`ShimmerGlyphs`, `MenuItemElement`) and the enums that are widget
 *arguments* rather than widgets (`DescriptionText`, `IconName`).
+
+gpui also counts the gpui-base widgets gpui-component makes public
+(`gpui_base_reexports`). A statement counts when it is `pub use
+gpui_base::<tree>;` with the visibility exactly `pub`, outside comments and
+`#[cfg(test)]` modules, in a module declared `pub mod` from the root down;
+in a module that is not, only for the names a public module re-exports from
+it by name or by glob (`pub use virtual_list::{VirtualList, …}` for the
+private `mod virtual_list`). Its tree is expanded (nested braces, `X as Y`,
+`*`, `self`) and each path followed in gpui-base as Rust resolves it:
+`crate::`, `self::` and `super::`; a module declared by `mod` or `pub mod`,
+its file `<name>.rs` or `<name>/mod.rs` in the declaring module's folder
+(a `mod.rs`'s or `lib.rs`'s own folder, `x/` beside any other `x.rs`), or
+the file a `#[path]` names; an inline `mod name { … }`; and a module
+another `pub use` brings in. Only `pub use` brings a name in. A path whose
+first segment none of these names is an external crate's (`ropey::Rope`)
+and yields nothing; a module segment that names nothing is a `Failure`
+(exit 2: the re-export rule no longer matches gpui-base's layout), the
+first segment of a gpui-component path included, while a last segment the
+module does not offer yields nothing. At the last module the name is a
+`pub struct` its file declares, or an item its own `pub use` items bring
+in by name, rename or glob, followed the same way; a glob takes all of
+them, and a `pub mod` named whole is followed as a glob. An item counts
+when the file declaring its `pub struct` also renders it, as above, so a
+same-named trait, enum or non-rendering struct elsewhere does not, and its
+name is gpui-component's public one (the `as` name where renamed).
 
 iced (`iced_widget`): every source module under `src/` that declares a
 crate-level `impl ... Widget<...>` or a `pub trait Catalog`. That rule
@@ -114,9 +141,12 @@ here". Three things count and nothing else —
   * a call or a struct literal, `W(` or `W {`;
   * for a widget no call site names, the extension method that builds one:
     `ContextMenuExt::context_menu` returns a `ContextMenu`
-    (menu/context_menu.rs:35) and `ScrollableElement::overflow_*_scrollbar`
+    (menu/context_menu.rs:39) and `ScrollableElement::overflow_*_scrollbar`
     returns a `Scrollable` (scroll/scrollable.rs:46, :53, :60). These live in
-    `GPUI_VIA`, one verified pattern each.
+    `GPUI_VIA`, one verified pattern each. A free function that returns a
+    widget counts through `GPUI_VIA` too: `grid_layout` returns a
+    `GridLayout` (gpui-component grid_layout.rs:40-64) and `h_resizable` a
+    `ResizablePanelGroup` (gpui-component resizable.rs:29).
 
 A name that is a segment of somebody else's path is somebody else's type.
 `std::process::Command::new` used to satisfy gpui-component's `Command`
@@ -338,15 +368,15 @@ def shows_iced(haystack, name):
 # that call, so the proof stays as specific as a constructor would be.
 GPUI_VIA = {
     # `ContextMenuExt::context_menu` -> `ContextMenu::new(id, self).menu(f)`
-    # (menu/context_menu.rs:35).
+    # (menu/context_menu.rs:39).
     "ContextMenu": r"\.context_menu\s*\(",
     # `ScrollableElement::overflow_scrollbar` and its two axis forms each
     # return `Scrollable<Self>` (scroll/scrollable.rs:46, 53, 60).
     "Scrollable": r"\.overflow(?:_[xy])?_scrollbar\s*\(",
     # The three `WindowExt` openers hand the widget itself to a builder
-    # closure -- `Fn(Dialog, …) -> Dialog` (window_ext.rs:30-32),
-    # `Fn(AlertDialog, …) -> AlertDialog` (:51-53), `Fn(Sheet, …) -> Sheet`
-    # (:14-16, and `open_sheet_at` at :19-20) -- so an application never names
+    # closure -- `Fn(Dialog, …) -> Dialog` (window_ext.rs:75-77),
+    # `Fn(AlertDialog, …) -> AlertDialog` (:101-103), `Fn(Sheet, …) -> Sheet`
+    # (:20-22, and `open_sheet_at` at :30-32) -- so an application never names
     # the type to render one.
     "Dialog": r"\.open_dialog\s*\(",
     "AlertDialog": r"\.open_alert_dialog\s*\(",
@@ -356,6 +386,21 @@ GPUI_VIA = {
     # so an application never names the type to render one: an item is
     # shown where an Accordion is built and given one in the same statement.
     "AccordionItem": r"\bAccordion::new\s*\([^;]*?\.item\s*\(",
+    # `grid_layout` returns gpui-component's `GridLayout`
+    # (gpui-component grid_layout.rs:40-64); not a path segment of another
+    # call, not a `fn` of the showcase's own.
+    "GridLayout": r"(?<!fn )(?<![\w:.])grid_layout\s*\(",
+    # `h_resizable` and `v_resizable` return a `ResizablePanelGroup`
+    # (gpui-component resizable.rs:29, :34).
+    "ResizablePanelGroup": r"(?<![\w:.])[hv]_resizable\s*\(",
+    # gpui-base's `resizable_panel` returns a `ResizablePanel`
+    # (gpui-base resizable/mod.rs:29; re-exported at gpui-component
+    # resizable.rs:18-21).
+    "ResizablePanel": r"(?<![\w:.])resizable_panel\s*\(",
+    # `ScrollableElement::scrollbar`, `vertical_scrollbar`, `horizontal_scrollbar`
+    # and `Scrollable`, which `overflow_*_scrollbar` returns, each draw a gpui-base
+    # `Scrollbar` (gpui-component scroll/scrollable.rs:19-41, :221, :251, :327).
+    "Scrollbar": r"\.(?:overflow(?:_[xy])?_|vertical_|horizontal_)?scrollbar\s*\(",
 }
 
 # The `\w+::` run immediately before a name, i.e. the path it is a segment of.
@@ -500,6 +545,24 @@ def rust_files(root):
                 yield os.path.join(base, name)
 
 
+def rendered(text):
+    """The `pub struct`s one source text declares, and the types it renders:
+    an `impl RenderOnce`/`IntoElement`, or a `#[derive(IntoElement)]` or
+    `#[derive(IntoPlot)]`."""
+    found = set()
+    lines = text.splitlines()
+    for i, line in enumerate(lines):
+        if m := RENDER_IMPL.match(line):
+            found.add(m.group(1))
+        d = DERIVE.search(line)
+        if d and RENDER_DERIVES & {x.strip() for x in d.group(1).split(",")}:
+            for follow in lines[i + 1 : i + 8]:
+                if s := STRUCT.match(follow):
+                    found.add(s.group(1))
+                    break
+    return {m.group(1) for m in PUB_STRUCT.finditer(text)}, found
+
+
 def gpui_widgets(src):
     """Public types that render themselves: `RenderOnce` / `IntoElement` /
     `IntoPlot`."""
@@ -507,18 +570,362 @@ def gpui_widgets(src):
     for path in sorted(rust_files(src)):
         with open(path, encoding="utf-8", errors="replace") as f:
             text = strip_test_modules(strip_comments(f.read()))
-        public |= {m.group(1) for m in PUB_STRUCT.finditer(text)}
-        lines = text.splitlines()
-        for i, line in enumerate(lines):
-            if m := RENDER_IMPL.match(line):
-                found.add(m.group(1))
-            d = DERIVE.search(line)
-            if d and RENDER_DERIVES & {x.strip() for x in d.group(1).split(",")}:
-                for follow in lines[i + 1 : i + 8]:
-                    if s := STRUCT.match(follow):
-                        found.add(s.group(1))
-                        break
+        structs, renders = rendered(text)
+        public |= structs
+        found |= renders
     return sorted(found & public)
+
+
+LITERAL_START = re.compile(r"""\bb?r(#*)"|"|'(?:\\.|[^\\'])'""")
+MOD_DECL = re.compile(
+    r"((?:#\[[^\]]*\]\s*)*)(?<![\w:])(pub(?:\s*\([^)]*\))?\s+)?mod\s+([A-Za-z_]\w*)\s*([;{])"
+)
+PATH_ATTR = re.compile(r"#\[path\s*=\s*\"([^\"]*)\"\]")
+PUB_USE = re.compile(r"(?<![\w:])pub(\s*\([^)]*\))?\s+use\s+([^;]*);")
+USE_TOKEN = re.compile(r"::|[{},*]|\w+")
+
+
+def blank_literals(src):
+    """`src` with every string and char literal blanked to spaces, its newlines
+    kept, so that offsets stay the same and a brace inside a literal is not
+    counted."""
+    out, i, n = [], 0, len(src)
+    while (m := LITERAL_START.search(src, i)) is not None:
+        if m.group(1) is not None:
+            close = '"' + m.group(1)
+            end = src.find(close, m.end())
+            end = n if end < 0 else end + len(close)
+        elif m.group(0) == '"':
+            end = m.end()
+            while end < n and src[end] != '"':
+                end += 2 if src[end] == "\\" else 1
+            end = min(end + 1, n)
+        else:
+            end = m.end()
+        out.append(src[i : m.start()])
+        out.append(re.sub(r"[^\n]", " ", src[m.start() : end]))
+        i = end
+    out.append(src[i:])
+    return "".join(out)
+
+
+def outer_blocks(blank):
+    """The outermost `{ … }` blocks of a literal-blanked text, as (open, close)
+    offsets; an unclosed block runs to the end."""
+    blocks, depth, start = [], 0, 0
+    for m in re.finditer(r"[{}]", blank):
+        if m.group(0) == "{":
+            if depth == 0:
+                start = m.start()
+            depth += 1
+        elif depth:
+            depth -= 1
+            if depth == 0:
+                blocks.append((start, m.start()))
+    if depth:
+        blocks.append((start, len(blank)))
+    return blocks
+
+
+def use_tree(tree):
+    """The (path, public name) pairs of a `use` tree: braces nest, `X as Y` is
+    the item `X` under the name `Y`, a path ending in `*` is a glob, and
+    `self` inside braces is the module itself. `as _` names nothing."""
+    tokens = USE_TOKEN.findall(tree)
+
+    def at(i):
+        return tokens[i] if i < len(tokens) else ""
+
+    def parse(i, prefix):
+        path = list(prefix)
+        while True:
+            token = at(i)
+            if token == "{":
+                pairs, i = [], i + 1
+                while at(i) not in ("}", ""):
+                    sub, i = parse(i, path)
+                    pairs += sub
+                    if at(i) == ",":
+                        i += 1
+                if at(i) != "}":
+                    raise Failure(f"an unclosed `use` tree: {tree.strip()}")
+                return pairs, i + 1
+            if token == "*":
+                return [(path + ["*"], None)], i + 1
+            if token == "::" and not path:
+                i += 1
+                continue
+            if not re.fullmatch(r"\w+", token):
+                raise Failure(f"a `use` tree this rule cannot read: {tree.strip()}")
+            path.append(token)
+            i += 1
+            if at(i) == "::":
+                i += 1
+                continue
+            alias = None
+            if at(i) == "as":
+                alias, i = at(i + 1), i + 2
+            if path[-1] == "self" and len(path) > 1:
+                path.pop()
+            if alias == "_":
+                return [], i
+            return [(path, alias or path[-1])], i
+
+    pairs, i = parse(0, [])
+    if i != len(tokens):
+        raise Failure(f"a `use` tree this rule cannot read: {tree.strip()}")
+    return pairs
+
+
+def read_module(text):
+    """One module's declarations, from its comment- and test-stripped text.
+
+    Only items at the module's top level count. An inline `mod name { … }` is
+    a module of its own (`inline`), and its body is no part of the module
+    around it. `mods` maps each declared module to its visibility (`""` for
+    none) and its `#[path]`; `uses` is every `pub use` whose visibility is
+    exactly `pub`, as (path, public name) pairs; `structs` and `renders` are
+    the discovery rule's, read in this module alone.
+    """
+    blank = blank_literals(text)
+    blocks = outer_blocks(blank)
+    opens = {open_: close for open_, close in blocks}
+
+    def top(pos):
+        return not any(open_ < pos <= close for open_, close in blocks)
+
+    inline = {}
+    own, own_blank = list(text), list(blank)
+    for m in MOD_DECL.finditer(blank):
+        if m.group(4) == "{" and top(m.start()) and (m.end(4) - 1) in opens:
+            open_, close = m.end(4) - 1, opens[m.end(4) - 1]
+            inline[m.group(3)] = read_module(text[open_ + 1 : close])
+            for i in range(open_ + 1, close):
+                if own[i] != "\n":
+                    own[i] = own_blank[i] = " "
+    text, blank = "".join(own), "".join(own_blank)
+    blocks = outer_blocks(blank)
+    mods, uses = {}, []
+    for m in MOD_DECL.finditer(blank):
+        if top(m.start()):
+            path = PATH_ATTR.search(text[m.start(1) : m.end(1)])
+            mods[m.group(3)] = (
+                re.sub(r"\s+", "", m.group(2) or ""),
+                path.group(1) if path else None,
+            )
+    for m in PUB_USE.finditer(blank):
+        if top(m.start()) and not m.group(1):
+            uses += use_tree(m.group(2))
+    structs, renders = rendered(blank)
+    return {
+        "mods": mods,
+        "inline": inline,
+        "uses": uses,
+        "structs": structs,
+        "renders": renders & structs,
+    }
+
+
+def read_source(path, what):
+    try:
+        with open(path, encoding="utf-8", errors="replace") as f:
+            return read_module(strip_test_modules(strip_comments(f.read())))
+    except OSError as err:
+        raise Failure(
+            f"cannot read {path}, {what}; the re-export rule no longer matches "
+            f"gpui-base's layout: {err}"
+        ) from err
+
+
+class BaseModules:
+    """gpui-base's modules, read from `lib.rs` down as Rust finds them, and the
+    paths of its `pub use` items followed as Rust resolves them."""
+
+    def __init__(self, src):
+        root = read_source(os.path.join(src, "lib.rs"), "gpui-base's root")
+        self.records = {(): self.place(root, src, src)}
+
+    @staticmethod
+    def place(record, folder, here):
+        """`folder` holds the record's file modules; `here`, the declaring
+        file's folder, is what a `#[path]` is relative to."""
+        record["folder"], record["here"] = folder, here
+        for name, child in record["inline"].items():
+            BaseModules.place(child, os.path.join(folder, name), here)
+        return record
+
+    def module(self, key):
+        if key in self.records:
+            return self.records[key]
+        parent = self.module(key[:-1])
+        name = key[-1]
+        if name in parent["inline"]:
+            record = parent["inline"][name]
+        else:
+            _, path_attr = parent["mods"][name]
+            if path_attr:
+                files = [os.path.join(parent["here"], path_attr)]
+            else:
+                files = [
+                    os.path.join(parent["folder"], name + ".rs"),
+                    os.path.join(parent["folder"], name, "mod.rs"),
+                ]
+            path = next((p for p in files if os.path.isfile(p)), files[0])
+            what = "the file of gpui-base's module `" + "::".join(key) + "`"
+            record = read_source(path, what)
+            here = os.path.dirname(path)
+            folder = here if os.path.basename(path) == "mod.rs" else path[:-3]
+            self.place(record, folder, here)
+        self.records[key] = record
+        return record
+
+    def walk(self, key, segments, outside, seen):
+        """The module a path's module segments lead to from module `key`, or
+        None for an external crate. `outside`: the path is gpui-component's,
+        so its first segment must be gpui-base's too."""
+        for i, seg in enumerate(segments):
+            if seg == "crate":
+                key = ()
+                continue
+            if seg == "self":
+                continue
+            if seg == "super":
+                if not key:
+                    raise Failure("the re-export rule no longer matches gpui-base's layout: "
+                                  "`super` at the crate root")
+                key = key[:-1]
+                continue
+            record = self.module(key)
+            if seg in record["mods"]:
+                key += (seg,)
+                continue
+            brought = [p for p, public in record["uses"] if public == seg and p[-1] != "*"]
+            if brought and (key, seg) not in seen:
+                key = self.walk(key, brought[0], False, seen | {(key, seg)})
+                if key is None:
+                    return None
+                continue
+            if i == 0 and not outside:
+                return None
+            raise Failure(
+                "the re-export rule no longer matches gpui-base's layout: the module "
+                f"`{'::'.join(key) or 'crate'}` declares or brings in no module `{seg}`"
+            )
+        return key
+
+    def follow(self, key, path, outside=False, seen=frozenset()):
+        """What a `use` path read in module `key` names: the (module, struct)
+        pairs of a named item, and the (name, module, struct) triples of a
+        glob or of a `pub mod` named whole."""
+        module = self.walk(key, path[:-1], outside, seen)
+        if module is None:
+            return [], []
+        if path[-1] == "*":
+            return [], self.glob(module, seen)
+        return self.lookup(module, path[-1], seen)
+
+    def lookup(self, key, name, seen):
+        if (key, name) in seen:
+            return [], []
+        seen = seen | {(key, name)}
+        record = self.module(key)
+        items, contents = [], []
+        if name in record["structs"]:
+            items.append((key, name))
+        if record["mods"].get(name, ("",))[0] == "pub":
+            contents += self.glob(key + (name,), seen)
+        for path, public in record["uses"]:
+            if path[-1] == "*":
+                _, globbed = self.follow(key, path, False, seen)
+                items += [(m, s) for n, m, s in globbed if n == name]
+            elif public == name:
+                found, whole = self.follow(key, path, False, seen)
+                items += found
+                contents += whole
+        return items, contents
+
+    def glob(self, key, seen):
+        if (key, "*") in seen:
+            return []
+        seen = seen | {(key, "*")}
+        record = self.module(key)
+        found = [(s, key, s) for s in sorted(record["structs"])]
+        for path, public in record["uses"]:
+            items, contents = self.follow(key, path, False, seen)
+            if path[-1] == "*":
+                found += contents
+            else:
+                found += [(public, m, s) for m, s in items]
+        return found
+
+    def renders(self, key, name):
+        return name in self.module(key)["renders"]
+
+
+def gpui_base_reexports(component_src, base_src):
+    """The public names of the gpui-base widgets gpui-component makes public.
+
+    A `pub use gpui_base::…;` (exactly `pub`) counts in a module that is
+    public from the root down; in one that is not, only for the names a
+    public module re-exports from it, by name or by glob. Its path is
+    followed through gpui-base's own modules (`BaseModules`), and an item
+    counts when the file that declares its `pub struct` also renders it, as
+    `gpui_widgets` asks. The name is gpui-component's public one.
+    """
+    base = BaseModules(base_src)
+    modules = {}
+
+    def add(key, record):
+        modules[key] = record
+        for name, child in record["inline"].items():
+            add(key + (name,), child)
+
+    for path in sorted(rust_files(component_src)):
+        parts = os.path.relpath(path, component_src)[:-3].split(os.sep)
+        if parts == ["lib"] or parts[-1] == "mod":
+            parts = parts[:-1]
+        add(tuple(parts), read_source(path, "a gpui-component source"))
+
+    def public(key):
+        return all(
+            key[:i] in modules and modules[key[:i]]["mods"].get(key[i], ("",))[0] == "pub"
+            for i in range(len(key))
+        )
+
+    def own_module(key, segments):
+        for seg in segments:
+            if seg == "crate":
+                key = ()
+            elif seg == "super" and key:
+                key = key[:-1]
+            elif seg != "self" and key + (seg,) in modules and seg in modules[key]["mods"]:
+                key += (seg,)
+            elif seg != "self":
+                return None
+        return key
+
+    exported = {}
+    for key, record in modules.items():
+        if public(key):
+            for path, name in record["uses"]:
+                target = own_module(key, path[:-1])
+                if target is not None and not public(target):
+                    exported.setdefault(target, []).append((path[-1], name))
+
+    found = set()
+    for key, record in modules.items():
+        for path, name in record["uses"]:
+            if path[0] != "gpui_base" or len(path) < 2:
+                continue
+            items, contents = base.follow((), path[1:], outside=True)
+            names = [name for m, s in items if base.renders(m, s)]
+            names += [n for n, m, s in contents if base.renders(m, s)]
+            if public(key):
+                found.update(names)
+                continue
+            for item, outer in exported.get(key, []):
+                found.update(n if item == "*" else outer for n in names if item in ("*", n))
+    return sorted(found)
 
 
 def iced_modules(src):
@@ -870,6 +1277,126 @@ def self_test():
         expect("an unshown widget is missing",
                check("egui", found, found, "", {}, report), (["Label"], []))
 
+        # the gpui-base re-export rule, on synthetic gpui-base and
+        # gpui-component roots: each case adds its lines to the roots below
+        base_files = {
+            "lib.rs": "pub mod grid;\nmod vl;\nmod fold;\npub mod traits;\npub mod plot;\n"
+            "mod text;\npub mod acts;\npub use vl::VList;\npub use fold::Fold;\n"
+            "pub use text::Txt;\n",
+            "grid/mod.rs": "mod g;\npub use g::Grid;\n",
+            "grid/g.rs": "#[derive(IntoElement)]\npub struct Grid;\n",
+            "vl.rs": "pub struct VList;\nimpl IntoElement for VList {}\n",
+            "fold.rs": "pub struct Fold;\nimpl RenderOnce for Fold {}\n",
+            "traits.rs": "pub trait Fold {}\n",
+            "plot/mod.rs": "mod label;\npub use label::*;\n",
+            "plot/label.rs": "pub struct Txt;\n",
+            "text.rs": "pub enum Txt {}\nimpl RenderOnce for Txt {}\n",
+            "acts.rs": "pub struct Act;\nimpl RenderOnce for Act {}\n",
+        }
+        component_files = {
+            "lib.rs": "pub mod grid;\nmod vl;\npub mod traits;\npub mod plot;\npub mod hidden;\n"
+            "pub(crate) mod acts {\n    pub use gpui_base::acts::*;\n}\n"
+            "pub use vl::{VList};\npub use gpui_base::{Fold as Folder};\n",
+            "grid.rs": "pub use gpui_base::grid::*;\n",
+            "vl.rs": "pub use gpui_base::VList;\n",
+            "traits.rs": "pub use gpui_base::traits::Fold;\n",
+            "plot.rs": "pub use gpui_base::plot::*;\n",
+            "hidden.rs": "pub(crate) use gpui_base::Fold;\n",
+        }
+        roots = ["Folder", "Grid", "VList"]
+
+        def reexports(label, base_more, component_more):
+            case = os.path.join(root, "reexport-" + re.sub(r"\W+", "-", label))
+            for name, files, more in (
+                ("base", base_files, base_more),
+                ("component", component_files, component_more),
+            ):
+                for rel in sorted(set(files) | set(more)):
+                    path = os.path.join(case, name, rel)
+                    os.makedirs(os.path.dirname(path), exist_ok=True)
+                    with open(path, "w", encoding="utf-8") as f:
+                        f.write(files.get(rel, "") + more.get(rel, ""))
+            return lambda: gpui_base_reexports(
+                os.path.join(case, "component"), os.path.join(case, "base")
+            )
+
+        def finds(label, call, want):
+            try:
+                expect(label, call(), want)
+            except Failure as err:
+                failures.append(f"{label}: Failure {err}")
+
+        finds("gpui-base: a module re-exported whole, a name through a private module "
+              "re-exported at the root, a rename; not a trait, a non-rendering struct, "
+              "a `pub(crate)` module or a `pub(crate) use`",
+              reexports("roots", {}, {}), roots)
+        finds("gpui-base: a `pub mod` re-exported by name is followed as a glob",
+              reexports("pub-mod", {
+                  "lib.rs": "pub mod anim;\n",
+                  "anim.rs": "pub struct Fade;\nimpl RenderOnce for Fade {}\n",
+              }, {"lib.rs": "pub use gpui_base::anim;\n"}),
+              ["Fade"] + roots)
+        finds("gpui-base: an external crate's path yields nothing",
+              reexports("external", {
+                  "lib.rs": "pub use vl::Rope;\n",
+                  "vl.rs": "pub use ropey::Rope;\n",
+              }, {"lib.rs": "pub use gpui_base::Rope;\n"}),
+              roots)
+        finds("gpui-base: `crate::`, `self::` and `super::` are followed",
+              reexports("crate-self-super", {
+                  "lib.rs": "pub mod nest;\npub use crate::nest::Deep as Root2;\n",
+                  "nest/mod.rs": "mod inner;\npub use self::inner::Deep;\n"
+                  "pub use super::vl::VList as Again;\n",
+                  "nest/inner.rs": "pub struct Deep;\nimpl RenderOnce for Deep {}\n",
+              }, {"lib.rs": "pub use gpui_base::nest::{Deep, Again};\npub use gpui_base::Root2;\n"}),
+              ["Again", "Deep", "Folder", "Grid", "Root2", "VList"])
+        finds("gpui-base: a `#[path]` names the module's file",
+              reexports("path", {
+                  "lib.rs": "pub mod pathed;\n",
+                  "pathed.rs": "#[path = \"other/place.rs\"]\nmod placed;\npub use placed::Placed;\n",
+                  "other/place.rs": "#[derive(IntoElement)]\npub struct Placed;\n",
+              }, {"lib.rs": "pub use gpui_base::pathed::Placed;\n"}),
+              ["Folder", "Grid", "Placed", "VList"])
+        finds("gpui-base: a submodule of `x.rs` is in the folder `x/`",
+              reexports("x-folder", {
+                  "lib.rs": "pub mod outer;\n",
+                  "outer.rs": "mod sub;\npub use sub::Sub;\n",
+                  "outer/sub.rs": "pub struct Sub;\nimpl IntoElement for Sub {}\n",
+              }, {"lib.rs": "pub use gpui_base::outer::Sub;\n"}),
+              ["Folder", "Grid", "Sub", "VList"])
+        finds("gpui-base: an inline module is a module of its own",
+              reexports("inline", {
+                  "lib.rs": "pub mod host;\n",
+                  "host.rs": "mod inner {\n    pub struct Nested;\n"
+                  "    impl RenderOnce for Nested {}\n}\npub use inner::Nested;\n",
+              }, {"lib.rs": "pub use gpui_base::host::Nested;\n"}),
+              ["Folder", "Grid", "Nested", "VList"])
+        finds("gpui-base: a `pub(crate) use` brings nothing in",
+              reexports("pub-crate-use", {
+                  "lib.rs": "pub mod hid;\n",
+                  "hid.rs": "pub(crate) use crate::fold::Fold;\n",
+              }, {"lib.rs": "pub use gpui_base::hid::Fold;\n"}),
+              roots)
+        fails("gpui-base: a gpui-component path's first module that gpui-base lacks",
+              reexports("gone", {}, {"lib.rs": "pub use gpui_base::gone::X;\n"}))
+        fails("gpui-base: a module segment that names nothing",
+              reexports("nowhere", {}, {"lib.rs": "pub use gpui_base::grid::nowhere::X;\n"}))
+
+        # a free function that returns a widget counts through `GPUI_VIA`
+        for text, name, want in (
+            ('grid_layout("g", &state, cx)', "GridLayout", True),
+            (".child(grid_layout(", "GridLayout", True),
+            ("info::layout::grid_layout(t)", "GridLayout", False),
+            ("fn grid_layout(", "GridLayout", False),
+            ("demo::grid_layout_sample(", "GridLayout", False),
+            ("h_resizable(", "ResizablePanelGroup", True),
+            ("[resizable_panel()", "ResizablePanel", True),
+            (".vertical_scrollbar(h)", "Scrollbar", True),
+            (".overflow_y_scrollbar()", "Scrollbar", True),
+            (".scrollbar_show(", "Scrollbar", False),
+        ):
+            expect(f"gpui: `{text}` shows {name}", shows_gpui(text, name), want)
+
     for line in failures:
         print("  FAIL " + line)
     if failures:
@@ -921,7 +1448,11 @@ def main():
     exceptions = load_exceptions()
 
     gpui = {w: [w] for w in gpui_widgets(source_dir(meta, "gpui-component"))}
-    iced = {m: [m] for m in iced_modules(source_dir(meta, "iced_widget"))}
+    for w in gpui_base_reexports(
+        source_dir(meta, "gpui-component"), source_dir(meta, "gpui-base")
+    ):
+        gpui.setdefault(w, [w])
+    iced ={m: [m] for m in iced_modules(source_dir(meta, "iced_widget"))}
     aw_all = aw_modules(source_dir(meta, "iced_aw"))
     aw = aw_enabled(meta, aw_all)
     egui = {w: [w] for w in egui_widgets(source_dir(meta, "egui"))}

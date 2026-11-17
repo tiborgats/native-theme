@@ -703,13 +703,15 @@ showcase. Discovers the widgets from the dependencies' own sources through
 `cargo metadata` (the iced manifest with `--features iced_aw`, so the optional
 dependency is in the graph; gpui-component's widgets by their `RenderOnce` /
 `IntoElement` impls and their `IntoElement` or `IntoPlot` derives, the charts
-deriving `IntoPlot`), then requires each one to be either shown in the
-showcase or listed with a reason in `docs/showcase-exceptions.toml`. Exits 0
-when clean, 1 on a missing widget or a stale exception, 2 when a toolkit's
-package is absent from the metadata, the discovery finds no widget in it, or
-a file the rules read has moved upstream. `--self-test` runs those guards on
-synthetic crate roots, without cargo; `scripts/check_release.sh` and `ci.yml`
-run it beside the check. `scripts/check_release.sh`, `ci.yml` (and through
+deriving `IntoPlot`, and the gpui-base widgets gpui-component makes public by
+a `pub use gpui_base::…`, followed through gpui-base's own modules), then
+requires each one to be either shown in the showcase or listed with a reason
+in `docs/showcase-exceptions.toml`. Exits 0 when clean, 1 on a missing widget
+or a stale exception, 2 when a toolkit's package is absent from the metadata,
+the discovery finds no widget in it, a file the rules read has moved upstream,
+or the re-export rule no longer matches gpui-base's layout. `--self-test` runs
+those guards on synthetic crate roots, without cargo;
+`scripts/check_release.sh` and `ci.yml` run it beside the check. `scripts/check_release.sh`, `ci.yml` (and through
 it `publish.yml`'s CI run), `dependency-canary.yml` and
 `update_compatibility.sh run` run it, so an
 upstream release that adds a widget is reported the evening it appears.
