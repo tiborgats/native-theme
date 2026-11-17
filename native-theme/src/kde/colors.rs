@@ -1,6 +1,7 @@
 // KDE color group parsing -> populate per-widget fields on ThemeMode
 // Maps semantic color roles from KDE INI color groups directly to ThemeMode.
 
+use super::shade::{KdeShadeRole, kde_shade};
 use crate::Rgba;
 
 /// Look up a color key from a KDE INI section and parse it as RGB.
@@ -20,6 +21,12 @@ const BLEND_VALUE: f32 = 0.3;
 /// `kdeglobals` `[KDE] frameContrast` where it is unset, KColorScheme's own
 /// default (kcolorscheme.cpp:529-538 at 27066d47; docs/platform-facts.md §2.11).
 const FRAME_CONTRAST_DEFAULT: f64 = 0.2;
+
+/// `kdeglobals` `[KDE] contrast` where it is unset or not an integer,
+/// KColorScheme's own default: `contrastF` is `0.1 * readEntry("contrast", 7)`
+/// (kcolorscheme.cpp:519-527 at kcolorscheme v6.31.0; docs/platform-facts.md
+/// §2.15).
+const CONTRAST_DEFAULT: i32 = 7;
 
 /// `color` at `alpha`, held in 8 bits as `Rgba` holds every alpha.
 fn translucent(color: Rgba, alpha: f32) -> Rgba {
@@ -368,6 +375,13 @@ const CHECKED_BUTTON_MIX: f64 = 0.125;
 /// docs/platform-facts.md §2.3).
 const PRESSED_BUTTON_MIX: f64 = 0.3;
 
+/// How far a Qt Widgets menu's panel moves from `Window` towards `Base`:
+/// `frameBackgroundColor()`, `KColorUtils::mix(Window, Base,
+/// Metrics::Blend_Value)`, the `qreal` 0.3 (`drawPanelMenuPrimitive`,
+/// breezestyle.cpp:4708; breezehelper.cpp:200-203; breezemetrics.h:176 at breeze
+/// f0b1d75; docs/platform-facts.md §2.6).
+const MENU_PANEL_MIX: f64 = 0.3;
+
 /// The alpha of the hover decoration a hovered, unselected Breeze tab is
 /// filled with, `alphaColor(hoverColor(palette), 0.2)` (breezehelper.cpp:1497
 /// at breeze f0b1d75; docs/platform-facts.md §2.11).
@@ -449,6 +463,26 @@ fn frame_contrast(ini: &configparser::ini::Ini) -> f64 {
         .map_or(FRAME_CONTRAST_DEFAULT, |v| v.clamp(0.0, 1.0))
 }
 
+/// KColorScheme's contrast step: `[KDE] contrast` as an integer, or
+/// [`CONTRAST_DEFAULT`] where unset or not an integer. [`kde_shade`] takes a
+/// step beyond ±10 as ±10, so it is not bounded here.
+fn contrast(ini: &configparser::ini::Ini) -> i32 {
+    ini.get("KDE", "contrast")
+        .and_then(|v| v.trim().parse::<i32>().ok())
+        .unwrap_or(CONTRAST_DEFAULT)
+}
+
+/// KColorScheme's `MidShade` of `window` at `contrast`, which `QPalette::Mid`
+/// is (kcolorscheme.cpp:685 at 27066d47; docs/platform-facts.md §2.15), read
+/// back to 8 bits: [`kde_shade`] returns Qt's 16-bit channels over 65535, and
+/// [`Rgba::from_f32`] rounds each times 255 to the nearest, which is
+/// `qt_div_257` of the 16-bit value (`div_257` here): a channel `s / 65535`
+/// times 255 is `s / 257`, never halfway between two integers.
+fn mid_shade(window: Rgba, contrast: i32) -> Rgba {
+    let [r, g, b, a] = kde_shade(window.to_f32_array(), KdeShadeRole::Mid, contrast as f32);
+    Rgba::from_f32(r, g, b, a)
+}
+
 /// Populate a ThemeMode with colors from KDE INI color groups.
 ///
 /// Maps all standard KDE color groups (View, Window, Button, Selection,
@@ -460,10 +494,10 @@ fn frame_contrast(ini: &configparser::ini::Ini) -> f64 {
 /// them as Breeze, Kirigami and qqc2-desktop-style do, in Qt's arithmetic:
 /// the checked button, the checkbox and progress-bar blends, the switch
 /// tracks and outlines, the toolbar's fill and edge, the popover's and the
-/// card's edges, the menu's hover and separator, the list's hover and the
-/// scroll bar's resting handle. The blends on the accent (the checked
-/// checkbox, the progress fill, the switch's on track and its outline, and the
-/// list's hover) come from kdeglobals'
+/// card's edges, the menu's hover, separator and panel, the list's hover,
+/// the table's grid and the scroll bar's resting handle. The blends on the
+/// accent (the checked checkbox, the progress fill, the switch's on track and
+/// its outline, and the list's hover) come from kdeglobals'
 /// `[Colors:Selection] BackgroundNormal`, so an application's `with_overlay` accent or the
 /// portal's (`gnome::apply_accent`, applied by `GnomePortalKdeReader`) does
 /// not move them. The menu's hover comes from `[Colors:View] DecorationFocus`,
@@ -713,11 +747,13 @@ pub(crate) fn populate_colors(ini: &configparser::ini::Ini, variant: &mut crate:
         variant.combo_box.font.get_or_insert_default().color = Some(color);
     }
 
-    // Menu (docs/platform-facts.md §2.6): the text is the window text; a
-    // hovered item is the focus colour at `Blend_Value` lettered in the window
-    // text; the separator is `separatorColor()`, the window moved towards its
-    // text by the frame contrast (breezestyle.cpp:5984, :6021-6029, :6155;
-    // breezehelper.cpp:329-332 at breeze f0b1d75).
+    // Menu (docs/platform-facts.md §2.6): the panel is `frameBackgroundColor()`,
+    // the window moved towards the view by `Blend_Value`; the text is the
+    // window text; a hovered item is the focus colour at `Blend_Value`
+    // lettered in the window text; the separator is `separatorColor()`, the
+    // window moved towards its text by the frame contrast (breezestyle.cpp:4708,
+    // :5984, :6021-6029, :6155; breezehelper.cpp:200-203, :329-332 at breeze
+    // f0b1d75).
     if let Some(color) = window_fg {
         variant.menu.font.get_or_insert_default().color = Some(color);
     }
@@ -726,6 +762,9 @@ pub(crate) fn populate_colors(ini: &configparser::ini::Ini, variant: &mut crate:
     variant.menu.separator_color = window_bg
         .zip(window_fg)
         .map(|(window, text)| mix(window, text, frame_contrast(ini)));
+    variant.menu.background_color = window_bg
+        .zip(view_bg)
+        .map(|(window, base)| mix(window, base, MENU_PANEL_MIX));
 
     // KDE-02: list fields (Colors:View is the native source for list/table content areas); a
     // hovered row is the selection at `Blend_Value` (breezestyle.cpp:4871-4875)
@@ -734,6 +773,10 @@ pub(crate) fn populate_colors(ini: &configparser::ini::Ini, variant: &mut crate:
         variant.list.item_font.get_or_insert_default().color = Some(color);
     }
     variant.list.alternate_row_background = get_color(ini, "Colors:View", "BackgroundAlternate");
+    // A table's grid is `QPalette::Mid`, the window's `MidShade` at the
+    // scheme's contrast (qcommonstyle.cpp:5126-5128 at qtbase v6.11.0;
+    // kcolorscheme.cpp:685 at 27066d47; docs/platform-facts.md §2.15).
+    variant.list.grid_color = window_bg.map(|window| mid_shade(window, contrast(ini)));
     variant.list.hover_background =
         selection_bg.map(|selection| translucent(selection, BLEND_VALUE));
     // The header is the Button set: Breeze fills a `QHeaderView` section with
@@ -1604,6 +1647,105 @@ ForegroundNormal=239,240,241
         assert!(v.menu.hover_text_color.is_none());
     }
 
+    /// A table's grid is `QPalette::Mid`, the window's `MidShade` at the
+    /// scheme's contrast: Breeze's measured #c4c8cc / #1c1f21
+    /// (docs/platform-facts.md §2.15).
+    #[test]
+    fn test_table_grid_is_qts_mid_shade() {
+        for (window, expected) in [
+            ("239,240,241", Rgba::rgb(0xc4, 0xc8, 0xcc)),
+            ("32,35,38", Rgba::rgb(0x1c, 0x1f, 0x21)),
+        ] {
+            let v = populate_fixture(&format!(
+                "[Colors:Window]\nBackgroundNormal={window}\n\n[KDE]\ncontrast=4\n"
+            ));
+            assert_eq!(v.list.grid_color, Some(expected), "{window}");
+        }
+    }
+
+    /// The grid follows `[KDE] contrast`; a step beyond 10 acts as 10, and a
+    /// missing or non-integer value is KColorScheme's default, 7.
+    #[test]
+    fn test_table_grid_follows_the_contrast() {
+        let grid = |kde: &str| {
+            populate_fixture(&format!(
+                "[Colors:Window]\nBackgroundNormal=239,240,241\n\n{kde}"
+            ))
+            .list
+            .grid_color
+        };
+        assert_eq!(
+            grid("[KDE]\ncontrast=0\n"),
+            Some(Rgba::rgb(0xce, 0xd1, 0xd4))
+        );
+        assert_eq!(
+            grid("[KDE]\ncontrast=-3\n"),
+            Some(Rgba::rgb(0xd5, 0xd7, 0xda))
+        );
+        assert_eq!(
+            grid("[KDE]\ncontrast=10\n"),
+            Some(Rgba::rgb(0xb5, 0xba, 0xbf))
+        );
+        assert_eq!(
+            grid("[KDE]\ncontrast=12\n"),
+            grid("[KDE]\ncontrast=10\n"),
+            "a step beyond 10 acts as 10"
+        );
+        assert_eq!(
+            grid(""),
+            Some(Rgba::rgb(0xbd, 0xc1, 0xc6)),
+            "KColorScheme's default, 7"
+        );
+        assert_eq!(grid("[KDE]\ncontrast=high\n"), grid(""), "not an integer");
+        assert_eq!(grid("[KDE]\ncontrast=4.5\n"), grid(""), "not an integer");
+    }
+
+    /// Breeze's menu panel, `mix(Window, Base, 0.3)`: the measured #f4f5f5 /
+    /// #1c1f22 (docs/platform-facts.md §2.6).
+    #[test]
+    fn test_menu_panel_is_breezes() {
+        for (window, view, expected) in [
+            ("239,240,241", "255,255,255", Rgba::rgb(0xf4, 0xf5, 0xf5)),
+            ("32,35,38", "20,22,24", Rgba::rgb(0x1c, 0x1f, 0x22)),
+        ] {
+            let v = populate_fixture(&format!(
+                "[Colors:Window]\nBackgroundNormal={window}\n\n\
+                 [Colors:View]\nBackgroundNormal={view}\n"
+            ));
+            assert_eq!(v.menu.background_color, Some(expected), "{window}");
+        }
+    }
+
+    /// Another scheme's Window and View sets give their own panel and grid,
+    /// the grid at the default step where the scheme states no contrast.
+    #[test]
+    fn a_custom_scheme_moves_the_menu_panel_and_the_grid() {
+        let window = Rgba::rgb(230, 220, 200);
+        let view = Rgba::rgb(250, 240, 230);
+        let v = populate_fixture(
+            "[Colors:Window]\nBackgroundNormal=230,220,200\n\n\
+             [Colors:View]\nBackgroundNormal=250,240,230\n",
+        );
+        assert_eq!(
+            v.menu.background_color,
+            Some(mix(window, view, MENU_PANEL_MIX))
+        );
+        assert_eq!(v.list.grid_color, Some(mid_shade(window, CONTRAST_DEFAULT)));
+        assert_ne!(v.menu.background_color, Some(Rgba::rgb(0xf4, 0xf5, 0xf5)));
+        assert_ne!(v.list.grid_color, Some(Rgba::rgb(0xc4, 0xc8, 0xcc)));
+    }
+
+    #[test]
+    fn test_missing_groups_leave_the_panel_and_the_grid_to_the_preset() {
+        let v = populate_fixture("[Colors:View]\nBackgroundNormal=255,255,255\n");
+        assert!(v.list.grid_color.is_none());
+        assert!(v.menu.background_color.is_none());
+
+        let v = populate_fixture("[Colors:Window]\nBackgroundNormal=239,240,241\n");
+        assert!(v.list.grid_color.is_some());
+        assert!(v.menu.background_color.is_none());
+    }
+
     // === KDE-02: Link visited ===
 
     #[test]
@@ -1831,6 +1973,11 @@ DecorationFocus=61,174,233
         assert!(
             v.list.header_font.as_ref().and_then(|f| f.color).is_some(),
             "list.header_font.color missing"
+        );
+        assert!(v.list.grid_color.is_some(), "list.grid_color missing");
+        assert!(
+            v.menu.background_color.is_some(),
+            "menu.background_color missing"
         );
         assert!(
             v.link.visited_text_color.is_some(),

@@ -1865,6 +1865,14 @@ const IDLE_TAB_EXCEPTIONS: &[(&str, &str)] = &[("kde-breeze/dark", IDLE_TAB_SURF
 #[cfg(feature = "widgets")]
 const IDLE_TAB_EXCEPTIONS: &[(&str, &str)] = &[];
 
+/// gpui-component fills a menu with the `popover` token
+/// (`menu/popup_menu.rs:1610-1611`), the window's colour on KDE, where
+/// Breeze's menu panel, `menu.background_color`, is `mix(Window, Base, 0.3)`
+/// (issue #4's D3): the hover tint lies on a surface a few levels from the
+/// platform's, and gpui-component has no menu surface token.
+const MENU_PANEL_SURFACE: &str = "gpui-component paints a menu on the popover \
+     token, the window colour on KDE, where Breeze's panel is mix(Window, Base, 0.3)";
+
 /// The idle tab label as the connector draws it: `widgets::TabBar`'s idle
 /// tab on its bar.
 #[cfg(feature = "widgets")]
@@ -1994,7 +2002,10 @@ const PAIRS: &[Pair] = &[
             )
         },
         emitted: |tc, _| (tc.accent_foreground, tc.accent, tc.popover),
-        exceptions: &[],
+        exceptions: &[
+            ("kde-breeze/light", MENU_PANEL_SURFACE),
+            ("kde-breeze/dark", MENU_PANEL_SURFACE),
+        ],
     },
     Pair {
         what: "popover text",

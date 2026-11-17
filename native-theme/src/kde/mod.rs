@@ -27,6 +27,16 @@
 pub(crate) mod colors;
 /// Qt font string parsing with weight extraction.
 pub(crate) mod fonts;
+/// KColorScheme's shades of a colour, in Qt's arithmetic: the clean-room
+/// function of `v0.8.0-rc1`, carried with its vector test (its own notice).
+#[cfg_attr(
+    not(test),
+    allow(
+        dead_code,
+        reason = "the reader takes the Mid shade alone; the module is carried as the clean room wrote it, and its test builds every role"
+    )
+)]
+mod shade;
 
 use crate::Rgba;
 use crate::model::IconSizes;
@@ -1174,7 +1184,7 @@ BackgroundNormal=49,54,59
     /// A colour scheme's background and text keys, `(BackgroundNormal,
     /// ForegroundNormal)`, of the sets the derived leaves read, the View
     /// set's `DecorationFocus` and `DecorationHover`, with an optional
-    /// `[Colors:Header]` group and `[KDE] frameContrast`.
+    /// `[Colors:Header]` group and `[KDE]` `contrast` and `frameContrast`.
     struct Scheme {
         button: (&'static str, &'static str),
         header: Option<(&'static str, &'static str)>,
@@ -1184,6 +1194,7 @@ BackgroundNormal=49,54,59
         hover: &'static str,
         window: (&'static str, &'static str),
         frame_contrast: Option<&'static str>,
+        contrast: Option<&'static str>,
     }
 
     impl Scheme {
@@ -1205,8 +1216,14 @@ BackgroundNormal=49,54,59
                 self.view.0, self.view.1, self.focus, self.hover
             ));
             content.push_str(&group("Window", self.window));
+            if self.contrast.is_some() || self.frame_contrast.is_some() {
+                content.push_str("[KDE]\n");
+            }
+            if let Some(contrast) = self.contrast {
+                content.push_str(&format!("contrast={contrast}\n"));
+            }
             if let Some(contrast) = self.frame_contrast {
-                content.push_str(&format!("[KDE]\nframeContrast={contrast}\n"));
+                content.push_str(&format!("frameContrast={contrast}\n"));
             }
             content
         }
@@ -1216,7 +1233,8 @@ BackgroundNormal=49,54,59
     /// the derived leaves read: Button :31, :39; Header :59, :67; Selection
     /// :87; View :115, :123, DecorationFocus :116 and DecorationHover :117;
     /// Window :129, :137. No `[KDE] frameContrast`
-    /// (:193-194), so KColorScheme's 0.2.
+    /// (:193-194), so KColorScheme's 0.2. `[KDE] contrast=4`
+    /// (BreezeLight.colors:195 at breeze f0b1d75; docs/platform-facts.md §2.15).
     const BREEZE_LIGHT_SCHEME: Scheme = Scheme {
         button: ("252,252,252", "35,38,41"),
         header: Some(("222,224,226", "35,38,41")),
@@ -1226,12 +1244,14 @@ BackgroundNormal=49,54,59
         hover: "61,174,233",
         window: ("239,240,241", "35,38,41"),
         frame_contrast: None,
+        contrast: Some("4"),
     };
 
     /// The same keys of BreezeDark.colors at breeze v6.7.5
     /// (LGPL-2.0-or-later): Button :32, :40; Header :60, :68; Selection :88;
     /// View :116, :124, DecorationFocus :117 and DecorationHover :118;
-    /// Window :130, :138; no frameContrast (:200-201).
+    /// Window :130, :138; no frameContrast (:200-201). `[KDE] contrast=4`
+    /// (BreezeDark.colors:202 at breeze f0b1d75; docs/platform-facts.md §2.15).
     const BREEZE_DARK_SCHEME: Scheme = Scheme {
         button: ("41,44,48", "252,252,252"),
         header: Some(("41,44,48", "252,252,252")),
@@ -1241,11 +1261,12 @@ BackgroundNormal=49,54,59
         hover: "61,174,233",
         window: ("32,35,38", "252,252,252"),
         frame_contrast: None,
+        contrast: Some("4"),
     };
 
-    /// The twenty-nine colour leaves the reader derives from, or reads
+    /// The thirty-one colour leaves the reader derives from, or reads
     /// directly from, the colour scheme.
-    fn derived_leaves(mode: &crate::ThemeMode) -> [(&'static str, Option<Rgba>); 29] {
+    fn derived_leaves(mode: &crate::ThemeMode) -> [(&'static str, Option<Rgba>); 31] {
         let border = |b: &Option<crate::WidgetBorderSpec>| b.as_ref().and_then(|b| b.color);
         let sw = &mode.switch;
         [
@@ -1302,11 +1323,13 @@ BackgroundNormal=49,54,59
                 "list.header_font.color",
                 mode.list.header_font.as_ref().and_then(|f| f.color),
             ),
+            ("list.grid_color", mode.list.grid_color),
+            ("menu.background_color", mode.menu.background_color),
         ]
     }
 
     /// The same leaves resolved.
-    fn resolved_leaves(theme: &crate::ResolvedTheme) -> [(&'static str, Option<Rgba>); 29] {
+    fn resolved_leaves(theme: &crate::ResolvedTheme) -> [(&'static str, Option<Rgba>); 31] {
         let sw = &theme.switch;
         [
             (
@@ -1368,6 +1391,8 @@ BackgroundNormal=49,54,59
             ("list.hover_background", Some(theme.list.hover_background)),
             ("list.header_background", Some(theme.list.header_background)),
             ("list.header_font.color", Some(theme.list.header_font.color)),
+            ("list.grid_color", Some(theme.list.grid_color)),
+            ("menu.background_color", Some(theme.menu.background_color)),
         ]
     }
 
@@ -1479,9 +1504,9 @@ BackgroundNormal=49,54,59
         Ok(())
     }
 
-    /// The Window set moves the popover's edge, the scroll-bar handles and the
-    /// menu's hover text and separator, and the toolbar only where the scheme
-    /// has no Header group to take it from.
+    /// The Window set moves the popover's edge, the scroll-bar handles, the
+    /// menu's hover text, separator and panel and the table's grid, and the
+    /// toolbar only where the scheme has no Header group to take it from.
     #[test]
     fn the_window_set_moves_the_popover_edge() -> crate::Result<()> {
         let window = ("230,220,200", "90,40,20");
@@ -1498,6 +1523,8 @@ BackgroundNormal=49,54,59
                 "menu.hover_text_color",
                 "menu.separator_color",
                 "scrollbar.thumb_color",
+                "list.grid_color",
+                "menu.background_color",
             ]
         );
         let without_header = Scheme {
@@ -1516,18 +1543,23 @@ BackgroundNormal=49,54,59
                 "menu.hover_text_color",
                 "menu.separator_color",
                 "scrollbar.thumb_color",
+                "list.grid_color",
+                "menu.background_color",
             ]
         );
         Ok(())
     }
 
     #[test]
-    fn the_view_set_moves_the_card_edge() -> crate::Result<()> {
+    fn the_view_set_moves_the_card_edge_and_the_menu_panel() -> crate::Result<()> {
         let scheme = Scheme {
             view: ("250,240,230", "120,30,60"),
             ..BREEZE_LIGHT_SCHEME
         };
-        assert_eq!(moved_leaves(&scheme)?, ["card.border.color"]);
+        assert_eq!(
+            moved_leaves(&scheme)?,
+            ["card.border.color", "menu.background_color"]
+        );
         Ok(())
     }
 
@@ -1577,6 +1609,23 @@ BackgroundNormal=49,54,59
                 "menu.separator_color",
             ]
         );
+        Ok(())
+    }
+
+    /// `[KDE] contrast` moves the table's grid and nothing else; without it
+    /// the grid is KColorScheme's default step's.
+    #[test]
+    fn the_contrast_moves_the_table_grid() -> crate::Result<()> {
+        let zero = Scheme {
+            contrast: Some("0"),
+            ..BREEZE_LIGHT_SCHEME
+        };
+        assert_eq!(moved_leaves(&zero)?, ["list.grid_color"]);
+        let unset = Scheme {
+            contrast: None,
+            ..BREEZE_LIGHT_SCHEME
+        };
+        assert_eq!(moved_leaves(&unset)?, ["list.grid_color"]);
         Ok(())
     }
 
@@ -1667,6 +1716,7 @@ BackgroundNormal=49,54,59
             hover: "240,160,20",
             window: ("230,220,200", "90,40,20"),
             frame_contrast: Some("0.5"),
+            contrast: None,
         })?;
         let geometry = |b: &crate::ResolvedWidgetBorder| {
             (b.corner_radius, b.line_width, b.shadow_enabled, b.padding)
