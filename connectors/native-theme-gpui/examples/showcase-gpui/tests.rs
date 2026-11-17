@@ -1655,8 +1655,10 @@ fn the_theme_settings_switch_the_preset(cx: &mut TestAppContext) {
     );
     // Typing filters the rows and puts the cursor on the first match
     // (list/list.rs, ListState::start_search), which Enter takes. Nord lands
-    // in row 0, where `default` already is: the case a selection told apart
-    // by filtered row indices alone misses (support.rs, PresetDelegate).
+    // in row 0, where `default` already is: the case gpui-component before
+    // 0.9.0 missed by telling a selection apart by its filtered row indices
+    // alone; 0.9.0 compares the selection's values (gpui-component
+    // combobox.rs, ComboboxState::new).
     click(&mut cx, PROBE_COMBOBOX);
     cx.simulate_input("nord");
     cx.run_until_parked();

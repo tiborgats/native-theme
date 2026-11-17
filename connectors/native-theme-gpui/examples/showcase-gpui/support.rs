@@ -12,7 +12,7 @@ use gpui_component::{
     ActiveTheme, IconName, IconNamed as _, IndexPath, Selectable as _, StyledExt,
     attachment::AttachmentStatus,
     list::{ListDelegate, ListState},
-    searchable_list::{SearchableListChange, SearchableListDelegate, SearchableListItem},
+    searchable_list::{SearchableListDelegate, SearchableListItem},
     table::{Column, ColumnSort, TableDelegate, TableEvent, TableState},
 };
 
@@ -1316,42 +1316,5 @@ impl SearchableListDelegate for PresetDelegate {
             .cloned()
             .collect();
         Task::ready(())
-    }
-
-    /// Records the chosen preset at its row in the unfiltered list.
-    ///
-    /// The Combobox tells a changed selection from an unchanged one by the
-    /// selection's row indices alone (combobox.rs, ComboboxState::new), and
-    /// the default hook records the row the item has in the list as filtered
-    /// (searchable_list/delegate.rs, SearchableListDelegate::on_will_change).
-    /// Typing "nord" puts Nord in row 0, where `default` already is, so the
-    /// choice would change nothing that upstream compares: no `Change`, and
-    /// the popup stays open. A preset's row in the full list is its own.
-    /// Single selection only, which is how the theme settings build it.
-    fn on_will_change(
-        &mut self,
-        selection: &mut Vec<(IndexPath, Self::Item)>,
-        changes: &[SearchableListChange],
-    ) {
-        for change in changes {
-            match change {
-                SearchableListChange::Select { index } => {
-                    let Some(item) = self.matched.get(index.row).cloned() else {
-                        continue;
-                    };
-                    let Some(row) = self.items.iter().position(|i| i.key == item.key) else {
-                        continue;
-                    };
-                    if !selection.iter().any(|(_, s)| s.key == item.key) {
-                        selection.push((IndexPath::default().row(row), item));
-                    }
-                }
-                // Upstream deselects the current choice by the index this
-                // hook recorded for it (combobox.rs, selection_changes).
-                SearchableListChange::Deselect { index } => {
-                    selection.retain(|(at, _)| at != index);
-                }
-            }
-        }
     }
 }
