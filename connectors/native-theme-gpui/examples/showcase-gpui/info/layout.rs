@@ -349,7 +349,7 @@ fn upstream_accordion(
             "bg",
             "accordion",
             t.accordion,
-            "gpui-component/accordion.rs:378",
+            "gpui-component/accordion.rs:381",
         ));
     let info = if styled {
         info
@@ -358,19 +358,19 @@ fn upstream_accordion(
             "border",
             "border",
             t.border,
-            "gpui-component/accordion.rs:110",
+            "gpui-component/accordion.rs:111",
         ))
         .color(claim(
             "line between items",
             "border",
             t.border,
-            "gpui-component/accordion.rs:381",
+            "gpui-component/accordion.rs:384",
         ))
         .color(claim(
             "open item's title",
             "foreground",
             t.foreground,
-            "gpui-component/accordion.rs:306",
+            "gpui-component/accordion.rs:308",
         ))
         // A closed item's title row sets no colour (accordion.rs:306 is
         // the open one's), so it takes the colour the showcase sets on its
@@ -387,7 +387,7 @@ fn upstream_accordion(
             "chevron",
             "muted_foreground",
             t.muted_foreground,
-            "gpui-component/accordion.rs:330",
+            "gpui-component/accordion.rs:333",
         ))
         .config(
             "border-radius",
@@ -467,31 +467,31 @@ pub fn tab_row(
                 "label",
                 "tab_foreground",
                 t.tab_foreground,
-                "gpui-component/tab/tab.rs:172",
+                "gpui-component/tab/tab.rs:173",
             ))
             .color(claim(
                 "selected label",
                 "tab_active_foreground",
                 t.tab_active_foreground,
-                "gpui-component/tab/tab.rs:276",
+                "gpui-component/tab/tab.rs:277",
             ))
             .color(claim(
                 "selected tab",
                 "tab_active",
                 t.tab_active,
-                "gpui-component/tab/tab.rs:277",
+                "gpui-component/tab/tab.rs:278",
             ))
             .color(claim(
                 "selected tab's sides",
                 "border",
                 t.border,
-                "gpui-component/tab/tab.rs:283",
+                "gpui-component/tab/tab.rs:284",
             ))
             .color(claim(
                 "rule under the bar",
                 "border",
                 t.border,
-                "gpui-component/tab/tab_bar.rs:654",
+                "gpui-component/tab/tab_bar.rs:676",
             ))
             .not_themeable("hover", "transparent: a Tab-variant tab paints no hover fill, and the Tab sets its hover style itself, which replaces one a caller gives (tab/tab.rs, TabVariant::hovered and RenderOnce for Tab), so tab.hover_background has no receiver")
             .not_themeable("edges", "the selected tab's 1px sides and the bar's 1px bottom rule in border, px literals set inside render (tab/tab.rs, TabVariant::selected; tab/tab_bar.rs, RenderOnce for TabBar), while the model's tab.border states the tab's own edge")
@@ -535,43 +535,43 @@ pub fn folder_tab_row(
             "label",
             "tab_foreground",
             t.tab_foreground,
-            "gpui-component/tab/tab.rs:211",
+            "gpui-component/tab/tab.rs:212",
         ))
         .color(claim(
             "hovered label",
             "tab_active_foreground",
             t.tab_active_foreground,
-            "gpui-component/tab/tab.rs:266",
+            "gpui-component/tab/tab.rs:267",
         ))
         .color(claim(
             "selected label",
             "tab_active_foreground",
             t.tab_active_foreground,
-            "gpui-component/tab/tab.rs:317",
+            "gpui-component/tab/tab.rs:318",
         ))
         .color(claim(
             "disabled label",
             "muted_foreground",
             t.muted_foreground,
-            "gpui-component/tab/tab.rs:390",
+            "gpui-component/tab/tab.rs:391",
         ))
         .color(claim(
             "selected tab",
             "tab_active",
             t.tab_active,
-            "gpui-component/tab/tab.rs:1001",
+            "gpui-component/tab/tab.rs:1026",
         ))
         .color(claim(
             "hovered tab",
             "secondary",
             t.secondary,
-            "gpui-component/tab/tab.rs:1015",
+            "gpui-component/tab/tab.rs:1040",
         ))
         .color(claim(
             "separator",
             "border",
             t.border,
-            "gpui-component/tab/tab.rs:1028",
+            "gpui-component/tab/tab.rs:1054",
         ))
         .color(claim("panel", "tab_active", t.tab_active, "showcase"))
         .color(claim(
@@ -1021,13 +1021,13 @@ pub fn segmented(
                 "label",
                 "tab_foreground",
                 t.tab_foreground,
-                "gpui-component/tab/tab.rs:200",
+                "gpui-component/tab/tab.rs:201",
             ))
             .color(claim(
                 "selected label",
                 "tab_active_foreground",
                 t.tab_active_foreground,
-                "gpui-component/tab/tab.rs:299",
+                "gpui-component/tab/tab.rs:300",
             ))
             .not_themeable("font", "text_sm, the Tab's own: no native theme is installed (tab/tab.rs, RenderOnce for Tab)"),
     };
@@ -1137,7 +1137,7 @@ pub fn carousel_slide(t: &Theme, index: usize, title: &str, caption: &str) -> Wi
             "title",
             "foreground",
             t.foreground,
-            "gpui-component/label.rs:213",
+            "gpui-component/label.rs:248",
         ))
         .color(claim(
             "caption",
@@ -1172,19 +1172,19 @@ pub fn carousel_page(t: &Theme, index: usize, selected: bool) -> WidgetInfo {
                 "bg",
                 "button_active",
                 t.button_active,
-                "gpui-component/button/button.rs:1327",
+                "gpui-component/button/button.rs:1343",
             ))
             .color(claim(
                 "text",
                 "button_foreground",
                 t.button_foreground,
-                "gpui-component/button/button.rs:1034",
+                "gpui-component/button/button.rs:1050",
             ))
             .color(claim(
                 "border",
                 "input",
                 t.input,
-                "gpui-component/button/button.rs:1086",
+                "gpui-component/button/button.rs:1102",
             ))
             .not_themeable(
                 "hover",
@@ -1195,31 +1195,31 @@ pub fn carousel_page(t: &Theme, index: usize, selected: bool) -> WidgetInfo {
             "bg",
             "button",
             t.button,
-            "gpui-component/button/button.rs:1020",
+            "gpui-component/button/button.rs:1036",
         ))
         .color(claim(
             "text",
             "button_foreground",
             t.button_foreground,
-            "gpui-component/button/button.rs:1034",
+            "gpui-component/button/button.rs:1050",
         ))
         .color(claim(
             "border",
             "input",
             t.input,
-            "gpui-component/button/button.rs:1086",
+            "gpui-component/button/button.rs:1102",
         ))
         .color(claim(
             "hover",
             "button_hover",
             t.button_hover,
-            "gpui-component/button/button.rs:1164",
+            "gpui-component/button/button.rs:1180",
         ))
         .color(claim(
             "active",
             "button_active",
             t.button_active,
-            "gpui-component/button/button.rs:1248",
+            "gpui-component/button/button.rs:1264",
         ))
     };
     info.config("border-radius", format!("radius: {}px", t.radius.as_f32()))
@@ -1258,13 +1258,13 @@ pub fn stepper(
                 "icon, completed / current",
                 "primary_foreground",
                 t.primary_foreground,
-                "gpui-component/stepper/trigger.rs:134",
+                "gpui-component/stepper/trigger.rs:136",
             ),
             claim(
                 "icon, pending",
                 "secondary_foreground",
                 t.secondary_foreground,
-                "gpui-component/stepper/trigger.rs:131",
+                "gpui-component/stepper/trigger.rs:133",
             ),
         ),
         StepperKind::Icons if shown > 0 => (
@@ -1272,13 +1272,13 @@ pub fn stepper(
                 "icon or number, completed / current",
                 "primary_foreground",
                 t.primary_foreground,
-                "gpui-component/stepper/trigger.rs:134",
+                "gpui-component/stepper/trigger.rs:136",
             ),
             claim(
                 "icon or number, pending",
                 "secondary_foreground",
                 t.secondary_foreground,
-                "gpui-component/stepper/trigger.rs:131",
+                "gpui-component/stepper/trigger.rs:133",
             ),
         ),
         StepperKind::Icons | StepperKind::Numbers => (
@@ -1286,13 +1286,13 @@ pub fn stepper(
                 "number, completed / current",
                 "primary_foreground",
                 t.primary_foreground,
-                "gpui-component/stepper/trigger.rs:134",
+                "gpui-component/stepper/trigger.rs:136",
             ),
             claim(
                 "number, pending",
                 "secondary_foreground",
                 t.secondary_foreground,
-                "gpui-component/stepper/trigger.rs:131",
+                "gpui-component/stepper/trigger.rs:133",
             ),
         ),
     };
@@ -1302,7 +1302,7 @@ pub fn stepper(
             "completed / current",
             "primary",
             t.primary,
-            "gpui-component/stepper/trigger.rs:133",
+            "gpui-component/stepper/trigger.rs:135",
         ))
         .color(checked_mark);
     let info = if pending {
@@ -1310,26 +1310,26 @@ pub fn stepper(
             "pending",
             "secondary",
             t.secondary,
-            "gpui-component/stepper/trigger.rs:126",
+            "gpui-component/stepper/trigger.rs:128",
         ))
         .color(pending_mark)
         .color(claim(
             "pending hover",
             "secondary_hover",
             t.secondary_hover,
-            "gpui-component/stepper/trigger.rs:128",
+            "gpui-component/stepper/trigger.rs:130",
         ))
         .color(claim(
             "pending pressed",
             "secondary_active",
             t.secondary_active,
-            "gpui-component/stepper/trigger.rs:129",
+            "gpui-component/stepper/trigger.rs:131",
         ))
         .color(claim(
             "separator",
             "border",
             t.border,
-            "gpui-component/stepper/item.rs:263",
+            "gpui-component/stepper/item.rs:265",
         ))
     } else {
         info
@@ -1339,7 +1339,7 @@ pub fn stepper(
             "passed separator",
             "primary",
             t.primary,
-            "gpui-component/stepper/item.rs:264",
+            "gpui-component/stepper/item.rs:266",
         ))
     } else {
         info
@@ -1384,19 +1384,19 @@ pub fn breadcrumb(t: &Theme, pages: &[Page], current: Page) -> WidgetInfo {
             "items",
             "muted_foreground",
             t.muted_foreground,
-            "gpui-component/breadcrumb.rs:101",
+            "gpui-component/breadcrumb.rs:102",
         ))
         .color(claim(
             "last item",
             "foreground",
             t.foreground,
-            "gpui-component/breadcrumb.rs:102",
+            "gpui-component/breadcrumb.rs:103",
         ))
         .color(claim(
             "separators",
             "muted_foreground",
             t.muted_foreground,
-            "gpui-component/breadcrumb.rs:144",
+            "gpui-component/breadcrumb.rs:150",
         ))
         .not_themeable("own icons", super::own_icons("the ChevronRight between its items (breadcrumb.rs, Breadcrumb)"))
         .not_themeable("separator icon", "a ChevronRight built inline with no setter to replace it (breadcrumb.rs, Breadcrumb) -- unlike an Alert's icon, which Alert::icon takes")
@@ -1422,13 +1422,13 @@ pub fn form(t: &Theme, label_width: Pixels) -> WidgetInfo {
             "description",
             "muted_foreground",
             t.muted_foreground,
-            "gpui-component/form/field.rs:344",
+            "gpui-component/form/field.rs:346",
         ))
         .color(claim(
             "required marker",
             "danger",
             t.danger,
-            "gpui-component/form/field.rs:321",
+            "gpui-component/form/field.rs:323",
         ))
         .not_themeable("fields", "the Field wrapper takes no geometry -- the model has no form theme. Each field's Input is refined by geometry::input and reports itself")
         .not_themeable("label style", "text_sm and font_medium on a box that sets no colour (form/field.rs, Field)")
@@ -1454,19 +1454,19 @@ pub fn scroll_area(t: &Theme, styled: bool, items: usize) -> WidgetInfo {
             "track",
             "scrollbar",
             t.scrollbar,
-            "gpui-component/theme/mod.rs:425",
+            "gpui-component/theme/mod.rs:435",
         ))
         .color(claim(
             "thumb",
             "scrollbar_thumb",
             t.scrollbar_thumb,
-            "gpui-component/theme/mod.rs:430",
+            "gpui-component/theme/mod.rs:440",
         ))
         .color(claim(
             "thumb hover",
             "scrollbar_thumb_hover",
             t.scrollbar_thumb_hover,
-            "gpui-component/theme/mod.rs:441",
+            "gpui-component/theme/mod.rs:451",
         ))
         .config("border-radius", format!("radius: {}px", t.radius.as_f32()))
         .config(
@@ -1588,19 +1588,19 @@ pub fn sidebar(t: &Theme, collapsed: bool, header: &str) -> WidgetInfo {
             "bg",
             "sidebar",
             t.sidebar,
-            "gpui-component/sidebar/mod.rs:422",
+            "gpui-component/sidebar/mod.rs:435",
         ))
         .color(claim(
             "text",
             "sidebar_foreground",
             t.sidebar_foreground,
-            "gpui-component/sidebar/mod.rs:423",
+            "gpui-component/sidebar/mod.rs:436",
         ))
         .color(claim(
             "border",
             "sidebar_border",
             t.sidebar_border,
-            "gpui-component/sidebar/mod.rs:424",
+            "gpui-component/sidebar/mod.rs:437",
         ))
         .not_themeable(
             "width",
@@ -1661,32 +1661,32 @@ pub fn sidebar_item(
             "bg",
             "sidebar_accent",
             t.sidebar_accent,
-            "gpui-component/sidebar/menu.rs:318",
+            "gpui-component/sidebar/menu.rs:321",
         ))
         .color(claim(
             "text",
             "sidebar_accent_foreground",
             t.sidebar_accent_foreground,
-            "gpui-component/sidebar/menu.rs:319",
+            "gpui-component/sidebar/menu.rs:322",
         ))
     } else {
         info.color(claim(
             "text (the Sidebar's)",
             "sidebar_foreground",
             t.sidebar_foreground,
-            "gpui-component/sidebar/mod.rs:423",
+            "gpui-component/sidebar/mod.rs:436",
         ))
         .color(claim(
             "hover bg, at 80%",
             "sidebar_accent",
             t.sidebar_accent.opacity(0.8),
-            "gpui-component/sidebar/menu.rs:312",
+            "gpui-component/sidebar/menu.rs:315",
         ))
         .color(claim(
             "hover text",
             "sidebar_accent_foreground",
             t.sidebar_accent_foreground,
-            "gpui-component/sidebar/menu.rs:313",
+            "gpui-component/sidebar/menu.rs:316",
         ))
     };
     let info = info

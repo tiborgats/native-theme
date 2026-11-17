@@ -210,6 +210,7 @@ impl<E: InteractiveElement> InteractiveElement for A11yDisabled<E> {
     }
 }
 
+#[cfg(not(feature = "gpui-fast"))]
 impl<E: Element> IntoElement for A11yDisabled<E> {
     type Element = Self;
 

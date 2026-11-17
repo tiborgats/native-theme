@@ -27,7 +27,7 @@
 //!   on each change — no manual rewiring per widget.
 //! - Hover any widget and the inspector's Widget tab, in the side panel,
 //!   shows which `ResolvedTheme` fields drive its appearance.
-//! - The Theme Map page exposes the full 139-field `ThemeColor` palette that
+//! - The Theme Map page exposes the full 140-field `ThemeColor` palette that
 //!   gpui-component exposes, with each field's current value and the
 //!   `native-theme` field it was derived from.
 //! - The Icons page demonstrates `IconRole` mapping across Material, Lucide,

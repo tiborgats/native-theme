@@ -94,7 +94,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.page_tabs.menu",
         "button.hover_text_color",
-        "not reachable: a Custom variant has no hover text colour (gpui-component/button/button.rs:102-142, ButtonCustomVariant; :1209, Custom; :1223-1228, text_color)",
+        "not reachable: a Custom variant has no hover text colour (gpui-component/button/button.rs:104-149, ButtonCustomVariant; :1225, Custom; :1239-1244, text_color)",
     ),
     (
         "chrome.page_tabs.menu",
@@ -145,7 +145,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.status_bar.toggle",
         "button.active_background",
-        "gpui: ghost_button's active, secondary_active; also its selected fill (gpui-component/button/button.rs:1337, active)",
+        "gpui: ghost_button's active, secondary_active; also its selected fill (gpui-component/button/button.rs:1353, active)",
     ),
     (
         "chrome.toolbar.",
@@ -180,17 +180,17 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.toolbar.",
         "button.hover_text_color",
-        "not reachable: a Custom variant has no hover text colour (gpui-component/button/button.rs:102-142, ButtonCustomVariant; :1209, Custom; :1223-1228, text_color)",
+        "not reachable: a Custom variant has no hover text colour (gpui-component/button/button.rs:104-149, ButtonCustomVariant; :1225, Custom; :1239-1244, text_color)",
     ),
     (
         "basic.icons.",
         "button.hover_text_color",
-        "not reachable: a Custom variant has no hover text colour (gpui-component/button/button.rs:102-142, ButtonCustomVariant; :1209, Custom; :1223-1228, text_color)",
+        "not reachable: a Custom variant has no hover text colour (gpui-component/button/button.rs:104-149, ButtonCustomVariant; :1225, Custom; :1239-1244, text_color)",
     ),
     (
         "chrome.status_bar.toggle",
         "button.hover_text_color",
-        "not reachable: a Custom variant has no hover text colour (gpui-component/button/button.rs:102-142, ButtonCustomVariant; :1209, Custom; :1223-1228, text_color)",
+        "not reachable: a Custom variant has no hover text colour (gpui-component/button/button.rs:104-149, ButtonCustomVariant; :1225, Custom; :1239-1244, text_color)",
     ),
     (
         "chrome.toolbar.",
@@ -286,7 +286,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "button.active_text_color",
-        "not reachable: a pressed Button keeps its variant's text colour (gpui-component/button/button.rs:1299-1303, text_color)",
+        "not reachable: a pressed Button keeps its variant's text colour (gpui-component/button/button.rs:1315-1319, text_color)",
     ),
     (
         "",
@@ -331,7 +331,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "button.border.shadow_enabled",
-        "not reachable: only a Custom variant takes a shadow (gpui-component/button/button.rs:1135-1140, shadow)",
+        "not reachable: only a Custom variant takes a shadow (gpui-component/button/button.rs:1151-1156, shadow)",
     ),
     (
         "",
@@ -366,7 +366,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "button.hover_text_color",
-        "not reachable: a hovered Button keeps its variant's text colour (gpui-component/button/button.rs:1223-1228, text_color)",
+        "not reachable: a hovered Button keeps its variant's text colour (gpui-component/button/button.rs:1239-1244, text_color)",
     ),
     (
         "",
@@ -555,7 +555,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.side_panel.settings.theme",
         "combo_box.font.color",
-        "not reachable: the Combobox's disabled colour lands before the caller's style (gpui-component/combobox.rs:1009-1016, refine_style)",
+        "not reachable: the Combobox's disabled colour lands before the caller's style (gpui-component/combobox.rs:1035-1042, refine_style)",
     ),
     // --- combo_box: a Select, and the Combobox's metrics ------------------------
     (
@@ -566,7 +566,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "combo_box.arrow_icon_size_px",
-        "not reachable: the caret is the trigger's own, sized inside it (gpui-component/select.rs:626-627, Caret)",
+        "not reachable: the caret is the trigger's own, sized inside it (gpui-component/select.rs:642-643, Caret)",
     ),
     (
         "",
@@ -687,7 +687,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "defaults.font",
-        "gpui: the window's font, Theme::font_family and font_size (config.rs; gpui-component/root.rs:714, font_size; :724, font_family)",
+        "gpui: the window's font, Theme::font_family and font_size (config.rs; gpui-component/root.rs:725, font_size; :735, font_family)",
     ),
     (
         "basic.typography",
@@ -702,7 +702,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "defaults.font.color",
-        "gpui: the Label paints `foreground`, defaults.text_color (gpui-component/label.rs:213, foreground)",
+        "gpui: the Label paints `foreground`, defaults.text_color (gpui-component/label.rs:248, foreground)",
     ),
     (
         "basic.typography",
@@ -712,7 +712,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "defaults.font.family",
-        "gpui: the window's font, Theme::font_family (config.rs), set by gpui-component's WindowState root plugin (gpui-component/root.rs:724, font_family)",
+        "gpui: the window's font, Theme::font_family (config.rs), set by gpui-component's WindowState root plugin (gpui-component/root.rs:735, font_family)",
     ),
     (
         "basic.icons.large",
@@ -1079,12 +1079,12 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "input.disabled_text_color",
-        "gpui: geometry::input_fill's text colour for a disabled field, which gpui-base draws at half its alpha (gpui-base/input/base/element.rs:3184, opacity)",
+        "gpui: geometry::input_fill's text colour for a disabled field, which gpui-base draws at half its alpha (gpui-base/input/base/element.rs:3222, opacity)",
     ),
     (
         "",
         "input.focus_border_color",
-        "not reachable: a focused Input edges itself in `ring` after the caller's style (gpui-component/input/input.rs:775-778, ring)",
+        "not reachable: a focused Input edges itself in `ring` after the caller's style (gpui-component/input/input.rs:789-792, ring)",
     ),
     (
         "basic.text_area",
@@ -1099,7 +1099,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "input.font.color",
-        "gpui: geometry::input's text colour, over the window's `foreground` the field's text inherits (gpui-component/input/input.rs:715, input_style)",
+        "gpui: geometry::input's text colour, over the window's `foreground` the field's text inherits (gpui-component/input/input.rs:729, input_style)",
     ),
     (
         "basic.number_input",
@@ -1119,7 +1119,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "input.placeholder_color",
-        "not reachable: the placeholder is muted_foreground (gpui-component/input/input.rs:565, muted_foreground)",
+        "not reachable: the placeholder is muted_foreground (gpui-component/input/input.rs:579, muted_foreground)",
     ),
     // --- layout -------------------------------------------------------------------
     (
@@ -1145,7 +1145,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.status_bar",
         "layout.container_margin_px",
-        "gpui: not applied — an unstated side keeps StatusBar's px_2 py_1 (gpui-component/status_bar.rs:89-90, px_2), the padding's",
+        "gpui: not applied — an unstated side keeps StatusBar's px_2 py_1 (gpui-component/status_bar.rs:98-99, px_2), the padding's",
     ),
     (
         "basic.card",
@@ -1885,12 +1885,12 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "status_bar.background_color",
-        "gpui: ThemeColor status_bar (colors.rs): the bar's fill (gpui-component/status_bar.rs:93, status_bar)",
+        "gpui: ThemeColor status_bar (colors.rs): the bar's fill (gpui-component/status_bar.rs:102, status_bar)",
     ),
     (
         "",
         "status_bar.border.color",
-        "gpui: ThemeColor status_bar_border (colors.rs): the top edge (gpui-component/status_bar.rs:92, status_bar_border)",
+        "gpui: ThemeColor status_bar_border (colors.rs): the top edge (gpui-component/status_bar.rs:101, status_bar_border)",
     ),
     (
         "",

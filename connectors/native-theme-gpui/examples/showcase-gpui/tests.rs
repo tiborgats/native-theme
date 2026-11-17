@@ -10947,7 +10947,7 @@ fn each_family_of_the_stack_is_named_where_it_is_drawn() {
 
 /// The showcase's copy of gpui's fallback stack (`inspector::GPUI_FALLBACK_STACK`) is each
 /// core's, at the lines its doc cites: gpui-pre 0.3.12 `src/text_system.rs:261-272`, gpui-fast
-/// 0.1.15 `:262-273`, read from the sources `cargo metadata` names. The field is private in
+/// 0.1.16 `:262-273`, read from the sources `cargo metadata` names. The field is private in
 /// both, so the source is the only place to read it whole.
 #[test]
 fn the_fallback_stack_copy_is_gpuis() {
@@ -10968,7 +10968,7 @@ fn the_fallback_stack_copy_is_gpuis() {
         .expect("cargo metadata lists packages");
     for (core, version, first, last) in [
         ("gpui-pre", "0.3.12", 261, 272),
-        ("gpui-fast", "0.1.15", 262, 273),
+        ("gpui-fast", "0.1.16", 262, 273),
     ] {
         let manifest = packages
             .iter()
@@ -13817,7 +13817,7 @@ fn to_text_prints_the_four_sections_in_order() {
     let t = Theme::from(&colors);
     let info = WidgetInfo::new("Tag")
         .variant("Danger")
-        .color(claim("bg", "danger", t.danger, "gpui-component/tag.rs:31"))
+        .color(claim("bg", "danger", t.danger, "gpui-component/tag.rs:30"))
         .config("border-radius", "radius: 4px")
         .not_themeable("padding", "a rem literal")
         .instance("label", "Danger");
@@ -13837,7 +13837,7 @@ fn to_text_prints_the_four_sections_in_order() {
     );
     assert!(text.starts_with("Tag · Danger\n"), "{text}");
     assert!(
-        text.contains("  bg: danger #ff0000 (gpui-component/tag.rs:31)"),
+        text.contains("  bg: danger #ff0000 (gpui-component/tag.rs:30)"),
         "{text}"
     );
 }
@@ -16378,7 +16378,7 @@ fn look_findings(
 
 /// What is wrong with the focus ring `info` claims, if anything: a control
 /// that can take the focus (`focusable`) claims `defaults.focus_ring_color` as
-/// stated, read by `FocusRing::of` (native-theme-gpui/widgets/mod.rs:344), where
+/// stated, read by `FocusRing::of` (native-theme-gpui/widgets/mod.rs:345), where
 /// the theme states a ring, and none otherwise.
 #[cfg(feature = "widgets")]
 fn ring_findings(
@@ -16397,7 +16397,7 @@ fn ring_findings(
         (
             crate::info::stated(d.focus_ring_color),
             "focus_ring_color",
-            "native-theme-gpui/widgets/mod.rs:344",
+            "native-theme-gpui/widgets/mod.rs:345",
         )
     });
     if found == expected {

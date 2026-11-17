@@ -123,7 +123,7 @@ pub fn input(t: &Theme, field: InputField, styled: bool) -> WidgetInfo {
             "border",
             "input",
             t.input,
-            "gpui-component/input/input.rs:803",
+            "gpui-component/input/input.rs:817",
         ))
         .color(input_background(t))
     };
@@ -145,7 +145,7 @@ pub fn input(t: &Theme, field: InputField, styled: bool) -> WidgetInfo {
         "placeholder",
         "muted_foreground",
         t.muted_foreground,
-        "gpui-component/input/input.rs:565",
+        "gpui-component/input/input.rs:579",
     ));
     // geometry::input carries border.corner_radius, which the refinement
     // applies after upstream's own (input/input.rs:801, then :808).
@@ -226,14 +226,14 @@ pub fn textarea(t: &Theme, filled: bool) -> WidgetInfo {
                 "border",
                 "input",
                 t.input,
-                "gpui-component/input/input.rs:803",
+                "gpui-component/input/input.rs:817",
             ))
     };
     info.color(claim(
             "focused border",
             "ring",
             t.ring,
-            "gpui-component/input/input.rs:778",
+            "gpui-component/input/input.rs:792",
         ))
         .instance("row height", "defaults.line_height times the text size: geometry::text_area carries the platform's line height, which Input applies after its own 1.25rem (input/input.rs, Input::render: line_height then refine_style), and each row is the window's line height (gpui-base/input/base/element.rs, TextElement::request_layout)")
         .instance("height", "the showcase's own 90px, set after geometry::text_area, which sets none")
@@ -257,25 +257,25 @@ pub fn input_groups(t: &Theme) -> WidgetInfo {
             "border",
             "input",
             t.input,
-            "gpui-component/input/group.rs:324",
+            "gpui-component/input/group.rs:328",
         ))
         .color(claim(
             "focused border",
             "ring",
             t.ring,
-            "gpui-component/input/group.rs:322",
+            "gpui-component/input/group.rs:326",
         ))
         .color(claim(
             "focus ring, ring at 50%",
             "ring",
             t.ring.opacity(0.5),
-            "gpui-component/input/group.rs:322",
+            "gpui-component/input/group.rs:326",
         ))
         .color(claim(
             "addon text",
             "muted_foreground",
             t.muted_foreground,
-            "gpui-component/input/group.rs:410",
+            "gpui-component/input/group.rs:415",
         ))
         .color(claim(
             "addon button hover",
@@ -298,7 +298,7 @@ pub fn number_input(t: &Theme) -> WidgetInfo {
             "border",
             "input",
             t.input,
-            "gpui-component/input/number_input.rs:130",
+            "gpui-component/input/number_input.rs:141",
         ))
         .color(input_background(t))
         // The digits are the inner Input's, which drops input_style's
@@ -537,44 +537,44 @@ pub fn checkbox(t: &Theme, label: &'static str, checked: bool, disabled: bool) -
                 "checked bg",
                 "primary",
                 t.primary,
-                "gpui-component/checkbox.rs:315",
+                "gpui-component/checkbox.rs:352",
             ))
             .color(claim(
                 "checked border",
                 "primary",
                 t.primary,
-                "gpui-component/checkbox.rs:250",
+                "gpui-component/checkbox.rs:285",
             ))
             .color(claim(
                 "checkmark",
                 "primary_foreground",
                 t.primary_foreground,
-                "gpui-component/checkbox.rs:205",
+                "gpui-component/checkbox.rs:233",
             )),
         (false, false) => info.color(input_background(t)).color(claim(
             "unchecked border",
             "input",
             t.input,
-            "gpui-component/checkbox.rs:249",
+            "gpui-component/checkbox.rs:284",
         )),
         (true, true) => info
             .color(claim(
                 "checked bg and border, at 50%",
                 "primary",
                 t.primary.opacity(0.5),
-                "gpui-component/checkbox.rs:250-252",
+                "gpui-component/checkbox.rs:285-287",
             ))
             .color(claim(
                 "checkmark, at 50%",
                 "primary_foreground",
                 t.primary_foreground.opacity(0.5),
-                "gpui-component/checkbox.rs:203",
+                "gpui-component/checkbox.rs:231",
             )),
         (false, true) => info.color(input_background(t)).color(claim(
             "unchecked border, at 50%",
             "input",
             t.input.opacity(0.5),
-            "gpui-component/checkbox.rs:249-254",
+            "gpui-component/checkbox.rs:284-289",
         )),
     };
     let info = if disabled {
@@ -582,14 +582,14 @@ pub fn checkbox(t: &Theme, label: &'static str, checked: bool, disabled: bool) -
             "label",
             "muted_foreground",
             t.muted_foreground,
-            "gpui-component/checkbox.rs:346",
+            "gpui-component/checkbox.rs:392",
         ))
     } else {
         info.color(claim(
             "label",
             "foreground",
             t.foreground,
-            "gpui-component/checkbox.rs:344",
+            "gpui-component/checkbox.rs:390",
         ))
     };
     let info = info
@@ -629,7 +629,7 @@ pub fn radio_group(t: &Theme, labels: &[&'static str], selected: Option<usize>) 
             "upstream label",
             "foreground",
             t.foreground,
-            "gpui-component/radio.rs:220",
+            "gpui-component/radio.rs:222",
         ))
         .not_themeable("unselected fill", "input_background(), as an Input's -- not the input at 50% upstream computes and never paints. Disabled halves the border and a checked fill, never an unchecked one (gpui-component/radio.rs, Radio::render)")
         .not_themeable("corner radius", "a circle, through radius_full() -- and square where the theme's radius is 0, since radius_full() follows it (gpui-component/styled.rs, rounded_full_style). The radius * 0.5 is the row's, which only the focus ring shows (gpui-component/radio.rs, Radio::render)")
@@ -685,13 +685,13 @@ pub fn switch(
             "on track",
             "primary",
             t.primary,
-            "gpui-component/switch.rs:184",
+            "gpui-component/switch.rs:186",
         )),
         (false, false) => info.color(claim(
             "off track",
             "switch",
             t.switch,
-            "gpui-component/switch.rs:185",
+            "gpui-component/switch.rs:187",
         )),
         (true, true) => info.color(claim(
             "on track, at 50%",
@@ -710,7 +710,7 @@ pub fn switch(
         "thumb",
         "switch_thumb",
         t.switch_thumb,
-        "gpui-component/switch.rs:191",
+        "gpui-component/switch.rs:193",
     ));
     // 0.7.0: the track draws the focus ring while focused (switch.rs,
     // `Switch::render`); a disabled switch takes no focus.
@@ -729,7 +729,7 @@ pub fn switch(
             "disabled label",
             "muted_foreground",
             t.muted_foreground,
-            "gpui-component/switch.rs:192",
+            "gpui-component/switch.rs:194",
         ))
     } else {
         info
@@ -761,19 +761,19 @@ pub fn slider(t: &Theme, vertical: bool, range: bool) -> WidgetInfo {
             "track",
             "slider_bar",
             t.slider_bar,
-            "gpui-component/slider.rs:172",
+            "gpui-component/slider.rs:198",
         ))
         .color(claim(
             "thumb",
             "slider_thumb",
             t.slider_thumb,
-            "gpui-component/slider.rs:178",
+            "gpui-component/slider.rs:204",
         ))
         .color(claim(
             "text",
             "foreground",
             t.foreground,
-            "gpui-component/slider.rs:283",
+            "gpui-component/slider.rs:325",
         ))
         .not_themeable("track height", "Tier U, not an absence: slider.track_height is modelled and carried. Upstream sets h_1p5() on SliderIndicator, a child of the element the refinement lands on (gpui-component/slider.rs, Slider::render)")
         .not_themeable("thumb size", "Tier U, not an absence: slider.thumb_diameter is modelled and carried. The thumb is built by a closure inside the indicator, deeper still than the track (gpui-component/slider.rs, Slider::render)")
@@ -925,7 +925,7 @@ fn theme_focus_ring(info: WidgetInfo, r: &ResolvedTheme, part: &str) -> WidgetIn
         "focus ring",
         "focus_ring_color",
         stated(d.focus_ring_color),
-        "native-theme-gpui/widgets/mod.rs:344",
+        "native-theme-gpui/widgets/mod.rs:345",
     ))
     .config(
         "focus ring",
@@ -1477,7 +1477,7 @@ pub fn rating(t: &Theme, value: usize, disabled: bool) -> WidgetInfo {
             "active star",
             "yellow",
             t.yellow,
-            "gpui-component/rating.rs:120",
+            "gpui-component/rating.rs:121",
         ))
         // Rating colours only a filled or hovered star (rating.rs:159), so
         // an empty one takes the colour the showcase sets on its window.
@@ -1525,7 +1525,7 @@ pub fn otp_input(t: &Theme) -> WidgetInfo {
             "digit",
             "foreground",
             t.foreground,
-            "gpui-component/input/input.rs:126",
+            "gpui-component/input/input.rs:127",
         ))
         .color(claim(
             "caret",
@@ -1552,20 +1552,20 @@ pub fn select(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
             "upstream trigger text",
             "foreground",
             t.foreground,
-            "gpui-component/input/input.rs:126",
+            "gpui-component/input/input.rs:127",
         )),
     };
     info.color(claim(
             "focused border",
             "ring",
             t.ring,
-            "gpui-component/select.rs:582",
+            "gpui-component/select.rs:597",
         ))
         .color(claim(
             "placeholder",
             "muted_foreground",
             t.muted_foreground,
-            "gpui-component/select.rs:479",
+            "gpui-component/select.rs:492",
         ))
         .not_themeable("carried colour", "the one difference from a Combobox, such as the theme settings' preset switch: Select's selected-title child sets its own colour, so a carried colour yields to the disabled colour instead of beating it, and the connector carries it (native-theme-gpui geometry.rs, combobox)")
         .not_themeable("caret", "its colour is themed -- upstream paints it with muted_foreground (select.rs, Caret) -- and its size is not: Caret maps Size::Size into the same arm as Medium (gpui-component/select.rs, Caret::render), so combo_box.arrow_icon_size has no route at all, not even through the Size::Size escape hatch a DataTable row accepts. Tier U for the size")
@@ -1617,14 +1617,14 @@ pub fn combo_fill(
                     "trigger border",
                     "input",
                     t.input,
-                    "gpui-component/combobox.rs:1011",
+                    "gpui-component/combobox.rs:1037",
                 )
             } else {
                 claim(
                     "trigger border",
                     "input",
                     t.input,
-                    "gpui-component/select.rs:575",
+                    "gpui-component/select.rs:590",
                 )
             })
             .not_themeable("fill", "input_background(), as an Input's: the window background in light mode, and input mixed toward transparent in dark -- one accessor, two sources (theme/mod.rs, input_background)"),
@@ -1750,7 +1750,7 @@ pub fn color_select(t: &Theme, picked: bool) -> WidgetInfo {
             "text",
             "foreground",
             t.foreground,
-            "gpui-component/input/input.rs:126",
+            "gpui-component/input/input.rs:127",
         ))
         .instance("swatch", "the picked colour, edged in it darkened by 30% (color_picker.rs, ColorPickerButton::render_field)")
     } else {
@@ -1867,7 +1867,7 @@ pub fn speech_indicator(
         None => info.not_themeable(
             "square",
             format!(
-                "size_8, the square upstream gives an icon Button at the default Size, {padding}; a Button with a child is laid out as a labelled one (button/button.rs:684-690, size_8), so the showcase sets it"
+                "size_8, the square upstream gives an icon Button at the default Size, {padding}; a Button with a child is laid out as a labelled one (button/button.rs:693-699, size_8), so the showcase sets it"
             ),
         ),
     };
@@ -1897,7 +1897,7 @@ pub fn date_picker(t: &Theme) -> WidgetInfo {
             "selected day",
             "primary",
             t.primary,
-            "gpui-component/time/calendar.rs:189",
+            "gpui-component/time/calendar.rs:190",
         ))
         .config("border-radius", format!("radius: {}px", t.radius.as_f32()))
         .not_themeable("calendar icon", "an IconName::Calendar built inline with no setter (time/date_picker.rs, DatePicker)")
@@ -1912,25 +1912,25 @@ pub fn calendar(t: &Theme) -> WidgetInfo {
             "border",
             "border",
             t.border,
-            "gpui-component/time/calendar.rs:199",
+            "gpui-component/time/calendar.rs:200",
         ))
         .color(claim(
             "selected day",
             "primary",
             t.primary,
-            "gpui-component/time/calendar.rs:189",
+            "gpui-component/time/calendar.rs:190",
         ))
         .color(claim(
             "today",
             "accent",
             t.accent,
-            "gpui-component/time/calendar.rs:193",
+            "gpui-component/time/calendar.rs:194",
         ))
         .color(claim(
             "text",
             "foreground",
             t.foreground,
-            "gpui-component/time/calendar.rs:184",
+            "gpui-component/time/calendar.rs:185",
         ))
         .config("border-radius", format!("radius_lg: {}px", t.radius_lg.as_f32()))
         .not_themeable("fill", "none: a Calendar sets an edge, a radius and a padding but no background, so the window shows through (time/calendar.rs, Calendar)")
@@ -1947,7 +1947,7 @@ pub fn time_field(t: &Theme) -> WidgetInfo {
             "text",
             "foreground",
             t.foreground,
-            "gpui-component/input/input.rs:126",
+            "gpui-component/input/input.rs:127",
         ))
         .color(claim(
             "border",

@@ -9037,6 +9037,7 @@ pub(crate) enum ThemeToken {
     ListEven,
     ListHead,
     ListHover,
+    ListHighlightForeground,
     Table,
     TableActive,
     TableActiveBorder,

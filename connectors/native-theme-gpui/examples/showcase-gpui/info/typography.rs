@@ -258,7 +258,7 @@ pub fn editor(t: &Theme) -> WidgetInfo {
             "edge",
             "input",
             t.input,
-            "gpui-component/input/input.rs:803",
+            "gpui-component/input/input.rs:817",
         ))
         // Painted at a literal 85% of the style block's border
         // (gpui-base/input/base/element.rs:3915).
@@ -266,7 +266,7 @@ pub fn editor(t: &Theme) -> WidgetInfo {
             "indent guides, border at 85%",
             "border",
             t.border.opacity(0.85),
-            "gpui-base/input/base/element.rs:3915",
+            "gpui-base/input/base/element.rs:3956",
         ))
         // Unhighlighted text is painted in the colour the element inherits
         // (gpui-base/input/base/element.rs:3185), not the style block's
@@ -282,19 +282,19 @@ pub fn editor(t: &Theme) -> WidgetInfo {
             "caret",
             "caret",
             t.caret,
-            "gpui-component/input/input.rs:569",
+            "gpui-component/input/input.rs:583",
         ))
         .color(claim(
             "selection",
             "selection",
             t.selection,
-            "gpui-component/input/input.rs:568",
+            "gpui-component/input/input.rs:582",
         ))
         .color(claim(
             "line numbers",
             "muted_foreground",
             t.muted_foreground,
-            "gpui-component/input/input.rs:565",
+            "gpui-component/input/input.rs:579",
         ))
         // The current line's number takes the style block's foreground
         // (gpui-base/input/base/element.rs:3592).
@@ -302,7 +302,7 @@ pub fn editor(t: &Theme) -> WidgetInfo {
             "current line number",
             "foreground",
             t.foreground,
-            "gpui-component/input/input.rs:564",
+            "gpui-component/input/input.rs:578",
         ))
         // The root's fill (input/input.rs:715-717, Theme::editor_background)
         // and the gutter's, painted over the text that scrolls under it
@@ -318,7 +318,7 @@ pub fn editor(t: &Theme) -> WidgetInfo {
                 .style
                 .editor_background
                 .unwrap_or_else(|| t.input_background()),
-            "gpui-component/input/input.rs:717",
+            "gpui-component/input/input.rs:731",
         ))
         .color(claim(
             "gutter",
@@ -328,7 +328,7 @@ pub fn editor(t: &Theme) -> WidgetInfo {
                 .editor_gutter_background
                 .or(t.highlight_theme.style.editor_background)
                 .unwrap_or_else(|| t.input_background()),
-            "gpui-component/input/input.rs:579",
+            "gpui-component/input/input.rs:593",
         ))
         .config(
             "mono font",
@@ -443,7 +443,7 @@ pub fn diff(t: &Theme) -> WidgetInfo {
             "bg",
             "background",
             t.background,
-            "gpui-component/diff/mod.rs:792",
+            "gpui-component/diff/mod.rs:818",
         ))
         // The file name, the hunk's code where no syntax colour lands, and
         // the header's text inherit the frame's colour.
@@ -451,50 +451,50 @@ pub fn diff(t: &Theme) -> WidgetInfo {
             "text",
             "foreground",
             t.foreground,
-            "gpui-component/diff/mod.rs:793",
+            "gpui-component/diff/mod.rs:819",
         ))
         .color(claim(
             "edge",
             "border",
             t.border,
-            "gpui-component/diff/mod.rs:796",
+            "gpui-component/diff/mod.rs:822",
         ))
         .color(claim(
             "file header rule",
             "border",
             t.border,
-            "gpui-component/diff/mod.rs:1204",
+            "gpui-component/diff/mod.rs:1237",
         ))
         .color(claim(
             "file header counts",
             "muted_foreground",
             t.muted_foreground,
-            "gpui-component/diff/mod.rs:1203",
+            "gpui-component/diff/mod.rs:1236",
         ))
         .colors(ghost_colours(t, GhostContent::Icon))
         .color(claim(
             "hunk separator, at 35%",
             "muted",
             t.muted.opacity(0.35),
-            "gpui-component/diff/mod.rs:1020",
+            "gpui-component/diff/mod.rs:1053",
         ))
         .color(claim(
             "hunk separator text",
             "muted_foreground",
             t.muted_foreground,
-            "gpui-component/diff/mod.rs:1022",
+            "gpui-component/diff/mod.rs:1055",
         ))
         .color(claim(
             "line numbers",
             "muted_foreground",
             t.muted_foreground,
-            "gpui-component/diff/mod.rs:1388",
+            "gpui-component/diff/mod.rs:1421",
         ))
         .color(claim(
             "hovered line number",
             "foreground",
             t.foreground,
-            "gpui-component/diff/mod.rs:1389",
+            "gpui-component/diff/mod.rs:1422",
         ))
         // A changed line's colour is read once, as `status`, and then
         // painted as its sign, its fill at 12% (diff/mod.rs:1810-1812) and
@@ -503,61 +503,61 @@ pub fn diff(t: &Theme) -> WidgetInfo {
             "removed sign",
             "danger",
             t.danger,
-            "gpui-component/diff/mod.rs:1667",
+            "gpui-component/diff/mod.rs:1704",
         ))
         .color(claim(
             "removed line, at 12%",
             "danger",
             t.danger.opacity(0.12),
-            "gpui-component/diff/mod.rs:1667",
+            "gpui-component/diff/mod.rs:1704",
         ))
         .color(claim(
             "removed words, at 30%",
             "danger",
             t.danger.opacity(0.3),
-            "gpui-component/diff/mod.rs:1667",
+            "gpui-component/diff/mod.rs:1704",
         ))
         .color(claim(
             "added sign",
             "success",
             t.success,
-            "gpui-component/diff/mod.rs:1669",
+            "gpui-component/diff/mod.rs:1706",
         ))
         .color(claim(
             "added line, at 12%",
             "success",
             t.success.opacity(0.12),
-            "gpui-component/diff/mod.rs:1669",
+            "gpui-component/diff/mod.rs:1706",
         ))
         .color(claim(
             "added words, at 30%",
             "success",
             t.success.opacity(0.3),
-            "gpui-component/diff/mod.rs:1669",
+            "gpui-component/diff/mod.rs:1706",
         ))
         .color(claim(
             "hovered line and line number",
             "list_hover",
             t.list_hover,
-            "gpui-component/diff/mod.rs:1819",
+            "gpui-component/diff/mod.rs:1902",
         ))
         .color(claim(
             "selected lines",
             "selection",
             t.selection,
-            "gpui-component/diff/mod.rs:1817",
+            "gpui-component/diff/mod.rs:1900",
         ))
         .color(claim(
             "selected text",
             "selection",
             t.selection,
-            "gpui-component/diff/selection.rs:283",
+            "gpui-component/diff/selection.rs:284",
         ))
         .color(claim(
             "decorated line, warning at 20%",
             "warning",
             t.warning.opacity(0.2),
-            "gpui-component/diff/mod.rs:1773",
+            "gpui-component/diff/mod.rs:1813",
         ))
         .config(
             "mono font",

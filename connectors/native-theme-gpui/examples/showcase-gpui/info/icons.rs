@@ -25,7 +25,7 @@ fn name_label(info: WidgetInfo, t: &Theme) -> WidgetInfo {
         "name",
         "foreground",
         t.foreground,
-        "gpui-component/label.rs:213",
+        "gpui-component/label.rs:248",
     ))
 }
 

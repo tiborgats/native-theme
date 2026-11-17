@@ -143,6 +143,7 @@ pub(crate) const THEME_MAP_GROUPS: [(&str, &str, &[ThemeToken]); 18] = [
             ThemeToken::ListEven,
             ThemeToken::ListHead,
             ThemeToken::ListHover,
+            ThemeToken::ListHighlightForeground,
         ],
     ),
     (

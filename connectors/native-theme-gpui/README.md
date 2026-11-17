@@ -11,7 +11,7 @@ verified against, are in [Compatibility](#compatibility).
 Turns a `ResolvedTheme` into a fully configured
 `gpui_component::theme::Theme` and installs it:
 
-- **Colours**: all 139 `ThemeColor` fields, including the 28 `button*`
+- **Colours**: all 140 `ThemeColor` fields, including the 28 `button*`
   fields gpui-component's `Button` reads (since 0.7), so native themes keep
   their solid button surfaces instead of upstream's tinted house style.
 - **Fonts and global geometry**: families, sizes, `radius`, `window_radius`
@@ -74,17 +74,17 @@ sits.
 
 | Crate | Required |
 |---|---|
-| `gpui-component` | 0.9.1 |
-| `gpui-base` | 0.9.1 |
+| `gpui-component` | 0.10.0 |
+| `gpui-base` | 0.10.0 |
 | `gpui-pre` (GPUI, named `gpui` in the manifest) | 0.3.12 |
-| `gpui-kit` (GPUI as the code names it; the showcase) | 0.9.1 |
+| `gpui-kit` (GPUI as the code names it; the showcase) | 0.10.0 |
 | `rust-version` | 1.95.0 |
 
-With the `gpui-fast` feature, the crate also requires GPUI Fast (`gpui-fast`)
-at `>=0.1.14, <0.1.16`, until GPUI Kit 0.10 (see [Backends](#backends)).
+With the `gpui-fast` feature, the crate builds on GPUI Fast (`gpui-fast`)
+0.1.16 or later, which GPUI Kit 0.10.0 requires (see [Backends](#backends)).
 
 Each row is a floor: Cargo may resolve any later
-semver-compatible release (a later `0.9.x`, a later `0.3.x` of gpui-pre), but
+semver-compatible release (a later `0.10.x`, a later `0.3.x` of gpui-pre), but
 that the connector builds on one is a claim only of the *Verified* line below,
 because a *patch* release of these crates has broken this connector before: gpui-component
 0.6.2 removed `ThemeColor::tiles`, which the published 0.5.8 wrote, and 0.5.8
@@ -112,7 +112,7 @@ Add the crate to your `Cargo.toml`, with the OS readers (`native`):
 ```toml
 [dependencies]
 native-theme-gpui = { version = "0.7", features = ["native"] }
-gpui-kit = "0.9.1"        # or gpui-component + gpui-base + gpui-pre directly
+gpui-kit = "0.10.0"       # or gpui-component + gpui-base + gpui-pre directly
 ```
 
 Without `native`, `from_system()` is the platform preset on Linux and an
@@ -742,7 +742,7 @@ narrow. `gpui-fast` is off: it changes the GPUI core rather than adding to it
 | `system-icons` | the platform's own icons (`native-theme/system-icons`) |
 | `svg-rasterize` | SVG icons rasterised by this crate (`native-theme/svg-rasterize`) |
 | `system-fonts` | a theme family the system lacks is drawn in the family the platform substitutes for it (`native-theme/system-fonts`; fontconfig on Linux), not in gpui's own fallback list |
-| `gpui-fast` | builds on GPUI Kit's GPUI Fast core instead of gpui-pre (`gpui-kit/gpui-fast`, `gpui-component/gpui-fast`), with GPUI Fast held at `>=0.1.14, <0.1.16` until GPUI Kit 0.10 (see [Backends](#backends)) |
+| `gpui-fast` | builds on GPUI Kit's GPUI Fast core instead of gpui-pre (`gpui-kit/gpui-fast`, `gpui-component/gpui-fast`) |
 | `native` | the OS readers (`native-theme/native`), so `from_system()` reads the OS theme |
 | `watch` | `on_theme_change`, which runs a closure on gpui's foreground, with a window, when the OS theme changes (`native-theme/watch`, `futures`; see [Runtime theme change](#runtime-theme-change)) |
 
@@ -1026,13 +1026,11 @@ before letting go of it. `examples/showcase-gpui/support.rs` does it in
 
 ## Backends
 
-GPUI Kit 0.9.1 builds on one of two GPUI cores: **gpui-pre**, its default,
+GPUI Kit 0.10.0 builds on one of two GPUI cores: **gpui-pre**, its default,
 and **GPUI Fast** (the `gpui-fast` package, a fork of gpui-pre with retained
 rendering and layout), which its `gpui-fast` feature selects; it builds GPUI
-Fast 0.1.14 or later (gpui-kit 0.9.1's `gpui-fast = "0.1.14"`). gpui-base
-0.9.1 does not compile on GPUI Fast 0.1.16 or later, so this crate's
-`gpui-fast` feature holds GPUI Fast below 0.1.16 until GPUI Kit 0.10. The
-two cores' types are distinct (`Hsla`, `Pixels`, `App`, …), and Cargo unifies
+Fast 0.1.16 or later (gpui-kit 0.10.0's `gpui-fast = "0.1.16"`). The two
+cores' types are distinct (`Hsla`, `Pixels`, `App`, …), and Cargo unifies
 features across the build graph: once a crate's `gpui-fast` feature is on, it
 is on for every user of that crate. gpui-kit, gpui-component and gpui-base
 each have one, and they must switch together, or one crate's GPUI types are
@@ -1043,12 +1041,9 @@ alias gpui-kit documents), so it is built on the core gpui-kit is built on:
 
 - An application on **gpui-pre** needs nothing: it is the default.
 - An application on **GPUI Fast** through gpui-kit
-  (`gpui-kit = { version = "0.9.1", features = ["gpui-fast"] }`, with gpui-kit's
-  default `component` feature) enables this crate's `gpui-fast` too, or pins
-  `gpui-fast = ">=0.1.14, <0.1.16"` itself, until GPUI Kit 0.10: this crate
-  follows gpui-kit onto GPUI Fast, but gpui-kit 0.9.1 asks for
-  `gpui-fast = "0.1.14"`, which a fresh resolution takes to the newest 0.1.x,
-  and gpui-base 0.9.1 does not compile on GPUI Fast 0.1.16 or later.
+  (`gpui-kit = { version = "0.10.0", features = ["gpui-fast"] }`, with gpui-kit's
+  default `component` feature) needs nothing more either: this crate follows
+  gpui-kit.
 - Any other application on **GPUI Fast** (one that depends on gpui-component
   rather than on gpui-kit, or uses gpui-kit without its `component` feature)
   enables this crate's `gpui-fast`, which turns on `gpui-kit/gpui-fast` and
@@ -1078,7 +1073,7 @@ dependency wanting a later snapshot.
 
 ## What gets mapped
 
-- **All 139 `ThemeColor` fields.** The status button fields copy the semantic
+- **All 140 `ThemeColor` fields.** The status button fields copy the semantic
   colours their variant used before (solid surfaces); `table_head*` come
   from the list header (`list.header_background`, `list.header_font`), while
   `table_foot*` are the window background and the muted text colour, since
@@ -1122,7 +1117,7 @@ cargo run -p native-theme-gpui --example showcase-gpui --features watch
 
 Displays every gpui-component widget themed with native-theme presets, with
 live theme switching, the geometry builders applied where they reach, a
-139-field colour map and a 106-icon gallery. It opens on the Basic page, the
+140-field colour map and a 106-icon gallery. It opens on the Basic page, the
 controls all three showcases draw — buttons, checkboxes, radio buttons, text,
 text fields, a drop-down, a slider and a progress bar — in the same order and
 states, packed onto one screen, so the three showcases' captures compare

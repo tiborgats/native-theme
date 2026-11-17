@@ -271,10 +271,10 @@ pub(crate) fn font_rows(app: &Showcase, cx: &gpui::App) -> Vec<(&'static str, St
 
 /// gpui's fallback stack, in its order: what `TextSystem::resolve_font` draws text in where
 /// its text system finds no face of the family asked for, the first family it finds a face of
-/// (gpui-pre 0.3.12 `src/text_system.rs:261-272`, gpui-fast 0.1.15 `src/text_system.rs:262-273`;
+/// (gpui-pre 0.3.12 `src/text_system.rs:261-272`, gpui-fast 0.1.16 `src/text_system.rs:262-273`;
 /// private in both). `.ZedMono` and `.ZedSans` are aliases, which the platform text systems
 /// load as Lilex and IBM Plex Sans (`gpui::font_name_with_fallbacks`, gpui-pre `:1262-1272`,
-/// gpui-fast `:1259-1269`). Held against both cores' lines by
+/// gpui-fast `:1263-1273`). Held against both cores' lines by
 /// `tests::the_fallback_stack_copy_is_gpuis`.
 pub(crate) const GPUI_FALLBACK_STACK: [&str; 10] = [
     ".ZedMono",
