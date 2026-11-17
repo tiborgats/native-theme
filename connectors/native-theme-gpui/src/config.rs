@@ -104,7 +104,16 @@ pub fn to_theme_config(
 /// left unset, and the gutter is the editor's fill, halved with it.
 ///
 /// The current line, the line numbers, the invisibles and the syntax colours
-/// stay upstream's scheme: the model states none of them.
+/// stay upstream's scheme: the model states none of them. So do the status
+/// colours the scheme states (gpui-component
+/// `src/theme/default-theme.json:113-128`, `:315-340`): a hint's in both
+/// modes, a warning's in light mode, several backgrounds and borders in dark
+/// mode, and the `created`, `modified` and `deleted` colours gpui-component
+/// 0.9 added. A status colour the scheme leaves unstated falls back to the
+/// `Theme`'s (gpui-component `src/highlighter/registry.rs:358-463`), which
+/// the connector maps from the platform's status colours. `docs/todo.md`
+/// records it, *gpui: the editor's status colours are partly upstream's
+/// scheme*.
 pub(crate) fn highlight_style(
     resolved: &ResolvedTheme,
     mode: GpuiThemeMode,

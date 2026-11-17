@@ -29,13 +29,15 @@ equivalent, readable from gpui-component.
 
 In cell-selection mode (`cell_selectable`), gpui-component 0.9.1 paints
 `table_active`, edged with `table_active_border`, as an absolutely positioned
-child laid over a selected cell's content (`src/table/state.rs:2458-2472`),
-while a selected row gets the same token as its background, behind its content
-(`:2536-2541`). A theme that matches a platform whose row selection is opaque
-(KDE Breeze, macOS) needs an opaque `table_active`, and then a selected cell's
-text is hidden; a translucent one keeps the cell readable but washes out every
-selected row. Could the cell's overlay be painted behind the cell's content,
-or could a selected cell have a token of its own?
+child laid over a selected cell's content (`src/table/state.rs:2458-2472`,
+`:2630-2638`), while a selected row gets the same token as its background,
+behind its content, as long as `list.active_highlight` is on, its default
+(`:2536-2541`; with it off, a selected row is `accent`). A theme that matches
+a platform whose row selection is opaque (KDE Breeze, macOS) needs an opaque
+`table_active`, and then a selected cell's text is hidden; a translucent one
+keeps the cell readable but washes out every selected row. Could the cell's
+overlay be painted behind the cell's content, or could a selected cell have a
+token of its own?
 
 **3. Let a theme keep an opaque selection colour**
 

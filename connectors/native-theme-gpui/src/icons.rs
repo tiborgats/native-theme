@@ -599,7 +599,7 @@ pub fn freedesktop_name_candidates(icon: IconName) -> &'static [&'static str] {
         IconName::Settings => &["preferences-system"], // exact
         IconName::SortAscending => &["view-sort-ascending"], // exact
         IconName::SortDescending => &["view-sort-descending"], // exact
-        IconName::Square => &["media-playback-stop"], // close: upstream draws it only as SpeechButton's stop glyph (speech/button.rs:96-100); Breeze and Adwaita fill the square
+        IconName::Square => &["media-playback-stop"], // close: upstream draws it as SpeechButton's stop glyph (gpui-component speech/button.rs:135) and as SpeechIndicator's under the pointer (gpui-component speech/indicator.rs:130); Breeze and Adwaita fill the square
         IconName::SquareTerminal => &["utilities-terminal"], // close
         IconName::Star => &["non-starred"], // close: the hollow star, the "not starred" state; `starred` is StarFill's
         IconName::StarFill => &["starred"], // exact: the filled "starred" state

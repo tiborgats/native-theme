@@ -365,7 +365,7 @@ test over every preset and mode says so.
 | `link` | `link.underline_enabled`, `link.font`, `link.background_color`, `defaults.line_height` | `Link`: where the platform draws links without an underline, a zero-thickness underline in place of upstream's resting one. The colour is `ThemeColor::link` (`link.font.color`) |
 | `menu_item` | `menu.row_height` (where stated), `menu.border.padding` (the stated sides), `menu.icon_text_gap`, `menu.font`, `defaults.line_height` | a menu row the application draws with its own elements — gpui-component's own `MenuItemElement` is crate-private and `PopupMenu` builds its rows itself, so no upstream widget takes this style |
 | `list_item` | `list.row_height` (where stated), `list.border.padding` (the stated sides), `list.item_font`, `defaults.line_height` | `ListItem` |
-| `list_item_selected` | `list.selection_text_color` | a selected `ListItem` (`selected(true)`), after `list_item`. A colour, where no `ThemeColor` field maps: upstream marks a selected row by its fill alone (`list_active`, `list.selection_background`) and leaves its text the row's |
+| `list_item_selected` | `list.selection_text_color` | a selected `ListItem` (`selected(true)`), after `list_item`. A colour, where no `ThemeColor` field maps: while `list.active_highlight` is on, gpui-component's default, upstream marks a selected row by its fill alone (`list_active`, `list.selection_background`) and leaves its text the row's; with it off, upstream paints the row `accent` (`menu.hover_background`) under `accent_foreground` (`menu.hover_text_color`) after the refinement (`src/list/list_item.rs:257-263`), so this colour does not reach it |
 | `list` | `list.border.line_width`, `.color`, `.corner_radius`, `list.background_color` | the frame and the fill of a list view: a `List`, a `Tree`, or the box an application draws around one. Neither widget paints a border or a fill of its own (nor does a `ListItem` at rest, and the `list` token has no reader), while `DataTable` draws its frame from the same values through `Theme`, so this is what makes the three agree. It also clips its rows: on GPUI Fast to the rounded inside, on gpui-pre to the frame's rectangle, where a square row fill shows past the rounded corners, so the application rounds a row's fill where it meets the frame by the frame's inner radius (`corner_radius` less `line_width`): `list_item` sets no radius. A tree is a list view — the model has no tree theme |
 | `tooltip` | `tooltip.border.padding` (the stated sides), `.corner_radius`, `.line_width`, `.color`, `.shadow_enabled` (upstream's `shadow_md` layers in `defaults.shadow_color`, or none), `tooltip.background_color`, `tooltip.font`, `defaults.line_height` | an application-built `Tooltip`. No width: `tooltip.max_width` on the bubble clamps the bubble and not its text, which runs out of it |
 | `tooltip_content` | `tooltip.max_width` less the left and right padding (upstream's `px_2`, 0.5 rem at the installed font size, for a side the theme does not state) and `tooltip.border.line_width` twice | the element the application passes to `Tooltip::element` — the one place the platform's tooltip width makes the text wrap |
@@ -609,8 +609,10 @@ apply_system_theme(&SystemTheme::from_system()?.with_overlay(&overlay)?, cx);
 
 **A selected cell's fill covers its text.** In a `DataTable` with cell
 selection on (`cell_selectable`, off by default), gpui-component paints
-`table_active` over a selected cell (`src/table/state.rs:2458-2472`), where it
-paints it behind a selected row (`:2536-2541`). The connector gives
+`table_active` over a selected cell, inside a 1 px edge of `table_active_border`
+(`src/table/state.rs:2458-2472`, `:2630-2638`), where it paints it behind a
+selected row as long as `list.active_highlight` is on, its default
+(`:2536-2541`; with it off, a selected row is `accent`). The connector gives
 `table_active` the platform's row selection colour, `list.selection_background`,
 which every bundled preset but windows-11 states opaque, so a selected cell's
 text is hidden. One token cannot serve both: a translucent one keeps the cell
