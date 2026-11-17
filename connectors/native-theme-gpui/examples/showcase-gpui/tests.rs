@@ -7600,29 +7600,19 @@ fn the_typography_page_shows_a_diff(cx: &mut TestAppContext) {
     );
 }
 
-/// The quads of the last frame inside the bounds of the element tagged
-/// `selector` filled exactly in `colour`, in device pixels:
-/// [`painted_fill`]'s reading, filtered by colour instead of by area.
+/// The bounds of the quads [`quads_inside`] finds filled exactly in
+/// `colour`: [`painted_fill`]'s reading, filtered by colour instead of by
+/// area.
 fn quads_filled_in(
     cx: &mut VisualTestContext,
     selector: &'static str,
     colour: gpui::Hsla,
 ) -> Vec<Bounds<gpui::ScaledPixels>> {
-    let bounds = bounds_of(cx, selector);
-    cx.update(|window, _cx| {
-        let bounds = bounds.scale(window.scale_factor());
-        scene_quads(window)
-            .into_iter()
-            .filter(|q| {
-                q.background.as_solid() == Some(colour)
-                    && q.bounds.left() >= bounds.left()
-                    && q.bounds.top() >= bounds.top()
-                    && q.bounds.right() <= bounds.right()
-                    && q.bounds.bottom() <= bounds.bottom()
-            })
-            .map(|q| q.bounds)
-            .collect()
-    })
+    quads_inside(cx, selector)
+        .into_iter()
+        .filter(|q| q.background.as_solid() == Some(colour))
+        .map(|q| q.bounds)
+        .collect()
 }
 
 /// The colour of the claim `role` of the info the inspector shows once the
@@ -9636,25 +9626,33 @@ fn source_over(base: gpui::Hsla, layer: gpui::Hsla) -> gpui::Hsla {
     .into()
 }
 
-fn painted_fill(cx: &mut VisualTestContext, selector: &'static str) -> Option<gpui::Hsla> {
+/// The quads of the last frame wholly inside the bounds of the element
+/// tagged `selector`, in device pixels.
+fn quads_inside(cx: &mut VisualTestContext, selector: &'static str) -> Vec<gpui::Quad> {
     let bounds = bounds_of(cx, selector);
     cx.update(|window, _cx| {
         let bounds = bounds.scale(window.scale_factor());
         scene_quads(window)
             .into_iter()
             .filter(|q| {
-                !q.background.is_transparent()
-                    && q.bounds.left() >= bounds.left()
+                q.bounds.left() >= bounds.left()
                     && q.bounds.top() >= bounds.top()
                     && q.bounds.right() <= bounds.right()
                     && q.bounds.bottom() <= bounds.bottom()
             })
-            .max_by(|a, b| {
-                let area = |q: &gpui::Quad| q.bounds.size.width.0 * q.bounds.size.height.0;
-                area(a).total_cmp(&area(b))
-            })
-            .and_then(|q| q.background.as_solid())
+            .collect()
     })
+}
+
+fn painted_fill(cx: &mut VisualTestContext, selector: &'static str) -> Option<gpui::Hsla> {
+    quads_inside(cx, selector)
+        .into_iter()
+        .filter(|q| !q.background.is_transparent())
+        .max_by(|a, b| {
+            let area = |q: &gpui::Quad| q.bounds.size.width.0 * q.bounds.size.height.0;
+            area(a).total_cmp(&area(b))
+        })
+        .and_then(|q| q.background.as_solid())
 }
 
 /// A Basic text field under the pointer is framed by
@@ -15758,18 +15756,39 @@ fn a_bars_waveform_and_a_liquid_one_show_different_infos(cx: &mut TestAppContext
 /// The liquid waveform spans its row, as upstream's doc asks of one
 /// (gpui-component speech/waveform.rs, SpeechWaveform::liquid): it starts
 /// at the section heading's left edge and is wider than the bars, which
-/// keep upstream's 96px (speech/waveform.rs, DEFAULT_WIDTH).
+/// keep upstream's 96px (gpui-component speech/waveform.rs, DEFAULT_WIDTH).
+/// The liquid one is measured by its own box, not by its info's wrapper,
+/// which its column stretches whatever the waveform's width
+/// (`InfoRegistry::widget_bounds`).
 #[gpui::test]
 fn the_liquid_waveform_spans_its_row(cx: &mut TestAppContext) {
+    const LIQUID: &str = "inputs-speech-waveform-liquid";
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     show(&mut cx, &showcase, Page::Inputs);
     let heading = bounds_of(&mut cx, "inputs-heading-speech-waveform");
-    let liquid = bounds_of(&mut cx, "inputs-speech-waveform-liquid");
+    let liquid = read(&mut cx, &showcase, |this, cx| {
+        this.info_ui
+            .read(cx)
+            .widget_bounds
+            .get(&gpui::ElementId::from(LIQUID))
+            .copied()
+    });
     let bars = bounds_of(&mut cx, "inputs-speech-waveform");
+    assert!(
+        liquid.is_some(),
+        "the liquid waveform's own box was not laid out"
+    );
+    let liquid = liquid.unwrap_or_default();
+    let row = bounds_of(&mut cx, LIQUID);
     assert_eq!(
         liquid.left(),
         heading.left(),
         "the liquid waveform does not start at its section's left edge: {liquid:?}, {heading:?}"
+    );
+    assert_eq!(
+        liquid.right(),
+        row.right(),
+        "the liquid waveform does not reach its row's right edge: {liquid:?}, {row:?}"
     );
     assert_eq!(
         bars.size.width,
