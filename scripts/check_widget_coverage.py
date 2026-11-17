@@ -62,20 +62,21 @@ gpui-base as Rust resolves it: `crate::`, `self::` and `super::`; a module
 declared by `mod` or `pub mod`, its file `<name>.rs` or `<name>/mod.rs` in
 the declaring module's folder (the own folder of a `lib.rs`, a `mod.rs` or
 a file a `#[path]` names, which rustc reads as a `mod.rs`; `x/` beside any
-other `x.rs`), or the file a `#[path]` names; an inline `mod name { … }`; and a module another `pub use`
-brings in. Only `pub use` brings a name in. A path whose first segment is
-one of gpui-base's dependencies in the metadata, or `std`, `core` or
-`alloc`, is an external crate's (`ropey::Rope`) and yields nothing; any
-other module segment that names nothing is a `Failure` (exit 2: the
-re-export rule no longer matches gpui-base's layout), the first segment of
-a gpui-component path included, while a last segment the module does not
-offer yields nothing. At the last module the name is a
-`pub struct` its file declares, or an item its own `pub use` items bring
-in by name, rename or glob, followed the same way; a glob takes all of
-them, and a `pub mod` named whole is followed as a glob. An item counts
-when the file declaring its `pub struct` also renders it, as above, so a
-same-named trait, enum or non-rendering struct elsewhere does not, and its
-name is gpui-component's public one (the `as` name where renamed).
+other `x.rs`), or the file a `#[path]` names; an inline `mod name { … }`;
+and a module another `pub use` brings in. Only `pub use` brings a name in.
+A path whose first segment is one of gpui-base's dependencies in the
+metadata, or `std`, `core` or `alloc`, is an external crate's
+(`ropey::Rope`) and yields nothing; any other module segment that names
+nothing is a `Failure` (exit 2: the re-export rule no longer matches
+gpui-base's layout), the first segment of a gpui-component path included,
+while a last segment the module does not offer yields nothing. At the last
+module the name is a `pub struct` its file declares, or an item its own
+`pub use` items bring in by name, rename or glob, followed the same way; a
+glob takes all of them, and a `pub mod` named whole is followed as a glob.
+An item counts when the file declaring its `pub struct` also renders it, as
+above, so a same-named trait, enum or non-rendering struct elsewhere does
+not, and its name is gpui-component's public one (the `as` name where
+renamed).
 
 iced (`iced_widget`): every source module under `src/` that declares a
 crate-level `impl ... Widget<...>` or a `pub trait Catalog`. That rule
@@ -932,10 +933,8 @@ def component_exports(modules):
                 names = public_names(exports, key, name)
                 if not names:
                     continue
-                target = own_module(key, path)
+                target = own_module(key, path[:-1])
                 if target is not None:
-                    changed |= mark(target)
-                elif (target := own_module(key, path[:-1])) is not None:
                     changed |= mark(target, path[-1], names)
     return exports
 
@@ -1451,6 +1450,32 @@ def self_test():
               reexports("gone", {}, {"lib.rs": "pub use gpui_base::gone::X;\n"}))
         fails("gpui-base: a module segment that names nothing",
               reexports("nowhere", {}, {"lib.rs": "pub use gpui_base::grid::nowhere::X;\n"}))
+        widget_w = {
+            "lib.rs": "pub mod m;\nmod w;\npub use w::W;\n",
+            "w.rs": "pub struct W;\nimpl RenderOnce for W {}\n",
+            "m.rs": "pub struct V;\nimpl RenderOnce for V {}\n",
+        }
+        finds("gpui-component: a name exported through a chain of private globs",
+              reexports("glob-chain", widget_w, {
+                  "lib.rs": "mod a;\nmod b;\npub use a::W;\n",
+                  "a.rs": "pub use crate::b::*;\n",
+                  "b.rs": "pub use gpui_base::W;\n",
+              }),
+              ["Folder", "Grid", "VList", "W"])
+        finds("gpui-component: a gpui-base module re-exported whole by a private module "
+              "nothing re-exports",
+              reexports("private-whole", widget_w, {
+                  "lib.rs": "mod p;\n",
+                  "p.rs": "pub use gpui_base::m;\n",
+              }),
+              roots)
+        finds("gpui-component: a gpui-base widget named by a private module nothing "
+              "re-exports",
+              reexports("private-named", widget_w, {
+                  "lib.rs": "mod p;\n",
+                  "p.rs": "pub use gpui_base::W;\n",
+              }),
+              roots)
         fails("gpui-base: `super` at the crate root",
               reexports("super-root", {"lib.rs": "pub use super::vl::VList as Up;\n"},
                         {"lib.rs": "pub use gpui_base::Up;\n"}))
