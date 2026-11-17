@@ -4245,6 +4245,58 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       turning their text `accent_foreground` on hover, and the Preferences sheet at
       600px (`PREFERENCES_WIDTH`).
 
+### gpui: the editor's status colours are partly upstream's scheme
+
+- [ ] [v0.7.x] The connector installs gpui-component's default highlight scheme
+      and replaces only the editor's fill and its gutter's
+      (`connectors/native-theme-gpui/src/config.rs`, `highlight_style`). The scheme
+      states status colours of its own (gpui-component 0.9.1
+      `src/theme/default-theme.json:113-128`, `:315-340`): in light mode `warning`
+      (#C99401), `hint` (#9e5dff), `created`, `modified` and `deleted`; in dark mode
+      `hint`, `created`, `modified`, `deleted`, the backgrounds of `error`, `hint`,
+      `info`, `success` and `warning`, and the borders of `error`, `hint`, `info`
+      and `warning`. A colour the scheme leaves
+      unstated falls back (`src/highlighter/registry.rs:358-463`): `error`,
+      `warning`, `info` and `success` to the theme's `red`, `yellow`, `blue` and
+      `green`, which the connector maps from the platform's danger, warning, info
+      and success colours (`connectors/native-theme-gpui/src/colors.rs`,
+      `assign_base_colors`); `hint` to the theme's `cyan`, which the same
+      function derives; a
+      background to the window's background blended with its colour at 0.2; a
+      border to its colour; `created`, `modified` and `deleted` to `success`,
+      `warning` and `error`. So an editor's warning diagnostics are upstream's
+      #C99401 in light mode and the platform's warning colour in dark mode, and
+      the three colours 0.9.0 added are upstream's in both. The diagnostic
+      underline takes `error`, `warning`, `info` and `hint`
+      (`src/input/input.rs:570-575`), and the diagnostic popover letters its text in
+      the severity's colour on that colour's background, framed in its border
+      (`src/input/popovers/diagnostic_popover.rs:42-59`,
+      `src/highlighter/diagnostic_styles.rs:6-34`); `success`, `created`,
+      `modified` and `deleted` are read by no widget. The showcase shows no
+      diagnostic.
+      The status colours are one public field with a default
+      (`HighlightThemeStyle::status`, `registry.rs:485-486`; `StatusColors` derives
+      `Default`, `:318`). Computed from the presets' colours on a white background
+      (`docs/todo_v0.7.1_gpui-kit-0.9.1-rationale.md` at e866ea6c, N9; not on each preset's own
+      window colour): clearing them all makes `hint` the derived cyan, its contrast
+      against white falling from 3.84 (upstream's purple) to 1.57 on adwaita, 1.50
+      on kde-breeze and 1.48 on macOS, and to about 1.4 on its own tint, where the
+      popover letters it. Clearing all but `hint`'s three (through the style's
+      serialised form, since the single colours are private) changes one colour a
+      widget draws in light mode, `warning` lettered on its tint: upstream's reaches
+      2.27; the platform's warning colour gives 1.86 on adwaita, 1.87 and 1.95 on
+      the two macOS presets, 1.43 on nord, 2.30 on kde-breeze, 3.98 on windows-11
+      and 4.82 on material-3. In dark mode both are mixed: `info` gains (the stated
+      `info.background`, #0059D1, lies under the platform's info text today), and
+      so does `hint` when all are cleared; `warning` and `error` lose a little. The model's warning
+      colour is made for a filled badge or an icon and has no counterpart for a
+      diagnostic's text. To do: show one diagnostic of each severity in the gpui
+      showcase's editor, judge both modes, and then decide between keeping the
+      scheme's colours, clearing them all or all but `hint`'s, or a model colour for
+      diagnostic text. Until then the connector's documentation says the status
+      colours are partly upstream's (`config.rs`, `highlight_style`; the crate
+      documentation's `input` row).
+
 ---
 
 ## This cycle (v0.7.0)
