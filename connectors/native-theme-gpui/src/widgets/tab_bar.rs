@@ -10,7 +10,7 @@ use gpui::{
     StatefulInteractiveElement as _, StyleRefinement, Styled, Window, canvas, div, point,
     prelude::FluentBuilder as _, px, quad, size, transparent_black,
 };
-use gpui_base::{Tab as BaseTab, Tabs as BaseTabs};
+use gpui_base::{LayoutDirection, LogicalStyledExt as _, Tab as BaseTab, Tabs as BaseTabs};
 use gpui_component::StyledExt as _;
 use native_theme::theme::{ResolvedTheme, TabIndicatorSide};
 
@@ -344,6 +344,21 @@ type TabClick = Rc<dyn Fn(&usize, &mut Window, &mut App)>;
 /// gpui-component 0.9.1's `TabBar`, whose row locks its axis, does by a wheel
 /// mask (`tab/tab_bar.rs:691`, `:697`).
 ///
+/// The focus is gpui-base's `Tabs` list's: a click activates a tab and never
+/// moves the focus; the tabs take it from the keyboard only, the list one
+/// tab stop that Tab enters on the selected tab, and the arrow keys, Home
+/// and End move it to the next, previous, first and last enabled tab. The
+/// tab that has it from the keyboard shows the theme's focus ring
+/// (`defaults.focus_ring_color`, `focus_ring_width`) as an inset shadow
+/// inside its edge, as wide as the ring, and none after a click; the strip
+/// scrolls the tab the focus moves to into view.
+///
+/// Right to left ([`LayoutDirection::global`]), the tabs run from the
+/// bar's right edge, each one's `border.padding` sides mirrored and the
+/// suffix at the bar's left end; the arrow keys step as gpui-base's `Tabs`
+/// steps them (the next tab lies to the left), and where the tabs overflow
+/// the strip scrolls from its origin, as gpui-component's tab bar does.
+///
 /// The bar's own style (`Styled`) is the caller's: a rule under it, its
 /// inset. Without a native theme, or with a length that is not finite, it
 /// renders gpui-component's `TabBar`.
@@ -427,7 +442,9 @@ impl TabBar {
     /// [`wrap`](Self::wrap) the tabs do not scroll, so a click reveals
     /// nothing. A change of the selection, the tabs or the layout scrolls
     /// nothing, as in gpui-component's `TabBar::track_scroll`
-    /// (tab/tab_bar.rs:138-142); use `handle` to reveal a tab otherwise.
+    /// (tab/tab_bar.rs:138-142); use `handle` to reveal a tab otherwise. The
+    /// keyboard focus moving to a tab asks the handle to scroll that tab into
+    /// view, as a click does.
     #[must_use]
     pub fn track_scroll(mut self, handle: &ScrollHandle) -> Self {
         self.scroll = Some(handle.clone());
@@ -492,9 +509,43 @@ impl RenderOnce for TabBar {
                 .clone()
         });
         let view = window.current_view();
-        // Read again: the keyed handle took `cx` mutably.
+        // A probe inside each tab, not a tab stop, whose handle is within the
+        // focused element while its tab has the focus
+        // (`FocusHandle::within_focused`): where the focus moves to a tab,
+        // the strip scrolls to it.
+        let probes: Vec<gpui::FocusHandle> = (0..self.tabs.len())
+            .map(|ix| {
+                window
+                    .use_keyed_state(format!("{}-probe-{ix}", self.id), cx, |_, cx| {
+                        cx.focus_handle().tab_stop(false)
+                    })
+                    .read(cx)
+                    .clone()
+            })
+            .collect();
+        let focused = probes.iter().position(|p| p.within_focused(window, cx));
+        let last = window.use_keyed_state(format!("{}-focused", self.id), cx, |_, _| None::<usize>);
+        if *last.read(cx) != focused {
+            last.update(cx, |v, _| *v = focused);
+            if let Some(ix) = focused {
+                scroll.scroll_to_item(ix);
+            }
+        }
+        let rtl = LayoutDirection::global(cx).is_rtl();
+        // Right to left, a strip that scrolls is pushed against its right
+        // edge until it overflows (below).
+        let push_end = rtl && !self.wrap;
+        // Read again: the keyed handles took `cx` mutably.
         let Some(n) = cx.native() else {
             return self.fallback();
+        };
+        let ring = super::FocusRing::of(n.resolved);
+        // The tab's sides from its start edge: the left in a left-to-right
+        // layout, the right in a right-to-left one.
+        let (pad_left, pad_right) = if rtl {
+            (look.padding_right, look.padding_left)
+        } else {
+            (look.padding_left, look.padding_right)
         };
         let total = self.tabs.len();
         let selected = self.selected;
@@ -523,8 +574,8 @@ impl RenderOnce for TabBar {
                 .flex_none()
                 .min_w(look.min_width)
                 .min_h(look.min_height)
-                .pl(look.padding_left)
-                .pr(look.padding_right)
+                .pl(pad_left)
+                .pr(pad_right)
                 .when_some(look.padding_top, |tab, top| tab.pt(top))
                 .when_some(look.padding_bottom, |tab, bottom| tab.pb(bottom))
                 // Every tab keeps the outline's width, so a label sits where
@@ -575,11 +626,52 @@ impl RenderOnce for TabBar {
                 .when_some(tab.selector, |tab, selector| {
                     tab.debug_selector(|| selector)
                 })
+                // On keyboard focus only: the theme's ring as an inset
+                // shadow, inside the tab, its spread the ring's width.
+                .when_some(ring, |tab, ring| {
+                    tab.focus_visible(move |style| {
+                        style.shadow(vec![gpui::BoxShadow {
+                            color: ring.color,
+                            offset: point(px(0.), px(0.)),
+                            blur_radius: px(0.),
+                            spread_radius: px(ring.width),
+                            inset: true,
+                        }])
+                    })
+                })
+                // Right to left, the last tab, the leftmost, takes the free
+                // space before it, so the strip runs from the right; once the
+                // tabs overflow the margin is none, and they scroll from the
+                // origin, as gpui-component's tab bar lays them out
+                // (tab/tab_bar.rs, `push_end`).
+                .when(push_end && total.checked_sub(1) == Some(ix), |tab| {
+                    tab.ml_auto()
+                })
+                .children(probes.get(ix).map(|probe| {
+                    div()
+                        .absolute()
+                        .top_0()
+                        .left_0()
+                        .size(px(1.))
+                        .track_focus(probe)
+                }))
         });
         // Ids within the bar's own: the tabs within their row.
         let row = BaseTabs::new("tabs")
             .flex()
-            .flex_row()
+            .map(|row| {
+                // Right to left, the tabs keep their order, so the list's
+                // arrow keys step through them as gpui-base's `Tabs` does,
+                // and lie from the right; a strip that scrolls spills past
+                // its right edge where they overflow, which it scrolls to,
+                // and wrapped rows each start at the right.
+                if rtl {
+                    row.flex_row_reverse()
+                        .when(push_end, |row| row.justify_flex_end())
+                } else {
+                    row.flex_row()
+                }
+            })
             .items_end()
             .flex_auto()
             .min_w_0()
@@ -599,8 +691,7 @@ impl RenderOnce for TabBar {
             .children(outward.map(|_| flares(selected_bounds, look)));
         div()
             .id(self.id)
-            .flex()
-            .flex_row()
+            .flex_row_dir(cx)
             .items_end()
             .bg(look.bar)
             .refine_style(&self.style)

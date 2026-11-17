@@ -209,6 +209,7 @@ pub(super) struct Parts {
     id: ElementId,
     label: Option<SharedString>,
     checked: bool,
+    indeterminate: bool,
     disabled: bool,
     on_change: Option<ChangeHandler>,
     observer: Option<PartBounds>,
@@ -227,6 +228,7 @@ impl Parts {
             id,
             label: None,
             checked: false,
+            indeterminate: false,
             disabled: false,
             on_change: None,
             observer: None,
@@ -247,7 +249,10 @@ impl Parts {
     /// and the focus ring follows, the caller's style refined onto it after
     /// the widget's own, as gpui-component refines its checkbox's
     /// (checkbox.rs:294). Without a native theme or a finite look it hands
-    /// the parts back, for gpui-component's control.
+    /// the parts back, for gpui-component's control. An indeterminate control
+    /// takes the checked look. The indicator leads, on the start edge of the
+    /// layout direction (`LayoutDirection::global`), as gpui-component lays
+    /// its checkbox out (checkbox.rs, `flex_row_dir`).
     fn render<E>(
         mut self,
         of: fn(&ResolvedTheme, bool, bool) -> Option<CheckboxLook>,
@@ -262,7 +267,11 @@ impl Parts {
         let Some(n) = cx.native() else {
             return Err(Box::new(self));
         };
-        let Some(look) = of(n.resolved, self.checked, self.disabled) else {
+        let Some(look) = of(
+            n.resolved,
+            self.checked || self.indeterminate,
+            self.disabled,
+        ) else {
             return Err(Box::new(self));
         };
         let look = look.faded_over(
@@ -281,8 +290,7 @@ impl Parts {
         Ok(base(self, &focus_handle)
             .debug_selector(|| "native-checkbox-row".into())
             .group(HOVER_GROUP)
-            .flex()
-            .flex_row()
+            .map(|row| gpui_base::LogicalStyledExt::flex_row_dir(row, cx))
             .items_center()
             .gap(look.label_gap)
             // The row the focus ring follows, as gpui-component rounds it
@@ -304,17 +312,31 @@ impl Parts {
 /// `IconName::Check` (gpui-kit-assets 0.9.1 `assets/icons/check.svg`,
 /// `M20 6 9 17l-5-5`): a polyline through these points of its view box,
 /// round-capped and round-joined (`stroke-linecap`, `stroke-linejoin`).
-const CHECK_POINTS: [(f32, f32); 3] = [(20., 6.), (9., 17.), (4., 12.)];
+const CHECK_POINTS: &[(f32, f32)] = &[(20., 6.), (9., 17.), (4., 12.)];
 
-/// The side of that icon's view box (`viewBox="0 0 24 24"`).
+/// gpui-component's mixed mark, the Lucide `minus` icon it draws as
+/// `IconName::Minus` for an indeterminate checkbox (gpui-component 0.10.0
+/// checkbox.rs:370; gpui-kit-assets 0.10.0 `assets/icons/minus.svg`,
+/// `M5 12h14`, round-capped): a line through these points of the same
+/// view box.
+const MINUS_POINTS: &[(f32, f32)] = &[(5., 12.), (19., 12.)];
+
+/// The side of those icons' view box (`viewBox="0 0 24 24"`).
 const CHECK_VIEW_BOX: f32 = 24.;
 
-/// gpui-component's check mark `size` square, its line `stroke` wide in
-/// `colour`, faded to `opacity`: the icon's polyline scaled to the box and
-/// stroked at the width the theme states, where the icon file strokes it at
-/// its own two view-box units. Its round caps and join are discs as wide as
-/// the line on the three points.
-fn stroked_check(size: Pixels, stroke: Pixels, colour: Hsla, opacity: f32) -> AnyElement {
+/// gpui-component's mark, the polyline through `points` of its icon's view
+/// box ([`CHECK_POINTS`], [`MINUS_POINTS`]), in a `size` square, its line
+/// `stroke` wide in `colour`, faded to `opacity`: the polyline scaled to the
+/// box and stroked at the width the theme states, where the icon file
+/// strokes it at its own two view-box units. Its round caps and joins are
+/// discs as wide as the line on the points.
+fn stroked_check(
+    points: &'static [(f32, f32)],
+    size: Pixels,
+    stroke: Pixels,
+    colour: Hsla,
+    opacity: f32,
+) -> AnyElement {
     let colour = Hsla {
         a: colour.a * opacity,
         ..colour
@@ -333,17 +355,18 @@ fn stroked_check(size: Pixels, stroke: Pixels, colour: Hsla, opacity: f32) -> An
                 )
             };
             let mut path = PathBuilder::stroke(stroke);
-            let [first, rest @ ..] = CHECK_POINTS;
-            path.move_to(at(first));
-            for p in rest {
-                path.line_to(at(p));
+            if let [first, rest @ ..] = points {
+                path.move_to(at(*first));
+                for p in rest {
+                    path.line_to(at(*p));
+                }
             }
             if let Ok(path) = path.build() {
                 window.paint_path(path, colour);
             }
             let r = f32::from(stroke) / 2.;
-            for p in CHECK_POINTS {
-                let c = at(p);
+            for p in points {
+                let c = at(*p);
                 window.paint_quad(
                     fill(
                         Bounds::new(
@@ -366,14 +389,14 @@ fn stroked_check(size: Pixels, stroke: Pixels, colour: Hsla, opacity: f32) -> An
         .into_any_element()
 }
 
-/// The box `stroked_check` paints in a `size` square with a line `stroke`
-/// wide, as (left, top, width, height) in that square: its points scaled
-/// to the square, and half the line round them, where its round caps and
-/// join reach.
-fn stroked_check_bounds(size: f32, stroke: f32) -> (f32, f32, f32, f32) {
+/// The box `stroked_check` paints through `points` in a `size` square with
+/// a line `stroke` wide, as (left, top, width, height) in that square: its
+/// points scaled to the square, and half the line round them, where its
+/// round caps and joins reach.
+fn stroked_check_bounds(points: &[(f32, f32)], size: f32, stroke: f32) -> (f32, f32, f32, f32) {
     let scale = size / CHECK_VIEW_BOX;
     let (mut left, mut top, mut right, mut bottom) = (f32::MAX, f32::MAX, f32::MIN, f32::MIN);
-    for (x, y) in CHECK_POINTS {
+    for &(x, y) in points {
         left = left.min(x);
         top = top.min(y);
         right = right.max(x);
@@ -403,12 +426,23 @@ fn indicator_and_label(
     // motion.
     let opacity = spring(
         (parts.id.clone(), "mark"),
-        if parts.checked { 1. } else { 0. },
+        if parts.checked || parts.indeterminate {
+            1.
+        } else {
+            0.
+        },
         cx.theme().motion_tokens().spring_control,
         window,
         cx,
     );
     let observer = parts.observer.as_ref();
+    // An indeterminate checkbox's mark is gpui-component's dash in place of
+    // its check (gpui-component 0.10.0 checkbox.rs:368-371).
+    let (points, icon) = if parts.indeterminate {
+        (MINUS_POINTS, IconName::Minus)
+    } else {
+        (CHECK_POINTS, IconName::Check)
+    };
     let mark = match look.dot.filter(|_| round) {
         // A radio's dot, `radio_dot_diameter` across, centred in the circle
         // (docs/platform-facts.md:1241, §2.5).
@@ -426,7 +460,7 @@ fn indicator_and_label(
             match look.mark_stroke {
                 // gpui-component's own glyph, stroked as the theme states
                 // (docs/platform-facts.md:1242, §2.5).
-                Some(stroke) => stroked_check(inner, stroke, look.mark, opacity),
+                Some(stroke) => stroked_check(points, inner, stroke, look.mark, opacity),
                 // gpui-component's own glyph by its asset path, which the
                 // application's icon resolver is asked for first, as
                 // gpui-component's check box asks it (gpui-component
@@ -436,11 +470,8 @@ fn indicator_and_label(
                     .flex_none()
                     .text_color(look.mark)
                     .when(opacity > 0., |mark| {
-                        mark.path(gpui_component::resolve_icon_path(
-                            IconName::Check.path(),
-                            cx,
-                        ))
-                        .opacity(opacity)
+                        mark.path(gpui_component::resolve_icon_path(icon.path(), cx))
+                            .opacity(opacity)
                     })
                     .into_any_element(),
             }
@@ -457,7 +488,9 @@ fn indicator_and_label(
             let stroked = look
                 .mark_stroke
                 .filter(|_| !(round && look.dot.is_some()) && !look.mark_padded)
-                .map(|stroke| stroked_check_bounds(f32::from(look.mark_size), f32::from(stroke)));
+                .map(|stroke| {
+                    stroked_check_bounds(points, f32::from(look.mark_size), f32::from(stroke))
+                });
             let reported = part_bounds(Part::Mark, observer, px(0.)).into_any_element();
             let reported = match stroked {
                 Some((left, top, width, height)) => div()
@@ -538,7 +571,9 @@ fn indicator_and_label(
 /// where it states none, the mark is gpui-component's `IconName::Check`,
 /// resolved through the application's icon resolver
 /// (`gpui_component::set_icon_resolver`), as gpui-component's own check box
-/// draws it.
+/// draws it. An [`indeterminate`](Checkbox::indeterminate) one draws
+/// gpui-component's `IconName::Minus` the same way, in the box as when
+/// checked.
 pub struct Checkbox {
     parts: Parts,
 }
@@ -567,10 +602,24 @@ impl Checkbox {
         self
     }
 
-    /// Whether it is disabled: inert, unfocusable, in the disabled colours.
+    /// Whether it is disabled: inert, in the disabled colours, and no tab
+    /// stop; one focused when it becomes disabled keeps the focus, so that
+    /// Tab can leave it.
     #[must_use]
     pub fn disabled(mut self, disabled: bool) -> Self {
         self.parts.disabled = disabled;
+        self
+    }
+
+    /// Whether it shows the mixed state, as a checkbox over a group whose
+    /// items are only partly checked: gpui-base's indeterminate state, drawn
+    /// as when checked with gpui-component's dash in place of the check. While
+    /// set it wins over [`checked`](Self::checked), and activating it requests
+    /// `true`, as gpui-component's (gpui-component 0.10.0 checkbox.rs:256,
+    /// gpui-base 0.10.0 checkbox.rs:142).
+    #[must_use]
+    pub fn indeterminate(mut self, indeterminate: bool) -> Self {
+        self.parts.indeterminate = indeterminate;
         self
     }
 
@@ -628,6 +677,7 @@ impl Checkbox {
                 checkbox.accessibility_label(label)
             })
             .checked(parts.checked)
+            .indeterminate(parts.indeterminate)
             .disabled(parts.disabled)
             .tab_stop(parts.tab_stop)
             .tab_index(parts.tab_index)
@@ -651,9 +701,9 @@ impl Checkbox {
     pub(super) fn row(self, window: &mut Window, cx: &mut App) -> Result<BaseCheckbox, Box<Parts>> {
         self.parts
             .render(CheckboxLook::of, false, window, cx, |parts, focus| {
-                let checked = parts.checked;
                 BaseCheckbox::new(parts.id)
-                    .checked(checked)
+                    .checked(parts.checked)
+                    .indeterminate(parts.indeterminate)
                     .disabled(parts.disabled)
                     .track_focus(focus)
                     .tab_stop(parts.tab_stop)
@@ -663,9 +713,9 @@ impl Checkbox {
                         |checkbox, name| checkbox.accessibility_label(name),
                     )
                     .when_some(parts.on_change, |checkbox, on_change| {
-                        checkbox.on_change(move |_, _, window, cx| {
+                        checkbox.on_change(move |next, _, window, cx| {
                             window.prevent_default();
-                            on_change(&!checked, window, cx);
+                            on_change(&(next == gpui_base::CheckboxState::Checked), window, cx);
                         })
                     })
             })

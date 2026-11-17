@@ -6,11 +6,14 @@
 # comes from a sweep of every comment line that mentions a panic in the src/
 # of gpui-pre, gpui-fast, gpui-base, gpui-component, gpui-kit and the gpui-pre
 # and gpui-fast sub-crates (docs/archive/todo_v0.7.0_gpui-kit-0.8.1-spec.md §5),
-# redone for GPUI Kit 0.10.0 (gpui-pre 0.3.12, gpui-fast 0.1.16) together with
-# the explicit panics (panic!, assert!, unreachable!, expect, unwrap) the
-# upgrade added to public function bodies, and from the review of what the
-# listed text functions reach. A `gpui::` path resolves in both cores' `gpui`
-# crate, so one entry covers gpui-pre and GPUI Fast.
+# redone for GPUI Kit 0.10.0 (gpui-pre 0.3.12, which did not move, gpui-fast
+# 0.1.16) on the lines the upgrade added, found by diffing gpui-fast 0.1.15 and
+# its sub-crates against 0.1.16 and gpui-base, gpui-component and gpui-kit
+# 0.9.1 against 0.10.0, together with the explicit panics (panic!, assert!,
+# unreachable!, expect, unwrap, indexing, slicing) the upgrade added to public
+# function bodies: it added no entry. The list also comes from the
+# review of what the listed text functions reach. A `gpui::` path resolves in
+# both cores' `gpui` crate, so one entry covers gpui-pre and GPUI Fast.
 # At each GPUI Kit upgrade the sweep and the planted-function count (one
 # temporary call per entry, one disallowed_methods error each, in the
 # gpui-pre, GPUI Fast and no-default-features clippy runs) are redone; the
