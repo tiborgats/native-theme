@@ -4297,6 +4297,15 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       colours are partly upstream's (`config.rs`, `highlight_style`; the crate
       documentation's `input` row).
 
+### gpui: the widgets' own icons follow the theme's icon set
+
+- [ ] [v0.7.x] gpui-component's widgets draw their own Lucide glyphs — a
+      `Select`'s or `Combobox`'s caret, the check mark beside a chosen row, an
+      empty list's Inbox and the like — whatever the theme's icon set, until
+      the connector or the gpui showcase sets the application's icon resolver
+      (`set_icon_resolver`, gpui-component 0.9.1 `src/icon.rs:77-106`), which
+      every `Icon` drawn from an asset path asks first.
+
 ---
 
 ## This cycle (v0.7.0)
