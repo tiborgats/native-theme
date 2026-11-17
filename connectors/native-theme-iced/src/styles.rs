@@ -259,7 +259,7 @@ pub fn button(
 ///
 /// The model states no hovered and no pressed checked toggle, so under the
 /// pointer and while pressed it is the checked one, as gpui-component paints
-/// a selected button, with no hover of its own (gpui-component 0.8.1
+/// a selected button, with no hover of its own (gpui-component 0.9.1
 /// `src/button/button.rs:730`, `!self.disabled && !selected`). Disabled, it
 /// is [`button`]'s disabled pair where the platform states a disabled fill;
 /// where it states none it dims by opacity alone (`docs/platform-facts.md`

@@ -315,17 +315,17 @@ impl DrawnFamilies {
     /// asked once. It is asked only where it lists a family of gpui's
     /// fallback stack ([`GPUI_FALLBACK_STACK`], each by the family its
     /// platform loads for it, `gpui::font_name_with_fallbacks`), in
-    /// `TextSystem::all_font_names` (gpui-pre `:291-296`, gpui-fast
-    /// `:292-297`); elsewhere the answer is `None`, so the test platform's
+    /// `TextSystem::all_font_names` (gpui-pre `:290-295`, gpui-fast
+    /// `:291-296`); elsewhere the answer is `None`, so the test platform's
     /// `NoopTextSystem`, which lists none and resolves every family to one
-    /// face (gpui-pre `src/platform.rs:1578-1584`), is not asked.
+    /// face (gpui-pre `src/platform.rs:1601-1607`), is not asked.
     /// `resolve_font` panics where its text system finds no face of the
     /// family asked for nor of any stack family (gpui-pre
-    /// `src/text_system.rs:621-628`, gpui-fast `:618-625`, reached from `src/fast/text.rs:1182`),
+    /// `src/text_system.rs:620-627`, gpui-fast `:617-624`, reached from `src/fast/text.rs:1182`),
     /// so the one case where this call panics is a family the text system
     /// finds no face of where every stack family it lists has no face it
     /// loads; there gpui's own layout of text in that family panics too,
-    /// through the same call (gpui-pre `src/text_system.rs:830`, `:944`).
+    /// through the same call (gpui-pre `src/text_system.rs:763`, `:877`).
     pub(crate) fn of(asked: impl IntoIterator<Item = SharedString>, cx: &gpui::App) -> Self {
         let text_system = cx.text_system();
         let names = text_system.all_font_names();

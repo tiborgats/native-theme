@@ -5,13 +5,13 @@
 //!
 //! gpui-component's `Theme::change`, `sync_system_appearance` and `sync_base`
 //! rebuild `gpui_base::Theme` with fixed scrollbar styles (gpui-component
-//! `src/theme/mod.rs:403-457`), so these values are written after every such
+//! `src/theme/mod.rs:412-465`), so these values are written after every such
 //! rebuild by the observer `apply` installs (`crate::apply`, spec §3.3). The
-//! rebuild also carries 0.7.0's plot theme (`:455`), which this module leaves
+//! rebuild also carries 0.7.0's plot theme (`:462`), which this module leaves
 //! as upstream projects it.
 //!
-//! Upstream citations in this module are verified against gpui-component 0.8.1,
-//! gpui-base 0.8.1 and gpui-pre 0.3.10.
+//! Upstream citations in this module are verified against gpui-component 0.9.1,
+//! gpui-base 0.9.1 and gpui-pre 0.3.12.
 
 use gpui::{App, Hsla, Pixels, px};
 use gpui_base::{ResizableTheme, Theme as BaseTheme};
@@ -48,7 +48,7 @@ pub struct ScrollbarGeometry {
     /// one inset gpui-base takes for both directions cannot avoid.
     pub thumb_inset: Pixels,
     /// `defaults.border.corner_radius`, mirroring upstream's projection
-    /// (gpui-component `src/theme/mod.rs:419-439`); the theme has no
+    /// (gpui-component `src/theme/mod.rs:428-448`); the theme has no
     /// scrollbar radius and platform-facts records none.
     pub thumb_radius: Pixels,
     /// `scrollbar.min_thumb_length`, the drawn thumb's minimum length along
@@ -135,7 +135,7 @@ fn thumb_min_length(g: &ScrollbarGeometry) -> Pixels {
 /// Resize-handle colours from the splitter
 /// (`docs/archive/todo_v0.5.8_gpui-component-0.6-spec.md` §8.3). Upstream projects
 /// `border` / `drag_border` into the same two slots
-/// (gpui-component `src/theme/mod.rs:451-453`); the handle width is a
+/// (gpui-component `src/theme/mod.rs:460-461`); the handle width is a
 /// constant upstream (gpui-base `src/resizable/resize_handle.rs:13`), Tier U.
 ///
 /// They reach every handle gpui-base draws with its built-in line: groups
@@ -143,7 +143,7 @@ fn thumb_min_length(g: &ScrollbarGeometry) -> Pixels {
 /// `gpui_kit::base::h_resizable` / `v_resizable`), which install no renderer
 /// (gpui-base `src/resizable/resize_handle.rs:357-384`) — the splitter's
 /// colours at that 1 px width, not `splitter.divider_width`, the hover colour
-/// only while the handle is dragged. They do not reach gpui-component 0.8.1's
+/// only while the handle is dragged. They do not reach gpui-component 0.9.1's
 /// `h_resizable` / `v_resizable`, which install gpui-component's own
 /// renderer (a `border` hairline and a `muted_foreground` pill,
 /// gpui-component `src/resizable.rs:28-31, 108, 119-126`), nor `Settings`'

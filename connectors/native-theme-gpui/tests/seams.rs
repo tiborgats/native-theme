@@ -323,7 +323,7 @@ mod first_draw {
     /// `src/elements/img.rs:344-376`); with no data it lays out at nothing and
     /// paints nothing. `ImageSource::Image` is answered by
     /// `window.use_asset`, which returns `None` until a background decode finishes
-    /// (`src/elements/img.rs:534-553`), so every frame of an animation is blank
+    /// (`src/elements/img.rs:530-549`), so every frame of an animation is blank
     /// the first time it comes up -- the blink. `ImageSource::Render` is answered
     /// from the value itself, in the same frame.
     #[gpui::test]
@@ -461,7 +461,7 @@ seam!(
 /// (`src/tooltip.rs:131-137`), so it is a flex item with an automatic minimum
 /// size, and gpui measures text under `AvailableSpace::MinContent` without
 /// wrapping it — the wrap width is taken only from a *definite* available
-/// width (`gpui-pre-0.3.10/src/elements/text.rs:656-663`). The item's minimum is
+/// width (`gpui-pre-0.3.12/src/elements/text.rs:656-663`). The item's minimum is
 /// therefore the whole unwrapped line: a max width on the bubble alone clamps
 /// the bubble and not the text, and the text runs out of it.
 #[gpui::test]
@@ -802,7 +802,7 @@ fn right_inset(
 /// D2: where the theme states `combo_box.arrow_area_width`, the right padding
 /// side is measured to an arrow column, and gpui's triggers have none: the
 /// caret sits inside the padded row (`select.rs:626-627` in the row at
-/// `:591-633`, `combobox.rs:655-656` in the row at `:1009-1028`). So under
+/// `:591-633`, `combobox.rs:673-674` in the row at `:1027-1046`). So under
 /// kde-breeze and windows-11, which state the column and a right side of 0,
 /// the right inset a Select and a Combobox draw is upstream's own, measured
 /// on the unstyled widget. A theme that states no arrow column states its
@@ -942,7 +942,7 @@ fn without_padding(style: &StyleRefinement) -> StyleRefinement {
 /// size with every side 0. The height the rule sets is removed, as the
 /// showcase replaces it with its own, so the height is the content's.
 ///
-/// Left in, the refinement's padding would reach the root (`:784`): at least
+/// Left in, the refinement's padding would reach the root (`:808`): at least
 /// one preset states sides that then add to the width, or the sweep proves
 /// nothing about the clearing.
 #[gpui::test]

@@ -110,7 +110,7 @@
 //! | `defaults` colors | 14 of 24 | text_color, muted_color, accent_color, border.color, focus_ring_color, shadow_color (the dialog overlay's colour, at an alpha of its own), and the four status colours with their text colours; the window background comes from `window.background_color` |
 //! | `defaults` geometry | radius, radius_lg, shadow, focus ring | fonts scaled by the text-scaling factor |
 //! | `button` | all 28 `button*` plus `primary*` / `secondary*` | solid native surfaces, the semantic colours each variant read in gpui-component 0.5.1, not upstream's tinted house style; flat buttons via [`variants::ghost_button`] |
-//! | `tab` | 5 of 10 colours | geometry is upstream work (`Tab`'s render writes its own height, radius and text size into the style bag the caller's setters fill, `tab/tab.rs:958-966`) |
+//! | `tab` | 5 of 10 colours | geometry is upstream work (`Tab`'s render writes its own height, radius and text size into the style bag the caller's setters fill, `tab/tab.rs:961-969`) |
 //! | `sidebar` | 5 of 6 | background, font.color, selection_background, selection_text_color, border.color |
 //! | `window` | 6 of 6 | background_color, title_bar_background, border colour and corner radius (`window_radius`, the corners of a client-decorated window); title_bar_font family, size, weight, style and colour via `geometry::title_bar`; the inactive title bar's fill and text via `geometry::title_bar_inactive` |
 //! | `input` | 3 of 13 + geometry | border, caret, selection_background; height, line height, padding, radius, border, text and its colour via `geometry::input`; the fill, and a disabled field's fill and text colour, via `geometry::input_fill`; the code `Editor`'s fill, and where it is translucent its gutter's, the fill over `window.background_color`, through the highlight theme (its current line, line numbers and syntax colours stay upstream's scheme, and so do the status colours the scheme states: a hint's in both modes, a warning's in light mode, several backgrounds and borders in dark mode, and 0.9's `created`, `modified` and `deleted`; see [the backlog](https://github.com/tiborgats/native-theme/blob/main/docs/todo.md), *gpui: the editor's status colours are partly upstream's scheme*), and its line height via `geometry::editor` |
@@ -119,7 +119,7 @@
 //! | `table` | head, from `list.header_background` / `list.header_font` | the model states no footer colour, so `table_foot*` are derived |
 //! | `slider`, `switch` | 2 colours each | fill/thumb colours; a checked switch's track, `switch.checked_background`, via [`variants::switch_color`] for `Switch::color`; geometry upstream |
 //! | `progress_bar` | fill + geometry | height, radius, min width via `geometry::progress` |
-//! | `list` | 7 of 14 + geometry | background, alternate row, selection, hover, grid, header background and header font colour; the background and the frame via `geometry::list`, the receiver of the fill (the `list` token has no reader in gpui-component 0.8.1); row height, padding, font via `geometry::list_item`; a selected row's text colour via `geometry::list_item_selected`; header height via `geometry::list_header_height` for `DataTable::header_row_height` |
+//! | `list` | 7 of 14 + geometry | background, alternate row, selection, hover, grid, header background and header font colour; the background and the frame via `geometry::list`, the receiver of the fill (the `list` token has no reader in gpui-component 0.9.1); row height, padding, font via `geometry::list_item`; a selected row's text colour via `geometry::list_item_selected`; header height via `geometry::list_header_height` for `DataTable::header_row_height` |
 //! | `menu` | 2 colours + geometry | hover_background, hover_text_color → `accent`, `accent_foreground` (upstream's item highlight); row height, padding, icon gap, font via `geometry::menu_item` on an application-drawn row |
 //! | `segmented_control` | 1 of 9 | background → `tab_bar_segmented`, the track of a segmented `TabBar` |
 //! | `popover` | 2 of 3 + geometry | background, font.color; padding, radius and edge (`border.color` at `border.line_width`) via `geometry::popover` |
@@ -771,10 +771,10 @@ pub fn to_hsla(rgba: Rgba) -> Hsla {
 /// system UI font's stated family — "SF Pro" caselessly,
 /// `native_theme::fonts::is_macos_system_ui_family` — becomes gpui's own
 /// alias `.SystemUIFont`, "used to identify the system UI font, which varies
-/// based on platform" (gpui-pre 0.3.10 `src/text_system.rs` line 1328): gpui's
+/// based on platform" (gpui-pre 0.3.12 `src/text_system.rs` line 1137): gpui's
 /// macOS text system maps it to `.AppleSystemUIFont` through
-/// `font_name_with_fallbacks` (gpui-pre 0.3.10 `src/text_system.rs` lines 1453–1463,
-/// gpui-pre-apple 0.3.10 `src/text_system.rs` line 290) and looks that up among
+/// `font_name_with_fallbacks` (gpui-pre 0.3.12 `src/text_system.rs` lines 1262–1272,
+/// gpui-pre-apple 0.3.12 `src/text_system.rs` line 290) and looks that up among
 /// its memory fonts first, then in the system source (lines 294–297), so Core
 /// Text supplies its own system UI font. Its twin, the system monospaced
 /// font's stated family — "SF Mono" caselessly,
@@ -784,7 +784,7 @@ pub fn to_hsla(rgba: Rgba) -> Hsla {
 /// `docs/evidence/os-probe/2026-10-11-run-38129819806/os-probe-macos-26/probe.toml:162`),
 /// which the same lookup takes as it takes `.AppleSystemUIFont`: font-kit's
 /// `select_family_by_name`, memory fonts first, then the system source
-/// (gpui-pre-apple 0.3.10 `src/text_system.rs` lines 290–297), a Core Text
+/// (gpui-pre-apple 0.3.12 `src/text_system.rs` lines 290–297), a Core Text
 /// query by `NSFontFamilyAttribute` (zed-font-kit 0.14.1-zed
 /// `src/sources/core_text.rs` lines 69–80); "SF Mono" is in no font database
 /// of the runners (M9-167). Every other family, and every
@@ -809,7 +809,7 @@ pub(crate) fn ui_font_family(family: &std::sync::Arc<str>, macos: bool) -> Share
 /// Linux and the other non-Apple, non-Android unix systems, the font every
 /// native application of the system gets); else `family` as
 /// stated. gpui's own answer to a family its text system cannot find is a
-/// list of its own, `.ZedMono` first (gpui-pre 0.3.10 `src/text_system.rs`
+/// list of its own, `.ZedMono` first (gpui-pre 0.3.12 `src/text_system.rs`
 /// lines 261-272, 604-614), not the platform's. The platform is asked once
 /// per family and the answer kept for the process, so a caller may ask
 /// every frame. The first ask for a family runs on the calling thread: on
@@ -1329,7 +1329,7 @@ fn apply_inner(
     }
     // The application's settings, not theme data: upstream's own switch
     // (`Theme::change` -> `apply_config`, gpui-component
-    // src/theme/schema.rs:1064-1108) leaves them, and so does `apply`.
+    // src/theme/schema.rs:1078-1125) leaves them, and so does `apply`.
     let installed = GpuiTheme::global_mut(cx);
     theme.notification = installed.notification.clone();
     theme.list = installed.list.clone();
@@ -1452,8 +1452,8 @@ fn handles_hold_native_values(cx: &App) -> bool {
 /// `src/theme/schema.rs:657-691`), so the config `apply` installs for a variant
 /// cannot carry them; every `Theme::change` / `sync_system_appearance` resets
 /// them to `ThemeColor::dark()` / `light()` (`:705-713`, `:1093-1097`) and
-/// ends in `sync_base` (`theme/mod.rs:333`), whose `cx.set_global` of
-/// `gpui_base::Theme` (`:473-478`) is the one write of it; its notification
+/// ends in `sync_base` (`theme/mod.rs:342`), whose `cx.set_global` of
+/// `gpui_base::Theme` (`:481-486`) is the one write of it; its notification
 /// reaches the base-theme observer. Writes only when a field differs; the
 /// styled theme has no upstream observer, so the write triggers no rebuild.
 /// After `apply` the connector is the sole writer of these 12 fields: it

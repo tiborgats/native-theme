@@ -354,7 +354,7 @@ const MENU_TITLE_PADDING_Y: Rems = rems(0.125);
 /// and its height where neither `menu.row_height` nor a vertical padding
 /// side is stated: upstream's `PopupMenu` row at the default Size, in rems
 /// since gpui-component 0.9.0 (gpui-component 0.9.1
-/// menu/popup_menu.rs:1327, `INNER_PADDING`; :1333, the item height), so
+/// menu/popup_menu.rs:1328, `INNER_PADDING`; :1334, the item height), so
 /// both follow the window's rem, the theme's font size. The height takes
 /// the connector's control-height rule (geometry.rs, `with_height_rule`): it
 /// is the row's height at a text scale of 1 or less and its minimum above.
@@ -363,7 +363,7 @@ pub(crate) const MENU_ROW_HEIGHT: Rems = rems(1.625);
 
 /// What upstream's `PopupMenu` leaves round and between its rows, and
 /// between a row's label and its shortcut (menu/popup_menu.rs:1617-1619,
-/// `p_1`, `gap_y_0p5`, `min_w(rems(8.))`; :1354, `gap_3`); the model states
+/// `p_1`, `gap_y_0p5`, `min_w(rems(8.))`; :1449, `gap_3`); the model states
 /// none of them.
 const MENU_POPUP_PADDING: Rems = rems(0.25);
 const MENU_POPUP_ROW_GAP: Rems = rems(0.125);
@@ -379,7 +379,7 @@ const MENU_SEPARATOR: Pixels = px(2.);
 /// `popover.border.shadow_enabled` holds, as (y offset, blur radius, spread
 /// radius), drawn in `defaults.shadow_color`: the model states no shadow
 /// geometry, so these are gpui-component's popup surface shadow's
-/// (gpui-component 0.8.1 src/styled.rs:68-73, `popover_shadow`), without its
+/// (gpui-component 0.9.1 src/styled.rs:68-73, `popover_shadow`), without its
 /// ring (:65-67), whose place the frame in `popover.border` takes.
 const MENU_POPUP_SHADOW: [(Pixels, Pixels, Pixels); 2] =
     [(px(4.), px(3.), px(-1.)), (px(2.), px(2.), px(-2.))];
@@ -1396,7 +1396,7 @@ pub(crate) struct ToolItem {
 }
 
 /// The Buttons page's component `Toolbar` (spec §8.2): gpui-component
-/// 0.8.1's own, refined by `geometry::toolbar` alone -- the height, fill,
+/// 0.9.1's own, refined by `geometry::toolbar` alone -- the height, fill,
 /// font, gap, padding sides and bottom edge the theme states, and no
 /// fallback, since the section shows the widget and not the chrome's row -- holding
 /// the `edit` and `view` Buttons in two labelled `ToolbarGroup`s with a
@@ -2354,7 +2354,7 @@ pub(crate) const SEGMENT_PADDING: Pixels = px(12.);
 /// each label as gpui's text system shapes it in `segmented_control.font`
 /// (its family, weight, style and scaled size, as [`text_in`] sets them),
 /// its width rounded up, as gpui's text element rounds a line's width up
-/// (gpui-pre 0.3.10 `src/elements/text.rs:772`), inside the segment's stated
+/// (gpui-pre 0.3.12 `src/elements/text.rs:772`), inside the segment's stated
 /// side padding ([`SEGMENT_PADDING`] on a side left unstated), the
 /// `separator_width` line before each segment after the first, and the
 /// frame's `border.line_width` at both ends. The Basic page's
@@ -2376,7 +2376,7 @@ pub(crate) fn segmented_width(window: &Window, n: &Native<'_>, labels: &[&str]) 
     let padding = side(b.padding.left) + side(b.padding.right);
     #[allow(
         clippy::disallowed_methods,
-        reason = "shape_line's panic is a debug_assert! on a newline (gpui-pre 0.3.10 \
+        reason = "shape_line's panic is a debug_assert! on a newline (gpui-pre 0.3.12 \
                   src/text_system.rs:679-682): the one non-test caller passes BASIC_SEGMENTS \
                   (pages/basic.rs), constants without one, and the showcase tests call it in \
                   debug builds, where a newline would fire the assert; its one run is the \
@@ -2534,10 +2534,10 @@ pub(crate) fn splitter_reserve(cx: &App) -> Option<Pixels> {
 /// That area is the line, which starts at the boundary, and `HANDLE_PADDING`
 /// on either side of it: the handle is `straddle_extent` wide, its line padded
 /// by `HANDLE_PADDING` each side, absolutely placed `HANDLE_PADDING` left of
-/// the boundary (gpui-base 0.8.1 resizable/resize_handle.rs:283, :298,
-/// :340-346). gpui lays boxes out border-box (taffy 0.15.0 style/mod.rs:882;
+/// the boundary (gpui-base 0.9.1 resizable/resize_handle.rs:283, :298,
+/// :340-346). gpui lays boxes out border-box (taffy 0.15.1 style/mod.rs:882;
 /// gpui-pre's taffy.rs never sets it), so taffy's clamp of an absolute box's
-/// min size to its padding (compute/oof.rs:511-512) does not bite: 9px over 8.
+/// min size to its padding (compute/oof.rs:515-516) does not bite: 9px over 8.
 ///
 /// `handles` names the group's handles in order, as `(id, between)`. The
 /// renderer is not told which handle it draws (resizable/resize_handle.rs,
@@ -4967,7 +4967,7 @@ pub(crate) enum ListRowState {
     /// (list/list_item.rs:265-274).
     RightClicked,
     /// Selected and right-clicked: the selected fill with the outline over
-    /// it (list/list_item.rs:257-275).
+    /// it (list/list_item.rs:257-274).
     SelectedRightClicked,
 }
 
@@ -5025,9 +5025,9 @@ impl ListRow {
     /// on its bottom ones where it is the last, where it meets
     /// `geometry::list`'s frame, as the egui and iced Basic lists round
     /// theirs. GPUI Fast clips the frame's children to its curved padding
-    /// edge (gpui-fast 0.1.12 src/fast/rounded_clip.rs:68-104), so a square
+    /// edge (gpui-fast 0.1.15 src/fast/rounded_clip.rs:68-104), so a square
     /// fill would be cut at the curve; gpui-pre clips them to its rectangle
-    /// (gpui-pre 0.3.10 src/window.rs:2238-2246, ContentMask), so a square
+    /// (gpui-pre 0.3.12 src/window.rs:2453-2461, ContentMask), so a square
     /// fill would show past the curve there. The List does not tell a row
     /// where its view is scrolled to, so a row cut by the view's edge
     /// mid-scroll keeps its square corners.
@@ -9533,9 +9533,9 @@ pub(crate) fn files_table(
     // radius (`list_inner_radius`) on the corners it meets: the header's top
     // ones and the last row's bottom ones, as the egui and iced Basic tables
     // round theirs. GPUI Fast clips the frame's children to its curved
-    // padding edge (gpui-fast 0.1.12 src/fast/rounded_clip.rs:68-104), so a
+    // padding edge (gpui-fast 0.1.15 src/fast/rounded_clip.rs:68-104), so a
     // square fill would be cut at the curve; gpui-pre clips them to its
-    // rectangle (gpui-pre 0.3.10 src/window.rs:2238-2246, ContentMask), so a
+    // rectangle (gpui-pre 0.3.12 src/window.rs:2453-2461, ContentMask), so a
     // square fill would show past the curve there.
     let inner = list_inner_radius(&l.border);
     let [first, second] = head;

@@ -5,8 +5,8 @@
 //! derived via shade generation, blending, or fallback logic that mirrors
 //! gpui-component's own `apply_config` derivation.
 //!
-//! Upstream citations in this module are verified against gpui-component 0.8.1,
-//! gpui-base 0.8.1 and gpui-pre 0.3.10.
+//! Upstream citations in this module are verified against gpui-component 0.9.1,
+//! gpui-base 0.9.1 and gpui-pre 0.3.12.
 
 use gpui::Hsla;
 use gpui_component::theme::{Theme, ThemeColor, ThemeToken};
@@ -650,7 +650,7 @@ pub(crate) fn base_palette(resolved: &ResolvedTheme, is_dark: bool) -> ThemeColo
 /// each with its token, so `to.tokens.red` … `to.tokens.cyan_light` stay the
 /// plain fields' solid colours; `true` when any differed.
 ///
-/// gpui-component 0.8.1 keeps a token beside each of the 12
+/// gpui-component 0.9.1 keeps a token beside each of the 12
 /// (`Theme::tokens`, `src/theme/mod.rs:158`; `ThemeTokens`' fields `red` …
 /// `cyan_light`, `src/theme/theme_color.rs:535-546`), and a rebuild resets
 /// both to its constants; a token is a colour's solid form
@@ -1308,7 +1308,7 @@ mod tests {
 
     #[test]
     fn theme_color_field_count_tripwire() {
-        // ThemeColor has 139 Hsla fields in gpui-component 0.8.1 (each 16 bytes
+        // ThemeColor has 139 Hsla fields in gpui-component 0.9.1 (each 16 bytes
         // = 4x f32).
         // If this fails, gpui-component added/removed fields -- update the color mapping.
         let size = std::mem::size_of::<ThemeColor>();

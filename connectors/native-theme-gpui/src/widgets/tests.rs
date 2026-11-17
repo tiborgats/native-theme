@@ -1233,7 +1233,7 @@ fn painted_about(cx: &mut VisualTestContext, flare: &tab_bar::FlareQuad) -> Vec<
 
 /// The signed distance of the device point `p` from the border of `q`, a
 /// quad of one corner radius and one border width all round, as gpui's quad
-/// shader computes it (gpui-pre-wgpu 0.3.10 `src/shaders.wgsl`, `fs_quad`,
+/// shader computes it (gpui-pre-wgpu 0.3.12 `src/shaders.wgsl`, `fs_quad`,
 /// `quad_sdf_impl`): negative inside the border, so a pixel whose centre
 /// lies at or below 0 is at least half painted in the border's colour.
 fn border_sdf(q: &gpui::Quad, p: (f32, f32)) -> f32 {
@@ -1461,9 +1461,9 @@ fn a_separator_thinner_than_a_device_pixel_is_one_device_pixel(cx: &mut TestAppC
 /// draws. A border-only quad one device pixel tall, what a line drawn as a
 /// border is there, is drawn by none: the Metal, wgpu and DirectX quad
 /// shaders take a pixel's border by the half of the quad its centre lies in,
-/// the bottom border where it lies on the middle (gpui-pre-apple 0.3.10
-/// `src/shaders.metal:133-137`, gpui-pre-wgpu 0.3.10 `src/shaders.wgsl:603-611`,
-/// gpui-pre-windows 0.3.10 `src/shaders.hlsl:590-593`), so the one row of such
+/// the bottom border where it lies on the middle (gpui-pre-apple 0.3.12
+/// `src/shaders.metal:133-137`, gpui-pre-wgpu 0.3.12 `src/shaders.wgsl:603-611`,
+/// gpui-pre-windows 0.3.12 `src/shaders.hlsl:590-593`), so the one row of such
 /// a quad takes the zero bottom border and paints nothing, as the Screenshots
 /// run 40218601365 showed on macOS and Windows. Under macos-tahoe (0.5 px)
 /// and windows-11 (1 px), light.
@@ -2667,8 +2667,8 @@ fn a_disabled_slider_reports_itself_disabled(cx: &mut TestAppContext) {
 
 /// G3 T7: without a native theme the slider passes its label and its
 /// disabled state on to gpui-component's, whose gpui-base slider registers
-/// them for gpui-kit's test API (gpui-base slider.rs:509-511,
-/// test_support.rs:408-420).
+/// them for gpui-kit's test API (gpui-base slider.rs:610-612,
+/// test_support.rs:497-509).
 #[gpui::test]
 fn without_a_native_theme_a_slider_passes_on_its_label_and_disabled_state(cx: &mut TestAppContext) {
     let found = slider_snapshots(
@@ -3170,7 +3170,7 @@ fn a_range_slider_moves_its_start_by_pointer(cx: &mut TestAppContext) {
 
 /// M6-20: the keys move a range's end and keep its start, where a key turned
 /// `Range(20, 80)` into `Single(81)`; the end never passes the start, as a
-/// pointer keeps it (gpui-base slider.rs:378-382).
+/// pointer keeps it (gpui-base slider.rs:392-396).
 #[gpui::test]
 fn a_range_slider_keeps_its_range_on_the_keys(cx: &mut TestAppContext) {
     use gpui_base::slider::SliderValue;

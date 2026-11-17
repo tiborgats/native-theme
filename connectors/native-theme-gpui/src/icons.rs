@@ -59,7 +59,7 @@
 //! image gpui draws from as it stands, in the frame that asks for it. The
 //! alternative, `ImageSource::Image`, hands gpui encoded bytes and is decoded
 //! in the background, so an element holding one paints nothing the first time
-//! it comes up (gpui-pre `src/elements/img.rs:534-553`) -- an animation
+//! it comes up (gpui-pre `src/elements/img.rs:530-549`) -- an animation
 //! flickers its way through its first pass, one blank frame at a time. A
 //! [`gpui::RenderImage`] the caller keeps holds a tile in the window's sprite
 //! atlas until it is handed to `App::drop_image`; see
@@ -123,7 +123,7 @@ impl std::fmt::Debug for AnimatedImageSources {
 /// Maps 31 of the 42 `IconRole` variants to `IconName`. The 11 unmapped roles
 /// (Shield, ActionSave, ActionPaste, ActionCut, ActionEdit, ActionPrint,
 /// NavHome, TrashFull, DialogQuestion, Help, Lock) have no corresponding icon
-/// in gpui-component 0.8.1.
+/// in gpui-component 0.9.1.
 ///
 /// # Examples
 ///
@@ -201,7 +201,7 @@ pub fn icon_name(role: IconRole) -> Option<IconName> {
 /// Returns the kebab-case Lucide name for use with
 /// [`native_theme::icons::LucideLoader::new`].
 ///
-/// Covers all 106 gpui-component 0.8.1 `IconName` variants; a newer variant
+/// Covers all 106 gpui-component 0.9.1 `IconName` variants; a newer variant
 /// returns `None`. Returns `None` where Lucide has no equivalent (today only
 /// `StarFill`, `docs/archive/todo_v0.5.8_gpui-component-0.6-spec.md`
 /// §10.2); every `Some` is Lucide's own file name (`LucideLoader::new(name)`
@@ -333,7 +333,7 @@ pub fn lucide_name_for_gpui_icon(icon: IconName) -> Option<&'static str> {
 /// Returns the snake_case Material Symbols name for use with
 /// [`native_theme::icons::MaterialLoader`].
 ///
-/// Covers all 106 gpui-component 0.8.1 `IconName` variants; a newer variant
+/// Covers all 106 gpui-component 0.9.1 `IconName` variants; a newer variant
 /// returns `None`. Returns `None` where Material Symbols has no equivalent
 /// (today only `StarOff`); every `Some` is a bundled Material Symbols Outlined
 /// 24px file.
@@ -487,7 +487,7 @@ pub fn material_name_for_gpui_icon(icon: IconName) -> Option<&'static str> {
 /// (Adwaita) name, every other desktop the Breeze name; where the two
 /// conventions agree the DE is ignored.
 ///
-/// Returns `None` for an `IconName` newer than gpui-component 0.8.1, as
+/// Returns `None` for an `IconName` newer than gpui-component 0.9.1, as
 /// [`freedesktop_name_candidates`] returns no name for it.
 #[cfg(target_os = "linux")]
 #[deprecated(
@@ -548,7 +548,7 @@ pub fn freedesktop_name_for_gpui_icon(
 /// - `close`: same concept, minor visual difference
 /// - `approximate`: best available match, different metaphor
 ///
-/// Covers all 106 gpui-component 0.8.1 `IconName` variants; a newer variant
+/// Covers all 106 gpui-component 0.9.1 `IconName` variants; a newer variant
 /// returns an empty slice. Every variant has a name today, some only as a
 /// labelled `close` or `approximate` substitute: `StarOff` and `HeartOff`
 /// both take `non-starred`, the "not starred / not favourite" state.
@@ -714,7 +714,7 @@ const SVG_RASTERIZE_SIZE: u32 = 48;
 /// the SVG bytes, colorized first when `color` is `Some`, and gpui decodes it
 /// with its own resvg (gpui-pre `src/platform.rs:3504-3507`). That costs two
 /// things. gpui decodes it in the background, so an element holding it paints
-/// nothing the first time it comes up (gpui-pre `src/elements/img.rs:534-553`).
+/// nothing the first time it comes up (gpui-pre `src/elements/img.rs:530-549`).
 /// And gpui chooses the raster size, twice the SVG's own size
 /// (`src/svg_renderer.rs:81, 200-206`), so `size` has no effect. The bytes are
 /// not parsed here, so a corrupt SVG yields `Some` and paints nothing. RGBA
@@ -1137,7 +1137,7 @@ fn svg_to_render_source(svg_bytes: &[u8], _size: u32) -> Option<ImageSource> {
 /// asks for it; `ImageSource::Image` goes through `window.use_asset`, which
 /// returns nothing until a background decode finishes, so an element holding
 /// one paints nothing the first time it comes up (gpui-pre
-/// `src/elements/img.rs:534-553`). An icon this connector has already
+/// `src/elements/img.rs:530-549`). An icon this connector has already
 /// rasterized has no reason to be encoded only for gpui to decode it again.
 ///
 /// The pixels are converted the way gpui's own decoder converts them: it turns
@@ -1731,7 +1731,7 @@ mod tests {
     /// The decoded image behind a source, or a failure naming the variant that
     /// came instead. `ImageSource::Image` is the one that blinks: gpui decodes
     /// it through `window.use_asset` and the element paints nothing until that
-    /// finishes (gpui-pre `src/elements/img.rs:534-553`).
+    /// finishes (gpui-pre `src/elements/img.rs:530-549`).
     fn rendered(source: ImageSource) -> std::sync::Arc<gpui::RenderImage> {
         match source {
             ImageSource::Render(image) => image,

@@ -151,7 +151,7 @@ impl SliderLook {
 /// (slider.rs:157-164, :316-319): a press moves the nearer thumb, as
 /// gpui-base picks it, and the keys move the end, which stops at the start.
 /// The start moves by pointer only: a screen reader is told the range's end
-/// alone, as gpui-base's slider reports it (slider.rs:516), and AccessKit's
+/// alone, as gpui-base's slider reports it (slider.rs:618), and AccessKit's
 /// Increment and Decrement step the end.
 ///
 /// Its length is the caller's (`Styled`): a horizontal slider's width, a
@@ -243,7 +243,7 @@ impl Styled for Slider {
 
 /// The value a key moves `state` to, if the key is one the slider answers: a
 /// range's end, with its start as it was, the end kept from passing the
-/// start, as a pointer keeps it (gpui-base slider.rs:378-382).
+/// start, as a pointer keeps it (gpui-base slider.rs:392-396).
 fn stepped(state: &SliderState, key: &str) -> Option<SliderValue> {
     let (min, max) = (state.min_value(), state.max_value());
     let value = state.value();
@@ -354,7 +354,7 @@ impl RenderOnce for Slider {
                 percentage.end.clamp(0., 1.),
             )
         };
-        // gpui-base's slider's id (slider.rs:510), under which gpui-kit's
+        // gpui-base's slider's id (slider.rs:611), under which gpui-kit's
         // test API finds gpui-component's slider, so one query finds either.
         let id = ElementId::from(("slider", entity_id));
         let focus_handle = window
