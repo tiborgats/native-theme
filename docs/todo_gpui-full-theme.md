@@ -780,3 +780,29 @@ gpui-pre 0.3.10 or GPUI Fast 0.1.12, and the citations below are at 0.8.1.
   (`Dialog::exit_duration`, `:558-568`). So the entrance
   `geometry::dialog_entrance` gives a dialog is its exit too; the theme states
   no exit of its own, and the dialog row of the G2 note stands.
+
+## Note: gpui-component 0.9.1
+
+Appended 2026-11-17; the text above is left as written. In v0.7.1 the connector
+moves on to gpui-component, gpui-base and gpui-kit 0.9.1, on gpui-pre 0.3.12 or
+GPUI Fast 0.1.14 or later, and the citations below are at 0.9.1.
+
+- **`ThemeColor` is unchanged.** It keeps the same 139 fields as 0.8.1, and the
+  base-palette fields of `ThemeConfigColors` are still private
+  (`theme/schema.rs:657-691`). The rows above stand.
+- **`Theme` gains two fields.** `window_radius`, the corner radius of a
+  client-decorated window (`theme/mod.rs:192-193`; in `ThemeConfig` too,
+  `theme/schema.rs:76`, applied at `:1117-1118`), which `WindowBorder` rounds
+  the window with (`window_border.rs:20-29`) and which the connector sets from
+  `window.border.corner_radius` in `to_theme` and `to_theme_config`; and
+  `cursor_blink`, the caret's blink (`theme/mod.rs:218-220`), the application's
+  setting, which `apply` keeps as it keeps `motion`.
+- **`WindowBorder` draws its frame in the theme's colour.** It reads
+  `window_border` (`window_border.rs:201`), which the connector writes from
+  `window.border.color`, where 0.8.1 picked one of two literal greys; its shadow
+  is still two literal black layers (`:253-286`).
+- **The editor's highlight scheme gains `created`, `modified` and `deleted`**
+  status colours (`highlighter/registry.rs:350-355`), which no widget of
+  gpui-component or gpui-base reads; with the scheme's other stated status
+  colours they stay upstream's (`docs/todo.md`, *gpui: the editor's status
+  colours are partly upstream's scheme*).
