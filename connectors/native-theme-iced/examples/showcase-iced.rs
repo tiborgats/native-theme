@@ -29068,29 +29068,47 @@ mod tests {
     /// (`docs/archive/todo_v0.7.1_kde-open-items-step1-spec.md`): the window's
     /// menus keep [`menu_bar_style`], built in every build of the showcase,
     /// and it returns what the connector's `styles::aw::menu` returns, on
-    /// every bundled combination and status. `Style` has no `PartialEq`, so
-    /// the two `Debug` texts are compared.
+    /// every bundled combination and status. Every bundled combination states
+    /// `popover.border.shadow_enabled`, so kde-breeze light is compared with
+    /// it off as well, where the connector's menus cast no shadow. `Style`
+    /// has no `PartialEq`, so the `Debug` texts are compared.
     #[cfg(feature = "iced_aw")]
     #[test]
     fn the_window_menus_draw_as_the_connectors() {
-        use iced_aw::style::Status as Aw;
-        for (label, r) in bundled_combinations() {
+        let mut combinations = bundled_combinations();
+        let Some(mut unshadowed) = combinations
+            .iter()
+            .find(|(label, _)| label == "kde-breeze/light")
+            .map(|(_, r)| r.clone())
+        else {
+            panic!("kde-breeze/light is not bundled");
+        };
+        unshadowed.popover.border.shadow_enabled = false;
+        combinations.push(("kde-breeze/light, no shadow".to_owned(), unshadowed));
+        for (label, r) in combinations {
             let theme = native_theme_iced::to_theme(&r, "menus");
             let ours = menu_bar_style(&r);
             let theirs = styles::aw::menu(&r);
             for s in [
-                Aw::Active,
-                Aw::Hovered,
-                Aw::Pressed,
-                Aw::Disabled,
-                Aw::Focused,
-                Aw::Selected,
+                AwStatus::Active,
+                AwStatus::Hovered,
+                AwStatus::Pressed,
+                AwStatus::Disabled,
+                AwStatus::Focused,
+                AwStatus::Selected,
             ] {
                 assert_eq!(
                     format!("{:?}", ours(&theme, s)),
                     format!("{:?}", theirs(&theme, s)),
                     "{label}, {s:?}: menu_bar_style and styles::aw::menu differ"
                 );
+                if !r.popover.border.shadow_enabled {
+                    assert_eq!(
+                        format!("{:?}", theirs(&theme, s).menu_shadow),
+                        format!("{:?}", iced::Shadow::default()),
+                        "{label}, {s:?}: styles::aw::menu casts a shadow"
+                    );
+                }
             }
         }
     }
