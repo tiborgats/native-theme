@@ -1243,7 +1243,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 t.chart_grid,
                 "native-theme-gpui/colors.rs:446",
             ),
-            |i| i.config("model", "list.grid_color"),
+            |i| i.config("model", "separator.line_color"),
         ),
         ThemeToken::DescriptionListLabel => (
             claim(
