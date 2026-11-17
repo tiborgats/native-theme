@@ -102,13 +102,16 @@ take Breeze's colours, the scroll bar's resting thumb is Breeze's grey with no
 track behind it, and the message box icon is 64 px. The gpui connector
 restores the three selection colours gpui-component caps after a mode switch,
 makes `to_hsla` public, and its README covers overriding theme values, the
-focus ring, and what only gpui-component can change. The platform facts for
-the focus ring, the default button, the menu panel and the table's grid are
-corrected too, and their values wait for a connector design; the selection of
-an unfocused view waits for a text colour the model does not have yet. The
-next step proposed is Breeze's hover outlines: Breeze shows hover on a button,
-a combo box, a check box and a slider handle by recolouring the outline, which
-the model can state for text inputs only.
+focus ring, and what only gpui-component can change.
+A table's grid is Qt's, computed from the colour scheme, and a menu's panel is
+Breeze's; the iced connector's menu bar lies on the window, its menus and
+drop-downs are framed as the platforms frame a popup, and the gpui connector
+draws a chart's grid in the separator colour. The platform facts for the focus
+ring and the default button are corrected too, and their values wait for a
+connector design; the selection of an unfocused view waits for a text colour
+the model does not have yet. The reporter's remaining items, the focus ring and
+Breeze's hover outlines among them, are planned for later 0.7.x releases
+(`docs/issues/0004_kde-open-items-rationale.md`).
 
 ## Model completeness: what native-theme does not carry
 
@@ -262,7 +265,7 @@ limits table: `docs/archive/todo_v0.5.8_gpui-component-0.6-spec.md` §14.
 
 ## Also in the 0.7.x releases
 
-[`docs/todo.md`](docs/todo.md) tags 44 open items `[v0.7.x]`, follow-ups of
+[`docs/todo.md`](docs/todo.md) tags 47 open items `[v0.7.x]`, follow-ups of
 the v0.7.0 review that a 0.7 patch release takes beside the milestones
 above. Among them: the `ios-26` preset, iOS 26's Liquid Glass look, deferred
 while 38 of the values the resolver requires have no iOS 26 source;

@@ -1202,6 +1202,10 @@ model, the platform presets and the three connectors
       item's 30 % tint, so a title's fill joins *KDE: what a Qt application under Breeze
       shows that native-theme does not (issue #4)*, "What Breeze draws that the model
       has no field for".
+      *Issue #4 (0.7.1, 2026-11-17, cdd2f191):* the iced connector's `styles::aw::menu` fills the
+      bar from `window.background_color` too
+      (`docs/issues/0004_kde-open-items-rationale.md` D3), so a field of the bar's
+      own would have that reader as well.
 
 ### Presets: expander hover fills with no source
 
@@ -1871,34 +1875,8 @@ offscreen, `docs/evidence/breeze-offscreen/2026-11-13/`.
       every egui selection would turn pale. First the connectors stop reading the
       primary button's fill as the accent. The model has no field for the default
       button's outline.
-      (3) **The menu panel's colour**, `docs/platform-facts.md:1253`: Breeze's Qt
-      Widgets menu panel is `mix(Window, Base, 0.3)`, #f4f5f5 / #1c1f22 (measured), four
-      to five levels from the window colour `menu.background_color` inherits in
-      kde-breeze, #eff0f1 / #202326. It waits because egui's base style takes
-      `window_fill` from it (`connectors/native-theme-egui/src/style/base.rs:201`),
-      which fills every `egui::Window`, popup and tooltip, and iced_aw fills the menu
-      bar with it (`connectors/native-theme-iced/src/styles/aw.rs:152`), surfaces Breeze
-      paints in the window colour; gpui-component paints a menu in its `popover` token,
-      the window colour on KDE since 0.7.0, so gpui has no receiver. Changing the field
-      would move more surfaces away from Breeze than toward it. Read and cite
-      qqc2-desktop-style's `Menu` fill too, which M4 T36 read as
-      `Kirigami.Theme.backgroundColor` (from *kde-breeze: the Qt Widgets menu fill*,
-      closed into this item).
-      (4) **The table's grid**, `docs/platform-facts.md:1430`: `QPalette::Mid`, the
-      Window set's `MidShade` at the scheme's contrast, #c4c8cc / #1c1f21 under Breeze's
-      4 (measured; #bdc1c6 / #1c1e21 under KColorScheme's default 7, computed);
-      kde-breeze's `list.grid_color` inherits `defaults.border.color`, #bcc0bf /
-      #4d545b: close to Qt's in light, far brighter in dark, which the reporter saw. It
-      waits because egui's list role draws every separator and frame outline inside a
-      list with it (`connectors/native-theme-egui/src/style/roles.rs:776-779`; egui has
-      one stroke for both, and the role reads no `list.border.color`) and gpui's
-      `chart_grid` token reads it (`connectors/native-theme-gpui/src/colors.rs:446`): a
-      list's outline and a chart's grid would all but vanish in dark mode (#1c1f21 on
-      #202326). First egui's list role separates the frame from the grid. The derivation
-      exists on `v0.8.0-rc1`, written in a clean room and checked against KDE's code
-      (`native-theme/src/platform/kde_shade.rs`, with tables from `tools/kde-vectors`),
-      to be carried over. Until then an application sets gpui's `table_row_border` to
-      #c4c8cc / #1c1f21 (the gpui README's overrides section).
+      (3) **The menu panel's colour** and (4) **the table's grid**: done in 0.7.1
+      (below).
       (5) **The menu item's radius, padding and icon gap**,
       `docs/platform-facts.md:1261`, `:1265`, `:1267`: Breeze rounds a hovered item's
       highlight at 4.5; kde-breeze states no menu corner radius, and
@@ -1916,6 +1894,43 @@ offscreen, `docs/evidence/breeze-offscreen/2026-11-13/`.
       cancel: correcting the gap alone moves the text further from where Breeze puts it,
       so the two are one fix, with the question of what `padding_horizontal` means for a
       row with and without an icon.
+      *Issue #4, open items step 1 (0.7.1, 2026-11-17, cdd2f191):* (3) and (4) done
+      (`docs/issues/0004_kde-open-items-rationale.md` D2, D3). kde-breeze
+      (`kde-breeze.toml` `[light.menu] background_color`, `[dark.menu] background_color`,
+      `[light.list] grid_color`, `[dark.list] grid_color`) and the KDE reader state
+      Breeze's menu panel, `mix(Window, Base, 0.3)`, and Qt's grid, `MidShade` of the
+      window at `[KDE] contrast`, through the carried `kde_shade`
+      (`native-theme/src/kde/shade.rs`, with its table). gpui's `chart_grid` takes
+      `separator.line_color`; the iced connector's menu bar lies on the window and
+      its menus and drop-downs take the popover's frame on the menu's fill; egui
+      fills every popup with the menu's colour.
+- [ ] [v0.7.x] **Qt Quick's menu fill, for the facts.** `docs/platform-facts.md`
+      §2.6's KDE `background_color` cell states a Qt Widgets menu's panel, `mix(Window, Base, 0.3)`, which kde-breeze and
+      the KDE reader follow since 0.7.1, and marks Qt Quick's as not read. Read and
+      cite qqc2-desktop-style's `Menu` fill, which M4 T36 read as
+      `Kirigami.Theme.backgroundColor` (from *kde-breeze: the Qt Widgets menu fill*,
+      closed into item (3) of "KDE values that wait for a connector design"), and
+      state it in the row.
+- [ ] [v0.7.x] **KDE: a menu's frame is Qt Quick's, its fill Qt Widgets'.**
+      `docs/platform-facts.md` §2.6's KDE `background_color` cell records a Qt
+      Widgets menu's panel outlined 1 px in
+      `frameOutlineColor()`, #c6c8c9 / #4c4e51 (measured), and §2.6's
+      `border.*` rows send the menu's frame to the popover ("popup border
+      from §2.16"), whose KDE cell is qqc2-desktop-style's Popup, which kde-breeze
+      states as #c2c5c9 / #474c51 (`kde-breeze.toml` `[light.popover.border] color`,
+      `[dark.popover.border] color`). Since 0.7.1 kde-breeze's menu fill follows Qt
+      Widgets, `mix(Window, Base, 0.3)`, and its frame Qt Quick: up to five levels
+      apart in a 1 px line. The model's `menu.border.color`, which no preset states
+      and which resolves to no line, could carry the Qt Widgets outline; the readers
+      that frame a menu from `popover.border` would then read it: the iced
+      connector's `styles::aw::menu` and `styles::menu`, and the three showcases'
+      window menus (iced `menu_bar_style`, gpui `MenuLook`, egui `menu_modifier`).
+      The other way, not taken in step 1: the resolver giving `menu.border` the
+      popover's border where a theme states none, so the readers keep reading
+      `menu.border` and a theme that states one keeps it; it would make the
+      menu's border a border of its own kind, which the model does not give it
+      today (`native-theme/src/model/widgets/mod.rs`, `MenuTheme`). Not part of
+      `docs/issues/0004_kde-open-items-rationale.md`'s step 1.
 - [ ] [v0.7.x] **The selection of a view without the focus, KDE and macOS, and its
       missing text colour.** Breeze's schemes set
       `[ColorEffects:Inactive] ChangeSelectionColor`, so a selected row in an unfocused
@@ -2450,6 +2465,11 @@ caeddd6b, each platform file's *Cross-check* section has the detail.
       *GPUI Kit 0.9.1 (2026-11-17):* still so; `PopupMenu` renders with
       `.popover_style(cx)` (gpui-component 0.9.1 `src/menu/popup_menu.rs:1610`), i.e.
       `bg(theme.popover)` (`src/styled.rs:186-190`).
+      *Issue #4 (0.7.1, 2026-11-17, 096079e2):* at 0fa28027 23 of the 34 combinations differ
+      (`windows-11` now states one colour for both); kde-breeze now states Breeze's
+      menu panel, #f4f5f5 / #1c1f22, apart from its popover, so 25 do. The gpui
+      contract's "hovered menu row" pair excepts both kde-breeze modes for it
+      (`connectors/native-theme-gpui/src/contract.rs`, `MENU_PANEL_SURFACE`).
 - [ ] [upstream] a foreground token for the status bar. `StatusBar` labels everything
       with `muted_foreground` (`status_bar.rs:95`) over `tokens.status_bar`;
       measured against the platform's own `status_bar.font.color` on its
@@ -4638,6 +4658,39 @@ under *Closed items from M7 close (2026-10-16): items carried to M8, M9a and the
 
 ### iced: a PickList cuts a long label without an ellipsis, and its menu rows run out of the menu
 - [ ] [1.0] iced 0.14's `PickList` has no ellipsis and no wrapping setter (its public builders, iced_widget 0.14.2 `src/pick_list.rs:191-323`; no text ellipsis in iced_core 0.14.0, whose `text::Wrapping` is `None | Word | Glyph | WordOrGlyph`, `src/text.rs:179-193`). A label longer than the control is cut silently. The selected text is laid out one line tall with `Wrapping::Word` in the control's width less its padding, and only the first wrapped line is drawn. That room runs under the arrow, which is right-aligned at the right padding (`pick_list.rs:636-684`), so a long word or a line that fills the room has its last letters drawn under the arrow. The menu's rows are laid out at unlimited width (`bounds: Size::new(f32::INFINITY, ..)`, `src/overlay/menu.rs:557-575`), and while the menu does not scroll they are clipped only to the window's viewport, so a long row runs out of the menu and across whatever lies beside it; with more rows than fit it, its `Scrollable` clips them to the menu (`src/scrollable.rs:1186-1187`). Found in M9c CI2 (2026-10-24) under `scripts/run_in_runner_env.sh`: the iced showcase's Icon theme menu showed the system row's 335-character text across the content panel. Since then, short labels remove the case in practice: `IconSetChoice::System` reads `system (unavailable)` where the detection fails, and the reason is the drop-down's hover text and the Icons page's note. The case can still happen with an installed icon theme whose name is longer than the drop-down. Settle before 1.0: cut the label in the showcase itself, measured with iced's `Paragraph` at the picker's font, size and shaping in a room that leaves the arrow out and ended with "…", so the menu's rows are cut too; or ask iced upstream for an ellipsis or a wrapping setter on `PickList` and its `Menu`.
+
+### iced: a drop-down's highlighted first or last row paints over its frame
+
+- [ ] [upstream] iced 0.14 draws a `PickList`'s or a `ComboBox`'s drop-down as its
+      panel and frame, then its rows over them in the same bounds, the first row at
+      the top edge and the last at the bottom (iced_widget 0.14.2
+      `src/overlay/menu.rs:312-330`, `:535-540`), and insets a highlighted row by the
+      frame's width on the left and the right only (`:546-547`, in the row's quad,
+      `:542-553`, which `:550` rounds with the panel's radius): a highlighted first
+      or last row covers the frame's top or bottom line. Since 0.7.1 the connector's
+      `styles::menu` frames the drop-down in `popover.border`, so the line exists on
+      every bundled preset but material-3; `overlay::menu::Style` has no row inset,
+      so the connector cannot change it. Read from the code, not rendered.
+
+### iced: a drop-down on the popover's fill
+
+- [ ] [v0.7.x] `docs/platform-facts.md` §2.16 puts a drop-down with the popover
+      ("Popover / Dropdown"), and Breeze fills a combo box's popup with the window
+      colour (measured on its view, §2.16's KDE `background_color` cell). Since
+      0.7.1 the iced connector's `styles::menu` frames a `PickList`'s or a
+      `ComboBox`'s drop-down with the popover's line but fills it with
+      `menu.background_color`, since its rows are the menu's colours
+      (`menu.hover_background`, the menu's text), which each preset states against
+      the menu's fill: on the popover's fill they do not hold. In adwaita's dark
+      mode the highlighted row, `adwaita.toml` `[dark.menu] hover_background`
+      #3a3a3e, would lie on `[dark.popover] background_color` #36363a at 1.06:1,
+      where on the menu's #222226 it is 1.40:1, with the same white label on both
+      (`docs/issues/0004_kde-open-items-rationale.md` D3 (i)). Taking the popover's
+      fill needs a row highlight stated against the popover's fill, which the
+      model does not have; libadwaita's value for a dropdown's highlighted row was
+      not read. On kde-breeze the drop-down so lies four to five levels from
+      Breeze's combo popup (#f4f5f5 against #eff0f1 in light, #1c1f22 against
+      #202326 in dark).
 
 ### egui showcase: the command palette's highlight does not follow the pointer
 - [ ] [1.0] The egui showcase's command palette moves its highlighted row only by the keys (`command_palette`, `palette_highlight` and `PaletteState::selected` in `connectors/native-theme-egui/examples/showcase-egui/chrome.rs` at 5de1f8b1); gpui-component's `Command` also moves it to the row under the pointer (each enabled row's `on_hover` calls `select`, gpui-component 0.8.0 `src/command/state.rs:854-858`; `select`, `:534-551`, highlights without scrolling). With the pointer resting on the palette, egui paints the hovered row's hover fill beside the highlighted row, so two rows can look marked where gpui marks one. A known parity gap that M9-119 did not ask for (M9c T11 review, *Parity: hover*; the controller's ruling of 2026-10-24). A fix needs "the pointer moved this pass and is over a row", so a resting pointer does not override the arrow keys, one more writer of `PaletteState::selected` and a kittest that moves the pointer.
