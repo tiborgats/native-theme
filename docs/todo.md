@@ -737,6 +737,11 @@ model, the platform presets and the three connectors
       no size" above was already untrue at 0.8.0), but a `Size` gives one of four
       paddings (`sizing.rs:147-166`: 12, 10, 8 or 4 across, 10, 8, 2 or 0 down), so a
       stated side none of them gives, such as KDE's 5, still has no receiver.
+      *GPUI Kit 0.9.1 (2026-11-17):* still so; the multi-line editor's padding by the
+      field's `Size` is gpui-component 0.9.1 `src/input/input.rs:597-612`, a
+      `Textarea`'s `Size` is still `src/input/textarea.rs:172-177`, handed to its
+      `Input` at `:205`, and the four paddings are still `src/sizing.rs:147-166`, those
+      two files unchanged.
 - [ ] [1.0] **macOS text area padding.** NSTextView's `lineFragmentPadding` is 5, but
       `textContainerInset`'s default is not stated on its documentation page, so
       the total is not sourced and macos-monterey states none.
@@ -2213,23 +2218,6 @@ caeddd6b, each platform file's *Cross-check* section has the detail.
       M8 T21 fix round 1 (2026-10-17): no longer for M6, which closed on
       2026-10-16; it stays [1.0], with no milestone of the review assigned.
 
-- [ ] [upstream] **`unicode-properties` back to 0.1.4 when gpui-fast-web
-      unpins it.** gpui-fast-web 0.1.7, GPUI Fast's wasm platform crate, asks
-      for `unicode-properties = "=0.1.3"`, and a lockfile resolves every
-      target, so since the connector's `gpui-fast` feature (v0.7.0) the
-      workspace's Cargo.lock holds 0.1.3 (it was 0.1.4) for every user of it:
-      gpui-pre-web and `rustybuzz`, which the usvg of gpui-pre and of
-      gpui-component's resvg depend on (`cargo tree --workspace -i
-      unicode-properties --target all`, 2026-10-14; native-theme's own resvg
-      has no text support and does not reach it). Once a gpui-fast-web
-      release drops the exact pin, `cargo update -p unicode-properties` and
-      check the lockfile is back on 0.1.4.
-      *GPUI Kit 0.8.0 (2026-10-22, G3 T10):* gpui-fast-web 0.1.10 still pins
-      `unicode-properties = "=0.1.3"`, so the lockfile stays on 0.1.3.
-      *GPUI Kit 0.8.1 (2026-10-27, G4):* gpui-fast-web 0.1.12 still pins
-      `unicode-properties = "=0.1.3"` (`Cargo.toml:53-54`), so the lockfile stays on
-      0.1.3.
-
 - [ ] [upstream] **File the gpui-fast issue: `Window::painted_quads()` omits
       what a rounded clip and a scroll layer paint.** For the maintainer to
       file on longbridge/gpui-fast (an agent files nothing). Under
@@ -2255,6 +2243,10 @@ caeddd6b, each platform file's *Cross-check* section has the detail.
       `painted_quads()` (`src/window.rs:2925-2927`) and `painted_underlines()`
       (`:2931-2933`) return the rendered scene's own primitives only, and
       `src/fast/rounded_clip_scene.rs` is unchanged from 0.1.10.
+      *GPUI Kit 0.9.1 (2026-11-17):* still so; gpui-fast 0.1.15's `painted_quads()`
+      (`src/window.rs:3139-3141`) and `painted_underlines()` (`:3145-3147`) return the
+      rendered scene's own primitives only, and `src/fast/rounded_clip_scene.rs` is
+      unchanged (`:1-10`, `:60-75`).
 
 - [ ] [1.0] **The layout dump on GPUI Fast is stale inside a scrolled,
       composited scroll layer.** The showcase's Widget Info registry
@@ -2362,6 +2354,10 @@ caeddd6b, each platform file's *Cross-check* section has the detail.
       0.1.12's `src/fast/rounded_clip.rs` and `src/style.rs` are unchanged from
       0.1.10, so its lines hold (`src/style.rs:743`,
       `src/fast/rounded_clip.rs:68-70`). The issue text's numbers are 0.3.9's.
+      *GPUI Kit 0.9.1 (2026-11-17):* still so; gpui-pre 0.3.12's `ContentMask` still
+      says "only rectangular content masks are supported" (`src/window.rs:2453-2461`,
+      the words at `:2454`), and gpui-fast 0.1.15's lines hold (`src/style.rs:743`,
+      `src/fast/rounded_clip.rs:68-70`, that file unchanged).
 - [ ] [upstream] **File the gpui-kit issue: a non-panicking
       `TextSystem::try_resolve_font`.** For the maintainer to file on
       longbridge/gpui-kit (an agent files nothing); gpui-pre is a snapshot of
@@ -2413,6 +2409,14 @@ caeddd6b, each platform file's *Cross-check* section has the detail.
       `TextSystem::font_id` any more, and the fallback stack stays private (gpui-pre
       `:237`) and `pub(crate)` (gpui-fast `:238`). The issue text's numbers are
       0.3.9's and 0.1.10's.
+      *GPUI Kit 0.9.1 (2026-11-17):* still so; gpui-pre 0.3.12's
+      `TextSystem::resolve_font` (`src/text_system.rs:351-358`) reads its cache and
+      otherwise calls the private `resolve_font_uncached` (`:569`), the `panic!` at
+      `:620-627`; gpui-fast 0.1.15's (`src/text_system.rs:353-355`) goes through
+      `src/fast/text.rs:1085-1112` and `:1124-1154` to its `pub(crate)`
+      `resolve_font_uncached` (`src/text_system.rs:566`), the `panic!` at `:617-624`;
+      the fallback stack stays private (gpui-pre `:237`) and `pub(crate)` (gpui-fast
+      `:238`).
 
 #### Upstream PR candidates from v0.5.8 (Tier U)
 
@@ -2429,6 +2433,9 @@ caeddd6b, each platform file's *Cross-check* section has the detail.
       (#3daee94d), so a hovered ghost button is that tint, not a selection-coloured
       pill; Breeze draws a flat button's hover as an outline
       (`breezehelper.cpp:665-712`).
+      *GPUI Kit 0.9.1 (2026-11-17):* still so; a hovered Ghost button is filled with
+      `tokens.accent` (at half alpha in a dark theme) and labelled `accent_foreground`,
+      gpui-component 0.9.1 `src/button/button.rs:1210-1217`, `:1226`.
 - [ ] [upstream] a menu-surface token. `PopupMenu` renders with `.popover_style(cx)`, i.e.
       `bg(theme.popover)` (`menu/popup_menu.rs:1476`, `styled.rs:193-199`), and
       there is no seam to override it. native-theme records
@@ -2440,6 +2447,9 @@ caeddd6b, each platform file's *Cross-check* section has the detail.
       kde-breeze, macos-monterey, macos-tahoe and material-3 in both modes
       and ios-13 light state one colour for both, so the kde-breeze example
       above is out of date.
+      *GPUI Kit 0.9.1 (2026-11-17):* still so; `PopupMenu` renders with
+      `.popover_style(cx)` (gpui-component 0.9.1 `src/menu/popup_menu.rs:1610`), i.e.
+      `bg(theme.popover)` (`src/styled.rs:186-190`).
 - [ ] [upstream] a foreground token for the status bar. `StatusBar` labels everything
       with `muted_foreground` (`status_bar.rs:95`) over `tokens.status_bar`;
       measured against the platform's own `status_bar.font.color` on its
@@ -2450,6 +2460,9 @@ caeddd6b, each platform file's *Cross-check* section has the detail.
       the caller's refinement after its own text colour, so it wins — but an
       application that does not use the builder gets the muted label. The
       gpui contract reports the token pair on every run.
+      *GPUI Kit 0.9.1 (2026-11-17):* still so, at the same lines; `StatusBar` labels
+      everything with `muted_foreground` (gpui-component 0.9.1 `src/status_bar.rs:95`)
+      over `tokens.status_bar` (`:93`).
 - [ ] [upstream] foreground tokens for a selected list row and for selected text:
       `ThemeColor` has `list_active` and `selection` fills and no label colour
       for either, so a selected row keeps `foreground` where the platform pairs
@@ -2459,6 +2472,12 @@ caeddd6b, each platform file's *Cross-check* section has the detail.
       asserted. The title bar is the same shape (no `title_bar_foreground`),
       worse on 13 of 34 (measured 2026-10-11) against the darker end of
       upstream's title-bar gradient (`title_bar.rs:21-35`).
+      *GPUI Kit 0.9.1 (2026-11-17):* still so for a selected list row while
+      `list.active_highlight` is on, gpui-component's default (gpui-component 0.9.1
+      `src/list/list_item.rs:257-259`), and for selected text. With it off, the row is
+      `accent` under `accent_foreground` (`:260-263`); a `Select`'s or `Combobox`'s
+      dropdown row is lettered `accent_foreground` when hovered or selected, after the
+      caller's style (`src/searchable_list/item.rs:112-123`).
 - [ ] [upstream] `Checkbox::label` sets `text_color(foreground)` on the label wrapper
       unconditionally (`checkbox.rs:334-341`), so a platform
       `checkbox.font.color` has no route; and both `Checkbox` and `Combobox`
@@ -2475,14 +2494,24 @@ caeddd6b, each platform file's *Cross-check* section has the detail.
       only (the label wrapper `:336-343`, the disabled colour `:253-259`, the
       refinement `:265`), `combobox.rs:990-997` is unchanged, and `input/input.rs`'s
       `input_style` gives the disabled colours at `:97-101` (0.8.0 `:99-103`).
-- [ ] [upstream] `WindowBorder`'s frame colour is a literal (`window_border.rs:152-166`)
-      and so is the shadow it draws below it in the same `render`; no theme
-      value reaches either.
+      *GPUI Kit 0.9.1 (2026-11-17):* still so by another mechanism: the disabled colour
+      is now a state style that re-applies the caller's refinement (gpui-component
+      0.9.1 `src/checkbox.rs:262-268`), so a carried colour would still displace it;
+      the label wrapper still sets `text_color(foreground)` at `src/checkbox.rs:337-344`,
+      and a `Combobox` applies the caller's refinement after its disabled colour at
+      `src/combobox.rs:1008-1015`, with `input_style` at `src/input/input.rs:120-124`.
+- [ ] [upstream] `WindowBorder`'s shadow is a literal: no theme value reaches the
+      two-layer black shadow it draws below the frame in its `render`.
       *GPUI Kit 0.8.1 (2026-10-27, G4):* still so. gpui-component 0.8.1's `render`
       picks the frame colour from two literals by `is_dark()` at
       `window_border.rs:172-186` and draws the two-layer black shadow at `:244-276`
       (0.8.0 `:158-172`, `:230-262`; the `:152-166` above named other lines at 0.8.0);
       the file's only change is the new `window_safe_insets`.
+      *GPUI Kit 0.9.1 (2026-11-17):* the frame reads `window_border` (gpui-component
+      0.9.1 `src/window_border.rs:201`), which the connector writes from
+      `window.border.color` (`connectors/native-theme-gpui/src/colors.rs`,
+      `to_theme_color` and `assign_tab_sidebar`); the shadow is still the literal two
+      black layers (`src/window_border.rs:253-286`).
 - [ ] [upstream] a placeholder colour for `Input`. `Input::render` rebuilds the editor
       style from the theme on every frame and hands it `muted_foreground`
       (`input/input.rs:496-499`), which gpui-base paints the placeholder with
@@ -2498,6 +2527,10 @@ caeddd6b, each platform file's *Cross-check* section has the detail.
       `:564`), gpui-base 0.8.1 paints an empty field's placeholder in it
       (`input/base/element.rs:2718-2722`, 0.8.0 `:2634-2638`), and neither crate has a
       setter.
+      *GPUI Kit 0.9.1 (2026-11-17):* still so; `Input::render` hands the editor style
+      `muted_foreground` (gpui-component 0.9.1 `src/input/input.rs:565`), gpui-base
+      0.9.1 paints an empty field's placeholder in it
+      (`src/input/base/element.rs:3186-3190`), and neither crate has a setter.
 - [ ] [upstream] the focus ring's width. `focus_ring_style` draws the ring 3px wide at
       half the `ring` colour's alpha from two module consts
       (`styled.rs:11-12`), so the platform's `focus_ring_width` -- modelled,
@@ -2508,6 +2541,9 @@ caeddd6b, each platform file's *Cross-check* section has the detail.
       `Checkbox`, `Radio`, `Slider` and `Switch`".
       *Issue #4 (2026-11-13):* see *GPUI Kit, from issue #4* below, request (4),
       keyboard-only bands; KDE's band is 2 px (`docs/platform-facts.md:1109`).
+      *GPUI Kit 0.9.1 (2026-11-17):* still so, at the same lines; the ring's 3 px width
+      and half alpha are the two module consts of gpui-component 0.9.1
+      `src/styled.rs:11-12`, and `Theme` has no focus-ring width.
 - [ ] [upstream] gpui-component reads `tokens.tab`, `tokens.list`,
       `list_even`, `sidebar_primary` and `sidebar_primary_foreground`
       nowhere outside `theme/` in 0.8.0 (the connector's contract names
@@ -2515,16 +2551,27 @@ caeddd6b, each platform file's *Cross-check* section has the detail.
       Ask upstream to paint them (an idle tab's fill, a `List`'s or
       `Tree`'s fill, the sidebar's primary button), or to drop them.
       From the v0.7.0 entry closed 2026-10-26 (D4).
+      *GPUI Kit 0.9.1 (2026-11-17):* still so; gpui-component 0.9.1 reads `tokens.tab`,
+      `tokens.list`, `list_even`, `sidebar_primary` and `sidebar_primary_foreground`
+      nowhere outside `src/theme/`.
 - [ ] [upstream] the segmented `TabBar` has receivers for the track only
       (`tab/tab_bar.rs:391`): the selected segment is filled with
       `tokens.background` and labelled `tab_active_foreground`
       (`tab/tab.rs:247-249`), so `segmented_control.active_background`,
       `.active_text_color`, `.font.color` and `.border.color` reach nothing.
+      *GPUI Kit 0.9.1 (2026-11-17):* still so; the segmented track reads
+      `tokens.tab_bar_segmented` (gpui-component 0.9.1 `src/tab/tab_bar.rs:410`), and
+      the selected segment is filled with `tokens.background` and labelled
+      `tab_active_foreground` (`src/tab/tab.rs:243-247`).
 - [ ] [upstream] `Button::icon` discards an `Icon`'s own size
       (`button/button_icon.rs:116-131`); a nested `TitleBar`'s window controls
       are hit-tested by the OS on Windows (`title_bar.rs:220-222`) and
       `on_close_window` is Linux-only (`:99-101`), so a title bar shown inside
       a window closes that window there.
+      *GPUI Kit 0.9.1 (2026-11-17):* still so; `ButtonIcon`'s render gives the icon the
+      button's size (gpui-component 0.9.1 `src/button/button_icon.rs:116-131`), a
+      `TitleBar`'s window controls are hit-tested by the OS on Windows
+      (`src/title_bar.rs:222-224`) and `on_close_window` is Linux-only (`:100-102`).
 - [ ] [upstream] `Checkbox` and `Radio` draw their unchecked border with `theme.input`
       (`checkbox.rs:238`, `radio.rs:188`), the *text input's* border colour.
       native-theme records `checkbox.unchecked_border_color` separately and the
@@ -2533,6 +2580,8 @@ caeddd6b, each platform file's *Cross-check* section has the detail.
       is `#0000000f`. The token is
       named `input`, so the connector feeds it the input border; upstream needs
       a checkbox border token.
+      *GPUI Kit 0.9.1 (2026-11-17):* still so; gpui-component 0.9.1 draws the unchecked
+      border with `theme.input` (`src/checkbox.rs:249`, `src/radio.rs:196`).
 - [ ] [1.0] Whether any platform scales a control's corner radius with its control
       size. platform-facts records one `border.corner_radius` per widget on all
       four platforms (§2.3 and the per-widget tables), and records size classes
@@ -2554,6 +2603,11 @@ caeddd6b, each platform file's *Cross-check* section has the detail.
       `button/button.rs:660-665` (0.8.0 `:646-651`); an `XSmall` `InputGroupButton` is
       rounded `radius_tokens().sm` (`input/group.rs:602-603`, unchanged since 0.8.0),
       which is `radius / 2.` (`theme/mod.rs:580`).
+      *GPUI Kit 0.9.1 (2026-11-17):* still so; `Button`'s `ButtonRounded::Small` and
+      `Large` are `radius * 0.5` and `radius * 2.0` at gpui-component 0.9.1
+      `src/button/button.rs:660-665`; an `XSmall` `InputGroupButton` is rounded
+      `radius_tokens().sm` (`src/input/group.rs:602-603`, the file unchanged), which is
+      `radius / 2.` (`src/theme/mod.rs:588`).
 - [ ] [upstream] `Toggle` needs a token of its own for the pressed state: it reads
       `tokens.accent` (`button/toggle.rs:155, 202`), the item highlight of
       menus and lists. Since v0.5.9 the connector feeds that token the
@@ -2564,6 +2618,9 @@ caeddd6b, each platform file's *Cross-check* section has the detail.
       *Issue #4 (0.7.1):* KDE is affected now: kde-breeze's menu hover is the 30 % tint
       #3daee94d under window text, so a KDE toggle's hover and checked fill are that
       tint; macOS is still unaffected.
+      *GPUI Kit 0.9.1 (2026-11-17):* still so; `Toggle` reads `tokens.accent` for its
+      pressed fill and its hover (gpui-component 0.9.1 `src/button/toggle.rs:163`,
+      `:216`).
 - [ ] [upstream] `TabVariant::Outline` hovers with `tokens.secondary_hover`, the *button*
       hover (`tab/tab.rs:233` in gpui-component 0.8.0, `:187` in 0.7.3); every
       preset has a different
@@ -2575,6 +2632,9 @@ caeddd6b, each platform file's *Cross-check* section has the detail.
       `button.background_color` (native-theme-gpui `src/colors.rs:205`), so
       `tab.hover_background` reaches neither; the gpui showcase's Layout page
       shows the Folder bar, its Widget Info noting the hover so.
+      *GPUI Kit 0.9.1 (2026-11-17):* still so; `TabVariant::Outline` hovers with
+      `tokens.secondary_hover` (gpui-component 0.9.1 `src/tab/tab.rs:233`), and
+      `TabVariant::Folder`'s hover is the inset fill in `tokens.secondary` (`:1015`).
 - [ ] [upstream] `InputGroupButton` should hover with the platform's button hover, not
       `muted`: `render_in_group` hardcodes `cx.theme().muted` (halved in dark)
       for an in-group addon button (`input/group.rs:544-583`), which is the
@@ -2584,6 +2644,9 @@ caeddd6b, each platform file's *Cross-check* section has the detail.
       57 — so the addon button is grey while every other button in the window
       is blue. `secondary_hover` / `button_secondary_hover` is the token it
       wants.
+      *GPUI Kit 0.9.1 (2026-11-17):* still so; `render_in_group` hovers an in-group
+      ghost button with `cx.theme().muted`, halved in dark (gpui-component 0.9.1
+      `src/input/group.rs:552-595`, the colours at `:558-559`, the hover at `:590`).
 - [ ] [upstream] a `Dialog::max_h` prop, or letting the caller's `max_h` win: 0.6.4
       clamps the dialog to the viewport after `refine_style`
       (`dialog/dialog.rs:631`), so a themed `dialog.max_height` cannot reach
@@ -2592,8 +2655,16 @@ caeddd6b, each platform file's *Cross-check* section has the detail.
       viewport's height limit (`dialog/dialog.rs:689`) and sets it with `max_h` after
       the caller's `refine_style` (`:787`, `:792`; 0.8.0 `:630`, `:730`, `:735`), and
       the Dialog has `max_w` (`:519`) and no `max_h`.
+      *GPUI Kit 0.9.1 (2026-11-17):* still so, at the same lines; gpui-component 0.9.1
+      computes the viewport's height limit (`src/dialog/dialog.rs:689`) and sets it with
+      `max_h` after the caller's `refine_style` (`:787`, `:792`), and the Dialog has
+      `max_w` (`:519`) and no `max_h`.
 - [ ] [upstream] a styled `Theme` scrollbar-style override honoured by `base_theme()`
       (would make the connector's re-apply observer unnecessary)
+      *GPUI Kit 0.9.1 (2026-11-17):* still so; `base_theme()` builds the Base layer's
+      scrollbar styles anew from the theme's colours and radius (gpui-component 0.9.1
+      `src/theme/mod.rs:412-465`, the styles at `:420-459`), and `sync_base` replaces
+      any style written onto the Base global (`:479-481`).
 - [ ] [upstream] a scrollbar thumb inset per axis. gpui-base takes one inset for both
       directions and draws the thumb `2 × inset` shorter than its clamped
       length (gpui-base 0.7.3 `scrollbar.rs:1211-1216`); the connector centres
@@ -2609,9 +2680,15 @@ caeddd6b, each platform file's *Cross-check* section has the detail.
       (`:1219-1220`).
       *GPUI Kit 0.8.1 (2026-10-27, G4):* still so; gpui-base 0.8.1's `scrollbar.rs`
       keeps the lines above (`:1219-1220`, `:1225`).
+      *GPUI Kit 0.9.1 (2026-11-17):* still so; gpui-base 0.9.1 draws the thumb
+      `2 × inset` shorter (`src/scrollbar.rs:1230`) than its clamped length
+      (`:1224-1225`).
 - [ ] [upstream] `Tab` keeping the caller's height, radius and text size (its render writes its own into the style bag the caller's setters fill, `tab/tab.rs:801-808`)
       *GPUI Kit 0.8.0 (2026-10-22, G3 T10):* still so; the lines are `tab/tab.rs:958-966`
       in gpui-component 0.8.0 (`.h(height)` … `.rounded(radius)`).
+      *GPUI Kit 0.9.1 (2026-11-17):* still so; gpui-component 0.9.1 writes its own
+      height, text size and radius at `src/tab/tab.rs:961-969` (`.h(height)` …
+      `.rounded(radius)`).
 - [ ] [upstream] `Theme.shadow` honoured beyond `Button`; `tokens.shadow` consumed
       M8 T21 fix round 1 (2026-10-17), the duplicate rule: the lines of the entry
       "**`Theme::shadow` has one reader.**" (*native-theme-gpui connector*,
@@ -2626,7 +2703,13 @@ caeddd6b, each platform file's *Cross-check* section has the detail.
       *GPUI Kit 0.8.1 (2026-10-27, G4):* still so: `Theme::shadow`'s one reader
       outside `theme/` is gpui-component 0.8.1 `button/button.rs:680` (0.8.0 `:666`),
       and neither gpui-component nor gpui-base reads `tokens.shadow` outside `theme/`.
+      *GPUI Kit 0.9.1 (2026-11-17):* still so, at the same lines; `Theme::shadow`'s one
+      reader outside `theme/` is gpui-component 0.9.1 `src/button/button.rs:680`, and
+      neither gpui-component nor gpui-base reads `tokens.shadow` outside `theme/`.
 - [ ] [upstream] `Size::Size` honoured by `Checkbox` and `Switch`
+      *GPUI Kit 0.9.1 (2026-11-17):* still so; a `Size::Size` gets the Medium indicator
+      in gpui-component 0.9.1's `Checkbox` (`src/checkbox.rs:230-235`) and the Medium
+      track and thumb in its `Switch` (`src/switch.rs:194-203`).
 - [ ] [upstream] a disabled `Button` should read the platform's disabled colours.
       `ButtonVariant::disabled` (`button/button.rs:1273-1284`) derives the
       whole state by multiplying: the variant's own token at 0.15 for the
@@ -2647,6 +2730,9 @@ caeddd6b, each platform file's *Cross-check* section has the detail.
       *GPUI Kit 0.8.1 (2026-10-27, G4):* still so: `ButtonVariant::disabled` is
       gpui-component 0.8.1 `button/button.rs:1353-1364` (0.8.0 `:1339-1350`), the fill
       the variant's own token at 0.15 and the text `muted_foreground` at 0.5.
+      *GPUI Kit 0.9.1 (2026-11-17):* still so; `ButtonVariant::disabled` is
+      gpui-component 0.9.1 `src/button/button.rs:1358-1369`, the fill the variant's own
+      token at 0.15 and the text `muted_foreground` at 0.5.
 - [ ] [upstream] the `Link` widget should read `link_hover` and `link_active`. It computes
       both from the one token instead — `link.opacity(0.8)` hovered,
       `link.opacity(0.6)` pressed (`link.rs:80, 85`) — while the two tokens
@@ -2672,12 +2758,27 @@ caeddd6b, each platform file's *Cross-check* section has the detail.
       so: gpui-component's `link.rs` is unchanged, and a `Button::link()` reads the
       two tokens at 0.8.1 `button/button.rs:1219`, `:1295` and `:1337` (0.8.0 `:1205`,
       `:1281`, `:1323`).
+      *GPUI Kit 0.9.1 (2026-11-17):* still so, for the `link_hover` and `link_active`
+      half; gpui-component 0.9.1's `Link` computes both from `link` (`src/link.rs:80`,
+      `:85`, the file unchanged), and a `Button::link()` reads the two tokens at
+      `src/button/button.rs:1224`, `:1300` and `:1342`.
 - [ ] [upstream] a `PopupMenu` item style hook; a `Button::tooltip` style hook
+      *GPUI Kit 0.9.1 (2026-11-17):* still so; gpui-component 0.9.1's `PopupMenu` builds
+      each item in its private `render_item` (`src/menu/popup_menu.rs:1310-1317`), and
+      `Button::tooltip` takes text only (`src/button/button.rs:407-410`), from which the
+      button builds its `Tooltip` (`:906`).
 - [ ] [upstream] button label text size independent of rem
       M8 T21 fix round 1 (2026-10-17): the same label is "PR: Button: let the
       caller's text size reach the label" (*native-theme-gpui connector*,
       *Upstream PRs to gpui-component*).
+      *GPUI Kit 0.9.1 (2026-11-17):* still so; the label's size is `button_text_size`,
+      the rem sizes `text_xs`, `text_sm` or `text_base` by the button's `Size`
+      (gpui-component 0.9.1 `src/sizing.rs:337-343`), set on the content element at
+      `src/button/button.rs:782`.
 - [ ] [upstream] public base-palette fields on `ThemeConfigColors` (`red` … `cyan_light`, `schema.rs:657-668`)
+      *GPUI Kit 0.9.1 (2026-11-17):* still so; the base-palette fields of gpui-component
+      0.9.1's `ThemeConfigColors` are private, `src/theme/schema.rs:657-691` (`blue` …
+      `yellow_light`; `cyan_light` at `:668`, `red` at `:682`).
 - [ ] [upstream] internal scrollbars reserve no gutter where the platform's scrollbars
       are not overlays. Each of these attaches `.vertical_scrollbar` or
       `.overflow_y_scrollbar`, which lays a `ScrollbarLayer` over the scroll
@@ -2714,6 +2815,15 @@ caeddd6b, each platform file's *Cross-check* section has the detail.
       *Issue #4 (0.7.1):* kde-breeze's track is transparent (#00000000, Breeze paints
       none), so the content under the 21 px bar shows through; the thumb and the bar's
       hit area still lie over it, so the gutter is still needed.
+      *GPUI Kit 0.9.1 (2026-11-17):* still so; gpui-component 0.9.1's
+      `src/scroll/scrollable.rs` is unchanged (`:19-29`; the flex column `:203-207`, the
+      bar laid over the area `:221`), and the bar is attached by the Settings page body
+      (`src/setting/page.rs:315`, its padded row `:301-303`), `Dialog`
+      (`src/dialog/dialog.rs:830`), `Sheet` (`src/sheet.rs:224`), `PopupMenu`
+      (`src/menu/popup_menu.rs:1655`), `MessageScroller`
+      (`src/message_scroller.rs:442`), `Sidebar` (`src/sidebar/mod.rs:481`) and `Tree`
+      (`src/tree.rs:132`); a group applies the caller's refinement last
+      (`src/setting/group.rs:148`).
 - [ ] [upstream] a right-clicked `Tree` row shows the hover text colour without the
       hover fill: gpui-component 0.7.3 marks the row right-clicked after the
       application's `render_item` closure built it
@@ -2741,6 +2851,11 @@ caeddd6b, each platform file's *Cross-check* section has the detail.
       it (`:99-101`); its context menu is `:105` and its scrollbar `:132`.
       gpui-base's `Tree` is unchanged at `tree.rs:183`, `:188`, `:196` and
       `:458`, and `list/list_item.rs:190`, `:227-233` are unchanged.
+      *GPUI Kit 0.9.1 (2026-11-17):* still so, at the same lines; gpui-component 0.9.1's
+      wrapper hands `render_item` the selection alone (`src/tree.rs:98`) and marks the
+      row after it (`:99-101`), its context menu is `:105`, its scrollbar `:132`, and
+      its `src/list/list_item.rs:190`, `:227-233` hold; gpui-base 0.9.1's `Tree` keeps
+      `src/tree.rs:183`, `:188`, `:196` and `:458`.
 - [ ] [upstream] element hooks on the surfaces upstream builds itself, so an
       application can attach an id, a hover handler or a debug selector to
       them (found 2026-09-23 by v0.5.9 Task 12). A `SettingGroup` is not an
@@ -2768,6 +2883,14 @@ caeddd6b, each platform file's *Cross-check* section has the detail.
       wrapper (`:895-907`), no longer a gpui animation; a `Sheet`'s title row, padding
       and close button are `sheet.rs:174-252` (0.8.0 `:167-245`); `setting/page.rs`
       and `setting/group.rs` are unchanged.
+      *GPUI Kit 0.9.1 (2026-11-17):* still so; no hook. A `Dialog`'s surface is built at
+      gpui-component 0.9.1 `src/dialog/dialog.rs:775-862` and then given the closing
+      shield (`:863-892`), its opacity and shadow (`:893-894`) and the FadeSlide wrapper
+      (`:896-908`); a `Sheet`'s title row, padding and close button are
+      `src/sheet.rs:175-254`; the padded div round a `SettingGroup` is
+      `src/setting/page.rs:297-311`, its `render` is `pub(crate)`
+      (`src/setting/group.rs:114`), and its `Styled` reaches only the `GroupBox` style
+      (`src/group_box.rs:154`).
 - [ ] [upstream] **GPUI Kit, from issue #4**
       (`docs/issues/0004_kde-hand-overrides-rationale.md` §4.6, §4.7, §5.1; 2026-11-13).
       Four requests, drafted for GPUI Kit's tracker in
@@ -2791,6 +2914,8 @@ caeddd6b, each platform file's *Cross-check* section has the detail.
       (`docs/platform-facts.md:1108-1110`). See also *the focus ring's width* above, and
       *KDE: what a Qt application under Breeze shows that native-theme does not
       (issue #4)*, "KDE values that wait for a connector design", (1).
+      *GPUI Kit 0.9.1 (2026-11-17):* still so; written at 0.9.1 (2026-11-13), its lines
+      unchanged.
 
 #### native-theme-iced: the same audit (found 2026-09-20, fixed in v0.5.9)
 
@@ -3595,6 +3720,10 @@ the gap — closing it is a change, and each wants its own decision.
       function (`text`, `button`) rather than a type. The script also cannot
       see `cfg`, so the `iced_aw` widgets count as shown in a build that
       omits them.
+      *GPUI Kit 0.9.1 (2026-11-17):* the gpui side also counts a free
+      function that returns a widget, each one a pattern in `GPUI_VIA` as an
+      extension method is (`grid_layout`, `h_resizable`, `resizable_panel`);
+      the iced side is unchanged.
 - [ ] [1.0] The repository's PreToolUse hook refuses `panic!` in files under
       `examples/`, although the project's rule exempts examples and tests by
       path; align the hook with the rule.
@@ -3838,11 +3967,16 @@ the gap — closing it is a change, and each wants its own decision.
       *GPUI Kit 0.8.1 (2026-10-27, G4):* still so: the test-support `render_to_image`
       is gpui-pre 0.3.10 `src/window.rs:2888` and gpui-fast 0.1.12
       `src/window.rs:2915`, and neither has a public screenshot call.
-- [ ] [upstream] PR: let an application drop the SVGs a window has drawn, so the icons
-      gpui-component's widgets build for themselves can follow a theme
-      switch. Measured in the v0.5.9 pre-merge fixes (Task 6's spike,
-      2026-09-24, gpui-pre 0.3.6, gpui-component 0.6.6): gpui-component
-      names those icons as asset paths (`icon.rs:30-33`, `:189`;
+      *GPUI Kit 0.9.1 (2026-11-17):* still so; the test-support `render_to_image` is
+      gpui-pre 0.3.12 `src/window.rs:3095` and gpui-fast 0.1.15 `src/window.rs:3122`,
+      and neither has a public screenshot call.
+- [ ] [upstream] PR: let an application drop the SVGs a window has drawn, so a path a
+      window has drawn can show what the application's asset source answers for it
+      now; gpui-component 0.9's icon resolver lets the widgets' own icons follow a
+      theme switch without it, through paths of their own per icon set. Measured in
+      the v0.5.9 pre-merge fixes (Task 6's spike, 2026-09-24, gpui-pre 0.3.6,
+      gpui-component 0.6.6): gpui-component names those icons as asset paths
+      (`icon.rs:30-33`, `:189`;
       `checkbox.rs:211` sets the path on an `svg()` directly), so an
       application's `AssetSource` could answer `icons/<name>.svg` from the
       chosen icon theme. It cannot make a switch show: `Window::paint_svg`
@@ -3857,9 +3991,8 @@ the gap — closing it is a change, and each wants its own decision.
       renderers recover from GPU errors and a lost device (gpui-pre-wgpu
       `wgpu_renderer.rs:1300`, `:2120`; gpui-pre-windows
       `directx_atlas.rs:61`). A test against the `HeadlessAtlas` the test
-      platform uses built a path at a size once for two paints. The path
-      cannot vary per theme either: each call site builds a fixed
-      `IconName`. So after a switch every path and size already drawn keeps
+      platform uses built a path at a size once for two paints. So after a
+      switch every path and size already drawn keeps
       the old theme's icon while any new size gets the new one -- two icon
       themes in one window. What would do it: a public
       `Window::drop_svg(path)` (or a generation in `RenderSvgParams`) that
@@ -3872,8 +4005,7 @@ the gap — closing it is a change, and each wants its own decision.
       Until then the gpui showcase's page samples and chrome draw the chosen
       theme's icons where the showcase builds the icon, and each widget's
       Widget Info says which of its icons are gpui-component's own
-      (`info::own_icons`); the icon-provider hook in "Upstream PRs to
-      gpui-component" below is the other way in.
+      (`info::own_icons`).
       *GPUI Kit 0.8.1 (2026-10-27, G4):* still so at gpui-pre 0.3.10 (the numbers
       above are 0.3.6's): `Window::paint_svg` (`src/window.rs:5001`) keys the atlas by
       `RenderSvgParams { path, size }` (`:5015-5020`),
@@ -3881,6 +4013,16 @@ the gap — closing it is a change, and each wants its own decision.
       build closure (`src/platform.rs:1832-1838`), the atlas is a private field of
       `Window` (`src/window.rs:1233`), and `Window::drop_image` removes image keys
       only (`:5193-5204`); no call drops an SVG.
+      *GPUI Kit 0.9.1 (2026-11-17):* gpui-component 0.9.0's `set_icon_resolver` lets
+      an application answer each icon path with another, so a path can vary per icon
+      set (0.9.1 `src/icon.rs:77-106`); what stays is gpui-pre's half: a drawn SVG
+      cannot be dropped, so a set reused under the same paths would keep the old
+      drawing; at gpui-pre 0.3.12 `Window::paint_svg` (`src/window.rs:5233`) keys the
+      atlas by `RenderSvgParams { path, size }` (`:5247-5252`),
+      `AtlasState::get_or_insert_with` returns an occupied key without calling the
+      build closure (`src/platform.rs:1855-1861`), the atlas is a private field of
+      `Window` (`src/window.rs:1229`), and `Window::drop_image` removes image keys
+      only (`:5425-5436`).
 
 #### Upstream PRs to gpui-component
 
@@ -3907,6 +4049,10 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
 - [ ] [upstream] Audit gpui-component widgets for hardcoded values that should be
       theme tokens (padding, icon sizes, corner radii, spacing)
 - [ ] [upstream] PR: expose per-widget padding/margin as theme-configurable
+      *GPUI Kit 0.9.1 (2026-11-17):* still so; gpui-component 0.9.1's `ThemeConfig`
+      (`src/theme/schema.rs:40-87`) states no padding or margin; its semantic spacing is
+      a scale only (`SemanticSpacingConfig`, `:149-157`), which the theme has no storage
+      for, so the components keep their own (`src/theme/mod.rs:617-619`).
 - [ ] [upstream] PR: expose checkbox/radio indicator size as theme token
       M8 T21 fix round 1 (2026-10-17), the duplicate rule: the lines of the entry
       "inner geometry exposed" (*Upstream PR candidates from v0.5.8 (Tier U)*;
@@ -3914,11 +4060,22 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       inner geometry exposed: checkbox/radio indicator, switch track and thumb,
       slider track and thumb, separator thickness, resize-handle width, button
       icon gap, popup-menu items, select arrow, accordion arrow
-- [ ] [upstream] PR: expose scrollbar dimensions as theme-configurable
+      *GPUI Kit 0.9.1 (2026-11-17):* still so; gpui-component 0.9.1's widgets keep their
+      own inner geometry: the check box's and the radio's indicator by `Size`
+      (`src/checkbox.rs:230-235`, `src/radio.rs:176-181`), the switch's track and thumb
+      (`src/switch.rs:194-203`), the slider's track and thumb (`src/slider.rs:299-300`,
+      `:226`), the separator's 1 px (`src/separator.rs:81-82`), the button's icon gap
+      (`src/button/button.rs:783-787`), a popup-menu item's height
+      (`src/menu/popup_menu.rs:1332-1335`), the select's arrow (`src/select.rs:59-65`)
+      and the accordion's (`src/accordion.rs:327-328`); gpui-base 0.9.1's resize handle
+      is 1 px with 4 px padding (`src/resizable/resize_handle.rs:12-13`).
 - [ ] [upstream] PR: expose button min-height and icon spacing as theme tokens
       M8 T21 fix round 1 (2026-10-17): the button icon gap is also in "PR:
       expose checkbox/radio indicator size as theme token" above, the
       inner-geometry list merged into it.
+      *GPUI Kit 0.9.1 (2026-11-17):* still so; gpui-component 0.9.1's `Button` takes its
+      height from its `Size` (`src/button/button.rs:694-709`) and its icon gap too
+      (`:783-787`), with no theme token.
 - [ ] [upstream] PR: let a scroll container keep the wheel to itself. gpui dispatches
       `ScrollWheelEvent` in the bubble phase to every scroller whose hitbox is
       under the pointer and stops at none of them (gpui-pre-0.3.5
@@ -3984,65 +4141,24 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       overlays' `occlude`s are gpui-component 0.8.1 `src/popover.rs:306`, `:353` and
       `src/dialog/dialog.rs:725`, `:789`, `:881`; the `:282` and `:572` above named
       other lines at 0.8.0.
+      *GPUI Kit 0.9.1 (2026-11-17):* still so; gpui-component 0.9.1 wraps its scrolling
+      widgets in gpui-base's `ScrollBounce` at `src/scroll/scrollable.rs:209`,
+      `src/list/list.rs:611`, `src/tree.rs:127`, `src/table/state.rs:2929`,
+      `src/diff/mod.rs:621`, `src/message_scroller.rs:413`, `src/setting/page.rs:291`,
+      `src/sidebar/mod.rs:455` and `src/command/state.rs:1039`, and the overlays'
+      `occlude`s are `src/popover.rs:306`, `:353` and `src/dialog/dialog.rs:725`,
+      `:789`, `:882`. gpui-base 0.9.1's claim is `src/scroll_bounce.rs:248-270` and
+      `:556-620`, its bounce default `:170-178` and upstream's test
+      `the_innermost_area_takes_the_whole_gesture` `:1009`; the editor claims the wheel
+      at `src/input/base/element.rs:770-786` and scrolls and stops it at
+      `src/input/base/state.rs:2919-2991`. Two cases the entry does not mention: a
+      horizontal area whose content fits passes a swipe that moves vertically to its
+      parent (`src/scrollable_mask.rs:553-561`), and sideways packets keep the
+      overscroll stream alive (`src/scroll_bounce.rs:575-577`). gpui-pre 0.3.12's
+      `overflow_*_scroll` listener (`src/elements/div.rs:3385`, the bubble-phase
+      listener `:3400-3401`) still moves every scroller under the pointer and stops none
+      (`HitboxId::should_handle_scroll`, `src/window.rs:822`).
 - [ ] [upstream] Additional PRs as gaps are discovered during connector implementation
-- [ ] [upstream] Report: a single-select `Combobox` misses a change after a search.
-      It decides that the selection changed by comparing the selection's
-      `IndexPath`s before and after `on_will_change`
-      (gpui-component 0.6.6 `src/combobox.rs:183-196`, and `:459-468` in
-      `handle_item_select`), and the default `on_will_change` stores the
-      row in the *filtered* list. Choosing, after a search, an item that
-      lands in the row the current selection has — typing "nord" and
-      pressing Enter while `default`, also row 0, is selected — emits no
-      `Change` and no `Confirm` and leaves the popup open. The gpui
-      showcase works around it in `PresetDelegate::on_will_change`
-      (`examples/showcase-gpui/support.rs`), which records each chosen preset at
-      its row in the unfiltered list. Upstream could compare by value, or
-      store unfiltered indices. Found 2026-09-22 (showcase-app plan, Task 9).
-- [ ] [upstream] PR: let a consumer supply the icons gpui-component's widgets build for
-      themselves. Several widgets name a Lucide `IconName` as they render,
-      with no setter, so an application that draws its own icons from
-      another set -- the gpui showcase's chrome follows the icon-set Select
-      and draws no icon where the chosen set has none -- still shows
-      gpui-component's Lucide in them, mixing two sets. Read in
-      gpui-component 0.6.6: `SidebarToggleButton`'s PanelLeftClose /
-      PanelLeftOpen (`src/sidebar/mod.rs:351-359`), the `Caret` chevron of a
-      `Select`, `Combobox` or dropdown `Button` (`src/select.rs:59`), the
-      check mark of a chosen list row (`src/searchable_list/item.rs:42`,
-      `src/searchable_list/adapter.rs:130`), an empty list's Inbox
-      (`src/select.rs:279`, `src/combobox.rs:261`), the window controls
-      (`src/title_bar.rs:148-151`), the close button of a `Dialog`
-      (`src/dialog/dialog.rs:698`) and of a `Sheet` (`src/sheet.rs:204`),
-      the `Command` palette's search icon and check mark
-      (`src/command/state.rs:851`, `:767`), a `PopupMenu`'s check mark,
-      external-link and submenu chevron (`src/menu/popup_menu.rs:1167`,
-      `:1209`, `:1334`, `:1373`), the `Settings` search field's icon
-      (`src/setting/settings.rs:152`) and a `NumberInput`'s minus and plus
-      (`src/input/number_input.rs:155`, `:185`). One way in is an optional
-      icon-provider hook on the theme that these call sites ask first,
-      falling back to today's `IconName`. The showcase's icon-set Select
-      names the ones its chrome shows (`info::chrome::icon_set_select`).
-      Found in the final review of the v0.5.9 showcase-app work
-      (2026-09-23).
-      Added since: `SpeechButton`'s Mic / Square (`src/speech/button.rs:96-100`,
-      0.7.1).
-      *GPUI Kit 0.7.3 (2026-10-14):* `Diff` adds its own: ArrowDown, ArrowUp
-      and ChevronsUpDown or ChevronDown on a folded hunk's expand buttons
-      (`src/diff/mod.rs:993`, `:1000`, `:1006-1010`), ChevronRight or
-      ChevronDown on a file's collapse button (`:1194-1198`), and Plus on the
-      add-annotation button (`:1546`).
-      *GPUI Kit 0.8.0 (2026-10-22, G3 T10):* `Diff`'s icons are at `src/diff/mod.rs:998`,
-      `:1005`, `:1011-1015` (the folded hunk's buttons), `:1199-1203` (the
-      file's collapse button) and `:1551` (Plus), the same icons.
-      *GPUI Kit 0.8.1 (2026-10-27, G4):* still so; gpui-component 0.8.1 has no hook
-      (its `theme/` is unchanged). Of the files that changed, the `Dialog`'s close
-      button is `src/dialog/dialog.rs:859` and the `Sheet`'s `src/sheet.rs:211` (0.8.0
-      `:802`, `:204`), the `Command` palette's search icon and check mark stay at
-      `src/command/state.rs:953`, `:869`, and `Diff`'s icons are at
-      `src/diff/mod.rs:1014`, `:1021`, `:1027-1031`, `:1215-1219` and `:1567` (0.8.0
-      `:998`, `:1005`, `:1011-1015`, `:1199-1203`, `:1551`).
-      *GPUI Kit 0.9.1 (2026-11-13):* `SpeechIndicator`, new and shown on the Inputs page,
-      adds its own: the stop glyph's Square, shown under the pointer
-      (`src/speech/indicator.rs:130`).
 - [ ] [1.0] Left open by the v0.5.9 showcase-layout work
       ([archive](archive/todo_v0.5.9_showcase-layout.md)):
       - `info::title_bar` (`examples/showcase-gpui/info/chrome.rs`) keeps
@@ -4077,11 +4193,21 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       *GPUI Kit 0.8.1 (2026-10-27, G4):* still so: the content element's
       `button_text_size` is gpui-component 0.8.1 `button/button.rs:780` (0.8.0
       `:766`).
+      *GPUI Kit 0.9.1 (2026-11-17):* still so; the content element's `button_text_size`
+      is gpui-component 0.9.1 `src/button/button.rs:782`, and its `content_style` is
+      `pub(crate)` (`:307`).
 - [ ] [upstream] PR: ColorSelect: apply the caller's refinement to the framed field
       (`color_picker.rs:488` lands on the wrapper; the field is
       `render_field`, `:762-813`).
+      *GPUI Kit 0.9.1 (2026-11-17):* still so, at the same lines; gpui-component 0.9.1
+      applies the caller's refinement to the wrapper (`src/color_picker.rs:488`), the
+      field being `render_field` (`:762-813`).
 - [ ] [upstream] PR: DataTable: `Styled`, or a text-size setter, so the cell size need
       not go through `Size::Size`.
+      *GPUI Kit 0.9.1 (2026-11-17):* still so; gpui-component 0.9.1's `DataTable` is not
+      `Styled` and has no text-size setter: its setters are
+      `src/table/data_table.rs:105-176`, and its size comes through `Sizable`
+      (`:178-186`).
 - [ ] [upstream] a public way to mark an element's accessibility node disabled:
       gpui-base's `A11yDisabledExt` public (it is `pub(crate)`, gpui-base 0.8.0
       `a11y_disabled.rs:28`), or a GPUI `aria_disabled`, which neither gpui-pre 0.3.9
@@ -4089,6 +4215,9 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       node disabled through a crate-private copy of gpui-base's wrapper
       (`A11yDisabled`, native-theme-gpui `src/widgets/mod.rs`), which can go then
       (G3 T7, 2026-10-22).
+      *GPUI Kit 0.9.1 (2026-11-17):* still so; gpui-base 0.9.1's `A11yDisabledExt` is
+      still `pub(crate)` (`src/a11y_disabled.rs:28`), and neither gpui-pre 0.3.12 nor
+      gpui-fast 0.1.15 has an `aria_disabled`.
 - [ ] [upstream] PR: an `Icon` that draws an image, or an icon slot that takes any
       element, in gpui-component's widgets that take an `Icon` alone.
       gpui-component 0.8.0's `Icon` draws a path or SVG bytes and nothing else
@@ -4112,6 +4241,13 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       *GPUI Kit 0.8.1 (2026-10-27, G4):* still so; of the files cited, only
       `src/button/button.rs` changed outside its tests: `Button::icon` is `:401` and
       the children after the label `:787-803` (0.8.0 `:399`, `:773-789`).
+      *GPUI Kit 0.9.1 (2026-11-17):* still so; gpui-component 0.9.1's `Icon` draws a
+      path or SVG bytes and nothing else (`src/icon.rs:109-112`, `IconSource`),
+      `Toggle::icon` is `src/button/toggle.rs:93`, `Button::icon`
+      `src/button/button.rs:401` and the children after the label `:789-805`, and
+      `src/command/item.rs`, `src/alert.rs`, `src/stepper/item.rs`,
+      `src/sidebar/menu.rs` and `src/button/button_icon.rs` are unchanged (`:56`,
+      `:124`, `:47`, `:135`, `:55-59`).
 - [ ] [upstream] PR: let an application set the window's appearance on Windows,
       as `App::set_window_appearance` sets `NSApplication.appearance` on macOS
       (gpui-pre-macos 0.3.9 `src/platform.rs:808-829`). On Windows the call is the
@@ -4138,6 +4274,14 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       opens (gpui-pre-windows 0.3.10 `src/window.rs:574`, gpui-fast-windows 0.1.12
       `:579`) and when the system's changes (`src/events.rs:1229-1240`;
       gpui-fast-windows `:1245`).
+      *GPUI Kit 0.9.1 (2026-11-17):* still so; gpui-pre-macos 0.3.12 sets
+      `NSApplication.appearance` at `src/platform.rs:787-803`; the trait's no-op is
+      gpui-pre 0.3.12 `src/platform.rs:439` and gpui-fast 0.1.15 `:440`, which neither
+      Windows platform overrides; `configure_dwm_dark_mode` (`src/util.rs:134-148`,
+      unchanged) is still called from the system's appearance alone, when the window
+      opens (gpui-pre-windows 0.3.12 `src/window.rs:576`, gpui-fast-windows 0.1.15
+      `:581`) and when the system's changes (`src/events.rs:1240-1251`;
+      gpui-fast-windows `:1250`).
 
 ### gpui: a tab scrolled into view loses its outer flare
 
@@ -4163,37 +4307,6 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       `clippy.toml` per connector, each entry shown to flag a planted call.
       Its place is those crates' next upgrade, as G4's sweep is the gpui
       connector's.
-
-### gpui-fast pins `taffy = "=0.15.0"`
-
-- [ ] [upstream] gpui-fast 0.1.12 requires taffy at exactly 0.15.0
-      (`Cargo.toml:344-345`), where gpui-pre 0.3.10 takes it with a caret
-      (`Cargo.toml:524-525`). So a workspace that builds both cores, ours
-      among them, locks gpui-pre to taffy 0.15.0 too, while an application on
-      gpui-pre alone resolves 0.15.1. Our CI and the dependency canary
-      therefore cannot test the taffy that applications on the default core
-      get. G4 measures it once, in its plan's Task 6. For the maintainer to
-      raise upstream (an agent files nothing); re-check it at the next GPUI Kit
-      upgrade.
-      *GPUI Kit 0.8.1 (2026-10-27, G4):* measured once: gpui-pre on taffy 0.15.1 lays
-      the showcase out as on 0.15.0. Emptying the connector's `gpui-fast` feature does
-      not drop gpui-fast from Cargo.lock, which keeps an optional dependency that an
-      enabled feature names weakly: `gpui-fast?/test-support` in the `test-support`
-      features of gpui-kit 0.8.1 (`Cargo.toml:81-82`, with `gpui-fast-platform?`),
-      gpui-base 0.8.1 (`:48`) and gpui-component 0.8.1 (`:75`), which the connector's
-      dev-dependency turns on (`connectors/native-theme-gpui/Cargo.toml:104`). So the
-      measurement patched gpui-fast instead, in the working tree only: a copy of
-      gpui-fast 0.1.12 outside the repository with its taffy requirement relaxed to
-      `"0.15.0"`, a `[patch.crates-io]` entry for it in the root Cargo.toml, and
-      `cargo update -p taffy --precise 0.15.1`, after which `cargo tree -i taffy`
-      shows gpui-pre 0.3.10 on taffy 0.15.1. The gpui-pre suite passed (`cargo test -p
-      native-theme-gpui --features native,watch --all-targets`: 387, 331 with one
-      ignored, 18, and three ignored), `the_fallback_stack_copy_is_gpuis` and
-      `the_labelled_separator_centres_its_label` among them, and the `--dump-layout`
-      runs for kde-breeze and adwaita, light and dark, on the Basic and Layout pages,
-      are byte-identical to the 0.15.0 build's. The root Cargo.toml and Cargo.lock
-      were restored and the copy deleted. The pin stays a gap at the next upgrade: our
-      lock cannot carry 0.15.1 while gpui-fast pins 0.15.0.
 
 ### Showcases: a gate for one showcase's citations of another's lines
 
@@ -4412,6 +4525,12 @@ The `[v0.7.0]` items that sat under *Deferred (pre-1.0)*, in the order they had 
       *GPUI Kit 0.8.1 (2026-10-27, G4):* still so; `setting/settings.rs` and
       `resizable.rs` are unchanged, the dock's edge handle is `dock/dock.rs:142`
       (0.8.0 `:144`) and its splits' `render_resize_handle` still `:58`.
+      *GPUI Kit 0.9.1 (2026-11-17):* still so; `Settings` builds its divider with
+      `h_resizable` (gpui-component 0.9.1 `src/setting/settings.rs:465`), which installs
+      `resize_handle_appearance` (`src/resizable.rs:30`, the file unchanged); the dock's
+      edge handle is `resize_handle` (`src/dock/dock.rs:142`, `src/resizable.rs:46`) and
+      its splits draw `render_resize_handle` (`src/dock/dock.rs:58`), that file
+      unchanged.
 
 ### Popover arrow
 - [ ] [1.0] Record per platform whether a popover draws an arrow (`docs/platform-facts.md`, sources first), then model it.
@@ -4455,6 +4574,8 @@ The `[v0.7.0]` items that sat under *Deferred (pre-1.0)*, in the order they had 
 - [ ] [upstream] `QuestionnaireState::new` returns a `Result` (gpui-base 0.7.3 `questionnaire/state.rs:48-51`) while gpui builds entities infallibly, so the showcase cannot hold one without a panic path. Ask upstream for an infallible constructor (or schema validation at a later step), then show `Questionnaire` and drop its nine exceptions (`docs/showcase-exceptions.toml`).
       *GPUI Kit 0.8.0 (2026-10-22, G3 T10):* unchanged at gpui-base 0.8.0
       (`questionnaire/state.rs:48-51`).
+      *GPUI Kit 0.9.1 (2026-11-17):* still so, at the same lines; gpui-base 0.9.1's
+      `QuestionnaireState::new` returns a `Result` (`src/questionnaire/state.rs:48-51`).
 
 ### gpui showcase: the Basic tooltip's bubble is never recorded
 - [ ] [1.0] The gpui showcase records no `basic.buttons.tooltip.bubble` (`connectors/native-theme-gpui/examples/showcase-gpui/elements.rs` maps `basic-button-tooltip` to the Button and its label only, `:166`, `:362`), so the parity comparator sees the bubble in the iced and egui dumps alone, and no gpui panel shows the bubble's leaves. Hovering the Tooltip button shows the Button's listed panel, which keeps only the info's `not_themeable` notes and drops its `config` lines (`examples/showcase-gpui/inspector.rs:562-565`): where a preset states the bubble's fill, border, padding, `max_width` or (since G2) `show_delay_ms`, the panel says nothing of them. Recording the bubble from the content element `Tooltip::element` builds (`demo::built_tooltip_button`) would give it a dump entry and a listed panel of its own.

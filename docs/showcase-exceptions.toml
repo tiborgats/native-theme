@@ -66,6 +66,17 @@ QuestionnaireInput = "a part of `Questionnaire`, built from its state (questionn
 QuestionnaireItem = "a part of `Questionnaire`, built from its state (questionnaire/components.rs:536), excepted with it"
 QuestionnaireProgress = "a part of `Questionnaire`, built from its state (questionnaire/components.rs:377), excepted with it"
 
+# gpui-base widgets that gpui-component makes public (check_widget_coverage.py's
+# re-export rule): parts of a widget the showcase shows, and wrappers with no
+# visual surface of their own. "Paints nothing" was read as the absence of any
+# paint_quad or bg call, except a debug outline. Read in gpui-component and
+# gpui-base 0.9.1.
+PlotAppearScope = "a wrapper of the charts' appear animation, never needed to show a chart: it remembers which plots inside it have finished appearing, so a plot painted again after a gap is shown whole; it takes no part in layout and paints only its child (gpui-base plot/appear.rs:92-113, :196-207). No chart builds one; an application wraps a region of plots in it"
+PlotElement = "a part of every chart: `#[derive(IntoPlot)]` writes `type Element = PlotElement<Self>` (gpui-component-macros derive_into_plot.rs:21, :24; gpui-base plot/element.rs:13-30), so each chart of the Charts page is drawn through one, and none is built by hand"
+ResizeHandle = "a part of `ResizablePanelGroup`: each `ResizablePanel` after a group's first adds one as a child after its own children, on its leading edge (gpui-base resizable/panel.rs:395-401, through resize_handle.rs:43-48). The window body's group draws one between the side panel and the content, with the showcase's appearance and its own Widget Info (`demo::resize_handles`). gpui-component also offers a standalone `resize_handle`, for an edge no group owns (resizable.rs:42-47, re-exported at lib.rs:116), which the showcase does not use"
+ScrollableMask = "a wheel-event mask over a scroll area with no visual surface: it paints nothing but a yellow outline its `debug` switches on (gpui-base scrollable_mask.rs:398-404, :491-500). gpui-component's `Diff` and `DataTable` and gpui-base's Markdown code blocks build one (diff/mod.rs:643; table/state.rs:2949, :2958; gpui-base text/node.rs:2719), and the showcase shows all three"
+VirtualList = "a layout wrapper with no visual surface: it lays out the items its caller renders and paints only them (gpui-base virtual_list.rs:214-215, :745-768). gpui-component's `List` and command palette build one (list/list.rs:564; command/state.rs:1021), and the showcase shows both"
+
 # Layout and utility wrappers with no visual surface of their own, and the
 # one widget that needs a GPU pipeline the application supplies (spec §6a.3).
 # "Paints nothing" was read as the absence of any `fill_quad` call.

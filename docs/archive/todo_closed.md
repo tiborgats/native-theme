@@ -1380,6 +1380,27 @@ and many have since drifted, as the archive's [README](README.md) warns.
       was not opened on screen; that look is the open `[v0.7.x]` entry *gpui
       showcase: look at the overlays that open on input*.
 
+- [x] [upstream] **`unicode-properties` back to 0.1.4 when gpui-fast-web
+      unpins it.** gpui-fast-web 0.1.7, GPUI Fast's wasm platform crate, asks
+      for `unicode-properties = "=0.1.3"`, and a lockfile resolves every
+      target, so since the connector's `gpui-fast` feature (v0.7.0) the
+      workspace's Cargo.lock holds 0.1.3 (it was 0.1.4) for every user of it:
+      gpui-pre-web and `rustybuzz`, which the usvg of gpui-pre and of
+      gpui-component's resvg depend on (`cargo tree --workspace -i
+      unicode-properties --target all`, 2026-10-14; native-theme's own resvg
+      has no text support and does not reach it). Once a gpui-fast-web
+      release drops the exact pin, `cargo update -p unicode-properties` and
+      check the lockfile is back on 0.1.4.
+      *GPUI Kit 0.8.0 (2026-10-22, G3 T10):* gpui-fast-web 0.1.10 still pins
+      `unicode-properties = "=0.1.3"`, so the lockfile stays on 0.1.3.
+      *GPUI Kit 0.8.1 (2026-10-27, G4):* gpui-fast-web 0.1.12 still pins
+      `unicode-properties = "=0.1.3"` (`Cargo.toml:53-54`), so the lockfile stays on
+      0.1.3.
+  *Closed 2026-11-17 in cdd0c3c9:* gpui-fast-web 0.1.15 asks for
+  `unicode-properties = "0.1.3"` without the exact pin (its `Cargo.toml:53-54`; 0.1.12
+  `"=0.1.3"`); `cargo update -p unicode-properties` moved the lock from 0.1.3 to
+  0.1.5, for gpui-pre-web 0.3.12 and rustybuzz 0.20.1; the checks D.6 names passed.
+
 ### Closed items from Upstream PR candidates from v0.5.8 (Tier U)
 
 - [x] ~~a determinate `ProgressCircle` has no size receiver the theme can
@@ -1440,6 +1461,85 @@ and many have since drifted, as the archive's [README](README.md) warns.
       `accessibility_from_gnome_data` and `build_gnome_variant`);
       no preset or connector applies it.
   *Closed 2026-10-26 in c77b6f77 (D4):* carried, not applied, by design. High contrast belongs in the theme data, which a reader fills with what the platform draws under it. The Windows reader writes the high-contrast system colours (`apply_sys_colors`), the GNOME reader libadwaita's high-contrast focus ring, and the macOS reader's system colours follow Increase Contrast (`docs/evidence/os-probe/2026-10-26-run-40320895749/os-probe-macos-14/increase-contrast-on/probe.toml`). A connector-side transform would invent behaviour no platform states, and on Windows apply it twice; no platform has a high-contrast preset beyond Windows' system colours, which the reader reads live. The three connectors' docs say so in one word-identical row. The rest of libadwaita's rules move to the `[1.0]` entry *The GNOME reader applies libadwaita's high-contrast rules*.
+
+### Closed items from Upstream PRs to gpui-component
+
+- [x] [upstream] PR: expose scrollbar dimensions as theme-configurable
+  *Closed 2026-11-17:* resolved before GPUI Kit 0.9: gpui-base styles the track's and
+  the thumb's width (gpui-base 0.9.1 `src/scrollbar.rs:644-682`), which the connector
+  writes (`connectors/native-theme-gpui/src/base_layer.rs`, `scrollbar_geometry` and
+  `scrollbar_styles`); the table's fixed 16 px is *GPUI Kit, from issue #4*, request
+  (1).
+- [x] [upstream] Report: a single-select `Combobox` misses a change after a search.
+      It decides that the selection changed by comparing the selection's
+      `IndexPath`s before and after `on_will_change`
+      (gpui-component 0.6.6 `src/combobox.rs:183-196`, and `:459-468` in
+      `handle_item_select`), and the default `on_will_change` stores the
+      row in the *filtered* list. Choosing, after a search, an item that
+      lands in the row the current selection has — typing "nord" and
+      pressing Enter while `default`, also row 0, is selected — emits no
+      `Change` and no `Confirm` and leaves the popup open. The gpui
+      showcase works around it in `PresetDelegate::on_will_change`
+      (`examples/showcase-gpui/support.rs`), which records each chosen preset at
+      its row in the unfiltered list. Upstream could compare by value, or
+      store unfiltered indices. Found 2026-09-22 (showcase-app plan, Task 9).
+  *Closed 2026-11-17 in 64dc1654:* gpui-component 0.9.0 compares the selection's
+  values before and after `on_will_change` (0.9.1 `src/combobox.rs:184-200`,
+  `:467-483`), so the default hook emits the change; the showcase's
+  `PresetDelegate::on_will_change` is removed in 64dc1654, and
+  `the_theme_settings_switch_the_preset` passes on both cores without it. Upstream's
+  v0.9.0 release notes name PR 3449 (`docs/todo_v0.7.1_gpui-kit-0.9.1-rationale.md`
+  at e866ea6c, §1.4, S3; the notes were not re-read for this line).
+- [x] [upstream] PR: let a consumer supply the icons gpui-component's widgets build for
+      themselves. Several widgets name a Lucide `IconName` as they render,
+      with no setter, so an application that draws its own icons from
+      another set -- the gpui showcase's chrome follows the icon-set Select
+      and draws no icon where the chosen set has none -- still shows
+      gpui-component's Lucide in them, mixing two sets. Read in
+      gpui-component 0.6.6: `SidebarToggleButton`'s PanelLeftClose /
+      PanelLeftOpen (`src/sidebar/mod.rs:351-359`), the `Caret` chevron of a
+      `Select`, `Combobox` or dropdown `Button` (`src/select.rs:59`), the
+      check mark of a chosen list row (`src/searchable_list/item.rs:42`,
+      `src/searchable_list/adapter.rs:130`), an empty list's Inbox
+      (`src/select.rs:279`, `src/combobox.rs:261`), the window controls
+      (`src/title_bar.rs:148-151`), the close button of a `Dialog`
+      (`src/dialog/dialog.rs:698`) and of a `Sheet` (`src/sheet.rs:204`),
+      the `Command` palette's search icon and check mark
+      (`src/command/state.rs:851`, `:767`), a `PopupMenu`'s check mark,
+      external-link and submenu chevron (`src/menu/popup_menu.rs:1167`,
+      `:1209`, `:1334`, `:1373`), the `Settings` search field's icon
+      (`src/setting/settings.rs:152`) and a `NumberInput`'s minus and plus
+      (`src/input/number_input.rs:155`, `:185`). One way in is an optional
+      icon-provider hook on the theme that these call sites ask first,
+      falling back to today's `IconName`. The showcase's icon-set Select
+      names the ones its chrome shows (`info::chrome::icon_set_select`).
+      Found in the final review of the v0.5.9 showcase-app work
+      (2026-09-23).
+      Added since: `SpeechButton`'s Mic / Square (`src/speech/button.rs:96-100`,
+      0.7.1).
+      *GPUI Kit 0.7.3 (2026-10-14):* `Diff` adds its own: ArrowDown, ArrowUp
+      and ChevronsUpDown or ChevronDown on a folded hunk's expand buttons
+      (`src/diff/mod.rs:993`, `:1000`, `:1006-1010`), ChevronRight or
+      ChevronDown on a file's collapse button (`:1194-1198`), and Plus on the
+      add-annotation button (`:1546`).
+      *GPUI Kit 0.8.0 (2026-10-22, G3 T10):* `Diff`'s icons are at `src/diff/mod.rs:998`,
+      `:1005`, `:1011-1015` (the folded hunk's buttons), `:1199-1203` (the
+      file's collapse button) and `:1551` (Plus), the same icons.
+      *GPUI Kit 0.8.1 (2026-10-27, G4):* still so; gpui-component 0.8.1 has no hook
+      (its `theme/` is unchanged). Of the files that changed, the `Dialog`'s close
+      button is `src/dialog/dialog.rs:859` and the `Sheet`'s `src/sheet.rs:211` (0.8.0
+      `:802`, `:204`), the `Command` palette's search icon and check mark stay at
+      `src/command/state.rs:953`, `:869`, and `Diff`'s icons are at
+      `src/diff/mod.rs:1014`, `:1021`, `:1027-1031`, `:1215-1219` and `:1567` (0.8.0
+      `:998`, `:1005`, `:1011-1015`, `:1199-1203`, `:1551`).
+      *GPUI Kit 0.9.1 (2026-11-13):* `SpeechIndicator`, new and shown on the Inputs page,
+      adds its own: the stop glyph's Square, shown under the pointer
+      (`src/speech/indicator.rs:130`).
+  *Closed 2026-11-17:* closed as a request: gpui-component 0.9.0 has the hook,
+  `set_icon_resolver`, which every `Icon` drawn from an asset path asks for the path,
+  the icons its widgets build included (gpui-component 0.9.1 `src/icon.rs:77-106`).
+  The work that uses it is the open entry *gpui: the widgets' own icons follow the
+  theme's icon set*.
 
 ### Closed items from native-theme-iced: the same audit (found 2026-09-20, fixed in v0.5.9)
 
@@ -1936,6 +2036,41 @@ and many have since drifted, as the archive's [README](README.md) warns.
       check.
   *Closed by M8 T7 (2026-10-16, c94f1a1b, c645b2d5, 637f8fef):* a connector's own widget is a sink of a colour-leaf coverage test, with no second contract (Step 6 ruling), in all three. iced: the `Spinner` reads the theme through `spinner::Look::of`, and two accessor rows read it (`spinner.fill_color`, the arc and a bundled set's tint; `defaults.text_color`, a freedesktop indicator's `currentColor`), which `every_colour_leaf_reaches_a_row_or_is_named` requires each leaf to reach and its splice drift check holds to the leaf. gpui: the seven `widgets` Looks were sinks of its coverage test already (M6 T16). egui: the ruling's premise that native-theme-egui-widgets reads only the atlas's cells was wrong; it reads leaves from `resolved_for` too, and since c645b2d5 each widget reads its colours through one `Look` (the spinner, switch, slider, links, progress bar, radio button, segmented control and painted expander; the drop-down reads none; since 637f8fef the spinner's carries `defaults.text_color` to a freedesktop indicator as its icon key's tint, where the connector's `load_color` read it), which `each_widget_draws_in_the_colour_leaves_it_lists` (the crate's `tests.rs`) splices every colour leaf against in all 34 combinations: a widget whose `Look` moves under a leaf its `WIDGET_READS` row does not list fails it, as does a listed leaf that moves it nowhere, and `every_look_is_read_by_the_coverage_test` requires every `Look` the crate defines to be spliced. The one colour read the egui widgets make outside a `Look` is the expander's arrow over egui's own header, drawn by the connector's `expander_icon` and rowed by `connectors/native-theme-egui/mapping.toml:2727-2729` (`expander.arrow_color`, `tested_by = "T18(f)"`). The atlas's cells stay `mapping.toml`'s rows. In all three a read added outside the widget's Look later would not be seen: the widgets still take the whole `ResolvedTheme`.
   Archived 2026-10-17 (M8 T21): ticked in 80c6cf02.
+
+### gpui-fast pins `taffy = "=0.15.0"`
+
+- [x] [upstream] gpui-fast 0.1.12 requires taffy at exactly 0.15.0
+      (`Cargo.toml:344-345`), where gpui-pre 0.3.10 takes it with a caret
+      (`Cargo.toml:524-525`). So a workspace that builds both cores, ours
+      among them, locks gpui-pre to taffy 0.15.0 too, while an application on
+      gpui-pre alone resolves 0.15.1. Our CI and the dependency canary
+      therefore cannot test the taffy that applications on the default core
+      get. G4 measures it once, in its plan's Task 6. For the maintainer to
+      raise upstream (an agent files nothing); re-check it at the next GPUI Kit
+      upgrade.
+      *GPUI Kit 0.8.1 (2026-10-27, G4):* measured once: gpui-pre on taffy 0.15.1 lays
+      the showcase out as on 0.15.0. Emptying the connector's `gpui-fast` feature does
+      not drop gpui-fast from Cargo.lock, which keeps an optional dependency that an
+      enabled feature names weakly: `gpui-fast?/test-support` in the `test-support`
+      features of gpui-kit 0.8.1 (`Cargo.toml:81-82`, with `gpui-fast-platform?`),
+      gpui-base 0.8.1 (`:48`) and gpui-component 0.8.1 (`:75`), which the connector's
+      dev-dependency turns on (`connectors/native-theme-gpui/Cargo.toml:104`). So the
+      measurement patched gpui-fast instead, in the working tree only: a copy of
+      gpui-fast 0.1.12 outside the repository with its taffy requirement relaxed to
+      `"0.15.0"`, a `[patch.crates-io]` entry for it in the root Cargo.toml, and
+      `cargo update -p taffy --precise 0.15.1`, after which `cargo tree -i taffy`
+      shows gpui-pre 0.3.10 on taffy 0.15.1. The gpui-pre suite passed (`cargo test -p
+      native-theme-gpui --features native,watch --all-targets`: 387, 331 with one
+      ignored, 18, and three ignored), `the_fallback_stack_copy_is_gpuis` and
+      `the_labelled_separator_centres_its_label` among them, and the `--dump-layout`
+      runs for kde-breeze and adwaita, light and dark, on the Basic and Layout pages,
+      are byte-identical to the 0.15.0 build's. The root Cargo.toml and Cargo.lock
+      were restored and the copy deleted. The pin stays a gap at the next upgrade: our
+      lock cannot carry 0.15.1 while gpui-fast pins 0.15.0.
+  *Closed 2026-11-17 in 30b3e6d5:* gpui-fast 0.1.15 asks for taffy `"0.15.0"` without
+  the exact pin (its `Cargo.toml:347-348`; 0.1.12 `"=0.15.0"`, `:344-345`), as
+  gpui-pre 0.3.12 does (`Cargo.toml:527-528`); `cargo update -p taffy` moved the lock
+  to 0.15.1, which both cores now build on; the checks D.6 names passed.
 
 ---
 

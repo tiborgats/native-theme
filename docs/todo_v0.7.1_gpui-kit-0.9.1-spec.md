@@ -1734,7 +1734,11 @@ entry (none does today). gpui-base's source comes from the same `cargo metadata`
    In a module that is not, it counts only for the names a public module
    re-exports from that module by name or by glob (`GC/lib.rs:122`
    `pub use virtual_list::{VirtualList, …}` for the private `mod virtual_list`,
-   `:21`). So `pub(crate) mod actions { pub use gpui_base::actions::*; }`
+   `:21`), along any chain, as Rust's visibility is transitive: publicity is a
+   fixpoint, a module being public when a public module declares it `pub mod`
+   under a public name or re-exports it by name or by glob, and each name a
+   public module re-exports is carried through every private module it is
+   re-exported from. So `pub(crate) mod actions { pub use gpui_base::actions::*; }`
    (`GC/lib.rs:25-27`) does not count: the module is not public and nothing
    re-exports from it.
 3. **Following the path in gpui-base, as Rust resolves it.** A path from
@@ -1751,7 +1755,8 @@ entry (none does today). gpui-base's source comes from the same `cargo metadata`
      any other file `x.rs` is the folder `x/` beside it (gpui-base: `motion.rs` with
      `motion/`, `plot/scale.rs` with `plot/scale/`, `plot/shape.rs`,
      `text/inline.rs`). A `#[path = "…"]` on the declaration names the file,
-     relative to the declaring file's folder (`input/mod.rs:13-31`, nine of them).
+     relative to the declaring file's folder (`input/mod.rs:13-31`, nine of them);
+     rustc reads that file as a `mod.rs`, so its own modules are beside it.
      A segment the current module brings in by a `pub use` of a module is followed
      through that `pub use`. An inline `mod name { … }` (gpui-base has one,
      `input/base/native.rs:1-2`, `#[cfg(target_os = "macos")] mod macos { … }`,
@@ -1761,9 +1766,12 @@ entry (none does today). gpui-base's source comes from the same `cargo metadata`
      `pub(crate) use`, `pub(super) use` or plain `use` brings in nothing.
    - A path whose **first** segment is none of these — not `crate`, `self` or
      `super`, not a module of the current module — names an external crate and
-     yields nothing: `input/mod.rs:129` `pub use ropey::Rope;` (which
-     `GC/input/mod.rs:26-44` re-exports), `text/markdown_ext.rs:21`
-     `pub use markdown::mdast as markdown_ast;`, and `gpui::…`.
+     yields nothing when it is one of gpui-base's dependencies in the
+     `cargo metadata` (the name Rust knows it by, a rename honoured, `-` read as
+     `_`) or `std`, `core` or `alloc`: `input/mod.rs:129` `pub use ropey::Rope;`
+     (which `GC/input/mod.rs:26-44` re-exports), `text/markdown_ext.rs:21`
+     `pub use markdown::mdast as markdown_ast;`, and `gpui::…`. Any other such
+     first segment is a `Failure`.
    - A `Failure` (exit 2: "the re-export rule no longer matches gpui-base's
      layout") stays only for a **module segment** — any segment before the
      path's last — that names nothing the current module declares or brings in,
