@@ -1,11 +1,16 @@
-# v0.7.1 — Model completeness: Rationale
+# v0.8.0 — Model completeness: Rationale
+
+**Parked (2026-11-13):** the maintainer stopped the implementation for the time and resources it was
+taking; it is to be reconsidered later, not abandoned. The work done and the facts measured for it are on
+the branch `v0.8.0-rc1`. Meanwhile the 0.7.x releases close gaps in small steps on the released model
+(ROADMAP.md, *Model completeness: what native-theme does not carry*).
 
 **Status:** design, drafted 2026-10-28 from the gap map; checked eight times independently (§5), then amended
 in place during the specification's thirteen checks (each amendment noted under R25.13); done with the
-specification, 2026-10-29. Input: [`todo_v0.7.1_model-completeness-gap-map.md`](todo_v0.7.1_model-completeness-gap-map.md)
+specification, 2026-10-29. Input: [`todo_v0.8.0_model-completeness-gap-map.md`](todo_v0.8.0_model-completeness-gap-map.md)
 and its six platform files ("the map"; a row is identified by its file and ID, and cited here by ID,
 with its file where the prefix does not say it). Next: the specification,
-`todo_v0.7.1_model-completeness-spec.md`, which states every type, field and rule decided here and
+`todo_v0.8.0_model-completeness-spec.md`, which states every type, field and rule decided here and
 maps every row of the map to them (R24).
 
 The maintainer's rule (2026-10-27): native-theme covers **everything a platform draws visibly**; a

@@ -1836,7 +1836,7 @@ offscreen, `docs/evidence/breeze-offscreen/2026-11-13/`.
       a selected and hovered row, `Highlight.lighter(110)`, #44bfff
       (`breezestyle.cpp:4876`; measured); a list item's padding beyond the highlight's
       margin. The parked 0.8.0 work traces some of these
-      (`docs/todo_v0.7.1_model-completeness-spec-trace-kde.md` on `v0.8.0-rc1`: K1.92
+      (`docs/todo_v0.8.0_model-completeness-spec-trace-kde.md` on `v0.8.0-rc1`: K1.92
       the focused handle, K1.172 the selected and hovered row, K1.177 the header's
       fills). Not a missing field but a gap of the same kind: kde-breeze states
       `list.hover_text_color`, #232629 / #fcfcfc (`kde-breeze.toml`
@@ -2013,7 +2013,7 @@ offscreen, `docs/evidence/breeze-offscreen/2026-11-13/`.
 
 ### Values the v0.7.1 gap map found against their sources
 
-v0.7.1's platform research (2026-10-27, `docs/todo_v0.7.1_model-completeness-gap-map.md`)
+v0.7.1's platform research (2026-10-27, `docs/todo_v0.8.0_model-completeness-gap-map.md`)
 read sources that disagree with values the model already carries. Each is to be checked
 at the source and fixed in `docs/platform-facts.md`, the preset and the reader, or
 recorded as checked and right. The KDE citations are at Breeze `master` 75561b7f and

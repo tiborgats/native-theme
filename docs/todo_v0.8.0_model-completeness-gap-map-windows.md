@@ -595,7 +595,7 @@ capabilities: 19 with rows added, 9 with no further row. C — 56 cells: 13 b, 4
 
 Rows for the four seed groups no row covered after pass 2 (G12, G19, G24, G27; the main
 map's §5). The source abbreviations are defined in
-`todo_v0.7.1_model-completeness-gap-map-seeds.md`, *Seed follow-up sources*. CAPS and SRC
+`todo_v0.8.0_model-completeness-gap-map-seeds.md`, *Seed follow-up sources*. CAPS and SRC
 are the row's capability tags (main map §4.3) and source kinds.
 
 ### Code editor and rich text (G12, G27)
@@ -707,7 +707,7 @@ splitter collapser, drag handle).
 A completeness check of the map found two gaps no row covered: the emoji font and
 the fallback chain for scripts the UI font lacks (all six platforms), and right-to-left
 layout where this file had no general row. The source abbreviations are defined in
-`todo_v0.7.1_model-completeness-gap-map-seeds.md`, *Fonts and mirroring sources*.
+`todo_v0.8.0_model-completeness-gap-map-seeds.md`, *Fonts and mirroring sources*.
 
 Not covered by any row (see the top; W3-22 is rendering mode, W3-23 Segoe UI Variable's optical sizes).
 Two text stacks draw on Windows 11 and choose fallback fonts by different mechanisms: WinUI 3 (DirectWrite
@@ -726,7 +726,7 @@ no row covered it (row added below), 2 a row covers it (named), 3 Windows does n
 Rows that say the same kind of thing share a line. Sources beyond the citation bases above: Learn pages read
 2026-10-28, each with its `updated_at`; "Support *Snap your windows*" = support.microsoft.com
 `windows/snap-your-windows-885a9b1e-a983-a3b1-16cd-c531795e6241` (no date shown), read 2026-10-28;
-`CTK EqualPanel.cs` = `components/Segmented/src/EqualPanel.cs` at a6b4dc45 on GitHub (CommunityToolkit/Windows); `labs/` as defined in `todo_v0.7.1_model-completeness-gap-map-seeds.md`, *Seed follow-up sources*.
+`CTK EqualPanel.cs` = `components/Segmented/src/EqualPanel.cs` at a6b4dc45 on GitHub (CommunityToolkit/Windows); `labs/` as defined in `todo_v0.8.0_model-completeness-gap-map-seeds.md`, *Seed follow-up sources*.
 
 | Input rows | Decision 1–3 | Row added, row covering it, or the source showing it is absent |
 |---|---|---|

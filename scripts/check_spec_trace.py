@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """List every v0.7.1 gap-map row the specification's traceability does not place.
 
-The gap map (docs/todo_v0.7.1_model-completeness-gap-map.md and its six
+The gap map (docs/todo_v0.8.0_model-completeness-gap-map.md and its six
 platform files) lists what the platforms draw that the model cannot express;
-the specification's traceability (docs/todo_v0.7.1_model-completeness-spec-
+the specification's traceability (docs/todo_v0.8.0_model-completeness-spec-
 trace-<platform>.md) gives each of those rows its target in the new model, or
 its verdict when the row is out of scope (the rationale's R24). This script
 checks that every row has one.
@@ -41,7 +41,7 @@ import sys
 from pathlib import Path
 
 DOCS = Path("docs")
-MAP = DOCS / "todo_v0.7.1_model-completeness-gap-map.md"
+MAP = DOCS / "todo_v0.8.0_model-completeness-gap-map.md"
 PLATFORMS = {
     "macOS": "macos",
     "Windows": "windows",
@@ -136,8 +136,8 @@ def check(docs: Path) -> list[tuple[str, str, str]]:
     rows = map_rows((docs / MAP.name).read_text(encoding="utf-8"))
     out = []
     for name, slug in PLATFORMS.items():
-        platform = (docs / f"todo_v0.7.1_model-completeness-gap-map-{slug}.md").read_text(encoding="utf-8")
-        trace_path = docs / f"todo_v0.7.1_model-completeness-spec-trace-{slug}.md"
+        platform = (docs / f"todo_v0.8.0_model-completeness-gap-map-{slug}.md").read_text(encoding="utf-8")
+        trace_path = docs / f"todo_v0.8.0_model-completeness-spec-trace-{slug}.md"
         try:
             trace = trace_lines(trace_path.read_text(encoding="utf-8"))
         except InputError as err:

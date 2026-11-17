@@ -129,17 +129,17 @@ the platform, never left to a toolkit's default.
 Three documents describe the gaps and one way to close them, for the model
 only:
 
-- the gap map, [`docs/todo_v0.7.1_model-completeness-gap-map.md`](docs/todo_v0.7.1_model-completeness-gap-map.md):
+- the gap map, [`docs/todo_v0.8.0_model-completeness-gap-map.md`](docs/todo_v0.8.0_model-completeness-gap-map.md):
   every part, state, paint, geometry, text, motion, timing and accessibility
   variant each platform draws, every standard control the model lacks, and
   the properties that cross widgets (elevation and shadows, translucent
   materials, motion, focus, the caret, selection, window chrome, size
   variants), each with where its value will come from: read at run time,
   published, or measured;
-- the rationale, [`docs/todo_v0.7.1_model-completeness-rationale.md`](docs/todo_v0.7.1_model-completeness-rationale.md),
+- the rationale, [`docs/todo_v0.8.0_model-completeness-rationale.md`](docs/todo_v0.8.0_model-completeness-rationale.md),
   which decides how the model covers each gap;
 - the specification of the model changes,
-  [`docs/todo_v0.7.1_model-completeness-spec.md`](docs/todo_v0.7.1_model-completeness-spec.md), with its widget
+  [`docs/todo_v0.8.0_model-completeness-spec.md`](docs/todo_v0.8.0_model-completeness-spec.md), with its widget
   catalogue and one traceability file per platform mapping every row of the map.
 
 All three are done (2026-10-29). The specification replaces the model's shape,
@@ -147,7 +147,8 @@ and with it the API the three connectors and the showcases are written
 against. That rebuild was started as 0.8.0 and stopped on 2026-11-13, with one
 widget, the button, on the new model: it is far more work than the releases
 that keep the connectors on their toolkits' current versions leave room for.
-Its branch (`v0.8.0-rc1`) keeps the work and the facts measured for it.
+Its branch (`v0.8.0-rc1`) keeps the work and the facts measured for it. It is
+parked, not abandoned: whether and when it resumes is decided later.
 
 The gaps are closed in the 0.7.x releases instead, on the released model and
 in small steps: a field where a visible property has none, a value corrected

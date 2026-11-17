@@ -601,7 +601,7 @@ this change):
 
 Grep for `Xft`, `xrandr`, `xrdb`, `forceFontDPI`, `kcmfonts`, `font_dpi`,
 `font DPI` in the worktree, outside `docs/archive/`,
-`docs/todo_v0.7.1_model-completeness-*.md`, the two issue rationales' own
+`docs/todo_v0.8.0_model-completeness-*.md`, the two issue rationales' own
 analysis and `CHANGELOG.md` entries before 0.7.1. Every hit not changed above
 stays, for the reason given:
 
@@ -2062,7 +2062,7 @@ What each script requires of the rows changed above:
 - `scripts/check_wrong_safety_nets.py` requires that every `[uniform]` rule carrying `# see wrong_safety_nets` has a `[wrong_safety_nets."<key>"]` entry whose `inherits_from` is the rule's source, that every entry whose key is a `[uniform]` rule is marked there, and that each entry has string `inherits_from` and `why_wrong`. It does not read the facts file. C.3 adds two marks with their entries.
 - The Rust gate `native-theme/src/presets/documented_sizes.rs` (not a script, but it reads this file through `include_str!`) asserts only that each cited line starts with the expected row name (`facts_line(n).starts_with("| `row_height`")`, `:666-684`); its hard-coded expectations for kde-breeze's menu (`:184-185`: padding 4 on all sides, `row_height` None, cited to `1260`-`1262`, note "MenuItem_MarginWidth = 4; MenuItem_MarginHeight = 4") keep passing, but their note and the gate's message "platform-facts gives" no longer describe line 1261 and line 1260. Part B owns that note (table below).
 
-Every citation of a changed line, found with a scan of `platform-facts.md:<N>` (ranges and `, :K` continuations included) over the worktree outside `docs/archive/`. Citations of these lines that read another platform's cell (macOS, Windows, GNOME, Material: in the presets, `windows.rs`, `resolve/tests.rs:2024`, `docs/todo.md:393`, `:423`, `:1815`) stay true, since those cells do not change. The dated gap-map files (`docs/todo_v0.7.1_model-completeness-gap-map-*.md`, `-seeds.md`) quote the file at a past commit and are not edited. The citations whose meaning becomes false or needs a look, each with the part that owns its new wording (the rulings of review round 1; Part B writes its wording true against the rows of C.1):
+Every citation of a changed line, found with a scan of `platform-facts.md:<N>` (ranges and `, :K` continuations included) over the worktree outside `docs/archive/`. Citations of these lines that read another platform's cell (macOS, Windows, GNOME, Material: in the presets, `windows.rs`, `resolve/tests.rs:2024`, `docs/todo.md:393`, `:423`, `:1815`) stay true, since those cells do not change. The dated gap-map files (`docs/todo_v0.8.0_model-completeness-gap-map-*.md`, `-seeds.md`) quote the file at a past commit and are not edited. The citations whose meaning becomes false or needs a look, each with the part that owns its new wording (the rulings of review round 1; Part B writes its wording true against the rows of C.1):
 
 | Where | Cites | Owner |
 |---|---|---|
@@ -2461,7 +2461,7 @@ offscreen, `docs/evidence/breeze-offscreen/2026-11-13/`.
       a selected and hovered row, `Highlight.lighter(110)`, #44bfff
       (`breezestyle.cpp:4876`; measured); a list item's padding beyond the highlight's
       margin. The parked 0.8.0 work traces some of these
-      (`docs/todo_v0.7.1_model-completeness-spec-trace-kde.md` on `v0.8.0-rc1`: K1.92
+      (`docs/todo_v0.8.0_model-completeness-spec-trace-kde.md` on `v0.8.0-rc1`: K1.92
       the focused handle, K1.172 the selected and hovered row, K1.177 the header's
       fills). Not a missing field but a gap of the same kind: kde-breeze states
       `list.hover_text_color`, #232629 / #fcfcfc (`kde-breeze.toml`

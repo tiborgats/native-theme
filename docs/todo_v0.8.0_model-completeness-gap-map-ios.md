@@ -1,6 +1,6 @@
 # Gap map — iOS (13–18 `ios-13`, 26 Liquid Glass `ios-26` unwritten)
 
-Scope: `docs/todo_v0.7.1_model-completeness-gap-map.md` §2 checklist, applied to every element UIKit
+Scope: `docs/todo_v0.8.0_model-completeness-gap-map.md` §2 checklist, applied to every element UIKit
 (and SwiftUI where it draws differently) draws on iPhone and iPad. Model checked: `docs/property-registry.toml`
 at caeddd6b (branch `v0.7.1-rc1`), `native-theme/src/model/`, `AccessibilityPreferences`
 (`native-theme/src/lib.rs:415-437`), `IconRole` (`native-theme/src/model/icons.rs:42-139`),
@@ -873,7 +873,7 @@ MN-17†, MN-18†, SB-7†, DL-13†, SG-9†).
 
 Rows for the four seed groups no row covered after pass 2 (G12, G19, G24, G27; the main
 map's §5). The source abbreviations are defined in
-`todo_v0.7.1_model-completeness-gap-map-seeds.md`, *Seed follow-up sources*. CAPS and SRC
+`todo_v0.8.0_model-completeness-gap-map-seeds.md`, *Seed follow-up sources*. CAPS and SRC
 are the row's capability tags (main map §4.3) and source kinds.
 
 ### Code editor and rich text (G12, G27)
@@ -972,7 +972,7 @@ Tally (18): 1 — 2 (shortcuts dialog, editable label); 2 — 1 (wrap box); 3 �
 A completeness check of the map found two gaps no row covered: the emoji font and
 the fallback chain for scripts the UI font lacks (all six platforms), and right-to-left
 layout where this file had no general row. The source abbreviations are defined in
-`todo_v0.7.1_model-completeness-gap-map-seeds.md`, *Fonts and mirroring sources*.
+`todo_v0.8.0_model-completeness-gap-map-seeds.md`, *Fonts and mirroring sources*.
 
 Not covered by any row (see the top; D-1…D-6 and X-DT-5 are tracking, optical size, design, width and
 leading). Same mechanism as macOS: Core Text's cascade list and Apple Color Emoji, a system font on iOS

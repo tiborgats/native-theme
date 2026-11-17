@@ -1,12 +1,17 @@
-# v0.7.1 — Model completeness: the gap map
+# v0.8.0 — Model completeness: the gap map
+
+**Parked (2026-11-13):** the maintainer stopped the implementation for the time and resources it was
+taking; it is to be reconsidered later, not abandoned. The work done and the facts measured for it are on
+the branch `v0.8.0-rc1`. Meanwhile the 0.7.x releases close gaps in small steps on the released model
+(ROADMAP.md, *Model completeness: what native-theme does not carry*).
 
 Status: complete (2026-10-27/28, branch `v0.7.1-rc1`, model at caeddd6b): surveyed,
 cross-checked in four passes and reviewed (§4). §6 lists the open work: the scope
 questions the rationale decides, and what comes before any value is collected.
 
 The first of v0.7.1's three documents: this one lists what native-theme does not carry,
-the rationale (`todo_v0.7.1_model-completeness-rationale.md`) decides how the model
-covers each gap, and the specification (`todo_v0.7.1_model-completeness-spec.md`) states
+the rationale (`todo_v0.8.0_model-completeness-rationale.md`) decides how the model
+covers each gap, and the specification (`todo_v0.8.0_model-completeness-spec.md`) states
 the model changes exactly. The connectors are not in scope: they follow the model once it
 changes.
 
@@ -469,7 +474,7 @@ What the counts show, in brief:
 ## 5. Seeds
 
 The gaps the repository had already written down, gathered before the platform research,
-are in `todo_v0.7.1_model-completeness-gap-map-seeds.md`: 37 groups, each with every
+are in `todo_v0.8.0_model-completeness-gap-map-seeds.md`: 37 groups, each with every
 file:line that records it (at caeddd6b, as are the citations in the table below), and in
 its second part the 222 lines of `platform-facts.md` with a ❓ cell, a value no source gave,
 which under this milestone's rule is a value to measure.
@@ -579,13 +584,13 @@ correction names what corrected it (pass 2 or the follow-up, 2026-10-28).
 
 | File | Platform | Row IDs |
 |---|---|---|
-| `todo_v0.7.1_model-completeness-gap-map-macos.md` | macOS 12–15 and 26–27 | `MAC-…` |
-| `todo_v0.7.1_model-completeness-gap-map-windows.md` | Windows 11 | `W1-…`, `W2-…`, `W3-…`, `W-SF…`, `W-RL…`, `W-FM…`, `W-P3-…`, `W-RV-…` |
-| `todo_v0.7.1_model-completeness-gap-map-kde.md` | KDE Plasma 6, Breeze | `K…` (Qt Widgets, KDecoration, KWin), `Q…` (Kirigami, qqc2-desktop-style), `K-SF…`, `K-RL…`, `K-FM…`, `K-P3-…`, `K-RV…`, `K-KA-…` (kirigami-addons, added during the specification) |
-| `todo_v0.7.1_model-completeness-gap-map-gnome.md` | GNOME, libadwaita 1.10.0, GTK 4.24.1 | `GN-…` |
-| `todo_v0.7.1_model-completeness-gap-map-material.md` | Material 3 and Expressive | `MAT-…` |
-| `todo_v0.7.1_model-completeness-gap-map-ios.md` | iOS 13–18 and 26 | per section (`B-…`, `CK-…`, `X-MT-…`; `C-…` for the controls of §4.2; `SF-…`, `RL-…`, `FM-…`, `P3-…`) |
-| `todo_v0.7.1_model-completeness-gap-map-seeds.md` | the repository's own records, and the follow-up's sources | `G01`–`G37` |
+| `todo_v0.8.0_model-completeness-gap-map-macos.md` | macOS 12–15 and 26–27 | `MAC-…` |
+| `todo_v0.8.0_model-completeness-gap-map-windows.md` | Windows 11 | `W1-…`, `W2-…`, `W3-…`, `W-SF…`, `W-RL…`, `W-FM…`, `W-P3-…`, `W-RV-…` |
+| `todo_v0.8.0_model-completeness-gap-map-kde.md` | KDE Plasma 6, Breeze | `K…` (Qt Widgets, KDecoration, KWin), `Q…` (Kirigami, qqc2-desktop-style), `K-SF…`, `K-RL…`, `K-FM…`, `K-P3-…`, `K-RV…`, `K-KA-…` (kirigami-addons, added during the specification) |
+| `todo_v0.8.0_model-completeness-gap-map-gnome.md` | GNOME, libadwaita 1.10.0, GTK 4.24.1 | `GN-…` |
+| `todo_v0.8.0_model-completeness-gap-map-material.md` | Material 3 and Expressive | `MAT-…` |
+| `todo_v0.8.0_model-completeness-gap-map-ios.md` | iOS 13–18 and 26 | per section (`B-…`, `CK-…`, `X-MT-…`; `C-…` for the controls of §4.2; `SF-…`, `RL-…`, `FM-…`, `P3-…`) |
+| `todo_v0.8.0_model-completeness-gap-map-seeds.md` | the repository's own records, and the follow-up's sources | `G01`–`G37` |
 
 Each file states its sources and their refs at its top (later sources in the section that
 added them), and no file states a value it did not read in a cited source. A platform

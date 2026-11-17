@@ -1,8 +1,8 @@
 # tools/gap-map
 
 Generators of the v0.7.1 gap map's cross-platform sections (§4–§8 and Appendix A of
-`docs/todo_v0.7.1_model-completeness-gap-map.md`), and their inputs. The platform files
-(`docs/todo_v0.7.1_model-completeness-gap-map-<platform>.md`) are the source; these files are the
+`docs/todo_v0.8.0_model-completeness-gap-map.md`), and their inputs. The platform files
+(`docs/todo_v0.8.0_model-completeness-gap-map-<platform>.md`) are the source; these files are the
 rows' tags (`tags-<platform>.tsv`: platform, row ID, section, element, capabilities, source kind,
 summary), the pass-3 and pass-4 inputs, the capability taxonomy and the matched seeds.
 

@@ -1,6 +1,6 @@
 # Gap map — KDE Plasma 6 / Breeze (`kde-breeze`)
 
-Model at caeddd6b (`docs/property-registry.toml`, `native-theme/src/kde/`). Method: `docs/todo_v0.7.1_model-completeness-gap-map.md` §2–§4. This file collects no values: where a cell quotes a constant or a factor, it was read at the cited line, and it is there only to say *what* the gap is.
+Model at caeddd6b (`docs/property-registry.toml`, `native-theme/src/kde/`). Method: `docs/todo_v0.8.0_model-completeness-gap-map.md` §2–§4. This file collects no values: where a cell quotes a constant or a factor, it was read at the cited line, and it is there only to say *what* the gap is.
 
 ## Sources and abbreviations
 
@@ -751,7 +751,7 @@ These are fields the model has whose KDE source in `platform-facts.md` or the re
 
 ## Cross-check (pass 2, 2026-10-28)
 
-Pass 2 checked this map against the other five surveys (`docs/todo_v0.7.1_model-completeness-gap-map.md` §6.1–§6.3): the controls they list that this file did not (A), every capability C01–C28 (B), and every "(none)" cell of the KDE column of `platform-facts.md` (C). New rows carry a "†" after their ID: 15 in §4.1, 16 in §4.2, 11 in §4.3.
+Pass 2 checked this map against the other five surveys (`docs/todo_v0.8.0_model-completeness-gap-map.md` §6.1–§6.3): the controls they list that this file did not (A), every capability C01–C28 (B), and every "(none)" cell of the KDE column of `platform-facts.md` (C). New rows carry a "†" after their ID: 15 in §4.1, 16 in §4.2, 11 in §4.3.
 
 Sources read in this pass beyond the table at the top. The KDE clones are the same commits; KWin's sparse clone gained `src/outline.cpp`, `src/outputconfigurationstore.cpp`, `src/inputmethod.cpp`, `src/qml/outline/` and the plugins `dialogparent`, `frozenapp`, `fullscreen`, `systembell`, `shakecursor`, `startupfeedback` (and, read for enablement only, `sheet`, `invert`, `colorblindnesscorrection`, `translucency`, `slidingnotifications`, `blendchanges`, `screenedge`, `highlightwindow`, `zoom`, `slideback`), all at `625e3132`. Fetched files, read 2026-10-28: qtbase at tag `v6.10.1` (`src/widgets/…`, `src/gui/kernel/qplatformtheme.cpp`, `qplatformintegration.cpp`), cited as "qtbase v6.10.1 `<file>:<line>`"; KDE/kio @ `eec0132888fe2a6ede4b88c8b9689564a88d19fb`, KDE/kcompletion @ `2bc74a5bf8a04faa8f44815fb65dc17f0eb1208d`, KDE/ktexteditor @ `df8e3ad8b6fcbdb5278696640e9cdfe7507cb65a`, KDE/sonnet @ `5442e3b4cac09675133f345ff8ccecdfba9d58d9`, KDE/xdg-desktop-portal-kde @ `936476a53424f11b08c3ee0e290de0154220b531` (the `master` heads that day). They are re-pinned with the rest (§6.4).
 
@@ -926,7 +926,7 @@ Tally: a — 38; b — 20 (2 rows added for them: K1.58†, K3.84†; K1.83† a
 
 Rows for the four seed groups no row covered after pass 2 (G12, G19, G24, G27; the main
 map's §5). The source abbreviations are defined in
-`todo_v0.7.1_model-completeness-gap-map-seeds.md`, *Seed follow-up sources*. CAPS and SRC
+`todo_v0.8.0_model-completeness-gap-map-seeds.md`, *Seed follow-up sources*. CAPS and SRC
 are the row's capability tags (main map §4.3) and source kinds.
 
 ### Code editor and rich text (G12, G27)
@@ -1060,7 +1060,7 @@ Tally: 1 — 3 controls (4 rows); 2 — 3; 3 — 4; 4 — 2.
 A completeness check of the map found two gaps no row covered: the emoji font and
 the fallback chain for scripts the UI font lacks (all six platforms), and right-to-left
 layout where this file had no general row. The source abbreviations are defined in
-`todo_v0.7.1_model-completeness-gap-map-seeds.md`, *Fonts and mirroring sources*.
+`todo_v0.8.0_model-completeness-gap-map-seeds.md`, *Fonts and mirroring sources*.
 
 Not covered by any row (K3.45 is antialiasing and hinting, K3.46 the QFont string's extra fields). Qt
 Widgets and Qt Quick (Kirigami) share Qt's font database, so one pair of rows serves both. No Plasma
@@ -1278,7 +1278,7 @@ every platform; the coverage table is the main map's Appendix B. This section ho
 this platform's rows for the kinds it had none for. Sources are cited in full in
 each row.
 
-File: `docs/todo_v0.7.1_model-completeness-gap-map-kde.md`. Abbreviations as that file defines them
+File: `docs/todo_v0.8.0_model-completeness-gap-map-kde.md`. Abbreviations as that file defines them
 (`st`, `hp`, `mt`, `dbtn`, `deco`, `khint`, `kwa`, `kwin src/<path>` = KDE/kwin @ `625e3132`,
 `kirigami@81ada72b`, `qqc2@305eb2c4`, `kxmlgui@b5aa1026`, KDE/kio @ `eec01328`, `kconfigwidgets@939320a3`,
 plasma-integration @ `46eddde9`, qtbase v6.10.1). Sources new in this pass, all read 2026-10-28:

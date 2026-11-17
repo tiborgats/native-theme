@@ -2,7 +2,7 @@
 
 Model state: `v0.7.1-rc1` at caeddd6b (`docs/property-registry.toml`, `native-theme/src/model/`,
 `AccessibilityPreferences` in `native-theme/src/lib.rs:415-437`, reader `native-theme/src/macos.rs`).
-Method: `docs/todo_v0.7.1_model-completeness-gap-map.md` §2–§4.
+Method: `docs/todo_v0.8.0_model-completeness-gap-map.md` §2–§4.
 
 ## Conventions of this file
 
@@ -683,7 +683,7 @@ Tally over the 63 lines: a 32, b 29, and 2 split by generation (1377, 1378: a on
 
 Rows for the four seed groups no row covered after pass 2 (G12, G19, G24, G27; the main
 map's §5). The source abbreviations are defined in
-`todo_v0.7.1_model-completeness-gap-map-seeds.md`, *Seed follow-up sources*. CAPS and SRC
+`todo_v0.8.0_model-completeness-gap-map-seeds.md`, *Seed follow-up sources*. CAPS and SRC
 are the row's capability tags (main map §4.3) and source kinds.
 
 ### Code editor and rich text (G12, G27)
@@ -787,7 +787,7 @@ Tally: 1 — 0; 2 — 2 (wrap box, radio group); 3 — 11; 4 — 5.
 A completeness check of the map found two gaps no row covered: the emoji font and
 the fallback chain for scripts the UI font lacks (all six platforms), and right-to-left
 layout where this file had no general row. The source abbreviations are defined in
-`todo_v0.7.1_model-completeness-gap-map-seeds.md`, *Fonts and mirroring sources*.
+`todo_v0.8.0_model-completeness-gap-map-seeds.md`, *Fonts and mirroring sources*.
 
 Not covered by any row (see the top). The two rows differ nowhere between 12–15 and 26 in mechanism:
 the same Core Text API and the same emoji font name serve both; whether a cascade list's members differ

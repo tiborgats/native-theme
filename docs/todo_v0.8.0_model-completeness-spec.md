@@ -1,13 +1,18 @@
-# v0.7.1 — Model completeness: Specification
+# v0.8.0 — Model completeness: Specification
+
+**Parked (2026-11-13):** the maintainer stopped the implementation for the time and resources it was
+taking; it is to be reconsidered later, not abandoned. The work done and the facts measured for it are on
+the branch `v0.8.0-rc1`. Meanwhile the 0.7.x releases close gaps in small steps on the released model
+(ROADMAP.md, *Model completeness: what native-theme does not carry*).
 
 **Status:** done, 2026-10-29: checked by thirteen independent reviews (§0) and finished by the maintainer's decision after the final core check; next is the value phase. This document states the model the rationale
-([`todo_v0.7.1_model-completeness-rationale.md`](todo_v0.7.1_model-completeness-rationale.md), "R…")
+([`todo_v0.8.0_model-completeness-rationale.md`](todo_v0.8.0_model-completeness-rationale.md), "R…")
 decides: its types, values, rules, order, API, file formats and checks. It is in three parts:
 
 - this core: the mechanisms every widget uses (S1–S22);
-- the widget catalogue, [`todo_v0.7.1_model-completeness-spec-widgets.md`](todo_v0.7.1_model-completeness-spec-widgets.md):
+- the widget catalogue, [`todo_v0.8.0_model-completeness-spec-widgets.md`](todo_v0.8.0_model-completeness-spec-widgets.md):
   every typed widget and keyed component, with its parts, widget values, variants, sizes and flags;
-- the traceability, `todo_v0.7.1_model-completeness-spec-trace-<platform>.md`: every row of the gap map
+- the traceability, `todo_v0.8.0_model-completeness-spec-trace-<platform>.md`: every row of the gap map
   mapped to what carries it (R24).
 
 Rust in this document is a sketch of the public shape: names, fields and variants are normative; derives,
@@ -2596,7 +2601,7 @@ error types; the tests of `to_toml` and `lint_toml` go with them.
 
 ## S20. Traceability format (R24)
 
-Per platform, `todo_v0.7.1_model-completeness-spec-trace-<platform>.md`: at least one line per live gap-map row,
+Per platform, `todo_v0.8.0_model-completeness-spec-trace-<platform>.md`: at least one line per live gap-map row,
 several where a row needs several targets:
 
 | Row | Target | Kind |

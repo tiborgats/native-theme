@@ -866,7 +866,7 @@ Tallies: A — 51 listed controls: 8 decided 1, 12 decided 2, 31 decided 3 (plus
 
 Rows for the four seed groups no row covered after pass 2 (G12, G19, G24, G27; the main
 map's §5). The source abbreviations are defined in
-`todo_v0.7.1_model-completeness-gap-map-seeds.md`, *Seed follow-up sources*. CAPS and SRC
+`todo_v0.8.0_model-completeness-gap-map-seeds.md`, *Seed follow-up sources*. CAPS and SRC
 are the row's capability tags (main map §4.3) and source kinds.
 
 ### Code editor and rich text (G12, G27)
@@ -980,7 +980,7 @@ Tally: 1 — 1 (wizard); 2 — 0; 3 — 8; 4 — 1 (splitter collapser).
 A completeness check of the map found two gaps no row covered: the emoji font and
 the fallback chain for scripts the UI font lacks (all six platforms), and right-to-left
 layout where this file had no general row. The source abbreviations are defined in
-`todo_v0.7.1_model-completeness-gap-map-seeds.md`, *Fonts and mirroring sources*.
+`todo_v0.8.0_model-completeness-gap-map-seeds.md`, *Fonts and mirroring sources*.
 
 Not covered by any row (GN-1.193 is features and variations, GN-3.56 rendering). GNOME has no settings
 key for an emoji or fallback font: `org.gnome.desktop.interface` has `font-name`, `document-font-name` and

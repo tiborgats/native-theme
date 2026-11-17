@@ -23,10 +23,10 @@ from collections import defaultdict
 from pathlib import Path
 
 DOCS = Path("docs")  # run from the repository root
-CORE = DOCS / "todo_v0.7.1_model-completeness-spec.md"
-CAT = DOCS / "todo_v0.7.1_model-completeness-spec-widgets.md"
+CORE = DOCS / "todo_v0.8.0_model-completeness-spec.md"
+CAT = DOCS / "todo_v0.8.0_model-completeness-spec-widgets.md"
 PLATS = ["macos", "windows", "kde", "gnome", "material", "ios"]
-TRACES = {f"trace-{p}": DOCS / f"todo_v0.7.1_model-completeness-spec-trace-{p}.md" for p in PLATS}
+TRACES = {f"trace-{p}": DOCS / f"todo_v0.8.0_model-completeness-spec-trace-{p}.md" for p in PLATS}
 HERE = Path(__file__).resolve().parent
 
 IDENT = r"[a-z_][a-z0-9_]*"

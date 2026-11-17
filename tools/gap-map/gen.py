@@ -44,7 +44,7 @@ for s in slugs:
 p3 = {}
 p4_counts = []
 for s_, n_ in zip(slugs, names):
-    d_ = (repo / "docs" / f"todo_v0.7.1_model-completeness-gap-map-{s_}.md").read_text()
+    d_ = (repo / "docs" / f"todo_v0.8.0_model-completeness-gap-map-{s_}.md").read_text()
     inp = sum(1 for l in (sp / f"p3-{s_}.tsv").read_text().splitlines() if l.strip())
     added = len(set(re.findall(r"^\| ((?:[A-Z]+-)?P3-\d+†) \|", d_, flags=re.M)))
     marked = sum(1 for l in d_.splitlines() if l.startswith("|") and "(review 2026-10-28" in l)
@@ -58,7 +58,7 @@ p4_total = sum(p4_counts)
 p4 = (sp / "p4-result.md").read_text()
 p4_table = p4[p4.index("| Kind |"):p4.index("\n## ")].strip()
 p4_kinds = p4[p4.index("## Kinds") + len("## Kinds"):].strip()
-p = repo / "docs/todo_v0.7.1_model-completeness-gap-map.md"
+p = repo / "docs/todo_v0.8.0_model-completeness-gap-map.md"
 doc = p.read_text()
 head = doc[: doc.index("## 4. The gaps")]
 head = re.sub(r"Status: .*?(?=\n\nThe first of)",
@@ -177,7 +177,7 @@ body += "\n" + narr + "\n\n"
 body += f"""## 5. Seeds
 
 The gaps the repository had already written down, gathered before the platform research,
-are in `todo_v0.7.1_model-completeness-gap-map-seeds.md`: 37 groups, each with every
+are in `todo_v0.8.0_model-completeness-gap-map-seeds.md`: 37 groups, each with every
 file:line that records it (at caeddd6b, as are the citations in the table below), and in
 its second part the 222 lines of `platform-facts.md` with a ❓ cell, a value no source gave,
 which under this milestone's rule is a value to measure.
@@ -250,13 +250,13 @@ correction names what corrected it (pass 2 or the follow-up, 2026-10-28).
 
 | File | Platform | Row IDs |
 |---|---|---|
-| `todo_v0.7.1_model-completeness-gap-map-macos.md` | macOS 12–15 and 26–27 | `MAC-…` |
-| `todo_v0.7.1_model-completeness-gap-map-windows.md` | Windows 11 | `W1-…`, `W2-…`, `W3-…`, `W-SF…`, `W-RL…`, `W-FM…`, `W-P3-…`, `W-RV-…` |
-| `todo_v0.7.1_model-completeness-gap-map-kde.md` | KDE Plasma 6, Breeze | `K…` (Qt Widgets, KDecoration, KWin), `Q…` (Kirigami, qqc2-desktop-style), `K-SF…`, `K-RL…`, `K-FM…`, `K-P3-…`, `K-RV…`, `K-KA-…` (kirigami-addons, added during the specification) |
-| `todo_v0.7.1_model-completeness-gap-map-gnome.md` | GNOME, libadwaita 1.10.0, GTK 4.24.1 | `GN-…` |
-| `todo_v0.7.1_model-completeness-gap-map-material.md` | Material 3 and Expressive | `MAT-…` |
-| `todo_v0.7.1_model-completeness-gap-map-ios.md` | iOS 13–18 and 26 | per section (`B-…`, `CK-…`, `X-MT-…`; `C-…` for the controls of §4.2; `SF-…`, `RL-…`, `FM-…`, `P3-…`) |
-| `todo_v0.7.1_model-completeness-gap-map-seeds.md` | the repository's own records, and the follow-up's sources | `G01`–`G37` |
+| `todo_v0.8.0_model-completeness-gap-map-macos.md` | macOS 12–15 and 26–27 | `MAC-…` |
+| `todo_v0.8.0_model-completeness-gap-map-windows.md` | Windows 11 | `W1-…`, `W2-…`, `W3-…`, `W-SF…`, `W-RL…`, `W-FM…`, `W-P3-…`, `W-RV-…` |
+| `todo_v0.8.0_model-completeness-gap-map-kde.md` | KDE Plasma 6, Breeze | `K…` (Qt Widgets, KDecoration, KWin), `Q…` (Kirigami, qqc2-desktop-style), `K-SF…`, `K-RL…`, `K-FM…`, `K-P3-…`, `K-RV…`, `K-KA-…` (kirigami-addons, added during the specification) |
+| `todo_v0.8.0_model-completeness-gap-map-gnome.md` | GNOME, libadwaita 1.10.0, GTK 4.24.1 | `GN-…` |
+| `todo_v0.8.0_model-completeness-gap-map-material.md` | Material 3 and Expressive | `MAT-…` |
+| `todo_v0.8.0_model-completeness-gap-map-ios.md` | iOS 13–18 and 26 | per section (`B-…`, `CK-…`, `X-MT-…`; `C-…` for the controls of §4.2; `SF-…`, `RL-…`, `FM-…`, `P3-…`) |
+| `todo_v0.8.0_model-completeness-gap-map-seeds.md` | the repository's own records, and the follow-up's sources | `G01`–`G37` |
 
 Each file states its sources and their refs at its top (later sources in the section that
 added them), and no file states a value it did not read in a cited source. A platform

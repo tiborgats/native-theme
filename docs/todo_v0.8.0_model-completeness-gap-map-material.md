@@ -1,6 +1,6 @@
 # Gap map — Material 3 and Material 3 Expressive (preset `material-3`)
 
-Phase: gap listing only (docs/todo_v0.7.1_model-completeness-gap-map.md §2–§4). No values are
+Phase: gap listing only (docs/todo_v0.8.0_model-completeness-gap-map.md §2–§4). No values are
 collected here; a number appears only where it was read in the cited line, to identify the token.
 The model is `docs/property-registry.toml` at caeddd6b (branch `v0.7.1-rc1`); a row is a gap only
 where no field carries the property, a *partial* gap where a field carries part of it.
@@ -647,7 +647,7 @@ scrollbar's six (1304, 1305, 1307–1310) come with MAT-SC3† for what the mode
 
 Rows for the four seed groups no row covered after pass 2 (G12, G19, G24, G27; the main
 map's §5). The source abbreviations are defined in
-`todo_v0.7.1_model-completeness-gap-map-seeds.md`, *Seed follow-up sources*. CAPS and SRC
+`todo_v0.8.0_model-completeness-gap-map-seeds.md`, *Seed follow-up sources*. CAPS and SRC
 are the row's capability tags (main map §4.3) and source kinds.
 
 ### Code editor and rich text (G12, G27)
@@ -743,7 +743,7 @@ Tally: 1 — 1 (Chip set); 2 — 0; 3 — 5 (keycap, text selection handles, dra
 A completeness check of the map found two gaps no row covered: the emoji font and
 the fallback chain for scripts the UI font lacks (all six platforms), and right-to-left
 layout where this file had no general row. The source abbreviations are defined in
-`todo_v0.7.1_model-completeness-gap-map-seeds.md`, *Fonts and mirroring sources*.
+`todo_v0.8.0_model-completeness-gap-map-seeds.md`, *Fonts and mirroring sources*.
 
 **Emoji and fallback.** Not covered: MAT-X36† is the platform sans and monospace typefaces from
 `fonts.xml`, MAT-X16 tracking, line height, axes and features — neither names the emoji font or the

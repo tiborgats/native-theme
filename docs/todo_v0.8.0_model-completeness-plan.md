@@ -1,4 +1,9 @@
-# v0.7.1 → 0.8.0 — Model completeness: Plan
+# v0.8.0 — Model completeness: Plan
+
+**Parked (2026-11-13):** the maintainer stopped the implementation for the time and resources it was
+taking; it is to be reconsidered later, not abandoned. The work done and the facts measured for it are on
+the branch `v0.8.0-rc1`. Meanwhile the 0.7.x releases close gaps in small steps on the released model
+(ROADMAP.md, *Model completeness: what native-theme does not carry*).
 
 **Status:** approved 2026-10-29 with the maintainer's decisions D1, D4, D5, D7, D9, D10, D11 and D12 (each marked
 below); draft 12. Eleven independent reviews; draft 11 consolidated
@@ -8,10 +13,10 @@ their fixes into one text, and draft 12 applies the eleventh review's.
 facts and passing the facts gate; the bundled palettes checked against their projects' published colours; the four
 connectors and the three showcases moved to the model; released as 0.8.0 (R21, S21).
 
-**Inputs:** the gap map ([`todo_v0.7.1_model-completeness-gap-map.md`](todo_v0.7.1_model-completeness-gap-map.md)),
-the rationale ([`…-rationale.md`](todo_v0.7.1_model-completeness-rationale.md), "R…") and the specification (core
-[`…-spec.md`](todo_v0.7.1_model-completeness-spec.md), "S…"; catalogue
-[`…-spec-widgets.md`](todo_v0.7.1_model-completeness-spec-widgets.md); the six traces). This plan decides the order of
+**Inputs:** the gap map ([`todo_v0.8.0_model-completeness-gap-map.md`](todo_v0.8.0_model-completeness-gap-map.md)),
+the rationale ([`…-rationale.md`](todo_v0.8.0_model-completeness-rationale.md), "R…") and the specification (core
+[`…-spec.md`](todo_v0.8.0_model-completeness-spec.md), "S…"; catalogue
+[`…-spec-widgets.md`](todo_v0.8.0_model-completeness-spec-widgets.md); the six traces). This plan decides the order of
 the work, its gates, what runs in parallel and how the work is checked; it decides no part of the model. Where the
 work finds the specification wrong, the specification is corrected first (*Spec changes*) and the work follows.
 
@@ -369,7 +374,7 @@ M0 closes when its setup tasks close; the spikes continue beside M1a and have th
   together), and a `## [0.8.0] - Unreleased` CHANGELOG heading. The visual-asset and compatibility stamp checks, which
   fail once a release's entry is dated, then stay warnings until M6 dates it. Add `PLAN_EXCLUDED` (empty) to
   `check_release.sh`. Open the draft pull requests.
-- **The ledger** `docs/todo_v0.7.1_model-completeness-ledger.md`, written by the orchestrator only (the others report
+- **The ledger** `docs/todo_v0.8.0_model-completeness-ledger.md`, written by the orchestrator only (the others report
   to it): per unit and platform the status of facts, verification, presets, gate and connectors; the module inventory;
   the warnings of each full run; the spec-change queue; the unmeasured register; the verifiers' agreement and audit
   rates; the spikes' and drift runs' results; the evidence size; the tokens per milestone (the sum of the agents'

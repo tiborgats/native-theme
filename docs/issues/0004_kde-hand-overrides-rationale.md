@@ -77,7 +77,7 @@ so.
   row.
 - **The parked 0.8.0 work** (branch `v0.8.0-rc1`) read much of the same Breeze
   code for its model: `docs/facts/kde/`, the KDE trace of its specification
-  (`docs/todo_v0.7.1_model-completeness-spec-trace-kde.md`), and
+  (`docs/todo_v0.8.0_model-completeness-spec-trace-kde.md`), and
   `tools/kde-vectors`, which compiles KDE's and Qt's own colour functions and
   writes their results as tables. This document was written without it and
   compared with it afterwards. On the points compared the two agree on what

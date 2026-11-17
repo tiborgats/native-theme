@@ -12,7 +12,7 @@ import re
 import sys
 from pathlib import Path
 
-CAT = Path(sys.argv[1] if len(sys.argv) > 1 else "docs/todo_v0.7.1_model-completeness-spec-widgets.md")
+CAT = Path(sys.argv[1] if len(sys.argv) > 1 else "docs/todo_v0.8.0_model-completeness-spec-widgets.md")
 ITEMS = ["Kind", "Available", "Parts", "Widget values", "Variants", "Sizes and densities", "Flags", "Exclusive groups",
          "may_be_absent", "State-model source", "Today's fields", "Notes"]
 FIELDS = {"fill", "stroke", "corners", "shape", "shadow", "opacity", "transform", "text", "icon", "glyph", "focus",

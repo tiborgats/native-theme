@@ -147,7 +147,7 @@ sparse clone were read from GitHub at the same commit and saved in scratchpad `p
 
 ## KDE
 
-File: `docs/todo_v0.7.1_model-completeness-gap-map-kde.md`. Abbreviations as that file defines them
+File: `docs/todo_v0.8.0_model-completeness-gap-map-kde.md`. Abbreviations as that file defines them
 (`st`, `hp`, `mt`, `dbtn`, `deco`, `khint`, `kwa`, `kwin src/<path>` = KDE/kwin @ `625e3132`,
 `kirigami@81ada72b`, `qqc2@305eb2c4`, `kxmlgui@b5aa1026`, KDE/kio @ `eec01328`, `kconfigwidgets@939320a3`,
 plasma-integration @ `46eddde9`, qtbase v6.10.1). Sources new in this pass, all read 2026-10-28:

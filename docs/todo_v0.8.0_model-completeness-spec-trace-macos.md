@@ -1,14 +1,14 @@
-# v0.7.1 — Model completeness: Specification, traceability (macOS)
+# v0.8.0 — Model completeness: Specification, traceability (macOS)
 
 **Status:** draft, 2026-10-28. Part of the specification
-([`todo_v0.7.1_model-completeness-spec.md`](todo_v0.7.1_model-completeness-spec.md), S20): every gap row of
-[`todo_v0.7.1_model-completeness-gap-map-macos.md`](todo_v0.7.1_model-completeness-gap-map-macos.md) mapped to
+([`todo_v0.8.0_model-completeness-spec.md`](todo_v0.8.0_model-completeness-spec.md), S20): every gap row of
+[`todo_v0.8.0_model-completeness-gap-map-macos.md`](todo_v0.8.0_model-completeness-gap-map-macos.md) mapped to
 what carries it (R24), one line per (row, target), the rows in the order of the platform file. Withdrawn rows and
 the pointer rows the map does not count are not listed; the cross-check and pass decision tables are decisions,
 not rows.
 
 **Targets** use the widget catalogue's names
-([`todo_v0.7.1_model-completeness-spec-widgets.md`](todo_v0.7.1_model-completeness-spec-widgets.md), after its rename
+([`todo_v0.8.0_model-completeness-spec-widgets.md`](todo_v0.8.0_model-completeness-spec-widgets.md), after its rename
 table): `widget.part.field` (a `PartStyle` field, S2.11), `widget.values.name` (a widget value),
 `component.<key>.<part>` (a keyed component), `role.<set>.<role>`, `role.global.<role>`, `role.@<key>` (S3),
 `token.<path>` (S4), `input.<name>` with kind `input` (an S9 input, not the `input` widget), `reader:<platform>:<what

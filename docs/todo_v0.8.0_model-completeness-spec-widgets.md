@@ -1,11 +1,11 @@
-# v0.7.1 — Model completeness: Specification, widget catalogue
+# v0.8.0 — Model completeness: Specification, widget catalogue
 
 **Status:** done with the specification, 2026-10-29; merged from eight groups' catalogues and revised after each
 of eleven check passes and a systematic absence pass (the core's §0 records them); its per-platform details are
-confirmed or corrected by the facts in the value phase. Part of the specification ([`todo_v0.7.1_model-completeness-spec.md`](todo_v0.7.1_model-completeness-spec.md), "S…"; its
+confirmed or corrected by the facts in the value phase. Part of the specification ([`todo_v0.8.0_model-completeness-spec.md`](todo_v0.8.0_model-completeness-spec.md), "S…"; its
 decisions are the rationale's,
-[`todo_v0.7.1_model-completeness-rationale.md`](todo_v0.7.1_model-completeness-rationale.md),
-"R…"). The traceability is in `todo_v0.7.1_model-completeness-spec-trace-<platform>.md`.
+[`todo_v0.8.0_model-completeness-rationale.md`](todo_v0.8.0_model-completeness-rationale.md),
+"R…"). The traceability is in `todo_v0.8.0_model-completeness-spec-trace-<platform>.md`.
 
 ## What this is
 
