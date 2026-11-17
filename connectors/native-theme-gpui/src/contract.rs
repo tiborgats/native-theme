@@ -252,9 +252,10 @@ const ROWS: &[Row] = &[
         get: |tc| tc.chart_bearish,
         exceptions: &[],
     },
+    // A chart's grid: the separator colour (issue #4's D2); a table's is `table_row_border`'s, below.
     Row {
         slot: "chart_grid",
-        native: |r| r.list.grid_color,
+        native: |r| r.separator.line_color,
         get: |tc| tc.chart_grid,
         exceptions: &[],
     },
