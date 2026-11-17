@@ -248,6 +248,10 @@ fn the_check_mark_asks_the_applications_icon_resolver(cx: &mut TestAppContext) {
     );
     assert!(window.debug_bounds("native-checkbox-indicator").is_some());
     assert!(
+        window.debug_bounds("native-checkbox-mark").is_some(),
+        "kde-breeze's mark is the stroked check"
+    );
+    assert!(
         !record.borrow().contains(&check),
         "kde-breeze's stroked mark asks nothing: {:?}",
         record.borrow()
