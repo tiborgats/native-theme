@@ -48,7 +48,7 @@ actually happened when they were implemented.
 | v0.6.0 (gpui widgets) | `todo_gpui-widgets-spec.md` |
 | v0.6.1 | `todo_v0.6.1_gpui-kit-0.7.1-{rationale,spec,plan}.md` |
 | v0.7.0 | `todo_v0.7.0_gpui-kit-0.7.3-{rationale,spec,plan}.md`, `todo_v0.7.0_gpui-kit-0.8.0-{rationale,spec,plan}.md`, `todo_v0.7.0_gpui-kit-0.8.1-{rationale,spec,plan}.md`, `todo_v0.7.0_code-review-plan.md` and its finding ledger `todo_v0.7.0_code-review-findings.md` |
-| v0.7.1 | `todo_v0.7.1_kde-hand-overrides-{spec,plan}.md`: the KDE fixes from issue #4's second comment; their rationale stays with the issue, at `docs/issues/0004_kde-hand-overrides-rationale.md` |
+| v0.7.1 | `todo_v0.7.1_kde-hand-overrides-{spec,plan}.md`: the KDE fixes from issue #4's second comment; their rationale stays with the issue, at `docs/issues/0004_kde-hand-overrides-rationale.md`; `todo_v0.7.1_kde-open-items-step1-{spec,plan}.md`: step 1 of the open KDE items (the table's grid and the menu panel); their rationale stays with the issue, at `docs/issues/0004_kde-open-items-rationale.md`; `todo_v0.7.1_gpui-kit-0.9.1-{rationale,spec,plan}.md`: what the GPUI Kit 0.9.1 port left undone (the showcase's new parts, statements, the citations at 0.9.1, the coverage gate, the backlog's upstream entries and the two pins); `todo_v0.7.1_gate-speed-{spec,plan}.md`: `--quick`, nextest and the step cache ported from 0.8.0, and CI's MSRV checks in `--commit` and `--quick` of `scripts/check_release.sh` |
 | backlog, no version | `todo_closed.md`: the closed items of `docs/todo.md`, which move there as they close (the first batch on 2026-10-11) |
 
 The v0.5.7 pair `v0.5.7_docs-overhaul-{design,plan}.md` is the exception to

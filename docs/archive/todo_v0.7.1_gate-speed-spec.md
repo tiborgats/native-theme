@@ -1,6 +1,6 @@
 # v0.7.1: the gate's speed (`--quick`, nextest, the step cache) and CI's MSRV checks — specification
 
-- Rationale: [`todo_v0.7.1_batch-speed-rationale.md`](todo_v0.7.1_batch-speed-rationale.md),
+- Rationale: [`../todo_v0.7.1_batch-speed-rationale.md`](../todo_v0.7.1_batch-speed-rationale.md),
   decision S1, approved by the maintainer on 2026-11-15. This document says what
   changes, where, with which tests and gates. It decides what S1 left to it (what
   `--quick` runs on 0.7.x) and the points listed under *Decisions taken while
@@ -19,10 +19,15 @@
   `v0.8.0-rc1:scripts/check_release.sh`; `SC8` is `v0.8.0-rc1:scripts/step_cache.sh`
   (846 lines); `SC8a` is `818f0eab:scripts/step_cache.sh` (216 lines, the cache as
   first written, before the shared parts); `ci.yml` is `.github/workflows/ci.yml`.
-- Status: **settled 2026-11-15.** The maintainer answered the open points that day (O1a
+- Status: **implemented on 2026-11-17** (commits `e866ea6c..v0.7.1`, the close-out
+  commit that moved this specification and its plan here from `docs/` among them); the
+  running record at the end of the plan says how it ran. Settled 2026-11-15: the
+  maintainer answered the open points that day (O1a
   no, O1b no, O2 (e), O3's keyed option, decision 4 (y)) and approved the 0.7.1 plans as
   written: "When the plan that goes in the 0.7.1 version is ready, without errors, start
-  implementing it."
+  implementing it." The text below is the specification as it was approved: it speaks
+  of the work as still to do, and gives the paths of the documents moved here as they
+  were in `docs/`.
 - Place: v0.7.1's first unit, **GS**, on `v0.7.1-rc2` in the core worktree, after the
   GPUI plan's P1 and P0 and before any unit of the GPUI or the KDE step 1 plan runs a
   gate (`todo_v0.7.1_gpui-kit-0.9.1-plan.md`, header and its rows P0, GS, E1;

@@ -55,7 +55,7 @@ branch). The full run uses neither nextest nor the cache, on that branch as here
   the step cache with its self-test (`scripts/step_cache.sh`), from `v0.8.0-rc1`. What is
   0.8.0's own (its data checks, the PLAN_EXCLUDED steps, the ledger checks, the facts gate's
   shared parts of `80b722b8` and `a0ea8218`) is not ported. Its specification
-  (`docs/todo_v0.7.1_gate-speed-spec.md`) decides what `--quick` runs on 0.7.x, where most
+  (`docs/archive/todo_v0.7.1_gate-speed-spec.md`) decides what `--quick` runs on 0.7.x, where most
   units change a connector rather than the core: at least formatting, the panic scan,
   clippy with `-D warnings` and the strict panic lints over the workspace, the tests and
   doctests of every crate the unit changes and of every crate that depends on one it

@@ -36,9 +36,15 @@
 - Written: 2026-11-14, against `v0.7.1-rc2` at `0fa28027` (pull request #10).
   Its `file:line` citations are `0fa28027`'s unless they name another commit or
   version; it adds no line-number citation of a changing repository file (S6).
-  Status: **to be implemented once free of errors** (the maintainer, 2026-11-15:
-  "When the plan that goes in the 0.7.1 version is ready, without errors, start
-  implementing it."), which approves it as written; §7 lists what is settled.
+  Status: **implemented on 2026-11-17** (commits `e866ea6c..v0.7.1`, the
+  close-out commit that moved this plan, its rationale and its specification here
+  from `docs/` among them); the running record at the end of this plan says how
+  it ran. Approved as **to be implemented once free of errors** (the maintainer,
+  2026-11-15: "When the plan that goes in the 0.7.1 version is ready, without
+  errors, start implementing it."), which approves it as written; §7 lists what
+  is settled. The text below is the plan as it was approved: it speaks of the
+  work as still to do, and gives the paths of the documents moved here as they
+  were in `docs/`.
 - Where: branch `v0.7.1-rc2`, worktree
   `/home/tibi/Rust/native-theme/.claude/worktrees/v071`. The pull request is not
   merged by this plan.
@@ -711,3 +717,535 @@ GS, at M1 and before K5. Nothing in it is measured unless it says so.
 - **Where a new session begins.** After P0 (the build phase starts, the orchestrator on
   Opus); after GS; after M1; before K5. The state is in the two running records and the
   project memory.
+
+## Running record
+
+The orchestrator's running record of this plan, copied at the close-out (K5 step 7) from `~/.claude/projects/-home-tibi-Rust-native-theme/scratch-keep/todo_v0.7.1_gpui-kit-0.9.1-plan/record.md`; its headings are one level down.
+
+## Running record: v0.7.1, the GPUI Kit 0.9.1 plan (with the KDE step 1 plan's shared steps)
+
+Only the orchestrator writes this file.
+
+### 2026-11-16 — P1, the tools (done)
+
+- Worktree: `/home/tibi/Rust/native-theme/.claude/worktrees/v071`, branch `v0.7.1-rc2`, HEAD
+  `0fa28027f7f8ccb376f87e14d85a6e7acce84096`; `git status --porcelain --untracked-files=no` prints nothing.
+- `<tools>` = `/home/tibi/Rust/native-theme/.superpowers/sdd/todo_v0.7.1_gpui-kit-0.9.1-plan/tools/`: `slot.sh`
+  and `lowprio.sh` copied from `~/.claude/projects/-home-tibi-Rust-native-theme/scratch-keep/` and read.
+- `grep -n '^D=' <tools>/slot.sh` prints
+  `7:D=/home/tibi/.claude/projects/-home-tibi-Rust-native-theme/scratch-keep/slot-locks` (`<locks>`, created).
+- `lowprio.sh` gained `export CARGO_BUILD_JOBS=16 RUST_TEST_THREADS=16`; its `renice -n 19 -p $$` and
+  `ionice -c 3` are kept.
+- Slot test: two `<tools>/slot.sh sleep 8 &` took slots 1 and 2; a third `<tools>/slot.sh true` printed its
+  slot line after 20 s (its retry interval), when a slot was free. (The plan says `sleep 30`; 8 s was used,
+  the behaviour shown is the same.)
+- `<tools>/slot.sh <tools>/lowprio.sh sh -c 'echo "$CARGO_BUILD_JOBS $RUST_TEST_THREADS"; ps -o ni= -p $$'`
+  printed `16 16` and `19`. `ls <locks>`: `slot1.lock`, `slot2.lock`.
+- KDE plan K0 (1): `gates/rehearsal.sh` copied from `scratch-keep/batch-2026-11-15/gates/` into
+  `/home/tibi/Rust/native-theme/.superpowers/sdd/todo_v0.7.1_kde-open-items-step1-plan/gates/`. Neither
+  specification names another input in a scratch folder (`grep` for `scratch-keep` and `scratchpad`).
+- Hook trial: the Write of `<core worktree>/native-theme/src/hook_trial.rs` holding `fn f() { x.unwrap() }`
+  was refused ("BLOCKED: Code contains panic-prone or unsafe patterns … `.unwrap()`"); `git status
+  --porcelain --untracked-files=all` shows no `hook_trial.rs`.
+- Pull request: `gh pr view 10 --json state,headRefName,isDraft,title` printed
+  `{"headRefName":"v0.7.1-rc2","isDraft":false,"state":"OPEN","title":"v0.7.1: the gpui connector on GPUI Kit 0.9.1"}`.
+- Another project's `cargo test` (cascatura, not this session's) was running on the machine during P1; it
+  does not take this batch's slots.
+
+#### Untracked planning documents in the core worktree (22)
+
+- docs/issues/0004_kde-open-items-rationale.md
+- docs/todo_v0.7.1_batch-speed-rationale.md
+- docs/todo_v0.7.1_caret-blink-rationale.md
+- docs/todo_v0.7.1_gate-speed-plan.md
+- docs/todo_v0.7.1_gate-speed-spec.md
+- docs/todo_v0.7.1_gpui-kit-0.9.1-plan.md
+- docs/todo_v0.7.1_gpui-kit-0.9.1-rationale.md
+- docs/todo_v0.7.1_gpui-kit-0.9.1-spec.md
+- docs/todo_v0.7.1_gpui-widget-icons-rationale.md
+- docs/todo_v0.7.1_kde-open-items-step1-plan.md
+- docs/todo_v0.7.1_kde-open-items-step1-spec.md
+- docs/todo_v0.7.2_egui-0.37-rationale.md
+- docs/todo_v0.7.x_caret-blink-plan.md
+- docs/todo_v0.7.x_caret-blink-spec.md
+- docs/todo_v0.7.x_gpui-widget-icons-plan.md
+- docs/todo_v0.7.x_gpui-widget-icons-spec.md
+- docs/todo_v0.7.x_kde-open-items-steps2-3-plan.md
+- docs/todo_v0.7.x_kde-open-items-steps2-3-spec.md
+- docs/todo_v0.7.x_kde-open-items-steps4-5-plan.md
+- docs/todo_v0.7.x_kde-open-items-steps4-5-spec.md
+- docs/todo_v0.7.x_kde-open-items-steps6-7-plan.md
+- docs/todo_v0.7.x_kde-open-items-steps6-7-spec.md
+
+### 2026-11-16 — the last document fixes before P0
+
+- The gate-speed documents' two findings of 2026-11-15 (the self-test's call form; the include rule
+  inside macros) and six minor ones were applied by a `worker` and the diff read by the orchestrator. No
+  further review pass (the maintainer's document rule of 2026-11-16). A third lock-list point was taken
+  with them: E.4 item 3's `cargo test` and nextest runs start under `gate.lock`.
+- Small fixes to the two v0.7.1 plans and rule 24 of the batch rationale (the fifth gate script), read by
+  the orchestrator.
+- §9 *Cost check* added to this plan (the maintainer's rule of 2026-11-16).
+
+### 2026-11-16 — P0, commit (0) (done)
+
+- `e866ea6c28c5ae8af17c58068e902d4923ca2c06` on `v0.7.1-rc2`, not pushed. This is the `<sha>` of commit (0).
+- New files (9): docs/issues/0004_kde-open-items-rationale.md, docs/todo_v0.7.1_batch-speed-rationale.md,
+  docs/todo_v0.7.1_gate-speed-plan.md, docs/todo_v0.7.1_gate-speed-spec.md,
+  docs/todo_v0.7.1_gpui-kit-0.9.1-plan.md, docs/todo_v0.7.1_gpui-kit-0.9.1-rationale.md,
+  docs/todo_v0.7.1_gpui-kit-0.9.1-spec.md, docs/todo_v0.7.1_kde-open-items-step1-plan.md,
+  docs/todo_v0.7.1_kde-open-items-step1-spec.md.
+- Status lines set in the two rationales as P0's row gives them; the second Status sentence removed.
+- The five documentation checkers exit 0 on the staged tree (0 findings each).
+  `git status --porcelain --untracked-files=no` prints nothing after the commit.
+- KDE plan: there is no unit 0 (its three documents are in commit (0)).
+
+#### Untracked planning documents left in the core worktree (13)
+
+- docs/todo_v0.7.1_caret-blink-rationale.md
+- docs/todo_v0.7.1_gpui-widget-icons-rationale.md
+- docs/todo_v0.7.2_egui-0.37-rationale.md
+- docs/todo_v0.7.x_caret-blink-plan.md
+- docs/todo_v0.7.x_caret-blink-spec.md
+- docs/todo_v0.7.x_gpui-widget-icons-plan.md
+- docs/todo_v0.7.x_gpui-widget-icons-spec.md
+- docs/todo_v0.7.x_kde-open-items-steps2-3-plan.md
+- docs/todo_v0.7.x_kde-open-items-steps2-3-spec.md
+- docs/todo_v0.7.x_kde-open-items-steps4-5-plan.md
+- docs/todo_v0.7.x_kde-open-items-steps4-5-spec.md
+- docs/todo_v0.7.x_kde-open-items-steps6-7-plan.md
+- docs/todo_v0.7.x_kde-open-items-steps6-7-spec.md
+
+### 2026-11-16 — the untracked planning documents: a 14th
+
+The planning session wrote `docs/todo_v0.7.2_gpui-kit-0.10.0-rationale.md` into the core worktree during GS
+T-ii, a later-release planning document. It is left untracked and unchanged, and the staged-tree check allows
+it: the list above holds 14 from here, this one included.
+
+### 2026-11-16 — the maintainer's changes to the order (speed)
+
+Four departures, approved in the session's question dialog ("Split R, start now", "E4 beside R", "LN in own
+worktree", "L1+L2 one gate"); the gate-speed record says what each means. For this plan:
+- LN is built in its own worktree beside GS and merged after GS, gated by `--commit` on the merged tree.
+- L1 and L2 share one `--commit` gate, split on a red result.
+
+### 2026-11-16 — P2, the checks (done, early)
+
+P2 had no dependency on GS, so it ran during GS T-iv. A `worker` built it; no cargo, no repository change.
+- `<work>/checks/check_text.py` and `<work>/checks/check_moves.py`: `diff` against the blocks cut from the
+  spec by `<work>/checks/p2/extract.py` prints nothing for either; `cmp` says identical; `py_compile`
+  passes.
+- 54 quote files `<work>/checks/quote-*.txt` for G.6's 51 items (item 35 has three, item 38 two). The listing
+  is `<work>/checks/p2/listing.md`.
+- `check_text.py` run against the spec itself as a transcription check: 50 `ok`, 4 `MISSING`, each of the
+  four made from more than one place in the spec; their pieces each pass.
+- The worker's judgments:
+  - E.5's two weak fragment quotes (`check_showcase_parity.py`, `styles.rs`);
+  - the `proposals/README.md` quote's "…" filled with the present start the spec quotes;
+  - the open icons entry ends at "asks first." (the icons rationale is not in commit (0));
+  - Part H's `<sha>` kept split.
+- Possible gaps in G.6's list, for the tasks that write those texts to settle (not quoted):
+  - G.1's README entry ending;
+  - A.1's `SC/app.rs` field doc;
+  - A.3's `diff` doc addition;
+  - G.2's `:264` count line;
+  - A's quoted Widget Info notes.
+
+### 2026-11-16 — LN in its own worktree: started
+
+- Worktree `/home/tibi/Rust/native-theme/.claude/worktrees/v071-ln`, branch `v0.7.1-rc2-ln`, made from
+  `d733a440` (GS commit (iii)) with an absolute path.
+- Hook trial: a Write of `<v071-ln>/native-theme/src/hook_trial.rs` holding `fn f() { x.unwrap() }` was refused
+  ("BLOCKED: Code contains panic-prone or unsafe patterns … `.unwrap()`"); `git status --porcelain
+  --untracked-files=all` prints nothing.
+- Warm-up (the orchestrator's long run, under `gate.lock`):
+  `cargo test -p native-theme --all-targets --no-run && cargo clippy -p native-theme --all-targets -- -D warnings`.
+  Result: `<work>/LN/warmup/run-1`, STATUS 0, 25 s.
+- Its build folder, to be deleted after LN's merge: `/run/media/tibi/work/cargo-build/7d/3eec415c1d1637`.
+- Dispatched: one `implement` agent for Part I. It commits in its own worktree after the staged-tree check;
+  the orchestrator merges after GS and runs `--commit` on the merged tree.
+- Expected merge conflicts with GS commit (iv): in `scripts/check_release.sh`, `scripts/README.md` and
+  `CHANGELOG.md`; resolved by the quoted texts.
+
+### 2026-11-16 — LN: committed in its worktree, in review
+
+- `c43a0d2c` on `v0.7.1-rc2-ln` ("gates: the facts-row gates find rows by text (Part I): …"), not pushed; the
+  eight files of Part I, all `M`; 225 insertions, 527 deletions (the checker's comparison removed).
+- I.5, as the agent reported:
+  - the five tests fail on their temporary edits, each failing line in the commit body;
+  - `--self-test` failed once on the old `CITATION`: "got {'citations': 4, …} want {'citations': 11, …}";
+  - a line inserted at the top of the facts file breaks nothing: `platform_facts_xref` 9 passed,
+    `documented_sizes` 13 passed, the checker exits 0;
+  - the new form is read: kde-breeze stays at 287, 16, 267, 4;
+  - after the restores, `git diff --quiet` over the facts file and the presets exits 0;
+  - on the final tree: the checker's counts per preset (adwaita 133, ios-13 15, kde-breeze 287,
+    macos-monterey 204, macos-tahoe 237, material-3 240, windows-11 258, the colour schemes 0);
+    `self-test ok`; clippy `-D warnings` and strict-panic for native-theme pass; `fmt --check` passes; the
+    other four checkers report 0 findings.
+- Beyond the spec's letter, as the agent reported:
+  - the checker's removed helpers and the `findings` → `count_citations` rename;
+  - an extra self-test case;
+  - its own output format;
+  - the README section in its own wording;
+  - the step label change, which makes a recorded cache entry miss once.
+- Review: an Opus `review` agent (about 750 changed lines, above the orchestrator's size), given the diff and
+  Part I. The verdict was merge, with no must-fix:
+  - **should-fix 1**: the checker's self-test no longer exercises the kind rules (`LEADING` with the new form,
+    `MARKER`, keys taken from a block's first line). It goes back to the author as a new commit, with each rule
+    shown to fail under a deliberate break.
+  - **nit 2, not taken**: `facts_row` (documented_sizes) stops at the next `### ` only, as I.2 says, so §2.29's
+    range runs into the Appendix until `### macOS`. Those lines hold no row today. Recorded; the spec's wording
+    is kept.
+  - **nit 3, taken with 1**: `named()` returns a list nobody reads (I.3, "no dead code is left").
+  - Checks 1 and 3 to 6 found nothing. The review confirmed the lookups cannot match a partial key or the
+    wrong section, the CHANGELOG line is I.4's byte for byte, and the old step label is used nowhere else.
+- Fix: `92ec9297` "gates: check_preset_citations.py's self-test covers each citation kind: …", by the same
+  agent (about 200 k tokens), as a new commit.
+  - The self-test gained cases (a) to (c); `want` is now 16 citations, 4 named, 9 value, 3 rows.
+  - Four deliberate breaks each failed the self-test: `LEADING` reverted, `leading` forced `False`, `MARKER`
+    not stripped, the keys not taken from the first line.
+  - `named()` returns a bool.
+  - The per-preset counts are unchanged, and the four other checkers report 0 findings.
+  - Read by the orchestrator (30 lines): equivalent where the old code returned a list, possibly empty; no
+    finding.
+- **LN is ready to merge** (`v0.7.1-rc2-ln` at `92ec9297`) once GS closes, with `--commit` on the merged tree.
+
+### 2026-11-17 — GS closed; LN merged and gated
+
+- GS's last commit: `4e03057bcebb3acaadb3cab7de37b4f5ce58e532` (E.4 item 1 run `<work>/GS/e4/item1/run-2`;
+  review-hard closed). LN merged as `925125a7366f519f976f9dc678b2170f742ccb87`. E.4 item 1's `--commit` on
+  `925125a7` is GS's last gate and LN's structural gate (the maintainer's speed grant of 2026-11-16).
+- The branch's first timed `--commit`: 368 s on `925125a7`, the caches empty, the build folder warm. The
+  first, on `30a53e29` after other builds, took 942 s. The clean-tree `--quick` (E.4 item 4): 62 s.
+- `rustc -V` at this `--commit`: `rustc 1.100.0 (0ef1bc386 2026-11-09)`, the toolchain recorded for the
+  cadence (a change means the warm-up gate again).
+- E1's precondition checked (2026-11-17): `git diff --name-only e866ea6c HEAD -- <E.2's pathspecs>` prints
+  nothing (0 lines).
+- Cadence: the count restarts at LN's `--commit` (item 1). E1 is the first code unit after it, gated by
+  `--quick`.
+- `BASE_REV` for E1 is LN's last commit on the branch, the merge `925125a7`. E1's row first checks that
+  `git diff --name-only e866ea6c HEAD -- <E.2's pathspecs>` prints nothing.
+
+### 2026-11-17 — E1 started (session native-theme-31)
+
+- New orchestrating session `native-theme-31` (Opus); `native-theme-0c` is gone (ListAgents), the planning
+  session `native-theme-86` idle.
+- E1's precondition checked again: `git status --porcelain --untracked-files=no` 0 lines; the E.2-scope diff
+  against `e866ea6c` 0 lines. `BASE_REV` = `925125a7366f519f976f9dc678b2170f742ccb87`.
+- Untracked planning documents in `v071`: the 14 listed above plus
+  `docs/todo_v0.7.2_egui-0.37-and-gpui-kit-0.10.0-plan.md` and `docs/todo_v0.7.2_egui-0.37-and-gpui-kit-0.10.0-spec.md`
+  (the planning session's, 2026-11-16/17): 16.
+- Warm-up of both cores' connector test builds as a long run, `<work>/E1/warmup/run-1/`, under `gate.lock`.
+- E1 dispatched to a `worker` agent.
+
+### 2026-11-17 — E1 committed; H and O committed, their unit's gate pending
+
+- Warm-up `<work>/E1/warmup/run-1`: STATUS 0, 32 s (both cores already warm).
+- E1 by a `worker`: 559 numbers written in 33 files (E.2's scope only); `counts.txt` rule 1 411, rule 2 55,
+  rule 3 81; gates 1 and 2 pass before and after the write; gate 4 1527 checked, 1185 hold, 277 set aside,
+  65 fail (the dry run's figures), all 65 in `set-aside-gate4.txt` (61 distinct numbers); `lookup.py --check`
+  10 of 10; no `REVIEW_ASIDE` entry (126 candidate chains read for past tense, list
+  `<work>/E1/pasttense-candidates.txt`); E.4 step 6's three tests pass on both cores; fmt clean.
+  T1_COMMITS/TASK1 computed by `git rev-list` at run time (43 commits at BASE_REV).
+- Orchestrator's reading: E.7's word-diff over the staged change shows only numbers and the overlapping-range
+  splits (`-N-`/`+-N`), no version label changed; the counts and the full set-aside list are in the body.
+- **E1's gate**: `--quick` `<work>/E1/gate/run-1`, STATUS 0, **455 s** (the first `--quick` timed on a change;
+  0 unchanged, since E1 touches four crates), `147 checks · 147 ✅`; porcelain the same before and after.
+  GPUI Fast legs `<work>/E1/gate/run-1-fast`: STATUS 0, 21 s (lib 399, seams 18, showcase 332 twice).
+- **E1: `42b1437b362e1edc5780e00dd2bba6cdbab30e7f`.** Cadence: 1st code unit since LN's `--commit`.
+- **H: `30a83933`**, by the orchestrator (a verbatim paste of Part H's text, `<sha>` = `e866ea6c`; cheaper
+  than an agent; `check_text.py` ok, five checkers 0). **O: `e22dc00c`**, likewise (D.3's open entry
+  without the icons sentence, §7; `check_text.py` ok for both quotes, five checkers 0).
+- O's `--quick` (`<work>/O/gate/run-1`) was stopped at its start: the unit takes a third commit first, N5's
+  spec-text corrections and the `CARGO_ENCODED_*` backlog entry (gate-speed record, decision 4), by a
+  `worker`; one `--quick` on that staged change then covers H, O and N5.
+
+### 2026-11-17 — the documents unit H, O, N5 gated; the forks
+
+- N5 by a `worker` (continued once for the five further contradictions it found, decision 13, M.1, C.1/C.2,
+  C.5, D.2's header, and three omissions): the gate-speed specification follows fix-1's code; the backlog entry
+  on `CARGO_ENCODED_RUSTFLAGS`/`CARGO_ENCODED_RUSTDOCFLAGS` (Core API). The orchestrator measured Cargo's
+  precedence on 2026-11-17 (cargo 1.100.0, throwaway crate in the scratchpad): `RUSTFLAGS=-Dwarnings` fails an
+  unused variable, with `CARGO_ENCODED_RUSTFLAGS=` it exits 0; `RUSTDOCFLAGS=-Dwarnings` fails a broken
+  intra-doc link (101), with `CARGO_ENCODED_RUSTDOCFLAGS=` it exits 0. Diff read by the orchestrator.
+- **The unit's gate**: `--quick` `<work>/O/gate/run-2` on N5's staged change (tree holding H and O), STATUS 0,
+  **60 s**, `82 ✅ · 65 unchanged`, porcelain the same. Five checkers 0 on each commit.
+- **N5: `15b26f649e44d243500d04497d62bf06541db0eb`.** Documents unit: not counted for the cadence.
+- **Forks** from `15b26f64` (the unit's last commit, in place of O's: N5 joined the unit): `v071-lane` on
+  `v0.7.1-rc2-gk-connector`, `v071-docs` on `v0.7.1-rc2-gk-docs`; the hook trial refused in both, both clean.
+  The build lane's first builds, clippy warm-ups and `--prepare`: long run `<work>/forks/run-1`.
+- D dispatched to a `worker` in `v071-docs` (no cargo).
+
+### 2026-11-17 — L1 committed; L2 under the shared `--commit`; BT and D running
+
+- Forks' first builds `<work>/forks/run-1`: STATUS 0, 383 s (`--prepare` included, silent under `set -e`).
+- L1 and L2 by the orchestrator (D.6's commands and gates; the worker's part, the message, written from the
+  outputs: cheaper than an agent).
+- **L1: `cdd0c3c919ab4bf1d5a9e2ee1ec7f54cd4c0f697`**, unicode-properties 0.1.3 -> **0.1.5** (version and
+  checksum lines only; requirements "0.1.3" in gpui-fast-web 0.1.15, gpui-pre-web 0.3.12, rustybuzz 0.20.1;
+  `build = false`). Checks `<work>/L1/run-1/checks.log`: audit 0 (1083 deps), lib 401 / 399, seams 18,
+  showcase 332 on both cores, runner env 332 each; 321 s. Its `--commit` is L2's (maintainer's "L1+L2 one gate").
+- L2: taffy 0.15.0 -> **0.15.1** (version and checksum only; gpui-fast 0.1.15 and gpui-pre 0.3.12 require
+  "0.15.0", caret; `build = false`); staged; checks then `--commit` as one long run, `<work>/L2/run-1/`.
+- Registry note: gpui-component 0.10.0 and gpui-fast 0.1.16 are in Cargo's registry (the v0.7.2 trials'); no
+  new upstream for 0.7.1's purposes (v0.7.2 plans 0.10.0).
+- BT dispatched to an `implement` agent in `v071-lane`; D running in `v071-docs`.
+
+### 2026-11-17 — BT committed and reviewed; BX running
+
+- **BT: `cd770099`** on `v0.7.1-rc2-gk-connector` (the `implement` agent's commit): both tests red before on
+  gpui-pre (`tests.rs:232`, `:277`: "the resolver was asked for icons/check.svg: []"), green after on both
+  cores (lib 403 / 401; `--no-default-features` 294); clippy three ways; strict panic `--lib` and showcase,
+  both cores; fmt; pinned-lines check `ok` for both hunks; `check_text.py` ok. Code unit (counted at M1).
+- BT's `review`: **merge**; no must-fix, no should-fix. One nit, taken: assert `native-checkbox-mark` is laid
+  out in the kde-breeze half (proves the stroked arm drew). The reviewer verified per-test `App` isolation of
+  the resolver global (gpui-pre 0.3.12 and gpui-fast 0.1.15 `App::new_app` per `#[gpui::test]`).
+  The nit goes to BT's agent as the lane's next commit after BX's.
+- BX dispatched to a `worker` in `v071-lane` (after BT's commit).
+
+### 2026-11-17 — BX and D committed, read
+
+- **BX: `e49c48f6`** on `v0.7.1-rc2-gk-connector` (worker): B.2, B.4's README cell, B.5, B.6, B.9's comment
+  (anchored on its words, digits `596-598` already E's), B.10; lib 403 / 401, clippy three ways, `cargo doc`
+  `-D warnings` with and without private items, fmt; pinned-lines `geometry.rs` L=772 ok; seven `check_text.py`
+  ok. Orchestrator read the diff: the spec's texts. Documents unit (not counted).
+- **D: `43c8a9d4`** on `v0.7.1-rc2-gk-docs` (worker): 45 D.2 dated lines + 4 D.4 entries, as D.1; `lookup.py
+  --check` 10/10; all eight ROADMAP bullets still hold (no D.5 report); four `quote-D4-*` ok; five checkers 0.
+  Worker's own decisions in the body's Notes: nine entries without line numbers dated from its reading of the
+  source; `:2433` also gives `input_style`'s lines; `:2449`'s kept G4 line now points at a `:152-166` the
+  rewritten sentence no longer holds (the spec keeps the dated line; left); `:3893`'s editor range ends at the
+  listener's `});`. Orchestrator read the diff. Documents unit.
+
+### 2026-11-17 — L2 and the shared `--commit`; A dispatched; the build lane to the KDE plan
+
+- L2's checks `<work>/L2/run-1/checks.log`: audit 0, lib 401 / 399, seams 18, showcase 332 both cores, runner env
+  332 each; 301 s. **The shared `--commit` (L1+L2)**: `<work>/L2/run-1/gate.log`, STATUS 0, **666 s**,
+  `147 checks · 147 ✅ · 0 unchanged`; porcelain the same; no refusal line in its log (no registry list entry).
+- **L2: `30b3e6d548f08925d0a9456b458c621e0162b485`.** Cadence: count restarts here.
+- BT's nit: **`1a3e352b`** on `v0.7.1-rc2-gk-connector` (assert `native-checkbox-mark`; lib 403 / 401, fmt,
+  clippy). The connector branch is complete for M1: `cd770099`, `e49c48f6`, `1a3e352b`.
+- A dispatched to an `implement` agent in `v071`.
+- The build lane handed to the KDE plan: `v071-lane` on `v0.7.1-rc2-kde` at `30b3e6d5` (its record has K0).
+
+### 2026-11-17 — A committed; its review, C and F running
+
+- A by an `implement` agent: tests 2 and 4 (and 3) red before (`no quad … painted in its 'decorated line,
+  warning at 20%' claim`; `no square quad inside the Markdown …`; `left: (0, 0) right: (1, 1)`), all eight
+  green after on both cores, no GPUI Fast `cfg`; showcase 340 both cores, lib 401 / 399, clippy three ways,
+  strict panic both, coverage passes, fmt, five `quote-A*` ok. The agent once edited `SC/app.rs` by a shell
+  script (the brief forbids it; no hook pattern in it), reverted it and redid it with Edit; nothing staged came
+  from the shell. Added helpers `quads_filled_in`, `settled_claim` (sent to review).
+- **A's gate**: `--quick` `<work>/A/gate/run-1`, STATUS 0, 279 s in all, `--quick` 4 m 18 s, `95 ✅ · 52
+  unchanged`; GPUI Fast legs: 399, 18, 340, 340; porcelain the same.
+- **A: `47f28eff6a6543f6702f65d0402f9b4cd8c8d1d8`.** Cadence: 1st code unit since L2's `--commit`.
+- A's `review` dispatched (reads through git). C dispatched to an `implement` agent in `v071`.
+- The documents branch merged `v0.7.1-rc2` at A: **`a4c87408`** (clean). F dispatched to an `implement` agent in
+  `v071-docs` (no cargo but `cargo metadata` through `lowprio.sh`).
+
+### 2026-11-17 — C committed (Part C passes: the workaround is gone); A's must-fix
+
+- **Part C's outcome (for the maintainer, §7): both pass.** `the_theme_settings_switch_the_preset` passes on
+  gpui-pre and GPUI Fast without `PresetDelegate::on_will_change`; the removal is committed and the backlog entry
+  (`:3959`) closes in DM. C by an `implement` agent; diff read by the orchestrator (C's reviewer): exactly Part C.
+- **C's gate**: `--quick` `<work>/C/gate/run-1`, 163 s in all, `87 ✅ · 60 unchanged`, 2 m 26 s; GPUI Fast legs
+  399, 18, 340, 340; porcelain the same.
+- **C: `64dc16544327254ccbdc7b288e54c195e61c9ec3`** (the author's subject-only message amended, before any push,
+  to carry the evidence body; first sha `00ee756f`). Cadence: 2nd code unit since L2's `--commit`.
+- A's `review`: merge after one **must-fix**: test 8 measures the info wrapper, which `v_flex` stretches, so it
+  passes without `.w_full()`. Taken with nits 1 (shared quad helper), 2 (the duplicated `signal` note) and 5
+  (crate name in a citation); nits 3 and 4 left (harmless; test 4 is not vacuous, per the reviewer's trace).
+  Sent to A's author as the core lane's next commit after C. Its gate: covered by BS's `--commit` (the fix is
+  committed after its targeted tests, then BS is staged on top), as the speed rule "merge gate runs" allows;
+  the fix then goes back to the same reviewer.
+- K1 (KDE unit 1) committed in `v071-lane` (the KDE record); its `review` and K2 dispatched.
+
+### 2026-11-17 — A's must-fix committed; BS dispatched
+
+- A's author (continued, about 230 k tokens): test 8 reads the waveform's own box through a test-only
+  `InfoRegistry::widget_bounds` (`SC/info/registry.rs`, filled by the wrapper's `on_children_prepainted`, which
+  test builds now install for every target; release builds unchanged); also asserts the waveform's right edge
+  is its row's. Red with `.w_full()` removed, both cores ("does not reach its row's right edge … left: 409px
+  right: 1268px"); green after: showcase 340 ×2, lib 401 / 399, clippy three, strict panic two, fmt,
+  `quote-A2` ok. Nits 1, 2, 5 taken. Files: `SC/info/inputs.rs`, `SC/info/registry.rs`, `SC/tests.rs`.
+- **A's fix: `cf3895f4a9f57ca55670dc4d0341b317f118df8d`**, committed after its targeted tests; its gate is BS's
+  `--commit` (on BS's staged tree), and it went back to A's reviewer.
+- BS dispatched to an `implement` agent in `v071`.
+
+### 2026-11-17 — F committed; its review running
+
+- **F: `7b8b248e`** on `v0.7.1-rc2-gk-docs` (`implement`): coverage `gpui discovered 159 → 168` (+9), shown
+  124 → 128, excepted 35 → 40, missing 0; `--self-test` passes; every F.5 case fails with its part removed
+  (applied in memory; listed in the body); five checkers 0; `check_text.py` ok F3-1..5, F4-0..5, F7-1..2.
+  Author's choices beyond the spec: a declared module whose file is missing, an unreadable `use` tree, and
+  `super` at the root raise `Failure` (exit 2); one docstring sentence on `--self-test`. Noted, left: no F.5
+  case covers `\s*\(` in the GridLayout `GPUI_VIA` pattern. The rule adds about 2.7 s. Code unit (counted at M1).
+- F's `review` dispatched (may run the script read-only in `v071-docs`).
+
+### 2026-11-17 — A's fix re-reviewed
+
+- A's reviewer on `cf3895f4`: **merge**; the must-fix is resolved (traced: the first prepainted child is the
+  waveform; red at 96 vs 955 px; release build unchanged). **Should-fix, taken:** in test builds every info
+  wrapper installs `on_children_prepainted`, and on GPUI Fast such a listener calls `note_uncarried`
+  (gpui-fast 0.1.15 `elements/div.rs:2112-2113`), which marks the layer content-anchored (`fast/layers/
+  invalidate.rs:801-812`, `policy.rs:477`, `:494-511`): no page's scroll layer but Basic's can be composited in
+  GPUI Fast tests, unlike the shipped showcase. Fix: the test-only listener only on the targets a test measures
+  (the liquid waveform), and the field's doc and test 8's doc (nit 1: the right-edge check) say so. To A's author
+  after BS commits (one builder per tree); covered by M1's `--quick`; then back to the same reviewer.
+
+### 2026-11-17 — BS's review; F's review and its fixes
+
+- BS's `review` (on the staged change, while its gate ran): **commit**; no must-fix, no should-fix. Nit, left
+  (needs a spec change): the `receivers` note omits `questionnaire/components.rs:1219` (B.9's connector comment
+  cites it). The reviewer traced B.8's three claims, B.1's height, B.3's resolver callers, B.4, B.9, B.15.
+- F's `review` (ran the gate and self-test read-only; mutations on a copy, `<work>/F-review/`): **merge after
+  must-fixes**: (1) no self-test reaches `BaseModules.lookup`'s glob branch (it finds ResizablePanel and
+  ResizablePanelGroup; removing it leaves `--self-test` green); (2) F.1 step 2's one-hop publicity misses
+  gpui-component 0.9.1's own longer chains (`mod time; pub use time::{calendar, …}`; `styled::*` →
+  `component_traits`), dropping 12 names silently (none renders today). Should-fix: (3) an unknown first segment
+  in gpui-base taken as external silently; (4) untested `GPUI_VIA` sub-patterns and one `walk` branch. Minors.
+- **Orchestrator's decision (for the maintainer's report):** must-fix 2 is a gap in the specification's rule
+  F.1 step 2, corrected by its own goal (N7: find what gpui-component makes public; Rust's publicity is
+  transitive): reachable modules as a fixpoint, names carried along every chain. Settled by logic, not a
+  preference, so the work goes on. Taken: must-fixes 1, 2; should-fixes 3 (external only if a declared
+  dependency or std/core/alloc, else `Failure`), 4 (and the author's `grid_layout_sample(` gap); minors 2, 3, 4,
+  5. Minor 1 (`.scrollbar(` also matches `MessageScroller::scrollbar(bool)`; the showcase has none) reported
+  only: the pattern is the spec's. Sent to F's author as a new commit in `v071-docs`.
+
+### 2026-11-17 — BS committed under `--commit`
+
+- BS by an `implement` agent: B.1, B.3, B.4's `GEOMETRY_NOTES`, B.8 (three new claims), B.9's layout note, B.15;
+  lib 401 / 399 with the claim and prose gates, showcase 340 ×2, clippy three, strict panic two, `cargo doc`
+  `-D warnings`, fmt, eight quotes ok. Reviewed before the commit (above): commit.
+- **BS's gate**: `--commit` `<work>/BS/gate/run-1`, STATUS 0, 534 s in all, `--commit` **8 m 38 s**, `147 checks ·
+  113 ✅ · 34 unchanged`; GPUI Fast legs 399, 18, 340, 340; porcelain the same; `rustc 1.100.0 (0ef1bc386
+  2026-11-09)`, unchanged. It covers A's fix `cf3895f4` beneath it.
+- **BS: `9e02eaa1cf8364f3d6415d7bcef195a1dc2fe590`.** Cadence: 3rd code unit since L2 → `--commit`; the count
+  restarts here.
+- A's should-fix (listener only on measured targets; test 8's doc) sent to A's author as the next core commit.
+  Then M1: BT and F are the code units it brings (1st and 2nd) → `--quick`, which also covers A's fix-2.
+
+### 2026-11-17 — F's review fixes committed; back to its reviewer
+
+- **F's fixes: `ce6b914e`** on `v0.7.1-rc2-gk-docs` (F's author, about 265 k tokens): must-fix 1 (the `rz`/`Panel`
+  glob case), must-fix 2 (`component_exports`, publicity as a fixpoint; newly counts 12 names: time::calendar 4,
+  time::time_field 5, component_traits 3, none a widget), should-fixes 3 and 4, minors 2–5. Gate unchanged
+  `discovered 168 shown 128 excepted 40 missing 0`; `--self-test` passes; 31 mutations all fail the self-test;
+  five checkers 0; F's quotes ok. External crates: every dependency kind of gpui-base (dev included; harmless,
+  `#[cfg(test)]` modules are stripped). Re-review by F's reviewer running.
+
+### 2026-11-17 — A's fix-2 committed
+
+- **A's fix-2: `b22b431c09bbcd259bdc21bc5d7157460172ad98`** (A's author): a test-only `MEASURED_WIDGETS` limits
+  the listener to the liquid waveform; listed elements as before; release builds `listed.is_some()` alone; test
+  8's doc names the right-edge check. Red with `.w_full()` removed, both cores; showcase 340 ×2, lib 401 / 399,
+  clippy three, strict panic two, fmt. Committed after its targeted tests; gated by M1's `--quick`; re-read by
+  A's reviewer (running).
+- The documents branch's merge of `v0.7.1-rc2` waits for F's re-review (the reviewer may run the gate read-only
+  in `v071-docs`); it will take the core at `b22b431c`.
+
+- A's reviewer on `b22b431c`: **merge**; the compositing concern is resolved for every page but Inputs; the release
+  build is as at `47f28eff`; test 8 proves its claim. Nit left (a doc clause: the measured target's own page,
+  Inputs, still loses GPUI Fast compositing in test builds). **A's review is closed.**
+
+- F's reviewer on `ce6b914e`: **merge**; every earlier finding resolved (re-ran its mutations; real discovery
+  still the nine names; 12 more statement names counted, none dropped). Should-fix taken: three self-test cases
+  for branches 0.9.1 never exercises (a named item through private globs; a whole gpui-base module and a named
+  item re-exported from an unreachable private module). Nits taken: the redundant `own_module` branch (remove or
+  comment), a 104-column docstring line, and the spec's F.1 step 2 / step 3 text brought in line with the code
+  (as N5 did for the gate-speed spec). To F's author (about 265 k tokens: a small fix to its own work).
+
+- **F's last round: `43fa2f6f`** (three cases, each red under its mutation; the redundant branch removed; docstring
+  rewrapped; the spec's F.1 steps 2 and 3 describe the code). Read by the orchestrator. **F's review is closed.**
+- The documents branch merged `v0.7.1-rc2` at `b22b431c`: **`b44cd68f`** (clean). DM next.
+
+### 2026-11-17 — DM committed; M1 merged, its gate running
+
+- **DM: `a887b370`** on `v0.7.1-rc2-gk-docs` (worker): five entries moved (`:2187` in `cdd0c3c9`, `:3888`
+  no commit, `:3959` in `64dc1654` citing `e866ea6c`, `:3972` no commit and without the icons sentence,
+  `:4140`'s whole section in `30b3e6d5`); `check_moves.py` ok; five checkers 0. Read by the orchestrator. (The
+  agent misreported its parent as `43c8a9d4`; it is `b44cd68f`, history intact.)
+- **M1 merges**: the connector branch at `1a3e352b` → **`f38d158f`**; the documents branch at `a887b370` →
+  **`2bf76d5766fa966ba1edfc8129df69c904eabfe9`**; both clean. Every review M1 needs is closed (BT, BX read, D
+  read, F with two fix rounds, DM read; A with two fixes, C read; E1, H, O, L1, L2 read).
+- M1's gate: `--quick` + GPUI Fast legs, `<work>/M1/gate/run-1/` (BT and F are its two code units; A's fix-2
+  `b22b431c` is under it). Then the push and CI.
+
+- **M1's gate**: `--quick` + GPUI Fast legs `<work>/M1/gate/run-1`, STATUS 0, 414 s in all, `--quick` 6 m 21 s,
+  `147 checks · 113 ✅ · 34 unchanged`; legs 401 (GPUI Fast lib: 399 plus BT's two tests), 18, 340, 340;
+  tree clean. Cadence: BT and F, 1st and 2nd code units since BS's `--commit`.
+- **Pushed**: `git push origin v0.7.1-rc2:v0.7.1-rc2`, `0fa28027..2bf76d57` (fast-forward). CI run
+  **44007240992** watched in the background (`<work>/M1/ci-watch.log`); E2's commit waits for its result.
+- E2 dispatched to a `worker` in `v071`. The documents lane switched to the KDE plan (`v0.7.1-rc2-kde-docs` at
+  `2bf76d57`); KF dispatched there (the KDE record).
+
+- **CI run 44007240992 on `2bf76d57`: success**, every job green (the GPUI Fast builds on macOS and Windows
+  included). The first watch ended on a GitHub API HTTP 502, not on the run; a polling watch read the result.
+  E2's commit may proceed once its gate passes.
+
+### 2026-11-17 — E2 staged; its gate and review running
+
+- E2 by a `worker` (about 627 k tokens: not to be resumed for new work): 43 files staged; version grep 199 at
+  the start, 27 after (history, other crates' or floor versions, one excepted line); set-aside 269 chains (106
+  changed, 163 hold), gate-4 65 (none a moved citation; three counts re-measured and hold), E.3 54 (only
+  `demo.rs:357`'s known item), review chains 81 (none differs); taffy at 0.15.1; B.7 dated 2026-11-17;
+  word-diff 27 lines each a named rewrite; nine pinned files `ok`; check_text ok; the three tests both cores.
+  Its calls: `SC/tests.rs:9482` kept "(gpui-component 0.8.1)" over a measured list (sent to review);
+  "floor of gpui-fast 0.1.14" (gpui-kit 0.9.1's declared floor; right); `contract.rs` 96 → 97 sites, re-counted.
+  Hook: the outside-folder guard refused an inline command that held `…/citations/run/plan.json` (it read
+  `/run/plan.json` as a path); the agent moved the same read into `<work>/E2/leftover.py`, reading only that
+  file inside the project. A false refusal worked around; reported to the maintainer.
+- The orchestrator fixed one citation the author left: `SC/inspector.rs` `resolve_font`'s panic, gpui-pre
+  `:621-628` → `:620-627`, gpui-fast `:618-625` → `:617-624` (the `panic!(`…`);` span), noted in the message.
+- E2's gate: `--commit` + GPUI Fast legs, `<work>/E2/gate/run-1/`; E2's `review` on the staged change.
+
+### 2026-11-17 (04:50–) — E2 committed; the weekly limit; G1, G2 by the orchestrator
+
+- **E2's gate**: `--commit` + GPUI Fast legs `<work>/E2/gate/run-1`, STATUS 0, 480 s in all, `--commit` 7 m 39 s,
+  `147 checks · 123 ✅ · 24 unchanged`; legs 401, 18, 340, 340; porcelain the same.
+- **E2: `db717d49f339a99e8c6446803ebb853c93aea067`.** Cadence: E2 is the 3rd code unit since BS's `--commit`
+  (BT and F at M1, then E2) → `--commit`; the count restarts here.
+- **E2's review was cut off by the weekly limit** (HTTP 429, "resets 8pm (Europe/Madrid)"); its work is saved:
+  resume that agent with SendMessage after 20:00. No subagent can run until then. E2's review must close (with
+  any fix committed and gated) before the KDE plan's MK1.
+- G1 and G2 done by the orchestrator (verbatim spec texts; no agent available): **G1 `844a576d`**
+  (CHANGELOG: two Added lines, one Fixed line, the README entry's sentence; quotes G1-1..3 ok), **G2 `6cb5e38b`**
+  (ROADMAP's sentence; the count 29 → 44 by the grep on its tree; quote G2 ok). G5 staged (the note, each cited
+  line opened; `ThemeColor` 139 fields at 0.8.1 and 0.9.1; no caller of `created`/`modified`/`deleted`), its
+  unit's `--quick` running `<work>/G5/gate/run-1`.
+
+- **G5's unit gate**: `--quick` `<work>/G5/gate/run-1`, STATUS 0, 63 s, `147 checks · 82 ✅ · 65 unchanged`;
+  porcelain the same; five checkers 0. **G5: `2a885f6f6f8f48162101f7c6390c245a675cdc4e`.** G1, G2, G5 are the
+  orchestrator's own (their reading is its).
+
+### Next
+
+State at 2026-11-17 05:00 (session `native-theme-31`): **the GPUI port's commits are complete** on `v0.7.1-rc2`
+(HEAD `2a885f6f`; pushed up to M1's `2bf76d57`, CI green). Paused on the weekly limit (subagents refused until
+20:00 Europe/Madrid).
+
+1. After 20:00: resume E2's review agent (the "Review E2 staged hand-read" agent; SendMessage to it: the change
+   is now committed as `db717d49`, read it with `git show db717d49`; continue). A must-fix goes to a fresh
+   `worker` (E2's author is past 600 k tokens), gated by `--quick` (a fix does not count), re-read by the same
+   reviewer.
+2. Then the KDE plan's MK1 (its record): merge `v0.7.1-rc2-kde` at K1 `2e1c4af8` and `v0.7.1-rc2-kde-docs` at
+   KF `76ce9ace`; `cargo package -p native-theme --list` holds `tests/vectors/kde_shade.tsv`; `--quick` + GPUI
+   Fast legs (K1 and KF: 1st and 2nd since E2's `--commit`). MK2 (K2 `41c73d48`): `--commit` + legs. MK3 (K3
+   `1cc99825` + `14229f12`): `--commit`, legs; close the build lane (KDE plan §2.2). KR (private X server), KD
+   (ask the maintainer for the desktop window), K4 (`gh issue view 4 --comments` first; G3-12's condition to
+   confirm), MK4, K5 (the close-out of both plans).
+
+### 2026-11-17 05:15 — E2's review closed
+
+- E2's `review` (resumed after the limit reset): **merge**, no must-fix. Should-fix: `SC/tests.rs:9482`'s own-icons
+  widget list holds at gpui-component 0.9.1 (re-measured by the reviewer: only `speech/indicator.rs` gained a use,
+  `Square`, already listed; `icon.rs`'s `Check` is test-only), so the label becomes 0.9.1 and the separate
+  "(gpui-component 0.9.1)" after the SpeechIndicator goes; db717d49's body filed it "excepted, not re-measured".
+  Nit taken: `contract.rs:2160-2161` qualified "while `list.active_highlight` is on, the connector's setting"
+  (0.9.1's `list_item.rs:260-262` paints accent_foreground when off). Nit left: `SC/inspector.rs:324`'s `:1182`
+  is the `Missing` arm 6f85e1d6 chose. The same unqualified claim at `contract.rs:2294` and `geometry.rs:2178`
+  is outside B.4's list: left, named here.
+- The fix: by the orchestrator (two comment edits, line counts kept), after MK1's gate, covered by MK2/MK3's
+  `--commit`.
+
+- MK4 run-2 `--quick`: 147 ✅, 0 ❌, 6m 17s, tree clean (MK4 = merge 29e78d8b + audit fix e417add7).
+- the lane's gated head for the next release: e417add7 (MK4; --quick run /home/tibi/Rust/native-theme/.superpowers/sdd/todo_v0.7.1_kde-open-items-step1-plan/MK4/run-2; reviews closed)

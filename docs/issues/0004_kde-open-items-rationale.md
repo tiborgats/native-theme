@@ -1,7 +1,9 @@
 # Issue #4: the KDE items still open after v0.7.1's first fixes — rationale
 
 Status: written 2026-11-14, revised after six reviews. D2, D3 and D10 (a) approved
-for step 1 (2026-11-15); the later steps not yet approved.
+for step 1 (2026-11-15); the later steps not yet approved. Step 1 (D2, D3)
+implemented on 2026-11-17 for 0.7.1, by
+`../archive/todo_v0.7.1_kde-open-items-step1-{spec,plan}.md`.
 
 It continues `docs/issues/0004_kde-hand-overrides-rationale.md` (called "the first
 rationale" below), whose §5 left these items undecided, and the backlog entries
@@ -826,7 +828,7 @@ asked for first.
 - (a) Into v0.7.1. It corrects values in existing fields, as v0.7.1's first KDE
   fixes did, and both are items of the reporter's list, which the maintainer
   asked on 2026-11-13 to have fixed in v0.7.1. v0.7.1 is reopened in any case by the completion of
-  the GPUI Kit port (`docs/todo_v0.7.1_gpui-kit-0.9.1-rationale.md`), whose
+  the GPUI Kit port (`docs/archive/todo_v0.7.1_gpui-kit-0.9.1-rationale.md`), whose
   showcase changes need a new asset run already.
 - (b) As v0.7.2. v0.7.1 stood finished and checked on 2026-11-14; step 1 brings
   a carried module of 434 lines with its test, reader, preset and facts

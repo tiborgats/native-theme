@@ -2,6 +2,10 @@
 
 Status: written 2026-11-14, revised after three reviews. Approved by the maintainer's instruction of
 2026-11-15: "When the plan that goes in the 0.7.1 version is ready, without errors, start implementing it."
+**Implemented on 2026-11-17** (commits `e866ea6c..v0.7.1`, the close-out commit that moved this
+rationale, its specification and its plan here from `docs/` among them); the running record at the
+end of the plan says how it ran. The text below is the rationale as it was approved: it speaks of the
+work as still to do, and gives the paths of the documents moved here as they were in `docs/`.
 
 Abbreviations: `GC`, `GB`, `GP`, `GF` are the `src/` folders of gpui-component
 0.9.1, gpui-base 0.9.1, gpui-pre 0.3.12 and gpui-fast 0.1.15 in Cargo's registry;

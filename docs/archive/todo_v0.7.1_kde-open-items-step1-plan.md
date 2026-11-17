@@ -1,6 +1,6 @@
 # 0.7.1: issue #4's open KDE items, step 1 (the table's grid and the menu panel) — implementation plan
 
-- Rationale: [`issues/0004_kde-open-items-rationale.md`](issues/0004_kde-open-items-rationale.md)
+- Rationale: [`../issues/0004_kde-open-items-rationale.md`](../issues/0004_kde-open-items-rationale.md)
   (D2, D3, and what D10 gives a step outside the code). Specification:
   [`todo_v0.7.1_kde-open-items-step1-spec.md`](todo_v0.7.1_kde-open-items-step1-spec.md)
   (Parts A to H).
@@ -34,11 +34,16 @@
 - Written: 2026-11-14, against `v0.7.1-rc2` at `0fa28027` (pull request #10).
   Its `file:line` citations are `0fa28027`'s unless they name another commit or
   version; it adds no line-number citation of a changing repository file (S6).
-  Status: **to be implemented once free of errors** (the maintainer, 2026-11-15:
+  Status: **implemented on 2026-11-17** (commits `e866ea6c..v0.7.1`, the
+  close-out commit that moved this plan and its specification here from `docs/`
+  among them); the running record at the end of this plan says how it ran.
+  Approved as **to be implemented once free of errors** (the maintainer, 2026-11-15:
   "When the plan that goes in the 0.7.1 version is ready, without errors, start
   implementing it."); written for the specification's D10 (a), step 1 in
   v0.7.1, which the maintainer chose the same day; the instruction approves the
-  plan as written; §7 lists what is settled.
+  plan as written; §7 lists what is settled. The text below is the plan as it
+  was approved: it speaks of the work as still to do, and gives the paths of the
+  documents moved here as they were in `docs/`.
 - Where: branch `v0.7.1-rc2`, worktree
   `/home/tibi/Rust/native-theme/.claude/worktrees/v071`. The pull request is not
   merged by this plan.
@@ -816,3 +821,243 @@ to 6 need the desktop, a CI run 21 to 27 minutes. A `--commit` run and this
 plan's tasks were not measured on this tree. The longest chain runs through the GPUI plan's
 core lane to its G5, then MK1, MK2, MK3, KD, MK4 and K5, with K1 to K3 and KF
 beside the GPUI plan's E2 and Part G, and K4 beside KR and KD.
+
+## Running record
+
+The orchestrator's running record of this plan, copied at the close-out (K5 step 7) from `~/.claude/projects/-home-tibi-Rust-native-theme/scratch-keep/todo_v0.7.1_kde-open-items-step1-plan/record.md`; its headings are one level down.
+
+## Running record — 0.7.1, issue #4's open KDE items, step 1 (plan `docs/todo_v0.7.1_kde-open-items-step1-plan.md`)
+
+Only the orchestrator writes this file.
+
+### 2026-11-16 — K0 (1) at the GPUI plan's P1
+
+The work folder `/home/tibi/Rust/native-theme/.superpowers/sdd/todo_v0.7.1_kde-open-items-step1-plan/` holds
+`gates/rehearsal.sh` (from P1; the GPUI plan's record). No unit 0: this plan's rationale, specification and plan
+are in the GPUI plan's commit (0), `e866ea6c`.
+
+### 2026-11-17 — the build lane switched; K0 (1a)
+
+- Session `native-theme-31`. This record created now (it did not exist).
+- `v071-lane` switched to `v0.7.1-rc2-kde` at `30b3e6d5` (L2), after the GPUI plan's BT (`cd770099`, review
+  passed, nit `1a3e352b`) and BX (`e49c48f6`, read) on `v0.7.1-rc2-gk-connector`.
+- `git diff --quiet e49c48f6 HEAD -- Cargo.lock` exits 1 (L1, L2): the gpui legs are part of K0 (1a).
+
+### 2026-11-17 — K0 (3), the quote files (done)
+
+- A `worker`: 26 quote files and `INDEX.txt` in `<work>/quotes/` (G.1 4, G.2 2, G.3 12 of which 7 only where
+  the reply is not posted, G.5 8); scripts in `<work>/K0/` (`make_quotes.py`, an independent
+  `check_quotes.py`: `RESULT: all ok`, 26 byte-equal, 16 markdown blocks covered, `check_text.py` ok 26/26).
+- Open for K4's brief: G3-12 (the note after the reply) is filed as "only if not posted"; to be confirmed
+  against G.3 §8 when K4's brief is written. G2-2 is a weak quote (the count is G.2's grep's).
+
+### 2026-11-17 — K0 (1a) done; K1 dispatched
+
+- K0 (1a), first builds and clippy warm-ups in `v071-lane` (native-theme with NT_FEATURES; iced with and
+  without features; gpui on both cores, the lock having moved): `<kwork>/K0/run-1`, STATUS 0, 476 s.
+- K1 dispatched to an `implement` agent in `v071-lane` (clean-room rules in the brief: no KDE/Qt source opened;
+  only the two carried files read from `v0.8.0-rc1`).
+
+### 2026-11-17 — K1 committed; its review and K2 running
+
+- **K1: `2e1c4af8`** on `v0.7.1-rc2-kde` (`implement`). H.1's three hashes match (b1b8fa52…, 92068628…,
+  8328e762…). Red before: 9 failed of 188, plus `a_custom_scheme_moves_the_menu_panel_and_the_grid` not
+  compiling; after: `kde::` 191 passed. native-theme lib 1228 (NT_FEATURES) / 796; gpui 401/332/18 and
+  399/332/18, `--no-default-features` 294; claim test both cores; clippy five; strict panic four (A.4's case
+  passes); private-items rustdoc; `check_panic_patterns.py`; five checkers; fmt. Departures: `cargo fmt --check`
+  and `cargo metadata` run outside the wrappers (compile nothing); rustfmt put the `shade` import above
+  `crate::Rgba` (B.2 says after). Part C is KF's.
+- K1's `review` and K2 (`implement`) dispatched.
+- K1's `review`: **merge**, no must-fix, no should-fix. The reviewer recomputed the three hashes from `2e1c4af8`
+  and from `78ee0efd`; checked B.3's vector rows by hand, the contrast fallback (7, decision 14), missing groups,
+  the exceptions in both builds; no transcribed KDE/Qt structure. Nits, not taken (no code change): one test's
+  first half guards a regression and is not red alone; the body does not name rustfmt's import order (recorded
+  here). Unit 1's code part is closed; KF (Part C) follows in the documents lane after M1.
+
+### 2026-11-17 — K2 committed and read; K3 dispatched
+
+- **K2: `41c73d48`** (`implement`): red before (`colors.rs:846`, kde-breeze Light chart_grid not
+  separator.line_color), green after; gpui both cores all targets (401/18/332, 399/18/332), `--no-default-features`
+  294, runner env 332 ×3, clippy three, strict panic four, `check_panic_patterns.py` on the gpui crate,
+  private-items rustdoc, fmt; pinned-lines `colors.rs` L=718: six hunks, all `ok` (the agent added
+  `END { exit bad }` to its copy of the awk check).
+- Orchestrator's reading (K2's reviewer): exactly D.1, D.2's first bullet, D.3. The agent's remark that D.4's
+  kde-breeze row is stale does not hold: D.4 gives kde-breeze's chart grid as #bcc0bf / #4d545b before and after,
+  which is `separator.line_color`; its red run compared with unit 1's new `list.grid_color`. H.3's manual Theme
+  Map check stays for KD.
+- K3 dispatched to an `implement` agent in `v071-lane`.
+
+### 2026-11-17 — K3 committed; its review running
+
+- **K3: `1cc99825`** (`implement`): decision 12's test red first (`showcase-iced.rs:29099`, kde-breeze/light
+  Active: menu_bar_style and styles::aw::menu differ), decision 13's red after E.2/E.3 (`:29183`, both Infos name
+  menu.border.line_width while the styles draw 0 at 3); green after. `contract-leaves.toml` regenerated by the
+  ignored `regenerate_contract_leaves` test; its diff is E.4's expected one (in the body). iced lib 193, showcase
+  208 / 194 in the runner env, `--no-default-features` 114; clippy both; strict panic three; rustdoc both; fmt.
+  Left: `aw_menu_inks` still reports `bar.border` (no Info row asks; E.6 does not name it) — sent to review.
+- K3's `review` dispatched. The build lane's three units are committed: K1 `2e1c4af8`, K2 `41c73d48`, K3
+  `1cc99825`; MK1–MK3 wait for the GPUI plan's G5.
+- K3's `review`: **merge**, no must-fix. Should-fix taken: decision 12's test gets a shadow-off case
+  (kde-breeze/light with `popover.border.shadow_enabled = false`), since no bundled combination turns it off and
+  the `Shadow::default()` branch was untested (a gap in the spec's decision 12 too). Nit taken: `AwStatus` alias.
+  Nit left: `aw_menu_inks`' unused `bar.border` lookup (outside E.6, not a defect). Sent to K3's author as the
+  lane's next commit.
+- **K3's should-fix: `14229f12`** (the author): a "kde-breeze/light, no shadow" case in decision 12's test and the
+  `AwStatus` alias; red with the `if` removed from either function (`showcase-iced.rs:29100`); showcase 208,
+  iced lib 193, clippy, strict panic, fmt. Read by the orchestrator (test-only, 30 lines): correct.
+- The build lane is done: K1 `2e1c4af8`, K2 `41c73d48`, K3 `1cc99825` + `14229f12`, every review closed.
+  MK1 takes up to K1 (+KF), MK2 K2, MK3 K3 with its fix, after the GPUI plan's G5.
+
+### 2026-11-17 — the documents lane switched; KF dispatched
+
+- After the GPUI plan's M1 (`2bf76d57`, pushed): `v071-docs` switched to `v0.7.1-rc2-kde-docs` at `2bf76d57`.
+- KF dispatched to a `worker` (C.1, C.2; the one kcolorscheme link opened for its citation, no code).
+- **KF: `76ce9ace`** on `v0.7.1-rc2-kde-docs` (worker): the kcolorscheme link at `27066d47`, read raw with curl
+  (697 lines), holds `KColorScheme::contrastF` at 519–527 (526 reads the `KDE` group's `contrast`, default 7):
+  the citation stands. C.1's three cells and C.2's two `why_wrong` strings, each replacing only its text; five
+  checkers 0. Read by the orchestrator (word diff). Unit 1 complete: K1 `2e1c4af8` + KF `76ce9ace`, for MK1.
+
+### 2026-11-17 05:00 — waiting for MK1
+
+The GPUI plan's G5 is committed and gated (`2a885f6f`); MK1 waits for that plan's E2 review, which the weekly
+limit stopped (subagents refused until 20:00 Europe/Madrid). Ready for MK1: K1 `2e1c4af8` + KF `76ce9ace`.
+
+### 2026-11-17 05:05 — MK1 merged before E2's review closed (a departure)
+
+- The maintainer objected to the pause. MK1's row waits for the GPUI plan's E2 review; that review is the
+  citations' hand-read (comments and documents only), and no KDE unit touches its lines, so MK1 goes ahead and
+  any E2 fix lands after it, gated by its own `--quick`. Departure reported to the maintainer.
+- E2's review agent resumed by SendMessage (result pending).
+- MK1: `096079e2` (K1 `2e1c4af8`, clean, git's auto-merge in gpui `contract.rs`) and `9b1e64d9` (KF `76ce9ace`).
+  No unit 0. `cargo package -p native-theme --list` holds `tests/vectors/kde_shade.tsv`.
+  Gate: `--quick` + GPUI Fast legs, run folder `<kwork>/MK1/run-1/`.
+- K4's issue read (2026-11-17 05:08, `gh issue view 4 --json comments`): two comments, tiborgats 2026-10-22
+  ("Hi @l-raider, thanks for asking…") and l-raider 2026-10-30; no owner comment carries the draft's opening
+  sentence: **not posted**, so G.3's reply edits go ahead (and G3-12's quote file is used).
+- MK1's gate: `--quick` 134 ✅ / 13 unchanged, 13m 25s, GPUI Fast legs 0, tree clean (`<kwork>/MK1/run-1/`).
+- E2's review fix `1a7d31a8` (GPUI plan's record), then MK2 `9c4d4591` (K2 `41c73d48`) and MK3 `cdd2f191`
+  (K3 `1cc99825` + `14229f12`), git's auto-merge in gpui colors.rs/contract.rs and iced styles.rs/showcase-iced.rs,
+  no conflict. **One `--commit` + GPUI Fast legs for MK2 and MK3 together** (a departure: the second `--commit`
+  would check the same tree class; saves one gate), run `<kwork>/MK3/run-1/`.
+- Documents lane: `c256e422` merges `v0.7.1-rc2` at MK3 into `v0.7.1-rc2-kde-docs`. K4 dispatched to a `worker`
+  (shas: item 1 and 3 `cdd2f191`, item 2 `096079e2`; reply not posted).
+- KR queued behind the gate (`<kwork>/KR/run-1/`): the three release builds (they serve KD too), the rehearsal on
+  :97 under xvfb97.lock, `check_showcase_parity.py` on the dumps.
+- **K4: `580ac4dc`** on `v0.7.1-rc2-kde-docs` (worker): G.1, G.2, G.3 (reply edits, not posted), G.5; 26 quote
+  files `ok`; five checkers 0; four files only. G.2's count **47**, not the spec's 46: the port added three
+  `[v0.7.x]` entries (15b26f64, 30a83933, e22dc00c; 44 at both 2bf76d57 and c256e422, recounted by the
+  orchestrator), K4 three. Read by the orchestrator (word diff of all four files): each text where Part G puts it.
+  MK4 waits for KR and KD.
+- MK2+MK3's gate: `--commit` 113 ✅ / 34 unchanged, 6m 50s, GPUI Fast legs 0, tree clean (`<kwork>/MK3/run-1/`).
+  Core log: 096079e2, 9b1e64d9 (MK1), 1a7d31a8 (E2 fix), 9c4d4591 (MK2), cdd2f191 (MK3): the three merges in
+  unit order.
+- §2.2: the build lane's build folder `/run/media/tibi/work/cargo-build/e0/f9ec5b1bea498e` (48 GB) deleted,
+  `v071-lane` removed, `v0.7.1-rc2-kde` and `v0.7.1-rc2-gk-connector` deleted (`-d`).
+- Pushed `2bf76d57..cdd2f191` (MK3); CI run 44016819955.
+- KR run-1 **void**: the orchestrator's command ran in zsh, which does not split `$T`, so the three builds failed
+  (flock 69: no such file) and the rehearsal ran the 2026-11-14 binaries. Run-2 under `bash -c`
+  (`<kwork>/KR/run-2/`), the builds' exit statuses checked before the rehearsal.
+- **KR run-2**: builds 0 (binaries 2026-11-17 05:23-05:24), 18/18 dumps, `check_showcase_parity.py`: 6 groups,
+  836 differences, 836 excepted, 0 not excepted (R-shape 210, R-snap 750); the same totals as void run-1 on the
+  11-14 binaries. No difference to report. `<kwork>/KR/run-2/parity.out`.
+- KD run-1 started (`<kwork>/KD/run-1/`): HELD with assets.lock, gate.lock and the slot; waits for the
+  maintainer's window.
+- **KD run-1** (window given by the maintainer 12:08, "capture now"; done 12:11): iced, gpui, egui statuses 0,
+  each "Generated 6 screenshots", identity checks 1410x878 holding 1280x720 at +65+81. `check_showcase_parity.py`:
+  6 groups, 887 differences, 887 excepted, 0 not excepted (R-glyph 51+21, R-shape 210, R-snap 750, not visible 54);
+  no fix. `dry-parity.out` kept; the dump folder removed; asset folders restored; tree clean.
+- H.3's manual check (the gpui Theme Map's `chart_grid` Info read on screen): **not checked**. The showcase's
+  `--press` holds a press without a release, so it cannot open an Info, and the session has no desktop control.
+  What it would show is the contract row and claim line that `every_colour_claim_is_read_at_the_line_it_cites` and
+  the contract tests check (MK3's gate). A stray `showcase-gpui --help` window (unknown flags are ignored) was
+  opened and closed during the attempt.
+- CI 44016819955 on `cdd2f191`: success.
+- MK4: `29e78d8b` merges K4 `580ac4dc`; the five checkers 0; `--quick` running (`<kwork>/MK4/run-1/`).
+- K5 step 0: the stamped-paths grep prints nothing. Step 1, `cargo audit`: **fails** on RUSTSEC-2026-0543
+  (chrono 0.4.45 unmaintained, all versions, `patched = []`), reached only through GPUI Kit (gpui-base,
+  gpui-component, gpui-fast, gpui-pre, gpui-pre-scheduler 0.9.1/0.1.15/0.3.12); no workspace crate depends on it.
+  Decided by `.cargo/audit.toml`'s own rule: an ignore entry with the reason (a rule 15 fix, after MK4's gate).
+- KD's manual check stays "not checked" (above). Branches `v0.7.1-rc2-kde-docs` and `v0.7.1-rc2-gk-docs` deleted (`-d`).
+- A departure for speed: `v071-docs` is kept past MK4 as the archive lane: branch `v0.7.1-rc2-archive` at
+  `29e78d8b`; a `worker` prepares step 7's archiving (seven moves, README row, rewrites, status lines; no records,
+  no assets) as one commit, which the orchestrator folds into the asset commit (`cherry-pick -n`), so step 7 stays
+  one commit. The worktree is removed after the fold (§2.2).
+- MK4 run-1 `--quick`: one failure, `cargo audit` (RUSTSEC-2026-0543). Fix: `.cargo/audit.toml` entry with the
+  reason (commit after `29e78d8b`; `cargo audit` 0). MK4 run-2 `--quick` on it (`<kwork>/MK4/run-2/`).
+- Archive prepared: **`8c0fa634`** on `v0.7.1-rc2-archive` (worker): seven R pairs (R098/R099), README v0.7.1 row
+  (G.6 + the two quoted clauses), G.4's sentence, two path rewrites (0004 open-items rationale, batch-speed
+  rationale), moved documents' links re-pointed; grep check: only `docs/todo.md:4442` (dated "at e866ea6c",
+  exempt); link script `<kwork>/K5/check_archive_links.py`: 8 rule 22 (b) exemptions; five checkers 0. Reading
+  taken: plain paths inside the seven moved documents are not rewritten (rule 22 (a) covers files outside
+  docs/archive/). Read by the orchestrator (word diff of the three edited files).
+
+- MK4 run-2 `--quick`: 147 ✅, 0 ❌, 6m 17s, tree clean (MK4 = merge 29e78d8b + audit fix e417add7).
+- the lane's gated head for the next release: e417add7 (MK4; --quick run /home/tibi/Rust/native-theme/.superpowers/sdd/todo_v0.7.1_kde-open-items-step1-plan/MK4/run-2; reviews closed)
+- K5 step 3 moved ahead of step 2 (speed): pushed `cdd2f191..e417add7` right after MK4, so CI runs beside the
+  compatibility run (the run's changes are uncommitted and do not enter the push). Steps 2 then 4 chained under
+  gate.lock: `<kwork>/K5/run-1/` (compat.log, full.log, STATUS).
+
+### 2026-11-17 12:40 — K5 step 2 red: gpui-fast 0.1.17 released
+
+- `update_compatibility.sh run` (`<kwork>/K5/run-1/compat.log`): the lock update took gpui-fast 0.1.15 -> 0.1.17
+  (nine gpui-fast-* crates); native-theme-gpui NOT verified: `tests::the_fallback_stack_copy_is_gpuis` panics by
+  design ("gpui-fast 0.1.15 is not in the cargo metadata: re-cite ..."). Tree restored, clean.
+- Full check (`full.log`): 166 ✅, 2 ❌ (the asset and compatibility stamps, the asset run's), 1 ⚠️: `cargo outdated`
+  exit 1 — it raises native-theme-gpui's `gpui` to gpui-pre 0.3.13, which gpui-kit, gpui-component and gpui-base
+  0.9.1 pin out (`=0.3.12`); no user can get 0.3.13, so this is the tool, not a dependency to move. No list.
+- Decided by logic (rule 15, fix before the release): unit **L3**, the lock moves to gpui-fast 0.1.17 (what every
+  fresh resolution gets) and its citations are re-read at 0.1.17; 47 files differ 0.1.15 -> 0.1.17. Dispatched
+  to `implement` in `v071`; then its review, `--commit` + GPUI Fast legs, the compatibility run again.
+- CI 44073677773 on `e417add7`: running.
+- L3 stopped by its agent (nothing committed, lock restored): with gpui-fast 0.1.17 gpui-base 0.9.1 does not
+  compile on the GPUI Fast core (24 E0119: gpui-fast 0.1.16's `impl<T: Element> IntoElement for T`,
+  `src/element.rs:146`, against gpui-base's own impls, e.g. `src/a11y_disabled.rs:63`); gpui-base 0.9.1 asks
+  `gpui-fast = "0.1.14"`, so every fresh build of native-theme-gpui's `gpui-fast` feature fails today. gpui-base
+  0.10.0 gates those impls (`:63-64`). `text_system.rs:255-280` identical 0.1.15/0.1.17.
+- **Re-scoped, decided by logic:** native-theme-gpui gets an optional direct `gpui-fast = ">=0.1.14, <0.1.16"`
+  under its `gpui-fast` feature (no version >= 0.1.16 builds with GPUI Kit 0.9.1, so the bound loses nothing;
+  the taffy pin of G4 is the precedent); CHANGELOG Fixed line, README sentence, todo entry to lift it with GPUI
+  Kit 0.10.0. Sent to the same agent (a small fix to its own work, ~105k). An upstream report is the maintainer's.
+- **L3: `7f71f637`** (agent's `d9f26086`, amended by the orchestrator before any push): optional
+  `gpui-fast-bound = { package = "gpui-fast", version = ">=0.1.14, <0.1.16", … }` under the `gpui-fast` feature
+  (renamed so its lib `gpui` is not a second `--extern gpui`), Cargo.lock +1 line, CHANGELOG Fixed, README two
+  sentences (the bound; the gpui-kit-only case needs this crate's feature or its own hold), todo entry. Proof (agent):
+  dry run moves only gpui-fast-macros (0.1.17, allowed by gpui-fast 0.1.15's `^0.1.15`, tests pass with it); fresh
+  resolution 0.1.15. Tests both cores, clippy x3, strict panic, fmt, todo citations: pass. Read by the orchestrator.
+- Chain `<kwork>/L3/run-1/`: `--commit` + GPUI Fast legs, then `update_compatibility.sh run`, then the full check.
+- L3 chain: `--commit` 147 ✅ (17m 30s), GPUI Fast legs 0; **K5 step 2** `update_compatibility.sh run` 0: all three
+  verified on 2026-11-17 (gpui: gpui-fast 0.1.15 family, gpui-fast-macros 0.1.17; iced 0.14.0/iced_aw 0.14.1/
+  iced_widget 0.14.2; egui 0.36.2), its changes uncommitted (three READMEs, COMPATIBILITY.toml); **step 4** full
+  check: 167 ✅, 1 ❌ the asset stamp only, 1 ⚠️ `cargo outdated` (the gpui-pre 0.3.13 artifact). The list,
+  `cargo outdated --workspace --depth 1 --exclude zbus,gpui`: `<kwork>/L3/run-1/outdated.txt`.
+- Pushed `e417add7..7f71f637`. Step 5's release builds and the CI wait: `<kwork>/K5/run-2/`.
+- Step 5 builds 0; CI 44083520418 on `7f71f637`: success (13:49). Step 6: asset run HELD (`<kwork>/K5/run-3/`),
+  waiting for the maintainer's "capture now".
+
+### 2026-11-17 — K5 step 6, the asset run (`<kwork>/K5/run-3/`, then `run-4/`)
+
+The maintainer said "capture now"; GO at 16:04:58, the desktop free at 16:08:50 (the three kits' screenshots and
+GIFs; parity at rest passed, "The three showcases agree at rest"). The script then stopped (STATUS 1) at CI's
+screenshots run 44110255347 on `7f71f637`: its two macOS jobs (egui, iced) were cancelled, not failed, by GitHub:
+"The job was not acquired by Runner of type hosted even after multiple attempts" (macOS arm64 capacity); the four
+other jobs passed. **Departure:** instead of a second capture window, the two jobs were re-run in the same run
+(`gh run rerun 44110255347 --failed`, so its headSha stays HEAD), and the script's own remaining steps (its
+lines from "Verify the completed run matches our commit" to the end: the SHA check, the download, the provenance
+stamp, `update_compatibility.sh run`) run unchanged from `<kwork>/K5/tail.sh` (the script's preamble, its
+`SCRIPT_DIR` pinned to the worktree's `scripts/`, `RUN_ID`, `EXPECTED_SHA` and a HEAD check), under the gate lock.
+
+The KDE screenshots against the previous ones (`0f849012`, 2026-11-14), all three kits, light and dark: the one
+change is the tables' grid line, the same in the three kits (light `#BCC0BF` → `#C4C8CC`, dark `#4D545B` →
+`#1C1F21`), as H.4 says (tables in Qt's grid, `list.grid_color`, the three moving together); else the spinner's
+phase (animated) and the translucent window corners. Issue #4 read again: no comment since 2026-10-30, the reply
+not posted, so K4's draft edits stand.
+
+### 2026-11-17 — K5 step 7, the asset commit
+
+CI's re-run passed (the two macOS jobs; run 44110255347 green, its six jobs), and `<kwork>/K5/tail.sh` passed
+(STATUS 0): 18 screenshots downloaded (macOS 26.7.2, Windows 10.0.26100.0), `docs/assets/PROVENANCE.toml` written
+for `7f71f637` (sources `d53b549bd61c`), `update_compatibility.sh run` passed (`docs/COMPATIBILITY.toml` and the
+three connector READMEs' Verified lines from it). No new asset file: every asset path the run wrote was already
+tracked (`git status`: modified only). One commit: those assets, both stamps, the READMEs' lines, the CHANGELOG's
+0.7.1 date set to 2026-11-17, the archiving (the documents lane's `8c0fa634`, applied with `git cherry-pick -n`),
+and the three running records appended to their archived plans under "Running record", headings one level down.

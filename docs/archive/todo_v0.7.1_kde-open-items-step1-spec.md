@@ -1,17 +1,22 @@
 # 0.7.1: issue #4's open KDE items, step 1 (the table's grid and the menu panel) — specification
 
-- Rationale: [`issues/0004_kde-open-items-rationale.md`](issues/0004_kde-open-items-rationale.md)
+- Rationale: [`../issues/0004_kde-open-items-rationale.md`](../issues/0004_kde-open-items-rationale.md)
   ("the rationale"), decisions D2 and D3 and what D10 says a step carries outside
-  the code. To be implemented once free of errors (the maintainer, 2026-11-15:
+  the code. Status: **implemented on 2026-11-17** (commits `e866ea6c..v0.7.1`,
+  the close-out commit that moved this specification and its plan here from
+  `docs/` among them); the running record at the end of the plan says how it
+  ran. Approved to be implemented once free of errors (the maintainer, 2026-11-15:
   "When the plan that goes in the 0.7.1 version is ready, without errors, start
-  implementing it."), with its plan. It decides
+  implementing it."), with its plan. The text below is the specification as it
+  was approved: it speaks of the work as still to do, and gives the paths of the
+  documents moved here as they were in `docs/`. It decides
   nothing the rationale did not decide, except the small points under *Decisions
   taken while specifying*; what needs a decision the rationale does not contain is
   under *Open points*.
-- It continues [`issues/0004_kde-hand-overrides-rationale.md`](issues/0004_kde-hand-overrides-rationale.md)
+- It continues [`../issues/0004_kde-hand-overrides-rationale.md`](../issues/0004_kde-hand-overrides-rationale.md)
   ("the first rationale"), whose §5.5 and §5.6 deferred both items, and the backlog
   entries at `docs/todo.md:1767-1933`. Form: the specification of the first KDE
-  fixes, [`archive/todo_v0.7.1_kde-hand-overrides-spec.md`](archive/todo_v0.7.1_kde-hand-overrides-spec.md).
+  fixes, [`todo_v0.7.1_kde-hand-overrides-spec.md`](todo_v0.7.1_kde-hand-overrides-spec.md).
 - Written: 2026-11-14, against `v0.7.1-rc2` at `0fa28027`. Every `file:line` is that
   commit's unless it names another. `v0.8.0-rc1` is the parked branch at `78ee0efd`
   (the main checkout); `P8` is that checkout, `F` its `docs/facts/`.

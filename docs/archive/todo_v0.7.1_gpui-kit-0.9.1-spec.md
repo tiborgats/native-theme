@@ -9,9 +9,14 @@
 - Written: 2026-11-14, against `v0.7.1-rc2` at `0fa28027`. Every repository
   `file:line` is that commit's unless it names another; every upstream line is
   read in Cargo's registry at the versions below.
-- Status: **to be implemented once free of errors** (the maintainer, 2026-11-15:
-  "When the plan that goes in the 0.7.1 version is ready, without errors, start
-  implementing it."), with its plan.
+- Status: **implemented on 2026-11-17** (commits `e866ea6c..v0.7.1`, the
+  close-out commit that moved this specification, its rationale and its plan here
+  from `docs/` among them); the running record at the end of the plan says how it
+  ran. Approved as **to be implemented once free of errors** (the maintainer,
+  2026-11-15: "When the plan that goes in the 0.7.1 version is ready, without
+  errors, start implementing it."), with its plan. The text below is the
+  specification as it was approved: it speaks of the work as still to do, and
+  gives the paths of the documents moved here as they were in `docs/`.
 - The batch's working rules are cited as "rule N (batch-speed rationale,
   Appendix)": `docs/todo_v0.7.1_batch-speed-rationale.md`, *Appendix — the
   batch's working rules*, authoritative where this text differs.
