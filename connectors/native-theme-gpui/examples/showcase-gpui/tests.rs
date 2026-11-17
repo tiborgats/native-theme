@@ -15755,11 +15755,11 @@ fn a_bars_waveform_and_a_liquid_one_show_different_infos(cx: &mut TestAppContext
 
 /// The liquid waveform spans its row, as upstream's doc asks of one
 /// (gpui-component speech/waveform.rs, SpeechWaveform::liquid): it starts
-/// at the section heading's left edge and is wider than the bars, which
-/// keep upstream's 96px (gpui-component speech/waveform.rs, DEFAULT_WIDTH).
-/// The liquid one is measured by its own box, not by its info's wrapper,
-/// which its column stretches whatever the waveform's width
-/// (`InfoRegistry::widget_bounds`).
+/// at the section heading's left edge, reaches its row's right edge, and is
+/// wider than the bars, which keep upstream's 96px (gpui-component
+/// speech/waveform.rs, DEFAULT_WIDTH). The liquid one is measured by its own
+/// box, not by its info's wrapper, which its column stretches whatever the
+/// waveform's width (`InfoRegistry::widget_bounds`); the wrapper is its row.
 #[gpui::test]
 fn the_liquid_waveform_spans_its_row(cx: &mut TestAppContext) {
     const LIQUID: &str = "inputs-speech-waveform-liquid";

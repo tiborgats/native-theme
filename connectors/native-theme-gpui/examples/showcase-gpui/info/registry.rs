@@ -162,13 +162,23 @@ pub struct InfoRegistry {
     /// (`crate::elements::label_probe`). The tests read it.
     #[cfg(test)]
     pub label_colours: HashMap<String, gpui::Hsla>,
-    /// Where each target's widget, the first child of its wrapper
-    /// ([`InfoExt::info`]), was laid out in the last frame that laid it out:
-    /// the widget's own box, which the wrapper's is not where its parent
-    /// stretches it. The tests read it.
+    /// Where the widget of each target [`MEASURED_WIDGETS`] names, the first
+    /// child of its wrapper ([`InfoExt::info`]), was laid out in the last
+    /// frame that laid it out: the widget's own box, which the wrapper's is
+    /// not where its parent stretches it. The tests read it.
     #[cfg(test)]
     pub widget_bounds: HashMap<ElementId, Bounds<Pixels>>,
 }
+
+/// The targets whose widget's own box a test measures
+/// ([`InfoRegistry::widget_bounds`]). Only their wrappers take a
+/// children-prepainted listener for it: on GPUI Fast such a listener keeps
+/// the scroll layer it is painted in from being composited (gpui-fast
+/// 0.1.15 src/elements/div.rs, `Div::prepaint`; src/fast/layers/invalidate.rs,
+/// `note_uncarried`), so one on every target would leave the tests' pages
+/// without the composited scroll layers the showcase has.
+#[cfg(test)]
+const MEASURED_WIDGETS: &[&str] = &["inputs-speech-waveform-liquid"];
 
 /// An id drawn twice, a target's or an element's of the list.
 #[cfg(test)]
@@ -537,20 +547,29 @@ pub trait InfoExt: IntoElement + Sized {
         let (bounds_id, hover_id) = (id.clone(), id.clone());
         let bounds_info = info.clone();
         #[cfg(test)]
-        let widget_id = id.clone();
+        let measured = match &id {
+            ElementId::Name(name) if MEASURED_WIDGETS.contains(&&**name) => Some(id.clone()),
+            _ => None,
+        };
+        #[cfg(test)]
+        let records = listed.is_some() || measured.is_some();
+        #[cfg(not(test))]
+        let records = listed.is_some();
         div()
             // The element's own bounds, its first child's, for the layout
-            // dump, and in the tests for every target: the wrapper can be
-            // wider where its parent stretches it.
-            .when(listed.is_some() || cfg!(test), |wrapper| {
+            // dump, and in the tests for a target MEASURED_WIDGETS names: the
+            // wrapper can be wider where its parent stretches it.
+            .when(records, |wrapper| {
                 wrapper.on_children_prepainted(move |bounds, window, cx| {
                     let Some(bounds) = bounds.first() else {
                         return;
                     };
                     #[cfg(test)]
-                    on_layout.update(cx, |r, _| {
-                        r.widget_bounds.insert(widget_id.clone(), *bounds);
-                    });
+                    if let Some(measured) = &measured {
+                        on_layout.update(cx, |r, _| {
+                            r.widget_bounds.insert(measured.clone(), *bounds);
+                        });
+                    }
                     if let Some(listed) = listed {
                         let presence = begin_record(&on_layout, listed.into(), window, cx);
                         on_layout.update(cx, |r, _| r.record_layout(listed, *bounds, presence));
