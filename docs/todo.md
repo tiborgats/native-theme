@@ -2218,23 +2218,6 @@ caeddd6b, each platform file's *Cross-check* section has the detail.
       M8 T21 fix round 1 (2026-10-17): no longer for M6, which closed on
       2026-10-16; it stays [1.0], with no milestone of the review assigned.
 
-- [ ] [upstream] **`unicode-properties` back to 0.1.4 when gpui-fast-web
-      unpins it.** gpui-fast-web 0.1.7, GPUI Fast's wasm platform crate, asks
-      for `unicode-properties = "=0.1.3"`, and a lockfile resolves every
-      target, so since the connector's `gpui-fast` feature (v0.7.0) the
-      workspace's Cargo.lock holds 0.1.3 (it was 0.1.4) for every user of it:
-      gpui-pre-web and `rustybuzz`, which the usvg of gpui-pre and of
-      gpui-component's resvg depend on (`cargo tree --workspace -i
-      unicode-properties --target all`, 2026-10-14; native-theme's own resvg
-      has no text support and does not reach it). Once a gpui-fast-web
-      release drops the exact pin, `cargo update -p unicode-properties` and
-      check the lockfile is back on 0.1.4.
-      *GPUI Kit 0.8.0 (2026-10-22, G3 T10):* gpui-fast-web 0.1.10 still pins
-      `unicode-properties = "=0.1.3"`, so the lockfile stays on 0.1.3.
-      *GPUI Kit 0.8.1 (2026-10-27, G4):* gpui-fast-web 0.1.12 still pins
-      `unicode-properties = "=0.1.3"` (`Cargo.toml:53-54`), so the lockfile stays on
-      0.1.3.
-
 - [ ] [upstream] **File the gpui-fast issue: `Window::painted_quads()` omits
       what a rounded clip and a scroll layer paint.** For the maintainer to
       file on longbridge/gpui-fast (an agent files nothing). Under
@@ -4086,7 +4069,6 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       (`src/menu/popup_menu.rs:1332-1335`), the select's arrow (`src/select.rs:59-65`)
       and the accordion's (`src/accordion.rs:327-328`); gpui-base 0.9.1's resize handle
       is 1 px with 4 px padding (`src/resizable/resize_handle.rs:12-13`).
-- [ ] [upstream] PR: expose scrollbar dimensions as theme-configurable
 - [ ] [upstream] PR: expose button min-height and icon spacing as theme tokens
       M8 T21 fix round 1 (2026-10-17): the button icon gap is also in "PR:
       expose checkbox/radio indicator size as theme token" above, the
@@ -4177,64 +4159,6 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       listener `:3400-3401`) still moves every scroller under the pointer and stops none
       (`HitboxId::should_handle_scroll`, `src/window.rs:822`).
 - [ ] [upstream] Additional PRs as gaps are discovered during connector implementation
-- [ ] [upstream] Report: a single-select `Combobox` misses a change after a search.
-      It decides that the selection changed by comparing the selection's
-      `IndexPath`s before and after `on_will_change`
-      (gpui-component 0.6.6 `src/combobox.rs:183-196`, and `:459-468` in
-      `handle_item_select`), and the default `on_will_change` stores the
-      row in the *filtered* list. Choosing, after a search, an item that
-      lands in the row the current selection has — typing "nord" and
-      pressing Enter while `default`, also row 0, is selected — emits no
-      `Change` and no `Confirm` and leaves the popup open. The gpui
-      showcase works around it in `PresetDelegate::on_will_change`
-      (`examples/showcase-gpui/support.rs`), which records each chosen preset at
-      its row in the unfiltered list. Upstream could compare by value, or
-      store unfiltered indices. Found 2026-09-22 (showcase-app plan, Task 9).
-- [ ] [upstream] PR: let a consumer supply the icons gpui-component's widgets build for
-      themselves. Several widgets name a Lucide `IconName` as they render,
-      with no setter, so an application that draws its own icons from
-      another set -- the gpui showcase's chrome follows the icon-set Select
-      and draws no icon where the chosen set has none -- still shows
-      gpui-component's Lucide in them, mixing two sets. Read in
-      gpui-component 0.6.6: `SidebarToggleButton`'s PanelLeftClose /
-      PanelLeftOpen (`src/sidebar/mod.rs:351-359`), the `Caret` chevron of a
-      `Select`, `Combobox` or dropdown `Button` (`src/select.rs:59`), the
-      check mark of a chosen list row (`src/searchable_list/item.rs:42`,
-      `src/searchable_list/adapter.rs:130`), an empty list's Inbox
-      (`src/select.rs:279`, `src/combobox.rs:261`), the window controls
-      (`src/title_bar.rs:148-151`), the close button of a `Dialog`
-      (`src/dialog/dialog.rs:698`) and of a `Sheet` (`src/sheet.rs:204`),
-      the `Command` palette's search icon and check mark
-      (`src/command/state.rs:851`, `:767`), a `PopupMenu`'s check mark,
-      external-link and submenu chevron (`src/menu/popup_menu.rs:1167`,
-      `:1209`, `:1334`, `:1373`), the `Settings` search field's icon
-      (`src/setting/settings.rs:152`) and a `NumberInput`'s minus and plus
-      (`src/input/number_input.rs:155`, `:185`). One way in is an optional
-      icon-provider hook on the theme that these call sites ask first,
-      falling back to today's `IconName`. The showcase's icon-set Select
-      names the ones its chrome shows (`info::chrome::icon_set_select`).
-      Found in the final review of the v0.5.9 showcase-app work
-      (2026-09-23).
-      Added since: `SpeechButton`'s Mic / Square (`src/speech/button.rs:96-100`,
-      0.7.1).
-      *GPUI Kit 0.7.3 (2026-10-14):* `Diff` adds its own: ArrowDown, ArrowUp
-      and ChevronsUpDown or ChevronDown on a folded hunk's expand buttons
-      (`src/diff/mod.rs:993`, `:1000`, `:1006-1010`), ChevronRight or
-      ChevronDown on a file's collapse button (`:1194-1198`), and Plus on the
-      add-annotation button (`:1546`).
-      *GPUI Kit 0.8.0 (2026-10-22, G3 T10):* `Diff`'s icons are at `src/diff/mod.rs:998`,
-      `:1005`, `:1011-1015` (the folded hunk's buttons), `:1199-1203` (the
-      file's collapse button) and `:1551` (Plus), the same icons.
-      *GPUI Kit 0.8.1 (2026-10-27, G4):* still so; gpui-component 0.8.1 has no hook
-      (its `theme/` is unchanged). Of the files that changed, the `Dialog`'s close
-      button is `src/dialog/dialog.rs:859` and the `Sheet`'s `src/sheet.rs:211` (0.8.0
-      `:802`, `:204`), the `Command` palette's search icon and check mark stay at
-      `src/command/state.rs:953`, `:869`, and `Diff`'s icons are at
-      `src/diff/mod.rs:1014`, `:1021`, `:1027-1031`, `:1215-1219` and `:1567` (0.8.0
-      `:998`, `:1005`, `:1011-1015`, `:1199-1203`, `:1551`).
-      *GPUI Kit 0.9.1 (2026-11-13):* `SpeechIndicator`, new and shown on the Inputs page,
-      adds its own: the stop glyph's Square, shown under the pointer
-      (`src/speech/indicator.rs:130`).
 - [ ] [1.0] Left open by the v0.5.9 showcase-layout work
       ([archive](archive/todo_v0.5.9_showcase-layout.md)):
       - `info::title_bar` (`examples/showcase-gpui/info/chrome.rs`) keeps
@@ -4383,37 +4307,6 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       `clippy.toml` per connector, each entry shown to flag a planted call.
       Its place is those crates' next upgrade, as G4's sweep is the gpui
       connector's.
-
-### gpui-fast pins `taffy = "=0.15.0"`
-
-- [ ] [upstream] gpui-fast 0.1.12 requires taffy at exactly 0.15.0
-      (`Cargo.toml:344-345`), where gpui-pre 0.3.10 takes it with a caret
-      (`Cargo.toml:524-525`). So a workspace that builds both cores, ours
-      among them, locks gpui-pre to taffy 0.15.0 too, while an application on
-      gpui-pre alone resolves 0.15.1. Our CI and the dependency canary
-      therefore cannot test the taffy that applications on the default core
-      get. G4 measures it once, in its plan's Task 6. For the maintainer to
-      raise upstream (an agent files nothing); re-check it at the next GPUI Kit
-      upgrade.
-      *GPUI Kit 0.8.1 (2026-10-27, G4):* measured once: gpui-pre on taffy 0.15.1 lays
-      the showcase out as on 0.15.0. Emptying the connector's `gpui-fast` feature does
-      not drop gpui-fast from Cargo.lock, which keeps an optional dependency that an
-      enabled feature names weakly: `gpui-fast?/test-support` in the `test-support`
-      features of gpui-kit 0.8.1 (`Cargo.toml:81-82`, with `gpui-fast-platform?`),
-      gpui-base 0.8.1 (`:48`) and gpui-component 0.8.1 (`:75`), which the connector's
-      dev-dependency turns on (`connectors/native-theme-gpui/Cargo.toml:104`). So the
-      measurement patched gpui-fast instead, in the working tree only: a copy of
-      gpui-fast 0.1.12 outside the repository with its taffy requirement relaxed to
-      `"0.15.0"`, a `[patch.crates-io]` entry for it in the root Cargo.toml, and
-      `cargo update -p taffy --precise 0.15.1`, after which `cargo tree -i taffy`
-      shows gpui-pre 0.3.10 on taffy 0.15.1. The gpui-pre suite passed (`cargo test -p
-      native-theme-gpui --features native,watch --all-targets`: 387, 331 with one
-      ignored, 18, and three ignored), `the_fallback_stack_copy_is_gpuis` and
-      `the_labelled_separator_centres_its_label` among them, and the `--dump-layout`
-      runs for kde-breeze and adwaita, light and dark, on the Basic and Layout pages,
-      are byte-identical to the 0.15.0 build's. The root Cargo.toml and Cargo.lock
-      were restored and the copy deleted. The pin stays a gap at the next upgrade: our
-      lock cannot carry 0.15.1 while gpui-fast pins 0.15.0.
 
 ### Showcases: a gate for one showcase's citations of another's lines
 
