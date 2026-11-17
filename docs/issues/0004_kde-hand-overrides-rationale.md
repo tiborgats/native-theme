@@ -347,11 +347,14 @@ Over Breeze's menu panel the hover fill is #bcdff1 / #264a5e.
   menu bar title; wrong for every hovered item of every menu and dropdown,
   which is the reported defect.
 
-On the panels the connectors paint, the two differ by three levels per channel
-at most (#b9dcef against #bcdff1 in light, #294d61 against #264a5e in dark):
-iced and egui paint `menu.background_color`, gpui paints its `popover` token,
-and on KDE all three are the window colour (§5.5 says why the panel's own
-colour waits). **Decision: A**, with the text colour and the separator as the
+On the panels the connectors painted when this was decided, the two differ by
+three levels per channel at most (#b9dcef against #bcdff1 in light, #294d61
+against #264a5e in dark): iced and egui painted `menu.background_color`, gpui
+its `popover` token, and on KDE all three were the window colour. Since 0.7.1
+kde-breeze's menu panel is Breeze's (§5.5, settled by
+`0004_kde-open-items-rationale.md` D3): egui's menus and the iced connector's
+menus and drop-downs paint it, while gpui's menus keep the window colour.
+**Decision: A**, with the text colour and the separator as the
 table gives them. The KDE reader derives the three from the colour scheme with
 helpers it has (`translucent`, `mix`, `frame_contrast`); the preset states the
 Breeze values with their citations.
@@ -923,6 +926,11 @@ a hover fill before the outline exists would remove the only hover feedback.
 
 ### 5.5 The menu panel's colour
 
+*Settled by `0004_kde-open-items-rationale.md` D3 (0.7.1): kde-breeze and the KDE
+reader state Breeze's panel; the iced connector's menu bar takes the window's
+colour, and its menus and drop-downs keep the menu's panel, framed by the popover's
+border.*
+
 Breeze's menu panel is `mix(Window, Base, 0.3)` (#f4f5f5 / #1c1f22, measured;
 `drawPanelMenuPrimitive`, B `:4708`, `breezehelper.cpp:200-203`), four to five
 levels from the window colour the facts and the model give it.
@@ -937,6 +945,10 @@ a difference that is barely visible. Condition 3 fails; the facts row is
 corrected; backlog.
 
 ### 5.6 The table's grid
+
+*Settled by `0004_kde-open-items-rationale.md` D2 (0.7.1): kde-breeze and the KDE
+reader state Qt's grid; gpui's `chart_grid` takes the separator colour; egui's list
+role was not split.*
 
 `QTableView` draws its grid by default, 1 px, in `QPalette::Mid` (Qt
 `qtableview.cpp:1533-1535`, `qcommonstyle.cpp:5126-5128`; Breeze does not
@@ -1021,10 +1033,10 @@ and 3 above extend them with what was verified here.
 | B3 | scroll bar mode `Always` | the connector sets `Always` for Breeze, then and now. Not reproduced; the one path found to another mode is an `init` of gpui-component after `apply`, which the docs warn against |
 | B4 | `focus_ring = false` | a sound choice for now; documented (§4.8); the ring's values wait for a design (§5.1) |
 | B5 | `muted` = view background | the application's own use of a token; the view's colour is the theme's `list` and `table`. No change |
-| B6 | `popover` = window background | popups take the window colour since 0.7.0. Breeze's menu panel is a slightly different mix, which waits (§5.5) |
+| B6 | `popover` = window background | popups take the window colour since 0.7.0; Breeze's menu panel, `mix(Window, Base, 0.3)`, is kde-breeze's and the reader's since 0.7.1 (`0004_kde-open-items-rationale.md` D3). gpui-component paints a menu in its `popover` token, which stays the window colour, so in gpui the small difference remains |
 | B7 | `selection` opaque | **fixed**: restored after every rebuild (§4.6) |
 | B8 | `accent`, `table_hover` = selection at 30 % | **fixed**: the menu's and the list's hover are that tint (§4.2, §4.4) |
-| B9 | `table_row_border` = alternate row colour | today's grid is too bright in dark mode. The right colour is known (Qt's `Mid`, #c4c8cc / #1c1f21); the field has other readers that would suffer, so it waits, and an override to those two colours is what matches Qt (§5.6) |
+| B9 | `table_row_border` = alternate row colour | **fixed in 0.7.1** (`0004_kde-open-items-rationale.md` D2): `list.grid_color` is Qt's `Mid`, #c4c8cc / #1c1f21, which `table_row_border` takes; the override is no longer needed |
 | B10 | tokens set as well | not needed through `Theme::update`; documented (§4.8) |
 | B11 | scroll bar styles written again | the observer and its deferred re-write have done this since 0.6.0 |
 | C | button height, width, padding, border | sizes are in `geometry::button`, now pointed to (§4.8); the hover and focus border wait for §5.4 |
@@ -1062,6 +1074,15 @@ and 3 above extend them with what was verified here.
 > - **Table header.** Found while checking your list: it used the wrong group of
 >   colours from the colour scheme, and in the light theme that made it the
 >   wrong colour. Fixed.
+> - **Table lines.** You were right that they are too bright in the dark theme.
+>   native-theme now gives a table's grid the colour Qt draws it in, Qt's `Mid`
+>   (#c4c8cc in the light theme, #1c1f21 in the dark), computed from your colour
+>   scheme, so `table_row_border` is that colour and you need not set it. Charts
+>   in gpui-component keep a grid of their own, in the separator colour, since
+>   Qt's grid colour would all but vanish under a chart.
+> - **Menus.** Breeze's menu colour is very slightly different from the
+>   window's (a little toward the list colour). native-theme now gives a menu
+>   that colour, and the iced and egui connectors draw it.
 > - **Selections turning faint.** gpui-component makes three selection colours
 >   partly transparent (down to 20–30 %) whenever the theme is switched or
 >   reloaded. The connector now puts the native colours back each time.
@@ -1071,40 +1092,38 @@ and 3 above extend them with what was verified here.
 >
 > With 0.7.1 (which is built on GPUI Kit 0.9.1) you could delete these
 > overrides: the font size, the scroll bar's colours, thumb width and minimum
-> length, `popover`, `selection`, `accent`, `table_hover`, the writes to
-> `theme.tokens` (`Theme::update` keeps them in step by itself there) and the
-> second write of the scroll bar styles (the connector does that itself). Still
-> yours to keep: the 16 px groove (until gpui-component's table is fixed),
-> `focus_ring`, `muted` (that one is your application's own choice) and
-> `table_row_border`. The scroll bar mode override is not needed as long as
+> length, `popover`, `selection`, `accent`, `table_hover`, `table_row_border`,
+> the writes to `theme.tokens` (`Theme::update` keeps them in step by itself
+> there) and the second write of the scroll bar styles (the connector does that
+> itself). Still yours to keep: the 16 px groove (until gpui-component's table
+> is fixed), `focus_ring` and `muted` (that one is your application's own
+> choice). The scroll bar mode override is not needed as long as
 > `gpui_kit::init` runs before `apply_system_theme`.
 >
 > Some things are not fixed yet:
 >
 > - **The 16 px scroll bar in tables** is a bug in gpui-component's table, which
 >   ignores the theme's width. I am reporting it there.
-> - **Table lines.** You were right that they are too bright in the dark theme.
->   Qt draws a table's grid in #1c1f21 there (and #c4c8cc in the light theme,
->   which is close to what native-theme gives). I know the right colours now,
->   but the same value is also used for a list's frame in another GUI library,
->   where the dark one would make the frame disappear, so I have to separate
->   those two first. Until then, setting `table_row_border` yourself is right;
->   those two colours match Qt. (You used the alternate row colour. Breeze
->   Dark's is #1d1f22, which is nearly Qt's grid colour; the #2a2e32 you saw was
->   a wrong value in native-theme's own Breeze preset before 0.7.0. In the light
->   theme the alternate row colour is almost invisible as a grid.)
 > - **The focus ring.** Breeze draws a ring only when you move with the Tab key.
 >   With the mouse it only recolours a text field's border. gpui-component draws
 >   its ring however the focus came. GPUI itself can tell keyboard from mouse,
 >   so I will ask gpui-component to use that. Until then, turning the ring off,
 >   as you did, is a good choice on KDE; the README now shows how and says what
->   stays visible.
+>   stays visible. In a coming 0.7.x release, after an update of the libraries
+>   native-theme is built on, native-theme plans to state that Breeze shows its
+>   ring for keyboard focus only, and the connectors to follow it; for
+>   gpui-component's own widgets that means switching its ring off until
+>   gpui-component can tell.
 > - **Hover borders on buttons.** Breeze shows hover by recolouring a button's
 >   border, not its fill. native-theme has no value for that yet, which is why
->   you had to type it yourself. It is at the top of my list.
-> - **Menus.** In GPUI a menu has the window's colour (since 0.7.0, so you no
->   longer need to set `popover`). Breeze's real menu colour is very slightly
->   different (a little toward the list colour). That difference stays for now.
+>   you had to type it yourself. It is planned, after the focus ring, in a coming
+>   0.7.x release; an update of the libraries native-theme is built on comes
+>   before both. In GPUI it depends on whether gpui-component's buttons can take
+>   it, which I have yet to try.
+> - **Menus in GPUI.** gpui-component paints every menu in its `popover`
+>   colour, the window's on KDE (since 0.7.0, so you no longer need to set
+>   `popover`), and has no colour of its own for a menu, so in GPUI the small
+>   difference from Breeze's menu colour stays.
 >
 > I could not reproduce the hidden scroll bars: the connector asks for
 > always-visible bars on Breeze, then and now. One thing that would hide them is
@@ -1118,15 +1137,26 @@ and 3 above extend them with what was verified here.
 > The button sizes are already in native-theme: `geometry::button` applies them
 > for you (the README's "Per-widget geometry" section).
 >
-> The rest of your list, briefly. Toolbar buttons and the pressed sort header:
-> native-theme has no values for their states yet; they belong to the same work
-> as the hover borders. Dialog text is the general font, and Breeze sets no
+> The rest of your list, briefly. Toolbar buttons: native-theme has no values for
+> their states yet; they come in the same series of releases as the hover
+> borders. The pressed sort header has none either; it comes last, and since no
+> GUI library's table can show it, its values will reach an application only for
+> a table it draws itself. Dialog text is the general font, and Breeze sets no
 > dialog window size. Taking dark or light from `system_is_dark()` for the
 > fallback was right. And for looking at every colour of a theme, the showcase
 > example shows each widget's colours with where they come from.
 
-The sentences "I am reporting it there", "I will ask gpui-component" and "at the
-top of my list" are the maintainer's to confirm before posting.
+The sentences "I am reporting it there", "I will ask gpui-component", "after an
+update of the libraries native-theme is built on", "native-theme plans to state
+that Breeze shows its ring for keyboard focus only", "It is planned, after the
+focus ring, in a coming 0.7.x release", "an update of the libraries
+native-theme is built on comes before both", "In GPUI it depends on whether
+gpui-component's buttons can take it, which I have yet to try", "they come in
+the same series of releases as the hover borders" and "it comes last" are the
+maintainer's to confirm before posting (putting the update first is itself the
+maintainer's to decide): they follow `0004_kde-open-items-rationale.md`'s
+proposed order (D10), and "0.7.x" its proposed versions (D0 (a); under (b) or
+(c) some of these releases are minor ones, and the wording changes with them).
 
 ## 9. Measurement
 
