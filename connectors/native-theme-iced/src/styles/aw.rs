@@ -11,7 +11,9 @@
 //! `StyleFn`, and a `.style(..)` setter on the widget. So these functions
 //! follow the same rules as [`crate::styles`] -- every field named, native
 //! values captured by value, and a field the model does not carry read from
-//! `iced_aw`'s own default class rather than written as a literal. Every
+//! `iced_aw`'s own default class rather than written as a literal, except
+//! where the platform draws nothing (a transparent fill, a zero width or
+//! radius, `Border::default()`, `Shadow::default()`). Every
 //! closure here is `Clone`, as [`crate::styles`]' are, because
 //! `SelectionList::new_with` demands it.
 //!
@@ -121,7 +123,7 @@ pub fn card(
 /// border is no bar's. A menu is the menu's panel, `menu.background_color`,
 /// framed by the popup's border, `popover.border` (its colour, width and
 /// radius): the platforms frame a menu as they frame every popup
-/// (platform-facts §2.6: the popup border is §2.16's), and `MenuTheme`'s
+/// (`docs/platform-facts.md` §2.6: the popup border is §2.16's), and `MenuTheme`'s
 /// border states no line of its own. `path` -- the highlight under the item
 /// the pointer is on -- is `menu.hover_background`, emitted as given: it is
 /// a row highlight painted over a panel the widget also paints, so the
@@ -195,7 +197,7 @@ pub fn menu(
 /// The strip is `tab.bar_background`, and `tab.border.*` is the *selected*
 /// tab's border: its color and width outline the `Active` label and its
 /// corner radius rounds that label's top corners, the bottom ones square.
-/// That is the platforms' own (platform-facts §2.11): Breeze strokes the
+/// That is the platforms' own (`docs/platform-facts.md` §2.11): Breeze strokes the
 /// selected tab only, rounding its top corners, and draws an unselected one
 /// with no pen; WinUI's selected tab has a top-only radius and an unselected
 /// one a transparent stroke. The model states nothing for an unselected tab's

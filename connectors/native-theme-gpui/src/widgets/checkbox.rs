@@ -52,10 +52,10 @@ pub struct CheckboxLook {
     pub border: Hsla,
     /// The check mark's colour.
     pub mark: Hsla,
-    /// `checkbox.check_mark_stroke_width`: the check mark's line, or `None`
-    /// where the theme states none or a length that is not finite -- the
-    /// checkbox then draws gpui-component's own `Check` icon, at its own
-    /// stroke.
+    /// `checkbox.check_mark_stroke_width`: the mark's line, or `None` where the
+    /// theme states none or a length that is not finite -- the checkbox then
+    /// draws gpui-component's `IconName::Check`, through the application's icon
+    /// resolver (`set_icon_resolver`), as gpui-component's check box does.
     pub mark_stroke: Option<Pixels>,
     /// The side of the square a checkbox's mark is drawn in: the indicator
     /// inside `checkbox.border.padding` where the theme states it, and
@@ -532,6 +532,13 @@ fn indicator_and_label(
 /// the row, after the widget's own: the row's layout, box and spacing; the
 /// indicator and the label set their own colours and text. Without a native
 /// theme it renders gpui-component's `Checkbox`.
+///
+/// The check mark: where the theme states `checkbox.check_mark_stroke_width`,
+/// the connector draws gpui-component's check glyph stroked at that width;
+/// where it states none, the mark is gpui-component's `IconName::Check`,
+/// resolved through the application's icon resolver
+/// (`gpui_component::set_icon_resolver`), as gpui-component's own check box
+/// draws it.
 pub struct Checkbox {
     parts: Parts,
 }
@@ -680,7 +687,10 @@ impl RenderOnce for Checkbox {
 /// `checkbox.radio_dot_diameter` across in `indicator_color`, centred in the
 /// circle (:1241); where the theme states no dot size (ios-13 and the
 /// colour-scheme presets), it is gpui-component's own check glyph
-/// (radio.rs:247). Its `Styled` style
+/// (radio.rs:247), drawn as [`Checkbox`]'s mark is: stroked by the connector
+/// at `checkbox.check_mark_stroke_width` where the theme states it, else
+/// gpui-component's `IconName::Check` through the application's icon
+/// resolver (`gpui_component::set_icon_resolver`). Its `Styled` style
 /// refines the row, as [`Checkbox`]'s does.
 pub struct Radio {
     parts: Parts,

@@ -6,9 +6,19 @@
 # Output design (glance-first):
 #   * Each check renders a single-line status when done:
 #         ✅ description    (2.3s)       — pass
-#         ⚠  description    (9.2s) soft  — soft failure (a warning; only the
-#                                          semver checks are soft)
+#         ⚠  description    (9.2s) soft  — a warning (the run goes on; the
+#                                          checks that warn are listed below)
 #         ❌ description    (0.5s)       — hard failure (exits)
+#   * A warning, never a failure: a semver break (`semver-checks`), the
+#     outdated dependencies (or a `cargo outdated` that failed), TODO/FIXME
+#     comments, a tag the version already has, a cross-target check whose
+#     target or linker is missing (skipped), the showcases in CI's runner
+#     environment where its packages can be neither fetched nor found, the
+#     offline audit of --commit and --quick, the asset and compatibility
+#     stamps while the CHANGELOG entry for the version is undated (and asset
+#     sources with uncommitted changes), a tree outside git (the clean-tree
+#     and release-tag checks skipped) and a step-cache record that could not
+#     be written or removed. Every other check is hard.
 #   * Each command's stdout/stderr is captured, not streamed, and printed in
 #     full only when its check fails: streamed output would interleave with
 #     the status lines and bury the summary.

@@ -56,7 +56,9 @@
 //! signature that lost `+ Clone` would stop compiling.
 //!
 //! A `Style` field the native model does not carry is read from iced's own
-//! default for that widget, inside the closure, never written as a literal.
+//! default for that widget, inside the closure, never written as a literal,
+//! except where the platform draws nothing (a transparent fill, a zero width
+//! or radius).
 //! That read happens while the widget is being drawn, from the `&Theme` in
 //! effect, so fifteen of these functions -- `button_danger`,
 //! `button_success`, `button_warning`, `button_link`, `text_input`,
@@ -1239,7 +1241,7 @@ pub fn pick_list(
 /// `Status`, so the closure takes the theme alone.
 ///
 /// A drop-down is framed as a popup, in `popover.border`'s colour and width
-/// (platform-facts §2.16, "Popover / Dropdown"). Its panel and rows are the
+/// (`docs/platform-facts.md` §2.16, "Popover / Dropdown"). Its panel and rows are the
 /// menu's: the panel `menu.background_color`, the label `menu.font.color`,
 /// the selected row's label and fill `menu.hover_text_color` and
 /// `menu.hover_background`, which each theme states against the menu's

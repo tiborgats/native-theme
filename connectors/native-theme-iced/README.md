@@ -165,7 +165,9 @@ The palette alone makes an iced application *resemble* the platform. The style
 functions make each widget state *equal* to it: every colour, border and
 radius they emit is a field of the resolved theme, and a `Style` field the
 native model does not carry is read from iced's own default at run time —
-never written as a literal.
+never written as a literal, except where the platform draws nothing: a
+transparent fill, a zero width or radius, `Border::default()` or
+`Shadow::default()`.
 
 ```rust,no_run
 use iced::widget::{Button, button};
@@ -656,9 +658,10 @@ in none of them:
   frame a popup: a drop-down (`styles::menu`) takes `popover.border`'s colour
   and width, and an `iced_aw` menu (`styles::aw::menu`) its colour, width and
   corner radius, and casts `iced_aw`'s shadow where
-  `popover.border.shadow_enabled` states one. Both fill from
-  `menu.background_color`, and neither draws the colour or width of a
-  `menu.border` a theme states.
+  `popover.border.shadow_enabled` states one. The drop-down's panel and an
+  `iced_aw` menu's panels fill from `menu.background_color`; an `iced_aw`
+  `MenuBar` itself lies on `window.background_color`, unframed. Neither
+  draws the colour or width of a `menu.border` a theme states.
   A dialog and a toolbar are no iced widgets either; they are containers the
   application draws, which `styles::dialog`, `styles::toolbar`,
   `styles::toolbar_rule` and the `dialog_*` and `toolbar_*` helpers style.
@@ -727,9 +730,10 @@ let loaded = customised.to_iced_theme();
 With the `watch` feature, `theme_changes()` is an iced `Subscription` of the
 OS theme's changes: return it from `subscription()`, and on each change clear
 native-theme's detection caches, read the theme again and rebuild what was
-built from it, such as the `Spinner`. The caches hold dark mode,
-the icon theme and the accessibility preferences, so a re-read without
-`invalidate_caches()` gets the old ones. The caches are
+built from it, such as the `Spinner`. The caches hold dark mode, reduced
+motion, the accessibility preferences, the icon theme and, on Linux, the
+desktop, and the OS read takes its icon theme and desktop from them, so a
+re-read without `invalidate_caches()` gets the old ones. The caches are
 native-theme's, reached through the re-exported source crate
 (`native_theme_iced::native_theme`), so the connector stays the one
 dependency:

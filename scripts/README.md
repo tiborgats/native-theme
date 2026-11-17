@@ -307,7 +307,8 @@ The workspace's quality gate: source hygiene, the step cache's self-test (in
 checks (`ci.yml`'s `msrv` job, on its two toolchains) and the check that they
 are the job's (these two in `--commit` and `--quick`; `msrv_checks.sh`,
 below), the feature
-combinations, the cross-target checks and clippy, fmt, clippy, the strict
+combinations, the cross-target checks (`cargo check` and clippy on the
+Windows and macOS targets), `cargo fmt`, clippy, the strict
 panic lints, the tests, the connectors' other configurations, the showcases'
 tests in CI's runner environment (`run_in_runner_env.sh`, below), the examples,
 widget coverage, connector parity, the README versions, the showcase-parity comparator's static modes, the

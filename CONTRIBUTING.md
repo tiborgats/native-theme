@@ -41,7 +41,9 @@ full pre-release check:
 ./scripts/check_release.sh
 ```
 
-This is the canonical quality gate. In full, it runs, in order: a TODO/FIXME scan
+This is the canonical quality gate. In full, it runs, in order: the
+clean-tree check (uncommitted changes are noted, not failed) and the
+release-tag check, a TODO/FIXME scan
 of every `.rs` file outside `target/`, the panic-pattern scan
 (`scripts/check_panic_patterns.py` and its `--self-test`) of each workspace
 member's `src/` outside its test modules and test-only files (not `build.rs`,
@@ -106,11 +108,19 @@ publishable crate, `cargo semver-checks` against each crate's crates.io release
 `cargo audit`, `cargo outdated`, the visual assets'
 PROVENANCE stamp and the connectors' compatibility claims
 (`scripts/update_compatibility.sh check`). The script prints
-a single-line status per check, and a failing check's captured output; only the
-semver checks are soft (`⚠`), since approved breaks are expected before a
-release (a semver warning is resolved by the version number or by undoing the
-change); every other check is hard, and a hard failure (`❌`) exits non-zero and
-must be fixed. It needs jq and installs nothing: a missing `cargo-audit`,
+a single-line status per check, and a failing check's captured output. These
+report a warning (`⚠`) and let the run go on: the semver checks, since
+approved breaks are expected before a release (a semver warning is resolved
+by the version number or by undoing the change); the outdated dependencies,
+and a `cargo outdated` run that failed; the TODO/FIXME scan; a tag the version
+already has; a cross-target check whose target or linker is missing, which is
+skipped; the showcases in CI's runner environment where its packages can be
+neither fetched nor found; the offline audit of `--commit` and `--quick`; the
+PROVENANCE and compatibility stamps while the CHANGELOG entry for the version
+is undated, and asset sources with uncommitted changes; a tree outside git,
+where the clean-tree and release-tag checks are skipped; and a step-cache
+record that could not be written or removed. Every other check is hard, and a
+hard failure (`❌`) exits non-zero and must be fixed. It needs jq and installs nothing: a missing `cargo-audit`,
 `cargo-outdated` or `cargo-semver-checks` fails the full run with its install
 command.
 
@@ -249,7 +259,8 @@ git log --oneline -30
 ```
 
 Pre-1.0, breaking changes in minor versions are allowed and expected — just
-ensure they appear in `CHANGELOG.md` under the `[Unreleased]` section.
+ensure they appear in `CHANGELOG.md` under the `[Unreleased]` section (create it above the latest release if there
+is none).
 
 ## Pull request workflow
 

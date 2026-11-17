@@ -126,7 +126,9 @@
 //! a closure for that widget's style setter, and every colour, border and
 //! radius it emits is a field of the resolved theme. A `Style` field the
 //! native model does not carry is read from iced's own default at run time,
-//! never written as a literal.
+//! never written as a literal, except where the platform draws nothing: a
+//! transparent fill, a zero width or radius, `Border::default()` or
+//! `Shadow::default()`.
 //!
 //! ```rust
 //! # #[cfg(feature = "widgets")] {
@@ -357,8 +359,10 @@
 //!   lined in `popover.border`'s colour and width, and an `iced_aw` menu
 //!   (`styles::aw::menu`) is framed in its colour, width and corner radius,
 //!   with `iced_aw`'s shadow only where `popover.border.shadow_enabled`
-//!   states one; so a theme's `menu.border` colour and width reach neither, and
-//!   both fill from `menu.background_color`. A dialog, which neither iced nor
+//!   states one; so a theme's `menu.border` colour and width reach neither.
+//!   The drop-down's panel and an `iced_aw` menu's panels fill from
+//!   `menu.background_color`; an `iced_aw` `MenuBar` itself lies on
+//!   `window.background_color`, unframed. A dialog, which neither iced nor
 //!   `iced_aw` has either, is the consumer's
 //!   `container`, which `styles::dialog` and the `dialog_*` helpers style;
 //!   `dialog.entrance` and `.icon_size` reach nothing: no iced widget

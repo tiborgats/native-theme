@@ -4707,6 +4707,40 @@ under *Closed items from M7 close (2026-10-16): items carried to M8, M9a and the
       Breeze's combo popup (#f4f5f5 against #eff0f1 in light, #1c1f22 against
       #202326 in dark).
 
+### Documentation audit of 0.7.1: what needs more than a text edit
+- [ ] [v0.7.x] `menu.border.corner_radius` means two things: KDE's is a hovered
+      item's highlight, Material's the menu's container (`docs/platform-facts.md`
+      §2.6), and the connectors follow both: the iced connector's `styles::menu`
+      rounds a drop-down's panel with it, the egui connector a menu's items
+      (`style/roles.rs`). kde-breeze states none, though §2.6 gives KDE 4.5. A
+      field per meaning, or one meaning and the other derived, is a model
+      decision.
+- [ ] [v0.7.x] `DetectionContext::invalidate_font_dpi` does nothing since 0.7.1
+      (the font DPI is a per-platform constant); `#[deprecated]` would tell users
+      at compile time (an attribute change, with the workspace's own uses
+      checked under `-D warnings`).
+- [ ] [v0.7.x] The `kde` module is public on Linux with the `kde` feature, so
+      docs.rs shows a page with only its module doc, and the crate's *Modules*
+      list omits it: `#[doc(hidden)]`, or a module doc a user can use.
+- [ ] [v0.7.x] The egui connector's generated `src/mapping.md` shows test ids a
+      user cannot follow ("→ T18(a)", from `mapping.toml`'s `tested_by` through
+      `mapping_doc::render`): the generator should render the test's meaning or
+      leave the column out of the user-facing table.
+- [ ] [v0.7.x] The gpui README's *Backends* and `CONTRIBUTING.md` leave the
+      doctests out of the GPUI Fast test run because each names gpui-pre as
+      `gpui`; no doctest names `gpui::` any more (all name `gpui_kit`). A run of
+      `cargo test --doc -p native-theme-gpui --features gpui-fast,native,watch`
+      settles whether the exclusion, its reason and the `gpui` dev-dependency
+      kept for the doctests can go.
+- [ ] [v0.7.x] The gpui README's *Compatibility* table cannot carry the
+      `gpui-fast` bound as a row: `compat.rs`'s
+      `the_readme_states_the_manifest_floors` accepts only its fixed list of four
+      crates and `rust-version`; the bound is a sentence under the table.
+- [ ] [v0.7.x] Public widget docs in the gpui connector (`checkbox.rs`,
+      `progress.rs`, `slider.rs`, `switch.rs`, `spinner.rs`) cite
+      `docs/archive/todo_gpui-widgets-spec.md` §2.x, a plan a user cannot use:
+      the reasons in words.
+
 ### egui showcase: the command palette's highlight does not follow the pointer
 - [ ] [1.0] The egui showcase's command palette moves its highlighted row only by the keys (`command_palette`, `palette_highlight` and `PaletteState::selected` in `connectors/native-theme-egui/examples/showcase-egui/chrome.rs` at 5de1f8b1); gpui-component's `Command` also moves it to the row under the pointer (each enabled row's `on_hover` calls `select`, gpui-component 0.8.0 `src/command/state.rs:854-858`; `select`, `:534-551`, highlights without scrolling). With the pointer resting on the palette, egui paints the hovered row's hover fill beside the highlighted row, so two rows can look marked where gpui marks one. A known parity gap that M9-119 did not ask for (M9c T11 review, *Parity: hover*; the controller's ruling of 2026-10-24). A fix needs "the pointer moved this pass and is over a row", so a resting pointer does not override the arrow keys, one more writer of `PaletteState::selected` and a kittest that moves the pointer.
 

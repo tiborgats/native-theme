@@ -7,7 +7,7 @@ See also:
 
 - [CHANGELOG.md](CHANGELOG.md) — what has already shipped
 - [`docs/archive/`](docs/archive/) — detailed design docs and phase notes from completed milestones
-- [`docs/todo.md`](docs/todo.md) — the backlog: every open item, tagged by milestone (`[v0.7.0]`, `[v0.7.x]`, `[1.0]`, `[post-1.0]`, `[upstream]`)
+- [`docs/todo.md`](docs/todo.md) — the backlog: every open item, tagged by milestone (`[v0.7.x]`, `[1.0]`, `[post-1.0]`, `[upstream]`)
 
 ## v0.6.0 — egui connector
 
@@ -86,9 +86,10 @@ It also moves the gpui connector to GPUI Kit 0.8.1 on gpui-pre 0.3.10, with a
 
 **Delivered:** the gpui connector builds against GPUI Kit 0.9.1 and requires
 gpui-component, gpui-base and gpui-kit 0.9.1 on gpui-pre 0.3.12 (on the
-`gpui-fast` feature, GPUI Fast 0.1.14). gpui-component 0.9 gave its `Theme` a
-`window_radius`, the corner radius of a client-decorated window, which
-`to_theme` and `to_theme_config` set from `window.border.corner_radius`; its
+`gpui-fast` feature, GPUI Fast 0.1.14 or later, below 0.1.16). gpui-component
+0.9 gave its `Theme` a `window_radius`, the corner radius of a client-decorated
+window, which `to_theme` sets from `window.border.corner_radius`, in the theme
+and in the `ThemeConfig` it stores; its
 `WindowBorder` now draws the frame in the theme's border colour instead of a
 fixed grey; and `apply` keeps the application's `cursor_blink`, which
 native-theme does not model. The showcase shows 0.9.1's `SpeechIndicator` and
@@ -260,12 +261,11 @@ each, framed as theming flexibility:
   the next trigger's tooltip at once (`tooltip.rs:226-275` at gpui-base
   0.9.1), where a platform's reshow window does only the second.
 
-Gap analysis with citations: [`docs/todo_gpui-full-theme.md`](docs/todo_gpui-full-theme.md);
-limits table: `docs/archive/todo_v0.5.8_gpui-component-0.6-spec.md` §14.
+Gap analysis with citations: [`docs/todo_gpui-full-theme.md`](docs/todo_gpui-full-theme.md).
 
 ## Also in the 0.7.x releases
 
-[`docs/todo.md`](docs/todo.md) tags 47 open items `[v0.7.x]`, follow-ups of
+[`docs/todo.md`](docs/todo.md) tags 48 open items `[v0.7.x]`, follow-ups of
 the v0.7.0 review that a 0.7 patch release takes beside the milestones
 above. Among them: the `ios-26` preset, iOS 26's Liquid Glass look, deferred
 while 38 of the values the resolver requires have no iOS 26 source;

@@ -30,7 +30,7 @@
 //! gpui-component's own control instead, so nothing here ever paints a value
 //! no source gives.
 //!
-//! Rules, from `docs/archive/todo_gpui-widgets-spec.md` §1:
+//! Rules, from `docs/archive/todo_gpui-widgets-spec.md`:
 //!
 //! * a hover colour is a layer composited over the idle fill, source-over
 //!   (`colors::over`); a `None` soft option leaves the part at rest, which

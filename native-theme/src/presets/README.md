@@ -38,8 +38,8 @@ has no platform-facts column, state none (`documented_sizes.rs` checks
 both).
 An unstated gated size resolves to `None` and the toolkit's own applies. The
 presets' other sizes (`min_height_px`, `max_width_px`, …) are stated, often
-without a source, and are still being audited (`docs/todo.md`, Table B); the
-colour-scheme presets state many of them too.
+without a source, and are still being audited against
+`docs/platform-facts.md`; the colour-scheme presets state many of them too.
 
 `tooltip.show_delay_ms` and `dialog.entrance` are gated the same way: a native
 preset states each only as its platform's `docs/platform-facts.md` cell gives
@@ -74,7 +74,8 @@ generation alone. A new generation is a new preset under its own key; a new
 OS version of the same generation updates the existing one. The style
 presets keep their style names, `kde-breeze` and `adwaita`, and their
 headers name the style version they pin (Breeze v6.7.5, libadwaita
-1.10.0, checked in the code review's M2e on 2026-10-11), since the KDE
+1.10.0, checked against the latest released Breeze and libadwaita on
+2026-10-11), since the KDE
 and GNOME readers read the installed style, and the style, not the
 desktop's version, is the generation. The iOS preset follows the rule as
 well: `ios-13` carries the flat look iOS 13 introduced, unchanged to iOS 18,

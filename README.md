@@ -41,7 +41,10 @@ with Rust 1.88; the gpui, egui and egui-widgets crates need Rust 1.95.
 
 The OS readers cover KDE Plasma and GNOME (Budgie too) on Linux, macOS and
 Windows. Any other Linux desktop gets the `adwaita` preset in the OS's light or
-dark mode.
+dark mode. Where `XDG_CURRENT_DESKTOP` is unset or names no desktop the crate
+knows, the desktop portal's backend names the desktop, KDE or GNOME (with the
+`portal` feature), and where no backend answers, the user's `kdeglobals` makes
+it KDE (with the `kde` feature).
 
 ## Quick start
 

@@ -277,7 +277,11 @@ pub struct MenuTheme {
     #[serde(rename = "icon_size_px")]
     #[theme(check = "non_negative", inherit_from = "defaults.icon_sizes.toolbar")]
     pub icon_size: Option<f32>,
-    /// Menu item background on hover.
+    /// Menu item background on hover. It may be translucent, a layer over the
+    /// menu's `background_color` (kde-breeze states `#3daee94d`, windows-11
+    /// `#00000009` light and `#ffffff0f` dark): lay it over that fill, with
+    /// [`composite_over`](crate::color::composite_over) where the toolkit
+    /// replaces the fill rather than painting the highlight over it.
     #[theme(inherit_from = "defaults.selection_background")]
     pub hover_background: Option<Rgba>,
     /// Menu item text color on hover.
@@ -289,7 +293,14 @@ pub struct MenuTheme {
     /// Menu item font specification.
     #[theme(nested, resolved_type = "ResolvedFontSpec")]
     pub font: Option<FontSpec>,
-    /// Menu border specification.
+    /// Menu border specification: its padding insets an item's contents from
+    /// the edges of the item's highlight. Its corner radius is the platform's
+    /// menu radius, which KDE gives a hovered item's highlight and Material the
+    /// menu's container (the iced connector rounds a drop-down's panel with
+    /// it, the egui connector a menu's items). It has no colour of its own:
+    /// the menu's popup frame is the popover's, `popover.border`
+    /// (docs/platform-facts.md §2.6, §2.16). No bundled preset states this border's colour or width; unstated,
+    /// they resolve to transparent and 0.
     #[theme(nested, resolved_type = "ResolvedWidgetBorder")]
     pub border: Option<WidgetBorderSpec>,
 }
@@ -330,7 +341,9 @@ pub struct TooltipTheme {
 #[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde(default)]
 pub struct ScrollbarTheme {
-    /// Scrollbar track (gutter) color.
+    /// Scrollbar track (gutter) color. A transparent track means the platform
+    /// draws no groove: the view under the bar shows beside the handle
+    /// (kde-breeze, macos-monterey, macos-tahoe and windows-11 state one).
     pub track_color: Option<Rgba>,
     /// Scrollbar thumb color.
     #[theme(inherit_from = "defaults.muted_color")]
@@ -614,7 +627,8 @@ pub struct ListTheme {
     /// Column header background fill.
     #[theme(inherit_from = "defaults.surface_color")]
     pub header_background: Option<Rgba>,
-    /// Grid line color between rows/columns.
+    /// Grid line color between rows/columns: a table's grid. A separating
+    /// line elsewhere takes `separator.line_color`.
     #[theme(inherit_from = "defaults.border.color")]
     pub grid_color: Option<Rgba>,
     /// Row height in logical pixels. `None` where the platform states no row
@@ -631,7 +645,11 @@ pub struct ListTheme {
     pub header_height: Option<f32>,
     /// Hovered row background color; unstated, the list's own
     /// `background_color`, no tint (a widget-to-widget rule,
-    /// `resolve_widget_to_widget`).
+    /// `resolve_widget_to_widget`). It may be translucent, a layer over the
+    /// row's fill (kde-breeze states `#3daee94d`, windows-11 `#00000009` light
+    /// and `#ffffff0f` dark): lay it over that fill, with
+    /// [`composite_over`](crate::color::composite_over) where the toolkit
+    /// replaces the fill rather than painting the highlight over it.
     pub hover_background: Option<Rgba>,
     /// Hovered row text color.
     pub hover_text_color: Option<Rgba>,

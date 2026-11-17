@@ -215,8 +215,9 @@ pub fn system_is_dark() -> bool {
 /// Reset all process-wide caches so the next call to [`system_is_dark()`],
 /// [`prefers_reduced_motion()`], [`accessibility_preferences()`], or
 /// [`system_icon_theme()`] re-queries the OS; a cached failure to detect the
-/// icon theme is cleared too. The font DPI is not cached: since 0.7.1 it is a
-/// constant per platform, which
+/// icon theme is cleared too, and so, on Linux, is the detected desktop
+/// environment, with the desktop refined from it. The font DPI is not cached:
+/// since 0.7.1 it is a constant per platform, which
 /// [`ResolutionContext::from_system()`](crate::ResolutionContext::from_system) uses.
 ///
 /// Call this when you detect that the user has changed system settings (e.g.,

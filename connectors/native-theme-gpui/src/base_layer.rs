@@ -1,12 +1,10 @@
 //! Native values for the gpui-base layer, which paints scrollbars and resize
-//! handles without going through gpui-component
-//! (`docs/archive/todo_v0.5.8_gpui-component-0.6-spec.md` §8.2, §8.3, "the
-//! spec" below).
+//! handles without going through gpui-component.
 //!
 //! gpui-component's `Theme::change`, `sync_system_appearance` and `sync_base`
 //! rebuild `gpui_base::Theme` with fixed scrollbar styles (gpui-component
 //! `src/theme/mod.rs:412-465`), so these values are written after every such
-//! rebuild by the observer `apply` installs (`crate::apply`, spec §3.3). The
+//! rebuild by the observer `apply` installs (`crate::apply`). The
 //! rebuild also carries 0.7.0's plot theme (`:462`), which this module leaves
 //! as upstream projects it.
 //!
@@ -69,8 +67,8 @@ pub struct ScrollbarGeometry {
     pub thumb_active: Hsla,
 }
 
-/// Compute the scrollbar values (`docs/archive/todo_v0.5.8_gpui-component-0.6-spec.md`
-/// §8.2).
+/// Compute the scrollbar values: each a theme field, but the thumb's inset,
+/// which centres the thumb in the groove.
 #[must_use]
 pub fn scrollbar_geometry(resolved: &ResolvedTheme) -> ScrollbarGeometry {
     let sb = &resolved.scrollbar;
@@ -132,11 +130,12 @@ fn thumb_min_length(g: &ScrollbarGeometry) -> Pixels {
     px(f32::from(g.min_thumb_length) + 2.0 * f32::from(g.thumb_inset))
 }
 
-/// Resize-handle colours from the splitter
-/// (`docs/archive/todo_v0.5.8_gpui-component-0.6-spec.md` §8.3). Upstream projects
+/// Resize-handle colours from the splitter. Upstream projects
 /// `border` / `drag_border` into the same two slots
 /// (gpui-component `src/theme/mod.rs:460-461`); the handle width is a
-/// constant upstream (gpui-base `src/resizable/resize_handle.rs:13`), Tier U.
+/// constant upstream (gpui-base `src/resizable/resize_handle.rs:13`), out of
+/// the caller's reach: upstream work (ROADMAP.md, *Upstream receivers for the
+/// gpui connector*).
 ///
 /// They reach every handle gpui-base draws with its built-in line: groups
 /// built with `gpui_base::h_resizable` / `v_resizable` (re-exported as

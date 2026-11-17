@@ -10,7 +10,8 @@
 //! - `kdedefaults/kdeglobals`: the defaults Plasma keeps beneath the user's
 //!   file, read under it as KConfig cascades them.
 //! - `org.freedesktop.appearance accent-color`: the portal's accent colour,
-//!   with the `portal` feature (`crate::gnome::GnomePortalKdeReader`):
+//!   with the `portal` feature, which lays it over the kdeglobals theme's
+//!   accent, selection and focus-ring colours where the portal gives one:
 //!   xdg-desktop-portal-kde gives the application palette's highlight
 //!   colour (`src/settings.cpp:279-283` at v6.7.5), which the colour scheme
 //!   in kdeglobals sets.
@@ -44,8 +45,7 @@ use crate::model::IconSizes;
 /// Parse KDE kdeglobals content into a Theme without any I/O.
 ///
 /// This function is intentionally `pub` (not `pub(crate)`) because integration tests
-/// in `tests/reader_kde.rs` import it from outside the crate. See doc 1 section C6
-/// and Phase 79-02 decision for rationale.
+/// in `tests/reader_kde.rs` import it from outside the crate.
 ///
 /// `font_dpi` is returned as given: kdeglobals holds no font DPI
 /// (`forceFontDPI` lives in kcmfonts, `docs/platform-facts.md:717`).

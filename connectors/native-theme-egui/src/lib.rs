@@ -85,7 +85,9 @@
 //! use; fonts are [`fonts`]' and icons [`icons`]'.
 //!
 //! The base style alone carries, among others: the panel background (`visuals.panel_fill`)
-//! and the menu background (`visuals.window_fill`); the text colours; the button's fills,
+//! and the menu background (`visuals.window_fill`, which egui's own frames for every
+//! `Window`, `Modal`, menu, popup, tooltip and `ComboBox` list fill from: a window takes the
+//! window colour from [`Surface::Window`]'s frame); the text colours; the button's fills,
 //! borders, corner radius, padding and minimum height, which every interactive widget
 //! shares, since egui's `widgets` states belong to no one kind of widget; the selection,
 //! link, warning and error colours; the window stroke, the window and menu corners and the

@@ -1,11 +1,10 @@
-//! Per-widget geometry for gpui-component 0.9.1 widgets
-//! (`docs/archive/todo_v0.5.8_gpui-component-0.6-spec.md` §9, "the spec"
-//! below).
+//! Per-widget geometry for gpui-component 0.9.1 widgets.
 //!
-//! Every builder is a pure function of a [`Native`] view (the four layout
-//! accessors, of a `LayoutTheme`) and returns a
+//! Every builder is a pure function of a [`Native`] view and returns a
 //! [`StyleRefinement`] the application applies with
-//! `gpui_component::StyledExt::refine_style`:
+//! `gpui_component::StyledExt::refine_style`; the four layout accessors,
+//! [`widget_gap`], [`container_margin`], [`window_margin`] and
+//! [`section_gap`], take a `LayoutTheme` instead and return a length:
 //!
 //! ```no_run
 //! use gpui_kit::component::{StyledExt, button::Button};
@@ -19,10 +18,11 @@
 //! Each widget applies the caller's refinement after its own geometry at the
 //! cited upstream line, so the values here win. Text sizes carry the
 //! accessibility text-scaling factor; widths, paddings, radii and icon sizes
-//! do not (spec §3.4). Every builder that sets a text size also sets the
+//! do not, as in the platform toolkits. Every builder that sets a text size also sets the
 //! platform's `defaults.line_height` and the font's family, weight and style.
 //! Every value is a `ResolvedTheme` field or the one
-//! derivation in spec §9.4 (`scaled_text_size`), with two conversions the
+//! derivation, a font size times the text-scaling factor
+//! (`scaled_text_size`), with two conversions the
 //! receiving widget forces: [`tooltip_content`] turns the platform's outer
 //! tooltip width into the inner box its text wraps in, and
 //! [`scrollbar_gutter`] turns the scrollbar groove width the base layer
@@ -213,7 +213,7 @@ fn with_height_rule(r: StyleRefinement, stated: Option<f32>, n: Native<'_>) -> S
 }
 
 /// `Button` (gpui-component `src/button/button.rs:694-731` → refined at `:764`).
-/// The label's text size is set on an inner element (`:774-782`), Tier U.
+/// The label's text size is set on an inner element (`:774-782`): upstream work.
 ///
 /// Height by the control-height rule (module doc), through `h`.
 #[must_use]
@@ -601,7 +601,7 @@ pub fn status_bar(n: Native<'_>) -> StyleRefinement {
 /// `min_h` and the paddings still arrive, because `min_h_24()` runs before the
 /// refinement. Kept here for an application-drawn dialog and for the day
 /// upstream takes a `max_h` prop
-/// (`docs/archive/todo_v0.5.9_gpui-kit-0.6.4-spec.md` §4).
+/// (`docs/archive/todo_v0.5.9_gpui-kit-0.6.4-spec.md`).
 ///
 /// `min_w` arrives too: upstream sets the dialog's width after the
 /// refinement (`w` at `:790`), a property apart, so the dialog keeps
@@ -738,7 +738,8 @@ pub fn list(n: Native<'_>) -> StyleRefinement {
         .overflow_hidden()
 }
 
-/// Declarative `Table` (`src/table/table.rs:111` → `:114`); rows are inner, Tier U.
+/// Declarative `Table` (`src/table/table.rs:111` → `:114`); the rows are inner
+/// elements, out of the caller's reach, which only upstream can change.
 #[must_use]
 pub fn table(n: Native<'_>) -> StyleRefinement {
     with_text(StyleRefinement::default(), &n.resolved.list.item_font, n)
@@ -828,9 +829,11 @@ fn checkbox_metrics(n: Native<'_>) -> StyleRefinement {
     StyleRefinement::default().gap(px(n.resolved.checkbox.label_gap))
 }
 
-/// `Checkbox` (`src/checkbox.rs:281-293` → `:294`); the indicator is inner,
-/// Tier U. The text size replaces upstream's `input_text_size` (`:286-289`:
-/// XSmall `text_xs`, Small and Medium `text_sm`, Large `text_base`).
+/// `Checkbox` (`src/checkbox.rs:281-293` → `:294`); the indicator is an inner
+/// element, out of the caller's reach: upstream work (ROADMAP.md, *Upstream
+/// receivers for the gpui connector*). The text size replaces upstream's
+/// `input_text_size` (`:286-289`: XSmall `text_xs`, Small and Medium
+/// `text_sm`, Large `text_base`).
 ///
 /// No colour, although upstream does label the row with `foreground` (`:285`)
 /// before this refinement: a `Checkbox::label` is wrapped in a div that sets
@@ -906,7 +909,9 @@ fn combo_box_metrics(n: Native<'_>) -> StyleRefinement {
         .border(px(c.border.line_width))
 }
 
-/// `Select` (`src/select.rs:569-579` → `:580`); the arrow is inner, Tier U.
+/// `Select` (`src/select.rs:569-579` → `:580`); the arrow is an inner element,
+/// out of the caller's reach: upstream work (ROADMAP.md, *Upstream receivers
+/// for the gpui connector*).
 /// Height by the control-height rule (module doc), through `h`, in place of
 /// upstream's `h_8` at a text-scaling factor of 1 or less.
 ///
@@ -1188,8 +1193,13 @@ pub fn icon_size_panel(n: Native<'_>) -> Size {
 /// draws the vertical track flush with that area's right edge, at the track
 /// width this connector installed for it (gpui-base
 /// `src/scrollbar.rs:1427-1451`). Where `scrollbar.overlay_mode` is false —
-/// KDE and Windows — [`crate::apply`] also asks for an always-visible bar, so
-/// a content element that fills the scroll area runs underneath it. The width
+/// every bundled preset but adwaita, ios-13, macos-monterey and macos-tahoe:
+/// kde-breeze, windows-11, material-3 and the community themes — [`crate::apply`]
+/// also asks for an always-visible bar, so a content element that fills the
+/// scroll area runs underneath it. Where the theme states no track as well (a
+/// transparent `scrollbar.track_color`: kde-breeze, windows-11), that content
+/// shows through the bar, a row's hover fill and text or cells that reach the
+/// edge among it; the gutter keeps it clear of the bar. The width
 /// is read back from [`crate::base_layer::scrollbar_geometry`], the one that
 /// was written onto gpui-base, so the two cannot drift apart.
 ///

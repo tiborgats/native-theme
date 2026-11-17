@@ -14,13 +14,18 @@ Turns a `ResolvedTheme` into a fully configured
 - **Colours**: all 139 `ThemeColor` fields, including the 28 `button*`
   fields gpui-component's `Button` reads (since 0.7), so native themes keep
   their solid button surfaces instead of upstream's tinted house style.
-- **Fonts and global geometry**: families, sizes, `radius`, `shadow`,
+- **Fonts and global geometry**: families, sizes, `radius`, `window_radius`
+  (from `window.border.corner_radius`), `shadow`,
   `focus_ring`, `scrollbar_mode`; a `ThemeConfig` per mode so upstream's own
   `Theme::change` reproduces the native palette in light and dark. The
   connector's observer restores after each switch what the config cannot
   carry: the 12 base-palette fields `ThemeConfigColors` keeps private, and
   `selection`, `list_active` and `table_active`, whose alpha gpui-component
-  caps at 0.3, 0.2 and 0.2 whenever it applies a config.
+  caps at 0.3, 0.2 and 0.2 whenever it applies a config. A client-decorated
+  window (one the compositor leaves to the application to draw, as GNOME's
+  Mutter does under Wayland) has its corners rounded by `window_radius`, which
+  gpui-component's `WindowBorder`, `Root` and `TitleBar` read, and its frame
+  drawn by `WindowBorder` in `window.border.color` (`ThemeColor::window_border`).
 - **The base layer**: gpui-base paints scrollbars and resize handles without
   going through gpui-component; the connector writes the native scrollbar
   width, thumb width, inset and radius, minimum thumb length and colours, and
@@ -75,8 +80,13 @@ sits.
 | `gpui-kit` (GPUI as the code names it; the showcase) | 0.9.1 |
 | `rust-version` | 1.95.0 |
 
-Each is a floor and nothing more. It is not an open-ended `0.9.x`, because a
-*patch* release of these crates has broken this connector before: gpui-component
+With the `gpui-fast` feature, the crate also requires GPUI Fast (`gpui-fast`)
+at `>=0.1.14, <0.1.16`, until GPUI Kit 0.10 (see [Backends](#backends)).
+
+Each row is a floor: Cargo may resolve any later
+semver-compatible release (a later `0.9.x`, a later `0.3.x` of gpui-pre), but
+that the connector builds on one is a claim only of the *Verified* line below,
+because a *patch* release of these crates has broken this connector before: gpui-component
 0.6.2 removed `ThemeColor::tiles`, which the published 0.5.8 wrote, and 0.5.8
 stopped compiling on a fresh dependency resolution. gpui-component 0.7.1 did it
 again by adding two `IconName` variants, which the published 0.6.0 matched
@@ -259,13 +269,17 @@ carries no colours), so call `apply` once per variant.
   (source-over, straight alpha): the filled buttons' hover and pressed fills
   and the widgets' hover states are a theme layer over the fill it covers, so
   a layered state an application draws itself matches them through it.
+- **`to_hsla(rgba)`** — a theme colour as the `Hsla` gpui paints, by the
+  conversion the connector maps every colour with, so a colour an application
+  converts for a widget of its own is the one the connector would give.
 
 ## Per-widget geometry
 
 gpui-component widgets apply the caller's `StyleRefinement` after their own
 geometry, so a refinement built from the native theme wins. Every builder in
-the `geometry` module is a pure function of `Native<'_>` (the four layout
-accessors, of a `LayoutTheme`):
+the `geometry` module is a pure function of `Native<'_>`; the four layout
+accessors, `widget_gap`, `container_margin`, `window_margin` and
+`section_gap`, take a `LayoutTheme` instead:
 
 ```rust,no_run
 use gpui_kit::{ParentElement, Styled, div};
@@ -388,7 +402,7 @@ test over every preset and mode says so.
 | `title_bar_inactive` | `window.inactive_title_bar_background`, `window.inactive_title_bar_text_color` | a `TitleBar` while its window is not the active one, after `title_bar`: `.when(!window.is_window_active(), \|bar\| bar.refine_style(&geometry::title_bar_inactive(n)))`. gpui redraws the window when its activation changes. The fill is upstream's gradient drawn from the inactive colour, so a theme whose inactive pair is the active one draws the same bar in both states |
 | `toolbar` | `toolbar.bar_height` (as a minimum height, where stated), `.item_gap` (where stated), `.border.padding` (the stated sides), `.border.line_width` and `.border.color` (the bottom edge), `.background_color`, `toolbar.font`, `defaults.line_height` | a toolbar row the application draws with its own elements, or gpui-component 0.9.1's `Toolbar`: the height is the content's (at least `bar_height`), and the `Toolbar`'s own Small minimum height (`min_h_8`) is replaced by `bar_height` where stated and reset to `auto` where not. Add items to a `Toolbar` with `content()` — `child()` turns buttons into compact ghosts in a 1.5 rem box. The edge is a bottom rule, `toolbar.border.color` at `.line_width`, inside the bar, none at a width of 0 |
 | `spinner_size`, `icon_size_*` | `spinner.diameter`, `toolbar.icon_size` (which inherits `defaults.icon_sizes.toolbar`), `defaults.icon_sizes.*` for the others | `Spinner::with_size`, `Icon::with_size` |
-| `scrollbar_gutter` | `scrollbar.overlay_mode`, and the groove width the base layer installed | the element a `overflow_y_scrollbar` container scrolls. gpui-component overlays its bar on the scroll area whatever the platform does, so where the platform's bars are not overlays this reserves the groove width beside the content; where they are, it reserves nothing. Where the theme states no track (a transparent `scrollbar.track_color`: `kde-breeze`, `windows-11`), content that runs under the bar shows through it, a row's hover fill and text or cells that reach the edge among it; Qt ends the view at the bar, which this gutter reproduces. |
+| `scrollbar_gutter` | `scrollbar.overlay_mode`, and the groove width the base layer installed | the element an `overflow_y_scrollbar` container scrolls. gpui-component overlays its bar on the scroll area whatever the platform does, so where the platform's bars are not overlays this reserves the groove width beside the content; where they are, it reserves nothing. Where the theme states no track (a transparent `scrollbar.track_color`: `kde-breeze`, `windows-11`), content that runs under the bar shows through it, a row's hover fill and text or cells that reach the edge among it; Qt ends the view at the bar, which this gutter reproduces. |
 | `widget_gap`, `container_margin`, `window_margin`, `section_gap` | `LayoutTheme` (`Theme::layout` or `SystemTheme.layout`) | your own layout; `None` where the platform specifies nothing |
 
 The `button`, `input`, `select`, `combobox`, `list_item` and `progress`
@@ -449,10 +463,10 @@ flat buttons gpui-component builds internally, which takes `accent` where the
 platform has a button hover; the checkbox and radio unchecked border, which
 takes the text input's border colour; and tab height, radius
 and text size, which `Tab`'s render writes into the same style bag the caller's
-setters fill, `tab/tab.rs:961-969`) is
-listed in §14 of the [v0.5.8 specification](https://github.com/tiborgats/native-theme/blob/main/docs/archive/todo_v0.5.8_gpui-component-0.6-spec.md)
-and in the [roadmap](../../ROADMAP.md)'s upstream-PR list (*Upstream receivers for
-the gpui connector*). The checkbox, radio, switch, slider,
+setters fill, `tab/tab.rs:961-969`) is out of the caller's reach; the
+[roadmap](../../ROADMAP.md#upstream-receivers-for-the-gpui-connector)'s
+*Upstream receivers for the gpui connector*, read at gpui-component 0.9.1,
+lists the upstream changes proposed for most of it. The checkbox, radio, switch, slider,
 progress bar, spinner, tab bar and separator among them have theme-drawn
 replacements in the `widgets` module.
 
@@ -466,7 +480,7 @@ role, and paints every part from the theme leaf that states it:
 
 | Widget | Paints | Instead of gpui-component's |
 |---|---|---|
-| `Checkbox`, `Radio`, `RadioGroup` | `checkbox.*`: indicator size, fills per state, border, radius, mark and its stroke (`check_mark_stroke_width`), the radio's dot (`radio_dot_diameter`), label gap and font | an indicator sized in rems per `Size`; a check glyph as the radio's mark |
+| `Checkbox`, `Radio`, `RadioGroup` | `checkbox.*`: indicator size, fills per state, border, radius, mark and its stroke (`check_mark_stroke_width`), the radio's dot (`radio_dot_diameter`), label gap and font. Where the theme states no stroke (and, for a radio, no dot), the mark is gpui-component's `IconName::Check` through the application's icon resolver (`set_icon_resolver`), as gpui-component's own check box draws it; where it states one, the connector strokes that glyph at its width | an indicator sized in rems per `Size`; a check glyph as the radio's mark |
 | `Switch` | `switch.*`: track and thumb sizes, radius, fills per state, hover | pixel literals per `Size` |
 | `Slider` | `slider.*`: rail, fill, thumb, hover; keyboard steps; horizontal or vertical (`Slider::axis`) | a rail of its fill at 20% alpha, a thumb of its own size |
 | `ProgressBar` | `progress_bar.*`: track, fill, frame, height, minimum width; indeterminate with `ProgressBar::loading`, its fill sweeping on gpui-component's motion | a track of its fill at 20% alpha |
@@ -728,7 +742,7 @@ narrow. `gpui-fast` is off: it changes the GPUI core rather than adding to it
 | `system-icons` | the platform's own icons (`native-theme/system-icons`) |
 | `svg-rasterize` | SVG icons rasterised by this crate (`native-theme/svg-rasterize`) |
 | `system-fonts` | a theme family the system lacks is drawn in the family the platform substitutes for it (`native-theme/system-fonts`; fontconfig on Linux), not in gpui's own fallback list |
-| `gpui-fast` | builds on GPUI Kit's GPUI Fast core instead of gpui-pre (`gpui-kit/gpui-fast`, `gpui-component/gpui-fast`) |
+| `gpui-fast` | builds on GPUI Kit's GPUI Fast core instead of gpui-pre (`gpui-kit/gpui-fast`, `gpui-component/gpui-fast`), with GPUI Fast held at `>=0.1.14, <0.1.16` until GPUI Kit 0.10 (see [Backends](#backends)) |
 | `native` | the OS readers (`native-theme/native`), so `from_system()` reads the OS theme |
 | `watch` | `on_theme_change`, which runs a closure on gpui's foreground, with a window, when the OS theme changes (`native-theme/watch`, `futures`; see [Runtime theme change](#runtime-theme-change)) |
 
@@ -930,11 +944,11 @@ it in: a frame coloured as its set is coloured, a turning icon in that one
 colour:
 
 ```rust,no_run
-use gpui_kit::{Hsla, IntoElement, Styled, px, rgba};
+use gpui_kit::{IntoElement, Styled, px};
 use native_theme_gpui::icons::{animated_frames_to_image_sources_for, with_spin_animation};
 use native_theme_gpui::native_theme::detect::prefers_reduced_motion;
 use native_theme_gpui::native_theme::icons::load_icon_indicator;
-use native_theme_gpui::{AnimatedIcon, IconData, IconSet, TransformAnimation};
+use native_theme_gpui::{AnimatedIcon, IconData, IconSet, TransformAnimation, to_hsla};
 
 # fn f() -> native_theme_gpui::Result<()> {
 let loaded = native_theme_gpui::from_system()?;
@@ -946,7 +960,7 @@ let stated = match loaded.icon_set {
     IconSet::Material | IconSet::Lucide => loaded.resolved.spinner.fill_color,
     _ => loaded.resolved.defaults.text_color,
 };
-let colour: Hsla = rgba(u32::from_be_bytes([stated.r, stated.g, stated.b, stated.a])).into();
+let colour = to_hsla(stated);
 let diameter = px(loaded.resolved.spinner.diameter);
 if let Some(anim) = load_icon_indicator(loaded.icon_set, loaded.icon_theme.as_deref()) {
     match &anim {
@@ -1030,10 +1044,11 @@ alias gpui-kit documents), so it is built on the core gpui-kit is built on:
 - An application on **gpui-pre** needs nothing: it is the default.
 - An application on **GPUI Fast** through gpui-kit
   (`gpui-kit = { version = "0.9.1", features = ["gpui-fast"] }`, with gpui-kit's
-  default `component` feature) needs nothing more either: this crate follows
-  gpui-kit. Until GPUI Kit 0.10 it enables this crate's `gpui-fast` as well,
-  or holds GPUI Fast below 0.1.16 itself, since gpui-base 0.9.1 does not
-  compile on GPUI Fast 0.1.16 or later.
+  default `component` feature) enables this crate's `gpui-fast` too, or pins
+  `gpui-fast = ">=0.1.14, <0.1.16"` itself, until GPUI Kit 0.10: this crate
+  follows gpui-kit onto GPUI Fast, but gpui-kit 0.9.1 asks for
+  `gpui-fast = "0.1.14"`, which a fresh resolution takes to the newest 0.1.x,
+  and gpui-base 0.9.1 does not compile on GPUI Fast 0.1.16 or later.
 - Any other application on **GPUI Fast** (one that depends on gpui-component
   rather than on gpui-kit, or uses gpui-kit without its `component` feature)
   enables this crate's `gpui-fast`, which turns on `gpui-kit/gpui-fast` and
@@ -1068,9 +1083,12 @@ dependency wanting a later snapshot.
   from the list header (`list.header_background`, `list.header_font`), while
   `table_foot*` are the window background and the muted text colour, since
   the model states no footer colour; `status_bar*` come from the status-bar
-  theme; the rest as before (direct roles plus derived hover/active states).
+  theme; `chart_grid`, the grid of gpui-component's charts, is
+  `separator.line_color`; the rest as before (direct roles plus derived hover/active states).
 - **Fonts and geometry** — `family`, `size` (scaled by the text-scaling
-  factor), `radius`, `shadow`, `focus_ring`, `scrollbar_mode`.
+  factor), `radius`, `window_radius` (`window.border.corner_radius`, the
+  corners of a client-decorated window), `shadow`, `focus_ring`,
+  `scrollbar_mode`.
 - **Base layer** — scrollbar track width, thumb width, thumb inset (centred),
   thumb radius, minimum thumb length, track and thumb colours; resize-handle
   colours from the splitter, which gpui-base's own resizables draw (not

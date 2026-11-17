@@ -33,7 +33,12 @@ egui's own types, and hands them to egui through egui's own seams:
    `Ui`, for a popup or a menu. A `TextEdit` in a `Role::Input` scope takes the
    input's borders, corner radius and text colours, a checked box in
    `Role::Checkbox` with `RoleVariant::Selected` the checked fill, and a button
-   in `Role::Button` its own font size.
+   in `Role::Button` its own font size. Inside a `Role::List` scope egui's
+   non-interactive stroke, which draws a separator and a group's frame, is
+   `list.grid_color` at `list.border.line_width`; no `Surface` is a list's, so
+   a list's own outline is a `Frame` the application builds from
+   `list.border`'s colour, width and corner radius (`convert::to_stroke`,
+   `convert::to_corner_radius`).
 3. **Surface frames.** One `egui::Frame` per `Surface` — window, title bar,
    dialog, popover, tooltip, card, side and central panels — from
    `ui.native_frame(surface)` or `ThemeAtlas::surface_frame`.
@@ -54,6 +59,13 @@ What the base style carries, among others:
 | the tooltip's delay and width | `interaction.tooltip_delay`, `spacing.tooltip_width` |
 | the body, monospace, caption and section-heading sizes | `text_styles` `Body`, `Monospace`, `Small`, `Heading` |
 | reduced motion | `animation_time`, `scroll_animation` |
+
+egui's own frames for every `Window`, `Modal`, menu, popup, tooltip and
+`ComboBox` list fill from `visuals.window_fill` (`Frame::window`,
+`Frame::menu`, `Frame::popup`), so each of them takes the menu background.
+To give a window the window colour, `window.background_color`, hand it
+`Window::frame(ui.native_frame(Surface::Window))`, or
+`ThemeAtlas::surface_frame(theme, Surface::Window)` where no `Ui` is at hand.
 
 The complete list, one row per native leaf, is the mapping document in the
 API reference, rendered from [`mapping.toml`](mapping.toml).

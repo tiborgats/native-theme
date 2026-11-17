@@ -128,6 +128,7 @@
 //! | `tooltip` | show delay + geometry | `show_delay` installed by [`apply`] as gpui-base's `TooltipDefaults` show delay, and [`tooltip_show_delay`] for GPUI's own `.tooltip()` on an element; background, font, padding, border, radius via `geometry::tooltip`, max width via `geometry::tooltip_content` |
 //! | `dialog` | entrance + geometry | `entrance` via `geometry::dialog_entrance`, both styles as `DialogEntrance::Fade` (gpui-component draws neither a scaling nor a rising entrance); padding, min width, min height, radius, fill and edge colour via `geometry::dialog`, max width via `geometry::dialog_max_width`, button gap via `geometry::dialog_footer`, fonts via `geometry::dialog_title` and `geometry::dialog_description` |
 //! | `link` | 3 of 8 + geometry | font.color, hover_text_color, active_text_color; background_color via `geometry::link`, where the `Link` widget paints no background of its own (`link.rs:73-90`); `link.hover_background` has no receiver — the `Link` widget paints no background in any state, a `ButtonVariant::Link` button paints `Theme::transparent` in every state, and that field is not one of the 139 `ThemeColor` colours |
+//! | `separator` | 2 of 2 | line_color → `chart_grid`, the grid of gpui-component's charts; line_color and line_width via the `widgets` module's `Separator` (feature `widgets`), where gpui-component's own `Separator` draws a literal 1 px line |
 //! | `splitter` | colours | divider/hover colours via `base_layer::resizable_theme`, drawn by gpui-base's resizables at their 1 px width (not gpui-component's, `Settings` or dock edges) |
 //!
 //! **Accessors.** The free functions of the crate root read what an application
@@ -136,7 +137,9 @@
 //! `defaults.border.corner_radius` is `border_corner_radius`,
 //! `scrollbar.groove_width` is `scrollbar_groove_width`, the same name in the
 //! iced, gpui and egui connectors (`scripts/check_connector_parity.py` checks
-//! it).
+//! it). Two helpers draw as the connector does: [`to_hsla`] converts a theme
+//! colour to the `Hsla` gpui paints, and [`layer_over`] composites a state
+//! layer over the fill it covers.
 //!
 //! **Per-widget geometry.** Heights, paddings, radii, borders and text sizes
 //! reach the widgets through the [`geometry`] module: pure builders returning a
@@ -150,9 +153,9 @@
 //! splitter width, button icon gap, popup-menu rows), and tab
 //! height, radius and text size, which `Tab`'s render writes into the same
 //! style bag the caller's setters fill (`tab/tab.rs:961-969`), stay upstream
-//! work; §14 of the v0.5.8 specification
-//! (<https://github.com/tiborgats/native-theme/blob/main/docs/archive/todo_v0.5.8_gpui-component-0.6-spec.md>)
-//! lists each item with the upstream line that makes it unreachable. For
+//! work; the roadmap's *Upstream receivers for the gpui connector*
+//! (<https://github.com/tiborgats/native-theme/blob/main/ROADMAP.md#upstream-receivers-for-the-gpui-connector>)
+//! lists the requests to upstream, read at gpui-component 0.9.1. For
 //! the checkbox, radio, switch, slider, progress bar, spinner, tab bar and
 //! separator, the `widgets` module (feature `widgets`) draws controls of its own on
 //! gpui-base's headless primitives, every part from the theme.
@@ -171,18 +174,20 @@
 //! | `system-icons` | the platform's own icons (`native-theme/system-icons`) |
 //! | `svg-rasterize` | SVG icons rasterized by this crate (`native-theme/svg-rasterize`) |
 //! | `system-fonts` | a theme family the system lacks is drawn in the family the platform substitutes for it ([`font_family`]; `native-theme/system-fonts`) |
-//! | `gpui-fast` | the crate built on GPUI Kit's GPUI Fast core instead of gpui-pre (`gpui-kit/gpui-fast`, `gpui-component/gpui-fast`) |
+//! | `gpui-fast` | the crate built on GPUI Kit's GPUI Fast core instead of gpui-pre (`gpui-kit/gpui-fast`, `gpui-component/gpui-fast`), with GPUI Fast held at `>=0.1.14, <0.1.16` until GPUI Kit 0.10 |
 //! | `native` | the OS readers, `native-theme/native`; without one (or native-theme's `kde`, `portal`, `macos`, `windows`), [`from_system()`] is the platform preset on Linux and an error on macOS and Windows |
 //! | `watch` | `on_theme_change`, a closure run on gpui's foreground, with a window, when the OS theme changes, through `native-theme/watch` and `futures` (see [Runtime theme change](#runtime-theme-change)) |
 //!
 //! The crate names GPUI through gpui-kit, so it is built on whichever core
-//! gpui-kit is: an application that enables `gpui-kit/gpui-fast` with
-//! gpui-kit's `component` feature (on by default) gets this crate on GPUI Fast
-//! without `gpui-fast` here. Enable `gpui-fast` here only for an application
-//! on GPUI Fast otherwise (one that depends on gpui-component directly, or
-//! uses gpui-kit without `component`): it switches gpui-kit and
-//! gpui-component together, since the two cores' types are distinct. The
-//! README's *Backends* section has the details.
+//! gpui-kit is. Until GPUI Kit 0.10, an application on GPUI Fast enables
+//! `gpui-fast` here (or pins `gpui-fast = ">=0.1.14, <0.1.16"` itself),
+//! whether it turns on `gpui-kit/gpui-fast` or depends on gpui-component
+//! directly: gpui-kit 0.9.1 asks for `gpui-fast = "0.1.14"`, which resolves to
+//! the newest 0.1.x, and gpui-base 0.9.1 does not compile on GPUI Fast 0.1.16
+//! or later (its `IntoElement` impls conflict with the blanket one 0.1.16
+//! added); only this crate's `gpui-fast` holds GPUI Fast below 0.1.16. It also
+//! switches gpui-kit and gpui-component together, since the two cores' types
+//! are distinct. The README's *Backends* section has the details.
 //!
 //! Without `svg-rasterize` an SVG icon is still converted: [`icons`] hands
 //! gpui the (colorized) SVG bytes as an undecoded `ImageSource::Image`, which
@@ -290,14 +295,20 @@ use std::time::Duration;
 
 /// Convert a [`ResolvedTheme`] into a gpui-component [`GpuiTheme`].
 ///
-/// Builds a complete GpuiTheme by:
-/// 1. Mapping all 139 ThemeColor fields via `colors::to_theme_color`
-/// 2. Setting font, geometry, and mode fields directly on the Theme
-/// 3. Storing a ThemeConfig in light_theme/dark_theme Rc for gpui-component switching
-///
-/// All Theme fields are set explicitly -- no `apply_config` call is used.
-/// This avoids the fragile apply-then-restore pattern where `apply_config`
-/// would overwrite all 139 color fields with defaults.
+/// From `resolved` it sets all 139 `ThemeColor` fields (and the `tokens`
+/// gpui-component derives from them), `mode`, `font_family`, `font_size`,
+/// `mono_font_family`, `mono_font_size`, `radius`, `radius_lg`,
+/// `window_radius` (`window.border.corner_radius`), `shadow`, `focus_ring`,
+/// `scrollbar_mode` and `highlight_theme`, and stores a `ThemeConfig` of the
+/// same values in the slot of its mode (`light_theme` or `dark_theme`), for
+/// gpui-component's own mode switches; the other mode's slot stays
+/// `ThemeConfig::default()`. The fields are written directly, not through
+/// gpui-component's `apply_config`, which would cap `selection`,
+/// `list_active` and `table_active`. `transparent`, `notification`, `list`,
+/// `sheet`, `motion` and `cursor_blink` stay at gpui-component's defaults,
+/// which native-theme does not model; [`apply`] keeps the installed theme's
+/// `notification`, `list`, `sheet`, `motion` and `cursor_blink` in their
+/// place.
 ///
 /// A [`ResolvedTheme`] carries no colour mode, so `is_dark` is the theme's:
 /// [`Resolved::mode`](native_theme::theme::Resolved::mode) of the variant
@@ -966,8 +977,7 @@ pub fn tooltip_show_delay(resolved: &ResolvedTheme) -> Option<Duration> {
 /// Stores both resolved variants of one theme (when known) because upstream's
 /// `Theme::change` switches modes without going through the connector, and the
 /// re-apply observer must then find the variant of the mode upstream switched
-/// to (`docs/archive/todo_v0.5.8_gpui-component-0.6-rationale.md` §2.22).
-/// Each variant is kept with the display name of the theme that stored it, so
+/// to. Each variant is kept with the display name of the theme that stored it, so
 /// a later `apply` of another theme drops it. Every field's default is the
 /// right initial state, so `Default` is derived (a hand-written impl would
 /// trip clippy's `derivable_impls`).
@@ -1058,8 +1068,9 @@ impl ActiveNativeTheme for App {
     }
 }
 
-/// Borrowed inputs of every `geometry` builder
-/// (`docs/archive/todo_v0.5.8_gpui-component-0.6-spec.md` §9.1).
+/// Borrowed inputs of every `geometry` builder: the resolved theme the values
+/// come from, and the accessibility preferences, whose text-scaling factor
+/// scales its text sizes.
 #[derive(Clone, Copy, Debug)]
 pub struct Native<'a> {
     /// The resolved theme the values come from.
@@ -1080,8 +1091,7 @@ impl<'a> Native<'a> {
 }
 
 /// Install `theme` as gpui-component's global theme with the native base-layer
-/// overrides, and keep them installed across upstream rebuilds
-/// (`docs/archive/todo_v0.5.8_gpui-component-0.6-spec.md` §8.1, §3.3).
+/// overrides, and keep them installed across upstream rebuilds.
 ///
 /// 1. stores `resolved` under the theme's mode and `prefs` in [`NativeTheme`],
 ///    dropping the other mode's stored variant when another theme (one of a

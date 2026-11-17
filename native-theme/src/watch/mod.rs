@@ -35,9 +35,10 @@
 //! [`ThemeChangeEvent`] carries no theme data. When you receive an event,
 //! call [`detect::invalidate_caches()`](crate::detect::invalidate_caches),
 //! then re-run [`SystemTheme::from_system()`](crate::SystemTheme::from_system)
-//! to get the updated theme: the detection values the reader uses (dark
-//! mode, the icon theme, the accessibility preferences) stay cached until
-//! the caches are cleared.
+//! to get the updated theme: the detection values (dark mode, reduced
+//! motion, the accessibility preferences, the icon theme and, on Linux, the
+//! desktop) stay cached until the caches are cleared, and the OS read takes
+//! its icon theme and desktop from them.
 //!
 //! # Example
 //!
@@ -79,8 +80,10 @@ use std::thread::JoinHandle;
 /// When you receive an event, call
 /// [`detect::invalidate_caches()`](crate::detect::invalidate_caches), then
 /// [`SystemTheme::from_system()`](crate::SystemTheme::from_system)
-/// to read the updated theme; without the first call, the reader's detection
-/// values (dark mode, the icon theme) are the cached ones.
+/// to read the updated theme; without the first call, the detection values
+/// (dark mode, reduced motion, the accessibility preferences, the icon theme
+/// and, on Linux, the desktop) are the cached ones, and the OS read takes its
+/// icon theme and desktop from them.
 ///
 /// # Non-exhaustive
 ///
@@ -377,10 +380,11 @@ impl Debounce {
 /// # Ok::<(), native_theme::error::Error>(())
 /// ```
 ///
-/// Clear the detection caches before the re-read, as above: the reader's
-/// detection values (dark mode, the icon theme, the accessibility
-/// preferences) are cached until
-/// [`detect::invalidate_caches()`](crate::detect::invalidate_caches).
+/// Clear the detection caches before the re-read, as above: the detection
+/// values (dark mode, reduced motion, the accessibility preferences, the icon
+/// theme and, on Linux, the desktop) are cached until
+/// [`detect::invalidate_caches()`](crate::detect::invalidate_caches), and the
+/// OS read takes its icon theme and desktop from them.
 ///
 /// On macOS the change arrives as a distributed notification, which is
 /// delivered through the process's main run loop, so the application must be

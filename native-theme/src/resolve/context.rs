@@ -1,8 +1,7 @@
 //! Resolution-time inputs (font DPI, button order, icon theme) captured
 //! once per theme-build and passed by reference through the pipeline.
 //!
-//! Per `docs/archive/v0.5.7_gaps.md` §G7:
-//! intentionally NO `impl Default` — runtime-detected types must signal
+//! Intentionally NO `impl Default` — runtime-detected types must signal
 //! intent at the call site. Use [`ResolutionContext::from_system`] for
 //! production, or [`ResolutionContext::for_tests`] for deterministic
 //! test values.
@@ -13,21 +12,17 @@ use crate::model::DialogButtonOrder;
 
 /// Resolution-time inputs captured once per theme-build.
 ///
-/// Replaces the `font_dpi: Option<f32>` parameter on
-/// [`ThemeMode::into_resolved`](crate::theme::ThemeMode::into_resolved) and
-/// the corresponding internal `OverlaySource` field.
-///
 /// Accessibility preferences live on
 /// [`SystemTheme`](crate::SystemTheme), NOT here — accessibility is a
-/// render-time concern, not a resolve-time concern
-/// (`docs/archive/v0.5.7_gaps.md` §G7).
+/// render-time concern, not a resolve-time concern.
 ///
 /// # Examples
 ///
 /// ```
 /// use native_theme::resolve::ResolutionContext;
 ///
-/// // Production: auto-detect from OS.
+/// // The running platform's: its constant font DPI, its button order and
+/// // its detected icon theme.
 /// let ctx = ResolutionContext::from_system();
 /// assert!(ctx.font_dpi > 0.0);
 ///
@@ -53,23 +48,42 @@ pub struct ResolutionContext {
     /// theme is read ([`SystemTheme::from_system`](crate::SystemTheme::from_system)),
     /// the reader's own DPI, the same value, replaces it.
     ///
-    /// No font DPI is right where the application, not the toolkit, decides the
-    /// X11 scale (`GPUI_X11_SCALE_FACTOR`, `WINIT_X11_SCALE_FACTOR`); on X11
-    /// without `Xft.dpi`, where gpui and winit scale the whole interface by the
-    /// monitor's size (gpui-fast by `GDK_SCALE` where the session sets it) and Qt
-    /// does not (text and interface stay in proportion, at the toolkit's size);
-    /// on Plasma 6.7 X11 with a global scale other than 1
-    /// and a forced font DPI that departs from it, where Qt takes its scale from
-    /// `QT_SCREEN_SCALE_FACTORS` and gpui and winit from `Xft.dpi`; and for a
-    /// toolkit that does not scale by `Xft.dpi` on X11 (none of the three
-    /// connectors'). Such an application builds its own context for the preset
-    /// and TOML paths ([`Theme::resolve_with`](crate::Theme::resolve_with),
-    /// [`ThemeMode::into_resolved`](crate::theme::ThemeMode::into_resolved));
-    /// [`SystemTheme::from_system`](crate::SystemTheme::from_system) takes no font
-    /// DPI, so on that path it re-derives its sizes from each resolved font's
-    /// [`defined_size`](crate::theme::ResolvedFontSpec::defined_size) (the text
+    /// That font DPI is not right in these cases, where the application passes
+    /// a font DPI of its own:
+    ///
+    /// - where the application, not the toolkit, decides the X11 scale
+    ///   (`GPUI_X11_SCALE_FACTOR`, `WINIT_X11_SCALE_FACTOR`);
+    /// - on X11 without `Xft.dpi`, where gpui and winit scale the whole
+    ///   interface by the monitor's size (gpui-fast by `GDK_SCALE` where the
+    ///   session sets it) and Qt does not (text and interface stay in
+    ///   proportion, at the toolkit's size);
+    /// - on Plasma 6.7 X11 with a global scale other than 1 and a forced font
+    ///   DPI that departs from it, where Qt takes its scale from
+    ///   `QT_SCREEN_SCALE_FACTORS` and gpui and winit from `Xft.dpi`;
+    /// - for a toolkit that does not scale by `Xft.dpi` on X11 (none of the
+    ///   three connectors').
+    ///
+    /// On the preset and TOML paths the application builds its own context and
+    /// resolves with it ([`Theme::resolve_with`](crate::Theme::resolve_with),
+    /// [`ThemeMode::into_resolved`](crate::theme::ThemeMode::into_resolved)):
+    ///
+    /// ```
+    /// use native_theme::resolve::ResolutionContext;
+    /// use native_theme::theme::{ColorMode, Resolved, Theme};
+    ///
+    /// /// Resolves `kde-breeze` at the font DPI the application decided.
+    /// fn resolve_at(dpi: f32) -> native_theme::Result<Resolved> {
+    ///     let ctx = ResolutionContext { font_dpi: dpi, ..ResolutionContext::from_system() };
+    ///     Theme::preset("kde-breeze")?.resolve_with(ColorMode::Light, &ctx)
+    /// }
+    /// ```
+    ///
+    /// [`SystemTheme::from_system`](crate::SystemTheme::from_system) takes no
+    /// font DPI, so on that path the application re-derives its sizes from each
+    /// resolved font's
+    /// [`defined_size`](crate::theme::ResolvedFontSpec::defined_size). The text
     /// scale's entries carry no `defined_size`, so their sizes cannot be
-    /// re-derived).
+    /// re-derived.
     pub font_dpi: f32,
     /// Dialog button ordering (`PrimaryLeft` on KDE and Windows,
     /// `PrimaryRight` elsewhere).
@@ -87,14 +101,14 @@ pub struct ResolutionContext {
 }
 
 impl ResolutionContext {
-    /// Build the context by auto-detecting from the current OS.
+    /// Build the context of the running platform:
     ///
-    /// Calls:
-    /// - `crate::detect::system_font_dpi` for `font_dpi` (private)
-    /// - `crate::resolve::inheritance::platform_button_order` for
-    ///   `button_order`
-    /// - [`crate::detect::system_icon_theme`] for `icon_theme`, which
-    ///   is `None` where detection fails
+    /// - `font_dpi`: 72.0 on macOS and 96.0 everywhere else, a constant per
+    ///   platform (nothing is read);
+    /// - `button_order`: `PrimaryLeft` on Windows and on a KDE desktop,
+    ///   `PrimaryRight` elsewhere;
+    /// - `icon_theme`: the system icon theme
+    ///   ([`crate::detect::system_icon_theme`]), `None` where detection fails.
     #[must_use]
     pub fn from_system() -> Self {
         Self::with_detected_icon_theme(crate::detect::system_icon_theme())

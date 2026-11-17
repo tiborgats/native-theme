@@ -9,7 +9,7 @@
 //! (`src/input/group.rs:556-595`). Both readings are hardcoded, and both tokens
 //! are mapped correctly for what they are, so no theme value can make either
 //! button hover the way the platform's buttons do: under KDE Breeze the first
-//! turns the menu's hover tint, the focus colour at 30 % (half that when dark),
+//! turns the menu's hover tint, the focus colour at 30 % in both modes,
 //! and the second a grey barely distinguishable from the field, while ordinary
 //! buttons keep their resting fill, as Breeze's do; Breeze marks hover by outline.
 //!

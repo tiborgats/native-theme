@@ -17,9 +17,10 @@ use std::sync::{Mutex, PoisonError};
 /// [`SystemTheme::from_system_with_preset`](native_theme::SystemTheme::from_system_with_preset)
 /// and [`to_iced_theme()`](crate::SystemThemeExt::to_iced_theme) for a pinned
 /// preset), then rebuild what was built from the old theme, such as a
-/// `Spinner`: the reader's detection values (dark mode, the icon theme,
-/// the accessibility preferences) stay cached until the caches are
-/// cleared.
+/// `Spinner`: the detection values (dark mode, reduced motion, the
+/// accessibility preferences, the icon theme and, on Linux, the desktop)
+/// stay cached until the caches are cleared, and the OS read takes its icon
+/// theme and desktop from them.
 ///
 /// The watcher starts when iced first runs the subscription and stops when
 /// `subscription()` no longer returns it. If it cannot start
