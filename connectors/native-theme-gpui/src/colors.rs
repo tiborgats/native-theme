@@ -5,8 +5,8 @@
 //! derived via shade generation, blending, or fallback logic that mirrors
 //! gpui-component's own `apply_config` derivation.
 //!
-//! Upstream citations in this module are verified against gpui-component 0.8.1,
-//! gpui-base 0.8.1 and gpui-pre 0.3.10.
+//! Upstream citations in this module are verified against gpui-component 0.9.1,
+//! gpui-base 0.9.1 and gpui-pre 0.3.12.
 
 use gpui::Hsla;
 use gpui_component::theme::{Theme, ThemeColor, ThemeToken};
@@ -266,7 +266,7 @@ pub fn to_theme_color(
     assign_secondary(&mut tc, &c, is_dark);
     assign_status(&mut tc, &c, is_dark);
     assign_buttons(&mut tc);
-    assign_list_table(&mut tc, &c, is_dark);
+    assign_list_table(&mut tc, &c, resolved);
     assign_tab_sidebar(&mut tc, &c);
     assign_charts(&mut tc, &c);
     assign_misc(&mut tc, &c, resolved, is_dark, reduce_transparency);
@@ -411,7 +411,7 @@ fn assign_buttons(tc: &mut ThemeColor) {
     tc.button_warning_foreground = tc.warning_foreground;
 }
 
-fn assign_list_table(tc: &mut ThemeColor, c: &ResolvedColors, _is_dark: bool) {
+fn assign_list_table(tc: &mut ThemeColor, c: &ResolvedColors, resolved: &ResolvedTheme) {
     tc.list = c.list_bg;
     tc.list_hover = c.list_hover_bg;
     tc.list_active = c.list_selection_bg;
@@ -439,11 +439,11 @@ fn assign_list_table(tc: &mut ThemeColor, c: &ResolvedColors, _is_dark: bool) {
     // `table/state.rs:1716`), which the model states as `list.grid_color`.
     tc.table_row_border = c.list_grid;
     // The grid of a chart (`chart/mod.rs:493`, `chart/bar_chart.rs:878`,
-    // `chart/radar_chart.rs:507`): the model's grid-line colour, which
-    // platform-facts §2.15 states as macOS `gridColor` and Material's
-    // `outline-variant`, and which elsewhere inherits `defaults.border.color`
-    // (`docs/inheritance-rules.toml:245`).
-    tc.chart_grid = c.list_grid;
+    // `chart/radar_chart.rs:507`): a set of separating lines, so the model's
+    // separator colour (issue #4's D2); `list.grid_color` is a table's grid,
+    // Qt's `Mid` on KDE, which would all but vanish under a chart in dark
+    // mode, and stays `table_row_border`'s (above).
+    tc.chart_grid = rgba_to_hsla(resolved.separator.line_color);
     // Derivation (spec §6.2): upstream paints a table footer
     // (`table/table.rs:340-341`) and the model states no footer colour of any
     // kind, so these stay the window's own background and muted text rather
@@ -650,7 +650,7 @@ pub(crate) fn base_palette(resolved: &ResolvedTheme, is_dark: bool) -> ThemeColo
 /// each with its token, so `to.tokens.red` … `to.tokens.cyan_light` stay the
 /// plain fields' solid colours; `true` when any differed.
 ///
-/// gpui-component 0.8.1 keeps a token beside each of the 12
+/// gpui-component 0.9.1 keeps a token beside each of the 12
 /// (`Theme::tokens`, `src/theme/mod.rs:158`; `ThemeTokens`' fields `red` …
 /// `cyan_light`, `src/theme/theme_color.rs:535-546`), and a rebuild resets
 /// both to its constants; a token is a colour's solid form
@@ -828,11 +828,11 @@ mod tests {
             .expect("resolved preset must validate")
     }
 
-    /// K4: a chart's grid is the model's grid-line colour, on every preset in
-    /// both variants (platform-facts §2.15: macOS `gridColor`, Material
-    /// `outline-variant`, the border colour elsewhere).
+    /// K4, as issue #4's D2 changed it: a chart's grid is the separator
+    /// colour, on every preset in both variants; the table's grid,
+    /// `table_row_border`, keeps `list.grid_color` (`contract.rs`'s rows).
     #[test]
-    fn chart_grid_is_the_list_grid_colour() {
+    fn chart_grid_is_the_separator_colour() {
         for info in Theme::list_presets() {
             for (mode, is_dark) in [(ColorMode::Light, false), (ColorMode::Dark, true)] {
                 let theme = Theme::preset(info.key).expect("a listed preset loads");
@@ -845,8 +845,8 @@ mod tests {
                 let tc = to_theme_color(&resolved, is_dark, false);
                 assert_eq!(
                     tc.chart_grid,
-                    rgba_to_hsla(resolved.list.grid_color),
-                    "{} {mode:?}: chart_grid is not list.grid_color",
+                    rgba_to_hsla(resolved.separator.line_color),
+                    "{} {mode:?}: chart_grid is not separator.line_color",
                     info.key
                 );
             }
@@ -1308,7 +1308,7 @@ mod tests {
 
     #[test]
     fn theme_color_field_count_tripwire() {
-        // ThemeColor has 139 Hsla fields in gpui-component 0.8.1 (each 16 bytes
+        // ThemeColor has 139 Hsla fields in gpui-component 0.9.1 (each 16 bytes
         // = 4x f32).
         // If this fails, gpui-component added/removed fields -- update the color mapping.
         let size = std::mem::size_of::<ThemeColor>();

@@ -34,7 +34,7 @@ use crate::palette::to_color;
 use iced_aw::style::Status;
 use iced_core::border::Radius;
 use iced_core::theme::Theme;
-use iced_core::{Background, Color};
+use iced_core::{Background, Border, Color, Shadow};
 use iced_widget::container;
 use native_theme::theme::ResolvedTheme;
 
@@ -116,18 +116,23 @@ pub fn card(
 /// which paints both surfaces in the palette's base background and the open
 /// path in its weak primary.
 ///
-/// The bar and the menus it opens are the same surface here:
-/// `menu.background_color` fills both and `menu.border.*` outlines both,
-/// because `MenuTheme` states one menu panel. `path` -- the highlight under the
-/// item the pointer is on -- is `menu.hover_background`, emitted as given: it
-/// is a row highlight painted over a panel the widget also paints, so the
+/// The bar lies on the window: `window.background_color`, with no frame
+/// (`Border::default()`): the model has no menu-bar fill, and `MenuTheme`'s
+/// border is no bar's. A menu is the menu's panel, `menu.background_color`,
+/// framed by the popup's border, `popover.border` (its colour, width and
+/// radius): the platforms frame a menu as they frame every popup
+/// (platform-facts §2.6: the popup border is §2.16's), and `MenuTheme`'s
+/// border states no line of its own. `path` -- the highlight under the item
+/// the pointer is on -- is `menu.hover_background`, emitted as given: it is
+/// a row highlight painted over a panel the widget also paints, so the
 /// platform's layering happens by itself.
 ///
 /// Three fields have no native source and come from
-/// `menu_bar::primary(theme, status)`: the two shadows, because the model
-/// carries `defaults.shadow_color` but no offset or blur, and `path_border`,
-/// because the model's only menu border is the panel's and drawing it around a
-/// highlighted row would outline something the platform does not.
+/// `menu_bar::primary(theme, status)`: the bar's shadow and the menus'
+/// shadow, because the model carries `defaults.shadow_color` but no offset or
+/// blur -- a menu casts it only where `popover.border.shadow_enabled` states
+/// one --, and `path_border`, because the model has no border round a
+/// highlighted row.
 ///
 /// `menu.hover_text_color`, `menu.font.color`, `.disabled_text_color`,
 /// `.separator_color`, `.row_height`, `.icon_size` and `.icon_text_gap` have
@@ -139,22 +144,25 @@ pub fn menu(
 ) -> impl Fn(&Theme, Status) -> iced_aw::style::menu_bar::Style + Clone + use<> {
     use iced_aw::style::menu_bar::Style;
 
-    let m = &resolved.menu;
-
-    let panel = to_color(m.background_color);
-    let highlight = to_color(m.hover_background);
-
-    let border = border_of(&m.border);
+    let bar = to_color(resolved.window.background_color);
+    let panel = to_color(resolved.menu.background_color);
+    let highlight = to_color(resolved.menu.hover_background);
+    let frame = border_of(&resolved.popover.border);
+    let shadow = resolved.popover.border.shadow_enabled;
 
     move |theme, status| {
         let iced = iced_aw::style::menu_bar::primary(theme, status);
         Style {
-            bar_background: Background::Color(panel),
-            bar_border: border,
+            bar_background: Background::Color(bar),
+            bar_border: Border::default(),
             bar_shadow: iced.bar_shadow,
             menu_background: Background::Color(panel),
-            menu_border: border,
-            menu_shadow: iced.menu_shadow,
+            menu_border: frame,
+            menu_shadow: if shadow {
+                iced.menu_shadow
+            } else {
+                Shadow::default()
+            },
             path: Background::Color(highlight),
             path_border: iced.path_border,
         }

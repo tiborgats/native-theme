@@ -4387,7 +4387,7 @@ const COMPATIBILITY_URL: &str = concat!(
 const LEFT_PANEL_WIDTH: f32 = 300.0;
 
 /// The narrowest the splitter leaves the side panel, and the page beside it:
-/// gpui-base's `PANEL_MIN_SIZE` (gpui-base 0.8.1 `src/resizable/mod.rs:16`),
+/// gpui-base's `PANEL_MIN_SIZE` (gpui-base 0.9.1 `src/resizable/mod.rs:16`),
 /// the floor of the gpui showcase's resizable body. The model states none.
 const PANEL_MIN_WIDTH: f32 = 100.0;
 
@@ -5339,7 +5339,7 @@ struct IconButton<'a> {
     /// at the window's bottom edge, where iced would pull the bubble back
     /// over the button (`snap_within_viewport`, iced_widget 0.14.2
     /// `src/tooltip.rs:525-545`), above, as gpui's own tooltip turns above
-    /// the pointer there (gpui-pre 0.3.10 `src/window.rs:4070-4079`).
+    /// the pointer there (gpui-pre 0.3.12 `src/window.rs:4070-4079`).
     tip: tooltip::Position,
 }
 
@@ -6512,9 +6512,10 @@ fn page_menu(state: &State) -> Element<'_, Message> {
 /// a shadow colour but no shadow geometry, and no border round a highlighted
 /// row -- and are `iced_aw`'s own (`menu_bar::primary`).
 ///
-/// Not the connector's `styles::aw::menu`, which the Extra page shows: that
-/// one fills the bar as a menu and frames the popup with `menu.border`,
-/// which platform-facts §2.6 says is not the popup's.
+/// The same `Style` as the connector's `styles::aw::menu`, which the Extra
+/// page shows and `the_window_menus_draw_as_the_connectors` holds it to:
+/// the window's menus are built in every build of the showcase, and
+/// `styles::aw` only with the connector's `iced_aw` feature.
 fn menu_bar_style(
     resolved: &ResolvedTheme,
 ) -> impl Fn(&Theme, iced_aw::style::Status) -> iced_aw::style::menu_bar::Style + use<> {
@@ -6644,7 +6645,7 @@ fn status_bar(state: &State) -> Element<'_, Message> {
         },
     );
     // The bar's text on the theme's line box rounded to a whole pixel, as
-    // gpui lays a line of text out (gpui-pre 0.3.10 `src/style.rs:553-556`,
+    // gpui lays a line of text out (gpui-pre 0.3.12 `src/style.rs:553-556`,
     // `TextStyle::line_height_in_pixels`), so it lies on the pixels gpui's
     // does: catppuccin-mocha's 14 x 1.2 = 16.8 is 17.
     let status_line = iced::Pixels(
@@ -6702,7 +6703,7 @@ fn status_bar(state: &State) -> Element<'_, Message> {
 }
 
 /// `length` as gpui lays a padding out on a display of `scale`: rounded to
-/// whole device pixels, a half toward zero, before layout (gpui-pre 0.3.10
+/// whole device pixels, a half toward zero, before layout (gpui-pre 0.3.12
 /// `src/taffy.rs:534-538`, `round_to_device_pixel`; `src/util.rs:130-142`,
 /// `round_half_toward_zero`), in logical pixels again. So gpui's status bar
 /// is padded 3 px above and below under material-3's 14 px font, where a
@@ -6719,8 +6720,8 @@ fn gpui_rounded(length: f32, scale: f32) -> f32 {
 /// The status bar's padding on a side `status_bar.border.padding` leaves
 /// unstated: gpui-component's StatusBar's own, which the gpui showcase's bar
 /// keeps, `py_1` above and below and `px_2` at the sides (gpui-component
-/// 0.8.1 `src/status_bar.rs:89-90`). They are `rems(0.25)` and `rems(0.5)`
-/// (gpui-pre-macros 0.3.10 `src/styles.rs:939-951`), and gpui-component's rem
+/// 0.9.1 `src/status_bar.rs:89-90`). They are `rems(0.25)` and `rems(0.5)`
+/// (gpui-pre-macros 0.3.12 `src/styles.rs:939-951`), and gpui-component's rem
 /// is its `Theme::font_size` (`src/root.rs:714`), which the gpui connector
 /// fills with the scaled `defaults.font.size` (`native-theme-gpui/src/lib.rs`,
 /// `to_theme`): a quarter of that size above and below, a half at the sides.
@@ -10085,14 +10086,14 @@ fn bubble_padding(resolved: &ResolvedTheme) -> f32 {
 }
 
 /// A tooltip's gap to its control, in rems: gpui-component's `Tooltip`
-/// margin, `m_3` (gpui-component 0.8.1 `src/tooltip.rs:118`), `rems(0.75)`
-/// (gpui-pre-macros 0.3.10 `src/styles.rs:959-961`), which it lays around
+/// margin, `m_3` (gpui-component 0.9.1 `src/tooltip.rs:118`), `rems(0.75)`
+/// (gpui-pre-macros 0.3.12 `src/styles.rs:959-961`), which it lays around
 /// the bubble inside the popup, so the bubble stands that far from where
 /// the popup is placed. Every tooltip of the gpui showcase this one's are
 /// compared with (the toolbar's, the status bar's side-panel toggle's and
 /// the Basic page's, `showcase-gpui/demo.rs:1379`, `:1603`, `:6076`) is
 /// gpui's own element tooltip, which gpui places off the pointer, a pixel
-/// right of and below it (gpui-pre 0.3.10 `src/window.rs:4051-4052`,
+/// right of and below it (gpui-pre 0.3.12 `src/window.rs:4051-4052`,
 /// `prepaint_tooltip`), and above it where the window's bottom edge leaves
 /// no room (`:4070-4079`); so the gpui bubble stands `m_3` and a pixel from
 /// the pointer. The model states no gap (`docs/property-registry.toml`
@@ -10101,7 +10102,7 @@ const TOOLTIP_GAP_REMS: f32 = 0.75;
 
 /// The gap between every tooltip of the showcase and its control,
 /// [`TOOLTIP_GAP_REMS`] of gpui-component's rem, its `Theme::font_size`
-/// (gpui-component 0.8.1 `src/root.rs:714`), which the gpui connector fills
+/// (gpui-component 0.9.1 `src/root.rs:714`), which the gpui connector fills
 /// with the scaled `defaults.font.size` (as [`status_bar_padding`]). iced
 /// places a tooltip by its control alone: its `FollowCursor` lays the bubble
 /// over the pointer, above it, with no gap (iced_widget 0.14.2
@@ -10112,7 +10113,7 @@ fn tooltip_gap(resolved: &ResolvedTheme, a11y: &AccessibilityPreferences) -> f32
 }
 
 /// `rems` of gpui-component's rem, its `Theme::font_size` (gpui-component
-/// 0.8.1 `src/root.rs:714`), which the gpui connector fills with the scaled
+/// 0.9.1 `src/root.rs:714`), which the gpui connector fills with the scaled
 /// `defaults.font.size` (`native-theme-gpui/src/lib.rs`, `to_theme`): the
 /// size a gpui showcase constant of `rems(..)` stands for under the
 /// installed theme (Addendum F's rem rule).
@@ -12909,7 +12910,7 @@ fn menu_paints(state: &State) -> Vec<Paint> {
             ("menu selected text", "selected_text_color"),
             ("menu border", "border"),
         ],
-        &line_zero("menu"),
+        &line_zero("popover"),
     )
 }
 
@@ -15014,26 +15015,15 @@ fn menu_popup_padding(resolved: &ResolvedTheme) -> Padding {
 }
 
 /// The padding of the Extra page's menu panels round their rows, the
-/// drop-downs' and the context menu's popup: the popup's padding,
-/// `popover.border.padding` (platform-facts §2.6, as [`menu_popup_padding`]),
-/// inside the line those panels are framed by, `menu.border.line_width`
-/// (`styles::aw::menu`'s `menu_border`, which iced_aw paints over the
-/// panel's padding, iced_aw 0.14.1 `src/widget/menu/menu_tree.rs:770-779`,
-/// and [`menu_panel`]'s, which a container paints over its padding);
-/// [`AW_MENU_PADDING`] on a side the theme leaves unstated. The window's
-/// menus are framed by the popover's own border, so they take
-/// [`menu_popup_padding`].
+/// drop-downs' and the context menu's popup: [`menu_popup_padding`]'s, the
+/// window's menus' own, since both are framed by the popover's border:
+/// `popover.border.padding` inside `popover.border.line_width` (the line
+/// `styles::aw::menu`'s `menu_border` and [`menu_panel`]'s container paint
+/// over the panel's padding, iced_aw 0.14.1
+/// `src/widget/menu/menu_tree.rs:770-779`).
 #[cfg(feature = "iced_aw")]
 fn aw_menu_padding(resolved: &ResolvedTheme) -> Padding {
-    let line = resolved.menu.border.line_width;
-    let side = |stated: Option<f32>| stated.map_or(AW_MENU_PADDING, |v| v + line);
-    let p = &resolved.popover.border.padding;
-    Padding {
-        top: side(p.top),
-        right: side(p.right),
-        bottom: side(p.bottom),
-        left: side(p.left),
-    }
+    menu_popup_padding(resolved)
 }
 
 /// A drop-down of the Extra page's `MenuBar`, `width` wide
@@ -15061,7 +15051,8 @@ fn aw_menu<'a>(
 /// The Extra page's context menu's popup, drawn as the page's menus'
 /// panel: `styles::aw::menu`'s `menu_background`, `menu_border` and
 /// `menu_shadow`, read from its output (`menu.background_color`, framed by
-/// `menu.border`, with iced_aw's own shadow). `iced_aw`'s `ContextMenu`
+/// `popover.border`, with iced_aw's shadow where
+/// `popover.border.shadow_enabled`). `iced_aw`'s `ContextMenu`
 /// styles only its backdrop (`style/context_menu.rs:48-59`), and the popup
 /// is the page's own element.
 #[cfg(feature = "iced_aw")]
@@ -15216,11 +15207,10 @@ fn aw_menu_info(state: &State) -> String {
                     ("bar", "bar_background"),
                     ("panel", "menu_background"),
                     ("open path", "path"),
-                    ("bar border", "bar.border"),
                     ("panel border", "menu.border"),
                 ],
             )],
-            &line_zero("menu"),
+            &line_zero("popover"),
         ),
         &[
             (
@@ -15255,27 +15245,28 @@ fn aw_menu_info(state: &State) -> String {
             ),
             (
                 "panel padding",
-                "aw_menu_padding: popover.border.padding inside menu.border's \
-                 line, the side plus menu.border.line_width; iced_aw's 5 \
+                "aw_menu_padding: popover.border.padding inside the panel's \
+                 line, the side plus popover.border.line_width; iced_aw's 5 \
                  where unstated",
             ),
             (
                 "bar padding",
-                "menu.border.line_width all round: the titles inside the bar's \
-                 line, side by side with no gap, as the window's menu bar's",
+                "none: the bar has no frame, its titles side by side with no \
+                 gap, as the window's menu bar's",
             ),
             (
                 "context menu",
                 "our own popup, drawn as the panel (styles::aw::menu's \
                  menu_background, menu_border and menu_shadow): \
-                 menu.background_color framed by menu.border, padded by \
+                 menu.background_color framed by popover.border, padded by \
                  aw_menu_padding; its entries menu_row",
             ),
         ],
         &[
             (
                 "shadows",
-                "the model has no shadow geometry — iced_aw's own",
+                "the model has no shadow geometry — iced_aw's own, a menu's \
+                 only where popover.border.shadow_enabled",
             ),
             (
                 "panel offset",
@@ -15634,7 +15625,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
     });
     // A row of the page's menus, the drop-downs' and the context menu's
     // alike, as gpui's context menu is a `PopupMenu` whose rows its
-    // drop-downs share (gpui-component 0.8.1 `menu/context_menu.rs`). A row
+    // drop-downs share (gpui-component 0.9.1 `menu/context_menu.rs`). A row
     // of a stated height holds its label in the middle of it, as the
     // window's menu rows do and gpui's (`popup_menu.rs`, `items_center`).
     let menu_item = move |label: &'static str, chosen: String| -> Element<'_, Message> {
@@ -15726,11 +15717,9 @@ fn view_extra(state: &State) -> Element<'_, Message> {
             ),
         ),
     ])
-    // The titles inside the bar's line, `menu.border` (`styles::aw::menu`'s
-    // `bar_border`), which iced_aw paints over the bar's padding; side by
-    // side with no gap, as the window's menu bar's titles are (iced_aw's
-    // own `spacing`, none).
-    .padding(Padding::new(menu_t.border.line_width))
+    // The titles side by side with no gap, as the window's menu bar's titles
+    // are (iced_aw's own `spacing`, none); the bar has no frame, so no padding:
+    // `MenuBar`'s is `Padding::ZERO` (iced_aw 0.14.1 `src/widget/menu/menu_bar.rs:136`).
     .style(styles::aw::menu(resolved));
 
     let menu_demo = hoverable(
@@ -22414,7 +22403,7 @@ mod tests {
     /// bottom edge, iced's `snap_within_viewport` (on by default, iced_widget
     /// 0.14.2 `src/tooltip.rs:105`, `:525-545`) would pull the bubble back
     /// over the toggle, and gpui's own tooltip turns above the pointer there
-    /// (gpui-pre 0.3.10 `src/window.rs:4070-4079`). Under kde-breeze light.
+    /// (gpui-pre 0.3.12 `src/window.rs:4070-4079`). Under kde-breeze light.
     #[test]
     fn the_chrome_tooltips_stand_the_gap_from_their_control() {
         recording(|| {
@@ -26760,7 +26749,7 @@ mod tests {
     /// macos-monterey, material-3), and the line box plus the padding where
     /// the theme states no row height (kde-breeze), and so is the context
     /// menu's first entry, as gpui's context menu is a `PopupMenu` whose rows
-    /// its drop-downs share (gpui-component 0.8.1 `menu/context_menu.rs`).
+    /// its drop-downs share (gpui-component 0.9.1 `menu/context_menu.rs`).
     /// Each is computed from the theme at test time.
     #[cfg(feature = "iced_aw")]
     #[test]
@@ -26895,13 +26884,12 @@ mod tests {
     /// a splice of `popover.border.padding` moves, and lies [`AW_MENU_GAP`]
     /// below its title's foot; the Recent submenu's panel lies
     /// [`AW_MENU_GAP`] right of its row. The panels' padding is
-    /// `popover.border.padding` inside `menu.border`'s line, the line they
+    /// `popover.border.padding` inside `popover.border`'s line, the line they
     /// draw ([`aw_menu_padding`]): under kde-breeze the context entry is
-    /// `popover.border.padding` plus `menu.border.line_width` in from its
-    /// popup's corner, read from the leaves (12 px), where the popover's own
-    /// line made it 13. The context menu's popup is the menu's panel:
-    /// `menu.background_color`, framed by `menu.border`, its first entry
-    /// that padding in from its corner.
+    /// `popover.border.padding` plus `popover.border.line_width` in from its
+    /// popup's corner, read from the leaves (13 px). The context menu's popup
+    /// is the menu's panel: `menu.background_color`, framed by
+    /// `popover.border`, its first entry that padding in from its corner.
     #[cfg(feature = "iced_aw")]
     #[test]
     fn the_extra_menus_are_the_themes_menus() {
@@ -26954,7 +26942,7 @@ mod tests {
         );
         faults.extend(unfilled(&image, scale, "the File menu's first row", row));
         let pad = aw_menu_padding(&wide);
-        let edge = wide.menu.border.line_width;
+        let edge = wide.popover.border.line_width;
         let inside = Rectangle {
             x: row.x - pad.left + edge + 1.0,
             y: row.center_y() - 1.0,
@@ -26965,7 +26953,7 @@ mod tests {
         if of == 0 || inked < of {
             faults.push(format!(
                 "the File menu's panel fills {inked} of the {of} pixels {:.0} px left of its \
-                 first row, popover.border.padding's left inside menu.border",
+                 first row, popover.border.padding's left inside popover.border",
                 pad.left
             ));
         }
@@ -27043,7 +27031,7 @@ mod tests {
         let (Some(left), Some(top)) = (popover.left, popover.top) else {
             panic!("kde-breeze states no popover.border.padding to read");
         };
-        let line = theirs.menu.border.line_width;
+        let line = theirs.popover.border.line_width;
         let pad = Padding {
             left: left + line,
             top: top + line,
@@ -27052,7 +27040,7 @@ mod tests {
         if (copy.x - popup.x - pad.left).abs() > 0.5 || (copy.y - popup.y - pad.top).abs() > 0.5 {
             faults.push(format!(
                 "the context menu's first entry is {} by {} in from its popup's corner, \
-                 popover.border.padding inside menu.border's line {} by {}",
+                 popover.border.padding inside popover.border's line {} by {}",
                 copy.x - popup.x,
                 copy.y - popup.y,
                 pad.left,
@@ -27062,12 +27050,12 @@ mod tests {
         state.current_resolved.menu.font.color = label;
         let (image, _, _) = extra_frame(&state, open_extra_context_menu);
         let entry_moved = pixels_in(&image, copy, scale) != pixels_in(&base, copy, scale);
-        // kde-breeze's menu.border is 0 wide, so the splice gives it a line.
+        // The splice widens kde-breeze's 1 px popover line to 2, in a colour of its own.
         let edge = 2.0;
         state.current_resolved = theirs.clone();
         state.current_resolved.menu.background_color = panel_fill;
-        state.current_resolved.menu.border.color = label;
-        state.current_resolved.menu.border.line_width = edge;
+        state.current_resolved.popover.border.color = label;
+        state.current_resolved.popover.border.line_width = edge;
         state.current_resolved.button.background_color = fill;
         let (image, _, _) = extra_frame(&state, open_extra_context_menu);
         faults.extend(unfilled(
@@ -27097,7 +27085,7 @@ mod tests {
         let (inked, of) = inked_in(&image, frame, scale, label);
         if of == 0 || inked * 2 <= of {
             faults.push(format!(
-                "menu.border.color frames {inked} of the context popup's {of} left-edge pixels"
+                "popover.border.color frames {inked} of the context popup's {of} left-edge pixels"
             ));
         }
 
@@ -27854,7 +27842,7 @@ mod tests {
                 &[
                     "aw_menu_padding",
                     "popover.border.padding",
-                    "menu.border.line_width",
+                    "popover.border.line_width",
                 ][..],
             ),
             (&menu, "panel offset", &["AW_MENU_GAP"][..]),
@@ -27863,11 +27851,13 @@ mod tests {
                 "context menu",
                 &[
                     "menu.background_color",
-                    "menu.border",
+                    "popover.border",
                     "aw_menu_padding",
                     "menu_row",
                 ][..],
             ),
+            (&menu, "bar padding", &["no frame"][..]),
+            (&menu, "shadows", &["popover.border.shadow_enabled"][..]),
             (
                 &aw_tab_bar_info(&state),
                 "tab spacing",
@@ -29072,6 +29062,133 @@ mod tests {
             "disabled_switch_label" => format!("{:?}", disabled_switch_label(r)),
             _ => return None,
         })
+    }
+
+    /// Decision 12 of issue #4's step 1
+    /// (`docs/archive/todo_v0.7.1_kde-open-items-step1-spec.md`): the window's
+    /// menus keep [`menu_bar_style`], built in every build of the showcase,
+    /// and it returns what the connector's `styles::aw::menu` returns, on
+    /// every bundled combination and status. Every bundled combination states
+    /// `popover.border.shadow_enabled`, so kde-breeze light is compared with
+    /// it off as well, where the connector's menus cast no shadow. `Style`
+    /// has no `PartialEq`, so the `Debug` texts are compared.
+    #[cfg(feature = "iced_aw")]
+    #[test]
+    fn the_window_menus_draw_as_the_connectors() {
+        let mut combinations = bundled_combinations();
+        let Some(mut unshadowed) = combinations
+            .iter()
+            .find(|(label, _)| label == "kde-breeze/light")
+            .map(|(_, r)| r.clone())
+        else {
+            panic!("kde-breeze/light is not bundled");
+        };
+        unshadowed.popover.border.shadow_enabled = false;
+        combinations.push(("kde-breeze/light, no shadow".to_owned(), unshadowed));
+        for (label, r) in combinations {
+            let theme = native_theme_iced::to_theme(&r, "menus");
+            let ours = menu_bar_style(&r);
+            let theirs = styles::aw::menu(&r);
+            for s in [
+                AwStatus::Active,
+                AwStatus::Hovered,
+                AwStatus::Pressed,
+                AwStatus::Disabled,
+                AwStatus::Focused,
+                AwStatus::Selected,
+            ] {
+                assert_eq!(
+                    format!("{:?}", ours(&theme, s)),
+                    format!("{:?}", theirs(&theme, s)),
+                    "{label}, {s:?}: menu_bar_style and styles::aw::menu differ"
+                );
+                if !r.popover.border.shadow_enabled {
+                    assert_eq!(
+                        format!("{:?}", theirs(&theme, s).menu_shadow),
+                        format!("{:?}", iced::Shadow::default()),
+                        "{label}, {s:?}: styles::aw::menu casts a shadow"
+                    );
+                }
+            }
+        }
+    }
+
+    /// Decision 13 of issue #4's step 1
+    /// (`docs/archive/todo_v0.7.1_kde-open-items-step1-spec.md`): the leaf a
+    /// menu's Widget Info names for its undrawn line is the leaf the style
+    /// draws that line from. Under material-3 light, whose popover line is 0
+    /// wide, the drop-down's "menu border" row and, with `iced_aw`, the Extra
+    /// page's "panel border" row each name a leaf; spliced to 3, it makes the
+    /// style's border 3 wide.
+    #[test]
+    fn the_menu_infos_name_the_width_the_menus_draw() {
+        let mut state = State {
+            accessibility: native_theme_iced::AccessibilityPreferences::default(),
+            ..State::default()
+        };
+        assert!(state.install_in_mode(
+            ThemeChoice::Preset("material-3".to_owned()),
+            AppColorMode::Light
+        ));
+        let Ok(json) = serde_json::to_value(&state.current_resolved) else {
+            panic!("material-3 does not serialise");
+        };
+        let splice = |leaf: &str| {
+            let mut spliced = json.clone();
+            let Some(value) = spliced.pointer_mut(&format!("/{}", leaf.replace('.', "/"))) else {
+                panic!("{leaf} is not in the resolved theme");
+            };
+            *value = serde_json::Value::from(3.0);
+            let Ok(spliced) = serde_json::from_value::<ResolvedTheme>(spliced) else {
+                panic!("{leaf}: the splice does not parse");
+            };
+            spliced
+        };
+        let mut failures = Vec::new();
+
+        let Some(paint) = menu_paints(&state)
+            .into_iter()
+            .find(|p| p.role == "menu border")
+        else {
+            panic!("menu_paints has no \"menu border\" row");
+        };
+        let Some(leaf) = paint.zero.strip_suffix(" 0") else {
+            panic!("the drop-down's zero names no 0 leaf: {:?}", paint.zero);
+        };
+        let spliced = splice(leaf);
+        let theme = native_theme_iced::to_theme(&spliced, "splice");
+        let width = styles::menu(&spliced)(&theme).border.width;
+        if width != 3.0 {
+            failures.push(format!(
+                "the drop-down's Info names {leaf}, and styles::menu draws {width} with it at 3"
+            ));
+        }
+
+        #[cfg(feature = "iced_aw")]
+        {
+            let info = aw_menu_info(&state);
+            let named = info
+                .lines()
+                .find(|l| l.starts_with("  panel border: "))
+                .and_then(|l| l.rsplit_once(", not drawn ("))
+                .and_then(|(_, reason)| reason.strip_suffix(')'))
+                .and_then(|reason| reason.strip_suffix(" 0"));
+            let Some(leaf) = named else {
+                panic!("aw_menu_info names no undrawn panel border:\n{info}");
+            };
+            let spliced = splice(leaf);
+            let theme = native_theme_iced::to_theme(&spliced, "splice");
+            let width = styles::aw::menu(&spliced)(&theme, AwStatus::Active)
+                .menu_border
+                .width;
+            if width != 3.0 {
+                failures.push(format!(
+                    "the Extra page's Info names {leaf}, and styles::aw::menu draws {width} with it at 3"
+                ));
+            }
+        }
+
+        assert!(failures.is_empty(), "{failures:#?}");
     }
 
     /// The functions a hand-written route names: the word before the colon of
@@ -30340,7 +30457,7 @@ mod tests {
     /// S/2 and S/4 rounded.
     #[test]
     fn the_chrome_bars_are_padded_as_gpuis() {
-        // gpui-pre 0.3.10 `src/util.rs:130-142`, at the tests' scale factor, 1.
+        // gpui-pre 0.3.12 `src/util.rs:130-142`, at the tests' scale factor, 1.
         let gpui_rounds = |length: f32| (length.abs() - 0.5).ceil().copysign(length);
         for (preset, dark) in every_preset_in_both_modes() {
             let state = loaded(preset, dark);
@@ -30462,7 +30579,7 @@ mod tests {
 
     /// M9b Step 8 round 4, A1 (parity): the status bar's text lies on a
     /// line box rounded to a whole pixel, as gpui lays a line of text out
-    /// one `line_height` tall rounded to the nearest pixel (gpui-pre 0.3.10
+    /// one `line_height` tall rounded to the nearest pixel (gpui-pre 0.3.12
     /// `src/style.rs:553-556`, `TextStyle::line_height_in_pixels`): under
     /// every bundled preset in both modes the environment is
     /// `(status_bar.font.size × defaults.line_height).round()` tall, and

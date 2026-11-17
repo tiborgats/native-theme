@@ -1,4 +1,4 @@
-//! Per-widget geometry for gpui-component 0.8.1 widgets
+//! Per-widget geometry for gpui-component 0.9.1 widgets
 //! (`docs/archive/todo_v0.5.8_gpui-component-0.6-spec.md` §9, "the spec"
 //! below).
 //!
@@ -64,7 +64,7 @@
 //! text inherits and the macOS presets' `input.font.color` differs from —
 //! four displace `foreground`: [`list_item`], [`radio`], [`select`] and
 //! [`accordion_title`], and [`title_bar`], [`dialog_title`] and [`toolbar`]
-//! displace nothing (`title_bar.rs:331-346` paints the fill and the border,
+//! displace nothing (`title_bar.rs:332-349` paints the fill and the border,
 //! then refines; `dialog/title.rs:39-46` and `toolbar.rs:243-257` set no
 //! colour). Those seven change no pixel over the bundled presets but one --
 //! ios-13's [`select`], whose `combo_box.font.color` is the accent -- because
@@ -79,8 +79,8 @@
 //! that still take no colour, because the second half of the rule fails for
 //! them: a `Checkbox::label` is re-coloured by its own wrapper and both apply
 //! their disabled colour before the refinement, so a carried colour would
-//! either never arrive or displace the disabled one (`checkbox.rs:341-346` and
-//! `:262-266`, `input/input.rs:120-124` through `combobox.rs:998`).
+//! either never arrive or displace the disabled one (`checkbox.rs:342-347` and
+//! `:263-267`, `input/input.rs:120-124` through `combobox.rs:1016`).
 //!
 //! `tests/seams.rs` lays real gpui-component widgets out headlessly, with and
 //! without a builder's refinement, and checks what arrives: the heights of
@@ -99,8 +99,8 @@
 //! stated one without it. The other builders rest on the source citations in
 //! their doc comments.
 //!
-//! Upstream citations in this module are verified against gpui-component 0.8.1,
-//! gpui-base 0.8.1 and gpui-pre 0.3.10.
+//! Upstream citations in this module are verified against gpui-component 0.9.1,
+//! gpui-base 0.9.1 and gpui-pre 0.3.12.
 
 use gpui::{BoxShadow, FontWeight, Pixels, StyleRefinement, Styled, px, relative};
 use gpui_component::Size;
@@ -213,7 +213,7 @@ fn with_height_rule(r: StyleRefinement, stated: Option<f32>, n: Native<'_>) -> S
 }
 
 /// `Button` (gpui-component `src/button/button.rs:694-731` → refined at `:764`).
-/// The label's text size is set on an inner element (`:772-780`), Tier U.
+/// The label's text size is set on an inner element (`:774-782`), Tier U.
 ///
 /// Height by the control-height rule (module doc), through `h`.
 #[must_use]
@@ -251,8 +251,8 @@ pub fn button(n: Native<'_>) -> StyleRefinement {
 /// `src/button/button.rs:782`) after the button's own refinement (`:764`), so
 /// a size given to [`button`] would be shadowed; since 0.7.1 that size is
 /// `text_sm` at `Size::Medium`, 0.875 of the platform font. The content
-/// element's children are the one public route under it (`:803`): a label
-/// passed as a child, built like upstream's own label element (`:794-802`)
+/// element's children are the one public route under it (`:805`): a label
+/// passed as a child, built like upstream's own label element (`:796-804`)
 /// and refined with this. The name upstream derives from `.label()`
 /// (`:768-771`) is then given explicitly:
 ///
@@ -325,11 +325,11 @@ pub fn toggle(n: Native<'_>) -> StyleRefinement {
 /// at `input/input.rs:789-791`).
 ///
 /// The text is `input.font.color`. The root sets no text colour of its own
-/// (`input/input.rs:691-784`; `input_style`'s foreground is dropped at
-/// `:691`), and gpui-base paints the field's text in the colour the root
+/// (`input/input.rs:715-808`; `input_style`'s foreground is dropped at
+/// `:715`), and gpui-base paints the field's text in the colour the root
 /// inherits (gpui-base `input/base/element.rs:3182-3185`), so without the
 /// refinement it is the window's `foreground`. gpui-base halves that
-/// colour's alpha in a disabled field (`:2716-2717`): [`input_fill`] for a
+/// colour's alpha in a disabled field (`:3184-3185`): [`input_fill`] for a
 /// disabled field gives it `input.disabled_text_color` to halve.
 #[must_use]
 pub fn input(n: Native<'_>) -> StyleRefinement {
@@ -501,7 +501,7 @@ pub fn tooltip(n: Native<'_>) -> StyleRefinement {
 
 /// The layers of gpui's `shadow_md`, which upstream gives a tooltip
 /// (`src/tooltip.rs:124`), as (y offset, blur radius, spread radius) in
-/// pixels (gpui-pre-macros 0.3.10 `src/styles.rs:445-448`).
+/// pixels (gpui-pre-macros 0.3.12 `src/styles.rs:445-448`).
 const TOOLTIP_SHADOW: [(f32, f32, f32); 2] = [(4., 6., -1.), (2., 4., -2.)];
 
 /// The element an application passes to `Tooltip::element`
@@ -595,7 +595,7 @@ pub fn status_bar(n: Native<'_>) -> StyleRefinement {
 ///
 /// `max_h` no longer reaches upstream's `Dialog`: since 0.6.4 it clamps the
 /// dialog to what is left of the viewport *after* applying this style -- in
-/// 0.8.1 the view's height less twice the `lg` spacing token and the layer's
+/// 0.9.1 the view's height less twice the `lg` spacing token and the layer's
 /// offset (`:667-689`), set by `max_h` at `:792`, after the refinement at
 /// `:787`.
 /// `min_h` and the paddings still arrive, because `min_h_24()` runs before the
@@ -713,16 +713,16 @@ pub fn dialog_description(n: Native<'_>) -> StyleRefinement {
 ///
 /// The fill is this builder's because nothing upstream paints one: a
 /// `ListItem` fills only a hovered and a selected row
-/// (`src/list/list_item.rs:225-233`, `:257-265`), and `ThemeColor::list`,
+/// (`src/list/list_item.rs:225-233`, `:257-264`), and `ThemeColor::list`,
 /// which the connector fills with the same colour, has no reader outside the
 /// theme schema's fallbacks (`src/theme/schema.rs:985-986`, `:1020`).
 ///
 /// The clip keeps the rows inside the frame; how it meets the rounded corners
 /// depends on the core. GPUI Fast clips the children of a rounded box that
-/// clips both axes to its curved padding edge (gpui-fast 0.1.12
+/// clips both axes to its curved padding edge (gpui-fast 0.1.15
 /// `src/fast/rounded_clip.rs:68-104`), so a row's square fill is cut at the
-/// curve. gpui-pre clips them to the frame's rectangle (gpui-pre 0.3.10
-/// `src/window.rs:2238-2246`, `ContentMask`: "only rectangular content masks
+/// curve. gpui-pre clips them to the frame's rectangle (gpui-pre 0.3.12
+/// `src/window.rs:2453-2461`, `ContentMask`: "only rectangular content masks
 /// are supported"), so a square fill at a corner shows past the curve there.
 /// The application rounds a fill that meets the frame by its inner radius,
 /// `corner_radius` less `line_width`: [`list_item`] sets no radius.
@@ -756,7 +756,7 @@ pub fn progress(n: Native<'_>) -> StyleRefinement {
 }
 
 /// For `GroupBox::content_style` (`src/group_box.rs:107`), applied to the
-/// content surface (`:172-177`), which 0.8.1 nests in a column that also
+/// content surface (`:172-177`), which 0.9.1 nests in a column that also
 /// holds the optional footer (`:167-168`).
 ///
 /// The fill is `card.background_color` on every variant: the refinement
@@ -828,22 +828,22 @@ fn checkbox_metrics(n: Native<'_>) -> StyleRefinement {
     StyleRefinement::default().gap(px(n.resolved.checkbox.label_gap))
 }
 
-/// `Checkbox` (`src/checkbox.rs:280-292` → `:293`); the indicator is inner,
-/// Tier U. The text size replaces upstream's `input_text_size` (`:285-288`:
+/// `Checkbox` (`src/checkbox.rs:281-293` → `:294`); the indicator is inner,
+/// Tier U. The text size replaces upstream's `input_text_size` (`:286-289`:
 /// XSmall `text_xs`, Small and Medium `text_sm`, Large `text_base`).
 ///
-/// No colour, although upstream does label the row with `foreground` (`:284`)
+/// No colour, although upstream does label the row with `foreground` (`:285`)
 /// before this refinement: a `Checkbox::label` is wrapped in a div that sets
-/// `foreground` itself (`:341-346`), so a carried colour would never reach it,
+/// `foreground` itself (`:342-347`), so a carried colour would never reach it,
 /// and the disabled hook applies `muted_foreground` and only *then* the
-/// refinement (`:262-266`), so a carried colour would displace the disabled
+/// refinement (`:263-267`), so a carried colour would displace the disabled
 /// colour of custom children. [`radio`], whose label child sets no colour of
 /// its own, carries it.
 ///
 /// The platform's line height lands on the row, over upstream's
-/// `relative(1.)` (`:283`); the label column sets its own `relative(1.25)`
-/// (`:336`), which stands, and on which upstream centres the indicator
-/// (`:300-301`).
+/// `relative(1.)` (`:284`); the label column sets its own `relative(1.25)`
+/// (`:337`), which stands, and on which upstream centres the indicator
+/// (`:301-302`).
 #[must_use]
 pub fn checkbox(n: Native<'_>) -> StyleRefinement {
     with_text(checkbox_metrics(n), &n.resolved.checkbox.font, n)
@@ -881,7 +881,7 @@ pub fn radio(n: Native<'_>) -> StyleRefinement {
 /// side to a separate arrow column (WinUI's 38px column, Breeze's 20px one;
 /// docs/platform-facts.md §2.24), and gpui's trigger has none — its caret
 /// sits inside the padded row (`select.rs:626-627` in the row at
-/// `:591-633`, `combobox.rs:655-656` in the row at `:1009-1028`). A right
+/// `:591-633`, `combobox.rs:673-674` in the row at `:1027-1046`). A right
 /// side measured to a column the trigger does not have is not applied, and
 /// upstream's own right padding (`input_px`, `select.rs:578`,
 /// `combobox.rs:1014`) stands. Without an arrow column the stated right side
@@ -940,9 +940,9 @@ pub fn select(n: Native<'_>) -> StyleRefinement {
 /// (`combobox.rs:673-674`, in the row at `:1027-1046`).
 ///
 /// Upstream labels the trigger with the same `input_style` `foreground`
-/// (`:991`), but its disabled branch (`src/input/input.rs:97-101`) delivers
-/// `muted_foreground` through that same call, before the refinement at `:998`,
-/// and the selected-title child (`:585-591`) sets no colour to re-mute with —
+/// (`:1009`), but its disabled branch (`src/input/input.rs:120-124`) delivers
+/// `muted_foreground` through that same call, before the refinement at `:1016`,
+/// and the selected-title child (`:603-609`) sets no colour to re-mute with —
 /// so a carried colour would beat the disabled colour instead of yielding to
 /// it. A disabled trigger takes the platform's disabled text colour from
 /// [`combo_box_fill`] instead.
@@ -953,7 +953,7 @@ pub fn combobox(n: Native<'_>) -> StyleRefinement {
 
 /// `TitleBar` (`src/title_bar.rs:339` → `:349`); the height has no theme field.
 ///
-/// Upstream sets no text colour on the bar (`:331-346` paints the fill and the
+/// Upstream sets no text colour on the bar (`:332-349` paints the fill and the
 /// border, then refines), so the route is open and the carried colour displaces
 /// nothing. It is worth carrying: the KDE reader states
 /// `window.title_bar_font.color` from `[WM] activeForeground`, which a colour
@@ -970,13 +970,13 @@ pub fn title_bar(n: Native<'_>) -> StyleRefinement {
 /// A `TitleBar` of a window that is not the active one: the fill
 /// `window.inactive_title_bar_background` and the text
 /// `window.inactive_title_bar_text_color`. Apply it after [`title_bar`] while
-/// gpui's `Window::is_window_active` is false (gpui-pre `src/window.rs:2990`);
-/// gpui redraws the window when that changes (`:2011-2025`).
+/// gpui's `Window::is_window_active` is false (gpui-pre `src/window.rs:3204`);
+/// gpui redraws the window when that changes (`:2181-2195`).
 ///
 /// Colour, carried because neither `TitleBar` nor `ThemeColor` knows of a
 /// window's activation: upstream paints every bar the same, a gradient from
 /// `title_bar` mixed with `background` down to `title_bar`
-/// (`src/title_bar.rs:22-37`, painted at `:342-345` and refined at `:346`).
+/// (`src/title_bar.rs:22-37`, painted at `:345-348` and refined at `:349`).
 /// The refinement's fill is that gradient drawn from the inactive fill in
 /// place of `title_bar` -- `background` is `window.background_color`, as the
 /// connector installs it -- so an inactive bar has the active one's shape,
@@ -1074,7 +1074,7 @@ pub fn toolbar(n: Native<'_>) -> StyleRefinement {
 
 // --- Size helpers (spec §9.3) -------------------------------------------------
 
-/// `Spinner::with_size` (`src/spinner.rs:53-65` → `Icon`, `src/icon.rs:188`;
+/// `Spinner::with_size` (`src/spinner.rs:53-65` → `Icon`, `src/icon.rs:226`;
 /// 0.6.4 merged the two sizing arms 0.6.0 had at `:166` and `:195`).
 #[must_use]
 pub fn spinner_size(n: Native<'_>) -> Size {
@@ -1126,7 +1126,7 @@ pub fn list_header_height(n: Native<'_>) -> Option<Pixels> {
 
 /// The bottom border upstream draws under a `DataTable` row and under its
 /// header row, inside the row's height: `border_b_1()` (`src/table/state.rs:2375`,
-/// the header's `:2187-2188`), 1 px (gpui-pre-macros 0.3.10 `src/styles.rs:1336-1340`).
+/// the header's `:2187-2188`), 1 px (gpui-pre-macros 0.3.12 `src/styles.rs:1336-1340`).
 const TABLE_ROW_BORDER: f32 = 1.0;
 
 /// A `DataTable` row's height by the control-height rule (module doc): at a
@@ -1337,7 +1337,7 @@ fn unit(opacity: f32) -> f32 {
 /// half opacity and its label with `muted_foreground` at half opacity
 /// (`src/button/button.rs:1358-1404`, the label at `:1369`), literals of its
 /// own. Its disabled
-/// style replays the caller's refinement over its own (`:828-834`), so the
+/// style replays the caller's refinement over its own (`:830-836`), so the
 /// refinement's colours win there -- and at rest too (`:764`), which is why
 /// an enabled Button must not take it.
 #[must_use]
@@ -2408,7 +2408,7 @@ mod tests {
     /// one refinement earlier and mutes the disabled state on a child
     /// afterwards, an open accordion title with `foreground` and no disabled
     /// colour at all, and it labels the title bar, a dialog's title and a
-    /// toolbar with nothing at all (`title_bar.rs:331-346`,
+    /// toolbar with nothing at all (`title_bar.rs:332-349`,
     /// `dialog/title.rs:39-46`, `toolbar.rs:243-257`) -- so
     /// the day a source states
     /// `list.item_font.color`, or `window.title_bar_font.color` as the KDE
@@ -2479,7 +2479,7 @@ mod tests {
                     "{at}: select text"
                 );
                 // Upstream sets no colour on the bar at all
-                // (`title_bar.rs:331-346`), so the route is open and nothing
+                // (`title_bar.rs:332-349`), so the route is open and nothing
                 // is displaced -- and the KDE reader does state the field,
                 // from `[WM] activeForeground` (`native-theme/src/kde/colors.rs`).
                 assert_eq!(
@@ -2548,18 +2548,18 @@ mod tests {
     }
 
     /// The combinations whose preset states a combo box text colour of its own,
-    /// which gpui-component 0.8.1 gives no route for (Tier U): an iOS select's
+    /// which gpui-component 0.9.1 gives no route for (Tier U): an iOS select's
     /// text is systemBlue (WebKit html.css@31adf9d1:1099).
     const STATED_COMBO_TEXT: [&str; 2] = ["ios-13/light", "ios-13/dark"];
 
     /// `geometry::checkbox` and `geometry::combobox` carry no colour although
     /// upstream paints both from `foreground`: the route is blocked past the
     /// element the refinement lands on. A `Checkbox::label` sits in a wrapper
-    /// that sets `foreground` itself (`checkbox.rs:341-346`), so a carried
+    /// that sets `foreground` itself (`checkbox.rs:342-347`), so a carried
     /// colour never reaches it; and both widgets apply their disabled colour
     /// *before* the refinement (`checkbox.rs:263-267`, and
     /// `input_style(disabled, ..)` at `input/input.rs:120-124` feeding
-    /// `combobox.rs:991` -> `:998`, whose selected-title branch `:585-591` sets
+    /// `combobox.rs:1009` -> `:1016`, whose selected-title branch `:603-609` sets
     /// no colour to re-mute with), so a carried colour would displace it.
     ///
     /// The run therefore also guards the preconditions: every preset states
@@ -2590,7 +2590,7 @@ mod tests {
                     None,
                     "{at}: geometry::checkbox set a text colour; upstream's \
                      label wrapper paints `foreground` itself \
-                     (checkbox.rs:341-346) so it cannot arrive, and the \
+                     (checkbox.rs:342-347) so it cannot arrive, and the \
                      disabled hook (checkbox.rs:263-267) would take it instead \
                      of `muted_foreground`"
                 );
@@ -2605,7 +2605,7 @@ mod tests {
                 assert_eq!(
                     r.checkbox.font.color, r.defaults.text_color,
                     "{at}: this preset states a checkbox label text colour \
-                     that gpui-component 0.8.1 gives no route for \
+                     that gpui-component 0.9.1 gives no route for \
                      (checkbox.rs:342-347) -- record it as a Tier U candidate; \
                      do NOT carry it in the builder, it would displace the \
                      disabled colour (checkbox.rs:263-267)"
@@ -2621,7 +2621,7 @@ mod tests {
                     assert_eq!(
                         r.combo_box.font.color, r.defaults.text_color,
                         "{at}: this preset states a combo box text colour that \
-                         gpui-component 0.8.1 gives no route for \
+                         gpui-component 0.9.1 gives no route for \
                          (combobox.rs:1009 -> :1016) -- record it as a Tier U \
                          candidate; do NOT carry it in the builder, it would \
                          displace the disabled colour (input/input.rs:120-124)"

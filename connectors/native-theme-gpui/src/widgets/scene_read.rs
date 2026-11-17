@@ -5,8 +5,8 @@
 //! so a change to how a frame is read is made once.
 //!
 //! On gpui-pre the scene's primitives are `painted_quads()` and
-//! `painted_underlines()`. On GPUI Fast `painted_quads()` (gpui-fast 0.1.12
-//! src/window.rs:2925) reads the scene's own quads only, and since 0.1.10
+//! `painted_underlines()`. On GPUI Fast `painted_quads()` (gpui-fast 0.1.15
+//! src/window.rs:3139) reads the scene's own quads only, and since 0.1.10
 //! what a rounded overflow clip holds is painted into a clip-group
 //! `LayerFrame` instead (src/fast/rounded_clip_scene.rs:1-10, :60-75), so
 //! these read `painted_scene()` (src/fast/rounded_clip.rs:232-237) and the

@@ -329,6 +329,9 @@ hover_text_color = "#232629"
 # platform-facts.md:1254 (§2.6): separatorColor(), mix(Window #eff0f1, WindowText #232629, frameContrast 0.2)
 # (breezestyle.cpp:5984, breezehelper.cpp:329-332 at breeze f0b1d75; measured)
 separator_color = "#c6c8c9"
+# platform-facts.md (§2.6): frameBackgroundColor(), mix(Window #eff0f1, Base #ffffff, Blend_Value 0.3), a Qt
+# Widgets menu's panel (breezestyle.cpp:4708, breezehelper.cpp:200-203, breezemetrics.h:176 at breeze f0b1d75; measured)
+background_color = "#f4f5f5"
 
 
 [light.menu.border]
@@ -350,6 +353,10 @@ background_color = "#ffffff"
 header_background = "#fcfcfc"
 # platform-facts.md:1424 (§2.15): [Colors:View] BackgroundAlternate 247,247,247 (BreezeLight.colors:114, breeze v6.7.5)
 alternate_row_background = "#f7f7f7"
+# platform-facts.md (§2.15): QPalette::Mid, KColorScheme's MidShade of [Colors:Window] BackgroundNormal 239,240,241
+# (BreezeLight.colors:129, breeze v6.7.5) at [KDE] contrast 4 (BreezeLight.colors:195 at breeze f0b1d75), a QTableView's
+# grid (qcommonstyle.cpp:5126-5128 at qtbase v6.11.0; kcolorscheme.cpp:685 at 27066d47; measured)
+grid_color = "#c4c8cc"
 # row_height not stated: platform-facts.md:1431 (§2.15), (none), sizes to content
 # platform-facts.md:1435 (§2.15): [Colors:Selection] BackgroundNormal 61,174,233 (BreezeLight.colors:87, breeze v6.7.5) at
 # alpha Blend_Value 0.3, a focused view's hovered row (breezestyle.cpp:4871-4875 at breeze f0b1d75; measured)
@@ -917,6 +924,9 @@ hover_text_color = "#fcfcfc"
 # platform-facts.md:1254 (§2.6): separatorColor(), mix(Window #202326, WindowText #fcfcfc, frameContrast 0.2)
 # (breezestyle.cpp:5984, breezehelper.cpp:329-332 at breeze f0b1d75; measured)
 separator_color = "#4c4e51"
+# platform-facts.md (§2.6): frameBackgroundColor(), mix(Window #202326, Base #141618, Blend_Value 0.3), a Qt
+# Widgets menu's panel (breezestyle.cpp:4708, breezehelper.cpp:200-203, breezemetrics.h:176 at breeze f0b1d75; measured)
+background_color = "#1c1f22"
 
 
 [dark.menu.border]
@@ -938,6 +948,10 @@ background_color = "#141618"
 header_background = "#292c30"
 # platform-facts.md:1424 (§2.15): [Colors:View] BackgroundAlternate 29,31,34 (BreezeDark.colors:115, breeze v6.7.5)
 alternate_row_background = "#1d1f22"
+# platform-facts.md (§2.15): QPalette::Mid, KColorScheme's MidShade of [Colors:Window] BackgroundNormal 32,35,38
+# (BreezeDark.colors:130, breeze v6.7.5) at [KDE] contrast 4 (BreezeDark.colors:202 at breeze f0b1d75), a QTableView's
+# grid (qcommonstyle.cpp:5126-5128 at qtbase v6.11.0; kcolorscheme.cpp:685 at 27066d47; measured)
+grid_color = "#1c1f21"
 # row_height not stated: platform-facts.md:1431 (§2.15), (none), sizes to content
 # platform-facts.md:1435 (§2.15): [Colors:Selection] BackgroundNormal 61,174,233 (BreezeDark.colors:88, breeze v6.7.5) at
 # alpha Blend_Value 0.3, a focused view's hovered row (breezestyle.cpp:4871-4875 at breeze f0b1d75; measured)

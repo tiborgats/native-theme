@@ -64,10 +64,11 @@ The `native-theme` crate captures these values in a `WidgetMetrics` struct conta
 > (`toolbar.bar_height`) is likewise `Option<f32>`, `None` where the toolbar
 > sizes to its content.
 
-> **Status note (v0.7.0, gpui-component 0.8.1).** `ThemeConfig` still holds
-> only the fields listed under *Background*, with `colors` and `highlight`;
-> the separate `SemanticThemeConfig` adds scales of radii, spacing, shadows
-> and type (`sm`, `md`, `lg`, …), but no per-widget metric. The connector no
+> **Status note (v0.7.1, gpui-component 0.9.1).** `ThemeConfig` still holds
+> only the fields listed under *Background*, `window_radius` (0.9.0's corner
+> radius of a client-decorated window), `colors` and `highlight`; the separate
+> `SemanticThemeConfig` adds scales of radii, spacing, shadows and type (`sm`,
+> `md`, `lg`, …), but no per-widget metric. The connector no
 > longer waits on this proposal for every widget: where gpui-component applies
 > the caller's style after its own, the `geometry` module's builders set the
 > native sizes through a `StyleRefinement` (alternative 3 below), and the

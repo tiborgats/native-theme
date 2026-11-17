@@ -97,7 +97,7 @@ fn system_theme() -> native_theme::Result<native_theme::SystemTheme> {
 /// `gpui_kit::application().with_assets(gpui_kit::assets::Assets)` has no
 /// counterpart here — `TestAppContext::build` hands the app `Arc::new(())`
 /// through `build_with_platform` and exposes no setter
-/// (`gpui-pre-0.3.10/src/app/test_context.rs:132-144`, `:176-180`) — so
+/// (`gpui-pre-0.3.12/src/app/test_context.rs:132-144`, `:176-180`) — so
 /// gpui-component's own `IconName` SVGs resolve to nothing. The pages still
 /// lay out, which is what these tests measure; the showcase's native icons
 /// do not come from the asset source at all, they are decoded into
@@ -479,8 +479,8 @@ type ScrolledTo = fn(&mut VisualTestContext, &Entity<Showcase>) -> String;
 /// nothing there to click (`render_hunk_separator`, `diff/mod.rs:1017-1022`),
 /// so at least one of the three has to select a line. A file header and a
 /// fold row hold a button there instead, which a click presses: the
-/// header's collapse button (`:1212-1230`) or the fold's expand buttons
-/// (`:1005-1026`), which would change what the Diff shows. Today's sample is
+/// header's collapse button (`:1278-1296`) or the fold's expand buttons
+/// (`:1071-1092`), which would change what the Diff shows. Today's sample is
 /// one file, whose header lies above the quarter point. Each click starts
 /// from no selection: it is cleared before each one.
 fn diff_lines_down_the_middle(cx: &mut VisualTestContext, showcase: &Entity<Showcase>) -> String {
@@ -516,15 +516,15 @@ fn diff_lines_down_the_middle(cx: &mut VisualTestContext, showcase: &Entity<Show
 /// gpui's own scroll listener runs in the bubble phase and stops at no one:
 /// every scroll container whose hitbox is under the pointer moves by the
 /// same delta (gpui-pre `src/elements/div.rs`, `paint_scroll_listener`), and
-/// the page's is one (`support::gutter_scroll`). gpui-component 0.8.1 wraps
+/// the page's is one (`support::gutter_scroll`). gpui-component 0.9.1 wraps
 /// each of its scrolling widgets in gpui-base's `ScrollBounce`: in the
 /// capture phase the innermost area under the pointer that can scroll claims
 /// the wheel, scrolls and stops its propagation (gpui-base
-/// `src/scroll_bounce.rs:248-270`, `:556-617`), so the page's listener never
+/// `src/scroll_bounce.rs:248-270`, `:556-620`), so the page's listener never
 /// runs. gpui-base's editor claims it in the capture phase too, and scrolls
 /// and stops it in the bubble phase, before the page's listener, an outer
-/// element's (`src/input/base/element.rs:496-513`,
-/// `src/input/base/state.rs:2842-2912`). There is no chaining: at its end the
+/// element's (`src/input/base/element.rs:770-787`,
+/// `src/input/base/state.rs:2919-2991`). There is no chaining: at its end the
 /// inner area keeps the wheel. An inner area whose content fits lets it go
 /// (`scroll_bounce.rs:570`), so a site here is one whose content overflows.
 ///
@@ -4668,7 +4668,7 @@ fn the_sidebar_samples_icons_fit_their_items(cx: &mut TestAppContext) {
 /// drawn each time: GPUI Fast 0.1.7 reclaimed the row's earlier nodes with
 /// stale child lists and panicked prepainting the unmeasured label
 /// (src/elements/text.rs:650), which gpui-fast 0.1.9 fixed and GPUI Kit
-/// 0.8.1's floor of gpui-fast 0.1.12 includes. On any host: the icons are
+/// 0.9.1's floor of gpui-fast 0.1.14 includes. On any host: the icons are
 /// removed by hand, not by an icon theme the host cannot read.
 #[gpui::test]
 fn a_sidebar_item_losing_and_regaining_its_icon_is_drawn(cx: &mut TestAppContext) {
@@ -6797,7 +6797,7 @@ fn the_height_only_fields_note_follows_the_native_theme(cx: &mut TestAppContext)
 /// The preset Combobox's swatches are the colours it paints: its fill is
 /// `combo_box.background_color`, which the showcase refines the trigger
 /// with over upstream's `input_background()`, and a hovered row is accent at
-/// 70% (searchable_list/item.rs:114) -- checked against that line, since no
+/// 70% (searchable_list/item.rs:115) -- checked against that line, since no
 /// row is drawn while the popup is shut.
 #[gpui::test]
 fn the_preset_combobox_paints_its_fill_swatch_and_names_its_row_hover(cx: &mut TestAppContext) {
@@ -6989,7 +6989,7 @@ fn sorted(mut rows: Vec<[String; 3]>, by: usize, descending: bool) -> Vec<[Strin
 }
 
 /// Click the sort button of the DataTable's column `col_ix`: upstream's
-/// `("icon-sort", col_ix)` (gpui-component 0.8.1 table/state.rs:1902, with
+/// `("icon-sort", col_ix)` (gpui-component 0.9.1 table/state.rs:1902, with
 /// `test_support()`).
 fn click_sort(cx: &mut VisualTestContext, col_ix: usize) {
     cx.update(|window, cx| {
@@ -7417,7 +7417,7 @@ fn an_alerts_fill_swatch_is_the_painted_tint(cx: &mut TestAppContext) {
 
 /// A plain Label and a Label with secondary text show different infos (spec
 /// §4.3.2): only the second paints part of its text in muted_foreground
-/// (label.rs:171), and only its info says so.
+/// (label.rs:173), and only its info says so.
 #[gpui::test]
 fn a_plain_label_and_a_secondary_one_show_different_infos(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
@@ -7733,14 +7733,14 @@ fn a_solid_separator_and_a_dashed_one_show_different_infos(cx: &mut TestAppConte
 const LAYOUT_SEPARATOR_LABELLED: &str = "layout-separator-labelled";
 
 /// The labelled Separator draws its label centred on its line: the row is
-/// `justify_center` and the label `mx_auto` (gpui-component 0.8.1
+/// `justify_center` and the label `mx_auto` (gpui-component 0.9.1
 /// `separator.rs:136`, `:147`), and the label's box is the one quad inside
 /// the Separator filled with `tokens.background` (`:149`) and narrower than
 /// it. On gpui-pre 0.3.9, which laid out on taffy 0.13.0, the label sat at
 /// the line's right end: taffy offset the auto-margined label by the free
 /// space twice, once for the margins and again for `justify-content`.
 /// taffy 0.14 and 0.15 leave none for `justify-content` once the margins
-/// have absorbed it (taffy 0.15.0 `src/compute/flexbox.rs:2274-2275`).
+/// have absorbed it (taffy 0.15.1 `src/compute/flexbox.rs:2320-2321`).
 #[gpui::test]
 fn the_labelled_separator_centres_its_label(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
@@ -9479,10 +9479,10 @@ fn the_token_input_holds_its_token(cx: &mut TestAppContext) {
 /// gpui-component 0.9 has an icon resolver hook (`set_icon_resolver`) and
 /// the showcase does not set it yet, so they stay upstream's. The widgets
 /// are those whose shown configuration draws one
-/// (gpui-component 0.8.1): a DropdownButton's caret, a Clipboard's Copy, a
+/// (gpui-component 0.9.1): a DropdownButton's caret, a Clipboard's Copy, a
 /// NumberInput's steps, a Checkbox's check, a Rating's stars, a Select's,
 /// a Combobox's and a ColorSelect's caret, a SpeechIndicator's stop glyph
-/// (gpui-component 0.9.1), a DatePicker's Calendar, a
+/// a DatePicker's Calendar, a
 /// Calendar's month buttons, the command palette's Search, a Dialog's and a
 /// Sheet's close button, a Settings page's search and reset, a Pagination's
 /// arrows, the MessageScroller's jump button, an Alert's and a
@@ -10559,10 +10559,10 @@ fn a_listed_font_row_names_the_family_gpui_draws(cx: &mut TestAppContext) {
 
 /// A platform text system that holds the families `held` alone and lays text out as gpui's
 /// `NoopTextSystem`: a host that lacks a theme's family, for a test. The test platform's own,
-/// `NoopTextSystem`, resolves every family to one face and lists none (gpui-pre 0.3.10
+/// `NoopTextSystem`, resolves every family to one face and lists none (gpui-pre 0.3.12
 /// `src/platform.rs:1601-1607`). As gpui's platform text systems do, it loads a family asked
 /// for by an alias under the family the alias names (`gpui::font_name_with_fallbacks`, with
-/// Linux's system UI font, gpui-pre-linux 0.3.10 `src/linux/platform.rs:130`, gpui-pre-wgpu
+/// Linux's system UI font, gpui-pre-linux 0.3.12 `src/linux/platform.rs:130`, gpui-pre-wgpu
 /// `src/cosmic_text_system.rs:386`), and gives each family asked for a face id of its own
 /// (`:44-47`, `:400-443`), `asked` holding them in their order.
 struct HeldFamilies {
@@ -10668,7 +10668,7 @@ impl gpui::PlatformTextSystem for HeldFamilies {
     }
 }
 
-/// Run `test` as `#[gpui::test]` runs a test's body (gpui-pre-macros 0.3.10 `src/test.rs:159-196`),
+/// Run `test` as `#[gpui::test]` runs a test's body (gpui-pre-macros 0.3.12 `src/test.rs:159-196`),
 /// in an app whose platform text system holds the families `held` alone ([`HeldFamilies`]).
 fn with_held_families(
     held: &[&str],
@@ -10899,7 +10899,7 @@ fn label_of_absent(cx: &mut TestAppContext, stated: &str) -> String {
 }
 
 /// A text system that holds no family of gpui's fallback stack is not asked: `resolve_font`
-/// would panic there for a family it lacks (gpui-pre 0.3.10 `src/text_system.rs:621-627`), so
+/// would panic there for a family it lacks (gpui-pre 0.3.12 `src/text_system.rs:621-627`), so
 /// the label is the family asked for.
 #[test]
 fn a_text_system_without_a_stack_family_is_not_asked() {
@@ -14375,7 +14375,7 @@ fn twice(
 }
 
 /// A frame that builds a view again but draws a view nested in it from the
-/// last frame, as GPUI Fast draws one (gpui-fast 0.1.12
+/// last frame, as GPUI Fast draws one (gpui-fast 0.1.15
 /// src/fast/retained.rs, `reuse_retained_prepaint`), runs none of the
 /// nested view's code: its target records nothing. It is still drawn, so
 /// it stays hovered and chosen over the larger target around it, and
@@ -14498,7 +14498,7 @@ fn a_target_a_partial_frame_no_longer_draws_is_gone(cx: &mut TestAppContext) {
 
 /// A hovered target that a frame recording nothing took away gets no hover
 /// end from gpui; drawn again away from the pointer, as a new element that
-/// starts from not hovered (gpui-pre elements/div.rs:3213-3222), it must
+/// starts from not hovered (gpui-pre elements/div.rs:3215-3224), it must
 /// not win over the larger target the pointer is still on, which the
 /// pointer never left, so no hover event comes between. On GPUI Fast the
 /// frame that takes it away builds the host only, which records nothing
@@ -14833,14 +14833,14 @@ fn fields_written(body: &str) -> Vec<(usize, &str)> {
 /// Every `cx.listener(` closure in the showcase example that writes a field
 /// of its view calls `cx.notify()` (M9-017).
 ///
-/// `cx.listener` only updates the entity (gpui-pre 0.3.10
+/// `cx.listener` only updates the entity (gpui-pre 0.3.12
 /// `src/app/context.rs:241-251`). A mouse click is followed by a refresh of
 /// the window (`src/elements/div.rs:3147-3150`); a keyboard click calls the
 /// same listeners and refreshes nothing (`:3101-3132`), so a control
 /// activated from the keyboard by a listener that does not notify stays
 /// drawn as it was until something else redraws the window. gpui-component
 /// documents these values as controlled: the owner writes the value and calls
-/// `cx.notify()` (gpui-component 0.8.1 `src/checkbox.rs:106-110`).
+/// `cx.notify()` (gpui-component 0.9.1 `src/checkbox.rs:106-110`).
 #[test]
 fn every_listener_that_writes_state_notifies() {
     let sources = showcase_sources();
@@ -14902,13 +14902,13 @@ fn every_listener_that_writes_state_notifies() {
 ///
 /// Focus moves to the checkbox by Tab from the number field before it, and
 /// Space activates it as a keyboard click: gpui calls the listener and
-/// refreshes nothing (gpui-pre 0.3.10 `src/elements/div.rs:3099-3130`), so
+/// refreshes nothing (gpui-pre 0.3.12 `src/elements/div.rs:3101-3132`), so
 /// the window is marked dirty, and a frame drawn, only if the listener calls
 /// `cx.notify()`. That missing frame request is the bug, and it is what this
 /// counts, through an observer of the showcase, which runs on a notify
 /// alone. A drawn frame cannot show it: a test draws its frames itself, dirty
 /// window or not, and on GPUI Fast a view that is not cached is drawn again
-/// whenever an entity it read was written, notified or not (gpui-fast 0.1.12
+/// whenever an entity it read was written, notified or not (gpui-fast 0.1.15
 /// `src/fast/retained.rs:608-630`, `src/fast/dependencies.rs:514-528`), so
 /// the frame after Space shows the new state on both backends either way.
 #[gpui::test]
@@ -15434,9 +15434,9 @@ fn every_listed_leaf_has_a_route() {
 /// The Basic table's header and last row and the List's first and last rows
 /// round their own fills by the frame's inner radius where they meet the
 /// frame (demo::files_table, demo::ListRow), on either core: gpui-pre clips a
-/// rounded frame's children to a rectangle (gpui-pre 0.3.10
-/// src/window.rs:2238-2246, ContentMask), GPUI Fast to its curved inner edge
-/// (gpui-fast 0.1.12 src/fast/rounded_clip.rs:68-104), and a fill rounded
+/// rounded frame's children to a rectangle (gpui-pre 0.3.12
+/// src/window.rs:2453-2461, ContentMask), GPUI Fast to its curved inner edge
+/// (gpui-fast 0.1.15 src/fast/rounded_clip.rs:68-104), and a fill rounded
 /// inside that edge is drawn alike under both. So their
 /// `list.border.corner_radius_px` and `list.border.line_width_px` routes name
 /// the inner radius, where the frames' own routes name the frame's.
@@ -16972,7 +16972,7 @@ fn no_page_spaces_by_a_bare_rem_multiple() {
     const INSIDE_A_SAMPLE: [(&str, &[&str], &str); 1] = [(
         "component_toolbar",
         &[".gap_1()"],
-        "a ToolbarGroup's gap where toolbar.item_gap is unstated: upstream's own, the gap_1 a Small Toolbar spaces its items by (gpui-component 0.8.1 toolbar.rs:254), which a group, spacing nothing itself (gpui-base 0.8.1 toolbar.rs:256-267), takes from the caller; the sample shows upstream's Toolbar, so it keeps upstream's value and names no constant",
+        "a ToolbarGroup's gap where toolbar.item_gap is unstated: upstream's own, the gap_1 a Small Toolbar spaces its items by (gpui-component 0.9.1 toolbar.rs:254), which a group, spacing nothing itself (gpui-base 0.9.1 toolbar.rs:266-277), takes from the caller; the sample shows upstream's Toolbar, so it keeps upstream's value and names no constant",
     )];
     let sources = showcase_sources();
     let read: Vec<_> = sources
@@ -17514,7 +17514,7 @@ fn the_pages_own_distances_are_named_in_their_infos(cx: &mut TestAppContext) {
 /// `layout.widget_gap` from the next Badge, as the controls of every other
 /// row are apart, and touches it where the theme states no gap. Upstream
 /// draws a Medium count 3px per digit past its Button's right edge
-/// (gpui-component 0.8.1 `badge.rs:137-141`, the `Size::Medium` arm), so
+/// (gpui-component 0.9.1 `badge.rs:137-141`, the `Size::Medium` arm), so
 /// the Buttons are that much further apart (M9-022).
 #[gpui::test]
 fn a_badges_count_is_a_widget_gap_from_the_next(cx: &mut TestAppContext) {
@@ -17579,7 +17579,7 @@ fn a_badges_count_is_a_widget_gap_from_the_next(cx: &mut TestAppContext) {
 }
 
 /// How far a Badge's count stands past its Button is upstream's 3px a
-/// printed character (gpui-component 0.8.1 `badge.rs:137-141`, the
+/// printed character (gpui-component 0.9.1 `badge.rs:137-141`, the
 /// `Size::Medium` arm): one digit 3px, two 6px, a count above 99 printed
 /// `99+`, three characters (`badge.rs:130-134`); none for a dot, which sits
 /// inside the Button (`badge.rs:129`), nor for a zero count, which upstream
@@ -19036,7 +19036,7 @@ fn the_hairlines_are_filled_quads_at_scale_one(cx: &mut TestAppContext) {
 /// page row's menu button still shows upstream's caret (M9-168): the
 /// button holds the caret beside the theme's `button.border.padding`, where
 /// the caret-only Button, laid out as an icon Button of a fixed side
-/// (gpui-component 0.8.1 `button/button.rs:684-691`, `size_5`), gave the
+/// (gpui-component 0.9.1 `button/button.rs:684-691`, `size_5`), gave the
 /// stated side padding the whole of that side and the caret none.
 #[cfg(all(feature = "widgets", feature = "material-icons"))]
 #[gpui::test]
@@ -19197,7 +19197,7 @@ fn the_column_count_holds_the_segmented_control(cx: &mut TestAppContext) {
 /// The width the Basic page's column count holds for the Segmented control,
 /// `demo::segmented_width`, is the width gpui lays the control out at: each
 /// label's shaped width rounded up, as gpui's text element rounds a line's
-/// width up (gpui-pre 0.3.10 `src/elements/text.rs:772`), with its padding,
+/// width up (gpui-pre 0.3.12 `src/elements/text.rs:772`), with its padding,
 /// the lines between the segments and the frame's two edges (round 2-3
 /// review, item 15(3)).
 #[cfg(feature = "widgets")]
