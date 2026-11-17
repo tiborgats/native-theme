@@ -2158,7 +2158,7 @@ const PAIRS: &[Pair] = &[
         exceptions: &[],
     },
     // A list row sets `foreground` and no state changes it
-    // (`list/list_item.rs:205`; the hover and selected branches set only a
+    // (`list/list_item.rs:205`; while `list.active_highlight` is on, the connector's setting, the hover and selected branches set only a
     // fill, `:227-233, 257-264`), so the emitted foreground is the window's; for an idle and a hovered row the platform agrees.
     // An idle row stands on the list's fill, which `geometry::list` paints
     // over the window (no widget paints `tokens.list`).

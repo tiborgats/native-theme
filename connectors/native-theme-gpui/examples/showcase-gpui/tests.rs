@@ -9479,10 +9479,10 @@ fn the_token_input_holds_its_token(cx: &mut TestAppContext) {
 /// gpui-component 0.9 has an icon resolver hook (`set_icon_resolver`) and
 /// the showcase does not set it yet, so they stay upstream's. The widgets
 /// are those whose shown configuration draws one
-/// (gpui-component 0.8.1): a DropdownButton's caret, a Clipboard's Copy, a
+/// (gpui-component 0.9.1): a DropdownButton's caret, a Clipboard's Copy, a
 /// NumberInput's steps, a Checkbox's check, a Rating's stars, a Select's,
 /// a Combobox's and a ColorSelect's caret, a SpeechIndicator's stop glyph
-/// (gpui-component 0.9.1), a DatePicker's Calendar, a
+/// a DatePicker's Calendar, a
 /// Calendar's month buttons, the command palette's Search, a Dialog's and a
 /// Sheet's close button, a Settings page's search and reset, a Pagination's
 /// arrows, the MessageScroller's jump button, an Alert's and a
