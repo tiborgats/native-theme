@@ -427,12 +427,20 @@ fn indicator_and_label(
                 // gpui-component's own glyph, stroked as the theme states
                 // (docs/platform-facts.md:1242, §2.5).
                 Some(stroke) => stroked_check(inner, stroke, look.mark, opacity),
+                // gpui-component's own glyph by its asset path, which the
+                // application's icon resolver is asked for first, as
+                // gpui-component's check box asks it (gpui-component
+                // checkbox.rs:220-222).
                 None => svg()
                     .size(inner)
                     .flex_none()
                     .text_color(look.mark)
                     .when(opacity > 0., |mark| {
-                        mark.path(IconName::Check.path()).opacity(opacity)
+                        mark.path(gpui_component::resolve_icon_path(
+                            IconName::Check.path(),
+                            cx,
+                        ))
+                        .opacity(opacity)
                     })
                     .into_any_element(),
             }

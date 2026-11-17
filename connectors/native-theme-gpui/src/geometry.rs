@@ -1432,8 +1432,12 @@ pub fn link(n: Native<'_>) -> StyleRefinement {
 // The input is `Theme::layout` on the preset path and `SystemTheme.layout` on
 // the system path. There is no receiver to map these into: gpui-component's
 // `Theme::spacing_tokens()` returns `SpacingTokens::default()` with no field
-// behind it (`theme/mod.rs:596-598`), so its one reader, a `Dialog`'s viewport
-// margin (`dialog/dialog.rs:667`), gets that default whatever a theme says.
+// behind it (gpui-component `theme/mod.rs:596-598`), so its readers get that
+// default whatever a theme says: a `Dialog`'s viewport margin (gpui-component
+// `dialog/dialog.rs:667`), a `GridLayout`'s gap (gpui-component
+// `grid_layout.rs:65`) and, through `Theme::semantic_tokens`, a
+// `Questionnaire`'s metrics (gpui-component
+// `questionnaire/components.rs:87-88`, `:1219`).
 // `None` means the platform specifies nothing (platform-facts §2.20).
 
 /// Space between adjacent widgets.
