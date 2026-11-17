@@ -1230,7 +1230,7 @@ pub fn pick_list(
     }
 }
 
-/// The platform's own menu, for `.menu_style(..)` on a `PickList` or a
+/// The platform's own drop-down, for `.menu_style(..)` on a `PickList` or a
 /// `ComboBox`.
 ///
 /// Replaces `iced_widget::overlay::menu::default` (`overlay/menu.rs:646`),
@@ -1238,10 +1238,17 @@ pub fn pick_list(
 /// in the primary family. This is the one function of shape C: a menu has no
 /// `Status`, so the closure takes the theme alone.
 ///
-/// Every color is `menu.*`: the panel, its border, the label, and the selected
-/// row's label and fill. A selected row is a row highlight, painted over a
-/// panel the widget also paints, so it is emitted as given rather than
-/// composited: a translucent fill (KDE, Windows) lays itself over the panel.
+/// A drop-down is framed as a popup, in `popover.border`'s colour and width
+/// (platform-facts §2.16, "Popover / Dropdown"). Its panel and rows are the
+/// menu's: the panel `menu.background_color`, the label `menu.font.color`,
+/// the selected row's label and fill `menu.hover_text_color` and
+/// `menu.hover_background`, which each theme states against the menu's
+/// fill. Its corners are `menu.border.corner_radius`: iced rounds the
+/// highlighted row with the panel's radius (`overlay/menu.rs:550`), and the
+/// popover's would round every hovered row to a pill. A selected row is a
+/// row highlight, painted over a panel the widget also paints, so it is
+/// emitted as given rather than composited: a translucent fill (KDE,
+/// Windows) lays itself over the panel.
 ///
 /// `shadow` has no native source -- the model has `defaults.shadow_color` but
 /// no offset or blur -- and comes from `overlay::menu::default(theme)`.
@@ -1252,13 +1259,18 @@ pub fn menu(
     use iced_widget::overlay::menu::Style;
 
     let m = &resolved.menu;
+    let p = &resolved.popover;
 
     let background = to_color(m.background_color);
     let label = to_color(m.font.color);
     let selected_label = to_color(m.hover_text_color);
     let selected_background = to_color(m.hover_background);
 
-    let border = border_of(&m.border);
+    let border = Border {
+        color: to_color(p.border.color),
+        width: p.border.line_width,
+        radius: Radius::new(m.border.corner_radius),
+    };
 
     move |theme| {
         let iced = iced_widget::overlay::menu::default(theme);
