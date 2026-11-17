@@ -312,7 +312,7 @@ Each states the options, what each gives and costs, and the choice.
     read would be a check skipped silently, for a time not measured (each prints its
     own in the run's output).
 13. **A cargo step's inputs include the files its reached crates include from outside
-    their packages, and target sources outside a package** (C.4). 0.8.0's `@rust:`
+    their packages; a target source outside its package refuses the reach** (C.4). 0.8.0's `@rust:`
     inputs are the reached packages' directories and Cargo's configuration
     (`CR8:740-821`); 0.7.x's sources include `docs/*.toml`, `docs/platform-facts.md`,
     `scripts/capture_window.sh` and other packages' showcase files (C.4's table),
@@ -374,8 +374,10 @@ the modes that run Part M; the six argument lists are written in it, as on 0.8.0
   (`CR8:897-898`): `+1.95.0` at `0fa28027` (`ci.yml:272` is `@1.88.0`, `:275` `@1.95.0`).
   A read that gives an empty version fails the run before the first MSRV step, naming
   the file.
-- Six `run_check` steps, each `env RUSTFLAGS=-Dwarnings cargo <toolchain> check …`, as
-  the job runs them under its `RUSTFLAGS: -Dwarnings` (`ci.yml:268-269`):
+- Six `run_check` steps, each `env -u CARGO_ENCODED_RUSTFLAGS RUSTFLAGS=-Dwarnings cargo
+  <toolchain> check …`, as the job runs them under its `RUSTFLAGS: -Dwarnings`
+  (`ci.yml:268-269`); `CARGO_ENCODED_RUSTFLAGS` is unset because Cargo would read it in
+  place of `RUSTFLAGS`:
 
 | Description | Arguments after `check` | `ci.yml` |
 |---|---|---|
@@ -528,10 +530,13 @@ and 4 `compile_fails`: 214 + 64 + 4 + 4 = 286. The cost of a fresh
   items` of each, `docs (… all features)` of iced and egui). A test or docs step with no
   `-p` fails the run (`a test or docs step names no crate with -p: <description>`).
 - **The two `+1.88.0` MSRV checks, under O3's keyed option** (chosen 2026-11-15): they carry the
-  `--quick` key too, so 31 steps are quick-keyed (the 29 and the two). `run_check`
-  recognises them as the steps whose command's first `cargo` word is followed by
-  `$MSRV_TOOLCHAIN check` (M.1's `env RUSTFLAGS=-Dwarnings cargo +1.88.0 check …`); the
-  four `+1.95.0` commands, `$CONNECTOR_TOOLCHAIN check`, do not match. Their crates are
+  `--quick` key too, so 31 steps are quick-keyed (the 29 and the two). `msrv_check
+  --quick-keyed` marks them (M.1's `env -u CARGO_ENCODED_RUSTFLAGS RUSTFLAGS=-Dwarnings
+  cargo +1.88.0 check …`): `MSRV_QUICK_TOOLCHAIN` holds their toolchain while each runs,
+  and `quick_key_kind` gives a step that runs while it is set the `msrv` kind; the four
+  `+1.95.0` checks are not marked. `scripts/msrv_checks.sh` unsets
+  `MSRV_QUICK_TOOLCHAIN` and sets it empty at its top level, so a value from the
+  environment, exported or not, changes no step's key kind or base. Their crates are
   the `-p` crates of the command, or, for `--workspace`, every workspace member it does
   not `--exclude` (`step_cache_command_crates`, C.1); their key adds `rustc +1.88.0 -vV`
   (the toolchain the step runs, whose release names its cargo too) to the base, computed
@@ -546,8 +551,10 @@ and 4 `compile_fails`: 214 + 64 + 4 + 4 = 286. The cost of a fresh
 - **The base** (`step_cache_quick_base`, C.1), computed at the run's start and again in
   each re-key (`step_passed`): a SHA-256 over `cache_tool_versions` (C.2);
   `step_cache_quick_environment` (decision 3, C.1); and the content of every file `git
-  ls-files -co --exclude-standard` lists outside the workspace packages' directories but
-  those matching `QUICK_UNREAD`, by path and content (`step_cache_inputs`): the root
+  ls-files -z -co --exclude-standard` lists outside the workspace packages' directories but
+  those matching `QUICK_UNREAD`, the listing read NUL-separated, by path and content
+  (`step_cache_inputs --literal`: each path read as itself, a quote, a control
+  character, a backslash or a glob character included, none as a glob): the root
   manifests, the lock, `.cargo/`, `.config/nextest.toml` if there is one, `docs/*.toml`,
   every script under `scripts/` (the gate's own among them, whichever exist at the
   commit, so the `--quick` base needs no list of them), `tools/gap-map/` and the rest.
@@ -570,12 +577,19 @@ and 4 `compile_fails`: 214 + 64 + 4 + 4 = 286. The cost of a fresh
   `tools/showcase-support/src/lib.rs:66-75`, `:126-138`, whose scripts are in the
   base; and `native-theme-build/src/schema.rs:294`, whose test reads
   `../native-theme/src/detect.rs` at run time, covered because `native-theme` is in
-  build's reach, A.3). Where `git ls-files` fails, or this is no git work tree, no `--quick` key is
-  computed: every quick-keyed step runs, with the reason printed once.
+  build's reach, A.3). Where `git ls-files` fails, this is no git work tree, or the
+  listing lacks the root `Cargo.toml` or `scripts/step_cache.sh` (inside another
+  repository's ignored folder git lists nothing and exits 0), no `--quick` key is
+  computed: every quick-keyed step runs, with the reason printed once. Where a tool's
+  version cannot be read (`cache_tool_versions` returns 1), both sets are off for the
+  run, with that reason.
 - **The inputs:** `rust_config_inputs` (C.2) and, for each `-p` crate of the command,
-  its reach in `--quick` form (decision 4) with C.4's included files and target sources.
+  its reach in `--quick` form (decision 4) with C.4's included files (a target source
+  outside its package refuses the reach, C.4).
   Where a reach is refused or `cargo tree` fails, the step runs, the reason printed once
-  per crate set.
+  per crate set; `rust_reach_resolve` also refuses a reach, in either form, whose input
+  path (a package directory, an included file, a configuration file) holds `*`, `?` or
+  `[`, which `step_cache_inputs` would read as a glob.
 - **The key:** `step_cache_key --quick` (C.1): `step_cache_key`'s form with the
   `--quick` base in place of the strict base, over the step's description, those inputs
   and its command.
@@ -587,8 +601,11 @@ and 4 `compile_fails`: 214 + 64 + 4 + 4 = 286. The cost of a fresh
 - **Recording**, in `--commit` and `--quick`, after a quick-keyed step passes: its key
   computed again, the base with it; where equal to the key before the step,
   `step_cache_record --quick` (`step_passed`'s rule). A `--commit` pass therefore makes the
-  next `--quick` skip the steps nothing has touched since. `--no-cache` neither reads nor
-  writes these records; the full run never does.
+  next `--quick` skip the steps nothing has touched since. `--no-cache` and the full run
+  read no record and record no pass. A step that fails, in every mode, has its `--quick`
+  record removed (`step_failed`, `step_cache_forget`; `scripts/step_cache.sh` is
+  sourced and `STEP_CACHE_DIR` set in every mode, loading it runs nothing), so that no
+  later `--quick` skips it; its next pass in `--commit` or `--quick` records it again.
 - **Each status checked:** every function computing a base, a reach or a key returns its
   status (C.1's pipe rule, so a failure inside a pipe is seen), and the callers test it
   explicitly (`if ! …; then`), not through `set -e`; a
@@ -789,8 +806,8 @@ covers them:
   which would hide a function that lacks the rule;
 - **the reach** (`rust_reach`, `rust_reach_resolve`, `rust_config_inputs`,
   `cache_inputs`), moved from `CR8:740-821` into this file, with `--quick` as an option
-  of `rust_reach` (decision 4: the host-probe and the registry build-code refusals
-  skipped). `cargo tree`'s output comes through one function (`step_cache_cargo_tree`)
+  of `rust_reach` (decision 4: the host-probe refusal and those of build code from
+  outside the workspace, crates.io's unlisted and any other source's, skipped). `cargo tree`'s output comes through one function (`step_cache_cargo_tree`)
   and the workspace's and the full metadata through two variables, so that the
   self-test feeds synthetic ones; the first `cargo tree` per crate set is memoised and
   serves both forms. `step_cache_command_crates <cargo arguments>` gives a command's
@@ -960,14 +977,17 @@ record would end a passing run there, with nothing but the shell's redirection e
   `proc-macro`); `native-theme/build.rs:11-22` reads `CARGO_MANIFEST_DIR`, `OUT_DIR` and
   `icons/` only, and `native-theme-derive/src/` has no `std::fs`, `include_*!` or
   `env::var` (`grep`);
-- `CACHE_REVIEWED_REGISTRY_CODE`, new: the registry packages with a build script or a
+- `CACHE_REVIEWED_REGISTRY_CODE`, new: the crates.io packages with a build script or a
   proc macro that the strict reaches hold, each `name vX.Y.Z`, reviewed for this
   specification. A reach's package is matched by the first two fields of its `cargo tree
   --format '{p}'` line, which can carry more after them (`enumflags2_derive v0.7.12
   (proc-macro)`, and ` (*)` on a repeated package, `proc-macro2 v1.0.107 (*)`, both
-  printed at `0fa28027`). A strict reach that holds a registry package with a
+  printed at `0fa28027`). A strict reach that holds a crates.io package with a
   `custom-build` or `proc-macro` target (one `jq` over the full metadata) not on the list
-  is refused, the step runs, the package named; so a lock change that adds or moves one
+  is refused, the step runs, the package named; one that holds such a package from any
+  other source outside the workspace (a git fork, another registry, a `[patch]`) is
+  refused whatever the list names, the package named (the list matches crates.io's
+  source alone, `STEP_CACHE_CRATES_IO`); so a lock change that adds or moves one
   is caught mechanically, and the list is extended by the review of that change. At
   `0fa28027` the seven accepted crates reach these, each searched for `Command::new`,
   file reads and `env::var`:
@@ -1100,15 +1120,15 @@ ignored files included and symbolic links followed (Cargo compiles a `mod` file 
 git ignores it or not, rustc follows a link, and `step_cache_inputs` hashes a directory
 the same way, `find -L` at `SC8a:69`), blanks comments and
 literals with `code_only` (`scripts/check_panic_patterns.py:73`, loaded by path), and
-finds in the blanked text each `include_str!`, `include_bytes!`, `include!` and
-`#[path = …]`, taking its argument from the original text at the same position. It
+finds in the blanked text each `include_str!`, `include_bytes!`, `include!`,
+`#[path = …]` and `#![path = …]`, taking its argument from the original text at the same position. It
 prints each target outside the including package, with the including file and line, or
 a refusal with its reason; it exits non-zero on a refusal or a file it cannot read. The
 helper reads no metadata. Beside it, the reach in `step_cache.sh` (C.1, bash with `jq`,
-as `rust_reach_resolve` already reads the metadata, `CR8:779-804`) adds, for each reached
-package, every target source (`targets[].src_path`, read from the workspace metadata
+as `rust_reach_resolve` already reads the metadata, `CR8:779-804`) refuses the reach
+where a reached package has a target source (`targets[].src_path`, read from the workspace metadata
 `CR` already holds, `CR:315`, `--no-deps`, which lists every workspace package's targets)
-outside its directory as an input (none at `0fa28027`).
+outside its directory, which the scan does not read (none at `0fa28027`).
 So the `--quick` key, which uses this helper, stays independent of the full-metadata
 read, which only the strict cache's registry list needs (C.2).
 
@@ -1137,11 +1157,14 @@ read, which only the strict cache's registry list needs (C.2).
   - inside a `macro_rules!`, a `concat!` whose other parts
     are metavariables declared `$name:literal` in the matcher, where the first part is a
     string literal (a relative path, so the join is never absolute), no literal part
-    holds `..`, no attribute before the macro names `macro_export` (a `cfg_attr` one
+    holds `..` or ends with `.`, no attribute before the macro names `macro_export` (a `cfg_attr` one
     included), the identifier `<name>` occurs in the package's code only in the defining
     file (any occurrence, not only `<name>!`), no occurrence there lies inside another
-    `macro_rules!` body, and every string literal in those invocations
-    is free of `..` and `\`. This is the form
+    `macro_rules!` body, every string literal in those invocations
+    is free of `..` and `\` and neither starts nor ends with `.` (two such, `"."` and
+    `"./x"`, join into `..`), and no invocation holds a char literal (`concat!` joins
+    `'.'` as `.`). With no part ending in `.`, a body literal or an invocation literal,
+    an empty one included, no join makes `..`. This is the form
     `native-theme/src/presets.rs:49` uses (`include_str!(concat!("presets/", $key,
     ".toml"))`; the macro at `:34` is not exported, its matcher declares `$key:literal`
     (`:35`), and its one invocation (`:56`) passes keys such as `"kde-breeze"`, none
@@ -1177,7 +1200,9 @@ read, which only the strict cache's registry list needs (C.2).
 - **Refused** (the reach is refused, the step runs):
   - every other `include_str!`, `include_bytes!` or `include!` argument: a `concat!` with
     any other part, a metavariable outside that form (another fragment kind, a macro
-    that fails the test of the next bullet, a literal with `..` or `\`), any
+    that fails the test of the next bullet, a literal with `..` or `\`, a `concat!`
+    string literal ending with `.`, an invocation literal starting or ending with `.`,
+    an invocation holding a char literal), any
     other macro call, an identifier;
   - any include or `#[path]` inside the body of a `macro_rules!`, a literal one
     included, unless no attribute before the macro names `macro_export` (a `cfg_attr`
@@ -1191,12 +1216,15 @@ read, which only the strict cache's registry list needs (C.2).
     directories, would not follow (the one exception is `env!("OUT_DIR")`'s generated
     file of a trusted package, which its build script writes from the package's own
     files, C.2);
-  - an `include!` of a file not ending in `.rs` (Rust code the scan would not read as
-    such);
-  - every `#[cfg_attr(…, path = …)]`.
+  - an `include!` or a `#[path]` (`#![path]` too) of a file not ending in `.rs` (Rust
+    code the scan would not read as such);
+  - every `#[cfg_attr(…, path = …)]`;
+  - a `use` item naming `include_str`, `include_bytes` or `include` (renamed or not:
+    the scan finds the three by name), and a call of any other `include_<word>!` macro.
 
 At `0fa28027` none of these refusals occurs (the macro-body one checked by the scan
-above): every `#[path]` and `include!` target is a
+above; the helper with every rule above, run on `0fa28027`'s tree on 2026-11-17,
+refuses nothing and prints the table below): every `#[path]` and `include!` target is a
 `.rs` inside its package or a trusted `OUT_DIR` file, and no include literal holds `\`;
 so C.3's 34 and A.2's 29 hold.
 
@@ -1207,14 +1235,20 @@ literal ignored; a `concat!` with `..` refused; `env!("CARGO_MANIFEST_DIR")` acc
 metavariable form accepted, and with an unrelated `"/tmp/…"` literal elsewhere in the
 same file still accepted; refused where the macro is `#[macro_export]`, where the
 metavariable is `$name:expr`, where the macro is invoked from a second file, and where an
-invocation passes a literal with `..` or `\`; a literal `include_str!` in a macro body
+invocation passes a literal with `..` or `\`, literals starting or ending with `.` (and
+one starting with `.`, one ending with `.`, each alone), or char literals, and where a
+body literal ending with `.` joins into `..` (beside another body literal, and beside an
+empty invocation literal); a literal `include_str!` in a macro body
 refused where the macro is invoked from a second file, refused where the macro is
 `#[macro_export]`, refused where the macro is invoked only from another macro's body,
-refused where the macro is re-exported by `use … as`, and accepted where it is invoked
+refused where the macro is re-exported by `use … as`, refused where a second file
+imports it by `use … as`, and accepted where it is invoked
 only in its own file; a literal path
 with `\` refused; a
-`#[path]` and an `include!` to a `.rs` outside the package refused; an `include!` of a
-`.txt` refused; `#[cfg_attr(test, path = "x.rs")]` refused;
+`#[path]`, an inner `#![path]` and an `include!` to a `.rs` outside the package
+refused; an `include!` of a `.txt` and a `#[path]` to a file not ending in `.rs`
+refused; a `use` item naming `include_str` refused; an `include_<word>!` macro other
+than the three refused; `#[cfg_attr(test, path = "x.rs")]` refused;
 `#[path]` resolved against the including file's directory, and one whose target lies
 outside the package refused; an ignored `.rs` file (listed by `find`, not by git)
 scanned, and one reached through a symbolic link; an unreadable file fails (skipped
@@ -1247,8 +1281,9 @@ reaching egui (egui's and egui-widgets', whose reach holds egui), gpui or iced a
 
 `target/check-release-cache/` (the strict set) and `target/check-release-cache/quick/`
 (the `--quick` set), one file per step (`SC8a:102-124`), in the worktree's own
-`target/`. The full run never reads or writes them (`STEP_CACHE` empty, `CR8:927-931`);
-`--no-cache` runs every step and neither reads nor writes either.
+`target/`. The full run reads no record and records no pass (`STEP_CACHE` empty,
+`CR8:927-931`); `--no-cache` runs every step and does the same. In every mode a step
+that fails has its `--quick` record deleted (`step_failed`, `step_cache_forget`, A.2).
 
 ### C.6 The self-test, and its place
 
@@ -1295,7 +1330,9 @@ step, in `--commit` and `--quick`; not in the full run (O1b answered no).
   plan names a task structural.", and `--quick`'s "Run at a task's end." Then M.2's MSRV
   sentence and a paragraph "Speed in --commit and --quick, never in the full run", as
   `CR8:57-70` without its facts-gate and `--cache-keys` sentences and with "the
-  showcases' tests in CI's runner environment stay on cargo test".
+  showcases' tests in CI's runner environment stay on cargo test", and with the full
+  run's and `--no-cache`'s rule: each reads no record and records no pass, and a
+  failure still removes the step's `--quick` record.
 - Usage (`CR:46-62`) becomes:
 
 ```
@@ -1321,8 +1358,9 @@ Usage: scripts/check_release.sh [--commit | --quick] [--no-cache]
                  the tools, the environment and its command are unchanged
                  since it last passed in --commit or --quick; the summary
                  names what it left to --commit; run at a task's end
-  --no-cache     with --commit or --quick: run every step, no cache read or
-                 written (the full run never uses one)
+  --no-cache     with --commit or --quick: run every step; reads no record
+                 and records no pass; a failure still removes the step's
+                 --quick record (the full run does the same)
   -h, --help     print this help and exit
 
 With --commit or --quick, cargo nextest runs the test steps where it is
@@ -1330,8 +1368,9 @@ installed (cargo test --doc the doctests; the showcases' runner-environment
 tests stay on cargo test), and a compile-only or documentation step, or
 native-theme-derive's tests, whose declared inputs, tools, environment and
 command are unchanged since it last passed is skipped, named in the summary
-"unchanged since <commit>". The full run runs every step through cargo test,
-with no cache.
+"unchanged since <commit>". The full run runs every step through cargo test;
+it reads no record and records no pass; a failure still removes the step's
+--quick record.
 ```
 
   Before commit (iv) the `--quick` line and `--quick`'s mentions are absent. The rule

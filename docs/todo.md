@@ -2094,6 +2094,35 @@ caeddd6b, each platform file's *Cross-check* section has the detail.
       iOS gap map's *Cross-check*, table C. Its 61 other unsourced values each point to a
       row there, values to measure.
 
+### `scripts/check_release.sh`: `CARGO_ENCODED_RUSTFLAGS` and `CARGO_ENCODED_RUSTDOCFLAGS` drop its `-D warnings`
+
+- [ ] [v0.7.x] Since 0.7.0 the gate denies warnings through the environment in two
+      kinds of steps: the cross-target checks *all features, -D warnings (<target>)*
+      (`env RUSTFLAGS="-D warnings" cargo check --target …`, for x86_64-pc-windows-gnu
+      and x86_64-apple-darwin) and every step of the *Docs* section
+      (`env RUSTDOCFLAGS="-D warnings" cargo doc …`). Cargo takes its extra flags from
+      the first of four mutually exclusive sources, and `CARGO_ENCODED_RUSTFLAGS` comes
+      before `RUSTFLAGS`, as `CARGO_ENCODED_RUSTDOCFLAGS` before `RUSTDOCFLAGS` (Cargo's
+      configuration reference, `build.rustflags` and `build.rustdocflags`,
+      doc.rust-lang.org, read 2026-11-17). Measured on 2026-11-17 with cargo 1.100.0
+      on a throwaway crate: under `RUSTFLAGS=-Dwarnings` an unused variable fails
+      `cargo check`, and with `CARGO_ENCODED_RUSTFLAGS=` (empty) set as well it is a
+      warning and the check exits 0; under `RUSTDOCFLAGS=-Dwarnings` a broken
+      intra-doc link fails `cargo doc` (exit 101), and with
+      `CARGO_ENCODED_RUSTDOCFLAGS=` set as well `cargo doc` exits 0. So where either
+      is set in the gate's environment, those steps run
+      without `-D warnings` and a warning passes them. The step cache's keys hold both
+      variables (`step_cache_environment` and `step_cache_quick_environment` in
+      `scripts/step_cache.sh` hash every variable but their deny-lists, which do not
+      name them), so no step is skipped wrongly; only the warning denial can be lost.
+      CI's MSRV checks already run as `env -u CARGO_ENCODED_RUSTFLAGS
+      RUSTFLAGS=-Dwarnings cargo …` (`scripts/msrv_checks.sh`, `msrv_check`, 4e03057b),
+      and the docs.rs emulation passes `-D warnings` to `cargo rustdoc` after `--`
+      (`scripts/check_docsrs.py`), not through `RUSTDOCFLAGS`. Possible fixes, not
+      decided: the same `env -u` on those steps (`CARGO_ENCODED_RUSTDOCFLAGS` on the
+      docs steps), or the script refusing to run while either variable is set, naming
+      it. Raised by the gate-speed review (2026-11-16), outside that unit's scope.
+
 ---
 
 ## Toolkit Connectors
