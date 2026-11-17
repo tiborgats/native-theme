@@ -178,8 +178,10 @@
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::expect_used)]
 
+/// The README's code blocks, compiled as doctests so they cannot drift from the API; the
+/// theme-change block needs feature `watch`.
+#[cfg(all(doctest, feature = "watch"))]
 #[doc = include_str!("../README.md")]
-#[cfg(doctest)]
 pub struct ReadmeDoctests;
 
 /// Generates `merge()` and `is_empty()` methods for theme structs.
