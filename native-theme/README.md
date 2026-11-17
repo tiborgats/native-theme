@@ -9,14 +9,32 @@ themes, and 17 bundled TOML presets. Reads OS themes from KDE Plasma, GNOME
 (via `xdg-desktop-portal`), macOS, and Windows, and produces a fully populated
 `ResolvedTheme` any GUI toolkit can consume.
 
+Theme switching in the showcase application of each connector crate:
+
+**gpui**
+
+![gpui theme switching](../connectors/native-theme-gpui/docs/assets/theme-switching.gif "gpui")
+
+**iced**
+
+![Iced theme switching](../connectors/native-theme-iced/docs/assets/theme-switching.gif "iced")
+
+**egui**
+
+![egui theme switching](../connectors/native-theme-egui/docs/assets/theme-switching.gif "egui")
+
 ## How it fits
 
-Most apps don't depend on this crate directly — they use a framework connector like
-[`native-theme-gpui`](../connectors/native-theme-gpui/),
-[`native-theme-iced`](../connectors/native-theme-iced/) or
-[`native-theme-egui`](../connectors/native-theme-egui/), which pull `native-theme` in
-transitively and re-export it. Depend on `native-theme` directly to write a new connector,
-or to use the theme data without one.
+Most apps don't depend on this crate directly — they add the connector of their
+GUI framework, which pulls `native-theme` in transitively and re-exports it:
+
+| Your GUI framework | Add this crate |
+|---|---|
+| [gpui](https://www.gpui.rs) | [`native-theme-gpui`](../connectors/native-theme-gpui/) |
+| [iced](https://iced.rs) | [`native-theme-iced`](../connectors/native-theme-iced/) |
+| [egui](https://www.egui.rs) | [`native-theme-egui`](../connectors/native-theme-egui/) |
+| egui, plus widgets drawn from the theme where egui's own cannot follow it (switch, segmented control, slider, …) | [`native-theme-egui-widgets`](../connectors/native-theme-egui-widgets/), beside `native-theme-egui` |
+| Writing a new framework connector, or using the theme data without one | `native-theme`, this crate, directly |
 
 ## Quick start
 
@@ -31,11 +49,13 @@ Read the live OS theme:
 ```rust,no_run
 use native_theme::SystemTheme;
 
-let sys = SystemTheme::from_system()?;
-let active = sys.pick(sys.mode);                 // &ResolvedTheme
-let accent = active.defaults.accent_color;       // Rgba (fully populated)
-let bg     = active.defaults.background_color;   // Rgba
-# Ok::<(), native_theme::Error>(())
+fn main() -> native_theme::Result<()> {
+    let sys = SystemTheme::from_system()?;
+    let active = sys.pick(sys.mode);                 // &ResolvedTheme
+    let accent = active.defaults.accent_color;       // Rgba (fully populated)
+    let bg     = active.defaults.background_color;   // Rgba
+    Ok(())
+}
 ```
 
 For OS readers, enable the `native` feature (or an individual `kde` / `portal`
@@ -95,10 +115,12 @@ lists what detection can see, for debugging.
 ```rust
 use native_theme::{ColorMode, Theme};
 
-let theme = Theme::preset("catppuccin-mocha")?;
-let resolved = theme.resolve(ColorMode::Dark)?;
-let accent = resolved.variant.defaults.accent_color;  // Rgba
-# Ok::<(), native_theme::Error>(())
+fn main() -> native_theme::Result<()> {
+    let theme = Theme::preset("catppuccin-mocha")?;
+    let resolved = theme.resolve(ColorMode::Dark)?;
+    let accent = resolved.variant.defaults.accent_color;  // Rgba
+    Ok(())
+}
 ```
 
 `theme.resolve(mode)` returns a `Resolved` wrapper containing `variant`
@@ -109,16 +131,18 @@ let accent = resolved.variant.defaults.accent_color;  // Rgba
 ```rust
 use native_theme::Theme;
 
-let mut theme = Theme::preset("nord")?;
-let overrides = Theme::from_toml(r##"
-    [light.defaults]
-    accent_color = "#ff6600"
+fn main() -> native_theme::Result<()> {
+    let mut theme = Theme::preset("nord")?;
+    let overrides = Theme::from_toml(r##"
+        [light.defaults]
+        accent_color = "#ff6600"
 
-    [dark.defaults]
-    accent_color = "#ff6600"
-"##)?;
-theme.merge(&overrides);
-# Ok::<(), native_theme::Error>(())
+        [dark.defaults]
+        accent_color = "#ff6600"
+    "##)?;
+    theme.merge(&overrides);
+    Ok(())
+}
 ```
 
 `merge` fills in only the fields present in the overlay; everything else stays
@@ -131,16 +155,18 @@ changes only the variants it states, so the recipes state both: an overlay of
 ```rust,no_run
 use native_theme::{SystemTheme, Theme};
 
-let sys = SystemTheme::from_system()?;
-let overlay = Theme::from_toml(r##"
-    [light.defaults]
-    accent_color = "#ff6600"
+fn main() -> native_theme::Result<()> {
+    let sys = SystemTheme::from_system()?;
+    let overlay = Theme::from_toml(r##"
+        [light.defaults]
+        accent_color = "#ff6600"
 
-    [dark.defaults]
-    accent_color = "#ff6600"
-"##)?;
-let customised = sys.with_overlay(&overlay)?;
-# Ok::<(), native_theme::Error>(())
+        [dark.defaults]
+        accent_color = "#ff6600"
+    "##)?;
+    let customised = sys.with_overlay(&overlay)?;
+    Ok(())
+}
 ```
 
 ### Cheap dark-mode check
@@ -167,16 +193,16 @@ recipe does.
 With the `watch` feature:
 
 ```rust,no_run
-# #[cfg(feature = "watch")] {
 use native_theme::watch::on_theme_change;
 
-let _subscription = on_theme_change(|_event| {
-    // Runs on a background thread. The event carries no theme: tell the UI
-    // thread to call `detect::invalidate_caches()`, then
-    // `SystemTheme::from_system()` again.
-})?;
-# }
-# Ok::<(), native_theme::Error>(())
+fn main() -> native_theme::Result<()> {
+    let _subscription = on_theme_change(|_event| {
+        // Runs on a background thread. The event carries no theme: tell the UI
+        // thread to call `detect::invalidate_caches()`, then
+        // `SystemTheme::from_system()` again.
+    })?;
+    Ok(())
+}
 ```
 
 Keep the subscription alive: dropping it stops watching.
