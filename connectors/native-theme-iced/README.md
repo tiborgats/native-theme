@@ -651,7 +651,14 @@ iced takes a theme through three receivers: its palette, each widget's
 in none of them:
 
 - **Widgets iced lacks.** Neither iced 0.14 nor `iced_aw` 0.14.1 has a
-  popover or a status bar, so `popover.*` and `status_bar.*` reach nothing.
+  popover or a status bar, so `status_bar.*` reaches nothing, and of
+  `popover.*` only the border reaches iced, in its menus, as the platforms
+  frame a popup: a drop-down (`styles::menu`) takes `popover.border`'s colour
+  and width, and an `iced_aw` menu (`styles::aw::menu`) its colour, width and
+  corner radius, and casts `iced_aw`'s shadow where
+  `popover.border.shadow_enabled` states one. Both fill from
+  `menu.background_color`, and neither draws the colour or width of a
+  `menu.border` a theme states.
   A dialog and a toolbar are no iced widgets either; they are containers the
   application draws, which `styles::dialog`, `styles::toolbar`,
   `styles::toolbar_rule` and the `dialog_*` and `toolbar_*` helpers style.

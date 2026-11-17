@@ -834,14 +834,47 @@ pub(super) const DERIVED: &[(&str, &str)] = &[
     #[cfg(feature = "iced_aw")]
     (
         "styles::aw::menu.menu_shadow",
-        "iced_aw default: menu_bar::primary(..).menu_shadow -- the same",
+        "iced_aw default: menu_bar::primary(..).menu_shadow where \
+         popover.border.shadow_enabled, Shadow::default() where not -- the \
+         model has a shadow color but no offset or blur",
+    ),
+    #[cfg(feature = "iced_aw")]
+    (
+        "styles::aw::menu.bar.border.color",
+        "connector: `Border::default()`, no frame -- the bar lies on the \
+         window, and the model states no menu-bar border (`MenuTheme`'s is no \
+         bar's)",
+    ),
+    #[cfg(feature = "iced_aw")]
+    (
+        "styles::aw::menu.bar.border.width",
+        "connector: `Border::default()` -- the same",
+    ),
+    #[cfg(feature = "iced_aw")]
+    (
+        "styles::aw::menu.bar.border.radius.top_left",
+        "connector: `Border::default()` -- the same",
+    ),
+    #[cfg(feature = "iced_aw")]
+    (
+        "styles::aw::menu.bar.border.radius.top_right",
+        "connector: `Border::default()` -- the same",
+    ),
+    #[cfg(feature = "iced_aw")]
+    (
+        "styles::aw::menu.bar.border.radius.bottom_right",
+        "connector: `Border::default()` -- the same",
+    ),
+    #[cfg(feature = "iced_aw")]
+    (
+        "styles::aw::menu.bar.border.radius.bottom_left",
+        "connector: `Border::default()` -- the same",
     ),
     #[cfg(feature = "iced_aw")]
     (
         "styles::aw::menu.path.border.color",
-        "iced_aw default: menu_bar::primary(..).path_border -- the model's one \
-         menu border is the panel's, and drawing it around a highlighted row \
-         would outline something the platform does not",
+        "iced_aw default: menu_bar::primary(..).path_border -- the model has \
+         no border round a highlighted row",
     ),
     #[cfg(feature = "iced_aw")]
     (
@@ -1286,9 +1319,9 @@ pub(super) enum Unread {
     /// A widget neither iced nor `iced_aw` has; the entry names the widget, a
     /// prefix of every leaf it covers.
     NoWidget(&'static str),
-    /// iced has a receiver, and a ruling of the M5 review fills it from
-    /// another leaf, or leaves it to iced. The evidence cites the source,
-    /// `file.rs:line`.
+    /// iced has a receiver, and a ruling (the M5 review's, or a rationale's
+    /// decision) fills it from another leaf, or leaves it to iced. The
+    /// evidence cites the source, `file.rs:line`.
     Ruled(&'static str),
     /// The value is a soft option's fallback, which the connector draws where
     /// the option is unstated, and every bundled preset states the option.
@@ -1494,6 +1527,21 @@ pub(super) const UNREAD_COLOURS: &[UnreadColour] = &[
         ),
     },
     UnreadColour {
+        leaf: "menu.border.color",
+        why: Unread::Ruled(
+            "both menu styles frame their panel in `popover.border`, the \
+             popup's frame (`src/styles.rs` and `src/styles/aw.rs`, `menu`), \
+             into iced's `menu::Style::border` \
+             (`iced_widget-0.14.2/src/overlay/menu.rs:602`) and `iced_aw`'s \
+             `menu_border` (`iced_aw-0.14.1/src/style/menu_bar.rs:18`): \
+             `MenuTheme`'s border has no kind of its own and states no line \
+             (`MenuTheme` in `native-theme/src/model/widgets/mod.rs`), and the \
+             facts give a menu's frame to the popover \
+             (docs/platform-facts.md §2.6); \
+             docs/issues/0004_kde-open-items-rationale.md D3",
+        ),
+    },
+    UnreadColour {
         leaf: "link.visited_text_color",
         why: Unread::NoReceiver(
             "`button::Status` is Active, Hovered, Pressed and Disabled, with \
@@ -1530,11 +1578,24 @@ pub(super) const UNREAD_COLOURS: &[UnreadColour] = &[
         why: Unread::NoReceiver(WINDOW_FRAME),
     },
     UnreadColour {
-        leaf: "popover",
-        why: Unread::NoWidget(
-            "iced 0.14 has no popover, nor has `iced_aw` 0.14.1: its \
-             `context_menu::Style.background` is the backdrop of a modal \
-             (`style/context_menu.rs:8-14`), not a surface",
+        leaf: "popover.background_color",
+        why: Unread::Ruled(
+            "a drop-down, the one surface the popover's fill could reach, is \
+             filled from `menu.background_color` (`src/styles.rs`, `menu`), \
+             the background iced fills its list with \
+             (`iced_widget-0.14.2/src/overlay/menu.rs:316-324`): its \
+             rows' highlight and text are the menu's, stated against the menu's \
+             fill (docs/issues/0004_kde-open-items-rationale.md D3 (i))",
+        ),
+    },
+    UnreadColour {
+        leaf: "popover.font.color",
+        why: Unread::NoReceiver(
+            "iced 0.14 has no popover, nor has `iced_aw` 0.14.1 (its \
+             `context_menu::Style.background` is the backdrop of a modal, \
+             `style/context_menu.rs:8-14`); a drop-down, which takes only the \
+             popover's line, is a menu's list lettered in the menu's text \
+             (`iced_widget-0.14.2/src/overlay/menu.rs:598-611`)",
         ),
     },
     UnreadColour {

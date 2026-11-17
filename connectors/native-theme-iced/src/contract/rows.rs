@@ -1539,13 +1539,14 @@ pub(super) const MENU_ROWS: &[StyleRow<()>] = &[
     },
 ];
 
+/// A drop-down is framed in the popover's line, at the menu's radius (issue #4's D3).
 #[cfg(feature = "widgets")]
 pub(super) const MENU_BORDER_ROWS: &[BorderRow<()>] = &[BorderRow {
     field: "styles::menu",
     statuses: MENU_STATUSES,
     native: |r, ()| NativeBorder {
-        color: to_color(r.menu.border.color),
-        width: r.menu.border.line_width,
+        color: to_color(r.popover.border.color),
+        width: r.popover.border.line_width,
         radius: r.menu.border.corner_radius,
     },
     get: |t, r, ()| styles::menu(r)(t).border,
@@ -2594,14 +2595,14 @@ pub(super) const AW_CARD_SCALAR_ROWS: &[ScalarRow<AwStatus>] = &[
     },
 ];
 
-/// Every color field of `styles::aw::menu`: the bar and the menus share the
-/// one panel the model states, and the open path is the menu's hover fill.
+/// Every color field of `styles::aw::menu`: the bar lies on the window, a
+/// menu is the menu's panel, and the open path is the menu's hover fill.
 #[cfg(feature = "iced_aw")]
 pub(super) const AW_MENU_ROWS: &[StyleRow<AwStatus>] = &[
     StyleRow {
         field: "styles::aw::menu.bar_background",
         statuses: AW_MENU_STATUSES,
-        native: |r, _| to_color(r.menu.background_color),
+        native: |r, _| to_color(r.window.background_color),
         get: |t, r, s| fill(styles::aw::menu(r)(t, s).bar_background),
     },
     StyleRow {
@@ -2618,32 +2619,24 @@ pub(super) const AW_MENU_ROWS: &[StyleRow<AwStatus>] = &[
     },
 ];
 
-/// The menu's own border, worn by the bar and by the menus alike. The third
-/// border of the struct, `path_border`, has no native source and is in
-/// `DERIVED`.
+/// A menu's frame, the popover's border. The bar has none
+/// (`Border::default()`), and `path_border` has no native source: both are
+/// in `DERIVED`.
 #[cfg(feature = "iced_aw")]
-pub(super) const AW_MENU_BORDER_ROWS: &[BorderRow<AwStatus>] = &[
-    BorderRow {
-        field: "styles::aw::menu.bar",
-        statuses: AW_MENU_STATUSES,
-        native: |r, _| native_aw_menu_border(r),
-        get: |t, r, s| styles::aw::menu(r)(t, s).bar_border,
-    },
-    BorderRow {
-        field: "styles::aw::menu.menu",
-        statuses: AW_MENU_STATUSES,
-        native: |r, _| native_aw_menu_border(r),
-        get: |t, r, s| styles::aw::menu(r)(t, s).menu_border,
-    },
-];
+pub(super) const AW_MENU_BORDER_ROWS: &[BorderRow<AwStatus>] = &[BorderRow {
+    field: "styles::aw::menu.menu",
+    statuses: AW_MENU_STATUSES,
+    native: |r, _| native_aw_menu_border(r),
+    get: |t, r, s| styles::aw::menu(r)(t, s).menu_border,
+}];
 
-/// The one border `MenuTheme` states.
+/// The popup's border, `popover.border`, which frames an `iced_aw` menu.
 #[cfg(feature = "iced_aw")]
 fn native_aw_menu_border(r: &ResolvedTheme) -> NativeBorder {
     NativeBorder {
-        color: to_color(r.menu.border.color),
-        width: r.menu.border.line_width,
-        radius: r.menu.border.corner_radius,
+        color: to_color(r.popover.border.color),
+        width: r.popover.border.line_width,
+        radius: r.popover.border.corner_radius,
     }
 }
 

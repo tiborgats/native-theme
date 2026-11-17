@@ -315,7 +315,7 @@
 //! |--------|--------|--------|
 //! | `Palette` (6 fields) | background, text, primary, success, warning, danger | `defaults.*` |
 //! | `Extended` overrides (9) | background.base.text, secondary.base + strong, background.weak.color/text, primary/success/danger/warning.base.text | `input.placeholder_color`, `defaults.surface_color`, `defaults.text_color`, `defaults.{accent,success,danger,warning}_text_color` |
-//! | `styles` (33 functions) | every `Style` field of button (six classes), toggle button, text input, text editor, checkbox, radio, toggler, pick list, menu, slider, scrollable, progress bar, rule, pane grid split lines, tooltip, card container, segmented control, its segments and the separators between them, expander header and frame, the dialog's container (`dialog.background_color`, `.border`, `.body_font.color`), the toolbar's container and its bottom rule (`toolbar.background_color`, `.font.color`, `.border.color`), and the application's base style (`window.background_color`); scrollbar widths and embedding | the widget's own resolved theme; fields the model lacks come from iced's default |
+//! | `styles` (33 functions) | every `Style` field of button (six classes), toggle button, text input, text editor, checkbox, radio, toggler, pick list, menu, slider, scrollable, progress bar, rule, pane grid split lines, tooltip, card container, segmented control, its segments and the separators between them, expander header and frame, the dialog's container (`dialog.background_color`, `.border`, `.body_font.color`), the toolbar's container and its bottom rule (`toolbar.background_color`, `.font.color`, `.border.color`), and the application's base style (`window.background_color`); scrollbar widths and embedding | the widget's own resolved theme (`menu`, a drop-down's: its fill the menu's, its line the popover's border's, as the platforms frame a popup); fields the model lacks come from iced's default |
 //! | Widget metrics | button, input, text-area and combo-box padding (the stated sides inside the border, iced's own default for the others; `widgets` feature), any widget's padding over a default the caller names (`padding_or`, `padding_inside_border`) or where every side is stated (`stated_padding`), minimum control heights as a line height (`control_line_height`), a button's minimum size (`button_content_min_size`, `at_least`; `widgets` feature), border radius, scrollbar width, a tooltip's show delay (`tooltip_show_delay`, for `Tooltip::delay`), a table header's height (`list_header_height`), a dialog's padding inside its border and its bounds (`dialog_padding`, `dialog_max_width`, `dialog_max_height`, `dialog_min_width`, `dialog_min_height`), its button gap and order (`dialog_button_gap`, `dialog_button_order`), a toolbar's padding, item gap, outer height and rule width (`toolbar_padding`, `toolbar_item_gap`, `toolbar_bar_height`, `toolbar_border_line_width`) | Per-widget resolved fields |
 //! | Typography | font family/size/weight, mono family/size/weight, line height, the text scale (`text_scale`) | `defaults.font.*`, `defaults.mono_font.*`, `text_scale.*` |
 //! | Color helpers | `border_color`, `link_color`, `selection_background`, `info_color`, `info_text_color`, `warning_text_color`, `focus_ring_color`; `expander_arrow_color`, `dialog_title_font_color` | `defaults.*`; the widget's own |
@@ -352,7 +352,14 @@
 //!
 //! - **Widgets iced lacks.** The theme values of the widgets neither iced
 //!   0.14 nor `iced_aw` 0.14.1 has, the popover's and the status bar's,
-//!   reach nothing. A dialog, which neither has either, is the consumer's
+//!   reach nothing, but for four `popover.border` leaves, which iced's menus
+//!   take, as the platforms frame a popup: a drop-down (`styles::menu`) is
+//!   lined in `popover.border`'s colour and width, and an `iced_aw` menu
+//!   (`styles::aw::menu`) is framed in its colour, width and corner radius,
+//!   with `iced_aw`'s shadow only where `popover.border.shadow_enabled`
+//!   states one; so a theme's `menu.border` colour and width reach neither, and
+//!   both fill from `menu.background_color`. A dialog, which neither iced nor
+//!   `iced_aw` has either, is the consumer's
 //!   `container`, which `styles::dialog` and the `dialog_*` helpers style;
 //!   `dialog.entrance` and `.icon_size` reach nothing: no iced widget
 //!   animates a dialog's entrance, and iced has no dialog widget to draw a
