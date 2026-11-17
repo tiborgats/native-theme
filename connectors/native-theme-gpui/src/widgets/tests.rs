@@ -188,6 +188,99 @@ fn the_check_mark_fills_the_indicator_inside_its_padding() {
     );
 }
 
+/// An icon resolver that records every path it is asked for and keeps it.
+fn recording_resolver(cx: &mut VisualTestContext) -> Rc<RefCell<Vec<String>>> {
+    let record = Rc::new(RefCell::new(Vec::new()));
+    let sink = record.clone();
+    cx.update(|_, cx| {
+        gpui_component::set_icon_resolver(cx, move |path, _| {
+            sink.borrow_mut().push(path.to_string());
+            None
+        });
+    });
+    record
+}
+
+/// Where the theme states no check-mark stroke, the connector draws
+/// gpui-component's check glyph by its asset path, and asks the
+/// application's icon resolver for it first, as gpui-component's check box
+/// does (gpui-component checkbox.rs:220-222). A stroked mark asks nothing.
+#[gpui::test]
+fn the_check_mark_asks_the_applications_icon_resolver(cx: &mut TestAppContext) {
+    use gpui_component::{IconName, IconNamed as _};
+    let look = CheckboxLook::of(&resolved("macos-monterey", ColorMode::Light), true, false);
+    assert!(look.is_some(), "macos-monterey draws the connector's box");
+    assert_eq!(look.and_then(|l| l.mark_stroke), None);
+    let check = IconName::Check.path().to_string();
+
+    let window = window_with(
+        cx,
+        Some(("macos-monterey", ColorMode::Light)),
+        Box::new(|_, _| {
+            Checkbox::new("c")
+                .label("C")
+                .checked(true)
+                .into_any_element()
+        }),
+    );
+    assert!(
+        window.debug_bounds("native-checkbox-indicator").is_some(),
+        "the connector's box, not gpui-component's"
+    );
+    let record = recording_resolver(window);
+    redraw(window);
+    assert!(
+        record.borrow().contains(&check),
+        "the resolver was asked for {check}: {:?}",
+        record.borrow()
+    );
+
+    record.borrow_mut().clear();
+    let window = window_with(
+        cx,
+        Some(("kde-breeze", ColorMode::Light)),
+        Box::new(|_, _| {
+            Checkbox::new("c")
+                .label("C")
+                .checked(true)
+                .into_any_element()
+        }),
+    );
+    assert!(window.debug_bounds("native-checkbox-indicator").is_some());
+    assert!(
+        !record.borrow().contains(&check),
+        "kde-breeze's stroked mark asks nothing: {:?}",
+        record.borrow()
+    );
+}
+
+/// A radio whose theme states neither a dot nor a check-mark stroke (nord)
+/// draws the same check glyph, and asks the resolver for it too.
+#[gpui::test]
+fn the_radio_mark_asks_the_applications_icon_resolver(cx: &mut TestAppContext) {
+    use gpui_component::{IconName, IconNamed as _};
+    let look = CheckboxLook::radio(&resolved("nord", ColorMode::Light), true, false);
+    assert!(look.is_some(), "nord draws the connector's radio");
+    assert_eq!(look.and_then(|l| l.dot), None);
+    assert_eq!(look.and_then(|l| l.mark_stroke), None);
+    let check = IconName::Check.path().to_string();
+
+    let window = window_with(
+        cx,
+        Some(("nord", ColorMode::Light)),
+        Box::new(|_, _| Radio::new("r").label("R").checked(true).into_any_element()),
+    );
+    assert!(window.debug_bounds("native-checkbox-indicator").is_some());
+    assert!(window.debug_bounds("native-radio-dot").is_none());
+    let record = recording_resolver(window);
+    redraw(window);
+    assert!(
+        record.borrow().contains(&check),
+        "the resolver was asked for {check}: {:?}",
+        record.borrow()
+    );
+}
+
 /// A colour as 8-bit sRGB channels, alpha dropped: what a capture reads.
 fn rgb8(colour: gpui::Hsla) -> [u8; 3] {
     let rgba = gpui::Rgba::from(colour);
