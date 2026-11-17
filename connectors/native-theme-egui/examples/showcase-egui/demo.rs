@@ -1732,7 +1732,7 @@ fn reveal_selected_tab(
         grid(tab.width()),
         grid(ui.clip_rect().width()),
     );
-    let id = egui::Id::new(kind).with("revealed tab");
+    let id = egui::Id::unique(kind).with("revealed tab");
     if ui.data(|d| d.get_temp::<(usize, i64, i64, i64)>(id)) != Some(shown) {
         ui.data_mut(|d| d.insert_temp(id, shown));
         let reach = egui::Vec2 {

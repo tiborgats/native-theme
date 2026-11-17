@@ -23,15 +23,14 @@ use crate::style::push_note;
 #[non_exhaustive]
 pub enum FontBytes {
     /// `&'static [u8]`, typically `include_bytes!`. Registered with `FontData::from_static`
-    /// (`epaint/src/text/fonts.rs:125`), avoiding the per-`Fonts::new` copy that `Cow::Owned`
-    /// incurs (`fonts.rs:391-396`).
+    /// (`epaint-0.37.0/src/text/font_data.rs:31`), which wraps the reference and copies no
+    /// byte.
     Static(&'static [u8]),
-    /// A shared owned buffer. epaint's only constructors are `FontData::from_static`
-    /// (`epaint/src/text/fonts.rs:125`) and `FontData::from_owned` (`:133`), so these bytes
-    /// are copied into a `Vec<u8>` once when [`font_definitions`] builds the `FontData`, and
-    /// again at every `FontsImpl::new` (`:391-396`). The `Arc` serves a [`FontPlan`] reused
-    /// across rebuilds and `native_theme::fonts::SystemFace`'s `Arc<[u8]>`; it does **not**
-    /// avoid epaint's copies. Prefer [`FontBytes::Static`] for bytes the application embeds.
+    /// A shared owned buffer. Handed to epaint as a `Blob` that holds a clone of the `Arc`
+    /// (`FontData::from_blob`, `epaint-0.37.0/src/text/font_data.rs:40`), so neither
+    /// [`font_definitions`] nor epaint's face store (`epaint-0.37.0/src/text/face_store.rs:69`)
+    /// copies the bytes. The `Arc` serves a [`FontPlan`] reused across rebuilds and
+    /// `native_theme::fonts::SystemFace`'s `Arc<[u8]>`.
     Shared(std::sync::Arc<[u8]>),
 }
 
@@ -202,7 +201,9 @@ impl FontPlan {
 
     /// The `FontDefinitions` the plan's faces are prepended to — by [`crate::ThemeAtlas::install`]
     /// (spec §10.3 step 1) and by [`crate::Builder::build`]'s row height (spec §6.15). Without this call:
-    /// `egui::FontDefinitions::default()`, whose emoji fallbacks it keeps (spec §8.1).
+    /// `egui::FontDefinitions::default()` under the application's egui features (spec §8.1): egui
+    /// 0.37 adds its two emoji faces to it only under `monochrome_emoji_fonts`
+    /// (`epaint-0.37.0/src/text/font_definitions.rs:111-171`).
     /// `Context::set_fonts` overwrites the whole definition (`egui/src/context.rs:2105-2106`), so
     /// an application's own fonts — a `FontFamily::Name` family its code names, a script
     /// fallback — survive an install of another atlas only in this base; an `add_font` still
@@ -243,8 +244,10 @@ fn select<'a>(faces: &[&'a PlannedFace], spec: &ResolvedFontSpec) -> Option<&'a 
 /// Build a `FontDefinitions` that puts the theme's faces at the head of egui's `Proportional`
 /// and `Monospace` chains. Pure: needs no `Context`, so it is fully testable and the
 /// application may install the result itself. The starting point is the plan's base
-/// ([`FontPlan::with_base`]; `FontDefinitions::default()`, with egui's emoji fallbacks,
-/// without one, spec §8.1). A family the plan has no usable face for keeps the base's chain.
+/// ([`FontPlan::with_base`]; without one, `FontDefinitions::default()` under the application's
+/// egui features, which holds egui's emoji faces only under `monochrome_emoji_fonts`,
+/// `epaint-0.37.0/src/text/font_definitions.rs:111-171`, spec §8.1). A family the plan has no
+/// usable face for keeps the base's chain.
 ///
 /// **How a chain is reached is part of the contract**, because `FontDefinitions`'s two fields
 /// are both `pub` (`epaint/src/text/fonts.rs:435`, `:443`) and a plan may carry a base that
@@ -326,7 +329,9 @@ pub fn font_definitions(theme: &ResolvedTheme, plan: &FontPlan) -> (FontDefiniti
         };
         let mut data = match &face.bytes {
             FontBytes::Static(bytes) => FontData::from_static(bytes),
-            FontBytes::Shared(bytes) => FontData::from_owned(bytes.to_vec()),
+            FontBytes::Shared(bytes) => {
+                FontData::from_blob(Arc::new(Arc::clone(bytes)), face.index)
+            }
         };
         data.index = face.index;
         let own_weight_serves = face.weight == Some(spec.weight);
@@ -403,7 +408,7 @@ pub(crate) fn body_row_height(defs: &egui::FontDefinitions, size: f32) -> Option
         .get(&egui::FontFamily::Proportional)?
         .first()?;
     let data = defs.font_data.get(name)?;
-    let face = skrifa::FontRef::from_index(data.font.as_ref(), data.index).ok()?;
+    let face = skrifa::FontRef::from_index(data.bytes(), data.index).ok()?;
     let m = face.metrics(
         skrifa::instance::Size::unscaled(),
         skrifa::instance::LocationRef::default(),
@@ -441,8 +446,8 @@ pub(crate) fn widest_glyph(defs: &egui::FontDefinitions) -> Option<WidestGlyph> 
 /// collection, its table directory — each table's tag, checksum and length
 /// (`read-fonts-0.41.0/generated/font.rs:162-171`), the checksum computed over the table's
 /// bytes — and the normalised coordinates of the location it is drawn at. By content, not by
-/// address: [`font_definitions`] copies a [`FontBytes::Shared`] face into a new `Vec` at every
-/// build (`FontData::from_owned`, `epaint/src/text/fonts.rs:133`). The checksums are the
+/// address: one face's file in two buffers, such as a [`FontBytes::Static`] and a
+/// [`FontBytes::Shared`] copy of it, is one entry. The checksums are the
 /// file's own statement, trusted as its `head` box is for a static face; reading them costs
 /// one pass over the directory where hashing the bytes would read the whole file.
 #[derive(Clone, PartialEq, Eq, Hash)]
@@ -501,7 +506,7 @@ fn face_widest_glyph(data: &FontData) -> Option<WidestGlyph> {
     use skrifa::MetadataProvider as _;
     use skrifa::raw::TableProvider as _;
 
-    let face = skrifa::FontRef::from_index(data.font.as_ref(), data.index).ok()?;
+    let face = skrifa::FontRef::from_index(data.bytes(), data.index).ok()?;
     let metrics = face.metrics(
         skrifa::instance::Size::unscaled(),
         skrifa::instance::LocationRef::default(),
@@ -510,7 +515,7 @@ fn face_widest_glyph(data: &FontData) -> Option<WidestGlyph> {
     let width = if outline_bound {
         let location = drawn_location(&face, data);
         let key = WidestGlyphKey {
-            len: data.font.len(),
+            len: data.bytes().len(),
             index: data.index,
             tables: face
                 .table_directory
@@ -603,7 +608,9 @@ mod tests {
         let defs = egui::FontDefinitions::default();
         let (mut em, mut unscaled_em) = (0.0_f32, 0.0_f32);
         for data in defs.font_data.values() {
-            let face = skrifa::FontRef::from_index(data.font.as_ref(), data.index).unwrap();
+            let parsed = skrifa::FontRef::from_index(data.bytes(), data.index);
+            assert!(parsed.is_ok(), "egui's own face parses");
+            let Ok(face) = parsed else { continue };
             assert!(face.fvar().is_err() && face.cff().is_err() && face.cff2().is_err());
             let head = face.head().unwrap();
             let w = f32::from(head.x_max() - head.x_min()) / f32::from(head.units_per_em());
@@ -686,8 +693,9 @@ mod tests {
             };
             let (defs, _) = font_definitions(&t.variant, &FontPlan::from_system(&t.variant));
             for (name, plan_data) in &defs.font_data {
-                let face =
-                    skrifa::FontRef::from_index(plan_data.font.as_ref(), plan_data.index).unwrap();
+                let parsed = skrifa::FontRef::from_index(plan_data.bytes(), plan_data.index);
+                assert!(parsed.is_ok(), "{name}: the plan's face parses");
+                let Ok(face) = parsed else { continue };
                 if face.gvar().is_err() && face.cff().is_err() && face.cff2().is_err() {
                     continue;
                 }

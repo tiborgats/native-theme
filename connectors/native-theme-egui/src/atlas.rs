@@ -200,7 +200,7 @@ pub(crate) fn carry_name_keys(from: &egui::Style, into: &Arc<egui::Style>) -> Ar
 /// The `Context` data key under which [`ThemeAtlas::install`] publishes the atlas
 /// (spec §10.3 step 3) and [`ThemeAtlas::from_ctx`] reads it back.
 pub(crate) fn atlas_key() -> egui::Id {
-    egui::Id::new("native-theme-egui/atlas")
+    egui::Id::unique("native-theme-egui/atlas")
 }
 
 /// A complete egui theme compiled from native-theme data.
@@ -216,12 +216,13 @@ pub(crate) fn atlas_key() -> egui::Id {
 /// focus ring per `egui::Theme` (spec §6.18: an `Option` of an `egui::Stroke` and an `f32` offset),
 /// and the `egui::FontDefinitions` [`Builder::build`] made from its [`fonts::FontPlan`](crate::fonts::FontPlan) for
 /// [`ThemeAtlas::install`] (none when no plan was given), which are `BTreeMap`s of `String`,
-/// `FontFamily` (an `Arc<str>` in `Name`) and `Arc<FontData>` (`epaint/src/text/fonts.rs:431-444`,
-/// `:74-95`), a `FontData` being a `Cow<'static, [u8]>`, a `u32` and a `FontTweak` of plain
-/// values (`:112-122`, `:208-264`) — [`Builder::style_patch`]'s closure
-/// is applied at build and not kept; the widest glyph of those faces (`Option<f32>`) and the
-/// [`ThemeAtlas::text_size_cap`] the install plugin derives from it (an `AtomicU32`, shared by
-/// every clone); and a `ResolvedTheme` is plain
+/// `FontFamily` (an `Arc<str>` in `Name`) and `Arc<FontData>`
+/// (`epaint-0.37.0/src/text/font_definitions.rs:47-60`), a `FontData` being a `Blob`,
+/// `Arc<dyn AsRef<[u8]> + Send + Sync>`, a `u32` and a `FontTweak` of plain values
+/// (`epaint-0.37.0/src/text/font_data.rs:10-28`, `font_tweak.rs:6-62`) —
+/// [`Builder::style_patch`]'s closure is applied at build and not kept; the widest glyph of
+/// those faces (`Option<f32>`) and the [`ThemeAtlas::text_size_cap`] the install plugin
+/// derives from it (an `AtomicU32`, shared by every clone); and a `ResolvedTheme` is plain
 /// owned data with no interior mutability and no `Rc`
 /// (`native-theme/src/model/resolved.rs:161-222`).
 ///
@@ -500,11 +501,12 @@ impl ThemeAtlas {
     /// `Options::dark_style` and `light_style` are `#[serde(skip)]`
     /// (`egui/src/memory/mod.rs:195`, `:199`). Safe to call at any time, including inside a
     /// pass; the new theme reaches the whole UI on the next pass. Inside a pass, the base
-    /// styles change at once and the fonts do not: `Context::set_fonts` takes effect at the
-    /// next pass (`egui/src/context.rs:2104`, applied in `begin_pass`, `:548-553`), so text
-    /// drawn later in the same pass is set in the previous faces at sizes lowered for the new
-    /// faces' widest glyph — a previous face wider than the new widest is not bounded by the
-    /// cap for the rest of that pass.
+    /// styles change at once; `Context::set_fonts` applies the fonts at once while no text has
+    /// been laid out in the pass, and at the next pass after that
+    /// (`egui-0.37.0/src/context.rs:2505-2520`; `apply_font_changes_now_if_unused`, `:2561-2572`).
+    /// So once the pass has laid text out, text drawn later in it is set in the previous faces
+    /// at sizes lowered for the new faces' widest glyph — a previous face wider than the new
+    /// widest is not bounded by the cap for the rest of that pass.
     ///
     /// **Installing the installed atlas again is cheap.** For the atlas [`ThemeAtlas::from_ctx`]
     /// returns, or a clone of it, `install` restores both base styles — so a style the

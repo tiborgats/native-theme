@@ -821,6 +821,9 @@ The leaf that wins an egui field globally; the leaves that only feed its formula
 | `spacing.scroll.fade.size` | as spacing.scroll.fade.strength |
 | `spacing.scroll.fade.strength` | no platform fact records a scroll-edge fade (§5.10) |
 | `spacing.scroll.interact_handle_opacity` | as spacing.scroll.dormant_handle_opacity |
+| `spacing.scroll.kinetic.decay_time` | input behaviour, no native leaf |
+| `spacing.scroll.kinetic.rubber_band` | input behaviour, no native leaf |
+| `spacing.scroll.kinetic.stop_distance` | input behaviour, no native leaf |
 | `spacing.slider_width` | no native leaf states a slider length (§5.9) |
 | `spacing.text_edit_width` | no native leaf states a text-edit default width (§5.9) |
 | `text_styles[Body].family` | always FontFamily::Proportional: the family reaches egui as bytes, never as a name (§8.1; T6(d)) |

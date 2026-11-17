@@ -3,8 +3,8 @@ name = "native-theme-egui"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-# NOT `rust-version.workspace = true` — egui 0.36.2 declares 1.95, above the
-# 1.88.0 workspace floor. See §12.4.
+# NOT `rust-version.workspace = true` — egui 0.37.0 declares 1.95
+# (`egui-0.37.0/Cargo.toml:14`), above the 1.88.0 workspace floor. See §12.4.
 rust-version = "1.95"
 repository.workspace = true
 keywords = ["theme", "egui", "gui", "native", "colors"]
@@ -39,13 +39,13 @@ native        = ["native-theme/native"]
 watch         = ["native-theme/watch"]  # enables `ThemeWatcher`
 
 [dependencies]
-egui = "0.36.2"
+egui = "0.37.0"
 native-theme = { workspace = true }
 # `fonts::font_definitions` drops a face epaint could not parse before epaint
 # sees it (§8): `FontRef::from_index` is the one fallible step of epaint's
 # `FontFace::new` (`epaint/src/text/font.rs:386-388`). `Builder::build` reads
 # the face metrics epaint's row height is made of (§6.15). The requirement is
-# epaint 0.36.2's own (`epaint/Cargo.toml:149-155`), so cargo resolves one
+# epaint 0.37.0's own (`epaint-0.37.0/Cargo.toml:157-163`), so cargo resolves one
 # `skrifa` for both — checked by `cargo tree -d` (§13 T7).
 skrifa = { version = "0.44.0", default-features = false, features = ["std"] }
 
@@ -59,7 +59,7 @@ native-theme-test-fixtures = { path = "../../tools/test-fixtures" }
 # panel's picker rows and the status bar's text (tools/showcase-support, never
 # published). A path with no version: `cargo package` strips it.
 native-theme-showcase-support = { path = "../../tools/showcase-support" }
-eframe = "0.36.2"
+eframe = "0.37.0"
 # The OS readers, so the showcase, install_tests.rs and every test build read
 # the OS theme without the `native` feature named; `ThemeWatcher` and the
 # showcase's watcher still need this crate's own `watch` feature.
@@ -67,7 +67,7 @@ native-theme = { workspace = true, features = ["native", "watch"] }
 # The showcase's palette is every widget egui_extras offers (§10.4): `svg` for
 # the icons, `datepicker` for `DatePickerButton`. Not `syntect`: without it
 # `code_view_ui` highlights with egui_extras's own fallback.
-egui_extras = { version = "0.36.2", default-features = false, features = ["svg", "datepicker"] }
+egui_extras = { version = "0.37.0", default-features = false, features = ["svg", "datepicker"] }
 # `DatePickerButton::new` takes a `&mut jiff::civil::Date`
 # (`egui_extras/src/datepicker/button.rs:29`), and egui_extras re-exports no
 # `jiff`. Its `datepicker` feature turns on the `jiff` 0.2.35 dependency with
@@ -78,7 +78,12 @@ jiff = { version = "0.2.35", default-features = false }
 # and click it through AccessKit. `eframe` enables `HarnessBuilder::build_eframe`;
 # neither `wgpu` nor `snapshot`: nothing is rasterised and no baseline is kept
 # (rationale §8, Q-3).
-egui_kittest = { version = "0.36.2", features = ["eframe"] }
+egui_kittest = { version = "0.37.0", features = ["eframe"] }
+# egui's two monochrome emoji faces, `NOTO_EMOJI_REGULAR` and `EMOJI_ICON`, behind
+# `monochrome_emoji_fonts` (`epaint_default_fonts-0.37.0/src/lib.rs`): the showcase's harness
+# asks them last for a character no installed face has, since egui_kittest panics on a
+# missing glyph (`egui_kittest-0.37.0/src/builder.rs`, `missing_glyph_policy`).
+epaint_default_fonts = { version = "0.37.0", features = ["monochrome_emoji_fonts"] }
 # §13 T2 and T10 parse `mapping.toml`; T3 walks `serde_json::to_value(&resolved)`;
 # the showcase's Widget Info does both (§10.4).
 # Neither crate is reachable transitively: `native-theme` depends on `toml`

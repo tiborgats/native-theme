@@ -11,8 +11,8 @@
 
 use egui::epaint::text::TextOptions;
 use egui::style::{
-    ImeComposition, Interaction, ScrollAnimation, ScrollFadeStyle, ScrollStyle, Selection, Spacing,
-    Style, TextCursorStyle, Visuals, WidgetVisuals, Widgets,
+    ImeComposition, Interaction, KineticScrollStyle, ScrollAnimation, ScrollFadeStyle, ScrollStyle,
+    Selection, Spacing, Style, TextCursorStyle, Visuals, WidgetVisuals, Widgets,
 };
 use egui::{CornerRadius, FontId, Frame, Margin, Shadow, Stroke};
 
@@ -90,7 +90,7 @@ fn every_style_type_is_destructured_exhaustively() {
         bottom: _,
     } = window_margin;
 
-    // `ScrollStyle`, 16 fields (egui/src/style.rs:503-582).
+    // `ScrollStyle`, 17 fields (egui/src/style.rs:503-582).
     let ScrollStyle {
         floating: _,
         content_margin: _,
@@ -108,6 +108,7 @@ fn every_style_type_is_destructured_exhaustively() {
         active_handle_opacity: _,
         interact_handle_opacity: _,
         fade,
+        kinetic,
     } = scroll;
 
     // `ScrollFadeStyle`, 2 fields (egui/src/style.rs:788, :792).
@@ -115,6 +116,13 @@ fn every_style_type_is_destructured_exhaustively() {
         strength: _,
         size: _,
     } = fade;
+
+    // `KineticScrollStyle`, 3 fields (egui-0.37.0/src/style.rs:851-875).
+    let KineticScrollStyle {
+        decay_time: _,
+        stop_distance: _,
+        rubber_band: _,
+    } = kinetic;
 
     // `Interaction`, 8 fields (egui/src/style.rs:916-944): `tooltip.show_delay` writes
     // `tooltip_delay`.

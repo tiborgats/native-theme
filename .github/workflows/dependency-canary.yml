@@ -13,7 +13,7 @@ name: Dependency canary
 # committed lockfile stays green until Cargo.lock is refreshed.
 #
 # egui releases reach consumers the same way: the egui connector's caret
-# requirement, `egui = "0.36.2"`, takes every 0.36.x patch release, and the
+# requirement, `egui = "0.37.0"`, takes every 0.37.x patch release, and the
 # egui widget crate reaches egui through the connector's re-exports, so the
 # same releases reach it.
 #

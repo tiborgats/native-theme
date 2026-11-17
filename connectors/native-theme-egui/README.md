@@ -103,11 +103,11 @@ the atlas this crate installs; add that crate beside this one.
 
 | Crate | Required |
 |---|---|
-| `egui` | 0.36.2 |
+| `egui` | 0.37.0 |
 | `skrifa` | 0.44.0 |
-| `eframe` (dev-dependency: the showcase) | 0.36.2 |
-| `egui_extras` (dev-dependency: the showcase) | 0.36.2 |
-| `egui_kittest` (dev-dependency: the showcase's tests) | 0.36.2 |
+| `eframe` (dev-dependency: the showcase) | 0.37.0 |
+| `egui_extras` (dev-dependency: the showcase) | 0.37.0 |
+| `egui_kittest` (dev-dependency: the showcase's tests) | 0.37.0 |
 | `rust-version` | 1.95 |
 
 `egui = "0.36.2"` is a caret requirement, `>=0.36.2, <0.37.0`: it accepts
@@ -254,7 +254,7 @@ use native_theme_egui::{NativeThemeUiExt, ResolvedTheme, Role, RoleVariant, Surf
 
 fn form(ui: &mut egui::Ui, t: &ResolvedTheme, name: &mut String) {
     ui.native_frame(Surface::Card).show(ui, |ui| {
-        let id = egui::Id::new("name");
+        let id = egui::Id::unique("name");
         ui.native_scope(Role::Input, RoleVariant::Normal, |ui| {
             let frame = native_theme_egui::input_frame(ui, id, t);
             ui.add(egui::TextEdit::singleline(name).id(id).frame(frame));

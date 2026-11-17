@@ -165,7 +165,7 @@ struct Generation {
 
 /// Where the parts are kept in the `Context`'s data.
 fn store_key() -> egui::Id {
-    egui::Id::new("native-theme-egui-widgets::parts")
+    egui::Id::unique("native-theme-egui-widgets::parts")
 }
 
 /// The rectangle of a text atom laid out after an atom whose cell is `before`, `gap` apart, as

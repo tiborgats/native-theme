@@ -122,7 +122,7 @@ impl egui::Widget for Spinner {
 fn spinner_ui(ui: &mut egui::Ui, paint: &Paint) -> egui::Response {
     let size = egui::Vec2::splat(paint.diameter);
     let (rect, response) = ui.allocate_exact_size(size, egui::Sense::hover());
-    response.widget_info(|| egui::WidgetInfo::new(egui::WidgetType::ProgressIndicator));
+    response.widget_info(|| egui::WidgetInfo::new(egui::Role::ProgressIndicator));
     if !ui.is_rect_visible(rect) {
         return response;
     }
@@ -203,7 +203,7 @@ impl Sources {
 /// The icon set's indicator for `set` and, for a freedesktop set, `icon_theme`, loaded once per
 /// `Context` and kept in its data.
 fn indicator(ctx: &egui::Context, set: IconSet, icon_theme: Option<&str>) -> Arc<Indicator> {
-    let key = egui::Id::new(("native-theme-egui-widgets::spinner", set, icon_theme));
+    let key = egui::Id::unique(("native-theme-egui-widgets::spinner", set, icon_theme));
     if let Some(found) = ctx.data(|d| d.get_temp::<Arc<Indicator>>(key)) {
         return found;
     }

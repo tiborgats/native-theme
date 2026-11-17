@@ -42,7 +42,7 @@ use native_theme_egui::{NativeThemeUiExt as _, ResolvedTheme, Role, RoleVariant,
 struct Visited(Arc<BTreeSet<String>>);
 
 fn visited_key() -> egui::Id {
-    egui::Id::new("native-theme-egui-widgets::visited")
+    egui::Id::unique("native-theme-egui-widgets::visited")
 }
 
 /// What a link reads of a theme, every colour read in one place, so the crate's colour-leaf

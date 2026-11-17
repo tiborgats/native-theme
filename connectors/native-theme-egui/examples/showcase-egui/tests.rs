@@ -32,12 +32,40 @@ pub(crate) fn open(theme: egui::Theme, cli: CliArgs) -> Harness<'static, App> {
 /// `egui_kittest/src/builder.rs:35`).
 fn open_at(theme: egui::Theme, cli: CliArgs, pixels_per_point: f32) -> Harness<'static, App> {
     Harness::builder()
+        .with_context_setup(emoji_fallbacks)
         .with_theme(theme)
         .with_size(crate::WINDOW_SIZE)
         .with_pixels_per_point(pixels_per_point)
         .build_eframe(move |cc| {
             App::new(cc, &cli).expect("the showcase starts under a bundled preset")
         })
+}
+
+/// egui's two monochrome emoji faces, `NotoEmoji-Regular` and `emoji-icon-font`
+/// (`epaint_default_fonts`'s `monochrome_emoji_fonts`), each with the tweak egui's own
+/// `FontDefinitions::default` gives it (`epaint-0.37.0/src/text/font_definitions.rs`), asked in
+/// that order for a character no installed face has: font providers, which an atlas's
+/// `Context::set_fonts` keeps, and whose faces follow every installed face of the chain
+/// (`epaint-0.37.0/src/text/font_provider.rs`, `FontProvider::font_for`). Test setup only: the
+/// harness panics on a missing glyph (`egui_kittest-0.37.0/src/builder.rs`,
+/// `missing_glyph_policy`), and the showcase itself keeps eframe's system font fallback.
+fn emoji_fallbacks(ctx: &egui::Context) {
+    for (name, bytes, scale) in [
+        (
+            "NotoEmoji-Regular",
+            epaint_default_fonts::NOTO_EMOJI_REGULAR,
+            0.81,
+        ),
+        ("emoji-icon-font", epaint_default_fonts::EMOJI_ICON, 0.90),
+    ] {
+        let data = egui::FontData::from_static(bytes).tweak(egui::FontTweak {
+            scale,
+            ..Default::default()
+        });
+        ctx.add_font_provider(std::sync::Arc::new(move |_: &egui::FallbackRequest<'_>| {
+            Some(egui::FontInsert::new(name, data.clone(), Vec::new()))
+        }));
+    }
 }
 
 pub(crate) fn cli(pairs: &[(&str, &str)]) -> CliArgs {
@@ -1557,7 +1585,9 @@ fn open_page(page: Page, theme: egui::Theme) -> Harness<'static, App> {
 }
 
 /// The AccessKit roles egui gives a widget (`egui/src/response.rs:935-957`), less
-/// `Pane`, `Window`, `RadioGroup` and `Unknown`.
+/// `Pane`, `Window`, `RadioGroup` and `Unknown`, and `DisclosureTriangle`, which a
+/// `CollapsingHeader` reports from egui 0.37.0 on, where egui 0.36.2 gave it `Button`
+/// (`egui-0.37.0/src/containers/collapsing_header.rs`, `CollapsingHeader::begin`).
 const WIDGET_ROLES: &[Role] = &[
     Role::Label,
     Role::Link,
@@ -1573,6 +1603,7 @@ const WIDGET_ROLES: &[Role] = &[
     Role::ProgressIndicator,
     Role::Splitter,
     Role::ScrollBar,
+    Role::DisclosureTriangle,
 ];
 
 #[test]
@@ -1663,7 +1694,8 @@ fn every_widget_reports_itself() {
                 // pixel past the page's clip, so the rects compare within half a pixel.
                 let by_record = records.iter().any(|r| {
                     r.id == shown.id
-                        && r.rect.expand(0.5).contains_rect(rect)
+                        && (r.rect.expand(0.5).contains_rect(rect)
+                            || (egui_own && !node_recorded && r.rect.contains(global.center())))
                         && (!r.container || (egui_own && !node_recorded))
                 });
                 assert!(
@@ -1717,6 +1749,8 @@ fn the_innermost_hovered_target_wins() {
     let pos = centre_of(&harness, "card checkbox");
     hover_and_settle(&mut harness, pos);
     assert_eq!(shown_kind(&harness), Some("card checkbox"));
+    harness.get_by_label("ui.columns: column 0").scroll_to_me();
+    harness.run_steps(3);
     let pos = centre_of(&harness, "scene button");
     hover_and_settle(&mut harness, pos);
     assert_eq!(
@@ -3125,6 +3159,7 @@ fn a_dialog_side_the_theme_leaves_unstated_is_gpui_components_padding() {
 #[test]
 fn the_area_stays_inside_the_page() {
     let mut harness = Harness::builder()
+        .with_context_setup(emoji_fallbacks)
         .with_theme(egui::Theme::Light)
         .with_size(egui::vec2(crate::WINDOW_SIZE.x, crate::WINDOW_SIZE.y / 4.0))
         .build_eframe(|cc| {
@@ -3159,6 +3194,7 @@ fn the_area_stays_inside_the_page() {
             unit: egui::MouseWheelUnit::Point,
             delta: egui::vec2(0.0, -40.0),
             phase: egui::TouchPhase::Move,
+            source: egui::MouseWheelSource::Unknown,
             modifiers: egui::Modifiers::NONE,
         });
         harness.run_steps(2);
@@ -4290,6 +4326,7 @@ fn the_tables_keep_their_columns_at_the_largest_text_scale() {
                 unit: egui::MouseWheelUnit::Point,
                 delta: egui::vec2(0.0, -120.0),
                 phase: egui::TouchPhase::Move,
+                source: egui::MouseWheelSource::Unknown,
                 modifiers: egui::Modifiers::NONE,
             });
             map.run_steps(2);
@@ -4373,6 +4410,7 @@ fn the_tables_keep_their_columns_at_the_largest_text_scale() {
                 unit: egui::MouseWheelUnit::Point,
                 delta: egui::vec2(-STEP, 0.0),
                 phase: egui::TouchPhase::Move,
+                source: egui::MouseWheelSource::Unknown,
                 modifiers: egui::Modifiers::NONE,
             });
             map.run_steps(2);
@@ -4464,6 +4502,7 @@ fn a_narrow_colour_cell_is_cut_short_and_whole_on_hover() {
             unit: egui::MouseWheelUnit::Point,
             delta: egui::vec2(0.0, -120.0),
             phase: egui::TouchPhase::Move,
+            source: egui::MouseWheelSource::Unknown,
             modifiers: egui::Modifiers::NONE,
         });
         map.run_steps(2);
@@ -5100,6 +5139,7 @@ fn the_side_panel_keeps_its_width_when_widget_info_scrolls() {
     ] {
         let cli = cli(&[("--theme", preset), ("--tab", "basic")]);
         let mut harness = Harness::builder()
+            .with_context_setup(emoji_fallbacks)
             .with_theme(theme)
             .with_size(crate::WINDOW_SIZE)
             .with_step_dt(STEP)
@@ -5262,6 +5302,7 @@ fn the_icon_theme_drop_down_says_on_hover_why_the_system_theme_is_unavailable() 
             panic!("the Icon theme drop-down is not placed");
         };
         hover_and_settle(&mut harness, combo.center());
+        harness.run_steps(1);
         assert_eq!(
             crate::pages::icons::set_label(native_theme::theme::IconSet::Freedesktop, None, detect),
             if failed {
@@ -6048,6 +6089,7 @@ fn the_page_tabs_scroll_the_open_tab_into_view() {
         unit: egui::MouseWheelUnit::Point,
         delta: egui::vec2(before.width(), 0.0),
         phase: egui::TouchPhase::Move,
+        source: egui::MouseWheelSource::Unknown,
         modifiers: egui::Modifiers::NONE,
     });
     harness.run_steps(SETTLE);
@@ -6922,6 +6964,7 @@ fn leaving_every_target_keeps_what_is_shown() {
 #[test]
 fn crossing_is_not_hovering() {
     let mut harness = Harness::builder()
+        .with_context_setup(emoji_fallbacks)
         .with_theme(egui::Theme::Light)
         .with_size(crate::WINDOW_SIZE)
         .with_step_dt(0.05)
@@ -7417,7 +7460,7 @@ fn every_rendered_character_is_in_the_installed_fonts() {
             .into_iter()
             .flatten()
             .filter_map(|key| definitions.font_data.get(key))
-            .filter_map(|data| skrifa::FontRef::from_index(&data.font, data.index).ok())
+            .filter_map(|data| skrifa::FontRef::from_index(data.bytes(), data.index).ok())
             .collect();
         chars
             .iter()
@@ -8802,6 +8845,7 @@ fn a_layout_dump_is_the_same_under_the_pointer() {
         let mut args = args();
         args.dump_layout = dump.map(|path| path.display().to_string());
         let mut harness = Harness::builder()
+            .with_context_setup(emoji_fallbacks)
             .with_theme(egui::Theme::Light)
             .with_size(crate::WINDOW_SIZE)
             .with_step_dt(0.0)
@@ -9063,20 +9107,22 @@ fn the_panel_icon_loads_from_a_theme_of_either_convention() -> std::io::Result<(
         );
         // Its alt text names the icon, whichever name each theme holds it under.
         let mut cache = crate::demo::IconCache::default();
-        let harness = Harness::new_ui(|ui| {
-            for theme in ["gtk-names", "breeze-names"] {
-                if let Some(image) = crate::demo::named_image(
-                    &mut cache,
-                    ui,
-                    crate::demo::ChromeIcon::PanelLeft,
-                    native_theme::theme::IconSet::Freedesktop,
-                    Some(theme),
-                    16.0,
-                ) {
-                    ui.add(image);
+        let harness = Harness::builder()
+            .with_context_setup(emoji_fallbacks)
+            .build_ui(|ui| {
+                for theme in ["gtk-names", "breeze-names"] {
+                    if let Some(image) = crate::demo::named_image(
+                        &mut cache,
+                        ui,
+                        crate::demo::ChromeIcon::PanelLeft,
+                        native_theme::theme::IconSet::Freedesktop,
+                        Some(theme),
+                        16.0,
+                    ) {
+                        ui.add(image);
+                    }
                 }
-            }
-        });
+            });
         assert_eq!(harness.get_all_by_label("panel-left").count(), 2);
         return Ok(());
     }

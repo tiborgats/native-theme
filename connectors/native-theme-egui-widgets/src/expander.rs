@@ -400,9 +400,8 @@ fn header(
     }
     let enabled = ui.is_enabled();
     let text = galley.text().to_string();
-    response.widget_info(|| {
-        egui::WidgetInfo::labeled(egui::WidgetType::CollapsingHeader, enabled, &text)
-    });
+    response
+        .widget_info(|| egui::WidgetInfo::labeled(egui::Role::DisclosureTriangle, enabled, &text));
     // A title cut short shows its whole text under the pointer, as egui's truncated `Label`
     // does (`egui/src/widgets/label.rs:285-294`): its sections and text, the wrapping reset.
     if galley.elided {

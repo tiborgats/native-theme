@@ -3,8 +3,8 @@ name = "native-theme-egui-widgets"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-# NOT `rust-version.workspace = true` — egui 0.36.2 declares 1.95
-# (`egui/Cargo.toml:14`), exactly as the connector does.
+# NOT `rust-version.workspace = true` — egui 0.37.0 declares 1.95
+# (`egui-0.37.0/Cargo.toml:14`), exactly as the connector does.
 rust-version = "1.95"
 repository.workspace = true
 keywords = ["theme", "egui", "gui", "native", "widgets"]
@@ -36,7 +36,9 @@ watch          = ["native-theme-egui/watch"]
 [dependencies]
 # egui and native-theme are reached through the connector's re-exports
 # (`native_theme_egui::egui`, `native_theme_egui::native_theme`), so the graph
-# holds one copy of each and this crate names no version of either.
+# holds one copy of each and this crate names no version of either here. Its one
+# egui requirement is the test-only dev-dependency below, which must equal the
+# connector's egui requirement.
 native-theme-egui = { version = "0.7.1", path = "../native-theme-egui", default-features = false }
 
 [dev-dependencies]
@@ -47,3 +49,7 @@ serde_json = "1.0.151"
 # (tools/test-fixtures, never published), as the connectors' tests do. A path with no
 # version: `cargo package` strips it.
 native-theme-test-fixtures = { path = "../../tools/test-fixtures" }
+# Test-only: egui's `default_fonts`, so the tests lay text out with a face present; the
+# connector's egui turns on no feature. Its requirement equals the connector's egui
+# requirement: another would resolve to a second egui copy, where the feature would be lost.
+egui = { version = "0.37.0", features = ["default_fonts"] }

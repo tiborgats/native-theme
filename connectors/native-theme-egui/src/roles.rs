@@ -113,18 +113,18 @@ pub enum RoleVariant {
 /// it; every field the theme does not state keeps the preset's value (spec §3.4). The preset for
 /// each surface is the one [`NativeThemeUiExt::native_frame`](crate::NativeThemeUiExt::native_frame) names.
 ///
-/// The rule: **exactly one variant per container chrome in egui 0.36.2 to which an
+/// The rule: **exactly one variant per container chrome in egui 0.37.0 to which an
 /// application can attach an [`egui::Frame`]**. `Popover` and `Tooltip`
 /// are two chromes behind one attachment point, `Popup::frame`, fed from different native
 /// widgets. Two `Frame` setters are deliberately not surfaces, because they belong to widgets,
 /// not containers: `TextEdit::frame` (`egui/src/widgets/text_edit/builder.rs:306`), whose
 /// custom frame replaces egui's whole per-state painting — no hover or focus stroke
-/// (`:734-735`) — and `AtomLayout::frame` (`egui/src/atomics/atom_layout.rs:112`), the
-/// layout engine `Button` and `TextEdit` build on. egui has one `Panel` type
+/// (`:734-735`) — and `WidgetAtom::frame` (`egui-0.37.0/src/atomics/container_atom.rs:334`),
+/// the layout engine `Button` and `TextEdit` build on. egui has one `Panel` type
 /// (`egui/src/containers/panel.rs:206`) with
 /// four constructors (`left` `:249`, `right` `:256`, `top` `:265`, `bottom` `:274`), so the
 /// panel case is one variant carrying the side. `egui::SidePanel` and `egui::TopBottomPanel`
-/// **do not exist** in 0.36.2 and must never be named in this crate or its docs.
+/// **do not exist** in 0.37.0 and must never be named in this crate or its docs.
 ///
 /// Menu chrome has no variant, because no menu builder takes a frame: `MenuButton`,
 /// `SubMenuButton` and `MenuBar` have no `.frame(..)`, and `MenuConfig` carries no frame field
@@ -151,8 +151,9 @@ pub enum Surface {
     /// uses this frame's inner margin as its padding (`:1352`) and paints its fill, stroke and
     /// corner radius without the shadow (`:1425`), the fill replaced by
     /// `widgets.open.weak_bg_fill` on the top-most window (`:1426-1428`) and the bottom corners
-    /// squared while the window is expanded (`:1429-1432`). egui 0.36.1 fell back to
-    /// `Frame::window(&style)` instead, which is one reason this crate requires 0.36.2. Hand
+    /// squared while the window is expanded (`:1429-1432`); egui 0.37.0, this crate's floor,
+    /// does the same (`egui-0.37.0/src/containers/window.rs:631`), where egui 0.36.1 fell back to
+    /// `Frame::window(&style)`. Hand
     /// [`Surface::WindowTitleBar`] to `title_frame` to give the title bar its own chrome.
     Window,
     /// `Window::title_frame` (`egui/src/containers/window.rs:272`). Without it the title bar

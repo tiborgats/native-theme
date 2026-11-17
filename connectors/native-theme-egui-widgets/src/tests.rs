@@ -2072,18 +2072,46 @@ fn the_painted_widgets_are_still_needed() {
     let spinner = std::fs::read_to_string(widgets.join("spinner.rs")).unwrap();
     assert!(spinner.contains("Stroke::new(3.0, color)"));
     assert!(spinner.contains("- 2.0;"));
-    let slider = std::fs::read_to_string(widgets.join("slider.rs")).unwrap();
+    // The slider: egui fills its rail in `inactive.bg_fill` and its handle in the bg_fill of
+    // the response's state, which `Slider` hands the handle call.
+    let slider = std::fs::read_to_string(widgets.join("slider.rs")).unwrap_or_default();
+    let slider_core = std::fs::read_to_string(widgets.join("slider_core.rs")).unwrap_or_default();
+    assert!(slider_core.contains(concat!(
+        "rail_rect,\n",
+        "        widget_visuals.inactive.corner_radius,\n",
+        "        widget_visuals.inactive.bg_fill,\n",
+    )));
     assert!(
-        slider.contains("rect_filled(rail_rect, corner_radius, widget_visuals.inactive.bg_fill)")
+        slider.contains(
+            "slider_core::paint_handle(ui, &geom, center, ui.style().interact(response));"
+        )
     );
-    assert!(slider.contains("let visuals = ui.style().interact(response);"));
-    assert!(slider.contains("fill: visuals.bg_fill,"));
-    // The drop-down's per-instance change: egui's arrow box is square and raises the content
-    // to its height; its arrow is the triangle `ComboBox` repaints in the stated box.
+    assert!(slider_core.contains(concat!(
+        "pub fn paint_handle(ui: &Ui, geom: &SliderGeometry, center: Pos2, ",
+        "visuals: &style::WidgetVisuals) {",
+    )));
+    assert!(slider_core.contains("fill: visuals.bg_fill,"));
+    // The switch: egui's check-box style draws no frame round the atoms, so the switch's
+    // `WidgetAtom` sets none.
+    let theme = std::fs::read_to_string(egui_src().join("theme").join("default_style.rs"))
+        .unwrap_or_default();
+    let checkbox_style = theme
+        .split_once("impl StyleProvider<CheckboxStyle> for DefaultStyle {")
+        .and_then(|(_, rest)| rest.split_once("\nimpl "))
+        .map_or("", |(body, _)| body);
+    assert!(checkbox_style.contains("frame: Frame::new(),"));
+    // The drop-down's per-instance change: egui's arrow box is square, an atom beside the
+    // selected text's, and raises the content to its height, a row being as tall as its
+    // largest atom; its arrow is the triangle `ComboBox` repaints in the stated box.
     let combo =
         std::fs::read_to_string(egui_src().join("containers").join("combo_box.rs")).unwrap();
-    assert!(combo.contains("let icon_size = Vec2::splat(ui.spacing().icon_width);"));
-    assert!(combo.contains("let actual_height = galley.size().y.max(icon_size.y);"));
+    assert!(combo.contains(
+        "let icon_atom = Atom::paint(Vec2::splat(ui.spacing().icon_width), move |ui, args| {"
+    ));
+    assert!(combo.contains("WidgetAtom::new((selected_text, icon_atom))"));
+    let atoms = std::fs::read_to_string(egui_src().join("atomics").join("container_atom.rs"))
+        .unwrap_or_default();
+    assert!(atoms.contains("cross_size = cross_size.at_least(size[cross_axis]);"));
     assert!(combo.contains("vec2(rect.width() * 0.7, rect.height() * 0.45),"));
     // The radio button's per-instance change: egui's dot is a third of `icon_width_inner`.
     let radio = std::fs::read_to_string(widgets.join("radio_button.rs")).unwrap();
@@ -2762,9 +2790,12 @@ fn the_kde_drop_down_is_its_min_height_with_a_chevron() {
 }
 
 /// A truncated drop-down keeps to the room it is laid out in, its selected text cut there and
-/// ended by an ellipsis, with the atlas installed and without; untruncated, egui widens it to a
-/// text longer than the room. With the atlas, the text's part is the cut text, inside the
-/// drop-down, a single line as tall as the whole one.
+/// ended by an ellipsis, with the atlas installed and without; untruncated, it wraps a text
+/// longer than the room as egui's own `ComboBox` does, which takes the wrapping of the `Ui` it
+/// is in (`egui-0.37.0/src/containers/combo_box.rs:365`), here a vertical one's
+/// (`egui-0.37.0/src/ui.rs:615-632`). With the atlas, the text's part is the rectangle egui
+/// paints the text in: the wrapped text untruncated, the cut text, a single line as tall as the
+/// whole one, inside the drop-down truncated.
 #[test]
 fn a_truncated_drop_down_keeps_to_its_room() {
     const ROOM: f32 = 160.0;
@@ -2781,6 +2812,16 @@ fn a_truncated_drop_down_keeps_to_its_room() {
             .inner
         }
     };
+    let egui_drop_down = |ui: &mut egui::Ui| {
+        ui.allocate_ui(egui::vec2(ROOM, 100.0), |ui| {
+            egui::ComboBox::from_id_salt("egui-icons")
+                .selected_text(TEXT)
+                .width(ui.available_width())
+                .show_ui(ui, |ui| ui.label("Adwaita"))
+                .response
+        })
+        .inner
+    };
     let painted = |out: &egui::FullOutput| {
         flat(&out.shapes)
             .into_iter()
@@ -2790,6 +2831,12 @@ fn a_truncated_drop_down_keeps_to_its_room() {
             })
             .unwrap()
     };
+    // Where egui paints the text: its galley's rectangle at the shape's position.
+    let painted_rect =
+        |text: &egui::epaint::TextShape| text.galley.rect.translate(text.pos.to_vec2());
+    let same = |a: egui::Rect, b: egui::Rect| {
+        (a.min - b.min).length() < 1e-3 && (a.max - b.max).length() < 1e-3
+    };
     let t = kde();
     for (name, ctx) in [
         (
@@ -2798,13 +2845,36 @@ fn a_truncated_drop_down_keeps_to_its_room() {
         ),
         ("bare", bare()),
     ] {
-        let _ = response(&ctx, at(0.0), drop_down(false));
-        let (_, wide) = response(&ctx, at(0.0), drop_down(false));
+        let _ = response(&ctx, at(0.0), egui_drop_down);
+        let (out, egui_wrapped) = response(&ctx, at(0.0), egui_drop_down);
+        let egui_rows = painted(&out).galley.rows.len();
         assert!(
-            wide.rect.width() > ROOM + 1.0,
-            "{name}: the case this covers, a text wider than the room: {:?}",
-            wide.rect
+            egui_rows > 1,
+            "{name}: the case this covers, a text egui wraps in the room: {egui_rows} row(s)"
         );
+        let _ = response(&ctx, at(0.0), drop_down(false));
+        let (out, wrapped) = response(&ctx, at(0.0), drop_down(false));
+        assert_eq!(
+            painted(&out).galley.rows.len(),
+            egui_rows,
+            "{name}: the drop-down wraps its text as egui's own does"
+        );
+        assert!(
+            (wrapped.rect.width() - egui_wrapped.rect.width()).abs() < 1e-3,
+            "{name}: {:?} is not as wide as egui's own, {:?}",
+            wrapped.rect,
+            egui_wrapped.rect
+        );
+        if name == "installed" {
+            let part = Parts::of(&wrapped)
+                .and_then(|parts| parts.get("text"))
+                .unwrap();
+            let text = painted_rect(&painted(&out));
+            assert!(
+                same(part, text),
+                "{name}: the text part {part:?} is not the wrapped text egui paints, {text:?}"
+            );
+        }
         let _ = response(&ctx, at(0.0), drop_down(true));
         let (out, combo) = response(&ctx, at(0.0), drop_down(true));
         assert!(
@@ -2829,6 +2899,11 @@ fn a_truncated_drop_down_keeps_to_its_room() {
                 part.right() <= combo.rect.right(),
                 "{name}: the text part {part:?} leaves {:?}",
                 combo.rect
+            );
+            let drawn = painted_rect(&text);
+            assert!(
+                same(part, drawn),
+                "{name}: the text part {part:?} is not where egui paints the cut text, {drawn:?}"
             );
         }
     }

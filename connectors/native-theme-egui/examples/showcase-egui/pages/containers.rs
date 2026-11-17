@@ -280,7 +280,7 @@ fn drag_and_drop(reg: &mut Registry, state: &mut DemoState, ui: &mut egui::Ui) {
                     ui.dnd_drop_zone::<&'static str, ()>(egui::Frame::default(), |ui| {
                         ui.set_min_size(ui.spacing().interact_size);
                         for item in items {
-                            let id = egui::Id::new(("containers/dnd", *item));
+                            let id = egui::Id::unique(("containers/dnd", *item));
                             demo::base(reg, ui, "ui.dnd_drag_source", |ui| {
                                 ui.dnd_drag_source(id, *item, |ui| ui.label(*item)).response
                             });

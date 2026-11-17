@@ -925,7 +925,7 @@ impl InfoText {
         let galley = self.galley(ui, text, font, colour);
         let size = egui::vec2(galley.size().x.min(ui.available_width()), self.line);
         let (rect, response) = ui.allocate_exact_size(size, egui::Sense::hover());
-        response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Label, true, text));
+        response.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Label, true, text));
         let shown = painted(ui, rect, &galley);
         ui.painter()
             .with_clip_rect(rect)
@@ -997,7 +997,7 @@ pub(crate) fn widget_tab(
         egui::vec2(ui.available_width(), row_height),
         egui::Sense::hover(),
     );
-    title_row.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Label, true, &view.title));
+    title_row.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Label, true, &view.title));
     let title_rect = egui::Rect::from_min_size(
         egui::pos2(row.left(), row.center().y - 0.5 * text.line),
         egui::vec2(title.size().x, text.line),
@@ -1012,8 +1012,12 @@ pub(crate) fn widget_tab(
         ),
         copy_size,
     );
-    let copy = ui.interact(copy_rect, ui.id().with("info copy"), egui::Sense::click());
-    copy.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, "Copy"));
+    let copy = ui.interact(
+        copy_rect,
+        ui.scope_id().with("info copy"),
+        egui::Sense::click(),
+    );
+    copy.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, true, "Copy"));
     let b = &t.button;
     // The pressed fill: `button.active_background`, or the hover fill where it is unstated (§6.4).
     let (fill, colour) = if copy.is_pointer_button_down_on() {
@@ -1059,7 +1063,7 @@ pub(crate) fn widget_tab(
             egui::Sense::hover(),
         );
         response.widget_info(|| {
-            egui::WidgetInfo::labeled(egui::WidgetType::Label, true, row.lines().join("\n"))
+            egui::WidgetInfo::labeled(egui::Role::Label, true, row.lines().join("\n"))
         });
         let mut x = rect.left();
         let swatch = row.colour.map(|colour| {

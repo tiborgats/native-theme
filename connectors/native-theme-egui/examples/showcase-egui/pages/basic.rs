@@ -6,7 +6,8 @@
 //! parts too, for `--dump-layout` and Widget Info.
 
 use egui::Button;
-use egui::widget_style::{Classes, WidgetState};
+use egui::class::Classes;
+use egui::widget_style::{ButtonStyle, CheckboxStyle, StyleArgs, WidgetState};
 use native_theme::AccessibilityPreferences;
 use native_theme::icons::IconRole;
 use native_theme::theme::IconSet;
@@ -376,8 +377,15 @@ fn button_label(
     text: impl Into<egui::WidgetText>,
 ) -> egui::Rect {
     let style = ui
-        .style()
-        .button_style(&Classes::default(), WidgetState::Inactive);
+        .ctx()
+        .get_widget_style::<ButtonStyle>(&StyleArgs {
+            classes: &Classes::default(),
+            state: WidgetState::Inactive,
+            stack: ui.stack(),
+            style: ui.style(),
+            ctx: ui.ctx(),
+        })
+        .atom_layout;
     let size = text_size(
         ui,
         text,
@@ -399,10 +407,14 @@ fn checkbox_parts(
     text: egui::RichText,
     checked: bool,
 ) -> Vec<(&'static str, egui::Rect)> {
-    let style = ui
-        .style()
-        .checkbox_style(&Classes::default(), WidgetState::Inactive);
-    let inner = inside(control.rect, style.frame.total_margin());
+    let style = ui.ctx().get_widget_style::<CheckboxStyle>(&StyleArgs {
+        classes: &Classes::default(),
+        state: WidgetState::Inactive,
+        stack: ui.stack(),
+        style: ui.style(),
+        ctx: ui.ctx(),
+    });
+    let inner = inside(control.rect, style.atom_layout.frame.total_margin());
     let atom = egui::Rect::from_x_y_ranges(
         inner.left()..=inner.left() + style.checkbox_size,
         inner.y_range(),
@@ -487,7 +499,7 @@ fn text_button(
 /// before the wrap, and the row only advances past it); a first pass, with no width yet, lays
 /// the line out as it comes.
 fn wrap_before(ui: &mut egui::Ui, key: &str) {
-    let id = egui::Id::new(("basic wrap", key));
+    let id = egui::Id::unique(("basic wrap", key));
     let Some(width) = ui.ctx().data(|d| d.get_temp::<f32>(id)) else {
         return;
     };
@@ -508,7 +520,7 @@ fn wrap_before(ui: &mut egui::Ui, key: &str) {
 
 /// The width of the item `key`, laid out at `rect`, for [`wrap_before`] in the next pass.
 fn remember_width(ui: &egui::Ui, key: &str, rect: egui::Rect) {
-    let id = egui::Id::new(("basic wrap", key));
+    let id = egui::Id::unique(("basic wrap", key));
     ui.ctx().data_mut(|d| d.insert_temp(id, rect.width()));
 }
 
@@ -759,7 +771,7 @@ fn field<'a>(
     egui::TextEdit::singleline(text)
         .desired_width(BASIC_WIDTH)
         .min_size(egui::vec2(BASIC_WIDTH, t.input.min_height))
-        .vertical_align(egui::Align::Center)
+        .align(egui::Align2::LEFT_CENTER)
         .id(id)
         .frame(input_frame(ui, id, t))
 }
@@ -816,7 +828,7 @@ fn text_field(
     let mut text = None;
     let response = demo::scoped(reg, ui, Role::Input, variant, kind, |ui| {
         line_box_rows(ui, t);
-        let r = add(ui, edit_id);
+        let r = add(ui, edit_id).accessible_name(kind);
         text = Some(field_text(
             ui,
             &r,
@@ -878,16 +890,19 @@ fn text_area(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: 
     heading(reg, ui, "basic.text_area.heading", "Text area");
     let id = ui.make_persistent_id("basic/area");
     let mut text = None;
-    let area = demo::scoped(reg, ui, Role::Input, normal, "TextEdit (multiline)", |ui| {
+    let kind = "TextEdit (multiline)";
+    let area = demo::scoped(reg, ui, Role::Input, normal, kind, |ui| {
         line_box_rows(ui, t);
         let frame = text_area_frame(ui, id, t);
-        let r = ui.add(
-            egui::TextEdit::multiline(&mut state.basic_area)
-                .desired_width(BASIC_WIDE)
-                .desired_rows(AREA_ROWS)
-                .id(id)
-                .frame(frame),
-        );
+        let r = ui
+            .add(
+                egui::TextEdit::multiline(&mut state.basic_area)
+                    .desired_width(BASIC_WIDE)
+                    .desired_rows(AREA_ROWS)
+                    .id(id)
+                    .frame(frame),
+            )
+            .accessible_name(kind);
         text = Some(field_text(ui, &r, &frame, AREA_TEXT, false));
         r
     });
@@ -903,10 +918,12 @@ fn text_area(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: 
 fn slider(reg: &mut Registry, state: &mut DemoState, ui: &mut egui::Ui) {
     let normal = RoleVariant::Normal;
     heading(reg, ui, "basic.slider.heading", "Slider");
-    let slider = demo::widget(reg, ui, Role::Slider, normal, "Slider (horizontal)", |ui| {
+    let kind = "Slider (horizontal)";
+    let slider = demo::widget(reg, ui, Role::Slider, normal, kind, |ui| {
         ui.scope(|ui| {
             ui.spacing_mut().slider_width = BASIC_WIDTH;
             ui.add(Slider::new(&mut state.basic_slider, 0.0..=100.0))
+                .accessible_name(kind)
         })
         .inner
     });
@@ -962,6 +979,7 @@ fn drop_down(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: 
                     }
                 })
                 .response
+                .accessible_name("ComboBox")
         },
     );
     reg.tag("basic.drop_down.trigger", &combo);
@@ -1004,7 +1022,9 @@ fn number_input(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, u
         ] {
             state.weak_bg_fill = fill;
         }
-        let r = ui.add(egui::DragValue::new(&mut state.basic_number).speed(NUMBER_STEP));
+        let r = ui
+            .add(egui::DragValue::new(&mut state.basic_number).speed(NUMBER_STEP))
+            .accessible_name("DragValue");
         text = Some(button_label(ui, &r, &shown));
         r
     });
@@ -1258,7 +1278,7 @@ fn icon_buttons(
                                 };
                                 let r = ui.add(button);
                                 r.widget_info(|| {
-                                    egui::WidgetInfo::labeled(egui::WidgetType::Button, true, label)
+                                    egui::WidgetInfo::labeled(egui::Role::Button, true, label)
                                 });
                                 r
                             })
@@ -1636,7 +1656,7 @@ fn scroll_bar(
         view.height()
     };
     let length = share.max(style.handle_min_length);
-    let offset = area.state.offset.y;
+    let offset = area.state.clamped_offset().y;
     let travel = (view.height() - length).max(0.0);
     let scrollable = (content - view.height()).max(0.0);
     let start = if scrollable > 0.0 {
@@ -1663,9 +1683,7 @@ fn list_row(
 ) -> (egui::Response, egui::Rect) {
     let size = egui::vec2(ui.available_width(), height);
     let (rect, response) = ui.allocate_exact_size(size, egui::Sense::click());
-    response.widget_info(|| {
-        egui::WidgetInfo::selected(egui::WidgetType::SelectableLabel, true, selected, text)
-    });
+    response.widget_info(|| egui::WidgetInfo::selected(egui::Role::Button, true, selected, text));
     let (fill, colour) = if selected {
         (Some(l.selection_background), l.selection_text_color)
     } else if response.hovered() {

@@ -32,10 +32,11 @@ pub(crate) fn show(
             ui.add(
                 egui::TextEdit::singleline(&mut state.text)
                     .min_size(min)
-                    .vertical_align(egui::Align::Center)
+                    .align(egui::Align2::LEFT_CENTER)
                     .id(id)
                     .frame(frame),
             )
+            .accessible_name("TextEdit (single line)")
         },
     );
     let id = ui.make_persistent_id("inputs/multiline");
@@ -47,6 +48,7 @@ pub(crate) fn show(
                 .id(id)
                 .frame(frame),
         )
+        .accessible_name("TextEdit (multiline)")
     });
     let id = ui.make_persistent_id("inputs/password");
     let frame = input_frame(ui, id, t);
@@ -55,10 +57,11 @@ pub(crate) fn show(
             egui::TextEdit::singleline(&mut state.password)
                 .password(true)
                 .min_size(min)
-                .vertical_align(egui::Align::Center)
+                .align(egui::Align2::LEFT_CENTER)
                 .id(id)
                 .frame(frame),
         )
+        .accessible_name("TextEdit (password)")
     });
     let id = ui.make_persistent_id("inputs/hint");
     let frame = input_frame(ui, id, t);
@@ -67,7 +70,7 @@ pub(crate) fn show(
             egui::TextEdit::singleline(&mut state.hint)
                 .hint_text("A hint")
                 .min_size(min)
-                .vertical_align(egui::Align::Center)
+                .align(egui::Align2::LEFT_CENTER)
                 .id(id)
                 .frame(frame),
         )
@@ -86,10 +89,11 @@ pub(crate) fn show(
                 false,
                 egui::TextEdit::singleline(&mut disabled)
                     .min_size(min)
-                    .vertical_align(egui::Align::Center)
+                    .align(egui::Align2::LEFT_CENTER)
                     .id(id)
                     .frame(frame),
             )
+            .accessible_name("TextEdit (disabled)")
         },
     );
 
@@ -107,7 +111,10 @@ pub(crate) fn show(
         Role::Input,
         normal,
         "ui.text_edit_singleline",
-        |ui| ui.text_edit_singleline(&mut state.text),
+        |ui| {
+            ui.text_edit_singleline(&mut state.text)
+                .accessible_name("ui.text_edit_singleline")
+        },
     );
     reg.note_last(
         "ui.text_edit_singleline",
@@ -119,7 +126,10 @@ pub(crate) fn show(
         Role::Input,
         normal,
         "ui.text_edit_multiline",
-        |ui| ui.text_edit_multiline(&mut state.multiline),
+        |ui| {
+            ui.text_edit_multiline(&mut state.multiline)
+                .accessible_name("ui.text_edit_multiline")
+        },
     );
     reg.note_last(
         "ui.text_edit_multiline",
@@ -127,6 +137,7 @@ pub(crate) fn show(
     );
     demo::scoped(reg, ui, Role::Input, normal, "ui.code_editor", |ui| {
         ui.code_editor(&mut state.code)
+            .accessible_name("ui.code_editor")
     });
     reg.note_last(
         "ui.code_editor",
@@ -137,6 +148,7 @@ pub(crate) fn show(
     ui.horizontal_wrapped(|ui| {
         demo::scoped(reg, ui, Role::Input, normal, "DragValue", |ui| {
             ui.add(egui::DragValue::new(&mut state.number))
+                .accessible_name("DragValue")
         });
         demo::scoped(reg, ui, Role::Input, normal, "ui.drag_angle", |ui| {
             ui.drag_angle(&mut state.angle)

@@ -1,7 +1,6 @@
 //! [`Switch`]: a two-state switch, a thumb on a track.
 
 use native_theme_egui::convert::{composite_over, to_color32, to_corner_radius};
-use native_theme_egui::egui::widget_style::Classes;
 use native_theme_egui::egui::{self, accesskit};
 use native_theme_egui::native_theme::color::Rgba;
 use native_theme_egui::native_theme::theme::ResolvedSwitchTheme;
@@ -19,7 +18,7 @@ use crate::scope;
 /// shows the track colours as a button's fill and no thumb.
 ///
 /// Built as egui's own `Checkbox` is (`egui/src/widgets/checkbox.rs:92-104`): an
-/// `AtomLayout` whose first atom is the track, the label after it at egui's own
+/// `WidgetAtom` whose first atom is the track, the label after it at egui's own
 /// `Spacing::icon_spacing`, sensing `Sense::click()`; a click flips the value and marks the
 /// response changed.
 ///
@@ -251,15 +250,6 @@ fn switch_ui(
         Some(ground) => crate::fade::faded(*ground, under.blend(colour), alpha),
         None => colour,
     };
-    // The state of the previous pass, as `Checkbox` reads it (`egui/src/widgets/checkbox.rs:72-74`).
-    let id = ui.next_auto_id();
-    let state = ui
-        .ctx()
-        .read_response(id)
-        .map(|r| r.widget_state())
-        .unwrap_or_default();
-    let style = ui.style().checkbox_style(&Classes::default(), state);
-
     // The atom holds the track and a thumb that overhangs it above and below.
     let largest = g.thumb.max(g.unchecked_thumb);
     let atom = egui::vec2(g.track.x, g.track.y.max(largest));
@@ -281,13 +271,12 @@ fn switch_ui(
         Some(label) => egui::Atoms::new(label),
         None => egui::Atoms::new(()),
     };
-    let rect_id = egui::Id::new("native-theme-egui-widgets::switch");
+    let rect_id = egui::IdSalt::new("native-theme-egui-widgets::switch");
     atoms.push_left(egui::Atom::custom(rect_id, atom));
 
-    let mut prepared = egui::AtomLayout::new(atoms)
+    let mut prepared = egui::WidgetAtom::new(atoms)
         .sense(egui::Sense::click())
         .min_size(min_size)
-        .frame(style.frame)
         .allocate(ui);
     if prepared.response.clicked() {
         *on = !*on;
@@ -297,7 +286,7 @@ fn switch_ui(
     let checked = *on;
     prepared.response.widget_info(|| {
         egui::WidgetInfo::selected(
-            egui::WidgetType::Checkbox,
+            egui::Role::CheckBox,
             enabled,
             checked,
             text.as_deref().unwrap_or_default(),
@@ -319,7 +308,7 @@ fn switch_ui(
         .ctx()
         .animate_bool_with_time(prepared.response.id, checked, time);
     let text = to_color32(if enabled { sw.text } else { sw.disabled_text });
-    prepared.fallback_text_color = ground.map_or(text, |ground| as_one(ground, text));
+    prepared.container.fallback_text_color = ground.map_or(text, |ground| as_one(ground, text));
     let laid = prepared.paint(ui);
     let Some(atom_rect) = laid.rect(rect_id) else {
         return laid.response;

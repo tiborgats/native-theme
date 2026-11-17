@@ -20,7 +20,7 @@ use crate::scope;
 /// (`egui/src/widgets/progress_bar.rs:130-204`), and has no builder for one. KDE's Breeze
 /// strokes its groove 1px in the window text at 20 %; GNOME and Windows draw none and state a
 /// width of 0 (`docs/platform-facts.md` §2.10), so nothing is stroked there. Everything else
-/// is egui's: layout, the fill, and accessibility (`WidgetType::ProgressIndicator`).
+/// is egui's: layout, the fill, and accessibility (`Role::ProgressIndicator`).
 ///
 /// As wide as the `Ui`'s available width, at least `progress_bar.min_width`, or
 /// `desired_width`: egui's own rule, the theme's floor in place of egui's 96

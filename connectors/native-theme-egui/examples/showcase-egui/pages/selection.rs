@@ -142,6 +142,7 @@ pub(crate) fn show(
                         }
                     })
                     .response
+                    .accessible_name("ComboBox")
             },
         );
         demo::scoped_popup(
@@ -158,6 +159,7 @@ pub(crate) fn show(
                 }
                 ui.add_enabled_ui(false, |ui| combo.show_ui(ui, |_| {}).response)
                     .inner
+                    .accessible_name("ComboBox (disabled)")
             },
         );
     });

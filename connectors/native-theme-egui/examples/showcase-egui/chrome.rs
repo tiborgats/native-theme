@@ -343,7 +343,7 @@ fn menu_bar(app: &mut App, ui: &mut egui::Ui) -> egui::Response {
                     // own leaves — whether or not the pointer is over it, as a desktop menu bar
                     // marks the item whose menu is open. Known from the pass before: the popup is
                     // keyed by the title's response (`egui/src/containers/popup.rs:653-655`).
-                    let flag = egui::Id::new(("menu title open", key.as_str()));
+                    let flag = egui::Id::unique(("menu title open", key.as_str()));
                     let opened = ui.ctx().data(|d| d.get_temp::<bool>(flag)).unwrap_or(false);
                     let resting = ui.visuals().widgets.inactive;
                     if opened {
@@ -589,7 +589,7 @@ fn toolbar(app: &mut App, ui: &mut egui::Ui, shrink: f32) {
                         bar.add(registry, ui, kind, |ui| {
                             let r = ui.add(ghost_button(ui, image, label, false));
                             r.widget_info(|| {
-                                egui::WidgetInfo::labeled(egui::WidgetType::Button, true, label)
+                                egui::WidgetInfo::labeled(egui::Role::Button, true, label)
                             });
                             r
                         })
@@ -766,7 +766,7 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
                         demo::tool_button(ui, &padding);
                         let r = ui.add(ghost_button(ui, image, label, open));
                         r.widget_info(|| {
-                            egui::WidgetInfo::selected(egui::WidgetType::Button, true, open, label)
+                            egui::WidgetInfo::selected(egui::Role::Button, true, open, label)
                         });
                         r
                     },
@@ -1417,8 +1417,7 @@ pub(crate) fn page_tabs(app: &mut App, ui: &mut egui::Ui) {
             if drawn {
                 place_icon(registry, ui, "chrome.page_tabs.menu", &response, caret_size);
             }
-            response
-                .widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, "Pages"));
+            response.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, true, "Pages"));
         },
     );
     if let Some(page) = picked.or(from_menu) {
@@ -1578,7 +1577,7 @@ fn dialog_title(
             };
             let r = body.add(reg, ui, "Button · dialog close", |ui| ui.add(button));
             reg.ghost_last();
-            r.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, "Close"));
+            r.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, true, "Close"));
             clicked = r.clicked();
         });
     });
@@ -1666,7 +1665,7 @@ pub(crate) fn command_palette(app: &mut App, ui: &mut egui::Ui) {
     let chosen_icons = app.chosen_icons();
     let mut query = palette.query.clone();
     let mut selected = palette.selected;
-    let query_id = egui::Id::new("command-palette").with("query");
+    let query_id = egui::Id::unique("command-palette").with("query");
     let mut chosen: Option<Action> = None;
     let mut chosen_theme: Option<ThemeChoice> = None;
     let mut should_close = false;
@@ -1691,7 +1690,7 @@ pub(crate) fn command_palette(app: &mut App, ui: &mut egui::Ui) {
             let max_w = inner_extent(max_w, &chrome.frame, true);
             let min_h = inner_extent(min_h, &chrome.frame, false);
             let max_h = inner_extent(max_h, &chrome.frame, false);
-            let out = egui::Modal::new(egui::Id::new("command-palette"))
+            let out = egui::Modal::new(egui::Id::unique("command-palette"))
                 .frame(chrome.frame)
                 .show(ui.ctx(), |ui| {
                     let dialog = demo::styled(
@@ -1925,7 +1924,7 @@ pub(crate) fn preferences(app: &mut App, ui: &mut egui::Ui) {
             // As wide as the theme lets a dialog be: the gpui showcase's sheet is its own 600px
             // (`PREFERENCES_WIDTH`), which the model states nothing of.
             let mut window = egui::Window::new(title)
-                .id(egui::Id::new("preferences"))
+                .id(egui::Id::unique("preferences"))
                 .open(&mut open)
                 .default_width(dialog_width)
                 .frame(chrome.frame);
@@ -2095,7 +2094,7 @@ pub(crate) fn about(app: &mut App, ui: &mut egui::Ui) {
         "about",
         |_, chrome, registry| {
             let max_w = inner_extent(t.dialog.max_width, &chrome.frame, true);
-            let response = egui::Modal::new(egui::Id::new("about")).frame(chrome.frame).show(&ctx, |ui| {
+            let response = egui::Modal::new(egui::Id::unique("about")).frame(chrome.frame).show(&ctx, |ui| {
         let body = demo::styled(registry, ui, Role::Dialog, RoleVariant::Normal, "about body");
         if let Some(w) = max_w {
             ui.set_max_width(w);

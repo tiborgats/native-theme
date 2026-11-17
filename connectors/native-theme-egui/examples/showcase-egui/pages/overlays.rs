@@ -52,7 +52,7 @@ pub(crate) fn show(
         "window",
         |ui, chrome, reg| {
             let mut window = egui::Window::new(title)
-                .id(egui::Id::new("overlays/window"))
+                .id(egui::Id::unique("overlays/window"))
                 .open(window_open)
                 .frame(chrome.frame)
                 // At the page's right edge, clear of the page's own controls, which sit at its left.
@@ -113,7 +113,7 @@ pub(crate) fn show(
                 let max_w = inner_extent(max_w, &chrome.frame, true);
                 let min_h = inner_extent(min_h, &chrome.frame, false);
                 let max_h = inner_extent(max_h, &chrome.frame, false);
-                let out = egui::Modal::new(egui::Id::new("overlays/modal"))
+                let out = egui::Modal::new(egui::Id::unique("overlays/modal"))
                     .frame(chrome.frame)
                     .show(ui.ctx(), |ui| {
                         let body = demo::styled(reg, ui, Role::Dialog, normal, "modal body");
@@ -259,7 +259,7 @@ pub(crate) fn show(
     // `constrain`ed, which would move it back into that rect, away from its anchor.
     let page = ui.clip_rect();
     demo::contained(reg, ui, "Area", |ui, reg| {
-        egui::Area::new(egui::Id::new("overlays/area"))
+        egui::Area::new(egui::Id::unique("overlays/area"))
             .constrain_to(page)
             .constrain(false)
             .fixed_pos(anchor.rect.right_top())

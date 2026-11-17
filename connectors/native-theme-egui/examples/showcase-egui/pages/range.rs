@@ -1,5 +1,6 @@
 //! Range (spec §10.4's palette table): `Role::Slider`, `Role::ProgressBar`, `Role::Spinner`,
-//! egui's own widgets and the companion crate's slider, progress bar and spinner.
+//! egui's own widgets (the range slider among them) and the companion crate's slider, progress
+//! bar and spinner.
 
 use native_theme_egui::{Role, RoleVariant, ThemeAtlas};
 use native_theme_egui_widgets::progress_bar::ProgressBar;
@@ -75,6 +76,25 @@ pub(crate) fn show(
             ui.add(egui::Slider::new(&mut state.vertical, range.clone()).vertical())
         });
     });
+
+    // egui's range slider, in the slider's scope: the rail in `widgets.inactive`'s fill and
+    // radius, the fill between the handles in `selection.bg_fill`, and each handle in its own
+    // state's `bg_fill`, `fg_stroke` and `expansion`, painted as the slider paints its one
+    // (`egui-0.37.0/src/widgets/slider_core.rs`, `paint_rail`, `paint_fill`, `paint_handle`).
+    caption(reg, ui, "RangeSlider (Role::Slider)");
+    demo::scoped(reg, ui, Role::Slider, normal, "RangeSlider", |ui| {
+        ui.add(
+            egui::RangeSlider::new(&mut state.range_low, &mut state.range_high, range.clone())
+                .text("range"),
+        )
+    });
+    reg.note_last(
+        "the resting handles",
+        "in the rail's colour, slider.track_color: egui paints a handle in its state's fill, \
+         and the resting state's is the rail's (egui 0.37.0 src/widgets/slider_core.rs, \
+         paint_rail and paint_handle); a hovered or pressed handle takes \
+         slider.thumb_hover_color, slider.thumb_color where that is unstated",
+    );
 
     caption(reg, ui, "ProgressBar (Role::ProgressBar)");
     // The percentage beside the bar, as the platforms draw it: egui's `show_percentage` paints

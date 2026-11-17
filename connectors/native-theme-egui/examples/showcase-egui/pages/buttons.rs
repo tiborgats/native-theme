@@ -1,5 +1,5 @@
 //! Buttons (spec §10.4's palette table): `Role::Button`, the base style's selectables,
-//! `AtomLayout`, and the companion crate's segmented control and switch.
+//! `WidgetAtom`, and the companion crate's segmented control and switch.
 
 use egui::Button;
 use native_theme::icons::IconRole;
@@ -151,9 +151,9 @@ pub(crate) fn show(
         },
     );
 
-    caption(reg, ui, "AtomLayout (the base style)");
-    demo::base(reg, ui, "AtomLayout", |ui| {
-        ui.add(egui::AtomLayout::new(("AtomLayout", "of two atoms")))
+    caption(reg, ui, "WidgetAtom (the base style)");
+    demo::base(reg, ui, "WidgetAtom", |ui| {
+        ui.add(egui::WidgetAtom::new(("WidgetAtom", "of two atoms")))
     });
 
     // The companion crate's switch (docs/archive/todo_egui-widgets-spec.md §4.1).

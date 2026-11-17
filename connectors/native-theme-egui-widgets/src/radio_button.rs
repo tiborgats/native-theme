@@ -35,7 +35,7 @@ const EGUI_DOT_DIVISOR: f32 = 3.0;
 /// icon's width plus the state's `expansion` in radius and epaint strokes it outside that
 /// (`epaint/src/tessellator.rs:1531`), so this radio's `expansion` gives back the stroke's
 /// width. Everything else is egui's: layout, interaction and accessibility
-/// (`WidgetType::RadioButton`).
+/// (`Role::RadioButton`).
 ///
 /// Like egui's, it holds no value: a click is `Response::clicked`, and the caller selects it.
 ///

@@ -49,7 +49,7 @@ const ARROW_HEIGHT: f32 = 0.45;
 /// edge.
 ///
 /// Everything else is egui's: layout, interaction, the popup, keyboard and accessibility
-/// (`WidgetType::ComboBox`). `Ui::add` takes an `egui::Widget`, and a drop-down's contents are
+/// (`Role::ComboBox`). `Ui::add` takes an `egui::Widget`, and a drop-down's contents are
 /// a closure, so this, like egui's own, is shown with [`ComboBox::show_ui`].
 ///
 /// `.enabled(false)`, or a disabled calling `Ui`, opens the role's `Disabled` scope, whose
@@ -107,9 +107,11 @@ impl ComboBox {
     }
 
     /// The selected text cut to the room the drop-down has, its end an ellipsis, as
-    /// `egui::ComboBox::truncate`. Without it egui lays the text out on one line as wide as it
-    /// runs (the drop-down's `Ui` is horizontal, `egui/src/containers/combo_box.rs:234`, and a
-    /// horizontal `Ui` extends text, `egui/src/ui.rs:599-604`) and widens the drop-down to it.
+    /// `egui::ComboBox::truncate`. Without it egui lays the text out in the wrap mode of the `Ui`
+    /// the drop-down is in (`egui-0.37.0/src/containers/combo_box.rs:365`): a vertical `Ui`
+    /// wraps it, so a text longer than the room is broken into rows and the drop-down grows
+    /// taller, and a horizontal `Ui` that does not wrap extends it on one line and widens the
+    /// drop-down to it (`egui-0.37.0/src/ui.rs:615-632`).
     /// As egui's, the cut text shows no tooltip: a caller that needs the whole text shows it
     /// elsewhere, as the showcase's drop-down rows do on hover.
     pub fn truncate(mut self) -> Self {
@@ -199,28 +201,27 @@ impl ComboBox {
             } else {
                 0.0
             };
-            // A truncated text is one line, as tall as the whole one, cut to the room egui lays
-            // it out in: the room the `Ui` has less the button's padding on its left and right
-            // (`button_frame`), the arrow's box and the spacing before it (`combo_box_dyn`).
-            let text_size = if truncate {
+            // The text as egui lays it out: in the drop-down's wrap mode, the `Ui`'s unless it is
+            // truncated (`egui-0.37.0/src/containers/combo_box.rs:365`), in the room the `Ui` has
+            // less the button's padding on its left and right, the arrow's box and the spacing
+            // before it, the room the text atom gets (`egui-0.37.0/src/atomics/container_atom.rs`,
+            // `ContainerAtom::measure`). A truncated text is one line, as tall as the whole one,
+            // cut to that room; a wrapped one is broken into rows there.
+            let wrap_mode = if truncate {
                 combo = combo.truncate();
-                let spacing = ui.spacing();
-                let room = ui.available_width()
-                    - padding.x
-                    - padding.x
-                    - spacing.icon_spacing
-                    - spacing.icon_width;
-                selected_text
-                    .into_galley(
-                        ui,
-                        Some(egui::TextWrapMode::Truncate),
-                        room,
-                        egui::TextStyle::Button,
-                    )
-                    .size()
+                egui::TextWrapMode::Truncate
             } else {
-                text_size
+                ui.wrap_mode()
             };
+            let spacing = ui.spacing();
+            let room = ui.available_width()
+                - padding.x
+                - padding.x
+                - spacing.icon_spacing
+                - spacing.icon_width;
+            let text_size = selected_text
+                .into_galley(ui, Some(wrap_mode), room, egui::TextStyle::Button)
+                .size();
             let arrow_box = std::rc::Rc::new(std::cell::Cell::new(None));
             let painted = std::rc::Rc::clone(&arrow_box);
             let margin = padding.x;

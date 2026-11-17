@@ -19,8 +19,8 @@ use std::sync::Arc;
 
 use egui::epaint::text::TextOptions;
 use egui::style::{
-    ImeComposition, Interaction, ScrollAnimation, ScrollFadeStyle, ScrollStyle, Selection, Spacing,
-    Style, TextCursorStyle, Visuals, WidgetVisuals, Widgets,
+    ImeComposition, Interaction, KineticScrollStyle, ScrollAnimation, ScrollFadeStyle, ScrollStyle,
+    Selection, Spacing, Style, TextCursorStyle, Visuals, WidgetVisuals, Widgets,
 };
 use egui::{FontId, Frame, Margin, Shadow, Stroke, Vec2};
 
@@ -291,6 +291,29 @@ fn scroll_fade(p: &str, field: &str, a: &ScrollFadeStyle, b: &ScrollFadeStyle, f
     leaf_f32(&p, ".size", asz, bsz, f);
 }
 
+fn scroll_kinetic(
+    p: &str,
+    field: &str,
+    a: &KineticScrollStyle,
+    b: &KineticScrollStyle,
+    f: Emit<'_>,
+) {
+    let KineticScrollStyle {
+        decay_time: adt,
+        stop_distance: asd,
+        rubber_band: arb,
+    } = *a;
+    let KineticScrollStyle {
+        decay_time: bdt,
+        stop_distance: bsd,
+        rubber_band: brb,
+    } = *b;
+    let p = format!("{p}{field}");
+    leaf_f32(&p, ".decay_time", adt, bdt, f);
+    leaf_f32(&p, ".stop_distance", asd, bsd, f);
+    leaf(&p, ".rubber_band", &arb, &brb, f);
+}
+
 fn scroll_animation(p: &str, field: &str, a: &ScrollAnimation, b: &ScrollAnimation, f: Emit<'_>) {
     let ScrollAnimation {
         points_per_second: aps,
@@ -332,6 +355,7 @@ fn scroll(p: &str, field: &str, a: &ScrollStyle, b: &ScrollStyle, f: Emit<'_>) {
         active_handle_opacity: aah,
         interact_handle_opacity: aih,
         fade: afd,
+        kinetic: aki,
     } = a;
     let ScrollStyle {
         floating: bfl,
@@ -350,6 +374,7 @@ fn scroll(p: &str, field: &str, a: &ScrollStyle, b: &ScrollStyle, f: Emit<'_>) {
         active_handle_opacity: bah,
         interact_handle_opacity: bih,
         fade: bfd,
+        kinetic: bki,
     } = b;
     let p = format!("{p}{field}");
     leaf(&p, ".floating", afl, bfl, f);
@@ -368,6 +393,7 @@ fn scroll(p: &str, field: &str, a: &ScrollStyle, b: &ScrollStyle, f: Emit<'_>) {
     leaf_f32(&p, ".active_handle_opacity", *aah, *bah, f);
     leaf_f32(&p, ".interact_handle_opacity", *aih, *bih, f);
     scroll_fade(&p, ".fade", afd, bfd, f);
+    scroll_kinetic(&p, ".kinetic", aki, bki, f);
 }
 
 fn interaction(p: &str, field: &str, a: &Interaction, b: &Interaction, f: Emit<'_>) {

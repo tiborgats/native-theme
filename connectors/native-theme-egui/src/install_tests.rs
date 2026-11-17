@@ -1159,7 +1159,6 @@ fn after_clear_the_plugin_is_inert() {
 
 /// §13 T6 (a)–(e), T5 at a factor of `1.0` and T14 (a)'s font-plan clause.
 mod t6_fonts {
-    use std::borrow::Cow;
     use std::sync::Arc;
 
     use egui::{FontData, FontDefinitions, FontFamily, FontId, TextStyle};
@@ -1172,20 +1171,9 @@ mod t6_fonts {
     use crate::fonts::{FontBytes, FontPlan, font_definitions};
     use crate::{Note, Role, RoleVariant, ThemeAtlas};
 
-    /// One of egui's bundled faces, `&'static` as `FontDefinitions::default()` registers them
-    /// with `FontData::from_static` (`epaint/src/text/fonts.rs:506-532`).
-    fn bundled(name: &str) -> &'static [u8] {
-        let defs = FontDefinitions::default();
-        let data = defs.font_data.get(name).unwrap();
-        match &data.font {
-            Cow::Borrowed(bytes) => Some(*bytes),
-            Cow::Owned(_) => None,
-        }
-        .unwrap()
-    }
-
+    /// egui's bundled `Hack`, `&'static` (`epaint_default_fonts-0.37.0/src/lib.rs:20`).
     fn hack() -> &'static [u8] {
-        bundled("Hack")
+        epaint_default_fonts::HACK_REGULAR
     }
 
     /// `bytes` with the `head` table's `unitsPerEm` overwritten with `0`. OpenType's table
@@ -1383,10 +1371,7 @@ mod t6_fonts {
             .and_then(|chain| chain.first())
             .and_then(|name| defs.font_data.get(name))
             .unwrap();
-        assert!(
-            head.font.as_ref() == hack(),
-            "the valid 700 face heads the chain"
-        );
+        assert!(head.bytes() == hack(), "the valid 700 face heads the chain");
         assert_eq!(
             notes,
             vec![
@@ -1532,7 +1517,7 @@ mod t6_fonts {
             ),
         ] {
             let data = defs.font_data.get(key).expect("the substitute's face");
-            assert_eq!(data.font.as_ref(), face.data.as_ref(), "{family}");
+            assert_eq!(data.bytes(), face.data.as_ref(), "{family}");
             assert_eq!(data.index, face.index, "{family}");
             assert_eq!(
                 defs.families
@@ -1566,20 +1551,20 @@ mod t6_fonts {
                 "Plan Sans",
                 700,
                 FontStyle::Normal,
-                FontBytes::Static(bundled("Ubuntu-Light")),
+                FontBytes::Static(epaint_default_fonts::UBUNTU_LIGHT),
             )
             .face(
                 "Plan Sans",
                 400,
                 FontStyle::Italic,
-                FontBytes::Static(bundled("NotoEmoji-Regular")),
+                FontBytes::Static(epaint_default_fonts::NOTO_EMOJI_REGULAR),
             )
             // lower case on purpose: CSS Fonts 4 §5.1 caseless family matching (§8.2)
             .face(
                 "plan mono",
                 400,
                 FontStyle::Normal,
-                FontBytes::Static(bundled("emoji-icon-font")),
+                FontBytes::Static(epaint_default_fonts::EMOJI_ICON),
             );
         let (defs, notes) = font_definitions(&t, &plan);
         assert!(notes.is_empty(), "{notes:?}");
@@ -1588,13 +1573,13 @@ mod t6_fonts {
             Arc::clone(defs.font_data.get(name).unwrap())
         };
         let sans = head(FontFamily::Proportional);
-        assert_eq!(sans.font.as_ref(), bundled("Ubuntu-Light"));
+        assert_eq!(sans.bytes(), epaint_default_fonts::UBUNTU_LIGHT);
         assert_eq!(
             sans.tweak.coords,
             VariationCoords::new([(Tag::new(b"wght"), 700.0)])
         );
         let mono = head(FontFamily::Monospace);
-        assert_eq!(mono.font.as_ref(), bundled("emoji-icon-font"));
+        assert_eq!(mono.bytes(), epaint_default_fonts::EMOJI_ICON);
         assert_eq!(
             mono.tweak.coords,
             VariationCoords::new([(Tag::new(b"wght"), 400.0)])
@@ -1821,7 +1806,7 @@ mod t18_accessors {
         let ctx = egui::Context::default();
         let atlas = ThemeAtlas::builder("t18b-area", &t, &t).build();
         atlas.install(&ctx);
-        let id = egui::Id::new("t18b-area");
+        let id = egui::Id::unique("t18b-area");
         let mut text = String::new();
         let mut frame = None;
         let _ = pass(&ctx, egui::RawInput::default(), |ui| {
@@ -2127,7 +2112,7 @@ mod t18_accessors {
                 .scheme(ctx.theme())
                 .cell(Role::Input, RoleVariant::Normal),
         );
-        let id = egui::Id::new("t18h-field");
+        let id = egui::Id::unique("t18h-field");
         let mut text = String::new();
 
         let unfocused = input_pass(&ctx, &t, id, &mut text);
@@ -2148,7 +2133,7 @@ mod t18_accessors {
         assert_eq!(focused.corner_radius, active.corner_radius);
 
         // focused before its first pass: `widgets.active` (`egui/src/style.rs:1276-1278`)
-        let first_id = egui::Id::new("t18h-focused-first");
+        let first_id = egui::Id::unique("t18h-focused-first");
         ctx.memory_mut(|m| m.request_focus(first_id));
         let mut first_text = String::new();
         let first = input_pass(&ctx, &t, first_id, &mut first_text);
@@ -2170,7 +2155,7 @@ mod t18_accessors {
             .widgets
             .inactive
             .bg_stroke;
-        let none_id = egui::Id::new("t18h-none");
+        let none_id = egui::Id::unique("t18h-none");
         let mut none_text = String::new();
         let _ = input_pass(&ctx, &t_none, none_id, &mut none_text);
         ctx.memory_mut(|m| m.request_focus(none_id));
@@ -2187,7 +2172,7 @@ mod t18_accessors {
         t.input.focus_border_color = Some(t.input.selection_text_color);
         t.input.border.line_width = 1.0;
         let atlas = ThemeAtlas::builder("t18h-eq", &t, &t).build();
-        let id = egui::Id::new("t18h-equal");
+        let id = egui::Id::unique("t18h-equal");
         let with_frame = egui::Context::default();
         let with_margin = egui::Context::default();
         atlas.install(&with_frame);
@@ -2669,7 +2654,7 @@ fn t8a_named_text_styles_survive_every_seam() {
             .expect("installed")
             .role_modifier(ui.ctx().theme(), Role::Popover, RoleVariant::Normal);
         let in_popup = egui::Popup::new(
-            egui::Id::new("t8a-popup"),
+            egui::Id::unique("t8a-popup"),
             ui.ctx().clone(),
             egui::PopupAnchor::Position(egui::pos2(20.0, 20.0)), // egui/src/containers/popup.rs:35
             ui.layer_id(),
@@ -2771,8 +2756,6 @@ fn t8b_a_window_scrollbar_keeps_the_base_radius() {
 
 /// §13 T13, T16 and T5 at a factor of 2.0 (spec §4.3, §6.6, §6.15).
 mod t13_accessibility {
-    use std::borrow::Cow;
-
     use egui::{FontId, TextStyle};
     use native_theme::theme::{ColorMode, Theme as NativeTheme};
 
@@ -3015,22 +2998,14 @@ mod t13_accessibility {
     }
 
     /// T5 at a text-scaling factor of `2.0`, with no plan and with a plan whose face is egui's
-    /// bundled `Hack` (`epaint/src/text/fonts.rs:506-532`): the line spacing of §6.15 and the
-    /// slider `expansion` of §6.6, with the Body row height taken from egui itself
+    /// bundled `Hack` (`epaint_default_fonts-0.37.0/src/lib.rs:20`): the line spacing of §6.15 and
+    /// the slider `expansion` of §6.6, with the Body row height taken from egui itself
     /// (`epaint/src/text/fonts.rs:865-875`) on a `Context` given the definitions the atlas installs.
     #[test]
     fn t5_line_spacing_and_slider_expansion_at_factor_two() {
         let mut prefs = AccessibilityPreferences::default();
         prefs.text_scaling_factor = 2.0;
-        let hack = match &egui::FontDefinitions::default()
-            .font_data
-            .get("Hack")
-            .expect("egui bundles Hack")
-            .font
-        {
-            Cow::Borrowed(bytes) => *bytes,
-            Cow::Owned(_) => panic!("egui's bundled faces are `include_bytes!`, borrowed"),
-        };
+        let hack = epaint_default_fonts::HACK_REGULAR;
         for (key, light, dark) in presets() {
             for with_plan in [false, true] {
                 let mut builder = ThemeAtlas::builder(key, &light, &dark).accessibility(&prefs);
@@ -3503,7 +3478,7 @@ fn a_focus_entry_written_before_the_install_is_let_go() {
                             egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(8.0, 8.0));
                         crate::register_focus_shape(
                             ui.ctx(),
-                            egui::Id::new("shape"),
+                            egui::Id::unique("shape"),
                             rect,
                             egui::CornerRadius::ZERO,
                         );

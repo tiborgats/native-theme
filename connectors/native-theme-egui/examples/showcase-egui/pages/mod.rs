@@ -46,6 +46,9 @@ pub(crate) struct DemoState {
     pub date: jiff::civil::Date,
     pub slider: f64,
     pub vertical: f64,
+    /// The range slider's two ends.
+    pub range_low: f64,
+    pub range_high: f64,
     pub progress: f32,
     pub colour: egui::Color32,
     pub hsva: egui::ecolor::Hsva,
@@ -114,6 +117,8 @@ impl Default for DemoState {
             date: DEMO_DATE,
             slider: 40.0,
             vertical: 60.0,
+            range_low: 40.0,
+            range_high: 60.0,
             progress: 0.4,
             colour,
             hsva: egui::ecolor::Hsva::from(colour),

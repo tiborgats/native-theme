@@ -242,9 +242,9 @@ pub(crate) struct IconRegistry {
     uris: BTreeSet<String>,
 }
 
-/// The `Context` data key of the registry, `Id::new("native-theme-egui/icon-handles")`.
+/// The `Context` data key of the registry, `Id::unique("native-theme-egui/icon-handles")`.
 pub(crate) fn handles_key() -> egui::Id {
-    egui::Id::new("native-theme-egui/icon-handles")
+    egui::Id::unique("native-theme-egui/icon-handles")
 }
 
 /// A named icon [`custom_icon_to_image_source`] loaded, with what its set's loader was given.
@@ -317,14 +317,14 @@ impl IconProvider for SvgOnly<'_> {
     }
 }
 
-/// The `Context` data key of the loaded icons, `Id::new("native-theme-egui/loaded-icons")`.
+/// The `Context` data key of the loaded icons, `Id::unique("native-theme-egui/loaded-icons")`.
 pub(crate) fn loaded_key() -> egui::Id {
-    egui::Id::new("native-theme-egui/loaded-icons")
+    egui::Id::unique("native-theme-egui/loaded-icons")
 }
 
 /// The `Context` data key of the stored `TextureHandle` of a raster icon's URI.
 pub(crate) fn texture_id(uri: &str) -> egui::Id {
-    egui::Id::new(("native-theme-egui/icon-texture", uri))
+    egui::Id::unique(("native-theme-egui/icon-texture", uri))
 }
 
 fn remember_uri(ctx: &egui::Context, uri: &str) {
@@ -1481,6 +1481,7 @@ mod tests {
         // (`egui/src/widgets/image.rs:408`), which AccessKit reports.
         use egui_kittest::kittest::Queryable as _;
         let harness = egui_kittest::Harness::new_ui(|ui| {
+            egui_extras::install_image_loaders(ui.ctx());
             if let Some(image) = custom_icon_to_image(ui.ctx(), &role, &key) {
                 ui.add(image);
             }

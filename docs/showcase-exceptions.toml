@@ -110,10 +110,12 @@ time_picker = "native-theme models no time picker (spec §3a); the feature is no
 typed_input = "a wrapper with no visual surface: it is a `TextInput` that parses its value into a type and delegates its whole `draw` to that input, which `styles::text_input` already covers (widget/typed_input.rs:39-47, :341-361). The connector does not enable the feature itself; `number_input` does (Cargo.toml.orig:29), and the showcase's `NumberInput` draws its field through one (widget/number_input.rs:80, :134)"
 wrap = "native-theme models no wrapping layout (spec §3a); the feature is not enabled"
 
-# The `Ui` layout methods of egui 0.36.2 no page of the egui showcase calls
-# (the connector spec §10.4: "each places other widgets and paints nothing of
-# its own"). Every other name the three universes discover is shown.
+# The containers and `Ui` layout methods of egui 0.37.0 no page of the egui
+# showcase calls (the connector spec §10.4: "each places other widgets and
+# paints nothing of its own"): the container `Aligned`. Every other name the
+# three universes discover is shown.
 [egui]
+Aligned = "a layout wrapper with no visual surface: it places its contents within the parent's available space and draws nothing of its own (egui 0.37.0 src/containers/aligned.rs:40)"
 
 [egui_ui]
 

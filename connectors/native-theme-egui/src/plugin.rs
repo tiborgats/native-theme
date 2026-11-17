@@ -99,7 +99,7 @@ pub(crate) fn focus_key(ctx: &Context) -> Id {
 
 /// The entry's key for `viewport`.
 fn focus_key_of(viewport: egui::ViewportId) -> Id {
-    Id::new(("native-theme-egui/focus", viewport))
+    Id::unique(("native-theme-egui/focus", viewport))
 }
 
 /// Record that `ui_id` was styled with a role whose active corner radius is `radius`, for this
@@ -140,7 +140,7 @@ pub(crate) fn record_scope(ctx: &Context, ui_id: Id, radius: CornerRadius, repla
 /// closure (the lock discipline of spec §10.3).
 ///
 /// Stored in the viewport's one temporary focus entry (`IdTypeMap::insert_temp`,
-/// `egui/src/util/id_type_map.rs:425`), keyed `Id::new(("native-theme-egui/focus",
+/// `egui/src/util/id_type_map.rs:425`), keyed `Id::unique(("native-theme-egui/focus",
 /// ctx.viewport_id()))` (`egui/src/context.rs:3949`), beside spec §6.18's scope records and that
 /// viewport's `ctx.cumulative_pass_nr()` (`egui/src/context.rs:1781-1793`). The first registration of a new
 /// pass empties the entry's lists, and the plugin reads them only in the pass they hold, so
