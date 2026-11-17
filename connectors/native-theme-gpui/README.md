@@ -1015,12 +1015,14 @@ before letting go of it. `examples/showcase-gpui/support.rs` does it in
 GPUI Kit 0.9.1 builds on one of two GPUI cores: **gpui-pre**, its default,
 and **GPUI Fast** (the `gpui-fast` package, a fork of gpui-pre with retained
 rendering and layout), which its `gpui-fast` feature selects; it builds GPUI
-Fast 0.1.14 or later (gpui-kit 0.9.1's `gpui-fast = "0.1.14"`). The two cores'
-types are distinct (`Hsla`, `Pixels`, `App`, …), and Cargo unifies features
-across the build graph: once a crate's `gpui-fast` feature is on, it is on for
-every user of that crate. gpui-kit, gpui-component and gpui-base each have
-one, and they must switch together, or one crate's GPUI types are not the
-other's.
+Fast 0.1.14 or later (gpui-kit 0.9.1's `gpui-fast = "0.1.14"`). gpui-base
+0.9.1 does not compile on GPUI Fast 0.1.16 or later, so this crate's
+`gpui-fast` feature holds GPUI Fast below 0.1.16 until GPUI Kit 0.10. The
+two cores' types are distinct (`Hsla`, `Pixels`, `App`, …), and Cargo unifies
+features across the build graph: once a crate's `gpui-fast` feature is on, it
+is on for every user of that crate. gpui-kit, gpui-component and gpui-base
+each have one, and they must switch together, or one crate's GPUI types are
+not the other's.
 
 This crate names GPUI through gpui-kit (`extern crate gpui_kit as gpui;`, the
 alias gpui-kit documents), so it is built on the core gpui-kit is built on:
@@ -1029,7 +1031,9 @@ alias gpui-kit documents), so it is built on the core gpui-kit is built on:
 - An application on **GPUI Fast** through gpui-kit
   (`gpui-kit = { version = "0.9.1", features = ["gpui-fast"] }`, with gpui-kit's
   default `component` feature) needs nothing more either: this crate follows
-  gpui-kit.
+  gpui-kit. Until GPUI Kit 0.10 it enables this crate's `gpui-fast` as well,
+  or holds GPUI Fast below 0.1.16 itself, since gpui-base 0.9.1 does not
+  compile on GPUI Fast 0.1.16 or later.
 - Any other application on **GPUI Fast** (one that depends on gpui-component
   rather than on gpui-kit, or uses gpui-kit without its `component` feature)
   enables this crate's `gpui-fast`, which turns on `gpui-kit/gpui-fast` and

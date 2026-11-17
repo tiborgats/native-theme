@@ -43,8 +43,9 @@ system-fonts = ["native-theme/system-fonts"]
 # `gpui-fast`: build on GPUI Kit's GPUI Fast backend instead of gpui-pre.
 # gpui-kit's own `gpui-fast` turns on gpui-base's; it reaches gpui-component's
 # only weakly (`gpui-component?/gpui-fast`), with gpui-kit's `component`
-# feature, which this crate leaves off, so it is named here.
-gpui-fast = ["gpui-kit/gpui-fast", "gpui-component/gpui-fast"]
+# feature, which this crate leaves off, so it is named here. `dep:gpui-fast-bound`
+# holds GPUI Fast below 0.1.16 (the dependency's comment).
+gpui-fast = ["gpui-kit/gpui-fast", "gpui-component/gpui-fast", "dep:gpui-fast-bound"]
 # The OS readers, off by default as in native-theme: without one,
 # `from_system()` is the platform preset on Linux and an error on macOS and
 # Windows. native-theme's finer `kde`, `portal`, `macos` and `windows` pick one.
@@ -74,6 +75,17 @@ gpui-base = "0.9.1"
 # application that turns on `gpui-kit/gpui-fast`. No default features: the
 # library needs neither gpui-kit's component layer nor its assets.
 gpui-kit = { version = "0.9.1", default-features = false }
+# Not named in the code: the `gpui-fast` feature turns it on only to hold GPUI
+# Fast below 0.1.16. gpui-fast 0.1.16 added `impl<T: Element> IntoElement for
+# T` (`src/element.rs:146`, the same in 0.1.17), which conflicts with
+# gpui-base 0.9.1's own impls (`src/a11y_disabled.rs:63` and 23 more): E0119,
+# gpui-base does not compile. gpui-base 0.10.0 gates them on
+# `not(feature = "gpui-fast")`. The bound goes with the GPUI Kit 0.10 move.
+# No default features: gpui-base, gpui-component and gpui-kit ask for
+# gpui-fast's with their own edges.
+# Renamed so that its library, also called `gpui`, reaches rustc under a name
+# of its own.
+gpui-fast-bound = { package = "gpui-fast", version = ">=0.1.14, <0.1.16", optional = true, default-features = false }
 # `gpui::RenderImage::new` takes `image::Frame`s, so an icon can be handed to
 # gpui already decoded instead of as bytes gpui decodes again in the
 # background. Pinned to the version both GPUI backends resolve (gpui-pre

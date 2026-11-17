@@ -1690,6 +1690,21 @@ model, the platform presets and the three connectors
         0.1.7). It declares Rust 1.95, above the workspace's 1.88.0, so it
         waits for an MSRV decision.
 
+### Dependencies: native-theme-gpui holds GPUI Fast below 0.1.16
+
+- [ ] [v0.7.x] From 0.7.1's close-out (L3, 2026-11-17): gpui-fast 0.1.16
+      added `impl<T: Element> IntoElement for T` (`src/element.rs:146`, the
+      same in 0.1.17), which conflicts with gpui-base 0.9.1's own
+      `IntoElement` impls (`src/a11y_disabled.rs:63` and the others): E0119,
+      and gpui-base 0.9.1 does not compile on GPUI Fast 0.1.16 or later. Its
+      requirement, `gpui-fast = "0.1.14"`, lets a fresh resolution take them,
+      so the connector's `gpui-fast` feature now turns on a direct
+      `gpui-fast = ">=0.1.14, <0.1.16"` (`connectors/native-theme-gpui/Cargo.toml`,
+      the dependency's comment). gpui-base 0.10.0 puts those impls under
+      `#[cfg(not(feature = "gpui-fast"))]` (`src/a11y_disabled.rs:63-64`) and
+      requires gpui-fast 0.1.16. Remove the bound, its comment and
+      `dep:gpui-fast` from the feature with the move to GPUI Kit 0.10.0.
+
 ### detect: `prefers_reduced_motion` and the reader's block are two caches of one read
 
 - [ ] [v0.7.x] From M4's final review (P2-2, 2026-10-13):

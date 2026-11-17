@@ -6029,6 +6029,7 @@ dependencies = [
  "futures",
  "gpui-base",
  "gpui-component",
+ "gpui-fast",
  "gpui-kit",
  "gpui-pre",
  "image",
