@@ -711,9 +711,9 @@ or a stale exception, 2 when a toolkit's package is absent from the metadata,
 the discovery finds no widget in it, a file the rules read has moved upstream,
 or the re-export rule no longer matches gpui-base's layout. `--self-test` runs
 those guards on synthetic crate roots, without cargo;
-`scripts/check_release.sh` and `ci.yml` run it beside the check. `scripts/check_release.sh`, `ci.yml` (and through
-it `publish.yml`'s CI run), `dependency-canary.yml` and
-`update_compatibility.sh run` run it, so an
+`scripts/check_release.sh` and `ci.yml` run it beside the check.
+`scripts/check_release.sh`, `ci.yml` (and through it `publish.yml`'s CI run),
+`dependency-canary.yml` and `update_compatibility.sh run` run it, so an
 upstream release that adds a widget is reported the evening it appears.
 
 Requires Python 3.11+ (for `tomllib`); no network of its own once the registry
