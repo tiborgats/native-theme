@@ -47,9 +47,11 @@ jobs:
       # (native-theme-derive) is built for the host, and cargo writes its
       # pages to target/docsrs/doc whatever the host and the `--target`;
       # that directory is a link to the x86_64-unknown-linux-gnu tree, the
-      # site's root, which puts them in its crate list and search index. The
-      # crate list is collected first, so a listing that fails or lists
-      # nothing fails the step instead of documenting no crate.
+      # site's root, which puts them in its crate list and search index.
+      # --keep-output keeps each crate's pages for the next one's run, which
+      # would otherwise remove them, the link among them. The crate list is
+      # collected first, so a listing that fails or lists nothing fails the
+      # step instead of documenting no crate.
       - name: Document every crate as docs.rs does
         run: |
           python3 --version
@@ -61,7 +63,7 @@ jobs:
             exit 1
           fi
           for crate in $crates; do
-            python3 -I scripts/check_docsrs.py "$crate"
+            python3 -I scripts/check_docsrs.py --keep-output "$crate"
           done
       - name: Assemble the site
         run: |

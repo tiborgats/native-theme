@@ -14,7 +14,7 @@ appearing on docs.rs after it.
 
 Run from the repository root:
 
-    python3 scripts/check_docsrs.py <crate>
+    python3 scripts/check_docsrs.py [--keep-output] <crate>
 
 It documents the default target first (`default-target`, else the first of
 `targets`, else x86_64-unknown-linux-gnu) and then every other listed target,
@@ -27,6 +27,11 @@ What it does not reproduce: the dependency versions docs.rs resolves for the
 published package (this documents against the workspace's Cargo.lock; the
 nightly dependency canary documents against the newest releases), and
 docs.rs's sandbox limits on build time and memory.
+
+Before it documents, it removes the documentation an earlier run left in
+target/docsrs, as docs.rs documents each crate alone. `--keep-output` keeps it,
+for a caller that collects every crate's pages into one tree from a clean
+build (the GitHub Pages workflow, docs.yml).
 
 Exit 0 when every target documented cleanly, 1 otherwise.
 """
@@ -95,9 +100,13 @@ def installed_nightly_targets() -> set:
 
 
 def main() -> None:
-    if len(sys.argv) != 2:
-        fail("usage: check_docsrs.py <crate>")
-    crate = sys.argv[1]
+    args = sys.argv[1:]
+    keep_output = args[:1] == ["--keep-output"]
+    if keep_output:
+        args = args[1:]
+    if len(args) != 1 or args[0].startswith("-"):
+        fail("usage: check_docsrs.py [--keep-output] <crate>")
+    crate = args[0]
     package = workspace_package(crate)
     # `publish = false` (cargo metadata: an empty registry list): never on
     # crates.io, so docs.rs never builds it.
@@ -138,9 +147,14 @@ def main() -> None:
     # and a nightly that changed the index's format stops on the older
     # nightly's file ("invalid type: string ..., expected struct
     # AllCratesEntry", 2026-11-13). The compiled dependencies beside it stay.
-    for folder in [os.path.join(TARGET_DIR, "doc")] + [
+    # With --keep-output the caller wants every crate's pages in one tree, and
+    # target/docsrs/doc may be its link to the default target's tree.
+    folders = [os.path.join(TARGET_DIR, "doc")] + [
         os.path.join(TARGET_DIR, target, "doc") for target in targets
-    ]:
+    ]
+    for folder in [] if keep_output else folders:
+        if os.path.islink(folder):
+            fail(f"{folder} is a link; a caller that keeps a linked tree passes --keep-output")
         if os.path.isdir(folder):
             shutil.rmtree(folder)
 

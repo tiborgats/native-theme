@@ -679,13 +679,17 @@ runs `cargo +nightly rustdoc -p <crate> --lib --locked` with its features
 `rustc-args` as `RUSTFLAGS`, `DOCS_RS=1`, and `--cfg docsrs -D warnings` plus
 its `rustdoc-args`, once for each target: `default-target` (else the first of
 `targets`, else x86_64-unknown-linux-gnu) and then every other listed one,
-into `target/docsrs`. A metadata key it does not know, a missing nightly
+into `target/docsrs`, after removing the documentation an earlier run left
+there (rustdoc merges its cross-crate index with the folder's, and a newer
+nightly stops on an older one's index); `--keep-output` keeps it, for a caller
+that collects every crate's pages into one tree from a clean build. A metadata
+key it does not know, a missing nightly
 toolchain or a target whose nightly standard library is not installed fails
 the check. Exits 0 when every target documented cleanly, 1 otherwise.
 `scripts/check_release.sh` runs it for every workspace crate, `publish.yml`
 runs it for every crate before it uploads anything, and `docs.yml` builds the
-GitHub Pages documentation with it, so the site shows each crate as docs.rs
-does. It does not reproduce the
+GitHub Pages documentation with it (with `--keep-output`), so the site shows
+each crate as docs.rs does. It does not reproduce the
 dependency versions docs.rs resolves for the published package, nor docs.rs's
 build limits.
 
