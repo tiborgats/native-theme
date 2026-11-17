@@ -536,7 +536,7 @@ why_wrong     = "KDE uses surface (View bg); all have distinct APIs"
 
 [wrong_safety_nets."menu.background_color"]
 inherits_from = "defaults.background_color"
-why_wrong     = "macOS vibrancy and Win COLOR_MENU differ; KDE's Qt Widgets menu panel is mix(Window, Base, 0.3), #f4f5f5 / #1c1f22 under Breeze, four to five levels from the window colour, which kde-breeze keeps until the field's other readers allow (platform-facts.md:1253, §2.6)"
+why_wrong     = "macOS vibrancy and Win COLOR_MENU differ; KDE's Qt Widgets menu panel is mix(Window, Base, 0.3), #f4f5f5 / #1c1f22 under Breeze, four to five levels from the window colour, which kde-breeze states and the KDE reader derives (platform-facts.md §2.6)"
 
 [wrong_safety_nets."input.font.color"]
 inherits_from = "defaults.font.color"     # via font_inheritance
@@ -656,7 +656,7 @@ why_wrong     = "KDE's separator is mix(Window, WindowText, frameContrast), #c6c
 
 [wrong_safety_nets."list.grid_color"]
 inherits_from = "defaults.border.color"
-why_wrong     = "KDE's table grid is QPalette::Mid, the Window set's MidShade at the scheme's contrast, #c4c8cc / #1c1f21 under Breeze, where kde-breeze's defaults.border.color is #bcc0bf / #4d545b, far brighter in dark mode; kde-breeze keeps the inherited value until the field's other readers allow (platform-facts.md:1430, §2.15)"
+why_wrong     = "KDE's table grid is QPalette::Mid, the Window set's MidShade at the scheme's contrast, #c4c8cc / #1c1f21 under Breeze, where kde-breeze's defaults.border.color is #bcc0bf / #4d545b, far brighter in dark mode; kde-breeze states it and the KDE reader derives it from the scheme's contrast (platform-facts.md §2.15)"
 
 # ─── TextScale inheritance ────────────────────────────────────────────────
 #
