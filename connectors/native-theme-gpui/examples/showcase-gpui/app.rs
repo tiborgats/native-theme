@@ -13,6 +13,7 @@ use gpui_component::{
     combobox::{ComboboxEvent, ComboboxState},
     command::CommandState,
     diff::{DiffFile, DiffState},
+    grid_layout::{GridArea, GridLayoutState},
     h_flex, h_resizable,
     input::{
         EditorState, InlineToken, InputState, NumberInputEvent, OtpState, StepAction, TextareaState,
@@ -53,9 +54,9 @@ use crate::info::InfoRegistry;
 use crate::inspector::{Inspector, PanelLook};
 use crate::speech::{SilentRecognizer, SyntheticAudio};
 use crate::support::{
-    CAROUSEL_SLIDES, ChatMessage, ChromeIcon, DIFF_SAMPLE, DialogIcons, EDITOR_SAMPLE, IconEntry,
-    IconSource, PresetDelegate, SampleIcon, SampleListDelegate, SampleTableDelegate,
-    SharedDialogIcons, initial_chat_messages, load_all_icons, load_gpui_icons,
+    CAROUSEL_SLIDES, ChatMessage, ChromeIcon, DIFF_SAMPLE, DialogIcons, EDITOR_SAMPLE,
+    GRID_LAYOUT_ITEMS, IconEntry, IconSource, PresetDelegate, SampleIcon, SampleListDelegate,
+    SampleTableDelegate, SharedDialogIcons, initial_chat_messages, load_all_icons, load_gpui_icons,
     parse_icon_set_choice, release_sources,
 };
 use crate::{
@@ -521,6 +522,9 @@ pub(crate) struct Showcase {
     pub(crate) step: usize,
     /// The selected tab of the Folder TabBar, written by its `on_click`.
     pub(crate) folder_tab: usize,
+    /// The Layout page's GridLayout: GRID_LAYOUT_ITEMS's areas, which a drag or a
+    /// resize changes.
+    pub(crate) grid_layout_state: Entity<GridLayoutState>,
 
     // Typography page
     pub(crate) editor_state: Entity<EditorState>,
@@ -1551,6 +1555,15 @@ impl Showcase {
         });
 
         let carousel_state = cx.new(|_cx| CarouselState::new(CAROUSEL_SLIDES.len()));
+        let grid_layout_state = cx.new(|cx| {
+            GridLayoutState::new(cx).default_areas(GRID_LAYOUT_ITEMS.map(|card| {
+                GridArea::new(card.id)
+                    .col(card.col)
+                    .row(card.row)
+                    .col_span(card.col_span)
+                    .row_span(card.row_span)
+            }))
+        });
 
         let initial_chat = initial_chat_messages();
         let chat_scroller = cx.new(|cx| MessageScrollerState::new(initial_chat.len(), cx));
@@ -1706,6 +1719,7 @@ impl Showcase {
             carousel_state,
             step: 1,
             folder_tab: 0,
+            grid_layout_state,
             editor_state,
             diff_state,
             table_state,

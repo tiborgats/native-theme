@@ -18,7 +18,7 @@ use crate::Page;
 use crate::demo::{
     FOLDER_TAB_HEIGHT, GroupBoxKind, SEGMENT_PADDING, SeparatorKind, SpacingBox, StepperKind,
 };
-use crate::support::{ChromeIcon, SampleIcon, layout_value};
+use crate::support::{ChromeIcon, GRID_LAYOUT_ITEMS, SampleIcon, layout_value};
 
 /// One of the Layout page's two spacing boxes, `kind`, padded by `padding`
 /// and spacing its children by `gap`, each `None` where the platform states
@@ -1510,6 +1510,73 @@ pub fn settings(t: &Theme) -> WidgetInfo {
         .not_themeable("layout", "the label above the field wherever the page is at most 480px wide, and beside it where it is wider (setting/settings.rs, STACKED_LAYOUT_MAX_WIDTH)")
         .instance("pages", "Appearance, open, with the groups Theme and Editor, and Keyboard, with Shortcuts; the sidebar lists the pages")
         .instance("fields", "switch, checkbox, input, number input, dropdown, or an element of the application's own (setting/fields/mod.rs, SettingFieldType). This sample shows the first three and a dropdown, which upstream builds inside each SettingItem, so they report through the Settings. The Theme group also holds a whole-row item of the showcase's own, a 1px strip built with SettingItem::render (setting/item.rs, SettingItem::render), whose right edge is where a row ends: the self-tests measure it against the page's scrollbar")
+}
+
+/// The Layout page's `GridLayout`, gpui-component's `grid_layout` over the
+/// showcase's own cards.
+pub fn grid_layout(t: &Theme) -> WidgetInfo {
+    let info = WidgetInfo::new("GridLayout").color(claim(
+        "selected card's ring, 2px",
+        "primary",
+        t.primary,
+        "gpui-component/grid_layout.rs:51",
+    ));
+    let info = if t.focus_ring {
+        info.color(claim(
+            "keyboard's card, ring at 50%, 3px",
+            "ring",
+            t.ring.alpha(0.5),
+            "gpui-component/grid_layout.rs:58",
+        ))
+    } else {
+        info.color(claim(
+            "keyboard's card, ring, 1px",
+            "ring",
+            t.ring,
+            "gpui-component/grid_layout.rs:61",
+        ))
+    };
+    info.color(claim(
+        "drop placeholder, primary at 8%",
+        "primary",
+        t.primary.opacity(0.08),
+        "gpui-component/grid_layout.rs:79",
+    ))
+    .color(claim(
+        "drop placeholder's dashed edge, primary at 50%",
+        "primary",
+        t.primary.opacity(0.5),
+        "gpui-component/grid_layout.rs:82",
+    ))
+    .color(claim(
+        "resize grip, at 35%",
+        "muted_foreground",
+        t.muted_foreground.opacity(0.35),
+        "gpui-component/grid_layout.rs:86",
+    ))
+    .color(claim(
+        "resize grip under the pointer, at 90%",
+        "muted_foreground",
+        t.muted_foreground.opacity(0.9),
+        "gpui-component/grid_layout.rs:86",
+    ))
+    .config(
+        "border-radius",
+        format!(
+            "radius_lg: {}px, the drop placeholder's corners",
+            px_text(t.radius_lg.as_f32())
+        ),
+    )
+    .config("focus_ring", format!("{}", t.focus_ring))
+    .not_themeable("gap", format!("{}px, spacing_tokens().md: Theme::spacing_tokens returns SpacingTokens::default() with no field behind it, so no theme reaches it (gpui-component/grid_layout.rs:65; gpui-component/theme/mod.rs:596-598; gpui-base/theme_tokens.rs:146-158)", px_text(t.spacing_tokens().md.as_f32())))
+    .not_themeable("motion", "cards settle on Theme::motion's duration_normal and easing_move (gpui-component/grid_layout.rs:66); ResolvedTheme has no motion field, and apply keeps the application's")
+    .not_themeable("dragged card", "shadow_lg, two black layers at 10%, gpui's literal (gpui-component/grid_layout.rs:67, dragging_item)")
+    .not_themeable("rings", "both are the card's shadow, so the focus ring replaces the selection ring while the keyboard drives the grid, and a read-only grid shows no selection (gpui-component/grid_layout.rs:28-31, :68-73)")
+    .not_themeable("placeholder", "a 1px dashed edge round the cells the dragged card will take (gpui-component/grid_layout.rs:74-84)")
+    .not_themeable("resize grip", "a 6px corner mark 3px in from the card's corner, two 2px edges (gpui-component/grid_layout.rs:94-99), in a 16px hit corner (gpui-base/grid_layout/grid_layout.rs:22, RESIZE_HANDLE_SIZE): literals")
+    .not_themeable("row height", "2.5 rem unless the caller sets one, a literal (gpui-base/grid_layout/grid_layout.rs, GridLayout::row_height)")
+    .instance("cards", format!("{} of the showcase's own cards in 12 columns (GRID_LAYOUT_ITEMS), each framed and rounded as the showcase frames a demonstration (demo_frame)", GRID_LAYOUT_ITEMS.len()))
+    .instance("editing", "drag a card to move it and its bottom-right corner to resize it; a click selects one; with the grid focused the arrow keys move it, Shift with them resizes it, Tab moves the selection (gpui-base/grid_layout/grid_layout.rs, GridLayout)")
 }
 
 /// One of the Layout page's `Sidebar` samples (spec S5), `collapsed` to its

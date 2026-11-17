@@ -13,7 +13,7 @@ use super::percent_text;
 use super::{
     WidgetInfo, chrome::input_background, claim, edge_claim, px_text, stated, stated_claim,
 };
-use crate::demo::{InputField, NUMBER_STEP_ACTIVE, NUMBER_STEP_HOVER};
+use crate::demo::{InputField, NUMBER_STEP_ACTIVE, NUMBER_STEP_HOVER, WaveformKind};
 use crate::support::SampleIcon;
 
 /// A refined, enabled field's surface, which the showcase draws under the
@@ -1771,24 +1771,58 @@ pub fn color_select(t: &Theme, picked: bool) -> WidgetInfo {
         .not_themeable("own icons", super::own_icons("the caret's ChevronDown (select.rs, Caret)"))
 }
 
-/// A `SpeechWaveform` over the showcase's synthetic input.
-pub fn speech_waveform(t: &Theme) -> WidgetInfo {
-    WidgetInfo::new("SpeechWaveform")
-        .color(claim(
-            "bars, capturing",
-            "primary",
-            t.primary,
-            "gpui-component/speech/waveform.rs:137",
-        ))
-        .color(claim(
-            "bars, idle",
-            "muted_foreground",
-            t.muted_foreground,
-            "gpui-component/speech/waveform.rs:139",
-        ))
-        .instance("signal", "the showcase's own synthetic level envelope (speech.rs), no microphone; nothing is recognised")
-        .not_themeable("size", "96px wide and 12 / 16 / 20 / 24px tall per Size, literals (speech/waveform.rs, DEFAULT_WIDTH and SpeechWaveform::height)")
-        .not_themeable("motion", "one bar per 80ms of audio, scrolling while capturing; the bars stand still under reduced motion (speech/level.rs, LEVEL_INTERVAL; speech/waveform.rs, SpeechWaveform::render)")
+/// A `SpeechWaveform` of `kind` over the showcase's synthetic input.
+pub fn speech_waveform(t: &Theme, kind: WaveformKind) -> WidgetInfo {
+    let info = WidgetInfo::new("SpeechWaveform");
+    match kind {
+        WaveformKind::Bars => info
+            .variant("bars")
+            .color(claim(
+                "bars, capturing",
+                "primary",
+                t.primary,
+                "gpui-component/speech/waveform.rs:137",
+            ))
+            .color(claim(
+                "bars, idle",
+                "muted_foreground",
+                t.muted_foreground,
+                "gpui-component/speech/waveform.rs:139",
+            ))
+            .instance("signal", "the showcase's own synthetic level envelope (speech.rs), no microphone; nothing is recognised")
+            .not_themeable("size", "96px wide and 12 / 16 / 20 / 24px tall per Size, literals (speech/waveform.rs, DEFAULT_WIDTH and SpeechWaveform::height)")
+            .not_themeable("motion", "one bar per 80ms of audio, scrolling while capturing; the bars stand still under reduced motion (speech/level.rs, LEVEL_INTERVAL; speech/waveform.rs, SpeechWaveform::render)"),
+        WaveformKind::Liquid => info
+            .variant("liquid")
+            .color(claim(
+                "surface, capturing",
+                "primary",
+                t.primary,
+                "gpui-component/speech/waveform.rs:137",
+            ))
+            .color(claim(
+                "surface, idle",
+                "muted_foreground",
+                t.muted_foreground,
+                "gpui-component/speech/waveform.rs:139",
+            ))
+            .color(claim(
+                "water at the crest, capturing, at 16%",
+                "primary",
+                t.primary.opacity(0.16),
+                "gpui-component/speech/waveform.rs:137",
+            ))
+            .color(claim(
+                "water at the crest, idle, at 16%",
+                "muted_foreground",
+                t.muted_foreground.opacity(0.16),
+                "gpui-component/speech/waveform.rs:139",
+            ))
+            .instance("signal", "the showcase's own synthetic level envelope (speech.rs), no microphone; nothing is recognised")
+            .not_themeable("size", "20px tall at the default Size, a literal, and as wide as its row, the showcase's w_full in place of upstream's 96px (gpui-component/speech/waveform.rs, SpeechWaveform::height and DEFAULT_WIDTH)")
+            .not_themeable("surface", "a ribbon a tenth of the height thick in the middle, at least 2px, thinning to a quarter of that at its ends; crests reach 0.42 of the height, flattened by tanh at 1.4; the water fades from 16% at the crest to clear at the bottom (gpui-component/speech/waveform.rs:192-204, liquid; :26, CREST_RATIO; :30, CREST_SOFTNESS; :33, LINE_TAPER; :41, WATER_OPACITY): literals")
+            .not_themeable("motion", "while capturing the surface is advanced every frame and the window redraws; under reduced motion it holds a ripple that grows with the level (gpui-component/speech/waveform.rs:132-135, :199-201, :209-217)"),
+    }
 }
 
 /// The `SpeechIndicator` the Inputs page shows while its synthetic input

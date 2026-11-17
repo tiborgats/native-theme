@@ -7534,6 +7534,59 @@ fn the_diff_sample_parses_to_one_file(_cx: &mut TestAppContext) {
     );
 }
 
+/// The Diff sample's one file is the one its decoration names, and the
+/// decorated line of its modified side is `let system =
+/// SystemTheme::from_system()?;`, a line both sides keep: counted from the
+/// hunk header's modified start over the lines the modified side holds.
+#[test]
+fn the_diff_samples_file_is_the_decorated_one() {
+    use crate::support::{DIFF_DECORATED_LINE, DIFF_DECORATED_PATH, DIFF_SAMPLE};
+
+    let files = gpui_component::diff::DiffFile::parse(DIFF_SAMPLE);
+    let paths = files.as_ref().ok().map(|files| {
+        files
+            .iter()
+            .map(|file| file.path().to_string())
+            .collect::<Vec<_>>()
+    });
+    assert_eq!(
+        paths,
+        Some(vec![DIFF_DECORATED_PATH.to_string()]),
+        "the Diff sample's one file is not DIFF_DECORATED_PATH ({:?})",
+        files.err()
+    );
+
+    let headers: Vec<&str> = DIFF_SAMPLE
+        .lines()
+        .filter(|line| line.starts_with("@@"))
+        .collect();
+    assert_eq!(
+        headers,
+        ["@@ -5,12 +5,12 @@"],
+        "the Diff sample is not the one hunk the decorated line is counted in"
+    );
+    let start = headers
+        .first()
+        .and_then(|header| header.split_whitespace().find(|w| w.starts_with('+')))
+        .and_then(|modified| modified.trim_start_matches('+').split(',').next())
+        .and_then(|start| start.parse::<usize>().ok());
+    let line = start
+        .and_then(|start| DIFF_DECORATED_LINE.checked_sub(start))
+        .and_then(|offset| {
+            DIFF_SAMPLE
+                .lines()
+                .skip_while(|line| !line.starts_with("@@"))
+                .skip(1)
+                .filter(|line| !line.starts_with('-'))
+                .nth(offset)
+        });
+    assert_eq!(
+        line.and_then(|line| line.strip_prefix(' ')),
+        Some("    let system = SystemTheme::from_system()?;"),
+        "the modified side's line {DIFF_DECORATED_LINE} is not the kept `let system` line: {line:?}"
+    );
+}
+
 /// The Typography page shows a `Diff`.
 #[gpui::test]
 fn the_typography_page_shows_a_diff(cx: &mut TestAppContext) {
@@ -7542,6 +7595,104 @@ fn the_typography_page_shows_a_diff(cx: &mut TestAppContext) {
     assert!(
         cx.debug_bounds("typography-diff").is_some(),
         "the Typography page renders no `typography-diff`"
+    );
+}
+
+/// The quads of the last frame inside the bounds of the element tagged
+/// `selector` filled exactly in `colour`, in device pixels:
+/// [`painted_fill`]'s reading, filtered by colour instead of by area.
+fn quads_filled_in(
+    cx: &mut VisualTestContext,
+    selector: &'static str,
+    colour: gpui::Hsla,
+) -> Vec<Bounds<gpui::ScaledPixels>> {
+    let bounds = bounds_of(cx, selector);
+    cx.update(|window, _cx| {
+        let bounds = bounds.scale(window.scale_factor());
+        scene_quads(window)
+            .into_iter()
+            .filter(|q| {
+                q.background.as_solid() == Some(colour)
+                    && q.bounds.left() >= bounds.left()
+                    && q.bounds.top() >= bounds.top()
+                    && q.bounds.right() <= bounds.right()
+                    && q.bounds.bottom() <= bounds.bottom()
+            })
+            .map(|q| q.bounds)
+            .collect()
+    })
+}
+
+/// The colour of the claim `role` of the info the inspector shows once the
+/// pointer settled on the element tagged `selector`.
+fn settled_claim(
+    cx: &mut VisualTestContext,
+    showcase: &Entity<Showcase>,
+    selector: &'static str,
+    role: &str,
+) -> Option<gpui::Hsla> {
+    let info = settle_on(cx, showcase, selector);
+    info.and_then(|info| info.colors.iter().find(|c| c.role == role).map(|c| c.value))
+}
+
+/// The Diff's decorated line is painted in the colour its Widget Info
+/// claims, upstream's default decoration background, warning at 20%
+/// (gpui-component diff/mod.rs, code_line).
+#[gpui::test]
+fn the_diffs_decorated_line_is_painted_in_its_claim(cx: &mut TestAppContext) {
+    const ROLE: &str = "decorated line, warning at 20%";
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    show(&mut cx, &showcase, Page::Typography);
+    let claimed = settled_claim(&mut cx, &showcase, "typography-diff", ROLE);
+    assert!(claimed.is_some(), "the Diff's info has no `{ROLE}` claim");
+    let painted = claimed
+        .map(|colour| quads_filled_in(&mut cx, "typography-diff", colour))
+        .unwrap_or_default();
+    assert!(
+        !painted.is_empty(),
+        "no quad inside the Diff is painted in its `{ROLE}` claim, {claimed:?}"
+    );
+}
+
+/// The Markdown sample holds a task list: one done task and one open.
+#[test]
+fn the_markdown_sample_holds_a_task_list() {
+    let count = |prefix: &str| {
+        crate::support::MARKDOWN_SAMPLE
+            .lines()
+            .filter(|line| line.starts_with(prefix))
+            .count()
+    };
+    assert_eq!(
+        (count("- [x] "), count("- [ ] ")),
+        (1, 1),
+        "the Markdown sample does not hold one done task and one open"
+    );
+}
+
+/// The Markdown's checked task box is painted in the colour its Widget Info
+/// claims, link (gpui-base text/node.rs, the task item's box): a square
+/// quad, within the one device pixel gpui-pre may move each of its edges
+/// by when it puts it on the pixel grid.
+#[gpui::test]
+fn the_checked_task_box_is_painted_in_its_claim(cx: &mut TestAppContext) {
+    const ROLE: &str = "checked task box, fill and edge";
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    show(&mut cx, &showcase, Page::Typography);
+    let claimed = settled_claim(&mut cx, &showcase, "typography-markdown", ROLE);
+    assert!(
+        claimed.is_some(),
+        "the Markdown's info has no `{ROLE}` claim"
+    );
+    let painted = claimed
+        .map(|colour| quads_filled_in(&mut cx, "typography-markdown", colour))
+        .unwrap_or_default();
+    assert!(
+        painted
+            .iter()
+            .any(|b| (b.size.width.0 - b.size.height.0).abs() <= 1.0),
+        "no square quad inside the Markdown is painted in its `{ROLE}` claim, \
+         {claimed:?}: {painted:?}"
     );
 }
 
@@ -7682,6 +7833,78 @@ fn the_layout_page_draws_the_folder_tab_bar(cx: &mut TestAppContext) {
             .get(LAYOUT_FOLDER_TAB_DISABLED)
             .copied(),
         "the Folder TabBar's info does not name the disabled tab: {info:?}"
+    );
+}
+
+/// The Layout page shows a `GridLayout` that reports itself, its cards laid
+/// out as GRID_LAYOUT_ITEMS places them: the first two side by side a gap
+/// apart, the theme's spacing_tokens().md, and the third below both, as wide
+/// as the two. gpui-pre puts each element's outer edges on the device-pixel
+/// grid after layout (gpui-pre 0.3.12 src/taffy.rs:381-387), so an edge is
+/// compared within one device pixel.
+#[gpui::test]
+fn the_layout_page_shows_a_grid_layout(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    show(&mut cx, &showcase, Page::Layout);
+    assert!(
+        cx.debug_bounds("layout-grid-layout").is_some(),
+        "the Layout page renders no `layout-grid-layout`"
+    );
+    let info = settle_on(&mut cx, &showcase, "layout-grid-layout");
+    assert_eq!(
+        info.as_ref().map(|info| info.kind),
+        Some("GridLayout"),
+        "the inspector does not show the GridLayout's info on it: {info:?}"
+    );
+    let one = bounds_of(&mut cx, "layout-grid-item-one");
+    let two = bounds_of(&mut cx, "layout-grid-item-two");
+    let three = bounds_of(&mut cx, "layout-grid-item-three");
+    let gap = cx.update(|_window, cx| Theme::global(cx).spacing_tokens().md);
+    let device = device_pixel(&mut cx);
+    let near = |a: Pixels, b: Pixels| (a - b).abs() <= device;
+    assert_eq!(
+        one.top(),
+        two.top(),
+        "the GridLayout's first two cards do not share a top: {one:?}, {two:?}"
+    );
+    assert!(
+        near(two.left(), one.right() + gap),
+        "the GridLayout's second card does not start a gap of {gap:?} after the first: \
+         {one:?}, {two:?}"
+    );
+    assert!(
+        three.top() >= one.bottom() && three.top() >= two.bottom(),
+        "the GridLayout's third card is not below the first two: {one:?}, {two:?}, {three:?}"
+    );
+    assert!(
+        near(three.left(), one.left()) && near(three.right(), two.right()),
+        "the GridLayout's third card does not span the first two: {one:?}, {two:?}, {three:?}"
+    );
+}
+
+/// The GridLayout's info says its gap and its motion are upstream's: the
+/// gap is spacing_tokens().md, which no theme field reaches, and the
+/// connector's ResolvedTheme has no motion to give.
+#[test]
+fn the_grid_layouts_info_says_its_gap_and_motion_are_upstreams() {
+    let info = crate::info::layout::grid_layout(&Theme::default());
+    let note = |what: &str| {
+        info.not_themeable
+            .iter()
+            .find(|note| note.what == what)
+            .map(|note| note.text.as_str())
+    };
+    assert!(
+        note("gap").is_some_and(
+            |gap| gap.contains("spacing_tokens().md") && gap.contains("no field behind it")
+        ),
+        "the GridLayout's info does not say its gap is spacing_tokens().md with no field behind it: {:?}",
+        note("gap")
+    );
+    assert!(
+        note("motion").is_some_and(|motion| motion.contains("ResolvedTheme has no motion field")),
+        "the GridLayout's info does not say ResolvedTheme has no motion field: {:?}",
+        note("motion")
     );
 }
 
@@ -15507,6 +15730,53 @@ fn the_speech_indicator_fills_a_stop_button_while_capturing(cx: &mut TestAppCont
     assert!(
         cx.debug_bounds(STOP).is_none(),
         "the stop button stays after the session stopped"
+    );
+}
+
+/// The Inputs page's bars waveform and its liquid one show different infos:
+/// each reports its own variant.
+#[gpui::test]
+fn a_bars_waveform_and_a_liquid_one_show_different_infos(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    show(&mut cx, &showcase, Page::Inputs);
+    let texts = settle_on_each(
+        &mut cx,
+        &showcase,
+        &[
+            ("inputs-speech-waveform", "SpeechWaveform · bars"),
+            ("inputs-speech-waveform-liquid", "SpeechWaveform · liquid"),
+        ],
+    );
+    assert!(
+        texts.first() != texts.get(1),
+        "the bars and the liquid SpeechWaveform show the same info: {texts:?}"
+    );
+}
+
+/// The liquid waveform spans its row, as upstream's doc asks of one
+/// (gpui-component speech/waveform.rs, SpeechWaveform::liquid): it starts
+/// at the section heading's left edge and is wider than the bars, which
+/// keep upstream's 96px (speech/waveform.rs, DEFAULT_WIDTH).
+#[gpui::test]
+fn the_liquid_waveform_spans_its_row(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    show(&mut cx, &showcase, Page::Inputs);
+    let heading = bounds_of(&mut cx, "inputs-heading-speech-waveform");
+    let liquid = bounds_of(&mut cx, "inputs-speech-waveform-liquid");
+    let bars = bounds_of(&mut cx, "inputs-speech-waveform");
+    assert_eq!(
+        liquid.left(),
+        heading.left(),
+        "the liquid waveform does not start at its section's left edge: {liquid:?}, {heading:?}"
+    );
+    assert_eq!(
+        bars.size.width,
+        px(96.),
+        "the bars waveform is not upstream's 96px wide: {bars:?}"
+    );
+    assert!(
+        liquid.size.width > bars.size.width,
+        "the liquid waveform is not wider than the bars: {liquid:?}, {bars:?}"
     );
 }
 

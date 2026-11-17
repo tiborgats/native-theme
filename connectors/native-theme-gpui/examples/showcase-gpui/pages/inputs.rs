@@ -8,7 +8,7 @@ use gpui_component::{IconName, h_flex, v_flex};
 use native_theme_gpui::geometry;
 
 use crate::app::Showcase;
-use crate::demo::{self, InputField, InputGroupStates, StepIcons};
+use crate::demo::{self, InputField, InputGroupStates, StepIcons, WaveformKind};
 use crate::pages::page_root;
 use crate::support::with_gap;
 use crate::{
@@ -348,32 +348,43 @@ impl Showcase {
                 "SpeechWaveform & SpeechIndicator",
             ))
             .child(
-                with_gap(h_flex(), widget_gap)
-                    .items_center()
-                    .child(demo::action_button(
-                        ui,
-                        cx,
-                        "inputs-speech-toggle",
-                        speech_label,
-                        "starts the synthetic input, or stops it",
-                        move |_, _, cx| speech_state.update(cx, |s, cx| s.toggle(cx)),
-                    ))
+                with_gap(v_flex(), widget_gap)
+                    .child(
+                        with_gap(h_flex(), widget_gap)
+                            .items_center()
+                            .child(demo::action_button(
+                                ui,
+                                cx,
+                                "inputs-speech-toggle",
+                                speech_label,
+                                "starts the synthetic input, or stops it",
+                                move |_, _, cx| speech_state.update(cx, |s, cx| s.toggle(cx)),
+                            ))
+                            .child(demo::speech_waveform(
+                                ui,
+                                cx,
+                                "inputs-speech-waveform",
+                                &self.speech_state,
+                                WaveformKind::Bars,
+                            ))
+                            .when(speech_capturing, |row| {
+                                row.child(demo::speech_indicator(
+                                    ui,
+                                    cx,
+                                    "inputs-speech-indicator",
+                                    &self.speech_state,
+                                    &self.speech_stop_focus,
+                                    speech_stop_keyboard,
+                                ))
+                            }),
+                    )
                     .child(demo::speech_waveform(
                         ui,
                         cx,
-                        "inputs-speech-waveform",
+                        "inputs-speech-waveform-liquid",
                         &self.speech_state,
-                    ))
-                    .when(speech_capturing, |row| {
-                        row.child(demo::speech_indicator(
-                            ui,
-                            cx,
-                            "inputs-speech-indicator",
-                            &self.speech_state,
-                            &self.speech_stop_focus,
-                            speech_stop_keyboard,
-                        ))
-                    }),
+                        WaveformKind::Liquid,
+                    )),
             )
             .child(demo::heading(
                 ui,

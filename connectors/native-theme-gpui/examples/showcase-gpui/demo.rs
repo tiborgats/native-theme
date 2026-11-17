@@ -45,12 +45,13 @@ use gpui_component::{
         AlertDialog, Dialog, DialogButtonProps, DialogClose, DialogDescription, DialogEntrance,
         DialogFooter, DialogTitle,
     },
-    diff::{Diff, DiffHoverHighlight, DiffState},
+    diff::{Diff, DiffDecoration, DiffHoverHighlight, DiffLineRange, DiffSide, DiffState},
     empty::{
         Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyMediaVariant,
         EmptyTitle,
     },
     form::{Field, Form},
+    grid_layout::{GridItem, GridLayoutState, grid_layout},
     group_box::{GroupBox, GroupBoxVariant, GroupBoxVariants as _},
     h_flex,
     hover_card::HoverCard,
@@ -110,9 +111,10 @@ use crate::app::{Quit, ShowPage};
 use crate::elements::{self, ListedExt as _};
 use crate::info::{self, InfoExt, InfoRegistry, WidgetInfo, as_rgba, native_info};
 use crate::support::{
-    CAROUSEL_SLIDES, ChatMessage, ChromeIcon, NativeStyled as _, PresetDelegate, STEPPER_STEPS,
-    SampleIcon, SampleListDelegate, SampleTableDelegate, native_color, native_geometry,
-    native_value, refined, with_gap, with_padding,
+    CAROUSEL_SLIDES, ChatMessage, ChromeIcon, DIFF_DECORATED_LINE, DIFF_DECORATED_PATH,
+    GRID_LAYOUT_ITEMS, NativeStyled as _, PresetDelegate, STEPPER_STEPS, SampleIcon,
+    SampleListDelegate, SampleTableDelegate, native_color, native_geometry, native_value, refined,
+    with_gap, with_padding,
 };
 use crate::{
     CHROME_APP_MENU_BAR, CHROME_SIDE_PANEL, CHROME_SPLITTER_LINE, CHROME_THEME_SETTINGS,
@@ -4542,16 +4544,33 @@ pub(crate) fn color_select(
     )
 }
 
-/// A `SpeechWaveform` over `state`, upstream's own: its size and colours are
-/// literals and theme tokens it reads itself, so no geometry builder reaches
-/// it. gpui redraws the window when `state` notifies, once per new level.
+/// How a `SpeechWaveform` draws the input: upstream's bars, or the water
+/// surface `SpeechWaveform::liquid` draws across a row (gpui-component
+/// speech/waveform.rs:85-101).
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum WaveformKind {
+    Bars,
+    Liquid,
+}
+
+/// A `SpeechWaveform` of `kind` over `state`, upstream's own: its size and
+/// colours are literals and theme tokens it reads itself, so no geometry
+/// builder reaches it. The liquid one spans its row. gpui redraws the window
+/// when `state` notifies, once per new level.
 pub(crate) fn speech_waveform(
     ui: &Entity<InfoRegistry>,
     cx: &App,
     id: &'static str,
     state: &Entity<SpeechState>,
+    kind: WaveformKind,
 ) -> Stateful<Div> {
-    SpeechWaveform::new(state).info(ui, id, info::inputs::speech_waveform(cx.theme()))
+    let waveform = match kind {
+        WaveformKind::Bars => SpeechWaveform::new(state),
+        WaveformKind::Liquid => SpeechWaveform::new(state).liquid().w_full(),
+    };
+    waveform
+        .info(ui, id, info::inputs::speech_waveform(cx.theme(), kind))
+        .debug_selector(move || id.into())
 }
 
 /// The stop button for `state` while it captures, as `SpeechIndicator`'s doc
@@ -6601,8 +6620,8 @@ pub(crate) fn markdown(
 }
 
 /// A `Diff` over `state`, `height` tall, its hovered line and line number
-/// highlighted. `Diff` is `Styled` and refines its frame last, so the height
-/// stands.
+/// highlighted, and one line decorated in upstream's default background.
+/// `Diff` is `Styled` and refines its frame last, so the height stands.
 pub(crate) fn diff(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -6612,6 +6631,12 @@ pub(crate) fn diff(
 ) -> Stateful<Div> {
     Diff::new(state)
         .hover_highlight(DiffHoverHighlight::Both)
+        .decorations([DiffDecoration::new(DiffLineRange::new(
+            DIFF_DECORATED_PATH,
+            DiffSide::Modified,
+            DIFF_DECORATED_LINE,
+            DIFF_DECORATED_LINE,
+        ))])
         .h(height)
         .info(ui, id, info::typography::diff(cx.theme()))
         .debug_selector(move || id.into())
@@ -7780,6 +7805,38 @@ pub(crate) fn settings(ui: &Entity<InfoRegistry>, cx: &App, id: &'static str) ->
         )
         .info(ui, id, settings_info)
         .size_full()
+        .debug_selector(move || id.into())
+}
+
+/// The Layout page's `GridLayout` over `state`, `width` wide: gpui-component's
+/// `grid_layout`, its gap, motion, rings, placeholder and grip upstream's
+/// (gpui-component grid_layout.rs:40-105), holding GRID_LAYOUT_ITEMS as cards
+/// framed as the showcase frames every demonstration.
+pub(crate) fn grid_layout_sample(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    state: &Entity<GridLayoutState>,
+    width: Pixels,
+) -> Stateful<Div> {
+    grid_layout(id, state, cx)
+        .w(width)
+        .items(GRID_LAYOUT_ITEMS.map(|card| {
+            GridItem::new(card.id).rounded(cx.theme().radius).child(
+                div()
+                    .size_full()
+                    .demo_frame(cx)
+                    .bg(cx.theme().background)
+                    .flex()
+                    .items_center()
+                    .justify_center()
+                    .text_sm()
+                    .child(card.label)
+                    .debug_selector(move || card.id.into()),
+            )
+        }))
+        .info(ui, id, info::layout::grid_layout(cx.theme()))
+        .self_start()
         .debug_selector(move || id.into())
 }
 
