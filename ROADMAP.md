@@ -91,9 +91,10 @@ gpui-component, gpui-base and gpui-kit 0.9.1 on gpui-pre 0.3.12 (on the
 `to_theme` and `to_theme_config` set from `window.border.corner_radius`; its
 `WindowBorder` now draws the frame in the theme's border colour instead of a
 fixed grey; and `apply` keeps the application's `cursor_blink`, which
-native-theme does not model. The showcase shows 0.9.1's `SpeechIndicator`. It
-also fixes what a KDE application's author found overriding by hand (issue
-#4). The font DPI is 96 on every Linux desktop, so a scaled KDE session and an
+native-theme does not model. The showcase shows 0.9.1's `SpeechIndicator` and
+`GridLayout`, the liquid `SpeechWaveform`, a `Diff` decoration and a Markdown
+task list. It also fixes what a KDE application's author found overriding by
+hand (issue #4). The font DPI is 96 on every Linux desktop, so a scaled KDE session and an
 X11 session with `Xft.dpi` above 96 no longer draw text at the display's scale
 twice. A hovered menu item and a hovered list row are tinted as Breeze tints
 them, at 30 % under the normal text; the menu separator and the table header
@@ -261,7 +262,7 @@ limits table: `docs/archive/todo_v0.5.8_gpui-component-0.6-spec.md` §14.
 
 ## Also in the 0.7.x releases
 
-[`docs/todo.md`](docs/todo.md) tags 29 open items `[v0.7.x]`, follow-ups of
+[`docs/todo.md`](docs/todo.md) tags 44 open items `[v0.7.x]`, follow-ups of
 the v0.7.0 review that a 0.7 patch release takes beside the milestones
 above. Among them: the `ios-26` preset, iOS 26's Liquid Glass look, deferred
 while 38 of the values the resolver requires have no iOS 26 source;
