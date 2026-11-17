@@ -513,5 +513,18 @@ impl Showcase {
                     .demo_frame(cx)
                     .child(demo::settings(ui, cx, "layout-settings")),
             )
+            .child(demo::heading(
+                ui,
+                cx,
+                "layout-heading-grid-layout",
+                "GridLayout (drag a card, or resize it by its corner)",
+            ))
+            .child(demo::grid_layout_sample(
+                ui,
+                cx,
+                "layout-grid-layout",
+                &self.grid_layout_state,
+                px(480.0),
+            ))
     }
 }

@@ -103,6 +103,47 @@ pub(crate) const STEPPER_STEPS: &[(&str, IconName)] = &[
     ("Apply to gpui", IconName::CircleCheck),
 ];
 
+/// One card of the Layout page's `GridLayout`: its id, which is the item's,
+/// its area's and its card's selector, its label, and its area in grid cells.
+#[derive(Clone, Copy)]
+pub(crate) struct GridCard {
+    pub(crate) id: &'static str,
+    pub(crate) label: &'static str,
+    pub(crate) col: usize,
+    pub(crate) row: usize,
+    pub(crate) col_span: usize,
+    pub(crate) row_span: usize,
+}
+
+/// The cards of the Layout page's `GridLayout` in its 12 columns: two side by
+/// side over one as wide as both.
+pub(crate) const GRID_LAYOUT_ITEMS: [GridCard; 3] = [
+    GridCard {
+        id: "layout-grid-item-one",
+        label: "One",
+        col: 0,
+        row: 0,
+        col_span: 6,
+        row_span: 2,
+    },
+    GridCard {
+        id: "layout-grid-item-two",
+        label: "Two",
+        col: 6,
+        row: 0,
+        col_span: 6,
+        row_span: 2,
+    },
+    GridCard {
+        id: "layout-grid-item-three",
+        label: "Three",
+        col: 0,
+        row: 2,
+        col_span: 12,
+        row_span: 2,
+    },
+];
+
 /// The source the code editor holds — the connector's own install sequence.
 pub(crate) const EDITOR_SAMPLE: &str = r#"use gpui::App;
 use native_theme::SystemTheme;
@@ -157,6 +198,13 @@ pub(crate) const DIFF_SAMPLE: &str = r#"diff --git a/src/install.rs b/src/instal
  }
 "#;
 
+/// The file of DIFF_SAMPLE as `DiffFile::path` gives it, and the line of its
+/// modified side the Typography page's `Diff` decorates: `let system =
+/// SystemTheme::from_system()?;`, which both sides keep, so the decoration lies
+/// over no change fill, and which the Diff shows at rest.
+pub(crate) const DIFF_DECORATED_PATH: &str = "src/install.rs";
+pub(crate) const DIFF_DECORATED_LINE: usize = 7;
+
 /// The Markdown source rendered by the `TextView` of the Typography page.
 pub(crate) const MARKDOWN_SAMPLE: &str = r#"## What native-theme maps
 
@@ -176,6 +224,9 @@ apply_system_theme(&system, cx);
 | `defaults.border.corner_radius` | `radius` |
 | `defaults.mono_font.family` | `mono_font_family` |
 | `input.min_height` | `geometry::input` height |
+
+- [x] Resolve the desktop's theme
+- [ ] Apply it with `apply_system_theme`
 "#;
 
 // ---------------------------------------------------------------------------

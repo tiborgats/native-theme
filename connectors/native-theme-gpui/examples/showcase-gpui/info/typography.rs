@@ -10,6 +10,7 @@ use super::{
     claim, drawn_font, px_text,
 };
 use crate::demo::{DecorationKind, HeadingLevel, TextSize, WeightKind};
+use crate::support::DIFF_DECORATED_LINE;
 
 /// One level of the showcase's own heading ladder: plain text in a div, no
 /// widget, at a rem size and a weight the showcase sets.
@@ -391,6 +392,30 @@ pub fn markdown(t: &Theme) -> WidgetInfo {
             t.table_head_foreground,
             "gpui-component/text/mod.rs:48",
         ))
+        .color(claim(
+            "hovered table row",
+            "table_hover",
+            t.table_hover,
+            "gpui-component/text/mod.rs:60",
+        ))
+        .color(claim(
+            "task box edge",
+            "muted_foreground",
+            t.muted_foreground,
+            "gpui-component/text/mod.rs:52",
+        ))
+        .color(claim(
+            "checked task box, fill and edge",
+            "link",
+            t.link,
+            "gpui-component/text/mod.rs:53",
+        ))
+        .color(claim(
+            "done task's text",
+            "muted_foreground",
+            t.muted_foreground,
+            "gpui-component/text/mod.rs:52",
+        ))
         .config("border-radius", format!("radius: {}px", px_text(t.radius.as_f32())))
         .config(
             "mono font",
@@ -401,6 +426,10 @@ pub fn markdown(t: &Theme) -> WidgetInfo {
         .not_themeable("heading sizes", "1.8, 4/3, 17/15, 1, 14/15 and 13/15 times the font size the view inherits, which follows the platform's: gpui-base scales a heading from literals (gpui-base/text/node.rs, heading_metrics, lines 3419-3428; body_font_size), and base_text_view_style installs no heading refinement over them (text/mod.rs, base_text_view_style; gpui-base/text/style.rs, with_heading). Every level is semibold, a literal too, and the sixth takes muted_foreground (gpui-base/text/node.rs, BlockNode::Heading, lines 4523-4526)")
         .not_themeable("link underline", "always drawn, a 1px hairline in the link colour at 0.4 alpha (gpui-base/text/node.rs, link_underline, lines 3393-3399), so link.underline_enabled = false cannot be honoured")
         .not_themeable("selection text", "the glyphs' own colour: the selection, in the selection token, paints under the glyphs (gpui-base/text/inline.rs, selection_paint, lines 1338 and 1358), so the selection's text colour cannot be honoured")
+        .not_themeable("task check mark", "white in a light theme and black in a dark one, an SVG gpui-base embeds and draws as an image, so neither a theme colour nor an icon set or resolver reaches it (gpui-base/text/node.rs:42-43, CHECK_SVG_LIGHT and CHECK_SVG_DARK; :3883-3887, :3913-3917)")
+        .not_themeable("task box", "a 0.9375 rem square, rounded 4px, with a 1.5px edge and a 0.75 rem mark (gpui-base/text/node.rs:3899-3903, :3917): literals; the edge is the list's text colour where a list style sets one, and gpui-component's sets none (gpui-base/text/node.rs:3904-3910; gpui-component/text/mod.rs, base_text_view_style)")
+        .instance("task boxes", "not clickable: the showcase sets no on_task_toggle, so they are drawn as upstream draws them by default (gpui-component/text/compat.rs, TextView::on_task_toggle)")
+        .instance("table hover", "a body row under the pointer is filled table_hover; the header keeps table_head (gpui-base/text/node.rs:4431-4435)")
 }
 
 /// The `Diff` over the showcase's one-file patch, its hovered line and line
@@ -524,6 +553,12 @@ pub fn diff(t: &Theme) -> WidgetInfo {
             t.selection,
             "gpui-component/diff/selection.rs:283",
         ))
+        .color(claim(
+            "decorated line, warning at 20%",
+            "warning",
+            t.warning.opacity(0.2),
+            "gpui-component/diff/mod.rs:1773",
+        ))
         .config(
             "mono font",
             format!("mono_font_family: {}", t.mono_font_family),
@@ -538,11 +573,12 @@ pub fn diff(t: &Theme) -> WidgetInfo {
             ),
         )
         .not_themeable("code size", "the code is sized rem × mono_font_size / 16 and its rows 1.6 times that (diff/mod.rs, render_diff), so it is mono_font_size only where the rem is 16px: a smaller platform font makes the code smaller than the platform's monospace size. No builder reaches it without changing every other monospace text; an upstream item")
-        .not_themeable("alphas", "the 12% of a changed line's fill (diff/mod.rs, code_line: lines 1810-1812), the 30% of its changed words (diff/mod.rs, line_highlights: line 1570) and the 35% of the hunk separator (diff/mod.rs, render_hunk_separator: line 1020) are upstream literals over the theme's colours")
+        .not_themeable("alphas", "the 12% of a changed line's fill (diff/mod.rs, code_line: lines 1810-1812), the 30% of its changed words (diff/mod.rs, line_highlights: line 1570), the 35% of the hunk separator (diff/mod.rs, render_hunk_separator: line 1020) and the 20% of a decorated line's default background (gpui-component/diff/mod.rs, code_line: line 1773) are upstream literals over the theme's colours")
         .not_themeable("syntax colors", "highlight_theme: default_light / default_dark per color mode (diff/mod.rs, line_highlights)")
         .not_themeable("collapse button", "the icon, hover and pressed swatches are the file header's ghost collapse Button, which the widget builds and no refinement reaches (diff/mod.rs, render_file_header)")
         .not_themeable("own icons", super::own_icons("ChevronDown and ChevronRight on the file header's collapse button (diff/mod.rs, render_file_header)"))
         .instance("hover", "DiffHoverHighlight::Both, set by the showcase: upstream highlights nothing by default (diff/mod.rs, DiffHoverHighlight)")
+        .instance("decoration", format!("the showcase decorates the modified side's line {DIFF_DECORATED_LINE}, a line both sides keep, with a DiffDecoration of upstream's default background; it is painted under the text, over a changed line's 12% fill where a line has one, which this unchanged line has not, and a selected line shows the selection instead (gpui-component/diff/decoration.rs, DiffDecoration; gpui-component/diff/mod.rs, code_line)"))
         .instance("add-annotation button", "none: it is shown only when on_add_annotation is set (diff/mod.rs, add_annotation_button: line 1597), and this one is not. It would paint primary, primary_foreground and radius (diff/mod.rs, add_annotation_button: lines 1626-1628)")
         .instance("conflict sides", "none: only a file read by DiffFile::parse_conflicts is conflicted (diff/conflict.rs, parse_conflicts: lines 264-265), and this patch is read by DiffFile::parse. Its current side would be tinted success and its incoming side info (diff/mod.rs, conflict_tint: lines 1185-1186)")
 }
