@@ -2951,6 +2951,9 @@ caeddd6b, each platform file's *Cross-check* section has the detail.
       (issue #4)*, "KDE values that wait for a connector design", (1).
       *GPUI Kit 0.9.1 (2026-11-17):* still so; written at 0.9.1 (2026-11-13), its lines
       unchanged.
+      *2026-11-17:* none sent yet; the maintainer sends them when he has the time. The
+      reply to issue #4 for 0.7.1 does not promise them: it says the table's bar is
+      gpui-component's to fix and that its ring cannot yet tell keyboard focus.
 
 #### native-theme-iced: the same audit (found 2026-09-20, fixed in v0.5.9)
 
