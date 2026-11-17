@@ -2072,6 +2072,9 @@ KColorScheme 8bb948c4, to be re-pinned to the release tags `platform-facts.md` u
       portal's accent to the nearest of its nine accents and gives it white text
       (`src/adw-settings-impl-portal.c:140`, `src/adw-accent-color.c:160`,
       `src/adw-style-manager.c:160-161`); the reader uses the accent as given.
+      *0.7.2 (2026-11-17):* (4) is fixed: the check box's radius is 6 in the facts
+      (`docs/platform-facts.md` §2.5 `border.corner_radius`) and in adwaita's preset; the
+      radio stays round. The other items stay open.
 - [ ] [v0.7.x] **Material.** Compose Material 3 states a text selection colour, `primary`
       at `TextSelectionBackgroundOpacity` (`compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/MaterialTheme.kt:276-287`
       at androidx 1e677685), where `platform-facts.md` §2.1.3 and §2.4 say "(none)".

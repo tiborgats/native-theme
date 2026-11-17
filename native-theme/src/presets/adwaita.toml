@@ -185,6 +185,8 @@ unchecked_border_color = "#d5d5d5"
 
 
 [light.checkbox.border]
+# platform-facts.md §2.5 border.corner_radius: $check_radius 6 (libadwaita 1.10.0 _checks.scss:1, :67-68)
+corner_radius_px = 6.0
 # platform-facts.md:1237-1238 (§2.5): Adwaita CSS check { padding: 3px }
 padding_horizontal_px = 3.0
 padding_vertical_px = 3.0
@@ -622,6 +624,8 @@ unchecked_border_color = "#4a4a4e"
 
 
 [dark.checkbox.border]
+# platform-facts.md §2.5 border.corner_radius: $check_radius 6 (libadwaita 1.10.0 _checks.scss:1, :67-68)
+corner_radius_px = 6.0
 # platform-facts.md:1237-1238 (§2.5): Adwaita CSS check { padding: 3px }
 padding_horizontal_px = 3.0
 padding_vertical_px = 3.0
