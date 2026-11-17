@@ -47,6 +47,11 @@ ignore = [
     # `cfg(target_arch = "wasm32")`, so no target the workspace builds
     # compiles it.
     "RUSTSEC-2026-0441",
+    # chrono 0.4.45, unmaintained, no patched release (every version is
+    # affected); reached only through native-theme-gpui's GPUI Kit: gpui-base
+    # and gpui-component 0.9.1, gpui-fast 0.1.15, gpui-pre and
+    # gpui-pre-scheduler 0.3.12. No workspace crate depends on it.
+    "RUSTSEC-2026-0543",
 ]
 
 [output]
