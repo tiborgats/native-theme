@@ -1365,12 +1365,15 @@ pub(crate) fn toolbar_button(
         button_info = button_info.geometry("icon_size_toolbar");
     }
     let dispatched = action.boxed_clone();
-    let button = refined(
+    let button = native_info(
         refined(
             Button::new(id).custom(variants::toolbar_button(cx)),
             tool_button_box(cx).as_ref(),
         ),
-        native_value(cx, geometry::toolbar_button_rest).as_ref(),
+        cx,
+        geometry::toolbar_button_rest,
+        "toolbar_button_rest",
+        &mut button_info,
     )
     .map(|button| match icon {
         Some(icon) => button.child(listed_icon(ui, icon, elements::icon_of(id))),
@@ -1471,12 +1474,15 @@ fn toolbar_item(ui: &Entity<InfoRegistry>, cx: &App, set: &str, item: ToolItem) 
     if icon.is_some() && native_value(cx, geometry::icon_size_toolbar).is_some() {
         button_info = button_info.geometry("icon_size_toolbar");
     }
-    let button = refined(
+    let button = native_info(
         refined(
             Button::new(id).custom(variants::toolbar_button(cx)),
             tool_button_box(cx).as_ref(),
         ),
-        native_value(cx, geometry::toolbar_button_rest).as_ref(),
+        cx,
+        geometry::toolbar_button_rest,
+        "toolbar_button_rest",
+        &mut button_info,
     )
     .map(|button| match icon {
         Some(icon) => button.accessibility_label(label).child(icon),
@@ -9400,8 +9406,10 @@ fn listed_icon(
 /// `px_2`/`px_2p5`); a side the theme leaves unstated keeps upstream's. It
 /// is rounded by `button.border.corner_radius` in place of the Theme's
 /// radius the Button takes (the same, `rounding`). A
-/// Ghost Button draws no border (the same, `border_l_1` and its siblings go
-/// to the Default and outline variants alone). `None` before `apply` ran.
+/// Ghost Button draws no border at rest (the same, `border_l_1` and its
+/// siblings go to the Default and outline variants alone; under a theme that
+/// states the toolbar's outline, `geometry::toolbar_button_rest`'s border is
+/// transparent at rest). `None` before `apply` ran.
 fn tool_button_box(cx: &App) -> Option<StyleRefinement> {
     native_value(cx, tool_box_of)
 }
@@ -9501,12 +9509,15 @@ pub(crate) fn icon_button(
     if icon.is_some() && native_value(cx, geometry::icon_size_toolbar).is_some() {
         button_info = button_info.geometry("icon_size_toolbar");
     }
-    let button = refined(
+    let button = native_info(
         refined(
             Button::new(id).custom(variants::toolbar_button(cx)),
             tool_button_box(cx).as_ref(),
         ),
-        native_value(cx, geometry::toolbar_button_rest).as_ref(),
+        cx,
+        geometry::toolbar_button_rest,
+        "toolbar_button_rest",
+        &mut button_info,
     );
     let button = match icon {
         Some(icon) => button

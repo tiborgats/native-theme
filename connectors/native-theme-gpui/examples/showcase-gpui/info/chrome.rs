@@ -514,7 +514,7 @@ pub fn panel_toggle(
     } else {
         info
     };
-    let info = super::buttons::tool_button_size(info, ToolSize::Small, drawn, native);
+    let info = super::buttons::tool_button_size(info, ToolSize::Small, drawn, native, None);
     info.instance(
         "icon",
         chrome_icon_note(
@@ -1057,25 +1057,28 @@ pub fn toolbar_button(
         tooltip_styled,
         tooltip_delay,
     )
-        .not_themeable(
-            "fill",
-            "none until hovered: the custom variant's fill is transparent (button/button.rs, ButtonCustomVariant::new)",
-        );
+    .not_themeable("fill", super::buttons::toolbar_fill(native));
     let info = if drawn {
         info.not_themeable("icon", child_icon_line(icon))
     } else {
         info
     };
-    super::buttons::tool_button_size(info, ToolSize::Medium, drawn, native.map(|r| &r.button))
-        .instance(
-            "icon",
-            chrome_icon_note(
-                icon,
-                set,
-                "the button shows the tooltip's text as its label instead",
-            ),
-        )
-        .instance("action", action)
+    super::buttons::tool_button_size(
+        info,
+        ToolSize::Medium,
+        drawn,
+        native.map(|r| &r.button),
+        super::buttons::rest_border(native),
+    )
+    .instance(
+        "icon",
+        chrome_icon_note(
+            icon,
+            set,
+            "the button shows the tooltip's text as its label instead",
+        ),
+    )
+    .instance("action", action)
 }
 
 /// What a chrome Button's tooltip paints: built by the application on the

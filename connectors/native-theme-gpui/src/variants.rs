@@ -171,14 +171,9 @@ pub(crate) fn toolbar_button_states(n: Native<'_>) -> ToolbarButtonStates {
 ///
 /// ```no_run
 /// use gpui_kit::component::{IconName, button::{Button, ButtonVariants as _}, toolbar::Toolbar};
-/// use gpui_kit::component::StyledExt as _;
-/// use native_theme_gpui::{ActiveNativeTheme as _, geometry, variants};
+/// use native_theme_gpui::variants;
 /// # fn f(cx: &gpui_kit::App) {
 /// let copy = Button::new("copy").icon(IconName::Copy).custom(variants::toolbar_button(cx));
-/// let copy = match cx.native() {
-///     Some(n) => copy.refine_style(&geometry::toolbar_button_rest(n)),
-///     None => copy,
-/// };
 /// // `content`, not `child`: `child` would make it a `.ghost()` again.
 /// let toolbar = Toolbar::new("tools").content(copy);
 /// # }
@@ -199,7 +194,9 @@ pub(crate) fn toolbar_button_states(n: Native<'_>) -> ToolbarButtonStates {
 /// button's fill at rest (gpui-component 0.10.0 `button/button.rs:1044`) and
 /// lays out no border width for a custom variant (0.10.0
 /// `button/button.rs:727-732`), so the button is tinted at rest and no edge
-/// shows under the pointer.
+/// shows under the pointer. The caller pads the Button with
+/// `button.border.padding`, which that builder assumes, and then refines it
+/// with the builder.
 ///
 /// Such a Button goes into gpui-component's `Toolbar` or `ToolbarGroup` by
 /// `content(..)`, not `child(..)`: `child` prepares a Button for the toolbar

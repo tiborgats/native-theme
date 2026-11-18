@@ -10111,6 +10111,8 @@ fn a_hovered_drop_down_takes_the_hover_border(cx: &mut TestAppContext) {
         );
     }
 }
+
+/// Install the bundled `preset` in its light variant.
 fn use_light_preset(cx: &mut VisualTestContext, showcase: &Entity<Showcase>, preset: &str) {
     use_preset(cx, showcase, preset);
     cx.update(|window, cx| window.dispatch_action(Box::new(SetColorMode(AppColorMode::Light)), cx));
@@ -17402,11 +17404,26 @@ fn a_tool_buttons_box_keeps_its_size_with_the_outline(cx: &mut TestAppContext) {
         r.toolbar.button_hover_border_color.is_some() && r.button.border.line_width > 0.0,
         "kde-breeze no longer outlines its toolbar buttons, so this test proves nothing"
     );
+    let rest = |cx: &mut VisualTestContext| {
+        cx.update(|_w, cx| native_geometry(cx, geometry::toolbar_button_rest))
+    };
+    let refined = rest(&mut cx);
+    assert!(
+        refined
+            .as_ref()
+            .is_some_and(|s| *s != gpui::StyleRefinement::default()),
+        "geometry::toolbar_button_rest gives the outlined Copy button nothing, so this test compares nothing: {refined:?}"
+    );
     let button = "basic-icon-copy";
     let outlined = bounds_of(&mut cx, button);
     r.toolbar.button_hover_border_color = None;
     install_breeze_light(&mut cx, &r);
     show(&mut cx, &showcase, Page::Basic);
+    assert_eq!(
+        rest(&mut cx),
+        Some(gpui::StyleRefinement::default()),
+        "with the toolbar's outline cleared geometry::toolbar_button_rest still refines the Copy button"
+    );
     assert_eq!(
         bounds_of(&mut cx, button),
         outlined,
