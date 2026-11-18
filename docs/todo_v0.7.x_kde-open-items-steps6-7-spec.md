@@ -81,7 +81,7 @@
   §2.3's `hover_background`; rows only, no blank line dropped), for Part F; steps 4 and 5's B.9 (the gpui builder
   `geometry::toolbar_button_rest`, the form of 6.D's `geometry::default_button_rest`, and
   their builders' place after `geometry::button_checked`) and B.10
-  (`docs/todo_v0.7.x_kde-open-items-steps4-5-spec.md`: the checked tool button
+  (`docs/todo_v0.7.2_kde-hover-outlines-and-toolbar-buttons-spec.md`: the checked tool button
   `basic.icons.edit` in the Basic page's icon row, and its layout measurement, with the
   `visible_area` stop rule, nine entries, pre-check and pre-build, re-read the same day
   as amended), for 6.D, 6.G and 7.H; their reply
@@ -1718,7 +1718,7 @@ visible area at 1280x720 under some preset was not read, so it is measured:
   each showcase before its block through the session's build slot, its command
   (`capture_showcases`, one block of nine runs per showcase, a failed block run again
   whole), its comparison script, its stop rule and its duration and announcement, as
-  B.10 states them (`docs/todo_v0.7.x_kde-open-items-steps4-5-spec.md`, B.10, *The
+  B.10 states them (`docs/todo_v0.7.2_kde-hover-outlines-and-toolbar-buttons-spec.md`, B.10, *The
   measurement* to *The duration*). Only the folders, the expected ids and the question
   of the comparison's items 5 and 6 differ, below.
 - **When.** "Before": on the tree U6.1 starts from (the header; the release's branch

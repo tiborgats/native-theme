@@ -32,7 +32,7 @@
   v0.7.1 (D10 (a), the maintainer's answer of 2026-11-15; D10 (b) is not
   taken). Under D10's proposed release order, `<lane-pred-head>` is the
   steps 4–5 release's gated head (0.7.4), read from that plan's record
-  (`docs/todo_v0.7.x_kde-open-items-steps4-5-plan.md`, its rule 20 line),
+  (`docs/todo_v0.7.2_kde-hover-outlines-and-toolbar-buttons-plan.md`, its rule 20 line),
   `<prev-tag>` is the icons' `v0.7.5`, and this release is 0.7.6. Under
   D10's other order for its items 2 and 3 (the icons before the KDE steps 2
   to 5), `<prev-tag>` is the steps 4–5 release's own tag (`v0.7.5`), the

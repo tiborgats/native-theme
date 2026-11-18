@@ -1,0 +1,15 @@
+style breeze Window #eff0f1 Highlight #3daee9 SH_ComboBox_Popup 0 combo geometry in window 10 84 280 32 away point 149 2
+1_closed_away events Enter -> QWindow#QWidgetClassWindow; Enter -> QWidget; MouseMove -> QWindow#QWidgetClassWindow; MouseMove -> QWidget
+1_closed_away grab 280 32 dpr 1.0 left edge x=0..7 at y 16 : #eff0f1 #d1d1d2 #fcfcfc #fcfcfc #fcfcfc #fcfcfc #fcfcfc #fcfcfc | fill at 140 16 : #fcfcfc | underMouse False hasFocus True option state Enabled|HasFocus|Active | popup none cursor 151 4
+2_closed_over events MouseMove -> QWindow#QWidgetClassWindow; Enter -> Combo (the combo box); HoverEnter -> Combo (the combo box); MouseMove -> Combo (the combo box); HoverMove -> Combo (the combo box)
+2_closed_over grab 280 32 dpr 1.0 left edge x=0..7 at y 16 : #eff0f1 #3daee9 #fcfcfc #fcfcfc #fcfcfc #fcfcfc #fcfcfc #fcfcfc | fill at 140 16 : #fcfcfc | underMouse True hasFocus True option state Enabled|MouseOver|HasFocus|Active | popup none cursor 151 101
+3_open_away_move events MouseMove -> QWindow#QWidgetClassWindow; Leave -> Combo (the combo box); HoverLeave -> Combo (the combo box); MouseMove -> QWidget
+3_open_away_show events Leave -> QWindow#QWidgetClassWindow; Leave -> QWidget
+popup QFrame global geometry 12 117 280 121 combo global 12 86 away global 151 4 away inside popup False trigger centre inside popup False
+3_open_away grab 280 32 dpr 1.0 left edge x=0..7 at y 16 : #eff0f1 #3daee9 #c3e5f6 #c3e5f6 #c3e5f6 #c3e5f6 #c3e5f6 #c3e5f6 | fill at 140 16 : #c3e5f6 | underMouse False hasFocus False option state Enabled|On|Active | popup QFrame cursor 151 4
+4a_open_move_to_combo events MouseMove -> QWindow#QComboBoxPrivateContainerClassWindow; MouseMove -> QFrame
+4a_open_move_to_combo grab 280 32 dpr 1.0 left edge x=0..7 at y 16 : #eff0f1 #3daee9 #c3e5f6 #c3e5f6 #c3e5f6 #c3e5f6 #c3e5f6 #c3e5f6 | fill at 140 16 : #c3e5f6 | underMouse False hasFocus False option state Enabled|On|Active | popup QFrame cursor 151 101
+4b_prep_popup_move_away events MouseMove -> QWindow#QComboBoxPrivateContainerClassWindow; MouseMove -> QFrame
+4b_prep_popup_move_away grab 280 32 dpr 1.0 left edge x=0..7 at y 16 : #eff0f1 #3daee9 #c3e5f6 #c3e5f6 #c3e5f6 #c3e5f6 #c3e5f6 #c3e5f6 | fill at 140 16 : #c3e5f6 | underMouse False hasFocus False option state Enabled|On|Active | popup QFrame cursor 151 4
+4b_open_move_to_popup events MouseMove -> QWindow#QComboBoxPrivateContainerClassWindow; MouseMove -> QFrame
+4b_open_move_to_popup grab 280 32 dpr 1.0 left edge x=0..7 at y 16 : #eff0f1 #3daee9 #c3e5f6 #c3e5f6 #c3e5f6 #c3e5f6 #c3e5f6 #c3e5f6 | fill at 140 16 : #c3e5f6 | underMouse False hasFocus False option state Enabled|On|Active | popup QFrame cursor 151 101

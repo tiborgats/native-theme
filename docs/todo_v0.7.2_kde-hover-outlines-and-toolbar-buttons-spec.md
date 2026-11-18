@@ -1,61 +1,42 @@
-# 0.7.x: issue #4's open KDE items, steps 4 and 5 — specification
+# 0.7.2: issue #4's open KDE items, steps 4 and 5 — specification
 
 - Rationale: [`issues/0004_kde-open-items-rationale.md`](issues/0004_kde-open-items-rationale.md)
-  ("the rationale"), not yet approved. This document specifies its step 4 (D6: the
-  hover outlines of the check box, the radio button and the combo box) and its step 5
-  (D7's first half: the states of a toolbar button). It decides nothing the rationale
-  decides; the small points it settles by reading are listed under *Decisions taken
-  while specifying*, and what needs the maintainer under *Open points*.
+  ("the rationale"). This document specifies its step 4 (D6: the hover outlines of the
+  check box, the radio button and the combo box) and its step 5 (D7's first half: the
+  states of a toolbar button). D6 and D7 (its first half, step 5) were approved by the
+  maintainer for 0.7.2 on 2026-11-18, with this specification and its plan. It decides nothing the
+  rationale decides; the small points it settles by reading are listed under *Decisions
+  taken while specifying*, and what needs the maintainer under *Open points*.
 - It continues [`issues/0004_kde-hand-overrides-rationale.md`](issues/0004_kde-hand-overrides-rationale.md)
   §5.4 ("the first rationale") and the backlog entries `docs/todo.md:1767-1933`,
   `:52-111`, `:1230-1511`, `:2860-2913`, which hold the verified Breeze facts.
-- Written 2026-11-14 against `v0.7.1-rc2` at `0fa28027`. Every `file:line` without
-  another version is that commit's. Steps 1 to 3 of the rationale land before step 4
-  and move some of these lines; where that matters the text says how to find the
-  place again (by name, by quoted text, by the row's property).
-- **What lands before, and how an edit is applied.** Steps 1 to 3 land before these
-  steps, on the branch the work starts from (steps 2 and 3's gated head, C.1, *The
-  branch*). The egui 0.37 upgrade (D10's proposed order puts it first after v0.7.1)
-  and any release of the other lane are released before this one, but normally reach
-  this branch only at the merge with the predecessor's tag (S2 as amended; the
-  batch's rule 25): the units are written in the egui version the branch then has,
-  normally 0.36.2, and the plan's task "the version forms after MG" rewrites the forms
-  that change once the merge brings 0.37. So every edit is applied by its quoted text,
-  its key or its test's name; line numbers are those of `0fa28027` and serve to find
-  the place; a count is given as today's value and as the delta the step adds ("516,
-  plus what steps 2 and 3 add, plus 2"). The egui citations (`EG/…`, egui 0.36.2) and
-  decisions 6 and 12 are re-read against the egui version the tree has, before the
-  units and again after the merge; of 0.37.0, `theme/default_style.rs:54-72` and
-  `containers/frame.rs:300-322` (`apply_stroke_and_expansion_without_layout_shift`)
-  were read for this document, which settle decision 6 for 0.37. Each text below
-  given in an egui 0.37 form and an egui 0.36.2 form is written in the form of the
-  tree's version.
+- Written 2026-11-14 for a release of its own; amended 2026-11-18: the maintainer folded
+  steps 4 and 5 into 0.7.2 (D0 (a), the version stays 0.7.2), built on `v0.7.2-rc1`
+  after steps 2 and 3 (head `f02c3ae9`). The tree has egui 0.37.0, gpui-component and
+  gpui-base 0.10.0, gpui-pre 0.3.12 and iced_widget 0.14.2.
+- Every edit is applied by its quoted text, its key or its test's name. A `file:line` of
+  a repository file is `0fa28027`'s and serves to find the place (a facts line is three
+  higher on this tree); none is re-pointed, and a new citation of a repository document
+  names the document only (the maintainer, 2026-11-15).
+- `GC` and `EG` lines in this document's reasoning are gpui-component 0.9.1's and egui
+  0.36.2's, as written; `<record>/steps45/upstream-reread.md` gives each one's line at
+  0.10.0 and 0.37.0 and its verdict (43 hold, 9 changed, 1 false; no behaviour Part A or
+  B rests on changed). Every text this document tells a builder to write cites
+  gpui-component 0.10.0 and egui 0.37.0.
+- Taken before the build, in `<record>/steps45/`: that re-read; three trials
+  (`trial/RESULTS.md`: T1, Edit's wrap; T2, a checked button's icon colour; T3, the
+  overlay over a combo box's trigger); two reviews and the decisions on them
+  (`decisions.md`).
 - Each part is complete in itself; part B assumes part A has landed only where it says
   so.
-- **The batch's speed decisions** (`docs/todo_v0.7.1_batch-speed-rationale.md`, S1 to
-  S5, approved by the maintainer on 2026-11-15) apply: steps 4 and 5 are one release on
-  one branch (S5; C.3), each unit is gated by S1's cadence (C.1), the branch starts from
-  its lane predecessor's gated head and is merged with the tag of the release before it
-  in the maintainer's order after its last unit before the merge (S2 as amended on 2026-11-15:
-  a merge, not a rebase; C.1, *The branch*; the amendment and the batch's
-  working rules, the rationale's Appendix, were approved by the maintainer on
-  2026-11-15, apart from the approval of S1 to S5), and the close-out pushes after the
-  compatibility run and runs the full check beside CI (S4; C.1, C.2). Two decisions of
-  the maintainer of 2026-11-15 apply too: the caret is in the KDE lane, after this
-  release (S3 as amended), and no citation is re-pointed, new ones naming the document,
-  never a line (S6; A.3, C.4).
-- **Version numbers.** Where a release's number appears below (0.7.3 for steps 2 and
-  3, 0.7.4 for this release), it is the proposal and a placeholder until the
-  maintainer decides D0 (C.3; the order itself was approved with the batch's S3 on
-  2026-11-15): the batch's proposed numbers (D10's order with S5's pairs) are 0.7.1 the GPUI Kit completion and step 1, 0.7.2 egui 0.37,
-  0.7.3 steps 2 and 3, 0.7.4 steps 4 and 5, 0.7.5 the widget icons, 0.7.6 the caret,
-  0.7.7 steps 6 and 7.
-- Abbreviations as the rationale's: `GC` gpui-component 0.9.1 `src/`, `GP` gpui-pre
-  0.3.12 `src/`, `IW` iced_widget 0.14.2 `src/`, `EG` egui 0.36.2 `src/`; `CG`, `CI`,
+- Abbreviations as the rationale's: `GC` gpui-component `src/`, `GP` gpui-pre 0.3.12
+  `src/`, `IW` iced_widget 0.14.2 `src/`, `EG` egui `src/`; `CG`, `CI`,
   `CE` the gpui, iced and egui connectors' `src/`; `F` is `docs/facts/` on the parked
   branch `v0.8.0-rc1` (checkout `/home/tibi/Rust/native-theme`, `78ee0efd`); `PF` is
   `docs/platform-facts.md`; "Breeze" lines are breeze 6.8.2 / `f0b1d753` as the facts
-  rows cite them.
+  rows cite them. `<record>` and `<tools>` are the folders the steps 2–3 plan
+  ([`todo_v0.7.2_kde-focus-ring-and-button-outlines-plan.md`](todo_v0.7.2_kde-focus-ring-and-button-outlines-plan.md))
+  names in its head.
 
 ## How to read it
 
@@ -65,43 +46,25 @@ Two parts and a closing section:
 |---|---|---|
 | A — Step 4 | D6 | `checkbox.hover_border_color`, `combo_box.hover_border_color`; kde-breeze drops two stand-in fills; the three connectors and showcases |
 | B — Step 5 | D7, toolbar buttons | `toolbar.button_hover_background`, `.button_hover_border_color`, `.button_active_background`, `.button_checked_background`; three presets; a toolbar button in each connector, a checked one lettered `button.checked_text_color`; the showcases' tool buttons and a checked one in each |
-| C — Order, gates, version | D0, D10; the batch's S1–S5 | each step's units, their order and gates (S1's cadence), the branch (S2), the one release of both steps (S5), its version and close-out (S4) |
+| C — Order and gates | D0, D10 | order and gates; 0.7.2's close-out runs once |
 
-**The facts lines this document names are `0fa28027`'s.** Step 1 adds no `PF` line (its
-specification's C.1). Steps 2 and 3 insert their rows only, each beside its group, and
-remove no line (their specification,
+**The facts lines this document names are `0fa28027`'s; each is three higher on this
+tree, and each row is found by its text.** Steps 2 and 3 inserted their rows only, each
+beside its group, and removed no line (their specification,
 [`todo_v0.7.2_kde-focus-ring-and-button-outlines-spec.md`](todo_v0.7.2_kde-focus-ring-and-button-outlines-spec.md),
 decision 2): step 2's row after `focus_ring_offset` (`PF:1110`), step 3's two directly
-before §2.3's `hover_background` (`PF:1192`). Every `PF` line this document names lies
-from `:1218` on, so on the tree this work starts from each number is three higher
-than written; the numbers serve to find the place, and each row is found by its text
-(the plan's anchors). The preset comments below cite no line (the batch's S6). The caret
-work, which also adds facts rows, comes after this release in the KDE lane and branches
-from its gated head (S3 as amended on 2026-11-15), so it moves none of these lines
-first. The plan re-reads the lines when it starts; the operations (which row goes
-where; no other line changes, decision 1) are stated by name and stay.
+before §2.3's `hover_background` (`PF:1192`); every `PF` line this document names lies
+from `:1218` on. The preset comments below cite no line (the batch's S6). The
+operations (which row goes where; no other line changes, decision 1) are stated by name.
 
 **Lines that must not move.** The gpui showcase's gate
 `every_colour_claim_is_read_at_the_line_it_cites` (`CG/showcase.rs:2819`) opens each
-colour claim at the connector line it cites. At `0fa28027` claims cite
-`CG/widgets/checkbox.rs` lines 123, 125, 129, 134, 138, 140, 143, 144, 145
-(`examples/showcase-gpui/info/inputs.rs:961-1157`, `tests.rs:15858-15918`),
-`CG/variants.rs` lines 62-64 and `CG/geometry.rs` lines 230, 737, 772. Where step 3's
-trial passed, four lines of `variants.rs` join them: `bordered_button`'s
-`.foreground(theme.button_foreground)`, `.hover(theme.button_hover)` and
-`.active(theme.button_active)`, and the line of `hover_border` that reads
-`n.resolved.button.hover_border_color`, which `ButtonKind::Bordered`'s claims cite (the
-steps 2–3 specification's *Lines that must not move*; their numbers are step 3's tree's).
-An edit above one of them either keeps the line count or re-points every claim it moves
-in the same commit; the gate fails otherwise. Part A's edit of `checkbox.rs` moves lines
-(A.10); part B adds code to `variants.rs` only after the last function before its
-`#[cfg(test)]` module (`hover_border` where step 3's trial passed, `switch_color`, which
-ends at `:93`, where it failed), adds code to `geometry.rs` only below `:1378`, and
-replaces one import line of `variants.rs` (`:34`) by one (B.9).
-
-**Facts lines move too.** A new row in a `PF` table moves every later line. Under the
-batch's S6 no citation of a moved line is re-pointed (A.3, C.4): the existing ones are
-left as they are, and the gates that compared line numbers stop doing so in v0.7.1.
+colour claim at the connector line it cites. An edit above a claimed line keeps the line
+count or re-points every claim it moves in the same commit. Part A's edit of
+`checkbox.rs` moves lines (A.10). Part B adds code to `variants.rs` only after
+`hover_border`, the last function before its `#[cfg(test)]` module, replaces
+`use crate::Native;` by one line (B.9), and adds code to `geometry.rs` only after
+`button_checked`.
 
 ## Decisions taken while specifying
 
@@ -145,16 +108,11 @@ None changes a result of the rationale.
    shows whenever the button is hovered or pressed, checked or not
    (`breezehelper.cpp:710-712`, F `:2991`), where the toolkit allows it (B.13).
 6. **egui's tool button and the hover outline.** egui keeps a button's size whatever
-   its stroke: `button_style` sets the frame's inner margin to `button_padding` plus the
-   expansion less the state's `bg_stroke.width` (`EG/widget_style.rs:162-164`), and the
-   frame's total margin is inner margin plus stroke plus outer margin
-   (`EG/containers/frame.rs:327-331`), so the stroke takes its width from the padding
-   inside the frame. egui 0.37.0, released before these steps and reaching this branch
-   at the latest with the merge (C.1, *The branch*), does the same: its
-   button frame takes `button_padding` as its inner margin and then
+   its stroke: its button frame takes `button_padding` as its inner margin and then
    `apply_stroke_and_expansion_without_layout_shift` with the state's `bg_stroke`
    (`egui-0.37.0/src/theme/default_style.rs:54-72`; the function at
-   `containers/frame.rs:300-322`).
+   `containers/frame.rs:300-322`), so the stroke takes its width from the padding
+   inside the frame (B.13.11 on a fractional width).
    The showcase's `tool_button` sets `spacing.button_padding` and zeroes every state's
    stroke width (`showcase-egui/demo.rs:294-313`). Where the theme states the toolbar's
    hover outline, it sets `bg_stroke.width` to `button.border.line_width` on the states
@@ -164,8 +122,8 @@ None changes a result of the rationale.
    absolutely over the trigger: a wrapper's own border would move the trigger in by its
    width. gpui paints a later child over an earlier one, and an element that only has a
    group-hover style gets a `Normal` hitbox, which "doesn't affect mouse handling for
-   other hitboxes" (`GP/window.rs:891-894`; `GP/elements/div.rs:2460-2468`). Read, not
-   built (A.10).
+   other hitboxes" (`GP/window.rs:891-894`; `GP/elements/div.rs:2460-2468`). Built in a
+   trial (T3): it passes (A.10).
 8. **Which facts a new field's preset values come from** (D6's rule, as D6 words it): a
    preset states a new field where `docs/platform-facts.md` gives the platform's value,
    with its source, as one colour for everything the field covers. In the 0.7.x line the facts of
@@ -179,9 +137,22 @@ None changes a result of the rationale.
    (B.3) are such. A.5 and B.4 apply the rule to every bundled platform preset.
 9. **Test names stay** where a test's list of leaves grows; their doc comments name the
    new leaves.
-10. **A combo box's hover outline shows while it is open under the pointer**
-    (`pick_list::Status::Opened { is_hovered: true }`), as its hover fill does today
-    (`CI/styles.rs:1180-1182`, `:1215-1221`).
+10. **A combo box's hover outline on an open trigger.** Breeze's pen is `Highlight`
+    while `hovered || visualFocus || down` (`breezehelper.cpp:710-712`); what
+    it draws on a combo box whose popup is open was measured on the installed Breeze
+    before the build (`docs/evidence/breeze-offscreen/2026-11-18/`): while the popup is
+    open the trigger is drawn with the `Highlight` pen and a tinted fill whether the
+    pointer is over it or not (the style option carries `State_On`; a pointer over the
+    trigger then reaches the popup, never the combo box, so Qt reports no hover there
+    (under Qt's `offscreen` platform, the measurement's)).
+    The hover field draws that pen where the pointer is over the trigger; an open
+    trigger with the pointer away is a state the model has no field for (A.12's backlog
+    line), and no connector draws the hover field there. So iced draws the outline in
+    `Hovered` and `Opened { is_hovered: true }`. egui has one look for an open combo box whatever the
+    pointer does (`widgets.open`), which the connector leaves at the border at rest; the
+    gpui showcase's overlay follows the pointer.
+    The source of this decision is the evidence folder
+    `docs/evidence/breeze-offscreen/2026-11-18/` (E4, Part C).
 11. **The checked text's fallback.** D7 letters a checked toolbar button in
     `button.checked_text_color` where the theme states the toolbar's checked fill.
     That field is a soft option (`docs/inheritance-rules.toml:412`); where it is `None`
@@ -204,20 +175,25 @@ None changes a result of the rationale.
     not be hovered; Reload System Theme is momentary); a fourth chrome toolbar button,
     Toggle Side Panel, would change every page's screenshot and put one action on two
     controls. The Basic page's row changes one page and one row.
+    Measured before the build (T1, `<record>/steps45/trial/RESULTS.md`): Edit fits on
+    the row's line under kde-breeze; under adwaita and catppuccin-mocha it starts a
+    second line and the groups below Icons in its column move down 32 to 40 px, staying
+    91 px or more inside the page's view; under material-3 the row has two lines already
+    and Edit joins Delete on the second. The three showcases wrap alike. Under the
+    presets of other platforms a Linux showcase cannot be run; the screenshots workflow
+    draws them.
 14. **How the gpui test learns a checked toolbar button's icon colour** (B.9, B.13.8).
     Not from the painted frame: gpui-pre 0.3.12's test API exposes painted quads and
     underlines only (`GP/window.rs:3112-3120`), no SVG sprite's colour. A probe child
-    inside a selected toolbar Button records `window.text_style().color` during paint,
-    which is the colour gpui-component 0.9.1 paints an `Icon` in where the icon states
+    inside a selected toolbar Button records `window.text_style().color` at render,
+    which is the colour gpui-component 0.10.0 paints an `Icon` in where the icon states
     none (`GC/icon.rs:260-266`, `:213-214`). The test is
     `a_checked_toolbar_buttons_icon_takes_the_checked_text`, a lib test in
     `connectors/native-theme-gpui/src/widgets/tests.rs` (the harness is there, and it
     needs no runner environment), on windows-11 light and dark, on both gpui backends.
-    Where the colour does not follow, the caller sets `Icon::text_color` from
-    `button.checked_text_color`, the existing fallback, and the test is removed: a probe
-    of `window.text_style().color` cannot see a colour set on the `Icon` itself, so no
-    test reads it then; the plan's record and the gpui README's sentence say so (B.9,
-    B.13.8), and this specification is not edited after the verdict.
+    Measured before the build (T2): the colour follows. If
+    `a_checked_toolbar_buttons_icon_takes_the_checked_text` fails in the unit that builds
+    Edit, the unit stops and the difference goes to the maintainer.
 
 ## Corrections to the rationale found while specifying
 
@@ -252,11 +228,11 @@ look belongs to a toolbar's image, image-text and arrow buttons").
 
 ## Open points
 
-1. **The version** (D0) and the release are the maintainer's: see C.3.
-
 Settled with the coordinator after review: material-3 states its combo box's hover
 outline (decision 8, A.5), and the checked toolbar button is a fourth tool button with
 the edit icon on the Basic page (decision 13, B.10).
+
+Open with the maintainer: the approval of D6 and D7 (the head).
 
 ---
 
@@ -271,8 +247,8 @@ the edit icon on the Basic page (decision 13, B.10).
 
   ```rust
       /// Border colour of a check box's or a radio button's indicator under the
-      /// pointer, checked or not; `None` where the platform draws no hover
-      /// outline, and the border at rest stays (docs/platform-facts.md §2.5).
+      /// pointer, checked or not. `None` where the theme states none; a connector
+      /// then keeps the border at rest (docs/platform-facts.md §2.5).
       #[theme(category = "soft_option")]
       pub hover_border_color: Option<Rgba>,
   ```
@@ -281,16 +257,16 @@ the edit icon on the Basic page (decision 13, B.10).
 - `ComboBoxTheme`, directly after `hover_background` (`:925-927`):
 
   ```rust
-      /// Border colour of the trigger under the pointer; `None` where the
-      /// platform shows hover by the fill alone or not at all, and the border at
-      /// rest stays (docs/platform-facts.md §2.24).
+      /// Border colour of the trigger under the pointer. `None` where the theme
+      /// states none; a connector then keeps the border at rest
+      /// (docs/platform-facts.md §2.24).
       #[theme(category = "soft_option")]
       pub hover_border_color: Option<Rgba>,
   ```
 
 The resolved forms the derive generates are `#[non_exhaustive]`
 (`native-theme-derive/src/gen_structs.rs:26`); `CheckboxTheme` and `ComboBoxTheme` are
-not, which is the struct-literal break of C.3.
+not, which is the struct-literal break of 0.7.2's *Breaking Changes* bullet (A.12).
 
 `native-theme/tests/proptest_roundtrip.rs:285-317` (`arb_checkbox_theme`) builds every
 field: the colour vector becomes `8..=8` and `hover_border_color: colors[7]` is added.
@@ -349,7 +325,7 @@ fetched lines disprove, becomes "and under the pointer its outline is stroked ag
 | property | `` `hover_border_color` `` |
 | macOS | `❓ — AppKit publishes no hover colour for a pop-up button, and the OS probe renders it at rest only (as hover_background above) · macOS 26: ❓ — the same` |
 | Windows | `❓ — not read: border.color above inherits the default border at rest, hover_background gives WinUI's fill under the pointer, neither a ComboBoxBorderBrushPointerOver` |
-| KDE | `**(Breeze src)** Highlight, [Colors:Selection] BackgroundNormal of the Active group: a non-editable combo box is a button frame whose hover turns its pen Highlight ([breezehelper.cpp:710-712](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezehelper.cpp#L710-L712), :672-673) — 61,174,233 #3daee9 in Breeze and Breeze Dark ([BreezeLight.colors:87](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/colors/BreezeLight.colors#L87); BreezeDark.colors:88). An editable combo box is a line edit, framed as §2.4 hover_border_color` |
+| KDE | `**(Breeze src)** Highlight, [Colors:Selection] BackgroundNormal of the Active group: a non-editable combo box is a button frame whose hover turns its pen Highlight ([breezehelper.cpp:710-712](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezehelper.cpp#L710-L712), :672-673); on an open combo box the pen is Highlight and the fill tinted whatever the pointer does (measured, [combo_trigger_light.txt](evidence/breeze-offscreen/2026-11-18/combo_trigger_light.txt), [combo_trigger_dark.txt](evidence/breeze-offscreen/2026-11-18/combo_trigger_dark.txt)) — 61,174,233 #3daee9 in Breeze and Breeze Dark ([BreezeLight.colors:87](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/colors/BreezeLight.colors#L87); BreezeDark.colors:88). An editable combo box is a line edit, framed as §2.4 hover_border_color` |
 | GNOME | `**(none)** at normal contrast — GtkDropDown's trigger is a button with no border at rest (border.color above) and shows hover by its fill (hover_background above); under prefers-contrast: more its 1px inset line on hover was not read` |
 | Material | `**(M3 token)** text-field-hover-outline-color = on-surface — L #1d1b20, D #e6e0e9 ([v0_192/_md-comp-outlined-select.scss:168-169](https://github.com/material-components/material-web/blob/cbd34a8921915af94d5ef65c2a69eece41d5b4f3/tokens/versions/v0_192/_md-comp-outlined-select.scss#L168-L169)), as hover_background above says` |
 
@@ -360,18 +336,16 @@ Sources of the values: the Breeze colours are kde-breeze's existing comments
 `hover_background` row's KDE cell (`PF:1625`) gains ", whose pen is
 `hover_border_color`" directly after its link `([breezehelper.cpp:710-712](…))`, which
 follows "a non-editable combo box is a button frame whose hover turns only the pen
-`Highlight`"; the rest of the cell (", its fill animates by …") stays.
+`Highlight`"; the rest of the cell (", its fill animates by …") stays. The new row's
+clause on an open combo box (decision 10) cites E4's evidence folder, which D0
+commits; U1 writes the row whole, as the table gives it. The clause's links name the
+two files and no line (the maintainer's rule of 2026-11-15, which the evidence
+README's older sentence does not override): `(measured,
+[combo_trigger_light.txt](evidence/breeze-offscreen/2026-11-18/combo_trigger_light.txt),
+[combo_trigger_dark.txt](evidence/breeze-offscreen/2026-11-18/combo_trigger_dark.txt))`.
 
-**Citations of the lines these edits move** (the batch's S6): the rows inserted move
-the facts lines below them, and no citation of those lines is
-re-pointed. The existing line-number citations are left as they are and may drift; the
-three gates that compared a citation's line number with the line it names stop doing so
-in v0.7.1 (its unit LN, `docs/todo_v0.7.1_gpui-kit-0.9.1-spec.md`, Part I:
-`native-theme/tests/platform_facts_xref.rs` and
-`native-theme/src/presets/documented_sizes.rs` find each row by its text, and
-`scripts/check_preset_citations.py` compares nothing with the facts file's rows,
-Part I.3). This work's own new citations of the facts file name the document and its
-section, never a line (A.5, B.4), in the form Part I.3 reads.
+The rows inserted move the facts lines below them; no citation of those lines is
+re-pointed, and no gate compares a facts line number.
 
 Gates: `scripts/check_platform_facts_rows.py` (every registry field has a row), and
 `scripts/check_preset_citations.py`, `documented_sizes.rs`' test and
@@ -415,9 +389,7 @@ it on an enabled box or radio, checked or not. The backlog's earlier reading at 
 no line number (the batch's S6: a new citation names the document, here with its
 section): a citation's first line starts `# platform-facts.md (§x.y):`; a key the preset
 leaves out is named with `# K not stated: platform-facts.md (§x.y), ...`. This is the
-form `scripts/check_preset_citations.py` reads once v0.7.1's unit LN has changed it
-(`docs/todo_v0.7.1_gpui-kit-0.9.1-spec.md`, Part I.3, *The new form*, which names this
-work's preset comments among those written in it). The preset's existing
+form `scripts/check_preset_citations.py` reads (its docstring). The preset's existing
 `platform-facts.md:<line>` comments are left as they are.
 
 **Light.** `[light.checkbox]`: replace `:204` (`hover_background = "#93cee9"`, uncited)
@@ -525,10 +497,9 @@ ported code.
 - Checkbox block (`:574-591`): after the `unchecked_border_color` assignment add
   `variant.checkbox.hover_border_color = view_focus;` and extend the block's comment
   with "; under the pointer the indicator's outline is stroked in `focusColor()`,
-  `[Colors:View] DecorationFocus` (breezehelper.cpp:895-907 at breeze f0b1d75)". `view_focus` is bound at `:478`.
+  `[Colors:View] DecorationFocus` (breezehelper.cpp:895-907 at breeze f0b1d75)".
 - Combo box block (`:710-714`): add `variant.combo_box.hover_border_color = selection_bg;`
-  (`selection_bg` is bound at `:580` today; step 2 moves the binding beside
-  `view_focus`, `:478`, the steps 2–3 specification's 2C.1); its comment becomes "Combo box
+  (`view_focus` and `selection_bg` are both bound at the top of `populate_colors`); its comment becomes "Combo box
   (docs/platform-facts.md §2.24): the Button set, and under the pointer the pen
   `Highlight`, `[Colors:Selection] BackgroundNormal` (breezehelper.cpp:710-712 at breeze
   f0b1d75)."
@@ -544,24 +515,25 @@ as kde-breeze cites them): both fields #3daee9 under both schemes; they equal A.
 
 **Tests** (`kde/colors.rs` test module, `kde/mod.rs`):
 
-1. `test_hover_borders_are_breezes` (new, `kde/colors.rs`): for both schemes of
-   `breeze_light_and_dark()` (`:1410`), `checkbox.hover_border_color` and
-   `combo_box.hover_border_color` are `Some(Rgba::rgb(61, 174, 233))`.
-2. `a_custom_scheme_moves_the_hover_borders` (new): the scheme of
+The Breeze values under both schemes are held by
+`the_derived_colours_are_the_presets_under_breeze` (item 4), so no test of its own
+asserts them.
+
+1. `a_custom_scheme_moves_the_hover_borders` (new, `kde/colors.rs`): the scheme of
    `a_custom_scheme_moves_the_menu_scrollbar_and_list_colours` (`:1492`) with
    `DecorationFocus=20,200,90` and `[Colors:Selection] BackgroundNormal=200,40,90`, each
    replaced by key as that test does: the check box's is (20,200,90), the combo box's
-   (200,40,90), each `assert_ne!` against the Breeze Light read.
-3. `test_missing_groups_leave_the_new_fields_to_the_preset` (`:1589`): with only
+   (200,40,90), each `assert_ne!` against the Breeze Light read. It is the one check of
+   the exact value on a scheme that is not Breeze's, where both Breeze schemes give
+   both keys the same #3daee9.
+2. `test_missing_groups_leave_the_new_fields_to_the_preset` (`:1589`): with only
    `[Colors:Selection]`, `checkbox.hover_border_color` is `None` and
    `combo_box.hover_border_color` `Some`; without `[Colors:Selection]` the latter is
    `None`.
-4. `test_full_mapping_completeness` (`:1714`): both are `Some` under `BREEZE_DARK`.
-5. `kde/mod.rs`: `derived_leaves` and `resolved_leaves` (`:1248`, `:1309`) append
+3. `test_full_mapping_completeness` (`:1714`): both are `Some` under `BREEZE_DARK`.
+4. `kde/mod.rs`: `derived_leaves` and `resolved_leaves` (`:1248`, `:1309`) append
    `("checkbox.hover_border_color", …)` and `("combo_box.hover_border_color", …)`
-   after what steps 1 to 3 append (29 at `0fa28027`; by their specifications 31 after
-   step 1, its B.5, 32 after step 2's ring, 34 after step 3's two button borders;
-   the array length and the doc's count grow by two, to 36). `the_derived_colours_are_the_presets_under_breeze` (`:1398`) then
+   (34 → 36, the doc's "thirty-four" → "thirty-six"). `the_derived_colours_are_the_presets_under_breeze` (`:1398`) then
    checks A.5 against the reader. `the_view_decorations_move_the_frames_the_tab_hover_and_the_handle`
    (`:1538`): the focus list appends `"checkbox.hover_border_color"`; its doc ends "…a
    focused field's frame, the menu's hover and the check box's hover outline".
@@ -668,9 +640,12 @@ only where platform-facts gives it".
   `styles::checkbox` `Hovered { is_checked: false }` border colour =
   `unchecked_border_color.unwrap_or(border.color)`, `styles::radio` `Hovered { is_selected: false }`
   `border_color` the same, `styles::pick_list` `Hovered` and `Opened { is_hovered: true }`
-  border colour = `combo_box.border.color`, and the checked statuses
-  (`Hovered { is_checked: true }`, `Hovered { is_selected: true }`) against
-  `checkbox.border.color`. The windows-11 test's code is left as it is: windows-11 states
+  border colour = `combo_box.border.color`, and the checked statuses on a theme whose
+  `checkbox.border.color` is replaced by a sentinel, a colour the test first asserts
+  differs from `checkbox.hover_border_color` and from every other `checkbox.*` colour
+  leaf: with the hover border stated, `Hovered { is_checked: true }` and
+  `Hovered { is_selected: true }` give the hover border; with it cleared, the sentinel.
+  The windows-11 test's code is left as it is: windows-11 states
   neither field. Its comment counts the soft options the test covers: the ones it
   clears and reads back through its `read_sites` (`contract.rs:4172-4268`), twelve at
   `0fa28027` and a thirteenth, `tab.hover_background`, under `iced_aw`. The two new
@@ -691,13 +666,8 @@ only where platform-facts gives it".
       // states them.
   ```
 
-  The rest of the comment, "The thirteenth" (`:4122-4123`) included, stays. The
-  counts this test's comment then holds after each step: twelve (thirteen with
-  `iced_aw`) after step 3, whose `button.hover_border_color` is read by `styles::button`,
-  which this test does not call (it calls `styles::checkbox`, `radio`, `toggler`,
-  `pick_list`, `slider`, `scrollable` and `aw::tab_bar`, `:4148-4166`); twelve after step
-  4; twelve after step 5, whose `toolbar.button_*` fields are read by
-  `styles::toolbar_button`, which this test does not call either (B.8's tests cover it).
+  The rest of the comment, "The thirteenth" (`:4122-4123`) included, stays, and the
+  count stays twelve.
 - `contract-leaves.toml` is generated: `cargo test -p native-theme-iced --all-features --lib -- --ignored regenerate_contract_leaves`
   (`contract.rs:5539`). Expected differences: `[leaves."checkbox.hover_border_color"]`
   moves `styles::checkbox.border` under `Hovered { is_checked: false }` (and `true`) and
@@ -757,7 +727,8 @@ by `cargo test -p native-theme-egui --lib -- --ignored regenerate_mapping_md`,
   shows it, where Breeze draws it under the pointer only".
 - `["combo_box.hover_border_color"]` after `["combo_box.hover_background"]` (`:1844`):
   the two sinks with `scope = "combo_box"`, `when = "stated; None copies
-  combo_box.border.color, §6.4"`.
+  combo_box.border.color, §6.4; an open combo box is egui's open state and keeps the
+  border at rest"`.
 - The hovered and active sinks of the borders at rest take a `when` in the file's form
   (`input.border.color`'s hovered and active sinks read
   `when = "input.hover_border_color is None, §6.4"`, `mapping.toml:1723-1724`; a second
@@ -773,24 +744,19 @@ by `cargo test -p native-theme-egui --lib -- --ignored regenerate_mapping_md`,
     `when = "stated and checkbox.hover_border_color is None; None copies checkbox.border.color, §6.4"`;
   - `["combo_box.border.color"]` (`:1894-1895`, no `when` today):
     `when = "combo_box.hover_border_color is None, §6.4"`.
-- Counts. The rule is the delta, added to what lands before step 4: steps 2 and 3 (the
-  caret work comes after this release in the KDE lane, S3 as amended); the figures
-  below are `0fa28027`'s and steps 2 and 3's, which a plan re-reads on its tree. 516
-  leaves at `0fa28027` (`src/mapping_tests.rs:238-240`, whose message
-  "512 ResolvedTheme leaves + 4 layout leaves" changes with the number: the
-  `ResolvedTheme` count that lands before, plus 2); step 4 adds 2 to what lands before. The totals table of `mapping.md` gains one SCOPED in
-  *Buttons* (113 → 114 leaves, 46 → 47 SCOPED at `0fa28027`; after step 3's 115 leaves,
-  its 3E.2, 116) and one in *Inputs* (87 → 88, 35 → 36, which steps 2 and 3 leave); the
-  generator writes them. `verdict_totals_match_the_specification`
-  (`src/mapping_tests.rs:443-497`) holds the same totals by hand, in the order
-  `[direct, scoped, derived, unmappable]` (`:457-462`, `:473-480`): `("buttons", …)` gains
-  one scoped and `("inputs", …)` one scoped on what steps 2 and 3 leave (at `0fa28027`
-  `[11, 46, 31, 25]` and `[4, 35, 36, 12]`; after step 3's `[13, 46, 31, 25]`, step 4
-  gives `[13, 47, 31, 25]` and `[4, 36, 36, 12]`); the sub-tag counts (`:486-495`) do not
-  change, the new rows having no `sub_tag`. Gates: `every_leaf_has_exactly_one_row_and_every_row_is_well_formed`,
+- Counts. On the tree (`f02c3ae9`): 519 leaves, message "515 ResolvedTheme leaves + 4
+  layout leaves (§5.7)"; Buttons 115, `[13, 46, 31, 25]`; Inputs 87, `[4, 39, 32, 12]`.
+  Step 4 adds one SCOPED leaf to each: Buttons 116, `("buttons", [13, 47, 31, 25])`;
+  Inputs 88, `("inputs", [4, 40, 32, 12])`, the comment above it gaining ", and
+  `combo_box.hover_border_color`"; 521 leaves, "517 ResolvedTheme leaves + 4 layout
+  leaves (§5.7)". The generator writes `mapping.md`. Both steps' egui parts land in one
+  unit (Part C), which writes the final figures: 525 leaves, "521 ResolvedTheme leaves
+  + 4 layout leaves (§5.7)", the totals row 525 = 48 + 217 + 169 + 91. The sub-tag
+  counts of `verdict_totals_match_the_specification` (`src/mapping_tests.rs:486-495`) do
+  not change, the new rows having no `sub_tag`. Gates: `every_leaf_has_exactly_one_row_and_every_row_is_well_formed`,
   `verdict_totals_match_the_specification`, `mapping_md_is_current`. A `grep` of the egui
   crate and its showcase for the two leaves' neighbours (`"checkbox.hover_background"`,
-  `"combo_box.hover_background"`) and for `516` finds no other hard-coded list or count
+  `"combo_box.hover_background"`) and for `519` finds no other hard-coded list or count
   these rows change (`CE/contract.rs:597` and `CE/style/roles.rs:390`, `:919` name the
   hover fills in their own formulas; the showcase names neither).
 
@@ -806,9 +772,12 @@ arms before the general checkbox stroke arm (`:715-718`), each in that arm's for
 Gates: `t10_every_sink_holds_the_leafs_value` (`:1074`),
 `t10c_every_undeclared_field_holds_its_inherited_value` (`:1343`).
 
-**Tests:** `a_none_soft_option_copies_its_fallback_leaf` (`CE/style/derived.rs:963`)
-also clears both fields and asserts the «checkbox» hovered stroke colour is the
-unchecked border and the «combo_box» hovered stroke colour `combo_box.border.color`;
+**Tests:** `a_none_soft_option_copies_its_fallback_leaf` (`CE/style/derived.rs:963`):
+it also replaces `t.checkbox.border.color` by a sentinel (asserted as A.8's new test
+asserts it), clears both fields, and asserts the «checkbox» hovered and active stroke
+colours are the sentinel (the unchecked border's fallback, which the test's own clearing
+of `unchecked_border_color` makes `border.color`); the expected values are read from the
+modified theme; and the «combo_box» hovered stroke colour is `combo_box.border.color`;
 `checkbox_cell_writes_its_rows` (`roles.rs:1557`) and
 `combo_box_and_segmented_control_cells_write_their_rows` (`:2186`) assert the border
 colour as the stroke of all five entries (`for e in all5(w)`, `:1586-1589`,
@@ -844,7 +813,7 @@ does for its checked box.
   `hover_fill`'s doc (`:46-49`) ends "-- the model states no hover for a checked one.",
   which the new field makes false; its last line becomes, one line for one,
   "    /// the model states no hover fill for a checked one; `hover_border` frames both."
-- `sized` (`:116-177`): `let hover_border = (!disabled).then_some(c.hover_border_color).flatten().map(color);`
+- `sized` (`:116-177`): `let hover_border = c.hover_border_color.filter(|_| !disabled).map(color);`
   added after `let opacity = …` (`:147`), below the claimed lines; the field goes into
   the struct literal after `hover_fill`. The struct's new lines above still move the
   claimed lines (the item on them below).
@@ -873,9 +842,8 @@ does for its checked box.
 (`GC/select.rs:562-583`; `GC/combobox.rs:983-1000`, `render_trigger_container`) and a
 `StyleRefinement` carries no hover state. `CG/contract.rs` `UNREAD_COLOURS` gains, after
 the `combo_box.hover_background` entry (`:1195-1201`):
-`UnreadColour { leaf: "combo_box.hover_border_color", why: Unread::NoReceiver("neither trigger has a hover style (`select.rs:563-582`, `combobox.rs:981-998`), and a `StyleRefinement` has no hover state; the showcase draws it over the trigger") }`,
-its citations those of the `combo_box.hover_background` entry beside it, in its form
-(`CG/contract.rs:1198-1199`, read today), so the two entries name the same lines.
+`UnreadColour { leaf: "combo_box.hover_border_color", why: Unread::NoReceiver("neither trigger has a hover style (gpui-component 0.10.0 `select.rs:578-597`, `combobox.rs:1025-1042`), and a `StyleRefinement` has no hover state; the showcase draws it over the trigger") }`;
+the `combo_box.hover_background` entry beside it keeps its citations as they are.
 It is not a `NO_RECEIVER` entry: that table requires every preset to state the colour
 (`:1451-1497`). `checkbox.hover_border_color` reaches a sink through `CheckboxLook`'s
 `Debug` in the walk (`:2843-2860`). Gate: `every_colour_leaf_reaches_a_sink_or_is_named`
@@ -894,7 +862,7 @@ It is not a `NO_RECEIVER` entry: that table requires every preset to state the c
   `combo_box.hover_border_color`, an edge in it is laid over the trigger's under the
   pointer: the trigger is no `InteractiveElement` either."
 - Widget Info (`info/inputs.rs:1582-1611`, `combo_fill`): an
-  `edge_claim("hover edge, over the trigger's", "hover_border_color", r.combo_box.hover_border_color, Some(r.combo_box.border.line_width), "showcase")`
+  `edge_claim("hovered edge, over the trigger's", "hover_border_color", r.combo_box.hover_border_color, Some(r.combo_box.border.line_width), "showcase")`
   after the hover layer's: the claim gate `every_edge_colour_is_claimed_through_edge_claim`
   (`CG/showcase.rs:2990`) classes any `_border_color` value and any Look field named
   `*_border` as an edge, which must be claimed through `edge_claim(role, field, colour,
@@ -912,20 +880,30 @@ It is not a `NO_RECEIVER` entry: that table requires every preset to state the c
   `CG/lib.rs:243-244`), which fails on a line no element's leaf reaches, and the
   showcase's `every_listed_leaf_has_a_route` (`showcase-gpui/tests.rs:15198`) fails on a
   listed leaf without one (C.1).
-- `info/inputs.rs`, the check box's and the radio's info (`:975-1000`, `:1135-1160`): an
-  `edge_claim("hover edge", "hover_border_color", look.hover_border, Some(f32::from(look.border_width)), "native-theme-gpui/widgets/checkbox.rs:<line of the new let>")`
-  after the hover fill's claim, at the indicator's border width, as these infos already
-  take it (`let width = Some(f32::from(look.border_width));`, `:1004`; the radio's from
-  `unselected.border_width`, `:1122`); `edge_claim` claims nothing where the colour is
-  unset or the width is 0.
-- Tests (`examples/showcase-gpui/tests.rs`): `a_theme_drawn_controls_info_prints_its_look`
-  (`:16141`) lists `("hover edge", look.hover_border, hover_edge)` with `checkbox_leaves`
-  returning six leaves. `checkbox_leaves`' doc (`tests.rs:15840-15851`), which cites
-  `widgets/checkbox.rs:123-146` and nine bare lines in it, keeps those citations as
-  they are (no gate reads a doc comment's lines; S6, C.4) and names the sixth leaf:
-  after the border's clause it gains "the hover edge `hover_border_color` where the box
-  is enabled, else none (the new `let` in `widgets/checkbox.rs`)", and its closing "(fill, hover, border, mark, label)"
-  names the six in the order the array returns them. Two new tests in the pattern of
+- `info/inputs.rs`: one claim, in `native_indicator` only, after the hover fill's claim:
+  `edge_claim("hovered edge", "hover_border_color", look.hover_border, Some(f32::from(look.border_width)), "native-theme-gpui/widgets/checkbox.rs:<line of the new let>")`.
+  The check box takes it in both check states; the radio column takes it once, through
+  its call of `native_indicator` for the selected radio (a selected and an unselected
+  radio's `hover_border` are one colour by construction). `native_radio_column` gains no
+  claim of its own. `edge_claim` claims nothing where the colour is unset or the width
+  is 0.
+- Tests (`examples/showcase-gpui/tests.rs`): `checkbox_leaves` returns `[Leaf; 6]`,
+  `[fill, hover, hover_edge, border, mark, label]`, the new leaf
+  `("hover_border_color", "native-theme-gpui/widgets/checkbox.rs:<that line>")`; its
+  doc's closing reads "(fill, hover, hover edge, border, mark, label)". The doc
+  (`tests.rs:15840-15851`), which cites `widgets/checkbox.rs:123-146` and nine bare
+  lines in it, keeps those citations as they are (no gate reads a doc comment's lines;
+  S6, C.4) and names the sixth leaf: after the border's clause it gains "the hover edge
+  `hover_border_color` where the box is enabled, else none (the new `let` in
+  `widgets/checkbox.rs`)". `a_theme_drawn_controls_info_prints_its_look`: the check box
+  part destructures six and lists
+  `("hovered edge", edge(look.hover_border, look.border_width), hover_edge)` after
+  `("hover", …)`; the radio part's two destructurings become
+  `let [fill, _, hover_edge, border, mark, label] = checkbox_leaves(&r.checkbox, true, false);`
+  and `let [off_fill, off_hover, _, off_border, _, _] = checkbox_leaves(&r.checkbox, false, false);`,
+  and its `want` list gains
+  `("hovered edge", edge(selected.hover_border, selected.border_width), hover_edge)`.
+  Two new tests in the pattern of
   `a_hovered_field_takes_the_hover_border` (`:9439`), under kde-breeze:
   `a_hovered_checkbox_takes_the_hover_border` (the Basic page's unchecked box: at rest
   `painted_edge` of its indicator is `unchecked_border_color`, hovered
@@ -937,12 +915,17 @@ It is not a `NO_RECEIVER` entry: that table requires every preset to state the c
   `a_hovered_drop_down_takes_the_hover_border`. gpui paints no border quad whose colour
   is transparent (`GP/style.rs:744`, `is_border_visible`, `:764-768`), so at rest the
   overlay paints nothing, and `painted_edge` (`tests.rs:9485-9494`) returns the first
-  bordered quad over the bounds, which is the trigger's own edge. So the test asserts:
-  at rest (pointer away), no scene quad over the trigger's bounds has
-  `combo_box.hover_border_color` as its border colour; hovered, the last-painted quad
-  whose bounds equal the trigger's and whose border widths are not zero (a new helper
-  beside `painted_edge`, `painted_edges(cx, selector) -> Vec<Hsla>` in paint order,
-  taking the last) has it. Under kde-breeze and material-3 light.
+  bordered quad over the bounds, which is the trigger's own edge. So the test first
+  moves the pointer away before it reads the rest state (a test window's pointer starts
+  at the origin) and asserts that no scene quad over the trigger's bounds has
+  `combo_box.hover_border_color` as its border colour; a border-only quad is painted as
+  four quads, so the test counts none. Hovered, the last-painted quad whose bounds equal
+  the trigger's and whose border widths are not zero has it: the bordered quad of the
+  highest `order` over the trigger's bounds (`scene_quads` is not in paint order on
+  GPUI Fast), which a new helper beside `painted_edge`,
+  `painted_edges(cx, selector) -> Vec<Hsla>`, returns last. While the Basic page's
+  drop-down is hovered, no bordered quad over the side panel's theme picker has the
+  hover colour. Under kde-breeze and material-3 light.
   `the_preset_combobox_paints_its_fill_swatch_and_names_its_row_hover` (`:6801`) reads
   the fields and stays.
 
@@ -978,26 +961,29 @@ It is not a `NO_RECEIVER` entry: that table requires every preset to state the c
 
 ### A.12 Documentation
 
-- **READMEs.** Five places count the optional colours, 34 at `0fa28027` (counted today:
-  34 `soft_option` fields of type `Option<Rgba>` in `model/widgets/mod.rs`):
-  `README.md:71` ("34 colours"), `:74` ("five of the 34"), `native-theme/README.md:48`
-  ("every colour but 34 optional ones"), `:49` ("most of the 34") and `:52` ("five of
-  the 34"), lines at `0fa28027`, each found by its quoted text: step 2 adds an item to
-  `README.md`'s list after `:73` (the steps 2–3 specification's 2I.2a), so "five of the
-  34" is `README.md:75` on step 3's tree; its edit of `native-theme/README.md:51` is in
-  place and moves no line. Each number rises by 2 from what step 3 leaves (36 if it adds its two
-  colours, so 38). "five" stays: it counts the switch's outline colours
-  (`unchecked_track_border_color`, `checked_track_border_color`, their two disabled
-  forms and `thumb_border_color`), and neither step adds one. No other README names
-  the two fields.
-- **CHANGELOG** (`CHANGELOG.md`), the release's one section for both steps (C.3), opened
-  by unit 4b with step 4's bullets, which B.11 (unit 5c) completes, one line per bullet:
+- **READMEs.** The optional colours are counted, 36 today, in five places found by
+  their quoted text (`README.md`: "36 colours", "five of the 36";
+  `native-theme/README.md`: "every colour but 36 optional ones", "most of the 36",
+  "five of the 36"): 38 after step 4, 42 after both; the documents unit writes 42.
+  "five" stays: it counts the switch's outline colours (`unchecked_track_border_color`,
+  `checked_track_border_color`, their two disabled forms and `thumb_border_color`), and
+  neither step adds one. `connectors/native-theme-gpui/README.md`, *Theme-drawn
+  widgets*, the row `Checkbox`, `Radio`, `RadioGroup`: "fills per state, border, radius"
+  becomes "fills per state, border and its colour under the pointer
+  (`hover_border_color`), radius" (the gpui unit).
+- **CHANGELOG** (`CHANGELOG.md`). No new section. In `## [0.7.2]`, the one *Breaking
+  Changes* bullet is replaced by this one, one line in the file, which names both
+  steps' structs (B.11 adds no second one):
 
   ```markdown
-  ### Breaking Changes
+  - **native-theme**: `ThemeDefaults` gains `focus_ring_keyboard_only`, `ButtonTheme` gains `hover_border_color` and `focus_border_color`, `CheckboxTheme` and `ComboBoxTheme` gain `hover_border_color`, and `ToolbarTheme` gains `button_hover_background`, `button_hover_border_color`, `button_active_background` and `button_checked_background` (see *Added*). None of them is `#[non_exhaustive]`, so a struct literal of any of them outside the crate needs the new fields or `..Default::default()`; their resolved forms are `#[non_exhaustive]` already.
+  ```
 
-  - **native-theme**: `CheckboxTheme` and `ComboBoxTheme` gain `hover_border_color` (see *Added*); neither is `#[non_exhaustive]`, so a struct literal of either outside the crate needs the field or `..Default::default()`; their resolved forms are `#[non_exhaustive]` already.
+  Step 4's *Added* bullet goes at the end of the section's `### Added`, B.11's five
+  after it, in that order; its *Fixed* bullet at the end of the section's `### Fixed`;
+  one line per bullet:
 
+  ```markdown
   ### Added
 
   - **native-theme**: `checkbox.hover_border_color` and `combo_box.hover_border_color`, the outline a check box, a radio button and a combo box take under the pointer: Breeze strokes a check box's or a radio button's outline in the focus colour under the pointer, checked or not, and a combo box's in the highlight, #3daee9 in both schemes. kde-breeze and the KDE reader state them (`[Colors:View] DecorationFocus`, `[Colors:Selection] BackgroundNormal`); material-3 states the combo box's, Material's select outline under the pointer, `on-surface` (#1d1b20 / #e6e0e9); no other preset states either, where the platform's value is not in `docs/platform-facts.md` for every state the field covers. iced (`styles::checkbox`, `styles::radio`, `styles::pick_list`) and egui (the check box and combo box roles) draw them; in gpui the connector's own `widgets::Checkbox` and `widgets::Radio` do, through the new public field `CheckboxLook::hover_border` (feature `widgets`; `CheckboxLook` is `#[non_exhaustive]`, so the field breaks no caller), gpui-component's `Select` and `Combobox` have no hover style that could, and the gpui showcase draws the outline over its drop-downs.
@@ -1007,20 +993,15 @@ It is not a `NO_RECEIVER` entry: that table requires every preset to state the c
   - **native-theme**: kde-breeze no longer states `checkbox.hover_background` and `combo_box.hover_background`, #93cee9 in both modes, a fill with no Breeze source that stood in for the outline: under the pointer a check box, a radio button and a combo box keep their fill, as Breeze's do, and take the outline above.
   ```
 
-  The headings are in 0.7.0's order, *Breaking Changes* first (`CHANGELOG.md:34`, then
-  *Added* `:90` and *Fixed* `:287`), and the *Breaking Changes* bullet is 0.7.0's
-  wording (`:66-68`).
-- **ROADMAP** (`ROADMAP.md`). Steps 2 and 3 add their release's section after the v0.7.1
-  one (which ends at `:110` and stays as that release's history) and before *Model
-  completeness* (`:112`) (their 2I.2, 3H.2; one release under S5). After it, one
-  section for this release, which states both steps (S5): unit 4b writes it with the
-  heading and the first paragraph below, unit 5c adds the second (B.11), so that at the
-  release it reads, in that form:
+  The two headings are the section's own and are not written again.
+- **ROADMAP** (`ROADMAP.md`). No new section. The heading of 0.7.2's section becomes
+  `## v0.7.2 — egui 0.37, GPUI Kit 0.10.0, and the focus ring, the hover outlines and the toolbar buttons from issue #4`
+  (no tracked file links the old heading's anchor: `git grep` of it finds nothing; the
+  wording is the maintainer's to change at approval). The documents unit appends the
+  two paragraphs below after the section's last (B.11's text is the second):
 
   ```markdown
-  ## v0.7.4 — hover outlines of check boxes, radio buttons and combo boxes, and toolbar buttons' states (issue #4)
-
-  **Delivered:** the model carries the outline a check box, a radio button and a combo
+  The model also carries the outline a check box, a radio button and a combo
   box take under the pointer, which Breeze draws in the focus colour (the indicator's
   outline, checked or not) and the highlight (a combo box's pen); kde-breeze and the KDE
   reader state both and no longer state the pale hover fills that stood in for them, and
@@ -1035,51 +1016,38 @@ It is not a `NO_RECEIVER` entry: that table requires every preset to state the c
   and windows-11 their platforms' fills, and the Windows reader the checked fill from
   the user's accent; a checked one is lettered in the button's checked text colour. The
   iced and egui connectors draw them, and the gpui connector gives a toolbar button
-  variant and a checked button's fill<, the outline included | ; gpui-component cannot
-  draw the outline>. Each showcase shows a checked toolbar button.
+  variant and a checked button's fill, the outline included. Each showcase shows a
+  checked toolbar button.
   ```
-
-  The heading's version follows C.3 (0.7.4 under D10's order with S5's pairs, a
-  proposal; the maintainer's version replaces it). (`<A | B>` as step 3's 3H writes it:
-  `A` where step 3's trial passed, `B` where it failed.)
 - **Backlog** (`docs/todo.md`). `scripts/check_todo_citations.py` fails on a key-path
   citation of a key the preset no longer has (`check_release.sh:977`). Of the three
   entries below that name kde-breeze's two hover fills, two cite them by key path and so
-  must change in the commit that removes the keys (unit 4a, C.1): *What Breeze draws that
+  must change in the commit that removes the keys (U1, Part C): *What Breeze draws that
   the model has no field for* (`:1782-1783`, `` `[light.checkbox] hover_background` ``,
   `` `[light.combo_box] hover_background` ``) and *Presets: values the M8 T15
   platform-facts rows disagree with* (`:1293-1294`, `:1310-1311`). The third, the `[1.0]`
   `#93cee9` entry, names them by dotted name only (`:2871-2872`), which the script does
-  not read; its note lands with the other documents (unit 4b):
+  not read; its note lands with the other documents (U6):
   - *What Breeze draws that the model has no field for* (`:1774-1825`), as step 3
-    leaves it: the steps 2–3 specification's 3H.4 rewrites its first part (`:1774-1780`,
-    "First, as the next 0.7.x step, … so on KDE a connector's button shows no hover at
-    all") to "Breeze shows hover on a combo box, a check box and a slider handle by
-    recolouring the outline, never the fill (open-items rationale D6; a button's outline
-    is in the model since 0.7.3)", the version being the one step 3's release wrote, and
-    rewrites the next sentence to "The kde-breeze hover fills that stand in for an
-    outline wait for their fields, … listed in *Presets: values the M8 T15
-    platform-facts rows disagree with*." (`:1780-1785` at `0fa28027`), and "The same step
-    takes:" (`:1785`) to "Breeze also draws, with no field yet:". After step 4 the
-    entry's first two sentences, those two, read in full:
+    left it: its first two sentences ("Breeze shows hover on a combo box, a check box
+    and a slider handle …", "The kde-breeze hover fills that stand in for an outline …")
+    read in full:
 
     ```markdown
     Breeze shows hover on a slider handle by recolouring the outline, never the fill
-    (open-items rationale D6, which leaves the handle out; a button's outline is in the
-    model since <the release that brings steps 2 and 3>, a check box's, a radio's and a combo
-    box's since <the release that brings steps 4 and 5>). kde-breeze's hover fill of the slider
-    handle stands in for that outline until the model has it, since removing it first
-    would remove the only hover feedback: `kde-breeze.toml` `[light.slider] thumb_hover_color`
-    and its dark twin, listed in *Presets: values the M8 T15 platform-facts rows
-    disagree with*.
+    (open-items rationale D6, which leaves the handle out; the outlines of a button, a
+    check box, a radio and a combo box are in the model since 0.7.2). kde-breeze's hover
+    fill of the slider handle stands in for that outline until the model has it, since
+    removing it first would remove the only hover feedback: `kde-breeze.toml`
+    `[light.slider] thumb_hover_color` and its dark twin, listed in *Presets: values the
+    M8 T15 platform-facts rows disagree with*.
     ```
 
-    The first placeholder is the version step 3's sentence names; the second is
-    replaced as C.3 says. The key-path citation keeps its one-line form, which
+    The key-path citation keeps its one-line form, which
     `scripts/check_todo_citations.py` reads (`kde-breeze.toml:259`, `:846` at
     `0fa28027` hold the two keys). Step 4 adds a dated note at the entry's end and
     changes nothing else in the entry (B.11 edits its toolbar item); the note says
-    "<version>: the check
+    "0.7.2: the check
     box's, the radio's and the combo box's hover outlines are `checkbox.hover_border_color` and `combo_box.hover_border_color`
     (D6 of `docs/issues/0004_kde-open-items-rationale.md`); kde-breeze's two stand-in
     fills are gone. Under the pointer Breeze strokes the indicator's outline in the
@@ -1087,6 +1055,13 @@ It is not a `NO_RECEIVER` entry: that table requires every preset to state the c
     box, on the rectangle the frame is drawn on (`Helper::renderCheckBox`,
     `Helper::renderRadioButton`, `kstyle/breezehelper.cpp:895-907`, `:1041-1054` at
     `f0b1d753`, read 2026-11-15)."
+  - The same entry's list "Breeze also draws, with no field yet:" gains, after the
+    header section's item and before "Then the rest" (decision 10's
+    measurement): "an open combo box's frame, as a pressed button frame's: the
+    `Highlight` pen whatever the pointer does, and the fill #c3e5f6 / #2f5368 (light /
+    dark; #fcfcfc / #292c30 closed, at rest)
+    (`docs/evidence/breeze-offscreen/2026-11-18/combo_trigger_light.txt`,
+    `combo_trigger_dark.txt`)".
   - *Presets: values the M8 T15 platform-facts rows disagree with* (`:1230-1511`): the
     kde-breeze clauses for `checkbox.hover_background` (`:1292-1295`) and
     `combo_box.hover_background` (`:1309-1311`) are removed, and the preset's file name
@@ -1098,25 +1073,33 @@ It is not a `NO_RECEIVER` entry: that table requires every preset to state the c
   - the `[1.0]` kde-breeze `#93cee9` entry (`:2860-2913`): a dated note says the check
     box's and the combo box's #93cee9 are gone; the slider's and the sidebar's stay.
   - *Checkbox: a checked checkbox's hover appearance* (`:52-111`): a dated note: "KDE's
-    hover outline is `checkbox.hover_border_color` since <version>; this entry stays for the
+    hover outline is `checkbox.hover_border_color` since 0.7.2; this entry stays for the
     checked box's hover fill of the other platforms."
-  - New, under *KDE: what a Qt application under Breeze shows that native-theme does
-    not*, tagged `[1.0]`, the readings D6's rule asks for (Breeze's own hover outline
-    needs no entry: the connectors recolour the indicator's border as Breeze does, A.4;
-    its fade-in under the hover animation is a transition, not a gap this entry
-    tracks):
-    "**The hover outlines the presets do not state yet** (`checkbox.hover_border_color`,
-    `combo_box.hover_border_color`, <version>). A preset states them where the facts give
+  - New, filed directly after *Presets: values the M8 T15 platform-facts rows disagree
+    with*, in that entry's form, tagged `[1.0]`, its heading starting "Presets:", the
+    readings D6's rule asks for (Breeze's own hover outline needs no entry: the
+    connectors recolour the indicator's border as Breeze does, A.4; its fade-in under
+    the hover animation is a transition, not a gap this entry tracks):
+    "**Presets: the hover outlines the presets do not state yet** (`checkbox.hover_border_color`,
+    `combo_box.hover_border_color`, 0.7.2). A preset states them where the facts give
     the platform's value as one colour for everything the field covers. To be read: GNOME's checked
     check box under the pointer (the unchecked box's ring is `currentColor` at 20 %,
     `PF` §2.5), and its drop-down's outline on hover under `prefers-contrast: more`;
     WinUI's check-box and combo-box border brushes under the pointer
     (`CheckBox_themeresources.xaml`, `ComboBox_themeresources.xaml`); an AppKit check
-    box's and pop-up button's hover, which the OS probe renders at rest only. Each into
+    box's and pop-up button's hover, which the OS probe renders at rest only; an open
+    Material select's outline (it has the focus then; `PF` §2.4 gives the text field's
+    focus outline). Each into
     `docs/platform-facts.md` with its source, then the preset. Not a reading but the
     model: Material's check box draws `on-surface` under the pointer when unchecked and
     no outline when checked (`PF` §2.5 `border.color`), which one field for both states
     cannot state, so material-3 leaves `checkbox.hover_border_color` unset."
+  - New, tagged `[upstream]`: "gpui-component: a hover style, fill and border, for the
+    trigger of `Select` and `Combobox` (0.10.0 `select.rs:578-597`,
+    `combobox.rs:1025-1042`); until then `combo_box.hover_background` and
+    `combo_box.hover_border_color` reach no gpui widget and the showcase lays them over
+    its triggers (`demo::combo_surface`)." It is filed under *native-theme-gpui
+    connector*, after that section's last `[upstream]` entry.
   - **The tags.** An entry is `[v0.7.x]` where the rationale's D10 plans its work
     within the 0.7.x releases, and `[1.0]` otherwise, as the steps 6–7 specification
     tags the work no step schedules (its decisions 15 and 18; 1.0 is the tag of 125 of
@@ -1129,92 +1112,65 @@ It is not a `NO_RECEIVER` entry: that table requires every preset to state the c
     entry is not among them: the readings D6 asks for are no step's (its bullet "The
     other platform presets: …, with a backlog entry that names what is to be read").
     So it is `[1.0]`.
-  - **The roadmap's count.** `ROADMAP.md:264` counts the backlog's open `[v0.7.x]`
-    entries ("tags 29 open items `[v0.7.x]`" at `0fa28027`; step 1's G.2 sets it from
-    the grep below). Unit 4b recounts it on its tree with
-    `grep -c '^- \[ \] \[v0.7.x\]' docs/todo.md` (41 at `0fa28027`), writes the number
-    there, and records it in its commit body, as step 1's G.2 does. Step 4 opens and
-    closes no `[v0.7.x]` entry by the edits above, so the number is the one steps 1 to 3
-    leave; another figure is explained in the commit body.
+  - **The roadmap's count.** `ROADMAP.md` counts the backlog's open `[v0.7.x]` entries
+    ("tags 74 open items `[v0.7.x]`" today). The documents unit recounts it on its tree
+    with `grep -c '^- \[ \] \[v0.7.x\]' docs/todo.md`, writes the number there and says
+    it in its commit body: 74 today, and the new entries of A.12 and B.11 are `[1.0]`,
+    so 74 is expected; another figure is explained in the commit body.
 - **The first rationale** (`docs/issues/0004_kde-hand-overrides-rationale.md`): no row
   of its table (§7) names these controls.
-  **§5.4's status line** (`:907`), as step 3 adds it (the steps 2–3 specification's
-  3H.3: "*Partly settled by `0004_kde-open-items-rationale.md` D5 (0.7.3): … The check
-  box, the radio and the combo box are that rationale's D6, toolbar buttons and the
-  table header its D7; the menu item's and the list row's outlines and the menu bar
-  title stay in the backlog (its §0).*", the version being the one step 3 wrote, the
-  D5 sentence by step 3's trial). Before the sentence that starts "The check box, the
-  radio and the combo box are", a sentence is inserted: "Also by D6 (<the release that
-  brings step 4>): the hover outlines of the check box, the radio button and the combo
+  **§5.4's status line**, as step 3 left it ("*Partly settled by
+  `0004_kde-open-items-rationale.md` D5 (0.7.2): … The check box, the radio and the
+  combo box are that rationale's D6, toolbar buttons and the table header its D7; the
+  menu item's and the list row's outlines and the menu bar title stay in the backlog
+  (its §0).*"). Before the sentence that starts "The check box, the
+  radio and the combo box are", a sentence is inserted: "Also by D6 (0.7.2): the hover outlines of the check box, the radio button and the combo
   box (`checkbox.hover_border_color`, `combo_box.hover_border_color`), which kde-breeze
   and the KDE reader state, material-3 the combo box's; iced and egui draw them, and in
   gpui the connector's own check box and radio and the showcase over its drop-downs.";
   that sentence becomes "Toolbar buttons and the table header are that rationale's D7;
   the menu item's and the list row's outlines and the menu bar title stay in the
   backlog (its §0)." The line stays one italic paragraph.
-  **The reply draft (§8)** is edited only while
-  the reply has not been posted; once it is posted these edits are dropped, and a
-  follow-up, if any, is the maintainer's. The edits follow 2I.3's rules (by anchor and
-  by content; a bullet found by its bold title) and are written against the draft as
-  steps 1 to 3 leave it (step 1's G.3, steps 2 and 3's 2I.3 and 3H.3): the list "Later
-  0.7.x releases fix more:" holds **The focus ring** (<the release that brings step 2>)
-  and **Hover borders on buttons** (<the release that brings step 3>), each placeholder
-  or the version that has replaced it; "Some things are not fixed yet" holds the 16 px
-  scroll bar, **Menus in GPUI** and, where step 3's trial failed, **Hover borders in
-  GPUI**, and names no check box, radio or combo box, so nothing below is listed both
-  as open and as fixed. The release is written "<the release that brings steps 4 and 5>",
-  replaced by that release's version when the maintainer gives it, as 2I.3 says for
-  step 2's.
-  1. The list "Later 0.7.x releases fix more:" gains, after the bullet titled **Hover
-     borders on buttons**:
-
-     ```markdown
-     > - **Hover outlines on check boxes, radio buttons and combo boxes**
-     >   (<the release that brings steps 4 and 5>).
-     >   Breeze shows hover on these by an outline as well: under the pointer the
-     >   border of a check box or a radio button turns the focus colour, checked or
-     >   not, and a combo box's border the highlight colour. native-theme had a pale blue fill there that
-     >   Breeze does not draw; it now has the outlines instead, and the iced and egui
-     >   connectors draw them. In GPUI, gpui-component's own check box, radio, select
-     >   and combo box have no hover style a theme could set, so they show no
-     >   outline; the connector's own `native_theme_gpui::widgets::Checkbox` and
-     >   `widgets::Radio` (feature `widgets`) draw it.
-     ```
-  2. The note after the draft is unchanged: the bullet adds no sentence the maintainer
-     has to confirm, and the note's D0/D10 caveat already covers the release.
 - **The rationale's status line.** `docs/issues/0004_kde-open-items-rationale.md`'s
-  "Status:" paragraph (under its title) gains, at the release's close-out
-  (one release with step 5, S5), as step 1's specification's G.4, the steps 2–3
-  specification's 2I.6 and the steps 6–7 specification's 6.H.4 give theirs: "Step 4
-  (D6) implemented on `<date>` for <the release that brings steps 4 and 5>, by
-  `../archive/todo_v0.7.x_kde-open-items-steps4-5-{spec,plan}.md`." (the archive's
-  path, since the same close-out moves the documents there, B.11, *`docs/archive/`*).
-  The rationale stays in `docs/issues/` while a step remains.
+  "Status:" paragraph (under its title) gains one sentence for steps 2 to 5, written at
+  0.7.2's close-out in place of the steps 2–3 plan's: "Steps 2 to 5 (D4, D5, D6 and
+  D7's toolbar buttons) implemented on `<date>` for 0.7.2, by
+  `../archive/todo_v0.7.2_kde-focus-ring-and-button-outlines-{spec,plan}.md` and
+  `../archive/todo_v0.7.2_kde-hover-outlines-and-toolbar-buttons-{spec,plan}.md`." (the
+  archive's paths, since the same close-out moves the documents there, B.11,
+  *`docs/archive/`*). The rationale stays in `docs/issues/` while a step remains.
 
 ### A.13 Gates
 
-| Command (`scripts/check_release.sh` line) | Catches |
+| Command | Catches |
 |---|---|
-| `cargo test -p native-theme --features "$NT_FEATURES"` (`:684`) | A.6 tests, `the_derived_colours_are_the_presets_under_breeze`, the moved-leaves tests, `presets.rs`, `property_registry_keys_match_derive_inventory`, `documented_sizes.rs`, proptest |
-| `cargo test -p native-theme-iced --features iced_aw,watch,native` (`:739`) and `--no-default-features` (`:737`) | contract rows, `every_colour_leaf_reaches_a_row_or_is_named`, the new cleared-hover test |
-| `cargo test -p native-theme-egui --all-features` and `--no-default-features` (`:760-762`) | T3, `verdict_totals_match_the_specification`, T2, T10, T10c, `mapping_md_is_current`, role tests |
-| `cargo test -p native-theme-gpui --features native,watch` (`:667`) and `--lib --no-default-features` (`:705`) | `every_colour_leaf_reaches_a_sink_or_is_named`, `CheckboxLook` tests, `every_colour_claim_is_read_at_the_line_it_cites` |
-| the showcases in the runner environment (`:835-848`, the legs `--commit` runs; the GPUI Fast leg, `:853-854`, runs in the full check only) | the showcase tests of A.10, A.11 |
-| data documents (`:964-982`) | facts rows, preset citations, backlog key paths |
-| clippy, strict panic, fmt, docs (`:518-653`, `:1002-1020`) | the new code and doc links |
-| full run only: `docs/assets/PROVENANCE.toml` and `docs/COMPATIBILITY.toml` stamps | stale after any connector change; re-stamped by the release's asset run (C.2) |
+| `cargo test -p native-theme --features "$NT_FEATURES"` | A.6 tests, `the_derived_colours_are_the_presets_under_breeze`, the moved-leaves tests, `presets.rs`, `property_registry_keys_match_derive_inventory`, `documented_sizes.rs`, proptest |
+| `cargo test -p native-theme-iced --features iced_aw,watch,native` and `--no-default-features` | contract rows, `every_colour_leaf_reaches_a_row_or_is_named`, the new cleared-hover test |
+| `cargo test -p native-theme-egui --all-features` and `--no-default-features` | T3, `verdict_totals_match_the_specification`, T2, T10, T10c, `mapping_md_is_current`, role tests |
+| `cargo test -p native-theme-gpui --features native,watch` and `--lib --no-default-features` | `every_colour_leaf_reaches_a_sink_or_is_named`, `CheckboxLook` tests, `every_colour_claim_is_read_at_the_line_it_cites` |
+| the showcases in the runner environment (`scripts/run_in_runner_env.sh`), with the GPUI Fast legs (`<tools>/gate.sh --fast`) | the showcase tests of A.10, A.11 |
+| the five documentation checkers (`scripts/check_platform_facts_rows.py`, `check_section_refs.py`, `check_preset_citations.py`, `check_wrong_safety_nets.py`, `check_todo_citations.py`) | facts rows, preset citations, backlog key paths |
+| clippy, strict panic (`scripts/check_strict_panic.sh`), fmt, docs | the new code and doc links |
+| full run only: `docs/assets/PROVENANCE.toml` and `docs/COMPATIBILITY.toml` stamps | stale after any connector change; re-stamped by 0.7.2's asset run (C.2) |
 
 Not gated: the wording of every doc comment, facts cell and backlog note; the facts
 citations of A.3, none re-pointed (S6).
 
 ### A.14 Problems found, and what was not verified
 
-1. **The gpui overlay** (decision 7) is read in gpui-pre, not built: that it lets clicks
-   through to the trigger is `GP/window.rs:891-894`'s statement about `Normal` hitboxes.
+1. **The gpui overlay** (decision 7) is built in a trial (T3): it passes. It
+   edges the real `Select`'s trigger, lets the click through and moves nothing, on both
+   backends.
 2. Windows's check-box and combo-box hover strokes, the outline of GNOME's checked box
    under the pointer and AppKit's hovers are not in the facts (the cells say so; A.12's
    backlog entry names them). Material's check box is in them and is not one colour
    (A.5).
+3. egui draws an open combo box from `widgets.open` whatever the pointer does (egui
+   0.37.0 `src/theme/default_style.rs:41-45`), so the egui connector shows the hover
+   outline on a closed combo box only.
+4. What an open `md-outlined-select` draws on its outline was not read; material-3's
+   hover outline is drawn on an open trigger under the pointer where the toolkit reports
+   one.
 
 ---
 
@@ -1470,7 +1426,7 @@ stated where the facts give them as one colour for everything they cover
   `variant.toolbar.button_hover_border_color = selection_bg;`,
   `variant.toolbar.button_active_background = selection_bg.map(|highlight| translucent(highlight, BLEND_VALUE));`,
   `variant.toolbar.button_checked_background = button_fg.map(|text| translucent(text, FLAT_CHECKED_ALPHA));`
-  (`selection_bg` `:580`, beside `view_focus` after step 2 as A.6 says, `button_fg`
+  (`selection_bg` beside `view_focus` at the top of `populate_colors`, `button_fg`
   `:520`, `BLEND_VALUE` `:18`). Comment: "A flat
   toolbar button (docs/platform-facts.md §2.13): under the pointer, focused or pressed
   its pen is `Highlight`; pressed it is filled with `Highlight` at `Blend_Value`,
@@ -1488,7 +1444,8 @@ Values under both Breeze schemes: B.3's KDE rows; they equal B.4's kde-breeze li
 **Tests.** `kde/colors.rs`: `test_toolbar_button_states_are_breezes` (both schemes:
 outline #3daee9, pressed `Rgba::new(0x3d, 0xae, 0xe9, 0x4d)`, checked
 `Rgba::new(0x23, 0x26, 0x29, 0x20)` / `Rgba::new(0xfc, 0xfc, 0xfc, 0x20)`,
-`button_hover_background` `None`); the custom-scheme test of A.6 item 2 also asserts the
+`button_hover_background` `None`); the custom-scheme test of A.6,
+`a_custom_scheme_moves_the_hover_borders`, also asserts the
 three from its keys, its scheme already holding `[Colors:Button] ForegroundNormal=60,20,10`
 (the fourth argument of `breeze_menu_list_groups` at `kde/colors.rs:1495`, the helper at
 `:1058-1070`; checked `Rgba::new(60, 20, 10, 0x20)`);
@@ -1499,8 +1456,8 @@ with only `[Colors:Window]` (`:1599`) all three are `None`; `test_full_mapping_c
 gains the three as `Some`. `kde/mod.rs`: `derived_leaves` and
 `resolved_leaves` append `toolbar.button_hover_border_color`,
 `toolbar.button_active_background`, `toolbar.button_checked_background` (the two
-array lengths, `29` at `0fa28027`, `:1248`, `:1309`, and the doc's count, "twenty-nine",
-`:1246`, grow by three, from step 4's 36 to 39);
+array lengths and the doc's count grow by three, 36 → 39, the doc's "thirty-six" →
+"thirty-nine"; the one core unit writes 39);
 `an_accent_moves_…` appends the first two; `the_button_set_moves_…` (`:1441`) appends
 the third. The `Header` set does not move them (not verified that a tools area's
 palette, which Breeze takes from the Header set, gives a toolbar button its
@@ -1519,7 +1476,7 @@ WinUI fills a checked toolbar button with the user's accent fill, as it fills a 
 windows-11's `#0067c0` / `#4cc2ff` (B.4) is the default accent's value only, and the
 Windows reader writes the field from the accent it reads, as it writes
 `button.checked_background`. `native-theme/src/windows.rs` (an existing `unsafe`
-exception file; this edit adds no `unsafe`), unit 5a task 1:
+exception file; this edit adds no `unsafe`), in the core unit (U1):
 
 - `build_theme` (`:525-…`), after `variant.button.checked_background = Some(primary_bg);`
   (`:551`, `primary_bg` being `AccentFillColorDefault`, `:549`):
@@ -1585,30 +1542,29 @@ outline, which a Qt toolbar button, taking no focus, never shows"). The «toolba
 `active` sink of `["toolbar.button_hover_border_color"]` carries no `when` to say it
 (decided): a `when` would lift T2's requirement that the sink moves under a splice of
 its leaf (*Why no `when`*, below), so the cost lives in this prose and the code comment
-only. A
+only. The backlog entry *Toolbar buttons and the Tab key* (B.11) records it. A
 pressed fill on focus is egui's for every button already and not new.
 
 **The states are a flat tool button's** (decided). The role leaves `inactive` the base's:
-a tool button is made flat per call. How, and what it costs, depends on the egui version
-the step's tree has, read from `connectors/native-theme-egui/Cargo.toml` when the step
-is run (`egui = "0.36.2"` at `0fa28027`, `:42`; D10 proposes the egui 0.37 release
-first, and the order is the maintainer's; that release normally reaches this branch only
-at the merge, C.1, and the plan's rework after it rewrites the forms, the header); each
-text below is written in that version's form:
+a tool button is made flat per call. `Button::frame_when_inactive(false)` adds
+`Button::CLASS_HIDE_FRAME_WHEN_INACTIVE`, which "with the default style removes the
+fill and the stroke, but keeps the margin, so the button does not change size"
+(`egui-0.37.0/src/widgets/button.rs:191-205`): the default style draws an inactive
+button of that class as `painted_frame.invisible()` (`theme/default_style.rs:77-84`), a
+frame with a transparent fill and stroke and its layout unchanged
+(`containers/frame.rs:344-353`). So the flag and a ghost scope (a scope whose resting
+fill and border colour are transparent, as the showcase's `demo::ghost` makes it,
+`showcase-egui/demo.rs:283-287`) both keep the button's size.
 
-- egui 0.37: `Button::frame_when_inactive(false)` adds
-  `Button::CLASS_HIDE_FRAME_WHEN_INACTIVE`, which "with the default style removes the
-  fill and the stroke, but keeps the margin, so the button does not change size"
-  (`egui-0.37.0/src/widgets/button.rs:191-205`): the default style draws an inactive
-  button of that class as `painted_frame.invisible()` (`theme/default_style.rs:77-84`), a
-  frame with a transparent fill and stroke and its layout unchanged
-  (`containers/frame.rs:344-353`). So the flag and a ghost scope (a scope whose resting
-  fill and border colour are transparent, as the showcase's `demo::ghost` makes it,
-  `showcase-egui/demo.rs:283-287`) both keep the button's size.
-- egui 0.36.2: the flag lays the button out at rest without the frame
-  (`EG/widgets/button.rs:178`, `:364-368`), so it grows under the pointer; a ghost scope
-  keeps the frame and so the size, as `demo::ghost`'s doc says (`showcase-egui/demo.rs:279-281`).
-  That doc states the 0.36 behaviour; the egui 0.37 upgrade corrects it, not this step.
+`demo::ghost`'s doc (`showcase-egui/demo.rs:279-281`) still states the 0.36 behaviour;
+the egui unit corrects it: the sentence "It keeps its full frame, and so its size, in
+every state, where `frame_when_inactive(false)` lays it out at rest without the frame's
+border, which the hovered frame adds to its size (`egui/src/widgets/button.rs:364-368`)."
+becomes "It keeps its full frame, and so its size, in every state, as
+`Button::frame_when_inactive(false)` does since egui 0.37, which hides a resting
+button's fill and stroke and keeps its margin (egui 0.37.0 `src/widgets/button.rs:191-205`,
+`src/theme/default_style.rs:77-84`)." Its gpui-component 0.9.1 citations, and
+`GHOST_NOTE`'s, stay.
 
 A plain framed `Button` in a «toolbar» scope keeps its resting fill and takes the stated
 hover and pressed fills. The options weighed: (a) the role as written, taken; its cost is
@@ -1621,30 +1577,19 @@ taken, since it would change the resting look of every widget in the scope that
 fills from `weak_bg_fill`, a combo box's too, which (a) leaves as the base gives it, changing only their
 hover and press. (c) The stated fills laid over the button's resting fill, as the ordinary
 button's hover is, which D7 rejects (its egui item, "a transparent hover fill must stay
-transparent", `docs/issues/0004_kde-open-items-rationale.md`, D7). Said in three places, each in the
-form of the tree's egui version:
+transparent", `docs/issues/0004_kde-open-items-rationale.md`, D7). Said in three places:
 
 - `Role::Toolbar`'s doc (`CE/roles.rs:44`, "The toolbar: `ResolvedTheme::toolbar`.")
-  becomes, on egui 0.37, "The toolbar: `ResolvedTheme::toolbar`. Its hovered and
+  becomes "The toolbar: `ResolvedTheme::toolbar`. Its hovered and
   pressed states are a flat tool button's, the toolbar's `button_*` fields where the
   theme states them: make the button flat with `Button::frame_when_inactive(false)`, or
   in a scope whose resting fill and border colour are transparent; both keep its size.
-  A framed button keeps its fill at rest."; on egui 0.36.2, "The toolbar:
-  `ResolvedTheme::toolbar`. Its hovered and pressed states are a flat tool button's, the
-  toolbar's `button_*` fields where the theme states them: make the button flat in a
-  scope whose resting fill and border colour are transparent, which keeps its size, or
-  with `Button::frame_when_inactive(false)`, which lays it out without its border at
-  rest so that it grows under the pointer; a framed button keeps its fill at rest.";
-- the README's accessor paragraph (below) gains, on egui 0.37, "A button in the toolbar
+  A framed button keeps its fill at rest.";
+- the README's accessor paragraph (below) gains "A button in the toolbar
   role is a flat tool button: the role colours its hover and press and leaves its rest
   to the button. Make it flat with `Button::frame_when_inactive(false)`, or in a scope
-  whose resting fill and border colour are transparent; both keep its size."; on egui
-  0.36.2, "A button in the toolbar role is a flat tool button: the role colours its
-  hover and press and leaves its rest to the button. Make it flat in a scope whose
-  resting fill and border colour are transparent, which keeps its size;
-  `Button::frame_when_inactive(false)` makes it flat too, but lays it out without its
-  border at rest, so it grows under the pointer.";
-- the CHANGELOG's egui bullet (B.11), in the same two forms.
+  whose resting fill and border colour are transparent; both keep its size.";
+- the CHANGELOG's egui bullet (B.11).
 
 The role does write `inactive`'s text colour,
 `fg_stroke.color`, from `toolbar.font.color`, as today (`write_states` with
@@ -1666,11 +1611,12 @@ the predicate, not the statement: it takes the theme as well and no longer holds
 `Role::Toolbar` where `toolbar.button_hover_border_color` is stated:
 
 ```rust
-/// The roles whose cells keep their resting stroke when hovered or pressed: they draw
-/// their controls flat or as parts (a toolbar's or a list's buttons, a slider's
-/// handle), so the button's hover and focus outline is not theirs (D5, D7). Each passes
-/// `border: None` to `write_states`. A toolbar whose theme states its buttons' outline
-/// keeps the one `toolbar` writes (D7).
+/// The roles whose cells keep their resting stroke when hovered or pressed: the button's
+/// hover and focus outline is not theirs, a toolbar's or a list's buttons and the controls
+/// inside a slider's or a switch's scope among them (D5; the backlog decides the others).
+/// Each passes `border: None` to `write_states`. A toolbar whose theme states its
+/// buttons' outline (`toolbar.button_hover_border_color`) keeps the one `toolbar`
+/// writes (D7).
 fn keeps_resting_stroke(role: Role, theme: &ResolvedTheme) -> bool {
     match role {
         Role::Toolbar => theme.toolbar.button_hover_border_color.is_none(),
@@ -1719,8 +1665,8 @@ Parity: `scripts/connector_parity_exceptions.toml` gains `kind = "absent"` entri
 (`src/styles.rs`); iced has no toolbar, so the style is the receiver") and `gpui`
 (reason: "a gpui toolbar Button's fills come from its variant and its style
 refinements (`variants::toolbar_button`, `src/geometry.rs`), not from a colour accessor",
-which is true in unit 5a, where `toolbar_button` gives the hover and pressed fills, and
-after unit 5b adds `geometry::toolbar_button_checked`). Gate:
+which is true in the gpui unit (U2), where `toolbar_button` gives the hover and pressed
+fills, and after the unit that builds Edit adds `geometry::toolbar_button_checked`). Gate:
 `scripts/check_connector_parity.py` (`check_release.sh:919`).
 
 **Mapping.** `["toolbar.button_hover_background"]` scoped, «toolbar»
@@ -1750,14 +1696,8 @@ the hovered and active `bg_stroke.color` of seven roles, with no `when` (its 3E.
 two of «toolbar» gain `when = "toolbar.button_hover_border_color is None"`: where it is
 stated, `toolbar` writes the field there instead.
 
-Counts (the delta is the rule, as A.9 says, on what lands before): four more
-leaves than step 4 leaves (516 at `0fa28027`, plus steps 2 and 3's, plus step 4's two,
-plus these four), in `src/mapping_tests.rs:238-240`'s number and in its message
-("512 ResolvedTheme leaves + 4 layout leaves" at `0fa28027`: the `ResolvedTheme`
-figure grows by the same four); *Chrome* 100 → 104 leaves, SCOPED 54 → 57, DERIVED
-27 → 28 at `0fa28027`'s figures, which steps 2 to 4 do not change (their rows are in
-*Foundation*, *Buttons* and *Inputs*). `verdict_totals_match_the_specification`
-(`mapping_tests.rs:473-480`): `("chrome", [0, 54, 27, 19])` → `("chrome", [0, 57, 28, 19])`,
+Counts. Four more: 525 leaves, "521 ResolvedTheme leaves + 4 layout leaves (§5.7)";
+Chrome 104, `("chrome", [0, 57, 28, 19])` in `verdict_totals_match_the_specification`,
 `[direct, scoped, derived, unmappable]`; no sub-tag count changes. A `grep` of the egui
 crate and its showcase finds no other hard-coded count or leaf list the four rows change
 (the leaf count of `mapping_tests.rs:239-240` is the one above).
@@ -1799,13 +1739,6 @@ closure the other scoped arms read (`:558`). Gates: T10 and T10c (`:1074`, `:134
   dark transparent, #3daee94d, #3daee9; adwaita light #0000060e, #00000621, the resting
   stroke; windows-11 light #00000009, #00000006, the resting stroke; the other three the
   base's fills and the resting stroke.
-- Step 3's `flat_and_part_scopes_keep_their_resting_stroke` (its 3E.3; every bundled
-  preset in both modes) iterates the roles for which `keeps_resting_stroke(role, theme)`
-  holds, so «toolbar» drops out of it on kde-breeze by itself. Its assertion that the
-  predicate holds for exactly the seven roles of decision 13 becomes: for the seven
-  under a theme that states no toolbar hover border, and for the six without «toolbar»
-  where it is stated (kde-breeze). A new assertion beside it: where the theme states
-  the field, «toolbar»'s `hovered` and `active` stroke colours are it. Its doc says so.
 - `panel_role_cells_write_their_rows` (`roles.rs:1900-…`, step 3 compares «toolbar»'s
   `hovered` and `active` stroke with the base's `inactive` one, 3E.3): for «toolbar»,
   the field where stated.
@@ -1859,13 +1792,13 @@ the same cell. The crate doc's coverage table, the `styles` row
 (`src/lib.rs:318`, one line, edited in place): "(33 functions)" becomes "(34
 functions)" and "toggle button, text input" becomes "toggle button, toolbar button,
 text input". The count is the top-level `pub fn`s of `src/styles.rs` but
-`composite_over`: 33 at `0fa28027` (34 lines `^pub fn`; the 35th `pub fn`, `:1747`, is
-`of` in an `impl`), so 34 where no other work adds one, re-read on the tree. The same
+`composite_over`: 33 today (34 lines `^pub fn`; the 35th `pub fn`, `:1747`, is
+`of` in an `impl`), so 34 (`^pub fn` 34 → 35). The same
 count in `ROADMAP.md:162` ("has 33 style functions", in place): 34; and the same
 paragraph's list of the functions it names (`ROADMAP.md:159-178`, *Full theme geometry
 in the iced connector*) gains, after "`styles::button_toggle` is a toggle button,"
 (`:171`), "`styles::toolbar_button` a toolbar's button,", rewrapped to the end of the
-paragraph. Both in the iced task of unit 5a. The steps 6–7 specification's 6.E.4 then adds its `button_default` on
+paragraph. Both in the iced unit (U3). The steps 6–7 specification's 6.E.4 then adds its `button_default` on
 top ("theirs plus one", "a dialog's default button" after "toolbar button").
 
 **Showcase** (`examples/showcase-iced.rs`): `IconButton` (`:5326-5344`) gains
@@ -1877,7 +1810,7 @@ doc (`:4625-4633`) gains "The toolbar's buttons take `styles::toolbar_button`, w
 falls back to these leaves."
 
 This switch, and the routes and checks below, land in the iced commit with the
-connector's `styles::toolbar_button` (C.1, unit 5a task 3), not later:
+connector's `styles::toolbar_button` (U3, C.1), not later:
 `styles_cover_every_widget_shown` (`showcase-iced.rs:20919`, the check at
 `:20971-20981`) requires a call site in the showcase for every `pub fn` of
 `src/styles.rs`, so the connector's new
@@ -1895,7 +1828,8 @@ and `button.checked_text_color` on Edit) have no arm there and would fall to "no
 `the_element_list_parses_and_every_leaf_has_a_route` (`:24982-25000`) refuses. The
 routes below land with the switch, before the elements list the new leaves (an arm for
 a leaf no element lists yet is read by no test); the parts for Edit (`Shown::basic_edit`,
-the `.edit` id, its `ICON_BUTTONS` entry) land with the button in unit 5b:
+the `.edit` id, its `ICON_BUTTONS` entry) land with the button in the unit that builds
+Edit (U5):
 
 - `Shown` (`:7284-7298`) gains `basic_edit: bool` (`State::basic_edit`, B.10;
   `opening` sets `true`). A predicate `fn tool_button(id: &str) -> bool`, true for the
@@ -1927,7 +1861,8 @@ the `.edit` id, its `ICON_BUTTONS` entry) land with the button in unit 5b:
   toolbar.button_checked_background is stated" (and "not drawn: the toolbar's checked
   fill is unstated, so the label is button.active_text_color" where it is unset, "not
   drawn: button.checked_text_color is unstated, so the label is
-  button.active_text_color" where the fill is stated and the text is not).
+  button.active_text_color" where the fill is stated and the text is not), and for a
+  tool button that is not checked: "not drawn: the button is not checked".
   **A checked tool button's other label colours** (B.8's table: in every enabled status
   its label and its bundled icon are the checked text, `button.checked_text_color` where
   `toolbar.button_checked_background` and it are both stated, else
@@ -1971,7 +1906,7 @@ the `.edit` id, its `ICON_BUTTONS` entry) land with the button in unit 5b:
   so that the toolbar case's colour moves where its leaves do; `ghost_drawn`'s call of
   `icon_colour` passes `false`.
 - The tests' oracle (`showcase-iced.rs:25300-25520`): `ICON_BUTTONS` (`:25300-25318`)
-  gains, in unit 5b, `("basic.icons.edit", "basic.icons.edit.icon")`; a
+  gains, in U5, `("basic.icons.edit", "basic.icons.edit.icon")`; a
   `toolbar_drawn(r, checked, shows)` beside `ghost_drawn` (`:25367-…`) reads
   `styles::toolbar_button(r, checked)`'s fill and border colour in `Active`, `Hovered`
   and `Pressed`, and, as `ghost_drawn` does, the label's colour only where the label
@@ -2017,22 +1952,20 @@ covers the new pair.
 
 ### B.9 gpui
 
-**The variant** (`CG/variants.rs`, after `hover_border` (or `switch_color`, `:91-93`,
-where step 3's trial failed), before the test module, so lines 62-64 and step 3's four
-claimed lines stay, *How to read it*):
+**The variant** (`CG/variants.rs`, after `hover_border`, before the test module, so
+lines 62-64 and step 3's four claimed lines stay, *How to read it*):
 
 - `pub(crate) struct ToolbarButtonStates { pub hover: Option<Hsla>, pub hover_border: Option<Hsla>, pub active: Option<Hsla> }`
   (`Debug`, `Clone`, `Copy`, `PartialEq`) and
   `pub(crate) fn toolbar_button_states(n: Native<'_>) -> ToolbarButtonStates` reading
   `toolbar.button_hover_background`, `.button_hover_border_color`,
-  `.button_active_background` through `rgba_to_hsla`. `hover_border` exists only if
-  step 3's trial passed (D5; Part 3F of
-  [`todo_v0.7.2_kde-focus-ring-and-button-outlines-spec.md`](todo_v0.7.2_kde-focus-ring-and-button-outlines-spec.md));
-  otherwise the field is left out of the struct and the leaf is named below. The
-  struct and `toolbar_button_states` come first, before `toolbar_button`: the claims of
-  `native_toolbar` (below) cite the lines of `toolbar_button_states` that read the
-  fields, from unit 5a on, and unit 5b adds a sentence and a doc link to
-  `toolbar_button`'s doc, which would move them if they lay below it.
+  `.button_active_background` through `rgba_to_hsla`; `hover_border` takes step 3's
+  route (D5; Part 3F of
+  [`todo_v0.7.2_kde-focus-ring-and-button-outlines-spec.md`](todo_v0.7.2_kde-focus-ring-and-button-outlines-spec.md)).
+  The struct and `toolbar_button_states` come first, before `toolbar_button`: the
+  claims of `native_toolbar` (below) cite the lines of `toolbar_button_states` that
+  read the fields, from U2 on, and the unit that builds Edit adds a sentence and a doc
+  link to `toolbar_button`'s doc, which would move them if they lay below it.
 - The public function:
 
   ```rust
@@ -2050,17 +1983,18 @@ claimed lines stay, *How to read it*):
   `toolbar_button(cx)` of `ghost_button(cx)`, which it extends, rather than step 3's
   `bordered_button(n: Native<'_>, cx: &App)`: that form would change decision 3, this
   section's signature and example, the showcase's three call sites, the README
-  paragraph, the CHANGELOG bullet and the reply draft, and would hand every caller the
+  paragraph and the CHANGELOG bullet, and would hand every caller the
   case of no native theme, which `toolbar_button` answers by keeping `ghost_button`'s
   tokens; the cost of `(cx)` is the one import line replaced below, which moves no line.
-- **The hover outline** follows step 3's trial, which tests one route: a custom
+- **The hover outline** follows step 3's route, whose trial passed
+  (`variants::bordered_button`): a custom
   variant whose `color` is the hover border, drawn in every state
   (`GC/button/button.rs:1118-1124`), and a caller's refinement that gives the button
   its own border and fill at rest, which upstream applies after the normal colours and
   under its hover style (`:730-764`; step 3's `variants::bordered_button`, its 3F.1).
-  - If the trial passes, `toolbar_button` also sets `.color(edge)` where
+  - `toolbar_button` also sets `.color(edge)` where
     `states.hover_border` is `Some`, and a new builder in `CG/geometry.rs`, after
-    `button_checked` (unit 5b then puts `toolbar_button_checked` between the two),
+    `button_checked`,
     `pub fn toolbar_button_rest(n: Native<'_>) -> StyleRefinement`, gives the caller
     the rest state: where the theme states `toolbar.button_hover_border_color`, a fill
     and a border colour of gpui's `transparent_black()` (`GP/color.rs:444`), the
@@ -2084,26 +2018,19 @@ claimed lines stay, *How to read it*):
     padding of each stated side with that side less `w`. Upstream replays the refinement in the
     selected and disabled states too (`GC/button/button.rs:821-838`), so a checked
     toolbar button takes `toolbar_button_checked` after it. Its row joins the README's
-    geometry table and the contract's refinements. Its unit test in `geometry.rs`,
+    geometry table, after `button_checked`'s, and the contract's refinements. Its unit test in `geometry.rs`,
     `toolbar_button_rest_keeps_the_padding_box`: under kde-breeze light the refinement's
     padding is the stated 6 less `button.border.line_width` on each side and its border
     width that width; under macos-tahoe it is empty.
-  - If the trial fails, `toolbar_button` sets no `color`, no rest builder exists, gpui
-    draws no hover outline on a toolbar button, the doc says so, and `CG/contract.rs`
-    `UNREAD_COLOURS` names `toolbar.button_hover_border_color` `Unread::NoReceiver`
-    with "a custom variant's border is its `color` in every state
-    (`button/button.rs:1118-1124`), and upstream's hover style replaces a caller's
-    (`:738-743`, `:751-762`); request 5 to upstream asks for a border colour per
-    state".
 - `variants::ghost_button` stays as it is (D7). The module doc (`:1-27`) is not
   touched: a line added there would move the claimed lines 62-64 (*How to read it*).
-  What it would have said goes into `toolbar_button`'s own doc, after `hover_border`
-  (or `switch_color`, `:91-93`, where step 3's trial failed), before the test module:
+  What it would have said goes into `toolbar_button`'s own doc, after `hover_border`,
+  before the test module:
   why a toolbar button is a variant of its own (the platform states a
   toolbar button's hover, pressed and checked colours apart from a flat button's), that
   a checked one takes `geometry::toolbar_button_checked` (a sentence and doc link added
-  in unit 5b, with the builder, so that no link dangles before it), where step 3's trial
-  passed, that it goes with its companion `geometry::toolbar_button_rest` and why
+  in the unit that builds Edit, with the builder, so that no link dangles before it),
+  that it goes with its companion `geometry::toolbar_button_rest` and why
   (where the theme states the outline, the variant's `color` is the edge colour, which
   upstream mixes toward transparent into the button's fill at rest,
   `colors.color.mix_oklab(cx.theme().transparent, 0.2)`, `GC/button/button.rs:1028`,
@@ -2113,16 +2040,19 @@ claimed lines stay, *How to read it*):
   `child` prepares a Button for the toolbar by `.ghost().compact()`
   (`GC/toolbar.rs:17-22`, `:71-74`; `GC/button/button.rs:590-592`), which replaces the
   custom variant (`with_variant`, `:596-599`). The showcase adds its toolbar items with
-  `content` already (`demo.rs:1424`). The README paragraph of B.9 says the same.
+  `content` already (`demo.rs:1424`). The README paragraph of B.9 says the same. The
+  lines above are 0.9.1's; the doc cites gpui-component 0.10.0's: the mix at rest
+  `button/button.rs:1044`, the border widths `:727-732`, `Toolbar::child`
+  `toolbar.rs:17-22`, `:71-74` with `button/button.rs:597-599`, `:603-606`.
 - `toolbar_button` calls `cx.native()`, a method of the `ActiveNativeTheme` trait
   (`CG/lib.rs:1041`), which the module does not import: `use crate::Native;`
   (`variants.rs:34`) becomes `use crate::{ActiveNativeTheme as _, Native};`, one line
   for one, so nothing above `:62` moves, nor step 3's claimed lines below it. The new
-  code goes after `hover_border` (or `switch_color`, which ends at `:93`, where step 3's
-  trial failed), before the test module (`:95` at `0fa28027`).
+  code goes after `hover_border`, before the test module.
 
-**The checked fill** (`CG/geometry.rs`, after `button_checked`, `:1354-1378`). It lands
-in unit 5b with the Edit button, its only user: `the_showcase_exercises_every_builder`
+**The checked fill** (`CG/geometry.rs`, after `toolbar_button_rest`, which follows
+`button_checked`, `:1354-1378`: the order they are applied in). It lands
+in the unit that builds Edit (U5) with the Edit button, its only user: `the_showcase_exercises_every_builder`
 (`CG/showcase.rs:384`) requires every `pub fn` of `geometry.rs` and `variants.rs` to be
 referenced in the showcase, so a builder no showcase code calls is red (C.1).
 
@@ -2131,7 +2061,10 @@ referenced in the showcase, so a builder no showcase code calls is red (C.1).
 /// (`Button::selected(true)`), over [`variants::toolbar_button`](crate::variants::toolbar_button):
 /// `toolbar.button_checked_background`, lettered `button.checked_text_color`
 /// (`button.active_text_color` where that is `None`). Where the theme states
-/// no checked fill the refinement sets nothing: the custom variant's selected
+/// no checked fill the fill is the pressed one, `toolbar.button_active_background`,
+/// else `button.active_background`, as [`button_checked`] falls back, and the
+/// text is left to the custom variant's one foreground. Where it states none
+/// of the three the refinement sets nothing: the custom variant's selected
 /// fill, its pressed one, stands under its one foreground, unless the caller
 /// applied [`toolbar_button_rest`], whose transparent fill upstream replays
 /// over the selected state too, so that a checked button then shows no fill.
@@ -2141,82 +2074,85 @@ referenced in the showcase, so a builder no showcase code calls is red (C.1).
 pub fn toolbar_button_checked(n: Native<'_>) -> StyleRefinement
 ```
 
-(The sentence on `toolbar_button_rest` exists only where step 3's trial passed.) No
-bundled preset is in that case: kde-breeze, the one that states the outline, states the
-checked fill. A unit test in `geometry.rs`, where the trial passed, in unit 5b with the
-builder whose doc it backs, `every_preset_with_a_toolbar_outline_states_its_checked_fill`, walks the bundled
+No bundled preset is in that case: kde-breeze, the one that states the outline, states
+the checked fill. A unit test in `geometry.rs`, in U5 with the builder whose doc it
+backs, `every_preset_with_a_toolbar_outline_states_its_checked_fill`, walks the bundled
 presets in both modes and asserts that each that states
 `toolbar.button_hover_border_color` states `toolbar.button_checked_background`, with the
 message "a checked toolbar button would show no fill in gpui (toolbar_button_rest's
 transparent fill is replayed over the selected state)".
 
-It sets `bg` and `text_color` together, as `button_checked` does (`:1369-1378`), and
-nothing where `toolbar.button_checked_background` is `None`. A custom variant has one
+Its `bg` is `toolbar.button_checked_background`, else
+`toolbar.button_active_background`, else `button.active_background`, in the form of
+`button_checked`'s `b.checked_background.or(b.active_background)` (`:1369-1378`); it
+sets `text_color` only where `toolbar.button_checked_background` is stated (decision
+11), and nothing where none of the three fills is. Under the bundled presets the
+fallback changes nothing: material-3's and catppuccin-mocha's `button.active_background`
+is what the variant's `secondary_active` already is, and macos-tahoe states none of the
+three, so its refinement stays empty. A custom variant has one
 foreground for every state (`GC/button/button.rs:1080`), so the refinement is the only
 receiver of the checked text; upstream replays it in the selected state over the
-variant's (`:821-829`). Whether a Button's icon takes the refinement's `text_color` as
-its label does was not read: the showcases' toolbar buttons are icons. A test cannot
+variant's (`:821-829`). The showcases' toolbar buttons are icons, so what matters is
+whether a Button's icon takes the refinement's `text_color` as its label does. A test cannot
 read an icon's painted colour, since gpui-pre 0.3.12's test API gives a frame's painted
 quads and underlines only (`GP/window.rs:3112-3120`, `painted_quads`,
 `painted_underlines`; the gpui showcase's tests say so, `showcase-gpui/tests.rs:8733-8735`,
 `:8882-8884`). It reads what decides the colour instead: gpui-component paints an
 `Icon` with no colour of its own in `window.text_style().color` (`Icon::render`,
 `GC/icon.rs:260-266`, through `into_svg`, whose `self.text_color.unwrap_or(fallback)`
-is `:213-214`). So a test of unit 5b, `a_checked_toolbar_buttons_icon_takes_the_checked_text`,
+is `:213-214`). So a test of the unit that builds Edit (U5), `a_checked_toolbar_buttons_icon_takes_the_checked_text`,
 a lib test in `connectors/native-theme-gpui/src/widgets/tests.rs`, where the harness
 is (`TestAppContext`, `add_window_view`, `:805`) and no runner environment is needed
 (`widgets` is in the crate's `default` feature, `connectors/native-theme-gpui/Cargo.toml`, which the
-gate's gpui leg builds, `scripts/check_release.sh:667`): on windows-11 light and dark it
-builds a selected Button with `variants::toolbar_button(cx)` and
+gate's gpui leg builds, `scripts/check_release.sh:667`), written from
+`<record>/steps45/trial/t2.patch` with the two real builders: on windows-11 light and
+dark it builds a selected Button with `variants::toolbar_button(cx)` and
 `geometry::toolbar_button_checked(n)`, as the Edit button is built, puts a probe child
-inside it that records `window.text_style().color` during its paint, records and prints
+inside it that records `window.text_style().color` in `render`, the moment
+`Icon::render` reads it (the test's doc cites gpui-component 0.10.0 `icon.rs:260-266`
+and `:213-214`), records and prints
 every case first, one line per case (preset, mode, recorded colour, checked text), and
 then asserts once that each recorded colour is `button.checked_text_color` (#ffffff /
 #000000), the assertion's message naming each case that differs, so that a colour that
 does not follow is seen on the first run. It runs with
 `cargo test -p native-theme-gpui --features native,watch --lib widgets::tests::a_checked_toolbar_buttons_icon_takes_the_checked_text`,
 and on GPUI Fast with `--features gpui-fast,native,watch` (the crate's `gpui-fast` feature,
-`connectors/native-theme-gpui/Cargo.toml`; the gate runs that leg in the full run, `check_release.sh:711-715`).
-Where the colour does not follow, the test is removed (a probe of
-`window.text_style().color` cannot see a colour the caller sets on the `Icon`), and the
-caller colours the icon with `Icon::text_color` (`GC/icon.rs:247`) from
-`button.checked_text_color` (an OS icon theme's raster or SVG keeps its own colours, as
-it does today), as `demo::toolbar_button` already sizes it (`demo.rs:1358-1359`). No
-test reads that colour then; the plan's record and the gpui README's *Flat buttons*
-paragraph say so (B.13.8).
+`connectors/native-theme-gpui/Cargo.toml`; the unit gates run the GPUI Fast legs
+(`<tools>/gate.sh --fast`), as the full check does).
+Measured before the build (T2): the colour follows. If
+`a_checked_toolbar_buttons_icon_takes_the_checked_text` fails in the unit that builds
+Edit, the unit stops and the difference goes to the maintainer.
 
-The gpui README's geometry table gains its row after `button_checked` (`README.md:364`
-row 25 of the table, in unit 5b), and the *Flat buttons* section (`:409-431`) a paragraph on
+The gpui README's geometry table gains its row after `toolbar_button_rest`'s, which
+follows `button_checked`'s (`README.md:364` row 25 of the table; in U5), and the *Flat buttons* section (`:409-431`) a paragraph on
 `variants::toolbar_button(cx)` with a two-line example, which adds the Button to a
-`Toolbar` by `content(..)` and says why (the variant's doc above). Where step 3's trial
-passed, the paragraph also says, in this order: "refine the button with
+`Toolbar` by `content(..)` and says why (the variant's doc above). The paragraph also
+says, in this order: "refine the button with
 `geometry::toolbar_button_rest(n)`, which assumes it is padded with
 `button.border.padding`, and a checked one after that with
 `geometry::toolbar_button_checked(n)`: upstream replays every refinement over the
-selected state (`button/button.rs:821-829`), so the rest refinement's transparent fill
-applied last would cover the checked fill"; the sentence on `toolbar_button_checked`
-lands in unit 5b with the builder, until which the paragraph names
-`toolbar_button_rest` alone. The builders' docs say the same order
-(`toolbar_button_checked`'s doc above; `toolbar_button_rest`'s gains "Apply it before
-`toolbar_button_checked`" in 5b). Where the probe test of unit 5b finds that a selected
-Button's icon does not take the checked text (above), the paragraph also says: "A
-checked toolbar button's icon does not take the refinement's text colour: give it
-`button.checked_text_color` with `Icon::text_color`. No test reads that colour.", in 5b.
+selected state (gpui-component 0.10.0 `button/button.rs:834-842`), so the rest
+refinement's transparent fill applied last would cover the checked fill"; the sentence
+on `toolbar_button_checked` lands in the unit that builds Edit with the builder, until
+which the paragraph names `toolbar_button_rest` alone. The builders' docs say the same
+order (`toolbar_button_checked`'s doc above; `toolbar_button_rest`'s gains "Apply it
+before `toolbar_button_checked`" in the unit that builds Edit).
 
 **`GEOMETRY_NOTES`** (`showcase-gpui/info/mod.rs:214-…`, one entry per `pub fn` of
 `geometry.rs`, in its order; `every_geometry_builder_has_a_note`, `CG/showcase.rs:572`),
-after `"button_checked"` (`:384-387`), in the form of that entry:
+after `"button_checked"` (`:384-387`), in the form of that entry, in the order of the
+builders:
 
-- `("toolbar_button_checked", "toolbar.button_checked_background and button.checked_text_color (button.active_text_color where that is unset) on a selected toolbar Button built on variants::toolbar_button, nothing where the theme states no checked fill: a custom variant fills a selected Button with its active colour and letters every state in its one foreground (button/button.rs, ButtonCustomVariant and RenderOnce for Button), and the Button replays the refinement over its selected style")`,
-  in unit 5b;
-- where step 3's trial passed, `("toolbar_button_rest", "where the theme states toolbar.button_hover_border_color, a transparent fill and a transparent border button.border.line_width wide, and each stated side of button.border.padding less that width: a custom variant draws its colour as the border in every state and lays out no border width (button/button.rs, ButtonCustomVariant and RenderOnce for Button), so this hides the edge at rest and keeps the button's size; nothing where the theme states no outline")`,
-  in unit 5a, after `toolbar_button_checked`'s place.
+- `("toolbar_button_rest", "where the theme states toolbar.button_hover_border_color, a transparent fill and a transparent border button.border.line_width wide, and each stated side of button.border.padding less that width: a custom variant draws its colour as the border in every state and lays out no border width (button/button.rs, ButtonCustomVariant and RenderOnce for Button), so this hides the edge at rest and keeps the button's size; nothing where the theme states no outline")`,
+  in U2;
+- `("toolbar_button_checked", "toolbar.button_checked_background and button.checked_text_color (button.active_text_color where that is unset) on a selected toolbar Button built on variants::toolbar_button; where the theme states no checked fill, toolbar.button_active_background, else button.active_background, with no text colour; nothing where it states none of the three: a custom variant fills a selected Button with its active colour and letters every state in its one foreground (button/button.rs, ButtonCustomVariant and RenderOnce for Button), and the Button replays the refinement over its selected style")`,
+  in U5, after it.
 
 **Contract** (`CG/contract.rs`): the walk's `sinks` (`:2736-…`) records
-`format!("{:?}", variants::toolbar_button_states(n))` (unit 5a) and adds
+`format!("{:?}", variants::toolbar_button_states(n))` (U2) and adds
 `("toolbar_button_checked", gm::toolbar_button_checked)` to its refinements
-(`:2790-2822`, unit 5b), so the four leaves (three without the outline) reach a sink.
-Between the two units `toolbar.button_checked_background` reaches none, so unit 5a adds
+(`:2790-2822`, U5), so the four leaves reach a sink.
+Between the two units `toolbar.button_checked_background` reaches none, so U2 adds
 an `UNREAD_COLOURS` entry (`:1095-…`):
 
 ```rust
@@ -2224,25 +2160,26 @@ UnreadColour {
     leaf: "toolbar.button_checked_background",
     why: Unread::NoReceiver(
         "a custom variant fills a selected Button with its `active` colour, the pressed \
-         fill (`button/button.rs:1337`, `ButtonVariant::selected`), and takes no checked \
-         colour of its own; until the connector refines a selected toolbar Button, a \
-         checked one shows the pressed fill",
+         fill (gpui-component 0.10.0 `button/button.rs:1353`, `ButtonVariant::selected`), \
+         and takes no checked colour of its own; until the connector refines a selected \
+         toolbar Button, a checked one shows the pressed fill",
     ),
 },
 ```
 
 The gate requires a `NoReceiver` reason to cite an upstream `file.rs:line`
-(`CG/contract.rs:3027-3039`); `:1337` is the `Self::Custom(colors) => colors.active`
-arm of `fn selected` (`:1316-…`), read today. Of the three kinds (`:1044-1064`),
+(`CG/contract.rs:3027-3039`); `:1353` is the `Self::Custom(colors) => colors.active`
+arm of `ButtonVariant::selected` at gpui-component 0.10.0 (`:1332-1372`,
+`<record>/steps45/upstream-reread.md`). Of the three kinds (`:1044-1064`),
 `Inherited` (a widget leaf that inherits it reaches a sink) and `Fallback` (a soft
 option's fallback every preset states) do not describe it; `NoReceiver` is taken, as the
 nearest: the variant has nowhere to take the checked colour, and the receiver the
 connector gives it, a refinement over the selected state, comes with the Edit button in
-unit 5b, which removes the entry and adds the refinement's sink. Gate:
+U5, which removes the entry and adds the refinement's sink. Gate:
 `every_colour_leaf_reaches_a_sink_or_is_named`. A unit test in `variants.rs`:
 `toolbar_button_takes_the_toolbars_states` (kde-breeze: hover transparent, active
-#3daee94d; macos-tahoe: the `ghost_button`'s tokens), unit 5a. A unit test in
-`geometry.rs`, unit 5b, with the builder:
+#3daee94d; macos-tahoe: the `ghost_button`'s tokens), U2. A unit test in
+`geometry.rs`, U5, with the builder:
 `toolbar_button_checked_letters_in_the_checked_text` (windows-11 light: bg #0067c0,
 text #ffffff; dark: #4cc2ff, #000000; kde-breeze light: #23262920, #232629; macos-tahoe:
 an empty refinement; windows-11 with `button.checked_text_color` cleared: the text is
@@ -2252,22 +2189,26 @@ an empty refinement; windows-11 with `button.checked_text_color` cleared: the te
 `toolbar_item` (`:1452-…`, the Buttons page's component `Toolbar`) and
 `demo::icon_button` (`:9210-…`, the Basic page's icon row) build
 `Button::new(id).custom(variants::toolbar_button(cx))` in place of
-`ButtonKind::Ghost.apply(..)`, refined, where step 3's trial passed, with
+`ButtonKind::Ghost.apply(..)`, refined with
 `geometry::toolbar_button_rest(n)` after `tool_button_box`'s refinement, so that its
 reduced padding wins over the box's (a later refinement's stated fields replace an
-earlier one's). Where the trial passed, and so in the unit after it (C.1), a test in
+earlier one's). A test in
 `tests.rs`, `a_tool_buttons_box_keeps_its_size_with_the_outline`: under kde-breeze light
 the bounds of `basic-icon-copy` equal its bounds under the same preset installed with
 `toolbar.button_hover_border_color` cleared (where `toolbar_button_rest` is empty), so
-the outline moves nothing; where the trial failed there is no rest builder and no
-border, and the test is not written. The checked
+the outline moves nothing. A second test there, in the pattern of
+`a_hovered_field_takes_the_hover_border`, is the one check that the edge is drawn:
+`a_hovered_tool_button_takes_the_toolbars_outline`: kde-breeze light,
+`basic-icon-copy`; pointer away: no bordered quad over its bounds has
+`toolbar.button_hover_border_color`; hovered: `painted_edge` is that colour, and
+`painted_fill` is `None` (the hover fill is transparent). The checked
 toolbar button of B.10 is built the same way, `.selected(true)` while it is on, with
 `geometry::toolbar_button_checked(n)` applied after the other refinements while it is
 on. Widget Info: a new
 `info::buttons::native_toolbar(info, t, native)` beside `native_ghost`
-(`info/buttons.rs:625`) claims the hover, pressed and (with D5's route) hover-edge
+(`info/buttons.rs:625`) claims the hover, pressed and hover-edge
 colours, each the toolbar field where stated with its leaf, else the ghost token's
-claim; the hover edge through `edge_claim("hover edge", "button_hover_border_color",
+claim; the hover edge through `edge_claim("border, hovered or pressed", "button_hover_border_color",
 <toolbar.button_hover_border_color>, Some(<button.border.line_width>), <the cited line of
 toolbar_button_states>)`, the width the rest refinement draws it at (A.10 says why
 `edge_claim`); `info/chrome.rs::toolbar_button` (`:1013-1053`), `info::buttons::toolbar_item`
@@ -2277,8 +2218,11 @@ of the three takes the resolved theme where it takes the button's today: their
 `native: Option<&ResolvedButtonTheme>` (`info/chrome.rs:1013-1021`, `info/buttons.rs:948`,
 `:969-974`) becomes `native: Option<&ResolvedTheme>`, from which they read `button` and
 `toolbar` (a parameter of its own would give `info::toolbar_button`, seven today, eight,
-over clippy's `too_many_arguments` limit); their callers pass `n.resolved`
-(`demo.rs:1346`, `:1460`, `:9221`), and the tests that call them follow:
+over clippy's `too_many_arguments` limit); the three callers that pass
+`native.as_ref().map(|n| &n.resolved.button)` to `info::toolbar_button`,
+`info::buttons::toolbar_item` and (in `demo::icon_button`) `info::buttons::icon_button`
+pass the resolved theme; the fourth such call, `panel_toggle`'s, keeps the button's;
+and the tests that call them follow:
 `every_tool_buttons_size_note_follows_the_stated_padding`'s `infos` closure
 (`tests.rs:17416-17459`, the calls at `:17422`, `:17450`, `:17456`, its parameter
 `Option<&ResolvedButtonTheme>` becoming `Option<&ResolvedTheme>`, and its caller's
@@ -2286,17 +2230,24 @@ over clippy's `too_many_arguments` limit); their callers pass `n.resolved`
 for the status bar's toggle (`:17428-17444`, `info/chrome.rs:482`), keeps its
 `Option<&ResolvedButtonTheme>` and is passed `native.map(|r| &r.button)` at `:17443`) and `tests.rs:17822`, which sets the padding on
 a clone of the resolved theme's `button` (`:17817`) and so clones the resolved theme
-instead. Where step 3's trial passed, `icon_button`'s
+instead. `icon_button`'s
 `not_themeable("edge", "none: upstream gives a border width only to a Default or an
 outlined Button, …; the showcase sets none")` (`info/buttons.rs:954-957`) is false where
 the theme states the outline, since `toolbar_button_rest` gives the button a border; it
 then reads `not_themeable("edge", "none at rest: geometry::toolbar_button_rest's border
 is transparent, button.border.line_width wide, and takes the variant's colour under the
-pointer (the hover edge)")`, and stays as it is where the theme states no outline or the
-trial failed. Where the trial passed, the doc of the gpui showcase test
-`the_basic_pages_icon_buttons_claim_no_edge` (`tests.rs`, "The Basic page's icon
-buttons claim no edge …") is reworded to say: no edge claimed at rest; the hover edge
-goes through `edge_claim`. The checked button's info adds the
+pointer and while pressed (the border, hovered or pressed)")`, and stays as it is where
+the theme states no outline. The gpui showcase test
+`the_basic_pages_icon_buttons_claim_no_edge` becomes
+`the_basic_pages_icon_buttons_claim_no_edge_at_rest`: under kde-breeze light, the Copy
+button's claims whose role starts with "border" are exactly one, of role "border,
+hovered or pressed", field `button_hover_border_color`, value
+`toolbar.button_hover_border_color`; under windows-11 light, which edges its buttons
+(the test's own precondition, asserted there too) and states no toolbar outline, no
+claim's role starts with "border"; the `geometry::button` assertion stays, under both.
+Its doc says so. No Widget Info text of a tool button contains `geometry::button` (the
+test's second assertion): the new texts name `geometry::toolbar_button_rest` and
+`geometry::toolbar_button_checked` only. The checked button's info adds the
 claims "checked fill" (`button_checked_background`) and "checked text"
 (`checked_text_color`, or `active_text_color` where unstated) at the lines of
 `toolbar_button_checked` that set them.
@@ -2309,22 +2260,21 @@ toolbar leaves the six tool buttons list, each under the prefix `"chrome.toolbar
 again under `"basic.icons."`, in the block of the two prefixes' `ghost_button` lines
 (`:144-205`): `toolbar.button_hover_background` "gpui: variants::toolbar_button's hover",
 `toolbar.button_active_background` "…'s pressed fill", and
-`toolbar.button_hover_border_color` "…'s edge under the pointer" or "not reachable: …"
-per D5; under the prefix `"basic.icons.edit"`, listed before the `"basic.icons."` lines
+`toolbar.button_hover_border_color` "…'s edge under the pointer"; under the prefix
+`"basic.icons.edit"`, listed before the `"basic.icons."` lines
 so that Edit's own entry is chosen first, `toolbar.button_checked_background` "gpui:
 geometry::toolbar_button_checked's bg, over the selected toolbar Button", which lands
-with the Edit button in unit 5b, the one element that lists the leaf (no interim line is
-written in 5a, where no element lists it; the interim `UNREAD_COLOURS` entry of 5a,
-below, stays until 5b, the leaf walk reading every leaf); one
+with the Edit button in U5, the one element that lists the leaf (no interim line is
+written in U2, where no element lists it; the interim `UNREAD_COLOURS` entry of U2,
+above, stays until U5, the leaf walk reading every leaf); one
 line for `button.border.line_width_px` under the same two prefixes, which B.10 adds to
 the tool buttons' leaves and whose generic line, "geometry::button's border width"
 (`info/leaves.rs:306-310`), is not a tool button's route ("gpui:
 geometry::toolbar_button_rest's border width, where toolbar.button_hover_border_color is
-stated" where step 3's trial passed, else "not reachable: …" with the reason of the
-`UNREAD_COLOURS` entry above), and
+stated"), and
 under `"basic.icons.edit"` too the line for `button.checked_text_color`
 ("gpui: geometry::toolbar_button_checked's text colour, where the toolbar's checked fill
-is stated"), which lands with the Edit button (unit 5b, C.1): before it no element
+is stated"), which lands with the Edit button (U5, C.1): before it no element
 reaches the line. Widget Info shows for a listed leaf the first `HOW` entry whose prefix
 the element's id starts with (`info/leaves.rs:11-14`; `chosen_how`, `CG/showcase.rs:3882`);
 `every_how_entry_is_shown` (`CG/showcase.rs:3893`, in the connector's own tests through
@@ -2333,15 +2283,16 @@ the element's id starts with (`info/leaves.rs:11-14`; `chosen_how`, `CG/showcase
 entry; and `the_showcase_exercises_every_builder` (`CG/showcase.rs:384`) fails on a
 `pub fn` of `variants.rs` or `geometry.rs` the showcase does not reference. So the
 connector's B.9 code, the showcase's switch to `variants::toolbar_button`, the claims of
-`native_toolbar`, the lines above and B.10's element edits land in one commit (C.1,
-unit 5a task 4), with what concerns the checked button in unit 5b.
+`native_toolbar` and the existing `HOW` lines' new texts land in one unit (U2); the new
+`HOW` lines land with B.10's element edits and what concerns the checked button in U5
+(C.1).
 
 ### B.10 Showcases: the element list and egui's tool button
 
 - `docs/showcase-elements.toml`: three of the four leaves, `toolbar.button_hover_background`,
   `.button_hover_border_color` and `.button_active_background`, in registry order after
   `"toolbar.icon_size_px"` (the checked fill, with `button.checked_text_color`, is listed
-  on Edit alone, unit 5b, the one tool button that is ever checked), and
+  on Edit alone, U5, the one tool button that is ever checked), and
   `"button.border.line_width_px"` after
   `"button.border.corner_radius_px"` (the hover outline's width, drawn where the theme
   states the outline), in the elements `chrome.toolbar.command_palette`,
@@ -2364,19 +2315,19 @@ unit 5a task 4), with what concerns the checked button in unit 5b.
   the «toolbar» scope writes as the hovered and active stroke colour) is drawn that wide
   under the pointer and while pressed, at rest none; egui takes a stroke's width from
   the padding inside the frame, so the button's size does not change
-  (<egui 0.37: `Frame::apply_stroke_and_expansion_without_layout_shift` | egui 0.36.2:
-  `Style::button_style`'s inner margin>). `None` draws no border in any
-  state. egui pads a button by one pair (`Spacing::button_padding`), so the left side
+  (`Frame::apply_stroke_and_expansion_without_layout_shift`). `None` draws no border in
+  any state. egui pads a button by one pair (`Spacing::button_padding`), so the left side
   pads left and right and the top side top and bottom; a side the theme leaves unstated
-  keeps the scope's own." The `<0.37 | 0.36.2>` part is written for the egui version
-  of the tree, as B.7's texts are: on 0.37 the frame's
-  `apply_stroke_and_expansion_without_layout_shift`
-  (`egui-0.37.0/src/containers/frame.rs:313`, which the button's style calls,
-  `theme/default_style.rs:54-72`), on 0.36.2 `Style::button_style`'s inner margin,
-  `button_padding` plus the expansion less the stroke's width (`EG/widget_style.rs:162-164`;
-  0.36.2 has no such `Frame` method). Under
+  keeps the scope's own." The function is named by name; the button's style calls it
+  (`egui-0.37.0/src/containers/frame.rs:313`, `theme/default_style.rs:54-72`). Under
   kde-breeze its tool buttons are then #3daee9-framed under the pointer and pressed,
-  transparent hovered, #3daee94d pressed.
+  transparent hovered, #3daee94d pressed. A test in `examples/showcase-egui/tests.rs`,
+  `a_tool_buttons_outline_has_the_borders_width`, is the one check that the width is
+  set (the colour is the role's, the width the showcase's per call; at width 0 nothing
+  is drawn): in a «toolbar» scope after `demo::tool_button(ui, padding, edge)` as the
+  chrome's toolbar calls it, under kde-breeze light the `hovered` and `active`
+  `bg_stroke.width` are `button.border.line_width` and the `inactive` one 0; under
+  adwaita light all three are 0.
 - egui's Widget Info routes (read for both steps): a listed leaf's line is its
   `mapping.toml` row's route (`info::listed_how`, `showcase-egui/info.rs:631-648`, then
   `how_line`, `:524-563`), "not reachable: mapping.toml has no row for it" where none is;
@@ -2389,8 +2340,8 @@ unit 5a task 4), with what concerns the checked button in unit 5b.
   (an id that does not end in `row_` names one element, `:637-643`), the entry
   `(id, "button.border.line_width_px", "egui: per call, the outline's width under the
   pointer and pressed, where toolbar.button_hover_border_color is stated; 0 otherwise
-  (demo::tool_button)")`, the six in the egui commit of unit 5a (an entry for a leaf no
-  element lists yet is read by nothing) and Edit's in unit 5b. Its doc (`info.rs:565-568`,
+  (demo::tool_button)")`, the six in the egui unit (U4; an entry for a leaf no
+  element lists yet is read by nothing) and Edit's in U5. Its doc (`info.rs:565-568`,
   which names the List scope's per-call leaves only) becomes: "The leaves a page applies
   per call where `mapping.toml`'s row names a style field the connector writes, by
   element id (a prefix, for the rows) and leaf: the List's and the table's frames, which
@@ -2442,14 +2393,16 @@ the checked fill, to the six existing tool buttons. The
 `fill` sample is the neighbours' (`:1574`): the comparator then reads the checked fill
 in each showcase's capture and compares the three. `basic.icons.small` keeps
 `basic.icons.copy` as its parent (`:1619`). Where the row holds four on one line, its
-place against Copy does not change; where Edit wraps to a second line, the small icon's
-row below moves down by that line in each showcase, and parity holds because the three
+place against Copy does not change; where Edit starts a line the row did not have, the
+groups below Icons move down by that line in each showcase (under material-3 the row
+has a second line already), and parity holds because the three
 wrap by the same rule: an item starts a new line where it does not fit beside what the
 line holds (gpui `.flex_wrap()`, `pages/basic.rs:703-704`; iced `.wrap()`,
 `showcase-iced.rs:11479`; egui `wrap_before`, `showcase-egui/pages/basic.rs:482-500`),
-on the same widths, which the comparator checks for Copy, Paste and Delete today. The
-line gap of a wrapped row in each toolkit was not read; the comparator's measured
-places show a difference.
+on the same widths, which the comparator checks for Copy, Paste and Delete today. Under
+catppuccin-mocha, which states no button padding, the three toolkits' own paddings
+differ, as `docs/showcase-exceptions.toml` records for Copy, Paste and Delete; Edit's
+keys join that group where the rehearsal reports them.
 
 *Each showcase's state and code:*
 
@@ -2457,9 +2410,9 @@ places show a difference.
 |---|---|---|---|
 | gpui | `Showcase::basic_edit: bool`, beside `basic_radio` (`examples/showcase-gpui/app.rs:453`), `true` where the struct is built | `pages/basic.rs:698-708`: after the three of `ICON_BUTTONS` (`:87-106`, which stays three), a `.child(..)` with `demo::icon_button` for `("basic-icon-edit", IconRole::ActionEdit, "Edit", "basic.icons.edit.icon")`; `demo::icon_button` (`demo.rs:9210-9245`, six parameters, its one caller `pages/basic.rs:707`) would take eight with `selected` and `on_click`, over clippy's `too_many_arguments` limit of seven; so, as `toolbar_button` takes a `ToolbarButton` (`demo.rs:1303-1317`) and `attachment` a `DemoAttachment` (`:5462-5477`), its four per-button values move into a spec struct, `pub(crate) struct IconButton<'a> { pub id: &'static str, pub name: &'static str, pub drawn: &'a (ChromeIcon, Option<IconName>), pub listed: &'static str, pub selected: bool }`, and the function becomes `icon_button(ui, cx, spec: IconButton<'_>, on_click: Option<impl Fn(&ClickEvent, &mut Window, &mut App) + 'static>)`, `on_click`'s form `attachment`'s (`:5477`); the three of `ICON_BUTTONS` pass `selected: false` and `None::<fn(&gpui::ClickEvent, &mut Window, &mut gpui::App)>`, as `pages/data.rs:347` passes none, and no `#[allow(clippy::too_many_arguments)]` is added. The Button takes `.selected(selected)`, `geometry::toolbar_button_checked(n)` after its other refinements where `selected`, and `.on_click(..)` with the handler where it is `Some` (`button/button.rs:459-465`) | `cx.listener(\|this, _, _, cx\| { this.basic_edit = !this.basic_edit; cx.notify(); })`, as `on_radio` is made (`pages/basic.rs:366-369`); `elements.rs:120-122` gains `("basic-icon-edit", "basic.icons.edit")` |
 | iced | `State::basic_edit: bool`, beside `basic_radio` (`showcase-iced.rs:1723`, `true` at `:2047`) | the icon row (`:11443-11479`): a fourth `tool(..)`-like item with `selected: state.basic_edit`, `toolbar: true` (B.8) and `action: Message::BasicEditToggled`; `ChromeIcons` gains `edit: Option<IconData>` (`:4519`), loaded `by_role(IconRole::ActionEdit)` (`:4575`), and the lookup `"basic.icons.edit" => icons.edit.as_ref()` (`:7654`) | `Message::BasicEditToggled`, beside `BasicRadioSelected` (`:2653`), handled beside it (`:3009`): `state.basic_edit = !state.basic_edit` |
-| egui | `DemoState::basic_edit: bool`, beside `basic_radio` (`examples/showcase-egui/pages/mod.rs:71`, `true` at `:133`) | `icon_buttons` (`pages/basic.rs:1214-1275`) takes `&mut DemoState`, which `group` holds (`:220`) and hands down through its call of `icons_group` (`:245`, today `icons_group(reg, atlas, ui, chosen)`) and `icons_group`'s call of `icon_buttons` (`:1324`): both functions gain a `state: &mut DemoState` parameter after `reg`, as `list_group` takes it (`:1206`); after the loop of three, a fourth item `"basic.icons.edit"` in the same `wrap_before` / `ui.scope` / `demo::tool_button` / `bar.add` form, where, while it is on and `toolbar_button_checked_background(t)` is `Some`, the scope's `override_text_color` is the checked text before `demo::role_image` builds the image inside the scope (decision 12), and the `Button` takes `.fill(..)` of the accessor; while on with the accessor `None`, `.fill(ui.visuals().widgets.active.weak_bg_fill)`, the selected flat button's fill (`chrome.rs:510-511`); its `widget_info` is `WidgetInfo::selected(WidgetType::Button, true, on, "Edit")`, egui 0.36.2's form (`typ: WidgetType`, `EG/data/output.rs:668`), as the status bar's toggle builds it (`chrome.rs:769`); on egui 0.37 (released first, on this branch at the latest after the merge, the header), the first argument is an accesskit `Role`, `egui::Role::Button` (`egui-0.37.0/src/data/output.rs:704`; `src/lib.rs:444`) | `response.clicked()` flips `state.basic_edit` |
+| egui | `DemoState::basic_edit: bool`, beside `basic_radio` (`examples/showcase-egui/pages/mod.rs:71`, `true` at `:133`) | `icon_buttons` (`pages/basic.rs:1214-1275`) takes `&mut DemoState`, which `group` holds (`:220`) and hands down through its call of `icons_group` (`:245`, today `icons_group(reg, atlas, ui, chosen)`) and `icons_group`'s call of `icon_buttons` (`:1324`): both functions gain a `state: &mut DemoState` parameter after `reg`, as `list_group` takes it (`:1206`); after the loop of three, a fourth item `"basic.icons.edit"` in the same `wrap_before` / `ui.scope` / `demo::tool_button` / `bar.add` form, where, while it is on and `toolbar_button_checked_background(t)` is `Some`, the scope's `override_text_color` is the checked text before `demo::role_image` builds the image inside the scope (decision 12), and the `Button` takes `.fill(..)` of the accessor; while on with the accessor `None`, `.fill(ui.visuals().widgets.active.weak_bg_fill)`, the selected flat button's fill (`chrome.rs:510-511`); its `widget_info` is `egui::WidgetInfo::selected(egui::Role::Button, true, on, "Edit")`, as the status bar's toggle builds it (`chrome.rs:769`) | `response.clicked()` flips `state.basic_edit` |
 
-In iced, `icon_colour` (`showcase-iced.rs:4613-4623`) has the toolbar case from unit 5a
+In iced, `icon_colour` (`showcase-iced.rs:4613-4623`) has the toolbar case from U3
 (B.8, its `toolbar` parameter): a selected toolbar button's bundled icon takes B.8's
 checked text, so icon and label agree; Edit is its first caller with both true.
 
@@ -2487,8 +2440,8 @@ widget_gap_px`):
 A column holds at least `BASIC_WIDE`, 170 (`showcase-gpui/pages/basic.rs:41`,
 `showcase-iced.rs:9753`, `showcase-egui/pages/basic.rs:41`; the header of
 `docs/showcase-elements.toml`, `:644-653`), so kde-breeze's and windows-11's four fit in
-any column; the others depend on the column's width at 1280x720, which this document
-did not read (material-3's three already exceed 170). The page lays its groups out in
+any column; the others depend on the column's width at 1280x720, measured by T1
+(decision 13) (material-3's three already exceed 170). The page lays its groups out in
 five columns down to one, as many as the theme's widest fixed control allows
 (`basic_column_count`, `showcase-gpui/pages/basic.rs:263-…`, which the iced and egui
 pages count alike, its doc `:241-262`); in five, Icons is the fifth column's first group,
@@ -2497,46 +2450,45 @@ four, three and two it is in the second column (`BASIC_FOUR`, `BASIC_THREE`,
 `BASIC_TWO`, `:193-207`), in one the seventeenth of twenty. Where the fourth button wraps,
 it starts the row's second line, and every group below Icons in its column moves down.
 
-**The measurement** (settled with the coordinator) compares layout dumps of the Basic
-page under nine entries, which between them hold the layout inputs of all 34 bundled
-presets and modes (*ENTRIES* and *The pre-check*, below), in each showcase: "before",
-taken at the end of unit 5a in the same worktree, before 5b is written (no second build
-tree, no stash); "after", taken in unit 5b with the Edit button built, before the unit
-is pushed (C.1). The "after" dumps are of their subject unit's last commit, 5b's (the batch's rule 19): S2's
-merge with the predecessor's tag (C.1, *The branch*) comes after the measurement, so
-both dumps stand on one base. What the merge brings is not measured again, but the
-release's parity rehearsal (the plan's) runs the measurement's after-only checks on
-its dumps of the merged tree, one for each showcase and entry, its entry list holding
-all nine (the batch's rule 19). The checks are relative to the "after" state, not
-absolute, since the page scrolls and some of its elements lie outside its visible
-area by design: before the "after" dumps are deleted, the record keeps, per showcase
-and entry, the listed `basic.` ids present and those wholly inside; on the merged
-tree an id present then and missing now, or inside then and not inside now, is a
-stop, and so is Edit outside wherever Copy is inside (*The stop rule* below); the three
-showcases' Edit not wrapped alike under an entry (*The comparison*'s item 6) is reported
-to the maintainer while the capture goes ahead (the batch's rule 19: a difference the
-rehearsal shows before the capture is reported; a parity fault is a difference the asset
-run's comparator shows after it); of an entry the
-measurement did not use, the visible-area findings are reported, not stopped on, and
-its Edit and wrap checks hold as for the nine. The edges are
-compared as logical edges, each dump snapped at its own scale; the "after" dumps
-come from the desktop and the rehearsal's from a private X server, and whether
-their scales agree was not verified. The rehearsal is needed because the parity
-comparator counts an element outside its visible area as ruled out, not as a
-difference (`scripts/check_showcase_parity.py:1077-1079`), and skips a property
-fewer than two showcases give (`:1080-1081`). A
-fix after the measurement that touches the Basic page or a showcase's layout, before
-S2's merge, means taking the "after" dumps again (one base); after the merge it is
-never compared with the "before" dumps: the rehearsal's after-only checks read it,
-and it is named to the maintainer (the batch's rule 19).
-The two are compared element by element.
+**The check on the built tree** (after the unit that builds Edit, before its gate; no
+commit): the three release showcases under kde-breeze light and dark, adwaita light,
+material-3 light and catppuccin-mocha light, by a copy of
+`<record>/steps45/trial/rehearsal-t1.sh` cut to those five entries, under
+`xvfb97.lock`; then `compare-t1.py <record>/steps45/trial/t1/after <new dumps>` with the
+five entries. Expected: no stop entry, no parity entry, **no moved line**. A moved line
+is a layout change a unit made (T1's "after" tree differs from the built one in no
+size by design): it is fixed, or explained in the record, before the gate. A stop entry
+stops the work for the maintainer; a parity entry is a showcase's fault and is fixed.
+
+The parity rehearsal R runs again after the same unit, as in the steps 2–3 plan
+(`<tools>/rehearsal.sh`, then `scripts/check_showcase_parity.py`, on the private X
+server). Expected new differences, from T1's sizes:
+`catppuccin-mocha:basic.icons.edit.{x,y,w,h}` and its `.icon.x`, `.icon.y` (Edit is a
+tool button like its three neighbours, and wraps there). The keys R reports of these
+join the existing group that holds Copy's, Paste's and Delete's, whose reason covers
+them; any other new key is a finding, fixed in code or excepted with its reason and
+source before the gate. Edit's `fill` is expected equal in the three (*Parity of the
+checked fill*, below).
+
+0.7.2's close-out asset run covers kde-breeze, material-3 and catppuccin-mocha, light
+and dark, at the desktop's scale, with the comparator over its dumps and captures;
+nothing is added to it but a look at the captures for Edit (present under kde-breeze
+and catppuccin-mocha; under material-3 the Icons group is below the view) and, in the
+screenshots workflow's captures, under macos-monterey, macos-tahoe and windows-11. The
+comparison's after-only checks are not run on the asset run's dumps: the smallest
+margin among the captured presets is 126 px against a move of 34 to 40, which no
+scale's rounding uses up.
+
+The rule of the check is the three sections below; the script is
+`<record>/steps45/trial/compare-t1.py`. In them "before" is T1's "after" dumps and
+"after" the built tree's.
 
 **The stop rule.** An element of the Basic page, an id that starts `basic.` (143 at
 `0fa28027`, each of them below `basic.page`, whose parent is `chrome.content`,
 `docs/showcase-elements.toml:678-680`), whose rectangle lies wholly inside its visible
 area before and not wholly inside it after, or that is present before and missing
-after, stops the work, and the maintainer decides. So does the new Edit button, which
-no "before" dump holds, where in an "after" dump `basic.icons.copy` lies wholly inside
+after, stops the work, and the maintainer decides. So does the Edit button where in an
+"after" dump `basic.icons.copy` lies wholly inside
 its visible area and `basic.icons.edit` does not. Its visible area is the one the
 comparator samples colours in, `visible_area` (`scripts/check_showcase_parity.py:776-787`):
 the window's content, 1280 × 720 (`WINDOW_SIZE`, `:325`), cut to every ancestor the
@@ -2558,28 +2510,26 @@ wrapped row needs computing; the table above is the expected widths only.
 **The wrap's parity.** In the "after" dumps, under each entry, Edit starts a new line in
 all three showcases or in none. The three wrap by one rule on the same widths (above),
 so a difference is a fault of a showcase, not a question for the maintainer (the
-batch's rule 19; the project's rule: a showcase that ignores theme data is a bug to fix): the showcase's
-author fixes it and the "after" blocks are taken again; where it is a toolkit's limit,
+project's rule: a showcase that ignores theme data is a bug to fix): the showcase's
+author fixes it and the check runs again; where it is a toolkit's limit,
 it is excepted with its reason: an exception is a record entry naming the entry, the
-kinds that differ and the toolkit's limit with its source, reviewed (the plan says
-how), named in the *Measurement record*, and the rehearsal's after-only check reports
-the same entry's parity failure as excepted, with no new exception; either way the
+kinds that differ and the toolkit's limit with its source, reviewed by the
+orchestrator and named in the plan's record; either way the
 maintainer is told, not asked. An element
 pushed out of view (the stop rule above) stays the maintainer's question, since Edit's
-place in the icon row was a design choice (the batch's rule 19).
+place in the icon row was a design choice.
 
-**The comparison** is a `python3 -I` script in the session's scratch folder, not
-committed, run once the "after" blocks have run, from the repository root, on the two
-folders (`target/measure-5b/before`, `target/measure-5b/after`). Its logic:
+**The comparison** is `<record>/steps45/trial/compare-t1.py`, run with `python3 -I`
+from the repository root on the two folders. Its logic:
 
 1. It loads `scripts/check_showcase_parity.py` by its path
    (`importlib.util.spec_from_file_location`) and uses its `load_elements`
    (`:460-526`), `load_dump` (`:653-681`, which checks each file's `kind`, `preset`,
    `variant` and `scale`), `visible_area` and `snapped_edges`, so that the area and the
-   rounding are the comparator's own. The list is the 5b tree's
+   rounding are the comparator's own. The list is the built tree's
    `docs/showcase-elements.toml`, with each id's `parent` and `clip`; it holds every
    "before" id and the two Edit ids.
-2. For each showcase and each of the nine entries it reads `before/KIND-THEME-VARIANT.json`
+2. For each showcase and each of the five entries it reads `before/KIND-THEME-VARIANT.json`
    and `after/KIND-THEME-VARIANT.json`. A file missing or malformed, or an id the list
    does not have, is an input fault: exit status 2.
 3. For each `basic.` id of the "before" dump: missing from the "after" dump, a stop
@@ -2587,8 +2537,8 @@ folders (`target/measure-5b/before`, `target/measure-5b/after`). Its logic:
    dump's rectangles) and not inside it in the "after" dump, a stop entry; its rounded
    edges different between the two, a "moved" line with the change of its left and top
    edges and of its width and height.
-4. The `basic.` ids only the "after" dump holds are listed as added (`basic.icons.edit`
-   and `basic.icons.edit.icon` are expected).
+4. The `basic.` ids only the "after" dump holds are listed as added (none is expected:
+   T1's dumps hold `basic.icons.edit` and `basic.icons.edit.icon`).
 5. Whether `basic.icons.edit` starts a new line: its rounded top edge not less than
    `basic.icons.copy`'s rounded bottom edge, in the "after" dump. The rows centre their
    items on a line (gpui `.items_center()`, `showcase-gpui/pages/basic.rs:705`; iced
@@ -2603,171 +2553,13 @@ folders (`target/measure-5b/before`, `target/measure-5b/after`). Its logic:
    lines, then the stop entries ("none" where there is none) and the parity entries,
    and exits 0 where both lists are empty, 1 otherwise.
 
-The moved lines of the entries where Edit starts a new line are the plan's list of each
-wrap and what it moves. A draft of the script was run, with no dumps committed at
-`0fa28027`, on a hand-made pair of the 54 files: under material-3 Edit wrapped in all
-three and two icons moved down by its height (and a third, the large icon, by 0.4 px,
-which rounds to no change and kept it inside); under macos-tahoe it wrapped in gpui
-only and pushed the large icon into the status bar's band; under ios-13 the egui
-"after" dump lacked an icon. It printed the two stop entries (the icon pushed out, the
-icon missing) and the parity entry (macos-tahoe light: gpui, not egui and iced), and
-exited 1; with an id the list lacks, it stopped with status 2. With item 5's test and
-the Edit stop entry it was run again on the same pair: the same answers, entries and
-exit status 1; with gpui's kde-breeze light Edit then moved below the window, it
-printed that stop entry too, and a parity entry for kde-breeze light, Edit's top being
-then below Copy's bottom.
-
-**The pre-check** runs before each tree's first block, on the tree to be measured: a
-`python3 -I` script in the session's scratch folder too, not committed. It asserts that
-every dropped preset and mode has the layout inputs of the kept entry it maps to, and
-fails, naming the differing keys, otherwise. The map: kde-breeze light and dark are
-kept (their icon themes differ, `breeze` and `breeze-dark`); the dark mode of adwaita,
-material-3, windows-11, macos-monterey, macos-tahoe and ios-13 maps to the same
-preset's light; the ten colour-scheme presets, light and dark, map to catppuccin-mocha
-light. A preset's layout inputs are every value of its `[light]` or `[dark]` tables and
-of its top-level keys but `name` (`icon_set`, `icon_theme`, `[layout]`), but its
-colours: a colour is a key the registry types `color` (`docs/property-registry.toml`,
-a structure field's sub-fields by its `[_structures.*]` table, `:36`, `:52`, `:71`,
-`:79`), and
-`defaults.border.opacity`, the share already folded into every stated border colour,
-applied to no colour (`CG/lib.rs:677-683`; egui's row of it is source-void,
-`CE/mapping_tests.rs:492-496`). A key the registry gives no type fails the check; a key
-one side states and the other does not is a difference. It rests on the connectors
-following theme data: no size depends on a preset's name or mode, only on these values
-and the icon set. The side panel, whose theme drop-down shows the preset's name, opens
-at a fixed width in all three, from a constant of 300: iced `LEFT_PANEL_WIDTH` (`showcase-iced.rs:4387`),
-egui `.default_size(LEFT_PANEL_WIDTH + splitter)` (`showcase-egui/chrome.rs:920`, the
-constant at `showcase-egui/main.rs:44`), gpui `LEFT_PANEL_WIDTH_PX = 300.`
-(`showcase-gpui/main.rs:341-342`, set as `side_panel_width` at `app.rs:1635`). Run at `0fa28027`, the draft found the 25 dropped entries equal to
-their kept ones: within each preset the modes differ only in colours and in
-kde-breeze's `defaults.icon_theme` and windows-11's `defaults.border.opacity` (0.059 and
-0.098, `windows-11.toml:74`, `:715`), and the ten colour-scheme presets agree with each
-other in every non-colour value.
-
-**The command.** `capture_showcases KIND FEATURES OUTPUT DUMPS ENTRY…` is a function of
-`scripts/capture_window.sh` (its doc `:401-423`, the function `:424-486`), which the asset scripts source and call with an
-`EXIT` trap that stops a showcase left running (`scripts/generate_screenshots_egui.sh`,
-`source …/capture_window.sh`, `trap stop_showcase EXIT`). It builds the showcase once in
-release mode, then per entry runs it on the Basic page with `--capture` (which opens it
-at its default size whatever the desktop remembers, `showcase-egui/main.rs:77-95`), waits
-for the dump (`wait_for_dump`, `:383-399`; the showcase writes it once its layout has
-settled, `showcase-egui/app.rs:872-878`), captures the window and stops it. Each tree
-runs in three blocks, one per showcase (*The duration*, below), in one window. Before
-a tree's blocks, not inside them, each of the three showcases is built with the function's own command and flags
-(`capture_window.sh:440`) through the session's build slot:
-`slot.sh lowprio.sh cargo build -p native-theme-iced --example showcase-iced --release --features iced_aw`
-(egui: `-p native-theme-egui --example showcase-egui --release --all-features`; gpui:
-`-p native-theme-gpui --example showcase-gpui --release`), so that the function's build
-(`:440`) and each entry's `cargo run` (`:467`) find it fresh and the block holds the
-captures only. From the repository root, the iced block of the "before" tree (`after`
-in place of `before` for the second; `kind=egui features="--all-features"` and
-`kind=gpui features=""` for the other two blocks):
-
-```bash
-bash -c 'set -euo pipefail
-source scripts/capture_window.sh
-trap stop_showcase EXIT
-ENTRIES=(
-  kde-breeze:light:freedesktop:breeze      kde-breeze:dark:freedesktop:breeze-dark
-  adwaita:light:freedesktop:Adwaita        material-3:light:material:
-  windows-11:light:default:                macos-monterey:light:default:
-  macos-tahoe:light:default:               ios-13:light:default:
-  catppuccin-mocha:light:lucide:
-)
-kind=iced features="--features iced_aw"
-capture_showcases "$kind" "$features" \
-  "$PWD/target/measure-5b/before/$kind-{theme}-{variant}.capture.png" \
-  "$PWD/target/measure-5b/before" "${ENTRIES[@]}"'
-```
-
-**A failed block** (the identity check, a window that lost the focus, a locked screen:
-each fails the function, which `set -e` turns into the block's end) is run again whole.
-The function deletes each entry's old dump, capture copy and offset before the entry
-runs (`capture_window.sh:463`), so a rerun leaves no file of the failed one; the plan's
-record names each rerun.
-
-- **KIND, FEATURES**: the three showcases, with the flags the asset scripts pass
-  (`generate_screenshots_*.sh`; the function's doc: iced `--features iced_aw`, egui
-  `--all-features`, gpui `""`).
-- **OUTPUT, DUMPS**: DUMPS is `"$PWD/target/measure-5b/before"` (and `…/after`), under
-  `target/`, which `.gitignore:2` ignores (`/target/`); the function writes each dump as
-  `DUMPS/KIND-THEME-VARIANT.json` and then copies the capture beside it as
-  `DUMPS/KIND-THEME-VARIANT.png` with its offset (`cp "$file" "$dumps/$name.png"`,
-  `capture_window.sh:481`). So OUTPUT must name another file than that copy: it is
-  `"$PWD/target/measure-5b/before/$kind-{theme}-{variant}.capture.png"` (and the same
-  under `after`). With OUTPUT `…/$kind-{theme}-{variant}.png` in the same folder the two
-  are one file, GNU `cp` refuses to copy a file onto itself (exit 1), and `set -e` stops
-  the run at its first entry. Both are given absolute: the function makes DUMPS absolute
-  from the caller's directory (`:435`) and then `cd`s to the repository root (`:437`),
-  after which a relative OUTPUT would be read from there, so absolute paths mean the
-  same wherever the command is started.
-- **The record**: the plan's own file, in a section *Measurement record*. It names the
-  two folders, the pre-check's result, each block's measured time, the reruns, the
-  entries whose icon set fell back (below) and the comparison's printout, the result
-  table. The orchestrator writes the "before" part when 5a's task 5 ends and the rest
-  when 5b's task 2 ends, and commits it in a commit of its own that touches the plan's
-  file only, on top of 5b's code commit once its gate has passed and the
-  measurement has run; the two are pushed together. A commit of the plan's file
-  changes no layout, so the "after" dumps stay those of the pushed layout.
-- **The folders**: `target/measure-5b/` is no cargo output, and
-  `~/.claude/scripts/sweep-target.sh` does not remove it. The orchestrator deletes it
-  (`rm -r target/measure-5b`) once the release is first pushed (after S2's merge, C.1);
-  where the stop rule stops the work, it is kept until the maintainer has decided.
-- **ENTRIES**: nine, one per distinct set of layout inputs among the 17 presets
-  (`native-theme/src/presets/*.toml`) × 2 modes (*The pre-check*, above): kde-breeze
-  light and dark, adwaita, material-3, windows-11, macos-monterey, macos-tahoe and
-  ios-13 light, and catppuccin-mocha light for the ten colour-scheme presets (the
-  comparator's colour scheme, `SCREENSHOT_ENTRIES`, `capture_window.sh:352-359`). Light
-  stands for a preset's dark where the two have the same layout inputs; the choice
-  changes no layout. 9 entries × 3 showcases make 27 runs per tree, 54 in all. Each
-  entry has the icon set the preset names (its `icon_set`, `icon_theme`: kde-breeze
-  `freedesktop`, `breeze` / `breeze-dark`, `kde-breeze.toml:11`, `:16`, `:601`; adwaita
-  `freedesktop`, `Adwaita`, `adwaita.toml:11-12`; material-3 `material`, `:9`;
-  catppuccin-mocha `lucide`, `catppuccin-mocha.toml:4`), and `default` where the preset's own set
-  cannot be loaded on Linux: windows-11's `segoe-fluent` and the macOS and iOS presets'
-  `sf-symbols` (`windows-11.toml:17`, `macos-monterey.toml:14`, `macos-tahoe.toml:18`,
-  `ios-13.toml:26`) are no name `--icon-set` takes there (`icon_set_choice` takes
-  `default`, `material`, `lucide`, `system`/`freedesktop` and installed themes,
-  `tools/showcase-support/src/cli.rs:383-416`; `default` follows the theme).
-  The set matters: where it lacks an icon, the button shows its label, which is wider.
-  That `breeze`, `breeze-dark` and `Adwaita` are installed on the maintainer's desktop
-  was not verified here. Where one is not, the showcase names the installed themes on
-  stderr and ignores the flag (`cli::reported`, `cli.rs:458-461`, called on the
-  `--icon-set` value by egui `main.rs:137`, iced `showcase-iced.rs:2181`, gpui
-  `main.rs:1038`), and the run goes on with the default; both trees then show the same
-  fallback, so the comparison still holds, and the plan's record names the entries that
-  fell back.
-
-**The duration**, from the script: each run sleeps `SHOWCASE_START_DELAY`, 3 s
-(`capture_window.sh:345`), before it waits for the dump, and 3 s inside
-`capture_showcase` (`sleep 1` after activating the window and after each of the two
-`spectacle` calls, `:318`, `:325`, `:328`), so at least 6 s; on top of that come the
-showcase's own settling before it writes the dump (1 s: egui `DUMP_SETTLE_S`,
-`showcase-egui/main.rs:113`; iced `LAYOUT_SETTLES_AFTER`, `showcase-iced.rs:849`; gpui
-four readings 250 ms apart, `showcase-gpui/main.rs:733-739`, which may fall inside the
-3 s), the two `spectacle` captures, the window's activation, `cargo run`'s check that the
-build is fresh, the identity check and the stop, none of which this document timed. The
-script bounds two of them: the wait for the dump and the activation each fail after
-`SHOWCASE_WINDOW_TIMEOUT`, 20 s (`:36`, `:387`, `:140`), so the sleeps and those waits
-come to at most 3 + 20 + 20 + 3 = 46 s a run. A block must stay well under the Bash
-tool's 10-minute limit of a foreground command. A block of a whole tree, 27 runs, takes
-at least 27 × 6 s = 162 s, but reaches 600 s at 600 / 27 ≈ 22 s a run, which the
-bounded waits alone allow. So each tree runs in three blocks, one per showcase, 9 runs
-each: at least 9 × 6 s = 54 s, at most 9 × 46 s = 414 s of sleeps and bounded waits,
-and 600 s only where the untimed parts take more than (600 − 414) / 9 ≈ 20 s a run. Six
-blocks in all, a tree's three after its three pre-builds (*The command*, above), which
-are outside the blocks and need no desktop (with 5a's tree the release build of a showcase is
-incremental on the last one; not timed). Before each tree's first block the pre-check
-runs. The announcement is made before the "before" blocks and again before the "after"
-blocks; it asks for the desktop unlocked and untouched (a locked screen gives no frames)
-and states the blocks, the at-least figure and, from the first block's measured time,
-the expected time of the rest, so that the maintainer can schedule the window, which
-holds a tree's three blocks together (the plan holds one lock across them). The runs
-take the focus.
-
 *Widget Info.* gpui: `info::buttons::icon_button` names the edit button's variant
 "Toolbar, icon, checked" (or "labelled") while on and "Toolbar, icon" while off, with
-the claims of B.9 ("checked fill", "checked text") and the instance line "state: an
+the claims of B.9 ("checked fill", "checked text"; where the theme states no checked
+fill the info takes the form of `native_ghost_selected`: "selected bg", the variant's
+active colour (`toolbar.button_active_background` at its line of
+`toolbar_button_states` where stated, else `secondary_active`), and "text",
+`secondary_foreground`) and the instance line "state: an
 edit-mode switch, on at start; a click switches it (Showcase::basic_edit)", and a
 `not_themeable("hover outline while checked", "gpui-component draws no hover style on a
 selected Button (button/button.rs, RenderOnce for Button: the hover style returns early
@@ -2805,7 +2597,7 @@ is not called for it while on (it is not at rest transparent then).
   the two entries; `scripts/check_showcase_parity.py --check-list`
   (`check_release.sh:940-941`) checks the entries against the registry, and the
   comparison itself, of their places and the fill sample in the dumps and captures,
-  runs in the release's asset run (C.2), not in `check_release.sh` (its comment
+  runs in 0.7.2's asset run (C.2), not in `check_release.sh` (its comment
   `:930-937`).
 
 *Parity of the checked fill.* The comparator captures kde-breeze, material-3 and
@@ -2824,7 +2616,7 @@ opaque the three agree, and material-3's and catppuccin-mocha's are, read today:
 (`catppuccin-mocha.toml:86`, `:329`). So no `[[parity.group]]` exception is planned; one
 is added, with its reason, only for a difference the comparison then shows. Under a
 preset that states neither the checked toolbar fill nor `button.active_background`,
-macos-tahoe (`[light.button]` and `[dark.button]` state only `hover_background`), the
+macos-tahoe (its `[light.button]` and `[dark.button]` state no `active_background`), the
 three differ: iced takes `button.hover_background` (B.8's fallback, as the showcase's
 `ghost_button` does today, `showcase-iced.rs:4642`), gpui `secondary_active`, a shade
 of the button's fill (`CG/colors.rs:319-321`), egui the base's active fill. That is
@@ -2833,51 +2625,33 @@ comparator captures no macos-tahoe run (`SCREENSHOT_ENTRIES`), so it needs no ex
 for it.
 
 *Hover.* Under kde-breeze, iced and egui draw the #3daee9 outline over the checked
-button under the pointer (B.8's table, B.7); gpui draws none, for the reason in the
-Widget Info line above (B.13.6).
+button under the pointer (B.8's table, B.7); gpui draws none: gpui-component draws no
+hover on a selected button (its hover style returns early, 0.10.0
+`button/button.rs:754-760`), as the Widget Info line above says (B.13.6).
 
-*Screenshots.* Every capture of the Basic page in the three showcases changes (the
-release's asset run, C.2); the other pages' do not.
+*Screenshots.* Every capture of the Basic page in the three showcases changes (0.7.2's
+asset run, C.2); the other pages' do not.
 
 ### B.11 Documentation
 
-- **READMEs**: the optional colours' count, in the five places A.12 names
-  (`README.md:71`, `:74` at `0fa28027`, `:75` after step 2, `native-theme/README.md:48`,
-  `:49`, `:52`, each found by its quoted text), rises by four from
-  step 4's (42 if steps 3 and 4 add two each); "five" stays, the four fields not being
-  switch outline colours; the iced, gpui and egui READMEs as B.7-B.9 say.
-- **CHANGELOG**, the same section as A.12's (one release, C.3): the *Added* bullets below
-  join A.12's *Added*, after its bullet; and the break is named once (D0 (a), S5): A.12's
-  *Breaking Changes* bullet becomes, in place of a second one,
+- **READMEs**: the optional colours' count, in the five places A.12 names, each found by
+  its quoted text, rises by four from step 4's: 36 today, 42 after both steps, which the
+  documents unit writes; "five" stays, the four fields not being switch outline colours;
+  the iced, gpui and egui READMEs as B.7-B.9 say.
+- **CHANGELOG**, 0.7.2's section: the break is named once (D0 (a)), in A.12's one
+  *Breaking Changes* bullet, which names `ToolbarTheme` too. The five step 5 bullets go
+  at the end of the section's `### Added`, after A.12's, one line per bullet:
 
   ```markdown
-  - **native-theme**: `CheckboxTheme` and `ComboBoxTheme` gain `hover_border_color`, and `ToolbarTheme` gains `button_hover_background`, `button_hover_border_color`, `button_active_background` and `button_checked_background` (see *Added*); none of the three is `#[non_exhaustive]`, so a struct literal of any of them outside the crate needs the fields or `..Default::default()`; their resolved forms are `#[non_exhaustive]` already.
-  ```
-
-  The step 5 bullets, under A.12's headings:
-
-  ```markdown
-  ### Added
-
   - **native-theme**: a toolbar button's states, `toolbar.button_hover_background`, `.button_hover_border_color`, `.button_active_background` and `.button_checked_background`, each a colour painted over the toolbar where the theme states it. kde-breeze and the KDE reader state Breeze's flat button: no fill and a #3daee9 outline under the pointer, the highlight at 30 % pressed, the button text at 12.5 % checked; adwaita and windows-11 state their fills (libadwaita's toolbar button and WinUI's `AppBarButton`), and the Windows reader writes the checked fill from the user's accent, `AccentFillColorDefault`, and the system highlight under high contrast, as it writes a checked button's. Where a theme states the checked fill, a checked toolbar button is lettered `button.checked_text_color`, which windows-11 states as WinUI's on-accent colour. Unstated, a connector draws a toolbar button as it draws a flat button.
   - **native-theme-iced**: `styles::toolbar_button(resolved, checked)`, a toolbar button's style from those fields, with a flat button's where a theme states none.
-  - **native-theme-gpui**: `variants::toolbar_button(cx)`: `variants::ghost_button` with those fields where the native theme states them, and `geometry::toolbar_button_checked(n)`, a checked toolbar button's fill and text colour. Add such a Button to gpui-component's `Toolbar` with `content(..)`: `child(..)` makes it a ghost button again.
-  - **native-theme-egui**: the toolbar role takes the hover and pressed fills and the hover outline as stated, for a flat tool button: the role leaves a button's rest to the button, and a framed button keeps its fill at rest, so make it flat in a scope whose resting fill and border colour are transparent, which keeps its size (`Button::frame_when_inactive(false)` makes it flat too, but it then grows under the pointer); `toolbar_button_checked_background(t)` gives a checked toolbar button's fill, which egui's states cannot carry, to be lettered `button.checked_text_color`, or `button.active_text_color` where that is unset.
+  - **native-theme-gpui**: `variants::toolbar_button(cx)`: `variants::ghost_button` with those fields where the native theme states them, `geometry::toolbar_button_checked(n)`, a checked toolbar button's fill and text colour, and `geometry::toolbar_button_rest(n)`, the rest state of a toolbar button whose theme states a hover outline, which the variant then draws. Add such a Button to gpui-component's `Toolbar` with `content(..)`: `child(..)` makes it a ghost button again.
+  - **native-theme-egui**: the toolbar role takes the hover and pressed fills and the hover outline as stated, for a flat tool button: the role leaves a button's rest to the button, and a framed button keeps its fill at rest, so make it flat with `Button::frame_when_inactive(false)`, or in a scope whose resting fill and border colour are transparent; both keep its size; `toolbar_button_checked_background(t)` gives a checked toolbar button's fill, which egui's states cannot carry, to be lettered `button.checked_text_color`, or `button.active_text_color` where that is unset.
   - **Showcases**: the Basic page's icon row gains Edit, a tool button that is checked at start and switches on a click, so each showcase shows a checked toolbar button.
   ```
-
-  The section keeps A.12's headings and order, 0.7.0's. The egui bullet is written above in its egui
-  0.36.2 form; on egui 0.37 (B.7: read the tree's `Cargo.toml`) its middle reads "…, so
-  make it flat with `Button::frame_when_inactive(false)`, or in a scope whose resting
-  fill and border colour are transparent; both keep its size;".
-
-  Where step 3's trial passed, the gpui bullet adds "and `geometry::toolbar_button_rest(n)`,
-  the rest state of a toolbar button whose theme states a hover outline, which the
-  variant then draws"; where it failed, "gpui draws no toolbar button outline".
-- **ROADMAP**: no section of its own (S5): unit 5c adds the second paragraph ("It also
-  carries a toolbar button's fill …") to the release's section A.12 opened, whose heading
-  already names both steps; the text is A.12's. Any list of what waits that names the
-  toolbar buttons loses them.
+- **ROADMAP**: the second of A.12's two paragraphs ("It also carries a toolbar button's
+  fill …"), appended to 0.7.2's section with the first; the text is A.12's. Any list of
+  what waits that names the toolbar buttons loses them.
 - **Backlog** (`docs/todo.md`):
   - *What Breeze draws that the model has no field for* (`:1785-1787` at `0fa28027`),
     as steps 3 and 4 leave it: the toolbar clause is the first item of the list
@@ -2897,14 +2671,31 @@ release's asset run, C.2); the other pages' do not.
     At the entry's end, after step 4's note (A.12), a dated note:
 
     ```markdown
-    <version>: a toolbar button's hover outline, pressed and checked fills are
+    0.7.2: a toolbar button's hover outline, pressed and checked fills are
     `toolbar.button_*` (D7 of `docs/issues/0004_kde-open-items-rationale.md`). gpui
-    draws no hover outline over a checked toolbar button: gpui-component registers no
-    hover style on a selected button (`button/button.rs:751-756`, 0.9.1).
+    draws no hover outline over a checked toolbar button: gpui-component's hover style
+    returns early on a selected button (gpui-component 0.10.0 `button/button.rs:754-760`).
+    ```
+  - A new item under *KDE: what a Qt application under Breeze shows that native-theme
+    does not*, tagged `[1.0]` by A.12's rule (D10 plans no step for it):
+
+    ```markdown
+    **Toolbar buttons and the Tab key.** Qt gives a toolbar's action buttons no keyboard focus
+    (`setFocusPolicy(Qt::NoFocus)`, qtbase v6.11.0 `src/widgets/widgets/qtoolbarlayout.cpp:703`),
+    so on KDE the Tab key never stops on one. The model has no field that says whether a toolbar's
+    buttons take the keyboard focus, and what WinUI's `AppBarButton`, GTK's header-bar buttons,
+    AppKit's toolbar items and Material's do was not read. Today an egui button and a
+    gpui-component Button are Tab stops under every theme (egui 0.37.0 `src/sense.rs:60-61`,
+    `Sense::click()`; gpui-component 0.10.0 `src/button/button.rs:293`, `tab_stop`), and an iced
+    button takes no focus. On kde-breeze an egui tool button reached by Tab so shows the toolbar's
+    hover outline (0.7.2: egui's `active` is also its focused state), which Breeze never shows
+    there. To do: read the four platforms into `docs/platform-facts.md` §2.13, add the field, and
+    build the showcases' tool buttons from it (egui `Button::sense(Sense::CLICK)`, gpui
+    `Button::tab_stop(false)`).
     ```
 
-    Without D5's route the note's last sentence reads: "gpui draws no toolbar button
-    outline (`variants::toolbar_button`)."
+    The README's accessor paragraph and `Role::Toolbar`'s doc are not given a sentence on
+    it.
   - The `[upstream]` ghost-token entry (`:2390-2404`): a dated note: "the connector's
     `variants::toolbar_button` paints a toolbar button's states from the model."
   - The `[1.0]` entry *windows-11: values WinUI 3 states no source for* (`:1528-1542`):
@@ -2923,7 +2714,10 @@ release's asset run, C.2); the other pages' do not.
     (`docs/facts/gnome/button.toml:5133`, `:5209` at `78ee0efd`); Breeze draws a
     pressed checked flat button with the pressed fill, its frame deciding `down` before
     `checked` (`docs/facts/kde/button.toml:1-12` at `78ee0efd`). Fields for the two states, and their rows in
-    `docs/platform-facts.md` §2.13, are to be decided."
+    `docs/platform-facts.md` §2.13, are to be decided. On GNOME the toolbar look
+    belongs to image, image-text and arrow buttons only; the model has no field for it,
+    and the showcases' tool buttons keep the look where an icon set lacks the icon and
+    the label shows."
   - Three more new `[1.0]` entries, by D6's rule (D7):
     - *macOS: a toolbar button's states.* "To be measured: an `NSToolbarItem` button's
       fill under the pointer, pressed and checked (`selectedItemIdentifier`), and its
@@ -2946,151 +2740,64 @@ release's asset run, C.2); the other pages' do not.
       checked for a `toggle` item `:17491` (U123), disabled and checked or pressed
       `:15175`, `:15705` (U115); no fill at rest, `:14089`. ios-13 states none of
       `toolbar.button_*` until then."
-  - **The tags**, by A.12's rule: all four new entries are `[1.0]`. D10 plans no step
+  - **The tags**, by A.12's rule: all five new entries are `[1.0]`. D10 plans no step
     for them: the checked toolbar button's hovered and pressed fills are this
     specification's decision 5, which the model has no field for, and D7 leaves the
     macOS, Material and iOS presets unset "with backlog entries" (D7, "so those presets
     stay unset, with backlog entries", `docs/issues/0004_kde-open-items-rationale.md`),
-    as D6 does its readings.
-  - **The roadmap's count** (`ROADMAP.md:264`), as A.12 says for unit 4b: unit 5c
-    recounts it on its tree with `grep -c '^- \[ \] \[v0.7.x\]' docs/todo.md`, writes it
-    there and records it in its commit body. Step 5 opens no `[v0.7.x]` entry and closes
-    none by the edits above.
+    as D6 does its readings; the Tab key's needs a field D7 does not decide either.
+  - **The roadmap's count**: one recount for both steps, as A.12 says. Step 5 opens no
+    `[v0.7.x]` entry and closes none by the edits above.
 - **The first rationale**: §7's row `| C | toolbar buttons, sort header | no fields (§5.4) |`
-  (`:1033`) becomes `| C | toolbar buttons, sort header | toolbar buttons: **fixed in <the release that brings steps 4 and 5>** (Breeze's outline on hover, the highlight at 30 % pressed, the button text at 12.5 % checked; the Windows reader writes the checked fill from the user's accent) in the iced and egui connectors; gpui: the connector's `variants::toolbar_button` and `geometry::toolbar_button_checked`<, the outline through `geometry::toolbar_button_rest` | , without the outline (request 5)>; the sort header waits for its fields |`.
-  **§5.4's status line** (`:907`), as step 4 leaves it (A.12): after the sentence that
-  starts "Also by D6", a sentence is inserted: "Also by D7's toolbar part (<the release
-  that brings step 5>): a toolbar button's states (`toolbar.button_hover_background`,
+  (`:1033`) becomes `| C | toolbar buttons, sort header | toolbar buttons: **fixed in 0.7.2** (Breeze's outline on hover, the highlight at 30 % pressed, the button text at 12.5 % checked; the Windows reader writes the checked fill from the user's accent) in the iced and egui connectors; gpui: the connector's `variants::toolbar_button` and `geometry::toolbar_button_checked`, the outline through `geometry::toolbar_button_rest`; the sort header waits for its fields |`.
+  §8 is not edited.
+  **§5.4's status line**, as step 4 leaves it (A.12): after the sentence that
+  starts "Also by D6", a sentence is inserted: "Also by D7's toolbar part (0.7.2): a
+  toolbar button's states (`toolbar.button_hover_background`,
   `.button_hover_border_color`, `.button_active_background`,
   `.button_checked_background`), which kde-breeze and the KDE reader state, adwaita and
   windows-11 their fills, and the Windows reader the checked fill from the user's
   accent; iced and egui draw them, gpui through
-  `variants::toolbar_button` and `geometry::toolbar_button_checked`<, the outline
-  through `geometry::toolbar_button_rest` | , without the outline (request 5)>." (`<A |
-  B>` by step 3's trial); the sentence "Toolbar buttons and the table header are that
+  `variants::toolbar_button` and `geometry::toolbar_button_checked`, the outline
+  through `geometry::toolbar_button_rest`."; the sentence "Toolbar buttons and the table header are that
   rationale's D7; …" becomes "The table header is that rationale's D7; the menu item's
   and the list row's outlines and the menu bar title stay in the backlog (its §0)."
-  **The reply draft (§8)**, under A.12's rules (only while the reply has not been
-  posted; by anchor and by content), against the draft as step 4 leaves it; the release
-  is written "<the release that brings steps 4 and 5>", replaced by its version when the
-  maintainer gives it:
-  1. The list "Later 0.7.x releases fix more:" gains, after the bullet titled **Hover
-     outlines on check boxes, radio buttons and combo boxes**:
-
-     ```markdown
-     > - **Toolbar buttons** (<the release that brings steps 4 and 5>). Breeze draws a
-     >   toolbar button flat: under the pointer no fill but an outline in the
-     >   highlight colour, while pressed the highlight at 30 %, and when checked a
-     >   light shade of the text colour. native-theme now has these values, and the
-     >   iced and egui connectors draw them. In GPUI, build a toolbar button with
-     >   `.custom(native_theme_gpui::variants::toolbar_button(cx))` and add it to the
-     >   toolbar with `content(..)`, since `child(..)` makes it a ghost button again.
-     >   The refinements below are called with the connector's native theme (what
-     >   `cx.native()` gives, as the README's examples show).< The button style draws
-     >   the outline under the pointer. Refine the button with
-     >   `native_theme_gpui::geometry::toolbar_button_rest` too: it keeps the edge
-     >   clear while the pointer is away and takes the edge's width out of the
-     >   padding, so the outline does not change the button's size; it expects the
-     >   button to be padded with the theme's button padding, as `geometry::button`
-     >   pads it. A
-     >   checked one takes `geometry::toolbar_button_checked` after that: in the
-     >   other order the rest refinement's clear fill would cover the checked fill.
-     >   gpui-component draws no hover over a checked button, so a checked one shows
-     >   no outline. | A checked one takes the refinement
-     >   `native_theme_gpui::geometry::toolbar_button_checked`. The outline cannot be
-     >   drawn in gpui-component yet; it is part of the same request as the
-     >   button's hover border.>
-     ```
-
-     (`<A | B>` by step 3's trial, as in 3H.) Where the trial failed, the bullet
-     **Hover borders in GPUI** of "Some things are not fixed yet" (3H.3, item 1) names
-     the button's hover border, the request the B text points to; the toolbar outline
-     is not listed there as a separate open item.
-  2. "The rest of your list": the sentence on toolbar buttons is found by its start,
-     "Toolbar buttons:" (as 3H.3 says step 5 finds it; step 3 rewrites its end to
-     "they come in a later 0.7.x release"), and removed, whatever its text then is; the
-     sentence on the pressed sort header becomes its own: "The pressed sort header:
-     native-theme has no values for its states yet; it comes last, and since no GUI
-     library's table can show it, its values will reach an application only for a
-     table it draws itself.", rewrapped. So the toolbar buttons are no longer listed as
-     open.
-  3. The note after the draft, as step 3 leaves it: the sentence that item 2 removes
-     leaves the note too, as it then stands ("they come in a later 0.7.x release" after
-     step 3); "it comes last" and the D0/D10 caveat stay. Where the trial passed, it
-     becomes: "The sentences "I am reporting it there", "I have asked gpui-component to
-     draw its ring for keyboard focus only" and "it comes last" are the maintainer's to
-     confirm before posting: they follow `0004_kde-open-items-rationale.md`'s proposed
-     order (D10), and "0.7.x" its proposed versions (D0 (a); under (b) or (c) some of
-     these releases are minor ones, and the wording changes with them)."; where it
-     failed, it becomes: "The sentences "I am reporting it there", "I have asked
-     gpui-component to draw its ring for keyboard focus only", "so I have asked for it",
-     "it is part of the same request as the button's hover border" and "it comes last"
-     are the maintainer's to confirm before posting: they follow
-     `0004_kde-open-items-rationale.md`'s proposed order (D10), and "0.7.x" its proposed
-     versions (D0 (a); under (b) or (c) some of these releases are minor ones, and the
-     wording changes with them); the fourth leans on request 5, which the maintainer
-     sends or not."
-- **The rationale's status line** (`docs/issues/0004_kde-open-items-rationale.md`, its "Status" line)
-  gains, once step 5 is implemented, after step 4's line (A.12): "Step 5 (D7's toolbar
-  buttons) implemented on `<date>` for <the release that brings steps 4 and 5>, by
-  `../archive/todo_v0.7.x_kde-open-items-steps4-5-{spec,plan}.md`." (the archive's path,
-  since the next bullet moves the documents in the same close-out). The rationale stays
-  in `docs/issues/` while a step remains, and after step 7 too (the steps 6–7
-  specification's 7.I.4: it stays there, as the first rationale does; its 7.I.6 archives
-  only that specification and its plan).
-- **`docs/archive/`.** At the plan's close-out, after step 5, this specification and its
-  plan move to `docs/archive/` (`docs/archive/README.md`: implemented design documents
-  live there; the project's rule that archiving is a plan's last task), and
-  `docs/archive/README.md` gains a row for <the release that brings steps 4 and 5> (or a line
-  on that release's row, if it has one by then), in the form of its v0.7.1 row (`:51`):
-  "`todo_v0.7.x_kde-open-items-steps4-5-{spec,plan}.md`: steps 4 and 5 of the open KDE
-  items, one release (the hover outlines of the check box, the radio button and the
-  combo box; a toolbar button's states); their rationale stays
-  with the issue, at `docs/issues/0004_kde-open-items-rationale.md`". Every link to the
-  two documents is rewritten for the new place, found again at the close-out with
-  `git grep -n 'kde-open-items-steps4-5'` over every tracked file: the later
-  documents' mentions of this specification and its plan (the caret's, its lane
-  successor's, which reads the plan's gated head and record; steps 6 and 7's; the
-  widget icons'; the gate-speed specification's), as their texts stand at the
-  close-out, since those documents were still being edited on 2026-11-15, each found
-  by the close-out's `git grep` and rewritten as rule 22 (a) says; a document among
-  them that an earlier close-out has moved to `docs/archive/` by then is left as
-  written;
-  - paths of the plan's record folder,
-    `<scratch-keep>/todo_v0.7.x_kde-open-items-steps4-5-plan/` (which later plans name
-    for their reads of the plan's record and of `<record>/measure-5b/…`, and the plan
-    names as its `<record>`), are not mentions of the two documents: the
-    folder does not move, so they are left as written and named in the commit body
-    (the batch's rule 22 (a)); the plan's check matches the document form, ending
-    in `.md`, which leaves them out;
-  - the steps 2–3 plan's close-out list (its K7) also names this specification; that
-    plan is in `docs/archive/` by this close-out (steps 2 and 3's close-out archives
-    it first), so it stays as written, as 3H.6 below does;
-  - the steps 2–3 specification's 3H.6 (`docs/todo_v0.7.2_kde-focus-ring-and-button-outlines-spec.md`,
-    its list of the links step 3's close-out re-points, found by the section's name since
-    its lines keep moving), which names this specification's two links to it, in *How
-    to read it* and in B.9's *The variant*: that document is in `docs/archive/` by
-    then, and its list is a record of step 3's close-out, path and line numbers as they
-    were then, so it stays as written (an archived document is not rewritten; it names
-    no link that would break, only a path in backticks);
-  - this specification's own links, which are relative to `docs/`, in one commit: the
-    header's two (`issues/…` → `../issues/…`), and the two to the steps 2–3
-    specification (in *How to read it* and B.9), which step 3's close-out rewrote to
-    `archive/todo_v0.7.2_kde-focus-ring-and-button-outlines-spec.md` (its 3H.6, this document then
-    lying in `docs/`) and which become `todo_v0.7.2_kde-focus-ring-and-button-outlines-spec.md`,
-    the same folder then.
-  A document that has itself moved to `docs/archive/` by then is found there by the same
-  `git grep`.
+  The reply was posted on 2026-11-17 for 0.7.1 and lists these items as open; whether a
+  follow-up comment is written is the maintainer's.
+- **The rationale's status line**: A.12's one sentence for steps 2 to 5, at 0.7.2's
+  close-out. The rationale stays in `docs/issues/` while a step remains, and after
+  step 7 too (the steps 6–7 specification's 7.I.4: it stays there, as the first
+  rationale does; its 7.I.6 archives only that specification and its plan).
+- **`docs/archive/`.** 0.7.2's close-out moves this specification and its plan to
+  `docs/archive/` with 0.7.2's other documents, the steps 2–3 specification and plan
+  among them, so this document's two links to that specification stay same-folder
+  links; its links `issues/…` become `../issues/…`. 0.7.2's row of
+  `docs/archive/README.md` names
+  `todo_v0.7.2_kde-hover-outlines-and-toolbar-buttons-{spec,plan}.md`: steps 4 and 5 of
+  the open KDE items (the hover outlines of the check box, the radio button and the
+  combo box; a toolbar button's states); their rationale stays with the issue. The
+  plan's record is `<record>/steps45/`.
+- **The old names** (`todo_v0.7.x_kde-open-items-steps4-5-{spec,plan}.md`). Every link
+  and mention that ends in `.md`, outside `docs/archive/`, is re-pointed in the working
+  tree and committed by D0: found today in `docs/todo_v0.7.x_caret-blink-plan.md`,
+  `docs/todo_v0.7.x_gpui-widget-icons-spec.md`,
+  `docs/todo_v0.7.x_kde-open-items-steps6-7-spec.md` and this work's plan (found again
+  by `git grep -n 'kde-open-items-steps4-5' -- ':!docs/archive'`, which then finds only
+  the record folder's path, in the caret plan and the steps 6–7 plan, the old names'
+  pattern in this work's plan's D0 row and in this bullet, and this specification's own
+  lines that name the old file names). Their mentions of the
+  old record folder (`<scratch-keep>/todo_v0.7.x_kde-open-items-steps4-5-plan/`) and of
+  this release as "0.7.4" are left: those documents were written for the lanes the fold
+  replaced and are read again when their work is planned (steps 2–3's 6.11).
 
 ### B.12 Gates
 
-As A.13, with: `scripts/check_connector_parity.py` (`check_release.sh:919`) for the egui
+As A.13, with: `scripts/check_connector_parity.py` for the egui
 accessor; the iced contract's rows, pairs and `every_colour_leaf_reaches_a_row_or_is_named`
 for `styles::toolbar_button`; gpui's leaf walk for `toolbar_button_states` and
 `toolbar_button_checked`; the egui contract's T10 arm for the «toolbar» strokes, T2 for
 the four rows and `button.border.color`'s «toolbar» `when`s, `verdict_totals_match_the_specification`
-for *Chrome*, step 3's `flat_and_part_scopes_keep_their_resting_stroke` and
-`panel_role_cells_write_their_rows` for the kept outline; `presets.rs` for which presets
+for *Chrome*, `panel_role_cells_write_their_rows` for the kept outline; `presets.rs` for which presets
 state the fields; the KDE reader tests of B.5; `check_preset_citations.py` for the
 twenty new values' comments and the four `not stated` lines; the iced, gpui and showcase
 tests of the checked text (B.8-B.10); the route tests of the three showcases
@@ -3138,7 +2845,8 @@ Not gated: the facts cells' text and the resolved values in them (no test compar
    `Float::round` calls it for `f32` under its `std` feature (`src/float.rs:1950`,
    `:2077-2078`), documents the same rule, "Round half-way cases away from `0.0`"
    (`:1184-1185`). GTK keeps a float alpha.
-4. **gpui's outline** depends on step 3's trial (D5), which has not run.
+4. **gpui's outline** is settled by step 3's trial, which passed
+   (`variants::bordered_button`).
 5. The Windows XAML lines are F's, read at `winui3/release/2.5.1`; the facts rows (B.3)
    and windows-11's comments (B.4) cite them at commit `8463f45`, as the other WinUI rows
    of `PF` do. Closed: this specification's eighth confirming check
@@ -3147,23 +2855,22 @@ Not gated: the facts cells' text and the resolved values in them (no test compar
    cited lines hold there: `AppBarToggleButton_themeresources.xaml` `:6`, `:7`, `:9`,
    `:74`, `AppBarButton_themeresources.xaml` `:6`, `:7`, `:14` (the reviewer's fetch,
    not re-read for this document).
-6. **No hover outline over a checked toolbar button in gpui.** gpui-component registers
-   no hover style on a selected button (`GC/button/button.rs:751-756`) and replays the
+6. **No hover outline over a checked toolbar button in gpui.** gpui-component draws no
+   hover on a selected button (its hover style returns early, 0.10.0
+   `button/button.rs:754-760`) and replays the
    caller's refinement over the selected state (`:821-829`), so a checked toolbar
    button's edge is the refinement's at all times; iced and egui draw the outline over
    it. Recorded in the backlog entry of B.11 that names the toolbar outline.
 7. **The checked text's contrast** (B.4's table): no pair of the three presets that state
    the checked fill is under 3:1 after the change; the lowest is windows-11 light,
    5.67:1.
-8. **A gpui Button's icon and the refinement's text colour** (B.9): not read. No test can
+8. **A gpui Button's icon and the refinement's text colour** (B.9). No test can
    read an icon's painted colour (gpui-pre's test API has painted quads and underlines
    only), so `a_checked_toolbar_buttons_icon_takes_the_checked_text` reads the text style
    an `Icon` without its own colour paints in (`GC/icon.rs:260-266`) through a probe
-   child. Where it does not follow, the caller colours the icon with `Icon::text_color`
-   from `button.checked_text_color`, the test is removed, and no test reads that colour
-   (decision 14). The verdict, and in that branch the untested colour, are recorded in
-   the plan's record and in B.9's README sentence; the specification is not edited after
-   the verdict.
+   child, at render (decision 14). Measured before the build (T2): the colour follows. If
+   `a_checked_toolbar_buttons_icon_takes_the_checked_text` fails in the unit that builds
+   Edit, the unit stops and the difference goes to the maintainer.
 9. **GNOME's toolbar look covers some buttons only.** libadwaita gives the flat
    toolbar look to a toolbar's button that is not `.raised`, `.suggested-action`,
    `.destructive-action` or `.opaque` and is an `.arrow-button`, `.image-button` or
@@ -3184,41 +2891,23 @@ Not gated: the facts cells' text and the resolved values in them (no test compar
     `GC/button/button.rs:590-592`), which replaces a custom variant; one added by
     `content(..)` keeps it. The showcase uses `content` (`demo.rs:1424`); the variant's
     doc and the README say so for an application (B.9).
+11. egui rounds a margin to a whole number (epaint 0.37.0 `src/margin.rs:108-120`), so
+    decision 6's "no size change" is exact for a whole-pixel `button.border.line_width`;
+    kde-breeze, the one preset that states the toolbar's outline, states 1.0. A
+    fractional width would move an egui tool button's size by the rounding.
 
 ---
 
-## Part C — Order, gates, version
+## Part C — Order and gates
 
 ### C.1 Units, their order and their gates
 
-**The cadence** (the batch's speed decision S1, `docs/todo_v0.7.1_batch-speed-rationale.md`,
-approved 2026-11-15; it replaces this specification's earlier rule that every unit ends
-with `--commit`). `scripts/check_release.sh` takes `--commit` or nothing at `0fa28027`
-(`:46-74`); v0.7.1's first unit ports `--quick`, nextest and the step cache from
-`v0.8.0-rc1` (S1; what `--quick` runs on 0.7.x is `docs/todo_v0.7.1_gate-speed-spec.md`'s,
-which is being reviewed). So:
-
-- during a unit, the agent runs only the touched tests (its targeted commands): the
-  tests of the crate it edits and the commands `check_release.sh` runs for that crate
-  (named below with their lines);
-- at a unit's end, `scripts/check_release.sh --quick`, by the orchestrator, as a long
-  run until its time is measured (the first timed into the record);
-- `--commit` every third code unit of the release, counted from the last
-  `--commit` (any `--commit` restarts the count, the batch's rule 11), on the
-  release's last code unit before its documents and version units, after a lock or
-  toolchain change (the warm-up gates, including the one after S2's merge, below, and
-  the version step, whose `Cargo.lock` lists the new versions), and wherever the plan
-  names a unit structural (the batch's rule 6); with the warm-up gate as the release's
-  first `--commit`, the code units 4a, 5a and 5b make 5b the third and the last code
-  unit, so 5b runs `--commit`; a documents-only unit (4b, 5c) runs the five
-  documentation checkers and `--quick`, the last unit before the merge (5c) included:
-  its commit is recorded as the lane's gated head for the next release, with no extra
-  `--commit`, since 5b's covers the code beneath it (the batch's rule 20);
-- the full run in the close-out (C.2), unchanged.
-
-The cost the maintainer accepted (S1, 2026-10-15): a commit between two `--commit` runs
-is proven by `--quick` only; a failure the next `--commit` finds is fixed by a new commit,
-never by rewriting a pushed one, and the record names the commit that brought it.
+On `v0.7.2-rc1`, in the worktree `lane2-b`, from `f02c3ae9` (steps 2 and 3 built and
+gated): the units are commits on it; no branch, no merge, no version step (the
+workspace is 0.7.2 already), no recount after a merge. The branch is pushed by explicit
+refspec at each `--commit` gate that passes, and each push's CI run is read (B.5a's
+three Windows tests run only in CI's Windows legs). A failure a later gate finds is
+fixed by a new commit, never by rewriting a pushed one. 0.7.2's close-out runs once.
 
 **What stays red inside a unit, and why the units are cut where they are.** A new
 registry leaf makes three connector gates fail until each connector reads or names it:
@@ -3230,103 +2919,80 @@ and T10; the gpui `every_colour_leaf_reaches_a_sink_or_is_named`. An element of
 `every_how_entry_is_shown` (`CG/showcase.rs:3893`) fails on a line no element's leaf
 reaches, and an element's new leaf takes its generic line where no specific one comes
 first. A preset key the backlog cites by key path cannot go without the backlog's
-citation: `scripts/check_todo_citations.py` (`check_release.sh:977`). A connector's
+citation: `scripts/check_todo_citations.py`. A connector's
 README is its crate's documentation (`#[doc = include_str!("../README.md")]`, e.g.
-`CI/lib.rs:457`), so a README edit goes with its crate's code. So each unit below is
-one commit, or a stack whose intermediate commits pass the gates of the crates they
-touch and whose last passes the unit's gate (`--quick`, or `--commit` where the cadence
-says); the plan chooses which. The reason holds under `--quick`: S1's floor makes it run
-the tests of every crate a unit changes and of every crate that depends on one it
-changes, and every connector depends on `native-theme`, so a unit's core commit alone
-(4a task 1, 5a task 1) leaves the connectors' leaf walks, counts and T10 red under
-`--quick` as under `--commit`; only the unit's last commit is green.
+`CI/lib.rs:457`), so a README edit goes with its crate's code. So U1's gate is not
+`--quick`: by this account a core commit that adds colour leaves leaves the three
+connectors' leaf walks, egui's count and T10 red under `--quick` as under `--commit`
+(read, not run). U1 is gated by its own crate: `cargo test -p native-theme` with the
+gate's features, the five documentation checkers, and the Windows reader with its tests
+type-checked for its target. The first `--commit` is the one over U1 to U4: four code units under one gate,
+since no gate can pass before all three connectors read the new leaves.
 
-**Pushes** (S2, S4). Nothing of this release is pushed before its branch is merged
-with its predecessor's tag (below); after that, a commit is pushed only at a unit's end,
-once its gate passes: CI and its e-mails see no commit inside a unit. 5b's *Measurement
-record* commit, which touches the plan's file only, follows its gate and the
-measurement and is pushed with the release's first push (B.10). The close-out pushes the release branch once
-its compatibility run has passed, and the full `scripts/check_release.sh` runs while CI
-runs on it (S4); the asset run starts only when both are green: CI green, and the full
-check's only failure the provenance stamp, which only the asset run refreshes (the
-batch's rule 9).
+**Evidence, before the units** (no commit). E1 (T1, Edit's wrap), E2 (T2, the icon's
+colour), E3 (the upstream re-read) and T3 (the overlay) are done
+(`<record>/steps45/`). E4, decision 10's measurement, is done too (2026-11-18, a
+`worker`; `docs/evidence/breeze-offscreen/2026-11-18/`, with its row in
+`docs/evidence/README.md`): the script's own check passed (the closed trigger's pen is
+#3daee9 under the pointer and not at rest), and an open combo box is drawn with the
+`Highlight` pen and the pressed button's fill whatever the pointer does. Decision 10,
+A.3's KDE cell, A.8 and A.12's backlog line carry that outcome.
 
-**The branch** (S2). The release's branch is made from the branch head of the release
-before it in its own lane (the KDE lane: v0.7.1 → steps 2 and 3 → steps 4 and 5 →
-the caret → steps 6 and 7, S3 as amended on 2026-11-15; here steps 2 and 3's release) as soon as that release's gated
-head, its documents unit, the last unit before its merge, has passed its gate (`--quick`)
-and its reviews are closed (the batch's rules 18 and 20), not from its tag; `<lane-pred-head>` is that head. The branch is merged with the tag of the
-release immediately before it in the maintainer's release order (by D10's proposed
-order with S5's pairs also steps 2 and 3's, `v0.7.3`), which may be another lane's,
-`<prev-tag>`: the batch's rule 17's command,
-`git -c merge.conflictStyle=diff3 merge --no-ff --no-commit -m "Merge <prev-tag> into v0.7.N-rc1" <prev-tag>`,
-committed once the conflicts are resolved and the generated files regenerated (S2 as amended on
-2026-11-15, the batch's rule 17; a merge
-keeps every sha, so the records', the measurement's and the commit messages' shas stay
-true), once, after the release's last unit before the merge (5c, which follows 5b's
-measurement, B.10) has passed its gate and every review is closed (the batch's rule
-17), when the tag exists, and before the release's recount (X), version and
-close-out. Below, "its predecessor's tag" is `<prev-tag>`. Conflicts are resolved by
-the orchestrator in the merge commit by both sides' texts, a citation like any other
-text (the batch's S6), and named in the record, a resolution in a code file is
-reviewed, and the warm-up gate (`--commit` on the clean tree) follows; X then recounts
-every stated count in the files either side changed, outside the pinned documents, and
-runs the five documentation checkers (the batch's rule 17). The close-out (version,
-compatibility run, full check, asset run) starts only after the merge. Where the branch
-was made from `<prev-tag>` itself, there is no merge and no X (the batch's rule 17). Every `0fa28027` line this
-specification names is read again on the tree the unit starts from, as *How to read
-it* says.
-
-Within a unit, each commit passes the gates of the crates it
-touches (a showcase is an example of its connector's crate, so a commit that touches the
-connector runs that showcase's tests too); a crate a commit does not touch may be red
-until the unit's task for it, and the order of tasks below makes each commit's own
-gates true.
-
-The crate gates, by their `scripts/check_release.sh` lines: native-theme
-`cargo test -p native-theme --features "$NT_FEATURES"` (`:684`); the data scripts
-`check_platform_facts_rows.py`, `check_preset_citations.py`, `check_todo_citations.py`
-(`:964-983`); iced `cargo test -p native-theme-iced --no-default-features` and
-`--features iced_aw,watch,native` (`:737`, `:739`); egui
-`cargo test -p native-theme-egui --no-default-features` and `--all-features` (`:760`, `:762`), egui-widgets the same
-(`:770`, `:772`); gpui `cargo test -p native-theme-gpui --features native,watch` and
-`--lib --no-default-features` (`:667`, `:705`); each showcase in the runner environment
-(`:835-848`); `check_showcase_parity.py --check-list` (`:940-941`);
-`check_connector_parity.py` (`:919`).
+During a unit the agent runs its own tests, the touched
+showcase's tests through `scripts/run_in_runner_env.sh` and
+`scripts/check_strict_panic.sh` for the changed crates.
 
 No task re-points a line citation no gate reads (C.4, the batch's S6).
 
-**Commit (0), the documents.** v0.7.1's commit (0) adds every document of this cycle
-the maintainer has approved by then (`docs/todo_v0.7.1_gpui-kit-0.9.1-spec.md`, *Order
-and gates*, its item (0), cited by section since that document is still being edited),
-this specification among them if it is approved by then. This work's own first commit,
-commit (0), adds to `docs/` the approved documents of this work that no earlier commit
-added: its plan at least, and this specification where v0.7.1's commit (0) did not add
-it. Where nothing is left to add, there is no commit (0) and the work starts with unit
-4a. A document not approved when the work starts stays untracked and outside the work;
-a text that cites one of them at a commit cites the commit that added it. As the steps
-2–3 specification's own paragraph (in its Part 2K) says for its steps.
-
-| Unit | Task, in commit order | Crates and files it touches | Gates after it |
+| Unit | Parts | Agent | Gate after it |
 |---|---|---|---|
-| **0** | The documents (*Commit (0)* above): the plan, and this specification where no earlier commit added it; none where nothing is left, and the work starts with 4a | `docs/` | none: no gate reads them |
-| **4a** | 1. Core: A.1, A.2, A.3 (the rows), A.5, A.6, A.7, A.12's two backlog edits that cite kde-breeze's removed keys by key path | native-theme; `docs/` | native-theme; the data scripts. Red until their tasks: iced's leaf walk and export, egui's leaf count, totals, T2 and T10, gpui's leaf walk |
-| | 2. egui: A.9; egui-widgets' doc line | native-theme-egui, native-theme-egui-widgets | egui, egui-widgets; the egui showcase |
-| | 3. iced: A.8, `contract-leaves.toml` regenerated | native-theme-iced | iced; the iced showcase (its step-4 routes come from the export, A.11) |
-| | 4. gpui connector: A.10's `CheckboxLook`, `sized`, render, `UNREAD_COLOURS` and tests, the showcase claims that cite `checkbox.rs` re-pointed (the claim gate runs in the connector's tests) | native-theme-gpui | gpui; the gpui showcase |
-| | 5. Showcases: A.10's showcase part (`combo_surface`, the `edge_claim`s, the tests), its two `HOW` lines and A.11's element edits, in one commit | native-theme-gpui; `docs/showcase-elements.toml` | gpui (`every_how_entry_is_shown`, the claim gates); the three showcases (their route tests read the list); `--check-list`. Unit end: `--quick` (the cadence's first code unit), pushed after S2's merge, with the release's first push |
-| **4b** | A.12's other bullets (READMEs' count, CHANGELOG, ROADMAP section, the remaining backlog notes and entries, the roadmap's recounted `[v0.7.x]` count with the number in the commit body, the first rationale's §5.4 line, the reply draft); the rationale's status line (A.12) is written at the close-out with step 5's (the plan's close-out, after S2's merge, holds the archive and its status lines) | `README.md`, `native-theme/README.md`, `CHANGELOG.md`, `ROADMAP.md`, `docs/` | the data scripts; native-theme (its README is its crate doc). Unit end: the five documentation checkers and `--quick`, pushed after S2's merge, with the release's first push |
-| **5a** | (Step 3's trial result in hand: it decides B.9's outline, `toolbar_button_rest`, two `HOW` lines' text and the tests that depend on it.) 1. Core: B.1, B.2, B.3 (the rows), B.4, B.5, B.5a (the Windows reader and its tests), the `presets.rs` test | native-theme; `docs/` | as 4a's first task |
-| | 2. egui: B.7 (the role, the predicate's change, the rows and the «toolbar» `when`s, the count and totals, the T10 arm, the tests, the accessor, its re-export and README), the parity exceptions (B.7), and the showcase's `tool_button` edge with the six tool buttons' per-call routes (B.10) | native-theme-egui; `scripts/connector_parity_exceptions.toml` | egui, egui-widgets; the egui showcase; `check_connector_parity.py` |
-| | 3. iced: B.8's style, contract, pairs and export, README, the crate doc's `styles` row and `ROADMAP.md:162`'s count, and the showcase's switch of the six tool buttons to `styles::toolbar_button` with `DRESSED`'s entry, the routes, `icon_colour`'s parameter, `drawn_by`'s arms and the oracle (B.8) | native-theme-iced; `ROADMAP.md` | iced; the iced showcase (`styles_cover_every_widget_shown`, `every_hand_colour_route_names_a_function_that_reads_it`, `route_faults`, the route test) |
-| | 4. gpui and the elements: B.9's variant, states, `toolbar_button_rest` with its note where the trial passed, contract (the interim `UNREAD_COLOURS` entry for the checked fill), README, unit tests; the showcase's switch of the six tool buttons to `variants::toolbar_button`, `native_toolbar`'s claims, the `HOW` lines for `"chrome.toolbar."` and `"basic.icons."`, `a_tool_buttons_box_keeps_its_size_with_the_outline` where the trial passed; B.10's first bullet (the six elements' new leaves) | native-theme-gpui; `docs/showcase-elements.toml` | gpui (`the_showcase_exercises_every_builder`, `every_geometry_builder_has_a_note`, `every_how_entry_is_shown`, the claim gates, the leaf walk); the three showcases (the elements changed); `--check-list`. Unit end: `--quick` (the second code unit), pushed after S2's merge, with the release's first push |
-| | 5. The "before" dumps of the measurement (B.10), in this worktree on 5a's last commit, before 5b is written: the pre-check, the three pre-builds, then three blocks of 9 runs, one per showcase, in one window, announced first; a failed block is run again whole | none (`target/measure-5b/before/`; the "before" part of the plan's *Measurement record*) | the pre-check passes; 27 dumps |
-| **5b** | 1. The Edit button, in one commit (B.10): the two elements; `geometry::toolbar_button_checked` with its `GEOMETRY_NOTES` entry, README row, the variant doc's sentence, the contract sink in place of the interim entry and its two unit tests (B.9); the three showcases' button, state and click; Widget Info; gpui's `HOW` lines for `toolbar.button_checked_background` and `button.checked_text_color` under `"basic.icons.edit"`; iced's Edit arm, `Shown::basic_edit`, the `.edit` id and `ICON_BUTTONS` entry (B.8); egui's per-call entry for Edit; the tests | native-theme-gpui, native-theme-iced, native-theme-egui; `docs/showcase-elements.toml` | gpui; iced; egui; the three showcases; `--check-list`; then `--commit` (the third code unit and the release's last code unit before its documents and version units, the batch's rule 6) |
-| | 2. The layout measurement (B.10): the "after" dumps of this commit (the pre-check, the three pre-builds, then three blocks of 9 runs in one window, announced first), compared with 5a's "before" dumps by the comparison script, before the push; the *Measurement record* committed on top, in a commit of the plan's file only | the plan's file (`target/measure-5b/after/`, not committed) | By B.10's stop rule the work stops for the maintainer; a difference of the wrap's parity is fixed by the showcase's author, the "after" blocks taken again, or excepted with its reason where it is a toolkit's limit, the maintainer told (B.10); else both commits are pushed with the release's first push, after S2's merge, and then `target/measure-5b/` is deleted. A fix after the measurement that touches the Basic page or a showcase's layout means the "after" blocks again before S2's merge, and after it the rehearsal's after-only checks, named to the maintainer (the batch's rule 19) |
-| **5c** | B.11 (READMEs' count, CHANGELOG, ROADMAP section, backlog, the roadmap's recounted `[v0.7.x]` count with the number in the commit body, the first rationale and the reply draft). The rationale's two status lines and the move to `docs/archive/` with its row and the re-pointed links (B.11) are the close-out's, after S2's merge, in one commit (the plan's close-out), as the steps 2–3 specification's close-out does | as 4b | as 4b. Unit end: the five documentation checkers and `--quick` (the last unit before the merge, rule 20: the lane's gated head for the next release, with no extra `--commit`); the merge, the recount (X), the version and the release's close-out follow (C.2, C.3) |
+| D0 | The amended specification, the new plan, the old-name links re-pointed (B.11, *The old names*), E4's evidence folder `docs/evidence/breeze-offscreen/2026-11-18/` and its row in `docs/evidence/README.md` | orchestrator | the five documentation checkers |
+| E4 | Decision 10's measurement (done); its folder and README row are committed with D0 | `worker` | the script's own check (state 2's pen) |
+| U1 | Both cores: A.1 to A.7, A.12's two backlog edits that cite kde-breeze's removed keys, B.1 to B.5, B.5a, the two `presets.rs` tests | `implement` | native-theme's tests, the five documentation checkers, the Windows reader's type-check with its tests; the connectors are red until the block |
+| U2 | gpui, both steps without Edit: A.10 but its two `HOW` lines (connector, showcase overlay, claims, tests, the README row of A.12); B.9's `ToolbarButtonStates`, `toolbar_button`, `toolbar_button_rest`, contract with the interim entry, README, unit tests, the six tool buttons' switch, `native_toolbar`, the existing `HOW` lines reworded, `a_tool_buttons_box_keeps_its_size_with_the_outline`, `a_hovered_tool_button_takes_the_toolbars_outline`, `the_basic_pages_icon_buttons_claim_no_edge_at_rest` | `implement` | none of its own |
+| U3 | iced, both steps without Edit: A.8 (decision 10); B.8 (style, contract, pairs, export, README, crate doc row, `ROADMAP.md`'s "33 style functions" → 34, the six tool buttons' switch with `DRESSED`, routes, `icon_colour`, `drawn_by`, the oracle) | `implement` | none of its own |
+| U4 | egui, both steps: A.9; B.7 (with `demo::ghost`'s doc and `keeps_resting_stroke`'s); the parity exceptions; B.10's `tool_button` edge and the six per-call routes; `a_tool_buttons_outline_has_the_borders_width`; the final counts of A.9 | `implement` | one `--commit` with the GPUI Fast legs (`<tools>/gate.sh --fast`) over U1 to U4; push; CI read |
+| U5 | The lists and Edit: A.11 and A.10's two `HOW` lines; B.10's element edits; the new `HOW` lines; iced's parts for Edit (`Shown::basic_edit`, the `.edit` id, `drawing()`'s Edit arm, the `ICON_BUTTONS` entry); Edit in the three showcases with `geometry::toolbar_button_checked` (note, README row, doc sentences, contract sink in place of the interim entry, unit tests), the probe test of decision 14, the three Edit tests, egui's per-call entry for Edit | `implement` | none of its own: beside U6 |
+| U6 | The documents of both steps into 0.7.2's sections (A.12, B.11): CHANGELOG, ROADMAP, the READMEs' 42, the backlog (with decision 10's item and the Tab key's), the first rationale | `worker` | after U5 and U6: B.10's check on the built tree and the rehearsal R; then one `--commit` with the GPUI Fast legs and the five documentation checkers; push; CI read |
 
-The order between the units: 0 where it exists, 4a, 4b; step 3's trial result; 5a, 5b,
-5c.
+U2, U3 and U4 each change one connector's folder (U3 also `ROADMAP.md`'s one count, U4
+also `scripts/connector_parity_exceptions.toml` and egui-widgets' doc line) and build on
+U1's tree: three builders in the one worktree, each with `-p` through `<tools>/slot.sh`,
+as the steps 2–3 plan's block. U5 touches the three showcases and
+`docs/showcase-elements.toml` and runs alone beside the documents-only U6.
+
+**Reviews.** U1 by the orchestrator (data the checkers validate, and the two readers'
+few assignments with their tests; B.5a adds no `unsafe`; its three Windows tests'
+verdict is CI's, after the first push); U2, U3 and U4 by three `review` agents beside
+U5; U5 by a `review` agent before its gate; U6 by the orchestrator. A must-fix is a
+commit of its own before the next gate.
+
+**Stops**: a decision neither this specification nor the plan's record makes; a stop
+entry of B.10's check on the built tree; the probe test of decision 14 failing.
+
+**Before the close-out**, the search over the stamped paths (0.7.2's rule 22 (c))
+runs with this specification's and plan's stems (expected: nothing), as the steps 2–3
+plan has it for its own.
+
+**The close-out** is 0.7.2's one (the steps 2–3 plan's). This specification adds to
+it: the archive moves this specification and its plan with 0.7.2's documents, and the
+rationale's status paragraph takes A.12's one sentence for steps 2 to 5; the asset
+run's parity list is read for Edit's keys (B.10, the rehearsal R) and for a `fill`
+exception (none planned); the captures are looked at for Edit, the screenshots
+workflow's under macos-monterey, macos-tahoe and windows-11 included (B.10).
+
+**For the maintainer, with the documents**: the approval of D6 and D7; Edit's second
+line under adwaita and the colour-scheme presets (decision 13, B.10); the two new
+`[1.0]` backlog items he may want sooner (the Tab key, B.7; an open combo box's frame,
+decision 10); three differences from the platforms the connectors and showcases keep,
+each visible on its platform: a checked toolbar button under the pointer and while it
+is held, which WinUI, libadwaita and Breeze draw in fills of their own (decision 5; the
+new `[1.0]` entry *A checked toolbar button under the pointer and pressed*, B.11), no
+hover outline over a checked toolbar button in gpui, where iced and egui draw it
+(B.13.6), and the toolbar look the showcases' tool buttons keep where an icon set lacks
+the icon and the label shows, which on GNOME a text-only button would not have
+(B.13.9; the same entry, B.11); the ROADMAP heading's wording (A.12); whether a
+follow-up comment goes on the issue.
 
 ### C.2 The asset run and the stamps
 
@@ -3347,35 +3013,14 @@ compared in a capture; the asset run's parity comparison shows it). Step 5 also 
 button, checked at start, so every
 capture of the Basic page in the three showcases changes, and no other page's (B.10).
 The run needs the maintainer's desktop unlocked and untouched for 4 to 6 minutes. It is
-one run for both steps, in the release's close-out (S5), after the full check and CI are
-green (S4, C.1, *Pushes*: the full check's only failure the provenance stamp, the batch's
-rule 9).
+0.7.2's one asset run, in its close-out, after the full check and CI are green (the
+full check's only failure the provenance stamp, the batch's rule 9).
 
 ### C.3 Version and release (D0)
 
-The version and the release are the maintainer's (rationale §3, items 1 and 6). **Steps
-4 and 5 are one release** (the batch's speed decision S5, approved 2026-11-15, under the
-rationale's D10 "The maintainer may merge or reorder steps"): one branch, one version
-`0.7.N`, one CHANGELOG section, one ROADMAP section stating what both steps bring, one
-close-out, one asset run (C.2) and one archive at the end (B.11). Each step keeps its own
-units, step 3's trial result for step 5, the measurement and the reviews inside the
-release. The reply to the reporter waits for this release, as it waited for step 5.
-Written for the proposals:
-
-- D0 (a): the release is a patch release that names the struct-literal break once, in
-  one *Breaking Changes* bullet for both steps' structs (A.12's block, which B.11
-  completes).
-- D10's proposed order with S5's pairs: after v0.7.1, the egui 0.37 release, steps 2
-  and 3, then steps 4 and 5; under it this release would be **0.7.4** (0.7.2 the egui
-  upgrade, 0.7.3 steps 2 and 3), a proposal only. `<version>` and
-  `<the release that brings steps 4 and 5>` in the texts above are that number, `<date>`
-  the release's.
-
-Otherwise: under D0 (b) the release's section is a minor version, with the same
-*Breaking Changes* bullet; under (c), once the input structs are `#[non_exhaustive]` the
-*Breaking Changes* bullet goes and nothing else changes; if the maintainer reorders the
-releases, the number and the "steps 2 and 3 leave" counts follow the order that lands.
-Tag, publish, GitHub release and the reply to the reporter stay the maintainer's.
+Steps 4 and 5 are part of 0.7.2 (the maintainer, 2026-11-18; D0 (a): the release names
+its break once, A.12's bullet). Tag, publication, GitHub release and any follow-up
+comment on the issue stay the maintainer's.
 
 ### C.4 Line citations no gate reads (both steps)
 
@@ -3390,9 +3035,6 @@ sources (an upstream crate at a version, a URL at a commit, a citation "at <sha>
 
 ## What could not be verified
 
-- (The line numbers of Breeze's two hover strokes at `f0b1d753`, A.4, are now read: the fetch
-  of 2026-11-15, B.3.)
-- The gpui overlay's click-through and the gpui hover outline (A.14.1, B.13.4).
 - The tools-area palette (B.13.1); a toolbar widget an application adds itself and its
   auto-raise (B.13.2: a toolbar's action buttons are auto-raised and drawn flat, read).
   (libadwaita's `_toolbars.scss:2-8`, B.3 and B.13.9, is verified: the fourth
@@ -3400,39 +3042,9 @@ sources (an upstream crate at a version, a URL at a commit, a citation "at <sha>
 - Windows's check-box and combo-box hover strokes; the outline of GNOME's checked box
   under the pointer; AppKit's check-box and pop-up hovers; macOS's, Material's and
   iOS's toolbar button states (each in a backlog entry, A.12, B.11).
-- Whether a gpui Button's icon follows the refinement's text colour (B.13.8; the plan's
-  probe test decides it).
-- Whether the Basic page's icon row holds four buttons on one line under every preset
-  at 1280x720, and whether a wrap would push an element out of its visible area: unit 5b
-  measures it with the button built, under the nine entries that stand for the 34
-  (B.10, C.1). That the iced and gpui showcases
-  settle and size their capture runs as the egui one does was read in
-  `scripts/capture_window.sh` only, which drives all three alike.
-- That no size of the Basic page depends on a preset's name or mode beyond the values
-  the pre-check compares (B.10): it rests on the connectors following theme data and was
-  not measured; the preset's name shows in the side panel's theme drop-down, whose
-  panel opens at a fixed width in all three showcases (read, B.10's *The pre-check*).
-- The measurement's run time beyond the script's sleeps and bounded waits (spectacle,
-  `cargo run`'s freshness check, the identity check), which the first block measures;
-  that a locked screen gives no frames and fails the block (the project's experience of
-  the asset runs, not read in the script); that `breeze`, `breeze-dark` and `Adwaita`
-  are installed on the maintainer's desktop; which icons `--icon-set default` shows for
-  the macOS, iOS and Windows presets on Linux.
-- `slot.sh` and `lowprio.sh`, the pre-build's build slot (B.10), are the session's
-  scripts, not files of the repository (no `scripts/slot.sh` at `0fa28027`): their path
-  and flags were not read for this document. The comparison and the pre-check exist only
-  as drafts in the writing session's scratch folder; the plan writes them again from
-  B.10's logic.
 - That no showcase paints another fill under the Basic page's icon row (B.4's contrast
   figures on the page). (The WinUI XAML lines at commit `8463f45`, B.13.5, are closed by
   the eighth confirming check's fetch of 2026-11-15.)
-- egui 0.37's lines for decision 12 and A.9, B.7, B.10's egui citations: read at
-  0.36.2, re-read against the tree's egui when the steps are planned (decision 6 is
-  settled for 0.37.0 by `theme/default_style.rs:54-72` and `containers/frame.rs:300-322`).
-- Steps 2 and 3's specification is written but not implemented: every count and line
-  this document gives "at `0fa28027`" is re-read when step 4 is planned, and the edits
-  of step 3's work in B.7 (the predicate `keeps_resting_stroke`, the «toolbar» `when`s,
-  the two tests) are written against its decision 13 and 3E as they read today.
 - T2's and T10's treatment of the «toolbar» sinks (B.7) was read from `own_write`,
   `carried_by`, `check_splice` and `expected`, not run; that no unit leaves a commit's
   own gates red (C.1) was read from the tests named there, not run.
@@ -3442,6 +3054,17 @@ sources (an upstream crate at a version, a URL at a commit, a citation "at <sha>
   toolchain outside what this work may read. KDE's 76.5 → 0x4d is asserted by the
   reader's existing test on the same path (`kde/colors.rs:1504`; not run for this
   document).
-- The line gap of a wrapped row in each toolkit (B.10, `basic.icons.small`): the
-  measurement compares dumps and needs it not; parity of the wrapped rows rests on the
-  comparator.
+- Whether Qt reports a pointer over an open combo box's trigger as a hover on a desktop
+  session: E4 ran under Qt's `offscreen` platform, where it does not (decision 10).
+- What an open `md-outlined-select` draws on its outline (material-3 states the hover
+  outline).
+- The Basic page under windows-11, macos-monterey, macos-tahoe and ios-13 with Edit: a
+  Linux showcase refuses those presets; T1's second pass (a patched command line, Linux
+  fallback fonts) found no stop; the screenshots workflow draws the first three on their
+  own platforms (decision 13).
+- That the five entries of the headless check stand for the 26 presets and modes a Linux
+  showcase can show: the draft pre-check found the dropped ones equal in every value but
+  colours at `0fa28027`; it was not run on this tree.
+- Whether a toolbar's buttons take the keyboard focus on Windows, GNOME, macOS and
+  Material (B.7; the backlog entry).
+- Whether a fractional border width moves an egui tool button (B.13.11).

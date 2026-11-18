@@ -43,5 +43,6 @@ the configuration the run read.
 |-----|------|-----|
 | [`2026-11-13/`](breeze-offscreen/2026-11-13/) | 2026-11-13 | issue #4's second comment ([rationale](../issues/0004_kde-hand-overrides-rationale.md) §9): the menu's, the list's and the scroll bar's colours, the header, the grid, the default button, the menu's metrics and the message icon in the facts' KDE cells |
 | [`2026-11-14/`](breeze-offscreen/2026-11-14/) | 2026-11-14 | the readings 2026-11-13 did not save: the combo box popup, Qt's scale on X11, and the egui showcase's text before and after the font DPI of 0.7.1 |
+| [`2026-11-18/`](breeze-offscreen/2026-11-18/) | 2026-11-18 | decision 10 of the 0.7.2 KDE steps 4 and 5: a combo box's own frame closed and open, with the pointer away and over it (the pen and the fill) |
 
 A citation links the file and its line (`evidence/breeze-offscreen/2026-11-13/out_light.txt#L27`).
