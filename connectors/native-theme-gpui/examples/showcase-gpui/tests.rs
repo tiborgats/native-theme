@@ -9904,7 +9904,213 @@ fn painted_edge(cx: &mut VisualTestContext, selector: &'static str) -> Option<gp
     })
 }
 
-/// Install the bundled `preset` in its light variant.
+/// The border colours of the boxes with a border painted exactly over
+/// `selector`'s bounds, the last-painted last: ordered by the quads' draw
+/// order, since `scene_quads` is not in paint order on GPUI Fast. A box with
+/// a border and no fill is painted as four quads, each over its whole bounds.
+fn painted_edges(cx: &mut VisualTestContext, selector: &'static str) -> Vec<gpui::Hsla> {
+    let bounds = bounds_of(cx, selector);
+    cx.update(|window, _cx| {
+        let bounds = bounds.scale(window.scale_factor());
+        let mut quads: Vec<gpui::Quad> = scene_quads(window)
+            .into_iter()
+            .filter(|q| q.bounds == bounds && q.border_widths.top.0 > 0.)
+            .collect();
+        quads.sort_by_key(|q| q.order);
+        quads.into_iter().map(|q| q.border_color).collect()
+    })
+}
+
+/// How many boxes with a border painted inside `selector`'s bounds have
+/// `colour` as their border colour.
+fn edges_inside(cx: &mut VisualTestContext, selector: &'static str, colour: gpui::Hsla) -> usize {
+    quads_inside(cx, selector)
+        .iter()
+        .filter(|q| q.border_widths.top.0 > 0. && q.border_color == colour)
+        .count()
+}
+
+/// Install `r` as kde-breeze's light variant, as an application that changed
+/// leaves of the resolved theme would, and draw the frame it produced.
+fn install_breeze_light(cx: &mut VisualTestContext, r: &native_theme_gpui::ResolvedTheme) {
+    cx.update(|_window, cx| {
+        let prefs = native_theme::AccessibilityPreferences::default();
+        native_theme_gpui::apply(
+            native_theme_gpui::to_theme(r, "kde-breeze", false, &prefs),
+            r,
+            &prefs,
+            cx,
+        );
+    });
+    cx.run_until_parked();
+    draw(cx);
+}
+
+/// A Basic check box under the pointer is framed by
+/// `checkbox.hover_border_color`, at rest by its border, under kde-breeze,
+/// which states the hover edge: the unchecked box at rest by
+/// `unchecked_border_color` and hovered by the hover edge, and the checked
+/// box hovered by it too. Breeze's hover colour, #3daee9, is also its
+/// `checkbox.border.color`, a checked box's edge at rest, so the checked part
+/// runs with the hover edge replaced by a sentinel no other `checkbox.*` leaf
+/// of the theme holds, which it could otherwise not fail on.
+#[cfg(feature = "widgets")]
+#[gpui::test]
+fn a_hovered_checkbox_takes_the_hover_border(cx: &mut TestAppContext) {
+    use crate::info::stated;
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_light_preset(&mut cx, &showcase, "kde-breeze");
+    show(&mut cx, &showcase, Page::Basic);
+    let mut r = resolved_theme(&mut cx, &showcase);
+    let k = &r.checkbox;
+    let hovered = k.hover_border_color.map(stated);
+    assert!(
+        hovered.is_some(),
+        "kde-breeze states checkbox.hover_border_color"
+    );
+    let rest = stated(k.unchecked_border_color.unwrap_or(k.border.color));
+    assert_ne!(
+        Some(rest),
+        hovered,
+        "kde-breeze's unchecked box is edged in its hover colour, so the test could not tell the two apart"
+    );
+    // The edge of the indicator, the one box with a border in the row.
+    let edge_of = |cx: &mut VisualTestContext, row: &'static str| {
+        quads_inside(cx, row)
+            .into_iter()
+            .filter(|q| q.border_widths.top.0 > 0.)
+            .max_by_key(|q| q.order)
+            .map(|q| q.border_color)
+    };
+    let hover_row = |cx: &mut VisualTestContext, row: &'static str| {
+        let bounds = bounds_of(cx, row);
+        hover(cx, point(bounds.left() + px(8.), bounds.center().y));
+        draw(cx);
+    };
+    let away = |cx: &mut VisualTestContext| {
+        hover(cx, point(px(4.), px(4.)));
+        draw(cx);
+    };
+    let unchecked = "basic-checkbox-unchecked";
+    away(&mut cx);
+    assert_eq!(
+        edge_of(&mut cx, unchecked),
+        Some(rest),
+        "an unchecked box at rest is not edged in checkbox.unchecked_border_color"
+    );
+    hover_row(&mut cx, unchecked);
+    assert_eq!(
+        edge_of(&mut cx, unchecked),
+        hovered,
+        "a hovered unchecked box is not edged in checkbox.hover_border_color"
+    );
+
+    let sentinel = native_theme::color::Rgba::new(0x12, 0x34, 0x56, 0xff);
+    let leaves = serde_json::to_value(&r.checkbox).unwrap_or_default();
+    let mut held = Vec::new();
+    colour_leaves(&leaves, "checkbox", &mut held);
+    let sentinel_text = serde_json::to_value(sentinel).unwrap_or_default();
+    assert!(
+        held.iter()
+            .any(|(leaf, _)| leaf == "checkbox.hover_border_color"),
+        "the checkbox's leaves did not serialise with their names: {held:?}"
+    );
+    assert!(
+        held.iter()
+            .all(|(leaf, value)| leaf == "checkbox.hover_border_color" || *value != sentinel_text),
+        "a checkbox leaf of kde-breeze light holds the sentinel, so the test could not tell it from the hover edge: {held:?}"
+    );
+    r.checkbox.hover_border_color = Some(sentinel);
+    install_breeze_light(&mut cx, &r);
+    let checked = "basic-checkbox-checked";
+    away(&mut cx);
+    hover_row(&mut cx, checked);
+    assert_eq!(
+        edge_of(&mut cx, checked),
+        Some(stated(sentinel)),
+        "a hovered checked box is not edged in checkbox.hover_border_color"
+    );
+}
+
+/// Every leaf under `value` with its dotted path from `at`.
+#[cfg(feature = "widgets")]
+fn colour_leaves(value: &serde_json::Value, at: &str, out: &mut Vec<(String, serde_json::Value)>) {
+    match value {
+        serde_json::Value::Object(map) => {
+            for (key, value) in map {
+                colour_leaves(value, &format!("{at}.{key}"), out);
+            }
+        }
+        leaf => out.push((at.to_owned(), leaf.clone())),
+    }
+}
+
+/// A Basic drop-down under the pointer takes `combo_box.hover_border_color`
+/// as an edge the showcase lays over its trigger (`demo::combo_surface`),
+/// under kde-breeze and material-3 light: with the pointer away no box over
+/// the trigger is edged in it; hovered, the last box edged over the
+/// trigger's bounds is, and no box in the side panel's theme settings is.
+#[gpui::test]
+fn a_hovered_drop_down_takes_the_hover_border(cx: &mut TestAppContext) {
+    use crate::info::stated;
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    for preset in ["kde-breeze", "material-3"] {
+        use_light_preset(&mut cx, &showcase, preset);
+        show(&mut cx, &showcase, Page::Basic);
+        let r = resolved_theme(&mut cx, &showcase);
+        let c = &r.combo_box;
+        assert!(
+            c.border.line_width > 0.0,
+            "{preset} no longer edges its drop-down, so no hover edge is drawn"
+        );
+        let hovered = c.hover_border_color.map(stated);
+        assert!(
+            hovered.is_some(),
+            "{preset} states combo_box.hover_border_color"
+        );
+        let Some(hovered) = hovered else { return };
+        assert_ne!(
+            stated(c.border.color),
+            hovered,
+            "{preset}'s drop-down is edged in its hover colour at rest, so the test could not tell the two apart"
+        );
+        let field = "basic-select";
+        hover(&mut cx, point(px(4.), px(4.)));
+        draw(&mut cx);
+        let over_the_trigger = |cx: &mut VisualTestContext| {
+            let bounds = bounds_of(cx, field);
+            cx.update(|window, _cx| {
+                let bounds = bounds.scale(window.scale_factor());
+                scene_quads(window)
+                    .into_iter()
+                    .filter(|q| {
+                        q.bounds == bounds
+                            && q.border_widths.top.0 > 0.
+                            && q.border_color == hovered
+                    })
+                    .count()
+            })
+        };
+        assert_eq!(
+            over_the_trigger(&mut cx),
+            0,
+            "{preset}: a drop-down at rest is edged in combo_box.hover_border_color"
+        );
+        let at = bounds_of(&mut cx, field).center();
+        hover(&mut cx, at);
+        draw(&mut cx);
+        assert_eq!(
+            painted_edges(&mut cx, field).last(),
+            Some(&hovered),
+            "{preset}: a hovered drop-down is not edged in combo_box.hover_border_color"
+        );
+        assert_eq!(
+            edges_inside(&mut cx, CHROME_THEME_SETTINGS, hovered),
+            0,
+            "{preset}: hovering the Basic drop-down edged the side panel's theme pickers too"
+        );
+    }
+}
 fn use_light_preset(cx: &mut VisualTestContext, showcase: &Entity<Showcase>, preset: &str) {
     use_preset(cx, showcase, preset);
     cx.update(|window, cx| window.dispatch_action(Box::new(SetColorMode(AppColorMode::Light)), cx));
@@ -16366,81 +16572,87 @@ type Leaf = (&'static str, &'static str);
 /// `unchecked_background`, `background_color` where that is unstated (:123);
 /// the hover `hover_background` over that fill (:134), or the fill at rest;
 /// the border `border.color` checked (:138), else `unchecked_border_color`,
-/// `border.color` where that is unstated (:140); the mark and the label
+/// `border.color` where that is unstated (:140); the hover edge
+/// `hover_border_color` where the box is enabled, else none (the new `let` in
+/// `widgets/checkbox.rs`); the mark and the label
 /// `disabled_text_color` over a stated disabled fill (:143), the mark
 /// `indicator_color` and the label `disabled_text_color` disabled over none
 /// (:144), and enabled `indicator_color` and `font.color` (:145) -- as
-/// (fill, hover, border, mark, label).
+/// (fill, hover, hover edge, border, mark, label).
 #[cfg(feature = "widgets")]
 fn checkbox_leaves(
     c: &native_theme::theme::ResolvedCheckboxTheme,
     checked: bool,
     disabled: bool,
-) -> [Leaf; 5] {
-    const AT_123: &str = "native-theme-gpui/widgets/checkbox.rs:123";
+) -> [Leaf; 6] {
+    const AT_128: &str = "native-theme-gpui/widgets/checkbox.rs:128";
     let stated_disabled = disabled && c.disabled_background.is_some();
     let unchecked = if c.unchecked_background.is_some() {
-        ("unchecked_background", AT_123)
+        ("unchecked_background", AT_128)
     } else {
-        ("background_color", AT_123)
+        ("background_color", AT_128)
     };
     let fill = match (stated_disabled, checked) {
         (true, _) => (
             "disabled_background",
-            "native-theme-gpui/widgets/checkbox.rs:129",
+            "native-theme-gpui/widgets/checkbox.rs:134",
         ),
         (false, true) => (
             "checked_background",
-            "native-theme-gpui/widgets/checkbox.rs:125",
+            "native-theme-gpui/widgets/checkbox.rs:130",
         ),
         (false, false) => unchecked,
     };
     let hover = if c.hover_background.is_some() {
         (
             "hover_background",
-            "native-theme-gpui/widgets/checkbox.rs:134",
+            "native-theme-gpui/widgets/checkbox.rs:139",
         )
     } else {
         unchecked
     };
     let border = match (checked, c.unchecked_border_color.is_some()) {
-        (true, _) => ("border", "native-theme-gpui/widgets/checkbox.rs:138"),
+        (true, _) => ("border", "native-theme-gpui/widgets/checkbox.rs:143"),
         (false, true) => (
             "unchecked_border_color",
-            "native-theme-gpui/widgets/checkbox.rs:140",
+            "native-theme-gpui/widgets/checkbox.rs:145",
         ),
-        (false, false) => ("border", "native-theme-gpui/widgets/checkbox.rs:140"),
+        (false, false) => ("border", "native-theme-gpui/widgets/checkbox.rs:145"),
     };
     let (mark, label) = match (disabled, stated_disabled) {
         (true, true) => (
             (
                 "disabled_text_color",
-                "native-theme-gpui/widgets/checkbox.rs:143",
+                "native-theme-gpui/widgets/checkbox.rs:148",
             ),
             (
                 "disabled_text_color",
-                "native-theme-gpui/widgets/checkbox.rs:143",
+                "native-theme-gpui/widgets/checkbox.rs:148",
             ),
         ),
         (true, false) => (
             (
                 "indicator_color",
-                "native-theme-gpui/widgets/checkbox.rs:144",
+                "native-theme-gpui/widgets/checkbox.rs:149",
             ),
             (
                 "disabled_text_color",
-                "native-theme-gpui/widgets/checkbox.rs:144",
+                "native-theme-gpui/widgets/checkbox.rs:149",
             ),
         ),
         (false, _) => (
             (
                 "indicator_color",
-                "native-theme-gpui/widgets/checkbox.rs:145",
+                "native-theme-gpui/widgets/checkbox.rs:150",
             ),
-            ("font", "native-theme-gpui/widgets/checkbox.rs:145"),
+            ("font", "native-theme-gpui/widgets/checkbox.rs:150"),
         ),
     };
-    [fill, hover, border, mark, label]
+    let hover_edge = (
+        "hover_border_color",
+        "native-theme-gpui/widgets/checkbox.rs:153",
+    );
+    [fill, hover, hover_edge, border, mark, label]
 }
 
 /// The leaf each colour of a switch's look is read from, `checked` or not,
@@ -16683,7 +16895,7 @@ fn a_theme_drawn_controls_info_prints_its_look() {
                 continue;
             };
             let look = rest.faded_over(ground);
-            let [fill, hover, border, mark, label] =
+            let [fill, hover, hover_edge, border, mark, label] =
                 checkbox_leaves(&r.checkbox, checked, disabled);
             // The mark fades out while unchecked, so it is painted checked only.
             wrong.extend(look_findings(
@@ -16692,6 +16904,11 @@ fn a_theme_drawn_controls_info_prints_its_look() {
                 &[
                     ("fill", Some(look.fill), fill),
                     ("hover", look.hover_fill, hover),
+                    (
+                        "hovered edge",
+                        edge(look.hover_border, look.border_width),
+                        hover_edge,
+                    ),
                     ("border", edge(Some(look.border), look.border_width), border),
                     ("mark", checked.then_some(look.mark), mark),
                     ("label", Some(look.label), label),
@@ -16843,13 +17060,18 @@ fn a_theme_drawn_controls_info_prints_its_look() {
             ));
             continue;
         };
-        let [fill, _, border, mark, label] = checkbox_leaves(&r.checkbox, true, false);
-        let [off_fill, off_hover, off_border, _, _] = checkbox_leaves(&r.checkbox, false, false);
+        let [fill, _, hover_edge, border, mark, label] = checkbox_leaves(&r.checkbox, true, false);
+        let [off_fill, off_hover, _, off_border, _, _] = checkbox_leaves(&r.checkbox, false, false);
         wrong.extend(look_findings(
             &format!("{name}: the radios"),
             &info,
             &[
                 ("fill", Some(selected.fill), fill),
+                (
+                    "hovered edge",
+                    edge(selected.hover_border, selected.border_width),
+                    hover_edge,
+                ),
                 (
                     "border",
                     edge(Some(selected.border), selected.border_width),
@@ -17102,33 +17324,152 @@ fn a_group_box_and_a_card_claim_the_card_edge_only_where_one_is_drawn() {
     );
 }
 
-/// The Basic page's icon buttons claim no edge (review of M9a T7): they are
-/// Ghosts the showcase gives only `button.border`'s radius and padding
-/// (`demo::tool_box_of`), not `geometry::button`, and upstream gives a Ghost
-/// no border width -- under kde-breeze light, whose `button.border.line_width`
-/// is above 0, where a Button `geometry::button` refines is edged.
+/// The Basic page's icon buttons claim no edge at rest (review of M9a T7):
+/// they are toolbar buttons the showcase gives only `button.border`'s radius
+/// and padding (`demo::tool_box_of`), not `geometry::button`, and upstream
+/// gives a custom variant no border width. Under kde-breeze light, which
+/// states the toolbar's outline, the Copy button claims one edge, the
+/// outline under the pointer and while pressed, `geometry::toolbar_button_rest`'s
+/// border in `toolbar.button_hover_border_color`; under windows-11 light,
+/// which states none, it claims no edge. Both edge a Button `geometry::button`
+/// refines (`button.border.line_width` above 0), and under both no config
+/// line names `geometry::button`.
 #[gpui::test]
-fn the_basic_pages_icon_buttons_claim_no_edge(cx: &mut TestAppContext) {
+fn the_basic_pages_icon_buttons_claim_no_edge_at_rest(cx: &mut TestAppContext) {
+    use crate::info::stated;
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    for preset in ["kde-breeze", "windows-11"] {
+        use_light_preset(&mut cx, &showcase, preset);
+        show(&mut cx, &showcase, Page::Basic);
+        let r = resolved_theme(&mut cx, &showcase);
+        assert!(
+            r.button.border.line_width > 0.0,
+            "{preset} no longer edges its buttons, so this test cannot tell an edge claim from none"
+        );
+        let outline = r.toolbar.button_hover_border_color.map(stated);
+        assert_eq!(
+            outline.is_some(),
+            preset == "kde-breeze",
+            "{preset}: toolbar.button_hover_border_color is stated by kde-breeze alone"
+        );
+        let info = settle_on(&mut cx, &showcase, "basic-icon-copy");
+        assert!(
+            info.is_some(),
+            "{preset}: the Copy icon button shows no info"
+        );
+        let Some(info) = info else { return };
+        let edges: Vec<_> = info
+            .colors
+            .iter()
+            .filter(|c| c.role.starts_with("border"))
+            .map(|c| (c.role, c.field, c.value))
+            .collect();
+        let expected: Vec<_> = outline
+            .map(|outline| {
+                (
+                    "border, hovered or pressed",
+                    "button_hover_border_color",
+                    outline,
+                )
+            })
+            .into_iter()
+            .collect();
+        assert_eq!(
+            edges, expected,
+            "{preset}: an icon button's info claims an edge other than the one it draws: {info:?}"
+        );
+        assert!(
+            info.config
+                .iter()
+                .all(|n| !n.text.contains("geometry::button")),
+            "{preset}: an icon button's info names geometry::button, which it does not take: {info:?}"
+        );
+    }
+}
+
+/// A tool button's box keeps its size with the toolbar's outline: under
+/// kde-breeze light, which states `toolbar.button_hover_border_color`, the
+/// Basic page's Copy button lies where it lies under kde-breeze light with
+/// that leaf cleared, where `geometry::toolbar_button_rest` gives it no
+/// border, since the border's width comes out of its padding.
+#[gpui::test]
+fn a_tool_buttons_box_keeps_its_size_with_the_outline(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    use_light_preset(&mut cx, &showcase, "kde-breeze");
+    show(&mut cx, &showcase, Page::Basic);
+    let mut r = resolved_theme(&mut cx, &showcase);
+    assert!(
+        r.toolbar.button_hover_border_color.is_some() && r.button.border.line_width > 0.0,
+        "kde-breeze no longer outlines its toolbar buttons, so this test proves nothing"
+    );
+    let button = "basic-icon-copy";
+    let outlined = bounds_of(&mut cx, button);
+    r.toolbar.button_hover_border_color = None;
+    install_breeze_light(&mut cx, &r);
+    show(&mut cx, &showcase, Page::Basic);
+    assert_eq!(
+        bounds_of(&mut cx, button),
+        outlined,
+        "the toolbar's outline moved the Copy button's box"
+    );
+}
+
+/// A Basic icon button under the pointer is edged in the toolbar's outline,
+/// `toolbar.button_hover_border_color`, under kde-breeze light: with the
+/// pointer away no box over the Copy button is edged in it; hovered, the
+/// box over it is, and is not filled (the toolbar's hover fill,
+/// `toolbar.button_hover_background`, is transparent).
+#[gpui::test]
+fn a_hovered_tool_button_takes_the_toolbars_outline(cx: &mut TestAppContext) {
+    use crate::info::stated;
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     use_light_preset(&mut cx, &showcase, "kde-breeze");
     show(&mut cx, &showcase, Page::Basic);
     let r = resolved_theme(&mut cx, &showcase);
+    let outline = r.toolbar.button_hover_border_color.map(stated);
     assert!(
-        r.button.border.line_width > 0.0,
-        "kde-breeze no longer edges its buttons, so this test cannot tell an edge claim from none"
+        outline.is_some() && r.button.border.line_width > 0.0,
+        "kde-breeze no longer outlines its toolbar buttons, so this test proves nothing"
     );
-    let info = settle_on(&mut cx, &showcase, "basic-icon-copy");
-    assert!(info.is_some(), "the Copy icon button shows no info");
-    let Some(info) = info else { return };
+    let Some(outline) = outline else { return };
     assert!(
-        info.colors.iter().all(|c| !c.role.starts_with("border")),
-        "an icon button's info claims an edge it does not draw: {info:?}"
+        r.toolbar
+            .button_hover_background
+            .is_some_and(|fill| fill.a == 0),
+        "kde-breeze's toolbar hover fill is no longer transparent, which this test reads"
     );
-    assert!(
-        info.config
-            .iter()
-            .all(|n| !n.text.contains("geometry::button")),
-        "an icon button's info names geometry::button, which it does not take: {info:?}"
+    let button = "basic-icon-copy";
+    hover(&mut cx, point(px(4.), px(4.)));
+    draw(&mut cx);
+    let over_the_button = |cx: &mut VisualTestContext| {
+        let bounds = bounds_of(cx, button);
+        cx.update(|window, _cx| {
+            let bounds = bounds.scale(window.scale_factor());
+            scene_quads(window)
+                .into_iter()
+                .filter(|q| {
+                    q.bounds == bounds && q.border_widths.top.0 > 0. && q.border_color == outline
+                })
+                .count()
+        })
+    };
+    assert_eq!(
+        over_the_button(&mut cx),
+        0,
+        "a tool button at rest is edged in toolbar.button_hover_border_color"
+    );
+    let at = bounds_of(&mut cx, button).center();
+    hover(&mut cx, at);
+    draw(&mut cx);
+    assert_eq!(
+        painted_edge(&mut cx, button),
+        Some(outline),
+        "a hovered tool button is not edged in toolbar.button_hover_border_color"
+    );
+    assert_eq!(
+        painted_fill(&mut cx, button),
+        None,
+        "a hovered tool button is filled, where the toolbar's hover fill is transparent"
     );
 }
 
@@ -17935,7 +18276,7 @@ fn the_tool_buttons_info_names_upstreams_size_only_where_unstated(cx: &mut TestA
 #[test]
 fn every_tool_buttons_size_note_follows_the_stated_padding() {
     let icon = ChromeIcon::Builtin("Search".into());
-    let infos = |t: &Theme, native: Option<&native_theme::theme::ResolvedButtonTheme>| {
+    let infos = |t: &Theme, native: Option<&native_theme_gpui::ResolvedTheme>| {
         [
             (
                 "toolbar button",
@@ -17962,7 +18303,7 @@ fn every_tool_buttons_size_note_follows_the_stated_padding() {
                     },
                     false,
                     None,
-                    native,
+                    native.map(|r| &r.button),
                 ),
             ),
             (
@@ -17982,7 +18323,7 @@ fn every_tool_buttons_size_note_follows_the_stated_padding() {
     let variants = every_bundled_variant();
     for (name, r, t) in &variants {
         let p = r.button.border.padding;
-        for (which, height, across, info) in infos(t, Some(&r.button)) {
+        for (which, height, across, info) in infos(t, Some(r)) {
             let text = info.to_text();
             let said = words(&text);
             assert_eq!(
@@ -18336,12 +18677,12 @@ fn a_partly_stated_tool_button_padding_leaves_upstream_the_rest() {
         config,
     } in shapes
     {
-        let mut button = r.button.clone();
-        button.border.padding.top = top;
-        button.border.padding.right = right;
-        button.border.padding.bottom = bottom;
-        button.border.padding.left = left;
-        let info = crate::info::buttons::icon_button(t, true, Some(&button));
+        let mut theme = r.clone();
+        theme.button.border.padding.top = top;
+        theme.button.border.padding.right = right;
+        theme.button.border.padding.bottom = bottom;
+        theme.button.border.padding.left = left;
+        let info = crate::info::buttons::icon_button(t, true, Some(&theme));
         let note = shown_note(Some(&info), "size");
         let note_words = note.as_deref().map(words).unwrap_or_default();
         assert_eq!(

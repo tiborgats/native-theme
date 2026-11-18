@@ -1031,11 +1031,11 @@ pub fn icon_set_select(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo 
 }
 
 /// One of the toolbar's icon Buttons (spec §2.3), running `action` and
-/// showing `icon` of the icon theme named `set`, sized as
-/// `buttons::tool_button_size` says under `native`'s `button`. Its
-/// icon-size line is recorded where `demo::toolbar_button` applies the
-/// builder; `tooltip_delay` is the delay its tooltip is given, the theme's
-/// `tooltip.show_delay_ms`.
+/// showing `icon` of the icon theme named `set`, coloured as
+/// `buttons::native_toolbar` says and sized as `buttons::tool_button_size`
+/// says under `native`'s `button`. Its icon-size line is recorded where
+/// `demo::toolbar_button` applies the builder; `tooltip_delay` is the delay
+/// its tooltip is given, the theme's `tooltip.show_delay_ms`.
 pub fn toolbar_button(
     t: &Theme,
     action: &'static str,
@@ -1043,7 +1043,7 @@ pub fn toolbar_button(
     set: &str,
     tooltip_styled: bool,
     tooltip_delay: Option<Duration>,
-    native: Option<&ResolvedButtonTheme>,
+    native: Option<&ResolvedTheme>,
 ) -> WidgetInfo {
     let drawn = !matches!(icon, ChromeIcon::Missing(_) | ChromeIcon::Unlisted(_));
     let info = WidgetInfo::new("Button").variant(if drawn {
@@ -1052,7 +1052,7 @@ pub fn toolbar_button(
         "Ghost, labelled"
     });
     let info = action_tooltip(
-        super::buttons::native_ghost(info, t),
+        super::buttons::native_toolbar(info, t, native),
         t,
         tooltip_styled,
         tooltip_delay,
@@ -1066,7 +1066,7 @@ pub fn toolbar_button(
     } else {
         info
     };
-    super::buttons::tool_button_size(info, ToolSize::Medium, drawn, native)
+    super::buttons::tool_button_size(info, ToolSize::Medium, drawn, native.map(|r| &r.button))
         .instance(
             "icon",
             chrome_icon_note(

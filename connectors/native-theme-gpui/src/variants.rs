@@ -31,8 +31,8 @@ use gpui::{App, Hsla};
 use gpui_component::ActiveTheme as _;
 use gpui_component::button::ButtonCustomVariant;
 
-use crate::Native;
 use crate::colors::rgba_to_hsla;
+use crate::{ActiveNativeTheme as _, Native};
 
 /// A flat button with the platform's button state colours: transparent when
 /// idle, exactly like upstream's `.ghost()`, but hovering and pressing with the
@@ -144,6 +144,89 @@ pub(crate) fn hover_border(n: Native<'_>) -> Option<Hsla> {
     n.resolved.button.hover_border_color.map(rgba_to_hsla)
 }
 
+/// The toolbar button states the theme states, each `None` where it states
+/// none: what [`toolbar_button`] gives its variant.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) struct ToolbarButtonStates {
+    /// `toolbar.button_hover_background`.
+    pub hover: Option<Hsla>,
+    /// `toolbar.button_hover_border_color`.
+    pub hover_border: Option<Hsla>,
+    /// `toolbar.button_active_background`.
+    pub active: Option<Hsla>,
+}
+
+/// The toolbar button states of `n`'s theme.
+pub(crate) fn toolbar_button_states(n: Native<'_>) -> ToolbarButtonStates {
+    let t = &n.resolved.toolbar;
+    ToolbarButtonStates {
+        hover: t.button_hover_background.map(rgba_to_hsla),
+        hover_border: t.button_hover_border_color.map(rgba_to_hsla),
+        active: t.button_active_background.map(rgba_to_hsla),
+    }
+}
+
+/// A toolbar's flat button: [`ghost_button`] with the platform's toolbar
+/// button states where the installed native theme states them.
+///
+/// ```no_run
+/// use gpui_kit::component::{IconName, button::{Button, ButtonVariants as _}, toolbar::Toolbar};
+/// use gpui_kit::component::StyledExt as _;
+/// use native_theme_gpui::{ActiveNativeTheme as _, geometry, variants};
+/// # fn f(cx: &gpui_kit::App) {
+/// let copy = Button::new("copy").icon(IconName::Copy).custom(variants::toolbar_button(cx));
+/// let copy = match cx.native() {
+///     Some(n) => copy.refine_style(&geometry::toolbar_button_rest(n)),
+///     None => copy,
+/// };
+/// // `content`, not `child`: `child` would make it a `.ghost()` again.
+/// let toolbar = Toolbar::new("tools").content(copy);
+/// # }
+/// ```
+///
+/// A toolbar button is a variant of its own because the platform states a
+/// toolbar button's hover, pressed and checked colours apart from a flat
+/// button's (`toolbar.button_hover_background`, `button_active_background`,
+/// `button_checked_background`). Where the theme states one of the first two
+/// it replaces [`ghost_button`]'s token; with none, or no native theme
+/// installed, the variant is [`ghost_button`]'s.
+///
+/// Where the theme states the hover outline,
+/// `toolbar.button_hover_border_color`, it is the variant's `color`, which
+/// upstream draws as the border in every state. So the variant goes with its
+/// companion [`geometry::toolbar_button_rest`](crate::geometry::toolbar_button_rest):
+/// without it upstream mixes that colour toward transparent into the
+/// button's fill at rest (gpui-component 0.10.0 `button/button.rs:1044`) and
+/// lays out no border width for a custom variant (0.10.0
+/// `button/button.rs:727-732`), so the button is tinted at rest and no edge
+/// shows under the pointer.
+///
+/// Such a Button goes into gpui-component's `Toolbar` or `ToolbarGroup` by
+/// `content(..)`, not `child(..)`: `child` prepares a Button for the toolbar
+/// by `.ghost().compact()` (gpui-component 0.10.0 `toolbar.rs:17-22`,
+/// `:71-74`; `button/button.rs:597-599`), which replaces the custom variant
+/// (`with_variant`, 0.10.0 `button/button.rs:603-606`).
+#[must_use]
+pub fn toolbar_button(cx: &App) -> ButtonCustomVariant {
+    let variant = ghost_button(cx);
+    let Some(n) = cx.native() else {
+        return variant;
+    };
+    let states = toolbar_button_states(n);
+    let variant = match states.hover {
+        Some(hover) => variant.hover(hover),
+        None => variant,
+    };
+    let variant = match states.active {
+        Some(active) => variant.active(active),
+        None => variant,
+    };
+    match states.hover_border {
+        Some(edge) => variant.color(edge),
+        None => variant,
+    }
+}
+
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
@@ -231,6 +314,56 @@ mod tests {
                     .hover(cx.theme().secondary_hover)
                     .active(cx.theme().secondary_active)
             );
+        });
+    }
+
+    /// `toolbar_button` takes the toolbar's states where the installed theme
+    /// states them: kde-breeze light hovers transparent, presses in
+    /// #3daee94d and draws its outline as the variant's colour; macos-tahoe,
+    /// which states none of the three, keeps `ghost_button`'s tokens.
+    #[gpui::test]
+    fn toolbar_button_takes_the_toolbars_states(cx: &mut TestAppContext) {
+        use native_theme::color::Rgba;
+        let prefs = AccessibilityPreferences::default();
+        cx.update(|cx| {
+            gpui_component::init(cx);
+            let loaded = crate::from_preset("kde-breeze", false, &prefs);
+            assert!(loaded.is_ok(), "kde-breeze: {:?}", loaded.as_ref().err());
+            let Ok((theme, resolved)) = loaded else {
+                return;
+            };
+            crate::apply(theme, &resolved, &prefs, cx);
+            let edge = resolved.toolbar.button_hover_border_color;
+            assert!(edge.is_some(), "kde-breeze states the toolbar's outline");
+            let Some(edge) = edge else {
+                return;
+            };
+            assert_eq!(
+                toolbar_button(cx),
+                ghost_button(cx)
+                    .hover(rgba_to_hsla(Rgba::new(0, 0, 0, 0)))
+                    .active(rgba_to_hsla(Rgba::new(0x3d, 0xae, 0xe9, 0x4d)))
+                    .color(rgba_to_hsla(edge)),
+                "kde-breeze light"
+            );
+
+            let loaded = crate::from_preset("macos-tahoe", false, &prefs);
+            assert!(loaded.is_ok(), "macos-tahoe: {:?}", loaded.as_ref().err());
+            let Ok((theme, resolved)) = loaded else {
+                return;
+            };
+            let t = &resolved.toolbar;
+            assert_eq!(
+                (
+                    t.button_hover_background,
+                    t.button_hover_border_color,
+                    t.button_active_background
+                ),
+                (None, None, None),
+                "macos-tahoe states no toolbar button state"
+            );
+            crate::apply(theme, &resolved, &prefs, cx);
+            assert_eq!(toolbar_button(cx), ghost_button(cx), "macos-tahoe");
         });
     }
 

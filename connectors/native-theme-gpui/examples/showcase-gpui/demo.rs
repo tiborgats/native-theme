@@ -1319,10 +1319,11 @@ pub(crate) struct ToolbarButton<'a> {
     pub about: &'static str,
 }
 
-/// A Ghost `Button` for the toolbar -- the Buttons page's, built with
-/// `variants::ghost_button` -- dispatching its action, its icon of the
-/// chosen icon theme at `geometry::icon_size_toolbar` and its tooltip showing
-/// the action's key binding. Where the icon theme has no icon for it, it
+/// A flat `Button` for the toolbar, built with `variants::toolbar_button` and
+/// refined by `geometry::toolbar_button_rest` after its box -- dispatching
+/// its action, its icon of the chosen icon theme at
+/// `geometry::icon_size_toolbar` and its tooltip showing the action's key
+/// binding. Where the icon theme has no icon for it, it
 /// shows its tooltip's text instead, never another icon theme's icon.
 ///
 /// The icon is the Button's child, not its `icon`: `Button::icon` resizes
@@ -1353,7 +1354,7 @@ pub(crate) fn toolbar_button(
         set,
         styled,
         delay,
-        native.as_ref().map(|n| &n.resolved.button),
+        native.as_ref().map(|n| n.resolved),
     );
     if styled {
         button_info = button_info.geometry("tooltip");
@@ -1365,8 +1366,11 @@ pub(crate) fn toolbar_button(
     }
     let dispatched = action.boxed_clone();
     let button = refined(
-        ButtonKind::Ghost.apply(Button::new(id), cx),
-        tool_button_box(cx).as_ref(),
+        refined(
+            Button::new(id).custom(variants::toolbar_button(cx)),
+            tool_button_box(cx).as_ref(),
+        ),
+        native_value(cx, geometry::toolbar_button_rest).as_ref(),
     )
     .map(|button| match icon {
         Some(icon) => button.child(listed_icon(ui, icon, elements::icon_of(id))),
@@ -1447,7 +1451,7 @@ pub(crate) fn component_toolbar(
     toolbar.info(ui, "buttons-toolbar", toolbar_info)
 }
 
-/// One of the component `Toolbar`'s Buttons: a Ghost `Button` built as
+/// One of the component `Toolbar`'s Buttons: a flat `Button` built as
 /// [`toolbar_button`] builds the chrome's, without an action or a tooltip,
 /// its icon of the chosen icon theme at `geometry::icon_size_toolbar`, and
 /// its label as its text where the icon theme has no icon for it, never
@@ -1460,20 +1464,19 @@ fn toolbar_item(ui: &Entity<InfoRegistry>, cx: &App, set: &str, item: ToolItem) 
         label,
     } = item;
     let native = cx.native();
-    let mut button_info = info::buttons::toolbar_item(
-        cx.theme(),
-        &drawn,
-        set,
-        native.as_ref().map(|n| &n.resolved.button),
-    );
+    let mut button_info =
+        info::buttons::toolbar_item(cx.theme(), &drawn, set, native.as_ref().map(|n| n.resolved));
     let icon = chrome_glyph(&drawn, &icon)
         .map(|icon| native_sized_glyph(cx, icon, geometry::icon_size_toolbar));
     if icon.is_some() && native_value(cx, geometry::icon_size_toolbar).is_some() {
         button_info = button_info.geometry("icon_size_toolbar");
     }
     let button = refined(
-        ButtonKind::Ghost.apply(Button::new(id), cx),
-        tool_button_box(cx).as_ref(),
+        refined(
+            Button::new(id).custom(variants::toolbar_button(cx)),
+            tool_button_box(cx).as_ref(),
+        ),
+        native_value(cx, geometry::toolbar_button_rest).as_ref(),
     )
     .map(|button| match icon {
         Some(icon) => button.accessibility_label(label).child(icon),
@@ -1550,7 +1553,7 @@ pub(crate) struct PanelToggle<'a> {
 }
 
 /// A small Ghost `Button` for the status bar -- built with
-/// `variants::ghost_button`, as the toolbar's are -- dispatching its action,
+/// `variants::ghost_button`, not the toolbar's variant -- dispatching its action,
 /// selected while its panel is open, its icon of the chosen icon theme at
 /// `geometry::icon_size_small` and its tooltip showing the action's key
 /// binding. Where the icon theme has no icon for it, it shows its tooltip's
@@ -4659,7 +4662,18 @@ fn combo_fill(cx: &App) -> Option<StyleRefinement> {
 /// sets no hover (select.rs:562-580; combobox.rs:999-1016) and neither
 /// `Select` nor `Combobox` is an `InteractiveElement` (select.rs:832), so the
 /// hover fill is this element's. Before `apply` ran it is a plain box.
+///
+/// Where the theme states `combo_box.hover_border_color`, an edge in it is
+/// laid over the trigger's under the pointer: the trigger is no
+/// `InteractiveElement` either. The edge is a child after the trigger, laid
+/// absolutely over it, `combo_box.border.line_width` wide and transparent at
+/// rest, with only a hover style of the surface's group: gpui paints a later
+/// child over an earlier one, and an element that only has a group-hover
+/// style gets a `Normal` hitbox, which leaves the trigger's mouse handling as
+/// it is (gpui-pre 0.3.12 `window.rs:891-894`; `elements/div.rs:2460-2468`).
 fn combo_surface(cx: &App, trigger: impl IntoElement) -> Div {
+    // Upstream's own `transparent` token, as `combo_fill` takes it.
+    let none = cx.theme().transparent;
     let look = native_value(cx, |n| {
         let c = &n.resolved.combo_box;
         (
@@ -4668,19 +4682,41 @@ fn combo_surface(cx: &App, trigger: impl IntoElement) -> Div {
                 native_theme_gpui::layer_over(info::stated(c.background_color), info::stated(hover))
             }),
             px(c.border.corner_radius.max(0.0)),
+            c.hover_border_color.map(info::stated),
+            px(c.border.line_width.max(0.0)),
         )
     });
     match look {
-        Some((fill, hover, radius)) => div()
-            .rounded(radius)
-            .when_some(fill, |surface, fill| surface.bg(fill))
-            .when_some(hover, |surface, hover| {
-                surface.hover(move |style| style.bg(hover))
-            })
-            .child(trigger),
+        Some((fill, hover, radius, edge, width)) => {
+            let edge = edge.filter(|_| width > px(0.0));
+            div()
+                .rounded(radius)
+                .when_some(fill, |surface, fill| surface.bg(fill))
+                .when_some(hover, |surface, hover| {
+                    surface.hover(move |style| style.bg(hover))
+                })
+                .when(edge.is_some(), |surface| surface.group(COMBO_HOVER_GROUP))
+                .child(trigger)
+                .when_some(edge, |surface, edge| {
+                    surface.child(
+                        div()
+                            .absolute()
+                            .inset_0()
+                            .rounded(radius)
+                            .border(width)
+                            .border_color(none)
+                            .group_hover(COMBO_HOVER_GROUP, move |style| style.border_color(edge))
+                            .debug_selector(|| "combo-hover-edge".into()),
+                    )
+                })
+        }
         None => div().child(trigger),
     }
 }
+
+/// The group [`combo_surface`] names its surface by, whose hover the edge
+/// laid over the trigger listens to.
+const COMBO_HOVER_GROUP: &str = "showcase-combo-hover";
 
 /// A `ColorPicker` over `state`, reading `label`.
 pub(crate) fn color_picker(
@@ -9430,7 +9466,7 @@ pub(crate) fn toggle_button(
         .debug_selector(move || id.into())
 }
 
-/// An icon-only button as the toolbar's (`toolbar_button`): the Ghost
+/// An icon-only button as the toolbar's (`toolbar_button`): the toolbar's
 /// variant, its icon native-theme's for a role as the chosen set gives it
 /// (`Showcase::role_chrome_icon`), at `toolbar.icon_size`, the icon
 /// recording its bounds as the element `listed_icon`. Where the set has no
@@ -9445,10 +9481,13 @@ pub(crate) fn icon_button(
     listed: &'static str,
 ) -> Stateful<Div> {
     let native = cx.native();
-    let native_button = native.as_ref().map(|n| &n.resolved.button);
     let icon = role_glyph_of(drawn);
-    let mut button_info = info::buttons::icon_button(cx.theme(), icon.is_some(), native_button)
-        .instance("icon", format!("{name}, at toolbar.icon_size"));
+    let mut button_info = info::buttons::icon_button(
+        cx.theme(),
+        icon.is_some(),
+        native.as_ref().map(|n| n.resolved),
+    )
+    .instance("icon", format!("{name}, at toolbar.icon_size"));
     if drawn.0.is_raster() {
         button_info = button_info.instance(
             "icon colour",
@@ -9463,8 +9502,11 @@ pub(crate) fn icon_button(
         button_info = button_info.geometry("icon_size_toolbar");
     }
     let button = refined(
-        ButtonKind::Ghost.apply(Button::new(id), cx),
-        tool_button_box(cx).as_ref(),
+        refined(
+            Button::new(id).custom(variants::toolbar_button(cx)),
+            tool_button_box(cx).as_ref(),
+        ),
+        native_value(cx, geometry::toolbar_button_rest).as_ref(),
     );
     let button = match icon {
         Some(icon) => button

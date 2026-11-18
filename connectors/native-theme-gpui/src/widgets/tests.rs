@@ -79,6 +79,7 @@ fn a_checkbox_paints_checkbox_theme() {
         );
         assert_eq!(idle.mark, c(k.indicator_color), "{preset}");
         assert_eq!(idle.label, c(k.font.color), "{preset}");
+        assert_eq!(idle.hover_border, k.hover_border_color.map(c), "{preset}");
 
         let checked = at(true, false);
         assert_eq!(checked.fill, c(k.checked_background), "{preset}");
@@ -86,6 +87,11 @@ fn a_checkbox_paints_checkbox_theme() {
         assert_eq!(
             checked.hover_fill, None,
             "{preset}: no stated checked hover"
+        );
+        assert_eq!(
+            checked.hover_border,
+            k.hover_border_color.map(c),
+            "{preset}: the hover border frames a checked box too"
         );
 
         // A stated disabled fill replaces the box, its mark in the disabled
@@ -104,6 +110,7 @@ fn a_checkbox_paints_checkbox_theme() {
         }
         assert_eq!(disabled.label, c(k.disabled_text_color), "{preset}");
         assert_eq!(disabled.hover_fill, None, "{preset}");
+        assert_eq!(disabled.hover_border, None, "{preset}");
         assert_eq!(disabled.opacity, k.disabled_opacity, "{preset}");
         assert_eq!(idle.opacity, 1., "{preset}");
     }
@@ -125,6 +132,25 @@ fn an_unset_checkbox_hover_is_the_box_at_rest() {
     ] {
         assert_eq!(look.fill, c(fill));
         assert_eq!(look.hover_fill, Some(look.fill));
+    }
+}
+
+/// A theme that states no `checkbox.hover_border_color` gives the look no
+/// hover border, so the indicator keeps its border at rest under the
+/// pointer; kde-breeze states one, which is cleared here.
+#[test]
+fn an_unset_hover_border_keeps_the_border() {
+    let mut r = resolved("kde-breeze", ColorMode::Light);
+    assert!(
+        r.checkbox.hover_border_color.is_some(),
+        "kde-breeze states checkbox.hover_border_color, so clearing it proves something"
+    );
+    r.checkbox.hover_border_color = None;
+    for look in [
+        CheckboxLook::of(&r, false, false).expect("finite"),
+        CheckboxLook::radio(&r, false, false).expect("finite"),
+    ] {
+        assert_eq!(look.hover_border, None);
     }
 }
 

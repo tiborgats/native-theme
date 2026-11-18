@@ -191,12 +191,12 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.toolbar.",
         "button.hover_background",
-        "gpui: variants::ghost_button's hover, ThemeColor secondary_hover (colors.rs)",
+        "gpui: variants::toolbar_button's hover where toolbar.button_hover_background is unset, ThemeColor secondary_hover (colors.rs)",
     ),
     (
         "basic.icons.",
         "button.hover_background",
-        "gpui: variants::ghost_button's hover, ThemeColor secondary_hover (colors.rs)",
+        "gpui: variants::toolbar_button's hover where toolbar.button_hover_background is unset, ThemeColor secondary_hover (colors.rs)",
     ),
     (
         "chrome.status_bar.toggle",
@@ -221,12 +221,12 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.toolbar.",
         "button.active_background",
-        "gpui: variants::ghost_button's active, ThemeColor secondary_active (colors.rs)",
+        "gpui: variants::toolbar_button's active where toolbar.button_active_background is unset, ThemeColor secondary_active (colors.rs)",
     ),
     (
         "basic.icons.",
         "button.active_background",
-        "gpui: variants::ghost_button's active, ThemeColor secondary_active (colors.rs)",
+        "gpui: variants::toolbar_button's active where toolbar.button_active_background is unset, ThemeColor secondary_active (colors.rs)",
     ),
     (
         "chrome.toolbar.",

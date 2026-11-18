@@ -376,6 +376,7 @@ test over every preset and mode says so.
 | `button_disabled` | `button.disabled_background` (or `button.background_color` where it is not stated), `button.disabled_text_color`, `button.disabled_opacity` | a disabled `Button`, after `button`. A colour, where no `ThemeColor` field maps: upstream paints a disabled button with its own faded literals and then replays the caller's refinement over them; the refinement lands at rest too, so an enabled Button must not take it |
 | `input_group_button` | `button.border.corner_radius` | the button nested in an `InputGroup` (`InputGroupButton`): the platform's button radius, where upstream rounds that `XSmall` button with half the theme's radius |
 | `button_checked` | `button.checked_background` (or `button.active_background`), `button.checked_text_color` (or `button.active_text_color`) | a toggle `Button` that is on (`selected(true)`), after `button`. A colour, where no `ThemeColor` field maps; with neither fill stated, upstream's selected fill stands |
+| `toolbar_button_rest` | where `toolbar.button_hover_border_color` is stated: a transparent fill and border, `button.border.line_width` wide, and each stated side of `button.border.padding` less that width | a toolbar `Button` built on `variants::toolbar_button`, padded with `button.border.padding`: hides the outline colour at rest and keeps the button's size; nothing where the theme states no outline |
 | `link` | `link.underline_enabled`, `link.font`, `link.background_color`, `defaults.line_height` | `Link`: where the platform draws links without an underline, a zero-thickness underline in place of upstream's resting one. The colour is `ThemeColor::link` (`link.font.color`) |
 | `menu_item` | `menu.row_height` (where stated), `menu.border.padding` (the stated sides), `menu.icon_text_gap`, `menu.font`, `defaults.line_height` | a menu row the application draws with its own elements — gpui-component's own `MenuItemElement` is crate-private and `PopupMenu` builds its rows itself, so no upstream widget takes this style |
 | `list_item` | `list.row_height` (where stated), `list.border.padding` (the stated sides), `list.item_font`, `defaults.line_height` | `ListItem` |
@@ -490,6 +491,33 @@ let button = match cx.native() {
 # }
 ```
 
+`variants::toolbar_button(cx)` is `ghost_button` with the platform's toolbar
+button states, `toolbar.button_hover_background`, `button_active_background`
+and the hover outline `button_hover_border_color`, where the installed theme
+states them: the platform states a toolbar button's hover, pressed and checked
+colours apart from a flat button's. Add it to a `Toolbar` or `ToolbarGroup` by
+`content(..)`, not `child(..)`: `child` prepares a Button for the toolbar with
+`.ghost().compact()`, which replaces the custom variant.
+
+```rust,no_run
+use gpui_kit::component::IconName;
+use gpui_kit::component::button::{Button, ButtonVariants as _};
+use gpui_kit::component::toolbar::Toolbar;
+use native_theme_gpui::variants;
+
+# fn f(cx: &gpui_kit::App) {
+let copy = Button::new("copy").icon(IconName::Copy).custom(variants::toolbar_button(cx));
+let toolbar = Toolbar::new("edit").content(copy);
+# }
+```
+
+Where the theme states the outline, the variant's colour is that edge, which
+upstream draws as the border in every state and mixes into the fill at rest,
+with no border width for a custom variant: refine the button with
+`geometry::toolbar_button_rest(n)`, which assumes it is padded with
+`button.border.padding`; it hides the edge at rest, gives it its width and
+keeps the button's size.
+
 What stays upstream work (inner elements the caller's style cannot reach:
 checkbox and radio indicators, switch, slider, separator thickness, splitter
 width, button icon gap, popup-menu rows; the hover of the
@@ -514,7 +542,7 @@ role, and paints every part from the theme leaf that states it:
 
 | Widget | Paints | Instead of gpui-component's |
 |---|---|---|
-| `Checkbox`, `Radio`, `RadioGroup` | `checkbox.*`: indicator size, fills per state, border, radius, mark and its stroke (`check_mark_stroke_width`), the radio's dot (`radio_dot_diameter`), label gap and font. Where the theme states no stroke (and, for a radio, no dot), the mark is gpui-component's `IconName::Check` through the application's icon resolver (`set_icon_resolver`), as gpui-component's own check box draws it; where it states one, the connector strokes that glyph at its width | an indicator sized in rems per `Size`; a check glyph as the radio's mark |
+| `Checkbox`, `Radio`, `RadioGroup` | `checkbox.*`: indicator size, fills per state, border and its colour under the pointer (`hover_border_color`), radius, mark and its stroke (`check_mark_stroke_width`), the radio's dot (`radio_dot_diameter`), label gap and font. Where the theme states no stroke (and, for a radio, no dot), the mark is gpui-component's `IconName::Check` through the application's icon resolver (`set_icon_resolver`), as gpui-component's own check box draws it; where it states one, the connector strokes that glyph at its width | an indicator sized in rems per `Size`; a check glyph as the radio's mark |
 | `Switch` | `switch.*`: track and thumb sizes, radius, fills per state, hover | pixel literals per `Size` |
 | `Slider` | `slider.*`: rail, fill, thumb, hover; keyboard steps; horizontal or vertical (`Slider::axis`) | a rail of its fill at 20% alpha, a thumb of its own size |
 | `ProgressBar` | `progress_bar.*`: track, fill, frame, height, minimum width; indeterminate with `ProgressBar::loading`, its fill sweeping on gpui-component's motion | a track of its fill at 20% alpha |

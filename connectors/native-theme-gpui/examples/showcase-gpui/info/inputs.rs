@@ -1065,25 +1065,25 @@ fn native_indicator(
             "fill",
             "disabled_background",
             look.fill,
-            "native-theme-gpui/widgets/checkbox.rs:129",
+            "native-theme-gpui/widgets/checkbox.rs:134",
         ),
         (false, true, _) => claim(
             "fill",
             "checked_background",
             look.fill,
-            "native-theme-gpui/widgets/checkbox.rs:125",
+            "native-theme-gpui/widgets/checkbox.rs:130",
         ),
         (false, false, true) => claim(
             "fill",
             "unchecked_background",
             look.fill,
-            "native-theme-gpui/widgets/checkbox.rs:123",
+            "native-theme-gpui/widgets/checkbox.rs:128",
         ),
         (false, false, false) => claim(
             "fill",
             "background_color",
             look.fill,
-            "native-theme-gpui/widgets/checkbox.rs:123",
+            "native-theme-gpui/widgets/checkbox.rs:128",
         ),
     });
     // An unset hover is the box at rest (CheckboxLook::of); the swatch is
@@ -1093,21 +1093,28 @@ fn native_indicator(
             "hover, hover_background over the fill",
             "hover_background",
             look.hover_fill,
-            "native-theme-gpui/widgets/checkbox.rs:134",
+            "native-theme-gpui/widgets/checkbox.rs:139",
         ),
         (false, true) => stated_claim(
             "hover, none stated: the fill at rest",
             "unchecked_background",
             look.hover_fill,
-            "native-theme-gpui/widgets/checkbox.rs:123",
+            "native-theme-gpui/widgets/checkbox.rs:128",
         ),
         (false, false) => stated_claim(
             "hover, none stated: the fill at rest",
             "background_color",
             look.hover_fill,
-            "native-theme-gpui/widgets/checkbox.rs:123",
+            "native-theme-gpui/widgets/checkbox.rs:128",
         ),
     });
+    let info = info.colors(edge_claim(
+        "hovered edge",
+        "hover_border_color",
+        look.hover_border,
+        Some(f32::from(look.border_width)),
+        "native-theme-gpui/widgets/checkbox.rs:153",
+    ));
     let width = Some(f32::from(look.border_width));
     let info = info.colors(match (checked, k.unchecked_border_color.is_some()) {
         (true, _) => edge_claim(
@@ -1115,21 +1122,21 @@ fn native_indicator(
             "border",
             Some(look.border),
             width,
-            "native-theme-gpui/widgets/checkbox.rs:138",
+            "native-theme-gpui/widgets/checkbox.rs:143",
         ),
         (false, true) => edge_claim(
             "border",
             "unchecked_border_color",
             Some(look.border),
             width,
-            "native-theme-gpui/widgets/checkbox.rs:140",
+            "native-theme-gpui/widgets/checkbox.rs:145",
         ),
         (false, false) => edge_claim(
             "border",
             "border",
             Some(look.border),
             width,
-            "native-theme-gpui/widgets/checkbox.rs:140",
+            "native-theme-gpui/widgets/checkbox.rs:145",
         ),
     });
     let info = info.colors(match (disabled, stated_disabled) {
@@ -1137,19 +1144,19 @@ fn native_indicator(
             "mark",
             "disabled_text_color",
             checked.then_some(look.mark),
-            "native-theme-gpui/widgets/checkbox.rs:143",
+            "native-theme-gpui/widgets/checkbox.rs:148",
         ),
         (true, false) => stated_claim(
             "mark",
             "indicator_color",
             checked.then_some(look.mark),
-            "native-theme-gpui/widgets/checkbox.rs:144",
+            "native-theme-gpui/widgets/checkbox.rs:149",
         ),
         (false, _) => stated_claim(
             "mark",
             "indicator_color",
             checked.then_some(look.mark),
-            "native-theme-gpui/widgets/checkbox.rs:145",
+            "native-theme-gpui/widgets/checkbox.rs:150",
         ),
     });
     info.color(match (disabled, stated_disabled) {
@@ -1157,19 +1164,19 @@ fn native_indicator(
             "label",
             "disabled_text_color",
             look.label,
-            "native-theme-gpui/widgets/checkbox.rs:143",
+            "native-theme-gpui/widgets/checkbox.rs:148",
         ),
         (true, false) => claim(
             "label",
             "disabled_text_color",
             look.label,
-            "native-theme-gpui/widgets/checkbox.rs:144",
+            "native-theme-gpui/widgets/checkbox.rs:149",
         ),
         (false, _) => claim(
             "label",
             "font",
             look.label,
-            "native-theme-gpui/widgets/checkbox.rs:145",
+            "native-theme-gpui/widgets/checkbox.rs:150",
         ),
     })
 }
@@ -1216,14 +1223,14 @@ pub fn native_radio_column(
             "unselected fill",
             "unchecked_background",
             unselected.fill,
-            "native-theme-gpui/widgets/checkbox.rs:123",
+            "native-theme-gpui/widgets/checkbox.rs:128",
         )
     } else {
         claim(
             "unselected fill",
             "background_color",
             unselected.fill,
-            "native-theme-gpui/widgets/checkbox.rs:123",
+            "native-theme-gpui/widgets/checkbox.rs:128",
         )
     });
     let width = Some(f32::from(unselected.border_width));
@@ -1233,7 +1240,7 @@ pub fn native_radio_column(
             "unchecked_border_color",
             Some(unselected.border),
             width,
-            "native-theme-gpui/widgets/checkbox.rs:140",
+            "native-theme-gpui/widgets/checkbox.rs:145",
         )
     } else {
         edge_claim(
@@ -1241,7 +1248,7 @@ pub fn native_radio_column(
             "border",
             Some(unselected.border),
             width,
-            "native-theme-gpui/widgets/checkbox.rs:140",
+            "native-theme-gpui/widgets/checkbox.rs:145",
         )
     });
     let info = info.colors(match (k.hover_background.is_some(), unchecked_stated) {
@@ -1249,19 +1256,19 @@ pub fn native_radio_column(
             "hover, hover_background over an unselected fill",
             "hover_background",
             unselected.hover_fill,
-            "native-theme-gpui/widgets/checkbox.rs:134",
+            "native-theme-gpui/widgets/checkbox.rs:139",
         ),
         (false, true) => stated_claim(
             "hover, none stated: an unselected fill at rest",
             "unchecked_background",
             unselected.hover_fill,
-            "native-theme-gpui/widgets/checkbox.rs:123",
+            "native-theme-gpui/widgets/checkbox.rs:128",
         ),
         (false, false) => stated_claim(
             "hover, none stated: an unselected fill at rest",
             "background_color",
             unselected.hover_fill,
-            "native-theme-gpui/widgets/checkbox.rs:123",
+            "native-theme-gpui/widgets/checkbox.rs:128",
         ),
     });
     let info = if k.radio_indicator_width.is_some() {
@@ -1736,8 +1743,15 @@ pub fn combo_fill(
                     r.combo_box.hover_background,
                     "showcase",
                 ))
+                .colors(edge_claim(
+                    "hovered edge, over the trigger's",
+                    "hover_border_color",
+                    r.combo_box.hover_border_color,
+                    Some(r.combo_box.border.line_width),
+                    "showcase",
+                ))
                 .geometry("combo_box_fill");
-            info.config("fill", "geometry::combo_box_fill's combo_box.background_color, and combo_box.hover_background over it under the pointer, which the showcase paints on the element under the trigger and leaves the trigger without a fill: upstream's trigger sets no hover and is not an InteractiveElement (gpui-component/select.rs, Select::render; gpui-component/combobox.rs, Combobox::render); the trigger's edge is combo_box.border.color at combo_box.border.line_width, none where that is 0, over the input edge it paints first, which the showcase sets: geometry::select and geometry::combobox carry no edge colour, since the trigger of a Select or Combobox built with appearance(false) keeps a transparent edge the refinement would colour (gpui-component/select.rs, Select::render; gpui-component/combobox.rs, Combobox::render)")
+            info.config("fill", "geometry::combo_box_fill's combo_box.background_color, and combo_box.hover_background over it under the pointer, which the showcase paints on the element under the trigger and leaves the trigger without a fill: upstream's trigger sets no hover and is not an InteractiveElement (gpui-component/select.rs, Select::render; gpui-component/combobox.rs, Combobox::render); the trigger's edge is combo_box.border.color at combo_box.border.line_width, none where that is 0, over the input edge it paints first, which the showcase sets: geometry::select and geometry::combobox carry no edge colour, since the trigger of a Select or Combobox built with appearance(false) keeps a transparent edge the refinement would colour (gpui-component/select.rs, Select::render; gpui-component/combobox.rs, Combobox::render); and, where the theme states it, combo_box.hover_border_color as an edge the showcase lays over the trigger's under the pointer, for the same reason")
         }
         None => info
             .color(input_background(t))

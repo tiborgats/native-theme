@@ -102,7 +102,7 @@
 //! Upstream citations in this module are verified against gpui-component 0.9.1,
 //! gpui-base 0.9.1 and gpui-pre 0.3.12.
 
-use gpui::{BoxShadow, FontWeight, Pixels, StyleRefinement, Styled, px, relative};
+use gpui::{BoxShadow, FontWeight, Hsla, Pixels, StyleRefinement, Styled, px, relative};
 use gpui_component::Size;
 use gpui_component::dialog::DialogEntrance;
 use native_theme::theme::{DialogEntranceStyle, LayoutTheme, ResolvedFontSpec, ResolvedPadding};
@@ -1399,6 +1399,48 @@ pub fn button_checked(n: Native<'_>) -> StyleRefinement {
     }
 }
 
+/// The rest state of a toolbar `Button` built on
+/// [`variants::toolbar_button`](crate::variants::toolbar_button): where the
+/// theme states `toolbar.button_hover_border_color`, a transparent fill, a
+/// transparent border `button.border.line_width` wide, as [`button`] sets the
+/// width, and each side of `button.border.padding` the theme states less that
+/// width, floored at 0; nothing where it states no outline (the variant's
+/// colour then stays transparent, as `ghost_button`'s).
+///
+/// Where the theme states the outline, the variant's colour is the edge
+/// colour, which upstream draws as the border in every state and mixes
+/// toward transparent into the fill at rest (gpui-component 0.10.0
+/// `src/button/button.rs:1044`), with no border width for a custom variant
+/// (`:727-732`): this hides both at rest and gives the edge its width. gpui
+/// lays the border out, so the padding is reduced by it and the button keeps
+/// its size. It assumes the caller pads the button with
+/// `button.border.padding`, as [`button`] and the showcase's tool buttons do:
+/// on a button padded otherwise it replaces the padding of each stated side
+/// with that side less the width. A side the theme leaves unstated is not
+/// set, and the border makes the button that much wider there. Upstream
+/// replays the refinement over the selected and disabled states too
+/// (`:836-850`).
+#[must_use]
+pub fn toolbar_button_rest(n: Native<'_>) -> StyleRefinement {
+    if n.resolved.toolbar.button_hover_border_color.is_none() {
+        return StyleRefinement::default();
+    }
+    let b = &n.resolved.button;
+    let w = b.border.line_width;
+    let p = &b.border.padding;
+    let less = |side: Option<f32>| side.map(|v| (v - w).max(0.0));
+    let inside = ResolvedPadding {
+        top: less(p.top),
+        right: less(p.right),
+        bottom: less(p.bottom),
+        left: less(p.left),
+    };
+    with_padding(StyleRefinement::default(), &inside)
+        .bg(Hsla::transparent_black())
+        .border(px(w))
+        .border_color(Hsla::transparent_black())
+}
+
 /// The text colour of a selected `ListItem` (`ListItem::selected(true)`):
 /// `list.selection_text_color`. Apply it after [`list_item`], to a selected
 /// row only.
@@ -2193,6 +2235,45 @@ mod tests {
             }
         }
         assert!(stated > 0, "no preset states a checked button fill");
+    }
+
+    /// `toolbar_button_rest` keeps a tool button's padding box: under
+    /// kde-breeze light, which states the toolbar's hover outline, each side
+    /// is the stated 6 less `button.border.line_width`, the border that wide
+    /// and transparent, the fill transparent; under macos-tahoe, which states
+    /// no outline, the refinement is empty.
+    #[test]
+    fn toolbar_button_rest_keeps_the_padding_box() {
+        let r = resolved("kde-breeze", ColorMode::Light);
+        let b = &r.button;
+        assert!(r.toolbar.button_hover_border_color.is_some());
+        let p = &b.border.padding;
+        assert_eq!(
+            [p.top, p.right, p.bottom, p.left],
+            [Some(6.0); 4],
+            "kde-breeze's stated button padding"
+        );
+        let w = b.border.line_width;
+        assert!(w > 0.0, "a border width of 0 would prove nothing");
+        let out = toolbar_button_rest(Native::unscaled(&r));
+        let inside = def(6.0 - w);
+        assert_eq!(out.padding.top, inside, "top");
+        assert_eq!(out.padding.right, inside, "right");
+        assert_eq!(out.padding.bottom, inside, "bottom");
+        assert_eq!(out.padding.left, inside, "left");
+        assert_eq!(out.border_widths.top, abs(w));
+        assert_eq!(out.border_widths.right, abs(w));
+        assert_eq!(out.border_widths.bottom, abs(w));
+        assert_eq!(out.border_widths.left, abs(w));
+        assert_eq!(out.border_color, Some(Hsla::transparent_black()));
+        assert_eq!(out.background, Some(Hsla::transparent_black().into()));
+
+        let r = resolved("macos-tahoe", ColorMode::Light);
+        assert!(r.toolbar.button_hover_border_color.is_none());
+        assert_eq!(
+            toolbar_button_rest(Native::unscaled(&r)),
+            StyleRefinement::default()
+        );
     }
 
     /// `list_item_selected` letters a selected row in

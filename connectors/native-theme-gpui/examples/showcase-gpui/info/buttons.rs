@@ -7,7 +7,7 @@ use native_theme_gpui::ResolvedTheme;
 use super::{
     ColorClaim, WidgetInfo,
     chrome::{GhostContent, chrome_icon_note, ghost_colours, input_background},
-    claim, edge_claim, percent_text, px_text,
+    claim, edge_claim, percent_text, px_text, stated_claim,
 };
 use crate::demo::{ButtonKind, ButtonState};
 use crate::support::ChromeIcon;
@@ -653,11 +653,76 @@ fn ghost_variant(info: WidgetInfo) -> WidgetInfo {
 }
 
 /// `info` with what the page's Ghost Button paints, unrefined, and its
-/// variant line: the window's toolbar buttons and the status bar's
-/// side-panel toggle are that Ghost too, and take it from here so they
-/// cannot drift apart.
+/// variant line: the status bar's side-panel toggle is that Ghost too, and
+/// takes it from here so the two cannot drift apart.
 pub(super) fn native_ghost(info: WidgetInfo, t: &Theme) -> WidgetInfo {
     ghost_variant(colours(info, t, ButtonKind::Ghost, None))
+}
+
+/// The variant line of a tool Button built with
+/// `native_theme_gpui::variants::toolbar_button`.
+fn toolbar_variant(info: WidgetInfo) -> WidgetInfo {
+    info.instance("variant", "native_theme_gpui::variants::toolbar_button: native_theme_gpui::variants::ghost_button with the platform's toolbar button states where the theme states them, toolbar.button_hover_background, button_active_background and the outline button_hover_border_color, and ghost_button's colour for each it leaves unstated. It goes into a Toolbar by content, not child, which would make it a .ghost() again (toolbar.rs, ToolbarItem; button/button.rs, Button::prepare_for_toolbar)")
+}
+
+/// `info` with what a tool Button built with
+/// `native_theme_gpui::variants::toolbar_button` paints, and its variant
+/// line: the hover and pressed fills `toolbar.button_hover_background` and
+/// `toolbar.button_active_background` where `native` states them, else the
+/// Ghost's tokens, and the outline under the pointer and while pressed,
+/// `toolbar.button_hover_border_color`, at `button.border.line_width`, the
+/// width `geometry::toolbar_button_rest` gives the border. The window's
+/// toolbar buttons, the Buttons page's toolbar items and the Basic page's
+/// icon buttons take it from here so they cannot drift apart.
+pub(super) fn native_toolbar(
+    info: WidgetInfo,
+    t: &Theme,
+    native: Option<&ResolvedTheme>,
+) -> WidgetInfo {
+    let info = info.color(claim(
+        "text",
+        "secondary_foreground",
+        t.secondary_foreground,
+        "native-theme-gpui/variants.rs:62",
+    ));
+    let info = match stated_claim(
+        "hover bg",
+        "button_hover_background",
+        native.and_then(|r| r.toolbar.button_hover_background),
+        "native-theme-gpui/variants.rs:163",
+    ) {
+        Some(hover) => info.color(hover),
+        None => info.color(claim(
+            "hover bg",
+            "secondary_hover",
+            t.secondary_hover,
+            "native-theme-gpui/variants.rs:63",
+        )),
+    };
+    let info = match stated_claim(
+        "active bg",
+        "button_active_background",
+        native.and_then(|r| r.toolbar.button_active_background),
+        "native-theme-gpui/variants.rs:165",
+    ) {
+        Some(active) => info.color(active),
+        None => info.color(claim(
+            "active bg",
+            "secondary_active",
+            t.secondary_active,
+            "native-theme-gpui/variants.rs:64",
+        )),
+    };
+    let edge = native.and_then(|r| {
+        edge_claim(
+            "border, hovered or pressed",
+            "button_hover_border_color",
+            r.toolbar.button_hover_border_color,
+            Some(r.button.border.line_width),
+            "native-theme-gpui/variants.rs:164",
+        )
+    });
+    toolbar_variant(info.colors(edge))
 }
 
 /// `info` with what a selected Button built with
@@ -982,37 +1047,44 @@ pub fn toolbar(item_gap: Option<f32>, native: Option<&ResolvedTheme>) -> WidgetI
 }
 
 /// One of the Basic page's icon buttons (`demo::icon_button`), showing its
-/// icon where `drawn`, else its name: the Ghost the window's toolbar buttons
-/// are, given `native`'s `button.border` radius and stated padding sides by
-/// the showcase (`demo::tool_box_of`) where a native theme is installed, as
-/// [`tool_button_size`] says -- not `geometry::button`, so the edge stays
-/// upstream's, none.
-pub fn icon_button(t: &Theme, drawn: bool, native: Option<&ResolvedButtonTheme>) -> WidgetInfo {
+/// icon where `drawn`, else its name: the toolbar button the window's
+/// toolbar buttons are, given `native`'s `button.border` radius and stated
+/// padding sides by the showcase (`demo::tool_box_of`) where a native theme
+/// is installed, as [`tool_button_size`] says -- not `geometry::button`, so
+/// it has no edge at rest; where `native` states the toolbar's outline,
+/// `geometry::toolbar_button_rest` gives it a transparent one, coloured
+/// under the pointer and while pressed.
+pub fn icon_button(t: &Theme, drawn: bool, native: Option<&ResolvedTheme>) -> WidgetInfo {
     let info = WidgetInfo::new("Button").variant(if drawn {
         "Ghost, icon"
     } else {
         "Ghost, labelled"
     });
-    let info = native_ghost(info, t).not_themeable(
+    let outlined = native.is_some_and(|r| r.toolbar.button_hover_border_color.is_some());
+    let info = native_toolbar(info, t, native).not_themeable(
         "edge",
-        "none: upstream gives a border width only to a Default or an outlined Button, and a Ghost is a custom variant (button/button.rs, RenderOnce for Button); the showcase sets none",
+        if outlined {
+            "none at rest: geometry::toolbar_button_rest's border is transparent, button.border.line_width wide, and takes the variant's colour under the pointer and while pressed (the border, hovered or pressed)"
+        } else {
+            "none: upstream gives a border width only to a Default or an outlined Button, and a Ghost is a custom variant (button/button.rs, RenderOnce for Button); the showcase sets none"
+        },
     );
     let info = match native {
         Some(_) => info,
         None => info.config("border-radius", format!("radius: {}px", t.radius.as_f32())),
     };
-    tool_button_size(info, ToolSize::Medium, drawn, native)
+    tool_button_size(info, ToolSize::Medium, drawn, native.map(|r| &r.button))
 }
 
-/// One of the component `Toolbar`'s Ghost Buttons, showing `icon` of the
-/// icon theme named `set`, sized as [`tool_button_size`] says under
-/// `native`'s `button`; it runs nothing. Its icon-size line is recorded
-/// where `demo::toolbar_item` applies the builder.
+/// One of the component `Toolbar`'s flat Buttons, showing `icon` of the
+/// icon theme named `set`, coloured as [`native_toolbar`] says and sized as
+/// [`tool_button_size`] says under `native`'s `button`; it runs nothing. Its
+/// icon-size line is recorded where `demo::toolbar_item` applies the builder.
 pub fn toolbar_item(
     t: &Theme,
     icon: &ChromeIcon,
     set: &str,
-    native: Option<&ResolvedButtonTheme>,
+    native: Option<&ResolvedTheme>,
 ) -> WidgetInfo {
     let drawn = !matches!(icon, ChromeIcon::Missing(_) | ChromeIcon::Unlisted(_));
     let info = WidgetInfo::new("Button").variant(if drawn {
@@ -1020,7 +1092,7 @@ pub fn toolbar_item(
     } else {
         "Ghost, labelled"
     });
-    let info = native_ghost(info, t).not_themeable(
+    let info = native_toolbar(info, t, native).not_themeable(
         "fill",
         "none until hovered: the custom variant's fill is transparent (button/button.rs, ButtonCustomVariant::new)",
     );
@@ -1029,7 +1101,7 @@ pub fn toolbar_item(
     } else {
         info
     };
-    tool_button_size(info, ToolSize::Medium, drawn, native)
+    tool_button_size(info, ToolSize::Medium, drawn, native.map(|r| &r.button))
         .instance(
             "icon",
             chrome_icon_note(icon, set, "the button shows its name as its label instead"),

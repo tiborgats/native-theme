@@ -46,8 +46,12 @@ pub struct CheckboxLook {
     /// The fill while the pointer is over the control: `hover_background`
     /// composited over the unchecked fill, or that fill at rest where the
     /// theme states no hover, and only for an enabled, unchecked control --
-    /// the model states no hover for a checked one.
+    /// the model states no hover fill for a checked one; `hover_border` frames both.
     pub hover_fill: Option<Hsla>,
+    /// The indicator's border colour while the pointer is over the control:
+    /// `hover_border_color`, for an enabled control, checked or not; `None`
+    /// where the theme states none, and the border at rest stays.
+    pub hover_border: Option<Hsla>,
     /// The indicator's border colour in this state.
     pub border: Hsla,
     /// The check mark's colour.
@@ -84,7 +88,8 @@ impl CheckboxLook {
     /// (`native-theme-iced` `styles::checkbox`), so the two draw one control:
     /// an unstated unchecked fill copies `background_color`, and an unstated
     /// hover leaves that fill at rest; a checked box is bordered in
-    /// `border.color`, an unchecked one in `unchecked_border_color`;
+    /// `border.color`, an unchecked one in `unchecked_border_color`; a stated
+    /// hover border recolours the border under the pointer;
     /// `disabled_background` replaces the fill in either state, and there the
     /// mark takes `disabled_text_color`, because `indicator_color` is the
     /// colour stated for a foreground on the accent the disabled fill no longer
@@ -145,6 +150,7 @@ impl CheckboxLook {
             (false, _) => (color(c.indicator_color), color(c.font.color)),
         };
         let opacity = super::disabled_opacity(disabled, c.disabled_opacity);
+        let hover_border = c.hover_border_color.filter(|_| !disabled).map(color);
         let indicator = length(indicator_width)?;
         let border_width = length(c.border.line_width)?;
         let p = &c.border.padding;
@@ -165,6 +171,7 @@ impl CheckboxLook {
             border_width,
             fill,
             hover_fill,
+            hover_border,
             border,
             mark,
             mark_stroke: c.check_mark_stroke_width.and_then(length),
@@ -544,9 +551,22 @@ fn indicator_and_label(
             .bg(look.fill),
         look.radius,
     )
-    .when_some(look.hover_fill, |box_, hover| {
-        box_.group_hover(HOVER_GROUP, move |style| style.bg(hover))
-    })
+    .when(
+        look.hover_fill.is_some() || look.hover_border.is_some(),
+        |box_| {
+            let (fill, edge) = (look.hover_fill, look.hover_border);
+            box_.group_hover(HOVER_GROUP, move |style| {
+                let style = match fill {
+                    Some(fill) => style.bg(fill),
+                    None => style,
+                };
+                match edge {
+                    Some(edge) => style.border_color(edge),
+                    None => style,
+                }
+            })
+        },
+    )
     .debug_selector(|| "native-checkbox-indicator".into())
     .child(mark)
     .children(observer.map(|o| part_bounds(Part::Indicator, o, look.border_width)))

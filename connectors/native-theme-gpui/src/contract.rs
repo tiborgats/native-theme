@@ -1229,6 +1229,15 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
         ),
     },
     UnreadColour {
+        leaf: "combo_box.hover_border_color",
+        why: Unread::NoReceiver(
+            "neither trigger has a hover style (gpui-component 0.10.0 \
+             `select.rs:578-597`, `combobox.rs:1025-1042`), and a \
+             `StyleRefinement` has no hover state; the showcase draws it over \
+             the trigger",
+        ),
+    },
+    UnreadColour {
         leaf: "combo_box.border.color",
         why: Unread::NoReceiver(
             "the trigger's edge is `border_color(input)` (`select.rs:575`, \
@@ -1357,6 +1366,15 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
         why: Unread::NoReceiver(
             "a hovered sidebar item takes `sidebar_accent` at 0.8, the \
              selection's token (`sidebar/menu.rs:311-314`)",
+        ),
+    },
+    UnreadColour {
+        leaf: "toolbar.button_checked_background",
+        why: Unread::NoReceiver(
+            "a custom variant fills a selected Button with its `active` colour, the pressed \
+             fill (gpui-component 0.10.0 `button/button.rs:1353`, `ButtonVariant::selected`), \
+             and takes no checked colour of its own; until the connector refines a selected \
+             toolbar Button, a checked one shows the pressed fill",
         ),
     },
     UnreadColour {
@@ -2854,6 +2872,7 @@ fn sinks(r: &ResolvedTheme, is_dark: bool) -> std::collections::BTreeMap<String,
         ("input_height", gm::input_height),
         ("button_disabled", gm::button_disabled),
         ("button_checked", gm::button_checked),
+        ("toolbar_button_rest", gm::toolbar_button_rest),
         ("list_item_selected", gm::list_item_selected),
         ("link", gm::link),
         ("input_fill(false)", |n| gm::input_fill(n, false)),
@@ -2881,6 +2900,10 @@ fn sinks(r: &ResolvedTheme, is_dark: bool) -> std::collections::BTreeMap<String,
     out.insert(
         "variants::hover_border".to_owned(),
         show(&crate::variants::hover_border(n)),
+    );
+    out.insert(
+        "variants::toolbar_button_states".to_owned(),
+        format!("{:?}", crate::variants::toolbar_button_states(n)),
     );
 
     use crate::widgets::{
