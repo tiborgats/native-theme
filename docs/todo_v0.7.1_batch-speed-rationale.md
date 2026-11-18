@@ -391,7 +391,7 @@ The labels the rules use, as the plans define them:
     ignores theme data is a bug). An element pushed out of view, where its placement is a design
     choice the maintainer made, stays a question. A difference K5's rehearsal shows before the
     capture is reported while the capture goes ahead, as the plans say. At MG, `Cargo.lock`'s versions of the crates P2 lists are compared before and after; a version
-    within P2's accepted set (egui 0.36.2 or 0.37.x, patch releases of the others) is rule 25's
+    within P2's accepted set (egui 0.36.2 or 0.37.x, GPUI Kit 0.10.x, patch releases of the others) is rule 25's
     rework, any other a stop. On both paths (the branch made from `<lane-pred-head>` or from
     `<prev-tag>`), P2 compares the tree's `Cargo.lock` with `git show 0fa28027:Cargo.lock` for the
     same crates, and a changed version's readings are made again before the first unit (or P2's
@@ -595,7 +595,7 @@ The labels the rules use, as the plans define them:
     step of `--commit` for the crates a change reaches, their dependents included (gate-speed
     specification, decision 1 (c), A.4), so a new module, a new public API or new model fields are
     no reason on their own, and neither is a leg that only `--commit` was thought to build.
-25. Since `<lane-pred-head>` is a pre-merge head, egui 0.37 (v0.7.2) and the other lane's releases
+25. Since `<lane-pred-head>` is a pre-merge head, egui 0.37.x and GPUI Kit 0.10.x (v0.7.2) and the other lane's releases
     normally reach a branch only at MG. Each plan names, in MG's step (3), after the version
     comparison (step (1), rule 21) and before the warm-up gate, the task VF "the version forms after MG": for every
     crate whose version changed, a `worker` re-reads every upstream line the specification cites in
