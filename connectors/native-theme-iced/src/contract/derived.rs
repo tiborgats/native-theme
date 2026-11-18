@@ -1472,6 +1472,14 @@ pub(super) const UNREAD_COLOURS: &[UnreadColour] = &[
         ),
     },
     UnreadColour {
+        leaf: "button.focus_border_color",
+        why: Unread::NoReceiver(
+            "an iced button takes no keyboard focus: it implements no `operate` \
+             for `Focusable`, and its status has no focused variant \
+             (`iced_widget-0.14.2/src/button.rs:257-273`, `:471-498`)",
+        ),
+    },
+    UnreadColour {
         leaf: "combo_box.disabled_background",
         why: Unread::NoReceiver(
             "`pick_list::Status` is Active, Hovered and Opened, with no \

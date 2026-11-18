@@ -585,6 +585,12 @@ pub(crate) fn populate_colors(ini: &configparser::ini::Ini, variant: &mut crate:
     // (breezestyle.cpp:5350-5362; docs/platform-facts.md §2.3).
     variant.button.hover_background = variant.button.background_color;
     variant.button.hover_text_color = button_fg;
+    // The pen of a non-flat button turns the active group's `Highlight` while it is
+    // hovered, has the visual focus or is pressed (breezehelper.cpp:672-673, :710-712 at
+    // breeze f0b1d75; docs/platform-facts.md §2.3): the hover border, which a pressed
+    // button keeps, and the focus border.
+    variant.button.hover_border_color = selection_bg;
+    variant.button.focus_border_color = selection_bg;
 
     // Tooltip
     variant.tooltip.background_color = get_color(ini, "Colors:Tooltip", "BackgroundNormal");
@@ -1608,6 +1614,21 @@ ForegroundNormal=239,240,241
         ] {
             assert_ne!(ours, breezes, "{field}: the custom scheme did not reach it");
         }
+    }
+
+    /// A button's hover and focus border is the scheme's selection colour
+    /// (docs/platform-facts.md §2.3), on a scheme whose selection is not Breeze's.
+    #[test]
+    fn a_buttons_hover_and_focus_border_is_the_selection() {
+        let custom = breeze_menu_list_groups("230,220,200", "90,40,20", "200,180,150", "60,20,10")
+            .replace(
+                "[Colors:Selection]\nBackgroundNormal=61,174,233",
+                "[Colors:Selection]\nBackgroundNormal=200,40,90",
+            )
+            .replace("DecorationFocus=61,174,233", "DecorationFocus=20,200,90");
+        let v = populate_fixture(&custom);
+        assert_eq!(v.button.hover_border_color, Some(Rgba::rgb(200, 40, 90)));
+        assert_eq!(v.button.focus_border_color, Some(Rgba::rgb(200, 40, 90)));
     }
 
     /// Breeze's keyboard focus band is the selection colour at `Blend_Value`

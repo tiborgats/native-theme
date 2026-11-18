@@ -10,7 +10,9 @@ use native_theme_gpui::ResolvedTheme;
 #[cfg(feature = "widgets")]
 use super::edge_claim;
 use super::{ColorClaim, WidgetInfo, claim, px_text, stated};
-use crate::demo::{CircleKind, MarkerKind, Severity, ShimmerKind, SpinnerKind, TagKind};
+use crate::demo::{
+    ButtonKind, CircleKind, MarkerKind, Severity, ShimmerKind, SpinnerKind, TagKind,
+};
 use crate::support::SampleIcon;
 
 /// An `Alert` of `severity` at the default Size, a `banner` or not. The
@@ -825,10 +827,11 @@ pub fn marker(
         .instance("text", text.to_string())
 }
 
-/// A tooltip reading `text` on a Default Button reading `label`, which
+/// A tooltip reading `text` on a Button reading `label`, which
 /// reports through the tooltip: the popup is drawn on a layer above the
-/// page, where nothing of the showcase can wrap it. `built` is whether the
-/// application built the tooltip itself; `styled` is whether it is refined
+/// page, where nothing of the showcase can wrap it. `built` is the kind of
+/// the trigger where the application built the tooltip itself, and `None`
+/// where `Button::tooltip` gave it; `styled` is whether it is refined
 /// by `geometry::tooltip`, whose lines are recorded where
 /// `demo::built_tooltip_button` applies it; `delay` is the theme's
 /// `tooltip.show_delay_ms`, which the showcase gives a built tooltip's
@@ -836,7 +839,7 @@ pub fn marker(
 /// `Button::tooltip` waits, where `apply` installed that delay.
 pub fn tooltip(
     t: &Theme,
-    built: bool,
+    built: Option<ButtonKind>,
     styled: bool,
     delay: Option<Duration>,
     defaults: TooltipDefaults,
@@ -844,7 +847,7 @@ pub fn tooltip(
     text: &str,
 ) -> WidgetInfo {
     let info = WidgetInfo::new("Tooltip")
-        .variant(if built {
+        .variant(if built.is_some() {
             "built by the application"
         } else {
             "Button::tooltip"
@@ -853,22 +856,22 @@ pub fn tooltip(
         // tooltip.background_color, .border.color and .font's colour, which
         // no ThemeColor field holds, over upstream's, and rounds it with the
         // platform's corner radius: its geometry line names them.
-        .colors(if built && styled {
+        .colors(if built.is_some() && styled {
             Vec::new()
         } else {
             tooltip_colours(t, true)
         });
-    let info = if built && styled {
+    let info = if built.is_some() && styled {
         info
     } else {
         info.config("border-radius", format!("radius: {}px", t.radius.as_f32()))
     };
-    let info = match (built, delay) {
+    let info = match (built.is_some(), delay) {
         (true, Some(delay)) => info.config("delay", format!("tooltip.show_delay_ms, {}ms: gpui's own tooltip, set on an element rather than through Button::tooltip, which the showcase gives the theme's delay through the element's own tooltip_show_delay (native-theme-gpui/lib.rs, tooltip_show_delay; gpui-pre/elements/div.rs, tooltip_show_delay, line 1755)", delay.as_millis())),
         (true, None) => info.not_themeable("delay", "500ms: gpui's own tooltip, set on an element rather than through Button::tooltip, so it waits gpui's default (gpui-pre/elements/div.rs, DEFAULT_TOOLTIP_SHOW_DELAY, lines 53 and 3784) unless the element's own tooltip_show_delay sets another (gpui-pre/elements/div.rs, tooltip_show_delay, line 1755), which the showcase sets to the theme's tooltip.show_delay_ms where the theme states one; this one states none, or no native theme is installed"),
         (false, _) => info,
     };
-    let info = if built {
+    let info = if built.is_some() {
         info.not_themeable("position", "gpui's own sits a pixel off the pointer (gpui-pre/window.rs, prepaint_tooltip)")
             .instance("why built", "Button::tooltip takes a string and builds the tooltip itself (button/button.rs, Button::tooltip), so the only way to a refined one is to build it with Tooltip::element: the one place the platform's tooltip padding, radius and text colour reach the popup. The width is the content element's, geometry::tooltip_content's: for a tooltip without a key binding, as this one, Tooltip::new with the theme's tooltip.max_width on the popup is the same bubble, since gpui-component 0.10.0 gives the text's box no minimum width and clips it (gpui-component/tooltip.rs, Tooltip::render); with a key binding the two differ: the content's width counts the text alone, so the popup grows past tooltip.max_width by the key and the gap before it, where the width on the popup keeps it within tooltip.max_width and wraps the text beside the key, which is why the chrome's tooltips, which show a key binding, are Tooltip::new with the width on the popup")
     } else {
@@ -884,11 +887,16 @@ pub fn tooltip(
             .not_themeable("position", "beside its trigger, flipping to stay in the window, unless Button::tooltip_placement pins a side (gpui-base/tooltip.rs, TooltipPositioner)")
             .not_themeable("size change", "moving from one tooltip to another on the same row, the bubble slides and grows or shrinks to the new one's size over 200ms, a literal (gpui-component/tooltip.rs, SLIDE_DURATION; render_tooltip); under gpui's App::reduce_motion, which apply switches on where the platform asks for less motion, it is drawn at the new size at once, as every animation gpui runs (gpui-pre/elements/animation.rs, AnimationExt)")
     };
-    info.instance(
-        "trigger",
-        format!("a Default Button reading {label}, which reports through its tooltip. Its own colours are a Default Button's, which the Buttons page's Default Button states"),
-    )
-    .instance("text", text.to_string())
+    let trigger = match built {
+        Some(ButtonKind::Bordered) => format!(
+            "a Button reading {label}, built with native_theme_gpui::variants::bordered_button, which reports through its tooltip. Its own colours are the Basic page's Button's, which that Button states"
+        ),
+        _ => format!(
+            "a Default Button reading {label}, which reports through its tooltip. Its own colours are a Default Button's, which the Buttons page's Default Button states"
+        ),
+    };
+    info.instance("trigger", trigger)
+        .instance("text", text.to_string())
 }
 
 /// What upstream's `Tooltip` paints: its surface and edge, and, with

@@ -4632,3 +4632,505 @@ fn each_windows_root_sets_the_band_for_its_window(cx: &mut TestAppContext) {
     );
     assert_painted_band(&mut v2, None, "window 2 drawn again");
 }
+
+// ---------------------------------------------------------------------------
+// The bordered button against the Default one
+// ---------------------------------------------------------------------------
+
+/// A colour as 8-bit sRGBA channels: the precision a frame is drawn in.
+fn rgba8(colour: gpui::Hsla) -> [u8; 4] {
+    let rgba = gpui::Rgba::from(colour);
+    let channel = |v: f32| (v.clamp(0., 1.) * 255.).round() as u8;
+    [
+        channel(rgba.r),
+        channel(rgba.g),
+        channel(rgba.b),
+        channel(rgba.a),
+    ]
+}
+
+fn hex(c: [u8; 4]) -> String {
+    format!("#{:02x}{:02x}{:02x}{:02x}", c[0], c[1], c[2], c[3])
+}
+
+/// What one quad paints, its bounds relative to the button's origin.
+#[derive(Clone)]
+struct QuadLook {
+    at: [f32; 4],
+    fill: String,
+    raw_fill: Option<gpui::Hsla>,
+    border: [u8; 4],
+    raw_border: gpui::Hsla,
+    widths: [f32; 4],
+    radii: [f32; 4],
+}
+
+impl QuadLook {
+    fn of(q: &gpui::Quad, origin: gpui::Point<gpui::ScaledPixels>) -> Self {
+        let raw_fill = q.background.as_solid();
+        Self {
+            at: [
+                q.bounds.origin.x.0 - origin.x.0,
+                q.bounds.origin.y.0 - origin.y.0,
+                q.bounds.size.width.0,
+                q.bounds.size.height.0,
+            ],
+            fill: raw_fill.map_or_else(|| format!("{:?}", q.background), |f| hex(rgba8(f))),
+            raw_fill,
+            border: rgba8(q.border_color),
+            raw_border: q.border_color,
+            widths: [
+                q.border_widths.top.0,
+                q.border_widths.right.0,
+                q.border_widths.bottom.0,
+                q.border_widths.left.0,
+            ],
+            radii: [
+                q.corner_radii.top_left.0,
+                q.corner_radii.top_right.0,
+                q.corner_radii.bottom_right.0,
+                q.corner_radii.bottom_left.0,
+            ],
+        }
+    }
+
+    fn line(&self) -> String {
+        format!(
+            "at={:?} fill={} border={} widths={:?} radii={:?}",
+            self.at,
+            self.fill,
+            hex(self.border),
+            self.widths,
+            self.radii
+        )
+    }
+}
+
+/// The quads of the last frame whose bounds are the button's, and those
+/// inside its bounds grown by 12 px (a focus band, a focus line), each in
+/// paint order.
+type ButtonQuads = (Vec<QuadLook>, Vec<QuadLook>);
+
+fn button_quads(cx: &mut VisualTestContext, selector: &'static str) -> ButtonQuads {
+    let b = bounds(cx, selector);
+    cx.update(|window, _| {
+        let scale = window.scale_factor();
+        let b = b.scale(scale);
+        let pad = 12. * scale;
+        let mut quads = scene_quads(window);
+        quads.sort_by_key(|q| q.order);
+        let (mut own, mut near) = (Vec::new(), Vec::new());
+        for q in &quads {
+            let look = QuadLook::of(q, b.origin);
+            let inside = q.bounds.origin.x.0 >= b.origin.x.0 - pad
+                && q.bounds.origin.y.0 >= b.origin.y.0 - pad
+                && q.bounds.origin.x.0 + q.bounds.size.width.0
+                    <= b.origin.x.0 + b.size.width.0 + pad
+                && q.bounds.origin.y.0 + q.bounds.size.height.0
+                    <= b.origin.y.0 + b.size.height.0 + pad;
+            if q.bounds == b {
+                own.push(look);
+            } else if inside {
+                near.push(look);
+            }
+        }
+        (own, near)
+    })
+}
+
+/// The button under `selector` hovered, then pressed, each frame read
+/// before the pointer moves on; the pointer is left away from both.
+fn hover_and_press(
+    cx: &mut VisualTestContext,
+    selector: &'static str,
+    away: gpui::Point<Pixels>,
+) -> (ButtonQuads, ButtonQuads) {
+    let at = centre(bounds(cx, selector));
+    cx.simulate_mouse_move(at, None, Modifiers::default());
+    redraw(cx);
+    let hovered = button_quads(cx, selector);
+    cx.simulate_mouse_down(at, gpui::MouseButton::Left, Modifiers::default());
+    redraw(cx);
+    let pressed = button_quads(cx, selector);
+    cx.simulate_mouse_up(at, gpui::MouseButton::Left, Modifiers::default());
+    cx.simulate_mouse_move(away, None, Modifiers::default());
+    redraw(cx);
+    (hovered, pressed)
+}
+
+/// `handle` given the focus by `focus_next`, at most four steps; whether it
+/// took it.
+fn focus_next_to(cx: &mut VisualTestContext, handle: &gpui::FocusHandle) -> bool {
+    for _ in 0..4 {
+        if cx.update(|window, _| handle.is_focused(window)) {
+            return true;
+        }
+        focus_next(cx);
+    }
+    cx.update(|window, _| handle.is_focused(window))
+}
+
+/// Whether the quad has a border width above 0.
+fn has_border(q: &QuadLook) -> bool {
+    q.widths.iter().any(|w| *w > 0.)
+}
+
+/// Whether the quad's fill is its own border colour at alpha 0, as gpui
+/// paints a border (gpui-pre 0.3.12 src/style.rs:746-756).
+fn carries_border(q: &QuadLook) -> bool {
+    q.fill == hex([q.border[0], q.border[1], q.border[2], 0])
+}
+
+/// How the two buttons are built: at rest (hovered, pressed and focused
+/// from there), selected or disabled.
+#[derive(Clone, Copy)]
+enum BuiltAs {
+    Rest,
+    Selected,
+    Disabled,
+}
+
+/// The `Default` button and the `bordered_button` one, both reading "Apply"
+/// and refined by `geometry::button`, as `built` asks, 40 px apart. Nothing
+/// is drawn where no native theme or no hover border is installed.
+fn default_and_bordered(built: BuiltAs, handles: (gpui::FocusHandle, gpui::FocusHandle)) -> Build {
+    use crate::ActiveNativeTheme as _;
+    use gpui_component::button::{Button, ButtonVariants as _};
+    use gpui_component::{ActiveTheme as _, Disableable as _, Selectable as _, StyledExt as _};
+    Box::new(move |_, cx| {
+        let Some(n) = cx.native() else {
+            return div().into_any_element();
+        };
+        let Some(variant) = crate::variants::bordered_button(n, cx) else {
+            return div().into_any_element();
+        };
+        let label = || {
+            div()
+                .min_w_0()
+                .whitespace_nowrap()
+                .text_ellipsis()
+                .refine_style(&crate::geometry::button_label(n))
+                .child("Apply")
+        };
+        let default = Button::new("default")
+            .debug_selector(|| "default-button".into())
+            .track_focus(&handles.0)
+            .refine_style(&crate::geometry::button(n));
+        let bordered = Button::new("bordered")
+            .debug_selector(|| "bordered-button".into())
+            .track_focus(&handles.1)
+            .custom(variant)
+            .refine_style(&crate::geometry::button(n));
+        let (default, bordered) = match built {
+            BuiltAs::Rest => (default, bordered.bg(cx.theme().button)),
+            BuiltAs::Selected => (
+                default
+                    .selected(true)
+                    .refine_style(&crate::geometry::button_checked(n)),
+                bordered
+                    .selected(true)
+                    .refine_style(&crate::geometry::button_checked(n)),
+            ),
+            BuiltAs::Disabled => (
+                default
+                    .disabled(true)
+                    .refine_style(&crate::geometry::button_disabled(n)),
+                bordered
+                    .bg(cx.theme().button)
+                    .disabled(true)
+                    .refine_style(&crate::geometry::button_disabled(n)),
+            ),
+        };
+        div()
+            .pt(px(40.))
+            .pl(px(20.))
+            .flex()
+            .flex_col()
+            .gap(px(40.))
+            .child(default.child(label()).accessibility_label("Apply"))
+            .child(bordered.child(label()).accessibility_label("Apply"))
+            .into_any_element()
+    })
+}
+
+/// docs/todo_v0.7.2_kde-focus-ring-and-button-outlines-spec.md, 3F.2 and
+/// 3F.3: in every state the `bordered_button` paints what the `Default`
+/// button paints, but the hovered and pressed border, which is the theme's
+/// `button.hover_border_color` where the `Default` one draws `input`.
+#[gpui::test]
+fn bordered_button_matches_the_default_button_but_its_hover_border(cx: &mut TestAppContext) {
+    use gpui_component::ActiveTheme as _;
+    use gpui_component::button::ButtonCustomVariant;
+    let red = native_theme::color::Rgba::rgb(255, 0, 0);
+    let away = point(px(500.), px(400.));
+    let (default_sel, bordered_sel) = ("default-button", "bordered-button");
+    let mut unexpected: Vec<String> = Vec::new();
+    let mut expected_seen: Vec<String> = Vec::new();
+    let mut vanished: Vec<String> = Vec::new();
+    let mut border_fills_checked = 0usize;
+    // The third field: whether gpui-component's band is on for any focus
+    // (`Theme::focus_ring`); kde-breeze and windows-11 say keyboard only, so
+    // outside a `Root` the band stays off there.
+    for (preset, set, band_on) in [
+        ("kde-breeze", None, false),
+        ("windows-11", Some(red), false),
+        ("macos-tahoe", Some(red), true),
+    ] {
+        for mode in [ColorMode::Light, ColorMode::Dark] {
+            let combo = format!("{preset} {mode:?}");
+            // Each state's (Default, bordered) quads.
+            let mut states: Vec<(&str, ButtonQuads, ButtonQuads)> = Vec::new();
+            let mut hover = None;
+            let mut input = None;
+            for built in [BuiltAs::Rest, BuiltAs::Selected, BuiltAs::Disabled] {
+                let handles = cx.update(|cx| (cx.focus_handle(), cx.focus_handle()));
+                let edit = move |r: &mut ResolvedTheme| {
+                    if let Some(c) = set {
+                        r.button.hover_border_color = Some(c);
+                    }
+                };
+                let vcx = window_with_resolved(
+                    cx,
+                    preset,
+                    mode,
+                    edit,
+                    default_and_bordered(built, handles.clone()),
+                );
+                vcx.simulate_mouse_move(away, None, Modifiers::default());
+                redraw(vcx);
+                let name = match built {
+                    BuiltAs::Rest => "rest",
+                    BuiltAs::Selected => "selected",
+                    BuiltAs::Disabled => "disabled",
+                };
+                if !matches!(built, BuiltAs::Rest) {
+                    let d = button_quads(vcx, default_sel);
+                    let b = button_quads(vcx, bordered_sel);
+                    states.push((name, d, b));
+                    continue;
+                }
+                let read = vcx.update(|_, cx| {
+                    use crate::ActiveNativeTheme as _;
+                    let n = cx.native()?;
+                    let theme = cx.theme();
+                    let h = crate::variants::hover_border(n)?;
+                    let want = ButtonCustomVariant::new(cx)
+                        .color(h)
+                        .foreground(theme.button_foreground)
+                        .hover(theme.button_hover)
+                        .active(theme.button_active)
+                        .shadow(false);
+                    let got = crate::variants::bordered_button(n, cx);
+                    let other_fg = want.foreground(theme.muted_foreground);
+                    let distinct =
+                        theme.muted_foreground == theme.button_foreground || got != Some(other_fg);
+                    Some((
+                        h,
+                        theme.input,
+                        got == Some(want),
+                        distinct,
+                        theme.focus_ring,
+                    ))
+                });
+                let Some((h, i, text_ok, text_distinct, band)) = read else {
+                    unexpected.push(format!(
+                        "{combo}: no native theme or no hover border on the resolved theme"
+                    ));
+                    continue;
+                };
+                hover = Some(h);
+                input = Some(i);
+                if band != band_on {
+                    unexpected.push(format!(
+                        "{combo}: Theme::focus_ring is {band}, the combination's band is {}",
+                        if band_on { "on" } else { "off" }
+                    ));
+                }
+                if !text_ok {
+                    unexpected.push(format!(
+                        "{combo}: the variant is not color(hover_border).foreground(button_foreground).hover(button_hover).active(button_active).shadow(false)"
+                    ));
+                }
+                if !text_distinct {
+                    unexpected.push(format!(
+                        "{combo}: the foreground is not part of the variant's equality"
+                    ));
+                }
+                println!(
+                    "{combo} | hover_border_color={} input={} button_foreground: {} | Theme::focus_ring={band}",
+                    hex(rgba8(h)),
+                    hex(rgba8(i)),
+                    if text_ok { "equal" } else { "NOT equal" }
+                );
+                let d = button_quads(vcx, default_sel);
+                let b = button_quads(vcx, bordered_sel);
+                states.push(("rest", d, b));
+
+                let (d_hovered, d_pressed) = hover_and_press(vcx, default_sel, away);
+                let (b_hovered, b_pressed) = hover_and_press(vcx, bordered_sel, away);
+                states.push(("hovered", d_hovered, b_hovered));
+                states.push(("pressed", d_pressed, b_pressed));
+
+                let before = vcx.update(|window, cx| window.focused(cx));
+                activate_key(vcx, "x");
+                let after = vcx.update(|window, cx| window.focused(cx));
+                assert!(before == after, "{combo}: the key moved the focus");
+                assert!(
+                    focus_next_to(vcx, &handles.0),
+                    "{combo}: focus_next never reached the Default button"
+                );
+                redraw(vcx);
+                let d_focused = button_quads(vcx, default_sel);
+                assert!(
+                    focus_next_to(vcx, &handles.1),
+                    "{combo}: focus_next never reached the bordered button"
+                );
+                redraw(vcx);
+                let b_focused = button_quads(vcx, bordered_sel);
+                states.push(("focused", d_focused, b_focused));
+            }
+            let hover8 = hover.map(rgba8);
+            let input8 = input.map(rgba8);
+            for (state, d, b) in &states {
+                for (name, (own, near)) in [("default", d), ("bordered", b)] {
+                    for (i, q) in own.iter().enumerate() {
+                        println!("{combo} | {state:8} | {name:8} | own[{i}]  {}", q.line());
+                    }
+                    for (i, q) in near.iter().enumerate() {
+                        println!("{combo} | {state:8} | {name:8} | near[{i}] {}", q.line());
+                    }
+                }
+                let border_state = matches!(*state, "hovered" | "pressed");
+                for (part, dq, bq) in [("own", &d.0, &b.0), ("near", &d.1, &b.1)] {
+                    if dq.len() != bq.len() {
+                        unexpected.push(format!(
+                            "{combo} | {state} | {part}: Default paints {} quads, bordered {}",
+                            dq.len(),
+                            bq.len()
+                        ));
+                    }
+                    if part == "own" && border_state {
+                        let shown = bq
+                            .iter()
+                            .any(|q| Some(q.border) == hover8 && q.widths.iter().any(|w| *w > 0.));
+                        if !shown {
+                            unexpected.push(format!(
+                                "{combo} | {state} | own: the bordered button does not draw hover_border_color"
+                            ));
+                        }
+                    }
+                    // Exception 2: a quad with a border is painted filled with
+                    // its own border colour at alpha 0; asserted on every such
+                    // quad of both buttons, and its fill is not compared.
+                    for (name, quads) in [("Default", dq), ("bordered", bq)] {
+                        for (i, q) in quads.iter().enumerate() {
+                            if !has_border(q) {
+                                continue;
+                            }
+                            border_fills_checked += 1;
+                            if !carries_border(q) {
+                                unexpected.push(format!(
+                                    "{combo} | {state} | {part}[{i}] {name}: a quad with a border is filled {}, not its border colour {} at alpha 0",
+                                    q.fill,
+                                    hex(q.border)
+                                ));
+                            }
+                        }
+                    }
+                    for (i, (x, y)) in dq.iter().zip(bq.iter()).enumerate() {
+                        let at = format!("{combo} | {state} | {part}[{i}]");
+                        let mut item = |what: &str, dv: String, bv: String| {
+                            unexpected.push(format!("{at} {what}: Default {dv}, bordered {bv}"));
+                        };
+                        if x.at != y.at {
+                            item("bounds", format!("{:?}", x.at), format!("{:?}", y.at));
+                        }
+                        let fill_compared = !(has_border(x) && has_border(y));
+                        if fill_compared && x.fill != y.fill {
+                            item("fill", x.fill.clone(), y.fill.clone());
+                        }
+                        if x.widths != y.widths {
+                            item(
+                                "border widths",
+                                format!("{:?}", x.widths),
+                                format!("{:?}", y.widths),
+                            );
+                        }
+                        if x.radii != y.radii {
+                            item("radii", format!("{:?}", x.radii), format!("{:?}", y.radii));
+                        }
+                        // Exception 1: hovered and pressed, the border quads'
+                        // colour is asserted on both sides.
+                        let designed =
+                            part == "own" && border_state && has_border(x) && has_border(y);
+                        if designed {
+                            let default_ok = Some(x.border) == input8;
+                            let bordered_ok = Some(y.border) == hover8;
+                            if default_ok && bordered_ok {
+                                expected_seen.push(format!(
+                                    "{at} border: Default {} (input), bordered {} (hover_border_color)",
+                                    hex(x.border),
+                                    hex(y.border)
+                                ));
+                            } else {
+                                item(
+                                    "hover and press border (want Default input, bordered hover_border_color)",
+                                    format!(
+                                        "{} (input {})",
+                                        hex(x.border),
+                                        input8.map_or_else(|| "unread".into(), hex)
+                                    ),
+                                    format!(
+                                        "{} (hover_border_color {})",
+                                        hex(y.border),
+                                        hover8.map_or_else(|| "unread".into(), hex)
+                                    ),
+                                );
+                            }
+                        } else if x.border != y.border {
+                            item("border colour", hex(x.border), hex(y.border));
+                        } else if x.raw_border != y.raw_border {
+                            vanished.push(format!(
+                                "{at} border: {:?} against {:?}, equal at 8 bits",
+                                x.raw_border, y.raw_border
+                            ));
+                        }
+                        if fill_compared && x.fill == y.fill && x.raw_fill != y.raw_fill {
+                            vanished.push(format!(
+                                "{at} fill: {:?} against {:?}, equal at 8 bits",
+                                x.raw_fill, y.raw_fill
+                            ));
+                        }
+                    }
+                }
+            }
+        }
+    }
+    println!(
+        "--- the hover and press border, as designed ({}):",
+        expected_seen.len()
+    );
+    for line in &expected_seen {
+        println!("{line}");
+    }
+    println!(
+        "--- differences that vanish at 8 bits ({}):",
+        vanished.len()
+    );
+    for line in &vanished {
+        println!("{line}");
+    }
+    println!("--- other differences ({}):", unexpected.len());
+    for line in &unexpected {
+        println!("{line}");
+    }
+    println!(
+        "--- quads with a border whose fill was asserted to be their border colour at alpha 0: {border_fills_checked}"
+    );
+    assert!(
+        unexpected.is_empty(),
+        "{} differences beyond the hover and press border:\n{}",
+        unexpected.len(),
+        unexpected.join("\n")
+    );
+}

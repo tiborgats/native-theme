@@ -410,6 +410,8 @@ fields = [
     "button.disabled_background",      # platform-specific disabled bg
     "button.checked_background",       # None: the pressed pair shows a checked toggle (§2.3)
     "button.checked_text_color",       # None: the pressed pair shows a checked toggle (§2.3)
+    "button.hover_border_color",       # None: the theme states none, border.color stays (§2.3)
+    "button.focus_border_color",       # None: the theme states none, the hover border or border.color (§2.3)
     "input.hover_border_color",        # platform-specific hover border
     "input.focus_border_color",        # platform-specific focus border
     "input.disabled_background",       # platform-specific disabled bg

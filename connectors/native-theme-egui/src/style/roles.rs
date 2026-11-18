@@ -50,8 +50,30 @@ pub(crate) fn role_cell(
         Role::Expander => expander(&mut s, base, input, notes),
         Role::Link => link(&mut s, base, input, notes),
     }
+    if keeps_resting_stroke(role) {
+        let w = &mut s.visuals.widgets;
+        w.hovered.bg_stroke.color = w.inactive.bg_stroke.color;
+        w.active.bg_stroke.color = w.inactive.bg_stroke.color;
+    }
     crate::style::derived::apply_role(role, &mut s, input, notes);
     s
+}
+
+/// The roles whose cells keep their resting stroke when hovered or pressed: the button's
+/// hover and focus outline is not theirs, a toolbar's or a list's buttons and the controls
+/// inside a slider's or a switch's scope among them (D5; D7 and the backlog decide them).
+/// Each passes `border: None` to `write_states`.
+fn keeps_resting_stroke(role: Role) -> bool {
+    matches!(
+        role,
+        Role::Scrollbar
+            | Role::Slider
+            | Role::Sidebar
+            | Role::Toolbar
+            | Role::StatusBar
+            | Role::List
+            | Role::Switch
+    )
 }
 
 /// B3 (§8.5): the role's font size on `override_font_id`, `Proportional` always; a size
@@ -224,6 +246,15 @@ fn button(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes:
             open: OpenFrom::Inactive,
         },
         notes,
+    );
+    // the hovered and the focused button's border, as the base writes them (`base_style`)
+    let w = &mut s.visuals.widgets;
+    let border = b.border.color;
+    w.hovered.bg_stroke.color = to_color32(b.hover_border_color.unwrap_or(border));
+    w.active.bg_stroke.color = to_color32(
+        b.focus_border_color
+            .or(b.hover_border_color)
+            .unwrap_or(border),
     );
     // the selected (primary) button: `button_style` reads `selection.*` regardless of state (§6.2)
     s.visuals.selection.bg_fill = to_color32(b.primary_background);
@@ -1162,7 +1193,15 @@ mod tests {
         mode: ColorMode,
         role: Role,
     ) -> (egui::Style, egui::Style, ResolvedTheme, Vec<Note>) {
-        let t = resolved(preset, mode);
+        cell_of(resolved(preset, mode), mode, role)
+    }
+
+    /// [`cell`] of a resolved theme, which a test may have edited.
+    fn cell_of(
+        t: ResolvedTheme,
+        mode: ColorMode,
+        role: Role,
+    ) -> (egui::Style, egui::Style, ResolvedTheme, Vec<Note>) {
         let scheme = if mode == ColorMode::Dark {
             egui::Theme::Dark
         } else {
@@ -1316,11 +1355,33 @@ mod tests {
     /// §5.3's Button rows, each at the entries §6.1 names, plus `selection.*` (§6.2) and B3.
     #[test]
     fn button_cell_writes_its_rows() {
-        for (preset, mode) in [
-            ("adwaita", ColorMode::Light),
-            ("windows-11", ColorMode::Dark),
+        // a theme that states the hover border alone, which no preset does: `active` takes it
+        let mut hover_only = resolved("adwaita", ColorMode::Light);
+        hover_only.button.hover_border_color = Some(Rgba::rgb(255, 0, 0));
+        hover_only.button.focus_border_color = None;
+        for (preset, mode, t) in [
+            (
+                "adwaita",
+                ColorMode::Light,
+                resolved("adwaita", ColorMode::Light),
+            ),
+            (
+                "windows-11",
+                ColorMode::Dark,
+                resolved("windows-11", ColorMode::Dark),
+            ),
+            (
+                "kde-breeze",
+                ColorMode::Dark,
+                resolved("kde-breeze", ColorMode::Dark),
+            ),
+            (
+                "adwaita, the hover border alone",
+                ColorMode::Light,
+                hover_only,
+            ),
         ] {
-            let (c, base, t, notes) = cell(preset, mode, Role::Button);
+            let (c, base, t, notes) = cell_of(t, mode, Role::Button);
             let b = &t.button;
             let w = &c.visuals.widgets;
             assert!(notes.is_empty(), "{preset}: {notes:?}");
@@ -1348,15 +1409,21 @@ mod tests {
             }
             assert_eq!(w.hovered.fg_stroke.color, to_color32(b.hover_text_color));
             assert_eq!(w.active.fg_stroke.color, to_color32(b.active_text_color));
-            // border in all five entries, colour as stated (§6.13 folds only `defaults.border.color`)
-            for e in [
-                &w.noninteractive,
-                &w.inactive,
-                &w.hovered,
-                &w.active,
-                &w.open,
+            // border in all five entries, colour as stated (§6.13 folds only `defaults.border.color`);
+            // hovered the hover border, active the focus border, else the hover border
+            let hover = b.hover_border_color.unwrap_or(b.border.color);
+            let focus = b
+                .focus_border_color
+                .or(b.hover_border_color)
+                .unwrap_or(b.border.color);
+            for (e, colour) in [
+                (&w.noninteractive, b.border.color),
+                (&w.inactive, b.border.color),
+                (&w.hovered, hover),
+                (&w.active, focus),
+                (&w.open, b.border.color),
             ] {
-                assert_eq!(e.bg_stroke.color, to_color32(b.border.color));
+                assert_eq!(e.bg_stroke.color, to_color32(colour), "{preset}");
                 assert_eq!(e.bg_stroke.width, clamp_length(b.border.line_width));
                 assert_eq!(
                     e.corner_radius,
@@ -1365,6 +1432,12 @@ mod tests {
                         b.border.corner_radius
                     )
                 );
+            }
+            if preset == "kde-breeze" {
+                // Breeze's highlight (docs/platform-facts.md §2.3, `hover_border_color`)
+                let highlight = egui::Color32::from_rgb(0x3d, 0xae, 0xe9);
+                assert_eq!(w.hovered.bg_stroke.color, highlight);
+                assert_eq!(w.active.bg_stroke.color, highlight);
             }
             // the selected (primary) button (§6.2)
             assert_eq!(
@@ -1955,10 +2028,12 @@ mod tests {
                     w.noninteractive.corner_radius, bw.noninteractive.corner_radius,
                     "{preset} {role:?}: the radius is the Panel frame's"
                 );
+                // hovered and active keep the base's resting stroke, not the button's hover
+                // and focus border
                 for (e, be) in [
                     (&w.inactive, &bw.inactive),
-                    (&w.hovered, &bw.hovered),
-                    (&w.active, &bw.active),
+                    (&w.hovered, &bw.inactive),
+                    (&w.active, &bw.inactive),
                     (&w.open, &bw.open),
                 ] {
                     assert_eq!(
@@ -2149,16 +2224,23 @@ mod tests {
             };
             assert_eq!(w.hovered.weak_bg_fill, hovered, "{preset}");
             assert_eq!(w.active.weak_bg_fill, hovered, "{preset}");
-            for (e, be) in all5(w).into_iter().zip(all5(&base.visuals.widgets)) {
+            let bw = &base.visuals.widgets;
+            // hovered and active keep the base's resting stroke, not the button's hover and
+            // focus border
+            let strokes = [
+                bw.noninteractive.bg_stroke,
+                bw.inactive.bg_stroke,
+                bw.inactive.bg_stroke,
+                bw.inactive.bg_stroke,
+                bw.open.bg_stroke,
+            ];
+            for ((e, be), stroke) in all5(w).into_iter().zip(all5(bw)).zip(strokes) {
                 assert_eq!(
                     e.corner_radius,
                     to_corner_radius(be.corner_radius, sw.track_radius),
                     "{preset}"
                 );
-                assert_eq!(
-                    e.bg_stroke, be.bg_stroke,
-                    "{preset}: the switch states no border"
-                );
+                assert_eq!(e.bg_stroke, stroke, "{preset}: the switch states no border");
             }
             assert_eq!(
                 c.spacing.interact_size.y,

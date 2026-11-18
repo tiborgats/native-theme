@@ -296,7 +296,8 @@ mod tests {
 
     /// §6.1: a field the widget states no hover or pressed value for is `inactive`'s in every
     /// entry — egui's stock radius 3 and strokes 1.5 / 2.0 (`egui/src/style.rs:1703-1704`,
-    /// `:1711`) never appear.
+    /// `:1711`) never appear. The button's hover and focus border, where stated, colour
+    /// `hovered` and `active` (`base_style`).
     #[test]
     fn hover_and_active_keep_the_resting_stroke_and_radius() {
         for (preset, mode, scheme) in [
@@ -307,10 +308,14 @@ mod tests {
             let (s, _) = base(scheme, &t);
             let w = &s.visuals.widgets;
             for e in [&w.hovered, &w.active, &w.open] {
-                assert_eq!(e.bg_stroke, w.inactive.bg_stroke, "{preset}");
+                assert_eq!(e.bg_stroke.width, w.inactive.bg_stroke.width, "{preset}");
                 assert_eq!(e.corner_radius, w.inactive.corner_radius, "{preset}");
                 assert_eq!(e.fg_stroke.width, w.inactive.fg_stroke.width, "{preset}");
             }
+            assert_eq!(
+                w.open.bg_stroke.color, w.inactive.bg_stroke.color,
+                "{preset}"
+            );
             assert_eq!(
                 w.inactive.bg_stroke.color,
                 to_color32(t.button.border.color),

@@ -26,7 +26,8 @@ use gpui_component::{
     breadcrumb::{Breadcrumb, BreadcrumbItem},
     bubble::{Bubble, BubbleVariant},
     button::{
-        Button, ButtonGroup, ButtonVariant, ButtonVariants, DropdownButton, Toggle, ToggleGroup,
+        Button, ButtonCustomVariant, ButtonGroup, ButtonVariant, ButtonVariants, DropdownButton,
+        Toggle, ToggleGroup,
     },
     calendar::{Calendar, CalendarState},
     carousel::{
@@ -3266,6 +3267,11 @@ pub(crate) enum ButtonKind {
     Info,
     /// `native_theme_gpui::variants::ghost_button`, not upstream's `.ghost()`.
     Ghost,
+    /// `native_theme_gpui::variants::bordered_button`, filled with `ThemeColor`
+    /// `button` at rest; built only where that returns `Some`
+    /// (`ButtonKind::built`), and never selected: a selected Button takes no
+    /// rest fill.
+    Bordered,
     Link,
     Text,
     /// Default, outlined.
@@ -3285,6 +3291,7 @@ impl ButtonKind {
             Self::Warning => "Warning",
             Self::Info => "Info",
             Self::Ghost => "Ghost",
+            Self::Bordered => "Bordered",
             Self::Link => "Link",
             Self::Text => "Text",
             Self::DefaultOutline => "Default, outline",
@@ -3303,12 +3310,30 @@ impl ButtonKind {
             // By path: `InfoExt::info` is in scope too.
             Self::Info => ButtonVariants::info(button),
             Self::Ghost => button.custom(variants::ghost_button(cx)),
+            Self::Bordered => match bordered(cx) {
+                Some(v) => button.custom(v).bg(cx.theme().button),
+                None => button,
+            },
             Self::Link => button.link(),
             Self::Text => button.text(),
             Self::DefaultOutline => button.outline(),
             Self::PrimaryOutline => button.primary().outline(),
         }
     }
+    /// The kind a Button asked for as `self` is built as: `Default` for
+    /// `Bordered` where the theme states no hover border, `self` otherwise.
+    pub(crate) fn built(self, cx: &App) -> Self {
+        match self {
+            Self::Bordered if bordered(cx).is_none() => Self::Default,
+            kind => kind,
+        }
+    }
+}
+
+/// `variants::bordered_button` under the installed native theme, where there
+/// is one and it states a hover border.
+fn bordered(cx: &App) -> Option<ButtonCustomVariant> {
+    cx.native().and_then(|n| variants::bordered_button(n, cx))
 }
 
 /// What a Button of the Buttons page is doing.
@@ -3380,6 +3405,7 @@ fn button_turning(
         state,
         icon,
     } = spec;
+    let kind = kind.built(cx);
     // `Button::icon` and `loading_icon` take an `Icon` (`ButtonIcon`) alone
     // (button/button.rs, button/button_icon.rs).
     let icon = icon.as_ref().map(SampleIcon::svg_only);
@@ -6224,7 +6250,7 @@ pub(crate) fn tooltip_button(
     let text = text.into();
     let mut tooltip_info = info::feedback::tooltip(
         cx.theme(),
-        false,
+        None,
         false,
         tooltip_delay(cx),
         gpui_base::TooltipDefaults::global(cx),
@@ -6248,8 +6274,9 @@ pub(crate) fn tooltip_button(
     InfoExt::info(button, ui, id, tooltip_info).debug_selector(move || id.into())
 }
 
-/// A Default Button reading `label`, refined by `geometry::button`, under a
-/// tooltip the application builds itself, reading `text`.
+/// A Button of `kind` (as `ButtonKind::built` gives it) reading `label`,
+/// refined by `geometry::button`, under a tooltip the application builds
+/// itself, reading `text`.
 ///
 /// `Button::tooltip` takes a string and builds the tooltip itself
 /// (`button/button.rs:407`), so the only way to a refined one is to build
@@ -6264,13 +6291,15 @@ pub(crate) fn built_tooltip_button(
     id: &'static str,
     label: &'static str,
     text: &'static str,
+    kind: ButtonKind,
 ) -> Stateful<Div> {
+    let kind = kind.built(cx);
     let style = native_geometry(cx, geometry::tooltip);
     let content = native_geometry(cx, geometry::tooltip_content);
     let delay = tooltip_delay(cx);
     let mut tooltip_info = info::feedback::tooltip(
         cx.theme(),
-        true,
+        Some(kind),
         style.is_some(),
         delay,
         gpui_base::TooltipDefaults::global(cx),
@@ -6278,7 +6307,7 @@ pub(crate) fn built_tooltip_button(
         text,
     );
     let button = native_info(
-        Button::new(id),
+        kind.apply(Button::new(id), cx),
         cx,
         geometry::button,
         "button",

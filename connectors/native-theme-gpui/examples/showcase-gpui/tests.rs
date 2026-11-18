@@ -16216,7 +16216,12 @@ fn a_refined_buttons_info_claims_an_edge_only_where_one_is_drawn() {
             ButtonKind::DefaultOutline,
             ButtonKind::PrimaryOutline,
             ButtonKind::Primary,
+            ButtonKind::Bordered,
         ] {
+            // a Bordered Button is built only where the theme states a hover border
+            if kind == ButtonKind::Bordered && r.button.hover_border_color.is_none() {
+                continue;
+            }
             let info = crate::info::buttons::button(
                 &t,
                 kind,
@@ -16227,6 +16232,13 @@ fn a_refined_buttons_info_claims_an_edge_only_where_one_is_drawn() {
             );
             let hovered = claim_as(&info, "border, hovered or pressed");
             if r.button.border.line_width > 0.0 {
+                if let (ButtonKind::Bordered, Some(c)) = (kind, r.button.hover_border_color) {
+                    assert_eq!(
+                        hovered,
+                        Some(("hover_border_color", stated(c))),
+                        "{name}: a Bordered Button's info does not claim the hover border it is drawn with: {info:?}"
+                    );
+                }
                 branches.0 = true;
                 assert_eq!(
                     claim_as(&info, "border at rest"),

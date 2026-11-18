@@ -51,12 +51,18 @@ moves = [
 
 [leaves."button.border.color"]
 moves = [
-  { row = "styles::button.border", statuses = ["Active", "Disabled", "Hovered", "Pressed"] },
-  { row = "styles::button_danger.border", statuses = ["Active", "Disabled", "Hovered", "Pressed"] },
-  { row = "styles::button_primary.border", statuses = ["Active", "Disabled", "Hovered", "Pressed"] },
-  { row = "styles::button_success.border", statuses = ["Active", "Disabled", "Hovered", "Pressed"] },
-  { row = "styles::button_toggle.border", statuses = ["(false, Active)", "(false, Disabled)", "(false, Hovered)", "(false, Pressed)", "(true, Active)", "(true, Disabled)", "(true, Hovered)", "(true, Pressed)"] },
-  { row = "styles::button_warning.border", statuses = ["Active", "Disabled", "Hovered", "Pressed"] },
+  { row = "styles::button.border", statuses = ["Active", "Disabled"] },
+  { row = "styles::button.border", statuses = ["Hovered", "Pressed"], except = ["kde-breeze/light", "kde-breeze/dark"] },
+  { row = "styles::button_danger.border", statuses = ["Active", "Disabled"] },
+  { row = "styles::button_danger.border", statuses = ["Hovered", "Pressed"], except = ["kde-breeze/light", "kde-breeze/dark"] },
+  { row = "styles::button_primary.border", statuses = ["Active", "Disabled"] },
+  { row = "styles::button_primary.border", statuses = ["Hovered", "Pressed"], except = ["kde-breeze/light", "kde-breeze/dark"] },
+  { row = "styles::button_success.border", statuses = ["Active", "Disabled"] },
+  { row = "styles::button_success.border", statuses = ["Hovered", "Pressed"], except = ["kde-breeze/light", "kde-breeze/dark"] },
+  { row = "styles::button_toggle.border", statuses = ["(false, Active)", "(false, Disabled)", "(true, Active)", "(true, Disabled)"] },
+  { row = "styles::button_toggle.border", statuses = ["(false, Hovered)", "(false, Pressed)", "(true, Hovered)", "(true, Pressed)"], except = ["kde-breeze/light", "kde-breeze/dark"] },
+  { row = "styles::button_warning.border", statuses = ["Active", "Disabled"] },
+  { row = "styles::button_warning.border", statuses = ["Hovered", "Pressed"], except = ["kde-breeze/light", "kde-breeze/dark"] },
 ]
 
 [leaves."button.checked_background"]
@@ -95,6 +101,12 @@ moves = [
   { row = "styles::button_warning.text_color", statuses = ["Disabled"], except = ["adwaita/light", "adwaita/dark"] },
 ]
 
+[leaves."button.focus_border_color"]
+named = "UNREAD_COLOURS"
+entry = "button.focus_border_color"
+kind = "no receiver"
+why = "an iced button takes no keyboard focus: it implements no `operate` for `Focusable`, and its status has no focused variant (`iced_widget-0.14.2/src/button.rs:257-273`, `:471-498`)"
+
 [leaves."button.font.color"]
 moves = [
   { row = "styles::button.text_color", statuses = ["Active"] },
@@ -107,6 +119,16 @@ moves = [
   { row = "styles::button.background", statuses = ["Pressed"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
   { row = "styles::button_toggle.background", statuses = ["(false, Hovered)"] },
   { row = "styles::button_toggle.background", statuses = ["(false, Pressed)", "(true, Active)", "(true, Hovered)", "(true, Pressed)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+]
+
+[leaves."button.hover_border_color"]
+moves = [
+  { row = "styles::button.border", statuses = ["Hovered", "Pressed"] },
+  { row = "styles::button_danger.border", statuses = ["Hovered", "Pressed"] },
+  { row = "styles::button_primary.border", statuses = ["Hovered", "Pressed"] },
+  { row = "styles::button_success.border", statuses = ["Hovered", "Pressed"] },
+  { row = "styles::button_toggle.border", statuses = ["(false, Hovered)", "(false, Pressed)", "(true, Hovered)", "(true, Pressed)"] },
+  { row = "styles::button_warning.border", statuses = ["Hovered", "Pressed"] },
 ]
 
 [leaves."button.hover_text_color"]
@@ -1276,7 +1298,7 @@ leaves = ["tab.active_text_color", "tab.font.color", "tab.hover_text_color"]
 leaves = ["button.active_background", "button.background_color", "button.disabled_background", "button.hover_background"]
 
 [rows."styles::button.border"]
-leaves = ["button.border.color"]
+leaves = ["button.border.color", "button.hover_border_color"]
 
 [rows."styles::button.text_color"]
 leaves = ["button.active_text_color", "button.disabled_text_color", "button.font.color", "button.hover_text_color"]
@@ -1285,7 +1307,7 @@ leaves = ["button.active_text_color", "button.disabled_text_color", "button.font
 leaves = ["button.disabled_background", "defaults.danger_color"]
 
 [rows."styles::button_danger.border"]
-leaves = ["button.border.color"]
+leaves = ["button.border.color", "button.hover_border_color"]
 
 [rows."styles::button_danger.text_color"]
 leaves = ["button.disabled_background", "button.disabled_text_color", "defaults.danger_text_color"]
@@ -1300,7 +1322,7 @@ leaves = ["link.active_text_color", "link.disabled_text_color", "link.font.color
 leaves = ["button.disabled_background", "button.primary_background"]
 
 [rows."styles::button_primary.border"]
-leaves = ["button.border.color"]
+leaves = ["button.border.color", "button.hover_border_color"]
 
 [rows."styles::button_primary.text_color"]
 leaves = ["button.disabled_background", "button.disabled_text_color", "button.primary_text_color"]
@@ -1309,7 +1331,7 @@ leaves = ["button.disabled_background", "button.disabled_text_color", "button.pr
 leaves = ["button.disabled_background", "defaults.success_color"]
 
 [rows."styles::button_success.border"]
-leaves = ["button.border.color"]
+leaves = ["button.border.color", "button.hover_border_color"]
 
 [rows."styles::button_success.text_color"]
 leaves = ["button.disabled_background", "button.disabled_text_color", "defaults.success_text_color"]
@@ -1318,7 +1340,7 @@ leaves = ["button.disabled_background", "button.disabled_text_color", "defaults.
 leaves = ["button.active_background", "button.background_color", "button.checked_background", "button.disabled_background", "button.hover_background"]
 
 [rows."styles::button_toggle.border"]
-leaves = ["button.border.color"]
+leaves = ["button.border.color", "button.hover_border_color"]
 
 [rows."styles::button_toggle.text_color"]
 leaves = ["button.active_text_color", "button.checked_text_color", "button.disabled_text_color", "button.font.color", "button.hover_text_color"]
@@ -1327,7 +1349,7 @@ leaves = ["button.active_text_color", "button.checked_text_color", "button.disab
 leaves = ["button.disabled_background", "defaults.warning_color"]
 
 [rows."styles::button_warning.border"]
-leaves = ["button.border.color"]
+leaves = ["button.border.color", "button.hover_border_color"]
 
 [rows."styles::button_warning.text_color"]
 leaves = ["button.disabled_text_color", "defaults.warning_text_color"]

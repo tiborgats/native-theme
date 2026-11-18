@@ -55,7 +55,7 @@ const BUTTONS: [BasicButton; 2] = [
     (
         "basic-button",
         "Button",
-        ButtonKind::Default,
+        ButtonKind::Bordered,
         ButtonState::Idle,
     ),
     (
@@ -78,7 +78,7 @@ const DISABLED_BUTTON: BasicButton = (
 const TOGGLE_OFF: BasicButton = (
     "basic-toggle-off",
     "Off",
-    ButtonKind::Default,
+    ButtonKind::Bordered,
     ButtonState::Idle,
 );
 
@@ -445,6 +445,7 @@ impl Showcase {
                             "basic-button-tooltip",
                             "Tooltip",
                             "A tooltip",
+                            ButtonKind::Bordered,
                         ))
                         .into_any_element(),
                     row()

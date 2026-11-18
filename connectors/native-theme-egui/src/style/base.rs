@@ -373,6 +373,17 @@ pub(crate) fn base_style(input: &BuildInput<'_>, notes: &mut Vec<Note>) -> egui:
         },
         notes,
     );
+    // the hovered button's border, which a pressed one keeps, and the focused one's; egui's
+    // `active` is press and keyboard focus alike (`Response::widget_state`, egui 0.37.0
+    // src/widget_style/mod.rs:212-222); where a theme states both and they differ, a
+    // pressed button takes the focus border. `None` keeps `button.border.color`.
+    let border = b.border.color;
+    w.hovered.bg_stroke.color = to_color32(b.hover_border_color.unwrap_or(border));
+    w.active.bg_stroke.color = to_color32(
+        b.focus_border_color
+            .or(b.hover_border_color)
+            .unwrap_or(border),
+    );
     // `bg_fill`: the scrollbar thumb, which every unscoped `ScrollArea` handle paints (§5.9)
     let sb = &t.scrollbar;
     write_states(

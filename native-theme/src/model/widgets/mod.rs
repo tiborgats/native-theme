@@ -95,6 +95,16 @@ pub struct ButtonTheme {
     /// `checked_background`, the pressed pair's (docs/platform-facts.md §2.3).
     #[theme(category = "soft_option")]
     pub checked_text_color: Option<Rgba>,
+    /// Border colour of a hovered button, which a pressed button keeps (it is under
+    /// the pointer). `None` where the theme states none; a connector then draws
+    /// `border.color` (docs/platform-facts.md §2.3).
+    #[theme(category = "soft_option")]
+    pub hover_border_color: Option<Rgba>,
+    /// Border colour of a button with the keyboard focus. `None` where the theme
+    /// states none; a connector then draws the hover border, else `border.color`, where
+    /// it shows a focused button by its border (docs/platform-facts.md §2.3).
+    #[theme(category = "soft_option")]
+    pub focus_border_color: Option<Rgba>,
     /// Button label font specification.
     #[theme(nested, resolved_type = "ResolvedFontSpec")]
     pub font: Option<FontSpec>,
@@ -1864,6 +1874,8 @@ mod tests {
             disabled_background: Some(Rgba::rgb(220, 220, 220)),
             checked_background: Some(Rgba::rgb(190, 190, 190)),
             checked_text_color: None,
+            hover_border_color: Some(Rgba::rgb(0, 120, 215)),
+            focus_border_color: None,
             font: Some(FontSpec {
                 family: Some("Inter".into()),
                 size: Some(FontSize::Px(14.0)),
@@ -1895,6 +1907,8 @@ mod tests {
         assert_eq!(resolved.disabled_background, Some(Rgba::rgb(220, 220, 220)));
         assert_eq!(resolved.checked_background, Some(Rgba::rgb(190, 190, 190)));
         assert_eq!(resolved.checked_text_color, None);
+        assert_eq!(resolved.hover_border_color, Some(Rgba::rgb(0, 120, 215)));
+        assert_eq!(resolved.focus_border_color, None);
     }
 
     #[test]

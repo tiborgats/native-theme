@@ -336,15 +336,17 @@ pub(super) fn native_button_label(r: &ResolvedTheme, status: button::Status) -> 
 }
 
 /// The border every button function wears: the button's own, in every status,
-/// faded when disabled.
+/// faded when disabled, and the hover border, where stated, hovered and pressed.
 #[cfg(feature = "widgets")]
 pub(super) fn native_button_border(r: &ResolvedTheme, status: button::Status) -> NativeBorder {
     let color = to_color(r.button.border.color);
     NativeBorder {
-        color: if status == button::Status::Disabled {
-            dim(color, r.button.disabled_opacity)
-        } else {
-            color
+        color: match status {
+            button::Status::Disabled => dim(color, r.button.disabled_opacity),
+            button::Status::Hovered | button::Status::Pressed => {
+                to_color(r.button.hover_border_color.unwrap_or(r.button.border.color))
+            }
+            button::Status::Active => color,
         },
         width: r.button.border.line_width,
         radius: r.button.border.corner_radius,

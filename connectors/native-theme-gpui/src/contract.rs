@@ -1213,6 +1213,14 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
         ),
     },
     UnreadColour {
+        leaf: "button.focus_border_color",
+        why: Unread::NoReceiver(
+            "a focused Button's border is gpui-component's `ring` \
+             (`styled.rs:257-297`, `focus_style`), which the model's one focus \
+             colour reaches through the `ring` row",
+        ),
+    },
+    UnreadColour {
         leaf: "combo_box.hover_background",
         why: Unread::NoReceiver(
             "neither trigger has a hover style (`select.rs:563-582`, \
@@ -2870,6 +2878,10 @@ fn sinks(r: &ResolvedTheme, is_dark: bool) -> std::collections::BTreeMap<String,
     ] {
         out.insert(format!("geometry::{name}"), value);
     }
+    out.insert(
+        "variants::hover_border".to_owned(),
+        show(&crate::variants::hover_border(n)),
+    );
 
     use crate::widgets::{
         CheckboxLook, ProgressBarLook, SeparatorLook, SliderLook, SpinnerLook, SwitchLook, TabLook,

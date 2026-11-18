@@ -238,8 +238,8 @@ fn every_leaf_has_exactly_one_row_and_every_row_is_well_formed() {
     let leaves = leaf_paths(&resolved("adwaita", ColorMode::Light));
     assert_eq!(
         leaves.len(),
-        517,
-        "513 ResolvedTheme leaves + 4 layout leaves (§5.7)"
+        519,
+        "515 ResolvedTheme leaves + 4 layout leaves (§5.7)"
     );
 
     let mut problems: Vec<String> = Vec::new();
@@ -484,7 +484,7 @@ fn verdict_totals_match_the_specification() {
     let expected = [
         ("foundation", [18, 1, 37, 11]),
         ("surfaces", [8, 55, 32, 15]),
-        ("buttons", [11, 46, 31, 25]),
+        ("buttons", [13, 46, 31, 25]),
         // §5.7's [4, 35, 36, 12], the four `input.border.padding` sides SCOPED since 0.7.2
         ("inputs", [4, 39, 32, 12]),
         ("indicators", [5, 17, 9, 9]),

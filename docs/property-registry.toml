@@ -195,6 +195,8 @@ disabled_background          = "color"
 disabled_text_color          = "color"
 checked_background           = "color"
 checked_text_color           = "color"
+hover_border_color           = "color"
+focus_border_color           = "color"
 border                       = "border"
 
 # ═══════════════════════════════════════════════════════════════════════════

@@ -193,6 +193,11 @@ pub(crate) fn border_of(border: &ResolvedWidgetBorder) -> Border {
 /// `.hover_background`, `.active_background`, `.disabled_background` and the
 /// matching label colors, with the button's own border.
 ///
+/// Hovered and pressed, the border is `button.hover_border_color` where the
+/// theme states one (a pressed button is under the pointer); an iced button
+/// takes no keyboard focus (iced_widget 0.14.2 `src/button.rs:257-273`), so
+/// `button.focus_border_color` has no receiver.
+///
 /// `shadow` and `snap` have no native source and come from
 /// `button::Style::default()`: the model carries a shadow color but no offset
 /// or blur, and `snap` is a renderer setting (`cfg!(feature = "crisp")`).
@@ -223,13 +228,17 @@ pub fn button(
     let opacity = b.disabled_opacity;
 
     let border = border_of(&b.border);
+    let hovered_border = Border {
+        color: to_color(b.hover_border_color.unwrap_or(b.border.color)),
+        ..border
+    };
 
     move |_theme, status| {
         let iced = Style::default();
         let (background, text_color, border) = match status {
             Status::Active => (idle, label, border),
-            Status::Hovered => (hovered, hovered_label, border),
-            Status::Pressed => (pressed, pressed_label, border),
+            Status::Hovered => (hovered, hovered_label, hovered_border),
+            Status::Pressed => (pressed, pressed_label, hovered_border),
             Status::Disabled => (
                 faded(disabled, opacity),
                 faded(disabled_label, opacity),
@@ -323,7 +332,11 @@ pub fn button_toggle(
 ///
 /// The border is the button's, not iced's `border::rounded(2)`
 /// (`button.rs:739`), so such a button sits beside a native one instead of
-/// beside a differently rounded one. Disabled is the button's disabled pair
+/// beside a differently rounded one. Hovered and pressed, the border is
+/// `button.hover_border_color` where the theme states one (a pressed button is
+/// under the pointer); an iced button takes no keyboard focus (iced_widget
+/// 0.14.2 `src/button.rs:257-273`), so `button.focus_border_color` has no
+/// receiver. Disabled is the button's disabled pair
 /// where the platform states a disabled fill, which it gives every button
 /// class; where it states none it dims by opacity alone
 /// (`docs/platform-facts.md` §2.1.6), and the class keeps its idle pair. Either
@@ -347,14 +360,18 @@ fn class_button(
     let opacity = b.disabled_opacity;
 
     let border = border_of(&b.border);
+    let hovered_border = Border {
+        color: to_color(b.hover_border_color.unwrap_or(b.border.color)),
+        ..border
+    };
 
     move |theme, status| {
         let iced = class(theme, status);
         let (background, text_color, border) = match status {
             Status::Active => (Some(Background::Color(idle)), idle_label, border),
-            // Neither side of these two states has a native source, so both
-            // are iced's own answer for this class.
-            Status::Hovered | Status::Pressed => (iced.background, iced.text_color, border),
+            // Neither the fill nor the label of these two states has a native
+            // source, so both are iced's own answer for this class.
+            Status::Hovered | Status::Pressed => (iced.background, iced.text_color, hovered_border),
             Status::Disabled => (
                 Some(Background::Color(faded(disabled, opacity))),
                 faded(disabled_label, opacity),

@@ -120,6 +120,15 @@ fn at_rest(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
             t.secondary_foreground,
             "native-theme-gpui/variants.rs:62",
         )],
+        ButtonKind::Bordered => vec![
+            claim("bg", "button", t.button, "showcase"),
+            claim(
+                "text",
+                "button_foreground",
+                t.button_foreground,
+                "native-theme-gpui/variants.rs:134",
+            ),
+        ],
         ButtonKind::Link => vec![claim(
             "text",
             "link",
@@ -273,6 +282,20 @@ fn under_the_pointer(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
                 "native-theme-gpui/variants.rs:64",
             ),
         ],
+        ButtonKind::Bordered => vec![
+            claim(
+                "hover",
+                "button_hover",
+                t.button_hover,
+                "native-theme-gpui/variants.rs:135",
+            ),
+            claim(
+                "active",
+                "button_active",
+                t.button_active,
+                "native-theme-gpui/variants.rs:136",
+            ),
+        ],
         ButtonKind::Link => vec![
             claim(
                 "hover text",
@@ -350,6 +373,15 @@ fn edge(t: &Theme, kind: ButtonKind, native: Option<&ResolvedButtonTheme>) -> Ve
         )
     });
     let hovered = match (kind, native.is_some()) {
+        (ButtonKind::Bordered, _) => native.and_then(|b| {
+            edge_claim(
+                "border, hovered or pressed",
+                "hover_border_color",
+                b.hover_border_color,
+                Some(b.border.line_width),
+                "native-theme-gpui/variants.rs:144",
+            )
+        }),
         (ButtonKind::Default | ButtonKind::DefaultOutline, true) => Some(claim(
             "border, hovered or pressed",
             "input",
@@ -540,6 +572,7 @@ pub fn button(
                     ButtonKind::Warning => "button_warning",
                     ButtonKind::Info => "button_info",
                     ButtonKind::Ghost | ButtonKind::Link | ButtonKind::Text => "transparent, so it vanishes under the pointer",
+                    ButtonKind::Bordered => "button.hover_border_color, the colour variants::bordered_button gives its custom variant (native-theme-gpui/variants.rs, bordered_button)",
                 }),
                 (ButtonState::Disabled, _) => "button.border.color, as at rest: upstream's disabled style sets an edge colour of its own and then replays the caller's style over it, so geometry::button's colour wins (button/button.rs, RenderOnce for Button)".to_string(),
                 (ButtonState::Loading, _) => "button.border.color, and it stays: a loading Button takes no hover or press style, so nothing repaints it (button/button.rs, Button::interactive). It is painted at 80% all the same: while loading, the whole element fades, border included (button/button.rs, Button::render: line 861, the opacity(0.8))".to_string(),
@@ -547,10 +580,10 @@ pub fn button(
     } else {
         info.config("border-radius", format!("radius: {}px", t.radius.as_f32()))
     };
-    let info = if kind == ButtonKind::Ghost {
-        info
-    } else {
-        info.not_themeable("shadow", "none on a standard variant: Theme::shadow, which the connector sets from border.shadow_enabled, reaches only a ButtonCustomVariant built with .shadow(true) (button/button.rs, ButtonVariant::shadow)")
+    let info = match kind {
+        ButtonKind::Ghost => info,
+        ButtonKind::Bordered => info.not_themeable("shadow", "none: variants::bordered_button builds its custom variant with .shadow(false), and upstream's Default variant has none (native-theme-gpui/variants.rs, bordered_button; button/button.rs, ButtonVariant::shadow)"),
+        _ => info.not_themeable("shadow", "none on a standard variant: Theme::shadow, which the connector sets from border.shadow_enabled, reaches only a ButtonCustomVariant built with .shadow(true) (button/button.rs, ButtonVariant::shadow)"),
     };
     let info = if styled {
         info.config("label size", "button.font.size through geometry::button_label on the label, which the showcase passes as the Button's child: upstream sizes a .label() from the Size enum on the content element (sizing.rs, button_text_size; button/button.rs, Button::render), which a style on the Button does not reach and a child's own size overrules")
@@ -560,6 +593,7 @@ pub fn button(
     let info = match kind {
         ButtonKind::Default => info.instance("variant", "no variant method, so ButtonVariant::Default -- the button family, whose own edge colour is input, not border (button/button.rs, ButtonVariant::border_color)"),
         ButtonKind::Ghost => ghost_variant(info),
+        ButtonKind::Bordered => info.instance("variant", "native_theme_gpui::variants::bordered_button: a custom variant with the Default Button's text, hover and press colours (button_foreground, button_hover, button_active) and button.hover_border_color as its border, which upstream's Default variant draws in input (button/button.rs, ButtonVariant::border_color). A custom variant fills itself at rest with its border colour mixed toward transparent (button/button.rs, ButtonVariant::bg_color), so the showcase gives the Button ThemeColor button, the Default Button's rest fill. Built only where the theme states a hover border; elsewhere the Button is the Default variant"),
         ButtonKind::Link => info
             .not_themeable("fill", "transparent in every state (button/button.rs, ButtonVariant::bg_color, hovered and active)")
             .not_themeable("underline", "always on for this variant (button/button.rs, ButtonVariant::underline)"),

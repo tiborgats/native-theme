@@ -109,7 +109,7 @@
 //! |----------|--------|-------|
 //! | `defaults` colors | 14 of 24 | text_color, muted_color, accent_color, border.color, focus_ring_color, shadow_color (the dialog overlay's colour, at an alpha of its own), and the four status colours with their text colours; the window background comes from `window.background_color` |
 //! | `defaults` geometry | radius, radius_lg, shadow, focus ring | fonts scaled by the text-scaling factor |
-//! | `button` | all 28 `button*` plus `primary*` / `secondary*` | solid native surfaces, the semantic colours each variant read in gpui-component 0.5.1, not upstream's tinted house style; flat buttons via [`variants::ghost_button`] |
+//! | `button` | all 28 `button*` plus `primary*` / `secondary*` | solid native surfaces, the semantic colours each variant read in gpui-component 0.5.1, not upstream's tinted house style; flat buttons via [`variants::ghost_button`]; the hover border via [`variants::bordered_button`] |
 //! | `tab` | 5 of 10 colours | geometry is upstream work (`Tab`'s render writes its own height, radius and text size into the style bag the caller's setters fill, `tab/tab.rs:961-969`) |
 //! | `sidebar` | 5 of 6 | background, font.color, selection_background, selection_text_color, border.color |
 //! | `window` | 6 of 6 | background_color, title_bar_background, border colour and corner radius (`window_radius`, the corners of a client-decorated window); title_bar_font family, size, weight, style and colour via `geometry::title_bar`; the inactive title bar's fill and text via `geometry::title_bar_inactive` |

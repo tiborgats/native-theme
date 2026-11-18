@@ -1052,7 +1052,8 @@ mod tests {
     /// `defaults.border.opacity` is the text colour's share already folded into every stated
     /// border colour (native-theme/src/model/border.rs, `DefaultsBorderSpec::opacity`;
     /// docs/platform-facts.md §2.1.6), so the connector multiplies no colour by it: the
-    /// defaults' border and every widget's own border are painted as stated, whatever the
+    /// defaults' border and every widget's own border, and the button's hover and focus
+    /// border, are painted as stated, whatever the
     /// opacity, and a non-finite one is never read.
     #[test]
     fn no_border_colour_carries_the_border_opacity() {
@@ -1072,8 +1073,18 @@ mod tests {
             w.inactive.bg_stroke.color,
             to_color32(t.button.border.color)
         );
-        for e in entries(&s.cell(Role::Button, RoleVariant::Normal).visuals.widgets) {
-            assert_eq!(e.bg_stroke.color, to_color32(t.button.border.color));
+        let border = t.button.border.color;
+        let hover = t.button.hover_border_color.unwrap_or(border);
+        let focus = t
+            .button
+            .focus_border_color
+            .or(t.button.hover_border_color)
+            .unwrap_or(border);
+        for (e, colour) in entries(&s.cell(Role::Button, RoleVariant::Normal).visuals.widgets)
+            .iter()
+            .zip([border, border, hover, focus, border])
+        {
+            assert_eq!(e.bg_stroke.color, to_color32(colour));
         }
         let checkbox = t
             .checkbox

@@ -92,6 +92,58 @@ pub fn switch_color(n: Native<'_>) -> Hsla {
     rgba_to_hsla(n.resolved.switch.checked_background)
 }
 
+/// A gpui-component `Button` with the platform's hover and press border
+/// (`button.hover_border_color`), which the stock `Default` variant cannot take: it draws
+/// the `input` token there (gpui-component 0.10.0 button/button.rs:1100-1102). `None`
+/// where the theme states no hover border; the caller then keeps the `Default` variant.
+///
+/// ```no_run
+/// use gpui_kit::Styled as _;
+/// use gpui_kit::component::button::{Button, ButtonVariants as _};
+/// use gpui_kit::component::{ActiveTheme as _, Disableable as _, Selectable as _, StyledExt as _};
+/// use native_theme_gpui::{ActiveNativeTheme as _, geometry, variants};
+/// # fn f(cx: &gpui_kit::App) {
+/// let Some(n) = cx.native() else { return };
+/// let Some(v) = variants::bordered_button(n, cx) else { return };
+/// // At rest: the Default Button's rest fill, which the variant does not give.
+/// let apply = Button::new("apply")
+///     .custom(v)
+///     .refine_style(&geometry::button(n))
+///     .bg(cx.theme().button);
+/// // Selected: no rest fill; upstream fills it with the variant's `active`.
+/// let bold = Button::new("bold")
+///     .custom(v)
+///     .refine_style(&geometry::button(n))
+///     .selected(true)
+///     .refine_style(&geometry::button_checked(n));
+/// // Disabled: `button_disabled`'s fill replaces the rest fill.
+/// let undo = Button::new("undo")
+///     .custom(v)
+///     .refine_style(&geometry::button(n))
+///     .bg(cx.theme().button)
+///     .disabled(true)
+///     .refine_style(&geometry::button_disabled(n));
+/// # }
+/// ```
+#[must_use]
+pub fn bordered_button(n: Native<'_>, cx: &App) -> Option<ButtonCustomVariant> {
+    hover_border(n).map(|c| {
+        let theme = cx.theme();
+        ButtonCustomVariant::new(cx)
+            .color(c)
+            .foreground(theme.button_foreground)
+            .hover(theme.button_hover)
+            .active(theme.button_active)
+            .shadow(false)
+    })
+}
+
+/// The colour [`bordered_button`] gives its variant: `button.hover_border_color`, where
+/// the theme states one.
+pub(crate) fn hover_border(n: Native<'_>) -> Option<Hsla> {
+    n.resolved.button.hover_border_color.map(rgba_to_hsla)
+}
+
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {

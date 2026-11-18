@@ -3747,6 +3747,42 @@ fn a_cleared_soft_option_copies_the_base_state_value() -> native_theme::Result<(
 
 #[cfg(feature = "widgets")]
 #[test]
+fn a_kde_breeze_button_hovers_and_presses_in_the_selection_border() -> native_theme::Result<()> {
+    // kde-breeze states Breeze's highlight as the hover border in both modes
+    // (docs/platform-facts.md §2.3, `hover_border_color`).
+    let selection = to_color(Rgba::rgb(0x3d, 0xae, 0xe9));
+    for mode in [ColorMode::Light, ColorMode::Dark] {
+        let resolved = native_theme::theme::Theme::preset("kde-breeze")?
+            .into_variant(mode)?
+            .into_resolved(&native_theme::ResolutionContext::for_tests())?;
+        let theme = crate::to_theme(&resolved, "kde-breeze");
+        let rest = to_color(resolved.button.border.color);
+        let plain = styles::button(&resolved);
+        let primary = styles::button_primary(&resolved);
+        for (name, style) in [
+            ("button", plain(&theme, button::Status::Active)),
+            ("button_primary", primary(&theme, button::Status::Active)),
+        ] {
+            assert_eq!(style.border.color, rest, "{name} at rest, {mode:?}");
+        }
+        for status in [button::Status::Hovered, button::Status::Pressed] {
+            assert_eq!(
+                plain(&theme, status).border.color,
+                selection,
+                "button {status:?}, {mode:?}"
+            );
+            assert_eq!(
+                primary(&theme, status).border.color,
+                selection,
+                "button_primary {status:?}, {mode:?}"
+            );
+        }
+    }
+    Ok(())
+}
+
+#[cfg(feature = "widgets")]
+#[test]
 fn a_checked_toggle_button_paints_the_checked_pair_or_the_pressed_one() -> native_theme::Result<()>
 {
     // windows-11 states WinUI's checked ToggleButton as the accent fill,

@@ -722,6 +722,19 @@ fn expected(
                 &["input.hover_border_color", "input.border.color"],
             )?)
         }
+        (None | Some("button"), "normal", None, "visuals.widgets.hovered.bg_stroke.color") => c32(
+            chain(c, &["button.hover_border_color", "button.border.color"])?,
+        ),
+        (None | Some("button"), "normal", None, "visuals.widgets.active.bg_stroke.color") => {
+            c32(chain(
+                c,
+                &[
+                    "button.focus_border_color",
+                    "button.hover_border_color",
+                    "button.border.color",
+                ],
+            )?)
+        }
         // ---- §5.9: `slider.fill_color` is invisible without the trailing fill ----
         (None, _, None, "visuals.slider_trailing_fill") => Val::Bool(true),
         // §5.9, §6.6: a diameter's knob is round, in the base style and every slider cell.

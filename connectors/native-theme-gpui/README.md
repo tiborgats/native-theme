@@ -456,6 +456,40 @@ platform's checked track, `switch.checked_background`, for the `Native` view
 unless it is handed a colour, and `ThemeColor` has no checked-switch field.
 The `widgets` feature's own `Switch` draws it without this.
 
+`variants::bordered_button(n, cx)` gives a `Button` the platform's hover and
+press border, `button.hover_border_color` (Breeze's highlight), which
+upstream's `Default` variant draws in `input`, the text input's border colour.
+It is `None` where the theme states no hover border, and the caller keeps the
+`Default` variant. The variant's own rest fill is a fifth of its border colour,
+so the caller gives an unselected button its fill, `.bg(cx.theme().button)`,
+after `geometry::button`, and a disabled one takes `geometry::button_disabled`
+after that, as any other. A selected button takes no such fill: upstream fills
+it with the variant's pressed colour, `button_active`, as it fills a selected
+`Default` button, and replays the caller's style over that state, so a rest
+fill would stand where `geometry::button_checked`, applied after
+`geometry::button`, sets none.
+
+```rust,no_run
+use gpui_kit::Styled as _;
+use gpui_kit::component::button::{Button, ButtonVariants as _};
+use gpui_kit::component::{ActiveTheme as _, StyledExt as _};
+use native_theme_gpui::{ActiveNativeTheme as _, geometry, variants};
+
+# fn f(cx: &gpui_kit::App) {
+let button = Button::new("apply");
+let button = match cx.native() {
+    Some(n) => match variants::bordered_button(n, cx) {
+        Some(v) => button
+            .custom(v)
+            .refine_style(&geometry::button(n))
+            .bg(cx.theme().button),
+        None => button.refine_style(&geometry::button(n)),
+    },
+    None => button,
+};
+# }
+```
+
 What stays upstream work (inner elements the caller's style cannot reach:
 checkbox and radio indicators, switch, slider, separator thickness, splitter
 width, button icon gap, popup-menu rows; the hover of the

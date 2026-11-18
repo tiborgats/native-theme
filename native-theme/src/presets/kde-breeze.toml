@@ -145,6 +145,10 @@ disabled_text_color = "#a8a9aa"
 # platform-facts.md:1194-1195 (§2.3): a checked button is KColorUtils::mix(Button #fcfcfc, ButtonText #232629, 0.125), lettered ButtonText (breezehelper.cpp:695-699, breezestyle.cpp:5350-5362)
 checked_background = "#e1e1e2"
 checked_text_color = "#232629"
+# platform-facts.md (§2.3): hover_border_color and focus_border_color: a non-flat button's pen turns Highlight, [Colors:Selection] BackgroundNormal 61,174,233
+# (BreezeLight.colors:87, breeze v6.7.5), while hovered, pressed or keyboard-focused (breezehelper.cpp:710-712 at breeze f0b1d75)
+hover_border_color = "#3daee9"
+focus_border_color = "#3daee9"
 # primary_background / primary_text_color not stated: platform-facts.md:1188-1189 (§2.3), Breeze's default button is
 # mix(Button, Highlight, 0.2), #d6ecf8, under ButtonText #232629; they keep inheriting the accent and its text because
 # gpui's primary tokens and egui's selection fill read them as the accent (docs/todo.md, KDE values that wait for a
@@ -737,6 +741,10 @@ disabled_text_color = "#6d6f72"
 # platform-facts.md:1194-1195 (§2.3): a checked button is KColorUtils::mix(Button #292c30, ButtonText #fcfcfc, 0.125), lettered ButtonText (breezehelper.cpp:695-699, breezestyle.cpp:5350-5362)
 checked_background = "#43464a"
 checked_text_color = "#fcfcfc"
+# platform-facts.md (§2.3): hover_border_color and focus_border_color: a non-flat button's pen turns Highlight, [Colors:Selection] BackgroundNormal 61,174,233
+# (BreezeDark.colors:88, breeze v6.7.5), while hovered, pressed or keyboard-focused (breezehelper.cpp:710-712 at breeze f0b1d75)
+hover_border_color = "#3daee9"
+focus_border_color = "#3daee9"
 # primary_background / primary_text_color not stated: platform-facts.md:1188-1189 (§2.3), Breeze's default button is
 # mix(Button, Highlight, 0.2), #2d4655, under ButtonText #fcfcfc; they keep inheriting the accent and its text because
 # gpui's primary tokens and egui's selection fill read them as the accent (docs/todo.md, KDE values that wait for a

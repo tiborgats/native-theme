@@ -1005,6 +1005,22 @@ tested_by = "T18(a)"
 verdict   = "derived"
 tested_by = "T18(a)"
 
+["button.hover_border_color"]
+verdict = "direct"
+sinks   = [
+  { path = "visuals.widgets.hovered.bg_stroke.color", when = "stated; None keeps button.border.color" },
+  { path = "visuals.widgets.hovered.bg_stroke.color", scope = "button", when = "stated; None keeps button.border.color" },
+  { path = "visuals.widgets.active.bg_stroke.color", when = "button.focus_border_color is None" },
+  { path = "visuals.widgets.active.bg_stroke.color", scope = "button", when = "button.focus_border_color is None" },
+]
+
+["button.focus_border_color"]
+verdict = "direct"
+sinks   = [
+  { path = "visuals.widgets.active.bg_stroke.color", when = "stated; None takes button.hover_border_color, else button.border.color" },
+  { path = "visuals.widgets.active.bg_stroke.color", scope = "button", when = "stated; None takes button.hover_border_color, else button.border.color" },
+]
+
 ["button.font.family"]
 verdict  = "unmappable"
 sub_tag  = "egui-limited"
@@ -1046,14 +1062,28 @@ sinks   = [
 verdict = "direct"
 sinks   = [
   { path = "visuals.widgets.inactive.bg_stroke.color" },
-  { path = "visuals.widgets.hovered.bg_stroke.color" },
-  { path = "visuals.widgets.active.bg_stroke.color" },
+  { path = "visuals.widgets.hovered.bg_stroke.color", when = "button.hover_border_color is None" },
+  { path = "visuals.widgets.active.bg_stroke.color", when = "button.focus_border_color and button.hover_border_color are None" },
   { path = "visuals.widgets.open.bg_stroke.color" },
   { path = "visuals.widgets.noninteractive.bg_stroke.color", scope = "button" },
   { path = "visuals.widgets.inactive.bg_stroke.color", scope = "button" },
-  { path = "visuals.widgets.hovered.bg_stroke.color", scope = "button" },
-  { path = "visuals.widgets.active.bg_stroke.color", scope = "button" },
+  { path = "visuals.widgets.hovered.bg_stroke.color", scope = "button", when = "button.hover_border_color is None" },
+  { path = "visuals.widgets.active.bg_stroke.color", scope = "button", when = "button.focus_border_color and button.hover_border_color are None" },
   { path = "visuals.widgets.open.bg_stroke.color", scope = "button" },
+  { path = "visuals.widgets.hovered.bg_stroke.color", scope = "scrollbar" },
+  { path = "visuals.widgets.active.bg_stroke.color", scope = "scrollbar" },
+  { path = "visuals.widgets.hovered.bg_stroke.color", scope = "slider" },
+  { path = "visuals.widgets.active.bg_stroke.color", scope = "slider" },
+  { path = "visuals.widgets.hovered.bg_stroke.color", scope = "sidebar" },
+  { path = "visuals.widgets.active.bg_stroke.color", scope = "sidebar" },
+  { path = "visuals.widgets.hovered.bg_stroke.color", scope = "toolbar" },
+  { path = "visuals.widgets.active.bg_stroke.color", scope = "toolbar" },
+  { path = "visuals.widgets.hovered.bg_stroke.color", scope = "status_bar" },
+  { path = "visuals.widgets.active.bg_stroke.color", scope = "status_bar" },
+  { path = "visuals.widgets.hovered.bg_stroke.color", scope = "list" },
+  { path = "visuals.widgets.active.bg_stroke.color", scope = "list" },
+  { path = "visuals.widgets.hovered.bg_stroke.color", scope = "switch" },
+  { path = "visuals.widgets.active.bg_stroke.color", scope = "switch" },
 ]
 
 ["button.border.corner_radius"]

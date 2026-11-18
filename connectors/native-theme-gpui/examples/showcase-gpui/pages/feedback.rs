@@ -470,6 +470,7 @@ impl Showcase {
                         "This popup carries geometry::tooltip and geometry::tooltip_content: \
                          the platform's padding, radius, text size and text colour, and the \
                          max width the text wraps at.",
+                        demo::ButtonKind::Default,
                     )),
             )
             .child(demo::heading(
