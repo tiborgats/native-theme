@@ -820,6 +820,208 @@ fn the_ring_marks_keyboard_focus_only_while_the_window_has_it() {
     );
 }
 
+/// A press of `key` with `modifiers` held, as `tab_press` gives `Tab`.
+fn key_event(key: egui::Key, modifiers: egui::Modifiers) -> egui::Event {
+    egui::Event::Key {
+        key,
+        physical_key: None,
+        pressed: true,
+        repeat: false,
+        modifiers,
+    }
+}
+
+fn pointer_moved(pos: egui::Pos2) -> egui::RawInput {
+    egui::RawInput {
+        events: vec![egui::Event::PointerMoved(pos)],
+        ..Default::default()
+    }
+}
+
+/// kde-breeze's ring stroke, asserted to be keyboard only: the harness of the tests below.
+fn keyboard_only_ring(atlas: &ThemeAtlas, theme: egui::Theme) -> egui::Stroke {
+    assert_eq!(
+        atlas.resolved_for(theme).defaults.focus_ring_keyboard_only,
+        Some(true),
+        "kde-breeze says keyboard only, or the test proves nothing"
+    );
+    let ring = atlas
+        .focus_ring(theme)
+        .expect("kde-breeze states a focus ring");
+    assert!(ring.keyboard_only);
+    ring.stroke
+}
+
+/// T14 (b), D4: under a theme that says keyboard only, a text edit a click focuses (press,
+/// then release) draws no ring; under adwaita, which does not say it, the same sequence draws
+/// one (`a_clicked_borderless_text_field_shows_the_focus_ring`).
+#[test]
+fn a_click_into_a_text_edit_draws_no_ring_where_keyboard_only() {
+    let (ctx, atlas, probe) = ring_harness("kde-breeze");
+    let stroke = keyboard_only_ring(&atlas, ctx.theme());
+    let mut text = String::new();
+    let mut show = |ui: &mut egui::Ui| in_window(ui, |ui| ui.text_edit_singleline(&mut text));
+    let field = pass_ui(&ctx, egui::RawInput::default(), &mut show);
+    let layer = field.layer_id;
+    watch(&probe, &[layer]);
+    let field = pass_ui(&ctx, egui::RawInput::default(), &mut show);
+    let centre = field.rect.center();
+    let _ = pass_ui(&ctx, primary(centre, true), &mut show);
+    let field = pass_ui(&ctx, primary(centre, false), &mut show);
+    assert!(field.has_focus(), "the click focuses the field");
+    assert!(
+        rings_on(&seen(&probe), layer, stroke).is_empty(),
+        "no ring after a click"
+    );
+}
+
+/// T14 (b), D4: the ring `Tab` gave stays through a pass whose input is a pointer move.
+#[test]
+fn the_ring_after_tab_outlasts_a_pointer_move() {
+    let (ctx, atlas, probe) = ring_harness("kde-breeze");
+    let stroke = keyboard_only_ring(&atlas, ctx.theme());
+    let mut show = |ui: &mut egui::Ui| in_window(ui, |ui| ui.button("focus me"));
+    let button = pass_ui(&ctx, egui::RawInput::default(), &mut show);
+    let layer = button.layer_id;
+    watch(&probe, &[layer]);
+    let button = pass_ui(&ctx, tab_press(), &mut show);
+    assert!(button.has_focus(), "Tab focuses the button");
+    assert_eq!(rings_on(&seen(&probe), layer, stroke).len(), 1, "after Tab");
+    let button = pass_ui(&ctx, pointer_moved(button.rect.center()), &mut show);
+    assert!(button.has_focus());
+    assert_eq!(
+        rings_on(&seen(&probe), layer, stroke).len(),
+        1,
+        "after the pointer move"
+    );
+}
+
+/// T14 (b), D4: a drag value takes the focus at the release of a click (egui 0.37.0
+/// `src/widgets/drag_value.rs:641-643`), with no key: no ring where the theme says keyboard
+/// only.
+#[test]
+fn a_drag_value_focused_by_a_click_draws_no_ring_where_keyboard_only() {
+    let (ctx, atlas, probe) = ring_harness("kde-breeze");
+    let stroke = keyboard_only_ring(&atlas, ctx.theme());
+    let mut value = 1.0_f64;
+    let mut show = |ui: &mut egui::Ui| in_window(ui, |ui| ui.add(egui::DragValue::new(&mut value)));
+    let drag = pass_ui(&ctx, egui::RawInput::default(), &mut show);
+    let layer = drag.layer_id;
+    watch(&probe, &[layer]);
+    let drag = pass_ui(&ctx, egui::RawInput::default(), &mut show);
+    let centre = drag.rect.center();
+    let _ = pass_ui(&ctx, primary(centre, true), &mut show);
+    let _ = pass_ui(&ctx, primary(centre, false), &mut show);
+    let _ = pass_ui(&ctx, egui::RawInput::default(), &mut show);
+    assert!(
+        ctx.memory(|m| m.focused()).is_some(),
+        "the click focuses the drag value"
+    );
+    assert!(
+        rings_on(&seen(&probe), layer, stroke).is_empty(),
+        "no ring after a click"
+    );
+}
+
+/// T14 (b), D4: a widget the program focuses (`Response::request_focus`), with no key: no ring
+/// where the theme says keyboard only.
+#[test]
+fn a_widget_focused_by_the_program_draws_no_ring_where_keyboard_only() {
+    let (ctx, atlas, probe) = ring_harness("kde-breeze");
+    let stroke = keyboard_only_ring(&atlas, ctx.theme());
+    let mut asked = false;
+    let mut show = |ui: &mut egui::Ui| {
+        in_window(ui, |ui| {
+            let button = ui.button("focus me");
+            if !asked {
+                button.request_focus();
+                asked = true;
+            }
+            button
+        })
+    };
+    let button = pass_ui(&ctx, egui::RawInput::default(), &mut show);
+    let layer = button.layer_id;
+    watch(&probe, &[layer]);
+    let button = pass_ui(&ctx, egui::RawInput::default(), &mut show);
+    assert!(button.has_focus(), "the program focuses the button");
+    assert!(
+        rings_on(&seen(&probe), layer, stroke).is_empty(),
+        "no ring without a key"
+    );
+}
+
+/// T14 (b), D4 and decision 14: Shift+Tab from a focused widget moves the focus at the next
+/// pass's start (egui 0.37.0 `src/memory/mod.rs:674`, `:572-574`); that pass's input is a
+/// pointer move, and the ring is painted round the widget the focus moved to.
+#[test]
+fn shift_tab_rings_a_pass_late_through_a_pointer_move() {
+    let (ctx, atlas, probe) = ring_harness("kde-breeze");
+    let theme = ctx.theme();
+    let stroke = keyboard_only_ring(&atlas, theme);
+    let offset = atlas.focus_ring(theme).expect("a ring").offset;
+    let mut show = |ui: &mut egui::Ui| {
+        in_window(ui, |ui| {
+            let first = ui.button("first");
+            let _ = ui.button("second");
+            first
+        })
+    };
+    let first = pass_ui(&ctx, egui::RawInput::default(), &mut show);
+    let layer = first.layer_id;
+    watch(&probe, &[layer]);
+    let _ = pass_ui(&ctx, tab_press(), &mut show);
+    let first = pass_ui(&ctx, tab_press(), &mut show);
+    let second = ctx.memory(|m| m.focused());
+    assert!(
+        second.is_some() && second != Some(first.id),
+        "the second Tab focuses the second button"
+    );
+    let shift_tab = egui::RawInput {
+        events: vec![key_event(egui::Key::Tab, egui::Modifiers::SHIFT)],
+        ..Default::default()
+    };
+    let _ = pass_ui(&ctx, shift_tab, &mut show);
+    assert_eq!(
+        ctx.memory(|m| m.focused()),
+        second,
+        "Shift+Tab moves the focus a pass late, or the test proves nothing"
+    );
+    let first = pass_ui(&ctx, pointer_moved(egui::Pos2::ZERO), &mut show);
+    assert!(first.has_focus(), "Shift+Tab focuses the first button");
+    let rings = rings_on(&seen(&probe), layer, stroke);
+    assert_eq!(rings.len(), 1, "one ring");
+    assert_eq!(
+        rings.first().map(|r| r.rect),
+        Some(first.rect.expand(offset)),
+        "round the first button"
+    );
+}
+
+/// T14 (b), D4: one pass whose input is a press on a text edit and then a key press: egui gives
+/// a text edit the focus in the pass of the press, and the press decides: no ring.
+#[test]
+fn a_press_then_a_key_in_one_pass_draws_no_ring() {
+    let (ctx, atlas, probe) = ring_harness("kde-breeze");
+    let stroke = keyboard_only_ring(&atlas, ctx.theme());
+    let mut text = String::new();
+    let mut show = |ui: &mut egui::Ui| in_window(ui, |ui| ui.text_edit_singleline(&mut text));
+    let field = pass_ui(&ctx, egui::RawInput::default(), &mut show);
+    let layer = field.layer_id;
+    watch(&probe, &[layer]);
+    let field = pass_ui(&ctx, egui::RawInput::default(), &mut show);
+    let mut input = primary(field.rect.center(), true);
+    input
+        .events
+        .push(key_event(egui::Key::A, egui::Modifiers::NONE));
+    let field = pass_ui(&ctx, input, &mut show);
+    assert!(field.has_focus(), "the press focuses the field in its pass");
+    assert!(
+        rings_on(&seen(&probe), layer, stroke).is_empty(),
+        "no ring after a press and a key"
+    );
+}
+
 /// T14 (b), second half, and the ring in nested scopes: the corners follow the innermost
 /// scope, `native_set_style` on a window body, `native_set_style` on the root and a following
 /// `reset_style`, and a registered shape. Each case is a fresh harness on `adwaita`.
@@ -3561,6 +3763,96 @@ fn a_closed_viewport_s_last_sent_theme_is_let_go() {
         "egui closed the child"
     );
     assert!(!crate::plugin::last_sent_viewports(&ctx).contains(&child));
+}
+
+/// T14 (b), D4 and decision 6: each viewport keeps its own focus origin. An immediate viewport
+/// runs its pass inside its parent's (egui 0.37.0 `src/context.rs:4676-4711`); the child's
+/// input holds a key press and the root's a pointer move, so the two entries differ, and a
+/// focus the program gives in the root afterwards is not ringed. Once egui has closed the
+/// child, its entry is gone, as its `last_sent` theme is
+/// (`a_closed_viewport_s_last_sent_theme_is_let_go`).
+#[test]
+fn the_focus_origin_is_kept_per_viewport() {
+    let (ctx, atlas, probe) = ring_harness("kde-breeze");
+    let stroke = keyboard_only_ring(&atlas, ctx.theme());
+    ctx.set_embed_viewports(false);
+    egui::Context::set_immediate_viewport_renderer(|ctx, viewport| {
+        let mut input = tab_press();
+        input.viewport_id = viewport.ids.this;
+        input.viewports.insert(
+            viewport.ids.this,
+            egui::ViewportInfo {
+                parent: Some(viewport.ids.parent),
+                ..egui::ViewportInfo::default()
+            },
+        );
+        let mut show = viewport.viewport_ui_cb;
+        let _ = pass(ctx, input, |ui| show(ui));
+    });
+    let child = egui::ViewportId::from_hash_of("keyed child");
+    let mut asked = false;
+    let mut show = |ui: &mut egui::Ui, open: bool, ask: bool| {
+        let button = in_window(ui, |ui| ui.button("root"));
+        if ask && !asked {
+            button.request_focus();
+            asked = true;
+        }
+        if open {
+            ui.ctx()
+                .show_viewport_immediate(child, egui::ViewportBuilder::default(), |_, _| ());
+        }
+        button
+    };
+    let origin = |ctx: &egui::Context, viewport: egui::ViewportId| {
+        crate::plugin::focus_origins(ctx)
+            .into_iter()
+            .find(|(v, _)| *v == viewport)
+            .map(|(_, o)| o)
+    };
+
+    let button = pass_ui(&ctx, egui::RawInput::default(), &mut |ui| {
+        show(ui, false, false)
+    });
+    let layer = button.layer_id;
+    watch(&probe, &[layer]);
+    let _ = pass_ui(&ctx, pointer_moved(egui::Pos2::ZERO), &mut |ui| {
+        show(ui, true, false)
+    });
+    let (root_origin, child_origin) = (origin(&ctx, egui::ViewportId::ROOT), origin(&ctx, child));
+    assert!(
+        root_origin.is_some() && child_origin.is_some(),
+        "both entries"
+    );
+    assert_ne!(
+        root_origin, child_origin,
+        "the two viewports' entries differ"
+    );
+
+    let button = pass_ui(&ctx, egui::RawInput::default(), &mut |ui| {
+        show(ui, true, true)
+    });
+    assert!(button.has_focus(), "the program focuses the root's button");
+    assert!(
+        rings_on(&seen(&probe), layer, stroke).is_empty(),
+        "the child's key counts for no focus change in the root"
+    );
+
+    let _ = pass_ui(&ctx, egui::RawInput::default(), &mut |ui| {
+        show(ui, false, false)
+    });
+    let _ = pass_ui(&ctx, egui::RawInput::default(), &mut |ui| {
+        show(ui, false, false)
+    });
+    assert_eq!(
+        ctx.cumulative_pass_nr_for(child),
+        0,
+        "egui closed the child"
+    );
+    assert!(origin(&ctx, child).is_none(), "the child's entry is gone");
+    assert!(
+        origin(&ctx, egui::ViewportId::ROOT).is_some(),
+        "the root's stays"
+    );
 }
 
 /// M7-04: a pass whose sizes all lie under the cap writes no style: both base styles are the

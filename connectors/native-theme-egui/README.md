@@ -75,7 +75,9 @@ The complete list, one row per native leaf, is the mapping document in the
 API reference, rendered from [`mapping.toml`](mapping.toml).
 
 The install also registers a plugin that paints the platform's focus ring
-around the widget with keyboard focus and, where the platform integration
+around the widget with keyboard focus (where the theme says the platform shows
+it for keyboard focus only, `defaults.focus_ring_keyboard_only`, only after a
+key press) and, where the platform integration
 reports no colour scheme (Linux), tells egui the OS one when the atlas carries
 it (`from_system`, `to_egui_atlas`, `from_preset`, `Builder::os_mode`). The
 values no `Style` field carries — the info colours, the warning text colour,

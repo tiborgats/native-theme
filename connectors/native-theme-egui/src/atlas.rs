@@ -99,6 +99,7 @@ pub(crate) type StylePatch<'a> = Box<dyn Fn(&mut egui::Style) + 'a>;
 pub(crate) struct FocusRing {
     pub(crate) stroke: egui::Stroke,
     pub(crate) offset: f32,
+    pub(crate) keyboard_only: bool,
 }
 
 /// One colour scheme's compiled styles (spec §3.4).

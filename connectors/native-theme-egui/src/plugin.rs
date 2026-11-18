@@ -14,9 +14,10 @@ use crate::{ColorMode, Note, ResolvedTheme, ThemeAtlas};
 
 /// Spec §6.18: the ring from `defaults.focus_ring_color`, `focus_ring_width` and
 /// `focus_ring_offset`. A non-finite width or offset is egui's own value — no ring — with a
-/// `Note::ValueSanitised` per leaf; a stated zero width is no ring and no note, as gpui's
-/// `focus_ring = width > 0.0` (`connectors/native-theme-gpui/src/lib.rs:362`). The offset is
-/// kept signed and unclamped: negative means inside the edge (`docs/platform-facts.md:1110`).
+/// `Note::ValueSanitised` per leaf; a stated zero width is no ring and no note, as a zero width
+/// is no band in gpui's `focus_band_on` (`connectors/native-theme-gpui/src/colors.rs`). The
+/// offset is kept signed and unclamped: negative means inside the edge
+/// (`docs/platform-facts.md:1110`).
 pub(crate) fn build_focus_ring(theme: &ResolvedTheme, notes: &mut Vec<Note>) -> Option<FocusRing> {
     let (color, width, offset) = (
         theme.defaults.focus_ring_color,
@@ -48,6 +49,7 @@ pub(crate) fn build_focus_ring(theme: &ResolvedTheme, notes: &mut Vec<Note>) -> 
     Some(FocusRing {
         stroke: egui::Stroke::new(clamp_length(width), to_color32(color)),
         offset,
+        keyboard_only: theme.defaults.focus_ring_keyboard_only == Some(true),
     })
 }
 
@@ -300,6 +302,88 @@ pub(crate) fn cap_at_install(ctx: &Context, atlas: &ThemeAtlas) {
     }
 }
 
+/// What one viewport's focus followed (D4): its inputs' kinds and its focused widget.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub(crate) struct FocusOrigin {
+    /// The last key or pointer event of its input was a key press.
+    key_last: bool,
+    /// Its previous pass's input held a key press.
+    key_before: bool,
+    /// This pass's input held a key press.
+    key_now: bool,
+    /// This pass's input held a pointer button press or a touch's start.
+    pointer_now: bool,
+    /// The widget that held the focus at the end of its last pass.
+    focused: Option<egui::Id>,
+    /// Whether that widget's focus followed a key.
+    by_key: bool,
+}
+
+impl FocusOrigin {
+    /// One pass's events, in order (decision 4): a key press is a key, but for egui's eight
+    /// modifier keys (egui 0.37.0 `src/data/key.rs:253-274`), which egui-winit sends as
+    /// `Event::Key` presses (egui-winit 0.37.0 `src/lib.rs:1797-1804`), so a modifier pressed
+    /// alone is no key; a pointer button press or a touch's start is the pointer's press; a
+    /// pointer move or any other touch event is the pointer; every other event changes
+    /// nothing. A pass after the first of a frame gets no events (egui 0.37.0
+    /// `src/data/input/raw_input.rs:124-143`), so its previous pass is the one that had them.
+    fn read(&mut self, events: &[egui::Event]) {
+        use egui::Key;
+        self.key_before = self.key_now;
+        self.key_now = false;
+        self.pointer_now = false;
+        for event in events {
+            match event {
+                egui::Event::Key {
+                    key, pressed: true, ..
+                } => {
+                    if !matches!(
+                        key,
+                        Key::ShiftLeft
+                            | Key::ShiftRight
+                            | Key::ControlLeft
+                            | Key::ControlRight
+                            | Key::AltLeft
+                            | Key::AltRight
+                            | Key::SuperLeft
+                            | Key::SuperRight
+                    ) {
+                        self.key_last = true;
+                        self.key_now = true;
+                    }
+                }
+                egui::Event::PointerButton { pressed: true, .. }
+                | egui::Event::Touch {
+                    phase: egui::TouchPhase::Start,
+                    ..
+                } => {
+                    self.key_last = false;
+                    self.pointer_now = true;
+                }
+                egui::Event::PointerMoved(_) | egui::Event::Touch { .. } => self.key_last = false,
+                _ => {}
+            }
+        }
+    }
+
+    /// The end of a pass with `focused` the focused widget: where it differs from the stored
+    /// one, it is stored with whether its focus followed a key (decision 14): no pointer button
+    /// press and no touch in this pass's input, and either a key was the last input, or this
+    /// pass's input held a key press, or the previous pass's did (Shift+Tab, an arrow key and
+    /// a Tab past the last focusable widget move the focus a pass late, egui 0.37.0
+    /// `src/memory/mod.rs:572-574`, `:635-640`, `:665-671`). Returns whether the stored
+    /// widget's focus followed a key. A key pressed during a drag, or a key and a click in one
+    /// pass or in two passes in a row, can be counted the wrong way; no mechanism change is
+    /// made for these.
+    fn settle(&mut self, focused: Option<egui::Id>) -> bool {
+        if focused != self.focused {
+            self.focused = focused;
+            self.by_key = !self.pointer_now && (self.key_last || self.key_now || self.key_before);
+        }
+        self.by_key
+    }
+}
+
 /// The install plugin of spec §10.3: the OS colour scheme where the integration reports none, the
 /// title bar that follows it, the focus ring of spec §6.18 and the text-size cap of M7-04
 /// ([`ThemeAtlas::text_size_cap`]). It holds no theme data — every hook
@@ -314,6 +398,8 @@ pub(crate) struct NativeThemePlugin {
     /// pass; `false` too for the viewport of a focus entry older than the plugin.
     filled: egui::ViewportIdMap<bool>,
     last_sent: egui::ViewportIdMap<egui::SystemTheme>,
+    /// Per viewport whose input this plugin saw, what its focus followed.
+    focus_origin: egui::ViewportIdMap<FocusOrigin>,
     /// The `max_texture_side` and `pixels_per_point` of each pass in progress, innermost last:
     /// an immediate viewport runs its whole pass, hooks included, inside its parent's
     /// (`egui/src/context.rs:2799-2811`), so the cap one pass derives is put back to its
@@ -376,6 +462,7 @@ impl NativeThemePlugin {
         }
         for viewport in &closed {
             self.last_sent.remove(viewport);
+            self.focus_origin.remove(viewport);
         }
         ctx.data_mut(|data| {
             for viewport in closed {
@@ -392,6 +479,19 @@ pub(crate) fn last_sent_viewports(ctx: &Context) -> Vec<egui::ViewportId> {
         .unwrap_or_default()
 }
 
+/// The viewports the install plugin holds a focus origin for, with it, for the tests.
+#[cfg(test)]
+pub(crate) fn focus_origins(ctx: &Context) -> Vec<(egui::ViewportId, FocusOrigin)> {
+    ctx.with_plugin(|plugin: &mut NativeThemePlugin| {
+        plugin
+            .focus_origin
+            .iter()
+            .map(|(viewport, origin)| (*viewport, *origin))
+            .collect()
+    })
+    .unwrap_or_default()
+}
+
 /// The atlas's OS mode, read from `Context` data (spec §10.3 step 3).
 fn os_mode(ctx: &Context) -> Option<ColorMode> {
     ThemeAtlas::from_ctx(ctx).and_then(|atlas| atlas.os_mode())
@@ -406,6 +506,10 @@ impl egui::plugin::Plugin for NativeThemePlugin {
     /// the hook runs before `Options::begin_pass` copies the field
     /// (`egui/src/context.rs:966-968`, `egui/src/memory/mod.rs:358-359`). The viewport is the
     /// input's own: `Context::viewport_id` is not for use outside a pass.
+    ///
+    /// The pass's events go into the viewport's focus origin (D4): the hook runs before egui's
+    /// `begin_pass` reads them (egui 0.37.0 `src/context.rs:1227`), on every pass, a frame's
+    /// later passes included, with that pass's events (`:1111`).
     ///
     /// Then, before egui builds the pass's root `Ui` from the `Context`'s style
     /// (`egui/src/context.rs:802-808`, after `begin_pass` ran this hook at `:966`), the
@@ -431,6 +535,10 @@ impl egui::plugin::Plugin for NativeThemePlugin {
             _ => false,
         };
         self.filled.insert(input.viewport_id, filled);
+        self.focus_origin
+            .entry(input.viewport_id)
+            .or_default()
+            .read(&input.events);
         let max_texture_side = input
             .max_texture_side
             .unwrap_or_else(|| ctx.input_for(input.viewport_id, |i| i.max_texture_side));
@@ -574,7 +682,11 @@ impl egui::plugin::Plugin for NativeThemePlugin {
     }
 
     fn on_end_pass(&mut self, ui: &mut egui::Ui) {
-        paint_focus_ring(ui);
+        let by_key = self
+            .focus_origin
+            .get_mut(&ui.ctx().viewport_id())
+            .is_some_and(|o| o.settle(ui.ctx().memory(|m| m.focused())));
+        paint_focus_ring(ui, by_key);
     }
 }
 
@@ -620,8 +732,11 @@ fn scope_radius(
 /// Spec §6.18. The focused widget is read from this pass's widget table
 /// (`egui/src/context.rs:3963-3965`, `egui/src/widget_rect.rs:127-129`), never from
 /// `read_response`, which falls back to the previous pass's rect (spec §6.18). `ui` is the root `Ui`
-/// `on_end_pass` receives: its own style is the radius where no record matches.
-fn paint_focus_ring(ui: &egui::Ui) {
+/// `on_end_pass` receives: its own style is the radius where no record matches. Where the theme
+/// says keyboard only, only for a focus that followed a key press: the plugin remembers the kind
+/// of the last input across passes (a drag value takes the focus in the pass of the release, not
+/// of the press) and, when the focused widget changes, keeps the answer for that widget.
+fn paint_focus_ring(ui: &egui::Ui, by_key: bool) {
     let ctx = ui.ctx();
     let Some(atlas) = ThemeAtlas::from_ctx(ctx) else {
         return;
@@ -630,6 +745,9 @@ fn paint_focus_ring(ui: &egui::Ui) {
     let Some(ring) = atlas.focus_ring(theme) else {
         return;
     };
+    if ring.keyboard_only && !by_key {
+        return; // the theme says keyboard only, and this focus did not follow a key (D4)
+    }
     if !ctx.input(|i| i.focused) {
         return; // the window has no OS keyboard focus (`egui/src/input_state/mod.rs:315`)
     }
@@ -812,5 +930,139 @@ mod tests {
         );
         assert_eq!(ring.offset, -2.0);
         assert!(notes.is_empty());
+    }
+
+    fn key(key: egui::Key) -> egui::Event {
+        egui::Event::Key {
+            key,
+            physical_key: None,
+            pressed: true,
+            repeat: false,
+            modifiers: egui::Modifiers::NONE,
+        }
+    }
+
+    fn shift_tab() -> egui::Event {
+        egui::Event::Key {
+            key: egui::Key::Tab,
+            physical_key: None,
+            pressed: true,
+            repeat: false,
+            modifiers: egui::Modifiers::SHIFT,
+        }
+    }
+
+    fn moved() -> egui::Event {
+        egui::Event::PointerMoved(egui::Pos2::ZERO)
+    }
+
+    fn button(pressed: bool) -> egui::Event {
+        egui::Event::PointerButton {
+            pos: egui::Pos2::ZERO,
+            button: egui::PointerButton::Primary,
+            pressed,
+            modifiers: egui::Modifiers::NONE,
+        }
+    }
+
+    fn widget(name: &str) -> Option<egui::Id> {
+        Some(egui::Id::unique(name))
+    }
+
+    /// Tab moves the focus inside its pass; a pointer move after it in the same input clears
+    /// `key_last`, but the pass's key press stands.
+    #[test]
+    fn focus_origin_tab_then_a_pointer_move() {
+        let mut origin = FocusOrigin::default();
+        origin.read(&[key(egui::Key::Tab), moved()]);
+        assert!(origin.settle(widget("a")));
+    }
+
+    /// A press focuses a text field in its pass, a key after it in the same input: the press
+    /// decides. And a click after typing, in the next pass: the pointer's.
+    #[test]
+    fn focus_origin_a_press_then_a_key() {
+        let mut origin = FocusOrigin::default();
+        origin.read(&[moved(), button(true), key(egui::Key::A)]);
+        assert!(!origin.settle(widget("field")));
+
+        let mut origin = FocusOrigin::default();
+        origin.read(&[key(egui::Key::A)]);
+        assert!(!origin.settle(None));
+        origin.read(&[moved(), button(true)]);
+        assert!(!origin.settle(widget("field")));
+    }
+
+    /// Shift+Tab moves the focus at the next pass's start: with a pointer move in that pass, the
+    /// key; with a click in it, the pointer (decision 14's cost).
+    #[test]
+    fn focus_origin_shift_tab_applied_a_pass_late() {
+        let focused_second = || {
+            let mut origin = FocusOrigin::default();
+            origin.read(&[key(egui::Key::Tab)]);
+            assert!(origin.settle(widget("second")));
+            origin.read(&[shift_tab()]);
+            assert!(origin.settle(widget("second")), "no change yet");
+            origin
+        };
+
+        let mut origin = focused_second();
+        origin.read(&[moved()]);
+        assert!(origin.settle(widget("first")));
+
+        let mut origin = focused_second();
+        origin.read(&[moved(), button(true)]);
+        assert!(!origin.settle(widget("first")));
+    }
+
+    /// A frame's later pass gets no events: an arrow key's focus move, made at the end of the
+    /// first pass, is seen at the second's end through `key_before`; a click's, seen at the
+    /// first pass's end, keeps its answer at the second's.
+    #[test]
+    fn focus_origin_a_later_pass_of_the_frame() {
+        let mut origin = FocusOrigin::default();
+        origin.read(&[key(egui::Key::ArrowDown)]);
+        assert!(!origin.settle(None));
+        origin.read(&[]);
+        assert!(origin.settle(widget("below")));
+
+        let mut origin = FocusOrigin::default();
+        origin.read(&[moved(), button(true)]);
+        assert!(!origin.settle(widget("clicked")));
+        origin.read(&[]);
+        assert!(!origin.settle(widget("clicked")));
+    }
+
+    /// A drag value takes the focus at the release, a pass after the press; the program gives
+    /// one with no key since the last pointer event.
+    #[test]
+    fn focus_origin_a_drag_value_and_the_program() {
+        let mut origin = FocusOrigin::default();
+        origin.read(&[moved(), button(true)]);
+        assert!(!origin.settle(None));
+        origin.read(&[button(false)]);
+        assert!(!origin.settle(widget("drag value")));
+
+        let mut origin = FocusOrigin::default();
+        origin.read(&[key(egui::Key::A)]);
+        assert!(!origin.settle(None));
+        origin.read(&[moved()]);
+        assert!(!origin.settle(None));
+        origin.read(&[]);
+        assert!(!origin.settle(widget("requested")));
+    }
+
+    /// Decision 4: a modifier key pressed alone is no key.
+    #[test]
+    fn focus_origin_a_modifier_alone_is_no_key() {
+        for (pressed, by_key) in [
+            (egui::Key::ShiftLeft, false),
+            (egui::Key::ControlRight, false),
+            (egui::Key::Tab, true),
+        ] {
+            let mut origin = FocusOrigin::default();
+            origin.read(&[key(pressed)]);
+            assert_eq!(origin.settle(widget("new")), by_key, "{pressed:?}");
+        }
     }
 }

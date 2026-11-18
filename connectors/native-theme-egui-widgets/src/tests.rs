@@ -879,14 +879,18 @@ fn ring_round_a_focused_button(
 /// button outside any scope is ringed at; inside a `Role::Tab` scope, whose cell has another
 /// radius, the radius a button in that scope is ringed at. A plain `Role::Expander` scope and
 /// the `Role::Tab` scope each ring at another radius than the base style in at least one
-/// preset, or a body that recorded the expander's or the base style would pass.
+/// preset, or a body that recorded the expander's or the base style would pass. The button is
+/// focused by the program, with no key, so each theme is installed with
+/// `focus_ring_keyboard_only` set to `None`, where the ring shows on any focus: the test is of
+/// the radius, not of when the ring shows.
 #[test]
 fn a_widget_focused_in_the_body_is_ringed_at_the_callers_radius() {
     use native_theme_egui::{NativeThemeUiExt, Role, RoleVariant};
     let prefs = AccessibilityPreferences::default();
     let (mut expander_differs, mut role_differs) = (0, 0);
     for preset in ["kde-breeze", "adwaita", "windows-11", "catppuccin-mocha"] {
-        let t = from_preset(preset, false, &prefs).unwrap().1;
+        let mut t = from_preset(preset, false, &prefs).unwrap().1;
+        t.defaults.focus_ring_keyboard_only = None;
         let ring =
             |add: &mut AddButton<'_>| ring_round_a_focused_button(&installed(&t, &prefs), &t, add);
         let plain = ring(&mut |ui, add| add(ui));
