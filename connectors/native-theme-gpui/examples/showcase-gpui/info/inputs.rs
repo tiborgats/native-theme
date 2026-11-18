@@ -166,7 +166,7 @@ pub fn input(t: &Theme, field: InputField, styled: bool) -> WidgetInfo {
         info.not_themeable("text colour", "none of its own: Input takes only the fill from input_style and drops its foreground (input/input.rs, Input::render), so the text takes the colour the showcase sets on its window; geometry::input gives a refined field input.font's")
     };
     let info = info
-        .not_themeable("focus ring", "the connector uses the platform's focus_ring_width only as a switch: upstream drops the ring where Theme::focus_ring is off (styled.rs, FocusableExt::focus_ring_style), and draws it 3px wide at half the ring colour's alpha where it is on (styled.rs, FOCUS_RING_WIDTH), so the platform's width itself is Tier U. The ring is `ring` at that half alpha, shown on the InputGroup's info; the OtpInput and Select show `ring` only as their focused border");
+        .not_themeable("focus ring", "the connector uses the platform's focus_ring_width and focus_ring_keyboard_only only as a switch: upstream drops the ring where Theme::focus_ring is off, which the connector leaves off where the width is 0 or the theme says keyboard only, there but for a focus that followed a key press in a window under Root (styled.rs, FocusableExt::focus_ring_style), and draws it 3px wide with the ring colour's alpha set to 0.5 where it is on (styled.rs, FOCUS_RING_WIDTH), so the platform's width itself is Tier U. The ring is `ring` with that alpha, shown on the InputGroup's info; the OtpInput and Select show `ring` only as their focused border");
     let info = if filled {
         info
     } else {
@@ -252,7 +252,7 @@ pub fn rows_textarea(t: &Theme, filled: bool) -> WidgetInfo {
 /// The three `InputGroup`s, which report as one. Their geometry lines are
 /// recorded where `demo::input_groups` applies the builders.
 pub fn input_groups(t: &Theme) -> WidgetInfo {
-    WidgetInfo::new("InputGroup")
+    let info = WidgetInfo::new("InputGroup")
         .color(claim(
             "border",
             "input",
@@ -264,14 +264,18 @@ pub fn input_groups(t: &Theme) -> WidgetInfo {
             "ring",
             t.ring,
             "gpui-component/input/group.rs:326",
-        ))
-        .color(claim(
+        ));
+    let info = if t.focus_ring {
+        info.color(claim(
             "focus ring, ring at 50%",
             "ring",
             t.ring.opacity(0.5),
             "gpui-component/input/group.rs:326",
         ))
-        .color(claim(
+    } else {
+        info.config("focus ring", NO_BAND)
+    };
+    info.color(claim(
             "addon text",
             "muted_foreground",
             t.muted_foreground,
@@ -716,13 +720,23 @@ pub fn switch(
     // `Switch::render`); a disabled switch takes no focus.
     let info = if disabled {
         info
-    } else {
+    } else if t.focus_ring {
         info.color(claim(
             "focus ring, ring at 50% alpha",
             "ring",
             t.ring.alpha(0.5),
             "gpui-component/styled.rs:261",
         ))
+    } else {
+        // With the band off the bordered track (switch.rs:278), focused through
+        // focus_ring_style (:289-290), has its border tinted (styled.rs:269-270).
+        info.color(claim(
+            "focused border",
+            "ring",
+            t.ring,
+            "gpui-component/styled.rs:270",
+        ))
+        .config("focus ring", NO_BAND)
     };
     let info = if disabled {
         info.color(claim(
@@ -799,6 +813,10 @@ fn slider_shape(info: WidgetInfo, vertical: bool, range: bool) -> WidgetInfo {
         info
     }
 }
+
+/// The note an upstream control's info takes in place of the band claim
+/// where `Theme::focus_ring` is off.
+const NO_BAND: &str = "no band for this focus: Theme::focus_ring is off where the theme's ring has no width, and, where the theme says the platform shows its ring for keyboard focus only, for a focus that did not follow a key press (native-theme-gpui/colors.rs, focus_band_on; native-theme-gpui/lib.rs, FocusBand)";
 
 /// Where the theme-drawn widgets read what they paint.
 #[cfg(feature = "widgets")]
@@ -1014,8 +1032,13 @@ fn theme_focus_ring(info: WidgetInfo, r: &ResolvedTheme, part: &str) -> WidgetIn
     .config(
         "focus ring",
         format!(
-            "{}px wide, {place}, painted over the {part}'s other parts (native-theme-gpui/widgets/mod.rs, FocusRing::draw)",
-            px_text(width)
+            "{}px wide, {place}, painted over the {part}'s other parts (native-theme-gpui/widgets/mod.rs, FocusRing::draw){}",
+            px_text(width),
+            if d.focus_ring_keyboard_only == Some(true) {
+                ", for a focus that followed a key press only (native-theme-gpui/widgets/mod.rs, ring_shows)"
+            } else {
+                ""
+            }
         ),
     )
 }
@@ -1844,13 +1867,17 @@ pub fn color_select(t: &Theme, picked: bool) -> WidgetInfo {
             "ring",
             t.ring,
             "gpui-component/color_picker.rs:778",
-        ))
-        .color(claim(
+        ));
+    let info = if t.focus_ring {
+        info.color(claim(
             "focus ring, ring at 50% alpha",
             "ring",
             t.ring.alpha(0.5),
             "gpui-component/styled.rs:261",
-        ));
+        ))
+    } else {
+        info.config("focus ring", NO_BAND)
+    };
     let info = if picked {
         info.color(claim(
             "text",
@@ -2047,7 +2074,7 @@ pub fn calendar(t: &Theme) -> WidgetInfo {
 /// The Inputs page's `TimeField` (spec §8.3), enabled and empty: a field of
 /// hour, minute and period segments over the state `Showcase::new` builds.
 pub fn time_field(t: &Theme) -> WidgetInfo {
-    WidgetInfo::new("TimeField")
+    let info = WidgetInfo::new("TimeField")
         .color(super::chrome::input_background(t))
         .color(claim(
             "text",
@@ -2072,14 +2099,27 @@ pub fn time_field(t: &Theme) -> WidgetInfo {
             "selection",
             t.selection,
             "gpui-component/time/time_field.rs:137",
-        ))
-        .color(claim(
+        ));
+    let info = if t.focus_ring {
+        info.color(claim(
             "focus ring, ring at 50% alpha",
             "ring",
             t.ring.alpha(0.5),
             "gpui-component/styled.rs:261",
         ))
-        .config("border-radius", format!("radius: {}px", t.radius.as_f32()))
+    } else {
+        // With the band off the bordered field (time/time_field.rs:109),
+        // focused through focus_ring_style (:116), has its border tinted
+        // (styled.rs:269-270).
+        info.color(claim(
+            "focused border",
+            "ring",
+            t.ring,
+            "gpui-component/styled.rs:270",
+        ))
+        .config("focus ring", NO_BAND)
+    };
+    info.config("border-radius", format!("radius: {}px", t.radius.as_f32()))
         .not_themeable("segment radius", "half the theme's radius (time/time_field.rs, TimeField)")
         .not_themeable("size", "input_h and the input text size of its Size, Medium unless the caller sizes it -- rems, so the platform's font (time/time_field.rs, TimeField; sizing.rs, input_h)")
         .not_themeable("figures", "tabular figures, a font feature the field sets itself (time/time_field.rs, tabular_figures)")

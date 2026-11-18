@@ -448,7 +448,7 @@ pub fn card(
 
 /// The ring gpui-component's own tab draws while it has the focus from the
 /// keyboard.
-const UPSTREAM_TAB_RING: &str = "on keyboard focus only, the tabs taking the focus from the keyboard alone: ring, the theme's focus ring colour, as an inset shadow 2px wide inside the tab, a literal the theme's defaults.focus_ring_width and focus_ring_offset do not reach (gpui-component/tab/tab.rs:933, ring; :962-973, focus_visible)";
+const UPSTREAM_TAB_RING: &str = "on keyboard focus only: ring, the theme's focus ring colour (without its alpha where the theme says keyboard only or its ring has no width), as an inset shadow 2px wide inside the tab, a literal the theme's defaults.focus_ring_width and focus_ring_offset do not reach (gpui-component/tab/tab.rs:933, ring; :962-973, focus_visible)";
 
 /// A `TabBar` of the Tab variant over `labels`, the one at `selected`
 /// shown, its per-call seams taken from `native` where a native theme is
@@ -972,7 +972,12 @@ fn tab_bar_ring(info: WidgetInfo, r: &ResolvedTheme) -> WidgetInfo {
     .config(
         "focus ring",
         format!(
-            "on keyboard focus only, the tabs taking the focus from the keyboard alone: an inset shadow defaults.focus_ring_width, {}px, wide inside the tab (native-theme-gpui/widgets/tab_bar.rs, TabBar). defaults.focus_ring_offset, {}px, is not reached: the tabs' row scrolls and clips what lies outside it, so a ring outside the tab would lose a band",
+            "{} an inset shadow defaults.focus_ring_width, {}px, wide inside the tab (native-theme-gpui/widgets/tab_bar.rs, TabBar). defaults.focus_ring_offset, {}px, is not reached: the tabs' row scrolls and clips what lies outside it, so a ring outside the tab would lose a band",
+            if d.focus_ring_keyboard_only == Some(true) {
+                "on the focused tab, for a focus that followed a key press only (native-theme-gpui/widgets/mod.rs, focus_followed_key):"
+            } else {
+                "on the focused tab:"
+            },
             px_text(width),
             px_text(offset)
         ),

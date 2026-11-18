@@ -404,6 +404,63 @@ impl FocusRing {
 /// The debug selector of the ring [`FocusRing::draw`] draws.
 const FOCUS_RING_SELECTOR: &str = "native-focus-ring";
 
+/// Whether a theme-drawn control's focus followed a key, decided when it gets the focus
+/// and kept until it loses it (docs/issues/0004_kde-open-items-rationale.md D4).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+struct FocusVisible {
+    /// Whether the control held the focus at its last render.
+    focused: bool,
+    /// `Window::last_input_was_keyboard` at the render that first saw it focused.
+    keyboard: bool,
+}
+
+/// Whether a theme-drawn control that is `focused` draws the theme's focus ring, its
+/// state keyed by `key` (the control's id and `"focus-visible"`), and `keyboard_only` the
+/// theme's `defaults.focus_ring_keyboard_only == Some(true)`.
+///
+/// Where the theme says the platform shows its ring for keyboard focus only
+/// (`defaults.focus_ring_keyboard_only`), a control draws it only for a focus that
+/// followed a key press, decided when it gets the focus and kept until it loses it. The
+/// answer is taken at render, so a control that loses the focus and gets it back with no
+/// frame between keeps the first answer.
+fn ring_shows(
+    key: impl Into<ElementId>,
+    focused: bool,
+    keyboard_only: bool,
+    window: &mut Window,
+    cx: &mut App,
+) -> bool {
+    let state = window.use_keyed_state(key, cx, |_, _| FocusVisible::default());
+    let last = *state.read(cx);
+    let mut seen = last;
+    if focused && !last.focused {
+        seen.keyboard = window.last_input_was_keyboard();
+    } else if !focused {
+        seen.keyboard = false;
+    }
+    seen.focused = focused;
+    if seen != last {
+        state.update(cx, |stored, _| *stored = seen);
+    }
+    focused && (!keyboard_only || seen.keyboard)
+}
+
+/// Whether the window's present focus followed a key, for a control whose focus handles are
+/// not its own (`TabBar`: gpui-base's `Tab` keeps each tab's): decided at the render that
+/// first sees the focus on another element, and kept until it moves again
+/// (docs/issues/0004_kde-open-items-rationale.md D4). Taken at render, as `ring_shows`' answer.
+fn focus_followed_key(key: impl Into<ElementId>, window: &mut Window, cx: &mut App) -> bool {
+    let now = window.focused(cx).map(|handle| handle.downgrade());
+    let state = window.use_keyed_state(key, cx, |_, _| (None::<gpui::WeakFocusHandle>, false));
+    let (stored, by_key) = state.read(cx).clone();
+    if stored == now {
+        return by_key;
+    }
+    let by_key = now.is_some() && window.last_input_was_keyboard();
+    state.update(cx, |stored, _| *stored = (now, by_key));
+    by_key
+}
+
 /// One colour of a control faded as one widget over `ground`, the colour
 /// under the control: `colour` composited over `under`, the part it is
 /// painted on (the ground itself, or a fill already composited over it),

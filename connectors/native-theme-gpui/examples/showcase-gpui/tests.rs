@@ -371,6 +371,30 @@ fn a_page_that_fits_keeps_no_scrollbar_strip(cx: &mut TestAppContext) {
     );
 }
 
+/// D4: the showcase's window has the connector's `Root` plugin, its `Root`
+/// made after the view applied the theme, so under kde-breeze, which says
+/// keyboard only, gpui-component's band is off for the start-up focus,
+/// which followed no key, on after Tab, and off again after a click into the
+/// Basic page's field.
+#[gpui::test]
+fn upstreams_band_follows_the_focus_in_the_showcase(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    use_preset(&mut cx, &showcase, "kde-breeze");
+    show(&mut cx, &showcase, Page::Basic);
+    let band = |cx: &mut VisualTestContext| cx.update(|_, cx| Theme::global(cx).focus_ring);
+    assert!(!band(&mut cx), "the band is on for the start-up focus");
+    cx.simulate_keystrokes("tab");
+    cx.run_until_parked();
+    draw(&mut cx);
+    assert!(band(&mut cx), "the band is off after Tab");
+    let field = bounds_of(&mut cx, "basic-input-focused");
+    click_at(&mut cx, field.center());
+    assert!(
+        !band(&mut cx),
+        "the band is on after a click into the Basic page's field"
+    );
+}
+
 /// A Settings row keeps off the page's scrollbar.
 ///
 /// The Layout page's scroll area scrolls its content inside its frame: the

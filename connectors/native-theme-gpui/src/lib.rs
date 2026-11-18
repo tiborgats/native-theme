@@ -372,9 +372,10 @@ pub fn to_theme(
     theme.window_radius = px(resolved.window.border.corner_radius);
     theme.shadow = d.border.shadow_enabled;
 
-    // §8.3: the ring is drawn only when the theme gives it a width; its width
-    // and offset have no receiver (derived from the element's border upstream).
-    theme.focus_ring = d.focus_ring_width > 0.0;
+    // §8.3 and D4: the band is drawn where the ring has a width and the
+    // platform does not show it for keyboard focus only; its width and offset
+    // have no receiver.
+    theme.focus_ring = crate::colors::focus_band_on(d);
 
     // §8.3: Scrolling (overlay, auto-hide) when the platform draws overlay
     // scrollbars, Always otherwise.
@@ -1389,6 +1390,7 @@ fn apply_inner(
     forward_reduce_motion(prefs.reduce_motion, cx);
     install_variant_tooltip_delay(cx);
     install_observer_once(cx);
+    gpui_base::Root::register_plugin::<FocusBand>(cx, |_, _| FocusBand::default());
     // D37: paint now. A change from a timer, portal signal or menu action must
     // not wait for the next input event. The theme is written through
     // `Theme::global_mut` and `sync_base`, which refresh nothing -- upstream
@@ -1622,6 +1624,64 @@ fn install_observer_once(cx: &mut App) {
         write_base_overrides(cx, false);
         repair_base_palette(cx);
     });
+}
+
+/// Makes gpui-component's own focus band follow the theme's rule for when the ring shows,
+/// in every window under gpui-base's `Root`: a plugin of `Root`, which [`apply`] registers.
+///
+/// Where the theme says the platform shows its ring for keyboard focus only
+/// (`defaults.focus_ring_keyboard_only`), `apply` leaves the band off, since gpui-component
+/// draws it on a click as well. Before a window's `Root` builds its content, this sets
+/// `Theme::focus_ring` for that window: on while its focus is one that followed a key press
+/// (`Window::last_input_was_keyboard` when the focus arrived, kept until it moves), off
+/// otherwise. On any other theme it writes nothing.
+///
+/// `Theme::focus_ring` is one value for the application, so each window's `Root` sets it
+/// when it renders: a view drawn again without its `Root`, after another window's `Root`
+/// rendered, reads that window's value until its own `Root` renders again. A `Root` made
+/// before the first `apply` has no plugin.
+#[derive(Default)]
+struct FocusBand {
+    /// The window's focus at the last render of its `Root`.
+    focus: Option<gpui::WeakFocusHandle>,
+    /// `Window::last_input_was_keyboard` at the render that first saw that focus.
+    by_key: bool,
+}
+
+impl gpui::Render for FocusBand {
+    fn render(
+        &mut self,
+        _window: &mut gpui::Window,
+        _cx: &mut gpui::Context<Self>,
+    ) -> impl gpui::IntoElement {
+        gpui::Empty
+    }
+}
+
+impl gpui_base::RootPlugin for FocusBand {
+    // gpui-base 0.10.0 `src/root.rs:74-80`: `Root::render` runs every plugin's
+    // `prepare` before it builds the window's content (`:246-252`), and it must
+    // not notify (`:66-70`).
+    fn prepare(&mut self, window: &mut gpui::Window, cx: &mut gpui::Context<Self>) {
+        let now = window.focused(cx).map(|handle| handle.downgrade());
+        if self.focus != now {
+            self.by_key = now.is_some() && window.last_input_was_keyboard();
+            self.focus = now;
+        }
+        let Some(n) = cx.native() else {
+            return;
+        };
+        let d = &n.resolved.defaults;
+        if d.focus_ring_keyboard_only != Some(true) || d.focus_ring_width <= 0.0 {
+            return;
+        }
+        let want = self.by_key;
+        // A write queues the global's observers (gpui-pre 0.3.12
+        // `src/app.rs:2555-2557`), so none is made where the value stands.
+        if GpuiTheme::global(cx).focus_ring != want {
+            GpuiTheme::global_mut(cx).focus_ring = want;
+        }
+    }
 }
 
 #[cfg(test)]
@@ -2017,17 +2077,30 @@ mod tests {
         }
     }
 
-    /// §8.3: only the flag has a receiver; a zero-width ring is not drawn.
+    /// §8.3 and D4: the band's switch.
     #[test]
-    fn focus_ring_follows_focus_ring_width() {
-        let resolved = test_resolved();
-        let theme = to_theme(
-            &resolved,
-            "Ring",
-            true,
-            &AccessibilityPreferences::default(),
-        );
-        assert_eq!(theme.focus_ring, resolved.defaults.focus_ring_width > 0.0);
+    fn focus_ring_is_the_band_rule() {
+        for (name, expected) in [
+            ("kde-breeze", false),
+            ("windows-11", false),
+            ("material-3", false),
+            ("adwaita", true),
+            ("ios-13", true),
+        ] {
+            let resolved = Theme::preset(name)
+                .expect("preset must exist")
+                .into_variant(ColorMode::Light)
+                .expect("preset must have a light variant")
+                .into_resolved(&native_theme::ResolutionContext::for_tests())
+                .expect("resolved preset must validate");
+            let theme = to_theme(
+                &resolved,
+                "Ring",
+                false,
+                &AccessibilityPreferences::default(),
+            );
+            assert_eq!(theme.focus_ring, expected, "{name}");
+        }
     }
 
     // -- from_preset tests --

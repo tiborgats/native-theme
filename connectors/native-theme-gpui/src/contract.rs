@@ -103,12 +103,6 @@ const ROWS: &[Row] = &[
         get: |tc| tc.input,
         exceptions: &[],
     },
-    Row {
-        slot: "ring",
-        native: |r| r.defaults.focus_ring_color,
-        get: |tc| tc.ring,
-        exceptions: &[],
-    },
     // Upstream documents `selection` as the *input* selection background
     // (`theme_color.rs:230`), and its text readers are the input editor style
     // (`input/input.rs:568`), the text view (`text/mod.rs:54`), the touch
@@ -788,6 +782,25 @@ const COMPUTED_ROWS: &[ComputedRow] = &[
         get: |tc| tc.button_secondary_active,
         exceptions: &[],
     },
+    // D4: where gpui-component's band is off for a focus that did not follow
+    // a key, `ring` colours only a focused control's border or line, at the
+    // token's own alpha, so the stated ring loses its alpha there.
+    ComputedRow {
+        slot: "ring",
+        source: "defaults.focus_ring_color, opaque where gpui-component's band is off \
+                 (focus_ring_keyboard_only true, or no ring width; D4)",
+        native: |r, _| {
+            let d = &r.defaults;
+            let c = d.focus_ring_color;
+            if d.focus_ring_keyboard_only == Some(true) || d.focus_ring_width <= 0.0 {
+                rgba_to_hsla(Rgba::new(c.r, c.g, c.b, 255))
+            } else {
+                rgba_to_hsla(c)
+            }
+        },
+        get: |tc| tc.ring,
+        exceptions: &[],
+    },
 ];
 
 /// Every `ThemeColor` field the connector derives, with the derivation named.
@@ -1245,7 +1258,7 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
         why: Unread::NoReceiver(
             "a focused field's edge is `ring` (`input/input.rs:778`, `:811`), \
              the token every focus ring shares, which the `ring` row gives \
-             `defaults.focus_ring_color`",
+             `defaults.focus_ring_color`, opaque where the band is off",
         ),
     },
     UnreadColour {
@@ -2263,7 +2276,10 @@ const UPSTREAM_LIMITS: &[UpstreamLimit] = &[UpstreamLimit {
                without a line (adwaita's 0) gains a 1px edge and its text moves \
                in a pixel; and its own ring, `FOCUS_RING_WIDTH` 3 outside that \
                edge (`src/styled.rs:11`, `:257-262`, `:301-327`, called at \
-               `src/input/input.rs:811`). It cannot draw the theme's inset ring \
+               `src/input/input.rs:811`), where `Theme::focus_ring` is on, \
+               which the connector leaves off where the theme says keyboard \
+               only, but for a focus that followed a key in a window under \
+               `Root` (`FocusBand`). It cannot draw the theme's inset ring \
                in a focus state. The 1px edge is not forced: \
                `Input::focus_bordered(false)` (`src/input/input.rs:332-335`, \
                also `FocusableExt::focus_ring(false)`, `:185-188`) turns off \

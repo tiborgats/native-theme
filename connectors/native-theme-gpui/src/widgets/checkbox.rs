@@ -280,12 +280,20 @@ impl Parts {
         );
         let text = font_text(&n.resolved.checkbox.font, n);
         let ring = FocusRing::of(n.resolved);
+        let keyboard_only = n.resolved.defaults.focus_ring_keyboard_only == Some(true);
         let (indicator, label) = indicator_and_label(&self, &look, round, text, window, cx);
         let focus_handle = window
             .use_keyed_state(self.id.clone(), cx, |_, cx| cx.focus_handle())
             .read(cx)
             .clone();
         let focused = focus_handle.is_focused(window);
+        let shows = super::ring_shows(
+            (self.id.clone(), "focus-visible"),
+            focused,
+            keyboard_only,
+            window,
+            cx,
+        );
         let style = std::mem::take(&mut self.style);
         Ok(base(self, &focus_handle)
             .debug_selector(|| "native-checkbox-row".into())
@@ -304,7 +312,7 @@ impl Parts {
             // The ring follows the row, for a radio as for a checkbox, as
             // gpui-component's and the egui connector's do: last, over the indicator
             // and the label, and after the caller's refinement.
-            .when_some(ring.filter(|_| focused), |row, ring| ring.draw(row, window)))
+            .when_some(ring.filter(|_| shows), |row, ring| ring.draw(row, window)))
     }
 }
 

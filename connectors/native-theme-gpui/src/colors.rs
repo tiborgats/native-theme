@@ -10,7 +10,7 @@
 
 use gpui::Hsla;
 use gpui_component::theme::{Theme, ThemeColor, ThemeToken};
-use native_theme::theme::ResolvedTheme;
+use native_theme::theme::{ResolvedDefaults, ResolvedTheme};
 
 use crate::derive::{active_color, hover_color, light_variant};
 
@@ -220,7 +220,7 @@ pub fn to_theme_color(
         // The link's own text colour (`link.rs:76`), which inherits
         // `defaults.link_color` rather than `defaults.font.color`.
         link: rgba_to_hsla(resolved.link.font.color),
-        ring: rgba_to_hsla(d.focus_ring_color),
+        ring: rgba_to_hsla(ring_colour(d)),
         input: rgba_to_hsla(resolved.input.border.color),
         sidebar: rgba_to_hsla(resolved.sidebar.background_color),
         sidebar_fg: rgba_to_hsla(resolved.sidebar.font.color),
@@ -793,6 +793,31 @@ pub(crate) fn restore_capped(native: &CappedNatives, to: &mut Theme) -> bool {
     restored
 }
 
+/// Whether gpui-component's focus band is drawn on any focus, the value `to_theme` gives
+/// `Theme::focus_ring`: where the theme states a ring with a width, and does not say the
+/// platform shows it for keyboard focus only. gpui-component draws its band on a click as
+/// well (into a text field, a select or a switch) and offers no way to turn that off, so
+/// where the platform shows its ring for keyboard focus only the band starts off, and
+/// the connector's `Root` plugin (`FocusBand`) turns it on for a focus that followed a key
+/// (docs/issues/0004_kde-open-items-rationale.md D4).
+pub(crate) fn focus_band_on(d: &ResolvedDefaults) -> bool {
+    d.focus_ring_width > 0.0 && d.focus_ring_keyboard_only != Some(true)
+}
+
+/// The colour of `ThemeColor::ring`: the theme's ring where the band is on for any focus
+/// (`focus_band_on`). Elsewhere that colour without its alpha: `ring` there colours what
+/// gpui-component draws in it at the token's own alpha, a focused control's border or 1 px
+/// line and a keyboard-focused `Tab`'s 2 px inset ring (the band the `Root` plugin turns on
+/// and a `Slider`'s thumb ring set their own alpha).
+pub(crate) fn ring_colour(d: &ResolvedDefaults) -> native_theme::color::Rgba {
+    let c = d.focus_ring_color;
+    if focus_band_on(d) {
+        c
+    } else {
+        native_theme::color::Rgba::new(c.r, c.g, c.b, 255)
+    }
+}
+
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
@@ -832,6 +857,18 @@ mod tests {
             .expect("preset must have the variant")
             .into_resolved(&native_theme::ResolutionContext::for_tests())
             .expect("resolved preset must validate")
+    }
+
+    /// D4: where gpui-component's band is off (windows-11 says keyboard only),
+    /// `ring` is the stated ring colour, #000000e4 there, made opaque.
+    #[test]
+    fn ring_is_opaque_where_the_band_is_off() {
+        let resolved = resolved_preset("windows-11", ColorMode::Light);
+        let tc = to_theme_color(&resolved, false, false);
+        assert_eq!(
+            tc.ring,
+            rgba_to_hsla(native_theme::color::Rgba::new(0, 0, 0, 255))
+        );
     }
 
     /// K4, as issue #4's D2 changed it: a chart's grid is the separator

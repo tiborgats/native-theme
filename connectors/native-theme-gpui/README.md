@@ -727,12 +727,34 @@ border gets a 1 px line (`:264-299`), in `ring`, or, on a borderless button
 that is neither a ghost nor unpadded, in the button's text colour at 60 % of
 its alpha (`src/button/button.rs:643-650`). For a
 text field that is Breeze's look on any focus; a focused button keeps a tinted
-border, which Breeze shows for keyboard focus only. Breeze draws its band, 2 px
-of the selection colour at alpha 0.3, only for a focus that came from the
-keyboard, so on KDE an application whose users mostly point and click may
-prefer the ring off; a keyboard user then loses the band Breeze would draw.
-`apply` sets `focus_ring` from the theme again (on where
-`defaults.focus_ring_width` is above 0), so write it after each `apply`.
+border, which Breeze shows for keyboard focus only. Breeze, WinUI and Material
+draw their focus ring only for a focus that came from the keyboard;
+gpui-component draws its band on a click as well and offers no way to turn that
+off. So where the theme says so (`defaults.focus_ring_keyboard_only`, true in
+kde-breeze, windows-11 and material-3), `apply` leaves the band off, makes
+`ring` opaque, and registers a plugin of gpui-base's `Root` that turns the band
+on for keyboard focus: in every window whose `Root` is made after the first
+`apply`, gpui-component's controls draw their band while the window's focus is
+one that followed a key press, and none after a click, with nothing to call.
+The band is gpui-component's own, 3 px outside the edge in `ring` with its
+alpha set to 0.5; the connector's own controls draw the theme's ring, at its
+width and offset, after a key (below). In a window without the plugin (its
+`Root` made before the first `apply`) a focused control shows its border, or a
+1 px line, in `ring` (a borderless button but a link, a text or an upstream
+`.ghost()` one: a 1 px line in its text colour at 60 %), also when Tab reached
+it. `Theme::focus_ring` is one value for the application, so each window's
+`Root` sets it when it renders; a view drawn again without its `Root`, after
+another window's rendered, reads that window's value until its own `Root`
+renders again. Two of gpui-component's widgets keep a ring that
+`Theme::focus_ring` does not switch: a `Tab` (2 px inset in `ring`, while the
+last input was a key) and a `Slider`, which rings its thumb (3 px, `ring` with
+its alpha set to 0.5) while it has the focus, however it got it, and while the
+pointer is over the thumb. The theme-drawn `widgets::TabBar` and
+`widgets::Slider` follow the theme's rule. `apply` sets `focus_ring` from the
+theme again (on where `defaults.focus_ring_width` is above 0 and
+`focus_ring_keyboard_only` is not true); on a theme that says keyboard only the
+plugin writes it at each render of a window's `Root`, and on any other theme an
+application that wants another value writes it after each `apply`, as before.
 
 ## Features
 
@@ -782,16 +804,22 @@ theme's focus ring while focused: `defaults.focus_ring_color` as stated, a band
 `defaults.focus_ring_width` wide whose outer edge lies `focus_ring_offset` plus the
 width outside the control, over its other parts; where the ring lies inset at the
 edge (libadwaita's) it is a band inside the edge, the control having no border of
-its own. gpui-component's own widgets draw their 3 px ring in `ring` with its
-alpha set to 0.5, whatever the colour's own (gpui-component 0.10.0
+its own. Where the theme says the platform shows its ring for keyboard focus
+only, a control draws it only for a focus that followed a key press: the answer
+is `Window::last_input_was_keyboard` when the focus arrives, kept until it
+leaves. gpui-component's own widgets draw their 3 px ring in `ring` with its
+alpha set to 0.5, whatever the colour's own, where `Theme::focus_ring` is on
+(gpui-component 0.10.0
 `src/styled.rs:11-12`, `focus_style`), and gpui-component's `Tab` draws another,
 2 px inset at the full colour, a literal the theme's width does not reach
 (`src/tab/tab.rs:933`, `:962-973`). The theme-drawn `TabBar` draws the theme's ring inside the tab, in
 `defaults.focus_ring_color` and `focus_ring_width`; `focus_ring_offset` is not
 reached there, since the tabs' scrolling row would cut a band outside the tab
-away. Both tab bars show their ring for a focus that came from the keyboard
-only: the tabs take the focus from the keyboard alone, the arrow keys moving it
-along the bar, and a click selects a tab without focusing it.
+away. A click selects a tab without focusing it; the tabs take the focus from
+the keyboard, the arrow keys moving it along the bar. The theme-drawn `TabBar`
+rings the focused tab by the rule above, as the other theme-drawn controls;
+gpui-component's shows its ring while the last input was a key (gpui's
+`focus_visible`), whatever the theme says.
 
 Assistive technology: the theme-drawn `Slider` takes an `accessibility_label`,
 the name a screen reader announces, since a slider draws no text of its own,

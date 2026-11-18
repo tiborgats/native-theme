@@ -345,6 +345,7 @@ impl RenderOnce for Slider {
             return self.fallback();
         };
         let ring = FocusRing::of(n.resolved);
+        let keyboard_only = n.resolved.defaults.focus_ring_keyboard_only == Some(true);
         let look = look.faded_over(
             self.backdrop
                 .unwrap_or_else(|| color(n.resolved.defaults.background_color)),
@@ -377,6 +378,13 @@ impl RenderOnce for Slider {
             .read(cx)
             .clone();
         let focused = !disabled && focus_handle.is_focused(window);
+        let shows = super::ring_shows(
+            (id.clone(), "focus-visible"),
+            focused,
+            keyboard_only,
+            window,
+            cx,
+        );
         let radius = px(f32::from(look.thumb) / 2.);
         let beyond = px(-f32::from(radius));
         // The rail is a pill unless the theme squares its corners
@@ -387,7 +395,7 @@ impl RenderOnce for Slider {
         let end_thumb = thumb(&state, &look, axis, end, false, disabled, cx)
             .debug_selector(|| "native-slider-thumb".into())
             .children(observer.map(|o| part_bounds(Part::Thumb, o, px(0.))))
-            .when_some(ring.filter(|_| focused), |thumb, ring| {
+            .when_some(ring.filter(|_| shows), |thumb, ring| {
                 ring.draw(thumb, window)
             });
         let start_thumb = range.then(|| {

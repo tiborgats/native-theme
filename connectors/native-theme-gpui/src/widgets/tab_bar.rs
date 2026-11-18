@@ -345,13 +345,17 @@ type TabClick = Rc<dyn Fn(&usize, &mut Window, &mut App)>;
 /// mask (`tab/tab_bar.rs:691`, `:697`).
 ///
 /// The focus is gpui-base's `Tabs` list's: a click activates a tab and never
-/// moves the focus; the tabs take it from the keyboard only, the list one
-/// tab stop that Tab enters on the selected tab, and the arrow keys, Home
-/// and End move it to the next, previous, first and last enabled tab. The
-/// tab that has it from the keyboard shows the theme's focus ring
+/// moves the focus (the bar keeps a right and a middle press from focusing a
+/// tab, which gpui-base's `Tab` alone would let them); the tabs take it from
+/// the keyboard only, the list one tab stop that Tab enters on the selected
+/// tab, and the arrow keys, Home and End move it to the next, previous, first
+/// and last enabled tab. The tab that has it shows the theme's focus ring
 /// (`defaults.focus_ring_color`, `focus_ring_width`) as an inset shadow
-/// inside its edge, as wide as the ring, and none after a click; the strip
-/// scrolls the tab the focus moves to into view.
+/// inside its edge, as wide as the ring; where the theme says the platform
+/// shows its ring for keyboard focus only (`defaults.focus_ring_keyboard_only`),
+/// only for a focus that followed a key press, kept until the focus moves, so
+/// through a click on another tab, which moves none; the strip scrolls the tab
+/// the focus moves to into view.
 ///
 /// Right to left ([`LayoutDirection::global`]), the tabs run from the
 /// bar's right edge, each one's `border.padding` sides mirrored and the
@@ -512,7 +516,9 @@ impl RenderOnce for TabBar {
         // A probe inside each tab, not a tab stop, whose handle is within the
         // focused element while its tab has the focus
         // (`FocusHandle::within_focused`): where the focus moves to a tab,
-        // the strip scrolls to it.
+        // the strip scrolls to it. The focused tab is the one whose probe
+        // alone is within the focus: where an element round the bar has it,
+        // every probe is, and the strip stays where it is.
         let probes: Vec<gpui::FocusHandle> = (0..self.tabs.len())
             .map(|ix| {
                 window
@@ -523,7 +529,15 @@ impl RenderOnce for TabBar {
                     .clone()
             })
             .collect();
-        let focused = probes.iter().position(|p| p.within_focused(window, cx));
+        let mut within = probes
+            .iter()
+            .enumerate()
+            .filter(|(_, p)| p.within_focused(window, cx))
+            .map(|(ix, _)| ix);
+        let focused = match (within.next(), within.next()) {
+            (Some(ix), None) => Some(ix),
+            _ => None,
+        };
         let last = window.use_keyed_state(format!("{}-focused", self.id), cx, |_, _| None::<usize>);
         if *last.read(cx) != focused {
             last.update(cx, |v, _| *v = focused);
@@ -531,6 +545,7 @@ impl RenderOnce for TabBar {
                 scroll.scroll_to_item(ix);
             }
         }
+        let by_key = super::focus_followed_key((self.id.clone(), "focus-visible"), window, cx);
         let rtl = LayoutDirection::global(cx).is_rtl();
         // Right to left, a strip that scrolls is pushed against its right
         // edge until it overflows (below).
@@ -539,7 +554,8 @@ impl RenderOnce for TabBar {
         let Some(n) = cx.native() else {
             return self.fallback();
         };
-        let ring = super::FocusRing::of(n.resolved);
+        let keyboard_only = n.resolved.defaults.focus_ring_keyboard_only == Some(true);
+        let ring = super::FocusRing::of(n.resolved).filter(|_| !keyboard_only || by_key);
         // The tab's sides from its start edge: the left in a left-to-right
         // layout, the right in a right-to-left one.
         let (pad_left, pad_right) = if rtl {
@@ -626,10 +642,23 @@ impl RenderOnce for TabBar {
                 .when_some(tab.selector, |tab, selector| {
                     tab.debug_selector(|| selector)
                 })
-                // On keyboard focus only: the theme's ring as an inset
-                // shadow, inside the tab, its spread the ring's width.
+                // gpui-base's `Tab` keeps only the left button from focusing it
+                // (gpui-base 0.10.0 `src/tabs.rs:194`); a prevented default keeps
+                // the others from it too (gpui-pre 0.3.12
+                // `src/elements/div.rs:2828-2840`), and lets the press reach an
+                // enclosing element's handler.
+                .on_mouse_down(gpui::MouseButton::Right, |_, window, _| {
+                    window.prevent_default()
+                })
+                .on_mouse_down(gpui::MouseButton::Middle, |_, window, _| {
+                    window.prevent_default()
+                })
+                // While the tab has the focus (where the theme says keyboard
+                // only, a focus that followed a key, `focus_followed_key`): the
+                // theme's ring as an inset shadow, inside the tab, its spread
+                // the ring's width.
                 .when_some(ring, |tab, ring| {
-                    tab.focus_visible(move |style| {
+                    tab.focus(move |style| {
                         style.shadow(vec![gpui::BoxShadow {
                             color: ring.color,
                             offset: point(px(0.), px(0.)),

@@ -214,7 +214,8 @@ impl SwitchLook {
 /// state. The thumb travels on gpui-component's spring (switch.rs:216-225).
 /// While focused, the track draws the theme's focus ring
 /// (`defaults.focus_ring_color`, `focus_ring_width` and `focus_ring_offset`,
-/// as the other theme-drawn controls draw it), where gpui-component's switch
+/// as the other theme-drawn controls draw it; where the theme says keyboard
+/// only, for a focus that followed a key press), where gpui-component's switch
 /// draws its own (switch.rs:280-283).
 ///
 /// It is laid out from the start edge of the layout direction
@@ -385,6 +386,7 @@ impl Switch {
         let label_size = text_size(n.resolved.defaults.font.size, n);
         let label_line = n.resolved.defaults.line_height;
         let label_weight = FontWeight(f32::from(n.resolved.defaults.font.weight));
+        let keyboard_only = n.resolved.defaults.focus_ring_keyboard_only == Some(true);
         let thumb_left = spring(
             (self.id.clone(), "thumb"),
             look.thumb_left(checked),
@@ -399,7 +401,13 @@ impl Switch {
             .use_keyed_state(self.id.clone(), cx, |_, cx| cx.focus_handle())
             .read(cx)
             .clone();
-        let focused = focus_handle.is_focused(window);
+        let focused = super::ring_shows(
+            (self.id.clone(), "focus-visible"),
+            focus_handle.is_focused(window),
+            keyboard_only,
+            window,
+            cx,
+        );
         let track = self.track(&look, focused, thumb_left, window, cx);
         Ok(BaseSwitch::new(self.id)
             .checked(checked)
@@ -447,8 +455,8 @@ impl Switch {
 
 impl Switch {
     /// The track in `look`, its thumb `thumb_left` from its start edge; while
-    /// `focused`, enabled, and told to (`focus_ring`), it draws the focus
-    /// ring.
+    /// `focused` (a focus the theme rings, `ring_shows`), enabled, and told to
+    /// (`focus_ring`), it draws the focus ring.
     pub(super) fn track(
         &self,
         look: &SwitchLook,

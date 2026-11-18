@@ -1791,6 +1791,28 @@ fn window_with<'a>(
     cx
 }
 
+/// [`window_with`] under `preset` with `edit` applied to the resolved theme
+/// before it is installed.
+fn window_with_resolved<'a>(
+    cx: &'a mut TestAppContext,
+    preset: &str,
+    mode: ColorMode,
+    edit: impl FnOnce(&mut ResolvedTheme),
+    build: Build,
+) -> &'a mut VisualTestContext {
+    cx.update(|cx| {
+        gpui_component::init(cx);
+        let mut r = resolved(preset, mode);
+        edit(&mut r);
+        let prefs = AccessibilityPreferences::default();
+        let theme = crate::to_theme(&r, preset, mode == ColorMode::Dark, &prefs);
+        crate::apply(theme, &r, &prefs, cx);
+    });
+    let (_, cx) = cx.add_window_view(|_, _| Harness { build });
+    cx.update(|window, cx| window.draw(cx).clear(cx));
+    cx
+}
+
 fn bounds(cx: &mut VisualTestContext, selector: &'static str) -> Bounds<Pixels> {
     cx.debug_bounds(selector)
         .unwrap_or_else(|| panic!("{selector} was not laid out"))
@@ -2697,8 +2719,8 @@ fn without_a_native_theme_a_slider_passes_on_its_label_and_disabled_state(cx: &m
 
 /// M6-27: `focus_ring(false)` keeps a focused switch's track free of the
 /// ring: told to, the focused track draws the theme's ring
-/// ([`FocusRing::draw`], kde-breeze's outside the track), and told not to,
-/// none.
+/// ([`FocusRing::draw`], kde-breeze's across the track's edge, from 1 px
+/// inside it to 1 px outside), and told not to, none.
 #[gpui::test]
 fn a_switch_told_not_to_draws_no_focus_ring(cx: &mut TestAppContext) {
     let r = resolved("kde-breeze", ColorMode::Light);
@@ -2723,9 +2745,19 @@ fn a_switch_told_not_to_draws_no_focus_ring(cx: &mut TestAppContext) {
     }
 }
 
+/// A key no control in the window binds, pressed and released: the last
+/// input is then a key, and the focus has not moved.
+fn a_key_that_moves_no_focus(cx: &mut VisualTestContext) {
+    let before = cx.update(|window, cx| window.focused(cx));
+    activate_key(cx, "f1");
+    let after = cx.update(|window, cx| window.focused(cx));
+    assert_eq!(before, after, "the key moved the focus");
+}
+
 /// A focused Checkbox, Radio, Switch and Slider each draw the theme's ring
-/// (C-06): kde-breeze's outside the control, adwaita's inset one as a band
-/// inside the edge of the borderless row, track and thumb.
+/// (C-06): kde-breeze's after a key press, as the theme says keyboard only,
+/// across the control's edge, from 1 px inside it to 1 px outside; adwaita's
+/// inset one as a band inside the edge of the borderless row, track and thumb.
 #[gpui::test]
 fn every_focused_control_draws_the_ring(cx: &mut TestAppContext) {
     type Build = Box<dyn Fn() -> AnyElement>;
@@ -2751,6 +2783,9 @@ fn every_focused_control_draws_the_ring(cx: &mut TestAppContext) {
                 cx.debug_bounds(FOCUS_RING_SELECTOR).is_none(),
                 "{preset} {name}: a ring before the focus"
             );
+            if preset == "kde-breeze" {
+                a_key_that_moves_no_focus(cx);
+            }
             focus_next(cx);
             redraw(cx);
             assert!(
@@ -2760,12 +2795,120 @@ fn every_focused_control_draws_the_ring(cx: &mut TestAppContext) {
         }
     }
     let (cx, _state) = slider_window(cx, false);
+    a_key_that_moves_no_focus(cx);
     focus_next(cx);
     redraw(cx);
     assert!(
         cx.debug_bounds(FOCUS_RING_SELECTOR).is_some(),
         "kde-breeze slider: no ring once focused"
     );
+}
+
+/// The three theme-drawn controls the D4 tests focus, built in a window's
+/// harness: a Checkbox, a Switch, and a Slider over `state`.
+fn d4_controls(state: &Entity<SliderState>) -> [(&'static str, Build); 3] {
+    let s = state.clone();
+    [
+        (
+            "checkbox",
+            Box::new(|_, _| Checkbox::new("c").label("C").into_any_element()),
+        ),
+        (
+            "switch",
+            Box::new(|_, _| Switch::new("s").into_any_element()),
+        ),
+        (
+            "slider",
+            Box::new(move |_, _| Slider::new(&s).w(px(140.)).into_any_element()),
+        ),
+    ]
+}
+
+fn d4_slider_state(cx: &mut TestAppContext) -> Entity<SliderState> {
+    cx.new(|_| {
+        SliderState::new()
+            .min(0.)
+            .max(100.)
+            .step(1.)
+            .default_value(50.)
+    })
+}
+
+/// D4: under kde-breeze, which says the platform shows its ring for keyboard
+/// focus only, a Checkbox, a Switch and a Slider the program focuses with no
+/// key before draw no ring; the same theme with
+/// `focus_ring_keyboard_only` unset rings the same focus.
+#[gpui::test]
+fn a_control_focused_without_a_key_shows_no_ring_where_the_theme_says_keyboard_only(
+    cx: &mut TestAppContext,
+) {
+    assert_eq!(
+        resolved("kde-breeze", ColorMode::Light)
+            .defaults
+            .focus_ring_keyboard_only,
+        Some(true)
+    );
+    for (unset, drawn) in [(false, false), (true, true)] {
+        let state = d4_slider_state(cx);
+        for (name, build) in d4_controls(&state) {
+            let cx = window_with_resolved(
+                cx,
+                "kde-breeze",
+                ColorMode::Light,
+                |r| {
+                    if unset {
+                        r.defaults.focus_ring_keyboard_only = None;
+                    }
+                },
+                build,
+            );
+            focus_next(cx);
+            redraw(cx);
+            assert_eq!(
+                cx.debug_bounds(FOCUS_RING_SELECTOR).is_some(),
+                drawn,
+                "{name}, focus_ring_keyboard_only unset: {unset}"
+            );
+        }
+    }
+}
+
+/// D4: a ring that followed a key stays through a mouse move and ends with
+/// the focus; the next focus, with no key before, draws none. The frame
+/// between the blur and the refocus lets the control see itself unfocused
+/// (`ring_shows` samples at render).
+#[gpui::test]
+fn the_ring_outlasts_a_mouse_move_and_ends_with_the_focus(cx: &mut TestAppContext) {
+    let state = d4_slider_state(cx);
+    for (name, build) in d4_controls(&state) {
+        let cx = window_with(cx, Some(("kde-breeze", ColorMode::Light)), build);
+        a_key_that_moves_no_focus(cx);
+        focus_next(cx);
+        redraw(cx);
+        let ring = bounds(cx, FOCUS_RING_SELECTOR);
+        assert!(
+            cx.debug_bounds(FOCUS_RING_SELECTOR).is_some(),
+            "{name}: ringed after a key"
+        );
+        cx.simulate_mouse_move(centre(ring), None, Modifiers::default());
+        redraw(cx);
+        assert!(
+            cx.debug_bounds(FOCUS_RING_SELECTOR).is_some(),
+            "{name}: the ring left at a mouse move"
+        );
+        cx.update(|window, cx| window.blur(cx));
+        redraw(cx);
+        assert!(
+            cx.debug_bounds(FOCUS_RING_SELECTOR).is_none(),
+            "{name}: a ring without the focus"
+        );
+        focus_next(cx);
+        redraw(cx);
+        assert!(
+            cx.debug_bounds(FOCUS_RING_SELECTOR).is_none(),
+            "{name}: a ring for a focus that followed no key"
+        );
+    }
 }
 
 /// A theme's stated ring, `width` wide `offset` off the element's edge,
@@ -3327,9 +3470,22 @@ fn keyboard_tab_window(
     selected: usize,
     activated: Rc<RefCell<Vec<usize>>>,
 ) -> &mut VisualTestContext {
-    let cx = window_with(
+    edited_tab_window(cx, selected, activated, |_| {})
+}
+
+/// [`keyboard_tab_window`] under kde-breeze with `edit` applied to the
+/// resolved theme ([`window_with_resolved`]).
+fn edited_tab_window(
+    cx: &mut TestAppContext,
+    selected: usize,
+    activated: Rc<RefCell<Vec<usize>>>,
+    edit: impl FnOnce(&mut ResolvedTheme),
+) -> &mut VisualTestContext {
+    let cx = window_with_resolved(
         cx,
-        Some(("kde-breeze", ColorMode::Light)),
+        "kde-breeze",
+        ColorMode::Light,
+        edit,
         Box::new(move |_, _| {
             let activated = activated.clone();
             TabBar::new("t")
@@ -3414,8 +3570,9 @@ fn shadows_over(cx: &mut VisualTestContext, bar: Bounds<Pixels>) -> Vec<gpui::Sh
 
 /// T4 (b'): no tab draws a ring at rest; the tab the keyboard focuses draws
 /// the theme's, one inset shadow in `defaults.focus_ring_color` whose
-/// spread is `defaults.focus_ring_width`, inside the tab; after a click,
-/// none. It reads the painted shadows, which GPUI Fast's scene holds.
+/// spread is `defaults.focus_ring_width`, inside the tab; after a click on
+/// another tab, which moves no focus, it stays (D4). It reads the painted
+/// shadows, which GPUI Fast's scene holds.
 #[cfg(feature = "gpui-fast")]
 #[gpui::test]
 fn the_keyboard_focused_tab_draws_the_ring_inside(cx: &mut TestAppContext) {
@@ -3461,7 +3618,132 @@ fn the_keyboard_focused_tab_draws_the_ring_inside(cx: &mut TestAppContext) {
     cx.simulate_click(centre(tab2), Modifiers::default());
     redraw(cx);
     let painted = shadows_over(cx, bar);
-    assert!(painted.is_empty(), "no ring after a click: {painted:?}");
+    let tab = bounds(cx, "tab1").scale(scale);
+    assert!(
+        painted.len() == 1
+            && painted
+                .iter()
+                .all(|s| s.element_bounds.contains(&tab.center())),
+        "after the click, which moved no focus, one ring on tab 1: {painted:?}"
+    );
+}
+
+/// D4: under kde-breeze, which says keyboard only, the tab the program
+/// focuses with no key before draws no ring; an arrow key's move rings the
+/// tab it reaches, and a mouse move leaves that ring. With
+/// `focus_ring_keyboard_only` unset, the same focus rings the selected tab.
+#[cfg(feature = "gpui-fast")]
+#[gpui::test]
+fn a_tab_focused_without_a_key_draws_no_ring_where_the_theme_says_keyboard_only(
+    cx: &mut TestAppContext,
+) {
+    let one_ring_on = |cx: &mut VisualTestContext, bar: Bounds<Pixels>, name: &'static str| {
+        let painted = shadows_over(cx, bar);
+        let scale = cx.update(|window, _| window.scale_factor());
+        let tab = bounds(cx, name).scale(scale);
+        painted.len() == 1
+            && painted
+                .iter()
+                .all(|s| s.element_bounds.contains(&tab.center()))
+    };
+    let activated: Rc<RefCell<Vec<usize>>> = Rc::default();
+    let cx = keyboard_tab_window(cx, 0, activated.clone());
+    let bar = bounds(cx, "native-tab-bar");
+    focus_next(cx);
+    redraw(cx);
+    let painted = shadows_over(cx, bar);
+    assert!(painted.is_empty(), "no ring without a key: {painted:?}");
+    cx.simulate_keystrokes("right");
+    redraw(cx);
+    assert!(
+        one_ring_on(cx, bar, "tab1"),
+        "one ring on tab 1 after Right"
+    );
+    cx.simulate_mouse_move(centre(bar), None, Modifiers::default());
+    redraw(cx);
+    assert!(
+        one_ring_on(cx, bar, "tab1"),
+        "the ring on tab 1 after a mouse move"
+    );
+
+    let cx = edited_tab_window(cx, 0, activated, |r| {
+        r.defaults.focus_ring_keyboard_only = None;
+    });
+    let bar = bounds(cx, "native-tab-bar");
+    focus_next(cx);
+    redraw(cx);
+    assert!(
+        one_ring_on(cx, bar, "tab0"),
+        "unset: one ring on the selected tab"
+    );
+}
+
+/// The strip scrolled to its last tab, an element round the bar takes the
+/// focus: every tab's probe is then within the focus, and the strip stays
+/// where it is (two frames).
+#[gpui::test]
+fn focusing_an_element_round_the_bar_keeps_the_strip_where_it_is(cx: &mut TestAppContext) {
+    let handle = gpui::ScrollHandle::new();
+    let outer = cx.update(|cx| cx.focus_handle());
+    let (s, o) = (handle.clone(), outer.clone());
+    let cx = window_with(
+        cx,
+        Some(("kde-breeze", ColorMode::Light)),
+        Box::new(move |_, _| {
+            div()
+                .w_full()
+                .track_focus(&o)
+                .child(
+                    TabBar::new("t")
+                        .w_full()
+                        .children(
+                            TAB_NAMES.map(|name| Tab::new(name).debug_selector(|| name.into())),
+                        )
+                        .selected_index(3)
+                        .track_scroll(&s),
+                )
+                .into_any_element()
+        }),
+    );
+    redraw(cx);
+    redraw(cx);
+    handle.scroll_to_item(TAB_NAMES.len() - 1);
+    redraw(cx);
+    redraw(cx);
+    let before = handle.offset().x;
+    assert!(before < px(0.), "the strip scrolled: {before:?}");
+    cx.update(|window, cx| outer.focus(window, cx));
+    redraw(cx);
+    redraw(cx);
+    assert!(
+        cx.update(|window, _| outer.is_focused(window)),
+        "the element round the bar has the focus"
+    );
+    assert_eq!(handle.offset().x, before, "the strip stayed where it was");
+}
+
+/// gpui-base's `Tab` keeps only the left button from focusing it; the bar
+/// keeps a right and a middle press from it too, and neither activates a
+/// tab.
+#[gpui::test]
+fn a_right_or_a_middle_press_moves_no_focus(cx: &mut TestAppContext) {
+    let activated: Rc<RefCell<Vec<usize>>> = Rc::default();
+    let cx = keyboard_tab_window(cx, 0, activated.clone());
+    for button in [gpui::MouseButton::Right, gpui::MouseButton::Middle] {
+        let at = centre(bounds(cx, "tab1"));
+        cx.simulate_mouse_down(at, button, Modifiers::default());
+        cx.simulate_mouse_up(at, button, Modifiers::default());
+        redraw(cx);
+        assert!(
+            !anything_focused(cx),
+            "{button:?}: the press moved the focus"
+        );
+        assert!(
+            activated.borrow().is_empty(),
+            "{button:?}: the press activated {:?}",
+            activated.borrow()
+        );
+    }
 }
 
 /// T4: where the focus moves to a tab outside the strip, the strip scrolls
@@ -3912,4 +4194,345 @@ fn right_to_left_the_progress_bar_fills_from_the_right(cx: &mut TestAppContext) 
         grown |= fill.left() < bar.right();
     }
     assert!(grown, "the fill grows leftward");
+}
+
+// ---------------------------------------------------------------------------
+// gpui-component's own band under the connector's `Root` plugin (D4)
+// ---------------------------------------------------------------------------
+
+/// gpui-component's focus band: `FOCUS_RING_WIDTH` outside a focused
+/// control, in `ring` with its alpha set to `FOCUS_RING_OPACITY`
+/// (gpui-component 0.10.0 `src/styled.rs:11-12`).
+#[cfg(feature = "gpui-fast")]
+const UPSTREAM_BAND_WIDTH: f32 = 3.;
+#[cfg(feature = "gpui-fast")]
+const UPSTREAM_BAND_ALPHA: f32 = 0.5;
+
+/// An upstream `Input`, `Button` and `Switch`, one under another; the view
+/// calls nothing of the connector's but the button's geometry.
+struct UpstreamControls {
+    input: Entity<gpui_component::input::InputState>,
+    button: gpui::FocusHandle,
+}
+
+impl Render for UpstreamControls {
+    fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        use crate::ActiveNativeTheme as _;
+        use gpui_component::StyledExt as _;
+        let Some(n) = cx.native() else {
+            return div().into_any_element();
+        };
+        let button = gpui_component::button::Button::new("band-button")
+            .track_focus(&self.button)
+            .refine_style(&crate::geometry::button(n))
+            .child(
+                div()
+                    .refine_style(&crate::geometry::button_label(n))
+                    .child("Apply"),
+            );
+        div()
+            .size_full()
+            .p(px(40.))
+            .flex()
+            .flex_col()
+            .items_start()
+            .gap(px(40.))
+            .child(
+                div()
+                    .debug_selector(|| "band-field".into())
+                    .w(px(160.))
+                    .child(gpui_component::input::Input::new(&self.input)),
+            )
+            .child(div().debug_selector(|| "band-button".into()).child(button))
+            .child(
+                div()
+                    .debug_selector(|| "band-switch".into())
+                    .child(gpui_component::switch::Switch::new("band-switch").checked(false)),
+            )
+            .into_any_element()
+    }
+}
+
+/// A window of [`UpstreamControls`] inside gpui-component's `Root`, made
+/// when this is called, and the field's and the button's focus handles.
+struct BandWindow {
+    window: gpui::AnyWindowHandle,
+    field: gpui::FocusHandle,
+    button: gpui::FocusHandle,
+}
+
+fn band_window(cx: &mut TestAppContext) -> Option<BandWindow> {
+    let button = cx.update(|cx| cx.focus_handle());
+    let b = button.clone();
+    let field = Rc::new(RefCell::new(None));
+    let f = field.clone();
+    let handle = cx.add_window(move |window, cx| {
+        let input = cx.new(|cx| gpui_component::input::InputState::new(window, cx));
+        *f.borrow_mut() = Some(gpui::Focusable::focus_handle(input.read(cx), cx));
+        let view = cx.new(|_| UpstreamControls { input, button: b });
+        gpui_component::Root::new(view, window, cx)
+    });
+    let field = field.borrow_mut().take()?;
+    Some(BandWindow {
+        window: handle.into(),
+        field,
+        button,
+    })
+}
+
+/// `preset`'s light variant installed, as an application installs it.
+fn apply_light(cx: &mut TestAppContext, preset: &str) {
+    cx.update(|cx| {
+        gpui_component::init(cx);
+        let r = resolved(preset, ColorMode::Light);
+        let prefs = AccessibilityPreferences::default();
+        let theme = crate::to_theme(&r, preset, false, &prefs);
+        crate::apply(theme, &r, &prefs, cx);
+    });
+}
+
+fn activate(cx: &mut VisualTestContext) {
+    cx.update(|window, _| window.activate_window());
+    cx.run_until_parked();
+}
+
+fn band_flag(cx: &mut VisualTestContext) -> bool {
+    cx.update(|_, cx| gpui_component::Theme::global(cx).focus_ring)
+}
+
+/// The bounds, in logical pixels, of every quad the last frame painted as
+/// gpui-component's band: bordered `UPSTREAM_BAND_WIDTH` on every side in
+/// `ring` with its alpha set to `UPSTREAM_BAND_ALPHA`.
+#[cfg(feature = "gpui-fast")]
+fn painted_bands(cx: &mut VisualTestContext) -> Vec<Bounds<Pixels>> {
+    use gpui_component::ActiveTheme as _;
+    cx.update(|window, cx| {
+        let scale = window.scale_factor();
+        let rgba8 = |colour: gpui::Hsla| {
+            let rgba = gpui::Rgba::from(colour);
+            let channel = |v: f32| (v.clamp(0., 1.) * 255.).round() as u8;
+            [
+                channel(rgba.r),
+                channel(rgba.g),
+                channel(rgba.b),
+                channel(rgba.a),
+            ]
+        };
+        let band = rgba8(cx.theme().ring.alpha(UPSTREAM_BAND_ALPHA));
+        scene_quads(window)
+            .into_iter()
+            .filter(|q| {
+                let w = &q.border_widths;
+                [w.top, w.right, w.bottom, w.left]
+                    .iter()
+                    .all(|w| near(w.0 / scale, UPSTREAM_BAND_WIDTH))
+                    && rgba8(q.border_color) == band
+            })
+            .map(|q| Bounds {
+                origin: point(
+                    px(q.bounds.origin.x.0 / scale),
+                    px(q.bounds.origin.y.0 / scale),
+                ),
+                size: gpui::size(
+                    px(q.bounds.size.width.0 / scale),
+                    px(q.bounds.size.height.0 / scale),
+                ),
+            })
+            .collect()
+    })
+}
+
+/// After `step`: `Theme::focus_ring` is `on`, and the last frame painted
+/// the band as [`assert_painted_band`] says.
+fn assert_band(cx: &mut VisualTestContext, on: bool, round: Option<&'static str>, step: &str) {
+    assert_eq!(band_flag(cx), on, "{step}: Theme::focus_ring");
+    assert_painted_band(cx, round, step);
+}
+
+/// On GPUI Fast, whose scene holds the painted quads: the last frame painted
+/// the band round the control `round` names and nowhere else, or none where
+/// `round` is `None`.
+fn assert_painted_band(cx: &mut VisualTestContext, round: Option<&'static str>, step: &str) {
+    #[cfg(feature = "gpui-fast")]
+    {
+        let bands = painted_bands(cx);
+        match round {
+            None => assert!(bands.is_empty(), "{step}: a band: {bands:?}"),
+            Some(selector) => {
+                let want = bounds(cx, selector).dilate(px(UPSTREAM_BAND_WIDTH));
+                let edges = |b: &Bounds<Pixels>| {
+                    [b.origin.x, b.origin.y, b.size.width, b.size.height].map(f32::from)
+                };
+                let at = |b: &Bounds<Pixels>| {
+                    edges(b)
+                        .iter()
+                        .zip(edges(&want))
+                        .all(|(got, want)| near(*got, want))
+                };
+                assert!(
+                    !bands.is_empty() && bands.iter().all(at),
+                    "{step}: the band round {selector} ({want:?}): {bands:?}"
+                );
+            }
+        }
+    }
+    #[cfg(not(feature = "gpui-fast"))]
+    let _ = (cx, round, step);
+}
+
+fn focused_is(cx: &mut VisualTestContext, handle: &gpui::FocusHandle) -> bool {
+    cx.update(|window, cx| window.focused(cx).as_ref() == Some(handle))
+}
+
+/// The pointer moved onto the centre of `selector` and its left button
+/// pressed there.
+fn press(cx: &mut VisualTestContext, selector: &'static str) -> gpui::Point<Pixels> {
+    let at = centre(bounds(cx, selector));
+    cx.simulate_mouse_move(at, None, Modifiers::default());
+    cx.simulate_mouse_down(at, gpui::MouseButton::Left, Modifiers::default());
+    at
+}
+
+fn release(cx: &mut VisualTestContext, at: gpui::Point<Pixels>) {
+    cx.simulate_mouse_up(at, gpui::MouseButton::Left, Modifiers::default());
+}
+
+fn click_on(cx: &mut VisualTestContext, selector: &'static str) {
+    let at = press(cx, selector);
+    release(cx, at);
+}
+
+/// D4, decision 18: under kde-breeze, which says keyboard only, the plugin
+/// `apply` registers on gpui-base's `Root` turns gpui-component's band on
+/// for a focus that followed a key and off for a click's, in a `Root` made
+/// after `apply` whose view calls nothing; gpui-component's `Root` binds Tab
+/// and Shift+Tab (gpui-base 0.10.0 `src/root.rs:44-45`). Under adwaita,
+/// which leaves the field unset, the plugin writes nothing: the band stays
+/// as `apply` set it, or as the application wrote it after.
+#[gpui::test]
+fn upstreams_band_shows_after_a_key_only_where_the_theme_says_so(cx: &mut TestAppContext) {
+    apply_light(cx, "kde-breeze");
+    let opened = band_window(cx);
+    assert!(opened.is_some(), "the field has a focus handle");
+    let Some(w) = opened else {
+        return;
+    };
+    let cx = &mut VisualTestContext::from_window(w.window, cx);
+    activate(cx);
+    assert_band(cx, false, None, "start");
+
+    let at = press(cx, "band-field");
+    assert_band(cx, false, None, "the mouse-down into the field");
+    release(cx, at);
+    assert!(focused_is(cx, &w.field), "the click focused the field");
+    assert_band(cx, false, None, "a click into the field");
+
+    cx.simulate_keystrokes("tab");
+    assert!(focused_is(cx, &w.button), "Tab focused the button");
+    assert_band(cx, true, Some("band-button"), "Tab");
+
+    cx.simulate_keystrokes("tab");
+    assert!(
+        !focused_is(cx, &w.field) && !focused_is(cx, &w.button),
+        "Tab moved the focus on to the switch"
+    );
+    assert_band(cx, true, Some("band-switch"), "Tab to the switch");
+
+    let over_button = centre(bounds(cx, "band-button"));
+    cx.simulate_mouse_move(over_button, None, Modifiers::default());
+    assert_band(cx, true, Some("band-switch"), "a mouse move");
+
+    click_on(cx, "band-field");
+    assert_band(cx, false, None, "a click into the field again");
+
+    cx.simulate_keystrokes("tab");
+    assert_band(cx, true, Some("band-button"), "Tab from the field");
+    click_on(cx, "band-switch");
+    assert_band(cx, false, None, "a click on the switch");
+
+    cx.simulate_keystrokes("shift-tab");
+    assert!(focused_is(cx, &w.button), "Shift+Tab focused the button");
+    assert_band(cx, true, Some("band-button"), "Shift+Tab");
+
+    apply_light(cx, "adwaita");
+    let opened = band_window(cx);
+    assert!(opened.is_some(), "the field has a focus handle");
+    let Some(w) = opened else {
+        return;
+    };
+    let cx = &mut VisualTestContext::from_window(w.window, cx);
+    activate(cx);
+    assert_band(cx, true, None, "adwaita: start");
+    click_on(cx, "band-field");
+    assert_band(
+        cx,
+        true,
+        Some("band-field"),
+        "adwaita: a click into the field",
+    );
+    cx.simulate_keystrokes("tab");
+    assert_band(cx, true, Some("band-button"), "adwaita: Tab");
+
+    apply_light(cx, "adwaita");
+    cx.update(|_, cx| gpui_component::Theme::global_mut(cx).focus_ring = false);
+    let opened = band_window(cx);
+    assert!(opened.is_some(), "the field has a focus handle");
+    let Some(w) = opened else {
+        return;
+    };
+    let cx = &mut VisualTestContext::from_window(w.window, cx);
+    activate(cx);
+    cx.simulate_keystrokes("tab");
+    assert_band(
+        cx,
+        false,
+        None,
+        "adwaita, the band written off after apply: Tab",
+    );
+}
+
+/// Decision 18: each window's `Root` sets `Theme::focus_ring` for its own
+/// window when it renders, so two windows under kde-breeze paint each its
+/// own answer. Only the painted frames are asserted between the two, not the
+/// flag, which is the window's whose `Root` rendered last.
+#[gpui::test]
+fn each_windows_root_sets_the_band_for_its_window(cx: &mut TestAppContext) {
+    apply_light(cx, "kde-breeze");
+    let (one, two) = (band_window(cx), band_window(cx));
+    assert!(
+        one.is_some() && two.is_some(),
+        "the fields have focus handles"
+    );
+    let (Some(one), Some(two)) = (one, two) else {
+        return;
+    };
+    let mut v1 = VisualTestContext::from_window(one.window, cx);
+    let mut v2 = VisualTestContext::from_window(two.window, cx);
+
+    activate(&mut v1);
+    click_on(&mut v1, "band-field");
+    v1.simulate_keystrokes("tab");
+    assert!(
+        focused_is(&mut v1, &one.button),
+        "window 1: Tab focused the button"
+    );
+    assert_band(
+        &mut v1,
+        true,
+        Some("band-button"),
+        "window 1: a click, then Tab",
+    );
+
+    activate(&mut v2);
+    click_on(&mut v2, "band-field");
+    assert!(
+        focused_is(&mut v2, &two.field),
+        "window 2: the click focused the field"
+    );
+    assert_band(&mut v2, false, None, "window 2: a click into the field");
+
+    redraw(&mut v1);
+    assert_painted_band(&mut v1, Some("band-button"), "window 1 drawn again");
+    redraw(&mut v2);
+    assert_painted_band(&mut v2, None, "window 2 drawn again");
 }

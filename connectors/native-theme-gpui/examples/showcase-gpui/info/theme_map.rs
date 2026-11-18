@@ -125,7 +125,9 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
         ),
         ThemeToken::Ring => (
             claim("value", "ring", t.ring, "native-theme-gpui/colors.rs:295"),
-            |i| i.config("model", "defaults.focus_ring_color"),
+            |i| {
+                i.config("model", "defaults.focus_ring_color, defaults.focus_ring_width_px, defaults.focus_ring_keyboard_only").config("derived", "the colour as stated where gpui-component's band is on for any focus; made opaque where the theme says keyboard only or its ring width is not above 0: there ring colours a focused control's border or line and a Tab's keyboard ring, and the band after a key press takes it with its alpha set to 0.5 (native-theme-gpui/colors.rs, ring_colour)")
+            },
         ),
         ThemeToken::Selection => (
             claim(
