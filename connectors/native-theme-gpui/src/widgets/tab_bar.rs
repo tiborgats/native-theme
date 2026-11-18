@@ -676,6 +676,9 @@ impl RenderOnce for TabBar {
                 .when(push_end && total.checked_sub(1) == Some(ix), |tab| {
                     tab.ml_auto()
                 })
+                // The probe's pixel takes no focus from a press either: its
+                // own listener, which runs before its focus listener, prevents
+                // the default, and the press still reaches the tab.
                 .children(probes.get(ix).map(|probe| {
                     div()
                         .absolute()
@@ -683,6 +686,7 @@ impl RenderOnce for TabBar {
                         .left_0()
                         .size(px(1.))
                         .track_focus(probe)
+                        .on_any_mouse_down(|_, window, _| window.prevent_default())
                 }))
         });
         // Ids within the bar's own: the tabs within their row.

@@ -3722,14 +3722,57 @@ fn focusing_an_element_round_the_bar_keeps_the_strip_where_it_is(cx: &mut TestAp
     assert_eq!(handle.offset().x, before, "the strip stayed where it was");
 }
 
+/// A window drawing [`keyboard_tab_window`]'s bar inside an element that
+/// counts the right and the middle presses that reach it, as a context menu
+/// round the bar would open on them.
+fn pressed_tab_window(
+    cx: &mut TestAppContext,
+    activated: Rc<RefCell<Vec<usize>>>,
+    right: Rc<Cell<usize>>,
+    middle: Rc<Cell<usize>>,
+) -> &mut VisualTestContext {
+    let cx = window_with(
+        cx,
+        Some(("kde-breeze", ColorMode::Light)),
+        Box::new(move |_, _| {
+            let activated = activated.clone();
+            let (right, middle) = (right.clone(), middle.clone());
+            div()
+                .w_full()
+                .on_mouse_down(gpui::MouseButton::Right, move |_, _, _| {
+                    right.set(right.get() + 1)
+                })
+                .on_mouse_down(gpui::MouseButton::Middle, move |_, _, _| {
+                    middle.set(middle.get() + 1)
+                })
+                .child(
+                    TabBar::new("t")
+                        .w_full()
+                        .children(
+                            TAB_NAMES.map(|name| Tab::new(name).debug_selector(|| name.into())),
+                        )
+                        .on_click(move |ix, _, _| activated.borrow_mut().push(*ix)),
+                )
+                .into_any_element()
+        }),
+    );
+    redraw(cx);
+    redraw(cx);
+    cx
+}
+
 /// gpui-base's `Tab` keeps only the left button from focusing it; the bar
-/// keeps a right and a middle press from it too, and neither activates a
-/// tab.
+/// keeps a right and a middle press from it too, neither activates a tab,
+/// and both reach the element round the bar.
 #[gpui::test]
 fn a_right_or_a_middle_press_moves_no_focus(cx: &mut TestAppContext) {
     let activated: Rc<RefCell<Vec<usize>>> = Rc::default();
-    let cx = keyboard_tab_window(cx, 0, activated.clone());
-    for button in [gpui::MouseButton::Right, gpui::MouseButton::Middle] {
+    let (right, middle): (Rc<Cell<usize>>, Rc<Cell<usize>>) = Default::default();
+    let cx = pressed_tab_window(cx, activated.clone(), right.clone(), middle.clone());
+    for (button, count) in [
+        (gpui::MouseButton::Right, &right),
+        (gpui::MouseButton::Middle, &middle),
+    ] {
         let at = centre(bounds(cx, "tab1"));
         cx.simulate_mouse_down(at, button, Modifiers::default());
         cx.simulate_mouse_up(at, button, Modifiers::default());
@@ -3742,6 +3785,51 @@ fn a_right_or_a_middle_press_moves_no_focus(cx: &mut TestAppContext) {
             activated.borrow().is_empty(),
             "{button:?}: the press activated {:?}",
             activated.borrow()
+        );
+        assert_eq!(
+            count.get(),
+            1,
+            "{button:?}: the press reached the element round the bar"
+        );
+    }
+}
+
+/// A press of any button on the pixel of a tab's scroll probe, the focus
+/// handle inside the tab at its padding box's top left corner, moves no
+/// focus either; a left press there still activates the tab.
+#[gpui::test]
+fn a_press_on_a_tabs_scroll_probe_moves_no_focus(cx: &mut TestAppContext) {
+    let look = TabLook::of(&resolved("kde-breeze", ColorMode::Light));
+    assert!(look.is_some(), "kde-breeze's tab look resolves");
+    let Some(look) = look else {
+        return;
+    };
+    let activated: Rc<RefCell<Vec<usize>>> = Rc::default();
+    let cx = keyboard_tab_window(cx, 0, activated.clone());
+    let inset = f32::from(look.border_width) + 0.5;
+    for button in [
+        gpui::MouseButton::Left,
+        gpui::MouseButton::Right,
+        gpui::MouseButton::Middle,
+    ] {
+        activated.borrow_mut().clear();
+        let at = bounds(cx, "tab1").origin + point(px(inset), px(inset));
+        cx.simulate_mouse_down(at, button, Modifiers::default());
+        cx.simulate_mouse_up(at, button, Modifiers::default());
+        redraw(cx);
+        assert!(
+            !anything_focused(cx),
+            "{button:?}: the press on the probe moved the focus"
+        );
+        let want: &[usize] = if button == gpui::MouseButton::Left {
+            &[1]
+        } else {
+            &[]
+        };
+        assert_eq!(
+            activated.borrow().as_slice(),
+            want,
+            "{button:?}: the tabs the press activated"
         );
     }
 }
@@ -4493,8 +4581,8 @@ fn upstreams_band_shows_after_a_key_only_where_the_theme_says_so(cx: &mut TestAp
 
 /// Decision 18: each window's `Root` sets `Theme::focus_ring` for its own
 /// window when it renders, so two windows under kde-breeze paint each its
-/// own answer. Only the painted frames are asserted between the two, not the
-/// flag, which is the window's whose `Root` rendered last.
+/// own answer. The flag, which is the window's whose `Root` rendered last, is
+/// asserted only right after a window's own render, never between the two.
 #[gpui::test]
 fn each_windows_root_sets_the_band_for_its_window(cx: &mut TestAppContext) {
     apply_light(cx, "kde-breeze");
@@ -4532,7 +4620,15 @@ fn each_windows_root_sets_the_band_for_its_window(cx: &mut TestAppContext) {
     assert_band(&mut v2, false, None, "window 2: a click into the field");
 
     redraw(&mut v1);
+    assert!(
+        band_flag(&mut v1),
+        "window 1 drawn again: Theme::focus_ring"
+    );
     assert_painted_band(&mut v1, Some("band-button"), "window 1 drawn again");
     redraw(&mut v2);
+    assert!(
+        !band_flag(&mut v2),
+        "window 2 drawn again: Theme::focus_ring"
+    );
     assert_painted_band(&mut v2, None, "window 2 drawn again");
 }

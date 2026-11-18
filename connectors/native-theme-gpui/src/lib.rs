@@ -1640,6 +1640,11 @@ fn install_observer_once(cx: &mut App) {
 /// when it renders: a view drawn again without its `Root`, after another window's `Root`
 /// rendered, reads that window's value until its own `Root` renders again. A `Root` made
 /// before the first `apply` has no plugin.
+///
+/// Each write of the flag notifies the observers of gpui-component's `Theme` global
+/// (gpui-pre 0.3.12 `src/app.rs:2555-2557`). Nothing in gpui-component, gpui-base, gpui-kit
+/// or this crate observes it, but an application that observes it and refreshes its
+/// windows, with two windows whose focus answers differ, re-renders on every frame.
 #[derive(Default)]
 struct FocusBand {
     /// The window's focus at the last render of its `Root`.

@@ -745,7 +745,11 @@ width and offset, after a key (below). In a window without the plugin (its
 it. `Theme::focus_ring` is one value for the application, so each window's
 `Root` sets it when it renders; a view drawn again without its `Root`, after
 another window's rendered, reads that window's value until its own `Root`
-renders again. Two of gpui-component's widgets keep a ring that
+renders again. Each write of the flag notifies the observers of
+gpui-component's `Theme` global (gpui-pre 0.3.12 `src/app.rs:2555-2557`);
+nothing in gpui-component, gpui-base, gpui-kit or this crate observes it, but
+an application that observes it and refreshes its windows, with two windows
+whose focus answers differ, re-renders on every frame. Two of gpui-component's widgets keep a ring that
 `Theme::focus_ring` does not switch: a `Tab` (2 px inset in `ring`, while the
 last input was a key) and a `Slider`, which rings its thumb (3 px, `ring` with
 its alpha set to 0.5) while it has the focus, however it got it, and while the
