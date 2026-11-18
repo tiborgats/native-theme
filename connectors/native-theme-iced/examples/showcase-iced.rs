@@ -2829,6 +2829,48 @@ fn reveal_open_tab(state: &mut State) -> iced::Task<Message> {
     )
 }
 
+/// Tab's move of the keyboard focus (`forward`) or Shift+Tab's, through
+/// iced's own operations. While a dialog is open (`in_dialog`) the move
+/// stays inside it, as a native modal dialog keeps its Tab order:
+/// `Stack::operate` walks every layer (iced_widget 0.14.2
+/// `src/stack.rs:210-229`), so a move over the whole tree would focus the
+/// window's widgets under the dialog, which `opaque` hands the keys on to
+/// (`src/helpers.rs:671-682`). The move wraps straight round, as Qt and the
+/// other platforms' toolkits move it: iced's `focus_next` from the last
+/// focusable widget and `focus_previous` from the first leave none focused
+/// (iced_core 0.14.0 `src/widget/operation/focusable.rs:119-196`), so where
+/// a move leaves none focused among widgets that can take it, it runs once
+/// more, from none focused, which focuses the first or the last.
+fn move_focus(in_dialog: bool, forward: bool) -> iced::Task<Message> {
+    use iced::advanced::widget::operation::{Operation, focusable, scope};
+    fn run<T: Send + 'static>(
+        in_dialog: bool,
+        operation: impl Operation<T> + 'static,
+    ) -> iced::Task<T> {
+        if in_dialog {
+            iced::advanced::widget::operate(scope(iced::widget::Id::new(DIALOG_ID), operation))
+        } else {
+            iced::advanced::widget::operate(operation)
+        }
+    }
+    let step = move || {
+        if forward {
+            run(in_dialog, focusable::focus_next::<focusable::Count>())
+        } else {
+            run(in_dialog, focusable::focus_previous::<focusable::Count>())
+        }
+    };
+    step()
+        .chain(run(in_dialog, focusable::count()).then(move |count| {
+            if count.focused.is_none() && count.total > 0 {
+                step()
+            } else {
+                iced::Task::none()
+            }
+        }))
+        .discard()
+}
+
 /// [`update`] at `now` on the showcase's clock, which the tests set.
 fn update_at(state: &mut State, message: Message, now: Instant) -> iced::Task<Message> {
     match message {
@@ -2887,29 +2929,8 @@ fn update_at(state: &mut State, message: Message, now: Instant) -> iced::Task<Me
             }
         }
         Message::Quit => return iced::exit(),
-        // While a dialog is open the moves stay inside it, as a native modal
-        // dialog keeps its Tab order: `Stack::operate` walks every layer
-        // (iced_widget 0.14.2 `src/stack.rs:210-229`), so a move over the
-        // whole tree would focus the window's widgets under the dialog, which
-        // `opaque` hands the keys on to (`src/helpers.rs:671-682`).
-        Message::FocusNext if state.overlay.is_some() => {
-            use iced::advanced::widget::operation::{focusable, scope};
-            return iced::advanced::widget::operate(scope(
-                iced::widget::Id::new(DIALOG_ID),
-                focusable::focus_next::<()>(),
-            ))
-            .discard();
-        }
-        Message::FocusPrevious if state.overlay.is_some() => {
-            use iced::advanced::widget::operation::{focusable, scope};
-            return iced::advanced::widget::operate(scope(
-                iced::widget::Id::new(DIALOG_ID),
-                focusable::focus_previous::<()>(),
-            ))
-            .discard();
-        }
-        Message::FocusNext => return iced::widget::operation::focus_next(),
-        Message::FocusPrevious => return iced::widget::operation::focus_previous(),
+        Message::FocusNext => return move_focus(state.overlay.is_some(), true),
+        Message::FocusPrevious => return move_focus(state.overlay.is_some(), false),
         // The whole tree surveyed, then the scale factor read, then written.
         Message::LayoutSettled => {
             return iced::advanced::widget::operate(Survey)
@@ -4518,8 +4539,8 @@ fn shortcut(event: iced::keyboard::Event) -> Option<Message> {
             "," => Some(Message::Open(Overlay::Preferences)),
             _ => None,
         },
-        // `update_at` keeps the move inside an open dialog, whose Tab order
-        // a native modal dialog keeps to itself.
+        // `move_focus` keeps the move inside an open dialog, whose Tab order
+        // a native modal dialog keeps to itself, and wraps it round.
         Key::Named(Named::Tab) => Some(if modifiers.shift() {
             Message::FocusPrevious
         } else {
@@ -32526,7 +32547,7 @@ mod tests {
     /// Tab sends [`Message::FocusNext`] and Shift+Tab
     /// [`Message::FocusPrevious`], which `update_at` turns into iced's own
     /// `focus_next` and `focus_previous` operations (kept inside an open
-    /// dialog, `tab_with_a_dialog_open_keeps_the_focus_in_the_dialog`),
+    /// dialog and wrapped round, [`move_focus`]),
     /// where the menus are the window's and where they are the system menu
     /// bar's.
     #[test]
@@ -32558,56 +32579,85 @@ mod tests {
         }
     }
 
-    /// `view(state)` built at the window's size over a headless renderer, as
-    /// [`Simulator`] builds it (iced_test 0.14.0 `src/simulator.rs:60-93`),
-    /// with the renderer, so a test can run operations over it.
-    fn operable(
-        state: &State,
-    ) -> (
-        UserInterface<'_, Message, iced::Theme, iced::Renderer>,
-        iced::Renderer,
-    ) {
+    /// A headless renderer, as [`Simulator`] makes one (iced_test 0.14.0
+    /// `src/simulator.rs:60-93`).
+    fn headless() -> iced::Renderer {
         use iced::advanced::renderer::Headless;
-        let settings = Settings::default();
         let backend = std::env::var("ICED_TEST_BACKEND").ok();
-        let mut renderer =
-            iced_test::futures::futures::executor::block_on(<iced::Renderer as Headless>::new(
-                iced::Font::with_name("Fira Sans"),
-                settings.default_text_size,
-                backend.as_deref(),
-            ))
-            .expect("a headless renderer");
-        let ui = UserInterface::build(
-            view(state),
-            Size::new(WINDOW_SIZE.0, WINDOW_SIZE.1),
-            iced_test::runtime::user_interface::Cache::default(),
-            &mut renderer,
-        );
-        (ui, renderer)
+        iced_test::futures::futures::executor::block_on(<iced::Renderer as Headless>::new(
+            iced::Font::with_name("Fira Sans"),
+            Settings::default().default_text_size,
+            backend.as_deref(),
+        ))
+        .expect("a headless renderer")
     }
 
-    /// The widget operation `task` runs first, run over `ui` as iced's
+    /// The interface `view(state)` builds at the window's size from `cache`,
+    /// the widget states of the one built before, so a test can run
+    /// operations over it.
+    fn operable<'a>(
+        state: &'a State,
+        cache: iced_test::runtime::user_interface::Cache,
+        renderer: &mut iced::Renderer,
+    ) -> UserInterface<'a, Message, iced::Theme, iced::Renderer> {
+        UserInterface::build(
+            view(state),
+            Size::new(WINDOW_SIZE.0, WINDOW_SIZE.1),
+            cache,
+            renderer,
+        )
+    }
+
+    /// Every widget operation `task` runs, run over `ui` in order as iced's
     /// runtime runs one: again with each operation its `finish` chains to
-    /// (iced_winit 0.14.0 `src/lib.rs:1745-1758`).
-    fn run_operation(
+    /// (iced_winit 0.14.0 `src/lib.rs:1745-1758`). Its outputs are fed back
+    /// into the task, as the runtime does, and none reaches `update`.
+    fn run_task(
         ui: &mut UserInterface<'_, Message, iced::Theme, iced::Renderer>,
         renderer: &iced::Renderer,
         task: iced::Task<Message>,
     ) {
         use iced::advanced::widget::operation::Outcome;
         use iced_test::futures::futures::StreamExt;
-        let stream = iced_test::runtime::task::into_stream(task);
-        let first =
-            stream.and_then(|mut s| iced_test::futures::futures::executor::block_on(s.next()));
-        let Some(iced_test::runtime::Action::Widget(operation)) = first else {
-            panic!("the task runs no widget operation");
+        let Some(mut stream) = iced_test::runtime::task::into_stream(task) else {
+            return;
         };
-        let mut current = Some(operation);
-        while let Some(mut operation) = current.take() {
-            ui.operate(renderer, operation.as_mut());
-            if let Outcome::Chain(next) = operation.finish() {
-                current = Some(next);
+        while let Some(action) = iced_test::futures::futures::executor::block_on(stream.next()) {
+            let iced_test::runtime::Action::Widget(operation) = action else {
+                continue;
+            };
+            let mut current = Some(operation);
+            while let Some(mut operation) = current.take() {
+                ui.operate(renderer, operation.as_mut());
+                if let Outcome::Chain(next) = operation.finish() {
+                    current = Some(next);
+                }
             }
+        }
+    }
+
+    /// The focusable widgets of `ui`, and which of them holds the focus: in
+    /// the whole tree, or inside the open dialog's container ([`DIALOG_ID`])
+    /// where `in_dialog`.
+    fn focus_count(
+        ui: &mut UserInterface<'_, Message, iced::Theme, iced::Renderer>,
+        renderer: &iced::Renderer,
+        in_dialog: bool,
+    ) -> iced::advanced::widget::operation::focusable::Count {
+        use iced::advanced::widget::Operation;
+        use iced::advanced::widget::operation::{self, Outcome, focusable};
+        let mut count: Box<dyn Operation<focusable::Count>> = if in_dialog {
+            Box::new(operation::scope(
+                iced::widget::Id::new(DIALOG_ID),
+                focusable::count(),
+            ))
+        } else {
+            Box::new(focusable::count())
+        };
+        ui.operate(renderer, &mut operation::black_box(&mut count));
+        match count.finish() {
+            Outcome::Some(count) => count,
+            _ => focusable::Count::default(),
         }
     }
 
@@ -32649,19 +32699,118 @@ mod tests {
         state.overlay = Some(Overlay::CommandPalette);
         let next = update(&mut state, Message::FocusNext);
         let previous = update(&mut state, Message::FocusPrevious);
-        let (mut ui, renderer) = operable(&state);
+        let mut renderer = headless();
+        let mut ui = operable(&state, Default::default(), &mut renderer);
         assert_eq!(
             focused_in_and_out(&mut ui, &renderer),
             (0, 0),
             "a widget is focused at first"
         );
-        run_operation(&mut ui, &renderer, next);
+        run_task(&mut ui, &renderer, next);
         let (all, inside) = focused_in_and_out(&mut ui, &renderer);
         assert!(all > 0, "Tab focused nothing");
         assert_eq!(all, inside, "Tab focused a widget outside the dialog");
-        run_operation(&mut ui, &renderer, previous);
+        run_task(&mut ui, &renderer, previous);
         let (all, inside) = focused_in_and_out(&mut ui, &renderer);
         assert_eq!(all, inside, "Shift+Tab focused a widget outside the dialog");
+    }
+
+    /// A dialog takes the keyboard focus from the window, as a native modal
+    /// dialog does, so no key reaches a field hidden under it: the Basic
+    /// page's focused field given the focus as `boot` gives it, then
+    /// Preferences, About and the command palette opened in turn, each
+    /// leaves no widget outside the dialog focused. The dialog roots the
+    /// window in a stack, whose tag differs, so the diff replaces the
+    /// window's tree and the field's state with it (iced_core 0.14.0
+    /// `src/widget/tree.rs:63-67`); this holds the page to it.
+    #[test]
+    fn a_dialog_takes_the_focus_from_the_window() {
+        for overlay in [
+            Overlay::Preferences,
+            Overlay::About,
+            Overlay::CommandPalette,
+        ] {
+            let mut state = page_state("macos-tahoe", Tab::Basic);
+            let mut renderer = headless();
+            let cache = {
+                let mut ui = operable(&state, Default::default(), &mut renderer);
+                run_task(
+                    &mut ui,
+                    &renderer,
+                    iced::widget::operation::focus(FOCUSED_INPUT_ID),
+                );
+                assert!(
+                    focus_count(&mut ui, &renderer, false).focused.is_some(),
+                    "{overlay:?}: the page's field took no focus"
+                );
+                ui.into_cache()
+            };
+            let open = update(&mut state, Message::Open(overlay));
+            let mut ui = operable(&state, cache, &mut renderer);
+            run_task(&mut ui, &renderer, open);
+            let (all, inside) = focused_in_and_out(&mut ui, &renderer);
+            assert_eq!(
+                all, inside,
+                "{overlay:?}: a widget outside the dialog is focused"
+            );
+        }
+    }
+
+    /// Tab wraps straight round, as Qt and the other platforms' toolkits
+    /// do, with no step where nothing is focused: in the window, Shift+Tab
+    /// from nothing focuses the last widget, Tab from it the first, and
+    /// Shift+Tab from that the last again; in the command palette, whose
+    /// query is its one focusable widget, Tab and Shift+Tab keep it focused.
+    #[test]
+    fn tab_wraps_round() {
+        let mut state = page_state("macos-tahoe", Tab::Basic);
+        let moves = [
+            update(&mut state, Message::FocusPrevious),
+            update(&mut state, Message::FocusNext),
+            update(&mut state, Message::FocusPrevious),
+        ];
+        let mut renderer = headless();
+        let mut ui = operable(&state, Default::default(), &mut renderer);
+        let total = focus_count(&mut ui, &renderer, false).total;
+        assert!(total > 1, "the window has {total} focusable widgets");
+        let want = [total - 1, 0, total - 1];
+        for ((task, want), what) in
+            moves
+                .into_iter()
+                .zip(want)
+                .zip(["Shift+Tab", "Tab", "Shift+Tab"])
+        {
+            run_task(&mut ui, &renderer, task);
+            assert_eq!(
+                focus_count(&mut ui, &renderer, false).focused,
+                Some(want),
+                "the window, {what}"
+            );
+        }
+        drop(ui);
+
+        state.overlay = Some(Overlay::CommandPalette);
+        let moves = [
+            update(&mut state, Message::FocusNext),
+            update(&mut state, Message::FocusNext),
+            update(&mut state, Message::FocusPrevious),
+        ];
+        let mut ui = operable(&state, Default::default(), &mut renderer);
+        assert_eq!(
+            focus_count(&mut ui, &renderer, true).total,
+            1,
+            "the palette"
+        );
+        for (task, what) in moves.into_iter().zip(["Tab", "Tab again", "Shift+Tab"]) {
+            run_task(&mut ui, &renderer, task);
+            let count = focus_count(&mut ui, &renderer, true);
+            assert_eq!(count.focused, Some(0), "the palette, {what}");
+            assert_eq!(
+                focused_in_and_out(&mut ui, &renderer).0,
+                1,
+                "the palette, {what}"
+            );
+        }
     }
 
     /// The chrome does what the gpui showcase's does: the key bindings the
