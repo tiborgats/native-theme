@@ -1749,6 +1749,13 @@ pub(crate) fn command_palette(app: &mut App, ui: &mut egui::Ui) {
                                 .desired_width(ui.available_width()),
                         )
                     });
+                    registry.note_last(
+                        "padding",
+                        "outside the input scope: the button's padding, one value per axis \
+                         (egui-0.37.0 src/theme/default_style.rs:155), button.border.padding \
+                         under the pair rule, egui's own 8 × 2 (src/style.rs:1568) on a pair \
+                         the theme states neither side of",
+                    );
                     if !field.has_focus() && palette.query.is_empty() {
                         field.request_focus();
                     }

@@ -19,6 +19,7 @@
 # note: optional, on any row: a fact about the leaf's route the sinks cannot carry (an egui
 #   limit, a reader, egui's own value where the theme states none), in the note column.
 # [unwritten]: sink path → why egui's own value stands there (T10b).
+# An egui-family line cited without a version, written before 0.7.2, is egui 0.36.2's.
 
 # ---- §5.1 Foundation — defaults, text_scale, layout
 

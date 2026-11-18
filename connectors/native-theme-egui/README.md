@@ -114,13 +114,10 @@ the atlas this crate installs; add that crate beside this one.
 | `egui_kittest` (dev-dependency: the showcase's tests) | 0.37.0 |
 | `rust-version` | 1.95 |
 
-`egui = "0.36.2"` is a caret requirement, `>=0.36.2, <0.37.0`: it accepts
-later 0.36 patch releases and rejects 0.37. The floor is 0.36.2, not 0.36.1,
-because 0.36.2 paints a `Window`'s title bar with the window's custom frame
-when no title frame is given, where 0.36.1 fell back to egui's stock window
-frame; the `Window` and `WindowTitleBar` surfaces look different on 0.36.1.
-An exact `=0.36.2` pin would reject patch fixes, and a wider range is
-impossible: your `egui::Style` must be this crate's `egui::Style`, and cargo
+`egui = "0.37.0"` is a caret requirement, `>=0.37.0, <0.38.0`: it accepts
+later 0.37 patch releases and rejects 0.38. The floor is 0.37.0 because it is
+the only 0.37 release. An exact `=0.37.0` pin would reject patch fixes, and a
+wider range is impossible: your `egui::Style` must be this crate's `egui::Style`, and cargo
 cannot unify two semver-incompatible egui versions in one build.
 
 Each is a floor and nothing more, and deliberately not an open-ended range: a
@@ -143,7 +140,7 @@ Add the crate to your `Cargo.toml`, with the OS readers (`native`):
 
 ```toml
 [dependencies]
-eframe = "0.36.2"
+eframe = "0.37.0"
 native-theme-egui = { version = "0.7", features = ["native"] }
 ```
 
@@ -288,7 +285,13 @@ conversion is read from the `ResolvedTheme` itself
 With the `system-fonts` feature (on by default) `from_preset`, `from_system`
 and `to_egui_atlas` attach `fonts::FontPlan::from_system`, which asks
 native-theme for the faces of the theme's font families and installs them as
-the head of egui's `Proportional` and `Monospace` families. An
+the head of egui's `Proportional` and `Monospace` families. Without a base of
+the application's own, the plan's base is `FontDefinitions::default()` under
+the application's egui features: egui 0.37 adds its two emoji faces,
+`NotoEmoji-Regular` and `emoji-icon-font`, only under its
+`monochrome_emoji_fonts` feature, and `default_fonts`, which an eframe
+application with eframe's default features has, still gives Ubuntu-Light and
+Hack (`epaint-0.37.0/src/text/font_definitions.rs`). An
 application with fonts of its own passes them as the plan's base. On the OS
 theme, `SystemThemeExt::to_egui_builder` is the builder `to_egui_atlas` builds,
 before its `build()`, so every OS input stays and the second `fonts` call
@@ -583,10 +586,19 @@ themselves, and return `None` under reduced motion.
 
 ## Limits
 
-egui 0.36.2 cannot show everything a platform theme states: some leaves have
-no `Style` field, and some containers paint parts no style reaches. Each such
-leaf is a `mapping.toml` row marked `unmappable`, with the reason, and the
-mapping document in the API reference lists them all.
+egui 0.37.0 cannot show everything a platform theme states: some leaves have
+no `Style` field — an accent colour, a text colour per role, a stated-size unit
+beside `FontId::size` — and some parts egui draws in a way no style changes: a
+`Window` or `Modal` only fades in (`Area::fade_in`,
+`egui-0.37.0/src/containers/area.rs`), with no scaling or rising entrance, and
+a `Slider` draws no tick marks. Each such leaf is a `mapping.toml` row marked
+`unmappable`, with the reason, and the mapping document in the API reference
+lists them all.
+
+A submenu opens egui's 2.0 points from its menu's frame
+(`MenuConfig::submenu_gap`, `egui-0.37.0/src/containers/menu.rs`): a field of
+the menu's configuration, not of the `Style`, with no theme value, as
+native-theme's model states no such gap.
 
 One egui colour, `visuals.extreme_bg_color`, fills the scroll-bar groove, a
 `ProgressBar`'s track and `Frame::canvas`. The base style puts the theme's

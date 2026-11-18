@@ -1584,10 +1584,14 @@ fn open_page(page: Page, theme: egui::Theme) -> Harness<'static, App> {
     harness
 }
 
-/// The AccessKit roles egui gives a widget (`egui/src/response.rs:935-957`), less
-/// `Pane`, `Window`, `RadioGroup` and `Unknown`, and `DisclosureTriangle`, which a
-/// `CollapsingHeader` reports from egui 0.37.0 on, where egui 0.36.2 gave it `Button`
-/// (`egui-0.37.0/src/containers/collapsing_header.rs`, `CollapsingHeader::begin`).
+/// The AccessKit roles egui gives a widget: from egui 0.37.0 on a widget names its `Role` itself
+/// in its `WidgetInfo`, and `WidgetType`, which egui 0.36.2 mapped to a role, is that `Role`
+/// under its old name, the variants egui renamed tabled at `egui-0.37.0/src/lib.rs:642-659`
+/// (`Label`, `Link`, `TextInput`, `Button`, `Image`, `CheckBox`, `RadioButton`, `ComboBox`,
+/// `Slider`, `SpinButton`, `ColorWell`, `ProgressIndicator`, `Splitter`, `ScrollBar`, and
+/// `DisclosureTriangle`, which a `CollapsingHeader` reports,
+/// `egui-0.37.0/src/containers/collapsing_header.rs:589`, where 0.36.2 gave it `Button`), less
+/// `Pane`, `Window`, `RadioGroup` and `Unknown`.
 const WIDGET_ROLES: &[Role] = &[
     Role::Label,
     Role::Link,
@@ -1634,9 +1638,10 @@ fn every_widget_reports_itself() {
                 // The scroll lands on the third pass after the request (measured on the Text page).
                 harness.run_steps(3);
                 // A node egui creates itself, whose id no helper sees (§13.2): a scroll bar
-                // (`egui/src/containers/scroll_area.rs:1336`), a window's resize handle
-                // (`egui/src/containers/window.rs:1085`), or a node inside a `Window`'s AccessKit
-                // node — its title bar's collapse and close buttons (`:1377-1388`, `:1466-1470`).
+                // (`egui-0.37.0/src/containers/scroll_area.rs:1473`), a window's resize handle or a
+                // panel's (`Role::Splitter`: `egui-0.37.0/src/containers/window.rs:1087`,
+                // `containers/panel.rs:1202`), or a node inside a `Window`'s AccessKit node — its
+                // title bar's collapse and close buttons (`window.rs:1396-1410`, `:1488-1491`).
                 let Some((rect, egui_own)) = harness
                     .query_all(By::new().predicate(move |n| n.locate().0 == id))
                     .next()
@@ -1689,7 +1694,9 @@ fn every_widget_reports_itself() {
                 let own = shown.id.accesskit_id() == id;
                 // Else the info of a non-container widget whose rect contains the node's; for a
                 // node egui creates itself (and no helper records), the innermost record's,
-                // container or not (§13.2). A record is clipped to what is shown and the node is
+                // container or not (§13.2), which holds the node's centre where the node reaches
+                // past it, as a panel's resize handle (`Role::Splitter`) straddles its panel's
+                // edge. A record is clipped to what is shown and the node is
                 // not: the last node of a page scrolled to its end may reach a fraction of a
                 // pixel past the page's clip, so the rects compare within half a pixel.
                 let by_record = records.iter().any(|r| {
@@ -1707,6 +1714,107 @@ fn every_widget_reports_itself() {
             }
         }
     }
+}
+
+/// Every input on every page has an accessible name (`Harness::unnamed_widgets`,
+/// `egui_kittest-0.37.0/src/accessibility.rs`). kittest checks it itself only where a run settles
+/// (`Harness::try_run`, `egui_kittest-0.37.0/src/lib.rs`), which a visible spinner keeps the
+/// Range page from doing, so each page is checked here once it is open.
+#[test]
+fn every_page_names_its_inputs() {
+    for theme in [egui::Theme::Light, egui::Theme::Dark] {
+        for page in Page::ALL {
+            let harness = open_page(page, theme);
+            let unnamed = harness.unnamed_widgets();
+            assert!(
+                unnamed.is_empty(),
+                "{page:?} {theme:?}: inputs with no accessible name: {unnamed:#?}"
+            );
+        }
+    }
+}
+
+/// Widget Info states what egui draws where a `mapping.toml` row records it in its `note` (E5,
+/// E7): under TEST_PRESET, which states no `button.border.padding` and a check box radius above
+/// egui's cap, a button's padding and least-height rows and a checked box's radius row carry
+/// their row's note after the route.
+#[test]
+fn widget_info_carries_the_mapping_notes() {
+    let note = |manifest: &Manifest, leaf: &str| {
+        manifest
+            .rows
+            .iter()
+            .find(|r| r.leaf == leaf)
+            .and_then(|r| r.note.clone())
+            .unwrap_or_else(|| panic!("mapping.toml's {leaf} row has no note"))
+    };
+    let elements = crate::elements::showcase_elements().unwrap_or_default();
+    for (page, kind, leaves) in [
+        (
+            Page::Buttons,
+            "button (enabled)",
+            &["button.border.padding.left", "button.min_height"][..],
+        ),
+        (
+            Page::Selection,
+            "checkbox (checked)",
+            &["checkbox.border.corner_radius", "checkbox.indicator_width"][..],
+        ),
+    ] {
+        let mut harness = open_page(page, egui::Theme::Light);
+        let pos = centre_of(&harness, kind);
+        hover_and_settle(&mut harness, pos);
+        let shown = harness.state().registry.shown().cloned().expect("shown");
+        assert_eq!(shown.info.kind, kind);
+        let (manifest, json) = manifest_and_json(&harness);
+        let t = harness.state().atlas.resolved_for(egui::Theme::Light);
+        assert!(
+            t.button.border.padding.left.is_none() && t.button.border.padding.right.is_none(),
+            "{TEST_PRESET} states a button padding across, so the padding note shows no default"
+        );
+        let view = crate::info::InfoView::of(
+            &shown,
+            &elements,
+            &manifest,
+            (&json, TEST_PRESET),
+            (&harness.state().atlas, &harness.ctx),
+        );
+        for leaf in leaves {
+            let row = view
+                .rows
+                .iter()
+                .find(|r| r.leaf == *leaf)
+                .unwrap_or_else(|| panic!("{kind}: no {leaf} row"));
+            let note = note(&manifest, leaf);
+            assert!(
+                row.how.ends_with(&format!("; {note}")),
+                "{kind}: {leaf}'s route {:?} does not end in its note {note:?}",
+                row.how
+            );
+        }
+    }
+}
+
+/// E10: the Inputs page's `CompletionPopup` offers the bundled presets whose key begins with the
+/// word typed into its field, and Enter takes the selected one.
+#[test]
+fn the_completion_popup_completes_a_presets_key() {
+    let mut harness = open_page(Page::Inputs, egui::Theme::Light);
+    harness
+        .get_by_role_and_label(Role::TextInput, "CompletionPopup")
+        .click();
+    harness.run_steps(SETTLE);
+    harness
+        .get_by_role_and_label(Role::TextInput, "CompletionPopup")
+        .type_text("adw");
+    harness.run_steps(SETTLE);
+    assert!(
+        harness.query_by_label("adwaita").is_some(),
+        "the popup offers no adwaita row"
+    );
+    harness.key_press(egui::Key::Enter);
+    harness.run_steps(SETTLE);
+    assert_eq!(harness.state().demo_state.completion, "adwaita");
 }
 
 #[test]
@@ -1749,6 +1857,9 @@ fn the_innermost_hovered_target_wins() {
     let pos = centre_of(&harness, "card checkbox");
     hover_and_settle(&mut harness, pos);
     assert_eq!(shown_kind(&harness), Some("card checkbox"));
+    // The Scene lies below the 720-point window as the page opens (its button's centre measured
+    // at y 937.5 under TEST_PRESET), where no pointer reaches it: `ui.columns`' first column,
+    // under the Scene, is scrolled into view, which brings the Scene into the window with it.
     harness.get_by_label("ui.columns: column 0").scroll_to_me();
     harness.run_steps(3);
     let pos = centre_of(&harness, "scene button");
@@ -5356,6 +5467,13 @@ fn the_icon_theme_drop_down_says_on_hover_why_the_system_theme_is_unavailable() 
             panic!("the Icon theme drop-down is not placed");
         };
         hover_and_settle(&mut harness, combo.center());
+        // One pass more than `hover_and_settle`'s three: egui opens the tooltip on the third,
+        // once the pointer has been still for `tooltip_delay`, 0.5 s
+        // (`egui-0.37.0/src/style.rs:1597`), two of kittest's 0.25 s steps after the hover's pass
+        // (`egui_kittest-0.37.0/src/builder.rs:47`), as an invisible sizing pass
+        // (`containers/popup.rs:629`, `containers/area.rs:691-693`), and egui 0.37 leaves an
+        // invisible widget out of the AccessKit tree (`context.rs:655`, `is_accesskit_visible`),
+        // so the hover text is in the tree from the fourth pass on (measured).
         harness.run_steps(1);
         assert_eq!(
             crate::pages::icons::set_label(native_theme::theme::IconSet::Freedesktop, None, detect),

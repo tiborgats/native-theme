@@ -1,6 +1,7 @@
 //! egui toolkit connector for native-theme.
 //!
-//! Target: **egui 0.36.2**.
+//! Target: **egui 0.37.0**. In this crate's documentation and comments, an egui-family line
+//! cited without a version, written before 0.7.2, is egui 0.36.2's.
 //!
 //! `native-theme-egui` themes an egui application from a [`native_theme`] theme: the OS's
 //! own, read at run time, or one of native-theme's bundled presets. One call,
@@ -131,7 +132,7 @@
 //! | `native` | off | the OS readers; without one, [`from_system`] is the platform preset on Linux and an error on macOS and Windows |
 //! | `watch` | off | `ThemeWatcher`, which follows OS theme changes; it needs a reader feature (`native`) too |
 //!
-//! The minimum supported Rust version is 1.95, egui 0.36.2's own.
+//! The minimum supported Rust version is 1.95, egui 0.37.0's own.
 //!
 //! # Semver
 //!

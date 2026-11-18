@@ -300,6 +300,13 @@ pub(crate) fn show(
                         });
                     });
                     open.record(reg, &sub, "SubMenuButton");
+                    reg.note_last(
+                        "the arrow",
+                        "egui's triangle, in the button's text colour, in a square \
+                         spacing.icon_width on a side, so checkbox.indicator_width \
+                         (egui-0.37.0 src/containers/menu.rs:492-505, \
+                         SubMenuButton::arrow_atom); menu.icon_size does not size it",
+                    );
                 });
                 menu.record(reg, &r.response, "menu button");
 

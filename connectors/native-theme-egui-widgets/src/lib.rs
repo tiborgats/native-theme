@@ -1,7 +1,8 @@
 //! egui widgets drawn from a native theme, for applications themed with
 //! [`native-theme-egui`](native_theme_egui).
 //!
-//! Target: **egui 0.36.2**.
+//! Target: **egui 0.37.0**. In this crate's documentation and comments, an egui-family line
+//! cited without a version, written before 0.7.2, is egui 0.36.2's.
 //!
 //! A companion widget crate for the connector. The connector themes egui's own
 //! widgets through egui's `Style`; this crate draws what no `Style` can produce,

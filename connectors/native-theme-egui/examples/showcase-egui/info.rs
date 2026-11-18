@@ -53,6 +53,9 @@ pub(crate) struct Row {
     pub sub_tag: Option<String>,
     pub upstream: Option<String>,
     pub exceptions: Vec<(String, String)>,
+    /// A fact about the leaf's route its sinks cannot carry (an egui limit, a reader, egui's own
+    /// value where the theme states none), which Widget Info shows after the route.
+    pub note: Option<String>,
 }
 
 /// The connector's test file whose `#[test]` functions hold the §13 clauses `mapping.toml`'s
@@ -219,6 +222,7 @@ impl Manifest {
                 sub_tag: string("sub_tag"),
                 upstream: string("upstream"),
                 exceptions,
+                note: string("note"),
             });
         }
         rows.sort_by(|a, b| a.leaf.cmp(&b.leaf));
@@ -695,13 +699,22 @@ impl InfoView {
         let families = crate::demo::DrawnFamilies::of(ctx, atlas);
         let family = |path: &str, font: &ResolvedFontSpec| families.font_label(path, font);
         let seams = &shown.info.seams;
-        // A row's route, with each exception `mapping.toml` records for the preset shown.
+        // A row's route, with each note `mapping.toml` records for its leaf, once, and each
+        // exception it records for the preset shown.
         let with_exceptions = |line: String, key: &str| {
             let prefix = format!("{key}.");
-            manifest
-                .rows
-                .iter()
-                .filter(|r| r.leaf == key || r.leaf.starts_with(&prefix))
+            let rows = || {
+                manifest
+                    .rows
+                    .iter()
+                    .filter(|r| r.leaf == key || r.leaf.starts_with(&prefix))
+            };
+            let mut notes: Vec<&str> = rows().filter_map(|r| r.note.as_deref()).collect();
+            notes.dedup();
+            let line = notes
+                .into_iter()
+                .fold(line, |line, note| format!("{line}; {note}"));
+            rows()
                 .flat_map(|r| r.exceptions.iter())
                 .filter(|(p, _)| p == preset)
                 .fold(line, |line, (_, why)| format!("{line}; on {preset}: {why}"))

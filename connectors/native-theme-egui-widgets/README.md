@@ -26,7 +26,7 @@ counterpart.
 
 ## Compatibility
 
-Built for egui 0.36.2, which it reaches through the connector, with
+Built for egui 0.37.0, which it reaches through the connector, with
 `rust-version = "1.95"`, as the connector; the connector's
 [Compatibility](../native-theme-egui/README.md#compatibility) section has the
 floors and the versions verified.
@@ -37,7 +37,7 @@ Add the connector, with the OS readers (`native`), and this crate:
 
 ```toml
 [dependencies]
-eframe = "0.36.2"
+eframe = "0.37.0"
 native-theme-egui = { version = "0.7", features = ["native"] }
 native-theme-egui-widgets = "0.7"
 ```

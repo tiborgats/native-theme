@@ -24,6 +24,7 @@ pub(crate) fn show(
         ui.vertical(|ui| {
             demo::scoped(reg, ui, Role::Slider, normal, "Slider (horizontal)", |ui| {
                 ui.add(egui::Slider::new(&mut state.slider, range.clone()).show_value(false))
+                    .accessible_name("Slider (horizontal)")
             });
             demo::scoped(
                 reg,
@@ -41,6 +42,7 @@ pub(crate) fn show(
                 "Slider (trailing fill)",
                 |ui| {
                     ui.add(egui::Slider::new(&mut state.slider, range.clone()).trailing_fill(true))
+                        .accessible_name("Slider (trailing fill)")
                 },
             );
             let mut disabled = state.slider;
@@ -50,7 +52,10 @@ pub(crate) fn show(
                 Role::Slider,
                 RoleVariant::Disabled,
                 "Slider (disabled)",
-                |ui| ui.add_enabled(false, egui::Slider::new(&mut disabled, range.clone())),
+                |ui| {
+                    ui.add_enabled(false, egui::Slider::new(&mut disabled, range.clone()))
+                        .accessible_name("Slider (disabled)")
+                },
             );
             // The companion crate's slider (docs/archive/todo_egui-widgets-spec.md §4.2): its knob in
             // `slider.thumb_color`, where egui's resting knob takes the rail's colour.
@@ -60,7 +65,10 @@ pub(crate) fn show(
                 Role::Slider,
                 normal,
                 "Slider (native-theme-egui-widgets)",
-                |ui| ui.add(Slider::new(&mut state.slider, range.clone())),
+                |ui| {
+                    ui.add(Slider::new(&mut state.slider, range.clone()))
+                        .accessible_name("Slider (native-theme-egui-widgets)")
+                },
             );
             let mut disabled = state.slider;
             demo::widget(
@@ -69,11 +77,15 @@ pub(crate) fn show(
                 Role::Slider,
                 RoleVariant::Disabled,
                 "Slider (native-theme-egui-widgets, disabled)",
-                |ui| ui.add(Slider::new(&mut disabled, range.clone()).enabled(false)),
+                |ui| {
+                    ui.add(Slider::new(&mut disabled, range.clone()).enabled(false))
+                        .accessible_name("Slider (native-theme-egui-widgets, disabled)")
+                },
             );
         });
         demo::scoped(reg, ui, Role::Slider, normal, "Slider (vertical)", |ui| {
             ui.add(egui::Slider::new(&mut state.vertical, range.clone()).vertical())
+                .accessible_name("Slider (vertical)")
         });
     });
 
@@ -92,7 +104,7 @@ pub(crate) fn show(
         "the resting handles",
         "in the rail's colour, slider.track_color: egui paints a handle in its state's fill, \
          and the resting state's is the rail's (egui 0.37.0 src/widgets/slider_core.rs, \
-         paint_rail and paint_handle); a hovered or pressed handle takes \
+         paint_rail and paint_handle); a hovered, pressed or focused handle takes \
          slider.thumb_hover_color, slider.thumb_color where that is unstated",
     );
 

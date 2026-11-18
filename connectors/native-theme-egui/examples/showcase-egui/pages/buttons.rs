@@ -49,9 +49,10 @@ pub(crate) fn show(
         reg.note_last(
             "Button::small",
             "egui's own size, its label's with the button padding at the sides \
-             (button.border.padding's left and right, egui's where unstated) and none above \
-             and below (egui 0.36.2 src/widgets/button.rs:306-309, :339-342); \
-             button.min_width and button.min_height are not applied",
+             (button.border.padding's left and right, egui's own 8 where the theme states \
+             neither, egui-0.37.0 src/style.rs:1568) and none above and below \
+             (src/theme/default_style.rs:56-60, :98-102); button.min_width and \
+             button.min_height are not applied",
         );
         demo::scoped(reg, ui, Role::Button, normal, "button (frameless)", |ui| {
             ui.add(Button::new("Frameless").frame(false).min_size(min))
@@ -102,8 +103,9 @@ pub(crate) fn show(
         reg.note_last(
             "ui.small_button",
             "egui's own size, its label's with the button padding at the sides \
-             (button.border.padding's left and right, egui's where unstated) and none above \
-             and below; button.min_width and button.min_height are not applied",
+             (button.border.padding's left and right, egui's own 8 where the theme states \
+             neither) and none above and below; button.min_width and button.min_height are \
+             not applied",
         );
         demo::scoped(reg, ui, Role::Button, normal, "ui.toggle_value", |ui| {
             ui.toggle_value(&mut state.toggle, "ui.toggle_value")
