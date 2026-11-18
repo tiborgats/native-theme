@@ -9242,6 +9242,79 @@ fn a_capture_without_the_scale_factor_is_refused() {
     assert_eq!(content(Some(1.25)), Ok(((1600, 900), 1.25)));
 }
 
+/// The one check that a tool button's hover outline is drawn: the «toolbar» scope writes its
+/// colour (`toolbar.button_hover_border_color`), and `demo::tool_button` its width per call,
+/// at width 0 nothing being drawn. In a «toolbar» scope after `demo::tool_button` as the
+/// chrome's toolbar calls it, kde-breeze light, which states the outline, draws it
+/// `button.border.line_width` wide hovered and pressed and none at rest; adwaita light, which
+/// does not, draws none in the three.
+#[test]
+fn a_tool_buttons_outline_has_the_borders_width() {
+    let prefs = AccessibilityPreferences::default();
+    for (preset, outlined) in [("kde-breeze", true), ("adwaita", false)] {
+        let (atlas, t) = from_preset(preset, false, &prefs).expect("a bundled preset");
+        assert_eq!(
+            t.toolbar.button_hover_border_color.is_some(),
+            outlined,
+            "{preset} states the toolbar's hover outline"
+        );
+        let ctx = egui::Context::default();
+        atlas.install(&ctx);
+        ctx.set_theme(egui::Theme::Light);
+        let mut reg = crate::demo::Registry::default();
+        let mut widths = None;
+        let mut out = ctx.run_ui(egui::RawInput::default(), |ui| {
+            crate::demo::scoped(
+                &mut reg,
+                ui,
+                native_theme_egui::Role::Toolbar,
+                native_theme_egui::RoleVariant::Normal,
+                "icon button",
+                |ui| {
+                    crate::demo::tool_button(
+                        ui,
+                        &t.button.border.padding,
+                        t.toolbar
+                            .button_hover_border_color
+                            .map(|_| t.button.border.line_width),
+                    );
+                    let w = &ui.style().visuals.widgets;
+                    widths = Some((
+                        [
+                            w.inactive.bg_stroke.width,
+                            w.hovered.bg_stroke.width,
+                            w.active.bg_stroke.width,
+                        ],
+                        w.hovered.bg_stroke.color,
+                    ));
+                    ui.add(egui::Button::new("Copy"))
+                },
+            );
+        });
+        // The font atlas's upload, which no renderer takes here (`epaint/src/textures.rs:337`).
+        out.textures_delta.clear();
+        let edge = t.button.border.line_width;
+        let want = if outlined {
+            assert!(edge > 0.0, "{preset} states a border width");
+            [0.0, edge, edge]
+        } else {
+            [0.0; 3]
+        };
+        assert_eq!(
+            widths.map(|(w, _)| w),
+            Some(want),
+            "{preset}: [inactive, hovered, active]"
+        );
+        if let Some(colour) = t.toolbar.button_hover_border_color {
+            assert_eq!(
+                widths.map(|(_, c)| c),
+                Some(native_theme_egui::convert::to_color32(colour)),
+                "{preset}: the «toolbar» scope's outline colour"
+            );
+        }
+    }
+}
+
 // --- The chrome's icons from a fixture icon theme --------------------------------------------
 
 /// M7-15: the side-panel toggle's freedesktop icon loads from the icon theme the chrome chose

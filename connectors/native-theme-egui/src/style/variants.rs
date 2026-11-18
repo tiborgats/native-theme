@@ -24,9 +24,10 @@ pub(crate) fn selected_cell(
     let t = input.theme;
     let mut style = normal.clone();
     // The checked box: `checkbox_style` fills from the state's `bg_fill`
-    // (`egui/src/widget_style.rs:182`) and outlines from `bg_stroke` (`:184`); the mark keeps
-    // `indicator_color` in `fg_stroke` (§5.3). `checkbox.hover_background` is the unchecked
-    // box's hover fill, so the hovered entry holds the checked fill too (§6.4).
+    // (`egui/src/widget_style.rs:182`) and outlines from `bg_stroke` (`:184`), and its hover
+    // outline, where stated, under the pointer; the mark keeps `indicator_color` in `fg_stroke`
+    // (§5.3). `checkbox.hover_background` is the unchecked box's hover fill, so the hovered
+    // entry holds the checked fill too (§6.4).
     let fill = to_color32(t.checkbox.checked_background);
     note_transparent_fill(fill, "checkbox.checked_background", notes);
     let outline = to_color32(t.checkbox.border.color);
@@ -40,6 +41,11 @@ pub(crate) fn selected_cell(
     ] {
         entry.bg_fill = fill;
         entry.bg_stroke.color = outline;
+    }
+    if let Some(hover) = t.checkbox.hover_border_color {
+        let hover = to_color32(hover);
+        w.hovered.bg_stroke.color = hover;
+        w.active.bg_stroke.color = hover;
     }
     Some(style)
 }
@@ -327,23 +333,50 @@ mod tests {
     }
 
     /// §6.2: the checked box fills from `checked_background` in all five entries, its outline is
-    /// `checkbox.border.color`, the mark keeps `indicator_color`, and nothing else moves.
+    /// `checkbox.border.color` in `noninteractive`, `inactive` and `open` and
+    /// `checkbox.hover_border_color` in `hovered` and `active` (a sentinel no other `checkbox.*`
+    /// colour holds, since kde-breeze's border and hover outline are one colour), the mark
+    /// keeps `indicator_color`, and nothing else moves.
     #[test]
     fn the_checkbox_selected_cell_fills_the_box_and_outlines_it() {
-        let t = resolved("kde-breeze", ColorMode::Light);
+        let mut t = resolved("kde-breeze", ColorMode::Light);
+        let sentinel = Rgba {
+            r: 0x12,
+            g: 0x34,
+            b: 0x56,
+            a: 0xff,
+        };
+        let k = &t.checkbox;
+        for other in [
+            Some(k.background_color),
+            Some(k.checked_background),
+            Some(k.indicator_color),
+            Some(k.disabled_text_color),
+            Some(k.font.color),
+            Some(k.border.color),
+            k.hover_background,
+            k.disabled_background,
+            k.unchecked_background,
+            k.unchecked_border_color,
+        ] {
+            assert_ne!(other, Some(sentinel));
+        }
+        t.checkbox.hover_border_color = Some(sentinel);
         let (s, _) = build(&t);
         let normal = s.cell(Role::Checkbox, RoleVariant::Normal);
         let sel = s.cell(Role::Checkbox, RoleVariant::Selected);
         let fill = to_color32(t.checkbox.checked_background);
         let outline = to_color32(t.checkbox.border.color);
+        let hover = to_color32(sentinel);
         let entries =
             |w: &egui::style::Widgets| [w.noninteractive, w.inactive, w.hovered, w.active, w.open];
-        for (n, e) in entries(&normal.visuals.widgets)
+        for ((n, e), want) in entries(&normal.visuals.widgets)
             .iter()
             .zip(entries(&sel.visuals.widgets))
+            .zip([outline, outline, hover, hover, outline])
         {
             assert_eq!(e.bg_fill, fill);
-            assert_eq!(e.bg_stroke.color, outline);
+            assert_eq!(e.bg_stroke.color, want);
             assert_eq!(e.bg_stroke.width, n.bg_stroke.width);
             assert_eq!(e.fg_stroke, n.fg_stroke, "the mark keeps indicator_color");
             assert_eq!(e.weak_bg_fill, n.weak_bg_fill);

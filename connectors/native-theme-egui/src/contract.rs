@@ -712,6 +712,34 @@ fn expected(
             }))
         }
         // ---- border colours with their §6.4 fallbacks, as stated (§6.13 folds none) ----
+        (Some("checkbox"), "normal", None, p)
+            if hover_or_press && p.ends_with(".bg_stroke.color") =>
+        {
+            c32(chain(
+                c,
+                &[
+                    "checkbox.hover_border_color",
+                    "checkbox.unchecked_border_color",
+                    "checkbox.border.color",
+                ],
+            )?)
+        }
+        (Some("checkbox"), "selected", None, p)
+            if hover_or_press && p.ends_with(".bg_stroke.color") =>
+        {
+            c32(chain(
+                c,
+                &["checkbox.hover_border_color", "checkbox.border.color"],
+            )?)
+        }
+        (Some("combo_box"), "normal", None, p)
+            if hover_or_press && p.ends_with(".bg_stroke.color") =>
+        {
+            c32(chain(
+                c,
+                &["combo_box.hover_border_color", "combo_box.border.color"],
+            )?)
+        }
         (Some("checkbox"), "normal", None, p) if p.ends_with(".bg_stroke.color") => c32(chain(
             c,
             &["checkbox.unchecked_border_color", "checkbox.border.color"],
@@ -734,6 +762,23 @@ fn expected(
                     "button.border.color",
                 ],
             )?)
+        }
+        // ---- D7: a toolbar's buttons' outline, else the resting stroke step 3 keeps ----
+        (Some("toolbar"), "normal", None, p)
+            if hover_or_press && p.ends_with(".bg_stroke.color") =>
+        {
+            match t.toolbar.button_hover_border_color {
+                Some(edge) => c32(edge),
+                None => Val::Color(
+                    cell()
+                        .ok_or("a scoped sink")?
+                        .visuals
+                        .widgets
+                        .inactive
+                        .bg_stroke
+                        .color,
+                ),
+            }
         }
         // ---- §5.9: `slider.fill_color` is invisible without the trailing fill ----
         (None, _, None, "visuals.slider_trailing_fill") => Val::Bool(true),

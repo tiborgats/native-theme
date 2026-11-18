@@ -41,7 +41,11 @@ pub enum Role {
     Tab,
     /// The sidebar: `ResolvedTheme::sidebar`.
     Sidebar,
-    /// The toolbar: `ResolvedTheme::toolbar`.
+    /// The toolbar: `ResolvedTheme::toolbar`. Its hovered and
+    /// pressed states are a flat tool button's, the toolbar's `button_*` fields where the
+    /// theme states them: make the button flat with `Button::frame_when_inactive(false)`, or
+    /// in a scope whose resting fill and border colour are transparent; both keep its size.
+    /// A framed button keeps its fill at rest.
     Toolbar,
     /// The status bar: `ResolvedTheme::status_bar`.
     StatusBar,

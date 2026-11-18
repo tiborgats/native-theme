@@ -960,6 +960,10 @@ mod tests {
 
     /// Every `None` soft option is a copy of the leaf its row names in §6.4's table, written as
     /// given; only `button.active_background` falls back to another *layer*, composited.
+    /// `checkbox.hover_border_color` copies the unchecked border, `combo_box.hover_border_color`
+    /// the combo box's border, and the toolbar's `button_hover_background`,
+    /// `button_active_background` and `button_hover_border_color` leave the base's hovered and
+    /// pressed fills and the cell's resting stroke.
     #[test]
     fn a_none_soft_option_copies_its_fallback_leaf() {
         let mut t = theme();
@@ -973,6 +977,45 @@ mod tests {
         t.segmented_control.hover_background = None;
         t.switch.hover_unchecked_background = None;
         t.input.hover_border_color = None;
+        let tb = &t.toolbar;
+        assert!(
+            t.checkbox.hover_border_color.is_some()
+                && t.combo_box.hover_border_color.is_some()
+                && tb.button_hover_background.is_some()
+                && tb.button_hover_border_color.is_some()
+                && tb.button_active_background.is_some(),
+            "this preset no longer states the hover borders and the toolbar's button states, \
+             so clearing them proves nothing"
+        );
+        // the box's border, a colour no other `checkbox.*` colour leaf holds, so the hover
+        // outline's fallback is told from the hover outline itself and from the other leaves
+        let sentinel = Rgba {
+            r: 0x12,
+            g: 0x34,
+            b: 0x56,
+            a: 0xff,
+        };
+        let k = &t.checkbox;
+        for other in [
+            Some(k.background_color),
+            Some(k.checked_background),
+            Some(k.indicator_color),
+            Some(k.disabled_text_color),
+            Some(k.font.color),
+            k.hover_background,
+            k.hover_border_color,
+            k.disabled_background,
+            k.unchecked_background,
+            k.unchecked_border_color,
+        ] {
+            assert_ne!(other, Some(sentinel));
+        }
+        t.checkbox.border.color = sentinel;
+        t.checkbox.hover_border_color = None;
+        t.combo_box.hover_border_color = None;
+        t.toolbar.button_hover_background = None;
+        t.toolbar.button_hover_border_color = None;
+        t.toolbar.button_active_background = None;
         let (s, _) = build(&t);
         let cell = |r: Role| s.cell(r, RoleVariant::Normal);
 
@@ -1007,6 +1050,26 @@ mod tests {
             cb.visuals.widgets.inactive.bg_stroke.color,
             to_color32(t.checkbox.border.color)
         );
+        // the hover outline's fallback is the unchecked border's, which is `border.color` here
+        assert_eq!(
+            cb.visuals.widgets.hovered.bg_stroke.color,
+            to_color32(sentinel)
+        );
+        assert_eq!(
+            cb.visuals.widgets.active.bg_stroke.color,
+            to_color32(sentinel)
+        );
+        assert_eq!(
+            cell(Role::ComboBox).visuals.widgets.hovered.bg_stroke.color,
+            to_color32(t.combo_box.border.color)
+        );
+        let toolbar = cell(Role::Toolbar);
+        let tw = &toolbar.visuals.widgets;
+        let bw = &s.base.visuals.widgets;
+        assert_eq!(tw.hovered.weak_bg_fill, bw.hovered.weak_bg_fill);
+        assert_eq!(tw.active.weak_bg_fill, bw.active.weak_bg_fill);
+        assert_eq!(tw.hovered.bg_stroke.color, tw.inactive.bg_stroke.color);
+        assert_eq!(tw.active.bg_stroke.color, tw.inactive.bg_stroke.color);
         assert_eq!(
             cell(Role::ComboBox).visuals.widgets.hovered.weak_bg_fill,
             to_color32(t.combo_box.background_color)
@@ -1052,8 +1115,8 @@ mod tests {
     /// `defaults.border.opacity` is the text colour's share already folded into every stated
     /// border colour (native-theme/src/model/border.rs, `DefaultsBorderSpec::opacity`;
     /// docs/platform-facts.md §2.1.6), so the connector multiplies no colour by it: the
-    /// defaults' border and every widget's own border, and the button's hover and focus
-    /// border, are painted as stated, whatever the
+    /// defaults' border and every widget's own border, the button's hover and focus
+    /// border, and the check box's hover outline, are painted as stated, whatever the
     /// opacity, and a non-finite one is never read.
     #[test]
     fn no_border_colour_carries_the_border_opacity() {
@@ -1090,8 +1153,12 @@ mod tests {
             .checkbox
             .unchecked_border_color
             .unwrap_or(t.checkbox.border.color);
-        for e in entries(&s.cell(Role::Checkbox, RoleVariant::Normal).visuals.widgets) {
-            assert_eq!(e.bg_stroke.color, to_color32(checkbox));
+        let checkbox_hover = t.checkbox.hover_border_color.unwrap_or(checkbox);
+        for (e, colour) in entries(&s.cell(Role::Checkbox, RoleVariant::Normal).visuals.widgets)
+            .iter()
+            .zip([checkbox, checkbox, checkbox_hover, checkbox_hover, checkbox])
+        {
+            assert_eq!(e.bg_stroke.color, to_color32(colour));
         }
         let input = s.cell(Role::Input, RoleVariant::Normal);
         assert_eq!(

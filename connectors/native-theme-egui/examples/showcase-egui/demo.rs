@@ -276,9 +276,10 @@ pub(crate) const GHOST_NOTE: (&str, &str) = (
 /// border's width kept, so a button in it is transparent at rest, as gpui-component's ghost
 /// button is (gpui-component 0.9.1 `src/button/button.rs:1027`, `bg_color`'s `Ghost` arm, and
 /// `:1117`, `border_color`'s), and filled and bordered hovered and pressed
-/// as its role states. It keeps its full frame, and so its size, in every state, where
-/// `frame_when_inactive(false)` lays it out at rest without the frame's border, which the
-/// hovered frame adds to its size (`egui/src/widgets/button.rs:364-368`). Each button drawn in
+/// as its role states. It keeps its full frame, and so its size, in every state, as
+/// `Button::frame_when_inactive(false)` does since egui 0.37, which hides a resting
+/// button's fill and stroke and keeps its margin (egui 0.37.0 `src/widgets/button.rs:191-205`,
+/// `src/theme/default_style.rs:77-84`). Each button drawn in
 /// it is noted with `Registry::ghost_last` where it is recorded.
 pub(crate) fn ghost(ui: &mut egui::Ui) {
     let rest = &mut ui.style_mut().visuals.widgets.inactive;
@@ -288,27 +289,39 @@ pub(crate) fn ghost(ui: &mut egui::Ui) {
 
 /// Make the rest of `ui` a tool button's, the icon-only button of a toolbar, the status bar and
 /// the tab row's page menu: Ghost ([`ghost`]), padded by `button.border.padding` and with no
-/// border and no minimum height, so it is its icon and that padding — the tool buttons of
-/// `docs/showcase-elements.toml` name the four padding sides and no border width or minimum
-/// size. egui pads a button by one pair (`Spacing::button_padding`), so the left side pads
+/// minimum height, so it is its icon and that padding. Where `edge` is `Some(width)`, the
+/// toolbar's hover outline (`toolbar.button_hover_border_color`, which the «toolbar» scope
+/// writes as the hovered and active stroke colour) is drawn that wide under the pointer and
+/// while pressed, at rest none; egui takes a stroke's width from the padding inside the frame,
+/// so the button's size does not change
+/// (`Frame::apply_stroke_and_expansion_without_layout_shift`). `None` draws no border in any
+/// state. egui pads a button by one pair (`Spacing::button_padding`), so the left side pads
 /// left and right and the top side top and bottom; a side the theme leaves unstated keeps the
 /// scope's own.
-pub(crate) fn tool_button(ui: &mut egui::Ui, padding: &native_theme::theme::ResolvedPadding) {
+pub(crate) fn tool_button(
+    ui: &mut egui::Ui,
+    padding: &native_theme::theme::ResolvedPadding,
+    edge: Option<f32>,
+) {
     ghost(ui);
     let own = ui.spacing().button_padding;
     let spacing = ui.spacing_mut();
     spacing.button_padding =
         egui::vec2(padding.left.unwrap_or(own.x), padding.top.unwrap_or(own.y));
     spacing.interact_size.y = 0.0;
+    let edge = edge.filter(|w| *w > 0.0);
     let widgets = &mut ui.style_mut().visuals.widgets;
-    for state in [
-        &mut widgets.noninteractive,
-        &mut widgets.inactive,
-        &mut widgets.hovered,
-        &mut widgets.active,
-        &mut widgets.open,
+    for (state, pointer) in [
+        (&mut widgets.noninteractive, false),
+        (&mut widgets.inactive, false),
+        (&mut widgets.hovered, true),
+        (&mut widgets.active, true),
+        (&mut widgets.open, false),
     ] {
-        state.bg_stroke.width = 0.0;
+        state.bg_stroke.width = match edge {
+            Some(width) if pointer => width,
+            _ => 0.0,
+        };
         state.expansion = 0.0;
     }
 }

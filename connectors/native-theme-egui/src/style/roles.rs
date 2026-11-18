@@ -14,7 +14,7 @@ use crate::accessors::scaled_text_size;
 use crate::convert::{
     Rgba, clamp_length, expander_padding_border, padding_with_border, to_button_padding, to_color32,
 };
-use crate::{Note, Role};
+use crate::{Note, ResolvedTheme, Role};
 
 /// One role's `Normal` cell: `base` copied, then the role's writes (§3.4).
 pub(crate) fn role_cell(
@@ -50,7 +50,7 @@ pub(crate) fn role_cell(
         Role::Expander => expander(&mut s, base, input, notes),
         Role::Link => link(&mut s, base, input, notes),
     }
-    if keeps_resting_stroke(role) {
+    if keeps_resting_stroke(role, input.theme) {
         let w = &mut s.visuals.widgets;
         w.hovered.bg_stroke.color = w.inactive.bg_stroke.color;
         w.active.bg_stroke.color = w.inactive.bg_stroke.color;
@@ -61,19 +61,21 @@ pub(crate) fn role_cell(
 
 /// The roles whose cells keep their resting stroke when hovered or pressed: the button's
 /// hover and focus outline is not theirs, a toolbar's or a list's buttons and the controls
-/// inside a slider's or a switch's scope among them (D5; D7 and the backlog decide them).
-/// Each passes `border: None` to `write_states`.
-fn keeps_resting_stroke(role: Role) -> bool {
-    matches!(
-        role,
+/// inside a slider's or a switch's scope among them (D5; the backlog decides the others).
+/// Each passes `border: None` to `write_states`. A toolbar whose theme states its
+/// buttons' outline (`toolbar.button_hover_border_color`) keeps the one `toolbar`
+/// writes (D7).
+fn keeps_resting_stroke(role: Role, theme: &ResolvedTheme) -> bool {
+    match role {
+        Role::Toolbar => theme.toolbar.button_hover_border_color.is_none(),
         Role::Scrollbar
-            | Role::Slider
-            | Role::Sidebar
-            | Role::Toolbar
-            | Role::StatusBar
-            | Role::List
-            | Role::Switch
-    )
+        | Role::Slider
+        | Role::Sidebar
+        | Role::StatusBar
+        | Role::List
+        | Role::Switch => true,
+        _ => false,
+    }
 }
 
 /// B3 (§8.5): the role's font size on `override_font_id`, `Proportional` always; a size
@@ -446,6 +448,14 @@ fn checkbox(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, note
         },
         notes,
     );
+    // the hovered and pressed box's outline where stated (§6.4: `None` keeps the unchecked
+    // border `write_states` copied); `active` is also egui's keyboard-focused state, so a box
+    // reached by Tab shows the hover outline, which Breeze draws under the pointer only
+    if let Some(hover) = k.hover_border_color {
+        let hover = to_color32(hover);
+        s.visuals.widgets.hovered.bg_stroke.color = hover;
+        s.visuals.widgets.active.bg_stroke.color = hover;
+    }
     // The check mark is a line in the state's `fg_stroke` (`egui/src/widgets/checkbox.rs:151-158`,
     // `check_stroke` from `widget_style.rs:131`, `:188`), so its width is the stroke width, one in
     // every state (§6.1); the radio's dot takes only the stroke's colour (`radio_button.rs:97-103`).
@@ -768,6 +778,23 @@ fn toolbar(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes
         },
         notes,
     );
+    // D7: a flat tool button's hovered and pressed states, each field where stated and as
+    // stated, not composited; the rest is the button's own
+    let w = &mut s.visuals.widgets;
+    if let Some(fill) = tb.button_hover_background {
+        w.hovered.weak_bg_fill = to_color32(fill);
+    }
+    if let Some(fill) = tb.button_active_background {
+        w.active.weak_bg_fill = to_color32(fill);
+    }
+    // the colour only, the width stays the base's; `active` is also egui's keyboard-focused
+    // state, so a tool button reached by Tab shows the outline, which a Qt toolbar button,
+    // taking no focus, never shows
+    if let Some(edge) = tb.button_hover_border_color {
+        let edge = to_color32(edge);
+        w.hovered.bg_stroke.color = edge;
+        w.active.bg_stroke.color = edge;
+    }
     panel_edge(s, own, "toolbar.border.line_width", &tb.border, notes);
     slot_size(
         s,
@@ -975,6 +1002,13 @@ fn combo_box(
         },
         notes,
     );
+    // the hovered and pressed trigger's outline where stated (§6.4: `None` keeps the border
+    // `write_states` copied); an open combo box is egui's `open` state and keeps the border at rest
+    if let Some(hover) = cb.hover_border_color {
+        let hover = to_color32(hover);
+        s.visuals.widgets.hovered.bg_stroke.color = hover;
+        s.visuals.widgets.active.bg_stroke.color = hover;
+    }
     s.spacing.interact_size.y = length(
         "combo_box.min_height",
         cb.min_height,
@@ -1637,7 +1671,8 @@ mod tests {
 
     /// §5.3's Checkbox rows: the box on `bg_fill` (idle `unchecked_background`, else
     /// `background_color`, §6.4), the hover layer composited over it (C17), the mark on
-    /// `fg_stroke`, the unchecked border in all five, the label on `override_text_color` (B4).
+    /// `fg_stroke`, the unchecked border in all five but `hovered` and `active`, which take
+    /// `hover_border_color` where stated, the label on `override_text_color` (B4).
     #[test]
     fn checkbox_cell_writes_its_rows() {
         for (preset, mode) in PRESETS {
@@ -1665,13 +1700,18 @@ mod tests {
             assert_eq!(w.hovered.bg_fill, hovered, "{preset}");
             assert_eq!(w.active.bg_fill, hovered, "{preset}");
             let border = k.unchecked_border_color.unwrap_or(k.border.color);
+            let hover_border = k.hover_border_color.unwrap_or(border);
             let mark = k
                 .check_mark_stroke_width
                 .map_or(base.visuals.widgets.inactive.fg_stroke.width, clamp_length);
-            for e in all5(w) {
+            for (e, outline) in
+                all5(w)
+                    .into_iter()
+                    .zip([border, border, hover_border, hover_border, border])
+            {
                 assert_eq!(e.fg_stroke.color, to_color32(k.indicator_color), "{preset}");
                 assert_eq!(e.fg_stroke.width, mark, "{preset}: the check mark's stroke");
-                assert_eq!(e.bg_stroke.color, to_color32(border), "{preset}");
+                assert_eq!(e.bg_stroke.color, to_color32(outline), "{preset}");
                 assert_eq!(
                     e.bg_stroke.width,
                     clamp_length(k.border.line_width),
@@ -2029,16 +2069,26 @@ mod tests {
                     "{preset} {role:?}: the radius is the Panel frame's"
                 );
                 // hovered and active keep the base's resting stroke, not the button's hover
-                // and focus border
-                for (e, be) in [
-                    (&w.inactive, &bw.inactive),
-                    (&w.hovered, &bw.inactive),
-                    (&w.active, &bw.inactive),
-                    (&w.open, &bw.open),
+                // and focus border; a toolbar's take its buttons' outline where stated (D7)
+                let edge = match role {
+                    Role::Toolbar => t.toolbar.button_hover_border_color,
+                    _ => None,
+                };
+                for (e, be, pointer) in [
+                    (&w.inactive, &bw.inactive, false),
+                    (&w.hovered, &bw.inactive, true),
+                    (&w.active, &bw.inactive, true),
+                    (&w.open, &bw.open, false),
                 ] {
+                    let want = match edge {
+                        Some(edge) if pointer => {
+                            egui::Stroke::new(be.bg_stroke.width, to_color32(edge))
+                        }
+                        _ => be.bg_stroke,
+                    };
                     assert_eq!(
-                        e.bg_stroke, be.bg_stroke,
-                        "{preset} {role:?}: no outline on the panel's buttons"
+                        e.bg_stroke, want,
+                        "{preset} {role:?}: no outline on the panel's buttons but the toolbar's"
                     );
                     assert_eq!(e.corner_radius, be.corner_radius, "{preset} {role:?}");
                 }
@@ -2052,7 +2102,9 @@ mod tests {
     }
 
     /// The panel roles' own rows beyond the shared ones: the sidebar's hover highlight and
-    /// selection, the toolbar's item gap.
+    /// selection, the toolbar's item gap and its buttons' hover and pressed fills and hover
+    /// outline (`toolbar.button_hover_background`, `.button_active_background`,
+    /// `.button_hover_border_color`), with `inactive` left the base's.
     #[test]
     fn sidebar_and_toolbar_write_their_own_rows() {
         for (preset, mode) in PRESETS {
@@ -2091,7 +2143,47 @@ mod tests {
                     "{preset}"
                 ),
             }
+            // D7: a flat tool button's hover and pressed fills and its outline as given where
+            // stated; the button at rest is the caller's, so `inactive` is the base's
+            let tb = &t.toolbar;
+            let w = &c.visuals.widgets;
+            let bw = &base.visuals.widgets;
+            assert_eq!(
+                w.hovered.weak_bg_fill,
+                tb.button_hover_background
+                    .map_or(bw.hovered.weak_bg_fill, to_color32),
+                "{preset}"
+            );
+            assert_eq!(
+                w.active.weak_bg_fill,
+                tb.button_active_background
+                    .map_or(bw.active.weak_bg_fill, to_color32),
+                "{preset}"
+            );
+            let edge = tb
+                .button_hover_border_color
+                .map_or(w.inactive.bg_stroke.color, to_color32);
+            assert_eq!(w.hovered.bg_stroke.color, edge, "{preset}");
+            assert_eq!(w.active.bg_stroke.color, edge, "{preset}");
+            assert_eq!(
+                w.inactive.weak_bg_fill, bw.inactive.weak_bg_fill,
+                "{preset}"
+            );
+            assert_eq!(w.inactive.bg_fill, bw.inactive.bg_fill, "{preset}");
+            assert_eq!(w.inactive.bg_stroke, bw.inactive.bg_stroke, "{preset}");
+            assert_eq!(
+                w.inactive.fg_stroke.color,
+                to_color32(tb.font.color),
+                "{preset}"
+            );
         }
+        let breeze = resolved("kde-breeze", ColorMode::Dark).toolbar;
+        assert!(
+            breeze.button_hover_background.is_some()
+                && breeze.button_hover_border_color.is_some()
+                && breeze.button_active_background.is_some(),
+            "kde-breeze, one of PRESETS, states the three, so the stated paths are met"
+        );
     }
 
     /// §5.4's List rows: the grid line on `noninteractive.bg_stroke` as given, the row height,
@@ -2275,7 +2367,8 @@ mod tests {
     }
 
     /// §5.4's ComboBox and §5.3's SegmentedControl rows: a framed control's fill with its
-    /// hover layer composited (C17), its text in all five entries, its border in all five.
+    /// hover layer composited (C17), its text in all five entries, its border in all five, a
+    /// combo box's `hovered` and `active` taking `combo_box.hover_border_color` where stated.
     #[test]
     fn combo_box_and_segmented_control_cells_write_their_rows() {
         for (preset, mode) in PRESETS {
@@ -2299,9 +2392,15 @@ mod tests {
             );
             assert_eq!(w.hovered.weak_bg_fill, hovered, "{preset}");
             assert_eq!(w.active.weak_bg_fill, hovered, "{preset}");
-            for e in all5(w) {
+            let border = cb.border.color;
+            let hover_border = cb.hover_border_color.unwrap_or(border);
+            for (e, outline) in
+                all5(w)
+                    .into_iter()
+                    .zip([border, border, hover_border, hover_border, border])
+            {
                 assert_eq!(e.fg_stroke.color, to_color32(cb.font.color), "{preset}");
-                assert_eq!(e.bg_stroke.color, to_color32(cb.border.color), "{preset}");
+                assert_eq!(e.bg_stroke.color, to_color32(outline), "{preset}");
                 assert_eq!(
                     e.bg_stroke.width,
                     clamp_length(cb.border.line_width),

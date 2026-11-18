@@ -275,12 +275,16 @@ a multi-line one, `expander_icon` for a `CollapsingHeader`'s
 arrow, `text_role_font` and `text_role_line_height` for the caption, heading,
 dialog-title and display roles, `window_title_bar_font` and
 `window_title_bar_text_color`, `dialog_button_order`, `list_header_height`
-for `TableBuilder::header`, `icons::icon_size`, and the colours egui has no
+for `TableBuilder::header`, `toolbar_button_checked_background` for a
+checked toolbar button, `icons::icon_size`, and the colours egui has no
 slot for (`info_color`, `warning_text_color`, …). `tooltip_show_delay` is the
 delay the atlas writes into `Style::interaction.tooltip_delay`, as a
 `Duration`, for a tooltip the application times itself. A leaf that needs no
 conversion is read from the `ResolvedTheme` itself
-(`ThemeAtlas::resolved_for`).
+(`ThemeAtlas::resolved_for`). A button in the toolbar
+role is a flat tool button: the role colours its hover and press and leaves its rest
+to the button. Make it flat with `Button::frame_when_inactive(false)`, or in a scope
+whose resting fill and border colour are transparent; both keep its size.
 
 ## Fonts
 

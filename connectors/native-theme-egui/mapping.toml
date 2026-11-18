@@ -1076,8 +1076,8 @@ sinks   = [
   { path = "visuals.widgets.active.bg_stroke.color", scope = "slider" },
   { path = "visuals.widgets.hovered.bg_stroke.color", scope = "sidebar" },
   { path = "visuals.widgets.active.bg_stroke.color", scope = "sidebar" },
-  { path = "visuals.widgets.hovered.bg_stroke.color", scope = "toolbar" },
-  { path = "visuals.widgets.active.bg_stroke.color", scope = "toolbar" },
+  { path = "visuals.widgets.hovered.bg_stroke.color", scope = "toolbar", when = "toolbar.button_hover_border_color is None" },
+  { path = "visuals.widgets.active.bg_stroke.color", scope = "toolbar", when = "toolbar.button_hover_border_color is None" },
   { path = "visuals.widgets.hovered.bg_stroke.color", scope = "status_bar" },
   { path = "visuals.widgets.active.bg_stroke.color", scope = "status_bar" },
   { path = "visuals.widgets.hovered.bg_stroke.color", scope = "list" },
@@ -1426,6 +1426,15 @@ sinks   = [
   { path = "visuals.widgets.active.bg_fill", scope = "checkbox", when = "stated; None copies the idle fill, §6.4" },
 ]
 
+["checkbox.hover_border_color"]
+verdict = "scoped"
+sinks   = [
+  { path = "visuals.widgets.hovered.bg_stroke.color", scope = "checkbox", when = "stated; None copies the unchecked border, §6.4" },
+  { path = "visuals.widgets.active.bg_stroke.color", scope = "checkbox", when = "stated; None copies the unchecked border, §6.4; egui's active is also the keyboard-focused state, so a box reached by Tab shows it, where Breeze draws it under the pointer only" },
+  { path = "visuals.widgets.hovered.bg_stroke.color", scope = "checkbox", variant = "selected", when = "stated; None keeps checkbox.border.color, §6.4" },
+  { path = "visuals.widgets.active.bg_stroke.color", scope = "checkbox", variant = "selected", when = "stated; None keeps checkbox.border.color, §6.4; egui's active is also the keyboard-focused state, so a box reached by Tab shows it, where Breeze draws it under the pointer only" },
+]
+
 ["checkbox.disabled_background"]
 verdict = "scoped"
 sinks   = [
@@ -1449,8 +1458,8 @@ verdict = "scoped"
 sinks   = [
   { path = "visuals.widgets.noninteractive.bg_stroke.color", scope = "checkbox", when = "stated; None copies checkbox.border.color, §6.4" },
   { path = "visuals.widgets.inactive.bg_stroke.color", scope = "checkbox", when = "stated; None copies checkbox.border.color, §6.4" },
-  { path = "visuals.widgets.hovered.bg_stroke.color", scope = "checkbox", when = "stated; None copies checkbox.border.color, §6.4" },
-  { path = "visuals.widgets.active.bg_stroke.color", scope = "checkbox", when = "stated; None copies checkbox.border.color, §6.4" },
+  { path = "visuals.widgets.hovered.bg_stroke.color", scope = "checkbox", when = "stated and checkbox.hover_border_color is None; None copies checkbox.border.color, §6.4" },
+  { path = "visuals.widgets.active.bg_stroke.color", scope = "checkbox", when = "stated and checkbox.hover_border_color is None; None copies checkbox.border.color, §6.4" },
   { path = "visuals.widgets.open.bg_stroke.color", scope = "checkbox", when = "stated; None copies checkbox.border.color, §6.4" },
 ]
 
@@ -1487,13 +1496,13 @@ verdict = "scoped"
 sinks   = [
   { path = "visuals.widgets.noninteractive.bg_stroke.color", scope = "checkbox", variant = "selected" },
   { path = "visuals.widgets.inactive.bg_stroke.color", scope = "checkbox", variant = "selected" },
-  { path = "visuals.widgets.hovered.bg_stroke.color", scope = "checkbox", variant = "selected" },
-  { path = "visuals.widgets.active.bg_stroke.color", scope = "checkbox", variant = "selected" },
+  { path = "visuals.widgets.hovered.bg_stroke.color", scope = "checkbox", variant = "selected", when = "checkbox.hover_border_color is None, §6.4" },
+  { path = "visuals.widgets.active.bg_stroke.color", scope = "checkbox", variant = "selected", when = "checkbox.hover_border_color is None, §6.4" },
   { path = "visuals.widgets.open.bg_stroke.color", scope = "checkbox", variant = "selected" },
   { path = "visuals.widgets.noninteractive.bg_stroke.color", scope = "checkbox", when = "checkbox.unchecked_border_color is None, §6.4" },
   { path = "visuals.widgets.inactive.bg_stroke.color", scope = "checkbox", when = "checkbox.unchecked_border_color is None, §6.4" },
-  { path = "visuals.widgets.hovered.bg_stroke.color", scope = "checkbox", when = "checkbox.unchecked_border_color is None, §6.4" },
-  { path = "visuals.widgets.active.bg_stroke.color", scope = "checkbox", when = "checkbox.unchecked_border_color is None, §6.4" },
+  { path = "visuals.widgets.hovered.bg_stroke.color", scope = "checkbox", when = "checkbox.unchecked_border_color is None and checkbox.hover_border_color is None, §6.4" },
+  { path = "visuals.widgets.active.bg_stroke.color", scope = "checkbox", when = "checkbox.unchecked_border_color is None and checkbox.hover_border_color is None, §6.4" },
   { path = "visuals.widgets.open.bg_stroke.color", scope = "checkbox", when = "checkbox.unchecked_border_color is None, §6.4" },
 ]
 
@@ -1894,6 +1903,13 @@ sinks   = [
   { path = "visuals.widgets.active.weak_bg_fill", scope = "combo_box", when = "stated; None copies combo_box.background_color, §6.4" },
 ]
 
+["combo_box.hover_border_color"]
+verdict = "scoped"
+sinks   = [
+  { path = "visuals.widgets.hovered.bg_stroke.color", scope = "combo_box", when = "stated; None copies combo_box.border.color, §6.4; an open combo box is egui's open state and keeps the border at rest" },
+  { path = "visuals.widgets.active.bg_stroke.color", scope = "combo_box", when = "stated; None copies combo_box.border.color, §6.4; an open combo box is egui's open state and keeps the border at rest" },
+]
+
 ["combo_box.disabled_background"]
 verdict = "scoped"
 sinks   = [{ path = "visuals.widgets.inactive.weak_bg_fill", scope = "combo_box", variant = "disabled", when = "stated; None copies combo_box.background_color, §6.4" }]
@@ -1937,8 +1953,8 @@ verdict = "scoped"
 sinks   = [
   { path = "visuals.widgets.noninteractive.bg_stroke.color", scope = "combo_box" },
   { path = "visuals.widgets.inactive.bg_stroke.color", scope = "combo_box" },
-  { path = "visuals.widgets.hovered.bg_stroke.color", scope = "combo_box" },
-  { path = "visuals.widgets.active.bg_stroke.color", scope = "combo_box" },
+  { path = "visuals.widgets.hovered.bg_stroke.color", scope = "combo_box", when = "combo_box.hover_border_color is None, §6.4" },
+  { path = "visuals.widgets.active.bg_stroke.color", scope = "combo_box", when = "combo_box.hover_border_color is None, §6.4" },
   { path = "visuals.widgets.open.bg_stroke.color", scope = "combo_box" },
 ]
 
@@ -2653,6 +2669,25 @@ verdict = "scoped"
 sinks   = [{ path = "spacing.item_spacing.x", scope = "toolbar" }]
 
 ["toolbar.icon_size"]
+verdict   = "derived"
+tested_by = "T18(a)"
+
+["toolbar.button_hover_background"]
+verdict = "scoped"
+sinks   = [{ path = "visuals.widgets.hovered.weak_bg_fill", scope = "toolbar" }]
+
+["toolbar.button_hover_border_color"]
+verdict = "scoped"
+sinks   = [
+  { path = "visuals.widgets.hovered.bg_stroke.color", scope = "toolbar" },
+  { path = "visuals.widgets.active.bg_stroke.color", scope = "toolbar" },
+]
+
+["toolbar.button_active_background"]
+verdict = "scoped"
+sinks   = [{ path = "visuals.widgets.active.weak_bg_fill", scope = "toolbar" }]
+
+["toolbar.button_checked_background"]
 verdict   = "derived"
 tested_by = "T18(a)"
 

@@ -161,6 +161,12 @@ name = "dialog_title_font_color"
 kind = "absent"
 reason = "the receiver is `geometry::dialog_title` (`src/geometry.rs`), the `DialogTitle` refinement that colours the title with `dialog.title_font.color`; iced has no dialog title, so its consumer colours its own text with the accessor"
 
+[[exception]]
+connector = "gpui"
+name = "toolbar_button_checked_background"
+kind = "absent"
+reason = "a gpui toolbar Button's fills come from its variant and its style refinements (`variants::toolbar_button`, `src/geometry.rs`), not from a colour accessor"
+
 # ── absent: iced ────────────────────────────────────────────────────────────
 
 [[exception]]
@@ -210,6 +216,12 @@ connector = "iced"
 name = "selection_text_color"
 kind = "absent"
 reason = "iced's text styles take a selection fill and no selection text colour (`text_input::Style::selection`, `text_editor::Style::selection`, iced_widget 0.14.2 src/text_input.rs:1713-1726, src/text_editor.rs:1425-1436)"
+
+[[exception]]
+connector = "iced"
+name = "toolbar_button_checked_background"
+kind = "absent"
+reason = "`styles::toolbar_button` fills a checked toolbar button with it (`src/styles.rs`); iced has no toolbar, so the style is the receiver"
 
 # ── absent: egui ────────────────────────────────────────────────────────────
 # The egui accessors are the values no `Style` field carries (src/lib.rs,

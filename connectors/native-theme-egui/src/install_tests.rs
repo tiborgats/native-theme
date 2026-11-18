@@ -65,6 +65,16 @@ fn the_atlas_reports_what_the_builder_was_given() {
     assert_eq!(atlas.icon_set(), IconSet::Lucide);
     assert_eq!(atlas.icon_theme(egui::Theme::Light), Some("breeze"));
     assert_eq!(atlas.icon_theme(egui::Theme::Dark), Some("breeze-dark"));
+    // kde-breeze light's `toolbar.button_checked_background`, #23262920
+    assert_eq!(
+        crate::toolbar_button_checked_background(&light),
+        Some(egui::Color32::from_rgba_unmultiplied(
+            0x23, 0x26, 0x29, 0x20
+        ))
+    );
+    let mut unstated = light.clone();
+    unstated.toolbar.button_checked_background = None;
+    assert_eq!(crate::toolbar_button_checked_background(&unstated), None);
 }
 
 /// §4.2, §4.3: the documented defaults of every optional input.

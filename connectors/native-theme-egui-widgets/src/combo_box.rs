@@ -16,8 +16,8 @@ const ARROW_HEIGHT: f32 = 0.45;
 /// make it — `combo_box.*`.
 ///
 /// **Tier W.** One `egui::ComboBox` (`egui/src/containers/combo_box.rs`) in the
-/// `Role::ComboBox` scope, whose cell carries `combo_box.*` — its fill, hover fill, font,
-/// border, padding, `min_height` as `interact_size.y`, `arrow_icon_size` as `icon_width` and
+/// `Role::ComboBox` scope, whose cell carries `combo_box.*` — its fill, hover fill, hover
+/// outline, font, border, padding, `min_height` as `interact_size.y`, `arrow_icon_size` as `icon_width` and
 /// `arrow_area_width` as `icon_width + icon_spacing` — and its popup in that role's style
 /// (`ComboBox::popup_style`, `:199`), with one per-instance change to the scope:
 ///

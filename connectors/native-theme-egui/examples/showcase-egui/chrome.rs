@@ -585,7 +585,13 @@ fn toolbar(app: &mut App, ui: &mut egui::Ui, shrink: f32) {
                 let kind = ghost_kind(drawn, false);
                 let response = ui
                     .scope(|ui| {
-                        demo::tool_button(ui, &t.button.border.padding);
+                        demo::tool_button(
+                            ui,
+                            &t.button.border.padding,
+                            t.toolbar
+                                .button_hover_border_color
+                                .map(|_| t.button.border.line_width),
+                        );
                         bar.add(registry, ui, kind, |ui| {
                             let r = ui.add(ghost_button(ui, image, label, false));
                             r.widget_info(|| {
@@ -763,7 +769,7 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
                     RoleVariant::Normal,
                     kind,
                     |ui| {
-                        demo::tool_button(ui, &padding);
+                        demo::tool_button(ui, &padding, None);
                         let r = ui.add(ghost_button(ui, image, label, open));
                         r.widget_info(|| {
                             egui::WidgetInfo::selected(egui::Role::Button, true, open, label)
@@ -1387,7 +1393,7 @@ pub(crate) fn page_tabs(app: &mut App, ui: &mut egui::Ui) {
                 caret_size,
             );
             let drawn = caret.is_some();
-            demo::tool_button(ui, &t.button.border.padding);
+            demo::tool_button(ui, &t.button.border.padding, None);
             let button = match caret {
                 Some(image) => egui::Button::image(image),
                 None => egui::Button::new("Pages"),

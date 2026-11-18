@@ -1265,7 +1265,13 @@ fn icon_buttons(
                         .scope(|ui| {
                             // One line, as `text_button`'s label.
                             ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Extend);
-                            demo::tool_button(ui, &t.button.border.padding);
+                            demo::tool_button(
+                                ui,
+                                &t.button.border.padding,
+                                t.toolbar
+                                    .button_hover_border_color
+                                    .map(|_| t.button.border.line_width),
+                            );
                             bar.add(reg, ui, "icon button", |ui| {
                                 let button = match image {
                                     Some(image) => Button::image(image),

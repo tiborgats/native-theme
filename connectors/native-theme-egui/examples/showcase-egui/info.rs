@@ -566,11 +566,46 @@ pub(crate) fn how_line(manifest: &Manifest, leaf: &str, seams: &[Seam]) -> Strin
     line
 }
 
-/// The leaves the Basic page applies per call where `mapping.toml`'s row names the `Role::List`
-/// scope's style field the connector writes, by element id (a prefix, for the rows) and leaf:
-/// the List's and the table's frames, which `pages::basic::list_frame` paints, and the rows
-/// whose fills `pages::basic::inner_corners` rounds where they meet a frame.
+/// The route of a tool button's `button.border.line_width_px`, per call in `demo::tool_button`.
+const TOOL_BUTTON_EDGE: &str = "egui: per call, the outline's width under the pointer and \
+     pressed, where toolbar.button_hover_border_color is stated; 0 otherwise (demo::tool_button)";
+
+/// The leaves a page applies per call where `mapping.toml`'s row names a style field the
+/// connector writes, by element id (a prefix, for the rows) and leaf: the List's and the
+/// table's frames, which `pages::basic::list_frame` paints, the rows whose fills
+/// `pages::basic::inner_corners` rounds where they meet a frame, and the tool buttons' outline
+/// width, which `demo::tool_button` sets per call.
 const PER_CALL_ROUTES: &[(&str, &str, &str)] = &[
+    (
+        "chrome.toolbar.command_palette",
+        "button.border.line_width_px",
+        TOOL_BUTTON_EDGE,
+    ),
+    (
+        "chrome.toolbar.reload_theme",
+        "button.border.line_width_px",
+        TOOL_BUTTON_EDGE,
+    ),
+    (
+        "chrome.toolbar.preferences",
+        "button.border.line_width_px",
+        TOOL_BUTTON_EDGE,
+    ),
+    (
+        "basic.icons.copy",
+        "button.border.line_width_px",
+        TOOL_BUTTON_EDGE,
+    ),
+    (
+        "basic.icons.paste",
+        "button.border.line_width_px",
+        TOOL_BUTTON_EDGE,
+    ),
+    (
+        "basic.icons.delete",
+        "button.border.line_width_px",
+        TOOL_BUTTON_EDGE,
+    ),
     (
         "basic.list.frame",
         "list.border.corner_radius_px",

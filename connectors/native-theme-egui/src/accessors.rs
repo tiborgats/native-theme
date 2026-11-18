@@ -90,6 +90,17 @@ pub fn disabled_text_color(t: &ResolvedTheme) -> egui::Color32 {
 pub fn selection_inactive_background(t: &ResolvedTheme) -> egui::Color32 {
     to_color32(t.defaults.selection_inactive_background)
 }
+/// `toolbar.button_checked_background` as an `egui::Color32`: the fill of a
+/// checked toolbar button, for `Button::fill` on the one button. egui has no
+/// checked state: a selected button takes `visuals.selection`, which also
+/// fills selected text in the same scope. Where it is `Some`, letter the
+/// button in `button.checked_text_color`, or `button.active_text_color` where
+/// that is `None`, read from the `ResolvedTheme`. `None` where the theme
+/// states no checked fill: the button is drawn as a selected flat button.
+#[must_use]
+pub fn toolbar_button_checked_background(t: &ResolvedTheme) -> Option<egui::Color32> {
+    t.toolbar.button_checked_background.map(to_color32)
+}
 
 // --- focus ring: no egui concept at all ---------------------------------------
 // egui promotes a keyboard-focused widget to `widgets.active`
