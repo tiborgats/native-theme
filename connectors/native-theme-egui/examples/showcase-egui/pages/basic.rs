@@ -243,7 +243,7 @@ fn group(
         13 => separator(reg, ui),
         14 => progress_bar(reg, ui),
         15 => list_group(reg, state, atlas, ui),
-        16 => icons_group(reg, atlas, ui, chosen),
+        16 => icons_group(reg, state, atlas, ui, chosen),
         17 => tabs(reg, state, t, ui),
         18 => expander(reg, ui),
         _ => table_group(reg, atlas, ui),
@@ -1223,11 +1223,15 @@ fn list_group(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui:
     list(reg, state, atlas, ui);
 }
 
-/// The Icons group's first row: three icon-only tool buttons, as the toolbar's
-/// (`crate::chrome`'s toolbar): the chosen set's Copy, Paste and Delete at
-/// `toolbar.icon_size`, in the toolbar's scope, Ghost.
+/// The Icons group's first row: four icon-only tool buttons, as the toolbar's
+/// (`crate::chrome`'s toolbar): the chosen set's Copy, Paste, Delete and Edit at
+/// `toolbar.icon_size`, in the toolbar's scope, Ghost. Edit is an edit-mode switch
+/// (`DemoState::basic_edit`), on at start: while on it is filled with the toolbar's checked
+/// fill (`toolbar_button_checked_background`), lettered in the checked text, or, where the theme
+/// states no checked fill, with the selected flat button's fill, `widgets.active.weak_bg_fill`.
 fn icon_buttons(
     reg: &mut Registry,
+    state: &mut DemoState,
     atlas: &ThemeAtlas,
     ui: &mut egui::Ui,
     chosen: &(IconSet, Option<String>),
@@ -1248,7 +1252,7 @@ fn icon_buttons(
             // of tool buttons is not, and a wrapping row takes its first line's height from it
             // when it opens (`egui/src/ui.rs:2376-2379`).
             ui.spacing_mut().interact_size.y = 0.0;
-            // Wrapping onto a further line where the column is too narrow for the three.
+            // Wrapping onto a further line where the column is too narrow for the four.
             ui.horizontal_wrapped(|ui| {
                 demo::toolbar_gap(ui, t, atlas.layout());
                 let spacing = ui.spacing_mut();
@@ -1265,13 +1269,7 @@ fn icon_buttons(
                         .scope(|ui| {
                             // One line, as `text_button`'s label.
                             ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Extend);
-                            demo::tool_button(
-                                ui,
-                                &t.button.border.padding,
-                                t.toolbar
-                                    .button_hover_border_color
-                                    .map(|_| t.button.border.line_width),
-                            );
+                            demo::tool_button(ui, &t.button.border.padding, demo::toolbar_edge(t));
                             bar.add(reg, ui, "icon button", |ui| {
                                 let button = match image {
                                     Some(image) => Button::image(image),
@@ -1292,10 +1290,93 @@ fn icon_buttons(
                         crate::chrome::place_icon(reg, ui, id, &response, size);
                     }
                 }
+                // The edit-mode switch: the one toolbar button that is ever checked.
+                let id = "basic.icons.edit";
+                let on = state.basic_edit;
+                let mut drawn = false;
+                wrap_before(ui, id);
+                let response = ui
+                    .scope(|ui| {
+                        ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Extend);
+                        demo::tool_button(ui, &t.button.border.padding, demo::toolbar_edge(t));
+                        let (fill, text) = edit_look(t, ui.visuals(), on);
+                        // The checked text, before the icon is loaded in the scope's text
+                        // colour.
+                        if text.is_some() {
+                            ui.visuals_mut().override_text_color = text;
+                        }
+                        let image = demo::role_image(
+                            ui,
+                            IconRole::ActionEdit,
+                            *set,
+                            icon_theme.as_deref(),
+                            size,
+                        );
+                        drawn = image.is_some();
+                        let kind = if on {
+                            "icon button, checked"
+                        } else {
+                            "icon button"
+                        };
+                        bar.add(reg, ui, kind, |ui| {
+                            let button = match image {
+                                Some(image) => Button::image(image),
+                                None => Button::new("Edit"),
+                            };
+                            let button = match fill {
+                                Some(fill) => button.fill(fill),
+                                None => button,
+                            };
+                            let r = ui.add(button);
+                            r.widget_info(|| {
+                                egui::WidgetInfo::selected(egui::Role::Button, true, on, "Edit")
+                            });
+                            r
+                        })
+                    })
+                    .inner;
+                if response.clicked() {
+                    state.basic_edit = !on;
+                }
+                // Not at rest transparent while it is on.
+                if !on {
+                    reg.ghost_last();
+                }
+                reg.tag(id, &response);
+                remember_width(ui, id, response.rect);
+                if drawn {
+                    crate::chrome::place_icon(reg, ui, id, &response, size);
+                }
             })
             .response
         },
     );
+}
+
+/// The fill handed to the Basic page's edit-mode switch and the text colour its scope takes,
+/// while `on`: the toolbar's checked fill (`toolbar_button_checked_background`) and the checked
+/// text, `button.checked_text_color` (`button.active_text_color` where that is unset), where the
+/// theme states the fill; else the selected flat button's fill, `visuals`'
+/// `widgets.active.weak_bg_fill`, and the scope's own text. Neither while off.
+pub(crate) fn edit_look(
+    t: &native_theme_egui::ResolvedTheme,
+    visuals: &egui::Visuals,
+    on: bool,
+) -> (Option<egui::Color32>, Option<egui::Color32>) {
+    if !on {
+        return (None, None);
+    }
+    match native_theme_egui::toolbar_button_checked_background(t) {
+        Some(fill) => (
+            Some(fill),
+            Some(to_color32(
+                t.button
+                    .checked_text_color
+                    .unwrap_or(t.button.active_text_color),
+            )),
+        ),
+        None => (Some(visuals.widgets.active.weak_bg_fill), None),
+    }
 }
 
 /// The Icons group's second row: the chosen set's open folder at the theme's three icon sizes,
@@ -1336,13 +1417,14 @@ fn icons(
 /// The Icons group: the icon buttons, then the icons at the theme's three sizes.
 fn icons_group(
     reg: &mut Registry,
+    state: &mut DemoState,
     atlas: &ThemeAtlas,
     ui: &mut egui::Ui,
     chosen: &(IconSet, Option<String>),
 ) {
     let t = atlas.resolved_for(ui.ctx().theme());
     heading(reg, ui, "basic.icons.heading", "Icons");
-    icon_buttons(reg, atlas, ui, chosen);
+    icon_buttons(reg, state, atlas, ui, chosen);
     icons(reg, t, ui, chosen);
 }
 

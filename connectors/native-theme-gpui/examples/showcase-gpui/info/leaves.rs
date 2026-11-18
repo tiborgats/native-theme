@@ -167,7 +167,17 @@ pub const HOW: &[(&str, &str, &str)] = &[
         "theme_variant.icon_set",
         "gpui: the ChevronDown of the chosen set, none mixed in (Showcase::sample_icon)",
     ),
-    // --- button: the icon-only buttons, variants::ghost_button -----------------
+    // --- button: the icon-only buttons, variants::toolbar_button and ghost_button
+    (
+        "basic.icons.edit",
+        "toolbar.button_checked_background",
+        "gpui: geometry::toolbar_button_checked's bg, over the selected toolbar Button",
+    ),
+    (
+        "basic.icons.edit",
+        "button.checked_text_color",
+        "gpui: geometry::toolbar_button_checked's text colour, where the toolbar's checked fill is stated",
+    ),
     (
         "chrome.status_bar.toggle",
         "button.active_background",
@@ -282,6 +292,46 @@ pub const HOW: &[(&str, &str, &str)] = &[
         "basic.icons.",
         "button.border.padding_left_px",
         "gpui: pads the icon, where stated, for the Size's own (demo::tool_button_box)",
+    ),
+    (
+        "chrome.toolbar.",
+        "button.border.line_width_px",
+        "gpui: geometry::toolbar_button_rest's border width, where toolbar.button_hover_border_color is stated",
+    ),
+    (
+        "basic.icons.",
+        "button.border.line_width_px",
+        "gpui: geometry::toolbar_button_rest's border width, where toolbar.button_hover_border_color is stated",
+    ),
+    (
+        "chrome.toolbar.",
+        "toolbar.button_hover_background",
+        "gpui: variants::toolbar_button's hover",
+    ),
+    (
+        "basic.icons.",
+        "toolbar.button_hover_background",
+        "gpui: variants::toolbar_button's hover",
+    ),
+    (
+        "chrome.toolbar.",
+        "toolbar.button_active_background",
+        "gpui: variants::toolbar_button's pressed fill",
+    ),
+    (
+        "basic.icons.",
+        "toolbar.button_active_background",
+        "gpui: variants::toolbar_button's pressed fill",
+    ),
+    (
+        "chrome.toolbar.",
+        "toolbar.button_hover_border_color",
+        "gpui: variants::toolbar_button's edge under the pointer",
+    ),
+    (
+        "basic.icons.",
+        "toolbar.button_hover_border_color",
+        "gpui: variants::toolbar_button's edge under the pointer",
     ),
     (
         "chrome.status_bar.toggle",
@@ -544,6 +594,11 @@ pub const HOW: &[(&str, &str, &str)] = &[
     ),
     (
         "",
+        "checkbox.hover_border_color",
+        "gpui: the indicator's edge under the pointer (CheckboxLook); unset, the edge at rest",
+    ),
+    (
+        "",
         "checkbox.indicator_color",
         "gpui: the check mark's and the radio dot's colour (CheckboxLook)",
     ),
@@ -658,6 +713,11 @@ pub const HOW: &[(&str, &str, &str)] = &[
         "",
         "combo_box.hover_background",
         "gpui: over the fill under the pointer (demo::combo_surface)",
+    ),
+    (
+        "",
+        "combo_box.hover_border_color",
+        "gpui: an edge laid over the trigger under the pointer (demo::combo_surface); upstream's trigger has no hover style",
     ),
     (
         "",

@@ -73,6 +73,9 @@ pub(crate) struct DemoState {
     /// The Basic page's radio button, text fields, text area, drop-down, slider, tab, segment
     /// and list row.
     pub basic_radio: usize,
+    /// Whether the Basic page's edit-mode switch, the checked tool button, is on: on at start,
+    /// a click switches it.
+    pub basic_edit: bool,
     pub basic_hint: String,
     pub basic_text: String,
     pub basic_area: String,
@@ -138,6 +141,7 @@ impl Default for DemoState {
             dnd_columns: [vec!["First", "Second"], vec!["Third"]],
             theme_map_filter: None,
             basic_radio: 0,
+            basic_edit: true,
             basic_hint: String::new(),
             basic_text: "Text".to_string(),
             basic_area: basic::AREA_TEXT.to_string(),

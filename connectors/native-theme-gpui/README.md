@@ -377,6 +377,7 @@ test over every preset and mode says so.
 | `input_group_button` | `button.border.corner_radius` | the button nested in an `InputGroup` (`InputGroupButton`): the platform's button radius, where upstream rounds that `XSmall` button with half the theme's radius |
 | `button_checked` | `button.checked_background` (or `button.active_background`), `button.checked_text_color` (or `button.active_text_color`) | a toggle `Button` that is on (`selected(true)`), after `button`. A colour, where no `ThemeColor` field maps; with neither fill stated, upstream's selected fill stands |
 | `toolbar_button_rest` | where `toolbar.button_hover_border_color` is stated: a transparent fill and border, `button.border.line_width` wide, and each stated side of `button.border.padding` less that width | a toolbar `Button` built on `variants::toolbar_button`, padded with `button.border.padding`: hides the outline colour at rest and keeps the button's size; nothing where the theme states no outline |
+| `toolbar_button_checked` | `toolbar.button_checked_background` (or `toolbar.button_active_background`, else `button.active_background`), `button.checked_text_color` (or `button.active_text_color`) where the checked fill is stated | a toolbar `Button` that is on (`selected(true)`), built on `variants::toolbar_button`, after `toolbar_button_rest`. A colour, where no `ThemeColor` field maps: a custom variant fills a selected Button with its pressed colour and letters every state in its one foreground; with no checked fill stated the text is that foreground, and with none of the three fills the refinement sets nothing |
 | `link` | `link.underline_enabled`, `link.font`, `link.background_color`, `defaults.line_height` | `Link`: where the platform draws links without an underline, a zero-thickness underline in place of upstream's resting one. The colour is `ThemeColor::link` (`link.font.color`) |
 | `menu_item` | `menu.row_height` (where stated), `menu.border.padding` (the stated sides), `menu.icon_text_gap`, `menu.font`, `defaults.line_height` | a menu row the application draws with its own elements — gpui-component's own `MenuItemElement` is crate-private and `PopupMenu` builds its rows itself, so no upstream widget takes this style |
 | `list_item` | `list.row_height` (where stated), `list.border.padding` (the stated sides), `list.item_font`, `defaults.line_height` | `ListItem` |
@@ -516,7 +517,10 @@ upstream draws as the border in every state and mixes into the fill at rest,
 with no border width for a custom variant: refine the button with
 `geometry::toolbar_button_rest(n)`, which assumes it is padded with
 `button.border.padding`; it hides the edge at rest, gives it its width and
-keeps the button's size.
+keeps the button's size. Refine a checked one after that with
+`geometry::toolbar_button_checked(n)`: upstream replays every refinement over
+the selected state (gpui-component 0.10.0 `button/button.rs:834-842`), so the
+rest refinement's transparent fill applied last would cover the checked fill.
 
 What stays upstream work (inner elements the caller's style cannot reach:
 checkbox and radio indicators, switch, slider, separator thickness, splitter

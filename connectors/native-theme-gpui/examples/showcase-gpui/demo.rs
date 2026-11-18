@@ -9474,25 +9474,48 @@ pub(crate) fn toggle_button(
         .debug_selector(move || id.into())
 }
 
+/// One of the Basic page's icon buttons.
+pub(crate) struct IconButton<'a> {
+    pub id: &'static str,
+    /// The button's label where the chosen set has no icon for its role.
+    pub name: &'static str,
+    /// Its role's icon as the chosen set gives it
+    /// (`Showcase::role_chrome_icon`).
+    pub drawn: &'a (ChromeIcon, Option<IconName>),
+    /// The element of docs/showcase-elements.toml its icon is.
+    pub listed: &'static str,
+    /// Whether it is a switch that is on: selected, and refined by
+    /// `geometry::toolbar_button_checked`.
+    pub selected: bool,
+}
+
 /// An icon-only button as the toolbar's (`toolbar_button`): the toolbar's
 /// variant, its icon native-theme's for a role as the chosen set gives it
 /// (`Showcase::role_chrome_icon`), at `toolbar.icon_size`, the icon
 /// recording its bounds as the element `listed_icon`. Where the set has no
 /// icon for the role the button shows `name` instead -- never another set's
-/// icon.
+/// icon. A button given `on_click` is a switch (the edit-mode one,
+/// `Showcase::basic_edit`): while `selected` it is shown selected and refined
+/// by `geometry::toolbar_button_checked` after its other refinements.
 pub(crate) fn icon_button(
     ui: &Entity<InfoRegistry>,
     cx: &App,
-    id: &'static str,
-    name: &'static str,
-    drawn: &(ChromeIcon, Option<IconName>),
-    listed: &'static str,
+    spec: IconButton<'_>,
+    on_click: Option<impl Fn(&ClickEvent, &mut Window, &mut App) + 'static>,
 ) -> Stateful<Div> {
+    let IconButton {
+        id,
+        name,
+        drawn,
+        listed,
+        selected,
+    } = spec;
     let native = cx.native();
     let icon = role_glyph_of(drawn);
     let mut button_info = info::buttons::icon_button(
         cx.theme(),
         icon.is_some(),
+        on_click.as_ref().map(|_| selected),
         native.as_ref().map(|n| n.resolved),
     )
     .instance("icon", format!("{name}, at toolbar.icon_size"));
@@ -9519,6 +9542,21 @@ pub(crate) fn icon_button(
         "toolbar_button_rest",
         &mut button_info,
     );
+    let button = if selected {
+        native_info(
+            button.selected(true),
+            cx,
+            geometry::toolbar_button_checked,
+            "toolbar_button_checked",
+            &mut button_info,
+        )
+    } else {
+        button
+    };
+    let button = match on_click {
+        Some(on_click) => button.on_click(on_click),
+        None => button,
+    };
     let button = match icon {
         Some(icon) => button
             .accessibility_label(name)

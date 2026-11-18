@@ -452,6 +452,9 @@ pub(crate) struct Showcase {
     pub(crate) basic_select: Entity<SelectState<SearchableVec<SharedString>>>,
     pub(crate) basic_slider_state: Entity<SliderState>,
     pub(crate) basic_radio: Option<usize>,
+    /// Whether the Basic page's edit-mode switch, the checked tool button, is
+    /// on: on at start, a click switches it.
+    pub(crate) basic_edit: bool,
     /// The Basic page's text area: three rows, three lines of text.
     pub(crate) basic_textarea: Entity<TextareaState>,
     /// The Basic page's List: eight rows, the second selected.
@@ -1691,6 +1694,7 @@ impl Showcase {
             basic_select,
             basic_slider_state,
             basic_radio: Some(0),
+            basic_edit: true,
             basic_textarea,
             basic_list,
             basic_tab: 0,

@@ -367,6 +367,10 @@ impl Showcase {
             this.basic_radio = Some(*ix);
             cx.notify();
         });
+        let on_edit = cx.listener(|this, _, _, cx| {
+            this.basic_edit = !this.basic_edit;
+            cx.notify();
+        });
         let on_tab = cx.listener(|this, ix: &usize, _w, cx| {
             this.basic_tab = *ix;
             cx.notify();
@@ -696,27 +700,51 @@ impl Showcase {
                 .chain(TYPE_LINES_BELOW_LINK.map(type_line))
                 .collect(),
         );
-        let g_icons = group(
-            icons,
-            vec![
-                // As the toolbar's buttons are spaced: `toolbar.item_gap`,
-                // `layout.widget_gap` where the theme states none.
-                with_gap(h_flex(), tool_gap.or(widget_gap))
-                    .flex_wrap()
-                    .items_center()
-                    .children(ICON_BUTTONS.map(|(id, role, name, listed)| {
-                        demo::icon_button(ui, cx, id, name, &self.role_chrome_icon(role), listed)
-                    }))
-                    .into_any_element(),
-                row()
-                    .children(
-                        ICONS.map(|(id, size, what)| {
+        let g_icons =
+            group(
+                icons,
+                vec![
+                    // As the toolbar's buttons are spaced: `toolbar.item_gap`,
+                    // `layout.widget_gap` where the theme states none.
+                    with_gap(h_flex(), tool_gap.or(widget_gap))
+                        .flex_wrap()
+                        .items_center()
+                        .children(ICON_BUTTONS.map(|(id, role, name, listed)| {
+                            demo::icon_button(
+                                ui,
+                                cx,
+                                demo::IconButton {
+                                    id,
+                                    name,
+                                    drawn: &self.role_chrome_icon(role),
+                                    listed,
+                                    selected: false,
+                                },
+                                None::<fn(&gpui::ClickEvent, &mut Window, &mut gpui::App)>,
+                            )
+                        }))
+                        // The edit-mode switch, on at start: the one toolbar
+                        // button that is ever checked.
+                        .child(demo::icon_button(
+                            ui,
+                            cx,
+                            demo::IconButton {
+                                id: "basic-icon-edit",
+                                name: "Edit",
+                                drawn: &self.role_chrome_icon(IconRole::ActionEdit),
+                                listed: "basic.icons.edit.icon",
+                                selected: self.basic_edit,
+                            },
+                            Some(on_edit),
+                        ))
+                        .into_any_element(),
+                    row()
+                        .children(ICONS.map(|(id, size, what)| {
                             demo::sized_icon(ui, cx, id, &folder, size, what)
-                        }),
-                    )
-                    .into_any_element(),
-            ],
-        );
+                        }))
+                        .into_any_element(),
+                ],
+            );
         let g_separator = group(
             separator,
             vec![

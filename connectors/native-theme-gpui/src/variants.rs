@@ -198,6 +198,13 @@ pub(crate) fn toolbar_button_states(n: Native<'_>) -> ToolbarButtonStates {
 /// `button.border.padding`, which that builder assumes, and then refines it
 /// with the builder.
 ///
+/// A checked toolbar button (`Button::selected(true)`) takes
+/// [`geometry::toolbar_button_checked`](crate::geometry::toolbar_button_checked)
+/// after the rest refinement: a custom variant fills a selected Button with
+/// its pressed colour and has no checked colour of its own, and upstream
+/// replays every refinement over the selected state, so the rest one applied
+/// last would cover the checked fill.
+///
 /// Such a Button goes into gpui-component's `Toolbar` or `ToolbarGroup` by
 /// `content(..)`, not `child(..)`: `child` prepares a Button for the toolbar
 /// by `.ghost().compact()` (gpui-component 0.10.0 `toolbar.rs:17-22`,

@@ -5160,3 +5160,75 @@ fn bordered_button_matches_the_default_button_but_its_hover_border(cx: &mut Test
         unexpected.join("\n")
     );
 }
+
+/// A child that records `window.text_style().color` when it renders, which is
+/// the moment gpui-component's `Icon` reads the colour it paints in where it
+/// states none of its own (gpui-component 0.10.0 `icon.rs:260-266`, through
+/// `into_svg`'s `self.text_color.unwrap_or(..)`, `:213-214`).
+#[derive(IntoElement)]
+struct TextColourProbe {
+    rendered: Rc<RefCell<Vec<gpui::Hsla>>>,
+}
+
+impl gpui::RenderOnce for TextColourProbe {
+    fn render(self, window: &mut Window, _: &mut gpui::App) -> impl IntoElement {
+        self.rendered.borrow_mut().push(window.text_style().color);
+        div().size(px(1.))
+    }
+}
+
+/// A checked toolbar Button's icon takes the checked text (decision 14 of the
+/// steps 4–5 specification): a selected Button on `variants::toolbar_button`,
+/// refined with `geometry::toolbar_button_rest` and then
+/// `geometry::toolbar_button_checked` as the showcase's Edit button is,
+/// holds an `Icon` with no colour of its own and a probe that records the
+/// colour at render, the one the icon is painted in (a test cannot read an
+/// icon's painted colour: gpui's test API gives quads and underlines only).
+/// Under windows-11 light and dark, each recorded colour is
+/// `button.checked_text_color`.
+#[gpui::test]
+fn a_checked_toolbar_buttons_icon_takes_the_checked_text(cx: &mut TestAppContext) {
+    use gpui_component::button::{Button, ButtonVariants as _};
+    use gpui_component::{Icon, IconName, Selectable as _, StyledExt as _};
+
+    let mut lines = Vec::new();
+    let mut wrong = Vec::new();
+    for mode in [ColorMode::Light, ColorMode::Dark] {
+        let r = resolved("windows-11", mode);
+        let checked_text = r.button.checked_text_color.map(c);
+        let rest = crate::geometry::toolbar_button_rest(crate::Native::unscaled(&r));
+        let checked = crate::geometry::toolbar_button_checked(crate::Native::unscaled(&r));
+        let rendered = Rc::new(RefCell::new(Vec::new()));
+        let into_render = rendered.clone();
+        let build: Build = Box::new(move |_, cx| {
+            Button::new("edit")
+                .custom(crate::variants::toolbar_button(cx))
+                .selected(true)
+                .refine_style(&rest)
+                .refine_style(&checked)
+                .child(Icon::new(IconName::Copy))
+                .child(TextColourProbe {
+                    rendered: into_render.clone(),
+                })
+                .into_any_element()
+        });
+        let _ = window_with(cx, Some(("windows-11", mode)), build);
+        let recorded = rendered.borrow().last().copied();
+        let line = format!(
+            "windows-11 {mode:?}: recorded {recorded:?}; checked text {checked_text:?}; renders {}",
+            rendered.borrow().len()
+        );
+        if checked_text.is_none() || recorded != checked_text {
+            wrong.push(line.clone());
+        }
+        lines.push(line);
+    }
+    for line in &lines {
+        println!("{line}");
+    }
+    assert!(
+        wrong.is_empty(),
+        "the icon of a checked toolbar button is not lettered button.checked_text_color:\n{}",
+        wrong.join("\n")
+    );
+}

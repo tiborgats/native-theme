@@ -1419,7 +1419,7 @@ pub fn button_checked(n: Native<'_>) -> StyleRefinement {
 /// with that side less the width. A side the theme leaves unstated is not
 /// set, and the border makes the button that much wider there. Upstream
 /// replays the refinement over the selected and disabled states too
-/// (`:836-850`).
+/// (`:836-850`). Apply it before [`toolbar_button_checked`].
 #[must_use]
 pub fn toolbar_button_rest(n: Native<'_>) -> StyleRefinement {
     if n.resolved.toolbar.button_hover_border_color.is_none() {
@@ -1439,6 +1439,39 @@ pub fn toolbar_button_rest(n: Native<'_>) -> StyleRefinement {
         .bg(Hsla::transparent_black())
         .border(px(w))
         .border_color(Hsla::transparent_black())
+}
+
+/// The fill and text colour of a toolbar Button that is on
+/// (`Button::selected(true)`), over [`variants::toolbar_button`](crate::variants::toolbar_button):
+/// `toolbar.button_checked_background`, lettered `button.checked_text_color`
+/// (`button.active_text_color` where that is `None`). Where the theme states
+/// no checked fill the fill is the pressed one, `toolbar.button_active_background`,
+/// else `button.active_background`, as [`button_checked`] falls back, and the
+/// text is left to the custom variant's one foreground. Where it states none
+/// of the three the refinement sets nothing: the custom variant's selected
+/// fill, its pressed one, stands under its one foreground, unless the caller
+/// applied [`toolbar_button_rest`], whose transparent fill upstream replays
+/// over the selected state too, so that a checked button then shows no fill.
+/// Apply it to a selected toolbar Button only: upstream replays the
+/// refinement at rest too.
+#[must_use]
+pub fn toolbar_button_checked(n: Native<'_>) -> StyleRefinement {
+    let t = &n.resolved.toolbar;
+    let b = &n.resolved.button;
+    let r = match t.button_checked_background {
+        Some(_) => StyleRefinement::default().text_color(rgba_to_hsla(
+            b.checked_text_color.unwrap_or(b.active_text_color),
+        )),
+        None => StyleRefinement::default(),
+    };
+    match t
+        .button_checked_background
+        .or(t.button_active_background)
+        .or(b.active_background)
+    {
+        Some(fill) => r.bg(rgba_to_hsla(fill)),
+        None => r,
+    }
 }
 
 /// The text colour of a selected `ListItem` (`ListItem::selected(true)`):
@@ -2273,6 +2306,97 @@ mod tests {
         assert_eq!(
             toolbar_button_rest(Native::unscaled(&r)),
             StyleRefinement::default()
+        );
+    }
+
+    /// `toolbar_button_checked` fills a checked toolbar button with
+    /// `toolbar.button_checked_background` and letters it in
+    /// `button.checked_text_color`, or `button.active_text_color` where that
+    /// is unset; under a theme that states no toolbar fill nor
+    /// `button.active_background` it sets nothing.
+    #[test]
+    fn toolbar_button_checked_letters_in_the_checked_text() {
+        use native_theme::color::Rgba;
+        let cases = [
+            (
+                "windows-11",
+                ColorMode::Light,
+                Rgba::new(0x00, 0x67, 0xc0, 0xff),
+                Rgba::new(0xff, 0xff, 0xff, 0xff),
+            ),
+            (
+                "windows-11",
+                ColorMode::Dark,
+                Rgba::new(0x4c, 0xc2, 0xff, 0xff),
+                Rgba::new(0x00, 0x00, 0x00, 0xff),
+            ),
+            (
+                "kde-breeze",
+                ColorMode::Light,
+                Rgba::new(0x23, 0x26, 0x29, 0x20),
+                Rgba::new(0x23, 0x26, 0x29, 0xff),
+            ),
+        ];
+        for (preset, mode, fill, text) in cases {
+            let r = resolved(preset, mode);
+            let out = toolbar_button_checked(Native::unscaled(&r));
+            assert_eq!(
+                out.background,
+                Some(rgba_to_hsla(fill).into()),
+                "{preset} {mode:?}: fill"
+            );
+            assert_eq!(
+                out.text.color,
+                Some(rgba_to_hsla(text)),
+                "{preset} {mode:?}: text"
+            );
+        }
+
+        let r = resolved("macos-tahoe", ColorMode::Light);
+        assert_eq!(
+            toolbar_button_checked(Native::unscaled(&r)),
+            StyleRefinement::default(),
+            "macos-tahoe states none of the three fills"
+        );
+
+        let mut r = resolved("windows-11", ColorMode::Light);
+        assert_ne!(
+            r.button.checked_text_color,
+            Some(r.button.active_text_color),
+            "windows-11's checked and pressed texts differ, or the fallback proves nothing"
+        );
+        r.button.checked_text_color = None;
+        assert_eq!(
+            toolbar_button_checked(Native::unscaled(&r)).text.color,
+            Some(rgba_to_hsla(r.button.active_text_color)),
+            "windows-11 with button.checked_text_color cleared"
+        );
+    }
+
+    /// No bundled preset states the toolbar's hover outline without its
+    /// checked fill: `toolbar_button_rest`'s transparent fill is replayed over
+    /// the selected state, so `toolbar_button_checked` must have a fill to set.
+    #[test]
+    fn every_preset_with_a_toolbar_outline_states_its_checked_fill() {
+        let mut outlined = 0usize;
+        for info in Theme::list_presets() {
+            for mode in [ColorMode::Light, ColorMode::Dark] {
+                let r = resolved(info.key, mode);
+                if r.toolbar.button_hover_border_color.is_none() {
+                    continue;
+                }
+                outlined += 1;
+                assert!(
+                    r.toolbar.button_checked_background.is_some(),
+                    "{}/{mode:?}: a checked toolbar button would show no fill in gpui \
+                     (toolbar_button_rest's transparent fill is replayed over the selected state)",
+                    info.key
+                );
+            }
+        }
+        assert!(
+            outlined > 0,
+            "no preset states the outline, so this proves nothing"
         );
     }
 

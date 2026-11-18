@@ -1721,6 +1721,9 @@ struct State {
     // Basic tab
     /// The Basic tab's radio button, text fields, drop-down and slider.
     basic_radio: usize,
+    /// Whether the Basic page's edit-mode switch, the checked tool button,
+    /// is on: on at start, a click switches it.
+    basic_edit: bool,
     basic_hint: String,
     basic_text: String,
     basic_fruit: Fruit,
@@ -2045,6 +2048,7 @@ impl State {
             palette_query: String::new(),
             chrome_icons,
             basic_radio: 0,
+            basic_edit: true,
             basic_hint: String::new(),
             basic_text: "Text".to_string(),
             basic_fruit: Fruit::Apple,
@@ -2657,6 +2661,8 @@ enum Message {
     /// A click on a checkbox held in the one state it shows: nothing changes.
     BasicHeld,
     BasicRadioSelected(usize),
+    /// A click on the edit-mode switch: it turns on or off.
+    BasicEditToggled,
     BasicHintChanged(String),
     BasicTextChanged(String),
     BasicFruitSelected(Fruit),
@@ -3057,6 +3063,7 @@ fn update_inner(state: &mut State, message: Message) {
         Message::BasicHeld | Message::MenuOpened => {}
         Message::MenuTitleOpened(title) => state.menu_title_open = title,
         Message::BasicRadioSelected(i) => state.basic_radio = i,
+        Message::BasicEditToggled => state.basic_edit = !state.basic_edit,
         Message::BasicHintChanged(value) => state.basic_hint = value,
         Message::BasicTextChanged(value) => state.basic_text = value,
         Message::BasicFruitSelected(fruit) => state.basic_fruit = fruit,
@@ -4577,11 +4584,12 @@ struct ChromeIcons {
     panel: Option<IconData>,
     /// `IconRole::WindowClose`: a dialog's close button.
     close: Option<IconData>,
-    /// `IconRole::ActionCopy`, `ActionPaste`, `ActionDelete`: the Basic
-    /// page's icon buttons.
+    /// `IconRole::ActionCopy`, `ActionPaste`, `ActionDelete`, `ActionEdit`:
+    /// the Basic page's icon buttons.
     copy: Option<IconData>,
     paste: Option<IconData>,
     delete: Option<IconData>,
+    edit: Option<IconData>,
     /// `IconRole::FolderOpen`: the Basic page's icons at the theme's sizes.
     folder: Option<IconData>,
     /// Whether they are an OS icon theme's, drawn in their own colours;
@@ -4638,6 +4646,7 @@ fn load_chrome_icons(
         copy: by_role(IconRole::ActionCopy),
         paste: by_role(IconRole::ActionPaste),
         delete: by_role(IconRole::ActionDelete),
+        edit: by_role(IconRole::ActionEdit),
         folder: by_role(IconRole::FolderOpen),
         system: matches!(
             set,
@@ -7364,11 +7373,14 @@ const AW_TAB_BAR: &[&str] = &[
 ];
 
 /// What the drawing of a listed element depends on in the state shown: the
-/// resolved theme, and, where iced_aw's `TabBar` draws the Basic page's
-/// tabs, which of them is open.
+/// resolved theme, whether the Basic page's edit-mode switch is on, and,
+/// where iced_aw's `TabBar` draws the Basic page's tabs, which of them is
+/// open.
 #[derive(Clone, Copy)]
 struct Shown<'a> {
     resolved: &'a ResolvedTheme,
+    /// [`State::basic_edit`]: whether the edit-mode switch is checked.
+    basic_edit: bool,
     /// [`State::basic_tab`]: the index of the open tab in [`BASIC_TABS`].
     #[cfg(feature = "iced_aw")]
     basic_tab: usize,
@@ -7378,16 +7390,19 @@ impl<'a> Shown<'a> {
     fn of(state: &'a State) -> Self {
         Self {
             resolved: &state.current_resolved,
+            basic_edit: state.basic_edit,
             #[cfg(feature = "iced_aw")]
             basic_tab: state.basic_tab,
         }
     }
 
-    /// `resolved` as the showcase opens: the first tab open.
+    /// `resolved` as the showcase opens: the edit-mode switch on, the first
+    /// tab open.
     #[cfg(test)]
     fn opening(resolved: &'a ResolvedTheme) -> Self {
         Self {
             resolved,
+            basic_edit: true,
             #[cfg(feature = "iced_aw")]
             basic_tab: 0,
         }
@@ -7432,49 +7447,61 @@ fn tool_button(id: &str) -> bool {
             | "basic.icons.copy"
             | "basic.icons.paste"
             | "basic.icons.delete"
+            | "basic.icons.edit"
     )
 }
 
-/// The route of a tool button's colour leaf `leaf` that the theme leaves
-/// unstated: what `styles::toolbar_button` draws in its place, where it
-/// draws anything. `None` for a stated leaf, or one no tool button reads.
-fn unstated_tool_colour(resolved: &ResolvedTheme, leaf: &str) -> Option<String> {
+/// The route of a tool button's fill or outline leaf `leaf` that the theme
+/// leaves unstated: what `styles::toolbar_button(resolved, checked)` draws
+/// in its place, where it draws anything. A checked button keeps its checked
+/// fill in every enabled status, so that fill is what it draws under the
+/// pointer and pressed. `None` for a stated leaf, one no tool button reads,
+/// or the checked fill of a button that is not checked, which the export's
+/// rows route.
+fn unstated_tool_colour(resolved: &ResolvedTheme, leaf: &str, checked: bool) -> Option<String> {
     let b = &resolved.button;
     let t = &resolved.toolbar;
+    // The pressed fill of a button that is not checked, and the checked
+    // fill where the theme states none.
+    let pressed = if t.button_active_background.is_some() {
+        "toolbar.button_active_background"
+    } else if b.active_background.is_some() {
+        "button.active_background"
+    } else {
+        "button.hover_background"
+    };
+    let checked_fill = if t.button_checked_background.is_some() {
+        "toolbar.button_checked_background"
+    } else {
+        pressed
+    };
     let (stated, in_its_place) = match leaf {
         "button.active_background" => (
             b.active_background.is_some(),
-            t.button_active_background
-                .is_none()
-                .then_some("button.hover_background"),
-        ),
-        "button.checked_text_color" => (
-            b.checked_text_color.is_some(),
-            Some("button.active_text_color"),
+            if checked {
+                Some(checked_fill)
+            } else {
+                t.button_active_background
+                    .is_none()
+                    .then_some("button.hover_background")
+            },
         ),
         "toolbar.button_hover_background" => (
             t.button_hover_background.is_some(),
-            Some("button.hover_background"),
+            Some(if checked {
+                checked_fill
+            } else {
+                "button.hover_background"
+            }),
         ),
         "toolbar.button_hover_border_color" => (t.button_hover_border_color.is_some(), None),
         "toolbar.button_active_background" => (
             t.button_active_background.is_some(),
-            Some(if b.active_background.is_some() {
-                "button.active_background"
-            } else {
-                "button.hover_background"
-            }),
+            Some(if checked { checked_fill } else { pressed }),
         ),
-        "toolbar.button_checked_background" => (
-            t.button_checked_background.is_some(),
-            Some(if t.button_active_background.is_some() {
-                "toolbar.button_active_background"
-            } else if b.active_background.is_some() {
-                "button.active_background"
-            } else {
-                "button.hover_background"
-            }),
-        ),
+        "toolbar.button_checked_background" if checked => {
+            (t.button_checked_background.is_some(), Some(pressed))
+        }
         _ => return None,
     };
     if stated {
@@ -7616,7 +7643,14 @@ fn drawing(element: &ShowcaseElement, leaf: &str, shown: Shown<'_>) -> Option<Dr
         _ if under("basic.typography.link") => Drawing::enabled(&["styles::button_link."]),
         // A tool button's colour the theme leaves unstated: the hand line
         // names what `styles::toolbar_button` draws in its place.
-        _ if tool_button(id) && unstated_tool_colour(resolved, leaf).is_some() => {
+        _ if tool_button(id)
+            && unstated_tool_colour(
+                resolved,
+                leaf,
+                id == "basic.icons.edit" && shown.basic_edit,
+            )
+            .is_some() =>
+        {
             return None;
         }
         // A tool button's label colours: its icon, where one shows, takes
@@ -7633,7 +7667,11 @@ fn drawing(element: &ShowcaseElement, leaf: &str, shown: Shown<'_>) -> Option<Dr
         {
             return None;
         }
-        // The tool buttons are not checked.
+        // Edit, the edit-mode switch, is checked while it is on; the other
+        // tool buttons are never checked.
+        _ if id == "basic.icons.edit" && shown.basic_edit => {
+            Drawing::only(TOOLBAR_BUTTON, &["(true, "], &["Disabled"])
+        }
         _ if tool_button(id) => Drawing::only(TOOLBAR_BUTTON, &["(false, "], &["Disabled"]),
         // The toolbar's bar and its rule are the connector's.
         _ if id == "chrome.toolbar" => Drawing::of(&["styles::toolbar.", "styles::toolbar_rule."]),
@@ -7827,6 +7865,7 @@ fn ghost_icon<'a>(state: &'a State, id: &str) -> Option<&'a IconData> {
         "basic.icons.copy" => icons.copy.as_ref(),
         "basic.icons.paste" => icons.paste.as_ref(),
         "basic.icons.delete" => icons.delete.as_ref(),
+        "basic.icons.edit" => icons.edit.as_ref(),
         "chrome.status_bar.toggle" => icons.panel.as_ref(),
         "chrome.page_tabs.menu" => state
             .loaded_icons
@@ -7936,7 +7975,10 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
     if leaf == "defaults.focus_ring_color" && ring_round_the_field(resolved) {
         return "native_theme_iced::focus_ring: the ring round the focused field".to_owned();
     }
-    if let Some(line) = unstated_tool_colour(resolved, leaf).filter(|_| tool_button(id)) {
+    // The edit-mode switch while it is on, which `styles::toolbar_button`
+    // draws checked.
+    let checked = id == "basic.icons.edit" && state.basic_edit;
+    if let Some(line) = unstated_tool_colour(resolved, leaf, checked).filter(|_| tool_button(id)) {
         return line;
     }
     let theme_row = id == "chrome.side_panel.settings.theme";
@@ -7962,7 +8004,7 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
     // panel shows, which `ghost_button` draws selected in every status.
     let icon = ghost_icon(state, id).filter(|_| ghost || tool);
     let os_icon = icon.is_some() && state.chrome_icons.system;
-    let selected = id == "chrome.status_bar.toggle" && state.side_panel_visible;
+    let selected = checked || (id == "chrome.status_bar.toggle" && state.side_panel_visible);
     let pressed_fill = resolved.button.active_background;
     // A checked tool button is lettered `button.checked_text_color` where
     // the theme states it and the toolbar's checked fill, as
@@ -11697,11 +11739,12 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
         .into(),
     );
 
-    // Three icon-only tool buttons, as the toolbar's: flat, their icons the
-    // shown set's Copy, Paste and Delete at `toolbar.icon_size`, the
-    // toolbar's item gap apart.
+    // Four icon-only tool buttons, as the toolbar's: flat, their icons the
+    // shown set's Copy, Paste, Delete and Edit at `toolbar.icon_size`, the
+    // toolbar's item gap apart. Edit is an edit-mode switch, on at start: the
+    // one toolbar button that is ever checked.
     let icons = &state.chrome_icons;
-    let tool = |tags, icon, label| {
+    let tool = |tags, icon, label, selected, action| {
         icon_button(
             state,
             IconButton {
@@ -11711,9 +11754,9 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
                 key: None,
                 font: &resolved.toolbar.font,
                 padding: ghost_padding(resolved),
-                selected: false,
+                selected,
                 toolbar: true,
-                action: Message::ButtonPressed,
+                action,
                 tags: Some(tags),
                 tip: tooltip::Position::Bottom,
             },
@@ -11723,17 +11766,30 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
         tool(
             ("basic.icons.copy", "basic.icons.copy.icon"),
             &icons.copy,
-            "Copy"
+            "Copy",
+            false,
+            Message::ButtonPressed,
         ),
         tool(
             ("basic.icons.paste", "basic.icons.paste.icon"),
             &icons.paste,
-            "Paste"
+            "Paste",
+            false,
+            Message::ButtonPressed,
         ),
         tool(
             ("basic.icons.delete", "basic.icons.delete.icon"),
             &icons.delete,
-            "Delete"
+            "Delete",
+            false,
+            Message::ButtonPressed,
+        ),
+        tool(
+            ("basic.icons.edit", "basic.icons.edit.icon"),
+            &icons.edit,
+            "Edit",
+            state.basic_edit,
+            Message::BasicEditToggled,
         ),
     ]
     .spacing(resolved.toolbar.item_gap.unwrap_or(gap.widget))
@@ -18221,6 +18277,108 @@ mod tests {
             "the dot is not in the circles' column"
         );
         assert!(dot.y < option_b.y, "the dot is not Option A's");
+    }
+
+    // -----------------------------------------------------------------------
+    // the_basic_edit_button_starts_checked_and_switches
+    // -----------------------------------------------------------------------
+
+    /// The Basic page's edit-mode switch, Edit, starts checked and a click
+    /// switches it: the icon row hands it `styles::toolbar_button(resolved,
+    /// true)` while it is on, whose fill is `toolbar.button_checked_background`
+    /// (a mark spliced into it fills the button) and whose icon is the checked
+    /// text, and `styles::toolbar_button(resolved, false)` once a click
+    /// (`BasicEditToggled`) turned it off, which leaves it unfilled at rest; a
+    /// second click checks it again. Under kde-breeze light, which states the
+    /// checked fill and text.
+    #[test]
+    fn the_basic_edit_button_starts_checked_and_switches() {
+        let mut state = State::default();
+        assert!(state.basic_edit, "the edit button is not checked at start");
+        let _ = update(
+            &mut state,
+            Message::ThemeSelected(ThemeChoice::Preset("kde-breeze".to_string())),
+        );
+        let r = state.current_resolved.clone();
+        let checked_text = r.button.checked_text_color;
+        assert!(
+            r.toolbar.button_checked_background.is_some() && checked_text.is_some(),
+            "kde-breeze no longer states the checked toolbar fill and text, so this test proves nothing"
+        );
+        if let Some(text) = checked_text {
+            assert_eq!(
+                icon_colour(&r, true, true),
+                to_color(text),
+                "the checked tool button's icon is not button.checked_text_color"
+            );
+        }
+        let mark = native_theme::color::Rgba::rgb(0x13, 0x57, 0x9b);
+        let want = to_color(mark).into_rgba8();
+        // Whether the button is filled with the mark spliced into the
+        // toolbar's checked fill: most of its pixels are the mark.
+        let marked = |state: &mut State| {
+            let theirs = state.current_resolved.toolbar.button_checked_background;
+            state.current_resolved.toolbar.button_checked_background = Some(mark);
+            let (image, laid, scale) = basic_frame(state);
+            state.current_resolved.toolbar.button_checked_background = theirs;
+            let rect = laid.get("basic.icons.edit");
+            assert!(rect.is_some(), "basic.icons.edit is not drawn");
+            let pixels = rect.map(|rect| pixels_in(&image, *rect, scale));
+            let pixels = pixels.unwrap_or_default();
+            let filled = pixels
+                .iter()
+                .filter(|p| p.iter().zip(want).all(|(a, b)| a.abs_diff(b) <= 2))
+                .count();
+            filled * 2 > pixels.len()
+        };
+        let filled = marked(&mut state);
+        assert!(
+            filled,
+            "the checked edit button is not filled with toolbar.button_checked_background"
+        );
+
+        // Where the interface lays the button out, in the window.
+        let laid = recording(|| {
+            let mut ui = interface(&state);
+            let _ = texts(&mut ui);
+            surveyed_layout()
+        });
+        let rect = laid.get("basic.icons.edit").copied();
+        assert!(rect.is_some(), "basic.icons.edit is not laid out");
+        let Some(rect) = rect else {
+            return;
+        };
+        let click = |state: &mut State| {
+            drive(state, |ui| {
+                let at = rect.center();
+                ui.point_at(at);
+                let _ = ui.simulate([Event::Mouse(mouse::Event::CursorMoved { position: at })]);
+                let _ = ui.simulate(iced_test::simulator::click());
+            })
+        };
+        let messages = click(&mut state);
+        assert!(
+            matches!(messages.as_slice(), [Message::BasicEditToggled]),
+            "Edit: {messages:?}"
+        );
+        assert!(
+            !state.basic_edit,
+            "a click did not turn the edit button off"
+        );
+        let filled = marked(&mut state);
+        assert!(
+            !filled,
+            "the edit button that is off is filled with toolbar.button_checked_background"
+        );
+        let messages = click(&mut state);
+        assert!(
+            matches!(messages.as_slice(), [Message::BasicEditToggled]),
+            "Edit, again: {messages:?}"
+        );
+        assert!(
+            state.basic_edit,
+            "a second click did not turn the edit button on again"
+        );
     }
 
     // -----------------------------------------------------------------------
@@ -25288,17 +25446,27 @@ mod tests {
     }
 
     /// The listed colour leaves the connector draws only where the theme
-    /// leaves another value unstated, in a state no bundled preset has, each
-    /// with the reason: the export moves no row of their drawing in any
-    /// bundled combination, so their routes say they are not drawn there.
-    const DRAWN_IN_NO_BUNDLED_THEME: &[(&str, &str, &str)] = &[(
-        "basic.text_inputs.focused",
-        "defaults.focus_ring_color",
-        "styles::text_input's focused border is the ring's colour where \
-         input.focus_border_color is unstated and the ring is inset (styles.rs, \
-         `focus_color`): adwaita's ring is inset but it states the border colour, \
-         and macos-tahoe, which leaves it unstated, has no inset ring",
-    )];
+    /// leaves another value unstated, in a state no bundled preset has, or
+    /// not in the state the element opens in, each with the reason: the
+    /// export moves no row of their drawing in any bundled combination, so
+    /// their routes say they are not drawn there.
+    const DRAWN_IN_NO_BUNDLED_THEME: &[(&str, &str, &str)] = &[
+        (
+            "basic.text_inputs.focused",
+            "defaults.focus_ring_color",
+            "styles::text_input's focused border is the ring's colour where \
+             input.focus_border_color is unstated and the ring is inset (styles.rs, \
+             `focus_color`): adwaita's ring is inset but it states the border colour, \
+             and macos-tahoe, which leaves it unstated, has no inset ring",
+        ),
+        (
+            "basic.icons.edit",
+            "toolbar.button_hover_background",
+            "Edit opens checked, and styles::toolbar_button keeps a checked button's \
+             checked fill under the pointer (styles.rs, `toolbar_button`): the toolbar's \
+             hover fill is drawn once a click has turned it off",
+        ),
+    ];
 
     /// The contract's export parses, and names every colour leaf the element
     /// list gives an element: a leaf whose value is a colour in the resolved
@@ -25565,6 +25733,7 @@ mod tests {
         ("basic.icons.copy", "basic.icons.copy.icon"),
         ("basic.icons.paste", "basic.icons.paste.icon"),
         ("basic.icons.delete", "basic.icons.delete.icon"),
+        ("basic.icons.edit", "basic.icons.edit.icon"),
         ("chrome.page_tabs.menu", "chrome.page_tabs.menu.icon"),
         ("chrome.status_bar.toggle", "chrome.status_bar.toggle.icon"),
     ];
@@ -25774,7 +25943,8 @@ mod tests {
             fault("this build has no iced_aw widget");
         }
         if let Some((_, icon)) = ICON_BUTTONS.iter().find(|(button, _)| *button == id) {
-            let selected = id == "chrome.status_bar.toggle" && state.side_panel_visible;
+            let selected = (id == "basic.icons.edit" && state.basic_edit)
+                || (id == "chrome.status_bar.toggle" && state.side_panel_visible);
             let shows = match (laid.contains_key(icon), state.chrome_icons.system) {
                 (false, _) => Shows::Label,
                 (true, false) => Shows::BundledIcon,
@@ -25918,6 +26088,8 @@ mod tests {
                         seen.insert(("os icon", iconed && state.chrome_icons.system));
                         for (visible, basic_tab, page, inspector) in states {
                             state.side_panel_visible = visible;
+                            // The edit-mode switch on and off with the panel.
+                            state.basic_edit = visible;
                             state.basic_tab = basic_tab;
                             state.active_tab = page;
                             state.inspector_tab = inspector;

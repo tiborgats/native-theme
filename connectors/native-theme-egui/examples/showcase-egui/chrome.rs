@@ -585,13 +585,7 @@ fn toolbar(app: &mut App, ui: &mut egui::Ui, shrink: f32) {
                 let kind = ghost_kind(drawn, false);
                 let response = ui
                     .scope(|ui| {
-                        demo::tool_button(
-                            ui,
-                            &t.button.border.padding,
-                            t.toolbar
-                                .button_hover_border_color
-                                .map(|_| t.button.border.line_width),
-                        );
+                        demo::tool_button(ui, &t.button.border.padding, demo::toolbar_edge(t));
                         bar.add(registry, ui, kind, |ui| {
                             let r = ui.add(ghost_button(ui, image, label, false));
                             r.widget_info(|| {

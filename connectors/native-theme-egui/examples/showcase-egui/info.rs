@@ -607,6 +607,11 @@ const PER_CALL_ROUTES: &[(&str, &str, &str)] = &[
         TOOL_BUTTON_EDGE,
     ),
     (
+        "basic.icons.edit",
+        "button.border.line_width_px",
+        TOOL_BUTTON_EDGE,
+    ),
+    (
         "basic.list.frame",
         "list.border.corner_radius_px",
         "egui: per call, the frame's corner radius (pages::basic::list_frame)",
@@ -664,9 +669,9 @@ const PER_CALL_ROUTES: &[(&str, &str, &str)] = &[
     ),
 ];
 
-/// The line under a listed element's row: the call that applies it where the Basic page paints
-/// it per call ([`PER_CALL_ROUTES`], whose `row_` ids name every row by prefix and whose other
-/// ids name one element each), else [`how_line`]'s, from the leaf's `mapping.toml` row.
+/// The line under a listed element's row: the call that applies it where a page or the chrome
+/// paints it per call ([`PER_CALL_ROUTES`], whose `row_` ids name every row by prefix and whose
+/// other ids name one element each), else [`how_line`]'s, from the leaf's `mapping.toml` row.
 pub(crate) fn listed_how(manifest: &Manifest, element: &str, leaf: &str, seams: &[Seam]) -> String {
     let names = |id: &str| {
         if id.ends_with("row_") {

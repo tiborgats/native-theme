@@ -17490,6 +17490,95 @@ fn a_hovered_tool_button_takes_the_toolbars_outline(cx: &mut TestAppContext) {
     );
 }
 
+/// The Basic page's edit-mode switch is checked at start and a click
+/// switches it: under kde-breeze light and windows-11 light it is filled
+/// with `toolbar.button_checked_background` and its info claims
+/// `button.checked_text_color` as the checked text; a click turns it off,
+/// and with the pointer moved off it paints no fill (the rest fill is
+/// transparent); a second click checks it again. Under macos-tahoe light,
+/// which states no checked fill, its fill is the custom variant's selected
+/// fill, `secondary_active`.
+#[gpui::test]
+fn the_basic_edit_button_is_checked_and_switches(cx: &mut TestAppContext) {
+    use crate::info::stated;
+    let button = "basic-icon-edit";
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    let away = point(px(4.), px(4.));
+    for preset in ["kde-breeze", "windows-11"] {
+        use_light_preset(&mut cx, &showcase, preset);
+        show(&mut cx, &showcase, Page::Basic);
+        let r = resolved_theme(&mut cx, &showcase);
+        let fill = r.toolbar.button_checked_background.map(stated);
+        let text = r.button.checked_text_color.map(stated);
+        assert!(
+            fill.is_some() && text.is_some(),
+            "{preset} no longer states the checked toolbar fill and text, so this test proves nothing"
+        );
+        assert!(
+            read(&mut cx, &showcase, |this, _| this.basic_edit),
+            "{preset}: the edit button is not checked at start"
+        );
+        hover(&mut cx, away);
+        draw(&mut cx);
+        assert_eq!(
+            painted_fill(&mut cx, button),
+            fill,
+            "{preset}: the checked edit button is not filled with toolbar.button_checked_background"
+        );
+        let info = settle_on(&mut cx, &showcase, button);
+        assert_eq!(
+            info.as_ref()
+                .and_then(|info| claim_of(info, "checked_text_color")),
+            text,
+            "{preset}: the checked edit button's info does not claim button.checked_text_color: {info:?}"
+        );
+
+        click(&mut cx, button);
+        assert!(
+            !read(&mut cx, &showcase, |this, _| this.basic_edit),
+            "{preset}: a click did not turn the edit button off"
+        );
+        hover(&mut cx, away);
+        draw(&mut cx);
+        assert_eq!(
+            painted_fill(&mut cx, button),
+            None,
+            "{preset}: the edit button that is off is filled at rest"
+        );
+        click(&mut cx, button);
+        assert!(
+            read(&mut cx, &showcase, |this, _| this.basic_edit),
+            "{preset}: a second click did not turn the edit button on again"
+        );
+        hover(&mut cx, away);
+        draw(&mut cx);
+        assert_eq!(
+            painted_fill(&mut cx, button),
+            fill,
+            "{preset}: the edit button checked again is not filled with toolbar.button_checked_background"
+        );
+    }
+
+    use_light_preset(&mut cx, &showcase, "macos-tahoe");
+    show(&mut cx, &showcase, Page::Basic);
+    let r = resolved_theme(&mut cx, &showcase);
+    assert!(
+        r.toolbar.button_checked_background.is_none()
+            && r.toolbar.button_active_background.is_none()
+            && r.button.active_background.is_none(),
+        "macos-tahoe now states a fill toolbar_button_checked takes, so this part proves nothing"
+    );
+    assert!(read(&mut cx, &showcase, |this, _| this.basic_edit));
+    hover(&mut cx, away);
+    draw(&mut cx);
+    let selected = cx.update(|_, cx| Theme::global(cx).secondary_active);
+    assert_eq!(
+        painted_fill(&mut cx, button),
+        Some(selected),
+        "macos-tahoe: the checked edit button is not filled with the variant's selected fill"
+    );
+}
+
 /// A disabled refined field's edge swatch is the colour painted: the
 /// surface's `input.border.color` faded with the field by the opacity
 /// `geometry::input_fill` gives it (`input.disabled_opacity`) -- under the
@@ -18333,7 +18422,7 @@ fn every_tool_buttons_size_note_follows_the_stated_padding() {
                 "Basic icon button",
                 "h_8",
                 "px_2p5",
-                crate::info::buttons::icon_button(t, true, native),
+                crate::info::buttons::icon_button(t, true, None, native),
             ),
         ]
     };
@@ -18699,7 +18788,7 @@ fn a_partly_stated_tool_button_padding_leaves_upstream_the_rest() {
         theme.button.border.padding.right = right;
         theme.button.border.padding.bottom = bottom;
         theme.button.border.padding.left = left;
-        let info = crate::info::buttons::icon_button(t, true, Some(&theme));
+        let info = crate::info::buttons::icon_button(t, true, None, Some(&theme));
         let note = shown_note(Some(&info), "size");
         let note_words = note.as_deref().map(words).unwrap_or_default();
         assert_eq!(

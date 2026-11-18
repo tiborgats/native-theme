@@ -4527,14 +4527,18 @@ fn a_checked_toolbar_button_takes_the_checked_text() -> native_theme::Result<()>
              checked fill, lettered button.checked_text_color"
         );
 
+        // windows-11 states the toolbar's pressed fill, which a checked
+        // button takes where the checked fill is unset.
+        let pressed = resolved.toolbar.button_active_background;
+        assert!(
+            pressed.is_some(),
+            "windows-11 {mode:?} no longer states toolbar.button_active_background"
+        );
+        let Some(pressed) = pressed else {
+            return Ok(());
+        };
         resolved.toolbar.button_checked_background = None;
-        let b = &resolved.button;
-        let pressed = resolved
-            .toolbar
-            .button_active_background
-            .or(b.active_background)
-            .unwrap_or(b.hover_background);
-        let active_text = b.active_text_color;
+        let active_text = resolved.button.active_text_color;
         let checked = styles::toolbar_button(&resolved, true)(&theme, button::Status::Active);
         assert_eq!(
             (checked.background, checked.text_color),

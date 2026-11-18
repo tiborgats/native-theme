@@ -302,7 +302,7 @@ sample = { fill = [1.0, 0.5, -2.5, 0.0] }
 id = "chrome.toolbar.command_palette"
 name = "Tool button"
 parent = "chrome.toolbar"
-leaves = ["button.font.color", "button.hover_background", "button.hover_text_color", "button.active_background", "button.active_text_color", "button.border.corner_radius_px", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.icon_theme", "theme_variant.icon_set", "toolbar.font", "toolbar.icon_size_px"]
+leaves = ["button.font.color", "button.hover_background", "button.hover_text_color", "button.active_background", "button.active_text_color", "button.border.corner_radius_px", "button.border.line_width_px", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.icon_theme", "theme_variant.icon_set", "toolbar.font", "toolbar.icon_size_px", "toolbar.button_hover_background", "toolbar.button_hover_border_color", "toolbar.button_active_background"]
 states = ["Normal"]
 sample = { fill = [0.0, 0.5, 1.5, 0.0] }
 
@@ -318,7 +318,7 @@ part = true
 id = "chrome.toolbar.reload_theme"
 name = "Tool button"
 parent = "chrome.toolbar.command_palette"
-leaves = ["button.font.color", "button.hover_background", "button.hover_text_color", "button.active_background", "button.active_text_color", "button.border.corner_radius_px", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.icon_theme", "theme_variant.icon_set", "toolbar.font", "toolbar.icon_size_px"]
+leaves = ["button.font.color", "button.hover_background", "button.hover_text_color", "button.active_background", "button.active_text_color", "button.border.corner_radius_px", "button.border.line_width_px", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.icon_theme", "theme_variant.icon_set", "toolbar.font", "toolbar.icon_size_px", "toolbar.button_hover_background", "toolbar.button_hover_border_color", "toolbar.button_active_background"]
 states = ["Normal"]
 sample = { fill = [0.0, 0.5, 1.5, 0.0] }
 
@@ -334,7 +334,7 @@ part = true
 id = "chrome.toolbar.preferences"
 name = "Tool button"
 parent = "chrome.toolbar.reload_theme"
-leaves = ["button.font.color", "button.hover_background", "button.hover_text_color", "button.active_background", "button.active_text_color", "button.border.corner_radius_px", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.icon_theme", "theme_variant.icon_set", "toolbar.font", "toolbar.icon_size_px"]
+leaves = ["button.font.color", "button.hover_background", "button.hover_text_color", "button.active_background", "button.active_text_color", "button.border.corner_radius_px", "button.border.line_width_px", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.icon_theme", "theme_variant.icon_set", "toolbar.font", "toolbar.icon_size_px", "toolbar.button_hover_background", "toolbar.button_hover_border_color", "toolbar.button_active_background"]
 states = ["Normal"]
 sample = { fill = [0.0, 0.5, 1.5, 0.0] }
 
@@ -375,7 +375,7 @@ sample = { text = "glyph" }
 id = "chrome.side_panel.settings.theme"
 name = "Drop-down"
 parent = "chrome.side_panel.settings.theme_label"
-leaves = ["combo_box.background_color", "combo_box.font", "combo_box.font.color", "combo_box.min_height_px", "combo_box.min_width_px", "combo_box.arrow_icon_size_px", "combo_box.arrow_area_width_px", "combo_box.hover_background", "combo_box.border.color", "combo_box.border.corner_radius_px", "combo_box.border.line_width_px", "combo_box.border.shadow_enabled", "combo_box.border.padding_top_px", "combo_box.border.padding_right_px", "combo_box.border.padding_bottom_px", "combo_box.border.padding_left_px", "defaults.line_height"]
+leaves = ["combo_box.background_color", "combo_box.font", "combo_box.font.color", "combo_box.min_height_px", "combo_box.min_width_px", "combo_box.arrow_icon_size_px", "combo_box.arrow_area_width_px", "combo_box.hover_background", "combo_box.hover_border_color", "combo_box.border.color", "combo_box.border.corner_radius_px", "combo_box.border.line_width_px", "combo_box.border.shadow_enabled", "combo_box.border.padding_top_px", "combo_box.border.padding_right_px", "combo_box.border.padding_bottom_px", "combo_box.border.padding_left_px", "defaults.line_height"]
 states = ["Normal"]
 sample = { fill = [0.5, 1.0, 0.0, -2.5], border = [0.5, 1.0, 0.0, -0.5], text = { glyph = [0.0, 0.2, 0.6, 0.8] } }
 
@@ -391,7 +391,7 @@ sample = { text = "glyph" }
 id = "chrome.side_panel.settings.mode"
 name = "Drop-down"
 parent = "chrome.side_panel.settings.mode_label"
-leaves = ["combo_box.background_color", "combo_box.font", "combo_box.font.color", "combo_box.min_height_px", "combo_box.min_width_px", "combo_box.arrow_icon_size_px", "combo_box.arrow_area_width_px", "combo_box.hover_background", "combo_box.border.color", "combo_box.border.corner_radius_px", "combo_box.border.line_width_px", "combo_box.border.shadow_enabled", "combo_box.border.padding_top_px", "combo_box.border.padding_right_px", "combo_box.border.padding_bottom_px", "combo_box.border.padding_left_px", "defaults.line_height"]
+leaves = ["combo_box.background_color", "combo_box.font", "combo_box.font.color", "combo_box.min_height_px", "combo_box.min_width_px", "combo_box.arrow_icon_size_px", "combo_box.arrow_area_width_px", "combo_box.hover_background", "combo_box.hover_border_color", "combo_box.border.color", "combo_box.border.corner_radius_px", "combo_box.border.line_width_px", "combo_box.border.shadow_enabled", "combo_box.border.padding_top_px", "combo_box.border.padding_right_px", "combo_box.border.padding_bottom_px", "combo_box.border.padding_left_px", "defaults.line_height"]
 states = ["Normal"]
 sample = { fill = [0.5, 1.0, 0.0, -2.5], border = [0.5, 1.0, 0.0, -0.5], text = { glyph = [0.0, 0.2, 0.6, 0.8] } }
 
@@ -407,7 +407,7 @@ sample = { text = "glyph" }
 id = "chrome.side_panel.settings.icon_theme"
 name = "Drop-down"
 parent = "chrome.side_panel.settings.icon_theme_label"
-leaves = ["combo_box.background_color", "combo_box.font", "combo_box.font.color", "combo_box.min_height_px", "combo_box.min_width_px", "combo_box.arrow_icon_size_px", "combo_box.arrow_area_width_px", "combo_box.hover_background", "combo_box.border.color", "combo_box.border.corner_radius_px", "combo_box.border.line_width_px", "combo_box.border.shadow_enabled", "combo_box.border.padding_top_px", "combo_box.border.padding_right_px", "combo_box.border.padding_bottom_px", "combo_box.border.padding_left_px", "defaults.line_height"]
+leaves = ["combo_box.background_color", "combo_box.font", "combo_box.font.color", "combo_box.min_height_px", "combo_box.min_width_px", "combo_box.arrow_icon_size_px", "combo_box.arrow_area_width_px", "combo_box.hover_background", "combo_box.hover_border_color", "combo_box.border.color", "combo_box.border.corner_radius_px", "combo_box.border.line_width_px", "combo_box.border.shadow_enabled", "combo_box.border.padding_top_px", "combo_box.border.padding_right_px", "combo_box.border.padding_bottom_px", "combo_box.border.padding_left_px", "defaults.line_height"]
 states = ["Normal"]
 sample = { fill = [0.5, 1.0, 0.0, -2.5], border = [0.5, 1.0, 0.0, -0.5], text = { glyph = [0.0, 0.2, 0.6, 0.8] } }
 
@@ -869,14 +869,14 @@ sample = { text = "glyph" }
 id = "basic.checkboxes.unchecked"
 name = "Checkbox"
 parent = "basic.checkboxes.heading"
-leaves = ["checkbox.background_color", "checkbox.font", "checkbox.font.color", "checkbox.indicator_width_px", "checkbox.label_gap_px", "checkbox.hover_background", "checkbox.unchecked_background", "checkbox.unchecked_border_color", "checkbox.border.corner_radius_px", "checkbox.border.line_width_px", "defaults.line_height"]
+leaves = ["checkbox.background_color", "checkbox.font", "checkbox.font.color", "checkbox.indicator_width_px", "checkbox.label_gap_px", "checkbox.hover_background", "checkbox.hover_border_color", "checkbox.unchecked_background", "checkbox.unchecked_border_color", "checkbox.border.corner_radius_px", "checkbox.border.line_width_px", "defaults.line_height"]
 states = ["Unchecked"]
 
 [[element]]
 id = "basic.checkboxes.unchecked.indicator"
 name = "Checkbox indicator"
 parent = "basic.checkboxes.unchecked"
-leaves = ["checkbox.background_color", "checkbox.indicator_width_px", "checkbox.hover_background", "checkbox.unchecked_background", "checkbox.unchecked_border_color", "checkbox.border.corner_radius_px", "checkbox.border.line_width_px"]
+leaves = ["checkbox.background_color", "checkbox.indicator_width_px", "checkbox.hover_background", "checkbox.hover_border_color", "checkbox.unchecked_background", "checkbox.unchecked_border_color", "checkbox.border.corner_radius_px", "checkbox.border.line_width_px"]
 states = ["Unchecked"]
 part = true
 sample = { fill = [0.5, 0.5], border = [0.5, 0.0, 0.0, 0.5] }
@@ -894,14 +894,14 @@ sample = { text = "glyph" }
 id = "basic.checkboxes.checked"
 name = "Checkbox"
 parent = "basic.checkboxes.unchecked"
-leaves = ["checkbox.font", "checkbox.font.color", "checkbox.indicator_color", "checkbox.indicator_width_px", "checkbox.check_mark_stroke_width_px", "checkbox.label_gap_px", "checkbox.checked_background", "checkbox.border.color", "checkbox.border.corner_radius_px", "checkbox.border.line_width_px", "checkbox.border.padding_top_px", "checkbox.border.padding_right_px", "checkbox.border.padding_bottom_px", "checkbox.border.padding_left_px", "defaults.line_height"]
+leaves = ["checkbox.font", "checkbox.font.color", "checkbox.indicator_color", "checkbox.indicator_width_px", "checkbox.check_mark_stroke_width_px", "checkbox.label_gap_px", "checkbox.checked_background", "checkbox.hover_border_color", "checkbox.border.color", "checkbox.border.corner_radius_px", "checkbox.border.line_width_px", "checkbox.border.padding_top_px", "checkbox.border.padding_right_px", "checkbox.border.padding_bottom_px", "checkbox.border.padding_left_px", "defaults.line_height"]
 states = ["Checked"]
 
 [[element]]
 id = "basic.checkboxes.checked.indicator"
 name = "Checkbox indicator"
 parent = "basic.checkboxes.checked"
-leaves = ["checkbox.indicator_width_px", "checkbox.checked_background", "checkbox.border.color", "checkbox.border.corner_radius_px", "checkbox.border.line_width_px"]
+leaves = ["checkbox.indicator_width_px", "checkbox.checked_background", "checkbox.hover_border_color", "checkbox.border.color", "checkbox.border.corner_radius_px", "checkbox.border.line_width_px"]
 states = ["Checked"]
 part = true
 sample = { fill = [0.5, 0.0, 0.0, 2.5], border = [0.5, 0.0, 0.0, 0.5] }
@@ -972,14 +972,14 @@ sample = { text = "glyph" }
 id = "basic.radios.option_a"
 name = "Radio button"
 parent = "basic.radios.heading"
-leaves = ["checkbox.font", "checkbox.font.color", "checkbox.indicator_color", "checkbox.indicator_width_px", "checkbox.radio_indicator_width_px", "checkbox.radio_dot_diameter_px", "checkbox.label_gap_px", "checkbox.checked_background", "checkbox.border.color", "checkbox.border.line_width_px", "defaults.line_height"]
+leaves = ["checkbox.font", "checkbox.font.color", "checkbox.indicator_color", "checkbox.indicator_width_px", "checkbox.radio_indicator_width_px", "checkbox.radio_dot_diameter_px", "checkbox.label_gap_px", "checkbox.checked_background", "checkbox.hover_border_color", "checkbox.border.color", "checkbox.border.line_width_px", "defaults.line_height"]
 states = ["Selected"]
 
 [[element]]
 id = "basic.radios.option_a.indicator"
 name = "Radio indicator"
 parent = "basic.radios.option_a"
-leaves = ["checkbox.indicator_width_px", "checkbox.radio_indicator_width_px", "checkbox.checked_background", "checkbox.border.color", "checkbox.border.line_width_px"]
+leaves = ["checkbox.indicator_width_px", "checkbox.radio_indicator_width_px", "checkbox.checked_background", "checkbox.hover_border_color", "checkbox.border.color", "checkbox.border.line_width_px"]
 states = ["Selected"]
 part = true
 sample = { fill = [0.5, 0.0, 0.0, 2.5], border = [0.5, 0.0, 0.0, 0.5] }
@@ -1006,14 +1006,14 @@ sample = { text = "glyph" }
 id = "basic.radios.option_b"
 name = "Radio button"
 parent = "basic.radios.option_a"
-leaves = ["checkbox.background_color", "checkbox.font", "checkbox.font.color", "checkbox.indicator_width_px", "checkbox.radio_indicator_width_px", "checkbox.label_gap_px", "checkbox.hover_background", "checkbox.unchecked_background", "checkbox.unchecked_border_color", "checkbox.border.line_width_px", "defaults.line_height"]
+leaves = ["checkbox.background_color", "checkbox.font", "checkbox.font.color", "checkbox.indicator_width_px", "checkbox.radio_indicator_width_px", "checkbox.label_gap_px", "checkbox.hover_background", "checkbox.hover_border_color", "checkbox.unchecked_background", "checkbox.unchecked_border_color", "checkbox.border.line_width_px", "defaults.line_height"]
 states = ["Normal"]
 
 [[element]]
 id = "basic.radios.option_b.indicator"
 name = "Radio indicator"
 parent = "basic.radios.option_b"
-leaves = ["checkbox.background_color", "checkbox.indicator_width_px", "checkbox.radio_indicator_width_px", "checkbox.hover_background", "checkbox.unchecked_background", "checkbox.unchecked_border_color", "checkbox.border.line_width_px"]
+leaves = ["checkbox.background_color", "checkbox.indicator_width_px", "checkbox.radio_indicator_width_px", "checkbox.hover_background", "checkbox.hover_border_color", "checkbox.unchecked_background", "checkbox.unchecked_border_color", "checkbox.border.line_width_px"]
 states = ["Normal"]
 part = true
 sample = { fill = [0.5, 0.5], border = [0.5, 0.0, 0.0, 0.5] }
@@ -1258,7 +1258,7 @@ sample = { text = "glyph" }
 id = "basic.drop_down.trigger"
 name = "Drop-down"
 parent = "basic.drop_down.heading"
-leaves = ["combo_box.background_color", "combo_box.font", "combo_box.font.color", "combo_box.min_height_px", "combo_box.min_width_px", "combo_box.arrow_icon_size_px", "combo_box.arrow_area_width_px", "combo_box.hover_background", "combo_box.border.color", "combo_box.border.corner_radius_px", "combo_box.border.line_width_px", "combo_box.border.shadow_enabled", "combo_box.border.padding_top_px", "combo_box.border.padding_right_px", "combo_box.border.padding_bottom_px", "combo_box.border.padding_left_px", "defaults.line_height"]
+leaves = ["combo_box.background_color", "combo_box.font", "combo_box.font.color", "combo_box.min_height_px", "combo_box.min_width_px", "combo_box.arrow_icon_size_px", "combo_box.arrow_area_width_px", "combo_box.hover_background", "combo_box.hover_border_color", "combo_box.border.color", "combo_box.border.corner_radius_px", "combo_box.border.line_width_px", "combo_box.border.shadow_enabled", "combo_box.border.padding_top_px", "combo_box.border.padding_right_px", "combo_box.border.padding_bottom_px", "combo_box.border.padding_left_px", "defaults.line_height"]
 states = ["Normal"]
 sample = { fill = [0.5, 1.0, 0.0, -2.5], border = [0.5, 1.0, 0.0, -0.5] }
 
@@ -1569,7 +1569,7 @@ sample = { text = "glyph" }
 id = "basic.icons.copy"
 name = "Tool button"
 parent = "basic.icons.heading"
-leaves = ["button.font.color", "button.hover_background", "button.hover_text_color", "button.active_background", "button.active_text_color", "button.border.corner_radius_px", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.icon_theme", "theme_variant.icon_set", "toolbar.icon_size_px"]
+leaves = ["button.font.color", "button.hover_background", "button.hover_text_color", "button.active_background", "button.active_text_color", "button.border.corner_radius_px", "button.border.line_width_px", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.icon_theme", "theme_variant.icon_set", "toolbar.icon_size_px", "toolbar.button_hover_background", "toolbar.button_hover_border_color", "toolbar.button_active_background"]
 states = ["Normal"]
 sample = { fill = [0.0, 0.5, 1.5, 0.0] }
 
@@ -1585,7 +1585,7 @@ part = true
 id = "basic.icons.paste"
 name = "Tool button"
 parent = "basic.icons.copy"
-leaves = ["button.font.color", "button.hover_background", "button.hover_text_color", "button.active_background", "button.active_text_color", "button.border.corner_radius_px", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.icon_theme", "theme_variant.icon_set", "toolbar.icon_size_px"]
+leaves = ["button.font.color", "button.hover_background", "button.hover_text_color", "button.active_background", "button.active_text_color", "button.border.corner_radius_px", "button.border.line_width_px", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.icon_theme", "theme_variant.icon_set", "toolbar.icon_size_px", "toolbar.button_hover_background", "toolbar.button_hover_border_color", "toolbar.button_active_background"]
 states = ["Normal"]
 sample = { fill = [0.0, 0.5, 1.5, 0.0] }
 
@@ -1601,7 +1601,7 @@ part = true
 id = "basic.icons.delete"
 name = "Tool button"
 parent = "basic.icons.paste"
-leaves = ["button.font.color", "button.hover_background", "button.hover_text_color", "button.active_background", "button.active_text_color", "button.border.corner_radius_px", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.icon_theme", "theme_variant.icon_set", "toolbar.icon_size_px"]
+leaves = ["button.font.color", "button.hover_background", "button.hover_text_color", "button.active_background", "button.active_text_color", "button.border.corner_radius_px", "button.border.line_width_px", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.icon_theme", "theme_variant.icon_set", "toolbar.icon_size_px", "toolbar.button_hover_background", "toolbar.button_hover_border_color", "toolbar.button_active_background"]
 states = ["Normal"]
 sample = { fill = [0.0, 0.5, 1.5, 0.0] }
 
@@ -1611,6 +1611,22 @@ name = "Icon"
 parent = "basic.icons.delete"
 leaves = ["defaults.icon_theme", "theme_variant.icon_set", "toolbar.icon_size_px"]
 states = ["Normal"]
+part = true
+
+[[element]]
+id = "basic.icons.edit"
+name = "Tool button"
+parent = "basic.icons.delete"
+leaves = ["button.font.color", "button.hover_background", "button.hover_text_color", "button.active_background", "button.active_text_color", "button.checked_text_color", "button.border.corner_radius_px", "button.border.line_width_px", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.icon_theme", "theme_variant.icon_set", "toolbar.icon_size_px", "toolbar.button_hover_background", "toolbar.button_hover_border_color", "toolbar.button_active_background", "toolbar.button_checked_background"]
+states = ["Checked"]
+sample = { fill = [0.0, 0.5, 1.5, 0.0] }
+
+[[element]]
+id = "basic.icons.edit.icon"
+name = "Icon"
+parent = "basic.icons.edit"
+leaves = ["defaults.icon_theme", "theme_variant.icon_set", "toolbar.icon_size_px"]
+states = ["Checked"]
 part = true
 
 [[element]]

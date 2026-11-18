@@ -1369,15 +1369,6 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
         ),
     },
     UnreadColour {
-        leaf: "toolbar.button_checked_background",
-        why: Unread::NoReceiver(
-            "a custom variant fills a selected Button with its `active` colour, the pressed \
-             fill (gpui-component 0.10.0 `button/button.rs:1353`, `ButtonVariant::selected`), \
-             and takes no checked colour of its own; until the connector refines a selected \
-             toolbar Button, a checked one shows the pressed fill",
-        ),
-    },
-    UnreadColour {
         leaf: "checkbox.background_color",
         why: Unread::Fallback {
             option: "checkbox.unchecked_background",
@@ -2873,6 +2864,7 @@ fn sinks(r: &ResolvedTheme, is_dark: bool) -> std::collections::BTreeMap<String,
         ("button_disabled", gm::button_disabled),
         ("button_checked", gm::button_checked),
         ("toolbar_button_rest", gm::toolbar_button_rest),
+        ("toolbar_button_checked", gm::toolbar_button_checked),
         ("list_item_selected", gm::list_item_selected),
         ("link", gm::link),
         ("input_fill(false)", |n| gm::input_fill(n, false)),

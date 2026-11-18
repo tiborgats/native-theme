@@ -5745,7 +5745,7 @@ const BASIC_CONTROLS: [(&str, &[(&str, usize)]); 20] = [
     ("List", &[("List", 1)]),
     // The icon buttons; the chosen set's open folder, where the set has one, is not counted: a
     // freedesktop theme the test's machine lacks shows none, never another set's.
-    ("Icons", &[("icon button", 3)]),
+    ("Icons", &[("icon button", 3), ("icon button, checked", 1)]),
     ("Tabs", &[("Tab · Basic", 2)]),
     (
         "Expander",
@@ -9244,10 +9244,11 @@ fn a_capture_without_the_scale_factor_is_refused() {
 
 /// The one check that a tool button's hover outline is drawn: the «toolbar» scope writes its
 /// colour (`toolbar.button_hover_border_color`), and `demo::tool_button` its width per call,
-/// at width 0 nothing being drawn. In a «toolbar» scope after `demo::tool_button` as the
-/// chrome's toolbar calls it, kde-breeze light, which states the outline, draws it
-/// `button.border.line_width` wide hovered and pressed and none at rest; adwaita light, which
-/// does not, draws none in the three.
+/// at width 0 nothing being drawn. In a «toolbar» scope after `demo::tool_button` with the edge
+/// `demo::toolbar_edge` gives, as the chrome's toolbar and the Basic page's icon row call it,
+/// kde-breeze light, which states the outline, draws it `button.border.line_width` wide hovered
+/// and pressed, in its colour, and none at rest; adwaita light, which does not, draws none in
+/// the three.
 #[test]
 fn a_tool_buttons_outline_has_the_borders_width() {
     let prefs = AccessibilityPreferences::default();
@@ -9274,9 +9275,7 @@ fn a_tool_buttons_outline_has_the_borders_width() {
                     crate::demo::tool_button(
                         ui,
                         &t.button.border.padding,
-                        t.toolbar
-                            .button_hover_border_color
-                            .map(|_| t.button.border.line_width),
+                        crate::demo::toolbar_edge(&t),
                     );
                     let w = &ui.style().visuals.widgets;
                     widths = Some((
@@ -9285,7 +9284,7 @@ fn a_tool_buttons_outline_has_the_borders_width() {
                             w.hovered.bg_stroke.width,
                             w.active.bg_stroke.width,
                         ],
-                        w.hovered.bg_stroke.color,
+                        [w.hovered.bg_stroke.color, w.active.bg_stroke.color],
                     ));
                     ui.add(egui::Button::new("Copy"))
                 },
@@ -9306,13 +9305,107 @@ fn a_tool_buttons_outline_has_the_borders_width() {
             "{preset}: [inactive, hovered, active]"
         );
         if let Some(colour) = t.toolbar.button_hover_border_color {
+            let colour = native_theme_egui::convert::to_color32(colour);
             assert_eq!(
                 widths.map(|(_, c)| c),
-                Some(native_theme_egui::convert::to_color32(colour)),
-                "{preset}: the «toolbar» scope's outline colour"
+                Some([colour; 2]),
+                "{preset}: the «toolbar» scope's outline colour, [hovered, active]"
             );
         }
     }
+}
+
+/// The Basic page's edit-mode switch starts checked and a click switches it: its AccessKit node
+/// "Edit" is selected at start and not after a click. Under kde-breeze light, set directly (a
+/// preset of another platform is refused on the command line), which states the toolbar's
+/// checked fill and the checked text: the fill handed to the button (`pages::basic::edit_look`)
+/// is `toolbar_button_checked_background` and is painted over the button while it is on, and the
+/// text colour its scope takes, which tints its icon as it loads, is the checked text; off, it
+/// is handed no fill and not painted in that one.
+#[test]
+fn the_basic_edit_button_starts_checked_and_switches() {
+    let mut harness = open_scaled("kde-breeze", "basic", 1.0);
+    harness.run_steps(SETTLE);
+    let t = harness
+        .state()
+        .atlas
+        .resolved_for(egui::Theme::Light)
+        .clone();
+    let fill = native_theme_egui::toolbar_button_checked_background(&t);
+    assert!(
+        fill.is_some() && t.button.checked_text_color.is_some(),
+        "kde-breeze no longer states the checked toolbar fill and text, so this test proves nothing"
+    );
+    let text = t
+        .button
+        .checked_text_color
+        .map(native_theme_egui::convert::to_color32);
+    let visuals = harness.ctx.global_style().visuals.clone();
+    assert_eq!(
+        crate::pages::basic::edit_look(&t, &visuals, true),
+        (fill, text),
+        "Edit while on: (the fill handed to the button, the scope's text colour)"
+    );
+    assert_eq!(
+        crate::pages::basic::edit_look(&t, &visuals, false),
+        (None, None),
+        "Edit while off"
+    );
+    let selected = |harness: &Harness<'_, App>| {
+        harness
+            .get_by_role_and_label(Role::Button, "Edit")
+            .accesskit_node()
+            .toggled()
+            == Some(egui::accesskit::Toggled::True)
+    };
+    // Whether the toolbar's checked fill is painted over the button's rectangle.
+    let filled = |harness: &Harness<'_, App>| {
+        let edit = harness
+            .state()
+            .registry
+            .places()
+            .get("basic.icons.edit")
+            .copied();
+        assert!(edit.is_some(), "basic.icons.edit is not placed");
+        let edit = edit.unwrap_or(egui::Rect::NOTHING);
+        harness
+            .output()
+            .shapes
+            .iter()
+            .any(|clipped| match &clipped.shape {
+                egui::Shape::Rect(r) => {
+                    Some(r.fill) == fill && r.brush.is_none() && edit.contains_rect(r.rect)
+                }
+                _ => false,
+            })
+    };
+    assert!(
+        harness.state().demo_state.basic_edit,
+        "Edit is not on at start"
+    );
+    assert!(selected(&harness), "Edit's node is not selected at start");
+    assert!(
+        filled(&harness),
+        "Edit while on is not filled with the toolbar's checked fill"
+    );
+
+    harness.get_by_role_and_label(Role::Button, "Edit").click();
+    harness.run_steps(SETTLE);
+    assert!(
+        !harness.state().demo_state.basic_edit,
+        "a click did not turn Edit off"
+    );
+    assert!(!selected(&harness), "Edit's node is selected after a click");
+    assert!(
+        !filled(&harness),
+        "Edit while off is filled with the toolbar's checked fill"
+    );
+    harness.get_by_role_and_label(Role::Button, "Edit").click();
+    harness.run_steps(SETTLE);
+    assert!(
+        harness.state().demo_state.basic_edit,
+        "a second click did not turn Edit on again"
+    );
 }
 
 // --- The chrome's icons from a fixture icon theme --------------------------------------------

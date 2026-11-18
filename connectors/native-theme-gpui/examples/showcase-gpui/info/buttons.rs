@@ -7,7 +7,7 @@ use native_theme_gpui::ResolvedTheme;
 use super::{
     ColorClaim, WidgetInfo,
     chrome::{GhostContent, chrome_icon_note, ghost_colours, input_background},
-    claim, edge_claim, percent_text, px_text, stated_claim,
+    claim, edge_claim, percent_text, px_text, stated, stated_claim,
 };
 use crate::demo::{ButtonKind, ButtonState};
 use crate::support::ChromeIcon;
@@ -787,6 +787,58 @@ pub(super) fn native_ghost_selected(info: WidgetInfo, t: &Theme) -> WidgetInfo {
     )
 }
 
+/// `info` with what a checked tool Button paints over what [`native_toolbar`]
+/// claims: `geometry::toolbar_button_checked`'s fill and text where `native`
+/// states the toolbar's checked fill; else, as [`native_ghost_selected`]
+/// says, the variant's active colour as the selected fill, which that
+/// builder sets too. Upstream draws no hover style on a selected Button, so
+/// the edge stays the rest one under the pointer.
+fn toolbar_checked(info: WidgetInfo, t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
+    let checked_fill = stated_claim(
+        "checked fill",
+        "button_checked_background",
+        native.and_then(|r| r.toolbar.button_checked_background),
+        "native-theme-gpui/geometry.rs:1461",
+    );
+    let info = match (checked_fill, native) {
+        (Some(fill), Some(r)) => {
+            let text = match stated_claim(
+                "checked text",
+                "checked_text_color",
+                r.button.checked_text_color,
+                "native-theme-gpui/geometry.rs:1463",
+            ) {
+                Some(text) => text,
+                None => claim(
+                    "checked text",
+                    "active_text_color",
+                    stated(r.button.active_text_color),
+                    "native-theme-gpui/geometry.rs:1463",
+                ),
+            };
+            info.color(fill).color(text)
+        }
+        _ => match stated_claim(
+            "selected bg",
+            "button_active_background",
+            native.and_then(|r| r.toolbar.button_active_background),
+            "native-theme-gpui/variants.rs:165",
+        ) {
+            Some(active) => info.color(active),
+            None => info.color(claim(
+                "selected bg",
+                "secondary_active",
+                t.secondary_active,
+                "native-theme-gpui/variants.rs:64",
+            )),
+        },
+    };
+    info.not_themeable(
+        "hover outline while checked",
+        "gpui-component draws no hover style on a selected Button (button/button.rs, RenderOnce for Button: the hover style returns early while selected), and replays the caller's refinement over the selected state, so the edge stays the rest one",
+    )
+}
+
 /// The Size a tool button is built at: what upstream lays a labelled Button
 /// of it out at (button/button.rs, RenderOnce for Button).
 #[derive(Clone, Copy)]
@@ -1124,13 +1176,35 @@ pub fn toolbar(item_gap: Option<f32>, native: Option<&ResolvedTheme>) -> WidgetI
 /// is installed, as [`tool_button_size`] says -- not `geometry::button`, so
 /// it has no edge at rest; where `native` states the toolbar's outline,
 /// `geometry::toolbar_button_rest` gives it a transparent one, coloured
-/// under the pointer and while pressed.
-pub fn icon_button(t: &Theme, drawn: bool, native: Option<&ResolvedTheme>) -> WidgetInfo {
-    let info = WidgetInfo::new("Button").variant(if drawn {
-        "Ghost, icon"
-    } else {
-        "Ghost, labelled"
+/// under the pointer and while pressed. `checked` is `Some(on)` for the
+/// edit-mode switch (`Showcase::basic_edit`), `None` for a button that
+/// switches nothing; while on, the Button is selected and refined by
+/// `geometry::toolbar_button_checked`.
+pub fn icon_button(
+    t: &Theme,
+    drawn: bool,
+    checked: Option<bool>,
+    native: Option<&ResolvedTheme>,
+) -> WidgetInfo {
+    let info = WidgetInfo::new("Button").variant(match (checked, drawn) {
+        (None, true) => "Ghost, icon",
+        (None, false) => "Ghost, labelled",
+        (Some(false), true) => "Toolbar, icon",
+        (Some(false), false) => "Toolbar, labelled",
+        (Some(true), true) => "Toolbar, icon, checked",
+        (Some(true), false) => "Toolbar, labelled, checked",
     });
+    let info = match checked {
+        Some(true) => toolbar_checked(info, t, native),
+        _ => info,
+    };
+    let info = match checked {
+        Some(_) => info.instance(
+            "state",
+            "an edit-mode switch, on at start; a click switches it (Showcase::basic_edit)",
+        ),
+        None => info,
+    };
     let outlined = native.is_some_and(|r| r.toolbar.button_hover_border_color.is_some());
     let info = native_toolbar(info, t, native).not_themeable(
         "edge",

@@ -1053,11 +1053,11 @@ mod tests {
         // the hover outline's fallback is the unchecked border's, which is `border.color` here
         assert_eq!(
             cb.visuals.widgets.hovered.bg_stroke.color,
-            to_color32(sentinel)
+            to_color32(t.checkbox.border.color)
         );
         assert_eq!(
             cb.visuals.widgets.active.bg_stroke.color,
-            to_color32(sentinel)
+            to_color32(t.checkbox.border.color)
         );
         assert_eq!(
             cell(Role::ComboBox).visuals.widgets.hovered.bg_stroke.color,

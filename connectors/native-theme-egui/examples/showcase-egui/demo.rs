@@ -326,6 +326,15 @@ pub(crate) fn tool_button(
     }
 }
 
+/// The `edge` a toolbar's tool button passes [`tool_button`]: `button.border.line_width`,
+/// where the theme states the toolbar's hover outline (`toolbar.button_hover_border_color`),
+/// else `None`.
+pub(crate) fn toolbar_edge(t: &native_theme::theme::ResolvedTheme) -> Option<f32> {
+    t.toolbar
+        .button_hover_border_color
+        .map(|_| t.button.border.line_width)
+}
+
 /// A toolbar row's items `toolbar.item_gap` apart, which the toolbar scope's
 /// `item_spacing.x` carries, and `layout.widget_gap` apart where the theme states no item gap,
 /// as the other two showcases space theirs.
