@@ -8,7 +8,9 @@ use gpui::{
     prelude::FluentBuilder as _, px, relative,
 };
 use gpui_base::slider::{SliderEvent, SliderState, SliderValue};
-use gpui_base::{SliderIndicator, SliderThumb, SliderTrack, TestSupportExt as _};
+use gpui_base::{
+    LogicalStyledExt as _, SliderIndicator, SliderThumb, SliderTrack, TestSupportExt as _,
+};
 use gpui_component::{ActiveTheme as _, StyledExt as _};
 use native_theme::theme::ResolvedTheme;
 
@@ -140,11 +142,18 @@ impl SliderLook {
 /// its disabled state, as gpui-component's does, and answers AccessKit's
 /// Increment and Decrement while enabled. With gpui-base's `test-support`,
 /// gpui-kit's test API finds it as it finds gpui-component's, by the id
-/// `("slider", state.entity_id())`, its label or its role. Unlike
-/// gpui-component's, it takes keyboard focus: Left and Down step it down,
-/// Right and Up up, Home and End to the ends, each emitting
-/// `SliderEvent::Change`. The thumb's centre travels the widget's length
-/// less one thumb radius at each end, so the thumb stays inside the widget.
+/// `("slider", state.entity_id())`, its label or its role. It takes keyboard
+/// focus: Left and Down step it down, Right and Up up, Home and End to the
+/// ends, each emitting `SliderEvent::Change`; a horizontal slider in a
+/// right-to-left layout (`LayoutDirection::global`) swaps Left and Right, as
+/// gpui-base's slider does (gpui-base 0.10.0 slider.rs, `key_delta`). The
+/// thumb's centre travels the widget's length less one thumb radius at each
+/// end, so the thumb stays inside the widget.
+///
+/// A horizontal slider runs from the start edge of the layout direction, the
+/// right in a right-to-left layout, where gpui-base maps the pointer from
+/// (gpui-base 0.10.0 slider.rs, `offset_along`): the thumbs and the fill are
+/// laid out from it, as gpui-component's slider lays them out (`inset_s`).
 ///
 /// A range state (`SliderState::default_value(20.0..80.0)`) draws a thumb at
 /// each end and the fill between them, as gpui-component's slider does
@@ -182,9 +191,10 @@ impl Slider {
         }
     }
 
-    /// The axis it lies along: `Axis::Horizontal`, its minimum at the left,
-    /// or `Axis::Vertical`, its minimum at the bottom, as gpui-base maps the
-    /// pointer (slider.rs:381-385).
+    /// The axis it lies along: `Axis::Horizontal`, its minimum at the start
+    /// edge (the left, or the right in a right-to-left layout), or
+    /// `Axis::Vertical`, its minimum at the bottom, as gpui-base maps the
+    /// pointer (gpui-base 0.10.0 slider.rs, `offset_along`).
     #[must_use]
     pub fn axis(mut self, axis: Axis) -> Self {
         self.axis = axis;
@@ -243,16 +253,17 @@ impl Styled for Slider {
 
 /// The value a key moves `state` to, if the key is one the slider answers: a
 /// range's end, with its start as it was, the end kept from passing the
-/// start, as a pointer keeps it (gpui-base slider.rs:392-396).
-fn stepped(state: &SliderState, key: &str) -> Option<SliderValue> {
+/// start, as a pointer keeps it (gpui-base slider.rs:392-396). Left and Right
+/// swap where `mirrored`, a horizontal slider in a right-to-left layout.
+fn stepped(state: &SliderState, key: &str, mirrored: bool) -> Option<SliderValue> {
     let (min, max) = (state.min_value(), state.max_value());
     let value = state.value();
     let step = state.step_value();
-    let target = match key {
-        "left" | "down" => value.end() - step,
-        "right" | "up" => value.end() + step,
-        "home" => min,
-        "end" => max,
+    let target = match (key, mirrored) {
+        ("left", false) | ("right", true) | ("down", _) => value.end() - step,
+        ("right", false) | ("left", true) | ("up", _) => value.end() + step,
+        ("home", _) => min,
+        ("end", _) => max,
         _ => return None,
     };
     // `max` then `min`, never `clamp`: a state built with `min > max` must
@@ -283,9 +294,9 @@ fn step_by(
     })
 }
 
-/// A thumb of `state` at `position` of the travel along `axis`, the range's
-/// start thumb if `start`: the thumb's colour inside its outline, centred
-/// across the rail.
+/// A thumb of `state` at `position` of the travel along `axis`, from its
+/// start edge, the range's start thumb if `start`: the thumb's colour inside
+/// its outline, centred across the rail.
 fn thumb(
     state: &Entity<SliderState>,
     look: &SliderLook,
@@ -293,6 +304,7 @@ fn thumb(
     position: f32,
     start: bool,
     disabled: bool,
+    cx: &App,
 ) -> SliderThumb {
     let across = px((f32::from(look.track_height) - f32::from(look.thumb)) / 2.);
     let back = px(-f32::from(look.thumb) / 2.);
@@ -304,7 +316,10 @@ fn thumb(
         .absolute()
         .map(|thumb| match axis {
             Axis::Vertical => thumb.left(across).bottom(relative(position)).mb(back),
-            Axis::Horizontal => thumb.top(across).left(relative(position)).ml(back),
+            Axis::Horizontal => thumb
+                .top(across)
+                .inset_s(relative(position), cx)
+                .ms(back, cx),
         })
         .size(look.thumb)
         .rounded_full()
@@ -369,19 +384,19 @@ impl RenderOnce for Slider {
         let pill = cx.theme().radius_full();
 
         // The end thumb, the one the keys move, draws the focus ring.
-        let end_thumb = thumb(&state, &look, axis, end, false, disabled)
+        let end_thumb = thumb(&state, &look, axis, end, false, disabled, cx)
             .debug_selector(|| "native-slider-thumb".into())
             .children(observer.map(|o| part_bounds(Part::Thumb, o, px(0.))))
             .when_some(ring.filter(|_| focused), |thumb, ring| {
                 ring.draw(thumb, window)
             });
         let start_thumb = range.then(|| {
-            thumb(&state, &look, axis, start, true, disabled)
+            thumb(&state, &look, axis, start, true, disabled, cx)
                 .debug_selector(|| "native-slider-start-thumb".into())
                 .children(observer.map(|o| part_bounds(Part::StartThumb, o, px(0.))))
         });
-        // The fill from the rail's end, or a range's start thumb, to the end
-        // thumb.
+        // The fill from the rail's start end, or a range's start thumb, to
+        // the end thumb.
         let fill_from: Length = if range {
             relative(start).into()
         } else {
@@ -422,7 +437,10 @@ impl RenderOnce for Slider {
                         if vertical {
                             fill.left_0().right_0().bottom(fill_from).top(fill_to)
                         } else {
-                            fill.top_0().bottom_0().left(fill_from).right(fill_to)
+                            fill.top_0()
+                                .bottom_0()
+                                .inset_s(fill_from, cx)
+                                .inset_e(fill_to, cx)
                         }
                     })
                     .rounded(pill)
@@ -476,15 +494,16 @@ impl RenderOnce for Slider {
                 let decrement = state.clone();
                 root.on_key_down(move |event: &KeyDownEvent, window, cx| {
                     let key = event.keystroke.key.clone();
-                    if step_by(&keys, |s| stepped(s, &key), window, cx) {
+                    let mirrored = !vertical && gpui_base::LayoutDirection::global(cx).is_rtl();
+                    if step_by(&keys, |s| stepped(s, &key, mirrored), window, cx) {
                         cx.stop_propagation();
                     }
                 })
                 .on_a11y_action(AccessibleAction::Increment, move |_, window, cx| {
-                    step_by(&increment, |s| stepped(s, "right"), window, cx);
+                    step_by(&increment, |s| stepped(s, "up", false), window, cx);
                 })
                 .on_a11y_action(AccessibleAction::Decrement, move |_, window, cx| {
-                    step_by(&decrement, |s| stepped(s, "left"), window, cx);
+                    step_by(&decrement, |s| stepped(s, "down", false), window, cx);
                 })
                 .on_mouse_up(
                     MouseButton::Left,

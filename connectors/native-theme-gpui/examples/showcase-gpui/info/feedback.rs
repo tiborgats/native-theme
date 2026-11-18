@@ -202,9 +202,9 @@ pub fn native_progress(
     let p = &r.progress_bar;
     let info = WidgetInfo::new("ProgressBar")
         .config("drawn by", "native_theme_gpui::widgets::ProgressBar, on gpui-base's headless Progress, every part from the theme (docs/archive/todo_gpui-widgets-spec.md)")
-        .color(claim("fill", "fill_color", stated(p.fill_color), "native-theme-gpui/widgets/progress.rs:79"))
-        .color(claim("track", "track_color", stated(p.track_color), "native-theme-gpui/widgets/progress.rs:78"))
-        .colors(edge_claim("frame", "border", Some(p.border.color), Some(p.border.line_width), "native-theme-gpui/widgets/progress.rs:77"))
+        .color(claim("fill", "fill_color", stated(p.fill_color), "native-theme-gpui/widgets/progress.rs:80"))
+        .color(claim("track", "track_color", stated(p.track_color), "native-theme-gpui/widgets/progress.rs:79"))
+        .colors(edge_claim("frame", "border", Some(p.border.color), Some(p.border.line_width), "native-theme-gpui/widgets/progress.rs:78"))
         .config("height", format!("progress_bar.track_height: {}px, the frame inside it", p.track_height))
         .config("minimum width", format!("progress_bar.min_width: {}px", p.min_width))
         .config("frame", if p.border.line_width > 0.0 {

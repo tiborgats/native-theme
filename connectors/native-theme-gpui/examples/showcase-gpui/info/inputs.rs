@@ -925,7 +925,7 @@ fn theme_focus_ring(info: WidgetInfo, r: &ResolvedTheme, part: &str) -> WidgetIn
         "focus ring",
         "focus_ring_color",
         stated(d.focus_ring_color),
-        "native-theme-gpui/widgets/mod.rs:345",
+        "native-theme-gpui/widgets/mod.rs:349",
     ))
     .config(
         "focus ring",
@@ -1433,13 +1433,13 @@ pub fn native_slider(r: &ResolvedTheme, vertical: bool, range: bool) -> WidgetIn
     let s = &r.slider;
     let info = slider_shape(WidgetInfo::new("Slider"), vertical, range)
         .config("drawn by", DRAWN_BY)
-        .color(claim("rail", "track_color", stated(s.track_color), "native-theme-gpui/widgets/slider.rs:77"))
-        .color(claim("filled part", "fill_color", stated(s.fill_color), "native-theme-gpui/widgets/slider.rs:77"))
-        .color(claim("thumb", "thumb_color", stated(s.thumb_color), "native-theme-gpui/widgets/slider.rs:77"))
+        .color(claim("rail", "track_color", stated(s.track_color), "native-theme-gpui/widgets/slider.rs:79"))
+        .color(claim("filled part", "fill_color", stated(s.fill_color), "native-theme-gpui/widgets/slider.rs:79"))
+        .color(claim("thumb", "thumb_color", stated(s.thumb_color), "native-theme-gpui/widgets/slider.rs:79"))
         // An unset hover is the thumb at rest (SliderLook::of).
         .color(
-            stated_claim("hover layer, over the thumb", "thumb_hover_color", s.thumb_hover_color, "native-theme-gpui/widgets/slider.rs:80")
-                .unwrap_or_else(|| claim("hover, none stated: the thumb at rest", "thumb_color", stated(s.thumb_color), "native-theme-gpui/widgets/slider.rs:80")),
+            stated_claim("hover layer, over the thumb", "thumb_hover_color", s.thumb_hover_color, "native-theme-gpui/widgets/slider.rs:82")
+                .unwrap_or_else(|| claim("hover, none stated: the thumb at rest", "thumb_color", stated(s.thumb_color), "native-theme-gpui/widgets/slider.rs:82")),
         )
         .config("rail", format!("slider.track_height: {}px", s.track_height))
         .config("thumb", format!("slider.thumb_diameter: {}px; its centre travels the width less a radius at each end", s.thumb_diameter))

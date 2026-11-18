@@ -3791,3 +3791,125 @@ fn right_to_left_the_indicator_leads_from_the_right(cx: &mut TestAppContext) {
         );
     }
 }
+
+/// T6 (b): right to left, a horizontal slider runs from the right, where
+/// gpui-base maps the pointer from (gpui-base 0.10.0 slider.rs,
+/// `offset_along`): a range's thumbs and the fill between them stand where
+/// its left-to-right test has them, mirrored, a press lands where it is
+/// drawn, and Left and Right swap, as gpui-base's keys (`key_delta`); Up and
+/// Down do not.
+#[gpui::test]
+fn right_to_left_the_slider_runs_from_the_right(cx: &mut TestAppContext) {
+    use gpui_base::slider::SliderValue;
+    cx.update(|cx| gpui_base::LayoutDirection::Rtl.set_global(cx));
+    let (cx, state) = range_window(cx);
+    let r = resolved("kde-breeze", ColorMode::Light);
+    let radius = px(r.slider.thumb_diameter) / 2.;
+    let root = bounds(cx, "native-slider");
+    let travel = root.size.width - radius * 2.;
+    let at = |fraction: f32| root.right() - radius - travel * fraction;
+    let start = bounds(cx, "native-slider-start-thumb");
+    let end = bounds(cx, "native-slider-thumb");
+    assert_eq!(centre(start).x, at(0.2), "the start thumb at 20");
+    assert_eq!(centre(end).x, at(0.8), "the end thumb at 80");
+    let fill = bounds(cx, "native-slider-fill");
+    assert_eq!(fill.right(), at(0.2), "the fill from the start thumb");
+    assert_eq!(fill.left(), at(0.8), "to the end thumb");
+
+    let value = |cx: &mut VisualTestContext| cx.update(|_, cx| state.read(cx).value());
+    cx.simulate_click(point(at(0.05), centre(root).y), Modifiers::default());
+    assert_eq!(value(cx), SliderValue::Range(5., 80.), "the start moved");
+    redraw(cx);
+    let start = bounds(cx, "native-slider-start-thumb");
+    assert_eq!(centre(start).x, at(0.05), "the start thumb follows");
+
+    focus_next(cx);
+    cx.simulate_keystrokes("left");
+    assert_eq!(value(cx), SliderValue::Range(5., 81.), "Left steps up");
+    cx.simulate_keystrokes("right right");
+    assert_eq!(value(cx), SliderValue::Range(5., 79.), "Right steps down");
+    cx.simulate_keystrokes("up");
+    assert_eq!(value(cx), SliderValue::Range(5., 80.), "Up steps up");
+    cx.simulate_keystrokes("down");
+    assert_eq!(value(cx), SliderValue::Range(5., 79.), "Down steps down");
+}
+
+/// T6 (b): right to left, the switch is laid out from the right, as
+/// gpui-component's (gpui-component 0.10.0 switch.rs, `label_side`,
+/// `inset_s`): the thumb where its left-to-right test has it, mirrored, off
+/// flush with the track's right end and on with its left, and the label
+/// `LABEL_GAP` to the track's left.
+#[gpui::test]
+fn right_to_left_the_switch_runs_from_the_right(cx: &mut TestAppContext) {
+    cx.update(|cx| gpui_base::LayoutDirection::Rtl.set_global(cx));
+    for checked in [false, true] {
+        let cx = window_with(
+            cx,
+            Some(("kde-breeze", ColorMode::Light)),
+            Box::new(move |_, _| {
+                Switch::new("s")
+                    .label("On")
+                    .checked(checked)
+                    .into_any_element()
+            }),
+        );
+        let track = bounds(cx, "native-switch-track");
+        let thumb = bounds(cx, "native-switch-thumb");
+        if checked {
+            assert_eq!(thumb.left(), track.left(), "on: flush with the left end");
+        } else {
+            assert_eq!(
+                thumb.right(),
+                track.right(),
+                "off: flush with the right end"
+            );
+        }
+        let gap = cx.update(|window, _| super::switch::LABEL_GAP.to_pixels(window.rem_size()));
+        let label = bounds(cx, "native-switch-label");
+        assert_eq!(
+            track.left() - label.right(),
+            gap,
+            "checked {checked}: the label LABEL_GAP to the track's left"
+        );
+    }
+}
+
+/// T6 (b): right to left, the fill runs from the bar's right end, as
+/// gpui-component's (gpui-component 0.10.0 progress/progress.rs, `inset_s`):
+/// a value's fill as wide as the value from it, and a loading fill sweeping
+/// from it, its start held at the right end over the first half turn
+/// (`loading_span`).
+#[gpui::test]
+fn right_to_left_the_progress_bar_fills_from_the_right(cx: &mut TestAppContext) {
+    cx.update(|cx| gpui_base::LayoutDirection::Rtl.set_global(cx));
+    {
+        let value = 40.;
+        let cx = window_with(
+            cx,
+            Some(("kde-breeze", ColorMode::Light)),
+            Box::new(move |_, _| ProgressBar::new("p").value(value).into_any_element()),
+        );
+        let bar = bounds(cx, "native-progress");
+        let fill = bounds(cx, "native-progress-fill");
+        assert_eq!(fill.right(), bar.right(), "from the right end");
+        assert_eq!(
+            fill.size.width,
+            bar.size.width * (value / 100.),
+            "as wide as the value"
+        );
+    }
+    let (cx, _) = loading_window(cx);
+    let bar = bounds(cx, "native-progress");
+    fill_after(cx, 0);
+    let mut grown = false;
+    for _ in 0..10 {
+        let fill = fill_after(cx, 20);
+        assert_eq!(
+            fill.right(),
+            bar.right(),
+            "the sweep starts at the right end"
+        );
+        grown |= fill.left() < bar.right();
+    }
+    assert!(grown, "the fill grows leftward");
+}

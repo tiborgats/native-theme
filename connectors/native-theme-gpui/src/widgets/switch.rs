@@ -8,7 +8,7 @@ use gpui::{
     Pixels, RenderOnce, SharedString, StyleRefinement, Styled, Window, div,
     prelude::FluentBuilder as _, px, rems,
 };
-use gpui_base::{Switch as BaseSwitch, SwitchThumb, SwitchTrack, spring};
+use gpui_base::{LogicalStyledExt as _, Switch as BaseSwitch, SwitchThumb, SwitchTrack, spring};
 use gpui_component::{ActiveTheme as _, Disableable as _, FocusableExt as _, StyledExt as _};
 use native_theme::theme::ResolvedTheme;
 
@@ -17,7 +17,7 @@ use crate::ActiveNativeTheme;
 
 /// The space between the track and the label, which `SwitchTheme` does not
 /// state: gpui-component's own, `gap_2` (switch.rs:247).
-const LABEL_GAP: gpui::Rems = rems(0.5);
+pub(super) const LABEL_GAP: gpui::Rems = rems(0.5);
 
 type ChangeHandler = Rc<dyn Fn(&bool, &mut Window, &mut App)>;
 
@@ -195,8 +195,8 @@ impl SwitchLook {
         }
     }
 
-    /// The thumb's left edge, from the track's left edge, at rest `checked`
-    /// or not.
+    /// The thumb's start edge, from the track's start edge (the left, or the
+    /// right in a right-to-left layout), at rest `checked` or not.
     #[must_use]
     pub fn thumb_left(&self, checked: bool) -> Pixels {
         if checked {
@@ -216,6 +216,12 @@ impl SwitchLook {
 /// (`defaults.focus_ring_color`, `focus_ring_width` and `focus_ring_offset`,
 /// as the other theme-drawn controls draw it), where gpui-component's switch
 /// draws its own (switch.rs:280-283).
+///
+/// It is laid out from the start edge of the layout direction
+/// (`LayoutDirection::global`), the right in a right-to-left layout, as
+/// gpui-component's switch is (gpui-component 0.10.0 switch.rs, `label_side`
+/// and `inset_s`): the label after the track, and the thumb off at the
+/// track's start end and on at its far end.
 ///
 /// Controlled: [`Switch::on_change`] receives the requested value. Its
 /// `Styled` style refines the row, after the widget's own: the row's layout,
@@ -410,8 +416,7 @@ impl Switch {
             })
             .debug_selector(|| "native-switch-row".into())
             .group(HOVER_GROUP)
-            .flex()
-            .flex_row()
+            .flex_row_dir(cx)
             .items_center()
             .gap(LABEL_GAP)
             .opacity(look.opacity)
@@ -441,7 +446,7 @@ impl Switch {
 }
 
 impl Switch {
-    /// The track in `look`, its thumb `thumb_left` from its left edge; while
+    /// The track in `look`, its thumb `thumb_left` from its start edge; while
     /// `focused`, enabled, and told to (`focus_ring`), it draws the focus
     /// ring.
     pub(super) fn track(
@@ -491,7 +496,7 @@ impl Switch {
                     .disabled(self.disabled)
                     .absolute()
                     .top(look.inset)
-                    .left(thumb_left)
+                    .inset_s(thumb_left, cx)
                     .size(look.thumb)
                     .rounded_full()
                     .bg(look.thumb_color)

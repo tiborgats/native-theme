@@ -9,7 +9,8 @@ use gpui::{
     div, ease_in_out, prelude::FluentBuilder as _, px, relative,
 };
 use gpui_base::{
-    Progress as BaseProgress, ProgressIndicator, ProgressTrack, Transition, transition,
+    LayoutDirection, LogicalStyledExt as _, Progress as BaseProgress, ProgressIndicator,
+    ProgressTrack, Transition, transition,
 };
 use gpui_component::{ActiveTheme as _, StyledExt as _};
 use native_theme::theme::ResolvedTheme;
@@ -88,6 +89,11 @@ impl ProgressBarLook {
 /// (progress/progress.rs:111-118).
 /// A [`loading`](Self::loading) bar is indeterminate: its fill sweeps across
 /// the track on gpui-component's motion.
+///
+/// The fill runs from the start edge of the layout direction
+/// (`LayoutDirection::global`), the right in a right-to-left layout, and a
+/// loading fill sweeps from it, as gpui-component's (gpui-component 0.10.0
+/// progress/progress.rs, `inset_s` and the `progress-loading` motion).
 ///
 /// As wide as its container, and at least `min_width`. Without a native
 /// theme it renders gpui-component's `Progress`.
@@ -185,7 +191,10 @@ impl RenderOnce for ProgressBar {
             cx,
         );
         let loading = self.loading;
+        let rtl = LayoutDirection::global(cx).is_rtl();
         let indicator = ProgressIndicator::new()
+            .absolute()
+            .top_0()
             .h_full()
             .rounded(look.radius)
             .bg(look.fill)
@@ -201,31 +210,31 @@ impl RenderOnce for ProgressBar {
                     .map(|o| part_bounds(Part::Fill, o, px(0.))),
             );
         // As gpui-component lays its indicator out (progress/progress.rs:148-168):
-        // sweeping, still in the middle under reduced motion, or as wide as
-        // the value.
+        // sweeping from the start edge, still in the middle under reduced
+        // motion, or as wide as the value from the start edge.
         let indicator = if loading && !cx.reduce_motion() {
             indicator
-                .absolute()
-                .top_0()
                 .with_animation(
                     "native-theme-progress-loading",
                     Animation::new(LOADING_PERIOD).repeat(),
-                    |bar, delta| {
+                    move |bar, delta| {
                         let (start, end) = loading_span(delta);
-                        bar.left(relative(start)).right(relative(end))
+                        if rtl {
+                            bar.right(relative(start)).left(relative(end))
+                        } else {
+                            bar.left(relative(start)).right(relative(end))
+                        }
                     },
                 )
                 .into_any_element()
         } else if loading {
             indicator
-                .absolute()
-                .top_0()
                 .left(relative(LOADING_STILL_INSET))
                 .right(relative(LOADING_STILL_INSET))
                 .into_any_element()
         } else {
             indicator
-                .relative()
+                .inset_s(px(0.), cx)
                 .w(relative((shown / 100.).clamp(0., 1.)))
                 .into_any_element()
         };

@@ -16378,7 +16378,7 @@ fn look_findings(
 
 /// What is wrong with the focus ring `info` claims, if anything: a control
 /// that can take the focus (`focusable`) claims `defaults.focus_ring_color` as
-/// stated, read by `FocusRing::of` (native-theme-gpui/widgets/mod.rs:345), where
+/// stated, read by `FocusRing::of` (native-theme-gpui/widgets/mod.rs:349), where
 /// the theme states a ring, and none otherwise.
 #[cfg(feature = "widgets")]
 fn ring_findings(
@@ -16397,7 +16397,7 @@ fn ring_findings(
         (
             crate::info::stated(d.focus_ring_color),
             "focus_ring_color",
-            "native-theme-gpui/widgets/mod.rs:345",
+            "native-theme-gpui/widgets/mod.rs:349",
         )
     });
     if found == expected {
