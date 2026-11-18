@@ -574,10 +574,10 @@ impl InputColors {
         // border_color, ..)`, iced_wgpu 0.14.0 `src/shader/quad/solid.wgsl:78-83`),
         // while the platform lays the ring over the field's fill, so a
         // translucent ring is composited over the fill here. A ring that lies
-        // outside the edge (offset 0 or more: KDE's +2, Windows' +1),
-        // straddles it (macOS's -1 with width 3) or lies inside it with a gap
-        // (an offset below minus the width) is not a border iced can draw;
-        // there a focused field recolours its rest line, and
+        // outside the edge (offset 0 or more: Windows' +1), straddles it
+        // (macOS's -1 with width 3, KDE's -1 with width 2) or lies inside it
+        // with a gap (an offset below minus the width) is not a border iced
+        // can draw; there a focused field recolours its rest line, and
         // `crate::focus_ring` draws the ring round the field it wraps.
         let focus_color = i.focus_border_color.unwrap_or(d.focus_ring_color);
         let focused = if d.focus_ring_width > 0.0 && d.focus_ring_offset == -d.focus_ring_width {

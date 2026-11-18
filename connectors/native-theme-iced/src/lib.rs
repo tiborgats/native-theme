@@ -1541,9 +1541,9 @@ where
 ///
 /// A `text_input::Style` or `text_editor::Style` has one border and no
 /// outline, and iced draws nothing outside a widget's bounds but in a widget
-/// of its own, so a ring outside the field's edge (KDE's +2, Windows' and
-/// the colour schemes' +1) or across it (macOS's -1 with width 3) is drawn
-/// here, after the field, over whatever lies round it. A ring inset at the
+/// of its own, so a ring outside the field's edge (Windows' and the colour
+/// schemes' +1) or across it (macOS's -1 with width 3, KDE's -1 with width
+/// 2) is drawn here, after the field, over whatever lies round it. A ring inset at the
 /// edge (`focus_ring_offset` minus `focus_ring_width`, libadwaita's) is the
 /// field's border already ([`styles::text_input`], [`styles::text_editor`]),
 /// so where the theme states one, or no ring, the wrapper draws nothing; it
@@ -1562,7 +1562,14 @@ where
 /// reaches its field. While the window has lost the OS's keyboard focus no
 /// ring is drawn, though iced's field keeps its own focus
 /// (`src/text_input.rs:1313-1317`), as the platforms and the egui connector
-/// show none.
+/// show none. Where the theme says the platform shows its ring for keyboard
+/// focus only (`defaults.focus_ring_keyboard_only`), the wrapper rings the
+/// field only for a focus that followed a key press. iced moves the focus
+/// by Tab only where the application does: its text input has no Tab
+/// handling, and `focus_next` and `focus_previous` are operations an
+/// application sends (iced_runtime 0.14.0 `src/widget/operation.rs:50-56`).
+/// A ring inset at the edge is the style function's border and shows on any
+/// focus.
 ///
 /// Requires the `widgets` feature (on by default).
 #[cfg(feature = "widgets")]

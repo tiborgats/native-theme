@@ -593,12 +593,16 @@ a gap, is no border a `Style` can draw: wrap the field in
 while the field holds the focus, `defaults.focus_ring_width` wide,
 `defaults.focus_ring_offset` out from its edge, in `defaults.focus_ring_color`,
 as the egui connector does, and none while the window has lost the OS's
-keyboard focus; the focused field's own line then takes
+keyboard focus; where the theme says the platform shows its ring for keyboard
+focus only (`defaults.focus_ring_keyboard_only`: KDE, Windows, Material), only
+for a focus that followed a key press; the focused field's own line then takes
 `input.focus_border_color` where the theme states one. The wrapper learns the
 focus from iced's `Focusable` operation, so it rings a text input, a text
 editor or a widget that hands it one (`iced_aw`'s `NumberInput`), not a
 `ComboBox`, whose field no operation reaches (iced_widget 0.14.2
-`src/combo_box.rs` implements no `operate`).
+`src/combo_box.rs` implements no `operate`). iced moves the focus by Tab only
+if the application does: send `iced::widget::operation::focus_next()` on Tab
+and `focus_previous()` on Shift+Tab, as the showcase does.
 
 ### Text scaling
 

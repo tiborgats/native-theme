@@ -1,5 +1,15 @@
 //! The widget [`crate::focus_ring()`] returns: the theme's focus ring,
 //! drawn round a focused field after the field.
+//!
+//! Where the theme says keyboard only, the ring shows for a focus that
+//! followed a key: the wrapper remembers whether the last key or pointer
+//! event it saw was a key, and when its field gains the focus keeps that
+//! answer until the field loses it. A column or a row hands every event to
+//! every child, so the wrapper sees them while it exists. Two places keep an
+//! event from it: a stack does not hand a lower layer what a higher one took
+//! (iced_widget 0.14.2 `src/stack.rs:262-264`), and the base does not get
+//! what an overlay took; a field under an open dialog can so remember a key
+//! where a click came last, and show the ring once.
 
 use iced_core::layout::{self, Layout};
 use iced_core::renderer::Quad;
@@ -7,7 +17,7 @@ use iced_core::widget::operation::Focusable;
 use iced_core::widget::{Id, Operation, Tree, tree};
 use iced_core::{
     Background, Border, Clipboard, Color, Element, Event, Length, Padding, Rectangle, Shell, Size,
-    Theme, Vector, mouse, overlay, renderer, window,
+    Theme, Vector, keyboard, mouse, overlay, renderer, window,
 };
 use native_theme::theme::ResolvedTheme;
 
@@ -26,6 +36,9 @@ pub(crate) struct RingLook {
     pub(crate) offset: f32,
     /// The field's corner radius, from which the ring's curves are grown.
     pub(crate) radius: f32,
+    /// `defaults.focus_ring_keyboard_only` is `Some(true)`: the ring shows
+    /// only for a focus that followed a key.
+    pub(crate) keyboard_only: bool,
 }
 
 /// [`crate::focus_ring()`]'s look: `None` where the theme states no ring
@@ -46,6 +59,7 @@ pub(crate) fn ring_look(resolved: &ResolvedTheme, radius: f32) -> Option<RingLoo
         } else {
             0.0
         },
+        keyboard_only: d.focus_ring_keyboard_only == Some(true),
     })
 }
 
@@ -88,6 +102,12 @@ impl RingLook {
 struct Focus {
     field: bool,
     window: bool,
+    /// Whether the last key-or-pointer event the wrapper saw was a key
+    /// press ([`key_or_pointer`]).
+    key_last: bool,
+    /// `key_last` at the moment the field gained the focus, kept until it
+    /// loses it.
+    by_key: bool,
 }
 
 impl Default for Focus {
@@ -99,19 +119,63 @@ impl Default for Focus {
     /// window state starts unfocused (egui-winit 0.36.2 `src/lib.rs:149`)
     /// because it is one per window. The corner case: a window opened
     /// without the OS's focus shows a focused field's ring until its first
-    /// focus change.
+    /// focus change. A field focused before the wrapper saw any input, or by
+    /// the view that a key built, has seen no key and shows no ring where the
+    /// theme says keyboard only.
     fn default() -> Self {
         Self {
             field: false,
             window: true,
+            key_last: false,
+            by_key: false,
         }
     }
 }
 
 impl Focus {
-    /// Whether the ring is drawn.
-    fn ringed(self) -> bool {
-        self.field && self.window
+    /// Whether the ring is drawn; where `keyboard_only`, only for a focus
+    /// that followed a key.
+    fn ringed(self, keyboard_only: bool) -> bool {
+        self.field && self.window && (!keyboard_only || self.by_key)
+    }
+}
+
+/// Whether `event` is a key (`Some(true)`) or the pointer (`Some(false)`),
+/// or neither (`None`), which leaves the last answer as it is. A key press
+/// is a key, but a modifier key pressed alone: iced's winit conversion makes
+/// every key a `KeyPressed`, Shift and Control included (iced_winit 0.14.0
+/// `src/conversion.rs:291-302`), so the modifier block of iced_core 0.14.0's
+/// `keyboard::key::Named` (`src/keyboard/key.rs:133-180`) is left out by
+/// name. A pointer move, a pointer button press and a touch are the pointer;
+/// every other event (a key release, a modifier change, a scroll, a button
+/// release, a window event) is neither.
+fn key_or_pointer(event: &Event) -> Option<bool> {
+    use keyboard::key::{Key, Named};
+    match event {
+        Event::Keyboard(keyboard::Event::KeyPressed {
+            key:
+                Key::Named(
+                    Named::Alt
+                    | Named::AltGraph
+                    | Named::CapsLock
+                    | Named::Control
+                    | Named::Fn
+                    | Named::FnLock
+                    | Named::NumLock
+                    | Named::ScrollLock
+                    | Named::Shift
+                    | Named::Symbol
+                    | Named::SymbolLock
+                    | Named::Meta
+                    | Named::Hyper
+                    | Named::Super,
+                ),
+            ..
+        }) => None,
+        Event::Keyboard(keyboard::Event::KeyPressed { .. }) => Some(true),
+        Event::Mouse(mouse::Event::CursorMoved { .. } | mouse::Event::ButtonPressed(_))
+        | Event::Touch(_) => Some(false),
+        Event::Keyboard(_) | Event::Mouse(_) | Event::Window(_) | Event::InputMethod(_) => None,
     }
 }
 
@@ -164,6 +228,12 @@ impl Operation for Probe {
 /// is not placed yet, and an operation hands each widget its layout as
 /// placed in the window, which a widget that records its bounds as it is
 /// operated on keeps.
+///
+/// Where the theme says keyboard only, the ring shows for a focus that
+/// followed a key: the wrapper remembers whether the last key or pointer
+/// event it saw was a key ([`key_or_pointer`]), and when its field gains the
+/// focus keeps that answer until the field loses it (the module's doc says
+/// which events can miss it).
 pub(crate) struct FocusRing<'a, Message, Renderer> {
     content: Element<'a, Message, Theme, Renderer>,
     /// `None` where the theme draws no ring ([`ring_look`]): the wrapper is
@@ -177,6 +247,12 @@ impl<'a, Message, Renderer> FocusRing<'a, Message, Renderer> {
         look: Option<RingLook>,
     ) -> Self {
         Self { content, look }
+    }
+
+    /// Whether the theme says the ring shows only for a focus that followed
+    /// a key ([`RingLook::keyboard_only`]).
+    fn keyboard_only(&self) -> bool {
+        self.look.is_some_and(|look| look.keyboard_only)
     }
 
     /// Asks the content in `tree` laid out as `layout` whether it holds the
@@ -193,6 +269,11 @@ impl<'a, Message, Renderer> FocusRing<'a, Message, Renderer> {
             .as_widget_mut()
             .operate(child, layout, renderer, &mut probe);
         if let Some(focus) = focus_mut(tree) {
+            if !probe.focused {
+                focus.by_key = false;
+            } else if !focus.field {
+                focus.by_key = focus.key_last;
+            }
             focus.field = probe.focused;
         }
     }
@@ -209,10 +290,13 @@ fn focus_mut(tree: &mut Tree) -> Option<&mut Focus> {
 }
 
 /// Whether the wrapper's state in `tree` says the ring is drawn: its content
-/// focused, in a window that holds the focus.
-fn ringed(tree: &Tree) -> bool {
+/// focused, in a window that holds the focus, and where `keyboard_only`, by
+/// a focus that followed a key.
+fn ringed(tree: &Tree, keyboard_only: bool) -> bool {
     match &tree.state {
-        tree::State::Some(state) => state.downcast_ref::<Focus>().is_some_and(|f| f.ringed()),
+        tree::State::Some(state) => state
+            .downcast_ref::<Focus>()
+            .is_some_and(|f| f.ringed(keyboard_only)),
         tree::State::None => false,
     }
 }
@@ -242,6 +326,7 @@ where
             && let Some(focus) = focus_mut(tree)
         {
             focus.field = false;
+            focus.by_key = false;
         }
     }
 
@@ -283,7 +368,7 @@ where
         self.content
             .as_widget()
             .draw(child, renderer, theme, style, layout, cursor, viewport);
-        if ringed(tree)
+        if ringed(tree, self.keyboard_only())
             && let Some((quad, background)) = self.look.and_then(|look| look.quad(layout.bounds()))
         {
             renderer.fill_quad(quad, background);
@@ -316,6 +401,11 @@ where
         shell: &mut Shell<'_, Message>,
         viewport: &Rectangle,
     ) {
+        if let Some(key) = key_or_pointer(event)
+            && let Some(focus) = focus_mut(tree)
+        {
+            focus.key_last = key;
+        }
         let Some(child) = tree.children.first_mut() else {
             return;
         };
@@ -325,7 +415,8 @@ where
         if !may_move_focus(event) {
             return;
         }
-        let was = ringed(tree);
+        let keyboard_only = self.keyboard_only();
+        let was = ringed(tree, keyboard_only);
         if let Event::Window(window_event) = event
             && let Some(focus) = focus_mut(tree)
         {
@@ -336,7 +427,7 @@ where
             }
         }
         self.learn(tree, layout, renderer);
-        if ringed(tree) != was {
+        if ringed(tree, keyboard_only) != was {
             shell.request_redraw();
         }
     }
@@ -520,12 +611,15 @@ mod tests {
     /// a focused field is ringed by one quad: its bounds the field's grown
     /// by `offset + width`, its border `width` wide in
     /// `defaults.focus_ring_color`, its radius the field's 4 grown as much,
-    /// its fill transparent; an unfocused field by none.
+    /// its fill transparent; an unfocused field by none. The geometry, with
+    /// the keyboard rule off: the field is focused before any input, so
+    /// windows-11's `defaults.focus_ring_keyboard_only` is set to `None`.
     #[test]
     fn a_focused_field_is_ringed_by_the_themes_ring() {
         for preset in ["macos-tahoe", "windows-11"] {
             for mode in [ColorMode::Light, ColorMode::Dark] {
-                let r = resolved(preset, mode);
+                let mut r = resolved(preset, mode);
+                r.defaults.focus_ring_keyboard_only = None;
                 let d = &r.defaults;
                 let out = d.focus_ring_offset + d.focus_ring_width;
                 let quads = drawn(&r, true);
@@ -650,6 +744,32 @@ mod tests {
         );
     }
 
+    /// `element` in `tree`, laid out as `node`, operated on by `operation`,
+    /// and again by each operation its `finish` chains to, as iced's runtime
+    /// runs one (iced_winit 0.14.0 `src/lib.rs:1745-1758`; iced_test 0.14.0
+    /// `src/emulator.rs:195-205`): `focus_next` first counts the focusable
+    /// widgets, then moves the focus.
+    fn operate_chained(
+        element: &mut Element<'_, (), Theme, Recorder>,
+        tree: &mut Tree,
+        node: &layout::Node,
+        operation: impl Operation + 'static,
+    ) {
+        let mut current: Box<dyn Operation> = Box::new(operation);
+        loop {
+            element.as_widget_mut().operate(
+                tree,
+                Layout::new(node),
+                &Recorder::default(),
+                current.as_mut(),
+            );
+            let iced_core::widget::operation::Outcome::Chain(next) = current.finish() else {
+                break;
+            };
+            current = next;
+        }
+    }
+
     /// `element` laid out in `tree` at the origin: its node.
     fn laid(element: &mut Element<'_, (), Theme, Recorder>, tree: &mut Tree) -> layout::Node {
         element.as_widget_mut().layout(
@@ -701,14 +821,14 @@ mod tests {
         recorder.0.len()
     }
 
-    /// The ring follows the focus as `update` moves it: under windows-11 a
+    /// The ring follows the focus as `update` moves it: under macos-tahoe a
     /// field focused by a left press is ringed, a pointer move asks nothing
     /// and changes nothing, and while the window has lost the OS's focus
     /// (`window::Event::Unfocused`) no ring is drawn though the field keeps
     /// its own, until the window has it back (`Focused`).
     #[test]
     fn the_ring_follows_the_focus_through_update() {
-        let r = resolved("windows-11", ColorMode::Light);
+        let r = resolved("macos-tahoe", ColorMode::Light);
         let mut element: Element<'_, (), Theme, Recorder> =
             crate::focus_ring(&r, 4.0, Element::new(Clicked));
         let mut tree = Tree::new(&element);
@@ -836,13 +956,15 @@ mod tests {
 
     /// A focused field keeps its focus where the theme changes between one
     /// whose ring is the field's border (adwaita, no ring drawn) and one that
-    /// rings it (windows-11), both ways: [`crate::focus_ring()`] wraps the
-    /// field whatever the theme states, so the tree keeps its shape and iced
-    /// keeps the field's state (round 5 review, item 18 M4).
+    /// rings it (windows-11 with the keyboard rule off, so a ring shows the
+    /// focus whatever input gave it), both ways: [`crate::focus_ring()`]
+    /// wraps the field whatever the theme states, so the tree keeps its shape
+    /// and iced keeps the field's state (round 5 review, item 18 M4).
     #[test]
     fn the_focus_survives_a_theme_that_draws_no_ring() {
         let adwaita = resolved("adwaita", ColorMode::Light);
-        let windows = resolved("windows-11", ColorMode::Light);
+        let mut windows = resolved("windows-11", ColorMode::Light);
+        windows.defaults.focus_ring_keyboard_only = None;
         for (first, second) in [(&windows, &adwaita), (&adwaita, &windows)] {
             let mut element: Element<'_, (), Theme, Recorder> =
                 crate::focus_ring(first, 4.0, Element::new(Clicked));
@@ -869,10 +991,13 @@ mod tests {
 
     /// Where the view replaces the field with a widget of another kind, whose
     /// new state holds no focus, the ring goes: a focused field's ring goes
-    /// once the tree holds the other widget in its place.
+    /// once the tree holds the other widget in its place. Under windows-11
+    /// with the keyboard rule off, so a ring shows the focus whatever input
+    /// gave it.
     #[test]
     fn a_replaced_field_loses_the_ring() {
-        let r = resolved("windows-11", ColorMode::Light);
+        let mut r = resolved("windows-11", ColorMode::Light);
+        r.defaults.focus_ring_keyboard_only = None;
         let mut element: Element<'_, (), Theme, Recorder> =
             crate::focus_ring(&r, 4.0, Element::new(Field { focused: true }));
         let mut tree = Tree::new(&element);
@@ -892,5 +1017,100 @@ mod tests {
             0,
             "the unfocused widget in the field's place is ringed"
         );
+    }
+
+    /// A key press of `key`, with no modifier held.
+    fn key(key: keyboard::Key) -> Event {
+        Event::Keyboard(keyboard::Event::KeyPressed {
+            key: key.clone(),
+            modified_key: key,
+            physical_key: keyboard::key::Physical::Unidentified(
+                keyboard::key::NativeCode::Unidentified,
+            ),
+            location: keyboard::Location::Standard,
+            modifiers: keyboard::Modifiers::empty(),
+            text: None,
+            repeat: false,
+        })
+    }
+
+    /// Where the theme says keyboard only (windows-11), a field a left press
+    /// focuses draws no ring; unfocused, then focused by `focus_next` after
+    /// a Tab, it is ringed, and a pointer move keeps the ring; unfocused
+    /// again and focused by a left press, it draws none.
+    #[test]
+    fn where_the_theme_says_keyboard_only_a_click_draws_no_ring() {
+        use iced_core::widget::operation::focusable;
+        let r = resolved("windows-11", ColorMode::Light);
+        assert_eq!(r.defaults.focus_ring_keyboard_only, Some(true));
+        let mut element: Element<'_, (), Theme, Recorder> =
+            crate::focus_ring(&r, 4.0, Element::new(Clicked));
+        let mut tree = Tree::new(&element);
+        let node = laid(&mut element, &mut tree);
+        let press = || Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left));
+        send(&mut element, &mut tree, &node, press());
+        assert_eq!(painted(&element, &tree, &node), 0, "focused by a click");
+        operate_chained(&mut element, &mut tree, &node, focusable::unfocus());
+        send(
+            &mut element,
+            &mut tree,
+            &node,
+            key(keyboard::Key::Named(keyboard::key::Named::Tab)),
+        );
+        operate_chained(&mut element, &mut tree, &node, focusable::focus_next());
+        assert_eq!(painted(&element, &tree, &node), 1, "focused after Tab");
+        let moved = Event::Mouse(mouse::Event::CursorMoved {
+            position: iced_core::Point::new(5.0, 5.0),
+        });
+        send(&mut element, &mut tree, &node, moved);
+        assert_eq!(
+            painted(&element, &tree, &node),
+            1,
+            "a pointer move took the ring"
+        );
+        operate_chained(&mut element, &mut tree, &node, focusable::unfocus());
+        assert_eq!(painted(&element, &tree, &node), 0, "unfocused");
+        send(&mut element, &mut tree, &node, press());
+        assert_eq!(
+            painted(&element, &tree, &node),
+            0,
+            "focused by a click again"
+        );
+    }
+
+    /// Under kde-breeze, which says keyboard only, the field focused before
+    /// the wrapper saw any input draws no quad.
+    #[test]
+    fn a_field_focused_before_any_input_shows_no_ring_where_keyboard_only() {
+        for mode in [ColorMode::Light, ColorMode::Dark] {
+            let r = resolved("kde-breeze", mode);
+            assert_eq!(r.defaults.focus_ring_keyboard_only, Some(true), "{mode:?}");
+            assert!(ring_look(&r, 4.0).is_some(), "{mode:?}");
+            assert!(drawn(&r, true).is_empty(), "{mode:?}");
+        }
+    }
+
+    /// A modifier key pressed alone is no key (windows-11): a field focused
+    /// through `operate` after Shift or Control draws no ring, one after Tab
+    /// draws it.
+    #[test]
+    fn a_modifier_key_alone_is_no_key() {
+        use iced_core::widget::operation::focusable;
+        use keyboard::key::Named;
+        let r = resolved("windows-11", ColorMode::Light);
+        for (named, rings) in [(Named::Shift, 0), (Named::Control, 0), (Named::Tab, 1)] {
+            let mut element: Element<'_, (), Theme, Recorder> =
+                crate::focus_ring(&r, 4.0, Element::new(Clicked));
+            let mut tree = Tree::new(&element);
+            let node = laid(&mut element, &mut tree);
+            send(
+                &mut element,
+                &mut tree,
+                &node,
+                key(keyboard::Key::Named(named)),
+            );
+            operate_chained(&mut element, &mut tree, &node, focusable::focus_next());
+            assert_eq!(painted(&element, &tree, &node), rings, "{named:?}");
+        }
     }
 }

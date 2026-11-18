@@ -2624,6 +2624,12 @@ enum Message {
     ReloadSystemTheme,
     Open(Overlay),
     CloseOverlay,
+    /// Tab: the keyboard focus to the next focusable widget, iced's own
+    /// operation.
+    FocusNext,
+    /// Shift+Tab: the keyboard focus to the previous focusable widget,
+    /// iced's own operation.
+    FocusPrevious,
     InspectorTabSelected(InspectorTab),
     /// Text for the clipboard: Widget Info's, or the About dialog's address.
     Copy(String),
@@ -2881,6 +2887,8 @@ fn update_at(state: &mut State, message: Message, now: Instant) -> iced::Task<Me
             }
         }
         Message::Quit => return iced::exit(),
+        Message::FocusNext => return iced::widget::operation::focus_next(),
+        Message::FocusPrevious => return iced::widget::operation::focus_previous(),
         // The whole tree surveyed, then the scale factor read, then written.
         Message::LayoutSettled => {
             return iced::advanced::widget::operate(Survey)
@@ -3087,7 +3095,8 @@ fn update_inner(state: &mut State, message: Message) {
         Message::IconThemeMenuOpen(open) => state.icon_theme_menu_open = open,
         // `update_at` takes these and hands none of them on: the hover and
         // settle messages, the ticks, the layout dump's, the screenshot's
-        // and the capture's, Quit, Copy and the command palette's runs.
+        // and the capture's, Quit, the two focus moves, Copy and the command
+        // palette's runs.
         Message::WidgetHovered(_)
         | Message::WidgetUnhovered(_)
         | Message::ElementHovered(_)
@@ -3098,6 +3107,8 @@ fn update_inner(state: &mut State, message: Message) {
         | Message::LayoutScaled(_)
         | Message::DumpTimedOut
         | Message::Quit
+        | Message::FocusNext
+        | Message::FocusPrevious
         | Message::Copy(_)
         | Message::WindowOpened(_)
         | Message::PaletteRun(_)
@@ -4462,10 +4473,11 @@ const TEXT_SCALES: [TextScale; 6] = [
 
 /// The message a key binding sends: Ctrl (Cmd on macOS) with Q, B, K or the
 /// comma, as the gpui showcase binds `secondary-q`, `-b`, `-k` and `-,`
-/// (`showcase-gpui/app.rs`), and Escape, which closes a dialog. Only keys no
-/// widget took reach here (`keyboard::listen`). Where the menus are the
-/// system menu bar's ([`menus_in_window`]), their keys are its items' and
-/// Escape alone is bound here, so one route owns each key, as in the egui
+/// (`showcase-gpui/app.rs`), Escape, which closes a dialog, and Tab and
+/// Shift+Tab, which move the keyboard focus. Only keys no widget took reach
+/// here (`keyboard::listen`). Where the menus are the system menu bar's
+/// ([`menus_in_window`]), their keys are its items' and Escape, Tab and
+/// Shift+Tab alone are bound here, so one route owns each key, as in the egui
 /// showcase.
 fn shortcut(event: iced::keyboard::Event) -> Option<Message> {
     use iced::keyboard::{Event, Key, key::Named};
@@ -4481,6 +4493,11 @@ fn shortcut(event: iced::keyboard::Event) -> Option<Message> {
             "," => Some(Message::Open(Overlay::Preferences)),
             _ => None,
         },
+        Key::Named(Named::Tab) => Some(if modifiers.shift() {
+            Message::FocusPrevious
+        } else {
+            Message::FocusNext
+        }),
         _ => None,
     }
 }
@@ -19843,8 +19860,8 @@ mod tests {
 
     /// Where the menus are the system menu bar's, no menu can be held open:
     /// `--open-menu` reports every name and holds none, and the key bindings
-    /// the menus show are the system menu bar's items' (Escape stays the
-    /// window's).
+    /// the menus show are the system menu bar's items' (Escape, Tab and
+    /// Shift+Tab stay the window's).
     #[test]
     fn the_system_menu_bar_takes_the_open_menu_flag_and_the_keys() {
         menus_in_window_as(false, || {
@@ -25822,17 +25839,34 @@ mod tests {
     /// windows-11 (2 at +1), in both modes, with the field clicked into, a
     /// pixel left of the field on its middle row that lies wholly in the
     /// ring's band outside the field is the ring's colour over the ground,
-    /// the ground read past the ring, to 3 per channel.
+    /// the ground read past the ring, to 3 per channel. windows-11 says its
+    /// ring shows for keyboard focus only, and a click is no key, so it runs
+    /// twice: with `defaults.focus_ring_keyboard_only` set to `None`, the
+    /// ring's geometry at +1 as above, and as the preset states it, where
+    /// the pixel in the band is the ground's, to the same 3 per channel. The
+    /// Simulator runs no operation that gives a widget the focus, so the key
+    /// path is the connector's tests' (`focus_ring.rs`,
+    /// `where_the_theme_says_keyboard_only_a_click_draws_no_ring`,
+    /// `a_modifier_key_alone_is_no_key`), through `operate`.
     #[test]
     fn the_focused_field_draws_the_themes_ring_round_it() {
         let mut faults = Vec::new();
-        for preset in ["macos-tahoe", "windows-11"] {
+        let runs = [
+            ("macos-tahoe", false),
+            ("windows-11", true),
+            ("windows-11", false),
+        ];
+        for (preset, rule_off) in runs {
             for mode in [AppColorMode::Light, AppColorMode::Dark] {
                 let mut state = page_state(preset, Tab::Basic);
                 assert!(
                     state.install_in_mode(ThemeChoice::Preset(preset.to_owned()), mode),
                     "{preset} does not install"
                 );
+                if rule_off {
+                    state.current_resolved.defaults.focus_ring_keyboard_only = None;
+                }
+                let ringed = state.current_resolved.defaults.focus_ring_keyboard_only != Some(true);
                 let d = state.current_resolved.defaults.clone();
                 let (image, rects, scale) = frame_after(
                     &state,
@@ -25840,7 +25874,7 @@ mod tests {
                     Size::new(WINDOW_SIZE.0, 2000.0),
                     |ui| click_probe(ui, FOCUSED_INPUT_ID),
                 );
-                let what = format!("{preset} {mode:?}");
+                let what = format!("{preset} {mode:?}, ringed {ringed}");
                 let Some(field) = rects.get("basic.text_inputs.focused").copied() else {
                     faults.push(format!("{what}: the focused field is not drawn"));
                     continue;
@@ -25864,8 +25898,11 @@ mod tests {
                     continue;
                 };
                 let ground = Color::from_rgba8(ground[0], ground[1], ground[2], 1.0);
-                let want =
-                    styles::composite_over(to_color(d.focus_ring_color), ground).into_rgba8();
+                let want = if ringed {
+                    styles::composite_over(to_color(d.focus_ring_color), ground).into_rgba8()
+                } else {
+                    ground.into_rgba8()
+                };
                 if drawn
                     .iter()
                     .zip(want)
@@ -25873,7 +25910,7 @@ mod tests {
                     .any(|(a, b)| a.abs_diff(b) > 3)
                 {
                     faults.push(format!(
-                        "{what}: at x {x} the band is {drawn:?}, the ring over the ground {want:?}"
+                        "{what}: at x {x} the band is {drawn:?}, {want:?} expected"
                     ));
                 }
             }
@@ -32449,6 +32486,39 @@ mod tests {
             modifiers,
             text: None,
             repeat: false,
+        }
+    }
+
+    /// Tab sends [`Message::FocusNext`] and Shift+Tab
+    /// [`Message::FocusPrevious`], which `update_at` turns into iced's own
+    /// `focus_next` and `focus_previous` operations, where the menus are the
+    /// window's and where they are the system menu bar's.
+    #[test]
+    fn tab_moves_the_focus_with_iceds_operations() {
+        use iced::keyboard::{Key, Location, Modifiers, key};
+        let tab = |modifiers: Modifiers| iced::keyboard::Event::KeyPressed {
+            key: Key::Named(key::Named::Tab),
+            modified_key: Key::Named(key::Named::Tab),
+            physical_key: key::Physical::Unidentified(key::NativeCode::Unidentified),
+            location: Location::Standard,
+            modifiers,
+            text: None,
+            repeat: false,
+        };
+        for in_window in [true, false] {
+            menus_in_window_as(in_window, || {
+                assert!(
+                    matches!(shortcut(tab(Modifiers::empty())), Some(Message::FocusNext)),
+                    "Tab, menus in the window: {in_window}"
+                );
+                assert!(
+                    matches!(
+                        shortcut(tab(Modifiers::SHIFT)),
+                        Some(Message::FocusPrevious)
+                    ),
+                    "Shift+Tab, menus in the window: {in_window}"
+                );
+            });
         }
     }
 
