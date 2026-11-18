@@ -32,10 +32,10 @@ use crate::support::{
 };
 use crate::{
     BASIC_INPUT_DISABLED, BUTTONS_DANGER, BUTTONS_DISABLED_SECONDARY, BUTTONS_HEADING_VARIANTS,
-    BUTTONS_PRIMARY, BUTTONS_TEXT, CHARTS_AREA_CHART, CHARTS_BAR_CHART, CHARTS_CANDLESTICK_CHART,
-    CHARTS_LINE_CHART, CHARTS_PIE_CHART, CHARTS_RADAR_CHART, CHARTS_SANKEY_CHART,
-    CHROME_APP_MENU_BAR, CHROME_HANDLE, CHROME_LABEL_ICON_THEME, CHROME_LABEL_MODE,
-    CHROME_LABEL_THEME, CHROME_MENU_BAR, CHROME_PAGE_TABS, CHROME_SIDE_PANEL,
+    BUTTONS_LOADING_NO_ICON, BUTTONS_PRIMARY, BUTTONS_TEXT, CHARTS_AREA_CHART, CHARTS_BAR_CHART,
+    CHARTS_CANDLESTICK_CHART, CHARTS_LINE_CHART, CHARTS_PIE_CHART, CHARTS_RADAR_CHART,
+    CHARTS_SANKEY_CHART, CHROME_APP_MENU_BAR, CHROME_HANDLE, CHROME_LABEL_ICON_THEME,
+    CHROME_LABEL_MODE, CHROME_LABEL_THEME, CHROME_MENU_BAR, CHROME_PAGE_TABS, CHROME_SIDE_PANEL,
     CHROME_SIDE_PANEL_SEPARATOR, CHROME_SIDE_PANEL_TOGGLE, CHROME_SPLITTER_LINE, CHROME_STATUS_BAR,
     CHROME_THEME_SETTINGS, CHROME_TITLE_BAR, CHROME_TOOLBAR, CHROME_TOOLBAR_PALETTE,
     CHROME_TOOLBAR_PREFERENCES, CHROME_TOOLBAR_RELOAD, CONTENT_ALERT, CONTENT_PANEL,
@@ -64,6 +64,8 @@ use native_theme::icons::IconSetChoice;
 /// The painted scene, read as the widget tests read it.
 #[path = "../../src/widgets/scene_read.rs"]
 mod scene_read;
+#[cfg(feature = "gpui-fast")]
+use scene_read::scene_glyphs;
 use scene_read::{scene_quads, scene_underlines};
 
 /// The window the interaction test lays the showcase out in.
@@ -9004,13 +9006,14 @@ fn the_theme_error_alerts_icon_follows_the_chosen_set(cx: &mut TestAppContext) {
 
 /// The page samples that show an icon, as (the page they are on, the
 /// selector of the info that reports the icon, the IconName they show): the
-/// Buttons page's icon Button, its loading Button's spinner and its Toggle,
-/// the Inputs page's input groups, the Data page's Attachment, the Feedback
+/// Buttons page's icon Button, its two loading Buttons' spinners and its
+/// Toggle, the Inputs page's input groups, the Data page's Attachment, the Feedback
 /// page's Empty state and Plain Marker, the Layout page's Collapsible toggle
 /// (open at start) and icon Stepper, and the Overlays page's menu rows.
-const PAGE_SAMPLE_ICONS: [(Page, &str, IconName); 14] = [
+const PAGE_SAMPLE_ICONS: [(Page, &str, IconName); 15] = [
     (Page::Buttons, "buttons-icon-search", IconName::Search),
     (Page::Buttons, "buttons-loading", IconName::Loader),
+    (Page::Buttons, BUTTONS_LOADING_NO_ICON, IconName::Loader),
     (Page::Buttons, "buttons-toggle-star", IconName::Star),
     (Page::Inputs, "inputs-input-groups", IconName::Search),
     (Page::Inputs, "inputs-input-groups", IconName::Copy),
@@ -9141,7 +9144,13 @@ fn the_page_samples_icons_come_from_the_chosen_set(cx: &mut TestAppContext) {
             "with Material chosen, {selector}'s icon is not Material's own, or not absent"
         );
         let info = settle_on(&mut cx, &showcase, selector);
-        let start = icon_note_start(&icon.drawn, "material");
+        // A loading Button given no icon turns its Spinner's own Loader
+        // (button/button.rs:777-786), and says so.
+        let start = if matches!(name, IconName::Loader) && !icon.drawn.shown() {
+            "gpui-component's own Loader, the Spinner's default".to_string()
+        } else {
+            icon_note_start(&icon.drawn, "material")
+        };
         assert!(
             info.as_ref().is_some_and(|info| info_says(info, &start)),
             "with Material chosen, {selector} does not say its icon is {start:?}: {info:?}"
@@ -9153,7 +9162,9 @@ fn the_page_samples_icons_come_from_the_chosen_set(cx: &mut TestAppContext) {
 /// another icon theme's, and says so: with the samples' icons taken out of
 /// Material's loaded gallery, every sample's info reports none, the icon
 /// Button loses the width its icon took, and the Toggle shows its icon's
-/// name instead.
+/// name instead. The two loading Buttons are the exception, and say so: a
+/// loading Button given no icon turns its Spinner's own default,
+/// gpui-component's Loader (button/button.rs:777-786).
 #[cfg(feature = "material-icons")] // the bundled Material set it chooses
 #[gpui::test]
 fn a_page_sample_icon_the_set_lacks_is_absent(cx: &mut TestAppContext) {
@@ -9190,10 +9201,14 @@ fn a_page_sample_icon_the_set_lacks_is_absent(cx: &mut TestAppContext) {
             "{selector}'s icon was taken out of the gallery, and it is still {drawn:?}"
         );
         let info = settle_on(&mut cx, &showcase, selector);
-        let start = icon_note_start(&drawn, "material");
+        let start = if matches!(name, IconName::Loader) {
+            "gpui-component's own Loader, the Spinner's default".to_string()
+        } else {
+            icon_note_start(&drawn, "material")
+        };
         assert!(
             info.as_ref().is_some_and(|info| info_says(info, &start)),
-            "{selector} does not say it has no icon, {start:?}: {info:?}"
+            "{selector} does not say what it draws for the icon it lacks, {start:?}: {info:?}"
         );
     }
 
@@ -9506,7 +9521,7 @@ fn a_widgets_own_icons_are_named_gpui_components(cx: &mut TestAppContext) {
             "DropdownButton",
             buttons::dropdown_button(&t, ButtonKind::Primary),
         ),
-        ("Clipboard", buttons::clipboard(&t, "value")),
+        ("Clipboard", buttons::clipboard(&t, "value", None)),
         ("NumberInput", inputs::number_input(&t)),
         ("Checkbox", inputs::checkbox(&t, "label", true, false)),
         ("Rating", inputs::rating(&t, 3, false)),
@@ -9573,8 +9588,7 @@ fn a_widgets_own_icons_are_named_gpui_components(cx: &mut TestAppContext) {
 
 /// Paint-level check (rationale §3.6): the fill gpui painted inside the
 /// Primary Tag at rest is the colour its info's bg claim shows. The colour
-/// gate reads the line a claim cites; this reads the frame. At rest, because
-/// a hovered Tag paints at 90% (tag.rs:269).
+/// gate reads the line a claim cites; this reads the frame.
 #[gpui::test]
 fn a_tags_painted_fill_is_its_bg_claim(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
@@ -9596,6 +9610,156 @@ fn a_tags_painted_fill_is_its_bg_claim(cx: &mut TestAppContext) {
         painted, claimed,
         "the fill painted inside the Primary Tag is not its bg claim"
     );
+}
+
+/// A text system that lays text out as gpui's test one does and gives every
+/// glyph one device pixel to paint: gpui's test one gives every glyph empty
+/// raster bounds, so a frame laid out with it paints no glyph at all
+/// (gpui-fast src/platform.rs, `NoopTextSystem::glyph_raster_bounds`), and a
+/// glyph's colour cannot be read from it. With this one each glyph is a
+/// sprite in its run's colour, at the glyph's origin.
+#[cfg(feature = "gpui-fast")]
+struct PaintedGlyphs;
+
+#[cfg(feature = "gpui-fast")]
+impl gpui::PlatformTextSystem for PaintedGlyphs {
+    fn add_fonts(&self, fonts: Vec<std::borrow::Cow<'static, [u8]>>) -> gpui::Result<()> {
+        gpui::NoopTextSystem.add_fonts(fonts)
+    }
+    fn all_font_names(&self) -> Vec<String> {
+        gpui::NoopTextSystem.all_font_names()
+    }
+    fn font_id(&self, descriptor: &gpui::Font) -> gpui::Result<gpui::FontId> {
+        gpui::NoopTextSystem.font_id(descriptor)
+    }
+    fn font_metrics(&self, font_id: gpui::FontId) -> gpui::FontMetrics {
+        gpui::NoopTextSystem.font_metrics(font_id)
+    }
+    fn typographic_bounds(
+        &self,
+        font_id: gpui::FontId,
+        glyph_id: gpui::GlyphId,
+    ) -> gpui::Result<Bounds<f32>> {
+        gpui::NoopTextSystem.typographic_bounds(font_id, glyph_id)
+    }
+    fn advance(
+        &self,
+        font_id: gpui::FontId,
+        glyph_id: gpui::GlyphId,
+    ) -> gpui::Result<gpui::Size<f32>> {
+        gpui::NoopTextSystem.advance(font_id, glyph_id)
+    }
+    fn glyph_for_char(&self, font_id: gpui::FontId, ch: char) -> Option<gpui::GlyphId> {
+        gpui::NoopTextSystem.glyph_for_char(font_id, ch)
+    }
+    fn glyph_raster_bounds(
+        &self,
+        _: &gpui::RenderGlyphParams,
+    ) -> gpui::Result<Bounds<gpui::DevicePixels>> {
+        Ok(Bounds {
+            origin: point(gpui::DevicePixels(0), gpui::DevicePixels(0)),
+            size: size(gpui::DevicePixels(1), gpui::DevicePixels(1)),
+        })
+    }
+    fn rasterize_glyph(
+        &self,
+        _: &gpui::RenderGlyphParams,
+        raster_bounds: Bounds<gpui::DevicePixels>,
+    ) -> gpui::Result<(gpui::Size<gpui::DevicePixels>, Vec<u8>)> {
+        Ok((raster_bounds.size, vec![u8::MAX]))
+    }
+    fn layout_line(
+        &self,
+        text: &str,
+        font_size: Pixels,
+        runs: &[gpui::FontRun],
+    ) -> gpui::LineLayout {
+        gpui::NoopTextSystem.layout_line(text, font_size, runs)
+    }
+    fn recommended_rendering_mode(
+        &self,
+        font_id: gpui::FontId,
+        font_size: Pixels,
+    ) -> gpui::TextRenderingMode {
+        gpui::NoopTextSystem.recommended_rendering_mode(font_id, font_size)
+    }
+}
+
+/// The Inputs page's searchable Select draws the part of a row that matches
+/// what is typed in `list_highlight_foreground`, the resting text colour
+/// under a native theme, and the rest of the row in the row's own colour.
+/// Typing "ee" puts the cursor on the first match, Breeze (list/list.rs,
+/// `ListState::start_search`), whose row is lettered accent_foreground: on
+/// nord that differs from the resting text colour, so its glyphs read B, r,
+/// z and e in the one and the matched e, e in the other. Read in the
+/// GPUI Fast form, which paints glyphs under [`PaintedGlyphs`].
+#[cfg(feature = "gpui-fast")]
+#[gpui::test]
+fn the_select_draws_its_match_in_the_highlight_colour(base: &mut TestAppContext) {
+    let mut app = TestAppContext::build_with_text_system(
+        base.dispatcher.clone(),
+        None,
+        std::sync::Arc::new(PaintedGlyphs),
+    );
+    let (showcase, _root, mut cx) = open(&mut app, TALL_WINDOW);
+    // The popup fades in, and the test platform's clock stands still.
+    without_motion(&mut cx);
+    use_preset(&mut cx, &showcase, "nord");
+    show(&mut cx, &showcase, Page::Inputs);
+    click(&mut cx, crate::INPUTS_SELECT_HIGHLIGHT);
+    cx.simulate_input("ee");
+    cx.run_until_parked();
+    draw(&mut cx);
+    let (highlight, resting, selected, selected_row) = read(&mut cx, &showcase, |_, cx| {
+        let t = Theme::global(cx);
+        (
+            t.list_highlight_foreground,
+            native_color(cx, |n| n.resolved.defaults.text_color),
+            t.accent_foreground,
+            t.accent,
+        )
+    });
+    assert_eq!(
+        Some(highlight),
+        resting,
+        "list_highlight_foreground is not the resting text colour, defaults.text_color"
+    );
+    assert_ne!(
+        highlight, selected,
+        "nord letters the selected row in the highlight colour, so this proves nothing"
+    );
+    // Every fill in the selected row's colour, with the glyphs inside it
+    // from left to right: the Breeze row's among them, and others, such as a
+    // calendar's selected day.
+    let rows = cx.update(|window, _| {
+        let glyphs = scene_glyphs(window);
+        scene_quads(window)
+            .into_iter()
+            .filter(|q| q.background.as_solid() == Some(selected_row))
+            .map(|q| {
+                let mut inside: Vec<_> = glyphs
+                    .iter()
+                    .filter(|(b, _)| q.bounds.contains(&b.origin))
+                    .copied()
+                    .collect();
+                inside.sort_by(|a, b| a.0.origin.x.0.total_cmp(&b.0.origin.x.0));
+                inside
+                    .into_iter()
+                    .map(|(_, colour)| colour)
+                    .collect::<Vec<_>>()
+            })
+            .collect::<Vec<_>>()
+    });
+    let (s, h) = (selected, highlight);
+    assert!(
+        rows.contains(&vec![s, s, h, h, s, s]),
+        "no selected row draws Breeze's matched ee in the highlight colour {h:?} and the rest \
+         in the selected row's text colour {s:?}: {rows:?}"
+    );
+    drop(cx);
+    app.run_until_parked();
+    app.update(|cx| cx.quit());
+    app.run_until_parked();
 }
 
 /// The fill gpui painted last frame inside the element tagged `selector`.
@@ -11366,8 +11530,8 @@ fn an_unstroked_edge_is_claimed_by_no_native_info(cx: &mut TestAppContext) {
     }
 }
 
-/// A hovered Tag fades to 90% (tag.rs:269), and its info names the fill
-/// that paints -- the painted value, not the token it fades.
+/// The fill a hovered Primary Tag paints is the colour its info's bg claim
+/// shows, as at rest.
 #[gpui::test]
 fn a_hovered_tags_info_names_its_painted_fill(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
@@ -11375,21 +11539,18 @@ fn a_hovered_tags_info_names_its_painted_fill(cx: &mut TestAppContext) {
     // `settle_on` leaves the pointer on the Tag, so this frame is hovered.
     let info = settle_on(&mut cx, &showcase, FEEDBACK_TAG_PRIMARY);
     let painted = painted_fill(&mut cx, FEEDBACK_TAG_PRIMARY);
-    let hover = info.as_ref().and_then(|info| {
-        info.not_themeable
-            .iter()
-            .find(|n| n.what == "hover")
-            .map(|n| n.text.clone())
-    });
+    let claimed = info
+        .as_ref()
+        .and_then(|info| info.colors.iter().find(|c| c.role == "bg"))
+        .map(|c| c.value);
     assert!(
         painted.is_some(),
         "nothing was painted inside the Primary Tag"
     );
-    assert!(
-        painted.is_some_and(|fill| hover
-            .as_deref()
-            .is_some_and(|text| text.contains(&as_rgba(fill).to_string()))),
-        "the hovered Primary Tag paints {:?}, which its hover note does not name: {hover:?}",
+    assert_eq!(
+        painted,
+        claimed,
+        "the hovered Primary Tag paints {:?}, which is not its bg claim: {info:?}",
         painted.map(as_rgba)
     );
 }

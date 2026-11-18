@@ -545,14 +545,22 @@ pub(crate) fn window_rows(
     }
 }
 
-/// A section's heading.
+/// A section's heading. Its id is its title's: one panel shows several
+/// headings, all built by the one `Label::new` here, which would otherwise
+/// share the id gpui-component takes from the call site (label.rs,
+/// `Label::id`).
 fn section(title: &'static str) -> Label {
-    Label::new(title).text_sm().font_semibold()
+    Label::new(title)
+        .id(SharedString::from(format!("inspector-section-{title}")))
+        .text_sm()
+        .font_semibold()
 }
 
-/// One `what: value` row, the name muted.
-fn row(what: &'static str, value: String, cx: &gpui::App) -> gpui::Div {
+/// One `what: value` row, the name muted. Its id is `what`'s, for the reason
+/// [`section`] gives.
+fn row(what: &'static str, value: String, cx: &gpui::App) -> gpui::Stateful<gpui::Div> {
     v_flex()
+        .id(SharedString::from(format!("inspector-row-{what}")))
         .child(
             Label::new(what)
                 .text_xs()
@@ -923,8 +931,12 @@ fn listed_info(
 fn info_sections(info: &WidgetInfo, gap: Option<gpui::Pixels>, cx: &gpui::App) -> gpui::Div {
     let muted = cx.theme().muted_foreground;
     let frame = gpui::StyleRefinement::default().demo_frame(cx);
-    let colors = info.colors.iter().map(|c| {
+    // Each line has an id of its own, its index: the lines' labels are built
+    // by one `Label::new` each, which would otherwise give all of them the
+    // id gpui-component takes from the call site (label.rs, `Label::id`).
+    let colors = info.colors.iter().enumerate().map(|(ix, c)| {
         v_flex()
+            .id(("inspector-colour", ix))
             .child(swatch(&format!("{}: {}", c.role, c.field), c.value, &frame))
             .child(Label::new(c.cited_at).text_xs().text_color(muted))
     });
@@ -932,8 +944,9 @@ fn info_sections(info: &WidgetInfo, gap: Option<gpui::Pixels>, cx: &gpui::App) -
         (!notes.is_empty()).then(|| {
             v_flex()
                 .child(section(title))
-                .children(notes.iter().map(|n| {
+                .children(notes.iter().enumerate().map(|(ix, n)| {
                     v_flex()
+                        .id((title, ix))
                         .child(Label::new(n.what).text_xs().text_color(muted))
                         .child(Label::new(n.text.clone()).text_xs())
                 }))

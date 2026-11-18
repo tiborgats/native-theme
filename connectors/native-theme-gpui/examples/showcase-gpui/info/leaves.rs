@@ -662,7 +662,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "defaults.focus_ring_color",
-        "gpui: the ring the theme-drawn Checkbox, Radio, Slider and Switch draw, as stated (widgets/mod.rs, FocusRing::of); and ThemeColor ring (colors.rs): a focused Input's edge and ring, which focus_ring_style hands to focus_style (gpui-component/styled.rs:179-184, focus_ring_style; :250-298, focus_style)",
+        "gpui: the ring the theme-drawn Checkbox, Radio, Slider and Switch draw, as stated (widgets/mod.rs, FocusRing::of); and ThemeColor ring (colors.rs): a focused Input's edge and ring, which focus_ring_style hands to focus_style (gpui-component/styled.rs:179-184, focus_ring_style; :250-298, focus_style). gpui-component's widgets draw that ring 3px wide with its alpha set to 0.5, whatever the colour's own (gpui-component/styled.rs:12, FOCUS_RING_OPACITY; :250-298, focus_style), and the Tab draws another, 2px inset at the full colour, on keyboard focus only (gpui-component/tab/tab.rs:933, ring; :962-973, focus_visible)",
     ),
     (
         "",

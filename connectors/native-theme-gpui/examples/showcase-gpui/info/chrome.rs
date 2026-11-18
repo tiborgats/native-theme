@@ -971,7 +971,12 @@ pub fn preset_combobox(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo 
             "delegate",
             "SearchableListDelegate, implemented in this showcase (gpui-component/combobox.rs, Combobox)",
         )
+        .instance("match highlight", HIGHLIGHT_OFF)
 }
+
+/// Why the showcase's own searchable chrome leaves gpui-component's match
+/// highlight off.
+const HIGHLIGHT_OFF: &str = "off: highlight_matches(true) would draw the part of each row that matches the query in list_highlight_foreground (gpui-component/label.rs, highlight_matches), and the showcase leaves it off in its own chrome, where it would change how its rows read: with a native theme that colour is the resting text colour, which falls below a contrast of 1.5 on the selected row on some presets. The Inputs page's searchable Select shows it on";
 
 /// The theme settings' colour-mode Select (spec §3.3): the Inputs page's
 /// Select, choosing System, Light or Dark.
@@ -1091,7 +1096,7 @@ fn action_tooltip(
     };
     let info = info.instance(
         "tooltip",
-        "Tooltip::element with the action, which shows its key binding where one is bound (tooltip.rs, Tooltip::action), built by the showcase on the element around the Button: Button::tooltip_with_action would have the Button build its own as it renders (button/button.rs, RenderOnce for Button), which the platform's tooltip fill, edge, padding, radius and text colour could not reach. The text is the element, refined by geometry::tooltip_content where a native theme is installed, so it wraps within tooltip.max_width; a key binding beside it is not counted in that width",
+        "Tooltip::new with the action, which shows its key binding where one is bound (tooltip.rs, Tooltip::action), built by the showcase on the element around the Button: Button::tooltip_with_action would have the Button build its own as it renders (button/button.rs, RenderOnce for Button), which the platform's tooltip fill, edge, padding, radius and text colour could not reach. Where a native theme is installed the bubble is given tooltip.max_width as its max width, so the bubble, the key binding included, keeps within it and the text wraps beside the key. The text as an element refined by geometry::tooltip_content would not: that width counts the text alone, so with a key binding the bubble would be wider than tooltip.max_width by the key and the gap before it; without one the two are the same bubble (gpui-component/tooltip.rs, Tooltip::render)",
 );
     match delay {
         Some(delay) => info.config(
@@ -1405,6 +1410,7 @@ pub fn palette_dialog(t: &Theme, reduce_motion: bool, entrance: bool, styled: bo
 /// Dialog, its entries' icons from the icon theme named `set`.
 pub fn command_palette(t: &Theme, set: &str) -> WidgetInfo {
     WidgetInfo::new("Command")
+        .instance("match highlight", HIGHLIGHT_OFF)
         .not_themeable(
             "own icons",
             super::own_icons("Search before its query field, and Check beside a checked entry (command/state.rs, CommandState)"),

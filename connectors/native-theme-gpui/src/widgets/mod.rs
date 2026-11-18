@@ -303,8 +303,8 @@ fn color(rgba: Rgba) -> Hsla {
 }
 /// The theme's focus ring, which [`FocusRing::draw`] puts round a theme-drawn
 /// control that has the focus, in place of gpui-component's `focus_ring_style`, which draws a
-/// 3 px ring at half `ThemeColor::ring`'s alpha whatever the model states
-/// (gpui-component 0.9.1 `src/styled.rs:11-12`, `:301-327`). gpui-component's
+/// 3 px ring in `ThemeColor::ring` with its alpha set to 0.5 whatever the model
+/// states (gpui-component 0.10.0 `src/styled.rs:11-12`, `focus_style`). gpui-component's
 /// `Tab` now draws another, 2 px inset at the full colour, on keyboard focus
 /// only (gpui-component 0.10.0 `src/tab/tab.rs:933`, `:962-973`).
 ///

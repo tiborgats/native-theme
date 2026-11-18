@@ -9,12 +9,9 @@ use native_theme_gpui::ResolvedTheme;
 
 #[cfg(feature = "widgets")]
 use super::edge_claim;
-use super::{ColorClaim, WidgetInfo, as_rgba, claim, percent_text, px_text, stated};
+use super::{ColorClaim, WidgetInfo, claim, px_text, stated};
 use crate::demo::{CircleKind, MarkerKind, Severity, ShimmerKind, SpinnerKind, TagKind};
 use crate::support::SampleIcon;
-
-/// The opacity a hovered Tag paints at: upstream's literal (tag.rs:269).
-const TAG_HOVER_OPACITY: f32 = 0.9;
 
 /// An `Alert` of `severity` at the default Size, a `banner` or not. The
 /// caller adds what the Alert says.
@@ -677,26 +674,11 @@ pub fn tag(t: &Theme, kind: TagKind, outline: bool, label: &str) -> WidgetInfo {
     } else {
         (info, vec![fill, text, edge])
     };
-    // gpui multiplies a hovered element's opacity into every colour painted
-    // inside it (gpui-pre/window.rs:4937-4945 for fills and edges, :5081 and
-    // :5130 for glyphs), so these are what a hovered Tag paints.
-    let hovered: Vec<String> = painted
-        .iter()
-        .map(|c| format!("{} {}", c.role, as_rgba(c.value.opacity(TAG_HOVER_OPACITY))))
-        .collect();
     painted
         .into_iter()
         .fold(info, WidgetInfo::color)
         .config("border-radius", format!("radius: {}px", t.radius.as_f32()))
         .not_themeable("padding", "px_2p5 / py_1 at the default Size -- rems, so the platform's font -- and settable: Tag applies the caller's refinement last (tag.rs, Tag::render). native-theme states no tag widget. Our gap")
-        .not_themeable(
-            "hover",
-            format!(
-                "the whole Tag fades to {} opacity, a literal, everything it paints alike: hovered, it paints {} (tag.rs, Tag::render)",
-                percent_text(TAG_HOVER_OPACITY),
-                hovered.join(", ")
-            ),
-        )
         .instance("label", label.to_string())
 }
 
@@ -888,7 +870,7 @@ pub fn tooltip(
     };
     let info = if built {
         info.not_themeable("position", "gpui's own sits a pixel off the pointer (gpui-pre/window.rs, prepaint_tooltip)")
-            .instance("why built", "Button::tooltip takes a string and builds the tooltip itself (button/button.rs, Button::tooltip), so the only way to a refined one is to build it with Tooltip::element: the one place the platform's tooltip padding, radius and text colour reach the popup. The width is the content element's: on the popup it would clamp the popup and not the text, which then runs out of it")
+            .instance("why built", "Button::tooltip takes a string and builds the tooltip itself (button/button.rs, Button::tooltip), so the only way to a refined one is to build it with Tooltip::element: the one place the platform's tooltip padding, radius and text colour reach the popup. The width is the content element's, geometry::tooltip_content's: for a tooltip without a key binding, as this one, Tooltip::new with the theme's tooltip.max_width on the popup is the same bubble, since gpui-component 0.10.0 gives the text's box no minimum width and clips it (gpui-component/tooltip.rs, Tooltip::render); with a key binding the two differ: the content's width counts the text alone, so the popup grows past tooltip.max_width by the key and the gap before it, where the width on the popup keeps it within tooltip.max_width and wraps the text beside the key, which is why the chrome's tooltips, which show a key binding, are Tooltip::new with the width on the popup")
     } else {
         let (show, grace) = (
             defaults.show_delay().as_millis(),
@@ -900,6 +882,7 @@ pub fn tooltip(
         };
         info
             .not_themeable("position", "beside its trigger, flipping to stay in the window, unless Button::tooltip_placement pins a side (gpui-base/tooltip.rs, TooltipPositioner)")
+            .not_themeable("size change", "moving from one tooltip to another on the same row, the bubble slides and grows or shrinks to the new one's size over 200ms, a literal (gpui-component/tooltip.rs, SLIDE_DURATION; render_tooltip); under gpui's App::reduce_motion, which apply switches on where the platform asks for less motion, it is drawn at the new size at once, as every animation gpui runs (gpui-pre/elements/animation.rs, AnimationExt)")
     };
     info.instance(
         "trigger",

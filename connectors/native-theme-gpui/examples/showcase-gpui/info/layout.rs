@@ -186,7 +186,7 @@ fn card_edge(info: WidgetInfo, r: &ResolvedTheme, outline: bool) -> WidgetInfo {
         "border",
         Some(r.card.border.color),
         Some(width),
-        "native-theme-gpui/geometry.rs:772",
+        "native-theme-gpui/geometry.rs:784",
     ))
     .config("edge", match (width > 0.0, outline) {
         (true, _) => format!("card.border.color at card.border.line_width, {}px, on every variant: geometry::group_box_content sets both on the content, which the GroupBox refines last (group_box.rs, GroupBox) -- over an Outline's own border colour, and on a Normal or Fill box, which draws no edge of its own", px_text(width)),
@@ -446,6 +446,10 @@ pub fn card(
     info.instance("content", "a body-text Label, which reports itself")
 }
 
+/// The ring gpui-component's own tab draws while it has the focus from the
+/// keyboard.
+const UPSTREAM_TAB_RING: &str = "on keyboard focus only, the tabs taking the focus from the keyboard alone: ring, the theme's focus ring colour, as an inset shadow 2px wide inside the tab, a literal the theme's defaults.focus_ring_width and focus_ring_offset do not reach (gpui-component/tab/tab.rs:933, ring; :962-973, focus_visible)";
+
 /// A `TabBar` of the Tab variant over `labels`, the one at `selected`
 /// shown, its per-call seams taken from `native` where a native theme is
 /// installed (`demo::tab_row`).
@@ -495,7 +499,8 @@ pub fn tab_row(
             ))
             .not_themeable("hover", "transparent: a Tab-variant tab paints no hover fill, and the Tab sets its hover style itself, which replaces one a caller gives (tab/tab.rs, TabVariant::hovered and RenderOnce for Tab), so tab.hover_background has no receiver")
             .not_themeable("edges", "the selected tab's 1px sides and the bar's 1px bottom rule in border, px literals set inside render (tab/tab.rs, TabVariant::selected; tab/tab_bar.rs, RenderOnce for TabBar), while the model's tab.border states the tab's own edge")
-            .not_themeable("padding", "the tab's inner padding is a px literal per variant and Size on a child the Tab builds (tab/tab.rs, TabVariant::inner_paddings), so a caller's padding adds to it rather than replacing it, and the model's tab.border.padding is not applied");
+            .not_themeable("padding", "the tab's inner padding is a px literal per variant and Size on a child the Tab builds (tab/tab.rs, TabVariant::inner_paddings), so a caller's padding adds to it rather than replacing it, and the model's tab.border.padding is not applied")
+            .not_themeable("focus ring", UPSTREAM_TAB_RING);
     let info = match native {
         Some(r) => info
             .config("font", format!("tab.font: {}, on each label, a child over the text_sm the Tab sets on itself (tab/tab.rs, RenderOnce for Tab)", drawn_font(&r.tab.font)))
@@ -588,7 +593,8 @@ pub fn folder_tab_row(
         .not_themeable("separator", "1px wide in border, a px literal set inside render (tab/tab.rs, RenderOnce for Tab), drawn between two tabs neither of which is selected or hovered (tab/tab_bar.rs, RenderOnce for TabBar)")
         .not_themeable("padding", "px literals per Size (tab/tab.rs, FolderTabMetrics::new): the bar's space above the tabs is 2, 4, 4 and 8px at XSmall, Small, the default size and Large, the tab's side padding 8, 8, 12 and 16px and the separator 12, 12, 16 and 16px tall, so the model's tab.border.padding is not applied")
         .not_themeable("gap", "4px between two tabs, holding their separator: FOLDER_TAB_GAP, a px literal (tab/tab.rs)")
-        .not_themeable("height", "32px at the default size (20, 24 and 36px at XSmall, Small and Large), its content 24px tall (16, 18 and 28px), as Segmented's: px literals per Size (tab/tab.rs, TabVariant::height and TabVariant::inner_height)");
+        .not_themeable("height", "32px at the default size (20, 24 and 36px at XSmall, Small and Large), its content 24px tall (16, 18 and 28px), as Segmented's: px literals per Size (tab/tab.rs, TabVariant::height and TabVariant::inner_height)")
+        .not_themeable("focus ring", UPSTREAM_TAB_RING);
     let info = match native {
         Some(r) => info
             .config("font", format!("tab.font: {}, on each label, a child over the text_sm the Tab sets on itself (tab/tab.rs, RenderOnce for Tab)", drawn_font(&r.tab.font)))
@@ -909,7 +915,7 @@ pub fn native_tab_row(r: &ResolvedTheme, variant: &'static str) -> WidgetInfo {
             |v| format!("{}px", px_text(v)),
         )
     };
-    info.config("size", format!("each tab at least tab.min_width, {}px, by tab.min_height, {}px", px_text(t.min_width), px_text(t.min_height)))
+    let info = info.config("size", format!("each tab at least tab.min_width, {}px, by tab.min_height, {}px", px_text(t.min_width), px_text(t.min_height)))
         .config("font", format!("tab.font: {}", drawn_font(&t.font)))
         .config("padding", format!("tab.border.padding: left {}, right {}; top and bottom {} and {}", side(padding.left), side(padding.right), padding.top.map_or("unstated".to_string(), |v| format!("{}px", px_text(v))), padding.bottom.map_or("unstated".to_string(), |v| format!("{}px", px_text(v)))))
         .config("outline", format!("tab.border on the selected tab only: {}px, radius {}px on its top corners, as Breeze and Windows draw it (docs/platform-facts.md §2.11){}", px_text(t.border.line_width), px_text(t.border.corner_radius), if outward.is_some() { "; no bottom edge: it runs on down the outward corners instead" } else { "" }))
@@ -938,7 +944,39 @@ pub fn native_tab_row(r: &ResolvedTheme, variant: &'static str) -> WidgetInfo {
             (Some(_), false) => "none: tab.item_gap is unstated, and widgets::TabBar lays its tabs with none, as gpui-component lays its default variant's (tab/tab_bar.rs, TabBar::render)".to_string(),
             (None, _) => "not widgets::TabBar's: a tab length the theme states is not finite, so gpui-component's TabBar lays the tabs out".to_string(),
         })
-        .not_themeable("rule under the bar", "separator.*, the line the theme states for parting content: the model states no tab-bar rule of its own")
+        .not_themeable("rule under the bar", "separator.*, the line the theme states for parting content: the model states no tab-bar rule of its own");
+    match look {
+        Some(_) => tab_bar_ring(info, r),
+        None => info.not_themeable("focus ring", UPSTREAM_TAB_RING),
+    }
+}
+
+/// `info` with the focus ring `widgets::TabBar` draws round a tab under `r`:
+/// the theme's colour and width, inside the tab.
+#[cfg(feature = "widgets")]
+fn tab_bar_ring(info: WidgetInfo, r: &ResolvedTheme) -> WidgetInfo {
+    let d = &r.defaults;
+    let (width, offset) = (d.focus_ring_width, d.focus_ring_offset);
+    if !(width.is_finite() && offset.is_finite() && width > 0.0) {
+        return info.config(
+            "focus ring",
+            "none: the theme states no ring, its focus_ring_width not finite or not positive, or its focus_ring_offset not finite (native-theme-gpui/widgets/mod.rs, FocusRing::of)",
+        );
+    }
+    info.color(claim(
+        "focus ring",
+        "focus_ring_color",
+        stated(d.focus_ring_color),
+        "native-theme-gpui/widgets/mod.rs:349",
+    ))
+    .config(
+        "focus ring",
+        format!(
+            "on keyboard focus only, the tabs taking the focus from the keyboard alone: an inset shadow defaults.focus_ring_width, {}px, wide inside the tab (native-theme-gpui/widgets/tab_bar.rs, TabBar). defaults.focus_ring_offset, {}px, is not reached: the tabs' row scrolls and clips what lies outside it, so a ring outside the tab would lose a band",
+            px_text(width),
+            px_text(offset)
+        ),
+    )
 }
 
 /// Each side of a segment's padding as `demo::segmented` draws it: a side
@@ -1398,8 +1436,8 @@ pub fn breadcrumb(t: &Theme, pages: &[Page], current: Page) -> WidgetInfo {
             t.muted_foreground,
             "gpui-component/breadcrumb.rs:150",
         ))
-        .not_themeable("own icons", super::own_icons("the ChevronRight between its items (breadcrumb.rs, Breadcrumb)"))
-        .not_themeable("separator icon", "a ChevronRight built inline with no setter to replace it (breadcrumb.rs, Breadcrumb) -- unlike an Alert's icon, which Alert::icon takes")
+        .not_themeable("own icons", super::own_icons("the ChevronRight between its items, ChevronLeft in a right-to-left layout (breadcrumb.rs, BreadcrumbSeparator)"))
+        .not_themeable("separator icon", "a ChevronRight built inline with no setter to replace it, a ChevronLeft in a right-to-left layout (breadcrumb.rs, BreadcrumbSeparator) -- unlike an Alert's icon, which Alert::icon takes")
         .not_themeable("spacing", "gap_1p5 (breadcrumb.rs, Breadcrumb) -- rems again -- and applied before the caller's refinement. native-theme states no breadcrumb widget. Our gap")
         .instance("items", format!("{links} and {current}: a click on one of the first {} shows that page, and {current}, the last, is this page. Breadcrumb::child takes a BreadcrumbItem that the Breadcrumb renders itself (breadcrumb.rs, Breadcrumb::child), so an item cannot be wrapped: the Breadcrumb reports for its items", pages.len()))
 }

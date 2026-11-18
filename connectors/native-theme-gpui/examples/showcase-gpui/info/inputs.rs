@@ -246,7 +246,7 @@ pub fn textarea(t: &Theme, filled: bool) -> WidgetInfo {
 pub fn rows_textarea(t: &Theme, filled: bool) -> WidgetInfo {
     let mut info = textarea(t, filled);
     info.instance.retain(|note| note.what != "height");
-    info.instance("height", "the rows its state was built to show, three, each the row height above: geometry::text_area sets no height, so the state's rows size it (gpui-base/input/base/state.rs, InputBaseState::auto_grow)")
+    info.instance("height", "the rows its state was built to show, three, each the row height above, the three rounded up to a whole device pixel: geometry::text_area sets no height, so the state's rows size it (gpui-base/input/base/state.rs, InputBaseState::auto_grow; gpui-base/input/base/element.rs, ceil_to_device_pixel)")
 }
 
 /// The three `InputGroup`s, which report as one. Their geometry lines are
@@ -777,6 +777,7 @@ pub fn slider(t: &Theme, vertical: bool, range: bool) -> WidgetInfo {
         ))
         .not_themeable("track height", "Tier U, not an absence: slider.track_height is modelled and carried. Upstream sets h_1p5() on SliderIndicator, a child of the element the refinement lands on (gpui-component/slider.rs, Slider::render)")
         .not_themeable("thumb size", "Tier U, not an absence: slider.thumb_diameter is modelled and carried. The thumb is built by a closure inside the indicator, deeper still than the track (gpui-component/slider.rs, Slider::render)")
+        .not_themeable("focus ring", "a ring round the thumb in ring, the theme's focus ring colour, with its alpha set to 0.5, 3px wide, two literals the theme's defaults.focus_ring_width and focus_ring_offset do not reach (gpui-component/slider.rs, THUMB_RING_WIDTH, THUMB_RING_OPACITY), grown on a spring while the slider has the focus or the pointer is over the thumb or drags it; the keys move the end thumb, which carries it (gpui-component/slider.rs:63, focused; :228, ring_color; :233-238, end_ring)")
 }
 
 /// A slider's variant: a range state's two thumbs, a vertical one's axis.
@@ -830,11 +831,32 @@ pub fn native_checkbox(
     checked: bool,
     disabled: bool,
 ) -> WidgetInfo {
+    drawn_checkbox(r, label, checked, disabled, false)
+}
+
+/// A theme-drawn `widgets::Checkbox` reading `label` in the mixed state,
+/// `indeterminate(true)`, under `r`, with no handler: drawn as a checked one,
+/// gpui-component's dash in place of the check (native-theme-gpui
+/// widgets/checkbox.rs, `Checkbox::indeterminate`).
+#[cfg(feature = "widgets")]
+pub fn native_mixed_checkbox(r: &ResolvedTheme, label: &'static str) -> WidgetInfo {
+    drawn_checkbox(r, label, true, false, true)
+}
+
+/// [`native_checkbox`], `mixed` or not.
+#[cfg(feature = "widgets")]
+fn drawn_checkbox(
+    r: &ResolvedTheme,
+    label: &'static str,
+    checked: bool,
+    disabled: bool,
+    mixed: bool,
+) -> WidgetInfo {
     let k = &r.checkbox;
     let info = WidgetInfo::new("Checkbox");
     let Some(rest) = CheckboxLook::of(r, checked, disabled) else {
         let info = info.config("drawn by", "gpui-component's own Checkbox, in upstream's colours and sizes: a length the theme states is not finite, so widgets::Checkbox draws upstream's in its place (native-theme-gpui/widgets/checkbox.rs, CheckboxLook::of)");
-        return toggled(info.instance("label", label), CHECKBOX, checked, disabled);
+        return checkbox_state(info.instance("label", label), checked, disabled, mixed);
     };
     let look = rest.faded_over(ground(r));
     let info = native_indicator(
@@ -867,14 +889,26 @@ pub fn native_checkbox(
             "label font",
             format!("checkbox.font: {}", super::drawn_font(&k.font)),
         );
-    let info = match look.mark_stroke {
-        Some(stroke) => info.config("check mark", format!(
+    let info = match (look.mark_stroke, mixed) {
+        (Some(stroke), false) => info.config("check mark", format!(
             "the connector strokes upstream's check polyline at checkbox.check_mark_stroke_width, {}, in a {} square, the box inside {} (native-theme-gpui/widgets/checkbox.rs, stroked_check)",
             length_text(stroke),
             length_text(look.mark_size),
             if look.mark_padded { "checkbox.border.padding, and inside its border on a side the theme leaves unstated" } else { "its border" }
         )),
-        None => info.not_themeable("check mark", super::own_icons("Check, the mark gpui-component's own checkbox draws (checkbox.rs, checkbox_check_icon), which widgets::Checkbox draws where the theme states no checkbox.check_mark_stroke_width, filling the box inside its border")),
+        (Some(stroke), true) => info.config("mixed mark", format!(
+            "the connector strokes upstream's dash, the line of its Minus icon, at checkbox.check_mark_stroke_width, {}, in a {} square, the box inside {}, in the checked mark's colour (native-theme-gpui/widgets/checkbox.rs, MINUS_POINTS; stroked_check)",
+            length_text(stroke),
+            length_text(look.mark_size),
+            if look.mark_padded { "checkbox.border.padding, and inside its border on a side the theme leaves unstated" } else { "its border" }
+        )),
+        (None, false) => info.not_themeable("check mark", super::own_icons("Check, the mark gpui-component's own checkbox draws (checkbox.rs, checkbox_check_icon), which widgets::Checkbox draws where the theme states no checkbox.check_mark_stroke_width, filling the box inside its border")),
+        (None, true) => info.not_themeable("mixed mark", super::own_icons("Minus, the dash gpui-component's own checkbox draws in the mixed state (checkbox.rs, checkbox_check_icon), which widgets::Checkbox draws through the application's icon resolver where the theme states no checkbox.check_mark_stroke_width, filling the box inside its border, in the checked mark's colour")),
+    };
+    let info = if mixed {
+        info.not_themeable("mixed look", "the checked state's fill, border and mark colour: the model states no look of its own for the mixed state, so widgets::Checkbox draws it as checked, with the dash in place of the check (native-theme-gpui/widgets/checkbox.rs, Checkbox::indeterminate)")
+    } else {
+        info
     };
     let info = if disabled {
         info.config("disabled", if rest.opacity < 1. {
@@ -892,7 +926,57 @@ pub fn native_checkbox(
     } else {
         theme_focus_ring(info, r, "row")
     };
-    toggled(info.instance("label", label), CHECKBOX, checked, disabled)
+    checkbox_state(info.instance("label", label), checked, disabled, mixed)
+}
+
+/// `info` named by a checkbox's state, as [`toggled`] names it, or as the
+/// mixed state, which the showcase gives no handler.
+fn checkbox_state(info: WidgetInfo, checked: bool, disabled: bool, mixed: bool) -> WidgetInfo {
+    if mixed {
+        info.variant("mixed").instance(
+            "click",
+            "none: the showcase gives it no handler, so it stays mixed",
+        )
+    } else {
+        toggled(info, CHECKBOX, checked, disabled)
+    }
+}
+
+/// gpui-component's own `Checkbox` reading `label` in the mixed state,
+/// `indeterminate(true)`, with no handler. Its geometry line is recorded
+/// where `demo::mixed_checkbox` applies the builder.
+pub fn mixed_checkbox(t: &Theme, label: &'static str) -> WidgetInfo {
+    let info = WidgetInfo::new("Checkbox")
+        .color(claim(
+            "mixed bg",
+            "primary",
+            t.primary,
+            "gpui-component/checkbox.rs:357",
+        ))
+        .color(claim(
+            "mixed border",
+            "primary",
+            t.primary,
+            "gpui-component/checkbox.rs:285",
+        ))
+        .color(claim(
+            "dash",
+            "primary_foreground",
+            t.primary_foreground,
+            "gpui-component/checkbox.rs:233",
+        ))
+        .color(claim(
+            "label",
+            "foreground",
+            t.foreground,
+            "gpui-component/checkbox.rs:390",
+        ))
+        .not_themeable("mixed look", "the checked state's: its border in primary and its fill in tokens.primary, which the connector fills from the same accent (gpui-component/checkbox.rs:354-358, indeterminate)")
+        .not_themeable("mark", "IconName::Minus, a dash, in place of the check, asked of the application's icon resolver first, in primary_foreground (gpui-component/checkbox.rs:365-372, CheckboxState::Indeterminate; :249, resolve_icon_path; :230-234, primary_foreground)")
+        .not_themeable("own icons", super::own_icons("the dash, Minus, drawn while it is mixed (checkbox.rs, checkbox_check_icon)"))
+        .config("indicator radius", format!("radius, capped at 4px: {}px", t.radius.as_f32().min(4.0)))
+        .instance("label", label);
+    checkbox_state(info, true, false, true)
 }
 
 /// The focus ring a theme-drawn control draws round its `part` while focused
@@ -1570,6 +1654,28 @@ pub fn select(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
         .not_themeable("carried colour", "the one difference from a Combobox, such as the theme settings' preset switch: Select's selected-title child sets its own colour, so a carried colour yields to the disabled colour instead of beating it, and the connector carries it (native-theme-gpui geometry.rs, combobox)")
         .not_themeable("caret", "its colour is themed -- upstream paints it with muted_foreground (select.rs, Caret) -- and its size is not: Caret maps Size::Size into the same arm as Medium (gpui-component/select.rs, Caret::render), so combo_box.arrow_icon_size has no route at all, not even through the Size::Size escape hatch a DataTable row accepts. Tier U for the size")
         .not_themeable("own icons", super::own_icons("the caret's ChevronDown (select.rs, Caret), and in its open list Check beside the chosen row (searchable_list/item.rs, SearchableListItemElement) and Inbox while the list is empty (gpui-component/select.rs, SelectState::new)"))
+}
+
+/// `info` of a `Select` built searchable, with `highlight_matches(true)`:
+/// the colour its rows draw a match in, where it comes from, and, where
+/// `native` (a native theme is installed), the limit of that colour.
+pub fn match_highlight(info: WidgetInfo, t: &Theme, native: bool) -> WidgetInfo {
+    let info = info
+        .variant("searchable, highlight_matches(true)")
+        .color(claim(
+            "match",
+            "list_highlight_foreground",
+            t.list_highlight_foreground,
+            "gpui-component/label.rs:266",
+        ))
+        .instance("highlight", "typed into its search field, the query filters the rows, and each row's text that matches it, case-insensitively, is drawn in list_highlight_foreground; the rest of the row keeps the row's own colour (gpui-component/label.rs, highlight_matches; searchable_list/delegate.rs, render_highlighted)")
+        .not_themeable("search field", "at the top of its open list, with a rule in border under it: gpui-component's own Input without its frame, led by a Search icon in muted_foreground, gpui-component's own whichever icon theme is chosen, and cleanable (gpui-component/list/list.rs:720-740, query_input)");
+    if native {
+        info.config("match colour", "list_highlight_foreground, which the connector fills with the resting text colour, defaults.text_color: the model states no colour for a match (native-theme-gpui/colors.rs, list_highlight_foreground). So the match reads as the rest of the row at rest only: a hovered row and the selected row alike are lettered accent_foreground, the connector's menu.hover_text_color (gpui-component/searchable_list/item.rs, SearchableListItemElement), and on both the match stands out in the resting colour")
+            .not_themeable("match limit", "no one colour reads in all three row states on every preset: this one never falls below a contrast of 1.5 at rest or hovered, and does on the selected row in 7 of the 34 bundled preset and mode combinations, against 20 for the info colour, 10 of them invisible. Upstream's highlight replaces the row's text colour with the one colour; SearchableListItem::render_highlighted is the way to draw a match that keeps the row's text colour")
+    } else {
+        info.not_themeable("match colour", "list_highlight_foreground, gpui-component's own: no native theme is installed, so its built-in theme's, blue-600 in light mode and blue-400 in dark (gpui-component/theme/default-theme.json), where a theme that states none falls back to its blue (gpui-component/theme/schema.rs, apply_config)")
+    }
 }
 
 /// A drop-down trigger's fill and edge: `native`'s `combo_box.background_color`,

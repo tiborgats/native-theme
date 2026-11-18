@@ -13,7 +13,7 @@ use crate::pages::page_root;
 use crate::support::with_gap;
 use crate::{
     INPUTS_CHECKBOX_AUTOSAVE, INPUTS_CHECKBOX_NOTIFICATIONS, INPUTS_FIELD,
-    INPUTS_FIELD_HEIGHT_ONLY, INPUTS_TEXTAREA, PROBE_RATING, probe,
+    INPUTS_FIELD_HEIGHT_ONLY, INPUTS_SELECT_HIGHLIGHT, INPUTS_TEXTAREA, PROBE_RATING, probe,
 };
 
 impl Showcase {
@@ -192,6 +192,30 @@ impl Showcase {
                             None::<fn(&bool, &mut Window, &mut gpui::App)>,
                         )
                         .self_start(),
+                    )
+                    .child(
+                        demo::mixed_checkbox(
+                            ui,
+                            cx,
+                            "inputs-checkbox-mixed",
+                            "Mixed, gpui-component's",
+                            false,
+                        )
+                        .self_start(),
+                    )
+                    .child(
+                        demo::mixed_checkbox(
+                            ui,
+                            cx,
+                            "inputs-checkbox-mixed-theme",
+                            if demo::theme_checkbox(cx).is_some() {
+                                "Mixed, theme-drawn"
+                            } else {
+                                "Mixed, gpui-component's"
+                            },
+                            true,
+                        )
+                        .self_start(),
                     ),
             )
             .child(demo::heading(ui, cx, "inputs-heading-radio", "Radio Group"))
@@ -311,6 +335,23 @@ impl Showcase {
                     "inputs-select",
                     &self.select_demo,
                     "Pick an icon theme…",
+                    px(260.0),
+                )
+                .self_start(),
+            )
+            .child(demo::heading(
+                ui,
+                cx,
+                "inputs-heading-select-highlight",
+                "Select, searchable, highlight_matches(true): type to see the match",
+            ))
+            .child(
+                demo::highlighted_select(
+                    ui,
+                    cx,
+                    INPUTS_SELECT_HIGHLIGHT,
+                    &self.highlight_select,
+                    "Search the icon themes…",
                     px(260.0),
                 )
                 .self_start(),

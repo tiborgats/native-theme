@@ -448,12 +448,19 @@ pub fn list_item(n: Native<'_>) -> StyleRefinement {
 
 /// Application-built `Tooltip` (`src/tooltip.rs:125-130` → `:131`).
 ///
-/// No width: `tooltip.max_width` is the bubble's outer width, and a bubble that
-/// states it clamps itself without clamping its text, which then runs out of
-/// it. [`tooltip_content`] carries the width to the element the application
-/// passes to `Tooltip::element`, where it makes the text wrap; a tooltip built
-/// from `Tooltip::new(text)` has no element to put it on and stays as wide as
-/// its text.
+/// No width: `tooltip.max_width` is the bubble's outer width, which the
+/// application gives the bubble or the text. For a tooltip without a key
+/// binding either is the same bubble: since gpui-component 0.10.0 the box the
+/// text sits in has no minimum width and clips (gpui-component 0.10.0
+/// `src/tooltip.rs:134-144`), so `Tooltip::new(text)` given
+/// `max_w(tooltip.max_width)` wraps its text inside the bubble, and the
+/// conversion [`tooltip_content`] makes is no longer forced (`tests/seams.rs`).
+/// With a key binding beside the text the two differ: [`tooltip_content`]
+/// holds the text to the inner width and the bubble grows past
+/// `tooltip.max_width` by the key and the gap before it, while a `max_w` on
+/// the bubble keeps it within `tooltip.max_width` and wraps the text beside
+/// the key. A tooltip with a key binding therefore keeps to the platform's
+/// width only as `Tooltip::new(text)` given `max_w(tooltip.max_width)`.
 ///
 /// The colours are carried because upstream paints a tooltip as a popover:
 /// its text `popover_foreground` (`:120`) and its fill `tokens.popover`
@@ -509,16 +516,21 @@ const TOOLTIP_SHADOW: [(f32, f32, f32); 2] = [(4., 6., -1.), (2., 4., -2.)];
 /// horizontal paddings and its edge, `tooltip.border.line_width` on each
 /// side ([`tooltip`]), which is the inner box the text wraps in.
 ///
-/// The width has to land here and not on the bubble. The tooltip's content
-/// sits in a bare `div()` inside upstream's `h_flex()`, so it is a flex item
-/// with an automatic minimum size, and gpui measures text under
-/// `AvailableSpace::MinContent` without wrapping it — a wrap width is taken
-/// only from a *definite* available width (gpui-pre
-/// `src/elements/text.rs:656-663`). The item's minimum is therefore the whole
-/// unwrapped line, which a max width on the bubble cannot shrink: the bubble
-/// stops at the platform's width and the text carries on past it. Given to the
-/// content instead, the same width is what the text wraps at, and the bubble
-/// grows to exactly `tooltip.max_width` around it.
+/// Given to the content, the width is what the text wraps at, and the bubble
+/// grows to exactly `tooltip.max_width` around it. For a tooltip without a
+/// key binding it is no longer forced: gpui-component 0.10.0 gives the box
+/// the content sits in a zero minimum width and clips it (gpui-component
+/// 0.10.0 `src/tooltip.rs:134-144`), so the same width on the bubble wraps the
+/// text too, into the same bubble (`tests/seams.rs`). Up to 0.9.1 that box was
+/// a bare `div()`, a flex item with an automatic minimum size, and gpui
+/// measures text under `AvailableSpace::MinContent` without wrapping it -- a
+/// wrap width is taken only from a *definite* available width (gpui-pre
+/// `src/elements/text.rs:656-663`) -- so the bubble stopped at the platform's
+/// width and the text carried on past it. With a key binding the width here
+/// counts the text alone: the key and the gap before it are laid beside it,
+/// and the bubble grows past `tooltip.max_width` by them. [`tooltip`] on
+/// `Tooltip::new(text)` given `max_w(tooltip.max_width)` keeps to the width,
+/// the text wrapping beside the key (`tests/seams.rs`).
 ///
 /// A side the platform does not state is upstream's own `px_2`
 /// (`src/tooltip.rs:128`), which is 0.5 rem (gpui-pre-macros

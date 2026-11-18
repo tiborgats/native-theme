@@ -446,6 +446,13 @@ pub(crate) const BUTTONS_TEXT: &str = "buttons-text";
 pub(crate) const BUTTONS_DISABLED_SECONDARY: &str = "buttons-disabled-secondary";
 /// The id and debug selector of the Buttons page's first section heading.
 pub(crate) const BUTTONS_HEADING_VARIANTS: &str = "buttons-heading-variants";
+/// The id and debug selector of the Inputs page's searchable `Select` that
+/// highlights its matches, which `the_select_draws_its_match_in_the_highlight_colour`
+/// types into.
+pub(crate) const INPUTS_SELECT_HIGHLIGHT: &str = "inputs-select-highlight";
+/// The id and debug selector of the Buttons page's loading Button without an
+/// icon, whose spinner sits where an icon would.
+pub(crate) const BUTTONS_LOADING_NO_ICON: &str = "buttons-loading-no-icon";
 
 /// The ids and debug selectors of the Inputs page's first two Checkboxes,
 /// one checked and one not when the showcase starts, which
@@ -1093,6 +1100,12 @@ fn main() {
         .with_assets(gpui_kit::assets::Assets)
         .run(move |cx: &mut App| {
             gpui_kit::init(cx);
+            // Left to right whatever the system's language: the showcase's own
+            // layout -- its pages, side panel, toolbar and status bar -- is
+            // written for that direction, while `gpui_kit::init` takes the
+            // direction from the system's preferred language (gpui-base 0.10.0
+            // `src/layout_direction.rs`, `init`).
+            gpui_base::LayoutDirection::Ltr.set_global(cx);
             app::init(cx);
 
             // Centred on whole pixels: `Bounds::centered` centres on the display's visible

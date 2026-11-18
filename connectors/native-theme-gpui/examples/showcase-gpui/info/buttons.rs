@@ -591,10 +591,10 @@ pub fn button(
             .not_themeable("opacity", "button.disabled_opacity is modelled and inherits defaults.disabled_opacity; upstream multiplies its own literals instead, so the platform's figure has no receiver -- Tier U, not an absence")
             .not_themeable("cursor", "the default arrow, not not-allowed: Button sets cursor_default, and only a link or text variant asks for a pointer (button/button.rs, Button::render)"),
         (ButtonState::Loading, _) if icon => info
-            .not_themeable("spinner", "stands in for the button's icon, so only a button with one shows it. This one's icon is the chosen icon theme's loading icon, which the Button is also given as its loading icon, so the Spinner turns it in place of upstream's own Loader (button/button.rs, Button::loading_icon; button/button_icon.rs, ButtonIcon). It inherits the button's text colour and turns every 0.8s, a literal (gpui-component/spinner.rs, Spinner::new)")
+            .not_themeable("spinner", "in place of the button's icon (button/button_icon.rs, ButtonIcon). This one's icon is the chosen icon theme's loading icon, which the Button is also given as its loading icon, so the Spinner turns it in place of its own default, upstream's Loader (button/button.rs, Button::loading_icon). It inherits the button's text colour and turns every 0.8s, a literal (gpui-component/spinner.rs, Spinner::new)")
             .not_themeable("interaction", "inert, as a disabled button is, but not styled as one: it keeps its variant's colours and the whole button fades to 0.8 (button/button.rs, Button::interactive)"),
         (ButtonState::Loading, _) => info
-            .not_themeable("spinner", "none: a Button shows its spinner in place of its icon, so only a button with one shows it (button/button_icon.rs, ButtonIcon), and the chosen icon theme has no loading icon to give this one; upstream's own Loader would be another icon theme's")
+            .not_themeable("spinner", "where an icon would sit: a loading Button without an icon shows a Spinner there, turning the Button's loading icon, or the Spinner's own default, upstream's Loader, where it is given none (button/button.rs:777-786, loading_icon; gpui-component/spinner.rs, Spinner::new). It inherits the button's text colour and turns every 0.8s, a literal (gpui-component/spinner.rs, Spinner::new)")
             .not_themeable("interaction", "inert, as a disabled button is, but not styled as one: it keeps its variant's colours and the whole button fades to 0.8 (button/button.rs, Button::interactive)"),
     };
     let info = if icon && state == ButtonState::Idle {
@@ -873,10 +873,18 @@ pub fn toggle_group(t: &Theme, styled: bool) -> WidgetInfo {
         .instance("toggles", "Left, Center and Right, none checked. ToggleGroup::child takes a Toggle, not an element a target could wrap, so they report through the group (button/toggle.rs, ToggleGroup::child)")
 }
 
-/// A `Clipboard` copying `value`.
-pub fn clipboard(t: &Theme, value: &'static str) -> WidgetInfo {
-    WidgetInfo::new("Clipboard")
-        .colors(ghost_colours(t, GhostContent::Icon))
+/// A `Clipboard` copying `value`, reading `label` beside its icon where one
+/// is given.
+pub fn clipboard(t: &Theme, value: &'static str, label: Option<&'static str>) -> WidgetInfo {
+    let info = WidgetInfo::new("Clipboard");
+    let info = match label {
+        Some(label) => info
+            .variant("labelled")
+            .colors(ghost_colours(t, GhostContent::TextAndIcon))
+            .instance("label", format!("{label}: text in the ghost Button's colours, as its icon, the Clipboard handing the label to the ghost Button it builds (gpui-component/clipboard.rs:52, label; Clipboard::render)")),
+        None => info.colors(ghost_colours(t, GhostContent::Icon)),
+    };
+    info
         .config("border-radius", format!("radius: {}px", t.radius.as_f32()))
         .not_themeable("surface", "a Clipboard is a ghost Button and reads no theme field of its own (clipboard.rs, Clipboard::render): transparent until hovered, when it takes accent (at half alpha in dark mode) -- the menu highlight, not the button family. Its icon takes the Ghost variant's secondary_foreground")
         .not_themeable("copy icon", "Copy and Check, built inline with no setter to replace them (clipboard.rs, Clipboard)")
