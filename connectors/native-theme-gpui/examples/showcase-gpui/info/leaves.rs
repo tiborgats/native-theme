@@ -34,6 +34,32 @@ pub const HOW: &[(&str, &str, &str)] = &[
         "button.active_text_color",
         "gpui: geometry::button_checked's text colour where checked_text_color is unstated (demo::toggle_button)",
     ),
+    (
+        "basic.buttons.toggle_on",
+        "button.hover_border_color",
+        "not reachable: a selected Button takes no hover or press style, so the toggle that is on draws no hover border (gpui-component/button/button.rs, RenderOnce for Button)",
+    ),
+    // --- button: the Basic page's buttons, variants::bordered_button -----------
+    (
+        "basic.buttons.default",
+        "button.hover_border_color",
+        "gpui: variants::bordered_button's colour, the border hovered and pressed, where the theme states one; at rest, selected and disabled the border is geometry::button's button.border.color, which upstream replays over those states (gpui-component/button/button.rs, RenderOnce for Button); else the Button is upstream's Default (demo::ButtonKind)",
+    ),
+    (
+        "basic.buttons.tooltip",
+        "button.hover_border_color",
+        "gpui: variants::bordered_button's colour, the border hovered and pressed, where the theme states one; at rest, selected and disabled the border is geometry::button's button.border.color, which upstream replays over those states (gpui-component/button/button.rs, RenderOnce for Button); else the Button is upstream's Default (demo::ButtonKind)",
+    ),
+    (
+        "basic.buttons.toggle_off",
+        "button.hover_border_color",
+        "gpui: variants::bordered_button's colour, the border hovered and pressed, where the theme states one; at rest, selected and disabled the border is geometry::button's button.border.color, which upstream replays over those states (gpui-component/button/button.rs, RenderOnce for Button); else the Button is upstream's Default (demo::ButtonKind)",
+    ),
+    (
+        "basic.buttons.primary",
+        "button.hover_border_color",
+        "not reachable: a Primary Button's hover and press border is the primary token (gpui-component 0.10.0 button/button.rs:1104, primary); at rest it is geometry::button's button.border.color (native-theme-gpui/geometry.rs:230, border_color)",
+    ),
     // --- button: the Copy box of Widget Info -----------------------------------
     (
         "chrome.info.copy",
@@ -347,6 +373,11 @@ pub const HOW: &[(&str, &str, &str)] = &[
         "",
         "button.disabled_text_color",
         "gpui: geometry::button_disabled letters a disabled Button in it",
+    ),
+    (
+        "",
+        "button.focus_border_color",
+        "not reachable: with gpui-component's band off, a focused Button's border is ThemeColor ring where it has a border width, and where it has none a 1 px line: inside it in its text colour at 60 %, but just outside it in ring on a link or a text Button and on its edge in ring on an upstream ghost Button; with the band on, its border is ring and the band is drawn round it (styled.rs, focus_style)",
     ),
     (
         "",
@@ -668,6 +699,11 @@ pub const HOW: &[(&str, &str, &str)] = &[
         "",
         "defaults.focus_ring_offset_px",
         "gpui: the theme-drawn Checkbox, Radio, Slider and Switch's ring, offset + width outside the control's edge, the control's border tinted where the ring lies inset at it (widgets/mod.rs, FocusRing::draw); upstream's own widgets' ring lies against the border, no offset (styled.rs, focus_ring)",
+    ),
+    (
+        "",
+        "defaults.focus_ring_keyboard_only",
+        "gpui: when gpui-component's band is drawn (Theme::focus_ring off where true, native-theme-gpui/colors.rs, focus_band_on; on there for a focus that followed a key press in a window under Root, native-theme-gpui/lib.rs, FocusBand), and whether the theme-drawn Checkbox, Radio, Slider and Switch (widgets/mod.rs, ring_shows) and the TabBar's focused tab (widgets/mod.rs, focus_followed_key) ring a focus that did not follow a key",
     ),
     (
         "",

@@ -16275,6 +16275,40 @@ fn a_refined_buttons_info_claims_an_edge_only_where_one_is_drawn() {
     );
 }
 
+/// A Bordered Button is built as the stock `Default` one where the theme
+/// states no `button.hover_border_color` (adwaita, both modes), so its info
+/// is `Default`'s, and as itself where the theme states one (kde-breeze).
+#[gpui::test]
+fn a_bordered_button_is_the_default_one_where_no_hover_border_is_stated(cx: &mut TestAppContext) {
+    use crate::demo::ButtonKind;
+    let prefs = native_theme_gpui::AccessibilityPreferences::default();
+    cx.update(|cx| {
+        gpui_kit::init(cx);
+        for (preset, built) in [
+            ("adwaita", ButtonKind::Default),
+            ("kde-breeze", ButtonKind::Bordered),
+        ] {
+            for is_dark in [false, true] {
+                let loaded = native_theme_gpui::from_preset(preset, is_dark, &prefs);
+                assert!(
+                    loaded.is_ok(),
+                    "{preset}/{is_dark}: {:?}",
+                    loaded.as_ref().err()
+                );
+                let Ok((theme, r)) = loaded else { return };
+                native_theme_gpui::apply(theme, &r, &prefs, cx);
+                let got = ButtonKind::Bordered.built(cx);
+                assert!(
+                    got == built,
+                    "{preset}/{is_dark}: a Bordered Button is built as {}, not {}",
+                    got.name(),
+                    built.name()
+                );
+            }
+        }
+    });
+}
+
 /// A disabled refined Button's info prints the fade `geometry::button_disabled`
 /// lays over the stated pair, `button.disabled_opacity`, where it said the
 /// pair is painted "with no further fade" (M9-060) -- over every bundled

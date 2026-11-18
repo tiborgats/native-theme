@@ -734,7 +734,7 @@ sample = { text = "glyph" }
 id = "basic.buttons.default"
 name = "Button"
 parent = "basic.buttons.heading"
-leaves = ["button.background_color", "button.font", "button.font.color", "button.min_width_px", "button.min_height_px", "button.hover_background", "button.hover_text_color", "button.active_background", "button.active_text_color", "button.border.color", "button.border.corner_radius_px", "button.border.line_width_px", "button.border.shadow_enabled", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.line_height"]
+leaves = ["button.background_color", "button.font", "button.font.color", "button.min_width_px", "button.min_height_px", "button.hover_background", "button.hover_text_color", "button.active_background", "button.active_text_color", "button.hover_border_color", "button.focus_border_color", "button.border.color", "button.border.corner_radius_px", "button.border.line_width_px", "button.border.shadow_enabled", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.line_height"]
 states = ["Normal"]
 sample = { fill = [0.5, 0.0, 0.0, 2.5], border = [0.5, 0.0, 0.0, 0.5] }
 
@@ -751,7 +751,7 @@ sample = { text = "glyph" }
 id = "basic.buttons.primary"
 name = "Button"
 parent = "basic.buttons.default"
-leaves = ["button.font", "button.min_width_px", "button.min_height_px", "button.primary_background", "button.primary_text_color", "button.border.color", "button.border.corner_radius_px", "button.border.line_width_px", "button.border.shadow_enabled", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.line_height"]
+leaves = ["button.font", "button.min_width_px", "button.min_height_px", "button.primary_background", "button.primary_text_color", "button.hover_border_color", "button.focus_border_color", "button.border.color", "button.border.corner_radius_px", "button.border.line_width_px", "button.border.shadow_enabled", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.line_height"]
 states = ["Primary"]
 sample = { fill = [0.5, 0.0, 0.0, 2.5], border = [0.5, 0.0, 0.0, 0.5] }
 
@@ -785,7 +785,7 @@ sample = { text = "glyph" }
 id = "basic.buttons.tooltip"
 name = "Button"
 parent = "basic.buttons.disabled"
-leaves = ["button.background_color", "button.font", "button.font.color", "button.min_width_px", "button.min_height_px", "button.hover_background", "button.hover_text_color", "button.active_background", "button.active_text_color", "button.border.color", "button.border.corner_radius_px", "button.border.line_width_px", "button.border.shadow_enabled", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.line_height"]
+leaves = ["button.background_color", "button.font", "button.font.color", "button.min_width_px", "button.min_height_px", "button.hover_background", "button.hover_text_color", "button.active_background", "button.active_text_color", "button.hover_border_color", "button.focus_border_color", "button.border.color", "button.border.corner_radius_px", "button.border.line_width_px", "button.border.shadow_enabled", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.line_height"]
 states = ["Normal"]
 sample = { fill = [0.5, 0.0, 0.0, 2.5], border = [0.5, 0.0, 0.0, 0.5] }
 
@@ -823,7 +823,7 @@ sample = { text = "glyph" }
 id = "basic.buttons.toggle_off"
 name = "Toggle button"
 parent = "basic.buttons.disabled"
-leaves = ["button.background_color", "button.font", "button.font.color", "button.min_width_px", "button.min_height_px", "button.hover_background", "button.hover_text_color", "button.active_background", "button.active_text_color", "button.border.color", "button.border.corner_radius_px", "button.border.line_width_px", "button.border.shadow_enabled", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.line_height"]
+leaves = ["button.background_color", "button.font", "button.font.color", "button.min_width_px", "button.min_height_px", "button.hover_background", "button.hover_text_color", "button.active_background", "button.active_text_color", "button.hover_border_color", "button.focus_border_color", "button.border.color", "button.border.corner_radius_px", "button.border.line_width_px", "button.border.shadow_enabled", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.line_height"]
 states = ["Off"]
 sample = { fill = [0.5, 0.0, 0.0, 2.5], border = [0.5, 0.0, 0.0, 0.5] }
 
@@ -842,7 +842,7 @@ sample = { text = "glyph" }
 id = "basic.buttons.toggle_on"
 name = "Toggle button"
 parent = "basic.buttons.toggle_off"
-leaves = ["button.font", "button.min_width_px", "button.min_height_px", "button.checked_background", "button.checked_text_color", "button.active_background", "button.active_text_color", "button.border.color", "button.border.corner_radius_px", "button.border.line_width_px", "button.border.shadow_enabled", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.line_height"]
+leaves = ["button.font", "button.min_width_px", "button.min_height_px", "button.checked_background", "button.checked_text_color", "button.active_background", "button.active_text_color", "button.hover_border_color", "button.focus_border_color", "button.border.color", "button.border.corner_radius_px", "button.border.line_width_px", "button.border.shadow_enabled", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.line_height"]
 states = ["On"]
 sample = { fill = [0.5, 0.0, 0.0, 2.5], border = [0.5, 0.0, 0.0, 0.5] }
 
@@ -1204,7 +1204,7 @@ sample = { text = "glyph" }
 id = "basic.text_inputs.focused"
 name = "Text input"
 parent = "basic.text_inputs.disabled"
-leaves = ["input.background_color", "input.caret_color", "input.font", "input.font.color", "input.min_height_px", "input.focus_border_color", "input.border.corner_radius_px", "input.border.line_width_px", "input.border.shadow_enabled", "input.border.padding_top_px", "input.border.padding_right_px", "input.border.padding_bottom_px", "input.border.padding_left_px", "defaults.line_height", "defaults.focus_ring_color", "defaults.focus_ring_width_px", "defaults.focus_ring_offset_px"]
+leaves = ["input.background_color", "input.caret_color", "input.font", "input.font.color", "input.min_height_px", "input.focus_border_color", "input.border.corner_radius_px", "input.border.line_width_px", "input.border.shadow_enabled", "input.border.padding_top_px", "input.border.padding_right_px", "input.border.padding_bottom_px", "input.border.padding_left_px", "defaults.line_height", "defaults.focus_ring_color", "defaults.focus_ring_width_px", "defaults.focus_ring_offset_px", "defaults.focus_ring_keyboard_only"]
 states = ["Focused"]
 sample = { fill = [0.5, 1.0, 0.0, -2.5], border = [0.5, 1.0, 0.0, -0.5] }
 

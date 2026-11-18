@@ -663,7 +663,7 @@ keys = [
 ]
 
 [[parity.group]]
-reason = "in the hover capture: gpui-component gives a hovered Default Button its variant's edge, the `input` token (button/button.rs:751-762, hovered at :1222, border_color at :1086), which the connector maps from input.border.color; gpui keeps one hover style per element (gpui-pre src/elements/div.rs:866-872, a second is debug-asserted) and refines it after a group hover (:3515, :3534), so no style the application gives reaches the hovered edge; the model states no hovered button edge, and iced and egui keep button.border.color"
+reason = "in the hover capture: gpui-component gives a hovered Default Button its variant's edge, the `input` token (button/button.rs:751-762, hovered at :1222, border_color at :1086), which the connector maps from input.border.color; gpui keeps one hover style per element (gpui-pre src/elements/div.rs:866-872, a second is debug-asserted) and refines it after a group hover (:3515, :3534), so no refinement the application gives reaches the hovered edge, only a custom variant's colour, which the Basic page's default button takes through variants::bordered_button where the theme states button.hover_border_color; where it states none, iced and egui keep button.border.color and gpui draws the input token"
 keys = [
     "hover@basic.buttons.default.border",
 ]

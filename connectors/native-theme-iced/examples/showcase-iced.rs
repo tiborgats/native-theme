@@ -8595,6 +8595,27 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
              focus_ring_width), drawn as the Focused border"
                 .into()
         }
+        ("defaults", "focus_ring_keyboard_only") if ring_as_the_border(resolved) => {
+            "styles::text_input: the ring is the Focused border here, which a style function \
+             draws on any focus, whatever the theme says of keyboard focus"
+                .into()
+        }
+        ("defaults", "focus_ring_keyboard_only")
+            if ring_round_the_field(resolved)
+                && resolved.defaults.focus_ring_keyboard_only == Some(true) =>
+        {
+            "native_theme_iced::focus_ring: the ring only for a focus that followed a key \
+             press, decided when the field gains the focus"
+                .into()
+        }
+        ("defaults", "focus_ring_keyboard_only") if ring_round_the_field(resolved) => {
+            "native_theme_iced::focus_ring: the ring on any focus (the theme does not say \
+             keyboard only)"
+                .into()
+        }
+        ("defaults", "focus_ring_keyboard_only") => {
+            "not drawn: the theme states no focus ring (focus_ring_width 0)".into()
+        }
         ("defaults", "border.color") => "swatch_frame: the swatch container's border.color".into(),
         ("defaults", "border.corner_radius_px") => "the swatch container's border.radius".into(),
         ("defaults", "border.line_width_px") => "the swatch container's border.width".into(),
@@ -28869,7 +28890,8 @@ mod tests {
         }
     }
 
-    /// The focused field's focus-ring lengths route to what draws the ring
+    /// The focused field's focus-ring lengths and
+    /// `defaults.focus_ring_keyboard_only` route to what draws the ring
     /// (M8 T16, M9-172): `styles::text_input`'s Focused border where the ring
     /// is inset at the edge (adwaita), `native_theme_iced::focus_ring` round
     /// the field where it is not (macos-tahoe, windows-11, kde-breeze). In
@@ -28892,6 +28914,7 @@ mod tests {
             for leaf in [
                 "defaults.focus_ring_width_px",
                 "defaults.focus_ring_offset_px",
+                "defaults.focus_ring_keyboard_only",
             ] {
                 assert!(
                     element.leaves.iter().any(|l| l == leaf),

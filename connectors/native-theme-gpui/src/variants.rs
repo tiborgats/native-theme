@@ -25,7 +25,7 @@
 //! `ThemeColor` has no checked-switch field the connector could fill, so
 //! [`switch_color`] reads the platform's from the model.
 //!
-//! Upstream citations in this module are verified against gpui-component 0.9.1.
+//! Upstream citations are gpui-component 0.9.1's, but where one names its version.
 
 use gpui::{App, Hsla};
 use gpui_component::ActiveTheme as _;
@@ -231,6 +231,41 @@ mod tests {
                     .hover(cx.theme().secondary_hover)
                     .active(cx.theme().secondary_active)
             );
+        });
+    }
+
+    /// Where the theme states no `button.hover_border_color` (adwaita, both
+    /// modes), `bordered_button` builds no variant, so the caller keeps the
+    /// stock `Default` button; kde-breeze, which states one, gets a variant.
+    #[gpui::test]
+    fn an_unset_hover_border_builds_no_bordered_button(cx: &mut TestAppContext) {
+        let prefs = AccessibilityPreferences::default();
+        cx.update(|cx| {
+            gpui_component::init(cx);
+            for (preset, states_one) in [("adwaita", false), ("kde-breeze", true)] {
+                for is_dark in [false, true] {
+                    let loaded = crate::from_preset(preset, is_dark, &prefs);
+                    assert!(
+                        loaded.is_ok(),
+                        "{preset}/{is_dark}: {:?}",
+                        loaded.as_ref().err()
+                    );
+                    let Ok((theme, resolved)) = loaded else {
+                        return;
+                    };
+                    assert_eq!(
+                        resolved.button.hover_border_color.is_some(),
+                        states_one,
+                        "{preset}/{is_dark}: the preset's button.hover_border_color"
+                    );
+                    crate::apply(theme, &resolved, &prefs, cx);
+                    assert_eq!(
+                        bordered_button(Native::unscaled(&resolved), cx).is_some(),
+                        states_one,
+                        "{preset}/{is_dark}: bordered_button"
+                    );
+                }
+            }
         });
     }
 }
