@@ -73,7 +73,7 @@
   2026-11-14 while their authors amend them (each dependency is named where it is used):
   step 1's Part A (`docs/todo_v0.7.1_kde-open-items-step1-spec.md`: `shade.rs`, the
   folder `native-theme/tests/vectors/`, the declaration `mod shade;` and its decisions 1
-  to 3), for 7.B; steps 2 and 3's Part 3F (`docs/todo_v0.7.x_kde-open-items-steps2-3-spec.md`:
+  to 3), for 7.B; steps 2 and 3's Part 3F (`docs/todo_v0.7.2_kde-focus-ring-and-button-outlines-spec.md`:
   `variants::bordered_button`, its trial `bordered_button_matches_the_default_button_but_its_hover_border`,
   the pass criterion 3F.3, the two outcomes 3F.4 and 3F.5, the private colour function
   `variants::hover_border` the contract's `sinks` reads), for 6.D and 6.G; their 2B.1 and
@@ -446,7 +446,7 @@ a button the application builds …", `0004_kde-open-items-rationale.md:687-691`
    case 3). Request 5 does not exist then: 3F.4 adds no request. 3F.5's text cannot be
    added as written: it says that "a theme cannot give a button a hover outline of its
    own" and that a custom variant "cannot stand in", which a passed trial disproves
-   (3F.5, *Upstream request 5*, `docs/todo_v0.7.x_kde-open-items-steps2-3-spec.md`).
+   (3F.5, *Upstream request 5*, `docs/todo_v0.7.2_kde-focus-ring-and-button-outlines-spec.md`).
    Settled by the coordinating session: case 3 stops the work before its push. A
    passed trial with a failed 6.D.4 means the custom variant carries a hover outline
    but not a state this step needs, which no part of this specification foresees; the

@@ -436,7 +436,7 @@ reason the connector copies a shared buffer (`FontBytes::Shared`, "bytes.to_vec(
   2026-11-16, so the breaking change in a patch release follows from it, as it did for v0.7.1
   (§4).
 - Later lanes: the KDE lane plans' P2 accepted set lists, of the egui family, "egui and egui-winit
-  0.36.2 or 0.37.x" (`docs/todo_v0.7.x_kde-open-items-steps2-3-plan.md`, P2's row). Whether that
+  0.36.2 or 0.37.x" (`docs/todo_v0.7.2_kde-focus-ring-and-button-outlines-plan.md`, P2's row). Whether that
   set also has to name the other lock moves of §1.2 is checked when that plan gets its last check,
   before its release is built.
 

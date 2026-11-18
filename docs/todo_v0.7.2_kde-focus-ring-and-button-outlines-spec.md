@@ -1,70 +1,61 @@
-# 0.7.x: issue #4's open KDE items, steps 2 and 3 (the focus ring; a button's border on hover and focus) — specification
+# 0.7.2: issue #4's open KDE items, steps 2 and 3 (the focus ring; a button's border on hover and focus) — specification
 
 - Rationale: [`issues/0004_kde-open-items-rationale.md`](issues/0004_kde-open-items-rationale.md)
   ("the rationale"), decisions D4 (step 2) and D5 (step 3), with what D0 and D10 say
-  every step carries. Not approved when this was written; nothing here is done before
-  the maintainer approves the rationale, this specification and its plan. It decides
-  nothing the rationale did not decide, except the small points under *Decisions taken
-  while specifying*; what needs a decision the rationale does not contain is under
-  *Open points*.
+  every step carries. Status: approved by the maintainer on 2026-11-18, with the
+  rationale's D4 and D5 and the plan. It decides nothing the
+  rationale did not decide, except the small points under *Decisions taken while
+  specifying*; what needs a decision the rationale does not contain is under *Open
+  points*.
 - It continues [`issues/0004_kde-hand-overrides-rationale.md`](issues/0004_kde-hand-overrides-rationale.md)
   ("the first rationale", §5.1, §5.4) and the backlog at `docs/todo.md:1767-1933` and
   `:2742-2764`. Form: [`archive/todo_v0.7.1_kde-hand-overrides-spec.md`](archive/todo_v0.7.1_kde-hand-overrides-spec.md).
-  Step 1 has its own specification, [`todo_v0.7.1_kde-open-items-step1-spec.md`](todo_v0.7.1_kde-open-items-step1-spec.md).
-- Written: 2026-11-14, against `v0.7.1-rc2` at `0fa28027`. Every `file:line` is that
-  commit's unless it names another. Step 1 lands before these steps and edits some of
-  the same files (`kde/colors.rs`, `kde-breeze.toml`, the gpui connector's `colors.rs`);
-  it adds no line to `docs/platform-facts.md` (its C.1). So every edit below is placed by
-  its quoted text, its function or its key, and a line number is where it stood at
-  `0fa28027`.
+  Step 1 has its own specification, [`archive/todo_v0.7.1_kde-open-items-step1-spec.md`](archive/todo_v0.7.1_kde-open-items-step1-spec.md).
+- Written: 2026-11-14, against `v0.7.1-rc2` at `0fa28027`. Every `file:line` of the
+  repository is that commit's unless it names another.
+- Amended 2026-11-18, on `v0.7.2-rc1` at `b434b9bc`: steps 2 and 3 folded into 0.7.2
+  (the maintainer, 2026-11-18); the upstream citations re-read at gpui-component and
+  gpui-base 0.10.0 and egui 0.37.0, and the repository's anchors at `b434b9bc`; step 3's
+  trial run on `b434b9bc` (3F.3); the open points of the two reviews decided in the plan's
+  record (`steps23/decisions.md`).
+- Amended again 2026-11-18, in the check after the branch's first push: gpui-component's
+  band follows keyboard focus through a plugin of gpui-base's `Root` that `apply`
+  registers (2E.1, decision 18; measured, the record's
+  `steps23/trial/band-switch-plugin-output.txt`), where it was switched off altogether;
+  the build order and the pushes (2K; the plan).
+- **Release and branch.** Steps 2 and 3 ship in 0.7.2, on `v0.7.2-rc1`, after its gated
+  head, which is code-complete for the egui 0.37 and GPUI Kit 0.10.0 work: one CHANGELOG
+  section, one ROADMAP section, one close-out, one asset run and one archive, 0.7.2's.
+  Each step keeps its own units and reviews. D0 is (a): the release names its break once,
+  in the CHANGELOG.
+- **The toolkits in the tree**: gpui-component and gpui-base 0.10.0, gpui-pre 0.3.12,
+  egui and egui-winit 0.37.0, iced 0.14.0 (iced_widget 0.14.2). An upstream citation
+  carries its version and lines.
 - **How an edit is applied.** By its anchor: the quoted text, the key, the function's
-  or the test's name. Line numbers are `0fa28027`'s and serve to find the place; the
-  steps before these (step 1, and the egui 0.37 release D10 proposes before them) move
-  them. A count stated here (egui's mapping totals, the leaf count) is today's value
-  with this step's delta, and the implementer reads the base from the tree. A citation
-  this specification writes into a file (a comment, a doc, a facts cell) names the
-  document, with its section, row or a quoted phrase where useful, never a line of a
-  tracked file that changes (S6, 2B.6); the existing line citations are left as they
-  are. The one exception is what the gpui showcase's tests read by line, its colour
-  claims and `HOW` texts (*Lines that must not move*): there a citation is given as
-  "the line of" a named statement, and the implementer writes that statement's line in
-  the tree it edits. Citations of
-  egui's sources (`EG/…`) are read against egui 0.36.2 and are re-read against the egui
-  version the tree then has.
+  or the test's name. Line numbers of the repository are `0fa28027`'s and serve to find
+  the place; step 1 and the 0.7.2 work before these steps moved them, and they are left
+  as they are. A count stated here (egui's mapping totals, the leaf count) is the
+  tree's value with this step's delta, and the implementer reads the base from the
+  tree. What a unit writes into a file cites as 2B.6 says.
 - Abbreviations, as in the rationale: `GC`, `GB`, `GP` are the `src/` folders of
-  gpui-component 0.9.1, gpui-base 0.9.1 and gpui-pre 0.3.12 in Cargo's registry; `IW`
+  gpui-component 0.10.0, gpui-base 0.10.0 and gpui-pre 0.3.12 in Cargo's registry; `IW`
   iced_widget 0.14.2's, `IC` iced_core 0.14.0's, `IR` iced_runtime 0.14.0's; `EG` egui
-  0.36.2's; `CG`, `CI`, `CE` the `src/` folders of the gpui, iced and egui connectors;
+  0.37.0's; `CG`, `CI`, `CE` the `src/` folders of the gpui, iced and egui connectors;
   `PF` is `docs/platform-facts.md`; `P8` the checkout of the parked branch `v0.8.0-rc1`
   at `78ee0efd`, `F` its `docs/facts/`.
-- **Version and release (D0) are the maintainer's.** This text is written for the
-  rationale's proposal, D0 (a): a 0.7.x release that names its break, and, in D10's
-  proposed order (step 1 in v0.7.1, then egui 0.37), the release is 0.7.3, on the branch
-  `v0.7.3-rc1`. **Steps 2 and 3 are one release** (the maintainer's decision of
-  2026-11-15, `docs/todo_v0.7.1_batch-speed-rationale.md`, S5): one branch, one version,
-  one CHANGELOG section, one ROADMAP section, one close-out, one asset run and one
-  archive at the end; each step keeps its own units, trial, reviews and record, the
-  release's texts state what both steps bring, and under D0 (a) the break is named once.
-  So "<the release that brings step 2>" and "<the release that brings step 3>" below
-  name the same release. Where a number appears below it is that proposal's, and a
-  placeholder until the maintainer decides D0 and the order: the batch's proposed
-  numbers (D10's order with S5's pairs) are 0.7.1 the GPUI Kit completion and step 1,
-  0.7.2 egui 0.37, 0.7.3 steps 2 and 3, 0.7.4 steps 4 and 5, 0.7.5 the widget icons,
-  0.7.6 the caret, 0.7.7 steps 6 and 7. What differs under (b) and (c) is in step 2's
-  *Order and gates* (2K), which holds for the release.
 - **The batch's working rules** are cited as "rule N (batch-speed rationale, Appendix)",
   the consolidated list at the end of `docs/todo_v0.7.1_batch-speed-rationale.md`; below,
   "rule N" is that list's.
 - **The gate cadence** is the batch's (`docs/todo_v0.7.1_batch-speed-rationale.md`, S1;
-  `--quick` as `docs/todo_v0.7.1_gate-speed-spec.md` defines it), 2K's *Units*.
+  `--quick` as `docs/archive/todo_v0.7.1_gate-speed-spec.md` defines it), 2K's *Units*.
 - Every value below was read today from the file named, or computed today, and says
   which. What could not be verified is marked **not verified**, with the reason.
 
 ## How to read it
 
-Two steps, each complete in itself, in one release (S5): step 2's units, then step 3's,
-on one branch, then one close-out. Step 3 builds on step 2's tree but on nothing step 2
-decides.
+Two steps, each complete in itself, in 0.7.2: step 2's units, then step 3's, on
+`v0.7.2-rc1`, then 0.7.2's close-out. Step 3 builds on step 2's tree but on nothing
+step 2 decides.
 
 | Part | Rationale | Files it owns |
 |---|---|---|
@@ -79,36 +70,19 @@ decides.
 | 2I — outside the code | D10 | `CHANGELOG.md`, `ROADMAP.md`, `README.md` and `native-theme/README.md` (2I.2a), the first rationale, the upstream requests, `docs/todo.md`, `docs/archive/todo_closed.md`, the rationale's status line (2I.6) |
 | 2J — the fallback | D10's last bullet | — |
 | 2K — order and gates | D0, D10 | — |
-| 3A–3I | D5 | as step 2, for `ButtonTheme`'s two fields and the gpui trial (`native-theme/src/kde/mod.rs`' lists among them, 3C); in iced also `CI/contract.rs` (the two tests, 3D.3); in egui also `CE/contract.rs` (T10's formulas, 3E.4) and `CE/style/derived.rs` (a test, 3E.3); `docs/showcase-exceptions.toml` (the hover run's exception, 3H.2b); at the close-out `docs/archive/README.md`, the move of this specification and its plan, and the links to them (3H.6) |
+| 3A–3I | D5 | as step 2, for `ButtonTheme`'s two fields and the gpui trial (`native-theme/src/kde/mod.rs`' lists among them, 3C); in iced also `CI/contract.rs` (the test, 3D.3); in egui also `CE/contract.rs` (T10's formulas, 3E.4) and `CE/style/derived.rs` (a test, 3E.3); `docs/showcase-exceptions.toml` (the hover run's exception, 3H.2b); at the close-out `docs/archive/README.md`, the move of this specification and its plan, and the links to them (3H.6) |
 
 **Lines that must not move** (the gpui showcase's `every_colour_claim_is_read_at_the_line_it_cites`,
-`CG/showcase.rs:2819`, opens each colour claim at its cited line). At `0fa28027` the
-claims cite, in `CG`: `colors.rs` 281–718, `geometry.rs` 230–772, `variants.rs` 62–64,
-`widgets/mod.rs` 344, `widgets/checkbox.rs` 123–145, `widgets/switch.rs` 94–144,
-`widgets/slider.rs` 77–80, `widgets/tab_bar.rs` 217–239, `widgets/spinner.rs` 93–466,
-`widgets/progress.rs` 77–79, `widgets/separator.rs` 30 (recomputed today from every
-`native-theme-gpui/<file>.rs:N` in `examples/showcase-gpui/info/*.rs`; an earlier
-version gave spinner 49, which is an egui citation). Every edit below in these files
-is either a line replaced by one line, or placed after the claimed lines; none needs a
-re-point. Per file:
-- `colors.rs`: the two functions after `:788` (2E.1); `:223` and the import at `:13`
-  one line for one (2E.1).
-- `widgets/mod.rs`: `FocusVisible` and `ring_shows`, with its doc, after `:400`
-  (2E.2, 2E.3); `FocusRing`'s doc above `:344` is not touched.
-- `widgets/checkbox.rs`, `widgets/switch.rs`, `widgets/slider.rs`: the lines of 2E.2,
-  all after `:251`, `:366` and `:325`, past the claims; `track`'s doc (`:444-446`)
-  lies after `:144`.
-- `variants.rs`: `bordered_button` and then `hover_border` after `switch_color`, before
-  `:95` (3F.1, 3F.4), past `:62-64`; the trial's test is not in this file (3F.2). From
-  unit 3.1 on, where the trial passes, `ButtonKind::Bordered`'s claims (3F.4) cite four
-  lines of these two functions: `bordered_button`'s `.foreground(theme.button_foreground)`,
-  `.hover(theme.button_hover)` and `.active(theme.button_active)`, each on a line of
-  its own as in `ghost_button` (`:62-64`), and the line of `hover_border` that reads
-  `n.resolved.button.hover_border_color`. They join this list, so `hover_border` comes
-  after `bordered_button`, and a later step adds to `variants.rs` only after
-  `hover_border` or re-points the four claims in the same commit.
-- `geometry.rs`, `tab_bar.rs`, `spinner.rs`, `progress.rs`, `separator.rs`: not
-  edited.
+`CG/showcase.rs:2819`, opens each colour claim at its cited line, and
+`every_prose_citation_still_exists` each `HOW` text's). The claims cite lines of the gpui
+connector's `src/` files (the cited lines are every `native-theme-gpui/<file>.rs:N` in
+`examples/showcase-gpui/info/*.rs`). An edit in a claimed file replaces a line one for
+one, goes after the last claimed line, or re-points the claim in the same commit. A
+citation these tests read that a unit writes is given as "the line of" a named
+statement, and the implementer writes that statement's line in the tree it edits. From
+unit 3.1 on, `ButtonKind::Bordered`'s claims (3F.4) cite four lines of `bordered_button`
+and `hover_border` in `variants.rs`, which then join the claimed lines, so
+`hover_border` comes after `bordered_button`.
 
 ## Decisions taken while specifying
 
@@ -140,9 +114,9 @@ None changes a result of the rationale; each is the smaller or the safer choice.
    is no modifier, gpui-pre-linux 0.3.12 `src/linux/wayland/client.rs:2183`, and a
    modifier change is `PlatformInput::ModifiersChanged`, `:2141`); egui-winit sends a
    modifier key as an `Event::Key` press of one of egui's eight left and right
-   `Shift`, `Control`, `Alt` and `Super` keys (egui 0.36.2 `src/data/key.rs:192-221`,
-   egui-winit 0.36.2 `src/lib.rs:1640-1651`, `:1019-1045`; 0.37.0 `key.rs:253-274`,
-   egui-winit `lib.rs:1128`, `:1797`), and the plugin leaves those out by name (2G.1);
+   `Shift`, `Control`, `Alt` and `Super` keys (egui 0.37.0 `src/data/key.rs:253-274`,
+   egui-winit 0.37.0 `src/lib.rs:1797-1804`, pushed at `:1155-1161` from `:1128`), and
+   the plugin leaves those out by name (2G.1);
    and iced, whose winit conversion
    makes every key a `KeyPressed`, Shift and Control included (iced_winit 0.14.0
    `src/conversion.rs:291-302`), leaves them out by name (2F.1).
@@ -188,7 +162,11 @@ None changes a result of the rationale; each is the smaller or the safer choice.
     theme's data. A variant that fails in such a state takes the rationale's failure
     branch (no receiver, the upstream request), and the trial's record names the state,
     so the maintainer sees what stood in the way. The criterion is now the rationale's
-    own (D5), so the maintainer approves it there, with the rationale.
+    own (D5), so the maintainer approves it there, with the rationale. Measured on
+    `b434b9bc`, 2026-11-18, on both backends: every compared item equal in the six
+    combinations but the designed border; the record is in the plan's record folder
+    (`steps23/trial/`). What "every compared item" is, and the one item that follows
+    from another, is 3F.3's.
 13. **3E. The other roles keep their rest stroke.** A role cell is the base style
     copied, then the role's writes (`CE/style/roles.rs:19-56`), and seven roles write
     no border (`border: None`): «scrollbar» (`:532`), «slider» (`:559`), «sidebar»
@@ -208,51 +186,36 @@ None changes a result of the rationale; each is the smaller or the safer choice.
     `toolbar.button_hover_border_color` is stated (the function then takes the theme
     as well); `["button.border.color"]`'s two «toolbar» sinks of 3E.2 gain a `when`
     ("toolbar.button_hover_border_color is None");
-    `flat_and_part_scopes_keep_their_resting_stroke` and
-    `panel_role_cells_write_their_rows` (3E.3) are narrowed to match; and step 5's T10
+    `panel_role_cells_write_their_rows` (3E.3) is narrowed to match; and step 5's T10
     formula for the toolbar's hovered stroke falls back to the cell's rest stroke, not
     to what the cell inherits from the base.
-14. **2G. egui's one-pass lag, and the rule that covers it.** egui applies a focus
-    move at three different times. Tab moves it inside the pass, as the widgets
-    register (`Focus::interested_in_focus`, `EG/memory/mod.rs:647-689`), so the
+14. **2G. egui's one-pass lag, and the rule that covers it.** egui 0.37.0 applies a
+    focus move at three different times. Tab moves it inside the pass, as the widgets
+    register (`Focus::interested_in_focus`, `EG/memory/mod.rs:659-694`), so the
     plugin's `on_end_pass` of the same pass sees it. Shift+Tab from a focused widget
-    stores its target in `id_next_frame` (`:669`), which the next pass's
-    `Focus::begin_pass` applies (`:573-575`). The arrow keys move it in
-    `Focus::end_pass` (`:623-628`), which `Memory::end_pass` calls (`:809`) from
-    `ContextImpl::end_pass` (`EG/context.rs:2673`), after the plugins' `on_end_pass`
-    (`:813`). So the plugin sees the last two at the end of the next pass, whose input
-    may hold a pointer move or a click. In egui 0.37.0, which D10 puts before this
-    step, the same holds: its `Focus::begin_pass` applies `id_next_frame`
-    (`src/memory/mod.rs:572`), and `run_pass_dyn` runs `on_end_pass` inside the pass
-    (`src/context.rs:990-994`), whose `end_pass` comes after it (`:1111-1113`). The
-    rule (2G.1): a focus change follows a key where this pass's input held no pointer
-    button press and no touch, and either a key was the last input, or this pass's
-    input held a key press, or the previous pass's did. A frame can run more than one
-    pass (`EG/context.rs:836-…`, a discarded pass runs again), and a pass after the
-    first gets no events (`RawInput::take` moves them, egui 0.36.2
-    `src/data/input/raw_input.rs:124-143`), so there "the previous pass" is the one
+    stores its target in `id_next_frame` (`:674`), which the next pass's
+    `Focus::begin_pass` applies (`:572-574`). The arrow keys move it in
+    `Focus::end_pass` (`:635-640`), which `Memory::end_pass` calls (`:814`) from
+    `ContextImpl::end_pass` (`EG/context.rs:3158`), after the plugins' `on_end_pass`,
+    which `run_pass_dyn` runs inside the pass (`:990-994`), its `end_pass` after it
+    (`:1111-1113`). So the plugin sees the last two at the end of the next pass, whose
+    input may hold a pointer move or a click. The rule (2G.1): a focus change follows a
+    key where this pass's input held no pointer button press and no touch, and either a
+    key was the last input, or this pass's input held a key press, or the previous
+    pass's did. A frame can run more than one pass (`EG/context.rs:1092-…`, a discarded
+    pass runs again), and a pass after the first gets no events (`RawInput::take` moves
+    them, `EG/data/input/raw_input.rs:124-143`), so there "the previous pass" is the one
     that had them. Tab is delayed too where it leaves the last focusable widget: the
-    focused widget hands the focus on (`give_to_next`, `EG/memory/mod.rs:666`) and the
-    next widget to register takes it (`:660-662`), which, past the last one, is the
+    focused widget hands the focus on (`give_to_next`, `EG/memory/mod.rs:671`) and the
+    next widget to register takes it (`:665-667`), which, past the last one, is the
     first widget of the next pass; `key_before` covers it as it covers Shift+Tab.
     Its costs, beside decision 4's (a focus the application moves after a key shows
-    the ring): `read` changes nothing at a pointer release and keeps `key_last` from
-    pass to pass, so **a key pressed while a pointer button is held rings a widget
-    that takes the focus at the release** (a drag value, `EG/widgets/drag_value.rs:665-667`)
-    **where no pointer move came after the key, or where the key came in the
-    release's pass or the pass before it**: a press in pass N, a key alone in N+1, a
-    pass with no events in N+2 (a repaint) and the release in N+3 (`key_last` alone);
-    a press in N, a key alone in N+1 and the release in N+2 (`key_last` and
-    `key_before`); a press in N, then a key and the release in N+1 (`key_last` and
-    `key_now`); a press, a key and a pointer move in N, then the release in N+1
-    (`key_before` alone: `key_now` of N, with `key_last` cleared by the move). Where a pointer move (a jitter within
-    the click threshold) follows the key and the release comes two or more passes
-    after the key's pass, `key_last` is cleared and `key_now` and `key_before` are
-    false: no ring. In one pass: a Tab and a pointer press together draw no ring
-    for the focus the Tab moved (`pointer_now`). And a click in the pass after a
-    Shift+Tab, an arrow key or a Tab past the last widget counts that focus move as
-    the pointer's. No mechanism change is made for these: each needs a key pressed
-    during a drag, or a key and a click in one pass or in two passes in a row.
+    the ring): a key pressed during a drag, or a key and a click in one pass or in two
+    passes in a row, can be counted the wrong way (a drag value, which takes the focus
+    at the release, `EG/widgets/drag_value.rs:641-643`, ringed after such a key; a focus
+    move by Shift+Tab, an arrow key or a Tab past the last widget counted as the
+    pointer's where a click comes in the next pass); no mechanism change is made for
+    these. `FocusOrigin::settle`'s doc states the same limit (2G.1).
 15. **3C. The portal's accent does not recolour the two button borders.** The line
     runs between the semantic roles `apply_accent` sets (the accent, the selection, the
     ring after step 2, the tab indicator) and each widget's own reads of the selection
@@ -263,6 +226,34 @@ None changes a result of the rationale; each is the smaller or the safer choice.
     setting them to the accent too, gives the same colour wherever the accent is the
     scheme's selection colour and would make them the one widget's own read of the
     selection colour the portal moves (3C).
+16. **2E. The `TabBar` follows D4's rule from the window's focus.** Its tabs' focus
+    handles are gpui-base's, and its probes read `within_focused`, true of every tab
+    while an element round the bar has the focus, so `ring_shows` has no exact
+    `focused` to take. The bar keeps one answer for the window's focus
+    (`focus_followed_key`) and draws under `.focus()`, which gpui applies to the tab
+    that has it. Weighed: `focus_visible` as 0.7.2 built it (the every-moment rule D4
+    rejects); `.focus()` alone. With the right and middle presses kept from focusing a tab
+    (2E.2, *The `TabBar`'s two defects*), no press focuses one, so `.focus()` alone would
+    be exact for every focus a key or a press gives; it is not for a focus the
+    application's code moves onto a tab after pointer input (`Window::focus_next`, or a
+    handle's `focus`, gpui-pre 0.3.12), which followed no key. `focus_followed_key` is the
+    same rule the other widgets take through `ring_shows`, in a few lines, so the bar
+    keeps it.
+17. **2E. gpui-component's rings that `Theme::focus_ring` does not switch** stay: a
+    `Tab`'s keyboard ring (gpui-component 0.10.0 `src/tab/tab.rs:933`, `:962-973`) and a `Slider`'s
+    thumb ring (`src/slider.rs:63`, `:76`, `:228-238`). Neither can be turned off but by
+    a transparent `ring`, which would take every focused border with it. The texts name
+    both; request (4) asks for them.
+18. **2E. gpui-component's band follows keyboard focus through a plugin of gpui-base's
+    `Root`** that `apply` registers (2E.1), with no call in the application, where this
+    specification first left the band off on the three keyboard-only presets whatever
+    gave the focus. Measured on `b434b9bc` (2E.1). The ways weighed are the rationale's
+    (D4): the band off altogether, which loses it after Tab where it can be had; a
+    function the application calls first in its root view's `render`, measured to work
+    but a line every application has to add; observers installed from `apply`, measured
+    a frame late on a click; the band on any focus. The plugin samples the focus as the
+    `TabBar`'s `focus_followed_key` does (decision 16) and keeps the answer in its own
+    fields, one plugin for each window's `Root`.
 
 ## Corrections and additions to the rationale found while specifying
 
@@ -270,23 +261,23 @@ No decision changes; each is recorded so the plan and the review see it.
 
 1. **D5, the gpui custom variant.** A custom variant has no border width of its own:
    gpui-component gives the four edges a width only for the `Default` variant or an
-   outlined button (`GC/button/button.rs:724-729`). With `geometry::button`'s refinement
+   outlined button (`GC/button/button.rs:727-732`). With `geometry::button`'s refinement
    the button gets `button.border.line_width` (`CG/geometry.rs:229`), so the trial
    builds on it as the rationale says. A selected and a disabled button replay the
-   caller's refinement over upstream's state style (`GC/button/button.rs:821-836`), so
+   caller's refinement over upstream's state style (`GC/button/button.rs:834-849`), so
    a rest fill the caller gives the variant would win in those states; the connector's
    buttons already apply `geometry::button_checked` and `geometry::button_disabled` there
    (`CG/geometry.rs:1328-1380`), and the trial does the same (3F.2). `button_disabled`
    sets a fill in every theme (`:1347-1349`), `button_checked` only where the theme
    states `checked_background` or `active_background` (`:1374-1377`; macos-tahoe states
    neither), so the rest fill goes on an unselected button only (3F.1), and a selected
-   one keeps upstream's selected fill, the variant's `active` (`GC/button/button.rs:1337`)
-   where the `Default` button has `tokens.button_active` (`:1327`).
+   one keeps upstream's selected fill, the variant's `active` (`GC/button/button.rs:1353`)
+   where the `Default` button has `tokens.button_active` (`:1343`).
 2. **D5, the text colours.** No frame read can give the text colour: gpui-pre exposes
    `painted_quads` and `painted_underlines` only (`GP/window.rs:3112-3118`). A custom
-   variant letters every enabled state in its `foreground` (`GC/button/button.rs:1080`,
-   the hovered and pressed styles take `text_color`, `:1223-1228`, `:1299-1303`), as the
-   `Default` variant letters every state in `button_foreground` (`:1034`); the trial
+   variant letters every enabled state in its `foreground` (`GC/button/button.rs:1096`,
+   the hovered and pressed styles take `text_color`, `:1239-1244`, `:1315-1319`), as the
+   `Default` variant letters every state in `button_foreground` (`:1050`); the trial
    compares those values (3F.2).
 3. **D4, what else becomes false.** Statements and tests the rationale does not list
    that the step makes false, each handled in its part: the iced connector's "KDE's +2"
@@ -305,11 +296,8 @@ No decision changes; each is recorded so the plan and the review see it.
 
 ## Open points for the maintainer
 
-1. **The version (D0)**, of the one release: (a) as written; (b) and (c) as 2K's
-   *Order and gates* says.
-2. **The asset run** of the release needs the maintainer's desktop unlocked and
+1. **The asset run** is 0.7.2's one: it needs the maintainer's desktop unlocked and
    untouched for 4 to 6 minutes, once, near the end.
-
 ---
 
 # Step 2 — D4: the focus ring
@@ -339,9 +327,6 @@ No `#[serde(rename)]`: the TOML key is the field's name. The struct's
   after the three focus-ring lines.
 - New test `merge_keeps_and_overrides_focus_ring_keyboard_only`: a base with `Some(true)`
   merged with an empty overlay keeps `Some(true)`; an overlay with `Some(false)` wins.
-- New test `toml_round_trip_focus_ring_keyboard_only`: `ThemeDefaults` with `Some(true)`
-  writes `focus_ring_keyboard_only = true` and reads back equal; with `None` the key is
-  absent from the written TOML.
 
 ### 2A.2 `native-theme/src/model/resolved.rs`
 
@@ -409,13 +394,9 @@ No resolve rule: nothing fills the field (`resolve/inheritance.rs` is unchanged;
   `native-theme/tests/proptest_roundtrip.rs:153-186` (above),
   `native-theme/src/model/resolved.rs:345-384` (`sample_defaults`, 2A.2) and the
   `validate_defaults!` literal, `native-theme/src/resolve/validate_helpers.rs:728-738`
-  (2A.3). The other 27 end in `..Default::default()` and need nothing:
-  `native-theme/src/macos.rs:145`, `:666`, `:693`, `:749`, `:802`, `:806`, `:828`,
-  `:966`, `:996`; `native-theme/src/model/defaults.rs:230`, `:239`, `:251`, `:282`,
-  `:286`, `:296`, `:307`, `:316`, `:333`, `:340`, `:354`, `:361`, `:377`, `:427`,
-  `:446`; `native-theme/tests/merge_behavior.rs:176`, `:183`, `:291`. No literal of
-  either struct is in a connector, a showcase, a README or a tracked document but
-  the archive's.
+  (2A.3). The others end in `..Default::default()` and need nothing; the compiler names
+  any that does not. No literal of either struct is in a connector, a showcase, a README
+  or a tracked document but the archive's.
 
 ## Part 2B — Facts, rules, registry, presets
 
@@ -490,11 +471,7 @@ against the struct; `scripts/check_platform_facts_rows.py` looks for a row named
   is true here, since kde-breeze states no caret (correction 4, *Problems found* 1).
   `per_platform_rules_match_safety_nets` (`resolve/inheritance.rs:626`) compares key sets
   only, so the value is documentation. The value's comment names the facts file's
-  section, not a line (S6).
-- **Lines that move.** The one inserted line moves every later line by one. The existing
-  line citations of the file (13 in `native-theme/src/presets/ios-13.toml` and one in
-  `docs/todo.md` name a line after the insertion, read today) are left as they are
-  and may drift; nothing re-points them (S6). No gate reads them.
+  section, not a line (2B.6).
 
 ### 2B.4 `docs/showcase-elements.toml`
 
@@ -506,7 +483,7 @@ order, the file's rule at `:30-34`). No other element lists the ring's leaves to
 
 Comment style as each file's own, but a new or rewritten comment cites the facts file
 in the batch's form, today's with the line number removed, `# platform-facts.md
-(§2.1.5): <key>: …` (S6; `docs/todo_v0.7.1_gpui-kit-0.9.1-spec.md`, Part I.3); LN's
+(§2.1.5): <key>: …` (S6; `docs/archive/todo_v0.7.1_gpui-kit-0.9.1-spec.md`, Part I.3); LN's
 checker (GPUI spec I.3) reads it.
 
 **`kde-breeze.toml`, light (`:53-57`, `:67-70`) and dark (`:638-642`, `:652-655`).** The
@@ -562,9 +539,6 @@ focus_ring_keyboard_only = false
 (source: `F/ios/tokens.toml:21006-21015`.) No `platform-facts.md:` citation, so the
 citation script does not read it, as for the file's other `(WebKit)` comments. The three
 files' blank lines before `[light.defaults.border]` and `[dark.defaults.border]` stay.
-The inserts move later preset lines that comments elsewhere cite (`windows-11.toml`'s
-in the egui and iced connectors, read today); those citations are left as they are
-and may drift (S6). No gate reads them.
 
 The other thirteen presets state nothing: adwaita for the reason 2B.1's GNOME cell
 gives; the macOS presets because their facts are pending; the ten colour schemes
@@ -580,8 +554,8 @@ number, read today (`git grep` of every `.rs`, `.py` and `.sh` file for code tha
 either file): only the three gates that compare a citation's line with the line it
 names, `native-theme/tests/platform_facts_xref.rs` (`line(N)`, from `.lines().nth`),
 `native-theme/src/presets/documented_sizes.rs` (`facts_line`, the same) and
-`scripts/check_preset_citations.py`. They stop using line positions in v0.7.1 (S6, its
-one change), before this release, so no test or gate here reads either file by line
+`scripts/check_preset_citations.py`. They stopped using line positions in v0.7.1 (S6, its
+one change; `facts_line` is gone), so no test or gate here reads either file by line
 number, and no edit here keeps their lines in place. Nothing reads a preset by line
 (`scripts/check_todo_citations.py` flags an undated preset line citation in
 `docs/todo.md`; it opens no line). The gpui showcase's citation tests read `.rs:` lines
@@ -619,7 +593,7 @@ and `every_prose_citation_still_exists` check, so those keep their line numbers.
 - `focus_ring_keyboard_only` is **not** written by the reader: no colour scheme key
   changes it. The preset's `true` stands (the reader's output merges over kde-breeze,
   `colors.rs:456-457`).
-- The doc of `populate_colors` (`:459-470`), as step 1 leaves it (its B.2 rewrites
+- The doc of `populate_colors` (`:459-470`), as step 1 left it (its B.2 rewrote
   `:463-466`): the list "Some colours Plasma computes from the scheme" gains "the focus
   ring"; the blends on the accent do not (the KDE portal's accent moves the ring, 2C.2);
   the portal function the KDE path calls is named, `gnome::apply_kde_accent` (2C.2), for
@@ -666,11 +640,10 @@ and `breeze-dark.ini`, read today); `Rgba::from_f32` rounds 0.3 × 255 = 76.5 up
   selection colour at 0x4d and the caret is still `DecorationFocus`, opaque.
 - **The lists that hold the reader to the preset** (`native-theme/src/kde/mod.rs`'
   tests, read today at `:1246-1588`). `derived_leaves` and `resolved_leaves`
-  (`:1248`, `:1309`; 29 leaves today, 31 after step 1, its B.5) do not hold the ring
-  today. Both append `("defaults.focus_ring_color", mode.defaults.focus_ring_color)`
+  (`:1248`, `:1309`; 31 leaves each since step 1, its B.5) do not hold the ring. Both append `("defaults.focus_ring_color", mode.defaults.focus_ring_color)`
   and `("defaults.focus_ring_color", Some(theme.defaults.focus_ring_color))` (the
   resolved field is a required `Rgba`, `model/resolved.rs:143`) after what the earlier
-  steps appended; the array length and the doc's count ("The twenty-nine colour leaves
+  steps appended; the array length and the doc's count ("The thirty-one colour leaves
   …", `:1246`) grow by one. `focus_ring_keyboard_only` is not a colour and the reader
   writes none; it joins no list. What each test then gains:
   - `the_derived_colours_are_the_presets_under_breeze` (`:1398-1414`): that the
@@ -688,7 +661,8 @@ and `breeze-dark.ini`, read today); `Rgba::from_f32` rounds 0.3 × 255 = 76.5 up
     `the_window_set_moves_the_popover_edge` (`:1486`, both assertions),
     `the_view_set_moves_the_card_edge_and_the_menu_panel` (step 1's name for
     `the_view_set_moves_the_card_edge`, `:1525`; its B.5), `the_frame_contrast_moves_the_edges`
-    (`:1564`): unchanged (their keys are not `selection`).
+    (`:1564`), and step 1's `the_contrast_moves_the_table_grid`: unchanged (their keys
+    are not `selection`).
 
 ### 2C.2 `native-theme/src/gnome/mod.rs`: the portal's accent on KDE
 
@@ -727,7 +701,8 @@ whichever colour `QPalette::Highlight` is.
 ## Part 2D — Every reader of the ring colour, before and after
 
 Found by `grep -rn 'focus_ring_color'` over `native-theme/`, `connectors/` (all crates
-and examples) today; the egui showcase reads none. The ring colour changes on
+and examples) today; the readers of `ThemeColor::ring` inside gpui-component are those
+the upstream re-read lists; the egui showcase reads none. The ring colour changes on
 kde-breeze only; when the ring shows changes on kde-breeze, windows-11 and material-3.
 The per-preset values are the presets' `[light|dark.defaults]` keys, read today with
 `python3 -c 'import tomllib …'` over the 17 files:
@@ -748,8 +723,11 @@ The per-preset values are the presets' `[light|dark.defaults]` keys, read today 
 | core: `gnome/mod.rs:153` via `:790-794` (KDE portal) | the accent, opaque | the accent at 0x4d (2C.2) |
 | core: `resolve/inheritance.rs:94-96` (`← accent_color`) | fills an unset ring | unchanged; every bundled preset states the ring |
 | gpui: `CG/colors.rs:223` → `ThemeColor::ring` | the colour as stated | opaque where the band is off (2E.1): kde-breeze #3daee9 (as today), windows-11 light #000000 (today #000000e4), windows-11 dark #ffffff, material-3 #625b71 / #ccc2dc (unchanged, opaque already); the other 14 presets unchanged |
-| gpui: `Theme::focus_ring` (`CG/lib.rs:362`, reads the width) | on in all 34 combinations | off on kde-breeze, windows-11, material-3; on elsewhere |
+| gpui: `Theme::focus_ring` (`CG/lib.rs:362`, reads the width) | on in all 34 combinations | as `apply` sets it: off on kde-breeze, windows-11, material-3; on elsewhere. On those three, in a window under gpui-base's `Root`, on while the window's focus followed a key (the connector's `Root` plugin, 2E.1) |
 | gpui: `FocusRing::of` (`CG/widgets/mod.rs:344`) | the stated ring on any focus | stated ring; on the three presets only for a focus that followed a key (2E.2) |
+| gpui: `widgets::TabBar` (`CG/widgets/tab_bar.rs`, `FocusRing::of`) | the stated colour as an inset shadow `focus_ring_width` wide, while the tab is focused and the last input was a key (kde-breeze: 1 px, #3daee9) | the stated colour and width (kde-breeze: 2 px, #3daee94d); on the three presets for a focus that followed a key, kept until the focus moves; elsewhere on any focus (2E.2) |
+| gpui-component: `Tab` (0.10.0 `src/tab/tab.rs:933`, `:962-973`), through `ThemeColor::ring` | a 2 px inset ring in `ring` while the tab is focused and the last input was a key; `Theme::focus_ring` does not switch it | the same, in `ring_colour`'s colour: kde-breeze #3daee9 (as today), windows-11 light #000000 (today #000000e4), the others unchanged |
+| gpui-component: `Slider` (0.10.0 `src/slider.rs:63`, `:76`, `:228-238`), through `ThemeColor::ring` | a 3 px ring round the end thumb, `ring` with its alpha set to 0.5, while the slider has the focus or the pointer is over or drags the thumb; `Theme::focus_ring` does not switch it | unchanged on every preset (the alpha is set, so the opaque `ring` gives the same colour); still drawn on the three keyboard-only presets |
 | iced: `focus_ring::ring_look` (`CI/focus_ring.rs:41`) | as gpui's own widgets | as gpui's own widgets (2F.1) |
 | iced: `styles::text_input` (`CI/styles.rs:580`) | ring colour as the focused border where the ring is inset and `input.focus_border_color` is unset | unchanged: no bundled preset has both (adwaita states the border colour; the macOS presets, which do not, have no inset ring) |
 | iced: `focus_ring_color()` (`CI/lib.rs:2017-2019`), contract `rows.rs:128-130`, `:624`, `contract.rs:3997` | the colour as stated | the colour as stated (kde-breeze's new value) |
@@ -765,19 +743,24 @@ The per-preset values are the presets' `[light|dark.defaults]` keys, read today 
   `#[cfg(test)]` (`:790`), so no claimed line moves:
 
   ```rust
-  /// Whether gpui-component's focus band is drawn (`Theme::focus_ring`): where the theme
-  /// states a ring with a width, and does not say the platform shows it for keyboard
-  /// focus only. gpui-component draws its band on a click as well (into a text field, a
-  /// select or a switch) and offers no way to turn that off, so where the platform shows its ring for
-  /// keyboard focus only the band is off (docs/issues/0004_kde-open-items-rationale.md D4).
+  /// Whether gpui-component's focus band is drawn on any focus, the value `to_theme` gives
+  /// `Theme::focus_ring`: where the theme states a ring with a width, and does not say the
+  /// platform shows it for keyboard focus only. gpui-component draws its band on a click as
+  /// well (into a text field, a select or a switch) and offers no way to turn that off, so
+  /// where the platform shows its ring for keyboard focus only the band starts off, and
+  /// the connector's `Root` plugin (`FocusBand`) turns it on for a focus that followed a key
+  /// (docs/issues/0004_kde-open-items-rationale.md D4).
   pub(crate) fn focus_band_on(d: &ResolvedDefaults) -> bool
   ```
 
   body `d.focus_ring_width > 0.0 && d.focus_ring_keyboard_only != Some(true)`; and
 
   ```rust
-  /// The colour of `ThemeColor::ring`: the theme's ring where the band is on; where it is
-  /// off, `ring` is only the colour of a focused control's line, and is opaque.
+  /// The colour of `ThemeColor::ring`: the theme's ring where the band is on for any focus
+  /// (`focus_band_on`). Elsewhere that colour without its alpha: `ring` there colours what
+  /// gpui-component draws in it at the token's own alpha, a focused control's border or 1 px
+  /// line and a keyboard-focused `Tab`'s 2 px inset ring (the band the `Root` plugin turns on
+  /// and a `Slider`'s thumb ring set their own alpha).
   pub(crate) fn ring_colour(d: &ResolvedDefaults) -> native_theme::color::Rgba
   ```
 
@@ -787,7 +770,7 @@ The per-preset values are the presets' `[light|dark.defaults]` keys, read today 
   (`CG/colors.rs:17-20`), since it uses `gpui::Rgba` too (`:22`, `:45`). `ResolvedDefaults`
   joins the import of `:13` on the same line, `use native_theme::theme::{ResolvedDefaults,
   ResolvedTheme};` (exported at `native-theme/src/lib.rs:308-313`), one line for one, so
-  the claimed lines `281-718` do not move.
+  no claimed line moves.
 - **`CG/colors.rs:223`**, one line for one line: `ring: rgba_to_hsla(d.focus_ring_color),`
   → `ring: rgba_to_hsla(ring_colour(d)),`. The opaque colour is converted, so the token
   is bit-for-bit what an opaque stated colour gives today (kde-breeze keeps exactly
@@ -796,15 +779,85 @@ The per-preset values are the presets' `[light|dark.defaults]` keys, read today 
   the ring has a width and the platform does not show it for keyboard focus only; its
   width and offset have no receiver.", and `:362` becomes
   `theme.focus_ring = crate::colors::focus_band_on(d);`.
+- **The `Root` plugin.** In `CG/lib.rs` (the showcase's infos cite that file by symbol
+  only, so it holds no claimed line), after `install_observer_once`, a private type:
+
+  ```rust
+  /// Makes gpui-component's own focus band follow the theme's rule for when the ring shows,
+  /// in every window under gpui-base's `Root`: a plugin of `Root`, which [`apply`] registers.
+  ///
+  /// Where the theme says the platform shows its ring for keyboard focus only
+  /// (`defaults.focus_ring_keyboard_only`), `apply` leaves the band off, since gpui-component
+  /// draws it on a click as well. Before a window's `Root` builds its content, this sets
+  /// `Theme::focus_ring` for that window: on while its focus is one that followed a key press
+  /// (`Window::last_input_was_keyboard` when the focus arrived, kept until it moves), off
+  /// otherwise. On any other theme it writes nothing.
+  ///
+  /// `Theme::focus_ring` is one value for the application, so each window's `Root` sets it
+  /// when it renders: a view drawn again without its `Root`, after another window's `Root`
+  /// rendered, reads that window's value until its own `Root` renders again. A `Root` made
+  /// before the first `apply` has no plugin.
+  #[derive(Default)]
+  struct FocusBand {
+      /// The window's focus at the last render of its `Root`.
+      focus: Option<gpui::WeakFocusHandle>,
+      /// `Window::last_input_was_keyboard` at the render that first saw that focus.
+      by_key: bool,
+  }
+  ```
+
+  with `impl Render for FocusBand`, which renders nothing (`gpui::Empty`), and `impl
+  gpui_base::RootPlugin for FocusBand`, whose one method is `prepare(&mut self, window:
+  &mut Window, cx: &mut Context<Self>)` (gpui-base 0.10.0 `src/root.rs:74-80`;
+  `Root::render` runs every plugin's `prepare` before it builds the window's content,
+  `:246-252`):
+  1. `let now = window.focused(cx).map(|handle| handle.downgrade());` and, where
+     `self.focus != now`, `self.by_key = now.is_some() && window.last_input_was_keyboard();
+     self.focus = now;`.
+  2. `let Some(n) = cx.native() else { return; };`, then, with `d` the resolved theme's
+     `defaults`: where `d.focus_ring_keyboard_only != Some(true)` or `d.focus_ring_width`
+     is not above 0, it returns; else `let want = self.by_key;`, which ends `n`'s use.
+  3. Only where `gpui_component::Theme::global(cx).focus_ring != want`, it writes
+     `gpui_component::Theme::global_mut(cx).focus_ring = want;` (a write queues the
+     global's observers, gpui-pre 0.3.12 `src/app.rs:2555-2557`, so none is made where the
+     value stands).
+
+  It never notifies (the trait's rule, `src/root.rs:66-70`). On a theme that does not say
+  keyboard only it writes nothing, so what `apply` set, or what the application wrote
+  after it, stands as before this step.
+
+  `apply_inner` registers it on the line after `install_observer_once(cx);`:
+  `gpui_base::Root::register_plugin::<FocusBand>(cx, |_, _| FocusBand::default());`
+  (`src/root.rs:129-171`; registering the type again replaces its factory, so every
+  `apply` may do it). `gpui_component::Root` is gpui-base's (gpui-component 0.10.0
+  `src/lib.rs:102`), and gpui-component registers a plugin of its own on it the same
+  way, which sets the window's rem size from the theme (`src/root.rs:22`, `:723-727`). A
+  `Root` takes the plugins registered when it is made (gpui-base `src/root.rs:71-72`,
+  `:175-190`). `to_theme` and `apply` keep giving `focus_band_on(d)`, so a theme change
+  puts the flag back, and the next render of the window's `Root` sets it again.
+
+  Measured on `b434b9bc`, 2026-11-18 (the record's `steps23/trial/band-switch-plugin.patch`
+  and `band-switch-plugin-output.txt`; the rationale's D4 says what was weighed), under
+  kde-breeze, with an upstream `Input`, `Button` and `Switch` in a `Root` made after
+  `apply` and nothing called by the application, on both backends: reached by Tab or
+  Shift+Tab, the `Button` and the `Switch` draw the band (3 px on every side, its inner
+  edge on the control's edge) in the frame of the focus move; a mouse move leaves it; a
+  click into the `Input` or onto the `Switch` draws none, the frame of the mouse-down
+  included. No render loop (one to three renders of the application's view per step);
+  the same 13 quads and the same bounds of the three controls with the plugin and
+  without it; the connector's library tests pass with it registered (419 on GPUI Fast,
+  420 on gpui-pre; none of their windows has a `Root`). The measurement told a
+  keyboard-only theme by its name, since the field does not exist at `b434b9bc`, and
+  wrote the flag on every theme; the early return of step 2 is this specification's
+  (*What could not be verified*). A failure of its tests (2E.4) is a stop.
 - **Test** `CG/lib.rs:1997-2008`, `focus_ring_follows_focus_ring_width`, becomes
-  `focus_ring_is_the_band_rule` over every preset in both modes (`Theme::list_presets()`,
-  `from_preset`): `theme.focus_ring == (width > 0 && keyboard_only != Some(true))`, and
-  `focus_ring` is false for kde-breeze, windows-11 and material-3 and true for adwaita
-  (so the test cannot pass vacuously). Its doc: "§8.3 and D4: the band's switch."
-- New test in `CG/colors.rs`: `ring_is_opaque_where_the_band_is_off`: for every preset
-  and mode, `to_theme_color(..).ring` is `rgba_to_hsla` of the stated colour where the
-  band is on and of its opaque form where it is off; windows-11 light's ring alpha is 1
-  (the one bundled combination where the two differ besides kde-breeze's).
+  `focus_ring_is_the_band_rule`, on five named cases: `focus_ring` is false for
+  kde-breeze, windows-11 and material-3 and true for adwaita and ios-13. Its doc: "§8.3
+  and D4: the band's switch."
+- New test in `CG/colors.rs`: `ring_is_opaque_where_the_band_is_off`, one literal
+  assertion: windows-11 light's `to_theme_color(..).ring` is opaque #000000 (the stated
+  colour is #000000e4). The contract's `ComputedRow` (2E.3) holds the rule over the 34
+  combinations.
 
 ### 2E.2 The connector's own widgets: "the focus followed a key"
 
@@ -858,39 +911,108 @@ happen in an application (how soon gpui draws after a focus change) was not meas
 `FocusRing::of` and `FocusRing::draw` are unchanged (their unit tests, `CG/widgets/tests.rs:2676-2806`,
 draw the ring directly and stay valid).
 
-**The users**, each changed after its claimed lines (`checkbox.rs` 123–145,
-`switch.rs` 94–144, `slider.rs` 77–80), each in the order the borrows need (read
-today):
+**The users**, each changed after its claimed lines. In each, `let keyboard_only = …;`
+goes while `n` is in use, before the first mutable use of `cx` after it (above); the
+compiler (E0502) holds the order.
 
 - `CG/widgets/checkbox.rs`, the shared `render` of `Checkbox` and `Radio` (`:251-300`):
-  `n` is bound at `:262` and last used at `:273` (`let ring = FocusRing::of(n.resolved);`);
-  the first mutable use of `cx` after it is `indicator_and_label(…, window, cx)` at
-  `:274`. So `let keyboard_only = …;` goes after `:273`, and `let shows =
-  ring_shows((self.id.clone(), "focus-visible"), focused, keyboard_only, window, cx);`
-  after `:279` (`let focused = focus_handle.is_focused(window);`); at `:299`
+  `let shows = ring_shows((self.id.clone(), "focus-visible"), focused, keyboard_only,
+  window, cx);` after `let focused = focus_handle.is_focused(window);`, and
   `.when_some(ring.filter(|_| focused), …)` becomes `.when_some(ring.filter(|_| shows),
   …)`.
-- `CG/widgets/switch.rs`, `Switch::row` (`:366-…`; not `render`, which calls it,
-  `:518-…`): `n` is bound at `:367` and last used at `:381` (`label_weight`); the
-  first mutable use of `cx` after it is `spring(…, window, cx)` at `:382-388`. So `let
-  keyboard_only = …;` goes after `:381`, and `:396`, `let focused =
-  focus_handle.is_focused(window);`, becomes `let focused = ring_shows((self.id.clone(),
-  "focus-visible"), focus_handle.is_focused(window), keyboard_only, window, cx);`, which
-  `track` (`:397`, `:447-…`) then takes as the `focused` it rings
-  (`:456`, `focused && !self.disabled && self.focus_ring`). `track` keeps its signature
-  (`window: &Window, cx: &App`, read only; it reads `cx.native()` itself at `:457`).
-  Its doc ("while `focused`, enabled, and told to") becomes "while `focused` (a focus
-  the theme rings, `ring_shows`), enabled, and told to". `focused` has no other use in
-  `row` (the implementer confirms).
-- `CG/widgets/slider.rs`, `render` (`:325-…`): `n` is bound at `:326` and last used at
-  `:333-336` (`look.faded_over(… n.resolved.defaults.background_color)`), with no
-  mutable use of `cx` between `:332` and there. So `let keyboard_only = …;` goes after
-  `:332` (`let ring = FocusRing::of(n.resolved);`), and `let shows = ring_shows((id.clone(),
-  "focus-visible"), focused, keyboard_only, window, cx);` after `:364` (`let focused =
-  !disabled && focus_handle.is_focused(window);`); the end thumb's
-  `.when_some(ring.filter(|_| focused), …)` (`:375-377`) becomes `ring.filter(|_|
-  shows)`. `focused` keeps its other uses in `render`, if any (the implementer checks
-  each).
+- `CG/widgets/switch.rs`, `Switch::row` (`:366-…`; not `render`, which calls it):
+  `let focused = focus_handle.is_focused(window);` becomes `let focused =
+  ring_shows((self.id.clone(), "focus-visible"), focus_handle.is_focused(window),
+  keyboard_only, window, cx);`, which `track` then takes as the `focused` it rings
+  (`focused && !self.disabled && self.focus_ring`). `track` keeps its signature
+  (`window: &Window, cx: &App`, read only; it reads `cx.native()` itself). Its doc
+  ("while `focused`, enabled, and told to") becomes "while `focused` (a focus the theme
+  rings, `ring_shows`), enabled, and told to". `focused` has no other use in `row` (the
+  implementer confirms). The struct's doc, "While focused, the track draws the theme's
+  focus ring (`defaults.focus_ring_color`, `focus_ring_width` and `focus_ring_offset`, as
+  the other theme-drawn controls draw it)", gains before the parenthesis' end "; where the
+  theme says keyboard only, for a focus that followed a key press", a replacement inside
+  the paragraph, after the file's claimed lines: the switch prevents no press,
+  so a click focuses it (read, not run), and on the three keyboard-only presets that
+  focus draws no ring.
+- `CG/widgets/slider.rs`, `render` (`:325-…`): `let shows = ring_shows((id.clone(),
+  "focus-visible"), focused, keyboard_only, window, cx);` after `let focused = !disabled
+  && focus_handle.is_focused(window);`; the end thumb's `.when_some(ring.filter(|_|
+  focused), …)` becomes `ring.filter(|_| shows)`. `focused` keeps its other uses in
+  `render`, if any (the implementer checks each).
+
+**`TabBar`** (`CG/widgets/tab_bar.rs`). In `CG/widgets/mod.rs`, after `ring_shows`:
+
+```rust
+/// Whether the window's present focus followed a key, for a control whose focus handles are
+/// not its own (`TabBar`: gpui-base's `Tab` keeps each tab's): decided at the render that
+/// first sees the focus on another element, and kept until it moves again
+/// (docs/issues/0004_kde-open-items-rationale.md D4). Taken at render, as `ring_shows`' answer.
+fn focus_followed_key(key: impl Into<ElementId>, window: &mut Window, cx: &mut App) -> bool
+```
+
+It (1) reads `let now = window.focused(cx).map(|handle| handle.downgrade());` (gpui-pre
+`src/window.rs:2604-2607`; a `WeakFocusHandle`, `:676-709`, so the state keeps no
+element's focus alive); (2) reads its state, `(Option<gpui::WeakFocusHandle>, bool)`,
+with `window.use_keyed_state(key, cx, |_, _| (None, false))`; (3) where the stored
+handle differs from `now`, stores `(now, now.is_some() &&
+window.last_input_was_keyboard())` with `Entity::update`, without a notify; (4) returns
+the stored `bool`.
+
+In `TabBar::render`: among the keyed-state reads, before the second `cx.native()` (its
+comment 'Read again: the keyed handles took `cx` mutably'), `let by_key =
+super::focus_followed_key((self.id.clone(), "focus-visible"), window, cx);`. `let ring =
+super::FocusRing::of(n.resolved);` becomes `let keyboard_only =
+n.resolved.defaults.focus_ring_keyboard_only == Some(true);` and `let ring =
+super::FocusRing::of(n.resolved).filter(|_| !keyboard_only || by_key);`.
+`tab.focus_visible(move |style| …)` becomes `tab.focus(move |style| …)` (gpui-pre
+`src/elements/div.rs:1320-1326`, applied where the element's own handle is focused,
+`:3484-3488`), the shadow unchanged; its comment becomes 'While the tab has the focus
+(where the theme says keyboard only, a focus that followed a key, `focus_followed_key`):
+the theme's ring as an inset shadow, inside the tab, its spread the ring's width.' The
+edits lie after the file's claimed lines.
+
+The struct's doc: 'The tab that has it from the keyboard shows the theme's focus ring
+(`defaults.focus_ring_color`, `focus_ring_width`) as an inset shadow inside its edge, as
+wide as the ring, and none after a click;' becomes 'The tab that has it shows the
+theme's focus ring (`defaults.focus_ring_color`, `focus_ring_width`) as an inset shadow
+inside its edge, as wide as the ring; where the theme says the platform shows its ring
+for keyboard focus only (`defaults.focus_ring_keyboard_only`), only for a focus that
+followed a key press, kept until the focus moves, so through a click on another tab,
+which moves none;'.
+
+**The `TabBar`'s two defects of 0.7.2, fixed with it** (found by this specification's
+check and measured on `b434b9bc`, 2026-11-18, the record's `steps23/`; both are in the
+unreleased 0.7.2 and fixed before it ships):
+
+- *The scroll to the focused tab.* `TabBar::render` takes the focused tab as the first
+  probe that is `within_focused`. Where an element that contains the bar takes the focus,
+  every probe is within it, so the strip scrolls to the first tab whatever is selected
+  (measured: from −440 px to 0). The focused tab becomes the probe that is within the
+  focus *alone*: `let mut within = probes.iter().enumerate().filter(|(_, p)|
+  p.within_focused(window, cx)).map(|(ix, _)| ix);` and `let focused = match
+  (within.next(), within.next()) { (Some(ix), None) => Some(ix), _ => None };`, its
+  comment saying so. Where the focus is on a tab, its probe alone is within it (the probe
+  lies inside that tab only); where it is on an element round the bar, every probe is, and
+  the strip stays where it is. A bar of one tab scrolls to that tab, which is in view. A new
+  test, `focusing_an_element_round_the_bar_keeps_the_strip_where_it_is`, in the form of
+  the measurement (the record's `steps23/trial/tabbar-scroll-measure.patch`): the strip
+  scrolled to the last tab, an enclosing element focused, the offset unchanged after two
+  frames; seen red before the change.
+- *A press other than the left button focused a tab.* gpui-base 0.10.0's `Tab` stops only
+  the left button's mouse-down from focusing (`src/tabs.rs:194`); a right or middle press
+  focused the tab without activating it (measured). `TabBar::render` gives each tab
+  `.on_mouse_down(MouseButton::Right, |_, window, _| window.prevent_default())` and the
+  same for `MouseButton::Middle`: gpui-pre focuses a tracked element on a mouse-down only
+  where the default is not prevented (gpui-pre 0.3.12 `src/elements/div.rs:2828-2840`),
+  and the element's own listeners run before that one. Not `stop_propagation`, which
+  would keep the press from an enclosing element's handler. The texts that say a click
+  moves no focus stay. New test `a_right_or_a_middle_press_moves_no_focus`, in the form
+  of the measurement, seen red before the change. If it cannot be made to pass this way,
+  that is a stop (the plan, §6): the unit reports what the run shows, builds the rest, and
+  changes no text that says a click moves no focus. The struct's doc gains after "never moves
+  the focus": " (the bar keeps a right and a middle press from focusing a tab, which
+  gpui-base's `Tab` alone would let them)".
 
 The other signatures this specification gives that take a value from `cx.native()`
 and `cx` take `cx` shared, which a live `Native` allows: `Switch::track` (unchanged),
@@ -915,7 +1037,8 @@ and `cx` together, both shared borrows), and 3F.4's `hover_border(n)` (no `cx`).
   opaque where the band is off".
 - **`CG/contract.rs:2241-2256`**, `UPSTREAM_LIMITS`' evidence: after "its own ring,
   `FOCUS_RING_WIDTH` 3 outside that edge (…)" add "where `Theme::focus_ring` is on, which
-  the connector turns off where the theme says keyboard only".
+  the connector leaves off where the theme says keyboard only, but for a focus that
+  followed a key in a window under `Root` (`FocusBand`)".
 - **`CG/lib.rs:104`, `:110-111`** (crate docs): unchanged in substance; `:111`'s
   "focus ring" stays.
 - **`scripts/connector_parity_exceptions.toml:493-497`**, the gpui `focus_ring`
@@ -924,11 +1047,12 @@ and `cx` together, both shared borrows), and 3F.4's `hover_border(n)` (no `cx`).
   parenthesis, before the closing quote, the clause "; it draws that ring only where
   `Theme::focus_ring` is on, which the connector turns off where the theme says the
   platform shows its ring for keyboard focus only (src/colors.rs, `focus_band_on`), and
-  there a focused Input shows its border in `ring`" (this specification's evidence for
-  the last part, `GC/input/input.rs:775-778`, not part of the inserted text). The
+  there a focused Input shows its border in `ring`, with the band too for a focus that
+  followed a key in a window under `Root` (src/lib.rs, `FocusBand`)" (this specification's evidence for
+  the last part, `GC/input/input.rs:789-792`, not part of the inserted text). The
   parity check asks of a `reason` only that it be a non-empty string
   (`scripts/check_connector_parity.py:705-707`), so no gate reads the clause; it goes
-  in unit 2.3 with `focus_band_on`. (The entry's citation of gpui-component 0.8.1 is
+  in unit 2.3 with `focus_band_on`. (The entry's citation of gpui-component 0.9.1 is
   older than this step and is not changed here.)
 - **`ring_shows`' doc** (2E.2, after `FOCUS_RING_SELECTOR`, `CG/widgets/mod.rs:400`):
   "Where the theme says the platform shows its ring for keyboard focus only
@@ -937,7 +1061,8 @@ and `cx` together, both shared borrows), and 3F.4's `hover_border(n)` (no `cx`).
   answer is taken at render, so a control that loses the focus and gets it back with no
   frame between keeps the first answer." `FocusRing`'s doc (`:300-327`) is left as it
   is: a paragraph there would move `:344` (`color: color(d.focus_ring_color),`), which
-  the gpui showcase claims (`examples/showcase-gpui/info/inputs.rs:928`).
+  the gpui showcase claims (`examples/showcase-gpui/info/inputs.rs:928`, and the
+  `TabBar`'s claim in `info/layout.rs`).
 - **`connectors/native-theme-gpui/README.md`**:
   - `:696-713`, *The focus ring*. Present: "…`theme.focus_ring = false`, as above, turns
     the band off. … Breeze draws its band, 2 px of the selection colour at alpha 0.3,
@@ -949,23 +1074,46 @@ and `cx` together, both shared borrows), and 3F.4's `hover_border(n)` (no `cx`).
     focus that came from the keyboard; gpui-component draws its band on a click as well
     and offers no way to turn that off. So
     where the theme says so (`defaults.focus_ring_keyboard_only`, true in kde-breeze,
-    windows-11 and material-3), `apply` turns the band off and makes `ring` opaque: a
-    focused control then shows its border, or a 1 px line, in `ring` (a borderless
-    button but a link, a text or an upstream `.ghost()` one: a 1 px line in its text
-    colour at 60 %),
-    also when Tab reached it, where the platform draws its ring; the connector's own controls draw the
-    theme's ring after a key (below). `apply` sets `focus_ring` from the theme again (on
+    windows-11 and material-3), `apply` leaves the band off, makes `ring` opaque, and
+    registers a plugin of gpui-base's `Root` that turns the band on for keyboard focus:
+    in every window whose `Root` is made after the first `apply`, gpui-component's
+    controls draw their band while the window's focus is one that followed a key press,
+    and none after a click, with nothing to call. The band is gpui-component's own, 3 px
+    outside the edge in `ring` with its alpha set to 0.5; the connector's own controls
+    draw the theme's ring, at its width and offset, after a key (below). In a window
+    without the plugin (its `Root` made before the first `apply`) a focused control
+    shows its border, or a 1 px line, in `ring` (a borderless button but a link, a text
+    or an upstream `.ghost()` one: a 1 px line in its text colour at 60 %), also when Tab
+    reached it. `Theme::focus_ring` is one value for the application, so each window's
+    `Root` sets it when it renders; a view drawn again without its `Root`, after another
+    window's rendered, reads that window's value until its own `Root` renders again. Two of gpui-component's widgets keep a ring that
+    `Theme::focus_ring` does not switch: a `Tab` (2 px inset in `ring`, while the last
+    input was a key) and a `Slider`, which rings its thumb (3 px, `ring` with its alpha
+    set to 0.5) while it has the focus, however it got it, and while the pointer is over
+    the thumb. The theme-drawn `widgets::TabBar` and `widgets::Slider` follow the theme's
+    rule. `apply` sets `focus_ring` from the theme again (on
     where `defaults.focus_ring_width` is above 0 and `focus_ring_keyboard_only` is not
-    true), so an application that wants another value writes it after each `apply`."
+    true); on a theme that says keyboard only the plugin writes it at each render of a
+    window's `Root`, and on any other theme an application that wants another value
+    writes it after each `apply`, as before."
     The sentence before it, "For a text field that is Breeze's look on any focus; a
     focused button keeps a tinted border, which Breeze shows for keyboard focus only.",
     stays.
-  - `:758-763`, *Keyboard focus*. After "…the control having no border of its own."
-    insert: "Where the theme says the platform shows its ring for keyboard focus only, a
-    control draws it only for a focus that followed a key press: it reads
-    `Window::last_input_was_keyboard` when it gets the focus and keeps the answer until
-    it loses it." The last sentence, "gpui-component's own widgets draw its 3 px ring at
-    half the colour's alpha.", gains ", where `Theme::focus_ring` is on".
+  - `:758-763`, *Keyboard focus*, as it stands at `b434b9bc` (it names both tab bars
+    already). After "…the control having no border of its own." insert: "Where the theme
+    says the platform shows its ring for keyboard focus only, a control draws it only for
+    a focus that followed a key press: the answer is `Window::last_input_was_keyboard`
+    when the focus arrives, kept until it leaves." In "gpui-component's own widgets draw
+    their 3 px ring in `ring` with its alpha set to 0.5, whatever the colour's own (…)",
+    ", where `Theme::focus_ring` is on" goes in before the parenthesis. The last
+    sentence, "Both tab bars show their ring for a focus that came from the keyboard
+    only: the tabs take the focus from the keyboard alone, the arrow keys moving it
+    along the bar, and a click selects a tab without focusing it.", becomes "A click
+    selects a tab without focusing it; the tabs take the focus from the keyboard, the
+    arrow keys moving it along the bar. The theme-drawn `TabBar` rings the focused tab
+    by the rule above, as the other theme-drawn controls; gpui-component's shows its
+    ring while the last input was a key (gpui's `focus_visible`), whatever the theme
+    says."
 
 ### 2E.4 Tests
 
@@ -1001,6 +1149,45 @@ and `cx` together, both shared borrows), and 3F.4's `hover_border(n)` (no `cx`).
   `focused` true directly, so its code stays as it is; its doc's "kde-breeze's outside
   the track" (`:2603`) becomes "kde-breeze's across the track's edge, from 1 px inside
   it to 1 px outside", for the same reason.
+- The `TabBar`'s two, under `#[cfg(feature = "gpui-fast")]` as the tab ring test is,
+  since they read the painted shadows:
+  - `the_keyboard_focused_tab_draws_the_ring_inside`: its last block (a click on tab 2,
+    "no ring after a click") becomes: after the click, still one ring, on tab 1 (the
+    click moved no focus); its doc's "after a click, none" becomes "after a click on
+    another tab, which moves no focus, it stays (D4)".
+  - New `a_tab_focused_without_a_key_draws_no_ring_where_the_theme_says_keyboard_only`:
+    kde-breeze; `focus_next` with no key before: no shadow over the bar;
+    `simulate_keystrokes("right")`: one ring, on tab 1; `simulate_mouse_move` over the
+    bar: still one. And under kde-breeze with `focus_ring_keyboard_only = None` (through
+    `window_with_resolved`; `keyboard_tab_window` takes the edit, or a sibling helper
+    does), `focus_next` with no key: one ring, on the selected tab.
+- The `Root` plugin's two, from the record's `steps23/trial/band-switch-plugin.patch`
+  (the patch only prints its rows; the assertions are these), written into
+  `CG/widgets/tests.rs` itself (the patch includes a file of its own by `#[path]`), their
+  names and comments without the word "trial", with the plugin reading
+  `focus_ring_keyboard_only` where the patch tells kde-breeze by its name, and with
+  `window_with` and `folder_window_counted` left as they are (the patch's last run wraps
+  them in a `Root`); the parts that read painted quads under `#[cfg(feature =
+  "gpui-fast")]`:
+  - `upstreams_band_shows_after_a_key_only_where_the_theme_says_so`: kde-breeze; a view
+    with an upstream `Input`, a `Button` and a `Switch`, inside gpui-component's `Root`
+    (which binds Tab and Shift+Tab, gpui-base 0.10.0 `src/root.rs:44-45`) made after
+    `apply`, the window activated; the view calls nothing. Asserted after each step:
+    `Theme::global(cx).focus_ring`, and whether a band (a quad bordered in `ring` with
+    its alpha set to 0.5, 3 px wide, round the focused control) is painted. Start:
+    false, none. A click into the field: false, none, in the frame of the mouse-down
+    too. Tab: true, on the button. Tab: true, on the switch. A mouse move: unchanged. A
+    click into the field: false, none. Tab, then a click on the switch: false, none.
+    Shift+Tab: true, on the button. Then a window under adwaita, which leaves the field
+    unset: true throughout, and a band on the field after the click into it; and with
+    `Theme::global_mut(cx).focus_ring = false` written after `apply` under adwaita, it
+    stays false through a Tab (the plugin writes nothing there).
+  - `each_windows_root_sets_the_band_for_its_window`: two windows under kde-breeze, each
+    with its own `Root`. Window 1, after a click into its field and Tab: `focus_ring`
+    true and a band round its button. Window 2, after a click into its field: false and
+    no band. Window 1 drawn again: a band round its button still. Window 2 drawn again:
+    no band. Only the painted frames are asserted, not the flag between two windows'
+    renders, which is the other window's (the plugin's doc).
 
 ## Part 2F — iced connector
 
@@ -1104,7 +1291,8 @@ function was read for a ring assertion (`FOCUS_RING_SELECTOR`, `rings_on`, `pain
 `window.focus`), and kde-breeze, windows-11 or material-3, directly or through a helper
 (`ring_round_a_focused_button`, `ring_harness`, `ringed`, `slider_window`); found:
 iced's four above and the showcase's (2H.2), gpui's `every_focused_control_draws_the_ring`
-(2E.4), egui-widgets' `a_widget_focused_in_the_body_is_ringed_at_the_callers_radius`
+(2E.4) and, new at `b434b9bc`, `the_keyboard_focused_tab_draws_the_ring_inside` (2E.4),
+egui-widgets' `a_widget_focused_in_the_body_is_ringed_at_the_callers_radius`
 (2G.4). Read and unaffected: egui's `the_ring_marks_keyboard_focus_only_while_the_window_has_it`
 (Tab, a key), the egui ring tests on adwaita (`install_tests.rs:694-…`, `:847-…`,
 `:1139-…`), egui-widgets' `the_switch_rings_its_track` (Tab), gpui's
@@ -1228,28 +1416,31 @@ captured (`:733-756`).
     `key_now = false`, `pointer_now = false`; then, in order, `Event::Key { key,
     pressed: true, .. }` sets `key_last` and `key_now` unless `key` is one of egui's
     eight modifier keys, `Key::ShiftLeft`, `ShiftRight`, `ControlLeft`, `ControlRight`,
-    `AltLeft`, `AltRight`, `SuperLeft` or `SuperRight` (egui 0.36.2
-    `src/data/key.rs:192-221`, 0.37.0 `:253-274`), which egui-winit sends as
-    `Event::Key` presses (egui-winit 0.36.2 `src/lib.rs:1640-1651`, pushed at
-    `:1019-1045`; 0.37.0 `:1797-…`, pushed from `:1128`), so a modifier pressed alone
+    `AltLeft`, `AltRight`, `SuperLeft` or `SuperRight` (egui 0.37.0
+    `src/data/key.rs:253-274`), which egui-winit sends as `Event::Key` presses
+    (egui-winit 0.37.0 `src/lib.rs:1797-1804`, pushed at `:1155-1161` from `:1128`), so a
+    modifier pressed alone
     is no key, as in iced (2F.1) and gpui (decision 4); `PointerButton { pressed: true, .. }`
     and `Touch { phase: egui::TouchPhase::Start, .. }` clear `key_last` and set
     `pointer_now`; `PointerMoved(_)` and every other `Touch { .. }` clear `key_last`;
     every other event changes nothing (decision 4).
   - `fn settle(&mut self, focused: Option<egui::Id>) -> bool`: where `focused` differs
     from `self.focused`, stores it with `by_key = !pointer_now && (key_last || key_now
-    || key_before)` (decision 14); returns `by_key`.
+    || key_before)` (decision 14); returns `by_key`. Its doc ends with decision 14's
+    limit: "A key pressed during a drag, or a key and a click in one pass or in two
+    passes in a row, can be counted the wrong way; no mechanism change is made for
+    these."
 
   `forget_closed_viewports` (`:347-385`) removes a closed viewport's entry beside its
   `last_sent` (`:378`).
 - `input_hook` (`:417-457`): `self.focus_origin.entry(input.viewport_id).or_default().read(&input.events)`.
-  The hook runs before egui's `begin_pass` reads the events (`EG/context.rs:966`, cited
+  The hook runs before egui's `begin_pass` reads the events (`EG/context.rs:1227`, cited
   at `plugin.rs:407`), and on every pass, a frame's later passes included
-  (`EG/context.rs:855`), with that pass's events.
+  (`EG/context.rs:1111`), with that pass's events.
 - `on_end_pass` (`:576-578`): `let by_key = self.focus_origin.get_mut(&ui.ctx().viewport_id()).is_some_and(|o| o.settle(ui.ctx().memory(|m| m.focused())));`
   (`false` for a viewport with no entry), then `paint_focus_ring(ui, by_key)`.
 - **The rule against the sequences it must cover** (each one a test of `FocusOrigin`,
-  2G.3, and the first three also through a `Context`):
+  2G.3, and the second and third also through a `Context`):
   - Tab, then a `PointerMoved`, in one pass: Tab moves the focus in that pass
     (decision 14); `key_last` is false after the move, but `key_now` holds and
     `pointer_now` does not: a ring.
@@ -1305,9 +1496,9 @@ tested_by = "T14(b)"
 ```
 
 Regenerate `src/mapping.md` (`cargo test -p native-theme-egui --lib -- --ignored regenerate_mapping_md`,
-the file's own instruction, `mapping.md:3`). Computed from today's totals
+the file's own instruction, `mapping.md:3`). Computed from the totals at `b434b9bc`
 (`mapping.md:11-19`): Foundation 66 → 67 leaves, DERIVED 36 → 37; TOTAL 516 → 517,
-DERIVED 171 → 172. `mapping_tests.rs:236-241`: `516` → `517` and the message
+DERIVED 167 → 168. `mapping_tests.rs:236-241`: `516` → `517` and the message
 "512 ResolvedTheme leaves" → "513". `verdict_totals_match_the_specification`
 (`mapping_tests.rs:443-497`) holds each group's totals by hand:
 `("foundation", [18, 1, 36, 11])` → `("foundation", [18, 1, 37, 11])`; its sub-tag
@@ -1341,19 +1532,13 @@ names them (`info::checked_by`, `docs/archive/todo_v0.7.0_code-review-findings.m
 - `the_ring_after_tab_outlasts_a_pointer_move`: kde-breeze; Tab to a button: one ring; a
   pass whose input is a `PointerMoved`: still one ring.
 - `a_drag_value_focused_by_a_click_draws_no_ring_where_keyboard_only`: kde-breeze; a
-  `DragValue` clicked (it takes the focus at the release, `EG/widgets/drag_value.rs:665-667`):
+  `DragValue` clicked (it takes the focus at the release, `EG/widgets/drag_value.rs:641-643`):
   no ring.
 - `a_widget_focused_by_the_program_draws_no_ring_where_keyboard_only`: kde-breeze;
   `request_focus` with no key: no ring.
 - `shift_tab_rings_a_pass_late_through_a_pointer_move`: kde-breeze, two buttons, the
   second focused by Tab; a pass whose input is Shift+Tab; then a pass whose input is a
   `PointerMoved`: the first button holds the focus and one ring is painted round it.
-- `a_click_after_typing_draws_no_ring`: kde-breeze, a text edit focused by Tab and
-  typed into (a key press), then in the next pass a click into a second text edit: it
-  holds the focus and no ring is painted.
-- `tab_then_a_pointer_move_in_one_pass_rings`: kde-breeze, two buttons; one pass whose
-  input is Tab followed by a `PointerMoved`: the first button holds the focus and one
-  ring is painted.
 - `a_press_then_a_key_in_one_pass_draws_no_ring`: kde-breeze, a text edit; one pass
   whose input is a press on it followed by a key press: it holds the focus and no ring
   is painted.
@@ -1362,7 +1547,9 @@ And in `CE/plugin.rs`' tests, of `FocusOrigin` alone (no `Context`), five tests 
 five of the six sequences of 2G.1's list, each named for its sequence (the sixth, two
 viewports, is a property of the plugin's map, not of `FocusOrigin`, so its test is the
 `Context` one below): `focus_origin_tab_then_a_pointer_move`,
-`focus_origin_a_press_then_a_key`, `focus_origin_shift_tab_applied_a_pass_late`
+`focus_origin_a_press_then_a_key` (and, apart, a key in one `read`, then a `read`
+with a press and a `settle` with a new widget: `false`, the sequence of a click after
+typing), `focus_origin_shift_tab_applied_a_pass_late`
 (with a `PointerMoved` and, apart, with a click in the later pass),
 `focus_origin_a_later_pass_of_the_frame` (a pass with an arrow key and no focus
 change, then an empty `read` and a `settle` with a new widget: `true`; and, apart, a
@@ -1453,16 +1640,23 @@ stay true. No code change.
 ### 2H.3 gpui
 
 - `info/leaves.rs`: a `HOW` entry for `("", "defaults.focus_ring_keyboard_only", …)`
-  after the `focus_ring_offset_px` one (`:668-671`): "gpui: whether gpui-component's band
-  is drawn (Theme::focus_ring off where true; native-theme-gpui/colors.rs, focus_band_on), and whether the
-  theme-drawn Checkbox, Radio, Slider and Switch ring a focus that did not follow a key
-  (widgets/mod.rs, ring_shows)". The `focus_ring_color` entry (`:663-666`): "and
+  after the `focus_ring_offset_px` one (`:668-671`): "gpui: when gpui-component's band
+  is drawn (Theme::focus_ring off where true, native-theme-gpui/colors.rs, focus_band_on;
+  on there for a focus that followed a key press in a window under Root,
+  native-theme-gpui/lib.rs, FocusBand), and whether the
+  theme-drawn Checkbox, Radio, Slider and Switch (widgets/mod.rs, ring_shows) and the
+  TabBar's focused tab (widgets/mod.rs, focus_followed_key) ring a focus that did not
+  follow a key". The `focus_ring_color` entry (`:663-666`): "and
   ThemeColor ring (colors.rs)" → "and ThemeColor ring (colors.rs, ring_colour: opaque
   where the band is off)". The `focus_ring_width_px` entry (`:673-676`), whose text ends
   "…, and a width > 0 turns it on", false after this step on kde-breeze, windows-11 and
   material-3: "and a width > 0 turns it on" → "and a width > 0 turns it on where the
-  theme does not say keyboard only (native-theme-gpui/colors.rs, focus_band_on)". A
-  `file.rs, Symbol` citation with no line passes `every_prose_citation_still_exists`
+  theme does not say keyboard only (native-theme-gpui/colors.rs, focus_band_on)". The
+  `TabBar`'s ring, `tab_bar_ring` (`info/layout.rs`): its config text's opening, "on
+  keyboard focus only, the tabs taking the focus from the keyboard alone:", becomes,
+  where the theme states `Some(true)`, "on the focused tab, for a focus that followed a
+  key press only (native-theme-gpui/widgets/mod.rs, focus_followed_key):", and elsewhere
+  "on the focused tab:"; the rest is unchanged. A `file.rs, Symbol` citation with no line passes `every_prose_citation_still_exists`
   where exactly one file of that name holds the symbol (`symbol_citation_finding`,
   `CG/showcase.rs:3392-3417`); the crate name picks the connector's own `src/`
   (`candidates`, `:2576-2585`; the root `cited_source_dirs` adds, `:2681-2684`).
@@ -1472,27 +1666,39 @@ stay true. No code change.
   made from them, and after 2E.1 the value is `ring_colour`'s. In the form of the Muted
   row (`:107-112`): `model` "defaults.focus_ring_color, defaults.focus_ring_width_px,
   defaults.focus_ring_keyboard_only" and a `derived` note, "the colour as stated where
-  gpui-component's band is on; made opaque where it is off, where the theme says
-  keyboard only or its ring width is not above 0: then ring is a focused control's
-  line, not a band (native-theme-gpui/colors.rs, ring_colour)". The note is read by
+  gpui-component's band is on for any focus; made opaque where the theme says
+  keyboard only or its ring width is not above 0: there ring colours a focused control's
+  border or line and a Tab's keyboard ring, and the band after a key press takes it with
+  its alpha set to 0.5 (native-theme-gpui/colors.rs, ring_colour)". The note is read by
   `every_prose_citation_still_exists` as a config line (its doc, `CG/showcase.rs:3669-3672`;
-  `config` is one of `NOTE_METHODS`, `:2417`).
+  `config` is one of `NOTE_METHODS`, `:2417`). `UPSTREAM_TAB_RING` (`info/layout.rs`):
+  "ring, the theme's focus ring colour," becomes "ring, the theme's focus ring colour
+  (without its alpha where the theme says keyboard only or its ring has no width),", and its
+  opening's ", the tabs taking the focus from the keyboard alone" is removed:
+  gpui-component's `Tab` is built on gpui-base's (gpui-component 0.10.0
+  `src/tab/tab.rs:539`), which a right or middle press focuses (2E.2). The `Tab`'s
+  and the `Slider`'s not-themeable ring notes are not branched on `t.focus_ring`:
+  neither ring is switched by it.
 - The four unconditional band claims become conditional on `t.focus_ring`, as the
   Carousel's are (`info/layout.rs:1093-1114`), with the focused border claimed where it
   is off: `info/inputs.rs:268-273` (InputGroup, "focus ring, ring at 50%"), `:716-726`
   (Switch), `:1742-1747` (ColorPicker), `:1937-1942` (TimeField). Where `t.focus_ring` is
-  false the entry is omitted and the info gains `.config("focus ring", "off: the theme
-  says the platform shows its ring for keyboard focus only, and gpui-component draws its
-  band on a click as well and offers no way to turn that off (native-theme-gpui/colors.rs,
-  focus_band_on)")`. Which info gains
+  false the entry is omitted and the info gains `.config("focus ring", "no band for this focus: Theme::focus_ring is off where the
+  theme's ring has no width, and, where the theme says the platform shows its ring for
+  keyboard focus only, for a focus that did not follow a key press
+  (native-theme-gpui/colors.rs, focus_band_on; native-theme-gpui/lib.rs, FocusBand)")`.
+  `t` is the installed theme when the info is built, and the showcase's window is under
+  `Root`, so on the three keyboard-only presets the info follows the window's focus: the
+  band is claimed after Tab, and the line above shows after a click or at start-up. The
+  tests build the infos from `to_theme`'s value, where the flag is `focus_band_on`'s. Which info gains
   which claim: the Switch and the TimeField claim no focused border today, so in the
   `else` branch each gains `claim("focused border", "ring", t.ring,
   "gpui-component/styled.rs:270")`, as the Carousel's `else` branch has it
-  (`info/layout.rs:1107-1112`): both are bordered (`border_1`, `GC/switch.rs:270`,
+  (`info/layout.rs:1107-1112`): both are bordered (`border_1`, `GC/switch.rs:278`,
   `GC/time/time_field.rs:109`) and focus through `focus_ring_style`
-  (`GC/switch.rs:281-282`, `GC/time/time_field.rs:116`), so with the band off their border
+  (`GC/switch.rs:289-290`, `GC/time/time_field.rs:116`), so with the band off their border
   is tinted (`GC/styled.rs:269-270`). The InputGroup and the ColorPicker claim theirs
-  already, in either branch (`"focused border"`, `input/group.rs:322`, `inputs.rs:262-267`;
+  already, in either branch (`"focused border"`, `input/group.rs:326`, `inputs.rs:262-267`;
   `color_picker.rs:778`, `inputs.rs:1736-1741`), and keep it. A disabled Switch gains
   neither the "focus ring" config line nor the focused-border claim: its info claims no
   ring today, since a disabled switch takes no focus (the `if disabled` of
@@ -1502,8 +1708,12 @@ stay true. No code change.
   platform's focus_ring_width only as a switch: upstream drops the ring where
   Theme::focus_ring is off …" → "the connector uses the platform's focus_ring_width and
   focus_ring_keyboard_only only as a switch: upstream drops the ring where
-  Theme::focus_ring is off, which the connector turns off where the width is 0 or the
-  theme says keyboard only, …" (rest unchanged).
+  Theme::focus_ring is off, which the connector leaves off where the width is 0 or the
+  theme says keyboard only, there but for a focus that followed a key press in a window
+  under Root, …"; in the rest, "at half the ring colour's alpha" becomes
+  "with the ring colour's alpha set to 0.5" and "at that half alpha" "with that alpha"
+  (gpui-component 0.10.0 `src/styled.rs:11-12`, `focus_style`), and the rest is
+  unchanged.
 - `theme_focus_ring` (`info/inputs.rs:898-935`): where the theme states `Some(true)`, the
   config line "{w}px wide, …" gains ", for a focus that followed a key press only
   (native-theme-gpui/widgets/mod.rs, ring_shows)".
@@ -1511,9 +1721,19 @@ stay true. No code change.
   line, which do not change.
 - `docs/todo.md:3315-3320` (`[1.0]` "Two focus claims hold only while
   `Theme::focus_ring` is on") closes: the claims are branched here (2I.5).
+- **The showcase needs no change for the band**: its window's `Root` is made after
+  `apply` (gpui-kit 0.10.0 `src/lib.rs:181-191`, `open_window`, builds the view, which
+  applies the theme, before `Root::new`), so it has the plugin, and on kde-breeze,
+  windows-11 and material-3 gpui-component's controls show their band after Tab and none
+  after a click. A new test in `examples/showcase-gpui/tests.rs`,
+  `upstreams_band_follows_the_focus_in_the_showcase`, in the form of the file's tests
+  that drive the window (where their window has no `Root`, the test mounts the view in
+  one, after `apply`), under kde-breeze: `Theme::global(cx).focus_ring` is false at start
+  (the start-up focus follows no key, 2H.1), true after a Tab keystroke, and false after
+  a click into the Basic page's field.
 - The showcase's Tab traversal: the showcase registers a plugin of gpui-base's `Root`
   (`examples/showcase-gpui/host.rs:75`), whose key bindings turn Tab and Shift+Tab into
-  `Window::focus_next` and `focus_prev` (gpui-base 0.9.1 `src/root.rs:44-45`,
+  `Window::focus_next` and `focus_prev` (gpui-base 0.10.0 `src/root.rs:44-45`,
   `:222-227`), so the showcase moves the focus with Tab; nothing to add.
 
 ### 2H.4 egui
@@ -1544,12 +1764,12 @@ the images: **not verified** against the files.
 
 ### 2I.1 `CHANGELOG.md`
 
-The release's one section (S5), `## [0.7.3] - <date>`, written with its number from the
-start (never `## [Unreleased]`) and its date filled by the version step, above every
-other `## [` heading (`## [0.7.1]`, or `[0.7.2]` if that is released first; at the
-merge, 2K, a conflict there is resolved by putting this section first). Unit 2.7 writes it
-with step 2's entries below; unit 3.3 adds step 3's (3H.1) under the same headings and
-turns the *Breaking Changes* entry into the one that names both structs (3H.1). The
+The entries go into the existing `## [0.7.2] - 2026-11-18`. `### Breaking Changes` is a
+new heading there, first in the section, as in `## [0.7.0]`; every other entry goes at
+the end of its existing heading. The date is set again in the close-out if the release
+is made on another day. Unit 2.7 writes step 2's entries; unit 3.3 adds step 3's (3H.1)
+under the same headings and turns the *Breaking Changes* entry into the one that names
+both structs (3H.1). The
 *Breaking Changes* entry follows 0.7.0's wording (its section of `CHANGELOG.md`, the
 entry on struct literals); that note is for the reader and is not written into
 `CHANGELOG.md`:
@@ -1568,19 +1788,38 @@ entry on struct literals); that note is for the reader and is not written into
     only, for a focus that followed a key press, decided when the field gains the focus.
   - **native-theme-egui**: the install plugin paints the ring, where the theme says
     keyboard only, for a focus that followed a key press.
-  - **native-theme-gpui**: the theme-drawn `Checkbox`, `Radio`, `Slider` and `Switch`
-    draw the ring, where the theme says keyboard only, for a focus that followed a key
-    press (`Window::last_input_was_keyboard` when they gain the focus).
+  - **native-theme-gpui**: the theme-drawn `Checkbox`, `Radio`, `Slider`, `Switch` and
+    `TabBar` draw the ring, where the theme says keyboard only, for a focus that followed
+    a key press (`Window::last_input_was_keyboard` when the focus arrives, kept until it
+    leaves).
+  - **native-theme-gpui**: where the theme says keyboard only, gpui-component's own
+    controls draw their focus band for a focus that followed a key press and none after
+    a click, in every window whose `Root` is made after the first `apply`: `apply`
+    registers a plugin of gpui-base's `Root` that sets `Theme::focus_ring` for the
+    window's focus before the window's content is built. Nothing to call.
   - **Showcases (iced)**: Tab and Shift+Tab move the keyboard focus.
 - `### Changed`
   - **native-theme-gpui**: where the theme says keyboard only, `apply` turns
     gpui-component's focus band off (`Theme::focus_ring`) and makes `ring` opaque:
     gpui-component draws its band on a click into a text field, a select or a switch.
-    A focused control shows its border, or a 1 px line, in `ring` (a borderless button
+    The `Root` plugin (see *Added*) turns it on for keyboard focus; in a window without
+    it (its `Root` made before the first `apply`) a focused control shows, also when Tab
+    reached it, its border, or a 1 px line, in `ring` (a borderless button
     but a link, a text or an upstream `.ghost()` one: a 1 px line in its text colour at
-    60 %). windows-11's light
+    60 %). gpui-component's `Tab` and `Slider` keep the rings that switch does not
+    reach: the `Tab`'s on keyboard focus, in `ring`, and the `Slider`'s round its thumb
+    while it has the focus. windows-11's light
     `ring` loses its last tenth of transparency (#000000e4 to #000000).
-  - **Showcases (gpui)**: the Widget Info of the InputGroup, the Switch, the
+  - **native-theme-gpui**, the existing 0.7.2 entry on `widgets::TabBar` (unreleased),
+    edited in place: "A tab with keyboard focus shows the theme's focus ring, an inset
+    shadow in the ring colour whose spread is the ring width, drawn inside the tab and
+    never after a click, and the strip scrolls to the focused tab." becomes "The focused
+    tab shows the theme's focus ring, an inset shadow in the ring colour whose spread is
+    the ring width, drawn inside the tab (where the theme says keyboard only, for a focus
+    that followed a key press, see *Added*), and the strip scrolls to the focused tab."
+  - **Showcases (gpui)**: on kde-breeze, windows-11 and material-3 gpui-component's
+    controls show their band after Tab and none after a click, and their Widget Info
+    follows the focus. The Widget Info of the InputGroup, the Switch, the
     ColorPicker and the TimeField claims gpui-component's focus band only where it is
     drawn (`Theme::focus_ring` on), as the Carousel's does; where it is off it says so
     and claims the focused border in `ring` (2H.3).
@@ -1593,47 +1832,51 @@ entry on struct literals); that note is for the reader and is not written into
     selection colour at 30 % (#3daee94d), 2 px wide from 1 px inside the control to 1 px
     outside it, where it was the opaque focus colour, 1 px wide, 2 px away; the KDE
     portal's accent is applied at the same alpha. The iced and egui connectors and the
-    gpui connector's own controls draw it only after a key press, as Breeze does.
-
-Under D0 (b) the heading is the minor version the maintainer gives, and the *Breaking
-Changes* entry is the same; under (c) the entry is dropped (a field of a
-`#[non_exhaustive]` struct is no break) and the release that made the structs
-`#[non_exhaustive]` carries the one note.
+    gpui connector's own controls draw it only after a key press, as Breeze does;
+    gpui-component's controls draw their own band then.
 
 ### 2I.2 `ROADMAP.md`
 
-The release's one section (S5), after the latest release's section, before *Model
-completeness* (`:112`): today that is *v0.7.1*, which ends at `:110`; where a release
-before this one (egui 0.37, D10) has added a section after it, the new section follows
-that one. Unit 2.7 writes its heading, which names both steps, and its first
-**Delivered** paragraph, step 2's; unit 3.3 adds step 3's paragraph after it (3H.2):
+`ROADMAP.md` has no v0.7.2 section at `b434b9bc`. Unit 2.7 writes the whole release's
+section, after *v0.7.1*'s and before *Model completeness* (`:112`), headed `## v0.7.2 —
+egui 0.37, GPUI Kit 0.10.0, and the focus ring and button outlines from issue #4`. Its
+first **Delivered** paragraph is the upgrade's, written from the `[0.7.2]` CHANGELOG
+entries that state the requirements (the egui connectors on egui 0.37.0; the gpui
+connector on gpui-component, gpui-base and gpui-kit 0.10.0 with gpui-pre 0.3.12 and, on
+`gpui-fast`, GPUI Fast 0.1.16 or later) and from its *Showcases* entries, in the form of
+v0.7.1's first sentences, with no value that the CHANGELOG does not hold. Step 2's
+paragraph follows it, without a "**Delivered:**" of its own; unit 3.3 adds step 3's
+after it (3H.2):
 
 ```markdown
-## v0.7.3 — the focus ring as KDE, Windows and Material show it, and a button's outline on hover and focus (issue #4)
-
-**Delivered:** the model says whether a platform shows its focus ring only for a focus
+The model says whether a platform shows its focus ring only for a focus
 that came from the keyboard (`defaults.focus_ring_keyboard_only`): KDE, Windows and
 Material do, iOS shows it on any focus, and where a theme does not say (GNOME, whose
 rule has a time-out, macOS, the colour schemes) the connectors draw it as before. The
 iced and egui connectors and the gpui connector's own controls draw the ring only for a
 focus that followed a key press. gpui-component draws its band on a click as well and
-offers no way to turn that off, so the gpui
-connector turns its band off on those platforms; a focused control keeps its focused
+offers no way to turn that off, so the gpui connector sets its band per focus on those
+platforms, on for a focus that followed a key press and off after a click, through a
+plugin of gpui-base's `Root`; a focused control keeps its focused
 border, or a focus line (a borderless button but a link, a text or an upstream
-`.ghost()` one: a 1 px line in its text colour at 60 %). kde-breeze states Breeze's
-ring: the selection colour at 30 %, 2 px from 1 px inside the control to 1 px outside.
+`.ghost()` one: a 1 px line in its text colour at 60 %); gpui-component's `Tab` and
+`Slider` keep rings of their own, which that switch does not reach. kde-breeze states
+Breeze's ring: the selection colour at 30 %, 2 px from 1 px inside the control to 1 px
+outside.
 ```
 
-The v0.7.1 paragraph's sentence "The platform facts for the focus ring, … are corrected
-too, and their values wait for a connector design" is history of that release and stays.
+The v0.7.1 paragraph's sentences "The platform facts for the focus ring and the default
+button are corrected too, and their values wait for a connector design" and "The
+reporter's remaining items, the focus ring and Breeze's hover outlines among them, are
+planned for later 0.7.x releases" are history of that release and stay.
 
 *Also in the 0.7.x releases* (`:262-…`) counts the backlog's open `[v0.7.x]` entries,
-"tags 29 open items `[v0.7.x]`" (`:264` today; the number the releases before this step
+"tags 48 open items `[v0.7.x]`" (at `b434b9bc`; the number the work before this step
 left there). 2I.5 opens one such entry and closes none (the item it marks done is part of an
 entry that stays, and the `[1.0]` entry is not one), so the number becomes what `grep -c
 '^- \[ \] \[v0.7.x\]' docs/todo.md` prints on the documents unit's tree (2.7), after
 2I.5's edits, in the form step 1's specification sets (its G.2); the commit body records
-it. Today the grep prints 41, against the 29 the line states.
+it. At `b434b9bc` the grep prints 69, against the 48 the line states.
 
 ### 2I.2a The READMEs' lists of optional resolved values
 
@@ -1657,117 +1900,21 @@ No count changes: the field is no colour, and both READMEs' 34 counts colours (3
 ### 2I.3 The first rationale (`docs/issues/0004_kde-hand-overrides-rationale.md`)
 
 - Table row B4 (`:1022`): "a sound choice for now; documented (§4.8); the ring's values
-  wait for a design (§5.1)" → "**fixed in 0.7.3**: Breeze's ring values, drawn only after
+  wait for a design (§5.1)" → "**fixed in 0.7.2**: Breeze's ring values, drawn only after
   a key in the iced and egui connectors and the gpui connector's own controls; on KDE the
-  gpui connector turns gpui-component's band off itself (open-items rationale D4), so
-  the override is no longer needed".
+  gpui connector shows gpui-component's band for keyboard focus only, itself (open-items
+  rationale D4), so the
+  override is no longer needed".
 - **§5.1** (`:837`), a line after the heading, in the form step 1's specification gives
-  §5.5 and §5.6 (its G.3): "*Settled by `0004_kde-open-items-rationale.md` D4 (0.7.3):
+  §5.5 and §5.6 (its G.3): "*Settled by `0004_kde-open-items-rationale.md` D4 (0.7.2):
   kde-breeze and the KDE reader state Breeze's band; `defaults.focus_ring_keyboard_only`
   says KDE, Windows and Material show it for keyboard focus only, which the iced and
   egui connectors and the gpui connector's own controls follow, and the gpui connector
-  turns gpui-component's band off where it is set.*"
-- **The reply draft (§8).** All of this applies only while the reply has not been
-  posted; once it is, this step edits nothing there, and whether a follow-up is written
-  is the maintainer's. Step 1's specification edits the draft before this step (its
-  G.3), and so may other work before it is posted, so every edit here is placed by
-  anchor and by content, never by line or by another specification's wording: a bullet
-  is found by its bold title whatever its body then says; what this step fixes moves
-  under "Later 0.7.x releases fix more:" with its full text, and what stays open stays
-  under "Some things are not fixed yet", never the same item in both; the release is
-  written "<the release that brings step 2>" here (and "<the release that brings step
-  3>" in 3H.3; one release under S5, and the reply waits for the release of steps 4
-  and 5, S5), each replaced by that release's version when the maintainer gives it,
-  in the commit that writes it into the draft if the version is known then, else in the
-  release's own close-out before the reply is posted; the confirm note keeps every
-  sentence still in the draft and its D0/D10 caveat, and gains the new ones.
-  1. The bullet whose title is **The focus ring.**, under "Some things are not fixed
-     yet", is removed.
-  2. After the paragraph that begins "Fixed earlier, in 0.7.0:", a new paragraph and
-     list (this step is the first to add it):
+  shows gpui-component's band, where it is set, only for a focus that followed a key.*"
 
-     ```markdown
-     > Later 0.7.x releases fix more:
-     >
-     > - **The focus ring** (<the release that brings step 2>). Breeze draws a ring
-     >   only when you move with the Tab key; with the mouse it only recolours a text
-     >   field's border. native-theme now knows that KDE, Windows and Material show
-     >   the ring for keyboard focus only, and gives Breeze's ring its real look, the
-     >   highlight colour at 30 %, 2 px wide. gpui-component draws its ring however
-     >   the focus came, so on those platforms the connector turns that ring off; a
-     >   focused control keeps its coloured border. The check box, radio button,
-     >   slider and switch the connector draws itself
-     >   (`native_theme_gpui::widgets::{Checkbox, Radio, Slider, Switch}`) draw
-     >   Breeze's ring after a key. I have asked gpui-component to draw its ring for
-     >   keyboard focus only, which would bring the ring back for Tab.
-     ```
-
-     (The four are the theme-drawn controls that draw `FocusRing`, read today:
-     `CG/widgets/checkbox.rs:273`, whose rendering `Checkbox` and `Radio` share,
-     `widgets/slider.rs:332`, `widgets/switch.rs:457`; they are public through
-     `pub mod widgets`, `CG/lib.rs:249`, and `widgets/mod.rs:78-83`.)
-  3. After the paragraph that begins "With 0.7.1 (which is built on GPUI Kit 0.9.1)",
-     a paragraph of its own: "> With <the release that brings step 2> you can drop
-     `focus_ring` as well: the connector turns gpui-component's ring off on KDE
-     itself." The sentence of the 0.7.1 paragraph that begins "Still yours to keep:"
-     is not edited: it says what 0.7.1 needs, and with 0.7.1 the `focus_ring` override
-     is still needed, so it keeps naming `focus_ring` (as step 1 leaves it: "Still
-     yours to keep: the 16 px groove (until gpui-component's table is fixed),
-     `focus_ring` and `muted` (that one is your application's own choice)."); the new
-     paragraph after it then drops `focus_ring` for the later release, and its "as
-     well" reads against that list.
-  4. The bullet whose title is **Hover borders on buttons.** gets this full text (the
-     focus ring and the library update its present wording waits for are then out):
-
-     ```markdown
-     > - **Hover borders on buttons.** Breeze shows hover by recolouring a button's
-     >   border, not its fill. native-theme has no value for that yet, which is why
-     >   you had to type it yourself. It is planned for a coming 0.7.x release. In
-     >   GPUI it depends on whether gpui-component's buttons can take it, which I
-     >   have yet to try.
-     ```
-  5. The note after the draft. Of the sentences step 1's note names, "I will ask
-     gpui-component", "after an update of the libraries native-theme is built on" and
-     "native-theme plans to state that Breeze shows its ring for keyboard focus only"
-     leave the draft with item 1, and "It is planned, after the focus ring, in a
-     coming 0.7.x release" and "an update of the libraries native-theme is built on
-     comes before both" with item 4; so does the parenthesis on putting the update
-     first, which no sentence then names. "In GPUI it depends on whether
-     gpui-component's buttons can take it, which I have yet to try" stays in item 4's
-     bullet and in the note. The note becomes:
-
-     ```markdown
-     The sentences "I am reporting it there", "I have asked gpui-component to draw
-     its ring for keyboard focus only", "It is planned for a coming 0.7.x release",
-     "In GPUI it depends on whether gpui-component's buttons can take it, which I
-     have yet to try", "they come in the same series of releases as the hover
-     borders" and "it comes last" are the maintainer's to confirm before posting:
-     they follow
-     `0004_kde-open-items-rationale.md`'s proposed order (D10), and "0.7.x" its
-     proposed versions (D0 (a); under (b) or (c) some of these releases are minor
-     ones, and the wording changes with them).
-     ```
-
-  **The draft's two lists as they stand after this step** (step 1's bullets as its G.3
-  gives them; the 0.7.1 list and the paragraphs around it are not repeated):
-
-  ```markdown
-  > Later 0.7.x releases fix more:
-  >
-  > - **The focus ring** (<the release that brings step 2>). [item 2's text]
-  >
-  > […]
-  >
-  > Some things are not fixed yet:
-  >
-  > - **The 16 px scroll bar in tables** is a bug in gpui-component's table, which
-  >   ignores the theme's width. I am reporting it there.
-  > - **Hover borders on buttons.** [item 4's text]
-  > - **Menus in GPUI.** gpui-component paints every menu in its `popover`
-  >   colour, the window's on KDE (since 0.7.0, so you no longer need to set
-  >   `popover`), and has no colour of its own for a menu, so in GPUI the small
-  >   difference from Breeze's menu colour stays.
-  ```
+The reply (§8) was posted on 2026-11-17 for 0.7.1; 0.7.2 fixes two of the items it
+lists as open (the focus ring, the hover borders), and whether a follow-up comment is
+written is the maintainer's.
 
 ### 2I.4 The upstream request (4), `docs/issues/0004_kde-hand-overrides-upstream-requests.md:53-66`
 
@@ -1775,9 +1922,13 @@ After "…whose focused border should show however it was focused." add: "The de
 would be taken when an element gains the focus, not at each paint: `last_input_was_keyboard`
 follows the last event (`src/window.rs:5873-5881`), so a band drawn from it at paint
 time would vanish at the next mouse move, as `DataTable`'s focus style does. Until then
-native-theme-gpui turns the band off (`Theme::focus_ring`) for themes whose platform
-shows its ring for keyboard focus only." The document's other citations stay as they
-are (a pinned document, S6).
+native-theme-gpui sets that switch (`Theme::focus_ring`) per focus for themes whose platform
+shows its ring for keyboard focus only, from a plugin of `Root` at each render of a window
+(0.7.2): on for a focus that followed a key, off otherwise. Two rings do not follow `Theme::focus_ring` at
+all: the `Slider`'s thumb ring (0.10.0 `src/slider.rs:228-238`), drawn while it has the
+focus however it got it, and the `Tab`'s (`src/tab/tab.rs:962-973`), which is already
+keyboard-only but through `focus_visible`, the every-paint rule." The document's other
+citations stay as they are (a pinned document, S6).
 
 ### 2I.5 The backlog, `docs/todo.md`
 
@@ -1786,70 +1937,64 @@ are (a pinned document, S6).
   `docs/archive/todo_closed.md` while the entry is open): *KDE values that wait for a
   connector design* (`:1826-1913`), item (1) *The focus ring*. Its text, from "(1)
   **The focus ring**," (`:1829`) to "(the gpui README's overrides section)."
-  (`:1854-1855`), becomes "(1) **The focus ring**: done in <the release that brings
-  step 2> (below)."; the entry keeps items (2) to (5) and its first sentence. After the
+  (`:1854-1855`), becomes "(1) **The focus ring**: done in 0.7.2 (below)."; the entry keeps items (2) to (5) and its first sentence. After the
   entry's last line, below step 1's dated note:
 
   ```markdown
-        *Issue #4, open items step 2 (<the release that brings step 2>, <date>, <sha>):*
+        *Issue #4, open items step 2 (0.7.2, <date>, <sha>):*
         (1) done (`docs/issues/0004_kde-open-items-rationale.md` D4). kde-breeze and the
         KDE reader state Breeze's band, the selection colour at alpha 0.3, 2 px from 1 px
         inside the control to 1 px outside (`kde-breeze.toml`
         `[light.defaults] focus_ring_color`, `[dark.defaults] focus_ring_color`), and
         `defaults.focus_ring_keyboard_only` says KDE shows it for keyboard focus only:
         the iced and egui connectors and the gpui connector's own controls draw it after
-        a key, and the gpui connector turns gpui-component's band off.
+        a key, and the gpui connector draws gpui-component's band only for a focus
+        that followed a key.
   ```
 
   Also done in place: in *KDE.* of *Values the v0.7.1 gap map found against their sources*
     (`:1987-2019`), item (9) `defaults.focus_ring_*`: the entry's items run on in one
     paragraph and end in a dated note, "*Issue #4 (0.7.1, 2026-11-14, abb3b761):* …"
     (`:2010-2019`), so the new note goes at the entry's end, after that one, in its
-    form: "*Issue #4 (<the release that brings step 2>, <date>, <commit>):* (9) is
+    form: "*Issue #4 (0.7.2, <date>, <commit>):* (9) is
     fixed: kde-breeze and the reader state Breeze's band, and the iced and egui
     connectors and the gpui connector's own controls draw it only after a key press."
-    The dated note's pointer for (9), "KDE values that wait for a
-    connector design" (`:2016-2019`), names an entry whose item (1), *The focus ring*,
-    this step marks done in place (above): the note is a record of 0.7.1 and keeps its
-    words, and the pointer gains " (its item (1) done in <the release that brings step
-    2>)" after the closing quotation mark of "KDE values that wait for a connector
-    design" and before the full stop that follows it. The entry stays open for its other
-    items.
+    The entry stays open for its other items.
 - **Closed** (moved to `docs/archive/todo_closed.md` under "Closed items from" and their
   heading, with a dated line naming the commit, the file's rule at `:1-13`):
   - `[1.0]` *Two focus claims hold only while `Theme::focus_ring` is on*
-    (`:3315-3320`), closed by 2H.3. Its closing line: "*Closed (<the release that
-    brings step 2>, <date>, <sha>):* the DataTable panel's keyboard-focus line was
+    (`:3315-3320`), closed by 2H.3. Its closing line: "*Closed (0.7.2, <date>, <sha>):*
+    the DataTable panel's keyboard-focus line was
     already conditional ("with the focus ring outside it where the theme's focus_ring
     is on", in `connectors/native-theme-gpui/examples/showcase-gpui/info/data.rs`),
     and the Switch panel's ring claim is now branched on `t.focus_ring`, as
-    the Carousel panel's is; kde-breeze, windows-11 and material-3 turn the ring off
+    the Carousel panel's is; kde-breeze, windows-11 and material-3 show gpui-component's
+    band only for a focus that followed a key
     (`docs/issues/0004_kde-open-items-rationale.md` D4)."
 - **Changed:**
   - `[upstream]` *GPUI Kit, from issue #4* (`:2742-2764`), request (4): after its
     sentence that ends "…a button's and a check box's border tint is keyboard-only too,
     as Breeze draws them (`docs/platform-facts.md:1108-1110`)." (`:2758-2762`), and
-    before "See also", a new sentence: "Until then the connector turns the band off
-    where the theme says keyboard only (`defaults.focus_ring_keyboard_only`, 0.7.3)."
-    Its pointer
-    "*KDE: what a Qt application under Breeze shows that native-theme does not (issue
-    #4)*, "KDE values that wait for a connector design", (1)." (`:2762-2764`) names the
-    item this step marks done; the item keeps its place (above), so the pointer stays
-    and gains ", done in <the release that brings step 2>" after "(1)" and before its
-    full stop, written with the placeholder as item (9)'s note is.
+    before "See also", a new sentence: "Until then the connector switches the band per focus
+    where the theme says keyboard only (`defaults.focus_ring_keyboard_only`, 0.7.2), on
+    for a focus that followed a key (a plugin of `Root`: `lib.rs`, `FocusBand`); a
+    `Tab`'s and a `Slider`'s own rings stay (gpui-component 0.10.0)."
   - *platform-facts: which part of a control the focus ring surrounds* (`:511-526`):
     its last sentence, "KDE's ring values wait in *KDE: what a Qt application under
     Breeze shows that native-theme does not (issue #4)*, "KDE values that wait for a
     connector design"." (`:524-526`), becomes "kde-breeze and the KDE reader state
-    Breeze's band since 0.7.3; the question of the part it surrounds stays." The
-    entry stays open.
-  - `[upstream]` *the focus ring's width* (`:2472-…`): append "*0.7.3:* where the theme
-    says keyboard only the band is off altogether (`colors.rs`, `focus_band_on`)."
+    Breeze's band since 0.7.2; the question of the part it surrounds stays, and so does
+    what Breeze draws on a keyboard-focused tab: the facts' list of the widgets that get
+    the band names no tab bar (`docs/platform-facts.md` §2.1.5, `focus_ring_color`,
+    KDE), while `widgets::TabBar` draws the band inside the tab." The entry stays open.
+  - `[upstream]` *the focus ring's width* (`:2472-…`): append "*0.7.2:* where the theme
+    says keyboard only the band is off (`colors.rs`, `focus_band_on`) but for a focus that
+    followed a key (`lib.rs`, `FocusBand`)."
 - **Appended**, to item (8) `input.caret_color` of the same *KDE.* entry
   (`:2005-2006`): "kde-breeze states no `input.caret_color`, so the preset's caret is
   `defaults.text_color`, the text colour, while the reader writes `DecorationFocus`
   (`native-theme/src/kde/colors.rs`, the Input block); the rule in
-  `docs/inheritance-rules.toml` names `DecorationFocus` since 0.7.3. Measure, then
+  `docs/inheritance-rules.toml` names `DecorationFocus` since 0.7.2. Measure, then
   state one of the two in the preset." (*Problems found*, 1.)
 - **New entry**, `[v0.7.x]`, in the issue-#4 section, right after step 1's *KDE: a
   menu's frame is Qt Quick's, its fill Qt Widgets'* (its G.5, item 1b, which follows
@@ -1872,15 +2017,18 @@ resolve in kde-breeze (both keys exist at `0fa28027`, and the step changes their
 only). The note's text, under an entry line, run through the script's `findings()`
 gives no finding (read today).
 
+In these notes `<sha>` and `<commit>` are the last code unit's commit (the plan's U6),
+and `<date>` its day; the closing line of the `[1.0]` entry names unit 2.3's commit.
+
 ### 2I.6 The rationale's status line
 
 `docs/issues/0004_kde-open-items-rationale.md`'s "Status:" paragraph (`:3-4`, under its
 title) gains, as step 1's specification's G.4 and the steps 6–7 specification's 6.H.4
-give theirs, one sentence for both steps, written in the release's close-out with 3H.5,
-since the documents move to `docs/archive/` in that close-out (3H.6, S5): "Steps 2 (D4)
-and 3 (D5) implemented on `<date>` for <the release that brings step 2>, by
-`../archive/todo_v0.7.x_kde-open-items-steps2-3-{spec,plan}.md`." (3H.5). The rationale
-stays in `docs/issues/` while a step remains.
+give theirs, one sentence for both steps, written in 0.7.2's close-out with 3H.5,
+since the documents move to `docs/archive/` in that close-out (3H.6): "Steps 2 (D4)
+and 3 (D5) implemented on `<date>` for 0.7.2, by
+`../archive/todo_v0.7.2_kde-focus-ring-and-button-outlines-{spec,plan}.md`." (3H.5). The
+rationale stays in `docs/issues/` while a step remains.
 
 ## Part 2J — The fallback (D10)
 
@@ -1890,228 +2038,108 @@ without a change this specification does not describe), that mechanism keeps dra
 the ring on any focus, which is what the field unset means:
 
 - its code ignores `focus_ring_keyboard_only` (the wrapper's `RingLook::keyboard_only`,
-  the plugin's `FocusRing::keyboard_only`, or `ring_shows`, is not added);
-- its documentation (the `focus_ring` doc and README of 2F.4, the plugin doc and README
-  of 2G.1; for gpui, whose `ring_shows` is then not added and whose `FocusRing` doc is
-  not touched, the README of 2E.3, in the form the gpui bullet below gives) says
-  instead: "The ring shows on any focus, a click included, also where the theme says the
-  platform shows it for keyboard focus only: <toolkit> gives no way to tell", with the
-  reason found;
+  the plugin's `FocusRing::keyboard_only`, or gpui's `ring_shows` and
+  `focus_followed_key`, is not added);
+- its documentation says instead that the ring shows on any focus, a click included,
+  also where the theme says the platform shows it for keyboard focus only, as
+  <toolkit> gives no way to tell, with the reason found;
 - its tests of 2E.4, 2F.2 or 2G.3 that assert the rule are not added, and the existing
-  tests that the rule would have broken stay as they are today: a mechanism that
-  ignores the field rings them as before, so the `None` edits of 2E.4, 2F.2, 2G.4 and
-  2H.2 are not made for it (for gpui, 2E.4's two doc rewrites are still made, in the
-  form the gpui bullet below gives);
+  tests that the rule would have broken stay as they are today (the `None` edits of
+  2E.4, 2F.2, 2G.4 and 2H.2 are not made for it);
 - the CHANGELOG's *Added* entry for it is dropped, and a backlog entry records what was
   tried and why it failed;
 - the texts of this step that say the connectors draw the ring after a key name only
   the ones that do, and say of the one that fell back that it draws the ring on any
-  focus, "<toolkit> gives no way to tell" (with the reason found). Each, with its text
-  where <X> is the connector that fell back and <the rest> the others the sentence
-  named:
-  - the CHANGELOG's *Fixed* entry (2I.1), "The iced and egui connectors and the gpui
-    connector's own controls draw it only after a key press, as Breeze does." → "<the
-    rest> draw it only after a key press, as Breeze does; <X> draws it on any focus
-    (<toolkit> gives no way to tell).";
-  - the ROADMAP section (2I.2), "The iced and egui connectors and the gpui connector's
-    own controls draw the ring only for a focus that followed a key press." → "<the
-    rest> draw the ring only for a focus that followed a key press; <X> draws it on
-    any focus, as <toolkit> gives no way to tell.";
-  - the first rationale's B4 row (2I.3), "drawn only after a key in the iced and egui
-    connectors and the gpui connector's own controls" → "drawn only after a key in
-    <the rest>, on any focus in <X>", and its §5.1 line (2I.3), "which the iced and egui
-    connectors and the gpui connector's own controls follow" → "which <the rest>
-    follow (<X> cannot tell)";
-  - the backlog's item (9) note (2I.5), "the iced and egui connectors and the gpui
-    connector's own controls draw it only after a key press" → "<the rest> draw it only
-    after a key press, <X> on any focus";
-  - where <X> is the gpui connector's own controls: the reply's *The focus ring* bullet
-    (2I.3, item 2), its sentence "The check box, radio button, slider and switch the
-    connector draws itself (…) draw Breeze's ring after a key." ends "draw Breeze's
-    ring, for now on any focus." instead;
-    in the README (2E.3), *The focus ring*'s rewrite is made without its clause "; the
-    connector's own controls draw the theme's ring after a key (below)" (the sentence
-    then ends "…also when Tab reached it, where the platform draws its ring."), and the
-    fallback sentence above takes the place of *Keyboard focus*'s insert only (that
-    section's last sentence still gains ", where `Theme::focus_ring` is on");
-    2E.4's two doc rewrites are kept, since the old "outside the control" and "outside
-    the track" turn false through unit 2.1's preset values either way:
-    `a_switch_told_not_to_draws_no_focus_ring`'s as 2E.4 gives it, and
-    `every_focused_control_draws_the_ring`'s without "after a key press": "A focused
-    Checkbox, Radio, Switch and Slider each draw the theme's ring (C-06): kde-breeze's
-    across the control's edge, from 1 px inside it to 1 px outside; adwaita's inset one
-    as a band inside the edge of the borderless row, track and thumb." (its key presses
-    are not added);
-    the gpui showcase's `HOW` entry (2H.3) loses "and whether the theme-drawn
-    Checkbox, Radio, Slider and Switch ring a focus that did not follow a key
-    (widgets/mod.rs, ring_shows)", and `theme_focus_ring`'s added clause (2H.3) is
-    not added;
-  - where <X> is iced: `iced_route`'s arm 2 (2H.2) gets its own fallback text, since
-    arm 3's "(the theme does not say keyboard only)" would be false for windows-11 and
-    kde-breeze, which say it: where `ring_round_the_field(resolved)` and the field is
-    `Some(true)`, "native_theme_iced::focus_ring: the ring on any focus, though the
-    theme says keyboard only (iced gives no way to tell a key's focus: <the reason
-    found>)"; arm 3 stays for the rest. `the_focus_ring_routes_name_the_border_that_draws_it`
-    then expects, for windows-11 and kde-breeze, a route that begins "iced:
-    native_theme_iced::focus_ring: " and contains "iced gives no way to tell a key's
-    focus", and for macos-tahoe arm 3's line as before. The tests not added are 2F.2's
-    `where_the_theme_says_keyboard_only_a_click_draws_no_ring`,
-    `a_field_focused_before_any_input_shows_no_ring_where_keyboard_only` and
-    `a_modifier_key_alone_is_no_key`, and 2H.2's split (b) of
-    `the_focused_field_draws_the_themes_ring_round_it` (the preset unchanged, clicked,
-    no ring): that test keeps its windows-11 case as today, with no field set to
-    `None`, since the ring then shows on the click. 2F.2's `None` edits of the
-    existing tests are not needed either and are not made. The showcase's Tab handler
-    (2F.5, its test, the CHANGELOG's *Showcases (iced)* entry) stays: Tab moving the
-    focus does not depend on the rule. Of 2F.4, the sentences on how iced moves the
-    focus by Tab (the `focus_ring()` doc's "iced moves the focus by Tab only where the
-    application does: …" and the README's "iced moves the focus by Tab only if the
-    application does: …") stay, and the sentences on the rule are replaced by the
-    fallback text above;
-  - where <X> is egui: the plugin reads no field, so the `mapping.toml` row of 2G.2
-    names no test that checks it: it becomes `verdict = "unmappable"` with
-    `sub_tag = "egui-limited"` and an `upstream` naming what egui lacks, and 2G.2's
-    group totals and sub-tag counts are taken again from the regenerated `mapping.md`
-    (not computed here); the egui showcase's route follows the row.
+  focus; for egui, the `mapping.toml` row of 2G.2 becomes `verdict = "unmappable"` with
+  `sub_tag = "egui-limited"` and an `upstream` naming what egui lacks, and 2G.2's totals
+  are taken again from the regenerated `mapping.md`.
+
+Those texts are written, and reviewed, if a fallback happens. Three points hold
+whichever mechanism falls back:
+
+- gpui: 2E.4's two doc rewrites are made either way, since the old "outside the
+  control" and "outside the track" turn false through unit 2.1's preset values. Where
+  the `TabBar`'s `focus_followed_key` alone falls back, the `TabBar` keeps its form at
+  `b434b9bc` (`focus_visible`, its doc, the README sentence, the showcase text and the
+  CHANGELOG entry as they are), and the step's texts then name the four other controls
+  only; the two defects of 2E.2 are fixed either way.
+- iced: the showcase's Tab handler (2F.5, its test, the CHANGELOG's *Showcases (iced)*
+  entry) stays, and so do 2F.4's sentences on how iced moves the focus by Tab: Tab
+  moving the focus does not depend on the rule.
+- A route text that says "the theme does not say keyboard only" (`iced_route`'s arm 3,
+  2H.2) is not used for a preset that says it.
 
 The rest of the step does not depend on it: the field, the facts, the presets, the
-reader, and gpui-component's band switch and opaque `ring` (2E.1).
+reader, and gpui-component's band switch and opaque `ring` (2E.1). The `Root` plugin
+(2E.1) is no part of this fallback: it was measured, and a failure of its test is a
+stop (the plan, §6).
 
 ## Part 2K — Order and gates (step 2, and the release)
 
-One branch for both steps, `v0.7.3-rc1` (S5), a worktree as the project's other work.
-It is made from the gated head of the release before it in its own lane (the KDE lane:
-v0.7.1 → steps 2 and 3 → steps 4 and 5 → the caret → steps 6 and 7, S3 as amended; here
-v0.7.1's, the tree with step 1, D10 (a) being the maintainer's answer of
-2026-11-15), as soon as that release's gated head (its documents unit, rule 20) has
-passed its gate and its reviews are closed (this release reads those texts), not
-from its tag (S2); v0.7.1's gated head is MK4. It is merged with the tag of the release
-immediately before it in the maintainer's release order (`<prev-tag>`; under D10's
-order egui 0.37's, `v0.7.2`), which may be another lane's: `git -c
-merge.conflictStyle=diff3 merge --no-ff --no-commit -m "Merge <prev-tag> into
-v0.7.3-rc1" <prev-tag>` once, concluded by `git commit` after the resolutions and
-regenerations (rule 17; S2 as amended on 2026-11-15: a merge, not a rebase, so no sha
-changes), after the release's last unit is committed and its reviews are closed and
-the tag exists, before the release's check X, version and close-out, never while a
-trial's or a unit's edits are uncommitted; `<lane-pred-head>` is the lane
-predecessor's head the branch was made from, and `<base>` the branch's base
-(`<prev-tag>` where the branch was made from it, else `<lane-pred-head>`). Where the
-branch was made from `<prev-tag>` itself, there is no merge. The last unit before
-the merge, the documents unit 3.3, takes its cadence's gate, `--quick`, with no extra
-`--commit` (unit 3.2's `--commit` covers the code beneath it), and its commit is the
-lane's gated head that the next release (steps 4 and 5) starts from (rule 20). The merge then runs in rule 21's order,
-(1), (3), (6), (7), (4), (5): (1) the merge itself: conflicts resolved by the
-orchestrator by both sides' texts, a citation like any other text (S6; but a line a
-gate reads by number, S6's fourth gate: the side that re-pointed it wins, and where
-both did, the number is the base plus both sides' deltas, confirmed by the warm-up
-gate), and named in the record; generated files regenerated, not resolved by hand; counts and verdict
-tuples a test or gate checks as the base plus both sides' deltas, a prose count
-`<prev-tag>`'s side; in `CHANGELOG.md` this release's section goes first and in
-`ROADMAP.md` it follows `<prev-tag>`'s (2I.2); (3) where the merge brought another
-version of a toolkit this specification cites (under D10's order `<prev-tag>` is egui
-0.37's, which moves egui and egui-winit from 0.36.2 to 0.37.0), every toolkit form a
-unit wrote into a comment, a doc or a test (an `EG` citation, the modifier keys of
-2G.1) is read again in the new version and rewritten only where its content changed
-(rule 25); a citation pinned to its version keeps its version (S6); (6) the path
-check of the two documents' paths and links; (7) checks that this release's texts and
-counts survived the merge, on HEAD as it stands after (3) and (6), VF's rewrites being
-expected differences, never undone; (4) a resolution in any file but Markdown no test
-parses, and every commit of steps (3), (6) and (7), is reviewed (`review`, or
-`review-hard` where a hard part of a core changes); (5) the warm-up gate (`--commit`
-on the clean tree, with the GPUI Fast legs, since the merge brings the other side's
-code), last, which covers every commit of those steps and builds the units against the
-merged toolkit versions. X then recounts, on the merged tree, every stated count in
-the files either side changed, and runs the five documentation checkers (*X*,
-below). Nothing of
-this release is pushed before that merge, and its close-out starts only after it, so
-its compatibility and semver steps compare with the released predecessor.
-
-**Commit (0), the documents.** v0.7.1's commit (0) adds every document of this cycle
-the maintainer has approved by then (`docs/todo_v0.7.1_gpui-kit-0.9.1-spec.md`,
-*Order and gates*, its item (0), cited by section since that document is still being
-edited), the rationale and this specification among them if they
-are approved by then. This work's own first commit, commit (0), adds to `docs/` the
-approved documents of this work that no earlier commit added: its plan at least, and the
-rationale and this specification where v0.7.1's commit (0) did not add them. Where
-nothing is left to add, there is no commit (0) and the step starts with unit 2.1. A
-document not approved when the work starts stays untracked and outside the work. A text
-that cites one of them at a commit cites the commit that added it.
+On `v0.7.2-rc1`, after its gated head (`b434b9bc`): no new branch, no merge, no recount
+after a merge and no version step (the workspace is 0.7.2 already). This specification
+and its plan are added by one commit before the units (their rename is staged).
 
 **Units.** Each unit is one commit (or a run of commits whose last one closes it), gated
-by the batch's cadence (S1; `--quick` as `docs/todo_v0.7.1_gate-speed-spec.md` defines
-it): during a unit, the agent runs only the touched tests (its targeted commands); at
-a unit's end, `--quick`, by the orchestrator, as a long run until its time is measured
-(the first timed into the record); `--commit` every third code unit of the release,
-counted from the last `--commit` (any `--commit`, a warm-up gate's or a fix's
-included, restarts the count, while a `--quick`-gated fix does not count toward the
-next third), on the release's last code unit before its documents and version units
-(rule 6: 3.2, which holds 3H.2b's TOML string so that 3.3 stays a documents unit),
-after a lock or toolchain change (the warm-up gates, P2's and the merge's above, and
-the version step, whose `Cargo.lock` lists the workspace crates' new versions), and
-wherever a unit is structural (rule 24: one that changes a
-manifest, `Cargo.lock`, a build script, the toolchain or the gate scripts; none here,
-new model fields being no reason on their own, so the count of three marks 2.3 and
-2.6 where no other `--commit` falls between, and 3.1 and 3.2 are the first and second
-code units after 2.6's); a unit is a documents unit only where it changes nothing but comments,
-rustdoc prose, READMEs and Markdown (`docs/platform-facts.md` counts as code: tests
-parse it); a documents unit (2.7, and 3.3, the gated head, rule 20) runs the five documentation checkers and `--quick`; the full run where the plan has it (the close-out), unchanged. A commit
-between two `--commit` runs is proven by `--quick` only; a failure the next `--commit`
-finds is fixed by a new commit on the branch, never by rewriting a pushed one, and the
-record names the commit that brought it. The script's full run and `--commit` differ
-in the release-only checks `--commit` skips (the release tag, gpui on GPUI Fast, the
-ignored stem-index test, the docs.rs emulation, packaging, semver, outdated
-dependencies, the asset and compatibility stamps; `scripts/check_release.sh:26-37`).
-What a test that walks or counts the model's leaves needs goes into the unit that makes
-the test red:
+by the batch's cadence (S1; `--quick` as `docs/archive/todo_v0.7.1_gate-speed-spec.md`
+defines it): during a unit, the agent runs only the touched tests (its targeted
+commands); at a unit's end, `--quick`, by the orchestrator; `--commit` every third code
+unit, counted from the last `--commit` on `v0.7.2-rc1`, which the plan's record names
+(any `--commit`, a fix's included, restarts the count, while a `--quick`-gated fix does
+not count toward the next third), on the last code unit before the documents unit
+(rule 6: 3.2, which holds 3H.2b's TOML string so that 3.3 stays a documents unit), and
+wherever a unit is structural (rule 24: one that changes a manifest, `Cargo.lock`, a
+build script, the toolchain or the gate scripts; none here, new model fields being no
+reason on their own); a unit is a documents unit only where it changes nothing but
+comments, rustdoc prose, READMEs and Markdown (`docs/platform-facts.md` counts as code:
+tests parse it); a documents unit (2.7, and 3.3) runs the five documentation checkers
+and `--quick`. A commit between two `--commit` runs is proven by `--quick` only; a
+failure the next `--commit` finds is fixed by a new commit on the branch, never by
+rewriting a pushed one, and the record names the commit that brought it. The script's
+full run and `--commit` differ in the release-only checks `--commit` skips (the release
+tag, gpui on GPUI Fast, the ignored stem-index test, the docs.rs emulation, packaging,
+semver, outdated dependencies, the asset and compatibility stamps;
+`scripts/check_release.sh:26-37`). What a test that walks or counts the model's leaves
+needs goes into the unit that makes the test red:
 
 | Unit | Contents | Why these belong together |
 |---|---|---|
-| 2.1 The field and its values | 2A (the field, `validate`, the three full literals of 2A.4, the baseline and new tests); 2B.1 (the facts row); 2B.2 (the registry line); 2B.3 (the `[no_inheritance]` entry, the caret rule); 2B.5 (the four presets); 2G.2 (egui's mapping row, `mapping.md` regenerated, the leaf count 516 → 517, the foundation totals `[18, 1, 36, 11]` → `[18, 1, 37, 11]`) | The field turns red, at once: `theme_defaults_field_info_matches_baseline` and `property_registry_keys_match_derive_inventory` (`model/mod.rs:1973`, `:2055`) until the registry line; `check_platform_facts_rows.py` until the facts row; egui's `every_leaf_has_exactly_one_row_and_every_row_is_well_formed` (`CE/mapping_tests.rs:234-262`), since `ResolvedDefaults` serialises the unset field as `null`, a leaf of its walk, until the row and the count; `verdict_totals_match_the_specification` (`:443-497`) until its foundation totals; `mapping_md_is_current` (`CE/mapping_doc.rs:347`) until `mapping.md`; egui's T2, `t2_every_row_s_declared_sinks_are_exactly_what_its_leaf_moves` (`:1334-1437`), until a preset pair differs in the leaf: it walks every row that is not unmappable, splices the leaf only between the pairs of `PAIRS` (`:905-918`) where the two differ (`:1205-1216`), and fails a row no pair exercises and that has no `probe` (`:1433-1436`); with the presets in the unit, kde-breeze (`true`) against adwaita (`null`) and material-3 (`true`) against catppuccin-mocha (`null`) differ, so no `probe` is needed (`toml_to_json` would handle a boolean one, `:1218-1234`); the two full literals until they name it. Not red: iced's and gpui's colour-leaf walks (`CI/contract.rs:5578`, `CG/contract.rs:2933`) take a `null` leaf only where a colour splices into it (`CI/contract.rs:4889-4898`, `CG/contract.rs:2696-2706`), and a `bool` does not; no showcase lists the leaf yet; no connector reads the field yet, so no ring test changes. The preset comments name the facts row of the same unit by section and key (2B.5). iced's export, `connectors/native-theme-iced/contract-leaves.toml`, is generated from the colour leaves of the bundled presets (`reach`, `CI/contract.rs:5262-…`; the file's header): the new `bool` leaf is not one, and kde-breeze's new ring colour still moves the one row `defaults.focus_ring_color` moves today, `crate::focus_ring_color`, in every combination (its `[leaves."defaults.focus_ring_color"]` entry has no `except`), since the walk splices a sentinel colour, not the preset's own. So the unit is expected to leave the export as it is; the implementer runs `regenerate_contract_leaves` (`CI/contract.rs:5539`) at its end and commits a difference if one appears, which `every_colour_leaf_reaches_a_row_or_is_named` would report. |
+| 2.1 The field and its values | 2A (the field, `validate`, the three full literals of 2A.4, the baseline and new tests); 2B.1 (the facts row); 2B.2 (the registry line); 2B.3 (the `[no_inheritance]` entry, the caret rule); 2B.5 (the four presets); 2G.2 (egui's mapping row, `mapping.md` regenerated, the leaf count 516 → 517, the foundation totals `[18, 1, 36, 11]` → `[18, 1, 37, 11]`) | The field turns red at once the tests that only these parts make green again (the gate shows which). egui's T2 (`t2_every_row_s_declared_sinks_are_exactly_what_its_leaf_moves`) needs a preset pair of `PAIRS` that differs in the leaf: with the presets in the unit, kde-breeze (`true`) against adwaita (`null`) and material-3 (`true`) against catppuccin-mocha (`null`) differ, so no `probe` is needed. iced's export, `connectors/native-theme-iced/contract-leaves.toml`, is expected unchanged (the new `bool` leaf is no colour leaf, and the walk splices a sentinel colour, not the preset's own): the implementer runs `regenerate_contract_leaves` (`CI/contract.rs:5539`) once at the unit's end and commits a difference if one appears, which `every_colour_leaf_reaches_a_row_or_is_named` would report. |
 | 2.2 The reader | 2C (the reader, the portal path, their tests, `kde/mod.rs`' two lists and the accent test's list) | No test pins kde-breeze's old ring but the reader's own, which change with it (2C.1); `the_derived_colours_are_the_presets_under_breeze` then holds the reader's new ring to unit 2.1's preset. The reader is not an input of iced's export (the walk splices the bundled presets), so the export does not change here. Contrast pairs: no pair of gpui's (`CG/contract.rs:1917-…`) or iced's (`CI/contract/pairs.rs`) names `ring`, the caret, the focus ring colour or a border (read today with `grep`), and kde-breeze's `ring` token keeps its value (2E.1), so no pair moves. |
-| 2.3 gpui | 2E (with 2E.3's clause in `scripts/connector_parity_exceptions.toml`); the gpui showcase's claims and texts of 2H.3 but the new leaf's `HOW` entry, which goes to unit 2.6 with the leaf; the edit of the existing `focus_ring_color` `HOW` entry (adding `ring_colour`, 2H.3) is in this unit, with the `ring_colour` it names, and so are the edit of the `focus_ring_width_px` entry (naming `focus_band_on`) and the Theme Map's Ring row (naming `ring_colour`), 2H.3 | `ring_colour` makes the `ring` row red on kde-breeze and windows-11 light until it is a computed row (2E.3); `ring_shows` makes `every_focused_control_draws_the_ring` red until its key press (2E.4). |
+| 2.3 gpui | 2E (with the `Root` plugin, its two tests and its README paragraph, 2E.1, 2E.3 and 2E.4, and the showcase's test of it, 2H.3; with 2E.3's clause in `scripts/connector_parity_exceptions.toml`, and the `TabBar`'s rule, 2E.2, with its two tests and its showcase text, 2H.3, and its two 0.7.2 defects, the scroll and the right and middle press, with their two tests and the struct doc's clause, 2E.2); the gpui showcase's claims and texts of 2H.3 but the new leaf's `HOW` entry, which goes to unit 2.6 with the leaf; the edit of the existing `focus_ring_color` `HOW` entry (adding `ring_colour`, 2H.3) is in this unit, with the `ring_colour` it names, and so are the edit of the `focus_ring_width_px` entry (naming `focus_band_on`) and the Theme Map's Ring row (naming `ring_colour`), 2H.3 | `ring_colour` makes the `ring` row red on kde-breeze and windows-11 light until it is a computed row (2E.3); `ring_shows` makes `every_focused_control_draws_the_ring` red until its key press, and the `TabBar`'s `.focus()` makes `the_keyboard_focused_tab_draws_the_ring_inside` red until its last block expects the ring after the click (2E.4). |
 | 2.4 iced | 2F; the showcase's Tab handler (2F.5) and its test `the_focused_field_draws_the_themes_ring_round_it` (2H.2) | The wrapper's rule makes red, until they change: `a_focused_field_is_ringed_by_the_themes_ring`, `the_ring_follows_the_focus_through_update`, `the_focus_survives_a_theme_that_draws_no_ring` and `a_replaced_field_loses_the_ring` (2F.2), and the showcase's test, all of which focus a field under windows-11 by a click or before any input and expect a ring. |
 | 2.5 egui | 2G.1, 2G.3, 2G.4, 2G.5 | The plugin's rule makes `a_widget_focused_in_the_body_is_ringed_at_the_callers_radius` red until the test sets the field to `None` on the theme it installs (2G.4, an edit of the test's body, not of its helper). |
 | 2.6 Showcase leaf | 2B.4 (the element list); its routes in the three showcases: iced's (2H.2), gpui's `HOW` entry (2H.3), egui's from unit 2.1's mapping row (2H.4) | A listed leaf without a route is red in `the_element_list_parses_and_every_leaf_has_a_route` (`showcase-iced.rs:24982`) and `every_listed_leaf_has_a_route` (`showcase-gpui/tests.rs:15198`); `check_showcase_parity.py --check-list` needs the registry key of unit 2.1. |
-| 2.7 Documents | 2I (with `ROADMAP.md:264`'s recount, 2I.2, and the two READMEs' new optional value, 2I.2a) | `check_todo_citations.py` reads the backlog edits. |
+| 2.7 Documents | 2I (with the ROADMAP section and *Also in the 0.7.x releases*' recount, 2I.2, and the two READMEs' new optional value, 2I.2a) | `check_todo_citations.py` reads the backlog edits. |
 
-Units 2.3 to 2.5 are independent of one another; each may fall back as 2J says.
+Units 2.3 to 2.5 are independent of one another; each may fall back as 2J says. The
+build plan, [`todo_v0.7.2_kde-focus-ring-and-button-outlines-plan.md`](todo_v0.7.2_kde-focus-ring-and-button-outlines-plan.md),
+merges units 2.1 with 2.2, 2.6 with 3.2 and 2.7 with 3.3, each pair into one commit, builds
+units 2.3 to 2.5 at the same time under one `--commit`, and says which gate closes each
+unit; where it and the cadence above differ in when a gate runs, the plan is followed.
 
-**X, once for the release, after 3.3 and the merge** (rule 17; S6). No citation is
-re-pointed: the existing line citations of the files this release changes are left as
-they are and may drift (2B.6). X recounts, on the merged tree, every stated count in
-every file either side of the merge changed (the union of `git diff --name-only <base>
-<the merge's first parent>` and `git diff --name-only <base> <prev-tag>`, `<base>` the
-branch's base: `<prev-tag>` where the branch was made from it, else `<lane-pred-head>`),
-outside the pinned documents, and runs the five documentation checkers. A generated file
-is regenerated by its command, never edited. With no merge there is no X (rule 17):
-nothing was merged, and unit 3.3 ran the five checkers.
-
-**The close-out, once for the release, after step 3's units, the merge and X** (S5, S2, S4):
-the version, the compatibility run, the push once it has passed, the full
-`scripts/check_release.sh` while CI runs on the push, then, when both are green, the
-one asset run (`scripts/generate_assets_release.sh`, the maintainer's desktop) and the
-release stamps, the documents' archive last (3H.5, 3H.6). The asset run compares the three showcases at rest under the six captured presets (its
-step 6, `scripts/generate_assets_release.sh:158-167`); `scripts/check_showcase_parity.py`
-lists at the end each exception whose scope it compared but that matched no difference
-(its doc, `:249-250`). The implementer reads that list: this step changes what the
-start-up field shows on kde-breeze, windows-11 and material-3 (2H.1, 2H.5), so an
-exception written for the old ring can go stale; each one listed is scoped or removed
-in a commit of its own (step 3 changes no capture, 3G.2, and its exceptions are read in
-the same list). The units of both steps are committed in order and not pushed one by
-one (the batch's rule, as step 1's specification gives it in its H.1,
-`docs/todo_v0.7.1_kde-open-items-step1-spec.md`): they are pushed together at the
-release's end, after step 3's last unit, the merge, X and the version, once the
-compatibility run has passed (S4), before the asset run, which refuses an unpushed
-branch and dispatches the screenshots workflow on it for the Windows and macOS captures
-(`scripts/generate_assets_release.sh:74-103`; 2H.5); the asset run's commit is pushed
-after it. CI is checked on each of these pushes, and a red run is fixed before the
-next.
+**The close-out** is 0.7.2's one, the K of
+[`todo_v0.7.2_egui-0.37-and-gpui-kit-0.10.0-plan.md`](todo_v0.7.2_egui-0.37-and-gpui-kit-0.10.0-plan.md).
+This specification adds to it only the reading of the parity run's stale exceptions,
+the rationale's status line (2I.6, 3H.5) and the archive (3H.6). The asset run compares
+the three showcases at rest under the six captured presets (its step 6,
+`scripts/generate_assets_release.sh:158-167`); `scripts/check_showcase_parity.py` lists
+at the end each exception whose scope it compared but that matched no difference (its
+doc, `:249-250`). The implementer reads that list: this step changes what the start-up
+field shows on kde-breeze, windows-11 and material-3 (2H.1, 2H.5), so an exception
+written for the old ring can go stale; each one listed is scoped or removed in a commit
+of its own (step 3 changes no capture, 3G.2, and its exceptions are read in the same
+list). The branch was pushed at `b434b9bc` on 2026-11-18 with a draft pull request (the
+maintainer), so that CI checks 0.7.2's toolkit work on macOS and Windows during the build;
+the units of both steps are committed in order and pushed at each `--commit` gate that
+passes (the plan, §1), the last of them in that close-out.
 
 **Semver.** The compatibility step (`scripts/check_release.sh:1128-1146` and on, soft,
 skipped under `--commit`) of the release's one full run reports `ThemeDefaults`' new
 field and `ButtonTheme`'s two (3A.1) on native-theme: under D0 (a) that is the approved
-break the CHANGELOG names once (2I.1, 3H.1). The connectors' public APIs gain nothing (no new `pub fn`;
-`scripts/check_connector_parity.py` has nothing new to compare). Checked against each
+break the CHANGELOG names once (2I.1, 3H.1). In step 2 the connectors' public APIs gain nothing (no new `pub fn`; the gpui
+connector's `Root` plugin is private; `scripts/check_connector_parity.py` has nothing new
+to compare). Checked against each
 crate's coverage tests: step 2 adds no `pub fn` to gpui's `variants.rs` or
 `geometry.rs` (`the_showcase_exercises_every_builder`, `every_geometry_builder_has_a_note`,
 `CG/showcase.rs:383-416`, `:572`; its new functions are `pub(crate)` or private), no
@@ -2119,32 +2147,11 @@ widget constructor to the iced showcase (`styles_cover_every_widget_shown`,
 `showcase-iced.rs:20919`; 2F.5 adds two messages and a key arm), and no element id to
 the egui showcase (`the_layout_dump_names_every_listed_element_the_basic_page_draws`,
 `showcase-egui/tests.rs:8037`; 2B.4 adds a leaf to an existing element). Step 3 adds
-one `pub fn`, gpui's `bordered_button` where the trial passes (its unit, 3I), and in
-iced and egui none, nor a constructor or an element id (3B.4 adds leaves to existing
-elements).
-
-**Under D0 (b)** only the version number differs, wherever this step writes it: the
-branch name (`v0.7.3-rc1`), the CHANGELOG heading (2I.1), the ROADMAP heading (2I.2),
-the first rationale's B4 row ("fixed in 0.7.3") and §5.1 line ("D4 (0.7.3)") (2I.3),
-and the backlog lines of 2I.5 (item (9)'s note and its pointer's annotation, written
-with the release placeholder in any case, as are item (1)'s "done in" and its dated
-note, and request (4)'s pointer annotation; request (4)'s new sentence's "0.7.3"; the
-focus-ring-part entry's "since 0.7.3", the ring-width entry's
-"*0.7.3:*", the caret item's "since 0.7.3"); the reply's version is the placeholder of
-2I.3 in any case. Outside the reply, a release placeholder ("<the release that brings
-step 2>" and its step 3 form, in 2I.5, 2I.6, 3H.5 and 3H.6) is written with the
-version the maintainer gave for the release, given before the work starts (D0,
-whose decision every step from 2 on needs, the rationale's D10). Step 3's number is
-the same one (S5), in the same places of 3H (row C, the §5.4 line, the backlog's
-"since 0.7.3"); the CHANGELOG and ROADMAP sections and the branch are the release's
-one.
-**Under (c)** the release that makes the model's input structs `#[non_exhaustive]` comes
-first; then `tests/proptest_roundtrip.rs`, an integration test outside the crate, can no
-longer build `ThemeDefaults` by struct literal at all, and 2A.4's edit becomes a build
-from `Default` with the fields set; the CHANGELOG has no *Breaking Changes* entry here.
+one `pub fn`, gpui's `bordered_button` (its unit, 3I), and in iced and egui none, nor a
+constructor or an element id (3B.4 adds leaves to existing elements).
 
 **The release** (tag, publish, GitHub release) is the maintainer's; so are sending the
-upstream request and posting the reply.
+upstream request and any follow-up comment on the issue.
 
 ---
 
@@ -2160,16 +2167,12 @@ its pair (`:141-146`):
 ```rust
     /// Border colour of a hovered button, which a pressed button keeps (it is under
     /// the pointer). `None` where the theme states none; a connector then draws
-    /// `border.color` (docs/platform-facts.md §2.3). The KDE reader derives it from
-    /// the scheme's selection colour; an accent the portal gives replaces
-    /// `selection_background` and the focus ring but not this border: it moves no
-    /// widget's own read of that colour (the check box's border, the blends).
+    /// `border.color` (docs/platform-facts.md §2.3).
     #[theme(category = "soft_option")]
     pub hover_border_color: Option<Rgba>,
     /// Border colour of a button with the keyboard focus. `None` where the theme
     /// states none; a connector then draws the hover border, else `border.color`, where
-    /// it shows a focused button by its border (docs/platform-facts.md §2.3). From the
-    /// KDE reader as `hover_border_color`.
+    /// it shows a focused button by its border (docs/platform-facts.md §2.3).
     #[theme(category = "soft_option")]
     pub focus_border_color: Option<Rgba>,
 ```
@@ -2205,7 +2208,7 @@ Some(Rgba::rgb(0, 120, 215)));` and `assert_eq!(resolved.focus_border_color, Non
 `..Default::default()` and need nothing: `native-theme/src/model/widgets/mod.rs:1423`,
 `:1433`, `:1442`, `:1458`; `native-theme/tests/merge_behavior.rs:341`.
 `ResolvedButtonTheme` is `#[non_exhaustive]` and has no literal outside the derive's
-generated code. `docs/todo_v0.7.1_model-completeness-spec.md:1215` declares a
+generated code. `docs/todo_v0.8.0_model-completeness-spec.md` declares a
 `struct ButtonTheme` of the parked design, not a literal of this one.
 
 ## Part 3B — Facts, rules, registry, presets
@@ -2247,8 +2250,6 @@ hover_border_color           = "color"
 focus_border_color           = "color"
 ```
 
-As 2B.2: no citation of a registry line is re-pointed (S6).
-
 ### 3B.3 `docs/inheritance-rules.toml`
 
 `[no_inheritance]`, after `"button.checked_text_color",` (`:412`):
@@ -2258,8 +2259,7 @@ As 2B.2: no citation of a registry line is re-pointed (S6).
     "button.focus_border_color",       # None: the theme states none, the hover border or border.color (§2.3)
 ```
 
-The entries go beside the button's other soft options; the existing citations of the
-lines they move are left as they are (S6, 2B.6).
+The entries go beside the button's other soft options.
 
 ### 3B.4 `docs/showcase-elements.toml`
 
@@ -2286,22 +2286,13 @@ hover_border_color = "#3daee9"
 focus_border_color = "#3daee9"
 ```
 
-in dark with `(BreezeDark.colors:88, breeze v6.7.5)`. The inserts move later lines of
-`kde-breeze.toml` that comments and assertion messages elsewhere cite (read today);
-those citations are left as they are (S6). No gate reads them.
+in dark with `(BreezeDark.colors:88, breeze v6.7.5)`.
 
 **No other preset states them**, each for its facts row's reason: adwaita (GNOME: no
 border in any state), windows-11 (the outline is the rest brush on hover; focus: no
 fact), macos-monterey (not measured) and macos-tahoe (hover draws nothing), material-3
 (no outline), ios-13 (no stroke, `F/ios/button.toml:18116-18124`), and the ten colour
 schemes (no platform).
-
-### 3B.6 Citations the two rows move
-
-The rows move `:1192` and every later line down two (3B.1). The existing citations of
-those lines (presets' comments, connectors' comments and messages, `docs/todo.md`) are
-left as they are and may drift, and no gate reads a facts line by number from v0.7.1
-on (2B.6, S6).
 
 ## Part 3C — The KDE reader
 
@@ -2322,26 +2313,17 @@ The comment at `:536-539` ("A hovered button keeps its fill and its text: Breeze
 changes only the pen …") stays. Values: #3daee9 in both Breeze fixtures; 246,116,0 in
 `custom-accent.ini` (read today).
 
-The portal's accent (2C.2, `apply_kde_accent`, through `apply_accent`,
-`gnome/mod.rs:150-156`) recolours the semantic roles it sets, the accent, the
-selection, the ring (after step 2) and the tab indicator, not these two, which are a
-widget's own reads of the selection colour: like the check box's border
-(`kde/colors.rs:586-588`), they are read from kdeglobals' `[Colors:Selection]
-BackgroundNormal`, as the reader's widget reads of it are (the blends: the checked check
-box, the progress fill, the switch's on track, the list's hover), which
-`populate_colors`' doc says the portal's accent does not move (`kde/colors.rs:464-470`). Under a portal accent that differs from
-the scheme's selection colour, a hovered button keeps the scheme's highlight. The field
-docs (3A.1) say so. Whether the KDE portal's accent can differ from the scheme's focus
-colour is the rationale's §4 open item. The other way, `apply_kde_accent` setting the
-two borders to the accent as well, is not taken: wherever the portal's accent is the
-scheme's selection colour (whether it can be another is that open item), it gives the
-same colour, and it would make the two borders the one widget's own read of the
-selection colour the portal moves, unlike the check box's border beside them; keeping
-them with the reader's widget reads of it is the simpler rule.
+The portal's accent (2C.2) does not move the two borders: they are a widget's own reads
+of the selection colour, as the check box's border is (`kde/colors.rs:586-588`), and
+`apply_kde_accent` leaves them as it leaves the reader's other widget reads of it
+(decision 15). Whether the KDE portal's accent can differ from the scheme's selection
+colour is the rationale's §4 open item (which names `DecorationFocus`; Breeze gives both
+the same value).
 
-Tests: in `kde/colors.rs`, `a_buttons_hover_and_focus_border_is_the_selection` for both
-Breeze fixtures and the custom scheme of `:1492` (selection 200,40,90); in
-`tests/reader_kde.rs`, the dark and custom-accent tests gain the two assertions.
+Test: in `kde/colors.rs`, `a_buttons_hover_and_focus_border_is_the_selection` on the
+custom scheme of `:1492` (selection 200,40,90), the one value check on a selection that
+is not Breeze's; the Breeze fixtures are `the_derived_colours_are_the_presets_under_breeze`'s
+(below).
 
 **The lists that hold the reader to the preset** (`kde/mod.rs`, as in 2C.1):
 `derived_leaves` and `resolved_leaves` append `("button.hover_border_color",
@@ -2356,8 +2338,9 @@ and the doc's count grow by two. Then:
 - The accent test (`:1420`, the `selection` key) gains `"button.hover_border_color",
   "button.focus_border_color"` at the end of its list, after step 2's
   `"defaults.focus_ring_color"`; its doc gains "the button's hover and focus border".
-- The other six moved-leaves tests are unchanged: no key but `selection` moves the
-  two.
+- The other seven moved-leaves tests (2C.1's list, step 1's
+  `the_contrast_moves_the_table_grid` among them) are unchanged: no key but `selection`
+  moves the two.
 
 ## Part 3D — iced connector
 
@@ -2394,11 +2377,8 @@ takes no keyboard focus (iced_widget 0.14.2 `src/button.rs:257-273`), so
   button takes no keyboard focus: it implements no `operate` for `Focusable`, and its
   status has no focused variant (`iced_widget-0.14.2/src/button.rs:257-273`,
   `:471-498`)") }`, right after the `input.caret_color` entry (`:1433-1440`) and before
-  `combo_box.disabled_background` (`:1441-…`): the list keeps no one order (its
-  `defaults.*` entries first, then input, combo box, slider, menu, link, splitter and
-  window, the `NoWidget` and `Fallback` entries last, read today), and the caret's,
-  another colour of a focused control that iced's `Style` has no field for, is the
-  entry it fits beside.
+  `combo_box.disabled_background` (`:1441-…`), beside the caret's, another colour of a
+  focused control that iced's `Style` has no field for.
 - `button.hover_border_color` reaches the border rows, so the colour-leaf test
   (`CI/contract.rs:5578`, `every_colour_leaf_reaches_a_row_or_is_named`) finds it without an
   entry.
@@ -2406,16 +2386,14 @@ takes no keyboard focus (iced_widget 0.14.2 `src/button.rs:257-273`), so
 ### 3D.3 Tests
 
 `CI/styles.rs` has no test module: the iced button-style tests live in `CI/contract.rs`
-(a `#[cfg(test)] mod contract;`, `CI/lib.rs:402-403`). So two new tests go there,
+(a `#[cfg(test)] mod contract;`, `CI/lib.rs:402-403`). So the new test goes there,
 beside `a_cleared_soft_option_copies_the_base_state_value` (`CI/contract.rs:3711-3744`,
 under the same `#[cfg(feature = "widgets")]`):
 - `a_kde_breeze_button_hovers_and_presses_in_the_selection_border`: under kde-breeze
   (both modes) `styles::button`'s and `styles::button_primary`'s `Hovered` and `Pressed`
-  border is #3daee9 and `Active` is `button.border.color`;
-- `an_adwaita_button_keeps_its_border_in_every_status`: under adwaita `Active`,
-  `Hovered` and `Pressed` are `border.color`, and `Disabled` its faded form, as today.
+  border is #3daee9 and `Active` is `button.border.color`.
 
-The contract's rows cover the 34 combinations.
+The contract's rows cover the 34 combinations, adwaita's unchanged border among them.
 
 ### 3D.4 Showcase
 
@@ -2438,7 +2416,8 @@ it.
 ### 3E.1 `CE/style/base.rs` and `CE/style/roles.rs`
 
 egui keeps one `bg_stroke` per state, and a button pressed or with the keyboard focus is
-`active` (`EG/style.rs:1273-1285`, `:1290-1320`). Two places write the two strokes
+`active` (`EG/style.rs:1383-1395`, `:1400-1430`; the same rule in
+`Response::widget_state`, `EG/widget_style/mod.rs:212-222`). Two places write the two strokes
 after their `write_states`, as the «input» role writes its own (`roles.rs:349-352`).
 
 In `base_style`, where `b` is bound to `&t.button` and `w` to the base's
@@ -2447,8 +2426,9 @@ In `base_style`, where `b` is bound to `&t.button` and `w` to the base's
 
 ```rust
     // the hovered button's border, which a pressed one keeps, and the focused one's; egui's
-    // `active` is press and keyboard focus alike (`Widgets::style`, egui 0.36.2). `None`
-    // keeps `button.border.color`.
+    // `active` is press and keyboard focus alike (`Response::widget_state`, egui 0.37.0
+    // src/widget_style/mod.rs:212-222); where a theme states both and they differ, a
+    // pressed button takes the focus border. `None` keeps `button.border.color`.
     let border = b.border.color;
     w.hovered.bg_stroke.color = to_color32(b.hover_border_color.unwrap_or(border));
     w.active.bg_stroke.color = to_color32(b.focus_border_color.or(b.hover_border_color).unwrap_or(border));
@@ -2469,10 +2449,10 @@ after the `match` and before `crate::style::derived::apply_role` (`:53`), one
 statement that uses it:
 
 ```rust
-/// The roles whose cells keep their resting stroke when hovered or pressed: they draw
-/// their controls flat or as parts (a toolbar's or a list's buttons, a slider's
-/// handle), so the button's hover and focus outline is not theirs (D5, D7). Each passes
-/// `border: None` to `write_states`.
+/// The roles whose cells keep their resting stroke when hovered or pressed: the button's
+/// hover and focus outline is not theirs, a toolbar's or a list's buttons and the controls
+/// inside a slider's or a switch's scope among them (D5; D7 and the backlog decide them).
+/// Each passes `border: None` to `write_states`.
 fn keeps_resting_stroke(role: Role) -> bool {
     matches!(
         role,
@@ -2524,14 +2504,20 @@ a control takes the highlight as its outline under the pointer; the controls rea
 this, which are examples and not the whole list: an unscoped check box, radio, combo box
 button and drag value, hovered and pressed, a selectable label, hovered and pressed, and
 a text field, hovered (egui draws their frames from the state's `bg_stroke`:
-`EG/widgets/radio_button.rs:81`, `:95`; a check box's frame, `EG/widget_style.rs:184`,
-drawn at `EG/widgets/checkbox.rs:138`; `EG/containers/combo_box.rs:452-461`; a drag value
-is a `Button`, `EG/widgets/drag_value.rs:636`; a selectable label is a `Button`,
-`EG/ui.rs:1929-1931`, an unselected one framed in every state but rest, `EG/widgets/button.rs:78-81`,
-`:364`, with the state's `bg_stroke`, `EG/widget_style.rs:158-161`; a text field not
-focused, `EG/widgets/text_edit/builder.rs:737`, `:749`, a focused one taking
-`selection.stroke`, `:742-747`). A slider's handle does not change: egui strokes it with
-the state's `fg_stroke` (`EG/widgets/slider.rs:817`, `:831`). Breeze's check box and
+`EG/widgets/radio_button.rs:81`, `:95`; a check box's frame, the `CheckboxStyle`
+provider, `EG/theme/default_style.rs:198`, drawn at `EG/widgets/checkbox.rs:131`; a combo
+box is a `ButtonStyle`, `EG/containers/combo_box.rs:369-374`, with `open` visuals while
+its popup is open, `EG/theme/default_style.rs:41-45`; a drag value is a `Button`,
+`EG/widgets/drag_value.rs:611`; a selectable label is a `Button`, `EG/ui.rs:2054-2056`,
+an unselected one framed in every state but rest, `EG/widgets/button.rs:91-95`
+(`frame_when_inactive` sets `CLASS_HIDE_FRAME_WHEN_INACTIVE`, `:202-203`, and the
+provider hides the frame only at `Inactive`, `EG/theme/default_style.rs:80-84`), a
+button's frame stroke being the state's `bg_stroke`, `EG/theme/default_style.rs:62-72`;
+a text field's style, `EG/widgets/text_edit/builder.rs:538-542`, takes the state's
+`bg_stroke` hovered and `selection.stroke` in the `Active` state, which a focus and a
+pointer press give, `EG/theme/default_style.rs:133-140`). A slider's handle does not
+change: egui strokes it with the state's `fg_stroke` (`EG/widgets/slider_core.rs:432`,
+`:441`, `paint_handle`). Breeze's check box and
 combo box show hover by an outline in the focus or highlight colour
 (`docs/todo.md:1774-1795`), so on KDE this moves them toward Breeze.
 
@@ -2594,28 +2580,13 @@ DIRECT 11 → 13; TOTAL 517 → 519, DIRECT 46 → 48. `mapping_tests.rs:236-241
 
 ### 3E.3 Tests
 
-New in `CE/style/roles.rs`' tests (beside `:1242`, which reads the «button» cell):
-kde-breeze, both modes: the «button» cell's and the base's `hovered.bg_stroke.color` and
-`active.bg_stroke.color` are #3daee9, `inactive`'s is `button.border.color`; adwaita:
-all three are `button.border.color`; a theme with only `hover_border_color` stated has
-it in `active` too.
-
-New, `flat_and_part_scopes_keep_their_resting_stroke`: for every bundled preset in both
-modes (kde-breeze states both fields), each role of `Role::all()` for which
-`keeps_resting_stroke` holds has `hovered.bg_stroke.color` and `active.bg_stroke.color`
-equal to its `inactive.bg_stroke.color`, which equals the base's
-`inactive.bg_stroke.color` (`button.border.color`): today's. It also asserts that the
-predicate holds for exactly the seven roles of decision 13, so a change of the list is
-a change of the test (step 5 narrows both).
-
 Changed, `hover_and_active_keep_the_resting_stroke_and_radius` (`CE/style/states.rs:301-330`):
 it runs `base()` under adwaita light and kde-breeze dark and asserts the base's
 hovered, active and open `bg_stroke` equal `inactive`'s. It keeps the width and radius
-assertions for every entry and the colour assertion for `open`; for `hovered` and
-`active` it compares the colour only where `button.hover_border_color` (and, for
-`active`, `button.focus_border_color`) is unset, and under kde-breeze asserts the
-stated colour instead. Its doc gains "the button's hover and focus border, where
-stated, colour `hovered` and `active` (3E.1)".
+assertions for every entry and the colour assertion for `open`, and drops the colour
+assertion for `hovered` and `active` (T10 holds those colours, 3E.4), so its name stays
+true. Its doc gains "the button's hover and focus border, where stated, colour
+`hovered` and `active` (3E.1)".
 
 **Further tests that read a hovered or active stroke**, found by `grep` for
 `bg_stroke`, `hovered`, `entries(` and `all5(`, and for loops over the states
@@ -2649,25 +2620,10 @@ the seven roles against the base's hovered or active stroke:
   colour is `button.border.color` (`:1343-1351`), but runs only adwaita light and
   windows-11 dark (`:1311-1314`), which state neither field: green as it is. Changed
   all the same, so that it holds the new formula: it expects for `hovered` and `active`
-  the colours 3E.1 writes, and gains kde-breeze dark.
-- Read and unchanged: `tooltip_and_popover_cells_write_their_rows` (`:1646-…`, the cells
-  equal the base's entries, which they still carry); `strong_text_is_the_panel_text_…`
-  (`:1241`, text only); the menu, input, checkbox, tab, combo box, segmented control and
-  expander cell tests (`:1406`, `:1501`, `:1557`, `:1813`, `:2186`, `:2320`; each
-  role's own border); `the_checkbox_selected_cell_fills_the_box_and_outlines_it` and
-  the selected-disabled checkbox test (`CE/style/variants.rs:318-347`; the checkbox's
-  own outline); the disabled button cell test (`variants.rs:421-424`, the disabled cell
-  against the normal one, which carry the same strokes);
-  `hover_and_active_keep_the_resting_stroke_and_radius`'s neighbours in `states.rs`
-  (`:343-…` under adwaita, and `:365-376`, which calls `write_states` directly);
-  `d2_the_knob_is_the_diameter_where_the_row_does_not_bite` (`derived.rs:540`, the
-  expansion only); egui-widgets' `a_widget_in_the_body_keeps_the_callers_style`
-  (`tests.rs:782-…`, the base's `inactive` stroke), `an_expander_with_no_stated_frame_outlines_nothing`
-  (`:739-…`, macos-tahoe and catppuccin-mocha, unset), `a_hovered_segment_lays_the_hover_over_the_group`
-  (`:2317`, the segment's own fill); `CE/install_tests.rs`' input-focus tests
-  (`:2114-2172`, the «input» cell's own strokes). The egui showcase's tests read no
-  `bg_stroke` (`grep`). The iced and gpui tests of the border per status are the
-  contract rows of 3D.2 and the trial of 3F.
+  the colours 3E.1 writes, and gains kde-breeze dark, where the «button» cell's hovered
+  and active stroke is also asserted against the literal #3daee9 (the one value of these
+  tests that is not the code's formula), and a theme with only `hover_border_color`
+  stated, which has it in `active` too (no preset states one without the other).
 
 The mapping tests (T2's splices) prove the sinks; T10 proves the values (3E.4).
 
@@ -2736,7 +2692,7 @@ claimed lines 62–64 do not move), a candidate function:
 ```rust
 /// A gpui-component `Button` with the platform's hover and press border
 /// (`button.hover_border_color`), which the stock `Default` variant cannot take: it draws
-/// the `input` token there (gpui-component 0.9.1 button/button.rs:1084-1086). `None`
+/// the `input` token there (gpui-component 0.10.0 button/button.rs:1100-1102). `None`
 /// where the theme states no hover border; the caller then keeps the `Default` variant.
 #[must_use]
 pub fn bordered_button(n: Native<'_>, cx: &App) -> Option<ButtonCustomVariant>
@@ -2747,20 +2703,20 @@ with `hover_border` the pure function of 3F.4, after `bordered_button` in the sa
 (`pub(crate) fn hover_border(n: Native<'_>) -> Option<Hsla>`,
 `n.resolved.button.hover_border_color.map(rgba_to_hsla)`), so that where the field is
 `Some`, it returns `ButtonCustomVariant::new(cx)` with `.color(c)` (the border in every
-state; `GC/button/button.rs:1118-1124`), `.foreground(theme.button_foreground)`,
+state; `GC/button/button.rs:1134-1140`), `.foreground(theme.button_foreground)`,
 `.hover(theme.button_hover)`, `.active(theme.button_active)` (the installed tokens the
 `Default` variant paints, `CG/colors.rs:380-382`), `.shadow(false)`. The caller builds
 the button as the connector's buttons are built, with the rest fill the variant cannot
-give (its own rest fill is a fifth of `color`, `GC/button/button.rs:1028`) on an
+give (its own rest fill is a fifth of `color`, `GC/button/button.rs:1044`) on an
 unselected button only:
 
 - rest: `.custom(v)`, `.refine_style(&geometry::button(n))` and `.bg(cx.theme().button)`;
 - selected: `.custom(v)`, `.refine_style(&geometry::button(n))` and
   `geometry::button_checked(n)` (`CG/geometry.rs:1369`), with no `.bg`. Upstream fills a
   selected custom variant with its `active`, here `button_active`
-  (`GC/button/button.rs:1337`), as it fills a selected `Default` button with
-  `tokens.button_active` (`:1327`), and replays the caller's style over that state
-  (`:821-829`); `button_checked` sets a fill only where the theme states
+  (`GC/button/button.rs:1353`), as it fills a selected `Default` button with
+  `tokens.button_active` (`:1343`), and replays the caller's style over that state
+  (`:834-842`); `button_checked` sets a fill only where the theme states
   `checked_background` or `active_background` (`CG/geometry.rs:1374-1377`), so a rest
   fill would stand on a selected button of a theme that states neither (macos-tahoe,
   both modes: `macos-tahoe.toml:113-129`, `:526-542` at `0fa28027`, and neither field
@@ -2779,15 +2735,12 @@ state, the button's own quad of the last frame (`scene_quads`,
 gives fill, border colour, border widths and corner radii. `CG/widgets/tests.rs`
 already includes `scene_read.rs` (`#[path = "scene_read.rs"] mod scene_read;`,
 `:23-25`) and draws under gpui's test context, so the test needs no `#[path]` of its
-own. It is not put in `variants.rs`' inline test module: there a `#[path =
-"widgets/scene_read.rs"]` would resolve against `src/variants/tests/`, the path rule
-for a module declared inside an inline module of a non-`mod.rs` file. This
-specification gives no other `#[path]`. **Equal** means: widths and radii exactly; each colour converted to 8-bit sRGBA (the
+own, which `variants.rs`' inline test module would. **Equal** means: widths and radii exactly; each colour converted to 8-bit sRGBA (the
 precision the frame is drawn in) and compared channel by channel, exactly. The `Default`
-variant paints `cx.theme().tokens.*` values (`GC/button/button.rs:1014-1030`,
-`:1158-1240`) where the custom variant paints the `ThemeColor` values `bordered_button`
-copies; whether the two are bit-equal as `Hsla` was not read, and a difference that
-vanishes at 8 bits is recorded in the trial's record as such. Compared field by field:
+variant paints `cx.theme().tokens.*` values (`GC/button/button.rs:1030-1046`,
+`:1174-1256`) where the custom variant paints the `ThemeColor` values `bordered_button`
+copies; whether the two are bit-equal as `Hsla` was not read (the measurement found
+none that vanish at 8 bits). Compared field by field:
 
 | State | How it is reached | Expected |
 |---|---|---|
@@ -2800,10 +2753,10 @@ vanishes at 8 bits is recorded in the trial's record as such. Compared field by 
 
 Text colour: not readable from a frame (correction 2). The test asserts by value that
 the variant's `foreground` equals `button_foreground` (`ButtonCustomVariant: PartialEq`,
-`GC/button/button.rs:38-39`, as `ghost_button`'s test compares, `CG/variants.rs:142-…`)
-and records, from `GC/button/button.rs:1032-1081`, `:1223-1228`, `:1299-1303`, that both
+`GC/button/button.rs:40-41`, as `ghost_button`'s test compares, `CG/variants.rs:142-…`)
+and records, from `GC/button/button.rs:1048-1097`, `:1239-1244`, `:1315-1319`, that both
 variants letter every enabled state in that one colour and a disabled one in
-`muted_foreground` at half alpha (`:1369`), where `button_disabled`'s text colour then
+`muted_foreground` at half alpha (`:1385`), where `button_disabled`'s text colour then
 wins for both.
 
 Presets: kde-breeze light and dark (the only preset that states the field), and
@@ -2813,31 +2766,52 @@ the window is set up with 2E.4's `window_with_resolved`, from step 2's tree), so
 translucent hover fill (windows-11's, `PF:1192`) and a pressed text colour of its own
 (`PF:1197`) are exercised too, and, on macos-tahoe, which states neither
 `checked_background` nor `active_background` (3F.1), a selected button whose fill is
-upstream's selected fill, not `button_checked`'s. The test runs in unit 3.0, on the
-worktree with the fields (3A.1, 3A.2's two full literals) and kde-breeze's lines (3B.5)
-applied and not committed (3I), so it reads the field through the code 3F.1 keeps.
+upstream's selected fill, not `button_checked`'s. The trial ran ahead of the build, on
+`b434b9bc` (3I); the kept test is unit 3.1's.
 
 ### 3F.3 The pass criterion
 
-The trial passes when, on all six combinations, every compared item of every state is
-equal, but the hover and press border (the variant's `hover_border_color` where the
-`Default` button has `input`), and the text-colour assertion holds. Any other
-difference fails it (decision 12), and the trial's record names the state that differed.
+The test passes when, in each of the six combinations and in each state of 3F.2's table,
+the two buttons paint the same quads: the same number, each pair with the same bounds,
+border widths and corner radii, exactly, and the same fill and border colour at 8 bits,
+exactly, with two exceptions and no other:
 
-### 3F.4 If it passes
+1. hovered and pressed, the border colour of the button's border quads: the variant's is
+   `hover_border_color` and `Default`'s is the `input` token, and the test asserts both
+   values;
+2. the fill of a quad with a border width above 0 is not an item of its own: gpui-pre
+   paints a border as a quad filled with its border colour at alpha 0 (gpui-pre 0.3.12
+   `src/style.rs:746-756`), so the test asserts on every such quad of both buttons that
+   its fill is its border colour with alpha 0, and compares the border colour. Two fills
+   are not equal because both have alpha 0: the shader mixes the fill's channels into the
+   border's inner edge (gpui-pre-wgpu 0.3.12 `src/shaders.wgsl:885-889`).
+
+And the text-colour assertion holds. Any other difference fails it (decision 12).
+
+**The outcome**, 2026-11-18 on `b434b9bc`, on both backends: passed. Exception 1 on 48
+quads, exception 2 on the same 48, nothing else; the text-colour assertion held in the
+six combinations. The band-off focused row (kde-breeze and windows-11, `focus_ring_width`
+set to 0 in the test, the branch of gpui-component's `focus_style` step 2 takes there):
+measured 2026-11-18 on `b434b9bc` with this criterion: passed in all six combinations on
+both backends, their printed rows identical; the designed border on 48 quads, no other
+difference, 304 bordered quads' fills asserted as their own border colour at alpha 0;
+focused with the band off, both buttons tint their own border quads in `ring` and draw no
+band. Unit 3.1 starts from that run's patch (the record's `steps23/trial/trial2.patch`).
+
+### 3F.4 What is kept
 
 - `bordered_button` stays, as written in 3F.1, with a doc example in the form of
   `ghost_button`'s (`CG/variants.rs:40-49`) showing the three states' refinements; the
-  trial's test stays where 3F.2 puts it, in `CG/widgets/tests.rs`, as the test that
+  test stays where 3F.2 puts it, in `CG/widgets/tests.rs`, as the test that
   holds `bordered_button` to the `Default` button.
 - **Contract.** The colour-leaf test's sinks (`CG/contract.rs:2736-…`) take no `App`,
   and a `ButtonCustomVariant` is built only with one (`ButtonCustomVariant::new(cx)`,
-  `GC/button/button.rs:103-111`); none of the table's three kinds, `NoReceiver`,
+  `GC/button/button.rs:105-113`); none of the table's three kinds, `NoReceiver`,
   `Inherited` and `Fallback` (`CG/contract.rs:1044-1064`), describes a value that does
   reach a receiver. That is why `bordered_button` reads its colour through 3F.1's
   `hover_border`, a pure function of the same file, crate-visible since
   `CG/contract.rs` calls it, placed after `bordered_button` (*Lines that must not
-  move*); where the trial fails, both go (3F.5). It returns a value, not a `StyleRefinement`, so `sinks` takes it among the
+  move*). It returns a value, not a `StyleRefinement`, so `sinks` takes it among the
   values it records by their `Debug` text, beside `dialog_entrance` (the list at
   `CG/contract.rs:2825-2838`), not among the refinements (`:2780-2823`, builders that
   return a `StyleRefinement`). That list's loop names each entry `geometry::<name>`
@@ -2845,48 +2819,47 @@ difference fails it (decision 12), and the trial's record names the state that d
   `out.insert("variants::hover_border".to_owned(), show(&crate::variants::hover_border(n)));`
   (`show`, `:2753`; `n`, the `Native` the refinements take). The leaf then reaches a
   sink and needs no entry.
-  `button.focus_border_color`: an `UnreadColour` with `Unread::NoReceiver("with
-  gpui-component's band off, a focused Button's border is `ring` where it has a border
-  width, and where it has none a 1 px line: inside it in its text colour at 60 %, but
-  just outside it in `ring` on a link or a text Button and on its edge in `ring` on an
-  upstream ghost Button; with the band on, its border is
-  `ring` and the band is drawn round it (styled.rs:257-297, focus_style;
-  button/button.rs:644-650, :920-922). The model's one focus colour reaches `ring`
-  through the `ring` row")`. What the text rests on, in gpui-component 0.9.1: every
+  `button.focus_border_color`: an `UnreadColour` with `Unread::NoReceiver("a focused
+  Button's border is gpui-component's `ring` (styled.rs:257-297, focus_style), which the
+  model's one focus colour reaches through the `ring` row")`. What the generic `HOW` line
+  below says of a focused Button rests on, in gpui-component 0.10.0: every
   focused Button whose own focus-ring switch is on gets `focus_style`
-  (`GC/button/button.rs:920-922`, `is_focused && self.focus_ring_enabled`; the switch is
-  `FocusableExt::focus_ring`, `:554-556`, on by default, `:275`, and none of the
+  (`GC/button/button.rs:936-938`, `is_focused && self.focus_ring_enabled`; the switch is
+  `FocusableExt::focus_ring`, `:561-563`, on by default, `:282`, and none of the
   showcase's buttons turns it off, `grep` today); with the band on it
   sets the border to `ring` and draws the band (`GC/styled.rs:257-262`); with it off it
   sets the border to `ring` where a border width is above 0 (`:269-270`), and otherwise
   draws the line its `FocusLine` gives (`:273-297`; inset, on the edge or outside it,
   `:274-278`): `Inside`, the text colour at
-  `FOCUS_LINE_OPACITY` 0.6 (`GC/button/button.rs:21`), for every Button but a link or a
+  `FOCUS_LINE_OPACITY` 0.6 (`GC/button/button.rs:23`), for every Button but a link or a
   text (`Outside`, `ring`) and upstream's `.ghost()` (`Edge`, `ring`; the connector's
-  `ghost_button` is a custom variant and takes `Inside`) (`:644-650`). A Button refined
+  `ghost_button` is a custom variant and takes `Inside`) (`:653-659`). A Button refined
   by `geometry::button` has a border width where `button.border.line_width` is above 0
   (`CG/geometry.rs:229`); material-3 and adwaita state 0 (`material-3.toml:136`,
-  `:655`; `adwaita.toml:138`, `:575`), so there a focused button shows the line, or, on
-  adwaita, where step 2 leaves the band on (2E.1), the band.
+  `:655`; `adwaita.toml:138`, `:575`), so there a focused button shows the line, or the
+  band where it is on: on adwaita always (2E.1), on material-3 for a focus that followed
+  a key in a window under `Root`.
 - **Showcase: the three buttons.** The Basic page's default, tooltip and toggle-off
   buttons (the elements of 3B.4 but primary and toggle-on; `basic-button`,
   `basic-button-tooltip`, `basic-toggle-off`) are built through `bordered_button` where
   it returns `Some`, with the rest refinements of 3F.1, and are the `Default` Button
-  elsewhere. `basic-toggle-on` stays the `Default` Button in gpui, and
+  elsewhere. The three are the buttons `docs/showcase-elements.toml` lists the leaf on,
+  the ones compared across the toolkits. The showcase's other `Default` buttons keep
+  upstream's `input` hover border in this release (3H.4). `basic-toggle-on` stays the `Default` Button in gpui, and
   `demo::toggle_button` (`demo.rs:9166-9202`) is not changed: it is built
   `.selected(true)` (`:9193-9199`), and gpui-component registers the press style only
-  for a Button that is neither disabled nor selected (`GC/button/button.rs:730-750`)
-  and returns from its hover closure unchanged for a selected one (`:755-757`), so a
+  for a Button that is neither disabled nor selected (`GC/button/button.rs:733-753`)
+  and returns from its hover closure unchanged for a selected one (`:758-760`), so a
   selected Button changes nothing under the pointer and a hover border would never be
   drawn on it. Its info's claims of a hover and press look are wrong today already
   (*Problems found*, 4; 3H.4).
   The three's info then has to be the variant's: today it is built as `ButtonKind::Default`
   (`pages/basic.rs:58`, `:81`), whose rest
-  fill (`gpui-component/button/button.rs:1020`), hover and press fills (`:1164`,
-  `:1248`), text (`:1034`) and variant line (`info/buttons.rs:561`) would claim upstream's
+  fill (`gpui-component/button/button.rs:1036`), hover and press fills (`:1180`,
+  `:1264`), text (`:1050`) and variant line (`info/buttons.rs:561`) would claim upstream's
   `Default` reads while the button paints the caller's `.bg(cx.theme().button)` and the
-  variant's `colors.hover`, `colors.active` (`:1209`, `:1294`) and `colors.foreground`
-  (`:1080`), and `every_colour_claim_is_read_at_the_line_it_cites` would not see it,
+  variant's `colors.hover`, `colors.active` (`:1225`, `:1310`) and `colors.foreground`
+  (`:1096`), and `every_colour_claim_is_read_at_the_line_it_cites` would not see it,
   since the cited lines name the same fields. (`DISABLED_BUTTON`, `pages/basic.rs:70-75`,
   is not hovered and stays `Default`, 3B.4; so does every other button of the
   showcase.) So the showcase gets a kind of its own for it, as `Ghost` is
@@ -2900,7 +2873,7 @@ difference fails it (decision 12), and the trial's record names the state that d
     `cx.native().and_then(|n| variants::bordered_button(n, cx))` (both borrows shared,
     2E.2). `apply` (`:3290-3306`) gains `Self::Bordered => match bordered(cx) { Some(v)
     => button.custom(v).bg(cx.theme().button), None => button }`, 3F.1's rest fill: the
-    two builders that use `Bordered` below, `demo::button` and
+    two builders that use `Bordered` below, `demo::button` (through `button_turning`) and
     `demo::built_tooltip_button`, hand `apply` a `Button::new(id)` and select it nowhere
     (`demo.rs:3330-3397`, `:6100-6144`, read today), and `basic-toggle-on`, the one
     selected button of 3B.4's elements, stays `Default` (above), so no `Bordered` Button
@@ -2911,9 +2884,11 @@ difference fails it (decision 12), and the trial's record names the state that d
     `bordered(cx)` is `None` and `self` otherwise.
   - **How the info learns the kind.** Every builder of the three asks `built` once and
     hands the one answer to both the info and `apply`, so the two cannot disagree:
-    `demo::button` (`demo.rs:3330-3397`) starts with `let kind = kind.built(cx);` after
-    its destructuring (`:3331-3337`), before `info::buttons::button` (`:3345-3352`) and
-    `kind.apply` (`:3365`). `demo::built_tooltip_button` (`:6100-6144`, five parameters
+    `demo::button` (`demo.rs:3330-3397`) is at `b434b9bc` a wrapper over the private
+    `button_turning`, which `loading_button` calls too and which holds the destructuring,
+    `info::buttons::button` and `kind.apply`; `button_turning` starts with `let kind =
+    kind.built(cx);` after its destructuring, before `info::buttons::button` and
+    `kind.apply`. `demo::built_tooltip_button` (`:6100-6144`, five parameters
     today) has two callers, the Basic page's tooltip button (`pages/basic.rs:442-448`)
     and the Feedback page's built tooltip (`pages/feedback.rs:465-473`), so it gains a
     sixth parameter, `kind: ButtonKind`, after `text`: it starts with `let kind =
@@ -3006,7 +2981,7 @@ difference fails it (decision 12), and the trial's record names the state that d
   form: the route listing skips a line that says "not reachable"
   (`CG/showcase.rs:4109`), and `RenderOnce` is in that one file of
   gpui-component (`prose_citations`, `:3222-3256`, reads the symbol up to the space;
-  `GC/button/button.rs:620`); and a generic
+  `GC/button/button.rs:627`); and a generic
   one for `button.focus_border_color` ("not reachable: with gpui-component's band off, a
   focused Button's border is ThemeColor ring where it has a border width, and where it
   has none a 1 px line: inside it in its text colour at 60 %, but just outside it in
@@ -3014,19 +2989,19 @@ difference fails it (decision 12), and the trial's record names the state that d
   with the band on, its border is ring and the band is drawn round it (styled.rs,
   focus_style)"); `basic.buttons.primary`'s
   `button.hover_border_color`: "not reachable: a Primary Button's hover and press border
-  is the primary token (gpui-component/button/button.rs:1088, primary); at rest it is
+  is the primary token (gpui-component/button/button.rs:1104, primary); at rest it is
   geometry::button's button.border.color (native-theme-gpui/geometry.rs:230,
   border_color)", and its `button.focus_border_color` takes the generic entry, which
   holds for it as for every Button. Why the Primary line: a Primary Button's rest,
   selected and disabled border is the caller's `geometry::button` `border_color`
   (`CG/geometry.rs:230`), which upstream replays over each state
-  (`GC/button/button.rs:634`, `:764`, `:828`, `:836`); only its hover and press styles
-  set the `primary` token (`:738-742`, `:758-760`, from `ButtonVariant::border_color`,
-  `:1088`), and gpui applies a hover style after the refinement. A `HOW` line's line
+  (`GC/button/button.rs:643`, `:767`, `:841`, `:849`); only its hover and press styles
+  set the `primary` token (`:741-745`, `:761-763`, from `ButtonVariant::border_color`,
+  `:1104`), and gpui applies a hover style after the refinement. A `HOW` line's line
   citation names the symbol its lines hold, in the form of the existing entries
   (`info/leaves.rs:97`), or `every_prose_citation_still_exists` fails it
-  (`CG/showcase.rs:3762-3771`; its parser, `line_citations`, `:3273-3387`): `:1088` is
-  `Self::Primary => cx.theme().primary,` in gpui-component 0.9.1, and
+  (`CG/showcase.rs:3762-3771`; its parser, `line_citations`, `:3273-3387`): `:1104` is
+  `Self::Primary => cx.theme().primary,` in gpui-component 0.10.0, and
   `native-theme-gpui/geometry.rs:230` is `.border_color(rgba_to_hsla(b.border.color))`
   (read today; the crate name picks the connector's `src/`, `candidates`,
   `CG/showcase.rs:2576-2585`, and `geometry.rs:230` is among the lines that must not
@@ -3064,67 +3039,20 @@ difference fails it (decision 12), and the trial's record names the state that d
   "flat buttons via [`variants::ghost_button`]" gains "; the hover border via
   [`variants::bordered_button`]".
 
-### 3F.5 If it fails
+### 3F.5 If the kept test fails later
 
-- `bordered_button`, `hover_border` and the test in `CG/widgets/tests.rs` are not kept; the trial's result (each state that
-  differed, and how) is recorded in the commit message, the plan's status line and the
-  backlog entry of request 5.
-- **Contract.** Both leaves are `UnreadColour` entries with `Unread::NoReceiver`:
-  `button.hover_border_color`, "the Default Button draws its hover and press border in
-  the `input` token, the text input's border (button/button.rs:1084-1086, :1222, :1298),
-  and a custom variant cannot stand in for it (<the difference the trial found>)";
-  `button.focus_border_color` as in 3F.4.
-- **Showcase.** `info/leaves.rs` `HOW` entries for both leaves on the five elements:
-  "not reachable: …" with the same reasons, each line citation with the symbol its lines
-  hold, as 3F.4's `HOW` entries (the `UnreadColour` texts need no symbol: their test asks
-  only for a `.rs:`, `CG/contract.rs:3028`). `button.hover_border_color` on the three
-  elements 3F.4 builds through `bordered_button` (default, tooltip, toggle-off): "not
-  reachable: the Default Button draws its hover and press border in the input token,
-  the text input's border
-  (gpui-component/button/button.rs:1084-1086, border_color; :1222, border_color; :1298,
-  border_color), and a custom variant cannot stand in for it (<the difference the trial
-  found>)": each range carries its symbol, and `line_citations` reads the `; :N, Symbol`
-  groups as ranges of the same file, as the existing entry `info/leaves.rs:97` does
-  (`:1084` is `fn border_color`, `:1222` and `:1298` call `self.border_color(outline,
-  cx)`, read today in gpui-component 0.9.1); on primary, 3F.4's text for primary; on
-  toggle-on, 3F.4's not-drawn line, which holds whatever the trial's outcome; the
-  generic `button.focus_border_color` entry as in 3F.4. `demo::ButtonKind` gains no
-  `Bordered` and the three buttons stay `Default`, so `edge`, the claims and the
-  tooltip's trigger text are unchanged.
-- **README** (`connectors/native-theme-gpui/README.md`, the *Limits* section): "A
-  button's hover and focus border: gpui-component's `Default` Button draws its hover and
-  press border in the `input` token, the text input's border colour, and a focused
-  Button's border in `ring` (where it has no border width, a 1 px line: in `ring` on a
-  link, a text or an upstream `.ghost()` Button, else in its text colour at 60 %; with
-  `Theme::focus_ring` on, the band as well); `button.hover_border_color` and
-  `button.focus_border_color` have no receiver (request 5 of the upstream requests)."
-- **Upstream request 5**, appended to `docs/issues/0004_kde-hand-overrides-upstream-requests.md`
-  (and its title "four requests" → "five requests"). Only the backlog entry gains (5)
-  (3H.4). The first rationale's §4.7, with its sentence "Four requests, drafted for the
-  maintainer to send to GPUI Kit's tracker", stays: it records what that rationale
-  drafted, and request 5 is this one's.
-
-  > **5. A button's border colour per state**
-  >
-  > gpui-component 0.9.1 draws a `Default` button's border in the `input` token at rest,
-  > hovered, pressed and selected (`src/button/button.rs:1084-1086`, read by those four
-  > styles at `:1144`, `:1222`, `:1298`, `:1340`), and in `ring` when it is focused
-  > (`src/styled.rs:257-270`), and its hover and press
-  > styles replace a caller's border colour (`:738-743`, `:751-762`). `input` is the text
-  > input's border, so a theme cannot give a button a hover outline of its own. KDE
-  > Breeze shows hover, keyboard focus and press on a button by turning its outline to
-  > the highlight colour and keeps its fill. A custom variant draws one colour as its
-  > border in every state (`:1118-1124`), at rest too, so it cannot stand in. Could the
-  > theme carry a button's border colour per state (`button_border`, `button_hover_border`,
-  > `button_active_border`, defaulting to `input` as today), or could
-  > `ButtonCustomVariant` take a border colour per state?
+The trial passed (3F.3). If `bordered_button_matches_the_default_button_but_its_hover_border`
+fails in unit 3.1, on step 2's tree, the unit stops before 3F.4's showcase parts are
+written and nothing of 3F.4 is committed; the difference goes to the maintainer with the
+test's output. D5 gives the outline of what then follows (no receiver, the contract says
+so, a request upstream); it is specified then.
 
 ## Part 3G — The showcases
 
 ### 3G.1 Widget Info routes
 
 - iced: 3D.4. egui: the two `mapping.toml` rows give the Theme Map's and Widget Info's
-  route lines (`direct` sinks). gpui: 3F.4 or 3F.5.
+  route lines (`direct` sinks). gpui: 3F.4.
 - `scripts/check_showcase_parity.py --check-list` checks the element list; the three
   showcases' route tests fail on a listed leaf without a route, which is the gate for
   3B.4.
@@ -3135,8 +3063,7 @@ Only on kde-breeze (light and dark), the only preset that states the fields: a h
 or pressed button's outline turns #3daee9 in iced (the button styles that wear `button.border`, decision 8; not `button_link`,
 `segment` or `expander`, `CI/styles.rs:497`, `:1947`, `:2034`, 3D.1),
 egui (the «button» role, the scopes that carry the base, every unscoped control of
-3E.1), and gpui if the trial passes (the showcase's default, tooltip and toggle-off
-buttons); a keyboard-focused egui button's outline turns #3daee9 (`active`). What does
+3E.1), and gpui (the showcase's default, tooltip and toggle-off buttons); a keyboard-focused egui button's outline turns #3daee9 (`active`). What does
 not change: in egui, the controls of the «scrollbar», «slider», «sidebar», «toolbar»,
 «status bar», «list» and «switch» scopes keep their resting stroke when hovered or
 pressed (the showcases' toolbar buttons and list rows among them; step 5 gives a
@@ -3148,19 +3075,15 @@ capturing, `showcase-egui/app.rs:975-988`; iced's `held_page` shows no pointer,
 `showcase-gpui/tests.rs:6253`), no script or workflow passes `--pointer` (`grep` over
 `scripts/` and `.github/` today), no key reaches it either (2H.5), and the start-up
 focus is a text field's (2H.1), whose focused stroke is the «input» cell's own in
-egui and no button border in iced or gpui. Step 3 adds nothing to the release's one
-asset run (2K, S5) but what the stamps hash (the sources).
+egui and no button border in iced or gpui. Step 3 adds nothing to 0.7.2's one asset
+run (2K) but what the stamps hash (the sources).
 
 ## Part 3H — Outside the code
 
-In 3H, `<A | B>` gives the text for the trial's two outcomes: `A` where it passes
-(3F.4), `B` where it fails (3F.5).
-
 ### 3H.1 `CHANGELOG.md`
 
-Into the release's one section, `## [0.7.3] - <date>` (2I.1, S5), under its headings,
-after step 2's entries of each heading (a `### Changed` heading is there already from
-step 2). The *Breaking Changes* entry follows 0.7.0's wording, as 2I.1's does; that note
+Into 0.7.2's section, `## [0.7.2] - 2026-11-18` (2I.1), under its headings, after
+step 2's entries of each heading. The *Breaking Changes* entry follows 0.7.0's wording, as 2I.1's does; that note
 is for the reader and is not written into `CHANGELOG.md`:
 
 - `### Breaking Changes`: step 2's entry becomes the release's one entry, naming both
@@ -3189,11 +3112,9 @@ is for the reader and is not written into `CHANGELOG.md`:
     not); the «scrollbar», «slider», «sidebar», «toolbar», «status bar», «list»
     and «switch» scopes keep their rest stroke, so a toolbar button or a list row shows
     no new outline.
-  - **native-theme-gpui** (if the trial passes): `variants::bordered_button`, a Button
+  - **native-theme-gpui**: `variants::bordered_button`, a Button
     with the platform's hover and press border.
-- `### Changed` (if the trial fails): **native-theme-gpui**: the README's *Limits*
-  names the button's hover and focus border, which gpui-component cannot take.
-- `### Changed` (if the trial passes): **Showcases (gpui)**: the Basic page's default,
+- `### Changed`: **Showcases (gpui)**: the Basic page's default,
   tooltip and toggle-off buttons are built with `variants::bordered_button` where the
   theme states a hover border (kde-breeze), so they take Breeze's outline under the
   pointer and while pressed, and their Widget Info claims the variant's colours (3F.4);
@@ -3202,18 +3123,18 @@ is for the reader and is not written into `CHANGELOG.md`:
 
 ### 3H.2 `ROADMAP.md`
 
-In the release's one section, whose heading 2I.2 gives (S5), a second paragraph after
-step 2's **Delivered** paragraph: "The model also carries a button's outline under the
+In the release's section, whose heading 2I.2 gives, a paragraph after step 2's: "The
+model also carries a button's outline under the
 pointer and with the keyboard focus, which Breeze turns to the highlight colour; kde-breeze states it, and no
 other bundled preset does. The egui connector draws both; the iced connector draws the
-hover border (an iced button takes no keyboard focus)<; the gpui connector offers a
+hover border (an iced button takes no keyboard focus); the gpui connector offers a
 button variant with the hover border (a focused gpui-component button's border, where
-it has one, is its `ring`) | ; gpui-component has no receiver for either, and the request to add one is
-drafted>."
+it has one, is its `ring`)."
 
-`:264`'s count of open `[v0.7.x]` entries is recounted as 2I.2 says, on the documents
-unit's tree (3.3), after 3H.4, which opens two (*macOS: the button's hover fill* and
-*gpui showcase: the toggle that is on …*) and closes none; the commit body records it.
+*Also in the 0.7.x releases*' count of open `[v0.7.x]` entries is recounted as 2I.2
+says, on the documents unit's tree (3.3), after 3H.4, which opens three (*macOS: the
+button's hover fill*, *gpui showcase: the toggle that is on …* and *gpui showcase: its
+other `Default` buttons …*) and closes none; the commit body records it.
 
 ### 3H.2a The READMEs' count of optional colours
 
@@ -3243,144 +3164,31 @@ application gives reaches the hovered edge; the model states no hovered button e
 and iced and egui keep button.border.color", which this step makes false: the model
 states one, and iced and egui draw it where the theme states it (3D.1, 3E.1). The key
 is not scoped to a preset, so the group stays for the presets that state none. In
-unit 3.3, the reason's text from "so no style the application gives" to its end
-becomes `<A | B>`: A, "so no refinement the application gives reaches the hovered
-edge, only a custom variant's colour, which the Basic page's default button takes
-through variants::bordered_button where the theme states button.hover_border_color;
-where it states none, iced and egui keep button.border.color and gpui draws the input
-token"; B, "so no style the application gives reaches the hovered edge; iced and egui
-draw button.hover_border_color where the theme states one and button.border.color
-elsewhere, and gpui the input token in either case (request 5 of the upstream
-requests)". The text before it, with its citations, is unchanged, and so is its key,
+unit 3.2, the reason's text from "so no style the application gives" to its end
+becomes "so no refinement the application gives reaches the hovered edge, only a custom
+variant's colour, which the Basic page's default button takes through
+variants::bordered_button where the theme states button.hover_border_color; where it
+states none, iced and egui keep button.border.color and gpui draws the input token".
+The text before it, with its citations, is unchanged, and so is its key,
 which stays unscoped. No gate reads a group's reason text.
 
 ### 3H.3 The first rationale (`docs/issues/0004_kde-hand-overrides-rationale.md`)
 
 - Table row C (`:1030`), "the hover and focus border wait for §5.4" → "the hover and
-  focus border: **fixed in 0.7.3**: egui draws both; iced draws the hover border (an
-  iced button takes no keyboard focus)<; gpui: the hover border through the connector's
+  focus border: **fixed in 0.7.2**: egui draws both; iced draws the hover border (an
+  iced button takes no keyboard focus); gpui: the hover border through the connector's
   `variants::bordered_button`, a focused button's border, where it has one, being
-  gpui-component's `ring` |
-  ; gpui-component cannot take either yet (request 5)>".
+  gpui-component's `ring`".
 - **§5.4** (`:907`), a line after the heading, in the form of 2I.3's §5.1 line:
-  "*Partly settled by `0004_kde-open-items-rationale.md` D5 (0.7.3): a button's border on
+  "*Partly settled by `0004_kde-open-items-rationale.md` D5 (0.7.2): a button's border on
   hover and on keyboard focus (`button.hover_border_color`, `button.focus_border_color`),
   which kde-breeze and the KDE reader state; egui draws both; iced draws the hover
-  border (an iced button takes no keyboard focus)<; gpui the hover border, through
-  `variants::bordered_button` | ; gpui-component cannot take either yet (request 5)>.
-  The check box, the radio and the combo box are that rationale's
-  D6, toolbar buttons and the table header its D7; the menu item's and the list row's
-  outlines and the menu bar title stay in the backlog (its §0).*"
-- **The reply draft (§8)**, under 2I.3's rules (only while it has not been posted; by
-  anchor and by content; "<the release that brings step 3>" replaced by its version as
-  2I.3 says; the note keeps every sentence still in the draft and its caveat), on the
-  draft as step 2 leaves it. Where this step's anchors are step 2's own sentences,
-  they are found by the sentence's start, which holds whether step 2's placeholder is
-  still in the draft or already replaced by its version: "> With " followed by the
-  release and "you can drop `focus_ring`"; the bullet titled **The focus ring**.
-  1. The bullet whose title is **Hover borders on buttons.**, under "Some things are not
-     fixed yet", is removed where the trial passed. Where it failed, it is replaced, in
-     its place, by what stays open:
+  border (an iced button takes no keyboard focus); gpui the hover border, through
+  `variants::bordered_button`. The check box, the radio and the combo box are that
+  rationale's D6, toolbar buttons and the table header its D7; the menu item's and the
+  list row's outlines and the menu bar title stay in the backlog (its §0).*"
 
-     ```markdown
-     > - **Hover borders in GPUI.** gpui-component's button draws its hover border in
-     >   the text field's border colour and cannot take one of its own yet, so I have
-     >   asked for it. Until then, setting it yourself, as you did, is the way to get
-     >   Breeze's.
-     ```
-  2. The list "Later 0.7.x releases fix more:" (2I.3, item 2) gains, after its bullet
-     **The focus ring**:
-
-     ```markdown
-     > - **Hover borders on buttons** (<the release that brings step 3>). Breeze
-     >   shows hover by recolouring a button's border, not its fill, and keyboard
-     >   focus the same way. native-theme now has values for both, Breeze's
-     >   highlight colour read from your colour scheme. The egui connector draws
-     >   both; the iced connector draws the hover border (an iced button cannot take
-     >   the keyboard focus).
-     ```
-
-     Where the trial passed, the bullet goes on: "In GPUI,
-     `native_theme_gpui::variants::bordered_button` gives a button the hover border;
-     a focused button's border is gpui-component's focus colour, which on KDE is
-     that highlight already." (kde-breeze's `ring` token is the opaque ring colour,
-     #3daee9, since step 2, 2E.1.) Where it failed, it ends there, and GPUI's part
-     is item 1's bullet, so no item stands in both lists.
-  3. Where the trial passed, the paragraph that begins "> With " and contains "you can
-     drop `focus_ring`" (2I.3, item 3; one release brings both steps, S5, so one
-     paragraph) gains, after its last sentence: " You can also give a button its hover
-     border with `native_theme_gpui::variants::bordered_button` instead of setting it
-     yourself." Where it failed, nothing: the reporter keeps the hand-set border.
-  4. "The rest of your list": in its sentence on toolbar buttons, "they come in the
-     same series of releases as the hover borders" becomes "they come in a later
-     0.7.x release" (the hover borders are then out, and the old words would read as
-     if toolbar buttons came with them). The sentence on the pressed sort header
-     ("it comes last") stays. The paragraph after this step, from step 1's text (its
-     G.3) with this one change, step 2 leaving it as it is:
-
-     ```markdown
-     > The rest of your list, briefly. Toolbar buttons: native-theme has no values for
-     > their states yet; they come in a later 0.7.x release. The pressed sort header
-     > has none either; it comes last, and since no GUI library's table can show it,
-     > its values will reach an application only for a table it draws itself. Dialog
-     > text is the general font, and Breeze sets no dialog window size. Taking dark or
-     > light from `system_is_dark()` for the fallback was right. And for looking at
-     > every colour of a theme, the showcase example shows each widget's colours with
-     > where they come from.
-     ```
-  5. The note after the draft. "It is planned for a coming 0.7.x release" and "In
-     GPUI it depends on whether gpui-component's buttons can take it, which I have
-     yet to try" leave the draft with item 1, and "they come in the same series of
-     releases as the hover borders" with item 4; "they come in a later 0.7.x
-     release" comes in, and, where the trial failed, "so I have asked for it". The
-     note becomes, where the trial passed:
-
-     ```markdown
-     The sentences "I am reporting it there", "I have asked gpui-component to draw
-     its ring for keyboard focus only", "they come in a later 0.7.x release" and "it
-     comes last" are the maintainer's to confirm before posting: they follow
-     `0004_kde-open-items-rationale.md`'s proposed order (D10), and "0.7.x" its
-     proposed versions (D0 (a); under (b) or (c) some of these releases are minor
-     ones, and the wording changes with them).
-     ```
-
-     and where it failed the same with "so I have asked for it" after the ring's
-     sentence:
-
-     ```markdown
-     The sentences "I am reporting it there", "I have asked gpui-component to draw
-     its ring for keyboard focus only", "so I have asked for it", "they come in a
-     later 0.7.x release" and "it comes last" are the maintainer's to confirm before
-     posting: they follow `0004_kde-open-items-rationale.md`'s proposed order (D10),
-     and "0.7.x" its proposed versions (D0 (a); under (b) or (c) some of these
-     releases are minor ones, and the wording changes with them).
-     ```
-
-  Step 5 (toolbar buttons) then finds that sentence by its start, "Toolbar buttons:",
-  not by the words this step replaces.
-
-  **The draft's two lists as they stand after this step** (the focus ring's bullet as
-  2I.3 gives it):
-
-  ```markdown
-  > Later 0.7.x releases fix more:
-  >
-  > - **The focus ring** (<the release that brings step 2>). […]
-  > - **Hover borders on buttons** (<the release that brings step 3>). [item 2's text,
-  >   by the trial's outcome]
-  >
-  > […]
-  >
-  > Some things are not fixed yet:
-  >
-  > - **The 16 px scroll bar in tables** is a bug in gpui-component's table, which
-  >   ignores the theme's width. I am reporting it there.
-  > - **Hover borders in GPUI.** [item 1's text; only where the trial failed]
-  > - **Menus in GPUI.** gpui-component paints every menu in its `popover`
-  >   colour, the window's on KDE (since 0.7.0, so you no longer need to set
-  >   `popover`), and has no colour of its own for a menu, so in GPUI the small
-  >   difference from Breeze's menu colour stays.
-  ```
+The reply (§8) was posted on 2026-11-17; 2I.3 says what of it is the maintainer's.
 
 ### 3H.4 The backlog
 
@@ -3388,15 +3196,13 @@ which stays unscoped. No gate reads a group's reason text.
   first part ("First, as the next 0.7.x step, … so on KDE a connector's button shows no
   hover at all", `:1774-1780`) is reworded to what remains: "Breeze shows hover on a
   combo box, a check box and a slider handle by recolouring the outline, never the fill
-  (open-items rationale D6; a button's outline is in the model since 0.7.3)". Two
+  (open-items rationale D6; a button's outline is in the model since 0.7.2)". Two
   sentences after it named that step and would point at nothing: "The kde-breeze hover
   fills that stand in for an outline wait for it, since removing them first would remove
   the only hover feedback" (`:1780-1782`) becomes "… stand in for an outline wait for
   their fields, since removing them first would remove the only hover feedback", and
   "The same step takes:" (`:1785`) becomes "Breeze also draws, with no field yet:". The
   rest of the entry is unchanged.
-- `[upstream]` *GPUI Kit, from issue #4* (`:2742-2764`): if the trial fails, "Four
-  requests" → "Five requests" and a sentence for (5) in the entry's form.
 - A new `[v0.7.x]` entry in the issue-#4 section: "**macOS: the button's hover fill.**
   `docs/platform-facts.md`'s `button.hover_background` macOS cell gives a measured
   'subtle CoreUI highlight' on 14–15 and ❓ on 26, while the parked facts record that
@@ -3412,88 +3218,98 @@ which stays unscoped. No gate reads a group's reason text.
   press border `input` (`:353-358`) and, in the idle edge note, a repaint in `input`
   under the pointer (`:534-535`), while the Button is `.selected(true)`
   (`demo.rs:9193-9199`): gpui-component paints a selected Button in its selected style,
-  `tokens.button_active` (`gpui-component 0.9.1 button/button.rs:1327`) or
+  `tokens.button_active` (`gpui-component 0.10.0 button/button.rs:1343`) or
   `geometry::button_checked`'s fill where the theme states one, and gives it no hover or
-  press style (`:730-762`); under a native theme its label is `button_checked`'s colour,
+  press style (`:733-765`); under a native theme its label is `button_checked`'s colour,
   not the claimed `button_foreground` (`info/buttons.rs:26-31`). Until this is done, its
-  Widget Info shows the true "not reachable" line the hover-border release added for
+  Widget Info shows the true "not reachable" line 0.7.2 added for
   `button.hover_border_color`
   beside the old false claim "border, hovered or pressed" in `input`. Give it a selected
   Button's info, as `native_ghost_selected` (`info/buttons.rs:629-652`) does for a
   selected Ghost." (*Problems found*, 4.)
+- A new `[v0.7.x]` entry in the issue-#4 section: "**gpui showcase: its other `Default`
+  buttons do not take the theme's hover border.** On kde-breeze only the Basic page's
+  default, tooltip and toggle-off buttons are built with `variants::bordered_button`;
+  the iced and egui showcases outline every button. Build the showcase's own buttons
+  through `ButtonKind::Bordered`, but the Buttons page's row that shows
+  gpui-component's `Default` variant by name."
 
 ### 3H.5 The rationale's status line
 
-`docs/issues/0004_kde-open-items-rationale.md:3-4` gains, in the release's close-out, as
+`docs/issues/0004_kde-open-items-rationale.md:3-4` gains, in 0.7.2's close-out, as
 the steps 6–7 specification's 7.I.4 gives its own, the one sentence for both steps that
-2I.6 gives (S5), word for word, with 2I.6's one placeholder: "Steps 2 (D4) and 3 (D5)
-implemented on `<date>` for <the release that brings step 2>, by
-`../archive/todo_v0.7.x_kde-open-items-steps2-3-{spec,plan}.md`." (the archive's path,
-since 3H.6 moves the documents in the same close-out). The rationale
+2I.6 gives, word for word, with 2I.6's one placeholder: "Steps 2 (D4) and 3 (D5)
+implemented on `<date>` for 0.7.2, by
+`../archive/todo_v0.7.2_kde-focus-ring-and-button-outlines-{spec,plan}.md`." (the
+archive's path, since 3H.6 moves the documents in the same close-out). The rationale
 stays in `docs/issues/` while a step remains.
 
 ### 3H.6 `docs/archive/`
 
-At the release's one close-out, after step 3 (S5), this specification and its plan move to
-`docs/archive/` (`docs/archive/README.md`: implemented design documents live there; the
-project's rule that archiving is a plan's last task), and `docs/archive/README.md`
-gains a row for <the release that brings step 3> (or a line on that release's row, if it
-has one by then): "`todo_v0.7.x_kde-open-items-steps2-3-{spec,plan}.md`: steps 2 and 3
-of the open KDE items, one release (the focus ring; a button's border on hover and on
+At 0.7.2's close-out, after step 3, this specification and its plan move to
+`docs/archive/` with 0.7.2's other documents (`docs/archive/README.md`: implemented
+design documents live there; the project's rule that archiving is a plan's last task),
+and `docs/archive/README.md`'s row for v0.7.2, which that close-out writes for all its
+documents, names them: "`todo_v0.7.2_kde-focus-ring-and-button-outlines-{spec,plan}.md`:
+steps 2 and 3 of the open KDE items (the focus ring; a button's border on hover and on
 keyboard focus); their rationale stays with the issue, at
 `docs/issues/0004_kde-open-items-rationale.md`". Every link to the two documents is
-rewritten for the new place, found at the close-out with `git grep -n
-'kde-open-items-steps2-3'` over every tracked file outside `docs/archive/`; that grep is
-the rule, not a list, since the other documents are still being edited. Among what it
-finds: the rationale's status line of 2I.6 and 3H.5 (written with the archive's path
-in this close-out), and this specification's own links, in its header, which are
-relative to `docs/`: `issues/…` → `../issues/…`,
-`archive/todo_v0.7.1_kde-hand-overrides-spec.md` → `todo_v0.7.1_kde-hand-overrides-spec.md`
-(the same folder then), and `todo_v0.7.1_kde-open-items-step1-spec.md` to where step 1's
-close-out put it (its G.6: `docs/archive/`, the same folder then). A document that has
-itself moved to `docs/archive/` by then is found there by the same `git grep`. Every
-path mention of the two documents in a tracked file outside `docs/archive/` is
-rewritten, a document whose header dates its lines exempt only for its line
-citations, never for a path mention; left as they are, by rule 22 (a)'s exemptions,
-are a mention that already points into `docs/archive/` (in any relative form or as an
-absolute URL), a citation dated "at <sha>", and a path inside another document's
-instructions that names its own future target, the last two each named in the
-commit body. A
-later document not tracked at the close-out's commit is not edited by this work: its
-own plan's path check after its merge re-points the paths that moved.
+rewritten for the new place, found at the close-out with `git grep -nE
+'kde-open-items-steps2-3|kde-focus-ring-and-button-outlines' -- ':!docs/archive'` (both
+names: links to the old ones were re-pointed when the rename was committed, and a later
+text may still carry one); that grep is the rule, not a list, since the other documents
+are still being edited. Among what it finds: the rationale's status line of 2I.6 and
+3H.5 (written with the archive's path in this close-out), and this specification's own
+links, in its header and 2K, which are relative to `docs/`: `issues/…` →
+`../issues/…`, `archive/todo_v0.7.1_kde-hand-overrides-spec.md` →
+`todo_v0.7.1_kde-hand-overrides-spec.md` and
+`archive/todo_v0.7.1_kde-open-items-step1-spec.md` →
+`todo_v0.7.1_kde-open-items-step1-spec.md` (the same folder then); the links to this
+work's plan and to 0.7.2's plan stay, as both move with it. A document that has itself
+moved to `docs/archive/` by then is found there by the same `git grep`. Every path
+mention of the two documents in a tracked file outside `docs/archive/` is rewritten, a
+document whose header dates its lines exempt only for its line citations, never for a
+path mention; left as they are, by rule 22 (a)'s exemptions, are a mention that already
+points into `docs/archive/` (in any relative form or as an absolute URL), a citation
+dated "at <sha>", and a path inside another document's instructions that names its own
+future target, the last two each named in the commit body. A later document not tracked
+at the close-out's commit is not edited by this work: its own plan's path check after
+its merge re-points the paths that moved.
 
 ## Part 3I — Order and gates (step 3)
 
-On the release's one branch, `v0.7.3-rc1`, after step 2's units (S5): no branch and no
-commit (0) of its own; the step starts with the trial, unit 3.0. Units as 2K defines
-them, gated by 2K's cadence (S1): unit 3.0 is uncommitted and has no gate; unit 3.1, the
-first code unit after 2.6's `--commit`, runs `--quick` (no unit is structural, rule 24);
-unit 3.2, the second, which holds 3H.2b's TOML string, is the release's last code unit
-before its documents and version units and runs `--commit` (rule 6); unit 3.3, a
-documents unit, is the last unit before the merge and runs the five checkers and
-`--quick`, its commit the lane's gated head for steps 4 and 5 (2K, rule 20); the merge's warm-up gate restarts the count, X runs the five checkers and
-`--quick`, and the version step runs `--commit` (rule 6: its `Cargo.lock` change).
+On `v0.7.2-rc1`, after step 2's units: no branch and no commit of its own. Units as 2K
+defines them, gated by 2K's cadence (S1): unit 3.1 runs `--quick`, or `--commit` where
+the count of three falls on it (no unit is structural, rule 24); unit 3.2, which holds
+3H.2b's TOML string, is the last code unit and runs `--commit` (rule 6); unit 3.3, a
+documents unit, runs the five checkers and `--quick`. Then 0.7.2's close-out (2K).
+
+**The trial is done** (a measurement ahead of the build; its outputs and its patch are
+in the plan's record folder, `steps23/trial/`; its edits were reverted). Unit 3.1 starts
+from the second run's patch, `steps23/trial/trial2.patch`, whose test already asserts
+3F.3's two exceptions. Where the patch and this specification differ, the specification
+is written: (1) the patch's `window_with_resolved` is left out (unit 2.3 added it,
+2E.4); (2) `bordered_button`'s doc is 3F.1's; (3) the two fields' docs are 3A.1's; (4)
+the test's `band_off` edit (`r.defaults.focus_ring_width = 0.0`) is removed, since
+kde-breeze and windows-11 turn the band off themselves on step 2's tree, and its check
+that `Theme::focus_ring` is what the combination expects stays; (5) the patch's interim
+names are renamed without the word "trial". It runs that test before it writes 3F.4's
+showcase parts (3F.5).
 
 | Unit | Contents | Why these belong together |
 |---|---|---|
-| 3.0 The trial | 3F.1-3F.3 run, uncommitted, in the worktree with 3A.1 (the two fields), 3A.2's two full literals and 3B.5's kde-breeze lines applied, so that the trial runs exactly the code 3F.1 keeps: `bordered_button` through `hover_border(n)`, which reads `n.resolved.button.hover_border_color`, on kde-breeze's stated value and, for windows-11 and macos-tahoe, on the value the test sets (3F.2). Its result, and where it fails the state that differed, go into the plan's status line (decision 12). Where it passes, those edits stay in the worktree and unit 3.1 commits them with the rest of its parts; where it fails, the trial's code goes and the model, test and preset edits are reverted with it (`git restore --staged --worktree --source=HEAD -- <the files>`), so unit 3.1 starts from step 2's last commit (unit 2.7's, its fixes included) | 3F.4 or 3F.5 decides what unit 3.1 holds for gpui. |
-| 3.1 The fields | 3A (the fields, the two full literals of 3A.2); 3B.1 (the two facts rows); 3B.2; 3B.3; 3B.5 (kde-breeze); 3C (the reader and its tests, `kde/mod.rs`' two lists and the accent test's list); egui's 3E.1 (the base's and «button»'s strokes, the seven roles' kept strokes), 3E.2 (the two new rows, `button.border.color`'s changed and added sinks, `mapping.md`, the count 517 → 519, the buttons totals `[11, 46, 31, 25]` → `[13, 46, 31, 25]`), 3E.3 (the new tests, the four changed ones in `roles.rs` and `states.rs`, and `no_border_colour_carries_the_border_opacity` in `CE/style/derived.rs`) and 3E.4 (T10's two formulas in `CE/contract.rs`); iced's 3D.1-3D.3 (the styles, `native_button_border`, the `UNREAD_COLOURS` entry, the tests) with `contract-leaves.toml` regenerated; gpui's contract and connector part of 3F.4 (`bordered_button`, `hover_border`, the `sinks` entry, the trial's test in `CG/widgets/tests.rs`, the `UnreadColour` of `button.focus_border_color`) with the showcase's use of `bordered_button` on the Basic page's buttons through `ButtonKind::Bordered`, its claims, `edge` branch and notes, the tooltip's trigger text and the info test's new kind, or of 3F.5 (the two `UnreadColour` entries) | From the moment the fields exist: `property_registry_keys_match_derive_inventory` until the registry lines, and `check_platform_facts_rows.py` until the facts rows; egui's leaf count and `mapping_md_is_current` until the rows, the count and the file, and egui's splice tests (T2) until the strokes the rows declare are written; iced's `every_colour_leaf_reaches_a_row_or_is_named` and gpui's `every_colour_leaf_reaches_a_sink_or_is_named` until each new leaf reaches a row or sink or is named, since both splice a colour into a leaf that is `null` in 32 combinations (`CI/contract.rs:4894`, `CG/contract.rs:2701`); iced's test also until `contract-leaves.toml` matches its walk, which the new leaves and kde-breeze's stated values (the `except` lists of the border rows) both change. egui's `verdict_totals_match_the_specification` until the buttons totals; T2 until a preset pair differs in each new leaf (kde-breeze against adwaita does, so the preset is in the unit) and until the seven roles' cells declare their own strokes; `hover_and_active_keep_the_resting_stroke_and_radius`, `panel_role_cells_write_their_rows`, `switch_cell_writes_its_rows` and `no_border_colour_carries_the_border_opacity` until they read the new strokes (3E.3; `button_cell_writes_its_rows` stays green, since its two presets state neither field, and changes with them); T10 (`t10_every_sink_holds_the_leafs_value`) until its two formulas, since the base's and «button»'s hovered and active strokes are then declared by more than one row (3E.4). Where the trial passed, gpui's `the_showcase_exercises_every_builder` (`CG/showcase.rs:383-416`) until the showcase calls the new `pub fn` `bordered_button`, so its use is in this unit (3F.4). The preset is in the unit so that the export is regenerated once; the reader is no input of it (2K, unit 2.2), and is here because `the_derived_colours_are_the_presets_under_breeze` holds it to the preset once its lists name the two leaves. |
-| 3.2 Showcases | 3B.4 (the element lists); iced's routes, which come from unit 3.1's export with no code of their own (3D.4); the gpui showcase's `HOW` entries of 3F.4 or 3F.5 (`every_how_entry_is_shown` needs the leaves listed; the buttons' use of `bordered_button` is unit 3.1's); egui's routes from unit 3.1's rows; 3H.2b's exception text (a TOML string, so code, rule 11) | A listed leaf without a route is red in the iced and gpui route tests (2K, unit 2.6); `check_showcase_parity.py --check-list` needs the registry keys; 3H.2b is the showcases' parity exception, and its being here leaves 3.3 a documents unit (rule 20). |
-| 3.3 Documents | 3H.1-3H.4 but 3H.2b (3H.2a and `ROADMAP.md:264`'s recount included), the README of 3F.4 or 3F.5, request 5 where the trial failed | — |
+| 3.1 The fields | 3A (the fields, the two full literals of 3A.2); 3B.1 (the two facts rows); 3B.2; 3B.3; 3B.5 (kde-breeze); 3C (the reader and its test, `kde/mod.rs`' two lists and the accent test's list); egui's 3E.1 (the base's and «button»'s strokes, the seven roles' kept strokes), 3E.2 (the two new rows, `button.border.color`'s changed and added sinks, `mapping.md`, the count 517 → 519, the buttons totals `[11, 46, 31, 25]` → `[13, 46, 31, 25]`), 3E.3 (the four changed tests in `roles.rs` and `states.rs`, and `no_border_colour_carries_the_border_opacity` in `CE/style/derived.rs`) and 3E.4 (T10's two formulas in `CE/contract.rs`); iced's 3D.1-3D.3 (the styles, `native_button_border`, the `UNREAD_COLOURS` entry, the test) with `contract-leaves.toml` regenerated; gpui's contract and connector part of 3F.4 (`bordered_button`, `hover_border`, the `sinks` entry, the trial's test in `CG/widgets/tests.rs`, the `UnreadColour` of `button.focus_border_color`) with the showcase's use of `bordered_button` on the Basic page's buttons through `ButtonKind::Bordered`, its claims, `edge` branch and notes, the tooltip's trigger text and the info test's new kind; 3F.4's README paragraph with its `rust,no_run` example, which compiles as a doctest of the crate (`CG/lib.rs`, `ReadmeDoctests`) | From the moment the fields exist: `property_registry_keys_match_derive_inventory` until the registry lines, and `check_platform_facts_rows.py` until the facts rows; egui's leaf count and `mapping_md_is_current` until the rows, the count and the file, and egui's splice tests (T2) until the strokes the rows declare are written; iced's `every_colour_leaf_reaches_a_row_or_is_named` and gpui's `every_colour_leaf_reaches_a_sink_or_is_named` until each new leaf reaches a row or sink or is named, since both splice a colour into a leaf that is `null` in 32 combinations (`CI/contract.rs:4894`, `CG/contract.rs:2701`); iced's test also until `contract-leaves.toml` matches its walk, which the new leaves and kde-breeze's stated values (the `except` lists of the border rows) both change. egui's `verdict_totals_match_the_specification` until the buttons totals; T2 until a preset pair differs in each new leaf (kde-breeze against adwaita does, so the preset is in the unit) and until the seven roles' cells declare their own strokes; `hover_and_active_keep_the_resting_stroke_and_radius` until it drops its hovered and active colour assertion, and `panel_role_cells_write_their_rows`, `switch_cell_writes_its_rows` and `no_border_colour_carries_the_border_opacity` until they read the new strokes (3E.3; `button_cell_writes_its_rows` stays green, since its two presets state neither field, and changes with them); T10 (`t10_every_sink_holds_the_leafs_value`) until its two formulas, since the base's and «button»'s hovered and active strokes are then declared by more than one row (3E.4). gpui's `the_showcase_exercises_every_builder` (`CG/showcase.rs:383-416`) until the showcase calls the new `pub fn` `bordered_button`, so its use is in this unit (3F.4). The preset is in the unit so that the export is regenerated once; the reader is no input of it (2K, unit 2.2), and is here because `the_derived_colours_are_the_presets_under_breeze` holds it to the preset once its lists name the two leaves. |
+| 3.2 Showcases | 3B.4 (the element lists); iced's routes, which come from unit 3.1's export with no code of their own (3D.4); the gpui showcase's `HOW` entries of 3F.4 (`every_how_entry_is_shown` needs the leaves listed; the buttons' use of `bordered_button` is unit 3.1's); egui's routes from unit 3.1's rows; 3H.2b's exception text (a TOML string, so code, rule 11) | A listed leaf without a route is red in the iced and gpui route tests (2K, unit 2.6); `check_showcase_parity.py --check-list` needs the registry keys; 3H.2b is the showcases' parity exception, and its being here leaves 3.3 a documents unit (rule 20). |
+| 3.3 Documents | 3H.1-3H.4 but 3H.2b (3H.2a and *Also in the 0.7.x releases*' recount included) | — |
 
 Contrast pairs: no pair of gpui's or iced's names a button's border (2K, unit 2.2's
-reading), so the hover and focus borders move none. After 3.3: the merge and X, as 2K
-says (S5); no citation of a line this step moves is re-pointed (2B.6).
+reading), so the hover and focus borders move none.
 
-Then the release's one close-out, as 2K says (S5, S4): the version, the compatibility
-run, the push of both steps' units, the full check while CI runs, the one asset run
-(step 3 changes no capture, 3G.2), and, last, the rationale's status line (3H.5, with
-2I.6's step 2 in the same sentence) and the move to `docs/archive/` with its row and
-the re-pointed links (3H.6), in one commit.
-
-Semver and D0's variants as 2K says for the release: its one compatibility step
-reports `ThemeDefaults` and `ButtonTheme`, and `arb_theme_defaults` and
-`arb_button_theme` are the integration tests that name every field.
+0.7.2's close-out takes from this step the rationale's status line (3H.5, with 2I.6's
+step 2 in the same sentence) and the move to `docs/archive/` with the re-pointed links
+(3H.6). Semver as 2K says: the one compatibility step reports `ThemeDefaults` and
+`ButtonTheme`, and `arb_theme_defaults` and `arb_button_theme` are the integration tests
+that name every field.
 
 ---
 
@@ -3525,18 +3341,20 @@ reports `ThemeDefaults` and `ButtonTheme`, and `arb_theme_defaults` and
 
 ## What could not be verified
 
-- No mechanism of step 2 and no part of step 3's trial was built or run (the rationale's
-  §4 says the same); 2J and 3F.5 say what happens if they fail.
+- No mechanism of step 2 was built or run (the rationale's §4 says the same); 2J says
+  what happens if one fails. Step 3's trial ran on `b434b9bc` as a measurement (3F.3);
+  the kept test runs again on step 2's tree in unit 3.1 (3F.5).
 - The URLs built from the parked facts' pinned commits (the WinUI ones in 2B.1 and
   3B.1, and the two androidx ones, on the GitHub mirror at the full commit of
   `androidx@e4d933c9`) and the GTK `gtkcssstylepropertyimpl.c` link were not opened (no
   network). That the mirror holds `e4d933c9` rests on the parked source's note
   (`docs/facts/sources.toml:843` on `v0.8.0-rc1`).
-- The `HOW` texts of 2H.3, 3F.4 and 3F.5 were checked against `every_prose_citation_still_exists`
+- The `HOW` texts of 2H.3 and 3F.4 were checked against `every_prose_citation_still_exists`
   by reading its parsers and by a Python transcription of `line_citations` run on the
   texts and on gpui-component 0.9.1's files (each range parsed with its symbol, and each
-  symbol in its lines), not by running the test; `focus_band_on` and `ring_colour`
-  exist only after 2E.1.
+  symbol in its lines), not by running the test, and that transcription was not run
+  again at 0.10.0, whose lines the texts now cite; `focus_band_on`, `ring_colour` and
+  `focus_followed_key` exist only after 2E.1 and 2E.2.
 - Breeze's band outlasting a mouse move rests on the facts' wording, as the rationale's
   §4 says.
 - Settled from the sources since the last version, no longer open: a focused iced
@@ -3551,7 +3369,28 @@ reports `ThemeDefaults` and `ButtonTheme`, and `arb_theme_defaults` and
 - T2's treatment of the seven roles' new scoped sinks (3E.2) was read from
   `own_write`, `cell_own` and `carried_by`, not run.
 - Whether the `Default` variant's `tokens.*` colours and the `ThemeColor` values the
-  custom variant copies are bit-equal as `Hsla` (3F.2): the comparison is made at 8 bits.
+  custom variant copies are bit-equal as `Hsla` (3F.2): the comparison is made at 8 bits,
+  where the trial found no difference that vanishes there (3F.3).
+- Whether a press gives gpui-component 0.10.0's `Slider` the focus was read, not run: on
+  its track yes, on its thumb no (gpui-base 0.10.0 `src/slider.rs:888-907`, `:1054`;
+  gpui-pre 0.3.12 `src/elements/div.rs:2825-2840`). The texts say "while it has the
+  focus" and do not depend on it.
+- The `TabBar`'s rule (2E.2) was read from gpui-base 0.10.0's `Tab` and gpui-pre
+  0.3.12's focus code, not run; its tests (2E.4) are specified, not written. That a left
+  click focuses no tab (`src/tabs.rs:194`) and a right or middle press does was measured
+  (2E.2, the second defect); that `prevent_default` keeps those two presses from
+  focusing it was read, not run, and its test (2E.2) settles it.
+- The `Root` plugin (2E.1) was measured under kde-breeze, told by the theme's name, and
+  writing the flag on every theme. Specified, not run: its reading of
+  `focus_ring_keyboard_only`, its return without a write on a theme that does not say
+  keyboard only, the assertions of its tests and their adwaita blocks (2E.4; the patch
+  prints), and the showcase's test (2H.3). That a view drawn again without its `Root`
+  reads another window's flag was seen as a value (on GPUI Fast the application's view
+  rendered without `Root`, and the flag read was the other window's), not as a wrongly
+  painted frame. What the `log` crate printed during the measurement was not captured.
+  With the two test helpers wrapped in a `Root`, `right_to_left_the_switch_runs_from_the_right`
+  failed on its label gap (6.5 px against 6.6666665), with the plugin registered and
+  without it; why was not looked into, and no test of this specification wraps them.
 - That no unit of 2K and 3I leaves a gate red was read from the tests named there; no
   gate was run (no cargo command in this task). In particular: T10's two formulas and
   its fallback for the 14 scoped sinks, and T10c over the seven cells (3E.4); that
@@ -3559,8 +3398,8 @@ reports `ThemeDefaults` and `ButtonTheme`, and `arb_theme_defaults` and
   lines iced's showcase forms for the two new leaves from the regenerated export
   (3D.4).
 - egui's rule (2G.1) was checked against the sequences by reading egui 0.36.2's and
-  0.37.0's focus code (decision 14), not by a run; its tests (2G.3) are specified, not
-  written.
+  0.37.0's focus code (decision 14; the citations re-read at 0.37.0), not by a run; its
+  tests (2G.3) are specified, not written.
 - That today's captures of kde-breeze, material-3 and windows-11 show the start-up
   field's ring (2H.5) was read from the code, not from the image files.
 - `ButtonKind::Bordered` (3F.4) was checked against the gates by reading them, not by
@@ -3574,10 +3413,12 @@ reports `ThemeDefaults` and `ButtonTheme`, and `arb_theme_defaults` and
   (`showcase-gpui/tests.rs:5638`, `:5875-5891`, `:6270`, `:6284`, `:6359`, `:6374`) were
   found with `grep` and read where they assert a text, not run.
 - The focused-button texts of 3F.4 (the band, the border, the 60 % line) were read from
-  gpui-component 0.9.1's `focus_style` and `Button::render`, not drawn; which bundled
+  gpui-component 0.9.1's `focus_style` and `Button::render` and re-read at 0.10.0
+  (`src/styled.rs` unchanged, `button/button.rs`' lines moved), not drawn; which bundled
   presets leave the band on after step 2 besides adwaita (2E.1 names adwaita as the
   one the test pins) and macos-tahoe (3F.2's focused row, from 2E.1's rule and the
   preset's values, not run) was not counted, and the texts say "where the band is on".
 - The egui controls 3E.1 and the CHANGELOG name as taking the base's new strokes are
-  the ones read in egui 0.36.2's sources for this; the list is not exhaustive, and
-  none was drawn.
+  the ones read in egui 0.36.2's sources for this, re-read at 0.37.0, where Button,
+  combo box, check box and text edit take their frames from `StyleProvider`s
+  (`EG/theme/default_style.rs`); the list is not exhaustive, and none was drawn.

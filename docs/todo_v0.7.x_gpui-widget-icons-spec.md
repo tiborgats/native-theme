@@ -1952,7 +1952,7 @@ and the connector's check box mark changes only under catppuccin-mocha, where th
 
 The KDE steps 4 and 5 (`docs/todo_v0.7.x_kde-open-items-steps4-5-spec.md`), released before
 this release in the maintainer's order, change the files of Part E, and the KDE steps 2 and 3
-(`docs/todo_v0.7.x_kde-open-items-steps2-3-spec.md`, 3F.4) change three of them too:
+(`docs/todo_v0.7.2_kde-focus-ring-and-button-outlines-spec.md`, 3F.4) change three of them too:
 `SC/tests.rs` (3F.4's test, `showcase-gpui/tests.rs:15732-15787` at `0fa28027`),
 `demo::button` in `SC/demo.rs` (3F.4's `let kind = kind.built(cx);` line, after the
 destructuring and before the `info::buttons::button` call E.4 changes) and the claims of

@@ -1,9 +1,13 @@
 # Issue #4: the KDE items still open after v0.7.1's first fixes — rationale
 
 Status: written 2026-11-14, revised after six reviews. D2, D3 and D10 (a) approved
-for step 1 (2026-11-15); the later steps not yet approved. Step 1 (D2, D3)
+for step 1 (2026-11-15); D4 and D5 approved for 0.7.2 (2026-11-18); the later steps
+not yet approved. Step 1 (D2, D3)
 implemented on 2026-11-17 for 0.7.1, by
-`../archive/todo_v0.7.1_kde-open-items-step1-{spec,plan}.md`.
+`../archive/todo_v0.7.1_kde-open-items-step1-{spec,plan}.md`. D4's bullet on
+gpui-component's widgets was rewritten on 2026-11-18 after three measurements: the
+band follows keyboard focus through a plugin the connector registers, where the
+first version switched it off altogether.
 
 It continues `docs/issues/0004_kde-hand-overrides-rationale.md` (called "the first
 rationale" below), whose §5 left these items undecided, and the backlog entries
@@ -409,24 +413,61 @@ after a key that is not Tab (Enter, for one) shows the ring too.
   accordingly.
 - gpui, the connector's own widgets: each reads `last_input_was_keyboard` when
   it gets the focus and keeps the answer in its state until it loses it.
-- gpui-component's widgets: the band is switched off (`Theme::focus_ring`),
+- gpui-component's widgets: `apply` leaves the band off (`Theme::focus_ring`),
   because upstream draws it on a click into seven kinds of control and offers
-  no way to tell. A focused control then shows its tinted border, and one
-  without a border a 1 px line (`GC/styled.rs:265-297`), so a keyboard user
-  still sees where the focus is. What is lost is the band around any control
-  reached by Tab, a text field included: on windows-11 and material-3 as on
-  KDE, such a control shows its border in the ring's colour, or, without one,
-  a 1 px line where the platform draws its ring: in the ring's colour on a
-  link, a text or an upstream ghost button, and in its text colour at 60 % on
-  any other borderless button, as on material-3 (`GC/button/button.rs:21`,
-  `:644-650`; `GC/styled.rs:273-297`). The alternative, keeping the band, shows it at every click
-  into a text field, a select or a switch, the more frequent case and the one
-  the reporter turned off by hand. A third way was weighed and rejected: the
-  connector switching `Theme::focus_ring` on and off as the input changes
-  between keyboard and pointer. The theme is one for the application while the
-  input's kind is per window, and each switch would re-render everything.
-  Request 4 to upstream asks for the band on keyboard focus only; when upstream
-  has it, the switch goes back on.
+  no way to tell, and registers a plugin of gpui-base's `Root` that turns it on
+  while the window's focus is one that followed a key, by the rule the
+  connector's own widgets follow. `Root` runs its plugins before it builds a
+  window's content (gpui-base 0.10.0 `src/root.rs:74-80`, `:246-252`), and
+  every gpui-component window has a `Root`, so upstream's controls show their
+  band after Tab and none after a click, as the platform does, with nothing for
+  the application to call. The band is upstream's own: 3 px outside the
+  control's edge, in `ring` with its alpha set to 0.5 (gpui-component 0.10.0
+  `src/styled.rs:11-12`, `:301-322`), and no theme value reaches its width or
+  its place (D4's first part). After a click a focused control shows its tinted
+  border, and one without a border a 1 px line (`GC/styled.rs:265-297`): in the
+  ring's colour on a link, a text or an upstream ghost button, and in its text
+  colour at 60 % on any other borderless button, as on material-3
+  (`GC/button/button.rs:21`, `:644-650`; `GC/styled.rs:273-297`).
+
+  Measured on 2026-11-18 on `v0.7.2-rc1` at `b434b9bc`, under kde-breeze, with
+  an upstream `Input`, `Button` and `Switch` in a `Root` (the record of 0.7.2's
+  plan, `steps23/trial/band-switch-plugin-output.txt`), on both backends: a band
+  on the focused control after Tab and Shift+Tab, kept through a mouse move,
+  none after a click, each in the frame of the focus move itself. That holds
+  because gpui redraws the window at every focus move (gpui-pre 0.3.12
+  `src/window.rs:2621-2631`) and gpui-component reads the switch at each render
+  (0.10.0 `src/styled.rs:250-262`). Writing the flag during a render started no
+  render loop, the plugin added no painted quad and moved no control, and
+  nothing in gpui-component 0.10.0 observes its `Theme` global.
+
+  The other ways, weighed:
+  - Leaving the band off altogether, this decision's first version. It loses
+    the band the platform draws after Tab on every upstream control, where it
+    can be had. Its reason was that each switch would re-render everything; the
+    focus move re-renders the window anyway.
+  - A function the application calls first in the `render` of each window's
+    root view. Measured, with the same rows. It needs a line in every
+    application, without which the band stays off; the plugin needs none.
+  - Observers the connector installs itself from `apply` (gpui's keystroke
+    observers, and a focus-out listener on the control a key focused). Measured
+    too: the value is right, but focus listeners run after the frame is
+    painted, so the frame of a click still paints the band on the clicked
+    control, and it goes a frame later.
+  - Keeping the band on any focus: it shows at every click into a text field, a
+    select or a switch, the more frequent case and the one the reporter turned
+    off by hand.
+
+  What the plugin costs. The flag is one for the application while the focus is
+  per window, so each window's `Root` sets it when it renders; a view that is
+  drawn again without its `Root`, which GPUI Fast does, after another window's
+  `Root` rendered, reads that window's answer until its own `Root` renders
+  again (two windows were measured: each painted its own band rightly). A
+  `Root` made before the first `apply` has no plugin. On a theme that says
+  keyboard only, the plugin writes `Theme::focus_ring` at each render, so an
+  application's own write of it does not stand there; on any other theme the
+  plugin writes nothing. Request 4 to upstream still asks for the band on
+  keyboard focus only; when upstream has it, the plugin is no longer needed.
 
 **The values, and gpui's `ring`.**
 
@@ -445,9 +486,11 @@ after a key that is not Tab (Enter, for one) shows the ring too.
   the slider's halo as well: on windows-11 and material-3 those would take the
   accent where the platform's focus colour is another); the ring colour without
   its alpha where the band is switched off, and as stated where it is on.
-  **The third.** Wherever the connector switches the band off (the new field
+  **The third.** Wherever `apply` leaves the band off (the new field
   is true, or the theme's ring has no width, which switches it off today),
-  `ring` is only the colour of a focused control's line, and a line at a third
+  `ring` is the colour of a focused control's line, and of the band the
+  plugin turns on after a key, whose alpha upstream sets itself
+  (0.5, whatever the token's own), and a line at a third
   of its colour is not what any of the three platforms draws: Breeze turns a
   focused frame the full highlight. Where the band is on, nothing changes from
   today. The effect per preset: kde-breeze keeps the colour it has today,
@@ -802,7 +845,9 @@ this repository before any connector drew it (commits `3ddfe91a`, `bd8f5756`).
   mechanism was for (the iced wrapper, the egui plugin, the gpui connector's
   own widgets) keeps drawing the ring on any focus, as the field left unset
   means, and its documentation says so; the step's other parts, the switch of
-  gpui-component's band among them, do not depend on it.
+  gpui-component's band as `apply` sets it among them, do not depend on it.
+  The plugin that turns that band on after a key was measured (D4), and a
+  failure of its test is a stop, not a fallback.
 
 **The releases after v0.7.1**, for the four documents of 2026-11-14 and the
 backlog's dependency upgrade together. The order is the maintainer's; this is
@@ -866,10 +911,9 @@ The maintainer may merge or reorder steps. On 2026-11-15 the maintainer merged s
 4. D4: Breeze's ring values; the field `focus_ring_keyboard_only`, true for
    kde-breeze, windows-11 and material-3, with adwaita unset; the ring shown
    for a focus that followed a key, decided when the focus is gained; on those
-   three presets gpui-component's band switched off, so a control reached by
-   Tab shows its border in `ring`, or a 1 px line, where the platform draws
-   its ring; gpui's `ring`
-   without its alpha where the band is off.
+   three presets gpui-component's band shown for a focus that followed a key
+   and not after a click, through a plugin of gpui-base's `Root` that `apply`
+   registers; gpui's `ring` without its alpha on those presets.
 5. D5 to D9: the fields named, each optional. With D6: material-3 states the
    combo box's hover outline too, and adwaita's check box stays as it is until
    GNOME's checked box under the pointer is read. With D7: the KDE reader

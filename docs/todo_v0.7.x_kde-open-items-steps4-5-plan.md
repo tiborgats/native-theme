@@ -52,7 +52,7 @@
   in v0.7.1 (the maintainer, 2026-11-15), and the release order was approved with
   S3 the same day. For both: `<lane-pred-head>` is the gated head of
   steps 2 and 3's release, read from the record of the steps 2–3 plan
-  (`docs/todo_v0.7.x_kde-open-items-steps2-3-plan.md`, its rule 20 line),
+  (`docs/todo_v0.7.2_kde-focus-ring-and-button-outlines-plan.md`, its rule 20 line),
   `<prev-tag>` is `v0.7.3`, this release is 0.7.4 (its number D0's, §8 item 1),
   and its worktree is `v071` (§1). Not taken (D10 (a), 2026-11-15), kept for the record: under D10 (b), step 1 as v0.7.2, every number from 0.7.2 on moves one up
   (steps 2 and 3 0.7.4, so `<prev-tag>` is `v0.7.4` and this release 0.7.5; the
@@ -762,8 +762,8 @@ only when the one before it holds, but K4 and K5 run beside K3's CI (S4).
    stand at the close-out, since those documents were still being edited on
    2026-11-15, where they are tracked outside `docs/archive/` by then; this
    specification's and this plan's
-   own links: `issues/…` → `../issues/…`, `archive/todo_v0.7.x_kde-open-items-steps2-3-spec.md`
-   → `todo_v0.7.x_kde-open-items-steps2-3-spec.md`; the steps 2–3 specification's
+   own links: `issues/…` → `../issues/…`, `archive/todo_v0.7.2_kde-focus-ring-and-button-outlines-spec.md`
+   → `todo_v0.7.2_kde-focus-ring-and-button-outlines-spec.md`; the steps 2–3 specification's
    3H.6 stays as written); the status lines of the specification and this plan say
    implemented, with the release's commit range; §9 holds the record up to this
    commit. **The batch's rationale** (rule 22 (a): the batch's last release
@@ -1253,7 +1253,7 @@ R-MG).
   temporary files, `<record>`, `<locks>` (written by `slot.sh` alone),
   `<scratch-keep>/batch-2026-11-15/` (read only), and the lane predecessor's
   record folder, read only: steps 2–3's
-  `<scratch-keep>/todo_v0.7.x_kde-open-items-steps2-3-plan/` for P1, P2, A4 and A5
+  `<scratch-keep>/todo_v0.7.2_egui-0.37-and-gpui-kit-0.10.0-plan/steps23/` for P1, P2, A4 and A5
   (the rule-20 line and step 3's outcome), read where its own plan's text names it
   (nothing in the main checkout). Nothing appears on the maintainer's desktop but the orchestrator's
   capture sessions.

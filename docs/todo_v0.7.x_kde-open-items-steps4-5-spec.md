@@ -70,7 +70,7 @@ Two parts and a closing section:
 **The facts lines this document names are `0fa28027`'s.** Step 1 adds no `PF` line (its
 specification's C.1). Steps 2 and 3 insert their rows only, each beside its group, and
 remove no line (their specification,
-[`todo_v0.7.x_kde-open-items-steps2-3-spec.md`](todo_v0.7.x_kde-open-items-steps2-3-spec.md),
+[`todo_v0.7.2_kde-focus-ring-and-button-outlines-spec.md`](todo_v0.7.2_kde-focus-ring-and-button-outlines-spec.md),
 decision 2): step 2's row after `focus_ring_offset` (`PF:1110`), step 3's two directly
 before §2.3's `hover_background` (`PF:1192`). Every `PF` line this document names lies
 from `:1218` on, so on the tree this work starts from each number is three higher
@@ -2027,7 +2027,7 @@ claimed lines stay, *How to read it*):
   `toolbar.button_hover_background`, `.button_hover_border_color`,
   `.button_active_background` through `rgba_to_hsla`. `hover_border` exists only if
   step 3's trial passed (D5; Part 3F of
-  [`todo_v0.7.x_kde-open-items-steps2-3-spec.md`](todo_v0.7.x_kde-open-items-steps2-3-spec.md));
+  [`todo_v0.7.2_kde-focus-ring-and-button-outlines-spec.md`](todo_v0.7.2_kde-focus-ring-and-button-outlines-spec.md));
   otherwise the field is left out of the struct and the leaf is named below. The
   struct and `toolbar_button_states` come first, before `toolbar_button`: the claims of
   `native_toolbar` (below) cite the lines of `toolbar_button_states` that read the
@@ -3066,7 +3066,7 @@ release's asset run, C.2); the other pages' do not.
   - the steps 2–3 plan's close-out list (its K7) also names this specification; that
     plan is in `docs/archive/` by this close-out (steps 2 and 3's close-out archives
     it first), so it stays as written, as 3H.6 below does;
-  - the steps 2–3 specification's 3H.6 (`docs/todo_v0.7.x_kde-open-items-steps2-3-spec.md`,
+  - the steps 2–3 specification's 3H.6 (`docs/todo_v0.7.2_kde-focus-ring-and-button-outlines-spec.md`,
     its list of the links step 3's close-out re-points, found by the section's name since
     its lines keep moving), which names this specification's two links to it, in *How
     to read it* and in B.9's *The variant*: that document is in `docs/archive/` by
@@ -3076,8 +3076,8 @@ release's asset run, C.2); the other pages' do not.
   - this specification's own links, which are relative to `docs/`, in one commit: the
     header's two (`issues/…` → `../issues/…`), and the two to the steps 2–3
     specification (in *How to read it* and B.9), which step 3's close-out rewrote to
-    `archive/todo_v0.7.x_kde-open-items-steps2-3-spec.md` (its 3H.6, this document then
-    lying in `docs/`) and which become `todo_v0.7.x_kde-open-items-steps2-3-spec.md`,
+    `archive/todo_v0.7.2_kde-focus-ring-and-button-outlines-spec.md` (its 3H.6, this document then
+    lying in `docs/`) and which become `todo_v0.7.2_kde-focus-ring-and-button-outlines-spec.md`,
     the same folder then.
   A document that has itself moved to `docs/archive/` by then is found there by the same
   `git grep`.
