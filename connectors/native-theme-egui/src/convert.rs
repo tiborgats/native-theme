@@ -225,19 +225,20 @@ pub fn to_margin(
 ///
 /// A platform's padding lies *inside* its border — outer size = border + padding + content
 /// (`docs/platform-facts.md:904-906`) — while `Button`, `ComboBox`, `CollapsingHeader` and
-/// `TextEdit` draw their stroke *inside* the padding egui gives them: `Button`'s frame margin
-/// is `button_padding + expansion − bg_stroke.width` and `Frame` adds the stroke back
-/// (`egui/src/widget_style.rs:163-165`, `egui/src/containers/frame.rs:327-331`),
-/// `button_frame` strokes `StrokeKind::Inside` within `content ± button_padding`
-/// (`egui/src/containers/combo_box.rs:439-460`), the header likewise
-/// (`egui/src/containers/collapsing_header.rs:531`, `:566-567`), and `TextEdit` allocates with
-/// its margin alone and paints with `margin + expansion − stroke.width`
-/// (`egui/src/widgets/text_edit/builder.rs:713`, `:763-767`). Written into those sinks, this
-/// padding makes the native outer size exact up to the sinks' whole-point rounding: a
-/// `Margin` sink holds `round(side + width)`, and a `Button` realises
-/// `round(button_padding − width) + width` per side (`egui/src/widget_style.rs:163-165`,
-/// `epaint/src/margin.rs:117-119`), so a fractional padding or width moves an edge by at
-/// most half a point. It is exact only where the preset's padding is the platform's
+/// `TextEdit` draw their stroke *inside* the padding egui gives them: egui 0.37 builds the
+/// `Button` and `ComboBox` frame, and the `TextEdit` one, from `button_padding` and takes the
+/// stroke's width out of it, `Frame::apply_stroke_and_expansion_without_layout_shift`, where
+/// `Frame` adds the stroke back (`egui-0.37.0/src/theme/default_style.rs`,
+/// `StyleProvider<ButtonStyle>` and `StyleProvider<TextEditStyle>`;
+/// `egui-0.37.0/src/containers/frame.rs:313-323`, `:362-366`); a margin handed to
+/// `TextEdit::margin` loses the stroke's width the same way
+/// (`egui-0.37.0/src/widgets/text_edit/builder.rs:693-704`), and the header strokes inside its
+/// padding (`egui/src/containers/collapsing_header.rs:531`, `:566-567`). Written into those
+/// sinks, this padding makes the native outer size exact up to the sinks' whole-point
+/// rounding: a `Margin` sink holds `round(side + width)`, and a `Button` realises
+/// `round(button_padding) + round(expansion − width) + width` per side
+/// (`epaint-0.37.0/src/margin.rs`, `From<Vec2>` and `From<f32>`), so a fractional padding or
+/// width moves an edge by up to a point. It is exact only where the preset's padding is the platform's
 /// inside-the-border padding: `macos-monterey`'s text-input, push-button and combo-box
 /// paddings (2 / 2, 1 / 3 and 1 / 3, top / bottom) and `macos-tahoe`'s (4 / 4 for all three)
 /// are the title's offsets from the control's outer edge (`docs/platform-facts.md:1185`,
@@ -297,7 +298,7 @@ pub(crate) fn expander_padding_border(
 /// share `.y`. Each component is the mean of its pair's two targets: a side of
 /// [`padding_with_border`] that is `Some` — the stated side plus the border's line width — is
 /// its own target, and a `None` side targets `base`'s component — the starting style's: egui's own default
-/// (`vec2(4.0, 1.0)`, `style.rs:1458`) on the base style, the base style's in a role cell — exactly as [`to_margin`] keeps `base`'s side.
+/// (`vec2(8.0, 2.0)`, `egui-0.37.0/src/style.rs:1568`) on the base style, the base style's in a role cell — exactly as [`to_margin`] keeps `base`'s side.
 /// With both sides stated the component is `(a + b) / 2 + line_width`: the one symmetric value
 /// that keeps the native outer size and moves the content off-centre by the least,
 /// `|a − b| / 2` (spec §5, §14 item 32). Filtering non-finite sides in [`padding_with_border`] is

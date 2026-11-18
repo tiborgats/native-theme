@@ -31,9 +31,13 @@ egui's own types, and hands them to egui through egui's own seams:
    `ui.native_set_style(role, variant)` from the `NativeThemeUiExt` trait, and
    `ThemeAtlas::role_modifier`, or `role_modifier(ui, role, variant)` from a
    `Ui`, for a popup or a menu. A `TextEdit` in a `Role::Input` scope takes the
-   input's borders, corner radius and text colours, a checked box in
-   `Role::Checkbox` with `RoleVariant::Selected` the checked fill, and a button
-   in `Role::Button` its own font size. Inside a `Role::List` scope egui's
+   input's borders, corner radius, text colours and padding; a plain single-line
+   field takes one padding per axis, the mean of the two sides where a theme
+   states different ones (windows-11), and the accessors are the exact route,
+   each side its own; a multi-line field's route is `text_area_margin` and
+   `text_area_frame`. A checked box in `Role::Checkbox` with
+   `RoleVariant::Selected` takes the checked fill, and a button in
+   `Role::Button` or a drop-down in `Role::ComboBox` its own font size. Inside a `Role::List` scope egui's
    non-interactive stroke, which draws a separator and a group's frame, is
    `list.grid_color` at `list.border.line_width`; no `Surface` is a list's, so
    a list's own outline is a `Frame` the application builds from

@@ -11,10 +11,10 @@ One row per native leaf (spec §5, §13.1). A `§N` that names no document cites
 | Foundation (`defaults`, `text_scale`, `layout`) | 66 | 18 | 1 | 36 | 11 |
 | Surfaces (window, dialog, popover, card, tooltip, menu) | 110 | 8 | 55 | 32 | 15 |
 | Buttons (button, link, switch, checkbox, segmented control) | 113 | 11 | 46 | 31 | 25 |
-| Inputs (input, text area, combo box, list) | 87 | 4 | 35 | 36 | 12 |
+| Inputs (input, text area, combo box, list) | 87 | 4 | 39 | 32 | 12 |
 | Indicators (scrollbar, slider, progress bar, splitter, separator, spinner) | 40 | 5 | 17 | 9 | 9 |
 | Chrome (tab, sidebar, toolbar, status bar, expander) | 100 | 0 | 54 | 27 | 19 |
-| **TOTAL** | **516** | **46** | **208** | **171** | **91** |
+| **TOTAL** | **516** | **46** | **212** | **167** | **91** |
 
 UNMAPPABLE sub-tags (§2): `egui-limited` 52, `source-side gap` 16, `source-void` 1, `widgets-crate` 22.
 
@@ -216,10 +216,10 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 52, `source-side gap` 16, `source-void
 | `button.border.color` | DIRECT | `visuals.widgets.inactive.bg_stroke.color`; `visuals.widgets.hovered.bg_stroke.color`; `visuals.widgets.active.bg_stroke.color`; `visuals.widgets.open.bg_stroke.color`; «button» `visuals.widgets.noninteractive.bg_stroke.color`; «button» `visuals.widgets.inactive.bg_stroke.color`; «button» `visuals.widgets.hovered.bg_stroke.color`; «button» `visuals.widgets.active.bg_stroke.color`; «button» `visuals.widgets.open.bg_stroke.color` |  |
 | `button.border.corner_radius` | DIRECT | «button» `visuals.widgets.noninteractive.corner_radius`; «button» `visuals.widgets.inactive.corner_radius`; «button» `visuals.widgets.hovered.corner_radius`; «button» `visuals.widgets.active.corner_radius`; «button» `visuals.widgets.open.corner_radius`; `visuals.widgets.inactive.corner_radius`; `visuals.widgets.hovered.corner_radius`; `visuals.widgets.active.corner_radius`; `visuals.widgets.open.corner_radius` |  |
 | `button.border.line_width` | DIRECT | «button» `visuals.widgets.noninteractive.bg_stroke.width`; «button» `visuals.widgets.inactive.bg_stroke.width`; «button» `visuals.widgets.hovered.bg_stroke.width`; «button» `visuals.widgets.active.bg_stroke.width`; «button» `visuals.widgets.open.bg_stroke.width`; `visuals.widgets.inactive.bg_stroke.width`; `visuals.widgets.hovered.bg_stroke.width`; `visuals.widgets.active.bg_stroke.width`; `visuals.widgets.open.bg_stroke.width`; `spacing.button_padding.x` (when: a side of the pair is stated, §5 intro); `spacing.button_padding.y` (when: a side of the pair is stated, §5 intro); «button» `spacing.button_padding.x` (when: a side of the pair is stated, §5 intro); «button» `spacing.button_padding.y` (when: a side of the pair is stated, §5 intro) |  |
-| `button.border.padding.bottom` | DERIVED | `spacing.button_padding.y`; «button» `spacing.button_padding.y` |  |
-| `button.border.padding.left` | DERIVED | `spacing.button_padding.x`; «button» `spacing.button_padding.x` |  |
-| `button.border.padding.right` | DERIVED | `spacing.button_padding.x`; «button» `spacing.button_padding.x` |  |
-| `button.border.padding.top` | DERIVED | `spacing.button_padding.y`; «button» `spacing.button_padding.y` |  |
+| `button.border.padding.bottom` | DERIVED | `spacing.button_padding.y`; «button» `spacing.button_padding.y` | egui 0.37's own button_padding, 8 × 2 (egui-0.37.0/src/style.rs:1568), stands where the theme states neither side of a pair |
+| `button.border.padding.left` | DERIVED | `spacing.button_padding.x`; «button» `spacing.button_padding.x` | egui 0.37's own button_padding, 8 × 2 (egui-0.37.0/src/style.rs:1568), stands where the theme states neither side of a pair |
+| `button.border.padding.right` | DERIVED | `spacing.button_padding.x`; «button» `spacing.button_padding.x` | egui 0.37's own button_padding, 8 × 2 (egui-0.37.0/src/style.rs:1568), stands where the theme states neither side of a pair |
+| `button.border.padding.top` | DERIVED | `spacing.button_padding.y`; «button» `spacing.button_padding.y` | egui 0.37's own button_padding, 8 × 2 (egui-0.37.0/src/style.rs:1568), stands where the theme states neither side of a pair |
 | `button.border.shadow_enabled` | UNMAPPABLE |  | `source-side gap`: native-theme: shadow offset, blur and spread in WidgetBorderSpec (§14 item 10) |
 | `button.checked_background` | DERIVED | → T18(a) |  |
 | `button.checked_text_color` | DERIVED | → T18(a) |  |
@@ -235,13 +235,13 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 52, `source-side gap` 16, `source-void
 | `button.hover_background` | DIRECT | `visuals.widgets.hovered.weak_bg_fill`; «button» `visuals.widgets.hovered.weak_bg_fill`; `visuals.widgets.active.weak_bg_fill` (when: button.active_background is None, §6.4); «button» `visuals.widgets.active.weak_bg_fill` (when: button.active_background is None, §6.4) |  |
 | `button.hover_text_color` | DIRECT | `visuals.widgets.hovered.fg_stroke.color`; «button» `visuals.widgets.hovered.fg_stroke.color` |  |
 | `button.icon_text_gap` | SCOPED | «button» `spacing.icon_spacing` |  |
-| `button.min_height` | DIRECT | `spacing.interact_size.y`; «button» `spacing.interact_size.y` |  |
+| `button.min_height` | DIRECT | `spacing.interact_size.y`; «button» `spacing.interact_size.y` | egui 0.37's own interact_size.y, 20 (egui-0.37.0/src/style.rs:1570), stands where the theme states none; where menu.row_height, list.row_height and toolbar.bar_height are unstated, the «menu», «list» and «toolbar» cells take egui's 20, not button.min_height (roles::row_height) |
 | `button.min_width` | DERIVED | → T18(a) |  |
 | `button.primary_background` | SCOPED | «button» `visuals.selection.bg_fill`; «button:disabled» `visuals.selection.bg_fill` (when: button.disabled_background is None: the platform dims by opacity alone, §6.3) |  |
 | `button.primary_text_color` | SCOPED | «button» `visuals.selection.stroke.color`; «button:disabled» `visuals.selection.stroke.color` (when: button.disabled_background is None: the platform dims by opacity alone, §6.3) |  |
 | `checkbox.background_color` | SCOPED | «checkbox» `visuals.widgets.inactive.bg_fill` (when: checkbox.unchecked_background is None, §6.4); «checkbox» `visuals.widgets.open.bg_fill` (when: checkbox.unchecked_background is None, §6.4); «checkbox» `visuals.widgets.hovered.bg_fill` (when: checkbox.unchecked_background is None and the hover layer is translucent or None, §6.1, §6.4); «checkbox» `visuals.widgets.active.bg_fill` (when: checkbox.unchecked_background is None and the hover layer is translucent or None, §6.1, §6.4); «checkbox:disabled» `visuals.widgets.inactive.bg_fill` (when: checkbox.disabled_background and checkbox.unchecked_background are None, §6.4) |  |
 | `checkbox.border.color` | SCOPED | «checkbox:selected» `visuals.widgets.noninteractive.bg_stroke.color`; «checkbox:selected» `visuals.widgets.inactive.bg_stroke.color`; «checkbox:selected» `visuals.widgets.hovered.bg_stroke.color`; «checkbox:selected» `visuals.widgets.active.bg_stroke.color`; «checkbox:selected» `visuals.widgets.open.bg_stroke.color`; «checkbox» `visuals.widgets.noninteractive.bg_stroke.color` (when: checkbox.unchecked_border_color is None, §6.4); «checkbox» `visuals.widgets.inactive.bg_stroke.color` (when: checkbox.unchecked_border_color is None, §6.4); «checkbox» `visuals.widgets.hovered.bg_stroke.color` (when: checkbox.unchecked_border_color is None, §6.4); «checkbox» `visuals.widgets.active.bg_stroke.color` (when: checkbox.unchecked_border_color is None, §6.4); «checkbox» `visuals.widgets.open.bg_stroke.color` (when: checkbox.unchecked_border_color is None, §6.4) |  |
-| `checkbox.border.corner_radius` | SCOPED | «checkbox» `visuals.widgets.noninteractive.corner_radius`; «checkbox» `visuals.widgets.inactive.corner_radius`; «checkbox» `visuals.widgets.hovered.corner_radius`; «checkbox» `visuals.widgets.active.corner_radius`; «checkbox» `visuals.widgets.open.corner_radius` |  |
+| `checkbox.border.corner_radius` | SCOPED | «checkbox» `visuals.widgets.noninteractive.corner_radius`; «checkbox» `visuals.widgets.inactive.corner_radius`; «checkbox» `visuals.widgets.hovered.corner_radius`; «checkbox» `visuals.widgets.active.corner_radius`; «checkbox» `visuals.widgets.open.corner_radius` | egui-limited above round(0.3 × spacing.icon_width): egui draws the box's corners at most that (egui-0.37.0/src/theme/default_style.rs:194-197), so the ten community presets draw 5 where they state 8, ios-13 7 for 10, macos-monterey 4 for 5 and macos-tahoe 5 for 6; adwaita's 6, kde-breeze's, windows-11's and material-3's are within the cap |
 | `checkbox.border.line_width` | SCOPED | «checkbox» `visuals.widgets.noninteractive.bg_stroke.width`; «checkbox» `visuals.widgets.inactive.bg_stroke.width`; «checkbox» `visuals.widgets.hovered.bg_stroke.width`; «checkbox» `visuals.widgets.active.bg_stroke.width`; «checkbox» `visuals.widgets.open.bg_stroke.width` |  |
 | `checkbox.border.padding.bottom` | DERIVED | «checkbox» `spacing.icon_width_inner` (when: all four checkbox.border.padding sides are stated, §6.11) |  |
 | `checkbox.border.padding.left` | DERIVED | «checkbox» `spacing.icon_width_inner` (when: all four checkbox.border.padding sides are stated, §6.11) |  |
@@ -261,7 +261,7 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 52, `source-side gap` 16, `source-void
 | `checkbox.font.weight` | DERIVED | → T18(c) | probe `700` |
 | `checkbox.hover_background` | SCOPED | «checkbox» `visuals.widgets.hovered.bg_fill` (when: stated; None copies the idle fill, §6.4); «checkbox» `visuals.widgets.active.bg_fill` (when: stated; None copies the idle fill, §6.4) |  |
 | `checkbox.indicator_color` | SCOPED | «checkbox» `visuals.widgets.noninteractive.fg_stroke.color`; «checkbox» `visuals.widgets.inactive.fg_stroke.color`; «checkbox» `visuals.widgets.hovered.fg_stroke.color`; «checkbox» `visuals.widgets.active.fg_stroke.color`; «checkbox» `visuals.widgets.open.fg_stroke.color`; «checkbox:selected_disabled» `visuals.widgets.inactive.fg_stroke.color` (when: checkbox.disabled_background is None: the platform dims by opacity alone, §6.3) |  |
-| `checkbox.indicator_width` | DIRECT | `spacing.icon_width`; «checkbox» `spacing.icon_width`; «checkbox» `spacing.interact_size.y`; «checkbox» `spacing.icon_width_inner` (when: all four checkbox.border.padding sides are stated, §6.11) |  |
+| `checkbox.indicator_width` | DIRECT | `spacing.icon_width`; «checkbox» `spacing.icon_width`; «checkbox» `spacing.interact_size.y`; «checkbox» `spacing.icon_width_inner` (when: all four checkbox.border.padding sides are stated, §6.11) | spacing.icon_width is read by the submenu arrow too (egui-0.37.0/src/containers/menu.rs:492-505, `SubMenuButton::arrow_atom`), so a submenu's arrow is drawn at checkbox.indicator_width; menu.icon_size stays DERIVED |
 | `checkbox.label_gap` | DIRECT | `spacing.icon_spacing`; «checkbox» `spacing.icon_spacing` |  |
 | `checkbox.radio_dot_diameter` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: RadioButton (docs/archive/todo_egui-widgets-spec.md §4.8) |
 | `checkbox.radio_indicator_width` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: RadioButton (docs/archive/todo_egui-widgets-spec.md §4.8): egui's radio shares the check box's spacing.icon_width |
@@ -345,7 +345,7 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 52, `source-side gap` 16, `source-void
 | `combo_box.font.color` | SCOPED | «combo_box» `visuals.widgets.noninteractive.fg_stroke.color`; «combo_box» `visuals.widgets.inactive.fg_stroke.color`; «combo_box» `visuals.widgets.hovered.fg_stroke.color`; «combo_box» `visuals.widgets.active.fg_stroke.color`; «combo_box» `visuals.widgets.open.fg_stroke.color` |  |
 | `combo_box.font.defined_size` | UNMAPPABLE |  | `egui-limited`: egui: a stated-size unit beside FontId::size (§5.1) |
 | `combo_box.font.family` | UNMAPPABLE |  | `egui-limited`: a TextStyle key naming a FontFamily::Name (declined, §5.8 item 7) |
-| `combo_box.font.size` | SCOPED | «combo_box» `text_styles[Button].size` |  |
+| `combo_box.font.size` | SCOPED | «combo_box» `override_font_id.size` |  |
 | `combo_box.font.style` | DERIVED | → T18(d) | probe `"italic"` |
 | `combo_box.font.weight` | DERIVED | → T18(c) | probe `700` |
 | `combo_box.hover_background` | SCOPED | «combo_box» `visuals.widgets.hovered.weak_bg_fill` (when: stated; None copies combo_box.background_color, §6.4); «combo_box» `visuals.widgets.active.weak_bg_fill` (when: stated; None copies combo_box.background_color, §6.4) |  |
@@ -354,11 +354,11 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 52, `source-side gap` 16, `source-void
 | `input.background_color` | DIRECT | `visuals.text_edit_bg_color`; «input:disabled» `visuals.text_edit_bg_color` (when: input.disabled_background is None, §6.4); `visuals.extreme_bg_color` (when: an overlay scrollbar with a fully transparent track, which has no groove) |  |
 | `input.border.color` | SCOPED | «input» `visuals.widgets.noninteractive.bg_stroke.color`; «input» `visuals.widgets.inactive.bg_stroke.color`; «input» `visuals.widgets.open.bg_stroke.color`; «input» `visuals.widgets.hovered.bg_stroke.color` (when: input.hover_border_color is None, §6.4); «input» `visuals.widgets.active.bg_stroke.color` (when: input.hover_border_color is None, §6.4) |  |
 | `input.border.corner_radius` | SCOPED | «input» `visuals.widgets.noninteractive.corner_radius`; «input» `visuals.widgets.inactive.corner_radius`; «input» `visuals.widgets.hovered.corner_radius`; «input» `visuals.widgets.active.corner_radius`; «input» `visuals.widgets.open.corner_radius` |  |
-| `input.border.line_width` | SCOPED | «input» `visuals.widgets.noninteractive.bg_stroke.width`; «input» `visuals.widgets.inactive.bg_stroke.width`; «input» `visuals.widgets.hovered.bg_stroke.width`; «input» `visuals.widgets.active.bg_stroke.width`; «input» `visuals.widgets.open.bg_stroke.width` |  |
-| `input.border.padding.bottom` | DERIVED | → T18(b) |  |
-| `input.border.padding.left` | DERIVED | → T18(b) |  |
-| `input.border.padding.right` | DERIVED | → T18(b) |  |
-| `input.border.padding.top` | DERIVED | → T18(b) |  |
+| `input.border.line_width` | SCOPED | «input» `visuals.widgets.noninteractive.bg_stroke.width`; «input» `visuals.widgets.inactive.bg_stroke.width`; «input» `visuals.widgets.hovered.bg_stroke.width`; «input» `visuals.widgets.active.bg_stroke.width`; «input» `visuals.widgets.open.bg_stroke.width`; «input» `spacing.button_padding.x` (when: a side of the pair is stated, §5 intro); «input» `spacing.button_padding.y` (when: a side of the pair is stated, §5 intro) |  |
+| `input.border.padding.bottom` | SCOPED | «input» `spacing.button_padding.y` |  |
+| `input.border.padding.left` | SCOPED | «input» `spacing.button_padding.x` |  |
+| `input.border.padding.right` | SCOPED | «input» `spacing.button_padding.x` |  |
+| `input.border.padding.top` | SCOPED | «input» `spacing.button_padding.y` |  |
 | `input.border.shadow_enabled` | UNMAPPABLE |  | `source-side gap`: native-theme: shadow offset, blur and spread in WidgetBorderSpec (§14 item 10) |
 | `input.caret_color` | DIRECT | `visuals.text_cursor.stroke.color` |  |
 | `input.disabled_background` | SCOPED | «input:disabled» `visuals.text_edit_bg_color` (when: stated; None copies input.background_color, §6.4) |  |
@@ -573,9 +573,9 @@ The leaf that wins an egui field globally; the leaves that only feed its formula
 | egui field | base owner | formula inputs and forced constants | displaced to a scope or a surface |
 |---|---|---|---|
 | `interaction.tooltip_delay` | `tooltip.show_delay` |  |  |
-| `override_font_id.size` | — (egui's own value stands) |  | `button.font.size` «button», `checkbox.font.size` «checkbox», `link.font.size` «link», `segmented_control.font.size` «segmented_control» |
-| `spacing.button_padding.x` | `button.border.padding.left`, `button.border.padding.right` | `button.border.line_width` | `button.border.line_width` «button», `button.border.padding.left` «button», `button.border.padding.right` «button», `combo_box.border.line_width` «combo_box», `combo_box.border.padding.left` «combo_box», `combo_box.border.padding.right` «combo_box», `expander.border.line_width` «expander», `expander.border.padding.right` «expander», `menu.border.line_width` «menu», `menu.border.padding.left` «menu», `menu.border.padding.right` «menu», `segmented_control.border.line_width` «segmented_control», `segmented_control.border.padding.left` «segmented_control», `segmented_control.border.padding.right` «segmented_control», `tab.border.line_width` «tab», `tab.border.padding.left` «tab», `tab.border.padding.right` «tab» |
-| `spacing.button_padding.y` | `button.border.padding.bottom`, `button.border.padding.top` | `button.border.line_width` | `button.border.line_width` «button», `button.border.padding.bottom` «button», `button.border.padding.top` «button», `combo_box.border.line_width` «combo_box», `combo_box.border.padding.bottom` «combo_box», `combo_box.border.padding.top` «combo_box», `defaults.line_height` «menu», `defaults.line_height` «list», `defaults.line_height` «expander», `expander.border.line_width` «expander», `expander.border.padding.bottom` «expander», `expander.border.padding.top` «expander», `expander.font.size` «expander», `expander.header_height` «expander», `list.item_font.size` «list», `list.row_height` «list», `menu.border.line_width` «menu», `menu.border.padding.bottom` «menu», `menu.border.padding.top` «menu», `menu.font.size` «menu», `menu.row_height` «menu», `segmented_control.border.line_width` «segmented_control», `segmented_control.border.padding.bottom` «segmented_control», `segmented_control.border.padding.top` «segmented_control», `tab.border.line_width` «tab», `tab.border.padding.bottom` «tab», `tab.border.padding.top` «tab» |
+| `override_font_id.size` | — (egui's own value stands) |  | `button.font.size` «button», `checkbox.font.size` «checkbox», `combo_box.font.size` «combo_box», `link.font.size` «link», `segmented_control.font.size` «segmented_control» |
+| `spacing.button_padding.x` | `button.border.padding.left`, `button.border.padding.right` | `button.border.line_width` | `button.border.line_width` «button», `button.border.padding.left` «button», `button.border.padding.right` «button», `combo_box.border.line_width` «combo_box», `combo_box.border.padding.left` «combo_box», `combo_box.border.padding.right` «combo_box», `expander.border.line_width` «expander», `expander.border.padding.right` «expander», `input.border.line_width` «input», `input.border.padding.left` «input», `input.border.padding.right` «input», `menu.border.line_width` «menu», `menu.border.padding.left` «menu», `menu.border.padding.right` «menu», `segmented_control.border.line_width` «segmented_control», `segmented_control.border.padding.left` «segmented_control», `segmented_control.border.padding.right` «segmented_control», `tab.border.line_width` «tab», `tab.border.padding.left` «tab», `tab.border.padding.right` «tab» |
+| `spacing.button_padding.y` | `button.border.padding.bottom`, `button.border.padding.top` | `button.border.line_width` | `button.border.line_width` «button», `button.border.padding.bottom` «button», `button.border.padding.top` «button», `combo_box.border.line_width` «combo_box», `combo_box.border.padding.bottom` «combo_box», `combo_box.border.padding.top` «combo_box», `defaults.line_height` «menu», `defaults.line_height` «list», `defaults.line_height` «expander», `expander.border.line_width` «expander», `expander.border.padding.bottom` «expander», `expander.border.padding.top` «expander», `expander.font.size` «expander», `expander.header_height` «expander», `input.border.line_width` «input», `input.border.padding.bottom` «input», `input.border.padding.top` «input», `list.item_font.size` «list», `list.row_height` «list», `menu.border.line_width` «menu», `menu.border.padding.bottom` «menu», `menu.border.padding.top` «menu», `menu.font.size` «menu», `menu.row_height` «menu», `segmented_control.border.line_width` «segmented_control», `segmented_control.border.padding.bottom` «segmented_control», `segmented_control.border.padding.top` «segmented_control», `tab.border.line_width` «tab», `tab.border.padding.bottom` «tab», `tab.border.padding.top` «tab» |
 | `spacing.combo_width` | `combo_box.min_width` |  |  |
 | `spacing.extra_text_line_spacing` | — (a formula's result) | `defaults.font.size`, `defaults.line_height` |  |
 | `spacing.icon_spacing` | `checkbox.label_gap` |  | `button.icon_text_gap` «button», `checkbox.label_gap` «checkbox», `combo_box.arrow_area_width` «combo_box», `combo_box.arrow_icon_size` «combo_box», `menu.icon_text_gap` «menu» |
@@ -607,7 +607,7 @@ The leaf that wins an egui field globally; the leaves that only feed its formula
 | `spacing.window_margin.right` | `window.border.padding.right` |  |  |
 | `spacing.window_margin.top` | `window.border.padding.top` |  |  |
 | `text_styles[Body].size` | `defaults.font.size` |  | `dialog.body_font.size` «dialog», `input.font.size` «input», `list.item_font.size` «list», `menu.font.size` «menu», `popover.font.size` «popover», `sidebar.font.size` «sidebar», `status_bar.font.size` «status_bar», `tab.font.size` «tab», `toolbar.font.size` «toolbar», `tooltip.font.size` «tooltip» |
-| `text_styles[Button].size` | `button.font.size` |  | `combo_box.font.size` «combo_box», `expander.font.size` «expander» |
+| `text_styles[Button].size` | `button.font.size` |  | `expander.font.size` «expander» |
 | `text_styles[Heading].size` | `text_scale.section_heading.size` |  | `dialog.title_font.size` «dialog» |
 | `text_styles[Monospace].size` | `defaults.mono_font.size` |  |  |
 | `text_styles[Small].size` | `text_scale.caption.size` |  |  |
@@ -736,7 +736,7 @@ The leaf that wins an egui field globally; the leaves that only feed its formula
 | `central_panel.shadow.spread` | as central_panel.stroke.width |
 | `central_panel.stroke.color` | as central_panel.stroke.width |
 | `central_panel.stroke.width` | Frame::central_panel has no stroke, radius or shadow (frame.rs:191-193); Surface::CentralPanel writes only its inner margin, from layout.window_margin (§4.4) |
-| `compact_menu_style` | no reader anywhere in egui 0.36.2 (§5.10) |
+| `compact_menu_style` | no reader in egui 0.37.0 but its style editor's checkbox for it (egui-0.37.0/src/style.rs, `Style::ui`) (§5.10) |
 | `debug` | egui's developer debug painting, DebugOptions (egui/src/style.rs:324, :1333): not appearance data |
 | `dialog.outer_margin.bottom` | as window.outer_margin.left |
 | `dialog.outer_margin.left` | as window.outer_margin.left |
@@ -752,7 +752,7 @@ The leaf that wins an egui field globally; the leaves that only feed its formula
 | `interaction.show_tooltips_only_when_still` | as interaction.interact_radius |
 | `interaction.tooltip_grace_time` | as interaction.interact_radius |
 | `override_font_id.family` | always FontFamily::Proportional where a scope writes the size: the family reaches egui as bytes, never as a name (§8.1) |
-| `override_text_style` | left at None: native-theme has no leaf forcing one TextStyle on all text; four scopes write override_font_id instead (§5.10) |
+| `override_text_style` | left at None: native-theme has no leaf forcing one TextStyle on all text; five scopes write override_font_id instead (§5.10) |
 | `override_text_valign` | vertical placement of mixed text in a row is layout policy with no native leaf (§5.10) |
 | `panel_bottom.outer_margin.bottom` | as window.outer_margin.left |
 | `panel_bottom.outer_margin.left` | as window.outer_margin.left |
@@ -810,8 +810,8 @@ The leaf that wins an egui field globally; the leaves that only feed its formula
 | `spacing.menu_margin.left` | native-theme states no menu-container padding; menu.border is the item's (§5.9) |
 | `spacing.menu_margin.right` | as spacing.menu_margin.left |
 | `spacing.menu_margin.top` | as spacing.menu_margin.left |
-| `spacing.menu_spacing` | no reader anywhere in egui 0.36.2 (§5.10) |
-| `spacing.menu_width` | no reader anywhere in egui 0.36.2 (§5.10) |
+| `spacing.menu_spacing` | no reader in egui 0.37.0 but its style editor's field for it (egui-0.37.0/src/style.rs, `Spacing::ui`) (§5.10) |
+| `spacing.menu_width` | no reader in egui 0.37.0 but its style editor's field for it (egui-0.37.0/src/style.rs, `Spacing::ui`) (§5.10) |
 | `spacing.scroll.active_handle_opacity` | as spacing.scroll.dormant_handle_opacity |
 | `spacing.scroll.content_margin.bottom` | as spacing.scroll.content_margin.left |
 | `spacing.scroll.content_margin.left` | no native leaf states a scroll-content margin (egui/src/style.rs:509, :596) |

@@ -782,7 +782,7 @@ fn the_segmented_control_keeps_its_segments_on_one_row() {
 /// M9x CI item E1 (M9-173): under a theme that states no `tab.border.padding` across
 /// (macos-tahoe), a page tab keeps egui's own button padding from each of its edges to its
 /// label, as the connector's pair rule gives a side the theme leaves unstated
-/// (native-theme-egui `src/convert.rs`, `to_button_padding`; egui 0.36.2 `src/style.rs:1458`), where
+/// (native-theme-egui `src/convert.rs`, `to_button_padding`; `egui-0.37.0/src/style.rs:1568`), where
 /// the showcase set the padding to the tab's line width and "Containers", about as wide as
 /// `tab.min_width` 64, nearly touched its neighbours. Its galley lies at least that padding
 /// inside the tab on both sides.
@@ -3830,6 +3830,60 @@ fn the_palette_pages_apply_the_per_call_leaves() {
         ] {
             assert_noted(&harness, kind, "input.min_height");
         }
+    }
+}
+
+/// The Inputs page builds each field's frame inside its `Role::Input` scope, as `input_frame`
+/// and `text_area_frame` ask, so the frame takes the field's border, not the button's the base
+/// style holds: under material-3, whose button has no line and whose field has one, each
+/// field's frame (the `Shape::Rect` in the field's fill inside its rectangle) is stroked at the
+/// field's `border.line_width` and rounded by its `border.corner_radius`.
+#[test]
+fn the_inputs_page_frames_its_fields_in_their_own_border() {
+    let harness = open_scaled("material-3", "inputs", 1.0);
+    let t = harness.state().atlas.resolved_for(egui::Theme::Light);
+    assert_ne!(
+        t.input.border.line_width, t.button.border.line_width,
+        "the case this covers: a field's line that is not the button's"
+    );
+    let fill = native_theme_egui::convert::to_color32(t.input.background_color);
+    for (kind, border) in [
+        ("TextEdit (single line)", &t.input.border),
+        ("TextEdit (password)", &t.input.border),
+        ("TextEdit (hint)", &t.input.border),
+        ("TextEdit (multiline)", &t.text_area.border),
+    ] {
+        let place = harness
+            .state()
+            .registry
+            .records()
+            .iter()
+            .find(|r| r.info.kind == kind)
+            .map(|r| r.rect)
+            .unwrap_or_else(|| panic!("no record of kind {kind}"));
+        let frames: Vec<(f32, egui::CornerRadius)> = harness
+            .output()
+            .shapes
+            .iter()
+            .filter_map(|clipped| match &clipped.shape {
+                egui::Shape::Rect(r)
+                    if r.fill == fill
+                        && place.expand(0.01).contains_rect(r.rect)
+                        && r.rect.width() > 0.5 * place.width() =>
+                {
+                    Some((r.stroke.width, r.corner_radius))
+                }
+                _ => None,
+            })
+            .collect();
+        let want = (
+            border.line_width,
+            native_theme_egui::convert::to_corner_radius(
+                egui::CornerRadius::ZERO,
+                border.corner_radius,
+            ),
+        );
+        assert_eq!(frames, vec![want], "{kind}: its frame at {place:?}");
     }
 }
 

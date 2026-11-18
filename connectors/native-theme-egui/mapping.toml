@@ -16,6 +16,8 @@
 # probe: a literal T2 splices when no bundled preset pair differentiates the leaf.
 # exceptions: [[preset, reason], ..] on which T10 may find the sink different.
 # sub_tag + upstream: required exactly on an unmappable row.
+# note: optional, on any row: a fact about the leaf's route the sinks cannot carry (an egui
+#   limit, a reader, egui's own value where the theme states none), in the note column.
 # [unwritten]: sink path → why egui's own value stands there (T10b).
 
 # ---- §5.1 Foundation — defaults, text_scale, layout
@@ -930,6 +932,7 @@ tested_by = "T18(a)"
 
 ["button.min_height"]
 verdict = "direct"
+note    = "egui 0.37's own interact_size.y, 20 (egui-0.37.0/src/style.rs:1570), stands where the theme states none; where menu.row_height, list.row_height and toolbar.bar_height are unstated, the «menu», «list» and «toolbar» cells take egui's 20, not button.min_height (roles::row_height)"
 sinks   = [
   { path = "spacing.interact_size.y" },
   { path = "spacing.interact_size.y", scope = "button" },
@@ -1087,6 +1090,7 @@ upstream = "native-theme: shadow offset, blur and spread in WidgetBorderSpec (§
 
 ["button.border.padding.top"]
 verdict = "derived"
+note    = "egui 0.37's own button_padding, 8 × 2 (egui-0.37.0/src/style.rs:1568), stands where the theme states neither side of a pair"
 sinks   = [
   { path = "spacing.button_padding.y" },
   { path = "spacing.button_padding.y", scope = "button" },
@@ -1094,6 +1098,7 @@ sinks   = [
 
 ["button.border.padding.right"]
 verdict = "derived"
+note    = "egui 0.37's own button_padding, 8 × 2 (egui-0.37.0/src/style.rs:1568), stands where the theme states neither side of a pair"
 sinks   = [
   { path = "spacing.button_padding.x" },
   { path = "spacing.button_padding.x", scope = "button" },
@@ -1101,6 +1106,7 @@ sinks   = [
 
 ["button.border.padding.bottom"]
 verdict = "derived"
+note    = "egui 0.37's own button_padding, 8 × 2 (egui-0.37.0/src/style.rs:1568), stands where the theme states neither side of a pair"
 sinks   = [
   { path = "spacing.button_padding.y" },
   { path = "spacing.button_padding.y", scope = "button" },
@@ -1108,6 +1114,7 @@ sinks   = [
 
 ["button.border.padding.left"]
 verdict = "derived"
+note    = "egui 0.37's own button_padding, 8 × 2 (egui-0.37.0/src/style.rs:1568), stands where the theme states neither side of a pair"
 sinks   = [
   { path = "spacing.button_padding.x" },
   { path = "spacing.button_padding.x", scope = "button" },
@@ -1325,6 +1332,7 @@ sinks   = [
 
 ["checkbox.indicator_width"]
 verdict = "direct"
+note    = "spacing.icon_width is read by the submenu arrow too (egui-0.37.0/src/containers/menu.rs:492-505, `SubMenuButton::arrow_atom`), so a submenu's arrow is drawn at checkbox.indicator_width; menu.icon_size stays DERIVED"
 sinks   = [
   { path = "spacing.icon_width" },
   { path = "spacing.icon_width", scope = "checkbox" },
@@ -1456,6 +1464,7 @@ sinks   = [
 
 ["checkbox.border.corner_radius"]
 verdict = "scoped"
+note    = "egui-limited above round(0.3 × spacing.icon_width): egui draws the box's corners at most that (egui-0.37.0/src/theme/default_style.rs:194-197), so the ten community presets draw 5 where they state 8, ios-13 7 for 10, macos-monterey 4 for 5 and macos-tahoe 5 for 6; adwaita's 6, kde-breeze's, windows-11's and material-3's are within the cap"
 sinks   = [
   { path = "visuals.widgets.noninteractive.corner_radius", scope = "checkbox" },
   { path = "visuals.widgets.inactive.corner_radius", scope = "checkbox" },
@@ -1742,6 +1751,8 @@ sinks   = [
   { path = "visuals.widgets.hovered.bg_stroke.width", scope = "input" },
   { path = "visuals.widgets.active.bg_stroke.width", scope = "input" },
   { path = "visuals.widgets.open.bg_stroke.width", scope = "input" },
+  { path = "spacing.button_padding.x", scope = "input", when = "a side of the pair is stated, §5 intro" },
+  { path = "spacing.button_padding.y", scope = "input", when = "a side of the pair is stated, §5 intro" },
 ]
 
 ["input.border.shadow_enabled"]
@@ -1750,20 +1761,20 @@ sub_tag  = "source-side gap"
 upstream = "native-theme: shadow offset, blur and spread in WidgetBorderSpec (§14 item 10)"
 
 ["input.border.padding.top"]
-verdict   = "derived"
-tested_by = "T18(b)"
+verdict = "scoped"
+sinks   = [{ path = "spacing.button_padding.y", scope = "input" }]
 
 ["input.border.padding.right"]
-verdict   = "derived"
-tested_by = "T18(b)"
+verdict = "scoped"
+sinks   = [{ path = "spacing.button_padding.x", scope = "input" }]
 
 ["input.border.padding.bottom"]
-verdict   = "derived"
-tested_by = "T18(b)"
+verdict = "scoped"
+sinks   = [{ path = "spacing.button_padding.y", scope = "input" }]
 
 ["input.border.padding.left"]
-verdict   = "derived"
-tested_by = "T18(b)"
+verdict = "scoped"
+sinks   = [{ path = "spacing.button_padding.x", scope = "input" }]
 
 ["text_area.border.color"]
 verdict   = "derived"
@@ -1859,7 +1870,7 @@ upstream = "a TextStyle key naming a FontFamily::Name (declined, §5.8 item 7)"
 
 ["combo_box.font.size"]
 verdict = "scoped"
-sinks   = [{ path = "text_styles[Button].size", scope = "combo_box" }]
+sinks   = [{ path = "override_font_id.size", scope = "combo_box" }]
 
 ["combo_box.font.defined_size"]
 verdict  = "unmappable"
@@ -2927,7 +2938,7 @@ sinks   = [{ path = "spacing.indent", scope = "expander" }]
 "scroll_animation.duration.max"     = "as scroll_animation.points_per_second"
 # The rest of T10b's list: every other `Style` path `style_diff` emits and every `Frame`
 # field of every `Surface` that no row writes.
-"override_text_style"   = "left at None: native-theme has no leaf forcing one TextStyle on all text; four scopes write override_font_id instead (§5.10)"
+"override_text_style"   = "left at None: native-theme has no leaf forcing one TextStyle on all text; five scopes write override_font_id instead (§5.10)"
 "override_font_id.family" = "always FontFamily::Proportional where a scope writes the size: the family reaches egui as bytes, never as a name (§8.1)"
 "override_text_valign"  = "vertical placement of mixed text in a row is layout policy with no native leaf (§5.10)"
 "drag_value_text_style" = "left at egui's TextStyle::Button (egui/src/style.rs:1434), whose size button.font writes (§5.9)"
@@ -2935,10 +2946,10 @@ sinks   = [{ path = "spacing.indent", scope = "expander" }]
 "explanation_tooltips"  = "whether widgets explain themselves in tooltips is application behaviour (§5.10)"
 "url_in_tooltip"        = "application behaviour (§5.10)"
 "always_scroll_the_only_direction" = "input behaviour (§5.10)"
-"compact_menu_style"    = "no reader anywhere in egui 0.36.2 (§5.10)"
+"compact_menu_style"    = "no reader in egui 0.37.0 but its style editor's checkbox for it (egui-0.37.0/src/style.rs, `Style::ui`) (§5.10)"
 "debug"                 = "egui's developer debug painting, DebugOptions (egui/src/style.rs:324, :1333): not appearance data"
-"spacing.menu_width"    = "no reader anywhere in egui 0.36.2 (§5.10)"
-"spacing.menu_spacing"  = "no reader anywhere in egui 0.36.2 (§5.10)"
+"spacing.menu_width"    = "no reader in egui 0.37.0 but its style editor's field for it (egui-0.37.0/src/style.rs, `Spacing::ui`) (§5.10)"
+"spacing.menu_spacing"  = "no reader in egui 0.37.0 but its style editor's field for it (egui-0.37.0/src/style.rs, `Spacing::ui`) (§5.10)"
 "spacing.indent_ends_with_horizontal_line" = "whether an indented region is ruled is layout policy with no native leaf (§5.10)"
 "spacing.scroll.content_margin.left"   = "no native leaf states a scroll-content margin (egui/src/style.rs:509, :596)"
 "spacing.scroll.content_margin.right"  = "as spacing.scroll.content_margin.left"

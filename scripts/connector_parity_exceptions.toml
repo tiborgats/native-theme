@@ -452,7 +452,7 @@ reason = "egui's padding sinks are per side or per axis and an unstated side kee
 connector = "egui"
 name = "padding_inside_border"
 kind = "absent"
-reason = "a `TextEdit` paints its stroke inside its margin, so `input_margin` and `text_area_margin` add the border's line width to each stated side themselves (src/accessors.rs, `input_margin`'s doc), and the role styles' paddings are the atlas's (src/mapping.md); no egui call site takes a widget border's padding"
+reason = "egui 0.37 paints a `TextEdit`'s stroke inside its padding, the scope's `button_padding` or the margin it is handed, so `input_margin` and `text_area_margin` add the border's line width to each stated side themselves and take the input scope's padding on an unstated one (src/accessors.rs, `input_margin`'s doc), and the role styles' paddings, the input scope's among them, are the atlas's, a stated side plus the line width under the pair rule (src/convert.rs, `to_button_padding`; src/mapping.md); no egui call site takes a widget border's padding"
 
 [[exception]]
 connector = "gpui"

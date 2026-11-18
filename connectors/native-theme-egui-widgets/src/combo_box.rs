@@ -175,17 +175,39 @@ impl ComboBox {
             if let Some((left, sides)) = sides.and_then(|s| Some((s.left?, s))) {
                 ui.spacing_mut().button_padding.x = left + sides.border;
             }
+            // The font egui draws the selected text in: `ButtonStyle`'s, the scope's
+            // `override_font_id`, else Body (`egui-0.37.0/src/theme/default_style.rs`,
+            // `StyleProvider<ButtonStyle>`), which `AtomLayoutStyle::apply` puts in place of the
+            // `TextStyle::Button` fallback `combo_box_dyn` sets
+            // (`egui-0.37.0/src/widget_style/mod.rs`).
+            let font = ui
+                .style()
+                .override_font_id
+                .clone()
+                .unwrap_or_else(|| egui::TextStyle::Body.resolve(ui.style()));
             let text_size = selected_text
                 .clone()
                 .into_galley(
                     ui,
                     Some(egui::TextWrapMode::Extend),
                     f32::INFINITY,
-                    egui::TextStyle::Button,
+                    font.clone(),
                 )
                 .size();
             let line = text_size.y;
-            let padding = ui.spacing().button_padding;
+            // The room the frame takes, as egui lays the button out by it
+            // (`egui-0.37.0/src/atomics/container_atom.rs`, `ContainerAtom::measure` and
+            // `SizedContainerAtom::paint_at`): `ButtonStyle`'s frame, `button_padding` with the
+            // resting stroke and expansion applied without a layout shift
+            // (`egui-0.37.0/src/theme/default_style.rs`, `StyleProvider<ButtonStyle>`), whose
+            // total margin is not `button_padding` where the stroke's width is fractional.
+            let resting = ui.visuals().widgets.inactive;
+            let margin = egui::Frame {
+                inner_margin: egui::Margin::from(ui.spacing().button_padding),
+                ..Default::default()
+            }
+            .apply_stroke_and_expansion_without_layout_shift(resting.bg_stroke, resting.expansion)
+            .total_margin();
             let arrow = ui.spacing().icon_width;
             let mut combo = egui::ComboBox::from_id_salt(id_salt)
                 .selected_text(selected_text.clone())
@@ -202,11 +224,12 @@ impl ComboBox {
                 0.0
             };
             // The text as egui lays it out: in the drop-down's wrap mode, the `Ui`'s unless it is
-            // truncated (`egui-0.37.0/src/containers/combo_box.rs:365`), in the room the `Ui` has
-            // less the button's padding on its left and right, the arrow's box and the spacing
-            // before it, the room the text atom gets (`egui-0.37.0/src/atomics/container_atom.rs`,
-            // `ContainerAtom::measure`). A truncated text is one line, as tall as the whole one,
-            // cut to that room; a wrapped one is broken into rows there.
+            // truncated (`egui-0.37.0/src/containers/combo_box.rs:365`), in the room egui gives
+            // the drop-down's content — the `Ui`'s available size, at least the drop-down's
+            // minimum width, `width` or else `spacing.combo_width` (`combo_box_dyn`), less the
+            // frame (`egui-0.37.0/src/atomics/container_atom.rs`, `ContainerAtom::measure`) —
+            // less the arrow's box and the spacing before it. A truncated text is one line, as
+            // tall as the whole one, cut to that room; a wrapped one is broken into rows there.
             let wrap_mode = if truncate {
                 combo = combo.truncate();
                 egui::TextWrapMode::Truncate
@@ -214,33 +237,46 @@ impl ComboBox {
                 ui.wrap_mode()
             };
             let spacing = ui.spacing();
-            let room = ui.available_width()
-                - padding.x
-                - padding.x
+            let room = ui
+                .available_width()
+                .max(width.unwrap_or(spacing.combo_width))
+                - margin.sum().x
                 - spacing.icon_spacing
                 - spacing.icon_width;
+            let arrow_side = spacing.icon_width;
             let text_size = selected_text
-                .into_galley(ui, Some(wrap_mode), room, egui::TextStyle::Button)
+                .into_galley(ui, Some(wrap_mode), room, font)
                 .size();
             let arrow_box = std::rc::Rc::new(std::cell::Cell::new(None));
             let painted = std::rc::Rc::clone(&arrow_box);
-            let margin = padding.x;
             combo = combo.icon(move |ui, rect, visuals, _open| {
-                let centre = sides.and_then(|s| s.column_centre(rect, margin));
+                let centre = sides.and_then(|s| s.column_centre(rect, margin.right));
                 painted.set(Some(paint_chevron(ui, rect, visuals, grow, centre)));
             });
+            let vertical = ui.layout().vertical_align();
             let out = combo.show_ui(ui, contents);
-            // egui lays the selected text out flush left in the button's padding, centred on
-            // the row (`egui/src/containers/combo_box.rs`, `combo_box_dyn`).
+            // egui paints the selected text and the arrow's box as one block inside the
+            // frame's total margin, the arrow growing to fill the row, so the text starts flush
+            // left; the block, as tall as the taller of the two, is placed by the `Ui` layout's
+            // `align2`, and the text is centred in its cell the block's height
+            // (`egui-0.37.0/src/atomics/container_atom.rs`, `SizedContainerAtom::paint_at`).
             let button = out.response.rect;
+            let inner = egui::Rect::from_min_max(
+                egui::pos2(button.left() + margin.left, button.top() + margin.top),
+                egui::pos2(
+                    button.right() - margin.right,
+                    button.bottom() - margin.bottom,
+                ),
+            );
+            let block = egui::Align2([egui::Align::Min, vertical]).align_size_within_rect(
+                egui::vec2(inner.width(), text_size.y.max(arrow_side)),
+                inner,
+            );
             let mut parts = Parts::default();
             parts.push(
                 "text",
                 egui::Rect::from_min_size(
-                    egui::pos2(
-                        button.left() + padding.x,
-                        button.center().y - 0.5 * text_size.y,
-                    ),
+                    egui::pos2(inner.left(), block.center().y - 0.5 * text_size.y),
                     text_size,
                 ),
             );
@@ -267,8 +303,8 @@ impl Sides {
     /// Where the arrow's column is centred: the column `arrow_area_width` wide, at the button's
     /// right edge inside its border and `border.padding.right` — Breeze centres its arrow in
     /// its `MenuButton_IndicatorWidth` column (`docs/platform-facts.md` §2.24). `icon` is the
-    /// box egui hands the icon, flush right in the content, which ends `margin`
-    /// (`button_padding.x`) inside the button's edge (`combo_box_dyn`). `None` where the theme
+    /// box egui hands the icon, flush right in the content, which ends `margin` (the frame's
+    /// total right margin) inside the button's edge (`combo_box_dyn`). `None` where the theme
     /// states no right padding or column: egui's own place stands.
     fn column_centre(self, icon: egui::Rect, margin: f32) -> Option<f32> {
         let (right, column) = (self.right?, self.column?);

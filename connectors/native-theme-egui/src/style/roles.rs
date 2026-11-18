@@ -353,6 +353,17 @@ fn input_role(
     s.visuals.weak_text_color = Some(to_color32(i.placeholder_color));
     s.visuals.selection.bg_fill = to_color32(i.selection_background);
     s.visuals.selection.stroke.color = to_color32(i.selection_text_color);
+    s.spacing.button_padding = button_padding(
+        [
+            "input.border.padding.top",
+            "input.border.padding.right",
+            "input.border.padding.bottom",
+            "input.border.padding.left",
+        ],
+        &i.border,
+        own.spacing.button_padding,
+        notes,
+    );
     slot_size(
         s,
         TextStyle::Body,
@@ -945,15 +956,6 @@ fn combo_box(
         own.spacing.icon_width,
         notes,
     );
-    slot_size(
-        s,
-        TextStyle::Button,
-        "combo_box.font.size",
-        cb.font.size,
-        own,
-        input,
-        notes,
-    );
     s.spacing.button_padding = button_padding(
         [
             "combo_box.border.padding.top",
@@ -971,6 +973,12 @@ fn combo_box(
         own.visuals.disabled_alpha,
         notes,
     );
+    // B3: egui 0.37 draws the selected text, and the popup's items, with `ButtonStyle`'s font,
+    // `override_font_id` before Body (`egui-0.37.0/src/theme/default_style.rs`,
+    // `StyleProvider<ButtonStyle>`; `AtomLayoutStyle::apply`,
+    // `egui-0.37.0/src/widget_style/mod.rs`, replaces the `TextStyle::Button` fallback
+    // `combo_box_dyn` sets)
+    override_font(s, "combo_box.font.size", cb.font.size, input, notes);
 }
 
 fn segmented_control(
@@ -1544,6 +1552,10 @@ mod tests {
             i.font.size
         );
         assert_eq!(c.visuals.disabled_alpha, unit_interval(i.disabled_opacity));
+        assert_eq!(
+            c.spacing.button_padding,
+            to_button_padding(base.spacing.button_padding, &i.border)
+        );
         assert_eq!(
             c.visuals.text_edit_bg_color, base.visuals.text_edit_bg_color,
             "the base owner's; the Disabled cell writes its own"
@@ -2233,11 +2245,11 @@ mod tests {
                 "{preset}"
             );
             assert_eq!(
-                c.text_styles.get(&TextStyle::Button).unwrap().size,
-                cb.font.size,
+                c.override_font_id,
+                Some(FontId::new(cb.font.size, FontFamily::Proportional)),
                 "{preset}"
             );
-            assert_eq!(c.override_font_id, None, "{preset}");
+            assert_eq!(c.text_styles, base.text_styles, "{preset}");
             assert_eq!(
                 c.spacing.button_padding,
                 to_button_padding(base.spacing.button_padding, &cb.border),

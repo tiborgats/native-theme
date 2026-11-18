@@ -1801,7 +1801,11 @@ mod t18_accessors {
         };
         let m = crate::text_area_margin(&t);
         assert_eq!((m.left, m.top, m.bottom), (7, 7, 7), "5 + the 2px line");
-        assert_eq!(m.right, 4, "egui's own where unstated");
+        assert_eq!(
+            m.right,
+            crate::input_margin(&t).right,
+            "input_margin's where unstated"
+        );
 
         let ctx = egui::Context::default();
         let atlas = ThemeAtlas::builder("t18b-area", &t, &t).build();
@@ -1826,8 +1830,10 @@ mod t18_accessors {
         );
     }
 
-    /// T18 (b): a stated side is the side plus the border's line width; `None` and `NaN` keep
-    /// egui's `Margin::symmetric(4, 2)` (`egui/src/widgets/text_edit/builder.rs:136`).
+    /// T18 (b): a stated side is the side plus the border's line width; `None` and `NaN` take
+    /// the «input» cell's `spacing.button_padding` component as egui narrows it to a `Margin`,
+    /// the padding egui's own `TextEdit` frame takes in that scope
+    /// (`egui-0.37.0/src/theme/default_style.rs`, `StyleProvider<TextEditStyle>`).
     #[test]
     fn t18_b_input_margin_adds_the_line_width_to_stated_sides_only() {
         let mut t = resolved("adwaita", ColorMode::Light);
@@ -1841,7 +1847,15 @@ mod t18_accessors {
         let m = crate::input_margin(&t);
         // 7 + 1.5 = 8.5 and 3 + 1.5 = 4.5, each rounded to a whole point, half away from zero
         assert_eq!((m.left, m.top), (9, 5));
-        assert_eq!((m.right, m.bottom), (4, 2));
+        let cell = egui::Margin::from(
+            ThemeAtlas::builder("t18b-input", &t, &t)
+                .build()
+                .scheme(egui::Theme::Light)
+                .cell(Role::Input, RoleVariant::Normal)
+                .spacing
+                .button_padding,
+        );
+        assert_eq!((m.right, m.bottom), (cell.right, cell.bottom));
     }
 
     /// T18 (c): each role's weight is its own font's — `font` for the fourteen, `list.item_font`,
@@ -3743,4 +3757,348 @@ fn a_stated_header_height_is_the_drawn_header_at_a_text_scale_of_one() {
         }
     }
     assert!(faults.is_empty(), "{faults:#?}");
+}
+
+/// What a single-line field at rest in the `Role::Input` scope measures from
+/// `TextEdit::show`: the insets of its `text_clip_rect` within `response.rect` (left, right,
+/// top), its height, and its text's row, the clip's height. Its text runs past the field, so
+/// the clip spans the room inside the frame: a shorter text's atom is only as wide as the text
+/// (`egui-0.37.0/src/atomics/container_atom.rs`, `item_rect`).
+struct FieldInsets {
+    left: f32,
+    right: f32,
+    top: f32,
+    height: f32,
+    row: f32,
+}
+
+/// The field of [`FieldInsets`] under `atlas` in `scheme`, drawn plain (`framed` false) or with
+/// `input_frame`, after the passes that load its fonts.
+fn field_insets(atlas: &ThemeAtlas, scheme: egui::Theme, framed: bool) -> FieldInsets {
+    use crate::NativeThemeUiExt as _;
+    let ctx = egui::Context::default();
+    atlas.install(&ctx);
+    ctx.set_theme(scheme);
+    let t = atlas.resolved_for(scheme).clone();
+    let id = egui::Id::unique("e6-field");
+    let mut text = "a field whose text runs past its right edge ".repeat(8);
+    let mut measured = None;
+    for _ in 0..3 {
+        let _ = pass(&ctx, egui::RawInput::default(), |ui| {
+            ui.native_scope(Role::Input, RoleVariant::Normal, |ui| {
+                let edit = egui::TextEdit::singleline(&mut text).id(id);
+                let edit = if framed {
+                    edit.frame(crate::input_frame(ui, id, &t))
+                } else {
+                    edit
+                };
+                let out = edit.show(ui);
+                let rect = out.response.response.rect;
+                let clip = out.text_clip_rect;
+                measured = Some(FieldInsets {
+                    left: clip.left() - rect.left(),
+                    right: rect.right() - clip.right(),
+                    top: clip.top() - rect.top(),
+                    height: rect.height(),
+                    row: clip.height(),
+                });
+            });
+        });
+    }
+    measured.expect("the pass ran")
+}
+
+/// E6: a single-line field at rest in the `Role::Input` scope keeps the platform's padding
+/// inside its border, drawn plain or with `input_frame`. With w = `input.border.line_width`,
+/// a side the theme states is w + that side's padding with `input_frame`; drawn plain, an axis
+/// with both sides stated is w + their mean, `to_button_padding`'s pair rule, so the two ways
+/// agree on every preset but windows-11, whose sides differ. On an unstated side the two ways
+/// agree, and the cell's `button_padding` component is the base style's. The bottom is
+/// asserted through the height: the larger of `interact_size.y` and the top, the text's row
+/// and the expected bottom. Every expected value passes through egui's own rounding
+/// (`Frame::apply_stroke_and_expansion_without_layout_shift`, `Frame::total_margin`,
+/// `egui-0.37.0/src/containers/frame.rs`), as egui's `TextEdit` frame does
+/// (`egui-0.37.0/src/theme/default_style.rs`, `StyleProvider<TextEditStyle>`), and the height
+/// through the GUI rounding of the rect egui allocates.
+#[test]
+fn e6_a_resting_field_keeps_the_platform_padding_either_way() {
+    use egui::emath::GuiRounding as _;
+    const SIDES_DIFFER: &[&str] = &["windows-11"];
+    let mut faults = Vec::new();
+    let mut differ = Vec::new();
+    for name in Theme::list_presets() {
+        let light = resolved(name.key, ColorMode::Light);
+        let dark = resolved(name.key, ColorMode::Dark);
+        let atlas = ThemeAtlas::builder(name.key, &light, &dark).build();
+        for scheme in [egui::Theme::Light, egui::Theme::Dark] {
+            let t = atlas.resolved_for(scheme);
+            let styles = atlas.scheme(scheme);
+            let cell = styles.cell(Role::Input, RoleVariant::Normal);
+            let state = cell.visuals.widgets.inactive;
+            let through_egui = |inner: egui::Margin| {
+                egui::Frame {
+                    inner_margin: inner,
+                    ..Default::default()
+                }
+                .apply_stroke_and_expansion_without_layout_shift(state.bg_stroke, state.expansion)
+                .total_margin()
+            };
+            let w = t.input.border.line_width;
+            let p = &t.input.border.padding;
+            let side = |v: Option<f32>| v.filter(|v| v.is_finite()).map(|v| w + v);
+            let (left, right, top, bottom) =
+                (side(p.left), side(p.right), side(p.top), side(p.bottom));
+            let pair = |a: Option<f32>, b: Option<f32>| a.zip(b).map(|(a, b)| f32::midpoint(a, b));
+            let base = styles.base.spacing.button_padding;
+            let unstated = through_egui(egui::Margin::from(base));
+            let one = |v: f32| through_egui(egui::Margin::from(v));
+            let two = |v: egui::Vec2| through_egui(egui::Margin::from(v));
+            // the accessor way: each stated side its own
+            let accessor_want = [
+                left.map(|v| one(v).left),
+                right.map(|v| one(v).right),
+                top.map(|v| one(v).top),
+                bottom.map(|v| one(v).bottom),
+            ];
+            // the plain way: an axis with both sides stated takes their mean
+            let x = pair(left, right);
+            let y = pair(top, bottom);
+            let plain_want = [
+                x.map(|v| two(egui::vec2(v, 0.0)).left),
+                x.map(|v| two(egui::vec2(v, 0.0)).right),
+                y.map(|v| two(egui::vec2(0.0, v)).top),
+                y.map(|v| two(egui::vec2(0.0, v)).bottom),
+            ];
+            let plain = field_insets(&atlas, scheme, false);
+            let framed = field_insets(&atlas, scheme, true);
+            let tag = format!("{} {scheme:?}", name.key);
+            if left.is_some() != right.is_some() || top.is_some() != bottom.is_some() {
+                faults.push(format!(
+                    "{tag}: an axis states one side only: {p:?}, line width {w}"
+                ));
+            }
+            for (way, got, want) in [
+                ("plain", &plain, plain_want),
+                ("input_frame", &framed, accessor_want),
+            ] {
+                let measured = [got.left, got.right, got.top];
+                for (i, label) in ["left", "right", "top"].into_iter().enumerate() {
+                    if let Some(want) = want[i]
+                        && measured[i] != want
+                    {
+                        faults.push(format!(
+                            "{tag} {way}: {label} {}, expected {want}",
+                            measured[i]
+                        ));
+                    }
+                }
+                let want_bottom = want[3].unwrap_or(unstated.bottom);
+                // the allocated rect at egui's GUI rounding (`egui-0.37.0/src/layout.rs`,
+                // `GuiRounding::round_ui`, `emath-0.37.0/src/gui_rounding.rs`)
+                let want_height = cell
+                    .spacing
+                    .interact_size
+                    .y
+                    .max(got.top + got.row + want_bottom)
+                    .round_ui();
+                if got.height != want_height {
+                    faults.push(format!(
+                        "{tag} {way}: height {}, expected {want_height} (top {}, row {}, bottom {want_bottom})",
+                        got.height, got.top, got.row
+                    ));
+                }
+            }
+            let unstated_sides = [
+                ("left", left.is_none(), plain.left, framed.left),
+                ("right", right.is_none(), plain.right, framed.right),
+                ("top", top.is_none(), plain.top, framed.top),
+            ];
+            for (label, is_unstated, a, b) in unstated_sides {
+                if is_unstated && a != b {
+                    faults.push(format!(
+                        "{tag}: unstated {label}: plain {a}, input_frame {b}"
+                    ));
+                }
+            }
+            if (left.is_none() || right.is_none()) && cell.spacing.button_padding.x != base.x {
+                faults.push(format!(
+                    "{tag}: the cell's button_padding.x {}, the base style's {}",
+                    cell.spacing.button_padding.x, base.x
+                ));
+            }
+            if (top.is_none() || bottom.is_none()) && cell.spacing.button_padding.y != base.y {
+                faults.push(format!(
+                    "{tag}: the cell's button_padding.y {}, the base style's {}",
+                    cell.spacing.button_padding.y, base.y
+                ));
+            }
+            if accessor_want != plain_want && scheme == egui::Theme::Light {
+                differ.push(name.key);
+            }
+        }
+    }
+    assert_eq!(differ, SIDES_DIFFER, "the presets whose two ways differ");
+    assert!(faults.is_empty(), "{faults:#?}");
+}
+
+/// E6: on every bundled preset in both modes, a side [`crate::input_margin`] or
+/// [`crate::text_area_margin`] takes from no stated padding is the «input» cell's
+/// `spacing.button_padding` component as egui's own `TextEdit` frame narrows it to a `Margin`
+/// (`Margin::from(Vec2)`, `egui-0.37.0/src/theme/default_style.rs`,
+/// `StyleProvider<TextEditStyle>`); an unstated `text_area` side is `input_margin`'s; and the
+/// mean of a stated pair of `input_margin`'s sides is the cell's component, spec §5's pair rule
+/// (`convert::to_button_padding`), each narrowed to a whole point as egui narrows a margin
+/// (`Margin::from(f32)`, `epaint-0.37.0/src/margin.rs`): a half-point line width beside a
+/// stated side (macos-monterey, macos-tahoe; ios-13's, the third, has none) leaves the
+/// component on a half point, and windows-11's sides 6 / 7 leave their mean there.
+#[test]
+fn the_field_accessors_take_the_input_cell_s_padding_where_none_is_stated() {
+    let mut faults = Vec::new();
+    for name in Theme::list_presets() {
+        let light = resolved(name.key, ColorMode::Light);
+        let dark = resolved(name.key, ColorMode::Dark);
+        let atlas = ThemeAtlas::builder(name.key, &light, &dark).build();
+        for scheme in [egui::Theme::Light, egui::Theme::Dark] {
+            let t = atlas.resolved_for(scheme);
+            let cell = egui::Margin::from(
+                atlas
+                    .scheme(scheme)
+                    .cell(Role::Input, RoleVariant::Normal)
+                    .spacing
+                    .button_padding,
+            );
+            let input = crate::input_margin(t);
+            let area = crate::text_area_margin(t);
+            let stated = |v: Option<f32>| v.is_some_and(f32::is_finite);
+            let (ip, ap) = (&t.input.border.padding, &t.text_area.border.padding);
+            let tag = format!("{} {scheme:?}", name.key);
+            let sides = [
+                ("left", ip.left, ap.left, input.left, area.left, cell.left),
+                (
+                    "right",
+                    ip.right,
+                    ap.right,
+                    input.right,
+                    area.right,
+                    cell.right,
+                ),
+                ("top", ip.top, ap.top, input.top, area.top, cell.top),
+                (
+                    "bottom",
+                    ip.bottom,
+                    ap.bottom,
+                    input.bottom,
+                    area.bottom,
+                    cell.bottom,
+                ),
+            ];
+            for (label, own, area_own, got, area_got, want) in sides {
+                if !stated(own) && got != want {
+                    faults.push(format!(
+                        "{tag}: input_margin's unstated {label} {got}, the cell's {want}"
+                    ));
+                }
+                let area_want = if stated(own) { got } else { want };
+                if !stated(area_own) && area_got != area_want {
+                    faults.push(format!(
+                        "{tag}: text_area_margin's unstated {label} {area_got}, expected {area_want}"
+                    ));
+                }
+            }
+            let pairs = [
+                (
+                    "x",
+                    ip.left,
+                    ip.right,
+                    input.leftf(),
+                    input.rightf(),
+                    cell.left,
+                ),
+                (
+                    "y",
+                    ip.top,
+                    ip.bottom,
+                    input.topf(),
+                    input.bottomf(),
+                    cell.top,
+                ),
+            ];
+            for (axis, a, b, got_a, got_b, want) in pairs {
+                if stated(a)
+                    && stated(b)
+                    && egui::Margin::from(f32::midpoint(got_a, got_b)).left != want
+                {
+                    faults.push(format!(
+                        "{tag}: input_margin's {axis} pair {got_a} / {got_b}, the cell's {want}"
+                    ));
+                }
+            }
+        }
+    }
+    assert!(faults.is_empty(), "{faults:#?}");
+}
+
+/// The bundled presets in both modes, in `Theme::list_presets`' order, whose built style
+/// satisfies `keeps`.
+fn presets_where(keeps: impl Fn(&crate::atlas::SchemeStyles) -> bool) -> [Vec<&'static str>; 2] {
+    [egui::Theme::Light, egui::Theme::Dark].map(|scheme| {
+        Theme::list_presets()
+            .iter()
+            .filter(|name| {
+                let light = resolved(name.key, ColorMode::Light);
+                let dark = resolved(name.key, ColorMode::Dark);
+                keeps(
+                    ThemeAtlas::builder(name.key, &light, &dark)
+                        .build()
+                        .scheme(scheme),
+                )
+            })
+            .map(|name| name.key)
+            .collect()
+    })
+}
+
+/// The presets on which egui's own `button_padding` stands in the base style, because the
+/// theme states no `button.border.padding` (`egui-0.37.0/src/style.rs:1568`): the ten community
+/// presets and ios-13, read from the built styles against `egui::Style::default()`.
+#[test]
+fn egui_s_own_button_padding_stands_on_the_eleven() {
+    const ELEVEN: &[&str] = &[
+        "ios-13",
+        "catppuccin-latte",
+        "catppuccin-frappe",
+        "catppuccin-macchiato",
+        "catppuccin-mocha",
+        "nord",
+        "dracula",
+        "gruvbox",
+        "solarized",
+        "tokyo-night",
+        "one-dark",
+    ];
+    let own = egui::Style::default().spacing.button_padding;
+    for got in presets_where(|s| s.base.spacing.button_padding == own) {
+        assert_eq!(got, ELEVEN);
+    }
+}
+
+/// The presets with a «menu», «list» or «toolbar» cell whose `interact_size.y` is egui's own
+/// (`egui-0.37.0/src/style.rs:1570`), the row height the theme leaves unstated there
+/// (`style::roles::row_height`): all but macos-monterey, read from the built styles against
+/// `egui::Style::default()`.
+#[test]
+fn egui_s_own_row_height_stands_on_all_but_macos_monterey() {
+    let own = egui::Style::default().spacing.interact_size.y;
+    let want: Vec<&str> = Theme::list_presets()
+        .iter()
+        .map(|name| name.key)
+        .filter(|key| *key != "macos-monterey")
+        .collect();
+    for got in presets_where(|s| {
+        [Role::Menu, Role::List, Role::Toolbar]
+            .into_iter()
+            .any(|role| s.cell(role, RoleVariant::Normal).spacing.interact_size.y == own)
+    }) {
+        assert_eq!(got, want);
+    }
 }

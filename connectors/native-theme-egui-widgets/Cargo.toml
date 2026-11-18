@@ -51,5 +51,6 @@ serde_json = "1.0.151"
 native-theme-test-fixtures = { path = "../../tools/test-fixtures" }
 # Test-only: egui's `default_fonts`, so the tests lay text out with a face present; the
 # connector's egui turns on no feature. Its requirement equals the connector's egui
-# requirement: another would resolve to a second egui copy, where the feature would be lost.
+# requirement: a semver-incompatible one would resolve to a second egui copy, where the
+# feature would be lost.
 egui = { version = "0.37.0", features = ["default_fonts"] }

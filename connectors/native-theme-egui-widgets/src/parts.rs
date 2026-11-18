@@ -169,9 +169,9 @@ fn store_key() -> egui::Id {
 }
 
 /// The rectangle of a text atom laid out after an atom whose cell is `before`, `gap` apart, as
-/// `egui::AtomLayout` places it: at the start of the cell after the gap, centred on the row
-/// (`egui/src/atomics/atom_layout.rs:629-640`; an atom's `align` is `CENTER_CENTER`,
-/// `egui/src/atomics/atom.rs:63`).
+/// egui 0.37's `WidgetAtom` places it: at the start of the cell after the gap, centred on the
+/// row (`egui-0.37.0/src/atomics/container_atom.rs`, `SizedContainerAtom::paint_at`; an atom's
+/// `align` is `CENTER_CENTER`, `egui-0.37.0/src/atomics/atom.rs:64`).
 pub(crate) fn text_after(before: egui::Rect, gap: f32, size: egui::Vec2) -> egui::Rect {
     egui::Rect::from_min_size(
         egui::pos2(before.right() + gap, before.center().y - 0.5 * size.y),

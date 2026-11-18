@@ -17,8 +17,8 @@ use crate::scope;
 /// substitute, `Button::new(..).selected(checked)` (`egui/src/widgets/button.rs:270`),
 /// shows the track colours as a button's fill and no thumb.
 ///
-/// Built as egui's own `Checkbox` is (`egui/src/widgets/checkbox.rs:92-104`): an
-/// `WidgetAtom` whose first atom is the track, the label after it at egui's own
+/// Built as egui's own `Checkbox` is (`egui-0.37.0/src/widgets/checkbox.rs`, `Checkbox::ui`):
+/// a `WidgetAtom` whose first atom is the track, the label after it at egui's own
 /// `Spacing::icon_spacing`, sensing `Sense::click()`; a click flips the value and marks the
 /// response changed.
 ///

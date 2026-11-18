@@ -239,6 +239,9 @@ pub(crate) fn render() -> String {
                     .unwrap_or_else(|| panic!("row `{leaf}`: unmappable without upstream"));
                 note.push(format!("`{tag}`: {}", md_text(upstream)));
             }
+            if let Some(text) = &row.note {
+                note.push(md_text(text));
+            }
             if let Some(probe) = &row.probe {
                 note.push(format!("probe `{probe}`"));
             }

@@ -10,8 +10,8 @@ use native_theme::theme::{
 };
 
 use crate::convert::{
-    clamp_length, finite_or, i8_from_f32_saturating, padding_with_border, to_color32,
-    to_corner_radius, to_margin,
+    clamp_length, finite_or, padding_with_border, to_button_padding, to_color32, to_corner_radius,
+    to_margin,
 };
 use crate::{AccessibilityPreferences, Role, TextRole};
 
@@ -297,70 +297,93 @@ pub fn window_title_bar_text_color(t: &ResolvedTheme, active: bool) -> egui::Col
 }
 
 // --- geometry with no Style sink ----------------------------------------------
-/// egui's own `TextEdit` margin (`egui/src/widgets/text_edit/builder.rs:136`).
-const TEXT_EDIT_MARGIN: egui::Margin = egui::Margin::symmetric(4, 2);
-
-/// `input.border.padding` as the margin to hand `TextEdit::margin`
-/// (`egui/src/widgets/text_edit/builder.rs:313`), the one place a `TextEdit` takes its inner
-/// padding — no `Style` field holds it. Each side the theme states is that side plus the
-/// border's line width, because `TextEdit` paints its stroke inside this margin (`:763-767`)
-/// where the platform's padding lies inside the border (spec §7.2); a side the theme leaves
-/// `None` keeps egui's own default, `Margin::symmetric(4, 2)`
-/// (`egui/src/widgets/text_edit/builder.rs:136`, a crate constant naming that line). Built
-/// with [`convert::to_margin`](crate::convert::to_margin), so a side saturates at the `i8` bound of `epaint::Margin`.
-#[must_use]
-pub fn input_margin(t: &ResolvedTheme) -> egui::Margin {
-    to_margin(TEXT_EDIT_MARGIN, &padding_with_border(&t.input.border))
+/// The «input» cell's `spacing.button_padding` as the margin egui's own `TextEdit` frame takes
+/// from it, `Margin::from(Vec2)` (`egui-0.37.0/src/theme/default_style.rs`,
+/// `StyleProvider<TextEditStyle>`): `input.border` under spec §5's pair rule over the base style's
+/// `button_padding`, which is `button.border`'s under the same rule over egui's own
+/// `Spacing::default().button_padding` (`egui-0.37.0/src/style.rs:1568`), as the atlas writes
+/// the two cells ([`convert::to_button_padding`](crate::convert::to_button_padding)).
+fn input_cell_margin(t: &ResolvedTheme) -> egui::Margin {
+    let base = to_button_padding(
+        egui::style::Spacing::default().button_padding,
+        &t.button.border,
+    );
+    egui::Margin::from(to_button_padding(base, &t.input.border))
 }
 
-/// The frame a `TextEdit` paints, for `TextEdit::frame`
-/// (`egui/src/widgets/text_edit/builder.rs:304-309`), which paints a frame it is handed as
-/// given (`:712-713`, `:734-735`): egui's own frame for a mutable text (`:737-750`,
-/// `:759-768`), except that a focused field's stroke takes its colour from
-/// `input.focus_border_color` where egui's takes `visuals.selection.stroke` (`:742-747`) —
-/// the selected text's colour, which the `Role::Input` cell holds (spec §5.4) — at the width of
-/// the state's own `bg_stroke`. Called inside the `Role::Input` scope with the id handed to
-/// `TextEdit::id` (`:168`):
-/// `TextEdit::singleline(&mut s).id(id).frame(input_frame(ui, id, &t))`. The frame's inner
-/// margin is [`input_margin`]; beside a frame, `TextEdit::margin` is unused (`:712-713`).
+/// `input.border.padding` as the margin of a single-line `TextEdit`, for `TextEdit::margin`
+/// (`egui-0.37.0/src/widgets/text_edit/builder.rs`, `TextEdit::margin`) or inside
+/// [`input_frame`]; no `Style` field holds it per side. Each side the theme states is that side
+/// plus the border's line width, exactly per side, because egui paints the field's stroke
+/// inside this margin where the platform's padding lies inside the border (spec §7.2): a
+/// margin handed to `TextEdit::margin` becomes the frame's inner margin less the stroke's width
+/// (`egui-0.37.0/src/widgets/text_edit/builder.rs:693-704`), and [`input_frame`] takes the
+/// stroke out of it the same way. A side the theme leaves `None` is the «input» cell's
+/// `spacing.button_padding` component, the padding egui's own `TextEdit` frame takes in that
+/// scope (`egui-0.37.0/src/theme/default_style.rs`, `StyleProvider<TextEditStyle>`): on an
+/// axis whose two sides are unstated, the base style's — the button's padding, else egui's
+/// own (`egui-0.37.0/src/style.rs:1568`) — so a field drawn with this margin and one drawn
+/// plain in the scope agree there, while the application's
+/// [`Builder::style_patch`](crate::Builder::style_patch) leaves `button_padding` alone: the
+/// accessors read only the theme. Built with
+/// [`convert::to_margin`](crate::convert::to_margin), so a side saturates at the `i8` bound of
+/// `epaint::Margin`.
+#[must_use]
+pub fn input_margin(t: &ResolvedTheme) -> egui::Margin {
+    to_margin(input_cell_margin(t), &padding_with_border(&t.input.border))
+}
+
+/// The frame of a single-line `TextEdit`, for `TextEdit::frame`
+/// (`egui-0.37.0/src/widgets/text_edit/builder.rs`, `TextEdit::frame`), which takes a frame it
+/// is handed in place of the theme's (`:693-694`, 0.37.0): egui's own frame for a mutable text,
+/// `StyleProvider<TextEditStyle>`'s (`egui-0.37.0/src/theme/default_style.rs`), but for its
+/// inner margin, [`input_margin`] where egui's is the scope's `button_padding`, and its focus
+/// stroke. egui outlines a field in the `Active` state of the previous pass's response —
+/// pressed, focused or clicked (`egui-0.37.0/src/widget_style/mod.rs`,
+/// `Response::widget_state`) — in `visuals.selection.stroke`, the selected text's colour, which
+/// the `Role::Input` cell holds (spec §5.4); this frame outlines a focused field in
+/// `input.focus_border_color` at the width of the state's own `bg_stroke`. Called inside the
+/// `Role::Input` scope with the id handed to `TextEdit::id`:
+/// `TextEdit::singleline(&mut s).id(id).frame(input_frame(ui, id, &t))`. Beside a frame,
+/// `TextEdit::margin` is unused (`egui-0.37.0/src/widgets/text_edit/builder.rs:693-704`).
 ///
-/// Computed from `ui`'s style exactly as egui computes it. The state is
-/// `ui.style().interact(&r)` (`egui/src/style.rs:355-357`) of
-/// `r = ui.ctx().read_response(id)` (`egui/src/context.rs:1350-1355`) — this pass's
-/// interaction, before the field is added — or, where there is none yet, `widgets.active`
-/// when focused (below) and `widgets.inactive` otherwise — the entries `Widgets::style` gives
-/// a focused response and one neither hovered, pressed nor focused
-/// (`egui/src/style.rs:1273-1282`); focused is `Response::has_focus`'s own body
-/// (`egui/src/response.rs:349-351`), `ui.ctx().input(|i| i.focused)` and
-/// `ui.ctx().memory(|m| m.has_focus(id))`, whether or not `read_response` returned a response
-/// (a field focused before its first pass). Focus moved while the field is added — by Tab
-/// (`egui/src/context.rs:1269-1270`, `egui/src/memory/mod.rs:659-668`) or by
-/// `Memory::request_focus` after this call — shows in the next pass: a key press or a click is
-/// an input event, after which egui runs that pass itself (`egui/src/input_state/mod.rs:655-663`,
-/// `egui/src/context.rs:469`, `:537-538`); a focus moved with no input event shows in the next
-/// pass that runs, which the application can request at once with `Context::request_repaint`
-/// (`egui/src/context.rs:1821`).
-/// Fill `ui.visuals().text_edit_bg_color()` (`egui/src/widgets/text_edit/builder.rs:739`);
-/// corner radius the state's (`:744`, `:749`); stroke the state's `bg_stroke` (`:749`), or,
-/// focused, `input.focus_border_color` at the state's own `bg_stroke.width` (not egui's
-/// `selection.stroke.width`: a width that changed with the state would change the frame's
-/// total margin, and the field's size, on focus) — or the
-/// resting `widgets.inactive.bg_stroke` where that `soft_option` is `None`, the border not
-/// changing on focus (spec §5.4); inner margin [`input_margin`] plus `expansion − stroke.width`
-/// on every side, outer margin `−expansion` (`:763-767`). Both narrowings to `i8` go through
-/// `i8_from_f32_saturating` (spec §7.2) where egui casts with `as`
-/// (`egui/src/widgets/text_edit/builder.rs:765`, `:767`), and the sum is `epaint::Margin`'s
-/// saturating `Add` (`epaint/src/margin.rs:123-134`), so the function is total; the two agree
-/// bit for bit wherever `expansion` is whole, as it is in every scope but `Role::Slider`'s
-/// (spec §6.6).
+/// Computed from `ui`'s style. The state is `ui.style().interact(&r)`
+/// (`egui/src/style.rs:355-357`) of `r = ui.ctx().read_response(id)`
+/// (`egui/src/context.rs:1350-1355`) — this pass's interaction, before the field is added, the
+/// entry `Response::widget_state` picks too (`egui-0.37.0/src/widget_style/mod.rs`) — or,
+/// where there is none yet, `widgets.active` when focused (below) and `widgets.inactive`
+/// otherwise — the entries `Widgets::style` gives a focused response and one neither hovered,
+/// pressed nor focused (`egui/src/style.rs:1273-1282`), where egui takes `Inactive` for a
+/// field with no response yet (`egui-0.37.0/src/theme/mod.rs`, `Ui::widget_style`); focused is
+/// `Response::has_focus`'s own body (`egui/src/response.rs:349-351`),
+/// `ui.ctx().input(|i| i.focused)` and `ui.ctx().memory(|m| m.has_focus(id))`, whether or not
+/// `read_response` returned a response (a field focused before its first pass). Focus moved
+/// while the field is added — by Tab (`egui/src/context.rs:1269-1270`,
+/// `egui/src/memory/mod.rs:659-668`) or by `Memory::request_focus` after this call — shows in
+/// the next pass: a key press or a click is an input event, after which egui runs that pass
+/// itself (`egui/src/input_state/mod.rs:655-663`, `egui/src/context.rs:469`, `:537-538`); a
+/// focus moved with no input event shows in the next pass that runs, which the application can
+/// request at once with `Context::request_repaint` (`egui/src/context.rs:1821`).
+/// Fill `ui.visuals().text_edit_bg_color()`; corner radius the state's; stroke the state's
+/// `bg_stroke`, or, focused, `input.focus_border_color` at the state's own `bg_stroke.width`
+/// (not egui's `selection.stroke.width`: a width that changed with the state could change the
+/// frame's whole-point margin, and the field's size, on focus) — or the resting
+/// `widgets.inactive.bg_stroke` where that `soft_option` is `None`, the border not changing on
+/// focus (spec §5.4). The stroke and the state's `expansion` go on through egui's own
+/// `Frame::apply_stroke_and_expansion_without_layout_shift`
+/// (`egui-0.37.0/src/containers/frame.rs:313-323`), as egui's frame does: inner margin
+/// [`input_margin`] plus `round(expansion − stroke.width)`, outer margin `−round(expansion)`,
+/// each side saturating at the `i8` bound (`epaint-0.37.0/src/margin.rs`, `Margin`'s `Add` and
+/// `Sub`), so the function is total.
 ///
-/// `TextEdit` lays a custom frame out by the frame's own total margin
-/// (`egui/src/widgets/text_edit/builder.rs:715`, `:726-729`; `Frame::total_margin`,
-/// `egui/src/containers/frame.rs:327-331`), where it lays its stock frame out by the margin
-/// alone (`egui/src/widgets/text_edit/builder.rs:713`); the two agree whenever
-/// `expansion − stroke.width` is whole. With a half-point stroke (`macos-monterey`, `ios-13`,
-/// spec §5.4) the total margin is half a point less than egui's stock one in every state, so the
-/// field is one point shorter than egui's own and keeps that size whether focused or not.
+/// egui lays the field out by its frame's total margin, `Frame::total_margin`
+/// (`egui-0.37.0/src/containers/frame.rs:362-366`), whether the frame is its own or this one
+/// (`egui-0.37.0/src/widgets/text_edit/builder.rs:809`), and no shorter than the scope's
+/// `interact_size.y`, `TextEditStyle`'s least size (`StyleProvider<TextEditStyle>`,
+/// `builder.rs:546`, 0.37.0). The total margin is [`input_margin`] wherever
+/// `expansion − stroke.width` is whole; with a half-point stroke (`macos-monterey`,
+/// `macos-tahoe`, `ios-13`, spec §5.4) it is half a point less on every side, in egui's own
+/// frame and this one alike.
 #[must_use = "hand the frame to TextEdit::frame"]
 pub fn input_frame(ui: &egui::Ui, id: egui::Id, t: &ResolvedTheme) -> egui::Frame {
     field_frame(ui, id, t, input_margin(t), None)
@@ -368,12 +391,13 @@ pub fn input_frame(ui: &egui::Ui, id: egui::Id, t: &ResolvedTheme) -> egui::Fram
 
 /// `text_area.border.padding` as the margin of a multi-line `TextEdit`, as [`input_margin`] is
 /// the single-line field's: each side the theme states plus `text_area.border.line_width`,
-/// egui's own `Margin::symmetric(4, 2)` on a side it leaves `None`. A platform pads its
-/// multi-line field apart from its single-line one (`docs/platform-facts.md` §2.29: Breeze's
-/// QTextEdit 5 where its line edit is 7 / 6, GTK's text view 0 where its entry is 9 / 0).
+/// exactly per side, and [`input_margin`]'s side on a side it leaves `None`. A platform pads
+/// its multi-line field apart from its single-line one (`docs/platform-facts.md` §2.29:
+/// Breeze's QTextEdit 5 where its line edit is 7 / 6, GTK's text view 0 where its entry is
+/// 9 / 0).
 #[must_use]
 pub fn text_area_margin(t: &ResolvedTheme) -> egui::Margin {
-    to_margin(TEXT_EDIT_MARGIN, &padding_with_border(&t.text_area.border))
+    to_margin(input_margin(t), &padding_with_border(&t.text_area.border))
 }
 
 /// [`input_frame`] for a multi-line `TextEdit`, called in the same `Role::Input` scope with
@@ -446,26 +470,15 @@ fn field_frame(
         ),
         None => (stroke, state.corner_radius),
     };
-    // egui's `Margin::same((expansion - stroke.width).round() as i8)` and
-    // `Margin::same(-(expansion as i8))` (`egui/src/widgets/text_edit/builder.rs:765`, `:767`),
-    // each through the saturating narrowing of §7.2. egui adds the first to the margin with
-    // `Margin + Margin`, which saturates side by side (`epaint/src/margin.rs:123-134`); the
-    // sum is spelled out with `i8::saturating_add`, the same arithmetic, because the
-    // strict-panic set's `arithmetic_side_effects` rejects the operator on a non-primitive type.
-    let grow = i8_from_f32_saturating(state.expansion - stroke.width);
-    let inner = egui::Margin {
-        left: base.left.saturating_add(grow),
-        right: base.right.saturating_add(grow),
-        top: base.top.saturating_add(grow),
-        bottom: base.bottom.saturating_add(grow),
-    };
-    let outer = egui::Margin::same(i8_from_f32_saturating(-state.expansion));
-    egui::Frame::new()
-        .fill(style.visuals.text_edit_bg_color())
-        .corner_radius(corner_radius)
-        .inner_margin(inner)
-        .outer_margin(outer)
-        .stroke(stroke)
+    // egui's own frame for a mutable text, built as `StyleProvider<TextEditStyle>` builds it
+    // (`egui-0.37.0/src/theme/default_style.rs`)
+    egui::Frame {
+        fill: style.visuals.text_edit_bg_color(),
+        corner_radius,
+        inner_margin: base,
+        ..Default::default()
+    }
+    .apply_stroke_and_expansion_without_layout_shift(stroke, state.expansion)
 }
 
 /// The expander's arrow, in `expander.arrow_color`, for `CollapsingHeader::icon`

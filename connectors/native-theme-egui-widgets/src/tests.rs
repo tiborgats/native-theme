@@ -428,6 +428,32 @@ fn every_widget_reports_its_role() {
     assert_eq!(node(&out, ids[7]).role(), accesskit::Role::RadioButton);
 }
 
+/// T3: the expander's header reports egui's own `CollapsingHeader` role,
+/// `Role::DisclosureTriangle` (`egui-0.37.0/src/containers/collapsing_header.rs`,
+/// `CollapsingHeader::begin`), drawn on the painted path (kde-breeze), over egui's own
+/// header (material-3) and with no atlas.
+#[test]
+fn the_expander_reports_its_role() {
+    for (name, ctx) in [
+        (
+            "painted",
+            installed(&kde(), &AccessibilityPreferences::default()),
+        ),
+        (
+            "own",
+            installed(&material(), &AccessibilityPreferences::default()),
+        ),
+        ("bare", bare()),
+    ] {
+        let mut id = None;
+        let out = pass(&ctx, at(0.0), |ui| {
+            id = Some(Expander::new("Details").show(ui, |_| ()).header_response.id);
+        });
+        let header = node(&out, id.unwrap());
+        assert_eq!(header.role(), accesskit::Role::DisclosureTriangle, "{name}");
+    }
+}
+
 /// An off switch's thumb is `switch.unchecked_thumb_diameter` across in
 /// `unchecked_thumb_background` where the theme states them (Material's 16 in `outline`,
 /// docs/platform-facts.md:1525-1526), centred on the track's axis.
@@ -2789,123 +2815,185 @@ fn the_kde_drop_down_is_its_min_height_with_a_chevron() {
     assert!((a.height() - 0.45 * arrow).abs() < 1e-3, "{a:?}");
 }
 
-/// A truncated drop-down keeps to the room it is laid out in, its selected text cut there and
-/// ended by an ellipsis, with the atlas installed and without; untruncated, it wraps a text
-/// longer than the room as egui's own `ComboBox` does, which takes the wrapping of the `Ui` it
-/// is in (`egui-0.37.0/src/containers/combo_box.rs:365`), here a vertical one's
-/// (`egui-0.37.0/src/ui.rs:615-632`). With the atlas, the text's part is the rectangle egui
-/// paints the text in: the wrapped text untruncated, the cut text, a single line as tall as the
-/// whole one, inside the drop-down truncated.
+/// The `TEXT` shape a pass painted.
+fn painted_text(out: &egui::FullOutput, text: &str) -> egui::epaint::TextShape {
+    flat(&out.shapes)
+        .into_iter()
+        .find_map(|s| match s {
+            egui::Shape::Text(shape) if shape.galley.job.text == text => Some(shape),
+            _ => None,
+        })
+        .unwrap_or_else(|| panic!("no painted text {text:?}"))
+}
+
+/// A material-3 light theme: its drop-down's font, 16, is not its Body font, 14.
+fn material() -> ResolvedTheme {
+    from_preset("material-3", false, &AccessibilityPreferences::default())
+        .unwrap()
+        .1
+}
+
+/// An ios-13 light theme: its drop-down's border is half a point wide and states no padding, so
+/// egui's frame, `button_padding` through `Frame::apply_stroke_and_expansion_without_layout_shift`,
+/// has a total margin that is not that padding (`egui-0.37.0/src/containers/frame.rs`).
+fn ios() -> ResolvedTheme {
+    from_preset("ios-13", false, &AccessibilityPreferences::default())
+        .unwrap()
+        .1
+}
+
+/// A drop-down's selected text in the room it is laid out in, as egui lays it out in the `Ui`
+/// it is in (`egui-0.37.0/src/containers/combo_box.rs:365`): a vertical `Ui` wraps a text
+/// longer than the room, a horizontal one keeps it on one line and widens the drop-down to it
+/// (`egui-0.37.0/src/ui.rs:615-632`), and truncated it is one line cut to the room, ended by
+/// an ellipsis, with the atlas installed and without. A room narrower than the drop-down's
+/// minimum width, `spacing.combo_width` (`combo_box.min_width`), lays the text out in that
+/// width, which egui gives the content at least (`combo_box_dyn`,
+/// `egui-0.37.0/src/atomics/container_atom.rs`, `ContainerAtom::measure`). With the atlas, the
+/// text's part is the rectangle egui paints the text in, on kde-breeze, on material-3, whose
+/// drop-down font is not its Body font, and on ios-13, whose half-point border leaves the
+/// frame's total margin (`Frame::total_margin`, which egui lays the content out by) off its
+/// padding.
 #[test]
 fn a_truncated_drop_down_keeps_to_its_room() {
     const ROOM: f32 = 160.0;
     const TEXT: &str = "an installed icon theme whose name runs longer than the room";
-    let drop_down = |truncate: bool| {
-        move |ui: &mut egui::Ui| {
-            ui.allocate_ui(egui::vec2(ROOM, 100.0), |ui| {
-                let combo = ComboBox::from_id_salt("icons")
-                    .selected_text(TEXT)
-                    .width(ui.available_width());
-                let combo = if truncate { combo.truncate() } else { combo };
-                combo.show_ui(ui, |ui| ui.label("Adwaita")).response
-            })
-            .inner
-        }
-    };
-    let egui_drop_down = |ui: &mut egui::Ui| {
-        ui.allocate_ui(egui::vec2(ROOM, 100.0), |ui| {
-            egui::ComboBox::from_id_salt("egui-icons")
-                .selected_text(TEXT)
-                .width(ui.available_width())
-                .show_ui(ui, |ui| ui.label("Adwaita"))
-                .response
-        })
-        .inner
-    };
-    let painted = |out: &egui::FullOutput| {
-        flat(&out.shapes)
-            .into_iter()
-            .find_map(|s| match s {
-                egui::Shape::Text(text) if text.galley.job.text == TEXT => Some(text),
-                _ => None,
-            })
-            .unwrap()
-    };
+    #[derive(Clone, Copy, Debug, PartialEq)]
+    enum Case {
+        Vertical,
+        Narrow,
+        Horizontal,
+    }
     // Where egui paints the text: its galley's rectangle at the shape's position.
     let painted_rect =
         |text: &egui::epaint::TextShape| text.galley.rect.translate(text.pos.to_vec2());
     let same = |a: egui::Rect, b: egui::Rect| {
         (a.min - b.min).length() < 1e-3 && (a.max - b.max).length() < 1e-3
     };
-    let t = kde();
-    for (name, ctx) in [
-        (
-            "installed",
-            installed(&t, &AccessibilityPreferences::default()),
-        ),
-        ("bare", bare()),
-    ] {
-        let _ = response(&ctx, at(0.0), egui_drop_down);
-        let (out, egui_wrapped) = response(&ctx, at(0.0), egui_drop_down);
-        let egui_rows = painted(&out).galley.rows.len();
-        assert!(
-            egui_rows > 1,
-            "{name}: the case this covers, a text egui wraps in the room: {egui_rows} row(s)"
-        );
-        let _ = response(&ctx, at(0.0), drop_down(false));
-        let (out, wrapped) = response(&ctx, at(0.0), drop_down(false));
-        assert_eq!(
-            painted(&out).galley.rows.len(),
-            egui_rows,
-            "{name}: the drop-down wraps its text as egui's own does"
-        );
-        assert!(
-            (wrapped.rect.width() - egui_wrapped.rect.width()).abs() < 1e-3,
-            "{name}: {:?} is not as wide as egui's own, {:?}",
-            wrapped.rect,
-            egui_wrapped.rect
-        );
-        if name == "installed" {
-            let part = Parts::of(&wrapped)
-                .and_then(|parts| parts.get("text"))
-                .unwrap();
-            let text = painted_rect(&painted(&out));
-            assert!(
-                same(part, text),
-                "{name}: the text part {part:?} is not the wrapped text egui paints, {text:?}"
-            );
+    let m = material();
+    assert_ne!(
+        m.combo_box.font.size, m.defaults.font.size,
+        "the case material-3 covers: a drop-down font that is not Body's"
+    );
+    let i = ios();
+    assert!(
+        i.combo_box.border.line_width.fract() != 0.0,
+        "the case ios-13 covers: a border off the whole point"
+    );
+    for (preset, t) in [("kde-breeze", kde()), ("material-3", m), ("ios-13", i)] {
+        for (name, ctx) in [
+            (
+                "installed",
+                installed(&t, &AccessibilityPreferences::default()),
+            ),
+            ("bare", bare()),
+        ] {
+            for case in [Case::Vertical, Case::Narrow, Case::Horizontal] {
+                for truncate in [false, true] {
+                    let tag = format!("{preset} {name} {case:?} truncate {truncate}");
+                    let mut room = 0.0;
+                    let mut min_width = 0.0;
+                    let mut add = |ui: &mut egui::Ui| {
+                        min_width = ui.spacing().combo_width;
+                        room = if case == Case::Narrow {
+                            0.5 * min_width
+                        } else {
+                            ROOM
+                        };
+                        let layout = if case == Case::Horizontal {
+                            egui::Layout::left_to_right(egui::Align::Center)
+                        } else {
+                            egui::Layout::top_down(egui::Align::Min)
+                        };
+                        ui.allocate_ui_with_layout(egui::vec2(room, 100.0), layout, |ui| {
+                            let combo = ComboBox::from_id_salt("icons").selected_text(TEXT);
+                            let combo = if truncate { combo.truncate() } else { combo };
+                            combo.show_ui(ui, |ui| ui.label("Adwaita")).response
+                        })
+                        .inner
+                    };
+                    let _ = response(&ctx, at(0.0), &mut add);
+                    let (out, combo) = response(&ctx, at(0.0), &mut add);
+                    let text = painted_text(&out, TEXT);
+                    let rows = text.galley.rows.len();
+                    if case == Case::Narrow {
+                        assert!(room < min_width, "{tag}: the case this covers");
+                    }
+                    if truncate {
+                        assert!(text.galley.elided, "{tag}: the text is not cut");
+                        assert_eq!(rows, 1, "{tag}: one line");
+                    } else if case == Case::Horizontal {
+                        assert!(
+                            !text.galley.elided && rows == 1,
+                            "{tag}: one whole line, {rows} row(s)"
+                        );
+                        assert!(
+                            combo.rect.width() > room,
+                            "{tag}: {:?} is not widened past its room, {room}",
+                            combo.rect
+                        );
+                    } else {
+                        assert!(rows > 1, "{tag}: the case this covers, a wrapped text");
+                    }
+                    if truncate && case == Case::Horizontal {
+                        // the room, or the minimum width where that is wider (material-3's)
+                        let most = room.max(min_width);
+                        assert!(
+                            combo.rect.width() <= most + 1e-3,
+                            "{tag}: {:?} is wider than its room, {most}",
+                            combo.rect
+                        );
+                    }
+                    if name == "installed" {
+                        let part = Parts::of(&combo)
+                            .and_then(|parts| parts.get("text"))
+                            .unwrap();
+                        let drawn = painted_rect(&text);
+                        assert!(
+                            same(part, drawn),
+                            "{tag}: the text part {part:?} is not where egui paints the text, {drawn:?}"
+                        );
+                    }
+                }
+            }
         }
-        let _ = response(&ctx, at(0.0), drop_down(true));
-        let (out, combo) = response(&ctx, at(0.0), drop_down(true));
-        assert!(
-            combo.rect.width() <= ROOM + 1e-3,
-            "{name}: {:?} is wider than its room, {ROOM}",
-            combo.rect
-        );
-        let text = painted(&out);
-        assert!(text.galley.elided, "{name}: the text is not cut");
-        assert_eq!(text.galley.rows.len(), 1, "{name}: one line");
-        if name == "installed" {
-            let part = Parts::of(&combo)
-                .and_then(|parts| parts.get("text"))
-                .unwrap();
-            assert!(
-                (part.width() - text.galley.size().x).abs() < 1e-3
-                    && (part.height() - text.galley.size().y).abs() < 1e-3,
-                "{name}: the text part {part:?} is not the cut text, {:?}",
-                text.galley.size()
-            );
-            assert!(
-                part.right() <= combo.rect.right(),
-                "{name}: the text part {part:?} leaves {:?}",
-                combo.rect
-            );
-            let drawn = painted_rect(&text);
-            assert!(
-                same(part, drawn),
-                "{name}: the text part {part:?} is not where egui paints the cut text, {drawn:?}"
-            );
-        }
+    }
+}
+
+/// The drop-down's selected text and its popup's items are drawn in `combo_box.font`'s size
+/// (B3): egui 0.37 draws both with `ButtonStyle`'s font, the scope's `override_font_id` before
+/// Body (`egui-0.37.0/src/theme/default_style.rs`, `StyleProvider<ButtonStyle>`), and the
+/// popup takes the role's style (`ComboBox::popup_style`). material-3, whose drop-down font is
+/// not its Body font.
+#[test]
+fn the_drop_down_and_its_items_take_the_drop_down_font() {
+    let t = material();
+    assert_ne!(
+        t.combo_box.font.size, t.defaults.font.size,
+        "the case this covers"
+    );
+    let ctx = installed(&t, &AccessibilityPreferences::default());
+    let add = |ui: &mut egui::Ui| {
+        ComboBox::from_id_salt("fruit")
+            .selected_text("Apple")
+            .show_ui(ui, |ui| {
+                let _ = ui.selectable_label(false, "Banana");
+                ui.label("Cherry")
+            })
+            .response
+    };
+    let _ = click(&ctx, add);
+    let (out, _) = response(&ctx, idle(), add);
+    for text in ["Apple", "Banana", "Cherry"] {
+        let shape = painted_text(&out, text);
+        let sizes: Vec<f32> = shape
+            .galley
+            .job
+            .sections
+            .iter()
+            .map(|s| s.format.font_id.size)
+            .collect();
+        assert_eq!(sizes, [t.combo_box.font.size], "{text}");
     }
 }
 

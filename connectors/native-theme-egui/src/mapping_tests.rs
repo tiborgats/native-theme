@@ -55,6 +55,7 @@ pub(crate) struct Row {
     pub(crate) sub_tag: Option<String>,
     pub(crate) upstream: Option<String>,
     pub(crate) exceptions: Vec<(String, String)>,
+    pub(crate) note: Option<String>,
 }
 
 /// `mapping.toml`, typed: the rows by leaf path and the `[unwritten]` table (§13.1).
@@ -142,6 +143,7 @@ impl Manifest {
                     sub_tag: text(row, "sub_tag"),
                     upstream: text(row, "upstream"),
                     exceptions,
+                    note: text(row, "note"),
                 },
             );
         }
@@ -288,6 +290,7 @@ fn every_leaf_has_exactly_one_row_and_every_row_is_well_formed() {
         "exceptions",
         "sub_tag",
         "upstream",
+        "note",
     ];
 
     let mut declared_paths: BTreeSet<String> = BTreeSet::new();
@@ -305,6 +308,14 @@ fn every_leaf_has_exactly_one_row_and_every_row_is_well_formed() {
             }
         }
         let has = |key: &str| row.contains_key(key);
+        if has("note")
+            && !row
+                .get("note")
+                .and_then(toml::Value::as_str)
+                .is_some_and(|n| !n.trim().is_empty())
+        {
+            problems.push(format!("{leaf}: a note is a non-empty string"));
+        }
         if verdict == "unmappable" {
             match row.get("sub_tag").and_then(toml::Value::as_str) {
                 Some(tag) if sub_tags.contains(&tag) => {}
@@ -474,7 +485,8 @@ fn verdict_totals_match_the_specification() {
         ("foundation", [18, 1, 36, 11]),
         ("surfaces", [8, 55, 32, 15]),
         ("buttons", [11, 46, 31, 25]),
-        ("inputs", [4, 35, 36, 12]),
+        // §5.7's [4, 35, 36, 12], the four `input.border.padding` sides SCOPED since 0.7.2
+        ("inputs", [4, 39, 32, 12]),
         ("indicators", [5, 17, 9, 9]),
         ("chrome", [0, 54, 27, 19]),
     ];
@@ -518,6 +530,7 @@ fn the_typed_reader_matches_the_raw_table() {
             sub_tag,
             upstream,
             exceptions,
+            note,
         },
     ) in &typed.rows
     {
@@ -536,6 +549,7 @@ fn the_typed_reader_matches_the_raw_table() {
         assert_eq!(text("tested_by"), tested_by.as_deref(), "{leaf}");
         assert_eq!(text("sub_tag"), sub_tag.as_deref(), "{leaf}");
         assert_eq!(text("upstream"), upstream.as_deref(), "{leaf}");
+        assert_eq!(text("note"), note.as_deref(), "{leaf}");
         assert_eq!(row.get("probe"), probe.as_ref(), "{leaf}");
         let raw_exceptions = row
             .get("exceptions")

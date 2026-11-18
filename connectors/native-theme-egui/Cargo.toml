@@ -82,7 +82,9 @@ egui_kittest = { version = "0.37.0", features = ["eframe"] }
 # egui's two monochrome emoji faces, `NOTO_EMOJI_REGULAR` and `EMOJI_ICON`, behind
 # `monochrome_emoji_fonts` (`epaint_default_fonts-0.37.0/src/lib.rs`): the showcase's harness
 # asks them last for a character no installed face has, since egui_kittest panics on a
-# missing glyph (`egui_kittest-0.37.0/src/builder.rs`, `missing_glyph_policy`).
+# missing glyph (`egui_kittest-0.37.0/src/builder.rs`, `missing_glyph_policy`). The library's
+# font tests (`src/install_tests.rs`) read its faces too: `HACK_REGULAR`, `UBUNTU_LIGHT`,
+# `NOTO_EMOJI_REGULAR` and `EMOJI_ICON`.
 epaint_default_fonts = { version = "0.37.0", features = ["monochrome_emoji_fonts"] }
 # §13 T2 and T10 parse `mapping.toml`; T3 walks `serde_json::to_value(&resolved)`;
 # the showcase's Widget Info does both (§10.4).

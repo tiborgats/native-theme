@@ -21,7 +21,6 @@ pub(crate) fn show(
 
     caption(reg, ui, "TextEdit with input_frame (Role::Input)");
     let id = ui.make_persistent_id("inputs/single-line");
-    let frame = input_frame(ui, id, t);
     demo::scoped(
         reg,
         ui,
@@ -29,6 +28,7 @@ pub(crate) fn show(
         normal,
         "TextEdit (single line)",
         |ui| {
+            let frame = input_frame(ui, id, t);
             ui.add(
                 egui::TextEdit::singleline(&mut state.text)
                     .min_size(min)
@@ -40,8 +40,8 @@ pub(crate) fn show(
         },
     );
     let id = ui.make_persistent_id("inputs/multiline");
-    let frame = text_area_frame(ui, id, t);
     demo::scoped(reg, ui, Role::Input, normal, "TextEdit (multiline)", |ui| {
+        let frame = text_area_frame(ui, id, t);
         ui.add(
             egui::TextEdit::multiline(&mut state.multiline)
                 .min_size(min)
@@ -51,8 +51,8 @@ pub(crate) fn show(
         .accessible_name("TextEdit (multiline)")
     });
     let id = ui.make_persistent_id("inputs/password");
-    let frame = input_frame(ui, id, t);
     demo::scoped(reg, ui, Role::Input, normal, "TextEdit (password)", |ui| {
+        let frame = input_frame(ui, id, t);
         ui.add(
             egui::TextEdit::singleline(&mut state.password)
                 .password(true)
@@ -64,8 +64,8 @@ pub(crate) fn show(
         .accessible_name("TextEdit (password)")
     });
     let id = ui.make_persistent_id("inputs/hint");
-    let frame = input_frame(ui, id, t);
     demo::scoped(reg, ui, Role::Input, normal, "TextEdit (hint)", |ui| {
+        let frame = input_frame(ui, id, t);
         ui.add(
             egui::TextEdit::singleline(&mut state.hint)
                 .hint_text("A hint")
@@ -76,7 +76,6 @@ pub(crate) fn show(
         )
     });
     let id = ui.make_persistent_id("inputs/disabled");
-    let frame = input_frame(ui, id, t);
     let mut disabled = "Disabled".to_string();
     demo::scoped(
         reg,
@@ -85,6 +84,7 @@ pub(crate) fn show(
         RoleVariant::Disabled,
         "TextEdit (disabled)",
         |ui| {
+            let frame = input_frame(ui, id, t);
             ui.add_enabled(
                 false,
                 egui::TextEdit::singleline(&mut disabled)
@@ -118,7 +118,8 @@ pub(crate) fn show(
     );
     reg.note_last(
         "ui.text_edit_singleline",
-        "egui's own height, one row and its margin; input.min_height is not applied",
+        "egui's own height: one row and its margin, at least the scope's interact_size.y \
+         (button.min_height); input.min_height is not applied",
     );
     demo::scoped(
         reg,
