@@ -1035,7 +1035,8 @@ mod tests {
     }
 
     /// Where the theme says keyboard only (windows-11), a field a left press
-    /// focuses draws no ring; unfocused, then focused by `focus_next` after
+    /// focuses draws no ring, nor after a key while it keeps that focus;
+    /// unfocused, then focused by `focus_next` after
     /// a Tab, it is ringed, and a pointer move keeps the ring; unfocused
     /// again and focused by a left press, it draws none.
     #[test]
@@ -1050,6 +1051,17 @@ mod tests {
         let press = || Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left));
         send(&mut element, &mut tree, &node, press());
         assert_eq!(painted(&element, &tree, &node), 0, "focused by a click");
+        send(
+            &mut element,
+            &mut tree,
+            &node,
+            key(keyboard::Key::Character("a".into())),
+        );
+        assert_eq!(
+            painted(&element, &tree, &node),
+            0,
+            "a key while the click's focus holds"
+        );
         operate_chained(&mut element, &mut tree, &node, focusable::unfocus());
         send(
             &mut element,
@@ -1092,25 +1104,34 @@ mod tests {
 
     /// A modifier key pressed alone is no key (windows-11): a field focused
     /// through `operate` after Shift or Control draws no ring, one after Tab
-    /// draws it.
+    /// draws it, and so does one after Tab and then Shift alone: a modifier
+    /// leaves the answer as it is, it is not the pointer.
     #[test]
     fn a_modifier_key_alone_is_no_key() {
         use iced_core::widget::operation::focusable;
         use keyboard::key::Named;
         let r = resolved("windows-11", ColorMode::Light);
-        for (named, rings) in [(Named::Shift, 0), (Named::Control, 0), (Named::Tab, 1)] {
+        let runs: [(&[Named], usize); 4] = [
+            (&[Named::Shift], 0),
+            (&[Named::Control], 0),
+            (&[Named::Tab], 1),
+            (&[Named::Tab, Named::Shift], 1),
+        ];
+        for (keys, rings) in runs {
             let mut element: Element<'_, (), Theme, Recorder> =
                 crate::focus_ring(&r, 4.0, Element::new(Clicked));
             let mut tree = Tree::new(&element);
             let node = laid(&mut element, &mut tree);
-            send(
-                &mut element,
-                &mut tree,
-                &node,
-                key(keyboard::Key::Named(named)),
-            );
+            for named in keys {
+                send(
+                    &mut element,
+                    &mut tree,
+                    &node,
+                    key(keyboard::Key::Named(*named)),
+                );
+            }
             operate_chained(&mut element, &mut tree, &node, focusable::focus_next());
-            assert_eq!(painted(&element, &tree, &node), rings, "{named:?}");
+            assert_eq!(painted(&element, &tree, &node), rings, "{keys:?}");
         }
     }
 }

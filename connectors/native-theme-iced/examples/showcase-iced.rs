@@ -2887,6 +2887,27 @@ fn update_at(state: &mut State, message: Message, now: Instant) -> iced::Task<Me
             }
         }
         Message::Quit => return iced::exit(),
+        // While a dialog is open the moves stay inside it, as a native modal
+        // dialog keeps its Tab order: `Stack::operate` walks every layer
+        // (iced_widget 0.14.2 `src/stack.rs:210-229`), so a move over the
+        // whole tree would focus the window's widgets under the dialog, which
+        // `opaque` hands the keys on to (`src/helpers.rs:671-682`).
+        Message::FocusNext if state.overlay.is_some() => {
+            use iced::advanced::widget::operation::{focusable, scope};
+            return iced::advanced::widget::operate(scope(
+                iced::widget::Id::new(DIALOG_ID),
+                focusable::focus_next::<()>(),
+            ))
+            .discard();
+        }
+        Message::FocusPrevious if state.overlay.is_some() => {
+            use iced::advanced::widget::operation::{focusable, scope};
+            return iced::advanced::widget::operate(scope(
+                iced::widget::Id::new(DIALOG_ID),
+                focusable::focus_previous::<()>(),
+            ))
+            .discard();
+        }
         Message::FocusNext => return iced::widget::operation::focus_next(),
         Message::FocusPrevious => return iced::widget::operation::focus_previous(),
         // The whole tree surveyed, then the scale factor read, then written.
@@ -4415,6 +4436,10 @@ const SWATCH_SIZE: f32 = 16.0;
 /// when the palette opens.
 const PALETTE_QUERY_ID: &str = "showcase-palette-query";
 
+/// The `widget::Id` of the open dialog's container ([`dialog`]), to which
+/// Tab and Shift+Tab keep the focus while it is open.
+const DIALOG_ID: &str = "showcase-dialog";
+
 /// The side-panel width the splitter leaves at `at`, the pointer's distance
 /// from the body's left edge: at least [`PANEL_MIN_WIDTH`], and at most the
 /// window's `width` less [`PANEL_MIN_WIDTH`] for the page.
@@ -4493,6 +4518,8 @@ fn shortcut(event: iced::keyboard::Event) -> Option<Message> {
             "," => Some(Message::Open(Overlay::Preferences)),
             _ => None,
         },
+        // `update_at` keeps the move inside an open dialog, whose Tab order
+        // a native modal dialog keeps to itself.
         Key::Named(Named::Tab) => Some(if modifiers.shift() {
             Message::FocusPrevious
         } else {
@@ -8945,6 +8972,7 @@ fn dialog(state: &State, overlay: Overlay) -> Element<'_, Message> {
         ],
         space().width(Length::Fixed(min_width)),
     ])
+    .id(DIALOG_ID)
     .padding(padding)
     .width(Fill)
     .max_width(native_theme_iced::dialog_max_width(resolved))
@@ -17654,6 +17682,7 @@ mod tests {
     use iced::mouse;
     use iced::{Event, Point, Rectangle, Settings, Size};
     use iced_test::Simulator;
+    use iced_test::runtime::UserInterface;
     use iced_test::selector::{self, Candidate};
     use native_theme_iced::icons::animated_frames_to_svg_handles_for;
     use std::collections::BTreeSet;
@@ -25851,12 +25880,13 @@ mod tests {
     #[test]
     fn the_focused_field_draws_the_themes_ring_round_it() {
         let mut faults = Vec::new();
+        // (preset, the keyboard rule set to `None`, the ring expected)
         let runs = [
-            ("macos-tahoe", false),
-            ("windows-11", true),
-            ("windows-11", false),
+            ("macos-tahoe", false, true),
+            ("windows-11", true, true),
+            ("windows-11", false, false),
         ];
-        for (preset, rule_off) in runs {
+        for (preset, rule_off, ringed) in runs {
             for mode in [AppColorMode::Light, AppColorMode::Dark] {
                 let mut state = page_state(preset, Tab::Basic);
                 assert!(
@@ -25866,7 +25896,11 @@ mod tests {
                 if rule_off {
                     state.current_resolved.defaults.focus_ring_keyboard_only = None;
                 }
-                let ringed = state.current_resolved.defaults.focus_ring_keyboard_only != Some(true);
+                assert_eq!(
+                    state.current_resolved.defaults.focus_ring_keyboard_only != Some(true),
+                    ringed,
+                    "{preset} {mode:?}: the keyboard rule is not as the run expects"
+                );
                 let d = state.current_resolved.defaults.clone();
                 let (image, rects, scale) = frame_after(
                     &state,
@@ -32491,8 +32525,10 @@ mod tests {
 
     /// Tab sends [`Message::FocusNext`] and Shift+Tab
     /// [`Message::FocusPrevious`], which `update_at` turns into iced's own
-    /// `focus_next` and `focus_previous` operations, where the menus are the
-    /// window's and where they are the system menu bar's.
+    /// `focus_next` and `focus_previous` operations (kept inside an open
+    /// dialog, `tab_with_a_dialog_open_keeps_the_focus_in_the_dialog`),
+    /// where the menus are the window's and where they are the system menu
+    /// bar's.
     #[test]
     fn tab_moves_the_focus_with_iceds_operations() {
         use iced::keyboard::{Key, Location, Modifiers, key};
@@ -32520,6 +32556,112 @@ mod tests {
                 );
             });
         }
+    }
+
+    /// `view(state)` built at the window's size over a headless renderer, as
+    /// [`Simulator`] builds it (iced_test 0.14.0 `src/simulator.rs:60-93`),
+    /// with the renderer, so a test can run operations over it.
+    fn operable(
+        state: &State,
+    ) -> (
+        UserInterface<'_, Message, iced::Theme, iced::Renderer>,
+        iced::Renderer,
+    ) {
+        use iced::advanced::renderer::Headless;
+        let settings = Settings::default();
+        let backend = std::env::var("ICED_TEST_BACKEND").ok();
+        let mut renderer =
+            iced_test::futures::futures::executor::block_on(<iced::Renderer as Headless>::new(
+                iced::Font::with_name("Fira Sans"),
+                settings.default_text_size,
+                backend.as_deref(),
+            ))
+            .expect("a headless renderer");
+        let ui = UserInterface::build(
+            view(state),
+            Size::new(WINDOW_SIZE.0, WINDOW_SIZE.1),
+            iced_test::runtime::user_interface::Cache::default(),
+            &mut renderer,
+        );
+        (ui, renderer)
+    }
+
+    /// The widget operation `task` runs first, run over `ui` as iced's
+    /// runtime runs one: again with each operation its `finish` chains to
+    /// (iced_winit 0.14.0 `src/lib.rs:1745-1758`).
+    fn run_operation(
+        ui: &mut UserInterface<'_, Message, iced::Theme, iced::Renderer>,
+        renderer: &iced::Renderer,
+        task: iced::Task<Message>,
+    ) {
+        use iced::advanced::widget::operation::Outcome;
+        use iced_test::futures::futures::StreamExt;
+        let stream = iced_test::runtime::task::into_stream(task);
+        let first =
+            stream.and_then(|mut s| iced_test::futures::futures::executor::block_on(s.next()));
+        let Some(iced_test::runtime::Action::Widget(operation)) = first else {
+            panic!("the task runs no widget operation");
+        };
+        let mut current = Some(operation);
+        while let Some(mut operation) = current.take() {
+            ui.operate(renderer, operation.as_mut());
+            if let Outcome::Chain(next) = operation.finish() {
+                current = Some(next);
+            }
+        }
+    }
+
+    /// How many widgets of `ui` hold the keyboard focus: in the whole tree,
+    /// and inside the open dialog's container ([`DIALOG_ID`]).
+    fn focused_in_and_out(
+        ui: &mut UserInterface<'_, Message, iced::Theme, iced::Renderer>,
+        renderer: &iced::Renderer,
+    ) -> (usize, usize) {
+        use iced::advanced::widget::Operation;
+        use iced::advanced::widget::operation::{self, Outcome};
+        use iced_test::Selector;
+        let count = |outcome: Outcome<Vec<_>>| match outcome {
+            Outcome::Some(found) => found.len(),
+            _ => 0,
+        };
+        let mut all = selector::is_focused().find_all();
+        ui.operate(renderer, &mut operation::black_box(&mut all));
+        let mut inside = operation::scope(
+            iced::widget::Id::new(DIALOG_ID),
+            selector::is_focused().find_all(),
+        );
+        ui.operate(renderer, &mut operation::black_box(&mut inside));
+        (count(all.finish()), count(inside.finish()))
+    }
+
+    /// With a dialog open, Tab and Shift+Tab keep the keyboard focus inside
+    /// it, as a native modal dialog keeps its Tab order: the page is the
+    /// window and the dialog in a stack, and iced's `Stack::operate` walks
+    /// every layer (iced_widget 0.14.2 `src/stack.rs:210-229`), so a move
+    /// over the whole tree would focus a widget of the window under the
+    /// dialog, which `opaque` hands the keys on to (`src/helpers.rs:671-682`).
+    /// The command palette open with nothing focused: Tab focuses a widget,
+    /// and every focused widget is inside the dialog; after Shift+Tab every
+    /// focused widget still is.
+    #[test]
+    fn tab_with_a_dialog_open_keeps_the_focus_in_the_dialog() {
+        let mut state = page_state("macos-tahoe", Tab::Basic);
+        state.overlay = Some(Overlay::CommandPalette);
+        let next = update(&mut state, Message::FocusNext);
+        let previous = update(&mut state, Message::FocusPrevious);
+        let (mut ui, renderer) = operable(&state);
+        assert_eq!(
+            focused_in_and_out(&mut ui, &renderer),
+            (0, 0),
+            "a widget is focused at first"
+        );
+        run_operation(&mut ui, &renderer, next);
+        let (all, inside) = focused_in_and_out(&mut ui, &renderer);
+        assert!(all > 0, "Tab focused nothing");
+        assert_eq!(all, inside, "Tab focused a widget outside the dialog");
+        run_operation(&mut ui, &renderer, previous);
+        let (all, inside) = focused_in_and_out(&mut ui, &renderer);
+        assert_eq!(all, inside, "Shift+Tab focused a widget outside the dialog");
     }
 
     /// The chrome does what the gpui showcase's does: the key bindings the
