@@ -240,6 +240,11 @@ pub struct CheckboxTheme {
     /// Checkbox background on hover.
     #[theme(category = "soft_option")]
     pub hover_background: Option<Rgba>,
+    /// Border colour of a check box's or a radio button's indicator under the
+    /// pointer, checked or not. `None` where the theme states none; a connector
+    /// then keeps the border at rest (docs/platform-facts.md §2.5).
+    #[theme(category = "soft_option")]
+    pub hover_border_color: Option<Rgba>,
     /// Checkbox background when disabled; `None`, the enabled box of its
     /// state (checked or unchecked).
     #[theme(category = "soft_option")]
@@ -562,7 +567,14 @@ pub struct SidebarTheme {
 
 // ── 2.13 Toolbar ─────────────────────────────────────────────────────────────
 
-/// Toolbar sizing, spacing, and font.
+/// Toolbar sizing, spacing, font, and its buttons' states.
+///
+/// The four `button_*` fields are the platform's toolbar-button look. A
+/// platform may give that look to some of a toolbar's buttons only (GNOME to
+/// image, image-text and arrow buttons; a button with a text label alone keeps
+/// the ordinary button's look, libadwaita 1.10.0 `_toolbars.scss:2-8`); an
+/// application applies the connector's toolbar-button style to those buttons,
+/// and the ordinary button's style to the others.
 #[serde_with::skip_serializing_none]
 #[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde(default)]
@@ -587,6 +599,27 @@ pub struct ToolbarTheme {
     #[serde(rename = "icon_size_px")]
     #[theme(check = "non_negative", inherit_from = "defaults.icon_sizes.toolbar")]
     pub icon_size: Option<f32>,
+    /// Fill of a toolbar button under the pointer, painted over the toolbar:
+    /// a translucent colour is a layer, a transparent one paints nothing.
+    /// `None` where the theme states none: a connector draws the hover as it
+    /// draws a flat button's (docs/platform-facts.md §2.13).
+    #[theme(category = "soft_option")]
+    pub button_hover_background: Option<Rgba>,
+    /// Outline of a toolbar button under the pointer, and while it is pressed.
+    /// `None` where the theme states none: a connector draws the outline as it
+    /// draws a flat button's (docs/platform-facts.md §2.13).
+    #[theme(category = "soft_option")]
+    pub button_hover_border_color: Option<Rgba>,
+    /// Fill of a toolbar button while it is pressed, painted over the toolbar.
+    /// `None` where the theme states none: a connector draws it as it draws a
+    /// pressed flat button (docs/platform-facts.md §2.13).
+    #[theme(category = "soft_option")]
+    pub button_active_background: Option<Rgba>,
+    /// Fill of a toolbar button that is checked (a toggle that is on), painted
+    /// over the toolbar. `None` where the theme states none: a connector draws
+    /// it as it draws a selected flat button (docs/platform-facts.md §2.13).
+    #[theme(category = "soft_option")]
+    pub button_checked_background: Option<Rgba>,
     /// Toolbar label font specification.
     #[theme(nested, resolved_type = "ResolvedFontSpec")]
     pub font: Option<FontSpec>,
@@ -953,6 +986,11 @@ pub struct ComboBoxTheme {
     /// ComboBox background on hover.
     #[theme(category = "soft_option")]
     pub hover_background: Option<Rgba>,
+    /// Border colour of the trigger under the pointer. `None` where the theme
+    /// states none; a connector then keeps the border at rest
+    /// (docs/platform-facts.md §2.24).
+    #[theme(category = "soft_option")]
+    pub hover_border_color: Option<Rgba>,
     /// ComboBox background when disabled; `None`, the enabled background.
     #[theme(category = "soft_option")]
     pub disabled_background: Option<Rgba>,

@@ -394,6 +394,15 @@ padding_vertical_px = 0.0
 bar_height_px = 48.0
 # platform-facts.md:1391 (§2.13): WinUI3 0
 item_gap_px = 0.0
+# platform-facts.md (§2.13): AppBarButtonBackgroundPointerOver = SubtleFillColorSecondary (AppBarButton_themeresources.xaml:6
+# at microsoft-ui-xaml 8463f45)
+button_hover_background = "#00000009"
+# button_hover_border_color not stated: platform-facts.md (§2.13), (none), AppBarButtonBorderBrushPointerOver is transparent
+# platform-facts.md (§2.13): AppBarButtonBackgroundPressed = SubtleFillColorTertiary (AppBarButton_themeresources.xaml:7)
+button_active_background = "#00000006"
+# platform-facts.md (§2.13): AppBarToggleButtonBackgroundChecked = AccentFillColorDefault = SystemAccentColorDark1, #0067c0
+# for the accent above (AppBarToggleButton_themeresources.xaml:9)
+button_checked_background = "#0067c0"
 
 
 [light.toolbar.border]
@@ -1037,6 +1046,15 @@ padding_vertical_px = 0.0
 bar_height_px = 48.0
 # platform-facts.md:1391 (§2.13): WinUI3 0
 item_gap_px = 0.0
+# platform-facts.md (§2.13): AppBarButtonBackgroundPointerOver = SubtleFillColorSecondary (AppBarButton_themeresources.xaml:6
+# at microsoft-ui-xaml 8463f45)
+button_hover_background = "#ffffff0f"
+# button_hover_border_color not stated: platform-facts.md (§2.13), (none), AppBarButtonBorderBrushPointerOver is transparent
+# platform-facts.md (§2.13): AppBarButtonBackgroundPressed = SubtleFillColorTertiary (AppBarButton_themeresources.xaml:7)
+button_active_background = "#ffffff0a"
+# platform-facts.md (§2.13): AppBarToggleButtonBackgroundChecked = AccentFillColorDefault = SystemAccentColorLight2, #4cc2ff
+# for the accent above (AppBarToggleButton_themeresources.xaml:9)
+button_checked_background = "#4cc2ff"
 
 
 [dark.toolbar.border]

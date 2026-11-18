@@ -1301,11 +1301,8 @@ model, the platform presets and the three connectors
         pressed thumb left this list in D7, 2026-10-26: the reader now writes
         them from the colour scheme, and it cannot be right while the preset
         states another value; the rest of this entry stays for 1.0, M8-76):
-        `checkbox.hover_background` `#93cee9`
-        (`kde-breeze.toml` `[light.checkbox] hover_background`,
-        `[dark.checkbox] hover_background`; §2.5: no hover fill, a
-        `DecorationFocus` ring); `slider.thumb_hover_color`
-        `#93cee9` (`[light.slider] thumb_hover_color`,
+        `slider.thumb_hover_color` `#93cee9`
+        (`kde-breeze.toml` `[light.slider] thumb_hover_color`,
         `[dark.slider] thumb_hover_color`; §2.9: the `Button` fill, #fcfcfc /
         #292c30, hover being an outline), `slider.disabled_fill_color`,
         `disabled_track_color` and `disabled_thumb_color`
@@ -1318,10 +1315,7 @@ model, the platform presets and the three connectors
         (`[light.switch] hover_checked_background, hover_unchecked_background, disabled_checked_background, disabled_unchecked_background`
         and the same four in `[dark.switch]`; §2.21: hover changes borders
         only; disabled #e6e7e8 / #26292c checked, #e9e9e9 / #2e3135
-        unchecked); `combo_box.hover_background` `#93cee9`
-        (`[light.combo_box] hover_background`,
-        `[dark.combo_box] hover_background`; §2.24: no hover fill);
-        `segmented_control.hover_background`
+        unchecked); `segmented_control.hover_background`
         (`[light.segmented_control] hover_background`,
         `[dark.segmented_control] hover_background`; §2.25: the tab bar's
         proxy, #3daee933); `expander.arrow_color` `#232629` / `#fcfcfc`
@@ -1335,9 +1329,8 @@ model, the platform presets and the three connectors
         and the popover's (§2.16: #c2c5c9 / #474c51, 1); `link.active_text_color`
         (§2.28: `Qt.darker`, #14405c / #0e4d79); the progress bar's padding
         (§2.10: 0).
-        *Issue #4 (0.7.1):* kde-breeze's `checkbox.hover_background`,
-        `slider.thumb_hover_color` and `combo_box.hover_background` wait for Breeze's
-        hover outlines, the step proposed after 0.7.1 (*KDE: what a Qt application under
+        *Issue #4 (0.7.1):* kde-breeze's `slider.thumb_hover_color` waits for Breeze's
+        hover outline, the step proposed after 0.7.1 (*KDE: what a Qt application under
         Breeze shows that native-theme does not (issue #4)*, "What Breeze draws that the
         model has no field for"): removing a hover fill first would remove the only
         hover feedback.
@@ -1814,14 +1807,13 @@ From issue #4's second comment, `docs/issues/0004_kde-hand-overrides-rationale.m
 offscreen, `docs/evidence/breeze-offscreen/2026-11-13/`.
 
 - [ ] [v0.7.x] **What Breeze draws that the model has no field for.** Breeze shows
-      hover on a combo box, a check box and a slider handle by recolouring the outline,
-      never the fill (open-items rationale D6; a button's outline is in the model since
-      0.7.2). The kde-breeze hover fills that stand in for an outline wait for their
-      fields, since removing them first would remove the only hover feedback:
-      `kde-breeze.toml` `[light.checkbox] hover_background`,
-      `[light.slider] thumb_hover_color`, `[light.combo_box] hover_background` and their
-      dark twins, listed in *Presets: values the M8 T15 platform-facts rows disagree
-      with*. Breeze also draws, with no field yet: a toolbar button's states (hover a
+      hover on a slider handle by recolouring the outline, never the fill (open-items
+      rationale D6, which leaves the handle out; the outlines of a button, a check box,
+      a radio and a combo box are in the model since 0.7.2). kde-breeze's hover fill of
+      the slider handle stands in for that outline until the model has it, since
+      removing it first would remove the only hover feedback: `kde-breeze.toml`
+      `[light.slider] thumb_hover_color` and its dark twin, listed in *Presets: values
+      the M8 T15 platform-facts rows disagree with*. Breeze also draws, with no field yet: a toolbar button's states (hover a
       1 px `Highlight` outline, pressed `Highlight` at 0.3, checked `ButtonText` at 0.125,
       `breezehelper.cpp:665-712`); a hovered menu item's 1 px outline,
       `mix(focusColor, WindowText, 0.15)` (`breezehelper.cpp:172-175`), #399acc /
@@ -1862,6 +1854,14 @@ offscreen, `docs/evidence/breeze-offscreen/2026-11-13/`.
       since 0.7.1 the hovered menu row follows the scheme's
       `[Colors:Window] ForegroundNormal`; Breeze letters a hovered row in
       `QPalette::Text`, the View set's `ForegroundNormal` (`docs/platform-facts.md:1436`).
+      *0.7.2 (2026-11-18):* the check box's, the radio's and the combo box's hover
+      outlines are `checkbox.hover_border_color` and `combo_box.hover_border_color` (D6
+      of `docs/issues/0004_kde-open-items-rationale.md`); kde-breeze's two stand-in fills
+      are gone. Under the pointer Breeze strokes the indicator's outline in the focus
+      colour on a radio button and on a checked control as on an unchecked check box, on
+      the rectangle the frame is drawn on (`Helper::renderCheckBox`,
+      `Helper::renderRadioButton`, `kstyle/breezehelper.cpp:895-907`, `:1041-1054` at
+      `f0b1d753`, read 2026-11-15).
 - [ ] [v0.7.x] **KDE values that wait for a connector design.** Each facts row below is
       corrected in 0.7.1; kde-breeze and the reader keep their present values, which
       disagree with it, until the readers named can take the platform's value without

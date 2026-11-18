@@ -376,6 +376,11 @@ fn switch_on_track(off: QtColor, highlight: Rgba) -> Rgba {
 /// docs/platform-facts.md §2.3).
 const CHECKED_BUTTON_MIX: f64 = 0.125;
 
+/// The alpha of the button text a checked flat Breeze button is filled
+/// with, `alphaColor(palette.buttonText().color(), 0.125)`
+/// (breezehelper.cpp:681-684 at breeze f0b1d75; docs/platform-facts.md §2.13).
+const FLAT_CHECKED_ALPHA: f32 = 0.125;
+
 /// How far a pressed, enabled, non-flat Breeze button's fill moves from
 /// `Button` towards `Highlight`: `KColorUtils::mix(palette.button().color(),
 /// highlightColor, Metrics::Blend_Value)`, the `qreal` 0.3
@@ -501,15 +506,18 @@ fn mid_shade(window: Rgba, contrast: i32) -> Rgba {
 /// Some colours Plasma computes from the scheme, and the reader computes
 /// them as Breeze, Kirigami and qqc2-desktop-style do, in Qt's arithmetic:
 /// the checked button, the checkbox and progress-bar blends, the switch
-/// tracks and outlines, the toolbar's fill and edge, the popover's and the
-/// card's edges, the menu's hover, separator and panel, the list's hover,
-/// the table's grid, the scroll bar's resting handle and the focus ring. The
-/// blends on the accent (the checked checkbox, the progress fill, the switch's
-/// on track and its outline, and the list's hover) come from kdeglobals'
+/// tracks and outlines, the toolbar's fill and edge, a toolbar button's
+/// pressed and checked fills, the popover's and the card's edges, the menu's
+/// hover, separator and panel, the list's hover, the table's grid, the scroll
+/// bar's resting handle and the focus ring. The blends on the accent (the
+/// checked checkbox, the progress fill, the switch's on track and its outline,
+/// the list's hover, and the toolbar button's pressed fill) come from kdeglobals'
 /// `[Colors:Selection] BackgroundNormal`, so an application's `with_overlay` accent or the
 /// portal's (`gnome::apply_kde_accent`, applied by `GnomePortalKdeReader`) does
-/// not move them. The menu's hover comes from `[Colors:View] DecorationFocus`,
-/// so the same holds for it. The focus ring is the selection colour at
+/// not move them. The menu's hover and the check box's hover outline come from
+/// `[Colors:View] DecorationFocus`, so the same holds for them. The combo box's
+/// and the toolbar button's hover pen is `[Colors:Selection] BackgroundNormal`
+/// as it is. The focus ring is the selection colour at
 /// `Blend_Value`; the KDE portal's accent replaces it (`gnome::apply_kde_accent`).
 ///
 /// The toolbar takes the Header set's fill as Breeze paints it where the
@@ -627,7 +635,9 @@ pub(crate) fn populate_colors(ini: &configparser::ini::Ini, variant: &mut crate:
     // unchecked indicator with the button colour and outlines it in
     // `separatorColor()`; a checked one is that fill under the selection
     // colour at `Metrics::Blend_Value`, outlined in the selection colour; the
-    // mark is the text colour.
+    // mark is the text colour; under the pointer the indicator's outline is
+    // stroked in `focusColor()`, `[Colors:View] DecorationFocus`
+    // (breezehelper.cpp:895-907 at breeze f0b1d75).
     let button_bg = get_color(ini, "Colors:Button", "BackgroundNormal");
     variant.checkbox.unchecked_background = button_bg;
     variant.checkbox.checked_background = button_bg
@@ -640,6 +650,7 @@ pub(crate) fn populate_colors(ini: &configparser::ini::Ini, variant: &mut crate:
     variant.checkbox.unchecked_border_color = get_color(ini, "Colors:Window", "BackgroundNormal")
         .zip(window_fg)
         .map(|(window, text)| mix(window, text, frame_contrast(ini)));
+    variant.checkbox.hover_border_color = view_focus;
 
     // Slider (docs/platform-facts.md §2.9): Breeze fills the handle with the
     // button colour (breezestyle.cpp:8122 at breeze f0b1d75).
@@ -732,6 +743,16 @@ pub(crate) fn populate_colors(ini: &configparser::ini::Ini, variant: &mut crate:
     {
         variant.toolbar.border.get_or_insert_default().color = Some(edge);
     }
+    // A flat toolbar button (docs/platform-facts.md §2.13): under the pointer,
+    // focused or pressed its pen is `Highlight`; pressed it is filled with
+    // `Highlight` at `Blend_Value`, checked with the button text at 0.125
+    // (breezehelper.cpp:679-691, :710-712 at breeze f0b1d75). Its hover fill,
+    // transparent, is the preset's alone.
+    variant.toolbar.button_hover_border_color = selection_bg;
+    variant.toolbar.button_active_background =
+        selection_bg.map(|highlight| translucent(highlight, BLEND_VALUE));
+    variant.toolbar.button_checked_background =
+        button_fg.map(|text| translucent(text, FLAT_CHECKED_ALPHA));
 
     // Popover (docs/platform-facts.md §2.16): its fill and text inherit the
     // window's, as qqc2-desktop-style's Popup fills the Window set's; its edge
@@ -758,11 +779,14 @@ pub(crate) fn populate_colors(ini: &configparser::ini::Ini, variant: &mut crate:
         variant.card.border.get_or_insert_default().color = Some(edge);
     }
 
-    // Combo box (docs/platform-facts.md §2.24): the Button set.
+    // Combo box (docs/platform-facts.md §2.24): the Button set, and under the
+    // pointer the pen `Highlight`, `[Colors:Selection] BackgroundNormal`
+    // (breezehelper.cpp:710-712 at breeze f0b1d75).
     variant.combo_box.background_color = button_bg;
     if let Some(color) = button_fg {
         variant.combo_box.font.get_or_insert_default().color = Some(color);
     }
+    variant.combo_box.hover_border_color = selection_bg;
 
     // Menu (docs/platform-facts.md §2.6): the panel is `frameBackgroundColor()`,
     // the window moved towards the view by `Blend_Value`; the text is the
@@ -1631,6 +1655,93 @@ ForegroundNormal=239,240,241
         assert_eq!(v.button.focus_border_color, Some(Rgba::rgb(200, 40, 90)));
     }
 
+    /// The check box's hover outline is the scheme's `DecorationFocus`, the
+    /// combo box's and a toolbar button's hover pen its selection colour, a
+    /// toolbar button's pressed fill that colour at `Blend_Value` and its
+    /// checked fill the button text at 0.125 (docs/platform-facts.md §2.5,
+    /// §2.13, §2.24), on a scheme whose colours are not Breeze's: both Breeze
+    /// schemes give `DecorationFocus` and the selection the same #3daee9.
+    #[test]
+    fn a_custom_scheme_moves_the_hover_borders() {
+        let [light, _] = breeze_light_and_dark();
+        let breeze = populate_fixture(&light);
+        let custom = breeze_menu_list_groups("230,220,200", "90,40,20", "200,180,150", "60,20,10")
+            .replace(
+                "[Colors:Selection]\nBackgroundNormal=61,174,233",
+                "[Colors:Selection]\nBackgroundNormal=200,40,90",
+            )
+            .replace("DecorationFocus=61,174,233", "DecorationFocus=20,200,90");
+        let v = populate_fixture(&custom);
+        assert_eq!(v.checkbox.hover_border_color, Some(Rgba::rgb(20, 200, 90)));
+        assert_eq!(v.combo_box.hover_border_color, Some(Rgba::rgb(200, 40, 90)));
+        assert_eq!(
+            v.toolbar.button_hover_border_color,
+            Some(Rgba::rgb(200, 40, 90))
+        );
+        assert_eq!(
+            v.toolbar.button_active_background,
+            Some(Rgba::new(200, 40, 90, 0x4d))
+        );
+        assert_eq!(
+            v.toolbar.button_checked_background,
+            Some(Rgba::new(60, 20, 10, 0x20))
+        );
+        for (field, ours, breezes) in [
+            (
+                "checkbox.hover_border_color",
+                v.checkbox.hover_border_color,
+                breeze.checkbox.hover_border_color,
+            ),
+            (
+                "combo_box.hover_border_color",
+                v.combo_box.hover_border_color,
+                breeze.combo_box.hover_border_color,
+            ),
+            (
+                "toolbar.button_hover_border_color",
+                v.toolbar.button_hover_border_color,
+                breeze.toolbar.button_hover_border_color,
+            ),
+            (
+                "toolbar.button_active_background",
+                v.toolbar.button_active_background,
+                breeze.toolbar.button_active_background,
+            ),
+            (
+                "toolbar.button_checked_background",
+                v.toolbar.button_checked_background,
+                breeze.toolbar.button_checked_background,
+            ),
+        ] {
+            assert_ne!(ours, breezes, "{field}: the custom scheme did not reach it");
+        }
+    }
+
+    /// A flat Breeze toolbar button's states (docs/platform-facts.md §2.13):
+    /// the pen `Highlight` under the pointer, `Highlight` at `Blend_Value`
+    /// pressed, the button text at 0.125 checked; the transparent hover fill
+    /// is the preset's alone.
+    #[test]
+    fn test_toolbar_button_states_are_breezes() {
+        let [light, dark] = breeze_light_and_dark();
+        for (content, checked) in [
+            (light, Rgba::new(0x23, 0x26, 0x29, 0x20)),
+            (dark, Rgba::new(0xfc, 0xfc, 0xfc, 0x20)),
+        ] {
+            let v = populate_fixture(&content);
+            assert_eq!(
+                v.toolbar.button_hover_border_color,
+                Some(Rgba::rgb(0x3d, 0xae, 0xe9))
+            );
+            assert_eq!(
+                v.toolbar.button_active_background,
+                Some(Rgba::new(0x3d, 0xae, 0xe9, 0x4d))
+            );
+            assert_eq!(v.toolbar.button_checked_background, Some(checked));
+            assert_eq!(v.toolbar.button_hover_background, None);
+        }
+    }
+
     /// Breeze's keyboard focus band is the selection colour at `Blend_Value`
     /// (docs/platform-facts.md §2.1.5), not `DecorationFocus`, which stays the
     /// caret's, opaque: under Breeze Light and Dark, and under a scheme whose two
@@ -1699,6 +1810,11 @@ ForegroundNormal=239,240,241
         assert!(v.scrollbar.thumb_color.is_none());
         assert!(v.list.header_background.is_none());
         assert!(v.list.header_font.is_none());
+        assert!(v.checkbox.hover_border_color.is_none());
+        assert!(v.combo_box.hover_border_color.is_some());
+        assert!(v.toolbar.button_hover_border_color.is_some());
+        assert!(v.toolbar.button_active_background.is_some());
+        assert!(v.toolbar.button_checked_background.is_none());
 
         let v = populate_fixture("[Colors:Window]\nBackgroundNormal=239,240,241\n");
         assert!(v.menu.separator_color.is_none());
@@ -1706,6 +1822,10 @@ ForegroundNormal=239,240,241
         assert!(v.list.hover_background.is_none());
         assert!(v.menu.hover_background.is_none());
         assert!(v.menu.hover_text_color.is_none());
+        assert!(v.combo_box.hover_border_color.is_none());
+        assert!(v.toolbar.button_hover_border_color.is_none());
+        assert!(v.toolbar.button_active_background.is_none());
+        assert!(v.toolbar.button_checked_background.is_none());
     }
 
     /// A table's grid is `QPalette::Mid`, the window's `MidShade` at the
@@ -1990,6 +2110,26 @@ DecorationFocus=61,174,233
         assert!(
             v.combo_box.font.as_ref().and_then(|f| f.color).is_some(),
             "combo_box.font.color missing"
+        );
+        assert!(
+            v.checkbox.hover_border_color.is_some(),
+            "checkbox.hover_border_color missing"
+        );
+        assert!(
+            v.combo_box.hover_border_color.is_some(),
+            "combo_box.hover_border_color missing"
+        );
+        assert!(
+            v.toolbar.button_hover_border_color.is_some(),
+            "toolbar.button_hover_border_color missing"
+        );
+        assert!(
+            v.toolbar.button_active_background.is_some(),
+            "toolbar.button_active_background missing"
+        );
+        assert!(
+            v.toolbar.button_checked_background.is_some(),
+            "toolbar.button_checked_background missing"
         );
         assert!(
             v.menu.font.as_ref().and_then(|f| f.color).is_some(),

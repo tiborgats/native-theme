@@ -416,6 +416,7 @@ fields = [
     "input.focus_border_color",        # platform-specific focus border
     "input.disabled_background",       # platform-specific disabled bg
     "checkbox.hover_background",       # platform-specific hover bg
+    "checkbox.hover_border_color",       # None: the border at rest stays (§2.5)
     "checkbox.disabled_background",    # platform-specific disabled bg
     "checkbox.unchecked_background",   # platform-specific unchecked indicator bg
     "checkbox.unchecked_border_color", # platform-specific unchecked border
@@ -439,10 +440,16 @@ fields = [
     "switch.disabled_checked_track_border_color", # None: the enabled outline (§2.21)
     "switch.thumb_border_color",       # None: no thumb outline, all but KDE (§2.21)
     "combo_box.hover_background",      # platform-specific hover bg
+    "combo_box.hover_border_color",      # None: the border at rest stays (§2.24)
     "combo_box.disabled_background",   # platform-specific disabled bg
     "segmented_control.hover_background", # platform-specific hover bg
     "expander.hover_background",       # platform-specific hover bg
     "expander.arrow_color",            # platform-specific arrow/chevron color
+    # toolbar buttons (D7)
+    "toolbar.button_hover_background",   # None: the flat button's hover (§2.13)
+    "toolbar.button_hover_border_color", # None: the flat button's outline (§2.13)
+    "toolbar.button_active_background",  # None: the flat button's pressed fill (§2.13)
+    "toolbar.button_checked_background", # None: the flat button's selected fill (§2.13)
     # soft_option sizes, enums, flags and the tooltip delay: stay None where the
     # platform states none
     "defaults.focus_ring_keyboard_only", # None: the connectors' ring on any focus; KDE, Windows, Material keyboard only, iOS any (§2.1.5)

@@ -290,7 +290,7 @@ fn arb_input_theme() -> impl Strategy<Value = InputTheme> {
 
 fn arb_checkbox_theme() -> impl Strategy<Value = CheckboxTheme> {
     (
-        proptest::collection::vec(proptest::option::of(arb_rgba()), 7..=7),
+        proptest::collection::vec(proptest::option::of(arb_rgba()), 8..=8),
         proptest::option::of(1.0f32..50.0),
         proptest::option::of(1.0f32..50.0),
         proptest::option::of(0.0f32..50.0),
@@ -313,6 +313,7 @@ fn arb_checkbox_theme() -> impl Strategy<Value = CheckboxTheme> {
                 disabled_opacity: dis_op,
                 disabled_text_color: colors[3],
                 hover_background: colors[4],
+                hover_border_color: colors[7],
                 disabled_background: colors[5],
                 unchecked_background: colors[6],
                 unchecked_border_color: colors[3],

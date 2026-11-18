@@ -288,6 +288,15 @@ padding_vertical_px = 2.0
 # bar_height not stated: platform-facts.md:1390 (§2.13), .toolbar sets no min-height
 # platform-facts.md:1391 (§2.13): Adwaita CSS .toolbar border-spacing 6
 item_gap_px = 6.0
+# platform-facts.md (§2.13): the toolbar look of an image, image-text or arrow button (_toolbars.scss:2-8):
+# :hover, $hover_color, the window text #000006cc at 7 %, a layer (_colors.scss:268, _buttons.scss:250-251 at
+# libadwaita 1.10.0)
+button_hover_background = "#0000060e"
+# button_hover_border_color not stated: platform-facts.md (§2.13), (none), a toolbar button draws no border
+# platform-facts.md (§2.13): :active, $active_color, the window text at 16 % (_colors.scss:269, _buttons.scss:254-256)
+button_active_background = "#00000621"
+# platform-facts.md (§2.13): :checked, the window text at 10 % (_colors.scss:270, _buttons.scss:259-260)
+button_checked_background = "#00000614"
 
 
 [light.toolbar.border]
@@ -727,6 +736,15 @@ padding_vertical_px = 2.0
 # bar_height not stated: platform-facts.md:1390 (§2.13), .toolbar sets no min-height
 # platform-facts.md:1391 (§2.13): Adwaita CSS .toolbar border-spacing 6
 item_gap_px = 6.0
+# platform-facts.md (§2.13): the toolbar look of an image, image-text or arrow button (_toolbars.scss:2-8):
+# :hover, $hover_color, the window text #ffffff at 7 %, a layer (_colors.scss:268, _buttons.scss:250-251 at
+# libadwaita 1.10.0)
+button_hover_background = "#ffffff12"
+# button_hover_border_color not stated: platform-facts.md (§2.13), (none), a toolbar button draws no border
+# platform-facts.md (§2.13): :active, $active_color, the window text at 16 % (_colors.scss:269, _buttons.scss:254-256)
+button_active_background = "#ffffff29"
+# platform-facts.md (§2.13): :checked, the window text at 10 % (_colors.scss:270, _buttons.scss:259-260)
+button_checked_background = "#ffffff1a"
 
 
 [dark.toolbar.border]

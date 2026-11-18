@@ -359,6 +359,9 @@ fn apply_sys_colors(variant: &mut crate::ThemeMode, colors: &SysColors) {
     // (ToggleButton_themeresources.xaml:69, :81; generic.xaml:2055, :2067).
     variant.button.checked_background = Some(colors.highlight);
     variant.button.checked_text_color = Some(colors.highlight_text);
+    // AppBarToggleButtonBackgroundChecked = SystemColorHighlightColorBrush
+    // (AppBarToggleButton_themeresources.xaml:74).
+    variant.toolbar.button_checked_background = Some(colors.highlight);
     // TextBox_themeresources.xaml's HighContrast dictionary leaves out the three keys:
     // TextControlBackground = SystemControlBackgroundAltMediumLowBrush (generic.xaml:2652,
     // :2008), TextControlForeground = SystemControlForegroundBaseHighBrush (:2648, :2039),
@@ -549,6 +552,10 @@ fn build_theme(
     let primary_bg = if dark { light2 } else { dark1 }.unwrap_or(accent);
     variant.button.primary_background = Some(primary_bg);
     variant.button.checked_background = Some(primary_bg);
+    // A checked toolbar button: AppBarToggleButtonBackgroundChecked =
+    // AccentFillColorDefaultBrush (AppBarToggleButton_themeresources.xaml:9;
+    // docs/platform-facts.md §2.13).
+    variant.toolbar.button_checked_background = Some(primary_bg);
     // Every accent control is filled with the same `AccentFillColorDefault`: a checked
     // checkbox and radio, an on switch, a slider's value and a progress bar
     // (CheckBox_themeresources.xaml:233, RadioButton_themeresources.xaml:146,
@@ -921,8 +928,9 @@ mod tests {
     ];
 
     /// The fields the accent fill reaches beside the buttons: the five accent
-    /// controls' fills, the spinner's among them, and the focused text box's line.
-    fn accent_fills(v: &crate::ThemeMode) -> [(&'static str, Option<crate::Rgba>); 6] {
+    /// controls' fills, the spinner's among them, the focused text box's line,
+    /// and a checked toolbar button's fill.
+    fn accent_fills(v: &crate::ThemeMode) -> [(&'static str, Option<crate::Rgba>); 7] {
         [
             ("checkbox.checked_background", v.checkbox.checked_background),
             ("switch.checked_background", v.switch.checked_background),
@@ -930,6 +938,10 @@ mod tests {
             ("progress_bar.fill_color", v.progress_bar.fill_color),
             ("spinner.fill_color", v.spinner.fill_color),
             ("input.focus_border_color", v.input.focus_border_color),
+            (
+                "toolbar.button_checked_background",
+                v.toolbar.button_checked_background,
+            ),
         ]
     }
 

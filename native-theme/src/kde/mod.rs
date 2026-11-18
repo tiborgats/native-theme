@@ -1264,9 +1264,9 @@ BackgroundNormal=49,54,59
         contrast: Some("4"),
     };
 
-    /// The thirty-four colour leaves the reader derives from, or reads
+    /// The thirty-nine colour leaves the reader derives from, or reads
     /// directly from, the colour scheme.
-    fn derived_leaves(mode: &crate::ThemeMode) -> [(&'static str, Option<Rgba>); 34] {
+    fn derived_leaves(mode: &crate::ThemeMode) -> [(&'static str, Option<Rgba>); 39] {
         let border = |b: &Option<crate::WidgetBorderSpec>| b.as_ref().and_then(|b| b.color);
         let sw = &mode.switch;
         [
@@ -1328,11 +1328,31 @@ BackgroundNormal=49,54,59
             ("defaults.focus_ring_color", mode.defaults.focus_ring_color),
             ("button.hover_border_color", mode.button.hover_border_color),
             ("button.focus_border_color", mode.button.focus_border_color),
+            (
+                "checkbox.hover_border_color",
+                mode.checkbox.hover_border_color,
+            ),
+            (
+                "combo_box.hover_border_color",
+                mode.combo_box.hover_border_color,
+            ),
+            (
+                "toolbar.button_hover_border_color",
+                mode.toolbar.button_hover_border_color,
+            ),
+            (
+                "toolbar.button_active_background",
+                mode.toolbar.button_active_background,
+            ),
+            (
+                "toolbar.button_checked_background",
+                mode.toolbar.button_checked_background,
+            ),
         ]
     }
 
     /// The same leaves resolved.
-    fn resolved_leaves(theme: &crate::ResolvedTheme) -> [(&'static str, Option<Rgba>); 34] {
+    fn resolved_leaves(theme: &crate::ResolvedTheme) -> [(&'static str, Option<Rgba>); 39] {
         let sw = &theme.switch;
         [
             (
@@ -1402,6 +1422,26 @@ BackgroundNormal=49,54,59
             ),
             ("button.hover_border_color", theme.button.hover_border_color),
             ("button.focus_border_color", theme.button.focus_border_color),
+            (
+                "checkbox.hover_border_color",
+                theme.checkbox.hover_border_color,
+            ),
+            (
+                "combo_box.hover_border_color",
+                theme.combo_box.hover_border_color,
+            ),
+            (
+                "toolbar.button_hover_border_color",
+                theme.toolbar.button_hover_border_color,
+            ),
+            (
+                "toolbar.button_active_background",
+                theme.toolbar.button_active_background,
+            ),
+            (
+                "toolbar.button_checked_background",
+                theme.toolbar.button_checked_background,
+            ),
         ]
     }
 
@@ -1449,8 +1489,9 @@ BackgroundNormal=49,54,59
 
     /// Another accent moves the switch's on track, hovered or not, and its
     /// outline, the pressed button and the selected segment, the list's
-    /// hover, the focus ring and the button's hover and focus border; the
-    /// checkbox and the progress bar follow it as before.
+    /// hover, the focus ring and the button's hover and focus border, the
+    /// combo box's hover pen, and a toolbar button's hover pen and pressed
+    /// fill; the checkbox and the progress bar follow it as before.
     #[test]
     fn an_accent_moves_the_on_track_the_pressed_button_the_selected_segment_and_the_list_hover()
     -> crate::Result<()> {
@@ -1470,6 +1511,9 @@ BackgroundNormal=49,54,59
                 "defaults.focus_ring_color",
                 "button.hover_border_color",
                 "button.focus_border_color",
+                "combo_box.hover_border_color",
+                "toolbar.button_hover_border_color",
+                "toolbar.button_active_background",
             ]
         );
         Ok(())
@@ -1497,6 +1541,7 @@ BackgroundNormal=49,54,59
                 "button.active_background",
                 "list.header_background",
                 "list.header_font.color",
+                "toolbar.button_checked_background",
             ]
         );
         Ok(())
@@ -1578,7 +1623,8 @@ BackgroundNormal=49,54,59
 
     /// The View set's decorations (D7): DecorationHover moves a hovered
     /// field's frame, the tab hover and the scroll-bar handle, DecorationFocus
-    /// a focused field's frame and the menu's hover.
+    /// a focused field's frame, the menu's hover and the check box's hover
+    /// outline.
     #[test]
     fn the_view_decorations_move_the_frames_the_tab_hover_and_the_handle() -> crate::Result<()> {
         let hover = Scheme {
@@ -1600,7 +1646,11 @@ BackgroundNormal=49,54,59
         };
         assert_eq!(
             moved_leaves(&focus)?,
-            ["input.focus_border_color", "menu.hover_background"]
+            [
+                "input.focus_border_color",
+                "menu.hover_background",
+                "checkbox.hover_border_color",
+            ]
         );
         Ok(())
     }

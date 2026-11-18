@@ -474,6 +474,8 @@ min_height_px = 56.0
 min_width_px = 210.0
 # platform-facts.md:1619 (§2.24): text-field-trailing-icon-size 24 (_md-comp-outlined-select.scss:261)
 arrow_icon_size_px = 24.0
+# platform-facts.md (§2.24): text-field-hover-outline-color = on-surface (_md-comp-outlined-select.scss:168-169)
+hover_border_color = "#1d1b20"
 disabled_text_color = "#1d1b2061"
 
 [light.combo_box.font]
@@ -995,6 +997,8 @@ min_height_px = 56.0
 min_width_px = 210.0
 # platform-facts.md:1619 (§2.24): text-field-trailing-icon-size 24 (_md-comp-outlined-select.scss:261)
 arrow_icon_size_px = 24.0
+# platform-facts.md (§2.24): text-field-hover-outline-color = on-surface (_md-comp-outlined-select.scss:168-169)
+hover_border_color = "#e6e0e9"
 disabled_text_color = "#e6e0e961"
 
 [dark.combo_box.font]

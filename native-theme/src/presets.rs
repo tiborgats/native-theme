@@ -480,6 +480,95 @@ accent_color = "#00ff00"
         }
     }
 
+    /// The hover outlines of the check box and the combo box: stated where
+    /// docs/platform-facts.md gives the platform's value as one colour for
+    /// every state the field covers (§2.5, §2.24).
+    #[test]
+    fn hover_outlines_are_stated_where_the_facts_give_them() {
+        let platform_presets = &[
+            "kde-breeze",
+            "adwaita",
+            "windows-11",
+            "macos-monterey",
+            "macos-tahoe",
+            "material-3",
+            "ios-13",
+        ];
+        for name in platform_presets {
+            let theme = preset(name).unwrap();
+            for (label, variant_opt) in [
+                ("light", theme.light.as_ref()),
+                ("dark", theme.dark.as_ref()),
+            ] {
+                let variant = variant_opt.unwrap();
+                assert_eq!(
+                    variant.checkbox.hover_border_color.is_some(),
+                    matches!(*name, "kde-breeze"),
+                    "preset '{name}' {label}.checkbox.hover_border_color: stated only where \
+                     platform-facts gives it"
+                );
+                assert_eq!(
+                    variant.combo_box.hover_border_color.is_some(),
+                    matches!(*name, "kde-breeze" | "material-3"),
+                    "preset '{name}' {label}.combo_box.hover_border_color: stated only where \
+                     platform-facts gives it"
+                );
+            }
+        }
+    }
+
+    /// A toolbar button's states: stated where the facts give them as one
+    /// colour for everything they cover (docs/platform-facts.md §2.13).
+    #[test]
+    fn toolbar_button_states_are_stated_where_the_facts_give_them() {
+        let platform_presets = &[
+            "kde-breeze",
+            "adwaita",
+            "windows-11",
+            "macos-monterey",
+            "macos-tahoe",
+            "material-3",
+            "ios-13",
+        ];
+        for name in platform_presets {
+            let theme = preset(name).unwrap();
+            for (label, variant_opt) in [
+                ("light", theme.light.as_ref()),
+                ("dark", theme.dark.as_ref()),
+            ] {
+                let variant = variant_opt.unwrap();
+                let fills = matches!(*name, "adwaita" | "kde-breeze" | "windows-11");
+                for (key, value) in [
+                    (
+                        "button_hover_background",
+                        variant.toolbar.button_hover_background,
+                    ),
+                    (
+                        "button_active_background",
+                        variant.toolbar.button_active_background,
+                    ),
+                    (
+                        "button_checked_background",
+                        variant.toolbar.button_checked_background,
+                    ),
+                ] {
+                    assert_eq!(
+                        value.is_some(),
+                        fills,
+                        "preset '{name}' {label}.toolbar.{key}: stated only where \
+                         platform-facts gives it"
+                    );
+                }
+                assert_eq!(
+                    variant.toolbar.button_hover_border_color.is_some(),
+                    matches!(*name, "kde-breeze"),
+                    "preset '{name}' {label}.toolbar.button_hover_border_color: stated only \
+                     where platform-facts gives it"
+                );
+            }
+        }
+    }
+
     // === resolve()/validate() integration tests (PRESET-03) ===
 
     #[test]

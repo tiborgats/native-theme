@@ -205,7 +205,11 @@ label_gap_px = 4.0
 checked_background = "#c2e4f6"
 # platform-facts.md:1232 (§2.5): palette.text(), [Colors:View] ForegroundNormal
 indicator_color = "#232629"
-hover_background = "#93cee9"
+# hover_background not stated: platform-facts.md (§2.5), Breeze adds no fill under the pointer: the box keeps
+# palette.button() (breezehelper.cpp:862 at breeze f0b1d75)
+# platform-facts.md (§2.5): focusColor(), [Colors:View] DecorationFocus 61,174,233 (BreezeLight.colors:116,
+# breeze v6.7.5): under the pointer the box's or radio's outline is stroked in it, checked or not (breezehelper.cpp:895-907, :1041-1054 at breeze f0b1d75)
+hover_border_color = "#3daee9"
 # platform-facts.md:1119 (§2.1.6): Disabled [Colors:Button] BackgroundNormal (the box) / [Colors:Window] ForegroundNormal (the label), KColorScheme 6.31.0
 disabled_background = "#f0f0f0"
 disabled_text_color = "#a0a1a3"
@@ -393,6 +397,18 @@ background_color = "#dee0e2"
 # bar_height not stated: platform-facts.md:1390 (§2.13), (none), sizes to content
 # platform-facts.md:1391 (§2.13): ToolBar_ItemSpacing = 0
 item_gap_px = 0.0
+# platform-facts.md (§2.13): a hovered flat button's fill is alphaColor(Highlight, 0), nothing (breezehelper.cpp:688-691
+# at breeze f0b1d75); its hover shows as the outline below
+button_hover_background = "#00000000"
+# platform-facts.md (§2.13): [Colors:Selection] BackgroundNormal 61,174,233 (BreezeLight.colors:87, breeze v6.7.5), the pen
+# of a hovered, focused or pressed flat button (breezehelper.cpp:710-712 at breeze f0b1d75)
+button_hover_border_color = "#3daee9"
+# platform-facts.md (§2.13): Highlight at Blend_Value 0.3, a layer (breezehelper.cpp:679-680, :40; breezemetrics.h:176 at
+# breeze f0b1d75)
+button_active_background = "#3daee94d"
+# platform-facts.md (§2.13): [Colors:Button] ForegroundNormal 35,38,41 (BreezeLight.colors:39, breeze v6.7.5) at 0.125
+# (breezehelper.cpp:681-684 at breeze f0b1d75)
+button_checked_background = "#23262920"
 
 
 [light.toolbar.border]
@@ -541,7 +557,11 @@ min_width_px = 120.0
 # platform-facts.md:1619 (§2.24): renderArrow draws min(w, h, ArrowSize = 10) in the 20px arrow column
 arrow_icon_size_px = 10.0
 arrow_area_width_px = 20.0
-hover_background = "#93cee9"
+# hover_background not stated: platform-facts.md (§2.24), ← background_color: a non-editable combo box's hover
+# turns only its pen Highlight (breezehelper.cpp:710-712 at breeze f0b1d75)
+# platform-facts.md (§2.24): [Colors:Selection] BackgroundNormal 61,174,233 (BreezeLight.colors:87, breeze v6.7.5),
+# Highlight, the pen of a hovered button frame (breezehelper.cpp:710-712 at breeze f0b1d75)
+hover_border_color = "#3daee9"
 # platform-facts.md:1119 (§2.1.6): Disabled [Colors:Button] BackgroundNormal / ForegroundNormal, KColorScheme 6.31.0
 disabled_background = "#f0f0f0"
 disabled_text_color = "#a8a9aa"
@@ -802,7 +822,11 @@ label_gap_px = 4.0
 checked_background = "#2f5368"
 # platform-facts.md:1232 (§2.5): palette.text(), [Colors:View] ForegroundNormal
 indicator_color = "#fcfcfc"
-hover_background = "#93cee9"
+# hover_background not stated: platform-facts.md (§2.5), Breeze adds no fill under the pointer: the box keeps
+# palette.button() (breezehelper.cpp:862 at breeze f0b1d75)
+# platform-facts.md (§2.5): focusColor(), [Colors:View] DecorationFocus 61,174,233 (BreezeDark.colors:117,
+# breeze v6.7.5): under the pointer the box's or radio's outline is stroked in it, checked or not (breezehelper.cpp:895-907, :1041-1054 at breeze f0b1d75)
+hover_border_color = "#3daee9"
 # platform-facts.md:1119 (§2.1.6): Disabled [Colors:Button] BackgroundNormal (the box) / [Colors:Window] ForegroundNormal (the label), KColorScheme 6.31.0
 disabled_background = "#272a2e"
 disabled_text_color = "#686a6c"
@@ -992,6 +1016,18 @@ background_color = "#292c30"
 # bar_height not stated: platform-facts.md:1390 (§2.13), (none), sizes to content
 # platform-facts.md:1391 (§2.13): ToolBar_ItemSpacing = 0
 item_gap_px = 0.0
+# platform-facts.md (§2.13): a hovered flat button's fill is alphaColor(Highlight, 0), nothing (breezehelper.cpp:688-691
+# at breeze f0b1d75); its hover shows as the outline below
+button_hover_background = "#00000000"
+# platform-facts.md (§2.13): [Colors:Selection] BackgroundNormal 61,174,233 (BreezeDark.colors:88, breeze v6.7.5), the pen
+# of a hovered, focused or pressed flat button (breezehelper.cpp:710-712 at breeze f0b1d75)
+button_hover_border_color = "#3daee9"
+# platform-facts.md (§2.13): Highlight at Blend_Value 0.3, a layer (breezehelper.cpp:679-680, :40; breezemetrics.h:176 at
+# breeze f0b1d75)
+button_active_background = "#3daee94d"
+# platform-facts.md (§2.13): [Colors:Button] ForegroundNormal 252,252,252 (BreezeDark.colors:40, breeze v6.7.5) at 0.125
+# (breezehelper.cpp:681-684 at breeze f0b1d75)
+button_checked_background = "#fcfcfc20"
 
 
 [dark.toolbar.border]
@@ -1140,7 +1176,11 @@ min_width_px = 120.0
 # platform-facts.md:1619 (§2.24): renderArrow draws min(w, h, ArrowSize = 10) in the 20px arrow column
 arrow_icon_size_px = 10.0
 arrow_area_width_px = 20.0
-hover_background = "#93cee9"
+# hover_background not stated: platform-facts.md (§2.24), ← background_color: a non-editable combo box's hover
+# turns only its pen Highlight (breezehelper.cpp:710-712 at breeze f0b1d75)
+# platform-facts.md (§2.24): [Colors:Selection] BackgroundNormal 61,174,233 (BreezeDark.colors:88, breeze v6.7.5),
+# Highlight, the pen of a hovered button frame (breezehelper.cpp:710-712 at breeze f0b1d75)
+hover_border_color = "#3daee9"
 # platform-facts.md:1119 (§2.1.6): Disabled [Colors:Button] BackgroundNormal / ForegroundNormal, KColorScheme 6.31.0
 disabled_background = "#272a2e"
 disabled_text_color = "#6d6f72"
