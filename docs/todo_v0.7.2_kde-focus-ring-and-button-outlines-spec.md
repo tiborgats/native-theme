@@ -1374,6 +1374,13 @@ key binding inserts a character only where the key's text has one that is no con
 character (`IW/text_editor.rs:1220-1223`), and an event no binding takes is not
 captured (`:733-756`).
 
+Decided in the build after a review (2026-11-18): while a dialog is open, Tab and
+Shift+Tab move the focus inside the dialog's container only, since iced's
+`Stack::operate` walks every layer and `opaque` passes keys down, so the focus reached
+the hidden window (iced_widget 0.14.2 `src/stack.rs:210-229`, `:262-264`); and both
+wrap straight round, as the platforms' Tab order does, since iced's `focus_next` leaves
+one step with nothing focused. Commits `ee76403a` and `6fb9b415`.
+
 ### 2F.6 Comments that become false
 
 - `CI/styles.rs:575`: "outside the edge (offset 0 or more: KDE's +2, Windows' +1),
@@ -1420,7 +1427,10 @@ captured (`:733-756`).
     `src/data/key.rs:253-274`), which egui-winit sends as `Event::Key` presses
     (egui-winit 0.37.0 `src/lib.rs:1797-1804`, pushed at `:1155-1161` from `:1128`), so a
     modifier pressed alone
-    is no key, as in iced (2F.1) and gpui (decision 4); `PointerButton { pressed: true, .. }`
+    is no key, as in iced (2F.1) and gpui (decision 4); `Key::CapsLock` and
+    `Key::NumLock` are excluded too, as gpui's `is_modifier_key` (xkeysym 0.2.1)
+    excludes them, decision 4 giving the three connectors gpui's classes of event
+    (commit `bc6154d9`); `PointerButton { pressed: true, .. }`
     and `Touch { phase: egui::TouchPhase::Start, .. }` clear `key_last` and set
     `pointer_now`; `PointerMoved(_)` and every other `Touch { .. }` clear `key_last`;
     every other event changes nothing (decision 4).

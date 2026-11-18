@@ -1915,6 +1915,20 @@ and many have since drifted, as the archive's [README](README.md) warns.
       the archive at the next prune.
   Archived 2026-10-17 (M8 T21): ticked in c0fa1b02.
 
+- [x] [1.0] Two focus claims hold only while `Theme::focus_ring` is on — the
+      Switch panel's ring and the DataTable panel's keyboard-focus line: with
+      it off a bordered element's border is tinted instead
+      (`styled.rs:269-271`). Every bundled preset turns it on
+      (focus_ring_width > 0), so nothing is false today; branch the claims as
+      the Carousel panel does if a preset ever states 0.
+  *Closed (0.7.2, 2026-11-18, 0a6b7d1c):* the DataTable panel's keyboard-focus line was
+  already conditional ("with the focus ring outside it where the theme's focus_ring
+  is on", in `connectors/native-theme-gpui/examples/showcase-gpui/info/data.rs`),
+  and the Switch panel's ring claim is now branched on `t.focus_ring`, as
+  the Carousel panel's is; kde-breeze, windows-11 and material-3 show gpui-component's
+  band only for a focus that followed a key
+  (`docs/issues/0004_kde-open-items-rationale.md` D4).
+
 ### Connectors: `native` and `watch` passthrough features in gpui and egui
 
 - [x] [v0.7.0] For M6/M7 (ruling M5-02, 2026-10-14): the iced connector

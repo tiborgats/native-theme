@@ -522,9 +522,12 @@ cannot tell which file a bare number continues, so it does not look for one.
       *Issue #4 (2026-11-13):* KDE answered from Breeze `f0b1d753`: the keyboard-focus
       band surrounds a line edit, text edit, spin box, combo box, push or tool button
       whole, from 1 px inside to 1 px outside (`breezestyle.cpp:6642-6651`), and a check
-      box's or radio button's indicator or a slider's handle alone (`:6652-6708`); KDE's
-      ring values wait in *KDE: what a Qt application under Breeze shows that
-      native-theme does not (issue #4)*, "KDE values that wait for a connector design".
+      box's or radio button's indicator or a slider's handle alone (`:6652-6708`).
+      kde-breeze and the KDE reader state Breeze's band since 0.7.2; the question of the
+      part it surrounds stays, and so does what Breeze draws on a keyboard-focused tab:
+      the facts' list of the widgets that get the band names no tab bar
+      (`docs/platform-facts.md` §2.1.5, `focus_ring_color`, KDE), while
+      `widgets::TabBar` draws the band inside the tab.
 - [ ] [1.0] Open question: does a Windows 11 text box show the system focus
       visual at all? `docs/platform-facts.md` §2.1.5 gives WinUI's focus
       visual (`focus_ring_*`) and §2.4 Text Input (`:1219`), for the
@@ -1810,19 +1813,16 @@ From issue #4's second comment, `docs/issues/0004_kde-hand-overrides-rationale.m
 `v6.8.2`), KColorScheme at `27066d47`; "measured" is Breeze 6.8.2 under Qt 6.12,
 offscreen, `docs/evidence/breeze-offscreen/2026-11-13/`.
 
-- [ ] [v0.7.x] **What Breeze draws that the model has no field for.** First, as the next
-      0.7.x step, "Breeze's hover and focus outlines", with a rationale of its own:
-      Breeze shows hover on a button, a combo box, a check box and a slider handle by
-      recolouring the outline, never the fill (a non-flat button's pen turns `Highlight`
-      on hover, keyboard focus or press, `breezehelper.cpp:710-712`), and the model has
-      `hover_border_color` and `focus_border_color` for text inputs only, so on KDE a
-      connector's button shows no hover at all. The kde-breeze hover fills that stand in
-      for an outline wait for it, since removing them first would remove the only hover
-      feedback: `kde-breeze.toml` `[light.checkbox] hover_background`,
+- [ ] [v0.7.x] **What Breeze draws that the model has no field for.** Breeze shows
+      hover on a combo box, a check box and a slider handle by recolouring the outline,
+      never the fill (open-items rationale D6; a button's outline is in the model since
+      0.7.2). The kde-breeze hover fills that stand in for an outline wait for their
+      fields, since removing them first would remove the only hover feedback:
+      `kde-breeze.toml` `[light.checkbox] hover_background`,
       `[light.slider] thumb_hover_color`, `[light.combo_box] hover_background` and their
       dark twins, listed in *Presets: values the M8 T15 platform-facts rows disagree
-      with*. The same step takes: a toolbar button's states (hover a 1 px `Highlight`
-      outline, pressed `Highlight` at 0.3, checked `ButtonText` at 0.125,
+      with*. Breeze also draws, with no field yet: a toolbar button's states (hover a
+      1 px `Highlight` outline, pressed `Highlight` at 0.3, checked `ButtonText` at 0.125,
       `breezehelper.cpp:665-712`); a hovered menu item's 1 px outline,
       `mix(focusColor, WindowText, 0.15)` (`breezehelper.cpp:172-175`), #399acc /
       #5abaec (measured); a hovered list row's 1 px outline, `Highlight` at alpha 0.8
@@ -1865,33 +1865,7 @@ offscreen, `docs/evidence/breeze-offscreen/2026-11-13/`.
 - [ ] [v0.7.x] **KDE values that wait for a connector design.** Each facts row below is
       corrected in 0.7.1; kde-breeze and the reader keep their present values, which
       disagree with it, until the readers named can take the platform's value without
-      another surface losing. (1) **The focus ring**,
-      `docs/platform-facts.md:1108-1110`: Breeze's keyboard-focus `QFocusFrame` is a
-      band 2 px wide of `Highlight` at alpha 0.3, #3daee94d in both schemes, from 1 px
-      inside a line edit's, spin box's, combo box's or button's rectangle to 1 px
-      outside it (offset −1), drawn only after Tab, Backtab or a shortcut; a pointer
-      focus only recolours a line edit's own frame (`focusColor()`), and a button's
-      frame turns `Highlight` on keyboard focus (`breezestyle.cpp:1648-1674`,
-      `:6614-6781`; `PM_FocusFrameHMargin` 2 measured). kde-breeze states #3daee9, width
-      1, offset 2 with no source (`kde-breeze.toml`
-      `[light.defaults] focus_ring_color, focus_ring_width_px, focus_ring_offset_px`,
-      `[dark.defaults] focus_ring_color, focus_ring_width_px, focus_ring_offset_px`). It
-      waits because gpui-component's one `ring` colour is both a focused element's
-      tinted border and the band, whose alpha it sets itself (`styled.rs:249-327`,
-      0.9.1): a translucent ring would make a focused text field's border faint, and
-      taking the input's focus border colour for `ring` would change Windows, whose two
-      colours differ; and because gpui-component's buttons, inputs and check boxes and
-      the iced and egui connectors' rings show on every focus, a click included. GPUI
-      can tell the two (`Window::last_input_was_keyboard`, gpui-pre 0.3.12
-      `src/window.rs:3641-3644`); whether iced or egui can was not read. A design over
-      every platform and three connectors, with *GPUI Kit, from issue #4*'s request (4).
-      When the ring takes #3daee94d, `docs/inheritance-rules.toml`'s KDE caret rule
-      (`[per_platform."input.caret_color"]`, `kde = "defaults.focus_ring_color"`) needs
-      another source: the caret is `DecorationFocus`, opaque
-      (`docs/platform-facts.md:1209`). Which part of a control the band surrounds:
-      *platform-facts: which part of a control the focus ring surrounds*. Until then an
-      application that wants no band on a click turns gpui's ring off (the gpui README's
-      overrides section).
+      another surface losing. (1) **The focus ring**: done in 0.7.2 (below).
       (2) **The default button**, `docs/platform-facts.md:1188-1189`: Breeze fills the
       active window's default button with `mix(Button, Highlight, 0.2)`, #d6ecf8 /
       #2d4655, outlined #87c0dd / #4882a1, under the ordinary `ButtonText`, #232629 /
@@ -1934,6 +1908,15 @@ offscreen, `docs/evidence/breeze-offscreen/2026-11-13/`.
       `separator.line_color`; the iced connector's menu bar lies on the window and
       its menus and drop-downs take the popover's frame on the menu's fill; egui
       fills every popup with the menu's colour.
+      *Issue #4, open items step 2 (0.7.2, 2026-11-18, b1fc42ba):*
+      (1) done (`docs/issues/0004_kde-open-items-rationale.md` D4). kde-breeze and the
+      KDE reader state Breeze's band, the selection colour at alpha 0.3, 2 px from 1 px
+      inside the control to 1 px outside (`kde-breeze.toml`
+      `[light.defaults] focus_ring_color`, `[dark.defaults] focus_ring_color`), and
+      `defaults.focus_ring_keyboard_only` says KDE shows it for keyboard focus only:
+      the iced and egui connectors and the gpui connector's own controls draw it after
+      a key, and the gpui connector draws gpui-component's band only for a focus
+      that followed a key.
 - [ ] [v0.7.x] **Qt Quick's menu fill, for the facts.** `docs/platform-facts.md`
       §2.6's KDE `background_color` cell states a Qt Widgets menu's panel, `mix(Window, Base, 0.3)`, which kde-breeze and
       the KDE reader follow since 0.7.1, and marks Qt Quick's as not read. Read and
@@ -1961,6 +1944,14 @@ offscreen, `docs/evidence/breeze-offscreen/2026-11-13/`.
       menu's border a border of its own kind, which the model does not give it
       today (`native-theme/src/model/widgets/mod.rs`, `MenuTheme`). Not part of
       `docs/issues/0004_kde-open-items-rationale.md`'s step 1.
+- [ ] [v0.7.x] **The focus ring's keyboard rule on GNOME and macOS.**
+      `defaults.focus_ring_keyboard_only` is unset for adwaita and the macOS presets
+      (`docs/platform-facts.md`, `focus_ring_keyboard_only`). GNOME shows its ring for
+      keyboard focus with a time-out of 3 s (gtk 4.24.1 `gtkwindow.c:195`,
+      `:6347-6349`), which a yes or no cannot carry; and whether a libadwaita text
+      field shows its ring after a click was not read. macOS's rule is pending in the
+      parked facts (U331, U611). Read both; then decide whether the model needs the
+      time-out.
 - [ ] [v0.7.x] **The selection of a view without the focus, KDE and macOS, and its
       missing text colour.** Breeze's schemes set
       `[ColorEffects:Inactive] ChangeSelectionColor`, so a selected row in an unfocused
@@ -2016,6 +2007,36 @@ offscreen, `docs/evidence/breeze-offscreen/2026-11-13/`.
       no field for a box inset inside its cell. egui 0.37's cap, 6 on a 20 box, draws
       either value as stated (`docs/todo_v0.7.2_egui-0.37-rationale.md`, §1.5 C and
       E7); see also *Checkbox: the check box's own corner radius*.
+- [ ] [v0.7.x] **macOS: the button's hover fill.** `docs/platform-facts.md`'s
+      `button.hover_background` macOS cell gives a measured 'subtle CoreUI highlight'
+      on 14–15 and ❓ on 26, while the parked facts record that hover draws nothing on a
+      macOS 26 push button (`docs/facts/macos/state-models.toml:1-3` at `78ee0efd`, OS
+      probe run 40969040283). Re-read both and correct the cell.
+- [ ] [v0.7.x] **gpui showcase: the toggle that is on claims a hover and press look it
+      does not paint.** `demo::toggle_button`
+      (`connectors/native-theme-gpui/examples/showcase-gpui/demo.rs:9166-9202` at
+      `0fa28027`, as every line of the connector's files below) builds its info as an
+      idle `ButtonKind::Default` Button's (`:9174-9181`), so it claims the Default
+      Button's rest fill `button` (`info/buttons.rs:20-25`), its hover and press fills
+      `button_hover` and `button_active` (`:164-177`), its hover and press border
+      `input` (`:353-358`) and, in the idle edge note, a repaint in `input` under the
+      pointer (`:534-535`), while the Button is `.selected(true)`
+      (`demo.rs:9193-9199`): gpui-component paints a selected Button in its selected
+      style, `tokens.button_active` (`gpui-component 0.10.0 button/button.rs:1343`) or
+      `geometry::button_checked`'s fill where the theme states one, and gives it no
+      hover or press style (`:733-765`); under a native theme its label is
+      `button_checked`'s colour, not the claimed `button_foreground`
+      (`info/buttons.rs:26-31`). Until this is done, its Widget Info shows the true
+      "not reachable" line 0.7.2 added for `button.hover_border_color` beside the old
+      false claim "border, hovered or pressed" in `input`. Give it a selected Button's
+      info, as `native_ghost_selected` (`info/buttons.rs:629-652`) does for a selected
+      Ghost.
+- [ ] [v0.7.x] **gpui showcase: its other `Default` buttons do not take the theme's
+      hover border.** On kde-breeze only the Basic page's default, tooltip and
+      toggle-off buttons are built with `variants::bordered_button`; the iced and egui
+      showcases outline every button. Build the showcase's own buttons through
+      `ButtonKind::Bordered`, but the Buttons page's row that shows gpui-component's
+      `Default` variant by name.
 
 ### Dialog: the platform's vertical placement
 
@@ -2064,6 +2085,11 @@ KColorScheme 8bb948c4, to be re-pinned to the release tags `platform-facts.md` u
       (`native-theme/src/kde/colors.rs:493` at caeddd6b), KDE derives it through
       `[ColorEffects:Disabled]` (`kcolorscheme.cpp:21-56`). (8) `input.caret_color`: Qt
       may draw the line edit's caret in the text colour, not `DecorationFocus`; to measure.
+      kde-breeze states no `input.caret_color`, so the preset's caret is
+      `defaults.text_color`, the text colour, while the reader writes `DecorationFocus`
+      (`native-theme/src/kde/colors.rs`, the Input block); the rule in
+      `docs/inheritance-rules.toml` names `DecorationFocus` since 0.7.2. Measure, then
+      state one of the two in the preset.
       (9) `defaults.focus_ring_*`: Breeze's focus frame is a filled ring between two
       rounded rectangles, `Highlight` at `Blend_Value` 0.3 (`breezestyle.cpp:6770-6786`,
       `kstyle/breezemetrics.h:176`), not a 1.001 px stroke; its width is to read there.
@@ -2077,6 +2103,9 @@ KColorScheme 8bb948c4, to be re-pinned to the release tags `platform-facts.md` u
       application under Breeze shows that native-theme does not (issue #4)*, "The
       selection of a view without the focus" and "KDE values that wait for a connector
       design". (2), (5), (7) and (8) stay open here.
+      *Issue #4 (0.7.2, 2026-11-18, b1fc42ba):* (9) is fixed: kde-breeze and the reader
+      state Breeze's band, and the iced and egui connectors and the gpui connector's
+      own controls draw it only after a key press.
 - [ ] [v0.7.x] **GNOME** (libadwaita 1.10.0, `src/stylesheet/`; GTK 4.24.1). (1) The
       tooltip sets `box-shadow: none` (`widgets/_tooltip.scss:15`); the facts say it
       casts one. (2) Menu items are rounded, `$menu_radius` 9 (`widgets/_menus.scss:138`),
@@ -2788,6 +2817,8 @@ theme's radius past egui's cap, with a check box of its own in the widgets crate
       the two readings agree only for an opaque `ring`. The `Tab` now draws a ring
       of its own, 2 px inset at the full colour, on keyboard focus only
       (`src/tab/tab.rs:933`, `:962-973`).
+      *0.7.2:* where the theme says keyboard only the band is off (`colors.rs`,
+      `focus_band_on`) but for a focus that followed a key (`lib.rs`, `FocusBand`).
 - [ ] [upstream] gpui-component reads `tokens.tab`, `tokens.list`,
       `list_even`, `sidebar_primary` and `sidebar_primary_foreground`
       nowhere outside `theme/` in 0.8.0 (the connector's contract names
@@ -3155,7 +3186,11 @@ theme's radius past egui's cap, with a check box of its own in the widgets crate
       focus from the keyboard, which GPUI can tell (`Window::last_input_was_keyboard`);
       a text input keeps its tinted border on any focus, and a button's and a check
       box's border tint is keyboard-only too, as Breeze draws them
-      (`docs/platform-facts.md:1108-1110`). See also *the focus ring's width* above, and
+      (`docs/platform-facts.md:1108-1110`). Until then the connector switches the band
+      per focus where the theme says keyboard only (`defaults.focus_ring_keyboard_only`,
+      0.7.2), on for a focus that followed a key (a plugin of `Root`: `lib.rs`,
+      `FocusBand`); a `Tab`'s and a `Slider`'s own rings stay (gpui-component 0.10.0).
+      See also *the focus ring's width* above, and
       *KDE: what a Qt application under Breeze shows that native-theme does not
       (issue #4)*, "KDE values that wait for a connector design", (1).
       *GPUI Kit 0.9.1 (2026-11-17):* still so; written at 0.9.1 (2026-11-13), its lines
@@ -3720,13 +3755,6 @@ What is still open on the iced side:
       radii, five others). The audit of the Widget Info panels is complete:
       every "Not themeable" entry, colour claim and config line has now been
       read against the source that paints it.
-- [ ] [1.0] Two focus claims hold only while `Theme::focus_ring` is on — the
-      Switch panel's ring and the DataTable panel's keyboard-focus line: with
-      it off a bordered element's border is tinted instead
-      (`styled.rs:269-271`). Every bundled preset turns it on
-      (focus_ring_width > 0), so nothing is false today; branch the claims as
-      the Carousel panel does if a preset ever states 0.
-
 ##### What the audit turned up that is ours to fix
 
 Each of these is a real route the connector or the model does not take. They
@@ -4921,6 +4949,9 @@ The `[v0.7.0]` items that sat under *Deferred (pre-1.0)*, in the order they had 
 
 ### iced showcase: the macOS system menu goes in after the window opens
 - [ ] [v0.7.x] On macOS the iced showcase puts its menus into the system menu bar from `update`, on a message `boot`'s task sends (`system_menu` and `boot` in `connectors/native-theme-iced/examples/showcase-iced.rs`, M9b T17), which an `iced::application` runs once its window is open (`iced_winit-0.14.0/src/lib.rs:108-113`), so possibly after the window's first frame, and winit's default app menu can stand for that frame. Not in `boot`: iced 0.14 builds winit's event loop with winit's default menu on and offers no way to turn it off (`iced_winit-0.14.0/src/lib.rs:79-81`; the egui showcase turns it off through eframe's `event_loop_builder`, `with_default_menu(false)`), and winit installs that menu when the application has finished launching (`winit-0.30.13/src/platform_impl/macos/app_state.rs:139-143`), inside the event loop's run (`iced_winit-0.14.0/src/lib.rs:451`), which `boot` comes before (`:105`), so it would replace a menu `boot` installed. Proposal: run the showcase as an `iced::daemon`. A daemon opens no window of its own (`iced-0.14.0/src/daemon.rs:76-78`), so its boot task runs at once (`iced_winit-0.14.0/src/lib.rs:108-119`); an `update` on its message installs the menus and then opens the window (`window::open` with `main`'s and `capture_window_settings`' settings), `view`, `title` and `theme` take the `window::Id`, and the run exits on the window's close. The menus are then in before any window or frame exists, provided winit's launch handling, which installs its default menu, has run by the time `update` handles the boot task's message: that order is assumed here, not read from the sources, so when the entry is picked up, check that winit's launch handling cannot replace a daemon's menus. Not taken in M9b (controller's ruling, M9b T17 fix round 1): a daemon opens and closes its window itself, which changes the start, the exit and the window settings on every platform, for one frame of winit's menu on macOS that no capture shows.
+
+### iced showcase: nothing is focused after a dialog closes
+- [ ] [v0.7.x] When a dialog of the iced showcase closes, no widget has the focus, while a native dialog gives the focus back to the control that had it before the dialog opened. iced replaces the window's widget tree when the dialog's stack appears and again when it goes (`connectors/native-theme-iced/examples/showcase-iced.rs`), so the focus the window held before the dialog is not restored. Found 2026-11-18 in the review of unit 2.4 of 0.7.2's KDE step 2 (`d04051ca`, reviewed in `ee76403a`); not built in 0.7.2.
 
 ### macOS: the stated font family "SF Pro" is not a family iced's font database holds
 - [ ] [1.0] In the v0.5.9 CI screenshot of the iced showcase (`connectors/native-theme-iced/docs/assets/macos-macos-sonoma-light.png`, captured at `33fea0f7`) the inspector reads "Font: SF Pro (not found; drawn in generic sans-serif: .SF NS)": the family macos-sonoma states (`presets/macos-monterey.toml`, renamed from `macos-sonoma.toml` in 11017186, `[light.defaults.font] family` and `[dark.defaults.font] family`, and the reader's non-macOS testable build, the test fixtures `sample_widget_fonts`, `sample_light_defaults` and `sample_dark_defaults`, `macos.rs:590-661`) is not a family name in fontdb on `macos-latest`, which holds the system UI font as `.SF NS`, so iced reaches it only through cosmic-text's fallback list (`cosmic-text-0.15.0` `font/fallback/macos.rs:30-38`). "SF Pro" is the name `docs/platform-facts.md` §1 (`:63-71`) gives every system font, Apple's name for the typeface, not the name the font file declares. The live reader states `NSFont.familyName()` (`fontspec_from_nsfont`, `macos.rs:297-298`), which on a real Mac is presumably `.AppleSystemUIFont`; unverified, and whether iced (fontdb) or gpui (Core Text) resolve that name is not checked either. To decide: what family name a toolkit resolves the macOS system font by (fontdb family names on `macos-latest`, Core Text's name for `systemFontOfSize:`), whether the preset should state that name, keep "SF Pro" as the documented name with the connectors mapping it, or state none so the toolkit's system default stands; check it on the macOS CI runner rather than by assumption. gpui draws through Core Text, which may resolve "SF Pro" differently: check both connectors.

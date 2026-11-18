@@ -114,6 +114,40 @@ the model does not have yet. The reporter's remaining items, the focus ring and
 Breeze's hover outlines among them, are planned for later 0.7.x releases
 (`docs/issues/0004_kde-open-items-rationale.md`).
 
+## v0.7.2 — egui 0.37, GPUI Kit 0.10.0, and the focus ring and button outlines from issue #4
+
+**Delivered:** the egui connector and the egui widgets crate require egui
+0.37.0, and the gpui connector requires gpui-component, gpui-base and gpui-kit
+0.10.0 on gpui-pre 0.3.12 (on the `gpui-fast` feature, GPUI Fast 0.1.16 or
+later); an application on egui 0.36 or on GPUI Kit 0.9.1 stays on the
+connector's 0.7.1. The egui showcase shows egui 0.37's `RangeSlider`,
+`CompletionPopup` and `AtomLayout`, and every input in it has an accessible
+name; the gpui showcase shows GPUI Kit 0.10.0's searchable `Select` with its
+matches marked, the check boxes in the mixed state, a loading button without an
+icon and a `Clipboard`, each with its Widget Info.
+
+The model says whether a platform shows its focus ring only for a focus
+that came from the keyboard (`defaults.focus_ring_keyboard_only`): KDE, Windows and
+Material do, iOS shows it on any focus, and where a theme does not say (GNOME, whose
+rule has a time-out, macOS, the colour schemes) the connectors draw it as before. The
+iced and egui connectors and the gpui connector's own controls draw the ring only for a
+focus that followed a key press. gpui-component draws its band on a click as well and
+offers no way to turn that off, so the gpui connector sets its band per focus on those
+platforms, on for a focus that followed a key press and off after a click, through a
+plugin of gpui-base's `Root`; a focused control keeps its focused
+border, or a focus line (a borderless button but a link, a text or an upstream
+`.ghost()` one: a 1 px line in its text colour at 60 %); gpui-component's `Tab` and
+`Slider` keep rings of their own, which that switch does not reach. kde-breeze states
+Breeze's ring: the selection colour at 30 %, 2 px from 1 px inside the control to 1 px
+outside.
+
+The model also carries a button's outline under the
+pointer and with the keyboard focus, which Breeze turns to the highlight colour; kde-breeze states it, and no
+other bundled preset does. The egui connector draws both; the iced connector draws the
+hover border (an iced button takes no keyboard focus); the gpui connector offers a
+button variant with the hover border (a focused gpui-component button's border, where
+it has one, is its `ring`).
+
 ## Model completeness: what native-theme does not carry
 
 native-theme is to carry everything a platform draws visibly. It does not yet:
@@ -266,7 +300,7 @@ Gap analysis with citations: [`docs/todo_gpui-full-theme.md`](docs/todo_gpui-ful
 
 ## Also in the 0.7.x releases
 
-[`docs/todo.md`](docs/todo.md) tags 48 open items `[v0.7.x]`, follow-ups of
+[`docs/todo.md`](docs/todo.md) tags 74 open items `[v0.7.x]`, follow-ups of
 the v0.7.0 review that a 0.7 patch release takes beside the milestones
 above. Among them: the `ios-26` preset, iOS 26's Liquid Glass look, deferred
 while 38 of the values the resolver requires have no iOS 26 source;

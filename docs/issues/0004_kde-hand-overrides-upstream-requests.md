@@ -66,3 +66,14 @@ band be drawn only for keyboard focus, a text input keep its tinted border on
 any focus, and a button's and a check box's border tint be keyboard-only too?
 Hiding the whole focus style on a click, as `DataTable` does, would be wrong
 for a text input, whose focused border should show however it was focused.
+The decision would be taken when an element gains the focus, not at each
+paint: `last_input_was_keyboard` follows the last event
+(`src/window.rs:5873-5881`), so a band drawn from it at paint time would vanish
+at the next mouse move, as `DataTable`'s focus style does. Until then
+native-theme-gpui sets that switch (`Theme::focus_ring`) per focus for themes
+whose platform shows its ring for keyboard focus only, from a plugin of `Root`
+at each render of a window (0.7.2): on for a focus that followed a key, off
+otherwise. Two rings do not follow `Theme::focus_ring` at all: the `Slider`'s
+thumb ring (0.10.0 `src/slider.rs:228-238`), drawn while it has the focus
+however it got it, and the `Tab`'s (`src/tab/tab.rs:962-973`), which is already
+keyboard-only but through `focus_visible`, the every-paint rule.

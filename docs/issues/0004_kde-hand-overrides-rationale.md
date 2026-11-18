@@ -839,6 +839,12 @@ whole token mapping and stays private.
 
 ### 5.1 The focus ring
 
+*Settled by `0004_kde-open-items-rationale.md` D4 (0.7.2):
+kde-breeze and the KDE reader state Breeze's band; `defaults.focus_ring_keyboard_only`
+says KDE, Windows and Material show it for keyboard focus only, which the iced and
+egui connectors and the gpui connector's own controls follow, and the gpui connector
+shows gpui-component's band, where it is set, only for a focus that followed a key.*
+
 **Facts.** Breeze shows focus in two ways. It recolours the widget's own frame:
 a line edit's on any focus (`focusColor`), a button's on keyboard focus
 (`Highlight`), each 1 px. And, for a focus that came from the keyboard (Tab,
@@ -908,6 +914,14 @@ with their tables from `tools/kde-vectors`), to be carried over when the field
 gets its text colour.
 
 ### 5.4 Outlines: how Breeze shows hover and focus
+
+*Partly settled by `0004_kde-open-items-rationale.md` D5 (0.7.2): a button's border on
+hover and on keyboard focus (`button.hover_border_color`, `button.focus_border_color`),
+which kde-breeze and the KDE reader state; egui draws both; iced draws the hover
+border (an iced button takes no keyboard focus); gpui the hover border, through
+`variants::bordered_button`. The check box, the radio and the combo box are that
+rationale's D6, toolbar buttons and the table header its D7; the menu item's and the
+list row's outlines and the menu bar title stay in the backlog (its §0).*
 
 Breeze signals hover on a button, a combo box, a check box and a slider handle
 by recolouring the outline, never the fill. The model carries
@@ -1031,7 +1045,7 @@ and 3 above extend them with what was verified here.
 | A2 | track = window background | **changed** to no track, as Breeze paints (§4.3) |
 | A2 | thumb hover / pressed = selection | already right since 0.7.0: the hover decoration at half alpha |
 | B3 | scroll bar mode `Always` | the connector sets `Always` for Breeze, then and now. Not reproduced; the one path found to another mode is an `init` of gpui-component after `apply`, which the docs warn against |
-| B4 | `focus_ring = false` | a sound choice for now; documented (§4.8); the ring's values wait for a design (§5.1) |
+| B4 | `focus_ring = false` | **fixed in 0.7.2**: Breeze's ring values, drawn only after a key in the iced and egui connectors and the gpui connector's own controls; on KDE the gpui connector shows gpui-component's band for keyboard focus only, itself (open-items rationale D4), so the override is no longer needed |
 | B5 | `muted` = view background | the application's own use of a token; the view's colour is the theme's `list` and `table`. No change |
 | B6 | `popover` = window background | popups take the window colour since 0.7.0; Breeze's menu panel, `mix(Window, Base, 0.3)`, is kde-breeze's and the reader's since 0.7.1 (`0004_kde-open-items-rationale.md` D3). gpui-component paints a menu in its `popover` token, which stays the window colour, so in gpui the small difference remains |
 | B7 | `selection` opaque | **fixed**: restored after every rebuild (§4.6) |
@@ -1039,7 +1053,7 @@ and 3 above extend them with what was verified here.
 | B9 | `table_row_border` = alternate row colour | **fixed in 0.7.1** (`0004_kde-open-items-rationale.md` D2): `list.grid_color` is Qt's `Mid`, #c4c8cc / #1c1f21, which `table_row_border` takes; the override is no longer needed |
 | B10 | tokens set as well | not needed through `Theme::update`; documented (§4.8) |
 | B11 | scroll bar styles written again | the observer and its deferred re-write have done this since 0.6.0 |
-| C | button height, width, padding, border | sizes are in `geometry::button`, now pointed to (§4.8); the hover and focus border wait for §5.4 |
+| C | button height, width, padding, border | sizes are in `geometry::button`, now pointed to (§4.8); the hover and focus border: **fixed in 0.7.2**: egui draws both; iced draws the hover border (an iced button takes no keyboard focus); gpui: the hover border through the connector's `variants::bordered_button`, a focused button's border, where it has one, being gpui-component's `ring` |
 | C | pressed button fill | the model's since 0.7.0 |
 | C | disabled at 50 % opacity | not Breeze's: it dims by colour |
 | C | toolbar buttons, sort header | no fields (§5.4) |
