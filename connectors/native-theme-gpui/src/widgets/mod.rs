@@ -192,7 +192,9 @@ where
 /// element (as gpui-base's forwards it, a11y_disabled.rs:71-75). GPUI has no
 /// `aria_disabled`, and gpui-base's wrapper of this
 /// shape, `A11yDisabled` (gpui-base a11y_disabled.rs:13-144), which its own
-/// controls are marked with, is `pub(crate)` there (:13, :28).
+/// controls are marked with, is `pub(crate)` there (:13, :28). gpui-base's
+/// copy now gates its `IntoElement` on the core, as this one does (gpui-base
+/// 0.10.0 a11y_disabled.rs:63-70).
 struct A11yDisabled<E> {
     inner: E,
     disabled: bool,
@@ -210,6 +212,7 @@ impl<E: InteractiveElement> InteractiveElement for A11yDisabled<E> {
     }
 }
 
+#[cfg(not(feature = "gpui-fast"))]
 impl<E: Element> IntoElement for A11yDisabled<E> {
     type Element = Self;
 
@@ -300,8 +303,10 @@ fn color(rgba: Rgba) -> Hsla {
 }
 /// The theme's focus ring, which [`FocusRing::draw`] puts round a theme-drawn
 /// control that has the focus, in place of gpui-component's `focus_ring_style`, which draws a
-/// 3 px ring at half `ThemeColor::ring`'s alpha whatever the model states
-/// (gpui-component 0.9.1 `src/styled.rs:11-12`, `:301-327`).
+/// 3 px ring in `ThemeColor::ring` with its alpha set to 0.5 whatever the model
+/// states (gpui-component 0.10.0 `src/styled.rs:11-12`, `focus_style`). gpui-component's
+/// `Tab` now draws another, 2 px inset at the full colour, on keyboard focus
+/// only (gpui-component 0.10.0 `src/tab/tab.rs:933`, `:962-973`).
 ///
 /// The ring is `defaults.focus_ring_color` as stated, alpha included, a band
 /// `defaults.focus_ring_width` wide whose outer edge is the element's bounds

@@ -2,7 +2,7 @@
 //!
 //! Maps native-theme's resolved font and geometry settings to gpui-component's
 //! `ThemeConfig`, which controls per-theme font family, font size, radius,
-//! shadow settings, and the colours as hex strings: 127 of `ThemeColor`'s 139
+//! shadow settings, and the colours as hex strings: 128 of `ThemeColor`'s 140
 //! fields (see [`theme_color_to_config_colors`]).
 //!
 //! Upstream citations in this module are verified against gpui-component 0.9.1,
@@ -23,7 +23,7 @@ use crate::colors::{hsla_to_hex, over, rgba_to_hsla, to_theme_color};
 /// sizes are in logical pixels (conversion from platform points is handled by
 /// the resolution step).
 ///
-/// Also populates the `colors` field with all 139 ThemeColor fields converted
+/// Also populates the `colors` field with all 140 ThemeColor fields converted
 /// to hex strings, so the config can be serialized/deserialized losslessly.
 ///
 /// Fields not explicitly set inherit from `ThemeConfig::default()`.
@@ -139,12 +139,12 @@ pub(crate) fn highlight_style(
 /// `#rrggbbaa` when its alpha is below 1 (D36), so translucent colours such as
 /// `overlay`, `drag_border` and `drop_target` survive `Theme::change`.
 ///
-/// `ThemeColor` has 139 fields (gpui-component 0.9.1
-/// `src/theme/theme_color.rs:61-345`) and `ThemeConfigColors` 140: the same
-/// 139 plus `group_box_title_foreground` (`src/theme/schema.rs:375`), which no
-/// `ThemeColor` field feeds. 127 are exported. The 12 base colours (`red`,
+/// `ThemeColor` has 140 fields (gpui-component 0.10.0
+/// `src/theme/theme_color.rs:61-347`) and `ThemeConfigColors` 141: the same
+/// 140 plus `group_box_title_foreground` (`src/theme/schema.rs:375`), which no
+/// `ThemeColor` field feeds. 128 are exported. The 12 base colours (`red`,
 /// `blue`, `green`, `yellow`, `magenta`, `cyan` and their `_light` variants)
-/// are private in `ThemeConfigColors` (`schema.rs:657-691`) and stay `None`,
+/// are private in `ThemeConfigColors` (`schema.rs:660-694`) and stay `None`,
 /// as does `group_box_title_foreground`.
 fn theme_color_to_config_colors(tc: &gpui_component::theme::ThemeColor) -> ThemeConfigColors {
     let h = |c: gpui::Hsla| -> Option<SharedString> { Some(SharedString::from(hsla_to_hex(c))) };
@@ -193,6 +193,7 @@ fn theme_color_to_config_colors(tc: &gpui_component::theme::ThemeColor) -> Theme
     colors.list_even = h(tc.list_even);
     colors.list_head = h(tc.list_head);
     colors.list_hover = h(tc.list_hover);
+    colors.list_highlight_foreground = h(tc.list_highlight_foreground);
     colors.muted = h(tc.muted);
     colors.muted_foreground = h(tc.muted_foreground);
     colors.popover = h(tc.popover);

@@ -3314,3 +3314,602 @@ fn a_disabled_slider_is_inert(cx: &mut TestAppContext) {
     cx.simulate_keystrokes("right");
     assert_eq!(slider_value(cx, &state), 50.);
 }
+
+// ---------------------------------------------------------------------------
+// The tab bar's keyboard focus
+// ---------------------------------------------------------------------------
+
+/// A window drawing a kde-breeze tab bar of [`TAB_NAMES`]' eight tabs across
+/// the harness's 200px column, the tab at `selected` selected; a click on a
+/// tab, or Enter on the focused one, pushes its index onto `activated`.
+fn keyboard_tab_window(
+    cx: &mut TestAppContext,
+    selected: usize,
+    activated: Rc<RefCell<Vec<usize>>>,
+) -> &mut VisualTestContext {
+    let cx = window_with(
+        cx,
+        Some(("kde-breeze", ColorMode::Light)),
+        Box::new(move |_, _| {
+            let activated = activated.clone();
+            TabBar::new("t")
+                .w_full()
+                .children(TAB_NAMES.map(|name| Tab::new(name).debug_selector(|| name.into())))
+                .selected_index(selected)
+                .on_click(move |ix, _, _| activated.borrow_mut().push(*ix))
+                .into_any_element()
+        }),
+    );
+    redraw(cx);
+    redraw(cx);
+    cx
+}
+
+/// The tab Enter activates, which is the focused one, or none.
+fn focused_tab(cx: &mut VisualTestContext, activated: &Rc<RefCell<Vec<usize>>>) -> Option<usize> {
+    activated.borrow_mut().clear();
+    activate_key(cx, "enter");
+    redraw(cx);
+    let tab = activated.borrow().last().copied();
+    activated.borrow_mut().clear();
+    tab
+}
+
+fn anything_focused(cx: &mut VisualTestContext) -> bool {
+    cx.update(|window, cx| window.focused(cx).is_some())
+}
+
+/// T4: a click activates a tab and leaves the focus where it was, none or
+/// another tab; Tab enters the list on the selected tab, and the arrow keys,
+/// Home and End move the focus to the next, previous, first and last tab.
+#[gpui::test]
+fn a_click_keeps_the_focus_and_the_keys_move_it(cx: &mut TestAppContext) {
+    let activated: Rc<RefCell<Vec<usize>>> = Rc::default();
+    let cx = keyboard_tab_window(cx, 2, activated.clone());
+    assert!(!anything_focused(cx));
+    let tab1 = bounds(cx, "tab1");
+    cx.simulate_click(centre(tab1), Modifiers::default());
+    redraw(cx);
+    assert_eq!(*activated.borrow(), [1], "the click activated tab 1");
+    assert!(!anything_focused(cx), "the click moved no focus");
+
+    focus_next(cx);
+    redraw(cx);
+    assert_eq!(
+        focused_tab(cx, &activated),
+        Some(2),
+        "Tab enters on the selected tab"
+    );
+    for (keys, tab) in [("right", 3), ("left", 2), ("end", 7), ("home", 0)] {
+        cx.simulate_keystrokes(keys);
+        redraw(cx);
+        assert_eq!(focused_tab(cx, &activated), Some(tab), "{keys}");
+    }
+
+    let tab1 = bounds(cx, "tab1");
+    cx.simulate_click(centre(tab1), Modifiers::default());
+    redraw(cx);
+    assert_eq!(*activated.borrow(), [1], "the click activated tab 1");
+    assert_eq!(
+        focused_tab(cx, &activated),
+        Some(0),
+        "the keyboard focus stayed on tab 0"
+    );
+}
+
+/// The shadows the last frame painted over the bar `bar`.
+#[cfg(feature = "gpui-fast")]
+fn shadows_over(cx: &mut VisualTestContext, bar: Bounds<Pixels>) -> Vec<gpui::Shadow> {
+    cx.update(|window, _| {
+        let bar = bar.scale(window.scale_factor());
+        window
+            .painted_scene()
+            .shadows
+            .iter()
+            .filter(|s| s.element_bounds.intersects(&bar))
+            .cloned()
+            .collect()
+    })
+}
+
+/// T4 (b'): no tab draws a ring at rest; the tab the keyboard focuses draws
+/// the theme's, one inset shadow in `defaults.focus_ring_color` whose
+/// spread is `defaults.focus_ring_width`, inside the tab; after a click,
+/// none. It reads the painted shadows, which GPUI Fast's scene holds.
+#[cfg(feature = "gpui-fast")]
+#[gpui::test]
+fn the_keyboard_focused_tab_draws_the_ring_inside(cx: &mut TestAppContext) {
+    let r = resolved("kde-breeze", ColorMode::Light);
+    let activated: Rc<RefCell<Vec<usize>>> = Rc::default();
+    let cx = keyboard_tab_window(cx, 0, activated);
+    let bar = bounds(cx, "native-tab-bar");
+    let painted = shadows_over(cx, bar);
+    assert!(painted.is_empty(), "no ring at rest: {painted:?}");
+
+    focus_next(cx);
+    cx.simulate_keystrokes("right");
+    redraw(cx);
+    let tab = bounds(cx, "tab1");
+    let painted = shadows_over(cx, bar);
+    let [ring] = painted.as_slice() else {
+        panic!("one ring on the focused tab: {painted:?}");
+    };
+    let scale = cx.update(|window, _| window.scale_factor());
+    let want = tab.scale(scale);
+    assert_eq!(ring.inset, 1, "inset");
+    assert_eq!(ring.color, c(r.defaults.focus_ring_color));
+    assert!(
+        ring.element_bounds.contains(&want.center()) && ring.element_bounds.size == want.size,
+        "on the focused tab: {:?}, tab {want:?}",
+        ring.element_bounds
+    );
+    let spread = r.defaults.focus_ring_width * scale;
+    let e = ring.element_bounds;
+    let hole = ring.bounds;
+    assert_eq!(
+        [
+            hole.origin.x.0 - e.origin.x.0,
+            hole.origin.y.0 - e.origin.y.0,
+            e.bottom_right().x.0 - hole.bottom_right().x.0,
+            e.bottom_right().y.0 - hole.bottom_right().y.0,
+        ],
+        [spread; 4],
+        "spread by the ring's width"
+    );
+
+    let tab2 = bounds(cx, "tab2");
+    cx.simulate_click(centre(tab2), Modifiers::default());
+    redraw(cx);
+    let painted = shadows_over(cx, bar);
+    assert!(painted.is_empty(), "no ring after a click: {painted:?}");
+}
+
+/// T4: where the focus moves to a tab outside the strip, the strip scrolls
+/// it in: the tab the bar's edge cuts, then by End the last, by Home the
+/// first.
+#[gpui::test]
+fn the_strip_scrolls_the_focused_tab_into_view(cx: &mut TestAppContext) {
+    let activated: Rc<RefCell<Vec<usize>>> = Rc::default();
+    let cx = keyboard_tab_window(cx, 0, activated.clone());
+    let bar = bounds(cx, "native-tab-bar");
+    let inside = |b: Bounds<Pixels>| b.left() >= bar.left() && b.right() <= bar.right();
+    let (ix, name) = half_hidden_tab(cx);
+    assert!(
+        !inside(bounds(cx, "tab7")),
+        "the last tab starts out of view"
+    );
+
+    focus_next(cx);
+    cx.simulate_keystrokes(&vec!["right"; ix].join(" "));
+    redraw(cx);
+    redraw(cx);
+    // Read before Enter, which reveals the tab it activates by itself.
+    assert!(inside(bounds(cx, name)), "tab {ix} scrolled into view");
+    assert_eq!(focused_tab(cx, &activated), Some(ix));
+    for (key, name) in [("end", "tab7"), ("home", "tab0")] {
+        cx.simulate_keystrokes(key);
+        redraw(cx);
+        redraw(cx);
+        assert!(inside(bounds(cx, name)), "{key}: {name} scrolled into view");
+    }
+}
+
+/// T6: right to left, the tabs run from the bar's right edge, each the
+/// stated gap to the left of the one before it, as
+/// `the_tab_bar_outlines_only_the_selected_tab` finds them to the right left
+/// to right; the arrow keys step as gpui-base's `Tabs` steps them, Left to
+/// the next tab, which lies to the left; overflowing, the strip scrolls from
+/// its origin, the last tab at its left edge, as gpui-component's tab bar
+/// lays them out, and the focused tab scrolls into view; wrapped, each row
+/// starts at the right.
+#[gpui::test]
+fn right_to_left_the_tab_bar_runs_from_the_right(cx: &mut TestAppContext) {
+    cx.update(|cx| gpui_base::LayoutDirection::Rtl.set_global(cx));
+    let r = resolved("kde-breeze", ColorMode::Light);
+    {
+        let cx = window_with(
+            cx,
+            Some(("kde-breeze", ColorMode::Light)),
+            Box::new(|_, _| {
+                TabBar::new("t")
+                    .w_full()
+                    .child(Tab::new("One").debug_selector(|| "one".into()))
+                    .child(Tab::new("Two").debug_selector(|| "two".into()))
+                    .selected_index(1)
+                    .into_any_element()
+            }),
+        );
+        let bar = bounds(cx, "native-tab-bar");
+        let (one, two) = (bounds(cx, "one"), bounds(cx, "two"));
+        assert_eq!(one.right(), bar.right(), "the first tab at the right edge");
+        assert_eq!(
+            Some(one.left() - two.right()),
+            r.tab.item_gap.map(px),
+            "the second tab tab.item_gap to the first's left"
+        );
+    }
+    {
+        let cx = window_with(
+            cx,
+            Some(("kde-breeze", ColorMode::Light)),
+            Box::new(|_, _| {
+                TabBar::new("t")
+                    .w_full()
+                    .wrap()
+                    .children(TAB_NAMES.map(|name| Tab::new(name).debug_selector(|| name.into())))
+                    .into_any_element()
+            }),
+        );
+        let bar = bounds(cx, "native-tab-bar");
+        let (first, last) = (bounds(cx, "tab0"), bounds(cx, "tab7"));
+        assert_eq!(
+            first.right(),
+            bar.right(),
+            "wrapped, the first row from the right"
+        );
+        assert!(last.top() > first.top(), "the tabs wrapped");
+    }
+
+    let activated: Rc<RefCell<Vec<usize>>> = Rc::default();
+    let cx = keyboard_tab_window(cx, 0, activated.clone());
+    let bar = bounds(cx, "native-tab-bar");
+    assert_eq!(
+        bounds(cx, "tab7").left(),
+        bar.left(),
+        "the strip scrolls from its origin"
+    );
+    assert!(bounds(cx, "tab0").right() > bar.right());
+    focus_next(cx);
+    redraw(cx);
+    redraw(cx);
+    let tab0 = bounds(cx, "tab0");
+    assert!(
+        tab0.left() >= bar.left() && tab0.right() <= bar.right(),
+        "the focused tab scrolled into view"
+    );
+    assert!(
+        bounds(cx, "tab1").right() <= tab0.left(),
+        "tab 1 to the left"
+    );
+    for (keys, tab) in [
+        ("left", 1),
+        ("left", 2),
+        ("right", 1),
+        ("end", 7),
+        ("home", 0),
+    ] {
+        cx.simulate_keystrokes(keys);
+        redraw(cx);
+        assert_eq!(focused_tab(cx, &activated), Some(tab), "{keys}");
+    }
+}
+
+// ---------------------------------------------------------------------------
+// The check box's mixed state and right-to-left row
+// ---------------------------------------------------------------------------
+
+/// T3 row 3: an indeterminate checkbox, checked or not, is drawn in the
+/// checked look with gpui-component's dash in place of the check: the box
+/// is `checked_background` edged in `border.color`, and the dash, stroked at
+/// `check_mark_stroke_width`, is `indicator_color`, its two round ends on the
+/// box's middle line; disabled under adwaita, the box and the dash are
+/// faded as one over the window ([`CheckboxLook::faded_over`]).
+#[gpui::test]
+fn an_indeterminate_checkbox_draws_the_checked_box_and_a_dash(cx: &mut TestAppContext) {
+    for (preset, checked, disabled) in [
+        ("kde-breeze", false, false),
+        ("kde-breeze", true, false),
+        ("adwaita", false, true),
+    ] {
+        let r = resolved(preset, ColorMode::Light);
+        let ground = c(r.defaults.background_color);
+        let look = CheckboxLook::of(&r, true, disabled)
+            .expect("finite")
+            .faded_over(ground);
+        let stroke = look.mark_stroke.expect("a stated check-mark stroke");
+        let cx = window_with(
+            cx,
+            Some((preset, ColorMode::Light)),
+            Box::new(move |_, _| {
+                Checkbox::new("m")
+                    .label("M")
+                    .checked(checked)
+                    .indeterminate(true)
+                    .disabled(disabled)
+                    .into_any_element()
+            }),
+        );
+        let indicator = bounds(cx, "native-checkbox-indicator");
+        let mark = bounds(cx, "native-checkbox-mark");
+        let (fill, edge, ends) = cx.update(|window, _| {
+            let scale = window.scale_factor();
+            let indicator = indicator.scale(scale);
+            let quads = scene_quads(window);
+            // gpui paints a box's fill and its border as two quads.
+            let fill = quads
+                .iter()
+                .find(|q| q.bounds == indicator && !q.background.is_transparent())
+                .and_then(|q| q.background.as_solid());
+            let edge = quads
+                .iter()
+                .find(|q| q.bounds == indicator && q.border_widths.top.0 > 0.)
+                .map(|q| q.border_color);
+            let ends: Vec<_> = quads
+                .iter()
+                .filter(|q| {
+                    indicator.contains(&q.bounds.center())
+                        && q.bounds.size != indicator.size
+                        && (q.bounds.size.width.0 - f32::from(stroke) * scale).abs() <= 1.
+                })
+                .map(|q| (q.background.as_solid(), q.bounds.center()))
+                .collect();
+            (fill, edge, ends)
+        });
+        let at = format!("{preset} checked({checked}) disabled({disabled})");
+        assert_eq!(
+            (fill, edge),
+            (Some(look.fill), Some(look.border)),
+            "{at}: the checked box"
+        );
+        let [(left, a), (right, b)] = ends.as_slice() else {
+            panic!("{at}: the dash's two round ends: {ends:?}");
+        };
+        assert_eq!((*left, *right), (Some(look.mark), Some(look.mark)), "{at}");
+        let scale = cx.update(|window, _| window.scale_factor());
+        let middle = mark.scale(scale).center().y.0;
+        assert!(
+            (a.y.0 - middle).abs() <= 1. && (b.y.0 - middle).abs() <= 1.,
+            "{at}: on the middle line, {a:?} {b:?}, {middle}"
+        );
+        let length = f32::from(mark.size.width) * scale * (19. - 5.) / 24.;
+        assert!(
+            ((a.x.0 - b.x.0).abs() - length).abs() <= 1.,
+            "{at}: {a:?} {b:?} {length}"
+        );
+    }
+}
+
+/// Where the theme states no check-mark stroke, an indeterminate checkbox's
+/// dash is gpui-component's `IconName::Minus` by its asset path, which the
+/// application's icon resolver is asked for in place of the check, as
+/// gpui-component's check box asks it (gpui-component 0.10.0 checkbox.rs,
+/// `an_indeterminate_checkbox_draws_a_dash`).
+#[gpui::test]
+fn the_dash_asks_the_applications_icon_resolver(cx: &mut TestAppContext) {
+    use gpui_component::{IconName, IconNamed as _};
+    let look = CheckboxLook::of(&resolved("macos-monterey", ColorMode::Light), true, false);
+    assert_eq!(look.and_then(|l| l.mark_stroke), None);
+    let window = window_with(
+        cx,
+        Some(("macos-monterey", ColorMode::Light)),
+        Box::new(|_, _| {
+            Checkbox::new("m")
+                .label("M")
+                .checked(true)
+                .indeterminate(true)
+                .into_any_element()
+        }),
+    );
+    assert!(window.debug_bounds("native-checkbox-indicator").is_some());
+    let record = recording_resolver(window);
+    redraw(window);
+    let asked = record.borrow();
+    assert!(
+        asked.contains(&IconName::Minus.path().to_string()),
+        "{asked:?}"
+    );
+    assert!(
+        !asked.contains(&IconName::Check.path().to_string()),
+        "the dash replaces the check: {asked:?}"
+    );
+}
+
+/// T3 row 3: an indeterminate checkbox reports gpui-base's mixed state,
+/// checked or not; one only checked reports checked.
+#[gpui::test]
+fn an_indeterminate_checkbox_reports_the_mixed_state(cx: &mut TestAppContext) {
+    let captured = Rc::new(RefCell::new(Vec::new()));
+    let sink = captured.clone();
+    window_with(
+        cx,
+        Some(("kde-breeze", ColorMode::Light)),
+        Box::new(move |_, _| {
+            let sink = sink.clone();
+            gpui::canvas(
+                move |_, window, cx| {
+                    *sink.borrow_mut() = [
+                        Checkbox::new("a").checked(true).indeterminate(true),
+                        Checkbox::new("b").indeterminate(true),
+                        Checkbox::new("c").checked(true),
+                    ]
+                    .map(|checkbox| {
+                        let base = checkbox.row(window, cx).ok();
+                        a11y_node(accesskit::Role::CheckBox, base, window, cx).toggled()
+                    })
+                    .to_vec();
+                },
+                |_, (), _, _| {},
+            )
+            .size_full()
+            .into_any_element()
+        }),
+    );
+    assert_eq!(
+        captured.take(),
+        [
+            Some(accesskit::Toggled::Mixed),
+            Some(accesskit::Toggled::Mixed),
+            Some(accesskit::Toggled::True),
+        ]
+    );
+}
+
+/// T3 row 3: activating an indeterminate checkbox requests `true`, even
+/// where it is also checked: the mixed state wins.
+#[gpui::test]
+fn activating_an_indeterminate_checkbox_requests_checked(cx: &mut TestAppContext) {
+    let requested = Rc::new(Cell::new(None));
+    let sink = requested.clone();
+    let cx = window_with(
+        cx,
+        Some(("kde-breeze", ColorMode::Light)),
+        Box::new(move |_, _| {
+            let sink = sink.clone();
+            Checkbox::new("m")
+                .label("M")
+                .checked(true)
+                .indeterminate(true)
+                .on_change(move |checked, _, _| sink.set(Some(*checked)))
+                .into_any_element()
+        }),
+    );
+    let at = centre(bounds(cx, "native-checkbox-indicator"));
+    cx.simulate_click(at, Modifiers::default());
+    assert_eq!(requested.get(), Some(true));
+}
+
+/// T6: right to left, a checkbox's and a radio's indicator leads on the
+/// right, the label `label_gap` to its left, as `the_indicator_is_the_stated_size`
+/// finds it to the right left to right.
+#[gpui::test]
+fn right_to_left_the_indicator_leads_from_the_right(cx: &mut TestAppContext) {
+    cx.update(|cx| gpui_base::LayoutDirection::Rtl.set_global(cx));
+    let r = resolved("kde-breeze", ColorMode::Light);
+    let controls: [Build; 2] = [
+        Box::new(|_, _| Checkbox::new("c").label("Label").into_any_element()),
+        Box::new(|_, _| Radio::new("r").label("Label").into_any_element()),
+    ];
+    for build in controls {
+        let cx = window_with(cx, Some(("kde-breeze", ColorMode::Light)), build);
+        let b = bounds(cx, "native-checkbox-indicator");
+        assert_eq!(b.size.width, px(r.checkbox.indicator_width));
+        let label = bounds(cx, "native-checkbox-label");
+        assert_eq!(
+            b.origin.x - label.right(),
+            px(r.checkbox.label_gap),
+            "the label sits label_gap to the indicator's left"
+        );
+    }
+}
+
+/// T6 (b): right to left, a horizontal slider runs from the right, where
+/// gpui-base maps the pointer from (gpui-base 0.10.0 slider.rs,
+/// `offset_along`): a range's thumbs and the fill between them stand where
+/// its left-to-right test has them, mirrored, a press lands where it is
+/// drawn, and Left and Right swap, as gpui-base's keys (`key_delta`); Up and
+/// Down do not.
+#[gpui::test]
+fn right_to_left_the_slider_runs_from_the_right(cx: &mut TestAppContext) {
+    use gpui_base::slider::SliderValue;
+    cx.update(|cx| gpui_base::LayoutDirection::Rtl.set_global(cx));
+    let (cx, state) = range_window(cx);
+    let r = resolved("kde-breeze", ColorMode::Light);
+    let radius = px(r.slider.thumb_diameter) / 2.;
+    let root = bounds(cx, "native-slider");
+    let travel = root.size.width - radius * 2.;
+    let at = |fraction: f32| root.right() - radius - travel * fraction;
+    let start = bounds(cx, "native-slider-start-thumb");
+    let end = bounds(cx, "native-slider-thumb");
+    assert_eq!(centre(start).x, at(0.2), "the start thumb at 20");
+    assert_eq!(centre(end).x, at(0.8), "the end thumb at 80");
+    let fill = bounds(cx, "native-slider-fill");
+    assert_eq!(fill.right(), at(0.2), "the fill from the start thumb");
+    assert_eq!(fill.left(), at(0.8), "to the end thumb");
+
+    let value = |cx: &mut VisualTestContext| cx.update(|_, cx| state.read(cx).value());
+    cx.simulate_click(point(at(0.05), centre(root).y), Modifiers::default());
+    assert_eq!(value(cx), SliderValue::Range(5., 80.), "the start moved");
+    redraw(cx);
+    let start = bounds(cx, "native-slider-start-thumb");
+    assert_eq!(centre(start).x, at(0.05), "the start thumb follows");
+
+    focus_next(cx);
+    cx.simulate_keystrokes("left");
+    assert_eq!(value(cx), SliderValue::Range(5., 81.), "Left steps up");
+    cx.simulate_keystrokes("right right");
+    assert_eq!(value(cx), SliderValue::Range(5., 79.), "Right steps down");
+    cx.simulate_keystrokes("up");
+    assert_eq!(value(cx), SliderValue::Range(5., 80.), "Up steps up");
+    cx.simulate_keystrokes("down");
+    assert_eq!(value(cx), SliderValue::Range(5., 79.), "Down steps down");
+}
+
+/// T6 (b): right to left, the switch is laid out from the right, as
+/// gpui-component's (gpui-component 0.10.0 switch.rs, `label_side`,
+/// `inset_s`): the thumb where its left-to-right test has it, mirrored, off
+/// flush with the track's right end and on with its left, and the label
+/// `LABEL_GAP` to the track's left.
+#[gpui::test]
+fn right_to_left_the_switch_runs_from_the_right(cx: &mut TestAppContext) {
+    cx.update(|cx| gpui_base::LayoutDirection::Rtl.set_global(cx));
+    for checked in [false, true] {
+        let cx = window_with(
+            cx,
+            Some(("kde-breeze", ColorMode::Light)),
+            Box::new(move |_, _| {
+                Switch::new("s")
+                    .label("On")
+                    .checked(checked)
+                    .into_any_element()
+            }),
+        );
+        let track = bounds(cx, "native-switch-track");
+        let thumb = bounds(cx, "native-switch-thumb");
+        if checked {
+            assert_eq!(thumb.left(), track.left(), "on: flush with the left end");
+        } else {
+            assert_eq!(
+                thumb.right(),
+                track.right(),
+                "off: flush with the right end"
+            );
+        }
+        let gap = cx.update(|window, _| super::switch::LABEL_GAP.to_pixels(window.rem_size()));
+        let label = bounds(cx, "native-switch-label");
+        assert_eq!(
+            track.left() - label.right(),
+            gap,
+            "checked {checked}: the label LABEL_GAP to the track's left"
+        );
+    }
+}
+
+/// T6 (b): right to left, the fill runs from the bar's right end, as
+/// gpui-component's (gpui-component 0.10.0 progress/progress.rs, `inset_s`):
+/// a value's fill as wide as the value from it, and a loading fill sweeping
+/// from it, its start held at the right end over the first half turn
+/// (`loading_span`).
+#[gpui::test]
+fn right_to_left_the_progress_bar_fills_from_the_right(cx: &mut TestAppContext) {
+    cx.update(|cx| gpui_base::LayoutDirection::Rtl.set_global(cx));
+    {
+        let value = 40.;
+        let cx = window_with(
+            cx,
+            Some(("kde-breeze", ColorMode::Light)),
+            Box::new(move |_, _| ProgressBar::new("p").value(value).into_any_element()),
+        );
+        let bar = bounds(cx, "native-progress");
+        let fill = bounds(cx, "native-progress-fill");
+        assert_eq!(fill.right(), bar.right(), "from the right end");
+        assert_eq!(
+            fill.size.width,
+            bar.size.width * (value / 100.),
+            "as wide as the value"
+        );
+    }
+    let (cx, _) = loading_window(cx);
+    let bar = bounds(cx, "native-progress");
+    fill_after(cx, 0);
+    let mut grown = false;
+    for _ in 0..10 {
+        let fill = fill_after(cx, 20);
+        assert_eq!(
+            fill.right(),
+            bar.right(),
+            "the sweep starts at the right end"
+        );
+        grown |= fill.left() < bar.right();
+    }
+    assert!(grown, "the fill grows leftward");
+}

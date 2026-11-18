@@ -100,7 +100,7 @@
 //! # Theme Field Coverage
 //!
 //! The connector maps [`ResolvedTheme`] onto gpui-component's `ThemeColor`
-//! (all 139 colour fields), `ThemeConfig` (fonts, radii, the window's corner
+//! (all 140 colour fields), `ThemeConfig` (fonts, radii, the window's corner
 //! radius, shadow, highlighter), the styled `Theme`'s `focus_ring`,
 //! `scrollbar_mode` and `highlight_theme`,
 //! and gpui-base's scrollbar and resize-handle styles.
@@ -119,15 +119,15 @@
 //! | `table` | head, from `list.header_background` / `list.header_font` | the model states no footer colour, so `table_foot*` are derived |
 //! | `slider`, `switch` | 2 colours each | fill/thumb colours; a checked switch's track, `switch.checked_background`, via [`variants::switch_color`] for `Switch::color`; geometry upstream |
 //! | `progress_bar` | fill + geometry | height, radius, min width via `geometry::progress` |
-//! | `list` | 7 of 14 + geometry | background, alternate row, selection, hover, grid, header background and header font colour; the background and the frame via `geometry::list`, the receiver of the fill (the `list` token has no reader in gpui-component 0.9.1); row height, padding, font via `geometry::list_item`; a selected row's text colour via `geometry::list_item_selected`; header height via `geometry::list_header_height` for `DataTable::header_row_height` |
+//! | `list` | 7 of 14 + geometry | background, alternate row, selection, hover, grid, header background and header font colour; the background and the frame via `geometry::list`, the receiver of the fill (the `list` token has no reader in gpui-component 0.9.1); row height, padding, font via `geometry::list_item`; a selected row's text colour via `geometry::list_item_selected`; header height via `geometry::list_header_height` for `DataTable::header_row_height`; the part of a searchable list's row that matches the query, `list_highlight_foreground`, in the resting text colour, `defaults.text_color`, since the model states no colour for a match |
 //! | `menu` | 2 colours + geometry | hover_background, hover_text_color → `accent`, `accent_foreground` (upstream's item highlight); row height, padding, icon gap, font via `geometry::menu_item` on an application-drawn row |
 //! | `segmented_control` | 1 of 9 | background → `tab_bar_segmented`, the track of a segmented `TabBar` |
 //! | `popover` | 2 of 3 + geometry | background, font.color; padding, radius and edge (`border.color` at `border.line_width`) via `geometry::popover` |
 //! | `combo_box` | geometry | height, width, padding, radius, font via `geometry::select` and `geometry::combobox`; the fill, and a disabled trigger's fill and text colour, via `geometry::combo_box_fill` |
 //! | `card`, `expander` | geometry | the card's padding, radius, edge and fill via `geometry::group_box_content`; the expander's title height and colour via `geometry::accordion_title`, its edge colour via `geometry::accordion`, its hover fill via `geometry::accordion_hover` |
-//! | `tooltip` | show delay + geometry | `show_delay` installed by [`apply`] as gpui-base's `TooltipDefaults` show delay, and [`tooltip_show_delay`] for GPUI's own `.tooltip()` on an element; background, font, padding, border, radius via `geometry::tooltip`, max width via `geometry::tooltip_content` |
+//! | `tooltip` | show delay + geometry | `show_delay` installed by [`apply`] as gpui-base's `TooltipDefaults` show delay, and [`tooltip_show_delay`] for GPUI's own `.tooltip()` on an element; background, font, padding, border, radius via `geometry::tooltip`, max width as `max_w(tooltip.max_width)` on a `Tooltip::new` bubble, or via `geometry::tooltip_content` for a tooltip without a key binding |
 //! | `dialog` | entrance + geometry | `entrance` via `geometry::dialog_entrance`, both styles as `DialogEntrance::Fade` (gpui-component draws neither a scaling nor a rising entrance); padding, min width, min height, radius, fill and edge colour via `geometry::dialog`, max width via `geometry::dialog_max_width`, button gap via `geometry::dialog_footer`, fonts via `geometry::dialog_title` and `geometry::dialog_description` |
-//! | `link` | 3 of 8 + geometry | font.color, hover_text_color, active_text_color; background_color via `geometry::link`, where the `Link` widget paints no background of its own (`link.rs:73-90`); `link.hover_background` has no receiver — the `Link` widget paints no background in any state, a `ButtonVariant::Link` button paints `Theme::transparent` in every state, and that field is not one of the 139 `ThemeColor` colours |
+//! | `link` | 3 of 8 + geometry | font.color, hover_text_color, active_text_color; background_color via `geometry::link`, where the `Link` widget paints no background of its own (`link.rs:73-90`); `link.hover_background` has no receiver — the `Link` widget paints no background in any state, a `ButtonVariant::Link` button paints `Theme::transparent` in every state, and that field is not one of the 140 `ThemeColor` colours |
 //! | `separator` | 2 of 2 | line_color → `chart_grid`, the grid of gpui-component's charts; line_color and line_width via the `widgets` module's `Separator` (feature `widgets`), where gpui-component's own `Separator` draws a literal 1 px line |
 //! | `splitter` | colours | divider/hover colours via `base_layer::resizable_theme`, drawn by gpui-base's resizables at their 1 px width (not gpui-component's, `Settings` or dock edges) |
 //!
@@ -174,20 +174,18 @@
 //! | `system-icons` | the platform's own icons (`native-theme/system-icons`) |
 //! | `svg-rasterize` | SVG icons rasterized by this crate (`native-theme/svg-rasterize`) |
 //! | `system-fonts` | a theme family the system lacks is drawn in the family the platform substitutes for it ([`font_family`]; `native-theme/system-fonts`) |
-//! | `gpui-fast` | the crate built on GPUI Kit's GPUI Fast core instead of gpui-pre (`gpui-kit/gpui-fast`, `gpui-component/gpui-fast`), with GPUI Fast held at `>=0.1.14, <0.1.16` until GPUI Kit 0.10 |
+//! | `gpui-fast` | the crate built on GPUI Kit's GPUI Fast core instead of gpui-pre (`gpui-kit/gpui-fast`, `gpui-component/gpui-fast`) |
 //! | `native` | the OS readers, `native-theme/native`; without one (or native-theme's `kde`, `portal`, `macos`, `windows`), [`from_system()`] is the platform preset on Linux and an error on macOS and Windows |
 //! | `watch` | `on_theme_change`, a closure run on gpui's foreground, with a window, when the OS theme changes, through `native-theme/watch` and `futures` (see [Runtime theme change](#runtime-theme-change)) |
 //!
 //! The crate names GPUI through gpui-kit, so it is built on whichever core
-//! gpui-kit is. Until GPUI Kit 0.10, an application on GPUI Fast enables
-//! `gpui-fast` here (or pins `gpui-fast = ">=0.1.14, <0.1.16"` itself),
-//! whether it turns on `gpui-kit/gpui-fast` or depends on gpui-component
-//! directly: gpui-kit 0.9.1 asks for `gpui-fast = "0.1.14"`, which resolves to
-//! the newest 0.1.x, and gpui-base 0.9.1 does not compile on GPUI Fast 0.1.16
-//! or later (its `IntoElement` impls conflict with the blanket one 0.1.16
-//! added); only this crate's `gpui-fast` holds GPUI Fast below 0.1.16. It also
-//! switches gpui-kit and gpui-component together, since the two cores' types
-//! are distinct. The README's *Backends* section has the details.
+//! gpui-kit is: an application that enables `gpui-kit/gpui-fast` with
+//! gpui-kit's `component` feature (on by default) gets this crate on GPUI Fast
+//! without `gpui-fast` here. Enable `gpui-fast` here only for an application
+//! on GPUI Fast otherwise (one that depends on gpui-component directly, or
+//! uses gpui-kit without `component`): it switches gpui-kit and
+//! gpui-component together, since the two cores' types are distinct. The
+//! README's *Backends* section has the details.
 //!
 //! Without `svg-rasterize` an SVG icon is still converted: [`icons`] hands
 //! gpui the (colorized) SVG bytes as an undecoded `ImageSource::Image`, which
@@ -295,7 +293,7 @@ use std::time::Duration;
 
 /// Convert a [`ResolvedTheme`] into a gpui-component [`GpuiTheme`].
 ///
-/// From `resolved` it sets all 139 `ThemeColor` fields (and the `tokens`
+/// From `resolved` it sets all 140 `ThemeColor` fields (and the `tokens`
 /// gpui-component derives from them), `mode`, `font_family`, `font_size`,
 /// `mono_font_family`, `mono_font_size`, `radius`, `radius_lg`,
 /// `window_radius` (`window.border.corner_radius`), `shadow`, `focus_ring`,
@@ -309,6 +307,12 @@ use std::time::Duration;
 /// which native-theme does not model; [`apply`] keeps the installed theme's
 /// `notification`, `list`, `sheet`, `motion` and `cursor_blink` in their
 /// place.
+///
+/// `scrollbar_mode` is `Scrolling` where `scrollbar.overlay_mode` is set and
+/// `Always` where it is not, on every platform. Upstream's
+/// `Theme::sync_scrollbar_appearance` maps the platform's auto-hide setting by
+/// a rule of its own, on Windows auto-hide to `Hover` and otherwise `Always`
+/// (gpui-component 0.10.0 `src/theme/mod.rs:145-154`, `:386-392`).
 ///
 /// A [`ResolvedTheme`] carries no colour mode, so `is_dark` is the theme's:
 /// [`Resolved::mode`](native_theme::theme::Resolved::mode) of the variant
@@ -1163,6 +1167,11 @@ impl<'a> Native<'a> {
 /// provenance, so an application flag that happens to equal gpui-base's own
 /// last reading is replaced when the OS reading changes. To force the flag
 /// either way regardless of the OS, call `cx.set_reduce_motion` after `apply`.
+/// gpui-base's `ReduceMotionPreference` and `set_reduce_motion_preference`
+/// (gpui-base 0.10.0 `src/reduce_motion.rs:85-127`) protect an explicit choice
+/// from gpui-base's own readings, not from the connector: its request still
+/// switches the flag on over an explicit `Allow`, so an application that keeps
+/// motion sets the flag after `apply`.
 ///
 /// `theme` is moved into the global; `resolved` is cloned once.
 pub fn apply(
@@ -1241,7 +1250,11 @@ impl Global for ReduceMotionRequest {}
 /// so if it was off. `false` is the absence of a request: undo the connector's
 /// own switch, if any, and ask gpui-base (which reads the OS preference itself
 /// since 0.6.2) to re-read the system. gpui-base writes only a flag it still
-/// owns, so a flag the application set is never cleared here.
+/// owns, so a flag the application set is never cleared here. An explicit
+/// choice through gpui-base's `set_reduce_motion_preference`
+/// (`ReduceMotionPreference`, gpui-base 0.10.0 `src/reduce_motion.rs:85-127`)
+/// is protected from gpui-base's readings only: a request still switches the
+/// flag on over an explicit `Allow`.
 fn forward_reduce_motion(reduce: bool, cx: &mut App) {
     if reduce {
         if !cx.reduce_motion() {
@@ -1652,7 +1665,7 @@ mod tests {
             // a later `apply` stores the other variant (D34).
             "light_theme",
             "dark_theme",
-            // Written by `Theme::from(&ThemeColor)`: the 139-field colour map,
+            // Written by `Theme::from(&ThemeColor)`: the 140-field colour map,
             // the tokens upstream derives from it, and `transparent` (Issue 53).
             "colors",
             "tokens",

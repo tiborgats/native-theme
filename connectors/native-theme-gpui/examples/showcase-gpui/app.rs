@@ -477,6 +477,9 @@ pub(crate) struct Showcase {
     /// The Inputs page's `Select`: the same trigger as a Combobox, with the
     /// platform's font colour carried as well.
     pub(crate) select_demo: Entity<SelectState<SearchableVec<SharedString>>>,
+    /// The Inputs page's searchable `Select`, which highlights the part of
+    /// each row that matches what is typed.
+    pub(crate) highlight_select: Entity<SelectState<SearchableVec<SharedString>>>,
     pub(crate) input_group_state: Entity<InputState>,
     pub(crate) input_group_button_state: Entity<InputState>,
     pub(crate) input_group_textarea_state: Entity<TextareaState>,
@@ -1298,6 +1301,15 @@ impl Showcase {
                 cx,
             )
         });
+        let highlight_select = cx.new(|cx| {
+            SelectState::new(
+                SearchableVec::new(demo::HIGHLIGHT_SELECT_ROWS.map(SharedString::from).to_vec()),
+                None,
+                window,
+                cx,
+            )
+            .searchable(true)
+        });
 
         let palette_state = cx.new(|cx| CommandState::new(window, cx));
 
@@ -1690,6 +1702,7 @@ impl Showcase {
             input_height_state,
             textarea_demo,
             select_demo,
+            highlight_select,
             input_group_state,
             input_group_button_state,
             input_group_textarea_state,

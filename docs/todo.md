@@ -1692,7 +1692,7 @@ model, the platform presets and the three connectors
 
 ### Dependencies: native-theme-gpui holds GPUI Fast below 0.1.16
 
-- [ ] [v0.7.x] From 0.7.1's close-out (L3, 2026-11-17): gpui-fast 0.1.16
+- [x] [v0.7.x] From 0.7.1's close-out (L3, 2026-11-17): gpui-fast 0.1.16
       added `impl<T: Element> IntoElement for T` (`src/element.rs:146`, the
       same in 0.1.17), which conflicts with gpui-base 0.9.1's own
       `IntoElement` impls (`src/a11y_disabled.rs:63` and the others): E0119,
@@ -1704,6 +1704,8 @@ model, the platform presets and the three connectors
       `#[cfg(not(feature = "gpui-fast"))]` (`src/a11y_disabled.rs:63-64`) and
       requires gpui-fast 0.1.16. Remove the bound, its comment and
       `dep:gpui-fast` from the feature with the move to GPUI Kit 0.10.0.
+      *Done in 0.7.2 (G-A, 2026-11-18):* the bound, its comment and its `dep:` entry
+      are gone; the connector requires GPUI Kit 0.10.0, the lock holds gpui-fast 0.1.16.
 
 ### detect: `prefers_reduced_motion` and the reader's block are two caches of one read
 

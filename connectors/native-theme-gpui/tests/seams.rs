@@ -31,6 +31,11 @@
 //! A tooltip's text wrapped to two lines under `geometry::tooltip` is two
 //! lines of the platform's `defaults.line_height` tall.
 //!
+//! A tooltip without a key binding is the same bubble on kde-breeze,
+//! windows-11 and adwaita whether it is `Tooltip::new(text)` given the
+//! theme's maximum width or the text refined by `geometry::tooltip_content`;
+//! with one, only the first keeps to the theme's maximum width.
+//!
 //! Four sweeps run every native preset at its own font DPI: the drawn content
 //! inset of an Input, a Select and a Combobox is the stated left padding
 //! side; an Input with no suffix is laid out with the stated right side; a
@@ -47,14 +52,15 @@ extern crate gpui_kit as gpui;
 
 use gpui::{
     AbsoluteLength, AnyElement, App, AppContext as _, Bounds, Context, DefiniteLength,
-    InteractiveElement as _, IntoElement, Length, ParentElement as _, Pixels, Render, SharedString,
-    Size, StyleRefinement, Styled as _, TestAppContext, Window, div, px,
+    InteractiveElement as _, IntoElement, Keystroke, Length, ParentElement as _, Pixels, Render,
+    SharedString, Size, StyleRefinement, Styled as _, TestAppContext, Window, div, px,
 };
 use gpui_component::{
     ActiveTheme as _, IndexPath, Sizable as _, StyledExt as _,
     button::{Button, Toggle},
     combobox::{Combobox, ComboboxState},
     input::{Input, InputState, Textarea, TextareaState},
+    kbd::Kbd,
     list::ListItem,
     progress::Progress,
     select::{SearchableVec, Select, SelectItem, SelectState},
@@ -1357,5 +1363,195 @@ fn a_data_table_row_holds_its_text_at_every_scale(cx: &mut TestAppContext) {
                 );
             }
         }
+    }
+}
+
+/// The fill both tooltip builders below give the bubble, which finds it among
+/// the painted quads; no preset states it.
+const BUBBLE_MARKER: u32 = 0x12_34_56;
+
+/// The presets the two ways of building a tooltip are compared under, each
+/// stating its own `tooltip.max_width`.
+const TOOLTIP_WAY_PRESETS: [&str; 3] = ["kde-breeze", "windows-11", "adwaita"];
+
+/// The key binding a keyed tooltip shows, as the showcase's panel toggle's
+/// `secondary-b` reads on Linux and Windows (`app::init`).
+const TOOLTIP_KEY: &str = "ctrl-b";
+
+/// The text as an element refined by `geometry::tooltip_content`, the
+/// bubble by `geometry::tooltip`; with `key`, the key binding beside the
+/// text.
+fn content_way(
+    key: Option<&'static str>,
+    s: Option<&StyleRefinement>,
+    w: &mut Window,
+    cx: &mut Context<Harness>,
+) -> AnyElement {
+    let content = cx.native().map(geometry::tooltip_content);
+    let tooltip = Tooltip::element(move |_, _| {
+        let body = div()
+            .debug_selector(|| TOOLTIP_TEXT.into())
+            .child(LONG_TOOLTIP);
+        match &content {
+            Some(style) => body.refine_style(style),
+            None => body,
+        }
+    });
+    marked(tooltip, key, s, w, cx)
+}
+
+/// `Tooltip::new(text)`, the bubble refined by `geometry::tooltip` and given
+/// the theme's `tooltip.max_width`, as the showcase's `action_tooltip`
+/// builds it; with `key`, the key binding beside the text.
+fn max_width_way(
+    key: Option<&'static str>,
+    s: Option<&StyleRefinement>,
+    w: &mut Window,
+    cx: &mut Context<Harness>,
+) -> AnyElement {
+    let max = cx.native().map(|n| px(n.resolved.tooltip.max_width));
+    let tooltip = Tooltip::new(LONG_TOOLTIP);
+    let tooltip = match max {
+        Some(max) => tooltip.max_w(max),
+        None => tooltip,
+    };
+    marked(tooltip, key, s, w, cx)
+}
+
+/// `tooltip` refined by `s`, with the key binding `key` where one is given,
+/// filled with [`BUBBLE_MARKER`] and built.
+fn marked(
+    tooltip: Tooltip,
+    key: Option<&'static str>,
+    s: Option<&StyleRefinement>,
+    w: &mut Window,
+    cx: &mut Context<Harness>,
+) -> AnyElement {
+    let tooltip = match s {
+        Some(style) => tooltip.refine_style(style),
+        None => tooltip,
+    };
+    let tooltip = match key {
+        Some(key) => tooltip.key_binding(Some(Kbd::new(
+            Keystroke::parse(key).expect("the key parses"),
+        ))),
+        None => tooltip,
+    };
+    tooltip
+        .bg(gpui::rgb(BUBBLE_MARKER))
+        .build(w, cx)
+        .into_any_element()
+}
+
+fn content_way_unkeyed(
+    s: Option<&StyleRefinement>,
+    w: &mut Window,
+    cx: &mut Context<Harness>,
+) -> AnyElement {
+    content_way(None, s, w, cx)
+}
+fn max_width_way_unkeyed(
+    s: Option<&StyleRefinement>,
+    w: &mut Window,
+    cx: &mut Context<Harness>,
+) -> AnyElement {
+    max_width_way(None, s, w, cx)
+}
+fn content_way_keyed(
+    s: Option<&StyleRefinement>,
+    w: &mut Window,
+    cx: &mut Context<Harness>,
+) -> AnyElement {
+    content_way(Some(TOOLTIP_KEY), s, w, cx)
+}
+fn max_width_way_keyed(
+    s: Option<&StyleRefinement>,
+    w: &mut Window,
+    cx: &mut Context<Harness>,
+) -> AnyElement {
+    max_width_way(Some(TOOLTIP_KEY), s, w, cx)
+}
+
+/// The bubble `build` paints under `preset`, refined by `geometry::tooltip`:
+/// the quad filled with [`BUBBLE_MARKER`], in logical pixels.
+fn bubble(cx: &mut TestAppContext, preset: &str, build: Build) -> Option<Bounds<Pixels>> {
+    let resolved = resolved(preset);
+    let prefs = scaled();
+    let theme = to_theme(&resolved, preset, false, &prefs);
+    cx.update(|cx| {
+        gpui_component::init(cx);
+        apply(theme, &resolved, &prefs, cx);
+    });
+    let style = native_style(preset, geometry::tooltip);
+    let (_, cx) = cx.add_window_view(|_, _| Harness {
+        style: Some(style),
+        build,
+    });
+    cx.update(|window, cx| window.draw(cx).clear(cx));
+    cx.update(|window, _| {
+        let marker: gpui::Background = gpui::rgb(BUBBLE_MARKER).into();
+        let scale = window.scale_factor();
+        window
+            .painted_quads()
+            .into_iter()
+            .find(|q| q.background == marker)
+            .map(|q| {
+                Bounds::new(
+                    gpui::point(
+                        px(q.bounds.origin.x.0 / scale),
+                        px(q.bounds.origin.y.0 / scale),
+                    ),
+                    gpui::size(
+                        px(q.bounds.size.width.0 / scale),
+                        px(q.bounds.size.height.0 / scale),
+                    ),
+                )
+            })
+    })
+}
+
+/// The tooltip's bubble keeps to the theme's `tooltip.max_width`, its outer
+/// width, built as `Tooltip::new(text)` given that width.
+///
+/// Without a key binding it is the same bubble as the text as an element
+/// refined by `geometry::tooltip_content`: gpui-component 0.10.0 gives the
+/// text's box a zero minimum width and clips it (`src/tooltip.rs:134-144`),
+/// so a maximum width on the bubble now wraps the text inside it; before,
+/// the text ran on past the bubble. With a key binding the two differ: the
+/// content's width counts the text alone, and the key and the gap before it
+/// widen the bubble past the theme's width, which is why the showcase's
+/// `action_tooltip`, whose tooltips show a key, is built the first way. The
+/// text is one long line, which every preset here wraps.
+#[gpui::test]
+fn the_tooltip_bubble_keeps_to_the_themes_width(cx: &mut TestAppContext) {
+    for preset in TOOLTIP_WAY_PRESETS {
+        let max = px(resolved(preset).tooltip.max_width);
+        let by_content = bubble(cx, preset, content_way_unkeyed);
+        let by_max_width = bubble(cx, preset, max_width_way_unkeyed);
+        assert_eq!(
+            by_content.map(|b| b.size.width),
+            Some(max),
+            "{preset}: the bubble built through tooltip_content is not the theme's {max:?} wide, \
+             so the text did not wrap at it"
+        );
+        assert_eq!(
+            by_max_width, by_content,
+            "{preset}: Tooltip::new with the theme's max width is not the bubble \
+             tooltip_content builds"
+        );
+        let keyed_max_width = bubble(cx, preset, max_width_way_keyed).map(|b| b.size.width);
+        assert_eq!(
+            keyed_max_width,
+            Some(max),
+            "{preset}: with a key binding, the bubble of Tooltip::new with the theme's max width \
+             is not the theme's {max:?} wide"
+        );
+        let keyed_content = bubble(cx, preset, content_way_keyed).map(|b| b.size.width);
+        assert!(
+            keyed_content.is_some_and(|w| w > max),
+            "{preset}: with a key binding, the bubble built through tooltip_content is \
+             {keyed_content:?} wide, not past the theme's {max:?}: action_tooltip's reason for \
+             Tooltip::new no longer holds"
+        );
     }
 }

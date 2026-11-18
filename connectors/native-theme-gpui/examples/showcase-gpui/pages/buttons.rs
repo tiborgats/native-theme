@@ -9,8 +9,8 @@ use crate::demo::{self, ButtonKind, ButtonState, DemoButton};
 use crate::pages::page_root;
 use crate::support::with_gap;
 use crate::{
-    BUTTONS_DANGER, BUTTONS_DISABLED_SECONDARY, BUTTONS_HEADING_VARIANTS, BUTTONS_PRIMARY,
-    BUTTONS_TEXT, PROBE_CLIPBOARD, probe,
+    BUTTONS_DANGER, BUTTONS_DISABLED_SECONDARY, BUTTONS_HEADING_VARIANTS, BUTTONS_LOADING_NO_ICON,
+    BUTTONS_PRIMARY, BUTTONS_TEXT, PROBE_CLIPBOARD, probe,
 };
 
 /// The variant row: one Button per variant the showcase builds, as `(id,
@@ -144,21 +144,38 @@ impl Showcase {
                 )
             })))
             .child(demo::heading(ui, cx, "buttons-heading-loading", "Loading State"))
-            .child(row().child(demo::button(
-                ui,
-                cx,
-                DemoButton {
-                    id: "buttons-loading",
-                    label: "Loading...",
-                    kind: ButtonKind::Primary,
-                    state: ButtonState::Loading,
-                    // `Button` draws its spinner in place of its icon
-                    // (`button/button_icon.rs`), so a loading button needs
-                    // one to show it: the chosen icon theme's loading
-                    // icon, which the spinner turns.
-                    icon: Some(self.sample_icon(IconName::Loader)),
-                },
-            )))
+            .child(
+                row()
+                    .child(demo::button(
+                        ui,
+                        cx,
+                        DemoButton {
+                            id: "buttons-loading",
+                            label: "Loading...",
+                            kind: ButtonKind::Primary,
+                            state: ButtonState::Loading,
+                            // `Button` draws its spinner in place of its
+                            // icon (`button/button_icon.rs`): the chosen icon
+                            // theme's loading icon, which the spinner turns.
+                            icon: Some(self.sample_icon(IconName::Loader)),
+                        },
+                    ))
+                    // Without an icon, where one would sit
+                    // (`button/button.rs`, `RenderOnce for Button`), turning
+                    // the same loading icon.
+                    .child(demo::loading_button(
+                        ui,
+                        cx,
+                        DemoButton {
+                            id: BUTTONS_LOADING_NO_ICON,
+                            label: "Loading, no icon...",
+                            kind: ButtonKind::Primary,
+                            state: ButtonState::Loading,
+                            icon: None,
+                        },
+                        self.sample_icon(IconName::Loader),
+                    )),
+            )
             .child(demo::heading(ui, cx, "buttons-heading-icons", "Buttons with Icons"))
             .child(
                 row()
@@ -243,6 +260,7 @@ impl Showcase {
                             cx,
                             "buttons-clipboard-cargo",
                             "cargo add native-theme",
+                            None,
                         ),
                     ))
                     .child(demo::clipboard(
@@ -250,6 +268,14 @@ impl Showcase {
                         cx,
                         "buttons-clipboard-npm",
                         "npm install native-theme",
+                        None,
+                    ))
+                    .child(demo::clipboard(
+                        ui,
+                        cx,
+                        "buttons-clipboard-labelled",
+                        "native-theme",
+                        Some("Copy the name"),
                     )),
             )
             .child(demo::heading(ui, cx, "buttons-heading-toolbar", "Toolbar & ToolbarGroup"))

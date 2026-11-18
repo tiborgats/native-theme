@@ -52,6 +52,28 @@ pub(super) fn scene_underlines(window: &gpui::Window) -> Vec<gpui::Underline> {
     }
 }
 
+/// The monochrome sprites the window's last frame painted, glyphs among
+/// them, as their bounds and their colours, read as [`scene_quads`] reads
+/// the quads: a glyph is a monochrome sprite (gpui-fast 0.1.16
+/// src/window.rs, `Window::paint_glyph`; the test window renders no
+/// subpixel glyph, src/platform/test/window.rs,
+/// `is_subpixel_rendering_supported`), and so is an SVG icon
+/// (`Window::paint_svg`). GPUI Fast only, and only where the
+/// platform's text system rasterizes glyphs: gpui's test one gives every
+/// glyph empty raster bounds, so nothing is painted for it
+/// (src/platform.rs, `NoopTextSystem::glyph_raster_bounds`).
+#[cfg(feature = "gpui-fast")]
+#[allow(dead_code, reason = "the widget tests read no glyph")]
+pub(super) fn scene_glyphs(
+    window: &gpui::Window,
+) -> Vec<(gpui::Bounds<gpui::ScaledPixels>, gpui::Hsla)> {
+    let mut glyphs = Vec::new();
+    for_each_clip_group_scene(window.painted_scene(), &mut |scene| {
+        glyphs.extend(scene.monochrome_sprites.iter().map(|s| (s.bounds, s.color)))
+    });
+    glyphs
+}
+
 /// `scene`, then the scene of each of its clip-group frames, depth first.
 #[cfg(feature = "gpui-fast")]
 fn for_each_clip_group_scene(scene: &gpui::Scene, f: &mut impl FnMut(&gpui::Scene)) {

@@ -186,7 +186,7 @@ fn card_edge(info: WidgetInfo, r: &ResolvedTheme, outline: bool) -> WidgetInfo {
         "border",
         Some(r.card.border.color),
         Some(width),
-        "native-theme-gpui/geometry.rs:772",
+        "native-theme-gpui/geometry.rs:784",
     ))
     .config("edge", match (width > 0.0, outline) {
         (true, _) => format!("card.border.color at card.border.line_width, {}px, on every variant: geometry::group_box_content sets both on the content, which the GroupBox refines last (group_box.rs, GroupBox) -- over an Outline's own border colour, and on a Normal or Fill box, which draws no edge of its own", px_text(width)),
@@ -349,7 +349,7 @@ fn upstream_accordion(
             "bg",
             "accordion",
             t.accordion,
-            "gpui-component/accordion.rs:378",
+            "gpui-component/accordion.rs:381",
         ));
     let info = if styled {
         info
@@ -358,19 +358,19 @@ fn upstream_accordion(
             "border",
             "border",
             t.border,
-            "gpui-component/accordion.rs:110",
+            "gpui-component/accordion.rs:111",
         ))
         .color(claim(
             "line between items",
             "border",
             t.border,
-            "gpui-component/accordion.rs:381",
+            "gpui-component/accordion.rs:384",
         ))
         .color(claim(
             "open item's title",
             "foreground",
             t.foreground,
-            "gpui-component/accordion.rs:306",
+            "gpui-component/accordion.rs:308",
         ))
         // A closed item's title row sets no colour (accordion.rs:306 is
         // the open one's), so it takes the colour the showcase sets on its
@@ -387,7 +387,7 @@ fn upstream_accordion(
             "chevron",
             "muted_foreground",
             t.muted_foreground,
-            "gpui-component/accordion.rs:330",
+            "gpui-component/accordion.rs:333",
         ))
         .config(
             "border-radius",
@@ -446,6 +446,10 @@ pub fn card(
     info.instance("content", "a body-text Label, which reports itself")
 }
 
+/// The ring gpui-component's own tab draws while it has the focus from the
+/// keyboard.
+const UPSTREAM_TAB_RING: &str = "on keyboard focus only, the tabs taking the focus from the keyboard alone: ring, the theme's focus ring colour, as an inset shadow 2px wide inside the tab, a literal the theme's defaults.focus_ring_width and focus_ring_offset do not reach (gpui-component/tab/tab.rs:933, ring; :962-973, focus_visible)";
+
 /// A `TabBar` of the Tab variant over `labels`, the one at `selected`
 /// shown, its per-call seams taken from `native` where a native theme is
 /// installed (`demo::tab_row`).
@@ -467,35 +471,36 @@ pub fn tab_row(
                 "label",
                 "tab_foreground",
                 t.tab_foreground,
-                "gpui-component/tab/tab.rs:172",
+                "gpui-component/tab/tab.rs:173",
             ))
             .color(claim(
                 "selected label",
                 "tab_active_foreground",
                 t.tab_active_foreground,
-                "gpui-component/tab/tab.rs:276",
+                "gpui-component/tab/tab.rs:277",
             ))
             .color(claim(
                 "selected tab",
                 "tab_active",
                 t.tab_active,
-                "gpui-component/tab/tab.rs:277",
+                "gpui-component/tab/tab.rs:278",
             ))
             .color(claim(
                 "selected tab's sides",
                 "border",
                 t.border,
-                "gpui-component/tab/tab.rs:283",
+                "gpui-component/tab/tab.rs:284",
             ))
             .color(claim(
                 "rule under the bar",
                 "border",
                 t.border,
-                "gpui-component/tab/tab_bar.rs:654",
+                "gpui-component/tab/tab_bar.rs:676",
             ))
             .not_themeable("hover", "transparent: a Tab-variant tab paints no hover fill, and the Tab sets its hover style itself, which replaces one a caller gives (tab/tab.rs, TabVariant::hovered and RenderOnce for Tab), so tab.hover_background has no receiver")
             .not_themeable("edges", "the selected tab's 1px sides and the bar's 1px bottom rule in border, px literals set inside render (tab/tab.rs, TabVariant::selected; tab/tab_bar.rs, RenderOnce for TabBar), while the model's tab.border states the tab's own edge")
-            .not_themeable("padding", "the tab's inner padding is a px literal per variant and Size on a child the Tab builds (tab/tab.rs, TabVariant::inner_paddings), so a caller's padding adds to it rather than replacing it, and the model's tab.border.padding is not applied");
+            .not_themeable("padding", "the tab's inner padding is a px literal per variant and Size on a child the Tab builds (tab/tab.rs, TabVariant::inner_paddings), so a caller's padding adds to it rather than replacing it, and the model's tab.border.padding is not applied")
+            .not_themeable("focus ring", UPSTREAM_TAB_RING);
     let info = match native {
         Some(r) => info
             .config("font", format!("tab.font: {}, on each label, a child over the text_sm the Tab sets on itself (tab/tab.rs, RenderOnce for Tab)", drawn_font(&r.tab.font)))
@@ -535,43 +540,43 @@ pub fn folder_tab_row(
             "label",
             "tab_foreground",
             t.tab_foreground,
-            "gpui-component/tab/tab.rs:211",
+            "gpui-component/tab/tab.rs:212",
         ))
         .color(claim(
             "hovered label",
             "tab_active_foreground",
             t.tab_active_foreground,
-            "gpui-component/tab/tab.rs:266",
+            "gpui-component/tab/tab.rs:267",
         ))
         .color(claim(
             "selected label",
             "tab_active_foreground",
             t.tab_active_foreground,
-            "gpui-component/tab/tab.rs:317",
+            "gpui-component/tab/tab.rs:318",
         ))
         .color(claim(
             "disabled label",
             "muted_foreground",
             t.muted_foreground,
-            "gpui-component/tab/tab.rs:390",
+            "gpui-component/tab/tab.rs:391",
         ))
         .color(claim(
             "selected tab",
             "tab_active",
             t.tab_active,
-            "gpui-component/tab/tab.rs:1001",
+            "gpui-component/tab/tab.rs:1026",
         ))
         .color(claim(
             "hovered tab",
             "secondary",
             t.secondary,
-            "gpui-component/tab/tab.rs:1015",
+            "gpui-component/tab/tab.rs:1040",
         ))
         .color(claim(
             "separator",
             "border",
             t.border,
-            "gpui-component/tab/tab.rs:1028",
+            "gpui-component/tab/tab.rs:1054",
         ))
         .color(claim("panel", "tab_active", t.tab_active, "showcase"))
         .color(claim(
@@ -588,7 +593,8 @@ pub fn folder_tab_row(
         .not_themeable("separator", "1px wide in border, a px literal set inside render (tab/tab.rs, RenderOnce for Tab), drawn between two tabs neither of which is selected or hovered (tab/tab_bar.rs, RenderOnce for TabBar)")
         .not_themeable("padding", "px literals per Size (tab/tab.rs, FolderTabMetrics::new): the bar's space above the tabs is 2, 4, 4 and 8px at XSmall, Small, the default size and Large, the tab's side padding 8, 8, 12 and 16px and the separator 12, 12, 16 and 16px tall, so the model's tab.border.padding is not applied")
         .not_themeable("gap", "4px between two tabs, holding their separator: FOLDER_TAB_GAP, a px literal (tab/tab.rs)")
-        .not_themeable("height", "32px at the default size (20, 24 and 36px at XSmall, Small and Large), its content 24px tall (16, 18 and 28px), as Segmented's: px literals per Size (tab/tab.rs, TabVariant::height and TabVariant::inner_height)");
+        .not_themeable("height", "32px at the default size (20, 24 and 36px at XSmall, Small and Large), its content 24px tall (16, 18 and 28px), as Segmented's: px literals per Size (tab/tab.rs, TabVariant::height and TabVariant::inner_height)")
+        .not_themeable("focus ring", UPSTREAM_TAB_RING);
     let info = match native {
         Some(r) => info
             .config("font", format!("tab.font: {}, on each label, a child over the text_sm the Tab sets on itself (tab/tab.rs, RenderOnce for Tab)", drawn_font(&r.tab.font)))
@@ -909,7 +915,7 @@ pub fn native_tab_row(r: &ResolvedTheme, variant: &'static str) -> WidgetInfo {
             |v| format!("{}px", px_text(v)),
         )
     };
-    info.config("size", format!("each tab at least tab.min_width, {}px, by tab.min_height, {}px", px_text(t.min_width), px_text(t.min_height)))
+    let info = info.config("size", format!("each tab at least tab.min_width, {}px, by tab.min_height, {}px", px_text(t.min_width), px_text(t.min_height)))
         .config("font", format!("tab.font: {}", drawn_font(&t.font)))
         .config("padding", format!("tab.border.padding: left {}, right {}; top and bottom {} and {}", side(padding.left), side(padding.right), padding.top.map_or("unstated".to_string(), |v| format!("{}px", px_text(v))), padding.bottom.map_or("unstated".to_string(), |v| format!("{}px", px_text(v)))))
         .config("outline", format!("tab.border on the selected tab only: {}px, radius {}px on its top corners, as Breeze and Windows draw it (docs/platform-facts.md §2.11){}", px_text(t.border.line_width), px_text(t.border.corner_radius), if outward.is_some() { "; no bottom edge: it runs on down the outward corners instead" } else { "" }))
@@ -938,7 +944,39 @@ pub fn native_tab_row(r: &ResolvedTheme, variant: &'static str) -> WidgetInfo {
             (Some(_), false) => "none: tab.item_gap is unstated, and widgets::TabBar lays its tabs with none, as gpui-component lays its default variant's (tab/tab_bar.rs, TabBar::render)".to_string(),
             (None, _) => "not widgets::TabBar's: a tab length the theme states is not finite, so gpui-component's TabBar lays the tabs out".to_string(),
         })
-        .not_themeable("rule under the bar", "separator.*, the line the theme states for parting content: the model states no tab-bar rule of its own")
+        .not_themeable("rule under the bar", "separator.*, the line the theme states for parting content: the model states no tab-bar rule of its own");
+    match look {
+        Some(_) => tab_bar_ring(info, r),
+        None => info.not_themeable("focus ring", UPSTREAM_TAB_RING),
+    }
+}
+
+/// `info` with the focus ring `widgets::TabBar` draws round a tab under `r`:
+/// the theme's colour and width, inside the tab.
+#[cfg(feature = "widgets")]
+fn tab_bar_ring(info: WidgetInfo, r: &ResolvedTheme) -> WidgetInfo {
+    let d = &r.defaults;
+    let (width, offset) = (d.focus_ring_width, d.focus_ring_offset);
+    if !(width.is_finite() && offset.is_finite() && width > 0.0) {
+        return info.config(
+            "focus ring",
+            "none: the theme states no ring, its focus_ring_width not finite or not positive, or its focus_ring_offset not finite (native-theme-gpui/widgets/mod.rs, FocusRing::of)",
+        );
+    }
+    info.color(claim(
+        "focus ring",
+        "focus_ring_color",
+        stated(d.focus_ring_color),
+        "native-theme-gpui/widgets/mod.rs:349",
+    ))
+    .config(
+        "focus ring",
+        format!(
+            "on keyboard focus only, the tabs taking the focus from the keyboard alone: an inset shadow defaults.focus_ring_width, {}px, wide inside the tab (native-theme-gpui/widgets/tab_bar.rs, TabBar). defaults.focus_ring_offset, {}px, is not reached: the tabs' row scrolls and clips what lies outside it, so a ring outside the tab would lose a band",
+            px_text(width),
+            px_text(offset)
+        ),
+    )
 }
 
 /// Each side of a segment's padding as `demo::segmented` draws it: a side
@@ -1021,13 +1059,13 @@ pub fn segmented(
                 "label",
                 "tab_foreground",
                 t.tab_foreground,
-                "gpui-component/tab/tab.rs:200",
+                "gpui-component/tab/tab.rs:201",
             ))
             .color(claim(
                 "selected label",
                 "tab_active_foreground",
                 t.tab_active_foreground,
-                "gpui-component/tab/tab.rs:299",
+                "gpui-component/tab/tab.rs:300",
             ))
             .not_themeable("font", "text_sm, the Tab's own: no native theme is installed (tab/tab.rs, RenderOnce for Tab)"),
     };
@@ -1137,7 +1175,7 @@ pub fn carousel_slide(t: &Theme, index: usize, title: &str, caption: &str) -> Wi
             "title",
             "foreground",
             t.foreground,
-            "gpui-component/label.rs:213",
+            "gpui-component/label.rs:248",
         ))
         .color(claim(
             "caption",
@@ -1172,19 +1210,19 @@ pub fn carousel_page(t: &Theme, index: usize, selected: bool) -> WidgetInfo {
                 "bg",
                 "button_active",
                 t.button_active,
-                "gpui-component/button/button.rs:1327",
+                "gpui-component/button/button.rs:1343",
             ))
             .color(claim(
                 "text",
                 "button_foreground",
                 t.button_foreground,
-                "gpui-component/button/button.rs:1034",
+                "gpui-component/button/button.rs:1050",
             ))
             .color(claim(
                 "border",
                 "input",
                 t.input,
-                "gpui-component/button/button.rs:1086",
+                "gpui-component/button/button.rs:1102",
             ))
             .not_themeable(
                 "hover",
@@ -1195,31 +1233,31 @@ pub fn carousel_page(t: &Theme, index: usize, selected: bool) -> WidgetInfo {
             "bg",
             "button",
             t.button,
-            "gpui-component/button/button.rs:1020",
+            "gpui-component/button/button.rs:1036",
         ))
         .color(claim(
             "text",
             "button_foreground",
             t.button_foreground,
-            "gpui-component/button/button.rs:1034",
+            "gpui-component/button/button.rs:1050",
         ))
         .color(claim(
             "border",
             "input",
             t.input,
-            "gpui-component/button/button.rs:1086",
+            "gpui-component/button/button.rs:1102",
         ))
         .color(claim(
             "hover",
             "button_hover",
             t.button_hover,
-            "gpui-component/button/button.rs:1164",
+            "gpui-component/button/button.rs:1180",
         ))
         .color(claim(
             "active",
             "button_active",
             t.button_active,
-            "gpui-component/button/button.rs:1248",
+            "gpui-component/button/button.rs:1264",
         ))
     };
     info.config("border-radius", format!("radius: {}px", t.radius.as_f32()))
@@ -1258,13 +1296,13 @@ pub fn stepper(
                 "icon, completed / current",
                 "primary_foreground",
                 t.primary_foreground,
-                "gpui-component/stepper/trigger.rs:134",
+                "gpui-component/stepper/trigger.rs:136",
             ),
             claim(
                 "icon, pending",
                 "secondary_foreground",
                 t.secondary_foreground,
-                "gpui-component/stepper/trigger.rs:131",
+                "gpui-component/stepper/trigger.rs:133",
             ),
         ),
         StepperKind::Icons if shown > 0 => (
@@ -1272,13 +1310,13 @@ pub fn stepper(
                 "icon or number, completed / current",
                 "primary_foreground",
                 t.primary_foreground,
-                "gpui-component/stepper/trigger.rs:134",
+                "gpui-component/stepper/trigger.rs:136",
             ),
             claim(
                 "icon or number, pending",
                 "secondary_foreground",
                 t.secondary_foreground,
-                "gpui-component/stepper/trigger.rs:131",
+                "gpui-component/stepper/trigger.rs:133",
             ),
         ),
         StepperKind::Icons | StepperKind::Numbers => (
@@ -1286,13 +1324,13 @@ pub fn stepper(
                 "number, completed / current",
                 "primary_foreground",
                 t.primary_foreground,
-                "gpui-component/stepper/trigger.rs:134",
+                "gpui-component/stepper/trigger.rs:136",
             ),
             claim(
                 "number, pending",
                 "secondary_foreground",
                 t.secondary_foreground,
-                "gpui-component/stepper/trigger.rs:131",
+                "gpui-component/stepper/trigger.rs:133",
             ),
         ),
     };
@@ -1302,7 +1340,7 @@ pub fn stepper(
             "completed / current",
             "primary",
             t.primary,
-            "gpui-component/stepper/trigger.rs:133",
+            "gpui-component/stepper/trigger.rs:135",
         ))
         .color(checked_mark);
     let info = if pending {
@@ -1310,26 +1348,26 @@ pub fn stepper(
             "pending",
             "secondary",
             t.secondary,
-            "gpui-component/stepper/trigger.rs:126",
+            "gpui-component/stepper/trigger.rs:128",
         ))
         .color(pending_mark)
         .color(claim(
             "pending hover",
             "secondary_hover",
             t.secondary_hover,
-            "gpui-component/stepper/trigger.rs:128",
+            "gpui-component/stepper/trigger.rs:130",
         ))
         .color(claim(
             "pending pressed",
             "secondary_active",
             t.secondary_active,
-            "gpui-component/stepper/trigger.rs:129",
+            "gpui-component/stepper/trigger.rs:131",
         ))
         .color(claim(
             "separator",
             "border",
             t.border,
-            "gpui-component/stepper/item.rs:263",
+            "gpui-component/stepper/item.rs:265",
         ))
     } else {
         info
@@ -1339,7 +1377,7 @@ pub fn stepper(
             "passed separator",
             "primary",
             t.primary,
-            "gpui-component/stepper/item.rs:264",
+            "gpui-component/stepper/item.rs:266",
         ))
     } else {
         info
@@ -1384,22 +1422,22 @@ pub fn breadcrumb(t: &Theme, pages: &[Page], current: Page) -> WidgetInfo {
             "items",
             "muted_foreground",
             t.muted_foreground,
-            "gpui-component/breadcrumb.rs:101",
+            "gpui-component/breadcrumb.rs:102",
         ))
         .color(claim(
             "last item",
             "foreground",
             t.foreground,
-            "gpui-component/breadcrumb.rs:102",
+            "gpui-component/breadcrumb.rs:103",
         ))
         .color(claim(
             "separators",
             "muted_foreground",
             t.muted_foreground,
-            "gpui-component/breadcrumb.rs:144",
+            "gpui-component/breadcrumb.rs:150",
         ))
-        .not_themeable("own icons", super::own_icons("the ChevronRight between its items (breadcrumb.rs, Breadcrumb)"))
-        .not_themeable("separator icon", "a ChevronRight built inline with no setter to replace it (breadcrumb.rs, Breadcrumb) -- unlike an Alert's icon, which Alert::icon takes")
+        .not_themeable("own icons", super::own_icons("the ChevronRight between its items, ChevronLeft in a right-to-left layout (breadcrumb.rs, BreadcrumbSeparator)"))
+        .not_themeable("separator icon", "a ChevronRight built inline with no setter to replace it, a ChevronLeft in a right-to-left layout (breadcrumb.rs, BreadcrumbSeparator) -- unlike an Alert's icon, which Alert::icon takes")
         .not_themeable("spacing", "gap_1p5 (breadcrumb.rs, Breadcrumb) -- rems again -- and applied before the caller's refinement. native-theme states no breadcrumb widget. Our gap")
         .instance("items", format!("{links} and {current}: a click on one of the first {} shows that page, and {current}, the last, is this page. Breadcrumb::child takes a BreadcrumbItem that the Breadcrumb renders itself (breadcrumb.rs, Breadcrumb::child), so an item cannot be wrapped: the Breadcrumb reports for its items", pages.len()))
 }
@@ -1422,13 +1460,13 @@ pub fn form(t: &Theme, label_width: Pixels) -> WidgetInfo {
             "description",
             "muted_foreground",
             t.muted_foreground,
-            "gpui-component/form/field.rs:344",
+            "gpui-component/form/field.rs:346",
         ))
         .color(claim(
             "required marker",
             "danger",
             t.danger,
-            "gpui-component/form/field.rs:321",
+            "gpui-component/form/field.rs:323",
         ))
         .not_themeable("fields", "the Field wrapper takes no geometry -- the model has no form theme. Each field's Input is refined by geometry::input and reports itself")
         .not_themeable("label style", "text_sm and font_medium on a box that sets no colour (form/field.rs, Field)")
@@ -1454,19 +1492,19 @@ pub fn scroll_area(t: &Theme, styled: bool, items: usize) -> WidgetInfo {
             "track",
             "scrollbar",
             t.scrollbar,
-            "gpui-component/theme/mod.rs:425",
+            "gpui-component/theme/mod.rs:435",
         ))
         .color(claim(
             "thumb",
             "scrollbar_thumb",
             t.scrollbar_thumb,
-            "gpui-component/theme/mod.rs:430",
+            "gpui-component/theme/mod.rs:440",
         ))
         .color(claim(
             "thumb hover",
             "scrollbar_thumb_hover",
             t.scrollbar_thumb_hover,
-            "gpui-component/theme/mod.rs:441",
+            "gpui-component/theme/mod.rs:451",
         ))
         .config("border-radius", format!("radius: {}px", t.radius.as_f32()))
         .config(
@@ -1588,19 +1626,19 @@ pub fn sidebar(t: &Theme, collapsed: bool, header: &str) -> WidgetInfo {
             "bg",
             "sidebar",
             t.sidebar,
-            "gpui-component/sidebar/mod.rs:422",
+            "gpui-component/sidebar/mod.rs:435",
         ))
         .color(claim(
             "text",
             "sidebar_foreground",
             t.sidebar_foreground,
-            "gpui-component/sidebar/mod.rs:423",
+            "gpui-component/sidebar/mod.rs:436",
         ))
         .color(claim(
             "border",
             "sidebar_border",
             t.sidebar_border,
-            "gpui-component/sidebar/mod.rs:424",
+            "gpui-component/sidebar/mod.rs:437",
         ))
         .not_themeable(
             "width",
@@ -1661,32 +1699,32 @@ pub fn sidebar_item(
             "bg",
             "sidebar_accent",
             t.sidebar_accent,
-            "gpui-component/sidebar/menu.rs:318",
+            "gpui-component/sidebar/menu.rs:321",
         ))
         .color(claim(
             "text",
             "sidebar_accent_foreground",
             t.sidebar_accent_foreground,
-            "gpui-component/sidebar/menu.rs:319",
+            "gpui-component/sidebar/menu.rs:322",
         ))
     } else {
         info.color(claim(
             "text (the Sidebar's)",
             "sidebar_foreground",
             t.sidebar_foreground,
-            "gpui-component/sidebar/mod.rs:423",
+            "gpui-component/sidebar/mod.rs:436",
         ))
         .color(claim(
             "hover bg, at 80%",
             "sidebar_accent",
             t.sidebar_accent.opacity(0.8),
-            "gpui-component/sidebar/menu.rs:312",
+            "gpui-component/sidebar/menu.rs:315",
         ))
         .color(claim(
             "hover text",
             "sidebar_accent_foreground",
             t.sidebar_accent_foreground,
-            "gpui-component/sidebar/menu.rs:313",
+            "gpui-component/sidebar/menu.rs:316",
         ))
     };
     let info = info

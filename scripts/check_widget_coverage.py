@@ -232,7 +232,7 @@ UI_HEADINGS = ("# Adding widgets", "# Colors", "# Adding Containers / Sub-uis:",
 RESPONSE_RETURN = re.compile(r"->\s*(?:egui::)?Response\b")
 
 RENDER_IMPL = re.compile(
-    r"^\s*impl(?:\s*<[^>]*>)?\s+(?:RenderOnce|IntoElement)\s+for\s+([A-Za-z_]\w*)"
+    r"^\s*impl(?:\s*<[^>]*>)?\s+(?:\w+::)*(?:RenderOnce|IntoElement)\s+for\s+([A-Za-z_]\w*)"
 )
 DERIVE = re.compile(r"#\[derive\(([^)]*)\)\]")
 RENDER_DERIVES = {"IntoElement", "IntoPlot"}
@@ -1398,6 +1398,14 @@ def self_test():
                   "anim.rs": "pub struct Fade;\nimpl RenderOnce for Fade {}\n",
               }, {"lib.rs": "pub use gpui_base::anim;\n"}),
               ["Fade"] + roots)
+        finds("gpui-base: a path-qualified impl (`gpui::IntoElement`, gpui-base 0.10.0 "
+              "plot/element.rs:50) under a cfg is discovered",
+              reexports("qualified", {
+                  "plot/mod.rs": "mod el;\npub use el::PlotEl;\n",
+                  "plot/el.rs": "pub struct PlotEl<P>(P);\n#[cfg(not(feature = \"x\"))]\n"
+                  "impl<P: Plot + 'static> gpui::IntoElement for PlotEl<P> {}\n",
+              }, {}),
+              ["Folder", "Grid", "PlotEl", "VList"])
         finds("gpui-base: an external crate's path yields nothing",
               reexports("external", {
                   "lib.rs": "pub use vl::Rope;\n",

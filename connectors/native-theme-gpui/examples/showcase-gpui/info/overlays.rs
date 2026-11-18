@@ -172,7 +172,7 @@ pub fn alert_dialog(
         "confirm button",
         "button_danger",
         t.button_danger,
-        "gpui-component/button/button.rs:1023",
+        "gpui-component/button/button.rs:1039",
     ))
     .not_themeable(
         "surface",

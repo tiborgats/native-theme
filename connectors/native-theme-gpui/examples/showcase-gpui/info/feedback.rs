@@ -9,12 +9,9 @@ use native_theme_gpui::ResolvedTheme;
 
 #[cfg(feature = "widgets")]
 use super::edge_claim;
-use super::{ColorClaim, WidgetInfo, as_rgba, claim, percent_text, px_text, stated};
+use super::{ColorClaim, WidgetInfo, claim, px_text, stated};
 use crate::demo::{CircleKind, MarkerKind, Severity, ShimmerKind, SpinnerKind, TagKind};
 use crate::support::SampleIcon;
-
-/// The opacity a hovered Tag paints at: upstream's literal (tag.rs:269).
-const TAG_HOVER_OPACITY: f32 = 0.9;
 
 /// An `Alert` of `severity` at the default Size, a `banner` or not. The
 /// caller adds what the Alert says.
@@ -29,19 +26,19 @@ pub fn alert(t: &Theme, severity: Severity, banner: bool) -> WidgetInfo {
                 "text and icon",
                 "info",
                 t.info,
-                "gpui-component/alert.rs:29",
+                "gpui-component/alert.rs:30",
             ),
             claim(
                 "bg, info at 4%",
                 "info",
                 t.info.mix_oklab(transparent_white(), 0.04),
-                "gpui-component/alert.rs:39",
+                "gpui-component/alert.rs:40",
             ),
             claim(
                 "border, info at 30%",
                 "info",
                 t.info.mix_oklab(transparent_white(), 0.3),
-                "gpui-component/alert.rs:49",
+                "gpui-component/alert.rs:50",
             ),
         ),
         Severity::Success => (
@@ -49,19 +46,19 @@ pub fn alert(t: &Theme, severity: Severity, banner: bool) -> WidgetInfo {
                 "text and icon",
                 "success",
                 t.success,
-                "gpui-component/alert.rs:30",
+                "gpui-component/alert.rs:31",
             ),
             claim(
                 "bg, success at 4%",
                 "success",
                 t.success.mix_oklab(transparent_white(), 0.04),
-                "gpui-component/alert.rs:40",
+                "gpui-component/alert.rs:41",
             ),
             claim(
                 "border, success at 30%",
                 "success",
                 t.success.mix_oklab(transparent_white(), 0.3),
-                "gpui-component/alert.rs:50",
+                "gpui-component/alert.rs:51",
             ),
         ),
         Severity::Warning => (
@@ -69,19 +66,19 @@ pub fn alert(t: &Theme, severity: Severity, banner: bool) -> WidgetInfo {
                 "text and icon",
                 "warning",
                 t.warning,
-                "gpui-component/alert.rs:31",
+                "gpui-component/alert.rs:32",
             ),
             claim(
                 "bg, warning at 4%",
                 "warning",
                 t.warning.mix_oklab(transparent_white(), 0.04),
-                "gpui-component/alert.rs:41",
+                "gpui-component/alert.rs:42",
             ),
             claim(
                 "border, warning at 30%",
                 "warning",
                 t.warning.mix_oklab(transparent_white(), 0.3),
-                "gpui-component/alert.rs:51",
+                "gpui-component/alert.rs:52",
             ),
         ),
         Severity::Error => (
@@ -89,19 +86,19 @@ pub fn alert(t: &Theme, severity: Severity, banner: bool) -> WidgetInfo {
                 "text and icon",
                 "danger",
                 t.danger,
-                "gpui-component/alert.rs:32",
+                "gpui-component/alert.rs:33",
             ),
             claim(
                 "bg, danger at 4%",
                 "danger",
                 t.danger.mix_oklab(transparent_white(), 0.04),
-                "gpui-component/alert.rs:42",
+                "gpui-component/alert.rs:43",
             ),
             claim(
                 "border, danger at 30%",
                 "danger",
                 t.danger.mix_oklab(transparent_white(), 0.3),
-                "gpui-component/alert.rs:52",
+                "gpui-component/alert.rs:53",
             ),
         ),
     };
@@ -150,13 +147,13 @@ pub fn progress(t: &Theme, label: &str, value: Option<f32>, reduce_motion: bool)
             "bar",
             "progress_bar",
             t.progress_bar,
-            "gpui-component/progress/progress.rs:86",
+            "gpui-component/progress/progress.rs:87",
         ))
         .color(claim(
             "track, progress_bar at 20% (progress/progress.rs:135)",
             "progress_bar",
             t.progress_bar.opacity(0.2),
-            "gpui-component/progress/progress.rs:86",
+            "gpui-component/progress/progress.rs:87",
         ))
         .not_themeable("animation", "not hardcoded upstream: the fill transitions over the theme's duration_normal and easing_move (progress/progress.rs, Progress). Theme::motion is a writable field (theme/mod.rs, MotionTokens) the connector leaves at its default, because native-theme models no motion -- our model's gap, not upstream's");
     let Some(value) = value else {
@@ -202,9 +199,9 @@ pub fn native_progress(
     let p = &r.progress_bar;
     let info = WidgetInfo::new("ProgressBar")
         .config("drawn by", "native_theme_gpui::widgets::ProgressBar, on gpui-base's headless Progress, every part from the theme (docs/archive/todo_gpui-widgets-spec.md)")
-        .color(claim("fill", "fill_color", stated(p.fill_color), "native-theme-gpui/widgets/progress.rs:79"))
-        .color(claim("track", "track_color", stated(p.track_color), "native-theme-gpui/widgets/progress.rs:78"))
-        .colors(edge_claim("frame", "border", Some(p.border.color), Some(p.border.line_width), "native-theme-gpui/widgets/progress.rs:77"))
+        .color(claim("fill", "fill_color", stated(p.fill_color), "native-theme-gpui/widgets/progress.rs:80"))
+        .color(claim("track", "track_color", stated(p.track_color), "native-theme-gpui/widgets/progress.rs:79"))
+        .colors(edge_claim("frame", "border", Some(p.border.color), Some(p.border.line_width), "native-theme-gpui/widgets/progress.rs:78"))
         .config("height", format!("progress_bar.track_height: {}px, the frame inside it", p.track_height))
         .config("minimum width", format!("progress_bar.min_width: {}px", p.min_width))
         .config("frame", if p.border.line_width > 0.0 {
@@ -588,80 +585,80 @@ pub fn tag(t: &Theme, kind: TagKind, outline: bool, label: &str) -> WidgetInfo {
     let (name, fill, text, edge, outlined_text) = match kind {
         TagKind::Primary => (
             "Primary",
-            claim("bg", "primary", t.primary, "gpui-component/tag.rs:29"),
+            claim("bg", "primary", t.primary, "gpui-component/tag.rs:28"),
             claim(
                 "text",
                 "primary_foreground",
                 t.primary_foreground,
-                "gpui-component/tag.rs:71",
+                "gpui-component/tag.rs:70",
             ),
-            claim("border", "primary", t.primary, "gpui-component/tag.rs:48"),
-            claim("text", "primary", t.primary, "gpui-component/tag.rs:69"),
+            claim("border", "primary", t.primary, "gpui-component/tag.rs:47"),
+            claim("text", "primary", t.primary, "gpui-component/tag.rs:68"),
         ),
         TagKind::Secondary => (
             "Secondary",
-            claim("bg", "secondary", t.secondary, "gpui-component/tag.rs:30"),
+            claim("bg", "secondary", t.secondary, "gpui-component/tag.rs:29"),
             claim(
                 "text",
                 "secondary_foreground",
                 t.secondary_foreground,
-                "gpui-component/tag.rs:78",
+                "gpui-component/tag.rs:77",
             ),
-            claim("border", "border", t.border, "gpui-component/tag.rs:49"),
+            claim("border", "border", t.border, "gpui-component/tag.rs:48"),
             claim(
                 "text",
                 "muted_foreground",
                 t.muted_foreground,
-                "gpui-component/tag.rs:76",
+                "gpui-component/tag.rs:75",
             ),
         ),
         TagKind::Danger => (
             "Danger",
-            claim("bg", "danger", t.danger, "gpui-component/tag.rs:31"),
+            claim("bg", "danger", t.danger, "gpui-component/tag.rs:30"),
             claim(
                 "text",
                 "danger_foreground",
                 t.danger_foreground,
-                "gpui-component/tag.rs:85",
+                "gpui-component/tag.rs:84",
             ),
-            claim("border", "danger", t.danger, "gpui-component/tag.rs:50"),
-            claim("text", "danger", t.danger, "gpui-component/tag.rs:83"),
+            claim("border", "danger", t.danger, "gpui-component/tag.rs:49"),
+            claim("text", "danger", t.danger, "gpui-component/tag.rs:82"),
         ),
         TagKind::Success => (
             "Success",
-            claim("bg", "success", t.success, "gpui-component/tag.rs:32"),
+            claim("bg", "success", t.success, "gpui-component/tag.rs:31"),
             claim(
                 "text",
                 "success_foreground",
                 t.success_foreground,
-                "gpui-component/tag.rs:92",
+                "gpui-component/tag.rs:91",
             ),
-            claim("border", "success", t.success, "gpui-component/tag.rs:51"),
-            claim("text", "success", t.success, "gpui-component/tag.rs:90"),
+            claim("border", "success", t.success, "gpui-component/tag.rs:50"),
+            claim("text", "success", t.success, "gpui-component/tag.rs:89"),
         ),
         TagKind::Warning => (
             "Warning",
-            claim("bg", "warning", t.warning, "gpui-component/tag.rs:33"),
+            claim("bg", "warning", t.warning, "gpui-component/tag.rs:32"),
             claim(
                 "text",
                 "warning_foreground",
                 t.warning_foreground,
-                "gpui-component/tag.rs:99",
+                "gpui-component/tag.rs:98",
             ),
-            claim("border", "warning", t.warning, "gpui-component/tag.rs:52"),
-            claim("text", "warning", t.warning, "gpui-component/tag.rs:97"),
+            claim("border", "warning", t.warning, "gpui-component/tag.rs:51"),
+            claim("text", "warning", t.warning, "gpui-component/tag.rs:96"),
         ),
         TagKind::Info => (
             "Info",
-            claim("bg", "info", t.info, "gpui-component/tag.rs:34"),
+            claim("bg", "info", t.info, "gpui-component/tag.rs:33"),
             claim(
                 "text",
                 "info_foreground",
                 t.info_foreground,
-                "gpui-component/tag.rs:106",
+                "gpui-component/tag.rs:105",
             ),
-            claim("border", "info", t.info, "gpui-component/tag.rs:53"),
-            claim("text", "info", t.info, "gpui-component/tag.rs:104"),
+            claim("border", "info", t.info, "gpui-component/tag.rs:52"),
+            claim("text", "info", t.info, "gpui-component/tag.rs:103"),
         ),
     };
     let info = WidgetInfo::new("Tag").variant(if outline {
@@ -677,26 +674,11 @@ pub fn tag(t: &Theme, kind: TagKind, outline: bool, label: &str) -> WidgetInfo {
     } else {
         (info, vec![fill, text, edge])
     };
-    // gpui multiplies a hovered element's opacity into every colour painted
-    // inside it (gpui-pre/window.rs:4937-4945 for fills and edges, :5081 and
-    // :5130 for glyphs), so these are what a hovered Tag paints.
-    let hovered: Vec<String> = painted
-        .iter()
-        .map(|c| format!("{} {}", c.role, as_rgba(c.value.opacity(TAG_HOVER_OPACITY))))
-        .collect();
     painted
         .into_iter()
         .fold(info, WidgetInfo::color)
         .config("border-radius", format!("radius: {}px", t.radius.as_f32()))
         .not_themeable("padding", "px_2p5 / py_1 at the default Size -- rems, so the platform's font -- and settable: Tag applies the caller's refinement last (tag.rs, Tag::render). native-theme states no tag widget. Our gap")
-        .not_themeable(
-            "hover",
-            format!(
-                "the whole Tag fades to {} opacity, a literal, everything it paints alike: hovered, it paints {} (tag.rs, Tag::render)",
-                percent_text(TAG_HOVER_OPACITY),
-                hovered.join(", ")
-            ),
-        )
         .instance("label", label.to_string())
 }
 
@@ -717,14 +699,14 @@ pub fn badge(
     let info = match count {
         Some(count) => info
             .variant("count")
-            .color(claim("fill", "red", t.red, "gpui-component/badge.rs:125"))
+            .color(claim("fill", "red", t.red, "gpui-component/badge.rs:126"))
             .not_themeable("text", "white() whatever the fill, not a theme field: the fill is red, which the connector writes from its danger colour, so the count reads only where that colour is dark enough for white (badge.rs, Badge::render)")
             .not_themeable("size", "none: a count badge is as wide as its digits, at least 0.875rem, with its text at a 10px literal at every Size. px(10) / px(16) / px(24) per Size is an icon badge's, which this demo does not show (badge.rs, Badge::render)")
             .not_themeable("padding", "0.125rem on a count badge at every Size, on a pill no caller can reach: Badge applies its refinement to the wrapper around the badged element, and the pill is an absolute child built after it (badge.rs, Badge::render). native-theme states no badge widget either")
             .instance("count", count.to_string()),
         None => info
             .variant("dot")
-            .color(claim("dot fill", "red", t.red, "gpui-component/badge.rs:125"))
+            .color(claim("dot fill", "red", t.red, "gpui-component/badge.rs:126"))
             .not_themeable("size", "a 6px literal at every Size, on a pill no caller can reach: Badge applies its refinement to the wrapper around the badged element, and the pill is an absolute child built after it (badge.rs, Badge::render). native-theme states no badge widget either"),
     };
     info.not_themeable("fill, overridden", "Badge::color replaces it; red is only the default")
@@ -785,7 +767,7 @@ pub fn marker(
         "text",
         "muted_foreground",
         t.muted_foreground,
-        "gpui-component/marker.rs:219",
+        "gpui-component/marker.rs:222",
     ));
     let info = match plain_icon {
         Some(icon) => info.instance("icon", icon.note("the Marker shows its text alone")),
@@ -800,7 +782,7 @@ pub fn marker(
                 "icon, the row's text colour",
                 "muted_foreground",
                 t.muted_foreground,
-                "gpui-component/marker.rs:219",
+                "gpui-component/marker.rs:222",
             ))
         }
         MarkerKind::Plain => info,
@@ -808,13 +790,13 @@ pub fn marker(
             "separator line",
             "border",
             t.border,
-            "gpui-component/marker.rs:237",
+            "gpui-component/marker.rs:240",
         )),
         MarkerKind::Border => info.color(claim(
             "bottom border",
             "border",
             t.border,
-            "gpui-component/marker.rs:226",
+            "gpui-component/marker.rs:229",
         )),
         MarkerKind::Spinner => info
             .not_themeable(
@@ -825,7 +807,7 @@ pub fn marker(
                 "spinner, the row's text colour",
                 "muted_foreground",
                 t.muted_foreground,
-                "gpui-component/marker.rs:219",
+                "gpui-component/marker.rs:222",
             ))
             .instance("spinner", if reduce_motion {
                 "added by the Marker itself, loading with no icon slot: an XSmall Spinner, standing still at its start angle while reduced motion is on (marker.rs, Marker::render; gpui-pre/elements/animation.rs, AnimationExt)"
@@ -888,7 +870,7 @@ pub fn tooltip(
     };
     let info = if built {
         info.not_themeable("position", "gpui's own sits a pixel off the pointer (gpui-pre/window.rs, prepaint_tooltip)")
-            .instance("why built", "Button::tooltip takes a string and builds the tooltip itself (button/button.rs, Button::tooltip), so the only way to a refined one is to build it with Tooltip::element: the one place the platform's tooltip padding, radius and text colour reach the popup. The width is the content element's: on the popup it would clamp the popup and not the text, which then runs out of it")
+            .instance("why built", "Button::tooltip takes a string and builds the tooltip itself (button/button.rs, Button::tooltip), so the only way to a refined one is to build it with Tooltip::element: the one place the platform's tooltip padding, radius and text colour reach the popup. The width is the content element's, geometry::tooltip_content's: for a tooltip without a key binding, as this one, Tooltip::new with the theme's tooltip.max_width on the popup is the same bubble, since gpui-component 0.10.0 gives the text's box no minimum width and clips it (gpui-component/tooltip.rs, Tooltip::render); with a key binding the two differ: the content's width counts the text alone, so the popup grows past tooltip.max_width by the key and the gap before it, where the width on the popup keeps it within tooltip.max_width and wraps the text beside the key, which is why the chrome's tooltips, which show a key binding, are Tooltip::new with the width on the popup")
     } else {
         let (show, grace) = (
             defaults.show_delay().as_millis(),
@@ -900,6 +882,7 @@ pub fn tooltip(
         };
         info
             .not_themeable("position", "beside its trigger, flipping to stay in the window, unless Button::tooltip_placement pins a side (gpui-base/tooltip.rs, TooltipPositioner)")
+            .not_themeable("size change", "moving from one tooltip to another on the same row, the bubble slides and grows or shrinks to the new one's size over 200ms, a literal (gpui-component/tooltip.rs, SLIDE_DURATION; render_tooltip); under gpui's App::reduce_motion, which apply switches on where the platform asks for less motion, it is drawn at the new size at once, as every animation gpui runs (gpui-pre/elements/animation.rs, AnimationExt)")
     };
     info.instance(
         "trigger",
@@ -919,13 +902,13 @@ pub(super) fn tooltip_colours(t: &Theme, text: bool) -> Vec<ColorClaim> {
             "tooltip bg",
             "popover",
             t.popover,
-            "gpui-component/tooltip.rs:119",
+            "gpui-component/tooltip.rs:120",
         ),
         claim(
             "tooltip border",
             "border",
             t.border,
-            "gpui-component/tooltip.rs:123",
+            "gpui-component/tooltip.rs:124",
         ),
     ];
     if text {
@@ -933,7 +916,7 @@ pub(super) fn tooltip_colours(t: &Theme, text: bool) -> Vec<ColorClaim> {
             "tooltip text",
             "popover_foreground",
             t.popover_foreground,
-            "gpui-component/tooltip.rs:120",
+            "gpui-component/tooltip.rs:121",
         ));
     }
     claims
@@ -978,13 +961,13 @@ pub fn notification(t: &Theme, severity: Severity, label: &str, message: &str) -
             "bg",
             "popover",
             t.popover,
-            "gpui-component/notification.rs:431",
+            "gpui-component/notification.rs:432",
         ))
         .color(claim(
             "border",
             "border",
             t.border,
-            "gpui-component/notification.rs:430",
+            "gpui-component/notification.rs:431",
         ))
         .color(icon)
         .config("border-radius", format!("radius_lg: {}px", t.radius_lg.as_f32()))

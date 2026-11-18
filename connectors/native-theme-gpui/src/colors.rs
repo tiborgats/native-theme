@@ -1,6 +1,6 @@
-//! ResolvedTheme -> gpui_component::theme::ThemeColor mapping (139 fields).
+//! ResolvedTheme -> gpui_component::theme::ThemeColor mapping (140 fields).
 //!
-//! Maps native-theme's per-widget resolved fields to gpui-component's 139-field
+//! Maps native-theme's per-widget resolved fields to gpui-component's 140-field
 //! ThemeColor struct. Direct mappings cover ~40 fields; the remaining ones are
 //! derived via shade generation, blending, or fallback logic that mirrors
 //! gpui-component's own `apply_config` derivation.
@@ -160,7 +160,7 @@ struct ResolvedColors {
 
 /// Build a complete [`ThemeColor`] from a [`ResolvedTheme`].
 ///
-/// Maps all 139 fields: ~40 directly from ResolvedTheme per-widget structs,
+/// Maps all 140 fields: ~40 directly from ResolvedTheme per-widget structs,
 /// the rest derived via shade generation following gpui-component's own
 /// fallback logic.
 ///
@@ -424,6 +424,12 @@ fn assign_list_table(tc: &mut ThemeColor, c: &ResolvedColors, resolved: &Resolve
     // The window background it used to take is the surface the header sits
     // on, not the header.
     tc.list_head = c.list_header_bg;
+    // The text of a searchable list's row where it matches the query
+    // (gpui-component 0.10.0 `label.rs:261-275`, `highlight_matches`, which a
+    // `Select` and a `Combobox` with `highlight_matches(true)` draw a row's
+    // title with). The model states no colour for a match, so the match is
+    // drawn in the row's resting text colour.
+    tc.list_highlight_foreground = c.fg;
 
     tc.table = c.list_bg;
     tc.table_hover = tc.list_hover;
@@ -1308,14 +1314,14 @@ mod tests {
 
     #[test]
     fn theme_color_field_count_tripwire() {
-        // ThemeColor has 139 Hsla fields in gpui-component 0.9.1 (each 16 bytes
+        // ThemeColor has 140 Hsla fields in gpui-component 0.10.0 (each 16 bytes
         // = 4x f32).
         // If this fails, gpui-component added/removed fields -- update the color mapping.
         let size = std::mem::size_of::<ThemeColor>();
         let hsla_size = std::mem::size_of::<Hsla>();
         let field_count = size / hsla_size;
         assert_eq!(
-            field_count, 139,
+            field_count, 140,
             "ThemeColor field count changed (got {field_count}) -- update color mapping in to_theme_color() and the doc table in lib.rs"
         );
     }
@@ -1334,7 +1340,7 @@ mod tests {
                 .expect("ThemeColor serialises as an object");
             assert_eq!(
                 fields.len(),
-                139,
+                140,
                 "serde sees a different field count than the tripwire"
             );
             let unassigned: Vec<&String> = fields

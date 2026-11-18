@@ -22,7 +22,7 @@ pub fn heading(t: &Theme, native: bool) -> WidgetInfo {
         "text",
         "foreground",
         t.foreground,
-        "gpui-component/label.rs:213",
+        "gpui-component/label.rs:248",
     ));
     if native {
         info.config(
@@ -63,7 +63,7 @@ pub fn label(t: &Theme) -> WidgetInfo {
             "text",
             "foreground",
             t.foreground,
-            "gpui-component/label.rs:213",
+            "gpui-component/label.rs:248",
         ))
         .instance(
             "style",
@@ -86,7 +86,7 @@ pub fn gallery_label(t: &Theme, kind: LabelKind, text: &str) -> WidgetInfo {
         "text",
         "foreground",
         t.foreground,
-        "gpui-component/label.rs:213",
+        "gpui-component/label.rs:248",
     ));
     let info = match kind {
         LabelKind::Plain => info.instance("text", text.to_string()),
@@ -95,7 +95,7 @@ pub fn gallery_label(t: &Theme, kind: LabelKind, text: &str) -> WidgetInfo {
                 "secondary",
                 "muted_foreground",
                 t.muted_foreground,
-                "gpui-component/label.rs:173",
+                "gpui-component/label.rs:199",
             ))
             .instance("text", text.to_string())
             .instance(
@@ -128,7 +128,7 @@ pub fn sized_label(t: &Theme, size: TextSize) -> WidgetInfo {
         "text",
         "foreground",
         t.foreground,
-        "gpui-component/label.rs:213",
+        "gpui-component/label.rs:248",
     ));
     let info = match size {
         TextSize::Xs => info.instance("size", "text_xs: rems(0.75) (gpui-pre/styled.rs, text_xs)"),

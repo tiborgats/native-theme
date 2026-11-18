@@ -1497,9 +1497,13 @@ pub(crate) fn tooltip_delay(cx: &App) -> Option<Duration> {
 /// Not `Button::tooltip_with_action`: the Button builds that Tooltip itself
 /// as it renders (button/button.rs, `RenderOnce for Button`), so the
 /// platform's tooltip fill, edge, padding, radius and text colour would not
-/// reach it. The text is a content element refined by
-/// `geometry::tooltip_content`, which is where `tooltip.max_width` makes it
-/// wrap: `Tooltip::new(text)` has no element to carry the width.
+/// reach it. It is `Tooltip::new(text)` with `tooltip.max_width` on the
+/// bubble, which keeps the bubble, key binding included, within the
+/// platform's outer width and wraps the text beside the key. The text as an
+/// element refined by `geometry::tooltip_content` would not: that width
+/// counts the text alone, and with a key binding the bubble grows past
+/// `tooltip.max_width` by the key and the gap before it; without one the two
+/// are the same bubble (`tests/seams.rs`, `geometry::tooltip`).
 fn action_tooltip(
     cx: &App,
     text: &'static str,
@@ -1509,16 +1513,15 @@ fn action_tooltip(
     bool,
 ) {
     let style = native_geometry(cx, geometry::tooltip);
-    let content = native_geometry(cx, geometry::tooltip_content);
+    let max_width = native_value(cx, |n| px(n.resolved.tooltip.max_width));
     let styled = style.is_some();
     let action = action.boxed_clone();
     let build = move |window: &mut Window, cx: &mut App| {
-        let content = content.clone();
         refined(
-            Tooltip::element(move |_window, _cx| refined(div().child(text), content.as_ref()))
-                .action(action.as_ref(), None),
+            Tooltip::new(text).action(action.as_ref(), None),
             style.as_ref(),
         )
+        .when_some(max_width, |tooltip, max| tooltip.max_w(max))
         .build(window, cx)
     };
     (build, styled)
@@ -3330,6 +3333,46 @@ pub(crate) struct DemoButton {
 
 /// A Button refined by `geometry::button`.
 pub(crate) fn button(ui: &Entity<InfoRegistry>, cx: &App, spec: DemoButton) -> Stateful<Div> {
+    button_turning(ui, cx, spec, None)
+}
+
+/// A loading Button refined by `geometry::button`, without an icon of its
+/// own, given `spinner`, of the chosen icon theme, as its loading icon:
+/// since gpui-component 0.10.0 a loading Button without an icon shows its
+/// spinner where an icon would sit (button/button.rs:777-786). Where the
+/// chosen icon theme has none, it is given none, as a loading Button with
+/// an icon is given none, and the spinner turns its own default.
+pub(crate) fn loading_button(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    spec: DemoButton,
+    spinner: SampleIcon,
+) -> Stateful<Div> {
+    button_turning(ui, cx, spec, Some(spinner))
+}
+
+/// What a loading Button's info says its spinner turns: `icon`, of the
+/// chosen icon theme, where that theme gives it; where it does not, the
+/// Button is given no icon, and the spinner turns its own default,
+/// gpui-component's Loader.
+fn spinner_note(icon: &SampleIcon) -> String {
+    if icon.shown() {
+        return icon.note("");
+    }
+    format!(
+        "gpui-component's own Loader, the Spinner's default (gpui-component/spinner.rs, Spinner::new): {} holds no SVG for it, so the Button is given no icon to turn, and a loading Button given none turns the Spinner's own (button/button.rs:777-786, loading_icon)",
+        icon.set
+    )
+}
+
+/// [`button`], and where `spinner` is given, a loading Button without an
+/// icon given it as its loading icon ([`loading_button`]).
+fn button_turning(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    spec: DemoButton,
+    spinner: Option<SampleIcon>,
+) -> Stateful<Div> {
     let DemoButton {
         id,
         label,
@@ -3340,6 +3383,8 @@ pub(crate) fn button(ui: &Entity<InfoRegistry>, cx: &App, spec: DemoButton) -> S
     // `Button::icon` and `loading_icon` take an `Icon` (`ButtonIcon`) alone
     // (button/button.rs, button/button_icon.rs).
     let icon = icon.as_ref().map(SampleIcon::svg_only);
+    let spinner = spinner.as_ref().map(SampleIcon::svg_only);
+    let spun = spinner.as_ref().and_then(SampleIcon::icon);
     // What `native_info` applies the builder under.
     let native = cx.native();
     let native_button = native.as_ref().map(|n| &n.resolved.button);
@@ -3354,14 +3399,13 @@ pub(crate) fn button(ui: &Entity<InfoRegistry>, cx: &App, spec: DemoButton) -> S
     );
     if let Some(icon) = &icon {
         button_info = match state {
-            ButtonState::Loading => button_info.instance(
-                "spinner icon",
-                icon.note("the Button shows no spinner, only the fade"),
-            ),
+            ButtonState::Loading => button_info.instance("spinner icon", spinner_note(icon)),
             ButtonState::Idle | ButtonState::Disabled => {
                 button_info.instance("icon", icon.note("the Button shows its label alone"))
             }
         };
+    } else if let Some(spinner) = spinner.as_ref().filter(|_| state == ButtonState::Loading) {
+        button_info = button_info.instance("spinner icon", spinner_note(spinner));
     }
     let button = native_info(
         kind.apply(Button::new(id), cx),
@@ -3408,6 +3452,7 @@ pub(crate) fn button(ui: &Entity<InfoRegistry>, cx: &App, spec: DemoButton) -> S
             ButtonState::Loading => button.loading_icon(icon.clone()).icon(icon),
             ButtonState::Idle | ButtonState::Disabled => button.icon(icon),
         })
+        .when_some(spun, |button, spun| button.loading_icon(spun))
         .disabled(state == ButtonState::Disabled)
         .loading(state == ButtonState::Loading);
     let none = cx.theme().transparent;
@@ -3553,16 +3598,19 @@ pub(crate) fn toggle_group(
         .info(ui, id, group_info)
 }
 
-/// A `Clipboard` copying `value`.
+/// A `Clipboard` copying `value`, reading `label` beside its icon where one
+/// is given.
 pub(crate) fn clipboard(
     ui: &Entity<InfoRegistry>,
     cx: &App,
     id: &'static str,
     value: &'static str,
+    label: Option<&'static str>,
 ) -> Stateful<Div> {
     Clipboard::new(id)
         .value(value)
-        .info(ui, id, info::buttons::clipboard(cx.theme(), value))
+        .when_some(label, Clipboard::label)
+        .info(ui, id, info::buttons::clipboard(cx.theme(), value, label))
 }
 
 // ---------------------------------------------------------------------------
@@ -4164,6 +4212,60 @@ pub(crate) fn checkbox(
         .debug_selector(move || id.into())
 }
 
+/// The theme [`mixed_checkbox`] draws a theme-drawn box from: the installed
+/// native theme's, with the `widgets` feature. `None` where it draws
+/// gpui-component's own in its place.
+#[cfg(feature = "widgets")]
+pub(crate) fn theme_checkbox(cx: &App) -> Option<&native_theme_gpui::ResolvedTheme> {
+    cx.native_theme().and_then(|nt| nt.resolved(cx))
+}
+
+/// The theme [`mixed_checkbox`] draws a theme-drawn box from: none without
+/// the `widgets` feature, where it draws gpui-component's own.
+#[cfg(not(feature = "widgets"))]
+pub(crate) fn theme_checkbox(_: &App) -> Option<&native_theme_gpui::ResolvedTheme> {
+    None
+}
+
+/// A `Checkbox` reading `label` in the mixed state, `indeterminate(true)`,
+/// with no handler: gpui-component's own, refined by `geometry::checkbox`,
+/// or where `theme_drawn` and [`theme_checkbox`] gives a theme, the
+/// connector's theme-drawn `widgets::Checkbox`.
+pub(crate) fn mixed_checkbox(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    label: &'static str,
+    theme_drawn: bool,
+) -> Stateful<Div> {
+    #[cfg(feature = "widgets")]
+    if let Some(r) = theme_checkbox(cx).filter(|_| theme_drawn) {
+        let checkbox_info = info::inputs::native_mixed_checkbox(r, label);
+        return widgets::Checkbox::new(id)
+            .label(label)
+            .indeterminate(true)
+            .when_some(elements::part_observer(ui, id), |checkbox, observer| {
+                checkbox.on_part_bounds(observer)
+            })
+            .info(ui, id, checkbox_info)
+            .debug_selector(move || id.into());
+    }
+    #[cfg(not(feature = "widgets"))]
+    let _ = theme_drawn;
+    let mut checkbox_info = info::inputs::mixed_checkbox(cx.theme(), label);
+    native_info(
+        Checkbox::new(id),
+        cx,
+        geometry::checkbox,
+        "checkbox",
+        &mut checkbox_info,
+    )
+    .label(label)
+    .indeterminate(true)
+    .info(ui, id, checkbox_info)
+    .debug_selector(move || id.into())
+}
+
 /// The space between the radios of a horizontal group, which the model does
 /// not state: gpui-component's own `RadioGroup`'s, `gap_3` (radio.rs,
 /// `RenderOnce for RadioGroup`).
@@ -4448,10 +4550,50 @@ pub(crate) fn select(
     placeholder: &'static str,
     width: Pixels,
 ) -> Stateful<Div> {
+    select_drawn(ui, cx, id, state, placeholder, width, false)
+}
+
+/// The rows of the Inputs page's searchable `Select`.
+pub(crate) const HIGHLIGHT_SELECT_ROWS: [&str; 5] =
+    ["Adwaita", "Breeze", "Breeze Dark", "Papirus", "Yaru"];
+
+/// [`select`] over a searchable `state`, with `highlight_matches(true)`: the
+/// part of each row that matches what is typed into its search field is
+/// drawn in `list_highlight_foreground` (gpui-component label.rs,
+/// `highlight_matches`).
+pub(crate) fn highlighted_select(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    state: &Entity<SelectState<SearchableVec<SharedString>>>,
+    placeholder: &'static str,
+    width: Pixels,
+) -> Stateful<Div> {
+    select_drawn(ui, cx, id, state, placeholder, width, true)
+}
+
+/// [`select`], with `highlight_matches` set to `highlight`.
+fn select_drawn(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    state: &Entity<SelectState<SearchableVec<SharedString>>>,
+    placeholder: &'static str,
+    width: Pixels,
+    highlight: bool,
+) -> Stateful<Div> {
     let native = cx.native();
-    let mut select_info = info::inputs::select(cx.theme(), native.as_ref().map(|n| n.resolved));
+    let select_info = info::inputs::select(cx.theme(), native.as_ref().map(|n| n.resolved));
+    let mut select_info = if highlight {
+        info::inputs::match_highlight(select_info, cx.theme(), native.is_some())
+    } else {
+        select_info
+    };
     let select = native_info(
-        Select::new(state).placeholder(placeholder).w(width),
+        Select::new(state)
+            .placeholder(placeholder)
+            .highlight_matches(highlight)
+            .w(width),
         cx,
         geometry::select,
         "select",
@@ -6113,9 +6255,9 @@ pub(crate) fn tooltip_button(
 /// (`button/button.rs:407`), so the only way to a refined one is to build
 /// it: that is what `geometry::tooltip` documents, and the one place the
 /// platform's tooltip padding, radius and text colour reach the popup. The
-/// width is the content element's, through `Tooltip::element`: on the
-/// popup it would clamp the popup and not the text, which then runs out of
-/// it.
+/// width is the content element's, through `Tooltip::element`; without a
+/// key binding, as here, `Tooltip::new(text)` with the width on the popup is
+/// the same bubble since gpui-component 0.10.0 (`geometry::tooltip`).
 pub(crate) fn built_tooltip_button(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -9037,6 +9179,7 @@ pub(crate) enum ThemeToken {
     ListEven,
     ListHead,
     ListHover,
+    ListHighlightForeground,
     Table,
     TableActive,
     TableActiveBorder,

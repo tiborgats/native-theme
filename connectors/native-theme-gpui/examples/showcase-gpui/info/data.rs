@@ -20,13 +20,13 @@ pub fn description_list(t: &Theme, items: usize, columns: usize) -> WidgetInfo {
             "label bg",
             "description_list_label",
             t.description_list_label,
-            "gpui-component/description_list.rs:333",
+            "gpui-component/description_list.rs:335",
         ))
         .color(claim(
             "label text",
             "description_list_label_foreground",
             t.description_list_label_foreground,
-            "gpui-component/description_list.rs:317",
+            "gpui-component/description_list.rs:319",
         ))
         // A value is a plain div of text (description_list.rs:344-349), so it
         // takes the colour the showcase sets on its window.
@@ -40,7 +40,7 @@ pub fn description_list(t: &Theme, items: usize, columns: usize) -> WidgetInfo {
             "border",
             "border",
             t.border,
-            "gpui-component/description_list.rs:288",
+            "gpui-component/description_list.rs:289",
         ))
         .config("border-radius", format!("radius: {}px", t.radius.as_f32()))
         .not_themeable("layout spacing", "per Size, in literal px (description_list.rs, DescriptionList), and the label column defaults to 120px -- a width DescriptionList::label_width does take")
@@ -65,31 +65,31 @@ pub fn data_table(
             "frame",
             "border",
             t.border,
-            "gpui-component/table/data_table.rs:252",
+            "gpui-component/table/data_table.rs:265",
         ))
         .color(claim(
             "bg",
             "table",
             t.table,
-            "gpui-component/table/data_table.rs:248",
+            "gpui-component/table/data_table.rs:261",
         ))
         .color(claim(
             "sort button icon",
             "secondary_foreground",
             t.secondary_foreground,
-            "gpui-component/table/state.rs:1920",
+            "gpui-component/table/state.rs:1923",
         ))
         .color(claim(
             "sort button hover",
             "secondary",
             t.secondary,
-            "gpui-component/table/state.rs:1912",
+            "gpui-component/table/state.rs:1915",
         ))
         .color(claim(
             "sort button pressed",
             "secondary_active",
             t.secondary_active,
-            "gpui-component/table/state.rs:1913",
+            "gpui-component/table/state.rs:1916",
         ))
         .config("border-radius", format!("radius: {}px", t.radius.as_f32()))
         .config(
@@ -131,13 +131,13 @@ pub fn data_table_header(t: &Theme, columns: &str) -> WidgetInfo {
             "bg",
             "table_head",
             t.table_head,
-            "gpui-component/table/state.rs:2131",
+            "gpui-component/table/state.rs:2134",
         ))
         .color(claim(
             "text",
             "table_head_foreground",
             t.table_head_foreground,
-            "gpui-component/table/state.rs:2132",
+            "gpui-component/table/state.rs:2135",
         ))
         .instance("columns", columns.to_string())
 }
@@ -157,14 +157,14 @@ pub fn data_table_row(t: &Theme, row: DataTableRow, cells: Option<String>) -> Wi
                     "stripe",
                     "table_even",
                     t.table_even,
-                    "gpui-component/table/state.rs:2583",
+                    "gpui-component/table/state.rs:2586",
                 ))
             } else {
                 info.color(claim(
                     "bg, the table's",
                     "table",
                     t.table,
-                    "gpui-component/table/data_table.rs:248",
+                    "gpui-component/table/data_table.rs:261",
                 ))
             };
             return info
@@ -172,7 +172,7 @@ pub fn data_table_row(t: &Theme, row: DataTableRow, cells: Option<String>) -> Wi
                     "bottom border",
                     "table_row_border",
                     t.table_row_border,
-                    "gpui-component/table/state.rs:2582",
+                    "gpui-component/table/state.rs:2585",
                 ))
                 .not_themeable("purpose", "a row a striped table draws below its data to fill its height: no cells, and no hover (table/state.rs, TableState::render_table_row)");
         }
@@ -205,21 +205,21 @@ pub fn data_table_row(t: &Theme, row: DataTableRow, cells: Option<String>) -> Wi
             "selected bg",
             "table_active",
             t.table_active,
-            "gpui-component/table/state.rs:2538",
+            "gpui-component/table/state.rs:2541",
         ))
     } else if body.striped {
         info.color(claim(
             "stripe",
             "table_even",
             t.table_even,
-            "gpui-component/table/state.rs:2377",
+            "gpui-component/table/state.rs:2380",
         ))
     } else {
         info.color(claim(
             "bg, the table's",
             "table",
             t.table,
-            "gpui-component/table/data_table.rs:248",
+            "gpui-component/table/data_table.rs:261",
         ))
     };
     // A cell is the delegate's plain text, and neither the table nor its
@@ -239,7 +239,7 @@ pub fn data_table_row(t: &Theme, row: DataTableRow, cells: Option<String>) -> Wi
             "hover",
             "table_hover",
             t.table_hover,
-            "gpui-component/table/state.rs:2383",
+            "gpui-component/table/state.rs:2386",
         ))
     };
     let info = if body.right_clicked {
@@ -247,7 +247,7 @@ pub fn data_table_row(t: &Theme, row: DataTableRow, cells: Option<String>) -> Wi
             "right-click frame",
             "selection",
             t.selection,
-            "gpui-component/table/state.rs:2554",
+            "gpui-component/table/state.rs:2557",
         ))
         .not_themeable("bottom border", "transparent while the row is right-clicked, under the frame drawn around it (table/state.rs, TableState::render_table_row)")
     } else {
@@ -255,7 +255,7 @@ pub fn data_table_row(t: &Theme, row: DataTableRow, cells: Option<String>) -> Wi
             "bottom border",
             "table_row_border",
             t.table_row_border,
-            "gpui-component/table/state.rs:2375",
+            "gpui-component/table/state.rs:2378",
         ));
         if body.last && !body.selected {
             info.not_themeable("last border", "the last row's bottom border is drawn only while the rows leave room below them or the row is selected (table/state.rs, TableState::render_table_row)")
@@ -283,7 +283,7 @@ pub fn table(t: &Theme, rows: usize) -> WidgetInfo {
             "bg",
             "table",
             t.table,
-            "gpui-component/table/table.rs:113",
+            "gpui-component/table/table.rs:114",
         ))
         .not_themeable("cell padding", "inner (Tier U)")
         .instance("rows", format!("a header and {rows} body rows, written out rather than driven by a delegate; each reports itself"))
@@ -296,19 +296,19 @@ pub fn table_header(t: &Theme, columns: &str) -> WidgetInfo {
             "header bg",
             "table_head",
             t.table_head,
-            "gpui-component/table/table.rs:199",
+            "gpui-component/table/table.rs:217",
         ))
         .color(claim(
             "header text",
             "table_head_foreground",
             t.table_head_foreground,
-            "gpui-component/table/table.rs:200",
+            "gpui-component/table/table.rs:218",
         ))
         .color(claim(
             "row border",
             "table_row_border",
             t.table_row_border,
-            "gpui-component/table/table.rs:203",
+            "gpui-component/table/table.rs:221",
         ))
         .instance("columns", columns.to_string())
 }
@@ -321,7 +321,7 @@ pub fn table_row(t: &Theme, first: bool, cells: &str) -> WidgetInfo {
             "bg, the table's",
             "table",
             t.table,
-            "gpui-component/table/table.rs:113",
+            "gpui-component/table/table.rs:114",
         ))
         // Neither the Table nor the row sets a text colour, and
         // geometry::table carries no colour (native-theme-gpui geometry.rs,
@@ -339,7 +339,7 @@ pub fn table_row(t: &Theme, first: bool, cells: &str) -> WidgetInfo {
             "top border",
             "table_row_border",
             t.table_row_border,
-            "gpui-component/table/table.rs:415",
+            "gpui-component/table/table.rs:452",
         ))
     };
     info.instance("cells", cells.to_string())
@@ -538,25 +538,25 @@ pub fn pagination(t: &Theme, compact: bool, page: usize, pages: usize, gap: bool
                 "current page text",
                 "button_foreground",
                 t.button_foreground,
-                "gpui-component/button/button.rs:1034",
+                "gpui-component/button/button.rs:1050",
             ))
             .color(claim(
                 "current page edge",
                 "input",
                 t.input,
-                "gpui-component/button/button.rs:1086",
+                "gpui-component/button/button.rs:1102",
             ))
             .color(claim(
                 "current page hover, 50% input mixed with 50% transparent",
                 "input",
                 t.input.mix_oklab(t.transparent, 0.5),
-                "gpui-component/button/button.rs:945-949",
+                "gpui-component/button/button.rs:961-965",
             ))
             .color(claim(
                 "current page pressed, 70% input mixed with 30% transparent",
                 "input",
                 t.input.mix_oklab(t.transparent, 0.7),
-                "gpui-component/button/button.rs:950-954",
+                "gpui-component/button/button.rs:966-970",
             ))
             .not_themeable("buttons", "built by the widget as ghost/outline Button (gpui-component/pagination.rs, Pagination::render page items); no refinement reaches them")
             .not_themeable("other pages", "no fill until hovered: a ghost Button is transparent, and it then hovers with accent -- the menu highlight, halved in dark mode (button/button.rs, ButtonVariant::hovered Ghost arm)")
@@ -575,7 +575,7 @@ pub fn pagination(t: &Theme, compact: bool, page: usize, pages: usize, gap: bool
                 "disabled text, at 50%",
                 "muted_foreground",
                 t.muted_foreground.opacity(0.5),
-                "gpui-component/button/button.rs:1369",
+                "gpui-component/button/button.rs:1385",
             ))
             .instance("disabled", format!("{which}: there is no page beyond it (pagination.rs, Pagination::render_nav_button)")),
         None => info,
@@ -601,7 +601,7 @@ fn list_fill(info: WidgetInfo, native: Option<&ResolvedTheme>) -> WidgetInfo {
             "fill",
             "background_color",
             stated(r.list.background_color),
-            "native-theme-gpui/geometry.rs:737",
+            "native-theme-gpui/geometry.rs:749",
         )),
         None => info.not_themeable("fill", "none: no native theme is installed, so geometry::list, which paints list.background_color on the box around the rows, does not apply, and ThemeColor::list has no reader (list/list_item.rs, ListItem::render)"),
     }
@@ -656,14 +656,14 @@ fn list_item(
             "hover",
             "list_hover",
             t.list_hover,
-            "gpui-component/list/list_item.rs:231",
+            "gpui-component/list/list_item.rs:233",
         )),
         ListRowState::Selected => info
             .color(claim(
                 "selected bg",
                 "list_active",
                 t.list_active,
-                "gpui-component/list/list_item.rs:259",
+                "gpui-component/list/list_item.rs:262",
             ))
             .not_themeable(
                 "hover",
@@ -674,7 +674,7 @@ fn list_item(
                 "outline, 1px",
                 "selection",
                 t.selection,
-                "gpui-component/list/list_item.rs:271",
+                "gpui-component/list/list_item.rs:274",
             ))
             .not_themeable(
                 "fill",
@@ -685,13 +685,13 @@ fn list_item(
                 "selected bg",
                 "list_active",
                 t.list_active,
-                "gpui-component/list/list_item.rs:259",
+                "gpui-component/list/list_item.rs:262",
             ))
             .color(claim(
                 "outline, 1px, over the fill",
                 "selection",
                 t.selection,
-                "gpui-component/list/list_item.rs:271",
+                "gpui-component/list/list_item.rs:274",
             ))
             .not_themeable(
                 "hover",
@@ -719,7 +719,7 @@ fn list_item(
             "text",
             "foreground",
             t.foreground,
-            "gpui-component/list/list_item.rs:205",
+            "gpui-component/list/list_item.rs:207",
         ))
         .not_themeable("text size", "text_base, ListItem's own: no native theme is installed, so geometry::list_item has no font to give the row (list/list_item.rs, ListItem::render)")
     }
@@ -805,21 +805,21 @@ fn bubble_surface(info: WidgetInfo, t: &Theme) -> WidgetInfo {
 fn bubble_colours(t: &Theme, kind: BubbleKind) -> Vec<ColorClaim> {
     match kind {
         BubbleKind::Filled => vec![
-            claim("bg", "primary", t.primary, "gpui-component/bubble.rs:215"),
+            claim("bg", "primary", t.primary, "gpui-component/bubble.rs:221"),
             claim(
                 "text",
                 "primary_foreground",
                 t.primary_foreground,
-                "gpui-component/bubble.rs:216",
+                "gpui-component/bubble.rs:222",
             ),
         ],
         BubbleKind::Secondary => vec![
-            claim("bg", "muted", t.muted, "gpui-component/bubble.rs:222"),
+            claim("bg", "muted", t.muted, "gpui-component/bubble.rs:228"),
             claim(
                 "text",
                 "secondary_foreground",
                 t.secondary_foreground,
-                "gpui-component/bubble.rs:223",
+                "gpui-component/bubble.rs:229",
             ),
         ],
         BubbleKind::Muted => vec![
@@ -828,7 +828,7 @@ fn bubble_colours(t: &Theme, kind: BubbleKind) -> Vec<ColorClaim> {
                 "text",
                 "foreground",
                 t.foreground,
-                "gpui-component/bubble.rs:226",
+                "gpui-component/bubble.rs:232",
             ),
         ],
         // `mix_oklab`'s factor is the first colour's share (theme/color.rs:
@@ -839,14 +839,14 @@ fn bubble_colours(t: &Theme, kind: BubbleKind) -> Vec<ColorClaim> {
                     "bg, 24% primary mixed with 76% background",
                     "primary",
                     t.primary.mix_oklab(t.background, 0.24),
-                    "gpui-component/bubble.rs:228-231",
+                    "gpui-component/bubble.rs:234-237",
                 )
             } else {
                 claim(
                     "bg, 12% primary mixed with 88% background",
                     "primary",
                     t.primary.mix_oklab(t.background, 0.12),
-                    "gpui-component/bubble.rs:228-231",
+                    "gpui-component/bubble.rs:234-237",
                 )
             },
             claim(
@@ -857,7 +857,7 @@ fn bubble_colours(t: &Theme, kind: BubbleKind) -> Vec<ColorClaim> {
             ),
         ],
         BubbleKind::Outline => vec![
-            claim("border", "border", t.border, "gpui-component/bubble.rs:234"),
+            claim("border", "border", t.border, "gpui-component/bubble.rs:240"),
             claim(
                 "bg",
                 "background",
@@ -876,13 +876,13 @@ fn bubble_colours(t: &Theme, kind: BubbleKind) -> Vec<ColorClaim> {
                 "bg",
                 "transparent",
                 t.transparent,
-                "gpui-component/bubble.rs:240",
+                "gpui-component/bubble.rs:246",
             ),
             claim(
                 "text",
                 "foreground",
                 t.foreground,
-                "gpui-component/bubble.rs:241",
+                "gpui-component/bubble.rs:247",
             ),
         ],
         // The semantic tokens name danger destructive (theme/mod.rs:542); the
@@ -894,21 +894,21 @@ fn bubble_colours(t: &Theme, kind: BubbleKind) -> Vec<ColorClaim> {
                     "bg, destructive at 20% (bubble.rs:244)",
                     "danger",
                     t.danger.opacity(0.2),
-                    "gpui-component/theme/mod.rs:542",
+                    "gpui-component/theme/mod.rs:552",
                 )
             } else {
                 claim(
                     "bg, destructive at 10% (bubble.rs:244)",
                     "danger",
                     t.danger.opacity(0.1),
-                    "gpui-component/theme/mod.rs:542",
+                    "gpui-component/theme/mod.rs:552",
                 )
             },
             claim(
                 "text, destructive (bubble.rs:249)",
                 "danger",
                 t.danger,
-                "gpui-component/theme/mod.rs:542",
+                "gpui-component/theme/mod.rs:552",
             ),
         ],
     }
@@ -971,25 +971,25 @@ pub fn message_scroller(t: &Theme, messages: usize) -> WidgetInfo {
             "scrollbar",
             "scrollbar_thumb",
             t.scrollbar_thumb,
-            "gpui-component/theme/mod.rs:430",
+            "gpui-component/theme/mod.rs:440",
         ))
         .color(claim(
             "jump button",
             "background",
             t.background,
-            "gpui-component/message_scroller.rs:476",
+            "gpui-component/message_scroller.rs:488",
         ))
         .color(claim(
             "jump button edge",
             "border",
             t.border,
-            "gpui-component/message_scroller.rs:475",
+            "gpui-component/message_scroller.rs:487",
         ))
         .color(claim(
             "jump button icon",
             "foreground",
             t.foreground,
-            "gpui-component/message_scroller.rs:477",
+            "gpui-component/message_scroller.rs:489",
         ))
         .color(claim("frame", "border", t.border, "showcase"))
         .not_themeable("jump button", "appears once the user scrolls away from the tail, fading over a 200ms module const rather than the theme's motion tokens (message_scroller.rs, JUMP_BUTTON_TRANSITION)")
@@ -1015,13 +1015,13 @@ pub fn attachment(
             "bg",
             "background",
             t.background,
-            "gpui-component/attachment.rs:432",
+            "gpui-component/attachment.rs:433",
         ))
         .color(claim(
             "title",
             "foreground",
             t.foreground,
-            "gpui-component/attachment.rs:433",
+            "gpui-component/attachment.rs:434",
         ));
     // The semantic tokens name danger destructive (theme/mod.rs:542); a
     // failed card reads it at full strength and at 10%.
@@ -1030,25 +1030,25 @@ pub fn attachment(
             "border, destructive (attachment.rs:426-427)",
             "danger",
             t.danger,
-            "gpui-component/theme/mod.rs:542",
+            "gpui-component/theme/mod.rs:552",
         ))
         .color(claim(
             "media bg, destructive at 10% (attachment.rs:841-842)",
             "danger",
             t.danger.opacity(0.1),
-            "gpui-component/theme/mod.rs:542",
+            "gpui-component/theme/mod.rs:552",
         ))
         .color(claim(
             "status glyph, upstream's Ban, destructive (attachment.rs:801, 846-847)",
             "danger",
             t.danger,
-            "gpui-component/theme/mod.rs:542",
+            "gpui-component/theme/mod.rs:552",
         ))
         .color(claim(
             "description, destructive (attachment.rs:1142-1143)",
             "danger",
             t.danger,
-            "gpui-component/theme/mod.rs:542",
+            "gpui-component/theme/mod.rs:552",
         ))
         .not_themeable("failed tint", "the semantic layer renames danger to destructive, and a failed card draws its border, status glyph and description in it (theme/mod.rs, color_tokens; attachment.rs, Attachment::render)")
     } else {
@@ -1056,13 +1056,13 @@ pub fn attachment(
             "border",
             "border",
             t.border,
-            "gpui-component/attachment.rs:429",
+            "gpui-component/attachment.rs:430",
         ))
         .color(claim(
             "media bg",
             "muted",
             t.muted,
-            "gpui-component/attachment.rs:844",
+            "gpui-component/attachment.rs:849",
         ))
         .colors(
             if matches!(
@@ -1073,7 +1073,7 @@ pub fn attachment(
                     "status spinner, in place of the media icon",
                     "primary",
                     t.primary,
-                    "gpui-component/attachment.rs:797",
+                    "gpui-component/attachment.rs:802",
                 ))
             } else {
                 // A raster icon keeps its own colours (`icon.note`).
@@ -1082,7 +1082,7 @@ pub fn attachment(
                         "media icon",
                         "foreground",
                         t.foreground,
-                        "gpui-component/attachment.rs:849",
+                        "gpui-component/attachment.rs:854",
                     )
                 })
             },
@@ -1091,7 +1091,7 @@ pub fn attachment(
             "description",
             "muted_foreground",
             t.muted_foreground,
-            "gpui-component/attachment.rs:1144",
+            "gpui-component/attachment.rs:1152",
         ))
     };
     let info = match status {
@@ -1107,7 +1107,7 @@ pub fn attachment(
             "hover bg, muted at 50%",
             "muted",
             t.muted.opacity(0.5),
-            "gpui-component/attachment.rs:438",
+            "gpui-component/attachment.rs:439",
         ))
         .instance("click", "steps it to the next status: Pending, Uploading, Processing, Complete, Failed, then Pending again")
     } else {

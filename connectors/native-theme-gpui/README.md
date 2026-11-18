@@ -11,7 +11,7 @@ verified against, are in [Compatibility](#compatibility).
 Turns a `ResolvedTheme` into a fully configured
 `gpui_component::theme::Theme` and installs it:
 
-- **Colours**: all 139 `ThemeColor` fields, including the 28 `button*`
+- **Colours**: all 140 `ThemeColor` fields, including the 28 `button*`
   fields gpui-component's `Button` reads (since 0.7), so native themes keep
   their solid button surfaces instead of upstream's tinted house style.
 - **Fonts and global geometry**: families, sizes, `radius`, `window_radius`
@@ -74,17 +74,17 @@ sits.
 
 | Crate | Required |
 |---|---|
-| `gpui-component` | 0.9.1 |
-| `gpui-base` | 0.9.1 |
+| `gpui-component` | 0.10.0 |
+| `gpui-base` | 0.10.0 |
 | `gpui-pre` (GPUI, named `gpui` in the manifest) | 0.3.12 |
-| `gpui-kit` (GPUI as the code names it; the showcase) | 0.9.1 |
+| `gpui-kit` (GPUI as the code names it; the showcase) | 0.10.0 |
 | `rust-version` | 1.95.0 |
 
-With the `gpui-fast` feature, the crate also requires GPUI Fast (`gpui-fast`)
-at `>=0.1.14, <0.1.16`, until GPUI Kit 0.10 (see [Backends](#backends)).
+With the `gpui-fast` feature, the crate builds on GPUI Fast (`gpui-fast`)
+0.1.16 or later, which GPUI Kit 0.10.0 requires (see [Backends](#backends)).
 
 Each row is a floor: Cargo may resolve any later
-semver-compatible release (a later `0.9.x`, a later `0.3.x` of gpui-pre), but
+semver-compatible release (a later `0.10.x`, a later `0.3.x` of gpui-pre), but
 that the connector builds on one is a claim only of the *Verified* line below,
 because a *patch* release of these crates has broken this connector before: gpui-component
 0.6.2 removed `ThemeColor::tiles`, which the published 0.5.8 wrote, and 0.5.8
@@ -112,7 +112,7 @@ Add the crate to your `Cargo.toml`, with the OS readers (`native`):
 ```toml
 [dependencies]
 native-theme-gpui = { version = "0.7", features = ["native"] }
-gpui-kit = "0.9.1"        # or gpui-component + gpui-base + gpui-pre directly
+gpui-kit = "0.10.0"       # or gpui-component + gpui-base + gpui-pre directly
 ```
 
 Without `native`, `from_system()` is the platform preset on Linux and an
@@ -381,8 +381,8 @@ test over every preset and mode says so.
 | `list_item` | `list.row_height` (where stated), `list.border.padding` (the stated sides), `list.item_font`, `defaults.line_height` | `ListItem` |
 | `list_item_selected` | `list.selection_text_color` | a selected `ListItem` (`selected(true)`), after `list_item`. A colour, where no `ThemeColor` field maps: while `list.active_highlight` is on, gpui-component's default, upstream marks a selected row by its fill alone (`list_active`, `list.selection_background`) and leaves its text the row's; with it off, upstream paints the row `accent` (`menu.hover_background`) under `accent_foreground` (`menu.hover_text_color`) after the refinement (`src/list/list_item.rs:257-263`), so this colour does not reach it |
 | `list` | `list.border.line_width`, `.color`, `.corner_radius`, `list.background_color` | the frame and the fill of a list view: a `List`, a `Tree`, or the box an application draws around one. Neither widget paints a border or a fill of its own (nor does a `ListItem` at rest, and the `list` token has no reader), while `DataTable` draws its frame from the same values through `Theme`, so this is what makes the three agree. It also clips its rows: on GPUI Fast to the rounded inside, on gpui-pre to the frame's rectangle, where a square row fill shows past the rounded corners, so the application rounds a row's fill where it meets the frame by the frame's inner radius (`corner_radius` less `line_width`): `list_item` sets no radius. A tree is a list view — the model has no tree theme |
-| `tooltip` | `tooltip.border.padding` (the stated sides), `.corner_radius`, `.line_width`, `.color`, `.shadow_enabled` (upstream's `shadow_md` layers in `defaults.shadow_color`, or none), `tooltip.background_color`, `tooltip.font`, `defaults.line_height` | an application-built `Tooltip`. No width: `tooltip.max_width` on the bubble clamps the bubble and not its text, which runs out of it |
-| `tooltip_content` | `tooltip.max_width` less the left and right padding (upstream's `px_2`, 0.5 rem at the installed font size, for a side the theme does not state) and `tooltip.border.line_width` twice | the element the application passes to `Tooltip::element` — the one place the platform's tooltip width makes the text wrap |
+| `tooltip` | `tooltip.border.padding` (the stated sides), `.corner_radius`, `.line_width`, `.color`, `.shadow_enabled` (upstream's `shadow_md` layers in `defaults.shadow_color`, or none), `tooltip.background_color`, `tooltip.font`, `defaults.line_height` | an application-built `Tooltip`. No width: give `Tooltip::new(text)` `max_w(tooltip.max_width)` on the bubble, and the text wraps inside it, a key binding included |
+| `tooltip_content` | `tooltip.max_width` less the left and right padding (upstream's `px_2`, 0.5 rem at the installed font size, for a side the theme does not state) and `tooltip.border.line_width` twice | the element the application passes to `Tooltip::element`; without a key binding its bubble equals `Tooltip::new`'s with the width on the bubble, with one it grows past `tooltip.max_width` by the key and its gap |
 | `popover` | `popover.border.padding` (the stated sides), `.corner_radius`, `.line_width`, `.color` | `Popover`, `HoverCard`: the edge lies inside the shadow ring gpui-component draws as a popover's edge, which stays |
 | `status_bar` | `status_bar.border.padding` (the stated sides), `status_bar.font`, `defaults.line_height` | `StatusBar` |
 | `dialog`, `dialog_max_width` | `dialog.border.padding` (the stated sides), `dialog.min_width`, `dialog.min_height`, `.border.corner_radius`, `.border.color`, `.background_color`, `.max_width` | `Dialog` (`Dialog::max_w` for the width). An unstated side keeps upstream's 16 px; upstream also spaces the dialog's sections by `max(top, 8px)` and a `DialogContent` by the bottom padding. `dialog.max_height` no longer arrives: since 0.6.4 gpui-component clamps the dialog to what is left of the viewport after applying the caller's style |
@@ -664,7 +664,13 @@ Three kinds of call replace such a value:
   `focus_ring` and
   `scrollbar_mode` survive it;
 - `gpui_kit::init` (or `gpui_component::init`) after `apply` is such a rebuild,
-  to light mode, and also sets `scrollbar_mode` from the platform.
+  to light mode, and also sets `scrollbar_mode` from the platform by
+  upstream's own rule, `Theme::sync_scrollbar_appearance`: on Windows the
+  system's auto-hide setting gives `Hover` and its absence `Always`, elsewhere
+  auto-hide gives `Scrolling` and its absence `Hover` (gpui-component 0.10.0
+  `src/theme/mod.rs:145-154`, `:386-392`), while `apply` maps
+  `scrollbar.overlay_mode` to `Scrolling`, and its absence to `Always`, on
+  every platform.
 
 So the application writes its overrides in one function of its own and calls
 it after each of those calls (and calls `init` before `apply`, as the Quick
@@ -742,7 +748,7 @@ narrow. `gpui-fast` is off: it changes the GPUI core rather than adding to it
 | `system-icons` | the platform's own icons (`native-theme/system-icons`) |
 | `svg-rasterize` | SVG icons rasterised by this crate (`native-theme/svg-rasterize`) |
 | `system-fonts` | a theme family the system lacks is drawn in the family the platform substitutes for it (`native-theme/system-fonts`; fontconfig on Linux), not in gpui's own fallback list |
-| `gpui-fast` | builds on GPUI Kit's GPUI Fast core instead of gpui-pre (`gpui-kit/gpui-fast`, `gpui-component/gpui-fast`), with GPUI Fast held at `>=0.1.14, <0.1.16` until GPUI Kit 0.10 (see [Backends](#backends)) |
+| `gpui-fast` | builds on GPUI Kit's GPUI Fast core instead of gpui-pre (`gpui-kit/gpui-fast`, `gpui-component/gpui-fast`) |
 | `native` | the OS readers (`native-theme/native`), so `from_system()` reads the OS theme |
 | `watch` | `on_theme_change`, which runs a closure on gpui's foreground, with a window, when the OS theme changes (`native-theme/watch`, `futures`; see [Runtime theme change](#runtime-theme-change)) |
 
@@ -776,12 +782,34 @@ theme's focus ring while focused: `defaults.focus_ring_color` as stated, a band
 `defaults.focus_ring_width` wide whose outer edge lies `focus_ring_offset` plus the
 width outside the control, over its other parts; where the ring lies inset at the
 edge (libadwaita's) it is a band inside the edge, the control having no border of
-its own. gpui-component's own widgets draw its 3 px ring at half the colour's alpha.
+its own. gpui-component's own widgets draw their 3 px ring in `ring` with its
+alpha set to 0.5, whatever the colour's own (gpui-component 0.10.0
+`src/styled.rs:11-12`, `focus_style`), and gpui-component's `Tab` draws another,
+2 px inset at the full colour, a literal the theme's width does not reach
+(`src/tab/tab.rs:933`, `:962-973`). The theme-drawn `TabBar` draws the theme's ring inside the tab, in
+`defaults.focus_ring_color` and `focus_ring_width`; `focus_ring_offset` is not
+reached there, since the tabs' scrolling row would cut a band outside the tab
+away. Both tab bars show their ring for a focus that came from the keyboard
+only: the tabs take the focus from the keyboard alone, the arrow keys moving it
+along the bar, and a click selects a tab without focusing it.
 
 Assistive technology: the theme-drawn `Slider` takes an `accessibility_label`,
 the name a screen reader announces, since a slider draws no text of its own,
 and reports its disabled state while disabled, as gpui-component's `Slider`
-does.
+does. gpui-component's own `Slider` has, since 0.10.0, what the theme-drawn one
+has not: Page Up and Page Down steps, a numeric `SetValue` from assistive
+technology, and a `Release` event after a key's `Change`.
+
+The match highlight: a `Select`, `Combobox` or `Command` with
+`highlight_matches(true)` draws the part of a row that matches the query in
+`list_highlight_foreground` (gpui-component 0.10.0 `src/label.rs:261-275`), which `apply` fills with
+the resting text colour, `defaults.text_color`, since the model states no
+colour for a match. No one colour reads in all three row states on every
+preset: this one never falls below a contrast of 1.5 at rest or hovered, and
+does on the selected row in 7 of the 34 bundled preset and mode combinations,
+against 20 for the `info` colour, 10 of them invisible. An application that wants a match
+that keeps the row's own text colour draws it through
+`SearchableListItem::render_highlighted`.
 
 ## Common recipes
 
@@ -1026,13 +1054,11 @@ before letting go of it. `examples/showcase-gpui/support.rs` does it in
 
 ## Backends
 
-GPUI Kit 0.9.1 builds on one of two GPUI cores: **gpui-pre**, its default,
+GPUI Kit 0.10.0 builds on one of two GPUI cores: **gpui-pre**, its default,
 and **GPUI Fast** (the `gpui-fast` package, a fork of gpui-pre with retained
 rendering and layout), which its `gpui-fast` feature selects; it builds GPUI
-Fast 0.1.14 or later (gpui-kit 0.9.1's `gpui-fast = "0.1.14"`). gpui-base
-0.9.1 does not compile on GPUI Fast 0.1.16 or later, so this crate's
-`gpui-fast` feature holds GPUI Fast below 0.1.16 until GPUI Kit 0.10. The
-two cores' types are distinct (`Hsla`, `Pixels`, `App`, …), and Cargo unifies
+Fast 0.1.16 or later (gpui-kit 0.10.0's `gpui-fast = "0.1.16"`). The two
+cores' types are distinct (`Hsla`, `Pixels`, `App`, …), and Cargo unifies
 features across the build graph: once a crate's `gpui-fast` feature is on, it
 is on for every user of that crate. gpui-kit, gpui-component and gpui-base
 each have one, and they must switch together, or one crate's GPUI types are
@@ -1042,17 +1068,11 @@ This crate names GPUI through gpui-kit (`extern crate gpui_kit as gpui;`, the
 alias gpui-kit documents), so it is built on the core gpui-kit is built on:
 
 - An application on **gpui-pre** needs nothing: it is the default.
-- An application on **GPUI Fast** through gpui-kit
-  (`gpui-kit = { version = "0.9.1", features = ["gpui-fast"] }`, with gpui-kit's
-  default `component` feature) enables this crate's `gpui-fast` too, or pins
-  `gpui-fast = ">=0.1.14, <0.1.16"` itself, until GPUI Kit 0.10: this crate
-  follows gpui-kit onto GPUI Fast, but gpui-kit 0.9.1 asks for
-  `gpui-fast = "0.1.14"`, which a fresh resolution takes to the newest 0.1.x,
-  and gpui-base 0.9.1 does not compile on GPUI Fast 0.1.16 or later.
-- Any other application on **GPUI Fast** (one that depends on gpui-component
-  rather than on gpui-kit, or uses gpui-kit without its `component` feature)
-  enables this crate's `gpui-fast`, which turns on `gpui-kit/gpui-fast` and
-  `gpui-component/gpui-fast` together. Turning on `gpui-component/gpui-fast`
+- An application on **GPUI Fast** 0.1.16 turns on this crate's `gpui-fast`
+  feature, which turns on the other two, `gpui-kit/gpui-fast` and
+  `gpui-component/gpui-fast`, together. gpui-kit's own `gpui-fast` reaches
+  gpui-component's only through gpui-kit's `component` feature, which this
+  crate leaves off, so it is named here. Turning on `gpui-component/gpui-fast`
   alone leaves gpui-kit on gpui-pre, and gpui-kit itself then fails to
   compile.
 
@@ -1078,7 +1098,7 @@ dependency wanting a later snapshot.
 
 ## What gets mapped
 
-- **All 139 `ThemeColor` fields.** The status button fields copy the semantic
+- **All 140 `ThemeColor` fields.** The status button fields copy the semantic
   colours their variant used before (solid surfaces); `table_head*` come
   from the list header (`list.header_background`, `list.header_font`), while
   `table_foot*` are the window background and the muted text colour, since
@@ -1122,7 +1142,7 @@ cargo run -p native-theme-gpui --example showcase-gpui --features watch
 
 Displays every gpui-component widget themed with native-theme presets, with
 live theme switching, the geometry builders applied where they reach, a
-139-field colour map and a 106-icon gallery. It opens on the Basic page, the
+140-field colour map and a 106-icon gallery. It opens on the Basic page, the
 controls all three showcases draw — buttons, checkboxes, radio buttons, text,
 text fields, a drop-down, a slider and a progress bar — in the same order and
 states, packed onto one screen, so the three showcases' captures compare

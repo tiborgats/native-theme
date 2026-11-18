@@ -7,7 +7,7 @@
 //! reason in `exceptions`, and an exception that no longer describes a real
 //! difference fails just as loudly as a broken row.
 //!
-//! The coverage tripwire (section 5.2) closes the table: every one of the 139
+//! The coverage tripwire (section 5.2) closes the table: every one of the 140
 //! `ThemeColor` fields -- enumerated through serde, the same mechanism
 //! `colors::tests::no_theme_color_field_is_left_at_default` uses, so a field
 //! added upstream appears here without anyone listing it -- must appear in
@@ -52,7 +52,7 @@ struct ComputedRow {
 /// Every `ThemeColor` field that equals one named native field.
 ///
 /// The fields whose value is composited or derived are in `COMPUTED_ROWS` and
-/// `DERIVED`; the three lists partition the 139 fields, which
+/// `DERIVED`; the three lists partition the 140 fields, which
 /// `every_theme_color_field_has_a_declared_source` asserts.
 const ROWS: &[Row] = &[
     // The model states the window's own fill, which inherits
@@ -836,6 +836,12 @@ const DERIVED: &[(&str, &str)] = &[
         "the primary colour at 0.6 alpha over the background",
     ),
     ("table_active_border", "a copy of list_active_border"),
+    // The model states no colour for the part of a row that matches a
+    // search, so the match is drawn as the rest of the row's text.
+    (
+        "list_highlight_foreground",
+        "the resting text colour, the value foreground takes",
+    ),
     ("chart_2", "accent rotated 0.2 around the hue wheel"),
     ("chart_3", "accent rotated 0.4 around the hue wheel"),
     ("chart_4", "accent rotated 0.6 around the hue wheel"),
@@ -967,7 +973,7 @@ const NO_RECEIVER: &[NoReceiver] = &[
                    background in every state (`button/button.rs:1218` hovered, \
                    `:1295` pressed, `:1335` selected) and the `Link` widget \
                    paints none at all (`link.rs:70-90`); `transparent` lives \
-                   on `Theme`, not on `ThemeColor`, and is not one of the 139. \
+                   on `Theme`, not on `ThemeColor`, and is not one of the 140. \
                    `link_hover` and `link_active` are the link's hover and \
                    pressed *text* (`theme_color.rs:181`, `:183`), which is what \
                    their rows give them.",
@@ -1170,8 +1176,8 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
     UnreadColour {
         leaf: "defaults.selection_inactive_background",
         why: Unread::NoReceiver(
-            "none of the 139 `ThemeColor` fields is an inactive selection \
-             (`theme/theme_color.rs:61-345`), and a selected `ListItem` fills \
+            "none of the 140 `ThemeColor` fields is an inactive selection \
+             (`theme/theme_color.rs:61-347`), and a selected `ListItem` fills \
              `list_active` or `accent` whatever the window's state \
              (`list/list_item.rs:257-264`)",
         ),
@@ -1696,7 +1702,7 @@ fn every_mapped_field_equals_its_native_source() -> crate::Result<()> {
     Ok(())
 }
 
-/// Every one of the 139 `ThemeColor` fields is in exactly one of the contract
+/// Every one of the 140 `ThemeColor` fields is in exactly one of the contract
 /// table and `DERIVED` (spec section 5.2).
 ///
 /// The field names come from serde rather than from a hand-written list, so a
@@ -1720,7 +1726,7 @@ fn every_theme_color_field_has_a_declared_source() -> crate::Result<()> {
         .unwrap_or_default();
     assert_eq!(
         fields.len(),
-        139,
+        140,
         "serde sees a different field count than the tripwire in colors.rs"
     );
 
@@ -1751,7 +1757,7 @@ fn every_theme_color_field_has_a_declared_source() -> crate::Result<()> {
 
     let rows = ROWS.len() + COMPUTED_ROWS.len();
     println!(
-        "--- gpui coverage: {rows} contract rows + {} derived = {} of 139 fields; \
+        "--- gpui coverage: {rows} contract rows + {} derived = {} of 140 fields; \
          {} of the rows map a slot 0.9.1 reads nowhere, not counted: {} fields \
          covered ---\n{}",
         DERIVED.len(),
