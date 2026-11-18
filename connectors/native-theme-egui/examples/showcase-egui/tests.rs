@@ -9321,7 +9321,9 @@ fn a_tool_buttons_outline_has_the_borders_width() {
 /// checked fill and the checked text: the fill handed to the button (`pages::basic::edit_look`)
 /// is `toolbar_button_checked_background` and is painted over the button while it is on, and the
 /// text colour its scope takes, which tints its icon as it loads, is the checked text; off, it
-/// is handed no fill and not painted in that one.
+/// is handed no fill and not painted in that one. Under windows-11 light, whose checked text is
+/// not the toolbar's own, Edit's label, under an icon theme that gives no icon, is painted in the
+/// checked text while on, and Copy's beside it is not.
 #[test]
 fn the_basic_edit_button_starts_checked_and_switches() {
     let mut harness = open_scaled("kde-breeze", "basic", 1.0);
@@ -9406,6 +9408,71 @@ fn the_basic_edit_button_starts_checked_and_switches() {
         harness.state().demo_state.basic_edit,
         "a second click did not turn Edit on again"
     );
+
+    // Under windows-11 light the checked text (#ffffff) is not the toolbar scope's own text, so
+    // the colour Edit's label is painted in tells them apart. A freedesktop theme that does not
+    // exist gives no icon on any platform (`find_icon` never falls back to hicolor), so Copy and
+    // Edit show their labels.
+    let mut harness = open_scaled("windows-11", "basic", 1.0);
+    harness.state_mut().settings.icon = IconSetChoice::Freedesktop("no-such-icon-theme".into());
+    harness.run_steps(SETTLE);
+    let t = harness
+        .state()
+        .atlas
+        .resolved_for(egui::Theme::Light)
+        .clone();
+    assert!(
+        native_theme_egui::toolbar_button_checked_background(&t).is_some(),
+        "windows-11 no longer states the checked toolbar fill, so Edit takes no checked text"
+    );
+    let checked = t
+        .button
+        .checked_text_color
+        .map(native_theme_egui::convert::to_color32);
+    assert!(
+        harness.state().demo_state.basic_edit,
+        "Edit is not on at start"
+    );
+    let copy = painted_label_colour(&harness, "Copy", "basic.icons.copy");
+    let edit = painted_label_colour(&harness, "Edit", "basic.icons.edit");
+    assert!(
+        copy.is_some() && edit.is_some(),
+        "windows-11: Copy's or Edit's label is not painted (an icon in its place?): {copy:?}, {edit:?}"
+    );
+    assert!(
+        checked.is_some() && checked != copy,
+        "windows-11's checked text {checked:?} is the toolbar's own text {copy:?}, so this part \
+         proves nothing"
+    );
+    assert_eq!(
+        edit, checked,
+        "windows-11: Edit while on is not lettered in button.checked_text_color"
+    );
+}
+
+/// The colour the label `text` is painted in inside the place `id` (the first such galley's first
+/// section: the shape's override, else the section's colour, its placeholder the shape's fallback).
+fn painted_label_colour(harness: &Harness<'_, App>, text: &str, id: &str) -> Option<egui::Color32> {
+    let place = harness.state().registry.places().get(id).copied()?;
+    harness
+        .output()
+        .shapes
+        .iter()
+        .find_map(|clipped| match &clipped.shape {
+            egui::Shape::Text(shape)
+                if shape.galley.job.text == text && place.contains(shape.pos) =>
+            {
+                let section = shape.galley.job.sections.first()?.format.color;
+                Some(shape.override_text_color.unwrap_or(
+                    if section == egui::Color32::PLACEHOLDER {
+                        shape.fallback_color
+                    } else {
+                        section
+                    },
+                ))
+            }
+            _ => None,
+        })
 }
 
 // --- The chrome's icons from a fixture icon theme --------------------------------------------

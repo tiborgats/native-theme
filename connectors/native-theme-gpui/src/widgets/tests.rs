@@ -5196,6 +5196,12 @@ fn a_checked_toolbar_buttons_icon_takes_the_checked_text(cx: &mut TestAppContext
     for mode in [ColorMode::Light, ColorMode::Dark] {
         let r = resolved("windows-11", mode);
         let checked_text = r.button.checked_text_color.map(c);
+        assert_ne!(
+            checked_text,
+            Some(c(r.button.font.color)),
+            "windows-11 {mode:?}: the checked text equals the variant's foreground \
+             (button.font.color), so this case proves nothing"
+        );
         let rest = crate::geometry::toolbar_button_rest(crate::Native::unscaled(&r));
         let checked = crate::geometry::toolbar_button_checked(crate::Native::unscaled(&r));
         let rendered = Rc::new(RefCell::new(Vec::new()));

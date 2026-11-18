@@ -1047,9 +1047,9 @@ pub fn toolbar_button(
 ) -> WidgetInfo {
     let drawn = !matches!(icon, ChromeIcon::Missing(_) | ChromeIcon::Unlisted(_));
     let info = WidgetInfo::new("Button").variant(if drawn {
-        "Ghost, icon"
+        "Toolbar, icon"
     } else {
-        "Ghost, labelled"
+        "Toolbar, labelled"
     });
     let info = action_tooltip(
         super::buttons::native_toolbar(info, t, native),

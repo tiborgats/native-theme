@@ -8947,7 +8947,7 @@ fn a_chrome_icon_the_set_lacks_is_absent(cx: &mut TestAppContext) {
     let info = settle_on(&mut cx, &showcase, CHROME_TOOLBAR_PALETTE);
     assert_eq!(
         info.as_ref().map(|info| info.title()).as_deref(),
-        Some("Button · Ghost, labelled"),
+        Some("Button · Toolbar, labelled"),
         "the Command Palette button with no icon of the chosen set is not labelled"
     );
     let note = info.as_ref().and_then(|info| {
@@ -17492,12 +17492,16 @@ fn a_hovered_tool_button_takes_the_toolbars_outline(cx: &mut TestAppContext) {
 
 /// The Basic page's edit-mode switch is checked at start and a click
 /// switches it: under kde-breeze light and windows-11 light it is filled
-/// with `toolbar.button_checked_background` and its info claims
-/// `button.checked_text_color` as the checked text; a click turns it off,
-/// and with the pointer moved off it paints no fill (the rest fill is
-/// transparent); a second click checks it again. Under macos-tahoe light,
+/// with `toolbar.button_checked_background` and its info, titled a checked
+/// toolbar Button, claims `button.checked_text_color` as the checked text
+/// and no colour but the checked fill and text (upstream paints no hover or
+/// press on a selected Button); a click turns it off, and with the pointer
+/// moved off it paints no fill (the rest fill is transparent), and its info
+/// claims the text, hover and pressed fills its neighbours claim and no
+/// checked colour; a second click checks it again. Under macos-tahoe light,
 /// which states no checked fill, its fill is the custom variant's selected
-/// fill, `secondary_active`.
+/// fill, `secondary_active`, and its info claims only that fill and the
+/// variant's text.
 #[gpui::test]
 fn the_basic_edit_button_is_checked_and_switches(cx: &mut TestAppContext) {
     use crate::info::stated;
@@ -17532,6 +17536,24 @@ fn the_basic_edit_button_is_checked_and_switches(cx: &mut TestAppContext) {
             text,
             "{preset}: the checked edit button's info does not claim button.checked_text_color: {info:?}"
         );
+        assert!(
+            info.as_ref().is_some_and(|info| {
+                let title = info.title();
+                title.starts_with("Button · Toolbar, ") && title.ends_with(", checked")
+            }),
+            "{preset}: the checked edit button's info is not titled a checked toolbar Button: {info:?}"
+        );
+        let mut roles: Vec<&str> = info
+            .as_ref()
+            .map(|info| info.colors.iter().map(|c| c.role).collect())
+            .unwrap_or_default();
+        roles.sort_unstable();
+        assert_eq!(
+            roles,
+            ["checked fill", "checked text"],
+            "{preset}: the checked edit button's info claims colours other than the checked \
+             fill and text, which upstream paints no hover or press over: {info:?}"
+        );
 
         click(&mut cx, button);
         assert!(
@@ -17544,6 +17566,26 @@ fn the_basic_edit_button_is_checked_and_switches(cx: &mut TestAppContext) {
             painted_fill(&mut cx, button),
             None,
             "{preset}: the edit button that is off is filled at rest"
+        );
+        let info = settle_on(&mut cx, &showcase, button);
+        assert!(
+            info.as_ref().is_some_and(|info| {
+                let title = info.title();
+                title.starts_with("Button · Toolbar, ") && !title.ends_with(", checked")
+            }),
+            "{preset}: the edit button that is off is not titled an unchecked toolbar Button: {info:?}"
+        );
+        let roles: Vec<&str> = info
+            .as_ref()
+            .map(|info| info.colors.iter().map(|c| c.role).collect())
+            .unwrap_or_default();
+        assert!(
+            ["text", "hover bg", "active bg"]
+                .iter()
+                .all(|role| roles.contains(role))
+                && !roles.iter().any(|role| role.starts_with("checked")),
+            "{preset}: the edit button that is off does not claim its neighbours' text, hover \
+             and pressed fills, or still claims a checked colour: {info:?}"
         );
         click(&mut cx, button);
         assert!(
@@ -17576,6 +17618,18 @@ fn the_basic_edit_button_is_checked_and_switches(cx: &mut TestAppContext) {
         painted_fill(&mut cx, button),
         Some(selected),
         "macos-tahoe: the checked edit button is not filled with the variant's selected fill"
+    );
+    let info = settle_on(&mut cx, &showcase, button);
+    let mut roles: Vec<&str> = info
+        .as_ref()
+        .map(|info| info.colors.iter().map(|c| c.role).collect())
+        .unwrap_or_default();
+    roles.sort_unstable();
+    assert_eq!(
+        roles,
+        ["selected bg", "text"],
+        "macos-tahoe: the checked edit button's info claims colours other than the selected \
+         fill and the variant's text: {info:?}"
     );
 }
 
@@ -19137,7 +19191,7 @@ fn a_raster_sets_icons_are_drawn_as_images_on_the_basic_page(cx: &mut TestAppCon
         let info = settle_on(&mut cx, &showcase, button);
         assert_eq!(
             info.as_ref().map(|info| info.title()).as_deref(),
-            Some("Button · Ghost, icon"),
+            Some("Button · Toolbar, icon"),
             "{button} does not say it shows its icon"
         );
     }
@@ -19464,7 +19518,7 @@ fn a_raster_sets_icons_are_drawn_as_images_in_the_chrome(cx: &mut TestAppContext
     let info = settle_on(&mut cx, &showcase, CHROME_TOOLBAR_PREFERENCES);
     assert_eq!(
         info.as_ref().map(|info| info.title()).as_deref(),
-        Some("Button · Ghost, icon"),
+        Some("Button · Toolbar, icon"),
         "the Preferences button with the set's Settings pixels is not an icon Button"
     );
 }

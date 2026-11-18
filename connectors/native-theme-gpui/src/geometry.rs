@@ -2312,7 +2312,9 @@ mod tests {
     /// `toolbar_button_checked` fills a checked toolbar button with
     /// `toolbar.button_checked_background` and letters it in
     /// `button.checked_text_color`, or `button.active_text_color` where that
-    /// is unset; under a theme that states no toolbar fill nor
+    /// is unset; with no checked fill stated it fills with
+    /// `toolbar.button_active_background`, else `button.active_background`,
+    /// and sets no text colour; under a theme that states no toolbar fill nor
     /// `button.active_background` it sets nothing.
     #[test]
     fn toolbar_button_checked_letters_in_the_checked_text() {
@@ -2371,6 +2373,45 @@ mod tests {
             Some(rgba_to_hsla(r.button.active_text_color)),
             "windows-11 with button.checked_text_color cleared"
         );
+
+        let mut r = resolved("windows-11", ColorMode::Light);
+        let pressed = Rgba::new(0x00, 0x00, 0x00, 0x06);
+        assert_eq!(r.toolbar.button_active_background, Some(pressed));
+        assert_ne!(
+            r.button.active_background,
+            Some(pressed),
+            "windows-11's toolbar and button pressed fills differ, or the fallback proves nothing"
+        );
+        r.toolbar.button_checked_background = None;
+        let out = toolbar_button_checked(Native::unscaled(&r));
+        assert_eq!(
+            out.background,
+            Some(rgba_to_hsla(pressed).into()),
+            "windows-11 with toolbar.button_checked_background cleared: fill"
+        );
+        assert_eq!(
+            out.text.color, None,
+            "windows-11 with toolbar.button_checked_background cleared: text"
+        );
+
+        let r = resolved("material-3", ColorMode::Light);
+        assert_eq!(
+            [
+                r.toolbar.button_checked_background,
+                r.toolbar.button_active_background
+            ],
+            [None, None],
+            "material-3 states no toolbar fill"
+        );
+        let pressed = Rgba::new(0xd0, 0xc6, 0xdf, 0xff);
+        assert_eq!(r.button.active_background, Some(pressed));
+        let out = toolbar_button_checked(Native::unscaled(&r));
+        assert_eq!(
+            out.background,
+            Some(rgba_to_hsla(pressed).into()),
+            "material-3 light: fill"
+        );
+        assert_eq!(out.text.color, None, "material-3 light: text");
     }
 
     /// No bundled preset states the toolbar's hover outline without its
