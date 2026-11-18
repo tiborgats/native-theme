@@ -533,7 +533,7 @@ keys = [
 ]
 
 [[parity.group]]
-reason = "the theme states no button.border.padding_* on catppuccin-mocha (its [button] has no border.padding; material-3 states padding_horizontal_px 24 and padding_vertical_px 10): each toolkit keeps its own default (iced: button::DEFAULT_PADDING 5 / 10, iced_widget 0.14.2 src/button.rs; a flat button's icon sits inside it) | theme silence: catppuccin-mocha states no button.border.padding_* (all four sides None, both variants), so each toolkit pads a button, a tool button and an icon button by its own default: egui's spacing.button_padding 8 x 2 (egui-0.37.0/src/style.rs:1568), iced's 5 x 10, gpui-component's own; material-3 states button.border.padding_horizontal_px 24 and padding_vertical_px 10"
+reason = "the theme states no button.border.padding_* on catppuccin-mocha (its [button] has no border.padding; material-3 states padding_horizontal_px 24 and padding_vertical_px 10): each toolkit keeps its own default (iced: button::DEFAULT_PADDING 5 / 10, iced_widget 0.14.2 src/button.rs; a flat button's icon sits inside it) | theme silence: catppuccin-mocha states no button.border.padding_* (all four sides None, both variants), so each toolkit pads a button, a tool button and an icon button by its own default: egui's spacing.button_padding 8 x 2 (egui-0.37.0/src/style.rs:1568), iced's 5 x 10, gpui-component's own; Edit, which wraps to the icon row's second line under catppuccin-mocha, sits below the first line's buttons, whose heights differ so; material-3 states button.border.padding_horizontal_px 24 and padding_vertical_px 10"
 keys = [
     "catppuccin-mocha:chrome.page_tabs.menu.x",
     "catppuccin-mocha:chrome.page_tabs.menu.w",
@@ -558,6 +558,12 @@ keys = [
     "catppuccin-mocha:basic.icons.delete.h",
     "catppuccin-mocha:basic.icons.delete.icon.x",
     "catppuccin-mocha:basic.icons.delete.icon.y",
+    "catppuccin-mocha:basic.icons.edit.x",
+    "catppuccin-mocha:basic.icons.edit.y",
+    "catppuccin-mocha:basic.icons.edit.w",
+    "catppuccin-mocha:basic.icons.edit.h",
+    "catppuccin-mocha:basic.icons.edit.icon.x",
+    "catppuccin-mocha:basic.icons.edit.icon.y",
     "catppuccin-mocha:basic.icons.small.y",
 ]
 
