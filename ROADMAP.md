@@ -18,7 +18,7 @@ role and per appearance variant (resting, selected, disabled) and applies them t
 egui's own seams (`UiBuilder::style`, `Ui::set_style`, `StyleModifier`, `Frame`), so
 per-widget geometry survives the contested-field collisions. Coverage is `mapping.toml`,
 one row per theme value, which the crate's tests hold to `ResolvedTheme` and to every
-published `Style`. Targets egui 0.36.2.
+published `Style`. Targets egui 0.37.0.
 
 Detailed design: [`docs/archive/todo_v0.6.0_egui-connector-spec.md`](docs/archive/todo_v0.6.0_egui-connector-spec.md),
 [`docs/archive/todo_v0.6.0_egui-connector-rationale.md`](docs/archive/todo_v0.6.0_egui-connector-rationale.md)

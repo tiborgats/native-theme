@@ -1674,12 +1674,20 @@ model, the platform presets and the three connectors
       - egui, eframe, egui_extras and egui_kittest 0.37.0 (egui 0.37.0 is of
         2026-10-15; the egui connector and its widgets crate are on 0.36.2,
         and the requirement `egui = "0.36.2"` does not take 0.37). skrifa
-        (0.44.0, newest 0.50.0) and muda (0.20.0, newest 0.21.2) follow it:
-        their requirements are epaint's and eframe's own
-        (`connectors/native-theme-egui/Cargo.toml`, the comments above each).
+        (0.44.0, newest 0.50.0) stays at epaint's own requirement, 0.44.0, as
+        the connector's manifest asks one skrifa for both
+        (`connectors/native-theme-egui/Cargo.toml`, the comment above it).
+        muda (0.20.0, newest 0.21.2) is not eframe's dependency, in 0.36.2 or
+        0.37.0: it is the egui showcase's own on macOS, whose version the iced
+        connector shares, and egui 0.37 does not move it
+        (`docs/todo_v0.7.2_egui-0.37-rationale.md`, §1.7 and E2).
         An egui 0.37 application cannot use native-theme-egui until this is
         done; it is a connector upgrade of the GPUI Kit kind, with its own
         rationale.
+        *Done in 0.7.2 (2026-11-18):* native-theme-egui and
+        native-theme-egui-widgets require egui 0.37.0, their showcase and tests
+        eframe, egui_extras and egui_kittest 0.37.0; skrifa stays at 0.44.0 and
+        muda at 0.20.0.
       - ashpd 0.14.0 with zbus 6: the entry above.
       - resvg 0.50.0 (2026-11-11; `native-theme/Cargo.toml:74` has 0.48.1) and
         fontdb 0.24.0 (2026-07-29; `:70` has 0.23). Before either moves, read
@@ -1991,6 +1999,16 @@ offscreen, `docs/evidence/breeze-offscreen/2026-11-13/`.
       32, which is another size; a helper for the message icon's size. The reporter's 14
       px button padding, 56 px icons, 1.25 line height and 50 % disabled opacity have no
       source in Breeze.
+- [ ] [v0.7.x] **The check box's 4, drawn inside its cell.** Breeze's check box is
+      `CheckBox_Radius = Frame_FrameRadius - 1`, 4, on a box drawn 2 inside the 20
+      cell (Breeze v6.7.5, `kstyle/breezemetrics.h:87-90`,
+      `kstyle/breezehelper.cpp:844-863`;
+      `docs/todo_v0.8.0_model-completeness-gap-map-kde.md`, K1.53), where kde-breeze
+      inherits `defaults.border.corner_radius`, 5, for the whole cell
+      (`docs/platform-facts.md` §2.5, the `border.corner_radius` row). The model has
+      no field for a box inset inside its cell. egui 0.37's cap, 6 on a 20 box, draws
+      either value as stated (`docs/todo_v0.7.2_egui-0.37-rationale.md`, §1.5 C and
+      E7); see also *Checkbox: the check box's own corner radius*.
 
 ### Dialog: the platform's vertical placement
 
@@ -2161,6 +2179,99 @@ caeddd6b, each platform file's *Cross-check* section has the detail.
       docs steps), or the script refusing to run while either variable is set, naming
       it. Raised by the gate-speed review (2026-11-16), outside that unit's scope.
 
+### Checkbox: the check box's own corner radius
+
+egui 0.37 caps a check box's corner radius at `round(0.3 × icon_width)`
+(`egui-0.37.0/src/theme/default_style.rs:194-197`), which no `Style` value lifts, so
+from 0.7.2 the egui connector draws the check box with a smaller radius than the
+theme's on 13 presets: the ten community presets 8 → 5, ios-13 10 → 7,
+macos-monterey 5 → 4, macos-tahoe 6 → 5 (`docs/todo_v0.7.2_egui-0.37-rationale.md`,
+§1.5 C and E7). None of the 13 has a source for its uncapped value: each inherits
+`defaults.border.corner_radius`. What would decide whether the connector draws the
+theme's radius past egui's cap, with a check box of its own in the widgets crate:
+
+- [ ] [v0.7.x] macOS's check-box radius, measured from the OS probe's renders.
+      `docs/platform-facts.md` §2.5, the `border.corner_radius` row, gives macOS
+      "← `defaults.border.corner_radius`"; the probe's check-box renders exist, and
+      no fact states the box's radius. The two macOS presets differ from egui's cap
+      by one point against that unchecked value. Measure the radius from the
+      renders, and state it in the facts with its source and in the two presets.
+- [ ] [v0.7.x] The check-box radius rule in `docs/inheritance-rules.toml`: a check
+      box without a radius of its own inherits `defaults.border.corner_radius`
+      (`"corner_radius.inherits_from"`), while the desktops' sources give the box a
+      radius of its own: GNOME's `$check_radius` 6 against the button's 9 (libadwaita
+      1.10.0 `src/stylesheet/widgets/_checks.scss:1`; adwaita states it since
+      0.7.2), KDE's `CheckBox_Radius = Frame_FrameRadius - 1`, 4, against
+      kde-breeze's inherited 5 (Breeze v6.7.5 `kstyle/breezemetrics.h:87-90`; *KDE:
+      what a Qt application under Breeze shows that native-theme does not (issue
+      #4)*, "The check box's 4"), and Windows' `CheckBox` style the control
+      radius itself, 4 (microsoft-ui-xaml `8463f451`,
+      `CheckBox_themeresources.xaml:294`). Decide what a preset without a check-box
+      radius of its own gives its check box: the ten community presets and ios-13
+      inherit 8 on a box of 18 and 10 on one of 22, which the gpui and iced
+      showcases draw nearly round. If this and the item above leave a preset whose
+      established radius is above egui's cap, a check box in
+      `native-theme-egui-widgets` that draws the theme's radius is built then (E7
+      (c)); see also the `[upstream]` draft under *native-theme-egui connector*,
+      "egui's check-box radius cap".
+
+### platform-facts: a submenu arrow's size
+
+- [ ] [v0.7.x] egui 0.37 draws a submenu's arrow as an atom `spacing.icon_width`
+      square (`egui-0.37.0/src/containers/menu.rs:492-505`), where 0.36's "⏵" took
+      the button's font. The egui connector's menu cell writes no `icon_width`, so
+      the arrow takes the base style's, `checkbox.indicator_width`
+      (`connectors/native-theme-egui/src/mapping.md`, the `spacing.icon_width` row).
+      No platform fact gives a submenu arrow's own size (`docs/platform-facts.md`
+      has no row for a submenu), and `menu.icon_size` is a menu item's icon, mostly
+      inherited from the toolbar's, not the arrow. Gather each platform's submenu
+      arrow size into the facts, with its source, then add a model leaf for it.
+      How the egui connector then reaches the arrow is that step's question: the
+      menu cell's `spacing.icon_width` would also size a check box or radio button
+      drawn directly in a menu, and `SubMenuButton::from_button` reaches only
+      buttons the caller builds (`docs/todo_v0.7.2_egui-0.37-rationale.md`, E20).
+
+### platform-facts: a search match's emphasis
+
+- [ ] [v0.7.x] gpui-component 0.10.0 draws the matched part of a searchable row's
+      title (`highlight_matches` on `Select`, `Combobox` and `Command`) in one
+      colour, `list_highlight_foreground`, on a row at rest, hovered and selected
+      (`src/label.rs:264-275`). The gpui connector gives it the resting text colour,
+      so with a native theme a match is not marked at rest
+      (`docs/todo_v0.7.2_gpui-kit-0.10.0-rationale.md`, T2). Which emphasis each
+      desktop gives a search match, a weight, an underline, a colour or a
+      background, is a platform fact nobody has gathered: macOS has
+      `NSColor.findHighlightColor`, a background (`docs/platform-facts.md`, the
+      system colours table), and the other desktops have no row. Gather it, with its
+      sources, then add a model field for it, which the connector maps once
+      upstream's highlight can take it (the `[upstream]` draft under
+      *native-theme-gpui connector*, "A search match that keeps the row's text
+      colour").
+
+### platform-facts: the desktops' own mark for a mixed check box
+
+- [ ] [v0.7.x] gpui-component 0.10.0 draws a mixed check box as a checked one,
+      with `IconName::Minus` for the mark (`src/checkbox.rs:109`, `:230-250`,
+      `:284-290`, `:354-370`), and from 0.7.2 the gpui connector's
+      `widgets::Checkbox::indeterminate` draws upstream's `Minus` the same way, in
+      the check's colours and stroke. Whether a desktop draws another mark, fill or
+      size for the mixed state is not in the facts. Read each platform's source for
+      it into `docs/platform-facts.md` §2.5, beside *Checkbox: the check mark's glyph
+      and size* (`docs/todo_v0.7.2_gpui-kit-0.10.0-rationale.md`, T3).
+
+### platform-facts: what reveals a hidden Windows scroll bar
+
+- [ ] [v0.7.x] gpui-component 0.10.0's `Theme::sync_scrollbar_appearance` maps
+      Windows by its own rule, auto-hide to `Hover`, otherwise `Always`
+      (`src/theme/mod.rs:145-154`, `:386-392`; 0.9.1 mapped auto-hide to
+      `Scrolling` on every platform), while the gpui connector maps the model's
+      `overlay_mode` to `Scrolling` on every platform. `docs/platform-facts.md` says
+      what the Windows setting is and marks which scroll bars follow it as unknown;
+      it has nothing on what reveals a hidden one, and upstream's rule states no
+      source. Read Microsoft's documentation of the behaviour into the facts, with
+      its source; the connector's mapping follows what it finds
+      (`docs/todo_v0.7.2_gpui-kit-0.10.0-rationale.md`, T9).
+
 ---
 
 ## Toolkit Connectors
@@ -2210,6 +2321,59 @@ caeddd6b, each platform file's *Cross-check* section has the detail.
       records the limit). It waits for an epaint hook or a `FontId` that can name a family
       with no registered key. Ledger M9-157 carries the evidence; the egui showcase names
       the face drawn (`DrawnFamily::OtherFont`, M9c T10 fix round 1, 79769ea9).
+- [ ] [v0.7.x] **egui 0.37's rubber band, for the facts.** egui 0.37 gives a scroll
+      area momentum and overscroll, `spacing.scroll.kinetic` (`decay_time` 0.5,
+      `stop_distance` 0.5, `rubber_band` true; `egui-0.37.0/src/style.rs:851-884`).
+      The connector leaves them at egui's values and records them in
+      `connectors/native-theme-egui/mapping.toml` as unwritten, "input behaviour, no
+      native leaf": no platform fact says what any platform does with momentum or
+      overscroll, under reduced motion or otherwise, and the model has no leaf for
+      either. The rubber band is visible. Gather the facts; then decide between
+      writing `decay_time` 0 and `rubber_band` false under reduced motion, as the
+      connector already writes `scroll_animation`, and a model leaf for momentum
+      scrolling (`docs/todo_v0.7.2_egui-0.37-rationale.md`, E4).
+- [ ] [v0.7.x] **egui 0.37's submenu gap, for the facts.** A submenu opens egui's
+      2.0 points from its menu's frame (`MenuConfig::submenu_gap`, new in 0.37): a
+      field of the menu's configuration, not of the `Style`, so the mapping has no
+      row for it, and no theme value reaches it (the connector's README says so). No
+      platform fact gives a submenu's offset from its menu, and the model has no
+      leaf for it. Gather it, then a model leaf (E4).
+- [ ] [v0.7.x] **A range counterpart in native-theme-egui-widgets.** egui 0.37's
+      `RangeSlider` paints its handles through egui's own slider code
+      (`slider_core::paint_handle`), so at rest its knobs take the rail's colour, the
+      limit the widgets crate's `Slider` exists to lift for a single value; the egui
+      showcase's Widget Info on the Range page says so. A range slider in the
+      widgets crate would draw both knobs from `slider.thumb_color`
+      (`docs/todo_v0.7.2_egui-0.37-rationale.md`, E10).
+- [ ] [v0.7.x] **native-theme-egui-widgets' drop-down measures its text part with
+      `ButtonStyle`'s framed margin.** `ComboBox` takes the room the frame takes as
+      `button_padding` with the resting stroke and expansion applied without a
+      layout shift (`connectors/native-theme-egui-widgets/src/combo_box.rs`,
+      `ComboBox::show_ui`). It does not handle `visuals.button_frame == false`,
+      where egui's `ButtonStyle` uses `Frame::new()` with no margin
+      (`egui-0.37.0/src/theme/default_style.rs`, `StyleProvider<ButtonStyle>`). It
+      also uses the resting stroke and expansion where egui uses the current
+      state's; the two differ only where a theme varies them by state. Found in
+      0.7.2's E-B review (2026-11-18).
+- [ ] [upstream] **egui's check-box radius cap.** egui 0.37 draws a check box's
+      corners at most `round(0.3 × icon_width)`
+      (`egui-0.37.0/src/theme/default_style.rs:194-197`), and no `Style` value lifts
+      the cap; the only other route is a `StyleProvider<CheckboxStyle>`, behind
+      egui's `experimental` feature, an unstable API for every application. Ask for
+      the cap to be optional. It matters only if the facts tasks under *Checkbox:
+      the check box's own corner radius* leave a preset whose established radius is
+      above the cap (`docs/todo_v0.7.2_egui-0.37-rationale.md`, E7 (d)). A draft,
+      not sent without the maintainer's approval:
+
+      > **Title:** A way to draw a check box's own corner radius past the cap
+      >
+      > egui 0.37's default check box style draws the box's corners at
+      > `round(0.3 × icon_width)` at most (`src/theme/default_style.rs:194-197`),
+      > whatever `widgets.*.corner_radius` states. A theme whose check box has a
+      > larger radius cannot draw it without a `StyleProvider<CheckboxStyle>`,
+      > which needs the `experimental` feature. Could the cap be made optional,
+      > for example a `Style` or `Visuals` switch, so a style's stated radius is
+      > drawn as stated?
 
 ### native-theme-gpui connector
 
@@ -2957,6 +3121,13 @@ caeddd6b, each platform file's *Cross-check* section has the detail.
       *2026-11-17:* none sent yet; the maintainer sends them when he has the time. The
       reply to issue #4 for 0.7.1 does not promise them: it says the table's bar is
       gpui-component's to fix and that its ring cannot yet tell keyboard focus.
+      *GPUI Kit 0.10.0 (2026-11-18):* request (4) is met for one element: the `Tab`
+      now draws its ring, `ring` as a 2 px inset, on keyboard focus only
+      (`focus_visible`, gpui-component 0.10.0 `src/tab/tab.rs:962-973`), and so does
+      the connector's `widgets::TabBar`, in the theme's ring colour and width.
+      `focus_ring_style`, the 3 px band of `ring` at alpha 0.5 the other widgets
+      draw, does not: it still shows on any focus, and the request stands for it
+      (`docs/todo_v0.7.2_gpui-kit-0.10.0-rationale.md`, §1.5 and T4).
 
 #### native-theme-iced: the same audit (found 2026-09-20, fixed in v0.5.9)
 
@@ -4259,6 +4430,15 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       *GPUI Kit 0.9.1 (2026-11-17):* still so; gpui-base 0.9.1's `A11yDisabledExt` is
       still `pub(crate)` (`src/a11y_disabled.rs:28`), and neither gpui-pre 0.3.12 nor
       gpui-fast 0.1.15 has an `aria_disabled`.
+      *GPUI Kit 0.10.0 (2026-11-18):* still no public route, and a second reason for
+      one: GPUI Fast 0.1.16 implements `IntoElement` for every `Element`
+      (`src/element.rs:146`), while gpui-pre 0.3.12 requires each `Element` to bring
+      its own (`src/element.rs:52`), so the copy's impl exists on one core only, gated
+      on the connector's own `gpui-fast` feature, as gpui-base gates its copy
+      (`src/a11y_disabled.rs:63-70`). An application on GPUI Fast must turn that
+      feature on; one that turns on only `gpui-kit/gpui-fast` gets E0119 inside the
+      connector. A public route would remove the copy and that failure
+      (`docs/todo_v0.7.2_gpui-kit-0.10.0-rationale.md`, T7).
 - [ ] [upstream] PR: an `Icon` that draws an image, or an icon slot that takes any
       element, in gpui-component's widgets that take an `Icon` alone.
       gpui-component 0.8.0's `Icon` draws a path or SVG bytes and nothing else
@@ -4323,6 +4503,77 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       opens (gpui-pre-windows 0.3.12 `src/window.rs:576`, gpui-fast-windows 0.1.15
       `:581`) and when the system's changes (`src/events.rs:1240-1251`;
       gpui-fast-windows `:1250`).
+- [ ] [upstream] **A search match that keeps the row's text colour, or a colour for
+      the selected row.** gpui-component 0.10.0's `highlight_matches` (`Select`,
+      `Combobox`, `Command`) draws a row's matched text in one colour,
+      `list_highlight_foreground` (`src/label.rs:264-275`), while a hovered or
+      selected row letters its own text `accent_foreground`
+      (`src/searchable_list/item.rs:106-123`), so no one colour reads in the three
+      states on every native theme; the gpui connector takes the resting text colour
+      (`docs/todo_v0.7.2_gpui-kit-0.10.0-rationale.md`, T2). An application can draw
+      its own through `SearchableListItem::render_highlighted`. A draft, not sent
+      without the maintainer's approval:
+
+      > **Title:** `highlight_matches`: keep the row's text colour, or a colour for
+      > the selected row
+      >
+      > With `highlight_matches(true)`, a `Select`, `Combobox` or `Command` draws the
+      > matched part of a row's title in `list.highlight.foreground` whatever the
+      > row's state, while a hovered or selected row draws its text in
+      > `accent_foreground`. On a theme whose selected row has a text colour of its
+      > own, the letters the user has just typed are hard to read, or cannot be
+      > seen, on the row the keyboard cursor is on. Could the highlight keep the
+      > row's own text colour and mark the match another way (a weight or an
+      > underline), or take a second colour for a selected row?
+- [ ] [upstream] **A focus callback on gpui-base's `Tabs`.** From 0.10.0 each tab in
+      gpui-base's `Tabs` has a focus handle, the list is one tab stop, and the
+      arrows, Home and End move the focus (`src/tabs.rs:160-173`), but `Tabs` gives
+      no handle, callback or event for the focused tab. The gpui connector's
+      `widgets::TabBar` learns it from a one-pixel child of each tab with a focus
+      handle of its own and scrolls the strip to it, which a callback would replace
+      (`docs/todo_v0.7.2_gpui-kit-0.10.0-rationale.md`, T4). A draft, not sent
+      without the maintainer's approval:
+
+      > **Title:** `Tabs`: a callback when the keyboard focus moves to a tab
+      >
+      > Since 0.10.0 the arrows, Home and End move the focus between a `Tabs`'
+      > tabs, but its owner cannot learn which tab has it, for example to scroll a
+      > tab strip to the focused tab. Could `Tabs` take a callback with the focused
+      > tab's index, or expose that index?
+- [ ] [upstream] **Document `gpui_kit::GPUI_FAST`.** gpui-kit 0.10.0's constant
+      (`src/lib.rs:122`, `#[doc(hidden)]`, in 0.9.1 too) says what it is for
+      ("Crates layered on the Kit that keep a backend feature of their own check it
+      at compile time to stay in step"), but it is hidden from the documentation, and
+      a hidden item may go in any release a caret requirement admits, so the gpui
+      connector does not use it. Documented, it would let the connector check at
+      compile time that its `gpui-fast` feature matches gpui-kit's, for a message
+      naming the fix where an application turns on only `gpui-kit/gpui-fast` and
+      gets E0119 (whether that message would show beside E0119 was not tried)
+      (`docs/todo_v0.7.2_gpui-kit-0.10.0-rationale.md`, T7). A draft, not sent
+      without the maintainer's approval:
+
+      > **Title:** Document `GPUI_FAST`
+      >
+      > `gpui_kit::GPUI_FAST` is `#[doc(hidden)]`, while its comment asks crates
+      > layered on the Kit with a backend feature of their own to check it at compile
+      > time. Could it be documented as public API, so such a crate can rely on it?
+- [ ] [upstream] **A getter for gpui-base's reduce-motion preference.** gpui-base
+      0.10.0 publishes `ReduceMotionPreference` and `set_reduce_motion_preference`
+      (`src/reduce_motion.rs:85-127`), which protect an application's explicit
+      choice from gpui-base's own readings, and no getter, so the gpui connector
+      cannot tell whether the application has chosen: its request still switches the
+      flag on over an explicit `Allow`, and an application that keeps motion sets
+      the flag after `apply`. With a getter the connector would forward the theme's
+      request only while the application has made no choice
+      (`docs/todo_v0.7.2_gpui-kit-0.10.0-rationale.md`, T8). A draft, not sent
+      without the maintainer's approval:
+
+      > **Title:** A getter for the reduce-motion preference
+      >
+      > `set_reduce_motion_preference` stores an application's explicit choice, but
+      > there is no way to read it back. A theme layer that forwards the system's
+      > reduce-motion request cannot tell whether the application has chosen. Could
+      > gpui-base add a getter for the `ReduceMotionPreference` in effect?
 
 ### gpui: a tab scrolled into view loses its outer flare
 
@@ -4488,6 +4739,69 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       the connector or the gpui showcase sets the application's icon resolver
       (`set_icon_resolver`, gpui-component 0.9.1 `src/icon.rs:77-106`), which
       every `Icon` drawn from an asset path asks first.
+      *GPUI Kit 0.10.0 (2026-11-18):* three more: the Spinner's own
+      `IconName::Loader` on a loading `Button` that sets no `loading_icon`
+      (gpui-component 0.10.0 `src/spinner.rs:25`; a loading button without an icon
+      shows the spinner too, `src/button/button.rs:777-786`), the mixed check box's
+      `IconName::Minus` (`src/checkbox.rs:230-250`, `:284-290`, `:354-370`), and
+      `ChevronLeft` in a right-to-left layout, where the widgets' chevrons mirror
+      (`docs/todo_v0.7.2_gpui-kit-0.10.0-rationale.md`, §1.3 and §1.5).
+
+### gpui: the theme-drawn slider beside upstream's keys and `SetValue`
+
+- [ ] [v0.7.x] From GPUI Kit 0.10.0 gpui-component's `Slider` is a tab stop and
+      answers the arrows, Page Up and Page Down (ten steps), Home, End and
+      AccessKit's numeric `SetValue`, and emits `Release` after a key's `Change`
+      (gpui-base 0.10.0 `src/slider.rs:430-463`, `:501-525`, `:726-735`). The
+      connector's `widgets::Slider`, built from gpui-base's parts (`SliderTrack`,
+      `SliderIndicator`, `SliderThumb`) with a key handler of its own, has neither
+      Page Up and Page Down, nor `SetValue`, nor that `Release`, and upstream's
+      handlers are on `gpui_base::Slider` alone, so they do not run beside it; the
+      connector's README says so (*Assistive technology*). Bring the theme-drawn
+      slider to upstream's keys and actions: about half a day by estimate. The page
+      step of ten is a toolkit's literal with no desktop's fact behind it
+      (`docs/todo_v0.7.2_gpui-kit-0.10.0-rationale.md`, T5).
+
+### gpui showcase: a layout-direction switch
+
+- [ ] [v0.7.x] From 0.7.2 the gpui connector's theme-drawn widgets follow
+      `LayoutDirection::global`, and the gpui showcase sets left to right at start,
+      as its own layout is written for that direction. A direction switch in the
+      chrome and a showcase that mirrors with it: counted by pattern on 2026-11-16,
+      outside its tests, 46 calls that name a physical edge (`demo.rs` 31, `app.rs`
+      7, `inspector.rs` 4, `chrome.rs` 2, `elements.rs` 1, `info/registry.rs` 1) and
+      51 explicit row layouts, about a hundred sites, rows built with a bare
+      `flex()` not counted; its tests hold 128 more lines that read a left or right
+      edge, and those that assert a side need a second direction. One and a half to
+      two and a half days by estimate, not measured
+      (`docs/todo_v0.7.2_gpui-kit-0.10.0-rationale.md`, T6).
+
+### gpui: the claim gates find a cited line by its content
+
+- [ ] [v0.7.x] The gpui showcase's colour claims and prose citations name upstream
+      lines by number, and the two claim gates
+      (`showcase::every_colour_claim_is_read_at_the_line_it_cites`,
+      `showcase::every_prose_citation_still_exists`) read them by number, so every
+      upgrade re-points them: upstream releases every week, and each release has
+      moved hundreds of cited lines (for GPUI Kit 0.10.0, 385 of the 386 failing
+      citations were pure line moves). Change the two gates to find a claim's line by
+      its content instead of its number: a redesign of the two gates and of the
+      claims' format (`docs/todo_v0.7.2_gpui-kit-0.10.0-rationale.md`, T11).
+
+### gpui showcase: no check recomputes the match highlight's figures
+
+- [ ] [v0.7.x] The Widget Info of the gpui showcase's searchable `Select` states the
+      match highlight's limit with the figures of the GPUI rationale's measurement
+      (`docs/todo_v0.7.2_gpui-kit-0.10.0-rationale.md`, T2): with the resting text
+      colour the matched part never falls below a contrast of 1.5 at rest or hovered,
+      and falls below it on the selected row in 7 of the 34 preset and mode cases,
+      against 20 for `info`, 10 of them invisible. On 2026-11-18 the build re-measured
+      them with a throwaway test over the 34 bundled preset and mode combinations, and
+      they match: at rest and hovered the lowest is one-dark dark, hovered, at 1.63;
+      on the selected row 7 fall below 1.5; `info` falls below 1.5 in 20 cases, 10 of
+      them at 1.04 or less. The test was removed, and no repository tool recomputes
+      the figures, so a preset or mapping change can make them false unseen. A kept
+      check that recomputes them is open work.
 
 ---
 
