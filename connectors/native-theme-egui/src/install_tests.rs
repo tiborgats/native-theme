@@ -875,6 +875,36 @@ fn a_click_into_a_text_edit_draws_no_ring_where_keyboard_only() {
     );
 }
 
+/// T14 (b), D4: a theme that says the ring shows on any focus (ios-13,
+/// `focus_ring_keyboard_only = false`) rings a text edit a click focuses, as one that says
+/// nothing does: only `Some(true)` is keyboard only.
+#[test]
+fn a_click_into_a_text_edit_draws_the_ring_where_not_keyboard_only() {
+    let (ctx, atlas, probe) = ring_harness("ios-13");
+    let theme = ctx.theme();
+    assert_eq!(
+        atlas.resolved_for(theme).defaults.focus_ring_keyboard_only,
+        Some(false),
+        "ios-13 says any focus, or the test proves nothing"
+    );
+    let ring = atlas.focus_ring(theme).expect("ios-13 states a focus ring");
+    let mut text = String::new();
+    let mut show = |ui: &mut egui::Ui| in_window(ui, |ui| ui.text_edit_singleline(&mut text));
+    let field = pass_ui(&ctx, egui::RawInput::default(), &mut show);
+    let layer = field.layer_id;
+    watch(&probe, &[layer]);
+    let field = pass_ui(&ctx, egui::RawInput::default(), &mut show);
+    let centre = field.rect.center();
+    let _ = pass_ui(&ctx, primary(centre, true), &mut show);
+    let field = pass_ui(&ctx, primary(centre, false), &mut show);
+    assert!(field.has_focus(), "the click focuses the field");
+    assert_eq!(
+        rings_on(&seen(&probe), layer, ring.stroke).len(),
+        1,
+        "a ring after a click"
+    );
+}
+
 /// T14 (b), D4: the ring `Tab` gave stays through a pass whose input is a pointer move.
 #[test]
 fn the_ring_after_tab_outlasts_a_pointer_move() {

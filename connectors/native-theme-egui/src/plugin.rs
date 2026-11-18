@@ -321,9 +321,12 @@ pub(crate) struct FocusOrigin {
 
 impl FocusOrigin {
     /// One pass's events, in order (decision 4): a key press is a key, but for egui's eight
-    /// modifier keys (egui 0.37.0 `src/data/key.rs:253-274`), which egui-winit sends as
-    /// `Event::Key` presses (egui-winit 0.37.0 `src/lib.rs:1797-1804`), so a modifier pressed
-    /// alone is no key; a pointer button press or a touch's start is the pointer's press; a
+    /// modifier keys (egui 0.37.0 `src/data/key.rs:253-274`) and its `CapsLock` and `NumLock`
+    /// (`:287`, `:290`), which egui-winit sends as `Event::Key` presses (egui-winit 0.37.0
+    /// `src/lib.rs:1797-1804`, `:1810-1811`), so a modifier pressed alone is no key. The list
+    /// follows gpui's modifier keys: on Wayland a keysym that `is_modifier_key` holds of, Caps
+    /// Lock and Num Lock among them (xkeysym 0.2.1 `src/lib.rs:168-176`), reaches gpui as no
+    /// key; a pointer button press or a touch's start is the pointer's press; a
     /// pointer move or any other touch event is the pointer; every other event changes
     /// nothing. A pass after the first of a frame gets no events (egui 0.37.0
     /// `src/data/input/raw_input.rs:124-143`), so its previous pass is the one that had them.
@@ -347,6 +350,8 @@ impl FocusOrigin {
                             | Key::AltRight
                             | Key::SuperLeft
                             | Key::SuperRight
+                            | Key::CapsLock
+                            | Key::NumLock
                     ) {
                         self.key_last = true;
                         self.key_now = true;
@@ -390,8 +395,9 @@ impl FocusOrigin {
 /// reads the atlas `install` published, so a re-install takes effect with no second
 /// registration (egui keeps the first plugin of a type, `egui/src/context.rs:2045`,
 /// `egui/src/plugin.rs:206-210`) — only its own bookkeeping: which viewports' input it filled
-/// this pass, the last window theme it sent per viewport, the cap inputs of each pass in
-/// progress, and whether it has adopted the focus entries written before it was registered.
+/// this pass, the last window theme it sent per viewport, what each viewport's focus followed
+/// ([`FocusOrigin`]), the cap inputs of each pass in progress, and whether it has adopted the
+/// focus entries written before it was registered.
 #[derive(Default)]
 pub(crate) struct NativeThemePlugin {
     /// Per viewport whose input this plugin saw, whether it filled the scheme in its latest
@@ -413,8 +419,8 @@ pub(crate) struct NativeThemePlugin {
 impl NativeThemePlugin {
     /// Drop the focus entry of every viewport whose input this plugin saw and that egui no
     /// longer has, as egui drops its own state of a closed viewport
-    /// (`egui/src/context.rs:2756-2790`, `:2829-2835`), its `last_sent` theme, and the viewport
-    /// from `filled`, which is the list scanned. A window reopened under the same id gets
+    /// (`egui/src/context.rs:2756-2790`, `:2829-2835`), its `last_sent` theme, its focus
+    /// origin, and the viewport from `filled`, which is the list scanned. A window reopened under the same id gets
     /// egui's own `SetTheme(SystemDefault)` in its first pass, as egui's new state of it has
     /// sent none (`egui/src/context.rs:2485-2498`), which `output_hook` rewrites.
     ///
@@ -1052,12 +1058,14 @@ mod tests {
         assert!(!origin.settle(widget("requested")));
     }
 
-    /// Decision 4: a modifier key pressed alone is no key.
+    /// Decision 4: a modifier key pressed alone is no key, Caps Lock and Num Lock included.
     #[test]
     fn focus_origin_a_modifier_alone_is_no_key() {
         for (pressed, by_key) in [
             (egui::Key::ShiftLeft, false),
             (egui::Key::ControlRight, false),
+            (egui::Key::CapsLock, false),
+            (egui::Key::NumLock, false),
             (egui::Key::Tab, true),
         ] {
             let mut origin = FocusOrigin::default();

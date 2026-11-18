@@ -214,7 +214,8 @@ pub(crate) fn atlas_key() -> egui::Id {
 /// [`ResolvedTheme`]s, its [`LayoutTheme`] (four `Option<f32>`), its name (`String`), the
 /// OS [`ColorMode`] (`Option`), the
 /// [`IconSet`] and the icon-theme name per `egui::Theme` (`Option<String>` each) it carries, the
-/// focus ring per `egui::Theme` (spec §6.18: an `Option` of an `egui::Stroke` and an `f32` offset),
+/// focus ring per `egui::Theme` (spec §6.18: an `Option` of an `egui::Stroke`, an `f32` offset
+/// and a `bool`, whether it shows for keyboard focus only),
 /// and the `egui::FontDefinitions` [`Builder::build`] made from its [`fonts::FontPlan`](crate::fonts::FontPlan) for
 /// [`ThemeAtlas::install`] (none when no plan was given), which are `BTreeMap`s of `String`,
 /// `FontFamily` (an `Arc<str>` in `Name`) and `Arc<FontData>`
