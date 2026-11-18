@@ -39,7 +39,7 @@ watch          = ["native-theme-egui/watch"]
 # holds one copy of each and this crate names no version of either here. Its one
 # egui requirement is the test-only dev-dependency below, which must equal the
 # connector's egui requirement.
-native-theme-egui = { version = "0.7.1", path = "../native-theme-egui", default-features = false }
+native-theme-egui = { version = "0.7.2", path = "../native-theme-egui", default-features = false }
 
 [dev-dependencies]
 # T7 finds egui's published sources through `cargo metadata`, as
