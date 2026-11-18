@@ -1658,6 +1658,11 @@ model, the platform presets and the three connectors
       stay. The check itself runs again: `--exclude zbus` no longer fails on
       the GPUI graph, so `scripts/check_release.sh` passes it and prints that
       zbus is not compared; what the check then listed is the next entry.
+      *GPUI Fast 0.1.16 (2026-11-18):* the exact pin is gone: gpui-fast-web 0.1.16
+      requires `unicode-properties = "0.1.3"`, a caret requirement
+      (`Cargo.toml:53-54`, the same in 0.1.15; 0.1.10 still has `"=0.1.3"`), and
+      `Cargo.lock` holds unicode-properties 0.1.5. gpui-fast-web 0.1.8 is not on
+      disk, so its pin was not read again.
 
 ### Dependencies: the newer releases the outdated check did not show (2026-11-14)
 
@@ -2446,6 +2451,10 @@ theme's radius past egui's cap, with a check box of its own in the widgets crate
       (`src/window.rs:3139-3141`) and `painted_underlines()` (`:3145-3147`) return the
       rendered scene's own primitives only, and `src/fast/rounded_clip_scene.rs` is
       unchanged (`:1-10`, `:60-75`).
+      *GPUI Fast 0.1.16 (2026-11-18):* still so, at gpui-fast 0.1.16's `painted_quads()`
+      (`src/window.rs:3229-3231`) and `painted_underlines()` (`:3235-3237`), which
+      return the rendered scene's own primitives only; `src/fast/rounded_clip_scene.rs`
+      is unchanged (`:1-10`, `:60-75`).
 
 - [ ] [1.0] **The layout dump on GPUI Fast is stale inside a scrolled,
       composited scroll layer.** The showcase's Widget Info registry
@@ -2471,6 +2480,15 @@ theme's radius past egui's cap, with a check box of its own in the widgets crate
       (`src/fast/layers/mod.rs:130`) and reuse with them
       (`src/fast/retained.rs:602`), and `DumpSettle` already reads until the
       layout holds. Found 2026-10-21 (G3 Task 1).
+      *GPUI Fast 0.1.16 (2026-11-18):* still so, at gpui-fast 0.1.16:
+      `PROMOTE_AFTER_SCROLLED_FRAMES` is still 2 (`src/fast/layers/policy.rs:43`, the
+      promotion `:305-306`), `prepaint_children` still runs the children's prepaint
+      only where the layer is not composited (`src/fast/layers/paint.rs:233-235`), and
+      `carry_prepaint` carries their records moved by the scroll instead
+      (`src/fast/layers/reuse.rs:39`, the same line); a refreshing frame still turns
+      the layers off (`src/fast/layers/mod.rs:130`) and reuse with them
+      (`src/fast/retained.rs:609`, 0.1.10 `:602`). `paint.rs` and `layers/mod.rs` are
+      unchanged since 0.1.10.
 
 - [ ] [1.0] **The gpui showcase keeps little of GPUI Fast's reuse.** Every
       Widget Info record is an update of the `InfoRegistry` entity made
@@ -2502,6 +2520,12 @@ theme's radius past egui's cap, with a check box of its own in the widgets crate
       `Inspector` still needs the frame's-end notification, through its
       observation, and the `Showcase` is no longer built again for its own
       records.
+      *GPUI Fast 0.1.16 (2026-11-18):* still so, at gpui-fast 0.1.16: `note_update`
+      (`src/fast/dependencies.rs:774-814`, 0.1.10 `:757-797`) still stamps an update
+      made while the window draws as a write, and `written_since` (`:651-658`, 0.1.10
+      `:646-653`) still rebuilds a subtree that read an entity another wrote, both
+      bodies as in 0.1.10; `Window::layout_stats` is `src/fast/stats.rs:241`. The
+      counts above were not taken again.
 
 - [ ] [upstream] **File the gpui-kit issue: gpui-pre clips a rounded box's
       children to a rectangle.** For the maintainer to file on
@@ -2557,6 +2581,10 @@ theme's radius past egui's cap, with a check box of its own in the widgets crate
       says "only rectangular content masks are supported" (`src/window.rs:2453-2461`,
       the words at `:2454`), and gpui-fast 0.1.15's lines hold (`src/style.rs:743`,
       `src/fast/rounded_clip.rs:68-70`, that file unchanged).
+      *GPUI Fast 0.1.16 (2026-11-18):* still so for the gpui-fast half: gpui-fast
+      0.1.16's `src/style.rs` and `src/fast/rounded_clip.rs` are unchanged from
+      0.1.15, so its lines hold (`src/style.rs:743`, `src/fast/rounded_clip.rs:68-70`).
+      gpui-pre was not read again here.
 - [ ] [upstream] **File the gpui-kit issue: a non-panicking
       `TextSystem::try_resolve_font`.** For the maintainer to file on
       longbridge/gpui-kit (an agent files nothing); gpui-pre is a snapshot of
@@ -2616,6 +2644,12 @@ theme's radius past egui's cap, with a check box of its own in the widgets crate
       `resolve_font_uncached` (`src/text_system.rs:566`), the `panic!` at `:617-624`;
       the fallback stack stays private (gpui-pre `:237`) and `pub(crate)` (gpui-fast
       `:238`).
+      *GPUI Fast 0.1.16 (2026-11-18):* still so, at the same lines: gpui-fast 0.1.16's
+      `TextSystem::resolve_font` (`src/text_system.rs:353-355`) goes through
+      `src/fast/text.rs` (unchanged from 0.1.15) to the `pub(crate)`
+      `resolve_font_uncached` (`src/text_system.rs:566`), the `panic!` at `:617-624`;
+      the fallback stack stays `pub(crate)` (`:238`), and there is no `font_id` and no
+      non-panicking resolve. `src/text_system.rs` changed only in `layout_line`.
 
 #### Upstream PR candidates from v0.5.8 (Tier U)
 
@@ -4190,6 +4224,9 @@ the gap — closing it is a change, and each wants its own decision.
       *GPUI Kit 0.9.1 (2026-11-17):* still so; the test-support `render_to_image` is
       gpui-pre 0.3.12 `src/window.rs:3095` and gpui-fast 0.1.15 `src/window.rs:3122`,
       and neither has a public screenshot call.
+      *GPUI Fast 0.1.16 (2026-11-18):* still so for gpui-fast: its test-support
+      `render_to_image` is gpui-fast 0.1.16 `src/window.rs:3212` (the `cfg` at `:3211`),
+      and it has no public screenshot call. gpui-pre was not read again here.
 - [ ] [upstream] PR: let an application drop the SVGs a window has drawn, so a path a
       window has drawn can show what the application's asset source answers for it
       now; gpui-component 0.9's icon resolver lets the widgets' own icons follow a
@@ -4447,6 +4484,9 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       feature on; one that turns on only `gpui-kit/gpui-fast` gets E0119 inside the
       connector. A public route would remove the copy and that failure
       (`docs/todo_v0.7.2_gpui-kit-0.10.0-rationale.md`, T7).
+      *GPUI Fast 0.1.16 (2026-11-18):* still so; gpui-fast 0.1.16 has no
+      `aria_disabled`: its `div` has the same 21 `aria_*` setters as 0.1.15
+      (`src/elements/div.rs:1380-1542`), none of them for a disabled state.
 - [ ] [upstream] PR: an `Icon` that draws an image, or an icon slot that takes any
       element, in gpui-component's widgets that take an `Icon` alone.
       gpui-component 0.8.0's `Icon` draws a path or SVG bytes and nothing else
@@ -4511,6 +4551,12 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       opens (gpui-pre-windows 0.3.12 `src/window.rs:576`, gpui-fast-windows 0.1.15
       `:581`) and when the system's changes (`src/events.rs:1240-1251`;
       gpui-fast-windows `:1250`).
+      *GPUI Fast 0.1.16 (2026-11-18):* still so for gpui-fast: the trait's no-op is
+      gpui-fast 0.1.16 `src/platform.rs:468`, which gpui-fast-windows 0.1.16 does not
+      override; its `configure_dwm_dark_mode` (`src/util.rs:134`, unchanged) is still
+      called from the system's appearance alone, when the window opens
+      (`src/window.rs:581`) and when the system's changes (`src/events.rs:1258`, in
+      `handle_system_theme_changed`, `:1238`). gpui-pre was not read again here.
 - [ ] [upstream] **A search match that keeps the row's text colour, or a colour for
       the selected row.** gpui-component 0.10.0's `highlight_matches` (`Select`,
       `Combobox`, `Command`) draws a row's matched text in one colour,
@@ -4862,6 +4908,7 @@ The `[v0.7.0]` items that sat under *Deferred (pre-1.0)*, in the order they had 
 ### Font DPI
 - [ ] [upstream] An X11 client through Xwayland on a GNOME or Budgie Wayland session draws the text-scaling factor twice: it gets the `Xft.dpi` gnome-settings-daemon writes as 96 × `text-scaling-factor` × the window scale (gnome-settings-daemon 51.0 `plugins/xsettings/gsd-xsettings-manager.c:666-668`, `:742`, `:797-798`), winit 0.30.13 and gpui-pre-linux 0.3.9 take their X11 scale factor from it (`src/platform_impl/linux/x11/util/randr.rs:41-53`, `:145-146`; `src/linux/x11/client.rs:2671-2678`), and the GNOME reader, which sees a `wayland` session, reports the factor, which the connectors apply again. Core cannot see a client's backend, and the connectors' entry points take no window (M8 Step 6 ruling, 2026-10-16). The lengths winit and gpui scale by the factor on X11, which GTK does not, are theirs, not ours. The same holds for an X11 session started with `startx` from a text login: it runs in the text login's session, whose `XDG_SESSION_TYPE` is `tty` (one of pam_systemd's session types, `pam_systemd(8)` `type=`, systemd 262), so the reader reports the factor and the X11 toolkit's `Xft.dpi` scale carries it too. The rule stays `x11` exactly (Step 6 ruling); `DISPLAY` or `WAYLAND_DISPLAY` would guess the backend, not know it. Waits on a way for the reader to learn the backend the client actually uses (Xwayland, `startx`), which no toolkit exposes to a theme reader today.
   *GPUI Kit 0.8.1 (2026-10-27, G4):* still so: gpui-pre-linux 0.3.10 takes its X11 scale factor from `Xft.dpi` at `src/linux/x11/client.rs:2674-2681` (0.3.9 `:2671-2678`), and gpui-fast-linux 0.1.12 does the same (`:2711-2718`).
+  *GPUI Fast 0.1.16 (2026-11-18):* still so: gpui-fast-linux 0.1.16 takes its X11 scale factor from `Xft.dpi` at `src/linux/x11/client.rs:2713-2720` (0.1.12 `:2711-2718`; the file is unchanged from 0.1.15). gpui-pre-linux was not read again here.
 
 ### docs.rs feature badges
 - [ ] [1.0] docs.rs `doc(cfg)` badges: mark each feature-gated item on docs.rs with the feature it needs. It needs nightly's `doc_cfg` (`#![cfg_attr(docsrs, feature(doc_cfg))]` and `--cfg docsrs` in `[package.metadata.docs.rs]`); until then the item's rustdoc names the feature in prose (the v0.5.9 second pre-merge review's Task 6).
