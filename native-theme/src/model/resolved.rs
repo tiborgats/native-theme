@@ -67,9 +67,11 @@ pub struct ResolvedTextScale {
 
 // --- ResolvedDefaults ---
 
-/// Fully resolved global theme defaults where every field is guaranteed populated.
+/// Fully resolved global theme defaults: every field is populated but
+/// `focus_ring_keyboard_only`, a soft option whose `None` is a meaning (the
+/// theme does not say).
 ///
-/// Mirrors [`crate::model::ThemeDefaults`] but with concrete (non-Option) types.
+/// Mirrors [`crate::model::ThemeDefaults`] with concrete types for every other field.
 /// Produced by the resolution/validation pipeline.
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[non_exhaustive]
@@ -145,6 +147,10 @@ pub struct ResolvedDefaults {
     pub focus_ring_width: f32,
     /// Gap between element edge and focus indicator.
     pub focus_ring_offset: f32,
+    /// Whether the platform shows its focus ring only for a keyboard focus;
+    /// `None` where the theme does not say. See
+    /// [`ThemeDefaults::focus_ring_keyboard_only`](crate::model::ThemeDefaults::focus_ring_keyboard_only).
+    pub focus_ring_keyboard_only: Option<bool>,
 
     // ---- Icon sizes ----
     /// Per-context icon sizes.
@@ -380,6 +386,7 @@ mod tests {
             focus_ring_color: c,
             focus_ring_width: 2.0,
             focus_ring_offset: 1.0,
+            focus_ring_keyboard_only: None,
             icon_sizes: sample_icon_sizes(),
         }
     }

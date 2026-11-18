@@ -71,6 +71,8 @@ disabled_opacity = 0.3
 line_height = 1.19
 focus_ring_width_px = 2.0
 focus_ring_offset_px = 1.0
+# (UIKit) the focus effect applies whenever the item is focused (UIView.h:166-167, Xcode 16.4 iPhoneSimulator SDK)
+focus_ring_keyboard_only = false
 
 
 [light.defaults.border]
@@ -417,6 +419,8 @@ disabled_opacity = 0.3
 line_height = 1.19
 focus_ring_width_px = 2.0
 focus_ring_offset_px = 1.0
+# (UIKit) the focus effect applies whenever the item is focused (UIView.h:166-167, Xcode 16.4 iPhoneSimulator SDK)
+focus_ring_keyboard_only = false
 
 
 [dark.defaults.border]

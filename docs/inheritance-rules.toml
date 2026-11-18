@@ -311,7 +311,7 @@ sub_field_inheritance = true   # None sub-fields inherit independently
 fallback = "defaults.text_color"
 macos    = "preset"
 windows  = "defaults.text_color"
-kde      = "defaults.focus_ring_color"
+kde      = "reader"                    # [Colors:View] DecorationFocus (platform-facts.md §2.4, caret_color), which the KDE reader writes (kde/colors.rs, the Input block); kde-breeze states none, so without the reader the fallback applies; not the ring, which is the selection colour at 0.3
 gnome    = "input.font.color"  # currentColor (libadwaita 1.10.0 _entries.scss:11); adwaita states it
 
 [per_platform."scrollbar.track_color"]
@@ -443,6 +443,7 @@ fields = [
     "expander.arrow_color",            # platform-specific arrow/chevron color
     # soft_option sizes, enums, flags and the tooltip delay: stay None where the
     # platform states none
+    "defaults.focus_ring_keyboard_only", # None: the connectors' ring on any focus; KDE, Windows, Material keyboard only, iOS any (§2.1.5)
     "checkbox.radio_dot_diameter",     # macOS publishes no radio dot size (platform-facts §2.5)
     "checkbox.radio_indicator_width",  # None: the radio is `indicator_width` across (§2.5)
     "switch.unchecked_thumb_diameter", # None: the off thumb is `thumb_diameter` across (§2.21)

@@ -640,7 +640,7 @@ impl ValidateNested for WidgetBorderSpec {
 
 /// Extract all defaults fields and construct `ResolvedDefaults` in one invocation.
 ///
-/// Handles five extraction patterns:
+/// Handles six extraction patterns:
 /// - **font**: non-Option `FontSpec` fields via `require_font()`.
 /// - **option_color**: `Option<Rgba>` fields via `require()` with
 ///   `Rgba::TRANSPARENT` fallback.
@@ -651,6 +651,8 @@ impl ValidateNested for WidgetBorderSpec {
 ///   (Rgba / f32 / bool).
 /// - **icon_sizes**: `Option<f32>` fields nested under `defaults.icon_sizes`
 ///   via `require()` with `0.0_f32` fallback.
+/// - **soft**: `Option<T>` fields whose `None` is a meaning of its own,
+///   passed through as they are and never reported missing.
 ///
 /// The split between `option_color` and `option_f32` is intentional: after
 /// G1 removes `impl Default for Rgba`, there is no uniform way for the
@@ -671,6 +673,7 @@ macro_rules! validate_defaults {
         option_f32 { $($f32_field:ident),* $(,)? }
         border_required { $($br_field:ident : $br_fallback:expr),* $(,)? }
         icon_sizes { $($is_field:ident),* $(,)? }
+        soft { $($soft_field:ident),* $(,)? }
     ) => {{
         use $crate::model::{DefaultsBorderSpec, IconSizes, ThemeDefaults};
         use $crate::resolve::validate_helpers::{require, require_font};
@@ -722,6 +725,10 @@ macro_rules! validate_defaults {
                 0.0_f32,
             );
         )*
+        // Pattern E: soft options, `None` a meaning of their own, passed through
+        $(
+            let $soft_field = $src.defaults.$soft_field;
+        )*
 
         use $crate::model::border::ResolvedDefaultsBorder;
         use $crate::model::resolved::{ResolvedDefaults, ResolvedIconSizes};
@@ -729,6 +736,7 @@ macro_rules! validate_defaults {
             $($font_field,)*
             $($color_field,)*
             $($f32_field,)*
+            $($soft_field,)*
             border: ResolvedDefaultsBorder {
                 $($br_field,)*
             },

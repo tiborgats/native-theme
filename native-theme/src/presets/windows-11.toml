@@ -64,6 +64,8 @@ line_height = 1.43
 focus_ring_width_px = 2.0
 # platform-facts.md:1110 (§2.1.5): Button FocusVisualMargin -3 around a 2px outer and a 1px inner ring
 focus_ring_offset_px = 1.0
+# platform-facts.md (§2.1.5): focus_ring_keyboard_only: the focus visual is drawn only in the Keyboard focus state (focusmgr.cpp:2731-2733, microsoft-ui-xaml 2.5.1)
+focus_ring_keyboard_only = true
 
 [light.defaults.border]
 # platform-facts.md:1055, :1120 (§2.1.3, §2.1.6): CardStrokeColorDefault #0F000000, its alpha 15/255 the opacity below; over background_color #e5e5e5
@@ -705,6 +707,8 @@ line_height = 1.43
 focus_ring_width_px = 2.0
 # platform-facts.md:1110 (§2.1.5): Button FocusVisualMargin -3 around a 2px outer and a 1px inner ring
 focus_ring_offset_px = 1.0
+# platform-facts.md (§2.1.5): focus_ring_keyboard_only: the focus visual is drawn only in the Keyboard focus state (focusmgr.cpp:2731-2733, microsoft-ui-xaml 2.5.1)
+focus_ring_keyboard_only = true
 
 [dark.defaults.border]
 # platform-facts.md:1055, :1120 (§2.1.3, §2.1.6): CardStrokeColorDefault #19000000, its alpha 25/255 the opacity below; over background_color #1d1d1d

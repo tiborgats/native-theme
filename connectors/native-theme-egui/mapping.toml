@@ -265,6 +265,10 @@ tested_by = "T14(b)"
 verdict   = "derived"
 tested_by = "T14(b)"
 
+["defaults.focus_ring_keyboard_only"]
+verdict   = "derived"
+tested_by = "T14(b)"
+
 ["defaults.icon_sizes.toolbar"]
 verdict   = "derived"
 tested_by = "T18(e)"

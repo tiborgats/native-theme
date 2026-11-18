@@ -29,7 +29,10 @@ fn breeze_dark_fixture_colors_and_fonts() {
     assert_eq!(v.defaults.background_color, Some(Rgba::rgb(49, 54, 59)));
     assert_eq!(v.defaults.text_color, Some(Rgba::rgb(239, 240, 241)));
     assert_eq!(v.defaults.surface_color, Some(Rgba::rgb(35, 38, 41)));
-    assert_eq!(v.defaults.focus_ring_color, Some(Rgba::rgb(61, 174, 233)));
+    assert_eq!(
+        v.defaults.focus_ring_color,
+        Some(Rgba::new(61, 174, 233, 0x4d))
+    );
     assert_eq!(
         v.defaults.selection_background,
         Some(Rgba::rgb(61, 174, 233))
@@ -140,7 +143,10 @@ fn custom_accent_fixture() {
         v.defaults.selection_background,
         Some(Rgba::rgb(246, 116, 0))
     );
-    assert_eq!(v.defaults.focus_ring_color, Some(Rgba::rgb(246, 116, 0)));
+    assert_eq!(
+        v.defaults.focus_ring_color,
+        Some(Rgba::new(246, 116, 0, 0x4d))
+    );
 
     // Window background unchanged from Breeze Dark
     assert_eq!(v.defaults.background_color, Some(Rgba::rgb(49, 54, 59)));

@@ -53,6 +53,8 @@ line_height = 1.43
 # platform-facts.md:1109-1110 (§2.1.5): md-focus-ring width 3, outward-offset 2 (tokens/_md-comp-focus-ring.scss:50, :52)
 focus_ring_width_px = 3.0
 focus_ring_offset_px = 2.0
+# platform-facts.md (§2.1.5): focus_ring_keyboard_only: Compose shows focus indication in keyboard input mode only (AndroidComposeView.android.kt:3807-3809, androidx e4d933c9)
+focus_ring_keyboard_only = true
 
 
 [light.defaults.border]
@@ -572,6 +574,8 @@ line_height = 1.43
 # platform-facts.md:1109-1110 (§2.1.5): md-focus-ring width 3, outward-offset 2 (tokens/_md-comp-focus-ring.scss:50, :52)
 focus_ring_width_px = 3.0
 focus_ring_offset_px = 2.0
+# platform-facts.md (§2.1.5): focus_ring_keyboard_only: Compose shows focus indication in keyboard input mode only (AndroidComposeView.android.kt:3807-3809, androidx e4d933c9)
+focus_ring_keyboard_only = true
 
 
 [dark.defaults.border]

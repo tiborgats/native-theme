@@ -86,6 +86,7 @@ impl ThemeMode {
                 shadow_enabled: false,
             }
             icon_sizes { toolbar, small, large, dialog, panel }
+            soft { focus_ring_keyboard_only }
         );
         let text_scale = validate_text_scale!(
             self, dpi, &mut missing;

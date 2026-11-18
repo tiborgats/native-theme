@@ -13,9 +13,10 @@ fn get_color(ini: &configparser::ini::Ini, section: &str, key: &str) -> Option<R
 /// Breeze's `Metrics::Blend_Value` (breezemetrics.h:176 at breeze v6.7.5), the
 /// alpha of the selection colour over a checked indicator's fill
 /// (breezehelper.cpp:40), of the focus colour over a hovered menu item
-/// (breezestyle.cpp:6021-6029 at breeze f0b1d75) and of the selection colour over
-/// a hovered item-view row (:4871-4875); docs/platform-facts.md §2.5, §2.6,
-/// §2.15.
+/// (breezestyle.cpp:6021-6029 at breeze f0b1d75), of the selection colour over
+/// a hovered item-view row (:4871-4875) and of the selection colour in the
+/// keyboard focus band (breezestyle.cpp:6776-6779); docs/platform-facts.md §2.5,
+/// §2.6, §2.15.
 const BLEND_VALUE: f32 = 0.3;
 
 /// `kdeglobals` `[KDE] frameContrast` where it is unset, KColorScheme's own
@@ -32,6 +33,13 @@ const CONTRAST_DEFAULT: i32 = 7;
 fn translucent(color: Rgba, alpha: f32) -> Rgba {
     let [r, g, b, _] = color.to_f32_array();
     Rgba::from_f32(r, g, b, alpha)
+}
+
+/// Breeze's keyboard focus band in `highlight`, the selection colour: that colour at
+/// `Metrics::Blend_Value` (breezestyle.cpp:6776-6779, breezemetrics.h:176 at breeze
+/// f0b1d75; docs/platform-facts.md §2.1.5).
+pub(crate) fn focus_ring_of(highlight: Rgba) -> Rgba {
+    translucent(highlight, BLEND_VALUE)
 }
 
 /// `top` painted over the opaque `bottom` (source over).
@@ -495,13 +503,14 @@ fn mid_shade(window: Rgba, contrast: i32) -> Rgba {
 /// the checked button, the checkbox and progress-bar blends, the switch
 /// tracks and outlines, the toolbar's fill and edge, the popover's and the
 /// card's edges, the menu's hover, separator and panel, the list's hover,
-/// the table's grid and the scroll bar's resting handle. The blends on the
-/// accent (the checked checkbox, the progress fill, the switch's on track and
-/// its outline, and the list's hover) come from kdeglobals'
+/// the table's grid, the scroll bar's resting handle and the focus ring. The
+/// blends on the accent (the checked checkbox, the progress fill, the switch's
+/// on track and its outline, and the list's hover) come from kdeglobals'
 /// `[Colors:Selection] BackgroundNormal`, so an application's `with_overlay` accent or the
-/// portal's (`gnome::apply_accent`, applied by `GnomePortalKdeReader`) does
+/// portal's (`gnome::apply_kde_accent`, applied by `GnomePortalKdeReader`) does
 /// not move them. The menu's hover comes from `[Colors:View] DecorationFocus`,
-/// so the same holds for it.
+/// so the same holds for it. The focus ring is the selection colour at
+/// `Blend_Value`; the KDE portal's accent replaces it (`gnome::apply_kde_accent`).
 ///
 /// The toolbar takes the Header set's fill as Breeze paints it where the
 /// window decoration's border size is automatic, None or NoSides
@@ -510,6 +519,7 @@ fn mid_shade(window: Rgba, contrast: i32) -> Rgba {
 pub(crate) fn populate_colors(ini: &configparser::ini::Ini, variant: &mut crate::ThemeMode) {
     let window_fg = get_color(ini, "Colors:Window", "ForegroundNormal");
     let view_focus = get_color(ini, "Colors:View", "DecorationFocus");
+    let selection_bg = get_color(ini, "Colors:Selection", "BackgroundNormal");
 
     // === defaults-level colors ===
     variant.defaults.accent_color = view_focus;
@@ -521,10 +531,12 @@ pub(crate) fn populate_colors(ini: &configparser::ini::Ini, variant: &mut crate:
     variant.defaults.muted_color = get_color(ini, "Colors:Window", "ForegroundInactive");
     // KDE does not expose shadow color in kdeglobals
     variant.defaults.link_color = get_color(ini, "Colors:View", "ForegroundLink");
-    variant.defaults.focus_ring_color = view_focus;
+    // Breeze's keyboard focus band: the selection colour at `Blend_Value`; a pointer
+    // focus draws none (docs/platform-facts.md §2.1.5)
+    variant.defaults.focus_ring_color = selection_bg.map(focus_ring_of);
 
     // Selection
-    variant.defaults.selection_background = get_color(ini, "Colors:Selection", "BackgroundNormal");
+    variant.defaults.selection_background = selection_bg;
     variant.defaults.selection_text_color = get_color(ini, "Colors:Selection", "ForegroundNormal");
     // accent_text_color: foreground on accent-colored backgrounds (platform-facts 2.1.3)
     variant.defaults.accent_text_color = get_color(ini, "Colors:Selection", "ForegroundNormal");
@@ -565,7 +577,7 @@ pub(crate) fn populate_colors(ini: &configparser::ini::Ini, variant: &mut crate:
     variant.button.active_background = variant
         .button
         .background_color
-        .zip(get_color(ini, "Colors:Selection", "BackgroundNormal"))
+        .zip(selection_bg)
         .map(|(button, highlight)| mix(button, highlight, PRESSED_BUTTON_MIX));
     // A hovered button keeps its fill and its text: Breeze's hover changes
     // only the pen (breezehelper.cpp:693-707, :710-712 at breeze f0b1d75), and
@@ -611,7 +623,6 @@ pub(crate) fn populate_colors(ini: &configparser::ini::Ini, variant: &mut crate:
     // colour at `Metrics::Blend_Value`, outlined in the selection colour; the
     // mark is the text colour.
     let button_bg = get_color(ini, "Colors:Button", "BackgroundNormal");
-    let selection_bg = get_color(ini, "Colors:Selection", "BackgroundNormal");
     variant.checkbox.unchecked_background = button_bg;
     variant.checkbox.checked_background = button_bg
         .zip(selection_bg)
@@ -1596,6 +1607,35 @@ ForegroundNormal=239,240,241
             ),
         ] {
             assert_ne!(ours, breezes, "{field}: the custom scheme did not reach it");
+        }
+    }
+
+    /// Breeze's keyboard focus band is the selection colour at `Blend_Value`
+    /// (docs/platform-facts.md §2.1.5), not `DecorationFocus`, which stays the
+    /// caret's, opaque: under Breeze Light and Dark, and under a scheme whose two
+    /// keys differ.
+    #[test]
+    fn the_focus_ring_is_the_selection_at_blend_value() {
+        let [light, dark] = breeze_light_and_dark();
+        let custom = light
+            .replace(
+                "[Colors:Selection]\nBackgroundNormal=61,174,233",
+                "[Colors:Selection]\nBackgroundNormal=200,40,90",
+            )
+            .replace("DecorationFocus=61,174,233", "DecorationFocus=20,200,90");
+        let cases = [
+            (
+                light,
+                Rgba::new(61, 174, 233, 0x4d),
+                Rgba::rgb(61, 174, 233),
+            ),
+            (dark, Rgba::new(61, 174, 233, 0x4d), Rgba::rgb(61, 174, 233)),
+            (custom, Rgba::new(200, 40, 90, 0x4d), Rgba::rgb(20, 200, 90)),
+        ];
+        for (content, ring, caret) in cases {
+            let v = populate_fixture(&content);
+            assert_eq!(v.defaults.focus_ring_color, Some(ring));
+            assert_eq!(v.input.caret_color, Some(caret));
         }
     }
 

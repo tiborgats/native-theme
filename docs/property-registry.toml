@@ -127,6 +127,7 @@ info_text_color              = "color"
 focus_ring_color             = "color"
 focus_ring_width_px          = "f32"
 focus_ring_offset_px         = "f32"
+focus_ring_keyboard_only     = "bool"
 # §2.1.6 Global Geometry (border.* fields are inside the Border sub-struct)
 border                       = "border"
 disabled_opacity             = "f32"

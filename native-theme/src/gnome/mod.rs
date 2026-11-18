@@ -155,6 +155,15 @@ fn apply_accent(variant: &mut crate::ThemeMode, accent: &crate::Rgba) {
     variant.tab.active_indicator_color = Some(*accent);
 }
 
+/// [`apply_accent`] as Breeze draws the accent the KDE portal gives, `QPalette::Highlight`
+/// (xdg-desktop-portal-kde `src/settings.cpp:282` at v6.7.5): its keyboard focus band is that
+/// colour at `Blend_Value` (docs/platform-facts.md §2.1.5).
+#[cfg(feature = "kde")]
+fn apply_kde_accent(variant: &mut crate::ThemeMode, accent: &crate::Rgba) {
+    apply_accent(variant, accent);
+    variant.defaults.focus_ring_color = Some(crate::kde::colors::focus_ring_of(*accent));
+}
+
 /// [`apply_accent`] as libadwaita draws the accent: its focus ring, and an
 /// entry's focus edge, are `$focus_border_color`, the accent's standalone
 /// colour at 50 % on a light or a dark background (`--accent-color`,
@@ -734,8 +743,8 @@ impl crate::reader::ThemeReader for GnomeReader {
 /// Reads the KDE kdeglobals file as the base theme via
 /// [`crate::kde::KdeReader`], then attempts to read the accent color from the
 /// XDG Desktop Portal. If the portal provides a valid accent color, it is
-/// applied to accent, selection, and focus_ring_color fields on the reader's
-/// variant.
+/// applied to accent, selection, and focus_ring_color fields (the ring at
+/// Breeze's band alpha) on the reader's variant.
 ///
 /// Falls back to the KDE-only base if the portal is unavailable, does not
 /// answer within [`PORTAL_DEADLINE`], or provides no accent color.
@@ -779,19 +788,19 @@ impl crate::reader::ThemeReader for GnomePortalKdeReader {
             None => return Ok(result),
         };
 
-        // Apply accent to the reader's variant. The KDE portal's accent is the
-        // palette's `QPalette::Highlight` (xdg-desktop-portal-kde
-        // `src/settings.cpp:282`), and Breeze draws its focus ring opaque in
-        // `[Colors:View] DecorationFocus` (docs/platform-facts.md §2.1.5),
-        // which equals it in Breeze and under a Plasma accent: the ring takes
-        // the accent as given, not libadwaita's standalone derivation.
+        // Apply the accent to the reader's variant. The KDE portal's accent is
+        // the palette's `QPalette::Highlight` (xdg-desktop-portal-kde
+        // `src/settings.cpp:282` at v6.7.5); Breeze's keyboard focus band is
+        // that colour at `Blend_Value` (docs/platform-facts.md §2.1.5), so the
+        // ring takes the accent at that alpha, not libadwaita's standalone
+        // derivation.
         match &mut result.output {
             crate::ReaderOutput::Single { mode, .. } => {
-                apply_accent(mode, &rgba);
+                apply_kde_accent(mode, &rgba);
             }
             crate::ReaderOutput::Dual { light, dark, .. } => {
-                apply_accent(light, &rgba);
-                apply_accent(dark, &rgba);
+                apply_kde_accent(light, &rgba);
+                apply_kde_accent(dark, &rgba);
             }
         }
 
@@ -1549,6 +1558,20 @@ mod tests {
         let ring = Some(super::accent::focus_ring(expected, false, false));
         assert_eq!(variant.defaults.focus_ring_color, ring);
         assert_eq!(variant.input.focus_border_color, ring);
+    }
+
+    #[cfg(feature = "kde")]
+    #[test]
+    fn the_kde_portal_accent_rings_at_blend_value() {
+        let accent = crate::Rgba::rgb(246, 116, 0);
+        let mut variant = crate::ThemeMode::default();
+        apply_kde_accent(&mut variant, &accent);
+        assert_eq!(variant.defaults.accent_color, Some(accent));
+        assert_eq!(variant.defaults.selection_background, Some(accent));
+        assert_eq!(
+            variant.defaults.focus_ring_color,
+            Some(crate::Rgba::new(246, 116, 0, 0x4d))
+        );
     }
 
     #[test]

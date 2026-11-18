@@ -120,6 +120,11 @@ pub struct ThemeDefaults {
     /// Gap between element edge and focus indicator.
     #[serde(rename = "focus_ring_offset_px")]
     pub focus_ring_offset: Option<f32>,
+    /// Whether the platform shows its focus ring only for a focus that came
+    /// from the keyboard (`true`), or for any focus (`false`). `None` where the
+    /// theme does not say: a connector then draws the ring on any focus.
+    /// docs/platform-facts.md §2.1.5.
+    pub focus_ring_keyboard_only: Option<bool>,
 
     // ---- Icon sizes ----
     /// Per-context icon sizes.
@@ -162,6 +167,7 @@ impl_merge!(ThemeDefaults {
         danger_color, danger_text_color, warning_color, warning_text_color,
         success_color, success_text_color, info_color, info_text_color,
         disabled_opacity, focus_ring_color, focus_ring_width, focus_ring_offset,
+        focus_ring_keyboard_only,
         icon_theme
     }
     nested { font, mono_font, border, icon_sizes }
@@ -207,6 +213,7 @@ mod tests {
         assert!(d.focus_ring_color.is_none());
         assert!(d.focus_ring_width.is_none());
         assert!(d.focus_ring_offset.is_none());
+        assert!(d.focus_ring_keyboard_only.is_none());
         assert!(d.line_height.is_none());
         assert!(d.icon_theme.is_none());
     }
@@ -300,6 +307,22 @@ mod tests {
         let overlay = ThemeDefaults::default();
         base.merge(&overlay);
         assert_eq!(base.accent_color, Some(Rgba::rgb(0, 120, 215)));
+    }
+
+    #[test]
+    fn merge_keeps_and_overrides_focus_ring_keyboard_only() {
+        let mut base = ThemeDefaults {
+            focus_ring_keyboard_only: Some(true),
+            ..Default::default()
+        };
+        base.merge(&ThemeDefaults::default());
+        assert_eq!(base.focus_ring_keyboard_only, Some(true));
+        let overlay = ThemeDefaults {
+            focus_ring_keyboard_only: Some(false),
+            ..Default::default()
+        };
+        base.merge(&overlay);
+        assert_eq!(base.focus_ring_keyboard_only, Some(false));
     }
 
     #[test]

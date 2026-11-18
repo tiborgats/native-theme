@@ -2002,6 +2002,7 @@ nonexistent_field = "#ff0000"
             "focus_ring_color",
             "focus_ring_width_px",
             "focus_ring_offset_px",
+            "focus_ring_keyboard_only",
             "icon_sizes",
             "icon_theme",
         ];

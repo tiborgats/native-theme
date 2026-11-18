@@ -1264,9 +1264,9 @@ BackgroundNormal=49,54,59
         contrast: Some("4"),
     };
 
-    /// The thirty-one colour leaves the reader derives from, or reads
+    /// The thirty-two colour leaves the reader derives from, or reads
     /// directly from, the colour scheme.
-    fn derived_leaves(mode: &crate::ThemeMode) -> [(&'static str, Option<Rgba>); 31] {
+    fn derived_leaves(mode: &crate::ThemeMode) -> [(&'static str, Option<Rgba>); 32] {
         let border = |b: &Option<crate::WidgetBorderSpec>| b.as_ref().and_then(|b| b.color);
         let sw = &mode.switch;
         [
@@ -1325,11 +1325,12 @@ BackgroundNormal=49,54,59
             ),
             ("list.grid_color", mode.list.grid_color),
             ("menu.background_color", mode.menu.background_color),
+            ("defaults.focus_ring_color", mode.defaults.focus_ring_color),
         ]
     }
 
     /// The same leaves resolved.
-    fn resolved_leaves(theme: &crate::ResolvedTheme) -> [(&'static str, Option<Rgba>); 31] {
+    fn resolved_leaves(theme: &crate::ResolvedTheme) -> [(&'static str, Option<Rgba>); 32] {
         let sw = &theme.switch;
         [
             (
@@ -1393,6 +1394,10 @@ BackgroundNormal=49,54,59
             ("list.header_font.color", Some(theme.list.header_font.color)),
             ("list.grid_color", Some(theme.list.grid_color)),
             ("menu.background_color", Some(theme.menu.background_color)),
+            (
+                "defaults.focus_ring_color",
+                Some(theme.defaults.focus_ring_color),
+            ),
         ]
     }
 
@@ -1439,8 +1444,9 @@ BackgroundNormal=49,54,59
     }
 
     /// Another accent moves the switch's on track, hovered or not, and its
-    /// outline, the pressed button and the selected segment, and the list's
-    /// hover; the checkbox and the progress bar follow it as before.
+    /// outline, the pressed button and the selected segment, the list's
+    /// hover and the focus ring; the checkbox and the progress bar follow it
+    /// as before.
     #[test]
     fn an_accent_moves_the_on_track_the_pressed_button_the_selected_segment_and_the_list_hover()
     -> crate::Result<()> {
@@ -1457,6 +1463,7 @@ BackgroundNormal=49,54,59
                 "button.active_background",
                 "segmented_control.active_background",
                 "list.hover_background",
+                "defaults.focus_ring_color",
             ]
         );
         Ok(())

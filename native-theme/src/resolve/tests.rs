@@ -1376,6 +1376,29 @@ fn validate_checks_all_defaults_fields() {
 }
 
 #[test]
+fn validate_passes_focus_ring_keyboard_only_through() {
+    for value in [Some(true), None] {
+        let mut v = fully_populated_variant();
+        v.defaults.focus_ring_keyboard_only = value;
+        let resolved = v.validate().unwrap();
+        assert_eq!(resolved.defaults.focus_ring_keyboard_only, value);
+
+        let mut empty = ThemeMode::default();
+        empty.defaults.focus_ring_keyboard_only = value;
+        let missing = match empty.validate() {
+            Err(crate::Error::ResolutionIncomplete { missing }) => missing,
+            other => panic!("expected ResolutionIncomplete, got {other:?}"),
+        };
+        assert!(
+            !missing
+                .iter()
+                .any(|f| f.contains("focus_ring_keyboard_only")),
+            "{value:?}: reported missing: {missing:?}"
+        );
+    }
+}
+
+#[test]
 fn validate_checks_all_widget_structs() {
     let v = ThemeMode::default();
     let result = v.validate();

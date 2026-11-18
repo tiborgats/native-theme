@@ -8,13 +8,13 @@ One row per native leaf (spec §5, §13.1). A `§N` that names no document cites
 
 | group | leaves | DIRECT | SCOPED | DERIVED | UNMAPPABLE |
 |---|---:|---:|---:|---:|---:|
-| Foundation (`defaults`, `text_scale`, `layout`) | 66 | 18 | 1 | 36 | 11 |
+| Foundation (`defaults`, `text_scale`, `layout`) | 67 | 18 | 1 | 37 | 11 |
 | Surfaces (window, dialog, popover, card, tooltip, menu) | 110 | 8 | 55 | 32 | 15 |
 | Buttons (button, link, switch, checkbox, segmented control) | 113 | 11 | 46 | 31 | 25 |
 | Inputs (input, text area, combo box, list) | 87 | 4 | 39 | 32 | 12 |
 | Indicators (scrollbar, slider, progress bar, splitter, separator, spinner) | 40 | 5 | 17 | 9 | 9 |
 | Chrome (tab, sidebar, toolbar, status bar, expander) | 100 | 0 | 54 | 27 | 19 |
-| **TOTAL** | **516** | **46** | **212** | **167** | **91** |
+| **TOTAL** | **517** | **46** | **212** | **168** | **91** |
 
 UNMAPPABLE sub-tags (§2): `egui-limited` 52, `source-side gap` 16, `source-void` 1, `widgets-crate` 22.
 
@@ -38,6 +38,7 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 52, `source-side gap` 16, `source-void
 | `defaults.disabled_opacity` | DIRECT | `visuals.disabled_alpha` |  |
 | `defaults.disabled_text_color` | UNMAPPABLE |  | `egui-limited`: egui: a sixth Widgets entry, or a WidgetState::Disabled (§14 item 6) |
 | `defaults.focus_ring_color` | DERIVED | → T14(b) |  |
+| `defaults.focus_ring_keyboard_only` | DERIVED | → T14(b) |  |
 | `defaults.focus_ring_offset` | DERIVED | → T14(b) |  |
 | `defaults.focus_ring_width` | DERIVED | → T14(b) |  |
 | `defaults.font.color` | UNMAPPABLE |  | `egui-limited`: egui: a text colour per role (§14 item 40) |
