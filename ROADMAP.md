@@ -114,7 +114,7 @@ the model does not have yet. The reporter's remaining items, the focus ring and
 Breeze's hover outlines among them, are planned for later 0.7.x releases
 (`docs/issues/0004_kde-open-items-rationale.md`).
 
-## v0.7.2 — egui 0.37, GPUI Kit 0.10.0, and the focus ring and button outlines from issue #4
+## v0.7.2 — egui 0.37, GPUI Kit 0.10.0, and the focus ring, the hover outlines and the toolbar buttons from issue #4
 
 **Delivered:** the egui connector and the egui widgets crate require egui
 0.37.0, and the gpui connector requires gpui-component, gpui-base and gpui-kit
@@ -147,6 +147,24 @@ other bundled preset does. The egui connector draws both; the iced connector dra
 hover border (an iced button takes no keyboard focus); the gpui connector offers a
 button variant with the hover border (a focused gpui-component button's border, where
 it has one, is its `ring`).
+
+The model also carries the outline a check box, a radio button and a combo
+box take under the pointer, which Breeze draws in the focus colour (the indicator's
+outline, checked or not) and the highlight (a combo box's pen); kde-breeze and the KDE
+reader state both and no longer state the pale hover fills that stood in for them, and
+material-3 states its select's. The iced and egui connectors draw both; in gpui the
+connector's own check box and radio do, gpui-component's select and combo box have no
+hover style that could, and the gpui showcase draws the outline over its drop-downs.
+
+It also carries a toolbar button's fill under the pointer, its outline, its fill while
+pressed and its fill when checked, each painted over the toolbar. kde-breeze and the
+KDE reader state Breeze's flat button (no fill and the highlight's outline under the
+pointer, the highlight at 30 % pressed, the button text at 12.5 % checked), adwaita
+and windows-11 their platforms' fills, and the Windows reader the checked fill from
+the user's accent; a checked one is lettered in the button's checked text colour. The
+iced and egui connectors draw them, and the gpui connector gives a toolbar button
+variant and a checked button's fill, the outline included. Each showcase shows a
+checked toolbar button.
 
 ## Model completeness: what native-theme does not carry
 

@@ -919,9 +919,20 @@ gets its text colour.
 hover and on keyboard focus (`button.hover_border_color`, `button.focus_border_color`),
 which kde-breeze and the KDE reader state; egui draws both; iced draws the hover
 border (an iced button takes no keyboard focus); gpui the hover border, through
-`variants::bordered_button`. The check box, the radio and the combo box are that
-rationale's D6, toolbar buttons and the table header its D7; the menu item's and the
-list row's outlines and the menu bar title stay in the backlog (its §0).*
+`variants::bordered_button`. Also by D6 (0.7.2): the hover outlines of the check box,
+the radio button and the combo box (`checkbox.hover_border_color`,
+`combo_box.hover_border_color`), which kde-breeze and the KDE reader state, material-3
+the combo box's; iced and egui draw them, and in gpui the connector's own check box and
+radio and the showcase over its drop-downs. Also by D7's toolbar part (0.7.2): a
+toolbar button's states (`toolbar.button_hover_background`,
+`.button_hover_border_color`, `.button_active_background`,
+`.button_checked_background`), which kde-breeze and the KDE reader state, adwaita and
+windows-11 their fills, and the Windows reader the checked fill from the user's
+accent; iced and egui draw them, gpui through `variants::toolbar_button` and
+`geometry::toolbar_button_checked`, the outline through
+`geometry::toolbar_button_rest`. The table header is that rationale's D7; the menu
+item's and the list row's outlines and the menu bar title stay in the backlog (its
+§0).*
 
 Breeze signals hover on a button, a combo box, a check box and a slider handle
 by recolouring the outline, never the fill. The model carries
@@ -1056,7 +1067,7 @@ and 3 above extend them with what was verified here.
 | C | button height, width, padding, border | sizes are in `geometry::button`, now pointed to (§4.8); the hover and focus border: **fixed in 0.7.2**: egui draws both; iced draws the hover border (an iced button takes no keyboard focus); gpui: the hover border through the connector's `variants::bordered_button`, a focused button's border, where it has one, being gpui-component's `ring` |
 | C | pressed button fill | the model's since 0.7.0 |
 | C | disabled at 50 % opacity | not Breeze's: it dims by colour |
-| C | toolbar buttons, sort header | no fields (§5.4) |
+| C | toolbar buttons, sort header | toolbar buttons: **fixed in 0.7.2** (Breeze's outline on hover, the highlight at 30 % pressed, the button text at 12.5 % checked; the Windows reader writes the checked fill from the user's accent) in the iced and egui connectors; gpui: the connector's `variants::toolbar_button` and `geometry::toolbar_button_checked`, the outline through `geometry::toolbar_button_rest`; the sort header waits for its fields |
 | C | dialog text, 56 px icons, window sizes | text is the general font; the message icon is 64 (§4.5); Breeze states no window size |
 | D | `from_system()` with a time-out | fixed in 0.7.0: the portal reads end within 2 s |
 | D | dark or light from `system_is_dark()` | right; the `sync_system_appearance` caveat is documented (§4.8) |

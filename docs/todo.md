@@ -109,6 +109,8 @@ cannot tell which file a bare number continues, so it does not look for one.
       "Presets (windows-11): the checkbox's hover fill", which *Presets:
       values the M8 T15 platform-facts rows disagree with* links, and *Hover
       fills: a layer or a replacement*'s fix round 1 line.
+      *0.7.2 (2026-11-18):* KDE's hover outline is `checkbox.hover_border_color` since
+      0.7.2; this entry stays for the checked box's hover fill of the other platforms.
 
 ### Tab: WinUI 3's tab separators and its tab bar's bottom rule
 
@@ -1514,6 +1516,69 @@ model, the platform presets and the three connectors
       fixed, and the gpui showcase's two side-panel tests take the panel's
       padding from the theme. The rest of this item stays open.
 
+### Presets: the hover outlines the presets do not state yet
+
+- [ ] [1.0] **Presets: the hover outlines the presets do not state yet** (`checkbox.hover_border_color`,
+      `combo_box.hover_border_color`, 0.7.2). A preset states them where the facts give
+      the platform's value as one colour for everything the field covers. To be read: GNOME's checked
+      check box under the pointer (the unchecked box's ring is `currentColor` at 20 %,
+      `PF` §2.5), and its drop-down's outline on hover under `prefers-contrast: more`;
+      WinUI's check-box and combo-box border brushes under the pointer
+      (`CheckBox_themeresources.xaml`, `ComboBox_themeresources.xaml`); an AppKit check
+      box's and pop-up button's hover, which the OS probe renders at rest only; an open
+      Material select's outline (it has the focus then; `PF` §2.4 gives the text field's
+      focus outline). Each into
+      `docs/platform-facts.md` with its source, then the preset. Not a reading but the
+      model: Material's check box draws `on-surface` under the pointer when unchecked and
+      no outline when checked (`PF` §2.5 `border.color`), which one field for both states
+      cannot state, so material-3 leaves `checkbox.hover_border_color` unset.
+
+### A checked toolbar button under the pointer and pressed
+
+- [ ] [1.0] The model has one checked fill, `toolbar.button_checked_background`,
+      which the connectors keep in every enabled state of a checked toolbar button. The
+      platforms draw two more: WinUI fills a checked `AppBarToggleButton`
+      `AccentFillColorSecondary` under the pointer and `AccentFillColorTertiary` pressed
+      (`docs/facts/windows/button.toml:18630`, `:18651` at `78ee0efd`); libadwaita a
+      checked toolbar button `currentColor` at 13 % under the pointer and 19 % pressed
+      (`docs/facts/gnome/button.toml:5133`, `:5209` at `78ee0efd`); Breeze draws a
+      pressed checked flat button with the pressed fill, its frame deciding `down` before
+      `checked` (`docs/facts/kde/button.toml:1-12` at `78ee0efd`). Fields for the two states, and their rows in
+      `docs/platform-facts.md` §2.13, are to be decided. On GNOME the toolbar look
+      belongs to image, image-text and arrow buttons only; the model has no field for it,
+      and the showcases' tool buttons keep the look where an icon set lacks the icon and
+      the label shows.
+
+### macOS: a toolbar button's states
+
+- [ ] [1.0] To be measured: an `NSToolbarItem` button's
+      fill under the pointer, pressed and checked (`selectedItemIdentifier`), and its
+      outline, in a toolbar, on macOS 15 and 26: the parked facts mark a toolbar
+      item's looks as unmeasured (`docs/facts/macos/state-models.toml:5-6`, U94, at
+      `78ee0efd`). Known: the `toolbar` bezel the OS probe drew on its sheet fills
+      #0000001a / #ffffff1a when pressed (`docs/facts/macos/button.toml:148813`,
+      `:148869` for macOS 15; `:14861`, `:14830` for macOS 26; at `78ee0efd`), and
+      AppKit's buttons draw nothing on hover (`state-models.toml:2` at `78ee0efd`). macos-monterey and macos-tahoe
+      state none of `toolbar.button_*` until then.
+
+### Material: a toolbar button's states
+
+- [ ] [1.0] To be read: which button Material's
+      toolbars hold (a top app bar's action items, a docked toolbar's) and its hover,
+      pressed and selected fills and outline; the parked facts give no `tool` variant
+      and a toolbar context only for the floating toolbar's FAB
+      (`docs/facts/material/button.toml:13267` at `78ee0efd`). material-3 states none of
+      `toolbar.button_*` until then.
+
+### iOS: a toolbar button's states
+
+- [ ] [1.0] To be read or measured: a `UIBarButtonItem`'s
+      pressed and selected looks in `toolbar.bar`, whose fills the parked facts leave
+      pending: pressed `docs/facts/ios/button.toml:17467` at `78ee0efd` (U123),
+      checked for a `toggle` item `:17491` (U123), disabled and checked or pressed
+      `:15175`, `:15705` (U115); no fill at rest, `:14089`. ios-13 states none of
+      `toolbar.button_*` until then.
+
 ### KDE reader: the toolbar's Header fill and the window border size
 
 - [ ] [1.0] From M8 T16b (2026-10-17): Breeze fills a main window's tools
@@ -1541,7 +1606,9 @@ model, the platform presets and the three connectors
       same name, `#F9F9F9` / `#2C2C2C` (`docs/platform-facts.md` §2.6
       `background_color`); and under high contrast the stated strokes and fills
       the reader does not map (`input.hover_border_color`, the check box's and
-      the switch's off colours, the slider's track and disabled colours), which
+      the switch's off colours, the slider's track and disabled colours, the toolbar
+      button's hover and pressed fills (`toolbar.button_hover_background`,
+      `.button_active_background`)), which
       keep their light or dark values. Each
       needs a measured or published source first: an OS-probe read in dark mode
       for the selected text, a render of the menu's backdrop, and the
@@ -1813,9 +1880,9 @@ offscreen, `docs/evidence/breeze-offscreen/2026-11-13/`.
       the slider handle stands in for that outline until the model has it, since
       removing it first would remove the only hover feedback: `kde-breeze.toml`
       `[light.slider] thumb_hover_color` and its dark twin, listed in *Presets: values
-      the M8 T15 platform-facts rows disagree with*. Breeze also draws, with no field yet: a toolbar button's states (hover a
-      1 px `Highlight` outline, pressed `Highlight` at 0.3, checked `ButtonText` at 0.125,
-      `breezehelper.cpp:665-712`); a hovered menu item's 1 px outline,
+      the M8 T15 platform-facts rows disagree with*. Breeze also draws, with no field yet:
+      a checked flat button's pen, `KColorUtils::mix(Button, ButtonText, frameContrast)`
+      (`breezehelper.cpp:681-684`); a hovered menu item's 1 px outline,
       `mix(focusColor, WindowText, 0.15)` (`breezehelper.cpp:172-175`), #399acc /
       #5abaec (measured); a hovered list row's 1 px outline, `Highlight` at alpha 0.8
       (`breezestyle.cpp:4880-4884`); a menu bar title's fill, the opaque hover or focus
@@ -1823,7 +1890,12 @@ offscreen, `docs/evidence/breeze-offscreen/2026-11-13/`.
       `breezestyle.cpp:5841-5948`), which `menu.hover_background` stood in for until
       0.7.1 (*Model: the menu bar has no fill of its own*); a header section's hover and
       pressed fills, `mix(Button, hoverColor, 0.2)` and `mix(Button, focusColor, 0.2)`
-      (`breezestyle.cpp:6828-6837`), #d6ecf8 / #2d4655 (computed), and its separators.
+      (`breezestyle.cpp:6828-6837`), #d6ecf8 / #2d4655 (computed), and its separators;
+      an open combo box's frame, as a pressed button frame's: the `Highlight` pen
+      whatever the pointer does, and the fill #c3e5f6 / #2f5368 (light / dark; #fcfcfc /
+      #292c30 closed, at rest)
+      (`docs/evidence/breeze-offscreen/2026-11-18/combo_trigger_light.txt`,
+      `combo_trigger_dark.txt`).
       Then the rest, each without a field: the pressed menu item, the opaque focus
       colour under `HighlightedText` (`breezestyle.cpp:6021-6029`, `:6155`); the 4 px
       gap between the menu panel's edge and the highlight (`PM_MenuHMargin` and
@@ -1862,6 +1934,10 @@ offscreen, `docs/evidence/breeze-offscreen/2026-11-13/`.
       the rectangle the frame is drawn on (`Helper::renderCheckBox`,
       `Helper::renderRadioButton`, `kstyle/breezehelper.cpp:895-907`, `:1041-1054` at
       `f0b1d753`, read 2026-11-15).
+      *0.7.2 (2026-11-18):* a toolbar button's hover outline, pressed and checked fills are
+      `toolbar.button_*` (D7 of `docs/issues/0004_kde-open-items-rationale.md`). gpui
+      draws no hover outline over a checked toolbar button: gpui-component's hover style
+      returns early on a selected button (gpui-component 0.10.0 `button/button.rs:754-760`).
 - [ ] [v0.7.x] **KDE values that wait for a connector design.** Each facts row below is
       corrected in 0.7.1; kde-breeze and the reader keep their present values, which
       disagree with it, until the readers named can take the platform's value without
@@ -2037,6 +2113,18 @@ offscreen, `docs/evidence/breeze-offscreen/2026-11-13/`.
       showcases outline every button. Build the showcase's own buttons through
       `ButtonKind::Bordered`, but the Buttons page's row that shows gpui-component's
       `Default` variant by name.
+- [ ] [1.0] **Toolbar buttons and the Tab key.** Qt gives a toolbar's action buttons no keyboard focus
+      (`setFocusPolicy(Qt::NoFocus)`, qtbase v6.11.0 `src/widgets/widgets/qtoolbarlayout.cpp:703`),
+      so on KDE the Tab key never stops on one. The model has no field that says whether a toolbar's
+      buttons take the keyboard focus, and what WinUI's `AppBarButton`, GTK's header-bar buttons,
+      AppKit's toolbar items and Material's do was not read. Today an egui button and a
+      gpui-component Button are Tab stops under every theme (egui 0.37.0 `src/sense.rs:60-61`,
+      `Sense::click()`; gpui-component 0.10.0 `src/button/button.rs:293`, `tab_stop`), and an iced
+      button takes no focus. On kde-breeze an egui tool button reached by Tab so shows the toolbar's
+      hover outline (0.7.2: egui's `active` is also its focused state), which Breeze never shows
+      there. To do: read the four platforms into `docs/platform-facts.md` §2.13, add the field, and
+      build the showcases' tool buttons from it (egui `Button::sense(Sense::CLICK)`, gpui
+      `Button::tab_stop(false)`).
 
 ### Dialog: the platform's vertical placement
 
@@ -2698,6 +2786,8 @@ theme's radius past egui's cap, with a check box of its own in the widgets crate
       *GPUI Kit 0.9.1 (2026-11-17):* still so; a hovered Ghost button is filled with
       `tokens.accent` (at half alpha in a dark theme) and labelled `accent_foreground`,
       gpui-component 0.9.1 `src/button/button.rs:1210-1217`, `:1226`.
+      *0.7.2 (2026-11-18):* the connector's `variants::toolbar_button` paints a toolbar
+      button's states from the model.
 - [ ] [upstream] a menu-surface token. `PopupMenu` renders with `.popover_style(cx)`, i.e.
       `bg(theme.popover)` (`menu/popup_menu.rs:1476`, `styled.rs:193-199`), and
       there is no seam to override it. native-theme records
@@ -3205,6 +3295,11 @@ theme's radius past egui's cap, with a check box of its own in the widgets crate
       `focus_ring_style`, the 3 px band of `ring` at alpha 0.5 the other widgets
       draw, does not: it still shows on any focus, and the request stands for it
       (`docs/todo_v0.7.2_gpui-kit-0.10.0-rationale.md`, §1.5 and T4).
+- [ ] [upstream] gpui-component: a hover style, fill and border, for the
+      trigger of `Select` and `Combobox` (0.10.0 `select.rs:578-597`,
+      `combobox.rs:1025-1042`); until then `combo_box.hover_background` and
+      `combo_box.hover_border_color` reach no gpui widget and the showcase lays them over
+      its triggers (`demo::combo_surface`).
 
 #### native-theme-iced: the same audit (found 2026-09-20, fixed in v0.5.9)
 
@@ -3354,6 +3449,8 @@ What is still open on the iced side:
       (*KDE: what a Qt application under Breeze shows that native-theme does not
       (issue #4)*, "What Breeze draws that the model has no field for"). The solarized
       and tokyo-night label contrasts stay this entry's.
+      *0.7.2 (2026-11-18):* the check box's and the combo box's #93cee9 are gone; the
+      slider's and the sidebar's stay.
 - [ ] [1.0] `button.hover_text_color` and `button.active_text_color` equal
       `button.font.color` in all 16 presets, so the per-status label rows of
       both contracts cannot tell hover or pressed from idle today. Either the
