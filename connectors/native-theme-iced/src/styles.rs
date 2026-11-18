@@ -316,6 +316,96 @@ pub fn button_toggle(
     }
 }
 
+/// A toolbar's button, for `button(..).style(..)`: flat at rest, in the
+/// toolbar's states where the theme states them, and `checked` a toolbar
+/// button that is on.
+///
+/// iced has no toolbar and no flat button class; this replaces the flat
+/// button an application would otherwise build from the plain button's
+/// leaves. Each `toolbar.button_*` field the theme leaves unset falls back to
+/// that flat button's leaf.
+///
+/// At rest the button has no fill and its label is `button.font.color`.
+/// Under the pointer its fill is `toolbar.button_hover_background`, or
+/// `button.hover_background` where that is unset, and its label
+/// `button.hover_text_color`; pressed, its fill is
+/// `toolbar.button_active_background`, else `button.active_background`, else
+/// `button.hover_background`, and its label `button.active_text_color`.
+/// Checked, it keeps `toolbar.button_checked_background` (the pressed fill
+/// where that is unset) in every enabled status, as the model states no
+/// hovered and no pressed checked toolbar button, and its label is
+/// `button.checked_text_color` where the theme states the checked fill and
+/// the checked text, `button.active_text_color` otherwise. Disabled, it has no
+/// fill and its label is `button.disabled_text_color`.
+///
+/// A stated fill is painted as given over the toolbar: translucent is a
+/// layer, transparent nothing. The border is `button.border.line_width` wide
+/// and rounded by `button.border.corner_radius`: transparent at rest and
+/// disabled, and `toolbar.button_hover_border_color` under the pointer and
+/// while pressed, checked or not, where the theme states it. iced lays a
+/// button out by its padding and draws the border on its bounds
+/// (iced_widget 0.14.2 `src/button.rs:379-385`), so the width moves no
+/// content. `shadow` and `snap` come from `button::Style::default()`, as
+/// [`button`]'s do.
+#[must_use = "this returns the style function; it does not apply it"]
+pub fn toolbar_button(
+    resolved: &ResolvedTheme,
+    checked: bool,
+) -> impl Fn(&Theme, iced_widget::button::Status) -> iced_widget::button::Style + Clone + use<> {
+    use iced_widget::button::{Status, Style};
+
+    let b = &resolved.button;
+    let t = &resolved.toolbar;
+
+    let hovered = to_color(t.button_hover_background.unwrap_or(b.hover_background));
+    let pressed = to_color(
+        t.button_active_background
+            .or(b.active_background)
+            .unwrap_or(b.hover_background),
+    );
+    let fill = t.button_checked_background.map_or(pressed, to_color);
+
+    let label = to_color(b.font.color);
+    let hovered_label = to_color(b.hover_text_color);
+    let pressed_label = to_color(b.active_text_color);
+    let checked_label = to_color(match t.button_checked_background {
+        Some(_) => b.checked_text_color.unwrap_or(b.active_text_color),
+        None => b.active_text_color,
+    });
+    let disabled_label = to_color(b.disabled_text_color);
+
+    let outline = Border {
+        color: Color::TRANSPARENT,
+        width: b.border.line_width,
+        radius: b.border.corner_radius.into(),
+    };
+    let hovered_outline = Border {
+        color: t
+            .button_hover_border_color
+            .map_or(Color::TRANSPARENT, to_color),
+        ..outline
+    };
+
+    move |_theme, status| {
+        let iced = Style::default();
+        let (background, text_color, border) = match (checked, status) {
+            (false, Status::Active) => (Color::TRANSPARENT, label, outline),
+            (false, Status::Hovered) => (hovered, hovered_label, hovered_outline),
+            (false, Status::Pressed) => (pressed, pressed_label, hovered_outline),
+            (true, Status::Active) => (fill, checked_label, outline),
+            (true, Status::Hovered | Status::Pressed) => (fill, checked_label, hovered_outline),
+            (_, Status::Disabled) => (Color::TRANSPARENT, disabled_label, outline),
+        };
+        Style {
+            background: Some(Background::Color(background)),
+            text_color,
+            border,
+            shadow: iced.shadow,
+            snap: iced.snap,
+        }
+    }
+}
+
 /// A button class the platform names but does not describe in every state:
 /// `fill` and `label` are the idle pair it states, `class` is the iced class
 /// this replaces.
@@ -732,9 +822,11 @@ pub fn text_editor(
 /// `.unchecked_background`, and the `Status` says which one it is showing.
 /// `.hover_background` is the hover of the *unchecked* box, and is composited
 /// as a layer over its fill where the theme states one; unset, a hovered
-/// unchecked box is the box at rest. The model states no hover for a checked
-/// one, and a state the platform does not state has no distinct appearance,
-/// so a hovered checked box is exactly the checked box. `.disabled_background`
+/// unchecked box is the box at rest. The model states no hover fill for a
+/// checked one, and a state the platform does not state has no distinct
+/// appearance, so a hovered checked box keeps the checked box's fill. Under
+/// the pointer the border is `.hover_border_color` where the theme states
+/// one, checked or not; `None` keeps the border at rest. `.disabled_background`
 /// replaces the fill, as given; where it is not stated the platform dims by
 /// opacity alone and a disabled box is its enabled self. Either way a disabled
 /// box is faded by `.disabled_opacity` as one widget over the window,
@@ -785,13 +877,14 @@ struct CheckFills {
     hovered_unchecked: Color,
     checked_border: Color,
     unchecked_border: Color,
+    hovered_border: Option<Color>,
 }
 
 impl CheckFills {
     fn new(c: &ResolvedCheckboxTheme) -> Self {
-        // The three soft options are the platform saying the box looks no
+        // The four soft options are the platform saying the box looks no
         // different: unchecked, it has the checkbox's own fill and border;
-        // under the pointer, the fill it has at rest.
+        // under the pointer, the fill and the border it has at rest.
         let unchecked = to_color(c.unchecked_background.unwrap_or(c.background_color));
         Self {
             checked: to_color(c.checked_background),
@@ -801,16 +894,26 @@ impl CheckFills {
             }),
             checked_border: to_color(c.border.color),
             unchecked_border: to_color(c.unchecked_border_color.unwrap_or(c.border.color)),
+            hovered_border: c.hover_border_color.map(to_color),
         }
     }
 
     /// The fill and the border colour of a box that is checked or not, under
-    /// the pointer or not. The model states no hover for a checked box.
+    /// the pointer or not. Under the pointer an unchecked box takes the hover
+    /// fill and a checked one keeps its own, and either takes the hover
+    /// border where the theme states one.
     fn at(&self, is_checked: bool, is_hovered: bool) -> (Color, Color) {
         match (is_checked, is_hovered) {
-            (true, _) => (self.checked, self.checked_border),
+            (true, false) => (self.checked, self.checked_border),
+            (true, true) => (
+                self.checked,
+                self.hovered_border.unwrap_or(self.checked_border),
+            ),
             (false, false) => (self.unchecked, self.unchecked_border),
-            (false, true) => (self.hovered_unchecked, self.unchecked_border),
+            (false, true) => (
+                self.hovered_unchecked,
+                self.hovered_border.unwrap_or(self.unchecked_border),
+            ),
         }
     }
 }
@@ -898,11 +1001,13 @@ pub fn checkbox_over(
 /// (`widgets/mod.rs:176-183`), so this reads exactly the sources [`checkbox`]
 /// reads, with `is_selected` where the checkbox has `is_checked` and the check
 /// mark serving as the dot -- `checkbox.hover_background` included, which is
-/// the hover of the *unselected* circle only, so a hovered selected radio is
-/// exactly the selected radio, and where the theme leaves it unset a hovered
-/// unselected radio is the circle at rest. `radio::Status` has no disabled
-/// variant (`radio.rs:474-487`), so the model's disabled fields have no
-/// receiver here.
+/// the hover fill of the *unselected* circle only, and
+/// `checkbox.hover_border_color`, which frames a hovered circle, selected or
+/// not, where the theme states it: a hovered selected radio is the selected
+/// radio in that border, and where the theme leaves both unset a hovered
+/// radio is the circle at rest. `radio::Status` has no disabled variant
+/// (`radio.rs:474-487`), so the model's disabled fields have no receiver
+/// here.
 ///
 /// `radio::Style` carries its border as a width and a color rather than as an
 /// iced `Border`, so there is no corner radius to give it.
@@ -1192,7 +1297,8 @@ pub fn toggler_over(
 /// The field is `combo_box.background_color` with `.hover_background` layered
 /// over it -- a soft option, whose `None` is the platform saying a hovered
 /// field looks no different -- its label is `combo_box.font.color` and its
-/// border is `combo_box.border.*`. The placeholder is
+/// border is `combo_box.border.*`, its colour `.hover_border_color` under the
+/// pointer where the theme states one. The placeholder is
 /// `input.placeholder_color`: the model states it once, for every field that
 /// has one.
 ///
@@ -1225,19 +1331,19 @@ pub fn pick_list(
     let placeholder = to_color(resolved.input.placeholder_color);
 
     let border = border_of(&c.border);
+    let hovered_border = c.hover_border_color.map_or(border.color, to_color);
 
     move |theme, status| {
         let iced = iced_widget::pick_list::default(theme, status);
-        let background = match status {
-            Status::Active => idle,
-            Status::Hovered => hovered,
-            Status::Opened { is_hovered } => {
-                if is_hovered {
-                    hovered
-                } else {
-                    idle
-                }
-            }
+        let (background, border) = match status {
+            Status::Active | Status::Opened { is_hovered: false } => (idle, border),
+            Status::Hovered | Status::Opened { is_hovered: true } => (
+                hovered,
+                Border {
+                    color: hovered_border,
+                    ..border
+                },
+            ),
         };
         Style {
             text_color: label,

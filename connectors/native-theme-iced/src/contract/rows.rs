@@ -462,6 +462,110 @@ pub(super) const BUTTON_TOGGLE_BORDER_ROWS: &[BorderRow<(bool, button::Status)>]
     get: |t, r, (checked, status)| styles::button_toggle(r, checked)(t, status).border,
 }];
 
+/// Every state of a toolbar button: every button status, off and on.
+#[cfg(feature = "widgets")]
+pub(super) const TOOLBAR_BUTTON_STATUSES: &[(bool, button::Status)] = &[
+    (false, button::Status::Active),
+    (false, button::Status::Hovered),
+    (false, button::Status::Pressed),
+    (false, button::Status::Disabled),
+    (true, button::Status::Active),
+    (true, button::Status::Hovered),
+    (true, button::Status::Pressed),
+    (true, button::Status::Disabled),
+];
+
+/// The fill, the label and the border colour the native fields give a
+/// toolbar button, computed from the resolved theme alone.
+///
+/// No fill at rest and disabled. Under the pointer
+/// `toolbar.button_hover_background`, pressed
+/// `toolbar.button_active_background`, checked
+/// `toolbar.button_checked_background` in every enabled status, each falling
+/// back to the flat button's fill where unstated: the button's hover fill,
+/// its pressed fill (the hover fill where that is unstated too), and the
+/// pressed fill. The label is the button's in each status; checked,
+/// `button.checked_text_color` where the checked fill and it are stated, else
+/// `button.active_text_color`. The border is transparent but under the
+/// pointer and pressed, where it is `toolbar.button_hover_border_color` where
+/// stated.
+#[cfg(feature = "widgets")]
+pub(super) fn native_toolbar_button(
+    r: &ResolvedTheme,
+    (checked, status): (bool, button::Status),
+) -> (Color, Color, Color) {
+    let b = &r.button;
+    let t = &r.toolbar;
+    let pressed = to_color(
+        t.button_active_background
+            .or(b.active_background)
+            .unwrap_or(b.hover_background),
+    );
+    let outline = t
+        .button_hover_border_color
+        .map_or(Color::TRANSPARENT, to_color);
+    let checked_fill = t.button_checked_background.map_or(pressed, to_color);
+    let checked_label = to_color(match t.button_checked_background {
+        Some(_) => b.checked_text_color.unwrap_or(b.active_text_color),
+        None => b.active_text_color,
+    });
+    match (checked, status) {
+        (_, button::Status::Disabled) => (
+            Color::TRANSPARENT,
+            to_color(b.disabled_text_color),
+            Color::TRANSPARENT,
+        ),
+        (false, button::Status::Active) => (
+            Color::TRANSPARENT,
+            to_color(b.font.color),
+            Color::TRANSPARENT,
+        ),
+        (false, button::Status::Hovered) => (
+            to_color(t.button_hover_background.unwrap_or(b.hover_background)),
+            to_color(b.hover_text_color),
+            outline,
+        ),
+        (false, button::Status::Pressed) => (pressed, to_color(b.active_text_color), outline),
+        (true, button::Status::Active) => (checked_fill, checked_label, Color::TRANSPARENT),
+        (true, button::Status::Hovered | button::Status::Pressed) => {
+            (checked_fill, checked_label, outline)
+        }
+    }
+}
+
+/// Every color field of `styles::toolbar_button`.
+#[cfg(feature = "widgets")]
+pub(super) const TOOLBAR_BUTTON_ROWS: &[StyleRow<(bool, button::Status)>] = &[
+    StyleRow {
+        field: "styles::toolbar_button.background",
+        statuses: TOOLBAR_BUTTON_STATUSES,
+        native: |r, s| native_toolbar_button(r, s).0,
+        get: |t, r, (checked, status)| {
+            flat(styles::toolbar_button(r, checked)(t, status).background)
+        },
+    },
+    StyleRow {
+        field: "styles::toolbar_button.text_color",
+        statuses: TOOLBAR_BUTTON_STATUSES,
+        native: |r, s| native_toolbar_button(r, s).1,
+        get: |t, r, (checked, status)| Ok(styles::toolbar_button(r, checked)(t, status).text_color),
+    },
+];
+
+/// A toolbar button's outline: the button's width and radius, transparent but
+/// under the pointer and pressed.
+#[cfg(feature = "widgets")]
+pub(super) const TOOLBAR_BUTTON_BORDER_ROWS: &[BorderRow<(bool, button::Status)>] = &[BorderRow {
+    field: "styles::toolbar_button",
+    statuses: TOOLBAR_BUTTON_STATUSES,
+    native: |r, s| NativeBorder {
+        color: native_toolbar_button(r, s).2,
+        width: r.button.border.line_width,
+        radius: r.button.border.corner_radius,
+    },
+    get: |t, r, (checked, status)| styles::toolbar_button(r, checked)(t, status).border,
+}];
+
 /// The statuses of a class button whose fill and label the function itself
 /// decides, and so the only ones its rows and its contrast pair cover.
 #[cfg(feature = "widgets")]
@@ -995,12 +1099,17 @@ pub(super) fn native_checkbox_mark(r: &ResolvedTheme, status: checkbox::Status) 
     }
 }
 
+/// The border colour the native fields give a checkbox in `status`: under the
+/// pointer `checkbox.hover_border_color` where stated, checked or not, else
+/// the outline at rest.
 #[cfg(feature = "widgets")]
 fn native_checkbox_border(r: &ResolvedTheme, status: checkbox::Status) -> Color {
     match status {
-        checkbox::Status::Active { is_checked } | checkbox::Status::Hovered { is_checked } => {
-            native_checkbox_outline(r, is_checked)
-        }
+        checkbox::Status::Active { is_checked } => native_checkbox_outline(r, is_checked),
+        checkbox::Status::Hovered { is_checked } => r
+            .checkbox
+            .hover_border_color
+            .map_or_else(|| native_checkbox_outline(r, is_checked), to_color),
         checkbox::Status::Disabled { is_checked } => as_one(
             r,
             native_checkbox_disabled_ground(r, is_checked),
@@ -1088,12 +1197,15 @@ pub(super) fn native_radio_fill(r: &ResolvedTheme, status: radio::Status) -> Col
     }
 }
 
+/// The checkbox's border colours, `is_selected` for `is_checked`.
 #[cfg(feature = "widgets")]
 fn native_radio_border(r: &ResolvedTheme, status: radio::Status) -> Color {
     match status {
-        radio::Status::Active { is_selected } | radio::Status::Hovered { is_selected } => {
-            native_checkbox_outline(r, is_selected)
-        }
+        radio::Status::Active { is_selected } => native_checkbox_outline(r, is_selected),
+        radio::Status::Hovered { is_selected } => r
+            .checkbox
+            .hover_border_color
+            .map_or_else(|| native_checkbox_outline(r, is_selected), to_color),
     }
 }
 
@@ -1496,8 +1608,19 @@ pub(super) const PICK_LIST_ROWS: &[StyleRow<pick_list::Status>] = &[
 pub(super) const PICK_LIST_BORDER_ROWS: &[BorderRow<pick_list::Status>] = &[BorderRow {
     field: "styles::pick_list",
     statuses: PICK_LIST_STATUSES,
-    native: |r, _| NativeBorder {
-        color: to_color(r.combo_box.border.color),
+    native: |r, s| NativeBorder {
+        color: match s {
+            pick_list::Status::Hovered | pick_list::Status::Opened { is_hovered: true } => {
+                to_color(
+                    r.combo_box
+                        .hover_border_color
+                        .unwrap_or(r.combo_box.border.color),
+                )
+            }
+            pick_list::Status::Active | pick_list::Status::Opened { is_hovered: false } => {
+                to_color(r.combo_box.border.color)
+            }
+        },
         width: r.combo_box.border.line_width,
         radius: r.combo_box.border.corner_radius,
     },
@@ -2944,6 +3067,7 @@ pub(super) fn style_row_fields() -> Vec<String> {
     out.extend(SEGMENT_SCALAR_ROWS.iter().map(|row| row.field.to_string()));
     out.extend(EXPANDER_ROWS.iter().map(|row| row.field.to_string()));
     out.extend(BUTTON_TOGGLE_ROWS.iter().map(|row| row.field.to_string()));
+    out.extend(TOOLBAR_BUTTON_ROWS.iter().map(|row| row.field.to_string()));
     // One border row claims six leaves, so its names are built rather than
     // written -- by the same walker the tripwire uses.
     out.extend(border_row_fields(BUTTON_BORDER_ROWS));
@@ -2964,6 +3088,7 @@ pub(super) fn style_row_fields() -> Vec<String> {
     out.extend(border_row_fields(EXPANDER_BORDER_ROWS));
     out.extend(border_row_fields(EXPANDER_FRAME_BORDER_ROWS));
     out.extend(border_row_fields(BUTTON_TOGGLE_BORDER_ROWS));
+    out.extend(border_row_fields(TOOLBAR_BUTTON_BORDER_ROWS));
     // `styles::aw`, gated on the feature that declares it: its rows, its
     // `check_*` calls, its walkers and its pairs all carry the same gate, so
     // the two directions of `Checked::covers` agree in every configuration.

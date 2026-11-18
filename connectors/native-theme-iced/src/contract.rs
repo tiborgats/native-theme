@@ -1286,6 +1286,17 @@ fn button_toggle_style_fields(style: &button::Style) -> Vec<String> {
     out
 }
 
+/// Every field of the `button::Style` `styles::toolbar_button` emits.
+#[cfg(feature = "widgets")]
+fn toolbar_button_style_fields(style: &button::Style) -> Vec<String> {
+    let mut out = Vec::new();
+    leaves_under!(out, style, "styles::toolbar_button", button::Style {
+        background, text_color, shadow, snap, @nested border
+    });
+    out.extend(border_fields(border, "styles::toolbar_button.border"));
+    out
+}
+
 /// Every field of the `button::Style` `styles::button_link` emits.
 #[cfg(feature = "widgets")]
 fn button_link_style_fields(style: &button::Style) -> Vec<String> {
@@ -1739,6 +1750,12 @@ fn named_fields(theme: &Theme, resolved: &ResolvedTheme) -> Vec<String> {
             resolved, true,
         )(
             theme, button::Status::Active
+        )));
+        out.extend(toolbar_button_style_fields(&styles::toolbar_button(
+            resolved, true,
+        )(
+            theme,
+            button::Status::Active,
         )));
         out.extend(text_input_style_fields(&styles::text_input(resolved)(
             theme,
@@ -2531,11 +2548,13 @@ fn every_status_list_names_each_status_once() {
          both values exactly once"
     );
 
-    // A segment is a button that is selected or not, and a toggle button one
-    // that is checked or not: every button status, once for each.
+    // A segment is a button that is selected or not, and a toggle button and
+    // a toolbar button one that is checked or not: every button status, once
+    // for each.
     for (what, statuses) in [
         ("SEGMENT_STATUSES", SEGMENT_STATUSES),
         ("BUTTON_TOGGLE_STATUSES", BUTTON_TOGGLE_STATUSES),
+        ("TOOLBAR_BUTTON_STATUSES", TOOLBAR_BUTTON_STATUSES),
     ] {
         for on in [false, true] {
             for status in BUTTON_STATUSES {
@@ -3433,6 +3452,13 @@ fn every_style_field_equals_its_native_value() -> native_theme::Result<()> {
         &mut failures,
         &mut ran,
     );
+    check_style_rows(TOOLBAR_BUTTON_ROWS, &combinations, &mut failures, &mut ran);
+    check_border_rows(
+        TOOLBAR_BUTTON_BORDER_ROWS,
+        &combinations,
+        &mut failures,
+        &mut ran,
+    );
     #[cfg(feature = "iced_aw")]
     {
         check_style_rows(AW_CARD_ROWS, &combinations, &mut failures, &mut ran);
@@ -3586,6 +3612,13 @@ fn style_contrast_never_degrades_the_native_pair() -> native_theme::Result<()> {
     check_style_pairs(EXPANDER_PAIRS, all, &mut failures, &mut below_aa, &mut ran);
     check_style_pairs(
         BUTTON_TOGGLE_PAIRS,
+        all,
+        &mut failures,
+        &mut below_aa,
+        &mut ran,
+    );
+    check_style_pairs(
+        TOOLBAR_BUTTON_PAIRS,
         all,
         &mut failures,
         &mut below_aa,
@@ -4129,13 +4162,16 @@ fn a_cleared_input_soft_option_copies_the_base_state_value() -> native_theme::Re
 #[cfg(feature = "widgets")]
 #[test]
 fn a_cleared_widget_soft_option_copies_the_base_state_value() -> native_theme::Result<()> {
-    // The twelve soft options the widget functions read: four `checkbox.*`
-    // (three of which `styles::radio` reads again, through the fills it
-    // shares with `styles::checkbox_over`), five `switch.*`, one
-    // `combo_box.*`, one `slider.*` and one `scrollbar.*`. A bundled preset
-    // rarely leaves them `None` after resolution, so the rows cannot tell a
-    // right base-state field from a wrong one; the fallbacks are reached by
-    // clearing them here (section 3.2).
+    // The twelve soft options this test clears, of those the widget functions
+    // read: four `checkbox.*` (three of which `styles::radio` reads again,
+    // through the fills it shares with `styles::checkbox_over`), five
+    // `switch.*`, one `combo_box.*`, one `slider.*` and one `scrollbar.*`.
+    // The check box's and the combo box's hover borders are cleared by
+    // `a_cleared_hover_border_copies_the_border_at_rest`, on a preset that
+    // states them. A bundled preset rarely leaves them `None` after
+    // resolution, so the rows cannot tell a right base-state field from a
+    // wrong one; the fallbacks are reached by clearing them here (section
+    // 3.2).
     // windows-11 states nine of them; the switch's disabled thumb, the
     // slider's thumb hover and the scroll bar's pressed thumb have no source
     // and are already `None`.
@@ -4325,6 +4361,206 @@ fn a_cleared_widget_soft_option_copies_the_base_state_value() -> native_theme::R
         failures.len(),
         failures.join("\n")
     );
+    Ok(())
+}
+
+#[cfg(feature = "widgets")]
+#[test]
+fn a_cleared_hover_border_copies_the_border_at_rest() -> native_theme::Result<()> {
+    // kde-breeze states the check box's and the combo box's hover borders, so
+    // the rows see them stated; their `None` is reached by clearing them
+    // here. A checked box's border at rest is `checkbox.border.color`, set to
+    // a colour no other `checkbox.*` colour leaf has, so that a hovered checked
+    // box falling back onto another leaf is caught.
+    let mut resolved = native_theme::theme::Theme::preset("kde-breeze")?
+        .into_variant(ColorMode::Light)?
+        .into_resolved(&native_theme::ResolutionContext::for_tests())?;
+    assert!(
+        resolved.checkbox.hover_border_color.is_some()
+            && resolved.combo_box.hover_border_color.is_some(),
+        "this preset no longer states the hover borders, so clearing them \
+         proves nothing"
+    );
+    let sentinel = Rgba::rgb(0x13, 0x57, 0x9b);
+    let c = &resolved.checkbox;
+    let other_leaves = [
+        Some(c.background_color),
+        Some(c.checked_background),
+        Some(c.indicator_color),
+        Some(c.disabled_text_color),
+        Some(c.font.color),
+        c.hover_background,
+        c.hover_border_color,
+        c.disabled_background,
+        c.unchecked_background,
+        c.unchecked_border_color,
+    ];
+    assert!(
+        !other_leaves.contains(&Some(sentinel)),
+        "the sentinel is another checkbox colour leaf's value, so it cannot \
+         tell the border at rest from that leaf"
+    );
+    resolved.checkbox.border.color = sentinel;
+
+    let theme = crate::to_theme(&resolved, "kde-breeze");
+    let hover_border = resolved.checkbox.hover_border_color.map(to_color);
+    assert_eq!(
+        Some(
+            styles::checkbox(&resolved)(&theme, checkbox::Status::Hovered { is_checked: true })
+                .border
+                .color
+        ),
+        hover_border,
+        "a hovered checked box takes the stated hover border"
+    );
+    assert_eq!(
+        Some(
+            styles::radio(&resolved)(&theme, radio::Status::Hovered { is_selected: true })
+                .border_color
+        ),
+        hover_border,
+        "a hovered selected radio takes the stated hover border"
+    );
+
+    resolved.checkbox.hover_border_color = None;
+    resolved.combo_box.hover_border_color = None;
+    let theme = crate::to_theme(&resolved, "kde-breeze");
+    let boxes = styles::checkbox(&resolved);
+    let buttons = styles::radio(&resolved);
+    let fields = styles::pick_list(&resolved);
+    let unchecked = to_color(
+        resolved
+            .checkbox
+            .unchecked_border_color
+            .unwrap_or(resolved.checkbox.border.color),
+    );
+    let field_border = to_color(resolved.combo_box.border.color);
+    let read_sites = [
+        (
+            "checkbox.hover_border_color, unchecked -> the unchecked border",
+            boxes(&theme, checkbox::Status::Hovered { is_checked: false })
+                .border
+                .color,
+            unchecked,
+        ),
+        (
+            "checkbox.hover_border_color, checked -> checkbox.border.color",
+            boxes(&theme, checkbox::Status::Hovered { is_checked: true })
+                .border
+                .color,
+            to_color(sentinel),
+        ),
+        (
+            "radio: checkbox.hover_border_color, unselected -> the unchecked border",
+            buttons(&theme, radio::Status::Hovered { is_selected: false }).border_color,
+            unchecked,
+        ),
+        (
+            "radio: checkbox.hover_border_color, selected -> checkbox.border.color",
+            buttons(&theme, radio::Status::Hovered { is_selected: true }).border_color,
+            to_color(sentinel),
+        ),
+        (
+            "combo_box.hover_border_color, Hovered -> combo_box.border.color",
+            fields(&theme, pick_list::Status::Hovered).border.color,
+            field_border,
+        ),
+        (
+            "combo_box.hover_border_color, Opened under the pointer -> combo_box.border.color",
+            fields(&theme, pick_list::Status::Opened { is_hovered: true })
+                .border
+                .color,
+            field_border,
+        ),
+    ];
+
+    let sites = read_sites.len();
+    let failures: Vec<String> = read_sites
+        .into_iter()
+        .filter(|(_, emitted, expected)| emitted != expected)
+        .map(|(read, emitted, expected)| {
+            format!(
+                "{read}: cleared, the widget emits {}, the border at rest is {}",
+                show(emitted),
+                show(expected)
+            )
+        })
+        .collect();
+    assert!(
+        failures.is_empty(),
+        "{} of {sites} cleared hover borders do not copy the border at rest:\n{}",
+        failures.len(),
+        failures.join("\n")
+    );
+    Ok(())
+}
+
+#[cfg(feature = "widgets")]
+#[test]
+fn a_checked_toolbar_button_takes_the_checked_text() -> native_theme::Result<()> {
+    // windows-11 states the toolbar's checked fill and the checked text, so
+    // the rows see them stated; each fallback is reached by clearing them.
+    for (mode, checked_text) in [
+        (ColorMode::Light, Rgba::rgb(0xff, 0xff, 0xff)),
+        (ColorMode::Dark, Rgba::rgb(0x00, 0x00, 0x00)),
+    ] {
+        let mut resolved = native_theme::theme::Theme::preset("windows-11")?
+            .into_variant(mode)?
+            .into_resolved(&native_theme::ResolutionContext::for_tests())?;
+        let theme = crate::to_theme(&resolved, "windows-11");
+        let Some(checked_fill) = resolved.toolbar.button_checked_background else {
+            panic!("windows-11 {mode:?} no longer states toolbar.button_checked_background");
+        };
+        assert_eq!(
+            resolved.button.checked_text_color,
+            Some(checked_text),
+            "windows-11 {mode:?}: button.checked_text_color"
+        );
+        let checked = styles::toolbar_button(&resolved, true)(&theme, button::Status::Active);
+        assert_eq!(
+            (checked.background, checked.text_color),
+            (
+                Some(Background::Color(to_color(checked_fill))),
+                to_color(checked_text)
+            ),
+            "windows-11 {mode:?}: a checked toolbar button is the toolbar's \
+             checked fill, lettered button.checked_text_color"
+        );
+
+        resolved.toolbar.button_checked_background = None;
+        let b = &resolved.button;
+        let pressed = resolved
+            .toolbar
+            .button_active_background
+            .or(b.active_background)
+            .unwrap_or(b.hover_background);
+        let active_text = b.active_text_color;
+        let checked = styles::toolbar_button(&resolved, true)(&theme, button::Status::Active);
+        assert_eq!(
+            (checked.background, checked.text_color),
+            (
+                Some(Background::Color(to_color(pressed))),
+                to_color(active_text)
+            ),
+            "windows-11 {mode:?}: with the toolbar's checked fill cleared, a \
+             checked toolbar button is the pressed fill, lettered \
+             button.active_text_color"
+        );
+
+        resolved.toolbar.button_checked_background = Some(checked_fill);
+        resolved.button.checked_text_color = None;
+        let checked = styles::toolbar_button(&resolved, true)(&theme, button::Status::Active);
+        assert_eq!(
+            (checked.background, checked.text_color),
+            (
+                Some(Background::Color(to_color(checked_fill))),
+                to_color(active_text)
+            ),
+            "windows-11 {mode:?}: with button.checked_text_color cleared, a \
+             checked toolbar button keeps the toolbar's checked fill, \
+             lettered button.active_text_color"
+        );
+    }
     Ok(())
 }
 
@@ -4783,6 +5019,7 @@ fn every_style_closure_is_clone() -> native_theme::Result<()> {
     assert_clone(&styles::button_warning(r));
     assert_clone(&styles::button_link(r));
     assert_clone(&styles::button_toggle(r, true));
+    assert_clone(&styles::toolbar_button(r, true));
     assert_clone(&styles::text_input(r));
     assert_clone(&styles::text_editor(r));
     assert_clone(&styles::checkbox(r));
@@ -5125,6 +5362,7 @@ impl Reading {
         x.style(BUTTON_WARNING_ROWS, t, r);
         x.style(BUTTON_LINK_ROWS, t, r);
         x.style(BUTTON_TOGGLE_ROWS, t, r);
+        x.style(TOOLBAR_BUTTON_ROWS, t, r);
         x.style(TEXT_INPUT_ROWS, t, r);
         x.style(TEXT_EDITOR_ROWS, t, r);
         x.style(CHECKBOX_ROWS, t, r);
@@ -5153,6 +5391,7 @@ impl Reading {
         x.border(BUTTON_SUCCESS_BORDER_ROWS, t, r);
         x.border(BUTTON_WARNING_BORDER_ROWS, t, r);
         x.border(BUTTON_TOGGLE_BORDER_ROWS, t, r);
+        x.border(TOOLBAR_BUTTON_BORDER_ROWS, t, r);
         x.border(TEXT_INPUT_BORDER_ROWS, t, r);
         x.border(TEXT_EDITOR_BORDER_ROWS, t, r);
         x.border(CHECKBOX_BORDER_ROWS, t, r);

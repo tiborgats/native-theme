@@ -199,7 +199,7 @@ steps above.
 v0.5.9 ships most of it, and v0.7.0 adds `styles::button_toggle`,
 `pane_grid`, `expander_frame`, `segment_separator`, `dialog`, `toolbar`,
 `toolbar_rule` and `application`. `native_theme_iced::styles`
-(feature `widgets`, on by default) has 33 style functions, closures built
+(feature `widgets`, on by default) has 34 style functions, closures built
 from the resolved theme. Twenty-one replace iced's own: every `Style` field —
 colours, border radius and width included — of the button (neutral, primary,
 danger, success, warning and link classes), text input, text editor,
@@ -209,13 +209,14 @@ base style (`styles::application`, the window's background).
 `styles::checkbox_over` and `toggler_over` are the checkbox and toggler of a
 control drawn on a backdrop rather than on the window (a disabled one is
 faded as one widget over it), `styles::button_toggle` is a toggle button,
-`styles::scrollbar` is the scrollbar's configuration, its widths and
-embedding, `styles::segmented_control`, `segment`, `segment_separator`,
-`expander` and `expander_frame` style the containers and buttons the showcase
-builds those widgets from, and `styles::dialog`, `toolbar` and `toolbar_rule`
-style the containers an application draws a dialog and a toolbar in, which
-iced 0.14 has no widget for. `styles::aw` (feature `iced_aw`) gives `iced_aw`'s card, menu
-bar, tab bar, sidebar, selection list and spinner the same. Padding, which
+`styles::toolbar_button` a toolbar's button, `styles::scrollbar` is the
+scrollbar's configuration, its widths and embedding,
+`styles::segmented_control`, `segment`, `segment_separator`, `expander` and
+`expander_frame` style the containers and buttons the showcase builds those
+widgets from, and `styles::dialog`, `toolbar` and `toolbar_rule` style the
+containers an application draws a dialog and a toolbar in, which iced 0.14
+has no widget for. `styles::aw` (feature `iced_aw`) gives `iced_aw`'s card,
+menu bar, tab bar, sidebar, selection list and spinner the same. Padding, which
 iced takes through each widget's builder rather than its `Style`, comes from
 `button_padding`, `input_padding`, `text_area_padding`, `combo_box_padding`
 and, for any other widget, `padding_or`, `padding_inside_border` and

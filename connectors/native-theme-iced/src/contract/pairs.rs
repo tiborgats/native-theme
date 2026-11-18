@@ -189,6 +189,25 @@ pub(super) const BUTTON_TOGGLE_PAIRS: &[StylePair<(bool, button::Status)>] = &[S
     },
 }];
 
+/// The `styles::toolbar_button` pairs the assertion covers: the label on the
+/// fill, off and on.
+#[cfg(feature = "widgets")]
+pub(super) const TOOLBAR_BUTTON_PAIRS: &[StylePair<(bool, button::Status)>] = &[StylePair {
+    what: "toolbar button label",
+    indicator: false,
+    statuses: TOOLBAR_BUTTON_STATUSES,
+    emitted: |t, r, (checked, status)| {
+        let style = styles::toolbar_button(r, checked)(t, status);
+        // Painted on the toolbar, a stated fill as given over it.
+        flat(style.background)
+            .map(|fill| (style.text_color, fill, to_color(r.toolbar.background_color)))
+    },
+    native: |r, s| {
+        let (fill, label, _) = native_toolbar_button(r, s);
+        (label, fill, to_color(r.toolbar.background_color))
+    },
+}];
+
 // The four class buttons' pairs -- `BUTTON_PRIMARY_PAIRS`,
 // `BUTTON_DANGER_PAIRS`, `BUTTON_SUCCESS_PAIRS`, `BUTTON_WARNING_PAIRS` --
 // are declared by `class_button_contract!` in the parent module, beside their
@@ -919,6 +938,7 @@ pub(super) fn style_pair_names() -> Vec<String> {
     out.extend(SEGMENT_PAIRS.iter().map(|p| p.what.to_string()));
     out.extend(EXPANDER_PAIRS.iter().map(|p| p.what.to_string()));
     out.extend(BUTTON_TOGGLE_PAIRS.iter().map(|p| p.what.to_string()));
+    out.extend(TOOLBAR_BUTTON_PAIRS.iter().map(|p| p.what.to_string()));
     #[cfg(feature = "iced_aw")]
     {
         out.extend(AW_CARD_PAIRS.iter().map(|p| p.what.to_string()));

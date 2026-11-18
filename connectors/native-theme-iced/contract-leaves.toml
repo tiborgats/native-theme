@@ -32,6 +32,7 @@ moves = [
   { row = "styles::button.background", statuses = ["Pressed"] },
   { row = "styles::button_toggle.background", statuses = ["(false, Pressed)"] },
   { row = "styles::button_toggle.background", statuses = ["(true, Active)", "(true, Hovered)", "(true, Pressed)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "material-3/light", "material-3/dark"] },
+  { row = "styles::toolbar_button.background", statuses = ["(false, Pressed)", "(true, Active)", "(true, Hovered)", "(true, Pressed)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark"] },
 ]
 
 [leaves."button.active_text_color"]
@@ -39,6 +40,8 @@ moves = [
   { row = "styles::button.text_color", statuses = ["Pressed"] },
   { row = "styles::button_toggle.text_color", statuses = ["(false, Pressed)"] },
   { row = "styles::button_toggle.text_color", statuses = ["(true, Active)", "(true, Hovered)", "(true, Pressed)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "material-3/light", "material-3/dark"] },
+  { row = "styles::toolbar_button.text_color", statuses = ["(false, Pressed)"] },
+  { row = "styles::toolbar_button.text_color", statuses = ["(true, Active)", "(true, Hovered)", "(true, Pressed)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark"] },
 ]
 
 [leaves."button.background_color"]
@@ -75,6 +78,7 @@ moves = [
 moves = [
   { row = "styles::button_toggle.text_color", statuses = ["(true, Active)", "(true, Hovered)", "(true, Pressed)"] },
   { row = "styles::button_toggle.text_color", statuses = ["(true, Disabled)"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+  { row = "styles::toolbar_button.text_color", statuses = ["(true, Active)", "(true, Hovered)", "(true, Pressed)"], except = ["macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
 ]
 
 [leaves."button.disabled_background"]
@@ -99,6 +103,7 @@ moves = [
   { row = "styles::button_toggle.text_color", statuses = ["(false, Disabled)"] },
   { row = "styles::button_toggle.text_color", statuses = ["(true, Disabled)"], except = ["adwaita/light", "adwaita/dark"] },
   { row = "styles::button_warning.text_color", statuses = ["Disabled"], except = ["adwaita/light", "adwaita/dark"] },
+  { row = "styles::toolbar_button.text_color", statuses = ["(false, Disabled)", "(true, Disabled)"] },
 ]
 
 [leaves."button.focus_border_color"]
@@ -111,6 +116,7 @@ why = "an iced button takes no keyboard focus: it implements no `operate` for `F
 moves = [
   { row = "styles::button.text_color", statuses = ["Active"] },
   { row = "styles::button_toggle.text_color", statuses = ["(false, Active)"] },
+  { row = "styles::toolbar_button.text_color", statuses = ["(false, Active)"] },
 ]
 
 [leaves."button.hover_background"]
@@ -119,6 +125,8 @@ moves = [
   { row = "styles::button.background", statuses = ["Pressed"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
   { row = "styles::button_toggle.background", statuses = ["(false, Hovered)"] },
   { row = "styles::button_toggle.background", statuses = ["(false, Pressed)", "(true, Active)", "(true, Hovered)", "(true, Pressed)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+  { row = "styles::toolbar_button.background", statuses = ["(false, Hovered)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark"] },
+  { row = "styles::toolbar_button.background", statuses = ["(false, Pressed)", "(true, Active)", "(true, Hovered)", "(true, Pressed)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
 ]
 
 [leaves."button.hover_border_color"]
@@ -135,6 +143,7 @@ moves = [
 moves = [
   { row = "styles::button.text_color", statuses = ["Hovered"] },
   { row = "styles::button_toggle.text_color", statuses = ["(false, Hovered)"] },
+  { row = "styles::toolbar_button.text_color", statuses = ["(false, Hovered)"] },
 ]
 
 [leaves."button.primary_background"]
@@ -169,8 +178,10 @@ why = "`styles::checkbox` fills an unchecked box with it where `checkbox.uncheck
 
 [leaves."checkbox.border.color"]
 moves = [
-  { row = "styles::checkbox.border", statuses = ["Active { is_checked: true }", "Disabled { is_checked: true }", "Hovered { is_checked: true }"] },
-  { row = "styles::radio.border_color", statuses = ["Active { is_selected: true }", "Hovered { is_selected: true }"] },
+  { row = "styles::checkbox.border", statuses = ["Active { is_checked: true }", "Disabled { is_checked: true }"] },
+  { row = "styles::checkbox.border", statuses = ["Hovered { is_checked: true }"], except = ["kde-breeze/light", "kde-breeze/dark"] },
+  { row = "styles::radio.border_color", statuses = ["Active { is_selected: true }"] },
+  { row = "styles::radio.border_color", statuses = ["Hovered { is_selected: true }"], except = ["kde-breeze/light", "kde-breeze/dark"] },
 ]
 
 [leaves."checkbox.checked_background"]
@@ -204,6 +215,12 @@ moves = [
   { row = "styles::radio.background", statuses = ["Hovered { is_selected: false }"] },
 ]
 
+[leaves."checkbox.hover_border_color"]
+moves = [
+  { row = "styles::checkbox.border", statuses = ["Hovered { is_checked: false }", "Hovered { is_checked: true }"] },
+  { row = "styles::radio.border_color", statuses = ["Hovered { is_selected: false }", "Hovered { is_selected: true }"] },
+]
+
 [leaves."checkbox.indicator_color"]
 moves = [
   { row = "styles::checkbox.icon_color", statuses = ["Active { is_checked: false }", "Active { is_checked: true }", "Hovered { is_checked: false }", "Hovered { is_checked: true }"] },
@@ -215,26 +232,29 @@ moves = [
 moves = [
   { row = "styles::checkbox.background", statuses = ["Active { is_checked: false }"] },
   { row = "styles::checkbox.background", statuses = ["Disabled { is_checked: false }"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
-  { row = "styles::checkbox.background", statuses = ["Hovered { is_checked: false }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+  { row = "styles::checkbox.background", statuses = ["Hovered { is_checked: false }"], except = ["adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
   { row = "styles::radio.background", statuses = ["Active { is_selected: false }"] },
-  { row = "styles::radio.background", statuses = ["Hovered { is_selected: false }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+  { row = "styles::radio.background", statuses = ["Hovered { is_selected: false }"], except = ["adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
 ]
 
 [leaves."checkbox.unchecked_border_color"]
 moves = [
-  { row = "styles::checkbox.border", statuses = ["Active { is_checked: false }", "Disabled { is_checked: false }", "Hovered { is_checked: false }"] },
-  { row = "styles::radio.border_color", statuses = ["Active { is_selected: false }", "Hovered { is_selected: false }"] },
+  { row = "styles::checkbox.border", statuses = ["Active { is_checked: false }", "Disabled { is_checked: false }"] },
+  { row = "styles::checkbox.border", statuses = ["Hovered { is_checked: false }"], except = ["kde-breeze/light", "kde-breeze/dark"] },
+  { row = "styles::radio.border_color", statuses = ["Active { is_selected: false }"] },
+  { row = "styles::radio.border_color", statuses = ["Hovered { is_selected: false }"], except = ["kde-breeze/light", "kde-breeze/dark"] },
 ]
 
 [leaves."combo_box.background_color"]
 moves = [
   { row = "styles::pick_list.background", statuses = ["Active", "Opened { is_hovered: false }"] },
-  { row = "styles::pick_list.background", statuses = ["Hovered", "Opened { is_hovered: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+  { row = "styles::pick_list.background", statuses = ["Hovered", "Opened { is_hovered: true }"], except = ["adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
 ]
 
 [leaves."combo_box.border.color"]
 moves = [
-  { row = "styles::pick_list.border", statuses = ["Active", "Hovered", "Opened { is_hovered: false }", "Opened { is_hovered: true }"] },
+  { row = "styles::pick_list.border", statuses = ["Active", "Opened { is_hovered: false }"] },
+  { row = "styles::pick_list.border", statuses = ["Hovered", "Opened { is_hovered: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "material-3/light", "material-3/dark"] },
 ]
 
 [leaves."combo_box.disabled_background"]
@@ -257,6 +277,11 @@ moves = [
 [leaves."combo_box.hover_background"]
 moves = [
   { row = "styles::pick_list.background", statuses = ["Hovered", "Opened { is_hovered: true }"] },
+]
+
+[leaves."combo_box.hover_border_color"]
+moves = [
+  { row = "styles::pick_list.border", statuses = ["Hovered", "Opened { is_hovered: true }"] },
 ]
 
 [leaves."defaults.accent_color"]
@@ -1051,6 +1076,28 @@ moves = [
   { row = "styles::toolbar_rule.color" },
 ]
 
+[leaves."toolbar.button_active_background"]
+moves = [
+  { row = "styles::toolbar_button.background", statuses = ["(false, Pressed)"] },
+  { row = "styles::toolbar_button.background", statuses = ["(true, Active)", "(true, Hovered)", "(true, Pressed)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark"] },
+]
+
+[leaves."toolbar.button_checked_background"]
+moves = [
+  { row = "styles::toolbar_button.background", statuses = ["(true, Active)", "(true, Hovered)", "(true, Pressed)"] },
+  { row = "styles::toolbar_button.text_color", statuses = ["(true, Active)", "(true, Hovered)", "(true, Pressed)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+]
+
+[leaves."toolbar.button_hover_background"]
+moves = [
+  { row = "styles::toolbar_button.background", statuses = ["(false, Hovered)"] },
+]
+
+[leaves."toolbar.button_hover_border_color"]
+moves = [
+  { row = "styles::toolbar_button.border", statuses = ["(false, Hovered)", "(false, Pressed)", "(true, Hovered)", "(true, Pressed)"] },
+]
+
 [leaves."toolbar.font.color"]
 moves = [
   { row = "styles::toolbar.text_color" },
@@ -1358,7 +1405,7 @@ leaves = ["button.disabled_text_color", "defaults.warning_text_color"]
 leaves = ["checkbox.checked_background", "checkbox.disabled_background", "checkbox.hover_background", "checkbox.unchecked_background", "defaults.background_color"]
 
 [rows."styles::checkbox.border"]
-leaves = ["checkbox.border.color", "checkbox.unchecked_border_color", "defaults.background_color"]
+leaves = ["checkbox.border.color", "checkbox.hover_border_color", "checkbox.unchecked_border_color", "defaults.background_color"]
 
 [rows."styles::checkbox.icon_color"]
 leaves = ["checkbox.disabled_background", "checkbox.disabled_text_color", "checkbox.indicator_color", "defaults.background_color"]
@@ -1418,7 +1465,7 @@ leaves = ["splitter.hover_color"]
 leaves = ["combo_box.background_color", "combo_box.hover_background"]
 
 [rows."styles::pick_list.border"]
-leaves = ["combo_box.border.color"]
+leaves = ["combo_box.border.color", "combo_box.hover_border_color"]
 
 [rows."styles::pick_list.placeholder_color"]
 leaves = ["input.placeholder_color"]
@@ -1439,7 +1486,7 @@ leaves = ["progress_bar.border.color"]
 leaves = ["checkbox.checked_background", "checkbox.hover_background", "checkbox.unchecked_background"]
 
 [rows."styles::radio.border_color"]
-leaves = ["checkbox.border.color", "checkbox.unchecked_border_color"]
+leaves = ["checkbox.border.color", "checkbox.hover_border_color", "checkbox.unchecked_border_color"]
 
 [rows."styles::radio.dot_color"]
 leaves = ["checkbox.indicator_color"]
@@ -1539,6 +1586,15 @@ leaves = ["toolbar.background_color"]
 
 [rows."styles::toolbar.text_color"]
 leaves = ["toolbar.font.color"]
+
+[rows."styles::toolbar_button.background"]
+leaves = ["button.active_background", "button.hover_background", "toolbar.button_active_background", "toolbar.button_checked_background", "toolbar.button_hover_background"]
+
+[rows."styles::toolbar_button.border"]
+leaves = ["toolbar.button_hover_border_color"]
+
+[rows."styles::toolbar_button.text_color"]
+leaves = ["button.active_text_color", "button.checked_text_color", "button.disabled_text_color", "button.font.color", "button.hover_text_color", "toolbar.button_checked_background"]
 
 [rows."styles::toolbar_rule.color"]
 leaves = ["toolbar.border.color"]
