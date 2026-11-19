@@ -2,7 +2,7 @@
 
 What the installed freedesktop icon themes and the bundled Lucide and Material sets give
 gpui-component's 106 `IconName`s through the gpui connector's lookup, before the connector's
-widget icons were built ([specification](../../../todo_v0.7.2_gpui-widget-icons-spec.md),
+widget icons were built ([specification](../../../archive/todo_v0.7.2_gpui-widget-icons-spec.md),
 Part C). The table is [`listing.md`](listing.md).
 
 - **Produced by**: the gpui showcase's ignored test `widget_icons_listing`, at commit

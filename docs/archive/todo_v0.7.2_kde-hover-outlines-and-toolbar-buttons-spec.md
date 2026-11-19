@@ -1,13 +1,13 @@
 # 0.7.2: issue #4's open KDE items, steps 4 and 5 — specification
 
-- Rationale: [`issues/0004_kde-open-items-rationale.md`](issues/0004_kde-open-items-rationale.md)
+- Rationale: [`../issues/0004_kde-open-items-rationale.md`](../issues/0004_kde-open-items-rationale.md)
   ("the rationale"). This document specifies its step 4 (D6: the hover outlines of the
   check box, the radio button and the combo box) and its step 5 (D7's first half: the
   states of a toolbar button). D6 and D7 (its first half, step 5) were approved by the
   maintainer for 0.7.2 on 2026-11-18, with this specification and its plan. It decides nothing the
   rationale decides; the small points it settles by reading are listed under *Decisions
   taken while specifying*, and what needs the maintainer under *Open points*.
-- It continues [`issues/0004_kde-hand-overrides-rationale.md`](issues/0004_kde-hand-overrides-rationale.md)
+- It continues [`../issues/0004_kde-hand-overrides-rationale.md`](../issues/0004_kde-hand-overrides-rationale.md)
   §5.4 ("the first rationale") and the backlog entries `docs/todo.md:1767-1933`,
   `:52-111`, `:1230-1511`, `:2860-2913`, which hold the verified Breeze facts.
 - Written 2026-11-14 for a release of its own; amended 2026-11-18: the maintainer folded

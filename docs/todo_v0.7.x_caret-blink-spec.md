@@ -185,7 +185,7 @@ choice, and each says what it rests on.
     (`info/leaves.rs`), the form every leaf takes there; the `Input`'s
     `WidgetInfo` (`info/inputs.rs:107-250`) gets no line of its own.
 17. **The documents of this work are committed first** (the batch's shared
-    rule: `docs/todo_v0.7.2_gpui-widget-icons-spec.md` decision 23,
+    rule: `docs/archive/todo_v0.7.2_gpui-widget-icons-spec.md` decision 23,
     `docs/todo_v0.7.1_gpui-kit-0.9.1-spec.md`'s commit (0)). v0.7.1's
     commit (0) adds every document of this cycle the maintainer has approved
     by then, this rationale and this specification among them if they are

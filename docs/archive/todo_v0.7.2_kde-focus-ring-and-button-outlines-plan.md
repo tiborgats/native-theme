@@ -1,6 +1,6 @@
 # 0.7.2: issue #4's open KDE items, steps 2 and 3 (the focus ring; a button's border on hover and focus) — implementation plan
 
-- Rationale: [`issues/0004_kde-open-items-rationale.md`](issues/0004_kde-open-items-rationale.md),
+- Rationale: [`../issues/0004_kde-open-items-rationale.md`](../issues/0004_kde-open-items-rationale.md),
   D4 (step 2), D5 (step 3), D0 (the version). Specification:
   [`todo_v0.7.2_kde-focus-ring-and-button-outlines-spec.md`](todo_v0.7.2_kde-focus-ring-and-button-outlines-spec.md)
   ("the spec").

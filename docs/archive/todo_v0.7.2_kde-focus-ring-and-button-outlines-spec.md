@@ -1,16 +1,16 @@
 # 0.7.2: issue #4's open KDE items, steps 2 and 3 (the focus ring; a button's border on hover and focus) — specification
 
-- Rationale: [`issues/0004_kde-open-items-rationale.md`](issues/0004_kde-open-items-rationale.md)
+- Rationale: [`../issues/0004_kde-open-items-rationale.md`](../issues/0004_kde-open-items-rationale.md)
   ("the rationale"), decisions D4 (step 2) and D5 (step 3), with what D0 and D10 say
   every step carries. Status: approved by the maintainer on 2026-11-18, with the
   rationale's D4 and D5 and the plan. It decides nothing the
   rationale did not decide, except the small points under *Decisions taken while
   specifying*; what needs a decision the rationale does not contain is under *Open
   points*.
-- It continues [`issues/0004_kde-hand-overrides-rationale.md`](issues/0004_kde-hand-overrides-rationale.md)
+- It continues [`../issues/0004_kde-hand-overrides-rationale.md`](../issues/0004_kde-hand-overrides-rationale.md)
   ("the first rationale", §5.1, §5.4) and the backlog at `docs/todo.md:1767-1933` and
-  `:2742-2764`. Form: [`archive/todo_v0.7.1_kde-hand-overrides-spec.md`](archive/todo_v0.7.1_kde-hand-overrides-spec.md).
-  Step 1 has its own specification, [`archive/todo_v0.7.1_kde-open-items-step1-spec.md`](archive/todo_v0.7.1_kde-open-items-step1-spec.md).
+  `:2742-2764`. Form: [`todo_v0.7.1_kde-hand-overrides-spec.md`](todo_v0.7.1_kde-hand-overrides-spec.md).
+  Step 1 has its own specification, [`todo_v0.7.1_kde-open-items-step1-spec.md`](todo_v0.7.1_kde-open-items-step1-spec.md).
 - Written: 2026-11-14, against `v0.7.1-rc2` at `0fa28027`. Every `file:line` of the
   repository is that commit's unless it names another.
 - Amended 2026-11-18, on `v0.7.2-rc1` at `b434b9bc`: steps 2 and 3 folded into 0.7.2

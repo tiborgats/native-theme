@@ -53,7 +53,7 @@ What the installed freedesktop icon themes and the bundled Lucide and Material s
 gpui-component's 106 `IconName`s through the gpui connector's lookup, at 16 and 24 px,
 whether a mask of one colour carries each, and how long the lookup takes beside the gpui
 showcase's own reload of its icons: the measurement before the connector's widget icons
-were built ([specification](../todo_v0.7.2_gpui-widget-icons-spec.md), Part C). Runs by
+were built ([specification](../archive/todo_v0.7.2_gpui-widget-icons-spec.md), Part C). Runs by
 hand, one directory per date, written by the gpui showcase's ignored test
 `widget_icons_listing`, which was removed once its run was recorded (commit `c89dfe85` holds
 it); each holds `listing.md`, a table, and a `README.md`. No drawing of

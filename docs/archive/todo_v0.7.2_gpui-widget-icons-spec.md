@@ -8,7 +8,7 @@
   *Decisions taken while specifying*; what needs a decision the rationale does not
   contain is under *Open points*.
 - It builds on the GPUI Kit 0.9.1 specification,
-  [`archive/todo_v0.7.1_gpui-kit-0.9.1-spec.md`](archive/todo_v0.7.1_gpui-kit-0.9.1-spec.md)
+  [`todo_v0.7.1_gpui-kit-0.9.1-spec.md`](todo_v0.7.1_gpui-kit-0.9.1-spec.md)
   ("the 0.9.1 specification"), whose parts landed in v0.7.1 and are in the tree: B.13 (the connector's
   `widgets::Checkbox` asks the icon resolver for its check mark: W8's first point),
   B.3 (the Widget Info's `own_icons` text, written for W11 (b)), B.15 (the citation in

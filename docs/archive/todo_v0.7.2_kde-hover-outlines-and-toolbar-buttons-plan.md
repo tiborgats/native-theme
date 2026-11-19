@@ -1,6 +1,6 @@
 # 0.7.2: issue #4's open KDE items, steps 4 and 5 (the hover outlines of the check box, the radio and the combo box; a toolbar button's states) — implementation plan
 
-- Rationale: [`issues/0004_kde-open-items-rationale.md`](issues/0004_kde-open-items-rationale.md),
+- Rationale: [`../issues/0004_kde-open-items-rationale.md`](../issues/0004_kde-open-items-rationale.md),
   D6 (step 4), D7's toolbar part (step 5). Specification:
   [`todo_v0.7.2_kde-hover-outlines-and-toolbar-buttons-spec.md`](todo_v0.7.2_kde-hover-outlines-and-toolbar-buttons-spec.md)
   ("the spec"), whose Part C this plan carries out.

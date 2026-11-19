@@ -7,7 +7,10 @@ implemented on 2026-11-17 for 0.7.1, by
 `../archive/todo_v0.7.1_kde-open-items-step1-{spec,plan}.md`. D4's bullet on
 gpui-component's widgets was rewritten on 2026-11-18 after three measurements: the
 band follows keyboard focus through a plugin the connector registers, where the
-first version switched it off altogether.
+first version switched it off altogether. Steps 2 to 5 (D4, D5, D6 and D7's toolbar
+buttons) implemented on 2026-11-18 for 0.7.2, by
+`../archive/todo_v0.7.2_kde-focus-ring-and-button-outlines-{spec,plan}.md` and
+`../archive/todo_v0.7.2_kde-hover-outlines-and-toolbar-buttons-{spec,plan}.md`.
 
 It continues `docs/issues/0004_kde-hand-overrides-rationale.md` (called "the first
 rationale" below), whose §5 left these items undecided, and the backlog entries
@@ -859,7 +862,7 @@ the proposal:
 2. Steps 2 to 5 above, the reporter's remaining items: the maintainer asked
    for the reporter's list first, and the issue's reply waits on them.
 3. gpui-component's own icons
-   (`docs/todo_v0.7.1_gpui-widget-icons-rationale.md`), then the step that
+   (`docs/archive/todo_v0.7.1_gpui-widget-icons-rationale.md`), then the step that
    serves the two pixel sets (its W7).
 4. The caret's blink (`docs/todo_v0.7.1_caret-blink-rationale.md`).
 5. Steps 6 and 7, and the three outlines §0 leaves in the backlog.
