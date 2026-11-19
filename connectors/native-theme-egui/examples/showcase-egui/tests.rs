@@ -6800,6 +6800,150 @@ fn a_held_pointer_hovers_and_presses_the_control_under_it() {
     }
 }
 
+/// The Basic page's dialog default button is drawn in the state of its previous response
+/// (`default_button`'s per-state looks): under kde-breeze light, hovered, its frame is
+/// `hover_stroke` over its own `fill`; pressed, its frame is `hover_stroke` over the button
+/// role's pressed fill, never its own. With `button.hover_border_color` unstated, `hover_stroke`
+/// is not `focus_stroke`, and the hovered button is drawn in the first. Under adwaita light,
+/// whose theme gives the default button no look of its own, it is the selected (primary)
+/// button, filled with `button.primary_background` at rest. kde-breeze is installed by the
+/// test, since `--theme` takes only the platform's presets.
+#[test]
+fn the_dialog_default_button_is_drawn_in_its_state() {
+    const KIND: &str = "button (dialog default)";
+    let args = [("--theme", TEST_PRESET), ("--tab", "basic")];
+    let breeze = || edited_atlas("kde-breeze", |_, _| {});
+    let mut probe = open(egui::Theme::Light, cli(&args));
+    let ctx = probe.ctx.clone();
+    probe.state_mut().adopt(&ctx, breeze());
+    probe.run_steps(4);
+    let Some(rect) = probe
+        .state()
+        .registry
+        .records()
+        .iter()
+        .find(|r| r.info.kind == KIND)
+        .map(|r| r.rect)
+    else {
+        panic!("no {KIND} record");
+    };
+    // The button's frame as egui painted it: the `Shape::Rect` at the button's place.
+    let drawn = |harness: &Harness<'_, App>| {
+        harness
+            .output()
+            .shapes
+            .iter()
+            .find_map(|clipped| match &clipped.shape {
+                egui::Shape::Rect(r) if r.rect == rect => Some((r.fill, r.stroke)),
+                _ => None,
+            })
+    };
+    // The pointer held over the button under `atlas`, pressed or not.
+    let held = |press: bool, atlas: native_theme_egui::ThemeAtlas| {
+        let mut args = cli(&args);
+        args.pointer = Some((rect.center().x as u16, rect.center().y as u16));
+        args.press = press;
+        let mut harness = open(egui::Theme::Light, args);
+        let ctx = harness.ctx.clone();
+        harness.state_mut().adopt(&ctx, atlas);
+        for step in 0..16u32 {
+            let ctx = harness.ctx.clone();
+            let mut input = std::mem::take(harness.input_mut());
+            input.time = Some(f64::from(step) * 0.5);
+            eframe::App::raw_input_hook(harness.state_mut(), &ctx, &mut input);
+            *harness.input_mut() = input;
+            harness.step();
+        }
+        harness
+    };
+    let look = |harness: &Harness<'_, App>| {
+        let t = harness.state().atlas.resolved_for(egui::Theme::Light);
+        native_theme_egui::default_button(t)
+    };
+
+    let hovered = held(false, breeze());
+    let Some(d) = look(&hovered) else {
+        panic!("kde-breeze light gives the default button no look of its own");
+    };
+    assert_ne!(
+        d.stroke, d.hover_stroke,
+        "the hovered frame is not told apart"
+    );
+    assert_eq!(
+        drawn(&hovered),
+        Some((d.fill, d.hover_stroke)),
+        "hovered: the default button's fill and hover frame"
+    );
+
+    let pressed = held(true, breeze());
+    let t = pressed.state().atlas.resolved_for(egui::Theme::Light);
+    let Some(active) = t
+        .button
+        .active_background
+        .map(native_theme_egui::convert::to_color32)
+    else {
+        panic!("kde-breeze light states no button.active_background");
+    };
+    assert_ne!(active, d.fill, "the pressed fill is not told apart");
+    assert_eq!(
+        drawn(&pressed),
+        Some((active, d.hover_stroke)),
+        "pressed: the button role's pressed fill under the hover frame"
+    );
+
+    let atlas = edited_atlas("kde-breeze", |_, t| t.button.hover_border_color = None);
+    let unstated = held(false, atlas);
+    let Some(d) = look(&unstated) else {
+        panic!("kde-breeze light without hover_border_color gives no default button");
+    };
+    assert_ne!(
+        d.hover_stroke, d.focus_stroke,
+        "the hover frame is not told apart from the focus frame"
+    );
+    assert_eq!(
+        drawn(&unstated).map(|(_, stroke)| stroke),
+        Some(d.hover_stroke),
+        "hovered, button.hover_border_color unstated: the hover frame, not the focus frame"
+    );
+
+    let mut adwaita = open(
+        egui::Theme::Light,
+        cli(&[("--theme", "adwaita"), ("--tab", "basic")]),
+    );
+    adwaita.run_steps(4);
+    let Some(rect) = adwaita
+        .state()
+        .registry
+        .records()
+        .iter()
+        .find(|r| r.info.kind == KIND)
+        .map(|r| r.rect)
+    else {
+        panic!("no {KIND} record under adwaita");
+    };
+    let t = adwaita.state().atlas.resolved_for(egui::Theme::Light);
+    assert_eq!(native_theme_egui::default_button(t), None);
+    let primary = native_theme_egui::convert::to_color32(t.button.primary_background);
+    assert_ne!(
+        primary,
+        native_theme_egui::convert::to_color32(t.button.background_color),
+        "the primary fill is not told apart"
+    );
+    let fill = adwaita
+        .output()
+        .shapes
+        .iter()
+        .find_map(|clipped| match &clipped.shape {
+            egui::Shape::Rect(r) if r.rect == rect => Some(r.fill),
+            _ => None,
+        });
+    assert_eq!(
+        fill,
+        Some(primary),
+        "adwaita: the selected (primary) button"
+    );
+}
+
 /// A held pointer is moved there once and then left still, so the Basic page's tooltip, which
 /// egui shows only under a pointer at rest, opens under it: a move on every pass would keep it
 /// shut.

@@ -2053,6 +2053,28 @@ mod t18_accessors {
         assert!(text_only.button.default_button_text_color.is_some());
         assert_eq!(crate::default_button(&text_only), None);
 
+        // No frame colour of its own: the button's border colour, at the border's width.
+        let mut unframed = light.clone();
+        unframed.button.default_button_border_color = None;
+        let border = egui::Stroke::new(
+            light.button.border.line_width,
+            to_color32(light.button.border.color),
+        );
+        assert_ne!(border, frame);
+        assert_eq!(
+            crate::default_button(&unframed).map(|d| d.stroke),
+            Some(border)
+        );
+        // No label colour of its own: the button's. kde-breeze states the two alike, so the
+        // button's is set apart for the test.
+        let mut unlettered = light.clone();
+        unlettered.button.default_button_text_color = None;
+        unlettered.button.font.color = native_theme::color::Rgba::rgb(1, 2, 3);
+        assert_eq!(
+            crate::default_button(&unlettered).map(|d| d.text),
+            Some(to_color32(unlettered.button.font.color))
+        );
+
         let mut unfocused = light.clone();
         unfocused.button.focus_border_color = None;
         let strokes = |t: &ResolvedTheme| {

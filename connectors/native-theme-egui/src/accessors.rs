@@ -340,7 +340,8 @@ pub struct DefaultButton {
 /// (`egui/src/widget_style/mod.rs:212-222` at egui 0.37.0), which `Button::stroke` overrides as
 /// well; while it was pressed, `hover_stroke` with neither `fill` nor `text`, so that egui draws
 /// the plain button's pressed fill and label, which the `Role::Button` scope gives it, as Breeze
-/// draws a pressed default button (docs/platform-facts.md §2.3).
+/// draws a pressed default button (docs/platform-facts.md §2.3). A non-finite
+/// `button.border.line_width` gives a frame 0 wide, as [`text_area_frame`]'s border does.
 #[must_use]
 pub fn default_button(t: &ResolvedTheme) -> Option<DefaultButton> {
     let b = &t.button;
