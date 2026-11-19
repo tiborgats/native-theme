@@ -238,8 +238,8 @@ fn every_leaf_has_exactly_one_row_and_every_row_is_well_formed() {
     let leaves = leaf_paths(&resolved("adwaita", ColorMode::Light));
     assert_eq!(
         leaves.len(),
-        531,
-        "527 ResolvedTheme leaves + 4 layout leaves (§5.7)"
+        534,
+        "530 ResolvedTheme leaves + 4 layout leaves (§5.7)"
     );
 
     let mut problems: Vec<String> = Vec::new();
@@ -448,7 +448,7 @@ fn every_leaf_has_exactly_one_row_and_every_row_is_well_formed() {
 }
 
 /// §5.7: the transcription carries the specification's verdicts, group by group, and its
-/// sub-tags (16 source-side gap, 22 widgets-crate, 53 egui-limited, 1 source-void). Read
+/// sub-tags (15 source-side gap, 22 widgets-crate, 53 egui-limited, 1 source-void). Read
 /// through the typed reader.
 #[test]
 fn verdict_totals_match_the_specification() {
@@ -482,13 +482,13 @@ fn verdict_totals_match_the_specification() {
     }
     // [direct, scoped, derived, unmappable] per group: §5.7's table
     let expected = [
-        ("foundation", [18, 1, 37, 11]),
+        ("foundation", [18, 1, 39, 10]),
         ("surfaces", [8, 55, 32, 15]),
         ("buttons", [13, 47, 34, 25]),
         // §5.7's [4, 35, 36, 12], the four `input.border.padding` sides SCOPED since 0.7.2,
-        // `combo_box.hover_border_color`, and the caret's blink (two DERIVED, one UNMAPPABLE)
-        // since 0.7.2
-        ("inputs", [4, 40, 34, 13]),
+        // `combo_box.hover_border_color`, the caret's blink (two DERIVED, one UNMAPPABLE), and
+        // the header's hovered and pressed fills (two DERIVED) since 0.7.2
+        ("inputs", [4, 40, 36, 13]),
         ("indicators", [5, 17, 9, 9]),
         ("chrome", [0, 57, 28, 19]),
     ];
@@ -500,7 +500,7 @@ fn verdict_totals_match_the_specification() {
         !counts.contains_key("unknown"),
         "a leaf outside the six groups"
     );
-    assert_eq!(tags.get("source-side gap").copied().unwrap_or_default(), 16);
+    assert_eq!(tags.get("source-side gap").copied().unwrap_or_default(), 15);
     assert_eq!(tags.get("widgets-crate").copied().unwrap_or_default(), 22);
     assert_eq!(tags.get("egui-limited").copied().unwrap_or_default(), 53);
     assert_eq!(

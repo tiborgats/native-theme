@@ -90,6 +90,12 @@ pub fn disabled_text_color(t: &ResolvedTheme) -> egui::Color32 {
 pub fn selection_inactive_background(t: &ResolvedTheme) -> egui::Color32 {
     to_color32(t.defaults.selection_inactive_background)
 }
+/// `defaults.selection_inactive_text_color` as an `egui::Color32`: text color over the
+/// selection of a view without the focus.
+#[must_use]
+pub fn selection_inactive_text_color(t: &ResolvedTheme) -> egui::Color32 {
+    to_color32(t.defaults.selection_inactive_text_color)
+}
 /// `toolbar.button_checked_background` as an `egui::Color32`: the fill of a
 /// checked toolbar button, for `Button::fill` on the one button. egui has no
 /// checked state: a selected button takes `visuals.selection`, which also
@@ -605,6 +611,21 @@ pub fn dialog_button_order(t: &ResolvedTheme) -> DialogButtonOrder {
 #[must_use]
 pub fn list_header_height(t: &ResolvedTheme) -> Option<f32> {
     t.list.header_height
+}
+/// `list.header_hover_background` as an `egui::Color32`: the fill of a hovered column-header
+/// section, where the platform states one (`None`: it keeps `list.header_background`).
+/// egui_extras' header row has no hover (`egui_extras/src/table.rs:490-506`); for a header
+/// the application paints.
+#[must_use]
+pub fn list_header_hover_background(t: &ResolvedTheme) -> Option<egui::Color32> {
+    t.list.header_hover_background.map(to_color32)
+}
+/// `list.header_active_background` as an `egui::Color32`: the fill of a pressed column-header
+/// section, where the platform states one (`None`: the hovered fill, else
+/// `list.header_background`). As [`list_header_hover_background`].
+#[must_use]
+pub fn list_header_active_background(t: &ResolvedTheme) -> Option<egui::Color32> {
+    t.list.header_active_background.map(to_color32)
 }
 /// `tooltip.show_delay` as a `Duration`, or `None` where the theme states none. The atlas
 /// already writes it, in seconds, into `Style::interaction.tooltip_delay`

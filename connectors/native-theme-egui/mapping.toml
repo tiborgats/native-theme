@@ -152,9 +152,12 @@ verdict = "direct"
 sinks   = [{ path = "visuals.selection.stroke.color" }]
 
 ["defaults.selection_inactive_background"]
-verdict  = "unmappable"
-sub_tag  = "source-side gap"
-upstream = "native-theme: a text colour for the unfocused selection fill (§14 item 45)"
+verdict   = "derived"
+tested_by = "T18(a)"
+
+["defaults.selection_inactive_text_color"]
+verdict   = "derived"
+tested_by = "T18(a)"
 
 ["defaults.text_selection_background"]
 verdict  = "unmappable"
@@ -2065,6 +2068,14 @@ sinks   = [
 ["list.header_height"]
 verdict   = "derived"
 tested_by = "T18(e)"
+
+["list.header_hover_background"]
+verdict   = "derived"
+tested_by = "T18(a)"
+
+["list.header_active_background"]
+verdict   = "derived"
+tested_by = "T18(a)"
 
 ["list.hover_background"]
 verdict = "scoped"

@@ -199,11 +199,12 @@ pub use accessors::{
     dialog_button_order, disabled_opacity, disabled_text_color, expander_icon, focus_ring_color,
     focus_ring_offset, focus_ring_width, font_family, font_size, font_weight, info_color,
     info_text_color, input_frame, input_margin, is_high_contrast, is_reduced_motion,
-    is_reduced_transparency, line_height, list_header_font, list_header_height, mono_font_family,
-    mono_font_size, mono_font_weight, role_font_is_italic, role_font_weight, scaled_text_size,
-    scrollbar_groove_width, selection_inactive_background, text_area_frame, text_area_margin,
-    text_role_font, text_role_line_height, text_role_weight, text_scaling_factor,
-    toolbar_button_checked_background, tooltip_show_delay, warning_text_color,
+    is_reduced_transparency, line_height, list_header_active_background, list_header_font,
+    list_header_height, list_header_hover_background, mono_font_family, mono_font_size,
+    mono_font_weight, role_font_is_italic, role_font_weight, scaled_text_size,
+    scrollbar_groove_width, selection_inactive_background, selection_inactive_text_color,
+    text_area_frame, text_area_margin, text_role_font, text_role_line_height, text_role_weight,
+    text_scaling_factor, toolbar_button_checked_background, tooltip_show_delay, warning_text_color,
     window_title_bar_font, window_title_bar_text_color,
 };
 pub use atlas::Note;

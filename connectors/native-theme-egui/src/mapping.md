@@ -8,15 +8,15 @@ One row per native leaf (spec §5, §13.1). A `§N` that names no document cites
 
 | group | leaves | DIRECT | SCOPED | DERIVED | UNMAPPABLE |
 |---|---:|---:|---:|---:|---:|
-| Foundation (`defaults`, `text_scale`, `layout`) | 67 | 18 | 1 | 37 | 11 |
+| Foundation (`defaults`, `text_scale`, `layout`) | 68 | 18 | 1 | 39 | 10 |
 | Surfaces (window, dialog, popover, card, tooltip, menu) | 110 | 8 | 55 | 32 | 15 |
 | Buttons (button, link, switch, checkbox, segmented control) | 119 | 13 | 47 | 34 | 25 |
-| Inputs (input, text area, combo box, list) | 91 | 4 | 40 | 34 | 13 |
+| Inputs (input, text area, combo box, list) | 93 | 4 | 40 | 36 | 13 |
 | Indicators (scrollbar, slider, progress bar, splitter, separator, spinner) | 40 | 5 | 17 | 9 | 9 |
 | Chrome (tab, sidebar, toolbar, status bar, expander) | 104 | 0 | 57 | 28 | 19 |
-| **TOTAL** | **531** | **48** | **217** | **174** | **92** |
+| **TOTAL** | **534** | **48** | **217** | **178** | **91** |
 
-UNMAPPABLE sub-tags (§2): `egui-limited` 53, `source-side gap` 16, `source-void` 1, `widgets-crate` 22.
+UNMAPPABLE sub-tags (§2): `egui-limited` 53, `source-side gap` 15, `source-void` 1, `widgets-crate` 22.
 
 ## Rows
 
@@ -64,7 +64,8 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 53, `source-side gap` 16, `source-void
 | `defaults.mono_font.weight` | DERIVED | → T6(d) | probe `700` |
 | `defaults.muted_color` | DIRECT | `visuals.weak_text_color` |  |
 | `defaults.selection_background` | DIRECT | `visuals.selection.bg_fill` |  |
-| `defaults.selection_inactive_background` | UNMAPPABLE |  | `source-side gap`: native-theme: a text colour for the unfocused selection fill (§14 item 45) |
+| `defaults.selection_inactive_background` | DERIVED | → T18(a) |  |
+| `defaults.selection_inactive_text_color` | DERIVED | → T18(a) |  |
 | `defaults.selection_text_color` | DIRECT | `visuals.selection.stroke.color` |  |
 | `defaults.shadow_color` | DIRECT | `visuals.window_shadow.color` (when: window.border.shadow_enabled, §6.14); `visuals.popup_shadow.color` (when: defaults.border.shadow_enabled, §6.14); \[dialog\] `shadow.color` (when: dialog.border.shadow_enabled, §6.14); \[popover\] `shadow.color` (when: popover.border.shadow_enabled, §6.14); \[tooltip\] `shadow.color` (when: tooltip.border.shadow_enabled, §6.14) |  |
 | `defaults.success_color` | DERIVED | → T18(a) |  |
@@ -399,6 +400,7 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 53, `source-side gap` 16, `source-void
 | `list.border.shadow_enabled` | UNMAPPABLE |  | `source-side gap`: native-theme: shadow offset, blur and spread in WidgetBorderSpec (§14 item 10) |
 | `list.disabled_text_color` | SCOPED | «list:disabled» `visuals.widgets.noninteractive.fg_stroke.color` |  |
 | `list.grid_color` | SCOPED | «list» `visuals.widgets.noninteractive.bg_stroke.color` |  |
+| `list.header_active_background` | DERIVED | → T18(a) |  |
 | `list.header_background` | DERIVED | → T18(a) |  |
 | `list.header_font.color` | SCOPED | «list» `visuals.widgets.active.fg_stroke.color` |  |
 | `list.header_font.defined_size` | UNMAPPABLE |  | `egui-limited`: egui: a stated-size unit beside FontId::size (§5.1) |
@@ -407,6 +409,7 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 53, `source-side gap` 16, `source-void
 | `list.header_font.style` | DERIVED | → T18(a) | probe `"italic"` |
 | `list.header_font.weight` | DERIVED | → T18(a) | probe `700` |
 | `list.header_height` | DERIVED | → T18(e) |  |
+| `list.header_hover_background` | DERIVED | → T18(a) |  |
 | `list.hover_background` | SCOPED | «list» `visuals.widgets.hovered.bg_fill`; «list» `visuals.widgets.active.bg_fill` |  |
 | `list.hover_text_color` | DERIVED | → T18(a) |  |
 | `list.item_font.color` | SCOPED | «list» `visuals.widgets.noninteractive.fg_stroke.color` |  |

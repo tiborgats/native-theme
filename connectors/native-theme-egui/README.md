@@ -288,8 +288,14 @@ and no fill or label colour, so that egui draws the plain button's pressed
 fill and label), `icons::icon_size`, and the colours egui has no
 slot for (`info_color`, `warning_text_color`, …). `tooltip_show_delay` is the
 delay the atlas writes into `Style::interaction.tooltip_delay`, as a
-`Duration`, for a tooltip the application times itself. A leaf that needs no
-conversion is read from the `ResolvedTheme` itself
+`Duration`, for a tooltip the application times itself.
+`selection_inactive_text_color` is the text over
+`selection_inactive_background`, the selection of a view without the focus
+(egui has one selection pair), and `list_header_hover_background` and
+`list_header_active_background` are the fills of a hovered and a pressed
+column-header section where the theme states them (`None` otherwise), for a
+header the application paints, since egui_extras' header row has no hover. A
+leaf that needs no conversion is read from the `ResolvedTheme` itself
 (`ThemeAtlas::resolved_for`). A button in the toolbar
 role is a flat tool button: the role colours its hover and press and leaves its rest
 to the button. Make it flat with `Button::frame_when_inactive(false)`, or in a scope

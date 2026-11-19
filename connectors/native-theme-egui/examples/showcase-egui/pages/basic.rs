@@ -14,7 +14,9 @@ use native_theme::theme::IconSet;
 use native_theme_egui::convert::{to_color32, to_corner_radius, to_margin, to_stroke};
 use native_theme_egui::{
     Role, RoleVariant, Surface, TextRole, ThemeAtlas, default_button, input_frame,
-    list_header_font, list_header_height, text_area_frame,
+    list_header_active_background, list_header_font, list_header_height,
+    list_header_hover_background, selection_inactive_background, selection_inactive_text_color,
+    text_area_frame,
 };
 use native_theme_egui_widgets::combo_box::ComboBox;
 use native_theme_egui_widgets::expander::Expander;
@@ -1669,9 +1671,10 @@ fn row_metrics(
 /// `list_frame`, in one `Role::List` scope (its selection colours and item font). egui has no
 /// list widget, and the leaves egui never reads from the style are per call (connector spec
 /// §5.4, T18(a)): each row is painted here, `row_metrics` tall and inset, filled with
-/// `list.selection_background` in `list.selection_text_color` while selected and with
-/// `list.hover_background` in `list.hover_text_color` while hovered, the fill rounded where it
-/// meets the frame (`inner_corners`).
+/// `list.selection_background` in `list.selection_text_color` while selected (the unfocused
+/// pair while the window is not active, `selection_pair`) and with `list.hover_background` in
+/// `list.hover_text_color` while hovered, the fill rounded where it meets the frame
+/// (`inner_corners`).
 fn list(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
     let t = atlas.resolved_for(ui.ctx().theme());
     let l = &t.list;
@@ -1722,7 +1725,7 @@ fn list(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &mut 
                                 let r = rows.add(reg, ui, "List row", |ui| {
                                     let (row, label) = list_row(
                                         ui,
-                                        l,
+                                        t,
                                         edges,
                                         &text,
                                         selected,
@@ -1800,25 +1803,30 @@ fn scroll_bar(
 /// One list row across the list, `height` tall, its text `inset` in, one `line` tall and
 /// centred vertically. Its fill covers what the list's view shows of it, rounded at a corner
 /// where that meets a corner of `edges`, the frame's inside. Its response, and its text's
-/// rectangle.
+/// rectangle. A selected row takes [`selection_pair`] in the window's state.
 fn list_row(
     ui: &mut egui::Ui,
-    l: &native_theme::theme::ResolvedListTheme,
+    t: &native_theme_egui::ResolvedTheme,
     edges: egui::Rect,
     text: &str,
     selected: bool,
     (height, inset, line): (f32, f32, f32),
     font: &egui::FontId,
 ) -> (egui::Response, egui::Rect) {
+    let l = &t.list;
     let size = egui::vec2(ui.available_width(), height);
     let (rect, response) = ui.allocate_exact_size(size, egui::Sense::click());
     response.widget_info(|| egui::WidgetInfo::selected(egui::Role::Button, true, selected, text));
     let (fill, colour) = if selected {
-        (Some(l.selection_background), l.selection_text_color)
+        let (fill, colour) = selection_pair(t, ui.ctx().input(|input| input.focused));
+        (Some(fill), colour)
     } else if response.hovered() {
-        (Some(l.hover_background), l.hover_text_color)
+        (
+            Some(to_color32(l.hover_background)),
+            to_color32(l.hover_text_color),
+        )
     } else {
-        (None, l.item_font.color)
+        (None, to_color32(l.item_font.color))
     };
     if let Some(fill) = fill {
         let view = ui.clip_rect();
@@ -1844,12 +1852,35 @@ fn list_row(
                     l,
                     [top && left, top && right, bottom && left, bottom && right],
                 ),
-                to_color32(fill),
+                fill,
             );
         }
     }
-    let label = paint_cell_text(ui, text, font, to_color32(colour), (rect, inset, line));
+    let label = paint_cell_text(ui, text, font, colour, (rect, inset, line));
     (response, label)
+}
+
+/// A selected list or table row's fill and text colour: `defaults.selection_inactive_background`
+/// lettered `defaults.selection_inactive_text_color` while the window is not active
+/// (`window_active` false, egui's `InputState::focused`) where the theme's inactive fill
+/// differs from `defaults.selection_background`; `list.selection_background` and
+/// `list.selection_text_color` otherwise.
+pub(crate) fn selection_pair(
+    t: &native_theme_egui::ResolvedTheme,
+    window_active: bool,
+) -> (egui::Color32, egui::Color32) {
+    let d = &t.defaults;
+    if !window_active && d.selection_inactive_background != d.selection_background {
+        (
+            selection_inactive_background(t),
+            selection_inactive_text_color(t),
+        )
+    } else {
+        (
+            to_color32(t.list.selection_background),
+            to_color32(t.list.selection_text_color),
+        )
+    }
 }
 
 /// `text` painted in `font` and `colour`, one `line` tall, `inset` in from `rect`'s left and
@@ -1880,8 +1911,12 @@ fn paint_cell_text(
 /// (`list_header_font`), `list_header_height` tall where the theme states it, else a row
 /// (`row_metrics`, of the header font), the rows `row_metrics` tall in
 /// `list.item_font`, the selected one in `list.selection_background` and
-/// `list.selection_text_color`, the header's fill rounded at the top and the last row's at the
-/// bottom, where they meet the frame (`inner_corners`); a vertical
+/// `list.selection_text_color` (the unfocused pair while the window is not active,
+/// `selection_pair`), the header's fill rounded at the top and the last row's at the bottom,
+/// where they meet the frame (`inner_corners`); each header section hovered in
+/// `list.header_hover_background` and pressed in `list.header_active_background`, else the
+/// hovered fill, where the theme states them, rounded where the section meets the frame's top
+/// corner; a vertical
 /// `list.grid_color` line between the columns through the header and the rows and a horizontal
 /// one under the header, each `separator.line_width` wide, inside the cell it closes.
 fn table(reg: &mut Registry, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
@@ -1950,6 +1985,29 @@ fn table(reg: &mut Registry, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
                         } else {
                             egui::Rect::from_x_y_ranges(mid..=header.right(), header.y_range())
                         };
+                        // egui_extras' header row has no hover
+                        // (`egui_extras/src/table.rs:490-506`): each section is filled here,
+                        // pressed in the pressed fill, else the hovered one, and hovered in the
+                        // hovered fill, where stated
+                        let response = ui.interact(
+                            cell,
+                            ui.scope_id().with(("table-head", i)),
+                            egui::Sense::click(),
+                        );
+                        let fill = if response.is_pointer_button_down_on() {
+                            list_header_active_background(t).or(list_header_hover_background(t))
+                        } else if response.hovered() {
+                            list_header_hover_background(t)
+                        } else {
+                            None
+                        };
+                        if let Some(fill) = fill {
+                            painter.rect_filled(
+                                cell,
+                                inner_corners(l, [i == 0, i == 1, false, false]),
+                                fill,
+                            );
+                        }
                         paint_cell_text(
                             ui,
                             text,
@@ -1966,16 +2024,18 @@ fn table(reg: &mut Registry, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
                             egui::vec2(inner, row_height),
                         );
                         let (fill, colour) = if i == TABLE_SELECTED {
-                            (Some(l.selection_background), l.selection_text_color)
+                            let window_active = ui.ctx().input(|input| input.focused);
+                            let (fill, colour) = selection_pair(t, window_active);
+                            (Some(fill), colour)
                         } else {
-                            (None, l.item_font.color)
+                            (None, to_color32(l.item_font.color))
                         };
                         if let Some(fill) = fill {
                             let last = i.saturating_add(1) == TABLE_ROWS.len();
                             painter.rect_filled(
                                 row,
                                 inner_corners(l, [false, false, last, last]),
-                                to_color32(fill),
+                                fill,
                             );
                         }
                         for (j, text) in cells.iter().enumerate() {
@@ -1984,13 +2044,7 @@ fn table(reg: &mut Registry, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
                             } else {
                                 egui::Rect::from_x_y_ranges(mid..=row.right(), row.y_range())
                             };
-                            paint_cell_text(
-                                ui,
-                                text,
-                                &item_font,
-                                to_color32(colour),
-                                (cell, inset, line),
-                            );
+                            paint_cell_text(ui, text, &item_font, colour, (cell, inset, line));
                         }
                         places.push((format!("basic.table.row_{}", i.saturating_add(1)), row));
                     }

@@ -4930,7 +4930,10 @@ fn the_basic_list_labels_are_placed_as_painted_centred_down_their_rows() {
 /// kde-breeze's bar takes its groove beside them. macos-tahoe's 0.5 pt line puts the frame's
 /// inside on a half point, and the list's scroll area lays its rows out on whole pixels
 /// (`egui/src/containers/scroll_area.rs:797-803`), half a point off it: a row there still meets
-/// the frame. Each fill is the `Shape::Rect` at its element's place in its colour.
+/// the frame. Under kde-breeze, which states the header's section fills, a section with the
+/// pointer on it, and pressed, is filled rounded by the inner radius where it meets the frame:
+/// the first section's top-left corner, the last's top-right, square elsewhere. Each fill is the
+/// `Shape::Rect` at its element's place in its colour.
 #[test]
 fn the_basic_list_and_table_fills_keep_inside_the_frames_corners() {
     use crate::pages::basic::{LIST_VISIBLE, TABLE_ROWS, TABLE_SELECTED};
@@ -5009,12 +5012,149 @@ fn the_basic_list_and_table_fills_keep_inside_the_frames_corners() {
                 "{preset}: the list's selected {id}"
             );
         }
+
+        // A hovered or pressed header section's fill, where the theme states one (kde-breeze
+        // alone of the three): the first section's top-left corner, the last's top-right.
+        let (Some(hovered), Some(pressed)) =
+            (l.header_hover_background, l.header_active_background)
+        else {
+            assert_ne!(preset, "kde-breeze", "kde-breeze states both section fills");
+            continue;
+        };
+        for (id, want) in [
+            ("basic.table.header.name", corners(inner, 0, 0, 0)),
+            ("basic.table.header.size", corners(0, inner, 0, 0)),
+        ] {
+            let at = harness.state().registry.places()[id].center();
+            harness.hover_at(at);
+            harness.run_steps(3);
+            assert_eq!(
+                corners_of(&harness, id, colour(hovered)),
+                want,
+                "{preset}: the hovered {id}"
+            );
+            harness.drag_at(at);
+            harness.run_steps(3);
+            assert_eq!(
+                corners_of(&harness, id, colour(pressed)),
+                want,
+                "{preset}: the pressed {id}"
+            );
+            harness.drop_at(at);
+            harness.run_steps(3);
+        }
     }
     assert!(
         bars.contains(&true) && bars.contains(&false),
         "a floating bar and one beside the rows: {bars:?}"
     );
     assert!(off_grid, "a list line off the whole-pixel grid");
+}
+
+/// The swap of `docs/todo_v0.7.2_kde-open-items-steps6-7-spec.md` 7.H.2: a selected list or
+/// table row takes the unfocused pair while the window is not active, where the theme's
+/// inactive fill differs from its selection. `selection_pair` with an active window is the
+/// list's pair on every bundled combination, and with an inactive one the defaults' inactive
+/// pair on exactly kde-breeze's, macos-monterey's and macos-tahoe's six and the list's pair on
+/// the others. A pass with `RawInput::focused` false, which egui_kittest otherwise keeps true,
+/// paints the table's and the list's selected rows under kde-breeze light in #c2e0f5 lettered
+/// #232629 (kde-breeze's `[light.defaults]`); a focused pass again in the list's pair.
+#[test]
+fn a_selected_row_takes_the_unfocused_pair_while_the_window_is_not_active() {
+    use crate::pages::basic::{TABLE_SELECTED, selection_pair};
+
+    let colour = native_theme_egui::convert::to_color32;
+    let mut swapped = Vec::new();
+    let mut kept = 0;
+    for preset in Theme::list_presets().iter().map(|p| p.key) {
+        let (atlas, _) = from_preset(preset, false, &AccessibilityPreferences::default())
+            .unwrap_or_else(|error| panic!("{preset}: {error}"));
+        for scheme in [egui::Theme::Light, egui::Theme::Dark] {
+            let t = atlas.resolved_for(scheme);
+            let d = &t.defaults;
+            let list = (
+                colour(t.list.selection_background),
+                colour(t.list.selection_text_color),
+            );
+            assert_eq!(selection_pair(t, true), list, "{preset} {scheme:?}");
+            if selection_pair(t, false) == list {
+                kept += 1;
+            } else {
+                assert_eq!(
+                    selection_pair(t, false),
+                    (
+                        colour(d.selection_inactive_background),
+                        colour(d.selection_inactive_text_color)
+                    ),
+                    "{preset} {scheme:?}"
+                );
+                swapped.push(format!("{preset} {scheme:?}"));
+            }
+        }
+    }
+    let six: Vec<String> = ["kde-breeze", "macos-monterey", "macos-tahoe"]
+        .into_iter()
+        .flat_map(|p| [format!("{p} Light"), format!("{p} Dark")])
+        .collect();
+    assert_eq!(swapped, six, "the combinations the rule selects");
+    assert_eq!(kept, 28, "the combinations that keep the list's pair");
+
+    let mut harness = open_scaled("kde-breeze", "basic", 1.0);
+    let rows = [
+        format!("basic.table.row_{}", TABLE_SELECTED + 1),
+        format!(
+            "basic.list.row_{}",
+            harness.state().demo_state.basic_list + 1
+        ),
+    ];
+    let painted = |harness: &Harness<'_, App>, id: &str| {
+        let place = harness.state().registry.places()[id];
+        let shapes = &harness.output().shapes;
+        let fills: Vec<egui::Color32> = shapes
+            .iter()
+            .filter_map(|clipped| match &clipped.shape {
+                egui::Shape::Rect(r) if near_rect(r.rect, place) => Some(r.fill),
+                _ => None,
+            })
+            .collect();
+        let inks: Vec<egui::Color32> = shapes
+            .iter()
+            .filter_map(|clipped| match &clipped.shape {
+                egui::Shape::Text(t) if place.contains(t.pos) => {
+                    t.galley.job.sections.first().map(|s| s.format.color)
+                }
+                _ => None,
+            })
+            .collect();
+        (fills, inks)
+    };
+    let rgb = egui::Color32::from_rgb;
+    let l = &harness
+        .state()
+        .atlas
+        .resolved_for(egui::Theme::Light)
+        .list
+        .clone();
+    // kde-breeze's `[light.defaults]`
+    for (focused, fill, ink) in [
+        (false, rgb(0xc2, 0xe0, 0xf5), rgb(0x23, 0x26, 0x29)),
+        (
+            true,
+            colour(l.selection_background),
+            colour(l.selection_text_color),
+        ),
+    ] {
+        harness.input_mut().focused = focused;
+        harness.run_steps(3);
+        for id in &rows {
+            let (fills, inks) = painted(&harness, id);
+            assert_eq!(fills, [fill], "{id}, focused {focused}: its fill");
+            assert!(
+                !inks.is_empty() && inks.iter().all(|c| *c == ink),
+                "{id}, focused {focused}: its text {inks:?}"
+            );
+        }
+    }
 }
 
 /// M9-150's class in egui: a stated row height holds its text at every text scale, as gpui's

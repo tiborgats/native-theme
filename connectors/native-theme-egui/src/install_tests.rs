@@ -2085,6 +2085,65 @@ mod t18_accessors {
         assert_eq!(strokes(&unfocused), Some((frame, frame, frame)));
     }
 
+    /// T18 (a): `selection_inactive_background`, `selection_inactive_text_color`,
+    /// `list_header_hover_background` and `list_header_active_background` return their
+    /// leaves.
+    #[test]
+    fn t18_a_the_inactive_selection_and_header_accessors_are_their_leaves() {
+        let rgb = egui::Color32::from_rgb;
+        // kde-breeze's `[light.defaults]`, `[light.list]`, `[dark.defaults]`, `[dark.list]`;
+        // adwaita states no header section fill
+        for (preset, mode, inactive, inactive_text, header) in [
+            (
+                "kde-breeze",
+                ColorMode::Light,
+                Some(rgb(0xc2, 0xe0, 0xf5)),
+                Some(rgb(0x23, 0x26, 0x29)),
+                Some(rgb(0xd6, 0xec, 0xf8)),
+            ),
+            (
+                "kde-breeze",
+                ColorMode::Dark,
+                Some(rgb(0x1b, 0x41, 0x55)),
+                Some(rgb(0xfc, 0xfc, 0xfc)),
+                Some(rgb(0x2d, 0x46, 0x55)),
+            ),
+            ("adwaita", ColorMode::Light, None, None, None),
+            ("adwaita", ColorMode::Dark, None, None, None),
+        ] {
+            let t = resolved(preset, mode);
+            let at = format!("{preset} {mode:?}");
+            assert_eq!(
+                crate::selection_inactive_background(&t),
+                to_color32(t.defaults.selection_inactive_background),
+                "{at}"
+            );
+            assert_eq!(
+                crate::selection_inactive_text_color(&t),
+                to_color32(t.defaults.selection_inactive_text_color),
+                "{at}"
+            );
+            assert_eq!(
+                crate::list_header_hover_background(&t),
+                t.list.header_hover_background.map(to_color32),
+                "{at}"
+            );
+            assert_eq!(
+                crate::list_header_active_background(&t),
+                t.list.header_active_background.map(to_color32),
+                "{at}"
+            );
+            if let Some(want) = inactive {
+                assert_eq!(crate::selection_inactive_background(&t), want, "{at}");
+            }
+            if let Some(want) = inactive_text {
+                assert_eq!(crate::selection_inactive_text_color(&t), want, "{at}");
+            }
+            assert_eq!(crate::list_header_hover_background(&t), header, "{at}");
+            assert_eq!(crate::list_header_active_background(&t), header, "{at}");
+        }
+    }
+
     /// T18 (b), the multi-line field: `text_area_margin` is `text_area.border`'s padding as
     /// `input_margin` is the input's, and `text_area_frame` strokes the field at
     /// `text_area.border.line_width` in `text_area.border.color` at rest, rounded
