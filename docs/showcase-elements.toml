@@ -855,6 +855,25 @@ states = ["On"]
 part = true
 sample = { text = "glyph" }
 
+# After the toggles, in the third row: a dialog's default button, the one Enter activates.
+
+[[element]]
+id = "basic.buttons.dialog_default"
+name = "Button"
+parent = "basic.buttons.toggle_on"
+leaves = ["button.font", "button.font.color", "button.min_width_px", "button.min_height_px", "button.primary_background", "button.primary_text_color", "button.active_background", "button.active_text_color", "button.hover_border_color", "button.focus_border_color", "button.default_button_background", "button.default_button_text_color", "button.default_button_border_color", "button.border.color", "button.border.corner_radius_px", "button.border.line_width_px", "button.border.shadow_enabled", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.line_height"]
+states = ["Default"]
+sample = { fill = [0.5, 0.0, 0.0, 2.5], border = [0.5, 0.0, 0.0, 0.5] }
+
+[[element]]
+id = "basic.buttons.dialog_default.label"
+name = "Button label"
+parent = "basic.buttons.dialog_default"
+leaves = ["button.font", "button.font.color", "button.primary_text_color", "button.active_text_color", "button.default_button_text_color", "defaults.line_height"]
+states = ["Default"]
+part = true
+sample = { text = "glyph" }
+
 # --- Column 1: Checkboxes ---------------------------------------------------------------------
 
 [[element]]

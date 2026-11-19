@@ -394,6 +394,10 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
         "toolbar.button_checked_background and button.checked_text_color (button.active_text_color where that is unset) on a selected toolbar Button built on variants::toolbar_button; where the theme states no checked fill, toolbar.button_active_background, else button.active_background, with no text colour; nothing where it states none of the three: a custom variant fills a selected Button with its active colour and letters every state in its one foreground (button/button.rs, ButtonCustomVariant and RenderOnce for Button), and the Button replays the refinement over its selected style",
     ),
     (
+        "default_button_rest",
+        "button.default_button_background as the fill and button.default_button_border_color (button.border.color where unstated) as the border colour of a dialog's default Button at rest, over variants::default_button, whose rest fill is a fifth of its border colour (button/button.rs, ButtonVariant::bg_color); nothing where the theme states no fill, and the Button is .primary()",
+    ),
+    (
         "list_item_selected",
         "list.selection_text_color on a selected ListItem's text, over the foreground upstream sets on every row before the refinement -- or geometry::list_item's list.item_font colour: while list.active_highlight is on, gpui-component's default, upstream marks a selected row by its fill alone, painted after the refinement; with it off, it letters the row accent_foreground on accent after the refinement, so this colour does not reach it; and it mutes a row that is not selectable after the refinement too (list/list_item.rs, ListItem::render)",
     ),

@@ -231,6 +231,106 @@ pub fn toolbar_button(cx: &App) -> ButtonCustomVariant {
     }
 }
 
+/// What [`default_button`] gives its variant where the theme gives a
+/// dialog's default button a look of its own.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) struct DefaultButtonStates {
+    /// `button.default_button_background`: the fill under the pointer.
+    pub hover: Hsla,
+    /// `button.default_button_text_color`, else `button.font.color`: the
+    /// label in every state.
+    pub foreground: Hsla,
+    /// `button.hover_border_color`, else the default button's frame,
+    /// `button.default_button_border_color`, else `button.border.color`: the
+    /// border hovered and pressed.
+    pub hover_frame: Hsla,
+}
+
+/// The default button states of `n`'s theme: `None` where it states no
+/// `button.default_button_background`, and the default button is the
+/// primary one.
+pub(crate) fn default_button_states(n: Native<'_>) -> Option<DefaultButtonStates> {
+    let b = &n.resolved.button;
+    let fill = b.default_button_background?;
+    let frame = b.default_button_border_color.unwrap_or(b.border.color);
+    Some(DefaultButtonStates {
+        hover: rgba_to_hsla(fill),
+        foreground: rgba_to_hsla(b.default_button_text_color.unwrap_or(b.font.color)),
+        hover_frame: rgba_to_hsla(b.hover_border_color.unwrap_or(frame)),
+    })
+}
+
+/// A dialog's default button where the theme gives it a look of its own
+/// (`button.default_button_background`, KDE): `None` where it does not, and the
+/// caller builds the primary button (`.primary()`), as macOS and Windows draw it.
+///
+/// ```no_run
+/// use gpui_kit::component::button::{Button, ButtonVariants as _};
+/// use gpui_kit::component::{Disableable as _, StyledExt as _};
+/// use native_theme_gpui::{ActiveNativeTheme as _, geometry, variants};
+/// # fn f(cx: &gpui_kit::App) {
+/// let Some(n) = cx.native() else { return };
+/// let ok = match (variants::default_button(n, cx), geometry::default_button_rest(n)) {
+///     // At rest: the theme's fill and frame, which the variant does not give.
+///     (Some(v), Some(rest)) => Button::new("ok")
+///         .custom(v)
+///         .refine_style(&geometry::button(n))
+///         .refine_style(&rest),
+///     // No look of its own: the default button is the primary one.
+///     _ => Button::new("ok").primary().refine_style(&geometry::button(n)),
+/// };
+/// // Disabled: `button_disabled` in place of the rest look, whose frame it
+/// // would not replace.
+/// if let Some(v) = variants::default_button(n, cx) {
+///     let off = Button::new("ok-off")
+///         .custom(v)
+///         .refine_style(&geometry::button(n))
+///         .disabled(true)
+///         .refine_style(&geometry::button_disabled(n));
+/// }
+/// # }
+/// ```
+///
+/// The variant's `color` is the border hovered and pressed,
+/// `button.hover_border_color`, else the default button's frame
+/// (`button.default_button_border_color`, else `button.border.color`); its
+/// `hover` the default fill, which Breeze keeps under the pointer; its
+/// `active` the plain button's pressed fill, the `button_active` token that
+/// [`apply`](crate::apply) fills from `button.active_background`; and its
+/// `foreground` `button.default_button_text_color`, else `button.font.color`.
+/// A custom variant has one foreground for every state (gpui-component
+/// 0.10.0 `button/button.rs:1096`), so a pressed default button keeps that
+/// label where a plain pressed button is lettered in
+/// `button.active_text_color`: on a theme that states the two apart, the
+/// pressed label differs.
+///
+/// The variant's own rest fill is a fifth of its `color` (0.10.0
+/// `button/button.rs:1044`), so an enabled Button takes
+/// [`geometry::default_button_rest`](crate::geometry::default_button_rest),
+/// the theme's fill and frame, after
+/// [`geometry::button`](crate::geometry::button). A disabled one takes
+/// [`geometry::button_disabled`](crate::geometry::button_disabled) in its
+/// place and keeps `geometry::button`'s `button.border.color`: upstream
+/// replays a refinement in the disabled state too (0.10.0
+/// `button/button.rs:834-851`), and `button_disabled` sets no border colour,
+/// so the rest frame would stand there.
+///
+/// A plain `Dialog`'s footer is the application's (`Dialog::footer`), so
+/// such a button goes there; an `AlertDialog`'s default footer builds its OK
+/// button from a `ButtonVariant` alone (0.10.0 `dialog/dialog.rs:149-162`),
+/// so that one stays the primary button.
+#[must_use]
+pub fn default_button(n: Native<'_>, cx: &App) -> Option<ButtonCustomVariant> {
+    default_button_states(n).map(|s| {
+        ButtonCustomVariant::new(cx)
+            .color(s.hover_frame)
+            .foreground(s.foreground)
+            .hover(s.hover)
+            .active(cx.theme().button_active)
+            .shadow(false)
+    })
+}
+
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
@@ -403,6 +503,105 @@ mod tests {
                     );
                 }
             }
+        });
+    }
+
+    /// Where the theme states no `button.default_button_background`, every
+    /// bundled preset but kde-breeze in both modes, the default button is
+    /// the primary one: `default_button_states`,
+    /// `geometry::default_button_rest` and `default_button` are all `None`.
+    /// kde-breeze, which states the fill, gets all three.
+    #[gpui::test]
+    fn default_button_is_none_where_no_fill_is_stated(cx: &mut TestAppContext) {
+        let prefs = AccessibilityPreferences::default();
+        cx.update(|cx| {
+            gpui_component::init(cx);
+            let mut unstated = 0usize;
+            for info in crate::Theme::list_presets() {
+                let states_one = info.key == "kde-breeze";
+                for is_dark in [false, true] {
+                    let loaded = crate::from_preset(info.key, is_dark, &prefs);
+                    assert!(
+                        loaded.is_ok(),
+                        "{}/{is_dark}: {:?}",
+                        info.key,
+                        loaded.as_ref().err()
+                    );
+                    let Ok((theme, resolved)) = loaded else {
+                        return;
+                    };
+                    crate::apply(theme, &resolved, &prefs, cx);
+                    let n = Native::unscaled(&resolved);
+                    let built = (
+                        default_button_states(n).is_some(),
+                        crate::geometry::default_button_rest(n).is_some(),
+                        default_button(n, cx).is_some(),
+                    );
+                    assert_eq!(
+                        built,
+                        (states_one, states_one, states_one),
+                        "{}/{is_dark}: (default_button_states, default_button_rest, default_button)",
+                        info.key
+                    );
+                    if !states_one {
+                        unstated += 1;
+                    }
+                }
+            }
+            assert!(
+                unstated > 0,
+                "every preset states a default button fill, so this proves nothing"
+            );
+        });
+    }
+
+    /// Built in `render`, the default button's variant follows a mode
+    /// switch: kde-breeze dark's fill, label and frame replace the light
+    /// ones', with the installed theme's `button_active`.
+    #[gpui::test]
+    fn default_button_follows_the_installed_theme(cx: &mut TestAppContext) {
+        let prefs = AccessibilityPreferences::default();
+        cx.update(|cx| {
+            gpui_component::init(cx);
+            let loaded = crate::from_preset("kde-breeze", false, &prefs);
+            assert!(loaded.is_ok(), "light: {:?}", loaded.as_ref().err());
+            let Ok((light, resolved)) = loaded else {
+                return;
+            };
+            crate::apply(light, &resolved, &prefs, cx);
+            let in_light = default_button(Native::unscaled(&resolved), cx);
+            assert!(in_light.is_some(), "kde-breeze light states the fill");
+
+            let loaded = crate::from_preset("kde-breeze", true, &prefs);
+            assert!(loaded.is_ok(), "dark: {:?}", loaded.as_ref().err());
+            let Ok((dark, resolved)) = loaded else {
+                return;
+            };
+            crate::apply(dark, &resolved, &prefs, cx);
+            let in_dark = default_button(Native::unscaled(&resolved), cx);
+            assert_ne!(in_dark, in_light);
+            let b = &resolved.button;
+            let stated = (b.default_button_background, b.hover_border_color);
+            assert!(
+                stated.0.is_some() && stated.1.is_some(),
+                "kde-breeze dark states the fill and the hover border: {stated:?}"
+            );
+            let (Some(fill), Some(frame)) = stated else {
+                return;
+            };
+            assert_eq!(
+                in_dark,
+                Some(
+                    ButtonCustomVariant::new(cx)
+                        .color(rgba_to_hsla(frame))
+                        .foreground(rgba_to_hsla(
+                            b.default_button_text_color.unwrap_or(b.font.color)
+                        ))
+                        .hover(rgba_to_hsla(fill))
+                        .active(cx.theme().button_active)
+                        .shadow(false)
+                )
+            );
         });
     }
 }

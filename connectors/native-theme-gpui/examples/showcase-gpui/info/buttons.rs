@@ -656,6 +656,102 @@ pub fn button(
     }
 }
 
+/// A dialog's default Button built through
+/// `native_theme_gpui::variants::default_button` under a theme that gives it
+/// a look of its own, `b` (`demo::dialog_default_button`): at rest
+/// `geometry::default_button_rest`'s fill and frame, under the pointer the
+/// variant's hover fill and its colour as the frame, pressed the plain
+/// button's `button_active` in that frame, and one label in every state.
+pub fn dialog_default(t: &Theme, b: &ResolvedButtonTheme) -> WidgetInfo {
+    let width = Some(b.border.line_width);
+    let info = WidgetInfo::new("Button").variant("Dialog default");
+    let info = info.colors(stated_claim(
+        "bg",
+        "default_button_background",
+        b.default_button_background,
+        "native-theme-gpui/geometry.rs:1491",
+    ));
+    let info = match stated_claim(
+        "text",
+        "default_button_text_color",
+        b.default_button_text_color,
+        "native-theme-gpui/variants.rs:258",
+    ) {
+        Some(text) => info.color(text),
+        None => info.color(claim(
+            "text",
+            "color",
+            stated(b.font.color),
+            "native-theme-gpui/variants.rs:258",
+        )),
+    };
+    let rest = edge_claim(
+        "border at rest",
+        "default_button_border_color",
+        b.default_button_border_color,
+        width,
+        "native-theme-gpui/geometry.rs:1492",
+    )
+    .or_else(|| {
+        edge_claim(
+            "border at rest",
+            "border",
+            Some(b.border.color),
+            width,
+            "native-theme-gpui/geometry.rs:1492",
+        )
+    });
+    let hovered = edge_claim(
+        "border, hovered or pressed",
+        "hover_border_color",
+        b.hover_border_color,
+        width,
+        "native-theme-gpui/variants.rs:259",
+    )
+    .or_else(|| {
+        edge_claim(
+            "border, hovered or pressed",
+            "default_button_border_color",
+            b.default_button_border_color,
+            width,
+            "native-theme-gpui/variants.rs:255",
+        )
+    })
+    .or_else(|| {
+        edge_claim(
+            "border, hovered or pressed",
+            "border",
+            Some(b.border.color),
+            width,
+            "native-theme-gpui/variants.rs:255",
+        )
+    });
+    let info = info.colors(rest).colors(hovered);
+    let info = info
+        .colors(stated_claim(
+            "hover",
+            "default_button_background",
+            b.default_button_background,
+            "native-theme-gpui/variants.rs:254",
+        ))
+        .color(claim(
+            "active",
+            "button_active",
+            t.button_active,
+            "native-theme-gpui/variants.rs:329",
+        ));
+    let edge_note = if b.border.line_width <= 0.0 {
+        "none in any state: button.border.line_width is 0, and geometry::button's width replaces upstream's border_1, whose hover and press styles only recolour (button/button.rs, RenderOnce for Button)"
+    } else {
+        "button.default_button_border_color at rest (button.border.color where unstated), from geometry::default_button_rest after geometry::button, which gives the border its width; hovered and pressed the variant's colour, button.hover_border_color where stated, else that frame -- gpui applies a hover style after the refinement (gpui-pre/elements/div.rs, hover_style)"
+    };
+    info.config("font-weight", "geometry::button carries button.font.weight. The label is a child that sets its own size from the Size enum (sizing.rs, button_text_size) and would overrule a size from here, but it sets no weight and neither does anything else on that path, so the platform's weight cascades (button/button.rs, Button::render)")
+        .not_themeable("edge", edge_note)
+        .not_themeable("shadow", "none: variants::default_button builds its custom variant with .shadow(false) (native-theme-gpui/variants.rs, default_button; button/button.rs, ButtonVariant::shadow)")
+        .config("label size", "button.font.size through geometry::button_label on the label, which the showcase passes as the Button's child: upstream sizes a .label() from the Size enum on the content element (sizing.rs, button_text_size; button/button.rs, Button::render), which a style on the Button does not reach and a child's own size overrules")
+        .instance("variant", "native_theme_gpui::variants::default_button: a custom variant with the default button's hover fill, label and hovered and pressed frame and the plain button's pressed fill (button_active); its rest fill and frame are geometry::default_button_rest's, refined after geometry::button")
+}
+
 /// The variant line of a Ghost Button built with
 /// `native_theme_gpui::variants::ghost_button`.
 fn ghost_variant(info: WidgetInfo) -> WidgetInfo {

@@ -39,6 +39,37 @@ pub const HOW: &[(&str, &str, &str)] = &[
         "button.hover_border_color",
         "not reachable: a selected Button takes no hover or press style, so the toggle that is on draws no hover border (gpui-component/button/button.rs, RenderOnce for Button)",
     ),
+    // --- button: a dialog's default button, variants::default_button ----------
+    (
+        "basic.buttons.dialog_default",
+        "button.default_button_background",
+        "gpui: geometry::default_button_rest's bg at rest, after geometry::button, and variants::default_button's hover fill; where unstated the Button is .primary(), ThemeColor primary",
+    ),
+    (
+        "basic.buttons.dialog_default",
+        "button.default_button_text_color",
+        "gpui: variants::default_button's foreground, in every state; where unstated the Primary Button's button_primary_foreground",
+    ),
+    (
+        "basic.buttons.dialog_default",
+        "button.default_button_border_color",
+        "gpui: geometry::default_button_rest's border colour at rest, after geometry::button; under the pointer and pressed variants::default_button's color, button.hover_border_color where stated",
+    ),
+    (
+        "basic.buttons.dialog_default",
+        "button.hover_border_color",
+        "gpui: variants::default_button's color, the border under the pointer and pressed, where the theme states button.default_button_background; elsewhere the Button is .primary(), whose hover and press border is the primary token (gpui-component 0.10.0 button/button.rs:1104, primary) and whose rest border is geometry::button's button.border.color (native-theme-gpui/geometry.rs:230, border_color)",
+    ),
+    (
+        "basic.buttons.dialog_default",
+        "button.font.color",
+        "gpui: variants::default_button_states's label where the theme states button.default_button_background and no button.default_button_text_color, the variant's foreground in every state; elsewhere the Button is .primary(), lettered in ThemeColor button_primary_foreground (gpui-component 0.10.0 button/button.rs:1055, button_primary_foreground)",
+    ),
+    (
+        "basic.buttons.dialog_default",
+        "button.active_background",
+        "gpui: variants::default_button's active, ThemeColor button_active (colors.rs), the pressed fill, where the theme states button.default_button_background; elsewhere the Button is .primary(), pressed in ThemeColor button_primary_active (gpui-component 0.10.0 button/button.rs:1271, button_primary_active), which the connector sets to primary_active, a shade of primary (colors.rs)",
+    ),
     // --- button: the Basic page's buttons, variants::bordered_button -----------
     (
         "basic.buttons.default",

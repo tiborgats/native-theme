@@ -402,6 +402,7 @@ test over every preset and mode says so.
 | `button_checked` | `button.checked_background` (or `button.active_background`), `button.checked_text_color` (or `button.active_text_color`) | a toggle `Button` that is on (`selected(true)`), after `button`. A colour, where no `ThemeColor` field maps; with neither fill stated, upstream's selected fill stands |
 | `toolbar_button_rest` | where `toolbar.button_hover_border_color` is stated: a transparent fill and border, `button.border.line_width` wide, and each stated side of `button.border.padding` less that width | a toolbar `Button` built on `variants::toolbar_button`, padded with `button.border.padding`: hides the outline colour at rest and keeps the button's size; nothing where the theme states no outline |
 | `toolbar_button_checked` | `toolbar.button_checked_background` (or `toolbar.button_active_background`, else `button.active_background`), `button.checked_text_color` (or `button.active_text_color`) where the checked fill is stated | a toolbar `Button` that is on (`selected(true)`), built on `variants::toolbar_button`, after `toolbar_button_rest`. A colour, where no `ThemeColor` field maps: a custom variant fills a selected Button with its pressed colour and letters every state in its one foreground; with no checked fill stated the text is that foreground, and with none of the three fills the refinement sets nothing |
+| `default_button_rest` | where `button.default_button_background` is stated: that fill, and a border in `button.default_button_border_color` (or `button.border.color`) | a dialog's default `Button` built on `variants::default_button`, after `button`, enabled only (a disabled one takes `button_disabled` instead). A colour, where no `ThemeColor` field maps: the variant's own rest fill is a fifth of its border colour; nothing where the theme states no fill, and the Button is `.primary()` |
 | `link` | `link.underline_enabled`, `link.font`, `link.background_color`, `defaults.line_height` | `Link`: where the platform draws links without an underline, a zero-thickness underline in place of upstream's resting one. The colour is `ThemeColor::link` (`link.font.color`) |
 | `menu_item` | `menu.row_height` (where stated), `menu.border.padding` (the stated sides), `menu.icon_text_gap`, `menu.font`, `defaults.line_height` | a menu row the application draws with its own elements — gpui-component's own `MenuItemElement` is crate-private and `PopupMenu` builds its rows itself, so no upstream widget takes this style |
 | `list_item` | `list.row_height` (where stated), `list.border.padding` (the stated sides), `list.item_font`, `defaults.line_height` | `ListItem` |
@@ -512,6 +513,38 @@ let button = match cx.native() {
         None => button.refine_style(&geometry::button(n)),
     },
     None => button,
+};
+# }
+```
+
+`variants::default_button(n, cx)` gives a dialog's default button the
+platform's own look where the theme states one (KDE's tinted fill and frame),
+and is `None` where the default button is the primary one, which the caller
+then builds with `.primary()`. The variant's own rest fill is a fifth of its
+border colour, so the caller gives the rest look after `geometry::button` with
+the refinement `geometry::default_button_rest(n)`, the theme's fill and frame,
+which is `Some` exactly where `default_button` is; a disabled default button
+takes `geometry::button_disabled` instead. A plain `Dialog`'s footer is yours
+(`Dialog::footer`), so the button goes there; an `AlertDialog`'s default footer
+builds its OK button from a `ButtonVariant` alone, so it keeps the primary
+button.
+
+```rust,no_run
+use gpui_kit::component::button::{Button, ButtonVariants as _};
+use gpui_kit::component::StyledExt as _;
+use native_theme_gpui::{ActiveNativeTheme as _, geometry, variants};
+
+# fn f(cx: &gpui_kit::App) {
+let button = Button::new("ok");
+let button = match cx.native() {
+    Some(n) => match (variants::default_button(n, cx), geometry::default_button_rest(n)) {
+        (Some(v), Some(rest)) => button
+            .custom(v)
+            .refine_style(&geometry::button(n))
+            .refine_style(&rest),
+        _ => button.primary().refine_style(&geometry::button(n)),
+    },
+    None => button.primary(),
 };
 # }
 ```

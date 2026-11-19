@@ -5946,6 +5946,7 @@ fn the_basic_page_holds_every_group_in_its_column(cx: &mut TestAppContext) {
         "basic-textarea",
         "basic-toggle-off",
         "basic-toggle-on",
+        "basic-button-dialog-default",
         "basic-input-focused",
         "basic-select",
         "basic-type-body",

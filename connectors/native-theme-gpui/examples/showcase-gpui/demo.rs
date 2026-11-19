@@ -9553,6 +9553,66 @@ pub(crate) fn toggle_button(
         .debug_selector(move || id.into())
 }
 
+/// A dialog's default button, the one Enter activates, reading `label`.
+/// Where the theme gives it a look of its own (`variants::default_button`),
+/// a Button on that custom variant, refined by `geometry::button` and then
+/// by `geometry::default_button_rest`, its rest fill and frame, which the
+/// variant does not give (its own rest fill is a fifth of its border
+/// colour, button/button.rs, `ButtonVariant::bg_color`); elsewhere the
+/// primary Button, refined by `geometry::button` alone, as macOS and
+/// Windows draw it.
+pub(crate) fn dialog_default_button(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    label: &'static str,
+) -> Stateful<Div> {
+    let native = cx.native();
+    let own = native.and_then(|n| {
+        let variant = variants::default_button(n, cx)?;
+        let rest = geometry::default_button_rest(n)?;
+        Some((n, variant, rest))
+    });
+    let (button, button_info) = match own {
+        Some((n, variant, rest)) => {
+            let mut button_info = info::buttons::dialog_default(cx.theme(), &n.resolved.button);
+            let button = native_info(
+                Button::new(id).custom(variant),
+                cx,
+                geometry::button,
+                "button",
+                &mut button_info,
+            );
+            (
+                refined(button, Some(&rest)),
+                button_info.geometry("default_button_rest"),
+            )
+        }
+        None => {
+            let native_button = native.as_ref().map(|n| &n.resolved.button);
+            let mut button_info = info::buttons::button(
+                cx.theme(),
+                ButtonKind::Primary,
+                ButtonState::Idle,
+                false,
+                false,
+                None,
+                native_button,
+            );
+            let button = native_info(
+                Button::new(id).primary(),
+                cx,
+                geometry::button,
+                "button",
+                &mut button_info,
+            );
+            (button, button_info)
+        }
+    };
+    InfoExt::info(labelled(ui, cx, button, id, label), ui, id, button_info)
+        .debug_selector(move || id.into())
+}
+
 /// One of the Basic page's icon buttons.
 pub(crate) struct IconButton<'a> {
     pub id: &'static str,

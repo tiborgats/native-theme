@@ -455,6 +455,12 @@ impl Showcase {
                     row()
                         .child(button(TOGGLE_OFF))
                         .child(demo::toggle_button(ui, cx, "basic-toggle-on", "On"))
+                        .child(demo::dialog_default_button(
+                            ui,
+                            cx,
+                            "basic-button-dialog-default",
+                            "OK",
+                        ))
                         .into_any_element(),
                 ],
             ),

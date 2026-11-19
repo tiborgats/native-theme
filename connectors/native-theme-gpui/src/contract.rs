@@ -2886,6 +2886,7 @@ fn sinks(r: &ResolvedTheme, is_dark: bool) -> std::collections::BTreeMap<String,
         ("icon_size_dialog", show(&gm::icon_size_dialog(n))),
         ("icon_size_panel", show(&gm::icon_size_panel(n))),
         ("dialog_max_width", show(&gm::dialog_max_width(n))),
+        ("default_button_rest", show(&gm::default_button_rest(n))),
     ] {
         out.insert(format!("geometry::{name}"), value);
     }
@@ -2896,6 +2897,10 @@ fn sinks(r: &ResolvedTheme, is_dark: bool) -> std::collections::BTreeMap<String,
     out.insert(
         "variants::toolbar_button_states".to_owned(),
         format!("{:?}", crate::variants::toolbar_button_states(n)),
+    );
+    out.insert(
+        "variants::default_button_states".to_owned(),
+        format!("{:?}", crate::variants::default_button_states(n)),
     );
 
     use crate::widgets::{

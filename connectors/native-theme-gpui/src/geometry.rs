@@ -1474,6 +1474,29 @@ pub fn toolbar_button_checked(n: Native<'_>) -> StyleRefinement {
     }
 }
 
+/// The rest look of a dialog's default Button where the theme gives it one
+/// of its own (`button.default_button_background`, KDE): that fill, and a
+/// border in `button.default_button_border_color`, else `button.border.color`
+/// (docs/platform-facts.md §2.3). `None` where the theme states no fill: the
+/// default button is then the primary one, `.primary()`. Apply it after
+/// [`button`], which sets the border's width, over
+/// [`variants::default_button`](crate::variants::default_button): upstream applies the refinement at rest,
+/// under the variant's hover and press styles. An enabled Button only: a
+/// disabled one takes [`button_disabled`] instead, since upstream replays a
+/// refinement in the disabled state too and [`button_disabled`] sets no
+/// border colour, so this frame would stand there.
+#[must_use]
+pub fn default_button_rest(n: Native<'_>) -> Option<StyleRefinement> {
+    let b = &n.resolved.button;
+    let fill = b.default_button_background?;
+    let frame = b.default_button_border_color.unwrap_or(b.border.color);
+    Some(
+        StyleRefinement::default()
+            .bg(rgba_to_hsla(fill))
+            .border_color(rgba_to_hsla(frame)),
+    )
+}
+
 /// The text colour of a selected `ListItem` (`ListItem::selected(true)`):
 /// `list.selection_text_color`. Apply it after [`list_item`], to a selected
 /// row only.
@@ -2438,6 +2461,51 @@ mod tests {
         assert!(
             outlined > 0,
             "no preset states the outline, so this proves nothing"
+        );
+    }
+
+    /// `default_button_rest` is the stated fill and frame: under kde-breeze
+    /// light #d6ecf8 framed #87c0dd; with `button.default_button_border_color`
+    /// cleared, the frame is `button.border.color`; under adwaita light, which
+    /// states no fill, it is `None`.
+    #[test]
+    fn default_button_rest_is_the_stated_fill_and_frame() {
+        use native_theme::color::Rgba;
+        let mut r = resolved("kde-breeze", ColorMode::Light);
+        let out = default_button_rest(Native::unscaled(&r));
+        assert!(out.is_some(), "kde-breeze light states the fill");
+        let Some(out) = out else {
+            return;
+        };
+        assert_eq!(
+            out.background,
+            Some(rgba_to_hsla(Rgba::rgb(0xd6, 0xec, 0xf8)).into()),
+            "kde-breeze light: fill"
+        );
+        assert_eq!(
+            out.border_color,
+            Some(rgba_to_hsla(Rgba::rgb(0x87, 0xc0, 0xdd))),
+            "kde-breeze light: frame"
+        );
+
+        assert_ne!(
+            r.button.default_button_border_color,
+            Some(r.button.border.color),
+            "kde-breeze's frame is its border colour, so the fallback proves nothing"
+        );
+        r.button.default_button_border_color = None;
+        assert_eq!(
+            default_button_rest(Native::unscaled(&r)).and_then(|out| out.border_color),
+            Some(rgba_to_hsla(r.button.border.color)),
+            "kde-breeze light with button.default_button_border_color cleared"
+        );
+
+        let r = resolved("adwaita", ColorMode::Light);
+        assert_eq!(r.button.default_button_background, None);
+        assert_eq!(
+            default_button_rest(Native::unscaled(&r)),
+            None,
+            "adwaita light"
         );
     }
 

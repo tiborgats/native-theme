@@ -5161,6 +5161,299 @@ fn bordered_button_matches_the_default_button_but_its_hover_border(cx: &mut Test
     );
 }
 
+/// A dialog's default button as `variants::default_button` says a caller
+/// builds it, reading "OK": over `geometry::button`, enabled with
+/// `geometry::default_button_rest` and disabled with
+/// `geometry::button_disabled` in its place, beside a Default Button built
+/// disabled the same way. Nothing is drawn where no native theme is
+/// installed or it gives the default button no look of its own.
+fn default_button_window(disabled: bool) -> Build {
+    use crate::ActiveNativeTheme as _;
+    use gpui_component::button::{Button, ButtonVariants as _};
+    use gpui_component::{Disableable as _, StyledExt as _};
+    Box::new(move |_, cx| {
+        let Some(n) = cx.native() else {
+            return div().into_any_element();
+        };
+        let (Some(variant), Some(rest)) = (
+            crate::variants::default_button(n, cx),
+            crate::geometry::default_button_rest(n),
+        ) else {
+            return div().into_any_element();
+        };
+        let label = || {
+            div()
+                .min_w_0()
+                .whitespace_nowrap()
+                .text_ellipsis()
+                .refine_style(&crate::geometry::button_label(n))
+                .child("OK")
+        };
+        let default = Button::new("dialog-default")
+            .debug_selector(|| "dialog-default-button".into())
+            .custom(variant)
+            .refine_style(&crate::geometry::button(n));
+        let root = div().pt(px(40.)).pl(px(20.)).flex().flex_col().gap(px(40.));
+        if disabled {
+            let plain = Button::new("plain")
+                .debug_selector(|| "plain-button".into())
+                .refine_style(&crate::geometry::button(n))
+                .disabled(true)
+                .refine_style(&crate::geometry::button_disabled(n));
+            let default = default
+                .disabled(true)
+                .refine_style(&crate::geometry::button_disabled(n));
+            root.child(plain.child(label()).accessibility_label("OK"))
+                .child(default.child(label()).accessibility_label("OK"))
+                .into_any_element()
+        } else {
+            root.child(
+                default
+                    .refine_style(&rest)
+                    .child(label())
+                    .accessibility_label("OK"),
+            )
+            .into_any_element()
+        }
+    })
+}
+
+/// docs/todo_v0.7.2_kde-open-items-steps6-7-spec.md, 6.D.4: the default
+/// button built from `variants::default_button` and
+/// `geometry::default_button_rest` draws Breeze's default button under
+/// kde-breeze light and dark. At rest the stated fill and frame; hovered the
+/// fill with `button.hover_border_color`; pressed the `button_active` token,
+/// `button.active_background`, with that frame; disabled what a Default
+/// Button with `geometry::button_disabled` draws; the label by value. Every
+/// compared item must be equal.
+#[gpui::test]
+fn default_button_matches_breezes_default_button(cx: &mut TestAppContext) {
+    use gpui_component::ActiveTheme as _;
+    use gpui_component::button::ButtonCustomVariant;
+    use native_theme::color::Rgba;
+    // kde-breeze's default button as the preset states it, (fill, frame,
+    // label), and its pressed fill, `button.active_background`.
+    let breeze = [
+        (
+            ColorMode::Light,
+            [
+                Rgba::rgb(0xd6, 0xec, 0xf8),
+                Rgba::rgb(0x87, 0xc0, 0xdd),
+                Rgba::rgb(0x23, 0x26, 0x29),
+            ],
+            Rgba::rgb(0xc3, 0xe5, 0xf6),
+        ),
+        (
+            ColorMode::Dark,
+            [
+                Rgba::rgb(0x2d, 0x46, 0x55),
+                Rgba::rgb(0x48, 0x82, 0xa1),
+                Rgba::rgb(0xfc, 0xfc, 0xfc),
+            ],
+            Rgba::rgb(0x2f, 0x53, 0x68),
+        ),
+    ];
+    let away = point(px(500.), px(400.));
+    let (default_sel, plain_sel) = ("dialog-default-button", "plain-button");
+    let mut unexpected: Vec<String> = Vec::new();
+    for (mode, look, pressed_fill) in breeze {
+        let combo = format!("kde-breeze {mode:?}");
+        let r = resolved("kde-breeze", mode);
+        let b = &r.button;
+        let stated = [
+            b.default_button_background,
+            b.default_button_border_color,
+            b.default_button_text_color,
+        ];
+        if stated != look.map(Some) {
+            unexpected.push(format!(
+                "{combo}: the preset's (default_button_background, default_button_border_color, default_button_text_color) are {stated:?}, not Breeze's {look:?}"
+            ));
+            continue;
+        }
+        if b.active_background != Some(pressed_fill) {
+            unexpected.push(format!(
+                "{combo}: button.active_background is {:?}, not Breeze's {pressed_fill:?}",
+                b.active_background
+            ));
+            continue;
+        }
+        let Some(hover_frame) = b.hover_border_color.map(c) else {
+            unexpected.push(format!(
+                "{combo}: button.hover_border_color is not stated on the resolved theme"
+            ));
+            continue;
+        };
+        let [fill, frame, label] = look.map(c);
+
+        let vcx = window_with(cx, Some(("kde-breeze", mode)), default_button_window(false));
+        vcx.simulate_mouse_move(away, None, Modifiers::default());
+        redraw(vcx);
+        let read = vcx.update(|_, cx| {
+            use crate::ActiveNativeTheme as _;
+            let n = cx.native()?;
+            let theme = cx.theme();
+            let want = ButtonCustomVariant::new(cx)
+                .color(hover_frame)
+                .foreground(label)
+                .hover(fill)
+                .active(theme.button_active)
+                .shadow(false);
+            let got = crate::variants::default_button(n, cx);
+            let other = want.foreground(theme.muted_foreground);
+            Some((
+                theme.button_active,
+                got == Some(want),
+                theme.muted_foreground == label || got != Some(other),
+            ))
+        });
+        let Some((active, variant_ok, label_distinct)) = read else {
+            unexpected.push(format!("{combo}: no native theme installed"));
+            continue;
+        };
+        println!(
+            "{combo} | fill={} frame={} label={} | hover_border_color={} | button_active={}",
+            hex(rgba8(fill)),
+            hex(rgba8(frame)),
+            hex(rgba8(label)),
+            hex(rgba8(hover_frame)),
+            hex(rgba8(active))
+        );
+        if active != c(pressed_fill) {
+            unexpected.push(format!(
+                "{combo}: the button_active token is {}, not button.active_background {}",
+                hex(rgba8(active)),
+                hex(rgba8(c(pressed_fill)))
+            ));
+        }
+        if !variant_ok {
+            unexpected.push(format!(
+                "{combo}: the variant is not color(hover_border_color).foreground(default_button_text_color).hover(default_button_background).active(button_active).shadow(false)"
+            ));
+        }
+        if !label_distinct {
+            unexpected.push(format!(
+                "{combo}: the foreground is not part of the variant's equality"
+            ));
+        }
+        let rest = button_quads(vcx, default_sel);
+        let (hovered, pressed) = hover_and_press(vcx, default_sel, away);
+        for (state, quads, want_fill, want_frame) in [
+            ("rest", &rest, fill, frame),
+            ("hovered", &hovered, fill, hover_frame),
+            ("pressed", &pressed, active, hover_frame),
+        ] {
+            let (own, near) = quads;
+            for (i, q) in own.iter().enumerate() {
+                println!("{combo} | {state:8} | own[{i}]  {}", q.line());
+            }
+            for (i, q) in near.iter().enumerate() {
+                println!("{combo} | {state:8} | near[{i}] {}", q.line());
+            }
+            let (want_fill, want_frame) = (hex(rgba8(want_fill)), hex(rgba8(want_frame)));
+            if !own.iter().any(|q| !has_border(q)) {
+                unexpected.push(format!(
+                    "{combo} | {state} | fill: expected {want_fill}, found no quad without a border"
+                ));
+            }
+            if !own.iter().any(has_border) {
+                unexpected.push(format!(
+                    "{combo} | {state} | border: expected {want_frame}, found no quad with a border"
+                ));
+            }
+            for (i, q) in own.iter().enumerate() {
+                if has_border(q) {
+                    if hex(q.border) != want_frame {
+                        unexpected.push(format!(
+                            "{combo} | {state} | own[{i}] border: expected {want_frame}, found {}",
+                            hex(q.border)
+                        ));
+                    }
+                    if !carries_border(q) {
+                        unexpected.push(format!(
+                            "{combo} | {state} | own[{i}] border quad filled {}, not its border colour at alpha 0",
+                            q.fill
+                        ));
+                    }
+                } else if q.fill != want_fill {
+                    unexpected.push(format!(
+                        "{combo} | {state} | own[{i}] fill: expected {want_fill}, found {}",
+                        q.fill
+                    ));
+                }
+            }
+        }
+
+        let vcx = window_with(cx, Some(("kde-breeze", mode)), default_button_window(true));
+        vcx.simulate_mouse_move(away, None, Modifiers::default());
+        redraw(vcx);
+        let plain = button_quads(vcx, plain_sel);
+        let default = button_quads(vcx, default_sel);
+        for (name, (own, near)) in [("plain", &plain), ("default", &default)] {
+            for (i, q) in own.iter().enumerate() {
+                println!("{combo} | disabled | {name:7} | own[{i}]  {}", q.line());
+            }
+            for (i, q) in near.iter().enumerate() {
+                println!("{combo} | disabled | {name:7} | near[{i}] {}", q.line());
+            }
+        }
+        if plain.0.is_empty() {
+            unexpected.push(format!(
+                "{combo} | disabled | the Default Button paints no quad of its own"
+            ));
+        }
+        for (part, pq, dq) in [
+            ("own", &plain.0, &default.0),
+            ("near", &plain.1, &default.1),
+        ] {
+            if pq.len() != dq.len() {
+                unexpected.push(format!(
+                    "{combo} | disabled | {part}: expected {} quads (Default), found {}",
+                    pq.len(),
+                    dq.len()
+                ));
+            }
+            for (i, (x, y)) in pq.iter().zip(dq.iter()).enumerate() {
+                let at = format!("{combo} | disabled | {part}[{i}]");
+                let mut item = |what: &str, want: String, found: String| {
+                    unexpected.push(format!(
+                        "{at} {what}: expected {want} (Default), found {found}"
+                    ));
+                };
+                if x.at != y.at {
+                    item("bounds", format!("{:?}", x.at), format!("{:?}", y.at));
+                }
+                if !(has_border(x) && has_border(y)) && x.fill != y.fill {
+                    item("fill", x.fill.clone(), y.fill.clone());
+                }
+                if x.widths != y.widths {
+                    item(
+                        "border widths",
+                        format!("{:?}", x.widths),
+                        format!("{:?}", y.widths),
+                    );
+                }
+                if x.radii != y.radii {
+                    item("radii", format!("{:?}", x.radii), format!("{:?}", y.radii));
+                }
+                if x.border != y.border {
+                    item("border colour", hex(x.border), hex(y.border));
+                }
+            }
+        }
+    }
+    println!("--- differing items ({}):", unexpected.len());
+    for line in &unexpected {
+        println!("{line}");
+    }
+    assert!(
+        unexpected.is_empty(),
+        "{} differing items:\n{}",
+        unexpected.len(),
+        unexpected.join("\n")
+    );
+}
+
 /// A child that records `window.text_style().color` when it renders, which is
 /// the moment gpui-component's `Icon` reads the colour it paints in where it
 /// states none of its own (gpui-component 0.10.0 `icon.rs:260-266`, through

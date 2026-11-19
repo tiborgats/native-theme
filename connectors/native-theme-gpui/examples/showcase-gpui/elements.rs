@@ -85,6 +85,10 @@ const LISTED: &[(&str, &str)] = &[
     ("basic-switch-disabled", "basic.switches.disabled"),
     ("basic-toggle-off", "basic.buttons.toggle_off"),
     ("basic-toggle-on", "basic.buttons.toggle_on"),
+    (
+        "basic-button-dialog-default",
+        "basic.buttons.dialog_default",
+    ),
     ("basic-heading-inputs", "basic.text_inputs.heading"),
     ("basic-input-placeholder", "basic.text_inputs.placeholder"),
     ("basic-input-filled", "basic.text_inputs.filled"),
@@ -274,6 +278,10 @@ const LABELS: &[(&str, &str)] = &[
     ("basic-button-tooltip", "basic.buttons.tooltip.label"),
     ("basic-toggle-off", "basic.buttons.toggle_off.label"),
     ("basic-toggle-on", "basic.buttons.toggle_on.label"),
+    (
+        "basic-button-dialog-default",
+        "basic.buttons.dialog_default.label",
+    ),
 ];
 
 /// The element of the list the label of the Button `button_id` is.
