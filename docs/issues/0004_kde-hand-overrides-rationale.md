@@ -882,6 +882,10 @@ choice.
 
 ### 5.2 The default button
 
+*Settled by `0004_kde-open-items-rationale.md` D8 (0.7.2): the default button has
+fields of its own, which kde-breeze and the KDE reader state; the primary pair keeps
+the accent.*
+
 Breeze fills the default button of an active window with `mix(Button,
 Highlight, 0.2)` (#d6ecf8 / #2d4655, measured) under the ordinary button text
 (`breezehelper.cpp:700-702`). The facts say "← accent", and

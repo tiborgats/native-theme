@@ -620,6 +620,17 @@ cannot tell which file a bare number continues, so it does not look for one.
       native-theme does not (issue #4)*, "The selection of a view without the focus";
       this entry keeps the macOS research.
 
+### Model: the accent a control is filled with
+
+- [ ] [1.0] D8 of `docs/issues/0004_kde-open-items-rationale.md` found no field that
+      is, on every platform, the colour a control is filled with when it is accented:
+      `defaults.accent_color` is the raw accent on Windows, where controls take another
+      shade (windows-11 #0078d4 against #0067c0 / #4cc2ff for the primary button and the
+      checked check box), and the check box's checked fill is a tint on KDE (#c2e4f6).
+      gpui-component reads its `primary` token as that colour in thirteen widget files,
+      and the connector fills it from `button.primary_background`. A field for it would
+      let `primary` follow it rather than the primary button.
+
 ### Presets: colours with no reproducible source
 
 - [ ] [1.0] These preset colours are reproduced by no platform computation, and
@@ -2042,23 +2053,17 @@ offscreen, `docs/evidence/breeze-offscreen/2026-11-13/`.
       `toolbar.button_*` (D7 of `docs/issues/0004_kde-open-items-rationale.md`). gpui
       draws no hover outline over a checked toolbar button: gpui-component's hover style
       returns early on a selected button (gpui-component 0.10.0 `button/button.rs:754-760`).
+      *Issue #4, open items step 6 (0.7.2, 2026-11-19, 836619cd):* Breeze tints a dialog's
+      default button only in an active window (breezehelper.cpp:700-702 at breeze
+      f0b1d75, `isActiveWindow && defaultButton`; the parked facts'
+      `docs/facts/kde/button.toml:1342` on `v0.8.0-rc1` at `78ee0efd`); the model's
+      `button.default_button_*` fields hold the active look, and the connectors draw it
+      whatever the window's state.
 - [ ] [v0.7.x] **KDE values that wait for a connector design.** Each facts row below is
       corrected in 0.7.1; kde-breeze and the reader keep their present values, which
       disagree with it, until the readers named can take the platform's value without
       another surface losing. (1) **The focus ring**: done in 0.7.2 (below).
-      (2) **The default button**, `docs/platform-facts.md:1188-1189`: Breeze fills the
-      active window's default button with `mix(Button, Highlight, 0.2)`, #d6ecf8 /
-      #2d4655, outlined #87c0dd / #4882a1, under the ordinary `ButtonText`, #232629 /
-      #fcfcfc (measured); `button.primary_background` and `primary_text_color` inherit
-      the accent pair, #3daee9 under #ffffff / #fcfcfc. It waits because gpui's
-      `primary` and `primary_foreground` tokens
-      (`connectors/native-theme-gpui/src/colors.rs:203-204`), which gpui-component's
-      widgets use as the theme's accent, and egui's selection fill
-      (`connectors/native-theme-egui/src/style/roles.rs:229`) read the two fields: one
-      button per dialog would gain, and every accent-coloured gpui-component widget and
-      every egui selection would turn pale. First the connectors stop reading the
-      primary button's fill as the accent. The model has no field for the default
-      button's outline.
+      (2) **The default button**: done in 0.7.2 (below).
       (3) **The menu panel's colour** and (4) **the table's grid**: done in 0.7.1
       (below).
       (5) **The menu item's radius, padding and icon gap**,
@@ -2097,6 +2102,12 @@ offscreen, `docs/evidence/breeze-offscreen/2026-11-13/`.
       the iced and egui connectors and the gpui connector's own controls draw it after
       a key, and the gpui connector draws gpui-component's band only for a focus
       that followed a key.
+      *Issue #4, open items step 6 (0.7.2, 2026-11-19, 836619cd):* (2) done
+      (`docs/issues/0004_kde-open-items-rationale.md` D8):
+      `button.default_button_background`, `_text_color`, `_border_color`, stated by
+      kde-breeze (`kde-breeze.toml` `[light.button] default_button_background`,
+      `[dark.button] default_button_background`) and the KDE reader; iced
+      `styles::button_default`, egui `default_button`, gpui `variants::default_button`.
 - [ ] [v0.7.x] **Qt Quick's menu fill, for the facts.** `docs/platform-facts.md`
       §2.6's KDE `background_color` cell states a Qt Widgets menu's panel, `mix(Window, Base, 0.3)`, which kde-breeze and
       the KDE reader follow since 0.7.1, and marks Qt Quick's as not read. Read and

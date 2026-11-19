@@ -71,11 +71,11 @@ Windows.
 
 - **`Theme`** — the sparse, TOML-shaped definition a preset or file loads. Fields are `Option<T>` because presets may omit almost anything.
 - **`ResolvedTheme`** — the resolved variant (`.variant` of what `Theme::resolve(mode)` returns). Your UI code reads from this. Every font has a value, and so does every colour and size the model requires. The rest are `Option`s, which a theme, a bundled preset included, may leave `None`:
-  - 42 colours, most of them state shades such as `checkbox.hover_background`;
+  - 45 colours, most of them state shades such as `checkbox.hover_background`;
   - the sizes the model treats as optional (padding sides, menu and list row heights, the list header height, toolbar height and item gap, tab item gap and active-indicator width, combobox arrow width, expander arrow gap and content indent, the checkbox's radio indicator width, radio dot diameter and check-mark stroke width, the switch's unchecked thumb diameter), the tooltip show delay, the dialog entrance, the caret's blink, the expander's arrow side and frame, and the tab's active-indicator side: where one is `None`, the toolkit's own value applies;
   - `tab.active_outward_corner_radius`: where it is `None`, the selected tab's feet are square;
   - `defaults.focus_ring_keyboard_only`: where it is `None`, a connector draws the focus ring on any focus;
-  - the switch's track and thumb outlines, their colours (five of the 42) and widths: where they are `None`, no outline is drawn, and a disabled track outline's colour left `None` takes the enabled one.
+  - the switch's track and thumb outlines, their colours (five of the 45) and widths: where they are `None`, no outline is drawn, and a disabled track outline's colour left `None` takes the enabled one.
 - **Preset** — a named, bundled theme (e.g. `catppuccin-mocha`, `kde-breeze`, `macos-monterey`). Load with `Theme::preset("name")`.
 - **Connector** — a small crate that maps `ResolvedTheme` onto a GUI framework's native theming system. You depend on one of these.
 
