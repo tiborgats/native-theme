@@ -11396,7 +11396,11 @@ fn each_family_of_the_stack_is_named_where_it_is_drawn() {
 /// The showcase's copy of gpui's fallback stack (`inspector::GPUI_FALLBACK_STACK`) is each
 /// core's, at the lines its doc cites: gpui-pre 0.3.12 `src/text_system.rs:261-272`, gpui-fast
 /// 0.1.16 `:262-273`, read from the sources `cargo metadata` names. The field is private in
-/// both, so the source is the only place to read it whole.
+/// both, so the source is the only place to read it whole. Each core is found by its name,
+/// at whatever version the lockfile holds: the cited lines are read there, so a compatibility
+/// run on a newer release (`scripts/update_compatibility.sh run`) checks the copy against the
+/// source it builds, and fails, asking for the lines to be cited again, where that release
+/// moved them.
 #[test]
 fn the_fallback_stack_copy_is_gpuis() {
     use crate::inspector::GPUI_FALLBACK_STACK;
@@ -11418,44 +11422,46 @@ fn the_fallback_stack_copy_is_gpuis() {
         ("gpui-pre", "0.3.12", 261, 272),
         ("gpui-fast", "0.1.16", 262, 273),
     ] {
-        let manifest = packages
+        let held: Vec<(&str, &str)> = packages
             .iter()
-            .find(|p| p["name"] == core && p["version"] == version)
-            .and_then(|p| p["manifest_path"].as_str())
-            .unwrap_or_else(|| {
-                panic!(
-                    "{core} {version} is not in the cargo metadata: re-cite the fallback-stack \
-                     lines, in inspector::GPUI_FALLBACK_STACK's doc and this test's table and \
-                     doc, at the gpui-pre and gpui-fast versions Cargo.lock now holds"
-                )
-            });
-        let source = std::path::Path::new(manifest)
-            .with_file_name("src")
-            .join("text_system.rs");
-        let text = std::fs::read_to_string(&source).expect("the core's text_system.rs reads");
-        let lines: Vec<&str> = text.lines().collect();
-        let cited: Vec<String> = lines[first - 1..last]
-            .iter()
-            .filter_map(|line| {
-                let start = line.find("font(\"")? + "font(\"".len();
-                let end = line[start..].find('"')? + start;
-                Some(line[start..end].to_string())
-            })
+            .filter(|p| p["name"] == core)
+            .filter_map(|p| Some((p["version"].as_str()?, p["manifest_path"].as_str()?)))
             .collect();
-        assert_eq!(
-            cited, GPUI_FALLBACK_STACK,
-            "{core} {version} src/text_system.rs:{first}-{last}"
-        );
-        assert!(
-            lines[first - 1].contains("fallback_font_stack: smallvec!["),
-            "{core} {version}: :{first} does not start the stack: {}",
-            lines[first - 1]
-        );
-        assert!(
-            lines[last].trim() == "],",
-            "{core} {version}: the line after :{last} does not end the stack: {}",
-            lines[last]
-        );
+        assert!(!held.is_empty(), "{core} is not in the cargo metadata");
+        for (held_version, manifest) in held {
+            let source = std::path::Path::new(manifest)
+                .with_file_name("src")
+                .join("text_system.rs");
+            let text = std::fs::read_to_string(&source).unwrap_or_default();
+            assert!(!text.is_empty(), "{} does not read", source.display());
+            let lines: Vec<&str> = text.lines().collect();
+            let at = format!(
+                "{core} {held_version} src/text_system.rs:{first}-{last} (cited at {version}); \
+                 where a release moved the lines, re-cite them in \
+                 inspector::GPUI_FALLBACK_STACK's doc and this test's table and doc"
+            );
+            let cited: Vec<String> = lines
+                .get(first - 1..last)
+                .unwrap_or_default()
+                .iter()
+                .filter_map(|line| {
+                    let start = line.find("font(\"")? + "font(\"".len();
+                    let end = line[start..].find('"')? + start;
+                    Some(line[start..end].to_string())
+                })
+                .collect();
+            assert_eq!(cited, GPUI_FALLBACK_STACK, "{at}");
+            let opening = lines.get(first - 1).copied().unwrap_or_default();
+            assert!(
+                opening.contains("fallback_font_stack: smallvec!["),
+                "{at}: :{first} does not start the stack: {opening}"
+            );
+            let closing = lines.get(last).copied().unwrap_or_default();
+            assert!(
+                closing.trim() == "],",
+                "{at}: the line after :{last} does not end the stack: {closing}"
+            );
+        }
     }
 }
 
