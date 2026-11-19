@@ -46,3 +46,21 @@ the configuration the run read.
 | [`2026-11-18/`](breeze-offscreen/2026-11-18/) | 2026-11-18 | decision 10 of the 0.7.2 KDE steps 4 and 5: a combo box's own frame closed and open, with the pointer away and over it (the pen and the fill) |
 
 A citation links the file and its line (`evidence/breeze-offscreen/2026-11-13/out_light.txt#L27`).
+
+## `widget-icons/`
+
+What the installed freedesktop icon themes and the bundled Lucide and Material sets give
+gpui-component's 106 `IconName`s through the gpui connector's lookup, at 16 and 24 px,
+whether a mask of one colour carries each, and how long the lookup takes beside the gpui
+showcase's own reload of its icons: the measurement before the connector's widget icons
+were built ([specification](../todo_v0.7.2_gpui-widget-icons-spec.md), Part C). Runs by
+hand, one directory per date, written by the gpui showcase's ignored test
+`widget_icons_listing`, which was removed once its run was recorded (commit `c89dfe85` holds
+it); each holds `listing.md`, a table, and a `README.md`. No drawing of
+an installed icon theme is kept: each icon is named, with its size, whether it is one colour
+and a hash of its bytes; the sheets of a run were read in the repository's `target/` and
+are not kept.
+
+| Run | Date | Why |
+|-----|------|-----|
+| [`2026-11-19/`](widget-icons/2026-11-19/) | 2026-11-19 | the seven stop conditions of the specification's C.5 |
