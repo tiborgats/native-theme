@@ -662,9 +662,15 @@ reason = "egui's takes the `Context`, the provider and an `IconKey`: the key car
 
 [[exception]]
 connector = ["iced", "egui"]
-name = ["icons::icon_name", "icons::lucide_name_for_gpui_icon", "icons::material_name_for_gpui_icon", "icons::freedesktop_name_for_gpui_icon", "icons::freedesktop_name_candidates", "icons::bundled_icon_to_image_source"]
+name = ["icons::icon_name", "icons::lucide_name_for_gpui_icon", "icons::material_name_for_gpui_icon", "icons::freedesktop_name_for_gpui_icon", "icons::freedesktop_name_candidates", "icons::bundled_icon_to_image_source", "icons::load_gpui_icon"]
 kind = "absent"
 reason = "they translate gpui-component's `IconName`, the icon vocabulary its widgets draw (`Icon::new`); iced and egui have no icon vocabulary of their own, so a bundled icon is an `IconData` like any other and takes the same call (the egui spec §4.7, mod `icons`)"
+
+[[exception]]
+connector = ["iced", "egui"]
+name = "icons::mask_drawable"
+kind = "absent"
+reason = "gpui draws an SVG by its path as a mask in one colour (gpui-pre src/svg_renderer.rs, render_alpha_mask), so an icon in several colours cannot be drawn that way; iced and egui draw an icon as an image in its own colours"
 
 [[exception]]
 connector = "egui"

@@ -637,8 +637,8 @@ pub fn freedesktop_name_candidates(icon: IconName) -> &'static [&'static str] {
         IconName::EyeOff => &["view-hidden", "view-conceal"],          // exact
         IconName::Frame => &["select-rectangular", "selection-mode"],  // close
         IconName::Heart => &["emblem-favorite", "starred"],            // close
-        IconName::Loader => &["process-working", "content-loading"],   // exact
-        IconName::LoaderCircle => &["process-working", "content-loading"], // exact
+        IconName::Loader => &["process-working-symbolic", "content-loading"], // exact: the symbolic name outright, so Breeze's strip of frames under the plain name is never found
+        IconName::LoaderCircle => &["process-working-symbolic", "content-loading"], // exact: as Loader
         IconName::MemoryStick => &["memory", "media-flash"], // approximate (GNOME) / exact (KDE: devices/64/memory.svg is a RAM module)
         IconName::Palette => &["palette", "color-select"],   // close
         IconName::PanelLeft => &["sidebar-expand-left", "sidebar-show"], // close
@@ -1187,6 +1187,252 @@ fn to_rgba(color: Hsla) -> native_theme::Rgba {
         (rgba.g.clamp(0.0, 1.0) * 255.0).round() as u8,
         (rgba.b.clamp(0.0, 1.0) * 255.0).round() as u8,
     )
+}
+
+/// What a caller of [`load_gpui_icon`] can draw. `Mask`: only an icon a mask
+/// of one colour carries as it is, which is how gpui draws an SVG by its path
+/// (gpui-pre `src/svg_renderer.rs`, `render_alpha_mask`), so the lookup passes
+/// over an icon in several colours and a raster for the next one the set's
+/// order comes to. `Any`: any icon the set has, for a caller that draws an
+/// image in its own colours too.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum IconUse {
+    /// Only an icon a mask of one colour carries as it is.
+    Mask,
+    /// Any icon the set has.
+    Any,
+}
+
+/// An icon [`load_gpui_icon`] found, with whether a mask carries it
+/// ([`mask_drawable`]): `Some(true)` an SVG that paints one colour,
+/// `Some(false)` an icon a mask cannot carry (pixels, several colours, nothing
+/// painted, an embedded image), `None` an SVG not judged, without the
+/// `svg-rasterize` feature.
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
+pub struct GpuiIcon {
+    /// The icon as its loader gave it.
+    pub data: IconData,
+    /// Whether a mask of one colour carries it ([`mask_drawable`]).
+    pub mask: Option<bool>,
+}
+
+/// The icon of `set` for gpui-component's `icon`: under Lucide and Material
+/// the bundled icon of the table's name ([`lucide_name_for_gpui_icon`],
+/// [`material_name_for_gpui_icon`]; `StarFill` has no Lucide name, `StarOff`
+/// no Material one); under Freedesktop, on Linux, the first of the entry's
+/// names ([`freedesktop_name_candidates`]) that `icon_theme` (else the
+/// system's icon theme) has, through
+/// [`FreedesktopLoader::any`](native_theme::icons::FreedesktopLoader::any), at
+/// `size` (else the loader's default) and with `color` given to a symbolic
+/// icon; `None` under every other set, and off Linux under Freedesktop. A
+/// set's own feature off (`lucide-icons`, `material-icons`, `system-icons`),
+/// its loader finds nothing, so neither does the lookup. `size` and `color`
+/// reach the freedesktop loader only: the bundled sets are scalable and
+/// coloured where they are drawn.
+///
+/// Under [`IconUse::Mask`] a freedesktop icon that [`mask_drawable`] does not
+/// judge `Some(true)` is passed over for the next one the loader's order comes
+/// to ([`FreedesktopLoader::load_where`](native_theme::icons::FreedesktopLoader::load_where)),
+/// and a bundled one gives `None`; under [`IconUse::Any`] the first icon found
+/// is served. The result's [`GpuiIcon::mask`] is the judgement.
+///
+/// This is the lookup the `WidgetIcons` handle serves gpui-component's widgets
+/// from, with `Some(16)`, no colour and `IconUse::Mask`; an application's own
+/// icons for the same names take their size and colour. Under SF Symbols and
+/// Segoe Fluent the connector has no table from a name to an icon, so there is
+/// none. Without `svg-rasterize` no SVG is judged, and `IconUse::Mask` finds
+/// none.
+#[must_use]
+pub fn load_gpui_icon(
+    icon: IconName,
+    set: IconSet,
+    icon_theme: Option<&str>,
+    size: Option<u32>,
+    color: Option<native_theme::Rgba>,
+    usage: IconUse,
+) -> Option<GpuiIcon> {
+    #[cfg(not(target_os = "linux"))]
+    let _ = (icon_theme, size, color);
+    let bundled = |data: Option<IconData>| {
+        let data = data?;
+        let mask = mask_drawable(&data);
+        (usage == IconUse::Any || mask == Some(true)).then_some(GpuiIcon { data, mask })
+    };
+    match set {
+        IconSet::Lucide => {
+            bundled(native_theme::icons::LucideLoader::new(lucide_name_for_gpui_icon(icon)?).load())
+        }
+        IconSet::Material => bundled(
+            native_theme::icons::MaterialLoader::new(material_name_for_gpui_icon(icon)?).load(),
+        ),
+        #[cfg(target_os = "linux")]
+        IconSet::Freedesktop => {
+            let mut loader =
+                native_theme::icons::FreedesktopLoader::any(freedesktop_name_candidates(icon))
+                    .color_opt(color);
+            if let Some(size) = size {
+                loader = loader.size(size);
+            }
+            if let Some(theme) = icon_theme {
+                loader = loader.theme(theme);
+            }
+            match usage {
+                IconUse::Any => {
+                    let data = loader.load()?;
+                    let mask = mask_drawable(&data);
+                    Some(GpuiIcon { data, mask })
+                }
+                IconUse::Mask => {
+                    let mut mask = None;
+                    let data = loader.load_where(|data| {
+                        mask = mask_drawable(data);
+                        mask == Some(true)
+                    })?;
+                    Some(GpuiIcon { data, mask })
+                }
+            }
+        }
+        _ => None,
+    }
+}
+
+/// Whether gpui's mask carries `data` as it is: an SVG counts as one colour
+/// where every pixel it paints, rasterised at 16 px by native-theme, has the
+/// same red, green and blue, whatever its alpha, within the rounding of
+/// antialiased edges; a symbolic icon with half-transparent parts is one
+/// colour, and so is one of a colour that is not grey, which gpui paints in
+/// the widget's colour, as it paints every icon. `Some(false)` for an SVG in
+/// several colours, one that paints nothing, one that embeds an image
+/// (native-theme's rasteriser does not draw it and gpui's does), and for
+/// pixels; `None` for an SVG without the `svg-rasterize` feature, which has no
+/// rasteriser to judge it. The test is by what the icon paints, not by its
+/// text: an icon may set its colours through a stylesheet, as Breeze's do. For
+/// an application that draws an icon it loaded itself (by a role, through
+/// `SystemTheme::icon` or a loader) as an `Icon`, a mask in the widget's text
+/// colour: where this is `Some(false)`, draw it with `gpui::img` instead, in
+/// its own colours (see [`to_image_source`]), or not at all where the widget
+/// takes an `Icon` alone. [`load_gpui_icon`] gives the same answer in
+/// [`GpuiIcon::mask`].
+#[must_use]
+pub fn mask_drawable(data: &IconData) -> Option<bool> {
+    match data {
+        IconData::Svg(bytes) => {
+            #[cfg(feature = "svg-rasterize")]
+            {
+                if embeds_image(bytes) {
+                    return Some(false);
+                }
+                let Ok(IconData::Rgba(rgba)) =
+                    native_theme::rasterize::rasterize_svg(bytes, ONE_COLOUR_TEST_SIZE)
+                else {
+                    return Some(false);
+                };
+                Some(one_colour_deviation(&rgba).is_some_and(|d| d <= ONE_COLOUR_TOLERANCE))
+            }
+            #[cfg(not(feature = "svg-rasterize"))]
+            {
+                let _ = bytes;
+                None
+            }
+        }
+        _ => Some(false),
+    }
+}
+
+/// The size [`mask_drawable`] rasterises an SVG at: the widget icons' lookup
+/// size.
+#[cfg(feature = "svg-rasterize")]
+const ONE_COLOUR_TEST_SIZE: u32 = 16;
+
+/// The largest deviation ([`one_colour_deviation`]) of a bundled Lucide or
+/// Material icon at [`ONE_COLOUR_TEST_SIZE`], as loaded and in each bundled
+/// preset's text colour, measured on 2026-11-19 with resvg 0.48.1 by
+/// `the_one_colour_tolerance_separates_the_bundled_sets_from_two_colours`: the
+/// rounding of antialiased edges, which a one-colour icon gives and a second
+/// colour exceeds.
+#[cfg(feature = "svg-rasterize")]
+const ONE_COLOUR_TOLERANCE: u32 = 492;
+
+/// Whether `svg` holds an element named `image` or `feImage`, with or without
+/// a namespace prefix: an image native-theme's rasteriser does not draw (it is
+/// built without resvg's `raster-images`), so only the text shows it. A
+/// mention inside a comment counts too.
+#[cfg(feature = "svg-rasterize")]
+fn embeds_image(svg: &[u8]) -> bool {
+    let is_name = |name: &[u8]| match name.split_first() {
+        Some((first, rest)) => {
+            let start = |b: u8| b.is_ascii_alphabetic() || b == b'_' || b >= 0x80;
+            start(*first)
+                && rest
+                    .iter()
+                    .all(|&b| start(b) || b.is_ascii_digit() || b == b'-' || b == b'.')
+        }
+        None => false,
+    };
+    svg.split(|&b| b == b'<').skip(1).any(|tag| {
+        let Some(end) = tag
+            .iter()
+            .position(|&b| b.is_ascii_whitespace() || b == b'/' || b == b'>')
+        else {
+            return false;
+        };
+        let Some((name, _)) = tag.split_at_checked(end) else {
+            return false;
+        };
+        let local = match name.iter().position(|&b| b == b':') {
+            Some(colon) => match name.split_at_checked(colon) {
+                Some((prefix, rest)) if is_name(prefix) => rest.strip_prefix(b":").unwrap_or(rest),
+                _ => return false,
+            },
+            None => name,
+        };
+        local == b"image" || local == b"feImage"
+    })
+}
+
+/// How far the pixels `rgba` paints stray from one colour: each painted pixel
+/// (alpha above 0) is compared with the reference, the first painted pixel of
+/// the greatest alpha `A`, by the largest over its red, green and blue of its
+/// alpha times the channel's difference, less the reference's rounding
+/// allowance `ρ` (`0` where `A` is 255, else `⌈255 / A⌉`: the rasteriser's
+/// division back from premultiplied values rounds a channel by up to that).
+/// The largest of these; `None` where no pixel is painted.
+#[cfg(feature = "svg-rasterize")]
+fn one_colour_deviation(rgba: &native_theme::icons::RgbaData) -> Option<u32> {
+    let painted = || {
+        rgba.data()
+            .as_chunks::<4>()
+            .0
+            .iter()
+            .filter(|&&[_, _, _, a]| a > 0)
+    };
+    let &[rr, rg, rb, ra] = painted().fold(None, |best: Option<&[u8; 4]>, pixel| {
+        let [_, _, _, a] = *pixel;
+        match best {
+            Some(&[_, _, _, best_a]) if best_a >= a => best,
+            _ => Some(pixel),
+        }
+    })?;
+    let allowance = if ra == 255 {
+        0
+    } else {
+        254u32
+            .saturating_add(u32::from(ra))
+            .checked_div(u32::from(ra))?
+    };
+    painted()
+        .map(|&[r, g, b, a]| {
+            [(r, rr), (g, rg), (b, rb)]
+                .into_iter()
+                .map(|(c, reference)| {
+                    u32::from(a)
+                        .saturating_mul(u32::from(c.abs_diff(reference)).saturating_sub(allowance))
+                })
+                .fold(0, u32::max)
+        })
+        .max()
 }
 
 #[cfg(test)]
@@ -2609,6 +2855,370 @@ mod tests {
             std::num::NonZeroU32::new(1000).expect("test constant"),
         );
     }
+
+    /// The resolved `defaults` of every bundled preset, light and dark.
+    #[cfg(feature = "svg-rasterize")]
+    fn preset_defaults() -> Vec<(String, native_theme::theme::ResolvedDefaults)> {
+        use native_theme::theme::{ColorMode, Theme};
+        let mut all = Vec::new();
+        for info in Theme::list_presets() {
+            for mode in [ColorMode::Light, ColorMode::Dark] {
+                let theme = Theme::preset(info.key).expect("a listed preset loads");
+                let Ok(variant) = theme.into_variant(mode) else {
+                    continue;
+                };
+                let resolved = variant
+                    .into_resolved(&native_theme::ResolutionContext::for_tests())
+                    .expect("resolved preset must validate");
+                all.push((format!("{} {mode:?}", info.key), resolved.defaults));
+            }
+        }
+        all
+    }
+
+    /// A colour as an SVG paint, `#rrggbb`.
+    #[cfg(any(
+        feature = "svg-rasterize",
+        all(target_os = "linux", feature = "system-icons")
+    ))]
+    pub(super) fn paint(color: native_theme::Rgba) -> String {
+        format!("#{:02x}{:02x}{:02x}", color.r, color.g, color.b)
+    }
+
+    /// [`one_colour_deviation`] of `svg` rasterised at
+    /// [`ONE_COLOUR_TEST_SIZE`]; `None` where it does not rasterise to pixels
+    /// or paints none.
+    #[cfg(feature = "svg-rasterize")]
+    fn deviation_of(svg: &[u8]) -> Option<u32> {
+        match native_theme::rasterize::rasterize_svg(svg, ONE_COLOUR_TEST_SIZE) {
+            Ok(IconData::Rgba(rgba)) => one_colour_deviation(&rgba),
+            _ => None,
+        }
+    }
+
+    /// An SVG of two equal rectangles side by side, in `left` and `right`.
+    #[cfg(any(
+        all(
+            feature = "svg-rasterize",
+            feature = "lucide-icons",
+            feature = "material-icons"
+        ),
+        all(target_os = "linux", feature = "system-icons")
+    ))]
+    pub(super) fn two_colours(left: native_theme::Rgba, right: native_theme::Rgba) -> String {
+        format!(
+            r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect x="0" y="0" width="8" height="16" fill="{}"/><rect x="8" y="0" width="8" height="16" fill="{}"/></svg>"#,
+            paint(left),
+            paint(right)
+        )
+    }
+
+    /// kde-breeze's resolved light text and accent colours.
+    #[cfg(any(
+        feature = "svg-rasterize",
+        all(target_os = "linux", feature = "system-icons")
+    ))]
+    pub(super) fn breeze_text_and_accent() -> (native_theme::Rgba, native_theme::Rgba) {
+        let defaults = native_theme::theme::Theme::preset("kde-breeze")
+            .expect("kde-breeze loads")
+            .into_variant(native_theme::theme::ColorMode::Light)
+            .expect("kde-breeze has a light variant")
+            .into_resolved(&native_theme::ResolutionContext::for_tests())
+            .expect("kde-breeze resolves")
+            .defaults;
+        (defaults.text_color, defaults.accent_color)
+    }
+
+    /// `ONE_COLOUR_TOLERANCE` is the largest deviation of the bundled Lucide
+    /// and Material icons, as loaded and in every preset's text colour, and
+    /// below a fixture of two colours; every bundled icon is judged one
+    /// colour (W6).
+    #[cfg(all(
+        feature = "svg-rasterize",
+        feature = "lucide-icons",
+        feature = "material-icons"
+    ))]
+    #[test]
+    fn the_one_colour_tolerance_separates_the_bundled_sets_from_two_colours() {
+        use native_theme::icons::{LucideLoader, MaterialLoader, colorize_monochrome_svg};
+        let colours: Vec<native_theme::Rgba> = preset_defaults()
+            .into_iter()
+            .map(|(_, defaults)| defaults.text_color)
+            .collect();
+        let mut largest = 0;
+        let mut not_one_colour = Vec::new();
+        for icon in ALL_ICON_NAMES {
+            let bundled = [
+                (
+                    "Lucide",
+                    lucide_name_for_gpui_icon(icon.clone())
+                        .and_then(|name| LucideLoader::new(name).load()),
+                ),
+                (
+                    "Material",
+                    material_name_for_gpui_icon(icon.clone())
+                        .and_then(|name| MaterialLoader::new(name).load()),
+                ),
+            ];
+            for (set, data) in bundled {
+                let Some(data) = data else {
+                    continue;
+                };
+                let IconData::Svg(svg) = &data else {
+                    not_one_colour.push(format!("{set} {}: not an SVG", variant_name(icon)));
+                    continue;
+                };
+                let mut forms = vec![("as loaded".to_string(), svg.to_vec())];
+                for colour in &colours {
+                    forms.push((paint(*colour), colorize_monochrome_svg(svg, *colour)));
+                }
+                for (form, svg) in forms {
+                    if let Some(deviation) = deviation_of(&svg) {
+                        largest = largest.max(deviation);
+                    }
+                    let judged = mask_drawable(&IconData::Svg(Cow::Owned(svg)));
+                    if judged != Some(true) {
+                        not_one_colour
+                            .push(format!("{set} {} {form}: {judged:?}", variant_name(icon)));
+                    }
+                }
+            }
+        }
+        let (text, accent) = breeze_text_and_accent();
+        let two = deviation_of(two_colours(text, accent).as_bytes())
+            .expect("the two-colour fixture paints");
+        eprintln!(
+            "M = {largest} (the bundled sets' largest deviation), F = {two} (the two-colour fixture's)"
+        );
+        assert!(
+            largest <= ONE_COLOUR_TOLERANCE,
+            "the bundled sets' largest deviation is {largest}, above ONE_COLOUR_TOLERANCE ({ONE_COLOUR_TOLERANCE}): \
+             a resvg or tiny-skia upgrade changes the rasteriser's rounding: re-derive \
+             ONE_COLOUR_TOLERANCE from the bundled sets by this test, writing the maximum it prints"
+        );
+        assert!(
+            ONE_COLOUR_TOLERANCE < two,
+            "ONE_COLOUR_TOLERANCE ({ONE_COLOUR_TOLERANCE}) does not separate the bundled sets from \
+             the two-colour fixture, whose deviation is {two}"
+        );
+        assert!(
+            not_one_colour.is_empty(),
+            "{} bundled icons are not judged one colour:\n  {}",
+            not_one_colour.len(),
+            not_one_colour.join("\n  ")
+        );
+    }
+
+    #[cfg(feature = "svg-rasterize")]
+    #[test]
+    fn a_half_transparent_part_keeps_an_icon_one_colour() {
+        let (text, _) = breeze_text_and_accent();
+        let colour = paint(text);
+        let svg = format!(
+            r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect x="1" y="1" width="6" height="14" fill="{colour}" fill-opacity="0.5"/><rect x="9" y="1" width="6" height="14" fill="{colour}"/></svg>"#
+        );
+        assert_eq!(
+            mask_drawable(&IconData::Svg(Cow::Owned(svg.into_bytes()))),
+            Some(true)
+        );
+    }
+
+    /// Where no pixel is opaque, the reference pixel comes back through the
+    /// rasteriser's division too, which the allowance covers.
+    #[cfg(feature = "svg-rasterize")]
+    #[test]
+    fn an_icon_with_no_opaque_part_is_one_colour() {
+        let mut wrong = Vec::new();
+        for (preset, defaults) in preset_defaults() {
+            let colour = paint(defaults.text_color);
+            let svg = format!(
+                r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="5" cy="5" r="3.5" fill="{colour}" opacity="0.5"/><line x1="8" y1="15" x2="15" y2="8" stroke="{colour}" stroke-width="1.5" opacity="0.5"/></svg>"#
+            );
+            let deviation = deviation_of(svg.as_bytes());
+            eprintln!("{preset} ({colour}): deviation {deviation:?}");
+            let judged = mask_drawable(&IconData::Svg(Cow::Owned(svg.into_bytes())));
+            if judged != Some(true) {
+                wrong.push(format!(
+                    "{preset} ({colour}): {judged:?}, deviation {deviation:?}"
+                ));
+            }
+        }
+        assert!(
+            wrong.is_empty(),
+            "an icon with no opaque part is not judged one colour (ONE_COLOUR_TOLERANCE {ONE_COLOUR_TOLERANCE}):\n  {}",
+            wrong.join("\n  ")
+        );
+    }
+
+    #[cfg(feature = "svg-rasterize")]
+    #[test]
+    fn an_svg_that_paints_nothing_is_not_drawable() {
+        let svg = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"></svg>"#;
+        assert_eq!(
+            mask_drawable(&IconData::Svg(Cow::Borrowed(svg))),
+            Some(false)
+        );
+    }
+
+    #[cfg(feature = "svg-rasterize")]
+    #[test]
+    fn an_svg_that_embeds_an_image_is_not_drawable() {
+        const PNG: &str = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYGD4DwABBAEAX+XDSwAAAABJRU5ErkJggg==";
+        let image = format!(
+            r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect width="8" height="8"/><image href="{PNG}" width="16" height="16"/></svg>"#
+        );
+        let prefixed = format!(
+            r#"<svg:svg xmlns:svg="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><svg:rect width="8" height="8"/><svg:image href="{PNG}" width="16" height="16"/></svg:svg>"#
+        );
+        let filtered = format!(
+            r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><filter id="f"><feImage href="{PNG}"/></filter><rect width="16" height="16" filter="url(#f)"/></svg>"#
+        );
+        for svg in [image, prefixed, filtered] {
+            assert!(embeds_image(svg.as_bytes()), "{svg}");
+            assert_eq!(
+                mask_drawable(&IconData::Svg(Cow::Owned(svg.clone().into_bytes()))),
+                Some(false),
+                "{svg}"
+            );
+        }
+        let imagery = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><g id="imagery"><rect width="16" height="16"/></g></svg>"#;
+        assert!(!embeds_image(imagery));
+    }
+
+    #[test]
+    fn pixels_are_not_drawable() {
+        let pixels = IconData::rgba(1, 1, vec![0, 0, 0, 255]).expect("one pixel");
+        assert_eq!(mask_drawable(&pixels), Some(false));
+    }
+
+    #[cfg(feature = "svg-rasterize")]
+    #[test]
+    fn an_unparseable_svg_is_not_drawable() {
+        assert_eq!(
+            mask_drawable(&IconData::Svg(Cow::Borrowed(b"not svg"))),
+            Some(false)
+        );
+    }
+
+    #[cfg(all(feature = "svg-rasterize", feature = "lucide-icons"))]
+    #[test]
+    fn the_lookups_judgement_is_mask_drawables() {
+        for icon in ALL_ICON_NAMES {
+            if lucide_name_for_gpui_icon(icon.clone()).is_none() {
+                continue;
+            }
+            let found = load_gpui_icon(
+                icon.clone(),
+                IconSet::Lucide,
+                None,
+                None,
+                None,
+                IconUse::Any,
+            )
+            .expect("a Lucide name loads");
+            assert_eq!(
+                found.mask,
+                mask_drawable(&found.data),
+                "{}",
+                variant_name(icon)
+            );
+        }
+    }
+
+    #[cfg(not(feature = "svg-rasterize"))]
+    #[test]
+    fn without_the_rasteriser_no_svg_is_judged() {
+        let svg = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect width="16" height="16"/></svg>"#;
+        assert_eq!(mask_drawable(&IconData::Svg(Cow::Borrowed(svg))), None);
+        #[cfg(feature = "lucide-icons")]
+        assert_eq!(
+            load_gpui_icon(
+                IconName::Check,
+                IconSet::Lucide,
+                None,
+                None,
+                None,
+                IconUse::Mask
+            ),
+            None
+        );
+    }
+
+    #[cfg(all(feature = "lucide-icons", feature = "material-icons"))]
+    #[test]
+    fn the_lookup_takes_the_tables_name_in_lucide_and_material() {
+        use native_theme::icons::{LucideLoader, MaterialLoader};
+        for icon in ALL_ICON_NAMES {
+            assert_eq!(
+                load_gpui_icon(
+                    icon.clone(),
+                    IconSet::Lucide,
+                    None,
+                    None,
+                    None,
+                    IconUse::Any
+                )
+                .map(|found| found.data),
+                lucide_name_for_gpui_icon(icon.clone())
+                    .and_then(|name| LucideLoader::new(name).load()),
+                "Lucide {}",
+                variant_name(icon)
+            );
+            assert_eq!(
+                load_gpui_icon(
+                    icon.clone(),
+                    IconSet::Material,
+                    None,
+                    None,
+                    None,
+                    IconUse::Any
+                )
+                .map(|found| found.data),
+                material_name_for_gpui_icon(icon.clone())
+                    .and_then(|name| MaterialLoader::new(name).load()),
+                "Material {}",
+                variant_name(icon)
+            );
+        }
+        assert_eq!(
+            load_gpui_icon(
+                IconName::StarFill,
+                IconSet::Lucide,
+                None,
+                None,
+                None,
+                IconUse::Any
+            ),
+            None
+        );
+        assert_eq!(
+            load_gpui_icon(
+                IconName::StarOff,
+                IconSet::Material,
+                None,
+                None,
+                None,
+                IconUse::Any
+            ),
+            None
+        );
+    }
+
+    #[test]
+    fn the_lookup_has_no_icon_under_sf_symbols_and_segoe_fluent() {
+        for icon in ALL_ICON_NAMES {
+            for set in [IconSet::SfSymbols, IconSet::SegoeFluent] {
+                for usage in [IconUse::Any, IconUse::Mask] {
+                    assert_eq!(
+                        load_gpui_icon(icon.clone(), set, None, None, None, usage),
+                        None,
+                        "{set:?} {}",
+                        variant_name(icon)
+                    );
+                }
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -2938,8 +3548,16 @@ mod freedesktop_mapping_tests {
         (IconName::EyeOff, "view-hidden", "view-conceal"),
         (IconName::Frame, "select-rectangular", "selection-mode"),
         (IconName::Heart, "emblem-favorite", "starred"),
-        (IconName::Loader, "process-working", "content-loading"),
-        (IconName::LoaderCircle, "process-working", "content-loading"),
+        (
+            IconName::Loader,
+            "process-working-symbolic",
+            "content-loading",
+        ),
+        (
+            IconName::LoaderCircle,
+            "process-working-symbolic",
+            "content-loading",
+        ),
         (IconName::MemoryStick, "memory", "media-flash"),
         (IconName::Palette, "palette", "color-select"),
         (IconName::PanelLeft, "sidebar-expand-left", "sidebar-show"),
@@ -3131,6 +3749,130 @@ mod freedesktop_mapping_tests {
                 }
             }
             Ok(())
+        })?;
+        Ok(())
+    }
+
+    /// The fixture's `tab-close` in kde-breeze's light text and accent
+    /// colours, and its `window-close` in the text colour alone.
+    #[cfg(feature = "system-icons")]
+    fn close_fixtures() -> (String, String) {
+        let (text, accent) = super::tests::breeze_text_and_accent();
+        let one = format!(
+            r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect x="2" y="2" width="12" height="12" fill="{}"/></svg>"#,
+            super::tests::paint(text)
+        );
+        (super::tests::two_colours(text, accent), one)
+    }
+
+    /// `Close` is `tab-close`, then `window-close`. Under `IconUse::Any` the
+    /// first is served whatever it paints; under `IconUse::Mask` an SVG in two
+    /// colours and pixels are passed over for the next name's SVG of one
+    /// colour.
+    #[cfg(feature = "system-icons")]
+    #[test]
+    fn the_mask_lookup_passes_over_several_colours_and_pixels()
+    -> Result<(), Box<dyn std::error::Error>> {
+        const NAME: &str = "icons::freedesktop_mapping_tests::the_mask_lookup_passes_over_several_colours_and_pixels";
+        let (two, one) = close_fixtures();
+        if crate::icon_fixture::in_child() {
+            let svg = |text: &str| IconData::Svg(Cow::Owned(text.as_bytes().to_vec()));
+            let close = |theme: &str, usage: IconUse| {
+                load_gpui_icon(
+                    IconName::Close,
+                    IconSet::Freedesktop,
+                    Some(theme),
+                    None,
+                    None,
+                    usage,
+                )
+            };
+            assert_eq!(
+                close("masks", IconUse::Any).map(|found| found.data),
+                Some(svg(&two)),
+                "Any serves tab-close"
+            );
+            #[cfg(feature = "svg-rasterize")]
+            {
+                assert_eq!(
+                    close("masks", IconUse::Mask),
+                    Some(GpuiIcon {
+                        data: svg(&one),
+                        mask: Some(true)
+                    }),
+                    "Mask passes over tab-close's two colours"
+                );
+                assert_eq!(
+                    close("rasters", IconUse::Mask),
+                    Some(GpuiIcon {
+                        data: svg(&one),
+                        mask: Some(true)
+                    }),
+                    "Mask passes over tab-close's pixels"
+                );
+            }
+            return Ok(());
+        }
+        crate::icon_fixture::run(NAME, Child::kde("masks"), |icons| {
+            crate::icon_fixture::write_scalable_theme(
+                icons,
+                "masks",
+                &[("tab-close", &two), ("window-close", &one)],
+            )?;
+            let mut png = std::io::Cursor::new(Vec::new());
+            image::RgbaImage::from_pixel(16, 16, image::Rgba([61, 174, 233, 255]))
+                .write_to(&mut png, image::ImageFormat::Png)
+                .map_err(std::io::Error::other)?;
+            crate::icon_fixture::write_fixed_theme(
+                icons,
+                "rasters",
+                &[
+                    (16, "tab-close.png", &png.into_inner()),
+                    (16, "window-close.svg", one.as_bytes()),
+                ],
+            )
+        })?;
+        Ok(())
+    }
+
+    /// The lookup looks a name up at the size it is given, and at the
+    /// loader's default, 24, where it is given none.
+    #[cfg(feature = "system-icons")]
+    #[test]
+    fn the_lookup_looks_up_at_the_size_given() -> Result<(), Box<dyn std::error::Error>> {
+        const NAME: &str =
+            "icons::freedesktop_mapping_tests::the_lookup_looks_up_at_the_size_given";
+        let sized = |size: u32| {
+            format!(
+                r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><title>sized/{size}</title><path d="M2 2h12v12H2z"/></svg>"#
+            )
+        };
+        if crate::icon_fixture::in_child() {
+            let down = |size: Option<u32>| {
+                load_gpui_icon(
+                    IconName::ChevronDown,
+                    IconSet::Freedesktop,
+                    Some("sized"),
+                    size,
+                    None,
+                    IconUse::Any,
+                )
+                .map(|found| found.data)
+            };
+            let svg = |size: u32| Some(IconData::Svg(Cow::Owned(sized(size).into_bytes())));
+            assert_eq!(down(Some(16)), svg(16), "the 16 px file at 16");
+            assert_eq!(down(None), svg(24), "the 24 px file by default");
+            return Ok(());
+        }
+        crate::icon_fixture::run(NAME, Child::kde("sized"), |icons| {
+            crate::icon_fixture::write_fixed_theme(
+                icons,
+                "sized",
+                &[
+                    (16, "go-down.svg", sized(16).as_bytes()),
+                    (24, "go-down.svg", sized(24).as_bytes()),
+                ],
+            )
         })?;
         Ok(())
     }
