@@ -6,7 +6,7 @@
 //! the user's config directory (`$XDG_CONFIG_HOME`, else `~/.config`); the
 //! watcher observes each of them:
 //!
-//! - `kdeglobals`: the colours, fonts, icon theme and accessibility flags.
+//! - `kdeglobals`: the colours, fonts, icon theme, accessibility flags and caret blink rate.
 //! - `kdedefaults/kdeglobals`: the defaults Plasma keeps beneath the user's
 //!   file, read under it as KConfig cascades them.
 //! - `org.freedesktop.appearance accent-color`: the portal's accent colour,
@@ -86,6 +86,8 @@ fn read_kde_ini(
 
     // KDE-05: Icon theme name from [Icons] Theme (per-variant)
     variant.defaults.icon_theme = icon_theme(ini).map(std::borrow::Cow::Owned);
+
+    caret_blink(ini, &mut variant.input);
 
     // KDE-06: Accessibility flags (pure -- no I/O)
     let accessibility = crate::AccessibilityPreferences {
@@ -274,6 +276,34 @@ fn reduce_motion(ini: &configparser::ini::Ini) -> bool {
 /// reads it, for [`crate::detect::detect_reduced_motion`].
 pub(crate) fn kdeglobals_reduce_motion() -> bool {
     reduce_motion(&read_kdeglobals().unwrap_or_else(create_kde_parser))
+}
+
+/// The caret's blink `ini` states: `[KDE] CursorBlinkRate`, the cycle in
+/// milliseconds, read as an `i32`. A rate above 0 is bounded to 200..=2000
+/// (plasma-integration 6.8.2 `qt6/src/platformtheme/khintssettings.cpp:79-80`)
+/// and halved, the caret shown and hidden half the cycle each (qtbase 6.12.0
+/// `src/widgets/widgets/qwidgetlinecontrol.cpp:1497-1509`), so both
+/// durations are 100 to 1000; a rate of 0 or less states a caret that does
+/// not blink (`caret_blink_off` 0 alone). Text that is not an `i32`, or no
+/// key, states nothing, and the preset's 500 / 500 applies, which is Qt's at
+/// the unset rate's default of 1000. Qt's caret never stops blinking: no
+/// time-out is written.
+fn caret_blink(ini: &configparser::ini::Ini, input: &mut crate::model::InputTheme) {
+    let Some(rate) = ini
+        .get("KDE", "CursorBlinkRate")
+        .and_then(|value| value.trim().parse::<i32>().ok())
+    else {
+        return;
+    };
+    if rate > 0 {
+        let half = u32::try_from(rate.clamp(200, 2000))
+            .ok()
+            .and_then(|cycle| cycle.checked_div(2));
+        input.caret_blink_on = half;
+        input.caret_blink_off = half;
+    } else {
+        input.caret_blink_off = Some(0);
+    }
 }
 
 /// The icon theme `ini` names: `[Icons] Theme`, `None` where it is absent or
@@ -1857,6 +1887,48 @@ AnimationDurationFactor=1.0
             (size - 10.0 * 96.0 / 72.0).abs() < 0.01,
             "drawn at {size} px"
         );
+        Ok(())
+    }
+
+    /// `[KDE] CursorBlinkRate` is bounded to 200..=2000 and halved into both
+    /// durations; 0 or less states no blink; text that is not an integer, or
+    /// no key, states nothing; no time-out is ever written.
+    #[test]
+    fn the_blink_rate_is_halved_within_qts_bound() -> crate::Result<()> {
+        let cases: [(&str, Option<u32>, Option<u32>); 8] = [
+            ("[KDE]\nCursorBlinkRate=1000\n", Some(500), Some(500)),
+            ("[KDE]\nCursorBlinkRate=1001\n", Some(500), Some(500)),
+            ("[KDE]\nCursorBlinkRate=100\n", Some(100), Some(100)),
+            ("[KDE]\nCursorBlinkRate=5000\n", Some(1000), Some(1000)),
+            ("[KDE]\nCursorBlinkRate=0\n", None, Some(0)),
+            ("[KDE]\nCursorBlinkRate=-1\n", None, Some(0)),
+            ("[KDE]\nCursorBlinkRate=fast\n", None, None),
+            (MINIMAL_FIXTURE, None, None),
+        ];
+        for (content, on, off) in cases {
+            let result = from_kde_content(content)?;
+            let input = &reader_mode(&result).input;
+            assert_eq!(
+                (
+                    input.caret_blink_on,
+                    input.caret_blink_off,
+                    input.caret_blink_timeout
+                ),
+                (on, off, None),
+                "{content:?}"
+            );
+        }
+        Ok(())
+    }
+
+    /// A rate of 0 resolves over kde-breeze to a caret that does not blink,
+    /// the shown duration the preset's.
+    #[test]
+    fn a_kde_blink_rate_of_0_resolves_to_no_blink() -> crate::Result<()> {
+        let result = from_kde_content("[KDE]\nCursorBlinkRate=0\n")?;
+        let sys = crate::pipeline::run_pipeline(result, "kde-breeze")?;
+        assert_eq!(sys.light.input.caret_blink_off, Some(0));
+        assert_eq!(sys.light.input.caret_blink_on, Some(500));
         Ok(())
     }
 

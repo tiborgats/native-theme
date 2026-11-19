@@ -1,7 +1,8 @@
 //! Windows theme reader: reads light or dark, the accent color and its shades,
 //! per-widget fonts from NONCLIENTMETRICSW, accessibility from UISettings and
-//! SystemParametersInfoW, icon sizes from GetSystemMetricsForDpi, and the
-//! scrollbar and border metrics. Outside high contrast it writes no other
+//! SystemParametersInfoW, icon sizes from GetSystemMetricsForDpi, the
+//! scrollbar and border metrics, and the caret's blink time from
+//! GetCaretBlinkTime. Outside high contrast it writes no other
 //! colour, as the `windows-11` preset states what WinUI 3 draws; under high
 //! contrast it writes the GetSysColor colours WinUI 3's HighContrast theme
 //! dictionaries draw with (see `apply_sys_colors`). Every system metric is read
@@ -30,9 +31,10 @@
 //!
 //! # Sources not watched
 //!
-//! Each is reported by a message Windows sends to top-level windows, which
-//! the watcher, without a window, does not receive: `WM_SETTINGCHANGE` with
-//! the `SPI_SET*` action in `wParam` for the `SystemParametersInfo` one
+//! Each but the last is reported by a message Windows sends to top-level
+//! windows, which the watcher, without a window, does not receive:
+//! `WM_SETTINGCHANGE` with the `SPI_SET*` action in `wParam` for the
+//! `SystemParametersInfo` one
 //! (<https://learn.microsoft.com/en-us/windows/win32/winmsg/wm-settingchange>)
 //! and `WM_SYSCOLORCHANGE`
 //! (<https://learn.microsoft.com/en-us/windows/win32/gdi/wm-syscolorchange>).
@@ -46,6 +48,9 @@
 //!   the watcher subscribes to it where Windows accepts the registration
 //!   (GitHub's `windows-latest` image refuses it with "Element not found").
 //! - `GetSysColor`: the high-contrast colours.
+//! - `GetCaretBlinkTime`: the caret's blink time. No message or event
+//!   that reports its change was read, and the watcher hears none, so a
+//!   change shows at the next read.
 
 #[cfg(all(target_os = "windows", feature = "windows"))]
 use ::windows::UI::ViewManagement::{UIColorType, UISettings};
@@ -53,9 +58,9 @@ use ::windows::UI::ViewManagement::{UIColorType, UISettings};
 use ::windows::Win32::UI::HiDpi::{GetSystemMetricsForDpi, SystemParametersInfoForDpi};
 #[cfg(all(target_os = "windows", feature = "windows"))]
 use ::windows::Win32::UI::WindowsAndMessaging::{
-    NONCLIENTMETRICSW, SM_CXBORDER, SM_CXICON, SM_CXSMICON, SM_CXVSCROLL, SM_CYVTHUMB,
-    SPI_GETNONCLIENTMETRICS, SYSTEM_METRICS_INDEX, SYSTEM_PARAMETERS_INFO_UPDATE_FLAGS,
-    SystemParametersInfoW, USER_DEFAULT_SCREEN_DPI,
+    GetCaretBlinkTime, NONCLIENTMETRICSW, SM_CXBORDER, SM_CXICON, SM_CXSMICON, SM_CXVSCROLL,
+    SM_CYVTHUMB, SPI_GETNONCLIENTMETRICS, SYSTEM_METRICS_INDEX,
+    SYSTEM_PARAMETERS_INFO_UPDATE_FLAGS, SystemParametersInfoW, USER_DEFAULT_SCREEN_DPI,
 };
 
 use crate::model::FontSpec;
@@ -649,6 +654,51 @@ fn build_theme(
     }
 }
 
+/// What `GetCaretBlinkTime` returns where it fails: 0
+/// (<https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getcaretblinktime>).
+const CARET_BLINK_FAILED: u32 = 0;
+
+/// What `GetCaretBlinkTime` returns where the caret does not blink: Win32's
+/// `INFINITE`, 4294967295
+/// (<https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getcaretblinktime>).
+const CARET_BLINK_NONE: u32 = 4_294_967_295;
+
+/// Map the caret blink `time` `GetCaretBlinkTime` returned onto `input`:
+/// [`CARET_BLINK_FAILED`] states nothing, and the preset's blink applies;
+/// [`CARET_BLINK_NONE`] states a caret that does not blink
+/// (`caret_blink_off` 0 alone); any other value states both durations, as
+/// WinUI shows and hides the caret one blink time each (microsoft-ui-xaml
+/// 2.5.1 `src/dxaml/xcp/core/text/TextBox/TextBoxHelpers.cpp:55-89`). No
+/// time-out is written. The watcher is not told of a change of the blink
+/// time: it shows at the next read.
+fn apply_caret_blink_time(input: &mut crate::model::InputTheme, time: u32) {
+    match time {
+        CARET_BLINK_FAILED => {}
+        CARET_BLINK_NONE => input.caret_blink_off = Some(0),
+        _ => {
+            input.caret_blink_on = Some(time);
+            input.caret_blink_off = Some(time);
+        }
+    }
+}
+
+/// Apply the caret blink `time` `GetCaretBlinkTime` returned to the variant
+/// [`build_theme`] filled in `result`, by [`apply_caret_blink_time`]'s
+/// mapping (microsoft-ui-xaml 2.5.1
+/// `src/dxaml/xcp/core/text/TextBox/TextBoxHelpers.cpp:55-89`), and to both
+/// variants of a reader output that holds two, the blink being one setting
+/// of the desktop. The watcher is not told of a change of the blink time: it
+/// shows at the next read.
+fn apply_caret_blink_to_reader(result: &mut crate::ReaderResult, time: u32) {
+    match &mut result.output {
+        crate::ReaderOutput::Single { mode, .. } => apply_caret_blink_time(&mut mode.input, time),
+        crate::ReaderOutput::Dual { light, dark, .. } => {
+            apply_caret_blink_time(&mut light.input, time);
+            apply_caret_blink_time(&mut dark.input, time);
+        }
+    }
+}
+
 /// Read the current Windows theme from UISettings, SystemParametersInfoW,
 /// GetSystemMetricsForDpi, and, under high contrast, GetSysColor.
 ///
@@ -704,7 +754,7 @@ fn read_windows() -> crate::Result<crate::ReaderResult> {
     let accessibility = read_accessibility(&settings);
     let sys_colors = (accessibility.high_contrast == Some(true)).then(read_sys_colors);
 
-    Ok(build_theme(
+    let mut result = build_theme(
         accent,
         fg,
         accent_shades,
@@ -712,7 +762,22 @@ fn read_windows() -> crate::Result<crate::ReaderResult> {
         sys_colors.as_ref(),
         Some((small, large)),
         Some(&accessibility),
-    ))
+    );
+    apply_caret_blink_to_reader(&mut result, read_caret_blink_time());
+    Ok(result)
+}
+
+/// Read the caret's blink time, in milliseconds, with `GetCaretBlinkTime`:
+/// [`CARET_BLINK_NONE`] (`INFINITE`) where the caret does not blink and
+/// [`CARET_BLINK_FAILED`] (0) where the call fails, which
+/// [`apply_caret_blink_time`] maps.
+#[cfg(all(target_os = "windows", feature = "windows"))]
+#[allow(unsafe_code)]
+fn read_caret_blink_time() -> u32 {
+    // SAFETY: GetCaretBlinkTime takes no argument, and Microsoft's page states
+    // no precondition for it
+    // (https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getcaretblinktime).
+    unsafe { GetCaretBlinkTime() }
 }
 
 #[cfg(test)]
@@ -806,6 +871,76 @@ mod tests {
     fn dark_theme() -> crate::Theme {
         let r = dark_reader();
         r.output.to_theme(&r.name, r.icon_set, &r.layout)
+    }
+
+    // === caret blink tests ===
+
+    /// `(caret_blink_on, caret_blink_off, caret_blink_timeout)` of `input`.
+    fn blink_of(input: &crate::model::InputTheme) -> (Option<u32>, Option<u32>, Option<u32>) {
+        (
+            input.caret_blink_on,
+            input.caret_blink_off,
+            input.caret_blink_timeout,
+        )
+    }
+
+    /// `apply_caret_blink_time`'s result over an input that states no blink.
+    fn blink_from_time(time: u32) -> (Option<u32>, Option<u32>, Option<u32>) {
+        let mut input = crate::model::InputTheme::default();
+        apply_caret_blink_time(&mut input, time);
+        blink_of(&input)
+    }
+
+    #[test]
+    fn a_blink_time_states_both_durations() {
+        assert_eq!(blink_from_time(530), (Some(530), Some(530), None));
+    }
+
+    #[test]
+    fn the_no_blink_value_states_no_blink() {
+        assert_eq!(blink_from_time(CARET_BLINK_NONE), (None, Some(0), None));
+    }
+
+    #[test]
+    fn a_failed_read_keeps_the_presets() {
+        assert_eq!(blink_from_time(CARET_BLINK_FAILED), (None, None, None));
+    }
+
+    #[test]
+    fn the_blink_reaches_the_active_variant_only() {
+        let mut r = dark_reader();
+        apply_caret_blink_to_reader(&mut r, 530);
+        let theme = r.output.to_theme(&r.name, r.icon_set, &r.layout);
+        assert_eq!(
+            theme.dark.as_ref().map(|dark| blink_of(&dark.input)),
+            Some((Some(530), Some(530), None))
+        );
+        assert!(theme.light.is_none());
+
+        let mut r = light_reader();
+        apply_caret_blink_to_reader(&mut r, 530);
+        let theme = r.output.to_theme(&r.name, r.icon_set, &r.layout);
+        assert_eq!(
+            theme.light.as_ref().map(|light| blink_of(&light.input)),
+            Some((Some(530), Some(530), None))
+        );
+        assert!(theme.dark.is_none());
+    }
+
+    /// The reader maps the system's blink time: the active variant states
+    /// what the value just read gives, whatever it is.
+    #[cfg(all(target_os = "windows", feature = "windows"))]
+    #[test]
+    fn the_windows_reader_maps_the_systems_blink_time() -> crate::Result<()> {
+        let time = read_caret_blink_time();
+        let result = read_windows()?;
+        let want = match time {
+            0 => (None, None, None),
+            u32::MAX => (None, Some(0), None),
+            time => (Some(time), Some(time), None),
+        };
+        assert_eq!(blink_of(&reader_mode(&result).input), want, "{time}");
+        Ok(())
     }
 
     // === is_dark_mode tests ===

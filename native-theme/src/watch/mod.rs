@@ -631,6 +631,21 @@ mod tests {
         ),
         (
             "gnome",
+            "org.gnome.desktop.interface cursor-blink",
+            "org.gnome.desktop.interface cursor-blink",
+        ),
+        (
+            "gnome",
+            "org.gnome.desktop.interface cursor-blink-time",
+            "org.gnome.desktop.interface cursor-blink-time",
+        ),
+        (
+            "gnome",
+            "org.gnome.desktop.interface cursor-blink-timeout",
+            "org.gnome.desktop.interface cursor-blink-timeout",
+        ),
+        (
+            "gnome",
             "org.gnome.desktop.interface icon-theme",
             "org.gnome.desktop.interface icon-theme",
         ),

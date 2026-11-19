@@ -107,7 +107,7 @@
 //! | KDE Plasma | `kde` | `kdeglobals`; with `portal`, the portal's accent colour | `kde-breeze` |
 //! | GNOME, Budgie | `portal` | the XDG Desktop Portal settings and gsettings | `adwaita` |
 //! | macOS 11 and later | `macos` | `NSColor` under both appearances, `NSFont`, the scroller style and the accessibility options | `macos-monterey` before 26 (it covers 12 to 15), `macos-tahoe` from 26 |
-//! | Windows | `windows` | `UISettings`, the system metrics and fonts | `windows-11` |
+//! | Windows | `windows` | `UISettings`, the system metrics, the fonts and the caret's blink time | `windows-11` |
 //!
 //! The KDE, GNOME and Windows readers read the active variant only, and the
 //! other variant is the preset's; the macOS reader reads both. On another

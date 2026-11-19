@@ -1,5 +1,5 @@
 //! GNOME portal reader: reads accent color, color scheme, contrast,
-//! fonts, text scale, accessibility flags, and icon_set from the
+//! fonts, text scale, accessibility flags, the caret's blink and icon_set from the
 //! XDG Desktop Portal Settings interface (via ashpd) and gsettings.
 //!
 //! Returns only what the desktop states, a sparse variant the pipeline
@@ -26,6 +26,10 @@
 //! - `org.gnome.desktop.interface monospace-font-name`: the monospace font.
 //! - `org.gnome.desktop.interface text-scaling-factor`: the text scale.
 //! - `org.gnome.desktop.interface overlay-scrolling`: overlay scroll bars.
+//! - `org.gnome.desktop.interface cursor-blink`: whether the caret blinks.
+//! - `org.gnome.desktop.interface cursor-blink-time`: the caret's blink cycle.
+//! - `org.gnome.desktop.interface cursor-blink-timeout`: when the caret stops
+//!   blinking.
 //! - `org.gnome.desktop.interface icon-theme`: the icon theme.
 //! - `org.gnome.desktop.wm.preferences titlebar-font`: the title bar font.
 //! - `org.gnome.desktop.a11y.interface high-contrast`: high contrast, where
@@ -432,6 +436,14 @@ pub(crate) struct GnomePortalData {
     pub(crate) session_type: Option<String>,
     /// Whether overlay scrollbars are enabled. None = not provided.
     pub(crate) overlay_scrolling: Option<bool>,
+    /// `cursor-blink`: whether the caret blinks. None = not provided.
+    pub(crate) cursor_blink: Option<bool>,
+    /// `cursor-blink-time` in milliseconds, within the schema's 100..=2500.
+    /// None = not provided or outside it.
+    pub(crate) cursor_blink_time: Option<u32>,
+    /// `cursor-blink-timeout` in seconds, within 1..=2147483647. None = not
+    /// provided or outside it.
+    pub(crate) cursor_blink_timeout: Option<u32>,
     /// Icon theme name (e.g. "Adwaita", "Papirus").
     pub(crate) icon_theme: Option<String>,
     /// High contrast from gsettings fallback (for GNOME < 44).
@@ -565,6 +577,31 @@ fn build_gnome_variant_pure(data: &GnomePortalData) -> crate::ThemeMode {
         variant.scrollbar.overlay_mode = Some(overlay);
     }
 
+    // The caret's blink: the three keys of gsettings-desktop-schemas 51.0
+    // `schemas/org.gnome.desktop.interface.gschema.xml.in:63-85` (read
+    // 2026-11-14): `cursor-blink`, a boolean, default true; `cursor-blink-time`,
+    // an integer within 100..=2500, default 1200, the whole blink cycle in
+    // milliseconds; `cursor-blink-timeout`, an integer within 1..=2147483647,
+    // default 10, the seconds after which the caret stops blinking. GTK 4.24.1
+    // takes them as its settings `gtk-cursor-blink`, `gtk-cursor-blink-time`
+    // and `gtk-cursor-blink-timeout` (`gtk/gtksettings.c`), and its text
+    // widget's blink callback (`blink_cb`, `gtk/gtktext.c`) shows the caret
+    // and stops the blink once the time-out has passed, which is the model's
+    // time-out. The cycle is halved into both durations; a caret that does not
+    // blink is stated whatever the cycle; a time-out past `u32::MAX`
+    // milliseconds (about 49.7 days) is stated as `u32::MAX`.
+    if let Some(time) = data.cursor_blink_time {
+        let half = time.checked_div(2);
+        variant.input.caret_blink_on = half;
+        variant.input.caret_blink_off = half;
+    }
+    if data.cursor_blink == Some(false) {
+        variant.input.caret_blink_off = Some(0);
+    }
+    if let Some(seconds) = data.cursor_blink_timeout {
+        variant.input.caret_blink_timeout = Some(seconds.saturating_mul(1000));
+    }
+
     // ── Icon theme (GNOME-04) ────────────────────────────────────────────
     variant.defaults.icon_theme = data.icon_theme.clone().map(std::borrow::Cow::Owned);
 
@@ -632,6 +669,11 @@ pub(crate) fn build_theme(
         &mut gsetting,
     );
     let flag = |value: Option<String>| value.and_then(|s| s.parse::<bool>().ok());
+    let within = |value: Option<String>, range: std::ops::RangeInclusive<u32>| {
+        value
+            .and_then(|s| s.parse::<u32>().ok())
+            .filter(|n| range.contains(n))
+    };
     let data = GnomePortalData {
         is_dark,
         accent_rgb: accent.map(|c| (c.red(), c.green(), c.blue())),
@@ -644,6 +686,15 @@ pub(crate) fn build_theme(
             .and_then(|s| s.parse::<f32>().ok()),
         session_type,
         overlay_scrolling: flag(gsetting("org.gnome.desktop.interface", "overlay-scrolling")),
+        cursor_blink: flag(gsetting("org.gnome.desktop.interface", "cursor-blink")),
+        cursor_blink_time: within(
+            gsetting("org.gnome.desktop.interface", "cursor-blink-time"),
+            100..=2500,
+        ),
+        cursor_blink_timeout: within(
+            gsetting("org.gnome.desktop.interface", "cursor-blink-timeout"),
+            1..=2_147_483_647,
+        ),
         icon_theme: gsetting("org.gnome.desktop.interface", "icon-theme"),
         gsettings_high_contrast: flag(gsetting(
             "org.gnome.desktop.a11y.interface",
@@ -1329,7 +1380,7 @@ mod tests {
 
     #[test]
     fn one_gsettings_read_per_key() {
-        for (scheme, reads) in [(None, 9), (Some(ColorScheme::PreferDark), 8)] {
+        for (scheme, reads) in [(None, 12), (Some(ColorScheme::PreferDark), 11)] {
             let mut keys = Vec::new();
             let result = build_theme(
                 scheme,
@@ -1351,6 +1402,106 @@ mod tests {
                 Some("Papirus")
             );
         }
+    }
+
+    /// The reader's result for gsettings that answer the `cursor-blink*` keys
+    /// of `org.gnome.desktop.interface` as `answers` gives, and nothing else.
+    fn blink_reader(answers: &[(&str, &str)]) -> crate::ReaderResult {
+        build_theme(
+            None,
+            None,
+            Contrast::NoPreference,
+            None,
+            None,
+            |schema, key| {
+                answers
+                    .iter()
+                    .find(|(k, _)| schema == "org.gnome.desktop.interface" && *k == key)
+                    .map(|(_, value)| (*value).to_string())
+            },
+        )
+    }
+
+    /// The reader's `(caret_blink_on, caret_blink_off, caret_blink_timeout)`
+    /// for `answers` ([`blink_reader`]).
+    fn blink_read(answers: &[(&str, &str)]) -> (Option<u32>, Option<u32>, Option<u32>) {
+        let result = blink_reader(answers);
+        let input = &reader_mode(&result).input;
+        (
+            input.caret_blink_on,
+            input.caret_blink_off,
+            input.caret_blink_timeout,
+        )
+    }
+
+    #[test]
+    fn the_blink_time_is_halved_into_both_durations() {
+        assert_eq!(
+            blink_read(&[("cursor-blink-time", "1000")]),
+            (Some(500), Some(500), None)
+        );
+        assert_eq!(
+            blink_read(&[("cursor-blink-time", "1201")]),
+            (Some(600), Some(600), None)
+        );
+    }
+
+    #[test]
+    fn cursor_blink_off_states_no_blink() {
+        assert_eq!(
+            blink_read(&[("cursor-blink", "false"), ("cursor-blink-time", "1000")]),
+            (Some(500), Some(0), None)
+        );
+        assert_eq!(
+            blink_read(&[("cursor-blink", "false")]),
+            (None, Some(0), None)
+        );
+    }
+
+    #[test]
+    fn the_time_out_is_read_in_milliseconds() {
+        for (seconds, ms) in [
+            ("10", 10_000),
+            ("4294967", 4_294_967_000),
+            ("4294968", u32::MAX),
+            ("2147483647", u32::MAX),
+        ] {
+            assert_eq!(
+                blink_read(&[("cursor-blink-timeout", seconds)]),
+                (None, None, Some(ms)),
+                "{seconds}"
+            );
+        }
+    }
+
+    #[test]
+    fn a_malformed_blink_setting_keeps_the_presets() {
+        for answers in [
+            [("cursor-blink-time", "99")],
+            [("cursor-blink-time", "2501")],
+            [("cursor-blink-time", "fast")],
+            [("cursor-blink-timeout", "0")],
+            [("cursor-blink-timeout", "-5")],
+            [("cursor-blink", "maybe")],
+        ] {
+            assert_eq!(blink_read(&answers), (None, None, None), "{answers:?}");
+        }
+    }
+
+    #[test]
+    fn the_gnome_blink_resolves_over_adwaita() -> crate::Result<()> {
+        let reader = blink_reader(&[("cursor-blink-time", "1000")]);
+        let sys = crate::pipeline::run_pipeline(reader, "adwaita")?;
+        let input = &sys.light.input;
+        assert_eq!(
+            (
+                input.caret_blink_on,
+                input.caret_blink_off,
+                input.caret_blink_timeout
+            ),
+            (Some(500), Some(500), Some(10_000))
+        );
+        Ok(())
     }
 
     #[test]
@@ -1380,6 +1531,9 @@ mod tests {
             text_scaling_factor: Some(1.0),
             session_type: None,
             overlay_scrolling: Some(true),
+            cursor_blink: None,
+            cursor_blink_time: None,
+            cursor_blink_timeout: None,
             icon_theme: Some("Adwaita".to_string()),
             gsettings_high_contrast: None,
         }

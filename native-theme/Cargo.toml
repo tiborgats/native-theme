@@ -27,7 +27,7 @@ kde = ["dep:configparser"]
 # The GNOME and Budgie reader: the XDG Desktop Portal settings and gsettings;
 # with `kde`, the portal's accent colour on KDE too (Linux).
 portal = ["dep:ashpd", "ashpd/async-io", "dep:async-io", "dep:zbus"]
-# The Windows reader: UISettings, the system metrics and fonts.
+# The Windows reader: UISettings, the system metrics, the fonts and the caret's blink time.
 windows = ["dep:windows", "dep:windows-version"]
 # The macOS reader: NSColor under both appearances, NSFont, accessibility.
 macos = ["dep:objc2", "dep:objc2-foundation", "dep:objc2-app-kit", "dep:block2", "dep:objc2-core-foundation"]
