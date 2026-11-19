@@ -211,6 +211,14 @@ cannot tell which file a bare number continues, so it does not look for one.
       the model does not, which is the hardcoded value the project's rules
       forbid; a platform value reaches a connector only through a model field
       that the readers and presets fill.
+      *Widget icons (0.7.2, 2026-11-19, dce5a987):* the gpui connector's `widgets::Checkbox`
+      draws its own mark, the outline of gpui-component's Lucide check, or of its dash
+      in the mixed state, stroked at `checkbox.check_mark_stroke_width`, where the theme
+      states it (kde-breeze, adwaita, material-3), and the set's `Check` or `Minus`
+      through the widget icons elsewhere; under those
+      three its mark is not the icon set's, while a menu's and a list's check mark are
+      (`docs/todo_v0.7.1_gpui-widget-icons-rationale.md` W8). A mark's shape in the model
+      would give the connector's mark one.
 
 ### Slider: the thumb's outline or shadow
 
@@ -509,6 +517,30 @@ cannot tell which file a bare number continues, so it does not look for one.
       all eight classes into one colour
       (`/usr/include/KF6/KIconThemes/kiconcolors.h:40-42`), and rewrites the
       stylesheet for a theme that follows the colour scheme.
+
+### Icons: no role for a caret
+
+- [ ] [1.0] A select's caret is a glyph of its own on every platform, and the model has
+      no `IconRole` for it. The gpui showcase's selects draw gpui-component's caret,
+      which the widget icons serve by the connector's table (`ChevronDown`: Material's
+      `expand_more`), while the iced and egui showcases draw theirs by the nearest role,
+      `NavDown` (Material's arrow), so the three differ under Material
+      (`docs/todo_v0.7.1_gpui-widget-icons-rationale.md` W3). A role for a disclosure
+      caret, read from each platform, would let all three draw one icon.
+
+### Icons: StatusCheck's and StatusBusy's freedesktop names
+
+- [ ] [1.0] The roles' freedesktop names, `emblem-default` for `StatusCheck` and
+      `content-loading-symbolic` for `StatusBusy` (`native-theme/src/model/icons.rs`,
+      `icon_name`), are what every user of a role loads, in iced and egui too. The gpui
+      connector's table, which the widget icons serve, gives `Check` `dialog-ok`,
+      `object-select` and `Loader` `process-working-symbolic`, `content-loading`
+      (`docs/todo_v0.7.1_gpui-widget-icons-rationale.md` W3): `object-select-symbolic`
+      is recorded as the chosen row's check mark on both desktops, `emblem-default` as
+      nothing. Review the two with the measurement's rows for each name
+      (`docs/evidence/widget-icons/2026-11-19/listing.md`, section 4), drawing the icons again
+      from the installed themes where they are to be seen: no drawing of an installed
+      theme is kept in the repository.
 
 ### platform-facts: which part of a control the focus ring surrounds
 
@@ -4384,10 +4416,6 @@ the gap — closing it is a change, and each wants its own decision.
       in the element's text colour (`svg_renderer.rs:231-261`), and
       Breeze's and Adwaita's symbolic icons rasterise to non-empty masks
       through `SvgRenderer` (measured: 318 and 678 covered pixels of 4096).
-      Until then the gpui showcase's page samples and chrome draw the chosen
-      theme's icons where the showcase builds the icon, and each widget's
-      Widget Info says which of its icons are gpui-component's own
-      (`info::own_icons`).
       *GPUI Kit 0.8.1 (2026-10-27, G4):* still so at gpui-pre 0.3.10 (the numbers
       above are 0.3.6's): `Window::paint_svg` (`src/window.rs:5001`) keys the atlas by
       `RenderSvgParams { path, size }` (`:5015-5020`),
@@ -4405,6 +4433,19 @@ the gap — closing it is a change, and each wants its own decision.
       build closure (`src/platform.rs:1855-1861`), the atlas is a private field of
       `Window` (`src/window.rs:1229`), and `Window::drop_image` removes image keys
       only (`:5425-5436`).
+      *Widget icons (0.7.2, 2026-11-19, dce5a987):* the gpui connector's
+      `icons::WidgetIcons` answers each icon set with paths of its own, so the widgets'
+      own icons follow a switch without this. It would not fix the staleness the
+      handle has: the handle keeps serving the drawings it loaded until the set
+      changes, so a theme whose files change while the application runs is loaded
+      again only after another set was chosen and the theme again, and the new
+      drawing then reaches only sizes a window has not drawn yet and windows opened
+      afterwards; a drawing a window already holds stays for the run, since the
+      theme's paths are the same (`docs/todo_v0.7.1_gpui-widget-icons-rationale.md`
+      W5). Dropping a window's drawn SVGs would let such a window redraw from the
+      handle's reloaded bytes after that second choice, and before it would redraw
+      the same old bytes. What it would give an application besides: a path it
+      serves itself, redrawn from what its asset source answers now.
 
 #### Upstream PRs to gpui-component
 
@@ -4642,6 +4683,11 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       `src/command/item.rs`, `src/alert.rs`, `src/stepper/item.rs`,
       `src/sidebar/menu.rs` and `src/button/button_icon.rs` are unchanged (`:56`,
       `:124`, `:47`, `:135`, `:55-59`).
+      *Widget icons (0.7.2, 2026-11-19, 352062e8):* still so; the widget icons carry an
+      SVG of one colour only, so under SF Symbols and Segoe Fluent they serve
+      nothing, and the gpui showcase's slots that take an `Icon` alone also show
+      nothing for an SVG in several colours
+      (`docs/todo_v0.7.1_gpui-widget-icons-rationale.md` W6, W7).
 - [ ] [upstream] PR: let an application set the window's appearance on Windows,
       as `App::set_window_appearance` sets `NSApplication.appearance` on macOS
       (gpui-pre-macos 0.3.9 `src/platform.rs:808-829`). On Windows the call is the
@@ -4910,21 +4956,42 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       colours are partly upstream's (`config.rs`, `highlight_style`; the crate
       documentation's `input` row).
 
-### gpui: the widgets' own icons follow the theme's icon set
+### gpui: the widgets' own icons under SF Symbols and Segoe Fluent
 
-- [ ] [v0.7.x] gpui-component's widgets draw their own Lucide glyphs — a
-      `Select`'s or `Combobox`'s caret, the check mark beside a chosen row, an
-      empty list's Inbox and the like — whatever the theme's icon set, until
-      the connector or the gpui showcase sets the application's icon resolver
-      (`set_icon_resolver`, gpui-component 0.9.1 `src/icon.rs:77-106`), which
-      every `Icon` drawn from an asset path asks first.
-      *GPUI Kit 0.10.0 (2026-11-18):* three more: the Spinner's own
-      `IconName::Loader` on a loading `Button` that sets no `loading_icon`
-      (gpui-component 0.10.0 `src/spinner.rs:25`; a loading button without an icon
-      shows the spinner too, `src/button/button.rs:777-786`), the mixed check box's
-      `IconName::Minus` (`src/checkbox.rs:230-250`, `:284-290`, `:354-370`), and
-      `ChevronLeft` in a right-to-left layout, where the widgets' chevrons mirror
-      (`docs/todo_v0.7.2_gpui-kit-0.10.0-rationale.md`, §1.3 and §1.5).
+- [ ] [v0.7.x] The connector's `icons::WidgetIcons` serves gpui-component's widgets
+      Lucide, Material and freedesktop icons, and nothing under SF Symbols and Segoe
+      Fluent: the connector knows those sets' icons by role only (29 of the 106
+      `IconName`s at most, `Close` not among them) and they load as pixels, where the
+      hook names an SVG path (`docs/todo_v0.7.1_gpui-widget-icons-rationale.md` W7).
+      So under them the widgets draw gpui-component's Lucide beside the application's
+      native icons. To do: a table from each of the 106 names to an SF Symbol and to a
+      Segoe glyph, each entry checked on the platform (the macOS and Windows runners),
+      and the pixels carried in an SVG that embeds them: both cores build resvg 0.46.0
+      with `raster-images` (gpui-pre 0.3.12 `Cargo.toml:456-462`, gpui-fast 0.1.16
+      `:276-282`), whose default resolver takes a `data:` PNG, JPEG, GIF or WebP (usvg 0.46.0
+      `src/parser/image.rs:59-74`, resvg 0.46.0 `src/image.rs:62-77`; PNG keeps the alpha
+      without loss); a mask needs only the alpha; GPUI rasterises an SVG at twice the
+      device pixels it is drawn at (gpui-pre 0.3.12 `src/window.rs:5247-5251`,
+      `src/svg_renderer.rs:81`); the widgets draw at 12 to 16 px, at 24, and an empty
+      list's inbox at 48 and a select's at 28 (gpui-component 0.10.0
+      `src/list/delegate.rs:83`, `src/table/delegate.rs:195`, `src/select.rs:289`). The
+      embedding was read, not run. `docs/showcase-exceptions.toml`'s
+      `SidebarToggleButton` and `SpeechButton` are shown with this step. *Segoe Fluent
+      icons as SVG outlines* above is another way for Segoe.
+
+### gpui: Lucide's and Material's window maximize and restore are full-screen glyphs
+
+- [ ] [1.0] Under Lucide and Material the widget icons draw a window's maximize and
+      restore controls as the sets' full-screen glyphs, Lucide's `maximize` and
+      `minimize-2`, Material's `open_in_full` and `close_fullscreen`
+      (`connectors/native-theme-gpui/src/icons.rs`, `lucide_name_for_gpui_icon` and
+      `material_name_for_gpui_icon`, `WindowMaximize` and `WindowRestore`), since
+      neither set has window glyphs, and the roles give the same
+      (`docs/todo_v0.7.1_gpui-widget-icons-rationale.md` W4). Lucide has a plain square
+      and a pair of squares that would read as maximize and restore; Material was not
+      read for them. A change of the two tables' entries, with the measurement's
+      rows for the four controls (`docs/evidence/widget-icons/2026-11-19/listing.md`) and the
+      sets' drawings, which are the repository's own (`native-theme/icons/`), beside it.
 
 ### gpui: the theme-drawn slider beside upstream's keys and `SetValue`
 

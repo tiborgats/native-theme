@@ -53,10 +53,14 @@ Turns a `ResolvedTheme` into a fully configured
   modal.
 - **Icons**: mappings from every gpui-component `IconName` (106 variants) to
   the bundled Lucide and Material sets and to freedesktop icon names, `None`
-  for the two a set lacks. gpui-component's `IconName` cannot be enumerated
-  in code, so the tables are audited by hand against the list gpui-kit-assets
-  generates the enum from (`default-icons.txt`) on every gpui-component bump;
-  0.9.1's is 0.7.1's, 106 variants. The tables end in a wildcard: an
+  for the two a set lacks. With `svg-rasterize` (on by default), a handle
+  serves gpui-component's widgets the theme's icons in place of
+  gpui-component's Lucide glyphs; see
+  [The widgets' own icons](#the-widgets-own-icons). gpui-component's
+  `IconName` cannot be enumerated in code, so the tables are audited by hand
+  against the list gpui-kit-assets generates the enum from
+  (`default-icons.txt`) on every gpui-component bump; 0.9.1's is 0.7.1's, 106
+  variants. The tables end in a wildcard: an
   `IconName` newer than this crate maps to no icon instead of stopping the
   build, and the test module's exhaustive list is what reports it.
 
@@ -119,8 +123,16 @@ Without `native`, `from_system()` is the platform preset on Linux and an
 error on macOS and Windows, where the code below falls back to a bundled
 preset (see [Features](#features)).
 
+The handle `WidgetIcons` wraps the application's asset source and serves
+gpui-component's widgets the theme's icons; `apply_system_theme` tells it the
+theme's icons, and on the `apply` path the application tells it, from the
+`Resolved` that resolving a preset gives (`from_preset` returns the
+`ResolvedTheme` alone).
+
 ```rust,no_run
 use gpui_kit::{AppContext as _, WindowOptions};
+use native_theme_gpui::icons::WidgetIcons;
+use native_theme_gpui::{AccessibilityPreferences, ColorMode, Theme, apply, apply_system_theme, to_theme};
 # use gpui_kit::{Context, IntoElement, Render, Window, div};
 # struct MyView;
 # impl Render for MyView {
@@ -129,22 +141,30 @@ use gpui_kit::{AppContext as _, WindowOptions};
 #     }
 # }
 
-gpui_kit::application().run(|cx| {
-    gpui_kit::init(cx);
-    match native_theme_gpui::SystemTheme::from_system() {
-        Ok(sys) => native_theme_gpui::apply_system_theme(&sys, cx),
-        Err(_) => {
-            let prefs = native_theme_gpui::AccessibilityPreferences::from_system();
-            if let Ok((theme, resolved)) = native_theme_gpui::from_preset("adwaita", false, &prefs) {
-                native_theme_gpui::apply(theme, &resolved, &prefs, cx);
+let icons = WidgetIcons::new();
+gpui_kit::application()
+    .with_assets(icons.assets(gpui_kit::assets::Assets))
+    .run(move |cx| {
+        gpui_kit::init(cx);
+        icons.install(cx);
+        match native_theme_gpui::SystemTheme::from_system() {
+            Ok(sys) => apply_system_theme(&sys, cx),
+            Err(_) => {
+                let prefs = AccessibilityPreferences::from_system();
+                if let Ok(nt) = Theme::preset("adwaita")
+                    && let Ok(resolved) = nt.resolve(ColorMode::Light)
+                {
+                    let theme = to_theme(&resolved.variant, &nt.name, resolved.mode.is_dark(), &prefs);
+                    apply(theme, &resolved.variant, &prefs, cx);
+                    icons.set_theme_icons(&resolved, cx);
+                }
             }
         }
-    }
-    let opened = gpui_kit::open_window(WindowOptions::default(), cx, |_, cx| cx.new(|_| MyView));
-    if let Err(error) = opened {
-        eprintln!("could not open the window: {error}");
-    }
-});
+        let opened = gpui_kit::open_window(WindowOptions::default(), cx, |_, cx| cx.new(|_| MyView));
+        if let Err(error) = opened {
+            eprintln!("could not open the window: {error}");
+        }
+    });
 ```
 
 The examples name GPUI and gpui-component through gpui-kit, as gpui-kit's own
@@ -229,6 +249,10 @@ another display name stored it. With only one variant stored, a switch to the
 other mode shows upstream's built-in `ThemeColor::light()` constants, in light
 mode, those three as upstream caps them (the default config is a light one and
 carries no colours), so call `apply` once per variant.
+
+An application that serves the widgets' own icons tells its handle each
+variant's icons, from the `Resolved` that `Theme::resolve` returns, as the
+quick start does.
 
 ## Core concepts
 
@@ -598,6 +622,128 @@ style to the caller (`Styled`): a rule under it, its inset. Where an
 on the next frame; `TabBar::track_scroll(&handle)` gives the bar the
 application's own `ScrollHandle`, to reveal a tab otherwise.
 
+## The widgets' own icons
+
+gpui-component's widgets draw icons of their own: a select's caret, the check
+mark of a chosen row or a menu item, a dialog's close button, the window
+controls, and every other icon a widget draws by its `IconName`. They are
+gpui-component's bundled Lucide glyphs, whatever the theme's icon set. The
+handle `icons::WidgetIcons` (feature `svg-rasterize`, on by default) serves
+them from the theme's icon set instead: Lucide, Material, or a freedesktop
+icon theme such as Breeze or Adwaita, each icon looked up by the connector's
+tables (see [What gets mapped](#what-gets-mapped)) and drawn in the colour
+gpui-component gives it.
+
+**Installing it** takes three steps, in this order:
+
+1. create the handle, `WidgetIcons::new()`;
+2. wrap the application's asset source in it, `icons.assets(…)`, and give
+   the wrapper to `Application::with_assets` (gpui-kit's own source is
+   `gpui_kit::assets::Assets`), so that the asset source serves the icons the
+   handle loaded and passes every other path on;
+3. install it, `icons.install(cx)`, after `gpui_kit::init` and before the
+   first theme is applied: from then on gpui-component's icon resolver
+   (`set_icon_resolver`) asks the handle for the path of every icon drawn.
+   Installing replaces a resolver, or a handle, installed before.
+
+The handle installed must be the one whose `assets()` went to
+`Application::with_assets`: otherwise no icon it would serve could load, so
+it serves none, its report says `NoAssetSource`, and the widgets keep
+gpui-component's glyphs.
+
+**Telling it the theme's icons.** `apply_system_theme` tells an installed
+handle the theme's icon set and the icon theme of each colour mode. On the
+`apply` path the application tells it itself,
+`icons.set_theme_icons(&resolved, cx)`, with the `Resolved` it built the
+theme from (`Theme::resolve` returns it; `from_preset` returns the
+`ResolvedTheme` alone), once for each variant it applies, as it calls `apply`
+once for each. The handle follows the colour mode: it answers from the icons
+of the mode gpui-component's theme is in, so a light/dark switch through
+gpui-component alone needs no call. What to tell it is the set the
+application draws its own icons from: where the theme names an icon theme
+the machine does not have, `native_theme::icons::default_icon_choice` falls
+back to the system's, and the handle serves what it is told.
+
+**Its three states.** A new handle follows the theme's icons, as they are
+told. `icons.fix(choice, cx)` fixes it to icons the application chose, such
+as a set its user picked; the theme's icons told meanwhile are kept, and
+`icons.follow_theme(cx)` follows them again. `icons.switch_off(cx)` turns it
+off: every widget draws gpui-component's glyphs. Switching off keeps the
+icons loaded, so following or fixing the same icons again loads nothing.
+
+**The paths.** The handle serves its icons under paths of its own, one per
+set, icon theme and name, all under `native-theme-gpui/`, so a drawing of one
+set is never shown for another; an application keeps no asset of its own
+there. It answers the 106 `icons/*.svg` paths of gpui-component's
+`IconName`, whoever draws them: an application's own
+`Icon::new(IconName::…)` draws the set's icon too, and so does an
+application's own artwork under one of those paths, once a set is served.
+
+**A resolver of the application's own.** An application that answers some
+icon paths itself sets its resolver after `install`, which would replace it
+otherwise, and asks `icons.lookup(path, cx)` for the paths it leaves to the
+handle: `IconAnswer::Draw(path)` and `IconAnswer::Empty(path)` are the path
+to return, `IconAnswer::NotMine` leaves the icon to gpui-component (`None`).
+
+**The report.** `icons.report()` says what the handle serves, and why it
+serves nothing where it does not: `NotInstalled`, `Off`, `NoAssetSource`,
+`NotTold`, `NotServed` (SF Symbols, Segoe Fluent, or a set the connector
+does not know), or `Loaded`, whose `LoadedSet::served` says whether the set
+is served and whose `light` and `dark` list, for each mode, the names it has
+no icon for, the essential icons it lacks and the names that keep
+gpui-component's glyph. An application checks it for the sets it supports.
+
+### What the widget icons leave as they are
+
+- **Where gpui-component's glyphs stay.** An icon the theme's set lacks is
+  not replaced by another set's, with two exceptions, where the widgets keep
+  gpui-component's glyphs for every icon. One: a set that lacks one of nine
+  glyphs nearly every window needs (`icons::ESSENTIAL_ICONS`: the window
+  controls, `Close`, `ChevronDown`, `Check`, `Minus` and `Plus`) in either
+  colour mode, or a set that gives no icon at all, is not served, since the
+  alternative would be a control the user cannot see;
+  `icons.set_essentials(…)` replaces the list, with an empty one too. Two:
+  SF Symbols and Segoe Fluent are not served in this release, since their
+  icons load as pixels and the connector knows them by role only.
+- **The filled star under Lucide.** `StarFill` keeps gpui-component's
+  glyph, a filled star Lucide lacks.
+- **A newer `IconName`.** An `IconName` a later gpui-component adds, which
+  the connector's tables do not know (their wildcard arms, in
+  `lucide_name_for_gpui_icon`, `material_name_for_gpui_icon` and
+  `freedesktop_name_candidates` in `src/icons.rs`), is not the handle's to
+  answer: it keeps gpui-component's glyph among the served set's icons until
+  the connector's tables gain it.
+- **Icons drawn empty.** An icon a served set lacks is drawn empty, and the
+  report names it. A button whose only content it is is drawn empty too: a
+  password field's eye, a carousel's arrows, a sidebar's toggle.
+- **One colour only.** Only an icon drawn in one colour is served:
+  gpui-component draws its icons as one-colour masks. Where the theme has an
+  icon for a name only in several colours, the name is drawn empty, so an
+  alert's or a notification's status icon is gone where the theme's is in
+  several colours.
+- **16 px.** A freedesktop theme's icon is looked up at 16 px, and drawn at
+  the size the widget asks for.
+- **Outside the hook.** Native menus on macOS and Windows, a
+  `gpui_kit_assets::IconName` rendered by itself, the Markdown task box's
+  mark and an `Icon` built from bytes are not drawn through the resolver, so
+  the handle does not reach them.
+- **The connector's own check box and spinner.** The connector's
+  `widgets::Checkbox` draws its own mark, a stroked check, or a dash in the
+  mixed state, where the theme states `checkbox.check_mark_stroke_width`,
+  and the set's `Check` or `Minus` otherwise; gpui-component's check box and
+  a menu's or a list's check mark show the set's. The connector's
+  `widgets::Spinner` turns the theme's animated indicator, or an arc, while
+  gpui-component's `Spinner` turns the set's `Loader`: under Adwaita, which
+  has no spinner icon, the three-dot loading icon.
+- **Staleness.** The handle keeps serving the drawings it loaded until the
+  set changes. It keeps every icon theme of the current set it has loaded,
+  so a light/dark switch loads each icon theme once. A theme whose files
+  change while the application runs is loaded again only after another set
+  has been chosen and then the theme again, and the new drawing then reaches
+  only sizes a window has not drawn yet and windows opened afterwards: a
+  drawing a window already holds stays for the run, since GPUI keeps one
+  drawing per path and size, and the theme's paths are the same.
+
 ## How re-application works
 
 gpui-component's `Theme::change`, `sync_system_appearance` and `sync_base`
@@ -658,6 +804,9 @@ geometry is still restored). The default registry holds two themes,
 
 Two things a theme cannot reach in gpui-component 0.9.1; each is a request to
 upstream.
+
+What the connector's widget icons leave as they are is in
+[The widgets' own icons](#what-the-widget-icons-leave-as-they-are).
 
 **A table's scroll bar is 16 px wide.** `DataTable` sizes the box its scroll
 bars sit in with the fixed `Scrollbar::width()`, 16 px (gpui-component
@@ -838,7 +987,7 @@ narrow. `gpui-fast` is off: it changes the GPUI core rather than adding to it
 | `material-icons` | the bundled Material Symbols set (`native-theme/material-icons`) |
 | `lucide-icons` | the bundled Lucide set (`native-theme/lucide-icons`) |
 | `system-icons` | the platform's own icons (`native-theme/system-icons`) |
-| `svg-rasterize` | SVG icons rasterised by this crate (`native-theme/svg-rasterize`) |
+| `svg-rasterize` | SVG icons rasterised by this crate (`native-theme/svg-rasterize`), and the widget icons (`icons::WidgetIcons`) |
 | `system-fonts` | a theme family the system lacks is drawn in the family the platform substitutes for it (`native-theme/system-fonts`; fontconfig on Linux), not in gpui's own fallback list |
 | `gpui-fast` | builds on GPUI Kit's GPUI Fast core instead of gpui-pre (`gpui-kit/gpui-fast`, `gpui-component/gpui-fast`) |
 | `native` | the OS readers (`native-theme/native`), so `from_system()` reads the OS theme |
@@ -1033,8 +1182,10 @@ icon from that colour mode's icon theme — and colours it, a freedesktop icon
 only where its foreground is left to the caller (a symbolic icon, a
 `currentColor` the icon sets no colour for), so a full-colour one keeps its
 own palette. An icon the set does not have is `None`; nothing is substituted.
-`icons::icon_name` is another thing: the `IconName` of gpui-component's
-bundled Lucide glyph, whatever the theme's set.
+`icons::icon_name` is another thing: the `IconName` gpui-component draws for
+the role, its Lucide glyph, or the theme's icon for that name where the
+widget icons serve the theme's set (see
+[The widgets' own icons](#the-widgets-own-icons)).
 
 ```rust,no_run
 use gpui_kit::{Styled, img, px};
@@ -1223,7 +1374,10 @@ dependency wanting a later snapshot.
   names Breeze/Adwaita icons. `None` means the set has no equivalent; nothing
   is substituted. 31 of the 42 `IconRole` variants map to `IconName`
   (`icons::icon_name`); a role's icon in the theme's own set is
-  `SystemTheme::icon` (see [Role icons](#role-icons)).
+  `SystemTheme::icon` (see [Role icons](#role-icons)); and the widget icons
+  (`icons::WidgetIcons`, feature `svg-rasterize`) serve gpui-component's
+  widgets their own icons from these tables (see
+  [The widgets' own icons](#the-widgets-own-icons)).
 - **Not mapped: scroll bounce.** It is a platform behaviour, not theme data:
   gpui-base's `ScrollBounce` bounces by build target, on macOS, iOS and
   Android, whose own scroll views do (`ScrollBounce::enabled_by_default`), and

@@ -114,7 +114,7 @@ the model does not have yet. The reporter's remaining items, the focus ring and
 Breeze's hover outlines among them, are planned for later 0.7.x releases
 (`docs/issues/0004_kde-open-items-rationale.md`).
 
-## v0.7.2 — egui 0.37, GPUI Kit 0.10.0, and the focus ring, the hover outlines and the toolbar buttons from issue #4
+## v0.7.2 — egui 0.37, GPUI Kit 0.10.0, gpui-component's own icons in the theme's icon set, and the focus ring, the hover outlines and the toolbar buttons from issue #4
 
 **Delivered:** the egui connector and the egui widgets crate require egui
 0.37.0, and the gpui connector requires gpui-component, gpui-base and gpui-kit
@@ -165,6 +165,15 @@ the user's accent; a checked one is lettered in the button's checked text colour
 iced and egui connectors draw them, and the gpui connector gives a toolbar button
 variant and a checked button's fill, the outline included. Each showcase shows a
 checked toolbar button.
+
+gpui-component's widgets draw icons of their own, the caret of a select, a dialog's
+close button, the window controls, a menu's check mark, about fifty in all, which were
+always its bundled Lucide glyphs. gpui-component 0.9 added a hook for them, and the gpui
+connector's `icons::WidgetIcons` uses it: the widgets draw the theme's icon set, Lucide,
+Material or a freedesktop theme such as Breeze or Adwaita, in the theme's light and dark
+modes, and an icon the set lacks is not drawn. Where a set lacks a glyph nearly every
+window needs, and under SF Symbols and Segoe Fluent, whose icons are pixels, the widgets
+keep gpui-component's own. Serving those two sets is the next step.
 
 ## Model completeness: what native-theme does not carry
 

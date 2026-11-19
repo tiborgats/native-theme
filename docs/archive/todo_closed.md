@@ -2086,6 +2086,29 @@ and many have since drifted, as the archive's [README](README.md) warns.
   gpui-pre 0.3.12 does (`Cargo.toml:527-528`); `cargo update -p taffy` moved the lock
   to 0.15.1, which both cores now build on; the checks D.6 names passed.
 
+### gpui: the widgets' own icons follow the theme's icon set
+
+- [x] [v0.7.x] gpui-component's widgets draw their own Lucide glyphs — a
+      `Select`'s or `Combobox`'s caret, the check mark beside a chosen row, an
+      empty list's Inbox and the like — whatever the theme's icon set, until
+      the connector or the gpui showcase sets the application's icon resolver
+      (`set_icon_resolver`, gpui-component 0.9.1 `src/icon.rs:77-106`), which
+      every `Icon` drawn from an asset path asks first.
+      *GPUI Kit 0.10.0 (2026-11-18):* three more: the Spinner's own
+      `IconName::Loader` on a loading `Button` that sets no `loading_icon`
+      (gpui-component 0.10.0 `src/spinner.rs:25`; a loading button without an icon
+      shows the spinner too, `src/button/button.rs:777-786`), the mixed check box's
+      `IconName::Minus` (`src/checkbox.rs:230-250`, `:284-290`, `:354-370`), and
+      `ChevronLeft` in a right-to-left layout, where the widgets' chevrons mirror
+      (`docs/todo_v0.7.2_gpui-kit-0.10.0-rationale.md`, §1.3 and §1.5).
+      *Closed 2026-11-19 by `dce5a987` (the connector's `icons::WidgetIcons`) and
+      `352062e8` (the gpui showcase installs it):* gpui-component's widgets draw the
+      theme's icon set under Lucide, Material and a freedesktop theme; under SF
+      Symbols and Segoe Fluent they keep gpui-component's glyphs, the open entry
+      *gpui: the widgets' own icons under SF Symbols and Segoe Fluent*; the three
+      icons its line of 2026-11-18 names are names of the connector's tables and are
+      served with the rest.
+
 ---
 
 ## Publishing Prep

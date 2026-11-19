@@ -868,6 +868,10 @@ The other order for 2 and 3, the icons first because they complete what GPUI
 Kit 0.9 made possible, is as sound technically; the proposal follows what was
 asked for first.
 
+*2026-11-19:* the first half of item 3, gpui-component's own icons, was built
+inside 0.7.2 by the maintainer's decision; the step that serves the two pixel
+sets stays a later release.
+
 **Where step 1 goes.**
 
 - (a) Into v0.7.1. It corrects values in existing fields, as v0.7.1's first KDE
