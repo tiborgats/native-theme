@@ -107,6 +107,8 @@ pub struct ResolvedDefaults {
     pub selection_text_color: Rgba,
     /// Selection background when window is unfocused.
     pub selection_inactive_background: Rgba,
+    /// Text color over `selection_inactive_background`.
+    pub selection_inactive_text_color: Rgba,
     /// Text selection background (inline text highlight).
     pub text_selection_background: Rgba,
     /// Text selection color (inline text highlight).
@@ -370,6 +372,7 @@ mod tests {
             selection_background: c,
             selection_text_color: c,
             selection_inactive_background: c,
+            selection_inactive_text_color: c,
             text_selection_background: c,
             text_selection_color: c,
             disabled_text_color: c,

@@ -1986,6 +1986,7 @@ nonexistent_field = "#ff0000"
             "selection_background",
             "selection_text_color",
             "selection_inactive_background",
+            "selection_inactive_text_color",
             "text_selection_background",
             "text_selection_color",
             "disabled_text_color",

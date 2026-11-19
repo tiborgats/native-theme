@@ -99,6 +99,10 @@ impl ThemeMode {
         if d.selection_inactive_background.is_none() {
             d.selection_inactive_background = d.selection_background;
         }
+        // selection_inactive_text_color <- selection_text_color
+        if d.selection_inactive_text_color.is_none() {
+            d.selection_inactive_text_color = d.selection_text_color;
+        }
         // text_selection_background <- selection_background (inline text highlight defaults to selection)
         if d.text_selection_background.is_none() {
             d.text_selection_background = d.selection_background;
@@ -382,6 +386,7 @@ mod tests {
             "defaults.selection_background",
             "defaults.focus_ring_color",
             "defaults.selection_inactive_background",
+            "defaults.selection_inactive_text_color",
             "defaults.text_selection_background",
             "defaults.text_selection_color",
             "defaults.font.color",
@@ -829,6 +834,7 @@ mod tests {
             "defaults.selection_background".into(),
             "defaults.focus_ring_color".into(),
             "defaults.selection_inactive_background".into(),
+            "defaults.selection_inactive_text_color".into(),
             "defaults.text_selection_background".into(),
             "defaults.text_selection_color".into(),
             "defaults.font.color".into(),

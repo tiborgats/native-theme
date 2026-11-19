@@ -730,6 +730,19 @@ pub struct ListTheme {
     #[serde(rename = "header_height_px")]
     #[theme(category = "soft_option", check = "positive")]
     pub header_height: Option<f32>,
+    /// Fill of a hovered column-header section, in place of
+    /// `header_background`: Breeze's `Button` mixed a fifth towards the hover
+    /// colour. `None` where the platform states none: a hovered section keeps
+    /// `header_background` (docs/platform-facts.md §2.15).
+    #[theme(category = "soft_option")]
+    pub header_hover_background: Option<Rgba>,
+    /// Fill of a pressed column-header section, in place of
+    /// `header_background`: Breeze's `Button` mixed a fifth towards the focus
+    /// colour. `None` where the platform states none: a pressed section keeps
+    /// the hovered fill, else `header_background` (docs/platform-facts.md
+    /// §2.15).
+    #[theme(category = "soft_option")]
+    pub header_active_background: Option<Rgba>,
     /// Hovered row background color; unstated, the list's own
     /// `background_color`, no tint (a widget-to-widget rule,
     /// `resolve_widget_to_widget`). It may be translucent, a layer over the

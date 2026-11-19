@@ -56,6 +56,7 @@
 "defaults.selection_background"          = "defaults.accent_color"
 "defaults.focus_ring_color"              = "defaults.accent_color"
 "defaults.selection_inactive_background" = "defaults.selection_background"       # must run AFTER selection_background
+"defaults.selection_inactive_text_color" = "defaults.selection_text_color"
 "defaults.text_selection_background"     = "defaults.selection_background"       # must run AFTER selection_background
 "defaults.text_selection_color"          = "defaults.selection_text_color"
 "defaults.font.color"                   = "defaults.text_color"                 # must run BEFORE mono_font.color
@@ -477,6 +478,8 @@ fields = [
     "input.caret_blink_timeout",       # milliseconds: KDE's, Material's and iOS's caret never stops (§2.4)
     "dialog.entrance",                 # enum: Windows/GNOME/Material scale_fade, KDE fade_rise (§2.22)
     "list.header_height",              # KDE content-sized, WinUI has no column header (§2.15)
+    "list.header_hover_background",    # None: a hovered section keeps header_background (§2.15)
+    "list.header_active_background",   # None: a pressed section keeps the hovered fill (§2.15)
 ]
 # All sizing fields (min_width, min_height, border.padding_*, height, width,
 # diameter, etc.) also have no inheritance — they come from preset/reader.

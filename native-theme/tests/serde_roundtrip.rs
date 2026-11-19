@@ -83,6 +83,7 @@ fn fully_populated_variant(offset: u8) -> ThemeMode {
     // Missing fields added for issue 24n
     v.defaults.accent_text_color = Some(c(252, 252, 252));
     v.defaults.selection_inactive_background = Some(c(180, 210, 233));
+    v.defaults.selection_inactive_text_color = Some(c(35, 38, 41));
     v.defaults.line_height = Some(1.2);
     v.defaults.border.corner_radius_lg = Some(8.0);
     v.defaults.border.shadow_enabled = Some(true);

@@ -169,6 +169,7 @@ fn arb_theme_defaults() -> impl Strategy<Value = ThemeDefaults> {
                     selection_background: colors[8],
                     selection_text_color: colors[9],
                     selection_inactive_background: colors[10],
+                    selection_inactive_text_color: colors[23],
                     text_selection_background: colors[11],
                     text_selection_color: colors[12],
                     disabled_text_color: colors[13],
@@ -421,7 +422,7 @@ fn arb_tooltip_theme() -> impl Strategy<Value = TooltipTheme> {
 
 fn arb_list_theme() -> impl Strategy<Value = ListTheme> {
     (
-        proptest::collection::vec(proptest::option::of(arb_rgba()), 9..=9),
+        proptest::collection::vec(proptest::option::of(arb_rgba()), 11..=11),
         proptest::option::of(0.0f32..200.0),
         proptest::option::of(1.0f32..200.0),
         proptest::option::of(arb_font_spec()),
@@ -438,6 +439,8 @@ fn arb_list_theme() -> impl Strategy<Value = ListTheme> {
                 grid_color: colors[5],
                 row_height: row_h,
                 header_height: header_h,
+                header_hover_background: colors[9],
+                header_active_background: colors[10],
                 hover_background: colors[6],
                 hover_text_color: colors[7],
                 disabled_text_color: colors[8],

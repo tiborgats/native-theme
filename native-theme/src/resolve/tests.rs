@@ -132,6 +132,31 @@ fn resolve_phase1_explicit_selection_preserved() {
 }
 
 #[test]
+fn resolve_phase1_selection_text_fills_selection_inactive_text() {
+    let mut v = ThemeMode::default();
+    v.defaults.selection_text_color = Some(Rgba::rgb(255, 255, 255));
+    v.resolve();
+    // selection_inactive_text_color, unset, inherits from selection_text_color
+    assert_eq!(
+        v.defaults.selection_inactive_text_color,
+        Some(Rgba::rgb(255, 255, 255))
+    );
+}
+
+#[test]
+fn resolve_phase1_explicit_selection_inactive_text_preserved() {
+    let mut v = ThemeMode::default();
+    v.defaults.selection_text_color = Some(Rgba::rgb(255, 255, 255));
+    v.defaults.selection_inactive_text_color = Some(Rgba::rgb(35, 38, 41));
+    v.resolve();
+    // Explicit selection_inactive_text_color preserved
+    assert_eq!(
+        v.defaults.selection_inactive_text_color,
+        Some(Rgba::rgb(35, 38, 41))
+    );
+}
+
+#[test]
 fn resolve_phase1_font_color_from_text_color() {
     let mut v = ThemeMode::default();
     v.defaults.text_color = Some(Rgba::rgb(30, 30, 30));
@@ -785,6 +810,7 @@ fn fully_populated_variant() -> ThemeMode {
     v.defaults.selection_background = Some(Rgba::rgb(0, 120, 215));
     v.defaults.selection_text_color = Some(Rgba::rgb(255, 255, 255));
     v.defaults.selection_inactive_background = Some(Rgba::rgb(0, 120, 215));
+    v.defaults.selection_inactive_text_color = Some(Rgba::rgb(255, 255, 255));
     v.defaults.text_selection_background = Some(Rgba::rgb(0, 120, 215));
     v.defaults.text_selection_color = Some(Rgba::rgb(255, 255, 255));
     v.defaults.focus_ring_color = Some(Rgba::rgb(0, 120, 215));
@@ -2366,6 +2392,7 @@ fn clear_derived_fields(v: &mut ThemeMode) {
     v.defaults.selection_background = None;
     v.defaults.focus_ring_color = None;
     v.defaults.selection_inactive_background = None;
+    v.defaults.selection_inactive_text_color = None;
 }
 
 /// fields + ~65 widget geometry/behavior fields that have no derivation

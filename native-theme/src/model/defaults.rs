@@ -70,6 +70,9 @@ pub struct ThemeDefaults {
     pub selection_text_color: Option<Rgba>,
     /// Selection background when window is unfocused.
     pub selection_inactive_background: Option<Rgba>,
+    /// Text color over `selection_inactive_background`, the selection of a
+    /// view without the focus; unstated, `selection_text_color`.
+    pub selection_inactive_text_color: Option<Rgba>,
     /// Text selection background (inline text highlight).
     pub text_selection_background: Option<Rgba>,
     /// Text selection color (inline text highlight).
@@ -161,7 +164,7 @@ impl_merge!(ThemeDefaults {
         background_color, text_color, accent_color, accent_text_color,
         surface_color, muted_color, shadow_color, link_color,
         selection_background, selection_text_color,
-        selection_inactive_background,
+        selection_inactive_background, selection_inactive_text_color,
         text_selection_background, text_selection_color,
         disabled_text_color,
         danger_color, danger_text_color, warning_color, warning_text_color,
@@ -198,6 +201,7 @@ mod tests {
         assert!(d.selection_background.is_none());
         assert!(d.selection_text_color.is_none());
         assert!(d.selection_inactive_background.is_none());
+        assert!(d.selection_inactive_text_color.is_none());
         assert!(d.text_selection_background.is_none());
         assert!(d.text_selection_color.is_none());
         assert!(d.disabled_text_color.is_none());
