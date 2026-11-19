@@ -350,7 +350,10 @@ table header's height),
 `line_height`,
 `border_color`, `disabled_opacity`, `focus_ring_color`, `link_color`,
 `expander_arrow_color`,
-`selection_background`, `info_color`, `info_text_color`,
+`selection_background`, `list_header_hover_background` and
+`list_header_active_background` (a table header section's hovered and
+pressed fills, for a header you draw: iced's `table` has no style setter),
+`info_color`, `info_text_color`,
 `warning_text_color`, `icon_sizes`, `text_scale`, plus `to_iced_weight(css_weight)`
 for converting CSS weight values to iced's `Weight` enum, and the widgets
 `pick_list_handle`, `tab_indicator`, `tab_indicator_line`, `tab_flares`,

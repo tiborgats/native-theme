@@ -161,6 +161,22 @@ pub(super) const ACCESSOR_ROWS: &[AccessorRow] = &[
         get: |r| Some(crate::selection_background(r)),
     },
     AccessorRow {
+        // iced 0.14's `table` has no style setter, and a header cell is the
+        // application's own element (`iced_widget-0.14.2/src/table.rs:35-44`,
+        // `:149-187`): the application draws a section in this fill.
+        accessor: "crate::list_header_hover_background",
+        native: |r| r.list.header_hover_background.map(to_color),
+        get: |r| crate::list_header_hover_background(r),
+    },
+    AccessorRow {
+        // iced 0.14's `table` has no style setter, and a header cell is the
+        // application's own element (`iced_widget-0.14.2/src/table.rs:35-44`,
+        // `:149-187`): the application draws a section in this fill.
+        accessor: "crate::list_header_active_background",
+        native: |r| r.list.header_active_background.map(to_color),
+        get: |r| crate::list_header_active_background(r),
+    },
+    AccessorRow {
         // iced's palette has no info family.
         accessor: "crate::info_color",
         native: |r| Some(to_color(r.defaults.info_color)),

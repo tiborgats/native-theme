@@ -413,6 +413,12 @@ entry = "defaults.selection_inactive_background"
 kind = "no receiver"
 why = "iced draws a text field's selection only while the field is focused (`iced_widget-0.14.2/src/text_input.rs:500-503`, `text_editor.rs:1021`), so an unfocused selection has no look to give"
 
+[leaves."defaults.selection_inactive_text_color"]
+named = "UNREAD_COLOURS"
+entry = "defaults.selection_inactive_text_color"
+kind = "no receiver"
+why = "iced draws a text field's selection only while the field is focused (`iced_widget-0.14.2/src/text_input.rs:500-503`, `text_editor.rs:1021`), so an unfocused selection has no look to give"
+
 [leaves."defaults.selection_text_color"]
 named = "UNREAD_COLOURS"
 entry = "defaults.selection_text_color"
@@ -662,6 +668,11 @@ entry = "list.grid_color"
 kind = "no receiver"
 why = "a `SelectionList` draws no line between its rows or columns (`selection_list/list.rs:215-275`), and its `Style` has no color for one (`style/selection_list.rs:10-19`)"
 
+[leaves."list.header_active_background"]
+moves = [
+  { row = "crate::list_header_active_background" },
+]
+
 [leaves."list.header_background"]
 named = "UNREACHABLE"
 entry = "list.header_background"
@@ -673,6 +684,11 @@ named = "UNREACHABLE"
 entry = "list.header_font"
 kind = "no receiver"
 why = "the same: a `SelectionList` has no column header to set in it (`selection_list/list.rs:215-275`)"
+
+[leaves."list.header_hover_background"]
+moves = [
+  { row = "crate::list_header_hover_background" },
+]
 
 [leaves."list.hover_background"]
 moves = [
@@ -1210,6 +1226,12 @@ leaves = ["defaults.info_text_color"]
 
 [rows."crate::link_color"]
 leaves = ["defaults.link_color"]
+
+[rows."crate::list_header_active_background"]
+leaves = ["list.header_active_background"]
+
+[rows."crate::list_header_hover_background"]
+leaves = ["list.header_hover_background"]
 
 [rows."crate::selection_background"]
 leaves = ["defaults.selection_background"]

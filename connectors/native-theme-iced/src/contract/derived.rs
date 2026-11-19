@@ -1598,6 +1598,15 @@ pub(super) const UNREAD_COLOURS: &[UnreadColour] = &[
         ),
     },
     UnreadColour {
+        leaf: "defaults.selection_inactive_text_color",
+        why: Unread::NoReceiver(
+            "iced draws a text field's selection only while the field is \
+             focused (`iced_widget-0.14.2/src/text_input.rs:500-503`, \
+             `text_editor.rs:1021`), so an unfocused selection has no look to \
+             give",
+        ),
+    },
+    UnreadColour {
         leaf: "defaults.selection_text_color",
         why: Unread::Inherited(
             "the selected-item labels that rows read inherit it: \

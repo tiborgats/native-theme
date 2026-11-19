@@ -320,7 +320,7 @@
 //! | `styles` (35 functions) | every `Style` field of button (six classes), toggle button, toolbar button, a dialog's default button, text input, text editor, checkbox, radio, toggler, pick list, menu, slider, scrollable, progress bar, rule, pane grid split lines, tooltip, card container, segmented control, its segments and the separators between them, expander header and frame, the dialog's container (`dialog.background_color`, `.border`, `.body_font.color`), the toolbar's container and its bottom rule (`toolbar.background_color`, `.font.color`, `.border.color`), and the application's base style (`window.background_color`); scrollbar widths and embedding | the widget's own resolved theme (`menu`, a drop-down's: its fill the menu's, its line the popover's border's, as the platforms frame a popup); fields the model lacks come from iced's default |
 //! | Widget metrics | button, input, text-area and combo-box padding (the stated sides inside the border, iced's own default for the others; `widgets` feature), any widget's padding over a default the caller names (`padding_or`, `padding_inside_border`) or where every side is stated (`stated_padding`), minimum control heights as a line height (`control_line_height`), a button's minimum size (`button_content_min_size`, `at_least`; `widgets` feature), border radius, scrollbar width, a tooltip's show delay (`tooltip_show_delay`, for `Tooltip::delay`), a table header's height (`list_header_height`), a dialog's padding inside its border and its bounds (`dialog_padding`, `dialog_max_width`, `dialog_max_height`, `dialog_min_width`, `dialog_min_height`), its button gap and order (`dialog_button_gap`, `dialog_button_order`), a toolbar's padding, item gap, outer height and rule width (`toolbar_padding`, `toolbar_item_gap`, `toolbar_bar_height`, `toolbar_border_line_width`) | Per-widget resolved fields |
 //! | Typography | font family/size/weight, mono family/size/weight, line height, the text scale (`text_scale`) | `defaults.font.*`, `defaults.mono_font.*`, `text_scale.*` |
-//! | Color helpers | `border_color`, `link_color`, `selection_background`, `info_color`, `info_text_color`, `warning_text_color`, `focus_ring_color`; `expander_arrow_color`, `dialog_title_font_color` | `defaults.*`; the widget's own |
+//! | Color helpers | `border_color`, `link_color`, `selection_background`, `list_header_hover_background`, `list_header_active_background`, `info_color`, `info_text_color`, `warning_text_color`, `focus_ring_color`; `expander_arrow_color`, `dialog_title_font_color` | `defaults.*`; the widget's own |
 //! | Geometry helpers | disabled_opacity | `defaults.*` |
 //! | Widgets (`widgets` feature; `Spinner`, `spinner`) | a switch at the stated track and thumb sizes (`switch`, `switch_over`), a radio at the stated indicator and dot sizes (`radio`), the focus ring round a field (`focus_ring`), the active tab's line (`tab_indicator`, `tab_indicator_line`) and outward corners (`tab_flares`), the drop-down chevron (`pick_list_handle`), the loading indicator (`Spinner`) | `switch.*`; `checkbox.*`; `defaults.focus_ring_*`; `tab.*`; `combo_box.arrow_icon_size`; `spinner.*` |
 //!
@@ -1633,6 +1633,31 @@ pub fn tooltip_show_delay(
 #[must_use]
 pub fn list_header_height(resolved: &native_theme::theme::ResolvedTheme) -> Option<f32> {
     resolved.list.header_height
+}
+
+/// Fill of a hovered column-header section, where the platform states one
+/// (`None`: it keeps `list.header_background`). iced's `table` has no style
+/// setter, and a header cell is the application's own element (iced_widget
+/// 0.14.2 `src/table.rs:35-44`, `:149-187`); for a header the application
+/// draws.
+#[must_use]
+pub fn list_header_hover_background(
+    resolved: &native_theme::theme::ResolvedTheme,
+) -> Option<iced_core::Color> {
+    resolved.list.header_hover_background.map(palette::to_color)
+}
+
+/// Fill of a pressed column-header section, where the platform states one
+/// (`None`: the hovered fill, else `list.header_background`). As
+/// [`list_header_hover_background`].
+#[must_use]
+pub fn list_header_active_background(
+    resolved: &native_theme::theme::ResolvedTheme,
+) -> Option<iced_core::Color> {
+    resolved
+        .list
+        .header_active_background
+        .map(palette::to_color)
 }
 
 /// Returns the padding inside a dialog's border as an iced

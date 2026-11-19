@@ -213,6 +213,12 @@ reason = "iced's text widgets have no unfocused-window state (`text_input::Statu
 
 [[exception]]
 connector = "iced"
+name = "selection_inactive_text_color"
+kind = "absent"
+reason = "iced's text widgets have no unfocused-window state (`text_input::Status` is Active, Hovered, Focused or Disabled, iced_widget 0.14.2 src/text_input.rs:1697-1709), so no style takes an inactive selection, and so no style takes its text colour either"
+
+[[exception]]
+connector = "iced"
 name = "selection_text_color"
 kind = "absent"
 reason = "iced's text styles take a selection fill and no selection text colour (`text_input::Style::selection`, `text_editor::Style::selection`, iced_widget 0.14.2 src/text_input.rs:1713-1726, src/text_editor.rs:1425-1436)"
