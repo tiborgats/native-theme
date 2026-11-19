@@ -8615,6 +8615,14 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
             "basic_table: the selected row's text colour".into()
         }
         ("list", "selection_text_color") => "list_row: the selected row's text_color".into(),
+        ("defaults", "selection_inactive_background" | "selection_inactive_text_color")
+            if resolved.defaults.selection_inactive_background
+                == resolved.defaults.selection_background =>
+        {
+            "not drawn: the theme's inactive fill is its selection's, so a selected row \
+             keeps the list's pair while the window is not active (selection_pair)"
+                .into()
+        }
         ("defaults", "selection_inactive_background") if under("basic.table.") => {
             "basic_table: the selected row's fill while the window is not active, where it \
              differs from the selection's (selection_pair)"
@@ -8683,7 +8691,9 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         ("list", "border.color") => "list_frame: the frame container's border.color".into(),
         ("list", "border.corner_radius_px") if under("basic.table.header") => {
             "table_row_style: the header's fill rounded at its top corners by the frame's \
-             inner radius, this less list.border.line_width (inner_radius)"
+             inner radius, this less list.border.line_width (inner_radius); \
+             header_section_style: a section's fill rounded so at the corner it meets the \
+             frame at"
                 .into()
         }
         ("list", "border.corner_radius_px") if under("basic.table.row_") => {
@@ -17978,15 +17988,7 @@ fn subscription(state: &State) -> Subscription<Message> {
     subs.push(iced::window::resize_events().map(|(_, size)| Message::WindowResized(size)));
     // The window's scale factor, once it is open and whenever it changes,
     // and its focus, which decides a selected row's pair.
-    subs.push(
-        iced::window::events().filter_map(|(id, event)| match event {
-            iced::window::Event::Opened { .. } => Some(Message::WindowOpened(id)),
-            iced::window::Event::Rescaled(scale) => Some(Message::WindowRescaled(scale)),
-            iced::window::Event::Focused => Some(Message::WindowFocusChanged(true)),
-            iced::window::Event::Unfocused => Some(Message::WindowFocusChanged(false)),
-            _ => None,
-        }),
-    );
+    subs.push(iced::window::events().filter_map(window_message));
 
     // The OS theme's changes, in every colour mode, as the gpui showcase
     // follows them: under a picked Light or Dark the OS still owns the
@@ -18014,6 +18016,18 @@ fn subscription(state: &State) -> Subscription<Message> {
     }
 
     Subscription::batch(subs)
+}
+
+/// The message a window's event sends: its opening, its scale factor, and
+/// its focus, which decides a selected row's pair ([`selection_pair`]).
+fn window_message((id, event): (iced::window::Id, iced::window::Event)) -> Option<Message> {
+    match event {
+        iced::window::Event::Opened { .. } => Some(Message::WindowOpened(id)),
+        iced::window::Event::Rescaled(scale) => Some(Message::WindowRescaled(scale)),
+        iced::window::Event::Focused => Some(Message::WindowFocusChanged(true)),
+        iced::window::Event::Unfocused => Some(Message::WindowFocusChanged(false)),
+        _ => None,
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -23167,6 +23181,197 @@ mod tests {
         }
     }
 
+    /// Issue #4's step 7 (7.H.2 of
+    /// `docs/archive/todo_v0.7.2_kde-open-items-steps6-7-spec.md`): the Basic
+    /// page as drawn follows the window's state. Under kde-breeze light, the
+    /// window not active, the selected list row's fill ([`LIST_FILLS`]) and
+    /// most of the selected table row's pixels are the theme's
+    /// `defaults.selection_inactive_background`; the window active, both are
+    /// `list.selection_background`.
+    #[test]
+    fn the_basic_page_draws_the_unfocused_pair_in_an_inactive_window() {
+        let mut state = State {
+            accessibility: native_theme_iced::AccessibilityPreferences::default(),
+            side_panel_visible: false,
+            ..State::default()
+        };
+        assert!(state.install_in_mode(
+            ThemeChoice::Preset("kde-breeze".to_owned()),
+            AppColorMode::Light
+        ));
+        state.basic_list_selected = Some(1);
+        let r = state.current_resolved.clone();
+        let inactive = to_color(r.defaults.selection_inactive_background);
+        let selection = to_color(r.list.selection_background);
+        assert_ne!(inactive, selection, "kde-breeze's two fills differ");
+        let table_row = BASIC_TABLE_ROWS
+            .get(BASIC_TABLE_SELECTED)
+            .map(|&(id, _, _)| id);
+        assert!(table_row.is_some(), "the table has its selected row");
+        for (active, want) in [(false, inactive), (true, selection)] {
+            state.window_active = active;
+            LIST_FILLS.with_borrow_mut(Vec::clear);
+            let (image, rects, scale) = basic_frame(&state);
+            let fills: Vec<_> = LIST_FILLS
+                .take()
+                .into_iter()
+                .filter(|(_, _, _, colour)| {
+                    [inactive, selection]
+                        .iter()
+                        .any(|c| *colour == iced::Background::Color(*c))
+                })
+                .map(|(_, _, _, colour)| colour)
+                .collect();
+            // `frame_after` draws twice, so a fill is recorded once a frame.
+            assert!(
+                !fills.is_empty() && fills.iter().all(|c| *c == iced::Background::Color(want)),
+                "the list's selected row's fills, window active: {active}: {fills:?}, want \
+                 {want:?}"
+            );
+            let pixels = table_row
+                .and_then(|id| rects.get(id))
+                .map_or_else(Vec::new, |row| pixels_in(&image, *row, scale));
+            let want = want.into_rgba8();
+            let filled = pixels
+                .iter()
+                .filter(|p| p.iter().zip(want).all(|(a, b)| a.abs_diff(b) <= 2))
+                .count();
+            assert!(
+                !pixels.is_empty() && filled * 2 > pixels.len(),
+                "the table's selected row, window active: {active}: {filled} of its {} \
+                 pixels in {want:?}",
+                pixels.len()
+            );
+        }
+    }
+
+    /// Decision 19 of `docs/archive/todo_v0.7.2_kde-open-items-steps6-7-spec.md`:
+    /// a header section pressed takes `list.header_active_background`, else
+    /// its hovered fill; with neither header fill stated no status fills it.
+    /// On kde-breeze light, the pressed fill unstated, a pressed section is
+    /// filled as a hovered one; both unstated, no section is filled.
+    #[test]
+    fn a_pressed_header_section_falls_back_to_its_hovered_fill() {
+        let mut state = State::default();
+        assert!(state.install_in_mode(
+            ThemeChoice::Preset("kde-breeze".to_owned()),
+            AppColorMode::Light
+        ));
+        let mut r = state.current_resolved.clone();
+        let theme = native_theme_iced::to_theme(&r, "header");
+        let statuses = [
+            button::Status::Active,
+            button::Status::Hovered,
+            button::Status::Pressed,
+            button::Status::Disabled,
+        ];
+        r.list.header_active_background = None;
+        assert!(
+            native_theme_iced::list_header_hover_background(&r).is_some(),
+            "kde-breeze states the hovered fill"
+        );
+        for first in [true, false] {
+            let style = header_section_style(&r, first);
+            let hovered = style(&theme, button::Status::Hovered).background;
+            assert!(
+                hovered.is_some(),
+                "first: {first}: the hovered section is filled"
+            );
+            assert_eq!(
+                style(&theme, button::Status::Pressed).background,
+                hovered,
+                "first: {first}: the pressed section without its own fill"
+            );
+        }
+        r.list.header_hover_background = None;
+        for first in [true, false] {
+            let style = header_section_style(&r, first);
+            for status in statuses {
+                assert_eq!(
+                    style(&theme, status).background,
+                    None,
+                    "first: {first}: {status:?} with neither header fill stated"
+                );
+            }
+        }
+    }
+
+    /// The window's focus events become [`Message::WindowFocusChanged`]
+    /// ([`window_message`]): `Focused` true, `Unfocused` false, and another
+    /// event of no concern to the focus none of it.
+    #[test]
+    fn the_windows_focus_events_send_its_focus() {
+        let id = iced::window::Id::unique();
+        assert!(matches!(
+            window_message((id, iced::window::Event::Focused)),
+            Some(Message::WindowFocusChanged(true))
+        ));
+        assert!(matches!(
+            window_message((id, iced::window::Event::Unfocused)),
+            Some(Message::WindowFocusChanged(false))
+        ));
+        assert!(window_message((id, iced::window::Event::CloseRequested)).is_none());
+    }
+
+    /// Decision 22 of `docs/archive/todo_v0.7.2_kde-open-items-steps6-7-spec.md`:
+    /// on every bundled combination, the routes of the selected rows'
+    /// `defaults.selection_inactive_background` and
+    /// `defaults.selection_inactive_text_color` say they are not drawn
+    /// exactly where the theme's inactive fill is its selection's, where a
+    /// selected row keeps the list's pair ([`selection_pair`]).
+    #[test]
+    fn the_unfocused_pairs_routes_say_where_it_is_not_drawn() {
+        let leaves = [
+            "defaults.selection_inactive_background",
+            "defaults.selection_inactive_text_color",
+        ];
+        let elements: Vec<_> = elements::elements()
+            .iter()
+            .filter(|e| e.leaves.iter().any(|l| leaves.contains(&l.as_str())))
+            .collect();
+        assert!(
+            elements.iter().any(|e| e.id.starts_with("basic.table."))
+                && elements.iter().any(|e| e.id.starts_with("basic.list.")),
+            "the table's and the list's rows list the unfocused pair"
+        );
+        let mut state = State {
+            accessibility: native_theme_iced::AccessibilityPreferences::default(),
+            ..State::default()
+        };
+        let mut seen = BTreeSet::new();
+        let mut faults = Vec::new();
+        for preset in native_theme::theme::Theme::list_presets() {
+            for mode in [AppColorMode::Light, AppColorMode::Dark] {
+                assert!(
+                    state.install_in_mode(ThemeChoice::Preset(preset.key.to_owned()), mode),
+                    "{} ({mode:?}): {:?}",
+                    preset.key,
+                    state.error_message
+                );
+                let d = &state.current_resolved.defaults;
+                let swaps = d.selection_inactive_background != d.selection_background;
+                seen.insert(swaps);
+                for element in &elements {
+                    for leaf in element
+                        .leaves
+                        .iter()
+                        .filter(|l| leaves.contains(&l.as_str()))
+                    {
+                        let route = iced_route(&state, element, leaf);
+                        if route.starts_with("not drawn: ") == swaps {
+                            faults.push(format!(
+                                "{} ({mode:?}) {} {leaf}, swaps: {swaps}: \"{route}\"",
+                                preset.key, element.id
+                            ));
+                        }
+                    }
+                }
+            }
+        }
+        assert_eq!(seen.len(), 2, "both cases among the presets: {seen:?}");
+        assert!(faults.is_empty(), "{faults:#?}");
+    }
+
     /// M9-158: the Basic table's and list's fills keep inside their frames'
     /// rounded corners, as egui's do (M9-110). Each frame is rounded by
     /// `list.border.corner_radius` and pads its content by its
@@ -25731,7 +25936,9 @@ mod tests {
     /// fills by the frame's inner radius (`table_row_style`,
     /// `list_row_fill`), so their routes for `list.border.corner_radius_px`
     /// and `list.border.line_width_px` name what rounds them, not the frame
-    /// container that the frames' own routes name.
+    /// container that the frames' own routes name; the header's
+    /// `list.border.corner_radius_px` names its sections' style
+    /// (`header_section_style`) as well.
     #[test]
     fn the_row_fill_corner_routes_name_what_rounds_them() {
         let state = route_states().swap_remove(0);
@@ -25761,6 +25968,13 @@ mod tests {
                 assert!(line.contains("frame container"), "{id} {leaf}: {line:?}");
             }
         }
+        // The header's sections round by the same inner radius.
+        let line = route("basic.table.header", "list.border.corner_radius_px");
+        assert_eq!(
+            route_functions(&line),
+            ["table_row_style", "header_section_style"],
+            "basic.table.header list.border.corner_radius_px: {line:?}"
+        );
     }
 
     /// The listed colour leaves the connector draws only where the theme
