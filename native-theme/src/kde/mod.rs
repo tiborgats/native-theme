@@ -1294,9 +1294,9 @@ BackgroundNormal=49,54,59
         contrast: Some("4"),
     };
 
-    /// The thirty-nine colour leaves the reader derives from, or reads
+    /// The forty-two colour leaves the reader derives from, or reads
     /// directly from, the colour scheme.
-    fn derived_leaves(mode: &crate::ThemeMode) -> [(&'static str, Option<Rgba>); 39] {
+    fn derived_leaves(mode: &crate::ThemeMode) -> [(&'static str, Option<Rgba>); 42] {
         let border = |b: &Option<crate::WidgetBorderSpec>| b.as_ref().and_then(|b| b.color);
         let sw = &mode.switch;
         [
@@ -1378,11 +1378,23 @@ BackgroundNormal=49,54,59
                 "toolbar.button_checked_background",
                 mode.toolbar.button_checked_background,
             ),
+            (
+                "button.default_button_background",
+                mode.button.default_button_background,
+            ),
+            (
+                "button.default_button_text_color",
+                mode.button.default_button_text_color,
+            ),
+            (
+                "button.default_button_border_color",
+                mode.button.default_button_border_color,
+            ),
         ]
     }
 
     /// The same leaves resolved.
-    fn resolved_leaves(theme: &crate::ResolvedTheme) -> [(&'static str, Option<Rgba>); 39] {
+    fn resolved_leaves(theme: &crate::ResolvedTheme) -> [(&'static str, Option<Rgba>); 42] {
         let sw = &theme.switch;
         [
             (
@@ -1472,6 +1484,18 @@ BackgroundNormal=49,54,59
                 "toolbar.button_checked_background",
                 theme.toolbar.button_checked_background,
             ),
+            (
+                "button.default_button_background",
+                theme.button.default_button_background,
+            ),
+            (
+                "button.default_button_text_color",
+                theme.button.default_button_text_color,
+            ),
+            (
+                "button.default_button_border_color",
+                theme.button.default_button_border_color,
+            ),
         ]
     }
 
@@ -1520,8 +1544,9 @@ BackgroundNormal=49,54,59
     /// Another accent moves the switch's on track, hovered or not, and its
     /// outline, the pressed button and the selected segment, the list's
     /// hover, the focus ring and the button's hover and focus border, the
-    /// combo box's hover pen, and a toolbar button's hover pen and pressed
-    /// fill; the checkbox and the progress bar follow it as before.
+    /// combo box's hover pen, a toolbar button's hover pen and pressed fill,
+    /// and the default button's fill and frame; the checkbox and the progress
+    /// bar follow it as before.
     #[test]
     fn an_accent_moves_the_on_track_the_pressed_button_the_selected_segment_and_the_list_hover()
     -> crate::Result<()> {
@@ -1544,6 +1569,8 @@ BackgroundNormal=49,54,59
                 "combo_box.hover_border_color",
                 "toolbar.button_hover_border_color",
                 "toolbar.button_active_background",
+                "button.default_button_background",
+                "button.default_button_border_color",
             ]
         );
         Ok(())
@@ -1572,6 +1599,9 @@ BackgroundNormal=49,54,59
                 "list.header_background",
                 "list.header_font.color",
                 "toolbar.button_checked_background",
+                "button.default_button_background",
+                "button.default_button_text_color",
+                "button.default_button_border_color",
             ]
         );
         Ok(())
@@ -1700,6 +1730,7 @@ BackgroundNormal=49,54,59
                 "popover.border.color",
                 "card.border.color",
                 "menu.separator_color",
+                "button.default_button_border_color",
             ]
         );
         Ok(())

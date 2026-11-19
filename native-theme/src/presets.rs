@@ -421,13 +421,19 @@ accent_color = "#00ff00"
             ] {
                 let variant = variant_opt.unwrap();
                 // button.primary_background is derived from accent, except on Windows
-                // (AccentFillColorDefault); KDE's default button is mix(Button, Highlight, 0.2)
-                // and waits for the connectors (docs/platform-facts.md:1188, §2.3)
+                // (AccentFillColorDefault); KDE's default button has fields of its own,
+                // `default_button_*` (docs/platform-facts.md §2.3)
                 assert_eq!(
                     variant.button.primary_background.is_some(),
                     *name == "windows-11",
                     "preset '{name}' {label}.button.primary_background: stated only where \
                      platform-facts does not derive it from the accent"
+                );
+                assert_eq!(
+                    variant.button.default_button_background.is_some(),
+                    *name == "kde-breeze",
+                    "preset '{name}' {label}.button.default_button_background: stated only where \
+                     the default button is not the primary one (KDE)"
                 );
                 // checkbox.checked_background is derived from accent, except on
                 // KDE, where Breeze tints the button colour instead, and on

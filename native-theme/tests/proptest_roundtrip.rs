@@ -227,10 +227,10 @@ fn arb_window_theme() -> impl Strategy<Value = WindowTheme> {
 }
 
 fn arb_button_theme() -> impl Strategy<Value = ButtonTheme> {
-    // Generate all 13 colours, 4 scalars, the font and the border
+    // Generate all 16 colours, 4 scalars, the font and the border
     // in a single flat_map to keep tree depth at 2.
     (
-        proptest::collection::vec(proptest::option::of(arb_rgba()), 13..=13),
+        proptest::collection::vec(proptest::option::of(arb_rgba()), 16..=16),
         proptest::option::of(1.0f32..200.0),
         proptest::option::of(1.0f32..200.0),
         proptest::option::of(0.0f32..50.0),
@@ -257,6 +257,9 @@ fn arb_button_theme() -> impl Strategy<Value = ButtonTheme> {
                 checked_text_color: colors[10],
                 hover_border_color: colors[11],
                 focus_border_color: colors[12],
+                default_button_background: colors[13],
+                default_button_text_color: colors[14],
+                default_button_border_color: colors[15],
                 font,
                 border,
             },

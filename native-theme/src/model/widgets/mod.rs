@@ -105,6 +105,28 @@ pub struct ButtonTheme {
     /// it shows a focused button by its border (docs/platform-facts.md §2.3).
     #[theme(category = "soft_option")]
     pub focus_border_color: Option<Rgba>,
+    /// Fill of a dialog's default button, the one Enter activates, where the
+    /// platform gives it a look of its own: Breeze's `Button` mixed a fifth
+    /// towards `Highlight`. `None` where the default button is the primary
+    /// one (macOS, Windows): a connector then draws `primary_background` and
+    /// `primary_text_color` in every state. Where it is stated, the default
+    /// button is this fill, lettered in `default_button_text_color` (else
+    /// `font.color`) and framed in `default_button_border_color` (else
+    /// `border.color`): the fill decides (docs/platform-facts.md §2.3).
+    /// Breeze tints its default button only in an active window; the
+    /// connectors draw this look whatever the window's state.
+    #[theme(category = "soft_option")]
+    pub default_button_background: Option<Rgba>,
+    /// Label colour of a dialog's default button, read only where
+    /// `default_button_background` is stated; `None` there is `font.color`,
+    /// as Breeze letters it (docs/platform-facts.md §2.3).
+    #[theme(category = "soft_option")]
+    pub default_button_text_color: Option<Rgba>,
+    /// Border colour of a dialog's default button, read only where
+    /// `default_button_background` is stated; `None` there is `border.color`
+    /// (docs/platform-facts.md §2.3).
+    #[theme(category = "soft_option")]
+    pub default_button_border_color: Option<Rgba>,
     /// Button label font specification.
     #[theme(nested, resolved_type = "ResolvedFontSpec")]
     pub font: Option<FontSpec>,
@@ -1936,6 +1958,9 @@ mod tests {
             checked_text_color: None,
             hover_border_color: Some(Rgba::rgb(0, 120, 215)),
             focus_border_color: None,
+            default_button_background: Some(Rgba::rgb(210, 230, 245)),
+            default_button_text_color: None,
+            default_button_border_color: None,
             font: Some(FontSpec {
                 family: Some("Inter".into()),
                 size: Some(FontSize::Px(14.0)),
@@ -1969,6 +1994,12 @@ mod tests {
         assert_eq!(resolved.checked_text_color, None);
         assert_eq!(resolved.hover_border_color, Some(Rgba::rgb(0, 120, 215)));
         assert_eq!(resolved.focus_border_color, None);
+        assert_eq!(
+            resolved.default_button_background,
+            Some(Rgba::rgb(210, 230, 245))
+        );
+        assert_eq!(resolved.default_button_text_color, None);
+        assert_eq!(resolved.default_button_border_color, None);
     }
 
     #[test]

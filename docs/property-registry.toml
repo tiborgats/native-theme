@@ -199,6 +199,9 @@ checked_background           = "color"
 checked_text_color           = "color"
 hover_border_color           = "color"
 focus_border_color           = "color"
+default_button_background    = "color"
+default_button_text_color    = "color"
+default_button_border_color  = "color"
 border                       = "border"
 
 # ═══════════════════════════════════════════════════════════════════════════

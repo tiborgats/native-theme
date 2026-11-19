@@ -255,7 +255,13 @@ fn mix(a: Rgba, b: Rgba, bias: f64) -> Rgba {
 /// (kcolorutils.cpp:144-165 at kguiaddons 7c766f6f; `qreal` is f64,
 /// `QColor`'s components f32).
 fn mix_qt(a: Rgba, b: Rgba, bias: f64) -> QtColor {
-    let (a, b) = (QtColor::from_rgba(a), QtColor::from_rgba(b));
+    mix_qt_colors(QtColor::from_rgba(a), QtColor::from_rgba(b), bias)
+}
+
+/// `KColorUtils::mix(a, b, bias)` for opaque colours already in `QColor`'s
+/// storage: [`mix_qt`]'s arithmetic, for a colour mixed from another mix
+/// without rounding it to 8 bits, as Qt keeps it.
+fn mix_qt_colors(a: QtColor, b: QtColor, bias: f64) -> QtColor {
     if bias.is_nan() || bias <= 0.0 {
         return a;
     }
@@ -395,6 +401,17 @@ const PRESSED_BUTTON_MIX: f64 = 0.3;
 /// f0b1d75; docs/platform-facts.md §2.6).
 const MENU_PANEL_MIX: f64 = 0.3;
 
+/// How far an active window's default button moves from `Button` towards
+/// `Highlight`: `KColorUtils::mix(palette.button().color(), highlightColor,
+/// 0.2)` (breezehelper.cpp:700-702 at breeze f0b1d75; docs/platform-facts.md
+/// §2.3).
+const DEFAULT_BUTTON_MIX: f64 = 0.2;
+
+/// How far the default button's frame moves from `Highlight` towards the
+/// plain frame, `mix(Button, ButtonText, frameContrast)`: 0.5
+/// (breezehelper.cpp:700-702 at breeze f0b1d75; docs/platform-facts.md §2.3).
+const DEFAULT_BUTTON_FRAME_MIX: f64 = 0.5;
+
 /// The alpha of the hover decoration a hovered, unselected Breeze tab is
 /// filled with, `alphaColor(hoverColor(palette), 0.2)` (breezehelper.cpp:1497
 /// at breeze f0b1d75; docs/platform-facts.md §2.11).
@@ -505,13 +522,14 @@ fn mid_shade(window: Rgba, contrast: i32) -> Rgba {
 ///
 /// Some colours Plasma computes from the scheme, and the reader computes
 /// them as Breeze, Kirigami and qqc2-desktop-style do, in Qt's arithmetic:
-/// the checked button, the checkbox and progress-bar blends, the switch
-/// tracks and outlines, the toolbar's fill and edge, a toolbar button's
-/// pressed and checked fills, the popover's and the card's edges, the menu's
-/// hover, separator and panel, the list's hover, the table's grid, the scroll
-/// bar's resting handle and the focus ring. The blends on the accent (the
-/// checked checkbox, the progress fill, the switch's on track and its outline,
-/// the list's hover, and the toolbar button's pressed fill) come from kdeglobals'
+/// the checked button, the default button's fill and frame, the checkbox and
+/// progress-bar blends, the switch tracks and outlines, the toolbar's fill and
+/// edge, a toolbar button's pressed and checked fills, the popover's and the
+/// card's edges, the menu's hover, separator and panel, the list's hover, the
+/// table's grid, the scroll bar's resting handle and the focus ring. The blends
+/// on the accent (the default button's fill and frame, the checked checkbox, the
+/// progress fill, the switch's on track and its outline, the list's hover, and
+/// the toolbar button's pressed fill) come from kdeglobals'
 /// `[Colors:Selection] BackgroundNormal`, so an application's `with_overlay` accent or the
 /// portal's (`gnome::apply_kde_accent`, applied by `GnomePortalKdeReader`) does
 /// not move them. The menu's hover and the check box's hover outline come from
@@ -599,6 +617,32 @@ pub(crate) fn populate_colors(ini: &configparser::ini::Ini, variant: &mut crate:
     // button keeps, and the focus border.
     variant.button.hover_border_color = selection_bg;
     variant.button.focus_border_color = selection_bg;
+    // The default button of an active window (docs/platform-facts.md §2.3): the
+    // button colour moved a fifth towards the highlight, framed in the
+    // highlight moved halfway towards the plain frame, `mix(Button,
+    // ButtonText, frameContrast)`, kept at Qt's precision, and lettered in the
+    // button text (breezehelper.cpp:700-702 and breezestyle.cpp:5350-5362 at
+    // breeze f0b1d75).
+    variant.button.default_button_background = variant
+        .button
+        .background_color
+        .zip(selection_bg)
+        .map(|(button, highlight)| mix(button, highlight, DEFAULT_BUTTON_MIX));
+    variant.button.default_button_border_color = variant
+        .button
+        .background_color
+        .zip(button_fg)
+        .zip(selection_bg)
+        .map(|((button, text), highlight)| {
+            let frame = mix_qt(button, text, frame_contrast(ini));
+            mix_qt_colors(
+                QtColor::from_rgba(highlight),
+                frame,
+                DEFAULT_BUTTON_FRAME_MIX,
+            )
+            .to_rgba()
+        });
+    variant.button.default_button_text_color = button_fg;
 
     // Tooltip
     variant.tooltip.background_color = get_color(ini, "Colors:Tooltip", "BackgroundNormal");
@@ -1011,6 +1055,55 @@ inactiveForeground=161,169,177
         let handle = Some(overlay_colors(window, hover, SCROLLBAR_HANDLE_ALPHA));
         assert_eq!(v.scrollbar.thumb_hover_color, handle);
         assert_eq!(v.scrollbar.thumb_active_color, handle);
+    }
+
+    /// The default button's fill, label and frame under Breeze Light and
+    /// Breeze Dark, as Breeze paints them (docs/platform-facts.md §2.3).
+    #[test]
+    fn test_default_button_is_breezes() {
+        let [light, dark] = breeze_light_and_dark();
+        let cases = [
+            (
+                light,
+                Rgba::rgb(0xd6, 0xec, 0xf8),
+                Rgba::rgb(0x23, 0x26, 0x29),
+                Rgba::rgb(0x87, 0xc0, 0xdd),
+            ),
+            (
+                dark,
+                Rgba::rgb(0x2d, 0x46, 0x55),
+                Rgba::rgb(0xfc, 0xfc, 0xfc),
+                Rgba::rgb(0x48, 0x82, 0xa1),
+            ),
+        ];
+        for (content, fill, text, frame) in cases {
+            let v = populate_fixture(&content);
+            assert_eq!(v.button.default_button_background, Some(fill));
+            assert_eq!(v.button.default_button_text_color, Some(text));
+            assert_eq!(v.button.default_button_border_color, Some(frame));
+        }
+    }
+
+    /// The default button's frame mixes the highlight with the plain frame
+    /// as Qt keeps it, in 16 bits: rounded to 8 bits first, Breeze Light's
+    /// frame would be one level bluer than Breeze's.
+    #[test]
+    fn test_default_button_frame_keeps_qts_precision() {
+        let [light, _] = breeze_light_and_dark();
+        let v = populate_fixture(&light);
+        let (button, text) = (Rgba::rgb(252, 252, 252), Rgba::rgb(35, 38, 41));
+        let highlight = Rgba::rgb(61, 174, 233);
+        let rounded_early = mix(
+            highlight,
+            mix(button, text, FRAME_CONTRAST_DEFAULT),
+            DEFAULT_BUTTON_FRAME_MIX,
+        );
+        assert_eq!(rounded_early.b, 0xde);
+        assert_eq!(
+            v.button.default_button_border_color,
+            Some(Rgba::rgb(0x87, 0xc0, 0xdd))
+        );
+        assert_ne!(v.button.default_button_border_color, Some(rounded_early));
     }
 
     /// D7: a scheme whose selection, focus and hover colours are not
@@ -2130,6 +2223,18 @@ DecorationFocus=61,174,233
         assert!(
             v.toolbar.button_checked_background.is_some(),
             "toolbar.button_checked_background missing"
+        );
+        assert!(
+            v.button.default_button_background.is_some(),
+            "button.default_button_background missing"
+        );
+        assert!(
+            v.button.default_button_text_color.is_some(),
+            "button.default_button_text_color missing"
+        );
+        assert!(
+            v.button.default_button_border_color.is_some(),
+            "button.default_button_border_color missing"
         );
         assert!(
             v.menu.font.as_ref().and_then(|f| f.color).is_some(),

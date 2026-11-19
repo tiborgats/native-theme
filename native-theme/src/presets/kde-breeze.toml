@@ -149,10 +149,17 @@ checked_text_color = "#232629"
 # (BreezeLight.colors:87, breeze v6.7.5), while hovered, pressed or keyboard-focused (breezehelper.cpp:710-712 at breeze f0b1d75)
 hover_border_color = "#3daee9"
 focus_border_color = "#3daee9"
-# primary_background / primary_text_color not stated: platform-facts.md:1188-1189 (§2.3), Breeze's default button is
-# mix(Button, Highlight, 0.2), #d6ecf8, under ButtonText #232629; they keep inheriting the accent and its text because
-# gpui's primary tokens and egui's selection fill read them as the accent (docs/todo.md, KDE values that wait for a
-# connector design)
+# primary_background / primary_text_color not stated: platform-facts.md (§2.3), Breeze has no primary variant; the
+# pair inherits the accent and its text, the accent-filled button
+# platform-facts.md (§2.3): default_button_background, KColorUtils::mix(Button #fcfcfc, Highlight #3daee9, 0.2), an
+# active window's default button (breezehelper.cpp:700-702 at breeze f0b1d75; measured)
+default_button_background = "#d6ecf8"
+# platform-facts.md (§2.3): default_button_text_color, [Colors:Button] ForegroundNormal 35,38,41 (BreezeLight.colors:39,
+# breeze v6.7.5)
+default_button_text_color = "#232629"
+# platform-facts.md (§2.3): default_button_border_color, mix(Highlight #3daee9, mix(Button, ButtonText, frameContrast
+# 0.2) #d1d1d2, 0.5) (breezehelper.cpp:700-702 at breeze f0b1d75; measured)
+default_button_border_color = "#87c0dd"
 
 
 [light.button.border]
@@ -770,10 +777,17 @@ checked_text_color = "#fcfcfc"
 # (BreezeDark.colors:88, breeze v6.7.5), while hovered, pressed or keyboard-focused (breezehelper.cpp:710-712 at breeze f0b1d75)
 hover_border_color = "#3daee9"
 focus_border_color = "#3daee9"
-# primary_background / primary_text_color not stated: platform-facts.md:1188-1189 (§2.3), Breeze's default button is
-# mix(Button, Highlight, 0.2), #2d4655, under ButtonText #fcfcfc; they keep inheriting the accent and its text because
-# gpui's primary tokens and egui's selection fill read them as the accent (docs/todo.md, KDE values that wait for a
-# connector design)
+# primary_background / primary_text_color not stated: platform-facts.md (§2.3), Breeze has no primary variant; the
+# pair inherits the accent and its text, the accent-filled button
+# platform-facts.md (§2.3): default_button_background, KColorUtils::mix(Button #292c30, Highlight #3daee9, 0.2), an
+# active window's default button (breezehelper.cpp:700-702 at breeze f0b1d75; measured)
+default_button_background = "#2d4655"
+# platform-facts.md (§2.3): default_button_text_color, [Colors:Button] ForegroundNormal 252,252,252 (BreezeDark.colors:40,
+# breeze v6.7.5)
+default_button_text_color = "#fcfcfc"
+# platform-facts.md (§2.3): default_button_border_color, mix(Highlight #3daee9, mix(Button, ButtonText, frameContrast
+# 0.2) #535659, 0.5) (breezehelper.cpp:700-702 at breeze f0b1d75; measured)
+default_button_border_color = "#4882a1"
 
 
 [dark.button.border]
