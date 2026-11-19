@@ -7308,14 +7308,19 @@ fn expected_leaves(manifest: &Manifest, seam: &Seam) -> BTreeSet<String> {
 }
 
 /// The value line a row prints, as R11 §B states it: the leaf, then its value — a colour as its
-/// hex text, a number as the `f32` it is prints, `None` as "not stated".
+/// hex text, an unsigned integer as itself and any other number as the `f32` it is prints, `None`
+/// as "not stated".
 fn value_line(leaf: &str, value: &serde_json::Value) -> String {
     let text = match value {
         serde_json::Value::Null => "not stated".to_string(),
         serde_json::Value::String(s) => s.clone(),
-        serde_json::Value::Number(n) => n
-            .as_f64()
-            .map_or_else(|| n.to_string(), |n| format!("{}", n as f32)),
+        serde_json::Value::Number(n) => n.as_u64().map_or_else(
+            || {
+                n.as_f64()
+                    .map_or_else(|| n.to_string(), |n| format!("{}", n as f32))
+            },
+            |n| n.to_string(),
+        ),
         other => other.to_string(),
     };
     format!("{leaf} {text}")

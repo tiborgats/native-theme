@@ -784,6 +784,23 @@ own `.tooltip()` on an element does not read `TooltipDefaults`: it waits
 GPUI's 500 ms unless the element is given `tooltip_show_delay(&resolved)`
 through `StatefulInteractiveElement::tooltip_show_delay`.
 
+`apply` and `apply_system_theme` also install the theme's caret blink, where
+the variant states one (`input.caret_blink_on_ms`, `caret_blink_off_ms`,
+`caret_blink_timeout_ms`): `cursor_blink` is `CursorBlink::steady()` for a
+`caret_blink_off_ms` of 0, else `CursorBlink::blinking` with each phase half
+of the two durations together (gpui-base blinks in equal phases, so the rate
+stays the platform's and the share of the cycle the caret is shown does not:
+iOS's 650 / 350 becomes 500 / 500), with the time-out, where stated, as its
+idle time-out. Where the variant states none, the application's blink comes
+back: the one installed before the connector's first write, or set by the
+application since (gpui-component's 500 ms, without a time-out, where it set
+none). It is told apart by value, as the tooltip delay is: an application
+blink equal to the one the connector last wrote is taken for the connector's,
+and a later theme without a blink then brings back the application's earlier
+one. Nothing else writes it: a mode switch through `Theme::change` or
+`sync_system_appearance` keeps the blink of the variant `apply` installed, and
+`apply_accessibility` leaves it.
+
 Assumptions: the connector is the only code writing `gpui_base::Theme`
 besides gpui-component itself, and the only code writing the styled theme's 12
 base-palette fields after `apply` (a value set there by the application does
@@ -871,13 +888,13 @@ Three kinds of call replace such a value:
 
 - every `apply`, `apply_system_theme` (an `on_theme_change` closure's
   included) and `apply_accessibility` (where a variant is stored) installs a
-  new theme, every field of it but the application's `notification`, `list`, `sheet`, `motion` and
-  `cursor_blink` settings;
+  new theme, every field of it but the application's `notification`, `list`,
+  `sheet` and `motion` settings, and `cursor_blink` where the theme states no
+  blink (`apply_accessibility` keeps it in any case);
 - every rebuild from a config, `Theme::change`, `Theme::sync_system_appearance`
   and a `ThemeRegistry` reload, replaces the colours, fonts, radii, `shadow`
   and the highlight theme with the config's (`src/theme/schema.rs:1078-1126`);
-  `focus_ring` and
-  `scrollbar_mode` survive it;
+  `focus_ring`, `scrollbar_mode` and `cursor_blink` survive it;
 - `gpui_kit::init` (or `gpui_component::init`) after `apply` is such a rebuild,
   to light mode, and also sets `scrollbar_mode` from the platform by
   upstream's own rule, `Theme::sync_scrollbar_appearance`: on Windows the
@@ -1367,6 +1384,12 @@ dependency wanting a later snapshot.
   The dialog entrance and the `DataTable` header height are builders the
   application applies, `geometry::dialog_entrance` and
   `geometry::list_header_height` (*Per-widget geometry*).
+- **Caret blink** — `input.caret_blink_on_ms`, `caret_blink_off_ms` and
+  `caret_blink_timeout_ms`, installed by `apply` as gpui-component's
+  `Theme::cursor_blink` (*How re-application works*): steady where
+  `caret_blink_off_ms` is 0, else blinking with each phase half of the two
+  durations together, since gpui-base blinks in equal phases, and the
+  time-out as its idle time-out.
 - **Icons** — every gpui-component `IconName` (106 variants) in three tables
   returning `Option<&'static str>`: the Lucide table returns Lucide's own file
   names (`StarFill` has no Lucide equivalent), the Material table names

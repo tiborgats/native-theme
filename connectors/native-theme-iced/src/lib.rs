@@ -394,6 +394,11 @@
 //!   theme data instead (see *What each flag does*).
 //! - **`spinner.min_diameter`.** The `Spinner` offers no size of its own for
 //!   it to bound.
+//! - **The caret's blink.** iced draws the caret 500 ms shown and 500 ms
+//!   hidden, a private constant of its text input and text editor, and never
+//!   stops (`iced_widget` 0.14.2 `src/text_input.rs:1693`,
+//!   `src/text_editor.rs:544`): `input.caret_blink_on`, `.caret_blink_off` and
+//!   `.caret_blink_timeout` reach nothing.
 //!
 //! Where iced's own widget has no field for what the platform draws, the
 //! crate draws it with a widget of its own (feature `widgets`): `switch`

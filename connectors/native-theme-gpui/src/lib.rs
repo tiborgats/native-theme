@@ -105,7 +105,7 @@
 //! The connector maps [`ResolvedTheme`] onto gpui-component's `ThemeColor`
 //! (all 140 colour fields), `ThemeConfig` (fonts, radii, the window's corner
 //! radius, shadow, highlighter), the styled `Theme`'s `focus_ring`,
-//! `scrollbar_mode` and `highlight_theme`,
+//! `scrollbar_mode`, `highlight_theme` and `cursor_blink`,
 //! and gpui-base's scrollbar and resize-handle styles.
 //!
 //! | Category | Mapped | Notes |
@@ -116,7 +116,7 @@
 //! | `tab` | 5 of 10 colours | geometry is upstream work (`Tab`'s render writes its own height, radius and text size into the style bag the caller's setters fill, `tab/tab.rs:961-969`) |
 //! | `sidebar` | 5 of 6 | background, font.color, selection_background, selection_text_color, border.color |
 //! | `window` | 6 of 6 | background_color, title_bar_background, border colour and corner radius (`window_radius`, the corners of a client-decorated window); title_bar_font family, size, weight, style and colour via `geometry::title_bar`; the inactive title bar's fill and text via `geometry::title_bar_inactive` |
-//! | `input` | 3 of 13 + geometry | border, caret, selection_background; height, line height, padding, radius, border, text and its colour via `geometry::input`; the fill, and a disabled field's fill and text colour, via `geometry::input_fill`; the code `Editor`'s fill, and where it is translucent its gutter's, the fill over `window.background_color`, through the highlight theme (its current line, line numbers and syntax colours stay upstream's scheme, and so do the status colours the scheme states: a hint's in both modes, a warning's in light mode, several backgrounds and borders in dark mode, and 0.9's `created`, `modified` and `deleted`; see [the backlog](https://github.com/tiborgats/native-theme/blob/main/docs/todo.md), *gpui: the editor's status colours are partly upstream's scheme*), and its line height via `geometry::editor` |
+//! | `input` | 6 of 16 + geometry | border, caret, selection_background; the caret's blink (`caret_blink_on`, `caret_blink_off`, `caret_blink_timeout`) as `cursor_blink`, installed by [`apply`]; height, line height, padding, radius, border, text and its colour via `geometry::input`; the fill, and a disabled field's fill and text colour, via `geometry::input_fill`; the code `Editor`'s fill, and where it is translucent its gutter's, the fill over `window.background_color`, through the highlight theme (its current line, line numbers and syntax colours stay upstream's scheme, and so do the status colours the scheme states: a hint's in both modes, a warning's in light mode, several backgrounds and borders in dark mode, and 0.9's `created`, `modified` and `deleted`; see [the backlog](https://github.com/tiborgats/native-theme/blob/main/docs/todo.md), *gpui: the editor's status colours are partly upstream's scheme*), and its line height via `geometry::editor` |
 //! | `scrollbar` | colours + geometry | track/thumb colours, widths, inset, min length via `base_layer` |
 //! | `status_bar` | 3 of 3 | background, border colour; the border's padding sides and the font's family, size, weight, style and colour via `geometry::status_bar` |
 //! | `table` | head, from `list.header_background` / `list.header_font` | the model states no footer colour, so `table_foot*` are derived |
@@ -293,6 +293,7 @@ pub use native_theme::detect::LinuxDesktop;
 pub struct ReadmeDoctests;
 
 use gpui::{App, Global, Hsla, SharedString, px};
+use gpui_base::input::CursorBlink;
 use gpui_component::scroll::ScrollbarMode;
 use gpui_component::theme::{Theme as GpuiTheme, ThemeMode as GpuiThemeMode};
 use std::borrow::Cow;
@@ -305,16 +306,18 @@ use std::time::Duration;
 /// gpui-component derives from them), `mode`, `font_family`, `font_size`,
 /// `mono_font_family`, `mono_font_size`, `radius`, `radius_lg`,
 /// `window_radius` (`window.border.corner_radius`), `shadow`, `focus_ring`,
-/// `scrollbar_mode` and `highlight_theme`, and stores a `ThemeConfig` of the
+/// `scrollbar_mode`, `highlight_theme` and, where the theme states a caret
+/// blink, `cursor_blink` (`caret_blink`), and stores a `ThemeConfig` of the
 /// same values in the slot of its mode (`light_theme` or `dark_theme`), for
 /// gpui-component's own mode switches; the other mode's slot stays
 /// `ThemeConfig::default()`. The fields are written directly, not through
 /// gpui-component's `apply_config`, which would cap `selection`,
 /// `list_active` and `table_active`. `transparent`, `notification`, `list`,
-/// `sheet`, `motion` and `cursor_blink` stay at gpui-component's defaults,
-/// which native-theme does not model; [`apply`] keeps the installed theme's
-/// `notification`, `list`, `sheet`, `motion` and `cursor_blink` in their
-/// place.
+/// `sheet` and `motion` stay at gpui-component's defaults, which native-theme
+/// does not model, and so does `cursor_blink` where the theme states no blink;
+/// [`apply`] keeps the installed theme's `notification`, `list`, `sheet` and
+/// `motion` in their place and installs the caret blink by its own rule (*The
+/// caret's blink*).
 ///
 /// `scrollbar_mode` is `Scrolling` where `scrollbar.overlay_mode` is set and
 /// `Always` where it is not, on every platform. Upstream's
@@ -392,6 +395,12 @@ pub fn to_theme(
     } else {
         ScrollbarMode::Always
     };
+
+    // Rationale B5: the theme's caret blink; where it states none, upstream's
+    // default stays, and `apply` installs the application's.
+    if let Some(blink) = caret_blink(resolved) {
+        theme.cursor_blink = blink;
+    }
 
     // Issue 43/44: the highlight theme follows is_dark, so syntax highlighting
     // takes the mode's colours. Its style is config::highlight_style's, the one
@@ -980,6 +989,38 @@ pub fn tooltip_show_delay(resolved: &ResolvedTheme) -> Option<Duration> {
         .map(|ms| Duration::from_millis(u64::from(ms)))
 }
 
+/// The caret's blink as gpui-base's `CursorBlink`, or `None` where the theme
+/// states none (`input.caret_blink_off_ms` unstated).
+///
+/// A `caret_blink_off_ms` of 0 is a caret that does not blink,
+/// `CursorBlink::steady()`. Otherwise it is `CursorBlink::blinking` with each
+/// phase half of `caret_blink_on_ms` and `caret_blink_off_ms` together, and
+/// `caret_blink_timeout_ms`, where stated, as its idle time-out. gpui-base
+/// blinks in equal phases only (gpui-base 0.10.0
+/// `src/input/base/blink_cursor.rs`, `CursorBlink::blinking`), so the half-sum
+/// keeps the platform's rate and loses the share of the cycle the caret is
+/// shown (rationale B5 (b)). An off duration without an on duration, which
+/// validation rejects, gives `None`.
+fn caret_blink(resolved: &ResolvedTheme) -> Option<CursorBlink> {
+    let input = &resolved.input;
+    match input.caret_blink_off? {
+        0 => Some(CursorBlink::steady()),
+        off => {
+            let on = input.caret_blink_on?;
+            let half_sum = Duration::from_micros(
+                u64::from(on)
+                    .saturating_add(u64::from(off))
+                    .saturating_mul(500),
+            );
+            let blink = CursorBlink::blinking(half_sum);
+            Some(match input.caret_blink_timeout {
+                Some(timeout) => blink.with_idle_timeout(Duration::from_millis(u64::from(timeout))),
+                None => blink,
+            })
+        }
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Installation: NativeTheme global, apply family, base-layer observer (§8.1, §3.3)
 // ---------------------------------------------------------------------------
@@ -1113,9 +1154,10 @@ impl<'a> Native<'a> {
 ///    requires `gpui_component::init` before any component use; calling it
 ///    here only when the global is missing means it runs at most once);
 /// 3. writes the styled theme, keeping the application's own `notification`,
-///    `list`, `sheet`, `motion` and `cursor_blink` settings of the installed
-///    one, as upstream's
-///    `Theme::change` does; then installs a `ThemeConfig` for the *other*
+///    `list`, `sheet` and `motion` settings of the installed one, as
+///    upstream's `Theme::change` does, and with the variant's caret blink as
+///    `cursor_blink`, or the application's where the variant states none
+///    (*The caret's blink* below); then installs a `ThemeConfig` for the *other*
 ///    stored variant (if any) under the same display name, so upstream's
 ///    `Theme::change` / `sync_system_appearance` reproduces native colours in
 ///    either mode, all but the ones step 8 restores;
@@ -1182,6 +1224,22 @@ impl<'a> Native<'a> {
 /// switches the flag on over an explicit `Allow`, so an application that keeps
 /// motion sets the flag after `apply`.
 ///
+/// The caret's blink: where the variant states one (`input.caret_blink_on_ms`,
+/// `caret_blink_off_ms`, `caret_blink_timeout_ms`), `cursor_blink` is
+/// `CursorBlink::steady()` for a `caret_blink_off_ms` of 0, else
+/// `CursorBlink::blinking` with each phase half of the two durations together
+/// (gpui-base blinks in equal phases, so the rate stays the platform's and the
+/// share of the cycle the caret is shown does not), with the time-out, where
+/// stated, as its idle time-out. Where the variant states none, the
+/// application's blink comes back: the one installed before the connector's
+/// first write, or set by the application since (gpui-component's 500 ms,
+/// without a time-out, where it set none). It is told apart by value, as the
+/// tooltip delay is: an application blink equal to the one the connector last
+/// wrote is taken for the connector's, and a later theme without a blink then
+/// brings back the application's earlier one. Nothing else writes it: a mode
+/// switch through `Theme::change` or `sync_system_appearance` keeps the blink
+/// of the variant `apply` installed, and [`apply_accessibility`] leaves it.
+///
 /// `theme` is moved into the global; `resolved` is cloned once.
 pub fn apply(
     theme: GpuiTheme,
@@ -1235,7 +1293,7 @@ pub fn apply_system_theme(sys: &SystemTheme, cx: &mut App) {
 /// [`apply`] path, so text scaling and transparency take effect and both
 /// configs are refreshed; the stored variants are kept. Without a stored
 /// variant only the reduced-motion request is forwarded and the preferences
-/// are stored.
+/// are stored. It leaves `cursor_blink` as it is installed.
 pub fn apply_accessibility(prefs: &AccessibilityPreferences, cx: &mut App) {
     let rebuilt = cx.try_global::<NativeTheme>().and_then(|nt| {
         let is_dark = nt.is_dark(cx);
@@ -1318,6 +1376,38 @@ fn install_tooltip_delay(theme: Option<Duration>, cx: &mut App) {
     }
 }
 
+/// The caret blink the connector last installed on the styled theme, and the
+/// application's own, which a theme without a blink brings back (rationale
+/// B5).
+#[derive(Default)]
+struct CursorBlinkWrite {
+    /// What the connector last installed; `None` before its first write.
+    last_written: Option<CursorBlink>,
+    /// The blink installed before the connector's first write, or set by the
+    /// application since.
+    app_blink: CursorBlink,
+}
+
+impl Global for CursorBlinkWrite {}
+
+/// The `cursor_blink` to install: `theme`'s blink, or the application's where
+/// the theme states none. An installed blink that is not the one the
+/// connector last wrote was set by the application (or is gpui-component's
+/// default, before the first write), so it becomes the application's blink.
+/// The result is recorded as the connector's last write. Decided by value, as
+/// [`install_tooltip_delay`] decides: an application blink equal to the one
+/// the connector last wrote is taken for the connector's.
+fn cursor_blink_to_install(theme: Option<CursorBlink>, cx: &mut App) -> CursorBlink {
+    let current = GpuiTheme::global(cx).cursor_blink;
+    let state = cx.default_global::<CursorBlinkWrite>();
+    if state.last_written != Some(current) {
+        state.app_blink = current;
+    }
+    let blink = theme.unwrap_or(state.app_blink);
+    state.last_written = Some(blink);
+    blink
+}
+
 /// [`install_tooltip_delay`] for the stored variant of the styled theme's
 /// current mode, or for no delay where none is stored.
 fn install_variant_tooltip_delay(cx: &mut App) {
@@ -1365,15 +1455,24 @@ fn apply_inner(
     if !cx.has_global::<GpuiTheme>() {
         gpui_component::init(cx);
     }
-    // The application's settings, not theme data: upstream's own switch
-    // (`Theme::change` -> `apply_config`, gpui-component
-    // src/theme/schema.rs:1078-1125) leaves them, and so does `apply`.
+    // The variant handed for the styled theme's mode: `apply` and
+    // `apply_system_theme` hand it, `apply_accessibility` hands none and
+    // leaves the installed blink.
+    let variant = if is_dark { dark } else { light };
+    let cursor_blink = match variant {
+        Some(variant) => cursor_blink_to_install(caret_blink(variant), cx),
+        None => GpuiTheme::global(cx).cursor_blink,
+    };
+    // The four settings are the application's, not theme data: upstream's own
+    // switch (`Theme::change` -> `apply_config`, gpui-component
+    // src/theme/schema.rs:1078-1125) leaves them, and so does `apply`; the
+    // blink is the theme's, or the application's where the theme states none.
     let installed = GpuiTheme::global_mut(cx);
     theme.notification = installed.notification.clone();
     theme.list = installed.list.clone();
     theme.sheet = installed.sheet.clone();
     theme.motion = installed.motion.clone();
-    theme.cursor_blink = installed.cursor_blink;
+    theme.cursor_blink = cursor_blink;
     *installed = theme;
 
     // D34: the other mode's config from its stored variant, so Theme::change
@@ -1726,7 +1825,8 @@ mod tests {
             &AccessibilityPreferences::default(),
         );
         let named = [
-            // Set by `to_theme` from the resolved native theme.
+            // Set by `to_theme` from the resolved native theme
+            // (`cursor_blink` where the theme states a blink).
             "mode",
             "font_family",
             "font_size",
@@ -1739,6 +1839,7 @@ mod tests {
             "focus_ring",
             "scrollbar_mode",
             "highlight_theme",
+            "cursor_blink",
             // `to_theme` fills the slot for `mode` only; the other keeps
             // `Theme::from(&ThemeColor)`'s empty `ThemeConfig::default()` until
             // a later `apply` stores the other variant (D34).
@@ -1750,15 +1851,14 @@ mod tests {
             "tokens",
             "transparent",
             // Left to the application: native-theme models no notification
-            // placement, list highlight default, sheet margin, motion tokens
-            // or caret blink (`ResolvedTheme` has no such field), so
-            // `to_theme` leaves upstream's default and `apply` keeps the
-            // installed theme's.
+            // placement, list highlight default, sheet margin or motion
+            // tokens (`ResolvedTheme` has no such field), so `to_theme`
+            // leaves upstream's default and `apply` keeps the installed
+            // theme's.
             "notification",
             "list",
             "sheet",
             "motion",
-            "cursor_blink",
         ];
         // `{:#?}` puts each top-level field on a line of its own, indented
         // by four spaces; nested fields are indented further.
@@ -2488,6 +2588,83 @@ mod tests {
         let (_, mocha) = from_preset("catppuccin-mocha", true, &prefs).unwrap();
         assert_eq!(mocha.tooltip.show_delay, None, "precondition");
         assert_eq!(tooltip_show_delay(&mocha), None);
+    }
+
+    /// The resolved variant of the preset `name` in the mode `is_dark`; a
+    /// preset that does not load fails the test.
+    fn resolved_preset(name: &str, is_dark: bool) -> Option<ResolvedTheme> {
+        let loaded = from_preset(name, is_dark, &AccessibilityPreferences::default());
+        assert!(
+            loaded.is_ok(),
+            "{name} should load: {:?}",
+            loaded.as_ref().err()
+        );
+        loaded.ok().map(|(_, resolved)| resolved)
+    }
+
+    #[test]
+    fn caret_blink_maps_each_case() {
+        let ms = Duration::from_millis;
+        let Some(mut adwaita) = resolved_preset("adwaita", false) else {
+            return;
+        };
+        let Some(breeze) = resolved_preset("kde-breeze", false) else {
+            return;
+        };
+        let Some(ios) = resolved_preset("ios-13", false) else {
+            return;
+        };
+        let Some(mocha) = resolved_preset("catppuccin-mocha", true) else {
+            return;
+        };
+        assert_eq!(
+            caret_blink(&adwaita),
+            Some(CursorBlink::blinking(ms(600)).with_idle_timeout(ms(10000)))
+        );
+        assert_eq!(caret_blink(&breeze), Some(CursorBlink::blinking(ms(500))));
+        assert_eq!(
+            (ios.input.caret_blink_on, ios.input.caret_blink_off),
+            (Some(650), Some(350)),
+            "precondition"
+        );
+        assert_eq!(caret_blink(&ios), Some(CursorBlink::blinking(ms(500))));
+        assert_eq!(caret_blink(&mocha), None);
+
+        let mut steady = adwaita.clone();
+        steady.input.caret_blink_off = Some(0);
+        assert_eq!(caret_blink(&steady), Some(CursorBlink::steady()));
+
+        adwaita.input.caret_blink_timeout = None;
+        adwaita.input.caret_blink_on = Some(501);
+        adwaita.input.caret_blink_off = Some(500);
+        assert_eq!(
+            caret_blink(&adwaita),
+            Some(CursorBlink::blinking(Duration::from_micros(500_500)))
+        );
+
+        adwaita.input.caret_blink_on = None;
+        assert_eq!(caret_blink(&adwaita), None);
+    }
+
+    #[test]
+    fn to_theme_sets_a_stated_blink_and_leaves_upstreams() {
+        let prefs = AccessibilityPreferences::default();
+        let Some(adwaita) = resolved_preset("adwaita", false) else {
+            return;
+        };
+        let Some(mocha) = resolved_preset("catppuccin-mocha", true) else {
+            return;
+        };
+        assert_eq!(
+            to_theme(&adwaita, "Adwaita", false, &prefs).cursor_blink,
+            CursorBlink::blinking(Duration::from_millis(600))
+                .with_idle_timeout(Duration::from_millis(10000))
+        );
+        assert_eq!(mocha.input.caret_blink_off, None, "precondition");
+        assert_eq!(
+            to_theme(&mocha, "Catppuccin Mocha", true, &prefs).cursor_blink,
+            CursorBlink::default()
+        );
     }
 
     // -- Issue 26: integration tests for all 17 presets in both modes --
@@ -3606,8 +3783,8 @@ mod apply_tests {
         });
     }
 
-    /// M6-01: `notification`, `list`, `sheet`, `motion` and `cursor_blink`
-    /// are the application's settings, not theme data, so `apply` and
+    /// M6-01: `notification`, `list`, `sheet` and `motion` are the
+    /// application's settings, not theme data, so `apply` and
     /// `apply_accessibility` keep the values the application set, as
     /// upstream's own `Theme::change` does.
     #[gpui::test]
@@ -3618,15 +3795,12 @@ mod apply_tests {
         assert_ne!(theme.notification.max_items, 3, "precondition");
         assert!(theme.list.active_highlight, "precondition");
         assert_ne!(theme.motion.duration_normal, Duration::ZERO, "precondition");
-        let steady = gpui_base::input::CursorBlink::steady();
-        assert_ne!(theme.cursor_blink, steady, "precondition");
         let assert_kept = |cx: &App| {
             let styled = GpuiTheme::global(cx);
             assert_eq!(styled.sheet.margin_top, px(40.));
             assert_eq!(styled.notification.max_items, 3);
             assert!(!styled.list.active_highlight);
             assert_eq!(styled.motion.duration_normal, Duration::ZERO);
-            assert_eq!(styled.cursor_blink, steady);
         };
         cx.update(|cx| {
             gpui_component::init(cx);
@@ -3635,13 +3809,223 @@ mod apply_tests {
             styled.notification.max_items = 3;
             styled.list.active_highlight = false;
             styled.motion.duration_normal = Duration::ZERO;
-            styled.cursor_blink = steady;
             apply(theme, &resolved, &prefs, cx);
             assert_kept(cx);
             let mut scaled = AccessibilityPreferences::default();
             scaled.text_scaling_factor = 1.5;
             apply_accessibility(&scaled, cx);
             assert_kept(cx);
+        });
+    }
+
+    /// The preset `name` in the mode `is_dark`; a preset that does not load
+    /// fails the test.
+    fn loaded_preset(name: &str, is_dark: bool) -> Option<(GpuiTheme, ResolvedTheme)> {
+        let loaded = from_preset(name, is_dark, &AccessibilityPreferences::default());
+        assert!(
+            loaded.is_ok(),
+            "{name} should load: {:?}",
+            loaded.as_ref().err()
+        );
+        loaded.ok()
+    }
+
+    /// A preset that states a caret blink with a time-out, and one that
+    /// states none.
+    fn caret_blink_presets() -> Option<[(GpuiTheme, ResolvedTheme); 2]> {
+        let adwaita = loaded_preset("adwaita", false)?;
+        let latte = loaded_preset("catppuccin-latte", false)?;
+        assert_eq!(adwaita.1.input.caret_blink_on, Some(600), "precondition");
+        assert_eq!(adwaita.1.input.caret_blink_off, Some(600), "precondition");
+        assert_eq!(
+            adwaita.1.input.caret_blink_timeout,
+            Some(10000),
+            "precondition"
+        );
+        assert_eq!(latte.1.input.caret_blink_off, None, "precondition");
+        Some([adwaita, latte])
+    }
+
+    fn adwaitas_blink() -> CursorBlink {
+        CursorBlink::blinking(ms(600)).with_idle_timeout(ms(10000))
+    }
+
+    /// The styled theme's `cursor_blink` and gpui-base's copy of it, which
+    /// `sync_base` fills.
+    fn assert_blink(cx: &App, expected: CursorBlink, context: &str) {
+        assert_eq!(
+            GpuiTheme::global(cx).cursor_blink,
+            expected,
+            "the styled theme's blink, {context}"
+        );
+        assert_eq!(
+            gpui_base::Theme::global(cx).cursor_blink,
+            expected,
+            "gpui-base's blink, {context}"
+        );
+    }
+
+    /// The application's own blink, set through `Theme::update`.
+    fn set_application_blink(blink: CursorBlink, cx: &mut App) {
+        if !cx.has_global::<GpuiTheme>() {
+            gpui_component::init(cx);
+        }
+        GpuiTheme::update(cx, |theme| theme.cursor_blink = blink);
+    }
+
+    /// Rationale B5: the theme's caret blink becomes `cursor_blink`.
+    #[gpui::test]
+    fn apply_installs_the_themes_caret_blink(cx: &mut TestAppContext) {
+        let Some([adwaita, _]) = caret_blink_presets() else {
+            return;
+        };
+        cx.update(|cx| {
+            apply_preset(&adwaita, cx);
+            assert_blink(cx, adwaitas_blink(), "after adwaita");
+        });
+    }
+
+    /// Rationale B5: a theme without a blink brings back the application's,
+    /// set before the first `apply`, or upstream's default where it set none.
+    #[gpui::test]
+    fn a_theme_without_a_blink_brings_back_the_applications(
+        cx: &mut TestAppContext,
+        fresh: &mut TestAppContext,
+    ) {
+        let Some([adwaita, latte]) = caret_blink_presets() else {
+            return;
+        };
+        cx.update(|cx| {
+            set_application_blink(CursorBlink::steady(), cx);
+            apply_preset(&adwaita, cx);
+            assert_blink(cx, adwaitas_blink(), "after adwaita");
+            apply_preset(&latte, cx);
+            assert_blink(cx, CursorBlink::steady(), "the application's, after latte");
+        });
+        fresh.update(|cx| {
+            apply_preset(&adwaita, cx);
+            apply_preset(&latte, cx);
+            assert_blink(cx, CursorBlink::default(), "upstream's, after latte");
+        });
+    }
+
+    /// Rationale B5: a blink the application sets between two applies is its
+    /// own from then on, and outlives a later theme's blink.
+    #[gpui::test]
+    fn a_blink_the_application_sets_between_applies_is_its_own(cx: &mut TestAppContext) {
+        let Some([adwaita, latte]) = caret_blink_presets() else {
+            return;
+        };
+        cx.update(|cx| {
+            apply_preset(&adwaita, cx);
+            set_application_blink(CursorBlink::steady(), cx);
+            apply_preset(&latte, cx);
+            assert_blink(cx, CursorBlink::steady(), "after latte");
+            apply_preset(&adwaita, cx);
+            assert_blink(cx, adwaitas_blink(), "after adwaita");
+            apply_preset(&latte, cx);
+            assert_blink(cx, CursorBlink::steady(), "after latte again");
+        });
+    }
+
+    /// The limit the docs state: the blink is told apart by value, so an
+    /// application blink equal to the one the connector last wrote is taken
+    /// for the connector's, and a later theme without a blink brings back the
+    /// application's earlier one.
+    #[gpui::test]
+    fn an_application_blink_equal_to_the_connectors_is_taken_for_the_connectors(
+        cx: &mut TestAppContext,
+    ) {
+        let Some([adwaita, latte]) = caret_blink_presets() else {
+            return;
+        };
+        cx.update(|cx| {
+            set_application_blink(CursorBlink::steady(), cx);
+            apply_preset(&adwaita, cx);
+            set_application_blink(adwaitas_blink(), cx);
+            apply_preset(&latte, cx);
+            assert_blink(cx, CursorBlink::steady(), "the application's earlier blink");
+        });
+    }
+
+    #[gpui::test]
+    fn apply_accessibility_leaves_the_caret_blink(cx: &mut TestAppContext) {
+        let Some([adwaita, _]) = caret_blink_presets() else {
+            return;
+        };
+        cx.update(|cx| {
+            apply_preset(&adwaita, cx);
+            set_application_blink(CursorBlink::steady(), cx);
+            let mut scaled = AccessibilityPreferences::default();
+            scaled.text_scaling_factor = 1.5;
+            apply_accessibility(&scaled, cx);
+            assert_blink(cx, CursorBlink::steady(), "after apply_accessibility");
+        });
+    }
+
+    /// An upstream mode switch keeps the blink of the variant `apply`
+    /// installed; the next `apply` installs its own variant's.
+    #[gpui::test]
+    fn a_mode_switch_keeps_the_applied_variants_blink(cx: &mut TestAppContext) {
+        let prefs = AccessibilityPreferences::default();
+        let Some((dark_theme, dark)) = loaded_preset("kde-breeze", true) else {
+            return;
+        };
+        let Some((light_theme, mut light)) = loaded_preset("kde-breeze", false) else {
+            return;
+        };
+        assert_eq!(dark.input.caret_blink_on, Some(500), "precondition");
+        assert_eq!(dark.input.caret_blink_off, Some(500), "precondition");
+        assert_eq!(dark.input.caret_blink_timeout, None, "precondition");
+        light.input.caret_blink_off = Some(0);
+        cx.update(|cx| {
+            apply(dark_theme.clone(), &dark, &prefs, cx);
+            apply(light_theme, &light, &prefs, cx);
+            assert!(!GpuiTheme::global(cx).is_dark());
+            assert_blink(cx, CursorBlink::steady(), "the light variant's");
+        });
+        cx.update(|cx| GpuiTheme::change(GpuiThemeMode::Dark, None, cx));
+        cx.update(|cx| {
+            assert!(GpuiTheme::global(cx).is_dark());
+            assert_blink(
+                cx,
+                CursorBlink::steady(),
+                "the applied light variant's, after the switch to dark",
+            );
+            apply(dark_theme, &dark, &prefs, cx);
+            assert_blink(cx, CursorBlink::blinking(ms(500)), "the dark variant's");
+        });
+    }
+
+    /// `apply_system_theme` installs the blink of the OS mode's variant, and a
+    /// stated blink replaces the connector's own previous write. Both blinks
+    /// differ from `CursorBlink::default()`.
+    #[gpui::test]
+    fn apply_system_theme_installs_the_os_modes_blink(cx: &mut TestAppContext) {
+        let Ok(mut sys) = super::tests::system_theme() else {
+            return;
+        };
+        let Some((_, mut light)) = loaded_preset("kde-breeze", false) else {
+            return;
+        };
+        let Some((_, dark)) = loaded_preset("adwaita", true) else {
+            return;
+        };
+        light.input.caret_blink_off = Some(0);
+        assert_eq!(dark.input.caret_blink_on, Some(600), "precondition");
+        assert_eq!(dark.input.caret_blink_off, Some(600), "precondition");
+        assert_eq!(dark.input.caret_blink_timeout, Some(10000), "precondition");
+        sys.light = light;
+        sys.dark = dark;
+        sys.mode = ColorMode::Dark;
+        cx.update(|cx| {
+            apply_system_theme(&sys, cx);
+            assert_blink(cx, adwaitas_blink(), "the dark variant's");
+        });
+        sys.mode = ColorMode::Light;
+        cx.update(|cx| {
+            apply_system_theme(&sys, cx);
+            assert_blink(cx, CursorBlink::steady(), "the light variant's");
         });
     }
 

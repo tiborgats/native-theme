@@ -8187,6 +8187,12 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         ("input", f) if side(f).is_some() => {
             "input_padding: TextInput::padding, the side plus the line width".into()
         }
+        ("input", "caret_blink_on_ms" | "caret_blink_off_ms" | "caret_blink_timeout_ms") => {
+            "not reachable: iced blinks the caret 500ms shown and 500ms hidden, a private \
+             constant, and never stops (text_input.rs, CURSOR_BLINK_INTERVAL_MILLIS; \
+             text_editor.rs, Focus)"
+                .into()
+        }
         ("text_area", "border.corner_radius_px") => {
             "styles::text_editor: text_editor::Style::border.radius".into()
         }

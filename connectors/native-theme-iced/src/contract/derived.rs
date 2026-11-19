@@ -1316,6 +1316,150 @@ pub(super) const UNREACHABLE: &[Unreachable] = &[
             ("ios-13/dark", "the same"),
         ],
     },
+    Unreachable {
+        field: "input.caret_blink_on",
+        evidence: "iced_widget 0.14.2 blinks the caret of its text input and \
+             text editor at a private constant, 500 ms shown and 500 ms hidden \
+             (`src/text_input.rs:1693`, read at `:515-518`; \
+             `src/text_editor.rs:544`), and neither `Style` has a caret field; \
+             iced cannot take the shown duration",
+        lost: |_, r| match (r.input.caret_blink_off, r.input.caret_blink_on) {
+            (Some(off), Some(on)) if off > 0 && on != 500 => Some(format!("{on}ms")),
+            _ => None,
+        },
+        exceptions: &[
+            (
+                "kde-breeze/light",
+                "the preset states 500 ms, which iced draws",
+            ),
+            ("kde-breeze/dark", "the same"),
+            ("material-3/light", "the same"),
+            ("material-3/dark", "the same"),
+            (
+                "macos-monterey/light",
+                "the preset states no blink, a soft option, so there is none to lose",
+            ),
+            ("macos-monterey/dark", "the same"),
+            ("macos-tahoe/light", "the same"),
+            ("macos-tahoe/dark", "the same"),
+            ("catppuccin-latte/light", "the same"),
+            ("catppuccin-latte/dark", "the same"),
+            ("catppuccin-frappe/light", "the same"),
+            ("catppuccin-frappe/dark", "the same"),
+            ("catppuccin-macchiato/light", "the same"),
+            ("catppuccin-macchiato/dark", "the same"),
+            ("catppuccin-mocha/light", "the same"),
+            ("catppuccin-mocha/dark", "the same"),
+            ("nord/light", "the same"),
+            ("nord/dark", "the same"),
+            ("dracula/light", "the same"),
+            ("dracula/dark", "the same"),
+            ("gruvbox/light", "the same"),
+            ("gruvbox/dark", "the same"),
+            ("solarized/light", "the same"),
+            ("solarized/dark", "the same"),
+            ("tokyo-night/light", "the same"),
+            ("tokyo-night/dark", "the same"),
+            ("one-dark/light", "the same"),
+            ("one-dark/dark", "the same"),
+        ],
+    },
+    Unreachable {
+        field: "input.caret_blink_off",
+        evidence: "iced_widget 0.14.2 blinks the caret of its text input and \
+             text editor at a private constant, 500 ms shown and 500 ms hidden \
+             (`src/text_input.rs:1693`, read at `:515-518`; \
+             `src/text_editor.rs:544`), and neither `Style` has a caret field; \
+             iced cannot take the hidden duration, nor 0, a caret that does not \
+             blink",
+        lost: |_, r| match r.input.caret_blink_off {
+            Some(0) => Some("0ms: no blink".to_string()),
+            Some(off) if off != 500 => Some(format!("{off}ms")),
+            _ => None,
+        },
+        exceptions: &[
+            (
+                "kde-breeze/light",
+                "the preset states 500 ms, which iced draws",
+            ),
+            ("kde-breeze/dark", "the same"),
+            ("material-3/light", "the same"),
+            ("material-3/dark", "the same"),
+            (
+                "macos-monterey/light",
+                "the preset states no blink, a soft option, so there is none to lose",
+            ),
+            ("macos-monterey/dark", "the same"),
+            ("macos-tahoe/light", "the same"),
+            ("macos-tahoe/dark", "the same"),
+            ("catppuccin-latte/light", "the same"),
+            ("catppuccin-latte/dark", "the same"),
+            ("catppuccin-frappe/light", "the same"),
+            ("catppuccin-frappe/dark", "the same"),
+            ("catppuccin-macchiato/light", "the same"),
+            ("catppuccin-macchiato/dark", "the same"),
+            ("catppuccin-mocha/light", "the same"),
+            ("catppuccin-mocha/dark", "the same"),
+            ("nord/light", "the same"),
+            ("nord/dark", "the same"),
+            ("dracula/light", "the same"),
+            ("dracula/dark", "the same"),
+            ("gruvbox/light", "the same"),
+            ("gruvbox/dark", "the same"),
+            ("solarized/light", "the same"),
+            ("solarized/dark", "the same"),
+            ("tokyo-night/light", "the same"),
+            ("tokyo-night/dark", "the same"),
+            ("one-dark/light", "the same"),
+            ("one-dark/dark", "the same"),
+        ],
+    },
+    Unreachable {
+        field: "input.caret_blink_timeout",
+        evidence: "iced_widget 0.14.2 blinks the caret of its text input and \
+             text editor at a private constant, 500 ms shown and 500 ms hidden \
+             (`src/text_input.rs:1693`, read at `:515-518`; \
+             `src/text_editor.rs:544`), and neither `Style` has a caret field; \
+             it never stops blinking, so it has no time-out to take",
+        lost: |_, r| r.input.caret_blink_timeout.map(|t| format!("{t}ms")),
+        exceptions: &[
+            (
+                "kde-breeze/light",
+                "the preset states no time-out, a soft option, so there is none to lose",
+            ),
+            ("kde-breeze/dark", "the same"),
+            ("windows-11/light", "the same"),
+            ("windows-11/dark", "the same"),
+            ("macos-monterey/light", "the same"),
+            ("macos-monterey/dark", "the same"),
+            ("macos-tahoe/light", "the same"),
+            ("macos-tahoe/dark", "the same"),
+            ("material-3/light", "the same"),
+            ("material-3/dark", "the same"),
+            ("ios-13/light", "the same"),
+            ("ios-13/dark", "the same"),
+            ("catppuccin-latte/light", "the same"),
+            ("catppuccin-latte/dark", "the same"),
+            ("catppuccin-frappe/light", "the same"),
+            ("catppuccin-frappe/dark", "the same"),
+            ("catppuccin-macchiato/light", "the same"),
+            ("catppuccin-macchiato/dark", "the same"),
+            ("catppuccin-mocha/light", "the same"),
+            ("catppuccin-mocha/dark", "the same"),
+            ("nord/light", "the same"),
+            ("nord/dark", "the same"),
+            ("dracula/light", "the same"),
+            ("dracula/dark", "the same"),
+            ("gruvbox/light", "the same"),
+            ("gruvbox/dark", "the same"),
+            ("solarized/light", "the same"),
+            ("solarized/dark", "the same"),
+            ("tokyo-night/light", "the same"),
+            ("tokyo-night/dark", "the same"),
+            ("one-dark/light", "the same"),
+            ("one-dark/dark", "the same"),
+        ],
+    },
 ];
 
 /// Why a colour leaf of `ResolvedTheme` reaches no row: the classes of

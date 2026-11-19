@@ -189,11 +189,19 @@ fn unit(leaf: &str) -> Option<&'static str> {
     }
 }
 
-/// A number of the theme's JSON as the f32 the theme holds, printed.
+/// A number of the theme's JSON, printed: an unsigned integer as itself (a
+/// `u32` above 2^24 would print rounded as an `f32`), any other number as the
+/// f32 the theme holds.
 fn number(value: Option<&serde_json::Value>) -> String {
-    value
-        .and_then(serde_json::Value::as_f64)
-        .map_or_else(|| NOT_STATED.to_string(), |v| format!("{}", v as f32))
+    let Some(value) = value else {
+        return NOT_STATED.to_string();
+    };
+    match value.as_u64() {
+        Some(whole) => whole.to_string(),
+        None => value
+            .as_f64()
+            .map_or_else(|| NOT_STATED.to_string(), |v| format!("{}", v as f32)),
+    }
 }
 
 /// A resolved font: its family, as `label` names it where it is given, else
@@ -371,6 +379,19 @@ mod tests {
             )
             .text,
             format!("{delay} ms")
+        );
+    }
+
+    /// A `u32` leaf prints whole: the largest caret time-out reads as
+    /// itself, not as the `f32` it would round to.
+    #[test]
+    fn a_u32_ms_leaf_prints_whole() {
+        let json = serde_json::json!({
+            "input": {"caret_blink_timeout": 4294967295_u32},
+        });
+        assert_eq!(
+            value_at("input.caret_blink_timeout_ms", &json, &as_stated).text,
+            "4294967295 ms"
         );
     }
 

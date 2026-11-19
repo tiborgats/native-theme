@@ -1164,6 +1164,21 @@ pub const HOW: &[(&str, &str, &str)] = &[
     ),
     (
         "",
+        "input.caret_blink_on_ms",
+        "gpui: Theme::cursor_blink, which apply installs (lib.rs, caret_blink): each phase half of caret_blink_on and caret_blink_off together, as gpui-base blinks in equal phases (gpui-base/input/base/blink_cursor.rs, CursorBlink::blinking); upstream's 500ms where the theme states no blink",
+    ),
+    (
+        "",
+        "input.caret_blink_off_ms",
+        "gpui: Theme::cursor_blink: steady where it is 0 (CursorBlink::steady), else its half of the phase; upstream's 500ms where the theme states no blink",
+    ),
+    (
+        "",
+        "input.caret_blink_timeout_ms",
+        "gpui: Theme::cursor_blink's idle time-out (CursorBlink::with_idle_timeout): the caret stops blinking, shown, that long after the last focus, edit or movement; it never stops where unstated",
+    ),
+    (
+        "",
         "input.disabled_background",
         "gpui: geometry::input_fill's fill for a disabled field",
     ),
