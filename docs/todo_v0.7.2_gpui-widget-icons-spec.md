@@ -647,18 +647,17 @@ with the feature and the tests use them, so without it none is dead code):
   they carry most of the weight, so the mean moves the reference by less than one step.
   The allowance changes nothing for the two-colour fixture (opaque, `ρ = 0`) nor for an
   icon with an opaque pixel; the tolerance is measured with it, as every judgement is.
-- `const ONE_COLOUR_TOLERANCE: u32` — its value is the largest deviation over the bundled
-  sets, measured by the test below when it is written: the implementer writes `0`, runs
-  the test, which fails printing the measured maximum, writes that number, and runs it
-  again. Its doc: "The largest deviation ([`one_colour_deviation`]) of a bundled Lucide or
-  Material icon at [`ONE_COLOUR_TEST_SIZE`], as loaded and in each bundled preset's text
-  colour, measured on `<date>` with resvg 0.48.1 by
-  `the_one_colour_tolerance_separates_the_bundled_sets_from_two_colours`: the rounding of
-  antialiased edges, which a one-colour icon gives and a second colour exceeds." The value
-  is no guess, and no bound either: it is the largest the bundled sets give, with no margin
-  added (none would have a source). A theme's icon whose rounding exceeds it by a little is
-  judged in several colours and passed over; the table of C.4 gives each judged icon's
-  deviation beside the constant, so a near miss shows at the stop.
+- `const ONE_COLOUR_TOLERANCE: u32 = 3812` (amended 2026-11-19, after the measurement;
+  first written as the largest deviation of the bundled sets, 492, which judged Breeze's
+  one-colour `weather-clear-night-symbolic`, 570, as several colours: a number set on the
+  bundled sets alone, not on the themes it judges). The measurement's 1,802 rows
+  (`docs/evidence/widget-icons/2026-11-19/listing.md`) fall in two groups with nothing
+  between: one-colour icons up to 570 (the bundled sets up to 492), about two levels of a
+  channel at full alpha, the rounding of antialiased edges; icons in several colours from
+  25500 (Breeze's `cpu`, 100 levels). The value is their geometric mean, rounded down
+  (`⌊√(570 × 25500)⌋`), the boundary with the same margin to both sides, a factor of 6.7.
+  Its doc says this, with both figures, their icons, the date, resvg 0.48.1 and the
+  evidence directory.
 
 **Its documentation** (`mask_drawable`): "Whether gpui's mask carries `data` as it is: an
 SVG counts as one colour where every pixel it paints, rasterised at 16 px by native-theme,
@@ -688,13 +687,13 @@ the widget takes an `Icon` alone. [`load_gpui_icon`] gives the same answer in
   equal rectangles side by side filled with kde-breeze's resolved light
   `defaults.text_color` and `defaults.accent_color` (read from the preset in the test, not
   written as literals), whose deviation is `F`. Asserts `M <= ONE_COLOUR_TOLERANCE` (the
-  message prints `M` and says: "a resvg or tiny-skia upgrade changes the rasteriser's
-  rounding: re-derive ONE_COLOUR_TOLERANCE from the bundled sets by this test, writing the
-  maximum it prints"), and `ONE_COLOUR_TOLERANCE < F` (the message prints both). Every
+  message prints `M` and says that a resvg or tiny-skia upgrade changes the rasteriser's
+  rounding, and that ONE_COLOUR_TOLERANCE is re-derived as its doc says, from a new run of
+  the measurement, whose tool the evidence README's commit holds), and `ONE_COLOUR_TOLERANCE < F` (the message prints both). Every
   bundled icon that `mask_drawable` does not judge `Some(true)` is named in a further
   assertion's message: the bundled sets are one colour throughout (W6). This test can turn
   the dependency canary red on a rasteriser upgrade with no defect in the connector; the
-  re-derivation is the response, and the commit that makes it says the new maximum.
+  re-derivation is the response, and the commit that makes it says the new figures.
 - `a_half_transparent_part_keeps_an_icon_one_colour`: one colour at `fill-opacity` 0.5 and
   at 1 → `Some(true)`.
 - `an_icon_with_no_opaque_part_is_one_colour`: an SVG whose every shape is at `opacity` 0.5,

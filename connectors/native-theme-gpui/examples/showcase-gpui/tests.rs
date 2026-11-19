@@ -20077,7 +20077,7 @@ mod widget_icons {
 
     /// A copy of the connector's private `ONE_COLOUR_TOLERANCE`
     /// (`src/icons.rs`); `judge` fails the run where it drifts.
-    const T_COPY: u32 = 492;
+    const T_COPY: u32 = 3812;
     /// A copy of the connector's private `ONE_COLOUR_TEST_SIZE`.
     const TEST_SIZE_COPY: u32 = 16;
     /// A sheet's cell, in pixels.

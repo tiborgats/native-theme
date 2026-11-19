@@ -1346,14 +1346,18 @@ pub fn mask_drawable(data: &IconData) -> Option<bool> {
 #[cfg(feature = "svg-rasterize")]
 const ONE_COLOUR_TEST_SIZE: u32 = 16;
 
-/// The largest deviation ([`one_colour_deviation`]) of a bundled Lucide or
-/// Material icon at [`ONE_COLOUR_TEST_SIZE`], as loaded and in each bundled
-/// preset's text colour, measured on 2026-11-19 with resvg 0.48.1 by
-/// `the_one_colour_tolerance_separates_the_bundled_sets_from_two_colours`: the
-/// rounding of antialiased edges, which a one-colour icon gives and a second
-/// colour exceeds.
+/// The boundary between the rounding of antialiased edges, which a one-colour
+/// icon gives, and a second colour ([`one_colour_deviation`] at
+/// [`ONE_COLOUR_TEST_SIZE`]): the geometric mean, rounded down, of the two
+/// sides measured on 2026-11-19 with resvg 0.48.1 over the bundled Lucide and
+/// Material sets and the installed Breeze, Breeze Dark and Adwaita themes
+/// (`docs/evidence/widget-icons/2026-11-19/`): the largest deviation of a
+/// one-colour icon, 570 (Breeze's `weather-clear-night-symbolic`; the bundled
+/// sets' largest is 492), and the smallest of an icon in several colours,
+/// 25500 (Breeze's `cpu`). No deviation lay between them; the mean leaves the
+/// same margin, a factor of 6.7, to each side.
 #[cfg(feature = "svg-rasterize")]
-const ONE_COLOUR_TOLERANCE: u32 = 492;
+const ONE_COLOUR_TOLERANCE: u32 = 3812;
 
 /// Whether `svg` holds an element named `image` or `feImage`, with or without
 /// a namespace prefix: an image native-theme's rasteriser does not draw (it is
@@ -2929,9 +2933,9 @@ mod tests {
         (defaults.text_color, defaults.accent_color)
     }
 
-    /// `ONE_COLOUR_TOLERANCE` is the largest deviation of the bundled Lucide
-    /// and Material icons, as loaded and in every preset's text colour, and
-    /// below a fixture of two colours; every bundled icon is judged one
+    /// `ONE_COLOUR_TOLERANCE` lies above the largest deviation of the bundled
+    /// Lucide and Material icons, as loaded and in every preset's text colour,
+    /// and below a fixture of two colours; every bundled icon is judged one
     /// colour (W6).
     #[cfg(all(
         feature = "svg-rasterize",
@@ -2994,7 +2998,7 @@ mod tests {
             largest <= ONE_COLOUR_TOLERANCE,
             "the bundled sets' largest deviation is {largest}, above ONE_COLOUR_TOLERANCE ({ONE_COLOUR_TOLERANCE}): \
              a resvg or tiny-skia upgrade changes the rasteriser's rounding: re-derive \
-             ONE_COLOUR_TOLERANCE from the bundled sets by this test, writing the maximum it prints"
+             ONE_COLOUR_TOLERANCE as its doc says, from a new run of the widget icons' measurement (docs/evidence/README.md, widget-icons, names the commit that holds its tool)"
         );
         assert!(
             ONE_COLOUR_TOLERANCE < two,
