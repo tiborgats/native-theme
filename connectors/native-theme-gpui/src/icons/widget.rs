@@ -372,9 +372,17 @@ fn served(light: &ModeIcons, dark: &ModeIcons) -> bool {
 ///
 /// An application wraps its asset source and installs the same handle:
 ///
-/// ```no_run
+/// ```rust,no_run
+/// use gpui_kit::{AppContext as _, WindowOptions};
 /// use native_theme_gpui::icons::WidgetIcons;
-/// use native_theme_gpui::{SystemTheme, apply_system_theme};
+/// use native_theme_gpui::{AccessibilityPreferences, ColorMode, Theme, apply, apply_system_theme, to_theme};
+/// # use gpui_kit::{Context, IntoElement, Render, Window, div};
+/// # struct MyView;
+/// # impl Render for MyView {
+/// #     fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+/// #         div()
+/// #     }
+/// # }
 ///
 /// let icons = WidgetIcons::new();
 /// gpui_kit::application()
@@ -382,18 +390,32 @@ fn served(light: &ModeIcons, dark: &ModeIcons) -> bool {
 ///     .run(move |cx| {
 ///         gpui_kit::init(cx);
 ///         icons.install(cx);
-///         // Tells the installed handle the theme's icons.
-///         if let Ok(sys) = SystemTheme::from_system() {
-///             apply_system_theme(&sys, cx);
+///         match native_theme_gpui::SystemTheme::from_system() {
+///             Ok(sys) => apply_system_theme(&sys, cx),
+///             Err(_) => {
+///                 let prefs = AccessibilityPreferences::from_system();
+///                 if let Ok(nt) = Theme::preset("adwaita")
+///                     && let Ok(resolved) = nt.resolve(ColorMode::Light)
+///                 {
+///                     let theme = to_theme(&resolved.variant, &nt.name, resolved.mode.is_dark(), &prefs);
+///                     apply(theme, &resolved.variant, &prefs, cx);
+///                     icons.set_theme_icons(&resolved, cx);
+///                 }
+///             }
 ///         }
-///         // Then open the windows with `gpui_kit::open_window`.
+///         let opened = gpui_kit::open_window(WindowOptions::default(), cx, |_, cx| cx.new(|_| MyView));
+///         if let Err(error) = opened {
+///             eprintln!("could not open the window: {error}");
+///         }
 ///     });
 /// ```
 ///
 /// The handle installed must be the one whose `assets()` went to
 /// `Application::with_assets`: otherwise [`report`](Self::report) says
 /// [`WidgetIconsReport::NoAssetSource`] and the widgets keep gpui-component's
-/// glyphs. [`apply_system_theme`](crate::apply_system_theme) tells an
+/// glyphs. [`install`](Self::install) comes before `apply_system_theme`, else
+/// the report says [`WidgetIconsReport::NotTold`] until the next theme change.
+/// [`apply_system_theme`](crate::apply_system_theme) tells an
 /// installed handle the theme's icons; an application on the
 /// [`apply`](crate::apply) path tells it itself,
 /// `set_theme_icons(&resolved)`, with the [`Resolved`] it built the theme
@@ -856,7 +878,9 @@ impl WidgetIcons {
 
     /// Installs the handle: gpui-component's icon resolver asks it for the
     /// path of every icon drawn from now on. It replaces a resolver and a
-    /// handle installed before, and refreshes the windows.
+    /// handle installed before, and refreshes the windows. A handle that a
+    /// later `install` replaced still reports its own state; only the
+    /// installed one's resolver is asked.
     pub fn install(&self, cx: &mut App) {
         self.shared.installed.store(true, Ordering::SeqCst);
         cx.set_global(InstalledWidgetIcons(self.clone()));
@@ -988,6 +1012,8 @@ impl WidgetIcons {
         let fixed = matches!(state.choosing, Choosing::Fixed(_));
         match (&state.choice, &state.serving) {
             (Some(_), Some(serving)) => serving.report(fixed),
+            // A choice is always written together with a serving of its key,
+            // so this arm covers only "not told".
             _ => WidgetIconsReport::NotTold,
         }
     }
@@ -1239,16 +1265,66 @@ mod tests {
         });
     }
 
+    /// The wrapper around gpui-kit's `Assets`, which errs on a path it lacks
+    /// where `()` answers `Ok(None)`: the empty path is nothing, a served path
+    /// the set's icon, and every other path and every list the inner source's.
+    #[cfg(feature = "lucide-icons")]
+    #[gpui::test]
+    fn the_asset_source_answers_only_its_own_paths(cx: &mut TestAppContext) {
+        use gpui_kit::assets::Assets;
+        /// A load's answer, its error as text.
+        fn text(
+            loaded: gpui::Result<Option<Cow<'static, [u8]>>>,
+        ) -> Result<Option<Cow<'static, [u8]>>, String> {
+            loaded.map_err(|error| error.to_string())
+        }
+        cx.update(|cx| {
+            gpui_kit::init(cx);
+            let icons = WidgetIcons::new();
+            let assets = icons.assets(Assets);
+            icons.install(cx);
+            icons.set_theme_icons(ThemeIcons::new(IconSet::Lucide, None, None), cx);
+            assert_eq!(serving(&icons), Some((IconSet::Lucide, false)));
+            assert!(matches!(assets.load(EMPTY_PATH), Ok(None)));
+            let upstream = "icons/check.svg";
+            let inner = text(Assets.load(upstream));
+            assert!(matches!(inner, Ok(Some(_))), "{inner:?}");
+            assert_eq!(text(assets.load(upstream)), inner);
+            let lucide = native_theme::icons::LucideLoader::new("check").load();
+            assert!(matches!(lucide, Some(IconData::Svg(_))), "{lucide:?}");
+            assert_eq!(
+                assets
+                    .load("native-theme-gpui/lucide/check.svg")
+                    .ok()
+                    .flatten()
+                    .map(IconData::Svg),
+                lucide
+            );
+            let unserved = "native-theme-gpui/material/check.svg";
+            let inner = text(Assets.load(unserved));
+            assert!(inner.is_err(), "{inner:?}");
+            assert_eq!(text(assets.load(unserved)), inner);
+            let listed = assets.list("icons/").map_err(|error| error.to_string());
+            assert_eq!(
+                listed,
+                Assets.list("icons/").map_err(|error| error.to_string())
+            );
+            assert!(listed.is_ok_and(|listed| !listed.is_empty()));
+        });
+    }
+
     #[cfg(feature = "material-icons")]
     #[gpui::test]
     fn material_draws_star_off_empty(cx: &mut TestAppContext) {
         cx.update(|cx| {
             let (icons, _assets) = installed(cx);
             icons.set_theme_icons(ThemeIcons::new(IconSet::Material, None, None), cx);
+            let star_off = SharedString::from("icons/star-off.svg");
             assert_eq!(
-                icons.lookup("icons/star-off.svg", cx),
+                icons.lookup(&star_off, cx),
                 IconAnswer::Empty(EMPTY_PATH.into())
             );
+            assert_eq!(resolved(&star_off, cx), EMPTY_PATH);
             let WidgetIconsReport::Loaded(set) = icons.report() else {
                 panic!("Material is loaded: {:?}", icons.report());
             };
@@ -1357,6 +1433,45 @@ mod tests {
             breeze.merged(&lucide).merged(&told),
             ThemeIcons::new(IconSet::Freedesktop, Some("b"), Some("b"))
         );
+    }
+
+    /// The three conversions, from KDE Breeze's icon themes (`breeze`,
+    /// `breeze-dark`): a `Resolved` and a `Loaded` tell their own mode, a
+    /// `SystemTheme` both, each where it stands. A `SystemTheme` is built only
+    /// by reading the OS, and a `Loaded` from one, so both come from the OS
+    /// theme with Breeze laid over it.
+    #[test]
+    fn the_conversions_tell_each_mode_its_icon_theme() -> Result<(), Box<dyn std::error::Error>> {
+        use crate::SystemThemeExt as _;
+        let breeze = native_theme::Theme::preset("kde-breeze")?;
+        for (mode, theme) in [
+            (ColorMode::Light, "breeze"),
+            (ColorMode::Dark, "breeze-dark"),
+        ] {
+            assert_eq!(
+                ThemeIcons::from(&breeze.resolve(mode)?),
+                ThemeIcons::for_mode(IconSet::Freedesktop, mode, Some(theme))
+            );
+        }
+        let Ok(sys) = crate::tests::system_theme() else {
+            return Ok(());
+        };
+        let mut sys = sys.with_overlay(&breeze)?;
+        assert_eq!(
+            ThemeIcons::from(&sys),
+            ThemeIcons::new(IconSet::Freedesktop, Some("breeze"), Some("breeze-dark"))
+        );
+        for (mode, theme) in [
+            (ColorMode::Light, "breeze"),
+            (ColorMode::Dark, "breeze-dark"),
+        ] {
+            sys.mode = mode;
+            assert_eq!(
+                ThemeIcons::from(&sys.to_gpui_theme()),
+                ThemeIcons::for_mode(IconSet::Freedesktop, mode, Some(theme))
+            );
+        }
+        Ok(())
     }
 
     #[cfg(feature = "lucide-icons")]
@@ -1648,6 +1763,39 @@ mod tests {
             crate::icon_fixture::run(NAME, Child::kde("light-a"), |icons| {
                 write_essentials(icons, "light-a", &[])?;
                 write_essentials(icons, "dark-a", &[])
+            })
+            .unwrap();
+        }
+
+        /// Told the system's icon theme for both modes, the handle detects it
+        /// once, loads its one table, and the report names it in both modes.
+        #[gpui::test]
+        fn the_systems_icon_theme_is_detected_and_reported(cx: &mut TestAppContext) {
+            const NAME: &str = "icons::widget::tests::freedesktop::the_systems_icon_theme_is_detected_and_reported";
+            if crate::icon_fixture::in_child() {
+                cx.update(|cx| {
+                    gpui_kit::init(cx);
+                    let icons = WidgetIcons::new();
+                    let _assets = icons.assets(());
+                    icons.install(cx);
+                    let start = icons.shared.loads.load(Ordering::SeqCst);
+                    icons.set_theme_icons(ThemeIcons::new(IconSet::Freedesktop, None, None), cx);
+                    assert_eq!(icons.shared.loads.load(Ordering::SeqCst), start + 1);
+                    let report = icons.report();
+                    assert!(
+                        matches!(&report, WidgetIconsReport::Loaded(set) if set.served()),
+                        "{report:?}"
+                    );
+                    if let WidgetIconsReport::Loaded(set) = &report {
+                        for mode in [&set.light, &set.dark] {
+                            assert_eq!(mode.icon_theme.as_deref(), Some("detected"));
+                        }
+                    }
+                });
+                return;
+            }
+            crate::icon_fixture::run(NAME, Child::kde("detected"), |icons| {
+                write_essentials(icons, "detected", &[])
             })
             .unwrap();
         }
