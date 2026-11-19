@@ -4879,7 +4879,7 @@ fn default_and_bordered(built: BuiltAs, handles: (gpui::FocusHandle, gpui::Focus
     })
 }
 
-/// docs/todo_v0.7.2_kde-focus-ring-and-button-outlines-spec.md, 3F.2 and
+/// docs/archive/todo_v0.7.2_kde-focus-ring-and-button-outlines-spec.md, 3F.2 and
 /// 3F.3: in every state the `bordered_button` paints what the `Default`
 /// button paints, but the hovered and pressed border, which is the theme's
 /// `button.hover_border_color` where the `Default` one draws `input`.
