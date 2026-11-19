@@ -3156,6 +3156,8 @@ fn a_blink_stated_whole_or_not_at_all_validates() {
         (on, Some(0), timeout),
         (on, Some(500), None),
         (on, Some(500), timeout),
+        // The lower bounds' edge: 1 is in range for each duration.
+        (Some(1), Some(1), Some(1)),
     ];
     for (on, off, timeout) in rows {
         let resolved = match variant_with_blink(on, off, timeout).validate() {
@@ -3184,6 +3186,8 @@ fn half_a_blink_names_the_key_to_add() {
         ((on, None, timeout), "input.caret_blink_off_ms"),
         ((None, Some(500), None), "input.caret_blink_on_ms"),
         ((None, Some(500), timeout), "input.caret_blink_on_ms"),
+        // A hidden duration of 1 is a blink, which needs its shown duration.
+        ((None, Some(1), None), "input.caret_blink_on_ms"),
     ];
     for ((on, off, timeout), key) in rows {
         assert_eq!(
