@@ -564,8 +564,7 @@ pub fn button(
         }
     };
     let info = if styled {
-        info.config("font-weight", "geometry::button carries button.font.weight. The label is a child that sets its own size from the Size enum (sizing.rs, button_text_size) and would overrule a size from here, but it sets no weight and neither does anything else on that path, so the platform's weight cascades (button/button.rs, Button::render)")
-            .not_themeable("edge", match (state, native) {
+        info.not_themeable("edge", match (state, native) {
                 (_, Some(b)) if b.border.line_width <= 0.0 => "none in any state: button.border.line_width is 0, and geometry::button's width replaces upstream's border_1, whose hover and press styles only recolour (button/button.rs, RenderOnce for Button)".to_string(),
                 (ButtonState::Idle, _) => format!("button.border.color at rest: geometry::button gives every variant a border, and upstream's hover and press styles repaint it {} -- gpui applies a hover style after the refinement (gpui-pre/elements/div.rs, hover_style)", match kind {
                     ButtonKind::Default | ButtonKind::DefaultOutline => "input",
@@ -590,7 +589,7 @@ pub fn button(
         _ => info.not_themeable("shadow", "none on a standard variant: Theme::shadow, which the connector sets from border.shadow_enabled, reaches only a ButtonCustomVariant built with .shadow(true) (button/button.rs, ButtonVariant::shadow)"),
     };
     let info = if styled {
-        info.config("label size", "button.font.size through geometry::button_label on the label, which the showcase passes as the Button's child: upstream sizes a .label() from the Size enum on the content element (sizing.rs, button_text_size; button/button.rs, Button::render), which a style on the Button does not reach and a child's own size overrules")
+        styled_label_notes(info)
     } else {
         info.not_themeable("label size", "a fixed ratio of the platform's base, not a value of its own: the label takes button_text_size (sizing.rs, button_text_size), which is text_xs for XSmall, text_sm for Small and Medium, and text_base for Large and Size::Size -- all rems -- and gpui-component's WindowState root plugin sets the rem to Theme::font_size (gpui-component/root.rs, WindowState::prepare set_rem_size), which this connector fills from the platform font. So it scales with font.size and cannot be set apart from it: button_text_size has no Size::Size arm")
     };
@@ -745,11 +744,18 @@ pub fn dialog_default(t: &Theme, b: &ResolvedButtonTheme) -> WidgetInfo {
     } else {
         "button.default_button_border_color at rest (button.border.color where unstated), from geometry::default_button_rest after geometry::button, which gives the border its width; hovered and pressed the variant's colour, button.hover_border_color where stated, else that frame -- gpui applies a hover style after the refinement (gpui-pre/elements/div.rs, hover_style)"
     };
-    info.config("font-weight", "geometry::button carries button.font.weight. The label is a child that sets its own size from the Size enum (sizing.rs, button_text_size) and would overrule a size from here, but it sets no weight and neither does anything else on that path, so the platform's weight cascades (button/button.rs, Button::render)")
+    styled_label_notes(info)
         .not_themeable("edge", edge_note)
         .not_themeable("shadow", "none: variants::default_button builds its custom variant with .shadow(false) (native-theme-gpui/variants.rs, default_button; button/button.rs, ButtonVariant::shadow)")
-        .config("label size", "button.font.size through geometry::button_label on the label, which the showcase passes as the Button's child: upstream sizes a .label() from the Size enum on the content element (sizing.rs, button_text_size; button/button.rs, Button::render), which a style on the Button does not reach and a child's own size overrules")
         .instance("variant", "native_theme_gpui::variants::default_button: a custom variant with the default button's hover fill, label and hovered and pressed frame and the plain button's pressed fill (button_active); its rest fill and frame are geometry::default_button_rest's, refined after geometry::button")
+}
+
+/// `info` with the label's two config lines of a Button that
+/// `geometry::button` styles: the weight it carries and the size
+/// `geometry::button_label` gives the label.
+fn styled_label_notes(info: WidgetInfo) -> WidgetInfo {
+    info.config("font-weight", "geometry::button carries button.font.weight. The label is a child that sets its own size from the Size enum (sizing.rs, button_text_size) and would overrule a size from here, but it sets no weight and neither does anything else on that path, so the platform's weight cascades (button/button.rs, Button::render)")
+        .config("label size", "button.font.size through geometry::button_label on the label, which the showcase passes as the Button's child: upstream sizes a .label() from the Size enum on the content element (sizing.rs, button_text_size; button/button.rs, Button::render), which a style on the Button does not reach and a child's own size overrules")
 }
 
 /// The variant line of a Ghost Button built with

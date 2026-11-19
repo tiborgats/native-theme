@@ -25483,10 +25483,11 @@ mod tests {
     }
 
     /// The listed colour leaves the connector draws only where the theme
-    /// leaves another value unstated, in a state no bundled preset has, or
-    /// not in the state the element opens in, each with the reason: the
-    /// export moves no row of their drawing in any bundled combination, so
-    /// their routes say they are not drawn there.
+    /// leaves another value unstated, in a state no bundled preset has, not
+    /// in the state the element opens in, or, under the presets whose drawing
+    /// of the element names other rows, in none of those rows, each with the
+    /// reason: the export moves no row of their drawing in any bundled
+    /// combination, so their routes say they are not drawn there.
     const DRAWN_IN_NO_BUNDLED_THEME: &[(&str, &str, &str)] = &[
         (
             "basic.text_inputs.focused",

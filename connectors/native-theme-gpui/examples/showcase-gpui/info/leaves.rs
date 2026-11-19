@@ -48,12 +48,17 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "basic.buttons.dialog_default",
         "button.default_button_text_color",
-        "gpui: variants::default_button's foreground, in every state; where unstated the Primary Button's button_primary_foreground",
+        "gpui: variants::default_button's foreground, in every state; where the theme states no button.default_button_background the Primary Button's button_primary_foreground",
     ),
     (
         "basic.buttons.dialog_default",
         "button.default_button_border_color",
         "gpui: geometry::default_button_rest's border colour at rest, after geometry::button; under the pointer and pressed variants::default_button's color, button.hover_border_color where stated",
+    ),
+    (
+        "basic.buttons.dialog_default",
+        "button.border.color",
+        "gpui: geometry::button's border colour at rest where the Button is .primary(); where the theme states button.default_button_background, the fallback of geometry::default_button_rest's frame and of variants::default_button's colour where button.default_button_border_color and button.hover_border_color are unstated",
     ),
     (
         "basic.buttons.dialog_default",

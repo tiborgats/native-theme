@@ -516,6 +516,7 @@ mod tests {
         let prefs = AccessibilityPreferences::default();
         cx.update(|cx| {
             gpui_component::init(cx);
+            let mut stated = 0usize;
             let mut unstated = 0usize;
             for info in crate::Theme::list_presets() {
                 let states_one = info.key == "kde-breeze";
@@ -543,7 +544,9 @@ mod tests {
                         "{}/{is_dark}: (default_button_states, default_button_rest, default_button)",
                         info.key
                     );
-                    if !states_one {
+                    if states_one {
+                        stated += 1;
+                    } else {
                         unstated += 1;
                     }
                 }
@@ -552,6 +555,7 @@ mod tests {
                 unstated > 0,
                 "every preset states a default button fill, so this proves nothing"
             );
+            assert_eq!(stated, 2, "kde-breeze's light and dark modes, the Some side");
         });
     }
 
