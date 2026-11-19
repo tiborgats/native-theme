@@ -20247,7 +20247,12 @@ mod widget_icons {
     /// An SVG's `viewBox` attribute as written.
     fn view_box(svg: &[u8]) -> Option<String> {
         let text = String::from_utf8_lossy(svg);
-        let (_, after) = text.split_once("viewBox")?;
+        // The root element's, not one in a comment or a `<symbol>` before it.
+        let (_, root) = text.split_once("<svg")?;
+        let root = root
+            .split_once('>')
+            .map_or(root, |(attributes, _)| attributes);
+        let (_, after) = root.split_once("viewBox")?;
         let after = after.trim_start().strip_prefix('=')?.trim_start();
         let quote = after.chars().next().filter(|c| *c == '"' || *c == '\'')?;
         let (value, _) = after.strip_prefix(quote)?.split_once(quote)?;
@@ -21216,7 +21221,7 @@ mod widget_icons {
         out.line("");
         out.line("## 5. `Loader` and `LoaderCircle` as strips");
         out.line("");
-        out.line("| Theme | IconName | Lookup | viewBox | A strip (height ≥ 2 × width) |");
+        out.line("| Theme | IconName | Lookup | viewBox (pixels: `0 0` and their size) | A strip (height ≥ 2 × width) |");
         out.line("|---|---|---|---|---|");
         let mut strips: Vec<String> = Vec::new();
         for m in &judged_themes {
@@ -21230,8 +21235,13 @@ mod widget_icons {
                         ));
                         continue;
                     };
+                    // An SVG's `viewBox`; pixels by their own size, by the
+                    // same rule.
                     let view = match &found.data {
                         IconData::Svg(svg) => view_box(svg),
+                        IconData::Rgba(rgba) => {
+                            Some(format!("0 0 {} {}", rgba.width(), rgba.height()))
+                        }
                         _ => None,
                     };
                     let strip = view.as_deref().and_then(is_strip);
@@ -21499,12 +21509,16 @@ mod widget_icons {
                     continue;
                 };
                 let judgement = judge(&data);
+                // Lost is "an SVG judged not one colour" (C.4 item 8): the
+                // loss this work brings. Pixels are drawn as nothing in these
+                // slots today too (`ChromeIcon::svg_only` makes them
+                // `Missing`), so they are listed and not counted.
                 let lost = match (&data, judgement.mask) {
                     (IconData::Svg(_), Some(false)) => "**yes**",
-                    (IconData::Rgba(_), _) => "pixels: no SVG to draw",
+                    (IconData::Rgba(_), _) => "pixels: drawn as nothing today too, not counted",
                     _ => "no",
                 };
-                if lost != "no" {
+                if lost == "**yes**" {
                     lost_all.push(format!("`{theme}` {name} ({})", judgement.why));
                     cells.push(as_loaded(&data));
                 }

@@ -3792,6 +3792,13 @@ mod freedesktop_mapping_tests {
                 Some(svg(&two)),
                 "Any serves tab-close"
             );
+            assert!(
+                matches!(
+                    close("rasters", IconUse::Any).map(|found| found.data),
+                    Some(IconData::Rgba(_))
+                ),
+                "Any serves tab-close's pixels, so the Mask lookup below passes over them"
+            );
             #[cfg(feature = "svg-rasterize")]
             {
                 assert_eq!(
@@ -3820,6 +3827,7 @@ mod freedesktop_mapping_tests {
                 &[("tab-close", &two), ("window-close", &one)],
             )?;
             let mut png = std::io::Cursor::new(Vec::new());
+            // Any opaque colour serves: the file only has to be pixels.
             image::RgbaImage::from_pixel(16, 16, image::Rgba([61, 174, 233, 255]))
                 .write_to(&mut png, image::ImageFormat::Png)
                 .map_err(std::io::Error::other)?;
