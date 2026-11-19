@@ -41,7 +41,7 @@ pub struct WindowTheme {
 #[serde(default)]
 #[theme_inherit(border_kind = "full", font = "font")]
 pub struct ButtonTheme {
-    /// Default button background fill.
+    /// Button background fill at rest.
     #[theme(inherit_from = "defaults.background_color")]
     pub background_color: Option<Rgba>,
     /// Primary / accent button background fill.
