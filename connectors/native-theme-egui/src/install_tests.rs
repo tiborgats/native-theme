@@ -2024,6 +2024,45 @@ mod t18_accessors {
         )
     }
 
+    /// T18 (a): `default_button` is the theme's default button where it states a fill, and `None`
+    /// where it does not.
+    #[test]
+    fn t18_a_default_button_is_the_themes_or_none() {
+        let light = resolved("kde-breeze", ColorMode::Light);
+        let rgb = egui::Color32::from_rgb;
+        // kde-breeze light's `[light.button]`, at `[light.defaults.border]`'s `line_width_px`, 1
+        let frame = egui::Stroke::new(1.0, rgb(0x87, 0xc0, 0xdd));
+        let highlight = egui::Stroke::new(1.0, rgb(0x3d, 0xae, 0xe9));
+        assert_eq!(
+            crate::default_button(&light),
+            Some(crate::DefaultButton {
+                fill: rgb(0xd6, 0xec, 0xf8),
+                text: rgb(0x23, 0x26, 0x29),
+                stroke: frame,
+                hover_stroke: highlight,
+                focus_stroke: highlight,
+            })
+        );
+        assert_eq!(
+            crate::default_button(&resolved("adwaita", ColorMode::Light)),
+            None
+        );
+        let mut text_only = light.clone();
+        text_only.button.default_button_background = None;
+        text_only.button.default_button_border_color = None;
+        assert!(text_only.button.default_button_text_color.is_some());
+        assert_eq!(crate::default_button(&text_only), None);
+
+        let mut unfocused = light.clone();
+        unfocused.button.focus_border_color = None;
+        let strokes = |t: &ResolvedTheme| {
+            crate::default_button(t).map(|d| (d.stroke, d.hover_stroke, d.focus_stroke))
+        };
+        assert_eq!(strokes(&unfocused), Some((frame, highlight, highlight)));
+        unfocused.button.hover_border_color = None;
+        assert_eq!(strokes(&unfocused), Some((frame, frame, frame)));
+    }
+
     /// T18 (b), the multi-line field: `text_area_margin` is `text_area.border`'s padding as
     /// `input_margin` is the input's, and `text_area_frame` strokes the field at
     /// `text_area.border.line_width` in `text_area.border.color` at rest, rounded

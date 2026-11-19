@@ -13,8 +13,8 @@ use native_theme::icons::IconRole;
 use native_theme::theme::IconSet;
 use native_theme_egui::convert::{to_color32, to_corner_radius, to_margin, to_stroke};
 use native_theme_egui::{
-    Role, RoleVariant, Surface, TextRole, ThemeAtlas, input_frame, list_header_font,
-    list_header_height, text_area_frame,
+    Role, RoleVariant, Surface, TextRole, ThemeAtlas, default_button, input_frame,
+    list_header_font, list_header_height, text_area_frame,
 };
 use native_theme_egui_widgets::combo_box::ComboBox;
 use native_theme_egui_widgets::expander::Expander;
@@ -524,10 +524,11 @@ fn remember_width(ui: &egui::Ui, key: &str, rect: egui::Rect) {
     ui.ctx().data_mut(|d| d.insert_temp(id, rect.width()));
 }
 
-/// Buttons (the toggle button their third row), check boxes, radio buttons, the drop-down.
-/// The Buttons group: three rows of two buttons, each row wrapping onto a further line where the
-/// column is too narrow for it (`horizontal_wrapped`), as the gpui (`flex_wrap`) and iced
-/// (`Row::wrap`) pages' rows wrap.
+/// Buttons (the toggle buttons and a dialog's default button their third row), check boxes,
+/// radio buttons, the drop-down.
+/// The Buttons group: two rows of two buttons and a third of three, each row wrapping onto a
+/// further line where the column is too narrow for it (`horizontal_wrapped`), as the gpui
+/// (`flex_wrap`) and iced (`Row::wrap`) pages' rows wrap.
 fn buttons(reg: &mut Registry, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
     let t = atlas.resolved_for(ui.ctx().theme());
     let normal = RoleVariant::Normal;
@@ -536,13 +537,13 @@ fn buttons(reg: &mut Registry, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
     // the application's, per call (connector spec §5.3, `Button::min_size`).
     let min = egui::vec2(t.button.min_width, t.button.min_height);
     let plain = |text: egui::RichText| Button::new(text);
+    let primary = |text: egui::RichText| Button::new(text).selected(true);
 
     heading(reg, ui, "basic.buttons.heading", "Buttons");
     ui.horizontal_wrapped(|ui| {
         let kind = ("basic.buttons.default", "button (enabled)", normal);
         text_button(reg, ui, kind, ("Button", min), plain, true);
         let kind = ("basic.buttons.primary", "button (suggested action)", normal);
-        let primary = |text: egui::RichText| Button::new(text).selected(true);
         text_button(reg, ui, kind, ("Primary", min), primary, true);
     });
     ui.horizontal_wrapped(|ui| {
@@ -599,12 +600,57 @@ fn buttons(reg: &mut Registry, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
         None => (Some("button.active_text_color"), b.active_text_color),
     };
     let (on_fill, on_text) = (to_color32(on_fill), to_color32(on_text));
+    // A dialog's default button, the one Enter activates: where the theme gives it a look of its
+    // own, per call, since `Button::fill` and `Button::stroke` override egui's on-hover effects,
+    // in the state of its previous response, kept in the page's memory (focus before hover, as
+    // egui's `Widgets::style` tests them); pressed, no fill and no label colour, so the button
+    // role's pressed pair shows. Where the theme gives it none, the primary button.
+    let state_key = egui::Id::unique(("basic state", "basic.buttons.dialog_default"));
+    let (hovered, pressed, focused) = ui
+        .ctx()
+        .data(|d| d.get_temp::<(bool, bool, bool)>(state_key))
+        .unwrap_or_default();
+    let look = default_button(t);
     ui.horizontal_wrapped(|ui| {
         let kind = ("basic.buttons.toggle_off", "toggle button (off)", normal);
         text_button(reg, ui, kind, ("Off", min), plain, true);
         let kind = ("basic.buttons.toggle_on", "toggle button (on)", normal);
         let held = |text: egui::RichText| Button::new(text.color(on_text)).fill(on_fill);
         text_button(reg, ui, kind, ("On", min), held, true);
+        let kind = (
+            "basic.buttons.dialog_default",
+            "button (dialog default)",
+            normal,
+        );
+        let response = match look {
+            Some(d) => {
+                let own = move |text: egui::RichText| {
+                    if pressed {
+                        return Button::new(text).stroke(d.hover_stroke);
+                    }
+                    let stroke = if focused {
+                        d.focus_stroke
+                    } else if hovered {
+                        d.hover_stroke
+                    } else {
+                        d.stroke
+                    };
+                    Button::new(text.color(d.text)).fill(d.fill).stroke(stroke)
+                };
+                text_button(reg, ui, kind, ("OK", min), own, true)
+            }
+            None => text_button(reg, ui, kind, ("OK", min), primary, true),
+        };
+        let now = (
+            response.hovered(),
+            response.is_pointer_button_down_on(),
+            response.has_focus(),
+        );
+        if now != (hovered, pressed, focused) {
+            // drawn from the previous response: one more pass shows the state it is in now
+            ui.ctx().request_repaint();
+        }
+        ui.ctx().data_mut(|d| d.insert_temp(state_key, now));
     });
     // Where the theme states no checked colour, the leaf the toggle is drawn in instead.
     if let Some(leaf) = fill_instead {

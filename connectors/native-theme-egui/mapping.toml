@@ -1005,6 +1005,18 @@ tested_by = "T18(a)"
 verdict   = "derived"
 tested_by = "T18(a)"
 
+["button.default_button_background"]
+verdict   = "derived"
+tested_by = "T18(a)"
+
+["button.default_button_text_color"]
+verdict   = "derived"
+tested_by = "T18(a)"
+
+["button.default_button_border_color"]
+verdict   = "derived"
+tested_by = "T18(a)"
+
 ["button.hover_border_color"]
 verdict = "direct"
 sinks   = [

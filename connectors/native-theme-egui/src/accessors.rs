@@ -307,6 +307,57 @@ pub fn window_title_bar_text_color(t: &ResolvedTheme, active: bool) -> egui::Col
     })
 }
 
+/// A dialog's default button where the theme gives it a look of its own:
+/// the fill, label colour and frame to hand `Button::fill`, `RichText::color`
+/// and `Button::stroke` at the call site.
+#[derive(Clone, Copy, Debug, PartialEq)]
+#[non_exhaustive]
+pub struct DefaultButton {
+    /// `button.default_button_background`.
+    pub fill: egui::Color32,
+    /// `button.default_button_text_color`, else `button.font.color`.
+    pub text: egui::Color32,
+    /// `button.default_button_border_color`, else `button.border.color`, at
+    /// `button.border.line_width`.
+    pub stroke: egui::Stroke,
+    /// The frame under the pointer and while pressed: `button.hover_border_color`,
+    /// else `stroke`'s colour, at the same width.
+    pub hover_stroke: egui::Stroke,
+    /// The frame while it has the keyboard focus: `button.focus_border_color`,
+    /// else `hover_stroke`'s colour, at the same width.
+    pub focus_stroke: egui::Stroke,
+}
+
+/// `Some` where the theme states `button.default_button_background` (KDE), `None` where the
+/// default button is the primary one (macOS, Windows): draw it then as a selected button in the
+/// `Role::Button` scope, which takes `button.primary_background` and `primary_text_color`.
+/// egui's `Button::fill` and `Button::stroke` override every on-hover effect ("Note that this
+/// will override any on-hover effects", `egui/src/widgets/button.rs:153-167` at egui 0.37.0),
+/// so one call draws one look in every state, and the states are the application's, from the
+/// button's previous response: at rest `fill`, `text` and `stroke`; while it was hovered, the
+/// same with `hover_stroke`; while it had the keyboard focus and was not pressed, the same with
+/// `focus_stroke`, since egui gives a focused button its `active` look
+/// (`egui/src/widget_style/mod.rs:212-222` at egui 0.37.0), which `Button::stroke` overrides as
+/// well; while it was pressed, `hover_stroke` with neither `fill` nor `text`, so that egui draws
+/// the plain button's pressed fill and label, which the `Role::Button` scope gives it, as Breeze
+/// draws a pressed default button (docs/platform-facts.md §2.3).
+#[must_use]
+pub fn default_button(t: &ResolvedTheme) -> Option<DefaultButton> {
+    let b = &t.button;
+    let fill = b.default_button_background?;
+    let width = clamp_length(finite_or(b.border.line_width, 0.0));
+    let frame = b.default_button_border_color.unwrap_or(b.border.color);
+    let hover = b.hover_border_color.unwrap_or(frame);
+    let focus = b.focus_border_color.unwrap_or(hover);
+    Some(DefaultButton {
+        fill: to_color32(fill),
+        text: to_color32(b.default_button_text_color.unwrap_or(b.font.color)),
+        stroke: egui::Stroke::new(width, to_color32(frame)),
+        hover_stroke: egui::Stroke::new(width, to_color32(hover)),
+        focus_stroke: egui::Stroke::new(width, to_color32(focus)),
+    })
+}
+
 // --- geometry with no Style sink ----------------------------------------------
 /// The «input» cell's `spacing.button_padding` as the margin egui's own `TextEdit` frame takes
 /// from it, `Margin::from(Vec2)` (`egui-0.37.0/src/theme/default_style.rs`,

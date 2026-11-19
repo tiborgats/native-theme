@@ -5568,20 +5568,24 @@ fn groups_and_columns_are_a_section_gap_apart() {
         .filter(|r| r.info.kind == "heading")
         .map(|r| r.rect)
         .collect();
-    // The Buttons group's last row, and the heading under it in the same column.
+    // The Buttons group's last row, which ends with the dialog's default button, on a line of
+    // its own where the row wraps, and the heading under it in the same column.
     let buttons = rect("toggle button (off)");
+    let bottom = buttons
+        .bottom()
+        .max(rect("button (dialog default)").bottom());
     let Some(below) = headings
         .iter()
-        .filter(|r| r.top() > buttons.bottom() && (r.left() - buttons.left()).abs() < 0.5)
+        .filter(|r| r.top() > bottom && (r.left() - buttons.left()).abs() < 0.5)
         .map(|r| r.top())
         .reduce(f32::min)
     else {
         panic!("no heading below the buttons");
     };
     assert!(
-        (below - buttons.bottom() - gap).abs() < 0.5,
+        (below - bottom - gap).abs() < 0.5,
         "the buttons and the next heading are {} apart, section_gap is {gap}",
-        below - buttons.bottom()
+        below - bottom
     );
     // Each column's first heading: five, one pitch apart, a pitch a column and a gap wide.
     let top = headings.iter().map(|r| r.top()).fold(f32::MAX, f32::min);
@@ -5697,6 +5701,7 @@ const BASIC_CONTROLS: [(&str, &[(&str, usize)]); 20] = [
             ("tooltip button", 1),
             ("toggle button (off)", 1),
             ("toggle button (on)", 1),
+            ("button (dialog default)", 1),
         ],
     ),
     (

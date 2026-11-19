@@ -276,7 +276,16 @@ arrow, `text_role_font` and `text_role_line_height` for the caption, heading,
 dialog-title and display roles, `window_title_bar_font` and
 `window_title_bar_text_color`, `dialog_button_order`, `list_header_height`
 for `TableBuilder::header`, `toolbar_button_checked_background` for a
-checked toolbar button, `icons::icon_size`, and the colours egui has no
+checked toolbar button, `default_button` for a dialog's default button
+(`Some` where the theme states `button.default_button_background`, `None`
+where the default button is the primary one: draw it then as a selected
+button in the `Role::Button` scope, which takes `button.primary_background`
+and `primary_text_color`; since egui's `Button::fill` and `Button::stroke`
+override every on-hover effect, the application picks the look from the
+button's previous response: at rest `fill`, `text` and `stroke`, hovered
+`hover_stroke`, focused and not pressed `focus_stroke`, pressed `hover_stroke`
+and no fill or label colour, so that egui draws the plain button's pressed
+fill and label), `icons::icon_size`, and the colours egui has no
 slot for (`info_color`, `warning_text_color`, …). `tooltip_show_delay` is the
 delay the atlas writes into `Style::interaction.tooltip_delay`, as a
 `Duration`, for a tooltip the application times itself. A leaf that needs no

@@ -195,12 +195,12 @@ mod style_diff;
 mod watch;
 
 pub use accessors::{
-    border_color, border_corner_radius, border_corner_radius_lg, dialog_button_order,
-    disabled_opacity, disabled_text_color, expander_icon, focus_ring_color, focus_ring_offset,
-    focus_ring_width, font_family, font_size, font_weight, info_color, info_text_color,
-    input_frame, input_margin, is_high_contrast, is_reduced_motion, is_reduced_transparency,
-    line_height, list_header_font, list_header_height, mono_font_family, mono_font_size,
-    mono_font_weight, role_font_is_italic, role_font_weight, scaled_text_size,
+    DefaultButton, border_color, border_corner_radius, border_corner_radius_lg, default_button,
+    dialog_button_order, disabled_opacity, disabled_text_color, expander_icon, focus_ring_color,
+    focus_ring_offset, focus_ring_width, font_family, font_size, font_weight, info_color,
+    info_text_color, input_frame, input_margin, is_high_contrast, is_reduced_motion,
+    is_reduced_transparency, line_height, list_header_font, list_header_height, mono_font_family,
+    mono_font_size, mono_font_weight, role_font_is_italic, role_font_weight, scaled_text_size,
     scrollbar_groove_width, selection_inactive_background, text_area_frame, text_area_margin,
     text_role_font, text_role_line_height, text_role_weight, text_scaling_factor,
     toolbar_button_checked_background, tooltip_show_delay, warning_text_color,

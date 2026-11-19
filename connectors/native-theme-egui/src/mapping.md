@@ -10,11 +10,11 @@ One row per native leaf (spec §5, §13.1). A `§N` that names no document cites
 |---|---:|---:|---:|---:|---:|
 | Foundation (`defaults`, `text_scale`, `layout`) | 67 | 18 | 1 | 37 | 11 |
 | Surfaces (window, dialog, popover, card, tooltip, menu) | 110 | 8 | 55 | 32 | 15 |
-| Buttons (button, link, switch, checkbox, segmented control) | 116 | 13 | 47 | 31 | 25 |
+| Buttons (button, link, switch, checkbox, segmented control) | 119 | 13 | 47 | 34 | 25 |
 | Inputs (input, text area, combo box, list) | 91 | 4 | 40 | 34 | 13 |
 | Indicators (scrollbar, slider, progress bar, splitter, separator, spinner) | 40 | 5 | 17 | 9 | 9 |
 | Chrome (tab, sidebar, toolbar, status bar, expander) | 104 | 0 | 57 | 28 | 19 |
-| **TOTAL** | **528** | **48** | **217** | **171** | **92** |
+| **TOTAL** | **531** | **48** | **217** | **174** | **92** |
 
 UNMAPPABLE sub-tags (§2): `egui-limited` 53, `source-side gap` 16, `source-void` 1, `widgets-crate` 22.
 
@@ -224,6 +224,9 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 53, `source-side gap` 16, `source-void
 | `button.border.shadow_enabled` | UNMAPPABLE |  | `source-side gap`: native-theme: shadow offset, blur and spread in WidgetBorderSpec (§14 item 10) |
 | `button.checked_background` | DERIVED | → T18(a) |  |
 | `button.checked_text_color` | DERIVED | → T18(a) |  |
+| `button.default_button_background` | DERIVED | → T18(a) |  |
+| `button.default_button_border_color` | DERIVED | → T18(a) |  |
+| `button.default_button_text_color` | DERIVED | → T18(a) |  |
 | `button.disabled_background` | SCOPED | «button:disabled» `visuals.widgets.inactive.weak_bg_fill` (when: stated; None copies button.background_color, §6.4); «button:disabled» `visuals.selection.bg_fill` (when: stated; None keeps button.primary_background, §6.3); «button:disabled» `visuals.selection.stroke.color` (when: stated: button.disabled_text_color, else button.primary_text_color, §6.3) |  |
 | `button.disabled_opacity` | SCOPED | «button» `visuals.disabled_alpha`; «button:disabled» `visuals.disabled_alpha` |  |
 | `button.disabled_text_color` | SCOPED | «button:disabled» `visuals.widgets.noninteractive.fg_stroke.color`; «button:disabled» `visuals.widgets.inactive.fg_stroke.color`; «button:disabled» `visuals.selection.stroke.color` (when: button.disabled_background is stated, §6.3) |  |
