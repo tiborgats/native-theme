@@ -188,7 +188,11 @@ the rest of what the platforms draw of the caret are in the backlog.
 A dialog's default button has fields of its own: Breeze's tinted default
 button under kde-breeze, the primary button where the platform draws that, as
 macOS and Windows do. The iced and egui connectors offer it, and the gpui
-connector a variant for a default button the application builds.
+connector a variant for a default button the application builds. A table
+header's hovered and pressed sections and the selection of a view without the
+focus take Breeze's colours under KDE: the model has fields for both, which the
+connectors offer to an application, since no toolkit's table or list has these
+states; the showcases draw them.
 
 ## Model completeness: what native-theme does not carry
 
@@ -344,7 +348,7 @@ Gap analysis with citations: [`docs/todo_gpui-full-theme.md`](docs/todo_gpui-ful
 
 ## Also in the 0.7.x releases
 
-[`docs/todo.md`](docs/todo.md) tags 78 open items `[v0.7.x]`, follow-ups of
+[`docs/todo.md`](docs/todo.md) tags 77 open items `[v0.7.x]`, follow-ups of
 the v0.7.0 review that a 0.7 patch release takes beside the milestones
 above. Among them: the `ios-26` preset, iOS 26's Liquid Glass look, deferred
 while 38 of the values the resolver requires have no iOS 26 source;

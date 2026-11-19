@@ -586,8 +586,8 @@ pairs on these fields and on the menu's compare like with like and keep passing
 **Not in 0.7.1.**
 
 - *No field:* the hovered row's outline; the hover in a view without the focus;
-  a selected and hovered row (#44bfff); the header's hover and pressed fills
-  (#d6ecf8 / #2d4655) and its separators; a list item's padding beyond the
+  a selected and hovered row (#44bfff); the header's separators (its hover and
+  pressed fills are fields since 0.7.2); a list item's padding beyond the
   highlight's margin.
 - *Other reasons:* the grid, §5.6; the selection of a view without the focus,
   §5.3.
@@ -901,6 +901,10 @@ as the accent first.
 
 ### 5.3 The selection of a view without focus
 
+*Settled by `0004_kde-open-items-rationale.md` D9 (0.7.2):
+`defaults.selection_inactive_text_color`; kde-breeze, the KDE reader and the macOS
+presets and reader state the pair.*
+
 Breeze's schemes set `ChangeSelectionColor`, so a selected row in an unfocused
 view is `tint(Window, Selection, 0.4)` (#c2e0f5 / #1b4155, measured) under the
 *window* text colour. The facts say the selection does not change. The model has
@@ -934,9 +938,12 @@ toolbar button's states (`toolbar.button_hover_background`,
 windows-11 their fills, and the Windows reader the checked fill from the user's
 accent; iced and egui draw them, gpui through `variants::toolbar_button` and
 `geometry::toolbar_button_checked`, the outline through
-`geometry::toolbar_button_rest`. The table header is that rationale's D7; the menu
-item's and the list row's outlines and the menu bar title stay in the backlog (its
-§0).*
+`geometry::toolbar_button_rest`. Also by D7's table part (0.7.2): a table header's
+hovered and pressed fills (`list.header_hover_background`,
+`list.header_active_background`), which kde-breeze and the KDE reader state; no
+toolkit's table draws them, so the three connectors offer them through accessors
+(`list_header_hover_background`, `list_header_active_background`). The menu item's
+and the list row's outlines and the menu bar title stay in the backlog (its §0).*
 
 Breeze signals hover on a button, a combo box, a check box and a slider handle
 by recolouring the outline, never the fill. The model carries
@@ -1071,7 +1078,7 @@ and 3 above extend them with what was verified here.
 | C | button height, width, padding, border | sizes are in `geometry::button`, now pointed to (§4.8); the hover and focus border: **fixed in 0.7.2**: egui draws both; iced draws the hover border (an iced button takes no keyboard focus); gpui: the hover border through the connector's `variants::bordered_button`, a focused button's border, where it has one, being gpui-component's `ring` |
 | C | pressed button fill | the model's since 0.7.0 |
 | C | disabled at 50 % opacity | not Breeze's: it dims by colour |
-| C | toolbar buttons, sort header | toolbar buttons: **fixed in 0.7.2** (Breeze's outline on hover, the highlight at 30 % pressed, the button text at 12.5 % checked; the Windows reader writes the checked fill from the user's accent) in the iced and egui connectors; gpui: the connector's `variants::toolbar_button` and `geometry::toolbar_button_checked`, the outline through `geometry::toolbar_button_rest`; the sort header waits for its fields |
+| C | toolbar buttons, sort header | toolbar buttons: **fixed in 0.7.2** (Breeze's outline on hover, the highlight at 30 % pressed, the button text at 12.5 % checked; the Windows reader writes the checked fill from the user's accent) in the iced and egui connectors; gpui: the connector's `variants::toolbar_button` and `geometry::toolbar_button_checked`, the outline through `geometry::toolbar_button_rest`; the sort header: **fixed in 0.7.2**, its hovered and pressed fills are `list.header_hover_background` and `header_active_background`; no toolkit's table draws them, so an application's own header takes them through the connectors' accessors |
 | C | dialog text, 56 px icons, window sizes | text is the general font; the message icon is 64 (§4.5); Breeze states no window size |
 | D | `from_system()` with a time-out | fixed in 0.7.0: the portal reads end within 2 s |
 | D | dark or light from `system_is_dark()` | right; the `sync_system_appearance` caveat is documented (§4.8) |

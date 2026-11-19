@@ -581,45 +581,6 @@ cannot tell which file a bare number continues, so it does not look for one.
       its `DefaultTextBoxStyle`, at 8463f45) and state the answer in §2.4,
       with its line; then decide whether the model needs a per-widget switch.
 
-### Selection: the text colour macOS pairs with the unemphasised selection
-
-- [ ] [1.0] `defaults.selection_inactive_background` is the selection fill of a
-      window that has lost focus. Only macOS's preset and reader state it
-      (since 0.7.1 the KDE cell gives a value too, which kde-breeze does not state)
-      (`docs/platform-facts.md:1061`, `unemphasizedSelectedContentBackgroundColor`;
-      the reader, `native-theme/src/macos.rs:107`), and `ResolvedTheme` has no
-      text colour to pair with it: a toolkit that swapped the fill in on focus
-      loss would paint the active `selection_text_color` on it. The egui
-      connector grades the leaf UNMAPPABLE `source-side gap` for that reason
-      (`docs/archive/todo_v0.6.0_egui-connector-spec.md` §14). Research which text
-      colour AppKit draws on the unemphasised selection — `docs/platform-facts.md`
-      first, then Apple's documentation, with citations; it is unresearched,
-      and no `NSColor` name is assumed here — and add it as a leaf beside
-      `selection_inactive_background` (property registry, inheritance rules,
-      platform-facts, presets, the macOS reader). Then the egui connector's
-      install plugin swaps both, fill and text, while the window is unfocused
-      (`ctx.input(|i| i.focused)`).
-      A question, not a claim: the macOS reader also writes the unemphasised
-      colour into `input.selection_background` (`native-theme/src/macos.rs:490`,
-      `:502`), where platform-facts gives an input's selection as
-      `← defaults.text_selection_background` (`docs/platform-facts.md:1210`),
-      `selectedTextBackgroundColor` on macOS (`:1062`). Neither the reader's
-      comments nor the commit that added the assignment (`d87483c8`) say why a text
-      field's selection takes the unfocused colour. Is it intended? Fix the
-      reader or record the reason.
-      Answered (M4 Step 6, 2026-10-12): c1704d2f stopped the reader writing
-      `input.selection_background`, and
-      `read_macos_leaves_the_text_field_selection_to_inheritance`
-      (`native-theme/src/macos.rs:1017`) pins it, so the field inherits
-      `defaults.text_selection_background`, as `docs/platform-facts.md:1210`
-      gives it. The research task above (the text colour on the unemphasised
-      selection) stays open.
-      *Issue #4 (2026-11-13):* KDE has the same gap: its unfocused selection is #c2e0f5
-      / #1b4155 under the window text (`docs/platform-facts.md:1061`). Adding the text
-      colour for both platforms is *KDE: what a Qt application under Breeze shows that
-      native-theme does not (issue #4)*, "The selection of a view without the focus";
-      this entry keeps the macOS research.
-
 ### Model: the accent a control is filled with
 
 - [ ] [1.0] D8 of `docs/issues/0004_kde-open-items-rationale.md` found no field that
@@ -630,6 +591,26 @@ cannot tell which file a bare number continues, so it does not look for one.
       gpui-component reads its `primary` token as that colour in thirteen widget files,
       and the connector fills it from `button.primary_background`. A field for it would
       let `primary` follow it rather than the primary button.
+
+### Model: an inactive window's palette
+
+- [ ] [1.0] KColorScheme gives an inactive window a palette of its own where a colour
+      scheme sets `[ColorEffects:Inactive] Enable=true`: the group's contrast,
+      intensity and colour effects (`ContrastEffect`, `IntensityEffect`, `ColorEffect`
+      and their amounts and colour) recolour every role of the window, not the
+      selection alone (Breeze's schemes set `Enable=false`;
+      `docs/facts/kde/tokens.toml:11066-11274` on `v0.8.0-rc1` at `78ee0efd` gives
+      Breeze's values and KColorScheme's defaults). The model holds none of it; since
+      0.7.2 the KDE reader writes the unfocused selection pair before those effects
+      (`docs/issues/0004_kde-open-items-rationale.md` D9). The arithmetic exists on
+      `v0.8.0-rc1` at `78ee0efd`, written in a clean room and checked against KDE's
+      code: `native-theme/src/platform/kde_effects.rs` (87 lines, with
+      `kde_color_common.rs`, which 0.7.2 carries) and its table
+      `native-theme/tests/vectors/kde_effects.tsv` (367 lines, sha256
+      `653da4a6335be39dee89cd244e79c99c0ff6d0a22f26fc2771e610a3dd6d21fb`). Decide
+      whether and how the model carries an inactive window's palette as a whole (every
+      colour of an unfocused window, on KDE and on the platforms that dim one), one
+      item, not a patch on one field.
 
 ### Presets: colours with no reproducible source
 
@@ -2003,9 +1984,7 @@ offscreen, `docs/evidence/breeze-offscreen/2026-11-13/`.
       (`breezestyle.cpp:4880-4884`); a menu bar title's fill, the opaque hover or focus
       colour under `HighlightedText` (`drawMenuBarItemControl`,
       `breezestyle.cpp:5841-5948`), which `menu.hover_background` stood in for until
-      0.7.1 (*Model: the menu bar has no fill of its own*); a header section's hover and
-      pressed fills, `mix(Button, hoverColor, 0.2)` and `mix(Button, focusColor, 0.2)`
-      (`breezestyle.cpp:6828-6837`), #d6ecf8 / #2d4655 (computed), and its separators;
+      0.7.1 (*Model: the menu bar has no fill of its own*); a header section's separators;
       an open combo box's frame, as a pressed button frame's: the `Highlight` pen
       whatever the pointer does, and the fill #c3e5f6 / #2f5368 (light / dark; #fcfcfc /
       #292c30 closed, at rest)
@@ -2059,6 +2038,11 @@ offscreen, `docs/evidence/breeze-offscreen/2026-11-13/`.
       `docs/facts/kde/button.toml:1342` on `v0.8.0-rc1` at `78ee0efd`); the model's
       `button.default_button_*` fields hold the active look, and the connectors draw it
       whatever the window's state.
+      *Issue #4, open items step 7 (0.7.2, 2026-11-19, a8598668):* the header section's hovered
+      and pressed fills are `list.header_hover_background` and `header_active_background`
+      (`kde-breeze.toml` `[light.list] header_hover_background`,
+      `[dark.list] header_hover_background`), drawn by the showcases' tables; the parked
+      trace's K1.177.
 - [ ] [v0.7.x] **KDE values that wait for a connector design.** Each facts row below is
       corrected in 0.7.1; kde-breeze and the reader keep their present values, which
       disagree with it, until the readers named can take the platform's value without
@@ -2143,26 +2127,6 @@ offscreen, `docs/evidence/breeze-offscreen/2026-11-13/`.
       field shows its ring after a click was not read. macOS's rule is pending in the
       parked facts (U331, U611). Read both; then decide whether the model needs the
       time-out.
-- [ ] [v0.7.x] **The selection of a view without the focus, KDE and macOS, and its
-      missing text colour.** Breeze's schemes set
-      `[ColorEffects:Inactive] ChangeSelectionColor`, so a selected row in an unfocused
-      view is `KColorUtils::tint(Window, Selection, 0.4)`, #c2e0f5 / #1b4155, lettered
-      in the window text, #232629 / #fcfcfc (measured; `docs/platform-facts.md:1061`;
-      `kcolorscheme.cpp:304-321`, `:374-377`). The model has
-      `defaults.selection_inactive_background` and no text colour for it, and no
-      connector draws it (gpui and egui have an accessor only, iced records no
-      receiver), so stating it alone would change nothing on screen and would give an
-      application that pairs it with `selection_text_color` white text on a pale fill,
-      as macos-monterey already does (`macos-monterey.toml`
-      `[light.defaults] selection_inactive_background, selection_text_color`: #dcdcdc
-      with #ffffff). Add the text colour (registry, inheritance rules, facts, presets,
-      the KDE and macOS readers), then state the pair for KDE and draw it in the
-      connectors. macOS's text colour is researched in *Selection: the text colour macOS
-      pairs with the unemphasised selection*. The KDE derivation exists on `v0.8.0-rc1`,
-      written in a clean room and checked against KDE's code
-      (`native-theme/src/platform/kde_selection_inactive.rs`, `kcu_tint.rs`, with tables
-      from `tools/kde-vectors`), to be carried over. Continues item (3) of *Values the
-      v0.7.1 gap map found against their sources*, "**KDE.**".
 - [ ] [1.0] **Font sizes and the KDE button and dialog sizes.** (1) Qt Widgets rounds a
       font's pixel size to a whole number before it scales (10 pt is 13 px, qtbase
       v6.10.1 `src/gui/text/qfontdatabase.cpp:2838-2841`; measured 13 under Breeze,
