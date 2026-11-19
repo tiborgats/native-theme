@@ -14,6 +14,9 @@
   completion and KDE step 1 (v0.7.1), issue #4's open KDE items steps 2 to 7
   (`docs/issues/0004_kde-open-items-rationale.md`, D10), gpui-component's own icons
   and the caret's blink.
+- Archived on 2026-11-19 by 0.7.2's close-out (rule 22 (a)): 0.7.2 is the batch's last
+  release (0.7.1 released 2026-11-17; 0.7.2 holds KDE steps 2 to 7, gpui-component's own
+  icons and the caret's blink).
 
 ## 1. Why
 

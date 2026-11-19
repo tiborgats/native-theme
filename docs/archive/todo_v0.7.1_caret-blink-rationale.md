@@ -7,7 +7,8 @@ specification and plan are [`todo_v0.7.2_caret-blink-spec.md`](todo_v0.7.2_caret
 and [`todo_v0.7.2_caret-blink-plan.md`](todo_v0.7.2_caret-blink-plan.md); the
 specification's head says what was read again on 0.7.2's tree (GPUI Kit 0.10.0, egui
 0.37.0), which this document's lines predate. The file's name carries the version it
-was written during.
+was written during. B1 to B6 implemented on 2026-11-19 for 0.7.2, by the specification
+and plan named above; the three documents are in `docs/archive/` since 0.7.2's close-out.
 
 Abbreviations: `GC`, `GB` are the `src/` folders of gpui-component 0.9.1 and
 gpui-base 0.9.1 in Cargo's registry; `EG` is egui 0.36.2's; `IW` is iced_widget

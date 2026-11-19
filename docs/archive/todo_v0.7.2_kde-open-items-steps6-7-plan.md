@@ -1,6 +1,6 @@
 # 0.7.2: issue #4's open KDE items, steps 6 and 7 (the default button; the table header's states and the unfocused selection) — implementation plan
 
-- Rationale: [`issues/0004_kde-open-items-rationale.md`](issues/0004_kde-open-items-rationale.md),
+- Rationale: [`../issues/0004_kde-open-items-rationale.md`](../issues/0004_kde-open-items-rationale.md),
   D8 (step 6), D7's second half and D9 (step 7). Specification:
   [`todo_v0.7.2_kde-open-items-steps6-7-spec.md`](todo_v0.7.2_kde-open-items-steps6-7-spec.md)
   ("the spec"), whose 6.I and 7.J this plan carries out.

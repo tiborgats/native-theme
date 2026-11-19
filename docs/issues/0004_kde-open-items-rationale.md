@@ -4,7 +4,7 @@ Status: written 2026-11-14, revised after six reviews. D2, D3 and D10 (a) approv
 for step 1 (2026-11-15); D4 and D5 approved for 0.7.2 (2026-11-18); D6 and D7's first
 half (steps 4 and 5) approved for 0.7.2 (2026-11-18); D8, D7's second half and D9 (steps 6 and 7) approved for
 0.7.2 (2026-11-19), together with the text caret's blink (D0 (a)), by
-`../todo_v0.7.2_kde-open-items-steps6-7-{spec,plan}.md`. Step 1 (D2, D3)
+`../archive/todo_v0.7.2_kde-open-items-steps6-7-{spec,plan}.md`. Step 1 (D2, D3)
 implemented on 2026-11-17 for 0.7.1, by
 `../archive/todo_v0.7.1_kde-open-items-step1-{spec,plan}.md`. D4's bullet on
 gpui-component's widgets was rewritten on 2026-11-18 after three measurements: the
@@ -13,6 +13,9 @@ first version switched it off altogether. Steps 2 to 5 (D4, D5, D6 and D7's tool
 buttons) implemented on 2026-11-18 for 0.7.2, by
 `../archive/todo_v0.7.2_kde-focus-ring-and-button-outlines-{spec,plan}.md` and
 `../archive/todo_v0.7.2_kde-hover-outlines-and-toolbar-buttons-{spec,plan}.md`.
+Steps 6 (D8) and 7 (D7's header, D9) implemented on 2026-11-19 for 0.7.2, by
+`../archive/todo_v0.7.2_kde-open-items-steps6-7-{spec,plan}.md`. With step 7 every
+step is done; this rationale stays in `docs/issues/`, as the first rationale does.
 
 It continues `docs/issues/0004_kde-hand-overrides-rationale.md` (called "the first
 rationale" below), whose §5 left these items undecided, and the backlog entries
@@ -866,7 +869,7 @@ the proposal:
 3. gpui-component's own icons
    (`docs/archive/todo_v0.7.1_gpui-widget-icons-rationale.md`), then the step that
    serves the two pixel sets (its W7).
-4. The caret's blink (`docs/todo_v0.7.1_caret-blink-rationale.md`).
+4. The caret's blink (`docs/archive/todo_v0.7.1_caret-blink-rationale.md`).
 5. Steps 6 and 7, and the three outlines §0 leaves in the backlog.
 
 The other order for 2 and 3, the icons first because they complete what GPUI
@@ -890,7 +893,7 @@ sets stays a later release.
   otherwise the dependency upgrade and its fixes. Under (b), every number from 0.7.2 on in the batch's proposed version table (0.7.2 egui 0.37, 0.7.3 steps 2 and 3, 0.7.4 steps 4 and 5, 0.7.5 the widget icons, 0.7.6 the caret, 0.7.7 steps 6 and 7) moves one up.
 
 **(a) is proposed**, for the first reason; the cost is the size of (b)'s list.
-The maintainer may merge or reorder steps. On 2026-11-15 the maintainer merged steps 2 and 3, 4 and 5, and 6 and 7 into one release each (`docs/todo_v0.7.1_batch-speed-rationale.md`, S5).
+The maintainer may merge or reorder steps. On 2026-11-15 the maintainer merged steps 2 and 3, 4 and 5, and 6 and 7 into one release each (`docs/archive/todo_v0.7.1_batch-speed-rationale.md`, S5).
 
 ## 3. What the maintainer approves
 

@@ -80,7 +80,7 @@ names recordings, a text-scale run and the OS probe's run of the same day
 
 | Run | Date | Commit | Why |
 |-----|------|--------|-----|
-| [`2026-11-06-run-42308526155/`](winui-host/2026-11-06-run-42308526155/) ([run](https://github.com/tiborgats/native-theme/actions/runs/42308526155)) | 2026-11-06 | `7bad463f` on `v0.8.0-tools-hosts-m1b` | `GetCaretBlinkTime`, windows-11's caret blink ([specification](../todo_v0.7.2_caret-blink-spec.md) Part 0) |
+| [`2026-11-06-run-42308526155/`](winui-host/2026-11-06-run-42308526155/) ([run](https://github.com/tiborgats/native-theme/actions/runs/42308526155)) | 2026-11-06 | `7bad463f` on `v0.8.0-tools-hosts-m1b` | `GetCaretBlinkTime`, windows-11's caret blink ([specification](../archive/todo_v0.7.2_caret-blink-spec.md) Part 0) |
 
 A citation links the file and its line
 (`evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/frames.toml#L248`).
@@ -105,7 +105,7 @@ are in the evidence repository and in this repository's commit `b38c1795`
 
 | Run | Date | Commit | Why |
 |-----|------|--------|-----|
-| [`2026-11-06-run-42275028573/`](ios-host/2026-11-06-run-42275028573/) ([run](https://github.com/tiborgats/native-theme/actions/runs/42275028573)) | 2026-11-06 | `7bb1e784` on `v0.8.0-tools-ios-m2` | ios-13's caret blink ([specification](../todo_v0.7.2_caret-blink-spec.md) Part 0) |
+| [`2026-11-06-run-42275028573/`](ios-host/2026-11-06-run-42275028573/) ([run](https://github.com/tiborgats/native-theme/actions/runs/42275028573)) | 2026-11-06 | `7bb1e784` on `v0.8.0-tools-ios-m2` | ios-13's caret blink ([specification](../archive/todo_v0.7.2_caret-blink-spec.md) Part 0) |
 
 `python3 -I docs/evidence/ios-host/2026-11-06-run-42275028573/analysis/behavior_values.py docs/evidence/ios-host/2026-11-06-run-42275028573/ios-host-macos-15`
 writes `behavior_values.toml` again from the kept inputs (Pillow). A citation

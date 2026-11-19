@@ -1,6 +1,6 @@
 # 0.7.2: issue #4's open KDE items, steps 6 and 7 (the default button; the table header's states and the unfocused selection) — specification
 
-- Rationale: [`issues/0004_kde-open-items-rationale.md`](issues/0004_kde-open-items-rationale.md)
+- Rationale: [`../issues/0004_kde-open-items-rationale.md`](../issues/0004_kde-open-items-rationale.md)
   ("the rationale"), decisions D8 (step 6), D7's second half and D9 (step 7), D0 for
   the version and what D10 says a step carries outside the code. Approved by the maintainer on
   2026-11-19: the rationale's D8, D7's second half and D9, this specification and its
@@ -11,14 +11,14 @@
   rationale put into the same step as its items 5 and 6 (a hovered menu item's and a
   hovered list row's 1 px outline, and a menu bar title's fill), none of which these
   steps add (7.I.3 keeps the first rationale's sentence that says so).
-- It continues [`issues/0004_kde-hand-overrides-rationale.md`](issues/0004_kde-hand-overrides-rationale.md)
+- It continues [`../issues/0004_kde-hand-overrides-rationale.md`](../issues/0004_kde-hand-overrides-rationale.md)
   ("the first rationale"), §5.2 (the default button), §5.3 (the unfocused selection)
   and §4.4 (the header's fills), and the backlog entries `docs/todo.md:1774-1825`
   (*What Breeze draws that the model has no field for*), `:1826-1913` item (2) (*KDE
   values that wait for a connector design*), `:1914-1933` (*The selection of a view
   without the focus*) and `:543-580` (*Selection: the text colour macOS pairs with the
-  unemphasised selection*). Form: [`archive/todo_v0.7.1_kde-hand-overrides-spec.md`](archive/todo_v0.7.1_kde-hand-overrides-spec.md)
-  and step 1's [`archive/todo_v0.7.1_kde-open-items-step1-spec.md`](archive/todo_v0.7.1_kde-open-items-step1-spec.md).
+  unemphasised selection*). Form: [`todo_v0.7.1_kde-hand-overrides-spec.md`](todo_v0.7.1_kde-hand-overrides-spec.md)
+  and step 1's [`todo_v0.7.1_kde-open-items-step1-spec.md`](todo_v0.7.1_kde-open-items-step1-spec.md).
 - **The release (D0).** Decided by the maintainer on 2026-11-19: steps 6 and 7 are part
   of **0.7.2**, as steps 2 to 5 are, together with the text caret's blink
   ([`todo_v0.7.2_caret-blink-spec.md`](todo_v0.7.2_caret-blink-spec.md), "the caret
