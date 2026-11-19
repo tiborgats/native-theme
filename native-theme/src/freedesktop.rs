@@ -294,17 +294,75 @@ fn find_icon_with(
     lookup_in_chain: impl Fn(&str, u16, &[String]) -> Option<PathBuf>,
 ) -> Option<(PathBuf, bool)> {
     let chain = cached_theme_chain(theme)?;
+    first_of_name(name, &chain, |n, c| lookup_in_chain(n, size, c))
+}
+
+/// The two passes of [`find_icon`]: `<name>-symbolic` through the whole
+/// chain, then `<name>`; with whether the icon is symbolic.
+fn first_of_name(
+    name: &str,
+    chain: &[String],
+    mut lookup: impl FnMut(&str, &[String]) -> Option<PathBuf>,
+) -> Option<(PathBuf, bool)> {
     // First try: symbolic variant (e.g., "edit-copy-symbolic")
     // Symbolic icons are always single-frame, avoiding sprite sheets
     // in themes like Breeze that put animation strips under plain names.
     let symbolic = format!("{name}-symbolic");
-    if let Some(path) = lookup_in_chain(&symbolic, size, &chain) {
+    if let Some(path) = lookup(&symbolic, chain) {
         return Some((path, true));
     }
     // Second try: plain name (e.g., "edit-copy")
     // If the name itself already ends with "-symbolic" (caller passed it
     // explicitly via load_freedesktop_icon_by_name), mark as symbolic.
-    lookup_in_chain(name, size, &chain).map(|path| (path, name.ends_with("-symbolic")))
+    lookup(name, chain).map(|path| (path, name.ends_with("-symbolic")))
+}
+
+/// The first icon of [`first_of_name`]'s order that loads and that `accept`
+/// passes: an icon found and refused, or a file that does not load, is
+/// passed over for the next one that order comes to, through the same
+/// theme's chain.
+fn first_accepted_of_name(
+    name: &str,
+    chain: &[String],
+    mut lookup: impl FnMut(&str, &String) -> Option<PathBuf>,
+    mut load: impl FnMut(&Path, bool) -> Option<IconData>,
+    accept: &mut dyn FnMut(&IconData) -> bool,
+) -> Option<IconData> {
+    let mut found = None;
+    first_of_name(name, chain, |name, chain| {
+        chain.iter().find_map(|theme| {
+            let path = lookup(name, theme)?;
+            let icon = load(&path, name.ends_with("-symbolic"))?;
+            accept(&icon).then(|| {
+                found = Some(icon);
+                path
+            })
+        })
+    })?;
+    found
+}
+
+/// The first icon of [`first_of_names`]'s order that loads and that `accept`
+/// passes: an icon found and refused, or a file that does not load, is
+/// passed over for the next one that order comes to, through the same
+/// theme's chain.
+fn first_accepted_of_names(
+    names: &[&str],
+    chain: &[String],
+    mut lookup: impl FnMut(&str, &String) -> Option<PathBuf>,
+    mut load: impl FnMut(&Path, bool) -> Option<IconData>,
+    accept: &mut dyn FnMut(&IconData) -> bool,
+) -> Option<IconData> {
+    let mut found = None;
+    first_of_names(names, chain, |name, theme| {
+        let path = lookup(name, theme)?;
+        let icon = load(&path, name.ends_with("-symbolic"))?;
+        accept(&icon).then(|| {
+            found = Some(icon);
+            path
+        })
+    })?;
+    found
 }
 
 /// [`find_icon`] for the first of several names: each theme of `theme`'s
@@ -391,6 +449,48 @@ pub(crate) fn load_freedesktop_icon_by_name(
 ) -> Option<IconData> {
     let (path, is_symbolic) = find_icon(name, theme, lookup_size(size))?;
     load_icon_file(&path, is_symbolic, fg_color)
+}
+
+/// [`load_freedesktop_icon_by_name`] for the first icon that `accept`
+/// passes (see [`first_accepted_of_name`]).
+#[must_use]
+pub(crate) fn load_freedesktop_icon_by_name_where(
+    name: &str,
+    theme: &str,
+    size: u32,
+    fg_color: Option<[u8; 3]>,
+    accept: &mut dyn FnMut(&IconData) -> bool,
+) -> Option<IconData> {
+    let chain = cached_theme_chain(theme)?;
+    let size = lookup_size(size);
+    first_accepted_of_name(
+        name,
+        &chain,
+        |n, t| lookup_in_chain(n, size, std::slice::from_ref(t)),
+        |path, symbolic| load_icon_file(path, symbolic, fg_color),
+        accept,
+    )
+}
+
+/// [`load_freedesktop_icon_by_names`] for the first icon that `accept`
+/// passes (see [`first_accepted_of_names`]).
+#[must_use]
+pub(crate) fn load_freedesktop_icon_by_names_where(
+    names: &[&str],
+    theme: &str,
+    size: u32,
+    fg_color: Option<[u8; 3]>,
+    accept: &mut dyn FnMut(&IconData) -> bool,
+) -> Option<IconData> {
+    let chain = cached_theme_chain(theme)?;
+    let size = lookup_size(size);
+    first_accepted_of_names(
+        names,
+        &chain,
+        |n, t| lookup_in_chain(n, size, std::slice::from_ref(t)),
+        |path, symbolic| load_icon_file(path, symbolic, fg_color),
+        accept,
+    )
 }
 
 /// The size freedesktop-icons looks `size` up at: its `with_size` takes a
@@ -1361,6 +1461,101 @@ mod tests {
             first_of_names(&["computer-symbolic"], &chain, fake_lookup(&files)),
             Some((PathBuf::from("breeze/computer-symbolic"), true))
         );
+    }
+
+    /// A lookup over `files` for a whole chain: the first theme of the chain,
+    /// in order, that has the name, answered as [`fake_lookup`] answers.
+    fn fake_chain_lookup<'a>(
+        files: &'a [(&'a str, &'a str)],
+    ) -> impl FnMut(&str, &[String]) -> Option<PathBuf> + 'a {
+        move |name, chain| {
+            chain
+                .iter()
+                .find(|theme| files.iter().any(|&(t, n)| t == *theme && n == name))
+                .map(|theme| PathBuf::from(theme).join(name))
+        }
+    }
+
+    /// The icon a fake load gives for `path`: an SVG of the path's text.
+    fn fake_icon(path: &str) -> IconData {
+        IconData::Svg(Cow::Owned(path.as_bytes().to_vec()))
+    }
+
+    /// A fake load: the path's text as an SVG.
+    fn fake_load(path: &Path, _symbolic: bool) -> Option<IconData> {
+        Some(fake_icon(&path.to_string_lossy()))
+    }
+
+    /// Refused icons are passed over in [`first_of_names`]'s order: the
+    /// theme's own later name before its parent's earlier one, and a file
+    /// that does not load counts as refused.
+    #[test]
+    fn first_accepted_of_names_goes_on_in_its_order() {
+        let chain = ["Adwaita".to_string(), "AdwaitaLegacy".to_string()];
+        let files = [
+            ("Adwaita", "a"),
+            ("Adwaita", "b-symbolic"),
+            ("AdwaitaLegacy", "a-symbolic"),
+        ];
+        let names = ["a", "b"];
+        let first = |accept: &mut dyn FnMut(&IconData) -> bool| {
+            first_accepted_of_names(&names, &chain, fake_lookup(&files), fake_load, accept)
+        };
+        assert_eq!(first(&mut |_| true), Some(fake_icon("Adwaita/a")));
+        assert_eq!(
+            first_of_names(&names, &chain, fake_lookup(&files)),
+            Some((PathBuf::from("Adwaita/a"), false))
+        );
+        assert_eq!(
+            first(&mut |icon| *icon != fake_icon("Adwaita/a")),
+            Some(fake_icon("Adwaita/b-symbolic"))
+        );
+        assert_eq!(
+            first(&mut |icon| {
+                *icon != fake_icon("Adwaita/a") && *icon != fake_icon("Adwaita/b-symbolic")
+            }),
+            Some(fake_icon("AdwaitaLegacy/a-symbolic"))
+        );
+        assert_eq!(first(&mut |_| false), None);
+        let fails_on_a = |path: &Path, symbolic: bool| {
+            (path != Path::new("Adwaita/a"))
+                .then(|| fake_load(path, symbolic))
+                .flatten()
+        };
+        assert_eq!(
+            first_accepted_of_names(&names, &chain, fake_lookup(&files), fails_on_a, &mut |_| {
+                true
+            }),
+            Some(fake_icon("Adwaita/b-symbolic"))
+        );
+    }
+
+    /// Refused icons are passed over in [`first_of_name`]'s order: the
+    /// symbolic form through the whole chain, then the plain name through
+    /// it.
+    #[test]
+    fn first_accepted_of_name_goes_on_in_its_order() {
+        let chain = ["child".to_string(), "parent".to_string()];
+        let files = [("parent", "x-symbolic"), ("child", "x"), ("parent", "x")];
+        let first = |accept: &mut dyn FnMut(&IconData) -> bool| {
+            first_accepted_of_name("x", &chain, fake_lookup(&files), fake_load, accept)
+        };
+        assert_eq!(first(&mut |_| true), Some(fake_icon("parent/x-symbolic")));
+        assert_eq!(
+            first_of_name("x", &chain, fake_chain_lookup(&files)),
+            Some((PathBuf::from("parent/x-symbolic"), true))
+        );
+        assert_eq!(
+            first(&mut |icon| *icon != fake_icon("parent/x-symbolic")),
+            Some(fake_icon("child/x"))
+        );
+        assert_eq!(
+            first(&mut |icon| {
+                *icon != fake_icon("parent/x-symbolic") && *icon != fake_icon("child/x")
+            }),
+            Some(fake_icon("parent/x"))
+        );
+        assert_eq!(first(&mut |_| false), None);
     }
 
     /// On the installed Adwaita, `Heart`'s names in the gpui connector's

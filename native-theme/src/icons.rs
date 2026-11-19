@@ -379,6 +379,90 @@ impl<'a> FreedesktopLoader<'a> {
         }
     }
 
+    /// [`Self::load`], for the first icon that `accept` passes: an icon the loader
+    /// finds and `accept` refuses is passed over for the next one this loader would
+    /// come to, in its own order and in the same theme and the themes it inherits
+    /// from, never another. By names ([`Self::any`]): theme by theme, each name as
+    /// `<name>-symbolic`, then as itself. By a name, or a role's name: the symbolic
+    /// form through the whole chain, then the plain name. A custom
+    /// [`IconProvider`]: its freedesktop name so, then its own SVG.
+    ///
+    /// For a caller that can use only some icons (a toolkit that draws an icon
+    /// as a mask of one colour cannot use one in several colours), so that one
+    /// unusable drawing does not hide a usable one under the next name.
+    ///
+    /// `load_where(|_| true)` is [`Self::load`] but in one case: where the first
+    /// file found cannot be read or decoded, `load` gives `None` and `load_where`
+    /// goes on to the next.
+    ///
+    /// Requires the `system-icons` feature, and Linux; `None` otherwise.
+    #[must_use]
+    #[allow(unused_variables)]
+    pub fn load_where(self, accept: impl FnMut(&IconData) -> bool) -> Option<IconData> {
+        #[cfg(all(target_os = "linux", feature = "system-icons"))]
+        {
+            let mut accept = accept;
+            let detected;
+            let theme: Option<&str> = match self.theme {
+                Some(t) => Some(t),
+                None => {
+                    detected = system_icon_theme().ok();
+                    detected.as_deref()
+                }
+            };
+            match self.wanted {
+                Wanted::AnyOf(names) => crate::freedesktop::load_freedesktop_icon_by_names_where(
+                    names,
+                    theme?,
+                    self.size,
+                    self.fg_color,
+                    &mut accept,
+                ),
+                Wanted::Id(IconId::Role(role)) => {
+                    let name = icon_name(role, IconSet::Freedesktop)?;
+                    crate::freedesktop::load_freedesktop_icon_by_name_where(
+                        name,
+                        theme?,
+                        self.size,
+                        self.fg_color,
+                        &mut accept,
+                    )
+                }
+                Wanted::Id(IconId::Name(name)) => {
+                    crate::freedesktop::load_freedesktop_icon_by_name_where(
+                        name,
+                        theme?,
+                        self.size,
+                        self.fg_color,
+                        &mut accept,
+                    )
+                }
+                Wanted::Id(IconId::Custom(provider)) => {
+                    if let Some(theme) = theme
+                        && let Some(name) = provider.icon_name(IconSet::Freedesktop)
+                        && let Some(data) = crate::freedesktop::load_freedesktop_icon_by_name_where(
+                            name,
+                            theme,
+                            self.size,
+                            self.fg_color,
+                            &mut accept,
+                        )
+                    {
+                        return Some(data);
+                    }
+                    provider
+                        .icon_svg(IconSet::Freedesktop)
+                        .map(IconData::Svg)
+                        .filter(|data| accept(data))
+                }
+            }
+        }
+        #[cfg(not(all(target_os = "linux", feature = "system-icons")))]
+        {
+            None
+        }
+    }
+
     /// Load the theme's animated process-working spinner.
     ///
     /// `theme` of `None` uses the system-detected theme, and gives `None`
@@ -2436,6 +2520,178 @@ mod icon_loader_tests {
         // SfSymbols and SegoeFluent have no spinner primitive.
         assert!(load_icon_indicator(IconSet::SfSymbols, None).is_none());
         assert!(load_icon_indicator(IconSet::SegoeFluent, None).is_none());
+    }
+
+    #[test]
+    #[cfg(not(all(target_os = "linux", feature = "system-icons")))]
+    fn load_where_is_none_without_the_freedesktop_loader() {
+        assert!(
+            FreedesktopLoader::new("edit-copy")
+                .load_where(|_| true)
+                .is_none()
+        );
+    }
+}
+
+/// [`FreedesktopLoader::load_where`] on fixture themes, each test in a child
+/// process whose icon dirs hold only its themes
+/// ([`native_theme_test_fixtures::run`]). Every SVG's `<title>` names its
+/// theme and file.
+#[cfg(all(test, target_os = "linux", feature = "system-icons"))]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
+mod load_where_tests {
+    use super::*;
+    use native_theme_test_fixtures::{Child, in_child, run, write_scalable_theme};
+    use std::path::Path;
+
+    /// An SVG of one shape whose `<title>` is `title`.
+    fn svg(title: &str) -> String {
+        format!(
+            r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><title>{title}</title><rect width="16" height="16"/></svg>"#
+        )
+    }
+
+    /// The `<title>` of an SVG icon.
+    fn title(icon: &IconData) -> Option<String> {
+        let IconData::Svg(bytes) = icon else {
+            return None;
+        };
+        let text = String::from_utf8_lossy(bytes);
+        let (_, rest) = text.split_once("<title>")?;
+        let (title, _) = rest.split_once("</title>")?;
+        Some(title.to_string())
+    }
+
+    /// Writes the theme `name`, one scalable directory, inheriting from
+    /// `inherits`, with each `(icon, svg)` as `scalable/<icon>.svg`.
+    fn write_inheriting_theme(
+        icons: &Path,
+        name: &str,
+        inherits: &str,
+        files: &[(&str, &str)],
+    ) -> std::io::Result<()> {
+        let dir = icons.join(name);
+        std::fs::create_dir_all(dir.join("scalable"))?;
+        std::fs::write(
+            dir.join("index.theme"),
+            format!(
+                "[Icon Theme]\nName={name}\nInherits={inherits}\nDirectories=scalable\n\n\
+                 [scalable]\nSize=16\nType=Scalable\nMinSize=8\nMaxSize=512\n"
+            ),
+        )?;
+        for (icon, svg) in files {
+            std::fs::write(dir.join(format!("scalable/{icon}.svg")), svg)?;
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn load_where_goes_on_by_names() -> std::io::Result<()> {
+        const NAME: &str = "icons::load_where_tests::load_where_goes_on_by_names";
+        if in_child() {
+            let loader = || FreedesktopLoader::any(&["refused", "kept"]).theme("passing");
+            let kept = loader()
+                .load_where(|icon| title(icon).as_deref() != Some("passing/refused"))
+                .expect("passing/kept passes");
+            assert_eq!(title(&kept).as_deref(), Some("passing/kept"));
+            let loaded = loader().load().expect("passing/refused is the first name");
+            assert_eq!(title(&loaded).as_deref(), Some("passing/refused"));
+            return Ok(());
+        }
+        run(NAME, Child::kde("passing"), |icons| {
+            write_scalable_theme(
+                icons,
+                "passing",
+                &[
+                    ("refused", &svg("passing/refused")),
+                    ("kept", &svg("passing/kept")),
+                ],
+            )
+        })
+    }
+
+    #[test]
+    fn load_where_goes_on_by_a_name_through_the_chain() -> std::io::Result<()> {
+        const NAME: &str =
+            "icons::load_where_tests::load_where_goes_on_by_a_name_through_the_chain";
+        if in_child() {
+            let loader = || FreedesktopLoader::new("x").theme("child");
+            let loaded = loader().load().expect("the parent's symbolic icon");
+            assert_eq!(title(&loaded).as_deref(), Some("parent/x-symbolic"));
+            let kept = loader()
+                .load_where(|icon| title(icon).as_deref() != Some("parent/x-symbolic"))
+                .expect("the child's plain icon passes");
+            assert_eq!(title(&kept).as_deref(), Some("child/x"));
+            return Ok(());
+        }
+        run(NAME, Child::kde("child"), |icons| {
+            write_inheriting_theme(icons, "child", "parent", &[("x", &svg("child/x"))])?;
+            write_scalable_theme(
+                icons,
+                "parent",
+                &[("x-symbolic", &svg("parent/x-symbolic"))],
+            )
+        })
+    }
+
+    #[test]
+    fn load_where_by_a_role() -> std::io::Result<()> {
+        const NAME: &str = "icons::load_where_tests::load_where_by_a_role";
+        if in_child() {
+            let loader = || FreedesktopLoader::new(IconRole::DialogError).theme("roles");
+            let loaded = loader().load();
+            assert_eq!(
+                title(loaded.as_ref().expect("roles has dialog-error")).as_deref(),
+                Some("roles/dialog-error")
+            );
+            assert_eq!(loader().load_where(|_| true), loaded);
+            assert_eq!(loader().load_where(|_| false), None);
+            return Ok(());
+        }
+        run(NAME, Child::kde("roles"), |icons| {
+            write_scalable_theme(
+                icons,
+                "roles",
+                &[("dialog-error", &svg("roles/dialog-error"))],
+            )
+        })
+    }
+
+    #[test]
+    fn load_where_by_a_provider() -> std::io::Result<()> {
+        const NAME: &str = "icons::load_where_tests::load_where_by_a_provider";
+        /// Names `edit-copy` and has an SVG of its own.
+        #[derive(Debug)]
+        struct CopyProvider;
+        impl IconProvider for CopyProvider {
+            fn icon_name(&self, set: IconSet) -> Option<&str> {
+                (set == IconSet::Freedesktop).then_some("edit-copy")
+            }
+            fn icon_svg(&self, set: IconSet) -> Option<Cow<'static, [u8]>> {
+                (set == IconSet::Freedesktop).then(|| Cow::Owned(svg("provider").into_bytes()))
+            }
+        }
+        if in_child() {
+            let provider: &dyn IconProvider = &CopyProvider;
+            let loader = || FreedesktopLoader::new(provider).theme("copying");
+            let theme_s = loader()
+                .load_where(|_| true)
+                .expect("the theme's edit-copy");
+            assert_eq!(title(&theme_s).as_deref(), Some("copying/edit-copy"));
+            let own = loader()
+                .load_where(|icon| title(icon).as_deref() != Some("copying/edit-copy"))
+                .expect("the provider's own SVG passes");
+            assert_eq!(title(&own).as_deref(), Some("provider"));
+            assert_eq!(loader().load_where(|_| false), None);
+            return Ok(());
+        }
+        run(NAME, Child::kde("copying"), |icons| {
+            write_scalable_theme(
+                icons,
+                "copying",
+                &[("edit-copy", &svg("copying/edit-copy"))],
+            )
+        })
     }
 }
 
