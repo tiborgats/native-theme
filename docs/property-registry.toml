@@ -22,7 +22,9 @@
 #   "color"  — Rgba color value
 #   "f32"    — 32-bit float (dimensions in logical pixels, ratios)
 #   "u16"    — 16-bit unsigned int (CSS font-weight: 400=Normal, 700=Bold;
-#              integer milliseconds for an `_ms` key)
+#              integer milliseconds for `tooltip.show_delay_ms`)
+#   "u32"    — 32-bit unsigned int (integer milliseconds for the
+#              caret's blink, `input.caret_blink_*_ms`)
 #   "bool"   — boolean
 #   "string" — UTF-8 string
 #   "enum"   — enumerated value (variants noted in comments)
@@ -207,6 +209,9 @@ border                       = "border"
 background_color             = "color"
 placeholder_color            = "color"
 caret_color                  = "color"
+caret_blink_on_ms            = "u32"
+caret_blink_off_ms           = "u32"
+caret_blink_timeout_ms       = "u32"
 selection_background         = "color"
 selection_text_color         = "color"
 font                         = "font"

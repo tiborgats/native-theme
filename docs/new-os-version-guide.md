@@ -84,6 +84,10 @@ For a new OS version:
   "fade_rise"`), and whether a table header still sizes to its content
   (Breeze's `Header_MarginWidth`; `list.header_height_px` stays unset while
   it does): `docs/platform-facts.md` §2.7, §2.22 and §2.15.
+- The caret's blink: plasma-integration's `CursorBlinkRate` default (1000)
+  and its bound (200..2000), and Qt's halving of the flash time (500:
+  `input.caret_blink_on_ms`, `caret_blink_off_ms`): `docs/platform-facts.md`
+  §2.4.
 
 **Process:**
 
@@ -126,6 +130,10 @@ WinUI3 Fluent Design specifications, the OS probe's reads
   "scale_fade"`), and whether WinUI has gained a column header
   (`list.header_height_px` stays unset while it has none):
   `docs/platform-facts.md` §2.7, §2.22 and §2.15.
+- `GetCaretBlinkTime` on the runner image (530 on the WinUI host's:
+  `input.caret_blink_on_ms`, `caret_blink_off_ms`), and whether WinUI's text
+  box still stops blinking after 5 s (`caret_blink_timeout_ms` stays unset
+  while that is a rule over the blink time): `docs/platform-facts.md` §2.4.
 
 **Process:**
 
@@ -180,6 +188,8 @@ probe's API reads and renders (`tools/os-probe`)
   `tooltip.show_delay_ms` and `dialog.entrance` stay unset; and the
   `NSTableHeaderView` height the OS probe reads (28 on macOS 14, 15 and 26:
   `list.header_height_px`): `docs/platform-facts.md` §2.7, §2.22 and §2.15.
+- A measured caret blink: no source gives macOS's yet, so
+  `input.caret_blink_*_ms` stay unset: `docs/platform-facts.md` §2.4.
 
 **Process:**
 
@@ -226,6 +236,10 @@ GTK4 source, freedesktop portal specification
   and the column view's title button, `min-height` 24 plus its padding
   (30: `list.header_height_px`): `docs/platform-facts.md` §2.7, §2.22 and
   §2.15.
+- The defaults of `cursor-blink-time` (1200) and `cursor-blink-timeout`
+  (10 s) in gsettings-desktop-schemas (600: `input.caret_blink_on_ms`,
+  `caret_blink_off_ms`; 10000: `caret_blink_timeout_ms`):
+  `docs/platform-facts.md` §2.4.
 
 **Process:**
 

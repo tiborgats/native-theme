@@ -178,6 +178,11 @@ focus_border_color = "#0067c0"
 placeholder_color = "#0000009e"
 # soft_option: Fluent TextBox disabled bg
 disabled_background = "#f9f9f900"
+# platform-facts.md (§2.4): GetCaretBlinkTime 530 on the WinUI host's Windows 11 image; WinUI shows the caret one blink time (TextBoxHelpers.cpp:55-89 at microsoft-ui-xaml 2.5.1)
+caret_blink_on_ms = 530
+# platform-facts.md (§2.4): and hides it one blink time
+caret_blink_off_ms = 530
+# caret_blink_timeout_ms not stated: platform-facts.md (§2.4), WinUI's is a rule over the blink time, not one value (TextBoxView.cpp:2742-2763 at microsoft-ui-xaml 2.5.1)
 
 [light.input.border]
 # platform-facts.md:1213-1214 (§2.4): WinUI3 TextControlThemePadding=10,5,6,6
@@ -830,6 +835,11 @@ focus_border_color = "#4cc2ff"
 placeholder_color = "#ffffffc5"
 # soft_option: Fluent TextBox disabled bg
 disabled_background = "#33333300"
+# platform-facts.md (§2.4): GetCaretBlinkTime 530 on the WinUI host's Windows 11 image; WinUI shows the caret one blink time (TextBoxHelpers.cpp:55-89 at microsoft-ui-xaml 2.5.1)
+caret_blink_on_ms = 530
+# platform-facts.md (§2.4): and hides it one blink time
+caret_blink_off_ms = 530
+# caret_blink_timeout_ms not stated: platform-facts.md (§2.4), WinUI's is a rule over the blink time, not one value (TextBoxView.cpp:2742-2763 at microsoft-ui-xaml 2.5.1)
 
 [dark.input.border]
 # platform-facts.md:1213-1214 (§2.4): WinUI3 TextControlThemePadding=10,5,6,6

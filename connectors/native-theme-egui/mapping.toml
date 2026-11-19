@@ -1692,6 +1692,24 @@ sinks   = [{ path = "visuals.weak_text_color", scope = "input" }]
 verdict = "direct"
 sinks   = [{ path = "visuals.text_cursor.stroke.color" }]
 
+["input.caret_blink_on"]
+verdict = "derived"
+sinks   = [{ path = "visuals.text_cursor.on_duration", when = "input.caret_blink_off is stated; a theme that states no blink leaves egui's own" }]
+
+["input.caret_blink_off"]
+verdict = "derived"
+probe   = 0
+sinks   = [
+  { path = "visuals.text_cursor.blink", when = "a change between two stated values above 0 holds it at true" },
+  { path = "visuals.text_cursor.off_duration" },
+  { path = "visuals.text_cursor.on_duration", when = "unstated, it leaves the whole blink to egui, input.caret_blink_on's duration included" },
+]
+
+["input.caret_blink_timeout"]
+verdict  = "unmappable"
+sub_tag  = "egui-limited"
+upstream = "egui: a time-out after which TextCursorStyle stops blinking, the caret shown"
+
 ["input.selection_background"]
 verdict = "scoped"
 sinks   = [{ path = "visuals.selection.bg_fill", scope = "input" }]
@@ -3052,9 +3070,6 @@ sinks   = [{ path = "spacing.indent", scope = "expander" }]
 "visuals.window_highlight_topmost"  = "no consumer (§5.10)"
 "visuals.resize_corner_size"        = "native-theme states no resize-grip size (§5.10)"
 "visuals.text_cursor.preview"       = "caret preview is input behaviour with no native leaf (§5.9)"
-"visuals.text_cursor.blink"         = "caret blink is input behaviour with no native leaf (§5.9)"
-"visuals.text_cursor.on_duration"   = "as visuals.text_cursor.blink"
-"visuals.text_cursor.off_duration"  = "as visuals.text_cursor.blink"
 "visuals.clip_rect_margin"          = "deprecated; setting it has no effect (§5.10)"
 "visuals.button_frame"              = "left at egui's true (egui/src/style.rs:1546): native-theme has no leaf for whether buttons draw a frame"
 "visuals.indent_has_left_vline"     = "whether an indented region is ruled is layout policy with no native leaf (§5.10)"

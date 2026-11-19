@@ -11,7 +11,7 @@ use crate::Rgba;
 use crate::model::border::{ResolvedPadding, ResolvedWidgetBorder, WidgetBorderSpec};
 use crate::model::font::{FontSize, FontStyle};
 use crate::model::{
-    DefaultsBorderSpec, FontSpec, IconSizes, LayoutTheme, ResolvedFontSpec, TextScale,
+    DefaultsBorderSpec, FontSpec, IconSizes, InputTheme, LayoutTheme, ResolvedFontSpec, TextScale,
     TextScaleEntry, ThemeDefaults,
 };
 use std::sync::Arc;
@@ -917,5 +917,46 @@ pub(crate) fn check_defaults_ranges(
             errors,
         );
         check_range_u16(entry.weight, 100, 900, prefix, "weight", errors);
+    }
+}
+
+/// Check that a `u32` value is at least `min`; there is no upper bound.
+///
+/// Path string (`"{prefix}.{field}"`) is only formatted in the error branch,
+/// so the happy path (value in range) allocates zero strings.
+pub(crate) fn check_min_u32(
+    value: u32,
+    min: u32,
+    prefix: &str,
+    field: &str,
+    errors: &mut Vec<crate::error::RangeViolation>,
+) {
+    if value < min {
+        errors.push(crate::error::RangeViolation {
+            path: format!("{prefix}.{field}"),
+            value: f64::from(value),
+            min: Some(f64::from(min)),
+            max: None,
+        });
+    }
+}
+
+/// Check that the caret's blink is stated whole or not at all.
+///
+/// `caret_blink_off` unset while `caret_blink_on` or `caret_blink_timeout`
+/// is stated names `caret_blink_off_ms`; `caret_blink_off` above 0 while
+/// `caret_blink_on` is unset names `caret_blink_on_ms`. A blink stated in
+/// part is rejected because a connector or an application then has three
+/// cases to tell. A stated field's range check (`check_min_u32`) runs after
+/// this one, in the range phase.
+pub(crate) fn check_caret_blink(input: &InputTheme, prefix: &str, missing: &mut Vec<String>) {
+    match input.caret_blink_off {
+        None if input.caret_blink_on.is_some() || input.caret_blink_timeout.is_some() => {
+            missing.push(format!("{prefix}.caret_blink_off_ms"));
+        }
+        Some(off) if off > 0 && input.caret_blink_on.is_none() => {
+            missing.push(format!("{prefix}.caret_blink_on_ms"));
+        }
+        _ => {}
     }
 }

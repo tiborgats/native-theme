@@ -57,7 +57,7 @@ What the base style carries, among others:
 | the button's fills, border, corner radius, padding and minimum height | `visuals.widgets.{inactive,hovered,active,open}`, `spacing.button_padding`, `spacing.interact_size.y` — shared by every interactive widget |
 | the selection, link, warning and error colours | `visuals.selection`, `hyperlink_color`, `warn_fg_color`, `error_fg_color` |
 | the window border, the window and menu corners, the shadows | `visuals.window_stroke`, `window_corner_radius`, `menu_corner_radius`, `window_shadow`, `popup_shadow` |
-| a text field's fill and caret | `visuals.text_edit_bg_color`, `visuals.text_cursor` |
+| a text field's fill, its caret and the caret's blink | `visuals.text_edit_bg_color`, `visuals.text_cursor` |
 | the scroll bar | `spacing.scroll`, the thumb fills in `visuals.widgets` |
 | the widget gap, the slider rail, the check box, the combo box width | `spacing.item_spacing`, `slider_rail_height`, `icon_width`, `icon_spacing`, `combo_width` |
 | the tooltip's delay and width | `interaction.tooltip_delay`, `spacing.tooltip_width` |

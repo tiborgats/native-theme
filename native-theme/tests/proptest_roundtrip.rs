@@ -270,22 +270,32 @@ fn arb_input_theme() -> impl Strategy<Value = InputTheme> {
         proptest::option::of(0.0f32..1.0),
         proptest::option::of(arb_font_spec()),
         proptest::option::of(arb_widget_border_spec()),
+        proptest::option::of(any::<u32>()),
+        proptest::option::of(any::<u32>()),
+        proptest::option::of(any::<u32>()),
     )
-        .prop_map(|(colors, min_h, dis_op, font, border)| InputTheme {
-            background_color: colors[0],
-            placeholder_color: colors[1],
-            caret_color: colors[2],
-            selection_background: colors[3],
-            selection_text_color: colors[4],
-            min_height: min_h,
-            disabled_opacity: dis_op,
-            disabled_text_color: colors[5],
-            hover_border_color: colors[6],
-            focus_border_color: colors[7],
-            disabled_background: colors[5],
-            font,
-            border,
-        })
+        .prop_map(
+            |(colors, min_h, dis_op, font, border, blink_on, blink_off, blink_timeout)| {
+                InputTheme {
+                    background_color: colors[0],
+                    placeholder_color: colors[1],
+                    caret_color: colors[2],
+                    caret_blink_on: blink_on,
+                    caret_blink_off: blink_off,
+                    caret_blink_timeout: blink_timeout,
+                    selection_background: colors[3],
+                    selection_text_color: colors[4],
+                    min_height: min_h,
+                    disabled_opacity: dis_op,
+                    disabled_text_color: colors[5],
+                    hover_border_color: colors[6],
+                    focus_border_color: colors[7],
+                    disabled_background: colors[5],
+                    font,
+                    border,
+                }
+            },
+        )
 }
 
 fn arb_checkbox_theme() -> impl Strategy<Value = CheckboxTheme> {

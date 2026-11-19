@@ -26,6 +26,8 @@ pub(crate) enum RangeCheck {
     Range { min: f64, max: f64 },
     /// `check_range_u16(self.field, min, max, ...)`
     RangeU16 { min: u16, max: u16 },
+    /// `check_min_u32(self.field, min, ...)`: at least `min`, no upper bound
+    MinU32 { min: u32 },
 }
 
 /// Parsed metadata for a single struct field.
@@ -318,9 +320,12 @@ fn parse_one_field(field: &Field) -> Result<FieldMeta> {
             attr.parse_nested_meta(|meta| {
                 let is_range_check = meta.path.is_ident("check")
                     || meta.path.is_ident("range")
-                    || meta.path.is_ident("range_u16");
+                    || meta.path.is_ident("range_u16")
+                    || meta.path.is_ident("min_u32");
                 if is_range_check && range_check.is_some() {
-                    return Err(meta.error("only one of check, range and range_u16 may be given"));
+                    return Err(meta.error(
+                        "only one of check, range, range_u16 and min_u32 may be given",
+                    ));
                 }
                 if meta.path.is_ident("category") {
                     if nested || resolved_ty.is_some() {
@@ -394,6 +399,16 @@ fn parse_one_field(field: &Field) -> Result<FieldMeta> {
                     let lit: LitStr = value.parse()?;
                     let (min, max) = parse_range::<u16>(&lit)?;
                     range_check = Some(RangeCheck::RangeU16 { min, max });
+                    Ok(())
+                } else if meta.path.is_ident("min_u32") {
+                    let value = meta.value()?;
+                    let lit: LitStr = value.parse()?;
+                    let min = lit
+                        .value()
+                        .trim()
+                        .parse::<u32>()
+                        .map_err(|_| Error::new(lit.span(), "min_u32 must be a u32"))?;
+                    range_check = Some(RangeCheck::MinU32 { min });
                     Ok(())
                 } else if meta.path.is_ident("min_max_pair") {
                     let value = meta.value()?;
@@ -709,6 +724,41 @@ mod tests {
             pub weight: Option<u16>
         });
         assert!(err.contains("exceeds"), "got: {err}");
+    }
+
+    #[test]
+    fn min_u32_is_parsed() {
+        let tokens = quote::quote! {
+            #[theme(category = "soft_option", min_u32 = "1")]
+            pub caret: Option<u32>
+        };
+        let meta = match parse_field_from_tokens(tokens) {
+            Ok(meta) => meta,
+            Err(e) => panic!("should parse: {e}"),
+        };
+        assert!(
+            matches!(meta.range_check, Some(RangeCheck::MinU32 { min: 1 })),
+            "expected MinU32 {{ min: 1 }}, got {:?}",
+            meta.range_check
+        );
+    }
+
+    #[test]
+    fn min_u32_not_a_u32_errors() {
+        let err = field_error(quote::quote! {
+            #[theme(min_u32 = "-1")]
+            pub caret: Option<u32>
+        });
+        assert!(err.contains("u32"), "got: {err}");
+    }
+
+    #[test]
+    fn min_u32_beside_another_range_errors() {
+        let err = field_error(quote::quote! {
+            #[theme(range_u16 = "1..=2", min_u32 = "1")]
+            pub caret: Option<u32>
+        });
+        assert!(err.contains("only one"), "got: {err}");
     }
 
     // === explicit_fields parsing ===

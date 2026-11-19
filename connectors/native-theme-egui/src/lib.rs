@@ -92,11 +92,11 @@
 //! borders, corner radius, padding and minimum height, which every interactive widget
 //! shares, since egui's `widgets` states belong to no one kind of widget; the selection,
 //! link, warning and error colours; the window stroke, the window and menu corners and the
-//! window and popup shadows; a text field's fill and caret colour; the scroll bar; the widget
-//! gap (`spacing.item_spacing`); the slider rail's height; the check box's size; the combo
-//! box's width; the tooltip's delay and width; and the body, monospace, small and heading
-//! text sizes. The mapping document below lists every native leaf with the egui field it
-//! reaches, or why it reaches none.
+//! window and popup shadows; a text field's fill, its caret's colour and the caret's blink;
+//! the scroll bar; the widget gap (`spacing.item_spacing`); the slider rail's height; the
+//! check box's size; the combo box's width; the tooltip's delay and width; and the body,
+//! monospace, small and heading text sizes. The mapping document below lists every native
+//! leaf with the egui field it reaches, or why it reaches none.
 //!
 //! An accessor that returns one `ResolvedTheme` leaf, converted to egui's type
 //! or scaled by the text-scaling factor, is named after the leaf's path,

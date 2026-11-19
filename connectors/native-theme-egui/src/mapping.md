@@ -11,12 +11,12 @@ One row per native leaf (spec §5, §13.1). A `§N` that names no document cites
 | Foundation (`defaults`, `text_scale`, `layout`) | 67 | 18 | 1 | 37 | 11 |
 | Surfaces (window, dialog, popover, card, tooltip, menu) | 110 | 8 | 55 | 32 | 15 |
 | Buttons (button, link, switch, checkbox, segmented control) | 116 | 13 | 47 | 31 | 25 |
-| Inputs (input, text area, combo box, list) | 88 | 4 | 40 | 32 | 12 |
+| Inputs (input, text area, combo box, list) | 91 | 4 | 40 | 34 | 13 |
 | Indicators (scrollbar, slider, progress bar, splitter, separator, spinner) | 40 | 5 | 17 | 9 | 9 |
 | Chrome (tab, sidebar, toolbar, status bar, expander) | 104 | 0 | 57 | 28 | 19 |
-| **TOTAL** | **525** | **48** | **217** | **169** | **91** |
+| **TOTAL** | **528** | **48** | **217** | **171** | **92** |
 
-UNMAPPABLE sub-tags (§2): `egui-limited` 52, `source-side gap` 16, `source-void` 1, `widgets-crate` 22.
+UNMAPPABLE sub-tags (§2): `egui-limited` 53, `source-side gap` 16, `source-void` 1, `widgets-crate` 22.
 
 ## Rows
 
@@ -365,6 +365,9 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 52, `source-side gap` 16, `source-void
 | `input.border.padding.right` | SCOPED | «input» `spacing.button_padding.x` |  |
 | `input.border.padding.top` | SCOPED | «input» `spacing.button_padding.y` |  |
 | `input.border.shadow_enabled` | UNMAPPABLE |  | `source-side gap`: native-theme: shadow offset, blur and spread in WidgetBorderSpec (§14 item 10) |
+| `input.caret_blink_off` | DERIVED | `visuals.text_cursor.blink` (when: a change between two stated values above 0 holds it at true); `visuals.text_cursor.off_duration`; `visuals.text_cursor.on_duration` (when: unstated, it leaves the whole blink to egui, input.caret_blink_on's duration included) | probe `0` |
+| `input.caret_blink_on` | DERIVED | `visuals.text_cursor.on_duration` (when: input.caret_blink_off is stated; a theme that states no blink leaves egui's own) |  |
+| `input.caret_blink_timeout` | UNMAPPABLE |  | `egui-limited`: egui: a time-out after which TextCursorStyle stops blinking, the caret shown |
 | `input.caret_color` | DIRECT | `visuals.text_cursor.stroke.color` |  |
 | `input.disabled_background` | SCOPED | «input:disabled» `visuals.text_edit_bg_color` (when: stated; None copies input.background_color, §6.4) |  |
 | `input.disabled_opacity` | SCOPED | «input» `visuals.disabled_alpha`; «input:disabled» `visuals.disabled_alpha` |  |
@@ -637,6 +640,9 @@ The leaf that wins an egui field globally; the leaves that only feed its formula
 | `visuals.selection.bg_fill` | `defaults.selection_background` |  | `button.disabled_background` «button:disabled», `button.primary_background` «button», `button.primary_background` «button:disabled», `input.selection_background` «input», `list.selection_background` «list», `progress_bar.fill_color` «progress_bar», `segmented_control.active_background` «segmented_control», `sidebar.selection_background` «sidebar», `slider.disabled_fill_color` «slider:disabled», `slider.fill_color` «slider», `slider.fill_color` «slider:disabled», `switch.checked_background` «switch», `switch.checked_background` «switch:disabled», `switch.disabled_checked_background` «switch:disabled», `tab.active_background` «tab» |
 | `visuals.selection.stroke.color` | `defaults.selection_text_color` |  | `button.disabled_background` «button:disabled», `button.disabled_text_color` «button:disabled», `button.primary_text_color` «button», `button.primary_text_color` «button:disabled», `input.selection_text_color` «input», `list.selection_text_color` «list», `segmented_control.active_text_color` «segmented_control», `sidebar.selection_text_color` «sidebar», `tab.active_text_color` «tab» |
 | `visuals.slider_trailing_fill` | — (a constant this crate writes) | `slider.fill_color` forces it: written true in the base style, which every cell inherits, §5.9 |  |
+| `visuals.text_cursor.blink` | — (a formula's result) | `input.caret_blink_off` |  |
+| `visuals.text_cursor.off_duration` | `input.caret_blink_off` |  |  |
+| `visuals.text_cursor.on_duration` | — (a formula's result) | `input.caret_blink_off`, `input.caret_blink_on` |  |
 | `visuals.text_cursor.stroke.color` | `input.caret_color` |  |  |
 | `visuals.text_edit_bg_color` | `input.background_color` |  | `input.background_color` «input:disabled», `input.disabled_background` «input:disabled» |
 | `visuals.warn_fg_color` | `defaults.warning_color` |  |  |
@@ -861,9 +867,6 @@ The leaf that wins an egui field globally; the leaves that only feed its formula
 | `visuals.resize_corner_size` | native-theme states no resize-grip size (§5.10) |
 | `visuals.selection.stroke.width` | no native source; egui's 1.0 (§6.2) |
 | `visuals.striped` | native-theme has no are-lists-striped boolean (§5.10) |
-| `visuals.text_cursor.blink` | caret blink is input behaviour with no native leaf (§5.9) |
-| `visuals.text_cursor.off_duration` | as visuals.text_cursor.blink |
-| `visuals.text_cursor.on_duration` | as visuals.text_cursor.blink |
 | `visuals.text_cursor.preview` | caret preview is input behaviour with no native leaf (§5.9) |
 | `visuals.text_cursor.stroke.width` | no native caret width exists (§5.9) |
 | `visuals.text_options.color_transfer_function` | how epaint writes glyph colours into the font atlas; native-theme carries no leaf for it (epaint/src/text/mod.rs:31-32) |

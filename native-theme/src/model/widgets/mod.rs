@@ -130,6 +130,28 @@ pub struct InputTheme {
     pub placeholder_color: Option<Rgba>,
     /// Text cursor (caret) color.
     pub caret_color: Option<Rgba>,
+    /// How long the caret is shown in each blink cycle, in milliseconds, 1 or
+    /// more. A blink is stated whole, with
+    /// [`caret_blink_off`](Self::caret_blink_off), or not at all; `None`
+    /// where the theme states none, and the toolkit's own blink applies
+    /// (docs/platform-facts.md §2.4).
+    #[serde(rename = "caret_blink_on_ms")]
+    #[theme(category = "soft_option", min_u32 = "1")]
+    pub caret_blink_on: Option<u32>,
+    /// How long the caret is hidden in each blink cycle, in milliseconds; 0
+    /// means the caret does not blink, whatever
+    /// [`caret_blink_on`](Self::caret_blink_on) is. `None` where the theme
+    /// states no blink (docs/platform-facts.md §2.4).
+    #[serde(rename = "caret_blink_off_ms")]
+    #[theme(category = "soft_option")]
+    pub caret_blink_off: Option<u32>,
+    /// How long after the last input the caret stops blinking, shown, in
+    /// milliseconds, 1 or more; stated only beside a blink. `None` where the
+    /// platform's caret never stops (KDE, Material, iOS) or no source gives
+    /// its time-out (Windows, macOS) (docs/platform-facts.md §2.4).
+    #[serde(rename = "caret_blink_timeout_ms")]
+    #[theme(category = "soft_option", min_u32 = "1")]
+    pub caret_blink_timeout: Option<u32>,
     /// Text selection highlight color.
     #[theme(inherit_from = "defaults.text_selection_background")]
     pub selection_background: Option<Rgba>,

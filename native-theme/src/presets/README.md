@@ -46,6 +46,12 @@ preset states each only as its platform's `docs/platform-facts.md` cell gives
 it (§2.7, §2.22), and no other preset states one (`documented_sizes.rs`); the
 macOS presets leave both unset, since AppKit states neither.
 
+The caret's blink, `input.caret_blink_on_ms`, `caret_blink_off_ms` and
+`caret_blink_timeout_ms`, is gated so too (§2.4), but for `ios-13`, which
+no platform-facts column covers and which states the blink measured on iOS
+18.6 (`docs/evidence/ios-host/`); the macOS presets leave it unset, since no
+source gives macOS's blink.
+
 `material-3` and `ios-13` have no reader: `SystemTheme::from_system()` never
 selects them, and an application chooses them as a look.
 `material-3` is a look for any platform, and `list_presets_for_platform()`

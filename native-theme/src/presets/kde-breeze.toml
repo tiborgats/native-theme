@@ -176,6 +176,11 @@ placeholder_color = "#707d8a"
 # platform-facts.md:1119 (§2.1.6): Disabled [Colors:View] BackgroundNormal / ForegroundNormal, KColorScheme 6.31.0
 disabled_background = "#f3f3f3"
 disabled_text_color = "#aaabac"
+# platform-facts.md (§2.4): half Qt's cursor flash time, 1000 where CursorBlinkRate is unset (khintssettings.cpp:79-80 at plasma-integration 6.8.2; qwidgetlinecontrol.cpp:1497-1509 at qtbase 6.12.0)
+caret_blink_on_ms = 500
+# platform-facts.md (§2.4): the other half, hidden
+caret_blink_off_ms = 500
+# caret_blink_timeout_ms not stated: platform-facts.md (§2.4), Qt's caret never stops blinking (qwidgetlinecontrol.cpp:1497-1531 at qtbase 6.12.0)
 
 
 [light.input.border]
@@ -793,6 +798,11 @@ placeholder_color = "#a1a9b1"
 # platform-facts.md:1119 (§2.1.6): Disabled [Colors:View] BackgroundNormal / ForegroundNormal, KColorScheme 6.31.0
 disabled_background = "#131517"
 disabled_text_color = "#606263"
+# platform-facts.md (§2.4): half Qt's cursor flash time, 1000 where CursorBlinkRate is unset (khintssettings.cpp:79-80 at plasma-integration 6.8.2; qwidgetlinecontrol.cpp:1497-1509 at qtbase 6.12.0)
+caret_blink_on_ms = 500
+# platform-facts.md (§2.4): the other half, hidden
+caret_blink_off_ms = 500
+# caret_blink_timeout_ms not stated: platform-facts.md (§2.4), Qt's caret never stops blinking (qwidgetlinecontrol.cpp:1497-1531 at qtbase 6.12.0)
 
 
 [dark.input.border]

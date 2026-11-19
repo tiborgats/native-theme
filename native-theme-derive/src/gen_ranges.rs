@@ -94,6 +94,18 @@ fn gen_check_stmts(fields: &[FieldMeta]) -> TokenStream {
                         );
                     }
                 }
+                RangeCheck::MinU32 { min } => {
+                    let min_lit = *min;
+                    quote! {
+                        crate::resolve::validate_helpers::check_min_u32(
+                            #value,
+                            #min_lit,
+                            prefix,
+                            #field_name,
+                            errors,
+                        );
+                    }
+                }
             };
             if soft {
                 stmts.push(quote! {

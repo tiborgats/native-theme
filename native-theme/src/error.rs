@@ -114,7 +114,9 @@ pub enum Error {
         source: std::io::Error,
     },
 
-    /// Theme resolution found missing fields that could not be inherited.
+    /// Theme resolution found missing fields that could not be inherited, or
+    /// a caret blink stated in part (`input.caret_blink_*_ms`), named by the
+    /// key to add.
     ///
     /// Each path, here and in [`RangeViolation::path`], names the key a
     /// theme author writes in TOML: `button.min_height_px`,

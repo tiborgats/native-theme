@@ -50,6 +50,7 @@ mod util;
 /// - `#[theme(check = "non_negative"|"positive")]` -- range check
 /// - `#[theme(range = "0.0..=1.0")]` -- f32 range check
 /// - `#[theme(range_u16 = "100..=900")]` -- u16 range check
+/// - `#[theme(min_u32 = "1")]` -- u32 lower bound, no upper bound
 /// - `#[theme(min_max_pair = "other_field")]` -- min/max pair validation
 /// - `#[theme(inherit_from = "defaults.accent_color")]` -- uniform inheritance source from defaults
 #[proc_macro_derive(ThemeWidget, attributes(theme, theme_layer, theme_inherit))]

@@ -149,6 +149,11 @@ focus_border_color = "#6750a4"
 disabled_text_color = "#1d1b2061"
 # platform-facts.md:1209 (§2.4): caret-color = primary (_md-comp-outlined-text-field.scss:31)
 caret_color = "#6750a4"
+# platform-facts.md (§2.4): Compose shows the cursor 500 ms (CursorAnimationState.kt:76-83 at androidx e4d933c9)
+caret_blink_on_ms = 500
+# platform-facts.md (§2.4): and hides it 500 ms
+caret_blink_off_ms = 500
+# caret_blink_timeout_ms not stated: platform-facts.md (§2.4), the blink loops until the animation is cancelled (CursorAnimationState.kt:78-83)
 
 
 [light.input.font]
@@ -672,6 +677,11 @@ focus_border_color = "#d0bcff"
 disabled_text_color = "#e6e0e961"
 # platform-facts.md:1209 (§2.4): caret-color = primary (_md-comp-outlined-text-field.scss:31)
 caret_color = "#d0bcff"
+# platform-facts.md (§2.4): Compose shows the cursor 500 ms (CursorAnimationState.kt:76-83 at androidx e4d933c9)
+caret_blink_on_ms = 500
+# platform-facts.md (§2.4): and hides it 500 ms
+caret_blink_off_ms = 500
+# caret_blink_timeout_ms not stated: platform-facts.md (§2.4), the blink loops until the animation is cancelled (CursorAnimationState.kt:78-83)
 
 
 [dark.input.font]

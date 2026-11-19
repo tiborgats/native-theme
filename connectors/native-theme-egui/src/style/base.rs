@@ -215,6 +215,16 @@ pub(crate) fn base_style(input: &BuildInput<'_>, notes: &mut Vec<Note>) -> egui:
     v.faint_bg_color = to_color32(t.list.alternate_row_background);
     v.text_edit_bg_color = Some(to_color32(t.input.background_color));
     v.text_cursor.stroke.color = to_color32(t.input.caret_color); // width stays egui's (§5.4)
+    // the caret's blink, the theme's milliseconds as egui's seconds; a theme that states no blink
+    // keeps egui's own whole, and egui has no time-out, so `input.caret_blink_timeout` has no sink
+    // (the caret blink's rationale, B5)
+    if let Some(off) = t.input.caret_blink_off {
+        v.text_cursor.blink = off != 0;
+        v.text_cursor.off_duration = (f64::from(off) / 1000.0) as f32;
+        if let Some(on) = t.input.caret_blink_on {
+            v.text_cursor.on_duration = (f64::from(on) / 1000.0) as f32;
+        }
+    }
     v.slider_trailing_fill = true; // `slider.fill_color` is invisible without it (§5.5)
     // `slider.thumb_diameter` is a diameter, so a round knob; egui's `Rect { aspect_ratio: 0.75 }`
     // (`egui/src/style.rs:1553`) has no theme value behind it (§5.9, §6.6)
@@ -548,6 +558,16 @@ mod tests {
                 v.text_cursor.stroke.width,
                 own.visuals.text_cursor.stroke.width
             );
+            let blink = if preset == "adwaita" { 0.6 } else { 0.5 };
+            assert_eq!(
+                (
+                    v.text_cursor.blink,
+                    v.text_cursor.on_duration,
+                    v.text_cursor.off_duration
+                ),
+                (true, blink, blink),
+                "{preset}: the caret's blink in seconds"
+            );
             assert!(v.slider_trailing_fill);
             assert_eq!(v.handle_shape, egui::style::HandleShape::Circle);
             assert_eq!(
@@ -739,6 +759,44 @@ mod tests {
         t.tooltip.show_delay = None;
         let (s, _) = build(egui::Theme::Light, &t, &LayoutTheme::default(), None);
         assert_eq!(s.interaction.tooltip_delay, own.interaction.tooltip_delay);
+    }
+
+    /// `input.caret_blink_on` and `caret_blink_off` are milliseconds, egui's
+    /// `TextCursorStyle` durations seconds; a hidden duration of 0 is no blink, and a theme that
+    /// states no blink keeps egui's own three values.
+    #[test]
+    fn caret_blink_is_the_themes_in_seconds_or_egui_own() {
+        let blink_of = |s: &egui::Style| {
+            let c = &s.visuals.text_cursor;
+            (c.blink, c.on_duration, c.off_duration)
+        };
+        let own = blink_of(&egui::Theme::Light.default_style());
+
+        let t = resolved("ios-13", ColorMode::Light);
+        let (s, notes) = build(egui::Theme::Light, &t, &LayoutTheme::default(), None);
+        assert_eq!(blink_of(&s), (true, 0.65, 0.35), "ios-13");
+        assert!(notes.is_empty(), "ios-13: {notes:?}");
+
+        let t = resolved("catppuccin-mocha", ColorMode::Dark);
+        let (s, notes) = build(egui::Theme::Dark, &t, &LayoutTheme::default(), None);
+        assert_eq!(
+            blink_of(&s),
+            blink_of(&egui::Theme::Dark.default_style()),
+            "catppuccin-mocha"
+        );
+        assert!(notes.is_empty(), "catppuccin-mocha: {notes:?}");
+
+        let mut t = resolved("adwaita", ColorMode::Light);
+        t.input.caret_blink_off = Some(0);
+        let (s, notes) = build(egui::Theme::Light, &t, &LayoutTheme::default(), None);
+        assert_eq!(blink_of(&s), (false, 0.6, 0.0), "adwaita, no blink");
+        assert!(notes.is_empty(), "adwaita, no blink: {notes:?}");
+
+        t.input.caret_blink_off = None;
+        assert_eq!(t.input.caret_blink_on, Some(600));
+        let (s, notes) = build(egui::Theme::Light, &t, &LayoutTheme::default(), None);
+        assert_eq!(blink_of(&s), own, "adwaita, no hidden duration");
+        assert!(notes.is_empty(), "adwaita, no hidden duration: {notes:?}");
     }
 
     /// §6.15: the delta between the theme's line box and the row, floored at egui's 0.0.

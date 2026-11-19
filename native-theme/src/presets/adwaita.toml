@@ -147,6 +147,12 @@ placeholder_color = "#929595"
 min_height_px = 34.0
 # platform-facts.md:1209 (§2.4): caret-color currentColor, the entry's text colour, input.font.color (libadwaita 1.10.0 _entries.scss:11)
 caret_color = "#2e3436"
+# platform-facts.md (§2.4): half cursor-blink-time, 1200 by default (org.gnome.desktop.interface.gschema.xml.in:70-77 at gsettings-desktop-schemas 51.0; gtktext.c:6866-6873 at GTK 4.24.1)
+caret_blink_on_ms = 600
+# platform-facts.md (§2.4): the other half, hidden
+caret_blink_off_ms = 600
+# platform-facts.md (§2.4): cursor-blink-timeout, 10 s by default (org.gnome.desktop.interface.gschema.xml.in:78-85 at gsettings-desktop-schemas 51.0)
+caret_blink_timeout_ms = 10000
 # hover_border_color not stated: platform-facts.md §2.4 hover_border_color, (none), the entry's only :hover rule is its
 # icons' opacity (_entries.scss:49)
 # platform-facts.md §2.4 focus_border_color: $focus_border_color, the focus ring's colour (_entries.scss:17, _colors.scss:307)
@@ -595,6 +601,12 @@ placeholder_color = "#8b8b8b"
 min_height_px = 34.0
 # platform-facts.md:1209 (§2.4): caret-color currentColor, the entry's text colour, input.font.color (libadwaita 1.10.0 _entries.scss:11)
 caret_color = "#ffffff"
+# platform-facts.md (§2.4): half cursor-blink-time, 1200 by default (org.gnome.desktop.interface.gschema.xml.in:70-77 at gsettings-desktop-schemas 51.0; gtktext.c:6866-6873 at GTK 4.24.1)
+caret_blink_on_ms = 600
+# platform-facts.md (§2.4): the other half, hidden
+caret_blink_off_ms = 600
+# platform-facts.md (§2.4): cursor-blink-timeout, 10 s by default (org.gnome.desktop.interface.gschema.xml.in:78-85 at gsettings-desktop-schemas 51.0)
+caret_blink_timeout_ms = 10000
 # hover_border_color not stated: platform-facts.md §2.4 hover_border_color, (none), the entry's only :hover rule is its
 # icons' opacity (_entries.scss:49)
 # platform-facts.md §2.4 focus_border_color: $focus_border_color, the focus ring's colour (_entries.scss:17, _colors.scss:307)

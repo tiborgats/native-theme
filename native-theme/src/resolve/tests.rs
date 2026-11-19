@@ -3129,3 +3129,143 @@ fn a_bad_font_dpi_is_one_context_violation() {
         }
     }
 }
+
+// ===== The caret's blink: stated whole or not at all =====
+
+/// `fully_populated_variant()` with `input`'s caret blink set as given.
+fn variant_with_blink(on: Option<u32>, off: Option<u32>, timeout: Option<u32>) -> ThemeMode {
+    let mut v = fully_populated_variant();
+    v.input.caret_blink_on = on;
+    v.input.caret_blink_off = off;
+    v.input.caret_blink_timeout = timeout;
+    v
+}
+
+/// The valid rows of the rule: no blink stated, `caret_blink_off` 0 (no
+/// blink, whatever else is stated), or both durations stated, with or
+/// without a time-out. The resolved `input` carries the values as set.
+#[test]
+fn a_blink_stated_whole_or_not_at_all_validates() {
+    let on = Some(500);
+    let timeout = Some(10000);
+    let rows = [
+        (None, None, None),
+        (None, Some(0), None),
+        (None, Some(0), timeout),
+        (on, Some(0), None),
+        (on, Some(0), timeout),
+        (on, Some(500), None),
+        (on, Some(500), timeout),
+    ];
+    for (on, off, timeout) in rows {
+        let resolved = match variant_with_blink(on, off, timeout).validate() {
+            Ok(resolved) => resolved,
+            Err(e) => panic!("on {on:?}, off {off:?}, timeout {timeout:?}: {e}"),
+        };
+        assert_eq!(
+            (
+                resolved.input.caret_blink_on,
+                resolved.input.caret_blink_off,
+                resolved.input.caret_blink_timeout,
+            ),
+            (on, off, timeout),
+        );
+    }
+}
+
+/// Half a blink is reported missing, by the one key that makes it whole.
+#[test]
+fn half_a_blink_names_the_key_to_add() {
+    let on = Some(500);
+    let timeout = Some(10000);
+    let rows = [
+        ((None, None, timeout), "input.caret_blink_off_ms"),
+        ((on, None, None), "input.caret_blink_off_ms"),
+        ((on, None, timeout), "input.caret_blink_off_ms"),
+        ((None, Some(500), None), "input.caret_blink_on_ms"),
+        ((None, Some(500), timeout), "input.caret_blink_on_ms"),
+    ];
+    for ((on, off, timeout), key) in rows {
+        assert_eq!(
+            missing_paths(&variant_with_blink(on, off, timeout)),
+            [key],
+            "on {on:?}, off {off:?}, timeout {timeout:?}"
+        );
+    }
+}
+
+/// A stated shown duration or time-out of 0 is out of range, with no upper
+/// bound; a hidden duration of 0 is not.
+#[test]
+fn a_zero_shown_duration_or_time_out_is_out_of_range() {
+    let rows = [
+        ((Some(0), Some(500), None), "input.caret_blink_on_ms"),
+        ((Some(0), Some(0), None), "input.caret_blink_on_ms"),
+        (
+            (Some(500), Some(500), Some(0)),
+            "input.caret_blink_timeout_ms",
+        ),
+    ];
+    for ((on, off, timeout), key) in rows {
+        let v = variant_with_blink(on, off, timeout);
+        assert_eq!(
+            range_violation_paths(&v),
+            [key],
+            "on {on:?}, off {off:?}, timeout {timeout:?}"
+        );
+        let Err(crate::Error::ResolutionInvalid { errors }) = v.validate() else {
+            panic!("on {on:?}, off {off:?}, timeout {timeout:?}: expected ResolutionInvalid");
+        };
+        for rv in errors {
+            assert_eq!((rv.min, rv.max), (Some(1.0), None), "{}", rv.path);
+        }
+    }
+}
+
+#[test]
+fn the_largest_time_out_validates() {
+    let v = variant_with_blink(Some(500), Some(500), Some(u32::MAX));
+    let resolved = match v.validate() {
+        Ok(resolved) => resolved,
+        Err(e) => panic!("{e}"),
+    };
+    assert_eq!(resolved.input.caret_blink_timeout, Some(u32::MAX));
+}
+
+/// An overlay's stated field replaces the preset's and its unstated ones
+/// leave the preset's: `caret_blink_off_ms = 0` over adwaita keeps adwaita's
+/// shown duration and time-out; `caret_blink_on_ms` over nord, which states
+/// no blink, is half a blink.
+#[test]
+fn an_overlay_merges_a_blink_field_by_field() -> crate::Result<()> {
+    let mut adwaita = crate::Theme::preset("adwaita")?;
+    adwaita.merge(&crate::Theme::from_toml(
+        "[light.input]\ncaret_blink_off_ms = 0\n\n[dark.input]\ncaret_blink_off_ms = 0\n",
+    )?);
+    for mode in [crate::ColorMode::Light, crate::ColorMode::Dark] {
+        let input = adwaita.resolve(mode)?.variant.input;
+        assert_eq!(
+            (
+                input.caret_blink_on,
+                input.caret_blink_off,
+                input.caret_blink_timeout,
+            ),
+            (Some(600), Some(0), Some(10000)),
+            "{mode:?}"
+        );
+    }
+
+    let mut nord = crate::Theme::preset("nord")?;
+    nord.merge(&crate::Theme::from_toml(
+        "[light.input]\ncaret_blink_on_ms = 400\n",
+    )?);
+    let Err(crate::Error::ResolutionIncomplete { missing }) = nord.resolve(crate::ColorMode::Light)
+    else {
+        panic!("expected ResolutionIncomplete");
+    };
+    assert!(
+        missing.contains(&"light.input.caret_blink_off_ms".to_string()),
+        "{missing:?}"
+    );
+    Ok(())
+}

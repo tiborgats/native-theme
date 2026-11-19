@@ -164,6 +164,12 @@ disabled_text_color = "#c7c7cc"
 # https://developer.apple.com/tutorials/data/documentation/uikit/uicolor/placeholdertext.json, read 2026-10-11),
 # rgba(60,60,67,0.298) (ios-18 expected.txt:109); #c5c5c7 over white
 placeholder_color = "#3c3c434c"
+# measured on iOS 18.6, which no platform-facts column covers: the caret's blink animation shows it, then fades it out,
+# for 0.65 s of each 1 s cycle (docs/evidence/ios-host/2026-11-06-run-42275028573/ios-host-macos-15/behavior_values.toml:11)
+caret_blink_on_ms = 650
+# hidden, then fading in, for the other 0.35 s (behavior_values.toml:12)
+caret_blink_off_ms = 350
+# caret_blink_timeout_ms unset: the blink repeats without end and still blinks after 12 s of samples (behavior_values.toml:18-20)
 
 
 [light.input.font]
@@ -511,6 +517,12 @@ disabled_text_color = "#3a3a3c"
 # https://developer.apple.com/tutorials/data/documentation/uikit/uicolor/placeholdertext.json, read 2026-10-11),
 # rgba(235,235,245,0.298) (ios-18 expected.txt:111); #464649 over black
 placeholder_color = "#ebebf54c"
+# measured on iOS 18.6, which no platform-facts column covers: the caret's blink animation shows it, then fades it out,
+# for 0.65 s of each 1 s cycle (docs/evidence/ios-host/2026-11-06-run-42275028573/ios-host-macos-15/behavior_values.toml:11)
+caret_blink_on_ms = 650
+# hidden, then fading in, for the other 0.35 s (behavior_values.toml:12)
+caret_blink_off_ms = 350
+# caret_blink_timeout_ms unset: the blink repeats without end and still blinks after 12 s of samples (behavior_values.toml:18-20)
 
 
 [dark.input.font]

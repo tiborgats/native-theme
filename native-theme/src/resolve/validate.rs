@@ -33,7 +33,9 @@ impl ThemeMode {
     /// Returns [`crate::Error::ResolutionInvalid`] with the one path
     /// `context.font_dpi` if `font_dpi` is not finite and positive, before
     /// any field is read. Returns [`crate::Error::ResolutionIncomplete`] if
-    /// any required fields are still `None` after resolution. Returns
+    /// any required fields are still `None` after resolution, or if `input`
+    /// states half a caret blink (the key to add, as
+    /// `Error::ResolutionIncomplete` names it). Returns
     /// [`crate::Error::ResolutionInvalid`] if all fields are present but
     /// some numeric values fall outside allowed ranges.
     #[doc(hidden)]
@@ -161,6 +163,7 @@ impl ThemeMode {
         let expander =
             ResolvedExpanderTheme::validate_widget(&self.expander, "expander", dpi, &mut missing);
         let link = ResolvedLinkTheme::validate_widget(&self.link, "link", dpi, &mut missing);
+        validate_helpers::check_caret_blink(&self.input, "input", &mut missing);
 
         // --- Phase 1 short-circuit: if any fields are missing, return immediately ---
         // This is the BUG-01 fix: check_ranges never runs on placeholder data.

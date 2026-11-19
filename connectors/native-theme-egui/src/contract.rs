@@ -239,6 +239,9 @@ fn read_style(style: &Style, path: &str) -> Option<Val> {
         ["visuals", "popup_shadow"] => Val::Shadow(v.popup_shadow),
         ["visuals", "popup_shadow", field] => shadow_field(v.popup_shadow, field)?,
         ["visuals", "text_cursor", "stroke", "color"] => Val::Color(v.text_cursor.stroke.color),
+        ["visuals", "text_cursor", "blink"] => Val::Bool(v.text_cursor.blink),
+        ["visuals", "text_cursor", "on_duration"] => Val::F32(v.text_cursor.on_duration),
+        ["visuals", "text_cursor", "off_duration"] => Val::F32(v.text_cursor.off_duration),
         ["visuals", "slider_trailing_fill"] => Val::Bool(v.slider_trailing_fill),
         ["visuals", "collapsing_header_frame"] => Val::Bool(v.collapsing_header_frame),
         ["visuals", "handle_shape"] => Val::Handle(v.handle_shape),
@@ -1051,6 +1054,22 @@ fn expected(
             Some(ms) => Val::F32(f32::from(ms) / 1000.0),
             None => return Ok(None),
         },
+        // ---- the caret's blink: the theme's milliseconds as egui's seconds, written only where
+        // the theme states a hidden duration ----
+        (None, _, None, "visuals.text_cursor.blink") => match t.input.caret_blink_off {
+            Some(off) => Val::Bool(off != 0),
+            None => return Ok(None),
+        },
+        (None, _, None, "visuals.text_cursor.off_duration") => match t.input.caret_blink_off {
+            Some(off) => Val::F32((f64::from(off) / 1000.0) as f32),
+            None => return Ok(None),
+        },
+        (None, _, None, "visuals.text_cursor.on_duration") => {
+            match (t.input.caret_blink_on, t.input.caret_blink_off) {
+                (Some(on), Some(_)) => Val::F32((f64::from(on) / 1000.0) as f32),
+                _ => return Ok(None),
+            }
+        }
         // ---- §6.16: the layout gap, a Builder input; T10's atlases carry none ----
         (None, _, None, "spacing.item_spacing.x" | "spacing.item_spacing.y") => {
             match c.atlas.layout().widget_gap {

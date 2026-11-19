@@ -1269,10 +1269,16 @@ fn native_themes_state_the_expanders_structure() {
 
 /// One soft field per native preset against the platform-facts row `row` names,
 /// static and live, and the unsourced presets stating none: the mismatches.
+///
+/// `elsewhere` names the unsourced presets that state the field from a source
+/// outside platform-facts, each with the value it must state; every other
+/// unsourced preset must state none. An `elsewhere` entry that names no
+/// unsourced preset is a failure, not ignored.
 fn soft_field_failures<T: Copy + PartialEq + std::fmt::Debug>(
     field: &str,
     row: &str,
     want: &[(NativePreset, Option<T>)],
+    elsewhere: &[(&str, Option<T>)],
     resolved: fn(&ResolvedTheme) -> Option<T>,
     stated: fn(&ThemeMode) -> Option<T>,
 ) -> Vec<String> {
@@ -1281,6 +1287,13 @@ fn soft_field_failures<T: Copy + PartialEq + std::fmt::Debug>(
         let n = want.iter().filter(|(p, _)| *p == preset).count();
         if n != 1 {
             failures.push(format!("{preset:?}: {n} rows for {field}"));
+        }
+    }
+    for (name, _) in elsewhere {
+        if !UNSOURCED_PRESETS.contains(name) {
+            failures.push(format!(
+                "{name}: not an unsourced preset, so it has no source outside platform-facts"
+            ));
         }
     }
     for &(preset, expected) in want {
@@ -1303,10 +1316,21 @@ fn soft_field_failures<T: Copy + PartialEq + std::fmt::Debug>(
         for mode in [ColorMode::Light, ColorMode::Dark] {
             match Theme::preset(name).and_then(|t| t.into_variant(mode)) {
                 Ok(v) => {
-                    if let Some(got) = stated(&v) {
-                        failures.push(format!(
-                            "{name} {mode:?}: states {field} = {got:?}, with no source"
-                        ));
+                    let source = elsewhere.iter().find(|(n, _)| *n == name);
+                    match (source, stated(&v)) {
+                        (Some(&(_, expected)), got) => {
+                            if got != expected {
+                                failures.push(format!(
+                                    "{name} {mode:?}: states {field} = {got:?}, its source gives {expected:?}"
+                                ));
+                            }
+                        }
+                        (None, Some(got)) => {
+                            failures.push(format!(
+                                "{name} {mode:?}: states {field} = {got:?}, with no source"
+                            ));
+                        }
+                        (None, None) => {}
                     }
                 }
                 Err(e) => failures.push(format!("{name} {mode:?}: {e}")),
@@ -1337,9 +1361,81 @@ fn native_themes_state_the_tooltip_show_delay() {
         "tooltip.show_delay_ms",
         "§2.7 show_delay",
         &TOOLTIP_SHOW_DELAY,
+        &[],
         |t| t.tooltip.show_delay,
         |v| v.tooltip.show_delay,
     );
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
+}
+
+/// The caret's shown duration per platform, in milliseconds, from
+/// platform-facts §2.4 (`caret_blink_on`); `None` where the cell states none.
+#[rustfmt::skip]
+const CARET_BLINK_ON: [(NativePreset, Option<u32>); 6] = [
+    (KdeBreeze, Some(500)),
+    (Adwaita, Some(600)),
+    (MacosMonterey, None),
+    (MacosTahoe, None),
+    (Windows11, Some(530)),
+    (Material3, Some(500)),
+];
+
+/// The caret's hidden duration per platform, in milliseconds, from
+/// platform-facts §2.4 (`caret_blink_off`); `None` where the cell states none.
+#[rustfmt::skip]
+const CARET_BLINK_OFF: [(NativePreset, Option<u32>); 6] = [
+    (KdeBreeze, Some(500)),
+    (Adwaita, Some(600)),
+    (MacosMonterey, None),
+    (MacosTahoe, None),
+    (Windows11, Some(530)),
+    (Material3, Some(500)),
+];
+
+/// The caret blink's time-out per platform, in milliseconds, from
+/// platform-facts §2.4 (`caret_blink_timeout`); `None` where the cell states none.
+#[rustfmt::skip]
+const CARET_BLINK_TIMEOUT: [(NativePreset, Option<u32>); 6] = [
+    (KdeBreeze, None),
+    (Adwaita, Some(10000)),
+    (MacosMonterey, None),
+    (MacosTahoe, None),
+    (Windows11, None),
+    (Material3, None),
+];
+
+/// The native themes state the caret's blink as platform-facts gives it,
+/// static and live; ios-13 states its measured blink; no other preset states
+/// one.
+#[test]
+fn native_themes_state_the_caret_blink() {
+    assert!(facts_row("2.4", "caret_blink_on").is_some());
+    assert!(facts_row("2.4", "caret_blink_off").is_some());
+    assert!(facts_row("2.4", "caret_blink_timeout").is_some());
+    let mut failures = soft_field_failures(
+        "input.caret_blink_on_ms",
+        "§2.4 caret_blink_on",
+        &CARET_BLINK_ON,
+        &[("ios-13", Some(650))],
+        |t| t.input.caret_blink_on,
+        |v| v.input.caret_blink_on,
+    );
+    failures.extend(soft_field_failures(
+        "input.caret_blink_off_ms",
+        "§2.4 caret_blink_off",
+        &CARET_BLINK_OFF,
+        &[("ios-13", Some(350))],
+        |t| t.input.caret_blink_off,
+        |v| v.input.caret_blink_off,
+    ));
+    failures.extend(soft_field_failures(
+        "input.caret_blink_timeout_ms",
+        "§2.4 caret_blink_timeout",
+        &CARET_BLINK_TIMEOUT,
+        &[],
+        |t| t.input.caret_blink_timeout,
+        |v| v.input.caret_blink_timeout,
+    ));
     assert!(failures.is_empty(), "{}", failures.join("\n"));
 }
 
@@ -1364,6 +1460,7 @@ fn native_themes_state_the_dialog_entrance() {
         "dialog.entrance",
         "§2.22 entrance",
         &DIALOG_ENTRANCE,
+        &[],
         |t| t.dialog.entrance,
         |v| v.dialog.entrance,
     );
