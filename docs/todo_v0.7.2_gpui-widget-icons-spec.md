@@ -1766,7 +1766,11 @@ it, since the first match wins: `(ButtonState::Loading, _) if icon && default_sp
 and a `spinner` note, still `not_themeable` (decision 16). In the two present arms,
 "upstream's Loader" becomes "gpui-component's Loader, drawn as the application's icon
 resolver answers it (the `spinner icon` line says what is turned here)", so they hold under
-`Upstream` and `Empty`. For the Button with an icon:
+`Upstream` and `Empty`; in the arm with an icon, the citation `(button/button.rs,
+Button::loading_icon)` moves to follow "in place of its own default", so that two
+parentheticals do not stand side by side (amended 2026-11-19, U5's review). `spinner_note`
+under `Set`, which `button_turning` does not reach, says the Spinner turns the widget icons'
+Loader of the chosen set. For the Button with an icon:
 
 > "in place of the button's icon (button/button_icon.rs, ButtonIcon). The Button is given no loading icon, so the Spinner turns its own default, gpui-component's Loader (gpui-component/spinner.rs, Spinner::new), which the connector's widget icons serve from the chosen icon theme (native-theme-gpui/icons/widget.rs, WidgetIcons): that theme's loading icon by the connector's table, not gpui-component's glyph. It inherits the button's text colour and turns every 0.8s, a literal (gpui-component/spinner.rs, Spinner::new)"
 
@@ -1877,6 +1881,13 @@ DropdownButton's caret, …" on the tree
 to `:9278`, the list of widgets, stays as it is. The test's name stays (other documents
 cite it).
 
+Without `svg-rasterize` (amended 2026-11-19, U5's review: Part E's head asks every
+handle-related item to name its `#[cfg(not(…))]` arm, and this one did not), `own_icons`
+keeps the same opening, up to where the text above begins to speak of the widget icons, and
+then says that this build has no widget icons (feature `svg-rasterize`), so the showcase
+sets no resolver and each path draws gpui-component's own icon, whichever icon theme is
+chosen. The count of the essential glyphs is formatted from `ESSENTIAL_ICONS.len()`.
+
 ### E.8 `SC/info/chrome.rs`, `icon_set_select` (`:975-1005`)
 
 | Note | Present (`0fa28027`) | New |
@@ -1885,6 +1896,12 @@ cite it).
 | `not_themeable("upstream's icons", …)` (`:993-996`) | label "upstream's icons"; text begins "the icons a widget names as it renders, with no setter: …" | label "widgets' own icons", still `not_themeable` (decisions 16, 19); text "the icons a widget names as it renders, with no setter, which the connector's widget icons answer from the chosen icon theme where they can (below): …" followed by the present list unchanged from "this Select's and the preset Combobox's caret" to its end, with "the page row's menu Button's caret where the chosen icon theme has no ChevronDown, upstream's Caret too, which the showcase lays in as the Button's child (demo::native_tab_bar)" left as it is |
 | `not_themeable("why they stay", own_icons(…))` (`:997-1000`) | label "why they stay" | label "how they are drawn", still `not_themeable`; the same `own_icons(…)` call |
 | `instance("pages", …)` (`:1001-1004`) | "the samples on the other pages show the chosen icon theme's icons for the icons they are given, as the chrome does, and none where it has none; only the icons their widgets draw of their own stay gpui-component's" | "the samples on the other pages show the chosen icon theme's icons for the icons they are given, as the chrome does, and none where it has none; the icons their widgets draw of their own are drawn as the widgets' own icons above say" |
+
+Without `svg-rasterize` (amended 2026-11-19, as E.7), the "widgets' own icons" note's
+clause "which the connector's widget icons answer … (below)" says instead that this build
+has no widget icons, so the widgets keep gpui-component's own. E.6's general `lookup` line
+begins "by name: the set's name for it in the connector's table", not "by name, as the connector serves gpui-component's own icons",
+in both builds.
 
 A test reading these labels: `git grep -nE "upstream's icons|why they stay" -- connectors/native-theme-gpui/examples/showcase-gpui/tests.rs` finds
 none today; the implementer reruns it.

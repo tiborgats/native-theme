@@ -613,7 +613,8 @@ pub fn folder_tab_row(
 /// The expanders the showcase draws as `r`'s `expander.*` states them
 /// (`demo::native_expander`), reading `titles`, each `open` or not, their
 /// arrow `arrow`, of the chosen icon theme -- `turned`, the chevron an open
-/// item shows where the set gives `arrow` as pixels -- and `gap`, the
+/// item shows where the set gives `arrow` as pixels, or as an SVG in
+/// several colours, drawn as an image, which does not turn -- and `gap`, the
 /// `layout.widget_gap` that parts the items where the theme states the
 /// frame.
 pub fn native_expander(

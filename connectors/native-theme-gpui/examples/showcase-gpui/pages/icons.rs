@@ -234,12 +234,12 @@ impl Showcase {
         );
         let fg = self.icon_cache_fg;
 
-        let icons: Vec<_> = self
+        let arts: Vec<_> = self
             .gpui_icons
             .iter()
             .enumerate()
-            .map(|(i, (name, icon, role, data, source))| {
-                let art = if builtin {
+            .map(|(i, (_, icon, _, data, source))| {
+                if builtin {
                     IconArt::Builtin(icon.clone())
                 } else {
                     let image = self.gpui_icon_sources.get(i).cloned().flatten();
@@ -249,7 +249,21 @@ impl Showcase {
                         (_, Some(_), _) => IconArt::Unreadable,
                         (_, None, _) => IconArt::Missing,
                     }
-                };
+                }
+            })
+            .collect();
+        // The names whose cell draws an icon the lookup found, by name or by
+        // role: gpui-component's own icons are looked up by nothing.
+        let mapped = arts
+            .iter()
+            .filter(|art| matches!(art, IconArt::System(_) | IconArt::Bundled(_)))
+            .count();
+
+        let icons: Vec<_> = self
+            .gpui_icons
+            .iter()
+            .zip(arts)
+            .map(|((name, _, role, _, _), art)| {
                 let role_name = role.map(|r| format!("{r:?}"));
                 demo::gpui_icon(
                     ui,
@@ -267,11 +281,6 @@ impl Showcase {
             })
             .collect();
 
-        let mapped = self
-            .gpui_icons
-            .iter()
-            .filter(|(_, _, r, _, _)| r.is_some())
-            .count();
         let title = format!(
             "gpui-component Icons ({} variants, {mapped} mapped to {set})",
             self.gpui_icons.len(),

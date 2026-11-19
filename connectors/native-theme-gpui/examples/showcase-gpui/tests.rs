@@ -20551,7 +20551,11 @@ fn a_spinner_with_nothing_to_turn_says_so() {
 
 /// The Icons page reports what the widget icons serve: under Lucide its
 /// served text, with no name drawn empty and StarFill kept; under the
-/// built-in row that they are off.
+/// built-in row that they are off. The frame's text is not readable from
+/// the test, so the caption's width shows the page draws the report:
+/// `self_start` keeps the caption as wide as its text, set in `text_sm`
+/// (demo::caption), and the served text and the `NotInstalled` one differ
+/// in width.
 #[cfg(all(feature = "svg-rasterize", feature = "lucide-icons"))]
 #[gpui::test]
 fn the_icons_page_reports_the_widget_icons(cx: &mut TestAppContext) {
@@ -20559,14 +20563,39 @@ fn the_icons_page_reports_the_widget_icons(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open_icons(cx, WINDOW_SIZE);
     use_preset(&mut cx, &showcase, "catppuccin-mocha");
     show(&mut cx, &showcase, Page::Icons);
+    let laid = cx.debug_bounds("icons-widget-icons");
     assert!(
-        cx.debug_bounds("icons-widget-icons").is_some(),
+        laid.is_some(),
         "the Icons page does not lay out the widget icons' caption"
     );
     let caption = widget_icons_caption(widget_icons_report(&mut cx).as_ref());
     assert_eq!(
         caption,
         "gpui-component's widgets: lucide, in one colour; not in the set, so drawn empty: none; kept as gpui-component's own: StarFill",
+    );
+    let width = |cx: &mut VisualTestContext, text: String| {
+        cx.update(|window, _| {
+            let size = rems(0.875).to_pixels(window.rem_size());
+            let text = gpui::SharedString::from(text);
+            let run = window.text_style().to_run(text.len());
+            window
+                .text_system()
+                .shape_line(text, size, &[run], None)
+                .width()
+        })
+    };
+    let served = width(&mut cx, caption);
+    let not_installed = width(&mut cx, widget_icons_caption(None));
+    assert_ne!(
+        served, not_installed,
+        "the two texts are as wide, so this proves nothing"
+    );
+    let laid = laid.map(|b| b.size.width).unwrap_or_default();
+    // The label box rounds the text's width to the pixel grid.
+    assert!(
+        (laid - served).abs() < px(1.0) && (laid - not_installed).abs() >= px(1.0),
+        "the widget icons' caption is {laid:?} wide, not the report at {served:?} (the text \
+         without widget icons is {not_installed:?})"
     );
     choose_icon_theme(&mut cx, &showcase, crate::app::GPUI_BUILTIN_ROW);
     show(&mut cx, &showcase, Page::Icons);

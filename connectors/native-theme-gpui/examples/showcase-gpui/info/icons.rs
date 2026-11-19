@@ -190,7 +190,7 @@ pub fn gpui_icon(
         ),
         _ => info.instance(
             "lookup",
-            "by name, as the connector serves gpui-component's own icons: the set's name for it in the connector's table (native-theme-gpui/icons.rs, load_gpui_icon), in a freedesktop theme each of the icon's names in turn, in that theme only (native-theme-gpui/icons.rs, freedesktop_name_candidates), at the page's size, and any icon the set has; the chrome and the samples draw a name that has a role by the role first",
+            "by name: the set's name for it in the connector's table (native-theme-gpui/icons.rs, load_gpui_icon), in a freedesktop theme each of the icon's names in turn, in that theme only (native-theme-gpui/icons.rs, freedesktop_name_candidates), at the page's size, and any icon the set has; the chrome and the samples draw a name that has a role by the role first",
         ),
     }
 }

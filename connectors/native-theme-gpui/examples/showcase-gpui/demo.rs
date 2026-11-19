@@ -3441,7 +3441,10 @@ pub(crate) fn spinner_note(icon: &SampleIcon, default: SpinnerDefault) -> String
         SpinnerDefault::Empty => format!(
             "none: {set} holds no SVG of one colour for it, so the Button is given no icon to turn, and the Spinner's own default, gpui-component's Loader, is answered by the connector's widget icons, which serve {set} and find no Loader in it: the Spinner draws nothing (native-theme-gpui/icons/widget.rs, WidgetIcons)"
         ),
-        SpinnerDefault::Upstream | SpinnerDefault::Set => format!(
+        SpinnerDefault::Set => format!(
+            "the widget icons' Loader of {set}: the Button is given no icon to turn, so the Spinner turns its own default, gpui-component's Loader (gpui-component/spinner.rs, Spinner::new), which the connector's widget icons serve from {set} (native-theme-gpui/icons/widget.rs, WidgetIcons)"
+        ),
+        SpinnerDefault::Upstream => format!(
             "gpui-component's own Loader, the Spinner's default (gpui-component/spinner.rs, Spinner::new): {set} holds no SVG of one colour for it, so the Button is given no icon to turn, and a loading Button given none turns the Spinner's own (button/button.rs:777-786, loading_icon)"
         ),
     }

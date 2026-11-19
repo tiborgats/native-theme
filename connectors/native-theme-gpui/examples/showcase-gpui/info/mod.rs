@@ -445,10 +445,21 @@ pub fn native_info<W: Styled>(
 /// `set_icon_resolver`, `resolve_icon_path`); the showcase installs the
 /// connector's widget icons there (`ShowcaseWidgetIcons`), which serve the
 /// chosen icon theme where they can and say what they serve on the Icons
-/// page.
+/// page. Without `svg-rasterize` there are no widget icons, and each is
+/// gpui-component's own.
+#[cfg(feature = "svg-rasterize")]
+pub fn own_icons(icons: &str) -> String {
+    let essential = native_theme_gpui::icons::ESSENTIAL_ICONS.len();
+    format!(
+        "{icons}: drawn by gpui-component inside the widget, each by its asset path, which it first hands to the application's icon resolver (gpui-component/icon.rs, resolve_icon_path). The showcase installs the connector's widget icons there (native-theme-gpui/icons/widget.rs, WidgetIcons): under an icon set of SVGs that has the {essential} glyphs nearly every window needs, these are the chosen set's icons, looked up by name (a freedesktop theme's at 16 px) and drawn in one colour, and one the set lacks is not drawn; under gpui-component's built-in Lucide, under a set that lacks one of the {essential}, and under SF Symbols or Segoe Fluent, they are gpui-component's own, and so is the filled star under Lucide. The Icons page reports which holds"
+    )
+}
+
+/// [`own_icons`] in a build without `svg-rasterize`.
+#[cfg(not(feature = "svg-rasterize"))]
 pub fn own_icons(icons: &str) -> String {
     format!(
-        "{icons}: drawn by gpui-component inside the widget, each by its asset path, which it first hands to the application's icon resolver (gpui-component/icon.rs, resolve_icon_path). The showcase installs the connector's widget icons there (native-theme-gpui/icons/widget.rs, WidgetIcons): under an icon set of SVGs that has the nine glyphs nearly every window needs, these are the chosen set's icons, looked up by name (a freedesktop theme's at 16 px) and drawn in one colour, and one the set lacks is not drawn; under gpui-component's built-in Lucide, under a set that lacks one of the nine, and under SF Symbols or Segoe Fluent, they are gpui-component's own, and so is the filled star under Lucide. The Icons page reports which holds"
+        "{icons}: drawn by gpui-component inside the widget, each by its asset path, which it first hands to the application's icon resolver (gpui-component/icon.rs, resolve_icon_path). This build has no widget icons (feature svg-rasterize), so the showcase sets no resolver and each path draws gpui-component's own icon, whichever icon theme is chosen"
     )
 }
 

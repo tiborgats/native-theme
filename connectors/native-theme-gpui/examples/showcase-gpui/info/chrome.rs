@@ -999,6 +999,10 @@ pub fn color_mode_select(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInf
 /// The theme settings' icon-theme Select (spec §3.3, S6): the Inputs page's
 /// Select, choosing the icon theme.
 pub fn icon_set_select(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
+    #[cfg(feature = "svg-rasterize")]
+    let answered = "which the connector's widget icons answer from the chosen icon theme where they can (below)";
+    #[cfg(not(feature = "svg-rasterize"))]
+    let answered = "which this build has no widget icons for (feature svg-rasterize), so the widgets keep gpui-component's own";
     super::inputs::select(t, native)
         .instance(
             "choices",
@@ -1018,7 +1022,7 @@ pub fn icon_set_select(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo 
         )
         .not_themeable(
             "widgets' own icons",
-            "the icons a widget names as it renders, with no setter, which the connector's widget icons answer from the chosen icon theme where they can (below): this Select's and the preset Combobox's caret (select.rs, Caret), the check mark on their chosen row (searchable_list/item.rs, SearchableListItemElement) and an empty list's Inbox (gpui-component/select.rs, SelectState::new; gpui-component/combobox.rs, ComboboxState::new); the page row's menu Button's caret where the chosen icon theme has no ChevronDown, upstream's Caret too, which the showcase lays in as the Button's child (demo::native_tab_bar) and the check mark on the shown page's row in its menu (menu/popup_menu.rs, PopupMenu); the window controls (title_bar.rs, ControlIcon); a Dialog's close button (dialog/dialog.rs, Dialog::render) and a Sheet's (gpui-component/sheet.rs, Sheet::render); the command palette's search icon and check mark (command/state.rs, CommandState); and in the Preferences sheet the search field's icon (setting/settings.rs, Settings) and the text scale's minus and plus (input/number_input.rs, NumberInput)",
+            format!("the icons a widget names as it renders, with no setter, {answered}: this Select's and the preset Combobox's caret (select.rs, Caret), the check mark on their chosen row (searchable_list/item.rs, SearchableListItemElement) and an empty list's Inbox (gpui-component/select.rs, SelectState::new; gpui-component/combobox.rs, ComboboxState::new); the page row's menu Button's caret where the chosen icon theme has no ChevronDown, upstream's Caret too, which the showcase lays in as the Button's child (demo::native_tab_bar) and the check mark on the shown page's row in its menu (menu/popup_menu.rs, PopupMenu); the window controls (title_bar.rs, ControlIcon); a Dialog's close button (dialog/dialog.rs, Dialog::render) and a Sheet's (gpui-component/sheet.rs, Sheet::render); the command palette's search icon and check mark (command/state.rs, CommandState); and in the Preferences sheet the search field's icon (setting/settings.rs, Settings) and the text scale's minus and plus (input/number_input.rs, NumberInput)"),
         )
         .not_themeable(
             "how they are drawn",
