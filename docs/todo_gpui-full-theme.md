@@ -806,3 +806,11 @@ GPUI Fast 0.1.14 or later, and the citations below are at 0.9.1.
   gpui-component or gpui-base reads; with the scheme's other stated status
   colours they stay upstream's (`docs/todo.md`, *gpui: the editor's status
   colours are partly upstream's scheme*).
+
+## Note: the caret's blink (v0.7.2)
+
+Appended 2026-11-19; the text above is left as written. The
+0.9.1 note says `apply` keeps the application's `cursor_blink`. From 0.7.2
+on `apply` and `apply_system_theme` install the theme's caret blink there
+where the theme states one, and the application's own comes back where it
+states none (`CHANGELOG.md`, 0.7.2, *Changed*).

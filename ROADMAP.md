@@ -114,7 +114,7 @@ the model does not have yet. The reporter's remaining items, the focus ring and
 Breeze's hover outlines among them, are planned for later 0.7.x releases
 (`docs/issues/0004_kde-open-items-rationale.md`).
 
-## v0.7.2 — egui 0.37, GPUI Kit 0.10.0, gpui-component's own icons in the theme's icon set, and the focus ring, the hover outlines and the toolbar buttons from issue #4
+## v0.7.2 — egui 0.37, GPUI Kit 0.10.0, gpui-component's own icons in the theme's icon set, the text caret's blink, and from issue #4 the focus ring, the hover outlines, the toolbar buttons, the default button, the table header's states and the unfocused selection
 
 **Delivered:** the egui connector and the egui widgets crate require egui
 0.37.0, and the gpui connector requires gpui-component, gpui-base and gpui-kit
@@ -174,6 +174,16 @@ Material or a freedesktop theme such as Breeze or Adwaita, in the theme's light 
 modes, and an icon the set lacks is not drawn. Where a set lacks a glyph nearly every
 window needs, and under SF Symbols and Segoe Fluent, whose icons are pixels, the widgets
 keep gpui-component's own. Serving those two sets is the next step.
+
+The model also states how the text caret blinks:
+`input.caret_blink_on_ms` and `caret_blink_off_ms`, how long the caret is
+shown and hidden (`caret_blink_off_ms = 0`: it does not blink), and
+`caret_blink_timeout_ms`, how long after the last input it stops. kde-breeze,
+adwaita, windows-11, material-3 and ios-13 state their platform's blink, and
+the KDE, GNOME and Windows readers read the user's. The gpui connector
+installs it as gpui-component's `cursor_blink`, the egui connector as egui's
+`text_cursor`; iced has no receiver. macOS's blink, the caret's width and
+the rest of what the platforms draw of the caret are in the backlog.
 
 ## Model completeness: what native-theme does not carry
 
@@ -328,7 +338,7 @@ Gap analysis with citations: [`docs/todo_gpui-full-theme.md`](docs/todo_gpui-ful
 
 ## Also in the 0.7.x releases
 
-[`docs/todo.md`](docs/todo.md) tags 74 open items `[v0.7.x]`, follow-ups of
+[`docs/todo.md`](docs/todo.md) tags 78 open items `[v0.7.x]`, follow-ups of
 the v0.7.0 review that a 0.7 patch release takes beside the milestones
 above. Among them: the `ios-26` preset, iOS 26's Liquid Glass look, deferred
 while 38 of the values the resolver requires have no iOS 26 source;

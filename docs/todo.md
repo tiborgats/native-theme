@@ -308,6 +308,10 @@ cannot tell which file a bare number continues, so it does not look for one.
       to use an existing window"). The window-creating design the spec cites
       is .NET's `SystemEvents`, the one this entry's hidden top-level window
       follows.
+      Caret blink (0.7.2, 2026-11-19, b64367c7): the reader reads the caret's
+      blink time (`docs/archive/todo_v0.7.2_caret-blink-spec.md` C.3), a
+      source the watcher hears no change of either; which message Windows
+      sends for it was not read.
 - [ ] [v0.7.x] **macOS watcher: check on a Mac which center posts the
       colour and scroller notifications.** The watcher observes
       `NSSystemColorsDidChangeNotification` and
@@ -1658,6 +1662,74 @@ model, the platform presets and the three connectors
       as it leaves the button's hover (`native-theme/src/windows.rs`, `apply_sys_colors`).
       A `segmented_control.hover_text_color` field, inheriting `font.color`, would let it
       write both; the connectors would then letter a hovered segment in it.
+
+### Model: the caret beyond its blink
+
+- [ ] [v0.7.x] What the 0.8.0 facts state of the text caret beside its
+      blink, which the model has no field for (`docs/archive/todo_v0.7.1_caret-blink-rationale.md`
+      §5; `docs/facts/<platform>/tokens.toml` on
+      `v0.8.0-rc1` at `78ee0efd`). Its width: 1 px on KDE and Windows, 2 px
+      on macOS, iOS and Material (key `token.caret.width`), and on GNOME no
+      fixed width, the stem the line height × 0.04 + 1 (`docs/todo_v0.8.0_model-completeness-gap-map-gnome.md`,
+      GN-3.36); only egui can take it (`Visuals::text_cursor.stroke.width`),
+      while gpui-base draws 1 px (`CURSOR_WIDTH`, gpui-base 0.10.0
+      `src/input/base/blink_cursor.rs:8`) and iced a 1 px quad. The blink's
+      style, at once or fading (`token.caret.blink_style`: hard on KDE,
+      Windows and Material, a fade on GNOME and iOS); whether a read-only
+      field shows a caret (`token.caret.shown_in_read_only`: no on KDE,
+      GNOME, Windows, iOS and Material); the secondary caret at a direction
+      boundary (`token.caret.secondary`: none on KDE, GNOME, Windows and
+      Material); and that the caret stays solid while the user types
+      (`token.caret.solid_while_typing`: on KDE, GNOME, iOS and Material).
+      No toolkit of the three takes these four. Each is a field and a step
+      of its own, with its facts rows and presets, once a toolkit draws it
+      or an application asks for it.
+
+### Readers: what a reader reads for the whole desktop reaches one variant
+
+- [ ] [v0.7.x] The KDE, GNOME and Windows readers fill the variant of the
+      mode the desktop is in, and the pipeline takes the other from the
+      preset (`native-theme/src/lib.rs`, `ReaderOutput::Single`: "The
+      pipeline fills the inactive variant from the platform preset.";
+      `native-theme/src/pipeline.rs`, "the merge keeps the preset's own
+      there"). For what a reader reads for the
+      desktop as a whole (the fonts, the scroll bars' overlay mode, the icon
+      theme, the caret's blink), an application that switches between light
+      and dark by itself and applies the other variant gets the preset's
+      value there until the next read: a user who turned blinking off sees
+      the caret blink in that mode. The gpui connector is spared it for the
+      blink, which gpui-component keeps across its own mode switch. A rule
+      for which reader values go into both variants is a design of its own:
+      the icon theme and the accent's shades are meant to differ by mode
+      (`docs/archive/todo_v0.7.1_caret-blink-rationale.md` B1).
+
+### macOS: the caret's blink
+
+- [ ] [v0.7.x] macOS's blink is not established: `NSTextInsertionIndicator.h`
+      (Xcode 16.4) declares no blink period, and the blink's user defaults
+      were unset on the test runner
+      (`docs/facts/macos/tokens.toml:47501-47513` and `:46129-46141` on
+      `v0.8.0-rc1` at `78ee0efd`, U605 and U316). So `macos-monterey` and `macos-tahoe`
+      state no `input.caret_blink_*_ms`, and the macOS reader reads none.
+      To measure (a run that records a focused text field's caret over
+      time, as the iOS host's behaviour pass does,
+      `docs/evidence/ios-host/`), then to read the user's setting where one
+      exists.
+
+### windows-11: the caret's blink time-out
+
+- [ ] [v0.7.x] WinUI's text box stops blinking after the whole blink periods
+      that fit in 5 s, three periods where none fits (`CheckCaretBlinkTimeout`,
+      microsoft-ui-xaml 2.5.1 `src/dxaml/xcp/core/native/text/Controls/TextBoxView.cpp:2742-2763`;
+      `docs/facts/windows/tokens.toml:2711-2718` on `v0.8.0-rc1` at `78ee0efd`, pending
+      U505): a rule over the blink time, not one value. The system's own
+      caret time-out, `SPI_GETCARETTIMEOUT` (windows 0.62.2
+      `src/Windows/Win32/UI/WindowsAndMessaging/mod.rs:6108`), was 5000 on
+      the OS probe's Windows 11 image (`probe.toml` of os-probe run
+      42307873328 at `efbffffe`, `[windows.system_parameters]`); how WinUI's
+      five seconds relate to it was not read, and the reader does not read
+      it. So windows-11 states no `input.caret_blink_timeout_ms`. Read how
+      WinUI's rule relates to the system time-out before a value is given.
 
 ### windows-11: the validator's findings after T35 left open
 
