@@ -2590,16 +2590,21 @@ mod tests {
         assert_eq!(tooltip_show_delay(&mocha), None);
     }
 
-    /// The resolved variant of the preset `name` in the mode `is_dark`; a
-    /// preset that does not load fails the test.
-    fn resolved_preset(name: &str, is_dark: bool) -> Option<ResolvedTheme> {
+    /// The preset `name` in the mode `is_dark`; a preset that does not load
+    /// fails the test.
+    pub(super) fn loaded_preset(name: &str, is_dark: bool) -> Option<(GpuiTheme, ResolvedTheme)> {
         let loaded = from_preset(name, is_dark, &AccessibilityPreferences::default());
         assert!(
             loaded.is_ok(),
             "{name} should load: {:?}",
             loaded.as_ref().err()
         );
-        loaded.ok().map(|(_, resolved)| resolved)
+        loaded.ok()
+    }
+
+    /// The resolved variant of the preset `name` in the mode `is_dark`.
+    fn resolved_preset(name: &str, is_dark: bool) -> Option<ResolvedTheme> {
+        loaded_preset(name, is_dark).map(|(_, resolved)| resolved)
     }
 
     #[test]
@@ -3818,17 +3823,7 @@ mod apply_tests {
         });
     }
 
-    /// The preset `name` in the mode `is_dark`; a preset that does not load
-    /// fails the test.
-    fn loaded_preset(name: &str, is_dark: bool) -> Option<(GpuiTheme, ResolvedTheme)> {
-        let loaded = from_preset(name, is_dark, &AccessibilityPreferences::default());
-        assert!(
-            loaded.is_ok(),
-            "{name} should load: {:?}",
-            loaded.as_ref().err()
-        );
-        loaded.ok()
-    }
+    use super::tests::loaded_preset;
 
     /// A preset that states a caret blink with a time-out, and one that
     /// states none.
@@ -3968,7 +3963,7 @@ mod apply_tests {
     #[gpui::test]
     fn a_mode_switch_keeps_the_applied_variants_blink(cx: &mut TestAppContext) {
         let prefs = AccessibilityPreferences::default();
-        let Some((dark_theme, dark)) = loaded_preset("kde-breeze", true) else {
+        let Some((dark_theme, mut dark)) = loaded_preset("kde-breeze", true) else {
             return;
         };
         let Some((light_theme, mut light)) = loaded_preset("kde-breeze", false) else {
@@ -3976,7 +3971,9 @@ mod apply_tests {
         };
         assert_eq!(dark.input.caret_blink_on, Some(500), "precondition");
         assert_eq!(dark.input.caret_blink_off, Some(500), "precondition");
-        assert_eq!(dark.input.caret_blink_timeout, None, "precondition");
+        // The dark variant's blink differs from `CursorBlink::default()`, so
+        // the last step fails where `apply` brings the application's back.
+        dark.input.caret_blink_timeout = Some(10000);
         light.input.caret_blink_off = Some(0);
         cx.update(|cx| {
             apply(dark_theme.clone(), &dark, &prefs, cx);
@@ -3993,7 +3990,11 @@ mod apply_tests {
                 "the applied light variant's, after the switch to dark",
             );
             apply(dark_theme, &dark, &prefs, cx);
-            assert_blink(cx, CursorBlink::blinking(ms(500)), "the dark variant's");
+            assert_blink(
+                cx,
+                CursorBlink::blinking(ms(500)).with_idle_timeout(ms(10000)),
+                "the dark variant's",
+            );
         });
     }
 

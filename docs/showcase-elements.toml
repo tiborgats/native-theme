@@ -1204,7 +1204,7 @@ sample = { text = "glyph" }
 id = "basic.text_inputs.focused"
 name = "Text input"
 parent = "basic.text_inputs.disabled"
-leaves = ["input.background_color", "input.caret_color", "input.caret_blink_on_ms", "input.caret_blink_off_ms", "input.caret_blink_timeout_ms", "input.font","input.font.color", "input.min_height_px", "input.focus_border_color", "input.border.corner_radius_px", "input.border.line_width_px", "input.border.shadow_enabled", "input.border.padding_top_px", "input.border.padding_right_px", "input.border.padding_bottom_px", "input.border.padding_left_px", "defaults.line_height", "defaults.focus_ring_color", "defaults.focus_ring_width_px", "defaults.focus_ring_offset_px", "defaults.focus_ring_keyboard_only"]
+leaves = ["input.background_color", "input.caret_color", "input.caret_blink_on_ms", "input.caret_blink_off_ms", "input.caret_blink_timeout_ms", "input.font", "input.font.color", "input.min_height_px", "input.focus_border_color", "input.border.corner_radius_px", "input.border.line_width_px", "input.border.shadow_enabled", "input.border.padding_top_px", "input.border.padding_right_px", "input.border.padding_bottom_px", "input.border.padding_left_px", "defaults.line_height", "defaults.focus_ring_color", "defaults.focus_ring_width_px", "defaults.focus_ring_offset_px", "defaults.focus_ring_keyboard_only"]
 states = ["Focused"]
 sample = { fill = [0.5, 1.0, 0.0, -2.5], border = [0.5, 1.0, 0.0, -0.5] }
 
