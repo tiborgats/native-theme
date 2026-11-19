@@ -1,0 +1,2474 @@
+[result]
+status = "ok"
+errors = []
+
+[host]
+windows_app_sdk_package = "2.5.1"
+windows_app_sdk_release = "error: The specified module could not be found.\r\n\r\nUnable to load resource dll. Microsoft.WindowsAppRuntime.Insights.Resource.dll"
+windows_app_sdk_runtime = "error: The specified module could not be found.\r\n\r\nUnable to load resource dll. Microsoft.WindowsAppRuntime.Insights.Resource.dll"
+microsoft_ui_xaml_version = "3.2.3.2609 (4DD5BB37B607(ContainerAdministrator)-89b7ad5b68f9f77311e09f3fc5eef5acb5f2460a)"
+microsoft_ui_xaml_loaded_from = "C:\\a\\native-theme\\native-theme\\tools\\winui-host\\bin\\ARM64\\Release\\net10.0-windows10.0.26100.0\\win-arm64\\Microsoft.UI.Xaml.dll"
+microsoft_ui_xaml_controls_version = "3.2.3.2609 (4DD5BB37B607(ContainerAdministrator)-89b7ad5b68f9f77311e09f3fc5eef5acb5f2460a)"
+microsoft_ui_xaml_controls_loaded_from = "C:\\a\\native-theme\\native-theme\\tools\\winui-host\\bin\\ARM64\\Release\\net10.0-windows10.0.26100.0\\win-arm64\\Microsoft.UI.Xaml.Controls.dll"
+microsoft_windowsappruntime_version = "2.0"
+microsoft_windowsappruntime_loaded_from = "C:\\a\\native-theme\\native-theme\\tools\\winui-host\\bin\\ARM64\\Release\\net10.0-windows10.0.26100.0\\win-arm64\\Microsoft.WindowsAppRuntime.dll"
+os_version = "Microsoft Windows NT 10.0.26200.0"
+os_architecture = "Arm64"
+process_architecture = "Arm64"
+dotnet = ".NET 10.0.14"
+application_requested_theme = "Light"
+root_actual_theme = "Light"
+root_background_application_page_background = true
+
+[window]
+rasterization_scale = 1.0
+dpi = 96
+app_window_position = { x = 100.0, y = 60.0 }
+app_window_size = { width = 800.0, height = 600.0 }
+app_window_client_size = { width = 784.0, height = 561.0 }
+window_rect = { x = 100, y = 60, width = 800, height = 600 }
+extended_frame_bounds = { x = 107, y = 60, width = 786, height = 593 }
+client_origin = { x = 108.0, y = 91.0 }
+bounds = { x = 0.0, y = 0.0, width = 784.0, height = 561.0 }
+xaml_root_size = { width = 784.0, height = 561.0 }
+content_actual_size = { width = 784.0, height = 561.0 }
+display_outer_bounds = { x = 0, y = 0, width = 1024, height = 768 }
+display_work_area = { x = 0, y = 0, width = 1024, height = 720 }
+
+[anchor]
+type = "Microsoft.UI.Xaml.Controls.Button"
+actual_size = { width = 66.0, height = 32.0 }
+bounds = { x = 359.0, y = 265.0, width = 66.0, height = 32.0 }
+window_pixels = { width = 784.0, height = 561.0 }
+png = "window.png"
+
+[defaults]
+repeat_button_delay = 500
+repeat_button_interval = 33
+button_padding = "11,5,11,6"
+button_border_thickness = "1,1,1,1"
+button_corner_radius = "4,4,4,4"
+button_font_size = 14.0
+button_font_family = "Segoe UI Variable"
+button_font_weight = "400"
+button_actual_size = { width = 66.0, height = 32.0 }
+button_background = "#B3FFFFFF opacity 1"
+button_foreground = "#E4000000 opacity 1"
+button_border_brush = "Microsoft.UI.Xaml.Media.LinearGradientBrush"
+button_focus_visual_margin = "-3,-3,-3,-3"
+button_focus_visual_primary_thickness = "2,2,2,2"
+button_focus_visual_secondary_thickness = "1,1,1,1"
+button_focus_visual_primary_brush = "#E4000000 opacity 1"
+button_focus_visual_secondary_brush = "#B3FFFFFF opacity 1"
+button_use_system_focus_visuals = true
+button_min_width = 0.0
+button_min_height = 0.0
+button_label_text = "Button"
+button_label_font_family = "Segoe UI Variable"
+button_label_font_size = 14.0
+button_label_font_weight = "400"
+button_label_font_style = "Normal"
+button_label_font_stretch = "Normal"
+button_label_actual_size = { width = 41.5625, height = 18.62109375 }
+button_label_bounds = { x = 12.0, y = 6.0, width = 41.5625, height = 18.62109375 }
+accent_button_padding = "11,5,11,6"
+accent_button_border_thickness = "1,1,1,1"
+accent_button_corner_radius = "4,4,4,4"
+accent_button_font_size = 14.0
+accent_button_font_family = "Segoe UI Variable"
+accent_button_font_weight = "400"
+accent_button_actual_size = { width = 66.0, height = 32.0 }
+accent_button_background = "#FF0067C0 opacity 1"
+accent_button_foreground = "#FFFFFFFF opacity 1"
+accent_button_border_brush = "Microsoft.UI.Xaml.Media.LinearGradientBrush"
+accent_button_focus_visual_margin = "-3,-3,-3,-3"
+accent_button_focus_visual_primary_thickness = "2,2,2,2"
+accent_button_focus_visual_secondary_thickness = "1,1,1,1"
+accent_button_focus_visual_primary_brush = "#E4000000 opacity 1"
+accent_button_focus_visual_secondary_brush = "#B3FFFFFF opacity 1"
+accent_button_use_system_focus_visuals = true
+accent_button_min_width = 0.0
+accent_button_min_height = 0.0
+accent_button_label_text = "Button"
+accent_button_label_font_family = "Segoe UI Variable"
+accent_button_label_font_size = 14.0
+accent_button_label_font_weight = "400"
+accent_button_label_font_style = "Normal"
+accent_button_label_font_stretch = "Normal"
+accent_button_label_actual_size = { width = 41.5625, height = 18.62109375 }
+accent_button_label_bounds = { x = 12.0, y = 6.0, width = 41.5625, height = 18.62109375 }
+
+[[popup]]
+pass = "menu_flyout"
+kind = "MenuFlyout"
+shown_by = "MenuFlyout.ShowAt(anchor)"
+opened_event = true
+placement = "Top"
+should_constrain_to_root_bounds = false
+is_constrained_to_root_bounds = false
+open_popups = 1
+closed_event = true
+
+[[popup.open]]
+is_constrained_to_root_bounds = false
+should_constrain_to_root_bounds = false
+horizontal_offset = 343.0
+vertical_offset = 92.0
+popup_origin = { x = 0.0, y = 0.0 }
+child_type = "Microsoft.UI.Xaml.Controls.MenuFlyoutPresenter"
+child_actual_size = { width = 98.0, height = 169.0 }
+child_margin = "0,0,0,0"
+child_bounds = { x = 343.0, y = 92.0, width = 98.0, height = 169.0 }
+child_bounds_to_null = { x = 343.0, y = 92.0, width = 98.0, height = 169.0 }
+popup_menu_flyout_0_pixels = { width = 98.0, height = 169.0 }
+png = "popup-menu_flyout-0.png"
+
+[[popup.hwnd]]
+class = "Microsoft.UI.Content.PopupWindowSiteBridge"
+is_main_window = false
+window_rect = { x = 441, y = 181, width = 118, height = 189 }
+extended_frame_bounds = { x = 441, y = 181, width = 118, height = 189 }
+
+[[popup.hwnd]]
+class = "WinUIDesktopWin32WindowClass"
+is_main_window = true
+window_rect = { x = 100, y = 60, width = 800, height = 600 }
+extended_frame_bounds = { x = 107, y = 60, width = 786, height = 593 }
+
+[[popup]]
+pass = "menu_flyout_constrained"
+kind = "MenuFlyout"
+shown_by = "MenuFlyout.ShowAt(anchor)"
+opened_event = true
+placement = "Top"
+should_constrain_to_root_bounds = true
+is_constrained_to_root_bounds = true
+open_popups = 1
+closed_event = true
+
+[[popup.open]]
+is_constrained_to_root_bounds = true
+should_constrain_to_root_bounds = true
+horizontal_offset = 343.0
+vertical_offset = 92.0
+popup_origin = { x = 0.0, y = 0.0 }
+child_type = "Microsoft.UI.Xaml.Controls.MenuFlyoutPresenter"
+child_actual_size = { width = 98.0, height = 169.0 }
+child_margin = "0,0,0,0"
+child_bounds = { x = 343.0, y = 92.0, width = 98.0, height = 169.0 }
+child_bounds_to_null = { x = 343.0, y = 92.0, width = 98.0, height = 169.0 }
+popup_menu_flyout_constrained_0_pixels = { width = 98.0, height = 169.0 }
+png = "popup-menu_flyout_constrained-0.png"
+
+[[popup.hwnd]]
+class = "WinUIDesktopWin32WindowClass"
+is_main_window = true
+window_rect = { x = 100, y = 60, width = 800, height = 600 }
+extended_frame_bounds = { x = 107, y = 60, width = 786, height = 593 }
+
+[[popup]]
+pass = "tooltip_programmatic"
+kind = "ToolTip"
+shown_by = "ToolTip.IsOpen = true"
+opened_event = true
+placement = "Top"
+horizontal_offset = 0.0
+vertical_offset = 0.0
+tooltip_bounds = { x = 363.0, y = 233.0, width = 58.0, height = 32.0 }
+open_popups = 1
+closed_event = true
+
+[[popup.open]]
+is_constrained_to_root_bounds = false
+should_constrain_to_root_bounds = true
+horizontal_offset = 363.0
+vertical_offset = 233.0
+popup_origin = { x = 0.0, y = 0.0 }
+child_type = "Microsoft.UI.Xaml.Controls.ToolTip"
+child_actual_size = { width = 58.0, height = 32.0 }
+child_margin = "0,0,0,0"
+child_bounds = { x = 363.0, y = 233.0, width = 58.0, height = 32.0 }
+child_bounds_to_null = { x = 363.0, y = 233.0, width = 58.0, height = 32.0 }
+png_error = "Value does not fall within the expected range."
+png = ""
+
+[[popup.hwnd]]
+class = "Microsoft.UI.Content.PopupWindowSiteBridge"
+is_main_window = false
+window_rect = { x = 467, y = 323, width = 66, height = 41 }
+extended_frame_bounds = { x = 467, y = 323, width = 66, height = 41 }
+
+[[popup.hwnd]]
+class = "WinUIDesktopWin32WindowClass"
+is_main_window = true
+window_rect = { x = 100, y = 60, width = 800, height = 600 }
+extended_frame_bounds = { x = 107, y = 60, width = 786, height = 593 }
+
+[[popup]]
+pass = "tooltip_hover"
+kind = "ToolTip"
+shown_by = "SendInput moving the pointer onto the anchor, HoverInset from its left edge"
+cursor = { x = 475.0, y = 372.0 }
+send_input = true
+opened_event = true
+placement = "Top"
+horizontal_offset = 0.0
+vertical_offset = 0.0
+tooltip_bounds = { x = 338.0, y = 229.0, width = 58.0, height = 32.0 }
+open_popups = 1
+closed_event = true
+
+[[popup.open]]
+is_constrained_to_root_bounds = false
+should_constrain_to_root_bounds = true
+horizontal_offset = 338.0
+vertical_offset = 229.0
+popup_origin = { x = 0.0, y = 0.0 }
+child_type = "Microsoft.UI.Xaml.Controls.ToolTip"
+child_actual_size = { width = 58.0, height = 32.0 }
+child_margin = "0,0,0,0"
+child_bounds = { x = 338.0, y = 229.0, width = 58.0, height = 32.0 }
+child_bounds_to_null = { x = 338.0, y = 229.0, width = 58.0, height = 32.0 }
+png_error = "Value does not fall within the expected range."
+png = ""
+
+[[popup.hwnd]]
+class = "Microsoft.UI.Content.PopupWindowSiteBridge"
+is_main_window = false
+window_rect = { x = 442, y = 319, width = 66, height = 41 }
+extended_frame_bounds = { x = 442, y = 319, width = 66, height = 41 }
+
+[[popup.hwnd]]
+class = "WinUIDesktopWin32WindowClass"
+is_main_window = true
+window_rect = { x = 100, y = 60, width = 800, height = 600 }
+extended_frame_bounds = { x = 107, y = 60, width = 786, height = 593 }
+
+[system]
+GetCaretBlinkTime = 530
+GetDoubleClickTime = 500
+ui_settings_text_scale_factor = 1.0
+
+[directwrite]
+default_gamma = 1.8
+default_enhanced_contrast = 0.5
+default_cleartype_level = 1.0
+default_pixel_geometry = "RGB"
+default_rendering_mode = "DEFAULT"
+default_grayscale_enhanced_contrast = 1.0
+default_grid_fit_mode = "DEFAULT"
+default_rendering_mode1 = "DEFAULT"
+monitor_gamma = 1.8
+monitor_enhanced_contrast = 0.5
+monitor_cleartype_level = 1.0
+monitor_pixel_geometry = "RGB"
+monitor_rendering_mode = "DEFAULT"
+monitor_grayscale_enhanced_contrast = 1.0
+monitor_grid_fit_mode = "DEFAULT"
+monitor_rendering_mode1 = "DEFAULT"
+
+[[font_fallback]]
+locale = "en-US"
+text = "Aa"
+base_family = ""
+runs = ["Aa -> Segoe UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "el-GR"
+text = "Ωω"
+base_family = ""
+runs = ["Ωω -> Segoe UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "ru-RU"
+text = "Жж"
+base_family = ""
+runs = ["Жж -> Segoe UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "ar-SA"
+text = "عربي"
+base_family = ""
+runs = ["عربي -> Segoe UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "fa-IR"
+text = "فارسی"
+base_family = ""
+runs = ["فارسی -> Segoe UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "he-IL"
+text = "עברית"
+base_family = ""
+runs = ["עברית -> Segoe UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "hi-IN"
+text = "हिन्दी"
+base_family = ""
+runs = ["हिन्दी -> Nirmala UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "bn-IN"
+text = "বাংলা"
+base_family = ""
+runs = ["বাংলা -> Nirmala UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "ta-IN"
+text = "தமிழ்"
+base_family = ""
+runs = ["தமிழ் -> Nirmala UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "th-TH"
+text = "ไทย"
+base_family = ""
+runs = ["ไทย -> Leelawadee UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "lo-LA"
+text = "ລາວ"
+base_family = ""
+runs = ["ລາວ -> Leelawadee UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "km-KH"
+text = "ខ្មែរ"
+base_family = ""
+runs = ["ខ្មែរ -> Leelawadee UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "my-MM"
+text = "မြန်မာ"
+base_family = ""
+runs = ["မြန်မာ -> Myanmar Text Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "si-LK"
+text = "සිංහල"
+base_family = ""
+runs = ["සිංහල -> Nirmala UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "hy-AM"
+text = "Հայ"
+base_family = ""
+runs = ["Հայ -> Segoe UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "ka-GE"
+text = "ქართ"
+base_family = ""
+runs = ["ქართ -> Segoe UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "am-ET"
+text = "አማርኛ"
+base_family = ""
+runs = ["አማርኛ -> Ebrima Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "ja-JP"
+text = "直あア"
+base_family = ""
+runs = ["直 -> Yu Gothic UI Regular (weight 400); scale 1", "あア -> Yu Gothic UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "zh-CN"
+text = "直汉"
+base_family = ""
+runs = ["直汉 -> Microsoft YaHei UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "zh-TW"
+text = "直漢"
+base_family = ""
+runs = ["直漢 -> Microsoft JhengHei UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "zh-HK"
+text = "直漢"
+base_family = ""
+runs = ["直漢 -> Microsoft JhengHei UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "ko-KR"
+text = "直한"
+base_family = ""
+runs = ["直 -> Malgun Gothic Regular (weight 400); scale 1", "한 -> Malgun Gothic Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "en-US"
+text = "😀"
+base_family = ""
+runs = ["😀 -> Segoe UI Emoji Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "en-US"
+text = "☃→✓"
+base_family = ""
+runs = ["☃ -> Segoe UI Emoji Regular (weight 400); scale 1", "→ -> Segoe UI Regular (weight 400); scale 1", "✓ -> Segoe UI Symbol Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "en-US"
+text = "Aa"
+base_family = "Segoe UI"
+runs = ["Aa -> Segoe UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "el-GR"
+text = "Ωω"
+base_family = "Segoe UI"
+runs = ["Ωω -> Segoe UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "ru-RU"
+text = "Жж"
+base_family = "Segoe UI"
+runs = ["Жж -> Segoe UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "ar-SA"
+text = "عربي"
+base_family = "Segoe UI"
+runs = ["عربي -> Segoe UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "fa-IR"
+text = "فارسی"
+base_family = "Segoe UI"
+runs = ["فارسی -> Segoe UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "he-IL"
+text = "עברית"
+base_family = "Segoe UI"
+runs = ["עברית -> Segoe UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "hi-IN"
+text = "हिन्दी"
+base_family = "Segoe UI"
+runs = ["हिन्दी -> Nirmala UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "bn-IN"
+text = "বাংলা"
+base_family = "Segoe UI"
+runs = ["বাংলা -> Nirmala UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "ta-IN"
+text = "தமிழ்"
+base_family = "Segoe UI"
+runs = ["தமிழ் -> Nirmala UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "th-TH"
+text = "ไทย"
+base_family = "Segoe UI"
+runs = ["ไทย -> Leelawadee UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "lo-LA"
+text = "ລາວ"
+base_family = "Segoe UI"
+runs = ["ລາວ -> Leelawadee UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "km-KH"
+text = "ខ្មែរ"
+base_family = "Segoe UI"
+runs = ["ខ្មែរ -> Leelawadee UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "my-MM"
+text = "မြန်မာ"
+base_family = "Segoe UI"
+runs = ["မြန်မာ -> Myanmar Text Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "si-LK"
+text = "සිංහල"
+base_family = "Segoe UI"
+runs = ["සිංහල -> Nirmala UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "hy-AM"
+text = "Հայ"
+base_family = "Segoe UI"
+runs = ["Հայ -> Segoe UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "ka-GE"
+text = "ქართ"
+base_family = "Segoe UI"
+runs = ["ქართ -> Segoe UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "am-ET"
+text = "አማርኛ"
+base_family = "Segoe UI"
+runs = ["አማርኛ -> Ebrima Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "ja-JP"
+text = "直あア"
+base_family = "Segoe UI"
+runs = ["直 -> Yu Gothic UI Regular (weight 400); scale 1", "あア -> Yu Gothic UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "zh-CN"
+text = "直汉"
+base_family = "Segoe UI"
+runs = ["直汉 -> Microsoft YaHei UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "zh-TW"
+text = "直漢"
+base_family = "Segoe UI"
+runs = ["直漢 -> Microsoft JhengHei UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "zh-HK"
+text = "直漢"
+base_family = "Segoe UI"
+runs = ["直漢 -> Microsoft JhengHei UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "ko-KR"
+text = "直한"
+base_family = "Segoe UI"
+runs = ["直 -> Malgun Gothic Regular (weight 400); scale 1", "한 -> Malgun Gothic Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "en-US"
+text = "😀"
+base_family = "Segoe UI"
+runs = ["😀 -> Segoe UI Emoji Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "en-US"
+text = "☃→✓"
+base_family = "Segoe UI"
+runs = ["☃ -> Segoe UI Emoji Regular (weight 400); scale 1", "→ -> Segoe UI Regular (weight 400); scale 1", "✓ -> Segoe UI Symbol Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "en-US"
+text = "Aa"
+base_family = "Segoe UI Variable"
+runs = ["Aa -> Segoe UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "el-GR"
+text = "Ωω"
+base_family = "Segoe UI Variable"
+runs = ["Ωω -> Segoe UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "ru-RU"
+text = "Жж"
+base_family = "Segoe UI Variable"
+runs = ["Жж -> Segoe UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "ar-SA"
+text = "عربي"
+base_family = "Segoe UI Variable"
+runs = ["عربي -> Segoe UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "fa-IR"
+text = "فارسی"
+base_family = "Segoe UI Variable"
+runs = ["فارسی -> Segoe UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "he-IL"
+text = "עברית"
+base_family = "Segoe UI Variable"
+runs = ["עברית -> Segoe UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "hi-IN"
+text = "हिन्दी"
+base_family = "Segoe UI Variable"
+runs = ["हिन्दी -> Nirmala UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "bn-IN"
+text = "বাংলা"
+base_family = "Segoe UI Variable"
+runs = ["বাংলা -> Nirmala UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "ta-IN"
+text = "தமிழ்"
+base_family = "Segoe UI Variable"
+runs = ["தமிழ் -> Nirmala UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "th-TH"
+text = "ไทย"
+base_family = "Segoe UI Variable"
+runs = ["ไทย -> Leelawadee UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "lo-LA"
+text = "ລາວ"
+base_family = "Segoe UI Variable"
+runs = ["ລາວ -> Leelawadee UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "km-KH"
+text = "ខ្មែរ"
+base_family = "Segoe UI Variable"
+runs = ["ខ្មែរ -> Leelawadee UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "my-MM"
+text = "မြန်မာ"
+base_family = "Segoe UI Variable"
+runs = ["မြန်မာ -> Myanmar Text Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "si-LK"
+text = "සිංහල"
+base_family = "Segoe UI Variable"
+runs = ["සිංහල -> Nirmala UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "hy-AM"
+text = "Հայ"
+base_family = "Segoe UI Variable"
+runs = ["Հայ -> Segoe UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "ka-GE"
+text = "ქართ"
+base_family = "Segoe UI Variable"
+runs = ["ქართ -> Segoe UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "am-ET"
+text = "አማርኛ"
+base_family = "Segoe UI Variable"
+runs = ["አማርኛ -> Ebrima Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "ja-JP"
+text = "直あア"
+base_family = "Segoe UI Variable"
+runs = ["直 -> Yu Gothic UI Regular (weight 400); scale 1", "あア -> Yu Gothic UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "zh-CN"
+text = "直汉"
+base_family = "Segoe UI Variable"
+runs = ["直汉 -> Microsoft YaHei UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "zh-TW"
+text = "直漢"
+base_family = "Segoe UI Variable"
+runs = ["直漢 -> Microsoft JhengHei UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "zh-HK"
+text = "直漢"
+base_family = "Segoe UI Variable"
+runs = ["直漢 -> Microsoft JhengHei UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "ko-KR"
+text = "直한"
+base_family = "Segoe UI Variable"
+runs = ["直 -> Malgun Gothic Regular (weight 400); scale 1", "한 -> Malgun Gothic Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "en-US"
+text = "😀"
+base_family = "Segoe UI Variable"
+runs = ["😀 -> Segoe UI Emoji Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "en-US"
+text = "☃→✓"
+base_family = "Segoe UI Variable"
+runs = ["☃ -> Segoe UI Emoji Regular (weight 400); scale 1", "→ -> Segoe UI Regular (weight 400); scale 1", "✓ -> Segoe UI Symbol Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "en-US"
+text = "Aa"
+base_family = "Segoe UI Variable Text"
+runs = ["Aa -> Segoe UI Variable Text Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "el-GR"
+text = "Ωω"
+base_family = "Segoe UI Variable Text"
+runs = ["Ωω -> Segoe UI Variable Text Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "ru-RU"
+text = "Жж"
+base_family = "Segoe UI Variable Text"
+runs = ["Жж -> Segoe UI Variable Text Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "ar-SA"
+text = "عربي"
+base_family = "Segoe UI Variable Text"
+runs = ["عربي -> Segoe UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "fa-IR"
+text = "فارسی"
+base_family = "Segoe UI Variable Text"
+runs = ["فارسی -> Segoe UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "he-IL"
+text = "עברית"
+base_family = "Segoe UI Variable Text"
+runs = ["עברי -> Segoe UI Regular (weight 400); scale 1", "ת -> Segoe UI Variable Text Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "hi-IN"
+text = "हिन्दी"
+base_family = "Segoe UI Variable Text"
+runs = ["हिन्दी -> Nirmala UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "bn-IN"
+text = "বাংলা"
+base_family = "Segoe UI Variable Text"
+runs = ["বাংলা -> Nirmala UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "ta-IN"
+text = "தமிழ்"
+base_family = "Segoe UI Variable Text"
+runs = ["தமிழ் -> Nirmala UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "th-TH"
+text = "ไทย"
+base_family = "Segoe UI Variable Text"
+runs = ["ไทย -> Leelawadee UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "lo-LA"
+text = "ລາວ"
+base_family = "Segoe UI Variable Text"
+runs = ["ລາວ -> Leelawadee UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "km-KH"
+text = "ខ្មែរ"
+base_family = "Segoe UI Variable Text"
+runs = ["ខ្មែរ -> Leelawadee UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "my-MM"
+text = "မြန်မာ"
+base_family = "Segoe UI Variable Text"
+runs = ["မြန်မာ -> Myanmar Text Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "si-LK"
+text = "සිංහල"
+base_family = "Segoe UI Variable Text"
+runs = ["සිංහල -> Nirmala UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "hy-AM"
+text = "Հայ"
+base_family = "Segoe UI Variable Text"
+runs = ["Հայ -> Segoe UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "ka-GE"
+text = "ქართ"
+base_family = "Segoe UI Variable Text"
+runs = ["ქართ -> Segoe UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "am-ET"
+text = "አማርኛ"
+base_family = "Segoe UI Variable Text"
+runs = ["አማርኛ -> Ebrima Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "ja-JP"
+text = "直あア"
+base_family = "Segoe UI Variable Text"
+runs = ["直 -> Yu Gothic UI Regular (weight 400); scale 1", "あア -> Yu Gothic UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "zh-CN"
+text = "直汉"
+base_family = "Segoe UI Variable Text"
+runs = ["直汉 -> Microsoft YaHei UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "zh-TW"
+text = "直漢"
+base_family = "Segoe UI Variable Text"
+runs = ["直漢 -> Microsoft JhengHei UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "zh-HK"
+text = "直漢"
+base_family = "Segoe UI Variable Text"
+runs = ["直漢 -> Microsoft JhengHei UI Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "ko-KR"
+text = "直한"
+base_family = "Segoe UI Variable Text"
+runs = ["直 -> Malgun Gothic Regular (weight 400); scale 1", "한 -> Malgun Gothic Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "en-US"
+text = "😀"
+base_family = "Segoe UI Variable Text"
+runs = ["😀 -> Segoe UI Emoji Regular (weight 400); scale 1"]
+
+[[font_fallback]]
+locale = "en-US"
+text = "☃→✓"
+base_family = "Segoe UI Variable Text"
+runs = ["☃ -> Segoe UI Emoji Regular (weight 400); scale 1", "→ -> Segoe UI Variable Text Regular (weight 400); scale 1", "✓ -> Segoe UI Symbol Regular (weight 400); scale 1"]
+
+[gesture_recognizer_microsoft_ui_input]
+type = "Microsoft.UI.Input.GestureRecognizer"
+AutoProcessInertia = "True"
+CrossSlideExact = "False"
+CrossSlideHorizontally = "False"
+CrossSlideThresholds = "Microsoft.UI.Input.CrossSlideThresholds"
+GestureSettings = "None"
+InertiaExpansion = "0"
+InertiaExpansionDeceleration = "0"
+InertiaRotationAngle = "0"
+InertiaRotationDeceleration = "0"
+InertiaTranslationDeceleration = "0"
+InertiaTranslationDisplacement = "0"
+IsActive = "False"
+IsInertial = "False"
+ManipulationExact = "False"
+MouseWheelParameters = "Microsoft.UI.Input.MouseWheelParameters"
+PivotCenter = "0,0"
+PivotRadius = "0"
+ShowGestureFeedback = "True"
+
+[gesture_recognizer_windows_ui_input]
+type = "Windows.UI.Input.GestureRecognizer"
+AutoProcessInertia = "True"
+CrossSlideExact = "False"
+CrossSlideHorizontally = "False"
+CrossSlideThresholds = "Windows.UI.Input.CrossSlideThresholds"
+GestureSettings = "None"
+HoldMaxContactCount = "0"
+HoldMinContactCount = "0"
+HoldRadius = "0"
+HoldStartDelay = "00:00:00"
+InertiaExpansion = "0"
+InertiaExpansionDeceleration = "0"
+InertiaRotationAngle = "0"
+InertiaRotationDeceleration = "0"
+InertiaTranslationDeceleration = "0"
+InertiaTranslationDisplacement = "0"
+IsActive = "False"
+IsInertial = "False"
+ManipulationExact = "False"
+MouseWheelParameters = "Windows.UI.Input.MouseWheelParameters"
+PivotCenter = "0,0"
+PivotRadius = "0"
+ShowGestureFeedback = "True"
+TapMaxContactCount = "0"
+TapMinContactCount = "0"
+TranslationMaxContactCount = "0"
+TranslationMinContactCount = "0"
+
+[[text]]
+pass = "default"
+font_size = 10.0
+font_family = "Segoe UI Variable"
+font_weight = "400"
+is_text_scale_factor_enabled = true
+line_height = 0.0
+line_stacking_strategy = "MaxHeight"
+optical_margin_alignment = "None"
+text_line_bounds = "Full"
+baseline_offset = 10.791015625
+actual_size = { width = 93.662109375, height = 13.30078125 }
+desired_size = { width = 94.0, height = 14.0 }
+bounds = { x = 8.0, y = 8.0, width = 93.662109375, height = 13.30078125 }
+
+[[text]]
+pass = "default"
+font_size = 12.0
+font_family = "Segoe UI Variable"
+font_weight = "400"
+is_text_scale_factor_enabled = true
+line_height = 0.0
+line_stacking_strategy = "MaxHeight"
+optical_margin_alignment = "None"
+text_line_bounds = "Full"
+baseline_offset = 12.94921875
+actual_size = { width = 110.12109375, height = 15.9609375 }
+desired_size = { width = 111.0, height = 16.0 }
+bounds = { x = 8.0, y = 22.0, width = 110.12109375, height = 15.9609375 }
+
+[[text]]
+pass = "default"
+font_size = 14.0
+font_family = "Segoe UI Variable"
+font_weight = "400"
+is_text_scale_factor_enabled = true
+line_height = 0.0
+line_stacking_strategy = "MaxHeight"
+optical_margin_alignment = "None"
+text_line_bounds = "Full"
+baseline_offset = 15.107421875
+actual_size = { width = 125.822265625, height = 18.62109375 }
+desired_size = { width = 126.0, height = 19.0 }
+bounds = { x = 8.0, y = 38.0, width = 125.822265625, height = 18.62109375 }
+
+[[text]]
+pass = "default"
+font_size = 16.0
+font_family = "Segoe UI Variable"
+font_weight = "400"
+is_text_scale_factor_enabled = true
+line_height = 0.0
+line_stacking_strategy = "MaxHeight"
+optical_margin_alignment = "None"
+text_line_bounds = "Full"
+baseline_offset = 17.265625
+actual_size = { width = 143.7109375, height = 21.28125 }
+desired_size = { width = 144.0, height = 22.0 }
+bounds = { x = 8.0, y = 57.0, width = 143.7109375, height = 21.28125 }
+
+[[text]]
+pass = "default"
+font_size = 18.0
+font_family = "Segoe UI Variable"
+font_weight = "400"
+is_text_scale_factor_enabled = true
+line_height = 0.0
+line_stacking_strategy = "MaxHeight"
+optical_margin_alignment = "None"
+text_line_bounds = "Full"
+baseline_offset = 19.423828125
+actual_size = { width = 161.595703125, height = 23.94140625 }
+desired_size = { width = 162.0, height = 24.0 }
+bounds = { x = 8.0, y = 79.0, width = 161.595703125, height = 23.94140625 }
+
+[[text]]
+pass = "default"
+font_size = 20.0
+font_family = "Segoe UI Variable"
+font_weight = "400"
+is_text_scale_factor_enabled = true
+line_height = 0.0
+line_stacking_strategy = "MaxHeight"
+optical_margin_alignment = "None"
+text_line_bounds = "Full"
+baseline_offset = 21.58203125
+actual_size = { width = 179.384765625, height = 26.6015625 }
+desired_size = { width = 180.0, height = 27.0 }
+bounds = { x = 8.0, y = 103.0, width = 179.384765625, height = 26.6015625 }
+
+[[text]]
+pass = "default"
+font_size = 28.0
+font_family = "Segoe UI Variable"
+font_weight = "400"
+is_text_scale_factor_enabled = true
+line_height = 0.0
+line_stacking_strategy = "MaxHeight"
+optical_margin_alignment = "None"
+text_line_bounds = "Full"
+baseline_offset = 30.21484375
+actual_size = { width = 250.578125, height = 37.2421875 }
+desired_size = { width = 251.0, height = 38.0 }
+bounds = { x = 8.0, y = 130.0, width = 250.578125, height = 37.2421875 }
+
+[[text]]
+pass = "default"
+font_size = 40.0
+font_family = "Segoe UI Variable"
+font_weight = "400"
+is_text_scale_factor_enabled = true
+line_height = 0.0
+line_stacking_strategy = "MaxHeight"
+optical_margin_alignment = "None"
+text_line_bounds = "Full"
+baseline_offset = 43.1640625
+actual_size = { width = 356.71875, height = 53.203125 }
+desired_size = { width = 357.0, height = 54.0 }
+bounds = { x = 8.0, y = 168.0, width = 356.71875, height = 53.203125 }
+
+[[text]]
+pass = "default"
+font_size = 68.0
+font_family = "Segoe UI Variable"
+font_weight = "400"
+is_text_scale_factor_enabled = true
+line_height = 0.0
+line_stacking_strategy = "MaxHeight"
+optical_margin_alignment = "None"
+text_line_bounds = "Full"
+baseline_offset = 73.37890625
+actual_size = { width = 604.861328125, height = 90.4453125 }
+desired_size = { width = 605.0, height = 91.0 }
+bounds = { x = 8.0, y = 222.0, width = 604.861328125, height = 90.4453125 }
+
+[[text_capture]]
+pass = "default"
+panel_bounds = { x = 0.0, y = 0.0, width = 621.0, height = 321.0 }
+png = "text-default.png"
+screen_rect = { x = 108, y = 91, width = 621, height = 321 }
+grey_pixels = 19740
+coloured_pixels = 0
+largest_channel_spread = 0
+
+[dialog]
+opened_event = true
+default_button = "Primary"
+accent_button_style_found = true
+default_button_style_found = true
+closed_event = true
+
+[[dialog.button]]
+name = "PrimaryButton"
+style_is_accent_button_style = true
+style_is_default_button_style = false
+style_is_null = false
+button_padding = "11,5,11,6"
+button_border_thickness = "1,1,1,1"
+button_corner_radius = "4,4,4,4"
+button_font_size = 14.0
+button_font_family = "Segoe UI Variable"
+button_font_weight = "400"
+button_actual_size = { width = 85.0, height = 32.0 }
+button_background = "#FF0067C0 opacity 1"
+button_foreground = "#FFFFFFFF opacity 1"
+button_border_brush = "Microsoft.UI.Xaml.Media.LinearGradientBrush"
+button_focus_visual_margin = "-3,-3,-3,-3"
+button_focus_visual_primary_thickness = "2,2,2,2"
+button_focus_visual_secondary_thickness = "1,1,1,1"
+button_focus_visual_primary_brush = "#E4000000 opacity 1"
+button_focus_visual_secondary_brush = "#B3FFFFFF opacity 1"
+button_use_system_focus_visuals = true
+button_min_width = 0.0
+button_min_height = 0.0
+button_label_text = "Primary"
+button_label_font_family = "Segoe UI Variable"
+button_label_font_size = 14.0
+button_label_font_weight = "400"
+button_label_font_style = "Normal"
+button_label_font_stretch = "Normal"
+button_label_actual_size = { width = 46.921875, height = 18.62109375 }
+button_label_bounds = { x = 19.0, y = 6.0, width = 46.921875, height = 18.62109375 }
+bounds = { x = 257.0, y = 318.0, width = 85.0, height = 32.0 }
+
+[[dialog.button]]
+name = "SecondaryButton"
+style_is_accent_button_style = false
+style_is_default_button_style = true
+style_is_null = false
+button_padding = "11,5,11,6"
+button_border_thickness = "1,1,1,1"
+button_corner_radius = "4,4,4,4"
+button_font_size = 14.0
+button_font_family = "Segoe UI Variable"
+button_font_weight = "400"
+button_actual_size = { width = 89.0, height = 32.0 }
+button_background = "#B3FFFFFF opacity 1"
+button_foreground = "#E4000000 opacity 1"
+button_border_brush = "Microsoft.UI.Xaml.Media.LinearGradientBrush"
+button_focus_visual_margin = "-3,-3,-3,-3"
+button_focus_visual_primary_thickness = "2,2,2,2"
+button_focus_visual_secondary_thickness = "1,1,1,1"
+button_focus_visual_primary_brush = "#E4000000 opacity 1"
+button_focus_visual_secondary_brush = "#B3FFFFFF opacity 1"
+button_use_system_focus_visuals = true
+button_min_width = 0.0
+button_min_height = 0.0
+button_label_text = "Secondary"
+button_label_font_family = "Segoe UI Variable"
+button_label_font_size = 14.0
+button_label_font_weight = "400"
+button_label_font_style = "Normal"
+button_label_font_stretch = "Normal"
+button_label_actual_size = { width = 64.3603515625, height = 18.62109375 }
+button_label_bounds = { x = 12.0, y = 6.0, width = 64.3603515625, height = 18.62109375 }
+bounds = { x = 350.0, y = 318.0, width = 89.0, height = 32.0 }
+
+[[dialog.button]]
+name = "CloseButton"
+style_is_accent_button_style = false
+style_is_default_button_style = true
+style_is_null = false
+button_padding = "11,5,11,6"
+button_border_thickness = "1,1,1,1"
+button_corner_radius = "4,4,4,4"
+button_font_size = 14.0
+button_font_family = "Segoe UI Variable"
+button_font_weight = "400"
+button_actual_size = { width = 80.0, height = 32.0 }
+button_background = "#B3FFFFFF opacity 1"
+button_foreground = "#E4000000 opacity 1"
+button_border_brush = "Microsoft.UI.Xaml.Media.LinearGradientBrush"
+button_focus_visual_margin = "-3,-3,-3,-3"
+button_focus_visual_primary_thickness = "2,2,2,2"
+button_focus_visual_secondary_thickness = "1,1,1,1"
+button_focus_visual_primary_brush = "#E4000000 opacity 1"
+button_focus_visual_secondary_brush = "#B3FFFFFF opacity 1"
+button_use_system_focus_visuals = true
+button_min_width = 0.0
+button_min_height = 0.0
+button_label_text = "Close"
+button_label_font_family = "Segoe UI Variable"
+button_label_font_size = 14.0
+button_label_font_weight = "400"
+button_label_font_style = "Normal"
+button_label_font_stretch = "Normal"
+button_label_actual_size = { width = 33.5234375, height = 18.62109375 }
+button_label_bounds = { x = 23.0, y = 6.0, width = 33.5234375, height = 18.62109375 }
+bounds = { x = 447.0, y = 318.0, width = 80.0, height = 32.0 }
+
+[[app_bar]]
+pass = "standalone"
+kind = "app_bar_button"
+control_padding = "0,0,0,0"
+control_border_thickness = "0,0,0,0"
+control_corner_radius = "4,4,4,4"
+control_font_size = 14.0
+control_font_family = "Segoe UI Variable"
+control_font_weight = "400"
+control_actual_size = { width = 68.0, height = 64.0 }
+control_background = "#00FFFFFF opacity 1"
+control_foreground = "#E4000000 opacity 1"
+control_border_brush = "#00FFFFFF opacity 1"
+control_focus_visual_margin = "-3,-3,-3,-3"
+control_focus_visual_primary_thickness = "2,2,2,2"
+control_focus_visual_secondary_thickness = "1,1,1,1"
+control_focus_visual_primary_brush = "#E4000000 opacity 1"
+control_focus_visual_secondary_brush = "#B3FFFFFF opacity 1"
+control_use_system_focus_visuals = true
+control_min_width = 0.0
+control_min_height = 0.0
+control_style_null = true
+bounds = { x = 0.0, y = 0.0, width = 68.0, height = 64.0 }
+
+[[part]]
+owner = "standalone.app_bar_button"
+name = "Root"
+type = "Microsoft.UI.Xaml.Controls.Grid"
+visibility = "Visible"
+margin = "0,0,0,0"
+horizontal_alignment = "Stretch"
+vertical_alignment = "Stretch"
+width = nan
+height = nan
+actual_size = { width = 68.0, height = 64.0 }
+bounds = { x = 0.0, y = 0.0, width = 68.0, height = 64.0 }
+
+[[part]]
+owner = "standalone.app_bar_button"
+name = "AppBarButtonInnerBorder"
+type = "Microsoft.UI.Xaml.Controls.Border"
+visibility = "Visible"
+margin = "2,6,2,6"
+horizontal_alignment = "Stretch"
+vertical_alignment = "Stretch"
+width = nan
+height = nan
+padding = "0,0,0,0"
+border_thickness = "0,0,0,0"
+actual_size = { width = 64.0, height = 52.0 }
+bounds = { x = 2.0, y = 6.0, width = 64.0, height = 52.0 }
+
+[[part]]
+owner = "standalone.app_bar_button"
+name = "ContentRoot"
+type = "Microsoft.UI.Xaml.Controls.Grid"
+visibility = "Visible"
+margin = "0,0,0,0"
+horizontal_alignment = "Stretch"
+vertical_alignment = "Stretch"
+width = nan
+height = nan
+actual_size = { width = 68.0, height = 64.0 }
+bounds = { x = 0.0, y = 0.0, width = 68.0, height = 64.0 }
+
+[[part]]
+owner = "standalone.app_bar_button"
+name = "ContentViewbox"
+type = "Microsoft.UI.Xaml.Controls.Viewbox"
+visibility = "Visible"
+margin = "0,16,0,2"
+horizontal_alignment = "Stretch"
+vertical_alignment = "Stretch"
+width = nan
+height = 16.0
+actual_size = { width = 16.0, height = 16.0 }
+bounds = { x = 26.0, y = 16.0, width = 16.0, height = 16.0 }
+
+[[part]]
+owner = "standalone.app_bar_button"
+name = "Content"
+type = "Microsoft.UI.Xaml.Controls.ContentPresenter"
+visibility = "Visible"
+margin = "0,0,0,0"
+horizontal_alignment = "Stretch"
+vertical_alignment = "Stretch"
+width = nan
+height = nan
+padding = "0,0,0,0"
+actual_size = { width = 20.0, height = 20.0 }
+bounds = { x = 26.0, y = 16.0, width = 16.0, height = 16.0 }
+
+[[part]]
+owner = "standalone.app_bar_button"
+name = "TextLabel"
+type = "Microsoft.UI.Xaml.Controls.TextBlock"
+visibility = "Visible"
+margin = "2,0,2,8"
+horizontal_alignment = "Stretch"
+vertical_alignment = "Stretch"
+width = nan
+height = nan
+text = "Add"
+font_family = "Segoe UI Variable"
+font_size = 12.0
+font_weight = "400"
+actual_size = { width = 22.3125, height = 15.9609375 }
+bounds = { x = 2.0, y = 34.0, width = 22.3125, height = 15.9609375 }
+
+[[part]]
+owner = "standalone.app_bar_button"
+name = "OverflowTextLabel"
+type = "Microsoft.UI.Xaml.Controls.TextBlock"
+visibility = "Collapsed"
+margin = "12,0,12,0"
+horizontal_alignment = "Stretch"
+vertical_alignment = "Center"
+width = nan
+height = nan
+text = "Add"
+font_family = "Segoe UI Variable"
+font_size = 14.0
+font_weight = "400"
+actual_size = { width = 0.0, height = 0.0 }
+bounds = { x = 0.0, y = 0.0, width = 0.0, height = 0.0 }
+
+[[part]]
+owner = "standalone.app_bar_button"
+name = "KeyboardAcceleratorTextLabel"
+type = "Microsoft.UI.Xaml.Controls.TextBlock"
+visibility = "Collapsed"
+margin = "24,0,12,0"
+horizontal_alignment = "Right"
+vertical_alignment = "Center"
+width = nan
+height = nan
+text = ""
+font_family = "Segoe UI Variable"
+font_size = 12.0
+font_weight = "400"
+actual_size = { width = 0.0, height = 0.0 }
+bounds = { x = 0.0, y = 0.0, width = 0.0, height = 0.0 }
+
+[[part]]
+owner = "standalone.app_bar_button"
+name = "SubItemChevronPanel"
+type = "Microsoft.UI.Xaml.Controls.Grid"
+visibility = "Collapsed"
+margin = "0,0,0,0"
+horizontal_alignment = "Stretch"
+vertical_alignment = "Stretch"
+width = nan
+height = nan
+actual_size = { width = 0.0, height = 0.0 }
+bounds = { x = 0.0, y = 0.0, width = 0.0, height = 0.0 }
+
+[[part]]
+owner = "standalone.app_bar_button"
+name = "SubItemChevron"
+type = "Microsoft.UI.Xaml.Controls.FontIcon"
+visibility = "Visible"
+margin = "-23,20,12,0"
+horizontal_alignment = "Stretch"
+vertical_alignment = "Top"
+width = nan
+height = nan
+actual_size = { width = 0.0, height = 0.0 }
+bounds = { x = -23.0, y = 20.0, width = 0.0, height = 0.0 }
+
+[[part]]
+owner = "standalone.app_bar_button"
+name = "OverflowSubItemChevron"
+type = "Microsoft.UI.Xaml.Controls.FontIcon"
+visibility = "Collapsed"
+margin = "0,0,16,0"
+horizontal_alignment = "Stretch"
+vertical_alignment = "Center"
+width = nan
+height = nan
+actual_size = { width = 0.0, height = 0.0 }
+bounds = { x = 0.0, y = 0.0, width = 0.0, height = 0.0 }
+
+[[app_bar]]
+pass = "standalone"
+kind = "app_bar_toggle_button"
+control_padding = "0,0,0,0"
+control_border_thickness = "1,1,1,1"
+control_corner_radius = "4,4,4,4"
+control_font_size = 14.0
+control_font_family = "Segoe UI Variable"
+control_font_weight = "400"
+control_actual_size = { width = 68.0, height = 64.0 }
+control_background = "#00FFFFFF opacity 1"
+control_foreground = "#E4000000 opacity 1"
+control_border_brush = "#00FFFFFF opacity 1"
+control_focus_visual_margin = "-3,-3,-3,-3"
+control_focus_visual_primary_thickness = "2,2,2,2"
+control_focus_visual_secondary_thickness = "1,1,1,1"
+control_focus_visual_primary_brush = "#E4000000 opacity 1"
+control_focus_visual_secondary_brush = "#B3FFFFFF opacity 1"
+control_use_system_focus_visuals = true
+control_min_width = 0.0
+control_min_height = 0.0
+control_style_null = true
+bounds = { x = 68.0, y = 0.0, width = 68.0, height = 64.0 }
+
+[[part]]
+owner = "standalone.app_bar_toggle_button"
+name = "Root"
+type = "Microsoft.UI.Xaml.Controls.Grid"
+visibility = "Visible"
+margin = "0,0,0,0"
+horizontal_alignment = "Stretch"
+vertical_alignment = "Stretch"
+width = nan
+height = nan
+actual_size = { width = 68.0, height = 64.0 }
+bounds = { x = 0.0, y = 0.0, width = 68.0, height = 64.0 }
+
+[[part]]
+owner = "standalone.app_bar_toggle_button"
+name = "AppBarToggleButtonInnerBorder"
+type = "Microsoft.UI.Xaml.Controls.Border"
+visibility = "Visible"
+margin = "2,6,2,6"
+horizontal_alignment = "Stretch"
+vertical_alignment = "Stretch"
+width = nan
+height = nan
+padding = "0,0,0,0"
+border_thickness = "1,1,1,1"
+actual_size = { width = 64.0, height = 52.0 }
+bounds = { x = 2.0, y = 6.0, width = 64.0, height = 52.0 }
+
+[[part]]
+owner = "standalone.app_bar_toggle_button"
+name = "ContentRoot"
+type = "Microsoft.UI.Xaml.Controls.Grid"
+visibility = "Visible"
+margin = "0,0,0,0"
+horizontal_alignment = "Stretch"
+vertical_alignment = "Stretch"
+width = nan
+height = nan
+actual_size = { width = 68.0, height = 64.0 }
+bounds = { x = 0.0, y = 0.0, width = 68.0, height = 64.0 }
+
+[[part]]
+owner = "standalone.app_bar_toggle_button"
+name = "OverflowCheckGlyph"
+type = "Microsoft.UI.Xaml.Controls.TextBlock"
+visibility = "Collapsed"
+margin = "12,4,12,4"
+horizontal_alignment = "Left"
+vertical_alignment = "Center"
+width = 14.0
+height = 14.0
+text = ""
+font_family = "Segoe Fluent Icons,Segoe MDL2 Assets"
+font_size = 16.0
+font_weight = "400"
+actual_size = { width = 0.0, height = 0.0 }
+bounds = { x = 0.0, y = 0.0, width = 0.0, height = 0.0 }
+
+[[part]]
+owner = "standalone.app_bar_toggle_button"
+name = "ContentViewbox"
+type = "Microsoft.UI.Xaml.Controls.Viewbox"
+visibility = "Visible"
+margin = "0,16,0,2"
+horizontal_alignment = "Stretch"
+vertical_alignment = "Stretch"
+width = nan
+height = 16.0
+actual_size = { width = 16.0, height = 16.0 }
+bounds = { x = 26.0, y = 16.0, width = 16.0, height = 16.0 }
+
+[[part]]
+owner = "standalone.app_bar_toggle_button"
+name = "Content"
+type = "Microsoft.UI.Xaml.Controls.ContentPresenter"
+visibility = "Visible"
+margin = "0,0,0,0"
+horizontal_alignment = "Stretch"
+vertical_alignment = "Stretch"
+width = nan
+height = nan
+padding = "0,0,0,0"
+actual_size = { width = 20.0, height = 20.0 }
+bounds = { x = 26.0, y = 16.0, width = 16.0, height = 16.0 }
+
+[[part]]
+owner = "standalone.app_bar_toggle_button"
+name = "TextLabel"
+type = "Microsoft.UI.Xaml.Controls.TextBlock"
+visibility = "Visible"
+margin = "2,0,2,8"
+horizontal_alignment = "Stretch"
+vertical_alignment = "Stretch"
+width = nan
+height = nan
+text = "Pin"
+font_family = "Segoe UI Variable"
+font_size = 12.0
+font_weight = "400"
+actual_size = { width = 16.822265625, height = 15.9609375 }
+bounds = { x = 2.0, y = 34.0, width = 16.822265625, height = 15.9609375 }
+
+[[part]]
+owner = "standalone.app_bar_toggle_button"
+name = "OverflowTextLabel"
+type = "Microsoft.UI.Xaml.Controls.TextBlock"
+visibility = "Collapsed"
+margin = "38,0,12,0"
+horizontal_alignment = "Stretch"
+vertical_alignment = "Center"
+width = nan
+height = nan
+text = "Pin"
+font_family = "Segoe UI Variable"
+font_size = 14.0
+font_weight = "400"
+actual_size = { width = 0.0, height = 0.0 }
+bounds = { x = 0.0, y = 0.0, width = 0.0, height = 0.0 }
+
+[[part]]
+owner = "standalone.app_bar_toggle_button"
+name = "KeyboardAcceleratorTextLabel"
+type = "Microsoft.UI.Xaml.Controls.TextBlock"
+visibility = "Collapsed"
+margin = "24,0,12,0"
+horizontal_alignment = "Right"
+vertical_alignment = "Center"
+width = nan
+height = nan
+text = ""
+font_family = "Segoe UI Variable"
+font_size = 12.0
+font_weight = "400"
+actual_size = { width = 0.0, height = 0.0 }
+bounds = { x = 0.0, y = 0.0, width = 0.0, height = 0.0 }
+
+[[app_bar]]
+pass = "command_bar"
+kind = "app_bar_button"
+default_label_position = "Bottom"
+control_padding = "0,0,0,0"
+control_border_thickness = "0,0,0,0"
+control_corner_radius = "4,4,4,4"
+control_font_size = 14.0
+control_font_family = "Segoe UI Variable"
+control_font_weight = "400"
+control_actual_size = { width = 68.0, height = 64.0 }
+control_background = "#00FFFFFF opacity 1"
+control_foreground = "#E4000000 opacity 1"
+control_border_brush = "#00FFFFFF opacity 1"
+control_focus_visual_margin = "-3,-3,-3,-3"
+control_focus_visual_primary_thickness = "2,2,2,2"
+control_focus_visual_secondary_thickness = "1,1,1,1"
+control_focus_visual_primary_brush = "#E4000000 opacity 1"
+control_focus_visual_secondary_brush = "#B3FFFFFF opacity 1"
+control_use_system_focus_visuals = true
+control_min_width = 0.0
+control_min_height = 0.0
+control_style_null = true
+bounds = { x = 4.0, y = 0.0, width = 68.0, height = 64.0 }
+
+[[part]]
+owner = "command_bar.app_bar_button"
+name = "Root"
+type = "Microsoft.UI.Xaml.Controls.Grid"
+visibility = "Visible"
+margin = "0,0,0,0"
+horizontal_alignment = "Stretch"
+vertical_alignment = "Stretch"
+width = nan
+height = nan
+actual_size = { width = 68.0, height = 64.0 }
+bounds = { x = 0.0, y = 0.0, width = 68.0, height = 64.0 }
+
+[[part]]
+owner = "command_bar.app_bar_button"
+name = "AppBarButtonInnerBorder"
+type = "Microsoft.UI.Xaml.Controls.Border"
+visibility = "Visible"
+margin = "2,6,2,22"
+horizontal_alignment = "Stretch"
+vertical_alignment = "Stretch"
+width = nan
+height = nan
+padding = "0,0,0,0"
+border_thickness = "0,0,0,0"
+actual_size = { width = 64.0, height = 36.0 }
+bounds = { x = 2.0, y = 6.0, width = 64.0, height = 36.0 }
+
+[[part]]
+owner = "command_bar.app_bar_button"
+name = "ContentRoot"
+type = "Microsoft.UI.Xaml.Controls.Grid"
+visibility = "Visible"
+margin = "0,0,0,0"
+horizontal_alignment = "Stretch"
+vertical_alignment = "Stretch"
+width = nan
+height = nan
+actual_size = { width = 68.0, height = 64.0 }
+bounds = { x = 0.0, y = 0.0, width = 68.0, height = 64.0 }
+
+[[part]]
+owner = "command_bar.app_bar_button"
+name = "ContentViewbox"
+type = "Microsoft.UI.Xaml.Controls.Viewbox"
+visibility = "Visible"
+margin = "0,16,0,2"
+horizontal_alignment = "Stretch"
+vertical_alignment = "Stretch"
+width = nan
+height = 16.0
+actual_size = { width = 16.0, height = 16.0 }
+bounds = { x = 26.0, y = 16.0, width = 16.0, height = 16.0 }
+
+[[part]]
+owner = "command_bar.app_bar_button"
+name = "Content"
+type = "Microsoft.UI.Xaml.Controls.ContentPresenter"
+visibility = "Visible"
+margin = "0,0,0,0"
+horizontal_alignment = "Stretch"
+vertical_alignment = "Stretch"
+width = nan
+height = nan
+padding = "0,0,0,0"
+actual_size = { width = 20.0, height = 20.0 }
+bounds = { x = 26.0, y = 16.0, width = 16.0, height = 16.0 }
+
+[[part]]
+owner = "command_bar.app_bar_button"
+name = "TextLabel"
+type = "Microsoft.UI.Xaml.Controls.TextBlock"
+visibility = "Collapsed"
+margin = "2,0,2,8"
+horizontal_alignment = "Stretch"
+vertical_alignment = "Stretch"
+width = nan
+height = nan
+text = "Add"
+font_family = "Segoe UI Variable"
+font_size = 12.0
+font_weight = "400"
+actual_size = { width = 0.0, height = 0.0 }
+bounds = { x = 0.0, y = 0.0, width = 0.0, height = 0.0 }
+
+[[part]]
+owner = "command_bar.app_bar_button"
+name = "OverflowTextLabel"
+type = "Microsoft.UI.Xaml.Controls.TextBlock"
+visibility = "Collapsed"
+margin = "12,0,12,0"
+horizontal_alignment = "Stretch"
+vertical_alignment = "Center"
+width = nan
+height = nan
+text = "Add"
+font_family = "Segoe UI Variable"
+font_size = 14.0
+font_weight = "400"
+actual_size = { width = 0.0, height = 0.0 }
+bounds = { x = 0.0, y = 0.0, width = 0.0, height = 0.0 }
+
+[[part]]
+owner = "command_bar.app_bar_button"
+name = "KeyboardAcceleratorTextLabel"
+type = "Microsoft.UI.Xaml.Controls.TextBlock"
+visibility = "Collapsed"
+margin = "24,0,12,0"
+horizontal_alignment = "Right"
+vertical_alignment = "Center"
+width = nan
+height = nan
+text = ""
+font_family = "Segoe UI Variable"
+font_size = 12.0
+font_weight = "400"
+actual_size = { width = 0.0, height = 0.0 }
+bounds = { x = 0.0, y = 0.0, width = 0.0, height = 0.0 }
+
+[[part]]
+owner = "command_bar.app_bar_button"
+name = "SubItemChevronPanel"
+type = "Microsoft.UI.Xaml.Controls.Grid"
+visibility = "Collapsed"
+margin = "0,0,0,0"
+horizontal_alignment = "Stretch"
+vertical_alignment = "Stretch"
+width = nan
+height = nan
+actual_size = { width = 0.0, height = 0.0 }
+bounds = { x = 0.0, y = 0.0, width = 0.0, height = 0.0 }
+
+[[part]]
+owner = "command_bar.app_bar_button"
+name = "SubItemChevron"
+type = "Microsoft.UI.Xaml.Controls.FontIcon"
+visibility = "Visible"
+margin = "-23,20,12,0"
+horizontal_alignment = "Stretch"
+vertical_alignment = "Top"
+width = nan
+height = nan
+actual_size = { width = 0.0, height = 0.0 }
+bounds = { x = -23.0, y = 20.0, width = 0.0, height = 0.0 }
+
+[[part]]
+owner = "command_bar.app_bar_button"
+name = "OverflowSubItemChevron"
+type = "Microsoft.UI.Xaml.Controls.FontIcon"
+visibility = "Collapsed"
+margin = "0,0,16,0"
+horizontal_alignment = "Stretch"
+vertical_alignment = "Center"
+width = nan
+height = nan
+actual_size = { width = 0.0, height = 0.0 }
+bounds = { x = 0.0, y = 0.0, width = 0.0, height = 0.0 }
+
+[[app_bar]]
+pass = "command_bar"
+kind = "app_bar_toggle_button"
+default_label_position = "Bottom"
+control_padding = "0,0,0,0"
+control_border_thickness = "1,1,1,1"
+control_corner_radius = "4,4,4,4"
+control_font_size = 14.0
+control_font_family = "Segoe UI Variable"
+control_font_weight = "400"
+control_actual_size = { width = 68.0, height = 64.0 }
+control_background = "#00FFFFFF opacity 1"
+control_foreground = "#E4000000 opacity 1"
+control_border_brush = "#00FFFFFF opacity 1"
+control_focus_visual_margin = "-3,-3,-3,-3"
+control_focus_visual_primary_thickness = "2,2,2,2"
+control_focus_visual_secondary_thickness = "1,1,1,1"
+control_focus_visual_primary_brush = "#E4000000 opacity 1"
+control_focus_visual_secondary_brush = "#B3FFFFFF opacity 1"
+control_use_system_focus_visuals = true
+control_min_width = 0.0
+control_min_height = 0.0
+control_style_null = true
+bounds = { x = 72.0, y = 0.0, width = 68.0, height = 64.0 }
+
+[[part]]
+owner = "command_bar.app_bar_toggle_button"
+name = "Root"
+type = "Microsoft.UI.Xaml.Controls.Grid"
+visibility = "Visible"
+margin = "0,0,0,0"
+horizontal_alignment = "Stretch"
+vertical_alignment = "Stretch"
+width = nan
+height = nan
+actual_size = { width = 68.0, height = 64.0 }
+bounds = { x = 0.0, y = 0.0, width = 68.0, height = 64.0 }
+
+[[part]]
+owner = "command_bar.app_bar_toggle_button"
+name = "AppBarToggleButtonInnerBorder"
+type = "Microsoft.UI.Xaml.Controls.Border"
+visibility = "Visible"
+margin = "2,6,2,22"
+horizontal_alignment = "Stretch"
+vertical_alignment = "Stretch"
+width = nan
+height = nan
+padding = "0,0,0,0"
+border_thickness = "1,1,1,1"
+actual_size = { width = 64.0, height = 36.0 }
+bounds = { x = 2.0, y = 6.0, width = 64.0, height = 36.0 }
+
+[[part]]
+owner = "command_bar.app_bar_toggle_button"
+name = "ContentRoot"
+type = "Microsoft.UI.Xaml.Controls.Grid"
+visibility = "Visible"
+margin = "0,0,0,0"
+horizontal_alignment = "Stretch"
+vertical_alignment = "Stretch"
+width = nan
+height = nan
+actual_size = { width = 68.0, height = 64.0 }
+bounds = { x = 0.0, y = 0.0, width = 68.0, height = 64.0 }
+
+[[part]]
+owner = "command_bar.app_bar_toggle_button"
+name = "OverflowCheckGlyph"
+type = "Microsoft.UI.Xaml.Controls.TextBlock"
+visibility = "Collapsed"
+margin = "12,4,12,4"
+horizontal_alignment = "Left"
+vertical_alignment = "Center"
+width = 14.0
+height = 14.0
+text = ""
+font_family = "Segoe Fluent Icons,Segoe MDL2 Assets"
+font_size = 16.0
+font_weight = "400"
+actual_size = { width = 0.0, height = 0.0 }
+bounds = { x = 0.0, y = 0.0, width = 0.0, height = 0.0 }
+
+[[part]]
+owner = "command_bar.app_bar_toggle_button"
+name = "ContentViewbox"
+type = "Microsoft.UI.Xaml.Controls.Viewbox"
+visibility = "Visible"
+margin = "0,16,0,2"
+horizontal_alignment = "Stretch"
+vertical_alignment = "Stretch"
+width = nan
+height = 16.0
+actual_size = { width = 16.0, height = 16.0 }
+bounds = { x = 26.0, y = 16.0, width = 16.0, height = 16.0 }
+
+[[part]]
+owner = "command_bar.app_bar_toggle_button"
+name = "Content"
+type = "Microsoft.UI.Xaml.Controls.ContentPresenter"
+visibility = "Visible"
+margin = "0,0,0,0"
+horizontal_alignment = "Stretch"
+vertical_alignment = "Stretch"
+width = nan
+height = nan
+padding = "0,0,0,0"
+actual_size = { width = 20.0, height = 20.0 }
+bounds = { x = 26.0, y = 16.0, width = 16.0, height = 16.0 }
+
+[[part]]
+owner = "command_bar.app_bar_toggle_button"
+name = "TextLabel"
+type = "Microsoft.UI.Xaml.Controls.TextBlock"
+visibility = "Collapsed"
+margin = "2,0,2,8"
+horizontal_alignment = "Stretch"
+vertical_alignment = "Stretch"
+width = nan
+height = nan
+text = "Pin"
+font_family = "Segoe UI Variable"
+font_size = 12.0
+font_weight = "400"
+actual_size = { width = 0.0, height = 0.0 }
+bounds = { x = 0.0, y = 0.0, width = 0.0, height = 0.0 }
+
+[[part]]
+owner = "command_bar.app_bar_toggle_button"
+name = "OverflowTextLabel"
+type = "Microsoft.UI.Xaml.Controls.TextBlock"
+visibility = "Collapsed"
+margin = "38,0,12,0"
+horizontal_alignment = "Stretch"
+vertical_alignment = "Center"
+width = nan
+height = nan
+text = "Pin"
+font_family = "Segoe UI Variable"
+font_size = 14.0
+font_weight = "400"
+actual_size = { width = 0.0, height = 0.0 }
+bounds = { x = 0.0, y = 0.0, width = 0.0, height = 0.0 }
+
+[[part]]
+owner = "command_bar.app_bar_toggle_button"
+name = "KeyboardAcceleratorTextLabel"
+type = "Microsoft.UI.Xaml.Controls.TextBlock"
+visibility = "Collapsed"
+margin = "24,0,12,0"
+horizontal_alignment = "Right"
+vertical_alignment = "Center"
+width = nan
+height = nan
+text = ""
+font_family = "Segoe UI Variable"
+font_size = 12.0
+font_weight = "400"
+actual_size = { width = 0.0, height = 0.0 }
+bounds = { x = 0.0, y = 0.0, width = 0.0, height = 0.0 }
+
+[[app_bar]]
+pass = "command_bar_right"
+kind = "app_bar_button"
+default_label_position = "Right"
+control_padding = "0,0,0,0"
+control_border_thickness = "0,0,0,0"
+control_corner_radius = "4,4,4,4"
+control_font_size = 14.0
+control_font_family = "Segoe UI Variable"
+control_font_weight = "400"
+control_actual_size = { width = 71.0, height = 48.0 }
+control_background = "#00FFFFFF opacity 1"
+control_foreground = "#E4000000 opacity 1"
+control_border_brush = "#00FFFFFF opacity 1"
+control_focus_visual_margin = "-3,-3,-3,-3"
+control_focus_visual_primary_thickness = "2,2,2,2"
+control_focus_visual_secondary_thickness = "1,1,1,1"
+control_focus_visual_primary_brush = "#E4000000 opacity 1"
+control_focus_visual_secondary_brush = "#B3FFFFFF opacity 1"
+control_use_system_focus_visuals = true
+control_min_width = 0.0
+control_min_height = 0.0
+control_style_null = true
+bounds = { x = 4.0, y = 0.0, width = 71.0, height = 48.0 }
+
+[[part]]
+owner = "command_bar_right.app_bar_button"
+name = "Root"
+type = "Microsoft.UI.Xaml.Controls.Grid"
+visibility = "Visible"
+margin = "0,0,0,0"
+horizontal_alignment = "Stretch"
+vertical_alignment = "Stretch"
+width = nan
+height = nan
+actual_size = { width = 71.0, height = 48.0 }
+bounds = { x = 0.0, y = 0.0, width = 71.0, height = 48.0 }
+
+[[part]]
+owner = "command_bar_right.app_bar_button"
+name = "AppBarButtonInnerBorder"
+type = "Microsoft.UI.Xaml.Controls.Border"
+visibility = "Visible"
+margin = "2,6,2,6"
+horizontal_alignment = "Stretch"
+vertical_alignment = "Stretch"
+width = nan
+height = nan
+padding = "0,0,0,0"
+border_thickness = "0,0,0,0"
+actual_size = { width = 67.0, height = 36.0 }
+bounds = { x = 2.0, y = 6.0, width = 67.0, height = 36.0 }
+
+[[part]]
+owner = "command_bar_right.app_bar_button"
+name = "ContentRoot"
+type = "Microsoft.UI.Xaml.Controls.Grid"
+visibility = "Visible"
+margin = "0,0,0,0"
+horizontal_alignment = "Stretch"
+vertical_alignment = "Stretch"
+width = nan
+height = nan
+actual_size = { width = 71.0, height = 48.0 }
+bounds = { x = 0.0, y = 0.0, width = 71.0, height = 48.0 }
+
+[[part]]
+owner = "command_bar_right.app_bar_button"
+name = "ContentViewbox"
+type = "Microsoft.UI.Xaml.Controls.Viewbox"
+visibility = "Visible"
+margin = "12,16,0,10"
+horizontal_alignment = "Stretch"
+vertical_alignment = "Stretch"
+width = nan
+height = 16.0
+actual_size = { width = 16.0, height = 16.0 }
+bounds = { x = 12.0, y = 16.0, width = 16.0, height = 16.0 }
+
+[[part]]
+owner = "command_bar_right.app_bar_button"
+name = "Content"
+type = "Microsoft.UI.Xaml.Controls.ContentPresenter"
+visibility = "Visible"
+margin = "0,0,0,0"
+horizontal_alignment = "Stretch"
+vertical_alignment = "Stretch"
+width = nan
+height = nan
+padding = "0,0,0,0"
+actual_size = { width = 20.0, height = 20.0 }
+bounds = { x = 12.0, y = 16.0, width = 16.0, height = 16.0 }
+
+[[part]]
+owner = "command_bar_right.app_bar_button"
+name = "TextLabel"
+type = "Microsoft.UI.Xaml.Controls.TextBlock"
+visibility = "Visible"
+margin = "8,16,12,10"
+horizontal_alignment = "Stretch"
+vertical_alignment = "Stretch"
+width = nan
+height = nan
+text = "Add"
+font_family = "Segoe UI Variable"
+font_size = 12.0
+font_weight = "400"
+actual_size = { width = 22.3125, height = 15.9609375 }
+bounds = { x = 36.0, y = 16.0, width = 22.3125, height = 15.9609375 }
+
+[[part]]
+owner = "command_bar_right.app_bar_button"
+name = "OverflowTextLabel"
+type = "Microsoft.UI.Xaml.Controls.TextBlock"
+visibility = "Collapsed"
+margin = "12,0,12,0"
+horizontal_alignment = "Stretch"
+vertical_alignment = "Center"
+width = nan
+height = nan
+text = "Add"
+font_family = "Segoe UI Variable"
+font_size = 14.0
+font_weight = "400"
+actual_size = { width = 0.0, height = 0.0 }
+bounds = { x = 0.0, y = 0.0, width = 0.0, height = 0.0 }
+
+[[part]]
+owner = "command_bar_right.app_bar_button"
+name = "KeyboardAcceleratorTextLabel"
+type = "Microsoft.UI.Xaml.Controls.TextBlock"
+visibility = "Collapsed"
+margin = "24,0,12,0"
+horizontal_alignment = "Right"
+vertical_alignment = "Center"
+width = nan
+height = nan
+text = ""
+font_family = "Segoe UI Variable"
+font_size = 12.0
+font_weight = "400"
+actual_size = { width = 0.0, height = 0.0 }
+bounds = { x = 0.0, y = 0.0, width = 0.0, height = 0.0 }
+
+[[part]]
+owner = "command_bar_right.app_bar_button"
+name = "SubItemChevronPanel"
+type = "Microsoft.UI.Xaml.Controls.Grid"
+visibility = "Collapsed"
+margin = "0,0,0,0"
+horizontal_alignment = "Stretch"
+vertical_alignment = "Stretch"
+width = nan
+height = nan
+actual_size = { width = 0.0, height = 0.0 }
+bounds = { x = 0.0, y = 0.0, width = 0.0, height = 0.0 }
+
+[[part]]
+owner = "command_bar_right.app_bar_button"
+name = "SubItemChevron"
+type = "Microsoft.UI.Xaml.Controls.FontIcon"
+visibility = "Visible"
+margin = "-7,20,12,0"
+horizontal_alignment = "Stretch"
+vertical_alignment = "Top"
+width = nan
+height = nan
+actual_size = { width = 0.0, height = 0.0 }
+bounds = { x = -7.0, y = 20.0, width = 0.0, height = 0.0 }
+
+[[part]]
+owner = "command_bar_right.app_bar_button"
+name = "OverflowSubItemChevron"
+type = "Microsoft.UI.Xaml.Controls.FontIcon"
+visibility = "Collapsed"
+margin = "0,0,16,0"
+horizontal_alignment = "Stretch"
+vertical_alignment = "Center"
+width = nan
+height = nan
+actual_size = { width = 0.0, height = 0.0 }
+bounds = { x = 0.0, y = 0.0, width = 0.0, height = 0.0 }
+
+[[app_bar]]
+pass = "command_bar_right"
+kind = "app_bar_toggle_button"
+default_label_position = "Right"
+control_padding = "0,0,0,0"
+control_border_thickness = "1,1,1,1"
+control_corner_radius = "4,4,4,4"
+control_font_size = 14.0
+control_font_family = "Segoe UI Variable"
+control_font_weight = "400"
+control_actual_size = { width = 65.0, height = 48.0 }
+control_background = "#00FFFFFF opacity 1"
+control_foreground = "#E4000000 opacity 1"
+control_border_brush = "#00FFFFFF opacity 1"
+control_focus_visual_margin = "-3,-3,-3,-3"
+control_focus_visual_primary_thickness = "2,2,2,2"
+control_focus_visual_secondary_thickness = "1,1,1,1"
+control_focus_visual_primary_brush = "#E4000000 opacity 1"
+control_focus_visual_secondary_brush = "#B3FFFFFF opacity 1"
+control_use_system_focus_visuals = true
+control_min_width = 0.0
+control_min_height = 0.0
+control_style_null = true
+bounds = { x = 75.0, y = 0.0, width = 65.0, height = 48.0 }
+
+[[part]]
+owner = "command_bar_right.app_bar_toggle_button"
+name = "Root"
+type = "Microsoft.UI.Xaml.Controls.Grid"
+visibility = "Visible"
+margin = "0,0,0,0"
+horizontal_alignment = "Stretch"
+vertical_alignment = "Stretch"
+width = nan
+height = nan
+actual_size = { width = 65.0, height = 48.0 }
+bounds = { x = 0.0, y = 0.0, width = 65.0, height = 48.0 }
+
+[[part]]
+owner = "command_bar_right.app_bar_toggle_button"
+name = "AppBarToggleButtonInnerBorder"
+type = "Microsoft.UI.Xaml.Controls.Border"
+visibility = "Visible"
+margin = "2,6,2,6"
+horizontal_alignment = "Stretch"
+vertical_alignment = "Stretch"
+width = nan
+height = nan
+padding = "0,0,0,0"
+border_thickness = "1,1,1,1"
+actual_size = { width = 61.0, height = 36.0 }
+bounds = { x = 2.0, y = 6.0, width = 61.0, height = 36.0 }
+
+[[part]]
+owner = "command_bar_right.app_bar_toggle_button"
+name = "ContentRoot"
+type = "Microsoft.UI.Xaml.Controls.Grid"
+visibility = "Visible"
+margin = "0,0,0,0"
+horizontal_alignment = "Stretch"
+vertical_alignment = "Stretch"
+width = nan
+height = nan
+actual_size = { width = 65.0, height = 48.0 }
+bounds = { x = 0.0, y = 0.0, width = 65.0, height = 48.0 }
+
+[[part]]
+owner = "command_bar_right.app_bar_toggle_button"
+name = "OverflowCheckGlyph"
+type = "Microsoft.UI.Xaml.Controls.TextBlock"
+visibility = "Collapsed"
+margin = "12,4,12,4"
+horizontal_alignment = "Left"
+vertical_alignment = "Center"
+width = 14.0
+height = 14.0
+text = ""
+font_family = "Segoe Fluent Icons,Segoe MDL2 Assets"
+font_size = 16.0
+font_weight = "400"
+actual_size = { width = 0.0, height = 0.0 }
+bounds = { x = 0.0, y = 0.0, width = 0.0, height = 0.0 }
+
+[[part]]
+owner = "command_bar_right.app_bar_toggle_button"
+name = "ContentViewbox"
+type = "Microsoft.UI.Xaml.Controls.Viewbox"
+visibility = "Visible"
+margin = "12,16,0,10"
+horizontal_alignment = "Stretch"
+vertical_alignment = "Stretch"
+width = nan
+height = 16.0
+actual_size = { width = 16.0, height = 16.0 }
+bounds = { x = 12.0, y = 16.0, width = 16.0, height = 16.0 }
+
+[[part]]
+owner = "command_bar_right.app_bar_toggle_button"
+name = "Content"
+type = "Microsoft.UI.Xaml.Controls.ContentPresenter"
+visibility = "Visible"
+margin = "0,0,0,0"
+horizontal_alignment = "Stretch"
+vertical_alignment = "Stretch"
+width = nan
+height = nan
+padding = "0,0,0,0"
+actual_size = { width = 20.0, height = 20.0 }
+bounds = { x = 12.0, y = 16.0, width = 16.0, height = 16.0 }
+
+[[part]]
+owner = "command_bar_right.app_bar_toggle_button"
+name = "TextLabel"
+type = "Microsoft.UI.Xaml.Controls.TextBlock"
+visibility = "Visible"
+margin = "8,16,12,10"
+horizontal_alignment = "Stretch"
+vertical_alignment = "Stretch"
+width = nan
+height = nan
+text = "Pin"
+font_family = "Segoe UI Variable"
+font_size = 12.0
+font_weight = "400"
+actual_size = { width = 16.822265625, height = 15.9609375 }
+bounds = { x = 36.0, y = 16.0, width = 16.822265625, height = 15.9609375 }
+
+[[part]]
+owner = "command_bar_right.app_bar_toggle_button"
+name = "OverflowTextLabel"
+type = "Microsoft.UI.Xaml.Controls.TextBlock"
+visibility = "Collapsed"
+margin = "38,0,12,0"
+horizontal_alignment = "Stretch"
+vertical_alignment = "Center"
+width = nan
+height = nan
+text = "Pin"
+font_family = "Segoe UI Variable"
+font_size = 14.0
+font_weight = "400"
+actual_size = { width = 0.0, height = 0.0 }
+bounds = { x = 0.0, y = 0.0, width = 0.0, height = 0.0 }
+
+[[part]]
+owner = "command_bar_right.app_bar_toggle_button"
+name = "KeyboardAcceleratorTextLabel"
+type = "Microsoft.UI.Xaml.Controls.TextBlock"
+visibility = "Collapsed"
+margin = "24,0,12,0"
+horizontal_alignment = "Right"
+vertical_alignment = "Center"
+width = nan
+height = nan
+text = ""
+font_family = "Segoe UI Variable"
+font_size = 12.0
+font_weight = "400"
+actual_size = { width = 0.0, height = 0.0 }
+bounds = { x = 0.0, y = 0.0, width = 0.0, height = 0.0 }
+
+[[motion]]
+name = "scroll_into_view_focus"
+offset_before = 0.0
+offset_after = 631.0
+target_field = 12
+focused_element = "Microsoft.UI.Xaml.Controls.TextBox"
+view_events = ["8.4 ms changing next 643 final 643 inertial False", "10.3 ms changing next 631 final 631 inertial False", "15.6 ms changed offset 631 intermediate False"]
+rendering_offsets = ["2.1 0", "16.0 631", "27.5 631", "43.2 631", "59.3 631", "75.0 631", "90.8 631", "106.6 631", "122.4 631", "138.1 631", "154.2 631", "170.0 631", "186.0 631", "202.0 631", "217.7 631", "233.5 631", "249.2 631", "265.1 631", "281.0 631", "296.6 631", "312.6 631", "328.4 631", "344.3 631", "360.0 631", "376.1 631", "391.8 631", "407.6 631", "423.3 631", "439.2 631", "455.0 631", "470.9 631", "488.0 631", "502.9 631", "518.8 631", "534.4 631", "550.5 631", "566.2 631", "582.0 631", "597.9 631", "613.6 631", "629.3 631", "645.1 631", "660.9 631", "676.9 631", "693.0 631", "709.0 631", "724.8 631", "740.7 631", "756.6 631", "772.5 631", "788.3 631", "804.4 631", "820.4 631", "836.1 631", "852.0 631", "867.8 631", "883.6 631", "899.3 631", "915.4 631", "931.1 631", "947.0 631", "962.8 631", "978.5 631", "994.4 631", "1010.4 631", "1026.2 631", "1042.3 631", "1058.1 631", "1073.7 631", "1089.4 631", "1105.4 631", "1121.1 631", "1137.2 631", "1152.9 631", "1168.8 631", "1184.5 631", "1200.4 631", "1216.3 631", "1232.2 631", "1248.0 631", "1263.8 631", "1279.6 631", "1295.3 631", "1311.4 631", "1327.4 631", "1343.1 631", "1359.0 631", "1374.8 631", "1390.7 631", "1406.4 631", "1422.6 631", "1438.3 631", "1454.2 631", "1470.3 631", "1485.9 631", "1502.1 631"]
+actions = ["0.3 ms Focus(Keyboard) on field 12"]
+
+[[motion]]
+name = "scroll_into_view_focus_next"
+offset_before = 631.0
+offset_after = 698.0
+target_field = 13
+focused_element = "Microsoft.UI.Xaml.Controls.TextBox"
+view_events = ["4.1 ms changing next 710 final 710 inertial False", "4.8 ms changing next 698 final 698 inertial False", "16.7 ms changed offset 698 intermediate False"]
+rendering_offsets = ["0.9 631", "16.9 698", "31.6 698", "47.8 698", "63.6 698", "79.7 698", "95.4 698", "111.0 698", "126.9 698", "142.9 698", "158.7 698", "174.9 698", "190.4 698", "206.0 698", "221.9 698", "237.8 698", "253.1 698", "269.1 698", "284.9 698", "301.1 698", "317.1 698", "333.0 698", "349.1 698", "364.9 698", "380.6 698", "396.7 698", "412.5 698", "428.4 698", "444.4 698", "460.2 698", "476.1 698", "491.8 698", "507.6 698", "523.6 698", "539.7 698", "555.5 698", "571.2 698", "587.1 698", "602.8 698", "618.8 698", "634.8 698", "650.7 698", "666.8 698", "682.6 698", "698.3 698", "714.1 698", "729.8 698", "745.4 698", "761.4 698", "777.3 698", "793.1 698", "808.7 698", "824.8 698", "840.8 698", "856.8 698", "872.6 698", "888.6 698", "904.3 698", "920.1 698", "936.1 698", "951.7 698", "967.5 698", "983.3 698", "999.4 698", "1015.2 698", "1030.9 698", "1046.9 698", "1062.8 698", "1078.6 698", "1094.4 698", "1110.2 698", "1126.2 698", "1142.0 698", "1157.9 698", "1173.6 698", "1189.5 698", "1205.6 698", "1221.5 698", "1237.4 698", "1253.2 698", "1269.3 698", "1285.4 698", "1301.4 698", "1317.4 698", "1333.4 698", "1349.2 698", "1364.9 698", "1380.5 698", "1396.3 698", "1427.5 698", "1443.3 698", "1459.1 698", "1475.4 698", "1491.1 698", "1506.8 698"]
+actions = ["0.2 ms Focus(Keyboard) on field 13"]
+
+[[motion]]
+name = "scroll_into_view_bring_into_view"
+offset_before = 698.0
+offset_after = 134.0
+target_field = 2
+focused_element = "Microsoft.UI.Xaml.Controls.TextBox"
+view_events = ["16.2 ms changing next 657.90185546875 final 134 inertial True", "16.6 ms changed offset 657.90185546875 intermediate True", "32.9 ms changing next 608.1134643554688 final 134 inertial True", "33.2 ms changed offset 608.1134643554688 intermediate True", "49.1 ms changing next 538.6018676757812 final 134 inertial True", "49.4 ms changed offset 538.6018676757812 intermediate True", "63.8 ms changing next 475.3864440917969 final 134 inertial True", "64.4 ms changed offset 475.3864440917969 intermediate True", "79.7 ms changing next 417.1310119628906 final 134 inertial True", "80.0 ms changed offset 417.1310119628906 intermediate True", "95.9 ms changing next 376.1752624511719 final 134 inertial True", "96.5 ms changed offset 376.1752624511719 intermediate True", "111.8 ms changing next 340.4424743652344 final 134 inertial True", "112.4 ms changed offset 340.4424743652344 intermediate True", "142.4 ms changing next 287.2261047363281 final 134 inertial True", "143.0 ms changed offset 287.2261047363281 intermediate True", "158.2 ms changing next 265.62469482421875 final 134 inertial True", "158.4 ms changed offset 265.62469482421875 intermediate True", "174.1 ms changing next 246.98085021972656 final 134 inertial True", "174.8 ms changed offset 246.98085021972656 intermediate True", "191.5 ms changing next 230.7727813720703 final 134 inertial True", "191.9 ms changed offset 230.7727813720703 intermediate True", "205.9 ms changing next 216.6112823486328 final 134 inertial True", "206.5 ms changed offset 216.6112823486328 intermediate True", "221.8 ms changing next 204.19590759277344 final 134 inertial True", "222.5 ms changed offset 204.19590759277344 intermediate True", "237.4 ms changing next 193.9328155517578 final 134 inertial True", "237.9 ms changed offset 193.9328155517578 intermediate True", "253.2 ms changing next 184.2739715576172 final 134 inertial True", "253.8 ms changed offset 184.2739715576172 intermediate True", "269.1 ms changing next 175.79385375976562 final 134 inertial True", "269.7 ms changed offset 175.79385375976562 intermediate True", "285.7 ms changing next 168.36448669433594 final 134 inertial True", "286.2 ms changed offset 168.36448669433594 intermediate True", "301.7 ms changing next 161.87930297851562 final 134 inertial True", "302.0 ms changed offset 161.87930297851562 intermediate True", "316.6 ms changing next 156.5762939453125 final 134 inertial True", "317.2 ms changed offset 156.5762939453125 intermediate True", "332.5 ms changing next 151.67503356933594 final 134 inertial True", "332.8 ms changed offset 151.67503356933594 intermediate True", "349.2 ms changing next 147.48806762695312 final 134 inertial True", "349.5 ms changed offset 147.48806762695312 intermediate True", "364.7 ms changing next 143.95736694335938 final 134 inertial True", "365.3 ms changed offset 143.95736694335938 intermediate True", "381.5 ms changing next 141.03219604492188 final 134 inertial True", "381.8 ms changed offset 141.03219604492188 intermediate True", "396.5 ms changing next 138.66790771484375 final 134 inertial True", "396.8 ms changed offset 138.66790771484375 intermediate True", "412.5 ms changing next 136.8251190185547 final 134 inertial True", "412.8 ms changed offset 136.8251190185547 intermediate True", "428.5 ms changing next 135.4686279296875 final 134 inertial True", "428.8 ms changed offset 135.4686279296875 intermediate True", "444.4 ms changing next 134.56707763671875 final 134 inertial True", "444.7 ms changed offset 134.56707763671875 intermediate True", "460.2 ms changing next 134.0922393798828 final 134 inertial True", "460.5 ms changed offset 134.0922393798828 intermediate True", "477.2 ms changing next 134 final 134 inertial True", "477.6 ms changed offset 134 intermediate False"]
+rendering_offsets = ["1.8 698", "16.7 657.90185546875", "33.4 608.1134643554688", "49.5 538.6018676757812", "64.5 475.3864440917969", "80.1 417.1310119628906", "96.7 376.1752624511719", "112.5 340.4424743652344", "143.1 287.2261047363281", "158.8 265.62469482421875", "174.9 246.98085021972656", "192.0 230.7727813720703", "206.6 216.6112823486328", "222.7 204.19590759277344", "238.1 193.9328155517578", "254.0 184.2739715576172", "269.9 175.79385375976562", "286.3 168.36448669433594", "302.2 161.87930297851562", "317.3 156.5762939453125", "333.2 151.67503356933594", "349.7 147.48806762695312", "365.5 143.95736694335938", "381.9 141.03219604492188", "397.2 138.66790771484375", "413.2 136.8251190185547", "428.9 135.4686279296875", "445.1 134.56707763671875", "461.3 134.0922393798828", "477.7 134", "491.6 134", "507.4 134", "523.1 134", "539.1 134", "555.5 134", "571.1 134", "586.8 134", "602.5 134", "628.0 134", "649.7 134", "665.5 134", "681.6 134", "697.5 134", "713.2 134", "729.0 134", "744.7 134", "760.7 134", "776.5 134", "792.1 134", "807.9 134", "823.8 134", "839.9 134", "855.7 134", "871.7 134", "887.8 134", "903.5 134", "919.4 134", "935.2 134", "966.6 134", "982.4 134", "998.3 134", "1013.9 134", "1029.6 134", "1045.3 134", "1061.5 134", "1077.3 134", "1092.9 134", "1108.7 134", "1124.7 134", "1140.4 134", "1156.5 134", "1172.1 134", "1188.1 134", "1204.7 134", "1219.9 134", "1235.6 134", "1251.4 134", "1267.2 134", "1283.1 134", "1299.1 134", "1315.3 134", "1330.6 134", "1346.4 134", "1362.2 134", "1377.9 134", "1393.7 134", "1409.5 134", "1425.5 134", "1441.5 134", "1457.1 134", "1473.1 134", "1488.8 134", "1504.9 134"]
+actions = ["0.3 ms StartBringIntoView(AnimationDesired) on field 2"]
+
+[[motion]]
+name = "scroll_into_view_change_view"
+offset_before = 134.0
+offset_after = 600.0
+target_field = 0
+focused_element = "Microsoft.UI.Xaml.Controls.TextBox"
+view_events = ["16.0 ms changing next 149.2939453125 final 600 inertial True", "16.3 ms changed offset 149.2939453125 intermediate True", "32.1 ms changing next 175.3934783935547 final 600 inertial True", "32.3 ms changed offset 175.3934783935547 intermediate True", "49.6 ms changing next 221.71807861328125 final 600 inertial True", "50.1 ms changed offset 221.71807861328125 intermediate True", "64.0 ms changing next 280.3667297363281 final 600 inertial True", "64.3 ms changed offset 280.3667297363281 intermediate True", "80.5 ms changing next 330.33746337890625 final 600 inertial True", "80.9 ms changed offset 330.33746337890625 intermediate True", "96.2 ms changing next 373.40423583984375 final 600 inertial True", "96.6 ms changed offset 373.40423583984375 intermediate True", "112.1 ms changing next 407.8442687988281 final 600 inertial True", "112.4 ms changed offset 407.8442687988281 intermediate True", "127.5 ms changing next 434.3611755371094 final 600 inertial True", "127.9 ms changed offset 434.3611755371094 intermediate True", "144.2 ms changing next 458.05999755859375 final 600 inertial True", "145.5 ms changed offset 458.05999755859375 intermediate True", "158.3 ms changing next 478.1183776855469 final 600 inertial True", "158.5 ms changed offset 478.1183776855469 intermediate True", "176.1 ms changing next 495.3073425292969 final 600 inertial True", "177.5 ms changed offset 495.3073425292969 intermediate True", "189.8 ms changing next 510.17303466796875 final 600 inertial True", "190.1 ms changed offset 510.17303466796875 intermediate True", "209.7 ms changing next 522.3568115234375 final 600 inertial True", "210.0 ms changed offset 522.3568115234375 intermediate True", "232.6 ms changing next 533.7699584960938 final 600 inertial True", "243.3 ms changed offset 533.7699584960938 intermediate True", "244.4 ms changing next 543.7804565429688 final 600 inertial True", "244.6 ms changed offset 543.7804565429688 intermediate True", "253.1 ms changing next 552.5740356445312 final 600 inertial True", "253.3 ms changed offset 552.5740356445312 intermediate True", "270.0 ms changing next 560.300048828125 final 600 inertial True", "270.3 ms changed offset 560.300048828125 intermediate True", "285.7 ms changing next 567.0805053710938 final 600 inertial True", "286.0 ms changed offset 567.0805053710938 intermediate True", "302.1 ms changing next 573.0162353515625 final 600 inertial True", "302.5 ms changed offset 573.0162353515625 intermediate True", "318.2 ms changing next 577.8890991210938 final 600 inertial True", "318.5 ms changed offset 577.8890991210938 intermediate True", "333.6 ms changing next 582.4171752929688 final 600 inertial True", "334.0 ms changed offset 582.4171752929688 intermediate True", "349.9 ms changing next 586.3143920898438 final 600 inertial True", "350.9 ms changed offset 586.3143920898438 intermediate True", "366.4 ms changing next 589.634033203125 final 600 inertial True", "366.7 ms changed offset 589.634033203125 intermediate True", "380.7 ms changing next 592.4224243164062 final 600 inertial True", "381.1 ms changed offset 592.4224243164062 intermediate True", "397.3 ms changing next 594.5902709960938 final 600 inertial True", "397.7 ms changed offset 594.5902709960938 intermediate True", "415.2 ms changing next 596.4605712890625 final 600 inertial True", "415.5 ms changed offset 596.4605712890625 intermediate True", "428.7 ms changing next 597.9057006835938 final 600 inertial True", "429.0 ms changed offset 597.9057006835938 intermediate True", "443.9 ms changing next 598.9541015625 final 600 inertial True", "444.2 ms changed offset 598.9541015625 intermediate True", "458.8 ms changing next 599.6312255859375 final 600 inertial True", "459.3 ms changed offset 599.6312255859375 intermediate True", "475.9 ms changing next 599.9598388671875 final 600 inertial True", "476.2 ms changed offset 599.9598388671875 intermediate True", "491.9 ms changing next 600 final 600 inertial True", "492.2 ms changed offset 600 intermediate False"]
+rendering_offsets = ["16.4 149.2939453125", "32.5 175.3934783935547", "50.7 221.71807861328125", "64.8 280.3667297363281", "81.1 330.33746337890625", "96.7 373.40423583984375", "112.5 407.8442687988281", "128.0 434.3611755371094", "146.4 458.05999755859375", "159.0 478.1183776855469", "178.0 495.3073425292969", "190.5 510.17303466796875", "210.2 522.3568115234375", "243.5 533.7699584960938", "244.7 543.7804565429688", "253.4 552.5740356445312", "270.4 560.300048828125", "286.2 567.0805053710938", "302.6 573.0162353515625", "318.7 577.8890991210938", "334.0 582.4171752929688", "351.0 586.3143920898438", "366.7 589.634033203125", "381.2 592.4224243164062", "397.9 594.5902709960938", "415.6 596.4605712890625", "429.1 597.9057006835938", "444.3 598.9541015625", "459.3 599.6312255859375", "476.3 599.9598388671875", "492.3 600", "506.2 600", "521.8 600", "537.5 600", "553.1 600", "568.8 600", "584.4 600", "600.8 600", "616.3 600", "632.6 600", "648.1 600", "664.4 600", "680.0 600", "702.3 600", "712.3 600", "727.1 600", "743.1 600", "758.8 600", "774.7 600", "790.6 600", "806.4 600", "822.6 600", "838.2 600", "854.0 600", "870.0 600", "886.1 600", "901.9 600", "918.0 600", "933.7 600", "949.6 600", "966.0 600", "981.4 600", "997.3 600", "1013.4 600", "1029.3 600", "1045.4 600", "1076.8 600", "1092.1 600", "1108.2 600", "1123.9 600", "1139.9 600", "1157.2 600", "1187.7 600", "1202.8 600", "1233.9 600", "1250.0 600", "1269.6 600", "1281.7 600", "1297.7 600", "1314.0 600", "1374.0 600", "1374.2 600", "1378.4 600", "1393.4 600", "1409.3 600", "1424.1 600", "1440.2 600", "1456.0 600", "1568.5 600", "1572.0 600"]
+actions = ["0.3 ms ChangeView(vertical 600, animation)"]
+
+[[motion]]
+name = "color_space_red_to_translucent_blue"
+from = "#ffff0000"
+to = "#400000ff"
+transition = "Border.BackgroundTransition, BrushTransition 1000 ms, over white"
+screen_rect = { x = 118, y = 101, width = 60, height = 40 }
+frames = 37
+distinct_frames = 22
+csv = "motion-color_space_red_to_translucent_blue.csv"
+png = "motion-color_space_red_to_translucent_blue.png"
+png_frame_ms = ["3.8", "235.7", "312.6", "360.3", "408.1", "471.0", "518.4", "566.0", "613.6", "675.7", "707.6", "755.6", "803.4", "866.6", "914.2", "961.8", "1009.5", "1056.6", "1120.0", "1166.6", "1198.5", "1245.8"]
+actions = ["204.3 ms Background set"]
+
+[[motion]]
+name = "color_space_translucent_green_to_red"
+from = "#8000ff00"
+to = "#ffff0000"
+transition = "Border.BackgroundTransition, BrushTransition 1000 ms, over white"
+screen_rect = { x = 118, y = 101, width = 60, height = 40 }
+frames = 40
+distinct_frames = 22
+csv = "motion-color_space_translucent_green_to_red.csv"
+png = "motion-color_space_translucent_green_to_red.png"
+png_frame_ms = ["0.1", "269.5", "317.5", "365.2", "413.3", "460.8", "508.6", "587.6", "634.9", "666.9", "714.6", "762.1", "809.3", "856.8", "903.7", "935.3", "982.5", "1030.3", "1077.6", "1125.1", "1172.8", "1220.5"]
+actions = ["206.1 ms Background set"]
+
+[[motion]]
+name = "color_space_black_to_white"
+from = "#ff000000"
+to = "#ffffffff"
+transition = "Border.BackgroundTransition, BrushTransition 1000 ms, over white"
+screen_rect = { x = 118, y = 101, width = 60, height = 40 }
+frames = 41
+distinct_frames = 23
+csv = "motion-color_space_black_to_white.csv"
+png = "motion-color_space_black_to_white.png"
+png_frame_ms = ["0.0", "269.1", "300.9", "348.6", "396.5", "444.2", "491.5", "539.0", "586.2", "617.7", "665.6", "713.3", "761.0", "808.6", "856.1", "903.6", "950.6", "997.7", "1045.1", "1093.0", "1140.5", "1187.9", "1235.4"]
+actions = ["205.8 ms Background set"]
+
+[[motion]]
+name = "theme_change_idle"
+screen_rect = { x = 118, y = 101, width = 60, height = 40 }
+frames = 40
+distinct_frames = 22
+csv = "motion-theme_change_idle.csv"
+png = "motion-theme_change_idle.png"
+png_frame_ms = ["0.0", "283.5", "331.3", "378.6", "426.7", "474.5", "522.1", "569.5", "617.5", "665.5", "712.7", "760.5", "808.0", "839.8", "887.4", "935.0", "982.4", "1030.1", "1077.6", "1125.4", "1172.4", "1220.1"]
+actions = ["205.0 ms host.RequestedTheme = Dark"]
+
+[[motion]]
+name = "theme_change_running"
+screen_rect = { x = 118, y = 101, width = 60, height = 40 }
+frames = 53
+distinct_frames = 23
+csv = "motion-theme_change_running.csv"
+png = "motion-theme_change_running.png"
+png_frame_ms = ["0.0", "269.5", "317.3", "364.9", "412.8", "460.3", "507.4", "539.2", "586.8", "634.0", "681.3", "729.3", "776.4", "824.1", "855.7", "903.3", "950.4", "998.1", "1045.6", "1093.3", "1140.4", "1188.4", "1236.2"]
+actions = ["206.0 ms Background = #ff0000ff", "618.6 ms host.RequestedTheme = Light"]
+
+[[motion]]
+name = "presence_collapse"
+screen_rect = { x = 118, y = 101, width = 60, height = 40 }
+frames = 44
+distinct_frames = 19
+csv = "motion-presence_collapse.csv"
+png = "motion-presence_collapse.png"
+png_frame_ms = ["0.1", "269.6", "317.5", "364.7", "412.5", "460.1", "507.7", "555.4", "746.7", "794.3", "842.6", "890.7", "938.3", "985.9", "1033.6", "1081.4", "1129.0", "1176.7", "1224.3"]
+actions = ["205.7 ms Background = #ff0000ff", "508.0 ms Visibility = Collapsed", "715.2 ms Visibility = Visible"]
+
+[[motion]]
+name = "presence_animations_off"
+client_area_animation_read = true
+client_area_animation_before = true
+ui_settings_animations_enabled_before = true
+set_off = true
+ui_settings_animations_enabled_after_off = false
+screen_rect = { x = 118, y = 101, width = 60, height = 40 }
+frames = 38
+distinct_frames = 29
+csv = "motion-presence_animations_off.csv"
+png = "motion-presence_animations_off.png"
+png_frame_ms = ["0.1", "236.0", "283.9", "331.3", "379.1", "426.5", "569.0", "616.2", "663.2", "725.9", "773.4", "836.1", "917.4", "963.2", "1011.2", "1058.7", "1122.0", "1169.6", "1216.7", "1248.6", "1296.2", "1343.6", "1391.1", "1438.8", "1486.3", "1533.7", "1581.0", "1628.9", "1676.2"]
+actions = ["204.9 ms Background = #ffff0000", "547.8 ms SPI_SETCLIENTAREAANIMATION FALSE", "663.7 ms Background = #ff00ff00"]
+restored = true
+
+[[motion]]
+name = "list_reselect"
+screen_rect = { x = 108, y = 91, width = 40, height = 120 }
+frames = 37
+distinct_frames = 7
+csv = "motion-list_reselect.csv"
+png = "motion-list_reselect.png"
+png_frame_ms = ["0.1", "235.7", "283.2", "330.8", "378.0", "410.5", "456.9"]
+actions = ["204.5 ms SelectedIndex = 1", "331.7 ms SelectedIndex = 0"]
+
+[[motion]]
+name = "checkbox_first_frame"
+screen_rect = { x = 108, y = 91, width = 140, height = 60 }
+frames = 37
+distinct_frames = 2
+csv = "motion-checkbox_first_frame.csv"
+png = "motion-checkbox_first_frame.png"
+png_frame_ms = ["0.0", "220.6"]
+actions = ["205.2 ms a new unchecked CheckBox added"]
+
+[[motion]]
+name = "radio_pressed_checked"
+pointer = { x = 128.0, y = 117.0 }
+is_pressed_while_held = true
+screen_rect = { x = 118, y = 101, width = 32, height = 32 }
+frames = 42
+distinct_frames = 14
+csv = "motion-radio_pressed_checked.csv"
+png = "motion-radio_pressed_checked.png"
+png_frame_ms = ["0.0", "284.3", "332.0", "379.8", "411.7", "459.5", "507.6", "555.2", "998.6", "1046.8", "1094.8", "1157.6", "1205.5", "1253.2"]
+actions = ["205.3 ms left button down", "983.6 ms left button up"]
+is_checked_after = "True"
+
+[[motion]]
+name = "radio_pressed_unchecked"
+pointer = { x = 128.0, y = 117.0 }
+is_pressed_while_held = true
+screen_rect = { x = 118, y = 101, width = 32, height = 32 }
+frames = 45
+distinct_frames = 12
+csv = "motion-radio_pressed_unchecked.csv"
+png = "motion-radio_pressed_unchecked.png"
+png_frame_ms = ["0.0", "253.7", "301.6", "349.3", "397.4", "445.5", "972.1", "1020.1", "1068.1", "1115.6", "1163.3", "1211.2"]
+actions = ["206.4 ms left button down", "940.7 ms left button up"]
+is_checked_after = "True"
+
+[[motion]]
+name = "caret_ltr"
+text = "Wg"
+selection_start = 2
+focus_state = "Keyboard"
+screen_rect = { x = 118, y = 101, width = 160, height = 32 }
+frames = 75
+distinct_frames = 4
+csv = "motion-caret_ltr.csv"
+png = "motion-caret_ltr.png"
+png_frame_ms = ["0.1", "1309.0", "1819.1", "2346.7"]
+actions = []
+
+[[motion]]
+name = "caret_mixed"
+text = "abc אבג"
+selection_start = 3
+focus_state = "Keyboard"
+screen_rect = { x = 118, y = 101, width = 160, height = 32 }
+frames = 73
+distinct_frames = 4
+csv = "motion-caret_mixed.csv"
+png = "motion-caret_mixed.png"
+png_frame_ms = ["0.0", "1298.1", "1837.6", "2375.0"]
+actions = []
+
+[[motion]]
+name = "caret_mixed_end"
+text = "abc אבג"
+selection_start = 7
+focus_state = "Keyboard"
+screen_rect = { x = 118, y = 101, width = 160, height = 32 }
+frames = 75
+distinct_frames = 4
+csv = "motion-caret_mixed_end.csv"
+png = "motion-caret_mixed_end.png"
+png_frame_ms = ["0.0", "1303.1", "1819.6", "2349.5"]
+actions = []
+
+[[motion]]
+name = "flyout_shadow_white"
+opened_event = true
+child_screen_rect = { x = 451, y = 250, width = 98, height = 102 }
+screen_rect = { x = 403, y = 202, width = 194, height = 198 }
+frames = 2
+distinct_frames = 1
+csv = "motion-flyout_shadow_white.csv"
+png = "motion-flyout_shadow_white.png"
+png_frame_ms = ["0.0"]
+actions = []
+
+[[motion]]
+name = "flyout_shadow_black"
+opened_event = true
+child_screen_rect = { x = 451, y = 250, width = 98, height = 102 }
+screen_rect = { x = 403, y = 202, width = 194, height = 198 }
+frames = 2
+distinct_frames = 1
+csv = "motion-flyout_shadow_black.csv"
+png = "motion-flyout_shadow_black.png"
+png_frame_ms = ["0.0"]
+actions = []
+
+[[motion]]
+name = "drop"
+drag_over_event = true
+screen_rect = { x = 302, y = 85, width = 232, height = 192 }
+frames = 10
+distinct_frames = 1
+csv = "motion-drop.csv"
+png = "motion-drop.png"
+png_frame_ms = ["1693.2"]
+actions = ["0.0 ms left button down on the item", "884.7 ms pointer over the target"]
+
+[[motion]]
+name = "mouse_vanish"
+mouse_vanish_read = true
+mouse_vanish_before = true
+set_on = true
+cursor_flags = ["2.3 ms showing"]
+text_after = "a"
+actions = ["314.2 ms key A typed", "1517.5 ms pointer moved"]
+restored = true
+
+[[motion]]
+name = "minimise"
+presenter_state_minimised = "Minimized"
+window_visible_minimised = false
+rendering_callbacks_minimised = 55
+border_actual_size_minimised = { width = 60.0, height = 40.0 }
+screen_rect = { x = 118, y = 101, width = 60, height = 40 }
+frames = 30
+distinct_frames = 5
+csv = "motion-minimise.csv"
+png = "motion-minimise.png"
+png_frame_ms = ["1556.5", "1598.3", "1629.9", "1661.6", "1693.5"]
+actions = ["0.1 ms Background = #ff0000ff", "315.0 ms Minimize", "1436.2 ms Restore"]
+presenter_state_restored = "Restored"
+size_changed_events = 0
+
+[[motion]]
+name = "deactivate"
+focus_state_active = "Keyboard"
+focused_active = "Microsoft.UI.Xaml.Controls.Button"
+mica_controller_is_supported = true
+backdrop_rect = { x = 339, y = 348, width = 40, height = 40 }
+focus_state_inactive = "Keyboard"
+focused_inactive = "Microsoft.UI.Xaml.Controls.Button"
+focus_state_reactivated = "Pointer"
+screen_rect = { x = 459, y = 348, width = 82, height = 48 }
+frames = 68
+distinct_frames = 2
+csv = "motion-deactivate_button.csv"
+png = "motion-deactivate_button.png"
+png_frame_ms = ["0.1", "316.3"]
+actions = ["307.7 ms another window activated", "1524.1 ms the host's window activated"]
+
+[[motion]]
+name = "deactivate_mica"
+mica_controller_is_supported = true
+screen_rect = { x = 339, y = 348, width = 40, height = 40 }
+frames = 68
+distinct_frames = 1
+csv = "motion-deactivate_mica.csv"
+png = "motion-deactivate_mica.png"
+png_frame_ms = ["0.0"]
+actions = ["307.7 ms another window activated", "1524.1 ms the host's window activated"]
+

@@ -1,0 +1,46 @@
+# Output of analysis/behavior_values.py (its docstring is the method) over docs/evidence/ios-host/2026-11-06-run-42275028573/ios-host-macos-15.
+input_image = [
+    "docs/evidence/ios-host/2026-11-06-run-42275028573/ios-host-macos-15/measure1/index.toml",
+    "docs/evidence/ios-host/2026-11-06-run-42275028573/ios-host-macos-15/measure1/screen/light/caret/default/system/text_view.png",
+    "docs/evidence/ios-host/2026-11-06-run-42275028573/ios-host-macos-15/measure1/screen/dark/caret/default/system/text_view.png",
+]
+
+[caret]
+color = "#426bf2"
+color_drawn_light = "#426bf2"
+blink_on_s = 0.65
+blink_off_s = 0.35
+blink_style = "fade"
+duration_s = 1.0
+keyframe_values = [1.0, 1.0, 0.75, 0.5, 0.25, 0.0, 0.0, 0.25, 0.5, 0.75, 1.0]
+keyframe_times = [0.0, 0.5, 0.5375, 0.575, 0.6125, 0.65, 0.85, 0.8875, 0.925, 0.9625, 1.0]
+calculation_mode = "discrete"
+repeat_count = 3.4028234663852886e+38
+samples_span_s = 12.050566
+blink_timeout = "none"
+solid_while_typing = true
+restart_begin_before = [385.818038]
+restart_begin_after = [391.835417]
+shown_in_read_only = false
+
+[buttons]
+styles = ["plain", "gray", "tinted", "filled", "borderless", "bordered", "bordered_tinted", "bordered_prominent", "system"]
+cursor = "absent"
+touch_target = "absent"
+hit_extension = { top_px = "absent", right_px = "absent", bottom_px = "absent", left_px = "absent" }
+help_tooltip_on_click = false
+
+[forms.close]
+help_tooltip_on_click = false
+touch_reach_pt = { top = 6, right = 6, bottom = 6, left = 6 }
+pointer_interaction_enabled = true
+
+[forms.info_light]
+cursor = "absent"
+help_tooltip_on_click = false
+touch_reach_pt = { top = 8, right = 8, bottom = 8, left = 8 }
+pointer_interaction_enabled = false
+
+[navigation]
+back_display_mode = "default"
+back_display_mode_read = 0

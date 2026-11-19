@@ -64,3 +64,48 @@ are not kept.
 | Run | Date | Why |
 |-----|------|-----|
 | [`2026-11-19/`](widget-icons/2026-11-19/) | 2026-11-19 | the seven stop conditions of the specification's C.5 |
+
+## `winui-host/`
+
+What `tools/winui-host` (on the parked branch `v0.8.0-tools-hosts-m1b`,
+never published), a WinUI 3 application dispatched through that branch's
+`.github/workflows/os-probe.yml` (its winui-host job, which this branch's
+workflow does not have), read on a GitHub Windows runner. Kept here: the file a citation reads, with the run's own `README.md`
+and `run.toml`, copied unchanged from this repository's commit `efbffffe`.
+The run's README describes the run as the evidence repository keeps it, and
+names recordings, a text-scale run and the OS probe's run of the same day
+(`docs/evidence/os-probe/2026-11-06-run-42307873328/`) that are not kept here.
+
+| Run | Date | Commit | Why |
+|-----|------|--------|-----|
+| [`2026-11-06-run-42308526155/`](winui-host/2026-11-06-run-42308526155/) ([run](https://github.com/tiborgats/native-theme/actions/runs/42308526155)) | 2026-11-06 | `7bad463f` on `v0.8.0-tools-hosts-m1b` | `GetCaretBlinkTime`, windows-11's caret blink ([specification](../todo_v0.7.2_caret-blink-spec.md) Part 0) |
+
+A citation links the file and its line
+(`evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/frames.toml#L248`).
+
+## `ios-host/`
+
+What `tools/ios-host` (on the parked branch `v0.8.0-tools-ios-m2`, never
+published), an iOS application run in the iOS Simulator by that branch's
+`.github/workflows/os-probe.yml` (its ios-host job, which this branch's
+workflow does not have), read on a GitHub macOS runner. Kept here, copied
+unchanged from this repository's commit
+`72fcf6a7`: the run's own `README.md` and `run.toml`, the script that derives
+the cited values (`analysis/behavior_values.py`, its docstring the method),
+and of the image `ios-host-macos-15` (the iOS 18.6 simulator, preset
+`ios-13`) the cited `behavior_values.toml` and the inputs the script reads
+(`measure1/index.toml` and the two caret crops). The run's other image,
+`ios-host-macos-26`, is the parked `ios-26` preset's and is not kept, nor are
+the image's other crops and `measure-differ-levels.txt`, which the run's
+README lists as kept, nor the README of run 42268160866 it links to: they
+are in the evidence repository and in this repository's commit `b38c1795`
+(on `v0.8.0-tools-ios-m2`).
+
+| Run | Date | Commit | Why |
+|-----|------|--------|-----|
+| [`2026-11-06-run-42275028573/`](ios-host/2026-11-06-run-42275028573/) ([run](https://github.com/tiborgats/native-theme/actions/runs/42275028573)) | 2026-11-06 | `7bb1e784` on `v0.8.0-tools-ios-m2` | ios-13's caret blink ([specification](../todo_v0.7.2_caret-blink-spec.md) Part 0) |
+
+`python3 -I docs/evidence/ios-host/2026-11-06-run-42275028573/analysis/behavior_values.py docs/evidence/ios-host/2026-11-06-run-42275028573/ios-host-macos-15`
+writes `behavior_values.toml` again from the kept inputs (Pillow). A citation
+links the file and its line
+(`evidence/ios-host/2026-11-06-run-42275028573/ios-host-macos-15/behavior_values.toml#L11`).
