@@ -1,6 +1,7 @@
 // KDE color group parsing -> populate per-widget fields on ThemeMode
 // Maps semantic color roles from KDE INI color groups directly to ThemeMode.
 
+use super::kcu_tint::kcu_tint;
 use super::shade::{KdeShadeRole, kde_shade};
 use crate::Rgba;
 
@@ -412,6 +413,17 @@ const DEFAULT_BUTTON_MIX: f64 = 0.2;
 /// (breezehelper.cpp:700-702 at breeze f0b1d75; docs/platform-facts.md §2.3).
 const DEFAULT_BUTTON_FRAME_MIX: f64 = 0.5;
 
+/// How far a hovered or pressed header section moves from `Button` towards
+/// the hover or the focus colour: `KColorUtils::mix(palette.button(),
+/// hoverColor, 0.2)` and `mix(…, focusColor, 0.2)` (breezestyle.cpp:6828-6837
+/// at breeze f0b1d75; docs/platform-facts.md §2.15).
+const HEADER_SECTION_MIX: f64 = 0.2;
+
+/// How far the inactive selection's background moves from the window's
+/// towards the selection's: `KColorUtils::tint(Window, Selection, 0.4)`
+/// (kcolorscheme.cpp:304-321 at 27066d47; docs/platform-facts.md §2.1.3).
+const INACTIVE_SELECTION_TINT: f32 = 0.4;
+
 /// The alpha of the hover decoration a hovered, unselected Breeze tab is
 /// filled with, `alphaColor(hoverColor(palette), 0.2)` (breezehelper.cpp:1497
 /// at breeze f0b1d75; docs/platform-facts.md §2.11).
@@ -513,6 +525,60 @@ fn mid_shade(window: Rgba, contrast: i32) -> Rgba {
     Rgba::from_f32(r, g, b, a)
 }
 
+/// A `kdeglobals` boolean: `true` or `false`, trimmed and in any ASCII case;
+/// any other value, or none, is `None`. Breeze's schemes write these two
+/// forms; KConfig's whole boolean syntax was not read, so no other form is
+/// accepted.
+fn kconfig_bool(value: Option<String>) -> Option<bool> {
+    let value = value?;
+    let value = value.trim();
+    if value.eq_ignore_ascii_case("true") {
+        Some(true)
+    } else if value.eq_ignore_ascii_case("false") {
+        Some(false)
+    } else {
+        None
+    }
+}
+
+/// Whether KColorScheme builds an inactive window's selection from the Window
+/// set: `[ColorEffects:Inactive] ChangeSelectionColor`, else the group's
+/// `Enable`, else true (kcolorscheme.cpp:304-316 at kcolorscheme v6.31.0).
+fn inactive_change_selection_color(ini: &configparser::ini::Ini) -> bool {
+    kconfig_bool(ini.get("ColorEffects:Inactive", "ChangeSelectionColor"))
+        .or_else(|| kconfig_bool(ini.get("ColorEffects:Inactive", "Enable")))
+        .unwrap_or(true)
+}
+
+/// The inactive Selection colour of a role, as KColorScheme builds it before
+/// any inactive effect: the rule of `kde_selection_inactive` on `v0.8.0-rc1`,
+/// rewritten for this reader and checked against its table (`vector_tests`).
+/// `None` where an input its branch reads is missing; an input the branch
+/// does not read may be missing. A scheme that enables
+/// `[ColorEffects:Inactive]` has its effects applied on top, which this does
+/// not do (docs/platform-facts.md §2.1.3).
+///
+/// Where `change` is false the role's own `selection` colour; else, for the
+/// `background` role, `window` tinted towards `selection_background`, and
+/// for a text role `window`.
+pub(super) fn inactive_selection(
+    selection: Option<[f32; 4]>,
+    window: Option<[f32; 4]>,
+    selection_background: Option<[f32; 4]>,
+    background: bool,
+    change: bool,
+) -> Option<[f32; 4]> {
+    if !change {
+        selection
+    } else if background {
+        window
+            .zip(selection_background)
+            .map(|(w, sb)| kcu_tint(w, sb, INACTIVE_SELECTION_TINT))
+    } else {
+        window
+    }
+}
+
 /// Populate a ThemeMode with colors from KDE INI color groups.
 ///
 /// Maps all standard KDE color groups (View, Window, Button, Selection,
@@ -526,10 +592,12 @@ fn mid_shade(window: Rgba, contrast: i32) -> Rgba {
 /// progress-bar blends, the switch tracks and outlines, the toolbar's fill and
 /// edge, a toolbar button's pressed and checked fills, the popover's and the
 /// card's edges, the menu's hover, separator and panel, the list's hover, the
-/// table's grid, the scroll bar's resting handle and the focus ring. The blends
-/// on the accent (the default button's fill and frame, the checked checkbox, the
-/// progress fill, the switch's on track and its outline, the list's hover, and
-/// the toolbar button's pressed fill) come from kdeglobals'
+/// header's hovered and pressed fills and the selection of a view without the
+/// focus, the table's grid, the scroll bar's resting handle and the focus ring.
+/// The blends on the accent (the default button's fill and frame, the checked
+/// checkbox, the progress fill, the switch's on track and its outline, the
+/// list's hover, the inactive selection, and the toolbar button's pressed fill)
+/// come from kdeglobals'
 /// `[Colors:Selection] BackgroundNormal`, so an application's `with_overlay` accent or the
 /// portal's (`gnome::apply_kde_accent`, applied by `GnomePortalKdeReader`) does
 /// not move them. The menu's hover and the check box's hover outline come from
@@ -537,6 +605,12 @@ fn mid_shade(window: Rgba, contrast: i32) -> Rgba {
 /// and the toolbar button's hover pen is `[Colors:Selection] BackgroundNormal`
 /// as it is. The focus ring is the selection colour at
 /// `Blend_Value`; the KDE portal's accent replaces it (`gnome::apply_kde_accent`).
+///
+/// The inactive selection follows `[ColorEffects:Inactive] ChangeSelectionColor`
+/// and `Enable`; a scheme that sets `[ColorEffects:Inactive] Enable=true` gets
+/// the pair before the inactive group's contrast, intensity and colour effects,
+/// which recolour every colour of an inactive window, a palette the model does
+/// not hold (decision 18; docs/todo.md, *Model: an inactive window's palette*).
 ///
 /// The toolbar takes the Header set's fill as Breeze paints it where the
 /// window decoration's border size is automatic, None or NoSides
@@ -872,6 +946,34 @@ pub(crate) fn populate_colors(ini: &configparser::ini::Ini, variant: &mut crate:
     if let Some(color) = button_fg {
         variant.list.header_font.get_or_insert_default().color = Some(color);
     }
+    // A header section (docs/platform-facts.md §2.15): hovered, the Button
+    // set's background moved a fifth towards the hover decoration; pressed,
+    // towards the focus decoration (breezestyle.cpp:6828-6837 at breeze f0b1d75).
+    variant.list.header_hover_background = button_bg
+        .zip(view_hover)
+        .map(|(button, hover)| mix(button, hover, HEADER_SECTION_MIX));
+    variant.list.header_active_background = button_bg
+        .zip(view_focus)
+        .map(|(button, focus)| mix(button, focus, HEADER_SECTION_MIX));
+
+    // The selection of a view without the focus (docs/platform-facts.md
+    // §2.1.3): where the scheme's `[ColorEffects:Inactive]` changes it, the
+    // window tinted towards the selection under the window text; where not,
+    // the focused pair, written so that kde-breeze's tint does not stand.
+    let change = inactive_change_selection_color(ini);
+    let selection_fg = get_color(ini, "Colors:Selection", "ForegroundNormal");
+    let inactive = |selection: Option<Rgba>, window: Option<Rgba>, background: bool| {
+        inactive_selection(
+            selection.map(|c| c.to_f32_array()),
+            window.map(|c| c.to_f32_array()),
+            selection_bg.map(|c| c.to_f32_array()),
+            background,
+            change,
+        )
+        .map(|[r, g, b, a]| Rgba::from_f32(r, g, b, a))
+    };
+    variant.defaults.selection_inactive_background = inactive(selection_bg, window_bg, true);
+    variant.defaults.selection_inactive_text_color = inactive(selection_fg, window_fg, false);
 
     // KDE-02: link.visited
     variant.link.visited_text_color = get_color(ini, "Colors:View", "ForegroundVisited");
@@ -1104,6 +1206,101 @@ inactiveForeground=161,169,177
             Some(Rgba::rgb(0x87, 0xc0, 0xdd))
         );
         assert_ne!(v.button.default_button_border_color, Some(rounded_early));
+    }
+
+    /// A hovered and a pressed header section under Breeze Light and Breeze
+    /// Dark, the Button set's background moved a fifth towards the hover and
+    /// the focus decoration (docs/platform-facts.md §2.15); Breeze's two
+    /// decorations are one colour, so the two fills are too, and a scheme
+    /// whose decorations differ gives two.
+    #[test]
+    fn test_header_sections_are_breezes() {
+        let hover = "DecorationHover=61,174,233\n";
+        let [light, dark] = breeze_light_and_dark();
+        for (content, fill) in [
+            (light.clone(), Rgba::rgb(0xd6, 0xec, 0xf8)),
+            (dark, Rgba::rgb(0x2d, 0x46, 0x55)),
+        ] {
+            let v = populate_fixture(&format!("{content}{hover}"));
+            assert_eq!(v.list.header_hover_background, Some(fill));
+            assert_eq!(v.list.header_active_background, Some(fill));
+        }
+        let v = populate_fixture(&format!("{light}DecorationHover=240,160,20\n"));
+        assert!(v.list.header_hover_background.is_some());
+        assert!(v.list.header_active_background.is_some());
+        assert_ne!(
+            v.list.header_hover_background,
+            v.list.header_active_background
+        );
+    }
+
+    /// The selection of a view without the focus under Breeze Light and
+    /// Breeze Dark: the window tinted towards the selection, lettered in the
+    /// window text (docs/platform-facts.md §2.1.3). `ChangeSelectionColor`
+    /// reads `true` and `false` trimmed and in any case; without the
+    /// Selection background the fill is unwritten and the text, which reads
+    /// the window alone, is still the window text.
+    #[test]
+    fn test_inactive_selection_is_breezes() {
+        let effects = "\n[ColorEffects:Inactive]\nChangeSelectionColor=true\nEnable=false\n";
+        let [light, dark] = breeze_light_and_dark();
+        for (content, fill, text) in [
+            (
+                &light,
+                Rgba::rgb(0xc2, 0xe0, 0xf5),
+                Rgba::rgb(0x23, 0x26, 0x29),
+            ),
+            (
+                &dark,
+                Rgba::rgb(0x1b, 0x41, 0x55),
+                Rgba::rgb(0xfc, 0xfc, 0xfc),
+            ),
+        ] {
+            let v = populate_fixture(&format!("{content}{effects}"));
+            assert_eq!(v.defaults.selection_inactive_background, Some(fill));
+            assert_eq!(v.defaults.selection_inactive_text_color, Some(text));
+        }
+
+        let selection = "[Colors:Selection]\nBackgroundNormal=61,174,233\n";
+        let with_text = light.replace(
+            selection,
+            "[Colors:Selection]\nBackgroundNormal=61,174,233\nForegroundNormal=255,255,255\n",
+        );
+        assert_ne!(with_text, light, "the fixture's Selection group moved");
+        let spaced = populate_fixture(&format!(
+            "{with_text}\n[ColorEffects:Inactive]\nChangeSelectionColor= TRUE \nEnable=false\n"
+        ));
+        assert_eq!(
+            spaced.defaults.selection_inactive_background,
+            Some(Rgba::rgb(0xc2, 0xe0, 0xf5))
+        );
+        assert_eq!(
+            spaced.defaults.selection_inactive_text_color,
+            Some(Rgba::rgb(0x23, 0x26, 0x29))
+        );
+        let off = populate_fixture(&format!(
+            "{with_text}\n[ColorEffects:Inactive]\nChangeSelectionColor=False\n"
+        ));
+        assert_eq!(
+            off.defaults.selection_inactive_background,
+            Some(Rgba::rgb(0x3d, 0xae, 0xe9))
+        );
+        assert_eq!(
+            off.defaults.selection_inactive_text_color,
+            Some(Rgba::rgb(0xff, 0xff, 0xff))
+        );
+
+        let without_selection = light.replace(selection, "");
+        assert_ne!(
+            without_selection, light,
+            "the fixture's Selection group moved"
+        );
+        let v = populate_fixture(&without_selection);
+        assert_eq!(v.defaults.selection_inactive_background, None);
+        assert_eq!(
+            v.defaults.selection_inactive_text_color,
+            Some(Rgba::rgb(0x23, 0x26, 0x29))
+        );
     }
 
     /// D7: a scheme whose selection, focus and hover colours are not
@@ -2279,6 +2476,22 @@ DecorationFocus=61,174,233
         assert!(
             v.list.header_font.as_ref().and_then(|f| f.color).is_some(),
             "list.header_font.color missing"
+        );
+        assert!(
+            v.list.header_hover_background.is_some(),
+            "list.header_hover_background missing"
+        );
+        assert!(
+            v.list.header_active_background.is_some(),
+            "list.header_active_background missing"
+        );
+        assert!(
+            v.defaults.selection_inactive_background.is_some(),
+            "defaults.selection_inactive_background missing"
+        );
+        assert!(
+            v.defaults.selection_inactive_text_color.is_some(),
+            "defaults.selection_inactive_text_color missing"
         );
         assert!(v.list.grid_color.is_some(), "list.grid_color missing");
         assert!(

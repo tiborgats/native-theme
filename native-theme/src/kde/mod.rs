@@ -28,6 +28,16 @@
 pub(crate) mod colors;
 /// Qt font string parsing with weight extraction.
 pub(crate) mod fonts;
+/// `KColorUtils::tint`: the clean-room function of `v0.8.0-rc1`, carried with
+/// its own notice.
+mod kcu_tint;
+/// The arithmetic the clean-room KDE colour functions share: Qt's colour
+/// storage, KDE's HCY space and `KColorUtils`' mix, tint and shade.
+#[allow(
+    dead_code,
+    reason = "carried as the clean room wrote it, for its functions that are not carried (kcu_mix, kcu_shade, kde_effects); kcu_tint uses part of it"
+)]
+mod kde_color_common;
 /// KColorScheme's shades of a colour, in Qt's arithmetic: the clean-room
 /// function of `v0.8.0-rc1`, carried with its vector test (its own notice).
 #[cfg_attr(
@@ -38,6 +48,8 @@ pub(crate) mod fonts;
     )
 )]
 mod shade;
+#[cfg(test)]
+mod vector_tests;
 
 use crate::Rgba;
 use crate::model::IconSizes;
@@ -1214,17 +1226,20 @@ BackgroundNormal=49,54,59
     /// A colour scheme's background and text keys, `(BackgroundNormal,
     /// ForegroundNormal)`, of the sets the derived leaves read, the View
     /// set's `DecorationFocus` and `DecorationHover`, with an optional
-    /// `[Colors:Header]` group and `[KDE]` `contrast` and `frameContrast`.
+    /// `[Colors:Header]` group, `[KDE]` `contrast` and `frameContrast`, and
+    /// `[ColorEffects:Inactive]` `ChangeSelectionColor` and `Enable`.
     struct Scheme {
         button: (&'static str, &'static str),
         header: Option<(&'static str, &'static str)>,
-        selection: &'static str,
+        selection: (&'static str, &'static str),
         view: (&'static str, &'static str),
         focus: &'static str,
         hover: &'static str,
         window: (&'static str, &'static str),
         frame_contrast: Option<&'static str>,
         contrast: Option<&'static str>,
+        change_selection_color: Option<&'static str>,
+        inactive_enable: Option<&'static str>,
     }
 
     impl Scheme {
@@ -1237,8 +1252,8 @@ BackgroundNormal=49,54,59
                 content.push_str(&group("Header", header));
             }
             content.push_str(&format!(
-                "[Colors:Selection]\nBackgroundNormal={}\n\n",
-                self.selection
+                "[Colors:Selection]\nBackgroundNormal={}\nForegroundNormal={}\n\n",
+                self.selection.0, self.selection.1
             ));
             content.push_str(&format!(
                 "[Colors:View]\nBackgroundNormal={}\nForegroundNormal={}\n\
@@ -1255,48 +1270,65 @@ BackgroundNormal=49,54,59
             if let Some(contrast) = self.frame_contrast {
                 content.push_str(&format!("frameContrast={contrast}\n"));
             }
+            if self.change_selection_color.is_some() || self.inactive_enable.is_some() {
+                content.push_str("[ColorEffects:Inactive]\n");
+            }
+            if let Some(change) = self.change_selection_color {
+                content.push_str(&format!("ChangeSelectionColor={change}\n"));
+            }
+            if let Some(enable) = self.inactive_enable {
+                content.push_str(&format!("Enable={enable}\n"));
+            }
             content
         }
     }
 
     /// The keys of BreezeLight.colors at breeze v6.7.5 (LGPL-2.0-or-later)
     /// the derived leaves read: Button :31, :39; Header :59, :67; Selection
-    /// :87; View :115, :123, DecorationFocus :116 and DecorationHover :117;
-    /// Window :129, :137. No `[KDE] frameContrast`
+    /// :87, ForegroundNormal :95; View :115, :123, DecorationFocus :116 and
+    /// DecorationHover :117; Window :129, :137. No `[KDE] frameContrast`
     /// (:193-194), so KColorScheme's 0.2. `[KDE] contrast=4`
     /// (BreezeLight.colors:195 at breeze f0b1d75; docs/platform-facts.md §2.15).
+    /// `[ColorEffects:Inactive]` ChangeSelectionColor :19 and Enable :25 at
+    /// breeze 6.8.2.
     const BREEZE_LIGHT_SCHEME: Scheme = Scheme {
         button: ("252,252,252", "35,38,41"),
         header: Some(("222,224,226", "35,38,41")),
-        selection: "61,174,233",
+        selection: ("61,174,233", "255,255,255"),
         view: ("255,255,255", "35,38,41"),
         focus: "61,174,233",
         hover: "61,174,233",
         window: ("239,240,241", "35,38,41"),
         frame_contrast: None,
         contrast: Some("4"),
+        change_selection_color: Some("true"),
+        inactive_enable: Some("false"),
     };
 
     /// The same keys of BreezeDark.colors at breeze v6.7.5
-    /// (LGPL-2.0-or-later): Button :32, :40; Header :60, :68; Selection :88;
-    /// View :116, :124, DecorationFocus :117 and DecorationHover :118;
-    /// Window :130, :138; no frameContrast (:200-201). `[KDE] contrast=4`
-    /// (BreezeDark.colors:202 at breeze f0b1d75; docs/platform-facts.md §2.15).
+    /// (LGPL-2.0-or-later): Button :32, :40; Header :60, :68; Selection :88,
+    /// ForegroundNormal :96; View :116, :124, DecorationFocus :117 and
+    /// DecorationHover :118; Window :130, :138; no frameContrast (:200-201).
+    /// `[KDE] contrast=4` (BreezeDark.colors:202 at breeze f0b1d75;
+    /// docs/platform-facts.md §2.15). `[ColorEffects:Inactive]`
+    /// ChangeSelectionColor :20 and Enable :26 at breeze 6.8.2.
     const BREEZE_DARK_SCHEME: Scheme = Scheme {
         button: ("41,44,48", "252,252,252"),
         header: Some(("41,44,48", "252,252,252")),
-        selection: "61,174,233",
+        selection: ("61,174,233", "252,252,252"),
         view: ("20,22,24", "252,252,252"),
         focus: "61,174,233",
         hover: "61,174,233",
         window: ("32,35,38", "252,252,252"),
         frame_contrast: None,
         contrast: Some("4"),
+        change_selection_color: Some("true"),
+        inactive_enable: Some("false"),
     };
 
-    /// The forty-two colour leaves the reader derives from, or reads
+    /// The forty-six colour leaves the reader derives from, or reads
     /// directly from, the colour scheme.
-    fn derived_leaves(mode: &crate::ThemeMode) -> [(&'static str, Option<Rgba>); 42] {
+    fn derived_leaves(mode: &crate::ThemeMode) -> [(&'static str, Option<Rgba>); 46] {
         let border = |b: &Option<crate::WidgetBorderSpec>| b.as_ref().and_then(|b| b.color);
         let sw = &mode.switch;
         [
@@ -1390,11 +1422,27 @@ BackgroundNormal=49,54,59
                 "button.default_button_border_color",
                 mode.button.default_button_border_color,
             ),
+            (
+                "list.header_hover_background",
+                mode.list.header_hover_background,
+            ),
+            (
+                "list.header_active_background",
+                mode.list.header_active_background,
+            ),
+            (
+                "defaults.selection_inactive_background",
+                mode.defaults.selection_inactive_background,
+            ),
+            (
+                "defaults.selection_inactive_text_color",
+                mode.defaults.selection_inactive_text_color,
+            ),
         ]
     }
 
     /// The same leaves resolved.
-    fn resolved_leaves(theme: &crate::ResolvedTheme) -> [(&'static str, Option<Rgba>); 42] {
+    fn resolved_leaves(theme: &crate::ResolvedTheme) -> [(&'static str, Option<Rgba>); 46] {
         let sw = &theme.switch;
         [
             (
@@ -1496,6 +1544,22 @@ BackgroundNormal=49,54,59
                 "button.default_button_border_color",
                 theme.button.default_button_border_color,
             ),
+            (
+                "list.header_hover_background",
+                theme.list.header_hover_background,
+            ),
+            (
+                "list.header_active_background",
+                theme.list.header_active_background,
+            ),
+            (
+                "defaults.selection_inactive_background",
+                Some(theme.defaults.selection_inactive_background),
+            ),
+            (
+                "defaults.selection_inactive_text_color",
+                Some(theme.defaults.selection_inactive_text_color),
+            ),
         ]
     }
 
@@ -1545,13 +1609,14 @@ BackgroundNormal=49,54,59
     /// outline, the pressed button and the selected segment, the list's
     /// hover, the focus ring and the button's hover and focus border, the
     /// combo box's hover pen, a toolbar button's hover pen and pressed fill,
-    /// and the default button's fill and frame; the checkbox and the progress
-    /// bar follow it as before.
+    /// the default button's fill and frame, and the inactive selection's
+    /// fill, tinted towards it; the checkbox and the progress bar follow it as
+    /// before.
     #[test]
     fn an_accent_moves_the_on_track_the_pressed_button_the_selected_segment_and_the_list_hover()
     -> crate::Result<()> {
         let scheme = Scheme {
-            selection: "233,84,32",
+            selection: ("233,84,32", "255,255,255"),
             ..BREEZE_LIGHT_SCHEME
         };
         assert_eq!(
@@ -1571,6 +1636,7 @@ BackgroundNormal=49,54,59
                 "toolbar.button_active_background",
                 "button.default_button_background",
                 "button.default_button_border_color",
+                "defaults.selection_inactive_background",
             ]
         );
         Ok(())
@@ -1602,6 +1668,8 @@ BackgroundNormal=49,54,59
                 "button.default_button_background",
                 "button.default_button_text_color",
                 "button.default_button_border_color",
+                "list.header_hover_background",
+                "list.header_active_background",
             ]
         );
         Ok(())
@@ -1623,8 +1691,9 @@ BackgroundNormal=49,54,59
     }
 
     /// The Window set moves the popover's edge, the scroll-bar handles, the
-    /// menu's hover text, separator and panel and the table's grid, and the
-    /// toolbar only where the scheme has no Header group to take it from.
+    /// menu's hover text, separator and panel, the table's grid and the
+    /// inactive selection, the window tinted and its text, and the toolbar
+    /// only where the scheme has no Header group to take it from.
     #[test]
     fn the_window_set_moves_the_popover_edge() -> crate::Result<()> {
         let window = ("230,220,200", "90,40,20");
@@ -1643,6 +1712,8 @@ BackgroundNormal=49,54,59
                 "scrollbar.thumb_color",
                 "list.grid_color",
                 "menu.background_color",
+                "defaults.selection_inactive_background",
+                "defaults.selection_inactive_text_color",
             ]
         );
         let without_header = Scheme {
@@ -1663,6 +1734,8 @@ BackgroundNormal=49,54,59
                 "scrollbar.thumb_color",
                 "list.grid_color",
                 "menu.background_color",
+                "defaults.selection_inactive_background",
+                "defaults.selection_inactive_text_color",
             ]
         );
         Ok(())
@@ -1682,9 +1755,9 @@ BackgroundNormal=49,54,59
     }
 
     /// The View set's decorations (D7): DecorationHover moves a hovered
-    /// field's frame, the tab hover and the scroll-bar handle, DecorationFocus
-    /// a focused field's frame, the menu's hover and the check box's hover
-    /// outline.
+    /// field's frame, the tab hover, the scroll-bar handle and a hovered
+    /// header section, DecorationFocus a focused field's frame, the menu's
+    /// hover, the check box's hover outline and a pressed header section.
     #[test]
     fn the_view_decorations_move_the_frames_the_tab_hover_and_the_handle() -> crate::Result<()> {
         let hover = Scheme {
@@ -1698,6 +1771,7 @@ BackgroundNormal=49,54,59
                 "tab.hover_background",
                 "scrollbar.thumb_hover_color",
                 "scrollbar.thumb_active_color",
+                "list.header_hover_background",
             ]
         );
         let focus = Scheme {
@@ -1710,6 +1784,7 @@ BackgroundNormal=49,54,59
                 "input.focus_border_color",
                 "menu.hover_background",
                 "checkbox.hover_border_color",
+                "list.header_active_background",
             ]
         );
         Ok(())
@@ -1750,6 +1825,38 @@ BackgroundNormal=49,54,59
             ..BREEZE_LIGHT_SCHEME
         };
         assert_eq!(moved_leaves(&unset)?, ["list.grid_color"]);
+        Ok(())
+    }
+
+    /// `[ColorEffects:Inactive] ChangeSelectionColor`, else the group's
+    /// `Enable`, else true decides the selection of a view without the
+    /// focus: the window tinted towards the selection under the window text,
+    /// or the focused pair (docs/platform-facts.md §2.1.3). A value that is no
+    /// boolean the reader accepts counts as missing.
+    #[test]
+    fn the_inactive_selection_follows_change_selection_color() -> crate::Result<()> {
+        let focused = (Rgba::rgb(0x3d, 0xae, 0xe9), Rgba::rgb(0xff, 0xff, 0xff));
+        let tinted = (Rgba::rgb(0xc2, 0xe0, 0xf5), Rgba::rgb(0x23, 0x26, 0x29));
+        for (change, enable, expected) in [
+            (Some("false"), None, focused),
+            (None, Some("false"), focused),
+            (None, None, tinted),
+            (Some("yes"), Some("false"), focused),
+        ] {
+            let theme = resolved_light(&Scheme {
+                change_selection_color: change,
+                inactive_enable: enable,
+                ..BREEZE_LIGHT_SCHEME
+            })?;
+            assert_eq!(
+                (
+                    theme.defaults.selection_inactive_background,
+                    theme.defaults.selection_inactive_text_color,
+                ),
+                expected,
+                "ChangeSelectionColor {change:?}, Enable {enable:?}"
+            );
+        }
         Ok(())
     }
 
@@ -1834,13 +1941,15 @@ BackgroundNormal=49,54,59
         let other = resolved_light(&Scheme {
             button: ("200,180,150", "60,20,10"),
             header: Some(("180,200,220", "10,40,80")),
-            selection: "233,84,32",
+            selection: ("233,84,32", "255,255,255"),
             view: ("250,240,230", "120,30,60"),
             focus: "20,200,90",
             hover: "240,160,20",
             window: ("230,220,200", "90,40,20"),
             frame_contrast: Some("0.5"),
             contrast: None,
+            change_selection_color: None,
+            inactive_enable: None,
         })?;
         let geometry = |b: &crate::ResolvedWidgetBorder| {
             (b.corner_radius, b.line_width, b.shadow_enabled, b.padding)
