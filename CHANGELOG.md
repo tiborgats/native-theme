@@ -1873,6 +1873,7 @@ let busy = load_icon(IconRole::StatusBusy, "material");
 - `impl_merge!` macro for recursive Option-based theme merging
 - Deep merge support across all theme types
 
+[0.7.2]: https://github.com/tiborgats/native-theme/compare/v0.7.1...v0.7.2
 [0.7.1]: https://github.com/tiborgats/native-theme/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/tiborgats/native-theme/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/tiborgats/native-theme/compare/v0.6.0...v0.6.1
