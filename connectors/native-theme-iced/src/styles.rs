@@ -536,6 +536,69 @@ pub fn button_primary(
     }
 }
 
+/// The platform's own default button, the one Enter activates in a dialog, for
+/// `button(..).style(..)`.
+///
+/// Where the theme states `button.default_button_background` (KDE's Breeze
+/// gives its default button a look of its own), the button is that fill,
+/// lettered in `button.default_button_text_color`, else `button.font.color`,
+/// and framed in `button.default_button_border_color`, else
+/// `button.border.color`; under the pointer the same fill and label, framed in
+/// `button.hover_border_color` where the theme states it, else that frame;
+/// pressed, [`button`]'s fill and label in that hovered frame; disabled,
+/// [`button`]'s. Where the theme states none, it is [`button_primary`] in every
+/// state: the default button is the primary one on macOS and Windows
+/// (`docs/platform-facts.md` §2.3).
+#[must_use = "this returns the style function; it does not apply it"]
+pub fn button_default(
+    resolved: &ResolvedTheme,
+) -> impl Fn(&Theme, iced_widget::button::Status) -> iced_widget::button::Style + Clone + use<> {
+    use iced_widget::button::{Status, Style};
+
+    let plain = button(resolved);
+    let primary = button_primary(resolved);
+    let b = &resolved.button;
+
+    let fill = b.default_button_background.map(to_color);
+    let label = to_color(b.default_button_text_color.unwrap_or(b.font.color));
+    let frame = b.default_button_border_color.unwrap_or(b.border.color);
+    let hover_frame = b.hover_border_color.unwrap_or(frame);
+    let border = Border {
+        color: to_color(frame),
+        ..border_of(&b.border)
+    };
+    let hovered_border = Border {
+        color: to_color(hover_frame),
+        ..border
+    };
+
+    move |theme, status| {
+        let Some(fill) = fill else {
+            return primary(theme, status);
+        };
+        let rest = plain(theme, Status::Active);
+        match status {
+            Status::Active => Style {
+                background: Some(Background::Color(fill)),
+                text_color: label,
+                border,
+                ..rest
+            },
+            Status::Hovered => Style {
+                background: Some(Background::Color(fill)),
+                text_color: label,
+                border: hovered_border,
+                ..rest
+            },
+            Status::Pressed => Style {
+                border: hovered_border,
+                ..plain(theme, Status::Pressed)
+            },
+            Status::Disabled => plain(theme, Status::Disabled),
+        }
+    }
+}
+
 /// The platform's own destructive button, for `button(..).style(..)`.
 ///
 /// Replaces `iced_widget::button::danger`, which paints the palette's `danger`

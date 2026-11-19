@@ -58,6 +58,8 @@ moves = [
   { row = "styles::button.border", statuses = ["Hovered", "Pressed"], except = ["kde-breeze/light", "kde-breeze/dark"] },
   { row = "styles::button_danger.border", statuses = ["Active", "Disabled"] },
   { row = "styles::button_danger.border", statuses = ["Hovered", "Pressed"], except = ["kde-breeze/light", "kde-breeze/dark"] },
+  { row = "styles::button_default.border", statuses = ["Active", "Hovered", "Pressed"], except = ["kde-breeze/light", "kde-breeze/dark"] },
+  { row = "styles::button_default.border", statuses = ["Disabled"] },
   { row = "styles::button_primary.border", statuses = ["Active", "Disabled"] },
   { row = "styles::button_primary.border", statuses = ["Hovered", "Pressed"], except = ["kde-breeze/light", "kde-breeze/dark"] },
   { row = "styles::button_success.border", statuses = ["Active", "Disabled"] },
@@ -81,11 +83,31 @@ moves = [
   { row = "styles::toolbar_button.text_color", statuses = ["(true, Active)", "(true, Hovered)", "(true, Pressed)"], except = ["macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
 ]
 
+[leaves."button.default_button_background"]
+moves = [
+  { row = "styles::button_default.background", statuses = ["Active"] },
+  { row = "styles::button_default.background", statuses = ["Disabled"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+  { row = "styles::button_default.text_color", statuses = ["Active"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/dark"] },
+  { row = "styles::button_default.text_color", statuses = ["Disabled"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+]
+
+[leaves."button.default_button_border_color"]
+moves = [
+  { row = "styles::button_default.border", statuses = ["Active"], except = ["adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+]
+
+[leaves."button.default_button_text_color"]
+moves = [
+  { row = "styles::button_default.text_color", statuses = ["Active"], except = ["adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+]
+
 [leaves."button.disabled_background"]
 moves = [
   { row = "styles::button.background", statuses = ["Disabled"] },
   { row = "styles::button_danger.background", statuses = ["Disabled"] },
   { row = "styles::button_danger.text_color", statuses = ["Disabled"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+  { row = "styles::button_default.background", statuses = ["Disabled"] },
+  { row = "styles::button_default.text_color", statuses = ["Disabled"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
   { row = "styles::button_primary.background", statuses = ["Disabled"] },
   { row = "styles::button_primary.text_color", statuses = ["Disabled"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
   { row = "styles::button_success.background", statuses = ["Disabled"] },
@@ -98,6 +120,7 @@ moves = [
 moves = [
   { row = "styles::button.text_color", statuses = ["Disabled"] },
   { row = "styles::button_danger.text_color", statuses = ["Disabled"], except = ["adwaita/light", "adwaita/dark"] },
+  { row = "styles::button_default.text_color", statuses = ["Disabled"], except = ["adwaita/light", "adwaita/dark"] },
   { row = "styles::button_primary.text_color", statuses = ["Disabled"], except = ["adwaita/light", "adwaita/dark"] },
   { row = "styles::button_success.text_color", statuses = ["Disabled"], except = ["adwaita/light", "adwaita/dark"] },
   { row = "styles::button_toggle.text_color", statuses = ["(false, Disabled)"] },
@@ -133,6 +156,7 @@ moves = [
 moves = [
   { row = "styles::button.border", statuses = ["Hovered", "Pressed"] },
   { row = "styles::button_danger.border", statuses = ["Hovered", "Pressed"] },
+  { row = "styles::button_default.border", statuses = ["Hovered", "Pressed"] },
   { row = "styles::button_primary.border", statuses = ["Hovered", "Pressed"] },
   { row = "styles::button_success.border", statuses = ["Hovered", "Pressed"] },
   { row = "styles::button_toggle.border", statuses = ["(false, Hovered)", "(false, Pressed)", "(true, Hovered)", "(true, Pressed)"] },
@@ -148,12 +172,16 @@ moves = [
 
 [leaves."button.primary_background"]
 moves = [
+  { row = "styles::button_default.background", statuses = ["Active"], except = ["kde-breeze/light", "kde-breeze/dark"] },
+  { row = "styles::button_default.background", statuses = ["Disabled"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
   { row = "styles::button_primary.background", statuses = ["Active"] },
   { row = "styles::button_primary.background", statuses = ["Disabled"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
 ]
 
 [leaves."button.primary_text_color"]
 moves = [
+  { row = "styles::button_default.text_color", statuses = ["Active"], except = ["kde-breeze/light", "kde-breeze/dark"] },
+  { row = "styles::button_default.text_color", statuses = ["Disabled"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
   { row = "styles::button_primary.text_color", statuses = ["Active"] },
   { row = "styles::button_primary.text_color", statuses = ["Disabled"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
 ]
@@ -1358,6 +1386,15 @@ leaves = ["button.border.color", "button.hover_border_color"]
 
 [rows."styles::button_danger.text_color"]
 leaves = ["button.disabled_background", "button.disabled_text_color", "defaults.danger_text_color"]
+
+[rows."styles::button_default.background"]
+leaves = ["button.default_button_background", "button.disabled_background", "button.primary_background"]
+
+[rows."styles::button_default.border"]
+leaves = ["button.border.color", "button.default_button_border_color", "button.hover_border_color"]
+
+[rows."styles::button_default.text_color"]
+leaves = ["button.default_button_background", "button.default_button_text_color", "button.disabled_background", "button.disabled_text_color", "button.primary_text_color"]
 
 [rows."styles::button_link.background"]
 leaves = ["link.background_color", "link.hover_background"]

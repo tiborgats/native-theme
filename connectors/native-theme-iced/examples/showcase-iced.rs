@@ -7538,6 +7538,18 @@ fn drawing(element: &ShowcaseElement, leaf: &str, shown: Shown<'_>) -> Option<Dr
         _ if under("basic.buttons.primary") => Drawing::enabled(&["styles::button_primary."]),
         _ if under("basic.buttons.disabled") => Drawing::only(BUTTON, &["Disabled"], &[]),
         _ if under("basic.buttons.tooltip.bubble") => Drawing::of(&["styles::tooltip."]),
+        // Where the theme states the default button's fill, it is pressed in
+        // `styles::button`'s pressed pair, which `styles::button_default`'s
+        // rows do not cover.
+        _ if under("basic.buttons.dialog_default")
+            && resolved.button.default_button_background.is_some()
+            && (leaf == "button.active_background" || leaf == "button.active_text_color") =>
+        {
+            Drawing::only(BUTTON, &["Pressed"], &[])
+        }
+        _ if under("basic.buttons.dialog_default") => {
+            Drawing::enabled(&["styles::button_default."])
+        }
         _ if under("basic.buttons") => Drawing::enabled(BUTTON),
         // The check mark the theme states a line for is the showcase's
         // ([`CheckMark`]); where it states none, iced's glyph is drawn, in
@@ -8025,6 +8037,8 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         "styles::button_toggle"
     } else if under("basic.buttons.primary") {
         "styles::button_primary"
+    } else if under("basic.buttons.dialog_default") {
+        "styles::button_default"
     } else {
         "styles::button"
     };
@@ -10314,12 +10328,13 @@ const BASIC_TABLE_SELECTED: usize = 1;
 const ICED_TOOLTIP_PADDING: f32 = 5.0;
 
 /// How a push button of the Basic page is dressed: the plain button, the
-/// primary one, or a toggle button that is on.
+/// primary one, a toggle button that is on, or a dialog's default button.
 #[derive(Clone, Copy)]
 enum Push {
     Plain,
     Primary,
     On,
+    DialogDefault,
 }
 
 /// The list's ids of a checkbox or a radio button and of its parts: the
@@ -10718,6 +10733,12 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
             ))
             .style(styles::button_toggle(resolved, true))
             .padding(btn_pad),
+            Push::DialogDefault => button(at_least(
+                tagged(label_id, text(label).themed(font, resolved, a11y)),
+                btn_min,
+            ))
+            .style(styles::button_default(resolved))
+            .padding(btn_pad),
         };
         // At its own width even where its row runs past the column, as the
         // gpui and egui buttons are, rather than squeezed under its label.
@@ -10783,7 +10804,8 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
             ]
             .spacing(gap.widget)
             .wrap(),
-            // The toggle buttons, off and on (Basic v4's third row).
+            // The toggle buttons, off and on, and a dialog's default button
+            // (Basic v4's third row).
             row![
                 push(
                     "basic.buttons.toggle_off",
@@ -10797,6 +10819,13 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
                     "basic.buttons.toggle_on.label",
                     "On",
                     Push::On,
+                    Some(Message::ButtonPressed),
+                ),
+                push(
+                    "basic.buttons.dialog_default",
+                    "basic.buttons.dialog_default.label",
+                    "OK",
+                    Push::DialogDefault,
                     Some(Message::ButtonPressed),
                 ),
             ]
@@ -21215,6 +21244,7 @@ mod tests {
                 "styles::button_warning",
                 "styles::button_link",
                 "styles::button_toggle",
+                "styles::button_default",
                 "styles::toolbar_button",
                 "styles::segment",
                 "styles::expander",
@@ -21427,6 +21457,7 @@ mod tests {
             "styles::button_success",
             "styles::button_warning",
             "styles::button_link",
+            "styles::button_default",
         ];
         let derived = theme_padding_bindings(&source);
         let from_theme = |args: &str| {
@@ -25472,7 +25503,49 @@ mod tests {
              checked fill under the pointer (styles.rs, `toolbar_button`): the toolbar's \
              hover fill is drawn once a click has turned it off",
         ),
+        (
+            "basic.buttons.dialog_default",
+            "button.font.color",
+            DIALOG_DEFAULT_LABEL_UNSTATED,
+        ),
+        (
+            "basic.buttons.dialog_default.label",
+            "button.font.color",
+            DIALOG_DEFAULT_LABEL_UNSTATED,
+        ),
+        (
+            "basic.buttons.dialog_default",
+            "button.active_background",
+            DIALOG_DEFAULT_PRESSED_STATED,
+        ),
+        (
+            "basic.buttons.dialog_default",
+            "button.active_text_color",
+            DIALOG_DEFAULT_PRESSED_STATED,
+        ),
+        (
+            "basic.buttons.dialog_default.label",
+            "button.active_text_color",
+            DIALOG_DEFAULT_PRESSED_STATED,
+        ),
     ];
+
+    /// Why the default button's label falls back to `button.font.color` in no
+    /// bundled theme.
+    const DIALOG_DEFAULT_LABEL_UNSTATED: &str = "\
+         styles::button_default letters a stated default-button fill in button.font.color \
+         only where button.default_button_text_color is unstated (styles.rs, \
+         `button_default`): kde-breeze, the one bundled preset that states the fill, states \
+         the text colour too, and elsewhere the button is styles::button_primary, lettered \
+         button.primary_text_color";
+
+    /// Why the default button wears the plain button's pressed pair in one
+    /// bundled preset alone.
+    const DIALOG_DEFAULT_PRESSED_STATED: &str = "\
+         styles::button_default is pressed in styles::button's pressed pair only where the \
+         theme states button.default_button_background (styles.rs, `button_default`), \
+         kde-breeze alone among the bundled presets; elsewhere it is styles::button_primary, \
+         whose pressed fill and label are iced's derivation from button.primary_background";
 
     /// The contract's export parses, and names every colour leaf the element
     /// list gives an element: a leaf whose value is a colour in the resolved
@@ -30085,6 +30158,7 @@ mod tests {
             for (id, title) in [
                 ("basic.buttons.default", "Button · Normal"),
                 ("basic.buttons.primary", "Button · Primary"),
+                ("basic.buttons.dialog_default", "Button · Default"),
                 ("basic.checkboxes.checked", "Checkbox · Checked"),
             ] {
                 let mut state = State::default();

@@ -837,6 +837,18 @@ pub(super) const DERIVED: &[(&str, &str)] = &[
         "iced default: button::Style::default().snap \
          -- a renderer setting, cfg!(feature = \"crisp\")",
     ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::button_default.shadow",
+        "iced default: button::Style::default().shadow, through styles::button \
+         or styles::button_primary -- the model has a shadow color but no offset or blur",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::button_default.snap",
+        "iced default: button::Style::default().snap, through styles::button \
+         or styles::button_primary -- a renderer setting, cfg!(feature = \"crisp\")",
+    ),
     #[cfg(feature = "iced_aw")]
     (
         "styles::aw::menu.bar_shadow",

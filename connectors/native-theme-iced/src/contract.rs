@@ -1297,6 +1297,17 @@ fn toolbar_button_style_fields(style: &button::Style) -> Vec<String> {
     out
 }
 
+/// Every field of the `button::Style` `styles::button_default` emits.
+#[cfg(feature = "widgets")]
+fn button_default_style_fields(style: &button::Style) -> Vec<String> {
+    let mut out = Vec::new();
+    leaves_under!(out, style, "styles::button_default", button::Style {
+        background, text_color, shadow, snap, @nested border
+    });
+    out.extend(border_fields(border, "styles::button_default.border"));
+    out
+}
+
 /// Every field of the `button::Style` `styles::button_link` emits.
 #[cfg(feature = "widgets")]
 fn button_link_style_fields(style: &button::Style) -> Vec<String> {
@@ -1753,6 +1764,12 @@ fn named_fields(theme: &Theme, resolved: &ResolvedTheme) -> Vec<String> {
         )));
         out.extend(toolbar_button_style_fields(&styles::toolbar_button(
             resolved, true,
+        )(
+            theme,
+            button::Status::Active,
+        )));
+        out.extend(button_default_style_fields(&styles::button_default(
+            resolved,
         )(
             theme,
             button::Status::Active,
@@ -3459,6 +3476,13 @@ fn every_style_field_equals_its_native_value() -> native_theme::Result<()> {
         &mut failures,
         &mut ran,
     );
+    check_style_rows(BUTTON_DEFAULT_ROWS, &combinations, &mut failures, &mut ran);
+    check_border_rows(
+        BUTTON_DEFAULT_BORDER_ROWS,
+        &combinations,
+        &mut failures,
+        &mut ran,
+    );
     #[cfg(feature = "iced_aw")]
     {
         check_style_rows(AW_CARD_ROWS, &combinations, &mut failures, &mut ran);
@@ -3619,6 +3643,13 @@ fn style_contrast_never_degrades_the_native_pair() -> native_theme::Result<()> {
     );
     check_style_pairs(
         TOOLBAR_BUTTON_PAIRS,
+        all,
+        &mut failures,
+        &mut below_aa,
+        &mut ran,
+    );
+    check_style_pairs(
+        BUTTON_DEFAULT_PAIRS,
         all,
         &mut failures,
         &mut below_aa,
@@ -4570,6 +4601,102 @@ fn a_checked_toolbar_button_takes_the_checked_text() -> native_theme::Result<()>
 
 #[cfg(feature = "widgets")]
 #[test]
+fn button_default_is_the_primary_where_no_fill_is_stated() -> native_theme::Result<()> {
+    // Where the theme states no default button of its own, the default button
+    // is the primary one in every state, iced's derivation included, which the
+    // rows (`CLASS_BUTTON_NATIVE_STATUSES` only) do not reach.
+    let mut failures = Vec::new();
+    let mut checked = 0;
+    for c in &combinations()? {
+        if c.resolved.button.default_button_background.is_some() {
+            continue;
+        }
+        let default = styles::button_default(&c.resolved);
+        let primary = styles::button_primary(&c.resolved);
+        for &status in BUTTON_STATUSES {
+            checked += 1;
+            let emitted = format!("{:?}", default(&c.theme, status));
+            let expected = format!("{:?}", primary(&c.theme, status));
+            if emitted != expected {
+                failures.push(format!(
+                    "{} ({status:?}): styles::button_default is {emitted}, \
+                     styles::button_primary {expected}",
+                    c.label()
+                ));
+            }
+        }
+    }
+    assert!(
+        checked > 0,
+        "no bundled combination leaves button.default_button_background unset"
+    );
+    assert!(
+        failures.is_empty(),
+        "{} of {checked} default-button states differ from the primary button:\n{}",
+        failures.len(),
+        failures.join("\n")
+    );
+    Ok(())
+}
+
+#[cfg(feature = "widgets")]
+#[test]
+fn button_default_hovers_and_presses_as_stated() -> native_theme::Result<()> {
+    // Where the fill is stated, the rows cover `Active` and `Disabled`; under
+    // the pointer the button keeps its resting fill and label, and pressed it
+    // is the plain button's pressed fill and label. The borders are the
+    // border rows'.
+    let mut failures = Vec::new();
+    let mut checked = 0;
+    for c in &combinations()? {
+        if c.resolved.button.default_button_background.is_none() {
+            continue;
+        }
+        checked += 1;
+        let default = styles::button_default(&c.resolved);
+        let plain = styles::button(&c.resolved);
+        let active = default(&c.theme, button::Status::Active);
+        let hovered = default(&c.theme, button::Status::Hovered);
+        if (hovered.background, hovered.text_color) != (active.background, active.text_color) {
+            failures.push(format!(
+                "{}: hovered is {:?} under {}, at rest {:?} under {}",
+                c.label(),
+                hovered.background,
+                show(hovered.text_color),
+                active.background,
+                show(active.text_color)
+            ));
+        }
+        let pressed = default(&c.theme, button::Status::Pressed);
+        let plain_pressed = plain(&c.theme, button::Status::Pressed);
+        if (pressed.background, pressed.text_color)
+            != (plain_pressed.background, plain_pressed.text_color)
+        {
+            failures.push(format!(
+                "{}: pressed is {:?} under {}, styles::button's pressed {:?} under {}",
+                c.label(),
+                pressed.background,
+                show(pressed.text_color),
+                plain_pressed.background,
+                show(plain_pressed.text_color)
+            ));
+        }
+    }
+    assert!(
+        checked > 0,
+        "no bundled combination states button.default_button_background"
+    );
+    assert!(
+        failures.is_empty(),
+        "{} default-button states differ:\n{}",
+        failures.len(),
+        failures.join("\n")
+    );
+    Ok(())
+}
+
+#[cfg(feature = "widgets")]
+#[test]
 fn an_unset_hover_soft_option_is_the_idle_fill() -> native_theme::Result<()> {
     // macos-tahoe states a translucent drop-down field and a translucent off
     // track, and no hover for either: a hovered one is the one at rest, not
@@ -5024,6 +5151,7 @@ fn every_style_closure_is_clone() -> native_theme::Result<()> {
     assert_clone(&styles::button_link(r));
     assert_clone(&styles::button_toggle(r, true));
     assert_clone(&styles::toolbar_button(r, true));
+    assert_clone(&styles::button_default(r));
     assert_clone(&styles::text_input(r));
     assert_clone(&styles::text_editor(r));
     assert_clone(&styles::checkbox(r));
@@ -5367,6 +5495,7 @@ impl Reading {
         x.style(BUTTON_LINK_ROWS, t, r);
         x.style(BUTTON_TOGGLE_ROWS, t, r);
         x.style(TOOLBAR_BUTTON_ROWS, t, r);
+        x.style(BUTTON_DEFAULT_ROWS, t, r);
         x.style(TEXT_INPUT_ROWS, t, r);
         x.style(TEXT_EDITOR_ROWS, t, r);
         x.style(CHECKBOX_ROWS, t, r);
@@ -5396,6 +5525,7 @@ impl Reading {
         x.border(BUTTON_WARNING_BORDER_ROWS, t, r);
         x.border(BUTTON_TOGGLE_BORDER_ROWS, t, r);
         x.border(TOOLBAR_BUTTON_BORDER_ROWS, t, r);
+        x.border(BUTTON_DEFAULT_BORDER_ROWS, t, r);
         x.border(TEXT_INPUT_BORDER_ROWS, t, r);
         x.border(TEXT_EDITOR_BORDER_ROWS, t, r);
         x.border(CHECKBOX_BORDER_ROWS, t, r);

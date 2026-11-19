@@ -566,6 +566,87 @@ pub(super) const TOOLBAR_BUTTON_BORDER_ROWS: &[BorderRow<(bool, button::Status)>
     get: |t, r, (checked, status)| styles::toolbar_button(r, checked)(t, status).border,
 }];
 
+/// The fill and the label the native fields give a dialog's default button,
+/// computed from the resolved theme alone.
+///
+/// Where `button.default_button_background` is stated: that fill under
+/// `default_button_text_color` (else `font.color`) at rest and under the
+/// pointer, the plain button's pair pressed and disabled. Where it is not, the
+/// primary class's pair, `primary_background` under `primary_text_color`; as
+/// for `native_class_button_fill`, only `CLASS_BUTTON_NATIVE_STATUSES` reach
+/// a row, and the hovered and pressed arms name the idle pair.
+#[cfg(feature = "widgets")]
+pub(super) fn native_button_default(r: &ResolvedTheme, status: button::Status) -> (Color, Color) {
+    let b = &r.button;
+    let Some(fill) = b.default_button_background else {
+        return (
+            native_class_button_fill(r, status, b.primary_background),
+            native_class_button_label(r, status, b.primary_text_color),
+        );
+    };
+    match status {
+        button::Status::Active | button::Status::Hovered => (
+            to_color(fill),
+            to_color(b.default_button_text_color.unwrap_or(b.font.color)),
+        ),
+        button::Status::Pressed | button::Status::Disabled => (
+            native_button_fill(r, status),
+            native_button_label(r, status),
+        ),
+    }
+}
+
+/// Every color field of `styles::button_default` its function decides: the
+/// rows cover `CLASS_BUTTON_NATIVE_STATUSES`, as the class buttons' do, since
+/// where no fill is stated the hovered and pressed pair is iced's derivation
+/// from the primary fill.
+#[cfg(feature = "widgets")]
+pub(super) const BUTTON_DEFAULT_ROWS: &[StyleRow<button::Status>] = &[
+    StyleRow {
+        field: "styles::button_default.background",
+        statuses: CLASS_BUTTON_NATIVE_STATUSES,
+        native: |r, s| native_button_default(r, s).0,
+        get: |t, r, s| flat(styles::button_default(r)(t, s).background),
+    },
+    StyleRow {
+        field: "styles::button_default.text_color",
+        statuses: CLASS_BUTTON_NATIVE_STATUSES,
+        native: |r, s| native_button_default(r, s).1,
+        get: |t, r, s| Ok(styles::button_default(r)(t, s).text_color),
+    },
+];
+
+/// A default button's frame: where its fill is stated,
+/// `default_button_border_color` (else `button.border.color`) at rest and
+/// `hover_border_color` (else that frame) under the pointer and pressed, the
+/// plain button's faded border disabled; where it is not, the primary
+/// button's, which is the plain button's.
+#[cfg(feature = "widgets")]
+pub(super) const BUTTON_DEFAULT_BORDER_ROWS: &[BorderRow<button::Status>] = &[BorderRow {
+    field: "styles::button_default",
+    statuses: BUTTON_STATUSES,
+    native: |r, s| {
+        let b = &r.button;
+        if b.default_button_background.is_none() {
+            return native_button_border(r, s);
+        }
+        let frame = b.default_button_border_color.unwrap_or(b.border.color);
+        let color = match s {
+            button::Status::Active => frame,
+            button::Status::Hovered | button::Status::Pressed => {
+                b.hover_border_color.unwrap_or(frame)
+            }
+            button::Status::Disabled => return native_button_border(r, s),
+        };
+        NativeBorder {
+            color: to_color(color),
+            width: b.border.line_width,
+            radius: b.border.corner_radius,
+        }
+    },
+    get: |t, r, s| styles::button_default(r)(t, s).border,
+}];
+
 /// The statuses of a class button whose fill and label the function itself
 /// decides, and so the only ones its rows and its contrast pair cover.
 #[cfg(feature = "widgets")]
@@ -3068,6 +3149,7 @@ pub(super) fn style_row_fields() -> Vec<String> {
     out.extend(EXPANDER_ROWS.iter().map(|row| row.field.to_string()));
     out.extend(BUTTON_TOGGLE_ROWS.iter().map(|row| row.field.to_string()));
     out.extend(TOOLBAR_BUTTON_ROWS.iter().map(|row| row.field.to_string()));
+    out.extend(BUTTON_DEFAULT_ROWS.iter().map(|row| row.field.to_string()));
     // One border row claims six leaves, so its names are built rather than
     // written -- by the same walker the tripwire uses.
     out.extend(border_row_fields(BUTTON_BORDER_ROWS));
@@ -3089,6 +3171,7 @@ pub(super) fn style_row_fields() -> Vec<String> {
     out.extend(border_row_fields(EXPANDER_FRAME_BORDER_ROWS));
     out.extend(border_row_fields(BUTTON_TOGGLE_BORDER_ROWS));
     out.extend(border_row_fields(TOOLBAR_BUTTON_BORDER_ROWS));
+    out.extend(border_row_fields(BUTTON_DEFAULT_BORDER_ROWS));
     // `styles::aw`, gated on the feature that declares it: its rows, its
     // `check_*` calls, its walkers and its pairs all carry the same gate, so
     // the two directions of `Checked::covers` agree in every configuration.

@@ -208,6 +208,32 @@ pub(super) const TOOLBAR_BUTTON_PAIRS: &[StylePair<(bool, button::Status)>] = &[
     },
 }];
 
+/// The `styles::button_default` pairs the assertion covers: the label on the
+/// fill. Only `CLASS_BUTTON_NATIVE_STATUSES`: where no fill is stated, the
+/// hovered and pressed pair is iced's derivation from the primary fill, which
+/// no native pair states.
+#[cfg(feature = "widgets")]
+pub(super) const BUTTON_DEFAULT_PAIRS: &[StylePair<button::Status>] = &[StylePair {
+    what: "default button label",
+    indicator: false,
+    statuses: CLASS_BUTTON_NATIVE_STATUSES,
+    emitted: |t, r, status| {
+        let style = styles::button_default(r)(t, status);
+        // Painted on the window, as a plain button is.
+        flat(style.background).map(|fill| {
+            (
+                style.text_color,
+                fill,
+                to_color(r.defaults.background_color),
+            )
+        })
+    },
+    native: |r, s| {
+        let (fill, label) = native_button_default(r, s);
+        (label, fill, to_color(r.defaults.background_color))
+    },
+}];
+
 // The four class buttons' pairs -- `BUTTON_PRIMARY_PAIRS`,
 // `BUTTON_DANGER_PAIRS`, `BUTTON_SUCCESS_PAIRS`, `BUTTON_WARNING_PAIRS` --
 // are declared by `class_button_contract!` in the parent module, beside their
@@ -939,6 +965,7 @@ pub(super) fn style_pair_names() -> Vec<String> {
     out.extend(EXPANDER_PAIRS.iter().map(|p| p.what.to_string()));
     out.extend(BUTTON_TOGGLE_PAIRS.iter().map(|p| p.what.to_string()));
     out.extend(TOOLBAR_BUTTON_PAIRS.iter().map(|p| p.what.to_string()));
+    out.extend(BUTTON_DEFAULT_PAIRS.iter().map(|p| p.what.to_string()));
     #[cfg(feature = "iced_aw")]
     {
         out.extend(AW_CARD_PAIRS.iter().map(|p| p.what.to_string()));
