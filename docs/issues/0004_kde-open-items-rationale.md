@@ -2,7 +2,9 @@
 
 Status: written 2026-11-14, revised after six reviews. D2, D3 and D10 (a) approved
 for step 1 (2026-11-15); D4 and D5 approved for 0.7.2 (2026-11-18); D6 and D7's first
-half (steps 4 and 5) approved for 0.7.2 (2026-11-18); the later steps not yet approved. Step 1 (D2, D3)
+half (steps 4 and 5) approved for 0.7.2 (2026-11-18); D8, D7's second half and D9 (steps 6 and 7) approved for
+0.7.2 (2026-11-19), together with the text caret's blink (D0 (a)), by
+`../todo_v0.7.2_kde-open-items-steps6-7-{spec,plan}.md`. Step 1 (D2, D3)
 implemented on 2026-11-17 for 0.7.1, by
 `../archive/todo_v0.7.1_kde-open-items-step1-{spec,plan}.md`. D4's bullet on
 gpui-component's widgets was rewritten on 2026-11-18 after three measurements: the

@@ -1,52 +1,64 @@
-# 0.7.x: the text caret's blink — specification
+# 0.7.2: the text caret's blink — specification
 
 - Rationale: [`todo_v0.7.1_caret-blink-rationale.md`](todo_v0.7.1_caret-blink-rationale.md)
-  (decisions B1 to B6), checked, not yet approved by the maintainer. This
-  document says what changes, where, to which value, with which tests and
-  gates. It decides nothing the rationale did not decide, except the small
-  points listed under *Decisions taken while specifying*; what needs the
-  maintainer is under *Open points*, the last section.
-- Written: 2026-11-14, against `v0.7.1-rc2` at `0fa28027` (worktree
-  `.claude/worktrees/v071`). Every `file:line` is that commit's unless it
-  names another version.
-- Abbreviations as in the rationale: `GC`, `GB` are gpui-component 0.9.1's and
-  gpui-base 0.9.1's `src/` in Cargo's registry; `EG` egui 0.36.2's; `IW`
+  (decisions B1 to B6), checked. This document says what changes, where, to
+  which value, with which tests and gates. It decides nothing the rationale
+  did not decide, except the small points listed under *Decisions taken while
+  specifying*; what needs the maintainer is under *Open points*, the last
+  section.
+- **The release (B6).** Decided by the maintainer on 2026-11-19: the caret's
+  blink is part of **0.7.2**, together with issue #4's KDE steps 6 and 7
+  ([`todo_v0.7.2_kde-open-items-steps6-7-spec.md`](todo_v0.7.2_kde-open-items-steps6-7-spec.md),
+  "the KDE document"); the version stays 0.7.2. (That morning the two works
+  were set for a release of their own, 0.7.3; he folded them into 0.7.2,
+  which is not released yet, so that no release changes the API a few days
+  after another did.) That is B6 (a): a 0.7.x release whose CHANGELOG names
+  the break. The two works add to 0.7.2's branch, its CHANGELOG section and
+  its ROADMAP section, and 0.7.2's close-out is made again after them, once,
+  with one asset run; this document's units are built first, the KDE
+  document's after them, and the close-out is the KDE document's (its 7.J.4
+  and its plan). Below, "the close-out" and "the release's asset run" are
+  that second pass.
+- Written 2026-11-14 against `v0.7.1-rc2` at `0fa28027`, for a release of its
+  own; amended 2026-11-19 for 0.7.2. The work is built on the branch
+  `v0.7.2-rc1`, from its head `da89b4ba`, in the worktree
+  `.claude/worktrees/lane2-b`. "0.7.2's tree" below is that tree, 0.7.2 as it
+  stood before this work: egui 0.37.0, gpui-component and gpui-base 0.10.0,
+  gpui-pre 0.3.12, the KDE steps 2 to 5 and gpui-component's own icons; iced
+  is 0.14.0 with iced_widget 0.14.2, as before. The branch went through
+  0.7.2's close-out once (`478cdab7`: the documents archived; `b494d6ed`: the
+  captures and both stamps), and its lock took heapless 0.9.4 after that (`da89b4ba`,
+  against nine advisories of 2026-11-18), so the assets' stamp is stale
+  already and the close-out is made again after this work whatever it adds.
+- **Every edit is applied by its anchor** (the quoted text, the key, the
+  test's name). A `file:line` of a repository file is `0fa28027`'s and serves
+  to find the place; none is re-pointed, and a new citation of a repository
+  document names the document only (the maintainer, 2026-11-15; S6, E.5).
+  The anchors, the counts and the upstream lines were read again on 0.7.2's
+  tree on 2026-11-19 (`<record>/respec/findings-c2-0A.md`, `-c3-BC.md`,
+  `-c4-D.md`): every anchor stands, nothing of this work is built yet, and
+  nothing the design rests on changed in gpui-component and gpui-base 0.10.0
+  or in egui 0.37.0. A count is given as that tree's value and what this work
+  makes of it.
+- Abbreviations as in the rationale: `GC`, `GB` are gpui-component 0.10.0's
+  and gpui-base 0.10.0's `src/` in Cargo's registry; `EG` egui 0.37.0's; `IW`
   iced_widget 0.14.2's; `F` is `docs/facts/` on the parked branch `v0.8.0-rc1`
   at `78ee0efd` (the checkout `/home/tibi/Rust/native-theme`); `CG`, `CE`,
-  `CI` the `src/` folders of the gpui, egui and iced connectors.
-- Status: not approved. B6 (the version and the release) is the
-  maintainer's; this specification is written for the proposed option, B6 (a)
-  as a release of its own after v0.7.1, and *Under the other B6 options* says
-  what differs.
+  `CI` the `src/` folders of the gpui, egui and iced connectors. `<record>` is
+  `~/.claude/projects/-home-tibi-Rust-native-theme/scratch-keep/todo_v0.7.3/`,
+  the record of this work and of the KDE document's (the folder keeps the
+  name it got while the two were set for 0.7.3).
+- Status: approved by the maintainer on 2026-11-19, together with the
+  rationale's B1 to B5 and the plan; the Windows reader's one `unsafe` call
+  (*Open points*, 2) granted the same day, so C.3 is built and C.5 does not
+  apply.
 - The batch's working rules are cited as "rule N (batch-speed rationale,
   Appendix)": the numbered rules of *Appendix — the batch's working rules* in
-  `docs/todo_v0.7.1_batch-speed-rationale.md`, authoritative where this
-  specification and they differ; below, "rule N" is short for that.
-- **This release is the release after `<prev-tag>`** in the maintainer's
-  order, item 4 of the list the KDE document's D10 proposes in *The releases
-  after v0.7.1* (`docs/issues/0004_kde-open-items-rationale.md`, a document
-  still being amended, so cited by its heading). Under that proposal, with the
-  KDE steps 2 to 5 as two releases (`docs/todo_v0.7.1_batch-speed-rationale.md`,
-  S5), it lands fifth after v0.7.1 (0.7.6): egui 0.37, the KDE steps 2 and 3,
-  the KDE steps 4 and 5, and gpui-component's own icons land before it, and
-  `<prev-tag>` is the icons'. D10's item 3 leaves open whether the icons'
-  follow-up, "the step that serves the two pixel sets (its W7)", is cut as a
-  release of its own before this one; where it is, `<prev-tag>` is W7's
-  where it stands immediately before, and this release's number is one
-  higher (0.7.7 under the proposal); W7 runs in the second lane, so the lane
-  predecessor stays steps 4 and 5's. This work runs in the KDE lane (S3 as
-  amended by the maintainer on 2026-11-15; *Order and gates*, *The branch*):
-  v0.7.1 and the KDE steps 2 to 5 are on the tree this work starts from,
-  and egui 0.37 and the icons arrive at the merge. They edit the same files
-  (the facts tables, the presets' sections, the egui mapping and its
-  counts, the GNOME reader's reads). So every edit below is applied by its
-  anchor (the quoted text, the key, the test's name); a line number is
-  `0fa28027`'s and serves to find the place; a count is given as today's
-  value and as a delta (+3 leaves; the inputs' DERIVED +2 and UNMAPPABLE +1;
-  `egui-limited` +1; `gsettings` reads +3), and the implementer adds the
-  delta to the value the tree holds then; and the facts rows go right after
-  §2.4's `caret_color` row, by A.8's rule, wherever that row is then. No
-  line citation is moved or re-pointed (S6, E.5).
+  `docs/todo_v0.7.1_batch-speed-rationale.md`; below, "rule N" is short for
+  that. Its rules about lanes, a branch's start and the merge of another
+  release's tag (rules 7, 17 to 21 and 25) have nothing to apply to here: the
+  work is built on one branch, in one worktree (*Order and gates*, *The
+  branch*).
 
 ## How to read it
 
@@ -60,7 +72,7 @@ it.
 | B — Presets | B3 | five presets, `native-theme/src/presets/documented_sizes.rs`, `native-theme/src/presets/README.md`, `docs/new-os-version-guide.md` |
 | C — Readers | B4 | `native-theme/src/kde/mod.rs`, `native-theme/src/gnome/mod.rs`, `native-theme/src/watch/gnome.rs`, `native-theme/src/watch/mod.rs`, `native-theme/src/windows.rs`, the Windows reader's comment in `native-theme/Cargo.toml` (C.3) |
 | D — Connectors and showcases | B5 | `connectors/native-theme-gpui/` (`src/lib.rs`, `README.md`, the showcase's `info/leaves.rs`), `connectors/native-theme-egui/` (`src/style/base.rs`, `mapping.toml`, `src/mapping.md`, `src/mapping_tests.rs`, `src/contract.rs`, `src/lib.rs`, `README.md`, the showcase's `tests.rs`), `connectors/native-theme-iced/` (`src/contract/derived.rs`, `src/lib.rs`, `README.md`, `examples/showcase-iced.rs`), `docs/showcase-elements.toml`, `tools/showcase-support/src/values.rs` |
-| E — Documentation, citations, close-out | B6, §5 | `CHANGELOG.md`, `native-theme/README.md` and its table's copy in `native-theme/src/lib.rs` (E.2), `ROADMAP.md`, `docs/todo.md`, the rule for line citations (E.5), the asset run, both stamps, the archive |
+| E — Documentation, citations, close-out | B6, §5 | `CHANGELOG.md`, `README.md`, `native-theme/README.md` and its table's copy in `native-theme/src/lib.rs` (E.2, built in unit 4), `ROADMAP.md`, `docs/todo.md`, the rule for line citations (E.5); what this work adds to the release's close-out (E.6) |
 
 Every edit has one owner, and with no citation re-pointed (S6) no file of
 the table is edited by more than one part.
@@ -184,20 +196,22 @@ choice, and each says what it rests on.
 16. **The gpui showcase states the blink in the text input's leaf rows**
     (`info/leaves.rs`), the form every leaf takes there; the `Input`'s
     `WidgetInfo` (`info/inputs.rs:107-250`) gets no line of its own.
-17. **The documents of this work are committed first** (the batch's shared
-    rule: `docs/archive/todo_v0.7.2_gpui-widget-icons-spec.md` decision 23,
-    `docs/todo_v0.7.1_gpui-kit-0.9.1-spec.md`'s commit (0)). v0.7.1's
-    commit (0) adds every document of this cycle the maintainer has approved
-    by then, this rationale and this specification among them if they are
-    approved by then. This work's first commit, unit 0 (*Order and gates*),
-    adds to `docs/` the approved documents of this work that no earlier
-    commit added: the rationale, this specification and the plan too, each
-    where v0.7.1's commit (0) did not add it. Where nothing
-    is left to add, there is no unit 0 and the work starts with unit 2. A
-    text that cites one of them at a commit cites the commit that added it.
+17. **The documents are committed first.** This work's first commit, unit
+    D0 (the plan), holds the amended documents of both works: this
+    specification, its plan and the KDE document with its plan. The rationale
+    is tracked already. A text that cites one of them at a commit cites that
+    commit.
 18. **Withdrawn** (S6, decided by the maintainer on 2026-11-15): the
     citations already off at `0fa28027` are left as they are, and there is
     no unit 1 that re-pointed them (E.5).
+19. **Windows' own caret time-out is stated where the facts row names it**
+    (A.8, E.4; found at the amendment, 2026-11-19). The OS probe read
+    `SPI_GETCARETTIMEOUT = 5000` on the Windows 11 image
+    (`efbffffe:docs/evidence/os-probe/2026-11-06-run-42307873328/os-probe-windows-11-arm/probe.toml`,
+    `[windows.system_parameters]`), so the row and the backlog entry say that
+    the value was read there and that how WinUI's rule relates to it was not,
+    in place of "is not read". The decision stands: windows-11 states no
+    time-out (B3).
 
 ## Corrections to the rationale found while specifying
 
@@ -222,10 +236,9 @@ None changes a decision.
 
 ## Part 0 — Evidence
 
-Implements B3's evidence paragraph. First of all the parts, after unit 0,
-where there is one (*Order and gates*), which edits only documents: the iOS
+Implements B3's evidence paragraph. The first unit after both works' documents (D0, *Order and gates*): the iOS
 commit is on one local branch only, `facts-ios-m1b3`
-(`git for-each-ref --contains 72fcf6a7`, read 2026-11-14), so it is copied
+(`git for-each-ref --contains 72fcf6a7`, read 2026-11-19), so it is copied
 before anything else is done with that branch. (The WinUI commit
 `efbffffe` is on `v0.8.0-tools-hosts-m1b`, which is also on `origin`.)
 Both commits are in this repository's object store, which the worktree shares
@@ -233,8 +246,9 @@ Both commits are in this repository's object store, which the worktree shares
 
 ### 0.1 The files
 
-Each is written with `git show <commit>:<path> > <path>` at the same path,
-unchanged, and checked with `git hash-object <path>` against the blob id
+Each is brought in at the same path, unchanged, with
+`git restore --source=<commit> --staged --worktree -- <paths>` (the bytes of the
+commit's blob, with no shell redirection), and checked with `git hash-object <path>` against the blob id
 below (`git ls-tree -r <commit>`).
 
 | Commit | Path | Blob | What it is |
@@ -250,8 +264,10 @@ below (`git ls-tree -r <commit>`).
 | `72fcf6a7` | `…/ios-host-macos-15/measure1/screen/light/caret/default/system/text_view.png` | `92e8648f` | the script's input |
 | `72fcf6a7` | `…/ios-host-macos-15/measure1/screen/dark/caret/default/system/text_view.png` | `c5e0f461` | the script's input |
 
-Not copied: the WinUI run's recordings and text-scale run (its README names
-them); the `ios-host-macos-26` image (decision 7); the seven other crops of
+Not copied: the WinUI run's recordings and text-scale run, and the OS
+probe's run of the same day,
+`docs/evidence/os-probe/2026-11-06-run-42307873328/` (its README names
+them; decision 19 cites the probe's file at its commit); the `ios-host-macos-26` image (decision 7); the seven other crops of
 `ios-host-macos-15` (nine in all) that the earlier commit `b38c1795`
 (on `origin/v0.8.0-tools-ios-m2`) holds; and that image's
 `measure-differ-levels.txt` (`b38c1795`, blob `bc7eb25f`, 1,192,955 bytes),
@@ -264,9 +280,9 @@ folder README (0.2) says what is kept. The iOS README also links run
 not kept: 0.2 says so. A recorded file is not edited
 (`docs/evidence/README.md:8-9`), so the two copied READMEs stay as they are.
 
-Size: `measure1/index.toml` is 811,237 bytes, about six times the largest
-file `docs/evidence/` holds today (135,880 bytes,
-`os-probe/2026-10-26-run-40348854007/os-probe-macos-15/not-key/probe.toml`).
+Size: `measure1/index.toml` is 811,237 bytes, nearly three times the
+largest file `docs/evidence/` holds today (287,963 bytes,
+`widget-icons/2026-11-19/listing.md`).
 No gate limits a file's size (`scripts/check_release.sh` and the workflows
 have no size check; `.gitattributes` only marks `docs/assets/*.svg` binary),
 and `docs/` is in no crate's package.
@@ -277,12 +293,14 @@ docs/evidence/ios-host/2026-11-06-run-42275028573/ios-host-macos-15`
 rewrites `behavior_values.toml` byte for byte (`cmp` against the blob) with
 Pillow 13.0.0, printing one `DeprecationWarning` (`Image.getdata`, which
 Pillow 14 removes; the script's line 121). After the copy the same command
-and `git diff --exit-code` on the file repeat the check in the tree.
+and `git diff --exit-code` on the file repeat the check in the tree: the file is
+staged by the `git restore` above, so a difference the script writes shows.
 
 ### 0.2 `docs/evidence/README.md`
 
-Two sections appended after `## breeze-offscreen/` (the file ends at line
-47), in the form of `## os-probe/` (`:13-32`):
+Two sections appended at the file's end, after its last section,
+`## widget-icons/` (`:47` is the end at `0fa28027`, which has no
+`## widget-icons/`), in the form of `## os-probe/` (`:13-32`):
 
 ```
 ## `winui-host/`
@@ -293,11 +311,12 @@ never published), a WinUI 3 application dispatched through that branch's
 workflow does not have), read on a GitHub Windows runner. Kept here: the file a citation reads, with the run's own `README.md`
 and `run.toml`, copied unchanged from this repository's commit `efbffffe`.
 The run's README describes the run as the evidence repository keeps it, and
-names recordings and a text-scale run that are not kept here.
+names recordings, a text-scale run and the OS probe's run of the same day
+(`docs/evidence/os-probe/2026-11-06-run-42307873328/`) that are not kept here.
 
 | Run | Date | Commit | Why |
 |-----|------|--------|-----|
-| [`2026-11-06-run-42308526155/`](winui-host/2026-11-06-run-42308526155/) ([run](https://github.com/tiborgats/native-theme/actions/runs/42308526155)) | 2026-11-06 | `7bad463f` on `v0.8.0-tools-hosts-m1b` | `GetCaretBlinkTime`, windows-11's caret blink ([specification](../todo_v0.7.x_caret-blink-spec.md) Part 0) |
+| [`2026-11-06-run-42308526155/`](winui-host/2026-11-06-run-42308526155/) ([run](https://github.com/tiborgats/native-theme/actions/runs/42308526155)) | 2026-11-06 | `7bad463f` on `v0.8.0-tools-hosts-m1b` | `GetCaretBlinkTime`, windows-11's caret blink ([specification](../todo_v0.7.2_caret-blink-spec.md) Part 0) |
 
 A citation links the file and its line
 (`evidence/winui-host/2026-11-06-run-42308526155/winui-host-windows-11-arm/frames.toml#L248`).
@@ -322,7 +341,7 @@ are in the evidence repository and in this repository's commit `b38c1795`
 
 | Run | Date | Commit | Why |
 |-----|------|--------|-----|
-| [`2026-11-06-run-42275028573/`](ios-host/2026-11-06-run-42275028573/) ([run](https://github.com/tiborgats/native-theme/actions/runs/42275028573)) | 2026-11-06 | `7bb1e784` on `v0.8.0-tools-ios-m2` | ios-13's caret blink ([specification](../todo_v0.7.x_caret-blink-spec.md) Part 0) |
+| [`2026-11-06-run-42275028573/`](ios-host/2026-11-06-run-42275028573/) ([run](https://github.com/tiborgats/native-theme/actions/runs/42275028573)) | 2026-11-06 | `7bb1e784` on `v0.8.0-tools-ios-m2` | ios-13's caret blink ([specification](../todo_v0.7.2_caret-blink-spec.md) Part 0) |
 
 `python3 -I docs/evidence/ios-host/2026-11-06-run-42275028573/analysis/behavior_values.py docs/evidence/ios-host/2026-11-06-run-42275028573/ios-host-macos-15`
 writes `behavior_values.toml` again from the kept inputs (Pillow). A citation
@@ -331,14 +350,14 @@ links the file and its line
 ```
 
 The two links to this specification are relative to `docs/evidence/`:
-`../todo_v0.7.x_caret-blink-spec.md` while it is in `docs/`; E.6 changes
-them to `../archive/todo_v0.7.x_caret-blink-spec.md` when it archives it.
+`../todo_v0.7.2_caret-blink-spec.md` while it is in `docs/`; E.6 changes
+them to `../archive/todo_v0.7.2_caret-blink-spec.md` when it archives it.
 
 ## Part A — The model
 
 Implements B2 and B1's place. Struct, derive, validation, registry, rules
 and facts rows land in one unit of work with Part B and D.2 (*Order and gates*, unit 3): the registry key, the
-derive inventory and the facts row are checked against each other (A.10),
+derive inventory and the facts row are checked against each other (A.9),
 and the new leaves need egui's mapping rows at once.
 
 ### A.1 The derive: a `u32` lower bound
@@ -623,7 +642,7 @@ The third, `caret_blink_timeout` (`F/kde/tokens.toml:1641-1650`, `F/gnome/tokens
 `:47693-47700`, `F/material/tokens.toml:1778-1787`):
 
 ```
-| `caret_blink_timeout` | ❓ — not established; pending in the 0.8.0 facts (`docs/facts/macos/tokens.toml:47693-47700` on `v0.8.0-rc1` at `78ee0efd`, U606) · macOS 26: ❓ — pending as well (`:46543-46547`, U328) | ❓ — not one value: WinUI's text box stops blinking after the whole blink periods that fit in 5 s, three periods where none fits (`CheckCaretBlinkTimeout`, [TextBoxView.cpp:2742-2763](https://github.com/microsoft/microsoft-ui-xaml/blob/ba3a8d59e6de4e2b86ca4f61c78bc26ccf129afd/src/dxaml/xcp/core/native/text/Controls/TextBoxView.cpp#L2742-L2763)), a rule over the blink time; the system's own `SPI_GETCARETTIMEOUT` is not read | **(none)** — never stops: Qt's blink timer runs for as long as the field has focus ([qwidgetlinecontrol.cpp:1497-1531](https://github.com/qt/qtbase/blob/v6.12.0/src/widgets/widgets/qwidgetlinecontrol.cpp#L1497-L1531)) | ⚙ 10000 **(GTK)** — `cursor-blink-timeout`, "Time after which the cursor stops blinking, in seconds.", 10 by default, 1 to 2147483647 ([org.gnome.desktop.interface.gschema.xml.in:78-85](https://gitlab.gnome.org/GNOME/gsettings-desktop-schemas/-/blob/51.0/schemas/org.gnome.desktop.interface.gschema.xml.in#L78-L85); GTK's `gtk-cursor-blink-timeout`, an int 1..G_MAXINT, 10 by default ([gtksettings.c:378-380](https://gitlab.gnome.org/GNOME/gtk/-/blob/4.24.1/gtk/gtksettings.c#L378-L380)), whose doc comment says "The timer is reset after each user interaction"); past it the caret is shown and stays (`blink_cb`, [gtktext.c](https://gitlab.gnome.org/GNOME/gtk/-/blob/4.24.1/gtk/gtktext.c)) | **(none)** — never stops: the blink loops until the cursor animation is cancelled ([CursorAnimationState.kt:78-83](https://github.com/androidx/androidx/blob/e4d933c98df7baa7ea2b83eea6e086915961e0ff/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/text/input/internal/CursorAnimationState.kt#L78-L83)) |
+| `caret_blink_timeout` | ❓ — not established; pending in the 0.8.0 facts (`docs/facts/macos/tokens.toml:47693-47700` on `v0.8.0-rc1` at `78ee0efd`, U606) · macOS 26: ❓ — pending as well (`:46543-46547`, U328) | ❓ — not one value: WinUI's text box stops blinking after the whole blink periods that fit in 5 s, three periods where none fits (`CheckCaretBlinkTimeout`, [TextBoxView.cpp:2742-2763](https://github.com/microsoft/microsoft-ui-xaml/blob/ba3a8d59e6de4e2b86ca4f61c78bc26ccf129afd/src/dxaml/xcp/core/native/text/Controls/TextBoxView.cpp#L2742-L2763)), a rule over the blink time; the system's own `SPI_GETCARETTIMEOUT` was 5000 on the OS probe's Windows 11 image (`probe.toml` of os-probe run 42307873328 at `efbffffe`, `[windows.system_parameters]`), and how WinUI's rule relates to it was not read | **(none)** — never stops: Qt's blink timer runs for as long as the field has focus ([qwidgetlinecontrol.cpp:1497-1531](https://github.com/qt/qtbase/blob/v6.12.0/src/widgets/widgets/qwidgetlinecontrol.cpp#L1497-L1531)) | ⚙ 10000 **(GTK)** — `cursor-blink-timeout`, "Time after which the cursor stops blinking, in seconds.", 10 by default, 1 to 2147483647 ([org.gnome.desktop.interface.gschema.xml.in:78-85](https://gitlab.gnome.org/GNOME/gsettings-desktop-schemas/-/blob/51.0/schemas/org.gnome.desktop.interface.gschema.xml.in#L78-L85); GTK's `gtk-cursor-blink-timeout`, an int 1..G_MAXINT, 10 by default ([gtksettings.c:378-380](https://gitlab.gnome.org/GNOME/gtk/-/blob/4.24.1/gtk/gtksettings.c#L378-L380)), whose doc comment says "The timer is reset after each user interaction"); past it the caret is shown and stays (`blink_cb`, [gtktext.c](https://gitlab.gnome.org/GNOME/gtk/-/blob/4.24.1/gtk/gtktext.c)) | **(none)** — never stops: the blink loops until the cursor animation is cancelled ([CursorAnimationState.kt:78-83](https://github.com/androidx/androidx/blob/e4d933c98df7baa7ea2b83eea6e086915961e0ff/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/text/input/internal/CursorAnimationState.kt#L78-L83)) |
 ```
 
 The table has no iOS column; ios-13 cites its evidence in the preset (B3,
@@ -633,7 +652,7 @@ API, function, or queryable constant" (`:11`), as `show_delay`'s Windows cell
 tags `SPI_GETMOUSEHOVERTIME`'s reading on the probe images; **(measured)**
 (`:21`) is for values measured from rendered pixels.
 
-### A.10 Checkers and tests a new field meets
+### A.9 Checkers and tests a new field meets
 
 | Check | What it requires of the three fields | Where it is met |
 |---|---|---|
@@ -642,7 +661,7 @@ tags `SPI_GETMOUSEHOVERTIME`'s reading on the probe images; **(measured)**
 | `scripts/check_section_refs.py` | each `§` in the registry, the inheritance rules, `docs/showcase-elements.toml` and `docs/new-os-version-guide.md` names a facts section | A.7's `(§2.4)`, B.3 |
 | `scripts/check_wrong_safety_nets.py` | nothing: no `[uniform]` rule names the fields | — |
 | `scripts/check_todo_citations.py` | a key path in `docs/todo.md` names a key its preset has; a preset line citation carries `at <sha>` | E.4 cites no preset by line, and names `input.caret_blink_*_ms` keys only as model paths |
-| `scripts/check_preset_citations.py` | a `platform-facts.md:N` above a value cites a row named after its key (its line-number comparison dropped by v0.7.1's unit, S6) | nothing: B.1's comments name the facts file and section without a line number, `platform-facts.md (§2.4)` (S6); the checker reads them as citations and compares none (v0.7.1 Part I, I.3) |
+| `scripts/check_preset_citations.py` | each `platform-facts.md` citation in a preset comment is in a form it reads, by line (`platform-facts.md:N`) or by section alone (`platform-facts.md (§2.4)`); it compares none with the facts file's rows (its docstring) | nothing: B.1's comments name the facts file and section without a line number, `platform-facts.md (§2.4)` (S6); the checker reads them as citations and compares none (the GPUI Kit 0.9.1 specification's I.3, `docs/archive/todo_v0.7.1_gpui-kit-0.9.1-spec.md`) |
 | `no_inheritance_fields_are_not_inherited` (`native-theme/src/resolve/inheritance.rs:816`) | no rule inherits a `[no_inheritance]` field | A.7 |
 | `documented_sizes.rs` | nothing by itself; B.2 adds the gate the tooltip delay has | B.2 |
 | `proptest_roundtrip.rs` | the one full struct literal compiles | A.5 |
@@ -725,8 +744,9 @@ Every comment takes the batch's one form, today's with the line number
 removed (S6): `# platform-facts.md (§2.4): …` above a stated value, and
 `# K not stated: platform-facts.md (§2.4), …` for a key the platform does
 not give. `check_preset_citations.py` reads them as citations and compares
-none (v0.7.1 Part I, I.3); the ios-13 comments contain no
-`platform-facts.md`.
+none (its module doc; the GPUI Kit 0.9.1 specification's I.3,
+`docs/archive/todo_v0.7.1_gpui-kit-0.9.1-spec.md`); the ios-13 comments
+contain no `platform-facts.md`.
 
 Lines added: kde-breeze 5 per variant, adwaita 6, material-3 5, windows-11
 5, ios-13 6.
@@ -744,8 +764,9 @@ Lines added: kde-breeze 5 per variant, adwaita 6, material-3 5, windows-11
   every other one must state none, as now. An `elsewhere` entry that names
   no preset of `UNSOURCED_PRESETS` is a failure
   (`"{name}: not an unsourced preset, so it has no source outside platform-facts"`),
-  not ignored. Its doc says so. The two callers (`:1362`, `:1390`) pass
-  `&[]`.
+  not ignored. Its doc says so. The two callers (`:1362`, `:1390`;
+  `native_themes_state_the_tooltip_show_delay` and
+  `native_themes_state_the_dialog_entrance`) pass `&[]`.
 - Three constants after `TOOLTIP_SHOW_DELAY` (`:1344-1354`), each with the doc
   form of that one, naming its row without a line (`platform-facts.md` §2.4
   `caret_blink_on`, `caret_blink_off`, `caret_blink_timeout`; S6):
@@ -755,10 +776,10 @@ Lines added: kde-breeze 5 per variant, adwaita 6, material-3 5, windows-11
   Adwaita 10000, the other four None.
 - A test `native_themes_state_the_caret_blink`: asserts
   `facts_row("2.4", "caret_blink_on").is_some()`, and the same for
-  `caret_blink_off` and `caret_blink_timeout` (v0.7.1's Part I.2 gives the
-  file `facts_row` in place of `facts_line(N)` and `facts_heading(N)`, S6);
-  then runs `soft_field_failures`, which after v0.7.1's Part I.2 takes a row
-  name where it took `line: usize` (its two existing callers pass
+  `caret_blink_off` and `caret_blink_timeout` (`facts_row(section, key)`,
+  the file's lookup of a facts row by its section and its key, S6);
+  then runs `soft_field_failures`, which takes the row's name as
+  `row: &str` (its two existing callers pass
   `"§2.7 show_delay"` and `"§2.22 entrance"`), three times:
   `"input.caret_blink_on_ms"` with the row `"§2.4 caret_blink_on"` and
   `&[("ios-13", Some(650))]`, `"input.caret_blink_off_ms"` with
@@ -771,7 +792,9 @@ Lines added: kde-breeze 5 per variant, adwaita 6, material-3 5, windows-11
 
 ### B.3 Documents of the presets
 
-`native-theme/src/presets/README.md`, after the paragraph at `:44-47`:
+`native-theme/src/presets/README.md`, after the paragraph at `:44-47`,
+the one that begins "`tooltip.show_delay_ms` and `dialog.entrance` are gated
+the same way":
 
 ```
 The caret's blink, `input.caret_blink_on_ms`, `caret_blink_off_ms` and
@@ -859,7 +882,7 @@ Tests, in `kde/mod.rs`'s `tests`, through `from_kde_content` and its
    every case.
 2. `a_kde_blink_rate_of_0_resolves_to_no_blink`: content `[KDE]\nCursorBlinkRate=0\n`
    through `crate::pipeline::run_pipeline(result, "kde-breeze")?` (the call
-   `text_scale_reaches_the_font_size_once` makes, `gnome/mod.rs`): the light
+   `the_reader_reports_a_font_dpi_of_96` makes, `kde/mod.rs`): the light
    variant's `input.caret_blink_off == Some(0)` and `caret_blink_on ==
    Some(500)`, the preset's (the fixture states no colour scheme, so the
    reader's variant is light).
@@ -951,10 +974,8 @@ in `WATCHED`) and `the_gnome_reader_lists_every_gsetting_it_reads`
 
 Tests, in `gnome/mod.rs`'s `tests`:
 
-1. `one_gsettings_read_per_key` (`:1322-1345`): each count gains 3 (at
-   `0fa28027` `(None, 9), (Some(ColorScheme::PreferDark), 8)` become `12`
-   and `11`; a release before this one may have changed the base, the
-   header's rule).
+1. `one_gsettings_read_per_key` (`:1322-1345`): each count gains 3:
+   `(None, 9), (Some(ColorScheme::PreferDark), 8)` become `12` and `11`.
 2. `the_blink_time_is_halved_into_both_durations`: `build_theme` with a
    `gsetting` that answers `cursor-blink-time` with `"1000"`: on 500, off
    500; with `"1201"`: 600, 600.
@@ -979,11 +1000,12 @@ the other parts then drop or word differently.
 (`UISettings::CaretBlinkRate`, the safe call weighed, is not used: open
 point 2.)
 
-- `native-theme/Cargo.toml`'s comment above the Windows dependency (`:30`),
+- `native-theme/Cargo.toml`'s comment above the `windows` feature (`:30`),
   "# The Windows reader: UISettings, the system metrics and fonts.", which
   describes the reader as well, becomes "# The Windows reader: UISettings,
   the system metrics, the fonts and the caret's blink time." in the same
-  commit (unit 4; a manifest change, so unit 4 is structural, rule 24).
+  commit (unit 4; a manifest change, which the `--commit` after units 4 to 6
+  covers).
 - Module doc, first paragraph (`:1-10`): "reads light or dark, the accent
   color and its shades, …" gains "the caret's blink time" in its list.
   `# Sources not watched` (`:31-48`): its intro (`:33-38`), "Each is
@@ -1003,8 +1025,8 @@ point 2.)
   GetCaretBlinkTime() -> u32`, feature `Win32_UI_WindowsAndMessaging`
   already on, `native-theme/Cargo.toml:141`) in one `unsafe` block under a
   `// SAFETY:` comment: it takes no argument and Microsoft's page states no
-  precondition (the page linked), in the form of `read_all_system_fonts`
-  (`:182-200`). The crate denies `unsafe_code` (`native-theme/src/lib.rs:175`);
+  precondition (the page linked), in the form of `logical_system_metric`,
+  the file's call by value with no pointer. The crate denies `unsafe_code` (`native-theme/src/lib.rs:175`);
   the exception per function is the file's form (`:189`, `:237`, `:280`,
   `:447`, `:491`). `read_windows` (`:673-709`) keeps its call of
   `build_theme` (`:700`), binds the result, and returns it after
@@ -1071,10 +1093,12 @@ setting or on the call succeeding. It does depend on `read_windows()`
 returning `Ok` on CI's Windows image, `windows-latest`
 (`.github/workflows/ci.yml:221-228`), which no run has shown: the
 measurement of 530 was on `windows-11-vs2026-arm64` (Part 0's `run.toml`),
-and no existing test calls `read_windows()`. That is first seen in CI
+and no existing test shows it: one reaches `read_windows()` and accepts an
+`Err` (`accessibility_preferences_from_system_is_consistent_with_system_theme`,
+`native-theme/src/lib.rs`, through `SystemTheme::from_system()`). That is first seen in CI
 (*Not verified*), and since a red CI run emails the maintainer, the notice
-of the branch's one push (*Order and gates*) says that its CI run is this
-test's first.
+of the push after units 4 to 6's gate (*Order and gates*) says that its CI
+run is this test's first.
 
 ### C.4 macOS, the pipeline
 
@@ -1100,8 +1124,8 @@ What changes elsewhere:
 - E.2: `native-theme/README.md:74` and `native-theme/src/lib.rs:108` keep
   "`UISettings`, the system metrics and fonts", and `native-theme/Cargo.toml`'s
   comment (`:30`) is not edited, so unit 4 changes no manifest.
-- E.3: the ROADMAP section reads "… and the KDE and GNOME readers read the
-  user's; the Windows reader does not yet."
+- E.3: the ROADMAP paragraph's sentence reads "… and the KDE and GNOME
+  readers read the user's; the Windows reader does not yet."
 - E.4: the dated sentence in *Windows watcher: the window-only sources* is
   not written; a new entry is, under `## Core API` after E.4's
   *windows-11: the caret's blink time-out*:
@@ -1114,7 +1138,7 @@ What changes elsewhere:
       2026-11-14: the blink time in milliseconds, `INFINITE` for no blink,
       0 for a failure), is `unsafe`, and the one new `unsafe` call it needs
       in `native-theme/src/windows.rs` waits for the maintainer's approval
-      (`docs/archive/todo_v0.7.x_caret-blink-spec.md` C.3 and open point
+      (`docs/archive/todo_v0.7.2_caret-blink-spec.md` C.3 and open point
       2). The safe `UISettings.CaretBlinkRate` is not used: its page does
       not say it is the same setting. Until then windows-11 states the
       measured 530 / 530.
@@ -1149,7 +1173,7 @@ D.4 are unit 5 (*Order and gates*).
 2. **`to_theme`** (`:326-397`): after the `scrollbar_mode` block (`:364-370`),
    where `caret_blink(resolved)` is `Some`, `theme.cursor_blink` is set to
    it, with a comment citing B5; otherwise upstream's default stays
-   (`GC/theme/mod.rs:797`).
+   (`GC/theme/mod.rs:815`).
 3. **The write rule.** A new global after `TooltipDelayWrite` (`:1249-1260`),
    in its form: `#[derive(Default)] struct CursorBlinkWrite { last_written:
    Option<CursorBlink>, app_blink: CursorBlink }` with `impl Global`, its
@@ -1187,6 +1211,16 @@ Doc text in `lib.rs`:
   does, and with the variant's caret blink as `cursor_blink`, or the
   application's where the variant states none (*The caret's blink* below);
   then installs …" (the rest unchanged).
+- `to_theme`'s doc, which 0.7.2 wrote and this work makes false in two
+  places. "`scrollbar_mode` and `highlight_theme`, and stores" becomes
+  "`scrollbar_mode`, `highlight_theme` and, where the theme states a caret
+  blink, `cursor_blink` (`caret_blink`), and stores"; and its two sentences
+  on what stays at gpui-component's defaults and what `apply` keeps become:
+  "`transparent`, `notification`, `list`, `sheet` and `motion` stay at
+  gpui-component's defaults, which native-theme does not model, and so does
+  `cursor_blink` where the theme states no blink; [`apply`] keeps the
+  installed theme's `notification`, `list`, `sheet` and `motion` in their
+  place and installs the caret blink by its own rule (*The caret's blink*)."
 - A paragraph after the *Reduced motion* paragraph (`:1147-1155`):
 
 ```
@@ -1246,7 +1280,7 @@ Tests in `lib.rs`: items 1, 3 and 4 in `mod tests` (`:1606`), items 2 and
 5. `#[gpui::test]`s, with `apply_preset` (`:3269-3276`) and presets loaded
    as `tooltip_delay_presets` does (`:3251-3263`), each asserting the styled
    theme's `cursor_blink` and gpui-base's (`gpui_base::Theme::global(cx)`,
-   which `sync_base` fills, `GC/theme/mod.rs:463`):
+   which `sync_base` fills, `GC/theme/mod.rs:473`):
    - `apply_installs_the_themes_caret_blink`: adwaita → its blink;
    - `a_theme_without_a_blink_brings_back_the_applications`: steady set by
      the application before the first `apply`; adwaita → adwaita's;
@@ -1299,7 +1333,7 @@ Tests in `lib.rs`: items 1, 3 and 4 in `mod tests` (`:1606`), items 2 and
   keeps it in any case);". Second bullet (`:645-649`), "`focus_ring` and
   `scrollbar_mode` survive it;" becomes "`focus_ring`, `scrollbar_mode` and
   `cursor_blink` survive it;" (gpui-component keeps the blink across
-  `Theme::change`, its test `GC/theme/mod.rs:1047-1067`).
+  `Theme::change`, its test `GC/theme/mod.rs:1065-1085`).
 - *What gets mapped*, a bullet after *Tooltip delay* (`:1072-1076`):
   "- **Caret blink** — `input.caret_blink_on_ms`, `caret_blink_off_ms` and
   `caret_blink_timeout_ms`, installed by `apply` as gpui-component's
@@ -1333,12 +1367,14 @@ the egui library, `scripts/check_release.sh:633-634`), and the egui crate
 denies no cast lint (`connectors/native-theme-egui/src/lib.rs:158-164`; the
 workspace sets no `[lints]`).
 
-egui 0.37, which lands before this release (the header), changes nothing
-here: in egui 0.37.0 (Cargo's registry) `TextCursorStyle` has the same five
-fields (`src/style.rs:1061-1076`), its defaults are the same (`blink: true`,
-`on_duration: 0.5`, `off_duration: 0.5`, `src/style.rs:1083-1085`), and `paint_text_cursor`
-blinks the same way (`src/text_selection/visuals.rs:291` on). The line
-numbers of `EG` above are 0.36.2's.
+The egui connector depends on egui 0.37.0
+(`connectors/native-theme-egui/Cargo.toml`, `egui = "0.37.0"`). There
+`TextCursorStyle` has five fields, `stroke`, `preview`, `blink`,
+`on_duration` and `off_duration` (`EG/style.rs:1061-1076`); its defaults are
+`blink: true`, `on_duration: 0.5` and `off_duration: 0.5`
+(`EG/style.rs:1083-1085`); and `TextEdit` paints its caret through
+`paint_text_cursor` (`EG/widgets/text_edit/builder.rs:1025`), which reads the
+three (`EG/text_selection/visuals.rs:297-299`).
 
 Tests in `base.rs`'s `tests`:
 
@@ -1389,18 +1425,21 @@ upstream = "egui: a time-out after which TextCursorStyle stops blinking, the car
 
 `connectors/native-theme-egui/src/mapping_tests.rs`:
 
-Counts below are deltas (the header's rule), with their value at
-`0fa28027`:
+Counts below are deltas (the head: a count is 0.7.2's tree's value and what
+this work makes of it), with their value in today's
+tree:
 
 - `every_leaf_has_exactly_one_row_and_every_row_is_well_formed`
-  (`:234-438`): the leaf count gains 3 (`516` at `:239` becomes `519`), and
-  its message's ResolvedTheme count likewise (`"512 ResolvedTheme leaves + 4
-  layout leaves (§5.7)"` becomes `"515 …"`, `:240`): a `None` soft option
+  (`:234-438`): the leaf count gains 3 (`525`, at `:239`, becomes `528`), and
+  its message's ResolvedTheme count likewise (`"521 ResolvedTheme leaves + 4
+  layout leaves (§5.7)"` becomes `"524 …"`, `:240`): a `None` soft option
   is a leaf too (`:152-155`).
 - `verdict_totals_match_the_specification` (`:443-497`): the inputs'
-  DERIVED +2 and UNMAPPABLE +1 (`("inputs", [4, 35, 36, 12])` becomes
-  `[4, 35, 38, 13]`); `egui-limited` +1 (`52` becomes `53`) in the
-  assertion and in the doc (`:440`).
+  DERIVED +2 and UNMAPPABLE +1 (`("inputs", [4, 40, 32, 12])` becomes
+  `[4, 40, 34, 13]`); `egui-limited` +1 (`52` becomes `53`) in the
+  assertion and in the doc (`:440`). The comment over the inputs' tuple,
+  which accounts for its numbers, gains "and the caret's blink (two DERIVED,
+  one UNMAPPABLE) since 0.7.2".
 
 `connectors/native-theme-egui/src/contract.rs`: `read_style` (`:198` on)
 gains `["visuals", "text_cursor", "blink"] => Val::Bool(…)`,
@@ -1416,11 +1455,11 @@ sinks are written by a formula, not by a row's conversion (`:521-529`).
 `connectors/native-theme-egui/src/mapping.md` is regenerated, never edited:
 `cargo test -p native-theme-egui --lib -- --ignored regenerate_mapping_md`
 (`src/mapping_doc.rs:19`), and `mapping_md_is_current` holds it. Its totals
-gain Inputs +3 leaves, DERIVED +2, UNMAPPABLE +1, `egui-limited` +1. At
-`0fa28027` (`src/mapping.md:14`, `:17`, `:19`): Inputs 87 leaves, DERIVED
-36, UNMAPPABLE 12; TOTAL 516, DERIVED 171, UNMAPPABLE 91; `egui-limited`
-52. After this change, on that base: Inputs 90, 38, 13; TOTAL 519, 173,
-92; `egui-limited` 53.
+gain Inputs +3 leaves, DERIVED +2, UNMAPPABLE +1, `egui-limited` +1. In
+today's tree (`src/mapping.md:14`, `:17`, `:19`): Inputs 88 leaves, DERIVED
+32, UNMAPPABLE 12; TOTAL 525, DERIVED 169, UNMAPPABLE 91; `egui-limited`
+52. After this change: Inputs 91, 34, 13; TOTAL 528, 171, 92;
+`egui-limited` 53.
 
 `connectors/native-theme-egui/src/tripwires.rs`: no change. `TextCursorStyle`
 is already destructured field by field (`:216-223`), and T1b's three
@@ -1505,6 +1544,9 @@ input's Widget Info, as its other leaf rows do (B5).
   - `input.caret_blink_on_ms`: `"gpui: Theme::cursor_blink, which apply installs (lib.rs, caret_blink): each phase half of caret_blink_on and caret_blink_off together, as gpui-base blinks in equal phases (gpui-base/input/base/blink_cursor.rs, CursorBlink::blinking); upstream's 500ms where the theme states no blink"`;
   - `input.caret_blink_off_ms`: `"gpui: Theme::cursor_blink: steady where it is 0 (CursorBlink::steady), else its half of the phase; upstream's 500ms where the theme states no blink"`;
   - `input.caret_blink_timeout_ms`: `"gpui: Theme::cursor_blink's idle time-out (CursorBlink::with_idle_timeout): the caret stops blinking, shown, that long after the last focus, edit or movement; it never stops where unstated"`.
+
+  `every_listed_leaf_has_a_route` (`examples/showcase-gpui/tests.rs`)
+  requires the three once the element lists them.
 - egui: nothing by hand. The showcase's line for a leaf is its
   `mapping.toml` row's route (`examples/showcase-egui/info.rs:524-545`,
   `mapping_key` strips `_ms`), so D.2's rows give it.
@@ -1536,20 +1578,21 @@ input's Widget Info, as its other leaf rows do (B5).
 
 ### E.1 `CHANGELOG.md`
 
-The entries go under a new heading `## [0.7.N] - <date>`, with the number
-proposed for this release and the date filled in by the version bump (E.6),
-never `## [Unreleased]` (rule 14, for every release of the batch). Its
-section stands above every other `## [`
-heading of the file, whichever releases land before it (the header); where the
-merge (*Order and gates*, *The branch*) meets a conflict there, this release's
-section is put first. No gate checks the order of the headings: `scripts/check_release.sh:1309` and
-`:1344` look only for the version's dated heading. Sections in 0.7.0's
-order (`CHANGELOG.md:34`, `:90`, `:213`).
+The entries go into 0.7.2's section, `## [0.7.2] - <date>`, which is in the
+file (never `## [Unreleased]`, rule 14): each entry at the end of its
+subsection, in the order below. The close-out sets the heading's date. No
+gate checks the section's place or the entries' order:
+`scripts/check_release.sh` looks only for the version's dated heading. The
+KDE document's steps add their entries to the same section (its 6.H.1,
+7.I.1).
 
-`### Breaking Changes` (under B6 (a); the words of `CHANGELOG.md:66-68`):
+`### Breaking Changes` (B6 (a)). The section names its break in one bullet,
+which lists every struct 0.7.2 gives a field. Unit 6 adds `InputTheme`'s
+clause to it, so that it reads as below; the KDE document's 6.H.1 gives the
+bullet's last form, with its own structs:
 
 ```
-- **native-theme**: `InputTheme` gains three fields, `caret_blink_on`, `caret_blink_off` and `caret_blink_timeout` (see *Added*). `InputTheme` is not `#[non_exhaustive]`, so a struct literal of it outside the crate needs the new fields or `..Default::default()`; `ResolvedInputTheme` is `#[non_exhaustive]` already.
+- **native-theme**: `ThemeDefaults` gains `focus_ring_keyboard_only`, `ButtonTheme` gains `hover_border_color` and `focus_border_color`, `CheckboxTheme` and `ComboBoxTheme` gain `hover_border_color`, `ToolbarTheme` gains `button_hover_background`, `button_hover_border_color`, `button_active_background` and `button_checked_background`, and `InputTheme` gains `caret_blink_on`, `caret_blink_off` and `caret_blink_timeout` (see *Added*). None of them is `#[non_exhaustive]`, so a struct literal of any of them outside the crate needs the new fields or `..Default::default()`; their resolved forms are `#[non_exhaustive]` already.
 ```
 
 `### Added`:
@@ -1564,7 +1607,7 @@ order (`CHANGELOG.md:34`, `:90`, `:213`).
 `### Changed`:
 
 ```
-- **native-theme-gpui**: `apply` and `apply_system_theme` install the theme's caret blink as gpui-component's `Theme::cursor_blink`, where they kept the application's always (since 0.7.1): steady where `caret_blink_off_ms` is 0, else blinking with each phase half of the two durations together (gpui-component blinks in equal phases), and the time-out as its idle time-out. Where the theme states no blink the application's own comes back, as for the tooltip delay, decided by value; `apply_accessibility` leaves the blink, and a mode switch through gpui-component keeps it.
+- **native-theme-gpui**: `apply` and `apply_system_theme` install the theme's caret blink as gpui-component's `Theme::cursor_blink`, where they kept the application's always (0.7.1): steady where `caret_blink_off_ms` is 0, else blinking with each phase half of the two durations together (gpui-component blinks in equal phases), and the time-out as its idle time-out. Where the theme states no blink the application's own comes back, as for the tooltip delay, decided by value; `apply_accessibility` leaves the blink, and a mode switch through gpui-component keeps it.
 - **native-theme-egui**: the base style writes the theme's blink into `Visuals::text_cursor` (`blink`, `on_duration`, `off_duration`) where the theme states one; egui has no time-out, so `input.caret_blink_timeout` is unmappable.
 ```
 
@@ -1572,7 +1615,11 @@ The iced entry is under *Added*, not *Changed*: iced's behaviour does not
 change, the crate documents one more value it cannot take, as 0.7.0 listed
 `dialog.entrance` (`CHANGELOG.md:134`).
 
-### E.2 `native-theme/README.md`
+### E.2 `native-theme/README.md` and `README.md`
+
+`native-theme/README.md` is the crate's documentation (`lib.rs` includes it), so
+its edits and the table's copy in `lib.rs` go with the crate's code, in unit 4;
+the root `README.md`'s line is unit 6's.
 
 - *Core concepts*, the *Behaviour* item (`:51`): "`expander.frame_enabled`
   and `tab.active_indicator_side`, where the toolkit's own value applies too"
@@ -1590,20 +1637,31 @@ change, the crate documents one more value it cannot take, as 0.7.0 listed
   and the caret's blink time"; the same row of the crate docs' copy of the
   table, `native-theme/src/lib.rs:108`, likewise (C.5: both stay without the
   approval). The same text in `native-theme/Cargo.toml`'s comment (`:30`)
-  changes with C.3, in unit 4, not here.
+  changes with C.3, in unit 4 as well.
+- The root `README.md`, *Core concepts*, the list of what a resolved theme
+  holds as `Option`s: "the tooltip show delay, the dialog entrance, the
+  expander's arrow side and frame, and the tab's active-indicator side: where
+  one is `None`, the toolkit's own value applies" becomes "the tooltip show
+  delay, the dialog entrance, the caret's blink, the expander's arrow side and
+  frame, and the tab's active-indicator side: where one is `None`, the
+  toolkit's own value applies", the rest unchanged (unit 6).
 
 ### E.3 `ROADMAP.md`
 
-Under B6 (a) as a release of its own, a section in the place the
-maintainer's order of the releases gives it (the KDE document's D10,
-*The releases after v0.7.1*, proposes it as item 4 of D10's list),
-written at the release's close-out in the form of the delivered ones
-(`ROADMAP.md:85-110`), heading with the version B6 sets:
+No section of its own: the release's section is `## v0.7.2 — …`, which is in
+the file. Unit 6 rewrites its heading for what the release holds now, and
+appends this work's paragraph at the section's end, after the paragraph on
+gpui-component's own icons; the KDE document's steps add theirs after it
+(its 6.H.2, 7.I.2). The heading's wording is the maintainer's to change:
 
 ```
-## v0.7.N — the caret's blink
+## v0.7.2 — egui 0.37, GPUI Kit 0.10.0, gpui-component's own icons in the theme's icon set, the text caret's blink, and from issue #4 the focus ring, the hover outlines, the toolbar buttons, the default button, the table header's states and the unfocused selection
+```
 
-**Delivered:** the model states how the text caret blinks:
+The paragraph:
+
+```
+The model also states how the text caret blinks:
 `input.caret_blink_on_ms` and `caret_blink_off_ms`, how long the caret is
 shown and hidden (`caret_blink_off_ms = 0`: it does not blink), and
 `caret_blink_timeout_ms`, how long after the last input it stops. kde-breeze,
@@ -1614,10 +1672,19 @@ installs it as gpui-component's `cursor_blink`, the egui connector as egui's
 the rest of what the platforms draw of the caret are in the backlog.
 ```
 
+Without the grant of open point 2, C.5 gives the sentence written in place
+of "and the KDE, GNOME and Windows readers read the user's".
+
 `ROADMAP.md:93-94` ("and `apply` keeps the application's `cursor_blink`,
 which native-theme does not model") describes v0.7.1 and stays.
 
-### E.4 `docs/todo.md`
+The count of open `[v0.7.x]` items in *Also in the 0.7.x releases* ("tags 74
+open items `[v0.7.x]`" on 0.7.2's tree): E.4 opens four such entries (five
+with C.5's, without the grant of open point 2), so unit 6 recounts it with
+`grep -c '^- \[ \] \[v0.7.x\]' docs/todo.md` after E.4's edits, writes that
+number there (78, or 79) and records it in its commit body.
+
+### E.4 `docs/todo.md` and `docs/todo_gpui-full-theme.md`
 
 New entries, the rationale's §5, under `## Core API`, after the entry
 *Model: a hovered segment's text colour* (`:1545`). Text:
@@ -1630,9 +1697,9 @@ New entries, the rationale's §5, under `## Core API`, after the entry
       §5; `docs/facts/<platform>/tokens.toml` on
       `v0.8.0-rc1` at `78ee0efd`). Its width: 1 px on KDE and Windows, 2 px
       on macOS, iOS and Material (key `token.caret.width`), and on GNOME no
-      fixed width, the stem the line height × 0.04 + 1 (`docs/todo_v0.7.1_model-completeness-gap-map-gnome.md`,
+      fixed width, the stem the line height × 0.04 + 1 (`docs/todo_v0.8.0_model-completeness-gap-map-gnome.md`,
       GN-3.36); only egui can take it (`Visuals::text_cursor.stroke.width`),
-      while gpui-base draws 1 px (`CURSOR_WIDTH`, gpui-base 0.9.1
+      while gpui-base draws 1 px (`CURSOR_WIDTH`, gpui-base 0.10.0
       `src/input/base/blink_cursor.rs:8`) and iced a 1 px quad. The blink's
       style, at once or fading (`token.caret.blink_style`: hard on KDE,
       Windows and Material, a fade on GNOME and iOS); whether a read-only
@@ -1684,23 +1751,37 @@ New entries, the rationale's §5, under `## Core API`, after the entry
       `docs/facts/windows/tokens.toml:2711-2718` on `v0.8.0-rc1` at `78ee0efd`, pending
       U505): a rule over the blink time, not one value. The system's own
       caret time-out, `SPI_GETCARETTIMEOUT` (windows 0.62.2
-      `src/Windows/Win32/UI/WindowsAndMessaging/mod.rs:6108`), is not read;
-      the parked specification lists it to verify
-      (`docs/todo_v0.7.1_model-completeness-spec-widgets.md:8909-8910` at
-      `0fa28027`: "`SPI_GETCARETTIMEOUT` (to verify): W3-24"). So
-      windows-11 states no `input.caret_blink_timeout_ms`. Read what the
-      system time-out is and how WinUI's rule relates to it before a value
-      is given.
+      `src/Windows/Win32/UI/WindowsAndMessaging/mod.rs:6108`), was 5000 on
+      the OS probe's Windows 11 image (`probe.toml` of os-probe run
+      42307873328 at `efbffffe`, `[windows.system_parameters]`); how WinUI's
+      five seconds relate to it was not read, and the reader does not read
+      it. So windows-11 states no `input.caret_blink_timeout_ms`. Read how
+      WinUI's rule relates to the system time-out before a value is given.
 ```
 
 And in the entry *Theme watcher: OS changes it does not report*, its item
 **Windows watcher: the window-only sources** (`:260-300`), a sentence
 appended at its end in the entry's dated form (decision 13): "*Caret blink
-(<the release's date>):* the reader reads the caret's blink time
-(`docs/archive/todo_v0.7.x_caret-blink-spec.md` C.3), a source the watcher
+(0.7.2, <the day unit 6 writes it>, <unit 4's commit>):* the reader reads the caret's blink time
+(`docs/archive/todo_v0.7.2_caret-blink-spec.md` C.3), a source the watcher
 hears no change of either; which message Windows sends for it was not read."
 (Only with the approval of the `unsafe` call; C.5 gives the entry written
 instead.)
+
+And `docs/todo_gpui-full-theme.md`, whose note of 2026-11-17 on
+gpui-component 0.9.1 says of `cursor_blink` "the application's setting, which
+`apply` keeps as it keeps `motion`": the file's notes are left as written and
+a later one is appended, so unit 6 appends at the file's end:
+
+```
+## Note: the caret's blink (v0.7.2)
+
+Appended <the day unit 6 writes it>; the text above is left as written. The
+0.9.1 note says `apply` keeps the application's `cursor_blink`. From 0.7.2
+on `apply` and `apply_system_theme` install the theme's caret blink there
+where the theme states one, and the application's own comes back where it
+states none (`CHANGELOG.md`, 0.7.2, *Changed*).
+```
 
 The entries cite this specification and the rationale at their archived
 paths, since E.6 moves them in the same release. The tag lines' citations
@@ -1719,45 +1800,33 @@ version, a URL at a commit, a citation "at <sha>", the parked
 `docs/facts/` on `v0.8.0-rc1` at `78ee0efd`) keep their lines.
 
 
-### E.6 Close-out
+### E.6 What this work adds to the release's close-out
 
-- Open the new facts cells' links (decision 4) and correct any that does
-  not show the cited lines.
-- The version bump B6 sets (the workspace version, the inter-crate
-  requirements, `Cargo.lock`, and the date of E.1's `## [0.7.N] - <date>`
-  heading, with its number corrected where B6 set another), as commit
-  `a3c10475` did for 0.7.1.
-- The release's compare link, which `scripts/check_release.sh:1417` names
-  as a release step ("Date the CHANGELOG entry, set its compare link"): a
-  line at the top of the CHANGELOG's link list, in the form its existing
-  links have (`CHANGELOG.md:1802`, `[0.7.0]:
-  https://github.com/tiborgats/native-theme/compare/v0.6.1...v0.7.0`):
-  `[0.7.N]: https://github.com/tiborgats/native-theme/compare/v<the previous
-  release>...v0.7.N`.
-- Asset run (`scripts/generate_assets_release.sh`), after the bump: the
-  provenance stamp hashes `Cargo.lock`, so a run before the bump is stale at
-  once. Parts A to D edit `native-theme/src/`, the connectors' `src/` and
-  `examples/` and `tools/showcase-support/`, which
-  `docs/assets/PROVENANCE.toml` and `docs/COMPATIBILITY.toml` hash; both
-  stamps fail the full check once the CHANGELOG entry is dated
-  (`scripts/check_release.sh:1288-1300`, `:1325-1335`). It needs the
-  maintainer's desktop unlocked and untouched, once, near the end.
-- The full `scripts/check_release.sh`; the semver step reports the
-  `InputTheme` break and asks for the version decision (B6).
-- Archive: this specification, the rationale and the plan move to
-  `docs/archive/` with their row in `docs/archive/README.md`
-  (`scripts/check_release.sh:1033` checks that the index names every
-  archived file, expanding a brace set). The two prefixes cannot share one
-  brace set, so the row, in the form of `docs/archive/README.md:51` and
-  after the newest release's row (the releases before this one add theirs
-  first), is the one below (the plan's own name in place of
-  `todo_v0.7.x_caret-blink-plan.md` if it is named otherwise). The links of
-  0.2 are updated.
+0.7.2's close-out is made again once, after both works (the KDE document's
+7.J.4 and its plan): the archive, the compatibility run, the full check
+beside CI, the asset run, both stamps and the CHANGELOG's date. This work
+adds to it:
 
-```
-| v0.7.N | `todo_v0.7.1_caret-blink-rationale.md`, `todo_v0.7.x_caret-blink-{spec,plan}.md`: the text caret's blink |
-```
-
+- **The links.** The new facts cells' links (decision 4) are opened, and any
+  that does not show the cited lines is corrected, before the close-out's first commit.
+- **The stamps.** Parts A to D edit `native-theme/src/`, the connectors'
+  `src/` and `examples/` and `tools/showcase-support/`, which
+  `docs/assets/PROVENANCE.toml` and `docs/COMPATIBILITY.toml` hash: the
+  compatibility stamp is stale until the close-out's compatibility run, the
+  assets' stamp (stale since `da89b4ba` already, it hashes the lock) until
+  its asset run.
+- **The semver step** of the full check reports the `InputTheme` break; it
+  is a warning, and the release names the break (E.1).
+- **The captures.** They are looked at for a focused text input's caret,
+  which gpui and egui now blink at the theme's durations; a capture is one
+  frame of it.
+- **The archive.** This specification, the rationale and the plan move to
+  `docs/archive/`, where 0.7.2's other documents are; the v0.7.2 row of
+  `docs/archive/README.md` (`scripts/check_release.sh` checks that the index
+  names every archived file, expanding a brace set) gains them so, the two
+  prefixes not sharing one brace set: "`todo_v0.7.1_caret-blink-rationale.md`,
+  `todo_v0.7.2_caret-blink-{spec,plan}.md`: the text caret's blink". The
+  links of 0.2 are updated.
 ## Order and gates
 
 The parts are not units of work: each unit below passes its gate (the cadence
@@ -1789,202 +1858,71 @@ deserialises into; the iced showcase's walks (`showcase-iced.rs:25057`,
 reads only the leaves `docs/showcase-elements.toml` lists; the core has no
 count of leaves.
 
-| Unit | Content | Gate, and what it must cover (`scripts/check_release.sh` line) |
+| Unit | Content | Gate after it |
 |---|---|---|
-| 0 — the documents | the approved documents of this work that no earlier commit added: the rationale, this specification and the plan too, each where v0.7.1's commit (0) did not add it (decision 17); no unit 0 where none is left | the five data-document checks and `--quick`, or `--commit` where it is the warm-up gate; no gate reads them but the archive index, which does not list them until E.6 |
-| 2 | Part 0 | blob ids (0.1); the reproduction check (0.1); the five data-document checks and `--quick` |
-| 3 | Part A (derive, fields, `check_caret_blink`, the `error.rs` and `validate.rs` docs, registry, rules, facts rows, A.5's tests), Part B (presets, B.2's gate, B.3) and D.2 (egui: `base.rs`, `mapping.toml`, `mapping.md` regenerated, `mapping_tests.rs`'s counts, `contract.rs`, the README row) | `--quick` or `--commit` as the count gives it (rule 6; not structural by rule 24, since it changes no manifest, lock, build script, toolchain or gate script; the plan's table); either must cover `cargo check` per crate (`:427`), clippy (`:529-549`), the tests (the loop `:665-682`, `:684`; egui `:760-762`), strict panic (`:572-575`, egui `:633-634`), the five data-document checks (`:965-983`), docs (`:1000-1021`) |
-| 4 | Part C (Windows only with open point 2's approval, C.5 otherwise) | `--quick` or `--commit` as the count gives it (rule 6), and `--commit` where C.3 is done, since its edit of `native-theme/Cargo.toml`'s comment is a manifest change (rule 24); as to the cross-target legs: `--quick` runs every step of `--commit`, the cross-target legs among them (`docs/todo_v0.7.1_gate-speed-spec.md`, decision 1 (c); rule 24), and the summary must name no skipped cross-target check; it must cover the native-theme tests with `$NT_FEATURES` (the readers', the watcher's three), `check_features.sh` (`:443`), strict panic (`:572-575`); for the Windows half, run locally, not left to CI: the cross-target checks and clippy (`:465-497`) and the Windows strict-panic legs (`:582-595`). The Windows and macOS targets are installed on this machine (the session's reading of 2026-11-14), and `check_release.sh` only warns where one is missing (`:466-472`, `:490-491`, `:583-584`), so a missing target would pass silently; CI's Windows leg then runs C.3's Windows-only test |
-| 5 | D.1 (gpui), D.3 (iced), D.4 (showcases, `tools/showcase-support`); after unit 3, whose presets D.3's `UNREACHABLE` exceptions and D.1's tests read; its edits of `connectors/native-theme-gpui/src/` and its examples keep the line count above every line a colour claim cites, or re-point those claims in the same commit (S6's fourth gate, `every_colour_claim_is_read_at_the_line_it_cites` in `src/showcase.rs`) | `--quick` or `--commit` as the count gives it (rule 6): the connector tests (`:705-772`), clippy (`:740-773`), strict panic for the gpui library and the showcases (`:616-654`), `cargo doc` of the connectors (`:1009-1021`) |
-| 6 | Part E: E.1 to E.4, the version bump, close-out (E.6) | E.1 to E.4: the five data-document checks and `--quick`, also where they are the last unit before the merge, the gated head (rule 20: no extra `--commit`); the version bump: `--commit`, a lock change's (it changes the manifests and `Cargo.lock`, rule 6); the close-out: the full run: docs.rs emulation (`:1078`), semver checks (`:1162`, soft), the two stamps |
+| D0 | Both works' documents (decision 17): this specification and its plan, the KDE document and its plan, under their `todo_v0.7.2_` names (the four `todo_v0.7.x_` files go by the rename), and the two rationales' status lines | none: no gate reads them; unit 3's `--quick` is this work's first |
+| 2 | Part 0 | the blob ids and the reproduction check (0.1); built beside unit 3, whose `--quick` runs the documentation checkers over both |
+| 3 | Part A (derive, fields, `check_caret_blink`, the `error.rs` and `validate.rs` docs, registry, rules, facts rows, A.5's tests), Part B (presets, B.2's gate, B.3) and D.2 (egui: `base.rs`, `mapping.toml`, `mapping.md` regenerated, `mapping_tests.rs`'s counts, `contract.rs`, the README row). Its first step, once A.1 and A.2 compile: the walks the second paragraph above names are run (the gpui and iced contracts', egui-widgets', the egui `roles` test, the iced showcase's), since the three `null` leaves are in the resolved theme from then on; a failure outside egui's count stops the unit | `scripts/check_release.sh --quick` over units 2 and 3, this work's first workspace gate, with the five documentation checkers |
+| 4 | Part C (C.3 with the grant of open point 2, C.5 without it) and E.2's edits of `native-theme/README.md` and `lib.rs`, the crate's documentation | none of its own: native-theme's tests with the gate's features before unit 5 starts |
+| 5 | D.1 (gpui), D.3 (iced), D.4 (showcases, `tools/showcase-support`); after unit 3, whose presets D.3's `UNREACHABLE` exceptions and D.1's tests read; it moves no line a colour claim cites: of the gpui connector it edits `src/lib.rs` and the showcase's `info/leaves.rs`, which no claim cites on 0.7.2's tree (the claims cite `colors.rs`, `variants.rs`, `geometry.rs` and the widgets' files; the gate is `every_colour_claim_is_read_at_the_line_it_cites` in `src/showcase.rs`) | none of its own: built after unit 4 |
+| 6 | Part E: E.1, E.3, E.4 and the root README's line of E.2, into the release's sections | after units 4, 5 and 6: one `scripts/check_release.sh --commit` with the gpui connector's two GPUI Fast legs and the five documentation checkers; then the push, and its CI run is read |
 
-Order: 0 (where there is one), 2, 3, then 4 and 5, then 6. There is no
-unit 1: the citations it re-pointed are left as they are (S6), and the
-other units keep their numbers. Units 4 and 5 do not depend on each other.
-**The gates' cadence** (the batch's S1, `docs/todo_v0.7.1_batch-speed-rationale.md`,
-approved by the maintainer on 2026-11-15; it replaces this section's earlier
-sentence that `--commit` runs at the end of every unit). During a unit, the
-agent runs only the touched tests (its targeted commands). At a unit's end,
-`scripts/check_release.sh --quick` (what it runs on 0.7.x is defined by
-`docs/todo_v0.7.1_gate-speed-spec.md`, S1; v0.7.1 ports it), by the
-orchestrator, as a long run until its time is measured (the first timed into
-the record); and `scripts/check_release.sh --commit` (the per-commit subset,
-`:29-34`) where the table says (rule 6): every third code unit counted from
-the last `--commit`; on the release's last code unit before its documents
-and version units (the later of units 4 and 5); after a lock or toolchain
-change (a warm-up gate: a new worktree, a `Cargo.lock` or toolchain change,
-the merge; and the version bump, which changes the manifests and
-`Cargo.lock`), so a documents unit between that unit and the bump takes
-`--quick`, the gated head among them (the documents unit before the merge,
-rule 20, with no extra `--commit`); and on a unit that is structural, one that changes a
-manifest, `Cargo.lock`, a build script, the toolchain or the gate scripts
-(rule 24; of units 2 to 5 only unit 4 is, and only with C.3, which edits
-`native-theme/Cargo.toml`'s comment). A documents-only unit runs the
-five documentation checkers and `--quick`. The full run where the plan has it
-(the close-out), unchanged. A commit between two `--commit` runs is proven by
-`--quick` only; a failure the next `--commit` finds is fixed by a new commit,
-and the record names the commit that brought it.
+Order: D0; then units 2 and 3 side by side; then unit 4, then unit 5, with
+unit 6 beside them. There is no unit 1: the citations it re-pointed are left as they are
+(S6), and the other units keep their numbers (the plans call them C2 to C6).
+Units 4 and 5 depend on unit 3 and not on each other, but unit 4 edits the
+core crate the connectors of unit 5 compile (`native-theme-gpui`'s `native`
+feature turns on `native-theme/native`), so they are built one after the
+other; unit 6 writes root documents only, which no crate compiles. The KDE document's units follow unit 6's gate on the same branch, and
+the close-out comes after them, once (the KDE document's 7.J.4); there is no
+version step, the workspace being at 0.7.2 since `b434b9bc`.
 
-**The branch** (S2). The release's branch is made from the gated head of the
-release before it in its own lane (the KDE lane, S3 as amended on
-2026-11-15: v0.7.1 → the KDE steps 2 and 3 → steps 4 and 5 → the caret →
-steps 6 and 7; here the steps 4–5 release, once its documents unit, the
-last unit before its merge, has passed its gate and its reviews are closed,
-rule 20), and merged with the tag of the release immediately
-before it in the maintainer's release order (under D10's proposal with S5's
-pairs the icons', `v0.7.5`, which carries steps 4 and 5 through its own
-merge), which may be the other lane's:
-`git -c merge.conflictStyle=diff3 merge --no-ff --no-commit -m "Merge <prev-tag> into v0.7.N-rc1" <prev-tag>`
-(rule 17; the merge commit made only after the resolutions and
-regenerations below), once, after this release's last unit before the merge
-has passed its gate, every review is closed and the tag exists, before X,
-the version bump and the close-out (S2 as amended on 2026-11-15: a merge,
-not a rebase, so no commit changes its sha). The orchestrator resolves every
-conflicted hunk by both sides' quoted texts, a citation like any other text
-(S6), names each in the record, and stops where a resolution would change a
-text's meaning; every file resolved, but Markdown that no test parses (so
-`.rs` files, manifests, a TOML a test reads, a script,
-`docs/platform-facts.md`, a README and the egui connector's `mapping.md` are
-in), is reviewed, by `review-hard` where it changes a hard part of a core
-(rule 21 (4)). Where both sides re-pointed the same line a gate reads by
-number (a gpui colour claim, S6's fourth gate), its number is the base plus
-both sides' deltas, which the warm-up gate confirms. A generated file
-(`mapping.md` among them) is regenerated by its command on the merged tree,
-as the orchestrator's long run under the gate lock (rule 2), never resolved
-by hand; a count or verdict tuple a test or gate checks
-(egui's leaf count and verdict tuples, `one_gsettings_read_per_key`'s
-counts) is the base plus both sides' deltas, and a prose count takes the
-tag's side and is named (rule 21). `Cargo.lock`'s toolkit versions are
-compared with the branch's start's, and where one changed (egui 0.37
-normally arrives only here), the upstream lines this specification cites
-are read again in the new version and the forms the units took on the older
-one re-written (rules 19 and 25), with no cargo run before the warm-up but
-`cargo fmt --all --check` and, for the agent that re-writes the code
-forms, one `nice 19` `-p` build or clippy of the crate it re-wrote, through
-`slot.sh` (rule 21); such a commit in a code file is reviewed. Then
-the warm-up gate runs last, covering those commits, and X recounts every
-stated count in the files either side changed, outside the pinned
-documents, and runs the five documentation checkers (rule 17). Nothing is pushed and no close-out (the
-version bump, the compatibility run, the full run, the asset run) starts
-before that merge. Where the branch is made from the tag itself, there is no
-merge.
+**What the gates cover.** During a unit the agent runs the tests its edits
+reach, and `scripts/check_strict_panic.sh` for the crates it changed. `--quick`
+runs `--commit`'s steps and skips a test, documentation or rust-version step
+whose inputs are unchanged since it last passed (the script's header). The
+`--commit` over units 4 to 6 is the one that proves the readers: it covers
+native-theme's tests with the gate's features (the readers', the watcher's
+three), `scripts/check_features.sh`, the strict-panic run, and, for the
+Windows reader, run on this machine and not left to CI, the cross-target
+checks and clippy and the Windows strict-panic legs. The Windows and macOS
+targets are installed on this machine, and `check_release.sh` only warns
+where one is missing, so its summary must name no skipped cross-target
+check. C.3's Windows-only test runs nowhere but in CI's Windows leg, first
+on the push after that gate (*Not verified*). A failure a later gate finds is
+fixed by a new commit, never by rewriting a pushed one, and the record names
+the commit that brought it.
 
-**The lanes** (S3, as amended by the maintainer on 2026-11-15). This work
-runs in the KDE lane, in the worktree `kde-b`, which the steps 2–3 release
-used before it and which it reuses once that release has its tag (rule 18);
-the second lane, beside it, holds gpui-component's own icons alone. The
-machine's limits hold for both lanes together: at most two cargo processes (one gate, and one `nice 19`
-targeted build in the other lane), the gates serialized by the shared
-`slot.sh` locks, at most four agents (six where two run no cargo), one asset
-run at a time, one capture window and one private-X rehearsal at a time, one
-Fable agent at a time. The files this work and the icons' release both
-edit meet at the merge, by quoted text, as every edit here is placed:
-`docs/evidence/README.md`, where both append a section after
-`## breeze-offscreen/` (Part 0.2; the icons' specification), so the merge
-conflicts there for certain; `connectors/native-theme-gpui/src/lib.rs` (D.1;
-the icons' D.10); `connectors/native-theme-gpui/README.md` (D.1; the icons'
-F.1, in a different section); and the release documents `CHANGELOG.md`, `ROADMAP.md`
-and `docs/todo.md`.
+**The branch.** `v0.7.2-rc1`, from its head `da89b4ba`, in the worktree
+`.claude/worktrees/lane2-b`; the units are commits on it: no new branch, no
+merge, no version step. The branch is pushed by explicit refspec at each
+`--commit` gate that passes, and each push's CI run is read; CI runs on the
+branch's draft pull request, #11 (the batch's rule 9).
 
-**The close-out's order** (S4). The branch is pushed once the compatibility
-run (E.6, `scripts/update_compatibility.sh run`) has passed, the work's one
-push before E.6's asset run, which needs HEAD pushed
-(`scripts/generate_assets_release.sh:17`, checked at `:74-87`); the full
-`scripts/check_release.sh` runs while CI runs on that push; the asset run
-starts when both are green (rule 9: CI green, and the full check's only
-failure the provenance stamp, which only the asset run refreshes). Where C.3 is done, the notice of that push names
-its CI run as the first of C.3's Windows-only test (*Not verified*), since a
-red CI run emails the maintainer. The version decision and the release, its
-tag and its publication are the maintainer's (B6).
+**The close-out** is 0.7.2's, made again once after both works, the KDE
+document's (7.J.4 and its plan): the archive, the compatibility run, the
+push, the full check beside CI, the asset run with its capture window and
+both stamps. E.6 lists what this work adds to it. The release, its tag and its
+publication are the maintainer's.
 
 Not covered by any gate: the doc and Markdown text of every part, the
 README sentences, the links of A.8 (E.6 opens them).
-
-## Under the other B6 options
-
-- **B6 (b), a minor version.** Nothing in Parts 0 to D changes; the
-  CHANGELOG heading becomes the minor version when the release sets it, and
-  E.3's heading likewise.
-- **B6 (c), `#[non_exhaustive]` model structs first.** A release of its own
-  before this one, specified separately (not written). This specification's
-  Breaking Changes entry (E.1) then goes; every in-repository struct literal
-  of a model struct outside `native-theme`'s crate stops compiling
-  (`native-theme/tests/merge_behavior.rs:347` among them) and is that
-  release's work, not this one's.
-- **Into v0.7.1 instead of a release of its own.** The entries of E.1 go
-  under `## [0.7.1]`'s sections (a `### Breaking Changes` section is added
-  there under (a)); `CHANGELOG.md:12`'s last sentence, "`apply` keeps the
-  application's `cursor_blink`, which native-theme does not model, as it keeps
-  `notification`, `list`, `sheet` and `motion`.", is removed, since the gpui
-  entry of E.1 then describes the same release; `ROADMAP.md:93-94`, "; and
-  `apply` keeps the application's `cursor_blink`, which native-theme does
-  not model", becomes "; and `apply` installs the theme's caret blink, which
-  the model now states, as its `cursor_blink`", and E.3's section is not
-  written, its content joining v0.7.1's paragraph. E.1's gpui entry then
-  has no earlier release to compare with and reads: "**native-theme-gpui**:
-  `apply` and `apply_system_theme` install the theme's caret blink as
-  gpui-component's `Theme::cursor_blink`: steady where `caret_blink_off_ms`
-  is 0, else blinking with each phase half of the two durations together
-  (gpui-component blinks in equal phases), and the time-out as its idle
-  time-out. Where the theme states no blink the application's own comes
-  back, as for the tooltip delay, decided by value; `apply_accessibility`
-  leaves the blink, and a mode switch through gpui-component keeps it." (in
-  `### Added`). v0.7.1's asset run and stamps are made again. Further:
-  - E.6's version bump falls: the workspace is 0.7.1 already
-    (`Cargo.toml:17`; the inter-crate requirements are 0.7.1, `Cargo.toml:26`,
-    `native-theme/Cargo.toml:72`,
-    `connectors/native-theme-egui-widgets/Cargo.toml:40`), and
-    the heading `## [0.7.1] - 2026-11-14` exists (`CHANGELOG.md:8`); its
-    date is v0.7.1's close-out's to set again where the release falls on
-    another day.
-  - E.6's compare link becomes v0.7.1's own, `[0.7.1]:
-    https://github.com/tiborgats/native-theme/compare/v0.7.0...v0.7.1`, at
-    the top of the link list; at `0fa28027` the list starts with `[0.7.0]`
-    (`CHANGELOG.md:1802`), so the line is written once, by whichever of
-    v0.7.1's works closes the release, and not again where it is there.
-  - E.6's archive row is not a new one: the existing v0.7.1 row
-    (`docs/archive/README.md:51`) gains "; `todo_v0.7.1_caret-blink-rationale.md`,
-    `todo_v0.7.x_caret-blink-{spec,plan}.md`: the text caret's blink", as
-    the KDE step 1 specification's G.6 extends the same row.
-  - E.3's heading and section are not written (above); E.1's
-    `## [0.7.N] - <date>` heading is not added.
-  - The header's paragraph that begins "**This release is the release after `<prev-tag>`**"
-    becomes: "**This work lands in v0.7.1**, beside the GPUI Kit 0.9.1 port
-    and the KDE step 1 (`docs/todo_v0.7.1_kde-open-items-step1-spec.md`),
-    on the tree the v0.7.1 work before it leaves; no release lands between
-    `0fa28027` and it, and the work after v0.7.1 (egui 0.37, the KDE steps
-    2 to 5, gpui-component's own icons) lands after it. Every edit below is
-    applied by its anchor (the quoted text, the key, the test's name); a
-    line number is `0fa28027`'s and serves to find the place; a count is
-    given as today's value and as a delta (+3 leaves; the inputs' DERIVED
-    +2 and UNMAPPABLE +1; `egui-limited` +1; `gsettings` reads +3), and the
-    implementer adds the delta to the value the tree holds then; the facts
-    rows go right after §2.4's `caret_color` row, by A.8's rule, wherever
-    that row is then."
-  - D.2's paragraph that begins "egui 0.37, which lands before this release"
-    becomes: "egui 0.37 lands after this work: v0.7.1 ships egui 0.36.2
-    (`connectors/native-theme-egui/Cargo.toml:42`), whose line numbers `EG`
-    above gives, and the upgrade is a backlog entry (`docs/todo.md`,
-    *Dependencies: the newer releases the outdated check did not show
-    (2026-11-14)*). It changes nothing here when it lands: in egui 0.37.0
-    (Cargo's registry) `TextCursorStyle` has the same five fields
-    (`src/style.rs:1061-1076`), its defaults are the same (`blink: true`,
-    `on_duration: 0.5`, `off_duration: 0.5`, `src/style.rs:1083-1085`), and
-    `paint_text_cursor` blinks the same way
-    (`src/text_selection/visuals.rs:291` on)."
 
 ## Not verified
 
 - Whether `UISettings.CaretBlinkRate` is the system's caret blink time: its
   page does not say (open point 2), and it was not measured.
+- How WinUI's five seconds relate to the system's `SPI_GETCARETTIMEOUT`,
+  which the OS probe read as 5000 on the Windows 11 image (decision 19):
+  WinUI's source was not read for it.
 - The line numbers of `gtk-cursor-blink` in GTK 4.24.1's
   `gtk/gtksettings.c` and of `blink_cb` in `gtk/gtktext.c`: not counted and
   not quoted by the parked facts, so A.8 cites them by name; the other two
   properties' lines are the facts' (`:364-366`, `:378-380`), not re-counted.
 - That `read_windows()` returns `Ok` on CI's Windows image,
   `windows-latest`: no run and no existing test has shown it, so C.3's
-  Windows-only test first sees it in CI; the notice of the branch's one
-  push (*Order and gates*) says so, since a red CI run emails the
+  Windows-only test first sees it in CI; the notice of the push after
+  units 4 to 6 (*Order and gates*) says so, since a red CI run emails the
   maintainer.
 - How KConfig hands on a malformed `CursorBlinkRate`: the reader keeps the
   preset's 500 / 500, which is Qt's at the default 1000; if Qt gets 0 from
@@ -1996,9 +1934,6 @@ README sentences, the links of A.8 (E.6 opens them).
 - The URLs of A.8: built from `F/sources.toml`'s pins and the file's patterns,
   not opened.
 - The upstream sources behind `F`'s entries, as in the rationale's §4.
-- That the Windows and macOS Rust targets are installed on this machine:
-  the session's reading; not checked here (it needs `rustup`, outside what
-  this specification's author could read).
 
 Verified since the first version: Part 0's reproduction (byte-identical
 output, Pillow 13.0.0, one `DeprecationWarning`), GNOME's three keys and
@@ -2011,14 +1946,11 @@ test (`int blink_timeout`, `int get_cursor_blink_timeout`, the `guint64`
 
 ## Open points
 
-1. **B6: the version and the release (the maintainer's).** Options: (a) a
-   0.7.x release with the break named in the CHANGELOG (proposed; this
-   specification); (b) a minor version; (c) `#[non_exhaustive]` model
-   structs first. And where it lands: a release of its own after v0.7.1
-   (proposed, item 4 of D10's list in the KDE document) or v0.7.1.
-   *Under the other B6 options* gives what differs.
+1. **B6: the version and the release.** Settled by the maintainer on
+   2026-11-19: 0.7.2, with the KDE steps 6 and 7 (the head). The break is
+   named in 0.7.2's CHANGELOG section (E.1), B6 (a).
 2. **Windows: the `unsafe` call that reads the blink time (B4; the
-   maintainer's).** Read on Microsoft Learn on 2026-11-14:
+   maintainer's to grant).** Read on Microsoft Learn on 2026-11-14:
    - `UISettings.CaretBlinkRate`
      (`learn.microsoft.com/en-us/uwp/api/windows.ui.viewmanagement.uisettings.caretblinkrate`):
      "Gets the blink rate of a new caret created by the app view." Property
@@ -2035,9 +1967,39 @@ test (`int blink_timeout`, `int get_cursor_blink_timeout`, the `guint64`
      page states no precondition; the `SAFETY` comment says so and links it.
 
    By B4's rule (the safe call only where the documentation shows it is the
-   same setting) the reader calls `GetCaretBlinkTime`: one new `unsafe` call
-   in `windows.rs`, in the form of the file's other system calls. The
-   choice left is the maintainer's: approve that call, or leave Windows
-   unread in this release (the preset's 530 / 530 stays, and C.3 is not
-   done; C.5 lists every edit that then falls or reads differently, with
-   its text).
+   same setting) the reader calls `GetCaretBlinkTime`
+   (`pub unsafe fn GetCaretBlinkTime() -> u32`, windows 0.62.2
+   `src/Windows/Win32/UI/WindowsAndMessaging/mod.rs:722`): one new `unsafe`
+   block in `native-theme/src/windows.rs`, in a function of its own under
+   `#[allow(unsafe_code)]`, as the file's five other system-call functions
+   are (`logical_system_metric`'s `GetSystemMetricsForDpi` is the nearest: a
+   call by value, no pointer). The file is one of the crate's `unsafe`
+   exception files, and the maintainer's approval of 2026-10-29 for new
+   reader calls inside those files was given for the 0.8.0 plan, which is
+   parked; so the grant is asked again for this call.
+
+   The ways without `unsafe` in the crate, and why none is proposed:
+   - **`UISettings.CaretBlinkRate` on a measurement.** The reader accepts one
+     UISettings value that way already (`windows.rs`, `# Sources`:
+     `AnimationsEnabled` "read the same as `SPI_GETCLIENTAREAANIMATION` on
+     the three Windows probe images"). No run has read `CaretBlinkRate`: the
+     OS probe's and the WinUI host's files of 2026-11-06 hold
+     `GetCaretBlinkTime` (530) and the registry's `CursorBlinkRate` ("530"),
+     not it. A new probe run could show the two equal at the default; what
+     `CaretBlinkRate` gives where the user turned blinking off, which
+     `GetCaretBlinkTime` reports as `INFINITE`, a run can show only by
+     changing the session's setting (`SetCaretBlinkTime`, an `unsafe` call in
+     the probe), and the page says nothing of it. So this way costs a probe
+     change and a run on the parked tools branch, and still rests the "off"
+     case on one run's reading.
+   - **The registry value** `HKCU\Control Panel\Desktop`, `CursorBlinkRate`,
+     which the OS probe read ("530"). The reader has no registry read; the
+     `windows` crate's registry functions are `unsafe` too, and a safe one
+     needs a new dependency for this one value. It is the stored setting, not
+     the session's.
+
+   Granted by the maintainer on 2026-11-19. Proposed was: grant the one call. It is the documented source, with a
+   documented value for "off" and for failure. Without the grant Windows
+   stays unread in this release (the preset's 530 / 530 stays, and C.3 is not
+   done; C.5 lists every edit that then falls or reads differently, with its
+   text).

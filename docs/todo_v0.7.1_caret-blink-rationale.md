@@ -1,8 +1,13 @@
 # The text caret's blink in the model — rationale
 
-Status: written 2026-11-14, revised after three reviews; not approved. No code
-follows from it before the maintainer approves its specification and plan. The
-file's name carries the version it was written during; B6 decides the release.
+Status: written 2026-11-14, revised after three reviews. B1 to B5 approved by the
+maintainer on 2026-11-19, with the grant of B4's `unsafe` call on Windows; B6 decided
+the same day: option (a), in 0.7.2, together with issue #4's KDE steps 6 and 7. The
+specification and plan are [`todo_v0.7.2_caret-blink-spec.md`](todo_v0.7.2_caret-blink-spec.md)
+and [`todo_v0.7.2_caret-blink-plan.md`](todo_v0.7.2_caret-blink-plan.md); the
+specification's head says what was read again on 0.7.2's tree (GPUI Kit 0.10.0, egui
+0.37.0), which this document's lines predate. The file's name carries the version it
+was written during.
 
 Abbreviations: `GC`, `GB` are the `src/` folders of gpui-component 0.9.1 and
 gpui-base 0.9.1 in Cargo's registry; `EG` is egui 0.36.2's; `IW` is iced_widget
