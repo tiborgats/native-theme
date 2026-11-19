@@ -166,8 +166,10 @@ fn read_appearance_colors() -> (crate::ThemeDefaults, PerWidgetColors) {
         info_color: nscolor_to_rgba(&system_blue, &srgb),
         info_text_color: label,
         selection_background: nscolor_to_rgba(&sel_content_bg, &srgb),
-        // platform-facts.md §2.1.3 (selection_text_color, selection_inactive_text_color, text_selection_*): alternateSelectedControlTextColor on a
-        // selection, labelColor on an unfocused one, which does not adapt;
+        // platform-facts.md §2.1.3 (selection_text_color,
+        // selection_inactive_text_color, text_selection_*):
+        // alternateSelectedControlTextColor on a selection, labelColor on an
+        // unfocused one, which does not adapt;
         // selectedTextBackgroundColor and selectedTextColor for selected text
         selection_text_color: nscolor_to_rgba(&alt_sel_text, &srgb),
         selection_inactive_background: nscolor_to_rgba(&unemph_sel_bg, &srgb),

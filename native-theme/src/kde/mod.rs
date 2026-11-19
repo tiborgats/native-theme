@@ -1839,6 +1839,7 @@ BackgroundNormal=49,54,59
         let tinted = (Rgba::rgb(0xc2, 0xe0, 0xf5), Rgba::rgb(0x23, 0x26, 0x29));
         for (change, enable, expected) in [
             (Some("false"), None, focused),
+            (Some("false"), Some("true"), focused),
             (None, Some("false"), focused),
             (None, None, tinted),
             (Some("yes"), Some("false"), focused),

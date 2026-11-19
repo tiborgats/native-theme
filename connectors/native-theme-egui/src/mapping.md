@@ -400,7 +400,7 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 53, `source-side gap` 15, `source-void
 | `list.border.shadow_enabled` | UNMAPPABLE |  | `source-side gap`: native-theme: shadow offset, blur and spread in WidgetBorderSpec (§14 item 10) |
 | `list.disabled_text_color` | SCOPED | «list:disabled» `visuals.widgets.noninteractive.fg_stroke.color` |  |
 | `list.grid_color` | SCOPED | «list» `visuals.widgets.noninteractive.bg_stroke.color` |  |
-| `list.header_active_background` | DERIVED | → T18(a) |  |
+| `list.header_active_background` | DERIVED | → T18(a) | hovered and pressed: egui_extras' header row has no such state (egui_extras-0.37.0/src/table.rs:490-506, hovered: false), so the showcase draws the header sections' fills |
 | `list.header_background` | DERIVED | → T18(a) |  |
 | `list.header_font.color` | SCOPED | «list» `visuals.widgets.active.fg_stroke.color` |  |
 | `list.header_font.defined_size` | UNMAPPABLE |  | `egui-limited`: egui: a stated-size unit beside FontId::size (§5.1) |
@@ -409,7 +409,7 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 53, `source-side gap` 15, `source-void
 | `list.header_font.style` | DERIVED | → T18(a) | probe `"italic"` |
 | `list.header_font.weight` | DERIVED | → T18(a) | probe `700` |
 | `list.header_height` | DERIVED | → T18(e) |  |
-| `list.header_hover_background` | DERIVED | → T18(a) |  |
+| `list.header_hover_background` | DERIVED | → T18(a) | hovered and pressed: egui_extras' header row has no such state (egui_extras-0.37.0/src/table.rs:490-506, hovered: false), so the showcase draws the header sections' fills |
 | `list.hover_background` | SCOPED | «list» `visuals.widgets.hovered.bg_fill`; «list» `visuals.widgets.active.bg_fill` |  |
 | `list.hover_text_color` | DERIVED | → T18(a) |  |
 | `list.item_font.color` | SCOPED | «list» `visuals.widgets.noninteractive.fg_stroke.color` |  |

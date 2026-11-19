@@ -2072,10 +2072,12 @@ tested_by = "T18(e)"
 ["list.header_hover_background"]
 verdict   = "derived"
 tested_by = "T18(a)"
+note      = "hovered and pressed: egui_extras' header row has no such state (egui_extras-0.37.0/src/table.rs:490-506, hovered: false), so the showcase draws the header sections' fills"
 
 ["list.header_active_background"]
 verdict   = "derived"
 tested_by = "T18(a)"
+note      = "hovered and pressed: egui_extras' header row has no such state (egui_extras-0.37.0/src/table.rs:490-506, hovered: false), so the showcase draws the header sections' fills"
 
 ["list.hover_background"]
 verdict = "scoped"
