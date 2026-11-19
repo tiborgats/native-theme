@@ -353,6 +353,7 @@ keys = [
     "catppuccin-mocha:basic.buttons.toggle_off.label.h",
     "adwaita:basic.buttons.toggle_on.label.h",
     "catppuccin-mocha:basic.buttons.toggle_on.label.h",
+    "catppuccin-mocha:basic.buttons.dialog_default.label.h",
     "adwaita:basic.switches.heading.h",
     "adwaita:basic.switches.off.y",
     "adwaita:basic.switches.off.label.h",
@@ -467,6 +468,8 @@ keys = [
     "menu@kde-breeze/light:basic.buttons.toggle_on.label.text",
     "rest@adwaita/light:basic.buttons.toggle_on.label.text",
     "rest@kde-breeze/light:basic.buttons.toggle_on.label.text",
+    "catppuccin-mocha/dark:basic.buttons.dialog_default.label.text",
+    "kde-breeze:basic.buttons.dialog_default.label.text",
     "hover@basic.checkboxes.unchecked.label.text",
     "menu@kde-breeze/light:basic.checkboxes.unchecked.label.text",
     "rest@kde-breeze/light:basic.checkboxes.unchecked.label.text",
@@ -524,6 +527,7 @@ keys = [
     "kde-breeze:basic.buttons.tooltip.label.x",
     "catppuccin-mocha:basic.buttons.toggle_off.label.x",
     "kde-breeze:basic.buttons.toggle_on.label.x",
+    "kde-breeze:basic.buttons.dialog_default.label.x",
     "catppuccin-mocha:basic.checkboxes.checked.w",
     "kde-breeze:basic.checkboxes.checked.w",
     "basic.checkboxes.disabled.w",
@@ -689,6 +693,7 @@ keys = [
     "catppuccin-mocha:basic.buttons.toggle_off.label.y",
     "adwaita:basic.buttons.toggle_on.label.y",
     "catppuccin-mocha:basic.buttons.toggle_on.label.y",
+    "catppuccin-mocha:basic.buttons.dialog_default.label.y",
     "adwaita:basic.text_inputs.filled.text.y",
     "catppuccin-mocha:basic.text_inputs.filled.text.y",
     "material-3:basic.text_inputs.filled.text.y",
@@ -719,6 +724,8 @@ keys = [
     "material-3:basic.buttons.toggle_off.w",
     "material-3:basic.buttons.toggle_on.x",
     "material-3:basic.buttons.toggle_on.w",
+    "material-3:basic.buttons.dialog_default.x",
+    "material-3:basic.buttons.dialog_default.w",
 ]
 
 [[parity.group]]
