@@ -147,7 +147,8 @@ impl ThemeMode {
     /// # Phases
     ///
     /// 1. **Defaults internal chains** -- accent derives selection, focus_ring_color;
-    ///    selection derives selection_inactive.
+    ///    selection derives selection_inactive, and the selection's text colour
+    ///    the unfocused selection's.
     /// 2. **Safety nets** -- platform-divergent fields get a reasonable fallback.
     /// 3. **Widget-from-defaults** -- colors, geometry, fonts, text scale entries
     ///    all inherit from defaults.

@@ -2,7 +2,7 @@
 //
 // Hand-written inheritance rules (not expressible as simple field <- defaults.field attributes):
 //
-// 1. defaults_internal (9 rules): ordering-dependent chains between defaults fields
+// 1. defaults_internal (8 rules): ordering-dependent chains between defaults fields
 // 2. text_scale inheritance (4 entries): resolve_text_scale_entry() with computed line_height
 // 3. safety nets (6 rules): per-platform fallbacks for input.caret_color, scrollbar.track_color, etc.
 // 4. widget-to-widget chains (9 rules): depend on resolved font/border, must run after Phase 3
