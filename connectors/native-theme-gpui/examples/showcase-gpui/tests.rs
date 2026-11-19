@@ -10086,7 +10086,6 @@ fn a_hovered_checkbox_takes_the_hover_border(cx: &mut TestAppContext) {
 }
 
 /// Every leaf under `value` with its dotted path from `at`.
-#[cfg(feature = "widgets")]
 fn colour_leaves(value: &serde_json::Value, at: &str, out: &mut Vec<(String, serde_json::Value)>) {
     match value {
         serde_json::Value::Object(map) => {
@@ -11776,11 +11775,22 @@ fn the_basic_tables_infos_report_what_it_draws(cx: &mut TestAppContext) {
 /// in the inactive one `defaults.selection_inactive_background`, and its
 /// info claims both pairs, the fill painted in each state among them. The
 /// List's selected row, a gpui-component `ListItem`, keeps `list_active`
-/// in both.
+/// in both. Under GPUI Fast, whose frames paint glyphs under
+/// [`PaintedGlyphs`], the row's glyphs are lettered in the pair's text:
+/// `list.selection_text_color` in the active window,
+/// `defaults.selection_inactive_text_color` in the inactive one.
 #[gpui::test]
-fn the_basic_tables_selected_row_follows_the_windows_state(cx: &mut TestAppContext) {
+fn the_basic_tables_selected_row_follows_the_windows_state(base: &mut TestAppContext) {
     use crate::info::stated;
-    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    #[cfg(feature = "gpui-fast")]
+    let mut app = TestAppContext::build_with_text_system(
+        base.dispatcher.clone(),
+        None,
+        std::sync::Arc::new(PaintedGlyphs),
+    );
+    #[cfg(feature = "gpui-fast")]
+    let base = &mut app;
+    let (showcase, _root, mut cx) = open(base, WINDOW_SIZE);
     use_light_preset(&mut cx, &showcase, "kde-breeze");
     show(&mut cx, &showcase, Page::Basic);
     let r = resolved_theme(&mut cx, &showcase);
@@ -11809,6 +11819,13 @@ fn the_basic_tables_selected_row_follows_the_windows_state(cx: &mut TestAppConte
         "the selected row's info does not claim both pairs: {info:?}"
     );
     let list_active = cx.update(|_, cx| Theme::global(cx).list_active);
+    #[cfg(feature = "gpui-fast")]
+    assert_ne!(
+        claimed[1], claimed[3],
+        "kde-breeze's inactive selection text is its selection's, so this test would see no swap of the text"
+    );
+    #[cfg(feature = "gpui-fast")]
+    let mut lettered = Vec::new();
     let mut seen = Vec::new();
     for active in [true, false] {
         if active {
@@ -11827,6 +11844,21 @@ fn the_basic_tables_selected_row_follows_the_windows_state(cx: &mut TestAppConte
             painted_fill(&mut cx, "basic-table-row-1"),
             painted_fill(&mut cx, "basic-list-row-1"),
         ));
+        #[cfg(feature = "gpui-fast")]
+        {
+            let row = bounds_of(&mut cx, "basic-table-row-1");
+            let colours = cx.update(|window, _| {
+                let row = row.scale(window.scale_factor());
+                let mut colours: Vec<_> = scene_glyphs(window)
+                    .into_iter()
+                    .filter(|(glyph, _)| row.contains(&glyph.origin))
+                    .map(|(_, colour)| Some(colour))
+                    .collect();
+                colours.dedup();
+                colours
+            });
+            lettered.push((is_active, colours));
+        }
     }
     assert_eq!(
         seen,
@@ -11837,6 +11869,19 @@ fn the_basic_tables_selected_row_follows_the_windows_state(cx: &mut TestAppConte
         "(window active, the table's selected row's fill, the List's selected row's fill) \
          in the active and the inactive window"
     );
+    #[cfg(feature = "gpui-fast")]
+    {
+        assert_eq!(
+            lettered,
+            [(true, vec![claimed[1]]), (false, vec![claimed[3]])],
+            "(window active, the colours of the glyphs painted in the table's selected row) \
+             in the active and the inactive window"
+        );
+        drop(cx);
+        app.run_until_parked();
+        app.update(|cx| cx.quit());
+        app.run_until_parked();
+    }
 }
 
 /// On every bundled combination, `selection_pair` gives the list's own pair
@@ -16123,11 +16168,17 @@ fn the_row_fills_are_rounded_where_they_meet_the_frame(cx: &mut TestAppContext) 
 
 /// Each of the Basic table's two header sections is filled on its own
 /// under the pointer with `list.header_hover_background`, and pressed with
-/// `list.header_active_background`, under kde-breeze light, which states
-/// both (7.H.1): the fill is the quad of the section's own bounds, rounded
-/// by the frame's inner radius where it meets the frame -- the first
-/// section's top-left corner, the last's top-right -- and square elsewhere,
-/// by the method of `the_row_fills_are_rounded_where_they_meet_the_frame`.
+/// `list.header_active_background`, else with the hovered fill (7.H.1,
+/// decision 19), under kde-breeze light: the fill is the quad of the
+/// section's own bounds, rounded by the frame's inner radius where it meets
+/// the frame -- the first section's top-left corner, the last's top-right --
+/// and square elsewhere, by the method of
+/// `the_row_fills_are_rounded_where_they_meet_the_frame`. Breeze states one
+/// colour for both fills, and a pressed section is still under the pointer,
+/// so the test runs twice on the theme it installs: with the pressed fill
+/// replaced by a sentinel no other `list.*` leaf of the theme holds, and
+/// with no pressed fill. A pressed section is read with the pointer on it
+/// and again dragged off it, where the hovered fill no longer applies.
 #[gpui::test]
 fn the_tables_header_sections_take_the_hovered_and_pressed_fills(cx: &mut TestAppContext) {
     use crate::info::stated;
@@ -16135,19 +16186,32 @@ fn the_tables_header_sections_take_the_hovered_and_pressed_fills(cx: &mut TestAp
     use_light_preset(&mut cx, &showcase, "kde-breeze");
     show(&mut cx, &showcase, Page::Basic);
     without_motion(&mut cx);
-    let r = resolved_theme(&mut cx, &showcase);
+    let mut r = resolved_theme(&mut cx, &showcase);
     let inner = f32::from(crate::demo::list_inner_radius(&r.list.border));
     assert!(
         inner > 0.0,
         "kde-breeze's list frame is rounded inside its line"
     );
-    let (hovered, pressed) = (
-        r.list.header_hover_background.map(stated),
-        r.list.header_active_background.map(stated),
+    let hovered = r.list.header_hover_background.map(stated);
+    assert!(
+        hovered.is_some(),
+        "kde-breeze states the header's hovered fill, which this test reads"
+    );
+    let sentinel = native_theme::color::Rgba::new(0x12, 0x34, 0x56, 0xff);
+    let leaves = serde_json::to_value(&r.list).unwrap_or_default();
+    let mut held = Vec::new();
+    colour_leaves(&leaves, "list", &mut held);
+    let sentinel_text = serde_json::to_value(sentinel).unwrap_or_default();
+    assert!(
+        held.iter()
+            .any(|(leaf, _)| leaf == "list.header_active_background"),
+        "the list's leaves did not serialise with their names: {held:?}"
     );
     assert!(
-        hovered.is_some() && pressed.is_some(),
-        "kde-breeze states the header's hovered and pressed fills, which this test reads"
+        held.iter().all(
+            |(leaf, value)| leaf == "list.header_active_background" || *value != sentinel_text
+        ),
+        "a list leaf of kde-breeze light holds the sentinel, so the test could not tell it from the pressed fill: {held:?}"
     );
     let section_quad = |cx: &mut VisualTestContext, selector: &'static str| {
         let bounds = bounds_of(cx, selector);
@@ -16171,32 +16235,46 @@ fn the_tables_header_sections_take_the_hovered_and_pressed_fills(cx: &mut TestAp
                 })
         })
     };
+    let away = point(px(4.), px(4.));
     let mut wrong = Vec::new();
-    for (selector, want) in [
-        ("basic-table-header-0", [inner, 0.0, 0.0, 0.0]),
-        ("basic-table-header-1", [0.0, inner, 0.0, 0.0]),
+    for (case, active) in [
+        ("a sentinel pressed fill", Some(sentinel)),
+        ("no pressed fill", None),
     ] {
-        let at = bounds_of(&mut cx, selector).center();
-        hover(&mut cx, at);
-        draw(&mut cx);
-        let hover_quad = section_quad(&mut cx, selector);
-        cx.simulate_mouse_down(at, MouseButton::Left, Modifiers::default());
-        cx.run_until_parked();
-        draw(&mut cx);
-        let press_quad = section_quad(&mut cx, selector);
-        cx.simulate_mouse_up(at, MouseButton::Left, Modifiers::default());
-        cx.run_until_parked();
-        for (state, quad, fill) in [
-            ("hovered", hover_quad, hovered),
-            ("pressed", press_quad, pressed),
+        r.list.header_active_background = active;
+        install_breeze_light(&mut cx, &r);
+        let pressed = active.map(stated).or(hovered);
+        for (selector, want) in [
+            ("basic-table-header-0", [inner, 0.0, 0.0, 0.0]),
+            ("basic-table-header-1", [0.0, inner, 0.0, 0.0]),
         ] {
-            match quad {
-                Some((radii, painted))
-                    if painted == fill
-                        && radii.iter().zip(want).all(|(r, w)| (r - w).abs() < 1e-3) => {}
-                other => wrong.push(format!(
-                    "{selector} {state}: (corners, fill) {other:?}, not ({want:?}, {fill:?})"
-                )),
+            let at = bounds_of(&mut cx, selector).center();
+            hover(&mut cx, at);
+            draw(&mut cx);
+            let hover_quad = section_quad(&mut cx, selector);
+            cx.simulate_mouse_down(at, MouseButton::Left, Modifiers::default());
+            cx.run_until_parked();
+            draw(&mut cx);
+            let press_quad = section_quad(&mut cx, selector);
+            cx.simulate_mouse_move(away, MouseButton::Left, Modifiers::default());
+            cx.run_until_parked();
+            draw(&mut cx);
+            let dragged_off_quad = section_quad(&mut cx, selector);
+            cx.simulate_mouse_up(away, MouseButton::Left, Modifiers::default());
+            cx.run_until_parked();
+            for (state, quad, fill) in [
+                ("hovered", hover_quad, hovered),
+                ("pressed", press_quad, pressed),
+                ("pressed and dragged off", dragged_off_quad, pressed),
+            ] {
+                match quad {
+                    Some((radii, painted))
+                        if painted == fill
+                            && radii.iter().zip(want).all(|(r, w)| (r - w).abs() < 1e-3) => {}
+                    other => wrong.push(format!(
+                        "{case}, {selector} {state}: (corners, fill) {other:?}, not ({want:?}, {fill:?})"
+                    )),
+                }
             }
         }
     }

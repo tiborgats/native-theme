@@ -5218,7 +5218,7 @@ fn default_button_window(disabled: bool) -> Build {
     })
 }
 
-/// docs/todo_v0.7.2_kde-open-items-steps6-7-spec.md, 6.D.4: the default
+/// docs/archive/todo_v0.7.2_kde-open-items-steps6-7-spec.md, 6.D.4: the default
 /// button built from `variants::default_button` and
 /// `geometry::default_button_rest` draws Breeze's default button under
 /// kde-breeze light and dark. At rest the stated fill and frame; hovered the
