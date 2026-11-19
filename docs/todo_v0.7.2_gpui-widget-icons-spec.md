@@ -1,15 +1,15 @@
-# 0.7.x: gpui-component's own icons follow the theme's icon set — specification
+# 0.7.2: gpui-component's own icons follow the theme's icon set — specification
 
 - Rationale: [`todo_v0.7.1_gpui-widget-icons-rationale.md`](todo_v0.7.1_gpui-widget-icons-rationale.md)
   ("the rationale"), decisions W1 to W11, §3 (what the maintainer approves) and §4
-  (what was not checked). Not approved when this was written; nothing here is done
-  before the maintainer approves the rationale, this specification and its plan. It
+  (what was not checked). Approved by the maintainer with the rationale and the plan
+  on 2026-11-19. It
   decides nothing the rationale did not decide, except the small points under
   *Decisions taken while specifying*; what needs a decision the rationale does not
   contain is under *Open points*.
 - It builds on the GPUI Kit 0.9.1 specification,
-  [`todo_v0.7.1_gpui-kit-0.9.1-spec.md`](todo_v0.7.1_gpui-kit-0.9.1-spec.md) ("the 0.9.1
-  specification"), whose parts land in v0.7.1 before this work: B.13 (the connector's
+  [`archive/todo_v0.7.1_gpui-kit-0.9.1-spec.md`](archive/todo_v0.7.1_gpui-kit-0.9.1-spec.md)
+  ("the 0.9.1 specification"), whose parts landed in v0.7.1 and are in the tree: B.13 (the connector's
   `widgets::Checkbox` asks the icon resolver for its check mark: W8's first point),
   B.3 (the Widget Info's `own_icons` text, written for W11 (b)), B.15 (the citation in
   `SC/info/icons.rs:15-17`), D.3 and D.4 (the backlog's two upstream entries on the
@@ -17,54 +17,47 @@
   renumbering of upstream citations, `SC/info/` left out). None of them is repeated
   here; where this document edits a text one of them wrote, it names that part and
   quotes the text that part gives.
-- Written: 2026-11-14, against `v0.7.1-rc2` at `0fa28027`. Every repository
-  `file:line` is that commit's unless it names another; every upstream line is read in
-  Cargo's registry at the versions below. Commands are run from the worktree's root.
-- **Line numbers are for finding the place.** v0.7.1 up to its gated head (the base:
-  the 0.9.1 work, and KDE step 1 under D10 (a)) and, by D10's order, v0.7.1's
-  close-out, v0.7.2 (egui 0.37), the KDE steps 2 and 3 and the KDE steps 4 and 5,
-  which come in at the merge of `<prev-tag>` (below, E.14), land before this
-  release, and each moves
-  lines of files edited here
-  (`docs/todo.md`, `CHANGELOG.md`, `ROADMAP.md`, the connector's README, the gpui
-  showcase). Every edit is applied by the text it quotes, the item it names or the
-  test's name; where the quoted text no longer stands, the implementer stops and
-  reports. A count is given as today's value and a delta ("today's, plus what the
-  earlier releases added"); the implementer reads the base from the tree.
-- Release (W11 (b), settled by S3 of `docs/todo_v0.7.1_batch-speed-rationale.md`, approved
-  by the maintainer on 2026-11-15: this work runs in a lane of its own and is cut as its own
-  release): a 0.7.x release of its own, D10's item 3 (the KDE
-  document's list of the releases after v0.7.1,
-  `docs/issues/0004_kde-open-items-rationale.md`, D10, *The releases after v0.7.1*). The version is `0.7.N`, `N`
-  the next patch number when the release is cut. The batch's working rules are cited as
-  "rule N (batch-speed rationale, Appendix)", here once and "rule N" below
+- Written: 2026-11-14, against `v0.7.1-rc2` at `0fa28027`; every repository `file:line` is
+  that commit's unless it names another, and stays so. Amended 2026-11-19 for the fold into
+  0.7.2 (below), on `v0.7.2-rc1` at `a3fc81f6`: the amended passages were read on that tree
+  and name a place by its file and a quoted phrase or an item, never by a line. Every
+  upstream line is read in Cargo's registry at the versions under *Abbreviations*. Commands
+  are run from the worktree's root.
+- **Line numbers are for finding the place, and they are `0fa28027`'s.** The tree has moved
+  since: v0.7.1's close-out, egui 0.37, GPUI Kit 0.10.0 and the KDE steps 2 to 5 are all on
+  `v0.7.2-rc1`, so most lines differ, and none is re-pointed. Every edit is applied by the
+  text it quotes, the item it names or the test's name. Where each anchor stands at
+  `a3fc81f6` is listed in the two reviews of 2026-11-19 (the plan's record,
+  `icons/review-partA.md` and `icons/review-partEG.md`), which the briefs give as a lookup;
+  a passage amended on 2026-11-19 is found by the function or text it names.
+  Where a quoted text no longer stands, the implementer stops and reports. A count is the
+  one read on the tree at the unit's commit.
+- **Release: inside 0.7.2.** The maintainer decided on 2026-11-19 to build this work in
+  0.7.2, which supersedes the rationale's W11 (b) and, for this work, the lane that S3 of
+  `docs/todo_v0.7.1_batch-speed-rationale.md` gave it. The units are commits on
+  `v0.7.2-rc1` in the worktree `.claude/worktrees/lane2-b`, after the KDE steps 4 and 5:
+  no branch, no merge and no version step of their own. The version stays 0.7.2, and
+  0.7.2's one close-out (its full check, asset run, stamps and archive row) closes this
+  work too (Part G). The batch's working rules are cited as "rule N"
   (`docs/todo_v0.7.1_batch-speed-rationale.md`, *Appendix — the batch's working rules*).
-  By the batch's S2 and S3
-  (`docs/todo_v0.7.1_batch-speed-rationale.md`; S3 as the maintainer amended it on
-  2026-11-15): this work runs alone in a second lane, in its own worktree beside the KDE
-  lane (the caret's blink is in the KDE lane); its branch is made from the gated head of
-  the release before it in its own lane (the second lane: v0.7.1 → this work; here
-  v0.7.1's) and, once the tag of the
-  release immediately before it in the maintainer's release order exists (under
-  D10's proposal with S5's pairs the KDE steps 4 and 5's, `v0.7.4`), which may be
-  another lane's, merged with it once, after this release's last unit before the
-  merge has passed its gate and every review is closed:
-  `git -c merge.conflictStyle=diff3 merge --no-ff --no-commit <prev-tag>` (the full
-  command: the plan's task MG;
-  S2 as amended on 2026-11-15: a merge, not a rebase, so that no sha changes),
-  `<prev-tag>` that tag and
-  `<lane-pred-head>` the lane predecessor's head the branch was made from; files
-  both lanes edit (`CHANGELOG.md`, `ROADMAP.md`, `docs/todo.md`, the showcases) meet
-  at that merge, by quoted text.
 - Every value below was read today from the file named, or computed today; the
   computations are named where they are given. What could not be verified is marked
-  so, with the reason. No cargo command was run.
+  so, with the reason. No cargo command was run. The amendment of 2026-11-19 ran none
+  either.
 
 **Abbreviations.** As in the rationale: `GC`, `GB`, `GP`, `GF` are the `src/` folders of
 gpui-component 0.9.1, gpui-base 0.9.1, gpui-pre 0.3.12 and gpui-fast 0.1.15 in
 `~/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/`; `GA` is gpui-kit-assets
 0.9.1; `CN` is `connectors/native-theme-gpui`; `SC` is `CN/examples/showcase-gpui`; `NT`
 is `native-theme`.
+
+The lines were read at those versions and stay theirs. The tree at `a3fc81f6` builds on
+gpui-component, gpui-base and gpui-kit-assets 0.10.0 and gpui-fast 0.1.16 (gpui-pre is still
+0.3.12). Every upstream citation of this document and of the rationale was read again there on
+2026-11-19: of 153, 106 stand as written, 45 stand at other lines or with additions (the
+corrections below and Appendix 2's note name the additions), and 2 were false at 0.10.0 and
+are corrected (the loading button, E.4). A text this work writes into the tree cites 0.10.0
+(F.5 item 1).
 
 ## How to read it
 
@@ -77,10 +70,10 @@ of what gpui-component's widgets draw.
 | A — The core's new method | W4 ("Passing over") | `NT/src/freedesktop.rs`, `NT/src/icons.rs` (the method and its tests) |
 | B — The lookup and the one-colour test | W3, W6, W9 | `CN/src/icons.rs` (two table entries, the lookup, the test, their tests), `scripts/connector_parity_exceptions.toml` (one entry's name list, one new entry) |
 | C — The measurement, the first stop | W3 "The measurement", W9, §4 | `SC/tests.rs` (one ignored test, appended), new `docs/evidence/widget-icons/<date>/` (a table and its README; the sheets stay in the git-ignored `target/`), `docs/evidence/README.md` (one section) |
-| D — The handle | W1, W2, W4, W5 | new `CN/src/icons/widget.rs`, `CN/src/icons.rs` (module doc, the module's declaration and re-export), `CN/src/lib.rs` (`apply_system_theme`, the doctest gate, the crate doc), `CN/src/widgets/checkbox.rs` (three doc comments) |
-| E — The showcase | W1, W3 "The showcase's two lists", W6, W9, W10 | `SC/main.rs`, `SC/app.rs`, `SC/support.rs`, `SC/demo.rs`, `SC/pages/buttons.rs`, `SC/pages/icons.rs`, `SC/info/mod.rs`, `SC/info/chrome.rs`, `SC/info/icons.rs`, `SC/info/buttons.rs`, `SC/tests.rs`, `docs/showcase-exceptions.toml` (two reasons) |
-| F — Documentation | W2, W3, W4, W7, W8, W9, W11 | `CN/README.md`, `CHANGELOG.md`, `ROADMAP.md`, `docs/todo.md`, `docs/archive/` |
-| G — Order, gates, close-out | — | both release stamps, the asset run |
+| D — The handle | W1, W2, W4, W5 | new `CN/src/icons/widget.rs`, `CN/src/icons.rs` (module doc, the module's declaration and re-export), `CN/src/lib.rs` (`apply_system_theme`, the doctest gate, the crate doc), `CN/src/widgets/checkbox.rs` (two doc comments) |
+| E — The showcase | W1, W3 "The showcase's two lists", W6, W9, W10 | `SC/main.rs`, `SC/app.rs`, `SC/support.rs`, `SC/demo.rs`, `SC/pages/buttons.rs`, `SC/pages/icons.rs`, `SC/info/mod.rs`, `SC/info/chrome.rs`, `SC/info/icons.rs`, `SC/info/buttons.rs`, `SC/tests.rs`, `docs/showcase-exceptions.toml` (two reasons); by E.3's rule, the `SC/info/` files whose texts speak of an image (`data.rs`, `inputs.rs`, `feedback.rs`, `layout.rs`) |
+| F — Documentation | W2, W3, W4, W7, W8, W9, W11 | `CN/README.md`, `CHANGELOG.md`, `ROADMAP.md`, `docs/todo.md`, `docs/issues/0004_kde-open-items-rationale.md`, `docs/archive/` |
+| G — Order, gates, close-out | — | the units on `v0.7.2-rc1`, their gates, what 0.7.2's close-out takes from this work |
 
 Every edit has one owner. `CN/src/icons.rs` is edited by B (the tables, the lookup,
 tests) and by D (the module doc, `mod widget;`, the re-export), at places that do not
@@ -88,17 +81,13 @@ meet; `SC/tests.rs` by C (one ignored test) and E. No unit re-points a line cita
 edits move (G.2, S6).
 
 **Lines that must not move.** The gpui showcase's test
-`every_colour_claim_is_read_at_the_line_it_cites` (`CN/src/showcase.rs:2819`) opens
-each colour claim at the connector line it cites. Listed today from every
-`"native-theme-gpui/…:N"` in `SC/` and `CN/src/showcase.rs`: `colors.rs` (lines 281
-to 718), `geometry.rs:230`, `:737`, `:772`, `variants.rs:62-64`,
-`widgets/checkbox.rs:123-145`, `widgets/mod.rs:344`, `widgets/progress.rs:77-79`,
-`widgets/separator.rs:30`, `widgets/slider.rs:77`, `:80`, `widgets/spinner.rs:93`,
-`:465-466`, `widgets/switch.rs:94-144`, `widgets/tab_bar.rs:217-239`. No claim cites
-`CN/src/icons.rs` or `CN/src/lib.rs`. Of the pinned files this document edits one,
-`widgets/checkbox.rs`, in three doc comments (`:38`, `:57-58`, `:674-675`, D.11), each in
-place with the same line count, so no pinned line moves. (B.13 of the 0.9.1 specification edits
-`widgets/checkbox.rs:430`, below its pinned lines, in v0.7.1.)
+`every_colour_claim_is_read_at_the_line_it_cites` (in `CN/src/showcase.rs`) opens each colour
+claim at the connector line it cites, and fails where a claimed line has moved. The claims
+cite lines of `colors.rs`, `geometry.rs`, `variants.rs` and eight files of `widgets/`; none
+cites `CN/src/icons.rs` or `CN/src/lib.rs`. Of those files this document edits one,
+`widgets/checkbox.rs`, in two doc comments (D.11): one above the lines the claims cite,
+replaced line for line, and one below every line they cite. So no claimed line moves; a unit
+whose edit would move one stops and reports.
 
 ## Decisions taken while specifying
 
@@ -205,11 +194,11 @@ options are named where there were more than one.
     are, `SC/app.rs:566-569`), so the `IconEntry` tuple and the tests that destructure it
     do not change.
 16. **E. The widgets' own icons are classified once: `not_themeable`, everywhere.** The
-    Widget Info's `own_icons` keeps its kind, `not_themeable`, at its 36 call sites
-    (counted today, `grep -rn 'own_icons(' SC | grep -v tests.rs`, 37 lines, of which one
+    Widget Info's `own_icons` keeps its kind, `not_themeable`, at its 38 call sites
+    (counted at `a3fc81f6`, `grep -rn 'own_icons(' SC | grep -v tests.rs`, 39 lines, of which one
     is the definition, `SC/info/mod.rs:444`; 33 of the notes are labelled "own icons",
     one through a variable, `SC/info/feedback.rs:970`, `:976`, and the others "check mark",
-    "mark" and "why they stay", the last relabelled by E.8),
+    "mixed mark", "mark" and "why they stay", the last relabelled by E.8),
     and the icon-theme Select's notes on the same icons keep the same kind (decision 19),
     with one text stating when the icons are the chosen theme's and when they are
     upstream's. The reason for `not_themeable` over `instance`: no theme value reaches
@@ -217,13 +206,18 @@ options are named where there were more than one.
     and for an icon in several colours they stay upstream's, and their colour is never the
     theme's own icon's), and the kind is what `a_widgets_own_icons_are_named_gpui_components`
     reads. A text that changed with the handle's state would need the state in every
-    builder that makes one of those 36 calls.
+    builder that makes one of those 38 calls.
 17. **F. W8's backlog entry is a dated line of the existing entry** *Checkbox: the check
     mark's glyph and size* (`docs/todo.md:186-212`), which is about the mark the model
     does not state; a second entry would split one item.
-18. **F. The archived documents keep their names** (`todo_v0.7.1_…-rationale.md`,
-    `todo_v0.7.x_…-{spec,plan}.md`): the other documents of 2026-11-14 link them by
-    name.
+18. **F. This specification and its plan are named for the release they are built in; the
+    rationale keeps its name.** With the fold (head) they are
+    `todo_v0.7.2_gpui-widget-icons-{spec,plan}.md`, as the two earlier folds into 0.7.2
+    renamed theirs, and D0 (G.1) re-points the live documents that name them; mentions
+    inside `docs/archive/` are left (rule 22 (a)). The rationale stays
+    `todo_v0.7.1_gpui-widget-icons-rationale.md`: it is named, as its two siblings of
+    2026-11-14 are, for the cycle it was written in, no fold renamed a rationale, and the
+    archived 0.9.1 documents and the open-items rationale cite it by that name.
 19. **E. The icon-theme Select's two notes on the widgets' own icons keep `not_themeable`**
     (`upstream's icons`, `why they stay`, E.8), relabelled for what they now say: the same
     fact as decision 16, the same kind.
@@ -246,9 +240,11 @@ options are named where there were more than one.
     rationale's W3 "The measurement"). The committed listing is a table: names, the name
     found, its size, the judgement and a hash of the bytes. The sheets the session reads
     are written under `target/`, which `.gitignore:2` (`/target/`) keeps out of git.
-23. **G. The documents of this cycle are committed first.** The work's first commit adds
-    the approved rationale, this specification and the plan (unit 0, G.1); a text that
-    cites one of them at a commit cites that one. A text the showcase shows, a source
+23. **G. The documents are committed before the code.** The three are tracked since
+    `0a9141b0`, as written on 2026-11-14. The work's first commit, D0 (G.1), commits them as
+    approved: the rationale amended, this specification amended and renamed, the plan
+    written anew under its new name (decision 18). A text that cites one of them at a commit
+    cites D0 or a later one. A text the showcase shows, a source
     comment or a test attribute names a backlog entry by its title, never a rationale's
     or a specification's path (E.7's doc, C.2's `#[ignore]` reason).
 24. **D. A `None` icon theme is resolved once per choice**, by `system_icon_theme()` when a
@@ -281,7 +277,8 @@ options are named where there were more than one.
     outside the runner environment at every per-commit gate (`scripts/check_release.sh:667`,
     `cargo test -p native-theme-gpui --features native,watch`, which runs the showcase's
     test module, `CN/Cargo.toml:118-123`, `test = true`), so a handle following the theme in
-    every window-opening test (about 248 sites open a window in `SC/tests.rs` today) would
+    every window-opening test (about 260 sites open a window in `SC/tests.rs` at
+    `a3fc81f6`; 248 when this was written) would
     load the machine's installed icon themes in each and make the tests depend on them.
     `open_with` installs none, and every reader of the showcase's handle handles its
     absence (E.2); a variant, `open_with_widget_icons`, installs one that follows the theme,
@@ -299,7 +296,8 @@ None changes a decision.
 - **§1.1, `Application::with_assets`**: `GP/app.rs:266-273` (the rationale says
   `:265-273`); `GF/app.rs:267-274`.
 - **§1.2's list with lines** is Appendix 2 (read today with a script over `GC/`, test
-  modules left out): 52 names in 43 files.
+  modules left out): 52 names in 43 files (at 0.9.1; 44 files at 0.10.0, Appendix 2's
+  note).
 - **W3's condition 7 is measured per switch, not per theme.** The rationale compares "the
   handle's load of a judged theme" with the showcase's reload for that theme. A theme
   switch can make the handle load two icon themes (kde-breeze's `breeze` and `breeze-dark`)
@@ -307,15 +305,29 @@ None changes a decision.
   times what each switch of a fixed run of presets makes each side do, and condition 7
   compares those figures. The handle's side counts the one-colour judgements this work
   adds to a switch; the showcase's side is its reload of today.
+- **At gpui-component 0.10.0** (read 2026-11-19; none changes a decision):
+  - A loading `Button` with no icon shows a `Spinner` where an icon would sit, so W3's
+    "without which gpui-component draws no spinner" no longer holds. The rationale's
+    paragraph is amended, and E.4 is written for the showcase's two loading buttons.
+  - A check box's indeterminate state draws `Minus` through the same raw `svg` path as its
+    check mark, so the resolver answers it. The connector's `widgets::Checkbox` draws its
+    dash the same two ways as its check (stroked, or through the resolver), so W8 holds for
+    both marks. `Minus` was an essential already.
+  - Under a right-to-left layout the breadcrumb, the submenu arrow and the sidebar menu's
+    caret draw `ChevronLeft`, and the calendar and the pagination swap their two chevrons.
+    These are names among the 106, served like any other and drawn empty where the set
+    lacks one (W4). The showcase lays out left to right only.
+  - `radio.rs` names `Check` itself; the radio drew the same mark before.
 
 ## Open points for the maintainer
 
 1. **At the measurement's stop, whether a longer load is noticeable** (condition 7,
    C.5): the maintainer's judgement on the two figures, which decides whether D.13 is built.
-2. **The asset run** needs the maintainer's desktop unlocked and untouched for 4 to 6
-   minutes, once, after the last change of this release.
-3. **The icon theme packages' versions** at the measurement's run (C.4, its README): read
-   by the maintainer once, at the run, since the session reads nothing in the icon base directories.
+2. (Closed by the fold: the asset run is 0.7.2's own, once, in its close-out, G.4.)
+3. **The icon theme packages' versions** for the measurement's README (C.4): of the judged
+   themes only, read by the maintainer on the day of the run, since the session reads nothing
+   in the icon base directories. He is asked for them with the approval, when he is also told
+   that the run reads the installed icon themes through the library.
 
 ---
 
@@ -801,11 +813,11 @@ environment, which hides the installed themes (`scripts/run_in_runner_env.sh`), 
 dev profile the gates build (no second build of the gpui stack): condition 7 compares two
 figures of one build, so the profile scales both alike:
 
-`NT_WIDGET_ICONS_LISTING=docs/evidence/widget-icons/<date> cargo test -p native-theme-gpui --example showcase-gpui -- --ignored widget_icons_listing --nocapture`
+`NT_WIDGET_ICONS_LISTING=docs/evidence/widget-icons/<date> cargo test -p native-theme-gpui --features native,watch --example showcase-gpui -- --ignored widget_icons_listing --nocapture`
 
 The run reads the maintainer's installed icon themes, the machine's state, through the
 library, as the connector's existing installed-theme tests do when the gates run them; the
-plan announces the run to the maintainer at its step, before it is made. The session itself reads no
+maintainer is told of the run with the approval (Open point 3). The session itself reads no
 file outside the project folder for it.
 
 It reads the themes only through native-theme and the connector: `load_gpui_icon`,
@@ -913,7 +925,7 @@ profile, the hash and the rule for the name found (C.2), then:
      adds to a switch, `mask_drawable` of each icon the showcase's two lists load for that
      switch (the judgements E.2 and E.3 add, below), on this side;
    - **the showcase's reload of today**: what `Showcase::reload_icons` does for that switch
-     without a window at unit 3 (`0fa28027`'s code): `load_all_icons(IconSet::Freedesktop,
+     without a window on the tree U3a is built on: `load_all_icons(IconSet::Freedesktop,
      Some(theme), tint)` and `load_gpui_icons(Some(IconSet::Freedesktop), Some(theme), tint)`
      (`SC/app.rs:1132-1134`), then `to_image_source(data, None, None)` for each icon the two
      loaded, as `rebuild_icon_caches` converts a system set's icons (`:718-743`). `theme` is
@@ -931,14 +943,15 @@ profile, the hash and the rule for the name found (C.2), then:
 
 8. **The slots that take an `Icon` alone** (W1): the names those slots draw, traced on
    `0fa28027` from every `svg_only` call (`SC/chrome.rs:451`, `SC/app.rs:2225`,
-   `SC/demo.rs:1791`, `:3340`, `:3511`, `:3896`, `:7441`, `:7596`) to the names they are
-   given: the palette's page icons (`SC/main.rs:207-221`: `Eye`, `CircleCheck`,
+   `SC/demo.rs:1791`, `:3340`, `:3511`, `:3896`, `:7441`, `:7596`), and traced again at
+   `a3fc81f6`, where the names are the same 23, to the names they are given: the palette's page icons (`SC/main.rs:207-221`: `Eye`, `CircleCheck`,
    `ALargeSmall`, `Inbox`, `Bell`, `CaseSensitive`, `LayoutDashboard`,
    `GalleryVerticalEnd`, `ChartPie`, `Star`, `Palette`), presets (`Palette`) and modes
    (`Settings`, `Sun`, `Moon`, `SC/chrome.rs:477-491`); the theme-error alert (`CircleX`);
    the Sidebar samples (`LayoutDashboard`, `Inbox`, `Settings`, `SC/main.rs:546-565`); the
    Buttons page's icon buttons (`Check`, `Search`, `Delete`, `SC/pages/buttons.rs:60-79`),
-   loading button (`Loader`, `:159`) and toggles (`Star`, `Heart`, `:215`, `:224`); the
+   two loading buttons (`Loader`, `:159`; the second, without an icon, came with the GPUI Kit
+   0.10.0 port and is given the same name as its loading icon) and toggles (`Star`, `Heart`, `:215`, `:224`); the
    input group's Copy (`SC/pages/inputs.rs:126`); the Collapsible (`ChevronDown`,
    `ChevronRight`, `SC/pages/layout.rs:377-381`); the Stepper (`Search`, `Settings`,
    `CircleCheck`, `SC/support.rs:100-104`): 23 names. Per judged theme, each name's icon as
@@ -947,12 +960,13 @@ profile, the hash and the rule for the name found (C.2), then:
    `IconUse::Any` and the tint above): its source (role or table), one colour, hash, and
    whether the slot would lose it (an SVG judged not one colour). The test holds the 23
    names as a constant whose comment names the call sites by their functions
-   (`palette_entry`, `Showcase::render` for `demo::alert`, `demo::sidebar`, `demo::button`,
+   (`palette_entry`, `Showcase::render` for `demo::alert`, `demo::sidebar`,
+   `demo::button_turning` (which `demo::button` and `demo::loading_button` call),
    `demo::toggle`, `demo::input_groups`, `demo::collapsible`, `demo::stepper`, each calling
    `svg_only`);
-   the implementer confirms each by reading it. The Basic page's Edit tool button that the KDE steps 4 and 5 add
-   (`IconRole::ActionEdit`) takes any element (`demo::icon_button`), so it is no such slot
-   (E.14).
+   the implementer confirms each by reading it. The Basic page's Edit tool button, which the
+   KDE steps 4 and 5 added (`IconRole::ActionEdit`), takes any element (`demo::icon_button`),
+   so it is no such slot (E.14).
 9. **The conditions of C.5**, each with its verdict where the table decides it.
 
 `docs/evidence/widget-icons/<date>/README.md`, as `docs/evidence/README.md` asks of a run
@@ -960,15 +974,16 @@ by hand: what produced it (the command of C.2, the commit), the date, what the r
 of the machine through the library and `std` (`std::env::consts::OS`; the desktop
 `native_theme::detect::detect_linux_desktop()` reports; the system icon theme detected),
 the judged themes' names; and the machine's versions, which `docs/evidence/README.md:5-7`
-asks a run by hand to state: the installed icon themes' packages, each with its version.
+asks a run by hand to state: the judged icon themes' packages, each with its version.
 The session may not read the themes' directories (they lie outside the project folder, in
 `/usr/share/icons/` and the other icon base directories), so the maintainer reads them once,
-at the run: for each judged theme and each listed one, the package that owns its directory
+on the day of the run: for each judged theme, the package that owns its directory
 and that package's version, by the package manager's query of the directory's owner, or
 "not from a package" for a theme installed by hand. The maintainer gives them to the session, which
 writes them in a table of the README (theme, package, version) under the sentence "Read by
-the maintainer on <date>, at the run, from the package manager; the session does not read
-the icon base directories." A theme given no version is written "not given". And: "No drawing of an installed icon theme is kept here: each is that
+the maintainer on <date> from the package manager; the session does not read the icon base
+directories." A theme given no version is written "not given". A listed theme that is not
+judged is named without a version. And: "No drawing of an installed icon theme is kept here: each is that
 theme's artwork under its own licence. `listing.md` names each icon, its size, whether it is
 one colour and a hash of its bytes; the sheets the run drew were read in the repository's
 `target/` and shown to the maintainer, and are not kept."
@@ -977,7 +992,9 @@ one colour and a hash of its bytes; the sheets the run drew were read in the rep
 
 The plan stops for the maintainer where one is met, with the table and the sheets, which the
 session opens from `target/widget-icons-sheets/<run>/`; otherwise the work goes on and the
-table is part of what the maintainer sees before the release.
+table is part of what the maintainer sees before the release. Where none is met there is no
+stop: the plan's record takes each verdict and the sheets' paths, the maintainer is told them
+in the next status, and U3c follows at once.
 
 | # | Condition (W3) | How the table decides it |
 |---|---|---|
@@ -1006,7 +1023,7 @@ What the installed freedesktop icon themes and the bundled Lucide and Material s
 gpui-component's 106 `IconName`s through the gpui connector's lookup, at 16 and 24 px,
 whether a mask of one colour carries each, and how long the lookup takes beside the gpui
 showcase's own reload of its icons: the measurement before the connector's widget icons
-were built ([specification](../todo_v0.7.x_gpui-widget-icons-spec.md), Part C). Runs by
+were built ([specification](../todo_v0.7.2_gpui-widget-icons-spec.md), Part C). Runs by
 hand, one directory per date, written by the gpui showcase's ignored test
 `widget_icons_listing`, which was removed once its run was recorded (commit `<sha>` holds
 it); each holds `listing.md`, a table, and a `README.md`. No drawing of
@@ -1056,7 +1073,8 @@ below is in `widget.rs` unless it says otherwise, documented (`#![warn(missing_d
   (W4). Doc: "The glyphs nearly every application's windows, dialogs and forms draw: the
   window controls, the close button of a dialog, a sheet and a notification, the caret of
   a select and a combo box, the check mark of a check box, a chosen row and a menu item,
-  and a number input's minus and plus. An icon set that lacks one of them, in the icons of
+  and a number input's minus and plus (the minus is a mixed check box's dash too). An icon
+  set that lacks one of them, in the icons of
   either colour mode, is not served (see [`WidgetIcons`]); an application replaces the
   list with [`WidgetIcons::set_essentials`]."
 - **`pub(crate) const GPUI_ICON_NAMES: &[IconName]`** — the 106 names in the test module's
@@ -1085,7 +1103,7 @@ below is in `widget.rs` unless it says otherwise, documented (`#![warn(missing_d
 - **`pub enum WidgetIconsReport`** (`Clone`, `Debug`, `PartialEq`, `Eq`,
   `#[non_exhaustive]`), in the order D.9 checks: `NotInstalled` (`install` never ran for
   this handle, so no resolver asks it); `Off` (switched off); `NoAssetSource` (installed,
-  but this handle's `assets()` was never called, so no served path could load: D.6); `NotTold` (following the theme, told nothing yet); `NotServedInThisRelease { set:
+  but this handle's `assets()` was never called, so no served path could load: D.6); `NotTold` (following the theme, told nothing yet); `NotServed { set:
   IconSet, fixed: bool }` (SF Symbols, Segoe Fluent or a set this connector does not know,
   W7); `Loaded(LoadedSet)`.
 - **`pub struct LoadedSet`** (same derives, `#[non_exhaustive]`, public fields): `set:
@@ -1259,7 +1277,7 @@ and only the state changes.
 
 1. SF Symbols, Segoe Fluent, or a set this connector does not know: a change of set, so the
    cache is emptied as in step 2; nothing loaded; serving becomes the not-served marker for
-   that choice; report `NotServedInThisRelease`.
+   that choice; report `NotServed`.
 2. A set other than the cache's: the cache is emptied and belongs to the new set (W5 ties a
    new set to a new path set; its old tables would never be answered again).
 3. Lucide, Material: one table, `load_gpui_icon(icon, set, None, None, None, IconUse::Mask)`
@@ -1303,7 +1321,7 @@ loading. Telling the theme's icons while fixed or off loads nothing.
 `report()`, checked in this order: not installed → `NotInstalled` (so a wrapped handle that
 was never installed says so, not `Loaded`); `Off` → `Off`; not wrapped → `NoAssetSource`;
 following and told nothing → `NotTold`; a load in flight for the current choice (D.13 only)
-→ `Loading`; serving's not-served marker → `NotServedInThisRelease { set,
+→ `Loading`; serving's not-served marker → `NotServed { set,
 fixed }`; else `Loaded(LoadedSet)` of serving, with `fixed` and the two `ModeIcons` (step 5's
 findings), whether served or not. The README tells an application to check it for the sets
 it supports.
@@ -1366,30 +1384,22 @@ The signature does not change; `apply` does not change (its `ResolvedTheme` name
   "`//! [`IconName`] of gpui-component's bundled Lucide glyph, drawn in the`" and
   "`//! theme's set instead where an installed `WidgetIcons` handle serves it.`" (code
   without a link, as the table's row; same line count).
-- `CN/src/widgets/checkbox.rs`, three doc comments that say the mark is gpui-component's
-  own, each rewritten in place with the same line count (the file holds pinned lines,
-  `:123-145`, *Lines that must not move*; no colour claim cites the lines edited here,
-  read from the list above). Under B.13 of the 0.9.1 specification the `None` arm of
-  `look.mark_stroke` (`:430-437`) asks the application's resolver for `IconName::Check`, so
-  an installed handle serves the check box's and the radio's unstroked mark from the
-  theme's set:
-  - `:38`, "`/// the radio then draws gpui-component's own mark.`" (the doc of
-    `CheckboxLook::dot`) becomes "`/// the radio then draws the check box's mark (`mark_stroke`).`"
-    (a radio without a dot falls to the `look.mark_stroke` match, B.13 of the 0.9.1
-    specification, its second paragraph);
-  - `:57-58`, "`/// checkbox then draws gpui-component's own `Check` icon, at its own`" and
-    "`/// stroke.`" (the doc of `CheckboxLook::mark_stroke`) become "`/// checkbox then
-    draws gpui-component's `Check` icon at its own stroke, or`" and "`/// the theme's
-    set's where an installed `icons::WidgetIcons` serves it.`";
-  - `:674-675`, "`/// colour-scheme presets), it is gpui-component's own check glyph`" and
-    "`/// (radio.rs:247). Its `Styled` style`" (the doc of `Radio`) become "`///
-    colour-scheme presets), it is the check mark a check box draws there`" and "`///
-    (`CheckboxLook::mark_stroke`; radio.rs:247). Its `Styled` style`" (the upstream
-    citation kept as it stands, `GC/radio.rs:247` holding the call of
-    `checkbox_check_icon` at 0.9.1).
-  The comment B.13 of the 0.9.1 specification puts above the `None` arm ("gpui-component's
-  own glyph by its asset path, which the application's icon resolver is asked for first,
-  …") stays: it names the path and the resolver, which hold with the handle.
+- `CN/src/widgets/checkbox.rs`, two doc comments. Since B.13 of the 0.9.1 specification and
+  the GPUI Kit 0.10.0 port, the `None` arm of `look.mark_stroke` asks the application's
+  resolver for `IconName::Check`, or for `IconName::Minus` where the box is indeterminate, so
+  an installed handle serves the check box's and the radio's unstroked mark, and the dash,
+  from the theme's set. The docs of `CheckboxLook::mark_stroke` and of `Radio`, and the
+  comment above the `None` arm, already say the mark goes through the application's icon
+  resolver; that holds with the handle, and they stay as they are. The two edits:
+  - the last line of `CheckboxLook::dot`'s doc, "`/// the radio then draws gpui-component's
+    own mark.`", becomes "`/// the radio then draws the check box's mark (`mark_stroke`).`":
+    one line for one, since the colour claims cite lines below it (*Lines that must not
+    move*);
+  - `Checkbox`'s doc, its paragraph that begins "The check mark:", gains after its last
+    sentence: "With an installed `icons::WidgetIcons` (feature `svg-rasterize`), that
+    resolver answers both from the theme's icon set where the handle serves it." (code
+    font without a link, as D.10's doc line; it lies below every line the claims cite, so
+    its line count is free).
 
 ### D.12 Tests (`widget.rs`'s `mod tests`)
 
@@ -1424,7 +1434,7 @@ action:
   `follow_theme` with nothing told: every path `NotMine`, the report `NotTold`.
 - `sf_symbols_and_segoe_fluent_are_not_served` (`lucide-icons`): serving Lucide, then told
   SF Symbols while following: every path `NotMine` (not Lucide's), the report
-  `NotServedInThisRelease { set: SfSymbols, fixed: false }`; told Lucide again, Lucide is
+  `NotServed { set: SfSymbols, fixed: false }`; told Lucide again, Lucide is
   served and loads +1 (the choice of SF Symbols was a change of set and emptied the cache,
   D.8 step 1); the same for `fix` of Segoe Fluent, `fixed: true`.
 - `told_one_mode_keeps_the_other_while_the_set_stays`: `ThemeIcons::merged`, without an
@@ -1435,7 +1445,8 @@ action:
   +1.
 - `a_floor_name_outside_the_tables_is_listed` (`lucide-icons`, served Lucide being what the
   floor is judged against): `set_essentials` with every name of
-  `GPUI_ICON_NAMES` (no newer variant exists to test with at 0.9.1, so the test checks the
+  `GPUI_ICON_NAMES` (no newer variant exists to test with, at 0.9.1 or at 0.10.0, so the
+  test checks the
   other half: `unknown_essentials` is empty and the floor judged), written so that a newer
   variant added upstream shows in `unknown_essentials` (its doc says so).
 - `a_handle_never_installed_says_so` (`lucide-icons`): wrapped and told Lucide, never
@@ -1547,14 +1558,14 @@ feature, a `WidgetIcons::new()` is created before it and the call becomes
   install_widget_icons(icons: &WidgetIcons, cx: &mut App)`: `icons.install(cx)` and the
   global set (decision 14). `main` (E.1) calls `assets` on the handle before.
 - **Without the global.** Every reader of it takes it with `cx.try_global::<ShowcaseWidgetIcons>()`
-  and handles `None` with no panic: `reload_icons` tells nothing; E.4's `default_spinner`
-  is `false` (the spinner as today); E.5's caption takes the `NotInstalled` text. And
+  and handles `None` with no panic: `reload_icons` tells nothing; E.4's `spinner_default`
+  answers `Upstream` (the spinners as today); E.5's caption takes the `NotInstalled` text. And
   `apply_system_theme`'s tell (D.10) does nothing with no handle installed (`tell_installed`
   reads its own global with `try_global` and returns where there is none).
 - **The test harness** (decision 27). `open_with` (`SC/tests.rs:119-130`) installs no
   handle, so no test it opens loads the machine's installed icon themes, and the chrome and
   the samples draw as with no widget icons (their own icons do not depend on the handle; the
-  loading button keeps today's override, E.4). A new helper, `open_with_widget_icons(cx:
+  two loading buttons keep today's override, E.4). A new helper, `open_with_widget_icons(cx:
   &mut TestAppContext, options: gpui::WindowOptions)`, with `open_with`'s parameters
   (`SC/tests.rs:119-122`; a test calls it with `crate::window_options(…)` as `open` builds
   them, `:109-115`), is `open_with` plus a new handle, `assets(())` called on it and the
@@ -1568,7 +1579,7 @@ feature, a `WidgetIcons::new()` is created before it and the call becomes
   `the_icon_theme_select_puts_the_widget_icons_in_its_state`,
   `the_widget_icons_follow_the_set_the_chrome_draws`,
   `a_fixed_row_keeps_the_widget_icons_where_the_detection_fails`,
-  `the_loading_button_keeps_the_spinners_icon_where_the_set_is_served` and
+  `the_loading_buttons_keep_the_spinners_icon_where_the_set_is_served` and
   `the_icons_page_reports_the_widget_icons`.
 - **The other mode's icon theme** (`#[cfg(feature = "svg-rasterize")]`, as its only reader
   is the handle's telling, so the no-feature clippy run, `scripts/check_release.sh:549-550`,
@@ -1681,36 +1692,107 @@ feature, a `WidgetIcons::new()` is created before it and the call becomes
   mask would show as a silhouette (native_theme_gpui::icons::mask_drawable)". `svg_only`'s
   doc (`:874-879`) adds that such an SVG is `Missing` there too.
 - **`ChromeIcon`'s doc** (`:771-774`) keeps "Icon themes are never mixed".
+- **The texts that speak of pixels** (`SC/info/chrome.rs`). With E.2 and this section a
+  `ChromeIcon::Raster` is pixels or an SVG in several colours, and `svg_only` makes either
+  `Missing`. Four texts change so that each is true of both:
+  - `chrome_icon_note`, the `Raster` arm: "{set} gives it as pixels, not an SVG, so it is
+    drawn" becomes "{set} gives it as pixels, or as an SVG in several colours, which a mask
+    of one colour cannot show (native-theme-gpui/icons.rs, mask_drawable), so it is drawn";
+  - `chrome_icon_note`, the `Missing` arm: "none: {set} holds no SVG for {name}" becomes
+    "none: {set} holds no SVG of one colour for {name}";
+  - `chrome_icon_note`, the `Loaded` arm: its ending ", so a coloured icon shows its shape
+    only" becomes ", which carries an icon of one colour";
+  - `RASTER_ICON_COLOUR`: its ending "a freedesktop raster icon in its own colours" becomes
+    "a freedesktop theme's raster icon, or its SVG in several colours, in its own colours".
 
-### E.4 `SC/pages/buttons.rs` and `SC/demo.rs`: the loading button
+  The phrase "holds no SVG for" stands in other places too, each changed the same way: the
+  command palette's `entry icons` note, `demo::spinner_note`, and in `SC/tests.rs` the
+  helper `icon_note_start` and the tests' own phrases (seven lines in all at `a3fc81f6`, and
+  "gives it as pixels, not an SVG" once). Before the unit's report the implementer reads
+  every text beside an `is_raster()` or a `ChromeIcon::Raster` in `SC/` and every "pixels"
+  and "no SVG" in `SC/info/`, makes each true of an SVG in several colours drawn as an
+  image, and lists each in the report. The kinds are not told apart in the type: a note that
+  says which of the two holds would need a reason on `Raster` and on `Missing`, which is
+  not built here.
 
-`SC/demo.rs:3317-3326`, `DemoButton`, gains `pub default_spinner: bool`: "the widget icons
-serve the chosen set and its `Loader`, so the Spinner's own `Loader` is that set's (W3)". In `demo::button`
-(`:3329-3420`), `ButtonState::Loading` with `default_spinner` → `button.icon(icon)`
-without `.loading_icon(…)`; otherwise as today (`:3405-3408`). `info::buttons::button` takes
-it as a parameter after `icon`, which its other callers pass `false` (`SC/info/overlays.rs:19`,
-`:123`; `SC/demo.rs:3441`, `:5432`, `:9174`; `SC/tests.rs:15744`, `:15799`; read today with
-`grep -n 'buttons::button('`); its loading arms (`SC/info/buttons.rs:593-597`) get a third
-case, placed before the existing `(ButtonState::Loading, _) if icon` arm (the first match
-wins), `(ButtonState::Loading, _) if icon && default_spinner`, whose `spinner` note reads:
+### E.4 `SC/demo.rs`, `SC/info/buttons.rs`, `SC/pages/buttons.rs`: the two loading buttons
 
-> "stands in for the button's icon, so only a button with one shows it. The Spinner turns gpui-component's own Loader, which the connector's widget icons serve from the chosen icon theme (native-theme-gpui/icons/widget.rs, WidgetIcons), so it is that theme's loading icon (button/button_icon.rs, ButtonIcon). It inherits the button's text colour and turns every 0.8s, a literal (gpui-component/spinner.rs, Spinner::new)"
+The Buttons page has two loading Buttons since the GPUI Kit 0.10.0 port: `buttons-loading`,
+which has an icon (`demo::button`), and `buttons-loading-no-icon`, which has none
+(`demo::loading_button`). Both are built by `demo::button_turning`, and both are given the
+sample icon for `IconName::Loader` as the icon their Spinner turns, because the Spinner's own
+default was upstream's glyph. With the handle that default follows the set (W3). So where the
+handle draws the set's `Loader`, neither Button is given a loading icon, and both Spinners
+turn the icon every other Spinner of the window turns.
 
-`SC/pages/buttons.rs:150-160`: the loading button's `default_spinner` is whether the
-handle's report is `Loaded` with `served()` and its `lookup("icons/loader.svg", cx)` is
-`IconAnswer::Draw(_)` (`Loader`'s asset path, `gpui-kit-assets 0.9.1 default-icons.txt:58`, named by its stem,
-`build.rs:26-48`;
-with the feature; `false` without). A served set whose `Loader` is `Empty` would leave the
-Spinner turning an empty icon, so there the button keeps today's override and turns the
-showcase's own sample icon (the role `StatusBusy`'s where the set has one, E.2's
-`chrome_icon`) rather than none. Every other `DemoButton` gives `false`. Its comment
-(`:155-158`) adds: "where the widget icons serve the chosen set and its Loader, the
-Spinner's own Loader is already that set's, and the Button keeps its icon without
-overriding the Spinner's". In `demo::button` the button's instance line for the
-sample icon (`SC/demo.rs:3353-3358`, `"spinner icon"`) is `"icon"` where `default_spinner`,
-with the same `icon.note(…)` text, since the sample icon is then the Button's own icon and
-not what the Spinner turns; `the_page_samples_icons_come_from_the_chosen_set` finds it by
-its text, whatever its label (`info_says`, `SC/tests.rs:8844-8849`).
+**One question, asked in one place.** `SC/demo.rs` gains:
+
+```rust
+/// What the Spinner's own default icon, gpui-component's Loader, is in this
+/// window: upstream's glyph, the chosen set's (the widget icons serve it),
+/// or nothing (the widget icons serve the set, and it has no Loader).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum SpinnerDefault { Upstream, Set, Empty }
+
+pub(crate) fn spinner_default(cx: &App) -> SpinnerDefault
+```
+
+With the feature it takes the handle of the `ShowcaseWidgetIcons` global (`cx.try_global`)
+and asks `lookup` for `IconName::Loader`'s path, taken with `IconNamed::path`, not written
+out: `IconAnswer::Draw(_)` is `Set`, `IconAnswer::Empty(_)` is `Empty`, and `NotMine`, any
+later variant (the enum is `#[non_exhaustive]`) and no global are `Upstream`. Without the
+feature it is `Upstream`. `lookup` answers from a table only where the set is served (D.7),
+so the report is not read a second time.
+
+`button_turning` asks it once, where `state` is `ButtonState::Loading`:
+
+| Answer | `buttons-loading` | `buttons-loading-no-icon` |
+|---|---|---|
+| `Upstream` | as today: its icon, where drawn, is also its loading icon | as today: the sample icon, where drawn, is its loading icon |
+| `Set` | `.icon(icon)` where its icon is drawn; no `loading_icon` | no `loading_icon` |
+| `Empty` | as `Upstream` | as `Upstream` |
+
+Under `Empty` the Spinner's default would turn nothing, so both Buttons keep the override and
+turn the showcase's own sample icon (the role `StatusBusy`'s where the set has one, E.2's
+`chrome_icon`). `DemoButton`, `demo::button` and `demo::loading_button` keep their fields and
+signatures, and the first Button keeps its own icon, so the page still shows both of
+gpui-component's cases: a Spinner in place of an icon, and a Spinner where an icon would sit.
+
+**The info.** `info::buttons::button` gains a parameter `default_spinner: bool` after `icon`,
+true for `Set` alone. Its other callers pass `false`; `grep -n 'buttons::button('` finds them
+(two in `SC/info/overlays.rs`; `sized_button`, `action_button` and `toggle_button` in
+`SC/demo.rs`; two in `SC/tests.rs`). Each of its two loading arms gets a twin placed before
+it, since the first match wins: `(ButtonState::Loading, _) if icon && default_spinner` and
+`(ButtonState::Loading, _) if default_spinner`. Each twin has the present `interaction` note
+and a `spinner` note, still `not_themeable` (decision 16). In the two present arms,
+"upstream's Loader" becomes "gpui-component's Loader, drawn as the application's icon
+resolver answers it (the `spinner icon` line says what is turned here)", so they hold under
+`Upstream` and `Empty`. For the Button with an icon:
+
+> "in place of the button's icon (button/button_icon.rs, ButtonIcon). The Button is given no loading icon, so the Spinner turns its own default, gpui-component's Loader (gpui-component/spinner.rs, Spinner::new), which the connector's widget icons serve from the chosen icon theme (native-theme-gpui/icons/widget.rs, WidgetIcons): that theme's loading icon by the connector's table, not gpui-component's glyph. It inherits the button's text colour and turns every 0.8s, a literal (gpui-component/spinner.rs, Spinner::new)"
+
+For the Button without one:
+
+> "where an icon would sit: a loading Button without an icon shows a Spinner there (button/button.rs, RenderOnce for Button). This one is given no loading icon, so the Spinner turns its own default, gpui-component's Loader (gpui-component/spinner.rs, Spinner::new), which the connector's widget icons serve from the chosen icon theme (native-theme-gpui/icons/widget.rs, WidgetIcons): that theme's loading icon by the connector's table, not gpui-component's glyph. It inherits the button's text colour and turns every 0.8s, a literal (gpui-component/spinner.rs, Spinner::new)"
+
+In `button_turning`, under `Set`: the Button with an icon gets the instance line `("icon",
+icon.note("the Button shows its Spinner and its label"))` in place of its `spinner icon`
+line, since the sample icon is then the Button's own icon, which the Spinner stands in for,
+and not what the Spinner turns; the Button without one gets no `spinner icon` line. Under
+`Upstream` and `Empty` both keep their `spinner icon` line. `spinner_note` becomes
+`pub(crate)` and takes the answer as a second parameter: an icon that is shown gives today's
+text; one that is not gives today's text under `Upstream` (with E.3's "no SVG of one
+colour"), and under `Empty`:
+
+> "none: {set} holds no SVG of one colour for it, so the Button is given no icon to turn, and the Spinner's own default, gpui-component's Loader, is answered by the connector's widget icons, which serve {set} and find no Loader in it: the Spinner draws nothing (native-theme-gpui/icons/widget.rs, WidgetIcons)"
+
+`SC/pages/buttons.rs`: the comment at the first loading Button adds that where the widget
+icons serve the chosen set's Loader, the Spinner's own default is already that set's and
+neither loading Button is given a loading icon (`demo::button_turning`). Nothing else on the
+page changes.
+
+The tests opened with `open` or `open_with` install no handle (decision 27), so there the
+answer is `Upstream` and both Buttons and their infos are as today. E.11 tests the rest.
 
 ### E.5 `SC/pages/icons.rs`: the report and the two labels (W4, W9)
 
@@ -1722,7 +1804,7 @@ In `render_gpui_icons_section` (`:219-272`), after the heading (`:270`), two cap
   - `NotInstalled`: "gpui-component's widgets: their own icons (the widget icons are not installed)"
   - `Off`: "gpui-component's widgets: their own icons (the built-in set is chosen, or no system icon theme was detected)"
   - `NotTold`: "gpui-component's widgets: their own icons (no icon set given yet)"
-  - `NotServedInThisRelease { set, .. }`: "gpui-component's widgets: their own icons: {set} is not served to them in this release"
+  - `NotServed { set, .. }`: "gpui-component's widgets: their own icons: {set} is not served to them in this release"
   - `NoAssetSource`: "gpui-component's widgets: their own icons (the widget icons have no asset source)"
   - `Loaded` served: "gpui-component's widgets: {set}{themes}, {size}in one colour; not in the set, so drawn empty: {missing}" (`{size}` "at 16 px and " for a freedesktop set, nothing for the bundled sets; `{set}` the set's `IconSet::name()`; `{themes}` for a freedesktop set " ({light}, {dark})", the two `ModeIcons::icon_theme`s, or " ({theme})" where they are the same, a mode whose `icon_theme` is `None` (its detection failed) written "no icon theme detected", and nothing for the bundled sets; `{missing}` the gallery names of a mode's `missing` paths, comma-separated, or "none": where the two modes' lists are equal (always under a bundled set, whose one table serves both modes, and under one icon theme for both), that list once; where they differ, both, light's first as in the not-served caption, "light: {light's}; dark: {dark's}", each list as above), and where `kept` is not empty "; kept as gpui-component's own: StarFill"
   - `Loaded` not served, one mode's reason (light's first): "gpui-component's widgets: their own icons: {set}{themes} gave nothing" or "… lacks {names}, which nearly every window needs"
@@ -1791,7 +1873,8 @@ become these five, the block's 76 columns kept:
 /// those whose shown configuration draws one
 ```
 
-The rest of the doc, from `:9267` ("(gpui-component 0.8.1): a DropdownButton's caret, …")
+The rest of the doc, from the line that begins "(gpui-component 0.9.1): a
+DropdownButton's caret, …" on the tree
 to `:9278`, the list of widgets, stays as it is. The test's name stays (other documents
 cite it).
 
@@ -1809,7 +1892,7 @@ none today; the implementer reruns it.
 
 ### E.9 `SC/info/buttons.rs`
 
-E.4's third arm; the doc of `button` (`:480-481`) adds the parameter.
+E.4's two new arms; the doc of `button` adds the parameter.
 
 ### E.10 The two tests that held the chrome to the list of names
 
@@ -1832,7 +1915,7 @@ role would then still find its role's icon in `loaded_icons`:
 | Test (`SC/tests.rs`) | Names it touches with a role | Edit |
 |---|---|---|
 | `the_chrome_icons_come_from_the_chosen_set` (`:8612`) | `CircleX`, `Settings`, the page icons with roles | the expectation above |
-| `the_page_samples_icons_come_from_the_chosen_set` (`:8888`) | most of `PAGE_SAMPLE_ICONS` (`:8796`) | the expectation above; the loading button's note by text (E.4) |
+| `the_page_samples_icons_come_from_the_chosen_set` (`:8888`) | most of `PAGE_SAMPLE_ICONS` (`:8796`) | the expectation above; the two loading buttons' notes do not change (`open` installs no handle, so E.4's answer is `Upstream`), and the test's `Loader` case stays, with E.3's phrase |
 | `remove_icons` (`:8863`), the helper of `a_page_sample_icon_the_set_lacks_is_absent` (`:8944`), `own_chevrons_come_from_the_chosen_set` (`:9030`), `the_dialog_samples_icons_follow_the_chosen_set` (`:9104`) | `ChevronUp`, `ChevronDown`, `ChevronRight`, `CircleX`, `TriangleAlert`, `Search`, `Settings`, `Copy`, `CircleCheck`, `Delete`, `Loader` | it also empties, in `loaded_icons`, the entry of `role_for_gpui_icon(name)` for each name it is given |
 | `rasterize_icons` (`:18055`), with names at `:9159`, `:18237`, `:18390`, `:18448`, `:18516` | `CircleX`, `TriangleAlert`, `ChevronUp`, `ChevronDown`, `ChevronRight`, `Settings`, `Search`, `Copy`, `CircleCheck`, `Delete` | for each name it is given, it also gives the role's entry in `loaded_icons` the same pixels (it already does so for the roles it is given, `:18069`) |
 | `the_theme_error_alerts_icon_follows_the_chosen_set` (`:8740`) | `CircleX` (its loop at `:8772-8777`) | the loop also empties `loaded_icons`' `DialogError` entry (`role_for_gpui_icon(&IconName::CircleX)`) |
@@ -1853,6 +1936,8 @@ for the role (`:1704`), two doc comments naming Breeze's `process-working` style
 `:2194`) and the fixture rows (`:2941-2942`); in `CN/src/widgets/spinner.rs`, the doc that names
 the spinner's own files (`:366`, `:371`), not the table; none in `CN/tests`). The implementer reruns the showcase suite after
 each change of E.2 and E.3 and lists any other red test with its edit in the plan's record.
+E.3's phrases reach these tests too: `icon_note_start`'s `Missing` arm and each literal
+"holds no SVG for".
 
 ### E.11 New showcase tests (`SC/tests.rs`, `#[gpui::test]`, with the feature)
 
@@ -1864,7 +1949,7 @@ window with `open_with_widget_icons` (E.2) and read the handle from the
 
 **Independent of the machine.** `Showcase::new` installs the system's theme, so at start
 the handle follows whatever the machine has (a freedesktop theme on Linux; on the macOS and
-Windows runners SF Symbols or Segoe Fluent, `NotServedInThisRelease { fixed: false, .. }`).
+Windows runners SF Symbols or Segoe Fluent, `NotServed { fixed: false, .. }`).
 No assertion reads that start: each test first installs a bundled-set preset with the
 existing helper `use_preset` (`catppuccin-mocha` for Lucide, `material-3` for Material, both
 naming their set, `catppuccin-mocha.toml:4`, `material-3.toml:9`), or, in the test of a
@@ -1915,9 +2000,17 @@ report as `WidgetIconsReport::Loaded(set)` with `set.fixed == false` (a pattern
   `mask_drawable`, `role_chrome_icon(IconRole::DialogError)` is `Raster` and
   `chrome_icon(&IconName::CircleX)` (its role path) is `Raster`, each `Missing` through
   `svg_only`.
-- `the_loading_button_keeps_the_spinners_icon_where_the_set_is_served`: under Lucide the
-  loading button's info carries E.4's new spinner note; under the built-in row the present
-  one.
+- `the_loading_buttons_keep_the_spinners_icon_where_the_set_is_served`
+  (`lucide-icons`): under Lucide (after `use_preset("catppuccin-mocha")`, the default row;
+  the handle serves Lucide, whose `Loader` draws) `buttons-loading`'s info carries E.4's
+  `spinner` note for a Button with an icon and an `icon` line, and no `spinner icon` line;
+  `buttons-loading-no-icon`'s carries E.4's note for a Button without one, and no `spinner
+  icon` line. Under the built-in row both carry the present notes and their `spinner icon`
+  lines.
+- `a_spinner_with_nothing_to_turn_says_so` (a plain `#[test]`): `spinner_note` of a
+  `SampleIcon` whose `drawn` is `ChromeIcon::Missing`, with `SpinnerDefault::Empty`, begins
+  "none:" and says the Spinner draws nothing; with `SpinnerDefault::Upstream` it begins
+  "gpui-component's own Loader".
 - `the_icons_page_reports_the_widget_icons`: under Lucide the `icons-widget-icons` caption
   reads the served text with `none` missing and `StarFill` kept; under the built-in row the
   `Off` text.
@@ -1948,59 +2041,27 @@ and the connector's check box mark changes only under catppuccin-mocha, where th
 `:756` records that the sample reads the fill); the egui and iced showcases (rationale §5);
 `check_widget_coverage.py`'s widgets (no widget added).
 
-### E.14 What the earlier releases bring, and what of it this part touches
+### E.14 The KDE steps 2 to 5, already on the tree, and what of them this part touches
 
-The KDE steps 4 and 5 (`docs/todo_v0.7.2_kde-hover-outlines-and-toolbar-buttons-spec.md`), released before
-this release in the maintainer's order, change the files of Part E, and the KDE steps 2 and 3
-(`docs/todo_v0.7.2_kde-focus-ring-and-button-outlines-spec.md`, 3F.4) change three of them too:
-`SC/tests.rs` (3F.4's test, `showcase-gpui/tests.rs:15732-15787` at `0fa28027`),
-`demo::button` in `SC/demo.rs` (3F.4's `let kind = kind.built(cx);` line, after the
-destructuring and before the `info::buttons::button` call E.4 changes) and the claims of
-`SC/info/buttons.rs` (3F.4's *The claims*), each where its trial passed (3F.4); a conflict
-at the merge is likely at the last two. This work's units start
-on a tree without them (the branch is made from v0.7.1's gated head, the release before it
-in its lane, S2). `<prev-tag>`, the tag of the release immediately before this one (under
-D10's proposal with S5's pairs `v0.7.4`), brings, besides v0.7.1's own commits up to its
-gated head: v0.7.1's close-out (its version, assets and archiving), v0.7.2 (egui 0.37), the
-KDE steps 2 and 3, and the KDE steps 4 and 5. They come in at the merge of `<prev-tag>`,
-which runs once, after this release's last unit before the merge has passed its gate and
-every review is closed, before its version and close-out. Right after the merge, before its
-warm-up gate, which covers their fixes, on the merged tree, the claims below are checked as checks that this release's results survived the merge: the
-texts this release replaced are absent; the remaining placement anchors of Part E and this
-release's new texts, unit 5's among them, are present; Edit is drawn through
-`role_chrome_icon` with E.2's judgement; C.4's 23 names are unchanged; the element list's two
-Edit elements are B.10's, with their routes; F.3's section stands above every other `## [`
-heading, and F.4's section is placed after `<prev-tag>`'s. After the warm-up gate, X (rule
-17), a documents unit of its own with its own `--quick`, recounts every stated count in
-every file either side of the merge changed, outside the pinned documents, F.4's count
-among them (S6 leaves line citations as they are). A conflict resolution in a code file is
-reviewed. A claim that fails is fixed after
-the units (a placement or a count by a documents commit, a code text by its unit's
-author, reviewed) or, where its cause is unclear, a stop. Where the branch was made from
-`<prev-tag>` itself, there is no merge: before unit 2 (T0.4), B.9's and B.10's texts are checked
-present on that tree, and the result claims are each unit's own: C.4's 23 names in unit 3's
-tool (C.4 item 8), Edit drawn through `role_chrome_icon` with E.2's judgement in unit 5.
+They are on `v0.7.2-rc1` (built 2026-11-18); nothing is merged, and nothing of them waits.
 
-- **B.10**: a fourth tool button on the Basic page, Edit, `basic-icon-edit`, drawn by
-  `demo::icon_button` from `role_chrome_icon(IconRole::ActionEdit)` (the list of roles), with
-  two new elements, `basic.icons.edit` and `basic.icons.edit.icon`, and a `basic_edit` state
-  in `SC/app.rs`. Of this part: E.2's change of `role_chrome_icon` (an SVG judged
-  `Some(false)` is drawn as an image) applies to it as to Copy, Paste and Delete;
-  `loaded_icon_masks` holds `ActionEdit`'s judgement as every role's. `demo::icon_button`
-  takes any element (it draws pixels as an image today, `SC/pages/basic.rs:707`), so Edit is
-  no slot that takes an `Icon` alone and C.4's 23 names do not change; `ActionEdit` maps to
-  no `IconName` (`CN/src/icons.rs:123-126`), so the widget icons never serve it. The element
-  list's two new elements are B.10's, with their routes; this part adds none (E.13).
-- **B.9**: `demo::icon_button`, `demo::toolbar_button` and `toolbar_item` take
-  `variants::toolbar_button`, and a checked tool button letters its icon in the checked text
-  colour where the icon follows the text colour, "an OS icon theme's raster or SVG keeps its
-  own colours". With E.2, an SVG in several colours on those buttons is drawn as an image in
-  its own colours, as B.9 says of a raster; a one-colour SVG stays a mask and takes the
-  colour. Nothing of B.9 changes this part's edits.
-- Their edits move lines of `SC/app.rs`, `SC/demo.rs`, `SC/pages/basic.rs`,
-  `SC/elements.rs` and `SC/tests.rs`, and the KDE steps 2 and 3's 3F.4 moves lines of
-  `SC/tests.rs`, `SC/demo.rs` and `SC/info/buttons.rs`: every place of Part E is found by
-  its quoted text or name, not by line.
+- **Edit** (steps 4 and 5, B.10): the Basic page's fourth tool button, `basic-icon-edit`,
+  is drawn by `demo::icon_button` from `role_chrome_icon(IconRole::ActionEdit)`, with the
+  elements `basic.icons.edit` and `basic.icons.edit.icon`. E.2's change of
+  `role_chrome_icon` (an SVG judged `Some(false)` is drawn as an image) applies to it as to
+  Copy, Paste and Delete, and `loaded_icon_masks` holds `ActionEdit`'s judgement as every
+  role's. `demo::icon_button` takes any element, so Edit is no slot that takes an `Icon`
+  alone and C.4's 23 names do not change; `ActionEdit` maps to no `IconName`, so the widget
+  icons never serve it. This part adds no element (E.13). Done-criteria: U3a's constant
+  holds the 23 names; in U5, Edit is drawn through `role_chrome_icon` with E.2's judgement.
+- **The toolbar buttons** (steps 4 and 5, B.9): `demo::icon_button`, `demo::toolbar_button`
+  and `toolbar_item` are built on `variants::toolbar_button`, and a checked tool button
+  letters its icon in the checked text colour where the icon follows the text colour. With
+  E.2 an SVG in several colours on those buttons is drawn as an image in its own colours,
+  as B.9 says of a raster; a one-colour SVG stays a mask and takes the colour. Nothing of
+  B.9 changes this part's edits.
+- **`demo::button`** (steps 2 and 3, 3F.4; then the GPUI Kit 0.10.0 port): its body is
+  `button_turning` now, which E.4 is written for.
 
 ---
 
@@ -2057,7 +2118,9 @@ tool (C.4 item 8), Edit drawn through `role_chrome_icon` with E.2's judgement in
        });
    ```
 
-   Not compiled here: the implementer confirms it under the gate. It is the crate doc's
+   Not compiled here: the implementer confirms it under the gate. It is the code of the
+   handle's own doc example (D.3), which U4's doctest run compiles: U6 copies the example as U4
+   committed it, and where U4 had to change it, the README takes U4's. It is the crate doc's
    manual path (`CN/src/lib.rs:58-67`: `Theme::preset`, `resolve`, `to_theme` with
    `&nt.name`, the name `from_preset` passes, `:464-469`), with a let chain (edition 2024,
    `Cargo.toml:18`; the crate's MSRV is 1.95.0).
@@ -2081,7 +2144,7 @@ tool (C.4 item 8), Edit drawn through `role_chrome_icon` with E.2's judgement in
    "nothing is substituted", the floor (a set lacking one of `ESSENTIAL_ICONS`, or a set
    that gives nothing, keeps gpui-component's glyphs for every widget) and SF Symbols and
    Segoe Fluent (not served in this release); `StarFill` under Lucide; an `IconName` a later
-   gpui-component 0.9.x adds, which the connector's tables do not know: "not mine", so it
+   gpui-component adds, which the connector's tables do not know: "not mine", so it
    keeps upstream's glyph among the served set's until the connector's tables gain it (the
    tables' wildcard arms, those of `lucide_name_for_gpui_icon`, `material_name_for_gpui_icon`
    and `freedesktop_name_candidates` in `CN/src/icons.rs`); an icon the set lacks
@@ -2091,8 +2154,8 @@ tool (C.4 item 8), Edit drawn through `role_chrome_icon` with E.2's judgement in
    freedesktop theme; what stays outside the hook (native menus on macOS and Windows, a
    `gpui_kit_assets::IconName` rendered by itself, the Markdown task box's mark, an `Icon`
    built from bytes); the connector's `widgets::Checkbox`, whose mark is its own stroked
-   check where the theme states `checkbox.check_mark_stroke_width` and the set's `Check`
-   otherwise, beside gpui-component's check box and a menu's or list's check mark, which
+   check, or dash in the mixed state, where the theme states
+   `checkbox.check_mark_stroke_width`, and the set's `Check` or `Minus` otherwise, beside gpui-component's check box and a menu's or list's check mark, which
    show the set's; the connector's `widgets::Spinner`, which turns the theme's animated
    indicator or arc, beside gpui-component's `Spinner`, which turns the set's `Loader` (the
    three-dot loading icon under Adwaita, which has no spinner icon); and staleness: the
@@ -2102,11 +2165,10 @@ tool (C.4 item 8), Edit drawn through `role_chrome_icon` with E.2's judgement in
    chosen and the theme again, and the new drawing then reaches only sizes a window has not
    drawn yet and windows opened afterwards: a drawing a window already holds stays for the
    run, since GPUI keeps one drawing per path and size and the theme's paths are the same
-   (W5). Each point cites the rationale's decision by name; the section links
-   the rationale once, in the form the README's other links into `docs/archive/` take, an
-   absolute URL on the repository's `main` branch (as `:453` links the v0.5.8
-   specification: `https://github.com/tiborgats/native-theme/blob/main/docs/archive/…`),
-   which F.6's archiving makes valid: `…/docs/archive/todo_v0.7.1_gpui-widget-icons-rationale.md`.
+   (W5). The section states each limit in plain words. It names no decision of
+   the rationale and links no document under `docs/`: the 0.7.1 documentation audit
+   (`8a22644d`) took plan history and private names out of the public READMEs. The "(W5)"
+   above is this specification's pointer for the writer, not README text.
 5. **Features** (`:715-747`): the `svg-rasterize` row adds ", and the widget icons
    (`icons::WidgetIcons`)".
 6. **Role icons** (`:886-920`): the sentence "`icons::icon_name` is another thing: the
@@ -2130,13 +2192,14 @@ tool (C.4 item 8), Edit drawn through `role_chrome_icon` with E.2's judgement in
 D.11 and the handle's doc (D.3); `load_gpui_icon`'s and `mask_drawable`'s (B.2, B.3); A.2's
 method doc in the core.
 
-### F.3 `CHANGELOG.md`, `## [0.7.N]`
+### F.3 `CHANGELOG.md`, `## [0.7.2]`
 
-One physical line each, in the style of the 0.7.1 entry.
+No new section: the *Added* bullets go at the end of `## [0.7.2]`'s `### Added` and the
+*Changed* bullets at the end of its `### Changed`, in the order given, one physical line each.
 
 ***Added***:
 
-> - **native-theme-gpui**: `icons::WidgetIcons` (feature `svg-rasterize`, on by default) serves gpui-component's widgets the theme's icon set: the caret of a `Select`, a dialog's close button, the window controls, a menu's check mark and every other icon gpui-component draws by its `IconName`, an application's own `Icon::new(IconName::…)` too. It wraps the application's asset source, installs gpui-component 0.9's icon resolver, follows the theme (`apply_system_theme` tells it; on the `apply` path the application does) and its light and dark modes, or a set the application fixes, and reports what it serves. It serves Lucide, Material and freedesktop themes by the connector's tables, a freedesktop icon at 16 px and only an icon of one colour, and draws an icon the set lacks empty; a set that lacks one of nine glyphs nearly every window needs (`icons::ESSENTIAL_ICONS`, replaceable), a set that gives nothing, and SF Symbols and Segoe Fluent are not served, and the widgets keep gpui-component's glyphs, as they keep its filled star under Lucide.
+> - **native-theme-gpui**: `icons::WidgetIcons` (feature `svg-rasterize`, on by default) serves gpui-component's widgets the theme's icon set: the caret of a `Select`, a dialog's close button, the window controls, a menu's check mark and every other icon gpui-component draws by its `IconName`, an application's own `Icon::new(IconName::…)` too. It wraps the application's asset source, installs gpui-component's icon resolver (`set_icon_resolver`), follows the theme (`apply_system_theme` tells it; on the `apply` path the application does) and its light and dark modes, or a set the application fixes, and reports what it serves. It serves Lucide, Material and freedesktop themes by the connector's tables, a freedesktop icon at 16 px and only an icon of one colour, and draws an icon the set lacks empty; a set that lacks one of nine glyphs nearly every window needs (`icons::ESSENTIAL_ICONS`, replaceable), a set that gives nothing, and SF Symbols and Segoe Fluent are not served, and the widgets keep gpui-component's glyphs, as they keep its filled star under Lucide.
 > - **native-theme-gpui**: `icons::load_gpui_icon`, the lookup the handle serves from, for an application's own icons by gpui-component's `IconName` at its size and colour, and `icons::mask_drawable`, whether gpui's one-colour mask carries an icon.
 > - **native-theme**: `FreedesktopLoader::load_where`, which takes the caller's test and returns the first icon that passes it, going on in the loader's own order (by names: theme by theme, each name symbolic first; by a name or a role: the symbolic form through the theme and those it inherits from, then the plain name).
 > - **Showcases (gpui)**: gpui-component's widgets draw the chosen icon theme's icons; the Icons page reports what the widget icons serve and labels its own gallery's lookup apart from theirs.
@@ -2145,51 +2208,44 @@ One physical line each, in the style of the 0.7.1 entry.
 
 > - **native-theme-gpui**: `freedesktop_name_candidates` gives `Loader` and `LoaderCircle` `process-working-symbolic`, `content-loading` (it gave `process-working`, `content-loading`), so Breeze's strip of animation frames under the plain name is never found; the deprecated `freedesktop_name_for_gpui_icon` answers `process-working-symbolic` for them outside GTK desktops, where a theme with only the plain strip now gives no icon.
 > - **native-theme-gpui**: `apply_system_theme` tells an installed `icons::WidgetIcons` the theme's icon set and the icon theme of each mode.
-> - **Showcases (gpui)**: the gallery of gpui-component's `IconName`s looks each name up by the connector's table, as the widgets' icons are served (under Lucide `Delete` is gpui-component's backspace glyph, under Material the chevrons are chevrons); the chrome and the samples keep drawing a name that has a role by the role first. An SVG icon in several colours is drawn as an image where the widget takes any element and as none where it takes an `Icon` alone, as pixels are. The Buttons page's loading button no longer gives its spinner an icon where the widget icons serve the set.
-
-The date follows the asset run (G.4).
+> - **Showcases (gpui)**: the gallery of gpui-component's `IconName`s looks each name up by the connector's table, as the widgets' icons are served (under Lucide `Delete` is gpui-component's backspace glyph, under Material the chevrons are chevrons); the chrome and the samples keep drawing a name that has a role by the role first. An SVG icon in several colours is drawn as an image where the widget takes any element and as none where it takes an `Icon` alone, as pixels are. The Buttons page's two loading buttons no longer give their spinner an icon where the widget icons serve the set and its `Loader`.
 
 ### F.4 `ROADMAP.md`
 
-After the last 0.7.x release section the earlier releases leave (the v0.7.1 section ends
-`:110` today; D10 puts the egui 0.37 release and the KDE steps 2 to 5 after it), a section:
+No new section. One paragraph is appended to the section `## v0.7.2 — …`, after its last:
 
 ```markdown
-## v0.7.N — gpui-component's own icons follow the theme's icon set
-
-**Delivered:** gpui-component's widgets draw icons of their own, the caret of a select,
-a dialog's close button, the window controls, a menu's check mark and about fifty more,
-which were always its bundled Lucide glyphs. gpui-component 0.9 added a hook for them,
-and the gpui connector's `icons::WidgetIcons` uses it: the widgets draw the theme's icon
-set, Lucide, Material or a freedesktop theme such as Breeze or Adwaita, in the theme's
-light and dark modes, and an icon the set lacks is not drawn. Where a set lacks a glyph
-nearly every window needs, and under SF Symbols and Segoe Fluent, whose icons are pixels,
-the widgets keep gpui-component's own. Serving those two sets is the next step.
+gpui-component's widgets draw icons of their own, the caret of a select, a dialog's
+close button, the window controls, a menu's check mark, about fifty in all, which were
+always its bundled Lucide glyphs. gpui-component 0.9 added a hook for them, and the gpui
+connector's `icons::WidgetIcons` uses it: the widgets draw the theme's icon set, Lucide,
+Material or a freedesktop theme such as Breeze or Adwaita, in the theme's light and dark
+modes, and an icon the set lacks is not drawn. Where a set lacks a glyph nearly every
+window needs, and under SF Symbols and Segoe Fluent, whose icons are pixels, the widgets
+keep gpui-component's own. Serving those two sets is the next step.
 ```
 
-`:262-270` ("Also in the 0.7.x releases") says "tags <N> open items `[v0.7.x]`": today
-`N` is 29, which is already not the count (`grep -c '^- \[ \] \[v0.7.x\]' docs/todo.md`
-gives 41 today), and the 0.9.1 specification's G.2 replaces it in v0.7.1 with the count
-on the tree it commits (its G.2, `ROADMAP.md`, the paragraph on `:264`), so `N` is
-read from the file when this edit is made; the sentence is found by its other words. The
-number written is what that grep gives once this work's backlog edits (F.5) are made, in
-the same commit (unit 6): F.5 opens one `[v0.7.x]` entry (its item 1) and closes one (its
-item 8, which v0.7.1 opens), and the earlier releases change the base; it is not computed
-here from a delta.
+The section's heading gains the icons. Proposed, and the maintainer's to word: `## v0.7.2 —
+egui 0.37, GPUI Kit 0.10.0, gpui-component's own icons in the theme's icon set, and the
+focus ring, the hover outlines and the toolbar buttons from issue #4`. Before changing it,
+U6 greps the tracked files for a link to the present heading's anchor (none at `a3fc81f6`).
+
+The paragraph *Also in the 0.7.x releases* says "tags N open items `[v0.7.x]`". The number
+written is what `grep -c '^- \[ \] \[v0.7.x\]' docs/todo.md` gives on U6's tree once F.5's
+edits are made (74 at `a3fc81f6`; F.5 opens one such entry, item 1, and closes one, item 8).
 
 ### F.5 `docs/todo.md`
 
-Conventions as its header (`:1-21`): a dated line `*<what> (0.7.N, <date>, <sha>):*`; an
+Conventions as its header (`:1-21`): a dated line `*<what> (0.7.2, <date>, <sha>):*`; an
 entry cited by heading and opening words.
 
 **New entries** (each "the backlog gets an entry" and "recorded" of the rationale):
 
-1. W7 (`:893-897`) and §5: a new section in *Toolkit Connectors*, directly after the open
-   entry it continues, *gpui: the widgets' own icons follow the theme's icon set*, which
-   the 0.9.1 specification's D.3 places after its Part H section (*gpui: the editor's status
-   colours are partly upstream's scheme*), before the `---` closing `## Toolkit
-   Connectors`. In the same commit item 8 moves that entry out (the group's resulting end
-   is stated after item 2):
+1. W7 (`:893-897`) and §5: a new section in *Toolkit Connectors*, in the place item 8
+   empties: after *gpui: the editor's status colours are partly upstream's scheme* and
+   before *gpui: the theme-drawn slider beside upstream's keys and `SetValue`* (four
+   sections of 0.7.2 now follow the entry item 8 moves out, so the place is named by both
+   neighbours):
 
    ```markdown
    ### gpui: the widgets' own icons under SF Symbols and Segoe Fluent
@@ -2203,14 +2259,14 @@ entry cited by heading and opening words.
          native icons. To do: a table from each of the 106 names to an SF Symbol and to a
          Segoe glyph, each entry checked on the platform (the macOS and Windows runners),
          and the pixels carried in an SVG that embeds them: both cores build resvg 0.46.0
-         with `raster-images` (gpui-pre 0.3.12 `Cargo.toml:456-462`, gpui-fast 0.1.15
+         with `raster-images` (gpui-pre 0.3.12 `Cargo.toml:456-462`, gpui-fast 0.1.16
          `:276-282`), whose default resolver takes a `data:` PNG, JPEG, GIF or WebP (usvg 0.46.0
          `src/parser/image.rs:59-74`, resvg 0.46.0 `src/image.rs:62-77`; PNG keeps the alpha
          without loss); a mask needs only the alpha; GPUI rasterises an SVG at twice the
          device pixels it is drawn at (gpui-pre 0.3.12 `src/window.rs:5247-5251`,
          `src/svg_renderer.rs:81`); the widgets draw at 12 to 16 px, at 24, and an empty
-         list's inbox at 48 and a select's at 28 (gpui-component 0.9.1
-         `src/list/delegate.rs:83`, `src/table/delegate.rs:195`, `src/select.rs:284`). The
+         list's inbox at 48 and a select's at 28 (gpui-component 0.10.0
+         `src/list/delegate.rs:83`, `src/table/delegate.rs:195`, `src/select.rs:289`). The
          embedding was read, not run. `docs/showcase-exceptions.toml`'s
          `SidebarToggleButton` and `SpeechButton` are shown with this step. *Segoe Fluent
          icons as SVG outlines* above is another way for Segoe.
@@ -2232,9 +2288,6 @@ entry cited by heading and opening words.
          rows for the four controls (`docs/evidence/widget-icons/<date>/listing.md`) and the
          sets' drawings, which are the repository's own (`native-theme/icons/`), beside it.
    ```
-
-   With items 1, 2 and 8 made, the end of `## Toolkit Connectors` reads, in order: Part H's
-   section, item 1's section, item 2's section, the `---`.
 3. W3 (`:588-592`) and §5: in *Core API*, after *Icons: recolour a Breeze
    `current-color-scheme` stylesheet from the theme, as KIconLoader does* (`:470-510`):
 
@@ -2270,10 +2323,11 @@ entry cited by heading and opening words.
    (`:186-212`):
 
    ```markdown
-         *Widget icons (0.7.N, <date>, <sha>):* the gpui connector's `widgets::Checkbox`
-         draws its own mark, the outline of gpui-component's Lucide check stroked at
-         `checkbox.check_mark_stroke_width`, where the theme states it (kde-breeze, adwaita,
-         material-3), and the set's `Check` through the widget icons elsewhere; under those
+         *Widget icons (0.7.2, <date>, <sha>):* the gpui connector's `widgets::Checkbox`
+         draws its own mark, the outline of gpui-component's Lucide check, or of its dash
+         in the mixed state, stroked at `checkbox.check_mark_stroke_width`, where the theme
+         states it (kde-breeze, adwaita, material-3), and the set's `Check` or `Minus`
+         through the widget icons elsewhere; under those
          three its mark is not the icon set's, while a menu's and a list's check mark are
          (`docs/todo_v0.7.1_gpui-widget-icons-rationale.md` W8). A mark's shape in the model
          would give the connector's mark one.
@@ -2286,7 +2340,7 @@ entry cited by heading and opening words.
    the 0.9.1 specification's D.4): the sentence that begins "Until then the gpui showcase's
    page samples and chrome draw the chosen theme's icons where the showcase builds the icon"
    (`:3843-3846` today, without the clause D.4 removes) is removed, and after the entry's
-   last line: "*Widget icons (0.7.N, <date>, <sha>):* the gpui connector's
+   last line: "*Widget icons (0.7.2, <date>, <sha>):* the gpui connector's
    `icons::WidgetIcons` answers each icon set with paths of its own, so the widgets' own
    icons follow a switch without this. It would not fix the staleness the handle has: the
    handle keeps serving the drawings it loaded until the set changes, so a theme whose files
@@ -2299,7 +2353,7 @@ entry cited by heading and opening words.
    would give an application besides: a path it serves itself, redrawn from what its asset
    source answers now."
 7. *Upstream PRs to gpui-component*, "PR: an `Icon` that draws an image, or an icon slot"
-   (`:4063` today), after its last line: "*Widget icons (0.7.N, <date>, <sha>):* still so; the
+   (`:4063` today), after its last line: "*Widget icons (0.7.2, <date>, <sha>):* still so; the
    widget icons carry an SVG of one colour only, so under SF Symbols and Segoe Fluent they
    serve nothing, and the gpui showcase's slots that take an `Icon` alone also show nothing
    for an SVG in several colours (`docs/todo_v0.7.1_gpui-widget-icons-rationale.md` W6, W7)."
@@ -2307,11 +2361,14 @@ entry cited by heading and opening words.
 **The entry this work closes.**
 
 8. *gpui: the widgets' own icons follow the theme's icon set* (`[v0.7.x]`), the section
-   the 0.9.1 specification's D.3 writes in v0.7.1 at the end of `## Toolkit Connectors`
+   the 0.9.1 specification's D.3 wrote in v0.7.1 in `## Toolkit Connectors`
    ("gpui-component's widgets draw their own Lucide glyphs … until the connector or the gpui
    showcase sets the application's icon resolver"). This work does what it asks: the
    connector's handle sets the resolver and the showcase installs it. What it leaves, SF
-   Symbols and Segoe Fluent (W7), is entry 1 above. The section's one item is done, so the
+   Symbols and Segoe Fluent (W7), is entry 1 above. Since 2026-11-18 the entry carries a
+   dated line, *GPUI Kit 0.10.0 (2026-11-18):*, which names three more of the widgets' own
+   icons (the Spinner's `Loader` on a loading `Button`, the mixed check box's `Minus`,
+   `ChevronLeft` in a right-to-left layout); the move keeps it. The section's one item is done, so the
    whole section moves to `docs/archive/todo_closed.md`, to the end of its `## Toolkit
    Connectors` group (`:963`, the group that runs to `## Publishing Prep`, `:1942`, today),
    verbatim with its box ticked, as that file's header asks (`:1-14`), ending with the dated
@@ -2321,9 +2378,15 @@ entry cited by heading and opening words.
    connector's `icons::WidgetIcons`) and `<sha of unit 5>` (the gpui showcase installs it):*
    gpui-component's widgets draw the theme's icon set under Lucide, Material and a
    freedesktop theme; under SF Symbols and Segoe Fluent they keep gpui-component's glyphs,
-   the open entry *gpui: the widgets' own icons under SF Symbols and Segoe Fluent*." The
+   the open entry *gpui: the widgets' own icons under SF Symbols and Segoe Fluent*; the
+   three icons its line of 2026-11-18 names are names of the connector's tables and are
+   served with the rest." The
    move is unit 6's (G.1), with the other backlog edits, after units 4 and 5 have landed and
    their commits are known.
+9. `docs/issues/0004_kde-open-items-rationale.md`, *The releases after v0.7.1*, after the
+   paragraph that follows its list ("The other order for 2 and 3, …"): "*2026-11-19:* the
+   first half of item 3, gpui-component's own icons, was built inside 0.7.2 by the
+   maintainer's decision; the step that serves the two pixel sets stays a later release."
 
 Nothing else closes whole (the request for the hook closed in v0.7.1, the 0.9.1
 specification's D.3). `python3 scripts/check_todo_citations.py` checks the preset
@@ -2331,27 +2394,25 @@ citations; these entries cite none.
 
 ### F.6 `docs/archive/`
 
-At the plan's close-out the rationale, this specification and the plan move to
-`docs/archive/` (decision 18), and `docs/archive/README.md` gains a row after the last 0.7.x
-row: "| v0.7.N | `todo_v0.7.1_gpui-widget-icons-rationale.md`,
-`todo_v0.7.x_gpui-widget-icons-{spec,plan}.md`: gpui-component's own icons follow the
-theme's icon set |". In the same commit every path mention of the three documents in
+In 0.7.2's close-out (G.4) the rationale, this specification and the plan move to
+`docs/archive/` with 0.7.2's other documents and are named in 0.7.2's one row of
+`docs/archive/README.md`; they get no row of their own. In the same commit every path mention of the three documents in
 every tracked file outside `docs/archive/` is rewritten for the new place (rule 22 (a);
 v0.7.1's convention: a document whose header dates its lines keeps its line citations,
 never a stale path), found after the move with
-`git grep -nE 'todo_v0\.7\.(1_gpui-widget-icons-rationale|x_gpui-widget-icons-(spec|plan)|x_gpui-widget-icons-\{spec,plan\})' -- ':!docs/archive'`
-(the last alternative the brace form, `todo_v0.7.x_gpui-widget-icons-{spec,plan}.md`);
+`git grep -nE 'todo_v0\.7\.(1_gpui-widget-icons-rationale|2_gpui-widget-icons-(spec|plan)|2_gpui-widget-icons-\{spec,plan\})' -- ':!docs/archive'`
+(the last alternative the brace form, `todo_v0.7.2_gpui-widget-icons-{spec,plan}.md`);
 a mention that already points into `docs/archive/`, in any relative form or as the absolute
 URL, is left, and so are a citation dated "at `<sha>`" and a path inside another document's
 instructions that names its own future target, each named in the commit body. They include
-F.1's README section, F.5's entries (which cite
+F.5's entries (which cite
 `docs/todo_v0.7.1_gpui-widget-icons-rationale.md`), C.6's section of
 `docs/evidence/README.md` (which links this specification), and the other documents of the
-batch that name the three. The check filters per match, not per line, and prints nothing but
+batch that name the three. The connector's README names none of them (F.1 item 4). The check filters per match, not per line, and prints nothing but
 the mentions the exemptions above leave, each named in the commit body:
 
 ```sh
-git grep -noE '(archive/)?todo_v0\.7\.(1_gpui-widget-icons-rationale|x_gpui-widget-icons-(spec|plan)|x_gpui-widget-icons-\{spec,plan\})' -- ':!docs/archive' | grep -v ':archive/'
+git grep -noE '(archive/)?todo_v0\.7\.(1_gpui-widget-icons-rationale|2_gpui-widget-icons-(spec|plan)|2_gpui-widget-icons-\{spec,plan\})' -- ':!docs/archive' | grep -v ':archive/'
 ```
 
 The three documents' own relative links are checked again after the move, since they now
@@ -2365,77 +2426,68 @@ commit. The archive index check (`scripts/check_release.sh:1033`) reads the row.
 
 ### G.1 Units
 
-Each unit lands as one change, gated by the batch's cadence
-(`docs/todo_v0.7.1_batch-speed-rationale.md`, S1): during a unit, the agent runs only
-the touched tests (its targeted commands); at a unit's end,
-`scripts/check_release.sh --quick` (defined by `docs/todo_v0.7.1_gate-speed-spec.md`,
-S1), by the orchestrator, as a long run until its time is measured (the first timed
-into the record); `scripts/check_release.sh --commit` (the per-commit subset: every
-lint, check, test, docs, widget-coverage, showcase-parity and archive-index gate; it
-skips the release-tag check, the gpui tests on GPUI Fast, native-theme's ignored
-stem-index test, the docs.rs emulation, packaging, semver, outdated
-dependencies and the two stamps, `:25-37`) every third code unit of the release,
-counted from the last `--commit`, on the release's last code unit before its documents
-and version units (unit 5, rule 6), after a lock or toolchain change (the warm-up gates,
-and V, which changes the manifests and `Cargo.lock`), and wherever the plan names a unit
-structural; a documents-only
-unit runs the five documentation checkers and `--quick`; the full run where the plan
-has it (the close-out), unchanged. A commit between two `--commit` runs is
-proven by `--quick` only; a failure the next `--commit` finds is fixed by a new commit,
-and the plan's record names the commit that brought it.
+Inside 0.7.2: commits on `v0.7.2-rc1` in the worktree `.claude/worktrees/lane2-b`, after
+`a3fc81f6`. No branch, no merge, no version step. Where another part says "unit N", it is U N
+here; unit 3's three steps are U3a to U3c, unit 0 is D0, and unit 7 is 0.7.2's close-out
+(G.4).
 
 | Unit | Parts | Why it holds together |
 |---|---|---|
-| 0 — the documents | the approved rationale, this specification and the plan, added to `docs/` | committed first (decision 23), so that every later commit, and a text that cites one of them at a commit, points at a document in the tree; no gate reads them but the archive index, which does not list them until F.6 |
-| 1 — the core | A | A.1's functions are reached only through A.2's method; without it they are dead code, an error under `-D warnings`. A.2's method is `pub`, so it is never dead; its `accept` is rebound `mut` inside the Linux block (A.2), so the macOS and Windows legs of the core (`:474-497`) and `--no-default-features` (`:574`, `:496`) see no `unused_mut` |
-| 2 — the lookup | first, C.1's check of `process-working-symbolic` with B.1 uncommitted (a stop where it fails); then B (B.1 to B.4) | B.1 on a machine whose Breeze lacks the symbolic spinner: `all_kde_names_resolve_in_breeze` red, hence the check first. B.1's entries without the fixture rows: `the_theme_s_own_name_wins_in_each_convention_s_theme` fails on `breeze-only` and `both-names`; the lookup without B.4: `check_connector_parity.py` reports `icons::load_gpui_icon` and `icons::mask_drawable` absent from iced and egui |
-| 3 — the measurement | C.2's test, in `SC/tests.rs`; then the run, C.4's table, C.6's record; last, once the stop has passed, the test removed | **the first stop**: the session reads the table and the sheets in `target/widget-icons-sheets/` against C.5's seven conditions; a condition met stops the plan for the maintainer with both. The test is committed before the run, the table and its README after it; the sheets are never committed. The test is `#[cfg(all(target_os = "linux", feature = "svg-rasterize"))]` and `#[ignore]`d, so the no-feature clippy run and every gate that runs the suite pass without running it. Its last commit removes the test (it is not run again; its table stays under `docs/evidence/widget-icons/`, and C.6's section names the commit that held it), so no later unit has to keep it compiling |
-| 4 — the handle | D; F.2's D items (the A and B docs land with A and B) | D.10 needs D's global; D.11's doctest gate needs the README block of unit 6 only once the README names the handle, so the gate's edit lands here and the README's block in unit 6 (the gate compiling nothing new until then) |
-| 5 — the showcase | E | E.2 needs the handle; E.7's text and the test's phrase change together; E.10's tests fail with E.2's role-first chrome alone |
-| 6 — outside the code | F.1, F.3, F.4, F.5 (item 8's move of the closed entry to `docs/archive/todo_closed.md` included) | the README's quick start names `WidgetIcons` (unit 4); F.5's entries name the evidence (unit 3); item 8's closing line names units 4's and 5's commits; F.4's count is taken after F.5 |
-| 7 — close-out | G.4's asset run, F.6 | after everything of this release |
+| D0 — the documents | the approved rationale, this specification renamed, the plan under its new name, and the two live mentions of the old names re-pointed (decision 18), with the approval's date written in the rationale's status and the plan's *Status* | committed first (decision 23), so every later commit points at documents in the tree |
+| U1 — the core | A | A.1's functions are reached only through A.2's method; without it they are dead code, an error under `-D warnings`. A.2's `accept` is rebound `mut` inside the Linux block, so the macOS and Windows legs see no `unused_mut` |
+| U2 — the lookup | first, C.1's check of `process-working-symbolic` with B.1 uncommitted (a stop where it fails); then B.1 to B.4 | B.1 without its fixture rows fails `the_theme_s_own_name_wins_in_each_convention_s_theme`; the lookup without B.4 fails `check_connector_parity.py` |
+| U3a — the measuring tool | C.2 to C.4: the ignored test in `SC/tests.rs` | committed and gated before the run, so the commit C.6 names holds the tool that measured |
+| U3b — the run and the verdict | C.4's table, C.5's seven conditions | **the first stop**, and not a commit: a condition met stops the work for the maintainer, with the table and the sheets; none met, the work goes on (C.5) |
+| U3c — the record | C.6: `listing.md`, its README, the section of `docs/evidence/README.md`; the tool removed | one commit, so no later unit has to keep the tool compiling |
+| U4 — the handle | D; F.2's D items | after the verdict; with D.13 only where condition 7 was met and the maintainer found the load noticeable. D.11's doctest gate lands here and compiles nothing new until U6 |
+| U5 — the showcase | E | E.2 needs the handle; E.7's text and the test's phrase change together; E.10's tests fail with E.2's role-first chrome alone |
+| U6 — outside the code | F.1, F.3, F.4, F.5 | beside U5, on other files. F.5's entries name the evidence (U3c); item 8's closing line names U4's and U5's commits, so U6 is committed after U5; F.4's count is taken after F.5 |
 
-Order: 0, 1, 2, 3 (stop), 4 (with D.13 only where condition 7 was met and the maintainer
-found the load noticeable), 5, 6, 7. Units 4 to 7 do not start before the stop's verdict.
+Order: D0, U1, U2, U3a, U3b (the stop), U3c, U4, U5 with U6. U4 to U6 do not start before
+the verdict. Then 0.7.2's close-out (G.4).
 
-The tests each unit's gates run (through `--quick` or `--commit`, by the cadence above;
-`--quick` runs at least the tests and doctests of every crate the unit changes and of
-every crate that depends on one, S1): unit 1, `cargo test -p native-theme` and
-with `$NT_FEATURES` (`:675`, `:683-684`); units 2, 4, `cargo test -p native-theme-gpui
---features native,watch` (`:667`) and `--lib --no-default-features` (`:704-705`), and the
-GPUI Fast leg by hand once per unit (`cargo test -p native-theme-gpui --features
-gpui-fast,native,watch --all-targets`, `:714-715`, which `--commit` skips); unit 5, the
-showcase in the runner environment (`:845-855`); every unit, clippy (`:529-550`) and the
-strict-panic runs of the library and the showcase (`:624-632`), the panic-pattern scan
-(`:400-408`), `scripts/check_features.sh` (`:443`: each feature alone, so the lookup and
-`mask_drawable` build with `svg-rasterize` alone and without it), the docs runs
-(`:1002-1010`).
+**Gates.** During a unit the agent runs the tests the unit names and the ones its edits
+reach, among them: in U1, the full check's step "test (native-theme, Linux features, stem
+index)", which `--commit` and `--quick` skip and which compares the lookup A.1 rewrites with
+the unfiltered one; in U4, D.12's tests on both cores (the asset source is an API of both)
+and the connector's doctests (D.3's example, D.11's gate). The orchestrator runs two gates,
+as the KDE steps 4 and 5 did:
+
+| After | Gate |
+|---|---|
+| D0 | the five documentation checkers |
+| U1, U2 and U3a | `scripts/check_release.sh --commit`, then the push |
+| U3c | the five documentation checkers; its code change, one removed test, is proven by the last gate |
+| U4, U5 with U6 | `--commit` (the last code unit), the two GPUI Fast legs and the five documentation checkers, then the push |
+
+The two GPUI Fast legs are `cargo test -p native-theme-gpui --features
+gpui-fast,native,watch --all-targets` and `scripts/run_in_runner_env.sh test -p
+native-theme-gpui --features gpui-fast,native,watch --example showcase-gpui`, which
+`--commit` skips. Clippy builds the connector and the showcase on GPUI Fast in every gate.
+A commit before a `--commit` is proven by that `--commit` and by its unit's own tests; a
+failure the gate finds is fixed by a new commit, and the plan's record names the commit
+that brought it.
 
 ### G.2 Line citations
 
 By S6 of `docs/todo_v0.7.1_batch-speed-rationale.md` (the maintainer's decision of
 2026-11-15), no unit re-points a line citation its edits move: the existing line-number
-citations of the edited files are left as they are and may drift, and a citation this
-release writes of a tracked file that changes names the file (with a quoted phrase where
-useful), never a line. Pinned sources keep their lines: an upstream crate at a version, a
-URL at a commit, a citation "at `<sha>`". The line numbers this specification gives for
-finding a place are read at `0fa28027`, as its header says.
+citations of the edited files are left as they are and may drift, and a citation this work
+writes of a tracked file names the file (with a quoted phrase where useful), never a line.
+Pinned sources keep their lines: an upstream crate at a version, a URL at a commit, a
+citation "at `<sha>`". The line numbers this specification gives for finding a place are
+read at `0fa28027`, as its header says.
 
-**Lines pinned by colour claims.** `every_colour_claim_is_read_at_the_line_it_cites` pins
-lines of `CN/src/colors.rs` (last pinned `:718`), `geometry.rs` (`:772`), `variants.rs`
-(`:64`), `widgets/checkbox.rs` (`:145`), `widgets/mod.rs` (`:344`), `widgets/progress.rs`
-(`:79`), `widgets/separator.rs` (`:30`), `widgets/slider.rs` (`:80`), `widgets/spinner.rs`
-(`:466`), `widgets/switch.rs` (`:144`) and `widgets/tab_bar.rs` (`:239`), listed today from
-every `"native-theme-gpui/…:N"` in `SC/` and `CN/src/showcase.rs`; no claim cites a line of
-the showcase's own files. Of those files only `widgets/checkbox.rs` is edited here, in three
-doc comments in place with the same line count (D.11), so its pinned lines stay (the KDE
-steps 4 and 5 add to `variants.rs` and `geometry.rs` below their pinned lines, by their own
-specification), and no claim cites `CN/src/icons.rs`, `CN/src/lib.rs` or the core: no unit
-moves a pinned line.
+**Lines the colour claims cite.** As the head's *Lines that must not move* says: of the
+files the claims cite, this work edits `widgets/checkbox.rs` alone, in two doc comments
+(D.11), and moves no claimed line.
 
 ### G.3 Gates
 
-From `scripts/check_release.sh` at `0fa28027`:
+From `scripts/check_release.sh` at `0fa28027`; its lines are that commit's and are left, and
+a step is found by its command. Under `--commit` and `--quick` the test steps run through
+cargo nextest where it is installed; the showcases' tests in the runner environment stay on
+`cargo test`.
 
 | Command (line) | Catches |
 |---|---|
@@ -2452,33 +2504,40 @@ From `scripts/check_release.sh` at `0fa28027`:
 | the five documentation checkers (`:964-983`) | F.5 (`check_todo_citations.py`) |
 | rustdoc `-D warnings`, private items included (`:1002-1010`) | the intra-doc links of A.2, B, D (the `WidgetIcons` mention without a link outside the feature) |
 | `cargo fmt --all` | formatting |
-| full run only: `scripts/update_provenance.sh check` (`:1302`), `scripts/update_compatibility.sh check` (`:1339`) | both stamps go stale with unit 1 until the asset run: unit 1 edits `native-theme/src`, which the provenance stamp (`scripts/update_provenance.sh:39-70`) and the compatibility stamp (`scripts/update_compatibility.sh:20-23`) hash |
+| full run only: `scripts/update_provenance.sh check` (`:1302`), `scripts/update_compatibility.sh check` (`:1339`) | both stamps go stale with unit 1 until 0.7.2's asset run: unit 1 edits `native-theme/src`, which the provenance stamp (`scripts/update_provenance.sh:39-70`) and the compatibility stamp (`scripts/update_compatibility.sh:20-23`) hash |
 
 **Not covered by any gate:** the wording of every doc, README, CHANGELOG, roadmap and
 backlog text above; the measurement's verdicts; what the
 installed themes draw.
 
-### G.4 The asset run
+### G.4 What 0.7.2's close-out takes from this work
 
-Both stamps are stale from unit 1 until the run (G.3, its last row). As the 0.9.1
-specification's G.4, with the batch's S4 (`docs/todo_v0.7.1_batch-speed-rationale.md`):
-`cargo audit`; `scripts/update_compatibility.sh run`; once it has passed, push, and the full
-`scripts/check_release.sh` (only the provenance stamp failing) runs while CI runs; both
-green; the three showcases built in advance; the
-maintainer's word for the 4 to 6 minutes; `scripts/generate_assets_release.sh` once; one
-commit with the assets, both stamps, the READMEs' lines and the CHANGELOG's date; the full
-check and CI again. What the new screenshots show from this work, for the maintainer's look
-before the commit: in the gpui screenshots, gpui-component's own glyphs in the preset's icon
-set (the Basic page's select caret and number input's minus and plus, the window controls
-where the showcase draws the title bar, a checked menu row), drawn empty where a set lacks
-one; the Icons page's two captions. The parity comparison (`scripts/check_showcase_parity.py`
-on the rest run) compares the chrome and the Basic page at their sample points; whether a
-sample point lies on a widget's glyph was not checked (not verified). A difference it
-reports is a fault, settled by rule 19 of `docs/todo_v0.7.1_batch-speed-rationale.md`,
-not asked: one this work's changes explain is fixed; one that is a toolkit's limit gets a
-`[[parity.group]]` exception with its reason and source, only for the difference the
-comparison shows, and is reviewed; the asset run is made again in either case, and the
-maintainer is told.
+The full check, the compatibility run, the asset run with its capture window, both stamps,
+the CHANGELOG's date and CI are 0.7.2's close-out's own, made once for the whole release.
+This work adds:
+
+1. **The archive** (F.6): the rationale, this specification and the plan move with 0.7.2's
+   other documents, in 0.7.2's one row, with F.6's rewrite of the path mentions and its
+   check.
+2. **Before the close-out**, the search over the stamped paths (rule 22 (c)) with this
+   work's stem, `gpui-widget-icons`: expected, nothing.
+3. **The look at the captures** before the asset commit. In the gpui screenshots,
+   gpui-component's own glyphs are the preset's icon set's: the carets of the Basic page's
+   select and of the chrome's icon-theme Select and preset Combobox, a checked menu row, the window controls where the
+   showcase draws the title bar, each drawn empty where the set lacks one; and the Icons
+   page's two captions where a capture shows them. The Basic page's number field shows no
+   Minus or Plus under a theme (its steps are the showcase's own chevrons,
+   `demo::number_input`), and its check boxes keep the connector's stroked mark where the
+   preset states `checkbox.check_mark_stroke_width`. In the screenshots workflow's captures
+   under macos-monterey, macos-tahoe and windows-11 the widgets keep gpui-component's
+   glyphs (SF Symbols and Segoe Fluent are not served).
+4. **Parity.** The comparison (`scripts/check_showcase_parity.py`) compares the chrome and
+   the Basic page at their sample points; whether a sample point lies on a widget's glyph
+   was not checked (not verified). A difference it reports is a fault, settled by rule 19
+   of `docs/todo_v0.7.1_batch-speed-rationale.md`, not asked: one this work's changes
+   explain is fixed; one that is a toolkit's limit gets a `[[parity.group]]` exception with
+   its reason and source, only for the difference shown, and is reviewed.
+5. **The sheets** under `target/widget-icons-sheets/` are deleted on the maintainer's word.
 
 ---
 
@@ -2608,6 +2667,13 @@ names in 43 files. Two more reach the resolver as raw `svg` paths: the check box
 (`checkbox.rs:221`) and the questionnaire's (`questionnaire/components.rs:866`), both
 `Check`, both counted below.
 
+At 0.10.0 (read 2026-11-19 with the same script; the plan's record, `icons/upstream-reread.md`,
+has every line): the same 52 names, in 44 files. Added: `checkbox.rs` draws `Minus` for
+the indeterminate state through the same raw `svg` path as `Check`; `radio.rs` names
+`Check` itself; `breadcrumb.rs`, `menu/popup_menu.rs` and `sidebar/menu.rs` draw
+`ChevronLeft` under a right-to-left layout, and `time/calendar.rs` and `pagination.rs`
+swap their two chevrons there. Nothing is gone. The lines below are 0.9.1's.
+
 | File | Names (line) |
 |---|---|
 | `accordion.rs` | ChevronDown :327 |
@@ -2655,7 +2721,8 @@ names in 43 files. Two more reach the resolver as raw `svg` paths: the check box
 | `title_bar.rs` | WindowMinimize :149, WindowRestore :150, WindowMaximize :151, WindowClose :152 |
 
 A loading `Button` draws a `Spinner` (`button/button_icon.rs`, through `Button::loading_icon`),
-whose default is `Loader` (`spinner.rs:25`).
+whose default is `Loader` (`spinner.rs:25`). From 0.10.0 a loading `Button` without an icon
+draws one too (`button/button.rs`, `RenderOnce for Button`).
 
 ## What was not verified
 
@@ -2703,7 +2770,12 @@ whose default is `Loader` (`spinner.rs:25`).
   `dark` true and false, and a `#[gpui::test]` with no fixture checks that the crate-private
   function `lookup` reads the mode with (decision 11) gives dark after
   `GpuiTheme::change(Dark, None, cx)` and light after the change back.
-- That the 0.9.1 specification's B.3, B.15, D.3, D.4 and E land as written; E.7 and F.5
-  quote what they leave and stop where the text differs.
-- The order of the releases after v0.7.1 (the KDE document's D10, the maintainer's): this
-  release's number and the ROADMAP's place follow it.
+- The 0.9.1 specification's B.3, B.13, B.15, D.3, D.4 and E landed in v0.7.1 and were found
+  on the tree by the reviews of 2026-11-19; E.7 and F.5 quote their texts and stop where a
+  text differs.
+- The amendment of 2026-11-19: nothing was compiled or run for it. E.4's three answers and
+  its texts, and E.3's four changed texts, were read against the tree, not built. The
+  reviews did not check that cargo nextest runs the showcase example's tests as `cargo
+  test` does (decision 27's reasoning does not depend on it), and upstream's default
+  glyphs' shapes were not compared again (gpui-kit-assets 0.10.0's files are byte-identical
+  to 0.9.1's).

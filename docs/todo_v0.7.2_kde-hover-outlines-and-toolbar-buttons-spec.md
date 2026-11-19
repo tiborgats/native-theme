@@ -2780,7 +2780,7 @@ asset run, C.2); the other pages' do not.
 - **The old names** (`todo_v0.7.x_kde-open-items-steps4-5-{spec,plan}.md`). Every link
   and mention that ends in `.md`, outside `docs/archive/`, is re-pointed in the working
   tree and committed by D0: found today in `docs/todo_v0.7.x_caret-blink-plan.md`,
-  `docs/todo_v0.7.x_gpui-widget-icons-spec.md`,
+  `docs/todo_v0.7.2_gpui-widget-icons-spec.md`,
   `docs/todo_v0.7.x_kde-open-items-steps6-7-spec.md` and this work's plan (found again
   by `git grep -n 'kde-open-items-steps4-5' -- ':!docs/archive'`, which then finds only
   the record folder's path, in the caret plan and the steps 6–7 plan, the old names'

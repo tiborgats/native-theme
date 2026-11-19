@@ -1,7 +1,13 @@
 # gpui: the icons gpui-component's widgets draw follow the theme's icon set — rationale
 
-Status: written 2026-11-14, revised after six reviews; not approved. No code
-follows from it before the maintainer approves its specification and plan.
+Status: written 2026-11-14, revised after six reviews; approved by the maintainer
+as amended, with its specification and plan, on 2026-11-19.
+
+Amended 2026-11-19: the work is built inside 0.7.2 by the maintainer's decision
+of that day (W11), and its upstream citations were read again at
+gpui-component 0.10.0 and gpui-fast 0.1.16, where one statement was false (W3,
+the loading button) and three notes are added (§1.2, W4, W8). The lines below
+stay those of the versions and the commit the next paragraph names.
 
 Abbreviations: `GC`, `GP`, `GF` are the `src/` folders of gpui-component 0.9.1,
 gpui-pre 0.3.12 and gpui-fast 0.1.15 in Cargo's registry; `GA` is
@@ -96,6 +102,10 @@ list's empty state and search, the message scroller, notification, pagination,
 the questionnaire, rating, the setting page's reset, the sidebar menu, spinner,
 the table's empty state and sort arrows, calendar, date picker). The whole list
 with lines is in the research of 2026-11-14 and goes into the specification.
+At 0.10.0 the list gains the check box's indeterminate dash (`Minus`, through the
+resolver like its check mark) and, under a right-to-left layout, `ChevronLeft`
+in the breadcrumb, the submenu arrow and the sidebar menu's caret; nothing
+leaves it.
 
 ### 1.3 The connector and the showcase today
 
@@ -219,9 +229,9 @@ with lines is in the research of 2026-11-14 and goes into the specification.
   What the repository records about them:
   - `Check`. `object-select-symbolic` is recorded as the check mark of a
     chosen row on both desktops: GTK's drop-down marks the chosen item with it
-    (`docs/todo_v0.7.1_model-completeness-gap-map-gnome.md:381`) and Kirigami
+    (`docs/todo_v0.8.0_model-completeness-gap-map-gnome.md:381`) and Kirigami
     Addons the current row
-    (`docs/todo_v0.7.1_model-completeness-gap-map-kde.md:1387`); Adwaita and
+    (`docs/todo_v0.8.0_model-completeness-gap-map-kde.md:1387`); Adwaita and
     Breeze both ship it (`native-theme/src/model/icons.rs:725-726`).
     `dialog-ok` is recorded as the icon of KDE's OK button (the gap map,
     `:433`), not as a check mark drawn in a row or a box; the table has it
@@ -575,15 +585,17 @@ gallery takes the role's icon from the list of roles for the names that have
 one, which is what it shows today; no rule of the showcase goes into the
 connector's function.
 
-One sample changes on purpose: the Buttons page's loading button gives the
-spinner an icon of its own, the role's (`SC/pages/buttons.rs:155-159`,
-`SC/demo.rs:3406`), because the widget's default was upstream's glyph. With
-the handle the default follows the set, so the sample no longer overrides
-the spinner's icon where the handle serves the set and its `Loader` (it keeps the button's
-own icon, without which gpui-component draws no spinner,
-`GC/button/button.rs:789-795`); otherwise it would show, beside the
-Feedback page's spinner (`SC/demo.rs:5752`), the very picture this decision
-rejects for Breeze.
+One sample changes on purpose. The Buttons page's loading buttons, two since
+the GPUI Kit 0.10.0 port, one with an icon and one without, give the spinner an
+icon of the showcase's own, the role's, because the widget's default was
+upstream's glyph. With the handle the default follows the set, so neither
+overrides the spinner's icon where the handle serves the set and its `Loader`;
+otherwise they would show, beside the Feedback page's spinner
+(`SC/demo.rs:5752`), the very picture this decision rejects for Breeze. The
+first button keeps its own icon, so the page still shows a spinner standing in
+for one. (As written on 2026-11-14 this paragraph said that gpui-component
+draws no spinner on a button without an icon; from 0.10.0 it does,
+`button/button.rs`, `RenderOnce for Button`.)
 
 One difference between the showcases stays and is said: a widget's own glyph
 in gpui (a select's caret, by the table: a chevron under Material) against
@@ -711,7 +723,8 @@ dialogs and forms draw: the four window controls (`WindowClose`,
 dialog, a sheet and a notification (`Close`), the caret of a select and a
 combo box (`ChevronDown`), the check mark of gpui-component's check box, of a
 chosen row and of a menu item (`Check`), and a number input's `Minus` and
-`Plus`. Lucide, Material and the
+`Plus`. From gpui-component 0.10.0 `Minus` is also the dash of a check box in
+the mixed state. Lucide, Material and the
 freedesktop naming have an icon for each (`CN/src/icons.rs:232-321`,
 `:376-463`, `:564-632`). A set, in the table of either mode, that lacks one of
 them is not served, as a set that gives nothing is not: the widgets keep
@@ -914,6 +927,9 @@ it is more than half of the icons. The step that embeds pixels serves those icon
   `gpui_component::resolve_icon_path` first, as upstream's check box does
   (`GC/checkbox.rs:220-222`). Without that it would be the one check box whose
   mark ignores a resolver, the connector's or an application's.
+- The same holds for the dash of the mixed state, which gpui-component 0.10.0
+  draws as `Minus` through the same path and the connector's check box draws
+  the same two ways as its check.
 - Where the theme states a stroke width, it draws the outline of Lucide's check
   icon at that width (§1.3). That mark stays. On the platforms that state the
   stroke, a check box's mark is drawn by the style and not taken from the
@@ -982,7 +998,7 @@ it is more than half of the icons. The step that embeds pixels serves those icon
   `sample_icon`) takes the role's icon and, where the role gives none, the
   name's from the list of names; the list of names alone serves the Icons
   page's gallery of `IconName`s and the names without a role; the Buttons
-  page's loading button leaves the spinner's default icon in place where
+  page's two loading buttons leave the spinner's default icon in place where
   the handle serves the set and its `Loader` (W3, "The showcase's two lists").
 - Its Select's rows map to the handle's states (W2): the row that follows the
   theme puts it into following; a named set fixes that set; the row for the
@@ -1024,6 +1040,11 @@ corrected statements about the hook (the port's document, N3 and N5). If the
 maintainer prefers (a), nothing in the design changes; v0.7.1's asset run then
 follows this work too.
 
+**Decided otherwise, 2026-11-19.** The maintainer folded the work into 0.7.2,
+after the dependency upgrades and the KDE steps 2 to 5 on the same branch; as
+said of (a), nothing in the design changes, and 0.7.2's asset run follows this
+work too.
+
 ## 3. What the maintainer approves
 
 1. W1, W2: a public handle in `native_theme_gpui::icons` that wraps the
@@ -1056,7 +1077,7 @@ follows this work too.
      today's order (the role's icon first) and so its icons; its gallery of
      `IconName`s is looked up by the connector's table, as the handle's
      icons are (at the page's size, and any icon the page can draw); the
-     Buttons page's loading button no longer overrides the spinner's icon
+     Buttons page's two loading buttons no longer override the spinner's icon
      where the handle serves the set's `Loader`;
    - until the measurement decides `Check`'s entry, the widgets' check mark
      is `dialog-ok` under Breeze and `object-select-symbolic` under Adwaita;
@@ -1089,8 +1110,8 @@ follows this work too.
    table differ (W1); in the showcase's slots that take an `Icon` alone, an icon in
    several colours is drawn as nothing.
 8. W10: the showcase's changes.
-9. W11: the release it lands in. The order of the releases after v0.7.1 is
-   proposed in one place for all four documents, the KDE document's D10.
+9. W11: the release it lands in: 0.7.2, by the maintainer's decision of
+   2026-11-19.
 
 ## 4. What was checked, and what was not
 
