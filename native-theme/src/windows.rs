@@ -700,12 +700,13 @@ fn apply_caret_blink_to_reader(result: &mut crate::ReaderResult, time: u32) {
 }
 
 /// Read the current Windows theme from UISettings, SystemParametersInfoW,
-/// GetSystemMetricsForDpi, and, under high contrast, GetSysColor.
+/// GetSystemMetricsForDpi, GetCaretBlinkTime, and, under high contrast,
+/// GetSysColor.
 ///
 /// Reads the accent and foreground colors plus 6 accent shade colors from
 /// `UISettings` (WinRT), per-widget fonts from `NONCLIENTMETRICSW` (Win32),
-/// GetSysColor for the high-contrast colors, accessibility settings, and icon
-/// sizes.
+/// GetSysColor for the high-contrast colors, accessibility settings, icon
+/// sizes, and the caret's blink time.
 ///
 /// Returns `Error::ReaderFailed` if UISettings cannot be created (pre-Windows 10).
 ///
