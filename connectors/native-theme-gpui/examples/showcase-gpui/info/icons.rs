@@ -155,11 +155,13 @@ pub fn role_icon(
 }
 
 /// A cell of the gpui-component Icons grid: the icon `set` gives gpui-component's
-/// IconName `name`, found by `role` where one maps to it.
+/// IconName `name`, found by the connector's table, or, where `by_role` (SF
+/// Symbols and Segoe Fluent), by `role` where one maps to it.
 pub fn gpui_icon(
     t: &Theme,
     name: &str,
     role: Option<&str>,
+    by_role: bool,
     set: &str,
     icon: IconDrawn,
     fg: Hsla,
@@ -178,13 +180,17 @@ pub fn gpui_icon(
             "lookup",
             "none: gpui-component draws its own icon for the name, from the application's assets (icon.rs, Icon::into_svg)",
         ),
-        (_, Some(role)) => info.instance(
+        (_, Some(role)) if by_role => info.instance(
             "lookup",
-            format!("by IconRole::{role}, the role the showcase maps the name to (showcase-gpui/support.rs, role_for_gpui_icon); a freedesktop theme without an icon for the role is asked for each name the connector gives the icon (native-theme-gpui/icons.rs, freedesktop_name_candidates) instead, in that theme only, never another (showcase-gpui/support.rs, load_gpui_icons)"),
+            format!("by IconRole::{role}, the role the showcase maps the name to (showcase-gpui/support.rs, role_for_gpui_icon): the connector has no table from a name to an SF Symbol or a Segoe glyph"),
         ),
-        (_, None) => info.instance(
+        (_, None) if by_role => info.instance(
             "lookup",
-            "by name: no IconRole maps to it, so the showcase asks the set for the name the connector gives it there; a freedesktop theme for each of the icon's names in turn, in that theme only (native-theme-gpui/icons.rs, freedesktop_name_candidates; showcase-gpui/support.rs, load_gpui_icons)",
+            "none: SF Symbols and Segoe Fluent are known by role only, and no role maps to this name",
+        ),
+        _ => info.instance(
+            "lookup",
+            "by name, as the connector serves gpui-component's own icons: the set's name for it in the connector's table (native-theme-gpui/icons.rs, load_gpui_icon), in a freedesktop theme each of the icon's names in turn, in that theme only (native-theme-gpui/icons.rs, freedesktop_name_candidates), at the page's size, and any icon the set has; the chrome and the samples draw a name that has a role by the role first",
         ),
     }
 }

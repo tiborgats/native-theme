@@ -129,7 +129,8 @@ use crate::{
 /// The `Icon` `drawn` is: gpui-component's `icon` where the built-in set is
 /// chosen, the chosen set's SVG otherwise, and `None` where that set has
 /// none, or pixels alone, which an `Icon` cannot draw (icon.rs,
-/// `IconSource`): for a widget that takes an `Icon` and nothing else
+/// `IconSource`), or an SVG in several colours, which it would draw as a
+/// mask of one colour: for a widget that takes an `Icon` and nothing else
 /// (`ChromeIcon::svg_only`). An SVG is drawn as every `Icon` is, as a mask in
 /// the colour its widget gives it (gpui-pre window.rs, `Window::paint_svg`).
 /// A part: the helper that places it reports.
@@ -142,8 +143,9 @@ fn chrome_icon(drawn: &ChromeIcon, icon: &IconName) -> Option<Icon> {
 }
 
 /// What `drawn` is drawn as where its widget takes any element: the `Icon`
-/// [`chrome_icon`] gives, or the chosen set's pixels as an image, as the
-/// Icons page draws them; `None` where the set has none.
+/// [`chrome_icon`] gives, or the chosen set's pixels, or its SVG in several
+/// colours, as an image, as the Icons page draws them; `None` where the set
+/// has none.
 fn chrome_glyph(drawn: &ChromeIcon, icon: &IconName) -> Option<Glyph> {
     match drawn {
         ChromeIcon::Raster(name, raster) => Some(Glyph::Raster(name, raster.0.clone(), None)),
@@ -158,9 +160,10 @@ pub(crate) fn raster_selector(name: &str) -> String {
 }
 
 /// An icon of the chosen set as a widget that takes any element draws it:
-/// an SVG as an `Icon`, or pixels as an image (`gpui::img`). An image takes
-/// no text colour: a system set's pixels are in the colour its loader drew
-/// them in (`app::icon_tint`), and a bundled set has no pixels.
+/// an SVG as an `Icon`, or pixels, or an SVG in several colours, as an
+/// image (`gpui::img`). An image takes no text colour: a system set's
+/// pixels are in the colour its loader drew them in (`app::icon_tint`), an
+/// SVG in several colours in its own, and a bundled set has no pixels.
 #[derive(Clone, IntoElement)]
 pub(crate) enum Glyph {
     Svg(Box<Icon>),
@@ -3361,7 +3364,8 @@ pub(crate) struct DemoButton {
     pub kind: ButtonKind,
     pub state: ButtonState,
     /// Its icon, of the chosen icon theme. A loading Button shows its
-    /// spinner in place of its icon, turning this one.
+    /// spinner in place of its icon, turning this one, or, where the widget
+    /// icons serve the chosen set's Loader, that ([`spinner_default`]).
     pub icon: Option<SampleIcon>,
 }
 
@@ -3375,7 +3379,9 @@ pub(crate) fn button(ui: &Entity<InfoRegistry>, cx: &App, spec: DemoButton) -> S
 /// since gpui-component 0.10.0 a loading Button without an icon shows its
 /// spinner where an icon would sit (button/button.rs:777-786). Where the
 /// chosen icon theme has none, it is given none, as a loading Button with
-/// an icon is given none, and the spinner turns its own default.
+/// an icon is given none, and the spinner turns its own default; so it is
+/// where the widget icons serve the chosen set's Loader, which that default
+/// then is ([`spinner_default`]).
 pub(crate) fn loading_button(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -3385,18 +3391,60 @@ pub(crate) fn loading_button(
     button_turning(ui, cx, spec, Some(spinner))
 }
 
+/// What the Spinner's own default icon, gpui-component's Loader, is in this
+/// window: upstream's glyph, the chosen set's (the widget icons serve it),
+/// or nothing (the widget icons serve the set, and it has no Loader).
+/// Without `svg-rasterize` there are no widget icons, and it is always
+/// upstream's glyph.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[cfg_attr(not(feature = "svg-rasterize"), allow(dead_code))]
+pub(crate) enum SpinnerDefault {
+    Upstream,
+    Set,
+    Empty,
+}
+
+/// [`SpinnerDefault`] in this window: what the showcase's widget icons
+/// answer for the Loader's path (`WidgetIcons::lookup`), `Upstream` where
+/// none are installed or the build has none.
+pub(crate) fn spinner_default(cx: &App) -> SpinnerDefault {
+    #[cfg(feature = "svg-rasterize")]
+    {
+        use gpui_component::IconNamed as _;
+        use native_theme_gpui::icons::IconAnswer;
+        let Some(icons) = cx.try_global::<crate::app::ShowcaseWidgetIcons>() else {
+            return SpinnerDefault::Upstream;
+        };
+        match icons.0.lookup(&IconName::Loader.path(), cx) {
+            IconAnswer::Draw(_) => SpinnerDefault::Set,
+            IconAnswer::Empty(_) => SpinnerDefault::Empty,
+            _ => SpinnerDefault::Upstream,
+        }
+    }
+    #[cfg(not(feature = "svg-rasterize"))]
+    {
+        let _ = cx;
+        SpinnerDefault::Upstream
+    }
+}
+
 /// What a loading Button's info says its spinner turns: `icon`, of the
 /// chosen icon theme, where that theme gives it; where it does not, the
 /// Button is given no icon, and the spinner turns its own default,
-/// gpui-component's Loader.
-fn spinner_note(icon: &SampleIcon) -> String {
+/// gpui-component's Loader, as `default` says it is drawn.
+pub(crate) fn spinner_note(icon: &SampleIcon, default: SpinnerDefault) -> String {
     if icon.shown() {
         return icon.note("");
     }
-    format!(
-        "gpui-component's own Loader, the Spinner's default (gpui-component/spinner.rs, Spinner::new): {} holds no SVG for it, so the Button is given no icon to turn, and a loading Button given none turns the Spinner's own (button/button.rs:777-786, loading_icon)",
-        icon.set
-    )
+    let set = &icon.set;
+    match default {
+        SpinnerDefault::Empty => format!(
+            "none: {set} holds no SVG of one colour for it, so the Button is given no icon to turn, and the Spinner's own default, gpui-component's Loader, is answered by the connector's widget icons, which serve {set} and find no Loader in it: the Spinner draws nothing (native-theme-gpui/icons/widget.rs, WidgetIcons)"
+        ),
+        SpinnerDefault::Upstream | SpinnerDefault::Set => format!(
+            "gpui-component's own Loader, the Spinner's default (gpui-component/spinner.rs, Spinner::new): {set} holds no SVG of one colour for it, so the Button is given no icon to turn, and a loading Button given none turns the Spinner's own (button/button.rs:777-786, loading_icon)"
+        ),
+    }
 }
 
 /// [`button`], and where `spinner` is given, a loading Button without an
@@ -3419,7 +3467,18 @@ fn button_turning(
     // (button/button.rs, button/button_icon.rs).
     let icon = icon.as_ref().map(SampleIcon::svg_only);
     let spinner = spinner.as_ref().map(SampleIcon::svg_only);
-    let spun = spinner.as_ref().and_then(SampleIcon::icon);
+    // Where the widget icons draw the chosen set's Loader, the Spinner's own
+    // default is already that set's, so no loading icon is given: every
+    // Spinner of the window then turns the same icon.
+    let default = match state {
+        ButtonState::Loading => spinner_default(cx),
+        ButtonState::Idle | ButtonState::Disabled => SpinnerDefault::Upstream,
+    };
+    let served = default == SpinnerDefault::Set;
+    let spun = spinner
+        .as_ref()
+        .and_then(SampleIcon::icon)
+        .filter(|_| !served);
     // What `native_info` applies the builder under.
     let native = cx.native();
     let native_button = native.as_ref().map(|n| &n.resolved.button);
@@ -3429,18 +3488,28 @@ fn button_turning(
         kind,
         state,
         drawn.is_some(),
+        served,
         None,
         native_button,
     );
     if let Some(icon) = &icon {
         button_info = match state {
-            ButtonState::Loading => button_info.instance("spinner icon", spinner_note(icon)),
+            ButtonState::Loading if served => button_info.instance(
+                "icon",
+                icon.note("the Button shows its Spinner and its label"),
+            ),
+            ButtonState::Loading => {
+                button_info.instance("spinner icon", spinner_note(icon, default))
+            }
             ButtonState::Idle | ButtonState::Disabled => {
                 button_info.instance("icon", icon.note("the Button shows its label alone"))
             }
         };
-    } else if let Some(spinner) = spinner.as_ref().filter(|_| state == ButtonState::Loading) {
-        button_info = button_info.instance("spinner icon", spinner_note(spinner));
+    } else if let Some(spinner) = spinner
+        .as_ref()
+        .filter(|_| state == ButtonState::Loading && !served)
+    {
+        button_info = button_info.instance("spinner icon", spinner_note(spinner, default));
     }
     let button = native_info(
         kind.apply(Button::new(id), cx),
@@ -3484,6 +3553,7 @@ fn button_turning(
     }
     let button = labelled(ui, cx, refined(button, on_button.as_ref()), id, label)
         .when_some(drawn, |button, icon| match state {
+            ButtonState::Loading if served => button.icon(icon),
             ButtonState::Loading => button.loading_icon(icon.clone()).icon(icon),
             ButtonState::Idle | ButtonState::Disabled => button.icon(icon),
         })
@@ -3524,6 +3594,7 @@ pub(crate) fn sized_button(
             cx.theme(),
             ButtonKind::Default,
             ButtonState::Idle,
+            false,
             false,
             Some(size),
             None,
@@ -5663,6 +5734,7 @@ pub(crate) fn action_button(
         ButtonKind::Default,
         ButtonState::Idle,
         false,
+        false,
         None,
         native_button,
     )
@@ -7396,7 +7468,8 @@ pub(crate) struct ExpanderArrows {
     pub leading: SampleIcon,
     pub trailing: SampleIcon,
     /// The arrows of an open item where the set gives its chevrons as
-    /// pixels, which do not turn (`gpui::img` takes no transformation):
+    /// pixels, or SVGs in several colours, drawn as images, which do not
+    /// turn (`gpui::img` takes no transformation):
     /// ChevronDown for a leading arrow, ChevronUp for a trailing one, the
     /// directions a turned chevron points in.
     pub leading_open: SampleIcon,
@@ -8938,19 +9011,21 @@ pub(crate) fn role_icon(
 }
 
 /// A cell of the gpui-component Icons grid: the icon the set gives the
-/// IconName `cell.label` names, found by `role` where one maps to it. A
-/// recoloured icon is painted in `fg`.
+/// IconName `cell.label` names, found by the connector's table, or, where
+/// `by_role` (SF Symbols and Segoe Fluent), by `role` where one maps to it.
+/// A recoloured icon is painted in `fg`.
 pub(crate) fn gpui_icon(
     ui: &Entity<InfoRegistry>,
     cx: &App,
     id: impl Into<SharedString>,
     cell: IconCell<'_>,
     role: Option<&str>,
+    by_role: bool,
     fg: Hsla,
 ) -> Stateful<Div> {
     let id: SharedString = id.into();
     let drawn = cell.art.drawn();
-    let info = info::icons::gpui_icon(cx.theme(), cell.label, role, cell.set, drawn, fg);
+    let info = info::icons::gpui_icon(cx.theme(), cell.label, role, by_role, cell.set, drawn, fg);
     icon_cell(cx, cell.art, cell.label)
         .info(ui, id.clone(), info)
         .debug_selector(move || id.to_string())
@@ -9449,6 +9524,7 @@ pub(crate) fn toggle_button(
         ButtonKind::Default,
         ButtonState::Idle,
         false,
+        false,
         None,
         native_button,
     )
@@ -9523,7 +9599,7 @@ pub(crate) fn icon_button(
         button_info = button_info.instance(
             "icon colour",
             format!(
-                "pixels, drawn as an image (gpui::img), {}",
+                "pixels, or an SVG in several colours, drawn as an image (gpui::img), {}",
                 info::chrome::RASTER_ICON_COLOUR
             ),
         );

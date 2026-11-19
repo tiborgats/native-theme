@@ -440,17 +440,15 @@ pub fn native_info<W: Styled>(
 
 /// What a Widget Info says of the icons gpui-component builds and draws
 /// inside a widget on its own, `icons` naming them and where upstream draws
-/// them. An icon the showcase builds itself is the chosen icon theme's
-/// (`SampleIcon`), so this is for upstream's alone. They stay
-/// gpui-component's whichever icon theme is chosen: upstream draws each by
-/// its asset path, which gpui-component 0.9 first hands to the resolver an
-/// application may set (gpui-component icon.rs, `set_icon_resolver` and
-/// `resolve_icon_path`), and the showcase sets none yet, so every path
-/// draws upstream's own icon. `docs/todo.md` records the work that sets one
-/// (*gpui: the widgets' own icons follow the theme's icon set*).
+/// them. gpui-component draws each by its asset path, which it hands to the
+/// application's icon resolver first (gpui-component icon.rs,
+/// `set_icon_resolver`, `resolve_icon_path`); the showcase installs the
+/// connector's widget icons there (`ShowcaseWidgetIcons`), which serve the
+/// chosen icon theme where they can and say what they serve on the Icons
+/// page.
 pub fn own_icons(icons: &str) -> String {
     format!(
-        "{icons}: gpui-component's own icons whichever icon theme is chosen, so under any other they are not that theme's. Upstream builds them inside the widget and draws each by its asset path, which it first hands to the application's icon resolver (gpui-component/icon.rs, resolve_icon_path), a hook gpui-component 0.9 added (gpui-component/icon.rs, set_icon_resolver); the showcase sets no resolver yet, so each path draws upstream's icon"
+        "{icons}: drawn by gpui-component inside the widget, each by its asset path, which it first hands to the application's icon resolver (gpui-component/icon.rs, resolve_icon_path). The showcase installs the connector's widget icons there (native-theme-gpui/icons/widget.rs, WidgetIcons): under an icon set of SVGs that has the nine glyphs nearly every window needs, these are the chosen set's icons, looked up by name (a freedesktop theme's at 16 px) and drawn in one colour, and one the set lacks is not drawn; under gpui-component's built-in Lucide, under a set that lacks one of the nine, and under SF Symbols or Segoe Fluent, they are gpui-component's own, and so is the filled star under Lucide. The Icons page reports which holds"
     )
 }
 

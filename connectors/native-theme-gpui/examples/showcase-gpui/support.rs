@@ -20,12 +20,10 @@ use gpui_component::{
 use native_theme::detect::system_icon_theme;
 use native_theme::icons::{
     FreedesktopLoader, IconData, IconRole, IconSetChoice, LucideLoader, MaterialLoader,
-    SegoeFluentLoader, SfSymbolsLoader, load_icon,
+    SegoeFluentLoader, SfSymbolsLoader,
 };
 use native_theme::theme::IconSet;
-#[cfg(target_os = "linux")]
-use native_theme_gpui::icons::freedesktop_name_candidates;
-use native_theme_gpui::icons::{lucide_name_for_gpui_icon, material_name_for_gpui_icon};
+use native_theme_gpui::icons::{IconUse, load_gpui_icon, mask_drawable};
 use native_theme_gpui::{ActiveNativeTheme, Native};
 use native_theme_showcase_support::rows;
 
@@ -696,8 +694,19 @@ pub(crate) type IconEntry = (
     IconSource,
 );
 
-/// Pre-load native-theme icons for gpui-component IconName variants.
+/// The gallery's entries as `load_gpui_icons` loads them, and, in the same
+/// order, whether a mask of one colour carries each one's icon
+/// (`native_theme_gpui::icons::mask_drawable`; `None` where nothing was
+/// loaded or judged).
+pub(crate) type GpuiIconsLoad = (Vec<IconEntry>, Vec<Option<bool>>);
+
+/// Pre-load native-theme icons for gpui-component IconName variants, and
+/// judge each.
 ///
+/// The lookup is the connector's (`native_theme_gpui::icons::load_gpui_icon`):
+/// each name by the connector's table, at the page's size (the loader's
+/// own), any icon the set has; under SF Symbols and Segoe Fluent, which the
+/// connector has no table for, by the role the showcase maps the name to.
 /// `theme`: the freedesktop theme a freedesktop set loads from
 /// (`Showcase::freedesktop_theme`), the system's own where `None`, as
 /// `load_all_icons` takes it.
@@ -705,22 +714,25 @@ pub(crate) fn load_gpui_icons(
     icon_set: Option<IconSet>,
     theme: Option<&str>,
     fg_color: Option<native_theme::Rgba>,
-) -> Vec<IconEntry> {
-    let icon_set = match icon_set {
-        Some(set) => set,
-        None => {
-            // "gpui-builtin" — no native-theme data loaded
-            return GPUI_ICONS
-                .iter()
-                .map(|(name, icon)| {
-                    let role = role_for_gpui_icon(icon);
-                    (*name, icon.clone(), role, None, IconSource::Bundled)
-                })
-                .collect();
-        }
+) -> GpuiIconsLoad {
+    let Some(icon_set) = icon_set else {
+        // "gpui-builtin" — no native-theme data loaded
+        let entries = GPUI_ICONS
+            .iter()
+            .map(|(name, icon)| {
+                let role = role_for_gpui_icon(icon);
+                (*name, icon.clone(), role, None, IconSource::Bundled)
+            })
+            .collect();
+        return (entries, vec![None; GPUI_ICONS.len()]);
     };
 
     let is_system_set = is_system_set(icon_set);
+    let source_of = |data: &Option<IconData>| match data {
+        None => IconSource::NotFound,
+        Some(_) if is_system_set => IconSource::System,
+        Some(_) => IconSource::Bundled,
+    };
 
     // On Linux with freedesktop, pick the theme once for the whole batch:
     // `theme`, else the system's. No theme where the system's cannot be
@@ -733,90 +745,43 @@ pub(crate) fn load_gpui_icons(
     } else {
         None
     };
-    // An icon's freedesktop names, each tried in the one theme: the theme's
-    // convention decides which it has, not the desktop's (no theme mixing).
-    #[cfg(target_os = "linux")]
-    let load_by_name = |icon: &IconName, theme: &str| {
-        FreedesktopLoader::any(freedesktop_name_candidates(icon.clone()))
-            .theme(theme)
-            .color_opt(fg_color)
-            .load()
+    #[cfg(not(target_os = "linux"))]
+    let fd_theme: Option<String> = {
+        let _ = theme;
+        None
     };
+    let no_theme = icon_set == IconSet::Freedesktop && fd_theme.is_none();
 
     GPUI_ICONS
         .iter()
         .map(|(name, icon)| {
             let role = role_for_gpui_icon(icon);
-
-            // Try loading by IconRole first (existing path)
-            if let Some(r) = role {
-                let data = match icon_set {
-                    IconSet::Freedesktop => {
-                        let loader = FreedesktopLoader::new(r).color_opt(fg_color);
-                        match theme {
-                            Some(theme) => loader.theme(theme).load(),
-                            None => loader.load(),
-                        }
-                    }
-                    IconSet::Material => MaterialLoader::new(r).load(),
-                    IconSet::Lucide => LucideLoader::new(r).load(),
-                    IconSet::SfSymbols => SfSymbolsLoader::new(r).color_opt(fg_color).load(),
-                    IconSet::SegoeFluent => SegoeFluentLoader::new(r).color_opt(fg_color).load(),
-                    _ => None,
-                };
-                let source = match &data {
-                    None => IconSource::NotFound,
-                    Some(_) if !is_system_set => IconSource::Bundled,
-                    Some(_) => IconSource::System,
-                };
-                // If the system set has no icon for the role, try the icon's
-                // freedesktop names in the same theme before giving up
-                #[cfg(target_os = "linux")]
-                if source == IconSource::NotFound
-                    && let Some(theme) = &fd_theme
-                {
-                    if let Some(fd_data) = load_by_name(icon, theme) {
-                        return (
-                            *name,
-                            icon.clone(),
-                            Some(r),
-                            Some(fd_data),
-                            IconSource::System,
-                        );
-                    }
-                    // System set but no system icon — mark not found (no bundled fallback)
-                    return (*name, icon.clone(), Some(r), None, IconSource::NotFound);
+            let (data, mask) = match icon_set {
+                // Known by role only: the connector has no table from a
+                // name to an SF Symbol or a Segoe glyph.
+                IconSet::SfSymbols | IconSet::SegoeFluent => {
+                    let data = role.and_then(|r| match icon_set {
+                        IconSet::SfSymbols => SfSymbolsLoader::new(r).color_opt(fg_color).load(),
+                        _ => SegoeFluentLoader::new(r).color_opt(fg_color).load(),
+                    });
+                    let mask = data.as_ref().and_then(mask_drawable);
+                    (data, mask)
                 }
-                return (*name, icon.clone(), Some(r), data, source);
-            }
-
-            // No IconRole mapping — try by-name lookup for the active icon set
-            #[cfg(target_os = "linux")]
-            if let Some(theme) = &fd_theme {
-                if let Some(data) = load_by_name(icon, theme) {
-                    return (*name, icon.clone(), None, Some(data), IconSource::System);
-                }
-                // System set but no system icon — do NOT fall back to bundled
-                return (*name, icon.clone(), None, None, IconSource::NotFound);
-            }
-
-            {
-                let lookup_name = match icon_set {
-                    IconSet::Lucide => lucide_name_for_gpui_icon(icon.clone()),
-                    IconSet::Material => material_name_for_gpui_icon(icon.clone()),
-                    _ => None,
-                };
-                if let Some(lname) = lookup_name
-                    && let Some(data) = load_icon(lname, icon_set)
-                {
-                    return (*name, icon.clone(), None, Some(data), IconSource::Bundled);
-                }
-            }
-
-            // Fallback: no icon data
-            (*name, icon.clone(), None, None, IconSource::NotFound)
+                _ if no_theme => (None, None),
+                _ => load_gpui_icon(
+                    icon.clone(),
+                    icon_set,
+                    fd_theme.as_deref(),
+                    None,
+                    fg_color,
+                    IconUse::Any,
+                )
+                .map_or((None, None), |found| (Some(found.data), found.mask)),
+            };
+            let source = source_of(&data);
+            ((*name, icon.clone(), role, data, source), mask)
         })
-        .collect()
+        .unzip()
 }
 
 /// One of the chrome's own icons -- a toolbar button's, the status bar's
@@ -834,7 +799,9 @@ pub(crate) enum ChromeIcon {
     Loaded(&'static str, Cow<'static, [u8]>),
     /// The chosen set's pixels for the IconName of this name: an SF Symbol
     /// or a Segoe Fluent glyph, which the system loaders give as pixels
-    /// only (`IconData::Rgba`), or a freedesktop theme's raster icon. It is
+    /// only (`IconData::Rgba`), or a freedesktop theme's raster icon; or an
+    /// SVG in several colours, which a mask would show as a silhouette
+    /// (native_theme_gpui::icons::mask_drawable). It is
     /// the Icons page's decoded image of it (`Showcase::gpui_icon_sources`,
     /// `loaded_icon_sources`), drawn as that page draws one, with
     /// `gpui::img`: an `Icon` takes a path or SVG bytes alone (icon.rs,
@@ -874,14 +841,17 @@ impl std::fmt::Debug for RasterIcon {
 
 impl ChromeIcon {
     /// The chrome's icon for `icon`: `icons` are the chosen set's, as
-    /// `load_gpui_icons` loaded them, `sources` their decoded images in the
-    /// same order (`Showcase::gpui_icon_sources`), and `builtin` is whether
-    /// that set is gpui-component's own. With another set chosen, an
-    /// IconName the gallery does not list is `Unlisted`: nothing was loaded
-    /// for it.
+    /// `load_gpui_icons` loaded them, `sources` their decoded images and
+    /// `masks` their judgements in the same order
+    /// (`Showcase::gpui_icon_sources`, `Showcase::gpui_icon_masks`), and
+    /// `builtin` is whether that set is gpui-component's own. An SVG judged
+    /// not to be one colour is drawn as an image, as pixels are; a judgement
+    /// missing counts as a mask. With another set chosen, an IconName the
+    /// gallery does not list is `Unlisted`: nothing was loaded for it.
     pub(crate) fn of(
         icons: &[IconEntry],
         sources: &[Option<ImageSource>],
+        masks: &[Option<bool>],
         builtin: bool,
         icon: &IconName,
     ) -> Self {
@@ -893,6 +863,11 @@ impl ChromeIcon {
         match listed {
             Some((_, (name, ..))) if builtin => Self::Builtin((*name).into()),
             None if builtin => Self::Builtin(path),
+            Some((ix, (name, _, _, Some(IconData::Svg(_)), _)))
+                if masks.get(ix).copied().flatten() == Some(false) =>
+            {
+                Self::raster(name, sources, ix)
+            }
             Some((_, (name, _, _, Some(IconData::Svg(bytes)), _))) => {
                 Self::Loaded(name, bytes.clone())
             }
@@ -927,7 +902,9 @@ impl ChromeIcon {
     /// `SidebarMenuItem`'s, a `Button`'s icon beside its label
     /// (`ButtonIcon`): a raster icon is `Missing` there, since an `Icon`
     /// draws a path or SVG bytes alone (icon.rs, `IconSource`), and the
-    /// widget shows what it shows where the set has none.
+    /// widget shows what it shows where the set has none. An SVG in several
+    /// colours is `Missing` there too: an `Icon` would draw it as a mask of
+    /// one colour.
     pub(crate) fn svg_only(self) -> Self {
         match self {
             Self::Raster(name, _) => Self::Missing(name),

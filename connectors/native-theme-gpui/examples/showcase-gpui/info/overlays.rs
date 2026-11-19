@@ -21,6 +21,7 @@ pub fn trigger(t: &Theme, overlay: Overlay, native: Option<&ResolvedButtonTheme>
         overlay.button_kind(),
         ButtonState::Idle,
         false,
+        false,
         None,
         native,
     )
@@ -124,6 +125,7 @@ pub fn dialog_close(t: &Theme, native: Option<&ResolvedButtonTheme>) -> WidgetIn
         t,
         ButtonKind::Default,
         ButtonState::Idle,
+        false,
         false,
         None,
         native,

@@ -43,7 +43,11 @@ use native_theme::icons::{
 };
 use native_theme::pipeline::platform_preset_name;
 use native_theme::theme::IconSet;
-use native_theme_gpui::icons::{animated_frames_to_image_sources_for, to_image_source};
+#[cfg(feature = "svg-rasterize")]
+use native_theme_gpui::icons::{ThemeIcons, WidgetIcons, WidgetIconsReport};
+use native_theme_gpui::icons::{
+    animated_frames_to_image_sources_for, mask_drawable, to_image_source,
+};
 use native_theme_gpui::to_theme;
 use native_theme_gpui::{AccessibilityPreferences, ActiveNativeTheme as _, geometry};
 use native_theme_showcase_support::rows;
@@ -54,10 +58,10 @@ use crate::info::InfoRegistry;
 use crate::inspector::{Inspector, PanelLook};
 use crate::speech::{SilentRecognizer, SyntheticAudio};
 use crate::support::{
-    CAROUSEL_SLIDES, ChatMessage, ChromeIcon, DIFF_SAMPLE, DialogIcons, EDITOR_SAMPLE,
+    CAROUSEL_SLIDES, ChatMessage, ChromeIcon, DIFF_SAMPLE, DialogIcons, EDITOR_SAMPLE, GPUI_ICONS,
     GRID_LAYOUT_ITEMS, IconEntry, IconSource, PresetDelegate, SampleIcon, SampleListDelegate,
     SampleTableDelegate, SharedDialogIcons, initial_chat_messages, load_all_icons, load_gpui_icons,
-    parse_icon_set_choice, release_sources,
+    parse_icon_set_choice, release_sources, role_for_gpui_icon,
 };
 use crate::{
     CHROME_HANDLE, CONTENT_ALERT, CONTENT_PANEL, CONTENT_SCROLL, LEFT_PANEL_WIDTH, PAGE_ROOT,
@@ -577,6 +581,13 @@ pub(crate) struct Showcase {
     pub(crate) loaded_icon_sources: Vec<Option<ImageSource>>,
     /// Cached ImageSource per gpui icon (same indexing as gpui_icons).
     pub(crate) gpui_icon_sources: Vec<Option<ImageSource>>,
+    /// Whether a mask of one colour carries each native icon
+    /// (`native_theme_gpui::icons::mask_drawable`; same indexing as
+    /// loaded_icons). `None`, or an index past its end, counts as a mask.
+    pub(crate) loaded_icon_masks: Vec<Option<bool>>,
+    /// The same of each gpui icon, as `load_gpui_icons` judged it (same
+    /// indexing as gpui_icons).
+    pub(crate) gpui_icon_masks: Vec<Option<bool>>,
     /// Foreground color used when building the image source caches.
     pub(crate) icon_cache_fg: Hsla,
     /// What the loaded icons were loaded as; `None` before the first load
@@ -601,6 +612,16 @@ pub(crate) struct Showcase {
     pub(crate) current_icon_set: IconSet,
     /// Whether the current theme's TOML specified `icon_theme` (before resolution).
     pub(crate) has_toml_icon_theme: bool,
+    /// The current theme's preferred icon theme in the colour mode not shown,
+    /// as `current_icon_theme` is the shown mode's; the icon set is one per
+    /// theme, `current_icon_set`. Read by the widget icons alone, which
+    /// serve both modes (`Showcase::tell_widget_icons`).
+    #[cfg(feature = "svg-rasterize")]
+    pub(crate) other_icon_theme: Option<String>,
+    /// Whether the current theme specified the other mode's icon theme, as
+    /// `has_toml_icon_theme` is the shown mode's.
+    #[cfg(feature = "svg-rasterize")]
+    pub(crate) other_icon_theme_explicit: bool,
 
     // Animated Icons state
     /// Cached frame ImageSources for frame-based animations (set name, frames).
@@ -628,6 +649,33 @@ pub(crate) struct Showcase {
 /// The icon-theme Select's row for gpui-component's own icons, which no
 /// `IconSetChoice` names.
 pub(crate) const GPUI_BUILTIN_ROW: &str = "gpui-component built-in (Lucide)";
+
+/// The connector's widget icons, which serve gpui-component's widgets their
+/// own icons from the chosen icon set: the handle whose asset source `main`
+/// gave the application, installed. Absent where none is installed, as in
+/// the self-tests' windows (`tests::open_with`); every reader handles that.
+#[cfg(feature = "svg-rasterize")]
+pub(crate) struct ShowcaseWidgetIcons(pub(crate) WidgetIcons);
+
+#[cfg(feature = "svg-rasterize")]
+impl gpui::Global for ShowcaseWidgetIcons {}
+
+/// Install `icons`, whose `assets` the application was given, as
+/// gpui-component's icon resolver and as the showcase's widget icons
+/// (`ShowcaseWidgetIcons`), which `Showcase::reload_icons` tells the
+/// chosen icons.
+#[cfg(feature = "svg-rasterize")]
+pub(crate) fn install_widget_icons(icons: &WidgetIcons, cx: &mut App) {
+    icons.install(cx);
+    cx.set_global(ShowcaseWidgetIcons(icons.clone()));
+}
+
+/// What the showcase's widget icons serve; `None` where none are installed.
+#[cfg(feature = "svg-rasterize")]
+pub(crate) fn widget_icons_report(cx: &App) -> Option<WidgetIconsReport> {
+    cx.try_global::<ShowcaseWidgetIcons>()
+        .map(|icons| icons.0.report())
+}
 
 /// The Basic page's slider value, on 0 to 100: the datum on display, as the
 /// page's `BASIC_PROGRESS` is.
@@ -973,14 +1021,50 @@ impl Showcase {
 
     /// The chrome's icon for gpui-component's `icon`, from the chosen icon
     /// set: its own icons where the built-in set is chosen, never another
-    /// set's.
+    /// set's. A name with a role takes the icon the set has for the role
+    /// (`loaded_icons`) first, under the gallery's name; any other name, or
+    /// one whose role the set has no icon for, the gallery's entry
+    /// (`gpui_icons`). An SVG judged not to be one colour is drawn as an
+    /// image, as pixels are.
     pub(crate) fn chrome_icon(&self, icon: &IconName) -> ChromeIcon {
+        if self.icon_set_enum.is_some()
+            && let Some(drawn) = self.role_icon_for(icon)
+        {
+            return drawn;
+        }
         ChromeIcon::of(
             &self.gpui_icons,
             &self.gpui_icon_sources,
+            &self.gpui_icon_masks,
             self.icon_set_enum.is_none(),
             icon,
         )
+    }
+
+    /// The icon the chosen set has for the role the showcase maps `icon` to
+    /// (`role_for_gpui_icon`), as the Icons page loaded it, under the
+    /// gallery's name of `icon`; `None` where no role maps to it or the set
+    /// has no icon for the role.
+    fn role_icon_for(&self, icon: &IconName) -> Option<ChromeIcon> {
+        let role = role_for_gpui_icon(icon)?;
+        let path = icon.clone().path();
+        let name = GPUI_ICONS
+            .iter()
+            .find(|(_, listed)| listed.clone().path() == path)
+            .map(|(name, _)| *name)?;
+        let (ix, (_, data, _)) = self
+            .loaded_icons
+            .iter()
+            .enumerate()
+            .find(|(_, (loaded, ..))| *loaded == role)?;
+        Some(match data.as_ref()? {
+            IconData::Svg(bytes)
+                if self.loaded_icon_masks.get(ix).copied().flatten() != Some(false) =>
+            {
+                ChromeIcon::Loaded(name, bytes.clone())
+            }
+            _ => ChromeIcon::raster(name, &self.loaded_icon_sources, ix),
+        })
     }
 
     /// Where the Basic page's fields laid their text out, as the elements of
@@ -1032,8 +1116,9 @@ impl Showcase {
     /// The chrome's icon for native-theme's `role`, from the chosen icon set
     /// as the Icons page loaded it (`loaded_icons`): gpui-component's own
     /// icon for the role where its built-in set is chosen, with the IconName
-    /// to draw; the set's SVG, or its pixels as the page decoded them
-    /// (`loaded_icon_sources`), otherwise; `Missing` where the set has none
+    /// to draw; the set's SVG, or its pixels or SVG in several colours as the
+    /// page decoded them (`loaded_icon_sources`), otherwise; `Missing` where
+    /// the set has none
     /// for the role -- never another set's.
     pub(crate) fn role_chrome_icon(&self, role: IconRole) -> (ChromeIcon, Option<IconName>) {
         if self.icon_set_enum.is_none() {
@@ -1048,6 +1133,11 @@ impl Showcase {
             .enumerate()
             .find(|(_, (loaded, ..))| *loaded == role);
         let drawn = match loaded {
+            Some((ix, (_, Some(IconData::Svg(_)), _)))
+                if self.loaded_icon_masks.get(ix).copied().flatten() == Some(false) =>
+            {
+                ChromeIcon::raster(role.name(), &self.loaded_icon_sources, ix)
+            }
             Some((_, (_, Some(IconData::Svg(bytes)), _))) => {
                 ChromeIcon::Loaded(role.name(), bytes.clone())
             }
@@ -1116,6 +1206,8 @@ impl Showcase {
     /// is recoloured with the theme's foreground, as a bundled set's icons
     /// are coloured where they are drawn.
     pub(crate) fn reload_icons(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        #[cfg(feature = "svg-rasterize")]
+        self.tell_widget_icons(cx);
         let effective = self
             .icon_set_choice
             .effective_icon_set(self.current_icon_set);
@@ -1140,13 +1232,111 @@ impl Showcase {
         // gpui-builtin draws gpui-component's own icons: nothing to load.
         if self.icon_set_enum.is_some() {
             self.loaded_icons = load_all_icons(effective, load.theme.as_deref(), fg_color);
+            self.loaded_icon_masks = self
+                .loaded_icons
+                .iter()
+                .map(|(_, data, _)| data.as_ref().and_then(mask_drawable))
+                .collect();
         }
-        self.gpui_icons = load_gpui_icons(self.icon_set_enum, load.theme.as_deref(), fg_color);
+        (self.gpui_icons, self.gpui_icon_masks) =
+            load_gpui_icons(self.icon_set_enum, load.theme.as_deref(), fg_color);
         self.icon_load = Some(load);
         self.rebuild_icon_caches(fg, window, cx);
         self.rebuild_animation_caches(window, cx);
         self.start_animation_timer(cx);
         cx.notify();
+    }
+
+    /// Tell the showcase's widget icons, where they are installed, what to
+    /// serve, so gpui-component's widgets draw the set the chrome draws.
+    ///
+    /// First the theme's icons in both modes, each as `default_icon_choice`
+    /// chooses it from the theme's icon theme for that mode: the choice's
+    /// own icon theme, else, for a freedesktop set, the showcase's detection
+    /// (`detected_icon_theme`), so the widget icons never detect one on their
+    /// own. Where both modes' choices give one set, both modes; else the
+    /// shown mode's for both. Then the row's state: the built-in row
+    /// switches them off, the row that follows the theme makes them follow
+    /// it, the `system` row fixes them to the system's set and detected icon
+    /// theme, and any other row to its own set and icon theme.
+    ///
+    /// Where the row's own icons depend on the detection -- the row that
+    /// follows the theme, whose choice is a freedesktop set naming no icon
+    /// theme, and the `system` row where the system's set is freedesktop --
+    /// and it fails, the showcase loads no freedesktop icon itself, so the
+    /// widget icons are told nothing and switched off; a later reload whose
+    /// detection gives a theme puts them back in the row's state. Under any
+    /// other row a failed detection tells them nothing of the theme's icons,
+    /// and the row's state is set as usual.
+    #[cfg(feature = "svg-rasterize")]
+    fn tell_widget_icons(&self, cx: &mut App) {
+        let Some(icons) = cx
+            .try_global::<ShowcaseWidgetIcons>()
+            .map(|icons| icons.0.clone())
+        else {
+            return;
+        };
+        // A mode's set and icon theme, and whether the detection its icon
+        // theme fell to failed.
+        let mode_icons = |icon_theme: Option<&str>| {
+            let choice = default_icon_choice(self.current_icon_set, icon_theme);
+            let set = choice.effective_icon_set(self.current_icon_set);
+            match choice.freedesktop_theme() {
+                Some(theme) => (set, Some(theme.to_string()), false),
+                None if set == IconSet::Freedesktop => match self.detected_icon_theme() {
+                    Ok(theme) => (set, Some(theme), false),
+                    Err(_) => (set, None, true),
+                },
+                None => (set, None, false),
+            }
+        };
+        let shown = mode_icons(self.preset_icon_theme());
+        let other = mode_icons(
+            self.other_icon_theme
+                .as_deref()
+                .filter(|_| self.other_icon_theme_explicit),
+        );
+        let told = if shown.0 == other.0 {
+            let (light, dark) = if self.is_dark {
+                (&other, &shown)
+            } else {
+                (&shown, &other)
+            };
+            (!light.2 && !dark.2)
+                .then(|| ThemeIcons::new(shown.0, light.1.as_deref(), dark.1.as_deref()))
+        } else {
+            (!shown.2).then(|| ThemeIcons::new(shown.0, shown.1.as_deref(), shown.1.as_deref()))
+        };
+
+        let builtin = self.icon_set_enum.is_none();
+        let following = !builtin && self.icon_choice_follows_preset;
+        let system_row = !builtin && !following && self.icon_set_choice == IconSetChoice::System;
+        let system_detected = (system_row && system_icon_set() == IconSet::Freedesktop)
+            .then(|| self.detected_icon_theme().ok());
+        if (following && told.is_none()) || system_detected == Some(None) {
+            icons.switch_off(cx);
+            return;
+        }
+        if let Some(told) = told {
+            icons.set_theme_icons(told, cx);
+        }
+        if builtin {
+            icons.switch_off(cx);
+        } else if following {
+            icons.follow_theme(cx);
+        } else if system_row {
+            let detected = system_detected.flatten();
+            icons.fix(
+                ThemeIcons::new(system_icon_set(), detected.as_deref(), detected.as_deref()),
+                cx,
+            );
+        } else {
+            let theme = self.icon_set_choice.freedesktop_theme();
+            let set = self
+                .icon_set_choice
+                .effective_icon_set(self.current_icon_set);
+            icons.fix(ThemeIcons::new(set, theme, theme), cx);
+        }
     }
 
     /// The icon-theme Select's rows for the installed theme.
@@ -1757,6 +1947,8 @@ impl Showcase {
             gpui_icons: Vec::new(),
             loaded_icon_sources: Vec::new(),
             gpui_icon_sources: Vec::new(),
+            loaded_icon_masks: Vec::new(),
+            gpui_icon_masks: Vec::new(),
             icon_cache_fg: fg,
             icon_load: None,
             icon_set_choice: IconSetChoice::System,
@@ -1765,6 +1957,10 @@ impl Showcase {
             current_icon_theme: None,
             current_icon_set: system_icon_set(),
             has_toml_icon_theme: false,
+            #[cfg(feature = "svg-rasterize")]
+            other_icon_theme: None,
+            #[cfg(feature = "svg-rasterize")]
+            other_icon_theme_explicit: false,
             animated_frame_sources: Vec::new(),
             animated_frame_durations: Vec::new(),
             animated_frame_indices: Vec::new(),
@@ -1861,6 +2057,15 @@ impl Showcase {
         self.layout = system.layout.clone();
         // Platform presets always specify icon_theme
         self.has_toml_icon_theme = true;
+        // The other mode's, from its own variant, which the system theme
+        // holds too.
+        #[cfg(feature = "svg-rasterize")]
+        {
+            self.other_icon_theme = system
+                .icon_theme_for(color_mode_of(!self.is_dark))
+                .map(str::to_owned);
+            self.other_icon_theme_explicit = true;
+        }
         // Installed with both variants stored, so the showcase's own
         // light/dark choice goes through upstream's mode switch, which
         // reproduces the native palette from the installed configs (D34).
@@ -1906,6 +2111,20 @@ impl Showcase {
         self.has_toml_icon_theme = r.icon_theme_explicit;
         self.current_icon_set = r.icon_set;
         self.current_icon_theme = r.icon_theme.map(Cow::into_owned);
+        // The other mode's icon theme, as the theme resolves it in that mode;
+        // where that fails, the shown mode's, so no earlier theme's decides
+        // what the widget icons serve.
+        #[cfg(feature = "svg-rasterize")]
+        match nt.resolve(color_mode_of(!self.is_dark)) {
+            Ok(other) => {
+                self.other_icon_theme_explicit = other.icon_theme_explicit;
+                self.other_icon_theme = other.icon_theme.map(Cow::into_owned);
+            }
+            Err(_) => {
+                self.other_icon_theme_explicit = self.has_toml_icon_theme;
+                self.other_icon_theme = self.current_icon_theme.clone();
+            }
+        }
         self.original_font = r.variant.defaults.font.clone();
         self.original_mono_font = r.variant.defaults.mono_font.clone();
         // Accessibility is orthogonal to the theme choice, so a preset is

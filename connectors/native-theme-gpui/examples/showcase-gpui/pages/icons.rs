@@ -11,7 +11,13 @@ use native_theme_gpui::geometry;
 use crate::app::Showcase;
 use crate::demo::{self, AnimatedArt, IconArt, IconCell, IconSizeContext};
 use crate::pages::{ICON_GRID_GAP, page_root};
+#[cfg(feature = "svg-rasterize")]
+use crate::support::GPUI_ICONS;
 use crate::support::{IconSource, is_native_icon_set, with_gap};
+#[cfg(feature = "svg-rasterize")]
+use gpui::SharedString;
+#[cfg(feature = "svg-rasterize")]
+use native_theme_gpui::icons::{LoadedSet, ModeIcons, WidgetIconsReport};
 
 /// The icon the Icon Sizes section shows at each size.
 pub(crate) const ICON_SIZES_ICON: IconName = IconName::Folder;
@@ -222,6 +228,10 @@ impl Showcase {
         let ui = &self.info_ui;
         let set = self.icon_set_label();
         let builtin = self.icon_set_enum.is_none();
+        let by_role = matches!(
+            self.icon_set_enum,
+            Some(IconSet::SfSymbols | IconSet::SegoeFluent)
+        );
         let fg = self.icon_cache_fg;
 
         let icons: Vec<_> = self
@@ -251,6 +261,7 @@ impl Showcase {
                         art,
                     },
                     role_name.as_deref(),
+                    by_role,
                     fg,
                 )
             })
@@ -266,8 +277,20 @@ impl Showcase {
             self.gpui_icons.len(),
         );
 
+        #[cfg(feature = "svg-rasterize")]
+        let widget_icons = widget_icons_caption(crate::app::widget_icons_report(cx).as_ref());
+        #[cfg(not(feature = "svg-rasterize"))]
+        let widget_icons = widget_icons_caption();
+
         with_gap(v_flex(), geometry::widget_gap(&self.layout))
             .child(demo::heading(ui, cx, "icons-heading-gpui", title))
+            .child(demo::caption(
+                ui,
+                cx,
+                "icons-gpui-lookup",
+                gallery_lookup_caption(self.icon_set_enum),
+            ))
+            .child(demo::caption(ui, cx, "icons-widget-icons", widget_icons))
             .child(div().flex().flex_wrap().gap(ICON_GRID_GAP).children(icons))
     }
 
@@ -284,4 +307,147 @@ impl Showcase {
             .child(self.render_native_icons_section(cx))
             .child(self.render_gpui_icons_section(cx))
     }
+}
+
+/// The gpui-component Icons section's caption on how its gallery finds a
+/// name's icon under the chosen `set` (`None`: gpui-component's own).
+pub(crate) fn gallery_lookup_caption(set: Option<IconSet>) -> &'static str {
+    match set {
+        None => "This gallery: gpui-component's own icons, which nothing looks up",
+        Some(IconSet::SfSymbols | IconSet::SegoeFluent) => {
+            "This gallery: SF Symbols and Segoe Fluent are known by role only, so a name shows its role's icon, and a name with no role none"
+        }
+        Some(_) => {
+            "This gallery: each name looked up as the page draws it, at the icon theme's 24 px or the bundled set's own, any icon the set has; a name it does not find is marked"
+        }
+    }
+}
+
+/// The gpui-component Icons section's caption on what the widget icons
+/// serve gpui-component's widgets, from their `report`; `None` where none
+/// are installed.
+#[cfg(feature = "svg-rasterize")]
+pub(crate) fn widget_icons_caption(report: Option<&WidgetIconsReport>) -> String {
+    const OWN: &str = "gpui-component's widgets: their own icons";
+    match report {
+        None | Some(WidgetIconsReport::NotInstalled) => {
+            format!("{OWN} (the widget icons are not installed)")
+        }
+        Some(WidgetIconsReport::Off) => {
+            format!("{OWN} (the built-in set is chosen, or no system icon theme was detected)")
+        }
+        Some(WidgetIconsReport::NotTold) => format!("{OWN} (no icon set given yet)"),
+        Some(WidgetIconsReport::NotServed { set, .. }) => format!(
+            "{OWN}: {} is not served to them in this release",
+            set.name()
+        ),
+        Some(WidgetIconsReport::NoAssetSource) => {
+            format!("{OWN} (the widget icons have no asset source)")
+        }
+        Some(WidgetIconsReport::Loaded(loaded)) => {
+            loaded_caption(loaded).unwrap_or_else(|| UNDESCRIBED.to_string())
+        }
+        Some(_) => UNDESCRIBED.to_string(),
+    }
+}
+
+/// [`widget_icons_caption`] without the widget icons, which this build
+/// lacks.
+#[cfg(not(feature = "svg-rasterize"))]
+pub(crate) fn widget_icons_caption() -> String {
+    "gpui-component's widgets: their own icons (this build has no widget icons: feature svg-rasterize)".to_string()
+}
+
+/// The caption of a state of the widget icons the showcase does not
+/// describe.
+#[cfg(feature = "svg-rasterize")]
+const UNDESCRIBED: &str =
+    "gpui-component's widgets: a state of the widget icons this showcase does not describe";
+
+/// [`widget_icons_caption`] of a set the widget icons loaded: what they
+/// serve, or why they serve nothing. `None` for a set not served for no
+/// reason a mode gives.
+#[cfg(feature = "svg-rasterize")]
+fn loaded_caption(loaded: &LoadedSet) -> Option<String> {
+    let set = loaded.set.name();
+    let freedesktop = loaded.set == IconSet::Freedesktop;
+    let themes = if freedesktop {
+        let theme = |mode: &ModeIcons| {
+            mode.icon_theme
+                .clone()
+                .unwrap_or_else(|| "no icon theme detected".to_string())
+        };
+        let (light, dark) = (theme(&loaded.light), theme(&loaded.dark));
+        if light == dark {
+            format!(" ({light})")
+        } else {
+            format!(" ({light}, {dark})")
+        }
+    } else {
+        String::new()
+    };
+    if !loaded.served() {
+        let reason = [&loaded.light, &loaded.dark].into_iter().find_map(|mode| {
+            if mode.gave_nothing {
+                Some("gave nothing".to_string())
+            } else if mode.missing_essentials.is_empty() {
+                None
+            } else {
+                Some(format!(
+                    "lacks {}, which nearly every window needs",
+                    gallery_names(&mode.missing_essentials)
+                ))
+            }
+        })?;
+        return Some(format!(
+            "gpui-component's widgets: their own icons: {set}{themes} {reason}"
+        ));
+    }
+    let size = if freedesktop { "at 16 px and " } else { "" };
+    let missing = if loaded.light.missing == loaded.dark.missing {
+        gallery_names(&loaded.light.missing)
+    } else {
+        format!(
+            "light: {}; dark: {}",
+            gallery_names(&loaded.light.missing),
+            gallery_names(&loaded.dark.missing)
+        )
+    };
+    let mut kept = loaded.light.kept.clone();
+    kept.extend(
+        loaded
+            .dark
+            .kept
+            .iter()
+            .filter(|path| !loaded.light.kept.contains(path))
+            .cloned(),
+    );
+    let kept = if kept.is_empty() {
+        String::new()
+    } else {
+        format!("; kept as gpui-component's own: {}", gallery_names(&kept))
+    };
+    Some(format!(
+        "gpui-component's widgets: {set}{themes}, {size}in one colour; not in the set, so drawn empty: {missing}{kept}"
+    ))
+}
+
+/// The gallery's names (`GPUI_ICONS`) of the icons at `paths`,
+/// comma-separated, a path the gallery does not list as itself; "none"
+/// for none.
+#[cfg(feature = "svg-rasterize")]
+fn gallery_names(paths: &[SharedString]) -> String {
+    if paths.is_empty() {
+        return "none".to_string();
+    }
+    paths
+        .iter()
+        .map(|path| {
+            GPUI_ICONS
+                .iter()
+                .find(|(_, icon)| icon.clone().path() == *path)
+                .map_or_else(|| path.to_string(), |(name, _)| (*name).to_string())
+        })
+        .collect::<Vec<_>>()
+        .join(", ")
 }

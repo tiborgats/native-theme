@@ -660,10 +660,10 @@ pub fn native_expander(
             "ChevronDown, after the title and turned while open, as upstream's Accordion draws it (gpui-component/accordion.rs, AccordionItem::render)"
         }
         (true, true) => {
-            "ChevronRight, before the title, as Breeze and the HIG draw a leading arrow; pixels do not turn (gpui::img takes no transformation), so an open item shows the set's ChevronDown instead"
+            "ChevronRight, before the title, as Breeze and the HIG draw a leading arrow; pixels, or an SVG in several colours, are drawn as an image, which does not turn (gpui::img takes no transformation), so an open item shows the set's ChevronDown instead"
         }
         (false, true) => {
-            "ChevronDown, after the title, as upstream's Accordion draws it (gpui-component/accordion.rs, AccordionItem::render); pixels do not turn (gpui::img takes no transformation), so an open item shows the set's ChevronUp instead"
+            "ChevronDown, after the title, as upstream's Accordion draws it (gpui-component/accordion.rs, AccordionItem::render); pixels, or an SVG in several colours, are drawn as an image, which does not turn (gpui::img takes no transformation), so an open item shows the set's ChevronUp instead"
         }
     };
     let info = info.instance(

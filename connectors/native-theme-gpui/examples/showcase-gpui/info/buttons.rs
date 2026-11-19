@@ -511,6 +511,9 @@ pub(crate) fn size_name(size: Size) -> &'static str {
 
 /// A Button of `kind` in `state`, with an icon where `icon` is set: an icon
 /// of the chosen icon theme, which a loading Button's spinner turns.
+/// `default_spinner` is set for a loading Button given no loading icon
+/// because the widget icons serve the chosen set's Loader, which the
+/// Spinner's own default then is (`demo::spinner_default`).
 ///
 /// `size` is `Some` only in the row that shows upstream's size scale, which
 /// is built without `geometry::button`; every other Button is built at the
@@ -522,6 +525,7 @@ pub fn button(
     kind: ButtonKind,
     state: ButtonState,
     icon: bool,
+    default_spinner: bool,
     size: Option<Size>,
     native: Option<&ResolvedButtonTheme>,
 ) -> WidgetInfo {
@@ -624,11 +628,17 @@ pub fn button(
             .not_themeable("text", "muted_foreground at 0.5, so a disabled button does not keep its variant's text colour. button.disabled_text_color is modelled and carried, and upstream reads it nowhere (button/button.rs, ButtonVariant::disabled)")
             .not_themeable("opacity", "button.disabled_opacity is modelled and inherits defaults.disabled_opacity; upstream multiplies its own literals instead, so the platform's figure has no receiver -- Tier U, not an absence")
             .not_themeable("cursor", "the default arrow, not not-allowed: Button sets cursor_default, and only a link or text variant asks for a pointer (button/button.rs, Button::render)"),
+        (ButtonState::Loading, _) if icon && default_spinner => info
+            .not_themeable("spinner", "in place of the button's icon (button/button_icon.rs, ButtonIcon). The Button is given no loading icon, so the Spinner turns its own default, gpui-component's Loader (gpui-component/spinner.rs, Spinner::new), which the connector's widget icons serve from the chosen icon theme (native-theme-gpui/icons/widget.rs, WidgetIcons): that theme's loading icon by the connector's table, not gpui-component's glyph. It inherits the button's text colour and turns every 0.8s, a literal (gpui-component/spinner.rs, Spinner::new)")
+            .not_themeable("interaction", "inert, as a disabled button is, but not styled as one: it keeps its variant's colours and the whole button fades to 0.8 (button/button.rs, Button::interactive)"),
         (ButtonState::Loading, _) if icon => info
-            .not_themeable("spinner", "in place of the button's icon (button/button_icon.rs, ButtonIcon). This one's icon is the chosen icon theme's loading icon, which the Button is also given as its loading icon, so the Spinner turns it in place of its own default, upstream's Loader (button/button.rs, Button::loading_icon). It inherits the button's text colour and turns every 0.8s, a literal (gpui-component/spinner.rs, Spinner::new)")
+            .not_themeable("spinner", "in place of the button's icon (button/button_icon.rs, ButtonIcon). This one's icon is the chosen icon theme's loading icon, which the Button is also given as its loading icon, so the Spinner turns it in place of its own default, gpui-component's Loader, drawn as the application's icon resolver answers it (the `spinner icon` line says what is turned here) (button/button.rs, Button::loading_icon). It inherits the button's text colour and turns every 0.8s, a literal (gpui-component/spinner.rs, Spinner::new)")
+            .not_themeable("interaction", "inert, as a disabled button is, but not styled as one: it keeps its variant's colours and the whole button fades to 0.8 (button/button.rs, Button::interactive)"),
+        (ButtonState::Loading, _) if default_spinner => info
+            .not_themeable("spinner", "where an icon would sit: a loading Button without an icon shows a Spinner there (button/button.rs, RenderOnce for Button). This one is given no loading icon, so the Spinner turns its own default, gpui-component's Loader (gpui-component/spinner.rs, Spinner::new), which the connector's widget icons serve from the chosen icon theme (native-theme-gpui/icons/widget.rs, WidgetIcons): that theme's loading icon by the connector's table, not gpui-component's glyph. It inherits the button's text colour and turns every 0.8s, a literal (gpui-component/spinner.rs, Spinner::new)")
             .not_themeable("interaction", "inert, as a disabled button is, but not styled as one: it keeps its variant's colours and the whole button fades to 0.8 (button/button.rs, Button::interactive)"),
         (ButtonState::Loading, _) => info
-            .not_themeable("spinner", "where an icon would sit: a loading Button without an icon shows a Spinner there, turning the Button's loading icon, or the Spinner's own default, upstream's Loader, where it is given none (button/button.rs:777-786, loading_icon; gpui-component/spinner.rs, Spinner::new). It inherits the button's text colour and turns every 0.8s, a literal (gpui-component/spinner.rs, Spinner::new)")
+            .not_themeable("spinner", "where an icon would sit: a loading Button without an icon shows a Spinner there, turning the Button's loading icon, or the Spinner's own default, gpui-component's Loader, drawn as the application's icon resolver answers it (the `spinner icon` line says what is turned here), where it is given none (button/button.rs:777-786, loading_icon; gpui-component/spinner.rs, Spinner::new). It inherits the button's text colour and turns every 0.8s, a literal (gpui-component/spinner.rs, Spinner::new)")
             .not_themeable("interaction", "inert, as a disabled button is, but not styled as one: it keeps its variant's colours and the whole button fades to 0.8 (button/button.rs, Button::interactive)"),
     };
     let info = if icon && state == ButtonState::Idle {

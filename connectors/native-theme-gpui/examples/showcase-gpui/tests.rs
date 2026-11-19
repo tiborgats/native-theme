@@ -122,9 +122,37 @@ fn open_with(
     cx: &mut TestAppContext,
     options: gpui::WindowOptions,
 ) -> (Entity<Showcase>, AnyWindowHandle, VisualTestContext) {
+    open_set_up(cx, options, |_| {})
+}
+
+/// [`open_with`], with the connector's widget icons installed as `main`
+/// installs them, following the icon-theme Select as in the application.
+/// The test app's asset source is `()`, which no setter replaces, so the
+/// handle's wrapper goes nowhere and a served icon draws nothing: these
+/// tests read what the handle reports and the showcase says, not glyphs.
+#[cfg(feature = "svg-rasterize")]
+fn open_with_widget_icons(
+    cx: &mut TestAppContext,
+    options: gpui::WindowOptions,
+) -> (Entity<Showcase>, AnyWindowHandle, VisualTestContext) {
+    open_set_up(cx, options, |cx| {
+        let icons = native_theme_gpui::icons::WidgetIcons::new();
+        drop(icons.assets(()));
+        crate::app::install_widget_icons(&icons, cx);
+    })
+}
+
+/// [`open_with`], with `set_up` run on the app after the showcase's
+/// `init` and before the window opens.
+fn open_set_up(
+    cx: &mut TestAppContext,
+    options: gpui::WindowOptions,
+    set_up: impl FnOnce(&mut App),
+) -> (Entity<Showcase>, AnyWindowHandle, VisualTestContext) {
     cx.update(|cx| {
         gpui_kit::init(cx);
         crate::app::init(cx);
+        set_up(cx);
     });
     let handle = cx
         .update(|cx| {
@@ -5363,8 +5391,9 @@ fn a_panel_toggle_the_set_has_no_icon_for_is_labelled(cx: &mut TestAppContext) {
                 .map(|n| n.text.clone())
         });
         assert!(
-            note.as_deref()
-                .is_some_and(|n| n.starts_with(&format!("none: material holds no SVG for {name}"))),
+            note.as_deref().is_some_and(|n| n.starts_with(&format!(
+                "none: material holds no SVG of one colour for {name}"
+            ))),
             "{selector} does not say material has no {name}: {note:?}"
         );
     }
@@ -8842,13 +8871,36 @@ fn chrome_icon_names() -> Vec<IconName> {
     names
 }
 
+/// What the chrome draws for `icon` with Material chosen, `material` being
+/// Material's gallery as `load_gpui_icons` loads it: the role first --
+/// Material's icon for the role the showcase maps `icon` to, as
+/// `load_all_icons` loads it, where it has one -- else the gallery's entry,
+/// or none.
+fn material_chrome_icon(icon: &IconName, material: &[crate::support::IconEntry]) -> ChromeIcon {
+    use native_theme::icons::{IconData, MaterialLoader};
+    let path = gpui_component::IconNamed::path(icon.clone());
+    let entry = material
+        .iter()
+        .find(|(_, listed, ..)| gpui_component::IconNamed::path(listed.clone()) == path);
+    let by_role =
+        crate::support::role_for_gpui_icon(icon).and_then(|role| MaterialLoader::new(role).load());
+    match (entry, by_role) {
+        (Some((n, ..)), Some(IconData::Svg(bytes))) => ChromeIcon::Loaded(n, bytes),
+        (Some((n, _, _, Some(IconData::Svg(bytes)), _)), _) => ChromeIcon::Loaded(n, bytes.clone()),
+        (Some((n, ..)), _) => ChromeIcon::Missing(n),
+        (None, _) => ChromeIcon::Unlisted(path),
+    }
+}
+
 /// The chrome's icons come from the chosen icon theme, and from no other
 /// (the maintainer's rule: never mix icon themes). With Material chosen, every
-/// chrome icon is the SVG Material's gallery holds for its IconName, as the
-/// Icons page loads it, or none -- never gpui-component's own -- and the
-/// toolbar's Command Palette button says which. With gpui-component's
-/// built-in set chosen, every one is gpui-component's own, which also
-/// proves each is in the gallery the lookup searches.
+/// chrome icon is Material's: for an IconName the showcase maps to a role,
+/// the SVG Material has for that role, as the Icons page loads it, where it
+/// has one (the chrome takes the role first); otherwise the SVG Material's
+/// gallery holds for the IconName, or none -- never gpui-component's own --
+/// and the toolbar's Command Palette button says which. With
+/// gpui-component's built-in set chosen, every one is gpui-component's own,
+/// which also proves each is in the gallery the lookup searches.
 #[gpui::test]
 fn the_chrome_icons_come_from_the_chosen_set(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
@@ -8869,22 +8921,12 @@ fn the_chrome_icons_come_from_the_chosen_set(cx: &mut TestAppContext) {
     }
 
     choose(&mut cx, "Material (bundled)");
-    let material = load_gpui_icons(Some(native_theme::theme::IconSet::Material), None, None);
+    let (material, _) = load_gpui_icons(Some(native_theme::theme::IconSet::Material), None, None);
     for name in chrome_icon_names() {
         let drawn = read(&mut cx, &showcase, |this, _| this.chrome_icon(&name));
-        let path = gpui_component::IconNamed::path(name.clone());
-        let entry = material
-            .iter()
-            .find(|(_, icon, ..)| gpui_component::IconNamed::path(icon.clone()) == path);
-        let expected = match entry {
-            Some((n, _, _, Some(native_theme::icons::IconData::Svg(bytes)), _)) => {
-                ChromeIcon::Loaded(n, bytes.clone())
-            }
-            Some((n, ..)) => ChromeIcon::Missing(n),
-            None => ChromeIcon::Unlisted(path),
-        };
         assert_eq!(
-            drawn, expected,
+            drawn,
+            material_chrome_icon(&name, &material),
             "with Material chosen, a chrome icon is not Material's own, or not absent"
         );
     }
@@ -8902,7 +8944,9 @@ fn the_chrome_icons_come_from_the_chosen_set(cx: &mut TestAppContext) {
         assert!(
             note.as_deref()
                 .is_some_and(|n| n.starts_with(&format!("material's icon for {name}"))
-                    || n.starts_with(&format!("none: material holds no SVG for {name}"))),
+                    || n.starts_with(&format!(
+                        "none: material holds no SVG of one colour for {name}"
+                    ))),
             "with Material chosen, {selector} does not say its icon is Material's {name}: {note:?}"
         );
     }
@@ -8957,8 +9001,9 @@ fn a_chrome_icon_the_set_lacks_is_absent(cx: &mut TestAppContext) {
             .map(|n| n.text.clone())
     });
     assert!(
-        note.as_deref()
-            .is_some_and(|n| n.starts_with("none: material holds no SVG for SquareTerminal")),
+        note.as_deref().is_some_and(
+            |n| n.starts_with("none: material holds no SVG of one colour for SquareTerminal")
+        ),
         "the Command Palette button does not say material has no icon for it: {note:?}"
     );
     assert!(
@@ -9015,6 +9060,13 @@ fn the_theme_error_alerts_icon_follows_the_chosen_set(cx: &mut TestAppContext) {
                     entry.3 = None;
                 }
             }
+            // The chrome takes CircleX's role's icon first.
+            let role = crate::support::role_for_gpui_icon(&IconName::CircleX);
+            for entry in &mut this.loaded_icons {
+                if Some(entry.0) == role {
+                    entry.1 = None;
+                }
+            }
             cx.notify();
         });
     });
@@ -9023,7 +9075,7 @@ fn the_theme_error_alerts_icon_follows_the_chosen_set(cx: &mut TestAppContext) {
     let note = alert_icon_note(&mut cx);
     assert!(
         note.as_deref()
-            .is_some_and(|n| n.starts_with("none: material holds no SVG for CircleX")),
+            .is_some_and(|n| n.starts_with("none: material holds no SVG of one colour for CircleX")),
         "with Material's CircleX gone, the theme-error Alert does not report no icon: {note:?}"
     );
 }
@@ -9076,7 +9128,7 @@ fn icon_note_start(drawn: &ChromeIcon, set: &str) -> String {
         ChromeIcon::Loaded(name, _) | ChromeIcon::Raster(name, _) => {
             format!("{set}'s icon for {name}")
         }
-        ChromeIcon::Missing(name) => format!("none: {set} holds no SVG for {name}"),
+        ChromeIcon::Missing(name) => format!("none: {set} holds no SVG of one colour for {name}"),
         ChromeIcon::Unlisted(path) => format!("none: {path} is not in the Icons page's gallery"),
     }
 }
@@ -9099,15 +9151,23 @@ fn choose_icon_theme(cx: &mut VisualTestContext, showcase: &Entity<Showcase>, di
     draw(cx);
 }
 
-/// Take `names` out of the loaded gallery, as if the chosen icon theme had
-/// no icon for them.
+/// Take `names` out of the loaded gallery, and their roles' icons out of the
+/// loaded role icons (`role_for_gpui_icon`), which the chrome takes first,
+/// as if the chosen icon theme had no icon for them.
 #[cfg(feature = "material-icons")]
 fn remove_icons(cx: &mut VisualTestContext, showcase: &Entity<Showcase>, names: &[&str]) {
     cx.update(|_window, cx| {
         showcase.update(cx, |this, cx| {
+            let mut roles = Vec::new();
             for entry in &mut this.gpui_icons {
                 if names.contains(&entry.0) {
                     entry.3 = None;
+                    roles.extend(crate::support::role_for_gpui_icon(&entry.1));
+                }
+            }
+            for entry in &mut this.loaded_icons {
+                if roles.contains(&entry.0) {
+                    entry.1 = None;
                 }
             }
             cx.notify();
@@ -9119,8 +9179,10 @@ fn remove_icons(cx: &mut VisualTestContext, showcase: &Entity<Showcase>, names: 
 
 /// Every page sample's icon is the chosen icon theme's, as the chrome's
 /// are (the maintainer's decision D1): with gpui-component's built-in set
-/// chosen, gpui-component's own; with Material chosen, the SVG Material's
-/// gallery holds for its IconName, or none -- and each sample's info says
+/// chosen, gpui-component's own; with Material chosen, Material's, the role
+/// first as the chrome takes it -- the SVG Material has for the role the
+/// showcase maps the IconName to, where it has one, else the SVG its
+/// gallery holds for the IconName -- or none, and each sample's info says
 /// which. An `Icon`'s source is private to gpui-component, and gpui keeps
 /// no record of the SVG sprites a frame paints that a test can read
 /// (gpui-pre window.rs has `painted_quads` and `painted_underlines` only),
@@ -9148,23 +9210,13 @@ fn the_page_samples_icons_come_from_the_chosen_set(cx: &mut TestAppContext) {
     }
 
     choose_icon_theme(&mut cx, &showcase, "Material (bundled)");
-    let material = load_gpui_icons(Some(native_theme::theme::IconSet::Material), None, None);
+    let (material, _) = load_gpui_icons(Some(native_theme::theme::IconSet::Material), None, None);
     for (page, selector, name) in PAGE_SAMPLE_ICONS {
         show(&mut cx, &showcase, page);
         let icon = read(&mut cx, &showcase, |this, _| this.sample_icon(name.clone()));
-        let path = gpui_component::IconNamed::path(name.clone());
-        let expected = match material
-            .iter()
-            .find(|(_, icon, ..)| gpui_component::IconNamed::path(icon.clone()) == path)
-        {
-            Some((n, _, _, Some(native_theme::icons::IconData::Svg(bytes)), _)) => {
-                ChromeIcon::Loaded(n, bytes.clone())
-            }
-            Some((n, ..)) => ChromeIcon::Missing(n),
-            None => ChromeIcon::Unlisted(path),
-        };
         assert_eq!(
-            icon.drawn, expected,
+            icon.drawn,
+            material_chrome_icon(&name, &material),
             "with Material chosen, {selector}'s icon is not Material's own, or not absent"
         );
         let info = settle_on(&mut cx, &showcase, selector);
@@ -9514,10 +9566,10 @@ fn the_token_input_holds_its_token(cx: &mut TestAppContext) {
 }
 
 /// Every sample whose gpui-component widget draws icons of its own says
-/// they are gpui-component's whichever icon theme is chosen (decision D1):
-/// gpui-component 0.9 has an icon resolver hook (`set_icon_resolver`) and
-/// the showcase does not set it yet, so they stay upstream's. The widgets
-/// are those whose shown configuration draws one
+/// how they are drawn (decision D1): by asset path, through the icon
+/// resolver, which the showcase's widget icons answer from the chosen icon
+/// theme where they can, gpui-component's own otherwise. The widgets are
+/// those whose shown configuration draws one
 /// (gpui-component 0.9.1): a DropdownButton's caret, a Clipboard's Copy, a
 /// NumberInput's steps, a Checkbox's check, a Rating's stars, a Select's,
 /// a Combobox's and a ColorSelect's caret, a SpeechIndicator's stop glyph
@@ -9604,8 +9656,8 @@ fn a_widgets_own_icons_are_named_gpui_components(cx: &mut TestAppContext) {
         assert!(
             note.is_some_and(|n| n
                 .text
-                .contains("gpui-component's own icons whichever icon theme is chosen")),
-            "{name} does not say the icons it draws of its own are gpui-component's: {info:?}"
+                .contains("drawn by gpui-component inside the widget, each by its asset path")),
+            "{name} does not say how the icons it draws of its own are drawn: {info:?}"
         );
     }
 }
@@ -16435,6 +16487,7 @@ fn a_refined_buttons_info_claims_an_edge_only_where_one_is_drawn() {
                 kind,
                 ButtonState::Idle,
                 false,
+                false,
                 None,
                 Some(&r.button),
             );
@@ -16530,6 +16583,7 @@ fn a_disabled_buttons_info_prints_its_fade() {
                 &t,
                 kind,
                 ButtonState::Disabled,
+                false,
                 false,
                 None,
                 Some(&r.button),
@@ -19069,7 +19123,8 @@ fn a_labels_weight_note_says_what_sets_the_weight() {
     }
 }
 
-/// The chosen set's icons of the gallery's `names` and of `roles` as
+/// The chosen set's icons of the gallery's `names`, of their roles
+/// (`role_for_gpui_icon`), which the chrome takes first, and of `roles` as
 /// pixels, as the SF Symbols and Segoe Fluent loaders give every icon
 /// (`IconData::Rgba`), decoded as an install decodes them
 /// (`Showcase::rebuild_icon_caches`): what macOS and Windows draw, on this
@@ -19084,9 +19139,11 @@ fn rasterize_icons(
     let pixels = || native_theme::icons::IconData::rgba(24, 24, vec![128; 24 * 24 * 4]);
     cx.update(|window, cx| {
         showcase.update(cx, |this, cx| {
+            let mut roles = roles.to_vec();
             for entry in &mut this.gpui_icons {
                 if names.contains(&entry.0) {
                     entry.3 = pixels();
+                    roles.extend(crate::support::role_for_gpui_icon(&entry.1));
                 }
             }
             for entry in &mut this.loaded_icons {
@@ -19451,8 +19508,10 @@ fn a_raster_sets_chevrons_are_the_expanders_arrows_and_the_steppers(cx: &mut Tes
     );
     let info = settle_on(&mut cx, &showcase, "basic-number");
     assert!(
-        info.as_ref()
-            .is_some_and(|info| info_says(info, "material gives it as pixels, not an SVG")),
+        info.as_ref().is_some_and(|info| info_says(
+            info,
+            "material gives it as pixels, or as an SVG in several colours"
+        )),
         "the Number input's info does not say its chevrons are the set's pixels: {info:?}"
     );
 }
@@ -19528,7 +19587,7 @@ fn a_raster_sets_icons_are_drawn_as_images_in_the_chrome(cx: &mut TestAppContext
 /// page's Attachment, the Feedback page's Empty state and Plain Marker, the
 /// Overlays page's menu rows, the Buttons page's Toolbar and the Icons
 /// page's sizes -- and show what they show without an icon where the
-/// widget takes an `Icon` alone, saying the set holds no SVG for it
+/// widget takes an `Icon` alone, saying the set holds no SVG of one colour for it
 /// (M9-163): the Buttons page's Toggle, the Inputs page's Copy button.
 #[cfg(feature = "material-icons")] // the bundled set the pixels stand in for
 #[gpui::test]
@@ -19581,7 +19640,7 @@ fn a_raster_sets_icons_on_the_other_pages(cx: &mut TestAppContext) {
     ] {
         show(&mut cx, &showcase, page);
         let info = settle_on(&mut cx, &showcase, frame);
-        let start = format!("none: material holds no SVG for {name}");
+        let start = format!("none: material holds no SVG of one colour for {name}");
         assert!(
             info.as_ref().is_some_and(|info| info_says(info, &start)),
             "{frame}, which takes an Icon alone, does not say {start:?}: {info:?}"
@@ -20010,5 +20069,510 @@ fn the_segmented_control_keeps_its_segments_on_one_row(cx: &mut TestAppContext) 
     assert!(
         control.size.height <= row + px(2.),
         "the control {control:?} is taller than one row of segments, {row:?}"
+    );
+}
+
+/// [`open_with_widget_icons`], in a window of `window_size`.
+#[cfg(feature = "svg-rasterize")]
+fn open_icons(
+    cx: &mut TestAppContext,
+    window_size: gpui::Size<Pixels>,
+) -> (Entity<Showcase>, AnyWindowHandle, VisualTestContext) {
+    open_with_widget_icons(
+        cx,
+        crate::window_options(Bounds {
+            origin: Point::default(),
+            size: window_size,
+        }),
+    )
+}
+
+/// What the showcase's widget icons report; `None` where none are installed.
+#[cfg(feature = "svg-rasterize")]
+fn widget_icons_report(
+    cx: &mut VisualTestContext,
+) -> Option<native_theme_gpui::icons::WidgetIconsReport> {
+    cx.update(|_window, cx| crate::app::widget_icons_report(cx))
+}
+
+/// The set the widget icons loaded, and whether it is fixed (else they
+/// follow the theme); `None` where they loaded none.
+#[cfg(feature = "svg-rasterize")]
+fn widget_icons_set(cx: &mut VisualTestContext) -> Option<(native_theme::theme::IconSet, bool)> {
+    match widget_icons_report(cx) {
+        Some(native_theme_gpui::icons::WidgetIconsReport::Loaded(set)) => {
+            Some((set.set, set.fixed))
+        }
+        _ => None,
+    }
+}
+
+/// An SVG of two colours, `top` over `bottom`, which a mask of one colour
+/// cannot carry.
+#[cfg(feature = "svg-rasterize")]
+fn two_colour_svg(top: &str, bottom: &str) -> native_theme::icons::IconData {
+    native_theme::icons::IconData::Svg(
+        format!(
+            r#"<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><rect x="0" y="0" width="16" height="8" fill="{top}"/><rect x="0" y="8" width="16" height="8" fill="{bottom}"/></svg>"#
+        )
+        .into_bytes()
+        .into(),
+    )
+}
+
+/// The icon-theme Select puts the widget icons in the state of its row:
+/// the row that follows the theme makes them follow it, the built-in row
+/// switches them off, and a bundled set's row fixes them to it, which a
+/// theme install keeps.
+#[cfg(all(
+    feature = "svg-rasterize",
+    feature = "lucide-icons",
+    feature = "material-icons"
+))]
+#[gpui::test]
+fn the_icon_theme_select_puts_the_widget_icons_in_its_state(cx: &mut TestAppContext) {
+    use native_theme::theme::IconSet;
+    use native_theme_gpui::icons::WidgetIconsReport;
+    let (showcase, _root, mut cx) = open_icons(cx, WINDOW_SIZE);
+    use_preset(&mut cx, &showcase, "catppuccin-mocha");
+    assert_eq!(
+        widget_icons_set(&mut cx),
+        Some((IconSet::Lucide, false)),
+        "under catppuccin-mocha's default row the widget icons do not follow its Lucide"
+    );
+    choose_icon_theme(&mut cx, &showcase, crate::app::GPUI_BUILTIN_ROW);
+    assert_eq!(
+        widget_icons_report(&mut cx),
+        Some(WidgetIconsReport::Off),
+        "the built-in row does not switch the widget icons off"
+    );
+    let material = IconSetChoice::Material.to_string();
+    choose_icon_theme(&mut cx, &showcase, &material);
+    assert_eq!(
+        widget_icons_set(&mut cx),
+        Some((IconSet::Material, true)),
+        "Material's row does not fix the widget icons to Material"
+    );
+    use_preset(&mut cx, &showcase, "catppuccin-latte");
+    assert_eq!(
+        widget_icons_set(&mut cx),
+        Some((IconSet::Material, true)),
+        "a theme install while Material is chosen does not keep the widget icons fixed to it"
+    );
+    let default_row = read(&mut cx, &showcase, |this, _| {
+        this.current_icon_theme
+            .clone()
+            .map(|theme| IconSetChoice::Default(theme).to_string())
+    });
+    assert_eq!(default_row.as_deref(), Some("default (lucide)"));
+    choose_icon_theme(&mut cx, &showcase, &default_row.unwrap_or_default());
+    assert_eq!(
+        widget_icons_set(&mut cx),
+        Some((IconSet::Lucide, false)),
+        "the default row again does not make the widget icons follow the theme's Lucide"
+    );
+}
+
+/// Under the row that follows the theme the widget icons serve the set the
+/// chrome draws, theme after theme.
+#[cfg(all(
+    feature = "svg-rasterize",
+    feature = "lucide-icons",
+    feature = "material-icons"
+))]
+#[gpui::test]
+fn the_widget_icons_follow_the_set_the_chrome_draws(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open_icons(cx, WINDOW_SIZE);
+    for preset in ["catppuccin-mocha", "material-3"] {
+        use_preset(&mut cx, &showcase, preset);
+        let chrome = read(&mut cx, &showcase, |this, _| {
+            this.icon_choice_follows_preset
+                .then_some(this.icon_set_enum)
+                .flatten()
+        });
+        assert!(
+            chrome.is_some(),
+            "{preset}: the icon choice does not follow the theme"
+        );
+        assert_eq!(
+            widget_icons_set(&mut cx).map(|(set, _)| set),
+            chrome,
+            "{preset}: the widget icons do not serve the set the chrome draws"
+        );
+    }
+}
+
+/// A row whose icons do not depend on the system's icon theme keeps the
+/// widget icons where its detection fails (spec E.2, step 2): Material's row
+/// stays fixed to Material under a theme whose icon theme falls to a failing
+/// detection, where the `system` row and the row that follows the theme
+/// switch them off, and a detection that works again puts the following
+/// row's state back. Linux only, where the system's set is freedesktop.
+#[cfg(all(
+    feature = "svg-rasterize",
+    feature = "material-icons",
+    target_os = "linux"
+))]
+#[gpui::test]
+fn a_fixed_row_keeps_the_widget_icons_where_the_detection_fails(cx: &mut TestAppContext) {
+    use native_theme::theme::IconSet;
+    use native_theme_gpui::icons::WidgetIconsReport;
+    let (showcase, _root, mut cx) = open_icons(cx, WINDOW_SIZE);
+    use_preset(&mut cx, &showcase, "adwaita");
+    let material = IconSetChoice::Material.to_string();
+    choose_icon_theme(&mut cx, &showcase, &material);
+    assert_eq!(
+        widget_icons_set(&mut cx),
+        Some((IconSet::Material, true)),
+        "Material's row does not fix the widget icons to Material"
+    );
+    cx.update(|window, cx| {
+        showcase.update(cx, |this, cx| {
+            this.icon_theme_detection_for_test = Some(|| {
+                Err(native_theme::error::Error::PlatformUnsupported {
+                    platform: "the test's failing detection",
+                })
+            });
+            this.current_icon_theme = Some("no-such-icon-theme".to_string());
+            this.other_icon_theme = Some("no-such-icon-theme".to_string());
+            this.other_icon_theme_explicit = true;
+            this.reload_icons(window, cx);
+        })
+    });
+    cx.run_until_parked();
+    let report = widget_icons_report(&mut cx);
+    assert!(
+        matches!(&report, Some(WidgetIconsReport::Loaded(set))
+            if set.set == IconSet::Material && set.fixed && set.served()),
+        "a failing detection under Material's row does not keep Material served: {report:?}"
+    );
+    choose_icon_theme(&mut cx, &showcase, &IconSetChoice::System.to_string());
+    assert_eq!(
+        widget_icons_report(&mut cx),
+        Some(WidgetIconsReport::Off),
+        "the system row under a failing detection does not switch the widget icons off"
+    );
+    choose_icon_theme(&mut cx, &showcase, &material);
+    assert_eq!(
+        widget_icons_set(&mut cx),
+        Some((IconSet::Material, true)),
+        "Material's row again does not fix the widget icons to Material"
+    );
+    // The following row, taken as `--icon-set default` takes it.
+    cx.update(|window, cx| {
+        showcase.update(cx, |this, cx| {
+            this.icon_choice_follows_preset = true;
+            this.show_icon_choice(window, cx);
+            this.reload_icons(window, cx);
+        })
+    });
+    cx.run_until_parked();
+    assert_eq!(
+        widget_icons_report(&mut cx),
+        Some(WidgetIconsReport::Off),
+        "the following row under a failing detection does not switch the widget icons off"
+    );
+    cx.update(|window, cx| {
+        showcase.update(cx, |this, cx| {
+            this.icon_theme_detection_for_test = Some(|| Ok("breeze".to_string()));
+            this.reload_icons(window, cx);
+        })
+    });
+    cx.run_until_parked();
+    assert!(
+        matches!(widget_icons_set(&mut cx), Some((_, false))),
+        "a detection that works again does not put the following row's state back: {:?}",
+        widget_icons_report(&mut cx)
+    );
+}
+
+/// The chrome takes a name's role's icon first, and the gallery the
+/// connector's table's: under Lucide, Delete is the role ActionDelete's
+/// icon in the chrome and Lucide's `delete` in the gallery; under Material,
+/// ChevronDown the role NavDown's and Material's `expand_more`.
+#[cfg(all(
+    feature = "svg-rasterize",
+    feature = "lucide-icons",
+    feature = "material-icons"
+))]
+#[gpui::test]
+fn a_name_with_a_role_takes_the_roles_icon_and_the_gallery_the_tables(cx: &mut TestAppContext) {
+    use native_theme::icons::{IconData, IconRole, LucideLoader, MaterialLoader};
+    use native_theme_gpui::icons::{lucide_name_for_gpui_icon, material_name_for_gpui_icon};
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let cases = [
+        (
+            IconSetChoice::Lucide,
+            IconName::Delete,
+            "Delete",
+            IconRole::ActionDelete,
+        ),
+        (
+            IconSetChoice::Material,
+            IconName::ChevronDown,
+            "ChevronDown",
+            IconRole::NavDown,
+        ),
+    ];
+    for (choice, icon, name, role) in cases {
+        choose_icon_theme(&mut cx, &showcase, &choice.to_string());
+        let (by_role, by_table) = match choice {
+            IconSetChoice::Lucide => (
+                LucideLoader::new(role).load(),
+                lucide_name_for_gpui_icon(icon.clone()).and_then(|n| LucideLoader::new(n).load()),
+            ),
+            _ => (
+                MaterialLoader::new(role).load(),
+                material_name_for_gpui_icon(icon.clone())
+                    .and_then(|n| MaterialLoader::new(n).load()),
+            ),
+        };
+        assert!(
+            by_table.is_some() && by_role != by_table,
+            "{choice}: {name}'s role icon and table icon are the same, so this proves nothing"
+        );
+        let drawn = read(&mut cx, &showcase, |this, _| this.chrome_icon(&icon));
+        let expected = match &by_role {
+            Some(IconData::Svg(bytes)) => Some(ChromeIcon::Loaded(name, bytes.clone())),
+            _ => None,
+        };
+        assert_eq!(
+            Some(drawn),
+            expected,
+            "{choice}: the chrome's {name} is not its role's icon"
+        );
+        let gallery = read(&mut cx, &showcase, |this, _| {
+            this.gpui_icons
+                .iter()
+                .find(|entry| entry.0 == name)
+                .and_then(|entry| entry.3.clone())
+        });
+        assert_eq!(
+            gallery, by_table,
+            "{choice}: the gallery's {name} is not the connector's table's"
+        );
+    }
+}
+
+/// An SVG in several colours is drawn as an image in the chrome, as pixels
+/// are: an entry judged `Some(false)` with a decoded image is `Raster`, and
+/// `Missing` in a widget that takes an `Icon` alone; one judged a mask, or
+/// not judged, stays `Loaded`.
+#[cfg(feature = "svg-rasterize")]
+#[test]
+fn an_svg_in_several_colours_is_an_image_in_the_chrome() {
+    let svg = two_colour_svg("#ff0000", "#0000ff");
+    assert_eq!(
+        native_theme_gpui::icons::mask_drawable(&svg),
+        Some(false),
+        "the fixture is judged one colour, so this proves nothing"
+    );
+    let entries = [(
+        "Search",
+        IconName::Search,
+        None,
+        Some(svg.clone()),
+        crate::support::IconSource::Bundled,
+    )];
+    let sources = [native_theme_gpui::icons::to_image_source(&svg, None, None)];
+    assert!(
+        sources.iter().all(Option::is_some),
+        "the fixture decodes to no image"
+    );
+    let drawn = ChromeIcon::of(&entries, &sources, &[Some(false)], false, &IconName::Search);
+    assert!(
+        matches!(drawn, ChromeIcon::Raster("Search", _)),
+        "an SVG in several colours is not an image in the chrome: {drawn:?}"
+    );
+    assert_eq!(drawn.svg_only(), ChromeIcon::Missing("Search"));
+    for mask in [Some(true), None] {
+        let drawn = ChromeIcon::of(&entries, &sources, &[mask], false, &IconName::Search);
+        assert!(
+            matches!(drawn, ChromeIcon::Loaded("Search", _)),
+            "an SVG judged {mask:?} is not a mask in the chrome: {drawn:?}"
+        );
+    }
+}
+
+/// A role's icon in several colours is drawn as an image, as pixels are:
+/// with Lucide chosen and its DialogError icon replaced by one of two
+/// colours, kde-breeze's light text and accent colours, and judged again,
+/// the role's chrome icon and CircleX's, which takes it by its role, are
+/// `Raster`, and `Missing` where a widget takes an `Icon` alone.
+#[cfg(all(feature = "svg-rasterize", feature = "lucide-icons"))]
+#[gpui::test]
+fn a_role_icon_in_several_colours_is_an_image(cx: &mut TestAppContext) {
+    use native_theme::icons::IconRole;
+    let colours = native_theme::theme::Theme::preset("kde-breeze")
+        .and_then(|theme| theme.resolve(native_theme::theme::ColorMode::Light))
+        .map(|r| {
+            (
+                r.variant.defaults.text_color,
+                r.variant.defaults.accent_color,
+            )
+        });
+    assert!(colours.is_ok(), "kde-breeze does not resolve: {colours:?}");
+    let Ok((text, accent)) = colours else { return };
+    let svg = two_colour_svg(&text.to_string(), &accent.to_string());
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    choose_icon_theme(&mut cx, &showcase, &IconSetChoice::Lucide.to_string());
+    cx.update(|window, cx| {
+        showcase.update(cx, |this, cx| {
+            for entry in &mut this.loaded_icons {
+                if entry.0 == IconRole::DialogError {
+                    entry.1 = Some(svg.clone());
+                }
+            }
+            this.loaded_icon_masks = this
+                .loaded_icons
+                .iter()
+                .map(|(_, data, _)| {
+                    data.as_ref()
+                        .and_then(native_theme_gpui::icons::mask_drawable)
+                })
+                .collect();
+            let fg = this.icon_cache_fg;
+            this.rebuild_icon_caches(fg, window, cx);
+            cx.notify();
+        });
+    });
+    cx.run_until_parked();
+    draw(&mut cx);
+    let (role, _) = read(&mut cx, &showcase, |this, _| {
+        this.role_chrome_icon(IconRole::DialogError)
+    });
+    let circle = read(&mut cx, &showcase, |this, _| {
+        this.chrome_icon(&IconName::CircleX)
+    });
+    for (what, drawn) in [("DialogError", role), ("CircleX", circle)] {
+        assert!(
+            drawn.is_raster(),
+            "{what}: the role's icon in two colours is not an image: {drawn:?}"
+        );
+        assert!(
+            matches!(drawn.svg_only(), ChromeIcon::Missing(_)),
+            "{what}: the role's icon in two colours is not none where an Icon alone is taken"
+        );
+    }
+}
+
+/// Where the widget icons serve the chosen set and its Loader draws, the
+/// Spinner's own default is already that set's, so neither loading Button
+/// is given a loading icon, and their infos say so; under the built-in row
+/// both keep their icon to turn and say what it is (spec E.4).
+#[cfg(all(feature = "svg-rasterize", feature = "lucide-icons"))]
+#[gpui::test]
+fn the_loading_buttons_keep_the_spinners_icon_where_the_set_is_served(cx: &mut TestAppContext) {
+    use crate::demo::{SpinnerDefault, spinner_default};
+    let (showcase, _root, mut cx) = open_icons(cx, TALL_WINDOW);
+    without_motion(&mut cx);
+    use_preset(&mut cx, &showcase, "catppuccin-mocha");
+    assert_eq!(
+        read(&mut cx, &showcase, |_, cx| spinner_default(cx)),
+        SpinnerDefault::Set,
+        "under catppuccin-mocha the widget icons do not serve Lucide's Loader"
+    );
+    let spinner = |info: &WidgetInfo| {
+        info.not_themeable
+            .iter()
+            .find(|n| n.what == "spinner")
+            .map(|n| n.text.clone())
+    };
+    let has = |info: &WidgetInfo, what: &str| info.instance.iter().any(|n| n.what == what);
+    show(&mut cx, &showcase, Page::Buttons);
+    for (selector, place) in [
+        ("buttons-loading", "in place of the button's icon"),
+        (BUTTONS_LOADING_NO_ICON, "where an icon would sit"),
+    ] {
+        let info = settle_on(&mut cx, &showcase, selector);
+        let note = info.as_ref().and_then(spinner);
+        assert!(
+            note.as_deref().is_some_and(|n| n.starts_with(place)
+                && (n.contains("The Button is given no loading icon")
+                    || n.contains("This one is given no loading icon"))),
+            "{selector}: the spinner note does not say the Spinner turns its served default: {note:?}"
+        );
+        assert!(
+            note.as_deref().is_some_and(|n| n
+                .contains("which the connector's widget icons serve from the chosen icon theme")),
+            "{selector}: the spinner note does not name the widget icons: {note:?}"
+        );
+        assert!(
+            info.as_ref().is_some_and(|info| !has(info, "spinner icon")),
+            "{selector}: a Button given no loading icon still names one: {info:?}"
+        );
+    }
+    let with_icon = settle_on(&mut cx, &showcase, "buttons-loading");
+    assert!(
+        with_icon.as_ref().is_some_and(|info| has(info, "icon")),
+        "buttons-loading does not say what its own icon is: {with_icon:?}"
+    );
+
+    choose_icon_theme(&mut cx, &showcase, crate::app::GPUI_BUILTIN_ROW);
+    show(&mut cx, &showcase, Page::Buttons);
+    for selector in ["buttons-loading", BUTTONS_LOADING_NO_ICON] {
+        let info = settle_on(&mut cx, &showcase, selector);
+        let note = info.as_ref().and_then(spinner);
+        assert!(
+            note.as_deref().is_some_and(|n| n.contains(
+                "gpui-component's Loader, drawn as the application's icon resolver answers it"
+            )),
+            "{selector}: under the built-in row the spinner note is not the present one: {note:?}"
+        );
+        assert!(
+            info.as_ref().is_some_and(|info| has(info, "spinner icon")),
+            "{selector}: under the built-in row the Button does not say what its Spinner turns: {info:?}"
+        );
+    }
+}
+
+/// A loading Button the chosen set gives no icon to turn says what its
+/// Spinner draws: nothing, where the widget icons serve that set and it has
+/// no Loader; gpui-component's own Loader otherwise.
+#[test]
+fn a_spinner_with_nothing_to_turn_says_so() {
+    use crate::demo::{SpinnerDefault, spinner_note};
+    let icon = crate::support::SampleIcon {
+        icon: IconName::Loader,
+        drawn: ChromeIcon::Missing("Loader"),
+        set: "material".into(),
+    };
+    let empty = spinner_note(&icon, SpinnerDefault::Empty);
+    assert!(
+        empty.starts_with("none:") && empty.contains("the Spinner draws nothing"),
+        "a Spinner with nothing to turn does not say so: {empty:?}"
+    );
+    let upstream = spinner_note(&icon, SpinnerDefault::Upstream);
+    assert!(
+        upstream.starts_with("gpui-component's own Loader"),
+        "a Spinner turning upstream's Loader does not say so: {upstream:?}"
+    );
+}
+
+/// The Icons page reports what the widget icons serve: under Lucide its
+/// served text, with no name drawn empty and StarFill kept; under the
+/// built-in row that they are off.
+#[cfg(all(feature = "svg-rasterize", feature = "lucide-icons"))]
+#[gpui::test]
+fn the_icons_page_reports_the_widget_icons(cx: &mut TestAppContext) {
+    use crate::pages::icons::widget_icons_caption;
+    let (showcase, _root, mut cx) = open_icons(cx, WINDOW_SIZE);
+    use_preset(&mut cx, &showcase, "catppuccin-mocha");
+    show(&mut cx, &showcase, Page::Icons);
+    assert!(
+        cx.debug_bounds("icons-widget-icons").is_some(),
+        "the Icons page does not lay out the widget icons' caption"
+    );
+    let caption = widget_icons_caption(widget_icons_report(&mut cx).as_ref());
+    assert_eq!(
+        caption,
+        "gpui-component's widgets: lucide, in one colour; not in the set, so drawn empty: none; kept as gpui-component's own: StarFill",
+    );
+    choose_icon_theme(&mut cx, &showcase, crate::app::GPUI_BUILTIN_ROW);
+    show(&mut cx, &showcase, Page::Icons);
+    let caption = widget_icons_caption(widget_icons_report(&mut cx).as_ref());
+    assert_eq!(
+        caption,
+        "gpui-component's widgets: their own icons (the built-in set is chosen, or no system icon theme was detected)",
     );
 }

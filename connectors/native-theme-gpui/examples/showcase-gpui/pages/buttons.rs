@@ -157,6 +157,10 @@ impl Showcase {
                             // `Button` draws its spinner in place of its
                             // icon (`button/button_icon.rs`): the chosen icon
                             // theme's loading icon, which the spinner turns.
+                            // Where the widget icons serve the chosen set's
+                            // Loader, the Spinner's own default is already
+                            // that set's, and neither loading Button is given
+                            // a loading icon (`demo::button_turning`).
                             icon: Some(self.sample_icon(IconName::Loader)),
                         },
                     ))

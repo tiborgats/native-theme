@@ -12,7 +12,7 @@ mod buttons;
 mod charts;
 mod data;
 pub(crate) mod feedback;
-mod icons;
+pub(crate) mod icons;
 mod inputs;
 pub(crate) mod layout;
 mod overlays;

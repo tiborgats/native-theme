@@ -1014,19 +1014,19 @@ pub fn icon_set_select(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo 
         )
         .instance(
             "raster sets",
-            "on macOS and Windows the system icon sets come as pixels, not SVG -- native-theme's loaders there return IconData::Rgba (native-theme/sficons.rs, load_sf_icon_by_name; native-theme/winicons.rs, hicon_to_rgba) -- and an Icon draws only a path or SVG bytes (icon.rs, Icon::data), so with the system icon theme chosen there the showcase draws those pixels as images (gpui::img, demo::Glyph) wherever the widget takes any element, at the size the SVG would take, in the colour their loader drew them in; only the widgets that take an Icon alone -- a Toggle, a Button's icon beside its label, a command-palette entry, the Alert, a Stepper step and a Sidebar item -- show none of theirs there, each info saying so",
+            "on macOS and Windows the system icon sets come as pixels, not SVG -- native-theme's loaders there return IconData::Rgba (native-theme/sficons.rs, load_sf_icon_by_name; native-theme/winicons.rs, hicon_to_rgba) -- and an Icon draws only a path or SVG bytes (icon.rs, Icon::data), so with the system icon theme chosen there the showcase draws those pixels as images (gpui::img, demo::Glyph) wherever the widget takes any element, at the size the SVG would take, in the colour their loader drew them in; only the widgets that take an Icon alone -- a Toggle, a Button's icon beside its label, a command-palette entry, the Alert, a Stepper step and a Sidebar item -- show none of theirs there, each info saying so; an SVG icon in several colours is drawn as an image too, and as none in those widgets, since a mask would show its outline in one colour (native-theme-gpui/icons.rs, mask_drawable). The icons gpui-component's widgets draw of their own stay gpui-component's under these two sets: the connector's widget icons do not serve a set of pixels in this release",
         )
         .not_themeable(
-            "upstream's icons",
-            "the icons a widget names as it renders, with no setter: this Select's and the preset Combobox's caret (select.rs, Caret), the check mark on their chosen row (searchable_list/item.rs, SearchableListItemElement) and an empty list's Inbox (gpui-component/select.rs, SelectState::new; gpui-component/combobox.rs, ComboboxState::new); the page row's menu Button's caret where the chosen icon theme has no ChevronDown, upstream's Caret too, which the showcase lays in as the Button's child (demo::native_tab_bar) and the check mark on the shown page's row in its menu (menu/popup_menu.rs, PopupMenu); the window controls (title_bar.rs, ControlIcon); a Dialog's close button (dialog/dialog.rs, Dialog::render) and a Sheet's (gpui-component/sheet.rs, Sheet::render); the command palette's search icon and check mark (command/state.rs, CommandState); and in the Preferences sheet the search field's icon (setting/settings.rs, Settings) and the text scale's minus and plus (input/number_input.rs, NumberInput)",
+            "widgets' own icons",
+            "the icons a widget names as it renders, with no setter, which the connector's widget icons answer from the chosen icon theme where they can (below): this Select's and the preset Combobox's caret (select.rs, Caret), the check mark on their chosen row (searchable_list/item.rs, SearchableListItemElement) and an empty list's Inbox (gpui-component/select.rs, SelectState::new; gpui-component/combobox.rs, ComboboxState::new); the page row's menu Button's caret where the chosen icon theme has no ChevronDown, upstream's Caret too, which the showcase lays in as the Button's child (demo::native_tab_bar) and the check mark on the shown page's row in its menu (menu/popup_menu.rs, PopupMenu); the window controls (title_bar.rs, ControlIcon); a Dialog's close button (dialog/dialog.rs, Dialog::render) and a Sheet's (gpui-component/sheet.rs, Sheet::render); the command palette's search icon and check mark (command/state.rs, CommandState); and in the Preferences sheet the search field's icon (setting/settings.rs, Settings) and the text scale's minus and plus (input/number_input.rs, NumberInput)",
         )
         .not_themeable(
-            "why they stay",
+            "how they are drawn",
             super::own_icons("those icons, and every icon a sample's widget draws of its own, which that sample's info names"),
         )
         .instance(
             "pages",
-            "the samples on the other pages show the chosen icon theme's icons for the icons they are given, as the chrome does, and none where it has none; only the icons their widgets draw of their own stay gpui-component's",
+            "the samples on the other pages show the chosen icon theme's icons for the icons they are given, as the chrome does, and none where it has none; the icons their widgets draw of their own are drawn as the widgets' own icons above say",
         )
 }
 
@@ -1120,7 +1120,9 @@ fn action_tooltip(
 /// child, and the colour it shows.
 pub(crate) fn child_icon_line(icon: &ChromeIcon) -> String {
     let colour = if icon.is_raster() {
-        format!("is pixels drawn as an image (gpui::img), {RASTER_ICON_COLOUR}")
+        format!(
+            "is pixels, or an SVG in several colours, drawn as an image (gpui::img), {RASTER_ICON_COLOUR}"
+        )
     } else {
         "takes the text colour above".to_string()
     };
@@ -1131,7 +1133,7 @@ pub(crate) fn child_icon_line(icon: &ChromeIcon) -> String {
 
 /// The colour a raster icon of the chosen set is drawn in
 /// (`ChromeIcon::Raster`), which no widget's colour reaches.
-pub(crate) const RASTER_ICON_COLOUR: &str = "which takes no text colour: it shows the colour its loader drew it in -- an SF Symbol or a Segoe Fluent glyph in defaults.font.color where a native theme is installed (the showcase's icon_tint), else in the loader's own (SF Symbols black, Segoe Fluent white: native-theme icons.rs, SfSymbolsLoader, SegoeFluentLoader); a freedesktop raster icon in its own colours";
+pub(crate) const RASTER_ICON_COLOUR: &str = "which takes no text colour: it shows the colour its loader drew it in -- an SF Symbol or a Segoe Fluent glyph in defaults.font.color where a native theme is installed (the showcase's icon_tint), else in the loader's own (SF Symbols black, Segoe Fluent white: native-theme icons.rs, SfSymbolsLoader, SegoeFluentLoader); a freedesktop theme's raster icon, or its SVG in several colours, in its own colours";
 
 /// What a chrome icon's info says it is: `icon` as the icon theme named
 /// `set` gives it, and `absent` what its widget shows where the icon theme
@@ -1142,13 +1144,13 @@ pub(crate) fn chrome_icon_note(icon: &ChromeIcon, set: &str, absent: &str) -> St
             "gpui-component's own {name}: its built-in icons are the icon theme the theme settings' Icon theme Select chose"
         ),
         ChromeIcon::Loaded(name, _) => format!(
-            "{set}'s icon for {name}, the icon theme the theme settings' Icon theme Select chose. It is drawn as every Icon is, as a mask in its widget's text colour (gpui-pre/window.rs, Window::paint_svg), so a coloured icon shows its shape only"
+            "{set}'s icon for {name}, the icon theme the theme settings' Icon theme Select chose. It is drawn as every Icon is, as a mask in its widget's text colour (gpui-pre/window.rs, Window::paint_svg), which carries an icon of one colour"
         ),
         ChromeIcon::Raster(name, _) => format!(
-            "{set}'s icon for {name}, the icon theme the theme settings' Icon theme Select chose. {set} gives it as pixels, not an SVG, so it is drawn as the Icons page draws it, as an image (gpui::img), {RASTER_ICON_COLOUR}"
+            "{set}'s icon for {name}, the icon theme the theme settings' Icon theme Select chose. {set} gives it as pixels, or as an SVG in several colours, which a mask of one colour cannot show (native-theme-gpui/icons.rs, mask_drawable), so it is drawn as the Icons page draws it, as an image (gpui::img), {RASTER_ICON_COLOUR}"
         ),
         ChromeIcon::Missing(name) => format!(
-            "none: {set} holds no SVG for {name}, and no other icon theme's icon stands in -- {absent}"
+            "none: {set} holds no SVG of one colour for {name}, and no other icon theme's icon stands in -- {absent}"
         ),
         ChromeIcon::Unlisted(path) => format!(
             "none: {path} is not in the Icons page's gallery, so nothing of {set} was loaded for it, and no other icon theme's icon stands in -- {absent}"
@@ -1498,7 +1500,7 @@ pub fn command_palette(t: &Theme, set: &str) -> WidgetInfo {
         )
         .instance(
             "entry icons",
-            format!("{set}'s, the icon theme the theme settings' Icon theme Select chose, in the row icon colour above; an entry whose icon that icon theme holds no SVG for shows its label alone, and no other icon theme's icon stands in. The search icon is upstream's own (command/state.rs, CommandState)"),
+            format!("{set}'s, the icon theme the theme settings' Icon theme Select chose, in the row icon colour above; an entry whose icon that icon theme holds no SVG of one colour for shows its label alone, and no other icon theme's icon stands in. The search icon is upstream's own (command/state.rs, CommandState)"),
         )
         .instance(
             "keys",

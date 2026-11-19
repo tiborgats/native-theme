@@ -1096,8 +1096,17 @@ fn main() {
         cli::refuse(&error);
     }
 
+    // The connector's widget icons serve gpui-component's widgets the chosen
+    // icon set's icons through the application's asset source, which they
+    // wrap, and the icon resolver, which `app::install_widget_icons` sets.
+    #[cfg(feature = "svg-rasterize")]
+    let icons = native_theme_gpui::icons::WidgetIcons::new();
+    #[cfg(feature = "svg-rasterize")]
+    let assets = icons.assets(gpui_kit::assets::Assets);
+    #[cfg(not(feature = "svg-rasterize"))]
+    let assets = gpui_kit::assets::Assets;
     gpui_kit::application()
-        .with_assets(gpui_kit::assets::Assets)
+        .with_assets(assets)
         .run(move |cx: &mut App| {
             gpui_kit::init(cx);
             // Left to right whatever the system's language: the showcase's own
@@ -1107,6 +1116,8 @@ fn main() {
             // `src/layout_direction.rs`, `init`).
             gpui_base::LayoutDirection::Ltr.set_global(cx);
             app::init(cx);
+            #[cfg(feature = "svg-rasterize")]
+            app::install_widget_icons(&icons, cx);
 
             // Centred on whole pixels: `Bounds::centered` centres on the display's visible
             // bounds (gpui-pre 0.3.12 `src/geometry.rs:740-749`), which exclude the macOS menu
