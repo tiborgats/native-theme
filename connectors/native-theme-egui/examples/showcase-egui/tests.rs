@@ -5015,6 +5015,8 @@ fn the_basic_list_and_table_fills_keep_inside_the_frames_corners() {
 
         // A hovered or pressed header section's fill, where the theme states one (kde-breeze
         // alone of the three): the first section's top-left corner, the last's top-right.
+        // kde-breeze states both in one colour: which fill pressed takes is
+        // `a_header_section_takes_the_pressed_fill_else_the_hovered_one`'s.
         let (Some(hovered), Some(pressed)) =
             (l.header_hover_background, l.header_active_background)
         else {
@@ -5051,8 +5053,53 @@ fn the_basic_list_and_table_fills_keep_inside_the_frames_corners() {
     assert!(off_grid, "a list line off the whole-pixel grid");
 }
 
-/// The swap of `docs/todo_v0.7.2_kde-open-items-steps6-7-spec.md` 7.H.2: a selected list or
-/// table row takes the unfocused pair while the window is not active, where the theme's
+/// A table header section's fill (`pages::basic::header_section_fill`, decision 19 and 7.H.1 of
+/// `docs/archive/todo_v0.7.2_kde-open-items-steps6-7-spec.md`), on kde-breeze light, which
+/// states its two section fills in one colour, so the page's pressed section
+/// (`the_basic_list_and_table_fills_keep_inside_the_frames_corners`) does not tell them apart.
+/// With `list.header_active_background` set to the header's own fill, which differs from the
+/// hovered one, pressed takes the pressed fill; without it, pressed takes the hovered fill;
+/// without either, no state takes a fill; at rest none does.
+#[test]
+fn a_header_section_takes_the_pressed_fill_else_the_hovered_one() {
+    use crate::pages::basic::header_section_fill;
+
+    let colour = native_theme_egui::convert::to_color32;
+    let (atlas, _) = from_preset("kde-breeze", false, &AccessibilityPreferences::default())
+        .unwrap_or_else(|error| panic!("kde-breeze: {error}"));
+    let mut t = atlas.resolved_for(egui::Theme::Light).clone();
+    let Some(hovered) = t.list.header_hover_background else {
+        panic!("kde-breeze states the hovered section fill");
+    };
+    assert_eq!(
+        t.list.header_active_background,
+        Some(hovered),
+        "kde-breeze states its two section fills in one colour"
+    );
+    let pressed = t.list.header_background;
+    assert_ne!(
+        pressed, hovered,
+        "the pressed fill differs from the hovered one"
+    );
+    t.list.header_active_background = Some(pressed);
+    let states = [(false, false), (true, false), (false, true), (true, true)];
+    let fills = |t: &native_theme_egui::ResolvedTheme| {
+        states.map(|(hover, press)| header_section_fill(t, hover, press))
+    };
+    let (hovered, pressed) = (Some(colour(hovered)), Some(colour(pressed)));
+    assert_eq!(fills(&t), [None, hovered, pressed, pressed], "both stated");
+    t.list.header_active_background = None;
+    assert_eq!(
+        fills(&t),
+        [None, hovered, hovered, hovered],
+        "the hovered alone"
+    );
+    t.list.header_hover_background = None;
+    assert_eq!(fills(&t), [None; 4], "neither stated");
+}
+
+/// The swap of `docs/archive/todo_v0.7.2_kde-open-items-steps6-7-spec.md` 7.H.2: a selected
+/// list or table row takes the unfocused pair while the window is not active, where the theme's
 /// inactive fill differs from its selection. `selection_pair` with an active window is the
 /// list's pair on every bundled combination, and with an inactive one the defaults' inactive
 /// pair on exactly kde-breeze's, macos-monterey's and macos-tahoe's six and the list's pair on
@@ -8744,6 +8791,45 @@ fn the_list_and_table_frame_routes_name_the_call_that_paints_them() {
             "{id} takes another element's route: {how:?}"
         );
     }
+}
+
+/// A selected list or table row takes the defaults' unfocused pair per call
+/// (`pages::basic::selection_pair`), so the routes of its and its label's
+/// `defaults.selection_inactive_*` leaves name that call and when it takes them.
+#[test]
+fn the_selected_rows_unfocused_pair_routes_name_selection_pair() {
+    let manifest =
+        Manifest::parse(MANIFEST).unwrap_or_else(|error| panic!("the manifest parses: {error}"));
+    let seams = [crate::demo::Seam::Role(
+        native_theme_egui::Role::List,
+        RoleVariant::Normal,
+    )];
+    let mut checked = 0usize;
+    let mut wrong = Vec::new();
+    for element in listed_elements() {
+        let id = element.id.as_str();
+        if !(id.starts_with("basic.table.row_") || id.starts_with("basic.list.row_")) {
+            continue;
+        }
+        for leaf in [
+            "defaults.selection_inactive_background",
+            "defaults.selection_inactive_text_color",
+        ] {
+            if !element.leaves.iter().any(|l| l == leaf) {
+                continue;
+            }
+            checked += 1;
+            let how = crate::info::listed_how(&manifest, id, leaf, &seams);
+            if !how.contains("selection_pair") || !how.contains("not focused") {
+                wrong.push(format!("{id} {leaf}: {how:?}"));
+            }
+        }
+    }
+    assert!(wrong.is_empty(), "{}", wrong.join("\n"));
+    assert_eq!(
+        checked, 5,
+        "the table's and the List's selected rows' two leaves and the List's label's text colour"
+    );
 }
 
 /// The family drawn in a family's place is the substitute the atlas's note for that family

@@ -570,11 +570,23 @@ pub(crate) fn how_line(manifest: &Manifest, leaf: &str, seams: &[Seam]) -> Strin
 const TOOL_BUTTON_EDGE: &str = "egui: per call, the outline's width under the pointer and \
      pressed, where toolbar.button_hover_border_color is stated; 0 otherwise (demo::tool_button)";
 
+/// The route of a selected list or table row's `defaults.selection_inactive_background`, per
+/// call in `pages::basic::selection_pair`.
+const SELECTED_ROW_INACTIVE_FILL: &str = "egui: per call, the selected row's fill while the \
+     window is not focused, where the theme's inactive fill differs from its selection \
+     (pages::basic::selection_pair)";
+/// The route of a selected list or table row's `defaults.selection_inactive_text_color`, as
+/// [`SELECTED_ROW_INACTIVE_FILL`].
+const SELECTED_ROW_INACTIVE_TEXT: &str = "egui: per call, the selected row's text colour while \
+     the window is not focused, where the theme's inactive fill differs from its selection \
+     (pages::basic::selection_pair)";
+
 /// The leaves a page applies per call where `mapping.toml`'s row names a style field the
-/// connector writes, by element id (a prefix, for the rows) and leaf: the List's and the
-/// table's frames, which `pages::basic::list_frame` paints, the rows whose fills
-/// `pages::basic::inner_corners` rounds where they meet a frame, and the tool buttons' outline
-/// width, which `demo::tool_button` sets per call.
+/// connector writes, or none, by element id (a prefix, for the rows) and leaf: the List's and
+/// the table's frames, which `pages::basic::list_frame` paints, the rows whose fills
+/// `pages::basic::inner_corners` rounds where they meet a frame, the selected rows' unfocused
+/// pair, which `pages::basic::selection_pair` takes, and the tool buttons' outline width, which
+/// `demo::tool_button` sets per call.
 const PER_CALL_ROUTES: &[(&str, &str, &str)] = &[
     (
         "chrome.toolbar.command_palette",
@@ -666,6 +678,26 @@ const PER_CALL_ROUTES: &[(&str, &str, &str)] = &[
         "list.border.line_width_px",
         "egui: per call, taken off the frame's radius for a fill's corners where it meets the \
          frame (pages::basic::inner_corners)",
+    ),
+    (
+        "basic.table.row_",
+        "defaults.selection_inactive_background",
+        SELECTED_ROW_INACTIVE_FILL,
+    ),
+    (
+        "basic.table.row_",
+        "defaults.selection_inactive_text_color",
+        SELECTED_ROW_INACTIVE_TEXT,
+    ),
+    (
+        "basic.list.row_",
+        "defaults.selection_inactive_background",
+        SELECTED_ROW_INACTIVE_FILL,
+    ),
+    (
+        "basic.list.row_",
+        "defaults.selection_inactive_text_color",
+        SELECTED_ROW_INACTIVE_TEXT,
     ),
 ];
 

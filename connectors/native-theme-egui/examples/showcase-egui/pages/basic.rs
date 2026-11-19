@@ -1903,6 +1903,23 @@ fn paint_cell_text(
     cell
 }
 
+/// A table header section's fill: pressed in `list.header_active_background`, else in the
+/// hovered fill; hovered in `list.header_hover_background`; `None` at rest and where the theme
+/// states neither fill.
+pub(crate) fn header_section_fill(
+    t: &native_theme_egui::ResolvedTheme,
+    hovered: bool,
+    pressed: bool,
+) -> Option<egui::Color32> {
+    if pressed {
+        list_header_active_background(t).or(list_header_hover_background(t))
+    } else if hovered {
+        list_header_hover_background(t)
+    } else {
+        None
+    }
+}
+
 /// The table: a header and two rows, the second selected, `BASIC_WIDE` across the list's
 /// frame (`list_frame`), the two columns half the width inside it each, in one `Role::List`
 /// scope. egui has no table the theme reaches (egui_extras' `TableBuilder` paints only its
@@ -1915,8 +1932,8 @@ fn paint_cell_text(
 /// `selection_pair`), the header's fill rounded at the top and the last row's at the bottom,
 /// where they meet the frame (`inner_corners`); each header section hovered in
 /// `list.header_hover_background` and pressed in `list.header_active_background`, else the
-/// hovered fill, where the theme states them, rounded where the section meets the frame's top
-/// corner; a vertical
+/// hovered fill, where the theme states them (`header_section_fill`), rounded where the section
+/// meets the frame's top corner; a vertical
 /// `list.grid_color` line between the columns through the header and the rows and a horizontal
 /// one under the header, each `separator.line_width` wide, inside the cell it closes.
 fn table(reg: &mut Registry, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
@@ -1986,21 +2003,18 @@ fn table(reg: &mut Registry, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
                             egui::Rect::from_x_y_ranges(mid..=header.right(), header.y_range())
                         };
                         // egui_extras' header row has no hover
-                        // (`egui_extras/src/table.rs:490-506`): each section is filled here,
-                        // pressed in the pressed fill, else the hovered one, and hovered in the
-                        // hovered fill, where stated
+                        // (`egui_extras/src/table.rs:490-506`): each section is filled here
+                        // (`header_section_fill`); it takes no focus, as iced's and gpui's do not
                         let response = ui.interact(
                             cell,
                             ui.scope_id().with(("table-head", i)),
-                            egui::Sense::click(),
+                            egui::Sense::CLICK,
                         );
-                        let fill = if response.is_pointer_button_down_on() {
-                            list_header_active_background(t).or(list_header_hover_background(t))
-                        } else if response.hovered() {
-                            list_header_hover_background(t)
-                        } else {
-                            None
-                        };
+                        let fill = header_section_fill(
+                            t,
+                            response.hovered(),
+                            response.is_pointer_button_down_on(),
+                        );
                         if let Some(fill) = fill {
                             painter.rect_filled(
                                 cell,
