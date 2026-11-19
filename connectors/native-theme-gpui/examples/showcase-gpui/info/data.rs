@@ -7,9 +7,9 @@ use native_theme_gpui::ResolvedTheme;
 use super::{
     ColorClaim, WidgetInfo,
     chrome::{GhostContent, ghost_colours, input_background},
-    claim, drawn_font, edge_claim, px_text, stated,
+    claim, drawn_font, edge_claim, px_text, stated, stated_claim,
 };
-use crate::demo::{BubbleKind, DataTableRow, ListRowState};
+use crate::demo::{BubbleKind, DataTableRow, ListRowState, inactive_selection_differs};
 use crate::support::SampleIcon;
 
 /// A `DescriptionList` of `items` items, `columns` wide, bordered as upstream
@@ -409,7 +409,33 @@ pub fn native_table_header(r: &ResolvedTheme, columns: &str) -> WidgetInfo {
             stated(l.header_font.color),
             "showcase",
         ));
-    grid_lines(info, r, "a line inside its bottom edge, under the header, and one down the first column's right edge")
+    let info = info
+        .colors(stated_claim(
+            "hovered section bg",
+            "header_hover_background",
+            l.header_hover_background,
+            "showcase",
+        ))
+        .colors(stated_claim(
+            "pressed section bg",
+            "header_active_background",
+            l.header_active_background,
+            "showcase",
+        ));
+    let info = if l.header_active_background.is_none() && l.header_hover_background.is_some() {
+        info.config(
+            "pressed section bg",
+            "the hovered section's fill, list.header_hover_background: the theme states no list.header_active_background",
+        )
+    } else {
+        info
+    };
+    let sections = if l.header_hover_background.is_some() || l.header_active_background.is_some() {
+        "each of the two is filled on its own while hovered (list.header_hover_background) and while pressed (list.header_active_background, else the hovered fill), rounded by the frame's inner radius where it meets the frame; gpui-component's own table header has no hover or pressed state (gpui-component/table/state.rs, render_th), so the showcase draws it"
+    } else {
+        "none hovered or pressed: the theme states neither list.header_hover_background nor list.header_active_background, so a section keeps the header's fill; gpui-component's own table header has no hover or pressed state either (gpui-component/table/state.rs, render_th)"
+    };
+    grid_lines(info.config("sections", sections), r, "a line inside its bottom edge, under the header, and one down the first column's right edge")
         .config("font", format!("list.header_font: {}", drawn_font(&l.header_font)))
         .instance("columns", columns.to_string())
 }
@@ -418,7 +444,9 @@ pub fn native_table_header(r: &ResolvedTheme, columns: &str) -> WidgetInfo {
 /// `list.*` states a list (`demo::files_table`), reading `cells`;
 /// `selected` is whether it is the selected row. The info does not follow
 /// the pointer: a row that is not selected names the fill and text it takes
-/// under the pointer beside the ones it rests in.
+/// under the pointer beside the ones it rests in. Nor does it follow the
+/// window's state: where the theme's unfocused selection has a fill of its
+/// own, the selected row's names that pair beside the list's.
 pub fn native_table_row(r: &ResolvedTheme, selected: bool, cells: &str) -> WidgetInfo {
     let l = &r.list;
     let info = WidgetInfo::new("Table row").variant(if selected {
@@ -427,22 +455,46 @@ pub fn native_table_row(r: &ResolvedTheme, selected: bool, cells: &str) -> Widge
         "drawn by the showcase"
     });
     let info = if selected {
-        info.color(claim(
-            "bg",
-            "selection_background",
-            stated(l.selection_background),
-            "showcase",
-        ))
-        .color(claim(
-            "text",
-            "selection_text_color",
-            stated(l.selection_text_color),
-            "showcase",
-        ))
-        .config(
-            "hover",
-            "none: the selected row keeps its fill and text under the pointer",
-        )
+        let info = info
+            .color(claim(
+                "bg",
+                "selection_background",
+                stated(l.selection_background),
+                "showcase",
+            ))
+            .color(claim(
+                "text",
+                "selection_text_color",
+                stated(l.selection_text_color),
+                "showcase",
+            ))
+            .config(
+                "hover",
+                "none: the selected row keeps its fill and text under the pointer",
+            );
+        if inactive_selection_differs(r) {
+            info.color(claim(
+                "bg, window not active",
+                "selection_inactive_background",
+                stated(r.defaults.selection_inactive_background),
+                "showcase",
+            ))
+            .color(claim(
+                "text, window not active",
+                "selection_inactive_text_color",
+                stated(r.defaults.selection_inactive_text_color),
+                "showcase",
+            ))
+            .config(
+                "window not active",
+                "the row takes defaults.selection_inactive_background and selection_inactive_text_color while its window is not active, since the theme gives the unfocused selection a fill of its own (demo::selection_pair); this info names both pairs whatever the window's state",
+            )
+        } else {
+            info.config(
+                "window not active",
+                "the same pair: the theme's defaults.selection_inactive_background is its selection_background, so the row does not change with the window's state (demo::selection_pair)",
+            )
+        }
     } else {
         info.color(claim(
             "bg, the frame's",
@@ -734,7 +786,17 @@ pub fn list_row(
     styled: bool,
     gutter: Option<gpui::Pixels>,
 ) -> WidgetInfo {
-    list_item(t, label, state, styled, gutter).instance("click", "selects the row")
+    let info = list_item(t, label, state, styled, gutter).instance("click", "selects the row");
+    if styled
+        && matches!(
+            state,
+            ListRowState::Selected | ListRowState::SelectedRightClicked
+        )
+    {
+        info.not_themeable("window not active", "the same list pair: a ListItem paints its selected fill, list_active, after the caller's style whatever the window's state (list/list_item.rs, ListItem::render), and a text colour without its fill is no pair, so defaults.selection_inactive_background and selection_inactive_text_color are not drawn here; the Basic table's selected row draws them where the theme gives that selection a fill of its own")
+    } else {
+        info
+    }
 }
 
 /// The Tree, with the box around it that is its frame. Its geometry line is

@@ -1497,6 +1497,26 @@ pub const HOW: &[(&str, &str, &str)] = &[
         "gpui: the selected row's text (demo::files_table)",
     ),
     (
+        "basic.table.",
+        "list.header_hover_background",
+        "gpui: demo::files_table's header cells, .hover(..) bg where stated: gpui-component's own table header has no hover style (gpui-component/table/state.rs:1932-1975, render_th)",
+    ),
+    (
+        "basic.table.",
+        "list.header_active_background",
+        "gpui: demo::files_table's header cells, .active(..) bg where stated, else the hovered fill: gpui-component's own table header has no press style (gpui-component/table/state.rs:1932-1975, render_th)",
+    ),
+    (
+        "basic.table.",
+        "defaults.selection_inactive_background",
+        "gpui: demo::files_table's selected row while the window is not active and the theme's inactive fill differs from its selection (selection_pair)",
+    ),
+    (
+        "basic.table.",
+        "defaults.selection_inactive_text_color",
+        "gpui: demo::files_table's selected row while the window is not active and the theme's inactive fill differs from its selection (selection_pair)",
+    ),
+    (
         "",
         "list.grid_color",
         "gpui: the header's bottom line and the column line (demo::files_table)",
@@ -1517,6 +1537,16 @@ pub const HOW: &[(&str, &str, &str)] = &[
         "gpui: the header row's text (demo::files_table)",
     ),
     // --- list: the List, demo::list and demo::ListRow ---------------------------
+    (
+        "basic.list.",
+        "defaults.selection_inactive_background",
+        "not reachable: a ListItem paints its selected fill list_active after the caller's style, whatever the window's state (gpui-component/list/list_item.rs:260-267, list_active), and a text colour without its fill is no pair",
+    ),
+    (
+        "basic.list.",
+        "defaults.selection_inactive_text_color",
+        "not reachable: a ListItem paints its selected fill list_active after the caller's style, whatever the window's state (gpui-component/list/list_item.rs:260-267, list_active), and a text colour without its fill is no pair",
+    ),
     (
         "basic.list.row_",
         "list.border.corner_radius_px",

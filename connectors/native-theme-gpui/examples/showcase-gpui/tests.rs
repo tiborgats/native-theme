@@ -11664,13 +11664,20 @@ fn the_native_number_field_reports_what_it_draws(cx: &mut TestAppContext) {
 /// light: the selected row `list.selection_background` and
 /// `selection_text_color`, the others `list.item_font`'s colour and the
 /// `list.hover_*` pair, no row a top edge, the two lines `list.grid_color`,
-/// the header `list.header_background` and `header_font`, the frame
+/// the header `list.header_background` and `header_font` and its sections'
+/// `header_hover_background` and `header_active_background`, the frame
 /// `list.border` round `list.background_color`. The fill painted on the
 /// selected row is its claim.
 #[gpui::test]
 fn the_basic_tables_infos_report_what_it_draws(cx: &mut TestAppContext) {
     use crate::info::stated;
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    // kde-breeze's inactive fill differs from its selection, so in an
+    // inactive window the selected row would paint
+    // defaults.selection_inactive_background, #c2e0f5, not the list's
+    // selection.
+    // The swap of docs/archive/todo_v0.7.2_kde-open-items-steps6-7-spec.md 7.H.2 follows the window's state; this test reads the active look
+    activate(&mut cx);
     use_light_preset(&mut cx, &showcase, "kde-breeze");
     show(&mut cx, &showcase, Page::Basic);
     let r = resolved_theme(&mut cx, &showcase);
@@ -11721,6 +11728,14 @@ fn the_basic_tables_infos_report_what_it_draws(cx: &mut TestAppContext) {
     for (leaf, want) in [
         ("header_background", Some(stated(l.header_background))),
         ("header_font", Some(stated(l.header_font.color))),
+        (
+            "header_hover_background",
+            l.header_hover_background.map(stated),
+        ),
+        (
+            "header_active_background",
+            l.header_active_background.map(stated),
+        ),
         ("grid_color", grid),
     ] {
         assert_eq!(
@@ -11752,6 +11767,133 @@ fn the_basic_tables_infos_report_what_it_draws(cx: &mut TestAppContext) {
         painted_fill(&mut cx, "basic-table-row-1"),
         claim_of(&selected, "selection_background"),
         "the fill painted on the selected row is not the fill its info claims"
+    );
+}
+
+/// The Basic table's selected row follows its window's state where the
+/// theme's unfocused selection has a fill of its own (decision 16), under
+/// kde-breeze light: in the active window it paints the list's selection,
+/// in the inactive one `defaults.selection_inactive_background`, and its
+/// info claims both pairs, the fill painted in each state among them. The
+/// List's selected row, a gpui-component `ListItem`, keeps `list_active`
+/// in both.
+#[gpui::test]
+fn the_basic_tables_selected_row_follows_the_windows_state(cx: &mut TestAppContext) {
+    use crate::info::stated;
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_light_preset(&mut cx, &showcase, "kde-breeze");
+    show(&mut cx, &showcase, Page::Basic);
+    let r = resolved_theme(&mut cx, &showcase);
+    assert!(
+        crate::demo::inactive_selection_differs(&r),
+        "kde-breeze's inactive selection fill is its selection's, so this test would see no swap"
+    );
+    let info = settle_on(&mut cx, &showcase, "basic-table-row-1");
+    assert!(info.is_some(), "the selected row shows no info");
+    let Some(info) = info else { return };
+    let claimed = [
+        "selection_background",
+        "selection_text_color",
+        "selection_inactive_background",
+        "selection_inactive_text_color",
+    ]
+    .map(|field| claim_of(&info, field));
+    assert_eq!(
+        claimed,
+        [
+            Some(stated(r.list.selection_background)),
+            Some(stated(r.list.selection_text_color)),
+            Some(stated(r.defaults.selection_inactive_background)),
+            Some(stated(r.defaults.selection_inactive_text_color)),
+        ],
+        "the selected row's info does not claim both pairs: {info:?}"
+    );
+    let list_active = cx.update(|_, cx| Theme::global(cx).list_active);
+    let mut seen = Vec::new();
+    for active in [true, false] {
+        if active {
+            // The swap of docs/archive/todo_v0.7.2_kde-open-items-steps6-7-spec.md 7.H.2 follows the window's state; this test reads the active look
+            activate(&mut cx);
+        } else {
+            // The swap of docs/archive/todo_v0.7.2_kde-open-items-steps6-7-spec.md 7.H.2 follows the window's state; this test reads the inactive look
+            cx.deactivate_window();
+            cx.run_until_parked();
+        }
+        hover(&mut cx, point(px(4.), px(4.)));
+        draw(&mut cx);
+        let is_active = cx.update(|window, _| window.is_window_active());
+        seen.push((
+            is_active,
+            painted_fill(&mut cx, "basic-table-row-1"),
+            painted_fill(&mut cx, "basic-list-row-1"),
+        ));
+    }
+    assert_eq!(
+        seen,
+        [
+            (true, claimed[0], Some(list_active)),
+            (false, claimed[2], Some(list_active)),
+        ],
+        "(window active, the table's selected row's fill, the List's selected row's fill) \
+         in the active and the inactive window"
+    );
+}
+
+/// On every bundled combination, `selection_pair` gives the list's own pair
+/// in an active window, and in an inactive one the unfocused selection's
+/// pair on exactly the combinations whose
+/// `defaults.selection_inactive_background` differs from
+/// `defaults.selection_background` -- kde-breeze's and the two macOS
+/// presets', in both modes (7.H.2) -- and the list's own pair on the others.
+#[test]
+fn the_selection_pair_swaps_only_where_the_inactive_fill_differs() {
+    use crate::demo::selection_pair;
+    use crate::info::stated;
+    let mut swapped = Vec::new();
+    let mut wrong = Vec::new();
+    for (name, r, _) in every_bundled_variant() {
+        let list = (
+            stated(r.list.selection_background),
+            stated(r.list.selection_text_color),
+        );
+        let inactive = (
+            stated(r.defaults.selection_inactive_background),
+            stated(r.defaults.selection_inactive_text_color),
+        );
+        if selection_pair(&r, true) != list {
+            wrong.push(format!(
+                "{name}: the active window's pair is not the list's"
+            ));
+        }
+        let differs = r.defaults.selection_inactive_background != r.defaults.selection_background;
+        let want = if differs { inactive } else { list };
+        if selection_pair(&r, false) != want {
+            wrong.push(format!(
+                "{name}: the inactive window's pair is not the {}",
+                if differs {
+                    "unfocused selection's"
+                } else {
+                    "list's"
+                }
+            ));
+        }
+        if differs {
+            swapped.push(name);
+        }
+    }
+    assert!(wrong.is_empty(), "{}", wrong.join("\n"));
+    swapped.sort();
+    assert_eq!(
+        swapped,
+        [
+            "kde-breeze dark",
+            "kde-breeze light",
+            "macos-monterey dark",
+            "macos-monterey light",
+            "macos-tahoe dark",
+            "macos-tahoe light",
+        ],
+        "the combinations whose inactive selection fill differs from the selection's"
     );
 }
 
@@ -14502,6 +14644,13 @@ fn hover(cx: &mut VisualTestContext, at: Point<Pixels>) {
     cx.run_until_parked();
 }
 
+/// Make the test's window the active one, which a test window opened by
+/// [`open`] is not, and let the status change, a spawned task, run.
+fn activate(cx: &mut VisualTestContext) {
+    cx.update(|window, _| window.activate_window());
+    cx.run_until_parked();
+}
+
 /// Let the current choice stay the choice for `INFO_SETTLE`.
 fn settle(cx: &mut VisualTestContext) {
     cx.executor().advance_clock(INFO_SETTLE);
@@ -15967,6 +16116,88 @@ fn the_row_fills_are_rounded_where_they_meet_the_frame(cx: &mut TestAppContext) 
         match radii {
             Some(radii) if radii.iter().zip(want).all(|(r, w)| (r - w).abs() < 1e-3) => {}
             other => wrong.push(format!("{selector}: corners {other:?}, not {want:?}")),
+        }
+    }
+    assert!(wrong.is_empty(), "{}", wrong.join("\n"));
+}
+
+/// Each of the Basic table's two header sections is filled on its own
+/// under the pointer with `list.header_hover_background`, and pressed with
+/// `list.header_active_background`, under kde-breeze light, which states
+/// both (7.H.1): the fill is the quad of the section's own bounds, rounded
+/// by the frame's inner radius where it meets the frame -- the first
+/// section's top-left corner, the last's top-right -- and square elsewhere,
+/// by the method of `the_row_fills_are_rounded_where_they_meet_the_frame`.
+#[gpui::test]
+fn the_tables_header_sections_take_the_hovered_and_pressed_fills(cx: &mut TestAppContext) {
+    use crate::info::stated;
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_light_preset(&mut cx, &showcase, "kde-breeze");
+    show(&mut cx, &showcase, Page::Basic);
+    without_motion(&mut cx);
+    let r = resolved_theme(&mut cx, &showcase);
+    let inner = f32::from(crate::demo::list_inner_radius(&r.list.border));
+    assert!(
+        inner > 0.0,
+        "kde-breeze's list frame is rounded inside its line"
+    );
+    let (hovered, pressed) = (
+        r.list.header_hover_background.map(stated),
+        r.list.header_active_background.map(stated),
+    );
+    assert!(
+        hovered.is_some() && pressed.is_some(),
+        "kde-breeze states the header's hovered and pressed fills, which this test reads"
+    );
+    let section_quad = |cx: &mut VisualTestContext, selector: &'static str| {
+        let bounds = bounds_of(cx, selector);
+        cx.update(|window, _| {
+            let s = window.scale_factor();
+            scene_quads(window)
+                .into_iter()
+                .filter(|q| !q.background.is_transparent())
+                .find(|q| {
+                    (q.bounds.origin.x.0 - f32::from(bounds.origin.x) * s).abs() <= 1.0
+                        && (q.bounds.origin.y.0 - f32::from(bounds.origin.y) * s).abs() <= 1.0
+                        && (q.bounds.size.width.0 - f32::from(bounds.size.width) * s).abs() <= 1.0
+                        && (q.bounds.size.height.0 - f32::from(bounds.size.height) * s).abs() <= 1.0
+                })
+                .map(|q| {
+                    let c = q.corner_radii;
+                    (
+                        [c.top_left, c.top_right, c.bottom_left, c.bottom_right].map(|r| r.0 / s),
+                        q.background.as_solid(),
+                    )
+                })
+        })
+    };
+    let mut wrong = Vec::new();
+    for (selector, want) in [
+        ("basic-table-header-0", [inner, 0.0, 0.0, 0.0]),
+        ("basic-table-header-1", [0.0, inner, 0.0, 0.0]),
+    ] {
+        let at = bounds_of(&mut cx, selector).center();
+        hover(&mut cx, at);
+        draw(&mut cx);
+        let hover_quad = section_quad(&mut cx, selector);
+        cx.simulate_mouse_down(at, MouseButton::Left, Modifiers::default());
+        cx.run_until_parked();
+        draw(&mut cx);
+        let press_quad = section_quad(&mut cx, selector);
+        cx.simulate_mouse_up(at, MouseButton::Left, Modifiers::default());
+        cx.run_until_parked();
+        for (state, quad, fill) in [
+            ("hovered", hover_quad, hovered),
+            ("pressed", press_quad, pressed),
+        ] {
+            match quad {
+                Some((radii, painted))
+                    if painted == fill
+                        && radii.iter().zip(want).all(|(r, w)| (r - w).abs() < 1e-3) => {}
+                other => wrong.push(format!(
+                    "{selector} {state}: (corners, fill) {other:?}, not ({want:?}, {fill:?})"
+                )),
+            }
         }
     }
     assert!(wrong.is_empty(), "{}", wrong.join("\n"));

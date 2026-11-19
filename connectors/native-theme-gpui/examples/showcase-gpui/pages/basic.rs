@@ -832,7 +832,10 @@ impl Showcase {
                     "basic-table",
                     TABLE_HEAD,
                     &TABLE_ROWS,
-                    TABLE_SELECTED,
+                    demo::TableSelection {
+                        row: TABLE_SELECTED,
+                        window_active: window.is_window_active(),
+                    },
                     wide,
                 )
                 .into_any_element(),

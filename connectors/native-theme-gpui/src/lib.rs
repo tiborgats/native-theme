@@ -110,7 +110,7 @@
 //!
 //! | Category | Mapped | Notes |
 //! |----------|--------|-------|
-//! | `defaults` colors | 14 of 24 | text_color, muted_color, accent_color, border.color, focus_ring_color, shadow_color (the dialog overlay's colour, at an alpha of its own), and the four status colours with their text colours; the window background comes from `window.background_color` |
+//! | `defaults` colors | 14 of 25 | text_color, muted_color, accent_color, border.color, focus_ring_color, shadow_color (the dialog overlay's colour, at an alpha of its own), and the four status colours with their text colours; the window background comes from `window.background_color` |
 //! | `defaults` geometry | radius, radius_lg, shadow, focus ring | fonts scaled by the text-scaling factor |
 //! | `button` | all 28 `button*` plus `primary*` / `secondary*` | solid native surfaces, the semantic colours each variant read in gpui-component 0.5.1, not upstream's tinted house style; flat buttons via [`variants::ghost_button`]; the hover border via [`variants::bordered_button`]; a dialog's default button via [`variants::default_button`] and [`geometry::default_button_rest`] |
 //! | `tab` | 5 of 10 colours | geometry is upstream work (`Tab`'s render writes its own height, radius and text size into the style bag the caller's setters fill, `tab/tab.rs:961-969`) |
@@ -122,7 +122,7 @@
 //! | `table` | head, from `list.header_background` / `list.header_font` | the model states no footer colour, so `table_foot*` are derived |
 //! | `slider`, `switch` | 2 colours each | fill/thumb colours; a checked switch's track, `switch.checked_background`, via [`variants::switch_color`] for `Switch::color`; geometry upstream |
 //! | `progress_bar` | fill + geometry | height, radius, min width via `geometry::progress` |
-//! | `list` | 7 of 14 + geometry | background, alternate row, selection, hover, grid, header background and header font colour; the background and the frame via `geometry::list`, the receiver of the fill (the `list` token has no reader in gpui-component 0.9.1); row height, padding, font via `geometry::list_item`; a selected row's text colour via `geometry::list_item_selected`; header height via `geometry::list_header_height` for `DataTable::header_row_height`; the part of a searchable list's row that matches the query, `list_highlight_foreground`, in the resting text colour, `defaults.text_color`, since the model states no colour for a match |
+//! | `list` | 7 of 16 + geometry | background, alternate row, selection, hover, grid, header background and header font colour; the background and the frame via `geometry::list`, the receiver of the fill (the `list` token has no reader in gpui-component 0.9.1); row height, padding, font via `geometry::list_item`; a selected row's text colour via `geometry::list_item_selected`; header height via `geometry::list_header_height` for `DataTable::header_row_height`; the part of a searchable list's row that matches the query, `list_highlight_foreground`, in the resting text colour, `defaults.text_color`, since the model states no colour for a match |
 //! | `menu` | 2 colours + geometry | hover_background, hover_text_color → `accent`, `accent_foreground` (upstream's item highlight); row height, padding, icon gap, font via `geometry::menu_item` on an application-drawn row |
 //! | `segmented_control` | 1 of 9 | background → `tab_bar_segmented`, the track of a segmented `TabBar` |
 //! | `popover` | 2 of 3 + geometry | background, font.color; padding, radius and edge (`border.color` at `border.line_width`) via `geometry::popover` |
@@ -950,6 +950,29 @@ pub fn selection_text_color(resolved: &ResolvedTheme) -> Rgba {
 #[must_use]
 pub fn selection_inactive_background(resolved: &ResolvedTheme) -> Rgba {
     resolved.defaults.selection_inactive_background
+}
+
+/// Text color over the selection of a view without the focus.
+#[must_use]
+pub fn selection_inactive_text_color(resolved: &ResolvedTheme) -> Rgba {
+    resolved.defaults.selection_inactive_text_color
+}
+
+/// Fill of a hovered column-header section, where the platform states one
+/// (`None`: it keeps `list.header_background`). gpui-component's table has no
+/// hover style for a header section (`table/state.rs`, `render_th`); for a
+/// header the application draws.
+#[must_use]
+pub fn list_header_hover_background(resolved: &ResolvedTheme) -> Option<Rgba> {
+    resolved.list.header_hover_background
+}
+
+/// Fill of a pressed column-header section, where the platform states one
+/// (`None`: the hovered fill, else `list.header_background`). As
+/// [`list_header_hover_background`].
+#[must_use]
+pub fn list_header_active_background(resolved: &ResolvedTheme) -> Option<Rgba> {
+    resolved.list.header_active_background
 }
 
 /// Foreground color for disabled elements.
@@ -2560,6 +2583,9 @@ mod tests {
         let resolved = test_resolved();
         let _ = selection_text_color(&resolved);
         let _ = selection_inactive_background(&resolved);
+        let _ = selection_inactive_text_color(&resolved);
+        let _ = list_header_hover_background(&resolved);
+        let _ = list_header_active_background(&resolved);
         let _ = disabled_text_color(&resolved);
     }
 

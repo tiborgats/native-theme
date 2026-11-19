@@ -1098,6 +1098,14 @@ const SELECTED_TEXT: &str = "`InputEditorStyle` has a selection fill and no \
      selected-text colour (`input/input.rs:562-569`), so a selected run is \
      drawn in the field's text colour";
 
+/// gpui-component's table draws its header sections with no state of their
+/// own: the fill of a hovered or pressed section has nowhere to go.
+#[cfg(feature = "widgets")]
+const HEADER_SECTION: &str = "a `DataTable`'s header section is `render_th`'s, \
+     with no hover or press style (`table/state.rs:1932-2023`); the delegate's \
+     `render_th` content lies inside the cell's padding (`:1553-1592`), not \
+     over the section";
+
 /// The colour leaves of `ResolvedTheme` that reach no sink in any of the 34
 /// bundled combinations and that `NO_RECEIVER` does not name, each with its
 /// reason.
@@ -1194,6 +1202,23 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
              `list_active` or `accent` whatever the window's state \
              (`list/list_item.rs:257-264`)",
         ),
+    },
+    UnreadColour {
+        leaf: "defaults.selection_inactive_text_color",
+        why: Unread::NoReceiver(
+            "a selected `ListItem` keeps the text it set before its fill \
+             whatever the window's state (`list/list_item.rs:207-267`), and no \
+             `ThemeColor` field is an inactive selection's text \
+             (`theme/theme_color.rs:61-347`)",
+        ),
+    },
+    UnreadColour {
+        leaf: "list.header_hover_background",
+        why: Unread::NoReceiver(HEADER_SECTION),
+    },
+    UnreadColour {
+        leaf: "list.header_active_background",
+        why: Unread::NoReceiver(HEADER_SECTION),
     },
     UnreadColour {
         leaf: "defaults.text_selection_color",

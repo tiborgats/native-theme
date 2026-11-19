@@ -9822,12 +9822,64 @@ pub(crate) fn sized_icon(
 struct TableLine<'a> {
     cells: [&'static str; 2],
     listed: [Option<&'static str>; 2],
+    /// The first part of each cell's element id, its column the second.
+    cell_id: &'static str,
     font: &'a ResolvedFontSpec,
     text: Hsla,
     fill: Option<Hsla>,
     closed: bool,
     /// The row's height where it is not a body row's.
     height: Option<Pixels>,
+    /// The header's sections' fills; `None` for a body row.
+    sections: Option<SectionFills>,
+}
+
+/// The fills a header section of [`files_table`] takes on its own, each
+/// where the theme states one: under the pointer `list.header_hover_background`;
+/// pressed `list.header_active_background`, else the hovered fill.
+#[derive(Clone, Copy)]
+struct SectionFills {
+    hover: Option<Hsla>,
+    active: Option<Hsla>,
+}
+
+/// Which row of [`files_table`] is selected, and whether its window is
+/// active, which decides the selected row's pair (`selection_pair`).
+#[derive(Clone, Copy)]
+pub(crate) struct TableSelection {
+    pub row: usize,
+    pub window_active: bool,
+}
+
+/// Whether `r` gives the selection of a view without the focus a fill of its
+/// own: `defaults.selection_inactive_background` other than
+/// `defaults.selection_background`. Only then does a selected row change
+/// with the window's state (`selection_pair`).
+pub(crate) fn inactive_selection_differs(r: &native_theme_gpui::ResolvedTheme) -> bool {
+    r.defaults.selection_inactive_background != r.defaults.selection_background
+}
+
+/// The fill and text colour of a selected row of [`files_table`] under `r`:
+/// while the window is not active and the theme's inactive fill differs
+/// from its selection's ([`inactive_selection_differs`]),
+/// `defaults.selection_inactive_background` lettered
+/// `defaults.selection_inactive_text_color`; otherwise the list's own pair,
+/// `list.selection_background` and `list.selection_text_color`.
+pub(crate) fn selection_pair(
+    r: &native_theme_gpui::ResolvedTheme,
+    window_active: bool,
+) -> (Hsla, Hsla) {
+    if !window_active && inactive_selection_differs(r) {
+        (
+            info::stated(r.defaults.selection_inactive_background),
+            info::stated(r.defaults.selection_inactive_text_color),
+        )
+    } else {
+        (
+            info::stated(r.list.selection_background),
+            info::stated(r.list.selection_text_color),
+        )
+    }
 }
 
 /// The inner radius of `geometry::list`'s frame, whose list border is
@@ -9850,8 +9902,12 @@ pub(crate) fn list_inner_radius(border: &native_theme::theme::ResolvedWidgetBord
 /// and that padding, the header `list.header_height` tall where the theme
 /// states it (`geometry::list_header_height`), else as a row is; the header
 /// in `list.header_background` and
-/// `list.header_font`, the rows in `list.item_font`, the row at `selected`
-/// in `list.selection_background` and `selection_text_color`; a
+/// `list.header_font`, each of its two sections filled on its own under the
+/// pointer and pressed where the theme states those fills (`SectionFills`),
+/// which gpui-component's own table header has no style for
+/// (table/state.rs, `render_th`); the rows in `list.item_font`, the row at
+/// `selected` in `selection_pair`'s fill and text colour, which follow the
+/// window's state; a
 /// `list.grid_color` line `separator.line_width`
 /// wide inside the header's bottom edge and one down the first column's
 /// right edge through every row, each a `widgets::Separator` recoloured, so
@@ -9864,7 +9920,7 @@ pub(crate) fn files_table(
     id: &'static str,
     head: [(&'static str, &'static str); 2],
     rows: &[[&'static str; 2]],
-    selected: usize,
+    selected: TableSelection,
     width: Pixels,
 ) -> Stateful<Div> {
     let Some(n) = cx.native() else {
@@ -9883,11 +9939,22 @@ pub(crate) fn files_table(
             px,
         )
     };
+    // A fill where a row meets the frame is rounded by the frame's inner
+    // radius (`list_inner_radius`) on the corners it meets: the header's top
+    // ones and the last row's bottom ones, as the egui and iced Basic tables
+    // round theirs. GPUI Fast clips the frame's children to its curved
+    // padding edge (gpui-fast 0.1.15 src/fast/rounded_clip.rs:68-104), so a
+    // square fill would be cut at the curve; gpui-pre clips them to its
+    // rectangle (gpui-pre 0.3.12 src/window.rs:2453-2461, ContentMask), so a
+    // square fill would show past the curve there.
+    let inner = list_inner_radius(&l.border);
     let row =
         |spec: TableLine<'_>| {
+            let (cell_id, sections) = (spec.cell_id, spec.sections);
             let cells = spec.cells.into_iter().zip(spec.listed).enumerate().map(
                 |(ix, (content, listed))| {
                     div()
+                        .id((cell_id, ix))
                         .relative()
                         .w(relative(0.5))
                         .h_full()
@@ -9909,6 +9976,20 @@ pub(crate) fn files_table(
                             )
                         })
                         .children(listed.map(|listed| elements::record(ui, listed)))
+                        // A header section is filled on its own, as Breeze
+                        // fills one; where it meets the frame its fill is
+                        // rounded as the header's is.
+                        .when_some(sections, |cell, fills| {
+                            cell.when(ix == 0, |cell| cell.rounded_tl(inner))
+                                .when(ix == 1, |cell| cell.rounded_tr(inner))
+                                .when_some(fills.hover, |cell, fill| {
+                                    cell.hover(move |s| s.bg(fill))
+                                })
+                                .when_some(fills.active, |cell, fill| {
+                                    cell.active(move |s| s.bg(fill))
+                                })
+                                .debug_selector(move || format!("{id}-header-{ix}"))
+                        })
                 },
             );
             h_flex()
@@ -9931,15 +10012,6 @@ pub(crate) fn files_table(
                     )
                 })
         };
-    // A fill where a row meets the frame is rounded by the frame's inner
-    // radius (`list_inner_radius`) on the corners it meets: the header's top
-    // ones and the last row's bottom ones, as the egui and iced Basic tables
-    // round theirs. GPUI Fast clips the frame's children to its curved
-    // padding edge (gpui-fast 0.1.15 src/fast/rounded_clip.rs:68-104), so a
-    // square fill would be cut at the curve; gpui-pre clips them to its
-    // rectangle (gpui-pre 0.3.12 src/window.rs:2453-2461, ContentMask), so a
-    // square fill would show past the curve there.
-    let inner = list_inner_radius(&l.border);
     let [first, second] = head;
     let header_height = geometry::list_header_height(n);
     let header_info = info::data::native_table_header(r, &format!("{}, {}", first.0, second.0));
@@ -9948,14 +10020,20 @@ pub(crate) fn files_table(
     } else {
         header_info
     };
+    let section_hover = l.header_hover_background.map(colour);
     let header = row(TableLine {
         cells: [first.0, second.0],
         listed: [Some(first.1), Some(second.1)],
+        cell_id: "table-head",
         font: &l.header_font,
         text: colour(l.header_font.color),
         fill: Some(colour(l.header_background)),
         closed: true,
         height: header_height,
+        sections: Some(SectionFills {
+            hover: section_hover,
+            active: l.header_active_background.map(colour).or(section_hover),
+        }),
     })
     .rounded_tl(inner)
     .rounded_tr(inner)
@@ -9964,11 +10042,10 @@ pub(crate) fn files_table(
     .w_full();
     let last = rows.len().checked_sub(1);
     let body = rows.iter().enumerate().map(|(ix, cells)| {
-        let (fill, text) = if ix == selected {
-            (
-                Some(colour(l.selection_background)),
-                colour(l.selection_text_color),
-            )
+        let is_selected = ix == selected.row;
+        let (fill, text) = if is_selected {
+            let (fill, text) = selection_pair(r, selected.window_active);
+            (Some(fill), text)
         } else {
             (None, colour(l.item_font.color))
         };
@@ -9978,23 +10055,25 @@ pub(crate) fn files_table(
         row(TableLine {
             cells: *cells,
             listed: [None, None],
+            cell_id: "table-cell",
             font: &l.item_font,
             text,
             fill,
             closed: false,
             height: None,
+            sections: None,
         })
         .id(("table-row", ix))
         .when(Some(ix) == last, |row| {
             row.rounded_bl(inner).rounded_br(inner)
         })
-        .when(ix != selected, |row| {
+        .when(!is_selected, |row| {
             row.hover(move |s| s.bg(hover).text_color(hover_text))
         })
         .info(
             ui,
             SharedString::from(format!("{id}-row-{ix}")),
-            info::data::native_table_row(r, ix == selected, &cells.join(", ")),
+            info::data::native_table_row(r, is_selected, &cells.join(", ")),
         )
         .debug_selector(move || format!("{id}-row-{ix}"))
         .w_full()
