@@ -1871,10 +1871,19 @@ else
     # (2026-10-17 to 2026-11-14). zbus stays at 5 for the reasons in
     # docs/todo.md ("Dependencies: zbus 6 ..."); the line printed below keeps
     # the exclusion visible. Remove both with the move to zbus 6.
-    OUTDATED_OUT=$(cargo outdated --workspace --depth 1 --exclude zbus 2>&1)
+    #
+    # --exclude gpui (native-theme-gpui's name for gpui-pre): gpui-kit,
+    # gpui-base and gpui-component 0.10.0 each require gpui-pre `=0.3.12`
+    # (their Cargo.toml), so raising the connector's requirement to a newer
+    # gpui-pre, as cargo outdated does, has no resolution, and the run failed
+    # and listed nothing (gpui-pre 0.3.13, 2026-11-19). gpui-pre moves with
+    # GPUI Kit, whose own row is compared; remove both with a GPUI Kit that
+    # takes a newer gpui-pre.
+    OUTDATED_OUT=$(cargo outdated --workspace --depth 1 --exclude zbus,gpui 2>&1)
     OUTDATED_STATUS=$?
     set -e
     printf "${DIM}   zbus is not compared: it stays at 5, see docs/todo.md (Dependencies: zbus 6)${NC}\n"
+    printf "${DIM}   gpui-pre is not compared: GPUI Kit 0.10.0 requires it at =0.3.12${NC}\n"
     # A row is outdated when Latest ($4) is a version other than Project ($2).
     # Compat ($3) is `---` when every newer release is semver-incompatible, as
     # each 0.x minor bump is, so it is not the column to read. `--workspace`
