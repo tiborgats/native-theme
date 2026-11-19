@@ -17,6 +17,9 @@
 //! | [`animated_frames_to_image_sources`] | Convert animation frames → [`AnimatedImageSources`] |
 //! | [`animated_frames_to_image_sources_for`] | Convert an icon set's animation frames → [`AnimatedImageSources`], coloured as the set is |
 //! | [`with_spin_animation`] | Wrap an SVG element with spin animation |
+//! | [`load_gpui_icon`] | Look up gpui-component's [`IconName`] in an icon set by the connector's tables, as the widgets' own icons are served |
+//! | [`mask_drawable`] | Whether gpui's one-colour mask carries an icon |
+//! | `WidgetIcons` | Serve gpui-component's widgets the theme's icons (feature `svg-rasterize`) |
 //!
 //! # Role icons
 //!
@@ -28,8 +31,8 @@
 //! colour for), so a full-colour one keeps its own palette; [`to_image_source`]
 //! then converts it, given no colour of its own. An icon the set does not
 //! have is `None`; nothing is substituted. [`icon_name`] is another thing: the
-//! [`IconName`] of gpui-component's bundled Lucide glyph, whatever the
-//! theme's set.
+//! [`IconName`] of gpui-component's bundled Lucide glyph, drawn in the
+//! theme's set instead where an installed `WidgetIcons` handle serves it.
 //!
 //! ```no_run
 //! use gpui_kit::{Styled, img, px};
@@ -71,6 +74,20 @@
 //! `ImageSource::Image` holding the (colorized) SVG bytes, which gpui decodes
 //! itself: it paints nothing the first time it comes up, and gpui chooses the
 //! raster size. RGBA icons are decoded images either way.
+//!
+//! # The icons gpui-component's widgets draw
+//!
+//! gpui-component's widgets draw their own icons, the check box's mark, a
+//! select's caret, the window controls and the rest, by the asset paths of
+//! its [`IconName`], in its bundled Lucide glyphs. A `WidgetIcons` handle
+//! (feature `svg-rasterize`), installed with the application's asset source
+//! wrapped in it, serves them from the theme's icon set instead, following the
+//! theme's icons and its colour mode, or the icons the application fixes. A
+//! set that lacks one of the essential icons, a set that gives nothing, and SF
+//! Symbols and Segoe Fluent are not served, so the widgets keep
+//! gpui-component's glyphs, and an icon a served set lacks is drawn empty. The
+//! handle's documentation and the README's *The widgets' own icons* say how
+//! to install it and what its report tells.
 
 use gpui::{
     Animation, AnimationExt, Hsla, ImageSource, RenderImage, Svg, Transformation, percentage,
@@ -85,6 +102,16 @@ use std::borrow::Cow;
 use std::num::NonZeroU32;
 use std::sync::Arc;
 use std::time::Duration;
+
+#[cfg(feature = "svg-rasterize")]
+mod widget;
+#[cfg(feature = "svg-rasterize")]
+pub(crate) use widget::tell_installed;
+#[cfg(feature = "svg-rasterize")]
+pub use widget::{
+    ESSENTIAL_ICONS, IconAnswer, LoadedSet, ModeIcons, ThemeIcons, WidgetIconAssets, WidgetIcons,
+    WidgetIconsReport,
+};
 
 /// Converted animation frames with timing metadata.
 ///

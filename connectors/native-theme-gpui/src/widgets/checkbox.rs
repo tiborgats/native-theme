@@ -35,7 +35,7 @@ pub struct CheckboxLook {
     pub indicator: Pixels,
     /// `checkbox.radio_dot_diameter`: the dot a selected radio draws, or
     /// `None` where the theme states none or a length that is not finite --
-    /// the radio then draws gpui-component's own mark.
+    /// the radio then draws the check box's mark (`mark_stroke`).
     pub dot: Option<Pixels>,
     /// `checkbox.border.corner_radius` (a radio is round instead).
     pub radius: Pixels,
@@ -601,7 +601,9 @@ fn indicator_and_label(
 /// (`gpui_component::set_icon_resolver`), as gpui-component's own check box
 /// draws it. An [`indeterminate`](Checkbox::indeterminate) one draws
 /// gpui-component's `IconName::Minus` the same way, in the box as when
-/// checked.
+/// checked. With an installed `icons::WidgetIcons` (feature
+/// `svg-rasterize`), that resolver answers both from the theme's icon set
+/// where the handle serves it.
 pub struct Checkbox {
     parts: Parts,
 }

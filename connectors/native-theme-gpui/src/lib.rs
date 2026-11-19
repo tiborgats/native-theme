@@ -13,7 +13,8 @@
 //!   [`cx.native()`](ActiveNativeTheme::native);
 //! - **scrollbars and resize handles**, which gpui-base draws: [`base_layer`],
 //!   which [`apply`] installs and keeps installed;
-//! - **icons** in the theme's icon set: [`icons`];
+//! - **icons** in the theme's icon set, gpui-component's widgets' too:
+//!   [`icons`];
 //! - **theme-drawn controls** for the parts gpui-component draws from literals
 //!   of its own: the `widgets` module (feature `widgets`, on by default).
 //!
@@ -49,7 +50,9 @@
 //! [`apply_system_theme`] runs; [`from_preset()`], [`from_system()`] and
 //! [`to_theme()`] only build a theme. Once one is installed,
 //! [`cx.native()`](ActiveNativeTheme::native) is the input of the [`geometry`]
-//! builders.
+//! builders. To have gpui-component's widgets draw their own icons in the
+//! theme's set, an application installs an `icons::WidgetIcons` handle
+//! (feature `svg-rasterize`; see the README's *The widgets' own icons*).
 //!
 //! # Manual Path
 //!
@@ -278,9 +281,14 @@ pub use native_theme::{AccessibilityPreferences, Result, SystemTheme};
 pub use native_theme::detect::LinuxDesktop;
 
 /// The README's code blocks, compiled as doctests so they cannot drift from the API; the
-/// runtime-theme-change block needs feature `watch`, and the theme-drawn widgets block
-/// `widgets`.
-#[cfg(all(doctest, feature = "watch", feature = "widgets"))]
+/// runtime-theme-change block needs `watch`, the theme-drawn widgets block `widgets`, and
+/// the widget icons' blocks `svg-rasterize`.
+#[cfg(all(
+    doctest,
+    feature = "watch",
+    feature = "widgets",
+    feature = "svg-rasterize"
+))]
 #[doc = include_str!("../README.md")]
 pub struct ReadmeDoctests;
 
@@ -1197,6 +1205,10 @@ pub fn apply(
 /// colours in either mode, with what a config cannot carry or gpui-component
 /// caps restored by [`apply`]'s observer (step 8).
 ///
+/// Where the application installed a `icons::WidgetIcons` handle (feature
+/// `svg-rasterize`), it tells the handle the theme's icon set and the icon
+/// theme of each mode, so gpui-component's widgets draw the theme's icons.
+///
 /// It installs the mode the OS reports ([`SystemTheme::mode`]), so it needs no
 /// `Theme::sync_system_appearance` after it. Calling that right after it can show
 /// a dark desktop's application light for its first frames: on Linux GPUI
@@ -1213,6 +1225,8 @@ pub fn apply_system_theme(sys: &SystemTheme, cx: &mut App) {
         &sys.accessibility,
         cx,
     );
+    #[cfg(feature = "svg-rasterize")]
+    icons::tell_installed(sys, cx);
 }
 
 /// Apply a runtime change of the accessibility preferences (a portal signal,
@@ -2975,6 +2989,30 @@ mod apply_tests {
             assert!(GpuiTheme::global(cx).is_dark());
             assert_three(cx, native_dark, "after the switch back to dark");
             assert_eq!(count.get(), 2, "deliveries of the switch to dark");
+        });
+    }
+
+    #[cfg(all(feature = "svg-rasterize", feature = "lucide-icons"))]
+    #[gpui::test]
+    fn apply_system_theme_tells_the_installed_handle(cx: &mut TestAppContext) {
+        let Ok(mut sys) = super::tests::system_theme() else {
+            return;
+        };
+        sys.icon_set = IconSet::Lucide;
+        cx.update(|cx| {
+            gpui_kit::init(cx);
+            let handle = icons::WidgetIcons::new();
+            let _assets = handle.assets(());
+            handle.install(cx);
+            apply_system_theme(&sys, cx);
+            let report = handle.report();
+            assert!(
+                matches!(
+                    &report,
+                    icons::WidgetIconsReport::Loaded(set) if set.set == IconSet::Lucide && !set.fixed
+                ),
+                "Lucide is loaded, the theme's: {report:?}"
+            );
         });
     }
 
