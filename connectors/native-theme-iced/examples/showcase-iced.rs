@@ -9349,6 +9349,16 @@ fn number_steps_line(resolved: &ResolvedTheme) -> String {
     )
 }
 
+/// Whether the theme outlines the slider's handle at rest: a stated
+/// `slider.thumb_border_color` and a finite `.thumb_border_line_width` above
+/// 0, as `styles::slider` draws it.
+fn slider_rest_outline(r: &ResolvedTheme) -> bool {
+    r.slider.thumb_border_color.is_some()
+        && r.slider
+            .thumb_border_line_width
+            .is_some_and(|w| w.is_finite() && w > 0.0)
+}
+
 /// What iced draws for `element` as `state` shows it that the theme states
 /// nothing for: the "Not themeable" lines of its Widget Info.
 fn iced_not_themeable(state: &State, element: &ShowcaseElement) -> Vec<Cow<'static, str>> {
@@ -9364,9 +9374,13 @@ fn iced_not_themeable(state: &State, element: &ShowcaseElement) -> Vec<Cow<'stat
             vec!["sweep and speed of the arc: egui's Spinner's, 240° a turn a second".into()]
         }
         "Expander" => vec!["arrow shape: a filled triangle on a canvas".into()],
-        // The model has no thumb outline or shadow (docs/todo.md, *Slider:
-        // the thumb's outline or shadow*), and iced's handle has no border
-        // (`styles::slider`).
+        // The model has no thumb shadow (docs/todo.md, *Slider: the thumb's
+        // outline or shadow*); its outline at rest is stated by some themes
+        // only (`slider.thumb_border_color`, `.thumb_border_line_width`), and
+        // where it is not, iced's handle has no border (`styles::slider`).
+        "Slider" if slider_rest_outline(&state.current_resolved) => {
+            vec!["thumb shadow: none, the model states no shadow".into()]
+        }
         "Slider" => vec![
             "thumb outline and shadow: none, iced's handle unbordered, so a thumb in \
              the ground's colour does not show"
@@ -27743,19 +27757,33 @@ mod tests {
     /// or shadow (`docs/property-registry.toml` `[slider]`) and iced's handle
     /// draws no border (`styles::slider`), so under macos-tahoe light, whose
     /// thumb is `defaults.surface_color` `#ffffff` on a `#ffffff` window, the
-    /// thumb does not show; the info says so, as "Not themeable".
+    /// thumb does not show; the info says so, as "Not themeable". Under
+    /// kde-breeze light, which outlines the thumb at rest (E8,
+    /// `slider.thumb_border_color`), it names the shadow alone.
     #[test]
     fn the_sliders_info_names_the_thumbs_unstated_outline() {
-        let state = loaded("macos-tahoe", false);
         let Some(slider) = elements::element("basic.slider.control") else {
             panic!("basic.slider.control is not in the list");
         };
+        let state = loaded("macos-tahoe", false);
+        assert!(!slider_rest_outline(&state.current_resolved));
         let lines = iced_not_themeable(&state, slider);
         assert!(
             lines
                 .iter()
                 .any(|l| l.starts_with("thumb outline and shadow")),
-            "{lines:?}"
+            "macos-tahoe: {lines:?}"
+        );
+        let state = loaded("kde-breeze", false);
+        assert!(
+            slider_rest_outline(&state.current_resolved),
+            "kde-breeze light states the thumb's outline at rest"
+        );
+        let lines = iced_not_themeable(&state, slider);
+        assert!(
+            lines.iter().any(|l| l.starts_with("thumb shadow: none"))
+                && !lines.iter().any(|l| l.contains("outline")),
+            "kde-breeze: {lines:?}"
         );
     }
 
