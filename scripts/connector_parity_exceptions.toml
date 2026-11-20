@@ -622,6 +622,12 @@ reason = "egui's popups and menus lay out in a `Ui` of their own, outside the ro
 
 [[exception]]
 connector = ["iced", "gpui"]
+name = "menu_bar_modifier"
+kind = "absent"
+reason = "egui's `MenuBar::style` takes a `StyleModifier`, and this one is the installed atlas's menu-bar title style (issue #4's leftovers, E3: the titles' fills, text and padding; connectors/native-theme-egui/src/ext.rs, its doc). iced styles its bar per widget (`styles::aw::menu`), and gpui-component's `AppMenuBar` has no receiver for it (E14)"
+
+[[exception]]
+connector = ["iced", "gpui"]
 name = "default_button"
 kind = "absent"
 reason = "egui has no default button and its `Button` takes a fill and a stroke per call, which this returns (connectors/native-theme-egui/src/accessors.rs, `default_button`'s doc); iced's is the style function `styles::button_default`, gpui's the custom variant `variants::default_button` for a button the application builds (connectors/native-theme-gpui/src/variants.rs), both in modules the script lists without comparing"

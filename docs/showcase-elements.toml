@@ -167,7 +167,7 @@ states = ["Normal"]
 id = "chrome.menu_bar"
 name = "Menu bar"
 parent = "chrome.window"
-leaves = ["window.background_color", "layout.container_margin_px"]
+leaves = ["toolbar.background_color", "layout.container_margin_px"]
 states = ["Normal"]
 sample = { fill = [1.0, 0.5, -2.5, 0.0] }
 
@@ -175,7 +175,7 @@ sample = { fill = [1.0, 0.5, -2.5, 0.0] }
 id = "chrome.menu_bar.file"
 name = "Menu title"
 parent = "chrome.menu_bar"
-leaves = ["menu.font", "menu.font.color", "menu.hover_background", "menu.hover_text_color", "menu.border.padding_top_px", "menu.border.padding_right_px", "menu.border.padding_bottom_px", "menu.border.padding_left_px", "defaults.line_height"]
+leaves = ["menu.font", "menu.font.color", "menu.hover_background", "menu.hover_text_color", "menu.bar_hover_background", "menu.bar_open_background", "menu.bar_hover_text_color", "menu.bar_padding_horizontal_px", "menu.bar_padding_vertical_px", "menu.border.corner_radius_px", "menu.border.padding_top_px", "menu.border.padding_right_px", "menu.border.padding_bottom_px", "menu.border.padding_left_px", "defaults.line_height"]
 states = ["Normal"]
 sample = { text = "glyph" }
 
@@ -183,7 +183,7 @@ sample = { text = "glyph" }
 id = "chrome.menu_bar.view"
 name = "Menu title"
 parent = "chrome.menu_bar.file"
-leaves = ["menu.font", "menu.font.color", "menu.hover_background", "menu.hover_text_color", "menu.border.padding_top_px", "menu.border.padding_right_px", "menu.border.padding_bottom_px", "menu.border.padding_left_px", "defaults.line_height"]
+leaves = ["menu.font", "menu.font.color", "menu.hover_background", "menu.hover_text_color", "menu.bar_hover_background", "menu.bar_open_background", "menu.bar_hover_text_color", "menu.bar_padding_horizontal_px", "menu.bar_padding_vertical_px", "menu.border.corner_radius_px", "menu.border.padding_top_px", "menu.border.padding_right_px", "menu.border.padding_bottom_px", "menu.border.padding_left_px", "defaults.line_height"]
 states = ["Normal"]
 sample = { text = "glyph" }
 
@@ -191,7 +191,7 @@ sample = { text = "glyph" }
 id = "chrome.menu_bar.theme"
 name = "Menu title"
 parent = "chrome.menu_bar.view"
-leaves = ["menu.font", "menu.font.color", "menu.hover_background", "menu.hover_text_color", "menu.border.padding_top_px", "menu.border.padding_right_px", "menu.border.padding_bottom_px", "menu.border.padding_left_px", "defaults.line_height"]
+leaves = ["menu.font", "menu.font.color", "menu.hover_background", "menu.hover_text_color", "menu.bar_hover_background", "menu.bar_open_background", "menu.bar_hover_text_color", "menu.bar_padding_horizontal_px", "menu.bar_padding_vertical_px", "menu.border.corner_radius_px", "menu.border.padding_top_px", "menu.border.padding_right_px", "menu.border.padding_bottom_px", "menu.border.padding_left_px", "defaults.line_height"]
 states = ["Normal"]
 sample = { text = "glyph" }
 
@@ -199,7 +199,7 @@ sample = { text = "glyph" }
 id = "chrome.menu_bar.help"
 name = "Menu title"
 parent = "chrome.menu_bar.theme"
-leaves = ["menu.font", "menu.font.color", "menu.hover_background", "menu.hover_text_color", "menu.border.padding_top_px", "menu.border.padding_right_px", "menu.border.padding_bottom_px", "menu.border.padding_left_px", "defaults.line_height"]
+leaves = ["menu.font", "menu.font.color", "menu.hover_background", "menu.hover_text_color", "menu.bar_hover_background", "menu.bar_open_background", "menu.bar_hover_text_color", "menu.bar_padding_horizontal_px", "menu.bar_padding_vertical_px", "menu.border.corner_radius_px", "menu.border.padding_top_px", "menu.border.padding_right_px", "menu.border.padding_bottom_px", "menu.border.padding_left_px", "defaults.line_height"]
 states = ["Normal"]
 sample = { text = "glyph" }
 
@@ -220,7 +220,7 @@ sample = { border = [0.0, 0.5, 0.5, 0.0] }
 id = "chrome.menu.theme.reload"
 name = "Menu item"
 parent = "chrome.menu.theme"
-leaves = ["menu.font", "menu.font.color", "menu.row_height_px", "menu.hover_background", "menu.hover_text_color", "menu.border.padding_top_px", "menu.border.padding_right_px", "menu.border.padding_bottom_px", "menu.border.padding_left_px", "defaults.line_height"]
+leaves = ["menu.font", "menu.font.color", "menu.row_height_px", "menu.hover_background", "menu.hover_text_color", "menu.hover_border_color", "menu.border.corner_radius_px", "menu.border.padding_top_px", "menu.border.padding_right_px", "menu.border.padding_bottom_px", "menu.border.padding_left_px", "defaults.line_height", "defaults.border.line_width_px"]
 states = ["Normal"]
 when = "the Theme menu is open (--open-menu theme)"
 sample = { fill = [0.95, 0.5], text = { glyph = [0.0, 0.0, 0.8, 1.0] } }
@@ -238,7 +238,7 @@ sample = { line = [0.5, 0.5] }
 id = "chrome.menu.theme.system"
 name = "Menu item"
 parent = "chrome.menu.theme.separator_1"
-leaves = ["menu.font", "menu.font.color", "menu.row_height_px", "menu.hover_background", "menu.hover_text_color", "menu.border.padding_top_px", "menu.border.padding_right_px", "menu.border.padding_bottom_px", "menu.border.padding_left_px", "defaults.line_height"]
+leaves = ["menu.font", "menu.font.color", "menu.row_height_px", "menu.hover_background", "menu.hover_text_color", "menu.hover_border_color", "menu.border.corner_radius_px", "menu.border.padding_top_px", "menu.border.padding_right_px", "menu.border.padding_bottom_px", "menu.border.padding_left_px", "defaults.line_height", "defaults.border.line_width_px"]
 states = ["Normal"]
 when = "the Theme menu is open (--open-menu theme)"
 sample = { fill = [0.95, 0.5], text = { glyph = [0.0, 0.0, 0.8, 1.0] } }
@@ -247,7 +247,7 @@ sample = { fill = [0.95, 0.5], text = { glyph = [0.0, 0.0, 0.8, 1.0] } }
 id = "chrome.menu.theme.light"
 name = "Menu item"
 parent = "chrome.menu.theme.system"
-leaves = ["menu.font", "menu.font.color", "menu.row_height_px", "menu.hover_background", "menu.hover_text_color", "menu.border.padding_top_px", "menu.border.padding_right_px", "menu.border.padding_bottom_px", "menu.border.padding_left_px", "defaults.line_height"]
+leaves = ["menu.font", "menu.font.color", "menu.row_height_px", "menu.hover_background", "menu.hover_text_color", "menu.hover_border_color", "menu.border.corner_radius_px", "menu.border.padding_top_px", "menu.border.padding_right_px", "menu.border.padding_bottom_px", "menu.border.padding_left_px", "defaults.line_height", "defaults.border.line_width_px"]
 states = ["Normal"]
 when = "the Theme menu is open (--open-menu theme)"
 sample = { fill = [0.95, 0.5], text = { glyph = [0.0, 0.0, 0.8, 1.0] } }
@@ -256,7 +256,7 @@ sample = { fill = [0.95, 0.5], text = { glyph = [0.0, 0.0, 0.8, 1.0] } }
 id = "chrome.menu.theme.dark"
 name = "Menu item"
 parent = "chrome.menu.theme.light"
-leaves = ["menu.font", "menu.font.color", "menu.row_height_px", "menu.hover_background", "menu.hover_text_color", "menu.border.padding_top_px", "menu.border.padding_right_px", "menu.border.padding_bottom_px", "menu.border.padding_left_px", "defaults.line_height"]
+leaves = ["menu.font", "menu.font.color", "menu.row_height_px", "menu.hover_background", "menu.hover_text_color", "menu.hover_border_color", "menu.border.corner_radius_px", "menu.border.padding_top_px", "menu.border.padding_right_px", "menu.border.padding_bottom_px", "menu.border.padding_left_px", "defaults.line_height", "defaults.border.line_width_px"]
 states = ["Normal"]
 when = "the Theme menu is open (--open-menu theme)"
 sample = { fill = [0.95, 0.5], text = { glyph = [0.0, 0.0, 0.8, 1.0] } }
@@ -274,7 +274,7 @@ sample = { line = [0.5, 0.5] }
 id = "chrome.menu.theme.preferences"
 name = "Menu item"
 parent = "chrome.menu.theme.separator_2"
-leaves = ["menu.font", "menu.font.color", "menu.row_height_px", "menu.hover_background", "menu.hover_text_color", "menu.border.padding_top_px", "menu.border.padding_right_px", "menu.border.padding_bottom_px", "menu.border.padding_left_px", "defaults.line_height"]
+leaves = ["menu.font", "menu.font.color", "menu.row_height_px", "menu.hover_background", "menu.hover_text_color", "menu.hover_border_color", "menu.border.corner_radius_px", "menu.border.padding_top_px", "menu.border.padding_right_px", "menu.border.padding_bottom_px", "menu.border.padding_left_px", "defaults.line_height", "defaults.border.line_width_px"]
 states = ["Normal"]
 when = "the Theme menu is open (--open-menu theme)"
 sample = { text = { glyph = [0.0, 0.0, 0.5, 1.0] } }
@@ -1728,7 +1728,7 @@ sample = { text = "glyph" }
 id = "basic.list.frame"
 name = "List"
 parent = "basic.list.heading"
-leaves = ["list.background_color", "list.item_font", "list.item_font.color", "list.selection_background", "list.selection_text_color", "list.row_height_px", "list.hover_background", "list.hover_text_color", "list.border.color", "list.border.corner_radius_px", "list.border.line_width_px", "list.border.padding_top_px", "list.border.padding_right_px", "list.border.padding_bottom_px", "list.border.padding_left_px", "defaults.line_height", "defaults.selection_inactive_background", "defaults.selection_inactive_text_color"]
+leaves = ["list.background_color", "list.item_font", "list.item_font.color", "list.selection_background", "list.selection_text_color", "list.row_height_px", "list.hover_background", "list.hover_text_color", "list.hover_border_color", "list.border.color", "list.border.corner_radius_px", "list.border.line_width_px", "list.border.padding_top_px", "list.border.padding_right_px", "list.border.padding_bottom_px", "list.border.padding_left_px", "defaults.line_height", "defaults.selection_inactive_background", "defaults.selection_inactive_text_color", "defaults.border.line_width_px"]
 states = ["Item 2 selected"]
 sample = { border = [0.0, 0.5, 0.5, 0.0] }
 
@@ -1736,7 +1736,7 @@ sample = { border = [0.0, 0.5, 0.5, 0.0] }
 id = "basic.list.row_1"
 name = "List row"
 parent = "basic.list.frame"
-leaves = ["list.background_color", "list.item_font", "list.item_font.color", "list.row_height_px", "list.hover_background", "list.hover_text_color", "list.border.corner_radius_px", "list.border.line_width_px", "list.border.padding_top_px", "list.border.padding_right_px", "list.border.padding_bottom_px", "list.border.padding_left_px", "defaults.line_height"]
+leaves = ["list.background_color", "list.item_font", "list.item_font.color", "list.row_height_px", "list.hover_background", "list.hover_text_color", "list.hover_border_color", "list.border.corner_radius_px", "list.border.line_width_px", "list.border.padding_top_px", "list.border.padding_right_px", "list.border.padding_bottom_px", "list.border.padding_left_px", "defaults.line_height", "defaults.border.line_width_px"]
 states = ["Normal"]
 part = true
 sample = { fill = [0.6, 0.5], text = { glyph = [0.0, 0.0, 0.5, 1.0] } }
@@ -1772,7 +1772,7 @@ sample = { text = "glyph" }
 id = "basic.list.row_3"
 name = "List row"
 parent = "basic.list.row_2"
-leaves = ["list.background_color", "list.item_font", "list.item_font.color", "list.row_height_px", "list.hover_background", "list.hover_text_color", "list.border.corner_radius_px", "list.border.line_width_px", "list.border.padding_top_px", "list.border.padding_right_px", "list.border.padding_bottom_px", "list.border.padding_left_px", "defaults.line_height"]
+leaves = ["list.background_color", "list.item_font", "list.item_font.color", "list.row_height_px", "list.hover_background", "list.hover_text_color", "list.hover_border_color", "list.border.corner_radius_px", "list.border.line_width_px", "list.border.padding_top_px", "list.border.padding_right_px", "list.border.padding_bottom_px", "list.border.padding_left_px", "defaults.line_height", "defaults.border.line_width_px"]
 states = ["Normal"]
 part = true
 sample = { fill = [0.6, 0.5], text = { glyph = [0.0, 0.0, 0.5, 1.0] } }
@@ -1909,7 +1909,7 @@ sample = { text = "glyph" }
 id = "basic.table.frame"
 name = "Table"
 parent = "basic.table.heading"
-leaves = ["list.background_color", "list.item_font", "list.item_font.color", "list.selection_background", "list.selection_text_color", "list.header_font", "list.header_font.color", "list.header_background", "list.grid_color", "separator.line_width_px", "list.row_height_px", "list.header_height_px", "list.header_hover_background", "list.header_active_background", "list.hover_background", "list.hover_text_color", "list.border.color", "list.border.corner_radius_px", "list.border.line_width_px", "list.border.padding_top_px", "list.border.padding_right_px", "list.border.padding_bottom_px", "list.border.padding_left_px", "defaults.line_height", "defaults.selection_inactive_background", "defaults.selection_inactive_text_color"]
+leaves = ["list.background_color", "list.item_font", "list.item_font.color", "list.selection_background", "list.selection_text_color", "list.header_font", "list.header_font.color", "list.header_background", "list.grid_color", "separator.line_width_px", "list.row_height_px", "list.header_height_px", "list.header_hover_background", "list.header_active_background", "list.hover_background", "list.hover_text_color", "list.hover_border_color", "list.border.color", "list.border.corner_radius_px", "list.border.line_width_px", "list.border.padding_top_px", "list.border.padding_right_px", "list.border.padding_bottom_px", "list.border.padding_left_px", "defaults.line_height", "defaults.selection_inactive_background", "defaults.selection_inactive_text_color", "defaults.border.line_width_px"]
 states = ["Row 2 selected"]
 sample = { border = [0.0, 0.5, 0.5, 0.0] }
 
@@ -1944,7 +1944,7 @@ sample = { text = "glyph", grid = [0.0, 0.5, 0.5, 0.0] }
 id = "basic.table.row_1"
 name = "Table row"
 parent = "basic.table.header"
-leaves = ["list.background_color", "list.item_font", "list.item_font.color", "list.grid_color", "list.row_height_px", "list.hover_background", "list.hover_text_color", "list.border.padding_top_px", "list.border.padding_right_px", "list.border.padding_bottom_px", "list.border.padding_left_px", "defaults.line_height"]
+leaves = ["list.background_color", "list.item_font", "list.item_font.color", "list.grid_color", "list.row_height_px", "list.hover_background", "list.hover_text_color", "list.hover_border_color", "list.border.padding_top_px", "list.border.padding_right_px", "list.border.padding_bottom_px", "list.border.padding_left_px", "defaults.line_height", "defaults.border.line_width_px"]
 states = ["Normal"]
 part = true
 sample = { fill = [0.45, 0.5], text = { glyph = [0.0, 0.0, 0.4, 1.0] } }
