@@ -197,6 +197,10 @@ specification's to read).
 6. **E8:** "with the width unset, no outline, as today": gpui's and egui-widgets' thumbs are
    outlined today, and keep it (S7). gpui shows no hover outline while the thumb is dragged.
 7. **E9, gpui:** the checked pen stays under the pointer and pressed (S8).
+8. **§4, the build's passes:** U1 takes its own pass, as §4 says; U2, U3 and U4 are built as one
+   pass (one connector block, one rehearsal, one gate), with the cut decided before that pass
+   begins, so a cut unit still leaves nothing behind (the plan, §2). This document's parts stay
+   in the four units.
 
 ## Not verified while specifying (settled in the build)
 
