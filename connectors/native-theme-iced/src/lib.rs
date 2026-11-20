@@ -374,6 +374,21 @@
 //!   `styles::toolbar_rule` and the `toolbar_*` helpers style; its items'
 //!   text takes `toolbar.font`, through [`font`] (`system-fonts`) at
 //!   [`scaled_text_size`] of `toolbar.font.size`.
+//! - **Menu items.** `iced_aw` paints a menu's highlight, `path`, and its
+//!   outline, `path_border` (`menu.hover_border_color`), only under
+//!   `DrawPath::Backdrop`; under its default, `FakeHovering`, the highlight
+//!   is the item's own widget, and under `Backdrop` it also outlines an open
+//!   bar title, which Breeze does not. A menu's items and a menu bar's
+//!   titles are the application's own widgets: the hovered item's outline,
+//!   the titles' fills (`menu.bar_hover_background`, `.bar_open_background`,
+//!   `.bar_hover_text_color`) and their padding (`menu.bar_padding_*`) are
+//!   drawn where the application builds them. iced's drop-down outlines no
+//!   highlighted row: its menu `Style` has no border for one (`iced_widget`
+//!   0.14.2 `src/overlay/menu.rs:598-611`).
+//! - **Lists and tables.** A `SelectionList` fills a hovered row with a quad
+//!   whose border is hardcoded 0 wide, so `list.hover_border_color` has no
+//!   receiver there; a list built of the application's own rows outlines a
+//!   hovered row itself.
 //! - **The window frame.** iced takes no colour for it (`decorations:
 //!   bool`, `iced_core` 0.14 `window/settings.rs:65-66`); it passes the
 //!   theme's light or dark flag to the window, which [`to_theme_in()`] sets

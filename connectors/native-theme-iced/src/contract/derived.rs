@@ -866,8 +866,8 @@ pub(super) const DERIVED: &[(&str, &str)] = &[
     (
         "styles::aw::menu.bar.border.color",
         "connector: `Border::default()`, no frame -- the bar lies on the \
-         window, and the model states no menu-bar border (`MenuTheme`'s is no \
-         bar's)",
+         tools area's fill, `toolbar.background_color`, and the model states no \
+         menu-bar border (`MenuTheme`'s is no bar's)",
     ),
     #[cfg(feature = "iced_aw")]
     (

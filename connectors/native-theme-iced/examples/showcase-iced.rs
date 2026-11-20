@@ -5168,7 +5168,8 @@ type UnderPaint<'a> = Box<
 
 /// A Basic list row's fill, painted under the row's button, which paints
 /// none ([`Underlay`]), with [`list_row`]'s border, the hovered row's
-/// outline where the theme states one, on the fill's shape: [`list_row`]'s
+/// outline where the theme states one, on the fill's shape, pushed past
+/// each side the view cuts ([`past_the_cut`]): [`list_row`]'s
 /// background for the row in the state
 /// the button takes from the cursor (Hovered and Pressed both need the
 /// cursor over the row, iced_widget 0.14.2 `src/button.rs:342-354`, and
@@ -5207,13 +5208,14 @@ fn list_row_fill(
             y: inside.y + (viewport.y - shown.y),
             ..inside
         };
-        let Some((rect, radius)) = shown_fill(bounds, *viewport, edges, radius) else {
+        let Some((shown, radius)) = shown_fill(bounds, *viewport, edges, radius) else {
             return;
         };
         let border = iced::Border {
             radius,
             ..style.border
         };
+        let rect = past_the_cut(shown, bounds, border.width);
         #[cfg(test)]
         {
             LIST_FILLS.with_borrow_mut(|fills| fills.push((bounds, rect, radius, background)));
@@ -5229,6 +5231,31 @@ fn list_row_fill(
             background,
         );
     })
+}
+
+/// `shown`, the part of a list row, `row`, that the list's view shows
+/// ([`shown_fill`]), pushed out by `width` on each side where the view cuts
+/// the row, so that the scrollable's clip, the view (iced_widget 0.14.2
+/// `src/scrollable.rs:1187`), hides that side of an outline `width` wide
+/// drawn on it: Breeze clips a row to the view, its outline with it, and
+/// draws no line along the view's edge. The view cuts a side where the row
+/// passes it by more than a thousandth of a pixel, [`shown_fill`]'s margin
+/// for f32's rounding, so a row flush with the view keeps its line there.
+/// The corners keep [`shown_fill`]'s radii, the frame's inner radius where
+/// they meet the frame's inside; where such a corner lies on a cut side,
+/// its arc moves out with that side, a line width from the frame's.
+fn past_the_cut(shown: iced::Rectangle, row: iced::Rectangle, width: f32) -> iced::Rectangle {
+    let out = |past: f32| if past > 1e-3 { width } else { 0.0 };
+    let top = out(shown.y - row.y);
+    let bottom = out((row.y + row.height) - (shown.y + shown.height));
+    let left = out(shown.x - row.x);
+    let right = out((row.x + row.width) - (shown.x + shown.width));
+    iced::Rectangle {
+        x: shown.x - left,
+        y: shown.y - top,
+        width: shown.width + left + right,
+        height: shown.height + top + bottom,
+    }
 }
 
 #[cfg(test)]
@@ -8490,35 +8517,68 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
             "menu_title: text_color at rest".into()
         }
         ("menu", "font.color") => "menu_row: text_color at rest".into(),
-        ("menu", "hover_background") if under("chrome.menu_bar.") => {
-            "menu_title: the Hovered fill where menu.bar_hover_background is unstated; \
-             menu_bar_style: path"
+        ("menu", "hover_background")
+            if under("chrome.menu_bar.") && resolved.menu.bar_hover_background.is_some() =>
+        {
+            "not drawn: menu.bar_hover_background is stated, and menu_title fills a lit \
+             title from it and menu.bar_open_background"
                 .into()
         }
-        ("menu", "hover_background") => "menu_row: the Hovered fill; menu_bar_style: path".into(),
+        ("menu", "hover_background") if under("chrome.menu_bar.") => {
+            "menu_title: the Hovered fill where menu.bar_hover_background is unstated".into()
+        }
+        ("menu", "hover_background") => "menu_row: the Hovered fill".into(),
+        ("menu", "hover_text_color")
+            if under("chrome.menu_bar.") && resolved.menu.bar_hover_text_color.is_some() =>
+        {
+            "not drawn: menu.bar_hover_text_color is stated, and menu_title letters a lit \
+             title in it"
+                .into()
+        }
         ("menu", "hover_text_color") if under("chrome.menu_bar.") => {
             "menu_title: the Hovered text_color where menu.bar_hover_text_color is unstated"
                 .into()
         }
         ("menu", "hover_text_color") => "menu_row: the Hovered text_color".into(),
+        ("menu", "bar_hover_background") if resolved.menu.bar_hover_background.is_none() => {
+            "not drawn: unstated; menu_title takes menu.hover_background under the pointer"
+                .into()
+        }
         ("menu", "bar_hover_background") => "menu_title: the Hovered fill".into(),
+        ("menu", "bar_open_background") if resolved.menu.bar_open_background.is_none() => {
+            "not drawn: unstated; menu_title takes the hover fill while its menu is open and \
+             while pressed"
+                .into()
+        }
         ("menu", "bar_open_background") => {
             "menu_title: the fill while its menu is open and while pressed".into()
+        }
+        ("menu", "bar_hover_text_color") if resolved.menu.bar_hover_text_color.is_none() => {
+            "not drawn: unstated; menu_title takes menu.hover_text_color".into()
         }
         ("menu", "bar_hover_text_color") => {
             "menu_title: the text_color under the pointer, while pressed and while its menu \
              is open"
                 .into()
         }
+        ("menu", "bar_padding_horizontal_px")
+            if resolved.menu.bar_padding_horizontal.is_none() =>
+        {
+            "not drawn: unstated; title_padding takes the rows' left and right padding".into()
+        }
         ("menu", "bar_padding_horizontal_px") => {
             "title_padding: the title button's left and right padding".into()
+        }
+        ("menu", "bar_padding_vertical_px") if resolved.menu.bar_padding_vertical.is_none() => {
+            "not drawn: unstated; title_padding takes the rows' top and bottom padding".into()
         }
         ("menu", "bar_padding_vertical_px") => {
             "title_padding: the title button's top and bottom padding".into()
         }
-        ("menu", "hover_border_color") => {
-            "menu_row: the Hovered and Pressed border; menu_bar_style: path_border".into()
+        ("menu", "hover_border_color") if resolved.menu.hover_border_color.is_none() => {
+            "not drawn: unstated; menu_row outlines no row".into()
         }
+        ("menu", "hover_border_color") => "menu_row: the Hovered and Pressed border".into(),
         ("menu", "border.corner_radius_px") if under("chrome.menu_bar.") => {
             "menu_title: the title's border radius".into()
         }
@@ -8535,9 +8595,22 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         }
         ("menu", "separator_color") => "line_style: the rule's colour".into(),
         ("menu", f) if side(f).is_some() && under("chrome.menu_bar.") => {
-            "title_padding: Button::padding where menu.bar_padding_* leaves it unstated, \
-             iced's own on an unstated side"
+            let m = &resolved.menu;
+            let (bar, stated) = match side(f) {
+                Some("top" | "bottom") => ("vertical", m.bar_padding_vertical.is_some()),
+                _ => ("horizontal", m.bar_padding_horizontal.is_some()),
+            };
+            if stated {
+                format!(
+                    "not drawn: menu.bar_padding_{bar} is stated, and title_padding pads the \
+                     title's side by it"
+                )
                 .into()
+            } else {
+                "title_padding: Button::padding where menu.bar_padding_* leaves it unstated, \
+                 iced's own on an unstated side"
+                    .into()
+            }
         }
         ("menu", f) if side(f).is_some() => "Button::padding, iced's own on an unstated side".into(),
         ("popover", "border.color") => "menu_bar_style: menu_border.color".into(),
@@ -8845,6 +8918,9 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         }
         ("list", "hover_background") => "list_row: the Hovered fill".into(),
         ("list", "hover_text_color") => "list_row: the Hovered text_color".into(),
+        ("list", "hover_border_color") if resolved.list.hover_border_color.is_none() => {
+            "not drawn: unstated; list_row outlines no row".into()
+        }
         ("list", "hover_border_color") => "list_row: the Hovered border".into(),
         ("defaults", "border.line_width_px") if under("basic.list.") => {
             "list_row_fill: the hovered row's outline width, where list.hover_border_color \
@@ -30422,15 +30498,6 @@ mod tests {
         }
     }
 
-    /// The bundled combination `label` (`<preset>/<mode>`), resolved as
-    /// [`bundled_combinations`] resolves it.
-    fn bundled(label: &str) -> ResolvedTheme {
-        match bundled_combinations().into_iter().find(|(l, _)| l == label) {
-            Some((_, r)) => r,
-            None => panic!("{label} is not bundled"),
-        }
-    }
-
     /// Issue #4's leftovers, E1 (docs/issues/0004_kde-leftovers-rationale.md):
     /// under kde-breeze a hovered menu row is outlined in Breeze's
     /// `focusOutlineColor()`, #399acc light and #5abaec dark, 1 px wide and
@@ -30470,11 +30537,9 @@ mod tests {
             button::Status::Disabled,
         ];
         let mut failures = Vec::new();
-        for (label, outline) in [
-            ("kde-breeze/light", "#399acc"),
-            ("kde-breeze/dark", "#5abaec"),
-        ] {
-            let r = bundled(label);
+        for (dark, outline) in [(false, "#399acc"), (true, "#5abaec")] {
+            let label = format!("kde-breeze dark {dark}");
+            let r = loaded("kde-breeze", dark).current_resolved;
             let theme = native_theme_iced::to_theme(&r, "menus");
             let row = menu_row(&r);
             let hovered = row(&theme, button::Status::Hovered);
@@ -30503,8 +30568,9 @@ mod tests {
                 }
             }
         }
-        for label in ["adwaita/light", "adwaita/dark"] {
-            let r = bundled(label);
+        for dark in [false, true] {
+            let label = format!("adwaita dark {dark}");
+            let r = loaded("adwaita", dark).current_resolved;
             assert!(
                 r.menu.hover_border_color.is_none(),
                 "{label} states an outline"
@@ -30542,11 +30608,9 @@ mod tests {
             left: 4.0,
         };
         let mut failures = Vec::new();
-        for (label, lit) in [
-            ("kde-breeze/light", "#ffffff"),
-            ("kde-breeze/dark", "#fcfcfc"),
-        ] {
-            let mut r = bundled(label);
+        for (dark, lit) in [(false, "#ffffff"), (true, "#fcfcfc")] {
+            let label = format!("kde-breeze dark {dark}");
+            let mut r = loaded("kde-breeze", dark).current_resolved;
             r.menu.bar_open_background = "#f0a014".parse().ok();
             let theme = native_theme_iced::to_theme(&r, "titles");
             for (open, status, want) in [
@@ -30587,8 +30651,9 @@ mod tests {
                 failures.push(format!("{label}: the titles are padded {padded:?}"));
             }
         }
-        for label in ["adwaita/light", "adwaita/dark"] {
-            let r = bundled(label);
+        for dark in [false, true] {
+            let label = format!("adwaita dark {dark}");
+            let r = loaded("adwaita", dark).current_resolved;
             let m = &r.menu;
             assert!(
                 m.bar_hover_background.is_none()
@@ -30737,6 +30802,104 @@ mod tests {
                 if selected.width != 0.0 {
                     failures.push(format!("{label}: a selected row, {status:?}, is outlined"));
                 }
+            }
+        }
+        assert!(failures.is_empty(), "{failures:#?}");
+    }
+
+    /// L1's review of E5: a hovered row of the Basic list that the view cuts,
+    /// the first scrolled half a row (a whole pixel) up under kde-breeze
+    /// light, is filled and outlined on the part the view shows, its cut top
+    /// side pushed out by the line's width ([`past_the_cut`]), so that the
+    /// scrollable's clip hides the outline there: the quad's top edge lies a
+    /// line width above the view's, its other sides on the shown part's.
+    #[test]
+    fn a_hovered_list_row_cut_by_the_view_has_no_outline_along_the_cut() {
+        let size = Size::new(WINDOW_SIZE.0, 2000.0);
+        let mut state = State {
+            accessibility: native_theme_iced::AccessibilityPreferences::default(),
+            side_panel_visible: false,
+            ..State::default()
+        };
+        assert!(state.install_in_mode(
+            ThemeChoice::Preset("kde-breeze".to_owned()),
+            AppColorMode::Light
+        ));
+        let r = state.current_resolved.clone();
+        let line = r.defaults.border.line_width;
+        assert!(
+            r.list.hover_border_color.is_some() && line > 0.0,
+            "kde-breeze outlines a hovered row"
+        );
+        let (_, rects, _) = frame_of(&state, view(&state), size);
+        let (Some(frame), Some(row_1)) = (
+            rects.get("basic.list.frame").copied(),
+            rects.get("basic.list.row_1").copied(),
+        ) else {
+            panic!("the Basic list is not drawn");
+        };
+        let w = r.list.border.line_width;
+        let inside = iced::Rectangle {
+            x: frame.x + w,
+            y: frame.y + w,
+            width: frame.width - 2.0 * w,
+            height: frame.height - 2.0 * w,
+        };
+        let by = (row_1.height / 2.0).round();
+        let view_by = iced::Rectangle {
+            y: inside.y + by,
+            ..inside
+        };
+        let Some(shown) = row_1.intersection(&view_by) else {
+            panic!("the first row leaves the view at {by}");
+        };
+        assert!(
+            shown.y > row_1.y + 0.5,
+            "the view cuts the first row's top: {shown:?} of {row_1:?}"
+        );
+        let at = iced::Point::new(inside.x + inside.width / 4.0, shown.center_y() - by);
+        LIST_FILLS.with_borrow_mut(Vec::clear);
+        LIST_EDGES.with_borrow_mut(Vec::clear);
+        let _ = frame_after(&state, view(&state), size, |ui| {
+            ui.point_at(at);
+            let _ = ui.simulate([
+                Event::Mouse(mouse::Event::CursorMoved { position: at }),
+                Event::Mouse(mouse::Event::WheelScrolled {
+                    delta: mouse::ScrollDelta::Pixels { x: 0.0, y: -by },
+                }),
+            ]);
+        });
+        let ours = |bounds: &iced::Rectangle| (bounds.y - row_1.y).abs() < 0.01;
+        let fills: Vec<_> = LIST_FILLS
+            .take()
+            .into_iter()
+            .filter(|(bounds, ..)| ours(bounds))
+            .collect();
+        let edges: Vec<_> = LIST_EDGES
+            .take()
+            .into_iter()
+            .filter(|(bounds, _)| ours(bounds))
+            .collect();
+        let hover = iced::Background::Color(to_color(r.list.hover_background));
+        let near = |a: f32, b: f32| (a - b).abs() < 0.01;
+        let mut failures = Vec::new();
+        if fills.is_empty() || edges.len() != fills.len() {
+            failures.push(format!("the first row's fills {fills:?}, edges {edges:?}"));
+        }
+        for ((_, rect, _, colour), (_, border)) in fills.iter().zip(&edges) {
+            if *colour != hover || border.width != line {
+                failures.push(format!(
+                    "the first row is filled {colour:?}, outlined {border:?}"
+                ));
+            }
+            let pushed = near(rect.y, shown.y - line)
+                && near(rect.y + rect.height, shown.y + shown.height)
+                && near(rect.x, shown.x)
+                && near(rect.width, shown.width);
+            if !pushed {
+                failures.push(format!(
+                    "the first row's quad is {rect:?}, want {shown:?} with its top {line} higher"
+                ));
             }
         }
         assert!(failures.is_empty(), "{failures:#?}");
