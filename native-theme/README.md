@@ -4,7 +4,7 @@
 
 ## What it does
 
-Cross-platform theme data model with 24 semantic color roles, 26 per-widget
+Cross-platform theme data model with 25 semantic color roles, 26 per-widget
 themes, and 17 bundled TOML presets. Reads OS themes from KDE Plasma, GNOME
 (via `xdg-desktop-portal`), macOS, and Windows, and produces a fully populated
 `ResolvedTheme` any GUI toolkit can consume.
@@ -71,7 +71,7 @@ are needed to use bundled presets.
   - *Behaviour:* `tooltip.show_delay`, `dialog.entrance`, `expander.arrow_side`, `expander.frame_enabled`, `tab.active_indicator_side` and the caret's blink (`input.caret_blink_on`, `caret_blink_off`, `caret_blink_timeout`), where the toolkit's own value applies too; `defaults.focus_ring_keyboard_only`, where unstated a connector draws the focus ring on any focus; `defaults.font_whole_pixels`, where unstated the font sizes keep their fraction; and `tab.active_outward_corner_radius`, where unstated the selected tab's feet are square.
   - *Switch outlines:* the track and thumb outlines' colours (five of the 61) and widths (`switch.track_border_line_width`, `switch.thumb_border_line_width`); where they are `None` no outline is drawn. A disabled track outline's colour (`switch.disabled_unchecked_track_border_color`, `switch.disabled_checked_track_border_color`) left `None` takes the enabled one.
   - *Slider handle outline:* its colours (`slider.thumb_border_color`, `thumb_hover_border_color`, `thumb_focus_border_color`, three of the 61) and width (`slider.thumb_border_line_width`); where the width is `None` a connector draws its own outline, where it is 0 none. An unset hover or focus colour takes the rest colour.
-  - *Caret blink:* `input.caret_blink_on_ms` and `caret_blink_off_ms` state a blink together, and `caret_blink_off_ms = 0` alone states a caret that does not blink; `caret_blink_timeout_ms` beside them stops the blinking that long after the last input, the caret shown. A theme that states one duration alone, or a time-out without a blink, fails to resolve, `Error::ResolutionIncomplete` naming the key to add, so an overlay states both durations: it merges field by field over a preset that may state none. An overlay cannot unset a preset's time-out; to keep the caret blinking it states the largest, `caret_blink_timeout_ms = 4294967295` (about 49.7 days).
+  - *Caret blink:* `input.caret_blink_on_ms` and `caret_blink_off_ms` state a blink together, and `caret_blink_off_ms = 0` alone states a caret that does not blink; `caret_blink_timeout_ms` beside them stops the blinking that long after the last input, the caret shown. A theme that states `caret_blink_on_ms` or a time-out without `caret_blink_off_ms`, or a `caret_blink_off_ms` above 0 without `caret_blink_on_ms`, fails to resolve, `Error::ResolutionIncomplete` naming the key to add, so an overlay states both durations: it merges field by field over a preset that may state none. An overlay cannot unset a preset's time-out; to keep the caret blinking it states the largest, `caret_blink_timeout_ms = 4294967295` (about 49.7 days).
 - **`SystemTheme`** — the OS theme, from `SystemTheme::from_system()`: both resolved variants (`light`, `dark`), the OS's active `mode`, the `preset` the reader's values were merged over and its `version_match`, the icon set and theme, and the accessibility preferences. `pick(mode)` gives one variant; `with_overlay(…)` applies an application's changes.
 - **`ColorMode`** — the `Light` / `Dark` choice passed when resolving.
 - **Preset** — a named bundled theme. 17 ship today:

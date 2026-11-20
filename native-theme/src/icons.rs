@@ -1675,10 +1675,9 @@ mod load_icon_tests {
     #[test]
     #[cfg(all(target_os = "linux", feature = "system-icons"))]
     fn freedesktop_loader_theme_override_honored_for_name_lookup() {
-        // Regression pin for Phase 93-03 silent-ignore bug (Plan 93-09 fix).
-        // The old IconLoader dispatched IconId::Name to a path that silently
-        // dropped `.theme()`. FreedesktopLoader has a single `load()` method
-        // that honors `.theme()` uniformly across Role/Name/Custom.
+        // Regression pin: a name lookup must not silently drop `.theme()`.
+        // FreedesktopLoader has a single `load()` method that honors
+        // `.theme()` uniformly across Role/Name/Custom.
         //
         // Requires the Adwaita icon theme installed on the test host.
         let result = FreedesktopLoader::new("format-text-rich")

@@ -229,8 +229,6 @@ fn read_all_system_fonts() -> AllFonts {
     }
 }
 
-// REMOVED(spacing): // WinUI3 Fluent Design spacing scale removed -- ThemeSpacing_DELETED deleted in Plan 01.
-
 /// Read a system metric in logical pixels, the unit of every length in the
 /// model.
 ///
@@ -1666,8 +1664,8 @@ mod tests {
             None,
             Some(&accessibility),
         );
-        // Accessibility fields are no longer on ThemeDefaults;
-        // they live on AccessibilityPreferences (constructed by pipeline).
+        // Accessibility fields live on AccessibilityPreferences (constructed
+        // by the pipeline), not on ThemeDefaults.
         assert!(matches!(
             theme.output,
             crate::ReaderOutput::Single { is_dark: false, .. }

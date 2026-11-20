@@ -3,9 +3,8 @@
 // Extracted from validate.rs to keep the orchestration module focused on
 // defaults extraction, per-widget dispatch, and construction.
 //
-// Phase 93-01 (G1): `require<T: Clone>` takes an explicit `fallback: T`
-// instead of requiring `T: Default`, breaking the bound chain that forced
-// `impl Default for Rgba`. See `fn require` below for details.
+// `require<T: Clone>` takes an explicit `fallback: T` instead of requiring
+// `T: Default`, so `Rgba` needs no `Default` impl. See `fn require` below.
 
 use crate::Rgba;
 use crate::model::border::{ResolvedPadding, ResolvedWidgetBorder, WidgetBorderSpec};
@@ -782,7 +781,7 @@ pub(crate) use validate_text_scale;
 /// Validate defaults and text_scale range checks.
 ///
 /// This centralizes all the range-check calls for the global defaults
-/// and the text_scale entries that were previously inline in validate().
+/// and the text_scale entries.
 /// `stated_scale` is the text scale as the theme states it: it gives the
 /// unit, so the TOML key, of each entry's size and line height.
 pub(crate) fn check_defaults_ranges(

@@ -130,11 +130,11 @@ pub struct ThemeMode {
     #[serde(default, skip_serializing_if = "TextAreaTheme::is_empty")]
     pub text_area: TextAreaTheme,
 
-    /// Checkbox and radio button indicator geometry.
+    /// Checkbox and radio button: colours, indicator geometry and states.
     #[serde(default, skip_serializing_if = "CheckboxTheme::is_empty")]
     pub checkbox: CheckboxTheme,
 
-    /// Popup and context menu appearance.
+    /// Popup and context menu appearance, and the menu bar's titles.
     #[serde(default, skip_serializing_if = "MenuTheme::is_empty")]
     pub menu: MenuTheme,
 
@@ -162,11 +162,11 @@ pub struct ThemeMode {
     #[serde(default, skip_serializing_if = "SidebarTheme::is_empty")]
     pub sidebar: SidebarTheme,
 
-    /// Toolbar sizing, spacing, and font.
+    /// Toolbar sizing, spacing, font, and its buttons' states.
     #[serde(default, skip_serializing_if = "ToolbarTheme::is_empty")]
     pub toolbar: ToolbarTheme,
 
-    /// Status bar font.
+    /// Status bar font and background.
     #[serde(default, skip_serializing_if = "StatusBarTheme::is_empty")]
     pub status_bar: StatusBarTheme,
 
@@ -178,11 +178,11 @@ pub struct ThemeMode {
     #[serde(default, skip_serializing_if = "PopoverTheme::is_empty")]
     pub popover: PopoverTheme,
 
-    /// Splitter handle width.
+    /// Splitter handle width and colours.
     #[serde(default, skip_serializing_if = "SplitterTheme::is_empty")]
     pub splitter: SplitterTheme,
 
-    /// Separator line color.
+    /// Separator line colour and width.
     #[serde(default, skip_serializing_if = "SeparatorTheme::is_empty")]
     pub separator: SeparatorTheme,
 
@@ -190,7 +190,7 @@ pub struct ThemeMode {
     #[serde(default, skip_serializing_if = "SwitchTheme::is_empty")]
     pub switch: SwitchTheme,
 
-    /// Dialog sizing, spacing, button order, and title font.
+    /// Dialog sizing, spacing, button order, fonts, border, and background.
     #[serde(default, skip_serializing_if = "DialogTheme::is_empty")]
     pub dialog: DialogTheme,
 
@@ -198,11 +198,11 @@ pub struct ThemeMode {
     #[serde(default, skip_serializing_if = "SpinnerTheme::is_empty")]
     pub spinner: SpinnerTheme,
 
-    /// ComboBox / dropdown trigger sizing.
+    /// ComboBox / dropdown trigger: colours, sizing, and states.
     #[serde(default, skip_serializing_if = "ComboBoxTheme::is_empty")]
     pub combo_box: ComboBoxTheme,
 
-    /// Segmented control sizing.
+    /// Segmented control colours and sizing.
     #[serde(default, skip_serializing_if = "SegmentedControlTheme::is_empty")]
     pub segmented_control: SegmentedControlTheme,
 
@@ -210,7 +210,7 @@ pub struct ThemeMode {
     #[serde(default, skip_serializing_if = "CardTheme::is_empty")]
     pub card: CardTheme,
 
-    /// Expander / disclosure row geometry.
+    /// Expander / disclosure row: geometry, arrow, and hover colours.
     #[serde(default, skip_serializing_if = "ExpanderTheme::is_empty")]
     pub expander: ExpanderTheme,
 
@@ -805,7 +805,7 @@ impl Theme {
         // Structural variant-level keys that are NOT widgets
         const STRUCTURAL_KEYS: &[&str] = &["defaults", "text_scale"];
 
-        // Phase 93-05 G5: build BOTH field registries from inventory.
+        // Build BOTH field registries from inventory.
         // - widget_registry: one entry per per-variant widget (ButtonTheme ->
         //   "button", etc.) populated by #[derive(ThemeWidget)].
         // - struct_registry: one entry per plain struct (FontSpec, IconSizes,
@@ -1013,7 +1013,7 @@ mod tests {
     #[test]
     fn theme_variant_has_all_widgets() {
         let mut v = ThemeMode::default();
-        // Set a field on each of the 25 widgets
+        // Set a field on 25 of the 26 widgets (all but text_area)
         v.window.background_color = Some(Rgba::rgb(255, 255, 255));
         v.button.min_height = Some(32.0);
         v.input.min_height = Some(32.0);
@@ -1901,11 +1901,11 @@ nonexistent_field = "#ff0000"
         assert!(!toml_str.contains("[dark.layout]"));
     }
 
-    // === Phase 93-05 G5: ThemeFields inventory baseline-equality tests ===
+    // === ThemeFields inventory baseline-equality tests ===
     //
     // Each struct that is expected to register via #[derive(ThemeFields)]
     // must produce a FieldInfo entry whose `field_names` matches the
-    // pre-migration hand-authored FIELD_NAMES list bit-for-bit. Failure means
+    // hand-written field list below bit-for-bit. Failure means
     // either the derive emission path is wrong (serde rename drift) or
     // the derive was not applied to the struct.
 

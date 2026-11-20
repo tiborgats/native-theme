@@ -2,7 +2,8 @@
 //! compile-time assertions.
 //!
 //! These tests exercise merge() overlay semantics, is_empty() on all structs,
-//! and verify that all public types implement Send + Sync + Default + Clone + Debug.
+//! and verify the Send + Sync, Clone, Debug and Default bounds of the public
+//! types (`Rgba` has no Default, `Error` neither Default nor Clone).
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
@@ -63,7 +64,6 @@ fn merge_preserves_base_when_overlay_empty() {
     base.defaults.background_color = Some(Rgba::rgb(255, 255, 255));
     base.defaults.font.family = Some("Noto Sans".into());
     base.defaults.border.corner_radius = Some(4.0);
-    // REMOVED(spacing): base.defaults.spacing.m = Some(12.0);
 
     let overlay = ThemeMode::default(); // completely empty
 
@@ -76,7 +76,6 @@ fn merge_preserves_base_when_overlay_empty() {
     );
     assert_eq!(base.defaults.font.family.as_deref(), Some("Noto Sans"));
     assert_eq!(base.defaults.border.corner_radius, Some(4.0));
-    // REMOVED(spacing): assert_eq!(base.defaults.spacing.m, Some(12.0));
 }
 
 #[test]
@@ -242,7 +241,6 @@ fn is_empty_all_structs() {
     assert!(ThemeMode::default().is_empty());
     assert!(ThemeDefaults::default().is_empty());
     assert!(FontSpec::default().is_empty());
-    // REMOVED(spacing): assert!(ThemeSpacing_DELETED::default().is_empty());
     assert!(IconSizes::default().is_empty());
     assert!(TextScaleEntry::default().is_empty());
     assert!(TextScale::default().is_empty());
@@ -499,7 +497,6 @@ fn trait_assertions_send_sync() {
     assert_send_sync::<ThemeMode>();
     assert_send_sync::<ThemeDefaults>();
     assert_send_sync::<FontSpec>();
-    // REMOVED(spacing): assert_send_sync::<ThemeSpacing_DELETED>();
     assert_send_sync::<Error>();
 }
 
@@ -508,16 +505,15 @@ fn trait_assertions_default_clone_debug() {
     fn assert_default_clone_debug<T: Default + Clone + std::fmt::Debug>() {}
     fn assert_clone_debug<T: Clone + std::fmt::Debug>() {}
 
-    // Phase 93-01 (G1): `Rgba` intentionally does NOT implement `Default`
-    // any more (§16 footgun). Callers use `Rgba::TRANSPARENT`,
-    // `Rgba::BLACK`, `Rgba::WHITE`, `Rgba::rgb`, or `Rgba::new`. The trait
-    // contract checked here is now Clone + Debug only.
+    // `Rgba` intentionally does NOT implement `Default` (§16 footgun).
+    // Callers use `Rgba::TRANSPARENT`, `Rgba::BLACK`, `Rgba::WHITE`,
+    // `Rgba::rgb`, or `Rgba::new`. The trait contract checked here is
+    // Clone + Debug only.
     assert_clone_debug::<Rgba>();
     assert_default_clone_debug::<Theme>();
     assert_default_clone_debug::<ThemeMode>();
     assert_default_clone_debug::<ThemeDefaults>();
     assert_default_clone_debug::<FontSpec>();
-    // REMOVED(spacing): assert_default_clone_debug::<ThemeSpacing_DELETED>();
 
     // Error is Debug but not Default/Clone -- verify separately
     fn assert_debug<T: std::fmt::Debug>() {}
@@ -561,11 +557,6 @@ fn realistic_theme_layering_scenario() {
     // Populate base geometry
     light.defaults.border.corner_radius = Some(4.0);
     light.defaults.border.line_width = Some(1.0);
-
-    // Populate base spacing
-    // REMOVED(spacing): light.defaults.spacing.s = Some(8.0);
-    // REMOVED(spacing): light.defaults.spacing.m = Some(12.0);
-    // REMOVED(spacing): light.defaults.spacing.l = Some(16.0);
 
     base.light = Some(light);
 
@@ -612,7 +603,6 @@ fn realistic_theme_layering_scenario() {
     assert_eq!(result.defaults.font.size, Some(FontSize::Px(10.0)));
     assert_eq!(result.defaults.mono_font.family.as_deref(), Some("Hack"));
     assert_eq!(result.defaults.border.corner_radius, Some(4.0));
-    // REMOVED(spacing): assert_eq!(result.defaults.spacing.m, Some(12.0));
 
     // Serialize the merged result to TOML and verify it looks reasonable
     let toml_str = toml::to_string_pretty(&base).unwrap();

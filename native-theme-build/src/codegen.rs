@@ -654,9 +654,6 @@ play-pause = { kde = "media-playback-start", default = "play" }
         );
     }
 
-    // Issue 48: tautological icon_svg_has_wildcard test removed.
-    // Replaced by generated_code_icon_svg_has_specific_match_arms below.
-
     // === de_key_to_variant tests ===
 
     #[test]
@@ -725,13 +722,13 @@ play-pause = { kde = "media-playback-start", default = "play" }
         assert_eq!(de_key_to_qualified_variant("default", "native_theme"), None);
     }
 
-    // === generate_code: DE-aware value tests (updated from Phase 23) ===
+    // === generate_code: DE-aware value tests ===
 
     #[test]
     fn generated_code_de_aware_default_in_wildcard_arm() {
         let (config, mappings) = de_aware_config_and_mappings();
         let output = generate_code(&config, &mappings, "icons", "native_theme", &[]);
-        // Phase 24: The default value "play" should appear inside a wildcard `_ =>` arm
+        // The default value "play" should appear inside a wildcard `_ =>` arm
         // within a `match de` block, NOT as a standalone simple arm
         assert!(
             output.contains("_ => Some(\"play\")"),
@@ -743,7 +740,7 @@ play-pause = { kde = "media-playback-start", default = "play" }
     fn generated_code_de_aware_has_kde_specific_arm() {
         let (config, mappings) = de_aware_config_and_mappings();
         let output = generate_code(&config, &mappings, "icons", "native_theme", &[]);
-        // Phase 24: KDE-specific arm "media-playback-start" SHOULD now appear
+        // The KDE-specific arm "media-playback-start" should appear
         assert!(
             output.contains(
                 "native_theme::detect::LinuxDesktop::Kde => Some(\"media-playback-start\")"

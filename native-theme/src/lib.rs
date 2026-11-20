@@ -620,9 +620,8 @@ pub(crate) struct OverlaySource {
     pub(crate) layout: LayoutTheme,
     /// The platform preset name (e.g. "kde-breeze").
     pub(crate) preset_name: String,
-    /// Resolution-time inputs captured at detection time. Replaces the
-    /// old `font_dpi: Option<f32>` field; the context bundles
-    /// `font_dpi` + `button_order` + detected `icon_theme` and is cloned
+    /// Resolution-time inputs captured at detection time: the context
+    /// bundles `font_dpi` + `button_order` + detected `icon_theme` and is cloned
     /// into `with_overlay` replays so resolution is deterministic across
     /// overlay applications.
     pub(crate) context: crate::resolve::ResolutionContext,
@@ -645,27 +644,12 @@ pub struct SystemTheme {
     //
     // # Ownership type
     //
-    // This field uses `Cow<'static, str>`, not `Arc<str>`. The v0.5.7 API
-    // review recommended uniform `Arc<str>` across `name`, `icon_theme`,
-    // `ReaderOutput::name`, and `ResolvedFontSpec::family`. The audit in
-    // `docs/archive/v0.5.7_gaps.md` §G9 concluded that the
-    // uniform recommendation should be adopted ONLY for
-    // [`ResolvedFontSpec::family`](crate::model::font::ResolvedFontSpec)
-    // (where 26 widgets × connectors genuinely share font families), and
-    // should be REVERSED for `name` / `icon_theme` because:
-    //
-    // - Each resolved theme carries exactly ONE `name` — no dedup benefit.
-    // - Bundled preset names are `&'static str` literals; `Cow::Borrowed(static_lit)`
-    //   is zero allocation, zero refcount. `Arc<str>` would require at least one
-    //   allocation per unique string at construction time, paying allocation cost
-    //   for a dedup benefit that is structurally absent.
-    //
-    // The same reasoning applies symmetrically to
-    // [`SystemTheme::icon_theme`](Self::icon_theme),
-    // [`Theme::name`](crate::theme::Theme), and
-    // [`ThemeDefaults::icon_theme`](crate::model::defaults::ThemeDefaults).
-    //
-    // See `docs/archive/v0.5.7_gaps.md` §G9 for the full audit.
+    // `Cow<'static, str>`, not `Arc<str>` (which `ResolvedFontSpec::family`
+    // uses, as 26 widgets share font families): each resolved theme carries
+    // one `name`, so sharing gains nothing, and a bundled preset's name is a
+    // `&'static str` literal that `Cow::Borrowed` holds with no allocation and
+    // no refcount. The same holds for `SystemTheme::icon_theme`, `Theme::name`
+    // and `ThemeDefaults::icon_theme` (`docs/archive/v0.5.7_gaps.md` §G9).
     pub name: Cow<'static, str>,
     /// The OS color mode preference (light or dark).
     pub mode: ColorMode,
@@ -673,7 +657,7 @@ pub struct SystemTheme {
     pub light: ResolvedTheme,
     /// Resolved dark variant (always populated).
     pub dark: ResolvedTheme,
-    /// Data for replaying the pipeline on overlay (replaces light_variant/dark_variant).
+    /// Data for replaying the pipeline on overlay.
     pub(crate) overlay_source: OverlaySource,
     /// The platform preset used (e.g., "kde-breeze", "adwaita", "macos-tahoe").
     pub preset: String,
@@ -1435,8 +1419,6 @@ mod overlay_tests {
     #[test]
     fn test_overlay_source_no_variant_fields() -> crate::Result<()> {
         // Verify overlay_source exists on SystemTheme (compile-time structural check).
-        // If light_variant or dark_variant fields still existed, this test would
-        // need updating -- documenting the structural change.
         let st = default_system_theme()?;
         let _ = &st.overlay_source; // overlay_source exists
         Ok(())

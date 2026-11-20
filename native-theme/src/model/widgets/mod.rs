@@ -168,7 +168,7 @@ pub struct InputTheme {
     #[theme(category = "soft_option")]
     pub caret_blink_off: Option<u32>,
     /// How long after the last input the caret stops blinking, shown, in
-    /// milliseconds, 1 or more; stated only beside a blink. `None` where the
+    /// milliseconds, 1 or more; stated only beside `caret_blink_off`. `None` where the
     /// platform's caret never stops (KDE, Material, iOS) or no source gives
     /// its time-out (Windows, macOS) (docs/platform-facts.md §2.4).
     #[serde(rename = "caret_blink_timeout_ms")]
@@ -258,8 +258,9 @@ pub struct CheckboxTheme {
     #[theme(category = "soft_option", check = "non_negative")]
     pub radio_indicator_width: Option<f32>,
     /// Diameter of the filled dot a selected radio button draws at the centre
-    /// of its indicator, in logical pixels. `None` where the platform states
-    /// no dot size: AppKit draws its own (docs/platform-facts.md §2.5).
+    /// of its indicator, in logical pixels. `None` where the theme states no
+    /// dot size (ios-13 and the community presets); a connector then draws
+    /// its toolkit's own dot (docs/platform-facts.md §2.5).
     #[serde(rename = "radio_dot_diameter_px")]
     #[theme(category = "soft_option", check = "non_negative")]
     pub radio_dot_diameter: Option<f32>,
@@ -309,7 +310,7 @@ pub struct CheckboxTheme {
 
 // ── 2.6 Menu ────────────────────────────────────────────────────────────────
 
-/// Popup and context menu appearance.
+/// Popup and context menu appearance, and the menu bar's titles.
 ///
 /// A menu bar is filled with `toolbar.background_color`, the fill of the one
 /// tools area Breeze paints (docs/platform-facts.md §2.6, §2.13).
@@ -715,7 +716,7 @@ pub struct SidebarTheme {
 
 /// Toolbar sizing, spacing, font, and its buttons' states.
 ///
-/// The four `button_*` fields are the platform's toolbar-button look. A
+/// The five `button_*` fields are the platform's toolbar-button look. A
 /// platform may give that look to some of a toolbar's buttons only (GNOME to
 /// image, image-text and arrow buttons; a button with a text label alone keeps
 /// the ordinary button's look, libadwaita 1.10.0 `_toolbars.scss:2-8`); an
@@ -1128,7 +1129,8 @@ pub struct SpinnerTheme {
 
 // ── 2.24 ComboBox / Dropdown Trigger ─────────────────────────────────────────
 
-/// ComboBox / dropdown trigger sizing.
+/// ComboBox / dropdown trigger: colours, sizing, and states (hover, open,
+/// disabled).
 #[serde_with::skip_serializing_none]
 #[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde(default)]
@@ -1197,7 +1199,7 @@ pub struct ComboBoxTheme {
 
 // ── 2.25 Segmented Control ───────────────────────────────────────────────────
 
-/// Segmented control sizing (macOS-primary; KDE uses tab bar metrics as proxy).
+/// Segmented control colours and sizing (macOS-primary; KDE uses tab bar metrics as proxy).
 #[serde_with::skip_serializing_none]
 #[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde(default)]
@@ -1254,7 +1256,7 @@ pub struct CardTheme {
 
 // ── 2.27 Expander / Disclosure ───────────────────────────────────────────────
 
-/// Expander / disclosure row geometry.
+/// Expander / disclosure row: geometry, arrow, and hover colours.
 #[serde_with::skip_serializing_none]
 #[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde(default)]
@@ -1342,7 +1344,7 @@ pub struct LinkTheme {
 ///
 /// Unlike other widget themes, LayoutTheme lives on [`crate::Theme`] (top-level)
 /// rather than [`crate::ThemeMode`] because spacing is variant-independent.
-// Phase 93-05 G5: LayoutTheme keeps `skip_inventory` so it does NOT register
+// LayoutTheme keeps `skip_inventory` so it does NOT register
 // in the per-variant WidgetFieldInfo registry (it is top-level, not per-variant),
 // but also derives ThemeFields so lint_toml can look up its fields in the
 // non-widget FieldInfo registry under the key "LayoutTheme".

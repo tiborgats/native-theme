@@ -1,7 +1,7 @@
 // Resolution engine: three-stage pipeline.
 //
 // 1. resolve() -- pure data transform: fills None fields from defaults and
-//    related widgets via ~91 inheritance rules. No OS detection, no I/O.
+//    related widgets by the inheritance rules (`inheritance.rs`). No OS detection, no I/O.
 // 2. resolve_platform_defaults() -- fills fields that require OS detection:
 //    button_order (from detected desktop environment).
 // 3. validate() -- extracts Option<T> -> T, producing ResolvedTheme.
@@ -9,7 +9,7 @@
 // Convenience: resolve_all() = 1+2, into_resolved() = 1+2+3.
 //
 // Split into submodules:
-// - inheritance: Phase 1-5 resolution rules (fill None fields from defaults/other widgets)
+// - inheritance: the resolution rules, in four phases (fill None fields from defaults/other widgets)
 // - validate: Field extraction, range checks, ResolvedTheme construction
 
 pub(crate) mod context;
@@ -32,10 +32,9 @@ inventory::collect!(WidgetFieldInfo);
 ///
 /// Populated by `#[derive(ThemeFields)]` on plain structs like `FontSpec`,
 /// `IconSizes`, `ThemeDefaults`, etc. Consumed by `lint_toml` to detect
-/// unknown keys in sub-tables. See `docs/archive/v0.5.7_gaps.md` §G5 for
-/// rationale — this sister registry to `WidgetFieldInfo` eliminates the
-/// hand-authored `FIELD_NAMES` constants that previously duplicated
-/// struct field lists.
+/// unknown keys in sub-tables, so no hand-written list of a struct's fields
+/// can drift from it (`docs/archive/v0.5.7_gaps.md` §G5). A sister registry
+/// to `WidgetFieldInfo`.
 pub(crate) struct FieldInfo {
     /// Pascal-case type name (e.g. "FontSpec", "IconSizes", "ThemeDefaults").
     pub struct_name: &'static str,
@@ -44,7 +43,7 @@ pub(crate) struct FieldInfo {
 }
 inventory::collect!(FieldInfo);
 
-/// Border inheritance registry (Phase 94-01 G6).
+/// Border inheritance registry.
 ///
 /// Populated by `#[derive(ThemeWidget)]` for widgets that declare
 /// `#[theme_inherit(border_kind = "full" | "full_lg" | "partial")]`. Each
@@ -62,10 +61,9 @@ inventory::collect!(FieldInfo);
 /// Fields carry `#[cfg_attr(not(test), allow(dead_code))]` because they are
 /// consumed only by the drift tests in `inheritance.rs::tests`
 /// (introspection via `inventory::iter`). A non-test build compiles the
-/// registry rows but never reads them — matching Phase 93-09's conditional
-/// `allow(dead_code)` pattern for self-unmasking (if a future non-test
-/// consumer lands, the allow stops firing and real dead-code regressions
-/// surface).
+/// registry rows but never reads them; the conditional `allow(dead_code)`
+/// unmasks itself (if a non-test consumer lands, the allow stops firing and
+/// real dead-code regressions surface).
 pub(crate) struct BorderInheritanceInfo {
     /// Snake_case widget name (e.g., "button", "segmented_control").
     #[cfg_attr(not(test), allow(dead_code))]
@@ -80,7 +78,7 @@ pub(crate) struct BorderInheritanceInfo {
 }
 inventory::collect!(BorderInheritanceInfo);
 
-/// Font inheritance registry (Phase 94-01 G6).
+/// Font inheritance registry.
 ///
 /// Populated by `#[derive(ThemeWidget)]` for widgets that declare one or
 /// more `#[theme_inherit(font = "<field>")]` attributes. Each attribute
@@ -134,7 +132,7 @@ use crate::model::ThemeMode;
 use crate::model::resolved::ResolvedTheme;
 
 impl ThemeMode {
-    /// Apply all ~91 inheritance rules in 4-phase order (pure data transform).
+    /// Apply all the inheritance rules in 4-phase order (pure data transform).
     ///
     /// After calling resolve(), most Option fields that were None will be filled
     /// from defaults or related widget fields. Calling resolve() twice produces
@@ -152,7 +150,9 @@ impl ThemeMode {
     /// 2. **Safety nets** -- platform-divergent fields get a reasonable fallback.
     /// 3. **Widget-from-defaults** -- colors, geometry, fonts, text scale entries
     ///    all inherit from defaults.
-    /// 4. **Widget-to-widget** -- inactive title bar fields fall back to active.
+    /// 4. **Widget-to-widget** -- inactive title bar fields fall back to active,
+    ///    hover and pressed text colours to the widget's text colour, an unstated
+    ///    row hover to the row's fill, and a text area's frame to the input's.
     #[doc(hidden)]
     pub fn resolve(&mut self) {
         self.resolve_defaults_internal();

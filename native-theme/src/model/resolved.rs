@@ -167,11 +167,13 @@ pub struct ResolvedDefaults {
 
 // --- ResolvedTheme ---
 
-/// A fully resolved theme where every field is guaranteed populated.
+/// A fully resolved theme: every field the model requires is populated, and
+/// a field the model treats as optional (an `Option` here too) is `None`
+/// where the theme states none.
 ///
 /// Produced by `validate()` after `resolve()`. Consumed by toolkit connectors.
-/// Mirrors [`crate::model::ThemeMode`] but with concrete (non-Option) types
-/// for all 26 per-widget structs plus defaults and text scale.
+/// Mirrors [`crate::model::ThemeMode`] with concrete types for the required
+/// fields of all 26 per-widget structs plus defaults and text scale.
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[non_exhaustive]
 pub struct ResolvedTheme {

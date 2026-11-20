@@ -51,12 +51,11 @@ pub struct Rgba {
     pub a: u8,
 }
 
-// Phase 93-01 (G1): no `impl Default for Rgba`. §16 of the v0.5.7 API
-// critique flagged that a theme library where `Rgba::default()` silently
-// returns "transparent black" is a footgun. Callers who need a named zero
-// colour use `Rgba::TRANSPARENT`, `Rgba::BLACK`, or `Rgba::WHITE` (all
-// `const`). Task 1 of this plan broke the sole transitive bound chain that
-// forced the Default impl (see `resolve::validate_helpers::require`).
+// No `impl Default for Rgba`: in a theme library an `Rgba::default()` that
+// silently returns transparent black is a footgun (§16 of the v0.5.7 API
+// critique). Callers who need a named zero colour use `Rgba::TRANSPARENT`,
+// `Rgba::BLACK`, or `Rgba::WHITE` (all `const`); `require` in
+// `resolve::validate_helpers` takes an explicit fallback for the same reason.
 
 impl Rgba {
     /// Create an opaque color (alpha = 255).

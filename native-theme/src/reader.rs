@@ -6,8 +6,8 @@
 //!
 //! The trait is `pub(crate)` — consumers of native-theme call
 //! [`SystemTheme::from_system`] or [`SystemTheme::from_system_async`] and
-//! never touch readers directly. This keeps the dispatch machinery as an
-//! implementation detail (per Phase 79-02 C6 audit).
+//! never touch readers directly. This keeps the dispatch machinery an
+//! implementation detail.
 //!
 //! ## Why `#[async_trait::async_trait]` instead of native async-fn-in-trait
 //!
@@ -18,8 +18,8 @@
 //! `async fn read(&self) -> Result<...>` into
 //! `fn read<'a>(&'a self) -> Pin<Box<dyn Future<Output=...> + Send + 'a>>`
 //! — a concrete return type that vtables can hold, making `Box<dyn>` compile.
-//!
-//! See plan 94-03 objective for the full three-option decision rationale.
+//! The options weighed are in `docs/archive/v0.5.7_planning-decision-log.md`,
+//! entry 94-03.
 //!
 //! [`SystemTheme::from_system`]: crate::SystemTheme::from_system
 //! [`SystemTheme::from_system_async`]: crate::SystemTheme::from_system_async

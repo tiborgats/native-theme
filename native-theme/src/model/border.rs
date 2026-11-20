@@ -12,10 +12,6 @@ use serde::{Deserialize, Serialize};
 ///
 /// **No padding fields:** Padding lives exclusively on [`WidgetBorderSpec`]
 /// because padding is a widget-level layout concern, not a global default.
-/// This split eliminated the former
-/// "derives-from-presence" rule where the resolver would fill padding with
-/// `0.0` based on whether `line_width` or `corner_radius` was set -- a
-/// confusing proxy heuristic that is no longer needed.
 ///
 /// All fields are optional to support partial overlays -- a DefaultsBorderSpec
 /// with only `color` set will only override the color when merged.

@@ -161,10 +161,8 @@ pub struct ThemeDefaults {
     pub icon_theme: Option<Cow<'static, str>>,
 }
 
-// Phase 93-05 G5: ThemeDefaults::FIELD_NAMES was a hand-authored 32-entry
-// mirror of the serde field names. Removed -- #[derive(ThemeFields)] above
-// registers the same list automatically into `crate::resolve::FieldInfo`,
-// consumed by `lint_toml`. See docs/archive/v0.5.7_gaps.md §G5.
+// #[derive(ThemeFields)] above registers the serde field names into
+// `crate::resolve::FieldInfo`, consumed by `lint_toml` (docs/archive/v0.5.7_gaps.md §G5).
 
 impl_merge!(ThemeDefaults {
     option {

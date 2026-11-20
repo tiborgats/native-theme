@@ -2061,7 +2061,7 @@ mod pipeline_tests {
         );
     }
 
-    // --- Phase 93-04 G4: Theme.icon_theme + three-tier precedence ---
+    // --- Theme.icon_theme + three-tier precedence ---
     //
     // Per docs/archive/v0.5.7_gaps.md §G4 and doc 1 §20 Option C:
     //   Tier 1 (highest): ThemeMode::defaults.icon_theme (per-variant override)

@@ -336,8 +336,7 @@ fn theme_spec_with_one_variant_is_not_empty() {
 // Issue 9b: Bundled SVG content validation
 // ---------------------------------------------------------------------------
 
-// G3 (Phase 93-03): migrated from the demoted `bundled_icon_svg` (now pub(crate))
-// to the public typed per-set loaders. Bundled icon sets always return
+// Through the public typed per-set loaders. Bundled icon sets always return
 // `IconData::Svg` with `Cow::Borrowed` to static bytes, so `cow.as_ref()` is
 // a zero-copy view back to `&'static [u8]`.
 
@@ -385,11 +384,8 @@ fn bundled_lucide_svg_starts_with_svg_tag() {
 // Platform sets return None when the target OS doesn't match
 // ---------------------------------------------------------------------------
 //
-// G3 (Phase 93-03): the original test asserted that `bundled_icon_svg`
-// (bundled lookup) has no entries for non-bundled sets. With the per-set
-// loaders, the equivalent observable behaviour is that platform-native sets
-// (SfSymbols, SegoeFluent) return None on the wrong OS. Freedesktop is
-// no longer asserted None here because on Linux with `system-icons`
+// Platform-native sets (SfSymbols, SegoeFluent) return None on the wrong OS.
+// Freedesktop is not asserted None here because on Linux with `system-icons`
 // FreedesktopLoader intentionally DOES load icons via the filesystem.
 
 #[test]

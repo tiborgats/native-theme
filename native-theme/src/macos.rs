@@ -1077,8 +1077,8 @@ mod tests {
             sample_dark_defaults(),
             &sample_widget_fonts(),
         );
-        // Accessibility fields are no longer on ThemeDefaults;
-        // they live on AccessibilityPreferences (constructed by pipeline).
+        // Accessibility fields live on AccessibilityPreferences (constructed
+        // by the pipeline), not on ThemeDefaults.
         assert!(theme.light.is_some());
     }
 

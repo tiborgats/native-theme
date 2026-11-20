@@ -29,7 +29,8 @@ kde = ["dep:configparser"]
 portal = ["dep:ashpd", "ashpd/async-io", "dep:async-io", "dep:zbus"]
 # The Windows reader: UISettings, the system metrics, the fonts and the caret's blink time.
 windows = ["dep:windows", "dep:windows-version"]
-# The macOS reader: NSColor under both appearances, NSFont, accessibility.
+# The macOS reader: NSColor under both appearances, NSFont, the scroller style
+# and the accessibility options.
 macos = ["dep:objc2", "dep:objc2-foundation", "dep:objc2-app-kit", "dep:block2", "dep:objc2-core-foundation"]
 # Aliases of `kde` and `portal`.
 linux-kde = ["kde"]

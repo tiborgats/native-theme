@@ -97,15 +97,6 @@ fn fully_populated_variant(offset: u8) -> ThemeMode {
     // Scrollbar width (per-widget)
     v.scrollbar.groove_width = Some(12.0);
 
-    // Spacing (on defaults)
-    // REMOVED(spacing): v.defaults.spacing.xxs = Some(2.0);
-    // REMOVED(spacing): v.defaults.spacing.xs = Some(4.0);
-    // REMOVED(spacing): v.defaults.spacing.s = Some(8.0);
-    // REMOVED(spacing): v.defaults.spacing.m = Some(12.0);
-    // REMOVED(spacing): v.defaults.spacing.l = Some(16.0);
-    // REMOVED(spacing): v.defaults.spacing.xl = Some(24.0);
-    // REMOVED(spacing): v.defaults.spacing.xxl = Some(32.0);
-
     v
 }
 

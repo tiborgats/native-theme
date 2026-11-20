@@ -227,8 +227,8 @@ fn resolve_phase2_safety_nets() {
     v.defaults.muted_color = Some(Rgba::rgb(128, 128, 128));
     v.resolve();
 
-    // Removed safety nets: line_height, accent_text_color, shadow_color,
-    // disabled_text_color are no longer fabricated -- all 20 presets provide them.
+    // No safety net fills line_height, accent_text_color, shadow_color or
+    // disabled_text_color: all 17 presets state them.
     assert_eq!(
         v.defaults.line_height, None,
         "line_height no longer fabricated"
@@ -286,9 +286,8 @@ fn resolve_phase2_safety_nets() {
 // ===== Font DPI conversion (via validate) =====
 //
 // These tests verify that FontSize::Pt values are correctly converted to
-// logical pixels during validate(). This replaces the old Phase 1.5
-// resolve_font_dpi_conversion() tests -- conversion now happens in validate
-// via FontSize::to_logical_px(dpi), not in-place mutation during resolve.
+// logical pixels during validate(), via FontSize::to_logical_px(dpi), not by
+// in-place mutation during resolve.
 
 /// Standard screen DPI (CSS reference pixel).
 const TEST_DPI_STANDARD: f32 = 96.0;
@@ -2842,12 +2841,11 @@ fn check_ranges_happy_path_zero_errors() {
     );
 }
 
-// ===== G1 (Phase 93-01) — `require` no-Default-bound regression tests =====
+// ===== `require` no-Default-bound regression tests =====
 //
 // These tests exercise `validate_helpers::require` on a type that does NOT
-// implement `Default`. Before Phase 93-01, `require<T: Clone + Default>`
-// could not be called with such a type and this module would not compile.
-// After the fix, `require<T: Clone>` accepts an explicit `fallback: T`.
+// implement `Default`: `require<T: Clone>` takes an explicit `fallback: T`,
+// so the module compiles only while `require` asks for no `Default` bound.
 
 #[test]
 fn require_accepts_type_without_default_when_value_present() {
@@ -2933,23 +2931,19 @@ fn validate_border_records_missing_and_returns_sentinel_for_full_kind() {
     assert!(!out.shadow_enabled);
 }
 
-// ===== G7 (Phase 94-02) — `ResolutionContext` regression tests =====
+// ===== `ResolutionContext` regression tests =====
 //
-// These tests lock the G7 contract (docs/archive/v0.5.7_gaps.md §G7) before the
-// implementation is written. They prove:
-//   (a) `crate::resolve::ResolutionContext` does not exist yet
-//   (b) `ThemeMode::into_resolved(&ResolutionContext)` does not exist yet
-//   (c) `ThemeMode::resolve_system()` does not exist yet
+// These tests lock the contract of docs/archive/v0.5.7_gaps.md §G7:
+//   (a) `crate::resolve::ResolutionContext` exists
+//   (b) `ThemeMode::into_resolved(&ResolutionContext)` exists
+//   (c) `ThemeMode::resolve_system()` exists
 //   (d) `for_tests()` semantics are correctly specified (96 DPI,
 //       PrimaryRight, no icon_theme)
-//   (e) `OverlaySource.context` field replaces `.font_dpi`
-//
-// Posture: Phase 93-01 and 93-09 established RED-then-GREEN discipline; this
-// plan follows the same pattern.
+//   (e) `OverlaySource` carries a `context`
 
 #[test]
 fn resolution_context_exists_and_has_no_default() {
-    // (a) Import check — this line fails to compile before Task 2.
+    // (a) Import check — this line fails to compile without the type.
     use crate::resolve::ResolutionContext;
 
     // (d) for_tests() semantics per gaps doc §G7.
@@ -2978,9 +2972,8 @@ fn resolution_context_exists_and_has_no_default() {
 
 #[test]
 fn into_resolved_takes_context_ref() {
-    // (b) The current signature `into_resolved(Option<f32>)` must be replaced
-    //     by `into_resolved(&ResolutionContext)`. Passing a &ctx literal
-    //     fails to compile until Task 2 lands.
+    // (b) The signature is `into_resolved(&ResolutionContext)`: passing a
+    //     &ctx literal fails to compile with any other.
     use crate::resolve::ResolutionContext;
 
     let theme = crate::Theme::preset("dracula").expect("dracula preset should load");
@@ -3056,10 +3049,7 @@ fn overlay_source_context_roundtrip() {
         "ResolutionContext should Clone with identical icon_theme"
     );
 
-    // Field-level compile check: if `context` is not a field of
-    // OverlaySource, this fails to compile at the point Task 2 wires it up.
-    // We cannot access pub(crate) fields from the unit test module because
-    // tests.rs is inside the crate — so reference the type directly.
+    // Type-level compile check on the type `OverlaySource.context` holds.
     let _type_check: fn() -> ResolutionContext = ResolutionContext::for_tests;
 }
 

@@ -147,7 +147,7 @@ impl FontSize {
 /// leave style undefined in a way that would produce incorrect rendering.
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize, ThemeFields)]
 #[serde(try_from = "FontSpecRaw", into = "FontSpecRaw")]
-// Phase 93-05 G5: serde serializes via FontSpecRaw which maps `size: FontSize`
+// serde serializes via FontSpecRaw which maps `size: FontSize`
 // to two mutually-exclusive keys (`size_pt` / `size_px`). The ThemeFields
 // derive's introspection path cannot see the proxy, so declare the wire-format
 // field names explicitly here. Keep in sync with FontSpecRaw below.
@@ -292,7 +292,7 @@ pub struct ResolvedFontSpec {
 /// consistent sizing and spacing.
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize, ThemeFields)]
 #[serde(try_from = "TextScaleEntryRaw", into = "TextScaleEntryRaw")]
-// Phase 93-05 G5: serde proxy through TextScaleEntryRaw maps `size` and
+// serde proxy through TextScaleEntryRaw maps `size` and
 // `line_height` each to two mutually-exclusive keys. Wire format declared
 // explicitly. Keep in sync with TextScaleEntryRaw below.
 #[theme_layer(fields = "size_pt, size_px, weight, line_height_pt, line_height_px")]

@@ -539,9 +539,9 @@ fn build_gnome_variant_pure(data: &GnomePortalData) -> crate::ThemeMode {
         );
     }
 
-    // NOTE: high_contrast, reduce_motion and text_scaling_factor
-    // are no longer on ThemeDefaults. They live on AccessibilityPreferences,
-    // constructed by the pipeline from GnomePortalData fields.
+    // NOTE: high_contrast, reduce_motion and text_scaling_factor live on
+    // AccessibilityPreferences, constructed by the pipeline from
+    // GnomePortalData fields, not on ThemeDefaults.
 
     // ── Fonts (GNOME-01) ────────────────────────────────────────────────
     // Primary UI font
