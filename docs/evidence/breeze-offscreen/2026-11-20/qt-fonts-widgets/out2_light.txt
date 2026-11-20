@@ -1,0 +1,3 @@
+h1 font pointSizeF 13.5 pixelSize -1 fontInfo.pixelSize 18 fontInfo.pointSize 13.5 implicitHeight 25.0
+h2 font pointSizeF 12.0 pixelSize -1 fontInfo.pixelSize 16 fontInfo.pointSize 12.0 implicitHeight 22.0
+small font pointSizeF 8.0 pixelSize -1 fontInfo.pixelSize 11 fontInfo.pointSize 8.25 implicitHeight 15.0

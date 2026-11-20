@@ -1,0 +1,99 @@
+[light proxy] platform offscreen | style LogStyle | base style breeze Breeze::Style
+[light proxy] screen logicalDPI 96.0 dpr 1.0 geometry 800 x 800
+[light proxy] palette Active Base #ffffff Text #232629 | Active Highlight #3daee9 | Inactive Highlight #c2e0f5 | Inactive Base #ffffff
+[light proxy] computed (not measured): Active Highlight@0.3 over Base = #c5e7f8; outline Active Highlight@0.8 over that fill = #58b9ec
+[light proxy] computed (not measured): Inactive Highlight@0.3 over Base = #edf6fc; outline Inactive Highlight@0.8 over that fill = #cbe4f6
+[light proxy] window active True | list selectionMode SingleSelection | tree selectionMode SingleSelection
+[light proxy] list lineedit-focused: focusWidget QLineEdit | view hasFocus False | window active True | viewport underMouse True | pointer (viewport) 210,83 | currentIndex row -1 | selected rows []
+[light proxy] list lineedit-focused state log: PE_PanelItemViewItem item=0 state=0x00000001 Enabled rect=(0,0,223x24) option=QStyleOptionViewItem widget=QListWidget
+[light proxy] list lineedit-focused state log: PE_PanelItemViewItem item=1 state=0x00000001 Enabled rect=(0,24,223x24) option=QStyleOptionViewItem widget=QListWidget
+[light proxy] list lineedit-focused state log: PE_PanelItemViewItem item=2 state=0x00000001 Enabled rect=(0,48,223x24) option=QStyleOptionViewItem widget=QListWidget
+[light proxy] list lineedit-focused state log: PE_PanelItemViewItem item=3 state=0x00002001 Enabled|MouseOver rect=(0,72,223x24) option=QStyleOptionViewItem widget=QListWidget
+[light proxy] list lineedit-focused state log: PE_PanelItemViewItem item=4 state=0x00000001 Enabled rect=(0,96,223x24) option=QStyleOptionViewItem widget=QListWidget
+[light proxy] list lineedit-focused state log: PE_PanelItemViewItem item=5 state=0x00000001 Enabled rect=(0,120,223x24) option=QStyleOptionViewItem widget=QListWidget
+[light proxy] list lineedit-focused state log: PE_PanelItemViewItem item=6 state=0x00000001 Enabled rect=(0,144,223x24) option=QStyleOptionViewItem widget=QListWidget
+[light proxy] list lineedit-focused state log: PE_PanelItemViewItem item=7 state=0x00000001 Enabled rect=(0,168,223x24) option=QStyleOptionViewItem widget=QListWidget
+[light proxy] list lineedit-focused: visualRect row 3 (viewport coords) x=0 y=72 w=223 h=24; viewport 223x258
+[light proxy] list lineedit-focused: fill (text-free) (202,83) #ecf5fb; (182,83) #ecf5fb; base outside the rows (219,254) #ffffff
+[light proxy] list lineedit-focused: row y=83 x=0..6: ['#ffffff', '#cce5f7', '#ecf5fb', '#ecf5fb', '#ecf5fb', '#ecf5fb', '#ecf5fb']; x=216..222: ['#ecf5fb', '#ecf5fb', '#ecf5fb', '#ecf5fb', '#ecf5fb', '#cce5f7', '#ffffff']
+[light proxy] list lineedit-focused: column x=202 y=71..76: ['#ffffff', '#ffffff', '#cce5f7', '#ecf5fb', '#ecf5fb', '#ecf5fb']; y=91..96: ['#ecf5fb', '#ecf5fb', '#ecf5fb', '#cce5f7', '#ffffff', '#ffffff']
+[light proxy] list lineedit-focused: painted highlight extent (pixels differing from the base sample) x=1 y=73 w=221 h=22
+[light proxy] list lineedit-focused: corner TL (1,73) #ffffff diag+1 #f3f8fc diag+2 #ecf5fb diag+3 #ecf5fb
+[light proxy] list lineedit-focused: corner TR (221,73) #ffffff diag+1 #f5fafc diag+2 #ecf5fb diag+3 #ecf5fb
+[light proxy] list lineedit-focused: corner BL (1,94) #ffffff diag+1 #f5fafc diag+2 #ecf5fb diag+3 #ecf5fb
+[light proxy] list lineedit-focused: corner BR (221,94) #ffffff diag+1 #f7fafe diag+2 #ecf5fb diag+3 #ecf5fb
+[light proxy] list lineedit-focused: patch TL x=0..5 y=72..77 (rows top to bottom): #ffffff #ffffff #ffffff #ffffff #ffffff #ffffff / #ffffff #ffffff #ffffff #f8fbfe #deeef9 #d0e7f7 / #ffffff #ffffff #f3f8fc #d0e7f7 #e4f0fa #e9f4fa / #ffffff #f8fbfe #d0e8f7 #ecf5fb #ecf5fb #ecf5fb / #ffffff #ddeef9 #e3f0fa #ecf5fb #ecf5fb #ecf5fb / #ffffff #d0e7f7 #e9f4fa #ecf5fb #ecf5fb #ecf5fb
+[light proxy] list lineedit-focused: patch TR x=217..222 y=72..77: #ffffff #ffffff #ffffff #ffffff #ffffff #ffffff / #d1e7f7 #deeef9 #f7fbfd #ffffff #ffffff #ffffff / #e8f4fa #e3f0f9 #d1e8f8 #f5fafc #ffffff #ffffff / #ecf5fb #ecf5fb #ecf5fb #d0e6f7 #f8fcfe #ffffff / #ecf5fb #ecf5fb #ecf5fb #e4f0fa #deeefa #ffffff / #ecf5fb #ecf5fb #ecf5fb #e9f4fb #d1e7f6 #ffffff
+[light proxy] list lineedit-focused: patch BL x=0..5 y=90..95: #ffffff #d1e7f7 #e8f4fa #ecf5fb #ecf5fb #ecf5fb / #ffffff #deeef9 #e4f0f9 #ecf5fb #ecf5fb #ecf5fb / #ffffff #f7fbfd #d1e7f8 #ecf5fb #ecf5fb #ecf5fb / #ffffff #ffffff #f5fafc #d0e7f8 #e3f0fa #e9f4fb / #ffffff #ffffff #ffffff #f8fcfe #deeefa #d1e7f6 / #ffffff #ffffff #ffffff #ffffff #ffffff #ffffff
+[light proxy] list lineedit-focused: patch BR x=217..222 y=90..95: #ecf5fb #ecf5fb #ecf5fb #e9f3fa #d1e8f7 #ffffff / #ecf5fb #ecf5fb #ecf5fb #e2f0f9 #ddeef8 #ffffff / #ecf5fb #ecf5fb #ecf5fb #cfe7f7 #f9fcfe #ffffff / #e9f3fa #e3eff9 #cfe7f7 #f7fafe #ffffff #ffffff / #d1e8f7 #ddeef8 #f9fcfe #ffffff #ffffff #ffffff / #ffffff #ffffff #ffffff #ffffff #ffffff #ffffff
+[light proxy] list lineedit-focused: text ink vs fill: bbox (7, 79, 62, 88) farthest #232629
+[light proxy] list view-focused: focusWidget QListWidget | view hasFocus True | window active True | viewport underMouse True | pointer (viewport) 210,83 | currentIndex row 0 | selected rows []
+[light proxy] list view-focused state log: PE_PanelItemViewItem item=0 state=0x00010101 Enabled|HasFocus|Active rect=(0,0,223x24) option=QStyleOptionViewItem widget=QListWidget
+[light proxy] list view-focused state log: PE_PanelItemViewItem item=1 state=0x00010001 Enabled|Active rect=(0,24,223x24) option=QStyleOptionViewItem widget=QListWidget
+[light proxy] list view-focused state log: PE_PanelItemViewItem item=2 state=0x00010001 Enabled|Active rect=(0,48,223x24) option=QStyleOptionViewItem widget=QListWidget
+[light proxy] list view-focused state log: PE_PanelItemViewItem item=3 state=0x00012001 Enabled|MouseOver|Active rect=(0,72,223x24) option=QStyleOptionViewItem widget=QListWidget
+[light proxy] list view-focused state log: PE_PanelItemViewItem item=4 state=0x00010001 Enabled|Active rect=(0,96,223x24) option=QStyleOptionViewItem widget=QListWidget
+[light proxy] list view-focused state log: PE_PanelItemViewItem item=5 state=0x00010001 Enabled|Active rect=(0,120,223x24) option=QStyleOptionViewItem widget=QListWidget
+[light proxy] list view-focused state log: PE_PanelItemViewItem item=6 state=0x00010001 Enabled|Active rect=(0,144,223x24) option=QStyleOptionViewItem widget=QListWidget
+[light proxy] list view-focused state log: PE_PanelItemViewItem item=7 state=0x00010001 Enabled|Active rect=(0,168,223x24) option=QStyleOptionViewItem widget=QListWidget
+[light proxy] list view-focused: visualRect row 3 (viewport coords) x=0 y=72 w=223 h=24; viewport 223x258
+[light proxy] list view-focused: fill (text-free) (202,83) #c4e6f8; (182,83) #c4e6f8; base outside the rows (219,254) #ffffff
+[light proxy] list view-focused: row y=83 x=0..6: ['#ffffff', '#5ebbec', '#c4e6f8', '#c4e6f8', '#c4e6f8', '#c4e6f8', '#c4e6f8']; x=216..222: ['#c4e6f8', '#c4e6f8', '#c4e6f8', '#c4e6f8', '#c3e6f8', '#5fbbec', '#ffffff']
+[light proxy] list view-focused: column x=202 y=71..76: ['#ffffff', '#ffffff', '#5ebbec', '#c4e6f8', '#c4e6f8', '#c4e6f8']; y=91..96: ['#c4e6f8', '#c4e6f8', '#c3e6f8', '#5fbbec', '#ffffff', '#ffffff']
+[light proxy] list view-focused: painted highlight extent (pixels differing from the base sample) x=1 y=73 w=221 h=22
+[light proxy] list view-focused: corner TL (1,73) #ffffff diag+1 #e0f2fa diag+2 #c4e6f8 diag+3 #c4e6f8
+[light proxy] list view-focused: corner TR (221,73) #ffffff diag+1 #e3f2fb diag+2 #c4e6f8 diag+3 #c4e6f8
+[light proxy] list view-focused: corner BL (1,94) #ffffff diag+1 #e3f2fb diag+2 #c4e6f8 diag+3 #c4e6f8
+[light proxy] list view-focused: corner BR (221,94) #ffffff diag+1 #e6f3fc diag+2 #c4e6f8 diag+3 #c4e6f8
+[light proxy] list view-focused: patch TL x=0..5 y=72..77 (rows top to bottom): #ffffff #ffffff #ffffff #ffffff #ffffff #ffffff / #ffffff #ffffff #ffffff #e7f5fc #96d2f3 #6bc1ed / #ffffff #ffffff #e0f2fa #6cc1ee #aadcf5 #bae2f8 / #ffffff #e7f5fc #6cc2ed #c4e6f8 #c4e6f8 #c4e6f8 / #ffffff #96d2f3 #a9dbf5 #c4e6f8 #c4e6f8 #c4e6f8 / #ffffff #6bc1ed #bae2f8 #c4e6f8 #c4e6f8 #c4e6f8
+[light proxy] list view-focused: patch TR x=217..222 y=72..77: #ffffff #ffffff #ffffff #ffffff #ffffff #ffffff / #6cc1ee #95d2f2 #e8f5fc #ffffff #ffffff #ffffff / #bae2f7 #a8daf4 #6bc2ed #e3f2fb #ffffff #ffffff / #c4e6f8 #c4e6f8 #c4e6f8 #6ac0ed #eaf6fd #ffffff / #c4e6f8 #c4e6f8 #c4e6f8 #a8daf4 #97d4f3 #ffffff / #c4e6f8 #c4e6f8 #c4e6f8 #b8e1f7 #6ec2ee #ffffff
+[light proxy] list view-focused: patch BL x=0..5 y=90..95: #ffffff #6cc1ee #bae2f7 #c4e6f8 #c4e6f8 #c4e6f8 / #ffffff #95d3f2 #a8dbf4 #c4e6f8 #c4e6f8 #c4e6f8 / #ffffff #e8f5fc #6bc1ee #c4e6f8 #c4e6f8 #c4e6f8 / #ffffff #ffffff #e3f2fb #69c1ed #a8daf4 #b8e1f7 / #ffffff #ffffff #ffffff #eaf6fd #96d4f3 #6ec2ee / #ffffff #ffffff #ffffff #ffffff #ffffff #ffffff
+[light proxy] list view-focused: patch BR x=217..222 y=90..95: #c4e6f8 #c4e6f8 #c4e6f8 #b8e1f7 #6ec2ee #ffffff / #c4e6f8 #c4e6f8 #c4e6f8 #a6daf4 #97d3f2 #ffffff / #c4e6f8 #c4e6f8 #c4e6f8 #6ac0ed #ebf7fd #ffffff / #b8e1f7 #a6daf4 #69bfed #e6f3fc #ffffff #ffffff / #6ec2ee #97d3f2 #ebf7fd #ffffff #ffffff #ffffff / #ffffff #ffffff #ffffff #ffffff #ffffff #ffffff
+[light proxy] list view-focused: text ink vs fill: bbox (7, 79, 62, 88) farthest #232629
+[light proxy] tree lineedit-focused: focusWidget QLineEdit | view hasFocus False | window active True | viewport underMouse True | pointer (viewport) 210,83 | currentIndex row -1 | selected rows []
+[light proxy] tree lineedit-focused state log: PE_PanelItemViewItem item=0 state=0x00200001 Enabled|Sibling rect=(20,0,203x24) option=QStyleOptionViewItem widget=QTreeWidget
+[light proxy] tree lineedit-focused state log: PE_PanelItemViewItem item=1 state=0x00200001 Enabled|Sibling rect=(20,24,203x24) option=QStyleOptionViewItem widget=QTreeWidget
+[light proxy] tree lineedit-focused state log: PE_PanelItemViewItem item=2 state=0x00200001 Enabled|Sibling rect=(20,48,203x24) option=QStyleOptionViewItem widget=QTreeWidget
+[light proxy] tree lineedit-focused state log: PE_PanelItemViewItem item=3 state=0x00202001 Enabled|MouseOver|Sibling rect=(20,72,203x24) option=QStyleOptionViewItem widget=QTreeWidget
+[light proxy] tree lineedit-focused state log: PE_PanelItemViewItem item=4 state=0x00200001 Enabled|Sibling rect=(20,96,203x24) option=QStyleOptionViewItem widget=QTreeWidget
+[light proxy] tree lineedit-focused state log: PE_PanelItemViewItem item=5 state=0x00200001 Enabled|Sibling rect=(20,120,203x24) option=QStyleOptionViewItem widget=QTreeWidget
+[light proxy] tree lineedit-focused state log: PE_PanelItemViewItem item=6 state=0x00200001 Enabled|Sibling rect=(20,144,203x24) option=QStyleOptionViewItem widget=QTreeWidget
+[light proxy] tree lineedit-focused state log: PE_PanelItemViewItem item=7 state=0x00000001 Enabled rect=(20,168,203x24) option=QStyleOptionViewItem widget=QTreeWidget
+[light proxy] tree lineedit-focused: visualRect row 3 (viewport coords) x=20 y=72 w=203 h=24; viewport 223x228
+[light proxy] tree lineedit-focused: fill (text-free) (202,83) #ecf5fb; (182,83) #ecf5fb; base outside the rows (219,224) #ffffff
+[light proxy] tree lineedit-focused: row y=83 x=20..26: ['#ffffff', '#cce5f7', '#ecf5fb', '#ecf5fb', '#ecf5fb', '#ecf5fb', '#ecf5fb']; x=216..222: ['#ecf5fb', '#ecf5fb', '#ecf5fb', '#ecf5fb', '#ecf5fb', '#cce5f7', '#ffffff']
+[light proxy] tree lineedit-focused: column x=202 y=71..76: ['#ffffff', '#ffffff', '#cce5f7', '#ecf5fb', '#ecf5fb', '#ecf5fb']; y=91..96: ['#ecf5fb', '#ecf5fb', '#ecf5fb', '#cce5f7', '#ffffff', '#ffffff']
+[light proxy] tree lineedit-focused: painted highlight extent (pixels differing from the base sample) x=21 y=73 w=201 h=22
+[light proxy] tree lineedit-focused: corner TL (21,73) #ffffff diag+1 #f3f8fc diag+2 #ecf5fb diag+3 #ecf5fb
+[light proxy] tree lineedit-focused: corner TR (221,73) #ffffff diag+1 #f5fafc diag+2 #ecf5fb diag+3 #ecf5fb
+[light proxy] tree lineedit-focused: corner BL (21,94) #ffffff diag+1 #f5fafc diag+2 #ecf5fb diag+3 #ecf5fb
+[light proxy] tree lineedit-focused: corner BR (221,94) #ffffff diag+1 #f7fafe diag+2 #ecf5fb diag+3 #ecf5fb
+[light proxy] tree lineedit-focused: patch TL x=20..25 y=72..77 (rows top to bottom): #ffffff #ffffff #ffffff #ffffff #ffffff #ffffff / #ffffff #ffffff #ffffff #f8fbfe #deeef9 #d0e7f7 / #ffffff #ffffff #f3f8fc #d0e7f7 #e4f0fa #e9f4fa / #ffffff #f8fbfe #d0e8f7 #ecf5fb #ecf5fb #ecf5fb / #ffffff #ddeef9 #e3f0fa #ecf5fb #ecf5fb #ecf5fb / #ffffff #d0e7f7 #e9f4fa #ecf5fb #ecf5fb #ecf5fb
+[light proxy] tree lineedit-focused: patch TR x=217..222 y=72..77: #ffffff #ffffff #ffffff #ffffff #ffffff #ffffff / #d1e7f7 #deeef9 #f7fbfd #ffffff #ffffff #ffffff / #e8f4fa #e3f0f9 #d1e8f8 #f5fafc #ffffff #ffffff / #ecf5fb #ecf5fb #ecf5fb #d0e6f7 #f8fcfe #ffffff / #ecf5fb #ecf5fb #ecf5fb #e4f0fa #deeefa #ffffff / #ecf5fb #ecf5fb #ecf5fb #e9f4fb #d1e7f6 #ffffff
+[light proxy] tree lineedit-focused: patch BL x=20..25 y=90..95: #ffffff #d1e7f7 #e8f4fa #ecf5fb #ecf5fb #ecf5fb / #ffffff #deeef9 #e4f0f9 #ecf5fb #ecf5fb #ecf5fb / #ffffff #f7fbfd #d1e7f8 #ecf5fb #ecf5fb #ecf5fb / #ffffff #ffffff #f5fafc #d0e7f8 #e3f0fa #e9f4fb / #ffffff #ffffff #ffffff #f8fcfe #deeefa #d1e7f6 / #ffffff #ffffff #ffffff #ffffff #ffffff #ffffff
+[light proxy] tree lineedit-focused: patch BR x=217..222 y=90..95: #ecf5fb #ecf5fb #ecf5fb #e9f3fa #d1e8f7 #ffffff / #ecf5fb #ecf5fb #ecf5fb #e2f0f9 #ddeef8 #ffffff / #ecf5fb #ecf5fb #ecf5fb #cfe7f7 #f9fcfe #ffffff / #e9f3fa #e3eff9 #cfe7f7 #f7fafe #ffffff #ffffff / #d1e8f7 #ddeef8 #f9fcfe #ffffff #ffffff #ffffff / #ffffff #ffffff #ffffff #ffffff #ffffff #ffffff
+[light proxy] tree lineedit-focused: text ink vs fill: bbox (26, 80, 88, 88) farthest #232629
+[light proxy] tree view-focused: focusWidget QTreeWidget | view hasFocus True | window active True | viewport underMouse True | pointer (viewport) 210,83 | currentIndex row 0 | selected rows []
+[light proxy] tree view-focused state log: PE_PanelItemViewItem item=0 state=0x00210101 Enabled|HasFocus|Active|Sibling rect=(20,0,203x24) option=QStyleOptionViewItem widget=QTreeWidget
+[light proxy] tree view-focused state log: PE_PanelItemViewItem item=1 state=0x00210001 Enabled|Active|Sibling rect=(20,24,203x24) option=QStyleOptionViewItem widget=QTreeWidget
+[light proxy] tree view-focused state log: PE_PanelItemViewItem item=2 state=0x00210001 Enabled|Active|Sibling rect=(20,48,203x24) option=QStyleOptionViewItem widget=QTreeWidget
+[light proxy] tree view-focused state log: PE_PanelItemViewItem item=3 state=0x00212001 Enabled|MouseOver|Active|Sibling rect=(20,72,203x24) option=QStyleOptionViewItem widget=QTreeWidget
+[light proxy] tree view-focused state log: PE_PanelItemViewItem item=4 state=0x00210001 Enabled|Active|Sibling rect=(20,96,203x24) option=QStyleOptionViewItem widget=QTreeWidget
+[light proxy] tree view-focused state log: PE_PanelItemViewItem item=5 state=0x00210001 Enabled|Active|Sibling rect=(20,120,203x24) option=QStyleOptionViewItem widget=QTreeWidget
+[light proxy] tree view-focused state log: PE_PanelItemViewItem item=6 state=0x00210001 Enabled|Active|Sibling rect=(20,144,203x24) option=QStyleOptionViewItem widget=QTreeWidget
+[light proxy] tree view-focused state log: PE_PanelItemViewItem item=7 state=0x00010001 Enabled|Active rect=(20,168,203x24) option=QStyleOptionViewItem widget=QTreeWidget
+[light proxy] tree view-focused: visualRect row 3 (viewport coords) x=20 y=72 w=203 h=24; viewport 223x228
+[light proxy] tree view-focused: fill (text-free) (202,83) #c4e6f8; (182,83) #c4e6f8; base outside the rows (219,224) #ffffff
+[light proxy] tree view-focused: row y=83 x=20..26: ['#ffffff', '#5ebbec', '#c4e6f8', '#c4e6f8', '#c4e6f8', '#c4e6f8', '#c4e6f8']; x=216..222: ['#c4e6f8', '#c4e6f8', '#c4e6f8', '#c4e6f8', '#c3e6f8', '#5fbbec', '#ffffff']
+[light proxy] tree view-focused: column x=202 y=71..76: ['#ffffff', '#ffffff', '#5ebbec', '#c4e6f8', '#c4e6f8', '#c4e6f8']; y=91..96: ['#c4e6f8', '#c4e6f8', '#c3e6f8', '#5fbbec', '#ffffff', '#ffffff']
+[light proxy] tree view-focused: painted highlight extent (pixels differing from the base sample) x=21 y=73 w=201 h=22
+[light proxy] tree view-focused: corner TL (21,73) #ffffff diag+1 #e0f2fa diag+2 #c4e6f8 diag+3 #c4e6f8
+[light proxy] tree view-focused: corner TR (221,73) #ffffff diag+1 #e3f2fb diag+2 #c4e6f8 diag+3 #c4e6f8
+[light proxy] tree view-focused: corner BL (21,94) #ffffff diag+1 #e3f2fb diag+2 #c4e6f8 diag+3 #c4e6f8
+[light proxy] tree view-focused: corner BR (221,94) #ffffff diag+1 #e6f3fc diag+2 #c4e6f8 diag+3 #c4e6f8
+[light proxy] tree view-focused: patch TL x=20..25 y=72..77 (rows top to bottom): #ffffff #ffffff #ffffff #ffffff #ffffff #ffffff / #ffffff #ffffff #ffffff #e7f5fc #96d2f3 #6bc1ed / #ffffff #ffffff #e0f2fa #6cc1ee #aadcf5 #bae2f8 / #ffffff #e7f5fc #6cc2ed #c4e6f8 #c4e6f8 #c4e6f8 / #ffffff #96d2f3 #a9dbf5 #c4e6f8 #c4e6f8 #c4e6f8 / #ffffff #6bc1ed #bae2f8 #c4e6f8 #c4e6f8 #c4e6f8
+[light proxy] tree view-focused: patch TR x=217..222 y=72..77: #ffffff #ffffff #ffffff #ffffff #ffffff #ffffff / #6cc1ee #95d2f2 #e8f5fc #ffffff #ffffff #ffffff / #bae2f7 #a8daf4 #6bc2ed #e3f2fb #ffffff #ffffff / #c4e6f8 #c4e6f8 #c4e6f8 #6ac0ed #eaf6fd #ffffff / #c4e6f8 #c4e6f8 #c4e6f8 #a8daf4 #97d4f3 #ffffff / #c4e6f8 #c4e6f8 #c4e6f8 #b8e1f7 #6ec2ee #ffffff
+[light proxy] tree view-focused: patch BL x=20..25 y=90..95: #ffffff #6cc1ee #bae2f7 #c4e6f8 #c4e6f8 #c4e6f8 / #ffffff #95d3f2 #a8dbf4 #c4e6f8 #c4e6f8 #c4e6f8 / #ffffff #e8f5fc #6bc1ee #c4e6f8 #c4e6f8 #c4e6f8 / #ffffff #ffffff #e3f2fb #69c1ed #a8daf4 #b8e1f7 / #ffffff #ffffff #ffffff #eaf6fd #96d4f3 #6ec2ee / #ffffff #ffffff #ffffff #ffffff #ffffff #ffffff
+[light proxy] tree view-focused: patch BR x=217..222 y=90..95: #c4e6f8 #c4e6f8 #c4e6f8 #b8e1f7 #6ec2ee #ffffff / #c4e6f8 #c4e6f8 #c4e6f8 #a6daf4 #97d3f2 #ffffff / #c4e6f8 #c4e6f8 #c4e6f8 #6ac0ed #ebf7fd #ffffff / #b8e1f7 #a6daf4 #69bfed #e6f3fc #ffffff #ffffff / #6ec2ee #97d3f2 #ebf7fd #ffffff #ffffff #ffffff / #ffffff #ffffff #ffffff #ffffff #ffffff #ffffff
+[light proxy] tree view-focused: text ink vs fill: bbox (26, 80, 88, 88) farthest #232629
+[light proxy] done

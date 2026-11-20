@@ -1,0 +1,14 @@
+## light
+style breeze
+focus widget None
+slider handle rect 90 5 20 20
+slider rest row y=14 x=90..95: ['#72c2eb', '#cfd1d3', '#fafafa', '#fcfcfc', '#fcfcfc', '#fcfcfc'] centre #fcfcfc column x=99 y=5..9: ['#eff0f1', '#d2d2d3', '#fafafa', '#fcfcfc', '#fcfcfc']
+slider hover underMouse True row: ['#72c2eb', '#42b0e9', '#f3f8fb', '#fcfcfc', '#fcfcfc', '#fcfcfc'] centre #fcfcfc column: ['#eff0f1', '#45b1e9', '#f3f8fb', '#fcfcfc', '#fcfcfc']
+checked flat toolbutton 80x34 row y=17 x=0..7: ['#eff0f1', '#d1d1d2', '#d5d7d8', '#d5d7d8', '#d5d7d8', '#d5d7d8', '#d5d7d8', '#d5d7d8'] column x=40 y=0..7: ['#eff0f1', '#d1d1d2', '#d5d7d8', '#d5d7d8', '#d5d7d8', '#d5d7d8', '#d5d7d8', '#d5d7d8'] fill #d5d7d8
+## dark
+style breeze
+focus widget None
+slider handle rect 90 5 20 20
+slider rest row y=14 x=90..95: ['#3584ae', '#51565a', '#2b2e32', '#292c30', '#292c30', '#292c30'] centre #292c30 column x=99 y=5..9: ['#202326', '#515457', '#2b2e32', '#292c30', '#292c30']
+slider hover underMouse True row: ['#3584ae', '#3caae3', '#2a3239', '#292c30', '#292c30', '#292c30'] centre #292c30 column: ['#202326', '#3ca8e0', '#2a3239', '#292c30', '#292c30']
+checked flat toolbutton 80x34 row y=17 x=0..7: ['#202326', '#535659', '#3c3f41', '#3c3f41', '#3c3f41', '#3c3f41', '#3c3f41', '#3c3f41'] column x=40 y=0..7: ['#202326', '#535659', '#3c3f41', '#3c3f41', '#3c3f41', '#3c3f41', '#3c3f41', '#3c3f41'] fill #3c3f41

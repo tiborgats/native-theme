@@ -1,0 +1,102 @@
+[light proxy] platform offscreen | style LogStyle | base style breeze Breeze::Style
+[light proxy] screen logicalDPI 96.0 dpr 1.0 geometry 800 x 800
+[light proxy] palette Window #eff0f1 WindowText #232629 Highlight #3daee9 HighlightedText #ffffff
+[light proxy] cfg [Colors:View] DecorationFocus #3daee9 DecorationHover #3daee9 | [Colors:Header] BackgroundNormal #dee0e2 | [Colors:Header][Inactive] BackgroundNormal #eff0f1 | [Colors:Window] BackgroundNormal #eff0f1
+[light proxy] kwinrc in XDG_CONFIG_HOME: False
+[light proxy] window active True geometry x=102 y=102 w=480 h=240 | menubar in window x=0 y=0 w=480 h=30 | toolbar in window x=0 y=30 w=480 h=42 | central in window x=0 y=72 w=480 h=168
+[light proxy] attributes: mainwindow WA_StyledBackground True autoFillBackground False | menubar autoFill False | toolbar autoFill False
+[light proxy] palettes: mainwindow Window #eff0f1 | menubar Window #dee0e2 WindowText #232629 | toolbar Window #dee0e2
+[light proxy] title File: actionGeometry (menubar coords) x=0 y=0 w=41 h=30
+[light proxy] title Edit: actionGeometry (menubar coords) x=41 y=0 w=44 h=30
+[light proxy] title View: actionGeometry (menubar coords) x=85 y=0 w=50 h=30
+[light proxy] ==== a rest
+[light proxy] window grab 480x240
+[light proxy] rest state log: CE_MenuBarItem item='File' state=0x00000001 Enabled rect=(0,0,41x30) option=QStyleOptionMenuItem widget=QMenuBar
+[light proxy] rest state log: CE_MenuBarItem item='Edit' state=0x00000001 Enabled rect=(41,0,44x30) option=QStyleOptionMenuItem widget=QMenuBar
+[light proxy] rest state log: CE_MenuBarItem item='View' state=0x00000001 Enabled rect=(85,0,50x30) option=QStyleOptionMenuItem widget=QMenuBar
+[light proxy] rest: bar fill between File and Edit (40,14) #dee0e2; right of View (174,14) #dee0e2; bar near right end (474,14) #dee0e2
+[light proxy] rest: toolbar fill right of the tools (460,51) #dee0e2; central (240,220) #eff0f1
+[light proxy] rest: column x=460 y=0..77 (menubar y=0..29, toolbar y=30..71): ['#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#b9bbbd', '#eff0f1', '#eff0f1', '#eff0f1', '#eff0f1', '#eff0f1', '#eff0f1']
+[light proxy] rest: column x=2 y=0..77: ['#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#b9bbbd', '#eff0f1', '#eff0f1', '#eff0f1', '#eff0f1', '#eff0f1', '#eff0f1']
+[light proxy] rest: title File rect x=0 y=0 w=41 h=30 bg (2,14) #dee0e2; text ink bbox (11, 10, 29, 19) farthest #232629; ink left - rect left 11, rect right - ink right 11, ink top - rect top 10, rect bottom - ink bottom 10
+[light proxy] rest: title Edit rect x=41 y=0 w=44 h=30 bg (43,14) #dee0e2; text ink bbox (52, 10, 73, 19) farthest #232629; ink left - rect left 11, rect right - ink right 11, ink top - rect top 10, rect bottom - ink bottom 10
+[light proxy] rest: title View rect x=85 y=0 w=50 h=30 bg (87,14) #dee0e2; text ink bbox (96, 10, 123, 19) farthest #232629; ink left - rect left 11, rect right - ink right 11, ink top - rect top 10, rect bottom - ink bottom 10
+[light proxy] ==== b File hovered, no menu open
+[light proxy] move to 20,14: after QTest.mouseMove activeAction None
+[light proxy] sending MouseMove source MouseEventNotSynthesized
+[light proxy] hover: menubar activeAction File | File menu visible False | mouse buttons 0
+[light proxy] hover state log: CE_MenuBarItem item='File' state=0x0000a101 Enabled|HasFocus|MouseOver|Selected rect=(0,0,41x30) option=QStyleOptionMenuItem widget=QMenuBar
+[light proxy] hover state log: CE_MenuBarItem item='Edit' state=0x00000101 Enabled|HasFocus rect=(41,0,44x30) option=QStyleOptionMenuItem widget=QMenuBar
+[light proxy] hover state log: CE_MenuBarItem item='View' state=0x00000101 Enabled|HasFocus rect=(85,0,50x30) option=QStyleOptionMenuItem widget=QMenuBar
+[light proxy] hover File: rect x=0 y=0 w=41 h=30; fill (ink-free) (3,14) #3daee9; (37,14) #3daee9; (20,2) #3daee9
+[light proxy] hover File: row y=14 x=-1..3: ['outside', '#3daee9', '#3daee9', '#3daee9', '#3daee9']; x=37..41: ['#3daee9', '#3daee9', '#3daee9', '#3daee9', '#dee0e2']
+[light proxy] hover File: column x=20 y=-1..3: ['outside', '#3daee9', '#3daee9', '#3daee9', '#3daee9']; y=26..30: ['#3daee9', '#3daee9', '#3daee9', '#3daee9', 'outside']
+[light proxy] hover File: corner TL (0,0) #dee0e2 diag+1 #63bae7 diag+2 #3daee9 diag+3 #3daee9
+[light proxy] hover File: corner TR (40,0) #dee0e2 diag+1 #63bae7 diag+2 #3daee9 diag+3 #3daee9
+[light proxy] hover File: corner BL (0,29) #dee0e2 diag+1 #63bae7 diag+2 #3daee9 diag+3 #3daee9
+[light proxy] hover File: corner BR (40,29) #dee0e2 diag+1 #63bae7 diag+2 #3daee9 diag+3 #3daee9
+[light proxy] hover File: patch TL x=-1..4 y=-1..4 (rows top to bottom): outside outside outside outside outside outside / outside #dee0e2 #dbdfe3 #92c8e6 #5db8e7 #40afe8 / outside #dbdfe3 #63bae7 #3daee9 #3daee9 #3daee9 / outside #92c8e6 #3daee9 #3daee9 #3daee9 #3daee9 / outside #5db8e7 #3daee9 #3daee9 #3daee9 #3daee9 / outside #40afe8 #3daee9 #3daee9 #3daee9 #3daee9
+[light proxy] hover File: patch TR x=36..41 y=-1..4: outside outside outside outside outside outside / #40afe8 #5db8e7 #92c8e6 #dcdfe2 #dee0e2 #dee0e2 / #3daee9 #3daee9 #3daee9 #63bae7 #dcdfe2 #dee0e2 / #3daee9 #3daee9 #3daee9 #3daee9 #93c9e5 #dee0e2 / #3daee9 #3daee9 #3daee9 #3daee9 #5eb9e7 #dee0e2 / #3daee9 #3daee9 #3daee9 #3daee9 #40afe8 #dee0e2
+[light proxy] hover File: patch BL x=-1..4 y=25..30: outside #40afe8 #3daee9 #3daee9 #3daee9 #3daee9 / outside #5db8e7 #3daee9 #3daee9 #3daee9 #3daee9 / outside #92c8e6 #3daee9 #3daee9 #3daee9 #3daee9 / outside #dcdfe2 #63bae7 #3daee9 #3daee9 #3daee9 / outside #dee0e2 #dbdfe3 #93c9e5 #5eb9e7 #40afe8 / outside outside outside outside outside outside
+[light proxy] hover File: patch BR x=36..41 y=25..30: #3daee9 #3daee9 #3daee9 #3daee9 #40afe8 #dee0e2 / #3daee9 #3daee9 #3daee9 #3daee9 #5eb9e7 #dee0e2 / #3daee9 #3daee9 #3daee9 #3daee9 #93c9e5 #dee0e2 / #3daee9 #3daee9 #3daee9 #63bae7 #dcdfe2 #dee0e2 / #40afe8 #5eb9e7 #93c9e5 #dcdfe2 #dee0e2 #dee0e2 / outside outside outside outside outside outside
+[light proxy] hover File: text ink vs fill #3daee9: bbox (11, 10, 29, 19) farthest #ffffff at (12, 11) (exact count 12 of 82)
+[light proxy] hover-time Edit (not hovered): rect x=41 y=0 w=44 h=30; fill (ink-free) (44,14) #dee0e2; (81,14) #dee0e2; (62,2) #dee0e2
+[light proxy] hover-time Edit (not hovered): row y=14 x=40..44: ['#3daee9', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2']; x=81..85: ['#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2']
+[light proxy] hover-time Edit (not hovered): column x=62 y=-1..3: ['outside', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2']; y=26..30: ['#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', 'outside']
+[light proxy] hover-time Edit (not hovered): corner TL (41,0) #dee0e2 diag+1 #dee0e2 diag+2 #dee0e2 diag+3 #dee0e2
+[light proxy] hover-time Edit (not hovered): corner TR (84,0) #dee0e2 diag+1 #dee0e2 diag+2 #dee0e2 diag+3 #dee0e2
+[light proxy] hover-time Edit (not hovered): corner BL (41,29) #dee0e2 diag+1 #dee0e2 diag+2 #dee0e2 diag+3 #dee0e2
+[light proxy] hover-time Edit (not hovered): corner BR (84,29) #dee0e2 diag+1 #dee0e2 diag+2 #dee0e2 diag+3 #dee0e2
+[light proxy] hover-time Edit (not hovered): patch TL x=40..45 y=-1..4 (rows top to bottom): outside outside outside outside outside outside / #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 / #dcdfe2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 / #93c9e5 #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 / #5eb9e7 #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 / #40afe8 #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2
+[light proxy] hover-time Edit (not hovered): patch TR x=80..85 y=-1..4: outside outside outside outside outside outside / #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 / #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 / #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 / #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 / #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2
+[light proxy] hover-time Edit (not hovered): patch BL x=40..45 y=25..30: #40afe8 #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 / #5eb9e7 #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 / #93c9e5 #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 / #dcdfe2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 / #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 / outside outside outside outside outside outside
+[light proxy] hover-time Edit (not hovered): patch BR x=80..85 y=25..30: #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 / #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 / #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 / #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 / #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 / outside outside outside outside outside outside
+[light proxy] hover-time Edit (not hovered): text ink vs fill #dee0e2: bbox (52, 10, 73, 19) farthest #232629 at (53, 11) (exact count 18 of 102)
+[light proxy] ==== c File clicked, its menu open
+[light proxy] open: File menu visible True | menubar activeAction File | popup widget <PySide6.QtWidgets.QMenu(0x55ae52251520) at 0x7f5899112e40> | File menu geometry x=102 y=132 w=86 h=66
+[light proxy] open state log: CE_MenuBarItem item='File' state=0x0000a105 Enabled|Sunken|HasFocus|MouseOver|Selected rect=(0,0,41x30) option=QStyleOptionMenuItem widget=QMenuBar
+[light proxy] open state log: CE_MenuBarItem item='Edit' state=0x00000101 Enabled|HasFocus rect=(41,0,44x30) option=QStyleOptionMenuItem widget=QMenuBar
+[light proxy] open state log: CE_MenuBarItem item='View' state=0x00000101 Enabled|HasFocus rect=(85,0,50x30) option=QStyleOptionMenuItem widget=QMenuBar
+[light proxy] open File: rect x=0 y=0 w=41 h=30; fill (ink-free) (3,14) #3daee9; (37,14) #3daee9; (20,2) #3daee9
+[light proxy] open File: row y=14 x=-1..3: ['outside', '#3daee9', '#3daee9', '#3daee9', '#3daee9']; x=37..41: ['#3daee9', '#3daee9', '#3daee9', '#3daee9', '#dee0e2']
+[light proxy] open File: column x=20 y=-1..3: ['outside', '#3daee9', '#3daee9', '#3daee9', '#3daee9']; y=26..30: ['#3daee9', '#3daee9', '#3daee9', '#3daee9', 'outside']
+[light proxy] open File: corner TL (0,0) #dee0e2 diag+1 #63bae7 diag+2 #3daee9 diag+3 #3daee9
+[light proxy] open File: corner TR (40,0) #dee0e2 diag+1 #63bae7 diag+2 #3daee9 diag+3 #3daee9
+[light proxy] open File: corner BL (0,29) #dee0e2 diag+1 #63bae7 diag+2 #3daee9 diag+3 #3daee9
+[light proxy] open File: corner BR (40,29) #dee0e2 diag+1 #63bae7 diag+2 #3daee9 diag+3 #3daee9
+[light proxy] open File: patch TL x=-1..4 y=-1..4 (rows top to bottom): outside outside outside outside outside outside / outside #dee0e2 #dbdfe3 #92c8e6 #5db8e7 #40afe8 / outside #dbdfe3 #63bae7 #3daee9 #3daee9 #3daee9 / outside #92c8e6 #3daee9 #3daee9 #3daee9 #3daee9 / outside #5db8e7 #3daee9 #3daee9 #3daee9 #3daee9 / outside #40afe8 #3daee9 #3daee9 #3daee9 #3daee9
+[light proxy] open File: patch TR x=36..41 y=-1..4: outside outside outside outside outside outside / #40afe8 #5db8e7 #92c8e6 #dcdfe2 #dee0e2 #dee0e2 / #3daee9 #3daee9 #3daee9 #63bae7 #dcdfe2 #dee0e2 / #3daee9 #3daee9 #3daee9 #3daee9 #93c9e5 #dee0e2 / #3daee9 #3daee9 #3daee9 #3daee9 #5eb9e7 #dee0e2 / #3daee9 #3daee9 #3daee9 #3daee9 #40afe8 #dee0e2
+[light proxy] open File: patch BL x=-1..4 y=25..30: outside #40afe8 #3daee9 #3daee9 #3daee9 #3daee9 / outside #5db8e7 #3daee9 #3daee9 #3daee9 #3daee9 / outside #92c8e6 #3daee9 #3daee9 #3daee9 #3daee9 / outside #dcdfe2 #63bae7 #3daee9 #3daee9 #3daee9 / outside #dee0e2 #dbdfe3 #93c9e5 #5eb9e7 #40afe8 / outside outside outside outside outside outside
+[light proxy] open File: patch BR x=36..41 y=25..30: #3daee9 #3daee9 #3daee9 #3daee9 #40afe8 #dee0e2 / #3daee9 #3daee9 #3daee9 #3daee9 #5eb9e7 #dee0e2 / #3daee9 #3daee9 #3daee9 #3daee9 #93c9e5 #dee0e2 / #3daee9 #3daee9 #3daee9 #63bae7 #dcdfe2 #dee0e2 / #40afe8 #5eb9e7 #93c9e5 #dcdfe2 #dee0e2 #dee0e2 / outside outside outside outside outside outside
+[light proxy] open File: text ink vs fill #3daee9: bbox (11, 10, 29, 19) farthest #ffffff at (12, 11) (exact count 12 of 82)
+[light proxy] open-time Edit (not hovered): rect x=41 y=0 w=44 h=30; fill (ink-free) (44,14) #dee0e2; (81,14) #dee0e2; (62,2) #dee0e2
+[light proxy] open-time Edit (not hovered): row y=14 x=40..44: ['#3daee9', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2']; x=81..85: ['#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2']
+[light proxy] open-time Edit (not hovered): column x=62 y=-1..3: ['outside', '#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2']; y=26..30: ['#dee0e2', '#dee0e2', '#dee0e2', '#dee0e2', 'outside']
+[light proxy] open-time Edit (not hovered): corner TL (41,0) #dee0e2 diag+1 #dee0e2 diag+2 #dee0e2 diag+3 #dee0e2
+[light proxy] open-time Edit (not hovered): corner TR (84,0) #dee0e2 diag+1 #dee0e2 diag+2 #dee0e2 diag+3 #dee0e2
+[light proxy] open-time Edit (not hovered): corner BL (41,29) #dee0e2 diag+1 #dee0e2 diag+2 #dee0e2 diag+3 #dee0e2
+[light proxy] open-time Edit (not hovered): corner BR (84,29) #dee0e2 diag+1 #dee0e2 diag+2 #dee0e2 diag+3 #dee0e2
+[light proxy] open-time Edit (not hovered): patch TL x=40..45 y=-1..4 (rows top to bottom): outside outside outside outside outside outside / #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 / #dcdfe2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 / #93c9e5 #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 / #5eb9e7 #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 / #40afe8 #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2
+[light proxy] open-time Edit (not hovered): patch TR x=80..85 y=-1..4: outside outside outside outside outside outside / #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 / #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 / #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 / #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 / #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2
+[light proxy] open-time Edit (not hovered): patch BL x=40..45 y=25..30: #40afe8 #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 / #5eb9e7 #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 / #93c9e5 #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 / #dcdfe2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 / #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 / outside outside outside outside outside outside
+[light proxy] open-time Edit (not hovered): patch BR x=80..85 y=25..30: #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 / #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 / #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 / #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 / #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 #dee0e2 / outside outside outside outside outside outside
+[light proxy] open-time Edit (not hovered): text ink vs fill #dee0e2: bbox (52, 10, 73, 19) farthest #232629 at (53, 11) (exact count 18 of 102)
+[light proxy] move to 62,14: after QTest.mouseMove activeAction File
+[light proxy] sending MouseMove source MouseEventNotSynthesized
+[light proxy] open, pointer moved to Edit: File menu visible False | Edit menu visible True | menubar activeAction Edit
+[light proxy] open-moved state log: CE_MenuBarItem item='File' state=0x00000101 Enabled|HasFocus rect=(0,0,41x30) option=QStyleOptionMenuItem widget=QMenuBar
+[light proxy] open-moved state log: CE_MenuBarItem item='Edit' state=0x0000a105 Enabled|Sunken|HasFocus|MouseOver|Selected rect=(41,0,44x30) option=QStyleOptionMenuItem widget=QMenuBar
+[light proxy] open-moved state log: CE_MenuBarItem item='View' state=0x00000101 Enabled|HasFocus rect=(85,0,50x30) option=QStyleOptionMenuItem widget=QMenuBar
+[light proxy] open-moved Edit: rect x=41 y=0 w=44 h=30; fill (ink-free) (44,14) #3daee9; (81,14) #3daee9; (62,2) #3daee9
+[light proxy] open-moved Edit: row y=14 x=40..44: ['#dee0e2', '#3daee9', '#3daee9', '#3daee9', '#3daee9']; x=81..85: ['#3daee9', '#3daee9', '#3daee9', '#3daee9', '#dee0e2']
+[light proxy] open-moved Edit: column x=62 y=-1..3: ['outside', '#3daee9', '#3daee9', '#3daee9', '#3daee9']; y=26..30: ['#3daee9', '#3daee9', '#3daee9', '#3daee9', 'outside']
+[light proxy] open-moved Edit: corner TL (41,0) #dee0e2 diag+1 #63bae7 diag+2 #3daee9 diag+3 #3daee9
+[light proxy] open-moved Edit: corner TR (84,0) #dee0e2 diag+1 #63bae7 diag+2 #3daee9 diag+3 #3daee9
+[light proxy] open-moved Edit: corner BL (41,29) #dee0e2 diag+1 #63bae7 diag+2 #3daee9 diag+3 #3daee9
+[light proxy] open-moved Edit: corner BR (84,29) #dee0e2 diag+1 #63bae7 diag+2 #3daee9 diag+3 #3daee9
+[light proxy] open-moved Edit: patch TL x=40..45 y=-1..4 (rows top to bottom): outside outside outside outside outside outside / #dee0e2 #dee0e2 #dbdfe3 #92c8e6 #5db8e7 #40afe8 / #dee0e2 #dbdfe3 #63bae7 #3daee9 #3daee9 #3daee9 / #dee0e2 #92c8e6 #3daee9 #3daee9 #3daee9 #3daee9 / #dee0e2 #5db8e7 #3daee9 #3daee9 #3daee9 #3daee9 / #dee0e2 #40afe8 #3daee9 #3daee9 #3daee9 #3daee9
+[light proxy] open-moved Edit: patch TR x=80..85 y=-1..4: outside outside outside outside outside outside / #40afe8 #5db8e7 #92c8e6 #dcdfe2 #dee0e2 #dee0e2 / #3daee9 #3daee9 #3daee9 #63bae7 #dcdfe2 #dee0e2 / #3daee9 #3daee9 #3daee9 #3daee9 #93c9e5 #dee0e2 / #3daee9 #3daee9 #3daee9 #3daee9 #5eb9e7 #dee0e2 / #3daee9 #3daee9 #3daee9 #3daee9 #40afe8 #dee0e2
+[light proxy] open-moved Edit: patch BL x=40..45 y=25..30: #dee0e2 #40afe8 #3daee9 #3daee9 #3daee9 #3daee9 / #dee0e2 #5db8e7 #3daee9 #3daee9 #3daee9 #3daee9 / #dee0e2 #92c8e6 #3daee9 #3daee9 #3daee9 #3daee9 / #dee0e2 #dcdfe2 #63bae7 #3daee9 #3daee9 #3daee9 / #dee0e2 #dee0e2 #dbdfe3 #93c9e5 #5eb9e7 #40afe8 / outside outside outside outside outside outside
+[light proxy] open-moved Edit: patch BR x=80..85 y=25..30: #3daee9 #3daee9 #3daee9 #3daee9 #40afe8 #dee0e2 / #3daee9 #3daee9 #3daee9 #3daee9 #5eb9e7 #dee0e2 / #3daee9 #3daee9 #3daee9 #3daee9 #93c9e5 #dee0e2 / #3daee9 #3daee9 #3daee9 #63bae7 #dcdfe2 #dee0e2 / #40afe8 #5eb9e7 #93c9e5 #dcdfe2 #dee0e2 #dee0e2 / outside outside outside outside outside outside
+[light proxy] open-moved Edit: text ink vs fill #3daee9: bbox (52, 10, 73, 19) farthest #ffffff at (53, 11) (exact count 18 of 102)
+[light proxy] done

@@ -1,0 +1,94 @@
+[light] platform offscreen | style Breeze::Style | base style breeze Breeze::Style
+[light] screen logicalDPI 96.0 dpr 1.0 geometry 800 x 800
+[light] palette Window #eff0f1 WindowText #232629 Highlight #3daee9 HighlightedText #ffffff
+[light] cfg [Colors:View] DecorationFocus #3daee9 DecorationHover #3daee9 | [Colors:Selection] ForegroundNormal #ffffff
+[light] ==== 1 text-only menu: Hide / Edit (Ctrl+E) / Mark
+[light] menu visible True geometry x=200 y=200 w=114 h=95 isActiveWindow True
+[light] text menu: actionGeometry Hide: x=4 y=4 w=106 h=29
+[light] text menu: actionGeometry Edit: x=4 y=33 w=106 h=29
+[light] text menu: actionGeometry Mark: x=4 y=62 w=106 h=29
+[light] rest: activeAction None
+[light] menu_text_rest: grabbed 114x95 (saved menu_text_rest_light.png)
+[light] rest: panel sample (103,18) #f4f5f5
+[light] rest Edit: actionGeometry x=4 y=33 w=106 h=29 (menu widget 114x95, origin = panel's top-left)
+[light] rest Edit: fill (ink-free, left of the text and icon) (12,47) #f4f5f5; (103,47) #f4f5f5; (12,37) #f4f5f5; geometric centre (56,47) #edeeee (may hit text)
+[light] rest Edit: row y=47 x=3..7 (left edge): ['#f4f5f5', '#f4f5f5', '#f4f5f5', '#f4f5f5', '#f4f5f5']; x=106..110 (right edge): ['#f4f5f5', '#f4f5f5', '#f4f5f5', '#f4f5f5', '#f4f5f5']
+[light] rest Edit: column x=56 y=32..36 (top edge): ['#f4f5f5', '#f4f5f5', '#f4f5f5', '#f4f5f5', '#f4f5f5']; y=58..62 (bottom edge): ['#f4f5f5', '#f4f5f5', '#f4f5f5', '#f4f5f5', '#f4f5f5']
+[light] rest Edit: corner TL (4,33) #f4f5f5 diag+1 #f4f5f5 diag+2 #f4f5f5 diag+3 #f4f5f5
+[light] rest Edit: corner TR (109,33) #f4f5f5 diag+1 #f4f5f5 diag+2 #f4f5f5 diag+3 #f4f5f5
+[light] rest Edit: corner BL (4,61) #f4f5f5 diag+1 #f4f5f5 diag+2 #f4f5f5 diag+3 #f4f5f5
+[light] rest Edit: corner BR (109,61) #f4f5f5 diag+1 #f4f5f5 diag+2 #f4f5f5 diag+3 #f4f5f5
+[light] rest Edit: patch TL x=3..8 y=32..37 (rows top to bottom): #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 / #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 / #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 / #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 / #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 / #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5
+[light] rest Edit: patch TR x=105..110 y=32..37: #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 / #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 / #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 / #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 / #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 / #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5
+[light] rest Edit: patch BL x=3..8 y=57..62: #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 / #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 / #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 / #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 / #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 / #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5
+[light] rest Edit: patch BR x=105..110 y=57..62: #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 / #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 / #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 / #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 / #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 / #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5
+[light] rest Edit: ink vs fill #f4f5f5: bbox (21, 42, 82, 51) farthest #232629 at (22, 43) (pixels of exactly that colour 12 of 207); column runs [[21, 42], [48, 82]]
+[light] rest Edit: ink run 0 x=21..42: bbox (21, 42, 42, 51) farthest #232629 at (22, 43) (exact count 12 of 100)
+[light] rest Edit: ink run 1 x=48..82: bbox (48, 42, 82, 51) farthest #626567 at (79, 43) (exact count 16 of 107)
+[light] rest Hide: ink vs panel: bbox (21, 13, 47, 22) farthest #26292c
+[light] hover: activeAction Edit | mouse buttons 0
+[light] menu_text_hover: grabbed 114x95 (saved menu_text_hover_light.png)
+[light] hover Edit: actionGeometry x=4 y=33 w=106 h=29 (menu widget 114x95, origin = panel's top-left)
+[light] hover Edit: fill (ink-free, left of the text and icon) (12,47) #bcdff1; (103,47) #bcdff1; (12,37) #bcdff1; geometric centre (56,47) #b7d9ea (may hit text)
+[light] hover Edit: row y=47 x=3..7 (left edge): ['#f4f5f5', '#399acc', '#bcdff1', '#bcdff1', '#bcdff1']; x=106..110 (right edge): ['#bcdff1', '#bcdff1', '#bbdef0', '#3b9bcd', '#f4f5f5']
+[light] hover Edit: column x=56 y=32..36 (top edge): ['#f4f5f5', '#399acc', '#bcdff1', '#bcdff1', '#bcdff1']; y=58..62 (bottom edge): ['#bcdff1', '#bcdff1', '#bbdef0', '#3b9bcd', '#f4f5f5']
+[light] hover Edit: corner TL (4,33) #f4f5f5 diag+1 #d2e4ee diag+2 #bcdff1 diag+3 #bcdff1
+[light] hover Edit: corner TR (109,33) #f4f5f5 diag+1 #d3e6ee diag+2 #bcdff1 diag+3 #bcdff1
+[light] hover Edit: corner BL (4,61) #f4f5f5 diag+1 #d3e5ee diag+2 #bcdff1 diag+3 #bcdff1
+[light] hover Edit: corner BR (109,61) #f4f5f5 diag+1 #d5e5ee diag+2 #bcdff1 diag+3 #bcdff1
+[light] hover Edit: patch TL x=3..8 y=32..37 (rows top to bottom): #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 / #f4f5f5 #f4f5f5 #f4f5f5 #d8e8ef #7abadb #49a2d0 / #f4f5f5 #f4f5f5 #d2e4ee #4ea4d2 #9ccee8 #afd8ed / #f4f5f5 #d8e8ef #4ea4d1 #bcdff1 #bcdff1 #bcdff1 / #f4f5f5 #7abada #9ccee8 #bcdff1 #bcdff1 #bcdff1 / #f4f5f5 #49a2d0 #afd8ed #bcdff1 #bcdff1 #bcdff1
+[light] hover Edit: patch TR x=105..110 y=32..37: #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 / #49a2d0 #7bbadc #d9e7ef #f4f5f5 #f4f5f5 #f4f5f5 / #b0d8ed #9bcee8 #4da5d1 #d3e6ee #f4f5f5 #f4f5f5 / #bcdff1 #bcdff1 #bcdff1 #4ca4d1 #dbe8ef #f4f5f5 / #bcdff1 #bcdff1 #bcdff1 #9acde7 #7cbcdc #f4f5f5 / #bcdff1 #bcdff1 #bcdff1 #add8ed #4ba3d1 #f4f5f5
+[light] hover Edit: patch BL x=3..8 y=57..62: #f4f5f5 #49a2d0 #b0d8ed #bcdff1 #bcdff1 #bcdff1 / #f4f5f5 #7bbbdc #9bcee8 #bcdff1 #bcdff1 #bcdff1 / #f4f5f5 #d9e7ef #4da4d1 #bcdff1 #bcdff1 #bcdff1 / #f4f5f5 #f4f5f5 #d3e5ee #4ca4d0 #99cde7 #add8ed / #f4f5f5 #f4f5f5 #f4f5f5 #dbe8ef #7cbcdb #4ba3d1 / #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5
+[light] hover Edit: patch BR x=105..110 y=57..62: #bcdff1 #bcdff1 #bcdff1 #add8ed #4ca3d1 #f4f5f5 / #bcdff1 #bcdff1 #bcdff1 #99cce7 #7dbcdc #f4f5f5 / #bcdff1 #bcdff1 #bcdff1 #4ba3d0 #dbe9ef #f4f5f5 / #add8ed #99cde7 #4ba3d1 #d5e5ee #f4f5f5 #f4f5f5 / #4ca3d1 #7ebcdc #dbe9ef #f4f5f5 #f4f5f5 #f4f5f5 / #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5
+[light] hover Edit: ink vs fill #bcdff1: bbox (21, 42, 82, 51) farthest #232629 at (22, 43) (pixels of exactly that colour 12 of 204); column runs [[21, 42], [48, 82]]
+[light] hover Edit: ink run 0 x=21..42: bbox (21, 42, 42, 51) farthest #232629 at (22, 43) (exact count 12 of 100)
+[light] hover Edit: ink run 1 x=48..82: bbox (48, 42, 82, 51) farthest #515e66 at (79, 43) (exact count 16 of 104)
+[light] computed (not measured): DecorationFocus@0.3 over panel #f4f5f5 = #bde0f1; mix(DecorationFocus, WindowText, 0.15) = #399acc
+[light] pressed: activeAction Edit | menu still visible True | app mouseButtons 1
+[light] menu_text_pressed: grabbed 114x95 (saved menu_text_pressed_light.png)
+[light] pressed Edit: actionGeometry x=4 y=33 w=106 h=29 (menu widget 114x95, origin = panel's top-left)
+[light] pressed Edit: fill (ink-free, left of the text and icon) (12,47) #3daee9; (103,47) #3daee9; (12,37) #3daee9; geometric centre (56,47) #43b1ea (may hit text)
+[light] pressed Edit: row y=47 x=3..7 (left edge): ['#f4f5f5', '#3daee9', '#3daee9', '#3daee9', '#3daee9']; x=106..110 (right edge): ['#3daee9', '#3daee9', '#3daee9', '#3eaee9', '#f4f5f5']
+[light] pressed Edit: column x=56 y=32..36 (top edge): ['#f4f5f5', '#3daee9', '#3daee9', '#3daee9', '#3daee9']; y=58..62 (bottom edge): ['#3daee9', '#3daee9', '#3daee9', '#3eaee9', '#f4f5f5']
+[light] pressed Edit: corner TL (4,33) #f4f5f5 diag+1 #cde6f3 diag+2 #3daee9 diag+3 #3daee9
+[light] pressed Edit: corner TR (109,33) #f4f5f5 diag+1 #d0e7f3 diag+2 #3daee9 diag+3 #3daee9
+[light] pressed Edit: corner BL (4,61) #f4f5f5 diag+1 #d0e7f3 diag+2 #3daee9 diag+3 #3daee9
+[light] pressed Edit: corner BR (109,61) #f4f5f5 diag+1 #d2e7f3 diag+2 #3daee9 diag+3 #3daee9
+[light] pressed Edit: patch TL x=3..8 y=32..37 (rows top to bottom): #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 / #f4f5f5 #f4f5f5 #f4f5f5 #d8ebf4 #75c3ed #47b2ea / #f4f5f5 #f4f5f5 #cde6f3 #46b1e9 #3daee9 #3daee9 / #f4f5f5 #d8ebf4 #46b1e9 #3daee9 #3daee9 #3daee9 / #f4f5f5 #75c3ed #3daee9 #3daee9 #3daee9 #3daee9 / #f4f5f5 #47b2ea #3daee9 #3daee9 #3daee9 #3daee9
+[light] pressed Edit: patch TR x=105..110 y=32..37: #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 / #48b2ea #74c3ed #daeaf3 #f4f5f5 #f4f5f5 #f4f5f5 / #3daee9 #3daee9 #45b2e9 #d0e7f3 #f4f5f5 #f4f5f5 / #3daee9 #3daee9 #3daee9 #46b1ea #dbebf3 #f4f5f5 / #3daee9 #3daee9 #3daee9 #3daee9 #76c4ec #f4f5f5 / #3daee9 #3daee9 #3daee9 #3daee9 #49b3e9 #f4f5f5
+[light] pressed Edit: patch BL x=3..8 y=57..62: #f4f5f5 #48b2ea #3daee9 #3daee9 #3daee9 #3daee9 / #f4f5f5 #75c4ec #3daee9 #3daee9 #3daee9 #3daee9 / #f4f5f5 #daeaf3 #45b1e9 #3daee9 #3daee9 #3daee9 / #f4f5f5 #f4f5f5 #d0e7f3 #46b1ea #3daee9 #3daee9 / #f4f5f5 #f4f5f5 #f4f5f5 #dbebf3 #76c3ec #49b3e9 / #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5
+[light] pressed Edit: patch BR x=105..110 y=57..62: #3daee9 #3daee9 #3daee9 #3daee8 #49b3e9 #f4f5f5 / #3daee9 #3daee9 #3daee9 #3daee9 #77c5ed #f4f5f5 / #3daee9 #3daee9 #3daee9 #45b0ea #dcecf3 #f4f5f5 / #3daee8 #3daee9 #45b0ea #d2e7f3 #f4f5f5 #f4f5f5 / #49b3e9 #77c5ed #dcecf3 #f4f5f5 #f4f5f5 #f4f5f5 / #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5
+[light] pressed Edit: ink vs fill #3daee9: bbox (21, 42, 82, 51) farthest #ffffff at (22, 43) (pixels of exactly that colour 12 of 204); column runs [[21, 42], [48, 82]]
+[light] pressed Edit: ink run 0 x=21..42: bbox (21, 42, 42, 51) farthest #ffffff at (22, 43) (exact count 12 of 100)
+[light] pressed Edit: ink run 1 x=48..82: bbox (48, 42, 82, 51) farthest #c4e7f8 at (79, 43) (exact count 16 of 104)
+[light] computed (not measured): HighlightedText #ffffff @0.7 over DecorationFocus #3daee9 = #c5e7f8; WindowText @0.7 over the hover fill measured above is not computed here
+[light] ==== 2 icon menu: Print (16 px #ff0000 icon) / Edit / Exit, no checkable items
+[light] menu visible True geometry x=200 y=200 w=90 h=95 isActiveWindow True
+[light] icon menu: actionGeometry Print(icon): x=4 y=4 w=82 h=29
+[light] icon menu: actionGeometry Edit: x=4 y=33 w=82 h=29
+[light] icon menu: actionGeometry Exit: x=4 y=62 w=82 h=29
+[light] menu_icon_rest: grabbed 90x95 (saved menu_icon_rest_light.png)
+[light] icon menu: panel sample (79,18) #f4f5f5
+[light] icon menu: icon (#ff0000) bbox x=18..33 y=10..25 count 256
+[light] icon menu: Print text ink bbox (39, 13, 66, 22); first ink column minus icon right edge 6
+[light] icon menu: Edit (no icon) text ink bbox (39, 42, 60, 51)
+[light] menu font Noto Sans,10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1,,0,0 | leftBearing 'P' 1 'E' 1 'H' 1 | height 18
+[light] icon menu hover: activeAction Print
+[light] menu_icon_hover: grabbed 90x95 (saved menu_icon_hover_light.png)
+[light] icon hover Print: actionGeometry x=4 y=4 w=82 h=29 (menu widget 90x95, origin = panel's top-left)
+[light] icon hover Print: fill (ink-free, left of the text and icon) (12,18) #bcdff1; (79,18) #bcdff1; (12,8) #bcdff1; geometric centre (44,18) #a6c5d4 (may hit text)
+[light] icon hover Print: row y=18 x=3..7 (left edge): ['#f4f5f5', '#399acc', '#bcdff1', '#bcdff1', '#bcdff1']; x=82..86 (right edge): ['#bcdff1', '#bcdff1', '#bbdef0', '#3b9bcd', '#f4f5f5']
+[light] icon hover Print: column x=44 y=3..7 (top edge): ['#f4f5f5', '#399acc', '#bcdff1', '#bcdff1', '#bcdff1']; y=29..33 (bottom edge): ['#bcdff1', '#bcdff1', '#bbdef0', '#3b9bcd', '#f4f5f5']
+[light] icon hover Print: corner TL (4,4) #f4f5f5 diag+1 #d2e4ee diag+2 #bcdff1 diag+3 #bcdff1
+[light] icon hover Print: corner TR (85,4) #f4f5f5 diag+1 #d3e6ee diag+2 #bcdff1 diag+3 #bcdff1
+[light] icon hover Print: corner BL (4,32) #f4f5f5 diag+1 #d3e5ee diag+2 #bcdff1 diag+3 #bcdff1
+[light] icon hover Print: corner BR (85,32) #f4f5f5 diag+1 #d5e5ee diag+2 #bcdff1 diag+3 #bcdff1
+[light] icon hover Print: patch TL x=3..8 y=3..8 (rows top to bottom): #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 / #f4f5f5 #f4f5f5 #f4f5f5 #d8e8ef #7abadb #49a2d0 / #f4f5f5 #f4f5f5 #d2e4ee #4ea4d2 #9ccee8 #afd8ed / #f4f5f5 #d8e8ef #4ea4d1 #bcdff1 #bcdff1 #bcdff1 / #f4f5f5 #7abada #9ccee8 #bcdff1 #bcdff1 #bcdff1 / #f4f5f5 #49a2d0 #afd8ed #bcdff1 #bcdff1 #bcdff1
+[light] icon hover Print: patch TR x=81..86 y=3..8: #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 / #49a2d0 #7bbadc #d9e7ef #f4f5f5 #f4f5f5 #f4f5f5 / #b0d8ed #9bcee8 #4da5d1 #d3e6ee #f4f5f5 #f4f5f5 / #bcdff1 #bcdff1 #bcdff1 #4ca4d1 #dbe8ef #f4f5f5 / #bcdff1 #bcdff1 #bcdff1 #9acde7 #7cbcdc #f4f5f5 / #bcdff1 #bcdff1 #bcdff1 #add8ed #4ba3d1 #f4f5f5
+[light] icon hover Print: patch BL x=3..8 y=28..33: #f4f5f5 #49a2d0 #b0d8ed #bcdff1 #bcdff1 #bcdff1 / #f4f5f5 #7bbbdc #9bcee8 #bcdff1 #bcdff1 #bcdff1 / #f4f5f5 #d9e7ef #4da4d1 #bcdff1 #bcdff1 #bcdff1 / #f4f5f5 #f4f5f5 #d3e5ee #4ca4d0 #99cde7 #add8ed / #f4f5f5 #f4f5f5 #f4f5f5 #dbe8ef #7cbcdb #4ba3d1 / #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5
+[light] icon hover Print: patch BR x=81..86 y=28..33: #bcdff1 #bcdff1 #bcdff1 #add8ed #4ca3d1 #f4f5f5 / #bcdff1 #bcdff1 #bcdff1 #99cce7 #7dbcdc #f4f5f5 / #bcdff1 #bcdff1 #bcdff1 #4ba3d0 #dbe9ef #f4f5f5 / #add8ed #99cde7 #4ba3d1 #d5e5ee #f4f5f5 #f4f5f5 / #4ca3d1 #7ebcdc #dbe9ef #f4f5f5 #f4f5f5 #f4f5f5 / #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5 #f4f5f5
+[light] icon hover Print: ink vs fill #bcdff1: bbox (18, 10, 66, 25) farthest #ff0000 at (18, 10) (pixels of exactly that colour 256 of 364); column runs [[18, 33], [39, 66]]
+[light] icon hover Print: ink run 0 x=18..33: bbox (18, 10, 33, 25) farthest #ff0000 at (18, 10) (exact count 256 of 256)
+[light] icon hover Print: ink run 1 x=39..66: bbox (39, 13, 66, 22) farthest #232629 at (44, 16) (exact count 6 of 108)
+[light] icon hover: #ff0000 pixels in the Print row: 256 bbox x=18..33 y=10..25
+[light] done

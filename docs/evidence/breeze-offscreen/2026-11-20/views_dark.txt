@@ -1,0 +1,67 @@
+[dark] platform offscreen | style Breeze::Style | base style breeze Breeze::Style
+[dark] screen logicalDPI 96.0 dpr 1.0 geometry 800 x 800
+[dark] palette Active Base #141618 Text #fcfcfc | Active Highlight #3daee9 | Inactive Highlight #1b4155 | Inactive Base #141618
+[dark] computed (not measured): Active Highlight@0.3 over Base = #204457; outline Active Highlight@0.8 over that fill = #3799cc
+[dark] computed (not measured): Inactive Highlight@0.3 over Base = #16232a; outline Inactive Highlight@0.8 over that fill = #1a3b4c
+[dark] window active True | list selectionMode SingleSelection | tree selectionMode SingleSelection
+[dark] list lineedit-focused: focusWidget QLineEdit | view hasFocus False | window active True | viewport underMouse True | pointer (viewport) 210,83 | currentIndex row -1 | selected rows []
+[dark] list lineedit-focused: visualRect row 3 (viewport coords) x=0 y=72 w=223 h=24; viewport 223x258
+[dark] list lineedit-focused: fill (text-free) (202,83) #16232b; (182,83) #16232b; base outside the rows (219,254) #141618
+[dark] list lineedit-focused: row y=83 x=0..6: ['#141618', '#1a3a4b', '#16232b', '#16232b', '#16232b', '#16232b', '#16232b']; x=216..222: ['#16232b', '#16232b', '#16232b', '#16232b', '#16242c', '#1a394a', '#141618']
+[dark] list lineedit-focused: column x=202 y=71..76: ['#141618', '#141618', '#1a3a4b', '#16232b', '#16232b', '#16232b']; y=91..96: ['#16232b', '#16232b', '#16242c', '#1a394a', '#141618', '#141618']
+[dark] list lineedit-focused: painted highlight extent (pixels differing from the base sample) x=1 y=73 w=221 h=22
+[dark] list lineedit-focused: corner TL (1,73) #141618 diag+1 #161b22 diag+2 #16232b diag+3 #16232b
+[dark] list lineedit-focused: corner TR (221,73) #141618 diag+1 #161c21 diag+2 #16232b diag+3 #16232b
+[dark] list lineedit-focused: corner BL (1,94) #141618 diag+1 #161b21 diag+2 #16232b diag+3 #16232b
+[dark] list lineedit-focused: corner BR (221,94) #141618 diag+1 #161c20 diag+2 #16232b diag+3 #16232b
+[dark] list lineedit-focused: patch TL x=0..5 y=72..77 (rows top to bottom): #141618 #141618 #141618 #141618 #141618 #141618 / #141618 #141618 #141618 #151b1f #182e3a #1a3647 / #141618 #141618 #161b22 #1a3747 #172933 #16252e / #141618 #151b1f #1a3748 #16232b #16232b #16232b / #141618 #172d3a #172933 #16232b #16232b #16232b / #141618 #1a3647 #16252e #16232b #16232b #16232b
+[dark] list lineedit-focused: patch TR x=217..222 y=72..77: #141618 #141618 #141618 #141618 #141618 #141618 / #1a3746 #182e39 #151b1f #141618 #141618 #141618 / #16252f #172933 #1a3747 #161c21 #141618 #141618 / #16232b #16232b #16232b #1a3847 #151b1e #141618 / #16232b #16232b #16232b #172935 #182e39 #141618 / #16232b #16232b #16232b #16262e #1a3646 #141618
+[dark] list lineedit-focused: patch BL x=0..5 y=90..95: #141618 #1a3746 #16252f #16232b #16232b #16232b / #141618 #182e39 #172933 #16232b #16232b #16232b / #141618 #151b1f #1a3747 #16232b #16232b #16232b / #141618 #141618 #161b21 #1a3847 #172a34 #16262e / #141618 #141618 #141618 #151b1e #182e39 #1a3646 / #141618 #141618 #141618 #141618 #141618 #141618
+[dark] list lineedit-focused: patch BR x=217..222 y=90..95: #16232b #16232b #16232b #17262f #193645 #141618 / #16232b #16232b #16232b #172934 #172d39 #141618 / #16232b #16232b #16232b #193747 #151b1f #141618 / #17262f #172934 #193747 #161c20 #141618 #141618 / #193645 #172d39 #151b1f #141618 #141618 #141618 / #141618 #141618 #141618 #141618 #141618 #141618
+[dark] list lineedit-focused: text ink vs fill: bbox (7, 79, 62, 88) farthest #fcfcfc
+[dark] list view-focused: focusWidget QListWidget | view hasFocus True | window active True | viewport underMouse True | pointer (viewport) 210,83 | currentIndex row 0 | selected rows []
+[dark] list view-focused: visualRect row 3 (viewport coords) x=0 y=72 w=223 h=24; viewport 223x258
+[dark] list view-focused: fill (text-free) (202,83) #204357; (182,83) #204357; base outside the rows (219,254) #141618
+[dark] list view-focused: row y=83 x=0..6: ['#141618', '#3694c5', '#204357', '#204357', '#204357', '#204357', '#204357']; x=216..222: ['#204357', '#204357', '#204357', '#204357', '#214458', '#3592c3', '#141618']
+[dark] list view-focused: column x=202 y=71..76: ['#141618', '#141618', '#3694c5', '#204357', '#204357', '#204357']; y=91..96: ['#204357', '#204357', '#214458', '#3592c3', '#141618', '#141618']
+[dark] list view-focused: painted highlight extent (pixels differing from the base sample) x=1 y=73 w=221 h=22
+[dark] list view-focused: corner TL (1,73) #141618 diag+1 #1a2d37 diag+2 #204357 diag+3 #204357
+[dark] list view-focused: corner TR (221,73) #141618 diag+1 #1a2b35 diag+2 #204357 diag+3 #204357
+[dark] list view-focused: corner BL (1,94) #141618 diag+1 #1a2b35 diag+2 #204357 diag+3 #204357
+[dark] list view-focused: corner BR (221,94) #141618 diag+1 #1b2a34 diag+2 #204357 diag+3 #204357
+[dark] list view-focused: patch TL x=0..5 y=72..77 (rows top to bottom): #141618 #141618 #141618 #141618 #141618 #141618 / #141618 #141618 #141618 #192831 #2b698b #3389b5 / #141618 #141618 #1a2d37 #348ab7 #265975 #234b63 / #141618 #192831 #348ab7 #204357 #204357 #204357 / #141618 #2c698a #265975 #204357 #204357 #204357 / #141618 #3389b5 #234b63 #204357 #204357 #204357
+[dark] list view-focused: patch TR x=217..222 y=72..77: #141618 #141618 #141618 #141618 #141618 #141618 / #3388b6 #2b6889 #192730 #141618 #141618 #141618 / #224c62 #265975 #348bb7 #1a2b35 #141618 #141618 / #204357 #204357 #204357 #338bb8 #19272f #141618 / #204357 #204357 #204357 #265975 #2a6888 #141618 / #204357 #204357 #204357 #224c63 #3387b4 #141618
+[dark] list view-focused: patch BL x=0..5 y=90..95: #141618 #3388b6 #224c62 #204357 #204357 #204357 / #141618 #2a6989 #265975 #204357 #204357 #204357 / #141618 #192730 #348bb7 #204357 #204357 #204357 / #141618 #141618 #1a2b35 #338bb8 #265975 #224c63 / #141618 #141618 #141618 #19272f #2a6889 #3387b4 / #141618 #141618 #141618 #141618 #141618 #141618
+[dark] list view-focused: patch BR x=217..222 y=90..95: #204357 #204357 #204357 #234d64 #3287b3 #141618 / #204357 #204357 #204357 #265b77 #2a6887 #141618 / #204357 #204357 #204357 #348bba #18262e #141618 / #234d64 #265a77 #348bb9 #1b2a34 #141618 #141618 / #3287b3 #296787 #18262e #141618 #141618 #141618 / #141618 #141618 #141618 #141618 #141618 #141618
+[dark] list view-focused: text ink vs fill: bbox (7, 79, 62, 88) farthest #fcfcfc
+[dark] tree lineedit-focused: focusWidget QLineEdit | view hasFocus False | window active True | viewport underMouse True | pointer (viewport) 210,83 | currentIndex row -1 | selected rows []
+[dark] tree lineedit-focused: visualRect row 3 (viewport coords) x=20 y=72 w=203 h=24; viewport 223x228
+[dark] tree lineedit-focused: fill (text-free) (202,83) #16232b; (182,83) #16232b; base outside the rows (219,224) #141618
+[dark] tree lineedit-focused: row y=83 x=20..26: ['#141618', '#1a3a4b', '#16232b', '#16232b', '#16232b', '#16232b', '#16232b']; x=216..222: ['#16232b', '#16232b', '#16232b', '#16232b', '#16242c', '#1a394a', '#141618']
+[dark] tree lineedit-focused: column x=202 y=71..76: ['#141618', '#141618', '#1a3a4b', '#16232b', '#16232b', '#16232b']; y=91..96: ['#16232b', '#16232b', '#16242c', '#1a394a', '#141618', '#141618']
+[dark] tree lineedit-focused: painted highlight extent (pixels differing from the base sample) x=21 y=73 w=201 h=22
+[dark] tree lineedit-focused: corner TL (21,73) #141618 diag+1 #161b22 diag+2 #16232b diag+3 #16232b
+[dark] tree lineedit-focused: corner TR (221,73) #141618 diag+1 #161c21 diag+2 #16232b diag+3 #16232b
+[dark] tree lineedit-focused: corner BL (21,94) #141618 diag+1 #161b21 diag+2 #16232b diag+3 #16232b
+[dark] tree lineedit-focused: corner BR (221,94) #141618 diag+1 #161c20 diag+2 #16232b diag+3 #16232b
+[dark] tree lineedit-focused: patch TL x=20..25 y=72..77 (rows top to bottom): #141618 #141618 #141618 #141618 #141618 #141618 / #141618 #141618 #141618 #151b1f #182e3a #1a3647 / #141618 #141618 #161b22 #1a3747 #172933 #16252e / #141618 #151b1f #1a3748 #16232b #16232b #16232b / #141618 #172d3a #172933 #16232b #16232b #16232b / #141618 #1a3647 #16252e #16232b #16232b #16232b
+[dark] tree lineedit-focused: patch TR x=217..222 y=72..77: #141618 #141618 #141618 #141618 #141618 #141618 / #1a3746 #182e39 #151b1f #141618 #141618 #141618 / #16252f #172933 #1a3747 #161c21 #141618 #141618 / #16232b #16232b #16232b #1a3847 #151b1e #141618 / #16232b #16232b #16232b #172935 #182e39 #141618 / #16232b #16232b #16232b #16262e #1a3646 #141618
+[dark] tree lineedit-focused: patch BL x=20..25 y=90..95: #141618 #1a3746 #16252f #16232b #16232b #16232b / #141618 #182e39 #172933 #16232b #16232b #16232b / #141618 #151b1f #1a3747 #16232b #16232b #16232b / #141618 #141618 #161b21 #1a3847 #172a34 #16262e / #141618 #141618 #141618 #151b1e #182e39 #1a3646 / #141618 #141618 #141618 #141618 #141618 #141618
+[dark] tree lineedit-focused: patch BR x=217..222 y=90..95: #16232b #16232b #16232b #17262f #193645 #141618 / #16232b #16232b #16232b #172934 #172d39 #141618 / #16232b #16232b #16232b #193747 #151b1f #141618 / #17262f #172934 #193747 #161c20 #141618 #141618 / #193645 #172d39 #151b1f #141618 #141618 #141618 / #141618 #141618 #141618 #141618 #141618 #141618
+[dark] tree lineedit-focused: text ink vs fill: bbox (26, 80, 88, 88) farthest #fcfcfc
+[dark] tree view-focused: focusWidget QTreeWidget | view hasFocus True | window active True | viewport underMouse True | pointer (viewport) 210,83 | currentIndex row 0 | selected rows []
+[dark] tree view-focused: visualRect row 3 (viewport coords) x=20 y=72 w=203 h=24; viewport 223x228
+[dark] tree view-focused: fill (text-free) (202,83) #204357; (182,83) #204357; base outside the rows (219,224) #141618
+[dark] tree view-focused: row y=83 x=20..26: ['#141618', '#3694c5', '#204357', '#204357', '#204357', '#204357', '#204357']; x=216..222: ['#204357', '#204357', '#204357', '#204357', '#214458', '#3592c3', '#141618']
+[dark] tree view-focused: column x=202 y=71..76: ['#141618', '#141618', '#3694c5', '#204357', '#204357', '#204357']; y=91..96: ['#204357', '#204357', '#214458', '#3592c3', '#141618', '#141618']
+[dark] tree view-focused: painted highlight extent (pixels differing from the base sample) x=21 y=73 w=201 h=22
+[dark] tree view-focused: corner TL (21,73) #141618 diag+1 #1a2d37 diag+2 #204357 diag+3 #204357
+[dark] tree view-focused: corner TR (221,73) #141618 diag+1 #1a2b35 diag+2 #204357 diag+3 #204357
+[dark] tree view-focused: corner BL (21,94) #141618 diag+1 #1a2b35 diag+2 #204357 diag+3 #204357
+[dark] tree view-focused: corner BR (221,94) #141618 diag+1 #1b2a34 diag+2 #204357 diag+3 #204357
+[dark] tree view-focused: patch TL x=20..25 y=72..77 (rows top to bottom): #141618 #141618 #141618 #141618 #141618 #141618 / #141618 #141618 #141618 #192831 #2b698b #3389b5 / #141618 #141618 #1a2d37 #348ab7 #265975 #234b63 / #141618 #192831 #348ab7 #204357 #204357 #204357 / #141618 #2c698a #265975 #204357 #204357 #204357 / #141618 #3389b5 #234b63 #204357 #204357 #204357
+[dark] tree view-focused: patch TR x=217..222 y=72..77: #141618 #141618 #141618 #141618 #141618 #141618 / #3388b6 #2b6889 #192730 #141618 #141618 #141618 / #224c62 #265975 #348bb7 #1a2b35 #141618 #141618 / #204357 #204357 #204357 #338bb8 #19272f #141618 / #204357 #204357 #204357 #265975 #2a6888 #141618 / #204357 #204357 #204357 #224c63 #3387b4 #141618
+[dark] tree view-focused: patch BL x=20..25 y=90..95: #141618 #3388b6 #224c62 #204357 #204357 #204357 / #141618 #2a6989 #265975 #204357 #204357 #204357 / #141618 #192730 #348bb7 #204357 #204357 #204357 / #141618 #141618 #1a2b35 #338bb8 #265975 #224c63 / #141618 #141618 #141618 #19272f #2a6889 #3387b4 / #141618 #141618 #141618 #141618 #141618 #141618
+[dark] tree view-focused: patch BR x=217..222 y=90..95: #204357 #204357 #204357 #234d64 #3287b3 #141618 / #204357 #204357 #204357 #265b77 #2a6887 #141618 / #204357 #204357 #204357 #348bba #18262e #141618 / #234d64 #265a77 #348bb9 #1b2a34 #141618 #141618 / #3287b3 #296787 #18262e #141618 #141618 #141618 / #141618 #141618 #141618 #141618 #141618 #141618
+[dark] tree view-focused: text ink vs fill: bbox (26, 80, 88, 88) farthest #fcfcfc
+[dark] done

@@ -1,0 +1,94 @@
+[dark] platform offscreen | style Breeze::Style | base style breeze Breeze::Style
+[dark] screen logicalDPI 96.0 dpr 1.0 geometry 800 x 800
+[dark] palette Window #202326 WindowText #fcfcfc Highlight #3daee9 HighlightedText #fcfcfc
+[dark] cfg [Colors:View] DecorationFocus #3daee9 DecorationHover #3daee9 | [Colors:Selection] ForegroundNormal #fcfcfc
+[dark] ==== 1 text-only menu: Hide / Edit (Ctrl+E) / Mark
+[dark] menu visible True geometry x=200 y=200 w=114 h=95 isActiveWindow True
+[dark] text menu: actionGeometry Hide: x=4 y=4 w=106 h=29
+[dark] text menu: actionGeometry Edit: x=4 y=33 w=106 h=29
+[dark] text menu: actionGeometry Mark: x=4 y=62 w=106 h=29
+[dark] rest: activeAction None
+[dark] menu_text_rest: grabbed 114x95 (saved menu_text_rest_dark.png)
+[dark] rest: panel sample (103,18) #1c1f22
+[dark] rest Edit: actionGeometry x=4 y=33 w=106 h=29 (menu widget 114x95, origin = panel's top-left)
+[dark] rest Edit: fill (ink-free, left of the text and icon) (12,47) #1c1f22; (103,47) #1c1f22; (12,37) #1c1f22; geometric centre (56,47) #232629 (may hit text)
+[dark] rest Edit: row y=47 x=3..7 (left edge): ['#1c1f22', '#1c1f22', '#1c1f22', '#1c1f22', '#1c1f22']; x=106..110 (right edge): ['#1c1f22', '#1c1f22', '#1c1f22', '#1c1f22', '#1c1f22']
+[dark] rest Edit: column x=56 y=32..36 (top edge): ['#1c1f22', '#1c1f22', '#1c1f22', '#1c1f22', '#1c1f22']; y=58..62 (bottom edge): ['#1c1f22', '#1c1f22', '#1c1f22', '#1c1f22', '#1c1f22']
+[dark] rest Edit: corner TL (4,33) #1c1f22 diag+1 #1c1f22 diag+2 #1c1f22 diag+3 #1c1f22
+[dark] rest Edit: corner TR (109,33) #1c1f22 diag+1 #1c1f22 diag+2 #1c1f22 diag+3 #1c1f22
+[dark] rest Edit: corner BL (4,61) #1c1f22 diag+1 #1c1f22 diag+2 #1c1f22 diag+3 #1c1f22
+[dark] rest Edit: corner BR (109,61) #1c1f22 diag+1 #1c1f22 diag+2 #1c1f22 diag+3 #1c1f22
+[dark] rest Edit: patch TL x=3..8 y=32..37 (rows top to bottom): #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 / #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 / #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 / #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 / #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 / #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22
+[dark] rest Edit: patch TR x=105..110 y=32..37: #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 / #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 / #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 / #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 / #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 / #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22
+[dark] rest Edit: patch BL x=3..8 y=57..62: #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 / #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 / #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 / #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 / #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 / #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22
+[dark] rest Edit: patch BR x=105..110 y=57..62: #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 / #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 / #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 / #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 / #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 / #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22
+[dark] rest Edit: ink vs fill #1c1f22: bbox (21, 42, 82, 51) farthest #fcfcfc at (22, 43) (pixels of exactly that colour 12 of 208); column runs [[21, 42], [48, 82]]
+[dark] rest Edit: ink run 0 x=21..42: bbox (21, 42, 42, 51) farthest #fcfcfc at (22, 43) (exact count 12 of 100)
+[dark] rest Edit: ink run 1 x=48..82: bbox (48, 42, 82, 51) farthest #b8b9ba at (79, 43) (exact count 16 of 108)
+[dark] rest Hide: ink vs panel: bbox (21, 13, 47, 22) farthest #f8f8f9
+[dark] hover: activeAction Edit | mouse buttons 0
+[dark] menu_text_hover: grabbed 114x95 (saved menu_text_hover_dark.png)
+[dark] hover Edit: actionGeometry x=4 y=33 w=106 h=29 (menu widget 114x95, origin = panel's top-left)
+[dark] hover Edit: fill (ink-free, left of the text and icon) (12,47) #264a5e; (103,47) #264a5e; (12,37) #264a5e; geometric centre (56,47) #2d5063 (may hit text)
+[dark] hover Edit: row y=47 x=3..7 (left edge): ['#1c1f22', '#5abaec', '#264a5e', '#264a5e', '#264a5e']; x=106..110 (right edge): ['#264a5e', '#264a5e', '#274b60', '#59b9ea', '#1c1f22']
+[dark] hover Edit: column x=56 y=32..36 (top edge): ['#1c1f22', '#5abaec', '#264a5e', '#264a5e', '#264a5e']; y=58..62 (bottom edge): ['#264a5e', '#264a5e', '#274b60', '#59b9ea', '#1c1f22']
+[dark] hover Edit: corner TL (4,33) #1c1f22 diag+1 #273a45 diag+2 #264a5e diag+3 #264a5e
+[dark] hover Edit: corner TR (109,33) #1c1f22 diag+1 #253844 diag+2 #264a5e diag+3 #264a5e
+[dark] hover Edit: corner BL (4,61) #1c1f22 diag+1 #253844 diag+2 #264a5e diag+3 #264a5e
+[dark] hover Edit: corner BR (109,61) #1c1f22 diag+1 #263842 diag+2 #264a5e diag+3 #264a5e
+[dark] hover Edit: patch TL x=3..8 y=32..37 (rows top to bottom): #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 / #1c1f22 #1c1f22 #1c1f22 #263641 #4484a6 #55addb / #1c1f22 #1c1f22 #273a45 #52a9d6 #336681 #2a556b / #1c1f22 #263641 #52a9d5 #264a5e #264a5e #264a5e / #1c1f22 #4483a6 #336781 #264a5e #264a5e #264a5e / #1c1f22 #55addb #2a556b #264a5e #264a5e #264a5e
+[dark] hover Edit: patch TR x=105..110 y=32..37: #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 / #54addb #4382a4 #25363f #1c1f22 #1c1f22 #1c1f22 / #2b556c #346782 #53aad6 #253844 #1c1f22 #1c1f22 / #264a5e #264a5e #264a5e #53aad8 #24353d #1c1f22 / #264a5e #264a5e #264a5e #356783 #4382a3 #1c1f22 / #264a5e #264a5e #264a5e #2c566e #54abd8 #1c1f22
+[dark] hover Edit: patch BL x=3..8 y=57..62: #1c1f22 #54addb #2b556c #264a5e #264a5e #264a5e / #1c1f22 #4382a5 #336782 #264a5e #264a5e #264a5e / #1c1f22 #25363f #53a9d7 #264a5e #264a5e #264a5e / #1c1f22 #1c1f22 #253844 #54aad8 #346783 #2c566e / #1c1f22 #1c1f22 #1c1f22 #24353d #4382a3 #54abd8 / #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22
+[dark] hover Edit: patch BR x=105..110 y=57..62: #264a5e #264a5e #264a5e #2c576e #54aad8 #1c1f22 / #264a5e #264a5e #264a5e #346884 #4380a2 #1c1f22 / #264a5e #264a5e #264a5e #53acd8 #24333d #1c1f22 / #2c576e #346885 #53abd8 #263842 #1c1f22 #1c1f22 / #54aad8 #4380a2 #24333d #1c1f22 #1c1f22 #1c1f22 / #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22
+[dark] hover Edit: ink vs fill #264a5e: bbox (21, 42, 82, 51) farthest #fcfcfc at (22, 43) (pixels of exactly that colour 12 of 207); column runs [[21, 42], [48, 82]]
+[dark] hover Edit: ink run 0 x=21..42: bbox (21, 42, 42, 51) farthest #fcfcfc at (22, 43) (exact count 12 of 100)
+[dark] hover Edit: ink run 1 x=48..82: bbox (48, 42, 82, 51) farthest #bbc6cc at (79, 43) (exact count 17 of 107)
+[dark] computed (not measured): DecorationFocus@0.3 over panel #1c1f22 = #264a5e; mix(DecorationFocus, WindowText, 0.15) = #5abaec
+[dark] pressed: activeAction Edit | menu still visible True | app mouseButtons 1
+[dark] menu_text_pressed: grabbed 114x95 (saved menu_text_pressed_dark.png)
+[dark] pressed Edit: actionGeometry x=4 y=33 w=106 h=29 (menu widget 114x95, origin = panel's top-left)
+[dark] pressed Edit: fill (ink-free, left of the text and icon) (12,47) #3daee9; (103,47) #3daee9; (12,37) #3daee9; geometric centre (56,47) #43b1ea (may hit text)
+[dark] pressed Edit: row y=47 x=3..7 (left edge): ['#1c1f22', '#3daee9', '#3daee9', '#3daee9', '#3daee9']; x=106..110 (right edge): ['#3daee9', '#3daee9', '#3daee9', '#3dade8', '#1c1f22']
+[dark] pressed Edit: column x=56 y=32..36 (top edge): ['#1c1f22', '#3daee9', '#3daee9', '#3daee9', '#3daee9']; y=58..62 (bottom edge): ['#3daee9', '#3daee9', '#3daee9', '#3dade8', '#1c1f22']
+[dark] pressed Edit: corner TL (4,33) #1c1f22 diag+1 #223e4d diag+2 #3daee9 diag+3 #3daee9
+[dark] pressed Edit: corner TR (109,33) #1c1f22 diag+1 #233c4a diag+2 #3daee9 diag+3 #3daee9
+[dark] pressed Edit: corner BL (4,61) #1c1f22 diag+1 #233c4a diag+2 #3daee9 diag+3 #3daee9
+[dark] pressed Edit: corner BR (109,61) #1c1f22 diag+1 #243a49 diag+2 #3daee9 diag+3 #3daee9
+[dark] pressed Edit: patch TL x=3..8 y=32..37 (rows top to bottom): #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 / #1c1f22 #1c1f22 #1c1f22 #213541 #3382ad #3ba6de / #1c1f22 #1c1f22 #223e4d #3ca7df #3daee9 #3daee9 / #1c1f22 #213541 #3ba7df #3daee9 #3daee9 #3daee9 / #1c1f22 #3382ad #3daee9 #3daee9 #3daee9 #3daee9 / #1c1f22 #3ba6de #3daee9 #3daee9 #3daee9 #3daee9
+[dark] pressed Edit: patch TR x=105..110 y=32..37: #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 / #3ba6dd #3281ac #21343f #1c1f22 #1c1f22 #1c1f22 / #3daee9 #3daee9 #3ba8e0 #233c4a #1c1f22 #1c1f22 / #3daee9 #3daee9 #3daee9 #3ca8e0 #20333d #1c1f22 / #3daee9 #3daee9 #3daee9 #3daee9 #3281ab #1c1f22 / #3daee9 #3daee9 #3daee9 #3daee9 #3ba5db #1c1f22
+[dark] pressed Edit: patch BL x=3..8 y=57..62: #1c1f22 #3ba6dd #3daee9 #3daee9 #3daee9 #3daee9 / #1c1f22 #3282ac #3daee9 #3daee9 #3daee9 #3daee9 / #1c1f22 #21343f #3ba8e0 #3daee9 #3daee9 #3daee9 / #1c1f22 #1c1f22 #233c4a #3da8e0 #3daee9 #3daee9 / #1c1f22 #1c1f22 #1c1f22 #20333d #3380ab #3ba5db / #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22
+[dark] pressed Edit: patch BR x=105..110 y=57..62: #3daee9 #3daee9 #3daee9 #3daee8 #3ba4db #1c1f22 / #3daee9 #3daee9 #3daee9 #3daee9 #3281ab #1c1f22 / #3daee9 #3daee9 #3daee9 #3ba7e1 #20323c #1c1f22 / #3daee8 #3daee9 #3ba7e1 #243a49 #1c1f22 #1c1f22 / #3ba4db #3381ab #20323c #1c1f22 #1c1f22 #1c1f22 / #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22
+[dark] pressed Edit: ink vs fill #3daee9: bbox (21, 42, 82, 51) farthest #fcfcfc at (22, 43) (pixels of exactly that colour 12 of 204); column runs [[21, 42], [48, 82]]
+[dark] pressed Edit: ink run 0 x=21..42: bbox (21, 42, 42, 51) farthest #fcfcfc at (22, 43) (exact count 12 of 100)
+[dark] pressed Edit: ink run 1 x=48..82: bbox (48, 42, 82, 51) farthest #c2e5f6 at (79, 43) (exact count 16 of 104)
+[dark] computed (not measured): HighlightedText #fcfcfc @0.7 over DecorationFocus #3daee9 = #c3e5f6; WindowText @0.7 over the hover fill measured above is not computed here
+[dark] ==== 2 icon menu: Print (16 px #ff0000 icon) / Edit / Exit, no checkable items
+[dark] menu visible True geometry x=200 y=200 w=90 h=95 isActiveWindow True
+[dark] icon menu: actionGeometry Print(icon): x=4 y=4 w=82 h=29
+[dark] icon menu: actionGeometry Edit: x=4 y=33 w=82 h=29
+[dark] icon menu: actionGeometry Exit: x=4 y=62 w=82 h=29
+[dark] menu_icon_rest: grabbed 90x95 (saved menu_icon_rest_dark.png)
+[dark] icon menu: panel sample (79,18) #1c1f22
+[dark] icon menu: icon (#ff0000) bbox x=18..33 y=10..25 count 256
+[dark] icon menu: Print text ink bbox (39, 13, 66, 22); first ink column minus icon right edge 6
+[dark] icon menu: Edit (no icon) text ink bbox (39, 42, 60, 51)
+[dark] menu font Noto Sans,10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1,,0,0 | leftBearing 'P' 1 'E' 1 'H' 1 | height 18
+[dark] icon menu hover: activeAction Print
+[dark] menu_icon_hover: grabbed 90x95 (saved menu_icon_hover_dark.png)
+[dark] icon hover Print: actionGeometry x=4 y=4 w=82 h=29 (menu widget 90x95, origin = panel's top-left)
+[dark] icon hover Print: fill (ink-free, left of the text and icon) (12,18) #264a5e; (79,18) #264a5e; (12,8) #264a5e; geometric centre (44,18) #456475 (may hit text)
+[dark] icon hover Print: row y=18 x=3..7 (left edge): ['#1c1f22', '#5abaec', '#264a5e', '#264a5e', '#264a5e']; x=82..86 (right edge): ['#264a5e', '#264a5e', '#274b60', '#59b9ea', '#1c1f22']
+[dark] icon hover Print: column x=44 y=3..7 (top edge): ['#1c1f22', '#5abaec', '#264a5e', '#264a5e', '#264a5e']; y=29..33 (bottom edge): ['#264a5e', '#264a5e', '#274b60', '#59b9ea', '#1c1f22']
+[dark] icon hover Print: corner TL (4,4) #1c1f22 diag+1 #273a45 diag+2 #264a5e diag+3 #264a5e
+[dark] icon hover Print: corner TR (85,4) #1c1f22 diag+1 #253844 diag+2 #264a5e diag+3 #264a5e
+[dark] icon hover Print: corner BL (4,32) #1c1f22 diag+1 #253844 diag+2 #264a5e diag+3 #264a5e
+[dark] icon hover Print: corner BR (85,32) #1c1f22 diag+1 #263842 diag+2 #264a5e diag+3 #264a5e
+[dark] icon hover Print: patch TL x=3..8 y=3..8 (rows top to bottom): #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 / #1c1f22 #1c1f22 #1c1f22 #263641 #4484a6 #55addb / #1c1f22 #1c1f22 #273a45 #52a9d6 #336681 #2a556b / #1c1f22 #263641 #52a9d5 #264a5e #264a5e #264a5e / #1c1f22 #4483a6 #336781 #264a5e #264a5e #264a5e / #1c1f22 #55addb #2a556b #264a5e #264a5e #264a5e
+[dark] icon hover Print: patch TR x=81..86 y=3..8: #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 / #54addb #4382a4 #25363f #1c1f22 #1c1f22 #1c1f22 / #2b556c #346782 #53aad6 #253844 #1c1f22 #1c1f22 / #264a5e #264a5e #264a5e #53aad8 #24353d #1c1f22 / #264a5e #264a5e #264a5e #356783 #4382a3 #1c1f22 / #264a5e #264a5e #264a5e #2c566e #54abd8 #1c1f22
+[dark] icon hover Print: patch BL x=3..8 y=28..33: #1c1f22 #54addb #2b556c #264a5e #264a5e #264a5e / #1c1f22 #4382a5 #336782 #264a5e #264a5e #264a5e / #1c1f22 #25363f #53a9d7 #264a5e #264a5e #264a5e / #1c1f22 #1c1f22 #253844 #54aad8 #346783 #2c566e / #1c1f22 #1c1f22 #1c1f22 #24353d #4382a3 #54abd8 / #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22
+[dark] icon hover Print: patch BR x=81..86 y=28..33: #264a5e #264a5e #264a5e #2c576e #54aad8 #1c1f22 / #264a5e #264a5e #264a5e #346884 #4380a2 #1c1f22 / #264a5e #264a5e #264a5e #53acd8 #24333d #1c1f22 / #2c576e #346885 #53abd8 #263842 #1c1f22 #1c1f22 / #54aad8 #4380a2 #24333d #1c1f22 #1c1f22 #1c1f22 / #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22 #1c1f22
+[dark] icon hover Print: ink vs fill #264a5e: bbox (18, 10, 66, 25) farthest #ff0000 at (18, 10) (pixels of exactly that colour 256 of 364); column runs [[18, 33], [39, 66]]
+[dark] icon hover Print: ink run 0 x=18..33: bbox (18, 10, 33, 25) farthest #ff0000 at (18, 10) (exact count 256 of 256)
+[dark] icon hover Print: ink run 1 x=39..66: bbox (39, 13, 66, 22) farthest #fcfcfc at (44, 16) (exact count 6 of 108)
+[dark] icon hover: #ff0000 pixels in the Print row: 256 bbox x=18..33 y=10..25
+[dark] done

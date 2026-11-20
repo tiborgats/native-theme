@@ -1,0 +1,8 @@
+style org.kde.desktop
+app font Noto Sans pointSizeF 10.0 pixelSize -1
+QFontInfo(app font) pixelSize 13 pointSizeF 9.75
+plain font pointSizeF 10.0 pixelSize -1 QFontInfo.pixelSize 13 implicitHeight 18.0 implicitWidth 39.171875 fontInfo.pixelSize 13 fontInfo.pointSize 9.75 contentHeight 18.0
+label font pointSizeF 10.0 pixelSize -1 QFontInfo.pixelSize 13 implicitHeight 18.0 implicitWidth 39.171875 fontInfo.pixelSize 13 fontInfo.pointSize 9.75 contentHeight 18.0
+kirigamiDefault font pointSizeF 10.0 pixelSize -1 QFontInfo.pixelSize 13 implicitHeight 18.0 implicitWidth 39.171875 fontInfo.pixelSize 13 fontInfo.pointSize 9.75 contentHeight 18.0
+button font pointSizeF 10.0 pixelSize -1 QFontInfo.pixelSize 13 implicitHeight 34.0 implicitWidth 84.0 
+screen logicalDpiY 96.0 dpr 1.0
