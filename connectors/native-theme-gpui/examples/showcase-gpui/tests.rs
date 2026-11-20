@@ -9248,11 +9248,15 @@ fn the_page_samples_icons_come_from_the_chosen_set(cx: &mut TestAppContext) {
 /// Button loses the width its icon took, and the Toggle shows its icon's
 /// name instead. The two loading Buttons are the exception, and say so: a
 /// loading Button given no icon turns its Spinner's own default,
-/// gpui-component's Loader (button/button.rs:777-786).
+/// gpui-component's Loader (button/button.rs:777-786). Under adwaita, the
+/// platform preset where the runner detects no desktop, on every host: a
+/// theme whose `button.min_width` is wider than the Search Button with its
+/// icon, as kde-breeze's 82 is, keeps the Button that wide without it too.
 #[cfg(feature = "material-icons")] // the bundled Material set it chooses
 #[gpui::test]
 fn a_page_sample_icon_the_set_lacks_is_absent(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    use_preset(&mut cx, &showcase, "adwaita");
     without_motion(&mut cx);
     choose_icon_theme(&mut cx, &showcase, "Material (bundled)");
     show(&mut cx, &showcase, Page::Buttons);
