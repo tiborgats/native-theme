@@ -499,6 +499,8 @@ fields = [
     "slider.thumb_hover_border_color", # None: thumb_border_color (§2.9)
     "slider.thumb_focus_border_color", # None: thumb_border_color (§2.9)
     "toolbar.button_checked_border_color", # None: a selected flat button's (§2.13)
+    "combo_box.open_background",       # None: the fill for the pointer's state (§2.24)
+    "combo_box.open_border_color",     # None: the border for the pointer's state (§2.24)
 ]
 # All sizing fields (min_width, min_height, border.padding_*, height, width,
 # diameter, etc.) also have no inheritance — they come from preset/reader.

@@ -1176,6 +1176,17 @@ pub struct ComboBoxTheme {
     /// ComboBox background when disabled; `None`, the enabled background.
     #[theme(category = "soft_option")]
     pub disabled_background: Option<Rgba>,
+    /// Fill of a combo box while its popup is open, whatever the pointer
+    /// does: Breeze draws it as a pressed button, `Button` mixed 0.3 towards
+    /// `Highlight`. `None`: the fill the connector draws for the pointer's
+    /// state (docs/platform-facts.md §2.24).
+    #[theme(category = "soft_option")]
+    pub open_background: Option<Rgba>,
+    /// Border colour of an open combo box, drawn at `border.line_width`:
+    /// Breeze's `Highlight`. `None`: the border the connector draws for the
+    /// pointer's state (docs/platform-facts.md §2.24).
+    #[theme(category = "soft_option")]
+    pub open_border_color: Option<Rgba>,
     /// ComboBox font specification.
     #[theme(nested, resolved_type = "ResolvedFontSpec")]
     pub font: Option<FontSpec>,

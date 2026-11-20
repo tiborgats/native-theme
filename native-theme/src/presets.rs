@@ -655,6 +655,14 @@ accent_color = "#00ff00"
                         "toolbar.button_checked_border_color",
                         variant.toolbar.button_checked_border_color.is_some(),
                     ),
+                    (
+                        "combo_box.open_background",
+                        variant.combo_box.open_background.is_some(),
+                    ),
+                    (
+                        "combo_box.open_border_color",
+                        variant.combo_box.open_border_color.is_some(),
+                    ),
                 ] {
                     assert_eq!(
                         stated,

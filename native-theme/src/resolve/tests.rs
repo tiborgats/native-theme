@@ -2097,6 +2097,8 @@ fn issue_4_leftovers_pass_through_resolution() {
     assert_eq!(r.slider.thumb_hover_border_color, None);
     assert_eq!(r.slider.thumb_focus_border_color, None);
     assert_eq!(r.toolbar.button_checked_border_color, None);
+    assert_eq!(r.combo_box.open_background, None);
+    assert_eq!(r.combo_box.open_border_color, None);
 
     let mut set = fully_populated_variant();
     set.menu.hover_border_color = Some(Rgba::rgb(1, 2, 3));
@@ -2117,6 +2119,8 @@ fn issue_4_leftovers_pass_through_resolution() {
     set.slider.thumb_hover_border_color = Some(Rgba::rgb(28, 29, 30));
     set.slider.thumb_focus_border_color = Some(Rgba::rgb(31, 32, 33));
     set.toolbar.button_checked_border_color = Some(Rgba::rgb(34, 35, 36));
+    set.combo_box.open_background = Some(Rgba::rgb(37, 38, 39));
+    set.combo_box.open_border_color = Some(Rgba::rgb(40, 41, 42));
     set.resolve_all();
     let r = set.validate().expect("validates with the new fields set");
     assert_eq!(r.menu.hover_border_color, Some(Rgba::rgb(1, 2, 3)));
@@ -2149,6 +2153,8 @@ fn issue_4_leftovers_pass_through_resolution() {
         r.toolbar.button_checked_border_color,
         Some(Rgba::rgb(34, 35, 36))
     );
+    assert_eq!(r.combo_box.open_background, Some(Rgba::rgb(37, 38, 39)));
+    assert_eq!(r.combo_box.open_border_color, Some(Rgba::rgb(40, 41, 42)));
 
     let mut negative = fully_populated_variant();
     negative.menu.min_row_height = Some(-1.0);

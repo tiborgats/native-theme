@@ -553,6 +553,8 @@ disabled_opacity             = "f32"
 hover_background             = "color"
 hover_border_color           = "color"
 disabled_background          = "color"
+open_background              = "color"
+open_border_color            = "color"
 disabled_text_color          = "color"
 border                       = "border"
 

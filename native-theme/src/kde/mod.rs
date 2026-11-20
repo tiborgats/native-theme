@@ -1326,9 +1326,9 @@ BackgroundNormal=49,54,59
         inactive_enable: Some("false"),
     };
 
-    /// The sixty colour leaves the reader derives from, or reads
+    /// The sixty-two colour leaves the reader derives from, or reads
     /// directly from, the colour scheme.
-    fn derived_leaves(mode: &crate::ThemeMode) -> [(&'static str, Option<Rgba>); 60] {
+    fn derived_leaves(mode: &crate::ThemeMode) -> [(&'static str, Option<Rgba>); 62] {
         let border = |b: &Option<crate::WidgetBorderSpec>| b.as_ref().and_then(|b| b.color);
         let sw = &mode.switch;
         [
@@ -1464,11 +1464,16 @@ BackgroundNormal=49,54,59
                 "toolbar.button_checked_border_color",
                 mode.toolbar.button_checked_border_color,
             ),
+            ("combo_box.open_background", mode.combo_box.open_background),
+            (
+                "combo_box.open_border_color",
+                mode.combo_box.open_border_color,
+            ),
         ]
     }
 
     /// The same leaves resolved.
-    fn resolved_leaves(theme: &crate::ResolvedTheme) -> [(&'static str, Option<Rgba>); 60] {
+    fn resolved_leaves(theme: &crate::ResolvedTheme) -> [(&'static str, Option<Rgba>); 62] {
         let sw = &theme.switch;
         [
             (
@@ -1612,6 +1617,11 @@ BackgroundNormal=49,54,59
                 "toolbar.button_checked_border_color",
                 theme.toolbar.button_checked_border_color,
             ),
+            ("combo_box.open_background", theme.combo_box.open_background),
+            (
+                "combo_box.open_border_color",
+                theme.combo_box.open_border_color,
+            ),
         ]
     }
 
@@ -1661,9 +1671,9 @@ BackgroundNormal=49,54,59
     /// outline, the pressed button and the selected segment, the list's
     /// hover and its outline, the focus ring and the button's hover and focus border, the
     /// combo box's hover pen, a toolbar button's hover pen and pressed fill,
-    /// the default button's fill and frame, and the inactive selection's
-    /// fill, tinted towards it; the checkbox and the progress bar follow it as
-    /// before.
+    /// the default button's fill and frame, the inactive selection's fill,
+    /// tinted towards it, and an open combo box's fill and pen; the checkbox
+    /// and the progress bar follow it as before.
     #[test]
     fn an_accent_moves_the_on_track_the_pressed_button_the_selected_segment_and_the_list_hover()
     -> crate::Result<()> {
@@ -1690,6 +1700,8 @@ BackgroundNormal=49,54,59
                 "button.default_button_border_color",
                 "defaults.selection_inactive_background",
                 "list.hover_border_color",
+                "combo_box.open_background",
+                "combo_box.open_border_color",
             ]
         );
         Ok(())
@@ -1698,7 +1710,8 @@ BackgroundNormal=49,54,59
     /// The Button set moves the button's fills, text and frame, the slider
     /// handle's fill and its outline at rest, the switch, the pressed and the
     /// default button, the list's header and its hovered and pressed
-    /// sections, and a checked toolbar button's fill and pen.
+    /// sections, a checked toolbar button's fill and pen, and an open combo
+    /// box's fill.
     #[test]
     fn the_button_set_moves_the_button_slider_switch_and_header_leaves() -> crate::Result<()> {
         let scheme = Scheme {
@@ -1730,6 +1743,7 @@ BackgroundNormal=49,54,59
                 "button.border.color",
                 "slider.thumb_border_color",
                 "toolbar.button_checked_border_color",
+                "combo_box.open_background",
             ]
         );
         Ok(())

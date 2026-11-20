@@ -649,6 +649,12 @@ arrow_area_width_px = 20.0
 # platform-facts.md (§2.24): [Colors:Selection] BackgroundNormal 61,174,233 (BreezeLight.colors:87, breeze v6.7.5),
 # Highlight, the pen of a hovered button frame (breezehelper.cpp:710-712 at breeze f0b1d75)
 hover_border_color = "#3daee9"
+# platform-facts.md (§2.24): open_background, open_border_color, an open combo box is a pressed button frame whatever the
+# pointer does: KColorUtils::mix([Colors:Button] BackgroundNormal 252,252,252 (BreezeLight.colors:31), [Colors:Selection] BackgroundNormal
+# 61,174,233 (BreezeLight.colors:87), 0.3), framed in that Highlight (breezestyle.cpp:7823-7853, breezehelper.cpp:693-712 at breeze
+# f0b1d75; measured)
+open_background = "#c3e5f6"
+open_border_color = "#3daee9"
 # platform-facts.md:1119 (§2.1.6): Disabled [Colors:Button] BackgroundNormal / ForegroundNormal, KColorScheme 6.31.0
 disabled_background = "#f0f0f0"
 disabled_text_color = "#a8a9aa"
@@ -1355,6 +1361,12 @@ arrow_area_width_px = 20.0
 # platform-facts.md (§2.24): [Colors:Selection] BackgroundNormal 61,174,233 (BreezeDark.colors:88, breeze v6.7.5),
 # Highlight, the pen of a hovered button frame (breezehelper.cpp:710-712 at breeze f0b1d75)
 hover_border_color = "#3daee9"
+# platform-facts.md (§2.24): open_background, open_border_color, an open combo box is a pressed button frame whatever the
+# pointer does: KColorUtils::mix([Colors:Button] BackgroundNormal 41,44,48 (BreezeDark.colors:32), [Colors:Selection] BackgroundNormal
+# 61,174,233 (BreezeDark.colors:88), 0.3), framed in that Highlight (breezestyle.cpp:7823-7853, breezehelper.cpp:693-712 at breeze
+# f0b1d75; measured)
+open_background = "#2f5368"
+open_border_color = "#3daee9"
 # platform-facts.md:1119 (§2.1.6): Disabled [Colors:Button] BackgroundNormal / ForegroundNormal, KColorScheme 6.31.0
 disabled_background = "#272a2e"
 disabled_text_color = "#6d6f72"

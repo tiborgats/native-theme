@@ -606,20 +606,19 @@ pub(super) fn inactive_selection(
 /// checked fills, the popover's and the card's edges, the menu's hover, its
 /// outline, separator and panel, the list's hover and its outline, the
 /// header's hovered and pressed fills and its section line, the selection of a
-/// view without the focus, the table's grid, the scroll bar's resting handle
-/// and the focus ring.
+/// view without the focus, the table's grid, the scroll bar's resting handle,
+/// an open combo box's fill and the focus ring.
 /// The blends on the accent (the default button's fill and frame, the checked
 /// checkbox, the progress fill, the switch's on track and its outline, the
-/// list's hover and its outline, the inactive selection, and the toolbar
-/// button's pressed fill) come from kdeglobals'
+/// list's hover and its outline, the inactive selection, the toolbar button's
+/// pressed fill and an open combo box's fill) come from kdeglobals'
 /// `[Colors:Selection] BackgroundNormal`, so an application's `with_overlay` accent or the
 /// portal's (`gnome::apply_kde_accent`, applied by `GnomePortalKdeReader`) does
 /// not move them. The menu's hover and its outline, a pressed item's fill, an
 /// open menu-bar title's fill, a focused slider handle's outline and the check
 /// box's hover outline come from `[Colors:View] DecorationFocus`, so the same
-/// holds for them. The combo box's
-/// and the toolbar button's hover pen is `[Colors:Selection] BackgroundNormal`
-/// as it is. The focus ring is the selection colour at
+/// holds for them. The combo box's hover and open pen and the toolbar
+/// button's hover pen are `[Colors:Selection] BackgroundNormal` as it is. The focus ring is the selection colour at
 /// `Blend_Value`; the KDE portal's accent replaces it (`gnome::apply_kde_accent`).
 /// A menu's fills and outlines are Breeze's with `MenuItemDrawStrongFocus` on,
 /// its default (breeze.kcfg:130-132 at breeze f0b1d75); the reader does not read
@@ -945,6 +944,12 @@ pub(crate) fn populate_colors(ini: &configparser::ini::Ini, variant: &mut crate:
         variant.combo_box.font.get_or_insert_default().color = Some(color);
     }
     variant.combo_box.hover_border_color = selection_bg;
+    // Open, a pressed button frame whatever the pointer does (breezestyle.cpp:7823-7853,
+    // breezehelper.cpp:693-712 at breeze f0b1d75; docs/platform-facts.md §2.24).
+    variant.combo_box.open_background = button_bg
+        .zip(selection_bg)
+        .map(|(button, highlight)| mix(button, highlight, PRESSED_BUTTON_MIX));
+    variant.combo_box.open_border_color = selection_bg;
 
     // Menu (docs/platform-facts.md §2.6): the panel is `frameBackgroundColor()`,
     // the window moved towards the view by `Blend_Value`; the text is the
@@ -1900,28 +1905,37 @@ ForegroundNormal=239,240,241
     /// The plain button frame, `mix(Button, ButtonText, frameContrast)`, is
     /// the button's border, a slider handle's outline at rest and a checked
     /// toolbar button's pen; the header's section line is the window text at
-    /// `frameContrast` (docs/platform-facts.md §2.3, §2.9, §2.13, §2.15).
+    /// `frameContrast`; an open combo box is a pressed button, the button
+    /// colour moved 0.3 towards `Highlight`, framed in `Highlight`
+    /// (docs/platform-facts.md §2.3, §2.9, §2.13, §2.15, §2.24).
     #[test]
-    fn test_the_plain_frame_and_the_header_separator_are_breezes() {
+    fn test_the_plain_frame_and_the_open_combo_box_are_breezes() {
         let [light, dark] = breeze_light_and_dark();
         let cases = [
             (
                 light,
                 Rgba::rgb(0xd1, 0xd1, 0xd2),
                 Rgba::new(0x23, 0x26, 0x29, 0x33),
+                Rgba::rgb(0xc3, 0xe5, 0xf6),
             ),
             (
                 dark,
                 Rgba::rgb(0x53, 0x56, 0x59),
                 Rgba::new(0xfc, 0xfc, 0xfc, 0x33),
+                Rgba::rgb(0x2f, 0x53, 0x68),
             ),
         ];
-        for (content, frame, separator) in cases {
+        for (content, frame, separator, open) in cases {
             let v = populate_fixture(&content);
             assert_eq!(v.button.border.and_then(|b| b.color), Some(frame));
             assert_eq!(v.slider.thumb_border_color, Some(frame));
             assert_eq!(v.toolbar.button_checked_border_color, Some(frame));
             assert_eq!(v.list.header_separator_color, Some(separator));
+            assert_eq!(v.combo_box.open_background, Some(open));
+            assert_eq!(
+                v.combo_box.open_border_color,
+                Some(Rgba::rgb(0x3d, 0xae, 0xe9))
+            );
         }
     }
 
@@ -2664,6 +2678,14 @@ DecorationFocus=61,174,233
         assert!(
             v.toolbar.button_checked_border_color.is_some(),
             "toolbar.button_checked_border_color missing"
+        );
+        assert!(
+            v.combo_box.open_background.is_some(),
+            "combo_box.open_background missing"
+        );
+        assert!(
+            v.combo_box.open_border_color.is_some(),
+            "combo_box.open_border_color missing"
         );
         assert!(
             v.link.visited_text_color.is_some(),
