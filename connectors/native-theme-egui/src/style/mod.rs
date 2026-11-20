@@ -8,6 +8,8 @@ mod roles;
 mod states;
 mod variants;
 
+pub(crate) use roles::menu_bar_titles;
+
 use std::sync::Arc;
 
 use crate::atlas::{Note, SchemeStyles};

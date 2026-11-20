@@ -190,6 +190,62 @@ fn the_free_role_modifier_is_the_installed_atlas_s_and_none_without_one() {
     assert_eq!(free(&ctx), None, "after clear");
 }
 
+/// T18 (a): `menu_bar_modifier` is the `Role::Menu` cell with the menu bar's title fields.
+/// kde-breeze states both title fills as Breeze's #3daee9 (docs/platform-facts.md §2.6), so the
+/// open one is set apart on the resolved theme; a title draws the cell's resting stroke in
+/// every state, where the cell outlines a hovered item (E1). adwaita states no title field: the
+/// modifier gives the cell as it is.
+#[test]
+fn t18_a_the_menu_bar_modifier_is_the_menu_cell_with_the_bar_fields() {
+    let rgb = egui::Color32::from_rgb;
+    let breeze = rgb(0x3d, 0xae, 0xe9);
+    let open = rgb(0xf0, 0xa0, 0x14);
+    let mut light = resolved("kde-breeze", ColorMode::Light);
+    assert_eq!(
+        light.menu.bar_hover_background,
+        Some(native_theme::Rgba::rgb(0x3d, 0xae, 0xe9))
+    );
+    assert_eq!(
+        light.menu.bar_open_background,
+        Some(native_theme::Rgba::rgb(0x3d, 0xae, 0xe9))
+    );
+    light.menu.bar_open_background = Some(native_theme::Rgba::rgb(0xf0, 0xa0, 0x14));
+    let atlas = ThemeAtlas::builder("Breeze", &light, &light).build();
+    let mut bar = egui::Style::default();
+    atlas.menu_bar_modifier(egui::Theme::Light).apply(&mut bar);
+    let mut cell = egui::Style::default();
+    atlas
+        .role_modifier(egui::Theme::Light, Role::Menu, RoleVariant::Normal)
+        .apply(&mut cell);
+    let w = &bar.visuals.widgets;
+    assert_eq!(w.hovered.weak_bg_fill, breeze);
+    assert_eq!(w.active.weak_bg_fill, breeze);
+    assert_eq!(w.open.weak_bg_fill, open);
+    for e in [&w.hovered, &w.active, &w.open] {
+        assert_eq!(e.fg_stroke.color, egui::Color32::WHITE);
+        assert_eq!(e.bg_stroke, w.inactive.bg_stroke);
+    }
+    assert_ne!(
+        cell.visuals.widgets.hovered.bg_stroke, w.hovered.bg_stroke,
+        "the cell outlines a hovered item, or the stroke check proves nothing"
+    );
+    assert_eq!(bar.spacing.button_padding, egui::vec2(10.0, 6.0));
+    assert_eq!(w.inactive, cell.visuals.widgets.inactive);
+    assert_eq!(w.noninteractive, cell.visuals.widgets.noninteractive);
+    assert_eq!(bar.text_styles, cell.text_styles);
+
+    let atlas = preset_atlas("adwaita");
+    for theme in [egui::Theme::Light, egui::Theme::Dark] {
+        let mut bar = egui::Style::default();
+        atlas.menu_bar_modifier(theme).apply(&mut bar);
+        let mut cell = egui::Style::default();
+        atlas
+            .role_modifier(theme, Role::Menu, RoleVariant::Normal)
+            .apply(&mut cell);
+        assert_eq!(bar, cell, "{theme:?}");
+    }
+}
+
 /// §4.5, §7.5: `carry_name_keys` hands the cell's `Arc` over unchanged when the style it
 /// merges from holds no `Name` key the cell lacks, and copies only otherwise.
 #[test]

@@ -1673,8 +1673,9 @@ fn row_metrics(
 /// §5.4, T18(a)): each row is painted here, `row_metrics` tall and inset, filled with
 /// `list.selection_background` in `list.selection_text_color` while selected (the unfocused
 /// pair while the window is not active, `selection_pair`) and with `list.hover_background` in
-/// `list.hover_text_color` while hovered, the fill rounded where it meets the frame
-/// (`inner_corners`).
+/// `list.hover_text_color` while hovered, outlined there in `list.hover_border_color` at
+/// `defaults.border.line_width` where the theme states it, the fill rounded where it meets the
+/// frame (`inner_corners`).
 fn list(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
     let t = atlas.resolved_for(ui.ctx().theme());
     let l = &t.list;
@@ -1846,14 +1847,24 @@ fn list_row(
             let bottom = meets(shown.bottom(), edges.bottom());
             let left = meets(shown.left(), edges.left());
             let right = meets(shown.right(), edges.right());
-            ui.painter().rect_filled(
-                shown,
-                inner_corners(
-                    l,
-                    [top && left, top && right, bottom && left, bottom && right],
-                ),
-                fill,
+            let corners = inner_corners(
+                l,
+                [top && left, top && right, bottom && left, bottom && right],
             );
+            ui.painter().rect_filled(shown, corners, fill);
+            // A hovered, unselected row's outline on its fill's shape, inside it, as Breeze's
+            // line is (`egui-0.37.0/src/painter.rs:406-414`, `epaint-0.37.0/src/stroke.rs:102-111`)
+            if let Some(edge) = l
+                .hover_border_color
+                .filter(|_| !selected && response.hovered())
+            {
+                ui.painter().rect_stroke(
+                    shown,
+                    corners,
+                    to_stroke(egui::Stroke::NONE, edge, t.defaults.border.line_width),
+                    egui::StrokeKind::Inside,
+                );
+            }
         }
     }
     let label = paint_cell_text(ui, text, font, colour, (rect, inset, line));

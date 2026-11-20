@@ -30,11 +30,14 @@ egui's own types, and hands them to egui through egui's own seams:
    where the application asks for it: `ui.native_scope(role, variant, ..)` or
    `ui.native_set_style(role, variant)` from the `NativeThemeUiExt` trait, and
    `ThemeAtlas::role_modifier`, or `role_modifier(ui, role, variant)` from a
-   `Ui`, for a popup or a menu. A `TextEdit` in a `Role::Input` scope takes the
-   input's borders, corner radius, text colours and padding; a plain single-line
-   field takes one padding per axis, the mean of the two sides where a theme
-   states different ones (windows-11), and the accessors are the exact route,
-   each side its own; a multi-line field's route is `text_area_margin` and
+   `Ui`, for a popup or a menu; `ThemeAtlas::menu_bar_modifier`, or
+   `menu_bar_modifier(ui)`, for a `MenuBar`'s titles: the `Role::Menu` style
+   with the theme's menu-bar title fills, text colour and padding. A
+   `TextEdit` in a `Role::Input` scope takes the input's borders, corner
+   radius, text colours and padding; a plain single-line field takes one
+   padding per axis, the mean of the two sides where a theme states different
+   ones (windows-11), and the accessors are the exact route, each side its
+   own; a multi-line field's route is `text_area_margin` and
    `text_area_frame`. A checked box in `Role::Checkbox` with
    `RoleVariant::Selected` takes the checked fill, and a button in
    `Role::Button` or a drop-down in `Role::ComboBox` its own font size. Inside a `Role::List` scope egui's
@@ -241,7 +244,8 @@ impl eframe::App for MyApp {
 - **Containers built on `egui::Area`** — `Window`, `Modal`, `Popup`, tooltips,
   menus and `ComboBox` popups — build their content from the `Context`'s style,
   so a scope wrapped *around* one does not reach it. Give a popup or a menu
-  `ThemeAtlas::role_modifier` (`role_modifier(ui, ..)` with a `Ui` at hand);
+  `ThemeAtlas::role_modifier` (`role_modifier(ui, ..)` with a `Ui` at hand),
+  and a menu bar `ThemeAtlas::menu_bar_modifier` (`menu_bar_modifier(ui)`);
   give a `Window` or a `Modal` its frame from
   `native_frame`, and make `ui.native_set_style(role, variant)` the first
   statement *inside* its closure for the body.
@@ -615,6 +619,19 @@ beside `FontId::size` — and some parts egui draws in a way no style changes: a
 a `Slider` draws no tick marks. Each such leaf is a `mapping.toml` row marked
 `unmappable`, with the reason, and the mapping document in the API reference
 lists them all.
+
+egui's `MenuButton` draws a menu-bar title from the pointer alone
+(`egui-0.37.0/src/containers/menu.rs`): only a `SubMenuButton` draws its
+`open` look while its menu shows. So `menu_bar_modifier`'s open fill
+(`menu.bar_open_background`, Breeze's focus colour) reaches a bar title only
+where the application swaps the style's `widgets.open` in while that title's
+menu is open, as the showcase's menu bar does.
+
+A hovered row's outline (`list.hover_border_color`) is drawn by the
+application where it paints its rows, as the showcase's list and command
+palette do. egui_extras' `TableBuilder` fills a hovered row cell by cell with
+`widgets.hovered.bg_fill` and draws no line round it
+(`egui_extras-0.37.0/src/layout.rs`).
 
 A submenu opens egui's 2.0 points from its menu's frame
 (`MenuConfig::submenu_gap`, `egui-0.37.0/src/containers/menu.rs`): a field of

@@ -5053,6 +5053,136 @@ fn the_basic_list_and_table_fills_keep_inside_the_frames_corners() {
     assert!(off_grid, "a list line off the whole-pixel grid");
 }
 
+/// E5 (issue #4's leftovers): a hovered, unselected row is outlined in
+/// `list.hover_border_color` at `defaults.border.line_width`, inside the row's fill and on its
+/// shape, where the theme states the colour: kde-breeze light states Breeze's `Highlight` at
+/// alpha 0.8 (docs/platform-facts.md §2.15), adwaita none. The Basic list's first row, item 2
+/// selected, and the command palette's second row, the first highlighted: each the one
+/// `Shape::Rect` so stroked, the list row's at its place with its fill's corners, the palette
+/// row's round it on the frame egui fills it in, at that frame's place and radius.
+#[test]
+fn a_hovered_list_row_is_outlined_where_the_theme_states_it() {
+    fn rects_at(harness: &Harness<'_, App>, place: egui::Rect) -> Vec<egui::epaint::RectShape> {
+        harness
+            .output()
+            .shapes
+            .iter()
+            .filter_map(|clipped| match &clipped.shape {
+                egui::Shape::Rect(r) if near_rect(r.rect, place) => Some(r.clone()),
+                _ => None,
+            })
+            .collect()
+    }
+    let colour = native_theme_egui::convert::to_color32;
+    for preset in ["kde-breeze", "adwaita"] {
+        let mut harness = open_scaled(preset, "basic", 1.0);
+        let t = harness
+            .state()
+            .atlas
+            .resolved_for(egui::Theme::Light)
+            .clone();
+        let l = &t.list;
+        let outline = l.hover_border_color.map(|edge| {
+            native_theme_egui::convert::to_stroke(
+                egui::Stroke::NONE,
+                edge,
+                t.defaults.border.line_width,
+            )
+        });
+        if preset == "kde-breeze" {
+            assert_eq!(
+                l.hover_border_color,
+                Some(native_theme::Rgba::new(0x3d, 0xae, 0xe9, 0xcc))
+            );
+            assert_eq!(outline.map(|s| s.width), Some(1.0));
+        } else {
+            assert_eq!(l.hover_border_color, None, "{preset} states no outline");
+        }
+        let stroked = |r: &egui::epaint::RectShape| r.stroke.width > 0.0 && r.stroke.color.a() > 0;
+
+        harness.state_mut().demo_state.basic_list = 1;
+        harness.run_steps(SETTLE);
+        let place = harness.state().registry.places()["basic.list.row_1"];
+        harness.hover_at(place.center());
+        harness.run_steps(3);
+        let shapes = rects_at(&harness, place);
+        let fills: Vec<_> = shapes
+            .iter()
+            .filter(|r| r.fill == colour(l.hover_background))
+            .collect();
+        assert_eq!(fills.len(), 1, "{preset}: the hovered row's fill");
+        let lines: Vec<_> = shapes.iter().filter(|r| stroked(r)).collect();
+        match outline {
+            Some(stroke) => {
+                assert_eq!(lines.len(), 1, "{preset}: the hovered row's outline");
+                assert_eq!(lines[0].stroke, stroke, "{preset}");
+                assert_eq!(lines[0].stroke_kind, egui::StrokeKind::Inside, "{preset}");
+                assert_eq!(
+                    lines[0].corner_radius, fills[0].corner_radius,
+                    "{preset}: the outline on the fill's shape"
+                );
+            }
+            None => assert!(lines.is_empty(), "{preset}: {lines:?}"),
+        }
+
+        open_palette(&mut harness);
+        let row = harness
+            .state()
+            .registry
+            .records()
+            .iter()
+            .filter(|r| r.info.kind == "palette row")
+            .nth(1)
+            .map(|r| r.rect)
+            .expect("a second palette row");
+        assert_eq!(
+            palette_selected(&harness),
+            vec![0],
+            "the first row is highlighted"
+        );
+        harness.hover_at(row.center());
+        harness.run_steps(3);
+        // Every rectangle so stroked in the pass, and egui's own frame of the row: the fill
+        // the hovered `selectable_label` paints at the outline's place, with its radius.
+        let shapes: Vec<egui::epaint::RectShape> = harness
+            .output()
+            .shapes
+            .iter()
+            .filter_map(|clipped| match &clipped.shape {
+                egui::Shape::Rect(r) => Some(r.clone()),
+                _ => None,
+            })
+            .collect();
+        let lines: Vec<_> = shapes
+            .iter()
+            .filter(|r| outline.is_some_and(|stroke| r.stroke == stroke))
+            .collect();
+        match outline {
+            Some(_) => {
+                assert_eq!(
+                    lines.len(),
+                    1,
+                    "{preset}: the hovered palette row's outline"
+                );
+                let line = lines[0];
+                assert_eq!(line.stroke_kind, egui::StrokeKind::Inside, "{preset}");
+                assert!(
+                    line.rect.contains_rect(row),
+                    "{preset}: {:?} round the row {row:?}",
+                    line.rect
+                );
+                assert!(
+                    shapes.iter().any(|r| r.fill.a() > 0
+                        && near_rect(r.rect, line.rect)
+                        && r.corner_radius == line.corner_radius),
+                    "{preset}: the outline on the row's frame"
+                );
+            }
+            None => assert!(lines.is_empty(), "{preset}: {lines:?}"),
+        }
+    }
+}
+
 /// A table header section's fill (`pages::basic::header_section_fill`, decision 19 and 7.H.1 of
 /// `docs/archive/todo_v0.7.2_kde-open-items-steps6-7-spec.md`), on kde-breeze light, which
 /// states its two section fills in one colour, so the page's pressed section

@@ -238,8 +238,8 @@ fn every_leaf_has_exactly_one_row_and_every_row_is_well_formed() {
     let leaves = leaf_paths(&resolved("adwaita", ColorMode::Light));
     assert_eq!(
         leaves.len(),
-        534,
-        "530 ResolvedTheme leaves + 4 layout leaves (§5.7)"
+        541,
+        "537 ResolvedTheme leaves + 4 layout leaves (§5.7)"
     );
 
     let mut problems: Vec<String> = Vec::new();
@@ -483,12 +483,15 @@ fn verdict_totals_match_the_specification() {
     // [direct, scoped, derived, unmappable] per group: §5.7's table
     let expected = [
         ("foundation", [18, 1, 39, 10]),
-        ("surfaces", [8, 55, 32, 15]),
+        // §5.7's [8, 55, 32, 15], issue #4's leftovers since 0.7.2: the menu item's outline
+        // (one SCOPED) and the menu bar's five title fields (five DERIVED)
+        ("surfaces", [8, 56, 37, 15]),
         ("buttons", [13, 47, 34, 25]),
         // §5.7's [4, 35, 36, 12], the four `input.border.padding` sides SCOPED since 0.7.2,
         // `combo_box.hover_border_color`, the caret's blink (two DERIVED, one UNMAPPABLE), and
-        // the header's hovered and pressed fills (two DERIVED) since 0.7.2
-        ("inputs", [4, 40, 36, 13]),
+        // the header's hovered and pressed fills (two DERIVED) since 0.7.2, and the hovered
+        // row's outline (one DERIVED, issue #4's leftovers)
+        ("inputs", [4, 40, 37, 13]),
         ("indicators", [5, 17, 9, 9]),
         ("chrome", [0, 57, 28, 19]),
     ];

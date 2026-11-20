@@ -324,6 +324,14 @@ fn menu(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes: &
         },
         notes,
     );
+    // E1: the base's `window_stroke.width` is `defaults.border.line_width`, sanitised; egui lays
+    // the stroke inside the padding (egui-0.37.0/src/theme/default_style.rs:68-71): nothing moves
+    if let Some(c) = m.hover_border_color {
+        let line = egui::Stroke::new(own.visuals.window_stroke.width, to_color32(c));
+        let w = &mut s.visuals.widgets;
+        (w.hovered.bg_stroke, w.open.bg_stroke) = (line, line); // open: a submenu shown, S4
+        w.active.bg_stroke = line; // `active` stays the hover look (S6)
+    }
     s.visuals.widgets.noninteractive.bg_stroke.color = to_color32(m.separator_color); // `separator_style` (§5.2)
     // the item padding over menu_style's vec2(2.0, 0.0), the unstated side's target (§5.2)
     let after_menu_style = s.spacing.button_padding;
@@ -355,6 +363,44 @@ fn menu(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes: &
         notes,
     ); // items read Body (B3)
     fit_row_padding(s, m.row_height, TextStyle::Body, input);
+}
+
+/// E3: a menu bar's titles over the `Role::Menu` cell ([`ThemeAtlas::menu_bar_modifier`]).
+/// A title draws no line under the pointer or open (Breeze draws none; E1's item outline would
+/// show), so `hovered`, `active` and `open` take `inactive`'s stroke. `hovered` and `active`
+/// (also egui's keyboard-focused state, which stays on a closed title, S6) take
+/// `menu.bar_hover_background`, `open` `menu.bar_open_background`, else the hover fill;
+/// `menu.bar_hover_text_color` letters the three; the title's padding is
+/// `menu.bar_padding_horizontal` and `menu.bar_padding_vertical`, a finite side through
+/// [`clamp_length`] (a title has no line). Each where stated: unstated, the cell's own look.
+///
+/// [`ThemeAtlas::menu_bar_modifier`]: crate::ThemeAtlas::menu_bar_modifier
+pub(crate) fn menu_bar_titles(t: &ResolvedTheme, s: &mut egui::Style) {
+    let m = &t.menu;
+    let w = &mut s.visuals.widgets;
+    let rest = w.inactive.bg_stroke;
+    for e in [&mut w.hovered, &mut w.active, &mut w.open] {
+        e.bg_stroke = rest;
+    }
+    if let Some(fill) = m.bar_hover_background {
+        w.hovered.weak_bg_fill = to_color32(fill);
+        w.active.weak_bg_fill = to_color32(fill);
+    }
+    if let Some(fill) = m.bar_open_background.or(m.bar_hover_background) {
+        w.open.weak_bg_fill = to_color32(fill);
+    }
+    if let Some(text) = m.bar_hover_text_color {
+        for e in [&mut w.hovered, &mut w.active, &mut w.open] {
+            e.fg_stroke.color = to_color32(text);
+        }
+    }
+    let padding = &mut s.spacing.button_padding;
+    if let Some(x) = m.bar_padding_horizontal.filter(|x| x.is_finite()) {
+        padding.x = clamp_length(x);
+    }
+    if let Some(y) = m.bar_padding_vertical.filter(|y| y.is_finite()) {
+        padding.y = clamp_length(y);
+    }
 }
 
 fn input_role(
@@ -1516,7 +1562,8 @@ mod tests {
     }
 
     /// §5.2's Menu rows over `menu_style` (§3.4): the item's border, radius and padding, the
-    /// hover highlight as given into {hovered,active,open}, and the frame left to the base.
+    /// hover highlight as given into {hovered,active,open}, its outline there where the theme
+    /// states one (E1), and the frame left to the base.
     #[test]
     fn menu_cell_applies_menu_style_then_its_rows() {
         let (c, base, t, notes) = cell("kde-breeze", ColorMode::Light, Role::Menu);
@@ -1533,17 +1580,20 @@ mod tests {
         for e in [&w.noninteractive, &w.inactive] {
             assert_eq!(e.fg_stroke.color, to_color32(m.font.color));
         }
-        // the item's border, in the four interactive entries only
+        // E1: the hovered, open and pressed item outlined in Breeze's `focusOutlineColor()`
+        // at `defaults.border.line_width` (docs/platform-facts.md §2.6), the resting item's
+        // border unchanged; the radius in the four interactive entries, 4.5 drawn 5
+        let outline = egui::Stroke::new(1.0, egui::Color32::from_rgb(0x39, 0x9a, 0xcc));
+        for e in [&w.hovered, &w.open, &w.active] {
+            assert_eq!(e.bg_stroke, outline);
+        }
+        assert_eq!(w.inactive.bg_stroke.color, to_color32(m.border.color));
+        assert_eq!(
+            w.inactive.bg_stroke.width,
+            clamp_length(m.border.line_width)
+        );
         for e in [&w.inactive, &w.hovered, &w.active, &w.open] {
-            assert_eq!(e.bg_stroke.color, to_color32(m.border.color));
-            assert_eq!(e.bg_stroke.width, clamp_length(m.border.line_width));
-            assert_eq!(
-                e.corner_radius,
-                to_corner_radius(
-                    base.visuals.widgets.inactive.corner_radius,
-                    m.border.corner_radius
-                )
-            );
+            assert_eq!(e.corner_radius, egui::CornerRadius::same(5));
         }
         assert_eq!(
             w.noninteractive.bg_stroke.color,
@@ -1580,6 +1630,24 @@ mod tests {
         );
         assert_eq!(c.visuals.popup_shadow, base.visuals.popup_shadow);
         assert_eq!(c.spacing.menu_margin, base.spacing.menu_margin);
+
+        // a theme that states no outline: the item's border, in the four interactive entries only
+        let (c, base, t, notes) = cell("adwaita", ColorMode::Light, Role::Menu);
+        let m = &t.menu;
+        assert!(notes.is_empty(), "{notes:?}");
+        assert_eq!(m.hover_border_color, None);
+        let w = &c.visuals.widgets;
+        for e in [&w.inactive, &w.hovered, &w.active, &w.open] {
+            assert_eq!(e.bg_stroke.color, to_color32(m.border.color));
+            assert_eq!(e.bg_stroke.width, clamp_length(m.border.line_width));
+            assert_eq!(
+                e.corner_radius,
+                to_corner_radius(
+                    base.visuals.widgets.inactive.corner_radius,
+                    m.border.corner_radius
+                )
+            );
+        }
     }
 
     /// §6.1: `Window` and `Card` write no entry and no field; their cell is the base style.

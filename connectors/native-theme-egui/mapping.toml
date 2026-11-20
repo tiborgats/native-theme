@@ -232,6 +232,9 @@ verdict = "direct"
 sinks   = [
   { path = "visuals.widgets.noninteractive.bg_stroke.width" },
   { path = "visuals.window_stroke.width" },
+  { path = "visuals.widgets.hovered.bg_stroke.width", scope = "menu", when = "menu.hover_border_color is stated" },
+  { path = "visuals.widgets.active.bg_stroke.width", scope = "menu", when = "menu.hover_border_color is stated" },
+  { path = "visuals.widgets.open.bg_stroke.width", scope = "menu", when = "menu.hover_border_color is stated" },
 ]
 
 # The text colour's share already folded into every stated border colour, which is the final
@@ -818,6 +821,43 @@ sinks   = [
   { path = "visuals.widgets.inactive.fg_stroke.color", scope = "menu", variant = "disabled" },
 ]
 
+["menu.hover_border_color"]
+verdict = "scoped"
+sinks   = [
+  { path = "visuals.widgets.hovered.bg_stroke.color", scope = "menu" },
+  { path = "visuals.widgets.open.bg_stroke.color", scope = "menu" },
+  { path = "visuals.widgets.active.bg_stroke.color", scope = "menu" },
+  { path = "visuals.widgets.hovered.bg_stroke.width", scope = "menu", when = "its being stated moves the width from menu.border.line_width to defaults.border.line_width, which may agree" },
+  { path = "visuals.widgets.open.bg_stroke.width", scope = "menu", when = "its being stated moves the width from menu.border.line_width to defaults.border.line_width, which may agree" },
+  { path = "visuals.widgets.active.bg_stroke.width", scope = "menu", when = "its being stated moves the width from menu.border.line_width to defaults.border.line_width, which may agree" },
+]
+note    = "at defaults.border.line_width, inside the item's padding (egui-0.37.0/src/theme/default_style.rs:68-71); open is an item whose submenu is shown (S4), and active, which is also egui's keyboard-focused item, stays the hover look (S6)"
+
+["menu.bar_hover_background"]
+verdict   = "derived"
+tested_by = "T18(a)"
+note      = "per call: menu_bar_modifier, a menu-bar title's hovered and active weak_bg_fill over the «menu» cell"
+
+["menu.bar_open_background"]
+verdict   = "derived"
+tested_by = "T18(a)"
+note      = "per call: menu_bar_modifier, a menu-bar title's open weak_bg_fill, else menu.bar_hover_background; egui's MenuButton has no open state (egui-0.37.0/src/containers/menu.rs:430), so it shows where the application swaps widgets.open in while the title's menu is open"
+
+["menu.bar_hover_text_color"]
+verdict   = "derived"
+tested_by = "T18(a)"
+note      = "per call: menu_bar_modifier, a menu-bar title's hovered, active and open fg_stroke.color"
+
+["menu.bar_padding_horizontal"]
+verdict   = "derived"
+tested_by = "T18(a)"
+note      = "per call: menu_bar_modifier, a menu-bar title's button_padding.x"
+
+["menu.bar_padding_vertical"]
+verdict   = "derived"
+tested_by = "T18(a)"
+note      = "per call: menu_bar_modifier, a menu-bar title's button_padding.y"
+
 ["menu.font.family"]
 verdict  = "unmappable"
 sub_tag  = "egui-limited"
@@ -856,9 +896,9 @@ sinks   = [
 verdict = "scoped"
 sinks   = [
   { path = "visuals.widgets.inactive.bg_stroke.color", scope = "menu" },
-  { path = "visuals.widgets.hovered.bg_stroke.color", scope = "menu" },
-  { path = "visuals.widgets.active.bg_stroke.color", scope = "menu" },
-  { path = "visuals.widgets.open.bg_stroke.color", scope = "menu" },
+  { path = "visuals.widgets.hovered.bg_stroke.color", scope = "menu", when = "menu.hover_border_color is None" },
+  { path = "visuals.widgets.active.bg_stroke.color", scope = "menu", when = "menu.hover_border_color is None" },
+  { path = "visuals.widgets.open.bg_stroke.color", scope = "menu", when = "menu.hover_border_color is None" },
 ]
 probe   = "#ff000080"
 
@@ -876,9 +916,9 @@ probe   = 4.0
 verdict = "scoped"
 sinks   = [
   { path = "visuals.widgets.inactive.bg_stroke.width", scope = "menu" },
-  { path = "visuals.widgets.hovered.bg_stroke.width", scope = "menu" },
-  { path = "visuals.widgets.active.bg_stroke.width", scope = "menu" },
-  { path = "visuals.widgets.open.bg_stroke.width", scope = "menu" },
+  { path = "visuals.widgets.hovered.bg_stroke.width", scope = "menu", when = "menu.hover_border_color is None" },
+  { path = "visuals.widgets.active.bg_stroke.width", scope = "menu", when = "menu.hover_border_color is None" },
+  { path = "visuals.widgets.open.bg_stroke.width", scope = "menu", when = "menu.hover_border_color is None" },
   { path = "spacing.button_padding.x", scope = "menu", when = "a side of the pair is stated, §5 intro" },
   { path = "spacing.button_padding.y", scope = "menu", when = "a side of the pair is stated, §5 intro" },
 ]
@@ -2089,6 +2129,11 @@ sinks   = [
 ["list.hover_text_color"]
 verdict   = "derived"
 tested_by = "T18(a)"
+
+["list.hover_border_color"]
+verdict   = "derived"
+tested_by = "T18(a)"
+note      = "per call: the showcase outlines a hovered, unselected list row and command-palette row at defaults.border.line_width, inside the row's fill (StrokeKind::Inside); egui_extras' TableBuilder fills a hovered row per cell with no stroke (egui_extras-0.37.0/src/layout.rs:145-151)"
 
 ["list.disabled_text_color"]
 verdict = "scoped"

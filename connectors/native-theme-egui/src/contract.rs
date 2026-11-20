@@ -783,6 +783,28 @@ fn expected(
                 ),
             }
         }
+        // ---- E1: a hovered, open or pressed menu item's outline, at the base's window stroke
+        // width (`defaults.border.line_width`, sanitised), else the item's border ----
+        (Some("menu"), "normal", None, p)
+            if matches!(state, "hovered" | "active" | "open")
+                && p.ends_with(".bg_stroke.color") =>
+        {
+            c32(chain(c, &["menu.hover_border_color", "menu.border.color"])?)
+        }
+        (Some("menu"), "normal", None, p)
+            if matches!(state, "hovered" | "active" | "open")
+                && p.ends_with(".bg_stroke.width") =>
+        {
+            if t.menu.hover_border_color.is_none() {
+                return converted(c, "menu.border.line_width", sink, inherited);
+            }
+            // the base style's `window_stroke`, from egui's own (egui/src/memory/theme.rs:24-29)
+            let own = c.scheme.default_style().visuals.window_stroke.width;
+            Val::F32(convert::clamp_length(convert::finite_or(
+                t.defaults.border.line_width,
+                own,
+            )))
+        }
         // ---- §5.9: `slider.fill_color` is invisible without the trailing fill ----
         (None, _, None, "visuals.slider_trailing_fill") => Val::Bool(true),
         // §5.9, §6.6: a diameter's knob is round, in the base style and every slider cell.

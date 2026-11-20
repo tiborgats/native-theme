@@ -413,6 +413,29 @@ impl ThemeAtlas {
         })
     }
 
+    /// A menu bar's style, for `MenuBar::style` (`egui-0.37.0/src/containers/menu.rs:345`): the
+    /// `Role::Menu` cell as [`ThemeAtlas::role_modifier`] gives it, then the theme's menu-bar
+    /// title fields (`menu.bar_hover_background`, `bar_open_background`,
+    /// `bar_hover_text_color`, `bar_padding_horizontal`, `bar_padding_vertical`): a title
+    /// under the pointer, or keyboard-focused, takes the hover fill, an open title the open
+    /// fill, and no title draws the item outline. A field the theme leaves unstated keeps the
+    /// cell's look. The menus the bar opens stay [`ThemeAtlas::role_modifier`]'s, through
+    /// `MenuConfig::style`.
+    ///
+    /// egui's `MenuButton` draws a title from its pointer state alone
+    /// (`egui-0.37.0/src/containers/menu.rs:430`); only a `SubMenuButton` draws its `open` look
+    /// while its menu shows (`:543-549`). The open fill reaches a bar title where the application
+    /// swaps `widgets.open` into the title's style while its menu is open, the same way.
+    #[must_use]
+    pub fn menu_bar_modifier(&self, theme: egui::Theme) -> egui::style::StyleModifier {
+        let atlas = self.clone();
+        let cell = self.role_modifier(theme, Role::Menu, RoleVariant::Normal);
+        egui::style::StyleModifier::new(move |style: &mut egui::Style| {
+            cell.apply(style);
+            crate::style::menu_bar_titles(atlas.resolved_for(theme), style);
+        })
+    }
+
     /// The [`egui::Frame`] recipe for one container surface.
     ///
     /// Feed to `Panel::frame` (`egui/src/containers/panel.rs:413`), `CentralPanel::frame`

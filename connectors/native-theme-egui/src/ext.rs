@@ -181,6 +181,22 @@ pub fn role_modifier(
     ThemeAtlas::from_ctx(ui.ctx()).map(|atlas| atlas.role_modifier(theme, role, variant))
 }
 
+/// A menu bar's style as an `egui::style::StyleModifier`, from the atlas installed in `ui`'s
+/// `Context` ([`ThemeAtlas::from_ctx`](crate::ThemeAtlas::from_ctx)), in the scheme
+/// `ui.ctx().theme()` reports:
+/// [`ThemeAtlas::menu_bar_modifier`](crate::ThemeAtlas::menu_bar_modifier) for a call site that
+/// holds a `Ui` and not the atlas. Feed it to `MenuBar::style`; the menus the bar opens take
+/// [`role_modifier`] with `Role::Menu` through `MenuConfig::style`.
+///
+/// `None` when no atlas is installed: pass `MenuBar::style` nothing, and it keeps egui's own
+/// `menu_style` (`egui-0.37.0/src/containers/menu.rs:330`), for the reason [`role_modifier`]
+/// gives.
+#[must_use]
+pub fn menu_bar_modifier(ui: &egui::Ui) -> Option<egui::style::StyleModifier> {
+    let theme = ui.ctx().theme();
+    ThemeAtlas::from_ctx(ui.ctx()).map(|atlas| atlas.menu_bar_modifier(theme))
+}
+
 use native_theme::theme::{ColorMode, IconSet, ResolvedTheme, Theme};
 use native_theme::{AccessibilityPreferences, ResolutionContext, Result, SystemTheme};
 use std::borrow::Cow;

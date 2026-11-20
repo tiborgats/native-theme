@@ -570,6 +570,14 @@ pub(crate) fn how_line(manifest: &Manifest, leaf: &str, seams: &[Seam]) -> Strin
 const TOOL_BUTTON_EDGE: &str = "egui: per call, the outline's width under the pointer and \
      pressed, where toolbar.button_hover_border_color is stated; 0 otherwise (demo::tool_button)";
 
+/// The route of a hovered list row's `defaults.border.line_width_px`, per call in
+/// `pages::basic::list_row`.
+const HOVERED_ROW_EDGE: &str =
+    "egui: per call, the hovered row's outline width (pages::basic::list_row)";
+/// The route of a Basic table leaf that only a hovered row would draw.
+const TABLE_ROW_NO_HOVER: &str =
+    "not reachable: the Basic table's rows take no hover (pages::basic::table)";
+
 /// The route of a selected list or table row's `defaults.selection_inactive_background`, per
 /// call in `pages::basic::selection_pair`.
 const SELECTED_ROW_INACTIVE_FILL: &str = "egui: per call, the selected row's fill while the \
@@ -585,8 +593,10 @@ const SELECTED_ROW_INACTIVE_TEXT: &str = "egui: per call, the selected row's tex
 /// connector writes, or none, by element id (a prefix, for the rows) and leaf: the List's and
 /// the table's frames, which `pages::basic::list_frame` paints, the rows whose fills
 /// `pages::basic::inner_corners` rounds where they meet a frame, the selected rows' unfocused
-/// pair, which `pages::basic::selection_pair` takes, and the tool buttons' outline width, which
-/// `demo::tool_button` sets per call.
+/// pair, which `pages::basic::selection_pair` takes, the tool buttons' outline width, which
+/// `demo::tool_button` sets per call, a hovered list row's outline width, which
+/// `pages::basic::list_row` paints, the hover outline the Basic table's rows never take, and
+/// the menu bar's fill, which `chrome::menu_panel` paints.
 const PER_CALL_ROUTES: &[(&str, &str, &str)] = &[
     (
         "chrome.toolbar.command_palette",
@@ -698,6 +708,41 @@ const PER_CALL_ROUTES: &[(&str, &str, &str)] = &[
         "basic.list.row_",
         "defaults.selection_inactive_text_color",
         SELECTED_ROW_INACTIVE_TEXT,
+    ),
+    (
+        "basic.list.row_",
+        "defaults.border.line_width_px",
+        HOVERED_ROW_EDGE,
+    ),
+    (
+        "basic.list.frame",
+        "defaults.border.line_width_px",
+        HOVERED_ROW_EDGE,
+    ),
+    (
+        "basic.table.frame",
+        "list.hover_border_color",
+        TABLE_ROW_NO_HOVER,
+    ),
+    (
+        "basic.table.frame",
+        "defaults.border.line_width_px",
+        TABLE_ROW_NO_HOVER,
+    ),
+    (
+        "basic.table.row_",
+        "list.hover_border_color",
+        TABLE_ROW_NO_HOVER,
+    ),
+    (
+        "basic.table.row_",
+        "defaults.border.line_width_px",
+        TABLE_ROW_NO_HOVER,
+    ),
+    (
+        "chrome.menu_bar",
+        "toolbar.background_color",
+        "egui: per call, the menu bar panel's fill (chrome::menu_panel)",
     ),
 ];
 

@@ -6,7 +6,8 @@ use native_theme::Rgba;
 use native_theme::icons::{AnimatedIcon, FreedesktopLoader, IconProvider, IconRole};
 use native_theme::theme::{IconSet, ResolvedFontSpec};
 use native_theme_egui::{
-    NativeThemeUiExt as _, Note, Role, RoleVariant, Surface, ThemeAtlas, icons, role_modifier,
+    NativeThemeUiExt as _, Note, Role, RoleVariant, Surface, ThemeAtlas, icons, menu_bar_modifier,
+    role_modifier,
 };
 use native_theme_showcase_support::status::DrawnFamily;
 use native_theme_showcase_support::{DIALOG_PADDING_PX, rows};
@@ -740,8 +741,9 @@ pub(crate) fn context_menu(
     });
 }
 
-/// A `MenuBar` given `role`'s modifier for both `MenuBar::style` and `MenuConfig::style` (§4.2):
-/// the closure builds the bar with the modifier and records the menu buttons egui builds in it
+/// A `MenuBar` given `menu_bar_modifier` for `MenuBar::style`, the `Role::Menu` cell with the
+/// theme's menu-bar title fields, and `role`'s modifier for `MenuConfig::style` (§4.2): the
+/// closure builds the bar with the modifiers and records the menu buttons egui builds in it
 /// through `Applied`; the bar's `Response` is recorded as a container with the role seam.
 pub(crate) fn menu_bar(
     reg: &mut Registry,
@@ -752,13 +754,14 @@ pub(crate) fn menu_bar(
     add: impl FnOnce(&mut egui::Ui, egui::MenuBar, Applied, &mut Registry) -> egui::Response,
 ) -> egui::Response {
     let mut bar = egui::MenuBar::new();
-    if let Some(modifier) = role_modifier(ui, role, variant) {
-        // The bar's titles edge to edge, each as tall as its text and the menu cell's vertical
-        // padding: `menu.border.padding`, which the connector narrows where a stated
-        // `menu.row_height` is shorter than a label and that padding at a text scale of 1 or
-        // less (`roles::fit_row_padding`; none under macos-monterey). The theme states no gap
-        // between two titles and no bar height, and a title is no button `interact_size.y`
-        // would make taller.
+    if let Some(modifier) = menu_bar_modifier(ui) {
+        // The bar's titles edge to edge, each as tall as its text and its vertical padding:
+        // `menu.bar_padding_vertical` where the theme states it (kde-breeze: 18 + 2 × 6 = 30,
+        // as Breeze's bar measures), else the menu cell's, `menu.border.padding`, which the
+        // connector narrows where a stated `menu.row_height` is shorter than a label and that
+        // padding at a text scale of 1 or less (`roles::fit_row_padding`; none under
+        // macos-monterey). The theme states no gap between two titles and no bar height, and a
+        // title is no button `interact_size.y` would make taller.
         let titles = modifier.clone();
         let bar_style = egui::style::StyleModifier::new(move |style: &mut egui::Style| {
             titles.apply(style);

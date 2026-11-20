@@ -267,9 +267,10 @@ fn fit_row(ui: &mut egui::Ui, shrink: f32) {
 }
 
 /// The menu bar, a strip of its own above the toolbar, as a desktop application's is: on the
-/// window's background (`window.background_color`, the menu bar's in
-/// `docs/showcase-elements.toml`), its menus `layout.container_margin` in from the window's
-/// sides, and [`MENU_BAR_PADDING`] where the theme states no such margin, as the gpui
+/// toolbar's background (`toolbar.background_color`, the menu bar's in
+/// `docs/showcase-elements.toml`: Breeze fills the menu bar and the toolbars as one tools area,
+/// docs/platform-facts.md §2.13; elsewhere than kde-breeze it is the window's), its menus
+/// `layout.container_margin` in from the window's sides, and [`MENU_BAR_PADDING`] where the theme states no such margin, as the gpui
 /// showcase's menu bar; no line under it.
 #[cfg(not(all(target_os = "macos", not(test))))]
 fn menu_panel(app: &mut App, ui: &mut egui::Ui) {
@@ -284,7 +285,7 @@ fn menu_panel(app: &mut App, ui: &mut egui::Ui) {
     };
     let frame = egui::Frame::NONE
         .fill(native_theme_egui::convert::to_color32(
-            t.window.background_color,
+            t.toolbar.background_color,
         ))
         .inner_margin(native_theme_egui::convert::to_margin(
             egui::Margin::ZERO,
@@ -338,16 +339,21 @@ fn menu_bar(app: &mut App, ui: &mut egui::Ui) -> egui::Response {
                 for (menu, items) in Action::MENUS {
                     let key = menu.to_lowercase();
                     let title = demo::lined(ui, *menu, egui::TextStyle::Button);
-                    // The title of the open menu is the bar's current item, drawn as a hovered
-                    // title — `menu.hover_background` under `menu.hover_text_color`, the title's
-                    // own leaves — whether or not the pointer is over it, as a desktop menu bar
-                    // marks the item whose menu is open. Known from the pass before: the popup is
-                    // keyed by the title's response (`egui/src/containers/popup.rs:653-655`).
+                    // The title of the open menu is the bar's current item, drawn in the bar's
+                    // open look — `menu.bar_open_background` (else `bar_hover_background`)
+                    // under `menu.bar_hover_text_color` where the theme states them
+                    // (`menu_bar_modifier`), the menu cell's hover look otherwise — whether or
+                    // not the pointer is over it, as a desktop menu bar marks the item whose menu
+                    // is open; egui's `MenuButton` has no open state of its own
+                    // (`egui-0.37.0/src/containers/menu.rs:430`). Known from the pass before: the
+                    // popup is keyed by the title's response
+                    // (`egui/src/containers/popup.rs:653-655`).
                     let flag = egui::Id::unique(("menu title open", key.as_str()));
                     let opened = ui.ctx().data(|d| d.get_temp::<bool>(flag)).unwrap_or(false);
-                    let resting = ui.visuals().widgets.inactive;
+                    let resting = ui.visuals().widgets.clone();
                     if opened {
-                        ui.visuals_mut().widgets.inactive = ui.visuals().widgets.hovered;
+                        let w = &mut ui.visuals_mut().widgets;
+                        (w.inactive, w.hovered, w.active) = (w.open, w.open, w.open);
                     }
                     let menu_button =
                         egui::containers::menu::MenuButton::from_button(egui::Button::new(title));
@@ -441,7 +447,7 @@ fn menu_bar(app: &mut App, ui: &mut egui::Ui) -> egui::Response {
                             registry.place(ui, "chrome.menu.theme", rect);
                         }
                     });
-                    ui.visuals_mut().widgets.inactive = resting;
+                    ui.visuals_mut().widgets = resting;
                     menu_seam.record(registry, &title_response, "Menu button");
                     registry.tag(&format!("chrome.menu_bar.{key}"), &title_response);
                     let popup = egui::Popup::default_response_id(&title_response);
@@ -1817,6 +1823,28 @@ pub(crate) fn command_palette(app: &mut App, ui: &mut egui::Ui) {
                                                             ui.selectable_label(highlighted, &label)
                                                         },
                                                     );
+                                                    // A hovered row the highlight does not
+                                                    // mark: outlined on the frame egui fills it
+                                                    // in, inside it, where the theme states the
+                                                    // line (egui-0.37.0
+                                                    // `src/theme/default_style.rs:62-72`).
+                                                    if let Some(edge) = t
+                                                        .list
+                                                        .hover_border_color
+                                                        .filter(|_| r.hovered() && !highlighted)
+                                                    {
+                                                        let v = ui.visuals().widgets.hovered;
+                                                        ui.painter().rect_stroke(
+                                                            r.rect.expand(v.expansion),
+                                                            v.corner_radius,
+                                                            native_theme_egui::convert::to_stroke(
+                                                                egui::Stroke::NONE,
+                                                                edge,
+                                                                t.defaults.border.line_width,
+                                                            ),
+                                                            egui::StrokeKind::Inside,
+                                                        );
+                                                    }
                                                     if highlighted && reveal {
                                                         r.scroll_to_me(None);
                                                     }
