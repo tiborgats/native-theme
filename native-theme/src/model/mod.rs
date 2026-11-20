@@ -1974,6 +1974,7 @@ nonexistent_field = "#ff0000"
         let baseline: &[&str] = &[
             "font",
             "line_height",
+            "font_whole_pixels",
             "mono_font",
             "background_color",
             "text_color",

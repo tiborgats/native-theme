@@ -435,6 +435,192 @@ fn validate_no_dpi_uses_default_96() {
     );
 }
 
+#[test]
+fn whole_pixel_fonts_round_as_qt() {
+    let variant = |flag: Option<bool>| {
+        let mut v = fully_populated_variant();
+        v.defaults.font_whole_pixels = flag;
+        v.defaults.font.size = Some(FontSize::Pt(10.0));
+        v.defaults.mono_font.size = Some(FontSize::Pt(8.0));
+        if let Some(ref mut bf) = v.button.font {
+            bf.size = Some(FontSize::Pt(13.5));
+        }
+        if let Some(ref mut cap) = v.text_scale.caption {
+            cap.size = Some(FontSize::Pt(12.0));
+            cap.line_height = None;
+        }
+        if let Some(ref mut disp) = v.text_scale.display {
+            disp.size = Some(FontSize::Pt(10.0));
+            disp.line_height = None;
+        }
+        v.resolve_all();
+        v
+    };
+    let flagged = variant(Some(true))
+        .validate_with_dpi(TEST_DPI_STANDARD)
+        .expect("validates with the flag");
+    let unflagged = variant(None)
+        .validate_with_dpi(TEST_DPI_STANDARD)
+        .expect("validates without the flag");
+    assert_eq!(flagged.defaults.font.size, 13.0, "10 pt, 13.33 px");
+    assert_eq!(flagged.defaults.mono_font.size, 11.0, "8 pt, 10.67 px");
+    assert_eq!(flagged.button.font.size, 18.0, "13.5 pt, 18 px");
+    assert_eq!(flagged.text_scale.caption.size, 16.0, "12 pt, 16 px");
+    assert_eq!(flagged.defaults.font.defined_size, Some(FontSize::Pt(10.0)));
+    assert_eq!(
+        flagged.text_scale.caption.line_height,
+        unflagged.text_scale.caption.line_height
+    );
+    // A line height is taken from the size before its rounding: 10 pt keeps
+    // its 13.33 px line box while the size is 13.
+    assert_eq!(flagged.text_scale.display.size, 13.0);
+    assert_eq!(
+        flagged.text_scale.display.line_height,
+        unflagged.text_scale.display.line_height
+    );
+    assert_eq!(flagged.defaults.font_whole_pixels, Some(true));
+    assert_eq!(unflagged.defaults.font_whole_pixels, None);
+
+    let at_120 = variant(Some(true))
+        .validate_with_dpi(120.0)
+        .expect("validates at 120 DPI");
+    assert_eq!(
+        at_120.defaults.font.size, 17.0,
+        "10 pt at 120 DPI, 16.67 px"
+    );
+    assert_eq!(at_120.defaults.font_whole_pixels, Some(true));
+
+    let off = variant(Some(false))
+        .validate_with_dpi(TEST_DPI_STANDARD)
+        .expect("validates with the flag false");
+    assert!(
+        (off.defaults.font.size - 13.333).abs() < 0.01,
+        "Some(false) keeps the fraction, got {}",
+        off.defaults.font.size
+    );
+    assert_eq!(off.defaults.font_whole_pixels, Some(false));
+}
+
+#[test]
+fn qt_whole_px_rounds_to_hundredths_first() {
+    use crate::resolve::validate_helpers::qt_whole_px;
+    assert_eq!(qt_whole_px(12.4999), 13.0, "one rounding would give 12");
+    assert_eq!(qt_whole_px(12.5), 13.0);
+    assert_eq!(qt_whole_px(13.333334), 13.0);
+    assert_eq!(qt_whole_px(10.666667), 11.0);
+}
+
+/// Every font size of a serialised `ResolvedTheme`: each object with a
+/// `family` key, and each text-scale entry, by its JSON path.
+fn resolved_font_sizes(theme: &crate::model::resolved::ResolvedTheme) -> Vec<(String, f64)> {
+    fn walk(value: &serde_json::Value, path: &str, out: &mut Vec<(String, f64)>) {
+        match value {
+            serde_json::Value::Object(map) => {
+                if map.contains_key("family") {
+                    let size = map.get("size").and_then(serde_json::Value::as_f64);
+                    let size = size.unwrap_or_else(|| panic!("{path}: no numeric size"));
+                    out.push((path.to_string(), size));
+                }
+                for (key, child) in map {
+                    walk(child, &format!("{path}.{key}"), out);
+                }
+            }
+            serde_json::Value::Array(items) => {
+                for (i, child) in items.iter().enumerate() {
+                    walk(child, &format!("{path}[{i}]"), out);
+                }
+            }
+            _ => {}
+        }
+    }
+    let value = serde_json::to_value(theme).expect("a resolved theme serialises");
+    let mut out = Vec::new();
+    walk(&value, "", &mut out);
+    let scale = value
+        .get("text_scale")
+        .and_then(serde_json::Value::as_object)
+        .expect("a resolved theme has a text scale");
+    for (role, entry) in scale {
+        let size = entry.get("size").and_then(serde_json::Value::as_f64);
+        let size = size.unwrap_or_else(|| panic!("text_scale.{role}: no numeric size"));
+        out.push((format!(".text_scale.{role}"), size));
+    }
+    out
+}
+
+#[test]
+fn every_resolved_font_size_is_whole_under_the_flag() {
+    fn ten_points(value: &mut serde_json::Value) {
+        match value {
+            serde_json::Value::Object(map) => {
+                let px = map.remove("size_px");
+                let pt = map.remove("size_pt");
+                if px.is_some() || pt.is_some() {
+                    map.insert("size_pt".to_string(), serde_json::json!(10.0));
+                }
+                for child in map.values_mut() {
+                    ten_points(child);
+                }
+            }
+            serde_json::Value::Array(items) => items.iter_mut().for_each(ten_points),
+            _ => {}
+        }
+    }
+    let mut value = serde_json::to_value(fully_populated_variant()).expect("a variant serialises");
+    ten_points(&mut value);
+    let base: ThemeMode = serde_json::from_value(value).expect("the variant deserialises");
+    let resolved = |flag: Option<bool>| {
+        let mut v = base.clone();
+        v.defaults.font_whole_pixels = flag;
+        v.resolve_all();
+        v.validate_with_dpi(TEST_DPI_STANDARD)
+            .expect("the variant validates")
+    };
+    let whole = resolved_font_sizes(&resolved(Some(true)));
+    let fractional = resolved_font_sizes(&resolved(None));
+    assert!(
+        whole.len() >= 25,
+        "checked {} font sizes, fewer than the pass's 25",
+        whole.len()
+    );
+    for (path, size) in &whole {
+        assert!(size.fract() == 0.0, "{path}: size {size} is not whole");
+    }
+    let paths: Vec<&String> = whole.iter().map(|(p, _)| p).collect();
+    let unflagged_paths: Vec<&String> = fractional.iter().map(|(p, _)| p).collect();
+    assert_eq!(paths, unflagged_paths, "the same places without the flag");
+    for (path, size) in &fractional {
+        assert!(
+            size.fract() != 0.0,
+            "{path}: size {size} is whole without the flag, so the check proves nothing there"
+        );
+    }
+}
+
+#[test]
+fn a_font_size_rounded_to_zero_is_invalid() {
+    let mut v = fully_populated_variant();
+    v.defaults.font_whole_pixels = Some(true);
+    if let Some(ref mut cap) = v.text_scale.caption {
+        cap.size = Some(FontSize::Pt(0.3));
+    }
+    if let Some(ref mut bf) = v.button.font {
+        bf.size = Some(FontSize::Pt(0.3));
+    }
+    let errors = match v.validate_with_dpi(TEST_DPI_STANDARD) {
+        Err(crate::Error::ResolutionInvalid { errors }) => errors,
+        other => panic!("expected ResolutionInvalid, got {other:?}"),
+    };
+    for path in ["text_scale.caption.size_pt", "button.font.size_pt"] {
+        assert!(
+            errors
+                .iter()
+                .any(|rv| rv.path == path && rv.value == f64::from(0.3_f32)),
+            "{path} with the stated 0.3, got: {errors:?}"
+        );
+    }
+}
+
 // ===== Phase 3: Accent propagation (RESOLVE-06) =====
 
 #[test]

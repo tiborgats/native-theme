@@ -43,6 +43,13 @@ pub struct ThemeDefaults {
     /// Line height multiplier (e.g. 1.4 = 140% of font size).
     pub line_height: Option<f32>,
 
+    /// Whether every font size is rounded to whole logical pixels after its
+    /// conversion (`true`), as Qt rounds a font's pixel size: to hundredths,
+    /// then to a whole number, halves up, before any scale. `None` or
+    /// `false`: sizes keep their fraction. Text-scale line heights are not
+    /// rounded (docs/platform-facts.md §2.1.1).
+    pub font_whole_pixels: Option<bool>,
+
     /// Monospace font for code/terminal content.
     #[serde(default, skip_serializing_if = "FontSpec::is_empty")]
     pub mono_font: FontSpec,
@@ -171,6 +178,7 @@ impl_merge!(ThemeDefaults {
         success_color, success_text_color, info_color, info_text_color,
         disabled_opacity, focus_ring_color, focus_ring_width, focus_ring_offset,
         focus_ring_keyboard_only,
+        font_whole_pixels,
         icon_theme
     }
     nested { font, mono_font, border, icon_sizes }
@@ -218,6 +226,7 @@ mod tests {
         assert!(d.focus_ring_width.is_none());
         assert!(d.focus_ring_offset.is_none());
         assert!(d.focus_ring_keyboard_only.is_none());
+        assert!(d.font_whole_pixels.is_none());
         assert!(d.line_height.is_none());
         assert!(d.icon_theme.is_none());
     }
@@ -327,6 +336,22 @@ mod tests {
         };
         base.merge(&overlay);
         assert_eq!(base.focus_ring_keyboard_only, Some(false));
+    }
+
+    #[test]
+    fn merge_keeps_and_overrides_font_whole_pixels() {
+        let mut base = ThemeDefaults {
+            font_whole_pixels: Some(true),
+            ..Default::default()
+        };
+        base.merge(&ThemeDefaults::default());
+        assert_eq!(base.font_whole_pixels, Some(true));
+        let overlay = ThemeDefaults {
+            font_whole_pixels: Some(false),
+            ..Default::default()
+        };
+        base.merge(&overlay);
+        assert_eq!(base.font_whole_pixels, Some(false));
     }
 
     #[test]

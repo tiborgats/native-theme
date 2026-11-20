@@ -74,7 +74,8 @@ pub enum FontStyle {
 /// `Deserialize` of its own for [`ResolvedFontSpec::defined_size`].
 ///
 /// During validation, all `FontSize` values are converted to logical pixels
-/// via `FontSize::to_logical_px(dpi)`, producing a plain `f32` for the resolved model.
+/// via `FontSize::to_logical_px(dpi)` and rounded to a whole number where `defaults.font_whole_pixels` is true, producing a plain `f32` for
+/// the resolved model.
 #[derive(Clone, Copy, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum FontSize {
     /// Typographic points (1/72 inch). Stated by the OS readers (KDE, GNOME,
@@ -158,7 +159,7 @@ pub struct FontSpec {
     ///
     /// In TOML, set as `size_pt` (typographic points) or `size_px` (logical
     /// pixels). Converted to `f32` logical pixels during validation via
-    /// `FontSize::to_logical_px(dpi)`.
+    /// `FontSize::to_logical_px(dpi)` and rounded to a whole number where `defaults.font_whole_pixels` is true.
     pub size: Option<FontSize>,
     /// CSS font weight (100–900).
     pub weight: Option<u16>,
@@ -257,7 +258,7 @@ pub struct ResolvedFontSpec {
     pub family: Arc<str>,
     /// Font size in logical pixels. A size stated in points is converted at
     /// the resolution context's
-    /// [`font_dpi`](crate::resolve::ResolutionContext::font_dpi).
+    /// [`font_dpi`](crate::resolve::ResolutionContext::font_dpi) and rounded to a whole number where `defaults.font_whole_pixels` is true.
     pub size: f32,
     /// The size as its source stated it, before conversion.
     ///

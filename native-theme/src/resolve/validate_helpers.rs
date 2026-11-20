@@ -96,6 +96,12 @@ fn stated_size(stated: Option<FontSize>, resolved: f32) -> f32 {
     }
 }
 
+/// Qt's rounding of a font's pixel size: to hundredths, then to a whole number,
+/// halves up (`QFontDatabasePrivate::load`, qtbase v6.12.0 qfontdatabase.cpp:2865-2869).
+pub(crate) fn qt_whole_px(px: f32) -> f32 {
+    ((px * 100.0).round() / 100.0).round()
+}
+
 // --- validate() helpers ---
 
 /// Extract a required field, recording the path if missing.
@@ -900,12 +906,17 @@ pub(crate) fn check_defaults_ranges(
     for (prefix, entry, stated) in entries {
         let stated: Option<&TextScaleEntry> = stated.as_ref();
         let stated_size_of = stated.and_then(|e| e.size);
-        check_positive(
-            stated_size(stated_size_of, entry.size),
-            prefix,
-            size_key(stated_size_of, ["size", "size_pt", "size_px"]),
-            errors,
-        );
+        if !entry.size.is_finite() || entry.size <= 0.0 {
+            errors.push(crate::error::RangeViolation {
+                path: format!(
+                    "{prefix}.{}",
+                    size_key(stated_size_of, ["size", "size_pt", "size_px"])
+                ),
+                value: stated_size(stated_size_of, entry.size) as f64,
+                min: Some(f64::MIN_POSITIVE),
+                max: None,
+            });
+        }
         let stated_line_height = stated.and_then(|e| e.line_height);
         check_positive(
             stated_size(stated_line_height, entry.line_height),

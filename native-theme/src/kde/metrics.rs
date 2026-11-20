@@ -8,7 +8,7 @@
 #[cfg_attr(not(all(target_os = "linux", feature = "kde")), allow(dead_code))]
 pub(crate) fn populate_widget_sizing(variant: &mut crate::ThemeMode) {
     // Button
-    variant.button.min_width = Some(80.0); // Button_MinWidth
+    variant.button.min_width = Some(82.0); // Button_MinWidth 80 + 2 × (2 frame - 1 shadow inset)
     let border = variant.button.border.get_or_insert_default();
     // platform-facts.md:1184-1185 (§2.3): Button_MarginWidth = 6 on both axes
     // (breezestyle.cpp expands the button size by the margin on each side).
@@ -124,7 +124,7 @@ mod tests {
     fn breeze_metrics_populates_button_min_width() {
         let mut v = ThemeMode::default();
         super::populate_widget_sizing(&mut v);
-        assert_eq!(v.button.min_width, Some(80.0), "Button_MinWidth");
+        assert_eq!(v.button.min_width, Some(82.0), "Button_MinWidth");
     }
 
     #[test]

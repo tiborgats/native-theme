@@ -50,6 +50,7 @@
 
 use crate::model::border::ResolvedPadding;
 use crate::resolve::ResolutionContext;
+use crate::resolve::validate_helpers::qt_whole_px;
 use crate::{ColorMode, ResolvedTheme, Theme, ThemeMode};
 
 const PLATFORM_FACTS: &str = include_str!("../../../docs/platform-facts.md");
@@ -765,7 +766,8 @@ fn unsourced_presets_state_no_gated_size() {
 /// What platform-facts gives for one number.
 #[derive(Clone, Copy, Debug)]
 enum Want {
-    /// A font size in points, resolved to logical pixels at the gate's 96 dpi.
+    /// A font size in points, resolved to logical pixels at the gate's 96 dpi,
+    /// rounded where the theme says.
     Pt(f32),
     /// A size in logical pixels (Windows' effective pixels).
     Px(f32),
@@ -1089,7 +1091,24 @@ fn native_themes_state_documented_fields() {
                     continue;
                 }
             };
-            let body = theme.defaults.font.size;
+            let dpi = ResolutionContext::for_tests().font_dpi;
+            let whole = variant.defaults.font_whole_pixels == Some(true);
+            let round = |px: f32| if whole { qt_whole_px(px) } else { px };
+            // Under the flag Kirigami scales the stated point size and Qt
+            // rounds once: the factor takes the body before its rounding.
+            let body = if whole {
+                match theme.defaults.font.defined_size {
+                    Some(size) => size.to_logical_px(dpi),
+                    None => {
+                        failures.push(format!(
+                            "{source} {name}: the body font has no defined_size"
+                        ));
+                        continue;
+                    }
+                }
+            } else {
+                theme.defaults.font.size
+            };
             for row in FIELD_ROWS.iter().filter(|r| r.preset == preset) {
                 let at = format!(
                     "{}: {source} {name} ({}; {})",
@@ -1108,9 +1127,9 @@ fn native_themes_state_documented_fields() {
                     continue;
                 }
                 let expected = match row.want {
-                    Want::Pt(v) => v * ResolutionContext::for_tests().font_dpi / 72.0,
+                    Want::Pt(v) => round(v * dpi / 72.0),
                     Want::Px(v) => v,
-                    Want::BodyTimes(f) => body * f,
+                    Want::BodyTimes(f) => round(body * f),
                     Want::Weight(w) => f32::from(w),
                     Want::Unstated => continue,
                 };

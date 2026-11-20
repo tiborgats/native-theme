@@ -501,6 +501,7 @@ fields = [
     "toolbar.button_checked_border_color", # None: a selected flat button's (§2.13)
     "combo_box.open_background",       # None: the fill for the pointer's state (§2.24)
     "combo_box.open_border_color",     # None: the border for the pointer's state (§2.24)
+    "defaults.font_whole_pixels",      # None: sizes keep their fraction; KDE rounds as Qt (§2.1.1)
 ]
 # All sizing fields (min_width, min_height, border.padding_*, height, width,
 # diameter, etc.) also have no inheritance — they come from preset/reader.

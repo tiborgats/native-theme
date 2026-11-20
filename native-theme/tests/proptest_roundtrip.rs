@@ -124,12 +124,13 @@ fn arb_theme_defaults() -> impl Strategy<Value = ThemeDefaults> {
         arb_font_spec(),
         arb_defaults_border_spec(),
         arb_icon_sizes(),
-        // 5 scalar Option fields
+        // 6 scalar Option fields
         proptest::option::of(0.5f32..3.0),         // line_height
         proptest::option::of(0.0f32..1.0),         // disabled_opacity
         proptest::option::of(0.0f32..10.0),        // focus_ring_width
         proptest::option::of(0.0f32..10.0),        // focus_ring_offset
         proptest::option::of(proptest::bool::ANY), // focus_ring_keyboard_only
+        proptest::option::of(proptest::bool::ANY), // font_whole_pixels
     )
         .prop_flat_map(|parts| {
             (
@@ -149,6 +150,7 @@ fn arb_theme_defaults() -> impl Strategy<Value = ThemeDefaults> {
                     focus_ring_width,
                     focus_ring_offset,
                     focus_ring_keyboard_only,
+                    font_whole_pixels,
                 ),
                 colors,
             )| {
@@ -158,6 +160,7 @@ fn arb_theme_defaults() -> impl Strategy<Value = ThemeDefaults> {
                     border,
                     icon_sizes,
                     line_height,
+                    font_whole_pixels,
                     background_color: colors[0],
                     text_color: colors[1],
                     accent_color: colors[2],

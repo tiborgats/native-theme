@@ -802,7 +802,7 @@ BackgroundNormal=49,54,59
     fn test_from_kde_content_populates_widget_sizing() {
         let result = from_kde_content(BREEZE_DARK_FULL).unwrap();
         let variant = reader_mode(&result);
-        assert_eq!(variant.button.min_width, Some(80.0), "Button_MinWidth");
+        assert_eq!(variant.button.min_width, Some(82.0), "Button_MinWidth");
         assert_eq!(
             variant.scrollbar.groove_width,
             Some(21.0),
@@ -2142,12 +2142,10 @@ AnimationDurationFactor=1.0
         let result = from_kde_content(BREEZE_DARK_FULL)?;
         assert_eq!(result.font_dpi, Some(96.0));
         let sys = crate::pipeline::run_pipeline(result, "kde-breeze")?;
-        // Noto Sans 10 pt at 96 DPI is 13.33 px.
+        // Noto Sans 10 pt at 96 DPI, 13.33 px, which kde-breeze's
+        // `font_whole_pixels` rounds to 13 as Qt does.
         let size = sys.dark.defaults.font.size;
-        assert!(
-            (size - 10.0 * 96.0 / 72.0).abs() < 0.01,
-            "drawn at {size} px"
-        );
+        assert_eq!(size, 13.0, "drawn at {size} px");
         Ok(())
     }
 

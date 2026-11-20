@@ -39,12 +39,12 @@ pub struct ResolvedIconSizes {
 pub struct ResolvedTextScaleEntry {
     /// Font size in logical pixels. A size stated in points is converted at
     /// the resolution context's
-    /// [`font_dpi`](crate::resolve::ResolutionContext::font_dpi).
+    /// [`font_dpi`](crate::resolve::ResolutionContext::font_dpi) and rounded to a whole number where `defaults.font_whole_pixels` is true.
     pub size: f32,
     /// CSS font weight (100-900).
     pub weight: u16,
     /// Line height in logical pixels. Computed as `defaults.line_height * size`
-    /// when not explicitly set. An explicit value stated in points is converted
+    /// from the size before that rounding when not explicitly set. An explicit value stated in points is converted
     /// at the same `font_dpi` as the size.
     pub line_height: f32,
 }
@@ -68,8 +68,8 @@ pub struct ResolvedTextScale {
 // --- ResolvedDefaults ---
 
 /// Fully resolved global theme defaults: every field is populated but
-/// `focus_ring_keyboard_only`, a soft option whose `None` is a meaning (the
-/// theme does not say).
+/// `font_whole_pixels` and `focus_ring_keyboard_only`, soft options whose
+/// `None` is a meaning (the theme does not say).
 ///
 /// Mirrors [`crate::model::ThemeDefaults`] with concrete types for every other field.
 /// Produced by the resolution/validation pipeline.
@@ -81,6 +81,12 @@ pub struct ResolvedDefaults {
     pub font: ResolvedFontSpec,
     /// Line height multiplier.
     pub line_height: f32,
+    /// Whether the font sizes were rounded to whole logical pixels as Qt
+    /// rounds (`Some(true)`); an application that re-derives a size from
+    /// `defined_size` at its own DPI rounds it so too. `None` where the theme
+    /// does not say. See
+    /// [`ThemeDefaults::font_whole_pixels`](crate::model::ThemeDefaults::font_whole_pixels).
+    pub font_whole_pixels: Option<bool>,
     /// Monospace font for code/terminal content.
     pub mono_font: ResolvedFontSpec,
 
@@ -353,6 +359,7 @@ mod tests {
         ResolvedDefaults {
             font: sample_font(),
             line_height: 1.4,
+            font_whole_pixels: None,
             mono_font: ResolvedFontSpec {
                 family: "JetBrains Mono".into(),
                 size: 12.0,

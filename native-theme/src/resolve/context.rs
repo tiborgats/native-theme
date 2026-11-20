@@ -81,8 +81,9 @@ pub struct ResolutionContext {
     /// [`SystemTheme::from_system`](crate::SystemTheme::from_system) takes no
     /// font DPI, so on that path the application re-derives its sizes from each
     /// resolved font's
-    /// [`defined_size`](crate::theme::ResolvedFontSpec::defined_size). The text
-    /// scale's entries carry no `defined_size`, so their sizes cannot be
+    /// [`defined_size`](crate::theme::ResolvedFontSpec::defined_size),
+    /// rounding each as Qt does where `defaults.font_whole_pixels` is
+    /// `Some(true)`. The text scale's entries carry no `defined_size`, so their sizes cannot be
     /// re-derived.
     pub font_dpi: f32,
     /// Dialog button ordering (`PrimaryLeft` on KDE and Windows,

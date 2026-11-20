@@ -99,6 +99,7 @@ line_height_px               = "f32"    # computed from defaults.line_height * s
 # §2.1.1 Base Font
 font                         = "font"
 line_height                  = "f32"
+font_whole_pixels            = "bool"
 # §2.1.2 Monospace Font
 mono_font                    = "font"
 # §2.1.3 Base Colors (text_color = defaults.font.color — same value, kept for state-override reference)

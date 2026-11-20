@@ -663,6 +663,10 @@ accent_color = "#00ff00"
                         "combo_box.open_border_color",
                         variant.combo_box.open_border_color.is_some(),
                     ),
+                    (
+                        "defaults.font_whole_pixels",
+                        variant.defaults.font_whole_pixels.is_some(),
+                    ),
                 ] {
                     assert_eq!(
                         stated,
