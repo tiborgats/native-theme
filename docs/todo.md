@@ -1,25 +1,23 @@
 # native-theme: TODO
 
 The backlog of native-theme, its connectors and their showcases: one checkbox per
-open item, each tagged after its box. `[v0.7.0]`: this cycle does it (the code-review
-plan or its M1 ledger schedules it, or it is a small defect in code the review reads);
-`[v0.7.x]`: a 0.7 patch release, in ROADMAP.md's order; `[1.0]`: settled before 1.0;
-`[post-1.0]`: deferred past 1.0; `[upstream]`: waits on an upstream crate (gpui-kit, iced,
-egui, libadwaita, Breeze). Find a milestone's items with
-`grep -n '^- \[ \] \[v0.7.0\]' docs/todo.md`. Sections: Core API, Toolkit Connectors,
-This cycle (v0.7.0), Post-1.0, Deferred (pre-1.0); items keep their order inside a
-section, and a `[v0.7.0]` item that would sit under Deferred (pre-1.0) is under This cycle
-(v0.7.0). Closed items move to [`archive/todo_closed.md`](archive/todo_closed.md) as they
-close, under the headings they had, each with the commit that closed it. Cite an entry by
-its file, its `###` heading and its opening words, quoted, as many as make it unique
-under that heading (`docs/todo.md`, *Font DPI*, "An X11 client through Xwayland"): a
-`docs/todo.md:N` citation is valid at the commit that wrote it
-(`git show <commit>:docs/todo.md`), since entries move as they close. A preset
-value is cited by its TOML key path, which no preset edit shifts (`adwaita.toml`
-`[light.button] active_background`), and a preset line only with the commit it
-holds at (`kde-breeze.toml:8` at 2ca74471), as `scripts/check_todo_citations.py`
-checks. A bare `:N` continuing a preset's line citation is never written: the script
-cannot tell which file a bare number continues, so it does not look for one.
+open item, each tagged after its box. `[v0.7.x]`: a 0.7 patch release, in ROADMAP.md's
+order; `[1.0]`: settled before 1.0; `[post-1.0]`: deferred past 1.0; `[upstream]`: waits
+on an upstream crate (gpui-kit, iced, egui, libadwaita, Breeze). (`[v0.7.0]` was the 0.7.0
+cycle's tag; none is open since that release, 2026-10-27.) Find a tag's items with
+`grep -n '^- \[ \] \[v0.7.x\]' docs/todo.md`. Sections: Core API, Toolkit Connectors,
+Post-1.0, Deferred (pre-1.0); items keep their order inside a section. Closed items
+move to [`archive/todo_closed.md`](archive/todo_closed.md) as they close, under the
+headings they had, each with the commit that closed it. Cite an entry by its file, its
+`###` heading and its opening words, quoted, as many as make it unique under that heading
+(`docs/todo.md`, *Font DPI*, "An X11 client through Xwayland"): a `docs/todo.md:N` citation
+is valid at the commit that wrote it (`git show <commit>:docs/todo.md`), since entries
+move as they close. A preset value is cited by its TOML key path, which no preset edit
+shifts (`adwaita.toml` `[light.button] active_background`), and a preset line only with
+the commit it holds at (`kde-breeze.toml:8` at 2ca74471), as
+`scripts/check_todo_citations.py` checks. A bare `:N` continuing a preset's line citation
+is never written: the script cannot tell which file a bare number continues, so it does
+not look for one.
 
 ---
 
@@ -222,13 +220,13 @@ cannot tell which file a bare number continues, so it does not look for one.
 
 ### Slider: the thumb's outline or shadow
 
-- [ ] [1.0] `SliderTheme` states the thumb's fill and diameter, and nothing
-      round it: no border and no shadow (`docs/property-registry.toml`
-      `[slider]`). macos-tahoe light leaves `slider.thumb_color` to
+- [ ] [1.0] `SliderTheme` states the thumb's fill and diameter, an outline
+      only since 0.7.2, which kde-breeze alone states (below), and no shadow
+      (`docs/property-registry.toml` `[slider]`). macos-tahoe light leaves `slider.thumb_color` to
       inheritance, `defaults.surface_color` (`docs/inheritance-rules.toml:211`),
       `#ffffff` (`macos-tahoe.toml` `[light.defaults] surface_color`), on a
       `#ffffff` window (`[light.defaults] background_color`), and the iced
-      connector draws the handle with iced's own `border_width` 0
+      connector, where the theme states no outline, draws the handle with iced's own `border_width` 0
       (`connectors/native-theme-iced/src/styles.rs`, `slider`; iced_widget
       0.14.2 `src/slider.rs:695-699`): the Screenshots run 40209162435 shows
       no thumb in the iced showcase, white on white over the rail. The real
@@ -1211,17 +1209,6 @@ model, the platform presets and the three connectors
       2026-10-13 (fd4abc64, a7da50c7, 74fc414d). Note the 2026-10-13 values in
       the header.
 
-### platform-facts: no shadow rows for the toolbar and the list
-
-- [ ] [v0.7.x] From the kde-breeze validator after M4 T36 (2026-10-13):
-      `docs/platform-facts.md` has no `shadow_enabled` row for the toolbar and
-      the list, so a preset's value for them cites nothing. Add the rows,
-      sourced per platform, then state the presets' values with citations.
-      M8 T15 (2026-10-17): the rows are in (§2.13 and §2.15
-      `border.shadow_enabled`, with `border.color`, `border.corner_radius` and
-      `border.line_width`); the presets' half is in *Presets: values the M8
-      T15 platform-facts rows disagree with*.
-
 ### Presets: expander hover fills with no source
 
 - [ ] [1.0] From M6 T16b (2026-10-16): `docs/platform-facts.md` §2.27 has no
@@ -1743,22 +1730,6 @@ model, the platform presets and the three connectors
       *windows-11: what WinUI 3 draws* is closed, in
       `docs/archive/todo_closed.md`.
 
-### CI: the macOS and Windows legs and the strict-panic steps have not run
-
-- [ ] [v0.7.x] M4 added CI test legs for `macos,watch,system-icons` and
-      `windows,watch,system-icons` (9ed71649) and strict-panic steps for both
-      targets (c373fdb0, `.github/workflows/ci.yml`, *Strict panic lints
-      (native-theme, macOS and Windows targets)*, `:82-89`). CI runs on a push to
-      `main`, a tag or a pull request (`ci.yml:3-7`), not on a branch push, so
-      none of them has run, nor the macOS and Windows runtime tests the M4
-      fixes wrote (the watcher, reader and icon tests of T2, T3, T5, T7, T19–T24
-      and T26, known-unrun). Run them at the next pull request or push to
-      `main`, and fix what fails.
-      M8 T21 (2026-10-17): since M8 T11 (60dcffbb) ci.yml has no tag trigger
-      of its own (its `on:` block, `ci.yml:6-10`): a `v*` tag runs it inside
-      publish.yml, whose `ci-full` job calls it (`workflow_call`) on the
-      tag's commit before the upload; a branch push still runs nothing.
-
 ### Dependencies: zbus 6 and the three unmaintained-crate advisories
 
 - [ ] [v0.7.x] From M8 Step 8 (2026-10-17, f0f17b95): zbus 6.0.0 merged
@@ -1797,8 +1768,9 @@ model, the platform presets and the three connectors
       0.14.0 and zbus 6.0.0 and 6.3.0 declare Rust 1.89, above the workspace's
       1.88.0 (`Cargo.toml:20`); and accesskit_unix 0.24.1 (zbus ^5.19) and
       atspi 0.30.0 (zbus ^5.5), the newest of each, are still on zbus 5, as is
-      the oo7 0.6.0 that GPUI Kit 0.9.1's graph locks (oo7 0.7.1 is on zbus
-      ^6.0), so every application that uses a connector would build zbus 5
+      the oo7 0.6.0 that GPUI Kit 0.9.1's graph locks, and 0.10.0's still does,
+      through gpui-pre-linux 0.3.12 and gpui-fast-linux 0.1.16 (`Cargo.lock`, 2026-11-20;
+      oo7 0.7.1 is on zbus ^6.0), so every application that uses a connector would build zbus 5
       and zbus 6 side by side, and the three `.cargo/audit.toml` entries would
       stay. The check itself runs again: `--exclude zbus` no longer fails on
       the GPUI graph, so `scripts/check_release.sh` passes it and prints that
@@ -1847,23 +1819,6 @@ model, the platform presets and the three connectors
       - windows-version 0.100.0 (2026-09-03; `native-theme/Cargo.toml:151` has
         0.1.7). It declares Rust 1.95, above the workspace's 1.88.0, so it
         waits for an MSRV decision.
-
-### Dependencies: native-theme-gpui holds GPUI Fast below 0.1.16
-
-- [x] [v0.7.x] From 0.7.1's close-out (L3, 2026-11-17): gpui-fast 0.1.16
-      added `impl<T: Element> IntoElement for T` (`src/element.rs:146`, the
-      same in 0.1.17), which conflicts with gpui-base 0.9.1's own
-      `IntoElement` impls (`src/a11y_disabled.rs:63` and the others): E0119,
-      and gpui-base 0.9.1 does not compile on GPUI Fast 0.1.16 or later. Its
-      requirement, `gpui-fast = "0.1.14"`, lets a fresh resolution take them,
-      so the connector's `gpui-fast` feature now turns on a direct
-      `gpui-fast = ">=0.1.14, <0.1.16"` (`connectors/native-theme-gpui/Cargo.toml`,
-      the dependency's comment). gpui-base 0.10.0 puts those impls under
-      `#[cfg(not(feature = "gpui-fast"))]` (`src/a11y_disabled.rs:63-64`) and
-      requires gpui-fast 0.1.16. Remove the bound, its comment and
-      `dep:gpui-fast` from the feature with the move to GPUI Kit 0.10.0.
-      *Done in 0.7.2 (G-A, 2026-11-18):* the bound, its comment and its `dep:` entry
-      are gone; the connector requires GPUI Kit 0.10.0, the lock holds gpui-fast 0.1.16.
 
 ### detect: `prefers_reduced_motion` and the reader's block are two caches of one read
 
@@ -2099,7 +2054,9 @@ offscreen, `docs/evidence/breeze-offscreen/2026-11-13/`.
       ios-13's 32 have no source. The change: these required fields made optional as
       `toolbar.bar_height` was, the unsourced values unset, and a dialog-icon helper
       beside `icon_size_dialog`; it touches every connector's size handling and about
-      ten presets. The reporter's 14 px button padding, 56 px icons, 1.25 line height
+      ten presets, and is part of the `[1.0]` entry under *native-theme-gpui connector*,
+      "Follow-up plan: the other sizing fields a platform leaves unstated", whose table
+      lists these rows. The reporter's 14 px button padding, 56 px icons, 1.25 line height
       and 50 % disabled opacity have no source in Breeze. (6) Qt's line box for the
       13 px body is 18 (`docs/evidence/breeze-offscreen/2026-11-20/qt-fonts-widgets/out_light.txt`,
       `implicitHeight 18.0`), where the model's is 13 × 1.36 = 17.68: line heights are
@@ -2450,12 +2407,6 @@ theme's radius past egui's cap, with a check box of its own in the widgets crate
 
 ### native-theme-egui connector
 
-- [ ] [1.0] Implement the companion widget crate, `native-theme-egui-widgets`, per
-      `docs/archive/todo_egui-widgets-spec.md` (rationale:
-      `docs/archive/todo_egui-widgets-rationale.md`): a switch, a slider, a spinner, a
-      segmented control and link wrappers. Milestone undecided; it starts after
-      the connector, whose API it consumes. When it is scheduled, re-verify the
-      spec against the connector as built, then write its plan.
 - [ ] [1.0] Map the platform font-rendering preferences (see Core API above) onto
       `Visuals::text_options` (`egui/src/style.rs:1001`) and the faces egui
       draws with. Map `font_hinting` (default `true`,
@@ -4220,7 +4171,7 @@ the gap — closing it is a change, and each wants its own decision.
       choice, or no number at all. Each needs its own connector decision,
       e.g. what a builder does without a minimum height or a dialog bound,
       and `bar_height`'s change to `Option` is the pattern. The plan's audit
-      (Table B, 2026-09-23) found these; the values are unchanged since, and
+      (Table B, 2026-09-23) found these; the values are unchanged since but where a row says done, and
       were the same in each `-live` twin until M1-T4-01 removed them:
 
       | Field | Platform-facts cell | Stated by |
@@ -4244,7 +4195,7 @@ the gap — closing it is a change, and each wants its own decision.
       | `layout.window_margin` | Windows, Material (none) (§2.20) | windows-11 10, material-3 10 |
       | `layout.section_gap` | Windows, KDE, Material (none) (§2.20) | windows-11 18, kde-breeze 18, material-3 18 |
       | `dialog.min_width` / `max_width` / `min_height` / `max_height` | macOS and KDE all (none); GNOME min and max height (none), max width per context 372 / wide 600 (§2.22) | macos-monterey and kde-breeze 320/560/140/600; adwaita min height 140, max height 600 |
-      | `dialog.icon_size` | Windows, KDE, GNOME (none) (§2.22) | windows-11, kde-breeze, adwaita 32 |
+      | `dialog.icon_size` | Windows, GNOME (none) (§2.22) | windows-11, adwaita 32. Done for KDE 2026-11-14: §2.22 gives KDE 64, which kde-breeze states (811bee05) |
       | `spinner.min_diameter` | KDE, GNOME (none) (§2.23) | kde-breeze, adwaita 16 |
       | `spinner.stroke_width` | macOS, KDE, GNOME (none) (§2.23) | macos-monterey, kde-breeze, adwaita 2 |
       | `combo_box.min_height` | KDE (none); GNOME a derivation, "← button min-height (24+pad)" (§2.24) | kde-breeze 32, adwaita 34 |
@@ -4252,7 +4203,7 @@ the gap — closing it is a change, and each wants its own decision.
       | `combo_box.arrow_icon_size` | macOS: a chevron measured 6 × 10, not a square (§2.24) | macos-monterey 17 |
       | `combo_box.arrow_area_width` | macOS range ~16–18; GNOME (none) (§2.24) | done 2026-09-24: both removed, and the gate checks the field (docs/archive/todo_v0.5.9_pre-merge-fixes.md) |
       | `segmented_control.segment_height` | Windows (none); KDE the tab bar as proxy (§2.25). GNOME now gives 28 (`AdwToggleGroup`, `docs/platform-facts.md:1638`, since 0c7bde37), adwaita's value | windows-11 28, adwaita 28, kde-breeze 30 |
-      | `segmented_control.separator_width` | Windows, GNOME (none) (§2.25) | windows-11 1, adwaita 1 |
+      | `segmented_control.separator_width` | GNOME (none) (§2.25) | adwaita 1. Done for Windows 2026-10-26: §2.25 gives WinUI's none drawn, which windows-11 states as 0 (49e9703e) |
       | `expander.header_height` | macOS, KDE (none) (§2.27) | macos-monterey 40, kde-breeze 40 |
       | `defaults.icon_sizes.small` | macOS range, "sidebar: 16–20pt" (§2.1.8) | macos-monterey 16 |
       | `defaults.icon_sizes.large` | macOS (none) (§2.1.8) | macos-monterey 32 |
@@ -5002,6 +4953,11 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       diagnostic text. Until then the connector's documentation says the status
       colours are partly upstream's (`config.rs`, `highlight_style`; the crate
       documentation's `input` row).
+      *GPUI Kit 0.10.0 (2026-11-20):* still so: the scheme's status colours are unchanged
+      (gpui-component 0.10.0 `src/theme/default-theme.json:114-129`, `:317-342`), and
+      `src/highlighter/registry.rs`, `src/highlighter/diagnostic_styles.rs` and
+      `src/input/popovers/diagnostic_popover.rs` are as in 0.9.1; the underline's colours
+      are `src/input/input.rs:584-589`.
 
 ### gpui: the widgets' own icons under SF Symbols and Segoe Fluent
 
@@ -5095,13 +5051,6 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       them at 1.04 or less. The test was removed, and no repository tool recomputes
       the figures, so a preset or mapping change can make them false unseen. A kept
       check that recomputes them is open work.
-
----
-
-## This cycle (v0.7.0)
-
-The `[v0.7.0]` items that sat under *Deferred (pre-1.0)*, in the order they had there
-(M8 T21, 2026-10-17).
 
 ---
 

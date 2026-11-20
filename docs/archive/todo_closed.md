@@ -1119,6 +1119,58 @@ and many have since drifted, as the archive's [README](README.md) warns.
       `bar_padding_horizontal` and `bar_padding_vertical`, which kde-breeze and the KDE
       reader state.
 
+### platform-facts: no shadow rows for the toolbar and the list
+
+- [x] [v0.7.x] From the kde-breeze validator after M4 T36 (2026-10-13):
+      `docs/platform-facts.md` has no `shadow_enabled` row for the toolbar and
+      the list, so a preset's value for them cites nothing. Add the rows,
+      sourced per platform, then state the presets' values with citations.
+      M8 T15 (2026-10-17): the rows are in (§2.13 and §2.15
+      `border.shadow_enabled`, with `border.color`, `border.corner_radius` and
+      `border.line_width`); the presets' half is in *Presets: values the M8
+      T15 platform-facts rows disagree with*.
+      *Closed 2026-11-20 (0.7.2's documentation audit); its half was done in `bfd41933`
+      (M8 T15, 2026-10-17):* the rows are in, and the presets' half is the open entry
+      *Presets: values the M8 T15 platform-facts rows disagree with*, so nothing was left here.
+
+### CI: the macOS and Windows legs and the strict-panic steps have not run
+
+- [x] [v0.7.x] M4 added CI test legs for `macos,watch,system-icons` and
+      `windows,watch,system-icons` (9ed71649) and strict-panic steps for both
+      targets (c373fdb0, `.github/workflows/ci.yml`, *Strict panic lints
+      (native-theme, macOS and Windows targets)*, `:82-89`). CI runs on a push to
+      `main`, a tag or a pull request (`ci.yml:3-7`), not on a branch push, so
+      none of them has run, nor the macOS and Windows runtime tests the M4
+      fixes wrote (the watcher, reader and icon tests of T2, T3, T5, T7, T19–T24
+      and T26, known-unrun). Run them at the next pull request or push to
+      `main`, and fix what fails.
+      M8 T21 (2026-10-17): since M8 T11 (60dcffbb) ci.yml has no tag trigger
+      of its own (its `on:` block, `ci.yml:6-10`): a `v*` tag runs it inside
+      publish.yml, whose `ci-full` job calls it (`workflow_call`) on the
+      tag's commit before the upload; a branch push still runs nothing.
+      *Closed 2026-11-20 (0.7.2's documentation audit):* every leg and step named above
+      passed in CI run 44763409888, on pull request #11 at `4d229998`; the eight macOS and
+      Windows test legs had passed at the v0.7.0 and v0.7.1 tags as well, inside
+      publish.yml (runs 40580852144 and 44166840093).
+
+### Dependencies: native-theme-gpui holds GPUI Fast below 0.1.16
+
+- [x] [v0.7.x] From 0.7.1's close-out (L3, 2026-11-17): gpui-fast 0.1.16
+      added `impl<T: Element> IntoElement for T` (`src/element.rs:146`, the
+      same in 0.1.17), which conflicts with gpui-base 0.9.1's own
+      `IntoElement` impls (`src/a11y_disabled.rs:63` and the others): E0119,
+      and gpui-base 0.9.1 does not compile on GPUI Fast 0.1.16 or later. Its
+      requirement, `gpui-fast = "0.1.14"`, lets a fresh resolution take them,
+      so the connector's `gpui-fast` feature now turns on a direct
+      `gpui-fast = ">=0.1.14, <0.1.16"` (`connectors/native-theme-gpui/Cargo.toml`,
+      the dependency's comment). gpui-base 0.10.0 puts those impls under
+      `#[cfg(not(feature = "gpui-fast"))]` (`src/a11y_disabled.rs:63-64`) and
+      requires gpui-fast 0.1.16. Remove the bound, its comment and
+      `dep:gpui-fast` from the feature with the move to GPUI Kit 0.10.0.
+      *Done in 0.7.2 (G-A, 2026-11-18):* the bound, its comment and its `dep:` entry
+      are gone; the connector requires GPUI Kit 0.10.0, the lock holds gpui-fast 0.1.16.
+      *Closed 2026-11-18 in `dca7f3bb`; moved here on 2026-11-20 (0.7.2's documentation audit).*
+
 ---
 
 ## Toolkit Connectors
@@ -1219,6 +1271,15 @@ and many have since drifted, as the archive's [README](README.md) warns.
       the theme's `defaults.background_color`, as the showcase does
       (`connectors/native-theme-egui/examples/showcase-egui/app.rs:895-897`).
   Archived 2026-10-17 (M8 T21): ticked in be1fbf49.
+- [x] [1.0] Implement the companion widget crate, `native-theme-egui-widgets`, per
+      `docs/archive/todo_egui-widgets-spec.md` (rationale:
+      `docs/archive/todo_egui-widgets-rationale.md`): a switch, a slider, a spinner, a
+      segmented control and link wrappers. Milestone undecided; it starts after
+      the connector, whose API it consumes. When it is scheduled, re-verify the
+      spec against the connector as built, then write its plan.
+      *Closed: done in `adf5cc80` (2026-09-28) and shipped in v0.6.0, the crate
+      `connectors/native-theme-egui-widgets`; moved here on 2026-11-20 (0.7.2's documentation
+      audit).*
 
 ### Closed items from native-theme-gpui connector
 

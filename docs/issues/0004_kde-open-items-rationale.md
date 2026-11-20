@@ -16,6 +16,9 @@ buttons) implemented on 2026-11-18 for 0.7.2, by
 Steps 6 (D8) and 7 (D7's header, D9) implemented on 2026-11-19 for 0.7.2, by
 `../archive/todo_v0.7.2_kde-open-items-steps6-7-{spec,plan}.md`. With step 7 every
 step is done; this rationale stays in `docs/issues/`, as the first rationale does.
+The items §0 leaves in the backlog were decided by
+[`0004_kde-leftovers-rationale.md`](0004_kde-leftovers-rationale.md) and built in
+0.7.2 on 2026-11-20, but for those its §3 keeps there.
 
 It continues `docs/issues/0004_kde-hand-overrides-rationale.md` (called "the first
 rationale" below), whose §5 left these items undecided, and the backlog entries
