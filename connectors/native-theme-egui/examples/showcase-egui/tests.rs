@@ -5792,20 +5792,22 @@ fn stated_list_and_menu_rows_hold_their_text_at_every_text_scale() {
 /// expander (the companion crate's: painted under kde-breeze and adwaita, egui's own
 /// `CollapsingHeader` under material-3 and ios-13), whose title is one line box tall
 /// (`demo::lined`), is exactly the rule's height. The Containers page's two egui headers in the
-/// expander scope are the stated height at 1, and at 1.5 the taller of the rule and their plain
-/// title with its padding: ios-13's 34 px title, whose face's row (46) is taller than its 41 px
-/// line box, grows its header past the rule's 44. At 1.5 kde-breeze's 13 px title (its 10 pt in
-/// whole pixels, `defaults.font_whole_pixels`) is 19.5, its line box 26.52 at its 1.36 line
-/// height, 27 rounded up, so a header with its 7 + 7 padding is 41, past the stated 40. Its
-/// egui headers' plain title is a 27 px row, also 41 with that padding, so the case does not
-/// tell the rule from egui's own sizing; a scale of 2 would (the rule's line box 35.36, 36
-/// rounded up, and 50, the title's row 35 and 49).
+/// expander scope are the stated height at 1, and above 1 the taller of the rule and their plain
+/// title with its padding. At 1.5 kde-breeze's 13 px title (its 10 pt in whole pixels,
+/// `defaults.font_whole_pixels`) is 19.5, its line box 26.52 at its 1.36 line height, 27
+/// rounded up, so a header with its 7 + 7 padding is 41, past the stated 40; its egui headers'
+/// plain title is a 27 px row, also 41 with that padding. At 2 the line box is 35.36, 36
+/// rounded up, so the rule is 50 where the title's 35 px row and its padding are 49: all three
+/// headers are 50, the rule's height, not egui's own. At 2 adwaita's painted header is the
+/// rule's 52 (36 and its 8 + 8) and its egui headers the rule's 54 (with 9 + 9; their title's
+/// 35 px row 53), material-3's the rule's 61 (its 40 px row 60), and ios-13's 54 px row equals
+/// its 53.95 line box rounded up, all three 58.
 #[test]
 fn the_expander_header_is_its_stated_height_by_the_row_rule() {
     let mut faults = Vec::new();
     for (preset, factor) in ["kde-breeze", "adwaita", "material-3", "ios-13"]
         .into_iter()
-        .flat_map(|preset| [(preset, 1.0), (preset, 1.5)])
+        .flat_map(|preset| [(preset, 1.0), (preset, 1.5), (preset, 2.0)])
     {
         let mut harness = open_scaled(preset, "basic", factor);
         harness.run_steps(2);
@@ -5867,7 +5869,12 @@ fn the_expander_header_is_its_stated_height_by_the_row_rule() {
             ),
             ("ui.collapsing", "ui.collapsing, egui's own icon"),
         ] {
-            // a record is the part of the header inside the page's clip (`demo.rs`, `record`)
+            // egui paints a header only where its clip shows it
+            // (`egui/src/containers/collapsing_header.rs:598`), so the header is scrolled into
+            // the page's view for its title to be painted; it is read by its whole rectangle
+            // (`demo.rs`, `Record::whole`), as the view can be shorter than the header: under
+            // ios-13 at 2 the Containers page's fixed nested panels leave its view 31.5 tall in
+            // the 1280 x 720 window, the header 58.
             harness.get_by_label(title).scroll_to_me();
             harness.run_steps(4);
             let painted = harness
@@ -5898,11 +5905,11 @@ fn the_expander_header_is_its_stated_height_by_the_row_rule() {
                 .iter()
                 .find(|r| r.info.kind == kind)
             {
-                Some(r) if (r.rect.height() - want).abs() <= 0.05 => {}
+                Some(r) if (r.whole.height() - want).abs() <= 0.05 => {}
                 Some(r) => faults.push(format!(
                     "{preset} at {factor}: {kind} is {} tall, want {want} (the rule {rule}, its \
                      title {row} and padding {scope} + {scope})",
-                    r.rect.height()
+                    r.whole.height()
                 )),
                 None => faults.push(format!("{preset} at {factor}: {kind} is not recorded")),
             }

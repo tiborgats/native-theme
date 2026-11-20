@@ -990,9 +990,10 @@ fn header_padding(t: &ResolvedTheme, ctx: &egui::Context, painted: bool) -> f32 
 /// the gpui showcase's header is the stated height at 1 (`geometry::accordion_title`). At 1.5
 /// kde-breeze's 13 px title (its 10 pt in whole pixels, `defaults.font_whole_pixels`) is 19.5,
 /// its line box 26.52 at its 1.36 line height, 27 rounded up, so the header is 27 + 7 + 7 = 41,
-/// past the stated 40. That is also egui's own sizing, its title's row (27 here) and its
-/// padding, so the case does not tell the rule from it; a scale of 2 would (the rule's line box
-/// 35.36, 36 rounded up, and 50, the title's row 35 and 49).
+/// past the stated 40; that is also egui's own sizing, its title's 27 px row and its padding.
+/// At 2 the line box is 35.36, 36 rounded up, so the header is the rule's 50 where its title's
+/// 35 px row and padding are 49; adwaita's is the rule's 52 (its row 35 and 8 + 8, 51) and
+/// material-3's 61 (its row 40 and 10 + 10, 60).
 #[test]
 fn the_header_is_its_stated_height_by_the_row_rule() {
     let mut faults = Vec::new();
@@ -1001,7 +1002,7 @@ fn the_header_is_its_stated_height_by_the_row_rule() {
         ("adwaita", true),
         ("material-3", false),
     ] {
-        for scale in [1.0, 1.5] {
+        for scale in [1.0, 1.5, 2.0] {
             let prefs = scaled_by(scale);
             let t = from_preset(preset, false, &prefs).unwrap().1;
             let ctx = installed(&t, &prefs);
