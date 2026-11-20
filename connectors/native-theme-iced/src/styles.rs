@@ -1384,9 +1384,15 @@ pub fn toggler_over(
 /// `input.placeholder_color`: the model states it once, for every field that
 /// has one.
 ///
-/// `pick_list::Status::Opened` carries whether the pointer is on the field
-/// (`pick_list.rs:838-849`), and that is what decides the fill here -- the
-/// model states no separate open appearance. `handle_color` has no native
+/// An open field (`pick_list::Status::Opened`) is `combo_box.open_background`
+/// layered over the idle fill, as the hover fill is, and outlined in
+/// `.open_border_color`, whatever the pointer does: Breeze draws an open
+/// combo box as a pressed button, framed in its focus colour (platform-facts
+/// §2.24). Where the theme leaves either unset, that part follows the
+/// pointer, as `Opened` carries whether it is on the field
+/// (`pick_list.rs:838-849`): the hovered fill or border on it, the idle one
+/// off it. The border's width and radius are `combo_box.border`'s in every
+/// status. `handle_color` has no native
 /// source, `ComboBoxTheme` carrying the arrow's sizes but not its color, so it
 /// comes from `pick_list::default(theme, status)`.
 ///
@@ -1412,21 +1418,29 @@ pub fn pick_list(
     let label = to_color(c.font.color);
     let placeholder = to_color(resolved.input.placeholder_color);
 
+    let open = c
+        .open_background
+        .map(|fill| composite_over(to_color(fill), idle));
+
     let border = border_of(&c.border);
     let hovered_border = c.hover_border_color.map_or(border.color, to_color);
+    let open_border = c.open_border_color.map(to_color);
 
     move |theme, status| {
         let iced = iced_widget::pick_list::default(theme, status);
-        let (background, border) = match status {
-            Status::Active | Status::Opened { is_hovered: false } => (idle, border),
-            Status::Hovered | Status::Opened { is_hovered: true } => (
-                hovered,
-                Border {
-                    color: hovered_border,
-                    ..border
-                },
-            ),
+        let (background, color) = match status {
+            Status::Active => (idle, border.color),
+            Status::Hovered => (hovered, hovered_border),
+            Status::Opened { is_hovered } => {
+                let (fill, line) = if is_hovered {
+                    (hovered, hovered_border)
+                } else {
+                    (idle, border.color)
+                };
+                (open.unwrap_or(fill), open_border.unwrap_or(line))
+            }
         };
+        let border = Border { color, ..border };
         Style {
             text_color: label,
             placeholder_color: placeholder,

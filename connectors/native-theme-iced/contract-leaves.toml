@@ -275,14 +275,17 @@ moves = [
 
 [leaves."combo_box.background_color"]
 moves = [
-  { row = "styles::pick_list.background", statuses = ["Active", "Opened { is_hovered: false }"] },
-  { row = "styles::pick_list.background", statuses = ["Hovered", "Opened { is_hovered: true }"], except = ["adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+  { row = "styles::pick_list.background", statuses = ["Active"] },
+  { row = "styles::pick_list.background", statuses = ["Hovered"], except = ["adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+  { row = "styles::pick_list.background", statuses = ["Opened { is_hovered: false }"], except = ["kde-breeze/light", "kde-breeze/dark"] },
+  { row = "styles::pick_list.background", statuses = ["Opened { is_hovered: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
 ]
 
 [leaves."combo_box.border.color"]
 moves = [
-  { row = "styles::pick_list.border", statuses = ["Active", "Opened { is_hovered: false }"] },
+  { row = "styles::pick_list.border", statuses = ["Active"] },
   { row = "styles::pick_list.border", statuses = ["Hovered", "Opened { is_hovered: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "material-3/light", "material-3/dark"] },
+  { row = "styles::pick_list.border", statuses = ["Opened { is_hovered: false }"], except = ["kde-breeze/light", "kde-breeze/dark"] },
 ]
 
 [leaves."combo_box.disabled_background"]
@@ -304,17 +307,25 @@ moves = [
 
 [leaves."combo_box.hover_background"]
 moves = [
-  { row = "styles::pick_list.background", statuses = ["Hovered", "Opened { is_hovered: true }"] },
+  { row = "styles::pick_list.background", statuses = ["Hovered"] },
+  { row = "styles::pick_list.background", statuses = ["Opened { is_hovered: true }"], except = ["kde-breeze/light", "kde-breeze/dark"] },
 ]
 
 [leaves."combo_box.hover_border_color"]
 moves = [
-  { row = "styles::pick_list.border", statuses = ["Hovered", "Opened { is_hovered: true }"] },
+  { row = "styles::pick_list.border", statuses = ["Hovered"] },
+  { row = "styles::pick_list.border", statuses = ["Opened { is_hovered: true }"], except = ["kde-breeze/light", "kde-breeze/dark"] },
 ]
 
 [leaves."combo_box.open_background"]
+moves = [
+  { row = "styles::pick_list.background", statuses = ["Opened { is_hovered: false }", "Opened { is_hovered: true }"] },
+]
 
 [leaves."combo_box.open_border_color"]
+moves = [
+  { row = "styles::pick_list.border", statuses = ["Opened { is_hovered: false }", "Opened { is_hovered: true }"] },
+]
 
 [leaves."defaults.accent_color"]
 moves = [
@@ -1598,10 +1609,10 @@ leaves = ["splitter.hover_color"]
 leaves = ["splitter.hover_color"]
 
 [rows."styles::pick_list.background"]
-leaves = ["combo_box.background_color", "combo_box.hover_background"]
+leaves = ["combo_box.background_color", "combo_box.hover_background", "combo_box.open_background"]
 
 [rows."styles::pick_list.border"]
-leaves = ["combo_box.border.color", "combo_box.hover_border_color"]
+leaves = ["combo_box.border.color", "combo_box.hover_border_color", "combo_box.open_border_color"]
 
 [rows."styles::pick_list.placeholder_color"]
 leaves = ["input.placeholder_color"]

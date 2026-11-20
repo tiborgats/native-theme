@@ -4455,6 +4455,9 @@ fn a_cleared_hover_border_copies_the_border_at_rest() -> native_theme::Result<()
 
     resolved.checkbox.hover_border_color = None;
     resolved.combo_box.hover_border_color = None;
+    // kde-breeze's open border, which an open field takes whatever the
+    // pointer does, cleared too: an open field then follows the pointer.
+    resolved.combo_box.open_border_color = None;
     let theme = crate::to_theme(&resolved, "kde-breeze");
     let boxes = styles::checkbox(&resolved);
     let buttons = styles::radio(&resolved);

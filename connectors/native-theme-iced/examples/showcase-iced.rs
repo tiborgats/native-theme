@@ -6196,11 +6196,14 @@ fn theme_picker(state: &State) -> Element<'_, Message> {
 
 /// The Theme row's field in the model's combo box: in each status the look
 /// `picker`, `styles::pick_list`, gives the other rows' drop-downs in the
-/// matching one -- hovered as hovered, focused, its menu open, as open --
-/// its arrow in the drop-down's `handle_color`, and the selection in what is
-/// typed `field`'s, `styles::text_input`, the text field's. The field always
-/// takes input, so it is never drawn disabled; that status is the
-/// drop-down's at rest.
+/// matching one -- hovered as hovered, focused as hovered or at rest, by the
+/// pointer -- its arrow in the drop-down's `handle_color`, and the selection
+/// in what is typed `field`'s, `styles::text_input`, the text field's. A
+/// focused field is not drawn open: the model has no editable combo box, and
+/// Breeze draws its pressed-button look on a closed one alone (E10), so the
+/// field keeps today's look under every theme. The field always takes
+/// input, so it is never drawn disabled; that status is the drop-down's at
+/// rest.
 fn theme_picker_style(
     picker: impl Fn(&Theme, pick_list::Status) -> pick_list::Style,
     field: impl Fn(&Theme, text_input::Status) -> text_input::Style,
@@ -6212,10 +6215,10 @@ fn theme_picker_style(
                 text_input::Status::Active | text_input::Status::Disabled => {
                     pick_list::Status::Active
                 }
-                text_input::Status::Hovered => pick_list::Status::Hovered,
-                text_input::Status::Focused { is_hovered } => {
-                    pick_list::Status::Opened { is_hovered }
+                text_input::Status::Hovered | text_input::Status::Focused { is_hovered: true } => {
+                    pick_list::Status::Hovered
                 }
+                text_input::Status::Focused { is_hovered: false } => pick_list::Status::Active,
             },
         );
         text_input::Style {

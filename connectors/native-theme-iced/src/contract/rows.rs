@@ -1663,8 +1663,9 @@ pub(super) const PICK_LIST_STATUSES: &[pick_list::Status] = &[
     pick_list::Status::Opened { is_hovered: true },
 ];
 
-/// The fill the native fields give a drop-down field in `status`. The model
-/// states no open appearance, so an open field follows its own `is_hovered`.
+/// The fill the native fields give a drop-down field in `status`: open,
+/// `combo_box.open_background` over the idle fill, whatever the pointer
+/// does; where that is unstated an open field follows its own `is_hovered`.
 #[cfg(feature = "widgets")]
 pub(super) fn native_pick_list_fill(r: &ResolvedTheme, status: pick_list::Status) -> Color {
     let c = &r.combo_box;
@@ -1676,13 +1677,11 @@ pub(super) fn native_pick_list_fill(r: &ResolvedTheme, status: pick_list::Status
     match status {
         pick_list::Status::Active => idle,
         pick_list::Status::Hovered => hovered(),
-        pick_list::Status::Opened { is_hovered } => {
-            if is_hovered {
-                hovered()
-            } else {
-                idle
-            }
-        }
+        pick_list::Status::Opened { is_hovered } => match c.open_background {
+            Some(open) => over(to_color(open), idle),
+            None if is_hovered => hovered(),
+            None => idle,
+        },
     }
 }
 
@@ -1716,6 +1715,13 @@ pub(super) const PICK_LIST_BORDER_ROWS: &[BorderRow<pick_list::Status>] = &[Bord
     statuses: PICK_LIST_STATUSES,
     native: |r, s| NativeBorder {
         color: match s {
+            pick_list::Status::Opened { .. } if r.combo_box.open_border_color.is_some() => {
+                to_color(
+                    r.combo_box
+                        .open_border_color
+                        .unwrap_or(r.combo_box.border.color),
+                )
+            }
             pick_list::Status::Hovered | pick_list::Status::Opened { is_hovered: true } => {
                 to_color(
                     r.combo_box
