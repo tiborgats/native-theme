@@ -1420,7 +1420,10 @@ fn the_server_side_texts_name_the_platforms_frame_drawer() {
         "{os}: the TitleBar sample's info is not this platform's"
     );
     assert_eq!(
-        instance(&crate::info::chrome::menu_bar(&t, None, px(8.)), "window"),
+        instance(
+            &crate::info::chrome::menu_bar(&t, None, None, px(8.)),
+            "window"
+        ),
         Some(menu_row_window(os)),
         "{os}: the menu-bar row's info is not this platform's"
     );
@@ -10160,6 +10163,357 @@ fn a_hovered_drop_down_takes_the_hover_border(cx: &mut TestAppContext) {
             edges_inside(&mut cx, CHROME_THEME_SETTINGS, hovered),
             0,
             "{preset}: hovering the Basic drop-down edged the side panel's theme pickers too"
+        );
+    }
+}
+
+/// The colour and width, in logical pixels, of the last-painted box with a
+/// border inside `selector`'s bounds, by the quads' draw order: a row's
+/// outline, the showcase's box laid over the row as its last child. A box
+/// with a border and no fill is painted as four quads with the same bounds,
+/// one per side; each of them names the same box.
+fn last_edge_inside(
+    cx: &mut VisualTestContext,
+    selector: &'static str,
+) -> Option<(gpui::Hsla, f32)> {
+    let scale = cx.update(|window, _| window.scale_factor());
+    quads_inside(cx, selector)
+        .into_iter()
+        .filter(|q| q.border_widths.top.0 > 0. && !q.border_color.is_transparent())
+        .max_by_key(|q| q.order)
+        .map(|q| (q.border_color, q.border_widths.top.0 / scale))
+}
+
+/// Open the menu titled `name` (`MenuBar::open_named`) and draw the frame.
+fn open_menu(cx: &mut VisualTestContext, showcase: &Entity<Showcase>, name: &str) {
+    let opened = cx.update(|window, cx| {
+        let menus = showcase.read(cx).menus.clone();
+        menus.update(cx, |m, cx| m.open_named(name, false, window, cx))
+    });
+    assert!(opened.is_ok(), "the {name} menu does not open: {opened:?}");
+    cx.run_until_parked();
+    draw(cx);
+}
+
+/// A menu row under the pointer is outlined in `menu.hover_border_color` at
+/// `defaults.border.line_width`, a box over the row (`MenuLook::edge`), and
+/// at rest it is not: under kde-breeze light, the Theme menu's "System" row,
+/// lit by the pointer, and the Overlays page's first application-drawn row.
+/// Under adwaita, which states no outline, a hovered row draws none.
+#[gpui::test]
+fn a_hovered_menu_row_takes_the_hover_border(cx: &mut TestAppContext) {
+    use crate::info::stated;
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    let far = point(px(1200.), px(8900.));
+    for preset in ["kde-breeze", "adwaita"] {
+        use_light_preset(&mut cx, &showcase, preset);
+        let r = resolved_theme(&mut cx, &showcase);
+        let edge = r.menu.hover_border_color.map(stated);
+        let width = r.defaults.border.line_width;
+        assert_eq!(
+            edge.is_some(),
+            preset == "kde-breeze",
+            "{preset}: menu.hover_border_color is stated by kde-breeze alone"
+        );
+        let expected = edge.map(|e| (e, width));
+        hover(&mut cx, far);
+        draw(&mut cx);
+        open_menu(&mut cx, &showcase, "theme");
+        let row = "menu-row-System";
+        assert_eq!(
+            last_edge_inside(&mut cx, row),
+            None,
+            "{preset}: the Theme menu's System row at rest is outlined"
+        );
+        let at = bounds_of(&mut cx, row).center();
+        hover(&mut cx, at);
+        draw(&mut cx);
+        assert_eq!(
+            last_edge_inside(&mut cx, row),
+            expected,
+            "{preset}: the hovered System row is not outlined in menu.hover_border_color at defaults.border.line_width"
+        );
+        if let Some(edge) = edge {
+            assert_eq!(
+                painted_edges(&mut cx, row).last(),
+                Some(&edge),
+                "{preset}: the System row's outline does not lie over the whole row"
+            );
+        }
+        cx.simulate_keystrokes("escape");
+        cx.run_until_parked();
+        assert_eq!(
+            read(&mut cx, &showcase, |this, cx| this
+                .menus
+                .read(cx)
+                .open_menu()),
+            None,
+            "{preset}: Escape does not close the Theme menu"
+        );
+        show(&mut cx, &showcase, Page::Overlays);
+        hover(&mut cx, far);
+        draw(&mut cx);
+        let row = "overlays-menu-row-undo";
+        assert_eq!(
+            last_edge_inside(&mut cx, row),
+            None,
+            "{preset}: the Overlays page's first menu row at rest is outlined"
+        );
+        let at = bounds_of(&mut cx, row).center();
+        hover(&mut cx, at);
+        draw(&mut cx);
+        assert_eq!(
+            last_edge_inside(&mut cx, row),
+            expected,
+            "{preset}: the Overlays page's hovered first menu row is not outlined in menu.hover_border_color at defaults.border.line_width"
+        );
+    }
+}
+
+/// The menu-bar row is filled with `toolbar.background_color` where a
+/// native theme is installed: kde-breeze light's, #dee0e2, which differs
+/// from its window's fill, so the row's fill cannot be the window's showing
+/// through. On macOS the menus are in the system's menu bar and there is no
+/// row.
+#[cfg(not(target_os = "macos"))]
+#[gpui::test]
+fn the_menu_bar_takes_the_toolbars_fill(cx: &mut TestAppContext) {
+    use crate::info::stated;
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_light_preset(&mut cx, &showcase, "kde-breeze");
+    let r = resolved_theme(&mut cx, &showcase);
+    let fill = stated(r.toolbar.background_color);
+    assert_ne!(
+        fill,
+        stated(r.window.background_color),
+        "kde-breeze light's toolbar fill is its window's, so the test could not tell them apart"
+    );
+    hover(&mut cx, point(px(1200.), px(700.)));
+    draw(&mut cx);
+    assert_eq!(
+        painted_fill(&mut cx, CHROME_MENU_BAR),
+        Some(fill),
+        "the menu-bar row is not filled with toolbar.background_color"
+    );
+}
+
+/// A menu title takes the bar's own look where the theme states it
+/// (`MenuLook::title`), under kde-breeze light: open, `menu.bar_open_background`
+/// lettered `bar_hover_text_color`; hovered and closed,
+/// `bar_hover_background`; `bar_padding_horizontal` (10) at its left and
+/// right and `bar_padding_vertical` (6) at its top and bottom, so it is the
+/// label's width + 20 by the line + 12, measured against the title with
+/// every padding 0. kde-breeze's two fills are both #3daee9, so the open
+/// one is set to #f0a014 first (the KDE reader tests' hover colour,
+/// 240,160,20). With the three colours cleared, today's look: the item's
+/// `menu.hover_background` open and hovered.
+#[gpui::test]
+fn a_menu_title_takes_the_bars_fills_and_padding(cx: &mut TestAppContext) {
+    use crate::info::stated;
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_light_preset(&mut cx, &showcase, "kde-breeze");
+    let mut r = resolved_theme(&mut cx, &showcase);
+    let open_fill = native_theme::color::Rgba::new(240, 160, 20, 255);
+    r.menu.bar_open_background = Some(open_fill);
+    let (hover_fill, text) = (r.menu.bar_hover_background, r.menu.bar_hover_text_color);
+    assert!(
+        hover_fill.is_some()
+            && text.is_some()
+            && r.menu.bar_padding_horizontal == Some(10.)
+            && r.menu.bar_padding_vertical == Some(6.),
+        "kde-breeze light no longer states the menu bar's hover fill, text and 10 by 6 padding, which this test reads"
+    );
+    let (Some(hover_fill), Some(text)) = (hover_fill, text) else {
+        return;
+    };
+    install_breeze_light(&mut cx, &r);
+    let far = point(px(1200.), px(700.));
+    hover(&mut cx, far);
+    draw(&mut cx);
+    let title = "menu-title-Theme";
+    let closed = "menu-title-View";
+    open_menu(&mut cx, &showcase, "theme");
+    assert_eq!(
+        painted_fill(&mut cx, title),
+        Some(stated(open_fill)),
+        "an open menu title is not filled with menu.bar_open_background"
+    );
+    let padded = bounds_of(&mut cx, title).size;
+    let lettered = read(&mut cx, &showcase, |_this, cx| {
+        native_value(cx, |n| {
+            let mut open = crate::demo::MenuLook::of(&n).title(gpui::div().id("title"), true);
+            open.style().text.color
+        })
+    });
+    assert_eq!(
+        lettered.flatten(),
+        Some(stated(text)),
+        "an open menu title is not lettered in menu.bar_hover_text_color"
+    );
+    click(&mut cx, title);
+    assert_eq!(
+        read(&mut cx, &showcase, |this, cx| this
+            .menus
+            .read(cx)
+            .open_menu()),
+        None,
+        "a click on the open title does not close its menu"
+    );
+    let at = bounds_of(&mut cx, closed).center();
+    hover(&mut cx, at);
+    draw(&mut cx);
+    assert_eq!(
+        painted_fill(&mut cx, closed),
+        Some(stated(hover_fill)),
+        "a hovered closed menu title is not filled with menu.bar_hover_background"
+    );
+
+    r.menu.bar_hover_background = None;
+    r.menu.bar_open_background = None;
+    r.menu.bar_hover_text_color = None;
+    install_breeze_light(&mut cx, &r);
+    hover(&mut cx, far);
+    draw(&mut cx);
+    hover(&mut cx, at);
+    draw(&mut cx);
+    let item = stated(r.menu.hover_background);
+    assert_eq!(
+        painted_fill(&mut cx, closed),
+        Some(item),
+        "with the bar's fills unstated, a hovered title is not filled with menu.hover_background"
+    );
+    hover(&mut cx, far);
+    draw(&mut cx);
+    open_menu(&mut cx, &showcase, "theme");
+    assert_eq!(
+        painted_fill(&mut cx, title),
+        Some(item),
+        "with the bar's fills unstated, an open title is not filled with menu.hover_background"
+    );
+    click(&mut cx, title);
+
+    r.menu.bar_padding_horizontal = None;
+    r.menu.bar_padding_vertical = None;
+    r.menu.border.padding = native_theme::theme::ResolvedPadding {
+        top: Some(0.),
+        right: Some(0.),
+        bottom: Some(0.),
+        left: Some(0.),
+    };
+    install_breeze_light(&mut cx, &r);
+    let bare = bounds_of(&mut cx, title).size;
+    assert_eq!(
+        (padded.width - bare.width, padded.height - bare.height),
+        (px(20.), px(12.)),
+        "a menu title padded {padded:?} is not its bare {bare:?} + 20 by + 12"
+    );
+}
+
+/// The Basic List's unselected rows under the pointer are outlined in
+/// `list.hover_border_color` at `defaults.border.line_width`, a box over
+/// the row in its suffix (`demo::ListRow`), and at rest they are not: under
+/// kde-breeze light, rows 1 and 3; the selected row 2 never.
+#[gpui::test]
+fn a_hovered_list_row_takes_the_hover_border(cx: &mut TestAppContext) {
+    use crate::info::stated;
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    use_light_preset(&mut cx, &showcase, "kde-breeze");
+    show(&mut cx, &showcase, Page::Basic);
+    let r = resolved_theme(&mut cx, &showcase);
+    let edge = r.list.hover_border_color.map(stated);
+    assert!(edge.is_some(), "kde-breeze states list.hover_border_color");
+    let expected = edge.map(|e| (e, r.defaults.border.line_width));
+    let far = point(px(1200.), px(8900.));
+    for (row, outlined) in [
+        ("basic-list-row-0", true),
+        ("basic-list-row-1", false),
+        ("basic-list-row-2", true),
+    ] {
+        hover(&mut cx, far);
+        draw(&mut cx);
+        assert_eq!(
+            last_edge_inside(&mut cx, row),
+            None,
+            "{row} at rest is outlined"
+        );
+        let at = bounds_of(&mut cx, row).center();
+        hover(&mut cx, at);
+        draw(&mut cx);
+        assert_eq!(
+            last_edge_inside(&mut cx, row),
+            expected.filter(|_| outlined),
+            "{row} under the pointer: the outline is not list.hover_border_color on an unselected row alone"
+        );
+    }
+}
+
+/// The Data page's unselected Tree row under the pointer is outlined in
+/// `list.hover_border_color` at `defaults.border.line_width`, a box in its
+/// suffix (`demo::tree_row`), and at rest it is not, under kde-breeze light.
+#[gpui::test]
+fn a_hovered_tree_row_takes_the_hover_border(cx: &mut TestAppContext) {
+    use crate::info::stated;
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    use_light_preset(&mut cx, &showcase, "kde-breeze");
+    show(&mut cx, &showcase, Page::Data);
+    let r = resolved_theme(&mut cx, &showcase);
+    let edge = r.list.hover_border_color.map(stated);
+    assert!(edge.is_some(), "kde-breeze states list.hover_border_color");
+    let row = "data-tree-row-1";
+    hover(&mut cx, point(px(1200.), px(8900.)));
+    draw(&mut cx);
+    assert_eq!(
+        last_edge_inside(&mut cx, row),
+        None,
+        "the tree row at rest is outlined"
+    );
+    let at = bounds_of(&mut cx, row).center();
+    hover(&mut cx, at);
+    draw(&mut cx);
+    assert_eq!(
+        last_edge_inside(&mut cx, row),
+        edge.map(|e| (e, r.defaults.border.line_width)),
+        "the hovered tree row is not outlined in list.hover_border_color at defaults.border.line_width"
+    );
+    if let Some(edge) = edge {
+        assert_eq!(
+            painted_edges(&mut cx, row).last(),
+            Some(&edge),
+            "the tree row's outline does not lie over the whole row"
+        );
+    }
+}
+
+/// The Basic table's unselected row under the pointer is outlined in
+/// `list.hover_border_color` at `defaults.border.line_width`, a box over the
+/// row (`demo::files_table`), and at rest it is not: under kde-breeze light,
+/// row 1; the selected row 2 never.
+#[gpui::test]
+fn a_hovered_table_row_takes_the_hover_border(cx: &mut TestAppContext) {
+    use crate::info::stated;
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    use_light_preset(&mut cx, &showcase, "kde-breeze");
+    show(&mut cx, &showcase, Page::Basic);
+    let r = resolved_theme(&mut cx, &showcase);
+    let edge = r.list.hover_border_color.map(stated);
+    assert!(edge.is_some(), "kde-breeze states list.hover_border_color");
+    let expected = edge.map(|e| (e, r.defaults.border.line_width));
+    let far = point(px(1200.), px(8900.));
+    for (row, outlined) in [("basic-table-row-0", true), ("basic-table-row-1", false)] {
+        hover(&mut cx, far);
+        draw(&mut cx);
+        assert_eq!(
+            last_edge_inside(&mut cx, row),
+            None,
+            "{row} at rest is outlined"
+        );
+        let at = bounds_of(&mut cx, row).center();
+        hover(&mut cx, at);
+        draw(&mut cx);
+        assert_eq!(
+            last_edge_inside(&mut cx, row),
+            expected.filter(|_| outlined),
+            "{row} under the pointer: the outline is not list.hover_border_color on an unselected row alone"
         );
     }
 }

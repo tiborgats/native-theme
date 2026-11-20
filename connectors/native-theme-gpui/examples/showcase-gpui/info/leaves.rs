@@ -777,6 +777,21 @@ pub const HOW: &[(&str, &str, &str)] = &[
         "gpui: the swatch's corner radius (inspector.rs)",
     ),
     (
+        "chrome.menu.",
+        "defaults.border.line_width_px",
+        "gpui: the width of the highlighted row's outline in menu.hover_border_color (MenuLook::edge, MenuBar::popup)",
+    ),
+    (
+        "basic.list.",
+        "defaults.border.line_width_px",
+        "gpui: the width of an unselected row's outline under the pointer in list.hover_border_color (demo::ListRow)",
+    ),
+    (
+        "basic.table",
+        "defaults.border.line_width_px",
+        "gpui: the width of an unselected row's outline under the pointer in list.hover_border_color (demo::files_table)",
+    ),
+    (
         "",
         "defaults.border.line_width_px",
         "gpui: the swatch's frame width (inspector.rs)",
@@ -1473,6 +1488,11 @@ pub const HOW: &[(&str, &str, &str)] = &[
     ),
     (
         "basic.table",
+        "list.hover_border_color",
+        "gpui: an unselected row's outline under the pointer, a box over the row, square but on the last row's bottom corners (demo::files_table)",
+    ),
+    (
+        "basic.table",
         "list.item_font",
         "gpui: each row's family, size, weight and style (demo::files_table)",
     ),
@@ -1546,6 +1566,11 @@ pub const HOW: &[(&str, &str, &str)] = &[
         "basic.list.",
         "defaults.selection_inactive_text_color",
         "not reachable: a ListItem paints its selected fill list_active after the caller's style, whatever the window's state (gpui-component/list/list_item.rs:260-267, list_active), and a text colour without its fill is no pair",
+    ),
+    (
+        "basic.list.",
+        "list.hover_border_color",
+        "gpui: an unselected row's outline under the pointer, a box over the row in its suffix, on the corners of its fill (demo::ListRow)",
     ),
     (
         "basic.list.row_",
@@ -1635,34 +1660,79 @@ pub const HOW: &[(&str, &str, &str)] = &[
         "gpui: the row's font, which the plain Kbd text inherits (MenuLook; gpui-component/kbd.rs:236-238, appearance)",
     ),
     (
+        "chrome.menu_bar",
+        "toolbar.background_color",
+        "gpui: the menu bar's fill, as the model fills a menu bar (demo::menu_bar)",
+    ),
+    (
         "chrome.menu_bar.",
         "menu.border.padding_top_px",
-        "gpui: pads the title by the stated side, else MENU_TITLE_PADDING_Y (demo::MenuTitle)",
+        "gpui: pads the title by the stated side where menu.bar_padding_vertical is unstated, else MENU_TITLE_PADDING_Y (demo::MenuTitle)",
     ),
     (
         "chrome.menu_bar.",
         "menu.border.padding_right_px",
-        "gpui: pads the title by the stated side, else MENU_TITLE_PADDING_X (demo::MenuTitle)",
+        "gpui: pads the title by the stated side where menu.bar_padding_horizontal is unstated, else MENU_TITLE_PADDING_X (demo::MenuTitle)",
     ),
     (
         "chrome.menu_bar.",
         "menu.border.padding_bottom_px",
-        "gpui: pads the title by the stated side, else MENU_TITLE_PADDING_Y (demo::MenuTitle)",
+        "gpui: pads the title by the stated side where menu.bar_padding_vertical is unstated, else MENU_TITLE_PADDING_Y (demo::MenuTitle)",
     ),
     (
         "chrome.menu_bar.",
         "menu.border.padding_left_px",
-        "gpui: pads the title by the stated side, else MENU_TITLE_PADDING_X (demo::MenuTitle)",
+        "gpui: pads the title by the stated side where menu.bar_padding_horizontal is unstated, else MENU_TITLE_PADDING_X (demo::MenuTitle)",
+    ),
+    (
+        "chrome.menu_bar.",
+        "menu.bar_padding_horizontal_px",
+        "gpui: pads the title's left and right, over menu.border.padding (MenuLook::title)",
+    ),
+    (
+        "chrome.menu_bar.",
+        "menu.bar_padding_vertical_px",
+        "gpui: pads the title's top and bottom, over menu.border.padding (MenuLook::title)",
     ),
     (
         "chrome.menu_bar.",
         "menu.hover_background",
-        "gpui: the title's fill under the pointer and while open (demo::MenuTitle)",
+        "gpui: the title's fill under the pointer where menu.bar_hover_background is unstated, and while open where menu.bar_open_background is unstated too (demo::MenuTitle)",
     ),
     (
         "chrome.menu_bar.",
         "menu.hover_text_color",
-        "gpui: the title's text under the pointer and while open (demo::MenuTitle)",
+        "gpui: the title's text under the pointer and while open where menu.bar_hover_text_color is unstated (demo::MenuTitle)",
+    ),
+    (
+        "chrome.menu_bar.",
+        "menu.bar_hover_background",
+        "gpui: the title's fill under the pointer, and while open where menu.bar_open_background is unstated (MenuLook::title)",
+    ),
+    (
+        "chrome.menu_bar.",
+        "menu.bar_open_background",
+        "gpui: the title's fill while its menu is open, under the pointer too (MenuLook::title)",
+    ),
+    (
+        "chrome.menu_bar.",
+        "menu.bar_hover_text_color",
+        "gpui: the title's text under the pointer and while open (MenuLook::title)",
+    ),
+    (
+        "chrome.menu_bar.",
+        "menu.border.corner_radius_px",
+        "gpui: rounds the title's fill (MenuLook::title)",
+    ),
+    (
+        "chrome.menu.",
+        "menu.border.corner_radius_px",
+        "gpui: rounds the highlighted row's fill and its outline (MenuLook)",
+    ),
+    (
+        "chrome.menu.",
+        "menu.hover_border_color",
+        "gpui: the highlighted row's outline, a box over the row and its padding, so nothing moves (MenuLook::edge, MenuBar::popup)",
     ),
     (
         "",

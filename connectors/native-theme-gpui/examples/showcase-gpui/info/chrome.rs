@@ -7,7 +7,9 @@ use gpui_component::{Colorize as _, theme::Theme};
 use native_theme::theme::{ResolvedButtonTheme, ResolvedPadding};
 use native_theme_gpui::ResolvedTheme;
 
-use super::{ColorClaim, WidgetInfo, buttons::ToolSize, claim, edge_claim, px_text, stated};
+use super::{
+    ColorClaim, WidgetInfo, buttons::ToolSize, claim, edge_claim, px_text, stated, stated_claim,
+};
 use crate::demo::{PanelToggle, Severity, SheetSide};
 use crate::support::ChromeIcon;
 
@@ -229,10 +231,16 @@ pub enum MenuHost {
 }
 
 /// The menu-bar row (spec S8), at the top of a window whose frame the window
-/// manager draws. `margin` is the installed layout's
+/// manager draws, filled with `native`'s `toolbar.background_color` where a
+/// native theme is installed. `margin` is the installed layout's
 /// `layout.container_margin`, which the row borrows, and `own` the showcase's
 /// `MENU_BAR_PADDING`.
-pub fn menu_bar(t: &Theme, margin: Option<Pixels>, own: Pixels) -> WidgetInfo {
+pub fn menu_bar(
+    t: &Theme,
+    native: Option<&ResolvedTheme>,
+    margin: Option<Pixels>,
+    own: Pixels,
+) -> WidgetInfo {
     let sides = match margin {
         Some(m) => format!(
             "left and right {}px, layout.container_margin, borrowed",
@@ -243,19 +251,33 @@ pub fn menu_bar(t: &Theme, margin: Option<Pixels>, own: Pixels) -> WidgetInfo {
             px_text(own.as_f32())
         ),
     };
-    WidgetInfo::new("Menu bar")
-        .color(claim("bg (the window's)", "background", t.background, "showcase"))
-        .not_themeable(
+    let info = WidgetInfo::new("Menu bar");
+    let info = match native {
+        Some(r) => info
+            .color(claim(
+                "bg",
+                "background_color",
+                stated(r.toolbar.background_color),
+                "showcase",
+            ))
+            .config(
+                "fill",
+                "toolbar.background_color: the model fills a menu bar as the toolbar, the one tools area Breeze paints (platform-facts §2.6, §2.13)",
+            ),
+        None => info
+            .color(claim("bg (the window's)", "background", t.background, "showcase"))
+            .not_themeable(
+                "fill",
+                "none of its own: the view's background, which the showcase paints under the whole window, shows through",
+            ),
+    };
+    info.not_themeable(
             "widget",
-            "gpui-component has no menu-bar row, so this row is the application's own h_flex around its menus. The model states no menu bar either: its menu is the popup a menu opens (platform-facts §2.6)",
+            "gpui-component has no menu-bar row, so this row is the application's own h_flex around its menus. The model states no menu-bar widget: its menu is the popup a menu opens, and the bar takes the toolbar's fill (platform-facts §2.6)",
         )
         .not_themeable(
             "inset",
             "the model states no menu-bar inset. The row borrows layout.container_margin, the padding inside containers, so its menus start where the toolbar's buttons do wherever toolbar.border states no left padding of its own: the showcase's choice",
-        )
-        .not_themeable(
-            "fill",
-            "none of its own: the view's background, which the showcase paints under the whole window, shows through",
         )
         .instance("window", menu_row_window(std::env::consts::OS))
         .instance(
@@ -272,10 +294,118 @@ pub fn app_menus(t: &Theme, host: MenuHost, native: Option<&ResolvedTheme>) -> W
     let info = match native {
         Some(r) => {
             let m = &r.menu;
-            info.color(claim("title and item text", "color", stated(m.font.color), "showcase"))
-                .color(claim("hovered or open title, hovered item", "hover_background", stated(m.hover_background), "showcase"))
-                .color(claim("its text", "hover_text_color", stated(m.hover_text_color), "showcase"))
-                .color(claim("menu bg", "background_color", stated(m.background_color), "showcase"))
+            // Which titles the item's hover colours still reach: a title
+            // takes `bar_hover_background` under the pointer and
+            // `bar_open_background`, else that, while open (demo::MenuLook).
+            let line_width = r.defaults.border.line_width;
+            let info = info.color(claim(
+                "title and item text",
+                "color",
+                stated(m.font.color),
+                "showcase",
+            ));
+            let info = match (m.bar_hover_background, m.bar_open_background) {
+                (None, None) => info.color(claim(
+                    "hovered or open title, hovered item",
+                    "hover_background",
+                    stated(m.hover_background),
+                    "showcase",
+                )),
+                (None, Some(_)) => info.color(claim(
+                    "hovered title, hovered item",
+                    "hover_background",
+                    stated(m.hover_background),
+                    "showcase",
+                )),
+                (Some(_), _) => info.color(claim(
+                    "hovered item",
+                    "hover_background",
+                    stated(m.hover_background),
+                    "showcase",
+                )),
+            };
+            let info = match m.bar_hover_text_color {
+                None => info.color(claim(
+                    "its text",
+                    "hover_text_color",
+                    stated(m.hover_text_color),
+                    "showcase",
+                )),
+                Some(_) => info.color(claim(
+                    "a hovered item's text",
+                    "hover_text_color",
+                    stated(m.hover_text_color),
+                    "showcase",
+                )),
+            };
+            let info = match m.bar_open_background {
+                None => info.colors(stated_claim(
+                    "hovered or open title",
+                    "bar_hover_background",
+                    m.bar_hover_background,
+                    "showcase",
+                )),
+                Some(_) => info.colors(stated_claim(
+                    "hovered title",
+                    "bar_hover_background",
+                    m.bar_hover_background,
+                    "showcase",
+                )),
+            };
+            let info = info
+                .colors(stated_claim(
+                    "open title",
+                    "bar_open_background",
+                    m.bar_open_background,
+                    "showcase",
+                ))
+                .colors(stated_claim(
+                    "hovered or open title's text",
+                    "bar_hover_text_color",
+                    m.bar_hover_text_color,
+                    "showcase",
+                ))
+                .colors(edge_claim(
+                    "hovered item edge",
+                    "hover_border_color",
+                    m.hover_border_color,
+                    Some(line_width),
+                    "showcase",
+                ));
+            let info = match (m.hover_border_color, line_width > 0.0) {
+                (Some(_), true) => info.config("hovered item edge", format!("menu.hover_border_color at defaults.border.line_width, {}px, a box over the highlighted item, its padding included, so nothing moves, rounded as the highlight", px_text(line_width))),
+                (Some(_), false) => info.config("hovered item edge", "none: defaults.border.line_width is 0"),
+                (None, _) => info,
+            };
+            let title_sides: Vec<String> = [
+                m.bar_padding_horizontal.map(|x| {
+                    format!(
+                        "menu.bar_padding_horizontal, {}px, at the left and right",
+                        px_text(x)
+                    )
+                }),
+                m.bar_padding_vertical.map(|y| {
+                    format!(
+                        "menu.bar_padding_vertical, {}px, at the top and bottom",
+                        px_text(y)
+                    )
+                }),
+            ]
+            .into_iter()
+            .flatten()
+            .collect();
+            let info = if title_sides.is_empty() {
+                info
+            } else {
+                info.config(
+                    "title padding",
+                    format!(
+                        "{} of each title, over menu.border.padding's sides",
+                        title_sides.join(" and ")
+                    ),
+                )
+            };
+            info.color(claim("menu bg", "background_color", stated(m.background_color), "showcase"))
                 .color(claim("menu separator", "separator_color", stated(m.separator_color), "showcase"))
                 .colors(edge_claim("menu edge", "border", Some(r.popover.border.color), Some(r.popover.border.line_width), "showcase"))
                 .config("font", format!("menu.font: {}, on the titles and the items, as geometry::menu_item sets it", super::drawn_font(&m.font)))
@@ -322,6 +452,7 @@ pub fn app_menus(t: &Theme, host: MenuHost, native: Option<&ResolvedTheme>) -> W
     .not_themeable(
         "fill",
         match host {
+            MenuHost::Row if native.is_some() => "none behind the titles: the menu bar's, toolbar.background_color, shows through (platform-facts §2.6, §2.13: the bar takes the toolbar's fill)",
             MenuHost::Row => "none behind the titles: the window's background shows through; the model states no menu-bar fill (platform-facts §2.6: its menu is the popup)",
             MenuHost::TitleBar => "none behind the titles: the title bar's fill shows through; the model states no menu-bar fill (platform-facts §2.6: its menu is the popup)",
         },

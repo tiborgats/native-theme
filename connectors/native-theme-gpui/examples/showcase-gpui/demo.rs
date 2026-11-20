@@ -390,10 +390,12 @@ const MENU_POPUP_SHADOW: [(Pixels, Pixels, Pixels); 2] =
 
 /// The model's menu, as the showcase draws a menu title and a menu row:
 /// `menu.font` and a row's size as `geometry::menu_item` refines a menu item,
-/// `menu.hover_background` and `hover_text_color`, `menu.border`'s padding
-/// sides and corner radius (platform-facts §2.6: the items are rectangular
-/// where it is 0), and the popup `menu.background_color` framed by the
-/// popover's border (§2.6: the popup border is §2.16's).
+/// `menu.hover_background` and `hover_text_color`, a lit row's outline in
+/// `menu.hover_border_color`, a title's `menu.bar_*` fills, text and
+/// padding, `menu.border`'s padding sides and corner radius (platform-facts
+/// §2.6: the items are rectangular where it is 0), and the popup
+/// `menu.background_color` framed by the popover's border (§2.6: the popup
+/// border is §2.16's).
 #[derive(Clone)]
 pub(crate) struct MenuLook {
     /// `geometry::menu_item`: a row's font, stated padding sides and height.
@@ -401,8 +403,24 @@ pub(crate) struct MenuLook {
     text: Hsla,
     hover: Hsla,
     hover_text: Hsla,
+    /// `menu.hover_border_color`, a lit row's outline: `None` where the
+    /// theme leaves it unstated or `defaults.border.line_width` is 0.
+    edge: Option<Hsla>,
+    /// `defaults.border.line_width`, the outline's width.
+    edge_width: Pixels,
+    /// A title's fill under the pointer and while its menu is open, and its
+    /// text in both: `menu.bar_hover_background`, `bar_open_background` and
+    /// `bar_hover_text_color`, each falling back as its doc says, to the
+    /// item's hover colours where all are unstated.
+    bar_hover: Hsla,
+    bar_open: Hsla,
+    bar_text: Hsla,
     radius: Pixels,
     padding: ResolvedPadding,
+    /// A title's padding: `menu.border.padding`, with
+    /// `menu.bar_padding_horizontal` over its left and right and
+    /// `bar_padding_vertical` over its top and bottom where stated.
+    title_padding: ResolvedPadding,
     row_height: Option<Pixels>,
     /// Whether the text scale is above 1, where a fixed height becomes a
     /// minimum (geometry.rs, `with_height_rule`).
@@ -423,13 +441,34 @@ impl MenuLook {
     pub(crate) fn of(n: &Native<'_>) -> Self {
         let m = &n.resolved.menu;
         let p = &n.resolved.popover.border;
+        let edge_width = px(n.resolved.defaults.border.line_width.max(0.0));
+        let pad = m.border.padding;
+        let (x, y) = (m.bar_padding_horizontal, m.bar_padding_vertical);
         Self {
             item: geometry::menu_item(*n),
             text: info::stated(m.font.color),
             hover: info::stated(m.hover_background),
             hover_text: info::stated(m.hover_text_color),
+            edge: m
+                .hover_border_color
+                .map(info::stated)
+                .filter(|_| edge_width > px(0.0)),
+            edge_width,
+            bar_hover: info::stated(m.bar_hover_background.unwrap_or(m.hover_background)),
+            bar_open: info::stated(
+                m.bar_open_background
+                    .or(m.bar_hover_background)
+                    .unwrap_or(m.hover_background),
+            ),
+            bar_text: info::stated(m.bar_hover_text_color.unwrap_or(m.hover_text_color)),
             radius: px(m.border.corner_radius.max(0.0)),
-            padding: m.border.padding,
+            padding: pad,
+            title_padding: ResolvedPadding {
+                top: y.or(pad.top),
+                right: x.or(pad.right),
+                bottom: y.or(pad.bottom),
+                left: x.or(pad.left),
+            },
             row_height: m.row_height.map(px),
             text_scaled_up: n.accessibility.text_scale_factor() > 1.0,
             background: info::stated(m.background_color),
@@ -454,25 +493,27 @@ impl MenuLook {
         }
     }
 
-    /// `title` as a menu title, in the font `geometry::menu_item` sets, and
-    /// in `hover` and `hover_text` where `selected` or under the pointer.
+    /// `title` as a menu title, in the font `geometry::menu_item` sets,
+    /// padded by `title_padding`, and filled `bar_open` where `selected` (its
+    /// menu is open, under the pointer too) and `bar_hover` under the
+    /// pointer, lettered `bar_text` in both.
     pub(crate) fn title(&self, mut title: Stateful<Div>, selected: bool) -> Stateful<Div> {
-        let (hover, hover_text) = (self.hover, self.hover_text);
+        let (hover, open, text) = (self.bar_hover, self.bar_open, self.bar_text);
         title.text_style().refine(&self.item.text);
         padded(
             title,
-            &self.padding,
+            &self.title_padding,
             Some(MENU_TITLE_PADDING_X),
             Some(MENU_TITLE_PADDING_Y),
         )
         .rounded(self.radius)
         .map(|title| {
             if selected {
-                title.bg(hover).text_color(hover_text)
+                title.bg(open).text_color(text)
             } else {
                 title
                     .text_color(self.text)
-                    .hover(move |style| style.bg(hover).text_color(hover_text))
+                    .hover(move |style| style.bg(hover).text_color(text))
             }
         })
     }
@@ -492,7 +533,9 @@ impl MenuLook {
             Some(MENU_ROW_PADDING_X),
             None,
         )
-        .rounded(self.radius);
+        .rounded(self.radius)
+        .relative()
+        .group(MENU_ROW_GROUP);
         let row = match (self.row_height, self.padding.top, self.padding.bottom) {
             (None, None, None) if self.text_scaled_up => row.min_h(MENU_ROW_HEIGHT).h_auto(),
             (None, None, None) => row.h(MENU_ROW_HEIGHT),
@@ -503,6 +546,35 @@ impl MenuLook {
         } else {
             row.text_color(self.text)
         }
+    }
+
+    /// The outline of a row in `MENU_ROW_GROUP`, for the row's last child:
+    /// a box laid over the whole row, its padding included, so nothing
+    /// moves, rounded as the row's fill, `edge_width` wide in `edge`. Lit by
+    /// the row's state where `lit` is `Some` (`MenuBar::popup`'s highlighted
+    /// row), by the pointer on the row where it is `None` (`menu_rows`);
+    /// `None` where the theme draws no outline. `none` is upstream's own
+    /// `transparent` token, the box's colour where it is not lit.
+    ///
+    /// Its group-hover style, a no-op where `lit` is `Some`, gives the box a
+    /// `Normal` hitbox, which leaves the row's own mouse handling alone, as
+    /// `combo_surface`'s hover edge does (gpui-pre 0.3.12
+    /// `elements/div.rs:2460-2486`, `should_insert_hitbox`); its id gives it
+    /// the state a group-active style needs (`:3570-3579`).
+    pub(crate) fn edge(&self, lit: Option<bool>, none: Hsla) -> Option<Stateful<Div>> {
+        let edge = self.edge?;
+        let rest = if lit == Some(true) { edge } else { none };
+        let hovered = if lit.is_none() { edge } else { rest };
+        Some(
+            div()
+                .id("menu-row-edge")
+                .absolute()
+                .inset_0()
+                .rounded(self.radius)
+                .border(self.edge_width)
+                .border_color(rest)
+                .group_hover(MENU_ROW_GROUP, move |style| style.border_color(hovered)),
+        )
     }
 }
 
@@ -859,6 +931,9 @@ impl MenuBar {
                             .child(name.clone())
                             .children(shortcut)
                             .children(listed(ix).map(|id| elements::record(ui, id)))
+                            .children(
+                                look.and_then(|look| look.edge(Some(lit), cx.theme().transparent)),
+                            )
                             .on_hover(cx.listener(move |this, hovered: &bool, _, cx| {
                                 if *hovered && this.highlighted != Some(ix) {
                                     this.highlighted = Some(ix);
@@ -1009,9 +1084,11 @@ pub(crate) const MENU_BAR_PADDING: Pixels = px(8.);
 
 /// The menu-bar row (spec S8): at the top of a window whose frame the window
 /// manager draws, the application's own row holding its menus (`app_menus`),
-/// as a KDE application places its menus. The model states no menu-bar
-/// inset, so its sides borrow `container_margin`, the installed layout's
-/// `geometry::container_margin`, and where that is unstated take
+/// as a KDE application places its menus, filled with
+/// `toolbar.background_color` where a native theme is installed (the model's
+/// `MenuTheme`: a menu bar takes the toolbar's fill). The model states no
+/// menu-bar inset, so its sides borrow `container_margin`, the installed
+/// layout's `geometry::container_margin`, and where that is unstated take
 /// [`MENU_BAR_PADDING`]; the menu titles set its height.
 pub(crate) fn menu_bar(
     ui: &Entity<InfoRegistry>,
@@ -1019,11 +1096,16 @@ pub(crate) fn menu_bar(
     container_margin: Option<Pixels>,
     menus: &Entity<MenuBar>,
 ) -> Stateful<Div> {
+    let native = cx.native();
+    let resolved = native.as_ref().map(|n| n.resolved);
     // No geometry line: the model states no menu-bar inset, and the row only
     // borrows container_margin, which its info says in its own words.
-    let row_info = info::menu_bar(cx.theme(), container_margin, MENU_BAR_PADDING);
+    let row_info = info::menu_bar(cx.theme(), resolved, container_margin, MENU_BAR_PADDING);
     h_flex()
         .px(container_margin.unwrap_or(MENU_BAR_PADDING))
+        .when_some(resolved, |row, r| {
+            row.bg(info::stated(r.toolbar.background_color))
+        })
         .child(app_menus(ui, cx, info::MenuHost::Row, menus))
         .info(ui, "chrome-menu-bar", row_info)
 }
@@ -4798,6 +4880,10 @@ fn combo_surface(cx: &App, trigger: impl IntoElement) -> Div {
 /// laid over the trigger listens to.
 const COMBO_HOVER_GROUP: &str = "showcase-combo-hover";
 
+/// The group a menu row names itself by, whose hover and press its outline
+/// ([`MenuLook::edge`]) follows.
+const MENU_ROW_GROUP: &str = "showcase-menu-row";
+
 /// A `ColorPicker` over `state`, reading `label`.
 pub(crate) fn color_picker(
     ui: &Entity<InfoRegistry>,
@@ -5357,6 +5443,50 @@ fn list_hover_text(cx: &App, selected: bool, row_info: &mut WidgetInfo) -> Optio
     hover_text
 }
 
+/// The outline a List or Tree row under the pointer is edged in:
+/// `list.hover_border_color` at `defaults.border.line_width`, where `shown`,
+/// the theme states it and the width is above 0, with its colour claim and
+/// config line recorded in `row_info`. A ListItem's own hover sets its fill
+/// alone (list/list_item.rs:229-235), so the outline is a box of the
+/// showcase's over the row ([`hover_edge`]). `None` where no native theme
+/// is installed.
+fn list_hover_edge(cx: &App, shown: bool, row_info: &mut WidgetInfo) -> Option<(Hsla, Pixels)> {
+    let n = cx.native()?;
+    let width = n.resolved.defaults.border.line_width;
+    let claim = info::edge_claim(
+        "hovered edge",
+        "hover_border_color",
+        n.resolved.list.hover_border_color.filter(|_| shown),
+        Some(width),
+        "showcase",
+    )?;
+    let edge = claim.value;
+    *row_info = std::mem::take(row_info)
+        .color(claim)
+        .config(
+            "hovered edge",
+            format!(
+                "list.hover_border_color at defaults.border.line_width, {}px, a box the showcase lays over the row while it is hovered, on the shape of its hover fill",
+                info::px_text(width)
+            ),
+        );
+    Some((edge, px(width)))
+}
+
+/// A box laid over the whole of a row in `group`, for the row's last child:
+/// `width` wide, transparent at rest (upstream's own `transparent` token, as
+/// `combo_surface` takes it) and edged `edge` while the group is under the
+/// pointer. Its group-hover style gives it a `Normal` hitbox, which leaves
+/// the row's own mouse handling alone (`combo_surface`).
+fn hover_edge(cx: &App, edge: Hsla, width: Pixels, group: &'static str) -> Div {
+    div()
+        .absolute()
+        .inset_0()
+        .border(width)
+        .border_color(cx.theme().transparent)
+        .group_hover(group, move |style| style.border_color(edge))
+}
+
 /// A List or Tree row's `ListItem` after `geometry::list_item`: lettered by
 /// `selected_text` where the row is selected, clear of the scrollbar its view
 /// lays over the rows, and the `LIST_ROW_GROUP` its label's hover colour
@@ -5435,6 +5565,7 @@ impl RenderOnce for ListRow {
         let hover_text = (!self.right_clicked)
             .then(|| list_hover_text(cx, self.selected, &mut row_info))
             .flatten();
+        let edge = list_hover_edge(cx, !self.selected && !self.right_clicked, &mut row_info);
         let inner = native_value(cx, |n| list_inner_radius(&n.resolved.list.border));
         let [first, last] = self.edges;
         let item = native_info(
@@ -5450,6 +5581,18 @@ impl RenderOnce for ListRow {
         })
         .when_some(inner.filter(|_| last), |item, r| {
             item.rounded_bl(r).rounded_br(r)
+        })
+        // The outline on the row's corners: `ListItem` puts the suffix into
+        // its `relative()` root (list/list_item.rs, `RenderOnce for
+        // ListItem`), as upstream lays a right-clicked row's outline.
+        .when_some(edge, |item, (edge, width)| {
+            item.suffix(move |_window, cx| {
+                hover_edge(cx, edge, width, LIST_ROW_GROUP)
+                    .when_some(inner.filter(|_| first), |b, r| {
+                        b.rounded_tl(r).rounded_tr(r)
+                    })
+                    .when_some(inner.filter(|_| last), |b, r| b.rounded_bl(r).rounded_br(r))
+            })
         })
         .child({
             // The text in a box of its own extent, which the layout dump
@@ -5536,9 +5679,10 @@ fn tree_row(
     }
     // The Tree marks a row right-clicked only after this closure built it
     // (tree.rs, `RenderOnce for Tree`), and gives the closure no way to
-    // learn it, so unlike a List row's this label cannot leave out a
-    // right-clicked row, which does not hover.
+    // learn it, so unlike a List row's this label and outline cannot leave
+    // out a right-clicked row, which does not hover.
     let hover_text = list_hover_text(cx, selected, &mut row_info);
+    let edge = list_hover_edge(cx, !selected, &mut row_info);
     let item = native_info(
         ListItem::new(SharedString::from(id.clone())),
         cx,
@@ -5553,14 +5697,19 @@ fn tree_row(
     let label = probed_label(label, &ui, &id);
     item.child(label)
         .selected(selected)
-        .suffix(move |_window, _cx| {
+        .suffix(move |_window, cx| {
             let id = id.clone();
+            // The outline is a child of the wrapper `info` makes, which
+            // the size is set on: the bare `div()` inside it has no height.
             div()
                 .info(&ui, SharedString::from(id.clone()), row_info.clone())
                 .absolute()
                 .top_0()
                 .left_0()
                 .size_full()
+                .when_some(edge, |target, (edge, width)| {
+                    target.child(hover_edge(cx, edge, width, LIST_ROW_GROUP))
+                })
                 .debug_selector(move || id)
         })
 }
@@ -8606,7 +8755,8 @@ pub(crate) const MENU_ROWS_FRAME: &str = "overlays-menu-rows";
 /// of `rows`, in a frame painted as the showcase's menus are, from
 /// [`MenuLook`]: `menu.background_color` edged by `popover.border`, the rows
 /// in `menu.font.color`, hovered in `menu.hover_background` and
-/// `hover_text_color`, rounded by `menu.border.corner_radius`; without a
+/// `hover_text_color` and outlined in `menu.hover_border_color`
+/// ([`MenuLook::edge`]), rounded by `menu.border.corner_radius`; without a
 /// native theme, the popover's tokens and the accent. Each icon is the
 /// chosen icon theme's, and a row whose icon that theme lacks shows its
 /// label alone. Upstream's `MenuItemElement` is crate-private and
@@ -8656,12 +8806,18 @@ pub(crate) fn menu_rows(
             // Plain text, not a Label: a Label paints foreground on its
             // own element (label.rs:213), over the frame's colour.
             let row = div()
+                .relative()
+                .group(MENU_ROW_GROUP)
                 .flex()
                 .items_center()
                 .when_some(radius, |row, radius| row.rounded(radius))
                 .hover(move |this| this.bg(hover_bg).text_color(hover_text))
                 .children(icon.glyph_sized(cx, geometry::icon_size_small))
-                .child(label);
+                .child(label)
+                .children(
+                    look.as_ref()
+                        .and_then(|look| look.edge(None, t.transparent)),
+                );
             native_info(row, cx, geometry::menu_item, "menu_item", &mut row_info)
                 .info(ui, id, row_info)
                 .debug_selector(move || id.into())
@@ -9882,6 +10038,10 @@ pub(crate) fn selection_pair(
     }
 }
 
+/// The group an unselected row of the Basic table names itself by, whose
+/// hover its outline follows (`files_table`).
+const TABLE_ROW_GROUP: &str = "showcase-table-row";
+
 /// The inner radius of `geometry::list`'s frame, whose list border is
 /// `border`: its `corner_radius` less its `line_width`, none below zero. A
 /// fill where a row meets the frame is rounded by it on the corners it meets
@@ -9907,7 +10067,8 @@ pub(crate) fn list_inner_radius(border: &native_theme::theme::ResolvedWidgetBord
 /// which gpui-component's own table header has no style for
 /// (table/state.rs, `render_th`); the rows in `list.item_font`, the row at
 /// `selected` in `selection_pair`'s fill and text colour, which follow the
-/// window's state; a
+/// window's state, every other row outlined in `list.hover_border_color`
+/// under the pointer; a
 /// `list.grid_color` line `separator.line_width`
 /// wide inside the header's bottom edge and one down the first column's
 /// right edge through every row, each a `widgets::Separator` recoloured, so
@@ -10041,6 +10202,14 @@ pub(crate) fn files_table(
     .debug_selector(move || format!("{id}-header"))
     .w_full();
     let last = rows.len().checked_sub(1);
+    // An unselected row's outline under the pointer, a box over the row
+    // (`hover_edge`): square but on the last row's bottom corners, which
+    // meet the frame.
+    let edge_width = r.defaults.border.line_width;
+    let edge = l
+        .hover_border_color
+        .filter(|_| edge_width > 0.0)
+        .map(colour);
     let body = rows.iter().enumerate().map(|(ix, cells)| {
         let is_selected = ix == selected.row;
         let (fill, text) = if is_selected {
@@ -10069,6 +10238,12 @@ pub(crate) fn files_table(
         })
         .when(!is_selected, |row| {
             row.hover(move |s| s.bg(hover).text_color(hover_text))
+        })
+        .when_some(edge.filter(|_| !is_selected), |row, edge| {
+            row.group(TABLE_ROW_GROUP).child(
+                hover_edge(cx, edge, px(edge_width), TABLE_ROW_GROUP)
+                    .when(Some(ix) == last, |b| b.rounded_bl(inner).rounded_br(inner)),
+            )
         })
         .info(
             ui,

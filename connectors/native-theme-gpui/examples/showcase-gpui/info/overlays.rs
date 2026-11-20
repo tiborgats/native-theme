@@ -480,7 +480,28 @@ pub fn menu_row(
                 Some(r.popover.border.color),
                 Some(r.popover.border.line_width),
                 "showcase",
-            ));
+            ))
+                .colors(edge_claim(
+                    "hovered item edge",
+                    "hover_border_color",
+                    m.hover_border_color,
+                    Some(r.defaults.border.line_width),
+                    "showcase",
+                ));
+            let line_width = r.defaults.border.line_width;
+            let info = match (m.hover_border_color, line_width > 0.0) {
+                (Some(_), true) => info.config(
+                    "hovered item edge",
+                    format!(
+                        "menu.hover_border_color at defaults.border.line_width, {}px, a box over the hovered row, its padding included, so nothing moves, rounded as the highlight",
+                        px_text(line_width)
+                    ),
+                ),
+                (Some(_), false) => {
+                    info.config("hovered item edge", "none: defaults.border.line_width is 0")
+                }
+                (None, _) => info,
+            };
             let info = if r.popover.border.line_width > 0.0 {
                 info.config(
                     "frame edge",

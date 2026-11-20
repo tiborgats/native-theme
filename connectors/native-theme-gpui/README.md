@@ -593,6 +593,12 @@ lists the upstream changes proposed for most of it. The checkbox, radio, switch,
 progress bar, spinner, tab bar and separator among them have theme-drawn
 replacements in the `widgets` module.
 
+Issue #4's KDE looks that gpui-component's own widgets cannot take:
+`PopupMenu` (a hovered item's outline), `AppMenuBar` (the bar's fill and the
+titles' fills, text and padding: its titles are ghost Buttons in the shared
+tokens), `ListItem` and `DataTable` (a hovered row's outline). The showcase
+draws them with its own elements.
+
 ## Theme-drawn widgets
 
 With the `widgets` feature (on by default), `native_theme_gpui::widgets` has

@@ -1106,6 +1106,20 @@ const HEADER_SECTION: &str = "a `DataTable`'s header section is `render_th`'s, \
      `render_th` content lies inside the cell's padding (`:1553-1592`), not \
      over the section";
 
+/// gpui-component's menu items light up in the shared accent tokens: a
+/// hovered or selected item's look has nowhere else to go.
+#[cfg(feature = "widgets")]
+const MENU_ITEM_LIGHT: &str = "a `PopupMenu` item lights its hover and \
+     selection with `accent` and `accent_foreground` only \
+     (`menu/menu_item.rs:134-141`); the showcase draws it";
+
+/// gpui-component's menu bar is a row of ghost Buttons with no fill of its
+/// own: a title's fills and text have nowhere to go.
+#[cfg(feature = "widgets")]
+const MENU_BAR_TITLE: &str = "`AppMenuBar`'s titles are Small ghost Buttons \
+     (`menu/app_menu_bar.rs:276-280`), its bar has no fill (`:122-143`); the \
+     showcase draws it";
+
 /// The colour leaves of `ResolvedTheme` that reach no sink in any of the 34
 /// bundled combinations and that `NO_RECEIVER` does not name, each with its
 /// reason.
@@ -1335,6 +1349,13 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
         ),
     },
     UnreadColour {
+        leaf: "list.hover_border_color",
+        why: Unread::NoReceiver(
+            "a hovered `ListItem` takes a fill only \
+             (`list/list_item.rs:229-235`)",
+        ),
+    },
+    UnreadColour {
         leaf: "list.hover_text_color",
         why: Unread::NoReceiver(
             "a hovered `ListItem` changes only its fill \
@@ -1349,6 +1370,18 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
              `popover` token, which the `popover` row gives \
              `popover.background_color`",
         ),
+    },
+    UnreadColour {
+        leaf: "menu.bar_hover_background",
+        why: Unread::NoReceiver(MENU_BAR_TITLE),
+    },
+    UnreadColour {
+        leaf: "menu.bar_hover_text_color",
+        why: Unread::NoReceiver(MENU_BAR_TITLE),
+    },
+    UnreadColour {
+        leaf: "menu.bar_open_background",
+        why: Unread::NoReceiver(MENU_BAR_TITLE),
     },
     UnreadColour {
         leaf: "menu.border.color",
@@ -1370,6 +1403,10 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
             "menu text is `popover_foreground` (`menu/popup_menu.rs:1611`), \
              which the `popover_foreground` row gives `popover.font.color`",
         ),
+    },
+    UnreadColour {
+        leaf: "menu.hover_border_color",
+        why: Unread::NoReceiver(MENU_ITEM_LIGHT),
     },
     UnreadColour {
         leaf: "menu.separator_color",

@@ -496,30 +496,49 @@ pub fn native_table_row(r: &ResolvedTheme, selected: bool, cells: &str) -> Widge
             )
         }
     } else {
-        info.color(claim(
-            "bg, the frame's",
-            "background_color",
-            stated(l.background_color),
-            "showcase",
-        ))
-        .color(claim(
-            "text",
-            "item_font",
-            stated(l.item_font.color),
-            "showcase",
-        ))
-        .color(claim(
-            "hovered bg",
-            "hover_background",
-            stated(l.hover_background),
-            "showcase",
-        ))
-        .color(claim(
-            "hovered text",
-            "hover_text_color",
-            stated(l.hover_text_color),
-            "showcase",
-        ))
+        let info = info
+            .color(claim(
+                "bg, the frame's",
+                "background_color",
+                stated(l.background_color),
+                "showcase",
+            ))
+            .color(claim(
+                "text",
+                "item_font",
+                stated(l.item_font.color),
+                "showcase",
+            ))
+            .color(claim(
+                "hovered bg",
+                "hover_background",
+                stated(l.hover_background),
+                "showcase",
+            ))
+            .color(claim(
+                "hovered text",
+                "hover_text_color",
+                stated(l.hover_text_color),
+                "showcase",
+            ))
+            .colors(edge_claim(
+                "hovered edge",
+                "hover_border_color",
+                l.hover_border_color,
+                Some(r.defaults.border.line_width),
+                "showcase",
+            ));
+        if l.hover_border_color.is_some() && r.defaults.border.line_width > 0.0 {
+            info.config(
+                "hovered edge",
+                format!(
+                    "list.hover_border_color at defaults.border.line_width, {}px, a box the showcase lays over the row while it is hovered, on the shape of its hover fill",
+                    px_text(r.defaults.border.line_width)
+                ),
+            )
+        } else {
+            info
+        }
     };
     grid_lines(info, r, "a line down the first column's right edge")
         .config(
