@@ -1775,7 +1775,7 @@ mod tests {
         let size = s.text_styles.get(&TextStyle::Body).unwrap().size;
         let label =
             crate::fonts::body_row_height(&defs, size).unwrap() + s.spacing.extra_text_line_spacing;
-        let fitted = ((24.0 - label) / 2.0).floor().max(0.0).min(4.0);
+        let fitted = ((24.0 - label) / 2.0).floor().max(0.0);
         assert!(fitted < 4.0, "the 24 px row narrows the padding: {label}");
         assert_eq!(s.spacing.button_padding.y, fitted);
 
