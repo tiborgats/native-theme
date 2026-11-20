@@ -5243,18 +5243,21 @@ fn list_row_fill(
 }
 
 /// `shown`, the part of a list row, `row`, that the list's view shows
-/// ([`shown_fill`]), pushed out by `width` on each side where the view cuts
-/// the row, so that the scrollable's clip, the view (iced_widget 0.14.2
-/// `src/scrollable.rs:1187`), hides that side of an outline `width` wide
-/// drawn on it: Breeze clips a row to the view, its outline with it, and
-/// draws no line along the view's edge. The view cuts a side where the row
-/// passes it by more than a thousandth of a pixel, [`shown_fill`]'s margin
-/// for f32's rounding, so a row flush with the view keeps its line there.
+/// ([`shown_fill`]), pushed out on each side where the view cuts the row by
+/// as much as the row passes the view there, at most `width`, so that the
+/// scrollable's clip, the view (iced_widget 0.14.2
+/// `src/scrollable.rs:1187`), hides the part of an outline `width` wide
+/// drawn on it that the view leaves out: Breeze clips a row to the view,
+/// its outline with it, so a side cut by less than the line still shows the
+/// rest of it, and one cut by more shows none along the view's edge. The
+/// view cuts a side where the row passes it by more than a thousandth of a
+/// pixel, [`shown_fill`]'s margin for f32's rounding, so a row flush with
+/// the view keeps its line there.
 /// The corners keep [`shown_fill`]'s radii, the frame's inner radius where
 /// they meet the frame's inside; where such a corner lies on a cut side,
-/// its arc moves out with that side, a line width from the frame's.
+/// its arc moves out with that side, at most a line width from the frame's.
 fn past_the_cut(shown: iced::Rectangle, row: iced::Rectangle, width: f32) -> iced::Rectangle {
-    let out = |past: f32| if past > 1e-3 { width } else { 0.0 };
+    let out = |past: f32| if past > 1e-3 { past.min(width) } else { 0.0 };
     let top = out(shown.y - row.y);
     let bottom = out((row.y + row.height) - (shown.y + shown.height));
     let left = out(shown.x - row.x);
@@ -8602,14 +8605,28 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         ("menu", "hover_border_color") if resolved.menu.hover_border_color.is_none() => {
             "not drawn: unstated; menu_row outlines no row".into()
         }
-        ("menu", "hover_border_color") => "menu_row: the Hovered and Pressed border".into(),
+        ("menu", "hover_border_color") if resolved.menu.active_background.is_some() => {
+            "menu_row: the Hovered border; the Pressed row takes menu.active_background, \
+             with no border"
+                .into()
+        }
+        ("menu", "hover_border_color") => {
+            "menu_row: the Hovered and Pressed border (menu.active_background unstated)".into()
+        }
         ("menu", "border.corner_radius_px") if under("chrome.menu_bar.") => {
             "menu_title: the title's border radius".into()
         }
         ("menu", "border.corner_radius_px") => "menu_row: the row's border radius".into(),
+        ("defaults", "border.line_width_px")
+            if under("chrome.menu.") && resolved.menu.active_background.is_some() =>
+        {
+            "menu_row: the Hovered border's width, where menu.hover_border_color is stated; \
+             the Pressed row, in menu.active_background, has no border"
+                .into()
+        }
         ("defaults", "border.line_width_px") if under("chrome.menu.") => {
             "menu_row: the Hovered and Pressed border's width, where menu.hover_border_color \
-             is stated"
+             is stated (menu.active_background unstated)"
                 .into()
         }
         ("menu", "row_height_px") if resolved.menu.row_height.is_none() => {
@@ -10357,7 +10374,7 @@ fn slider_inks(s: &slider::Style) -> Vec<(&'static str, Ink)> {
         ("rail.backgrounds.1", Ink::of(Some(s.rail.backgrounds.1))),
         ("handle.background", Ink::of(Some(s.handle.background))),
         (
-            "handle.border",
+            "handle.border_color",
             Ink::Edge {
                 color: s.handle.border_color,
                 width: s.handle.border_width,
@@ -12957,9 +12974,10 @@ fn toggler_paints(state: &State) -> Vec<Paint> {
     paints
 }
 
-/// Why a switch's outline is 0 wide: `styles::toggler` draws one only where
-/// the theme states its colour and a width, so the leaf of the two it leaves
-/// unstated, or the width it states 0.
+/// Why a switch's or a slider handle's outline is 0 wide: `styles::toggler`
+/// and `styles::slider` draw one only where the theme states its colour and
+/// a width, so the leaf of the two it leaves unstated, or the width it
+/// states 0.
 fn outline_zero(
     (colour_leaf, colour): (&str, Option<native_theme::color::Rgba>),
     (width_leaf, width): (&str, Option<f32>),
@@ -14160,11 +14178,13 @@ fn view_selection(state: &State) -> Element<'_, Message> {
 // ---------------------------------------------------------------------------
 
 /// The colours `styles::slider` paints the Range page's sliders in: the
-/// rail's two parts and the handle, at rest and, where `hovered`, under the
-/// pointer.
+/// rail's two parts, the handle and its outline, at rest and, where
+/// `hovered`, under the pointer.
 fn slider_paints(state: &State, hovered: bool) -> Vec<Paint> {
     use slider::Status;
     let resolved = &state.current_resolved;
+    let s = &resolved.slider;
+    let width = ("slider.thumb_border_line_width", s.thumb_border_line_width);
     let mut paints = style_paints(
         state,
         "styles::slider",
@@ -14178,6 +14198,15 @@ fn slider_paints(state: &State, hovered: bool) -> Vec<Paint> {
         ],
         "",
     );
+    paints.extend(style_paints(
+        state,
+        "styles::slider",
+        styles::slider(resolved),
+        slider_inks,
+        Status::Active,
+        &[("handle outline", "handle.border_color")],
+        &outline_zero(("slider.thumb_border_color", s.thumb_border_color), width),
+    ));
     if hovered {
         paints.extend(style_paints(
             state,
@@ -14187,6 +14216,21 @@ fn slider_paints(state: &State, hovered: bool) -> Vec<Paint> {
             Status::Hovered,
             &[("hovered handle", "handle.background")],
             "",
+        ));
+        paints.extend(style_paints(
+            state,
+            "styles::slider",
+            styles::slider(resolved),
+            slider_inks,
+            Status::Hovered,
+            &[("hovered handle outline", "handle.border_color")],
+            &outline_zero(
+                (
+                    "slider.thumb_hover_border_color and slider.thumb_border_color",
+                    s.thumb_hover_border_color.or(s.thumb_border_color),
+                ),
+                width,
+            ),
         ));
     }
     paints
@@ -15947,7 +15991,8 @@ fn menu_row_height(
 /// The padding of the Extra page's menu panels round their rows, the
 /// drop-downs' and the context menu's popup: [`menu_popup_padding`]'s, the
 /// window's menus' own, since both are framed by the popover's border:
-/// `popover.border.padding` inside `popover.border.line_width` (the line
+/// `menu.panel_padding_horizontal` and `_vertical` where stated, else
+/// `popover.border.padding`, inside `popover.border.line_width` (the line
 /// `styles::aw::menu`'s `menu_border` and [`menu_panel`]'s container paint
 /// over the panel's padding, iced_aw 0.14.1
 /// `src/widget/menu/menu_tree.rs:770-779`).
@@ -28535,7 +28580,8 @@ mod tests {
         if of == 0 || inked < of {
             faults.push(format!(
                 "the File menu's panel fills {inked} of the {of} pixels {:.0} px left of its \
-                 first row, popover.border.padding's left inside popover.border",
+                 first row, menu.panel_padding_horizontal where stated, else \
+                 popover.border.padding's left, inside popover.border",
                 pad.left
             ));
         }
@@ -30719,7 +30765,11 @@ mod tests {
     /// `focusOutlineColor()`, #399acc light and #5abaec dark, 1 px wide and
     /// rounded 4.5 as its highlight; E2: a pressed one is filled
     /// `menu.active_background`, Breeze's #3daee9, lettered #ffffff light and
-    /// #fcfcfc dark, with no outline. Under
+    /// #fcfcfc dark, with no outline; with `menu.active_background` cleared
+    /// on the resolved theme a pressed row is the hovered one, outline
+    /// included, lettered `menu.active_text_color` (set #f0a014 to tell it
+    /// from the hover label), and with that cleared too the hovered row
+    /// whole, lettered `menu.hover_text_color`. Under
     /// adwaita, which states no outline, every status is what [`menu_row`]
     /// drew before the outline, whose body this test keeps.
     #[test]
@@ -30790,6 +30840,38 @@ mod tests {
                 if rest.width != 0.0 {
                     failures.push(format!("{label}, {status:?}: outlined {rest:?}"));
                 }
+            }
+            let mut unfilled = r.clone();
+            unfilled.menu.active_background = None;
+            let letter = match "#f0a014".parse::<native_theme::color::Rgba>() {
+                Ok(c) => c,
+                Err(error) => panic!("#f0a014: {error}"),
+            };
+            unfilled.menu.active_text_color = Some(letter);
+            let row = menu_row(&unfilled);
+            let hovered = row(&theme, button::Status::Hovered);
+            let lettered = button::Style {
+                text_color: to_color(letter),
+                ..hovered
+            };
+            let pressed = row(&theme, button::Status::Pressed);
+            if format!("{pressed:?}") != format!("{lettered:?}") || hovered.border.width != 1.0 {
+                failures.push(format!(
+                    "{label}, menu.active_background unstated: pressed {pressed:?}, \
+                     hovered {hovered:?}"
+                ));
+            }
+            unfilled.menu.active_text_color = None;
+            let row = menu_row(&unfilled);
+            let (pressed, hovered) = (
+                row(&theme, button::Status::Pressed),
+                row(&theme, button::Status::Hovered),
+            );
+            if format!("{pressed:?}") != format!("{hovered:?}") {
+                failures.push(format!(
+                    "{label}, menu.active_background and .active_text_color unstated: \
+                     pressed {pressed:?}, hovered {hovered:?}"
+                ));
             }
         }
         for dark in [false, true] {
@@ -30942,16 +31024,23 @@ mod tests {
     /// box and padding are less, and their content, the line box of
     /// `menu.font` at its scaled size times `defaults.line_height` plus the
     /// padding, at a text scale of 2, where that is more; material-3's stated
-    /// 48 is drawn exactly. Read on the Theme menu's Light row, held open.
+    /// 48 is drawn exactly, with a `menu.min_row_height` of 60 set on its
+    /// resolved theme too, as `menu.row_height` wins where both are stated
+    /// (S2). Read on the Theme menu's Light row, held open.
     #[test]
     fn menu_rows_are_at_least_the_min_row_height() {
         let mut faults = Vec::new();
-        for (preset, factor) in [
-            ("kde-breeze", 1.0),
-            ("kde-breeze", 2.0),
-            ("material-3", 1.0),
+        for (preset, factor, min) in [
+            ("kde-breeze", 1.0, None),
+            ("kde-breeze", 2.0, None),
+            ("material-3", 1.0, None),
+            ("material-3", 1.0, Some(60.0)),
         ] {
-            let (state, _, rects, _) = theme_menu_frame(preset, factor, |_| {});
+            let (state, _, rects, _) = theme_menu_frame(preset, factor, |r| {
+                if min.is_some() {
+                    r.menu.min_row_height = min;
+                }
+            });
             let r = &state.current_resolved;
             let m = &r.menu;
             let pad = native_theme_iced::padding_or(&m.border.padding, button::DEFAULT_PADDING);
@@ -30971,25 +31060,82 @@ mod tests {
                 }
                 _ => {
                     assert_eq!(m.row_height, Some(48.0), "material-3's stated row");
+                    assert!(
+                        min.is_some() || m.min_row_height.is_none(),
+                        "material-3 states a least row"
+                    );
                     48.0
                 }
             };
+            let label = format!("{preset} at {factor}, menu.min_row_height {min:?}");
             if menu_row_height(r, &state.accessibility, pad) != Some(want) {
                 faults.push(format!(
-                    "{preset} at {factor}: menu_row_height gives {:?}, want {want}",
+                    "{label}: menu_row_height gives {:?}, want {want}",
                     menu_row_height(r, &state.accessibility, pad)
                 ));
             }
             match rects.get("chrome.menu.theme.light") {
                 Some(rect) if (rect.height - want).abs() < 0.01 => {}
                 Some(rect) => faults.push(format!(
-                    "{preset} at {factor}: the Light row is {} tall, want {want}",
+                    "{label}: the Light row is {} tall, want {want}",
                     rect.height
                 )),
-                None => faults.push(format!("{preset} at {factor}: the Light row is not drawn")),
+                None => faults.push(format!("{label}: the Light row is not drawn")),
             }
         }
         assert!(faults.is_empty(), "{faults:#?}");
+    }
+
+    /// Issue #4's leftovers, E4 (S10): the page tabs' menu takes the shared
+    /// row height, [`menu_row_height`]. Under adwaita light, which states
+    /// `menu.row_height`, the menu opened from its caret lays its rows out
+    /// touching (`Menu::new`, iced_aw 0.14.1
+    /// `src/widget/menu/menu_tree.rs:155`), each label centred in its row,
+    /// so the Buttons and Inputs rows' labels, the last of each the
+    /// interface lays out, lie that height apart; the rows' content alone,
+    /// the line box and the padding, is another height, so a menu that
+    /// applied none would fail.
+    #[test]
+    fn the_page_tab_menu_rows_take_the_menu_row_height() {
+        let state = loaded("adwaita", false);
+        let r = &state.current_resolved;
+        let m = &r.menu;
+        assert!(m.row_height.is_some(), "adwaita states a menu row height");
+        let pad = native_theme_iced::padding_or(&m.border.padding, button::DEFAULT_PADDING);
+        let Some(want) = menu_row_height(r, &state.accessibility, pad) else {
+            panic!("adwaita: menu_row_height gives none");
+        };
+        let content =
+            scaled_text_size(m.font.size, &state.accessibility) * r.defaults.line_height + pad.y();
+        assert!(
+            (content - want).abs() > 0.5,
+            "adwaita's row content is {content} tall, its row {want}"
+        );
+        let size = Size::new(WINDOW_SIZE.0, WINDOW_SIZE.1);
+        let (_, rects, _) = frame_of(&state, view(&state), size);
+        let Some(caret) = rects.get("chrome.page_tabs.menu").copied() else {
+            panic!("chrome.page_tabs.menu is not drawn");
+        };
+        let mut apart = None;
+        let _ = frame_after(&state, view(&state), size, |ui| {
+            let at = caret.center();
+            ui.point_at(at);
+            let _ = ui.simulate([Event::Mouse(mouse::Event::CursorMoved { position: at })]);
+            let _ = ui.simulate(iced_test::simulator::click());
+            let found = texts(ui);
+            let last = |label: &str| {
+                found
+                    .iter()
+                    .filter(|(content, _)| content == label)
+                    .map(|(_, bounds)| bounds.center_y())
+                    .next_back()
+            };
+            apart = last("Inputs").zip(last("Buttons")).map(|(b, a)| b - a);
+        });
+        match apart {
+            Some(apart) if (apart - want).abs() < 0.01 => {}
+            other => panic!("the page tabs' menu rows lie {other:?} apart, want {want}"),
+        }
     }
 
     /// Issue #4's leftovers, E4: the window's menu panel pads its rows by
@@ -31276,6 +31422,37 @@ mod tests {
             }
         }
         assert!(failures.is_empty(), "{failures:#?}");
+    }
+
+    /// L2's review of E5: a side the view cuts by less than the line's width
+    /// moves out by that cut alone ([`past_the_cut`]), so the clip hides the
+    /// part of the line the view leaves out and the rest shows, as Breeze's
+    /// row clipped to the view shows it; a side cut by more moves out a line
+    /// width, and a side flush with the view stays.
+    #[test]
+    fn a_cut_side_moves_out_by_the_cut_up_to_the_line() {
+        let row = iced::Rectangle {
+            x: 0.0,
+            y: 0.0,
+            width: 100.0,
+            height: 20.0,
+        };
+        let shown = iced::Rectangle {
+            x: 0.0,
+            y: 0.4,
+            width: 100.0,
+            height: 14.6,
+        };
+        let rect = past_the_cut(shown, row, 1.0);
+        let near = |a: f32, b: f32| (a - b).abs() < 1e-4;
+        assert!(
+            near(rect.y, 0.0)
+                && near(rect.y + rect.height, 16.0)
+                && near(rect.x, 0.0)
+                && near(rect.width, 100.0),
+            "{rect:?}: the top cut 0.4 moves out 0.4, the bottom cut 5 moves out 1, \
+             the flush sides stay"
+        );
     }
 
     /// Issue #4's leftovers, E3: the window's menu bar, its margins too, is

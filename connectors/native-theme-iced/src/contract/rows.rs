@@ -1714,23 +1714,22 @@ pub(super) const PICK_LIST_BORDER_ROWS: &[BorderRow<pick_list::Status>] = &[Bord
     field: "styles::pick_list",
     statuses: PICK_LIST_STATUSES,
     native: |r, s| NativeBorder {
-        color: match s {
-            pick_list::Status::Opened { .. } if r.combo_box.open_border_color.is_some() => {
-                to_color(
-                    r.combo_box
-                        .open_border_color
-                        .unwrap_or(r.combo_box.border.color),
-                )
-            }
-            pick_list::Status::Hovered | pick_list::Status::Opened { is_hovered: true } => {
-                to_color(
-                    r.combo_box
-                        .hover_border_color
-                        .unwrap_or(r.combo_box.border.color),
-                )
-            }
-            pick_list::Status::Active | pick_list::Status::Opened { is_hovered: false } => {
-                to_color(r.combo_box.border.color)
+        color: if let (pick_list::Status::Opened { .. }, Some(c)) =
+            (s, r.combo_box.open_border_color)
+        {
+            to_color(c)
+        } else {
+            match s {
+                pick_list::Status::Hovered | pick_list::Status::Opened { is_hovered: true } => {
+                    to_color(
+                        r.combo_box
+                            .hover_border_color
+                            .unwrap_or(r.combo_box.border.color),
+                    )
+                }
+                pick_list::Status::Active | pick_list::Status::Opened { is_hovered: false } => {
+                    to_color(r.combo_box.border.color)
+                }
             }
         },
         width: r.combo_box.border.line_width,

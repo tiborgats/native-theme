@@ -209,37 +209,37 @@ pub(super) const DERIVED: &[(&str, &str)] = &[
     (
         "styles::slider.rail.border.color",
         "iced default: slider::default(theme, status).rail.border.color -- \
-         SliderTheme carries no border",
+         SliderTheme carries no rail border",
     ),
     #[cfg(feature = "widgets")]
     (
         "styles::slider.rail.border.width",
         "iced default: slider::default(theme, status).rail.border.width -- \
-         SliderTheme carries no border",
+         SliderTheme carries no rail border",
     ),
     #[cfg(feature = "widgets")]
     (
         "styles::slider.rail.border.radius.top_left",
         "iced default: slider::default(theme, status).rail.border.radius -- \
-         SliderTheme carries no border",
+         SliderTheme carries no rail border",
     ),
     #[cfg(feature = "widgets")]
     (
         "styles::slider.rail.border.radius.top_right",
         "iced default: slider::default(theme, status).rail.border.radius -- \
-         SliderTheme carries no border",
+         SliderTheme carries no rail border",
     ),
     #[cfg(feature = "widgets")]
     (
         "styles::slider.rail.border.radius.bottom_right",
         "iced default: slider::default(theme, status).rail.border.radius -- \
-         SliderTheme carries no border",
+         SliderTheme carries no rail border",
     ),
     #[cfg(feature = "widgets")]
     (
         "styles::slider.rail.border.radius.bottom_left",
         "iced default: slider::default(theme, status).rail.border.radius -- \
-         SliderTheme carries no border",
+         SliderTheme carries no rail border",
     ),
     // `scrollable::Style` nests a whole `container::Style`, two `Rail`s with a
     // `Scroller` each, and the autoscroll overlay. `ScrollbarTheme` states two
