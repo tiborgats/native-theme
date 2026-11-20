@@ -5179,22 +5179,17 @@ fn a_hovered_list_row_is_outlined_where_the_theme_states_it() {
                 );
             }
             None => {
-                // no line on the row's frame but the list cell's own hovered stroke
-                let mut cell = egui::Style::default();
-                harness
-                    .state()
-                    .atlas
-                    .role_modifier(
-                        egui::Theme::Light,
-                        native_theme_egui::Role::List,
-                        RoleVariant::Normal,
-                    )
-                    .apply(&mut cell);
-                let own = cell.visuals.widgets.hovered;
-                let frame = row.expand(own.expansion);
+                // the row's frame, the smallest filled rectangle round the row, egui's own: no
+                // line lies on it but the stroke egui draws with that fill
+                let frame = shapes
+                    .iter()
+                    .filter(|r| r.fill.a() > 0 && r.rect.contains_rect(row))
+                    .min_by(|a, b| a.rect.area().total_cmp(&b.rect.area()))
+                    .map(|r| r.rect)
+                    .expect("egui's frame of the hovered row");
                 let others: Vec<_> = shapes
                     .iter()
-                    .filter(|r| stroked(r) && near_rect(r.rect, frame) && r.stroke != own.bg_stroke)
+                    .filter(|r| stroked(r) && r.fill.a() == 0 && near_rect(r.rect, frame))
                     .collect();
                 assert!(others.is_empty(), "{preset}: {others:?}");
             }
