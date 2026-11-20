@@ -654,9 +654,9 @@ pub(crate) fn populate_colors(ini: &configparser::ini::Ini, variant: &mut crate:
 
     // Selection
     variant.defaults.selection_background = selection_bg;
-    variant.defaults.selection_text_color = get_color(ini, "Colors:Selection", "ForegroundNormal");
+    variant.defaults.selection_text_color = selection_fg;
     // accent_text_color: foreground on accent-colored backgrounds (platform-facts 2.1.3)
-    variant.defaults.accent_text_color = get_color(ini, "Colors:Selection", "ForegroundNormal");
+    variant.defaults.accent_text_color = selection_fg;
 
     // Status colors
     variant.defaults.danger_color = get_color(ini, "Colors:View", "ForegroundNegative");
@@ -1856,6 +1856,10 @@ ForegroundNormal=239,240,241
         for (content, outline) in cases {
             let v = populate_fixture(&content);
             assert_eq!(v.menu.hover_border_color, Some(outline));
+            // The groups hold no View DecorationHover and no Selection ForegroundNormal:
+            // a missing input leaves the preset's value standing.
+            assert_eq!(v.menu.bar_hover_background, None);
+            assert_eq!(v.menu.bar_hover_text_color, None);
         }
     }
 
