@@ -47,7 +47,8 @@ pub struct ThemeDefaults {
     /// conversion (`true`), as Qt rounds a font's pixel size: to hundredths,
     /// then to a whole number, halves up, before any scale. `None` or
     /// `false`: sizes keep their fraction. Text-scale line heights are not
-    /// rounded (docs/platform-facts.md §2.1.1).
+    /// rounded, and a size that rounds to 0 is rejected as out of range
+    /// (docs/platform-facts.md §2.1.1).
     pub font_whole_pixels: Option<bool>,
 
     /// Monospace font for code/terminal content.

@@ -99,6 +99,11 @@ fn stated_size(stated: Option<FontSize>, resolved: f32) -> f32 {
 /// Qt's rounding of a font's pixel size: to hundredths, then to a whole number,
 /// halves up (`QFontDatabasePrivate::load`, qtbase v6.12.0 qfontdatabase.cpp:2865-2869).
 pub(crate) fn qt_whole_px(px: f32) -> f32 {
+    // Every f32 at or above 2^23 is whole already; scaling it by 100 could
+    // overflow to infinity and fail the range check only under the flag.
+    if px.abs() >= 8_388_608.0 {
+        return px;
+    }
     ((px * 100.0).round() / 100.0).round()
 }
 

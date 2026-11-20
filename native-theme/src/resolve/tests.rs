@@ -445,6 +445,10 @@ fn whole_pixel_fonts_round_as_qt() {
         if let Some(ref mut bf) = v.button.font {
             bf.size = Some(FontSize::Pt(13.5));
         }
+        // A size stated in pixels is rounded too (S3).
+        if let Some(ref mut inf) = v.input.font {
+            inf.size = Some(FontSize::Px(13.4));
+        }
         if let Some(ref mut cap) = v.text_scale.caption {
             cap.size = Some(FontSize::Pt(12.0));
             cap.line_height = None;
@@ -466,13 +470,16 @@ fn whole_pixel_fonts_round_as_qt() {
     assert_eq!(flagged.defaults.mono_font.size, 11.0, "8 pt, 10.67 px");
     assert_eq!(flagged.button.font.size, 18.0, "13.5 pt, 18 px");
     assert_eq!(flagged.text_scale.caption.size, 16.0, "12 pt, 16 px");
+    assert_eq!(flagged.input.font.size, 13.0, "13.4 px stated");
+    assert_eq!(unflagged.input.font.size, 13.4, "13.4 px stated, unflagged");
     assert_eq!(flagged.defaults.font.defined_size, Some(FontSize::Pt(10.0)));
     assert_eq!(
         flagged.text_scale.caption.line_height,
         unflagged.text_scale.caption.line_height
     );
     // A line height is taken from the size before its rounding: 10 pt keeps
-    // its 13.33 px line box while the size is 13.
+    // its unrounded line box, 13.33 × `defaults.line_height`, while the size
+    // is 13.
     assert_eq!(flagged.text_scale.display.size, 13.0);
     assert_eq!(
         flagged.text_scale.display.line_height,
@@ -508,6 +515,11 @@ fn qt_whole_px_rounds_to_hundredths_first() {
     assert_eq!(qt_whole_px(12.5), 13.0);
     assert_eq!(qt_whole_px(13.333334), 13.0);
     assert_eq!(qt_whole_px(10.666667), 11.0);
+    // Every f32 at or above 2^23 is whole: returned as it is, never scaled
+    // by 100 into an infinity.
+    assert_eq!(qt_whole_px(8_388_608.0), 8_388_608.0);
+    assert_eq!(qt_whole_px(1.0e38), 1.0e38);
+    assert_eq!(qt_whole_px(-1.0e38), -1.0e38);
 }
 
 /// Every font size of a serialised `ResolvedTheme`: each object with a
