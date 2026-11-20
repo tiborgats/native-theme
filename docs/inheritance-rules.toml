@@ -480,6 +480,14 @@ fields = [
     "list.header_height",              # KDE content-sized, WinUI has no column header (§2.15)
     "list.header_hover_background",    # None: a hovered section keeps header_background (§2.15)
     "list.header_active_background",   # None: a pressed section keeps the hovered fill (§2.15)
+    # issue #4's leftovers (0.7.2): None keeps the connectors' look
+    "menu.hover_border_color",         # None: no outline (§2.6)
+    "menu.bar_hover_background",       # None: the connector's own title look (§2.6)
+    "menu.bar_open_background",        # None: bar_hover_background, else the connector's look (§2.6)
+    "menu.bar_hover_text_color",       # None: the title keeps its text colour (§2.6)
+    "menu.bar_padding_horizontal",     # None: the connector's own title padding (§2.6)
+    "menu.bar_padding_vertical",       # None: the connector's own title padding (§2.6)
+    "list.hover_border_color",         # None: no outline (§2.15)
 ]
 # All sizing fields (min_width, min_height, border.padding_*, height, width,
 # diameter, etc.) also have no inheritance — they come from preset/reader.

@@ -88,6 +88,9 @@ pub(crate) fn populate_widget_sizing(variant: &mut crate::ThemeMode) {
     // Kept, see above: MenuItem_TextLeftMargin is the inset before the icon
     // column, not this gap (platform-facts.md:1267)
     variant.menu.icon_text_gap = Some(8.0);
+    // A menu bar's title (docs/platform-facts.md §2.6)
+    variant.menu.bar_padding_horizontal = Some(10.0); // MenuBarItem_MarginWidth
+    variant.menu.bar_padding_vertical = Some(6.0); // MenuBarItem_MarginHeight
 
     // Tooltip
     let border = variant.tooltip.border.get_or_insert_default();
@@ -171,6 +174,22 @@ mod tests {
         let mut v = ThemeMode::default();
         super::populate_widget_sizing(&mut v);
         assert_eq!(v.tab.item_gap, Some(0.0), "QTabBar: tabs edge to edge");
+    }
+
+    #[test]
+    fn breeze_metrics_populates_the_menu_bar_titles() {
+        let mut v = ThemeMode::default();
+        super::populate_widget_sizing(&mut v);
+        assert_eq!(
+            v.menu.bar_padding_horizontal,
+            Some(10.0),
+            "MenuBarItem_MarginWidth"
+        );
+        assert_eq!(
+            v.menu.bar_padding_vertical,
+            Some(6.0),
+            "MenuBarItem_MarginHeight"
+        );
     }
 
     #[test]

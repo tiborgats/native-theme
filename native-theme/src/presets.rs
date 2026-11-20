@@ -575,6 +575,56 @@ accent_color = "#00ff00"
         }
     }
 
+    #[test]
+    fn issue_4_leftovers_are_stated_by_kde_breeze_alone() {
+        for info in list_presets() {
+            let name = info.key;
+            let theme = preset(name).unwrap();
+            for (label, variant_opt) in [
+                ("light", theme.light.as_ref()),
+                ("dark", theme.dark.as_ref()),
+            ] {
+                let variant = variant_opt.unwrap();
+                for (path, stated) in [
+                    (
+                        "menu.hover_border_color",
+                        variant.menu.hover_border_color.is_some(),
+                    ),
+                    (
+                        "menu.bar_hover_background",
+                        variant.menu.bar_hover_background.is_some(),
+                    ),
+                    (
+                        "menu.bar_open_background",
+                        variant.menu.bar_open_background.is_some(),
+                    ),
+                    (
+                        "menu.bar_hover_text_color",
+                        variant.menu.bar_hover_text_color.is_some(),
+                    ),
+                    (
+                        "menu.bar_padding_horizontal",
+                        variant.menu.bar_padding_horizontal.is_some(),
+                    ),
+                    (
+                        "menu.bar_padding_vertical",
+                        variant.menu.bar_padding_vertical.is_some(),
+                    ),
+                    (
+                        "list.hover_border_color",
+                        variant.list.hover_border_color.is_some(),
+                    ),
+                ] {
+                    assert_eq!(
+                        stated,
+                        name == "kde-breeze",
+                        "preset '{name}' {label}.{path}: stated only by kde-breeze (rationale §2)"
+                    );
+                }
+            }
+        }
+    }
+
     // === resolve()/validate() integration tests (PRESET-03) ===
 
     #[test]

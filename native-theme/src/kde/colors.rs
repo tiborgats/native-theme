@@ -402,6 +402,12 @@ const PRESSED_BUTTON_MIX: f64 = 0.3;
 /// f0b1d75; docs/platform-facts.md §2.6).
 const MENU_PANEL_MIX: f64 = 0.3;
 
+/// How far a hovered menu item's outline moves from the focus colour towards
+/// the window text: `focusOutlineColor()`, `KColorUtils::mix(focusColor,
+/// WindowText, 0.15)` (breezehelper.cpp:172-175, breezestyle.cpp:6021-6049 at
+/// breeze f0b1d75; docs/platform-facts.md §2.6).
+const MENU_HOVER_OUTLINE_MIX: f64 = 0.15;
+
 /// How far an active window's default button moves from `Button` towards
 /// `Highlight`: `KColorUtils::mix(palette.button().color(), highlightColor,
 /// 0.2)` (breezehelper.cpp:700-702 at breeze f0b1d75; docs/platform-facts.md
@@ -418,6 +424,11 @@ const DEFAULT_BUTTON_FRAME_MIX: f64 = 0.5;
 /// hoverColor, 0.2)` and `mix(…, focusColor, 0.2)` (breezestyle.cpp:6828-6837
 /// at breeze f0b1d75; docs/platform-facts.md §2.15).
 const HEADER_SECTION_MIX: f64 = 0.2;
+
+/// The alpha of `Highlight` in a hovered item-view row's 1 px outline
+/// (breezestyle.cpp:4880-4884 at breeze f0b1d75; docs/platform-facts.md
+/// §2.15).
+const LIST_HOVER_OUTLINE_ALPHA: f32 = 0.8;
 
 /// How far the inactive selection's background moves from the window's
 /// towards the selection's: `KColorUtils::tint(Window, Selection, 0.4)`
@@ -591,20 +602,25 @@ pub(super) fn inactive_selection(
 /// the checked button, the default button's fill and frame, the checkbox and
 /// progress-bar blends, the switch tracks and outlines, the toolbar's fill and
 /// edge, a toolbar button's pressed and checked fills, the popover's and the
-/// card's edges, the menu's hover, separator and panel, the list's hover, the
-/// header's hovered and pressed fills and the selection of a view without the
-/// focus, the table's grid, the scroll bar's resting handle and the focus ring.
+/// card's edges, the menu's hover, its outline, separator and panel, the list's
+/// hover and its outline, the header's hovered and pressed fills and the
+/// selection of a view without the focus, the table's grid, the scroll bar's
+/// resting handle and the focus ring.
 /// The blends on the accent (the default button's fill and frame, the checked
 /// checkbox, the progress fill, the switch's on track and its outline, the
-/// list's hover, the inactive selection, and the toolbar button's pressed fill)
-/// come from kdeglobals'
+/// list's hover and its outline, the inactive selection, and the toolbar
+/// button's pressed fill) come from kdeglobals'
 /// `[Colors:Selection] BackgroundNormal`, so an application's `with_overlay` accent or the
 /// portal's (`gnome::apply_kde_accent`, applied by `GnomePortalKdeReader`) does
-/// not move them. The menu's hover and the check box's hover outline come from
+/// not move them. The menu's hover and its outline, an open menu-bar title's
+/// fill and the check box's hover outline come from
 /// `[Colors:View] DecorationFocus`, so the same holds for them. The combo box's
 /// and the toolbar button's hover pen is `[Colors:Selection] BackgroundNormal`
 /// as it is. The focus ring is the selection colour at
 /// `Blend_Value`; the KDE portal's accent replaces it (`gnome::apply_kde_accent`).
+/// A menu's fills and outlines are Breeze's with `MenuItemDrawStrongFocus` on,
+/// its default (breeze.kcfg:130-132 at breeze f0b1d75); the reader does not read
+/// breezerc.
 ///
 /// The inactive selection follows `[ColorEffects:Inactive] ChangeSelectionColor`
 /// and `Enable`; a scheme that sets `[ColorEffects:Inactive] Enable=true` gets
@@ -620,6 +636,7 @@ pub(crate) fn populate_colors(ini: &configparser::ini::Ini, variant: &mut crate:
     let window_fg = get_color(ini, "Colors:Window", "ForegroundNormal");
     let view_focus = get_color(ini, "Colors:View", "DecorationFocus");
     let selection_bg = get_color(ini, "Colors:Selection", "BackgroundNormal");
+    let selection_fg = get_color(ini, "Colors:Selection", "ForegroundNormal");
 
     // === defaults-level colors ===
     variant.defaults.accent_color = view_focus;
@@ -924,9 +941,21 @@ pub(crate) fn populate_colors(ini: &configparser::ini::Ini, variant: &mut crate:
     variant.menu.background_color = window_bg
         .zip(view_bg)
         .map(|(window, base)| mix(window, base, MENU_PANEL_MIX));
+    // A hovered item's highlight is outlined 1 px in `focusOutlineColor()`; a menu bar's
+    // title is filled with the opaque hover colour under the pointer and the focus colour
+    // while its menu is open, lettered `HighlightedText`; the bar is the toolbar's fill
+    // (breezestyle.cpp:5841-5945, :6021-6049, breezehelper.cpp:172-175 at breeze f0b1d75;
+    // docs/platform-facts.md §2.6).
+    variant.menu.hover_border_color = view_focus
+        .zip(window_fg)
+        .map(|(focus, text)| mix(focus, text, MENU_HOVER_OUTLINE_MIX));
+    variant.menu.bar_hover_background = view_hover;
+    variant.menu.bar_open_background = view_focus;
+    variant.menu.bar_hover_text_color = selection_fg;
 
     // KDE-02: list fields (Colors:View is the native source for list/table content areas); a
-    // hovered row is the selection at `Blend_Value` (breezestyle.cpp:4871-4875)
+    // hovered row is the selection at `Blend_Value` (breezestyle.cpp:4871-4875), outlined
+    // 1 px in it at alpha 0.8 (:4880-4884)
     variant.list.background_color = get_color(ini, "Colors:View", "BackgroundNormal");
     if let Some(color) = get_color(ini, "Colors:View", "ForegroundNormal") {
         variant.list.item_font.get_or_insert_default().color = Some(color);
@@ -938,6 +967,8 @@ pub(crate) fn populate_colors(ini: &configparser::ini::Ini, variant: &mut crate:
     variant.list.grid_color = window_bg.map(|window| mid_shade(window, contrast(ini)));
     variant.list.hover_background =
         selection_bg.map(|selection| translucent(selection, BLEND_VALUE));
+    variant.list.hover_border_color =
+        selection_bg.map(|s| translucent(s, LIST_HOVER_OUTLINE_ALPHA));
     // The header is the Button set: Breeze fills a `QHeaderView` section with
     // `QPalette::Button` (breezestyle.cpp:6827, :6838-6839 at breeze f0b1d75) and Qt
     // letters it `ButtonText` (qcommonstyle.cpp:1659-1660), which Breeze does not
@@ -961,7 +992,6 @@ pub(crate) fn populate_colors(ini: &configparser::ini::Ini, variant: &mut crate:
     // window tinted towards the selection under the window text; where not,
     // the focused pair, written so that kde-breeze's tint does not stand.
     let change = inactive_change_selection_color(ini);
-    let selection_fg = get_color(ini, "Colors:Selection", "ForegroundNormal");
     let inactive = |selection: Option<Rgba>, window: Option<Rgba>, background: bool| {
         inactive_selection(
             selection.map(|c| c.to_f32_array()),
@@ -1814,6 +1844,21 @@ ForegroundNormal=239,240,241
         }
     }
 
+    /// A hovered item's outline, `focusOutlineColor()`: the focus colour
+    /// mixed 15 % towards the window text (docs/platform-facts.md §2.6).
+    #[test]
+    fn test_menu_hover_outline_is_breezes() {
+        let [light, dark] = breeze_light_and_dark();
+        let cases = [
+            (light, Rgba::rgb(0x39, 0x9a, 0xcc)),
+            (dark, Rgba::rgb(0x5a, 0xba, 0xec)),
+        ];
+        for (content, outline) in cases {
+            let v = populate_fixture(&content);
+            assert_eq!(v.menu.hover_border_color, Some(outline));
+        }
+    }
+
     #[test]
     fn test_scrollbar_thumb_is_breezes() {
         let [light, dark] = breeze_light_and_dark();
@@ -2497,6 +2542,26 @@ DecorationFocus=61,174,233
         assert!(
             v.menu.background_color.is_some(),
             "menu.background_color missing"
+        );
+        assert!(
+            v.menu.hover_border_color.is_some(),
+            "menu.hover_border_color missing"
+        );
+        assert!(
+            v.menu.bar_hover_background.is_some(),
+            "menu.bar_hover_background missing"
+        );
+        assert!(
+            v.menu.bar_open_background.is_some(),
+            "menu.bar_open_background missing"
+        );
+        assert!(
+            v.menu.bar_hover_text_color.is_some(),
+            "menu.bar_hover_text_color missing"
+        );
+        assert!(
+            v.list.hover_border_color.is_some(),
+            "list.hover_border_color missing"
         );
         assert!(
             v.link.visited_text_color.is_some(),

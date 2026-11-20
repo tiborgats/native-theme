@@ -2069,6 +2069,42 @@ fn an_unstated_list_or_sidebar_hover_is_the_widgets_own_background() {
     assert_eq!(stated.sidebar.hover_background, Some(Rgba::rgb(4, 5, 6)));
 }
 
+/// Issue #4's leftovers: no resolver rule fills the new fields; unset, each
+/// stays `None` through resolution, and stated, each keeps its value.
+#[test]
+fn issue_4_leftovers_pass_through_resolution() {
+    let mut unset = fully_populated_variant();
+    unset.resolve_all();
+    let r = unset
+        .validate()
+        .expect("validates with the new fields unset");
+    assert_eq!(r.menu.hover_border_color, None);
+    assert_eq!(r.menu.bar_hover_background, None);
+    assert_eq!(r.menu.bar_open_background, None);
+    assert_eq!(r.menu.bar_hover_text_color, None);
+    assert_eq!(r.menu.bar_padding_horizontal, None);
+    assert_eq!(r.menu.bar_padding_vertical, None);
+    assert_eq!(r.list.hover_border_color, None);
+
+    let mut set = fully_populated_variant();
+    set.menu.hover_border_color = Some(Rgba::rgb(1, 2, 3));
+    set.menu.bar_hover_background = Some(Rgba::rgb(4, 5, 6));
+    set.menu.bar_open_background = Some(Rgba::rgb(7, 8, 9));
+    set.menu.bar_hover_text_color = Some(Rgba::rgb(10, 11, 12));
+    set.menu.bar_padding_horizontal = Some(10.0);
+    set.menu.bar_padding_vertical = Some(6.0);
+    set.list.hover_border_color = Some(Rgba::new(13, 14, 15, 204));
+    set.resolve_all();
+    let r = set.validate().expect("validates with the new fields set");
+    assert_eq!(r.menu.hover_border_color, Some(Rgba::rgb(1, 2, 3)));
+    assert_eq!(r.menu.bar_hover_background, Some(Rgba::rgb(4, 5, 6)));
+    assert_eq!(r.menu.bar_open_background, Some(Rgba::rgb(7, 8, 9)));
+    assert_eq!(r.menu.bar_hover_text_color, Some(Rgba::rgb(10, 11, 12)));
+    assert_eq!(r.menu.bar_padding_horizontal, Some(10.0));
+    assert_eq!(r.menu.bar_padding_vertical, Some(6.0));
+    assert_eq!(r.list.hover_border_color, Some(Rgba::new(13, 14, 15, 204)));
+}
+
 /// D9: the two macOS presets, which state neither hover (no source gives
 /// one, docs/platform-facts.md:1379, :1435), hover a row in its own
 /// background: macos-monterey's light window #ececec is not its list's

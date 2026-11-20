@@ -310,6 +310,9 @@ pub struct CheckboxTheme {
 // ── 2.6 Menu ────────────────────────────────────────────────────────────────
 
 /// Popup and context menu appearance.
+///
+/// A menu bar is filled with `toolbar.background_color`, the fill of the one
+/// tools area Breeze paints (docs/platform-facts.md §2.6, §2.13).
 #[serde_with::skip_serializing_none]
 #[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde(default)]
@@ -349,6 +352,43 @@ pub struct MenuTheme {
     /// Disabled menu item text color.
     #[theme(inherit_from = "defaults.disabled_text_color")]
     pub disabled_text_color: Option<Rgba>,
+    /// Outline of a hovered item's highlight, drawn at
+    /// `defaults.border.line_width` inside the highlight, over the item's
+    /// padding, so nothing moves, and rounded by `border.corner_radius`:
+    /// Breeze's focus colour mixed 15 % towards `WindowText`. A pressed item
+    /// draws none where `active_background` is stated. `None`: no outline
+    /// (docs/platform-facts.md §2.6).
+    #[theme(category = "soft_option")]
+    pub hover_border_color: Option<Rgba>,
+    /// Fill of a menu-bar title under the pointer, rounded by
+    /// `border.corner_radius`: Breeze's opaque hover colour. `None`: the title
+    /// keeps the connector's own look (docs/platform-facts.md §2.6).
+    #[theme(category = "soft_option")]
+    pub bar_hover_background: Option<Rgba>,
+    /// Fill of a menu-bar title whose menu is open: Breeze's focus colour.
+    /// `None`: `bar_hover_background`; with both `None`, the connector's own
+    /// look (docs/platform-facts.md §2.6).
+    #[theme(category = "soft_option")]
+    pub bar_open_background: Option<Rgba>,
+    /// Text colour of a menu-bar title under the pointer or open: Breeze's
+    /// `HighlightedText`. `None`: the title keeps its text colour
+    /// (docs/platform-facts.md §2.6).
+    #[theme(category = "soft_option")]
+    pub bar_hover_text_color: Option<Rgba>,
+    /// Inset of a menu-bar title's text from its left and right edge, in
+    /// logical pixels: Breeze's `MenuBarItem_MarginWidth` 10; titles so padded
+    /// touch. `None`: the connector's own title padding
+    /// (docs/platform-facts.md §2.6).
+    #[serde(rename = "bar_padding_horizontal_px")]
+    #[theme(category = "soft_option", check = "non_negative")]
+    pub bar_padding_horizontal: Option<f32>,
+    /// Inset of a menu-bar title's text from its top and bottom edge, in
+    /// logical pixels: Breeze's `MenuBarItem_MarginHeight` 6; titles so padded
+    /// touch. `None`: the connector's own title padding
+    /// (docs/platform-facts.md §2.6).
+    #[serde(rename = "bar_padding_vertical_px")]
+    #[theme(category = "soft_option", check = "non_negative")]
+    pub bar_padding_vertical: Option<f32>,
     /// Menu item font specification.
     #[theme(nested, resolved_type = "ResolvedFontSpec")]
     pub font: Option<FontSpec>,
@@ -624,7 +664,9 @@ pub struct SidebarTheme {
 #[serde(default)]
 #[theme_inherit(border_kind = "full", font = "font")]
 pub struct ToolbarTheme {
-    /// Toolbar background color.
+    /// Toolbar background color, also a menu bar's fill: Breeze fills the
+    /// menu bar and the toolbars as one tools area (docs/platform-facts.md
+    /// §2.13).
     #[theme(inherit_from = "defaults.background_color")]
     pub background_color: Option<Rgba>,
     /// Toolbar height in logical pixels. `None` where the platform states
@@ -753,6 +795,12 @@ pub struct ListTheme {
     pub hover_background: Option<Rgba>,
     /// Hovered row text color.
     pub hover_text_color: Option<Rgba>,
+    /// Outline of a hovered, unselected row, drawn at
+    /// `defaults.border.line_width` on the shape of the row's hover fill:
+    /// Breeze's `Highlight` at alpha 0.8, a translucent layer. `None`: no
+    /// outline (docs/platform-facts.md §2.15).
+    #[theme(category = "soft_option")]
+    pub hover_border_color: Option<Rgba>,
     /// Disabled row text color.
     #[theme(inherit_from = "defaults.disabled_text_color")]
     pub disabled_text_color: Option<Rgba>,
@@ -1777,6 +1825,26 @@ mod tests {
         let toml_str = toml::to_string(&s).unwrap();
         let s2: SwitchTheme = toml::from_str(&toml_str).unwrap();
         assert_eq!(s, s2);
+    }
+
+    #[test]
+    fn new_sizes_use_px_keys() {
+        let m = MenuTheme {
+            bar_padding_horizontal: Some(10.0),
+            bar_padding_vertical: Some(6.0),
+            ..Default::default()
+        };
+        let toml_str = toml::to_string(&m).unwrap();
+        assert!(
+            toml_str.contains("bar_padding_horizontal_px = 10.0"),
+            "{toml_str}"
+        );
+        assert!(
+            toml_str.contains("bar_padding_vertical_px = 6.0"),
+            "{toml_str}"
+        );
+        let m2: MenuTheme = toml::from_str(&toml_str).unwrap();
+        assert_eq!(m, m2);
     }
 
     #[test]

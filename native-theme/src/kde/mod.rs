@@ -1326,9 +1326,9 @@ BackgroundNormal=49,54,59
         inactive_enable: Some("false"),
     };
 
-    /// The forty-six colour leaves the reader derives from, or reads
+    /// The fifty-one colour leaves the reader derives from, or reads
     /// directly from, the colour scheme.
-    fn derived_leaves(mode: &crate::ThemeMode) -> [(&'static str, Option<Rgba>); 46] {
+    fn derived_leaves(mode: &crate::ThemeMode) -> [(&'static str, Option<Rgba>); 51] {
         let border = |b: &Option<crate::WidgetBorderSpec>| b.as_ref().and_then(|b| b.color);
         let sw = &mode.switch;
         [
@@ -1438,11 +1438,16 @@ BackgroundNormal=49,54,59
                 "defaults.selection_inactive_text_color",
                 mode.defaults.selection_inactive_text_color,
             ),
+            ("menu.hover_border_color", mode.menu.hover_border_color),
+            ("menu.bar_hover_background", mode.menu.bar_hover_background),
+            ("menu.bar_open_background", mode.menu.bar_open_background),
+            ("menu.bar_hover_text_color", mode.menu.bar_hover_text_color),
+            ("list.hover_border_color", mode.list.hover_border_color),
         ]
     }
 
     /// The same leaves resolved.
-    fn resolved_leaves(theme: &crate::ResolvedTheme) -> [(&'static str, Option<Rgba>); 46] {
+    fn resolved_leaves(theme: &crate::ResolvedTheme) -> [(&'static str, Option<Rgba>); 51] {
         let sw = &theme.switch;
         [
             (
@@ -1560,6 +1565,11 @@ BackgroundNormal=49,54,59
                 "defaults.selection_inactive_text_color",
                 Some(theme.defaults.selection_inactive_text_color),
             ),
+            ("menu.hover_border_color", theme.menu.hover_border_color),
+            ("menu.bar_hover_background", theme.menu.bar_hover_background),
+            ("menu.bar_open_background", theme.menu.bar_open_background),
+            ("menu.bar_hover_text_color", theme.menu.bar_hover_text_color),
+            ("list.hover_border_color", theme.list.hover_border_color),
         ]
     }
 
@@ -1607,7 +1617,7 @@ BackgroundNormal=49,54,59
 
     /// Another accent moves the switch's on track, hovered or not, and its
     /// outline, the pressed button and the selected segment, the list's
-    /// hover, the focus ring and the button's hover and focus border, the
+    /// hover and its outline, the focus ring and the button's hover and focus border, the
     /// combo box's hover pen, a toolbar button's hover pen and pressed fill,
     /// the default button's fill and frame, and the inactive selection's
     /// fill, tinted towards it; the checkbox and the progress bar follow it as
@@ -1637,6 +1647,7 @@ BackgroundNormal=49,54,59
                 "button.default_button_background",
                 "button.default_button_border_color",
                 "defaults.selection_inactive_background",
+                "list.hover_border_color",
             ]
         );
         Ok(())
@@ -1691,7 +1702,7 @@ BackgroundNormal=49,54,59
     }
 
     /// The Window set moves the popover's edge, the scroll-bar handles, the
-    /// menu's hover text, separator and panel, the table's grid and the
+    /// menu's hover text, separator and panel and a hovered item's outline, the table's grid and the
     /// inactive selection, the window tinted and its text, and the toolbar
     /// only where the scheme has no Header group to take it from.
     #[test]
@@ -1714,6 +1725,7 @@ BackgroundNormal=49,54,59
                 "menu.background_color",
                 "defaults.selection_inactive_background",
                 "defaults.selection_inactive_text_color",
+                "menu.hover_border_color",
             ]
         );
         let without_header = Scheme {
@@ -1736,6 +1748,7 @@ BackgroundNormal=49,54,59
                 "menu.background_color",
                 "defaults.selection_inactive_background",
                 "defaults.selection_inactive_text_color",
+                "menu.hover_border_color",
             ]
         );
         Ok(())
@@ -1755,9 +1768,10 @@ BackgroundNormal=49,54,59
     }
 
     /// The View set's decorations (D7): DecorationHover moves a hovered
-    /// field's frame, the tab hover, the scroll-bar handle and a hovered
-    /// header section, DecorationFocus a focused field's frame, the menu's
-    /// hover, the check box's hover outline and a pressed header section.
+    /// field's frame, the tab hover, the scroll-bar handle, a hovered
+    /// header section and a hovered menu-bar title, DecorationFocus a focused
+    /// field's frame, the menu's hover and its outline, the check box's hover
+    /// outline, a pressed header section and an open menu-bar title.
     #[test]
     fn the_view_decorations_move_the_frames_the_tab_hover_and_the_handle() -> crate::Result<()> {
         let hover = Scheme {
@@ -1772,6 +1786,7 @@ BackgroundNormal=49,54,59
                 "scrollbar.thumb_hover_color",
                 "scrollbar.thumb_active_color",
                 "list.header_hover_background",
+                "menu.bar_hover_background",
             ]
         );
         let focus = Scheme {
@@ -1785,6 +1800,8 @@ BackgroundNormal=49,54,59
                 "menu.hover_background",
                 "checkbox.hover_border_color",
                 "list.header_active_background",
+                "menu.hover_border_color",
+                "menu.bar_open_background",
             ]
         );
         Ok(())
@@ -1825,6 +1842,19 @@ BackgroundNormal=49,54,59
             ..BREEZE_LIGHT_SCHEME
         };
         assert_eq!(moved_leaves(&unset)?, ["list.grid_color"]);
+        Ok(())
+    }
+
+    /// The Selection set's text moves the menu-bar titles' text under the
+    /// pointer or open, and nothing else: with `ChangeSelectionColor=true`
+    /// the inactive selection's text is the window's.
+    #[test]
+    fn the_selection_text_moves_the_menu_bar_titles() -> crate::Result<()> {
+        let scheme = Scheme {
+            selection: ("61,174,233", "10,20,30"),
+            ..BREEZE_LIGHT_SCHEME
+        };
+        assert_eq!(moved_leaves(&scheme)?, ["menu.bar_hover_text_color"]);
         Ok(())
     }
 
