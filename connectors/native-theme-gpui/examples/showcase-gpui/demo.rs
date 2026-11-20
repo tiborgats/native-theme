@@ -625,6 +625,10 @@ struct MenuTitle {
     name: SharedString,
     look: Option<MenuLook>,
     selected: bool,
+    /// Where the title records the colour its text is laid out in, for the
+    /// self-tests (`elements::label_probe`).
+    #[cfg(test)]
+    ui: Entity<InfoRegistry>,
 }
 
 impl Selectable for MenuTitle {
@@ -648,7 +652,12 @@ impl RenderOnce for MenuTitle {
                 let name = self.name.clone();
                 move || format!("menu-title-{name}")
             })
-            .child(self.name);
+            .child(self.name.clone());
+        #[cfg(test)]
+        let title = title.child(crate::elements::label_probe(
+            &self.ui,
+            format!("menu-title-{}", self.name),
+        ));
         match self.look {
             Some(look) => look.title(title, self.selected),
             None => title
@@ -1022,6 +1031,8 @@ impl Render for MenuBar {
                         name,
                         look: look.clone(),
                         selected,
+                        #[cfg(test)]
+                        ui: ui.clone(),
                     })
                     .children(MENU_TITLES.get(ix).map(|id| elements::record(&ui, id)))
                     .on_mouse_down(

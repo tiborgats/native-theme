@@ -273,7 +273,7 @@ pub fn menu_bar(
     };
     info.not_themeable(
             "widget",
-            "gpui-component has no menu-bar row, so this row is the application's own h_flex around its menus. The model states no menu-bar widget: its menu is the popup a menu opens, and the bar takes the toolbar's fill (platform-facts §2.6)",
+            "gpui-component has no menu-bar row, so this row is the application's own h_flex around its menus. The model states no menu-bar widget: its menu is the popup a menu opens, and its rule fills the bar as the toolbar, where a native theme is installed (platform-facts §2.6)",
         )
         .not_themeable(
             "inset",
@@ -453,8 +453,8 @@ pub fn app_menus(t: &Theme, host: MenuHost, native: Option<&ResolvedTheme>) -> W
         "fill",
         match host {
             MenuHost::Row if native.is_some() => "none behind the titles: the menu bar's, toolbar.background_color, shows through (platform-facts §2.6, §2.13: the bar takes the toolbar's fill)",
-            MenuHost::Row => "none behind the titles: the window's background shows through; the model states no menu-bar fill (platform-facts §2.6: its menu is the popup)",
-            MenuHost::TitleBar => "none behind the titles: the title bar's fill shows through; the model states no menu-bar fill (platform-facts §2.6: its menu is the popup)",
+            MenuHost::Row => "none behind the titles: the window's background shows through, as no native theme is installed",
+            MenuHost::TitleBar => "none behind the titles: the title bar's fill shows through, as the showcase does not repaint under them; the model's menu-bar fill, toolbar.background_color, applies to the menu-bar row (platform-facts §2.6, §2.13)",
         },
     )
     .instance(

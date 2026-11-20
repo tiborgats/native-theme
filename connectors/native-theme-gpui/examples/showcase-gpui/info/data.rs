@@ -844,7 +844,7 @@ pub fn tree_row(
         ListRowState::Idle
     };
     list_item(t, label, state, styled, gutter)
-        .not_themeable("right-click", "not followed here: Tree tells the row's builder whether the row is selected and nothing else (gpui-component/tree.rs, Tree::new), and marks a right-clicked row after it is built (gpui-component/tree.rs, RenderOnce for Tree). A right-clicked row paints no hover and gains a 1px selection outline, over the selected fill when it is selected (list/list_item.rs, ListItem::render)")
+        .not_themeable("right-click", "not followed here: Tree tells the row's builder whether the row is selected and nothing else (gpui-component/tree.rs, Tree::new), and marks a right-clicked row after it is built (gpui-component/tree.rs, RenderOnce for Tree). A right-clicked row paints no hover fill and gains a 1px selection outline, over the selected fill when it is selected (list/list_item.rs, ListItem::render); the showcase's hover text and outline, built before the mark, still show under the pointer")
         .instance("click", "a full click, the press released on the row, selects it and opens or closes a folder; a press dragged off the row does neither (gpui-base/tree.rs, TreeState::on_entry_click)")
 }
 
