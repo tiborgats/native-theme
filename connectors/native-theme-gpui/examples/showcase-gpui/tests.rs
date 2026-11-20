@@ -10456,9 +10456,12 @@ fn a_menu_title_takes_the_bars_fills_and_padding(cx: &mut TestAppContext) {
 /// with the width set to 0, the Theme menu's System row (`MenuLook::of`),
 /// the Overlays page's first menu row, the Basic List's first row
 /// (`list_hover_edge`) and the Basic table's first row (`files_table`),
-/// each hovered, draw no outline.
+/// each hovered, draw no outline, each filled with its hover fill
+/// (`menu.hover_background`, `list.hover_background`), so the pointer is
+/// on it.
 #[gpui::test]
 fn no_row_is_outlined_where_the_line_width_is_0(cx: &mut TestAppContext) {
+    use crate::info::stated;
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     use_light_preset(&mut cx, &showcase, "kde-breeze");
     let mut r = resolved_theme(&mut cx, &showcase);
@@ -10468,46 +10471,51 @@ fn no_row_is_outlined_where_the_line_width_is_0(cx: &mut TestAppContext) {
     );
     r.defaults.border.line_width = 0.;
     install_breeze_light(&mut cx, &r);
+    let menu_hover = Some(stated(r.menu.hover_background));
+    let list_hover = Some(stated(r.list.hover_background));
     let far = point(px(1200.), px(8900.));
-    let hovered_edge = |cx: &mut VisualTestContext, row: &'static str| {
+    let hovered = |cx: &mut VisualTestContext, row: &'static str| {
         hover(cx, far);
         draw(cx);
         let at = bounds_of(cx, row).center();
         hover(cx, at);
         draw(cx);
-        last_edge_inside(cx, row)
+        (painted_fill(cx, row), last_edge_inside(cx, row))
     };
     open_menu(&mut cx, &showcase, "theme");
     assert_eq!(
-        hovered_edge(&mut cx, "menu-row-System"),
-        None,
-        "the hovered System row is outlined at a line width of 0"
+        hovered(&mut cx, "menu-row-System"),
+        (menu_hover, None),
+        "the hovered System row is not filled with menu.hover_background, or is outlined at a line width of 0"
     );
     cx.simulate_keystrokes("escape");
     cx.run_until_parked();
     show(&mut cx, &showcase, Page::Overlays);
     assert_eq!(
-        hovered_edge(&mut cx, "overlays-menu-row-undo"),
-        None,
-        "the Overlays page's hovered first menu row is outlined at a line width of 0"
+        hovered(&mut cx, "overlays-menu-row-undo"),
+        (menu_hover, None),
+        "the Overlays page's hovered first menu row is not filled with menu.hover_background, or is outlined at a line width of 0"
     );
     show(&mut cx, &showcase, Page::Basic);
     for row in ["basic-list-row-0", "basic-table-row-0"] {
         assert_eq!(
-            hovered_edge(&mut cx, row),
-            None,
-            "{row} under the pointer is outlined at a line width of 0"
+            hovered(&mut cx, row),
+            (list_hover, None),
+            "{row} under the pointer is not filled with list.hover_background, or is outlined at a line width of 0"
         );
     }
 }
 
 /// E2: a menu row the mouse button is held on is filled with
-/// `menu.active_background` and draws no outline (`MenuLook::pressed`, the
-/// edge hidden under group active), under kde-breeze light: the Theme
-/// menu's System row and the Overlays page's first application-drawn row.
-/// The press only: a release on the row runs its action, which closes the
-/// menu and switches the theme, so the button is let go off the row (trial
-/// T-L1 case 2 checked the released frame).
+/// `menu.active_background`, lettered `menu.active_text_color` (#ffffff
+/// under kde-breeze light, against the hover text #232629) and draws no
+/// outline (`MenuLook::pressed`, the edge hidden under group active), under
+/// kde-breeze light: the Theme menu's System row, its Preferences row with
+/// the shortcut, and the Overlays page's first application-drawn row. Each
+/// text colour is the one the frame laid the text out in
+/// (`elements::label_probe`). The press only: a release on the row runs its
+/// action, which closes the menu and switches the theme, so the button is
+/// let go off the row (trial T-L1 case 2 checked the released frame).
 #[gpui::test]
 fn a_pressed_menu_row_takes_the_pressed_look(cx: &mut TestAppContext) {
     use crate::info::stated;
@@ -10519,8 +10527,21 @@ fn a_pressed_menu_row_takes_the_pressed_look(cx: &mut TestAppContext) {
         fill.is_some() && fill != Some(stated(r.menu.hover_background)),
         "kde-breeze light no longer states a pressed menu fill apart from its hover fill, which this test reads"
     );
+    let text = r.menu.active_text_color.map(stated);
+    let hover_text = Some(stated(r.menu.hover_text_color));
+    assert!(
+        text.is_some() && text != hover_text,
+        "kde-breeze light no longer states a pressed menu text apart from its hover text, which this test reads"
+    );
+    let ui = read(&mut cx, &showcase, |this, _| this.info_ui.clone());
     let far = point(px(1200.), px(8900.));
-    let pressed = |cx: &mut VisualTestContext, row: &'static str| {
+    let pressed = |cx: &mut VisualTestContext, row: &'static str, texts: &[String]| {
+        let lettered = |cx: &mut VisualTestContext| -> Vec<Option<gpui::Hsla>> {
+            cx.update(|_window, cx| {
+                let colours = &ui.read(cx).label_colours;
+                texts.iter().map(|t| colours.get(t).copied()).collect()
+            })
+        };
         hover(cx, far);
         draw(cx);
         let at = bounds_of(cx, row).center();
@@ -10530,10 +10551,19 @@ fn a_pressed_menu_row_takes_the_pressed_look(cx: &mut TestAppContext) {
             last_edge_inside(cx, row).is_some(),
             "{row} under the pointer is not outlined, so its press proves nothing"
         );
+        assert_eq!(
+            lettered(cx),
+            vec![hover_text; texts.len()],
+            "{row} under the pointer: its text is not menu.hover_text_color, so its press proves nothing"
+        );
         cx.simulate_mouse_down(at, MouseButton::Left, Modifiers::default());
         cx.run_until_parked();
         draw(cx);
-        let look = (painted_fill(cx, row), last_edge_inside(cx, row));
+        let look = (
+            painted_fill(cx, row),
+            last_edge_inside(cx, row),
+            lettered(cx),
+        );
         cx.simulate_mouse_move(far, Some(MouseButton::Left), Modifiers::default());
         cx.simulate_mouse_up(far, MouseButton::Left, Modifiers::default());
         cx.run_until_parked();
@@ -10542,17 +10572,37 @@ fn a_pressed_menu_row_takes_the_pressed_look(cx: &mut TestAppContext) {
     };
     open_menu(&mut cx, &showcase, "theme");
     assert_eq!(
-        pressed(&mut cx, "menu-row-System"),
-        (fill, None),
-        "the pressed System row is not filled with menu.active_background, outlined in nothing"
+        pressed(
+            &mut cx,
+            "menu-row-System",
+            &["menu-row-label-System".to_owned()]
+        ),
+        (fill, None, vec![text]),
+        "the pressed System row is not filled with menu.active_background, lettered menu.active_text_color, outlined in nothing"
+    );
+    assert_eq!(
+        pressed(
+            &mut cx,
+            "menu-row-Preferences…",
+            &[
+                "menu-row-label-Preferences…".to_owned(),
+                "menu-row-shortcut-Preferences…".to_owned(),
+            ],
+        ),
+        (fill, None, vec![text, text]),
+        "the pressed Preferences row is not filled with menu.active_background, its label and shortcut lettered menu.active_text_color, outlined in nothing"
     );
     cx.simulate_keystrokes("escape");
     cx.run_until_parked();
     show(&mut cx, &showcase, Page::Overlays);
     assert_eq!(
-        pressed(&mut cx, "overlays-menu-row-undo"),
-        (fill, None),
-        "the Overlays page's pressed first menu row is not filled with menu.active_background, outlined in nothing"
+        pressed(
+            &mut cx,
+            "overlays-menu-row-undo",
+            &["overlays-menu-row-undo-label".to_owned()],
+        ),
+        (fill, None, vec![text]),
+        "the Overlays page's pressed first menu row is not filled with menu.active_background, lettered menu.active_text_color, outlined in nothing"
     );
 }
 

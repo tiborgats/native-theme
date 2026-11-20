@@ -370,7 +370,7 @@ pub(crate) const MENU_ROW_HEIGHT: Rems = rems(1.625);
 /// `p_1`, `gap_y_0p5`, `min_w(rems(8.))`; :1449, `gap_3`); the model states
 /// none of them.
 const MENU_POPUP_PADDING: Rems = rems(0.25);
-const MENU_POPUP_ROW_GAP: Rems = rems(0.125);
+pub(crate) const MENU_POPUP_ROW_GAP: Rems = rems(0.125);
 const MENU_POPUP_MIN_WIDTH: Rems = rems(8.);
 const MENU_SHORTCUT_GAP: Rems = rems(0.75);
 
@@ -995,6 +995,26 @@ impl MenuBar {
                             Some(look) => look.pressed(row),
                             None => row,
                         };
+                        let label = div()
+                            .debug_selector({
+                                let name = name.clone();
+                                move || format!("menu-row-label-{name}")
+                            })
+                            .child(name.clone());
+                        #[cfg(test)]
+                        let label = label.child(crate::elements::label_probe(
+                            ui,
+                            format!("menu-row-label-{name}"),
+                        ));
+                        // The shortcut is plain text in the row's own text
+                        // style, which a probe beside it records.
+                        #[cfg(test)]
+                        let row = row.when(shortcut.is_some(), |row| {
+                            row.child(crate::elements::label_probe(
+                                ui,
+                                format!("menu-row-shortcut-{name}"),
+                            ))
+                        });
                         let row = row
                             .w_full()
                             .gap(MENU_SHORTCUT_GAP)
@@ -1005,14 +1025,7 @@ impl MenuBar {
                                 let name = name.clone();
                                 move || format!("menu-row-{name}")
                             })
-                            .child(
-                                div()
-                                    .debug_selector({
-                                        let name = name.clone();
-                                        move || format!("menu-row-label-{name}")
-                                    })
-                                    .child(name.clone()),
-                            )
+                            .child(label)
                             .children(shortcut)
                             .children(listed(ix).map(|id| elements::record(ui, id)))
                             .children(
@@ -8912,6 +8925,8 @@ pub(crate) fn menu_rows(
                     look.as_ref()
                         .and_then(|look| look.edge(None, t.transparent)),
                 );
+            #[cfg(test)]
+            let row = row.child(crate::elements::label_probe(ui, format!("{id}-label")));
             // Pressed before `info`, which wraps the row in an element of
             // its own: a style set after it would land on the wrapper,
             // under the row's own hover fill and text.

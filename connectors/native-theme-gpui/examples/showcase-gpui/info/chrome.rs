@@ -443,9 +443,9 @@ pub fn app_menus(t: &Theme, host: MenuHost, native: Option<&ResolvedTheme>) -> W
                     .flatten()
                     .collect();
                     let rows = if m.panel_padding_vertical.is_some() {
-                        "the items touching"
+                        "the items touching".to_string()
                     } else {
-                        "the items 0.125rem apart, upstream's gap_y_0p5 (menu/popup_menu.rs, PopupMenu::render)"
+                        format!("the items {} apart, upstream's gap_y_0p5 (MENU_POPUP_ROW_GAP; menu/popup_menu.rs, PopupMenu::render)", super::rems_text(crate::demo::MENU_POPUP_ROW_GAP, t))
                     };
                     if sides.is_empty() {
                         format!("popover.border.padding's stated sides round the items, upstream's p_1 on an unstated side (menu/popup_menu.rs, PopupMenu::render); {rows}")

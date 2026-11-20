@@ -120,7 +120,7 @@
 //! | `scrollbar` | colours + geometry | track/thumb colours, widths, inset, min length via `base_layer` |
 //! | `status_bar` | 3 of 3 | background, border colour; the border's padding sides and the font's family, size, weight, style and colour via `geometry::status_bar` |
 //! | `table` | head, from `list.header_background` / `list.header_font` | the model states no footer colour, so `table_foot*` are derived |
-//! | `slider`, `switch` | 2 colours each | fill/thumb colours; a checked switch's track, `switch.checked_background`, via [`variants::switch_color`] for `Switch::color`; geometry upstream; the slider thumb's outline via [`widgets::ThumbOutline`] |
+//! | `slider`, `switch` | 2 colours each | fill/thumb colours; a checked switch's track, `switch.checked_background`, via [`variants::switch_color`] for `Switch::color`; geometry upstream; the slider thumb's outline via the `widgets` module's `ThumbOutline` (feature `widgets`) |
 //! | `progress_bar` | fill + geometry | height, radius, min width via `geometry::progress` |
 //! | `list` | 7 of 16 + geometry | background, alternate row, selection, hover, grid, header background and header font colour; the background and the frame via `geometry::list`, the receiver of the fill (the `list` token has no reader in gpui-component 0.9.1); row height, padding, font via `geometry::list_item`; a selected row's text colour via `geometry::list_item_selected`; header height via `geometry::list_header_height` for `DataTable::header_row_height`; the part of a searchable list's row that matches the query, `list_highlight_foreground`, in the resting text colour, `defaults.text_color`, since the model states no colour for a match |
 //! | `menu` | 2 colours + geometry | hover_background, hover_text_color → `accent`, `accent_foreground` (upstream's item highlight); row height, the least row height, padding, icon gap, font via `geometry::menu_item` on an application-drawn row |
@@ -1612,7 +1612,7 @@ fn handles_hold_native_values(cx: &App) -> bool {
 /// `ThemeConfigColors` keeps them private (gpui-component
 /// `src/theme/schema.rs:660-694`), so the config `apply` installs for a variant
 /// cannot carry them; every `Theme::change` / `sync_system_appearance` resets
-/// them to `ThemeColor::dark()` / `light()` (`:705-713`, `:1093-1097`) and
+/// them to `ThemeColor::dark()` / `light()` (`:708-716`, `:1097-1101`) and
 /// ends in `sync_base` (`theme/mod.rs:342`), whose `cx.set_global` of
 /// `gpui_base::Theme` (`:481-486`) is the one write of it; its notification
 /// reaches the base-theme observer. Writes only when a field differs; the

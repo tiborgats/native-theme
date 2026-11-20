@@ -3526,6 +3526,26 @@ fn a_thumb_outline_follows_the_theme() {
     assert_eq!(ThumbOutline::of(&r, false), None);
 }
 
+/// E8: `ThumbOutline::faded_over` fades the band as the look fades its
+/// ring: kde-breeze light with `slider.disabled_opacity` set to 0.5, the
+/// rest colour faded by it over the fill composited on the rail over the
+/// window, the hover and focus colours as they were.
+#[test]
+fn a_faded_thumb_outline_fades_its_rest_colour() {
+    let mut r = resolved("kde-breeze", ColorMode::Light);
+    r.slider.disabled_opacity = 0.5;
+    let ground = c(r.defaults.background_color);
+    let look = SliderLook::of(&r, true).expect("kde-breeze states the slider's lengths");
+    assert_eq!(look.opacity, 0.5);
+    let o = ThumbOutline::of(&r, false).expect("kde-breeze states the outline's width");
+    let rest = o.rest.expect("kde-breeze states the rest colour");
+    let f = o.faded_over(ground, &look);
+    let fill = over(over(ground, look.track), look.fill);
+    assert_eq!(f.rest, Some(faded(ground, fill, rest, 0.5)));
+    assert_ne!(f.rest, o.rest, "the rest colour is faded");
+    assert_eq!((f.width, f.hover, f.focus), (o.width, o.hover, o.focus));
+}
+
 /// E8: the thumb's outline is the theme's (S7), read off the frame: under
 /// kde-breeze light, with `thumb_focus_border_color` set to #f0a014 (the
 /// preset's hover and focus colours are both #3daee9), the thumb at rest is
@@ -3623,6 +3643,58 @@ fn the_thumb_outline_is_the_themes(cx: &mut TestAppContext) {
         band(cx).as_deref(),
         Some("#3daee9ff"),
         "focused and hovered: hover wins"
+    );
+    drop(state);
+}
+
+/// E8, S7: a stated outline width with no outline colour shows the thumb
+/// whole in every state: kde-breeze light with its three outline colours
+/// cleared and `thumb_hover_color` set to #f0a014, the band is the thumb's
+/// #fcfcfc at rest and the disc's hover colour, #f0a014, under the pointer,
+/// so no ring of the resting colour shows round the hovered disc.
+#[gpui::test]
+fn a_band_without_a_colour_takes_the_thumbs_hover(cx: &mut TestAppContext) {
+    let hover = native_theme::color::Rgba::new(0xf0, 0xa0, 0x14, 0xff);
+    let state = cx.new(|_| SliderState::new().min(0.).max(100.).default_value(50.));
+    let s = state.clone();
+    let cx = window_with_resolved(
+        cx,
+        "kde-breeze",
+        ColorMode::Light,
+        |r| {
+            r.slider.thumb_border_color = None;
+            r.slider.thumb_hover_border_color = None;
+            r.slider.thumb_focus_border_color = None;
+            r.slider.thumb_hover_color = Some(hover);
+        },
+        Box::new(move |_, _| Slider::new(&s).w(px(140.)).into_any_element()),
+    );
+    let r = resolved("kde-breeze", ColorMode::Light);
+    assert_eq!(
+        (r.slider.thumb_border_line_width, r.slider.thumb_hover_color,),
+        (Some(1.), None),
+        "kde-breeze light states the outline's width and no hover colour"
+    );
+    let away = point(px(390.), px(390.));
+    let thumb = bounds(cx, "native-slider-thumb");
+    cx.simulate_mouse_move(away, None, Modifiers::default());
+    redraw(cx);
+    assert_eq!(
+        painted_fill(cx, thumb),
+        Some(c(r.slider.thumb_color)),
+        "at rest: the thumb's colour"
+    );
+    cx.simulate_mouse_move(centre(thumb), None, Modifiers::default());
+    redraw(cx);
+    assert_eq!(
+        painted_fill(cx, thumb),
+        Some(c(hover)),
+        "hovered: the band takes the disc's hover colour"
+    );
+    assert_eq!(
+        painted_fill(cx, thumb.dilate(px(-1.))),
+        Some(c(hover)),
+        "hovered: the disc"
     );
     drop(state);
 }

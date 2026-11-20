@@ -369,8 +369,9 @@ fn step_by(
 /// A thumb of `state` at `position` of the travel along `axis`, from its
 /// start edge, the range's start thumb if `start`: the thumb's colour inside
 /// its outline, centred across the rail. The outline is `outline`'s, in its
-/// focus colour where `focused` and its hover colour under the pointer, where
-/// the theme states one; else gpui-component's ring, [`SliderLook::outline`].
+/// focus colour where `focused` and its hover colour under the pointer (the
+/// thumb's own hover colour where the outline has none), where the theme
+/// states one; else gpui-component's ring, [`SliderLook::outline`].
 #[allow(
     clippy::too_many_arguments,
     reason = "each is one of the thumb's own inputs"
@@ -407,7 +408,9 @@ fn thumb(
             Some(o) => thumb
                 .bg(if focused { o.focus } else { o.rest }.unwrap_or(look.thumb_color))
                 .p(o.width)
-                .when_some(o.hover, |thumb, hover| thumb.hover(move |s| s.bg(hover))),
+                .when_some(o.hover.or(look.hover_thumb), |thumb, hover| {
+                    thumb.hover(move |s| s.bg(hover))
+                }),
             None => thumb.bg(look.outline).p(THUMB_OUTLINE_WIDTH),
         })
         .child(

@@ -476,8 +476,8 @@ pub fn stated(color: native_theme::color::Rgba) -> Hsla {
 }
 
 /// A size in logical pixels to two decimals, trailing zeros dropped: a rem
-/// multiple of a 13.333333px font_size prints as what it is to the eye,
-/// not as float noise.
+/// multiple of a 14.666667px font_size (adwaita's 11 pt at 96 DPI) prints as
+/// what it is to the eye, not as float noise.
 pub fn px_text(v: f32) -> String {
     let s = format!("{v:.2}");
     s.trim_end_matches('0').trim_end_matches('.').to_string()
