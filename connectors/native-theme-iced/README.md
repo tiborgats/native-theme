@@ -188,7 +188,7 @@ the iced default it replaces:
 
 | Shape | Closure | Functions | Passed to |
 |---|---|---|---|
-| with a status | `Fn(&Theme, Status) -> Style` | `button`, `button_primary`, `button_danger`, `button_success`, `button_warning`, `button_link`, `button_toggle`, `toolbar_button`, `button_default`, `text_input`, `text_editor`, `checkbox`, `checkbox_over`, `radio`, `toggler`, `toggler_over`, `pick_list`, `scrollable`, `slider`, `segment`, `expander` | `.style(..)` — `slider` also serves `vertical_slider`; `text_input` also serves `ComboBox::input_style(..)`; `segment` and `expander` style the buttons of a segmented control and an expander header, which iced lacks; `scrollable` hides a floating bar (`scrollbar.overlay_mode`) at rest and shows it under the pointer, as iced has no auto-hide; `button_toggle(&resolved, checked)` is a toggle button, the plain button while off; `toolbar_button(&resolved, checked)` is a toolbar's button, flat at rest, in the toolbar's states where the theme states them; `button_default` is a dialog's default button, the primary one where the platform gives it no look of its own; the `_over` forms fade a disabled control over a backdrop you name |
+| with a status | `Fn(&Theme, Status) -> Style` | `button`, `button_primary`, `button_danger`, `button_success`, `button_warning`, `button_link`, `button_toggle`, `toolbar_button`, `button_default`, `text_input`, `text_editor`, `checkbox`, `checkbox_over`, `radio`, `toggler`, `toggler_over`, `pick_list`, `scrollable`, `slider`, `segment`, `expander` | `.style(..)` — `slider` also serves `vertical_slider`, and has no focused status, so a slider's focus outline (`slider.thumb_focus_border_color`) is not drawn; `text_input` also serves `ComboBox::input_style(..)`; `segment` and `expander` style the buttons of a segmented control and an expander header, which iced lacks; `scrollable` hides a floating bar (`scrollbar.overlay_mode`) at rest and shows it under the pointer, as iced has no auto-hide; `button_toggle(&resolved, checked)` is a toggle button, the plain button while off; `toolbar_button(&resolved, checked)` is a toolbar's button, flat at rest, in the toolbar's states where the theme states them; `button_default` is a dialog's default button, the primary one where the platform gives it no look of its own; the `_over` forms fade a disabled control over a backdrop you name |
 | without a status | `Fn(&Theme) -> Style` | `container_card`, `progress_bar`, `rule`, `tooltip`, `dialog`, `toolbar`, `toolbar_rule`, `segmented_control`, `segment_separator`, `expander_frame`, `pane_grid` | `.style(..)` — `dialog` styles the container a dialog is drawn in, which iced lacks (`dialog_padding`, `dialog_max_width`, `dialog_max_height`, `dialog_min_width` and `dialog_min_height` give its geometry, `dialog_title_font_color` its title), `toolbar` the container a toolbar is drawn in and `toolbar_rule` the rule under it, which iced lacks too (`toolbar_padding`, `toolbar_item_gap`, `toolbar_bar_height` and `toolbar_border_line_width` give its geometry), `segmented_control` the container holding the segments and `segment_separator` the line between two, `expander_frame` the one round an expander's header and body, `pane_grid` a `PaneGrid`'s split lines |
 | menu | `Fn(&Theme) -> menu::Style` | `menu` | `.menu_style(..)` on `PickList` and `ComboBox` |
 | application | `Fn(&Theme) -> theme::Style` | `application` | `iced::application(..).style(..)`, called inside its `Fn(&State, &Theme)`: the window's background, `window.background_color`, under the base style's text colour |
@@ -685,17 +685,26 @@ in none of them:
   `DrawPath::Backdrop`; under its default, `FakeHovering`, the highlight is
   the item's own widget, and under `Backdrop` it also outlines an open bar
   title, which Breeze does not. A menu's items and a menu bar's titles are
-  the application's own widgets: the hovered item's outline, the titles'
-  fills (`menu.bar_hover_background`, `.bar_open_background`,
-  `.bar_hover_text_color`) and their padding (`menu.bar_padding_*`) are
-  drawn where the application builds them, as the showcase's `menu_row`,
-  `menu_title` and `title_padding` do. iced's drop-down outlines no
+  the application's own widgets: the hovered item's outline, a pressed
+  item (`menu.active_background`, `.active_text_color`; `iced_aw`'s path
+  has no pressed status), the titles' fills (`menu.bar_hover_background`,
+  `.bar_open_background`, `.bar_hover_text_color`) and their padding
+  (`menu.bar_padding_*`), and the rows' geometry (`menu.min_row_height`,
+  and the panel's padding, `menu.panel_padding_*`, given to
+  `Menu::padding`) are drawn where the application builds them, as the
+  showcase's `menu_row`, `menu_title`, `title_padding`, `menu_row_height`
+  and `menu_popup_padding` do. No iced menu draws an icon, so
+  `menu.icon_text_gap` reaches nothing, and the padding is per physical
+  side: iced 0.14 has no layout direction. iced's drop-down outlines no
   highlighted row: its menu `Style` has no border for one
   (`iced_widget` 0.14.2 `src/overlay/menu.rs:598-611`).
 - **Lists and tables.** A `SelectionList` fills a hovered row with a quad
   whose border is hardcoded 0 wide, so `list.hover_border_color` has no
   receiver there; a list built of the application's own rows outlines a
-  hovered row as the showcase's `list_row` does.
+  hovered row as the showcase's `list_row` does. A `SelectionList` has no
+  column header either, so `list.header_separator_color` has none: a table
+  built of containers draws the header's lines in it, as the showcase's
+  `basic_table` does.
 - **The window frame.** iced takes no colour for the title bar or the window
   border (`window::Settings::decorations` is a `bool`); it passes the
   theme's light or dark flag to the window, which `to_theme_in`,

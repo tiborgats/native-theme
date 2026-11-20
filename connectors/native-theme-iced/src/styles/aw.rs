@@ -154,11 +154,15 @@ pub fn card(
 /// bar title, which Breeze does not.
 ///
 /// `menu.hover_text_color`, `menu.font.color`, `.disabled_text_color`,
-/// `.separator_color`, `.row_height`, `.icon_size`, `.icon_text_gap`,
-/// `.bar_hover_background`, `.bar_open_background`, `.bar_hover_text_color`
-/// and `.bar_padding_*` have no receiver: `menu_bar::Style` states no text
-/// color and no geometry, and an `iced_aw` menu's items and its bar's titles
-/// are the consumer's own widgets.
+/// `.separator_color`, `.row_height`, `.min_row_height`, `.icon_size`,
+/// `.icon_text_gap`, `.active_background`, `.active_text_color`,
+/// `.panel_padding_*`, `.bar_hover_background`, `.bar_open_background`,
+/// `.bar_hover_text_color` and `.bar_padding_*` have no receiver:
+/// `menu_bar::Style` states no text color and no geometry, its path has no
+/// pressed status (`menu_bar.rs:587` asks for `Active` alone), and an
+/// `iced_aw` menu's items, its bar's titles and its panel's padding
+/// (`Menu::padding`) are the consumer's own. Padding is per physical side;
+/// a right-to-left application swaps it.
 #[must_use = "this returns the style function; it does not apply it"]
 pub fn menu(
     resolved: &ResolvedTheme,

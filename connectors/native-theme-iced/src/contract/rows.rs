@@ -504,7 +504,9 @@ pub(super) const TOOLBAR_BUTTON_STATUSES: &[(bool, button::Status)] = &[
 /// `button.checked_text_color` where the checked fill and it are stated, else
 /// `button.active_text_color`. The border is transparent but under the
 /// pointer and pressed, where it is `toolbar.button_hover_border_color` where
-/// stated.
+/// stated, and on a checked button, where it is
+/// `toolbar.button_checked_border_color` at rest, and under the pointer and
+/// pressed the hover outline, else that checked pen, each where stated.
 #[cfg(feature = "widgets")]
 pub(super) fn native_toolbar_button(
     r: &ResolvedTheme,
@@ -519,6 +521,13 @@ pub(super) fn native_toolbar_button(
     );
     let outline = t
         .button_hover_border_color
+        .map_or(Color::TRANSPARENT, to_color);
+    let checked_pen = t
+        .button_checked_border_color
+        .map_or(Color::TRANSPARENT, to_color);
+    let checked_outline = t
+        .button_hover_border_color
+        .or(t.button_checked_border_color)
         .map_or(Color::TRANSPARENT, to_color);
     let checked_fill = t.button_checked_background.map_or(pressed, to_color);
     let checked_label = to_color(match t.button_checked_background {
@@ -542,9 +551,9 @@ pub(super) fn native_toolbar_button(
             outline,
         ),
         (false, button::Status::Pressed) => (pressed, to_color(b.active_text_color), outline),
-        (true, button::Status::Active) => (checked_fill, checked_label, Color::TRANSPARENT),
+        (true, button::Status::Active) => (checked_fill, checked_label, checked_pen),
         (true, button::Status::Hovered | button::Status::Pressed) => {
-            (checked_fill, checked_label, outline)
+            (checked_fill, checked_label, checked_outline)
         }
     }
 }
@@ -1816,7 +1825,28 @@ pub(super) fn native_slider_handle(r: &ResolvedTheme, status: slider::Status) ->
     }
 }
 
-/// Every color field of `styles::slider`.
+/// The handle's outline in `status`, `(width, colour)`, where the theme
+/// states a positive, finite `slider.thumb_border_line_width` and the
+/// status's colour: `.thumb_border_color` at rest, `.thumb_hover_border_color`
+/// (else the rest colour) hovered and dragged. iced has no focused slider,
+/// so `.thumb_focus_border_color` takes no status.
+#[cfg(feature = "widgets")]
+fn native_slider_handle_edge(r: &ResolvedTheme, status: slider::Status) -> Option<(f32, Color)> {
+    let s = &r.slider;
+    let width = s
+        .thumb_border_line_width
+        .filter(|w| w.is_finite() && *w > 0.0)?;
+    let colour = match status {
+        slider::Status::Active => s.thumb_border_color,
+        slider::Status::Hovered | slider::Status::Dragged => {
+            s.thumb_hover_border_color.or(s.thumb_border_color)
+        }
+    }?;
+    Some((width, to_color(colour)))
+}
+
+/// Every color field of `styles::slider`. A handle the theme states no
+/// outline for has a transparent border, iced's own.
 #[cfg(feature = "widgets")]
 pub(super) const SLIDER_ROWS: &[StyleRow<slider::Status>] = &[
     StyleRow {
@@ -1837,9 +1867,15 @@ pub(super) const SLIDER_ROWS: &[StyleRow<slider::Status>] = &[
         native: native_slider_handle,
         get: |t, r, s| fill(styles::slider(r)(t, s).handle.background),
     },
+    StyleRow {
+        field: "styles::slider.handle.border_color",
+        statuses: SLIDER_STATUSES,
+        native: |r, s| native_slider_handle_edge(r, s).map_or(Color::TRANSPARENT, |e| e.1),
+        get: |t, r, s| Ok(styles::slider(r)(t, s).handle.border_color),
+    },
 ];
 
-/// The slider's two lengths.
+/// The slider's three lengths.
 ///
 /// `handle.shape` is an enum rather than a number, and this row is what
 /// `ScalarRow`'s `Result` exists for: the shape carries the size the model
@@ -1867,6 +1903,16 @@ pub(super) const SLIDER_SCALAR_ROWS: &[ScalarRow<slider::Status>] = &[
                 border_radius: _,
             } => Err("a rectangular handle where the contract claims a circle".to_string()),
         },
+    },
+    ScalarRow {
+        field: "styles::slider.handle.border_width",
+        statuses: SLIDER_STATUSES,
+        // A handle the theme states no outline for keeps iced's own width.
+        native: |t, r, s| {
+            native_slider_handle_edge(r, s)
+                .map_or(slider::default(t, s).handle.border_width, |e| e.0)
+        },
+        get: |t, r, s| Ok(styles::slider(r)(t, s).handle.border_width),
     },
 ];
 

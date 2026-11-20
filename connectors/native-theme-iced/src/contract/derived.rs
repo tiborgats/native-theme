@@ -241,18 +241,6 @@ pub(super) const DERIVED: &[(&str, &str)] = &[
         "iced default: slider::default(theme, status).rail.border.radius -- \
          SliderTheme carries no border",
     ),
-    #[cfg(feature = "widgets")]
-    (
-        "styles::slider.handle.border_width",
-        "iced default: slider::default(theme, status).handle.border_width -- \
-         SliderTheme carries no border",
-    ),
-    #[cfg(feature = "widgets")]
-    (
-        "styles::slider.handle.border_color",
-        "iced default: slider::default(theme, status).handle.border_color -- \
-         SliderTheme carries no border",
-    ),
     // `scrollable::Style` nests a whole `container::Style`, two `Rail`s with a
     // `Scroller` each, and the autoscroll overlay. `ScrollbarTheme` states two
     // rail colors and three thumb colors and nothing else, so everything below
@@ -1241,6 +1229,51 @@ pub(super) const UNREACHABLE: &[Unreachable] = &[
     },
     #[cfg(feature = "iced_aw")]
     Unreachable {
+        field: "list.header_separator_color",
+        evidence: "the same: a `SelectionList` has no column header, so no \
+             section line to draw (`selection_list/list.rs:215-275`), and its \
+             `Style` no color for one (`style/selection_list.rs:10-19`)",
+        lost: |_, r| r.list.header_separator_color.and_then(lost_color),
+        exceptions: &[
+            (
+                "adwaita/light",
+                "the preset states no header separator, a soft option, so there is none to lose",
+            ),
+            ("adwaita/dark", "the same"),
+            ("windows-11/light", "the same"),
+            ("windows-11/dark", "the same"),
+            ("macos-monterey/light", "the same"),
+            ("macos-monterey/dark", "the same"),
+            ("macos-tahoe/light", "the same"),
+            ("macos-tahoe/dark", "the same"),
+            ("material-3/light", "the same"),
+            ("material-3/dark", "the same"),
+            ("ios-13/light", "the same"),
+            ("ios-13/dark", "the same"),
+            ("catppuccin-latte/light", "the same"),
+            ("catppuccin-latte/dark", "the same"),
+            ("catppuccin-frappe/light", "the same"),
+            ("catppuccin-frappe/dark", "the same"),
+            ("catppuccin-macchiato/light", "the same"),
+            ("catppuccin-macchiato/dark", "the same"),
+            ("catppuccin-mocha/light", "the same"),
+            ("catppuccin-mocha/dark", "the same"),
+            ("nord/light", "the same"),
+            ("nord/dark", "the same"),
+            ("dracula/light", "the same"),
+            ("dracula/dark", "the same"),
+            ("gruvbox/light", "the same"),
+            ("gruvbox/dark", "the same"),
+            ("solarized/light", "the same"),
+            ("solarized/dark", "the same"),
+            ("tokyo-night/light", "the same"),
+            ("tokyo-night/dark", "the same"),
+            ("one-dark/light", "the same"),
+            ("one-dark/dark", "the same"),
+        ],
+    },
+    #[cfg(feature = "iced_aw")]
+    Unreachable {
         field: "list.header_font",
         evidence: "the same: a `SelectionList` has no column header to set \
              in it (`selection_list/list.rs:215-275`)",
@@ -1539,6 +1572,16 @@ const MENU_BAR_TITLE: &str = "iced_aw paints an open bar title's highlight with 
      (`iced_aw-0.14.1/src/widget/menu/menu_bar.rs:587`, `:598-621`, \
      `src/style/menu_bar.rs:7-26`), and a title is the consumer's own widget";
 
+/// A pressed menu item has no look in either menu style.
+#[cfg(feature = "iced_aw")]
+const MENU_PRESSED_ITEM: &str = "`iced_aw` paints its menus' `path` from one \
+     `Style` asked for `Active` alone, with no pressed status \
+     (`iced_aw-0.14.1/src/widget/menu/menu_bar.rs:587`); iced's drop-down \
+     menu `Style` has a selected look only \
+     (`iced_widget-0.14.2/src/overlay/menu.rs:598-611`); and an `iced_aw` \
+     menu's items are the consumer's own widgets \
+     (`iced_aw-0.14.1/src/widget/menu/menu_tree.rs:830`)";
+
 /// iced's text fields draw the selected text in the value colour: the
 /// selection is a fill behind it.
 #[cfg(feature = "iced_aw")]
@@ -1712,6 +1755,13 @@ pub(super) const UNREAD_COLOURS: &[UnreadColour] = &[
         ),
     },
     UnreadColour {
+        leaf: "slider.thumb_focus_border_color",
+        why: Unread::NoReceiver(
+            "`slider::Status` is Active, Hovered and Dragged, with no focused \
+             state (`iced_widget-0.14.2/src/slider.rs:578-585`)",
+        ),
+    },
+    UnreadColour {
         leaf: "menu.disabled_text_color",
         why: Unread::NoReceiver(
             "iced's menu `Style` has a text colour and a selected one and no \
@@ -1733,6 +1783,14 @@ pub(super) const UNREAD_COLOURS: &[UnreadColour] = &[
     UnreadColour {
         leaf: "menu.bar_hover_text_color",
         why: Unread::NoReceiver(MENU_BAR_TITLE),
+    },
+    UnreadColour {
+        leaf: "menu.active_background",
+        why: Unread::NoReceiver(MENU_PRESSED_ITEM),
+    },
+    UnreadColour {
+        leaf: "menu.active_text_color",
+        why: Unread::NoReceiver(MENU_PRESSED_ITEM),
     },
     UnreadColour {
         leaf: "menu.separator_color",

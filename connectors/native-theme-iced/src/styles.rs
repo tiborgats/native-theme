@@ -342,7 +342,11 @@ pub fn button_toggle(
 /// layer, transparent nothing. The border is `button.border.line_width` wide
 /// and rounded by `button.border.corner_radius`: transparent at rest and
 /// disabled, and `toolbar.button_hover_border_color` under the pointer and
-/// while pressed, checked or not, where the theme states it. iced lays a
+/// while pressed, checked or not, where the theme states it. A checked
+/// button at rest is outlined in `toolbar.button_checked_border_color`,
+/// Breeze's plain button pen, where the theme states it, and keeps that pen
+/// under the pointer and pressed where the theme states no
+/// `toolbar.button_hover_border_color`. iced lays a
 /// button out by its padding and draws the border on its bounds
 /// (iced_widget 0.14.2 `src/button.rs:379-385`), so the width moves no
 /// content. `shadow` and `snap` come from `button::Style::default()`, as
@@ -385,6 +389,19 @@ pub fn toolbar_button(
             .map_or(Color::TRANSPARENT, to_color),
         ..outline
     };
+    let checked_outline = Border {
+        color: t
+            .button_checked_border_color
+            .map_or(Color::TRANSPARENT, to_color),
+        ..outline
+    };
+    let checked_hovered_outline = Border {
+        color: t
+            .button_hover_border_color
+            .or(t.button_checked_border_color)
+            .map_or(Color::TRANSPARENT, to_color),
+        ..outline
+    };
 
     move |_theme, status| {
         let iced = Style::default();
@@ -392,8 +409,10 @@ pub fn toolbar_button(
             (false, Status::Active) => (Color::TRANSPARENT, label, outline),
             (false, Status::Hovered) => (hovered, hovered_label, hovered_outline),
             (false, Status::Pressed) => (pressed, pressed_label, hovered_outline),
-            (true, Status::Active) => (fill, checked_label, outline),
-            (true, Status::Hovered | Status::Pressed) => (fill, checked_label, hovered_outline),
+            (true, Status::Active) => (fill, checked_label, checked_outline),
+            (true, Status::Hovered | Status::Pressed) => {
+                (fill, checked_label, checked_hovered_outline)
+            }
             (_, Status::Disabled) => (Color::TRANSPARENT, disabled_label, outline),
         };
         Style {
@@ -1496,8 +1515,18 @@ pub fn menu(
 /// platform's thumb diameter, and so does the rail under it. That one field is
 /// asserted against iced's own by
 /// `a_dragged_slider_handle_takes_its_fill_from_iced`. And `SliderTheme`
-/// carries no border, so the rail's border and the handle's border width and
-/// color are iced's too.
+/// carries no rail border, so the rail's border is iced's too.
+///
+/// The handle is outlined `slider.thumb_border_line_width` wide, inside the
+/// handle (iced draws one quad with its border, `slider.rs:506-522`), in
+/// `.thumb_border_color` at rest and `.thumb_hover_border_color` (else the
+/// rest colour) hovered and dragged, emitted as given, as the toggler's
+/// thumb edge is: no line at rest where `thumb_border_color` is unset, the
+/// handle filled whole at its outer size. A width unset, 0 or not finite
+/// draws no outline: the border is iced's own, 0 wide and transparent.
+/// iced's `Hovered` and `Dragged` cover the whole slider, not the handle
+/// alone (`slider.rs:421-427`), and it has no focused status
+/// (`slider.rs:578-585`): `thumb_focus_border_color` is not drawn.
 #[must_use = "this returns the style function; it does not apply it"]
 pub fn slider(
     resolved: &ResolvedTheme,
@@ -1519,6 +1548,12 @@ pub fn slider(
     // The model states the thumb's diameter; iced states a circular handle by
     // its radius.
     let handle_radius = s.thumb_diameter / 2.0;
+    let width = s
+        .thumb_border_line_width
+        .filter(|w| w.is_finite() && *w > 0.0);
+    let edge = |c: Option<Rgba>| width.zip(c).map(|(w, c)| (w, to_color(c)));
+    let rest_edge = edge(s.thumb_border_color);
+    let hovered_edge = edge(s.thumb_hover_border_color.or(s.thumb_border_color));
 
     move |theme, status| {
         let iced = iced_widget::slider::default(theme, status);
@@ -1527,6 +1562,11 @@ pub fn slider(
             Status::Hovered => Background::Color(hovered_thumb),
             Status::Dragged => iced.handle.background,
         };
+        let (border_width, border_color) = match status {
+            Status::Active => rest_edge,
+            Status::Hovered | Status::Dragged => hovered_edge,
+        }
+        .unwrap_or((iced.handle.border_width, iced.handle.border_color));
         Style {
             rail: Rail {
                 backgrounds: (Background::Color(filled), Background::Color(remaining)),
@@ -1538,8 +1578,8 @@ pub fn slider(
                     radius: handle_radius,
                 },
                 background: handle_background,
-                border_width: iced.handle.border_width,
-                border_color: iced.handle.border_color,
+                border_width,
+                border_color,
             },
         }
     }

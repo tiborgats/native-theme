@@ -4763,9 +4763,13 @@ fn ghost_padding(resolved: &ResolvedTheme) -> Padding {
 
 /// A menu's row, as the model's menu item (platform-facts §2.6): no fill at
 /// rest, its label `menu.font.color`; `menu.hover_background` and
-/// `.hover_text_color` under the pointer and while pressed, outlined in
+/// `.hover_text_color` under the pointer, outlined in
 /// `menu.hover_border_color` where the theme states it,
-/// `defaults.border.line_width` wide; `menu.disabled_text_color` disabled;
+/// `defaults.border.line_width` wide; while pressed `menu.active_background`
+/// with no outline, Breeze's opaque focus fill, where the theme states it,
+/// and the hovered look, outline included, where it does not, lettered
+/// `menu.active_text_color`, else `.hover_text_color`, in both;
+/// `menu.disabled_text_color` disabled;
 /// rounded by `menu.border.corner_radius`, 0 where the items are
 /// rectangular. iced draws a button's border on its bounds, over the padding
 /// (iced_widget 0.14.2 `src/button.rs:379-385`), so the outline moves
@@ -4785,12 +4789,17 @@ fn menu_row(resolved: &ResolvedTheme) -> impl Fn(&Theme, button::Status) -> butt
         width: resolved.defaults.border.line_width,
         ..plain
     });
+    let hovered = (Some(hover), hover_label, edge.unwrap_or(plain));
+    let pressed_label = to_color(m.active_text_color.unwrap_or(m.hover_text_color));
+    let pressed = match m.active_background {
+        Some(fill) => (Some(to_color(fill)), pressed_label, plain),
+        None => (Some(hover), pressed_label, edge.unwrap_or(plain)),
+    };
     move |_theme, status| {
         let (background, text_color, border) = match status {
             button::Status::Active => (None, label, plain),
-            button::Status::Hovered | button::Status::Pressed => {
-                (Some(hover), hover_label, edge.unwrap_or(plain))
-            }
+            button::Status::Hovered => hovered,
+            button::Status::Pressed => pressed,
             button::Status::Disabled => (None, disabled_label, plain),
         };
         button::Style {
@@ -5643,17 +5652,9 @@ fn menu_bar(state: &State) -> Element<'_, Message> {
     let m = &resolved.menu;
     let pad = native_theme_iced::padding_or(&m.border.padding, button::DEFAULT_PADDING);
     // A row's stated height, grown above a text scale of 1 to hold its line
-    // and padding, as gpui's menu rows do (`rows::scaled_height`).
-    let row_height = m.row_height.map(|h| {
-        rows::scaled_height(
-            h,
-            a11y,
-            m.font.size,
-            resolved.defaults.line_height,
-            pad.y(),
-            0.0,
-        )
-    });
+    // and padding, as gpui's menu rows do, or its least height grown to its
+    // content ([`menu_row_height`]).
+    let row_height = menu_row_height(resolved, a11y, pad);
     // The bar's `index`th title.
     let title = |index: usize, id: &'static str, label: &'static str| {
         tagged(
@@ -5684,11 +5685,12 @@ fn menu_bar(state: &State) -> Element<'_, Message> {
                 _ => shortcut.into(),
             }
         });
-        // A row `menu.row_height` tall holds its line centred in it, as the
-        // gpui and egui showcases' rows do, where iced's button would lay it
-        // out from the top: the model states the row's height ("height of a
-        // single item row", docs/platform-facts.md §2 dimension rules), and
-        // a menu item's label sits in the middle of it.
+        // A row `menu.row_height` tall, or `menu.min_row_height` at least,
+        // holds its line centred in it, as the gpui and egui showcases' rows
+        // do, where iced's button would lay it out from the top: the model
+        // states the row's height ("height of a single item row",
+        // docs/platform-facts.md §2 dimension rules), and a menu item's label
+        // sits in the middle of it.
         let line_height = match row_height {
             Some(_) => Fill,
             None => Length::Shrink,
@@ -6713,20 +6715,33 @@ fn page_menu(state: &State) -> Element<'_, Message> {
                 .into()
         });
     let pad = native_theme_iced::padding_or(&m.border.padding, button::DEFAULT_PADDING);
+    let row_height = menu_row_height(resolved, a11y, pad);
     let rows = Tab::ALL
         .iter()
         .map(|&tab| {
-            Item::new(
-                button(
+            // A row of a stated or least height holds its label in the
+            // middle of it, as the window's menu rows do.
+            let line = match row_height {
+                Some(_) => Fill,
+                None => Length::Shrink,
+            };
+            let entry = button(
+                row![
                     text(tab.label())
                         .themed(&m.font, resolved, a11y)
-                        .wrapping(text::Wrapping::None),
-                )
-                .padding(pad)
-                .width(Fill)
-                .style(menu_row(resolved))
-                .on_press(Message::TabSelected(tab)),
+                        .wrapping(text::Wrapping::None)
+                ]
+                .align_y(iced::Center)
+                .height(line),
             )
+            .padding(pad)
+            .width(Fill)
+            .style(menu_row(resolved))
+            .on_press(Message::TabSelected(tab));
+            Item::new(match row_height {
+                Some(h) => entry.height(Length::Fixed(h)),
+                None => entry,
+            })
         })
         .collect();
     let width = menu_width(
@@ -7635,7 +7650,8 @@ fn tool_button(id: &str) -> bool {
 /// leaves unstated: what `styles::toolbar_button(resolved, checked)` draws
 /// in its place, where it draws anything. A checked button keeps its checked
 /// fill in every enabled status, so that fill is what it draws under the
-/// pointer and pressed. `None` for a stated leaf, one no tool button reads,
+/// pointer and pressed, and its checked pen there where the theme states no
+/// hover outline. `None` for a stated leaf, one no tool button reads,
 /// or the checked fill of a button that is not checked, which the export's
 /// rows route.
 fn unstated_tool_colour(resolved: &ResolvedTheme, leaf: &str, checked: bool) -> Option<String> {
@@ -7674,7 +7690,12 @@ fn unstated_tool_colour(resolved: &ResolvedTheme, leaf: &str, checked: bool) -> 
                 "button.hover_background"
             }),
         ),
-        "toolbar.button_hover_border_color" => (t.button_hover_border_color.is_some(), None),
+        "toolbar.button_hover_border_color" => (
+            t.button_hover_border_color.is_some(),
+            (checked && t.button_checked_border_color.is_some())
+                .then_some("toolbar.button_checked_border_color"),
+        ),
+        "toolbar.button_checked_border_color" => (t.button_checked_border_color.is_some(), None),
         "toolbar.button_active_background" => (
             t.button_active_background.is_some(),
             Some(if checked { checked_fill } else { pressed }),
@@ -8588,9 +8609,60 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
              is stated"
                 .into()
         }
+        ("menu", "row_height_px") if resolved.menu.row_height.is_none() => {
+            "not drawn: unstated; menu_row_height takes menu.min_row_height, where stated, \
+             or the row's content"
+                .into()
+        }
         ("menu", "row_height_px") => {
-            "the row button's height, where stated, grown above a text scale of 1 to hold \
-             its line and padding (rows::scaled_height)"
+            "menu_row_height: the row button's height, where stated, grown above a text \
+             scale of 1 to hold its line and padding (rows::scaled_height)"
+                .into()
+        }
+        ("menu", "min_row_height_px") if resolved.menu.row_height.is_some() => {
+            "not drawn: menu.row_height is stated, and menu_row_height draws it in this \
+             one's place"
+                .into()
+        }
+        ("menu", "min_row_height_px") if resolved.menu.min_row_height.is_none() => {
+            "not drawn: unstated; menu_row_height leaves the row its content's height".into()
+        }
+        ("menu", "min_row_height_px") => {
+            "menu_row_height: the row button's least height, grown to its line box and \
+             padding"
+                .into()
+        }
+        ("menu", "active_background") if resolved.menu.active_background.is_none() => {
+            "not drawn: unstated; menu_row keeps the hovered look while pressed".into()
+        }
+        ("menu", "active_background") => {
+            "menu_row: the Pressed fill, with no outline".into()
+        }
+        ("menu", "active_text_color") if resolved.menu.active_text_color.is_none() => {
+            "not drawn: unstated; menu_row letters a pressed row menu.hover_text_color".into()
+        }
+        ("menu", "active_text_color") => "menu_row: the Pressed text_color".into(),
+        ("menu", "icon_text_gap_px") => "not reachable: no iced menu draws an icon".into(),
+        ("menu", "panel_padding_horizontal_px")
+            if resolved.menu.panel_padding_horizontal.is_none() =>
+        {
+            "not drawn: unstated; menu_popup_padding takes popover.border.padding's left and \
+             right"
+                .into()
+        }
+        ("menu", "panel_padding_horizontal_px") => {
+            "menu_popup_padding: Menu::padding's left and right, the side plus \
+             popover.border.line_width"
+                .into()
+        }
+        ("menu", "panel_padding_vertical_px") if resolved.menu.panel_padding_vertical.is_none() => {
+            "not drawn: unstated; menu_popup_padding takes popover.border.padding's top and \
+             bottom"
+                .into()
+        }
+        ("menu", "panel_padding_vertical_px") => {
+            "menu_popup_padding: Menu::padding's top and bottom, the side plus \
+             popover.border.line_width"
                 .into()
         }
         ("menu", "separator_color") => "line_style: the rule's colour".into(),
@@ -8618,6 +8690,18 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         ("popover", "border.line_width_px") => "menu_bar_style: menu_border.width".into(),
         ("popover", "border.shadow_enabled") => {
             "menu_bar_style: iced_aw's menu_shadow where true, none where false".into()
+        }
+        ("popover", f)
+            if under("chrome.menu.")
+                && match side(f) {
+                    Some("top" | "bottom") => resolved.menu.panel_padding_vertical.is_some(),
+                    Some(_) => resolved.menu.panel_padding_horizontal.is_some(),
+                    None => false,
+                } =>
+        {
+            "not drawn: the side's menu.panel_padding_* is stated, and menu_popup_padding \
+             pads the panel by it"
+                .into()
         }
         ("popover", f) if side(f).is_some() => {
             "menu_popup_padding: Menu::padding, the side plus popover.border.line_width; \
@@ -8781,6 +8865,16 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         }
         // ---- slider, progress bar, spinner ----
         ("slider", "track_height_px") => "styles::slider: the rail's width".into(),
+        ("slider", "thumb_border_line_width_px")
+            if resolved.slider.thumb_border_line_width.is_none() =>
+        {
+            "not drawn: unstated; styles::slider keeps iced's handle border, none".into()
+        }
+        ("slider", "thumb_border_line_width_px") => {
+            "styles::slider: the handle's border_width, where the status's outline colour is \
+             stated"
+                .into()
+        }
         ("slider", "thumb_diameter_px") => {
             "styles::slider: a circle handle of half of it; Slider::height".into()
         }
@@ -8888,6 +8982,14 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         }
         ("list", "grid_color") => {
             "basic_table: the grid lines' colour (rules between the cells)".into()
+        }
+        ("list", "header_separator_color") if resolved.list.header_separator_color.is_none() => {
+            "not drawn: unstated; basic_table draws the header's lines in list.grid_color".into()
+        }
+        ("list", "header_separator_color") => {
+            "basic_table: the header's lines, its first section's trailing edge and its \
+             bottom, laid over the header's fill"
+                .into()
         }
         ("list", "header_height_px") => {
             "list_header_height: the header row's height, grown above a text scale of 1 \
@@ -10251,6 +10353,13 @@ fn slider_inks(s: &slider::Style) -> Vec<(&'static str, Ink)> {
         ("rail.backgrounds.0", Ink::of(Some(s.rail.backgrounds.0))),
         ("rail.backgrounds.1", Ink::of(Some(s.rail.backgrounds.1))),
         ("handle.background", Ink::of(Some(s.handle.background))),
+        (
+            "handle.border",
+            Ink::Edge {
+                color: s.handle.border_color,
+                width: s.handle.border_width,
+            },
+        ),
     ]
 }
 
@@ -12315,7 +12424,8 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
 /// padded by `list.border.padding`, none on a side it leaves unstated; a
 /// `list.grid_color` line between the columns and under the header,
 /// `separator.line_width` thick (the theme states no grid width), inside the
-/// cell it closes; the frame `list.border` on `list.background_color`, the
+/// cell it closes, the header's two in `list.header_separator_color` where
+/// the theme states it, laid over the header's fill; the frame `list.border` on `list.background_color`, the
 /// header's fill rounded at the top and the last row's at the bottom where
 /// they meet it ([`table_row_style`]). The table the gpui and egui
 /// showcases build.
@@ -12334,19 +12444,22 @@ fn basic_table(state: &State) -> Element<'_, Message> {
         Some(h) => rows::scaled_height(h, a11y, font.size, line_height, pad.y(), rule),
         None => scaled_text_size(font.size, a11y) * line_height + pad.y(),
     };
-    let grid = colours.grid;
-    let grid_line = move |w: Length, h: Length| {
+    // A line in `colour`, a container's fill laid over the fill under it, so
+    // a translucent colour is drawn over that fill.
+    let grid_line = move |w: Length, h: Length, colour: Color| {
         container(space())
             .width(w)
             .height(h)
             .style(move |_: &Theme| container::Style {
-                background: Some(iced::Background::Color(grid)),
+                background: Some(iced::Background::Color(colour)),
                 ..container::Style::default()
             })
     };
     // A cell: its text, vertically centred inside the padding, `h` tall;
     // the first column's cell with the column line inside its right edge,
-    // a header cell with the header's line inside its bottom edge.
+    // a header cell with the header's line inside its bottom edge; a header
+    // cell's two lines in `TableColours::header_line`, a body cell's in
+    // `TableColours::grid`.
     let cell = move |content: &'static str,
                      font: &ResolvedFontSpec,
                      color: Color,
@@ -12367,12 +12480,17 @@ fn basic_table(state: &State) -> Element<'_, Message> {
             .height(Length::Fixed(text_h))
             .align_y(iced::Center)
         ];
+        let rule = if header {
+            colours.header_line
+        } else {
+            colours.grid
+        };
         if header {
-            body = body.push(grid_line(Fill, Length::Fixed(line)));
+            body = body.push(grid_line(Fill, Length::Fixed(line), rule));
         }
         let cell = row![body.width(Fill)];
         let cell = if first {
-            cell.push(grid_line(Length::Fixed(line), Length::Fixed(h)))
+            cell.push(grid_line(Length::Fixed(line), Length::Fixed(h), rule))
         } else {
             cell
         };
@@ -12613,6 +12731,10 @@ struct TableColours {
     selected_ink: Color,
     /// The lines between the cells, `list.grid_color`.
     grid: Color,
+    /// The header's lines, its sections' trailing edge and its bottom,
+    /// `list.header_separator_color`, else [`Self::grid`]: a layer over the
+    /// header's fill (platform-facts §2.15).
+    header_line: Color,
 }
 
 impl TableColours {
@@ -12628,6 +12750,7 @@ impl TableColours {
             selected_fill,
             selected_ink,
             grid: to_color(l.grid_color),
+            header_line: to_color(l.header_separator_color.unwrap_or(l.grid_color)),
         }
     }
 }
@@ -15733,7 +15856,8 @@ fn aw_tab_height(state: &State, padding: Padding) -> f32 {
 }
 
 /// How far the Extra page's menu panels lie from the item that opens them,
-/// and their rows and the context menu's entries from one another (spec
+/// and their rows and the context menu's entries from one another where the
+/// theme states no `menu.panel_padding_vertical` ([`aw_menu_row_gap`]) (spec
 /// §3.1): the showcase's own, 2 px, as the model states no menu offset and
 /// no row gap, so a drop-down's panel stands clear of the foot of its title,
 /// which iced_aw's offset of the rows alone would cover. The gpui showcase
@@ -15742,18 +15866,79 @@ fn aw_tab_height(state: &State, padding: Padding) -> f32 {
 #[cfg(feature = "iced_aw")]
 const AW_MENU_GAP: f32 = 2.0;
 
-/// The padding of the window's menus' panels round their rows: the popup's,
-/// `popover.border.padding` (platform-facts §2.6: the popup border is
-/// §2.16's), inside `popover.border.line_width`, the line
-/// [`menu_bar_style`] frames them by, which iced_aw paints over
+/// The padding of the window's menus' panels round their rows: at the left
+/// and right `menu.panel_padding_horizontal`, at the top and bottom
+/// `menu.panel_padding_vertical`, each inside `popover.border.line_width`,
+/// the line [`menu_bar_style`] frames them by, which iced_aw paints over
 /// the panel's padding (`pad_rectangle` round the rows, one quad with its
-/// border, iced_aw 0.14.1 `src/widget/menu/menu_tree.rs:764-780`);
-/// [`AW_MENU_PADDING`] on a side the theme leaves unstated.
+/// border, iced_aw 0.14.1 `src/widget/menu/menu_tree.rs:764-780`): Breeze's
+/// `PM_MenuHMargin` and `PM_MenuVMargin`, 4, count from the panel's outer
+/// edge (platform-facts §2.6). Each pair the theme leaves unstated is the
+/// popup's, `popover.border.padding` (the popup border is §2.16's), inside
+/// the same line, [`AW_MENU_PADDING`] on a side that leaves unstated too.
+/// The sides are physical: iced 0.14 has no layout direction.
 fn menu_popup_padding(resolved: &ResolvedTheme) -> Padding {
-    native_theme_iced::padding_inside_border(
-        &resolved.popover.border,
-        Padding::new(AW_MENU_PADDING),
-    )
+    let popup = &resolved.popover.border;
+    let pad = native_theme_iced::padding_inside_border(popup, Padding::new(AW_MENU_PADDING));
+    let m = &resolved.menu;
+    let (left, right) = m
+        .panel_padding_horizontal
+        .map_or((pad.left, pad.right), |h| {
+            (h + popup.line_width, h + popup.line_width)
+        });
+    let (top, bottom) = m.panel_padding_vertical.map_or((pad.top, pad.bottom), |v| {
+        (v + popup.line_width, v + popup.line_width)
+    });
+    Padding {
+        top,
+        right,
+        bottom,
+        left,
+    }
+}
+
+/// How far apart the Extra page's menu rows and its context menu's entries
+/// lie: none where the theme states `menu.panel_padding_vertical`, whose
+/// rows touch, as Breeze's do (platform-facts §2.6), and [`AW_MENU_GAP`]
+/// where it does not; the window's menus space their rows 0 in every theme
+/// (`Menu::new`, iced_aw 0.14.1 `src/widget/menu/menu_tree.rs:155`).
+#[cfg(feature = "iced_aw")]
+fn aw_menu_row_gap(resolved: &ResolvedTheme) -> f32 {
+    if resolved.menu.panel_padding_vertical.is_some() {
+        0.0
+    } else {
+        AW_MENU_GAP
+    }
+}
+
+/// A menu row's height: `menu.row_height`, exact at a text scale of 1
+/// ([`rows::scaled_height`]), grown above it to hold the row's line and its
+/// padding `pad`; else at least `menu.min_row_height`, grown to the row's
+/// line box and padding, the line box iced's unrounded text size times
+/// `defaults.line_height`, as [`Typeset::themed`] lays it; else none, the
+/// row its content's height. `row_height` wins where a theme states both
+/// (the model's precedence, `MenuTheme::min_row_height`'s doc). The window's
+/// menus, the page tabs' menu and the Extra page's take it, each row's label
+/// centred in a height it returns.
+fn menu_row_height(
+    resolved: &ResolvedTheme,
+    a11y: &AccessibilityPreferences,
+    pad: Padding,
+) -> Option<f32> {
+    let m = &resolved.menu;
+    let line = resolved.defaults.line_height;
+    match (m.row_height, m.min_row_height) {
+        (Some(h), _) => Some(rows::scaled_height(
+            h,
+            a11y,
+            m.font.size,
+            line,
+            pad.y(),
+            0.0,
+        )),
+        (None, Some(min)) => Some(min.max(scaled_text_size(m.font.size, a11y) * line + pad.y())),
+        (None, None) => None,
+    }
 }
 
 /// The padding of the Extra page's menu panels round their rows, the
@@ -15769,24 +15954,26 @@ fn aw_menu_padding(resolved: &ResolvedTheme) -> Padding {
 }
 
 /// A drop-down of the Extra page's `MenuBar`, `width` wide
-/// ([`menu_width`]), its rows `gap` apart, its panel padded by `padding`
-/// round them ([`aw_menu_padding`]). `iced_aw` pads the panel out from
-/// the rows (`pad_rectangle`, iced_aw 0.14.1 `src/widget/menu/menu_tree.rs:419`,
-/// `:770`) and places the rows `offset` from the item that opens the menu,
-/// so the rows lie `facing` (the panel's padding on that side) and `gap`
-/// from it, and the panel's edge `gap` from it, clear of the item.
+/// ([`menu_width`]), its rows `spacing` apart ([`aw_menu_row_gap`]), its
+/// panel padded by `padding` round them ([`aw_menu_padding`]). `iced_aw`
+/// pads the panel out from the rows (`pad_rectangle`, iced_aw 0.14.1
+/// `src/widget/menu/menu_tree.rs:419`, `:770`) and places the rows `offset`
+/// from the item that opens the menu, so the rows lie `facing` (the panel's
+/// padding on that side) and `gap` from it, and the panel's edge `gap` from
+/// it, clear of the item.
 #[cfg(feature = "iced_aw")]
 fn aw_menu<'a>(
     items: Vec<Item<'a, Message, Theme, iced::Renderer>>,
     width: f32,
     gap: f32,
+    spacing: f32,
     facing: f32,
     padding: Padding,
 ) -> Menu<'a, Message, Theme, iced::Renderer> {
     Menu::new(items)
         .width(width)
         .offset(facing + gap)
-        .spacing(gap)
+        .spacing(spacing)
         .padding(padding)
 }
 
@@ -15972,10 +16159,11 @@ fn aw_menu_info(state: &State) -> String {
         &[
             (
                 "item height",
-                "menu.row_height where the theme states one, on the item button \
-                 of the drop-downs and the context menu alike, its label centred \
-                 in it, grown above a text scale of 1 to hold its line and \
-                 padding (rows::scaled_height)",
+                "menu_row_height: menu.row_height where the theme states one, on \
+                 the item button of the drop-downs and the context menu alike, its \
+                 label centred in it, grown above a text scale of 1 to hold its \
+                 line and padding (rows::scaled_height); else at least \
+                 menu.min_row_height, grown to the line box and padding",
             ),
             (
                 "item padding",
@@ -15996,8 +16184,10 @@ fn aw_menu_info(state: &State) -> String {
                  are our own buttons, drawn as the window's menus' are: \
                  menu_row, menu.font.color at rest with no fill, \
                  menu.hover_text_color on menu.hover_background under the \
-                 pointer and while pressed, outlined in \
-                 menu.hover_border_color where stated, \
+                 pointer, outlined in menu.hover_border_color where stated; \
+                 while pressed menu.active_background with no outline where \
+                 stated, the hovered look where not, lettered \
+                 menu.active_text_color (else menu.hover_text_color); \
                  menu.disabled_text_color disabled; a title menu_title, \
                  menu.bar_hover_background (else menu.hover_background) \
                  under the pointer and while iced_aw marks its menu open, \
@@ -16019,9 +16209,10 @@ fn aw_menu_info(state: &State) -> String {
             ),
             (
                 "panel padding",
-                "aw_menu_padding: popover.border.padding inside the panel's \
-                 line, the side plus popover.border.line_width; iced_aw's 5 \
-                 where unstated",
+                "aw_menu_padding: menu.panel_padding_horizontal and \
+                 .panel_padding_vertical where stated, else \
+                 popover.border.padding, inside the panel's line, the side plus \
+                 popover.border.line_width; iced_aw's 5 where unstated",
             ),
             (
                 "bar padding",
@@ -16046,7 +16237,8 @@ fn aw_menu_info(state: &State) -> String {
                 "panel offset",
                 "AW_MENU_GAP, 2px, the showcase's own: a menu's panel lies that far \
                  from the item that opens it, and its rows and the context menu's \
-                 entries that far apart",
+                 entries that far apart, none where menu.panel_padding_vertical is \
+                 stated (aw_menu_row_gap)",
             ),
             (
                 "menu width",
@@ -16382,22 +16574,13 @@ fn view_extra(state: &State) -> Element<'_, Message> {
     // the titles `menu_title`, padded by `title_padding`), padded like the
     // platform's menu items: the sides menu.border.padding states, a
     // button's own elsewhere. A theme
-    // that states no row height (KDE's items fit content, with a floor) leaves the
-    // item its own height; a stated one grows above a text scale of 1 to
-    // hold the row's line and padding, as the window's menu rows do
-    // (`rows::scaled_height`). The text is drawn at the theme's line height,
-    // as the window's menus' is.
+    // that states no row height (KDE's items fit content, with a floor,
+    // `menu.min_row_height`) makes the item at least the floor; a stated one
+    // grows above a text scale of 1 to hold the row's line and padding, as
+    // the window's menu rows do ([`menu_row_height`]). The text is drawn at
+    // the theme's line height, as the window's menus' is.
     let item_pad = native_theme_iced::padding_or(&menu_t.border.padding, button::DEFAULT_PADDING);
-    let row_height = menu_t.row_height.map(|h| {
-        rows::scaled_height(
-            h,
-            a11y,
-            menu_t.font.size,
-            resolved.defaults.line_height,
-            item_pad.y(),
-            0.0,
-        )
-    });
+    let row_height = menu_row_height(resolved, a11y, item_pad);
     // A row of the page's menus, the drop-downs' and the context menu's
     // alike, as gpui's context menu is a `PopupMenu` whose rows its
     // drop-downs share (gpui-component 0.9.1 `menu/context_menu.rs`). A row
@@ -16443,6 +16626,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
         )
     };
     let popup_pad = aw_menu_padding(resolved);
+    let row_gap = aw_menu_row_gap(resolved);
     // A menu of the rows `entries`, each with the menu it opens where it
     // opens one, as wide as its widest row. Its panel's side `facing` the
     // item that opens it (`popup_pad.top` under a title, `.left` beside a
@@ -16463,7 +16647,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
                 None => Item::new(menu_entry(label)),
             })
             .collect();
-        aw_menu(items, width, AW_MENU_GAP, facing, popup_pad)
+        aw_menu(items, width, AW_MENU_GAP, row_gap, facing, popup_pad)
     };
 
     let menu_bar = MenuBar::new(vec![
@@ -16530,12 +16714,10 @@ fn view_extra(state: &State) -> Element<'_, Message> {
         let entry = |label: &'static str| menu_item(label, format!("Context menu: {label}"));
         drawn_probe(
             probes::AW_CONTEXT_MENU,
-            container(
-                column![entry("Copy"), entry("Paste"), entry("Select all")].spacing(AW_MENU_GAP),
-            )
-            .padding(popup_pad)
-            .style(menu_panel(resolved))
-            .width(Length::Fixed(180.0)),
+            container(column![entry("Copy"), entry("Paste"), entry("Select all")].spacing(row_gap))
+                .padding(popup_pad)
+                .style(menu_panel(resolved))
+                .width(Length::Fixed(180.0)),
         )
     });
 
@@ -25354,7 +25536,7 @@ mod tests {
     /// size the theme states (`button.min_width` and `.min_height`), or at
     /// its own size where its label, padded, is larger, as the Basic page's
     /// push buttons are and every Buttons-page button of the gpui showcase
-    /// is through `geometry::button`. kde-breeze states 80 by 32, which a
+    /// is through `geometry::button`. kde-breeze states 82 by 32, which a
     /// short label such as "Primary" falls short of; material-3 with its
     /// minimum raised to 120 by 48 holds both floors beyond kde-breeze.
     #[test]
@@ -25421,7 +25603,7 @@ mod tests {
     /// four tooltip buttons, the first pane's three controls and, in the
     /// `iced_aw` build, the card's Dismiss and the button that brings the
     /// card back; and each page's Widget Info names the minimum. kde-breeze
-    /// states 80 by 32, which "close" and "Dismiss" fall short of; windows-11
+    /// states 82 by 32, which "close" and "Dismiss" fall short of; windows-11
     /// 64 by 32.
     #[test]
     fn the_other_pages_push_buttons_take_the_stated_minimum_size() {
@@ -27038,10 +27220,13 @@ mod tests {
     }
 
     /// M9-069, M9-144 (M9b T5 fix round 1): the open menu's
-    /// `popover.border.padding_*` and `.shadow_enabled` lines name the
-    /// function that pads and shadows its panel, which a splice of the leaf
-    /// moves, and the "Not themeable" shadow line shows only where
-    /// `popover.border.shadow_enabled` keeps iced_aw's shadow.
+    /// `popover.border.padding_*`, `menu.panel_padding_*` and
+    /// `.shadow_enabled` lines name the function that pads and shadows its
+    /// panel, which a splice of the leaf moves, and the "Not themeable"
+    /// shadow line shows only where `popover.border.shadow_enabled` keeps
+    /// iced_aw's shadow. Issue #4's leftovers, E4: kde-breeze states the
+    /// menu's panel padding, so the popover's padding lines say they are not
+    /// drawn, and a splice of them moves no padding of the panel.
     #[test]
     fn the_menus_panel_lines_name_what_pads_and_shadows_it() {
         let Some(element) = elements::element("chrome.menu.theme") else {
@@ -27060,21 +27245,29 @@ mod tests {
             panic!("kde-breeze does not serialise");
         };
         let mut failures = Vec::new();
-        for leaf in element
-            .leaves
-            .iter()
-            .filter(|l| l.starts_with("popover.border.padding_") || l.ends_with("shadow_enabled"))
-        {
+        let mut overridden = 0;
+        for leaf in element.leaves.iter().filter(|l| {
+            l.starts_with("popover.border.padding_")
+                || l.starts_with("menu.panel_padding_")
+                || l.ends_with("shadow_enabled")
+        }) {
             let route = iced_route(&state, element, leaf);
-            let functions = route_functions(&route);
-            if functions.is_empty() {
+            let functions = if route.starts_with("not drawn: ") {
+                overridden += 1;
+                Vec::new()
+            } else {
+                route_functions(&route)
+            };
+            if functions.is_empty() && !route.starts_with("not drawn: ") {
                 failures.push(format!("{leaf}: \"{route}\" names no function"));
             }
             // The resolved theme serialises a side as `padding.<side>`.
-            let field = leaf
-                .strip_suffix("_px")
-                .unwrap_or(leaf)
-                .replace("padding_", "padding.");
+            let field = leaf.strip_suffix("_px").unwrap_or(leaf);
+            let field = if leaf.starts_with("popover.") {
+                field.replace("padding_", "padding.")
+            } else {
+                field.to_owned()
+            };
             let mut spliced = json.clone();
             let Some(value) = spliced.pointer_mut(&format!("/{}", field.replace('.', "/"))) else {
                 panic!("{leaf} is not in the resolved theme");
@@ -27086,6 +27279,11 @@ mod tests {
             let Ok(spliced) = serde_json::from_value::<ResolvedTheme>(spliced) else {
                 panic!("{leaf}: the splice does not parse");
             };
+            if route.starts_with("not drawn: ")
+                && drawn_by("menu_popup_padding", &r) != drawn_by("menu_popup_padding", &spliced)
+            {
+                failures.push(format!("{leaf}: \"{route}\", but menu_popup_padding moves"));
+            }
             for function in functions {
                 let moved = drawn_by(function, &r)
                     .zip(drawn_by(function, &spliced))
@@ -27094,6 +27292,11 @@ mod tests {
                     failures.push(format!("{leaf}: {function} draws nothing it moves"));
                 }
             }
+        }
+        if overridden != 4 {
+            failures.push(format!(
+                "{overridden} of the panel's lines are not drawn, want the popover's four sides"
+            ));
         }
         for shadow in [true, false] {
             state.current_resolved.popover.border.shadow_enabled = shadow;
@@ -28108,8 +28311,9 @@ mod tests {
     /// `menu.border.padding` ([`title_padding`]);
     /// the File menu's first row is `menu.row_height` at 1 and at least that
     /// line box, rounded up, plus the padding at 1.5 (adwaita,
-    /// macos-monterey, material-3), and the line box plus the padding where
-    /// the theme states no row height (kde-breeze), and so is the context
+    /// macos-monterey, material-3), and where the theme states no row height
+    /// the line box plus the padding, at least `menu.min_row_height` where it
+    /// states that (kde-breeze, [`menu_row_height`]), and so is the context
     /// menu's first entry, as gpui's context menu is a `PopupMenu` whose rows
     /// its drop-downs share (gpui-component 0.9.1 `menu/context_menu.rs`).
     /// Each is computed from the theme at test time.
@@ -28134,7 +28338,7 @@ mod tests {
             let row = match m.row_height {
                 Some(h) if factor > 1.0 => h.max(line.ceil() + pad.y()),
                 Some(h) => h,
-                None => line + pad.y(),
+                None => m.min_row_height.unwrap_or(0.0).max(line + pad.y()),
             };
             let (_, rects, _) = extra_frame(&state, open_extra_file_menu);
             let (_, context, _) = extra_frame(&state, open_extra_context_menu);
@@ -28247,13 +28451,15 @@ mod tests {
     /// `menu.font.color` moves; under the pointer a fill of
     /// `menu.hover_background` and a label `menu.hover_text_color` moves. The
     /// File menu's panel reaches [`aw_menu_padding`] round its rows, which
-    /// a splice of `popover.border.padding` moves, and lies [`AW_MENU_GAP`]
+    /// a splice of `popover.border.padding` and `menu.panel_padding_*`
+    /// moves, and lies [`AW_MENU_GAP`]
     /// below its title's foot; the Recent submenu's panel lies
     /// [`AW_MENU_GAP`] right of its row. The panels' padding is
-    /// `popover.border.padding` inside `popover.border`'s line, the line they
-    /// draw ([`aw_menu_padding`]): under kde-breeze the context entry is
-    /// `popover.border.padding` plus `popover.border.line_width` in from its
-    /// popup's corner, read from the leaves (13 px). The context menu's popup
+    /// `menu.panel_padding_*`, else `popover.border.padding`, inside
+    /// `popover.border`'s line, the line they draw ([`aw_menu_padding`]):
+    /// under kde-breeze the context entry is `menu.panel_padding_horizontal`
+    /// and `_vertical` plus `popover.border.line_width` in from its popup's
+    /// corner, read from the leaves (3 + 1 = 4 px). The context menu's popup
     /// is the menu's panel: `menu.background_color`, framed by
     /// `popover.border`, its first entry that padding in from its corner.
     #[cfg(feature = "iced_aw")]
@@ -28297,6 +28503,13 @@ mod tests {
         let pad = &mut wide.popover.border.padding;
         for side in [&mut pad.top, &mut pad.right, &mut pad.bottom, &mut pad.left] {
             *side = Some(side.unwrap_or(0.0) + 9.0);
+        }
+        let m = &mut wide.menu;
+        for side in [
+            &mut m.panel_padding_horizontal,
+            &mut m.panel_padding_vertical,
+        ] {
+            *side = side.map(|v| v + 9.0);
         }
         wide.menu.background_color = panel_fill;
         wide.button.background_color = fill;
@@ -28393,9 +28606,9 @@ mod tests {
             rect(&rects, probes::AW_CONTEXT_MENU),
             rect(&rects, probes::AW_COPY),
         );
-        let popover = &theirs.popover.border.padding;
-        let (Some(left), Some(top)) = (popover.left, popover.top) else {
-            panic!("kde-breeze states no popover.border.padding to read");
+        let m = &theirs.menu;
+        let (Some(left), Some(top)) = (m.panel_padding_horizontal, m.panel_padding_vertical) else {
+            panic!("kde-breeze states no menu.panel_padding_* to read");
         };
         let line = theirs.popover.border.line_width;
         let pad = Padding {
@@ -28406,7 +28619,7 @@ mod tests {
         if (copy.x - popup.x - pad.left).abs() > 0.5 || (copy.y - popup.y - pad.top).abs() > 0.5 {
             faults.push(format!(
                 "the context menu's first entry is {} by {} in from its popup's corner, \
-                 popover.border.padding inside popover.border's line {} by {}",
+                 menu.panel_padding_* inside popover.border's line {} by {}",
                 copy.x - popup.x,
                 copy.y - popup.y,
                 pad.left,
@@ -30501,8 +30714,9 @@ mod tests {
     /// Issue #4's leftovers, E1 (docs/issues/0004_kde-leftovers-rationale.md):
     /// under kde-breeze a hovered menu row is outlined in Breeze's
     /// `focusOutlineColor()`, #399acc light and #5abaec dark, 1 px wide and
-    /// rounded 4.5 as its highlight; a pressed one keeps the hovered look,
-    /// outline included, as no `menu.active_background` is stated (S4). Under
+    /// rounded 4.5 as its highlight; E2: a pressed one is filled
+    /// `menu.active_background`, Breeze's #3daee9, lettered #ffffff light and
+    /// #fcfcfc dark, with no outline. Under
     /// adwaita, which states no outline, every status is what [`menu_row`]
     /// drew before the outline, whose body this test keeps.
     #[test]
@@ -30537,7 +30751,9 @@ mod tests {
             button::Status::Disabled,
         ];
         let mut failures = Vec::new();
-        for (dark, outline) in [(false, "#399acc"), (true, "#5abaec")] {
+        for (dark, outline, pressed_text) in
+            [(false, "#399acc", "#ffffff"), (true, "#5abaec", "#fcfcfc")]
+        {
             let label = format!("kde-breeze dark {dark}");
             let r = loaded("kde-breeze", dark).current_resolved;
             let theme = native_theme_iced::to_theme(&r, "menus");
@@ -30556,10 +30772,15 @@ mod tests {
                 failures.push(format!("{label}: the hovered row's fill is {hovered:?}"));
             }
             let pressed = row(&theme, button::Status::Pressed);
-            if format!("{pressed:?}") != format!("{hovered:?}") {
-                failures.push(format!(
-                    "{label}: pressed {pressed:?}, not the hovered look {hovered:?}"
-                ));
+            let pressed_fill = pressed.background.map(|b| match b {
+                iced::Background::Color(c) => color_to_hex(c),
+                other => format!("{other:?}"),
+            });
+            if pressed_fill.as_deref() != Some("#3daee9")
+                || color_to_hex(pressed.text_color) != pressed_text
+                || pressed.border.width != 0.0
+            {
+                failures.push(format!("{label}: the pressed row is {pressed:?}"));
             }
             for status in [button::Status::Active, button::Status::Disabled] {
                 let rest = row(&theme, status).border;
@@ -30690,6 +30911,155 @@ mod tests {
             }
         }
         assert!(failures.is_empty(), "{failures:#?}");
+    }
+
+    /// `preset` in light, its Theme menu held open ([`HeldMenu`]), at the
+    /// text scale `factor`, drawn at [`WINDOW_SIZE`]: the image, the
+    /// elements' rectangles and the scale.
+    fn theme_menu_frame(
+        preset: &str,
+        factor: f32,
+        edit: impl FnOnce(&mut ResolvedTheme),
+    ) -> (State, image::RgbaImage, ElementRects, f32) {
+        let mut state = loaded(preset, false);
+        state.accessibility.text_scaling_factor = factor;
+        state.held_menu = MENU_TITLES.iter().position(|title| *title == "Theme");
+        edit(&mut state.current_resolved);
+        let (image, rects, scale) = frame_of(
+            &state,
+            view(&state),
+            Size::new(WINDOW_SIZE.0, WINDOW_SIZE.1),
+        );
+        (state, image, rects, scale)
+    }
+
+    /// Issue #4's leftovers, E4: a menu row is at least `menu.min_row_height`
+    /// where the theme states no `menu.row_height` ([`menu_row_height`]):
+    /// kde-breeze's rows are its 29 at a text scale of 1, where their line
+    /// box and padding are less, and their content, the line box of
+    /// `menu.font` at its scaled size times `defaults.line_height` plus the
+    /// padding, at a text scale of 2, where that is more; material-3's stated
+    /// 48 is drawn exactly. Read on the Theme menu's Light row, held open.
+    #[test]
+    fn menu_rows_are_at_least_the_min_row_height() {
+        let mut faults = Vec::new();
+        for (preset, factor) in [
+            ("kde-breeze", 1.0),
+            ("kde-breeze", 2.0),
+            ("material-3", 1.0),
+        ] {
+            let (state, _, rects, _) = theme_menu_frame(preset, factor, |_| {});
+            let r = &state.current_resolved;
+            let m = &r.menu;
+            let pad = native_theme_iced::padding_or(&m.border.padding, button::DEFAULT_PADDING);
+            let content = scaled_text_size(m.font.size, &state.accessibility)
+                * r.defaults.line_height
+                + pad.y();
+            let want = match (preset, factor) {
+                ("kde-breeze", 1.0) => {
+                    assert_eq!(m.min_row_height, Some(29.0), "kde-breeze's least row");
+                    assert!(m.row_height.is_none(), "kde-breeze states a row height");
+                    assert!(content < 29.0, "kde-breeze's row content is {content} tall");
+                    29.0
+                }
+                ("kde-breeze", _) => {
+                    assert!(content > 29.0, "at {factor} the content is {content} tall");
+                    content
+                }
+                _ => {
+                    assert_eq!(m.row_height, Some(48.0), "material-3's stated row");
+                    48.0
+                }
+            };
+            if menu_row_height(r, &state.accessibility, pad) != Some(want) {
+                faults.push(format!(
+                    "{preset} at {factor}: menu_row_height gives {:?}, want {want}",
+                    menu_row_height(r, &state.accessibility, pad)
+                ));
+            }
+            match rects.get("chrome.menu.theme.light") {
+                Some(rect) if (rect.height - want).abs() < 0.01 => {}
+                Some(rect) => faults.push(format!(
+                    "{preset} at {factor}: the Light row is {} tall, want {want}",
+                    rect.height
+                )),
+                None => faults.push(format!("{preset} at {factor}: the Light row is not drawn")),
+            }
+        }
+        assert!(faults.is_empty(), "{faults:#?}");
+    }
+
+    /// Issue #4's leftovers, E4: the window's menu panel pads its rows by
+    /// `menu.panel_padding_*` inside the popover's line ([`menu_popup_padding`]):
+    /// under kde-breeze light 3 + 1 = 4 on every side, the Theme menu's first
+    /// row 4 px in from the panel's outer edge, where the line, spliced to a
+    /// colour of its own, is the first pixel and the panel's fill, spliced
+    /// too, the three after it. Under adwaita, which states no panel padding,
+    /// the padding is the popover's, as before.
+    #[test]
+    fn menu_panels_take_the_panel_padding() {
+        let [frame, panel] = ["#9b1357", "#579b13"].map(spliced_colour);
+        let (state, image, rects, scale) = theme_menu_frame("kde-breeze", 1.0, |r| {
+            r.popover.border.color = frame;
+            r.menu.background_color = panel;
+        });
+        let r = &state.current_resolved;
+        let mut faults = Vec::new();
+        let pad = menu_popup_padding(r);
+        if pad != Padding::new(4.0) {
+            faults.push(format!(
+                "kde-breeze's panel is padded {pad:?}, want 4 a side"
+            ));
+        }
+        let Some(row) = rects.get("chrome.menu.theme.reload").copied() else {
+            panic!("the Theme menu's first row is not drawn");
+        };
+        let band = |x: f32, width: f32| Rectangle {
+            x,
+            y: row.center_y() - 1.0,
+            width,
+            height: 2.0,
+        };
+        for (what, at, colour) in [
+            ("the line", band(row.x - 4.0, 1.0), frame),
+            ("the panel's fill", band(row.x - 3.0, 3.0), panel),
+        ] {
+            let (inked, of) = inked_in(&image, at, scale, colour);
+            if of == 0 || inked < of {
+                faults.push(format!(
+                    "{what}: {inked} of {of} pixels left of the first row"
+                ));
+            }
+        }
+        let above = Rectangle {
+            x: row.center_x() - 1.0,
+            y: row.y - 3.0,
+            width: 2.0,
+            height: 3.0,
+        };
+        let (inked, of) = inked_in(&image, above, scale, panel);
+        if of == 0 || inked < of {
+            faults.push(format!(
+                "the panel's fill: {inked} of {of} pixels above the first row"
+            ));
+        }
+        let adwaita = loaded("adwaita", false).current_resolved;
+        assert!(
+            adwaita.menu.panel_padding_horizontal.is_none()
+                && adwaita.menu.panel_padding_vertical.is_none(),
+            "adwaita states a panel padding"
+        );
+        let popover = native_theme_iced::padding_inside_border(
+            &adwaita.popover.border,
+            Padding::new(AW_MENU_PADDING),
+        );
+        if menu_popup_padding(&adwaita) != popover {
+            faults.push(format!(
+                "adwaita's panel is padded {:?}, not the popover's {popover:?}",
+                menu_popup_padding(&adwaita)
+            ));
+        }
+        assert!(faults.is_empty(), "{faults:#?}");
     }
 
     /// Issue #4's leftovers, E5: under kde-breeze a hovered, unselected row

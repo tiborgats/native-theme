@@ -380,15 +380,24 @@
 //!   is the item's own widget, and under `Backdrop` it also outlines an open
 //!   bar title, which Breeze does not. A menu's items and a menu bar's
 //!   titles are the application's own widgets: the hovered item's outline,
-//!   the titles' fills (`menu.bar_hover_background`, `.bar_open_background`,
-//!   `.bar_hover_text_color`) and their padding (`menu.bar_padding_*`) are
-//!   drawn where the application builds them. iced's drop-down outlines no
+//!   a pressed item (`menu.active_background`, `.active_text_color`;
+//!   `iced_aw`'s path has no pressed status), the titles' fills
+//!   (`menu.bar_hover_background`, `.bar_open_background`,
+//!   `.bar_hover_text_color`) and their padding (`menu.bar_padding_*`), and
+//!   the rows' geometry (`menu.min_row_height`, and the panel's padding,
+//!   `menu.panel_padding_*`, given to `Menu::padding`) are drawn where the
+//!   application builds them. No iced menu draws an icon, so
+//!   `menu.icon_text_gap` reaches nothing, and the padding is per physical
+//!   side: iced 0.14 has no layout direction. iced's drop-down outlines no
 //!   highlighted row: its menu `Style` has no border for one (`iced_widget`
 //!   0.14.2 `src/overlay/menu.rs:598-611`).
 //! - **Lists and tables.** A `SelectionList` fills a hovered row with a quad
 //!   whose border is hardcoded 0 wide, so `list.hover_border_color` has no
 //!   receiver there; a list built of the application's own rows outlines a
-//!   hovered row itself.
+//!   hovered row itself. A `SelectionList` has no column header either, so
+//!   `list.header_separator_color` has none.
+//! - **A slider's focus.** iced's slider has no focused status, so
+//!   `slider.thumb_focus_border_color` is not drawn (`styles::slider`).
 //! - **The window frame.** iced takes no colour for it (`decorations:
 //!   bool`, `iced_core` 0.14 `window/settings.rs:65-66`); it passes the
 //!   theme's light or dark flag to the window, which [`to_theme_in()`] sets
@@ -2899,9 +2908,10 @@ mod tests {
     }
 
     /// kde-breeze states a 32px minimum for the button, the text input and
-    /// the combo box, and a 13.33px body font at a 1.36 line height: each
-    /// control's line box fills the minimum inside its padding, and the
-    /// theme's own line box stands where it is taller.
+    /// the combo box, and a 13px body font (10 pt in whole pixels, as Qt
+    /// rounds it) at a 1.36 line height: each control's line box fills the
+    /// minimum inside its padding, and the theme's own line box stands where
+    /// it is taller.
     #[cfg(feature = "widgets")]
     #[test]
     fn control_line_height_reaches_the_stated_minimum() {
@@ -2930,11 +2940,12 @@ mod tests {
             let own = size * r.defaults.line_height + pad.top + pad.bottom;
             assert_eq!(height, min.max(own), "{what}: {height} for {min}");
         }
-        // The input is 6 + 1 top and bottom: the 18 the minimum leaves is
-        // below the theme's 18.13 line box, which stands; a 40px minimum
-        // leaves 26.
+        // The input is 6 + 1 top and bottom: the theme's 13 x 1.36 = 17.68
+        // line box is below the 18 the minimum leaves, which it fills; a
+        // 40px minimum leaves 26.
         let input_own = r.input.font.size * r.defaults.line_height;
-        assert_eq!(line(r.input.font.size, 32.0, input_padding(&r)), input_own);
+        assert!(input_own < 18.0, "the input's own line box is {input_own}");
+        assert_eq!(line(r.input.font.size, 32.0, input_padding(&r)), 18.0);
         assert_eq!(line(r.input.font.size, 40.0, input_padding(&r)), 26.0);
         // A minimum below the theme's own line box leaves that line box.
         let own = r.defaults.font.size * r.defaults.line_height;
@@ -2949,8 +2960,8 @@ mod tests {
         let min = button_content_min_size(&r);
         assert_eq!(min.width + p.left + p.right, r.button.min_width);
         assert_eq!(min.height + p.top + p.bottom, r.button.min_height);
-        // kde-breeze: 80 x 32 outer, 6 + 1 on every side.
-        assert_eq!((min.width, min.height), (66.0, 18.0));
+        // kde-breeze: 82 x 32 outer, 6 + 1 on every side.
+        assert_eq!((min.width, min.height), (68.0, 18.0));
         let mut small = r.clone();
         small.button.min_width = 0.0;
         small.button.min_height = 0.0;
