@@ -383,9 +383,8 @@ pub struct MenuTheme {
     #[theme(category = "soft_option", check = "non_negative")]
     pub bar_padding_horizontal: Option<f32>,
     /// Inset of a menu-bar title's text from its top and bottom edge, in
-    /// logical pixels: Breeze's `MenuBarItem_MarginHeight` 6; titles so padded
-    /// touch. `None`: the connector's own title padding
-    /// (docs/platform-facts.md §2.6).
+    /// logical pixels: Breeze's `MenuBarItem_MarginHeight` 6. `None`: the
+    /// connector's own title padding (docs/platform-facts.md §2.6).
     #[serde(rename = "bar_padding_vertical_px")]
     #[theme(category = "soft_option", check = "non_negative")]
     pub bar_padding_vertical: Option<f32>,
