@@ -3374,6 +3374,12 @@ theme's radius past egui's cap, with a check box of its own in the widgets crate
       `focus_ring_style`, the 3 px band of `ring` at alpha 0.5 the other widgets
       draw, does not: it still shows on any focus, and the request stands for it
       (`docs/archive/todo_v0.7.2_gpui-kit-0.10.0-rationale.md`, §1.5 and T4).
+      *2026-11-20, the maintainer:* not sent for now. GPUI Kit is in active development,
+      and these can wait; they are sent later, with his approval. Re-checked against
+      gpui-component and gpui-base 0.10.0 the same day: all four still hold, each 0.9.1
+      citation says what the draft claims, and 0.10.0 adds nothing that would replace
+      the connector's colour write-back (request 3) or its `FocusBand` plugin (request
+      4). The drafts cite 0.10.0's lines since that day.
 - [ ] [upstream] gpui-component: a hover style, fill and border, for the
       trigger of `Select` and `Combobox` (0.10.0 `select.rs:578-597`,
       `combobox.rs:1025-1042`); until then `combo_box.hover_background` and
