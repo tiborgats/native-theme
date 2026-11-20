@@ -5,7 +5,8 @@ three looks the open-items rationale left in the backlog are done now, and the s
 Breeze details with them where they fit in one to two days of building; the four
 requests to GPUI Kit wait (`docs/todo.md`, the [upstream] entry "GPUI Kit, from issue
 #4"). Checked by two first-pass reviews and a confirming check, their findings
-applied. Not yet approved.
+applied. Approved by the maintainer on 2026-11-20; specified in
+`docs/todo_v0.7.2_kde-leftovers-spec.md`.
 
 It continues `docs/issues/0004_kde-open-items-rationale.md` (called "the open-items
 rationale" below), whose §0 left these items in the backlog, and the backlog entry

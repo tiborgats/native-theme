@@ -114,7 +114,7 @@ the model does not have yet. The reporter's remaining items, the focus ring and
 Breeze's hover outlines among them, are planned for later 0.7.x releases
 (`docs/issues/0004_kde-open-items-rationale.md`).
 
-## v0.7.2 — egui 0.37, GPUI Kit 0.10.0, gpui-component's own icons in the theme's icon set, the text caret's blink, and from issue #4 the focus ring, the hover outlines, the toolbar buttons, the default button, the table header's states and the unfocused selection
+## v0.7.2 — egui 0.37, GPUI Kit 0.10.0, gpui-component's own icons in the theme's icon set, the text caret's blink, and from issue #4 the focus ring, the hover outlines, the toolbar buttons, the default button, the table header's states and the unfocused selection, and issue #4's leftovers (the menus' and rows' outlines, the menu bar, the open combo box, whole-pixel fonts)
 
 **Delivered:** the egui connector and the egui widgets crate require egui
 0.37.0, and the gpui connector requires gpui-component, gpui-base and gpui-kit
@@ -193,6 +193,21 @@ header's hovered and pressed sections and the selection of a view without the
 focus take Breeze's colours under KDE: the model has fields for both, which the
 connectors offer to an application, since no toolkit's table or list has these
 states; the showcases draw them.
+
+Issue #4's leftovers follow under KDE: a hovered menu item and a hovered list
+or table row take Breeze's 1 px outline, and a pressed menu item its opaque
+fill; the menu bar takes the toolbar's fill, since Breeze paints the two as one
+area, and its titles take Breeze's hover and open fills and padding; a menu's
+panel and item padding, icon gap, radius and least row height are Breeze's. A
+table header's section lines, the slider handle's outline at rest, under the
+pointer and with the focus, a checked toolbar button's pen and an open combo
+box's fill and pen have fields too, and under kde-breeze every font size is a
+whole pixel, rounded as Qt rounds it. Only kde-breeze states the new fields,
+so the other presets look as before. The connectors and the
+showcases draw them where their toolkit can: egui draws no pressed menu item,
+since its menus move a lasting keyboard selection through the state a press
+would use, and gpui-component's own menus, menu bar, lists, tables, slider and
+select have no receiver for them, which the backlog records for GPUI Kit.
 
 ## Model completeness: what native-theme does not carry
 

@@ -242,6 +242,12 @@ cannot tell which file a bare number continues, so it does not look for one.
       (Not themeable), and no connector invents an outline: the egui
       showcase's is egui's own, the handle stroked in the widget's
       `fg_stroke` (egui 0.36.2 `src/widgets/slider.rs:811-816`).
+      *Issue #4's leftovers (0.7.2, 2026-11-20, 38ba86af):* KDE's outline is in the model:
+      `slider.thumb_border_color`, `thumb_hover_border_color`, `thumb_focus_border_color`
+      and `thumb_border_line_width`, which kde-breeze and the KDE reader state
+      (`docs/issues/0004_kde-leftovers-rationale.md` E8; `docs/platform-facts.md` §2.9).
+      The other platforms' outlines and every platform's shadow stay open (the gap maps'
+      MAC-SL02, W1-069, GN-1.96 and GN-1.97, MAT-S9 and MAT-S10).
 
 ### Radio: Material's radio is not the checkbox's shape
 
@@ -1216,30 +1222,6 @@ model, the platform presets and the three connectors
       `border.line_width`); the presets' half is in *Presets: values the M8
       T15 platform-facts rows disagree with*.
 
-### Model: the menu bar has no fill of its own
-
-- [ ] [1.0] From the M8 T16 review (2026-10-17, finding 10): Breeze fills a
-      `QMainWindow`'s tools area, its menu bar and its top toolbars, as one
-      area in the Header set's Window colour (`breezestyle.cpp:1341-1347`;
-      `breezetoolsareamanager.cpp:118-136`, Breeze f0b1d753), which
-      kde-breeze states as `toolbar.background_color` (#dee0e2 / #292c30,
-      `docs/platform-facts.md` §2.13). The model has no menu-bar fill, so the
-      three showcases draw the menu bar in the window's #eff0f1 / #202326
-      above the Header-filled toolbar: a two-tone tools area Breeze does not
-      draw. A `menu_bar` fill leaf (registry, inheritance, the three
-      connectors' menu bars), or the showcases' chrome taking the toolbar's
-      fill for the menu-bar row, would close it.
-      *Issue #4 (0.7.1):* Breeze fills a hovered or open menu bar title with the opaque
-      hover or focus colour under `HighlightedText` (`breezestyle.cpp:5841-5948`); the
-      connectors drew it from `menu.hover_background` until 0.7.1, which now holds the
-      item's 30 % tint, so a title's fill joins *KDE: what a Qt application under Breeze
-      shows that native-theme does not (issue #4)*, "What Breeze draws that the model
-      has no field for".
-      *Issue #4 (0.7.1, 2026-11-17, cdd2f191):* the iced connector's `styles::aw::menu` fills the
-      bar from `window.background_color` too
-      (`docs/issues/0004_kde-open-items-rationale.md` D3), so a field of the bar's
-      own would have that reader as well.
-
 ### Presets: expander hover fills with no source
 
 - [ ] [1.0] From M6 T16b (2026-10-16): `docs/platform-facts.md` §2.27 has no
@@ -1330,13 +1312,11 @@ model, the platform presets and the three connectors
       - kde-breeze (its pressed button's fill and text and its scroll bar's
         pressed thumb left this list in D7, 2026-10-26: the reader now writes
         them from the colour scheme, and it cannot be right while the preset
-        states another value; the rest of this entry stays for 1.0, M8-76):
-        `slider.thumb_hover_color` `#93cee9`
-        (`kde-breeze.toml` `[light.slider] thumb_hover_color`,
-        `[dark.slider] thumb_hover_color`; §2.9: the `Button` fill, #fcfcfc /
-        #292c30, hover being an outline), `slider.disabled_fill_color`,
-        `disabled_track_color` and `disabled_thumb_color`
-        (`[light.slider] disabled_fill_color, disabled_track_color, disabled_thumb_color`,
+        states another value; and its slider's hover fill in 0.7.2 (E8); the
+        rest of this entry stays for 1.0, M8-76):
+        `slider.disabled_fill_color`, `disabled_track_color` and
+        `disabled_thumb_color`
+        (`kde-breeze.toml` `[light.slider] disabled_fill_color, disabled_track_color, disabled_thumb_color`,
         `[dark.slider] disabled_fill_color, disabled_track_color, disabled_thumb_color`;
         §2.9: no fill, the groove #d9dcdd / #2a2b2e, the handle #f0f0f0 /
         #272a2e); `splitter.hover_color`
@@ -1364,6 +1344,12 @@ model, the platform presets and the three connectors
         Breeze shows that native-theme does not (issue #4)*, "What Breeze draws that the
         model has no field for"): removing a hover fill first would remove the only
         hover feedback.
+        *Issue #4's leftovers (0.7.2, 2026-11-20, 38ba86af):* kde-breeze no longer states
+        `slider.thumb_hover_color`, #93cee9, which had no source; the hover feedback is
+        the handle's outline, `slider.thumb_hover_border_color`, #3daee9, as §2.9 gives it
+        (`kde-breeze.toml` `[light.slider] thumb_hover_border_color`,
+        `[dark.slider] thumb_hover_border_color`;
+        `docs/issues/0004_kde-leftovers-rationale.md` E8).
       - windows-11: `button.disabled_background`, `input.disabled_background`
         and `combo_box.disabled_background` `#f9f9f900` / `#33333300`
         (`windows-11.toml` `[light.button] disabled_background`,
@@ -1969,57 +1955,34 @@ From issue #4's second comment, `docs/issues/0004_kde-hand-overrides-rationale.m
 `v6.8.2`), KColorScheme at `27066d47`; "measured" is Breeze 6.8.2 under Qt 6.12,
 offscreen, `docs/evidence/breeze-offscreen/2026-11-13/`.
 
-- [ ] [v0.7.x] **What Breeze draws that the model has no field for.** Breeze shows
-      hover on a slider handle by recolouring the outline, never the fill (open-items
-      rationale D6, which leaves the handle out; the outlines of a button, a check box,
-      a radio and a combo box are in the model since 0.7.2). kde-breeze's hover fill of
-      the slider handle stands in for that outline until the model has it, since
-      removing it first would remove the only hover feedback: `kde-breeze.toml`
-      `[light.slider] thumb_hover_color` and its dark twin, listed in *Presets: values
-      the M8 T15 platform-facts rows disagree with*. Breeze also draws, with no field yet:
-      a checked flat button's pen, `KColorUtils::mix(Button, ButtonText, frameContrast)`
-      (`breezehelper.cpp:681-684`); a hovered menu item's 1 px outline,
-      `mix(focusColor, WindowText, 0.15)` (`breezehelper.cpp:172-175`), #399acc /
-      #5abaec (measured); a hovered list row's 1 px outline, `Highlight` at alpha 0.8
-      (`breezestyle.cpp:4880-4884`); a menu bar title's fill, the opaque hover or focus
-      colour under `HighlightedText` (`drawMenuBarItemControl`,
-      `breezestyle.cpp:5841-5948`), which `menu.hover_background` stood in for until
-      0.7.1 (*Model: the menu bar has no fill of its own*); a header section's separators;
-      an open combo box's frame, as a pressed button frame's: the `Highlight` pen
-      whatever the pointer does, and the fill #c3e5f6 / #2f5368 (light / dark; #fcfcfc /
-      #292c30 closed, at rest)
-      (`docs/evidence/breeze-offscreen/2026-11-18/combo_trigger_light.txt`,
-      `combo_trigger_dark.txt`).
-      Then the rest, each without a field: the pressed menu item, the opaque focus
-      colour under `HighlightedText` (`breezestyle.cpp:6021-6029`, `:6155`); the 4 px
-      gap between the menu panel's edge and the highlight (`PM_MenuHMargin` and
-      `PM_MenuVMargin` are `MenuItem_HighlightGap` 4, `breezestyle.cpp:649-651`;
-      measured); the menu row's minimum height, the larger of the text, the 20 px
-      columns and the icon, plus 1, plus 4 above and below
-      (`breezestyle.cpp:3663-3667`), 29 at Noto Sans 10 pt (measured;
-      `docs/platform-facts.md:1260`), which `menu.row_height`, a fixed height, cannot
-      carry; the scroll bar's 1 px line along its inner edge, `Text` at alpha
-      frameContrast (`breezestyle.cpp:8220-8227`), #d3d4d4 / #424445 in a list
-      (measured); the handle's outline, its colour at alpha frameContrast
+- [ ] [v0.7.x] **What Breeze draws that the model has no field for.** Left after
+      issue #4's leftovers (`docs/issues/0004_kde-leftovers-rationale.md` §3), each
+      without a field. (S1–S4) The scroll bar: its 1 px line along its inner edge,
+      `Text` at alpha frameContrast (`breezestyle.cpp:8220-8227`), #d3d4d4 / #424445 in
+      a list (measured); the handle's outline, its colour at alpha frameContrast
       (`breezehelper.cpp:1283`); the handle of the view that has the focus,
       `focusColor()` (`breezehelper.cpp:298-299`), #b1d9ef / #2a546b (measured); the
       handle while the pointer is on the bar but off it, `WindowText` at 0.25 over the
-      window, #bcbebf / #57595b (computed); a hovered row in a view without the focus,
-      the Inactive `Highlight`, #c2e0f5 / #1b4155, at 0.3 (`breezestyle.cpp:4832-4837`);
-      a selected and hovered row, `Highlight.lighter(110)`, #44bfff
-      (`breezestyle.cpp:4876`; measured); a list item's padding beyond the highlight's
-      margin. The parked 0.8.0 work traces some of these
+      window, #bcbebf / #57595b (computed). gpui cannot draw any of the four without an
+      upstream change, so they are one unit, the scroll bar's lines and states, for the
+      release that sends the scroll-bar request upstream. (L2) A hovered row in a view
+      without the focus: two fields, fill and outline, for a state the showcases do not
+      track (they switch the selection on the window's activity, not the view's focus).
+      In an active window whose line edit has the focus, Breeze draws the view's rows
+      without `State_Active`, from the Inactive group (`breezestyle.cpp:4832-4837`): the
+      hovered row #ecf5fb / #16232b, the outline's pixel #cce5f7 / #1a3a4b (measured
+      2026-11-20, `docs/evidence/breeze-offscreen/2026-11-20/views_light.txt`,
+      `views_dark.txt`). (L3) A selected and hovered row, `Highlight.lighter(110)`,
+      #44bfff (`breezestyle.cpp:4876`; measured): `QColor::lighter` is Qt's (LGPL), and
+      the plain rule (the HSV value times 1.1, clamped) gives #43beff, so it waits for a
+      clean-room description of `lighter` and its test vectors. (L4) A list row's own
+      box: its margins, its padding beyond them, the highlight's 4.5 radius;
+      kde-breeze's `list.border.padding` holds Breeze's highlight margins, not a padding,
+      so it needs a field for the inset and a re-reading of every platform's
+      `docs/platform-facts.md` §2.15 padding cells under the new meaning. The parked
+      0.8.0 work traces some of these
       (`docs/todo_v0.8.0_model-completeness-spec-trace-kde.md` on `v0.8.0-rc1`: K1.92
-      the focused handle, K1.172 the selected and hovered row, K1.177 the header's
-      fills). Not a missing field but a gap of the same kind: kde-breeze states
-      `list.hover_text_color`, #232629 / #fcfcfc (`kde-breeze.toml`
-      `[light.list] hover_text_color`, `[dark.list] hover_text_color`), and the KDE
-      reader never writes it (`native-theme/src/kde/colors.rs` writes only the button's
-      and the menu's hover text, `:541`, `:725`), so under a colour scheme whose View
-      text differs from Breeze's a hovered list row keeps Breeze's text colour, while
-      since 0.7.1 the hovered menu row follows the scheme's
-      `[Colors:Window] ForegroundNormal`; Breeze letters a hovered row in
-      `QPalette::Text`, the View set's `ForegroundNormal` (`docs/platform-facts.md:1436`).
+      the focused handle, K1.172 the selected and hovered row).
       *0.7.2 (2026-11-18):* the check box's, the radio's and the combo box's hover
       outlines are `checkbox.hover_border_color` and `combo_box.hover_border_color` (D6
       of `docs/issues/0004_kde-open-items-rationale.md`); kde-breeze's two stand-in fills
@@ -2043,55 +2006,41 @@ offscreen, `docs/evidence/breeze-offscreen/2026-11-13/`.
       (`kde-breeze.toml` `[light.list] header_hover_background`,
       `[dark.list] header_hover_background`), drawn by the showcases' tables; the parked
       trace's K1.177.
-- [ ] [v0.7.x] **KDE values that wait for a connector design.** Each facts row below is
-      corrected in 0.7.1; kde-breeze and the reader keep their present values, which
-      disagree with it, until the readers named can take the platform's value without
-      another surface losing. (1) **The focus ring**: done in 0.7.2 (below).
-      (2) **The default button**: done in 0.7.2 (below).
-      (3) **The menu panel's colour** and (4) **the table's grid**: done in 0.7.1
-      (below).
-      (5) **The menu item's radius, padding and icon gap**,
-      `docs/platform-facts.md:1261`, `:1265`, `:1267`: Breeze rounds a hovered item's
-      highlight at 4.5; kde-breeze states no menu corner radius, and
-      `menu.border.corner_radius` is read as the item's radius by egui's menu role
-      (`connectors/native-theme-egui/src/style/roles.rs:287`) and the showcases, and as
-      the panel's by iced (`connectors/native-theme-iced/src/styles.rs:1261`): one
-      field, two meanings. In a menu without icons or checkable items (check box or
-      radio items) Breeze starts an item's text 16 from the highlight's edge (4 + 8 + 4,
-      measured). In a menu with icons it puts a 16 px icon in a column 20 px wide, 12 px
-      in where the menu has no checkable items (their column comes first otherwise,
-      `breezestyle.cpp:6059-6065`, `:6077`), and starts the text 4 after the icon
-      (measured); kde-breeze and the reader state 4 and 8 (`kde-breeze.toml`
-      `[light.menu.border] padding_horizontal_px`, `[light.menu] icon_text_gap_px`, and
-      dark; `native-theme/src/kde/metrics.rs`). Both are wrong in directions that partly
-      cancel: correcting the gap alone moves the text further from where Breeze puts it,
-      so the two are one fix, with the question of what `padding_horizontal` means for a
-      row with and without an icon.
-      *Issue #4, open items step 1 (0.7.1, 2026-11-17, cdd2f191):* (3) and (4) done
-      (`docs/issues/0004_kde-open-items-rationale.md` D2, D3). kde-breeze
-      (`kde-breeze.toml` `[light.menu] background_color`, `[dark.menu] background_color`,
-      `[light.list] grid_color`, `[dark.list] grid_color`) and the KDE reader state
-      Breeze's menu panel, `mix(Window, Base, 0.3)`, and Qt's grid, `MidShade` of the
-      window at `[KDE] contrast`, through the carried `kde_shade`
-      (`native-theme/src/kde/shade.rs`, with its table). gpui's `chart_grid` takes
-      `separator.line_color`; the iced connector's menu bar lies on the window and
-      its menus and drop-downs take the popover's frame on the menu's fill; egui
-      fills every popup with the menu's colour.
-      *Issue #4, open items step 2 (0.7.2, 2026-11-18, b1fc42ba):*
-      (1) done (`docs/issues/0004_kde-open-items-rationale.md` D4). kde-breeze and the
-      KDE reader state Breeze's band, the selection colour at alpha 0.3, 2 px from 1 px
-      inside the control to 1 px outside (`kde-breeze.toml`
-      `[light.defaults] focus_ring_color`, `[dark.defaults] focus_ring_color`), and
-      `defaults.focus_ring_keyboard_only` says KDE shows it for keyboard focus only:
-      the iced and egui connectors and the gpui connector's own controls draw it after
-      a key, and the gpui connector draws gpui-component's band only for a focus
-      that followed a key.
-      *Issue #4, open items step 6 (0.7.2, 2026-11-19, 836619cd):* (2) done
-      (`docs/issues/0004_kde-open-items-rationale.md` D8):
-      `button.default_button_background`, `_text_color`, `_border_color`, stated by
-      kde-breeze (`kde-breeze.toml` `[light.button] default_button_background`,
-      `[dark.button] default_button_background`) and the KDE reader; iced
-      `styles::button_default`, egui `default_button`, gpui `variants::default_button`.
+      *Issue #4's leftovers, U1 (0.7.2, 2026-11-20, 96ef2531):* a hovered menu item's
+      outline is `menu.hover_border_color`, a menu-bar title's fills and text are
+      `menu.bar_hover_background`, `bar_open_background` and `bar_hover_text_color` (the
+      bar itself takes `toolbar.background_color`), and a hovered list row's outline is
+      `list.hover_border_color` (`docs/issues/0004_kde-leftovers-rationale.md` E1, E3,
+      E5; `kde-breeze.toml` `[light.menu] hover_border_color`,
+      `[light.list] hover_border_color`, and dark).
+      *Issue #4's leftovers, U2 and U3 (0.7.2, 2026-11-20, 38ba86af):* the pressed menu
+      item is `menu.active_background` and `active_text_color`; the 4 px gap round the
+      highlight is `menu.panel_padding_horizontal` and `panel_padding_vertical`, 3 inside
+      the panel's 1 px outline; the menu row's least height is `menu.min_row_height`, 29;
+      a header section's separators are `list.header_separator_color`; the slider
+      handle's hover is its outline, `slider.thumb_border_color`,
+      `thumb_hover_border_color`, `thumb_focus_border_color` and
+      `thumb_border_line_width`, and kde-breeze's hover fill is gone; a checked flat
+      button's pen is `toolbar.button_checked_border_color` (E2, E4, E7, E8, E9). The gap
+      of E6 is closed: the KDE reader writes `list.hover_text_color` from the View set's
+      `ForegroundNormal`, and `button.border.color` as Breeze's button frame (`kde-breeze.toml`
+      `[light.slider] thumb_border_color, thumb_hover_border_color`,
+      `[light.toolbar] button_checked_border_color`, and dark).
+      *Issue #4's leftovers, E10 (0.7.2, 2026-11-20, 625011c0):* an open combo box's frame
+      is `combo_box.open_background` and `open_border_color`, #c3e5f6 / #2f5368 under
+      #3daee9 (`kde-breeze.toml` `[light.combo_box] open_background, open_border_color`,
+      and dark).
+- [ ] [v0.7.x] **A menu's shortcut text.** Breeze letters a menu item's shortcut in a
+      colour of its own at rest, under the pointer and pressed, `HighlightedText` at 0.7
+      on a pressed item (`docs/issues/0004_kde-leftovers-rationale.md` E2, §3); measured
+      in the run of 2026-11-20 as the Edit row's second ink run
+      (`docs/evidence/breeze-offscreen/2026-11-20/menus_light.txt`, `menus_dark.txt`,
+      "ink run 1 x=48..82"), whose pixels are antialiased ink, not the colour itself.
+      The model has no field for it in any state, and no showcase letters a shortcut
+      apart from its item's text. The gap maps name the part on macOS (MAC-MN04,
+      `docs/todo_v0.8.0_model-completeness-gap-map-macos.md`), Windows (W1-048,
+      `docs/todo_v0.8.0_model-completeness-gap-map-windows.md`) and Material (MAT-M4,
+      `docs/todo_v0.8.0_model-completeness-gap-map-material.md`).
 - [ ] [v0.7.x] **Qt Quick's menu fill, for the facts.** `docs/platform-facts.md`
       §2.6's KDE `background_color` cell states a Qt Widgets menu's panel, `mix(Window, Base, 0.3)`, which kde-breeze and
       the KDE reader follow since 0.7.1, and marks Qt Quick's as not read. Read and
@@ -2127,31 +2076,48 @@ offscreen, `docs/evidence/breeze-offscreen/2026-11-13/`.
       field shows its ring after a click was not read. macOS's rule is pending in the
       parked facts (U331, U611). Read both; then decide whether the model needs the
       time-out.
-- [ ] [1.0] **Font sizes and the KDE button and dialog sizes.** (1) Qt Widgets rounds a
-      font's pixel size to a whole number before it scales (10 pt is 13 px, qtbase
-      v6.10.1 `src/gui/text/qfontdatabase.cpp:2838-2841`; measured 13 under Breeze,
-      `docs/evidence/breeze-offscreen/2026-11-13/`), where native-theme gives 13.33;
-      read whether Qt Quick rounds too, then decide whether the model follows. (2)
+- [ ] [1.0] **Font sizes and the KDE button and dialog sizes.** (1) Qt's whole-pixel
+      font sizes: done in 0.7.2 (below). (2)
       `SystemTheme::from_system()` takes no font DPI, so an application on a toolkit
       that does not scale by `Xft.dpi` on X11 (none of the three connectors') gets 96
       since 0.7.1 where the chain gave it Qt's text size; it re-derives its font sizes
       from the resolved font's `defined_size`, which the text scale's sizes do not
-      carry. A way to pass another font DPI waits for such a consumer. (3) kde-breeze's
+      carry. A way to pass another font DPI waits for such a consumer. (3) The button's
+      minimum width: done in 0.7.2 (below). (3)'s height, (4) and (5) are one change
+      (`docs/issues/0004_kde-leftovers-rationale.md` §3): kde-breeze's
       `button.min_height_px = 32` has no citation (`kde-breeze.toml`
-      `[light.button] min_height_px`), and `min_width` 80 and the 6 px padding are
-      Breeze's values before its 2 px frame margin: a button's size hint is text + 2 ×
-      (6 + 2), "OK" at Noto Sans 10 pt measures 84 × 34 (measured), and Breeze draws the
-      frame 1 px inside that, a visible box of 82 × 32 with 7 px between the border line
-      and the text, where the stated values give 80 × 32 with 6 px; decide what the
-      model's padding is measured from. (4) kde-breeze's dialog sizes have no citation
-      and the facts give KDE none (`kde-breeze.toml`
-      `[light.dialog] min_width_px, max_width_px, min_height_px, max_height_px`). (5) No
-      connector reads `dialog.icon_size`, 64 on KDE since 0.7.1
-      (`docs/platform-facts.md:1568`): iced records no receiver, and the gpui and egui
-      dialog icon helpers read `defaults.icon_sizes.dialog`, KDE's dialog icon group,
-      32, which is another size; a helper for the message icon's size. The reporter's 14
-      px button padding, 56 px icons, 1.25 line height and 50 % disabled opacity have no
-      source in Breeze.
+      `[light.button] min_height_px`) and is the height at the default font, not a
+      minimum, and gpui draws the field as an exact height (*Connectors: gpui draws
+      `button.min_height` as an exact height where the model states a minimum*);
+      kde-breeze's dialog sizes have no citation and the facts give KDE none
+      (`[light.dialog] min_width_px, max_width_px, min_height_px, max_height_px`), nor
+      have the macOS presets', adwaita's two heights or ios-13's four; and no showcase
+      reads `dialog.icon_size`, 64 on KDE since 0.7.1 (`docs/platform-facts.md:1568`):
+      the gpui showcase's dialog takes `defaults.icon_sizes.dialog`, KDE's dialog icon
+      group, 32, through `icon_size_dialog`, the iced showcase's takes
+      `icon_sizes.small`, egui's modal has no icon, and windows-11's, adwaita's and
+      ios-13's 32 have no source. The change: these required fields made optional as
+      `toolbar.bar_height` was, the unsourced values unset, and a dialog-icon helper
+      beside `icon_size_dialog`; it touches every connector's size handling and about
+      ten presets. The reporter's 14 px button padding, 56 px icons, 1.25 line height
+      and 50 % disabled opacity have no source in Breeze. (6) Qt's line box for the
+      13 px body is 18 (`docs/evidence/breeze-offscreen/2026-11-20/qt-fonts-widgets/out_light.txt`,
+      `implicitHeight 18.0`), where the model's is 13 × 1.36 = 17.68: line heights are
+      not rounded (`docs/todo_v0.7.2_kde-leftovers-spec.md`, S3); decide whether the
+      model carries Qt's line box.
+      *Issue #4's leftovers (0.7.2, 2026-11-20, 98a76844):* (1) done
+      (`docs/issues/0004_kde-leftovers-rationale.md` E11): Qt Quick rounds as Qt Widgets
+      does, in QtGui (`qfontdatabase.cpp:2865-2869` at qtbase v6.12.0; measured 13 px for
+      10 pt in a Qt Quick `Text`, a QQC2 `Label` and Kirigami's default font,
+      `docs/evidence/breeze-offscreen/2026-11-20/qt-fonts-widgets/out_light.txt`), and
+      `defaults.font_whole_pixels`, which kde-breeze states (`kde-breeze.toml`
+      `[light.defaults] font_whole_pixels`, `[dark.defaults] font_whole_pixels`), rounds
+      every font size to whole logical pixels in validation. (3)'s width done (E12):
+      kde-breeze and the KDE reader state `button.min_width` 82, the visible box,
+      `Button_MinWidth` 80 and the frame, 2 on each side, less the 1 px shadow inset
+      (`[light.button] min_width_px`, `[dark.button] min_width_px`); the padding of 6 is
+      right: the 7 px once measured between the border line and the text ("OK" at Noto
+      Sans 10 pt, 84 × 34, measured) counts from the line's outer edge.
 - [ ] [v0.7.x] **The check box's 4, drawn inside its cell.** Breeze's check box is
       `CheckBox_Radius = Frame_FrameRadius - 1`, 4, on a box drawn 2 inside the 20
       cell (Breeze v6.7.5, `kstyle/breezemetrics.h:87-90`,
@@ -2317,6 +2283,9 @@ caeddd6b, each platform file's *Cross-check* section has the detail.
       kde-breeze's value waits (*KDE: what a Qt application under Breeze shows that
       native-theme does not (issue #4)*, "KDE values that wait for a connector design",
       (5)).
+      *Issue #4's leftovers (0.7.2, 2026-11-20, 96ef2531):* kde-breeze states it, 4.5
+      (`kde-breeze.toml` `[light.menu.border] corner_radius_px`, and dark); that entry is
+      closed (`docs/archive/todo_closed.md`). The other platforms' cells stay open.
 - [ ] [v0.7.x] **macOS.** (1) `platform-facts.md:1622` says the 12–15 pop-up button casts
       no shadow, and `:1644` the same of the selected segment; the gap map (MAC-X01,
       MAC-SG02) finds both, and the cells were likely read from the non-key render, which
@@ -3380,6 +3349,13 @@ theme's radius past egui's cap, with a check box of its own in the widgets crate
       citation says what the draft claims, and 0.10.0 adds nothing that would replace
       the connector's colour write-back (request 3) or its `FocusBand` plugin (request
       4). The drafts cite 0.10.0's lines since that day.
+      *Issue #4's leftovers (0.7.2, 2026-11-20, e7bc44b8):* unsent, beside the four:
+      gpui-component's own widgets have no receiver for what 0.7.2 adds
+      (`docs/issues/0004_kde-leftovers-rationale.md` E14): `PopupMenu` (the item's
+      outline, the pressed item, the geometry), `AppMenuBar` (the bar's and the titles'
+      fills, the titles' padding), `ListItem` and `DataTable` (the row's outline, the
+      header's separators), `Slider` (the handle's outline) and `Select` (the open
+      fill). Drafted when the maintainer sends them.
 - [ ] [upstream] gpui-component: a hover style, fill and border, for the
       trigger of `Select` and `Combobox` (0.10.0 `select.rs:578-597`,
       `combobox.rs:1025-1042`); until then `combo_box.hover_background` and
@@ -3536,6 +3512,9 @@ What is still open on the iced side:
       and tokyo-night label contrasts stay this entry's.
       *0.7.2 (2026-11-18):* the check box's and the combo box's #93cee9 are gone; the
       slider's and the sidebar's stay.
+      *Issue #4's leftovers (0.7.2, 2026-11-20, 38ba86af):* the slider's #93cee9 is gone
+      (`docs/issues/0004_kde-leftovers-rationale.md` E8: its hover is the handle's
+      outline); the sidebar's stays.
 - [ ] [1.0] `button.hover_text_color` and `button.active_text_color` equal
       `button.font.color` in all 16 presets, so the per-status label rows of
       both contracts cannot tell hover or pressed from idle today. Either the

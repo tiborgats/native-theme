@@ -1033,6 +1033,91 @@ and many have since drifted, as the archive's [README](README.md) warns.
       the carried `kcu_tint`, the macOS presets (`labelColor`) and reader; the connectors'
       accessors and the showcases' lists, which swap where the theme gives an inactive fill
       of its own.
+- [x] [v0.7.x] **KDE values that wait for a connector design.** Each facts row below is
+      corrected in 0.7.1; kde-breeze and the reader keep their present values, which
+      disagree with it, until the readers named can take the platform's value without
+      another surface losing. (1) **The focus ring**: done in 0.7.2 (below).
+      (2) **The default button**: done in 0.7.2 (below).
+      (3) **The menu panel's colour** and (4) **the table's grid**: done in 0.7.1
+      (below).
+      (5) **The menu item's radius, padding and icon gap**: done in 0.7.2 (below).
+      *Issue #4, open items step 1 (0.7.1, 2026-11-17, cdd2f191):* (3) and (4) done
+      (`docs/issues/0004_kde-open-items-rationale.md` D2, D3). kde-breeze
+      (`kde-breeze.toml` `[light.menu] background_color`, `[dark.menu] background_color`,
+      `[light.list] grid_color`, `[dark.list] grid_color`) and the KDE reader state
+      Breeze's menu panel, `mix(Window, Base, 0.3)`, and Qt's grid, `MidShade` of the
+      window at `[KDE] contrast`, through the carried `kde_shade`
+      (`native-theme/src/kde/shade.rs`, with its table). gpui's `chart_grid` takes
+      `separator.line_color`; the iced connector's menu bar lies on the window and
+      its menus and drop-downs take the popover's frame on the menu's fill; egui
+      fills every popup with the menu's colour.
+      *Issue #4, open items step 2 (0.7.2, 2026-11-18, b1fc42ba):*
+      (1) done (`docs/issues/0004_kde-open-items-rationale.md` D4). kde-breeze and the
+      KDE reader state Breeze's band, the selection colour at alpha 0.3, 2 px from 1 px
+      inside the control to 1 px outside (`kde-breeze.toml`
+      `[light.defaults] focus_ring_color`, `[dark.defaults] focus_ring_color`), and
+      `defaults.focus_ring_keyboard_only` says KDE shows it for keyboard focus only:
+      the iced and egui connectors and the gpui connector's own controls draw it after
+      a key, and the gpui connector draws gpui-component's band only for a focus
+      that followed a key.
+      *Issue #4, open items step 6 (0.7.2, 2026-11-19, 836619cd):* (2) done
+      (`docs/issues/0004_kde-open-items-rationale.md` D8):
+      `button.default_button_background`, `_text_color`, `_border_color`, stated by
+      kde-breeze (`kde-breeze.toml` `[light.button] default_button_background`,
+      `[dark.button] default_button_background`) and the KDE reader; iced
+      `styles::button_default`, egui `default_button`, gpui `variants::default_button`.
+      *Issue #4's leftovers (0.7.2, 2026-11-20, 38ba86af):* (5) done
+      (`docs/issues/0004_kde-leftovers-rationale.md` E4), and with it the entry. kde-breeze
+      and the KDE reader state Breeze's item in a menu with icons and no checkable items,
+      KDE's default: `menu.border.padding_left` 14 and `padding_right` 27, the arrow
+      column kept on the right, and `menu.icon_text_gap` 4 (`kde-breeze.toml`
+      `[light.menu.border] padding_left_px, padding_right_px`,
+      `[light.menu] icon_text_gap_px`, and dark); the panel's inset,
+      `menu.panel_padding_horizontal` and `panel_padding_vertical`, 3; the least row
+      height, `menu.min_row_height`, 29. kde-breeze states the highlight's radius 4.5
+      since 96ef2531 (`[light.menu.border] corner_radius_px`), and the field keeps its
+      two readers, the item's radius (egui, the showcases, iced's `path_border`) and the
+      iced drop-down's panel, 4.5 on KDE. The deviations, not carried: a menu without
+      icons is drawn 2 px left of Breeze's; in a menu with check items the icon is at 14
+      where Breeze draws it at 33, after the check column; in a menu with icons an item
+      without one starts its text at the left padding, where Breeze starts it with the
+      others' text; a menu whose widest row has no shortcut is 9 or 11 px wider than
+      Breeze's (the model's row is the label + 61 and + 41, Breeze's + 52 and + 30); and
+      egui pads both sides by the left padding, so its row's right inset is 14.
+
+### Model: the menu bar has no fill of its own
+
+- [x] [1.0] From the M8 T16 review (2026-10-17, finding 10): Breeze fills a
+      `QMainWindow`'s tools area, its menu bar and its top toolbars, as one
+      area in the Header set's Window colour (`breezestyle.cpp:1341-1347`;
+      `breezetoolsareamanager.cpp:118-136`, Breeze f0b1d753), which
+      kde-breeze states as `toolbar.background_color` (#dee0e2 / #292c30,
+      `docs/platform-facts.md` §2.13). The model has no menu-bar fill, so the
+      three showcases draw the menu bar in the window's #eff0f1 / #202326
+      above the Header-filled toolbar: a two-tone tools area Breeze does not
+      draw. A `menu_bar` fill leaf (registry, inheritance, the three
+      connectors' menu bars), or the showcases' chrome taking the toolbar's
+      fill for the menu-bar row, would close it.
+      *Issue #4 (0.7.1):* Breeze fills a hovered or open menu bar title with the opaque
+      hover or focus colour under `HighlightedText` (`breezestyle.cpp:5841-5948`); the
+      connectors drew it from `menu.hover_background` until 0.7.1, which now holds the
+      item's 30 % tint, so a title's fill joins *KDE: what a Qt application under Breeze
+      shows that native-theme does not (issue #4)*, "What Breeze draws that the model
+      has no field for".
+      *Issue #4 (0.7.1, 2026-11-17, cdd2f191):* the iced connector's `styles::aw::menu` fills the
+      bar from `window.background_color` too
+      (`docs/issues/0004_kde-open-items-rationale.md` D3), so a field of the bar's
+      own would have that reader as well.
+      *Issue #4's leftovers (0.7.2, 2026-11-20, 96ef2531):* closed
+      (`docs/issues/0004_kde-leftovers-rationale.md` E3). The bar has no field of its
+      own: it takes `toolbar.background_color`, the fill of the one tools area Breeze
+      paints (`kde-breeze.toml` `[light.toolbar] background_color`,
+      `[dark.toolbar] background_color`), which every other bundled preset resolves to
+      `defaults.background_color`, as the window's colour; the three showcases' bars and
+      iced's `styles::aw::menu` take it. A title's fills, text and padding are
+      `menu.bar_hover_background`, `bar_open_background`, `bar_hover_text_color`,
+      `bar_padding_horizontal` and `bar_padding_vertical`, which kde-breeze and the KDE
+      reader state.
 
 ---
 
