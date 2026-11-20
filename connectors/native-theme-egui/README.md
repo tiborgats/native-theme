@@ -74,15 +74,19 @@ To give a window the window colour, `window.background_color`, hand it
 `Window::frame(ui.native_frame(Surface::Window))`, or
 `ThemeAtlas::surface_frame(theme, Surface::Window)` where no `Ui` is at hand.
 
-The complete list, one row per native leaf, is the mapping document in the
-API reference, rendered from [`mapping.toml`](mapping.toml).
+The complete list, one row per native leaf with the egui field it reaches or
+why it reaches none, is the mapping document in the API reference, rendered
+from [`mapping.toml`](mapping.toml).
 
 The install also registers a plugin that paints the platform's focus ring
 around the widget with keyboard focus (where the theme says the platform shows
 it for keyboard focus only, `defaults.focus_ring_keyboard_only`, only after a
 key press) and, where the platform integration
 reports no colour scheme (Linux), tells egui the OS one when the atlas carries
-it (`from_system`, `to_egui_atlas`, `from_preset`, `Builder::os_mode`). The
+it (`from_system`, `to_egui_atlas`, `from_preset`, `Builder::os_mode`). A
+widget whose ring is not a rounded rectangle round its own rect, such as a
+switch's track beside its label, tells the plugin its outline with
+`register_focus_shape`. The
 values no `Style` field carries — the info colours, the warning text colour,
 the text-scale roles, a `TextEdit`'s margin and frame, the dialog button
 order, icon sizes — are free functions of the crate root and of `icons`.
@@ -96,9 +100,7 @@ drift from the connector's.
 It ships no `egui::Widget`, no image decoder, no font database of its own and
 no fork of any egui type. System-font lookup is native-theme's
 (`native_theme::fonts`, feature `system-fonts`), and icons are decoded by the
-image loaders the application installs with `egui_extras`. Every native leaf
-and where it goes in egui — or why it goes nowhere — is one row of
-[`mapping.toml`](mapping.toml), which the crate's API documentation renders.
+image loaders the application installs with `egui_extras`.
 
 The widgets egui lacks, or draws from values no `Style` holds, are in
 [`native-theme-egui-widgets`](../native-theme-egui-widgets/README.md): a
@@ -316,8 +318,9 @@ the application's own, the plan's base is `FontDefinitions::default()` under
 the application's egui features: egui 0.37 adds its two emoji faces,
 `NotoEmoji-Regular` and `emoji-icon-font`, only under its
 `monochrome_emoji_fonts` feature, and `default_fonts`, which an eframe
-application with eframe's default features has, still gives Ubuntu-Light and
-Hack (`epaint-0.37.0/src/text/font_definitions.rs`). An
+application with eframe's default features has, still gives Ubuntu-Light,
+Hack and `egui-icons`, the face of `egui::special_emojis`
+(`epaint-0.37.0/src/text/font_definitions.rs`). An
 application with fonts of its own passes them as the plan's base. On the OS
 theme, `SystemThemeExt::to_egui_builder` is the builder `to_egui_atlas` builds,
 before its `build()`, so every OS input stays and the second `fonts` call
@@ -786,7 +789,7 @@ showcases' captures do.
 
 ### macOS
 
-The `macos-monterey` preset, which covers macOS 12 to 15, and `macos-tahoe`, macOS 26's own look, both captured on GitHub's `macos-26` runner, macOS 26.6.2, so the Monterey pair shows that preset drawn on macOS 26.
+The `macos-monterey` preset, which covers macOS 12 to 15, and `macos-tahoe`, macOS 26's own look, both captured on GitHub's `macos-26` runner, macOS 26.7.2, so the Monterey pair shows that preset drawn on macOS 26.
 
 **macOS Monterey, light**
 

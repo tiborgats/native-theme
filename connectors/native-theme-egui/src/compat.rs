@@ -107,7 +107,7 @@ fn manifest_versions(manifest: &str) -> BTreeMap<String, BTreeSet<String>> {
 /// The package name and version a dependency line states, if it states a
 /// version of its own.
 ///
-/// The shapes read: `egui = "0.36.2"`, a table with a `version` such as
+/// The shapes read: `egui = "0.37.0"`, a table with a `version` such as
 /// `skrifa = { version = "0.44.0", default-features = false, features = ["std"] }`,
 /// and a table with a `package` key, whose package name is not its key and is
 /// the one returned. A dependency inherited from the workspace

@@ -447,9 +447,9 @@ fn every_leaf_has_exactly_one_row_and_every_row_is_well_formed() {
     assert!(problems.is_empty(), "{}", problems.join("\n"));
 }
 
-/// §5.7: the transcription carries the specification's verdicts, group by group, and its
-/// sub-tags (15 source-side gap, 26 widgets-crate, 55 egui-limited, 2 source-void). Read
-/// through the typed reader.
+/// §5.7: the verdicts per group, the specification's table grown by the leaves added since,
+/// and the sub-tags (15 source-side gap, 26 widgets-crate, 55 egui-limited, 2 source-void).
+/// Read through the typed reader.
 #[test]
 fn verdict_totals_match_the_specification() {
     let group_of = |leaf: &str| -> &'static str {
@@ -480,28 +480,15 @@ fn verdict_totals_match_the_specification() {
             *tags.entry(tag.as_str()).or_default() += 1;
         }
     }
-    // [direct, scoped, derived, unmappable] per group: §5.7's table
+    // [direct, scoped, derived, unmappable] per group, as `mapping.toml` holds them: §5.7's
+    // table counts the 482 leaves of the 0.6.0 design, and each leaf the model has gained since
+    // is counted in its group.
     let expected = [
-        // §5.7's [18, 1, 39, 10], and the whole-pixel font flag (one UNMAPPABLE, issue #4's
-        // leftovers)
         ("foundation", [18, 1, 39, 11]),
-        // §5.7's [8, 55, 32, 15], issue #4's leftovers since 0.7.2: the menu item's outline
-        // (one SCOPED), the menu bar's five title fields (five DERIVED), the least row height
-        // and the two panel paddings (three SCOPED) and the pressed item's two colours (two
-        // UNMAPPABLE)
         ("surfaces", [8, 59, 37, 17]),
         ("buttons", [13, 47, 34, 25]),
-        // §5.7's [4, 35, 36, 12], the four `input.border.padding` sides SCOPED since 0.7.2,
-        // `combo_box.hover_border_color`, the caret's blink (two DERIVED, one UNMAPPABLE), and
-        // the header's hovered and pressed fills (two DERIVED) since 0.7.2, the hovered row's
-        // outline and the header's section line (two DERIVED, issue #4's leftovers), and the
-        // open combo box's fill and border (two SCOPED, issue #4's leftovers)
         ("inputs", [4, 42, 38, 13]),
-        // §5.7's [5, 17, 9, 9], and the slider knob's outline (four UNMAPPABLE, issue #4's
-        // leftovers)
         ("indicators", [5, 17, 9, 13]),
-        // §5.7's [0, 57, 28, 19], and the checked toolbar button's pen (one DERIVED, issue #4's
-        // leftovers)
         ("chrome", [0, 57, 29, 19]),
     ];
     for (group, want) in expected {

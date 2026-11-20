@@ -9,8 +9,9 @@
 //! because egui draws it from a hardcoded value or not at all:
 //!
 //! * [`switch::Switch`]: a switch; egui has no switch or toggle widget.
-//! * [`slider::Slider`]: a slider whose knob has its own colour; egui paints the
-//!   resting knob in the rail's.
+//! * [`slider::Slider`]: a slider whose knob has its own colour and the outline the
+//!   theme states at rest, hovered and focused; egui paints the resting knob in the
+//!   rail's and strokes it in the colour that letters its value.
 //! * [`spinner::Spinner`]: the icon set's animated indicator where it has one, else
 //!   an arc at the theme's stroke width, which `egui::Spinner` hardcodes.
 //! * [`segmented_control::SegmentedControl`]: a segmented control; egui has none.

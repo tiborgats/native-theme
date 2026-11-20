@@ -1039,9 +1039,9 @@ mod tests {
     /// A provider's own SVG for a system set it names no icon in, or that the platform cannot
     /// load, is the icon, coloured as a monochrome icon (`colorize_monochrome_svg`, which fills
     /// this SVG's implicit black) in the colour [`custom_icon_to_image_source`] loads a system
-    /// set in: the text colour of the installed atlas, else the tint. That holds for a
-    /// freedesktop key too, where only a `currentColor` the SVG set no colour for used to be
-    /// filled. A bundled set's is untouched without a tint, as [`IconKey::tint`] says, and
+    /// set in: the tint, else the text colour of the installed atlas. That holds for a
+    /// freedesktop key too: the whole SVG is coloured, not only a `currentColor` it sets no
+    /// colour for. A bundled set's is untouched without a tint, as [`IconKey::tint`] says, and
     /// coloured with one.
     #[test]
     fn a_providers_own_svg_takes_the_colour_its_set_loads_in() {

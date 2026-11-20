@@ -4,8 +4,10 @@
 /// A widget role: the *content* style for one kind of widget.
 ///
 /// **Exactly one variant per widget field of [`ResolvedTheme`](crate::ResolvedTheme)**
-/// (`native-theme/src/model/resolved.rs:171-221`), in declaration order. That is the whole
-/// rule. When native-theme grows a widget, this enum grows one variant and `mapping.toml`
+/// (`native-theme/src/model/resolved.rs:171-221`), in declaration order, `text_area` aside:
+/// a multi-line `TextEdit` is drawn in `Role::Input`, and its own border reaches it through
+/// [`text_area_margin`](crate::text_area_margin) and [`text_area_frame`](crate::text_area_frame).
+/// When native-theme grows a widget, this enum grows one variant and `mapping.toml`
 /// grows one section; nothing else in this crate's API changes.
 ///
 /// Role names are **native-theme's vocabulary**: each one is a `ResolvedTheme` field name.

@@ -372,7 +372,7 @@ impl ThemeAtlas {
     /// Feed to `Popup::style` (`egui/src/containers/popup.rs:417`), `MenuConfig::style`
     /// (`egui/src/containers/menu.rs:107`), `MenuBar::style` (`:241`) or
     /// `ComboBox::popup_style` (`egui/src/containers/combo_box.rs:199`) — the only four
-    /// acceptors in egui 0.36.2 (spec §3.2); `Tooltip` reaches `Popup::style` through its public
+    /// acceptors in egui 0.36.2 and in 0.37.0 (spec §3.2); `Tooltip` reaches `Popup::style` through its public
     /// `popup` field (`egui/src/containers/tooltip.rs:9`).
     ///
     /// For menus this is required, not convenient: without it a menu's style is the

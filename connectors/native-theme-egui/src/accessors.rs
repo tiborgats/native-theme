@@ -90,7 +90,7 @@ pub fn disabled_text_color(t: &ResolvedTheme) -> egui::Color32 {
 pub fn selection_inactive_background(t: &ResolvedTheme) -> egui::Color32 {
     to_color32(t.defaults.selection_inactive_background)
 }
-/// `defaults.selection_inactive_text_color` as an `egui::Color32`: text color over the
+/// `defaults.selection_inactive_text_color` as an `egui::Color32`: the text colour over the
 /// selection of a view without the focus.
 #[must_use]
 pub fn selection_inactive_text_color(t: &ResolvedTheme) -> egui::Color32 {
