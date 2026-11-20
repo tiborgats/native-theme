@@ -1738,7 +1738,7 @@ pub(super) const PICK_LIST_BORDER_ROWS: &[BorderRow<pick_list::Status>] = &[Bord
     get: |t, r, s| styles::pick_list(r)(t, s).border,
 }];
 
-/// A menu has no `Status` (shape C), so its rows hold the unit value: the row
+/// A menu has no `Status`, so its rows hold the unit value: the row
 /// types are generic over the widget's status, and `()` is what a widget
 /// without one has.
 #[cfg(feature = "widgets")]
@@ -2148,7 +2148,7 @@ pub(super) const SCROLLABLE_ROWS: &[StyleRow<scrollable::Status>] = &[
     },
 ];
 
-/// A progress bar has no `Status` (shape B), so its rows hold the unit value,
+/// A progress bar has no `Status`, so its rows hold the unit value,
 /// as a menu's do.
 #[cfg(feature = "widgets")]
 pub(super) const PROGRESS_BAR_STATUSES: &[()] = &[()];
@@ -2183,7 +2183,7 @@ pub(super) const PROGRESS_BAR_BORDER_ROWS: &[BorderRow<()>] = &[BorderRow {
     get: |t, r, ()| styles::progress_bar(r)(t).border,
 }];
 
-/// A rule has no `Status` (shape B).
+/// A rule has no `Status`.
 #[cfg(feature = "widgets")]
 pub(super) const RULE_STATUSES: &[()] = &[()];
 
@@ -2196,7 +2196,7 @@ pub(super) const RULE_ROWS: &[StyleRow<()>] = &[StyleRow {
     get: |t, r, ()| Ok(styles::rule(r)(t).color),
 }];
 
-/// A pane grid has no `Status` (shape B): it picks the hovered or the picked
+/// A pane grid has no `Status`: it picks the hovered or the picked
 /// line itself (`pane_grid.rs:949-956`).
 #[cfg(feature = "widgets")]
 pub(super) const PANE_GRID_STATUSES: &[()] = &[()];
@@ -2237,7 +2237,7 @@ pub(super) const PANE_GRID_SCALAR_ROWS: &[ScalarRow<()>] = &[
     },
 ];
 
-/// A tooltip has no `Status` (shape B).
+/// A tooltip has no `Status`.
 #[cfg(feature = "widgets")]
 pub(super) const TOOLTIP_STATUSES: &[()] = &[()];
 
@@ -2272,7 +2272,7 @@ pub(super) const TOOLTIP_BORDER_ROWS: &[BorderRow<()>] = &[BorderRow {
     get: |t, r, ()| styles::tooltip(r)(t).border,
 }];
 
-/// A dialog's container has no `Status` (shape B).
+/// A dialog's container has no `Status`.
 #[cfg(feature = "widgets")]
 pub(super) const DIALOG_STATUSES: &[()] = &[()];
 
@@ -2306,7 +2306,7 @@ pub(super) const DIALOG_BORDER_ROWS: &[BorderRow<()>] = &[BorderRow {
     get: |t, r, ()| styles::dialog(r)(t).border,
 }];
 
-/// A toolbar's container and its rule have no `Status` (shape B).
+/// A toolbar's container and its rule have no `Status`.
 #[cfg(feature = "widgets")]
 pub(super) const TOOLBAR_STATUSES: &[()] = &[()];
 
@@ -2339,7 +2339,7 @@ pub(super) const TOOLBAR_RULE_ROWS: &[StyleRow<()>] = &[StyleRow {
     get: |t, r, ()| Ok(styles::toolbar_rule(r)(t).color),
 }];
 
-/// An application's base style has no `Status` (shape B).
+/// An application's base style has no `Status`.
 #[cfg(feature = "widgets")]
 pub(super) const APPLICATION_STATUSES: &[()] = &[()];
 
@@ -2361,7 +2361,7 @@ pub(super) const APPLICATION_ROWS: &[StyleRow<()>] = &[
     },
 ];
 
-/// A card has no `Status` (shape B).
+/// A card has no `Status`.
 #[cfg(feature = "widgets")]
 pub(super) const CONTAINER_CARD_STATUSES: &[()] = &[()];
 
@@ -2704,7 +2704,7 @@ pub(super) const EXPANDER_BORDER_ROWS: &[BorderRow<button::Status>] = &[BorderRo
     get: |t, r, s| styles::expander(r)(t, s).border,
 }];
 
-/// An expander's frame has no `Status` (shape B).
+/// An expander's frame has no `Status`.
 #[cfg(feature = "widgets")]
 pub(super) const EXPANDER_FRAME_STATUSES: &[()] = &[()];
 
@@ -3179,8 +3179,8 @@ pub(super) const AW_SELECTION_LIST_SCALAR_ROWS: &[ScalarRow<AwStatus>] = &[Scala
     get: |t, r, s| Ok(styles::aw::selection_list(r)(t, s).border_width),
 }];
 
-/// `styles::aw::spinner` is shape B -- a spinner has no status, and the
-/// container it styles takes none either -- so its rows hold the unit value.
+/// A spinner has no status, and the container `styles::aw::spinner` styles
+/// takes none either, so its rows hold the unit value.
 #[cfg(feature = "iced_aw")]
 pub(super) const AW_SPINNER_STATUSES: &[()] = &[()];
 

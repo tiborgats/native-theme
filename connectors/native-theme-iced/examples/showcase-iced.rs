@@ -107,8 +107,8 @@ const WINDOW_SIZE: (f32, f32) = (WINDOW_SIZE_PX.0 as f32, WINDOW_SIZE_PX.1 as f3
 /// Tags a widget so the self-tests can find it, and does nothing otherwise.
 ///
 /// `iced_selector` sees only the widgets that implement `Widget::operate`, and
-/// `slider`, `radio`, `toggler`, `pick_list`, `combo_box` and `text_editor`
-/// implement none, so no selector can reach them. `container` is the one
+/// `slider`, `radio`, `toggler`, `pick_list` and `combo_box` implement none
+/// (iced_widget 0.14.2), so no selector can reach them. `container` is the one
 /// widget in the showcase's set that carries a `widget::Id` and reports it
 /// with its own bounds (`container.rs:109`, `:280-283`), which is what
 /// `iced_test`'s `id` selector matches.
@@ -18218,8 +18218,8 @@ fn font_from_database(spec: &ResolvedFontSpec, mono: bool) -> Drawn {
 /// weight or style its family has no face of therefore falls through to the
 /// next fallback family that has one: on macOS cosmic-text's fallback list
 /// puts the system family, `.SF NS`, first and the monospace Menlo second
-/// (`font/fallback/macos.rs:30-38`), and bold section titles were drawn in
-/// a monospace bold. [`register_weight`] files the weights a variable face
+/// (`font/fallback/macos.rs:30-38`), so bold section titles would be drawn
+/// in a monospace bold. [`register_weight`] files the weights a variable face
 /// covers; where none does, the text stays in its family at the nearest
 /// face iced can ask for, one of its nine weights, chosen as fontdb's CSS
 /// matching chooses (`lib.rs:1278-1336`).

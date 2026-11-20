@@ -188,8 +188,8 @@ the iced default it replaces:
 
 | Shape | Closure | Functions | Passed to |
 |---|---|---|---|
-| with a status | `Fn(&Theme, Status) -> Style` | `button`, `button_primary`, `button_danger`, `button_success`, `button_warning`, `button_link`, `button_toggle`, `toolbar_button`, `button_default`, `text_input`, `text_editor`, `checkbox`, `checkbox_over`, `radio`, `toggler`, `toggler_over`, `pick_list`, `scrollable`, `slider`, `segment`, `expander` | `.style(..)` — `slider` also serves `vertical_slider`, and has no focused status, so a slider's focus outline (`slider.thumb_focus_border_color`) is not drawn; `text_input` also serves `ComboBox::input_style(..)`; `segment` and `expander` style the buttons of a segmented control and an expander header, which iced lacks; `scrollable` hides a floating bar (`scrollbar.overlay_mode`) at rest and shows it under the pointer, as iced has no auto-hide; `button_toggle(&resolved, checked)` is a toggle button, the plain button while off; `toolbar_button(&resolved, checked)` is a toolbar's button, flat at rest, in the toolbar's states where the theme states them; `button_default` is a dialog's default button, the primary one where the platform gives it no look of its own; the `_over` forms fade a disabled control over a backdrop you name |
-| without a status | `Fn(&Theme) -> Style` | `container_card`, `progress_bar`, `rule`, `tooltip`, `dialog`, `toolbar`, `toolbar_rule`, `segmented_control`, `segment_separator`, `expander_frame`, `pane_grid` | `.style(..)` — `dialog` styles the container a dialog is drawn in, which iced lacks (`dialog_padding`, `dialog_max_width`, `dialog_max_height`, `dialog_min_width` and `dialog_min_height` give its geometry, `dialog_title_font_color` its title), `toolbar` the container a toolbar is drawn in and `toolbar_rule` the rule under it, which iced lacks too (`toolbar_padding`, `toolbar_item_gap`, `toolbar_bar_height` and `toolbar_border_line_width` give its geometry), `segmented_control` the container holding the segments and `segment_separator` the line between two, `expander_frame` the one round an expander's header and body, `pane_grid` a `PaneGrid`'s split lines |
+| with a status | `Fn(&Theme, Status) -> Style` | `button`, `button_primary`, `button_danger`, `button_success`, `button_warning`, `button_link`, `button_toggle`, `toolbar_button`, `button_default`, `text_input`, `text_editor`, `checkbox`, `checkbox_over`, `radio`, `toggler`, `toggler_over`, `pick_list`, `scrollable`, `slider`, `segment`, `expander` | `.style(..)` — `slider` also serves `vertical_slider`, and outlines the handle `slider.thumb_border_line_width` wide in `.thumb_border_color`, `.thumb_hover_border_color` under the pointer, where the theme states them; `pick_list` takes `combo_box.open_background` and `.open_border_color` while its list is open; `text_input` also serves `ComboBox::input_style(..)`; `segment` and `expander` style the buttons of a segmented control and an expander header, which iced lacks; `scrollable` hides a floating bar (`scrollbar.overlay_mode`) at rest and shows it under the pointer, as iced has no auto-hide; `button_toggle(&resolved, checked)` is a toggle button, the plain button while off; `toolbar_button(&resolved, checked)` is a toolbar's button, flat at rest, in the toolbar's states where the theme states them; `button_default` is a dialog's default button, the primary one where the platform gives it no look of its own; the `_over` forms fade a disabled control over a backdrop you name |
+| without a status | `Fn(&Theme) -> Style` | `container_card`, `progress_bar`, `rule`, `tooltip`, `dialog`, `toolbar`, `toolbar_rule`, `segmented_control`, `segment_separator`, `expander_frame`, `pane_grid` | `.style(..)` — `dialog` styles the container a dialog is drawn in, which iced lacks (`dialog_padding`, `dialog_max_width`, `dialog_max_height`, `dialog_min_width` and `dialog_min_height` give its geometry, `dialog_title_font_color` its title, `dialog_button_gap` and `dialog_button_order` its button row), `toolbar` the container a toolbar is drawn in and `toolbar_rule` the rule under it, which iced lacks too (`toolbar_padding`, `toolbar_item_gap`, `toolbar_bar_height` and `toolbar_border_line_width` give its geometry), `segmented_control` the container holding the segments and `segment_separator` the line between two, `expander_frame` the one round an expander's header and body, `pane_grid` a `PaneGrid`'s split lines |
 | menu | `Fn(&Theme) -> menu::Style` | `menu` | `.menu_style(..)` on `PickList` and `ComboBox` |
 | application | `Fn(&Theme) -> theme::Style` | `application` | `iced::application(..).style(..)`, called inside its `Fn(&State, &Theme)`: the window's background, `window.background_color`, under the base style's text colour |
 | a value | `scrollable::Scrollbar` | `scrollbar` | `.direction(Direction::Vertical(..))` — widths, and an embedded bar where the platform does not overlay its scrollbars |
@@ -285,7 +285,8 @@ radio `checkbox.radio_indicator_width` across where the theme states it
 does not, `checkbox.label_gap` from its label,
 in `styles::radio`, and where the theme states `checkbox.radio_dot_diameter`
 lays a dot that many pixels across over the circle, in
-`checkbox.indicator_color`; where it states none (macOS), the dot is iced's.
+`checkbox.indicator_color`; where it states none (ios-13 and the community
+presets), the dot is iced's.
 
 ### `iced_aw`
 
@@ -359,7 +360,8 @@ table header's height),
 `list_header_active_background` (a table header section's hovered and
 pressed fills, for a header you draw: iced's `table` has no style setter),
 `info_color`, `info_text_color`,
-`warning_text_color`, `icon_sizes`, `text_scale`, plus `to_iced_weight(css_weight)`
+`warning_text_color`, `icon_sizes`, `text_scale`, the `dialog_*` and `toolbar_*`
+helpers (see [Styles](#styles)), plus `to_iced_weight(css_weight)`
 for converting CSS weight values to iced's `Weight` enum, and the widgets
 `pick_list_handle`, `tab_indicator`, `tab_indicator_line`, `tab_flares`,
 `focus_ring`, `switch` / `switch_over` and `radio` (all feature `widgets`).
@@ -705,6 +707,10 @@ in none of them:
   column header either, so `list.header_separator_color` has none: a table
   built of containers draws the header's lines in it, as the showcase's
   `basic_table` does.
+- **A button's and a slider's focus.** An iced button takes no keyboard
+  focus (`iced_widget` 0.14.2 `src/button.rs:257-273`), so
+  `button.focus_border_color` has no receiver, and iced's slider has no
+  focused status, so `slider.thumb_focus_border_color` is not drawn.
 - **The window frame.** iced takes no colour for the title bar or the window
   border (`window::Settings::decorations` is a `bool`); it passes the
   theme's light or dark flag to the window, which `to_theme_in`,
@@ -1097,7 +1103,7 @@ in `docs/showcase-exceptions.toml`.
 
 ### macOS
 
-The `macos-monterey` preset, which covers macOS 12 to 15, and `macos-tahoe`, macOS 26's own look, both captured on GitHub's `macos-26` runner, macOS 26.6.2, so the Monterey pair shows that preset drawn on macOS 26.
+The `macos-monterey` preset, which covers macOS 12 to 15, and `macos-tahoe`, macOS 26's own look, both captured on GitHub's `macos-26` runner, macOS 26.7.2, so the Monterey pair shows that preset drawn on macOS 26.
 
 **macOS Monterey, light**
 

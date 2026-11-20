@@ -396,7 +396,9 @@
 //!   receiver there; a list built of the application's own rows outlines a
 //!   hovered row itself. A `SelectionList` has no column header either, so
 //!   `list.header_separator_color` has none.
-//! - **A slider's focus.** iced's slider has no focused status, so
+//! - **A button's and a slider's focus.** An iced button takes no keyboard
+//!   focus, so `button.focus_border_color` has no receiver (`styles::button`),
+//!   and iced's slider has no focused status, so
 //!   `slider.thumb_focus_border_color` is not drawn (`styles::slider`).
 //! - **The window frame.** iced takes no colour for it (`decorations:
 //!   bool`, `iced_core` 0.14 `window/settings.rs:65-66`); it passes the

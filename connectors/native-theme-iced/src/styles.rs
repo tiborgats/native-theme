@@ -25,7 +25,7 @@
 //!
 //! | iced widget | Function |
 //! |---|---|
-//! | `button` | [`button`], [`button_primary`], [`button_danger`], [`button_success`], [`button_warning`], [`button_link`], [`button_toggle`]; [`segment`] and [`expander`] for the buttons of a segmented control and of an expander's header |
+//! | `button` | [`button`], [`button_primary`], [`button_danger`], [`button_success`], [`button_warning`], [`button_link`], [`button_toggle`], [`toolbar_button`], [`button_default`]; [`segment`] and [`expander`] for the buttons of a segmented control and of an expander's header |
 //! | `text_input`, and `ComboBox::input_style` | [`text_input`] |
 //! | `text_editor` | [`text_editor`] |
 //! | `checkbox` | [`checkbox`], [`checkbox_over`] |
@@ -1456,8 +1456,8 @@ pub fn pick_list(
 ///
 /// Replaces `iced_widget::overlay::menu::default` (`overlay/menu.rs:646`),
 /// which paints the list in the palette's weak background and its selected row
-/// in the primary family. This is the one function of shape C: a menu has no
-/// `Status`, so the closure takes the theme alone.
+/// in the primary family. A menu has no `Status`, so the closure takes the
+/// theme alone.
 ///
 /// A drop-down is framed as a popup, in `popover.border`'s colour and width
 /// (`docs/platform-facts.md` §2.16, "Popover / Dropdown"). Its panel and rows are the

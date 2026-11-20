@@ -557,7 +557,7 @@ struct Checked {
     checks: usize,
     /// How many of those comparisons were contrast pairs below AA. The printed
     /// lines collapse the statuses that read alike, so the count of lines is
-    /// no longer the count of pairs, and the header prints both.
+    /// not the count of pairs, and the header prints both.
     below_aa: usize,
 }
 
@@ -3743,7 +3743,7 @@ fn style_contrast_never_degrades_the_native_pair() -> native_theme::Result<()> {
 #[test]
 fn a_hovered_button_composites_the_state_layer_over_its_idle_fill() -> native_theme::Result<()> {
     // A translucent hover layer shows the difference between layering and
-    // replacing (section 3.2). No bundled preset states one since M2b Step 7b
+    // replacing (section 3.2). No bundled preset states one
     // (windows-11 states WinUI's replacing fill flattened,
     // native-theme/src/presets/windows-11.toml:127), so the fixture is
     // windows-11 light with that brush as the resource gives it,
