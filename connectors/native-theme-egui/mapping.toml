@@ -831,7 +831,7 @@ sinks   = [
   { path = "visuals.widgets.open.bg_stroke.width", scope = "menu", when = "its being stated moves the width from menu.border.line_width to defaults.border.line_width, which may agree" },
   { path = "visuals.widgets.active.bg_stroke.width", scope = "menu", when = "its being stated moves the width from menu.border.line_width to defaults.border.line_width, which may agree" },
 ]
-note    = "at defaults.border.line_width, inside the item's padding (egui-0.37.0/src/theme/default_style.rs:68-71); open is an item whose submenu is shown (S4), and active, which is also egui's keyboard-focused item, stays the hover look (S6)"
+note    = "at defaults.border.line_width, inside the item's padding (egui-0.37.0/src/theme/default_style.rs:68-71); open is an item whose submenu is shown, and active, which is also egui's keyboard-focused item, stays the hover look"
 
 ["menu.bar_hover_background"]
 verdict   = "derived"

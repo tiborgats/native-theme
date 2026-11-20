@@ -332,6 +332,16 @@ fn menu(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes: &
         (w.hovered.bg_stroke, w.open.bg_stroke) = (line, line); // open: a submenu shown, S4
         w.active.bg_stroke = line; // `active` stays the hover look (S6)
     }
+    // E3: `menu_bar_titles` keeps the cell's padding on a non-finite bar side; reported here,
+    // where the atlas is built
+    for (side, path) in [
+        (m.bar_padding_horizontal, "menu.bar_padding_horizontal"),
+        (m.bar_padding_vertical, "menu.bar_padding_vertical"),
+    ] {
+        if side.is_some_and(|v| !v.is_finite()) {
+            push_note(notes, Note::ValueSanitised { path });
+        }
+    }
     s.visuals.widgets.noninteractive.bg_stroke.color = to_color32(m.separator_color); // `separator_style` (§5.2)
     // the item padding over menu_style's vec2(2.0, 0.0), the unstated side's target (§5.2)
     let after_menu_style = s.spacing.button_padding;
@@ -372,7 +382,8 @@ fn menu(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes: &
 /// `menu.bar_hover_background`, `open` `menu.bar_open_background`, else the hover fill;
 /// `menu.bar_hover_text_color` letters the three; the title's padding is
 /// `menu.bar_padding_horizontal` and `menu.bar_padding_vertical`, a finite side through
-/// [`clamp_length`] (a title has no line). Each where stated: unstated, the cell's own look.
+/// [`clamp_length`] (a title has no line); a non-finite side keeps the cell's padding and is
+/// reported when the atlas is built (`menu`). Each where stated: unstated, the cell's own look.
 ///
 /// [`ThemeAtlas::menu_bar_modifier`]: crate::ThemeAtlas::menu_bar_modifier
 pub(crate) fn menu_bar_titles(t: &ResolvedTheme, s: &mut egui::Style) {

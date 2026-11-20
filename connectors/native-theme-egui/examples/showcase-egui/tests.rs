@@ -5178,9 +5178,82 @@ fn a_hovered_list_row_is_outlined_where_the_theme_states_it() {
                     "{preset}: the outline on the row's frame"
                 );
             }
-            None => assert!(lines.is_empty(), "{preset}: {lines:?}"),
+            None => {
+                // no line on the row's frame but the list cell's own hovered stroke
+                let mut cell = egui::Style::default();
+                harness
+                    .state()
+                    .atlas
+                    .role_modifier(
+                        egui::Theme::Light,
+                        native_theme_egui::Role::List,
+                        RoleVariant::Normal,
+                    )
+                    .apply(&mut cell);
+                let own = cell.visuals.widgets.hovered;
+                let frame = row.expand(own.expansion);
+                let others: Vec<_> = shapes
+                    .iter()
+                    .filter(|r| stroked(r) && near_rect(r.rect, frame) && r.stroke != own.bg_stroke)
+                    .collect();
+                assert!(others.is_empty(), "{preset}: {others:?}");
+            }
         }
     }
+}
+
+/// E3 (issue #4's leftovers): the menu bar is filled with `toolbar.background_color`
+/// (`chrome::menu_panel`; kde-breeze light #dee0e2, Breeze's tools area, docs/platform-facts.md
+/// §2.13), not the window's, and the title of the open menu takes the bar's open fill
+/// (`menu.bar_open_background`) with the pointer off it, where `chrome::menu_bar` swaps
+/// `widgets.open` in; a closed title is not so filled.
+#[test]
+fn the_menu_bar_takes_the_toolbar_fill_and_its_open_title_the_open_fill() {
+    let colour = native_theme_egui::convert::to_color32;
+    let mut harness = open_scaled("kde-breeze", "basic", 1.0);
+    harness.state_mut().open_menu = Some("theme".to_string());
+    harness.run_steps(4);
+    let t = harness
+        .state()
+        .atlas
+        .resolved_for(egui::Theme::Light)
+        .clone();
+    assert_eq!(
+        t.toolbar.background_color,
+        native_theme::Rgba::rgb(0xde, 0xe0, 0xe2)
+    );
+    assert_ne!(t.window.background_color, t.toolbar.background_color);
+    let open = t
+        .menu
+        .bar_open_background
+        .expect("kde-breeze states the open fill");
+    let rects: Vec<egui::epaint::RectShape> = harness
+        .output()
+        .shapes
+        .iter()
+        .filter_map(|clipped| match &clipped.shape {
+            egui::Shape::Rect(r) => Some(r.clone()),
+            _ => None,
+        })
+        .collect();
+    let bar = place_of(&harness, "chrome.menu_bar");
+    assert!(
+        rects
+            .iter()
+            .any(|r| near_rect(r.rect, bar) && r.fill == colour(t.toolbar.background_color)),
+        "the menu bar's fill at {bar:?}"
+    );
+    let filled = |id: &str| {
+        let title = place_of(&harness, id);
+        rects
+            .iter()
+            .any(|r| r.rect.contains(title.center()) && r.fill == colour(open))
+    };
+    assert!(filled("chrome.menu_bar.theme"), "the open title's fill");
+    assert!(
+        !filled("chrome.menu_bar.file"),
+        "a closed title is not filled"
+    );
 }
 
 /// A table header section's fill (`pages::basic::header_section_fill`, decision 19 and 7.H.1 of

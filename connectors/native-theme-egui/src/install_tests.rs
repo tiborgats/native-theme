@@ -246,6 +246,28 @@ fn t18_a_the_menu_bar_modifier_is_the_menu_cell_with_the_bar_fields() {
     }
 }
 
+/// E3: a theme that states the title's hover fill and no open fill draws an open title in the
+/// hover fill (`menu_bar_titles`), set apart from the cell's own on the resolved theme.
+#[test]
+fn an_unstated_open_title_fill_is_the_bar_hover_fill() {
+    let mut light = resolved("kde-breeze", ColorMode::Light);
+    light.menu.bar_open_background = None;
+    light.menu.bar_hover_background = Some(native_theme::Rgba::rgb(0xf0, 0xa0, 0x14));
+    let atlas = ThemeAtlas::builder("Breeze", &light, &light).build();
+    let mut bar = egui::Style::default();
+    atlas.menu_bar_modifier(egui::Theme::Light).apply(&mut bar);
+    let mut cell = egui::Style::default();
+    atlas
+        .role_modifier(egui::Theme::Light, Role::Menu, RoleVariant::Normal)
+        .apply(&mut cell);
+    let hover = egui::Color32::from_rgb(0xf0, 0xa0, 0x14);
+    assert_ne!(cell.visuals.widgets.open.weak_bg_fill, hover);
+    let w = &bar.visuals.widgets;
+    for e in [&w.hovered, &w.active, &w.open] {
+        assert_eq!(e.weak_bg_fill, hover);
+    }
+}
+
 /// §4.5, §7.5: `carry_name_keys` hands the cell's `Arc` over unchanged when the style it
 /// merges from holds no `Name` key the cell lacks, and copies only otherwise.
 #[test]

@@ -419,8 +419,13 @@ impl ThemeAtlas {
     /// `bar_hover_text_color`, `bar_padding_horizontal`, `bar_padding_vertical`): a title
     /// under the pointer, or keyboard-focused, takes the hover fill, an open title the open
     /// fill, and no title draws the item outline. A field the theme leaves unstated keeps the
-    /// cell's look. The menus the bar opens stay [`ThemeAtlas::role_modifier`]'s, through
-    /// `MenuConfig::style`.
+    /// cell's look, and a padding side that is not finite keeps the cell's padding and is
+    /// reported when the atlas is built ([`Note::ValueSanitised`]). The menus the bar opens stay
+    /// [`ThemeAtlas::role_modifier`]'s, through `MenuConfig::style`.
+    ///
+    /// The titles touch only where the application sets `spacing.item_spacing.x` and
+    /// `spacing.interact_size.y` to 0 over this style, as the showcase does: the modifier leaves
+    /// them the cell's.
     ///
     /// egui's `MenuButton` draws a title from its pointer state alone
     /// (`egui-0.37.0/src/containers/menu.rs:430`); only a `SubMenuButton` draws its `open` look

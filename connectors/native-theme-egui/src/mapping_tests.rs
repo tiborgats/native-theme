@@ -761,8 +761,14 @@ fn build(t: &ResolvedTheme) -> ThemeAtlas {
 
 /// The `tested_by` leaves `Builder::build` itself reads and sanitises (§7.2 does not exempt a
 /// `tested_by` row): the focus ring's width and offset, which `build_focus_ring` reports when
-/// non-finite (§6.18). `focus_ring_color` is a colour, not an `f32` leaf.
-const BUILD_READ_TESTED_BY: &[&str] = &["defaults.focus_ring_width", "defaults.focus_ring_offset"];
+/// non-finite (§6.18), and the menu bar's title padding, which the menu cell reports for
+/// `menu_bar_modifier` (E3). `focus_ring_color` is a colour, not an `f32` leaf.
+const BUILD_READ_TESTED_BY: &[&str] = &[
+    "defaults.focus_ring_width",
+    "defaults.focus_ring_offset",
+    "menu.bar_padding_horizontal",
+    "menu.bar_padding_vertical",
+];
 
 /// What §7.2's emission rule predicts for one leaf set to `v`: `ValueSanitised` and
 /// `ValueSaturated` only — the two kinds a hostile float causes.

@@ -1852,14 +1852,16 @@ fn list_row(
                 [top && left, top && right, bottom && left, bottom && right],
             );
             ui.painter().rect_filled(shown, corners, fill);
-            // A hovered, unselected row's outline on its fill's shape, inside it, as Breeze's
-            // line is (`egui-0.37.0/src/painter.rs:406-414`, `epaint-0.37.0/src/stroke.rs:102-111`)
+            // A hovered, unselected row's outline on the row's shape, inside it, as Breeze's
+            // line is (`egui-0.37.0/src/painter.rs:406-414`, `epaint-0.37.0/src/stroke.rs:102-111`),
+            // clipped to the view as the fill is: Breeze clips the row to the view, so a row
+            // partly scrolled out draws no line along the view's edge
             if let Some(edge) = l
                 .hover_border_color
                 .filter(|_| !selected && response.hovered())
             {
-                ui.painter().rect_stroke(
-                    shown,
+                ui.painter().with_clip_rect(shown).rect_stroke(
+                    rect,
                     corners,
                     to_stroke(egui::Stroke::NONE, edge, t.defaults.border.line_width),
                     egui::StrokeKind::Inside,

@@ -798,7 +798,7 @@ fn expected(
             if t.menu.hover_border_color.is_none() {
                 return converted(c, "menu.border.line_width", sink, inherited);
             }
-            // the base style's `window_stroke`, from egui's own (egui/src/memory/theme.rs:24-29)
+            // the base style's `window_stroke`, from egui's own (egui-0.37.0/src/memory/theme.rs:24-29)
             let own = c.scheme.default_style().visuals.window_stroke.width;
             Val::F32(convert::clamp_length(convert::finite_or(
                 t.defaults.border.line_width,

@@ -270,8 +270,8 @@ fn fit_row(ui: &mut egui::Ui, shrink: f32) {
 /// toolbar's background (`toolbar.background_color`, the menu bar's in
 /// `docs/showcase-elements.toml`: Breeze fills the menu bar and the toolbars as one tools area,
 /// docs/platform-facts.md §2.13; elsewhere than kde-breeze it is the window's), its menus
-/// `layout.container_margin` in from the window's sides, and [`MENU_BAR_PADDING`] where the theme states no such margin, as the gpui
-/// showcase's menu bar; no line under it.
+/// `layout.container_margin` in from the window's sides, and [`MENU_BAR_PADDING`] where the
+/// theme states no such margin, as the gpui showcase's menu bar; no line under it.
 #[cfg(not(all(target_os = "macos", not(test))))]
 fn menu_panel(app: &mut App, ui: &mut egui::Ui) {
     let t = app.atlas.resolved_for(ui.ctx().theme());
@@ -316,8 +316,9 @@ fn menu_panel(app: &mut App, ui: &mut egui::Ui) {
 }
 
 /// The in-window menu bar (Linux, Windows, and macOS under `cfg(test)`; macOS has the system
-/// menu bar otherwise). `Role::Menu` through `role_modifier` to both `MenuBar::style` and
-/// `MenuConfig::style` (§4.2); each open menu's own `Ui` is styled and recorded as `Role::Menu`
+/// menu bar otherwise). `MenuBar::style` takes `menu_bar_modifier(ui)`, the `Role::Menu` cell
+/// with the theme's menu-bar title fields, and `MenuConfig::style` `Role::Menu` through
+/// `role_modifier` (§4.2); each open menu's own `Ui` is styled and recorded as `Role::Menu`
 /// too.
 #[cfg(not(all(target_os = "macos", not(test))))]
 fn menu_bar(app: &mut App, ui: &mut egui::Ui) -> egui::Response {
