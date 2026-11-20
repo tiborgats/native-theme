@@ -20,8 +20,8 @@ Sources. Breeze is read at `f0b1d753` (`kstyle/breezestyle.cpp`, `breezehelper.c
 `hh`, `mt`, `tam`; qtbase and qtdeclarative at v6.12.0, kirigami and kwidgetsaddons at
 v6.31.0. "Measured" means an offscreen run in `docs/evidence/breeze-offscreen/`: the
 runs of 2026-11-13, 2026-11-14 and 2026-11-18, and the run of 2026-11-20 this
-rationale adds (Qt Quick's font sizes, a slider handle and a checked tool button, and
-menus and a menu bar; its README says what ran). The toolkits are gpui-component and
+rationale adds (Qt Quick's font sizes, a slider handle and a checked tool button,
+menus, a menu bar and item views; its README says what ran). The toolkits are gpui-component and
 gpui-base 0.10.0 (`GC`, `GB`), iced_widget 0.14.2 (`IW`), iced_aw 0.14.1 (`AW`), egui
 0.37 (`EG`) and epaint 0.37.0; `PF` is `docs/platform-facts.md`, `REG`
 `docs/property-registry.toml`, `INH` `docs/inheritance-rules.toml`. Breeze's colours
@@ -175,7 +175,7 @@ look there.
   `MenuBarItem_MarginHeight` 6 (`mt:93-94`, `st:3598`); measured: the text's ink 11 in
   from each side (10 and a bearing of 1), a title 30 high for an 18 px line, and the
   titles touching (File at x 0, Edit at x 41). All three showcases pad their titles
-  with `menu.border.padding`, which E4 changes to Breeze's item inset, so the titles
+  with `menu.border.padding`, which E4 changes to Breeze's item padding (14 and 27), so the titles
   need their own: new fields `menu.bar_padding_horizontal` and
   `menu.bar_padding_vertical` (two numbers, TOML `bar_padding_horizontal_px` and
   `bar_padding_vertical_px`, each applied to both of its sides), kde-breeze 10 and 6,
@@ -261,9 +261,12 @@ What kde-breeze and the reader state today, against Breeze:
   showcases' `rows::scaled_height` keeps it even where the text does not fit), the KDE
   reader sets no text scale, and its output is merged over the preset, so every KDE
   user with a menu font of about 16 pt or more would get clipped rows. A separate
-  least height leaves the M9-150 rule and its tests as they are. Read by: gpui
-  `geometry::menu_item` (a `min_h`), the iced showcase's rows, and egui's menu role
-  (`interact_size.y`, a least height in egui).
+  least height leaves the M9-150 rule and its tests as they are. Where a theme states
+  both, `row_height` is drawn as it is today and the least height is not applied: an
+  exact height leaves a least one nothing to do. Read by: gpui `geometry::menu_item`
+  (a `min_h`), the iced showcase's rows, and egui's menu role (`interact_size.y`, a
+  least height in egui, without the connector's `fit_row_padding`, which serves only a
+  stated `row_height`).
 - The vertical padding stays 4 (`MenuItem_MarginHeight`).
 
 ### E5 — The hovered list row's outline (L1)
@@ -510,7 +513,7 @@ fix, so the rest of those days went to specifications, plans and gates.
 | The looks | E1, E3, E5 | 7 | the menu bar takes the toolbar's fill; kde-breeze's menu radius 4.5, which E1's outline is rounded by | ⅘ |
 | Menus, the rest | E2, E4 | 5 | kde-breeze's padding and gap | ⅗ |
 | Lists, controls | E6, E7, E8, E9, E10 | 8 | two reader writes; kde-breeze's slider hover fill removed | ⅞ |
-| Fonts and sizes | E11, E12 | 1 | the button's minimum width | ⅑ |
+| Fonts and sizes | E11, E12 | 1 | the button's minimum width; every KDE font size the tests expect | ⅑ |
 
 The smaller details, the last three units, come to 14 fields, about one and a half
 days. The unit of sizes that are not minimums (Z1's height, Z2, Z3, §3) would have
@@ -547,7 +550,7 @@ Not checked:
 - Pango's rounding of font sizes; the 2 px by which a long button label's size hint
   exceeds its advance (E12 does not depend on it); whether `tab.min_width`, 80 in
   kde-breeze, is an outer box as the button's is (the specification reads it).
-- The rate of six fields a day (§4) is two days' figure, not a law.
+- The rate of nine fields a day (§4) is two days' figure, not a law.
 - `MenuItemDrawStrongFocus` and the window border size, as said above, are Breeze's
   defaults, not read.
 - The other platforms' values for every new field: their sources are named in the
