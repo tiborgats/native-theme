@@ -4908,6 +4908,21 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       `connectors/native-theme-gpui/clippy.toml`'s header, which asks for the
       body read, sets it no narrower scope than its comment sweep's.
 
+### egui showcase: the Containers page at a text scale of 2
+
+- [ ] [v0.7.x] Found 2026-11-20 by `the_expander_header_is_its_stated_height_by_the_row_rule`
+      (`23bbfa7e`, scale 2 added): under ios-13 at a text scale of 2, in the
+      1280 x 720 window, the Containers page leaves its scroll view 31.5 px tall
+      (607.5 to 639). Above it, the menu bar takes 54, the toolbar 75, the page tabs
+      58 and the page's fixed part 420 (a wrapped caption, and nested panels in a
+      128 px `Resize` whose right panel is 269 tall); the status bar takes 81. The
+      central panel's response runs to 671.5, past the status bar's top at 639,
+      from the scroll area's least height of 64 (egui 0.37.0
+      `src/containers/scroll_area.rs:469`). Decide how the page's fixed part gives
+      way at large scales (scrolled with the page, or shrunk), check the other
+      pages and the gpui and iced showcases at 2 the same way, and add the case
+      to a test.
+
 ### gpui showcase: the resize handle's width in Widget Info and `content_width`
 
 - [ ] [v0.7.x] G4's final review (2026-10-27) fixed the resize handle's Widget
