@@ -2103,7 +2103,7 @@ offscreen, `docs/evidence/breeze-offscreen/2026-11-13/`.
       and 50 % disabled opacity have no source in Breeze. (6) Qt's line box for the
       13 px body is 18 (`docs/evidence/breeze-offscreen/2026-11-20/qt-fonts-widgets/out_light.txt`,
       `implicitHeight 18.0`), where the model's is 13 × 1.36 = 17.68: line heights are
-      not rounded (`docs/todo_v0.7.2_kde-leftovers-spec.md`, S3); decide whether the
+      not rounded (`docs/archive/todo_v0.7.2_kde-leftovers-spec.md`, S3); decide whether the
       model carries Qt's line box.
       *Issue #4's leftovers (0.7.2, 2026-11-20, 98a76844):* (1) done
       (`docs/issues/0004_kde-leftovers-rationale.md` E11): Qt Quick rounds as Qt Widgets
