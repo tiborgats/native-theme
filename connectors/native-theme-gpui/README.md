@@ -598,8 +598,9 @@ Issue #4's KDE looks that gpui-component's own widgets cannot take:
 padding and height, which are constants), `AppMenuBar` (the bar's fill and
 the titles' fills, text and padding: its titles are ghost Buttons in the
 shared tokens), `ListItem` and `DataTable` (a hovered row's outline; the
-header's separators, in the shared `border`) and `Slider` (the thumb's
-outline). The showcase draws the first four with its own elements; the
+header's separators, in the shared `border`), `Slider` (the thumb's outline)
+and `Select` (an open combo box's fill and frame: it shows `ring` while
+open). The showcase draws the first four with its own elements; the
 `widgets` module's `Slider` draws the thumb's outline.
 
 ## Theme-drawn widgets

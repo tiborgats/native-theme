@@ -756,6 +756,16 @@ pub const HOW: &[(&str, &str, &str)] = &[
         "gpui: over the fill under the pointer (demo::combo_surface)",
     ),
     (
+        "basic.drop_down.trigger",
+        "combo_box.open_background",
+        "not reachable: an open Select draws ring and exposes no open state to style its fill by (gpui-component 0.10.0 select.rs:559, outline_visible; gpui-component 0.10.0 select.rs:596-598, ring)",
+    ),
+    (
+        "basic.drop_down.trigger",
+        "combo_box.open_border_color",
+        "not reachable: an open Select edges itself in ring and exposes no open state to style (gpui-component 0.10.0 select.rs:559, outline_visible; gpui-component 0.10.0 select.rs:596-598, ring)",
+    ),
+    (
         "",
         "combo_box.hover_border_color",
         "gpui: an edge laid over the trigger under the pointer (demo::combo_surface); upstream's trigger has no hover style",

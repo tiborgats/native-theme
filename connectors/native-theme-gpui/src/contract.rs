@@ -1120,6 +1120,12 @@ const MENU_BAR_TITLE: &str = "`AppMenuBar`'s titles are Small ghost Buttons \
      (`menu/app_menu_bar.rs:276-280`), its bar has no fill (`:122-143`); the \
      showcase draws it";
 
+/// gpui-component's open drop-downs show the focus ring: an open combo box's
+/// fill and frame have no open state to go to.
+#[cfg(feature = "widgets")]
+const COMBO_OPEN: &str = "an open `Select` or `Combobox` draws `ring` and has \
+     no open state to style (`select.rs:559`, `:596-598`; `combobox.rs:638`)";
+
 /// The colour leaves of `ResolvedTheme` that reach no sink in any of the 34
 /// bundled combinations and that `NO_RECEIVER` does not name, each with its
 /// reason.
@@ -1282,6 +1288,14 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
              `StyleRefinement` has no hover state; the showcase draws it over \
              the trigger",
         ),
+    },
+    UnreadColour {
+        leaf: "combo_box.open_background",
+        why: Unread::NoReceiver(COMBO_OPEN),
+    },
+    UnreadColour {
+        leaf: "combo_box.open_border_color",
+        why: Unread::NoReceiver(COMBO_OPEN),
     },
     UnreadColour {
         leaf: "combo_box.border.color",
