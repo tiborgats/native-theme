@@ -369,7 +369,11 @@ fn menu(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes: &
     // where stated, the shortcut and a submenu's arrow then that far from the right edge too
     // (README, *Limits*); else the pair's mean
     let mut items = m.border.clone();
-    items.padding.right = items.padding.left.or(items.padding.right);
+    items.padding.right = items
+        .padding
+        .left
+        .filter(|v| v.is_finite())
+        .or(items.padding.right);
     s.spacing.button_padding.x = to_button_padding(after_menu_style, &items).x;
     // E4: a stated row height is drawn exactly and wins (S2); else a least height, which egui's
     // Button grows past (egui-0.37.0/src/theme/default_style.rs:97-101,
@@ -1787,6 +1791,32 @@ mod tests {
             egui::Theme::Light.default_style().spacing.interact_size.y
         );
         assert_eq!(s.spacing.button_padding.y, 4.0);
+    }
+
+    /// E4: a non-finite `menu.border.padding.left` is no stated left side, so the item's one
+    /// horizontal padding keeps the finite right side, as an unstated left does.
+    #[test]
+    fn a_non_finite_left_menu_padding_keeps_the_right_side() {
+        let x = |t: &ResolvedTheme| {
+            let atlas = crate::ThemeAtlas::builder("t", t, t).build();
+            let mut s = egui::Style::default();
+            atlas
+                .role_modifier(egui::Theme::Light, Role::Menu, crate::RoleVariant::Normal)
+                .apply(&mut s);
+            s.spacing.button_padding.x
+        };
+        let mut t = crate::install_tests::resolved("kde-breeze", ColorMode::Light);
+        assert!(t.menu.border.padding.right.is_some_and(f32::is_finite));
+        t.menu.border.padding.left = None;
+        let unstated = x(&t);
+        t.menu.border.padding.right = None;
+        let neither = x(&t);
+        assert_ne!(unstated, neither, "the right side counts");
+        t = crate::install_tests::resolved("kde-breeze", ColorMode::Light);
+        for left in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
+            t.menu.border.padding.left = Some(left);
+            assert_eq!(x(&t), unstated, "{left}");
+        }
     }
 
     /// §6.1: `Window` and `Card` write no entry and no field; their cell is the base style.

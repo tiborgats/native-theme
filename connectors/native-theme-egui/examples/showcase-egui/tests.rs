@@ -5197,6 +5197,152 @@ fn a_hovered_list_row_is_outlined_where_the_theme_states_it() {
     }
 }
 
+/// E5: a hovered row the list's view cuts keeps its outline on its fill's shape: under
+/// kde-breeze light the first row scrolled partly out at the top, filled rounded where it meets
+/// the frame, draws no line along the view's edge and no line pixel outside the fill's arcs.
+/// Both shapes are tessellated as epaint draws them, each clipped to its clip rectangle, and
+/// sampled at every pixel's centre of the fill: the line covers no pixel more than the fill does.
+#[test]
+fn a_hovered_row_cut_by_the_list_view_is_outlined_on_its_fill() {
+    /// How much of the pixel at `p` the meshes of `shape` cover: the largest vertex alpha
+    /// interpolated over the triangles holding `p`, over the shape's own alpha; 0 outside its
+    /// clip rectangle.
+    fn coverage(
+        ctx: &egui::Context,
+        shape: &egui::epaint::ClippedShape,
+        alpha: u8,
+        p: egui::Pos2,
+    ) -> f32 {
+        let ppp = ctx.pixels_per_point();
+        let mut most: f32 = 0.0;
+        for clipped in ctx.tessellate(vec![shape.clone()], ppp) {
+            let egui::epaint::Primitive::Mesh(mesh) = clipped.primitive else {
+                continue;
+            };
+            if !clipped.clip_rect.contains(p) {
+                continue;
+            }
+            for tri in mesh.indices.as_chunks::<3>().0 {
+                let [a, b, c] = tri.map(|i| mesh.vertices[i as usize]);
+                let d =
+                    (b.pos - a.pos).x * (c.pos - a.pos).y - (c.pos - a.pos).x * (b.pos - a.pos).y;
+                if d.abs() < f32::EPSILON {
+                    continue;
+                }
+                let u = ((b.pos - p).x * (c.pos - p).y - (c.pos - p).x * (b.pos - p).y) / d;
+                let v = ((c.pos - p).x * (a.pos - p).y - (a.pos - p).x * (c.pos - p).y) / d;
+                let w = 1.0 - u - v;
+                if u >= 0.0 && v >= 0.0 && w >= 0.0 {
+                    let a_of = |vx: egui::epaint::Vertex| f32::from(vx.color.a());
+                    most = most.max((u * a_of(a) + v * a_of(b) + w * a_of(c)) / f32::from(alpha));
+                }
+            }
+        }
+        most
+    }
+    let colour = native_theme_egui::convert::to_color32;
+    let mut harness = open_scaled("kde-breeze", "basic", 1.0);
+    let t = harness
+        .state()
+        .atlas
+        .resolved_for(egui::Theme::Light)
+        .clone();
+    let l = &t.list;
+    let edge = l
+        .hover_border_color
+        .expect("kde-breeze outlines a hovered row");
+    let outline = native_theme_egui::convert::to_stroke(
+        egui::Stroke::NONE,
+        edge,
+        t.defaults.border.line_width,
+    );
+    harness.state_mut().demo_state.basic_list = 1;
+    harness.run_steps(SETTLE);
+    let place = harness.state().registry.places()["basic.list.row_1"];
+    harness.hover_at(place.center());
+    harness.run_steps(SETTLE);
+    harness.event(egui::Event::MouseWheel {
+        unit: egui::MouseWheelUnit::Point,
+        delta: egui::vec2(0.0, -(place.height() / 3.0).round()),
+        phase: egui::TouchPhase::Move,
+        source: egui::MouseWheelSource::Unknown,
+        modifiers: egui::Modifiers::NONE,
+    });
+    harness.run_steps(3 * SETTLE);
+    let row = harness.state().registry.places()["basic.list.row_1"];
+    harness.hover_at(egui::pos2(row.center().x, row.bottom() - 2.0));
+    harness.run_steps(SETTLE);
+    let shapes = harness.output().shapes.clone();
+    let fills: Vec<_> = shapes
+        .iter()
+        .filter_map(|s| match &s.shape {
+            egui::Shape::Rect(r)
+                if r.fill == colour(l.hover_background) && r.rect.intersects(row) =>
+            {
+                Some((s, r))
+            }
+            _ => None,
+        })
+        .collect();
+    assert_eq!(fills.len(), 1, "the hovered row's fill");
+    let (fill_shape, fill) = fills[0];
+    assert!(
+        fill.rect.top() > row.top() && fill.rect.top() < row.bottom(),
+        "the first row cut at the top: {:?} of {row:?}",
+        fill.rect
+    );
+    assert!(
+        fill.corner_radius.nw > 0,
+        "the cut row's fill is rounded where it meets the frame"
+    );
+    let lines: Vec<_> = shapes
+        .iter()
+        .filter(|s| {
+            matches!(&s.shape, egui::Shape::Rect(r)
+                if r.stroke == outline && r.rect.intersects(row))
+        })
+        .collect();
+    assert_eq!(lines.len(), 1, "the hovered row's outline");
+    let ctx = harness.ctx.clone();
+    let ppp = ctx.pixels_per_point();
+    let fill_alpha = colour(l.hover_background).a();
+    let mut drawn = 0;
+    let mut outside = Vec::new();
+    let (x0, x1) = (
+        (fill.rect.left() * ppp).floor() as i32,
+        (fill.rect.right() * ppp).ceil() as i32,
+    );
+    let (y0, y1) = (
+        (fill.rect.top() * ppp).floor() as i32,
+        (fill.rect.bottom() * ppp).ceil() as i32,
+    );
+    for y in y0..y1 {
+        for x in x0..x1 {
+            let p = egui::pos2((x as f32 + 0.5) / ppp, (y as f32 + 0.5) / ppp);
+            let line = coverage(&ctx, lines[0], outline.color.a(), p);
+            if line > 0.0 {
+                drawn += 1;
+            }
+            let under = coverage(&ctx, fill_shape, fill_alpha, p);
+            if line > under + 0.1 {
+                outside.push((p, line, under));
+            }
+        }
+    }
+    assert!(drawn > 0, "the outline is drawn");
+    assert!(
+        outside.is_empty(),
+        "line pixels outside the fill: {outside:?}"
+    );
+    let top_line = (x0..x1)
+        .map(|x| egui::pos2((x as f32 + 0.5) / ppp, fill.rect.top() + 0.5 / ppp))
+        .filter(|p| p.x > fill.rect.left() + 2.0 * fill.corner_radius.nw as f32)
+        .filter(|p| p.x < fill.rect.right() - 2.0 * fill.corner_radius.ne as f32)
+        .filter(|p| coverage(&ctx, lines[0], outline.color.a(), *p) > 0.0)
+        .count();
+    assert_eq!(top_line, 0, "no line along the view's edge");
+}
+
 /// E3 (issue #4's leftovers): the menu bar is filled with `toolbar.background_color`
 /// (`chrome::menu_panel`; kde-breeze light #dee0e2, Breeze's tools area, docs/platform-facts.md
 /// §2.13), not the window's, and the title of the open menu takes the bar's open fill
@@ -5249,6 +5395,84 @@ fn the_menu_bar_takes_the_toolbar_fill_and_its_open_title_the_open_fill() {
         !filled("chrome.menu_bar.file"),
         "a closed title is not filled"
     );
+}
+
+/// S10 (E4's geometry): the open Theme menu's popup, framed by `demo::menu_modifier`, insets its
+/// first item by the menu's `panel_padding_*` where the theme states them, inside the popup's
+/// line: kde-breeze light 3 + 1 from the frame's edge on the top and the left. adwaita states no
+/// panel padding, and its item lies `popover.border.padding` inside the line. The frame is the
+/// `Shape::Rect` egui paints for `Frame::popup` (`epaint::StrokeKind::Inside` on its outer
+/// rectangle, `egui-0.37.0/src/containers/frame.rs:468-476`), in the menu's fill and the popover
+/// line.
+#[test]
+fn the_open_menu_insets_its_first_item_by_the_panel_padding() {
+    fn walk(shape: &egui::Shape, out: &mut Vec<egui::epaint::RectShape>) {
+        match shape {
+            egui::Shape::Vec(inner) => inner.iter().for_each(|s| walk(s, out)),
+            egui::Shape::Rect(r) => out.push(r.clone()),
+            _ => {}
+        }
+    }
+    let colour = native_theme_egui::convert::to_color32;
+    for preset in ["kde-breeze", "adwaita"] {
+        let mut harness = open_scaled(preset, "basic", 1.0);
+        harness.state_mut().open_menu = Some("theme".to_string());
+        harness.run_steps(SETTLE);
+        let t = harness
+            .state()
+            .atlas
+            .resolved_for(egui::Theme::Light)
+            .clone();
+        let (m, p) = (&t.menu, &t.popover.border);
+        let line = native_theme_egui::convert::to_stroke(egui::Stroke::NONE, p.color, p.line_width);
+        let item = place_of(&harness, "chrome.menu.theme.reload");
+        let mut rects = Vec::new();
+        harness
+            .output()
+            .shapes
+            .iter()
+            .for_each(|clipped| walk(&clipped.shape, &mut rects));
+        let frames: Vec<_> = rects
+            .iter()
+            .filter(|r| {
+                r.stroke == line
+                    && r.fill == colour(m.background_color)
+                    && r.stroke_kind == egui::StrokeKind::Inside
+                    && r.rect.contains_rect(item)
+            })
+            .collect();
+        assert_eq!(
+            frames.len(),
+            1,
+            "{preset}: the popup's frame round {item:?}"
+        );
+        let inset = item.min - frames[0].rect.min;
+        let want = if preset == "kde-breeze" {
+            assert_eq!(
+                (m.panel_padding_horizontal, m.panel_padding_vertical),
+                (Some(3.0), Some(3.0))
+            );
+            assert_eq!(line.width, 1.0);
+            egui::vec2(3.0 + 1.0, 3.0 + 1.0)
+        } else {
+            assert_eq!(
+                (m.panel_padding_horizontal, m.panel_padding_vertical),
+                (None, None),
+                "{preset} states no panel padding"
+            );
+            let (left, top) = (
+                p.padding
+                    .left
+                    .expect("adwaita states the popover's padding"),
+                p.padding.top.expect("adwaita states the popover's padding"),
+            );
+            egui::vec2(left + line.width, top + line.width)
+        };
+        assert!(
+            near(inset.x, want.x) && near(inset.y, want.y),
+            "{preset}: the first item {inset:?} from the frame's edge, want {want:?}"
+        );
+    }
 }
 
 /// E7 (issue #4's leftovers): the Basic table's line under the header and its column line over
@@ -5572,7 +5796,10 @@ fn stated_list_and_menu_rows_hold_their_text_at_every_text_scale() {
 /// title with its padding: ios-13's 34 px title, whose face's row (46) is taller than its 41 px
 /// line box, grows its header past the rule's 44. At 1.5 kde-breeze's 13 px title (its 10 pt in
 /// whole pixels, `defaults.font_whole_pixels`) is 19.5, its line box 26.52 at its 1.36 line
-/// height, 27 rounded up, so a header with its 7 + 7 padding is 41, past the stated 40.
+/// height, 27 rounded up, so a header with its 7 + 7 padding is 41, past the stated 40. Its
+/// egui headers' plain title is a 27 px row, also 41 with that padding, so the case does not
+/// tell the rule from egui's own sizing; a scale of 2 would (the rule's line box 35.36, 36
+/// rounded up, and 50, the title's row 35 and 49).
 #[test]
 fn the_expander_header_is_its_stated_height_by_the_row_rule() {
     let mut faults = Vec::new();

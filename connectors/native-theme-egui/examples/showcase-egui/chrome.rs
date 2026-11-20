@@ -360,7 +360,7 @@ fn menu_bar(app: &mut App, ui: &mut egui::Ui) -> egui::Response {
                         egui::containers::menu::MenuButton::from_button(egui::Button::new(title));
                     let (title_response, _) = menu_button.ui(ui, |ui| {
                         // The popup's frame, built from the menu's modifier before the body's
-                        // cell style replaces it (`egui/src/containers/popup.rs:602-603`).
+                        // cell style replaces it (`egui-0.37.0/src/containers/popup.rs:650-651`).
                         let (margin, stroke) =
                             (ui.spacing().menu_margin, ui.visuals().window_stroke.width);
                         let open = demo::styled_menu(registry, ui, Role::Menu, normal);

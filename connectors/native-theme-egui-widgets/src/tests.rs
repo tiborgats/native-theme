@@ -990,7 +990,9 @@ fn header_padding(t: &ResolvedTheme, ctx: &egui::Context, painted: bool) -> f32 
 /// the gpui showcase's header is the stated height at 1 (`geometry::accordion_title`). At 1.5
 /// kde-breeze's 13 px title (its 10 pt in whole pixels, `defaults.font_whole_pixels`) is 19.5,
 /// its line box 26.52 at its 1.36 line height, 27 rounded up, so the header is 27 + 7 + 7 = 41,
-/// past the stated 40.
+/// past the stated 40. That is also egui's own sizing, its title's row (27 here) and its
+/// padding, so the case does not tell the rule from it; a scale of 2 would (the rule's line box
+/// 35.36, 36 rounded up, and 50, the title's row 35 and 49).
 #[test]
 fn the_header_is_its_stated_height_by_the_row_rule() {
     let mut faults = Vec::new();
@@ -2022,11 +2024,18 @@ fn the_slider_outlines_its_knob_in_the_themes_colours() {
         egui::Stroke::new(1.0, rest),
         "the pointer on the rail"
     );
-    // dragged: pressed on the knob, then moved off it
+    // dragged: pressed on the knob, then moved well off the slider across the rail, so the
+    // knob stays put and only the drag gives the hover colour
     let _ = show(&ctx, pointer(centre, true));
-    let (knob, _) = show(&ctx, moved(off));
+    let below = egui::pos2(centre.x, r.rect.bottom() + 3.0 * knob.radius);
+    let (knob, r_dragged) = show(&ctx, moved(below));
+    assert!(r_dragged.dragged(), "the knob is dragged");
+    assert!(
+        knob.center.distance(below) > knob.radius + knob.stroke.width,
+        "the pointer off the knob"
+    );
     assert_eq!(knob.stroke, egui::Stroke::new(1.0, hover), "dragged");
-    let _ = show(&ctx, pointer(off, false));
+    let _ = show(&ctx, pointer(below, false));
     let away = egui::pos2(r.rect.right() + 50.0, r.rect.bottom() + 50.0);
     let _ = show(&ctx, moved(away));
     ctx.memory_mut(|m| m.request_focus(r.id));
@@ -2051,6 +2060,97 @@ fn the_slider_outlines_its_knob_in_the_themes_colours() {
     });
     let knob = circles(&out).into_iter().next().unwrap();
     assert_eq!(Some(knob.stroke), want, "adwaita: the state's fg_stroke");
+}
+
+/// The knob of a kde-breeze light slider as drawn by one pass on `ctx` with `input`, and the
+/// slider's response; `enabled` as `Slider::enabled` takes it.
+fn slider_knob(
+    ctx: &egui::Context,
+    input: egui::RawInput,
+    enabled: bool,
+) -> (egui::epaint::CircleShape, egui::Response) {
+    let mut value = 50.0;
+    let (out, r) = response(ctx, input, |ui| {
+        ui.add(Slider::new(&mut value, 0.0..=100.0).enabled(enabled))
+    });
+    (circles(&out).into_iter().next().unwrap(), r)
+}
+
+fn moved(pos: egui::Pos2) -> egui::RawInput {
+    egui::RawInput {
+        events: vec![egui::Event::PointerMoved(pos)],
+        focused: true,
+        ..Default::default()
+    }
+}
+
+/// S7: a stated `slider.thumb_border_line_width` of 0 draws no outline at all, egui's own
+/// included, at rest and with the pointer on the knob: the disc is the whole knob,
+/// `thumb_diameter` across.
+#[test]
+fn a_stated_zero_width_draws_no_knob_outline() {
+    let mut t = kde();
+    assert!(t.slider.thumb_hover_border_color.is_some());
+    t.slider.thumb_border_line_width = Some(0.0);
+    let ctx = installed(&t, &AccessibilityPreferences::default());
+    let (knob, _) = slider_knob(&ctx, at(0.0), true);
+    assert_eq!(knob.stroke, egui::Stroke::NONE, "at rest");
+    assert_eq!(2.0 * knob.radius, t.slider.thumb_diameter);
+    let (knob, _) = slider_knob(&ctx, moved(knob.center), true);
+    assert_eq!(knob.stroke, egui::Stroke::NONE, "the pointer on the knob");
+    assert_eq!(2.0 * knob.radius, t.slider.thumb_diameter);
+}
+
+/// S7: a stated width with `slider.thumb_border_color` unset draws no line at rest, the knob
+/// whole at its diameter; with the pointer on the knob the stated hover colour is drawn.
+#[test]
+fn a_knob_with_no_rest_outline_colour_is_whole_at_rest() {
+    let mut t = kde();
+    assert_eq!(t.slider.thumb_border_line_width, Some(1.0));
+    t.slider.thumb_border_color = None;
+    let hover = t.slider.thumb_hover_border_color.map(to_color32).unwrap();
+    let ctx = installed(&t, &AccessibilityPreferences::default());
+    let (knob, _) = slider_knob(&ctx, at(0.0), true);
+    assert_eq!(knob.stroke, egui::Stroke::NONE, "at rest");
+    assert_eq!(2.0 * knob.radius, t.slider.thumb_diameter);
+    let (knob, _) = slider_knob(&ctx, moved(knob.center), true);
+    assert_eq!(
+        knob.stroke,
+        egui::Stroke::new(1.0, hover),
+        "the pointer on the knob"
+    );
+    assert_eq!(
+        2.0 * (knob.radius + knob.stroke.width),
+        t.slider.thumb_diameter
+    );
+}
+
+/// S7: a disabled knob is outlined in the rest colour, faded as the slider is (here by a
+/// `slider.disabled_opacity` of 0.5 over the window), with the pointer on it and the focus
+/// requested: hover and focus are ignored.
+#[test]
+fn a_disabled_knob_takes_the_rest_outline_faded() {
+    let mut t = kde();
+    let rest = t.slider.thumb_border_color.map(to_color32).unwrap();
+    assert_ne!(
+        t.slider.thumb_hover_border_color.map(to_color32),
+        Some(rest)
+    );
+    assert_ne!(
+        t.slider.thumb_focus_border_color.map(to_color32),
+        Some(rest)
+    );
+    t.slider.disabled_opacity = 0.5;
+    let ctx = installed(&t, &AccessibilityPreferences::default());
+    let ground = to_color32(t.defaults.background_color);
+    let want = egui::Stroke::new(1.0, ground.lerp_to_gamma(ground.blend(rest), 0.5));
+    let (knob, r) = slider_knob(&ctx, at(0.0), false);
+    assert_eq!(knob.stroke, want, "at rest");
+    let (knob, _) = slider_knob(&ctx, moved(knob.center), false);
+    assert_eq!(knob.stroke, want, "the pointer on the knob");
+    ctx.memory_mut(|m| m.request_focus(r.id));
+    let (knob, _) = slider_knob(&ctx, moved(knob.center), false);
+    assert_eq!(knob.stroke, want, "the focus requested");
 }
 
 // ---- T6: no hardcoded values -------------------------------------------------------------------

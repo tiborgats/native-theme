@@ -1063,7 +1063,11 @@ fn expected(
         // E4: a menu item's one horizontal padding is its stated left side, else the pair's
         (Some("menu"), "normal", None, "spacing.button_padding.x") => {
             let mut items = padding_border_of(c, "menu");
-            items.padding.right = items.padding.left.or(items.padding.right);
+            items.padding.right = items
+                .padding
+                .left
+                .filter(|v| v.is_finite())
+                .or(items.padding.right);
             Val::F32(convert::to_button_padding(inherited_style().spacing.button_padding, &items).x)
         }
         // E4: the menu panel's inset of its items, a side per panel padding (`i8`, §7.2)

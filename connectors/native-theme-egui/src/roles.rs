@@ -135,7 +135,7 @@ pub enum RoleVariant {
 /// (`egui/src/containers/menu.rs:65-76`). egui builds the frame itself, after applying the
 /// menu's `StyleModifier`: a top-level menu is a `Popup::menu` with no frame (`:325-331`), so
 /// `Popup::show` applies the modifier and then builds `Frame::popup(ui.style())`
-/// (`egui/src/containers/popup.rs:602-603`); a submenu is a `Popup` given the menu's
+/// (`egui-0.37.0/src/containers/popup.rs:650-651`); a submenu is a `Popup` given the menu's
 /// `MenuConfig::style` and no frame too (`egui-0.37.0/src/containers/menu.rs:707-720`), framed
 /// the same way (`Frame::menu` at `:598` only measures its offset). The popup frame reads five
 /// `Style` fields (spec §3.2), and the base style carries all five for every menu, which the

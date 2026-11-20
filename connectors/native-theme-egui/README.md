@@ -640,7 +640,8 @@ egui pads a menu item's text by one `button_padding.x` on both sides, so the
 item takes `menu.border.padding.left` on both where the theme states it: the
 shortcut text, which egui lays out flush right in the padding
 (`Button::shortcut_text`), and a submenu's arrow end that far from the right
-edge, 14 px under kde-breeze where Breeze's end 27 px from it.
+edge, 14 px under kde-breeze where Breeze's shortcut and arrow end 27 px
+from it.
 
 A hovered row's outline (`list.hover_border_color`) is drawn by the
 application where it paints its rows, as the showcase's list and command
