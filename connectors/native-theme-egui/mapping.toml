@@ -1968,7 +1968,7 @@ tested_by = "T18(b)"
 verdict = "scoped"
 sinks   = [
   { path = "visuals.widgets.inactive.weak_bg_fill", scope = "combo_box" },
-  { path = "visuals.widgets.open.weak_bg_fill", scope = "combo_box" },
+  { path = "visuals.widgets.open.weak_bg_fill", scope = "combo_box", when = "combo_box.open_background is translucent or None, §6.1, §6.4" },
   { path = "visuals.widgets.hovered.weak_bg_fill", scope = "combo_box", when = "combo_box.hover_background is translucent or None, §6.1, §6.4" },
   { path = "visuals.widgets.active.weak_bg_fill", scope = "combo_box", when = "combo_box.hover_background is translucent or None, §6.1, §6.4" },
   { path = "visuals.widgets.inactive.weak_bg_fill", scope = "combo_box", variant = "disabled", when = "combo_box.disabled_background is None, §6.4" },
@@ -2017,13 +2017,23 @@ sinks   = [
 ["combo_box.hover_border_color"]
 verdict = "scoped"
 sinks   = [
-  { path = "visuals.widgets.hovered.bg_stroke.color", scope = "combo_box", when = "stated; None copies combo_box.border.color, §6.4; an open combo box is egui's open state and keeps the border at rest" },
-  { path = "visuals.widgets.active.bg_stroke.color", scope = "combo_box", when = "stated; None copies combo_box.border.color, §6.4; an open combo box is egui's open state and keeps the border at rest" },
+  { path = "visuals.widgets.hovered.bg_stroke.color", scope = "combo_box", when = "stated; None copies combo_box.border.color, §6.4; an open combo box is egui's open state, combo_box.open_border_color's" },
+  { path = "visuals.widgets.active.bg_stroke.color", scope = "combo_box", when = "stated; None copies combo_box.border.color, §6.4; an open combo box is egui's open state, combo_box.open_border_color's" },
 ]
 
 ["combo_box.disabled_background"]
 verdict = "scoped"
 sinks   = [{ path = "visuals.widgets.inactive.weak_bg_fill", scope = "combo_box", variant = "disabled", when = "stated; None copies combo_box.background_color, §6.4" }]
+
+["combo_box.open_background"]
+verdict = "scoped"
+sinks   = [{ path = "visuals.widgets.open.weak_bg_fill", scope = "combo_box", when = "stated; None copies combo_box.background_color, §6.4" }]
+note    = "a state layer over combo_box.background_color; egui draws an open combo box from widgets.open under ComboBox::CLASS_OPEN whatever the pointer does (egui-0.37.0/src/theme/default_style.rs:41-45), as Breeze draws it"
+
+["combo_box.open_border_color"]
+verdict = "scoped"
+sinks   = [{ path = "visuals.widgets.open.bg_stroke.color", scope = "combo_box", when = "stated; None copies combo_box.border.color, §6.4" }]
+note    = "at combo_box.border.line_width, whatever the pointer does, as combo_box.open_background"
 
 ["combo_box.font.family"]
 verdict  = "unmappable"
@@ -2066,7 +2076,7 @@ sinks   = [
   { path = "visuals.widgets.inactive.bg_stroke.color", scope = "combo_box" },
   { path = "visuals.widgets.hovered.bg_stroke.color", scope = "combo_box", when = "combo_box.hover_border_color is None, §6.4" },
   { path = "visuals.widgets.active.bg_stroke.color", scope = "combo_box", when = "combo_box.hover_border_color is None, §6.4" },
-  { path = "visuals.widgets.open.bg_stroke.color", scope = "combo_box" },
+  { path = "visuals.widgets.open.bg_stroke.color", scope = "combo_box", when = "combo_box.open_border_color is None, §6.4" },
 ]
 
 ["combo_box.border.corner_radius"]

@@ -12,7 +12,8 @@ use super::states::{
 use super::{BuildInput, push_note};
 use crate::accessors::scaled_text_size;
 use crate::convert::{
-    Rgba, clamp_length, expander_padding_border, padding_with_border, to_button_padding, to_color32,
+    Rgba, clamp_length, composite_over, expander_padding_border, padding_with_border,
+    to_button_padding, to_color32,
 };
 use crate::{Note, ResolvedTheme, Role};
 
@@ -1120,11 +1121,21 @@ fn combo_box(
         notes,
     );
     // the hovered and pressed trigger's outline where stated (§6.4: `None` keeps the border
-    // `write_states` copied); an open combo box is egui's `open` state and keeps the border at rest
+    // `write_states` copied); an open combo box is egui's `open` state, written below
     if let Some(hover) = cb.hover_border_color {
         let hover = to_color32(hover);
         s.visuals.widgets.hovered.bg_stroke.color = hover;
         s.visuals.widgets.active.bg_stroke.color = hover;
+    }
+    // E10: an open combo box, drawn from `open` under `ComboBox::CLASS_OPEN` whatever the
+    // pointer does (egui-0.37.0/src/theme/default_style.rs:41-45), as Breeze draws it: the fill
+    // a state layer over the idle fill, as the hover's (opaque is exact), the border at the width
+    // `write_states` put there. Unstated, `open` keeps the resting look.
+    if let Some(fill) = cb.open_background {
+        s.visuals.widgets.open.weak_bg_fill = composite_over(fill, cb.background_color);
+    }
+    if let Some(edge) = cb.open_border_color {
+        s.visuals.widgets.open.bg_stroke.color = to_color32(edge);
     }
     s.spacing.interact_size.y = length(
         "combo_box.min_height",
@@ -2567,6 +2578,18 @@ mod tests {
     /// combo box's `hovered` and `active` taking `combo_box.hover_border_color` where stated.
     #[test]
     fn combo_box_and_segmented_control_cells_write_their_rows() {
+        // E10: kde-breeze light draws an open combo box as Breeze's pressed button, `Button`
+        // mixed 0.3 towards `Highlight`, framed in `Highlight` (docs/platform-facts.md §2.24);
+        // adwaita states neither, and its open box is its resting one
+        let (c, _, _, _) = cell("kde-breeze", ColorMode::Light, Role::ComboBox);
+        let open = &c.visuals.widgets.open;
+        assert_eq!(open.weak_bg_fill, egui::Color32::from_rgb(0xc3, 0xe5, 0xf6));
+        assert_eq!(
+            open.bg_stroke.color,
+            egui::Color32::from_rgb(0x3d, 0xae, 0xe9)
+        );
+        let (c, _, _, _) = cell("adwaita", ColorMode::Light, Role::ComboBox);
+        assert_eq!(c.visuals.widgets.open, c.visuals.widgets.inactive);
         for (preset, mode) in PRESETS {
             let (c, base, t, notes) = cell(preset, mode, Role::ComboBox);
             let cb = &t.combo_box;
@@ -2581,19 +2604,20 @@ mod tests {
                 to_color32(cb.background_color),
                 "{preset}"
             );
-            assert_eq!(
-                w.open.weak_bg_fill,
-                to_color32(cb.background_color),
-                "{preset}"
-            );
+            let open = match cb.open_background {
+                Some(o) => composite_over(o, cb.background_color),
+                None => to_color32(cb.background_color),
+            };
+            assert_eq!(w.open.weak_bg_fill, open, "{preset}");
             assert_eq!(w.hovered.weak_bg_fill, hovered, "{preset}");
             assert_eq!(w.active.weak_bg_fill, hovered, "{preset}");
             let border = cb.border.color;
             let hover_border = cb.hover_border_color.unwrap_or(border);
+            let open_border = cb.open_border_color.unwrap_or(border);
             for (e, outline) in
                 all5(w)
                     .into_iter()
-                    .zip([border, border, hover_border, hover_border, border])
+                    .zip([border, border, hover_border, hover_border, open_border])
             {
                 assert_eq!(e.fg_stroke.color, to_color32(cb.font.color), "{preset}");
                 assert_eq!(e.bg_stroke.color, to_color32(outline), "{preset}");

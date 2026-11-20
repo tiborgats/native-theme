@@ -569,6 +569,11 @@ fn expected(
             colour(c, "button.active_background").or_else(|| colour(c, "button.hover_background")),
             req("button.background_color")?,
         ),
+        // E10: an open combo box's fill, a state layer over the idle fill
+        (Some("combo_box"), "normal", None, "visuals.widgets.open.weak_bg_fill") => layered(
+            colour(c, "combo_box.open_background"),
+            req("combo_box.background_color")?,
+        ),
         (Some(w @ ("combo_box" | "segmented_control")), "normal", None, p)
             if hover_or_press && p.ends_with(".weak_bg_fill") =>
         {
@@ -743,6 +748,10 @@ fn expected(
                 &["combo_box.hover_border_color", "combo_box.border.color"],
             )?)
         }
+        (Some("combo_box"), "normal", None, "visuals.widgets.open.bg_stroke.color") => c32(chain(
+            c,
+            &["combo_box.open_border_color", "combo_box.border.color"],
+        )?),
         (Some("checkbox"), "normal", None, p) if p.ends_with(".bg_stroke.color") => c32(chain(
             c,
             &["checkbox.unchecked_border_color", "checkbox.border.color"],

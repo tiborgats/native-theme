@@ -493,9 +493,10 @@ fn verdict_totals_match_the_specification() {
         ("buttons", [13, 47, 34, 25]),
         // §5.7's [4, 35, 36, 12], the four `input.border.padding` sides SCOPED since 0.7.2,
         // `combo_box.hover_border_color`, the caret's blink (two DERIVED, one UNMAPPABLE), and
-        // the header's hovered and pressed fills (two DERIVED) since 0.7.2, and the hovered
-        // row's outline and the header's section line (two DERIVED, issue #4's leftovers)
-        ("inputs", [4, 40, 38, 13]),
+        // the header's hovered and pressed fills (two DERIVED) since 0.7.2, the hovered row's
+        // outline and the header's section line (two DERIVED, issue #4's leftovers), and the
+        // open combo box's fill and border (two SCOPED, issue #4's leftovers)
+        ("inputs", [4, 42, 38, 13]),
         // §5.7's [5, 17, 9, 9], and the slider knob's outline (four UNMAPPABLE, issue #4's
         // leftovers)
         ("indicators", [5, 17, 9, 13]),
