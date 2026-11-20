@@ -1326,9 +1326,9 @@ BackgroundNormal=49,54,59
         inactive_enable: Some("false"),
     };
 
-    /// The fifty-one colour leaves the reader derives from, or reads
+    /// The sixty colour leaves the reader derives from, or reads
     /// directly from, the colour scheme.
-    fn derived_leaves(mode: &crate::ThemeMode) -> [(&'static str, Option<Rgba>); 51] {
+    fn derived_leaves(mode: &crate::ThemeMode) -> [(&'static str, Option<Rgba>); 60] {
         let border = |b: &Option<crate::WidgetBorderSpec>| b.as_ref().and_then(|b| b.color);
         let sw = &mode.switch;
         [
@@ -1443,11 +1443,32 @@ BackgroundNormal=49,54,59
             ("menu.bar_open_background", mode.menu.bar_open_background),
             ("menu.bar_hover_text_color", mode.menu.bar_hover_text_color),
             ("list.hover_border_color", mode.list.hover_border_color),
+            ("menu.active_background", mode.menu.active_background),
+            ("menu.active_text_color", mode.menu.active_text_color),
+            ("list.hover_text_color", mode.list.hover_text_color),
+            ("button.border.color", border(&mode.button.border)),
+            (
+                "list.header_separator_color",
+                mode.list.header_separator_color,
+            ),
+            ("slider.thumb_border_color", mode.slider.thumb_border_color),
+            (
+                "slider.thumb_hover_border_color",
+                mode.slider.thumb_hover_border_color,
+            ),
+            (
+                "slider.thumb_focus_border_color",
+                mode.slider.thumb_focus_border_color,
+            ),
+            (
+                "toolbar.button_checked_border_color",
+                mode.toolbar.button_checked_border_color,
+            ),
         ]
     }
 
     /// The same leaves resolved.
-    fn resolved_leaves(theme: &crate::ResolvedTheme) -> [(&'static str, Option<Rgba>); 51] {
+    fn resolved_leaves(theme: &crate::ResolvedTheme) -> [(&'static str, Option<Rgba>); 60] {
         let sw = &theme.switch;
         [
             (
@@ -1570,6 +1591,27 @@ BackgroundNormal=49,54,59
             ("menu.bar_open_background", theme.menu.bar_open_background),
             ("menu.bar_hover_text_color", theme.menu.bar_hover_text_color),
             ("list.hover_border_color", theme.list.hover_border_color),
+            ("menu.active_background", theme.menu.active_background),
+            ("menu.active_text_color", theme.menu.active_text_color),
+            ("list.hover_text_color", Some(theme.list.hover_text_color)),
+            ("button.border.color", Some(theme.button.border.color)),
+            (
+                "list.header_separator_color",
+                theme.list.header_separator_color,
+            ),
+            ("slider.thumb_border_color", theme.slider.thumb_border_color),
+            (
+                "slider.thumb_hover_border_color",
+                theme.slider.thumb_hover_border_color,
+            ),
+            (
+                "slider.thumb_focus_border_color",
+                theme.slider.thumb_focus_border_color,
+            ),
+            (
+                "toolbar.button_checked_border_color",
+                theme.toolbar.button_checked_border_color,
+            ),
         ]
     }
 
@@ -1653,6 +1695,10 @@ BackgroundNormal=49,54,59
         Ok(())
     }
 
+    /// The Button set moves the button's fills, text and frame, the slider
+    /// handle's fill and its outline at rest, the switch, the pressed and the
+    /// default button, the list's header and its hovered and pressed
+    /// sections, and a checked toolbar button's fill and pen.
     #[test]
     fn the_button_set_moves_the_button_slider_switch_and_header_leaves() -> crate::Result<()> {
         let scheme = Scheme {
@@ -1681,6 +1727,9 @@ BackgroundNormal=49,54,59
                 "button.default_button_border_color",
                 "list.header_hover_background",
                 "list.header_active_background",
+                "button.border.color",
+                "slider.thumb_border_color",
+                "toolbar.button_checked_border_color",
             ]
         );
         Ok(())
@@ -1703,8 +1752,9 @@ BackgroundNormal=49,54,59
 
     /// The Window set moves the popover's edge, the scroll-bar handles, the
     /// menu's hover text, separator and panel and a hovered item's outline, the table's grid and the
-    /// inactive selection, the window tinted and its text, and the toolbar
-    /// only where the scheme has no Header group to take it from.
+    /// inactive selection, the window tinted and its text, the header's
+    /// section line, and the toolbar only where the scheme has no Header group
+    /// to take it from.
     #[test]
     fn the_window_set_moves_the_popover_edge() -> crate::Result<()> {
         let window = ("230,220,200", "90,40,20");
@@ -1726,6 +1776,7 @@ BackgroundNormal=49,54,59
                 "defaults.selection_inactive_background",
                 "defaults.selection_inactive_text_color",
                 "menu.hover_border_color",
+                "list.header_separator_color",
             ]
         );
         let without_header = Scheme {
@@ -1749,11 +1800,14 @@ BackgroundNormal=49,54,59
                 "defaults.selection_inactive_background",
                 "defaults.selection_inactive_text_color",
                 "menu.hover_border_color",
+                "list.header_separator_color",
             ]
         );
         Ok(())
     }
 
+    /// The View set moves the card's edge, the menu's panel and a hovered
+    /// row's text.
     #[test]
     fn the_view_set_moves_the_card_edge_and_the_menu_panel() -> crate::Result<()> {
         let scheme = Scheme {
@@ -1762,16 +1816,22 @@ BackgroundNormal=49,54,59
         };
         assert_eq!(
             moved_leaves(&scheme)?,
-            ["card.border.color", "menu.background_color"]
+            [
+                "card.border.color",
+                "menu.background_color",
+                "list.hover_text_color",
+            ]
         );
         Ok(())
     }
 
     /// The View set's decorations (D7): DecorationHover moves a hovered
     /// field's frame, the tab hover, the scroll-bar handle, a hovered
-    /// header section and a hovered menu-bar title, DecorationFocus a focused
-    /// field's frame, the menu's hover and its outline, the check box's hover
-    /// outline, a pressed header section and an open menu-bar title.
+    /// header section, a hovered menu-bar title and a hovered slider handle's
+    /// outline, DecorationFocus a focused field's frame, the menu's hover and
+    /// its outline, the check box's hover outline, a pressed header section, an
+    /// open menu-bar title, a pressed menu item and a focused slider handle's
+    /// outline.
     #[test]
     fn the_view_decorations_move_the_frames_the_tab_hover_and_the_handle() -> crate::Result<()> {
         let hover = Scheme {
@@ -1787,6 +1847,7 @@ BackgroundNormal=49,54,59
                 "scrollbar.thumb_active_color",
                 "list.header_hover_background",
                 "menu.bar_hover_background",
+                "slider.thumb_hover_border_color",
             ]
         );
         let focus = Scheme {
@@ -1802,11 +1863,18 @@ BackgroundNormal=49,54,59
                 "list.header_active_background",
                 "menu.hover_border_color",
                 "menu.bar_open_background",
+                "menu.active_background",
+                "slider.thumb_focus_border_color",
             ]
         );
         Ok(())
     }
 
+    /// `[KDE] frameContrast` moves the edges: the switch's, the toolbar's, the
+    /// popover's and the card's, the menu's separator, the default button's
+    /// frame, the plain button frame (the button's border, the slider handle's
+    /// outline at rest, a checked toolbar button's pen) and the header's
+    /// section line.
     #[test]
     fn the_frame_contrast_moves_the_edges() -> crate::Result<()> {
         let scheme = Scheme {
@@ -1823,6 +1891,10 @@ BackgroundNormal=49,54,59
                 "card.border.color",
                 "menu.separator_color",
                 "button.default_button_border_color",
+                "button.border.color",
+                "list.header_separator_color",
+                "slider.thumb_border_color",
+                "toolbar.button_checked_border_color",
             ]
         );
         Ok(())
@@ -1846,15 +1918,19 @@ BackgroundNormal=49,54,59
     }
 
     /// The Selection set's text moves the menu-bar titles' text under the
-    /// pointer or open, and nothing else: with `ChangeSelectionColor=true`
-    /// the inactive selection's text is the window's.
+    /// pointer or open and a pressed menu item's text, and nothing else: with
+    /// `ChangeSelectionColor=true` the inactive selection's text is the
+    /// window's.
     #[test]
-    fn the_selection_text_moves_the_menu_bar_titles() -> crate::Result<()> {
+    fn the_selection_text_moves_the_pressed_item_and_the_bar_titles() -> crate::Result<()> {
         let scheme = Scheme {
             selection: ("61,174,233", "10,20,30"),
             ..BREEZE_LIGHT_SCHEME
         };
-        assert_eq!(moved_leaves(&scheme)?, ["menu.bar_hover_text_color"]);
+        assert_eq!(
+            moved_leaves(&scheme)?,
+            ["menu.bar_hover_text_color", "menu.active_text_color"]
+        );
         Ok(())
     }
 

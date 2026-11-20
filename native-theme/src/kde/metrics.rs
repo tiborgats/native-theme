@@ -54,6 +54,7 @@ pub(crate) fn populate_widget_sizing(variant: &mut crate::ThemeMode) {
     variant.slider.track_height = Some(6.0); // Slider_GrooveThickness
     variant.slider.thumb_diameter = Some(20.0); // Slider_ControlThickness
     variant.slider.tick_mark_length = Some(8.0); // Slider_TickLength
+    variant.slider.thumb_border_line_width = Some(1.0); // PenWidth::Frame 1.001, drawn as 1
 
     // Progress bar
     variant.progress_bar.track_height = Some(6.0); // ProgressBar_Thickness
@@ -75,19 +76,17 @@ pub(crate) fn populate_widget_sizing(variant: &mut crate::ThemeMode) {
 
     // Menu
     let border = variant.menu.border.get_or_insert_default();
-    // platform-facts.md:1261-1262 (§2.6): MenuItem_MarginWidth and
-    // MenuItem_MarginHeight, 4; kept although, in a menu without icons or
-    // checkable items, Breeze starts the text 16 from the highlight (:1261),
-    // and puts a 16 px icon's text 4 after the icon (:1267): the padding and
-    // the gap change together (docs/todo.md, KDE values that wait for a
-    // connector design)
-    border.padding_left = Some(4.0); // MenuItem_MarginWidth
-    border.padding_right = Some(4.0); // MenuItem_MarginWidth
+    // A menu with icons and no checkable items, KDE's default
+    // (docs/platform-facts.md §2.6; breezestyle.cpp:649-651, :3663-3667,
+    // :6053-6065, :6091-6097 at breeze f0b1d75)
+    border.padding_left = Some(14.0); // MenuItem_MarginWidth 4 + MenuItem_TextLeftMargin 8 + (20 - 16) / 2
+    border.padding_right = Some(27.0); // MenuItem_MarginWidth 4 + MenuButton_IndicatorWidth 20 + MenuItem_ItemSpacing 2 + 1
     border.padding_top = Some(4.0); // MenuItem_MarginHeight
     border.padding_bottom = Some(4.0); // MenuItem_MarginHeight
-    // Kept, see above: MenuItem_TextLeftMargin is the inset before the icon
-    // column, not this gap (platform-facts.md:1267)
-    variant.menu.icon_text_gap = Some(8.0);
+    variant.menu.icon_text_gap = Some(4.0); // (20 - 16) / 2 + MenuItem_ItemSpacing 2
+    variant.menu.panel_padding_horizontal = Some(3.0); // PM_MenuHMargin = MenuItem_HighlightGap 4, less the 1 px outline
+    variant.menu.panel_padding_vertical = Some(3.0); // PM_MenuVMargin, the same
+    variant.menu.min_row_height = Some(29.0); // max(text, 20, icon) + 1 + 2 * MenuItem_MarginHeight, text <= 20
     // A menu bar's title (docs/platform-facts.md §2.6)
     variant.menu.bar_padding_horizontal = Some(10.0); // MenuBarItem_MarginWidth
     variant.menu.bar_padding_vertical = Some(6.0); // MenuBarItem_MarginHeight
@@ -156,6 +155,11 @@ mod tests {
             Some(20.0),
             "Slider_ControlThickness"
         );
+        assert_eq!(
+            v.slider.thumb_border_line_width,
+            Some(1.0),
+            "PenWidth::Frame"
+        );
     }
 
     #[test]
@@ -190,6 +194,41 @@ mod tests {
             Some(6.0),
             "MenuBarItem_MarginHeight"
         );
+    }
+
+    #[test]
+    fn breeze_metrics_populates_the_menu_geometry() {
+        let mut v = ThemeMode::default();
+        super::populate_widget_sizing(&mut v);
+        let border = v.menu.border.as_ref();
+        assert_eq!(
+            border.and_then(|b| b.padding_left),
+            Some(14.0),
+            "MenuItem_MarginWidth + MenuItem_TextLeftMargin + (20 - 16) / 2"
+        );
+        assert_eq!(
+            border.and_then(|b| b.padding_right),
+            Some(27.0),
+            "MenuItem_MarginWidth + MenuButton_IndicatorWidth + MenuItem_ItemSpacing + 1"
+        );
+        assert_eq!(
+            border.and_then(|b| b.padding_top),
+            Some(4.0),
+            "MenuItem_MarginHeight"
+        );
+        assert_eq!(
+            border.and_then(|b| b.padding_bottom),
+            Some(4.0),
+            "MenuItem_MarginHeight"
+        );
+        assert_eq!(
+            v.menu.icon_text_gap,
+            Some(4.0),
+            "(20 - 16) / 2 + MenuItem_ItemSpacing"
+        );
+        assert_eq!(v.menu.panel_padding_horizontal, Some(3.0), "PM_MenuHMargin");
+        assert_eq!(v.menu.panel_padding_vertical, Some(3.0), "PM_MenuVMargin");
+        assert_eq!(v.menu.min_row_height, Some(29.0), "the least row");
     }
 
     #[test]

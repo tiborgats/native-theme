@@ -171,6 +171,9 @@ default_button_border_color = "#87c0dd"
 
 
 [light.button.border]
+# platform-facts.md (§2.3): border.color, the plain button frame, mix([Colors:Button] BackgroundNormal 252,252,252
+# (BreezeLight.colors:31), [Colors:Button] ForegroundNormal 35,38,41 (BreezeLight.colors:39), frameContrast 0.2)
+# (breezehelper.cpp:697-699 at breeze f0b1d75; measured)
 color = "#d1d1d2"
 # platform-facts.md:1184-1185 (§2.3): Button_MarginWidth = 6, both axes
 padding_horizontal_px = 6.0
@@ -284,7 +287,18 @@ tick_mark_length_px = 8.0
 # platform-facts.md:1319 (§2.9): Breeze fills the handle with QPalette::Button, [Colors:Button] BackgroundNormal #fcfcfc
 # (breezestyle.cpp:8122, breezehelper.cpp:1191-1195; BreezeLight.colors:31, breeze v6.7.5)
 thumb_color = "#fcfcfc"
-thumb_hover_color = "#93cee9"
+# thumb_hover_color not stated: platform-facts.md (§2.9), the handle keeps its fill under the pointer
+# platform-facts.md (§2.9): thumb_border_color, thumb_border_line_width, thumb_hover_border_color,
+# thumb_focus_border_color, the handle is outlined PenWidth::Frame 1 wide in the plain frame at rest,
+# mix([Colors:Button] BackgroundNormal 252,252,252 (BreezeLight.colors:31), [Colors:Button] ForegroundNormal 35,38,41
+# (BreezeLight.colors:39), frameContrast 0.2), in hoverColor(), [Colors:View] DecorationHover 61,174,233
+# (BreezeLight.colors:117), under the pointer, and in focusColor(), [Colors:View] DecorationFocus 61,174,233
+# (BreezeLight.colors:116), with the focus, hover winning (breezestyle.cpp:8122-8128, breezehelper.cpp:248-275 at breeze
+# f0b1d75; measured)
+thumb_border_color = "#d1d1d2"
+thumb_border_line_width_px = 1.0
+thumb_hover_border_color = "#3daee9"
+thumb_focus_border_color = "#3daee9"
 disabled_fill_color = "#bcc0bf"
 disabled_track_color = "#dee0e2"
 disabled_thumb_color = "#dee0e2"
@@ -337,15 +351,22 @@ shadow_enabled = false
 padding_horizontal_px = 8.0
 padding_vertical_px = 4.0
 [light.menu]
-# row_height not stated: platform-facts.md:1260 (§2.6), Breeze sizes an item to its content with a floor, 29 at
-# Noto Sans 10 pt; the model's row_height is a fixed height and has no floor (docs/todo.md, What Breeze draws that
-# the model has no field for)
+# row_height not stated: platform-facts.md:1260 (§2.6), Breeze sizes an item to its content with a floor, min_row_height
+# platform-facts.md (§2.6): min_row_height, the larger of the text's height, the 20 px arrow and check box columns and the
+# icon column, plus 1, plus MenuItem_MarginHeight 4 above and below: 29 wherever the text line and the icon are 20 px or
+# less, the text + 9 above that (breezestyle.cpp:3663-3667, breezemetrics.h:57, :84, :87 at breeze f0b1d75; measured)
+min_row_height_px = 29.0
 # platform-facts.md:1268 (§2.6): KIconLoader's Small, 16
 icon_size_px = 16.0
-# platform-facts.md:1267 (§2.6): kept at 8, the reader's MenuItem_TextLeftMargin, although Breeze puts the text 4 px
-# after a 16 px icon and the 8 is the inset before the icon column; it changes together with border.padding_horizontal
-# (docs/todo.md, KDE values that wait for a connector design)
-icon_text_gap_px = 8.0
+# platform-facts.md (§2.6): icon_text_gap, Qt's icon column is the widest icon + 4, Breeze centres a 16 px icon in it and
+# starts the text MenuItem_ItemSpacing 2 + 1 after the column, (20 − 16) / 2 + 2 = 4 (breezestyle.cpp:6096-6099,
+# breezemetrics.h:58 at breeze f0b1d75; measured)
+icon_text_gap_px = 4.0
+# platform-facts.md (§2.6): panel_padding_horizontal, panel_padding_vertical, PM_MenuHMargin and PM_MenuVMargin =
+# MenuItem_HighlightGap 4 from the panel's outer edge, its 1 px outline included: 3 inside it (breezestyle.cpp:649-651,
+# breezemetrics.h:55 at breeze f0b1d75; measured)
+panel_padding_horizontal_px = 3.0
+panel_padding_vertical_px = 3.0
 # platform-facts.md:1119 (§2.1.6): Disabled [Colors:Window] ForegroundNormal, KColorScheme 6.31.0
 disabled_text_color = "#a0a1a3"
 # platform-facts.md:1269 (§2.6): [Colors:View] DecorationFocus 61,174,233 (BreezeLight.colors:116, breeze v6.7.5) at
@@ -358,6 +379,11 @@ hover_text_color = "#232629"
 # 61,174,233, [Colors:Window] ForegroundNormal 35,38,41, 0.15) (breezestyle.cpp:6021-6049, breezehelper.cpp:172-175 at
 # breeze f0b1d75; measured)
 hover_border_color = "#399acc"
+# platform-facts.md (§2.6): active_background, active_text_color, a pressed item is the opaque focusColor(), [Colors:View]
+# DecorationFocus 61,174,233 (BreezeLight.colors:116), outlined in it, lettered HighlightedText, [Colors:Selection]
+# ForegroundNormal 255,255,255 (BreezeLight.colors:95) (breezestyle.cpp:6021-6029, :6155 at breeze f0b1d75; measured)
+active_background = "#3daee9"
+active_text_color = "#ffffff"
 # platform-facts.md:1254 (§2.6): separatorColor(), mix(Window #eff0f1, WindowText #232629, frameContrast 0.2)
 # (breezestyle.cpp:5984, breezehelper.cpp:329-332 at breeze f0b1d75; measured)
 separator_color = "#c6c8c9"
@@ -379,10 +405,13 @@ bar_padding_vertical_px = 6.0
 
 
 [light.menu.border]
-# platform-facts.md:1261-1262 (§2.6): MenuItem_MarginWidth = 4; MenuItem_MarginHeight = 4
-# Kept although, in a menu without icons or checkable items, Breeze puts the text 16 px from the
-# highlight's edge (4 + 8 + 4); see icon_text_gap.
-padding_horizontal_px = 4.0
+# platform-facts.md (§2.6): border.padding_horizontal, in a menu with icons and no checkable items, KDE's default: 14 left,
+# MenuItem_MarginWidth 4 + MenuItem_TextLeftMargin 8 + (20 − 16) / 2 to a 16 px icon; 27 right, MenuItem_MarginWidth 4 +
+# MenuButton_IndicatorWidth 20 + MenuItem_ItemSpacing 2 + 1; a menu without icons starts its text 16 in
+# (breezestyle.cpp:6053-6065, :6091-6097 at breeze f0b1d75; measured)
+padding_left_px = 14.0
+padding_right_px = 27.0
+# platform-facts.md (§2.6): border.padding_vertical, MenuItem_MarginHeight = 4
 padding_vertical_px = 4.0
 # platform-facts.md (§2.6): border.corner_radius, a hovered item's highlight rounded by frameRadius(PenWidth::Frame),
 # Frame_FrameRadius 5 − 0.5 × int(PenWidth::Frame) (breezehelper.h:345-348, breezehelper.cpp:384 at breeze f0b1d75)
@@ -404,6 +433,10 @@ header_hover_background = "#d6ecf8"
 # platform-facts.md (§2.15): header_active_background, KColorUtils::mix(Button #fcfcfc, [Colors:View] DecorationFocus
 # 61,174,233 (BreezeLight.colors:116), 0.2), a pressed header section (breezestyle.cpp:6828-6837 at breeze f0b1d75)
 header_active_background = "#d6ecf8"
+# platform-facts.md (§2.15): header_separator_color, [Colors:Window] ForegroundNormal 35,38,41 (BreezeLight.colors:137) at alpha
+# frameContrast 0.2, the line on a section's trailing edge and along the header's bottom, none after the last or a lone
+# section (breezestyle.cpp:6803-6893 at breeze f0b1d75; measured)
+header_separator_color = "#23262933"
 # platform-facts.md:1424 (§2.15): [Colors:View] BackgroundAlternate 247,247,247 (BreezeLight.colors:114, breeze v6.7.5)
 alternate_row_background = "#f7f7f7"
 # platform-facts.md (§2.15): QPalette::Mid, KColorScheme's MidShade of [Colors:Window] BackgroundNormal 239,240,241
@@ -414,6 +447,8 @@ grid_color = "#c4c8cc"
 # platform-facts.md:1435 (§2.15): [Colors:Selection] BackgroundNormal 61,174,233 (BreezeLight.colors:87, breeze v6.7.5) at
 # alpha Blend_Value 0.3, a focused view's hovered row (breezestyle.cpp:4871-4875 at breeze f0b1d75; measured)
 hover_background = "#3daee94d"
+# platform-facts.md (§2.15): hover_text_color ← item_font.color, [Colors:View] ForegroundNormal 35,38,41 (BreezeLight.colors:123):
+# a hovered row is lettered QPalette::Text
 hover_text_color = "#232629"
 # platform-facts.md (§2.15): hover_border_color, [Colors:Selection] BackgroundNormal 61,174,233 (BreezeLight.colors:87) at
 # alpha 0.8, the 1 px outline of a hovered, unselected row (breezestyle.cpp:4880-4884 at breeze f0b1d75; measured)
@@ -457,6 +492,10 @@ button_active_background = "#3daee94d"
 # platform-facts.md (§2.13): [Colors:Button] ForegroundNormal 35,38,41 (BreezeLight.colors:39, breeze v6.7.5) at 0.125
 # (breezehelper.cpp:681-684 at breeze f0b1d75)
 button_checked_background = "#23262920"
+# platform-facts.md (§2.13): button_checked_border_color, a checked flat button keeps the plain button pen,
+# mix([Colors:Button] BackgroundNormal 252,252,252 (BreezeLight.colors:31), [Colors:Button] ForegroundNormal 35,38,41
+# (BreezeLight.colors:39), frameContrast 0.2) (breezehelper.cpp:681-684, :697-699 at breeze f0b1d75; measured)
+button_checked_border_color = "#d1d1d2"
 
 
 [light.toolbar.border]
@@ -835,6 +874,9 @@ default_button_border_color = "#4882a1"
 
 
 [dark.button.border]
+# platform-facts.md (§2.3): border.color, the plain button frame, mix([Colors:Button] BackgroundNormal 41,44,48
+# (BreezeDark.colors:32), [Colors:Button] ForegroundNormal 252,252,252 (BreezeDark.colors:40), frameContrast 0.2)
+# (breezehelper.cpp:697-699 at breeze f0b1d75; measured)
 color = "#535659"
 # platform-facts.md:1184-1185 (§2.3): Button_MarginWidth = 6, both axes
 padding_horizontal_px = 6.0
@@ -950,7 +992,18 @@ tick_mark_length_px = 8.0
 # platform-facts.md:1319 (§2.9): Breeze fills the handle with QPalette::Button, [Colors:Button] BackgroundNormal #292c30
 # (breezestyle.cpp:8122, breezehelper.cpp:1191-1195; BreezeDark.colors:32, breeze v6.7.5)
 thumb_color = "#292c30"
-thumb_hover_color = "#93cee9"
+# thumb_hover_color not stated: platform-facts.md (§2.9), the handle keeps its fill under the pointer
+# platform-facts.md (§2.9): thumb_border_color, thumb_border_line_width, thumb_hover_border_color,
+# thumb_focus_border_color, the handle is outlined PenWidth::Frame 1 wide in the plain frame at rest,
+# mix([Colors:Button] BackgroundNormal 41,44,48 (BreezeDark.colors:32), [Colors:Button] ForegroundNormal 252,252,252
+# (BreezeDark.colors:40), frameContrast 0.2), in hoverColor(), [Colors:View] DecorationHover 61,174,233
+# (BreezeDark.colors:118), under the pointer, and in focusColor(), [Colors:View] DecorationFocus 61,174,233
+# (BreezeDark.colors:117), with the focus, hover winning (breezestyle.cpp:8122-8128, breezehelper.cpp:248-275 at breeze
+# f0b1d75; measured)
+thumb_border_color = "#535659"
+thumb_border_line_width_px = 1.0
+thumb_hover_border_color = "#3daee9"
+thumb_focus_border_color = "#3daee9"
 disabled_fill_color = "#4d545b"
 disabled_track_color = "#2d3035"
 disabled_thumb_color = "#2d3035"
@@ -1004,15 +1057,22 @@ shadow_enabled = false
 padding_horizontal_px = 8.0
 padding_vertical_px = 4.0
 [dark.menu]
-# row_height not stated: platform-facts.md:1260 (§2.6), Breeze sizes an item to its content with a floor, 29 at
-# Noto Sans 10 pt; the model's row_height is a fixed height and has no floor (docs/todo.md, What Breeze draws that
-# the model has no field for)
+# row_height not stated: platform-facts.md:1260 (§2.6), Breeze sizes an item to its content with a floor, min_row_height
+# platform-facts.md (§2.6): min_row_height, the larger of the text's height, the 20 px arrow and check box columns and the
+# icon column, plus 1, plus MenuItem_MarginHeight 4 above and below: 29 wherever the text line and the icon are 20 px or
+# less, the text + 9 above that (breezestyle.cpp:3663-3667, breezemetrics.h:57, :84, :87 at breeze f0b1d75; measured)
+min_row_height_px = 29.0
 # platform-facts.md:1268 (§2.6): KIconLoader's Small, 16
 icon_size_px = 16.0
-# platform-facts.md:1267 (§2.6): kept at 8, the reader's MenuItem_TextLeftMargin, although Breeze puts the text 4 px
-# after a 16 px icon and the 8 is the inset before the icon column; it changes together with border.padding_horizontal
-# (docs/todo.md, KDE values that wait for a connector design)
-icon_text_gap_px = 8.0
+# platform-facts.md (§2.6): icon_text_gap, Qt's icon column is the widest icon + 4, Breeze centres a 16 px icon in it and
+# starts the text MenuItem_ItemSpacing 2 + 1 after the column, (20 − 16) / 2 + 2 = 4 (breezestyle.cpp:6096-6099,
+# breezemetrics.h:58 at breeze f0b1d75; measured)
+icon_text_gap_px = 4.0
+# platform-facts.md (§2.6): panel_padding_horizontal, panel_padding_vertical, PM_MenuHMargin and PM_MenuVMargin =
+# MenuItem_HighlightGap 4 from the panel's outer edge, its 1 px outline included: 3 inside it (breezestyle.cpp:649-651,
+# breezemetrics.h:55 at breeze f0b1d75; measured)
+panel_padding_horizontal_px = 3.0
+panel_padding_vertical_px = 3.0
 # platform-facts.md:1119 (§2.1.6): Disabled [Colors:Window] ForegroundNormal, KColorScheme 6.31.0
 disabled_text_color = "#686a6c"
 # platform-facts.md:1269 (§2.6): [Colors:View] DecorationFocus 61,174,233 (BreezeDark.colors:117, breeze v6.7.5) at
@@ -1025,6 +1085,11 @@ hover_text_color = "#fcfcfc"
 # 61,174,233 (BreezeDark.colors:117), [Colors:Window] ForegroundNormal 252,252,252 (BreezeDark.colors:138), 0.15) (breezestyle.cpp:6021-6049, breezehelper.cpp:172-175 at
 # breeze f0b1d75; measured)
 hover_border_color = "#5abaec"
+# platform-facts.md (§2.6): active_background, active_text_color, a pressed item is the opaque focusColor(), [Colors:View]
+# DecorationFocus 61,174,233 (BreezeDark.colors:117), outlined in it, lettered HighlightedText, [Colors:Selection]
+# ForegroundNormal 252,252,252 (BreezeDark.colors:96) (breezestyle.cpp:6021-6029, :6155 at breeze f0b1d75; measured)
+active_background = "#3daee9"
+active_text_color = "#fcfcfc"
 # platform-facts.md:1254 (§2.6): separatorColor(), mix(Window #202326, WindowText #fcfcfc, frameContrast 0.2)
 # (breezestyle.cpp:5984, breezehelper.cpp:329-332 at breeze f0b1d75; measured)
 separator_color = "#4c4e51"
@@ -1046,10 +1111,13 @@ bar_padding_vertical_px = 6.0
 
 
 [dark.menu.border]
-# platform-facts.md:1261-1262 (§2.6): MenuItem_MarginWidth = 4; MenuItem_MarginHeight = 4
-# Kept although, in a menu without icons or checkable items, Breeze puts the text 16 px from the
-# highlight's edge (4 + 8 + 4); see icon_text_gap.
-padding_horizontal_px = 4.0
+# platform-facts.md (§2.6): border.padding_horizontal, in a menu with icons and no checkable items, KDE's default: 14 left,
+# MenuItem_MarginWidth 4 + MenuItem_TextLeftMargin 8 + (20 − 16) / 2 to a 16 px icon; 27 right, MenuItem_MarginWidth 4 +
+# MenuButton_IndicatorWidth 20 + MenuItem_ItemSpacing 2 + 1; a menu without icons starts its text 16 in
+# (breezestyle.cpp:6053-6065, :6091-6097 at breeze f0b1d75; measured)
+padding_left_px = 14.0
+padding_right_px = 27.0
+# platform-facts.md (§2.6): border.padding_vertical, MenuItem_MarginHeight = 4
 padding_vertical_px = 4.0
 # platform-facts.md (§2.6): border.corner_radius, a hovered item's highlight rounded by frameRadius(PenWidth::Frame),
 # Frame_FrameRadius 5 − 0.5 × int(PenWidth::Frame) (breezehelper.h:345-348, breezehelper.cpp:384 at breeze f0b1d75)
@@ -1071,6 +1139,10 @@ header_hover_background = "#2d4655"
 # platform-facts.md (§2.15): header_active_background, KColorUtils::mix(Button #292c30, [Colors:View] DecorationFocus
 # 61,174,233 (BreezeDark.colors:117), 0.2), a pressed header section (breezestyle.cpp:6828-6837 at breeze f0b1d75)
 header_active_background = "#2d4655"
+# platform-facts.md (§2.15): header_separator_color, [Colors:Window] ForegroundNormal 252,252,252 (BreezeDark.colors:138) at alpha
+# frameContrast 0.2, the line on a section's trailing edge and along the header's bottom, none after the last or a lone
+# section (breezestyle.cpp:6803-6893 at breeze f0b1d75; measured)
+header_separator_color = "#fcfcfc33"
 # platform-facts.md:1424 (§2.15): [Colors:View] BackgroundAlternate 29,31,34 (BreezeDark.colors:115, breeze v6.7.5)
 alternate_row_background = "#1d1f22"
 # platform-facts.md (§2.15): QPalette::Mid, KColorScheme's MidShade of [Colors:Window] BackgroundNormal 32,35,38
@@ -1081,6 +1153,8 @@ grid_color = "#1c1f21"
 # platform-facts.md:1435 (§2.15): [Colors:Selection] BackgroundNormal 61,174,233 (BreezeDark.colors:88, breeze v6.7.5) at
 # alpha Blend_Value 0.3, a focused view's hovered row (breezestyle.cpp:4871-4875 at breeze f0b1d75; measured)
 hover_background = "#3daee94d"
+# platform-facts.md (§2.15): hover_text_color ← item_font.color, [Colors:View] ForegroundNormal 252,252,252 (BreezeDark.colors:124):
+# a hovered row is lettered QPalette::Text
 hover_text_color = "#fcfcfc"
 # platform-facts.md (§2.15): hover_border_color, [Colors:Selection] BackgroundNormal 61,174,233 (BreezeDark.colors:88) at
 # alpha 0.8, the 1 px outline of a hovered, unselected row (breezestyle.cpp:4880-4884 at breeze f0b1d75; measured)
@@ -1124,6 +1198,10 @@ button_active_background = "#3daee94d"
 # platform-facts.md (§2.13): [Colors:Button] ForegroundNormal 252,252,252 (BreezeDark.colors:40, breeze v6.7.5) at 0.125
 # (breezehelper.cpp:681-684 at breeze f0b1d75)
 button_checked_background = "#fcfcfc20"
+# platform-facts.md (§2.13): button_checked_border_color, a checked flat button keeps the plain button pen,
+# mix([Colors:Button] BackgroundNormal 41,44,48 (BreezeDark.colors:32), [Colors:Button] ForegroundNormal 252,252,252
+# (BreezeDark.colors:40), frameContrast 0.2) (breezehelper.cpp:681-684, :697-699 at breeze f0b1d75; measured)
+button_checked_border_color = "#535659"
 
 
 [dark.toolbar.border]

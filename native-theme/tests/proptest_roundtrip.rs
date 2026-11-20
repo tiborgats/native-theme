@@ -422,7 +422,7 @@ fn arb_tooltip_theme() -> impl Strategy<Value = TooltipTheme> {
 
 fn arb_list_theme() -> impl Strategy<Value = ListTheme> {
     (
-        proptest::collection::vec(proptest::option::of(arb_rgba()), 12..=12),
+        proptest::collection::vec(proptest::option::of(arb_rgba()), 13..=13),
         proptest::option::of(0.0f32..200.0),
         proptest::option::of(1.0f32..200.0),
         proptest::option::of(arb_font_spec()),
@@ -441,6 +441,7 @@ fn arb_list_theme() -> impl Strategy<Value = ListTheme> {
                 header_height: header_h,
                 header_hover_background: colors[9],
                 header_active_background: colors[10],
+                header_separator_color: colors[12],
                 hover_background: colors[6],
                 hover_text_color: colors[7],
                 hover_border_color: colors[11],

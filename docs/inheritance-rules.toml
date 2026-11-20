@@ -488,6 +488,17 @@ fields = [
     "menu.bar_padding_horizontal",     # None: the connector's own title padding (§2.6)
     "menu.bar_padding_vertical",       # None: the connector's own title padding (§2.6)
     "list.hover_border_color",         # None: no outline (§2.15)
+    "menu.min_row_height",             # None: the row is its content's height (§2.6)
+    "menu.active_background",          # None: a pressed item keeps the hover look (§2.6)
+    "menu.active_text_color",          # None: hover_text_color (§2.6)
+    "menu.panel_padding_horizontal",   # None: popover.border's padding (§2.6)
+    "menu.panel_padding_vertical",     # None: popover.border's padding (§2.6)
+    "list.header_separator_color",     # None: grid_color (§2.15)
+    "slider.thumb_border_color",       # None with the width stated: no line at rest (§2.9)
+    "slider.thumb_border_line_width",  # None: the connector's own handle (§2.9)
+    "slider.thumb_hover_border_color", # None: thumb_border_color (§2.9)
+    "slider.thumb_focus_border_color", # None: thumb_border_color (§2.9)
+    "toolbar.button_checked_border_color", # None: a selected flat button's (§2.13)
 ]
 # All sizing fields (min_width, min_height, border.padding_*, height, width,
 # diameter, etc.) also have no inheritance — they come from preset/reader.

@@ -325,12 +325,23 @@ pub struct MenuTheme {
     /// Separator line color between menu items.
     #[theme(inherit_from = "defaults.border.color")]
     pub separator_color: Option<Rgba>,
-    /// Height of a single menu item row. `None` where the platform states
-    /// no fixed row height: KDE's menu items size to their content with a
-    /// floor, which this field cannot carry (docs/platform-facts.md §2.6).
+    /// Height of an item row, drawn exactly at a text scale of 1. `None`
+    /// where the platform states no fixed row height: KDE's rows size to
+    /// their content with a floor, `min_row_height`. Where both are stated,
+    /// this one is drawn and `min_row_height` is not applied
+    /// (docs/platform-facts.md §2.6).
     #[serde(rename = "row_height_px")]
     #[theme(category = "soft_option", check = "non_negative")]
     pub row_height: Option<f32>,
+    /// Least height of a one-line item row in logical pixels; content taller
+    /// than it grows the row. Breeze's row is 29 wherever the text line and
+    /// the icon are 20 px or less, and the text + 9 above that, where the
+    /// model's row grows as the text + `border`'s vertical padding: one pixel
+    /// short there. Not applied where `row_height` is stated. `None`: the row
+    /// is its content's height (docs/platform-facts.md §2.6).
+    #[serde(rename = "min_row_height_px")]
+    #[theme(category = "soft_option", check = "non_negative")]
+    pub min_row_height: Option<f32>,
     /// Space between a menu item's icon and its label.
     #[serde(rename = "icon_text_gap_px")]
     #[theme(check = "non_negative")]
@@ -388,6 +399,35 @@ pub struct MenuTheme {
     #[serde(rename = "bar_padding_vertical_px")]
     #[theme(category = "soft_option", check = "non_negative")]
     pub bar_padding_vertical: Option<f32>,
+    /// Fill of an item while the mouse button is held on it: Breeze's opaque
+    /// focus colour. Where it is stated, a pressed item draws no
+    /// `hover_border_color` outline (Breeze's outline is the fill's own
+    /// colour). `None`: a pressed item keeps the hover look, outline included
+    /// (docs/platform-facts.md §2.6).
+    #[theme(category = "soft_option")]
+    pub active_background: Option<Rgba>,
+    /// Text colour of a pressed item: Breeze's `HighlightedText`. `None`:
+    /// `hover_text_color` (docs/platform-facts.md §2.6).
+    #[theme(category = "soft_option")]
+    pub active_text_color: Option<Rgba>,
+    /// Inset of the items from the left and right of the menu panel's frame
+    /// line, in logical pixels; the frame is `popover.border`'s. Breeze's
+    /// `PM_MenuHMargin` 4 counts from the panel's outer edge, its 1 px line
+    /// included, so kde-breeze states 3. Rows so inset touch. `None`: the
+    /// items are inset by `popover.border`'s padding (docs/platform-facts.md
+    /// §2.6).
+    #[serde(rename = "panel_padding_horizontal_px")]
+    #[theme(category = "soft_option", check = "non_negative")]
+    pub panel_padding_horizontal: Option<f32>,
+    /// Inset of the items from the top and bottom of the menu panel's frame
+    /// line, in logical pixels; the frame is `popover.border`'s. Breeze's
+    /// `PM_MenuVMargin` 4 counts from the panel's outer edge, its 1 px line
+    /// included, so kde-breeze states 3. Rows so inset touch. `None`: the
+    /// items are inset by `popover.border`'s padding (docs/platform-facts.md
+    /// §2.6).
+    #[serde(rename = "panel_padding_vertical_px")]
+    #[theme(category = "soft_option", check = "non_negative")]
+    pub panel_padding_vertical: Option<f32>,
     /// Menu item font specification.
     #[theme(nested, resolved_type = "ResolvedFontSpec")]
     pub font: Option<FontSpec>,
@@ -514,6 +554,29 @@ pub struct SliderTheme {
     /// Thumb color when disabled.
     #[theme(category = "soft_option")]
     pub disabled_thumb_color: Option<Rgba>,
+    /// The handle's outline at rest, `thumb_border_line_width` wide inside
+    /// the handle: Breeze's `Button` mixed `frameContrast` towards
+    /// `ButtonText`. `None` with the width stated: no line at rest, the
+    /// handle keeping its outer size (docs/platform-facts.md §2.9).
+    #[theme(category = "soft_option")]
+    pub thumb_border_color: Option<Rgba>,
+    /// Width of the handle's outline in logical pixels; 0 draws no outline in
+    /// any state, a connector's own included. `None`: the connector draws the
+    /// handle as it does without this field (its own outline, if any)
+    /// (docs/platform-facts.md §2.9).
+    #[serde(rename = "thumb_border_line_width_px")]
+    #[theme(category = "soft_option", check = "non_negative")]
+    pub thumb_border_line_width: Option<f32>,
+    /// The handle's outline with the pointer on it and while it is dragged,
+    /// over the focus outline: Breeze's hover colour. `None`:
+    /// `thumb_border_color` (docs/platform-facts.md §2.9).
+    #[theme(category = "soft_option")]
+    pub thumb_hover_border_color: Option<Rgba>,
+    /// The handle's outline while the slider has the focus, from a click or a
+    /// key: Breeze's focus colour. `None`: `thumb_border_color`
+    /// (docs/platform-facts.md §2.9).
+    #[theme(category = "soft_option")]
+    pub thumb_focus_border_color: Option<Rgba>,
 }
 
 // ── 2.10 Progress Bar ───────────────────────────────────────────────────────
@@ -705,6 +768,14 @@ pub struct ToolbarTheme {
     /// it as it draws a selected flat button (docs/platform-facts.md §2.13).
     #[theme(category = "soft_option")]
     pub button_checked_background: Option<Rgba>,
+    /// Outline of a checked toolbar button, drawn at
+    /// `button.border.line_width`: Breeze's ordinary button pen, `Button`
+    /// mixed `frameContrast` towards `ButtonText`; under the pointer and
+    /// pressed `button_hover_border_color` applies. `None` where the theme
+    /// states none: a connector draws it as it draws a selected flat button's
+    /// (docs/platform-facts.md §2.13).
+    #[theme(category = "soft_option")]
+    pub button_checked_border_color: Option<Rgba>,
     /// Toolbar label font specification.
     #[theme(nested, resolved_type = "ResolvedFontSpec")]
     pub font: Option<FontSpec>,
@@ -784,6 +855,13 @@ pub struct ListTheme {
     /// §2.15).
     #[theme(category = "soft_option")]
     pub header_active_background: Option<Rgba>,
+    /// The line on each column-header section's trailing edge (the last and
+    /// a lone section have none) and along the header's bottom, laid over
+    /// the header's fill: Breeze's `WindowText` at `frameContrast`, a
+    /// translucent layer. `None`: `grid_color` (docs/platform-facts.md
+    /// §2.15).
+    #[theme(category = "soft_option")]
+    pub header_separator_color: Option<Rgba>,
     /// Hovered row background color; unstated, the list's own
     /// `background_color`, no tint (a widget-to-widget rule,
     /// `resolve_widget_to_widget`). It may be translucent, a layer over the
@@ -1844,6 +1922,35 @@ mod tests {
         );
         let m2: MenuTheme = toml::from_str(&toml_str).unwrap();
         assert_eq!(m, m2);
+
+        let m = MenuTheme {
+            min_row_height: Some(29.0),
+            panel_padding_horizontal: Some(3.0),
+            panel_padding_vertical: Some(3.0),
+            ..Default::default()
+        };
+        let toml_str = toml::to_string(&m).unwrap();
+        for key in [
+            "min_row_height_px = 29.0",
+            "panel_padding_horizontal_px = 3.0",
+            "panel_padding_vertical_px = 3.0",
+        ] {
+            assert!(toml_str.contains(key), "{toml_str}");
+        }
+        let m2: MenuTheme = toml::from_str(&toml_str).unwrap();
+        assert_eq!(m, m2);
+
+        let s = SliderTheme {
+            thumb_border_line_width: Some(1.0),
+            ..Default::default()
+        };
+        let toml_str = toml::to_string(&s).unwrap();
+        assert!(
+            toml_str.contains("thumb_border_line_width_px = 1.0"),
+            "{toml_str}"
+        );
+        let s2: SliderTheme = toml::from_str(&toml_str).unwrap();
+        assert_eq!(s, s2);
     }
 
     #[test]

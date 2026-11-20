@@ -599,22 +599,25 @@ pub(super) fn inactive_selection(
 ///
 /// Some colours Plasma computes from the scheme, and the reader computes
 /// them as Breeze, Kirigami and qqc2-desktop-style do, in Qt's arithmetic:
-/// the checked button, the default button's fill and frame, the checkbox and
-/// progress-bar blends, the switch tracks and outlines, the toolbar's fill and
-/// edge, a toolbar button's pressed and checked fills, the popover's and the
-/// card's edges, the menu's hover, its outline, separator and panel, the list's
-/// hover and its outline, the header's hovered and pressed fills and the
-/// selection of a view without the focus, the table's grid, the scroll bar's
-/// resting handle and the focus ring.
+/// the checked button, the default button's fill and frame, the plain button
+/// frame (also a slider handle's outline at rest and a checked toolbar
+/// button's pen), the checkbox and progress-bar blends, the switch tracks and
+/// outlines, the toolbar's fill and edge, a toolbar button's pressed and
+/// checked fills, the popover's and the card's edges, the menu's hover, its
+/// outline, separator and panel, the list's hover and its outline, the
+/// header's hovered and pressed fills and its section line, the selection of a
+/// view without the focus, the table's grid, the scroll bar's resting handle
+/// and the focus ring.
 /// The blends on the accent (the default button's fill and frame, the checked
 /// checkbox, the progress fill, the switch's on track and its outline, the
 /// list's hover and its outline, the inactive selection, and the toolbar
 /// button's pressed fill) come from kdeglobals'
 /// `[Colors:Selection] BackgroundNormal`, so an application's `with_overlay` accent or the
 /// portal's (`gnome::apply_kde_accent`, applied by `GnomePortalKdeReader`) does
-/// not move them. The menu's hover and its outline, an open menu-bar title's
-/// fill and the check box's hover outline come from
-/// `[Colors:View] DecorationFocus`, so the same holds for them. The combo box's
+/// not move them. The menu's hover and its outline, a pressed item's fill, an
+/// open menu-bar title's fill, a focused slider handle's outline and the check
+/// box's hover outline come from `[Colors:View] DecorationFocus`, so the same
+/// holds for them. The combo box's
 /// and the toolbar button's hover pen is `[Colors:Selection] BackgroundNormal`
 /// as it is. The focus ring is the selection colour at
 /// `Blend_Value`; the KDE portal's accent replaces it (`gnome::apply_kde_accent`).
@@ -734,6 +737,17 @@ pub(crate) fn populate_colors(ini: &configparser::ini::Ini, variant: &mut crate:
             .to_rgba()
         });
     variant.button.default_button_text_color = button_fg;
+    // A button's frame, the plain pen: the button colour moved towards its text by the
+    // frame contrast (breezehelper.cpp:697-699 at breeze f0b1d75; docs/platform-facts.md
+    // §2.3); a slider handle's outline at rest and a checked flat button's pen are the same.
+    let button_frame = variant
+        .button
+        .background_color
+        .zip(button_fg)
+        .map(|(button, text)| mix(button, text, frame_contrast(ini)));
+    if let Some(frame) = button_frame {
+        variant.button.border.get_or_insert_default().color = Some(frame);
+    }
 
     // Tooltip
     variant.tooltip.background_color = get_color(ini, "Colors:Tooltip", "BackgroundNormal");
@@ -790,6 +804,12 @@ pub(crate) fn populate_colors(ini: &configparser::ini::Ini, variant: &mut crate:
     // Slider (docs/platform-facts.md §2.9): Breeze fills the handle with the
     // button colour (breezestyle.cpp:8122 at breeze f0b1d75).
     variant.slider.thumb_color = button_bg;
+    // The handle is outlined in the plain frame at rest, `hoverColor` under the pointer,
+    // `focusColor` with the focus, hover winning (breezestyle.cpp:8122-8128,
+    // breezehelper.cpp:248-275 at breeze f0b1d75; docs/platform-facts.md §2.9).
+    variant.slider.thumb_border_color = button_frame;
+    variant.slider.thumb_hover_border_color = view_hover;
+    variant.slider.thumb_focus_border_color = view_focus;
 
     // Switch (docs/platform-facts.md §2.21): qqc2-desktop-style's tracks, the
     // off one the Button set's text tinted by its background, the on one the
@@ -888,6 +908,9 @@ pub(crate) fn populate_colors(ini: &configparser::ini::Ini, variant: &mut crate:
         selection_bg.map(|highlight| translucent(highlight, BLEND_VALUE));
     variant.toolbar.button_checked_background =
         button_fg.map(|text| translucent(text, FLAT_CHECKED_ALPHA));
+    // A checked flat button keeps the plain button pen (breezehelper.cpp:681-684, :697-699
+    // at breeze f0b1d75; docs/platform-facts.md §2.13).
+    variant.toolbar.button_checked_border_color = button_frame;
 
     // Popover (docs/platform-facts.md §2.16): its fill and text inherit the
     // window's, as qqc2-desktop-style's Popup fills the Window set's; its edge
@@ -952,6 +975,10 @@ pub(crate) fn populate_colors(ini: &configparser::ini::Ini, variant: &mut crate:
     variant.menu.bar_hover_background = view_hover;
     variant.menu.bar_open_background = view_focus;
     variant.menu.bar_hover_text_color = selection_fg;
+    // A pressed item is the opaque focus colour, outlined in it, lettered `HighlightedText`
+    // (breezestyle.cpp:6021-6029, :6155 at breeze f0b1d75; docs/platform-facts.md §2.6).
+    variant.menu.active_background = view_focus;
+    variant.menu.active_text_color = selection_fg;
 
     // KDE-02: list fields (Colors:View is the native source for list/table content areas); a
     // hovered row is the selection at `Blend_Value` (breezestyle.cpp:4871-4875), outlined
@@ -969,6 +996,8 @@ pub(crate) fn populate_colors(ini: &configparser::ini::Ini, variant: &mut crate:
         selection_bg.map(|selection| translucent(selection, BLEND_VALUE));
     variant.list.hover_border_color =
         selection_bg.map(|s| translucent(s, LIST_HOVER_OUTLINE_ALPHA));
+    // A row is lettered `QPalette::Text` under the pointer too (docs/platform-facts.md §2.15).
+    variant.list.hover_text_color = view_fg;
     // The header is the Button set: Breeze fills a `QHeaderView` section with
     // `QPalette::Button` (breezestyle.cpp:6827, :6838-6839 at breeze f0b1d75) and Qt
     // letters it `ButtonText` (qcommonstyle.cpp:1659-1660), which Breeze does not
@@ -986,6 +1015,11 @@ pub(crate) fn populate_colors(ini: &configparser::ini::Ini, variant: &mut crate:
     variant.list.header_active_background = button_bg
         .zip(view_focus)
         .map(|(button, focus)| mix(button, focus, HEADER_SECTION_MIX));
+    // A section's trailing edge and the header's bottom, the window text at
+    // `frameContrast` (breezestyle.cpp:6803-6893 at breeze f0b1d75; docs/platform-facts.md
+    // §2.15).
+    variant.list.header_separator_color =
+        window_fg.map(|text| translucent(text, frame_contrast(ini) as f32));
 
     // The selection of a view without the focus (docs/platform-facts.md
     // §2.1.3): where the scheme's `[ColorEffects:Inactive]` changes it, the
@@ -1863,6 +1897,34 @@ ForegroundNormal=239,240,241
         }
     }
 
+    /// The plain button frame, `mix(Button, ButtonText, frameContrast)`, is
+    /// the button's border, a slider handle's outline at rest and a checked
+    /// toolbar button's pen; the header's section line is the window text at
+    /// `frameContrast` (docs/platform-facts.md §2.3, §2.9, §2.13, §2.15).
+    #[test]
+    fn test_the_plain_frame_and_the_header_separator_are_breezes() {
+        let [light, dark] = breeze_light_and_dark();
+        let cases = [
+            (
+                light,
+                Rgba::rgb(0xd1, 0xd1, 0xd2),
+                Rgba::new(0x23, 0x26, 0x29, 0x33),
+            ),
+            (
+                dark,
+                Rgba::rgb(0x53, 0x56, 0x59),
+                Rgba::new(0xfc, 0xfc, 0xfc, 0x33),
+            ),
+        ];
+        for (content, frame, separator) in cases {
+            let v = populate_fixture(&content);
+            assert_eq!(v.button.border.and_then(|b| b.color), Some(frame));
+            assert_eq!(v.slider.thumb_border_color, Some(frame));
+            assert_eq!(v.toolbar.button_checked_border_color, Some(frame));
+            assert_eq!(v.list.header_separator_color, Some(separator));
+        }
+    }
+
     #[test]
     fn test_scrollbar_thumb_is_breezes() {
         let [light, dark] = breeze_light_and_dark();
@@ -2566,6 +2628,42 @@ DecorationFocus=61,174,233
         assert!(
             v.list.hover_border_color.is_some(),
             "list.hover_border_color missing"
+        );
+        assert!(
+            v.menu.active_background.is_some(),
+            "menu.active_background missing"
+        );
+        assert!(
+            v.menu.active_text_color.is_some(),
+            "menu.active_text_color missing"
+        );
+        assert!(
+            v.list.hover_text_color.is_some(),
+            "list.hover_text_color missing"
+        );
+        assert!(
+            v.button.border.as_ref().and_then(|b| b.color).is_some(),
+            "button.border.color missing"
+        );
+        assert!(
+            v.list.header_separator_color.is_some(),
+            "list.header_separator_color missing"
+        );
+        assert!(
+            v.slider.thumb_border_color.is_some(),
+            "slider.thumb_border_color missing"
+        );
+        assert!(
+            v.slider.thumb_hover_border_color.is_some(),
+            "slider.thumb_hover_border_color missing"
+        );
+        assert!(
+            v.slider.thumb_focus_border_color.is_some(),
+            "slider.thumb_focus_border_color missing"
+        );
+        assert!(
+            v.toolbar.button_checked_border_color.is_some(),
+            "toolbar.button_checked_border_color missing"
         );
         assert!(
             v.link.visited_text_color.is_some(),

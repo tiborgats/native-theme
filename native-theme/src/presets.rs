@@ -614,11 +614,58 @@ accent_color = "#00ff00"
                         "list.hover_border_color",
                         variant.list.hover_border_color.is_some(),
                     ),
+                    ("menu.min_row_height", variant.menu.min_row_height.is_some()),
+                    (
+                        "menu.active_background",
+                        variant.menu.active_background.is_some(),
+                    ),
+                    (
+                        "menu.active_text_color",
+                        variant.menu.active_text_color.is_some(),
+                    ),
+                    (
+                        "menu.panel_padding_horizontal",
+                        variant.menu.panel_padding_horizontal.is_some(),
+                    ),
+                    (
+                        "menu.panel_padding_vertical",
+                        variant.menu.panel_padding_vertical.is_some(),
+                    ),
+                    (
+                        "list.header_separator_color",
+                        variant.list.header_separator_color.is_some(),
+                    ),
+                    (
+                        "slider.thumb_border_color",
+                        variant.slider.thumb_border_color.is_some(),
+                    ),
+                    (
+                        "slider.thumb_border_line_width",
+                        variant.slider.thumb_border_line_width.is_some(),
+                    ),
+                    (
+                        "slider.thumb_hover_border_color",
+                        variant.slider.thumb_hover_border_color.is_some(),
+                    ),
+                    (
+                        "slider.thumb_focus_border_color",
+                        variant.slider.thumb_focus_border_color.is_some(),
+                    ),
+                    (
+                        "toolbar.button_checked_border_color",
+                        variant.toolbar.button_checked_border_color.is_some(),
+                    ),
                 ] {
                     assert_eq!(
                         stated,
                         name == "kde-breeze",
                         "preset '{name}' {label}.{path}: stated only by kde-breeze (rationale §2)"
+                    );
+                }
+                if name == "kde-breeze" {
+                    assert!(
+                        variant.slider.thumb_hover_color.is_none(),
+                        "preset '{name}' {label}.slider.thumb_hover_color: the handle keeps its fill under the pointer (rationale E8)"
                     );
                 }
             }

@@ -2070,7 +2070,8 @@ fn an_unstated_list_or_sidebar_hover_is_the_widgets_own_background() {
 }
 
 /// Issue #4's leftovers: no resolver rule fills the new fields; unset, each
-/// stays `None` through resolution, and stated, each keeps its value.
+/// stays `None` through resolution, and stated, each keeps its value; a
+/// negative least row height is a range error.
 #[test]
 fn issue_4_leftovers_pass_through_resolution() {
     let mut unset = fully_populated_variant();
@@ -2085,6 +2086,17 @@ fn issue_4_leftovers_pass_through_resolution() {
     assert_eq!(r.menu.bar_padding_horizontal, None);
     assert_eq!(r.menu.bar_padding_vertical, None);
     assert_eq!(r.list.hover_border_color, None);
+    assert_eq!(r.menu.min_row_height, None);
+    assert_eq!(r.menu.active_background, None);
+    assert_eq!(r.menu.active_text_color, None);
+    assert_eq!(r.menu.panel_padding_horizontal, None);
+    assert_eq!(r.menu.panel_padding_vertical, None);
+    assert_eq!(r.list.header_separator_color, None);
+    assert_eq!(r.slider.thumb_border_color, None);
+    assert_eq!(r.slider.thumb_border_line_width, None);
+    assert_eq!(r.slider.thumb_hover_border_color, None);
+    assert_eq!(r.slider.thumb_focus_border_color, None);
+    assert_eq!(r.toolbar.button_checked_border_color, None);
 
     let mut set = fully_populated_variant();
     set.menu.hover_border_color = Some(Rgba::rgb(1, 2, 3));
@@ -2094,6 +2106,17 @@ fn issue_4_leftovers_pass_through_resolution() {
     set.menu.bar_padding_horizontal = Some(10.0);
     set.menu.bar_padding_vertical = Some(6.0);
     set.list.hover_border_color = Some(Rgba::new(13, 14, 15, 204));
+    set.menu.min_row_height = Some(29.0);
+    set.menu.active_background = Some(Rgba::rgb(16, 17, 18));
+    set.menu.active_text_color = Some(Rgba::rgb(19, 20, 21));
+    set.menu.panel_padding_horizontal = Some(3.0);
+    set.menu.panel_padding_vertical = Some(2.0);
+    set.list.header_separator_color = Some(Rgba::new(22, 23, 24, 51));
+    set.slider.thumb_border_color = Some(Rgba::rgb(25, 26, 27));
+    set.slider.thumb_border_line_width = Some(1.0);
+    set.slider.thumb_hover_border_color = Some(Rgba::rgb(28, 29, 30));
+    set.slider.thumb_focus_border_color = Some(Rgba::rgb(31, 32, 33));
+    set.toolbar.button_checked_border_color = Some(Rgba::rgb(34, 35, 36));
     set.resolve_all();
     let r = set.validate().expect("validates with the new fields set");
     assert_eq!(r.menu.hover_border_color, Some(Rgba::rgb(1, 2, 3)));
@@ -2103,6 +2126,41 @@ fn issue_4_leftovers_pass_through_resolution() {
     assert_eq!(r.menu.bar_padding_horizontal, Some(10.0));
     assert_eq!(r.menu.bar_padding_vertical, Some(6.0));
     assert_eq!(r.list.hover_border_color, Some(Rgba::new(13, 14, 15, 204)));
+    assert_eq!(r.menu.min_row_height, Some(29.0));
+    assert_eq!(r.menu.active_background, Some(Rgba::rgb(16, 17, 18)));
+    assert_eq!(r.menu.active_text_color, Some(Rgba::rgb(19, 20, 21)));
+    assert_eq!(r.menu.panel_padding_horizontal, Some(3.0));
+    assert_eq!(r.menu.panel_padding_vertical, Some(2.0));
+    assert_eq!(
+        r.list.header_separator_color,
+        Some(Rgba::new(22, 23, 24, 51))
+    );
+    assert_eq!(r.slider.thumb_border_color, Some(Rgba::rgb(25, 26, 27)));
+    assert_eq!(r.slider.thumb_border_line_width, Some(1.0));
+    assert_eq!(
+        r.slider.thumb_hover_border_color,
+        Some(Rgba::rgb(28, 29, 30))
+    );
+    assert_eq!(
+        r.slider.thumb_focus_border_color,
+        Some(Rgba::rgb(31, 32, 33))
+    );
+    assert_eq!(
+        r.toolbar.button_checked_border_color,
+        Some(Rgba::rgb(34, 35, 36))
+    );
+
+    let mut negative = fully_populated_variant();
+    negative.menu.min_row_height = Some(-1.0);
+    negative.resolve_all();
+    let errors = match negative.validate() {
+        Err(crate::Error::ResolutionInvalid { errors }) => errors,
+        other => panic!("expected ResolutionInvalid, got {other:?}"),
+    };
+    assert!(
+        errors.iter().any(|rv| rv.path == "menu.min_row_height_px"),
+        "should report negative menu.min_row_height, got: {errors:?}"
+    );
 }
 
 /// D9: the two macOS presets, which state neither hover (no source gives
