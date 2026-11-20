@@ -4,7 +4,7 @@
   E1–E14. Specification: [`todo_v0.7.2_kde-leftovers-spec.md`](todo_v0.7.2_kde-leftovers-spec.md)
   ("the spec"): its decisions S1–S12 and Parts A–E, each in the units U1–U4.
 - Part of 0.7.2 (D0 (a)): the version stays 0.7.2, and 0.7.2's close-out is made again after these
-  units, once. Written 2026-11-20; not yet approved.
+  units, once. Written 2026-11-20; approved by the maintainer 2026-11-20.
 - `<record>` = `~/.claude/projects/-home-tibi-Rust-native-theme/scratch-keep/todo_v0.7.3/`, this
   work's files in `<record>/leftovers/` (the trial's in `<record>/leftovers/trial/`). `<tools>` =
   `/home/tibi/Rust/native-theme/.superpowers/sdd/todo_v0.7.2_egui-0.37-and-gpui-kit-0.10.0-plan/tools/`,
