@@ -3843,7 +3843,7 @@ fn the_palette_pages_apply_the_per_call_leaves() {
         }
     };
 
-    // windows-11's buttons are as wide as its 64 px already; kde-breeze's 80 px is wider.
+    // windows-11's buttons are as wide as its 64 px already; kde-breeze's 82 px is wider.
     for preset in ["windows-11", "kde-breeze"] {
         let harness = open_scaled(preset, "buttons", 1.0);
         wide_enough(
@@ -5251,6 +5251,83 @@ fn the_menu_bar_takes_the_toolbar_fill_and_its_open_title_the_open_fill() {
     );
 }
 
+/// E7 (issue #4's leftovers): the Basic table's line under the header and its column line over
+/// the header take `list.header_separator_color` where the theme states it, the column line over
+/// the rows `list.grid_color`: kde-breeze light's Breeze `WindowText` at `frameContrast`,
+/// #23262933 (docs/platform-facts.md §2.15), laid once over the header's fill; adwaita states
+/// none, and every line is the grid's.
+#[test]
+fn the_table_headers_lines_take_the_header_separator_colour() {
+    let colour = native_theme_egui::convert::to_color32;
+    for preset in ["kde-breeze", "adwaita"] {
+        let harness = open_scaled(preset, "basic", 1.0);
+        let t = harness
+            .state()
+            .atlas
+            .resolved_for(egui::Theme::Light)
+            .clone();
+        let l = &t.list;
+        let grid = colour(l.grid_color);
+        let head = if preset == "kde-breeze" {
+            assert_eq!(
+                l.header_separator_color,
+                Some(native_theme::Rgba::new(0x23, 0x26, 0x29, 0x33))
+            );
+            colour(native_theme::Rgba::new(0x23, 0x26, 0x29, 0x33))
+        } else {
+            assert_eq!(l.header_separator_color, None, "{preset}");
+            grid
+        };
+        let header = place_of(&harness, "basic.table.header");
+        let row = place_of(&harness, "basic.table.row_1");
+        let segments: Vec<([egui::Pos2; 2], egui::Stroke)> = harness
+            .output()
+            .shapes
+            .iter()
+            .filter_map(|clipped| match &clipped.shape {
+                egui::Shape::LineSegment { points, stroke } => Some((*points, *stroke)),
+                _ => None,
+            })
+            .collect();
+        let under_header: Vec<_> = segments
+            .iter()
+            .filter(|(p, _)| {
+                p[0].y == p[1].y
+                    && (p[0].y - header.bottom()).abs() < 1.0
+                    && near(p[0].x.min(p[1].x), header.left())
+                    && near(p[0].x.max(p[1].x), header.right())
+            })
+            .collect();
+        assert_eq!(under_header.len(), 1, "{preset}: the line under the header");
+        assert_eq!(
+            under_header[0].1.color, head,
+            "{preset}: the line under the header"
+        );
+        let column = |y: f32| -> Vec<egui::Color32> {
+            segments
+                .iter()
+                .filter(|(p, _)| {
+                    p[0].x == p[1].x
+                        && p[0].y.min(p[1].y) <= y
+                        && y <= p[0].y.max(p[1].y)
+                        && header.x_range().contains(p[0].x)
+                })
+                .map(|(_, s)| s.color)
+                .collect()
+        };
+        assert_eq!(
+            column(header.center().y),
+            vec![head],
+            "{preset}: the column line over the header"
+        );
+        assert_eq!(
+            column(row.center().y),
+            vec![grid],
+            "{preset}: the column line over the rows"
+        );
+    }
+}
+
 /// A table header section's fill (`pages::basic::header_section_fill`, decision 19 and 7.H.1 of
 /// `docs/archive/todo_v0.7.2_kde-open-items-steps6-7-spec.md`), on kde-breeze light, which
 /// states its two section fills in one colour, so the page's pressed section
@@ -5493,9 +5570,9 @@ fn stated_list_and_menu_rows_hold_their_text_at_every_text_scale() {
 /// (`demo::lined`), is exactly the rule's height. The Containers page's two egui headers in the
 /// expander scope are the stated height at 1, and at 1.5 the taller of the rule and their plain
 /// title with its padding: ios-13's 34 px title, whose face's row (46) is taller than its 41 px
-/// line box, grows its header past the rule's 44. At 1.5 kde-breeze's 13.33 px title's line box
-/// is 27.2 at its 1.36 line height, 28 rounded up, so a header with its 7 + 7 padding is 42, past
-/// the stated 40, where egui grew it to its title's 27 and its padding, 41.
+/// line box, grows its header past the rule's 44. At 1.5 kde-breeze's 13 px title (its 10 pt in
+/// whole pixels, `defaults.font_whole_pixels`) is 19.5, its line box 26.52 at its 1.36 line
+/// height, 27 rounded up, so a header with its 7 + 7 padding is 41, past the stated 40.
 #[test]
 fn the_expander_header_is_its_stated_height_by_the_row_rule() {
     let mut faults = Vec::new();
@@ -9968,6 +10045,29 @@ fn the_basic_edit_button_starts_checked_and_switches() {
         filled(&harness),
         "Edit while on is not filled with the toolbar's checked fill"
     );
+    // E9: at rest, while on, lined in the checked pen at the button's line width: kde-breeze
+    // light's #d1d1d2, 1 px
+    let pen = egui::Stroke::new(1.0, egui::Color32::from_rgb(0xd1, 0xd1, 0xd2));
+    assert_eq!(
+        native_theme_egui::toolbar_button_checked_border_color(&t),
+        Some(pen.color)
+    );
+    assert_eq!(t.button.border.line_width, pen.width);
+    let lined = |harness: &Harness<'_, App>| {
+        let edit = harness.state().registry.places()["basic.icons.edit"];
+        harness
+            .output()
+            .shapes
+            .iter()
+            .any(|clipped| match &clipped.shape {
+                egui::Shape::Rect(r) => r.stroke == pen && edit.contains_rect(r.rect),
+                _ => false,
+            })
+    };
+    assert!(
+        lined(&harness),
+        "Edit while on, at rest, is not lined in the checked pen"
+    );
 
     harness.get_by_role_and_label(Role::Button, "Edit").click();
     harness.run_steps(SETTLE);
@@ -9979,6 +10079,10 @@ fn the_basic_edit_button_starts_checked_and_switches() {
     assert!(
         !filled(&harness),
         "Edit while off is filled with the toolbar's checked fill"
+    );
+    assert!(
+        !lined(&harness),
+        "Edit while off is lined in the checked pen"
     );
     harness.get_by_role_and_label(Role::Button, "Edit").click();
     harness.run_steps(SETTLE);

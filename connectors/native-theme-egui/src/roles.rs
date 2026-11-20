@@ -135,15 +135,17 @@ pub enum RoleVariant {
 /// (`egui/src/containers/menu.rs:65-76`). egui builds the frame itself, after applying the
 /// menu's `StyleModifier`: a top-level menu is a `Popup::menu` with no frame (`:325-331`), so
 /// `Popup::show` applies the modifier and then builds `Frame::popup(ui.style())`
-/// (`egui/src/containers/popup.rs:602-603`); a submenu's frame is `Frame::menu(ui.style())` of
-/// the parent menu's already-modified `Ui` (`egui/src/containers/menu.rs:432`), handed to
-/// `Popup::frame` (`:509`). Both presets read the same five `Style` fields (spec §3.2), and the
-/// base style carries all five for every menu, which the `Role::Menu` cell inherits:
-/// `window_fill` from `menu.background_color`, `window_stroke`, `menu_corner_radius` and
-/// the `popup_shadow` gate from `defaults.border`, and egui's own `menu_margin` (spec §5.9).
+/// (`egui/src/containers/popup.rs:602-603`); a submenu is a `Popup` given the menu's
+/// `MenuConfig::style` and no frame too (`egui-0.37.0/src/containers/menu.rs:707-720`), framed
+/// the same way (`Frame::menu` at `:598` only measures its offset). The popup frame reads five
+/// `Style` fields (spec §3.2), and the base style carries all five for every menu, which the
+/// `Role::Menu` cell inherits: `window_fill` from `menu.background_color`, `window_stroke`,
+/// `menu_corner_radius` and the `popup_shadow` gate from `defaults.border`, and `menu_margin`,
+/// egui's own (spec §5.9) where the menu states no `menu.panel_padding_horizontal` or
+/// `panel_padding_vertical`, which the cell writes there.
 /// What [`ThemeAtlas::role_modifier`](crate::ThemeAtlas::role_modifier) for `Role::Menu`, fed to `MenuConfig::style`
 /// (`:107`), adds is the items' look: `menu.border`'s item border, radius and padding over
-/// `menu_style`'s (spec §5.2, §6.1).
+/// `menu_style`'s (spec §5.2, §6.1), and the panel padding.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 #[non_exhaustive]
 pub enum Surface {

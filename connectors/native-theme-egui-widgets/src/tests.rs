@@ -12,6 +12,7 @@ use std::path::{Path, PathBuf};
 
 use native_theme_egui::convert::{composite_over, to_color32, u8_from_f32_saturating};
 use native_theme_egui::egui::{self, accesskit};
+use native_theme_egui::native_theme::color::Rgba;
 use native_theme_egui::native_theme::theme::IconSet;
 use native_theme_egui::{
     AccessibilityPreferences, ResolvedTheme, ThemeAtlas, focus_ring_color, focus_ring_offset,
@@ -987,8 +988,9 @@ fn header_padding(t: &ResolvedTheme, ctx: &egui::Context, painted: bool) -> f32 
 /// rule's height, the stated height grown to hold its scaled line box and padding: on the
 /// painted path (kde-breeze, adwaita) and on egui's own `CollapsingHeader` (material-3), as
 /// the gpui showcase's header is the stated height at 1 (`geometry::accordion_title`). At 1.5
-/// kde-breeze's 13.33 px title's line box is 27.2 at its 1.36 line height, 28 rounded up, so the
-/// header is 28 + 7 + 7 = 42, past the stated 40, where it was its title's 27 and its padding.
+/// kde-breeze's 13 px title (its 10 pt in whole pixels, `defaults.font_whole_pixels`) is 19.5,
+/// its line box 26.52 at its 1.36 line height, 27 rounded up, so the header is 27 + 7 + 7 = 41,
+/// past the stated 40.
 #[test]
 fn the_header_is_its_stated_height_by_the_row_rule() {
     let mut faults = Vec::new();
@@ -1898,10 +1900,14 @@ fn the_animated_progress_bar_pulses_unless_motion_is_reduced() {
     }
 }
 
-/// The slider's rail, fill and knob are the theme's, the knob's hover a layer over it.
+/// The slider's rail, fill and knob are the theme's, the knob's hover a layer over it: kde-breeze
+/// states no knob hover fill (its hover is the outline's, E8), so one is set on the resolved
+/// theme.
 #[test]
 fn the_slider_paints_the_themes_knob() {
-    let t = kde();
+    let mut t = kde();
+    assert_eq!(t.slider.thumb_hover_color, None);
+    t.slider.thumb_hover_color = Some(Rgba::new(0xf0, 0xa0, 0x14, 0x80));
     let ctx = installed(&t, &AccessibilityPreferences::default());
     let mut value = 50.0;
     let (out, r) = response(&ctx, at(0.0), |ui| {
@@ -1954,6 +1960,97 @@ fn the_slider_paints_the_themes_knob() {
         ui.add(Slider::new(&mut value, 0.0..=100.0))
     });
     assert_eq!(value, 100.0);
+}
+
+/// E8: where the theme states the knob's outline width, the knob is outlined inside its diameter
+/// in the theme's colours: kde-breeze light 1 px in #d1d1d2 at rest, #3daee9 with the pointer on
+/// the knob and while it is dragged, the rest colour with the pointer on the rail off the knob,
+/// and, its focus colour set to #f0a014 on the resolved theme (it states #3daee9 for hover and
+/// focus alike), #f0a014 while focused and #3daee9 while focused with the pointer on the knob
+/// (hover wins). adwaita states no width: the outline is the interaction state's `fg_stroke`.
+#[test]
+fn the_slider_outlines_its_knob_in_the_themes_colours() {
+    let rgb = egui::Color32::from_rgb;
+    let (rest, hover, focus) = (
+        rgb(0xd1, 0xd1, 0xd2),
+        rgb(0x3d, 0xae, 0xe9),
+        rgb(0xf0, 0xa0, 0x14),
+    );
+    let mut t = kde();
+    assert_eq!(t.slider.thumb_border_line_width, Some(1.0));
+    assert_eq!(t.slider.thumb_border_color.map(to_color32), Some(rest));
+    assert_eq!(
+        t.slider.thumb_hover_border_color.map(to_color32),
+        Some(hover)
+    );
+    assert_eq!(
+        t.slider.thumb_focus_border_color.map(to_color32),
+        Some(hover)
+    );
+    t.slider.thumb_focus_border_color = Some(Rgba::rgb(0xf0, 0xa0, 0x14));
+    let ctx = installed(&t, &AccessibilityPreferences::default());
+    let mut value = 50.0;
+    let mut show = |ctx: &egui::Context, input: egui::RawInput| {
+        let (out, r) = response(ctx, input, |ui| {
+            ui.add(Slider::new(&mut value, 0.0..=100.0))
+        });
+        let knob = circles(&out).into_iter().next().unwrap();
+        assert_eq!(
+            2.0 * (knob.radius + knob.stroke.width),
+            t.slider.thumb_diameter
+        );
+        (knob, r)
+    };
+    let moved = |pos: egui::Pos2| egui::RawInput {
+        events: vec![egui::Event::PointerMoved(pos)],
+        focused: true,
+        ..Default::default()
+    };
+    let (knob, r) = show(&ctx, at(0.0));
+    assert_eq!(knob.stroke, egui::Stroke::new(1.0, rest), "at rest");
+    let centre = knob.center;
+    let (knob, _) = show(&ctx, moved(centre));
+    assert_eq!(
+        knob.stroke,
+        egui::Stroke::new(1.0, hover),
+        "the pointer on the knob"
+    );
+    let off = egui::pos2(r.rect.left() + 1.0, r.rect.center().y);
+    let (knob, _) = show(&ctx, moved(off));
+    assert_eq!(
+        knob.stroke,
+        egui::Stroke::new(1.0, rest),
+        "the pointer on the rail"
+    );
+    // dragged: pressed on the knob, then moved off it
+    let _ = show(&ctx, pointer(centre, true));
+    let (knob, _) = show(&ctx, moved(off));
+    assert_eq!(knob.stroke, egui::Stroke::new(1.0, hover), "dragged");
+    let _ = show(&ctx, pointer(off, false));
+    let away = egui::pos2(r.rect.right() + 50.0, r.rect.bottom() + 50.0);
+    let _ = show(&ctx, moved(away));
+    ctx.memory_mut(|m| m.request_focus(r.id));
+    let (knob, _) = show(&ctx, moved(away));
+    assert_eq!(knob.stroke, egui::Stroke::new(1.0, focus), "focused");
+    let (knob, _) = show(&ctx, moved(knob.center));
+    assert_eq!(
+        knob.stroke,
+        egui::Stroke::new(1.0, hover),
+        "focused, the pointer on the knob"
+    );
+
+    let t = adwaita();
+    assert_eq!(t.slider.thumb_border_line_width, None);
+    let ctx = installed(&t, &AccessibilityPreferences::default());
+    let mut value = 50.0;
+    let mut want = None;
+    let (out, _) = response(&ctx, at(0.0), |ui| {
+        let r = ui.add(Slider::new(&mut value, 0.0..=100.0));
+        want = Some(ui.style().interact(&r).fg_stroke);
+        r
+    });
+    let knob = circles(&out).into_iter().next().unwrap();
+    assert_eq!(Some(knob.stroke), want, "adwaita: the state's fg_stroke");
 }
 
 // ---- T6: no hardcoded values -------------------------------------------------------------------
@@ -3288,6 +3385,9 @@ const WIDGET_READS: &[(&str, &[&str])] = &[
             "slider.disabled_track_color",
             "slider.disabled_fill_color",
             "slider.disabled_thumb_color",
+            "slider.thumb_border_color",
+            "slider.thumb_hover_border_color",
+            "slider.thumb_focus_border_color",
             "defaults.background_color",
         ],
     ),

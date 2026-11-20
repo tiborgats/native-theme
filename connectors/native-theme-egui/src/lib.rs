@@ -205,8 +205,8 @@ pub use accessors::{
     mono_font_weight, role_font_is_italic, role_font_weight, scaled_text_size,
     scrollbar_groove_width, selection_inactive_background, selection_inactive_text_color,
     text_area_frame, text_area_margin, text_role_font, text_role_line_height, text_role_weight,
-    text_scaling_factor, toolbar_button_checked_background, tooltip_show_delay, warning_text_color,
-    window_title_bar_font, window_title_bar_text_color,
+    text_scaling_factor, toolbar_button_checked_background, toolbar_button_checked_border_color,
+    tooltip_show_delay, warning_text_color, window_title_bar_font, window_title_bar_text_color,
 };
 pub use atlas::Note;
 pub use atlas::{Builder, ThemeAtlas};

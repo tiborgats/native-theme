@@ -238,8 +238,8 @@ fn every_leaf_has_exactly_one_row_and_every_row_is_well_formed() {
     let leaves = leaf_paths(&resolved("adwaita", ColorMode::Light));
     assert_eq!(
         leaves.len(),
-        541,
-        "537 ResolvedTheme leaves + 4 layout leaves (§5.7)"
+        555,
+        "551 ResolvedTheme leaves + 4 layout leaves (§5.7)"
     );
 
     let mut problems: Vec<String> = Vec::new();
@@ -448,7 +448,7 @@ fn every_leaf_has_exactly_one_row_and_every_row_is_well_formed() {
 }
 
 /// §5.7: the transcription carries the specification's verdicts, group by group, and its
-/// sub-tags (15 source-side gap, 22 widgets-crate, 53 egui-limited, 1 source-void). Read
+/// sub-tags (15 source-side gap, 26 widgets-crate, 55 egui-limited, 2 source-void). Read
 /// through the typed reader.
 #[test]
 fn verdict_totals_match_the_specification() {
@@ -482,18 +482,26 @@ fn verdict_totals_match_the_specification() {
     }
     // [direct, scoped, derived, unmappable] per group: §5.7's table
     let expected = [
-        ("foundation", [18, 1, 39, 10]),
+        // §5.7's [18, 1, 39, 10], and the whole-pixel font flag (one UNMAPPABLE, issue #4's
+        // leftovers)
+        ("foundation", [18, 1, 39, 11]),
         // §5.7's [8, 55, 32, 15], issue #4's leftovers since 0.7.2: the menu item's outline
-        // (one SCOPED) and the menu bar's five title fields (five DERIVED)
-        ("surfaces", [8, 56, 37, 15]),
+        // (one SCOPED), the menu bar's five title fields (five DERIVED), the least row height
+        // and the two panel paddings (three SCOPED) and the pressed item's two colours (two
+        // UNMAPPABLE)
+        ("surfaces", [8, 59, 37, 17]),
         ("buttons", [13, 47, 34, 25]),
         // §5.7's [4, 35, 36, 12], the four `input.border.padding` sides SCOPED since 0.7.2,
         // `combo_box.hover_border_color`, the caret's blink (two DERIVED, one UNMAPPABLE), and
         // the header's hovered and pressed fills (two DERIVED) since 0.7.2, and the hovered
-        // row's outline (one DERIVED, issue #4's leftovers)
-        ("inputs", [4, 40, 37, 13]),
-        ("indicators", [5, 17, 9, 9]),
-        ("chrome", [0, 57, 28, 19]),
+        // row's outline and the header's section line (two DERIVED, issue #4's leftovers)
+        ("inputs", [4, 40, 38, 13]),
+        // §5.7's [5, 17, 9, 9], and the slider knob's outline (four UNMAPPABLE, issue #4's
+        // leftovers)
+        ("indicators", [5, 17, 9, 13]),
+        // §5.7's [0, 57, 28, 19], and the checked toolbar button's pen (one DERIVED, issue #4's
+        // leftovers)
+        ("chrome", [0, 57, 29, 19]),
     ];
     for (group, want) in expected {
         let got = counts.get(group).copied().unwrap_or([0; 4]);
@@ -504,12 +512,13 @@ fn verdict_totals_match_the_specification() {
         "a leaf outside the six groups"
     );
     assert_eq!(tags.get("source-side gap").copied().unwrap_or_default(), 15);
-    assert_eq!(tags.get("widgets-crate").copied().unwrap_or_default(), 22);
-    assert_eq!(tags.get("egui-limited").copied().unwrap_or_default(), 53);
+    assert_eq!(tags.get("widgets-crate").copied().unwrap_or_default(), 26);
+    assert_eq!(tags.get("egui-limited").copied().unwrap_or_default(), 55);
     assert_eq!(
         tags.get("source-void").copied().unwrap_or_default(),
-        1,
-        "one row is source-void: defaults.border.opacity, already folded into every border colour"
+        2,
+        "two rows are source-void: defaults.border.opacity, already folded into every border \
+         colour, and defaults.font_whole_pixels, which the model applies to every font size"
     );
 }
 

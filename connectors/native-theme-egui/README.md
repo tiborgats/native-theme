@@ -279,8 +279,9 @@ a multi-line one, `expander_icon` for a `CollapsingHeader`'s
 arrow, `text_role_font` and `text_role_line_height` for the caption, heading,
 dialog-title and display roles, `window_title_bar_font` and
 `window_title_bar_text_color`, `dialog_button_order`, `list_header_height`
-for `TableBuilder::header`, `toolbar_button_checked_background` for a
-checked toolbar button, `default_button` for a dialog's default button
+for `TableBuilder::header`, `toolbar_button_checked_background` and
+`toolbar_button_checked_border_color` for a checked toolbar button's fill and
+line, `default_button` for a dialog's default button
 (`Some` where the theme states `button.default_button_background`, `None`
 where the default button is the primary one: draw it then as a selected
 button in the `Role::Button` scope, which takes `button.primary_background`
@@ -627,11 +628,35 @@ egui's `MenuButton` draws a menu-bar title from the pointer alone
 where the application swaps the style's `widgets.open` in while that title's
 menu is open, as the showcase's menu bar does.
 
+egui draws a pressed menu item in `widgets.active`, which is also the look of
+the item the keyboard focuses (`egui-0.37.0/src/widget_style/mod.rs`), and
+the arrow keys move that focus along a menu's items
+(`egui-0.37.0/src/containers/menu.rs`): Breeze's pressed look
+(`menu.active_background`, `active_text_color`) would stay on every
+keyboard-selected item, where Breeze draws the hover look. So a pressed menu
+item keeps the hover look, its outline included.
+
+egui pads a menu item's text by one `button_padding.x` on both sides, so the
+item takes `menu.border.padding.left` on both where the theme states it: the
+shortcut text, which egui lays out flush right in the padding
+(`Button::shortcut_text`), and a submenu's arrow end that far from the right
+edge, 14 px under kde-breeze where Breeze's end 27 px from it.
+
 A hovered row's outline (`list.hover_border_color`) is drawn by the
 application where it paints its rows, as the showcase's list and command
 palette do. egui_extras' `TableBuilder` fills a hovered row cell by cell with
 `widgets.hovered.bg_fill` and draws no line round it
-(`egui_extras-0.37.0/src/layout.rs`).
+(`egui_extras-0.37.0/src/layout.rs`); its column line runs through header and
+body alike in `noninteractive.bg_stroke` (`egui_extras-0.37.0/src/table.rs`),
+so the header's section line (`list.header_separator_color`) is drawn where the
+application paints its header, as the showcase's Basic table does.
+
+egui's own `Slider` strokes its handle in `fg_stroke`, the colour that also
+letters its value (`egui-0.37.0/src/widgets/slider_core.rs`,
+`egui-0.37.0/src/style.rs`), so the knob's outline
+(`slider.thumb_border_color`, `thumb_border_line_width`,
+`thumb_hover_border_color`, `thumb_focus_border_color`) is drawn by
+native-theme-egui-widgets' `Slider`.
 
 A submenu opens egui's 2.0 points from its menu's frame
 (`MenuConfig::submenu_gap`, `egui-0.37.0/src/containers/menu.rs`): a field of

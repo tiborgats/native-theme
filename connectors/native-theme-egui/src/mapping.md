@@ -8,15 +8,15 @@ One row per native leaf (spec §5, §13.1). A `§N` that names no document cites
 
 | group | leaves | DIRECT | SCOPED | DERIVED | UNMAPPABLE |
 |---|---:|---:|---:|---:|---:|
-| Foundation (`defaults`, `text_scale`, `layout`) | 68 | 18 | 1 | 39 | 10 |
-| Surfaces (window, dialog, popover, card, tooltip, menu) | 116 | 8 | 56 | 37 | 15 |
+| Foundation (`defaults`, `text_scale`, `layout`) | 69 | 18 | 1 | 39 | 11 |
+| Surfaces (window, dialog, popover, card, tooltip, menu) | 121 | 8 | 59 | 37 | 17 |
 | Buttons (button, link, switch, checkbox, segmented control) | 119 | 13 | 47 | 34 | 25 |
-| Inputs (input, text area, combo box, list) | 94 | 4 | 40 | 37 | 13 |
-| Indicators (scrollbar, slider, progress bar, splitter, separator, spinner) | 40 | 5 | 17 | 9 | 9 |
-| Chrome (tab, sidebar, toolbar, status bar, expander) | 104 | 0 | 57 | 28 | 19 |
-| **TOTAL** | **541** | **48** | **218** | **184** | **91** |
+| Inputs (input, text area, combo box, list) | 95 | 4 | 40 | 38 | 13 |
+| Indicators (scrollbar, slider, progress bar, splitter, separator, spinner) | 44 | 5 | 17 | 9 | 13 |
+| Chrome (tab, sidebar, toolbar, status bar, expander) | 105 | 0 | 57 | 29 | 19 |
+| **TOTAL** | **553** | **48** | **221** | **186** | **98** |
 
-UNMAPPABLE sub-tags (§2): `egui-limited` 53, `source-side gap` 15, `source-void` 1, `widgets-crate` 22.
+UNMAPPABLE sub-tags (§2): `egui-limited` 55, `source-side gap` 15, `source-void` 2, `widgets-crate` 26.
 
 ## Rows
 
@@ -47,6 +47,7 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 53, `source-side gap` 15, `source-void
 | `defaults.font.size` | DIRECT | `text_styles[Body].size`; `spacing.extra_text_line_spacing` (when: the theme's line box is taller than epaint's row, §6.15); «slider» `visuals.widgets.noninteractive.expansion` (when: Body row \> 1.25 · thumb_diameter, §6.6); «slider» `visuals.widgets.inactive.expansion` (when: Body row \> 1.25 · thumb_diameter, §6.6); «slider» `visuals.widgets.hovered.expansion` (when: Body row \> 1.25 · thumb_diameter, §6.6); «slider» `visuals.widgets.active.expansion` (when: Body row \> 1.25 · thumb_diameter, §6.6); «slider» `visuals.widgets.open.expansion` (when: Body row \> 1.25 · thumb_diameter, §6.6) |  |
 | `defaults.font.style` | DERIVED | → T6(d) | probe `"italic"` |
 | `defaults.font.weight` | DERIVED | → T6(d) | probe `700` |
+| `defaults.font_whole_pixels` | UNMAPPABLE |  | `source-void`: none: the model rounds every font size where it is true |
 | `defaults.icon_sizes.dialog` | DERIVED | → T18(e) |  |
 | `defaults.icon_sizes.large` | DERIVED | → T18(e) |  |
 | `defaults.icon_sizes.panel` | DERIVED | → T18(e) |  |
@@ -135,6 +136,8 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 53, `source-side gap` 15, `source-void
 | `dialog.title_font.size` | SCOPED | «dialog» `text_styles[Heading].size` |  |
 | `dialog.title_font.style` | DERIVED | → T18(a) | probe `"italic"` |
 | `dialog.title_font.weight` | DERIVED | → T18(a) |  |
+| `menu.active_background` | UNMAPPABLE |  | `egui-limited`: egui: a pressed state apart from the focused one (Widgets::style gives a focused widget active); egui draws a keyboard-focused item in widgets.active (egui-0.37.0/src/widget_style/mod.rs:212-222) and moves the focus along a menu's items with the arrow keys (src/containers/menu.rs:233-288): the pressed look would stay on every keyboard-selected item, so a pressed item keeps the hover look |
+| `menu.active_text_color` | UNMAPPABLE |  | `egui-limited`: egui: a pressed state apart from the focused one (Widgets::style gives a focused widget active); as menu.active_background: a pressed item keeps menu.hover_text_color |
 | `menu.background_color` | DIRECT | `visuals.window_fill` |  |
 | `menu.bar_hover_background` | DERIVED | → T18(a) | per call: menu_bar_modifier, a menu-bar title's hovered and active weak_bg_fill over the «menu» cell |
 | `menu.bar_hover_text_color` | DERIVED | → T18(a) | per call: menu_bar_modifier, a menu-bar title's hovered, active and open fg_stroke.color |
@@ -146,7 +149,7 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 53, `source-side gap` 15, `source-void
 | `menu.border.line_width` | SCOPED | «menu» `visuals.widgets.inactive.bg_stroke.width`; «menu» `visuals.widgets.hovered.bg_stroke.width` (when: menu.hover_border_color is None); «menu» `visuals.widgets.active.bg_stroke.width` (when: menu.hover_border_color is None); «menu» `visuals.widgets.open.bg_stroke.width` (when: menu.hover_border_color is None); «menu» `spacing.button_padding.x` (when: a side of the pair is stated, §5 intro); «menu» `spacing.button_padding.y` (when: a side of the pair is stated, §5 intro) | probe `2.0` |
 | `menu.border.padding.bottom` | DERIVED | «menu» `spacing.button_padding.y` (when: no stated menu.row_height narrows the padding at a text scale of 1 or less (roles::fit_row_padding)) |  |
 | `menu.border.padding.left` | DERIVED | «menu» `spacing.button_padding.x` |  |
-| `menu.border.padding.right` | DERIVED | «menu» `spacing.button_padding.x` |  |
+| `menu.border.padding.right` | DERIVED | «menu» `spacing.button_padding.x` (when: menu.border.padding.left is None) |  |
 | `menu.border.padding.top` | DERIVED | «menu» `spacing.button_padding.y` (when: no stated menu.row_height narrows the padding at a text scale of 1 or less (roles::fit_row_padding)) |  |
 | `menu.border.shadow_enabled` | UNMAPPABLE |  | `source-side gap`: native-theme: shadow offset, blur and spread in WidgetBorderSpec (§14 item 10) |
 | `menu.disabled_text_color` | SCOPED | «menu:disabled» `visuals.widgets.noninteractive.fg_stroke.color`; «menu:disabled» `visuals.widgets.inactive.fg_stroke.color` |  |
@@ -161,6 +164,9 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 53, `source-side gap` 15, `source-void
 | `menu.hover_text_color` | SCOPED | «menu» `visuals.widgets.hovered.fg_stroke.color`; «menu» `visuals.widgets.active.fg_stroke.color`; «menu» `visuals.widgets.open.fg_stroke.color` |  |
 | `menu.icon_size` | DERIVED | → T18(a) | probe `20.0` |
 | `menu.icon_text_gap` | SCOPED | «menu» `spacing.icon_spacing` |  |
+| `menu.min_row_height` | SCOPED | «menu» `spacing.interact_size.y` (when: menu.row_height is None) | a least height, which egui's Button grows past (egui-0.37.0/src/theme/default_style.rs:97-101, src/widgets/button.rs:351); a stated menu.row_height is drawn instead |
+| `menu.panel_padding_horizontal` | SCOPED | «menu» `spacing.menu_margin.left`; «menu» `spacing.menu_margin.right` | MenuConfig::style styles a menu's and a submenu's popup (egui-0.37.0/src/containers/menu.rs:457, :714), which Popup::show frames with Frame::popup's inner margin, spacing.menu_margin (src/containers/popup.rs:650-651, src/containers/frame.rs:214-220); a popup given no modifier starts from the Context's style |
+| `menu.panel_padding_vertical` | SCOPED | «menu» `spacing.menu_margin.top`; «menu» `spacing.menu_margin.bottom` | as menu.panel_padding_horizontal |
 | `menu.row_height` | SCOPED | «menu» `spacing.interact_size.y`; «menu» `spacing.button_padding.y` (when: a one-line label and the padding overrun the stated menu.row_height at a text scale of 1 or less, which narrows the padding (roles::fit_row_padding); a label alone taller than the stated height is drawn whole, its padding 0 and the row its height, since egui takes the stated height as the row's least (egui/src/widgets/button.rs:306-309)) |  |
 | `menu.separator_color` | SCOPED | «menu» `visuals.widgets.noninteractive.bg_stroke.color` |  |
 | `popover.background_color` | SCOPED | \[popover\] `fill` |  |
@@ -416,6 +422,7 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 53, `source-side gap` 15, `source-void
 | `list.header_font.weight` | DERIVED | → T18(a) | probe `700` |
 | `list.header_height` | DERIVED | → T18(e) |  |
 | `list.header_hover_background` | DERIVED | → T18(a) | hovered and pressed: egui_extras' header row has no such state (egui_extras-0.37.0/src/table.rs:490-506, hovered: false), so the showcase draws the header sections' fills |
+| `list.header_separator_color` | DERIVED | → T18(a) | per call: the showcase draws the Basic table's line under the header and its column line over the header in it, laid over the header's fill, the column line below in list.grid_color; egui_extras' TableBuilder draws one column line through header and body in noninteractive.bg_stroke (egui_extras-0.37.0/src/table.rs:891-900) |
 | `list.hover_background` | SCOPED | «list» `visuals.widgets.hovered.bg_fill`; «list» `visuals.widgets.active.bg_fill` |  |
 | `list.hover_border_color` | DERIVED | → T18(a) | per call: the showcase outlines a hovered, unselected list row and command-palette row at defaults.border.line_width, inside the row's fill (StrokeKind::Inside); egui_extras' TableBuilder fills a hovered row per cell with no stroke (egui_extras-0.37.0/src/layout.rs:145-151) |
 | `list.hover_text_color` | DERIVED | → T18(a) |  |
@@ -468,8 +475,12 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 53, `source-side gap` 15, `source-void
 | `slider.disabled_thumb_color` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: Slider (docs/archive/todo_egui-widgets-spec.md §4.2) |
 | `slider.disabled_track_color` | SCOPED | «slider:disabled» `visuals.widgets.inactive.bg_fill` (when: stated; None copies slider.track_color, §6.4) |  |
 | `slider.fill_color` | SCOPED | «slider» `visuals.selection.bg_fill`; `visuals.slider_trailing_fill` (when: never: written true in the base style, which every cell inherits, §5.9); «slider:disabled» `visuals.selection.bg_fill` (when: slider.disabled_fill_color is None, §6.4) |  |
+| `slider.thumb_border_color` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: Slider: the knob's outline; egui's Slider strokes its handle in fg_stroke, which letters its value |
+| `slider.thumb_border_line_width` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: Slider: the knob's outline; egui's Slider strokes its handle in fg_stroke, which letters its value |
 | `slider.thumb_color` | SCOPED | «slider» `visuals.widgets.hovered.bg_fill` (when: slider.thumb_hover_color is None, §6.9); «slider» `visuals.widgets.active.bg_fill` (when: slider.thumb_hover_color is None, §6.9) |  |
 | `slider.thumb_diameter` | DERIVED | «slider» `spacing.interact_size.y`; «slider» `visuals.widgets.noninteractive.expansion` (when: Body row \> 1.25 · thumb_diameter, §6.6); «slider» `visuals.widgets.inactive.expansion` (when: Body row \> 1.25 · thumb_diameter, §6.6); «slider» `visuals.widgets.hovered.expansion` (when: Body row \> 1.25 · thumb_diameter, §6.6); «slider» `visuals.widgets.active.expansion` (when: Body row \> 1.25 · thumb_diameter, §6.6); «slider» `visuals.widgets.open.expansion` (when: Body row \> 1.25 · thumb_diameter, §6.6); `visuals.handle_shape` (when: never: HandleShape::Circle in the base style and every slider cell, a diameter's knob, §5.9, §6.6) |  |
+| `slider.thumb_focus_border_color` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: Slider: the knob's outline; egui's Slider strokes its handle in fg_stroke, which letters its value |
+| `slider.thumb_hover_border_color` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: Slider: the knob's outline; egui's Slider strokes its handle in fg_stroke, which letters its value |
 | `slider.thumb_hover_color` | SCOPED | «slider» `visuals.widgets.hovered.bg_fill` (when: stated; None copies slider.thumb_color, §6.9); «slider» `visuals.widgets.active.bg_fill` (when: stated; None copies slider.thumb_color, §6.9) |  |
 | `slider.tick_mark_length` | UNMAPPABLE |  | `egui-limited`: egui: tick marks on Slider |
 | `slider.track_color` | SCOPED | «slider» `visuals.widgets.inactive.bg_fill`; «slider» `visuals.widgets.open.bg_fill`; «slider:disabled» `visuals.widgets.inactive.bg_fill` (when: slider.disabled_track_color is None, §6.4) |  |
@@ -580,6 +591,7 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 53, `source-side gap` 15, `source-void
 | `toolbar.border.shadow_enabled` | UNMAPPABLE |  | `source-side gap`: native-theme: shadow offset, blur and spread in WidgetBorderSpec (§14 item 10) |
 | `toolbar.button_active_background` | SCOPED | «toolbar» `visuals.widgets.active.weak_bg_fill` |  |
 | `toolbar.button_checked_background` | DERIVED | → T18(a) |  |
+| `toolbar.button_checked_border_color` | DERIVED | → T18(a) |  |
 | `toolbar.button_hover_background` | SCOPED | «toolbar» `visuals.widgets.hovered.weak_bg_fill` |  |
 | `toolbar.button_hover_border_color` | SCOPED | «toolbar» `visuals.widgets.hovered.bg_stroke.color`; «toolbar» `visuals.widgets.active.bg_stroke.color` |  |
 | `toolbar.font.color` | SCOPED | «toolbar» `visuals.widgets.noninteractive.fg_stroke.color`; «toolbar» `visuals.widgets.inactive.fg_stroke.color`; «toolbar» `visuals.widgets.hovered.fg_stroke.color`; «toolbar» `visuals.widgets.active.fg_stroke.color`; «toolbar» `visuals.widgets.open.fg_stroke.color` |  |
@@ -607,13 +619,13 @@ The leaf that wins an egui field globally; the leaves that only feed its formula
 | `spacing.icon_width` | `checkbox.indicator_width` |  | `checkbox.indicator_width` «checkbox», `combo_box.arrow_icon_size` «combo_box» |
 | `spacing.icon_width_inner` | — (egui's own value stands) |  | `checkbox.border.padding.bottom` «checkbox», `checkbox.border.padding.left` «checkbox», `checkbox.border.padding.right` «checkbox», `checkbox.border.padding.top` «checkbox», `checkbox.indicator_width` «checkbox», `expander.arrow_icon_size` «expander» |
 | `spacing.indent` | — (egui's own value stands) |  | `expander.arrow_icon_size` «expander», `expander.border.line_width` «expander», `expander.border.padding.left` «expander» |
-| `spacing.interact_size.y` | `button.min_height` |  | `button.min_height` «button», `checkbox.indicator_width` «checkbox», `combo_box.min_height` «combo_box», `expander.header_height` «expander», `list.row_height` «list», `menu.row_height` «menu», `progress_bar.track_height` «progress_bar», `segmented_control.segment_height` «segmented_control», `slider.thumb_diameter` «slider», `spinner.diameter` «spinner», `spinner.min_diameter` «spinner», `switch.track_height` «switch», `tab.min_height` «tab», `toolbar.bar_height` «toolbar», `toolbar.border.line_width` «toolbar», `toolbar.border.padding.bottom` «toolbar», `toolbar.border.padding.top` «toolbar» |
+| `spacing.interact_size.y` | `button.min_height` |  | `button.min_height` «button», `checkbox.indicator_width` «checkbox», `combo_box.min_height` «combo_box», `expander.header_height` «expander», `list.row_height` «list», `menu.min_row_height` «menu», `menu.row_height` «menu», `progress_bar.track_height` «progress_bar», `segmented_control.segment_height` «segmented_control», `slider.thumb_diameter` «slider», `spinner.diameter` «spinner», `spinner.min_diameter` «spinner», `switch.track_height` «switch», `tab.min_height` «tab», `toolbar.bar_height` «toolbar», `toolbar.border.line_width` «toolbar», `toolbar.border.padding.bottom` «toolbar», `toolbar.border.padding.top` «toolbar» |
 | `spacing.item_spacing.x` | `layout.widget_gap` |  | `dialog.button_gap` «dialog», `progress_bar.border.padding.left` «progress_bar», `segmented_control.separator_width` «segmented_control», `tab.item_gap` «tab», `toolbar.item_gap` «toolbar» |
 | `spacing.item_spacing.y` | `layout.widget_gap` |  |  |
-| `spacing.menu_margin.bottom` | — (egui's own value stands) |  | `dialog.border.padding.bottom` \[dialog\], `popover.border.padding.bottom` \[popover\], `tooltip.border.padding.bottom` \[tooltip\] |
-| `spacing.menu_margin.left` | — (egui's own value stands) |  | `dialog.border.padding.left` \[dialog\], `popover.border.padding.left` \[popover\], `tooltip.border.padding.left` \[tooltip\] |
-| `spacing.menu_margin.right` | — (egui's own value stands) |  | `dialog.border.padding.right` \[dialog\], `popover.border.padding.right` \[popover\], `tooltip.border.padding.right` \[tooltip\] |
-| `spacing.menu_margin.top` | — (egui's own value stands) |  | `dialog.border.padding.top` \[dialog\], `popover.border.padding.top` \[popover\], `tooltip.border.padding.top` \[tooltip\] |
+| `spacing.menu_margin.bottom` | — (egui's own value stands) |  | `dialog.border.padding.bottom` \[dialog\], `menu.panel_padding_vertical` «menu», `popover.border.padding.bottom` \[popover\], `tooltip.border.padding.bottom` \[tooltip\] |
+| `spacing.menu_margin.left` | — (egui's own value stands) |  | `dialog.border.padding.left` \[dialog\], `menu.panel_padding_horizontal` «menu», `popover.border.padding.left` \[popover\], `tooltip.border.padding.left` \[tooltip\] |
+| `spacing.menu_margin.right` | — (egui's own value stands) |  | `dialog.border.padding.right` \[dialog\], `menu.panel_padding_horizontal` «menu», `popover.border.padding.right` \[popover\], `tooltip.border.padding.right` \[tooltip\] |
+| `spacing.menu_margin.top` | — (egui's own value stands) |  | `dialog.border.padding.top` \[dialog\], `menu.panel_padding_vertical` «menu», `popover.border.padding.top` \[popover\], `tooltip.border.padding.top` \[tooltip\] |
 | `spacing.scroll.active_background_opacity` | — (a formula's result) | `scrollbar.overlay_mode`, `scrollbar.track_color` |  |
 | `spacing.scroll.bar_inner_margin` | — (a formula's result) | `scrollbar.groove_width`, `scrollbar.overlay_mode`, `scrollbar.thumb_width` |  |
 | `spacing.scroll.bar_outer_margin` | — (a formula's result) | `scrollbar.groove_width`, `scrollbar.overlay_mode`, `scrollbar.thumb_width` |  |
@@ -834,10 +846,6 @@ The leaf that wins an egui field globally; the leaves that only feed its formula
 | `spacing.default_area_size.y` | as spacing.default_area_size.x |
 | `spacing.indent_ends_with_horizontal_line` | whether an indented region is ruled is layout policy with no native leaf (§5.10) |
 | `spacing.interact_size.x` | no native analogue: a Grid column floor, the DragValue and colour-swatch width (§7.5) |
-| `spacing.menu_margin.bottom` | as spacing.menu_margin.left |
-| `spacing.menu_margin.left` | native-theme states no menu-container padding; menu.border is the item's (§5.9) |
-| `spacing.menu_margin.right` | as spacing.menu_margin.left |
-| `spacing.menu_margin.top` | as spacing.menu_margin.left |
 | `spacing.menu_spacing` | no reader in egui 0.37.0 but its style editor's field for it (egui-0.37.0/src/style.rs, `Spacing::ui`) (§5.10) |
 | `spacing.menu_width` | no reader in egui 0.37.0 but its style editor's field for it (egui-0.37.0/src/style.rs, `Spacing::ui`) (§5.10) |
 | `spacing.scroll.active_handle_opacity` | as spacing.scroll.dormant_handle_opacity |

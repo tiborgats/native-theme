@@ -1276,7 +1276,10 @@ fn list_group(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui:
 /// `toolbar.icon_size`, in the toolbar's scope, Ghost. Edit is an edit-mode switch
 /// (`DemoState::basic_edit`), on at start: while on it is filled with the toolbar's checked
 /// fill (`toolbar_button_checked_background`), lettered in the checked text, or, where the theme
-/// states no checked fill, with the selected flat button's fill, `widgets.active.weak_bg_fill`.
+/// states no checked fill, with the selected flat button's fill, `widgets.active.weak_bg_fill`;
+/// and lined at rest in the checked pen (`toolbar_button_checked_border_color`,
+/// `button.border.line_width` wide) where the theme states it, under the pointer and pressed in
+/// the toolbar's hover outline, or that pen where the theme states no hover outline (E9).
 fn icon_buttons(
     reg: &mut Registry,
     state: &mut DemoState,
@@ -1347,6 +1350,20 @@ fn icon_buttons(
                     .scope(|ui| {
                         ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Extend);
                         demo::tool_button(ui, &t.button.border.padding, demo::toolbar_edge(t));
+                        // E9: a checked button's pen at rest; under the pointer and pressed the
+                        // toolbar's hover outline where the theme states one, else the pen (S8).
+                        // `Button::fill` leaves the stroke to the scope; only `Button::stroke`
+                        // overrides it (`egui-0.37.0/src/widgets/button.rs:161`).
+                        if let Some(pen) =
+                            native_theme_egui::toolbar_button_checked_border_color(t).filter(|_| on)
+                        {
+                            let line = egui::Stroke::new(t.button.border.line_width, pen);
+                            let w = &mut ui.visuals_mut().widgets;
+                            w.inactive.bg_stroke = line;
+                            if demo::toolbar_edge(t).is_none() {
+                                (w.hovered.bg_stroke, w.active.bg_stroke) = (line, line);
+                            }
+                        }
                         let (fill, text) = edit_look(t, ui.visuals(), on);
                         // The checked text, before the icon is loaded in the scope's text
                         // colour.
@@ -1948,7 +1965,8 @@ pub(crate) fn header_section_fill(
 /// hovered fill, where the theme states them (`header_section_fill`), rounded where the section
 /// meets the frame's top corner; a vertical
 /// `list.grid_color` line between the columns through the header and the rows and a horizontal
-/// one under the header, each `separator.line_width` wide, inside the cell it closes.
+/// one under the header, each `separator.line_width` wide, inside the cell it closes, the
+/// header's share of them in `list.header_separator_color` where the theme states it (E7).
 fn table(reg: &mut Registry, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
     let t = atlas.resolved_for(ui.ctx().theme());
     let prefs = atlas.accessibility();
@@ -2076,10 +2094,32 @@ fn table(reg: &mut Registry, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
                         places.push((format!("basic.table.row_{}", i.saturating_add(1)), row));
                     }
                     // The grid: under the header, and between the columns from top to bottom,
-                    // each inside the cell it closes.
+                    // each inside the cell it closes. Over the header, in
+                    // `list.header_separator_color` where the theme states it (E7), Breeze's
+                    // translucent section line laid over the header's fill: the column line is
+                    // split at the line under the header, so no pixel takes that colour twice.
                     let stroke = egui::Stroke::new(grid_width, grid);
-                    painter.hline(header.x_range(), header.bottom() - 0.5 * grid_width, stroke);
-                    painter.vline(mid - 0.5 * grid_width, rect.y_range(), stroke);
+                    let x = mid - 0.5 * grid_width;
+                    match l.header_separator_color {
+                        Some(c) => {
+                            let head = egui::Stroke::new(grid_width, to_color32(c));
+                            painter.hline(
+                                header.x_range(),
+                                header.bottom() - 0.5 * grid_width,
+                                head,
+                            );
+                            painter.vline(x, header.top()..=header.bottom() - grid_width, head);
+                            painter.vline(x, header.bottom()..=rect.bottom(), stroke);
+                        }
+                        None => {
+                            painter.hline(
+                                header.x_range(),
+                                header.bottom() - 0.5 * grid_width,
+                                stroke,
+                            );
+                            painter.vline(x, rect.y_range(), stroke);
+                        }
+                    }
                 })
                 .response
         },

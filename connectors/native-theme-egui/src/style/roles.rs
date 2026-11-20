@@ -2,9 +2,9 @@
 
 use egui::{FontFamily, FontId, TextStyle};
 
-use native_theme::theme::ResolvedWidgetBorder;
+use native_theme::theme::{ResolvedPadding, ResolvedWidgetBorder};
 
-use super::base::{button_padding, length, opacity, radius, stroke, text_size};
+use super::base::{button_padding, length, margin, opacity, radius, stroke, text_size};
 use super::states::{
     BorderEntries, BorderSource, FillField, FillSource, Layer, OpenFrom, StateSource, TextSource,
     write_states,
@@ -120,7 +120,9 @@ fn slot_size(
 /// the platform sizes to its content (`docs/platform-facts.md` §2.6, §2.13, §2.15) at least a
 /// push button tall. The toolbar's stated height is §6.10's, written after this. A stated menu
 /// or list row height is a row's least height to egui, so the cell's vertical padding is fitted
-/// to it once the cell's font is written ([`fit_row_padding`]).
+/// to it once the cell's font is written ([`fit_row_padding`]). The menu's `min_row_height`, a
+/// least height the row grows past, goes into `interact_size.y` in its place where
+/// `menu.row_height` is unstated (`menu`), and fits no padding.
 fn row_height(
     s: &mut egui::Style,
     path: &'static str,
@@ -133,7 +135,8 @@ fn row_height(
 }
 
 /// A stated row height (`menu.row_height`, `list.row_height`, `expander.header_height`) as the
-/// drawn height of a one-line row at a text scale of 1 or less, as gpui
+/// drawn height of a one-line row at a text scale of 1 or less (not the menu's
+/// `min_row_height`, a least height, which egui's `Button` takes as it is), as gpui
 /// (`geometry::with_height_rule`'s fixed `h`, `geometry::accordion_title`'s) and iced
 /// (`Length::Fixed`) draw it. egui's `Button` takes `interact_size.y`, where [`row_height`]
 /// writes the stated height, as its least height and grows to its label and vertical padding
@@ -320,6 +323,11 @@ fn menu(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes: &
                 paths: ["menu.border.corner_radius", "menu.border.line_width"],
                 entries: BorderEntries::Interactive, // the item's outline; nothing into the frame's
             }),
+            // `active` copies `hovered`, so `menu.active_background` and `active_text_color`
+            // are not drawn: egui draws a focused widget in `active`
+            // (egui-0.37.0/src/widget_style/mod.rs:212-222) and moves the focus along a menu's
+            // items with the arrow keys (src/containers/menu.rs:233-288), where Breeze's pressed
+            // look would stay on every keyboard-selected item (S6)
             open: OpenFrom::Hovered, // the open item stays highlighted (`menu.rs:382-384`)
         },
         notes,
@@ -356,7 +364,59 @@ fn menu(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes: &
         after_menu_style,
         notes,
     );
-    row_height(s, "menu.row_height", m.row_height, input, notes);
+    // E4: egui has one `button_padding.x` for both sides of an item: `menu.border.padding.left`
+    // where stated, the shortcut and a submenu's arrow then that far from the right edge too
+    // (README, *Limits*); else the pair's mean
+    let mut items = m.border.clone();
+    items.padding.right = items.padding.left.or(items.padding.right);
+    s.spacing.button_padding.x = to_button_padding(after_menu_style, &items).x;
+    // E4: a stated row height is drawn exactly and wins (S2); else a least height, which egui's
+    // Button grows past (egui-0.37.0/src/theme/default_style.rs:97-101,
+    // src/widgets/button.rs:351); else egui's own
+    match (m.row_height, m.min_row_height) {
+        (None, Some(least)) => {
+            s.spacing.interact_size.y = length(
+                "menu.min_row_height",
+                least,
+                input.scheme.default_style().spacing.interact_size.y,
+                notes,
+            );
+        }
+        (_, least) => {
+            // a non-finite least height is reported though the row height wins over it
+            if least.is_some_and(|v| !v.is_finite()) {
+                push_note(
+                    notes,
+                    Note::ValueSanitised {
+                        path: "menu.min_row_height",
+                    },
+                );
+            }
+            row_height(s, "menu.row_height", m.row_height, input, notes);
+        }
+    }
+    // E4: the panel's inset of its items, where egui frames a menu's popup: `MenuConfig::style`
+    // styles a menu's and a submenu's popup (egui-0.37.0/src/containers/menu.rs:457, :714), and
+    // `Popup::show` frames it with `Frame::popup`, whose inner margin is `spacing.menu_margin`
+    // (src/containers/popup.rs:650-651, src/containers/frame.rs:214-220). Physical sides, as
+    // every egui frame pads, in a right-to-left layout too.
+    let (h, v) = (m.panel_padding_horizontal, m.panel_padding_vertical);
+    s.spacing.menu_margin = margin(
+        [
+            "menu.panel_padding_vertical",
+            "menu.panel_padding_horizontal",
+            "menu.panel_padding_vertical",
+            "menu.panel_padding_horizontal",
+        ],
+        own.spacing.menu_margin,
+        &ResolvedPadding {
+            top: v,
+            right: h,
+            bottom: v,
+            left: h,
+        },
+        notes,
+    );
     s.spacing.icon_spacing = length(
         "menu.icon_text_gap",
         m.icon_text_gap,
@@ -1610,29 +1670,17 @@ mod tests {
             w.noninteractive.bg_stroke.color,
             to_color32(m.separator_color)
         );
-        // the item padding over menu_style's vec2(2.0, 0.0) (`egui/src/containers/menu.rs:23`)
-        let mut after_menu_style = base.clone();
-        egui::containers::menu::menu_style(&mut after_menu_style);
-        assert_eq!(
-            c.spacing.button_padding,
-            to_button_padding(after_menu_style.spacing.button_padding, &m.border)
-        );
+        // E2 is not drawn (S6): the pressed item is the hovered one, outline included, though
+        // the theme states Breeze's pressed look
+        assert!(m.active_background.is_some() && m.active_text_color.is_some());
+        assert_eq!(w.active, w.hovered);
         assert_eq!(c.spacing.icon_spacing, clamp_length(m.icon_text_gap));
-        // §2 *Unstated sizes*: egui's own row where the theme states none, not the base's
-        // `button.min_height`
-        match m.row_height {
-            Some(h) => assert_eq!(c.spacing.interact_size.y, clamp_length(h)),
-            None => assert_eq!(
-                c.spacing.interact_size.y,
-                egui::Theme::Light.default_style().spacing.interact_size.y
-            ),
-        }
         assert_eq!(
             c.text_styles.get(&TextStyle::Body).unwrap().size,
             m.font.size
         );
         assert_eq!(c.override_font_id, None, "menu items read Body (B3)");
-        // the frame is the base style's (§5.2, §5.9)
+        // the frame is the base style's (§5.2, §5.9), its items inset by the panel padding (E4)
         assert_eq!(c.visuals.window_fill, base.visuals.window_fill);
         assert_eq!(c.visuals.window_stroke, base.visuals.window_stroke);
         assert_eq!(
@@ -1640,7 +1688,9 @@ mod tests {
             base.visuals.menu_corner_radius
         );
         assert_eq!(c.visuals.popup_shadow, base.visuals.popup_shadow);
-        assert_eq!(c.spacing.menu_margin, base.spacing.menu_margin);
+        assert_eq!(c.spacing.menu_margin, egui::Margin::same(3));
+        assert_eq!(c.spacing.button_padding, egui::vec2(14.0, 4.0));
+        assert_eq!(c.spacing.interact_size.y, 29.0);
 
         // a theme that states no outline: the item's border, in the four interactive entries only
         let (c, base, t, notes) = cell("adwaita", ColorMode::Light, Role::Menu);
@@ -1659,6 +1709,73 @@ mod tests {
                 )
             );
         }
+        assert_eq!(c.spacing.menu_margin, base.spacing.menu_margin);
+
+        // over both: the item padding over menu_style's vec2(2.0, 0.0)
+        // (`egui/src/containers/menu.rs:23`), its `x` the stated left side on both sides (E4),
+        // else the pair's mean; the row `menu.row_height`, else the least height, else egui's
+        // own (§2 *Unstated sizes*), not the base's `button.min_height`
+        for preset in ["kde-breeze", "adwaita"] {
+            let (c, base, t, _) = cell(preset, ColorMode::Light, Role::Menu);
+            let m = &t.menu;
+            let mut after_menu_style = base.clone();
+            egui::containers::menu::menu_style(&mut after_menu_style);
+            let pair = to_button_padding(after_menu_style.spacing.button_padding, &m.border);
+            let x = match m.border.padding.left {
+                Some(left) => left + m.border.line_width,
+                None => pair.x,
+            };
+            assert_eq!(c.spacing.button_padding.x, x, "{preset}");
+            if m.row_height.is_none() {
+                assert_eq!(c.spacing.button_padding.y, pair.y, "{preset}");
+            }
+            let own = egui::Theme::Light.default_style().spacing.interact_size.y;
+            let row = m.row_height.or(m.min_row_height).map_or(own, clamp_length);
+            assert_eq!(c.spacing.interact_size.y, row, "{preset}");
+        }
+    }
+
+    /// E4: `menu.min_row_height` is a least height in the menu cell's `interact_size.y`, which
+    /// egui's `Button` grows past, and fits no padding; a stated `menu.row_height` wins over it
+    /// (S2) and is fitted as today; with neither, egui's own.
+    #[test]
+    fn the_menu_row_is_at_least_min_row_height_unless_a_row_height_is_stated() {
+        let built = |t: &ResolvedTheme| {
+            let atlas = crate::ThemeAtlas::builder("t", t, t).build();
+            let mut s = egui::Style::default();
+            atlas
+                .role_modifier(egui::Theme::Light, Role::Menu, crate::RoleVariant::Normal)
+                .apply(&mut s);
+            s
+        };
+        let mut t = crate::install_tests::resolved("kde-breeze", ColorMode::Light);
+        assert_eq!(
+            (t.menu.row_height, t.menu.min_row_height),
+            (None, Some(29.0))
+        );
+        let s = built(&t);
+        assert_eq!(s.spacing.interact_size.y, 29.0);
+        assert_eq!(s.spacing.button_padding.y, 4.0);
+
+        t.menu.row_height = Some(24.0);
+        let s = built(&t);
+        assert_eq!(s.spacing.interact_size.y, 24.0, "row_height wins");
+        let defs = egui::FontDefinitions::default();
+        let size = s.text_styles.get(&TextStyle::Body).unwrap().size;
+        let label =
+            crate::fonts::body_row_height(&defs, size).unwrap() + s.spacing.extra_text_line_spacing;
+        let fitted = ((24.0 - label) / 2.0).floor().max(0.0).min(4.0);
+        assert!(fitted < 4.0, "the 24 px row narrows the padding: {label}");
+        assert_eq!(s.spacing.button_padding.y, fitted);
+
+        t.menu.row_height = None;
+        t.menu.min_row_height = None;
+        let s = built(&t);
+        assert_eq!(
+            s.spacing.interact_size.y,
+            egui::Theme::Light.default_style().spacing.interact_size.y
+        );
+        assert_eq!(s.spacing.button_padding.y, 4.0);
     }
 
     /// §6.1: `Window` and `Card` write no entry and no field; their cell is the base style.

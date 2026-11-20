@@ -68,6 +68,11 @@ sinks   = [
   { path = "spacing.button_padding.y", scope = "expander", when = "a one-line title and the padding overrun the stated expander.header_height at a text scale of 1 or less, which narrows the padding (roles::fit_row_padding); a title alone taller than the stated height is drawn whole, its padding 0 and the header its height, since egui takes the stated height as the header's least (egui/src/containers/collapsing_header.rs:531-532)" },
 ]
 
+["defaults.font_whole_pixels"]
+verdict  = "unmappable"
+sub_tag  = "source-void"
+upstream = "none: the model rounds every font size where it is true"
+
 ["defaults.mono_font.family"]
 verdict   = "derived"
 tested_by = "T6(d)"
@@ -789,6 +794,11 @@ sinks   = [
   { path = "spacing.button_padding.y", scope = "menu", when = "a one-line label and the padding overrun the stated menu.row_height at a text scale of 1 or less, which narrows the padding (roles::fit_row_padding); a label alone taller than the stated height is drawn whole, its padding 0 and the row its height, since egui takes the stated height as the row's least (egui/src/widgets/button.rs:306-309)" },
 ]
 
+["menu.min_row_height"]
+verdict = "scoped"
+sinks   = [{ path = "spacing.interact_size.y", scope = "menu", when = "menu.row_height is None" }]
+note    = "a least height, which egui's Button grows past (egui-0.37.0/src/theme/default_style.rs:97-101, src/widgets/button.rs:351); a stated menu.row_height is drawn instead"
+
 ["menu.icon_text_gap"]
 verdict = "scoped"
 sinks   = [{ path = "spacing.icon_spacing", scope = "menu" }]
@@ -857,6 +867,34 @@ note      = "per call: menu_bar_modifier, a menu-bar title's button_padding.x"
 verdict   = "derived"
 tested_by = "T18(a)"
 note      = "per call: menu_bar_modifier, a menu-bar title's button_padding.y"
+
+["menu.active_background"]
+verdict  = "unmappable"
+sub_tag  = "egui-limited"
+upstream = "egui: a pressed state apart from the focused one (Widgets::style gives a focused widget active)"
+note     = "egui draws a keyboard-focused item in widgets.active (egui-0.37.0/src/widget_style/mod.rs:212-222) and moves the focus along a menu's items with the arrow keys (src/containers/menu.rs:233-288): the pressed look would stay on every keyboard-selected item, so a pressed item keeps the hover look"
+
+["menu.active_text_color"]
+verdict  = "unmappable"
+sub_tag  = "egui-limited"
+upstream = "egui: a pressed state apart from the focused one (Widgets::style gives a focused widget active)"
+note     = "as menu.active_background: a pressed item keeps menu.hover_text_color"
+
+["menu.panel_padding_horizontal"]
+verdict = "scoped"
+sinks   = [
+  { path = "spacing.menu_margin.left", scope = "menu" },
+  { path = "spacing.menu_margin.right", scope = "menu" },
+]
+note    = "MenuConfig::style styles a menu's and a submenu's popup (egui-0.37.0/src/containers/menu.rs:457, :714), which Popup::show frames with Frame::popup's inner margin, spacing.menu_margin (src/containers/popup.rs:650-651, src/containers/frame.rs:214-220); a popup given no modifier starts from the Context's style"
+
+["menu.panel_padding_vertical"]
+verdict = "scoped"
+sinks   = [
+  { path = "spacing.menu_margin.top", scope = "menu" },
+  { path = "spacing.menu_margin.bottom", scope = "menu" },
+]
+note    = "as menu.panel_padding_horizontal"
 
 ["menu.font.family"]
 verdict  = "unmappable"
@@ -935,7 +973,7 @@ sinks   = [{ path = "spacing.button_padding.y", scope = "menu", when = "no state
 
 ["menu.border.padding.right"]
 verdict = "derived"
-sinks   = [{ path = "spacing.button_padding.x", scope = "menu" }]
+sinks   = [{ path = "spacing.button_padding.x", scope = "menu", when = "menu.border.padding.left is None" }]
 
 ["menu.border.padding.bottom"]
 verdict = "derived"
@@ -2119,6 +2157,11 @@ verdict   = "derived"
 tested_by = "T18(a)"
 note      = "hovered and pressed: egui_extras' header row has no such state (egui_extras-0.37.0/src/table.rs:490-506, hovered: false), so the showcase draws the header sections' fills"
 
+["list.header_separator_color"]
+verdict   = "derived"
+tested_by = "T18(a)"
+note      = "per call: the showcase draws the Basic table's line under the header and its column line over the header in it, laid over the header's fill, the column line below in list.grid_color; egui_extras' TableBuilder draws one column line through header and body in noninteractive.bg_stroke (egui_extras-0.37.0/src/table.rs:891-900)"
+
 ["list.hover_background"]
 verdict = "scoped"
 sinks   = [
@@ -2378,6 +2421,26 @@ sinks   = [{ path = "visuals.widgets.inactive.bg_fill", scope = "slider", varian
 verdict  = "unmappable"
 sub_tag  = "widgets-crate"
 upstream = "native-theme-egui-widgets: Slider (docs/archive/todo_egui-widgets-spec.md §4.2)"
+
+["slider.thumb_border_color"]
+verdict  = "unmappable"
+sub_tag  = "widgets-crate"
+upstream = "native-theme-egui-widgets: Slider: the knob's outline; egui's Slider strokes its handle in fg_stroke, which letters its value"
+
+["slider.thumb_border_line_width"]
+verdict  = "unmappable"
+sub_tag  = "widgets-crate"
+upstream = "native-theme-egui-widgets: Slider: the knob's outline; egui's Slider strokes its handle in fg_stroke, which letters its value"
+
+["slider.thumb_hover_border_color"]
+verdict  = "unmappable"
+sub_tag  = "widgets-crate"
+upstream = "native-theme-egui-widgets: Slider: the knob's outline; egui's Slider strokes its handle in fg_stroke, which letters its value"
+
+["slider.thumb_focus_border_color"]
+verdict  = "unmappable"
+sub_tag  = "widgets-crate"
+upstream = "native-theme-egui-widgets: Slider: the knob's outline; egui's Slider strokes its handle in fg_stroke, which letters its value"
 
 ["progress_bar.fill_color"]
 verdict = "scoped"
@@ -2779,6 +2842,10 @@ sinks   = [{ path = "visuals.widgets.active.weak_bg_fill", scope = "toolbar" }]
 verdict   = "derived"
 tested_by = "T18(a)"
 
+["toolbar.button_checked_border_color"]
+verdict   = "derived"
+tested_by = "T18(a)"
+
 ["toolbar.font.family"]
 verdict  = "unmappable"
 sub_tag  = "egui-limited"
@@ -3074,10 +3141,6 @@ sinks   = [{ path = "spacing.indent", scope = "expander" }]
 "spacing.combo_height"       = "no native leaf states a combo-box maximum height (§5.9)"
 "spacing.text_edit_width"    = "no native leaf states a text-edit default width (§5.9)"
 "spacing.slider_width"       = "no native leaf states a slider length (§5.9)"
-"spacing.menu_margin.left"   = "native-theme states no menu-container padding; menu.border is the item's (§5.9)"
-"spacing.menu_margin.right"  = "as spacing.menu_margin.left"
-"spacing.menu_margin.top"    = "as spacing.menu_margin.left"
-"spacing.menu_margin.bottom" = "as spacing.menu_margin.left"
 "spacing.default_area_size.x" = "sizes every free Area; dialog.max_width goes per call (§5.8 item 6)"
 "spacing.default_area_size.y" = "as spacing.default_area_size.x"
 "spacing.scroll.dormant_handle_opacity"      = "no native leaf describes an auto-hide fade curve (§5.9)"

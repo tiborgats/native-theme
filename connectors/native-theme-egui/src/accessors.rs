@@ -107,6 +107,15 @@ pub fn selection_inactive_text_color(t: &ResolvedTheme) -> egui::Color32 {
 pub fn toolbar_button_checked_background(t: &ResolvedTheme) -> Option<egui::Color32> {
     t.toolbar.button_checked_background.map(to_color32)
 }
+/// `toolbar.button_checked_border_color` as an `egui::Color32`: the line of a
+/// checked toolbar button at rest, `button.border.line_width` wide; under the
+/// pointer and pressed the toolbar's hover outline
+/// (`toolbar.button_hover_border_color`) applies. `None`: the checked button
+/// keeps its rest stroke.
+#[must_use]
+pub fn toolbar_button_checked_border_color(t: &ResolvedTheme) -> Option<egui::Color32> {
+    t.toolbar.button_checked_border_color.map(to_color32)
+}
 
 // --- focus ring: no egui concept at all ---------------------------------------
 // egui promotes a keyboard-focused widget to `widgets.active`

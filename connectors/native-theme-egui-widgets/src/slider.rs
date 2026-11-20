@@ -29,8 +29,15 @@ const KEY_STEP: f32 = 1.0;
 ///   theme states none); the trailing fill runs from its start to the knob's centre in
 ///   `fill_color`.
 /// * The knob is a `slider.thumb_diameter` circle, its outline included, in `thumb_color`,
-///   with `thumb_hover_color` composited over it while hovered; its outline is egui's, the
-///   interaction state's `fg_stroke` (`:817`), as the theme states none. Its centre travels
+///   with `thumb_hover_color` composited over it while hovered. Where the theme states
+///   `slider.thumb_border_line_width`, the outline is that wide inside the knob: at rest in
+///   `thumb_border_color`, with the pointer on the knob or while it is dragged in
+///   `thumb_hover_border_color`, while the slider has the focus in `thumb_focus_border_color`
+///   (hover wins over focus; each `None` is the rest colour), a disabled knob in the rest
+///   colour, faded as the slider is; a stated 0, or a width with no rest colour at rest, draws
+///   no line, the knob whole at its diameter. egui gives a slider the focus by keyboard only,
+///   so the focus colour shows after Tab, not after a click. Where the width is unstated the
+///   outline is egui's, the interaction state's `fg_stroke` (`:817`). Its centre travels
 ///   the width less one knob radius at each end, as egui's `position_range` does
 ///   (`:853-865`).
 /// * The width is egui's `Spacing::slider_width` (`egui/src/style.rs:412`) of the `Ui` it is
@@ -145,6 +152,9 @@ pub(crate) struct Look {
     pub(crate) disabled_track_color: Option<Rgba>,
     pub(crate) disabled_fill_color: Option<Rgba>,
     pub(crate) disabled_thumb_color: Option<Rgba>,
+    pub(crate) thumb_border_color: Option<Rgba>,
+    pub(crate) thumb_hover_border_color: Option<Rgba>,
+    pub(crate) thumb_focus_border_color: Option<Rgba>,
     /// `defaults.background_color`: the colour faded over where no backdrop is given.
     pub(crate) background: Rgba,
 }
@@ -160,25 +170,35 @@ impl Look {
             disabled_track_color: sl.disabled_track_color,
             disabled_fill_color: sl.disabled_fill_color,
             disabled_thumb_color: sl.disabled_thumb_color,
+            thumb_border_color: sl.thumb_border_color,
+            thumb_hover_border_color: sl.thumb_hover_border_color,
+            thumb_focus_border_color: sl.thumb_focus_border_color,
             background: t.defaults.background_color,
         }
     }
 }
 
-/// The knob and rail sizes, every one finite, and the slider's width.
+/// The knob and rail sizes, every one finite, the slider's width, and the knob's outline width
+/// where the theme states one (`slider.thumb_border_line_width`).
 #[derive(Clone, Copy)]
 struct Geometry {
     thumb: f32,
     rail: f32,
     width: f32,
+    outline: Option<f32>,
 }
 
 impl Geometry {
     fn of(sl: &ResolvedSliderTheme, width: f32) -> Option<Self> {
+        let border = |width: Option<f32>| match width {
+            Some(w) => scope::length(w).map(Some),
+            None => Some(None),
+        };
         Some(Self {
             thumb: scope::length(sl.thumb_diameter)?,
             rail: scope::length(sl.track_height)?,
             width: scope::length(width)?,
+            outline: border(sl.thumb_border_line_width)?,
         })
     }
 }
@@ -389,12 +409,40 @@ fn slider_ui(
             )
         };
         let radius = ui.visuals().widgets.inactive.corner_radius;
-        let mut outline = ui.style().interact(&response).fg_stroke;
+        // E8: the knob's own line where the theme states its width (0: none); else egui's, as
+        // without it (the class doc)
+        let on_knob = response.dragged()
+            || response
+                .hover_pos()
+                .is_some_and(|p| p.distance(centre) <= knob_radius);
+        let mut outline = match g.outline {
+            None => ui.style().interact(&response).fg_stroke,
+            Some(width) => {
+                let rest = sl.thumb_border_color; // a disabled knob's too
+                let colour = if enabled && on_knob {
+                    sl.thumb_hover_border_color.or(rest) // hover wins over focus
+                } else if enabled && response.has_focus() {
+                    sl.thumb_focus_border_color.or(rest)
+                } else {
+                    rest
+                };
+                colour
+                    .filter(|_| width > 0.0)
+                    .map_or(egui::Stroke::NONE, |c| {
+                        egui::Stroke::new(width, to_color32(c))
+                    })
+            }
+        };
         // Faded as one: the rail over the ground, the fill over the rail, the knob and its
-        // outline over the ground, where most of the knob lies (the class doc).
+        // outline over the ground, where most of the knob lies (the class doc); a stated
+        // outline from its own colour, egui's from the `Disabled` cell's.
         let (track, fill, thumb) = match fade {
             Some(f) => {
-                outline.color = f.over(f.ground, f.outline.color);
+                if g.outline.is_none() {
+                    outline.color = f.over(f.ground, f.outline.color);
+                } else if !outline.is_empty() {
+                    outline.color = f.over(f.ground, outline.color);
+                }
                 (
                     f.over(f.ground, track),
                     f.over(f.ground.blend(track), fill),

@@ -394,11 +394,14 @@ pub(crate) fn info(kind: &'static str, seams: Vec<Seam>) -> InstanceInfo {
 /// `role`'s modifier for an open menu (`MenuConfig::style`): the popup framed by
 /// `popover.border`'s colour, line width and radius, where the base style frames every menu by
 /// `defaults.border` (`Frame::popup` reads `window_stroke` and `menu_corner_radius`), padded
-/// inside that border by `popover.border.padding` on each side the theme states, where egui pads by its own
-/// `menu_margin` (`Frame::popup`, `egui/src/containers/frame.rs:220-230`, a frame whose total
-/// margin is that margin and its stroke), and its rows one under another, `menu.row_height`
-/// apart where the theme states it: the theme states no gap between two menu rows, where egui
-/// would put `item_spacing.y` between them.
+/// inside that border by the menu role's `menu.panel_padding_horizontal` and
+/// `panel_padding_vertical` where the theme states them (E4: kde-breeze 3, the items 3 + the
+/// 1 px line from the panel's edge), else by `popover.border.padding` on each side the theme
+/// states, where egui pads by its own `menu_margin` (`Frame::popup`,
+/// `egui/src/containers/frame.rs:220-230`, a frame whose total margin is that margin and its
+/// stroke), and its rows one under another, `menu.row_height` apart where the theme states it:
+/// the theme states no gap between two menu rows, where egui would put `item_spacing.y`
+/// between them.
 fn menu_modifier(
     ui: &egui::Ui,
     role: Role,
@@ -407,7 +410,20 @@ fn menu_modifier(
     let theme = ui.ctx().theme();
     let atlas = ThemeAtlas::from_ctx(ui.ctx())?;
     let role_style = atlas.role_modifier(theme, role, variant);
-    let border = atlas.resolved_for(theme).popover.border.clone();
+    let t = atlas.resolved_for(theme);
+    let border = t.popover.border.clone();
+    // the sides the menu role pads (`menu_margin`) keep its padding
+    let (h, v) = (
+        t.menu.panel_padding_horizontal.is_some(),
+        t.menu.panel_padding_vertical.is_some(),
+    );
+    let unstated = |stated: bool, side: Option<f32>| side.filter(|_| !stated);
+    let padding = native_theme::theme::ResolvedPadding {
+        top: unstated(v, border.padding.top),
+        right: unstated(h, border.padding.right),
+        bottom: unstated(v, border.padding.bottom),
+        left: unstated(h, border.padding.left),
+    };
     Some(egui::style::StyleModifier::new(
         move |style: &mut egui::Style| {
             use native_theme_egui::convert::{to_corner_radius, to_margin, to_stroke};
@@ -416,7 +432,7 @@ fn menu_modifier(
                 to_stroke(style.visuals.window_stroke, border.color, border.line_width);
             style.visuals.menu_corner_radius =
                 to_corner_radius(style.visuals.menu_corner_radius, border.corner_radius);
-            style.spacing.menu_margin = to_margin(style.spacing.menu_margin, &border.padding);
+            style.spacing.menu_margin = to_margin(style.spacing.menu_margin, &padding);
             style.spacing.item_spacing.y = 0.0;
         },
     ))

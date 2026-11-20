@@ -72,9 +72,16 @@ fn the_atlas_reports_what_the_builder_was_given() {
             0x23, 0x26, 0x29, 0x20
         ))
     );
+    // and its `toolbar.button_checked_border_color`, #d1d1d2 (E9)
+    assert_eq!(
+        crate::toolbar_button_checked_border_color(&light),
+        Some(egui::Color32::from_rgb(0xd1, 0xd1, 0xd2))
+    );
     let mut unstated = light.clone();
     unstated.toolbar.button_checked_background = None;
+    unstated.toolbar.button_checked_border_color = None;
     assert_eq!(crate::toolbar_button_checked_background(&unstated), None);
+    assert_eq!(crate::toolbar_button_checked_border_color(&unstated), None);
 }
 
 /// §4.2, §4.3: the documented defaults of every optional input.

@@ -931,10 +931,11 @@ fn expected(
         }
         // ---- §2 *Unstated sizes*: an unstated row height leaves egui's own `interact_size.y`,
         // never the base style's `button.min_height` (`style::roles::row_height`) ----
+        // E4: the menu's least row height where no row height is stated (S2: the row wins)
         (Some(w @ ("menu" | "list")), "normal", None, "spacing.interact_size.y") => {
             let own = c.scheme.default_style().spacing.interact_size.y; // egui/src/memory/theme.rs:24-29
             let stated = if w == "menu" {
-                t.menu.row_height
+                t.menu.row_height.or(t.menu.min_row_height)
             } else {
                 t.list.row_height
             };
@@ -1049,6 +1050,21 @@ fn expected(
                 Some(right) => Val::F32(convert::clamp_length(right)),
                 None => return Ok(None),
             }
+        }
+        // E4: a menu item's one horizontal padding is its stated left side, else the pair's
+        (Some("menu"), "normal", None, "spacing.button_padding.x") => {
+            let mut items = padding_border_of(c, "menu");
+            items.padding.right = items.padding.left.or(items.padding.right);
+            Val::F32(convert::to_button_padding(inherited_style().spacing.button_padding, &items).x)
+        }
+        // E4: the menu panel's inset of its items, a side per panel padding (`i8`, §7.2)
+        (Some("menu"), "normal", None, p) if p.starts_with("spacing.menu_margin.") => {
+            let leaf = if p.ends_with(".left") || p.ends_with(".right") {
+                "menu.panel_padding_horizontal"
+            } else {
+                "menu.panel_padding_vertical"
+            };
+            return converted(c, leaf, sink, inherited);
         }
         (_, "normal", None, p @ ("spacing.button_padding.x" | "spacing.button_padding.y")) => {
             let widget = scope.unwrap_or("button");

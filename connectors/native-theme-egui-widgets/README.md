@@ -10,7 +10,7 @@ from a hardcoded value or does not draw them at all. This crate draws those:
 | widget | what egui cannot give its own widgets |
 |---|---|
 | `switch::Switch` | a switch: egui has no switch or toggle widget |
-| `slider::Slider` | a slider knob in its own colour: egui paints the resting knob in the rail's |
+| `slider::Slider` | a slider knob in its own colour, with the outline the theme states at rest, hovered and focused: egui paints the resting knob in the rail's and strokes it in the colour that letters its value |
 | `spinner::Spinner` | a spinner at the theme's stroke: `egui::Spinner` hardcodes its stroke width; where the icon set has an animated indicator, that is drawn |
 | `segmented_control::SegmentedControl` | a segmented control: egui has none |
 | `links::link`, `links::hyperlink` | a link in its hover, pressed, disabled and visited colours |
