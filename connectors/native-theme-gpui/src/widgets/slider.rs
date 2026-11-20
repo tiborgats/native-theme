@@ -130,6 +130,69 @@ impl SliderLook {
     }
 }
 
+/// The thumb's outline where the theme states its width,
+/// `slider.thumb_border_line_width` (docs/platform-facts.md §2.9), in place
+/// of gpui-component's ring, [`SliderLook::outline`]: a band `width` wide
+/// inside the thumb, in `rest` at rest, `focus` while the slider has the
+/// focus and `hover` with the pointer on the thumb, over the focus. Where
+/// the state's colour is `None` the band is the thumb's own colour, so the
+/// thumb is shown whole at its outer size; a width of 0 draws no band in any
+/// state.
+#[derive(Clone, Copy, Debug, PartialEq)]
+#[non_exhaustive]
+pub struct ThumbOutline {
+    /// `slider.thumb_border_line_width`: the band's width.
+    pub width: Pixels,
+    /// `slider.thumb_border_color`: the band at rest.
+    pub rest: Option<Hsla>,
+    /// `slider.thumb_hover_border_color`, else `rest`: the band with the
+    /// pointer on the thumb; `None` disabled.
+    pub hover: Option<Hsla>,
+    /// `slider.thumb_focus_border_color`, else `rest`: the band while the
+    /// slider has the focus; `None` disabled.
+    pub focus: Option<Hsla>,
+}
+
+impl ThumbOutline {
+    /// The outline of a slider's thumb, `disabled` or not, or `None` where
+    /// the theme leaves `slider.thumb_border_line_width` unstated (or not
+    /// finite): the thumb then takes [`SliderLook::outline`]'s ring. A
+    /// disabled thumb keeps its rest colour, with no hover or focus.
+    #[must_use]
+    pub fn of(resolved: &ResolvedTheme, disabled: bool) -> Option<Self> {
+        let s = &resolved.slider;
+        let width = length(s.thumb_border_line_width?)?;
+        let drawn = |c: Option<native_theme::color::Rgba>| c.filter(|_| width > px(0.)).map(color);
+        let rest = drawn(s.thumb_border_color);
+        let hover = drawn(s.thumb_hover_border_color).or(rest);
+        let focus = drawn(s.thumb_focus_border_color).or(rest);
+        Some(Self {
+            width,
+            rest,
+            hover: hover.filter(|_| !disabled),
+            focus: focus.filter(|_| !disabled),
+        })
+    }
+
+    /// This outline faded over `ground` with `look`, the slider's look
+    /// before its own fade ([`SliderLook::faded_over`]): where
+    /// [`opacity`](SliderLook::opacity) is below 1, `rest` faded by it over
+    /// the fill composited on the rail over `ground`, as the look fades its
+    /// ring.
+    #[must_use]
+    pub fn faded_over(self, ground: Hsla, look: &SliderLook) -> Self {
+        if look.opacity >= 1. {
+            return self;
+        }
+        let a = look.opacity;
+        let fill = over(over(ground, look.track), look.fill);
+        Self {
+            rest: self.rest.map(|rest| faded(ground, fill, rest, a)),
+            ..self
+        }
+    }
+}
+
 /// A slider over a gpui-base `SliderState` whose rail, fill and thumbs are
 /// `SliderTheme`'s (`docs/archive/todo_gpui-widgets-spec.md` §2.4),
 /// horizontal or vertical ([`Slider::axis`]).
@@ -162,6 +225,15 @@ impl SliderLook {
 /// The start moves by pointer only: a screen reader is told the range's end
 /// alone, as gpui-base's slider reports it (slider.rs:618), and AccessKit's
 /// Increment and Decrement step the end.
+///
+/// Where the theme states `slider.thumb_border_line_width`, a thumb takes
+/// [`ThumbOutline`]'s band in place of gpui-component's ring: its hover
+/// colour with the pointer on the thumb, though not while the thumb is
+/// dragged, since gpui applies no hover style during a drag (gpui-pre 0.3.12
+/// `elements/div.rs:3498`, `has_active_drag`), and on the end thumb its focus
+/// colour while the slider has the focus, from a key or a press on the rail;
+/// a press on a thumb gives no focus, since gpui-base's thumb stops the
+/// mouse-down (gpui-base 0.10.0 slider.rs, `SliderThumb::render`).
 ///
 /// Its length is the caller's (`Styled`): a horizontal slider's width, a
 /// vertical one's height, gpui-component's 120 px where not given. Without a
@@ -296,13 +368,21 @@ fn step_by(
 
 /// A thumb of `state` at `position` of the travel along `axis`, from its
 /// start edge, the range's start thumb if `start`: the thumb's colour inside
-/// its outline, centred across the rail.
+/// its outline, centred across the rail. The outline is `outline`'s, in its
+/// focus colour where `focused` and its hover colour under the pointer, where
+/// the theme states one; else gpui-component's ring, [`SliderLook::outline`].
+#[allow(
+    clippy::too_many_arguments,
+    reason = "each is one of the thumb's own inputs"
+)]
 fn thumb(
     state: &Entity<SliderState>,
     look: &SliderLook,
+    outline: Option<&ThumbOutline>,
     axis: Axis,
     position: f32,
     start: bool,
+    focused: bool,
     disabled: bool,
     cx: &App,
 ) -> SliderThumb {
@@ -323,8 +403,13 @@ fn thumb(
         })
         .size(look.thumb)
         .rounded_full()
-        .bg(look.outline)
-        .p(THUMB_OUTLINE_WIDTH)
+        .map(|thumb| match outline {
+            Some(o) => thumb
+                .bg(if focused { o.focus } else { o.rest }.unwrap_or(look.thumb_color))
+                .p(o.width)
+                .when_some(o.hover, |thumb, hover| thumb.hover(move |s| s.bg(hover))),
+            None => thumb.bg(look.outline).p(THUMB_OUTLINE_WIDTH),
+        })
         .child(
             div()
                 .size_full()
@@ -346,10 +431,12 @@ impl RenderOnce for Slider {
         };
         let ring = FocusRing::of(n.resolved);
         let keyboard_only = n.resolved.defaults.focus_ring_keyboard_only == Some(true);
-        let look = look.faded_over(
-            self.backdrop
-                .unwrap_or_else(|| color(n.resolved.defaults.background_color)),
-        );
+        let ground = self
+            .backdrop
+            .unwrap_or_else(|| color(n.resolved.defaults.background_color));
+        let outline =
+            ThumbOutline::of(n.resolved, self.disabled).map(|o| o.faded_over(ground, &look));
+        let look = look.faded_over(ground);
         let axis = self.axis;
         let vertical = axis == Axis::Vertical;
         let disabled = self.disabled;
@@ -392,16 +479,36 @@ impl RenderOnce for Slider {
         let pill = cx.theme().radius_full();
 
         // The end thumb, the one the keys move, draws the focus ring.
-        let end_thumb = thumb(&state, &look, axis, end, false, disabled, cx)
-            .debug_selector(|| "native-slider-thumb".into())
-            .children(observer.map(|o| part_bounds(Part::Thumb, o, px(0.))))
-            .when_some(ring.filter(|_| shows), |thumb, ring| {
-                ring.draw(thumb, window)
-            });
+        let end_thumb = thumb(
+            &state,
+            &look,
+            outline.as_ref(),
+            axis,
+            end,
+            false,
+            focused,
+            disabled,
+            cx,
+        )
+        .debug_selector(|| "native-slider-thumb".into())
+        .children(observer.map(|o| part_bounds(Part::Thumb, o, px(0.))))
+        .when_some(ring.filter(|_| shows), |thumb, ring| {
+            ring.draw(thumb, window)
+        });
         let start_thumb = range.then(|| {
-            thumb(&state, &look, axis, start, true, disabled, cx)
-                .debug_selector(|| "native-slider-start-thumb".into())
-                .children(observer.map(|o| part_bounds(Part::StartThumb, o, px(0.))))
+            thumb(
+                &state,
+                &look,
+                outline.as_ref(),
+                axis,
+                start,
+                true,
+                false,
+                disabled,
+                cx,
+            )
+            .debug_selector(|| "native-slider-start-thumb".into())
+            .children(observer.map(|o| part_bounds(Part::StartThumb, o, px(0.))))
         });
         // The fill from the rail's start end, or a range's start thumb, to
         // the end thumb.

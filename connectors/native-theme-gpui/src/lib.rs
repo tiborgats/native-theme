@@ -120,10 +120,10 @@
 //! | `scrollbar` | colours + geometry | track/thumb colours, widths, inset, min length via `base_layer` |
 //! | `status_bar` | 3 of 3 | background, border colour; the border's padding sides and the font's family, size, weight, style and colour via `geometry::status_bar` |
 //! | `table` | head, from `list.header_background` / `list.header_font` | the model states no footer colour, so `table_foot*` are derived |
-//! | `slider`, `switch` | 2 colours each | fill/thumb colours; a checked switch's track, `switch.checked_background`, via [`variants::switch_color`] for `Switch::color`; geometry upstream |
+//! | `slider`, `switch` | 2 colours each | fill/thumb colours; a checked switch's track, `switch.checked_background`, via [`variants::switch_color`] for `Switch::color`; geometry upstream; the slider thumb's outline via [`widgets::ThumbOutline`] |
 //! | `progress_bar` | fill + geometry | height, radius, min width via `geometry::progress` |
 //! | `list` | 7 of 16 + geometry | background, alternate row, selection, hover, grid, header background and header font colour; the background and the frame via `geometry::list`, the receiver of the fill (the `list` token has no reader in gpui-component 0.9.1); row height, padding, font via `geometry::list_item`; a selected row's text colour via `geometry::list_item_selected`; header height via `geometry::list_header_height` for `DataTable::header_row_height`; the part of a searchable list's row that matches the query, `list_highlight_foreground`, in the resting text colour, `defaults.text_color`, since the model states no colour for a match |
-//! | `menu` | 2 colours + geometry | hover_background, hover_text_color → `accent`, `accent_foreground` (upstream's item highlight); row height, padding, icon gap, font via `geometry::menu_item` on an application-drawn row |
+//! | `menu` | 2 colours + geometry | hover_background, hover_text_color → `accent`, `accent_foreground` (upstream's item highlight); row height, the least row height, padding, icon gap, font via `geometry::menu_item` on an application-drawn row |
 //! | `segmented_control` | 1 of 9 | background → `tab_bar_segmented`, the track of a segmented `TabBar` |
 //! | `popover` | 2 of 3 + geometry | background, font.color; padding, radius and edge (`border.color` at `border.line_width`) via `geometry::popover` |
 //! | `combo_box` | geometry | height, width, padding, radius, font via `geometry::select` and `geometry::combobox`; the fill, and a disabled trigger's fill and text colour, via `geometry::combo_box_fill` |
@@ -370,7 +370,7 @@ pub fn to_theme(
     theme.mode = mode;
     theme.font_family = font_family(&d.font.family);
     // §3.4: gpui-component's `WindowState` root plugin sets the window rem
-    // to font_size (gpui-component src/root.rs:714), so scaling these two sizes scales every rem-relative
+    // to font_size (gpui-component 0.10.0 src/root.rs:725), so scaling these two sizes scales every rem-relative
     // size in gpui-component, as the platform toolkit scales its own text.
     theme.font_size = px(prefs.scaled(d.font.size));
     theme.mono_font_family = font_family(&d.mono_font.family);
@@ -1203,7 +1203,7 @@ impl<'a> Native<'a> {
 ///    (`red` … `cyan_light`, private in `ThemeConfigColors`); restores
 ///    `selection`, `list_active` and `table_active`, with their tokens, where each
 ///    holds what gpui-component's alpha cap made of the stored variant's colour
-///    (0.3, 0.2 and 0.2, gpui-component src/theme/schema.rs:1039-1070), through
+///    (0.3, 0.2 and 0.2, gpui-component 0.10.0 src/theme/schema.rs:1043-1074), through
 ///    `Theme::update`, which also rebuilds gpui-base's copies of `selection`;
 ///    restores step 5; and installs step 7's delay for the mode then current;
 ///    together with one deferred repeat for the update that installs it (the
@@ -1219,7 +1219,7 @@ impl<'a> Native<'a> {
 /// theme's was, which step 1 drops) leaves the other mode's config at
 /// `ThemeConfig::default()`, a light config with no colours and an empty name.
 /// Upstream's `apply_config` takes the mode from the config and stores it in
-/// that mode's slot (gpui-component src/theme/schema.rs:1079-1083, :1125), so
+/// that mode's slot (gpui-component src/theme/schema.rs:1083-1087, :1129), so
 /// a `Theme::change` to the unstored mode shows upstream's built-in
 /// `ThemeColor::light()` constants, in light mode. Where the stored variant is
 /// the light one, a change to dark therefore leaves the window light and
@@ -1488,7 +1488,7 @@ fn apply_inner(
     };
     // The four settings are the application's, not theme data: upstream's own
     // switch (`Theme::change` -> `apply_config`, gpui-component
-    // src/theme/schema.rs:1078-1125) leaves them, and so does `apply`; the
+    // src/theme/schema.rs:1082-1129) leaves them, and so does `apply`; the
     // blink is the theme's, or the application's where the theme states none.
     let installed = GpuiTheme::global_mut(cx);
     theme.notification = installed.notification.clone();
@@ -1610,7 +1610,7 @@ fn handles_hold_native_values(cx: &App) -> bool {
 /// (D43).
 ///
 /// `ThemeConfigColors` keeps them private (gpui-component
-/// `src/theme/schema.rs:657-691`), so the config `apply` installs for a variant
+/// `src/theme/schema.rs:660-694`), so the config `apply` installs for a variant
 /// cannot carry them; every `Theme::change` / `sync_system_appearance` resets
 /// them to `ThemeColor::dark()` / `light()` (`:705-713`, `:1093-1097`) and
 /// ends in `sync_base` (`theme/mod.rs:342`), whose `cx.set_global` of
@@ -1651,7 +1651,7 @@ fn repair_base_palette(cx: &mut App) {
 /// restored.
 ///
 /// gpui-component caps their alpha at 0.3, 0.2 and 0.2 whenever it applies a
-/// `ThemeConfig` (gpui-component 0.9.1 `src/theme/schema.rs:1039-1070`, a
+/// `ThemeConfig` (gpui-component 0.10.0 `src/theme/schema.rs:1043-1074`, a
 /// colour the config states included, `src/theme/color.rs:777-791`), so after
 /// every `Theme::change`, `sync_system_appearance` or registry reload they
 /// differ from what [`apply`] installed. A field is restored only when it holds
@@ -4061,7 +4061,7 @@ mod apply_tests {
     /// mode shows upstream's built-in palette, not the earlier theme's. The
     /// unstored config is `ThemeConfig::default()`, a light one: a change to
     /// an unstored dark mode keeps the window light (gpui-component
-    /// src/theme/schema.rs:1125), as the `apply` doc says.
+    /// src/theme/schema.rs:1129), as the `apply` doc says.
     #[gpui::test]
     fn a_one_variant_apply_of_another_theme_drops_the_earlier_themes_other_mode(
         cx: &mut TestAppContext,

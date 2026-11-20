@@ -238,7 +238,7 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
     (
         "menu_item",
-        "menu.row_height, where the theme states one, by the control-height rule (defaults.line_height as the line height; the stated height at a text scale of 1 or less, a minimum with an automatic height above 1), the menu.border.padding sides the theme states, menu.icon_text_gap, menu.font",
+        "menu.row_height, where the theme states one, by the control-height rule (defaults.line_height as the line height; the stated height at a text scale of 1 or less, a minimum with an automatic height above 1), else menu.min_row_height as a least height the content grows past, the menu.border.padding sides the theme states, menu.icon_text_gap, menu.font",
     ),
     (
         "list_item",
@@ -391,7 +391,7 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
     (
         "toolbar_button_checked",
-        "toolbar.button_checked_background and button.checked_text_color (button.active_text_color where that is unset) on a selected toolbar Button built on variants::toolbar_button; where the theme states no checked fill, toolbar.button_active_background, else button.active_background, with no text colour; nothing where it states none of the three: a custom variant fills a selected Button with its active colour and letters every state in its one foreground (button/button.rs, ButtonCustomVariant and RenderOnce for Button), and the Button replays the refinement over its selected style",
+        "toolbar.button_checked_background and button.checked_text_color (button.active_text_color where that is unset) on a selected toolbar Button built on variants::toolbar_button; where the theme states no checked fill, toolbar.button_active_background, else button.active_background, with no text colour; nothing where it states none of the three: a custom variant fills a selected Button with its active colour and letters every state in its one foreground (button/button.rs, ButtonCustomVariant and RenderOnce for Button), and the Button replays the refinement over its selected style. Its border colour is toolbar.button_checked_border_color where stated, at toolbar_button_rest's width, and stays under the pointer and pressed, where a selected Button takes no hover or press style",
     ),
     (
         "default_button_rest",

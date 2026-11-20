@@ -215,6 +215,11 @@ pub const HOW: &[(&str, &str, &str)] = &[
         "gpui: geometry::toolbar_button_checked's text colour, where the toolbar's checked fill is stated",
     ),
     (
+        "basic.icons.edit",
+        "toolbar.button_checked_border_color",
+        "gpui: geometry::toolbar_button_checked's border colour, at geometry::toolbar_button_rest's width, kept under the pointer and pressed: a selected Button takes no hover or press style (gpui-component 0.10.0 button/button.rs:733, selected; gpui-component 0.10.0 button/button.rs:758, selected)",
+    ),
+    (
         "chrome.status_bar.toggle",
         "button.active_background",
         "gpui: ghost_button's active, secondary_active; also its selected fill (gpui-component/button/button.rs:1353, active)",
@@ -1527,6 +1532,11 @@ pub const HOW: &[(&str, &str, &str)] = &[
         "gpui: demo::files_table's header cells, .active(..) bg where stated, else the hovered fill: gpui-component's own table header has no press style (gpui-component/table/state.rs:1932-1975, render_th)",
     ),
     (
+        "basic.table",
+        "list.header_separator_color",
+        "gpui: the header's line on the first section's trailing edge and along its bottom, laid over the header's and a section's fill (demo::files_table)",
+    ),
+    (
         "basic.table.",
         "defaults.selection_inactive_background",
         "gpui: demo::files_table's selected row while the window is not active and the theme's inactive fill differs from its selection (selection_pair)",
@@ -1539,7 +1549,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "list.grid_color",
-        "gpui: the header's bottom line and the column line (demo::files_table)",
+        "gpui: the column line, and the header's lines where list.header_separator_color is unstated (demo::files_table)",
     ),
     (
         "",
@@ -1733,6 +1743,36 @@ pub const HOW: &[(&str, &str, &str)] = &[
         "chrome.menu.",
         "menu.hover_border_color",
         "gpui: the highlighted row's outline, a box over the row and its padding, so nothing moves (MenuLook::edge, MenuBar::popup)",
+    ),
+    (
+        "chrome.menu.theme",
+        "menu.panel_padding_horizontal_px",
+        "gpui: insets the rows at the left and right inside the popup's frame line, over popover.border.padding (MenuLook, MenuBar::popup)",
+    ),
+    (
+        "chrome.menu.theme",
+        "menu.panel_padding_vertical_px",
+        "gpui: insets the rows at the top and bottom inside the popup's frame line, over popover.border.padding, and leaves no gap between them (MenuLook, MenuBar::popup)",
+    ),
+    (
+        "chrome.menu.",
+        "menu.min_row_height_px",
+        "gpui: the row's least height where menu.row_height is unstated, the content growing past it (geometry::menu_item)",
+    ),
+    (
+        "chrome.menu.",
+        "menu.icon_text_gap_px",
+        "not reachable: the Theme menu's items show no icon, and the popup spaces an item's label and its shortcut by MENU_SHORTCUT_GAP instead (MenuBar::popup)",
+    ),
+    (
+        "chrome.menu.",
+        "menu.active_background",
+        "gpui: the row's fill while the mouse button is held on it, its outline hidden (MenuLook::pressed, MenuLook::edge)",
+    ),
+    (
+        "chrome.menu.",
+        "menu.active_text_color",
+        "gpui: the row's text while the mouse button is held on it, its shortcut's too (MenuLook::pressed)",
     ),
     (
         "",
@@ -1992,7 +2032,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "basic.table",
         "separator.line_width_px",
-        "gpui: the width of the header's bottom line and the column line, both in list.grid_color (demo::files_table)",
+        "gpui: the width of the header's bottom line and the column line, in list.grid_color, the header's in list.header_separator_color where stated (demo::files_table)",
     ),
     (
         "chrome.page_tabs.rule",
@@ -2090,6 +2130,26 @@ pub const HOW: &[(&str, &str, &str)] = &[
         "",
         "slider.track_height_px",
         "gpui: the rail's height (widgets::Slider)",
+    ),
+    (
+        "basic.slider.control",
+        "slider.thumb_border_color",
+        "gpui: the band inside the thumb at rest, in place of upstream's ring (widgets::ThumbOutline)",
+    ),
+    (
+        "basic.slider.control",
+        "slider.thumb_border_line_width_px",
+        "gpui: the width of the band inside the thumb; 0 draws none, upstream's ring included (widgets::ThumbOutline)",
+    ),
+    (
+        "basic.slider.control",
+        "slider.thumb_hover_border_color",
+        "gpui: the band with the pointer on the thumb, over the focus colour, not while it is dragged (widgets::ThumbOutline)",
+    ),
+    (
+        "basic.slider.control",
+        "slider.thumb_focus_border_color",
+        "gpui: the band on the end thumb while the slider has the focus (widgets::ThumbOutline)",
     ),
     // --- spinner: widgets::Spinner --------------------------------------------------
     (

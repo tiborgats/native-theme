@@ -1557,8 +1557,16 @@ pub fn native_slider(r: &ResolvedTheme, vertical: bool, range: bool) -> WidgetIn
         )
         .config("rail", format!("slider.track_height: {}px", s.track_height))
         .config("thumb", format!("slider.thumb_diameter: {}px; its centre travels the width less a radius at each end", s.thumb_diameter))
-        .not_themeable("thumb outline", "gpui-component's own: a 1px ring of the fill colour at half alpha (gpui-component/slider.rs, Slider::render); the model states no thumb outline")
         .not_themeable("rail radius", "a pill, gpui-component's radius_full (gpui-component/slider.rs, Slider::render); SliderTheme states no rail radius");
+    let info = match s.thumb_border_line_width {
+        None => info.not_themeable("thumb outline", "gpui-component's own: a 1px ring of the fill colour at half alpha (gpui-component/slider.rs, Slider::render); the theme states no slider.thumb_border_line_width"),
+        Some(width) if width > 0.0 => info
+            .colors(edge_claim("thumb outline", "thumb_border_color", s.thumb_border_color, Some(width), "native-theme-gpui/widgets/slider.rs:166"))
+            .colors(edge_claim("thumb outline, hovered", "thumb_hover_border_color", s.thumb_hover_border_color, Some(width), "native-theme-gpui/widgets/slider.rs:167"))
+            .colors(edge_claim("thumb outline, focused", "thumb_focus_border_color", s.thumb_focus_border_color, Some(width), "native-theme-gpui/widgets/slider.rs:168"))
+            .config("thumb outline", format!("slider.thumb_border_line_width, {}px, a band inside the thumb (widgets::ThumbOutline): slider.thumb_border_color at rest, the thumb's own colour where unstated; thumb_hover_border_color with the pointer on the thumb, though not while it is dragged, gpui applying no hover style during a drag (gpui-pre/elements/div.rs, Interactivity::compute_style_internal); thumb_focus_border_color on the end thumb while the slider has the focus, from a key or a press on the rail (a press on a thumb gives none: gpui-base/slider.rs, SliderThumb), the pointer's winning; each unstated one the rest colour", px_text(width))),
+        Some(_) => info.config("thumb outline", "none: slider.thumb_border_line_width is 0, so the thumb draws no outline in any state, gpui-component's ring included"),
+    };
     let info = if vertical {
         info.not_themeable("length", "the caller's height; gpui-component's 120px where none is given (gpui-component/slider.rs, Slider::render): SliderTheme states no length")
     } else {

@@ -1235,6 +1235,13 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
         why: Unread::NoReceiver(HEADER_SECTION),
     },
     UnreadColour {
+        leaf: "list.header_separator_color",
+        why: Unread::NoReceiver(
+            "a `DataTable` header's line is `border`, every frame's token \
+             (`table/state.rs:2191-2192`, `:2295-2296`)",
+        ),
+    },
+    UnreadColour {
         leaf: "defaults.text_selection_color",
         why: Unread::NoReceiver(SELECTED_TEXT),
     },
@@ -1406,6 +1413,14 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
     },
     UnreadColour {
         leaf: "menu.hover_border_color",
+        why: Unread::NoReceiver(MENU_ITEM_LIGHT),
+    },
+    UnreadColour {
+        leaf: "menu.active_background",
+        why: Unread::NoReceiver(MENU_ITEM_LIGHT),
+    },
+    UnreadColour {
+        leaf: "menu.active_text_color",
         why: Unread::NoReceiver(MENU_ITEM_LIGHT),
     },
     UnreadColour {
@@ -2967,6 +2982,7 @@ fn sinks(r: &ResolvedTheme, is_dark: bool) -> std::collections::BTreeMap<String,
 
     use crate::widgets::{
         CheckboxLook, ProgressBarLook, SeparatorLook, SliderLook, SpinnerLook, SwitchLook, TabLook,
+        ThumbOutline,
     };
     let ground = rgba_to_hsla(r.defaults.background_color);
     for checked in [false, true] {
@@ -2998,6 +3014,10 @@ fn sinks(r: &ResolvedTheme, is_dark: bool) -> std::collections::BTreeMap<String,
         out.insert(
             format!("SliderLook::of({disabled}) drawn"),
             format!("{:?}", slider.map(|l| l.faded_over(ground))),
+        );
+        out.insert(
+            format!("ThumbOutline::of({disabled})"),
+            format!("{:?}", ThumbOutline::of(r, disabled)),
         );
     }
     out.insert(

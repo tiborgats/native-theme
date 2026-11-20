@@ -5055,8 +5055,11 @@ fn device_pixel(cx: &mut VisualTestContext) -> Pixels {
 }
 
 /// The width gpui's text system gives `text` at the status bar's text size,
-/// which `geometry::status_bar` sets from `status_bar.font`: the width the
-/// bar draws that text at. `None` before a native theme is installed.
+/// which `geometry::status_bar` sets from `status_bar.font`, rounded up to a
+/// whole pixel as gpui lays a text element out (gpui-pre 0.3.12
+/// src/elements/text.rs:772; gpui-fast 0.1.16 src/fast/text.rs:526): the
+/// width the bar draws that text at. `None` before a native theme is
+/// installed.
 fn status_text_width(cx: &mut VisualTestContext, text: &str) -> Option<Pixels> {
     cx.update(|window, cx| {
         let size = native_geometry(cx, geometry::status_bar)?
@@ -5069,7 +5072,8 @@ fn status_text_width(cx: &mut VisualTestContext, text: &str) -> Option<Pixels> {
             window
                 .text_system()
                 .shape_line(text, size, &[run], None)
-                .width(),
+                .width()
+                .ceil(),
         )
     })
 }
@@ -5709,7 +5713,7 @@ fn the_basic_tooltip_is_refined(cx: &mut TestAppContext) {
 
 /// A section heading is set in the theme's section-heading role, as the iced
 /// showcase's section titles are: its info says so, and under kde-breeze,
-/// whose role is 16px (12pt) against a 13.33px body, the heading is taller
+/// whose role is 16px (12pt) against a 13px body, the heading is taller
 /// than a body-text label.
 #[gpui::test]
 fn a_section_heading_takes_the_section_heading_role(cx: &mut TestAppContext) {
@@ -10493,6 +10497,199 @@ fn no_row_is_outlined_where_the_line_width_is_0(cx: &mut TestAppContext) {
     }
 }
 
+/// E2: a menu row the mouse button is held on is filled with
+/// `menu.active_background` and draws no outline (`MenuLook::pressed`, the
+/// edge hidden under group active), under kde-breeze light: the Theme
+/// menu's System row and the Overlays page's first application-drawn row.
+/// The press only: a release on the row runs its action, which closes the
+/// menu and switches the theme, so the button is let go off the row (trial
+/// T-L1 case 2 checked the released frame).
+#[gpui::test]
+fn a_pressed_menu_row_takes_the_pressed_look(cx: &mut TestAppContext) {
+    use crate::info::stated;
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    use_light_preset(&mut cx, &showcase, "kde-breeze");
+    let r = resolved_theme(&mut cx, &showcase);
+    let fill = r.menu.active_background.map(stated);
+    assert!(
+        fill.is_some() && fill != Some(stated(r.menu.hover_background)),
+        "kde-breeze light no longer states a pressed menu fill apart from its hover fill, which this test reads"
+    );
+    let far = point(px(1200.), px(8900.));
+    let pressed = |cx: &mut VisualTestContext, row: &'static str| {
+        hover(cx, far);
+        draw(cx);
+        let at = bounds_of(cx, row).center();
+        hover(cx, at);
+        draw(cx);
+        assert!(
+            last_edge_inside(cx, row).is_some(),
+            "{row} under the pointer is not outlined, so its press proves nothing"
+        );
+        cx.simulate_mouse_down(at, MouseButton::Left, Modifiers::default());
+        cx.run_until_parked();
+        draw(cx);
+        let look = (painted_fill(cx, row), last_edge_inside(cx, row));
+        cx.simulate_mouse_move(far, Some(MouseButton::Left), Modifiers::default());
+        cx.simulate_mouse_up(far, MouseButton::Left, Modifiers::default());
+        cx.run_until_parked();
+        draw(cx);
+        look
+    };
+    open_menu(&mut cx, &showcase, "theme");
+    assert_eq!(
+        pressed(&mut cx, "menu-row-System"),
+        (fill, None),
+        "the pressed System row is not filled with menu.active_background, outlined in nothing"
+    );
+    cx.simulate_keystrokes("escape");
+    cx.run_until_parked();
+    show(&mut cx, &showcase, Page::Overlays);
+    assert_eq!(
+        pressed(&mut cx, "overlays-menu-row-undo"),
+        (fill, None),
+        "the Overlays page's pressed first menu row is not filled with menu.active_background, outlined in nothing"
+    );
+}
+
+/// E4: the Theme menu's popup lays its rows out as Breeze does, under
+/// kde-breeze light, whose body font is 13 px: the first row
+/// `menu.panel_padding_vertical`, 3, below the frame's inner edge
+/// (`popover.border`'s line), every row touching the next (no gap where the
+/// panel padding is stated), each item 29 high (`menu.min_row_height` over
+/// its 17.68 line and `menu.border`'s 4 above and below), the label 14 from
+/// the row's left (`padding_left`) and the Preferences shortcut ending 27
+/// from its row's right (`padding_right`).
+#[gpui::test]
+fn the_theme_menu_has_breezes_geometry(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_light_preset(&mut cx, &showcase, "kde-breeze");
+    let r = resolved_theme(&mut cx, &showcase);
+    let m = &r.menu;
+    assert_eq!(
+        (
+            m.panel_padding_vertical,
+            m.min_row_height,
+            m.border.padding.left,
+            m.border.padding.right,
+            m.row_height,
+            r.defaults.font.size,
+        ),
+        (Some(3.), Some(29.), Some(14.), Some(27.), None, 13.),
+        "kde-breeze light's menu geometry and body size, which this test reads"
+    );
+    hover(&mut cx, point(px(1200.), px(700.)));
+    draw(&mut cx);
+    open_menu(&mut cx, &showcase, "theme");
+    let drawn = read(&mut cx, &showcase, |this, cx| {
+        this.info_ui.read(cx).layout_drawn()
+    });
+    let at = |id: &str| {
+        let b = drawn.get(id).copied();
+        assert!(b.is_some(), "{id} was not laid out");
+        b.unwrap_or_default()
+    };
+    let near = |a: Pixels, b: f32| (f32::from(a) - b).abs() < 0.01;
+    let frame = at("chrome.menu.theme");
+    let rows = [
+        "chrome.menu.theme.reload",
+        "chrome.menu.theme.separator_1",
+        "chrome.menu.theme.system",
+        "chrome.menu.theme.light",
+        "chrome.menu.theme.dark",
+        "chrome.menu.theme.separator_2",
+        "chrome.menu.theme.preferences",
+    ];
+    let inset = at(rows[0]).top() - frame.top() - px(r.popover.border.line_width);
+    println!("first row below the frame's inner edge: {inset:?}");
+    assert!(
+        near(inset, 3.),
+        "the first row is {inset:?} below the frame's inner edge, not 3"
+    );
+    for pair in rows.windows(2) {
+        let (above, below) = (at(pair[0]), at(pair[1]));
+        assert!(
+            near(below.top() - above.bottom(), 0.),
+            "{} ends at {:?} and {} starts at {:?}: the rows do not touch",
+            pair[0],
+            above.bottom(),
+            pair[1],
+            below.top()
+        );
+    }
+    for id in rows.iter().filter(|id| !id.contains("separator")) {
+        let height = at(id).size.height;
+        println!("{id}: {height:?} high");
+        assert!(near(height, 29.), "{id} is {height:?} high, not 29");
+    }
+    let system = at("chrome.menu.theme.system");
+    let label = bounds_of(&mut cx, "menu-row-label-System");
+    let left = label.left() - system.left();
+    println!("System's label from the row's left: {left:?}");
+    assert!(
+        near(left, 14.),
+        "System's label is {left:?} from the row's left, not 14"
+    );
+    let preferences = at("chrome.menu.theme.preferences");
+    let shortcut = at("chrome.menu.theme.preferences.shortcut");
+    let right = preferences.right() - shortcut.right();
+    println!("the Preferences shortcut from the row's right: {right:?}");
+    assert!(
+        near(right, 27.),
+        "the Preferences shortcut ends {right:?} from the row's right, not 27"
+    );
+}
+
+/// E7: the Basic table's header draws its section line and its bottom line
+/// in `list.header_separator_color` where the theme states it, laid over
+/// the header's fill, and a body row its column line in `list.grid_color`:
+/// under kde-breeze light, the header's two lines (#23262933) and the first
+/// row's line (#c4c8cc); under adwaita, which states no header separator,
+/// the header's lines in `list.grid_color` too.
+#[gpui::test]
+fn the_table_headers_separators_take_their_colour(cx: &mut TestAppContext) {
+    use crate::info::stated;
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    for preset in ["kde-breeze", "adwaita"] {
+        use_light_preset(&mut cx, &showcase, preset);
+        show(&mut cx, &showcase, Page::Basic);
+        let r = resolved_theme(&mut cx, &showcase);
+        let grid = stated(r.list.grid_color);
+        let header_line = r.list.header_separator_color.map(stated);
+        assert_eq!(
+            header_line.is_some(),
+            preset == "kde-breeze",
+            "{preset}: list.header_separator_color is stated by kde-breeze alone"
+        );
+        let line = header_line.unwrap_or(grid);
+        hover(&mut cx, point(px(1200.), px(8900.)));
+        draw(&mut cx);
+        let filled = |cx: &mut VisualTestContext, selector: &'static str, colour: gpui::Hsla| {
+            quads_inside(cx, selector)
+                .iter()
+                .filter(|q| q.background.as_solid() == Some(colour))
+                .count()
+        };
+        assert_eq!(
+            filled(&mut cx, "basic-table-header", line),
+            2,
+            "{preset}: the header's section line and bottom line are not its separator colour"
+        );
+        if header_line.is_some() {
+            assert_eq!(
+                filled(&mut cx, "basic-table-header", grid),
+                0,
+                "{preset}: the header draws a line in list.grid_color"
+            );
+        }
+        assert_eq!(
+            filled(&mut cx, "basic-table-row-0", grid),
+            1,
+            "{preset}: the first row's column line is not list.grid_color"
+        );
+    }
+}
+
 /// The Basic List's unselected rows under the pointer are outlined in
 /// `list.hover_border_color` at `defaults.border.line_width`, a box over
 /// the row in its suffix (`demo::ListRow`), and at rest they are not: under
@@ -12100,9 +12297,10 @@ fn the_native_number_field_reports_what_it_draws(cx: &mut TestAppContext) {
 /// header and frame -- reports what it paints (M9-003), under kde-breeze
 /// light: the selected row `list.selection_background` and
 /// `selection_text_color`, the others `list.item_font`'s colour and the
-/// `list.hover_*` pair, no row a top edge, the two lines `list.grid_color`,
-/// the header `list.header_background` and `header_font` and its sections'
-/// `header_hover_background` and `header_active_background`, the frame
+/// `list.hover_*` pair, no row a top edge, a row's line `list.grid_color`,
+/// the header `list.header_background` and `header_font`, its sections'
+/// `header_hover_background` and `header_active_background` and its lines'
+/// `header_separator_color`, the frame
 /// `list.border` round `list.background_color`. The fill painted on the
 /// selected row is its claim.
 #[gpui::test]
@@ -12173,7 +12371,16 @@ fn the_basic_tables_infos_report_what_it_draws(cx: &mut TestAppContext) {
             "header_active_background",
             l.header_active_background.map(stated),
         ),
-        ("grid_color", grid),
+        (
+            "header_separator_color",
+            l.header_separator_color
+                .map(stated)
+                .filter(|_| grid.is_some()),
+        ),
+        (
+            "grid_color",
+            grid.filter(|_| l.header_separator_color.is_none()),
+        ),
     ] {
         assert_eq!(
             claim_of(&header, leaf),
@@ -18302,8 +18509,9 @@ fn a_hovered_tool_button_takes_the_toolbars_outline(cx: &mut TestAppContext) {
 /// switches it: under kde-breeze light and windows-11 light it is filled
 /// with `toolbar.button_checked_background` and its info, titled a checked
 /// toolbar Button, claims `button.checked_text_color` as the checked text
-/// and no colour but the checked fill and text (upstream paints no hover or
-/// press on a selected Button); a click turns it off, and with the pointer
+/// and no colour but the checked fill and text, and the checked pen where
+/// the theme states it with the toolbar's outline (kde-breeze) (upstream
+/// paints no hover or press on a selected Button); a click turns it off, and with the pointer
 /// moved off it paints no fill (the rest fill is transparent), and its info
 /// claims the text, hover and pressed fills its neighbours claim and no
 /// checked colour; a second click checks it again. Under macos-tahoe light,
@@ -18356,11 +18564,23 @@ fn the_basic_edit_button_is_checked_and_switches(cx: &mut TestAppContext) {
             .map(|info| info.colors.iter().map(|c| c.role).collect())
             .unwrap_or_default();
         roles.sort_unstable();
+        let pen = r.toolbar.button_checked_border_color.is_some()
+            && r.toolbar.button_hover_border_color.is_some()
+            && r.button.border.line_width > 0.0;
         assert_eq!(
-            roles,
-            ["checked fill", "checked text"],
+            pen,
+            preset == "kde-breeze",
+            "{preset}: the checked pen with the toolbar's outline is kde-breeze's alone"
+        );
+        let want: &[&str] = if pen {
+            &["checked edge", "checked fill", "checked text"]
+        } else {
+            &["checked fill", "checked text"]
+        };
+        assert_eq!(
+            roles, want,
             "{preset}: the checked edit button's info claims colours other than the checked \
-             fill and text, which upstream paints no hover or press over: {info:?}"
+             fill, text and pen, which upstream paints no hover or press over: {info:?}"
         );
 
         click(&mut cx, button);

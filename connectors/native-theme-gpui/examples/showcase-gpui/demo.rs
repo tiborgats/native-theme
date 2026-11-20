@@ -391,11 +391,12 @@ const MENU_POPUP_SHADOW: [(Pixels, Pixels, Pixels); 2] =
 /// The model's menu, as the showcase draws a menu title and a menu row:
 /// `menu.font` and a row's size as `geometry::menu_item` refines a menu item,
 /// `menu.hover_background` and `hover_text_color`, a lit row's outline in
-/// `menu.hover_border_color`, a title's `menu.bar_*` fills, text and
-/// padding, `menu.border`'s padding sides and corner radius (platform-facts
-/// §2.6: the items are rectangular where it is 0), and the popup
-/// `menu.background_color` framed by the popover's border (§2.6: the popup
-/// border is §2.16's).
+/// `menu.hover_border_color`, a pressed row's `menu.active_background` and
+/// `active_text_color`, a title's `menu.bar_*` fills, text and padding,
+/// `menu.border`'s padding sides and corner radius (platform-facts §2.6: the
+/// items are rectangular where it is 0), and the popup `menu.background_color`
+/// framed by the popover's border (§2.6: the popup border is §2.16's), its
+/// rows inset by `menu.panel_padding_*` where stated.
 #[derive(Clone)]
 pub(crate) struct MenuLook {
     /// `geometry::menu_item`: a row's font, stated padding sides and height.
@@ -408,6 +409,11 @@ pub(crate) struct MenuLook {
     edge: Option<Hsla>,
     /// `defaults.border.line_width`, the outline's width.
     edge_width: Pixels,
+    /// A pressed row's fill and text: `menu.active_background` and
+    /// `active_text_color`, each `None` where unstated, the row then keeping
+    /// its hover look (the fill's outline included) or its hover text.
+    active: Option<Hsla>,
+    active_text: Option<Hsla>,
     /// A title's fill under the pointer and while its menu is open, and its
     /// text in both: `menu.bar_hover_background`, `bar_open_background` and
     /// `bar_hover_text_color`, each falling back as its doc says, to the
@@ -422,6 +428,9 @@ pub(crate) struct MenuLook {
     /// `bar_padding_vertical` over its top and bottom where stated.
     title_padding: ResolvedPadding,
     row_height: Option<Pixels>,
+    /// `menu.min_row_height`, which `geometry::menu_item` sets as the row's
+    /// least height where `row_height` is unstated.
+    min_row_height: Option<Pixels>,
     /// Whether the text scale is above 1, where a fixed height becomes a
     /// minimum (geometry.rs, `with_height_rule`).
     text_scaled_up: bool,
@@ -430,8 +439,18 @@ pub(crate) struct MenuLook {
     frame: Hsla,
     frame_width: Pixels,
     frame_radius: Pixels,
-    /// `popover.border.padding`: round the popup's rows.
+    /// `popover.border.padding`, with `menu.panel_padding_horizontal` over
+    /// its left and right and `panel_padding_vertical` over its top and
+    /// bottom where stated: round the popup's rows.
     popup_padding: ResolvedPadding,
+    /// `menu.panel_padding_horizontal` and `panel_padding_vertical` alone,
+    /// each side `None` where unstated: round the Overlays page's rows
+    /// ([`menu_rows`]), which pad nothing on an unstated side.
+    panel_padding: ResolvedPadding,
+    /// The gap between the popup's rows: none where
+    /// `menu.panel_padding_vertical` is stated (Breeze's rows touch), else
+    /// upstream's [`MENU_POPUP_ROW_GAP`].
+    popup_row_gap: Option<Rems>,
     /// The popup's drop shadow ([`MENU_POPUP_SHADOW`]), none where
     /// `popover.border.shadow_enabled` does not hold.
     popup_shadow: Vec<gpui::BoxShadow>,
@@ -444,6 +463,7 @@ impl MenuLook {
         let edge_width = px(n.resolved.defaults.border.line_width.max(0.0));
         let pad = m.border.padding;
         let (x, y) = (m.bar_padding_horizontal, m.bar_padding_vertical);
+        let (panel_x, panel_y) = (m.panel_padding_horizontal, m.panel_padding_vertical);
         Self {
             item: geometry::menu_item(*n),
             text: info::stated(m.font.color),
@@ -454,6 +474,8 @@ impl MenuLook {
                 .map(info::stated)
                 .filter(|_| edge_width > px(0.0)),
             edge_width,
+            active: m.active_background.map(info::stated),
+            active_text: m.active_text_color.map(info::stated),
             bar_hover: info::stated(m.bar_hover_background.unwrap_or(m.hover_background)),
             bar_open: info::stated(
                 m.bar_open_background
@@ -470,13 +492,26 @@ impl MenuLook {
                 left: x.or(pad.left),
             },
             row_height: m.row_height.map(px),
+            min_row_height: m.min_row_height.map(px),
             text_scaled_up: n.accessibility.text_scale_factor() > 1.0,
             background: info::stated(m.background_color),
             separator: info::stated(m.separator_color),
             frame: info::stated(p.color),
             frame_width: px(p.line_width),
             frame_radius: px(p.corner_radius.max(0.0)),
-            popup_padding: p.padding,
+            popup_padding: ResolvedPadding {
+                top: panel_y.or(p.padding.top),
+                right: panel_x.or(p.padding.right),
+                bottom: panel_y.or(p.padding.bottom),
+                left: panel_x.or(p.padding.left),
+            },
+            panel_padding: ResolvedPadding {
+                top: panel_y,
+                right: panel_x,
+                bottom: panel_y,
+                left: panel_x,
+            },
+            popup_row_gap: panel_y.is_none().then_some(MENU_POPUP_ROW_GAP),
             popup_shadow: if p.shadow_enabled {
                 let ink = info::stated(n.resolved.defaults.shadow_color);
                 MENU_POPUP_SHADOW
@@ -536,9 +571,10 @@ impl MenuLook {
         .rounded(self.radius)
         .relative()
         .group(MENU_ROW_GROUP);
-        let row = match (self.row_height, self.padding.top, self.padding.bottom) {
-            (None, None, None) if self.text_scaled_up => row.min_h(MENU_ROW_HEIGHT).h_auto(),
-            (None, None, None) => row.h(MENU_ROW_HEIGHT),
+        let no_height = self.row_height.is_none() && self.min_row_height.is_none();
+        let row = match (no_height, self.padding.top, self.padding.bottom) {
+            (true, None, None) if self.text_scaled_up => row.min_h(MENU_ROW_HEIGHT).h_auto(),
+            (true, None, None) => row.h(MENU_ROW_HEIGHT),
             _ => row,
         };
         if lit {
@@ -560,7 +596,9 @@ impl MenuLook {
     /// `Normal` hitbox, which leaves the row's own mouse handling alone, as
     /// `combo_surface`'s hover edge does (gpui-pre 0.3.12
     /// `elements/div.rs:2460-2486`, `should_insert_hitbox`); its id gives it
-    /// the state a group-active style needs (`:3570-3579`).
+    /// the state a group-active style needs (`:3570-3579`): where `active`
+    /// is stated the box is `none` while the row is pressed, as Breeze draws
+    /// the pressed fill with no outline of another colour.
     pub(crate) fn edge(&self, lit: Option<bool>, none: Hsla) -> Option<Stateful<Div>> {
         let edge = self.edge?;
         let rest = if lit == Some(true) { edge } else { none };
@@ -573,8 +611,34 @@ impl MenuLook {
                 .rounded(self.radius)
                 .border(self.edge_width)
                 .border_color(rest)
-                .group_hover(MENU_ROW_GROUP, move |style| style.border_color(hovered)),
+                .group_hover(MENU_ROW_GROUP, move |style| style.border_color(hovered))
+                .when(self.active.is_some(), |edge| {
+                    edge.group_active(MENU_ROW_GROUP, move |style| style.border_color(none))
+                }),
         )
+    }
+
+    /// `row` while the mouse button is held on it: filled `active` and
+    /// lettered `active_text` where each is stated, over its hover look; a
+    /// row of `MENU_ROW_GROUP` whose [`edge`](Self::edge) hides while it is
+    /// pressed where `active` is stated. One `active` style, as gpui keeps
+    /// one (gpui-pre 0.3.12 `elements/div.rs`, `active`): where neither is
+    /// stated the row is left as it is.
+    pub(crate) fn pressed(&self, row: Stateful<Div>) -> Stateful<Div> {
+        let (fill, text) = (self.active, self.active_text);
+        if fill.is_none() && text.is_none() {
+            return row;
+        }
+        row.active(move |style| {
+            let style = match fill {
+                Some(fill) => style.bg(fill),
+                None => style,
+            };
+            match text {
+                Some(text) => style.text_color(text),
+                None => style,
+            }
+        })
     }
 }
 
@@ -877,11 +941,11 @@ impl MenuBar {
                 &look.popup_padding,
                 Some(MENU_POPUP_PADDING),
                 Some(MENU_POPUP_PADDING),
-            ),
-            None => v_flex().p(MENU_POPUP_PADDING),
+            )
+            .when_some(look.popup_row_gap, |body, gap| body.gap(gap)),
+            None => v_flex().p(MENU_POPUP_PADDING).gap(MENU_POPUP_ROW_GAP),
         };
         let body = body
-            .gap(MENU_POPUP_ROW_GAP)
             .min_w(MENU_POPUP_MIN_WIDTH)
             .children(rows.iter().enumerate().map(|(ix, row)| {
                 match row {
@@ -926,8 +990,12 @@ impl MenuBar {
                                         .text_color(cx.theme().accent_foreground)
                                 }),
                         };
+                        let row = row.id(("menu-row", ix));
+                        let row = match look {
+                            Some(look) => look.pressed(row),
+                            None => row,
+                        };
                         let row = row
-                            .id(("menu-row", ix))
                             .w_full()
                             .gap(MENU_SHORTCUT_GAP)
                             .justify_between()
@@ -937,7 +1005,14 @@ impl MenuBar {
                                 let name = name.clone();
                                 move || format!("menu-row-{name}")
                             })
-                            .child(name.clone())
+                            .child(
+                                div()
+                                    .debug_selector({
+                                        let name = name.clone();
+                                        move || format!("menu-row-label-{name}")
+                                    })
+                                    .child(name.clone()),
+                            )
                             .children(shortcut)
                             .children(listed(ix).map(|id| elements::record(ui, id)))
                             .children(
@@ -8764,13 +8839,15 @@ pub(crate) const MENU_ROWS_FRAME: &str = "overlays-menu-rows";
 
 /// The menu rows an application draws itself, one per `(id, icon, label)`
 /// of `rows`, in a frame painted as the showcase's menus are, from
-/// [`MenuLook`]: `menu.background_color` edged by `popover.border`, the rows
-/// in `menu.font.color`, hovered in `menu.hover_background` and
+/// [`MenuLook`]: `menu.background_color` edged by `popover.border` and
+/// padded by the `menu.panel_padding_*` sides the theme states, the rows in
+/// `menu.font.color`, hovered in `menu.hover_background` and
 /// `hover_text_color` and outlined in `menu.hover_border_color`
-/// ([`MenuLook::edge`]), rounded by `menu.border.corner_radius`; without a
-/// native theme, the popover's tokens and the accent. Each icon is the
-/// chosen icon theme's, and a row whose icon that theme lacks shows its
-/// label alone. Upstream's `MenuItemElement` is crate-private and
+/// ([`MenuLook::edge`]), pressed in `menu.active_background` and
+/// `active_text_color` ([`MenuLook::pressed`]), rounded by
+/// `menu.border.corner_radius`; without a native theme, the popover's tokens
+/// and the accent. Each icon is the chosen icon theme's, and a row whose
+/// icon that theme lacks shows its label alone. Upstream's `MenuItemElement` is crate-private and
 /// `PopupMenu` builds its own rows, so `geometry::menu_item` has no widget
 /// to refine: these rows are the receiver it documents.
 pub(crate) fn menu_rows(
@@ -8784,13 +8861,18 @@ pub(crate) fn menu_rows(
     let frame = v_flex().w(MENU_ROWS_WIDTH);
     let (frame, hover_bg, hover_text, radius) = match &look {
         Some(look) => (
-            frame
-                .bg(look.background)
-                .text_color(look.text)
-                .border(look.frame_width)
-                .border_color(look.frame)
-                .rounded(look.frame_radius)
-                .overflow_hidden(),
+            padded(
+                frame
+                    .bg(look.background)
+                    .text_color(look.text)
+                    .border(look.frame_width)
+                    .border_color(look.frame)
+                    .rounded(look.frame_radius)
+                    .overflow_hidden(),
+                &look.panel_padding,
+                None::<Pixels>,
+                None,
+            ),
             look.hover,
             look.hover_text,
             Some(look.radius),
@@ -8817,6 +8899,7 @@ pub(crate) fn menu_rows(
             // Plain text, not a Label: a Label paints foreground on its
             // own element (label.rs:213), over the frame's colour.
             let row = div()
+                .id("row")
                 .relative()
                 .group(MENU_ROW_GROUP)
                 .flex()
@@ -8829,7 +8912,14 @@ pub(crate) fn menu_rows(
                     look.as_ref()
                         .and_then(|look| look.edge(None, t.transparent)),
                 );
+            // Pressed before `info`, which wraps the row in an element of
+            // its own: a style set after it would land on the wrapper,
+            // under the row's own hover fill and text.
             native_info(row, cx, geometry::menu_item, "menu_item", &mut row_info)
+                .map(|row| match &look {
+                    Some(look) => look.pressed(row),
+                    None => row,
+                })
                 .info(ui, id, row_info)
                 .debug_selector(move || id.into())
         }))
@@ -9985,7 +10075,8 @@ pub(crate) fn sized_icon(
 
 /// One row of [`files_table`]: its two cells' texts, the elements of
 /// docs/showcase-elements.toml its cells are, where they are ones, its font
-/// and text colour, its fill, and whether the header's line closes it.
+/// and text colour, its fill, the colour of its lines, and whether the
+/// header's line closes it.
 struct TableLine<'a> {
     cells: [&'static str; 2],
     listed: [Option<&'static str>; 2],
@@ -9994,6 +10085,10 @@ struct TableLine<'a> {
     font: &'a ResolvedFontSpec,
     text: Hsla,
     fill: Option<Hsla>,
+    /// The line down the first cell's right edge and, where `closed`, the
+    /// one along the bottom: `list.grid_color` in a body row, the header's
+    /// `list.header_separator_color`, else that.
+    line: Hsla,
     closed: bool,
     /// The row's height where it is not a body row's.
     height: Option<Pixels>,
@@ -10079,12 +10174,14 @@ pub(crate) fn list_inner_radius(border: &native_theme::theme::ResolvedWidgetBord
 /// (table/state.rs, `render_th`); the rows in `list.item_font`, the row at
 /// `selected` in `selection_pair`'s fill and text colour, which follow the
 /// window's state, every other row outlined in `list.hover_border_color`
-/// under the pointer; a
-/// `list.grid_color` line `separator.line_width`
-/// wide inside the header's bottom edge and one down the first column's
-/// right edge through every row, each a `widgets::Separator` recoloured, so
-/// one device pixel at least (M9-165); the whole framed by `list.border` on
-/// `list.background_color`. The header, its two cells and every row report
+/// under the pointer; a line `separator.line_width` wide inside the
+/// header's bottom edge and one down the first column's right edge through
+/// every row, each a `widgets::Separator` recoloured, so one device pixel at
+/// least (M9-165), laid over the cell's and a section's fill: in
+/// `list.grid_color`, the header's in `list.header_separator_color` where
+/// the theme states it (platform-facts §2.15: the last section has none of
+/// its own, and the two half-width columns leave no space after it); the
+/// whole framed by `list.border` on `list.background_color`. The header, its two cells and every row report
 /// themselves. Without a native theme, the Data page's declarative `Table`.
 pub(crate) fn files_table(
     ui: &Entity<InfoRegistry>,
@@ -10144,7 +10241,7 @@ pub(crate) fn files_table(
                                     .top_0()
                                     .bottom_0()
                                     .right_0()
-                                    .child(widgets::Separator::vertical().bg(grid)),
+                                    .child(widgets::Separator::vertical().bg(spec.line)),
                             )
                         })
                         .children(listed.map(|listed| elements::record(ui, listed)))
@@ -10180,7 +10277,7 @@ pub(crate) fn files_table(
                             .left_0()
                             .right_0()
                             .bottom_0()
-                            .child(widgets::Separator::horizontal().bg(grid)),
+                            .child(widgets::Separator::horizontal().bg(spec.line)),
                     )
                 })
         };
@@ -10200,6 +10297,7 @@ pub(crate) fn files_table(
         font: &l.header_font,
         text: colour(l.header_font.color),
         fill: Some(colour(l.header_background)),
+        line: l.header_separator_color.map(colour).unwrap_or(grid),
         closed: true,
         height: header_height,
         sections: Some(SectionFills {
@@ -10239,6 +10337,7 @@ pub(crate) fn files_table(
             font: &l.item_font,
             text,
             fill,
+            line: grid,
             closed: false,
             height: None,
             sections: None,

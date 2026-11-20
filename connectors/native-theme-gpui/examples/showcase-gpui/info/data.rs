@@ -435,9 +435,17 @@ pub fn native_table_header(r: &ResolvedTheme, columns: &str) -> WidgetInfo {
     } else {
         "none hovered or pressed: the theme states neither list.header_hover_background nor list.header_active_background, so a section keeps the header's fill; gpui-component's own table header has no hover or pressed state either (gpui-component/table/state.rs, render_th)"
     };
-    grid_lines(info.config("sections", sections), r, "a line inside its bottom edge, under the header, and one down the first column's right edge")
-        .config("font", format!("list.header_font: {}", drawn_font(&l.header_font)))
-        .instance("columns", columns.to_string())
+    let lines = "a line inside its bottom edge, under the header, and one down the first column's right edge, laid over the header's and a section's fill; the second section, the last, has none of its own (platform-facts §2.15)";
+    let info = info.config("sections", sections);
+    let info = match l.header_separator_color {
+        Some(_) => section_lines(info, r, lines),
+        None => grid_lines(info, r, lines),
+    };
+    info.config(
+        "font",
+        format!("list.header_font: {}", drawn_font(&l.header_font)),
+    )
+    .instance("columns", columns.to_string())
 }
 
 /// A body row of the Basic page's table the showcase draws as `r`'s
@@ -550,6 +558,30 @@ pub fn native_table_row(r: &ResolvedTheme, selected: bool, cells: &str) -> Widge
             format!("list.item_font: {}", drawn_font(&l.item_font)),
         )
         .instance("cells", cells.to_string())
+}
+
+/// `info` given the claim and the config line of the header's lines in
+/// `list.header_separator_color` (`demo::files_table`), where the theme
+/// states it, as [`grid_lines`] gives a body row's.
+fn section_lines(info: WidgetInfo, r: &ResolvedTheme, where_drawn: &str) -> WidgetInfo {
+    if r.separator.line_width > 0.0 {
+        info.colors(stated_claim(
+            "section line",
+            "header_separator_color",
+            r.list.header_separator_color,
+            "showcase",
+        ))
+        .config(
+            "grid",
+            format!(
+                "{where_drawn}, list.header_separator_color at separator.line_width, {}px, \
+                 one device pixel at least",
+                px_text(r.separator.line_width)
+            ),
+        )
+    } else {
+        info.config("grid", "none: separator.line_width is 0")
+    }
 }
 
 /// `info` given the claim and the config line of the grid lines a row of the

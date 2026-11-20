@@ -417,11 +417,11 @@ pub fn editor(n: Native<'_>) -> StyleRefinement {
 /// the v0.5.8 documentation named does not exist.
 ///
 /// Height by the control-height rule (module doc), through `h`, where
-/// `menu.row_height` is stated.
+/// `menu.row_height` is stated, else at least `menu.min_row_height`.
 #[must_use]
 pub fn menu_item(n: Native<'_>) -> StyleRefinement {
     let m = &n.resolved.menu;
-    let r = with_height_rule(StyleRefinement::default(), m.row_height, n);
+    let r = row_height_rule(m.row_height, m.min_row_height, n);
     with_text(
         with_padding(r, &m.border.padding).gap_x(px(m.icon_text_gap)),
         &m.font,
@@ -538,7 +538,7 @@ const TOOLTIP_SHADOW: [(f32, f32, f32); 2] = [(4., 6., -1.), (2., 4., -2.)];
 /// installs as the rem: `defaults.font.size` scaled by
 /// [`crate::scaled_text_size`] (`theme.font_size` in [`crate::to_theme`],
 /// which gpui-component's `WindowState` root plugin sets as the window's rem
-/// size, `src/root.rs:714`).
+/// size, `src/root.rs:725`).
 ///
 /// Never negative: a platform that states a width narrower than its own
 /// paddings leaves nothing for the text rather than a width gpui would reject.
@@ -1441,19 +1441,19 @@ pub fn toolbar_button_rest(n: Native<'_>) -> StyleRefinement {
         .border_color(Hsla::transparent_black())
 }
 
-/// The fill and text colour of a toolbar Button that is on
+/// The fill, text colour and pen of a toolbar Button that is on
 /// (`Button::selected(true)`), over [`variants::toolbar_button`](crate::variants::toolbar_button):
 /// `toolbar.button_checked_background`, lettered `button.checked_text_color`
-/// (`button.active_text_color` where that is `None`). Where the theme states
-/// no checked fill the fill is the pressed one, `toolbar.button_active_background`,
-/// else `button.active_background`, as [`button_checked`] falls back, and the
-/// text is left to the custom variant's one foreground. Where it states none
-/// of the three the refinement sets nothing: the custom variant's selected
-/// fill, its pressed one, stands under its one foreground, unless the caller
-/// applied [`toolbar_button_rest`], whose transparent fill upstream replays
-/// over the selected state too, so that a checked button then shows no fill.
-/// Apply it to a selected toolbar Button only: upstream replays the
-/// refinement at rest too.
+/// (`button.active_text_color` where that is `None`); with no checked fill the
+/// pressed one, `toolbar.button_active_background`, else `button.active_background`,
+/// as [`button_checked`] falls back, the text the custom variant's one foreground;
+/// with none of the three no fill (the variant's selected one, or none after
+/// [`toolbar_button_rest`], whose transparent fill upstream replays). The pen is
+/// `toolbar.button_checked_border_color` where stated, at [`toolbar_button_rest`]'s
+/// width. A selected Button takes no hover or press style (gpui-component 0.10.0
+/// `src/button/button.rs:733`, `:758`), so the pen stays under the pointer and
+/// pressed. Apply it after [`toolbar_button_rest`], to a selected toolbar Button
+/// only: upstream replays the refinement at rest too.
 #[must_use]
 pub fn toolbar_button_checked(n: Native<'_>) -> StyleRefinement {
     let t = &n.resolved.toolbar;
@@ -1469,8 +1469,8 @@ pub fn toolbar_button_checked(n: Native<'_>) -> StyleRefinement {
         .or(t.button_active_background)
         .or(b.active_background)
     {
-        Some(fill) => r.bg(rgba_to_hsla(fill)),
-        None => r,
+        Some(fill) => checked_pen(r.bg(rgba_to_hsla(fill)), t),
+        None => checked_pen(r, t),
     }
 }
 
@@ -1495,6 +1495,32 @@ pub fn default_button_rest(n: Native<'_>) -> Option<StyleRefinement> {
             .bg(rgba_to_hsla(fill))
             .border_color(rgba_to_hsla(frame)),
     )
+}
+
+/// A row's height for [`menu_item`]: `stated`, a fixed height, by the
+/// control-height rule ([`with_height_rule`]); where it is `None`, at least
+/// `least`, a least height the content grows past (`min_h` is the border
+/// box); nothing where both are `None`. A stated `menu.row_height` wins over
+/// `menu.min_row_height` (docs/platform-facts.md §2.6).
+fn row_height_rule(stated: Option<f32>, least: Option<f32>, n: Native<'_>) -> StyleRefinement {
+    match (stated, least) {
+        (None, Some(least)) => StyleRefinement::default().min_h(px(least)),
+        _ => with_height_rule(StyleRefinement::default(), stated, n),
+    }
+}
+
+/// `r` with a checked toolbar Button's pen ([`toolbar_button_checked`]): its
+/// border colour `toolbar.button_checked_border_color` where the theme states
+/// it, drawn at the width [`toolbar_button_rest`] gives the border; `r` as it
+/// is where the theme states none.
+fn checked_pen(
+    r: StyleRefinement,
+    t: &native_theme::theme::ResolvedToolbarTheme,
+) -> StyleRefinement {
+    match t.button_checked_border_color {
+        Some(pen) => r.border_color(rgba_to_hsla(pen)),
+        None => r,
+    }
 }
 
 /// The text colour of a selected `ListItem` (`ListItem::selected(true)`):
@@ -2437,6 +2463,27 @@ mod tests {
         assert_eq!(out.text.color, None, "material-3 light: text");
     }
 
+    /// A checked toolbar Button takes `toolbar.button_checked_border_color`
+    /// as its border colour where the theme states it (kde-breeze light), and
+    /// no border colour where it is cleared.
+    #[test]
+    fn toolbar_button_checked_takes_the_checked_pen() {
+        let mut r = resolved("kde-breeze", ColorMode::Light);
+        let pen = r.toolbar.button_checked_border_color;
+        assert!(pen.is_some(), "kde-breeze states the checked pen");
+        assert_eq!(
+            toolbar_button_checked(Native::unscaled(&r)).border_color,
+            pen.map(rgba_to_hsla),
+            "kde-breeze light: the checked pen"
+        );
+        r.toolbar.button_checked_border_color = None;
+        assert_eq!(
+            toolbar_button_checked(Native::unscaled(&r)).border_color,
+            None,
+            "the checked pen cleared: no border colour"
+        );
+    }
+
     /// No bundled preset states the toolbar's hover outline without its
     /// checked fill: `toolbar_button_rest`'s transparent fill is replayed over
     /// the selected state, so `toolbar_button_checked` must have a fill to set.
@@ -2591,13 +2638,55 @@ mod tests {
         });
     }
 
+    /// `menu_item`'s height where the theme states `menu.min_row_height`:
+    /// kde-breeze's 29 as a least height and no fixed one; with
+    /// `menu.row_height` 30 stated too, the fixed 30 and no least height (a
+    /// stated row height wins); adwaita's stated 32, no least height.
+    #[test]
+    fn menu_item_takes_the_least_row_height() {
+        let mut r = resolved("kde-breeze", ColorMode::Light);
+        assert_eq!(
+            (r.menu.row_height, r.menu.min_row_height),
+            (None, Some(29.)),
+            "kde-breeze states a least menu row height of 29 and no fixed one"
+        );
+        let out = menu_item(Native::unscaled(&r));
+        assert_eq!(out.min_size.height, len(29.), "kde-breeze: least height");
+        assert_eq!(out.size.height, None, "kde-breeze: no fixed height");
+        r.menu.row_height = Some(30.);
+        let out = menu_item(Native::unscaled(&r));
+        assert_eq!(
+            out.size.height,
+            len(30.),
+            "row_height 30 stated too: height"
+        );
+        assert_eq!(
+            out.min_size.height, None,
+            "row_height 30 stated too: no least height"
+        );
+        let r = resolved("adwaita", ColorMode::Light);
+        assert_eq!(
+            r.menu.min_row_height, None,
+            "adwaita states no least height"
+        );
+        let out = menu_item(Native::unscaled(&r));
+        assert_eq!(out.size.height, len(32.), "adwaita: its stated row_height");
+        assert_eq!(out.min_size.height, None, "adwaita: no least height");
+    }
+
     #[test]
     fn menu_and_list_items_match_theme_values() {
         let mut stated = Stated::default();
         for_each_case(|r, s, n| {
             let m = &r.menu;
             let out = menu_item(n);
-            stated.height(&out, r, m.row_height, s, "menu_item");
+            match (m.row_height, m.min_row_height) {
+                (None, Some(least)) => {
+                    assert_eq!(out.min_size.height, len(least), "menu_item: least height");
+                    assert_eq!(out.size.height, None, "menu_item: no fixed height");
+                }
+                _ => stated.height(&out, r, m.row_height, s, "menu_item"),
+            }
             stated.padding(&out, &m.border.padding, "menu_item");
             assert_eq!(out.gap.width, def(m.icon_text_gap));
             assert_eq!(out.gap.height, None, "gap_x sets the column gap only");

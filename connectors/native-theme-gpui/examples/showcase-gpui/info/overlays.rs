@@ -7,7 +7,7 @@ use native_theme_gpui::ResolvedTheme;
 use super::{
     WidgetInfo, buttons,
     chrome::{dialog_surface, popup_menu, sheet_surface},
-    claim, edge_claim, px_text, stated,
+    claim, edge_claim, px_text, stated, stated_claim,
 };
 use crate::demo::{ButtonKind, ButtonState, Overlay, SAMPLE_MENU, SheetSide};
 use crate::support::SampleIcon;
@@ -486,6 +486,18 @@ pub fn menu_row(
                     "hover_border_color",
                     m.hover_border_color,
                     Some(r.defaults.border.line_width),
+                    "showcase",
+                ))
+                .colors(stated_claim(
+                    "pressed item",
+                    "active_background",
+                    m.active_background,
+                    "showcase",
+                ))
+                .colors(stated_claim(
+                    "pressed item text",
+                    "active_text_color",
+                    m.active_text_color,
                     "showcase",
                 ));
             let line_width = r.defaults.border.line_width;

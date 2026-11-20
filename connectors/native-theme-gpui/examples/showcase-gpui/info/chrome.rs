@@ -371,7 +371,24 @@ pub fn app_menus(t: &Theme, host: MenuHost, native: Option<&ResolvedTheme>) -> W
                     m.hover_border_color,
                     Some(line_width),
                     "showcase",
+                ))
+                .colors(stated_claim(
+                    "pressed item",
+                    "active_background",
+                    m.active_background,
+                    "showcase",
+                ))
+                .colors(stated_claim(
+                    "pressed item text",
+                    "active_text_color",
+                    m.active_text_color,
+                    "showcase",
                 ));
+            let info = match (m.active_background, m.active_text_color) {
+                (None, None) => info,
+                (Some(_), _) => info.config("pressed item", "menu.active_background while the mouse button is held on an item, with no outline, and menu.active_text_color where stated, else the hover text"),
+                (None, Some(_)) => info.config("pressed item", "the hover look, its outline included, lettered menu.active_text_color while the mouse button is held on an item: the theme states no menu.active_background"),
+            };
             let info = match (m.hover_border_color, line_width > 0.0) {
                 (Some(_), true) => info.config("hovered item edge", format!("menu.hover_border_color at defaults.border.line_width, {}px, a box over the highlighted item, its padding included, so nothing moves, rounded as the highlight", px_text(line_width))),
                 (Some(_), false) => info.config("hovered item edge", "none: defaults.border.line_width is 0"),
@@ -411,10 +428,30 @@ pub fn app_menus(t: &Theme, host: MenuHost, native: Option<&ResolvedTheme>) -> W
                 .config("font", format!("menu.font: {}, on the titles and the items, as geometry::menu_item sets it", super::drawn_font(&m.font)))
                 .config("highlight", format!("rectangular where menu.border.corner_radius is 0 (platform-facts §2.6: the items are rectangular), here {}px", px_text(m.border.corner_radius)))
                 .config("padding", format!("menu.border.padding's stated sides on each title and item, an item's through geometry::menu_item; on a side left unstated, upstream's own: a title's px_1p5 / py_0p5, and an item's {} at the sides (MENU_ROW_PADDING_X) and nothing above or below, its height the item-height line's (menu/app_menu_bar.rs, AppMenu::render; menu/popup_menu.rs, PopupMenu::render_item)", super::rems_text(crate::demo::MENU_ROW_PADDING_X, t)))
-                .config("item height", match m.row_height {
-                    Some(h) => format!("menu.row_height, {}px, by geometry::menu_item's control-height rule: the height at a text scale of 1 or less, a minimum with an automatic height above 1", px_text(h)),
-                    None if m.border.padding.top.is_none() && m.border.padding.bottom.is_none() => format!("{}, upstream's PopupMenu row (menu/popup_menu.rs, PopupMenu::render_item), by the connector's control-height rule: the height at a text scale of 1 or less, a minimum with an automatic height above 1; the theme states neither menu.row_height nor a vertical padding", super::rems_text(crate::demo::MENU_ROW_HEIGHT, t)),
-                    None => "the font's line and menu.border.padding: the theme states no menu.row_height, the item sizes to its font (platform-facts §2.6)".to_string(),
+                .config("item height", match (m.row_height, m.min_row_height) {
+                    (Some(h), _) => format!("menu.row_height, {}px, by geometry::menu_item's control-height rule: the height at a text scale of 1 or less, a minimum with an automatic height above 1", px_text(h)),
+                    (None, Some(least)) => format!("at least menu.min_row_height, {}px, by geometry::menu_item: the font's line and menu.border.padding where they are taller (platform-facts §2.6)", px_text(least)),
+                    (None, None) if m.border.padding.top.is_none() && m.border.padding.bottom.is_none() => format!("{}, upstream's PopupMenu row (menu/popup_menu.rs, PopupMenu::render_item), by the connector's control-height rule: the height at a text scale of 1 or less, a minimum with an automatic height above 1; the theme states neither menu.row_height nor a vertical padding", super::rems_text(crate::demo::MENU_ROW_HEIGHT, t)),
+                    (None, None) => "the font's line and menu.border.padding: the theme states no menu.row_height, the item sizes to its font (platform-facts §2.6)".to_string(),
+                })
+                .config("menu inset", {
+                    let sides: Vec<String> = [
+                        m.panel_padding_horizontal.map(|x| format!("menu.panel_padding_horizontal, {}px, at the left and right", px_text(x))),
+                        m.panel_padding_vertical.map(|y| format!("menu.panel_padding_vertical, {}px, at the top and bottom", px_text(y))),
+                    ]
+                    .into_iter()
+                    .flatten()
+                    .collect();
+                    let rows = if m.panel_padding_vertical.is_some() {
+                        "the items touching"
+                    } else {
+                        "the items 0.125rem apart, upstream's gap_y_0p5 (menu/popup_menu.rs, PopupMenu::render)"
+                    };
+                    if sides.is_empty() {
+                        format!("popover.border.padding's stated sides round the items, upstream's p_1 on an unstated side (menu/popup_menu.rs, PopupMenu::render); {rows}")
+                    } else {
+                        format!("{} inside the frame's line, over popover.border.padding's sides; {rows}", sides.join(" and "))
+                    }
                 })
                 .config("menu edge", if r.popover.border.line_width > 0.0 {
                     format!("popover.border: {}px, radius {}px (platform-facts §2.6: a menu's popup border is §2.16's)", px_text(r.popover.border.line_width), px_text(r.popover.border.corner_radius))

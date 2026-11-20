@@ -3484,6 +3484,170 @@ fn a_disabled_slider_is_inert(cx: &mut TestAppContext) {
     assert_eq!(slider_value(cx, &state), 50.);
 }
 
+/// E8: `ThumbOutline::of` follows the theme (S7): kde-breeze light states
+/// the width 1 and the three colours, each a band colour, the disabled
+/// thumb keeping its rest one alone; a hover or focus colour unset is the
+/// rest one; a width of 0 draws no band in any state; the rest colour unset
+/// leaves the band the thumb's own colour (no colour); adwaita states no
+/// width, so the thumb keeps gpui-component's ring.
+#[test]
+fn a_thumb_outline_follows_the_theme() {
+    let mut r = resolved("kde-breeze", ColorMode::Light);
+    let s = r.slider.clone();
+    let o = ThumbOutline::of(&r, false).expect("kde-breeze states the outline's width");
+    assert_eq!(o.width, px(1.));
+    assert_eq!(o.rest, s.thumb_border_color.map(c));
+    assert_eq!(o.hover, s.thumb_hover_border_color.map(c));
+    assert_eq!(o.focus, s.thumb_focus_border_color.map(c));
+    assert!(o.rest.is_some() && o.hover.is_some() && o.focus.is_some());
+    let disabled = ThumbOutline::of(&r, true).expect("width stated");
+    assert_eq!(
+        (disabled.rest, disabled.hover, disabled.focus),
+        (o.rest, None, None),
+        "a disabled thumb keeps its rest colour alone"
+    );
+    r.slider.thumb_hover_border_color = None;
+    r.slider.thumb_focus_border_color = None;
+    let fallen = ThumbOutline::of(&r, false).expect("width stated");
+    assert_eq!((fallen.hover, fallen.focus), (o.rest, o.rest));
+    r.slider.thumb_border_color = None;
+    let bare = ThumbOutline::of(&r, false).expect("width stated");
+    assert_eq!((bare.rest, bare.hover, bare.focus), (None, None, None));
+    let mut r = resolved("kde-breeze", ColorMode::Light);
+    r.slider.thumb_border_line_width = Some(0.);
+    let none = ThumbOutline::of(&r, false).expect("a stated 0 is stated");
+    assert_eq!(
+        (none.width, none.rest, none.hover, none.focus),
+        (px(0.), None, None, None),
+        "a width of 0 draws no band"
+    );
+    let r = resolved("adwaita", ColorMode::Light);
+    assert_eq!(r.slider.thumb_border_line_width, None);
+    assert_eq!(ThumbOutline::of(&r, false), None);
+}
+
+/// E8: the thumb's outline is the theme's (S7), read off the frame: under
+/// kde-breeze light, with `thumb_focus_border_color` set to #f0a014 (the
+/// preset's hover and focus colours are both #3daee9), the thumb at rest is
+/// filled #d1d1d2 round an inner disc 1 px in, in its own colour; hovered
+/// #3daee9; focused (`focus_next`) and not hovered #f0a014; focused and
+/// hovered #3daee9, hover winning. A click on the thumb gives the slider no
+/// focus: the thumb stops the mouse-down (gpui-base 0.10.0 slider.rs,
+/// `SliderThumb::render`), before the slider's root takes it; a click on
+/// the rail, which lets it pass, does.
+#[gpui::test]
+fn the_thumb_outline_is_the_themes(cx: &mut TestAppContext) {
+    let focus = native_theme::color::Rgba::new(0xf0, 0xa0, 0x14, 0xff);
+    let state = cx.new(|_| {
+        SliderState::new()
+            .min(0.)
+            .max(100.)
+            .step(1.)
+            .default_value(50.)
+    });
+    let s = state.clone();
+    let cx = window_with_resolved(
+        cx,
+        "kde-breeze",
+        ColorMode::Light,
+        |r| r.slider.thumb_focus_border_color = Some(focus),
+        Box::new(move |_, _| Slider::new(&s).w(px(140.)).into_any_element()),
+    );
+    let r = resolved("kde-breeze", ColorMode::Light);
+    let hex_of = |h: gpui::Hsla| {
+        let rgba = gpui::Rgba::from(h);
+        let byte = |v: f32| (v * 255.).round() as u8;
+        hex([byte(rgba.r), byte(rgba.g), byte(rgba.b), byte(rgba.a)])
+    };
+    assert_eq!(
+        (
+            r.slider.thumb_border_color.map(c).map(hex_of),
+            r.slider.thumb_hover_border_color.map(c).map(hex_of),
+            r.slider.thumb_border_line_width,
+        ),
+        (
+            Some("#d1d1d2ff".to_owned()),
+            Some("#3daee9ff".to_owned()),
+            Some(1.)
+        ),
+        "kde-breeze light's thumb outline"
+    );
+    let away = point(px(390.), px(390.));
+    let thumb = bounds(cx, "native-slider-thumb");
+    let band = |cx: &mut VisualTestContext| painted_fill(cx, thumb).map(hex_of);
+    cx.simulate_mouse_move(away, None, Modifiers::default());
+    redraw(cx);
+    assert_eq!(band(cx).as_deref(), Some("#d1d1d2ff"), "at rest");
+    assert_eq!(
+        painted_fill(cx, thumb.dilate(px(-1.))),
+        Some(c(r.slider.thumb_color)),
+        "the disc inside a 1 px band"
+    );
+    cx.simulate_mouse_move(centre(thumb), None, Modifiers::default());
+    redraw(cx);
+    assert_eq!(band(cx).as_deref(), Some("#3daee9ff"), "hovered");
+    cx.simulate_mouse_down(centre(thumb), gpui::MouseButton::Left, Modifiers::default());
+    cx.simulate_mouse_up(centre(thumb), gpui::MouseButton::Left, Modifiers::default());
+    redraw(cx);
+    assert!(
+        cx.update(|window, cx| window.focused(cx).is_none()),
+        "a click on the thumb focused the slider"
+    );
+    let rail = bounds(cx, "native-slider-rail");
+    let on_rail = point(rail.left() + px(12.), rail.center().y);
+    cx.simulate_click(on_rail, Modifiers::default());
+    redraw(cx);
+    assert!(
+        cx.update(|window, cx| window.focused(cx).is_some()),
+        "a click on the rail did not focus the slider"
+    );
+    cx.update(|window, cx| {
+        window.blur(cx);
+        state.update(cx, |s, cx| {
+            s.set_value(gpui_base::slider::SliderValue::from(50.), window, cx)
+        });
+    });
+    cx.simulate_mouse_move(away, None, Modifiers::default());
+    redraw(cx);
+    assert_eq!(
+        bounds(cx, "native-slider-thumb"),
+        thumb,
+        "the thumb back at 50"
+    );
+    focus_next(cx);
+    redraw(cx);
+    assert_eq!(band(cx).as_deref(), Some("#f0a014ff"), "focused");
+    cx.simulate_mouse_move(centre(thumb), None, Modifiers::default());
+    redraw(cx);
+    assert_eq!(
+        band(cx).as_deref(),
+        Some("#3daee9ff"),
+        "focused and hovered: hover wins"
+    );
+    drop(state);
+}
+
+/// E8: under adwaita, which states no thumb outline width, the thumb keeps
+/// gpui-component's ring: the fill colour at half alpha round the disc.
+#[gpui::test]
+fn without_a_stated_width_the_thumb_keeps_upstreams_ring(cx: &mut TestAppContext) {
+    let state = cx.new(|_| SliderState::new().min(0.).max(100.).default_value(50.));
+    let s = state.clone();
+    let cx = window_with(
+        cx,
+        Some(("adwaita", ColorMode::Light)),
+        Box::new(move |_, _| Slider::new(&s).w(px(140.)).into_any_element()),
+    );
+    let r = resolved("adwaita", ColorMode::Light);
+    let thumb = bounds(cx, "native-slider-thumb");
+    assert_eq!(
+        painted_fill(cx, thumb),
+        Some(c(r.slider.fill_color).opacity(0.5)),
+        "adwaita: gpui-component's ring"
+    );
+    drop(state);
+}
+
 // ---------------------------------------------------------------------------
 // The tab bar's keyboard focus
 // ---------------------------------------------------------------------------
@@ -5530,4 +5694,70 @@ fn a_checked_toolbar_buttons_icon_takes_the_checked_text(cx: &mut TestAppContext
         "the icon of a checked toolbar button is not lettered button.checked_text_color:\n{}",
         wrong.join("\n")
     );
+}
+
+/// E9: a checked toolbar Button takes the checked pen, built as
+/// [`a_checked_toolbar_buttons_icon_takes_the_checked_text`] builds it: a
+/// selected Button on `variants::toolbar_button`, refined with
+/// `geometry::toolbar_button_rest` and then
+/// `geometry::toolbar_button_checked`, under kde-breeze light and dark: the
+/// box over the Button's bounds is edged in
+/// `toolbar.button_checked_border_color`, #d1d1d2 and #535659, 1 px wide
+/// (`button.border.line_width`, which `toolbar_button_rest` gives the
+/// border).
+#[gpui::test]
+fn a_checked_toolbar_button_takes_the_checked_pen(cx: &mut TestAppContext) {
+    use gpui_component::button::{Button, ButtonVariants as _};
+    use gpui_component::{Icon, IconName, Selectable as _, StyledExt as _};
+
+    for (mode, pen) in [
+        (ColorMode::Light, [0xd1, 0xd1, 0xd2, 0xff]),
+        (ColorMode::Dark, [0x53, 0x56, 0x59, 0xff]),
+    ] {
+        let r = resolved("kde-breeze", mode);
+        assert_eq!(
+            r.toolbar.button_checked_border_color.map(c),
+            Some(c(native_theme::color::Rgba::new(
+                pen[0], pen[1], pen[2], pen[3]
+            ))),
+            "kde-breeze {mode:?}: the checked pen"
+        );
+        assert_eq!(
+            r.button.border.line_width, 1.,
+            "kde-breeze {mode:?}: the width"
+        );
+        let rest = crate::geometry::toolbar_button_rest(crate::Native::unscaled(&r));
+        let checked = crate::geometry::toolbar_button_checked(crate::Native::unscaled(&r));
+        let build: Build = Box::new(move |_, cx| {
+            Button::new("edit")
+                .debug_selector(|| "checked-edit".into())
+                .custom(crate::variants::toolbar_button(cx))
+                .selected(true)
+                .refine_style(&rest)
+                .refine_style(&checked)
+                .child(Icon::new(IconName::Copy))
+                .into_any_element()
+        });
+        let cx = window_with(cx, Some(("kde-breeze", mode)), build);
+        let button = bounds(cx, "checked-edit");
+        let edges: Vec<(gpui::Hsla, f32)> = cx.update(|window, _| {
+            let scale = window.scale_factor();
+            let at = button.scale(scale);
+            scene_quads(window)
+                .into_iter()
+                .filter(|q| q.bounds == at && q.border_widths.top.0 > 0.)
+                .map(|q| (q.border_color, q.border_widths.top.0 / scale))
+                .collect()
+        });
+        assert!(
+            !edges.is_empty()
+                && edges.iter().all(|&(colour, width)| colour
+                    == r.toolbar
+                        .button_checked_border_color
+                        .map(c)
+                        .unwrap_or_default()
+                    && width == 1.),
+            "kde-breeze {mode:?}: the checked button's edges {edges:?} are not the checked pen, 1 px wide"
+        );
+    }
 }

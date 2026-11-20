@@ -904,9 +904,10 @@ pub(super) fn native_ghost_selected(info: WidgetInfo, t: &Theme) -> WidgetInfo {
 /// `geometry::toolbar_button_checked`'s fill and text where `native` states
 /// the toolbar's checked fill; else, as [`native_ghost_selected`] says, the
 /// variant's active colour as the selected fill, which that builder sets
-/// too, under the variant's one foreground. Upstream draws no hover or press
-/// style on a selected Button, so it claims no hover or pressed fill, and the
-/// edge stays the rest one under the pointer.
+/// too, under the variant's one foreground; and its pen,
+/// `toolbar.button_checked_border_color`, where `native` states it. Upstream
+/// draws no hover or press style on a selected Button, so it claims no hover
+/// or pressed fill, and the edge stays the rest one under the pointer.
 fn toolbar_checked(info: WidgetInfo, t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
     let checked_fill = stated_claim(
         "checked fill",
@@ -955,9 +956,22 @@ fn toolbar_checked(info: WidgetInfo, t: &Theme, native: Option<&ResolvedTheme>) 
             ))
         }
     };
+    // The pen's width is toolbar_button_rest's, which sets one only where the
+    // toolbar's hover outline is stated.
+    let info = info.colors(edge_claim(
+        "checked edge",
+        "button_checked_border_color",
+        native.and_then(|r| r.toolbar.button_checked_border_color),
+        native.and_then(|r| {
+            r.toolbar
+                .button_hover_border_color
+                .map(|_| r.button.border.line_width)
+        }),
+        "native-theme-gpui/geometry.rs:1520",
+    ));
     info.not_themeable(
         "hover outline while checked",
-        "gpui-component draws no hover style on a selected Button (button/button.rs, RenderOnce for Button: the hover style returns early while selected), and replays the caller's refinement over the selected state, so the edge stays the rest one",
+        "gpui-component draws no hover style on a selected Button (button/button.rs, RenderOnce for Button: the hover style returns early while selected), and replays the caller's refinement over the selected state, so the edge stays the rest one, the checked pen where the theme states it",
     )
 }
 
@@ -1322,14 +1336,21 @@ pub fn icon_button(
         None => native_toolbar(info, t, native),
     };
     let outlined = native.is_some_and(|r| r.toolbar.button_hover_border_color.is_some());
-    let info = info.not_themeable(
-        "edge",
-        match (outlined, checked) {
-            (true, Some(true)) => "none: geometry::toolbar_button_rest's border is transparent, button.border.line_width wide, and stays so while checked (the hover outline while checked)",
-            (true, _) => "none at rest: geometry::toolbar_button_rest's border is transparent, button.border.line_width wide, and takes the variant's colour under the pointer and while pressed (the border, hovered or pressed)",
-            (false, _) => "none: upstream gives a border width only to a Default or an outlined Button, and a Ghost is a custom variant (button/button.rs, RenderOnce for Button); the showcase sets none",
-        },
-    );
+    let pen = native.is_some_and(|r| r.toolbar.button_checked_border_color.is_some());
+    let info = match (outlined, checked) {
+        (true, Some(true)) if pen => info.config(
+            "edge",
+            "the checked pen, toolbar.button_checked_border_color, which geometry::toolbar_button_checked sets on geometry::toolbar_button_rest's border, button.border.line_width wide, and which stays under the pointer and while pressed (the hover outline while checked)",
+        ),
+        _ => info.not_themeable(
+            "edge",
+            match (outlined, checked) {
+                (true, Some(true)) => "none: geometry::toolbar_button_rest's border is transparent, button.border.line_width wide, and stays so while checked (the hover outline while checked)",
+                (true, _) => "none at rest: geometry::toolbar_button_rest's border is transparent, button.border.line_width wide, and takes the variant's colour under the pointer and while pressed (the border, hovered or pressed)",
+                (false, _) => "none: upstream gives a border width only to a Default or an outlined Button, and a Ghost is a custom variant (button/button.rs, RenderOnce for Button); the showcase sets none",
+            },
+        ),
+    };
     let info = match native {
         Some(_) => info,
         None => info.config("border-radius", format!("radius: {}px", t.radius.as_f32())),
