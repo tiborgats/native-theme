@@ -695,6 +695,12 @@ moves = [
   { row = "styles::aw::selection_list.background", statuses = ["Hovered"] },
 ]
 
+[leaves."list.hover_border_color"]
+named = "UNREACHABLE"
+entry = "list.hover_border_color"
+kind = "no receiver"
+why = "a `SelectionList` fills a hovered row with a quad whose border is hardcoded 0 wide (`selection_list/list.rs:226-249`)"
+
 [leaves."list.hover_text_color"]
 moves = [
   { row = "styles::aw::selection_list.text_color", statuses = ["Hovered"] },
@@ -721,6 +727,24 @@ moves = [
   { row = "styles::menu.background" },
 ]
 
+[leaves."menu.bar_hover_background"]
+named = "UNREAD_COLOURS"
+entry = "menu.bar_hover_background"
+kind = "no receiver"
+why = "iced_aw paints an open bar title's highlight with the menus' `path`, one `Style` asked for `Active` alone (`iced_aw-0.14.1/src/widget/menu/menu_bar.rs:587`, `:598-621`, `src/style/menu_bar.rs:7-26`), and a title is the consumer's own widget"
+
+[leaves."menu.bar_hover_text_color"]
+named = "UNREAD_COLOURS"
+entry = "menu.bar_hover_text_color"
+kind = "no receiver"
+why = "iced_aw paints an open bar title's highlight with the menus' `path`, one `Style` asked for `Active` alone (`iced_aw-0.14.1/src/widget/menu/menu_bar.rs:587`, `:598-621`, `src/style/menu_bar.rs:7-26`), and a title is the consumer's own widget"
+
+[leaves."menu.bar_open_background"]
+named = "UNREAD_COLOURS"
+entry = "menu.bar_open_background"
+kind = "no receiver"
+why = "iced_aw paints an open bar title's highlight with the menus' `path`, one `Style` asked for `Active` alone (`iced_aw-0.14.1/src/widget/menu/menu_bar.rs:587`, `:598-621`, `src/style/menu_bar.rs:7-26`), and a title is the consumer's own widget"
+
 [leaves."menu.border.color"]
 named = "UNREAD_COLOURS"
 entry = "menu.border.color"
@@ -742,6 +766,11 @@ moves = [
 moves = [
   { row = "styles::aw::menu.path", statuses = ["Active", "Disabled", "Focused", "Hovered", "Pressed", "Selected"] },
   { row = "styles::menu.selected_background" },
+]
+
+[leaves."menu.hover_border_color"]
+moves = [
+  { row = "styles::aw::menu.path.border", statuses = ["Active", "Disabled", "Focused", "Hovered", "Pressed", "Selected"] },
 ]
 
 [leaves."menu.hover_text_color"]
@@ -1112,6 +1141,7 @@ moves = [
 
 [leaves."toolbar.background_color"]
 moves = [
+  { row = "styles::aw::menu.bar_background", statuses = ["Active", "Disabled", "Focused", "Hovered", "Pressed", "Selected"] },
   { row = "styles::toolbar.background" },
 ]
 
@@ -1165,7 +1195,6 @@ moves = [
 [leaves."window.background_color"]
 moves = [
   { row = "styles::application.background_color" },
-  { row = "styles::aw::menu.bar_background", statuses = ["Active", "Disabled", "Focused", "Hovered", "Pressed", "Selected"] },
 ]
 
 [leaves."window.border.color"]
@@ -1321,7 +1350,7 @@ leaves = ["defaults.text_color"]
 
 [rows."styles::aw::menu.bar_background"]
 cfg = "iced_aw"
-leaves = ["window.background_color"]
+leaves = ["toolbar.background_color"]
 
 [rows."styles::aw::menu.menu.border"]
 cfg = "iced_aw"
@@ -1334,6 +1363,10 @@ leaves = ["menu.background_color"]
 [rows."styles::aw::menu.path"]
 cfg = "iced_aw"
 leaves = ["menu.hover_background"]
+
+[rows."styles::aw::menu.path.border"]
+cfg = "iced_aw"
+leaves = ["menu.hover_border_color"]
 
 [rows."styles::aw::selection_list.background"]
 cfg = "iced_aw"

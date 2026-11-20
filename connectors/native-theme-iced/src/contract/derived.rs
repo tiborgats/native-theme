@@ -896,37 +896,6 @@ pub(super) const DERIVED: &[(&str, &str)] = &[
     ),
     #[cfg(feature = "iced_aw")]
     (
-        "styles::aw::menu.path.border.color",
-        "iced_aw default: menu_bar::primary(..).path_border -- the model has \
-         no border round a highlighted row",
-    ),
-    #[cfg(feature = "iced_aw")]
-    (
-        "styles::aw::menu.path.border.width",
-        "iced_aw default: menu_bar::primary(..).path_border -- the same",
-    ),
-    #[cfg(feature = "iced_aw")]
-    (
-        "styles::aw::menu.path.border.radius.top_left",
-        "iced_aw default: menu_bar::primary(..).path_border -- the same",
-    ),
-    #[cfg(feature = "iced_aw")]
-    (
-        "styles::aw::menu.path.border.radius.top_right",
-        "iced_aw default: menu_bar::primary(..).path_border -- the same",
-    ),
-    #[cfg(feature = "iced_aw")]
-    (
-        "styles::aw::menu.path.border.radius.bottom_right",
-        "iced_aw default: menu_bar::primary(..).path_border -- the same",
-    ),
-    #[cfg(feature = "iced_aw")]
-    (
-        "styles::aw::menu.path.border.radius.bottom_left",
-        "iced_aw default: menu_bar::primary(..).path_border -- the same",
-    ),
-    #[cfg(feature = "iced_aw")]
-    (
         "styles::aw::tab_bar.border_color",
         "iced_aw default: tab_bar::primary(..).border_color -- TabTheme states \
          one border and it is the tab's, not the strip's",
@@ -1292,6 +1261,50 @@ pub(super) const UNREACHABLE: &[Unreachable] = &[
     },
     #[cfg(feature = "iced_aw")]
     Unreachable {
+        field: "list.hover_border_color",
+        evidence: "a `SelectionList` fills a hovered row with a quad whose \
+             border is hardcoded 0 wide (`selection_list/list.rs:226-249`)",
+        lost: |_, r| r.list.hover_border_color.and_then(lost_color),
+        exceptions: &[
+            (
+                "adwaita/light",
+                "the preset states no row outline, a soft option, so there is none to lose",
+            ),
+            ("adwaita/dark", "the same"),
+            ("windows-11/light", "the same"),
+            ("windows-11/dark", "the same"),
+            ("macos-monterey/light", "the same"),
+            ("macos-monterey/dark", "the same"),
+            ("macos-tahoe/light", "the same"),
+            ("macos-tahoe/dark", "the same"),
+            ("material-3/light", "the same"),
+            ("material-3/dark", "the same"),
+            ("ios-13/light", "the same"),
+            ("ios-13/dark", "the same"),
+            ("catppuccin-latte/light", "the same"),
+            ("catppuccin-latte/dark", "the same"),
+            ("catppuccin-frappe/light", "the same"),
+            ("catppuccin-frappe/dark", "the same"),
+            ("catppuccin-macchiato/light", "the same"),
+            ("catppuccin-macchiato/dark", "the same"),
+            ("catppuccin-mocha/light", "the same"),
+            ("catppuccin-mocha/dark", "the same"),
+            ("nord/light", "the same"),
+            ("nord/dark", "the same"),
+            ("dracula/light", "the same"),
+            ("dracula/dark", "the same"),
+            ("gruvbox/light", "the same"),
+            ("gruvbox/dark", "the same"),
+            ("solarized/light", "the same"),
+            ("solarized/dark", "the same"),
+            ("tokyo-night/light", "the same"),
+            ("tokyo-night/dark", "the same"),
+            ("one-dark/light", "the same"),
+            ("one-dark/dark", "the same"),
+        ],
+    },
+    #[cfg(feature = "iced_aw")]
+    Unreachable {
         field: "list.border.corner_radius",
         evidence: "`selection_list::Style` carries no radius, and `iced_aw` \
              outlines the list with a hardcoded `radius: (0.0).into()` \
@@ -1519,6 +1532,13 @@ const WINDOW_FRAME: &str = "iced's window takes `decorations: bool` -- whether t
      OS draws a border and a title bar at all -- and nothing to colour them \
      with (`iced_core-0.14.0/src/window/settings.rs:65-66`)";
 
+/// A menu bar's titles are the consumer's own widgets.
+#[cfg(feature = "iced_aw")]
+const MENU_BAR_TITLE: &str = "iced_aw paints an open bar title's highlight with the \
+     menus' `path`, one `Style` asked for `Active` alone \
+     (`iced_aw-0.14.1/src/widget/menu/menu_bar.rs:587`, `:598-621`, \
+     `src/style/menu_bar.rs:7-26`), and a title is the consumer's own widget";
+
 /// iced's text fields draw the selected text in the value colour: the
 /// selection is a fill behind it.
 #[cfg(feature = "iced_aw")]
@@ -1701,6 +1721,18 @@ pub(super) const UNREAD_COLOURS: &[UnreadColour] = &[
              `menu_bar::Style` backgrounds, borders and shadows only \
              (`style/menu_bar.rs:7-26`)",
         ),
+    },
+    UnreadColour {
+        leaf: "menu.bar_hover_background",
+        why: Unread::NoReceiver(MENU_BAR_TITLE),
+    },
+    UnreadColour {
+        leaf: "menu.bar_open_background",
+        why: Unread::NoReceiver(MENU_BAR_TITLE),
+    },
+    UnreadColour {
+        leaf: "menu.bar_hover_text_color",
+        why: Unread::NoReceiver(MENU_BAR_TITLE),
     },
     UnreadColour {
         leaf: "menu.separator_color",

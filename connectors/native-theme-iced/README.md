@@ -314,6 +314,11 @@ container(iced_aw::Spinner::new()).style(styles::aw::spinner(&resolved))
 # }
 ```
 
+`menu`'s `path_border` outlines the highlight in `menu.hover_border_color`
+where the theme states one, but `iced_aw` draws the path only under
+`DrawPath::Backdrop`, not its default (see
+[What iced cannot take](#what-iced-cannot-take)).
+
 `Card::on_close` is the one receiver `iced_aw` 0.14.1 does not honour: it
 styles the close button with its *default* card class, not the one
 `.style(..)` was given (`widget/card.rs:193-206`), so the icon is that class's
@@ -667,13 +672,30 @@ in none of them:
   corner radius, and casts `iced_aw`'s shadow where
   `popover.border.shadow_enabled` states one. The drop-down's panel and an
   `iced_aw` menu's panels fill from `menu.background_color`; an `iced_aw`
-  `MenuBar` itself lies on `window.background_color`, unframed. Neither
-  draws the colour or width of a `menu.border` a theme states.
+  `MenuBar` itself lies on `toolbar.background_color`, the tools area's
+  fill, unframed. Neither draws the colour or width of a `menu.border` a
+  theme states.
   A dialog and a toolbar are no iced widgets either; they are containers the
   application draws, which `styles::dialog`, `styles::toolbar`,
   `styles::toolbar_rule` and the `dialog_*` and `toolbar_*` helpers style.
   `dialog.entrance` and `dialog.icon_size` reach nothing: no iced widget
   animates a dialog's entrance or draws its type icon.
+- **Menu items.** `iced_aw` paints a menu's highlight, `path`, and its
+  outline, `path_border` (`menu.hover_border_color`), only under
+  `DrawPath::Backdrop`; under its default, `FakeHovering`, the highlight is
+  the item's own widget, and under `Backdrop` it also outlines an open bar
+  title, which Breeze does not. A menu's items and a menu bar's titles are
+  the application's own widgets: the hovered item's outline, the titles'
+  fills (`menu.bar_hover_background`, `.bar_open_background`,
+  `.bar_hover_text_color`) and their padding (`menu.bar_padding_*`) are
+  drawn where the application builds them, as the showcase's `menu_row`,
+  `menu_title` and `title_padding` do. iced's drop-down outlines no
+  highlighted row: its menu `Style` has no border for one
+  (`iced_widget` 0.14.2 `src/overlay/menu.rs:598-611`).
+- **Lists and tables.** A `SelectionList` fills a hovered row with a quad
+  whose border is hardcoded 0 wide, so `list.hover_border_color` has no
+  receiver there; a list built of the application's own rows outlines a
+  hovered row as the showcase's `list_row` does.
 - **The window frame.** iced takes no colour for the title bar or the window
   border (`window::Settings::decorations` is a `bool`); it passes the
   theme's light or dark flag to the window, which `to_theme_in`,

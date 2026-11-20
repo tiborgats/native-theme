@@ -362,8 +362,8 @@
 //!   states one; so a theme's `menu.border` colour and width reach neither.
 //!   The drop-down's panel and an `iced_aw` menu's panels fill from
 //!   `menu.background_color`; an `iced_aw` `MenuBar` itself lies on
-//!   `window.background_color`, unframed. A dialog, which neither iced nor
-//!   `iced_aw` has either, is the consumer's
+//!   `toolbar.background_color`, the tools area's fill, unframed. A dialog,
+//!   which neither iced nor `iced_aw` has either, is the consumer's
 //!   `container`, which `styles::dialog` and the `dialog_*` helpers style;
 //!   `dialog.entrance` and `.icon_size` reach nothing: no iced widget
 //!   animates a dialog's entrance, and iced has no dialog widget to draw a

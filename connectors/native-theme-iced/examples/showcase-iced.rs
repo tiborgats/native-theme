@@ -71,7 +71,7 @@ use native_theme::icons::{
 };
 use native_theme::theme::{
     ArrowSide, FontStyle, IconSet, LayoutTheme, ResolvedFontSpec, ResolvedListTheme,
-    ResolvedTextScale, ResolvedTextScaleEntry, ResolvedTheme,
+    ResolvedMenuTheme, ResolvedTextScale, ResolvedTextScaleEntry, ResolvedTheme,
 };
 use native_theme_iced::icons::to_svg_handle;
 use native_theme_iced::palette::to_color;
@@ -4761,11 +4761,17 @@ fn ghost_padding(resolved: &ResolvedTheme) -> Padding {
     native_theme_iced::padding_or(&resolved.button.border.padding, button::DEFAULT_PADDING)
 }
 
-/// A menu's title and its rows, as the model's menu item (platform-facts
-/// §2.6): no fill at rest, its label `menu.font.color`;
-/// `menu.hover_background` and `.hover_text_color` under the pointer and
-/// while pressed; `menu.disabled_text_color` disabled; rounded by
-/// `menu.border.corner_radius`, 0 where the items are rectangular.
+/// A menu's row, as the model's menu item (platform-facts §2.6): no fill at
+/// rest, its label `menu.font.color`; `menu.hover_background` and
+/// `.hover_text_color` under the pointer and while pressed, outlined in
+/// `menu.hover_border_color` where the theme states it,
+/// `defaults.border.line_width` wide; `menu.disabled_text_color` disabled;
+/// rounded by `menu.border.corner_radius`, 0 where the items are
+/// rectangular. iced draws a button's border on its bounds, over the padding
+/// (iced_widget 0.14.2 `src/button.rs:379-385`), so the outline moves
+/// nothing; and it paints the border in place of the fill under it, so the
+/// outline's colour is composited over the hover fill, as Breeze lays the
+/// line over it.
 fn menu_row(resolved: &ResolvedTheme) -> impl Fn(&Theme, button::Status) -> button::Style + use<> {
     let m = &resolved.menu;
     let label = to_color(m.font.color);
@@ -4773,43 +4779,91 @@ fn menu_row(resolved: &ResolvedTheme) -> impl Fn(&Theme, button::Status) -> butt
     let hover_label = to_color(m.hover_text_color);
     let disabled_label = to_color(m.disabled_text_color);
     let radius = m.border.corner_radius;
+    let plain = iced::Border::default().rounded(radius);
+    let edge = m.hover_border_color.map(|c| iced::Border {
+        color: styles::composite_over(to_color(c), hover),
+        width: resolved.defaults.border.line_width,
+        ..plain
+    });
     move |_theme, status| {
-        let (background, text_color) = match status {
-            button::Status::Active => (None, label),
-            button::Status::Hovered | button::Status::Pressed => (Some(hover), hover_label),
-            button::Status::Disabled => (None, disabled_label),
+        let (background, text_color, border) = match status {
+            button::Status::Active => (None, label, plain),
+            button::Status::Hovered | button::Status::Pressed => {
+                (Some(hover), hover_label, edge.unwrap_or(plain))
+            }
+            button::Status::Disabled => (None, disabled_label, plain),
         };
         button::Style {
             background: background.map(iced::Background::Color),
             text_color,
-            border: iced::Border::default().rounded(radius),
+            border,
             ..button::Style::default()
         }
     }
 }
 
-/// A menu bar's title: a menu item ([`menu_row`]); while its menu is `open`,
-/// the bar's current item, drawn as a hovered title whether or not the
-/// pointer is on it, as a desktop menu bar marks the item whose menu is
-/// open: `menu.hover_background` under `menu.hover_text_color`. `iced_aw`
-/// marks it only by handing the titles a pointer at the open one's centre
-/// as its menu takes an event (`DrawPath::FakeHovering`, the bar's
-/// default, iced_aw 0.14.1 `src/widget/menu/menu_bar.rs:143`,
+/// A menu bar's title (platform-facts §2.6): no fill at rest, its label
+/// `menu.font.color`; under the pointer `menu.bar_hover_background`, else
+/// `menu.hover_background`; while its menu is `open` or the title is pressed
+/// `menu.bar_open_background`, else the hover fill; lettered
+/// `menu.bar_hover_text_color`, else `menu.hover_text_color`, in both;
+/// `menu.disabled_text_color` disabled; rounded by
+/// `menu.border.corner_radius`, with no outline. With the three bar fields
+/// unstated it is a hovered [`menu_row`] in every lit status, without the
+/// row's outline. The open title is the bar's current item, drawn so whether
+/// or not the pointer is on it, as a desktop menu bar marks the item whose
+/// menu is open. `iced_aw` marks it only by handing the titles a pointer at
+/// the open one's centre as its menu takes an event
+/// (`DrawPath::FakeHovering`, the bar's default, iced_aw 0.14.1
+/// `src/widget/menu/menu_bar.rs:143`,
 /// `src/widget/menu/menu_bar_overlay.rs:382-422`), which a held menu
-/// ([`HeldOverlay`]) is never handed.
+/// ([`HeldOverlay`]) is never handed. On the Extra page (`menu_root` passes
+/// `open: false`) an open title is known only by that fake pointer and shows
+/// `menu.bar_hover_background`, equal to the open fill in Breeze's schemes.
 fn menu_title(
     resolved: &ResolvedTheme,
     open: bool,
 ) -> impl Fn(&Theme, button::Status) -> button::Style + use<> {
-    let row = menu_row(resolved);
-    move |theme, status| {
-        row(
-            theme,
-            match status {
-                button::Status::Active if open => button::Status::Hovered,
-                other => other,
-            },
-        )
+    let m = &resolved.menu;
+    let label = to_color(m.font.color);
+    let hover = m.bar_hover_background.unwrap_or(m.hover_background);
+    let open_fill = to_color(m.bar_open_background.unwrap_or(hover));
+    let hover = to_color(hover);
+    let lit = to_color(m.bar_hover_text_color.unwrap_or(m.hover_text_color));
+    let disabled_label = to_color(m.disabled_text_color);
+    let plain = iced::Border::default().rounded(m.border.corner_radius);
+    move |_theme, status| {
+        let (background, text_color) = match status {
+            button::Status::Disabled => (None, disabled_label),
+            _ if open => (Some(open_fill), lit),
+            button::Status::Pressed => (Some(open_fill), lit),
+            button::Status::Hovered => (Some(hover), lit),
+            button::Status::Active => (None, label),
+        };
+        button::Style {
+            background: background.map(iced::Background::Color),
+            text_color,
+            border: plain,
+            ..button::Style::default()
+        }
+    }
+}
+
+/// A menu bar title's padding: left and right `menu.bar_padding_horizontal`,
+/// top and bottom `menu.bar_padding_vertical`, each pair `rows`' sides where
+/// the theme leaves it unstated (`rows`, the menu rows' padding).
+fn title_padding(m: &ResolvedMenuTheme, rows: Padding) -> Padding {
+    let (left, right) = m
+        .bar_padding_horizontal
+        .map_or((rows.left, rows.right), |h| (h, h));
+    let (top, bottom) = m
+        .bar_padding_vertical
+        .map_or((rows.top, rows.bottom), |v| (v, v));
+    Padding {
+        top,
+        right,
+        bottom,
+        left,
     }
 }
 
@@ -4859,11 +4913,15 @@ fn tab_style(
 /// A list row, as the model's list (platform-facts §2.15): no fill of its
 /// own over `list.background_color`, its label `list.item_font.color`;
 /// `list.selection_background` and `.selection_text_color` while selected;
-/// `list.hover_background` and `.hover_text_color` under the pointer;
-/// `list.disabled_text_color` disabled. Square: the model rounds the list's
-/// frame, not its rows; the Basic list paints this fill itself, rounded
-/// where it meets the frame ([`list_row_fill`]). A selected row's pair
-/// follows the window's state, `window_active` ([`selection_pair`]).
+/// `list.hover_background` and `.hover_text_color` under the pointer and
+/// pressed, an unselected row outlined there in `list.hover_border_color`
+/// where the theme states it, `defaults.border.line_width` wide, its colour
+/// composited over the hover fill, as iced paints a border in place of the
+/// fill under it; `list.disabled_text_color` disabled. Square: the model
+/// rounds the list's frame, not its rows; the Basic list paints this fill
+/// and its outline itself, rounded where it meets the frame
+/// ([`list_row_fill`]). A selected row's pair follows the window's state,
+/// `window_active` ([`selection_pair`]).
 fn list_row(
     resolved: &ResolvedTheme,
     selected: bool,
@@ -4875,16 +4933,25 @@ fn list_row(
     let hover = to_color(l.hover_background);
     let hover_label = to_color(l.hover_text_color);
     let disabled_label = to_color(l.disabled_text_color);
+    let edge = l
+        .hover_border_color
+        .map(|c| iced::Border {
+            color: styles::composite_over(to_color(c), hover),
+            width: resolved.defaults.border.line_width,
+            ..iced::Border::default()
+        })
+        .unwrap_or_default();
     move |_theme, status| {
-        let (background, text_color) = match status {
-            button::Status::Disabled => (None, disabled_label),
-            _ if selected => (Some(selection), selection_label),
-            button::Status::Hovered | button::Status::Pressed => (Some(hover), hover_label),
-            button::Status::Active => (None, label),
+        let (background, text_color, border) = match status {
+            button::Status::Disabled => (None, disabled_label, iced::Border::default()),
+            _ if selected => (Some(selection), selection_label, iced::Border::default()),
+            button::Status::Hovered | button::Status::Pressed => (Some(hover), hover_label, edge),
+            button::Status::Active => (None, label, iced::Border::default()),
         };
         button::Style {
             background: background.map(iced::Background::Color),
             text_color,
+            border,
             ..button::Style::default()
         }
     }
@@ -5100,7 +5167,9 @@ type UnderPaint<'a> = Box<
 >;
 
 /// A Basic list row's fill, painted under the row's button, which paints
-/// none ([`Underlay`]): [`list_row`]'s background for the row in the state
+/// none ([`Underlay`]), with [`list_row`]'s border, the hovered row's
+/// outline where the theme states one, on the fill's shape: [`list_row`]'s
+/// background for the row in the state
 /// the button takes from the cursor (Hovered and Pressed both need the
 /// cursor over the row, iced_widget 0.14.2 `src/button.rs:342-354`, and
 /// [`list_row`] fills them alike; the rows always take `on_press`, so the
@@ -5141,15 +5210,19 @@ fn list_row_fill(
         let Some((rect, radius)) = shown_fill(bounds, *viewport, edges, radius) else {
             return;
         };
+        let border = iced::Border {
+            radius,
+            ..style.border
+        };
         #[cfg(test)]
-        LIST_FILLS.with_borrow_mut(|fills| fills.push((bounds, rect, radius, background)));
+        {
+            LIST_FILLS.with_borrow_mut(|fills| fills.push((bounds, rect, radius, background)));
+            LIST_EDGES.with_borrow_mut(|edges| edges.push((bounds, border)));
+        }
         renderer.fill_quad(
             iced::advanced::renderer::Quad {
                 bounds: rect,
-                border: iced::Border {
-                    radius,
-                    ..style.border
-                },
+                border,
                 shadow: style.shadow,
                 snap: style.snap,
             },
@@ -5165,6 +5238,15 @@ thread_local! {
     static LIST_FILLS: std::cell::RefCell<
         Vec<(iced::Rectangle, iced::Rectangle, iced::border::Radius, iced::Background)>,
     > = const { std::cell::RefCell::new(Vec::new()) };
+    /// The borders [`list_row_fill`] has painted its fills with on this
+    /// thread: each row's bounds and the fill's border, its outline where
+    /// [`list_row`] gives one.
+    static LIST_EDGES: std::cell::RefCell<Vec<(iced::Rectangle, iced::Border)>> =
+        const { std::cell::RefCell::new(Vec::new()) };
+    /// The borders the Basic list's row buttons have been styled with on
+    /// this thread, each with the status it was asked for.
+    static LIST_ROW_BORDERS: std::cell::RefCell<Vec<(button::Status, iced::Border)>> =
+        const { std::cell::RefCell::new(Vec::new()) };
 }
 
 /// `content`, drawn over what `paint` paints first; in all else the
@@ -5513,16 +5595,18 @@ fn icon_button<'a>(state: &'a State, spec: IconButton<'a>) -> Element<'a, Messag
 }
 
 /// The menu-bar row (spec S8), the gpui showcase's menus with the same items,
-/// separators and key bindings, in `iced_aw`'s `MenuBar`: each title and row
-/// a button in [`menu_row`], in `menu.font`, padded by `menu.border.padding`
-/// (iced's button padding on a side it leaves unstated), `menu.row_height`
-/// tall where the theme states one, grown above a text scale of 1 to hold
-/// the row's line and padding; the rows' separators
-/// `separator.line_width` thick in `menu.separator_color`. The row has the
-/// window's `window.background_color` and no frame; a menu's panel is
-/// `menu.background_color`, framed by the popover's border (platform-facts
-/// §2.6: the popup border is §2.16's); its open title the bar's current
-/// item ([`menu_title`]). The row's sides are `layout.container_margin`, as
+/// separators and key bindings, in `iced_aw`'s `MenuBar`: each row a button
+/// in [`menu_row`], in `menu.font`, padded by `menu.border.padding` (iced's
+/// button padding on a side it leaves unstated), `menu.row_height` tall
+/// where the theme states one, grown above a text scale of 1 to hold the
+/// row's line and padding; each title a button in [`menu_title`], padded by
+/// [`title_padding`]; the rows' separators `separator.line_width` thick in
+/// `menu.separator_color`. The row, its margins too, has the tools area's
+/// `toolbar.background_color`, as the bar and the toolbar under it, and no
+/// frame; a menu's panel is `menu.background_color`, framed by the popover's
+/// border (platform-facts §2.6: the popup border is §2.16's); its open title
+/// the bar's current item ([`menu_title`]). The row's sides are
+/// `layout.container_margin`, as
 /// the gpui showcase's, and [`MENU_BAR_PADDING`] where that is unstated: the
 /// model states no menu-bar inset.
 fn menu_bar(state: &State) -> Element<'_, Message> {
@@ -5548,7 +5632,7 @@ fn menu_bar(state: &State) -> Element<'_, Message> {
         tagged(
             id,
             button(text(label).themed(&m.font, resolved, a11y))
-                .padding(pad)
+                .padding(title_padding(m, pad))
                 .style(menu_title(resolved, state.menu_title_open == Some(index)))
                 .on_press(Message::MenuOpened),
         )
@@ -5741,11 +5825,16 @@ fn menu_bar(state: &State) -> Element<'_, Message> {
         None => bar,
     };
     let side = state.layout.container_margin.unwrap_or(MENU_BAR_PADDING);
+    let fill = to_color(resolved.toolbar.background_color);
     tagged(
         "chrome.menu_bar",
         container(bar)
             .padding(Padding::ZERO.left(side).right(side))
-            .width(Fill),
+            .width(Fill)
+            .style(move |_theme: &Theme| container::Style {
+                background: Some(iced::Background::Color(fill)),
+                ..container::Style::default()
+            }),
     )
     .into()
 }
@@ -6569,7 +6658,9 @@ fn page_tabs(state: &State) -> Element<'_, Message> {
 /// `IconRole::NavDown` at `defaults.icon_sizes.small`, or "Pages" where the
 /// set has none, opening a menu of every page in [`menu_row`]s. Unlike the
 /// gpui showcase's, the shown page carries no check mark: the model's menu
-/// states no checked row.
+/// states no checked row. Its one-item bar lies in the page tab row, so it
+/// keeps the window's `window.background_color` where [`menu_bar_style`]
+/// gives the window's menu bar the toolbar's fill.
 fn page_menu(state: &State) -> Element<'_, Message> {
     let resolved = &state.current_resolved;
     let a11y = &state.accessibility;
@@ -6632,19 +6723,33 @@ fn page_menu(state: &State) -> Element<'_, Message> {
             .offset(menu_popup_padding(resolved).top)
             .padding(menu_popup_padding(resolved)),
     )])
-    .style(menu_bar_style(resolved))
+    .style({
+        let style = menu_bar_style(resolved);
+        let window = iced::Background::Color(to_color(resolved.window.background_color));
+        move |theme, status| iced_aw::style::menu_bar::Style {
+            bar_background: window,
+            ..style(theme, status)
+        }
+    })
     .into()
 }
 
 /// The style of the window's menu bar and of the page tabs' menu, from the
-/// model's leaves: the bar is the window's `window.background_color` with no
-/// frame; a menu's panel `menu.background_color`, framed by the popover's
-/// border (platform-facts §2.6: the popup border is §2.16's); the open
-/// title's highlight `menu.hover_background`. The panel casts a shadow only
-/// where `popover.border.shadow_enabled` states one; its geometry, the
-/// bar's shadow and the highlight's border have no source -- the model has
-/// a shadow colour but no shadow geometry, and no border round a highlighted
-/// row -- and are `iced_aw`'s own (`menu_bar::primary`).
+/// model's leaves: the bar is the tools area's fill,
+/// `toolbar.background_color`, with no frame (Breeze fills the menu bar and
+/// the toolbars as one area; on every other bundled preset it resolves to
+/// `defaults.background_color`, as the window's does); a menu's panel
+/// `menu.background_color`, framed by the popover's border (platform-facts
+/// §2.6: the popup border is §2.16's); the open title's highlight
+/// `menu.hover_background`, outlined in `menu.hover_border_color` where the
+/// theme states it, composited over the highlight,
+/// `defaults.border.line_width` wide and rounded by
+/// `menu.border.corner_radius`, `iced_aw`'s own outline where it states none.
+/// The panel casts a shadow only where `popover.border.shadow_enabled` states
+/// one; its geometry and the bar's shadow have no source -- the model has a
+/// shadow colour but no shadow geometry -- and are `iced_aw`'s own
+/// (`menu_bar::primary`). The page tabs' menu keeps the window's fill under
+/// its caret ([`page_menu`]).
 ///
 /// The same `Style` as the connector's `styles::aw::menu`, which the Extra
 /// page shows and `the_window_menus_draw_as_the_connectors` holds it to:
@@ -6653,9 +6758,15 @@ fn page_menu(state: &State) -> Element<'_, Message> {
 fn menu_bar_style(
     resolved: &ResolvedTheme,
 ) -> impl Fn(&Theme, iced_aw::style::Status) -> iced_aw::style::menu_bar::Style + use<> {
-    let bar = to_color(resolved.window.background_color);
-    let panel = to_color(resolved.menu.background_color);
-    let highlight = to_color(resolved.menu.hover_background);
+    let m = &resolved.menu;
+    let bar = to_color(resolved.toolbar.background_color);
+    let panel = to_color(m.background_color);
+    let highlight = to_color(m.hover_background);
+    let outline = m.hover_border_color.map(|c| iced::Border {
+        color: styles::composite_over(to_color(c), highlight),
+        width: resolved.defaults.border.line_width,
+        radius: iced::border::Radius::new(m.border.corner_radius),
+    });
     let popup = &resolved.popover.border;
     let frame = iced::Border {
         color: to_color(popup.color),
@@ -6677,7 +6788,7 @@ fn menu_bar_style(
                 iced::Shadow::default()
             },
             path: iced::Background::Color(highlight),
-            path_border: iced.path_border,
+            path_border: outline.unwrap_or(iced.path_border),
         }
     }
 }
@@ -8375,15 +8486,59 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         // ---- menu and popover ----
         ("menu", "background_color") => "menu_bar_style: menu_background".into(),
         ("menu", "font") => "the row's text size and theme_font".into(),
+        ("menu", "font.color") if under("chrome.menu_bar.") => {
+            "menu_title: text_color at rest".into()
+        }
         ("menu", "font.color") => "menu_row: text_color at rest".into(),
+        ("menu", "hover_background") if under("chrome.menu_bar.") => {
+            "menu_title: the Hovered fill where menu.bar_hover_background is unstated; \
+             menu_bar_style: path"
+                .into()
+        }
         ("menu", "hover_background") => "menu_row: the Hovered fill; menu_bar_style: path".into(),
+        ("menu", "hover_text_color") if under("chrome.menu_bar.") => {
+            "menu_title: the Hovered text_color where menu.bar_hover_text_color is unstated"
+                .into()
+        }
         ("menu", "hover_text_color") => "menu_row: the Hovered text_color".into(),
+        ("menu", "bar_hover_background") => "menu_title: the Hovered fill".into(),
+        ("menu", "bar_open_background") => {
+            "menu_title: the fill while its menu is open and while pressed".into()
+        }
+        ("menu", "bar_hover_text_color") => {
+            "menu_title: the text_color under the pointer, while pressed and while its menu \
+             is open"
+                .into()
+        }
+        ("menu", "bar_padding_horizontal_px") => {
+            "title_padding: the title button's left and right padding".into()
+        }
+        ("menu", "bar_padding_vertical_px") => {
+            "title_padding: the title button's top and bottom padding".into()
+        }
+        ("menu", "hover_border_color") => {
+            "menu_row: the Hovered and Pressed border; menu_bar_style: path_border".into()
+        }
+        ("menu", "border.corner_radius_px") if under("chrome.menu_bar.") => {
+            "menu_title: the title's border radius".into()
+        }
+        ("menu", "border.corner_radius_px") => "menu_row: the row's border radius".into(),
+        ("defaults", "border.line_width_px") if under("chrome.menu.") => {
+            "menu_row: the Hovered and Pressed border's width, where menu.hover_border_color \
+             is stated"
+                .into()
+        }
         ("menu", "row_height_px") => {
             "the row button's height, where stated, grown above a text scale of 1 to hold \
              its line and padding (rows::scaled_height)"
                 .into()
         }
         ("menu", "separator_color") => "line_style: the rule's colour".into(),
+        ("menu", f) if side(f).is_some() && under("chrome.menu_bar.") => {
+            "title_padding: Button::padding where menu.bar_padding_* leaves it unstated, \
+             iced's own on an unstated side"
+                .into()
+        }
         ("menu", f) if side(f).is_some() => "Button::padding, iced's own on an unstated side".into(),
         ("popover", "border.color") => "menu_bar_style: menu_border.color".into(),
         ("popover", "border.corner_radius_px") => "menu_bar_style: menu_border.radius".into(),
@@ -8683,8 +8838,19 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         ("list", "hover_text_color") if under("basic.table.") => {
             "not reachable: the table's rows are containers, not hoverable".into()
         }
+        ("list", "hover_border_color") | ("defaults", "border.line_width_px")
+            if under("basic.table.") =>
+        {
+            "not reachable: the table's rows are containers, not hoverable".into()
+        }
         ("list", "hover_background") => "list_row: the Hovered fill".into(),
         ("list", "hover_text_color") => "list_row: the Hovered text_color".into(),
+        ("list", "hover_border_color") => "list_row: the Hovered border".into(),
+        ("defaults", "border.line_width_px") if under("basic.list.") => {
+            "list_row_fill: the hovered row's outline width, where list.hover_border_color \
+             is stated (list_row's border)"
+                .into()
+        }
         ("list", "border.color") if under("basic.table.") => {
             "basic_table: the frame container's border.color".into()
         }
@@ -8821,8 +8987,8 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         ("window", "background_color") if id == "chrome.window" => {
             "surface: the window container's background".into()
         }
-        ("window", "background_color") if id == "chrome.menu_bar" => {
-            "menu_bar_style: bar_background".into()
+        ("toolbar", "background_color") if id == "chrome.menu_bar" => {
+            "menu_bar_style: bar_background, under the row's container (menu_bar)".into()
         }
         ("window", "background_color") => {
             "surface: the window container's background, which shows through".into()
@@ -10065,6 +10231,7 @@ fn aw_menu_inks(s: &iced_aw::style::menu_bar::Style) -> Vec<(&'static str, Ink)>
         ("menu_background", Ink::of(Some(s.menu_background))),
         ("menu.border", Ink::edge(s.menu_border)),
         ("path", Ink::of(Some(s.path))),
+        ("path.border", Ink::edge(s.path_border)),
     ]
 }
 
@@ -11671,10 +11838,19 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
             .width(Fill)
             .height(Length::Fixed(row_height))
             .style({
+                // The fill and its outline are `list_row_fill`'s, so the
+                // button draws neither.
                 let row = list_row(resolved, selected, state.window_active);
-                move |theme, status| button::Style {
-                    background: None,
-                    ..row(theme, status)
+                move |theme, status| {
+                    let style = button::Style {
+                        background: None,
+                        border: iced::Border::default(),
+                        ..row(theme, status)
+                    };
+                    #[cfg(test)]
+                    LIST_ROW_BORDERS
+                        .with_borrow_mut(|borders| borders.push((status, style.border)));
+                    style
                 }
             })
             .on_press(Message::BasicListSelected(i)),
@@ -15684,24 +15860,39 @@ fn aw_card_info(state: &State) -> String {
 /// The Widget Info of the Extra page's iced_aw MenuBar and context menu.
 fn aw_menu_info(state: &State) -> String {
     let resolved = &state.current_resolved;
+    let mut paints = aw_paints(
+        state,
+        "styles::aw::menu",
+        styles::aw::menu(resolved),
+        aw_menu_inks,
+        &[(
+            AwStatus::Active,
+            &[
+                ("bar", "bar_background"),
+                ("panel", "menu_background"),
+                ("open path", "path"),
+                ("panel border", "menu.border"),
+            ],
+        )],
+        &line_zero("popover"),
+    );
+    // The path's outline is 0 wide where the theme states none, iced_aw's
+    // own, or where it states one at a 0 line width.
+    let path_zero = match resolved.menu.hover_border_color {
+        Some(_) => line_zero("defaults"),
+        None => "menu.hover_border_color unstated".to_owned(),
+    };
+    paints.extend(aw_paints(
+        state,
+        "styles::aw::menu",
+        styles::aw::menu(resolved),
+        aw_menu_inks,
+        &[(AwStatus::Active, &[("path border", "path.border")])],
+        &path_zero,
+    ));
     widget_tooltip(
         "MenuBar / Menu",
-        &aw_paints(
-            state,
-            "styles::aw::menu",
-            styles::aw::menu(resolved),
-            aw_menu_inks,
-            &[(
-                AwStatus::Active,
-                &[
-                    ("bar", "bar_background"),
-                    ("panel", "menu_background"),
-                    ("open path", "path"),
-                    ("panel border", "menu.border"),
-                ],
-            )],
-            &line_zero("popover"),
-        ),
+        &paints,
         &[
             (
                 "item height",
@@ -15729,9 +15920,26 @@ fn aw_menu_info(state: &State) -> String {
                  are our own buttons, drawn as the window's menus' are: \
                  menu_row, menu.font.color at rest with no fill, \
                  menu.hover_text_color on menu.hover_background under the \
-                 pointer and while pressed, menu.disabled_text_color \
-                 disabled; a title menu_title, the menu row iced_aw marks \
-                 while its menu is open",
+                 pointer and while pressed, outlined in \
+                 menu.hover_border_color where stated, \
+                 menu.disabled_text_color disabled; a title menu_title, \
+                 menu.bar_hover_background (else menu.hover_background) \
+                 under the pointer and while iced_aw marks its menu open, \
+                 lettered menu.bar_hover_text_color (else \
+                 menu.hover_text_color), with no outline",
+            ),
+            (
+                "title padding",
+                "title_padding: menu.bar_padding_horizontal and \
+                 .bar_padding_vertical where stated, the item padding's sides \
+                 where unstated",
+            ),
+            (
+                "draw path",
+                "iced_aw paints path and path border only under \
+                 DrawPath::Backdrop (widget/menu/menu_bar.rs:598-621, \
+                 menu_tree.rs:783-801); these menus keep its default, \
+                 FakeHovering, so the highlight shown is menu_row's",
             ),
             (
                 "panel padding",
@@ -16095,8 +16303,9 @@ fn view_extra(state: &State) -> Element<'_, Message> {
     // ---- MenuBar and Menu ----
 
     // The items are menu rows, as the window's menu bar's are (`menu_row`,
-    // the titles `menu_title`), padded like the platform's menu items: the
-    // sides menu.border.padding states, a button's own elsewhere. A theme
+    // the titles `menu_title`, padded by `title_padding`), padded like the
+    // platform's menu items: the sides menu.border.padding states, a
+    // button's own elsewhere. A theme
     // that states no row height (KDE's items fit content, with a floor) leaves the
     // item its own height; a stated one grows above a text scale of 1 to
     // hold the row's line and padding, as the window's menu rows do
@@ -16154,7 +16363,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
             button(text(label).themed(&menu_t.font, resolved, a11y))
                 .on_press(Message::AwActionChosen(format!("Menu: {label}")))
                 .style(menu_title(resolved, false))
-                .padding(item_pad),
+                .padding(title_padding(menu_t, item_pad)),
         )
     };
     let popup_pad = aw_menu_padding(resolved);
@@ -27818,7 +28027,9 @@ mod tests {
     /// `menu.row_height` grows above a text scale of 1 to hold its line and
     /// padding, as the window's rows do (`rows::scaled_height`). At 1 and at
     /// 1.5 the File title is the line box of `menu.font` at its scaled size
-    /// and `defaults.line_height` plus `menu.border.padding` above and below;
+    /// and `defaults.line_height` plus its padding above and below,
+    /// `menu.bar_padding_vertical` where stated (kde-breeze), else
+    /// `menu.border.padding` ([`title_padding`]);
     /// the File menu's first row is `menu.row_height` at 1 and at least that
     /// line box, rounded up, plus the padding at 1.5 (adwaita,
     /// macos-monterey, material-3), and the line box plus the padding where
@@ -27852,7 +28063,11 @@ mod tests {
             let (_, rects, _) = extra_frame(&state, open_extra_file_menu);
             let (_, context, _) = extra_frame(&state, open_extra_context_menu);
             for (what, at, want) in [
-                ("the File title", rects.get(probes::AW_FILE), line + pad.y()),
+                (
+                    "the File title",
+                    rects.get(probes::AW_FILE),
+                    line + title_padding(m, pad).y(),
+                ),
                 (
                     "the File menu's first row",
                     rects.get(probes::AW_NEW_WINDOW),
@@ -30205,6 +30420,394 @@ mod tests {
                 }
             }
         }
+    }
+
+    /// The bundled combination `label` (`<preset>/<mode>`), resolved as
+    /// [`bundled_combinations`] resolves it.
+    fn bundled(label: &str) -> ResolvedTheme {
+        match bundled_combinations().into_iter().find(|(l, _)| l == label) {
+            Some((_, r)) => r,
+            None => panic!("{label} is not bundled"),
+        }
+    }
+
+    /// Issue #4's leftovers, E1 (docs/issues/0004_kde-leftovers-rationale.md):
+    /// under kde-breeze a hovered menu row is outlined in Breeze's
+    /// `focusOutlineColor()`, #399acc light and #5abaec dark, 1 px wide and
+    /// rounded 4.5 as its highlight; a pressed one keeps the hovered look,
+    /// outline included, as no `menu.active_background` is stated (S4). Under
+    /// adwaita, which states no outline, every status is what [`menu_row`]
+    /// drew before the outline, whose body this test keeps.
+    #[test]
+    fn menu_rows_outline_and_press_as_stated() {
+        fn todays_menu_row(
+            resolved: &ResolvedTheme,
+        ) -> impl Fn(&Theme, button::Status) -> button::Style + use<> {
+            let m = &resolved.menu;
+            let label = to_color(m.font.color);
+            let hover = to_color(m.hover_background);
+            let hover_label = to_color(m.hover_text_color);
+            let disabled_label = to_color(m.disabled_text_color);
+            let radius = m.border.corner_radius;
+            move |_theme, status| {
+                let (background, text_color) = match status {
+                    button::Status::Active => (None, label),
+                    button::Status::Hovered | button::Status::Pressed => (Some(hover), hover_label),
+                    button::Status::Disabled => (None, disabled_label),
+                };
+                button::Style {
+                    background: background.map(iced::Background::Color),
+                    text_color,
+                    border: iced::Border::default().rounded(radius),
+                    ..button::Style::default()
+                }
+            }
+        }
+        let statuses = [
+            button::Status::Active,
+            button::Status::Hovered,
+            button::Status::Pressed,
+            button::Status::Disabled,
+        ];
+        let mut failures = Vec::new();
+        for (label, outline) in [
+            ("kde-breeze/light", "#399acc"),
+            ("kde-breeze/dark", "#5abaec"),
+        ] {
+            let r = bundled(label);
+            let theme = native_theme_iced::to_theme(&r, "menus");
+            let row = menu_row(&r);
+            let hovered = row(&theme, button::Status::Hovered);
+            let border = hovered.border;
+            if color_to_hex(border.color) != outline
+                || border.width != 1.0
+                || border.radius != iced::border::Radius::new(4.5)
+            {
+                failures.push(format!("{label}: the hovered row's border is {border:?}"));
+            }
+            if hovered.background
+                != Some(iced::Background::Color(to_color(r.menu.hover_background)))
+            {
+                failures.push(format!("{label}: the hovered row's fill is {hovered:?}"));
+            }
+            let pressed = row(&theme, button::Status::Pressed);
+            if format!("{pressed:?}") != format!("{hovered:?}") {
+                failures.push(format!(
+                    "{label}: pressed {pressed:?}, not the hovered look {hovered:?}"
+                ));
+            }
+            for status in [button::Status::Active, button::Status::Disabled] {
+                let rest = row(&theme, status).border;
+                if rest.width != 0.0 {
+                    failures.push(format!("{label}, {status:?}: outlined {rest:?}"));
+                }
+            }
+        }
+        for label in ["adwaita/light", "adwaita/dark"] {
+            let r = bundled(label);
+            assert!(
+                r.menu.hover_border_color.is_none(),
+                "{label} states an outline"
+            );
+            let theme = native_theme_iced::to_theme(&r, "menus");
+            let (ours, todays) = (menu_row(&r), todays_menu_row(&r));
+            for status in statuses {
+                let (ours, todays) = (ours(&theme, status), todays(&theme, status));
+                if format!("{ours:?}") != format!("{todays:?}") {
+                    failures.push(format!("{label}, {status:?}: {ours:?}, before {todays:?}"));
+                }
+            }
+        }
+        assert!(failures.is_empty(), "{failures:#?}");
+    }
+
+    /// Issue #4's leftovers, E3: a menu-bar title takes the bar's own fills.
+    /// kde-breeze states both fills #3daee9, so its open fill is set to
+    /// #f0a014 on the resolved theme to tell them apart: open, and pressed,
+    /// #f0a014; hovered #3daee9; lettered #ffffff light and #fcfcfc dark in
+    /// all three; never outlined; padded 10 at the sides and 6 above and
+    /// below. With the bar's fields unstated (adwaita) a lit title is the
+    /// menu's hover look and its padding the rows'.
+    #[test]
+    fn menu_titles_take_the_bar_fills_and_padding() {
+        let fill = |style: &button::Style| style.background.map(|b| format!("{b:?}"));
+        let hex = |hex: &str| match hex.parse::<native_theme::color::Rgba>() {
+            Ok(c) => Some(format!("{:?}", iced::Background::Color(to_color(c)))),
+            Err(error) => panic!("{hex}: {error}"),
+        };
+        let rows = Padding {
+            top: 1.0,
+            right: 2.0,
+            bottom: 3.0,
+            left: 4.0,
+        };
+        let mut failures = Vec::new();
+        for (label, lit) in [
+            ("kde-breeze/light", "#ffffff"),
+            ("kde-breeze/dark", "#fcfcfc"),
+        ] {
+            let mut r = bundled(label);
+            r.menu.bar_open_background = "#f0a014".parse().ok();
+            let theme = native_theme_iced::to_theme(&r, "titles");
+            for (open, status, want) in [
+                (true, button::Status::Active, "#f0a014"),
+                (true, button::Status::Hovered, "#f0a014"),
+                (false, button::Status::Pressed, "#f0a014"),
+                (false, button::Status::Hovered, "#3daee9"),
+            ] {
+                let style = menu_title(&r, open)(&theme, status);
+                if fill(&style) != hex(want) || color_to_hex(style.text_color) != lit {
+                    failures.push(format!("{label}, open {open}, {status:?}: {style:?}"));
+                }
+            }
+            for open in [false, true] {
+                for status in [
+                    button::Status::Active,
+                    button::Status::Hovered,
+                    button::Status::Pressed,
+                    button::Status::Disabled,
+                ] {
+                    let border = menu_title(&r, open)(&theme, status).border;
+                    if border.width != 0.0 {
+                        failures.push(format!(
+                            "{label}, open {open}, {status:?}: outlined {border:?}"
+                        ));
+                    }
+                }
+            }
+            let padded = title_padding(&r.menu, rows);
+            if padded
+                != (Padding {
+                    top: 6.0,
+                    right: 10.0,
+                    bottom: 6.0,
+                    left: 10.0,
+                })
+            {
+                failures.push(format!("{label}: the titles are padded {padded:?}"));
+            }
+        }
+        for label in ["adwaita/light", "adwaita/dark"] {
+            let r = bundled(label);
+            let m = &r.menu;
+            assert!(
+                m.bar_hover_background.is_none()
+                    && m.bar_open_background.is_none()
+                    && m.bar_hover_text_color.is_none()
+                    && m.bar_padding_horizontal.is_none()
+                    && m.bar_padding_vertical.is_none(),
+                "{label} states a menu-bar field"
+            );
+            let theme = native_theme_iced::to_theme(&r, "titles");
+            let lit = (
+                Some(format!(
+                    "{:?}",
+                    iced::Background::Color(to_color(m.hover_background))
+                )),
+                to_color(m.hover_text_color),
+            );
+            for (open, status) in [
+                (true, button::Status::Active),
+                (false, button::Status::Hovered),
+                (false, button::Status::Pressed),
+            ] {
+                let style = menu_title(&r, open)(&theme, status);
+                if (fill(&style), style.text_color) != lit {
+                    failures.push(format!("{label}, open {open}, {status:?}: {style:?}"));
+                }
+            }
+            let rest = menu_title(&r, false)(&theme, button::Status::Active);
+            if rest.background.is_some() || rest.text_color != to_color(m.font.color) {
+                failures.push(format!("{label}: a title at rest is {rest:?}"));
+            }
+            if title_padding(m, rows) != rows {
+                failures.push(format!("{label}: the titles are not padded as the rows"));
+            }
+        }
+        assert!(failures.is_empty(), "{failures:#?}");
+    }
+
+    /// Issue #4's leftovers, E5: under kde-breeze a hovered, unselected row
+    /// of the Basic list is outlined once, by its fill ([`LIST_FILLS`],
+    /// `LIST_EDGES`): #3daee9cc over the #3daee94d hover fill, 1 px wide, on
+    /// the fill's shape; its button draws no border (`LIST_ROW_BORDERS`). A
+    /// command palette row, whose button draws its own fill, is outlined by
+    /// its button; a selected row is not outlined. Under adwaita, which
+    /// states no outline, the hovered row's fill has none.
+    #[test]
+    fn a_hovered_list_row_is_outlined_once() {
+        let size = Size::new(WINDOW_SIZE.0, 2000.0);
+        let mut failures = Vec::new();
+        for (preset, mode) in [
+            ("kde-breeze", AppColorMode::Light),
+            ("kde-breeze", AppColorMode::Dark),
+            ("adwaita", AppColorMode::Light),
+        ] {
+            let mut state = State {
+                accessibility: native_theme_iced::AccessibilityPreferences::default(),
+                side_panel_visible: false,
+                ..State::default()
+            };
+            assert!(state.install_in_mode(ThemeChoice::Preset(preset.to_owned()), mode));
+            let r = state.current_resolved.clone();
+            let label = format!("{preset} {mode:?}");
+            let l = &r.list;
+            let hover = to_color(l.hover_background);
+            let want = l.hover_border_color.map(|c| iced::Border {
+                color: styles::composite_over(to_color(c), hover),
+                width: 1.0,
+                ..iced::Border::default()
+            });
+            if preset == "kde-breeze"
+                && want.map(|b| b.color)
+                    != Some(styles::composite_over(
+                        to_color(native_theme::color::Rgba::new(0x3d, 0xae, 0xe9, 0xcc)),
+                        to_color(native_theme::color::Rgba::new(0x3d, 0xae, 0xe9, 0x4d)),
+                    ))
+            {
+                failures.push(format!("{label}: the outline is {want:?}"));
+            }
+            let (_, rects, _) = frame_of(&state, view(&state), size);
+            let Some(row_3) = rects.get("basic.list.row_3").copied() else {
+                panic!("{label}: basic.list.row_3 is not drawn");
+            };
+            let at = iced::Point::new(row_3.x + row_3.width / 4.0, row_3.center_y());
+            LIST_FILLS.with_borrow_mut(Vec::clear);
+            LIST_EDGES.with_borrow_mut(Vec::clear);
+            LIST_ROW_BORDERS.with_borrow_mut(Vec::clear);
+            let _ = frame_after(&state, view(&state), size, |ui| {
+                ui.point_at(at);
+                let _ = ui.simulate([Event::Mouse(mouse::Event::CursorMoved { position: at })]);
+            });
+            let fills: Vec<_> = LIST_FILLS
+                .take()
+                .into_iter()
+                .filter(|(bounds, ..)| (bounds.y - row_3.y).abs() < 0.01)
+                .collect();
+            let edges: Vec<_> = LIST_EDGES
+                .take()
+                .into_iter()
+                .filter(|(bounds, _)| (bounds.y - row_3.y).abs() < 0.01)
+                .collect();
+            if fills.is_empty()
+                || fills
+                    .iter()
+                    .any(|(.., colour)| *colour != iced::Background::Color(hover))
+            {
+                failures.push(format!("{label}: row 3's fills are {fills:?}"));
+            }
+            if edges.len() != fills.len() {
+                failures.push(format!(
+                    "{label}: {} fills, {} edges",
+                    fills.len(),
+                    edges.len()
+                ));
+            }
+            for ((_, _, radius, _), (_, border)) in fills.iter().zip(&edges) {
+                let want = want.unwrap_or_default();
+                let drawn = border.width == want.width
+                    && (want.width == 0.0 || border.color == want.color)
+                    && border.radius == *radius;
+                if !drawn {
+                    failures.push(format!(
+                        "{label}: row 3's fill is outlined {border:?}, want {want:?} \
+                         rounded {radius:?}"
+                    ));
+                }
+            }
+            let buttons = LIST_ROW_BORDERS.take();
+            if !buttons
+                .iter()
+                .any(|(status, _)| *status == button::Status::Hovered)
+            {
+                failures.push(format!("{label}: no row button is hovered"));
+            }
+            if let Some((status, border)) = buttons.iter().find(|(_, b)| b.width != 0.0) {
+                failures.push(format!(
+                    "{label}: a row button, {status:?}, draws {border:?}"
+                ));
+            }
+            let theme = native_theme_iced::to_theme(&r, "rows");
+            let palette = list_row(&r, false, true)(&theme, button::Status::Hovered).border;
+            if palette != want.unwrap_or_default() {
+                failures.push(format!("{label}: a hovered palette row draws {palette:?}"));
+            }
+            for status in [button::Status::Hovered, button::Status::Pressed] {
+                let selected = list_row(&r, true, true)(&theme, status).border;
+                if selected.width != 0.0 {
+                    failures.push(format!("{label}: a selected row, {status:?}, is outlined"));
+                }
+            }
+        }
+        assert!(failures.is_empty(), "{failures:#?}");
+    }
+
+    /// Issue #4's leftovers, E3: the window's menu bar, its margins too, is
+    /// the tools area's fill, `toolbar.background_color` (#dee0e2 in
+    /// kde-breeze light, where the window's differs), and the page tabs'
+    /// caret menu keeps the window's: drawn under kde-breeze light, the menu
+    /// bar's row at its left margin and past its last title, and the caret
+    /// button's corner, at rest, which shows its bar through it.
+    #[test]
+    fn the_menu_bar_row_is_the_toolbars_fill() {
+        let mut state = State {
+            accessibility: native_theme_iced::AccessibilityPreferences::default(),
+            ..State::default()
+        };
+        assert!(state.install_in_mode(
+            ThemeChoice::Preset("kde-breeze".to_owned()),
+            AppColorMode::Light
+        ));
+        let r = state.current_resolved.clone();
+        let tools = to_color(r.toolbar.background_color);
+        let window = to_color(r.window.background_color);
+        assert_eq!(color_to_hex(tools), "#dee0e2", "kde-breeze light's toolbar");
+        assert_ne!(
+            tools, window,
+            "kde-breeze light's toolbar is its window's fill"
+        );
+        let theme = native_theme_iced::to_theme(&r, "bar");
+        let style = menu_bar_style(&r)(&theme, iced_aw::style::Status::Active);
+        assert_eq!(
+            format!("{:?}", style.bar_background),
+            format!("{:?}", iced::Background::Color(tools)),
+            "menu_bar_style's bar"
+        );
+        let (image, rects, scale) = frame_of(&state, view(&state), Size::new(1280.0, 720.0));
+        let rect_of = |id: &str| match rects.get(id) {
+            Some(rect) => *rect,
+            None => panic!("{id} is not drawn"),
+        };
+        let bar = rect_of("chrome.menu_bar");
+        let help = rect_of("chrome.menu_bar.help");
+        let caret = rect_of("chrome.page_tabs.menu");
+        let spot = |x: f32, y: f32| Rectangle {
+            x,
+            y,
+            width: 1.0,
+            height: 1.0,
+        };
+        let mut failures = Vec::new();
+        for (what, at, want) in [
+            (
+                "the menu bar's left margin",
+                spot(bar.x, bar.center_y()),
+                tools,
+            ),
+            (
+                "the menu bar past its last title",
+                spot(help.x + help.width + 1.0, bar.center_y()),
+                tools,
+            ),
+            ("the caret button's corner", spot(caret.x, caret.y), window),
+        ] {
+            let pixels = pixels_in(&image, at, scale);
+            let want = want.into_rgba8();
+            if pixels.is_empty() || pixels.iter().any(|p| *p != want) {
+                failures.push(format!("{what} at {at:?}: {pixels:?}, want {want:?}"));
+            }
+        }
+        assert!(failures.is_empty(), "{failures:#?}");
     }
 
     /// Decision 13 of issue #4's step 1

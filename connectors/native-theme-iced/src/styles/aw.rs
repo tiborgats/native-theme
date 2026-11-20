@@ -31,7 +31,7 @@
 //! Upstream citations in this module are read at iced_aw 0.14.1, with
 //! iced_widget 0.14.2 and iced_core 0.14.0 beneath it.
 
-use super::border_of;
+use super::{border_of, composite_over};
 use crate::palette::to_color;
 use iced_aw::style::Status;
 use iced_core::border::Radius;
@@ -118,9 +118,11 @@ pub fn card(
 /// which paints both surfaces in the palette's base background and the open
 /// path in its weak primary.
 ///
-/// The bar lies on the window: `window.background_color`, with no frame
-/// (`Border::default()`): the model has no menu-bar fill, and `MenuTheme`'s
-/// border is no bar's. A menu is the menu's panel, `menu.background_color`,
+/// The bar is the tools area's fill, `toolbar.background_color`: Breeze fills
+/// the menu bar and the toolbars as one area; on every other bundled preset it
+/// resolves to `defaults.background_color`, as the window's does. It has no
+/// frame (`Border::default()`): `MenuTheme`'s border is no bar's. A menu is
+/// the menu's panel, `menu.background_color`,
 /// framed by the popup's border, `popover.border` (its colour, width and
 /// radius): the platforms frame a menu as they frame every popup
 /// (`docs/platform-facts.md` §2.6: the popup border is §2.16's), and `MenuTheme`'s
@@ -129,12 +131,27 @@ pub fn card(
 /// a row highlight painted over a panel the widget also paints, so the
 /// platform's layering happens by itself.
 ///
-/// Three fields have no native source and come from
+/// Two fields have no native source and come from
 /// `menu_bar::primary(theme, status)`: the bar's shadow and the menus'
 /// shadow, because the model carries `defaults.shadow_color` but no offset or
 /// blur -- a menu casts it only where `popover.border.shadow_enabled` states
-/// one --, and `path_border`, because the model has no border round a
-/// highlighted row.
+/// one.
+///
+/// `path_border` outlines the highlight where the theme states
+/// `menu.hover_border_color`: that colour, composited over the highlight,
+/// `defaults.border.line_width` wide, rounded by `menu.border.corner_radius`.
+/// iced paints a quad's border in place of its fill, where Breeze lays the
+/// line over the fill, so the colour is flattened onto the highlight first
+/// (an opaque line, as kde-breeze's, comes back as it is). Where the theme
+/// states no outline, `path_border` is `menu_bar::primary`'s.
+///
+/// `iced_aw` paints `path` and `path_border` only under `DrawPath::Backdrop`
+/// (`widget/menu/menu_bar.rs:598-621` under the open title,
+/// `widget/menu/menu_tree.rs:783-801` under the active item); under its
+/// default, `DrawPath::FakeHovering` (`menu_bar.rs:143`), it draws no path
+/// and hands the item a pointer at its centre instead, so the highlight is
+/// the item's own button style. Under `Backdrop` it also outlines an open
+/// bar title, which Breeze does not.
 ///
 /// `menu.hover_text_color`, `menu.font.color`, `.disabled_text_color`,
 /// `.separator_color`, `.row_height`, `.icon_size` and `.icon_text_gap` have
@@ -146,11 +163,17 @@ pub fn menu(
 ) -> impl Fn(&Theme, Status) -> iced_aw::style::menu_bar::Style + Clone + use<> {
     use iced_aw::style::menu_bar::Style;
 
-    let bar = to_color(resolved.window.background_color);
-    let panel = to_color(resolved.menu.background_color);
-    let highlight = to_color(resolved.menu.hover_background);
+    let m = &resolved.menu;
+    let bar = to_color(resolved.toolbar.background_color);
+    let panel = to_color(m.background_color);
+    let highlight = to_color(m.hover_background);
     let frame = border_of(&resolved.popover.border);
     let shadow = resolved.popover.border.shadow_enabled;
+    let outline = m.hover_border_color.map(|c| Border {
+        color: composite_over(to_color(c), highlight),
+        width: resolved.defaults.border.line_width,
+        radius: Radius::new(m.border.corner_radius),
+    });
 
     move |theme, status| {
         let iced = iced_aw::style::menu_bar::primary(theme, status);
@@ -166,7 +189,7 @@ pub fn menu(
                 Shadow::default()
             },
             path: Background::Color(highlight),
-            path_border: iced.path_border,
+            path_border: outline.unwrap_or(iced.path_border),
         }
     }
 }
@@ -414,9 +437,11 @@ pub fn sidebar(
 /// list's intrinsic width does read `padding.x()` (`selection_list.rs:237`,
 /// `:244`).
 ///
-/// `list.alternate_row_background`, `.header_background`, `.header_font` and
-/// `.grid_color` have no receiver at all -- a selection list has no striping,
-/// no column header and no grid.
+/// `list.alternate_row_background`, `.hover_border_color`,
+/// `.header_background`, `.header_font` and `.grid_color` have no receiver at
+/// all -- a selection list has no striping, fills a hovered row with a quad
+/// whose border is hardcoded 0 wide (`selection_list/list.rs:226-249`), and
+/// has no column header and no grid.
 #[must_use = "this returns the style function; it does not apply it"]
 pub fn selection_list(
     resolved: &ResolvedTheme,

@@ -2817,14 +2817,15 @@ pub(super) const AW_CARD_SCALAR_ROWS: &[ScalarRow<AwStatus>] = &[
     },
 ];
 
-/// Every color field of `styles::aw::menu`: the bar lies on the window, a
-/// menu is the menu's panel, and the open path is the menu's hover fill.
+/// Every color field of `styles::aw::menu`: the bar is the tools area's
+/// fill, `toolbar.background_color`, a menu is the menu's panel, and the open
+/// path is the menu's hover fill.
 #[cfg(feature = "iced_aw")]
 pub(super) const AW_MENU_ROWS: &[StyleRow<AwStatus>] = &[
     StyleRow {
         field: "styles::aw::menu.bar_background",
         statuses: AW_MENU_STATUSES,
-        native: |r, _| to_color(r.window.background_color),
+        native: |r, _| to_color(r.toolbar.background_color),
         get: |t, r, s| fill(styles::aw::menu(r)(t, s).bar_background),
     },
     StyleRow {
@@ -2841,16 +2842,24 @@ pub(super) const AW_MENU_ROWS: &[StyleRow<AwStatus>] = &[
     },
 ];
 
-/// A menu's frame, the popover's border. The bar has none
-/// (`Border::default()`), and `path_border` has no native source: both are
-/// in `DERIVED`.
+/// A menu's frame, the popover's border, and the highlight's outline,
+/// `menu.hover_border_color`. The bar has no frame (`Border::default()`): it
+/// is in `DERIVED`.
 #[cfg(feature = "iced_aw")]
-pub(super) const AW_MENU_BORDER_ROWS: &[BorderRow<AwStatus>] = &[BorderRow {
-    field: "styles::aw::menu.menu",
-    statuses: AW_MENU_STATUSES,
-    native: |r, _| native_aw_menu_border(r),
-    get: |t, r, s| styles::aw::menu(r)(t, s).menu_border,
-}];
+pub(super) const AW_MENU_BORDER_ROWS: &[BorderRow<AwStatus>] = &[
+    BorderRow {
+        field: "styles::aw::menu.menu",
+        statuses: AW_MENU_STATUSES,
+        native: |r, _| native_aw_menu_border(r),
+        get: |t, r, s| styles::aw::menu(r)(t, s).menu_border,
+    },
+    BorderRow {
+        field: "styles::aw::menu.path",
+        statuses: AW_MENU_STATUSES,
+        native: |r, _| native_aw_path_border(r),
+        get: |t, r, s| styles::aw::menu(r)(t, s).path_border,
+    },
+];
 
 /// The popup's border, `popover.border`, which frames an `iced_aw` menu.
 #[cfg(feature = "iced_aw")]
@@ -2859,6 +2868,33 @@ fn native_aw_menu_border(r: &ResolvedTheme) -> NativeBorder {
         color: to_color(r.popover.border.color),
         width: r.popover.border.line_width,
         radius: r.popover.border.corner_radius,
+    }
+}
+
+/// The highlight's outline where the theme states `menu.hover_border_color`:
+/// that colour over the highlight, `menu.hover_background`, as iced paints a
+/// border in place of the fill under it, `defaults.border.line_width` wide,
+/// rounded by `menu.border.corner_radius`. Where it states none, `iced_aw`'s
+/// own `path_border`, read from its default `Style` at run time, as the
+/// toggler's rows fall back to `toggler::default`; its radius is uniform, so
+/// its top-left corner stands for all four.
+#[cfg(feature = "iced_aw")]
+fn native_aw_path_border(r: &ResolvedTheme) -> NativeBorder {
+    let m = &r.menu;
+    match m.hover_border_color {
+        Some(c) => NativeBorder {
+            color: styles::composite_over(to_color(c), to_color(m.hover_background)),
+            width: r.defaults.border.line_width,
+            radius: m.border.corner_radius,
+        },
+        None => {
+            let own = iced_aw::style::menu_bar::Style::default().path_border;
+            NativeBorder {
+                color: own.color,
+                width: own.width,
+                radius: own.radius.top_left,
+            }
+        }
     }
 }
 
