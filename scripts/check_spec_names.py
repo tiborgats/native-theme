@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check every name the v0.7.1 specification's catalogue and traceability use.
+"""Check every name the v0.8.0 specification's catalogue and traceability use.
 
 It reads the core (S…), builds the vocabulary it defines (state flags, shared flags, conditions, colour
 roles, tokens, element data, part-style fields), reads the widget catalogue and builds, per typed widget

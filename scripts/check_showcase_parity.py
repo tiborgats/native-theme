@@ -127,11 +127,11 @@ R-snap -- geometry is compared on edges rounded to the pixel grid.
       sit on whole device pixels vertically (`SUBPIXEL_VARIANTS_Y` = 1,
       src/text_system.rs:53, applied in src/window.rs:5085-5090). Its dump
       therefore holds whole pixels.
-    - egui lays out in steps of 1/32 point (emath 0.36.2
+    - egui lays out in steps of 1/32 point (emath 0.37.0
       src/gui_rounding.rs:18) and rounds rectangles, right-angled line
       segments and text positions to physical pixels when it paints; all
-      three are on by default (epaint 0.36.2 src/tessellator.rs:685-700,
-      :734-736; rectangles :1830-1861, text :2024-2025; the rounding,
+      three are on by default (epaint 0.37.0 src/tessellator.rs:693-708,
+      :742-744; rectangles :2062-2093, text :2259-2260; the rounding,
       `(x * pixels_per_point).round()`, emath src/gui_rounding.rs:68-70).
       Its dump holds the unrounded layout.
     - iced keeps fractions: iced_core 0.14.0's layout (src/layout.rs,

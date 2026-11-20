@@ -1050,3 +1050,28 @@ network access on the first run.
 ./scripts/run_in_runner_env.sh test -p native-theme-egui --example showcase-egui
 ./scripts/run_in_runner_env.sh --prepare
 ```
+
+## check_spec_names.py, check_spec_trace.py, check_spec_entries.py
+
+The checkers of the parked 0.8.0 model rebuild's documents
+(`docs/todo_v0.8.0_model-completeness-*.md`, ROADMAP.md's *Model
+completeness*); neither `check_release.sh` nor CI runs them.
+`check_spec_names.py` reports every name the specification's widget
+catalogue and traceability files use that the specification does not
+define, and notation it forbids (`--only`, `--cat`, `--part` and `--traces`
+check one file or copies; `--index` also writes `scripts/index.json`, the
+catalogue's names per widget). `check_spec_trace.py` lists every gap-map row
+the traceability does not place (`--self-test` runs it on synthetic files).
+`check_spec_entries.py` checks that every typed entry of the widget
+catalogue has every item of the entry format, in order (the catalogue's
+path may be given). Each prints one line per problem and exits 0 when there
+is none, 1 when there are some; `check_spec_trace.py` exits 2 on an input it
+cannot read. The scripts' docstrings state the rules.
+
+Requires Python 3.
+
+```sh
+python3 scripts/check_spec_names.py
+python3 scripts/check_spec_trace.py
+python3 scripts/check_spec_entries.py
+```

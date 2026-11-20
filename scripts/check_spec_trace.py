@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""List every v0.7.1 gap-map row the specification's traceability does not place.
+"""List every v0.8.0 gap-map row the specification's traceability does not place.
 
 The gap map (docs/todo_v0.8.0_model-completeness-gap-map.md and its six
 platform files) lists what the platforms draw that the model cannot express;

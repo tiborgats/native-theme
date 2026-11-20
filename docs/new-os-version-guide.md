@@ -276,7 +276,12 @@ Steps:
    `native-theme/src/presets/documented_sizes.rs` checks them). The switch's
    `track_border_line_width` and `thumb_border_line_width` are stated
    only where the platform draws that outline (`docs/platform-facts.md`
-   §2.21), and unset draw none. Every other size is required, and those the
+   §2.21), and unset draw none. The menu's `min_row_height`,
+   `panel_padding_horizontal`, `panel_padding_vertical`,
+   `bar_padding_horizontal` and `bar_padding_vertical` (§2.6) and the
+   slider's `thumb_border_line_width` (§2.9; unset, a connector draws its own
+   handle outline, 0 none) are optional too and stated only from their rows;
+   the gate does not check them. Every other size is required, and those the
    presets state today without a source are listed in `docs/todo.md`, Table B.
 4. Run the full test suite: `cargo test -p native-theme` (no feature flags needed
    for preset-only changes).

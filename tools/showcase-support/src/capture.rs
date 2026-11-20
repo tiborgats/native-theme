@@ -39,7 +39,7 @@
 //!   (gpui-pre 0.3.12 `build.rs:32-46`,
 //!   `resources/windows/gpui.manifest.xml:17-18`);
 //! - gpui on GPUI Fast: none is embedded, as gpui-base and gpui-component
-//!   0.9.1 turn on `windows-manifest-provided-by-host` (gpui-fast 0.1.15
+//!   0.10.0 turn on `windows-manifest-provided-by-host` (gpui-fast 0.1.16
 //!   `build.rs:37-38`), so its DPI awareness is whatever the host provides.
 //!
 //! `nudge_content_size`, on macOS, is gpui's alone: gpui-pre's Metal

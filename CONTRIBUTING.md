@@ -287,7 +287,7 @@ plans. Archiving is every plan's last task: once it is implemented, the plan,
 its rationale and its spec move to [`docs/archive/`](docs/archive/), keeping
 their names, and the index table in
 [`docs/archive/README.md`](docs/archive/README.md) gains their row;
-`scripts/check_release.sh` warns about an archived file the table does not name.
+`scripts/check_release.sh` fails on an archived file the table does not name.
 
 A non-trivial GitHub issue gets a rationale before it is answered:
 `docs/issues/<NNNN>_<topic>-rationale.md`, the issue number zero-padded to four

@@ -48,7 +48,7 @@ This policy covers the following crates published from this repository:
 - [`native-theme-egui`](https://crates.io/crates/native-theme-egui)
 - [`native-theme-egui-widgets`](https://crates.io/crates/native-theme-egui-widgets)
 
-Vulnerabilities in downstream dependencies (gpui, iced, serde, ashpd, etc.)
+Vulnerabilities in the crates these depend on (gpui, iced, serde, ashpd, etc.)
 should be reported to those projects directly.
 
 ## Dependency auditing
