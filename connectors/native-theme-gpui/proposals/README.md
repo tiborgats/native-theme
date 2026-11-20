@@ -64,7 +64,7 @@ The `native-theme` crate captures these values in a `WidgetMetrics` struct conta
 > (`toolbar.bar_height`) is likewise `Option<f32>`, `None` where the toolbar
 > sizes to its content.
 
-> **Status note (v0.7.1, gpui-component 0.9.1).** `ThemeConfig` still holds
+> **Status note (v0.7.2, gpui-component 0.10.0).** `ThemeConfig` still holds
 > only the fields listed under *Background*, `window_radius` (0.9.0's corner
 > radius of a client-decorated window), `colors` and `highlight`; the separate
 > `SemanticThemeConfig` adds scales of radii, spacing, shadows and type (`sm`,

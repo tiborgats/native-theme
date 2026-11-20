@@ -574,7 +574,7 @@ pub(crate) fn role_for_gpui_icon(icon: &IconName) -> Option<IconRole> {
     })
 }
 
-/// The 106 gpui-component 0.9.1 IconName variants shown in the gallery.
+/// The 106 gpui-component 0.10.0 IconName variants shown in the gallery.
 pub(crate) const GPUI_ICONS: &[(&str, IconName)] = &[
     ("ALargeSmall", IconName::ALargeSmall),
     ("ArrowDown", IconName::ArrowDown),

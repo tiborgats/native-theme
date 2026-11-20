@@ -6,7 +6,7 @@
 //! "not reachable" with the upstream line that keeps it out. Where the
 //! showcase could apply a leaf and does not, the line says so and names what
 //! is drawn instead. Upstream citations are to gpui-component 0.9.1,
-//! gpui-base 0.9.1 and gpui-pre 0.3.12.
+//! gpui-base 0.9.1 and gpui-pre 0.3.12, but where one names its version.
 
 /// Each line as (element-id prefix, leaf, line). The first entry whose
 /// prefix the hovered element's id starts with and whose leaf matches wins;

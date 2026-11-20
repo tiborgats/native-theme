@@ -45,7 +45,7 @@
 //!   as a constant with its upstream line.
 //!
 //! Upstream citations are verified against gpui-component 0.9.1, gpui-base
-//! 0.9.1 and gpui-pre 0.3.12.
+//! 0.9.1 and gpui-pre 0.3.12, but where one names its version.
 
 /// `IntoElement` for a `RenderOnce` widget, as gpui's `#[derive(IntoElement)]`
 /// writes it (gpui-pre-macros `derive_into_element.rs`). Written out, so the

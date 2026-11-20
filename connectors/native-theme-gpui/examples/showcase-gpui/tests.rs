@@ -233,7 +233,8 @@ fn click_at(cx: &mut VisualTestContext, at: Point<Pixels>) {
 /// The leading edge, not the middle: a probe around a control in a block
 /// container is as wide as the column, and the control it holds sits at the
 /// left of it, so the middle of the probe can be empty space. Upstream's own
-/// interaction tests click the same way (`tests/controlled_change_callbacks.rs`).
+/// interaction tests click the same way (gpui-component 0.10.0
+/// `tests/integration/controlled_change_callbacks.rs`).
 fn click(cx: &mut VisualTestContext, selector: &'static str) {
     let bounds = bounds_of(cx, selector);
     click_at(cx, point(bounds.left() + px(8.), bounds.center().y));
@@ -4725,7 +4726,7 @@ fn the_sidebar_samples_icons_fit_their_items(cx: &mut TestAppContext) {
 /// drawn each time: GPUI Fast 0.1.7 reclaimed the row's earlier nodes with
 /// stale child lists and panicked prepainting the unmeasured label
 /// (src/elements/text.rs:650), which gpui-fast 0.1.9 fixed and GPUI Kit
-/// 0.9.1's floor of gpui-fast 0.1.14 includes. On any host: the icons are
+/// 0.10.0's floor of gpui-fast 0.1.16 includes. On any host: the icons are
 /// removed by hand, not by an icon theme the host cannot read.
 #[gpui::test]
 fn a_sidebar_item_losing_and_regaining_its_icon_is_drawn(cx: &mut TestAppContext) {

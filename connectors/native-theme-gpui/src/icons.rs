@@ -150,7 +150,7 @@ impl std::fmt::Debug for AnimatedImageSources {
 /// Maps 31 of the 42 `IconRole` variants to `IconName`. The 11 unmapped roles
 /// (Shield, ActionSave, ActionPaste, ActionCut, ActionEdit, ActionPrint,
 /// NavHome, TrashFull, DialogQuestion, Help, Lock) have no corresponding icon
-/// in gpui-component 0.9.1.
+/// in gpui-component 0.10.0.
 ///
 /// # Examples
 ///
@@ -228,7 +228,7 @@ pub fn icon_name(role: IconRole) -> Option<IconName> {
 /// Returns the kebab-case Lucide name for use with
 /// [`native_theme::icons::LucideLoader::new`].
 ///
-/// Covers all 106 gpui-component 0.9.1 `IconName` variants; a newer variant
+/// Covers all 106 gpui-component 0.10.0 `IconName` variants; a newer variant
 /// returns `None`. Returns `None` where Lucide has no equivalent (today only
 /// `StarFill`, `docs/archive/todo_v0.5.8_gpui-component-0.6-spec.md`
 /// §10.2); every `Some` is Lucide's own file name (`LucideLoader::new(name)`
@@ -360,7 +360,7 @@ pub fn lucide_name_for_gpui_icon(icon: IconName) -> Option<&'static str> {
 /// Returns the snake_case Material Symbols name for use with
 /// [`native_theme::icons::MaterialLoader`].
 ///
-/// Covers all 106 gpui-component 0.9.1 `IconName` variants; a newer variant
+/// Covers all 106 gpui-component 0.10.0 `IconName` variants; a newer variant
 /// returns `None`. Returns `None` where Material Symbols has no equivalent
 /// (today only `StarOff`); every `Some` is a bundled Material Symbols Outlined
 /// 24px file.
@@ -514,7 +514,7 @@ pub fn material_name_for_gpui_icon(icon: IconName) -> Option<&'static str> {
 /// (Adwaita) name, every other desktop the Breeze name; where the two
 /// conventions agree the DE is ignored.
 ///
-/// Returns `None` for an `IconName` newer than gpui-component 0.9.1, as
+/// Returns `None` for an `IconName` newer than gpui-component 0.10.0, as
 /// [`freedesktop_name_candidates`] returns no name for it.
 #[cfg(target_os = "linux")]
 #[deprecated(
@@ -575,7 +575,7 @@ pub fn freedesktop_name_for_gpui_icon(
 /// - `close`: same concept, minor visual difference
 /// - `approximate`: best available match, different metaphor
 ///
-/// Covers all 106 gpui-component 0.9.1 `IconName` variants; a newer variant
+/// Covers all 106 gpui-component 0.10.0 `IconName` variants; a newer variant
 /// returns an empty slice. Every variant has a name today, some only as a
 /// labelled `close` or `approximate` substitute: `StarOff` and `HeartOff`
 /// both take `non-starred`, the "not starred / not favourite" state.

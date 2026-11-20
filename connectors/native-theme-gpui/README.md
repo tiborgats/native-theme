@@ -33,7 +33,7 @@ Turns a `ResolvedTheme` into a fully configured
   The splitter colours reach the handles gpui-base draws itself — groups built
   with `gpui_base::h_resizable` / `v_resizable` (`gpui_kit::base::…`), as
   colours at gpui-base's 1 px width, the hover colour only while dragged — not
-  gpui-component 0.9.1's own `h_resizable` / `v_resizable`, `Settings`' divider
+  gpui-component's own `h_resizable` / `v_resizable`, `Settings`' divider
   or the dock's edges, which draw a `border` hairline and a `muted_foreground`
   pill of their own.
 - **Per-widget geometry**: pure builders that return a `StyleRefinement` with
@@ -59,7 +59,7 @@ Turns a `ResolvedTheme` into a fully configured
   [The widgets' own icons](#the-widgets-own-icons). gpui-component's
   `IconName` cannot be enumerated in code, so the tables are audited by hand
   against the list gpui-kit-assets generates the enum from
-  (`default-icons.txt`) on every gpui-component bump; 0.9.1's is 0.7.1's, 106
+  (`default-icons.txt`) on every gpui-component bump; 0.10.0's is 0.7.1's, 106
   variants. The tables end in a wildcard: an
   `IconName` newer than this crate maps to no icon instead of stopping the
   build, and the test module's exhaustive list is what reports it.
@@ -412,8 +412,8 @@ test over every preset and mode says so.
 | `tooltip_content` | `tooltip.max_width` less the left and right padding (upstream's `px_2`, 0.5 rem at the installed font size, for a side the theme does not state) and `tooltip.border.line_width` twice | the element the application passes to `Tooltip::element`; without a key binding its bubble equals `Tooltip::new`'s with the width on the bubble, with one it grows past `tooltip.max_width` by the key and its gap |
 | `popover` | `popover.border.padding` (the stated sides), `.corner_radius`, `.line_width`, `.color` | `Popover`, `HoverCard`: the edge lies inside the shadow ring gpui-component draws as a popover's edge, which stays |
 | `status_bar` | `status_bar.border.padding` (the stated sides), `status_bar.font`, `defaults.line_height` | `StatusBar` |
-| `dialog`, `dialog_max_width` | `dialog.border.padding` (the stated sides), `dialog.min_width`, `dialog.min_height`, `.border.corner_radius`, `.border.color`, `.background_color`, `.max_width` | `Dialog` (`Dialog::max_w` for the width). An unstated side keeps upstream's 16 px; upstream also spaces the dialog's sections by `max(top, 8px)` and a `DialogContent` by the bottom padding. `dialog.max_height` no longer arrives: since 0.6.4 gpui-component clamps the dialog to what is left of the viewport after applying the caller's style |
-| `dialog_entrance` | `dialog.entrance` | `Dialog::entrance`, `AlertDialog::entrance`. Both styles are approximations, drawn as `DialogEntrance::Fade`, a fade in place: `scale_fade` loses its scale, because gpui-component has no scaling entrance, and `fade_rise` its rise, because its `FadeSlide` settles from just above the dialog's place. Since gpui-component 0.8.1 the dialog leaves the way it entered: it fades out on the same curve and over the same duration, the motion tokens' `duration_normal`, as it faded in. `None` where the theme states none, and the dialog keeps upstream's `SlideDown` |
+| `dialog`, `dialog_max_width` | `dialog.border.padding` (the stated sides), `dialog.min_width`, `dialog.min_height`, `.border.corner_radius`, `.border.color`, `.background_color`, `.max_width` | `Dialog` (`Dialog::max_w` for the width). An unstated side keeps upstream's 16 px; upstream also spaces the dialog's sections by `max(top, 8px)` and a `DialogContent` by the bottom padding. `dialog.max_height` does not arrive: gpui-component clamps the dialog to what is left of the viewport after applying the caller's style |
+| `dialog_entrance` | `dialog.entrance` | `Dialog::entrance`, `AlertDialog::entrance`. Both styles are approximations, drawn as `DialogEntrance::Fade`, a fade in place: `scale_fade` loses its scale, because gpui-component has no scaling entrance, and `fade_rise` its rise, because its `FadeSlide` settles from just above the dialog's place. The dialog leaves the way it entered: it fades out on the same curve and over the same duration, the motion tokens' `duration_normal`, as it faded in. `None` where the theme states none, and the dialog keeps upstream's `SlideDown` |
 | `dialog_footer`, `dialog_title`, `dialog_description` | `dialog.button_gap`, `dialog.title_font`, `dialog.body_font`; the two fonts with `defaults.line_height` | `DialogFooter`, `DialogTitle`, `DialogDescription` |
 | `table` | `list.item_font`, `defaults.line_height` | declarative `Table` |
 | `data_table_size` | `list.row_height`, or upstream's Medium row height where it is not stated; above a text-scaling factor of 1 at least `list.item_font`'s scaled size × `defaults.line_height`, upstream's cell padding and the row's 1 px bottom border | `DataTable::with_size`; with `table` on the container for the cell text |
@@ -427,7 +427,7 @@ test over every preset and mode says so.
 | `select`, `combobox` | `combo_box.min_height`, `.min_width`, `.arrow_area_width` (whether it is stated), `combo_box.border.padding` (the stated sides), `.corner_radius`, `.line_width`, `combo_box.font`, `defaults.line_height` | `Select`, `Combobox`. Where the theme states `combo_box.arrow_area_width`, the right padding side is not applied and upstream's own stands: the platform measures that side to a separate arrow column, and gpui's caret sits inside the padded trigger, which has none. Without an arrow column the stated right side is applied |
 | `title_bar` | `window.title_bar_font`, `defaults.line_height` | `TitleBar` |
 | `title_bar_inactive` | `window.inactive_title_bar_background`, `window.inactive_title_bar_text_color` | a `TitleBar` while its window is not the active one, after `title_bar`: `.when(!window.is_window_active(), \|bar\| bar.refine_style(&geometry::title_bar_inactive(n)))`. gpui redraws the window when its activation changes. The fill is upstream's gradient drawn from the inactive colour, so a theme whose inactive pair is the active one draws the same bar in both states |
-| `toolbar` | `toolbar.bar_height` (as a minimum height, where stated), `.item_gap` (where stated), `.border.padding` (the stated sides), `.border.line_width` and `.border.color` (the bottom edge), `.background_color`, `toolbar.font`, `defaults.line_height` | a toolbar row the application draws with its own elements, or gpui-component 0.9.1's `Toolbar`: the height is the content's (at least `bar_height`), and the `Toolbar`'s own Small minimum height (`min_h_8`) is replaced by `bar_height` where stated and reset to `auto` where not. Add items to a `Toolbar` with `content()` — `child()` turns buttons into compact ghosts in a 1.5 rem box. The edge is a bottom rule, `toolbar.border.color` at `.line_width`, inside the bar, none at a width of 0 |
+| `toolbar` | `toolbar.bar_height` (as a minimum height, where stated), `.item_gap` (where stated), `.border.padding` (the stated sides), `.border.line_width` and `.border.color` (the bottom edge), `.background_color`, `toolbar.font`, `defaults.line_height` | a toolbar row the application draws with its own elements, or gpui-component's `Toolbar`: the height is the content's (at least `bar_height`), and the `Toolbar`'s own Small minimum height (`min_h_8`) is replaced by `bar_height` where stated and reset to `auto` where not. Add items to a `Toolbar` with `content()` — `child()` turns buttons into compact ghosts in a 1.5 rem box. The edge is a bottom rule, `toolbar.border.color` at `.line_width`, inside the bar, none at a width of 0 |
 | `spinner_size`, `icon_size_*` | `spinner.diameter`, `toolbar.icon_size` (which inherits `defaults.icon_sizes.toolbar`), `defaults.icon_sizes.*` for the others | `Spinner::with_size`, `Icon::with_size` |
 | `scrollbar_gutter` | `scrollbar.overlay_mode`, and the groove width the base layer installed | the element an `overflow_y_scrollbar` container scrolls. gpui-component overlays its bar on the scroll area whatever the platform does, so where the platform's bars are not overlays this reserves the groove width beside the content; where they are, it reserves nothing. Where the theme states no track (a transparent `scrollbar.track_color`: `kde-breeze`, `windows-11`), content that runs under the bar shows through it, a row's hover fill and text or cells that reach the edge among it; Qt ends the view at the bar, which this gutter reproduces. |
 | `widget_gap`, `container_margin`, `window_margin`, `section_gap` | `LayoutTheme` (`Theme::layout` or `SystemTheme.layout`) | your own layout; `None` where the platform specifies nothing |
@@ -586,9 +586,9 @@ flat buttons gpui-component builds internally, which takes `accent` where the
 platform has a button hover; the checkbox and radio unchecked border, which
 takes the text input's border colour; and tab height, radius
 and text size, which `Tab`'s render writes into the same style bag the caller's
-setters fill, `tab/tab.rs:961-969`) is out of the caller's reach; the
+setters fill, `tab/tab.rs:986-994` at gpui-component 0.10.0) is out of the caller's reach; the
 [roadmap](../../ROADMAP.md#upstream-receivers-for-the-gpui-connector)'s
-*Upstream receivers for the gpui connector*, read at gpui-component 0.9.1,
+*Upstream receivers for the gpui connector*, read at gpui-component 0.10.0,
 lists the upstream changes proposed for most of it. The checkbox, radio, switch, slider,
 progress bar, spinner, tab bar and separator among them have theme-drawn
 replacements in the `widgets` module.
@@ -613,7 +613,7 @@ role, and paints every part from the theme leaf that states it:
 
 | Widget | Paints | Instead of gpui-component's |
 |---|---|---|
-| `Checkbox`, `Radio`, `RadioGroup` | `checkbox.*`: indicator size, fills per state, border and its colour under the pointer (`hover_border_color`), radius, mark and its stroke (`check_mark_stroke_width`), the radio's dot (`radio_dot_diameter`), label gap and font. Where the theme states no stroke (and, for a radio, no dot), the mark is gpui-component's `IconName::Check` through the application's icon resolver (`set_icon_resolver`), as gpui-component's own check box draws it; where it states one, the connector strokes that glyph at its width | an indicator sized in rems per `Size`; a check glyph as the radio's mark |
+| `Checkbox`, `Radio`, `RadioGroup` | `checkbox.*`: indicator size, fills per state, border and its colour under the pointer (`hover_border_color`), radius, mark and its stroke (`check_mark_stroke_width`), the mixed state's dash (`Checkbox::indeterminate`), the radio's dot (`radio_dot_diameter`), label gap and font. Where the theme states no stroke (and, for a radio, no dot), the mark is gpui-component's `IconName::Check` through the application's icon resolver (`set_icon_resolver`), as gpui-component's own check box draws it; where it states one, the connector strokes that glyph at its width | an indicator sized in rems per `Size`; a check glyph as the radio's mark |
 | `Switch` | `switch.*`: track and thumb sizes, radius, fills per state, hover | pixel literals per `Size` |
 | `Slider` | `slider.*`: rail, fill, thumb, hover; the thumb's outline where `slider.thumb_border_line_width` is stated (`ThumbOutline`), in its hover colour with the pointer on the thumb though not while it is dragged (gpui applies no hover style during a drag), and on the end thumb in its focus colour while the slider has the focus (a press on the rail gives it, a press on a thumb does not); keyboard steps; horizontal or vertical (`Slider::axis`) | a rail of its fill at 20% alpha, a thumb of its own size and a ring of its fill at half alpha |
 | `ProgressBar` | `progress_bar.*`: track, fill, frame, height, minimum width; indeterminate with `ProgressBar::loading`, its fill sweeping on gpui-component's motion | a track of its fill at 20% alpha |
@@ -622,7 +622,10 @@ role, and paints every part from the theme leaf that states it:
 | `Separator` | a line `separator.line_width` thick, one device pixel at least, in `separator.line_color` | a line a literal 1px thick |
 
 Each reads the variant `apply` installed for the current mode as it renders,
-so it follows a light/dark switch. With no native theme installed, or a
+so it follows a light/dark switch. The tab bar, check box, radio, slider,
+switch and progress bar follow `gpui_base::LayoutDirection::global`, so they
+mirror in a right-to-left layout as gpui-component's widgets do; the slider's
+Left and Right keys swap there. With no native theme installed, or a
 length the theme gives that is not finite, it renders gpui-component's own
 control. Each has a `…Look` type (`CheckboxLook::of(&resolved, …)`,
 `TabLook::of(&resolved)`, …) with the values it paints, for an application
@@ -727,6 +730,9 @@ icon paths itself sets its resolver after `install`, which would replace it
 otherwise, and asks `icons.lookup(path, cx)` for the paths it leaves to the
 handle: `IconAnswer::Draw(path)` and `IconAnswer::Empty(path)` are the path
 to return, `IconAnswer::NotMine` leaves the icon to gpui-component (`None`).
+`icons::load_gpui_icon` is the lookup the handle serves from, for an
+application's own icons by `IconName` at their size and colour, and
+`icons::mask_drawable` says whether gpui's one-colour mask carries an icon.
 
 **The report.** `icons.report()` says what the handle serves, and why it
 serves nothing where it does not: `NotInstalled`, `Off`, `NoAssetSource`,
@@ -846,14 +852,9 @@ one. Nothing else writes it: a mode switch through `Theme::change` or
 
 Assumptions: the connector is the only code writing `gpui_base::Theme`
 besides gpui-component itself, and the only code writing the styled theme's 12
-base-palette fields after `apply` (a value set there by the application does
-not stay: the connector writes them back whenever gpui-base's theme is
-notified, which the application's own `Theme::update` does); a value the
-application gives `selection`,
-`list_active` or `table_active` is its own until the next rebuild replaces it,
-unless it is exactly the capped native colour (the native colour at alpha 0.3
-for `selection`, 0.2 for the other two), which cannot be told from
-gpui-component's cap and is replaced at once; and gpui-component's
+base-palette fields after `apply` (what becomes of an application's own value
+there, and in `selection`, `list_active` and `table_active`, is in
+[Overriding theme values](#overriding-theme-values)); and gpui-component's
 `ThemeRegistry` observer replaces the styled theme's configs by *name* on a registry change, so an
 application that loads a theme through `ThemeRegistry` under the same display
 name as the native theme replaces the connector's colours (the base-layer
@@ -862,8 +863,9 @@ geometry is still restored). The default registry holds two themes,
 
 ## Limits
 
-Two things a theme cannot reach in gpui-component 0.9.1; each is a request to
-upstream.
+Two things a theme cannot reach in gpui-component 0.10.0; each is a request to
+upstream. The upstream lines cited are 0.9.1's, whose code 0.10.0 keeps a few
+lines apart.
 
 What the connector's widget icons leave as they are is in
 [The widgets' own icons](#what-the-widget-icons-leave-as-they-are).
@@ -1015,7 +1017,7 @@ The band is gpui-component's own, 3 px outside the edge in `ring` with its
 alpha set to 0.5; the connector's own controls draw the theme's ring, at its
 width and offset, after a key (below). In a window without the plugin (its
 `Root` made before the first `apply`) a focused control shows its border, or a
-1 px line, in `ring` (a borderless button but a link, a text or an upstream
+1 px line, in `ring` (a borderless button other than a link, a text or an upstream
 `.ghost()` one: a 1 px line in its text colour at 60 %), also when Tab reached
 it. `Theme::focus_ring` is one value for the application, so each window's
 `Root` sets it when it renders; a view drawn again without its `Root`, after
@@ -1072,7 +1074,7 @@ argument has no effect. `icons::to_image_source` documents it.
 | Preference | Effect |
 |---|---|
 | `text_scaling_factor` | multiplies `Theme.font_size` and `mono_font_size` (and their `ThemeConfig` copies); gpui-component's `WindowState` plugin sets the window rem to `font_size`, so every rem-relative size in gpui-component scales; the geometry builders scale text sizes and grow control heights; `scaled_text_size(size, &prefs)` scales a text size the connector does not apply itself, such as a `text_scale` role's |
-| `reduce_motion` | `true` switches `App::reduce_motion` on if it is off; a later `false` undoes only that, then gpui-base (which reads the OS preference itself since 0.6.2) re-reads the OS and decides. GPUI's animations, gpui-base's motion and gpui-component's animated widgets read the flag (the spinner, shimmer, progress, marker and accordion among them) |
+| `reduce_motion` | `true` switches `App::reduce_motion` on if it is off; a later `false` undoes only that, then gpui-base (which reads the OS preference itself) re-reads the OS and decides. GPUI's animations, gpui-base's motion and gpui-component's animated widgets read the flag (the spinner, shimmer, progress, marker and accordion among them) |
 | `reduce_transparency` | the overlay behind a dialog or sheet is not drawn (`overlay` becomes transparent): macOS asks for no semitransparent backgrounds, and an opaque overlay would hide the window. The dialog or sheet stays modal |
 | `high_contrast` | nothing, by design: GPUI and gpui-component have no receiver, and high contrast belongs in the theme data, which the OS readers fill with what the platform draws under high contrast; `is_high_contrast(&sys)` reads the flag |
 
@@ -1086,19 +1088,17 @@ edge (libadwaita's) it is a band inside the edge, the control having no border o
 its own. Where the theme says the platform shows its ring for keyboard focus
 only, a control draws it only for a focus that followed a key press: the answer
 is `Window::last_input_was_keyboard` when the focus arrives, kept until it
-leaves. gpui-component's own widgets draw their 3 px ring in `ring` with its
+leaves. The theme-drawn `TabBar` rings the focused tab by the same rule, inside
+the tab, in `defaults.focus_ring_color` and `focus_ring_width`;
+`focus_ring_offset` is not reached there, since the tabs' scrolling row would
+cut a band outside the tab away. A click selects a tab without focusing it;
+the tabs take the focus from the keyboard, the arrow keys moving it along the
+bar. gpui-component's own widgets draw their 3 px ring in `ring` with its
 alpha set to 0.5, whatever the colour's own, where `Theme::focus_ring` is on
-(gpui-component 0.10.0
-`src/styled.rs:11-12`, `focus_style`), and gpui-component's `Tab` draws another,
-2 px inset at the full colour, a literal the theme's width does not reach
-(`src/tab/tab.rs:933`, `:962-973`). The theme-drawn `TabBar` draws the theme's ring inside the tab, in
-`defaults.focus_ring_color` and `focus_ring_width`; `focus_ring_offset` is not
-reached there, since the tabs' scrolling row would cut a band outside the tab
-away. A click selects a tab without focusing it; the tabs take the focus from
-the keyboard, the arrow keys moving it along the bar. The theme-drawn `TabBar`
-rings the focused tab by the rule above, as the other theme-drawn controls;
-gpui-component's shows its ring while the last input was a key (gpui's
-`focus_visible`), whatever the theme says.
+(gpui-component 0.10.0 `src/styled.rs:11-12`, `focus_style`), and
+gpui-component's `Tab` draws another, 2 px inset at the full colour, a literal
+the theme's width does not reach, while the last input was a key (gpui's
+`focus_visible`), whatever the theme says (`src/tab/tab.rs:933`, `:962-973`).
 
 Assistive technology: the theme-drawn `Slider` takes an `accessibility_label`,
 the name a screen reader announces, since a slider draws no text of its own,
@@ -1381,7 +1381,9 @@ alias gpui-kit documents), so it is built on the core gpui-kit is built on:
   feature, which turns on the other two, `gpui-kit/gpui-fast` and
   `gpui-component/gpui-fast`, together. gpui-kit's own `gpui-fast` reaches
   gpui-component's only through gpui-kit's `component` feature, which this
-  crate leaves off, so it is named here. Turning on `gpui-component/gpui-fast`
+  crate leaves off, so it is named here; an application that turns on
+  `gpui-kit/gpui-fast` with gpui-kit's `component` feature (on by default)
+  switches all three without it. Turning on `gpui-component/gpui-fast`
   alone leaves gpui-kit on gpui-pre, and gpui-kit itself then fails to
   compile.
 
@@ -1529,7 +1531,7 @@ every title is).
 
 ### macOS
 
-The `macos-monterey` preset, which covers macOS 12 to 15, and `macos-tahoe`, macOS 26's own look, both captured on GitHub's `macos-26` runner, macOS 26.6.2, so the Monterey pair shows that preset drawn on macOS 26.
+The `macos-monterey` preset, which covers macOS 12 to 15, and `macos-tahoe`, macOS 26's own look, both captured on GitHub's `macos-26` runner, macOS 26.7.2, so the Monterey pair shows that preset drawn on macOS 26.
 
 **macOS Monterey, light**
 

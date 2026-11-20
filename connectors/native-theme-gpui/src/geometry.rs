@@ -1,4 +1,4 @@
-//! Per-widget geometry for gpui-component 0.9.1 widgets.
+//! Per-widget geometry for gpui-component widgets.
 //!
 //! Every builder is a pure function of a [`Native`] view and returns a
 //! [`StyleRefinement`] the application applies with
@@ -100,7 +100,7 @@
 //! their doc comments.
 //!
 //! Upstream citations in this module are verified against gpui-component 0.9.1,
-//! gpui-base 0.9.1 and gpui-pre 0.3.12.
+//! gpui-base 0.9.1 and gpui-pre 0.3.12, but where one names its version.
 
 use gpui::{BoxShadow, FontWeight, Hsla, Pixels, StyleRefinement, Styled, px, relative};
 use gpui_component::Size;
@@ -249,8 +249,8 @@ pub fn button(n: Native<'_>) -> StyleRefinement {
 /// gpui-component sets the label's size from the `Size` enum on the content
 /// element (`button_text_size`, `src/sizing.rs:337-343`, applied at
 /// `src/button/button.rs:782`) after the button's own refinement (`:764`), so
-/// a size given to [`button`] would be shadowed; since 0.7.1 that size is
-/// `text_sm` at `Size::Medium`, 0.875 of the platform font. The content
+/// a size given to [`button`] would be shadowed; that size is `text_sm` at
+/// `Size::Medium`, 0.875 of the platform font. The content
 /// element's children are the one public route under it (`:805`): a label
 /// passed as a child, built like upstream's own label element (`:796-804`)
 /// and refined with this. The name upstream derives from `.label()`
@@ -286,7 +286,7 @@ pub fn button_label(n: Native<'_>) -> StyleRefinement {
 /// line height.
 ///
 /// gpui-component sets `text_sm` on a `Size::Medium` Toggle's root before
-/// the caller's refinement (0.875 of the platform font since 0.7.1), so this
+/// the caller's refinement (0.875 of the platform font), so this
 /// size wins. Only the text: a `Toggle` is `Ghost` by default (`:15-16`), a
 /// flat button, and the model states no flat-button frame, so upstream's own
 /// stands. The platform's segmented control is the segmented `TabBar`, not a
@@ -450,11 +450,11 @@ pub fn list_item(n: Native<'_>) -> StyleRefinement {
 ///
 /// No width: `tooltip.max_width` is the bubble's outer width, which the
 /// application gives the bubble or the text. For a tooltip without a key
-/// binding either is the same bubble: since gpui-component 0.10.0 the box the
-/// text sits in has no minimum width and clips (gpui-component 0.10.0
-/// `src/tooltip.rs:134-144`), so `Tooltip::new(text)` given
-/// `max_w(tooltip.max_width)` wraps its text inside the bubble, and the
-/// conversion [`tooltip_content`] makes is no longer forced (`tests/seams.rs`).
+/// binding either is the same bubble: the box the text sits in has no
+/// minimum width and clips (gpui-component 0.10.0 `src/tooltip.rs:134-144`),
+/// so `Tooltip::new(text)` given `max_w(tooltip.max_width)` wraps its text
+/// inside the bubble, and the conversion [`tooltip_content`] makes is not
+/// needed (`tests/seams.rs`).
 /// With a key binding beside the text the two differ: [`tooltip_content`]
 /// holds the text to the inner width and the bubble grows past
 /// `tooltip.max_width` by the key and the gap before it, while a `max_w` on
@@ -518,10 +518,10 @@ const TOOLTIP_SHADOW: [(f32, f32, f32); 2] = [(4., 6., -1.), (2., 4., -2.)];
 ///
 /// Given to the content, the width is what the text wraps at, and the bubble
 /// grows to exactly `tooltip.max_width` around it. For a tooltip without a
-/// key binding it is no longer forced: gpui-component 0.10.0 gives the box
-/// the content sits in a zero minimum width and clips it (gpui-component
-/// 0.10.0 `src/tooltip.rs:134-144`), so the same width on the bubble wraps the
-/// text too, into the same bubble (`tests/seams.rs`). Up to 0.9.1 that box was
+/// key binding it is not needed: gpui-component 0.10.0 gives the box the
+/// content sits in a zero minimum width and clips it (gpui-component 0.10.0
+/// `src/tooltip.rs:134-144`), so the same width on the bubble wraps the text
+/// too, into the same bubble (`tests/seams.rs`). Up to 0.9.1 that box was
 /// a bare `div()`, a flex item with an automatic minimum size, and gpui
 /// measures text under `AvailableSpace::MinContent` without wrapping it -- a
 /// wrap width is taken only from a *definite* available width (gpui-pre
@@ -605,8 +605,8 @@ pub fn status_bar(n: Native<'_>) -> StyleRefinement {
 /// over the window's `background` and `border` tokens upstream paints the
 /// dialog with before the refinement (`:779`, `:781`).
 ///
-/// `max_h` no longer reaches upstream's `Dialog`: since 0.6.4 it clamps the
-/// dialog to what is left of the viewport *after* applying this style -- in
+/// `max_h` does not reach upstream's `Dialog`: it clamps the dialog to what
+/// is left of the viewport *after* applying this style -- in
 /// 0.9.1 the view's height less twice the `lg` spacing token and the layer's
 /// offset (`:667-689`), set by `max_h` at `:792`, after the refinement at
 /// `:787`.
@@ -1112,7 +1112,7 @@ pub fn spinner_size(n: Native<'_>) -> Size {
 /// (`src/sizing.rs:57-64`) and the cells no text size (`:323-333`), so they
 /// inherit — refine the table's container with [`table`] and they take
 /// `list.item_font`. The Medium cell padding stands (`:89-94`). At
-/// `Size::Medium` the cells are `text_sm` since 0.7.1: 0.875 of the platform
+/// `Size::Medium` the cells are `text_sm`: 0.875 of the platform
 /// font.
 #[must_use]
 pub fn data_table_size(n: Native<'_>) -> Size {

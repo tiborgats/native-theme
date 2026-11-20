@@ -113,7 +113,7 @@
 //! | `defaults` colors | 14 of 25 | text_color, muted_color, accent_color, border.color, focus_ring_color, shadow_color (the dialog overlay's colour, at an alpha of its own), and the four status colours with their text colours; the window background comes from `window.background_color` |
 //! | `defaults` geometry | radius, radius_lg, shadow, focus ring | fonts scaled by the text-scaling factor |
 //! | `button` | all 28 `button*` plus `primary*` / `secondary*` | solid native surfaces, the semantic colours each variant read in gpui-component 0.5.1, not upstream's tinted house style; flat buttons via [`variants::ghost_button`]; the hover border via [`variants::bordered_button`]; a dialog's default button via [`variants::default_button`] and [`geometry::default_button_rest`] |
-//! | `tab` | 5 of 10 colours | geometry is upstream work (`Tab`'s render writes its own height, radius and text size into the style bag the caller's setters fill, `tab/tab.rs:961-969`) |
+//! | `tab` | 5 of 10 colours | geometry is upstream work (`Tab`'s render writes its own height, radius and text size into the style bag the caller's setters fill, `tab/tab.rs:986-994` at gpui-component 0.10.0) |
 //! | `sidebar` | 5 of 6 | background, font.color, selection_background, selection_text_color, border.color |
 //! | `window` | 6 of 6 | background_color, title_bar_background, border colour and corner radius (`window_radius`, the corners of a client-decorated window); title_bar_font family, size, weight, style and colour via `geometry::title_bar`; the inactive title bar's fill and text via `geometry::title_bar_inactive` |
 //! | `input` | 6 of 16 + geometry | border, caret, selection_background; the caret's blink (`caret_blink_on`, `caret_blink_off`, `caret_blink_timeout`) as `cursor_blink`, installed by [`apply`]; height, line height, padding, radius, border, text and its colour via `geometry::input`; the fill, and a disabled field's fill and text colour, via `geometry::input_fill`; the code `Editor`'s fill, and where it is translucent its gutter's, the fill over `window.background_color`, through the highlight theme (its current line, line numbers and syntax colours stay upstream's scheme, and so do the status colours the scheme states: a hint's in both modes, a warning's in light mode, several backgrounds and borders in dark mode, and 0.9's `created`, `modified` and `deleted`; see [the backlog](https://github.com/tiborgats/native-theme/blob/main/docs/todo.md), *gpui: the editor's status colours are partly upstream's scheme*), and its line height via `geometry::editor` |
@@ -122,7 +122,7 @@
 //! | `table` | head, from `list.header_background` / `list.header_font` | the model states no footer colour, so `table_foot*` are derived |
 //! | `slider`, `switch` | 2 colours each | fill/thumb colours; a checked switch's track, `switch.checked_background`, via [`variants::switch_color`] for `Switch::color`; geometry upstream; the slider thumb's outline via the `widgets` module's `ThumbOutline` (feature `widgets`) |
 //! | `progress_bar` | fill + geometry | height, radius, min width via `geometry::progress` |
-//! | `list` | 7 of 16 + geometry | background, alternate row, selection, hover, grid, header background and header font colour; the background and the frame via `geometry::list`, the receiver of the fill (the `list` token has no reader in gpui-component 0.9.1); row height, padding, font via `geometry::list_item`; a selected row's text colour via `geometry::list_item_selected`; header height via `geometry::list_header_height` for `DataTable::header_row_height`; the part of a searchable list's row that matches the query, `list_highlight_foreground`, in the resting text colour, `defaults.text_color`, since the model states no colour for a match |
+//! | `list` | 7 of 16 + geometry | background, alternate row, selection, hover, grid, header background and header font colour; the background and the frame via `geometry::list`, the receiver of the fill (the `list` token has no reader in gpui-component 0.10.0); row height, padding, font via `geometry::list_item`; a selected row's text colour via `geometry::list_item_selected`; header height via `geometry::list_header_height` for `DataTable::header_row_height`; the part of a searchable list's row that matches the query, `list_highlight_foreground`, in the resting text colour, `defaults.text_color`, since the model states no colour for a match |
 //! | `menu` | 2 colours + geometry | hover_background, hover_text_color → `accent`, `accent_foreground` (upstream's item highlight); row height, the least row height, padding, icon gap, font via `geometry::menu_item` on an application-drawn row |
 //! | `segmented_control` | 1 of 9 | background → `tab_bar_segmented`, the track of a segmented `TabBar` |
 //! | `popover` | 2 of 3 + geometry | background, font.color; padding, radius and edge (`border.color` at `border.line_width`) via `geometry::popover` |
@@ -155,10 +155,10 @@
 //! (checkbox and radio indicators, switch, slider, separator thickness,
 //! splitter width, button icon gap, popup-menu rows), and tab
 //! height, radius and text size, which `Tab`'s render writes into the same
-//! style bag the caller's setters fill (`tab/tab.rs:961-969`), stay upstream
+//! style bag the caller's setters fill (`tab/tab.rs:986-994` at gpui-component 0.10.0), stay upstream
 //! work; the roadmap's *Upstream receivers for the gpui connector*
 //! (<https://github.com/tiborgats/native-theme/blob/main/ROADMAP.md#upstream-receivers-for-the-gpui-connector>)
-//! lists the requests to upstream, read at gpui-component 0.9.1. For
+//! lists the requests to upstream, read at gpui-component 0.10.0. For
 //! the checkbox, radio, switch, slider, progress bar, spinner, tab bar and
 //! separator, the `widgets` module (feature `widgets`) draws controls of its own on
 //! gpui-base's headless primitives, every part from the theme.
@@ -175,7 +175,7 @@
 //! | `material-icons` | the bundled Material Symbols set (`native-theme/material-icons`) |
 //! | `lucide-icons` | the bundled Lucide set (`native-theme/lucide-icons`) |
 //! | `system-icons` | the platform's own icons (`native-theme/system-icons`) |
-//! | `svg-rasterize` | SVG icons rasterized by this crate (`native-theme/svg-rasterize`) |
+//! | `svg-rasterize` | SVG icons rasterized by this crate (`native-theme/svg-rasterize`), and the widget icons (`icons::WidgetIcons`) |
 //! | `system-fonts` | a theme family the system lacks is drawn in the family the platform substitutes for it ([`font_family`]; `native-theme/system-fonts`) |
 //! | `gpui-fast` | the crate built on GPUI Kit's GPUI Fast core instead of gpui-pre (`gpui-kit/gpui-fast`, `gpui-component/gpui-fast`) |
 //! | `native` | the OS readers, `native-theme/native`; without one (or native-theme's `kde`, `portal`, `macos`, `windows`), [`from_system()`] is the platform preset on Linux and an error on macOS and Windows |
@@ -322,7 +322,8 @@ use std::time::Duration;
 /// `scrollbar_mode` is `Scrolling` where `scrollbar.overlay_mode` is set and
 /// `Always` where it is not, on every platform. Upstream's
 /// `Theme::sync_scrollbar_appearance` maps the platform's auto-hide setting by
-/// a rule of its own, on Windows auto-hide to `Hover` and otherwise `Always`
+/// a rule of its own: on Windows auto-hide gives `Hover` and its absence
+/// `Always`, elsewhere auto-hide gives `Scrolling` and its absence `Hover`
 /// (gpui-component 0.10.0 `src/theme/mod.rs:145-154`, `:386-392`).
 ///
 /// A [`ResolvedTheme`] carries no colour mode, so `is_dark` is the theme's:
@@ -1190,8 +1191,8 @@ impl<'a> Native<'a> {
 /// 6. forwards a reduced-motion *request*: `prefs.reduce_motion == true`
 ///    switches `App::reduce_motion` on if it is off; a later `false` undoes
 ///    only that switch, never clears a flag the connector did not set, and
-///    asks gpui-base (which reads the OS preference itself since 0.6.2) to
-///    re-read the system;
+///    asks gpui-base (which reads the OS preference itself) to re-read the
+///    system;
 /// 7. installs the variant's [`tooltip_show_delay`] as gpui-base's
 ///    application-wide `TooltipDefaults` show delay, keeping the grace period
 ///    installed; where the theme states no delay, the application's comes back:
@@ -1208,7 +1209,14 @@ impl<'a> Native<'a> {
 ///    restores step 5; and installs step 7's delay for the mode then current;
 ///    together with one deferred repeat for the update that installs it (the
 ///    subscription activates only at the end of that update's effect flush);
-/// 9. refreshes every window so the change paints at once.
+/// 9. registers the plugin of gpui-base's `Root` that, in every window whose
+///    `Root` is made after it, turns gpui-component's focus band on for a focus
+///    that followed a key press and off after a click, where the theme says the
+///    platform shows its ring for keyboard focus only
+///    (`defaults.focus_ring_keyboard_only`); on any other theme it writes
+///    nothing. Registering it again replaces its factory, so a window mounts
+///    it once (gpui-base 0.10.0 `src/root.rs`, `Root::register_plugin`);
+/// 10. refreshes every window so the change paints at once.
 ///
 /// Call `gpui_component::init` (or `gpui_kit::init`) *before* `apply`: an
 /// `init` afterwards switches the theme to light mode (the stored light
@@ -1344,8 +1352,8 @@ impl Global for ReduceMotionRequest {}
 
 /// `true` is a request: switch the flag on, remembering that the connector did
 /// so if it was off. `false` is the absence of a request: undo the connector's
-/// own switch, if any, and ask gpui-base (which reads the OS preference itself
-/// since 0.6.2) to re-read the system. gpui-base writes only a flag it still
+/// own switch, if any, and ask gpui-base (which reads the OS preference itself)
+/// to re-read the system. gpui-base writes only a flag it still
 /// owns, so a flag the application set is never cleared here. An explicit
 /// choice through gpui-base's `set_reduce_motion_preference`
 /// (`ReduceMotionPreference`, gpui-base 0.10.0 `src/reduce_motion.rs:85-127`)
@@ -1831,7 +1839,7 @@ mod tests {
     use super::*;
 
     /// Tripwire: `gpui_component::Theme` has exactly these 22 fields in
-    /// 0.9.1. Upstream carried three `tile_*` fields through 0.6.0 and 0.6.1
+    /// 0.10.0. Upstream carried three `tile_*` fields through 0.6.0 and 0.6.1
     /// that this connector never set, and nothing noticed until 0.6.2 removed
     /// them again; a field *added* in a release would be left at upstream's
     /// default just as silently. The struct is `#[non_exhaustive]` since

@@ -6,7 +6,7 @@
 //! gpui-component's own `apply_config` derivation.
 //!
 //! Upstream citations in this module are verified against gpui-component 0.9.1,
-//! gpui-base 0.9.1 and gpui-pre 0.3.12.
+//! gpui-base 0.9.1 and gpui-pre 0.3.12, but where one names its version.
 
 use gpui::Hsla;
 use gpui_component::theme::{Theme, ThemeColor, ThemeToken};
@@ -323,12 +323,12 @@ fn assign_secondary(tc: &mut ThemeColor, c: &ResolvedColors, is_dark: bool) {
 
 /// The status colours and their labels, as the platform states them.
 ///
-/// A label below 4.5:1 used to be replaced with white or black, chosen on
-/// a 0.5 lightness threshold that is not where the two cross over in contrast.
-/// On the real platforms the replacement was the colour the platform already
-/// had, and on the community presets it sometimes made the label *worse* than
-/// what the platform gave. A connector that overrode the platform's own choice
-/// here would be inventing a colour, so it emits the platform's.
+/// A label below 4.5:1 is kept as stated, not replaced with white or black
+/// on a 0.5 lightness threshold, which is not where the two cross over in
+/// contrast. On the real platforms such a replacement is the colour the
+/// platform already has, and on the community presets it can make the label
+/// *worse* than what the theme gives. A connector that overrode the
+/// platform's own choice here would be inventing a colour.
 fn assign_status(tc: &mut ThemeColor, c: &ResolvedColors, is_dark: bool) {
     tc.danger = c.danger;
     tc.danger_foreground = c.danger_fg;
@@ -421,8 +421,8 @@ fn assign_list_table(tc: &mut ThemeColor, c: &ResolvedColors, resolved: &Resolve
     // The column header's own fill, which upstream paints as the header row
     // (`table/column.rs:302`, `table/state.rs:1864, :2131`,
     // `table/table.rs:199`) and the model states as `list.header_background`.
-    // The window background it used to take is the surface the header sits
-    // on, not the header.
+    // Not the window background: that is the surface the header sits on,
+    // not the header.
     tc.list_head = c.list_header_bg;
     // The text of a searchable list's row where it matches the query
     // (gpui-component 0.10.0 `label.rs:261-275`, `highlight_matches`, which a

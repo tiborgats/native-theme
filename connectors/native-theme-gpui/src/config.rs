@@ -6,7 +6,7 @@
 //! fields (see [`theme_color_to_config_colors`]).
 //!
 //! Upstream citations in this module are verified against gpui-component 0.9.1,
-//! gpui-base 0.9.1 and gpui-pre 0.3.12.
+//! gpui-base 0.9.1 and gpui-pre 0.3.12, but where one names its version.
 
 use gpui::SharedString;
 use gpui_component::highlighter::{HighlightTheme, HighlightThemeStyle};

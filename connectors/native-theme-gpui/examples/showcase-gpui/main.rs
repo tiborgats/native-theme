@@ -31,7 +31,8 @@
 //!   gpui-component exposes, with each field's current value and the
 //!   `native-theme` field it was derived from.
 //! - The Icons page demonstrates `IconRole` mapping across Material, Lucide,
-//!   and freedesktop sets, plus animated spinner playback.
+//!   and freedesktop sets, plus animated spinner playback, and reports what
+//!   the widget icons (`icons::WidgetIcons`) serve gpui-component's widgets.
 //!
 //! # How the source is organised
 //!
@@ -115,7 +116,8 @@ impl Page {
     /// Every page, in the order the TabBar lists them.
     ///
     /// A new variant forces an arm in [`Page::index`], [`Page::label`],
-    /// [`Page::icon`] and [`Page::tab`], whose matches are exhaustive,
+    /// [`Page::flag`], [`Page::icon`] and [`Page::tab`], whose matches are
+    /// exhaustive,
     /// and the index it is given there has to be its position in this array
     /// — the `const` block below rejects the build otherwise. The one thing
     /// neither the compiler nor that block can see is a variant added to the
