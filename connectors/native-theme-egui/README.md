@@ -138,7 +138,7 @@ the default and all features, and the widget-coverage script against. The script
 writes the line; a hand-edited one fails a test:
 
 <!-- compat:begin -->
-Verified against ecolor 0.37.0, eframe 0.37.0, egui 0.37.0, egui-wgpu 0.37.0, egui-winit 0.37.0, egui_extras 0.37.0, egui_kittest 0.37.0, emath 0.37.0, epaint 0.37.0, epaint_default_fonts 0.37.0 and kittest 0.5.0 on 2026-11-20.
+Verified against ecolor 0.37.0, eframe 0.37.0, egui 0.37.0, egui-wgpu 0.37.0, egui-winit 0.37.0, egui_extras 0.37.0, egui_kittest 0.37.0, emath 0.37.0, epaint 0.37.0, epaint_default_fonts 0.37.0 and kittest 0.5.0 on 2026-11-21.
 <!-- compat:end -->
 
 ## Quick start
