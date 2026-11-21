@@ -1820,6 +1820,18 @@ model, the platform presets and the three connectors
         0.1.7). It declares Rust 1.95, above the workspace's 1.88.0, so it
         waits for an MSRV decision.
 
+      *At 0.7.2's release (2026-11-21):* `Cargo.lock` took the ten above
+      (jiff at 0.2.46) and xcap 0.9.10; resvg moved to 0.50.0 (it is
+      native-theme's own copy: the toolkits hold 0.45.1 and 0.46.0) and muda
+      to 0.21.2. Five stay listed: fontdb 0.24.0 (fontdb 0.23.0 is the one copy
+      iced's cosmic-text 0.15 and gpui-pre-wgpu's cosmic-text 0.19 share with
+      native-theme, so 0.24 would add a second to every iced and gpui
+      application), jiff 1.0 (egui_extras 0.37.0 takes jiff 0.2, the copy the
+      egui connector's tests share), skrifa (epaint's 0.44.0), ashpd 0.14 (zbus
+      6, the entry above) and windows-version 0.100 (the MSRV). xcap 0.9.10
+      brings ashpd 0.14 and zbus 6 into `Cargo.lock` for Linux alone, where
+      `tools/showcase-support` does not take xcap, so neither is built.
+
 ### detect: `prefers_reduced_motion` and the reader's block are two caches of one read
 
 - [ ] [v0.7.x] From M4's final review (P2-2, 2026-10-13):

@@ -114,7 +114,7 @@ test = true
 # back through the shared crate (`menu::main_menu_titles`).
 [target.'cfg(target_os = "macos")'.dev-dependencies]
 winit = { version = "0.30.13", default-features = false }
-# Off: muda's default `libxdo` and `gtk3` are Linux/BSD-only (its `Cargo.toml` lines 45-51,
-# 96-107), change nothing on macOS, and would add the gtk-rs 0.18 stack to `Cargo.lock`.
-muda = { version = "0.20.0", default-features = false }
+# Off: muda's default `gtk3` is Linux/BSD-only (its `Cargo.toml` lines 52-56, 102-105),
+# changes nothing on macOS, and would add the gtk-rs 0.18 stack to `Cargo.lock`.
+muda = { version = "0.21.2", default-features = false }
 
