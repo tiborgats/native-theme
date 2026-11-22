@@ -74,13 +74,6 @@ pub struct ButtonParts {
 
 impl ButtonWidget {
     /// A button of these rule sets and metrics.
-    #[cfg_attr(
-        not(test),
-        expect(
-            dead_code,
-            reason = "called by the kde-breeze builder, the next task of M0"
-        )
-    )]
     pub(crate) fn new(
         origin: WidgetOrigin,
         body: PartRules<ButtonMatcher>,
@@ -169,13 +162,6 @@ pub struct CheckboxParts {
 
 impl CheckboxWidget {
     /// A check box of these rule sets and metrics.
-    #[cfg_attr(
-        not(test),
-        expect(
-            dead_code,
-            reason = "called by the kde-breeze builder, the next task of M0"
-        )
-    )]
     pub(crate) fn new(
         origin: WidgetOrigin,
         indicator: PartRules,
@@ -264,13 +250,6 @@ pub struct RadioParts {
 
 impl RadioWidget {
     /// A radio button of these rule sets and metrics.
-    #[cfg_attr(
-        not(test),
-        expect(
-            dead_code,
-            reason = "called by the kde-breeze builder, the next task of M0"
-        )
-    )]
     pub(crate) fn new(
         origin: WidgetOrigin,
         indicator: PartRules,
@@ -356,13 +335,6 @@ pub struct ScrollbarParts {
 
 impl ScrollbarWidget {
     /// A scroll bar of these rule sets and metrics.
-    #[cfg_attr(
-        not(test),
-        expect(
-            dead_code,
-            reason = "called by the kde-breeze builder, the next task of M0"
-        )
-    )]
     pub(crate) fn new(
         origin: WidgetOrigin,
         track: PartRules,
@@ -449,13 +421,6 @@ pub struct ListParts {
 
 impl ListWidget {
     /// A list of these rule sets and metrics.
-    #[cfg_attr(
-        not(test),
-        expect(
-            dead_code,
-            reason = "called by the kde-breeze builder, the next task of M0"
-        )
-    )]
     #[allow(
         clippy::too_many_arguments,
         reason = "one rule set per part of spec §5's table, and its metric"
@@ -557,13 +522,6 @@ pub struct TooltipWidget {
 
 impl TooltipWidget {
     /// A tooltip of these parts.
-    #[cfg_attr(
-        not(test),
-        expect(
-            dead_code,
-            reason = "called by the kde-breeze builder, the next task of M0"
-        )
-    )]
     pub(crate) fn new(origin: WidgetOrigin, panel: PartStyle, text: TextStyle) -> Self {
         Self {
             origin,

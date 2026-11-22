@@ -14,8 +14,9 @@
 //! [`MotionTokens`](crate::next::MotionTokens),
 //! [`CaretSpec`](crate::next::CaretSpec)), what a reader carries
 //! ([`SystemOverrides`](crate::next::SystemOverrides)), the presets
-//! ([`Preset`](crate::next::Preset)) and the first slice's widgets in a
-//! [`ResolvedTheme`](crate::next::ResolvedTheme).
+//! ([`Preset`](crate::next::Preset)), the first slice's widgets in a
+//! [`ResolvedTheme`](crate::next::ResolvedTheme), and a minimal
+//! [`Theme`](crate::next::Theme) that resolves one.
 
 /// The methods and operators of a bit set over an unsigned integer whose
 /// `ALL` constant holds every defined bit: `bits`, `from_bits_truncate`,
@@ -145,7 +146,7 @@ pub use motion::{
 pub use paint::{
     BlendMode, ComplexPaint, GradientStop, MaterialKind, MaterialSpec, Paint, PaintLayer,
 };
-pub use preset::Preset;
+pub use preset::{Preset, Theme};
 pub use query::{
     ButtonKind, ButtonQuery, ButtonShape, ButtonVariant, Contrast, ControlSize, Direction,
     GroupPosition, InputQuery, InputVariant, ListKind, ListQuery, ListVariant, MotionPreference,

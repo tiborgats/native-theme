@@ -29,11 +29,11 @@ pub struct ThemeContext {
 }
 
 /// The smallest text scale (spec §3, `ThemeContext::text_scale`).
-const TEXT_SCALE_MIN: f32 = 0.5;
+pub(crate) const TEXT_SCALE_MIN: f32 = 0.5;
 /// The largest text scale (spec §3, `ThemeContext::text_scale`).
-const TEXT_SCALE_MAX: f32 = 4.0;
+pub(crate) const TEXT_SCALE_MAX: f32 = 4.0;
 /// The default text scale (spec §3, `ThemeContext::text_scale`).
-const TEXT_SCALE_DEFAULT: f32 = 1.0;
+pub(crate) const TEXT_SCALE_DEFAULT: f32 = 1.0;
 
 impl Default for ThemeContext {
     fn default() -> Self {
