@@ -9,19 +9,26 @@
 #
 # Steps: cargo fmt --all (formats in place, as check_release.sh does); clippy
 # on native-theme's targets without features and with the Linux features,
-# -D warnings; the strict panic lints on its library with both; its tests with
-# both (cargo nextest where installed, then the doctests through cargo test
-# --doc, as check_release.sh's cargo_tests; each run fails below run_tests'
-# minimum of one passed test); its two rustdoc runs, -D warnings; the
-# panic-pattern scan of native-theme/src and the README
-# versions check. `--target windows` or `--target macos` adds check_release.sh's
-# cross-target clippy and strict-panic steps of native-theme for that target,
-# whose cfg-gated code no host step compiles.
+# -D warnings; the strict panic lints on its library with both; the two MSRV
+# checks of native-theme in check_release.sh's MSRV section
+# (scripts/msrv_checks.sh: cargo check on the workspace's rust-version,
+# RUSTFLAGS=-Dwarnings, --locked, in its own build folder, which is deleted
+# when the run ends), with its default features and with all its features;
+# its tests with both feature sets (cargo nextest where installed, then the
+# doctests through cargo test --doc, as check_release.sh's cargo_tests; each
+# run fails below run_tests' minimum of one passed test); from the plan's M0,
+# step 4 on, cargo check of the gpui connector's targets and its parity test
+# (next::parity), with the features check_release.sh tests it with; the core
+# crate's two rustdoc runs, -D warnings; the panic-pattern scan of
+# native-theme/src and the README versions check. `--target windows` or
+# `--target macos` adds check_release.sh's cross-target clippy and
+# strict-panic steps of native-theme for that target, whose cfg-gated code no
+# host step compiles.
 #
-# It leaves to `check_release.sh --commit` the MSRV checks, the feature
-# combinations and every other crate. Each step prints its name, result and
-# wall time; the first failure prints the step's output and stops the run
-# with a non-zero status; a total time ends a passing run.
+# It leaves to `check_release.sh --commit` the other MSRV checks, the feature
+# combinations and every other crate's steps. Each step prints its name,
+# result and wall time; the first failure prints the step's output and stops
+# the run with a non-zero status; a total time ends a passing run.
 #
 # Scaffolding of the 0.8.0 work: deleted at the 0.8.0 cut.
 
@@ -45,7 +52,7 @@ while [ $# -gt 0 ]; do
             shift 2
             ;;
         -h | --help)
-            sed -n '2,26p' "$0" | sed 's/^# \{0,1\}//'
+            sed -n '2,33p' "$0" | sed 's/^# \{0,1\}//'
             exit 0
             ;;
         *)
@@ -149,6 +156,27 @@ tests() {
     cargo test "$@" --doc
 }
 
+# The gpui connector's parity test: tests' runner without its doctest run,
+# which cargo refuses beside --lib and a test filter.
+parity_tests() {
+    if [[ ! $HAVE_NEXTEST ]]; then
+        cargo test "$@"
+        return
+    fi
+    local threads=()
+    if [ -n "${RUST_TEST_THREADS:-}" ] && [ -z "${NEXTEST_TEST_THREADS:-}" ]; then
+        threads=(--test-threads "$RUST_TEST_THREADS")
+    fi
+    cargo nextest run --no-tests=pass --status-level fail --final-status-level fail \
+        --color never ${threads[@]+"${threads[@]}"} "$@"
+}
+
+# check_release.sh's MSRV section, scripts/msrv_checks.sh, sourced for the
+# toolchain, the check that it is installed (rustup may install a toolchain
+# it is asked for) and the arguments; it runs nothing when sourced.
+# shellcheck source=scripts/msrv_checks.sh
+source scripts/msrv_checks.sh
+
 TOTAL_START=$SECONDS
 
 step "cargo fmt (all crates)" cargo fmt --all
@@ -160,6 +188,35 @@ step "strict-panic (native-theme, Linux features)" \
     bash scripts/check_strict_panic.sh -p native-theme --lib --features "$NT_FEATURES"
 step "strict-panic (native-theme, no features)" \
     bash scripts/check_strict_panic.sh -p native-theme --lib --no-default-features
+# The MSRV checks of native-theme, as msrv_checks runs them: the workspace's
+# rust-version, warnings denied through RUSTFLAGS (CARGO_ENCODED_RUSTFLAGS
+# unset, which Cargo would read in its place), in the folder
+# <build_directory>/msrv-<major.minor>, which an EXIT trap deletes however the
+# run ends (Cargo at that version reads no build.build-dir), a leftover first.
+if ! msrv_toolchains; then
+    echo "check_next.sh: MSRV toolchains not read: $MSRV_TOOLCHAINS_ERROR" >&2
+    exit 1
+fi
+msrv_toolchain_list
+if ! reason=$(msrv_toolchain_installed "$MSRV_TOOLCHAIN"); then
+    echo "check_next.sh: MSRV: $reason" >&2
+    exit 1
+fi
+build_directory=$(cargo metadata --format-version 1 --no-deps | jq -r '.build_directory // empty')
+MSRV_TARGET_DIR="${build_directory:-target}/msrv-$(cut -d. -f1-2 <<<"${MSRV_TOOLCHAIN#+}")"
+quoted=$(printf %q "$MSRV_TARGET_DIR")
+# shellcheck disable=SC2064  # the path is fixed when the trap is set
+trap "[ -d $quoted ] && du -sb $quoted || true; rm -rf $quoted || true" EXIT
+if ! rm -rf "$MSRV_TARGET_DIR"; then
+    echo "check_next.sh: MSRV: the leftover $MSRV_TARGET_DIR could not be removed" >&2
+    exit 1
+fi
+step "MSRV $MSRV_TOOLCHAIN, -D warnings (native-theme, default features)" \
+    env -u CARGO_ENCODED_RUSTFLAGS RUSTFLAGS=-Dwarnings \
+    cargo "$MSRV_TOOLCHAIN" check "${MSRV_CHECK_ARGS_2[@]}" --target-dir "$MSRV_TARGET_DIR"
+step "MSRV $MSRV_TOOLCHAIN, -D warnings (native-theme, all features)" \
+    env -u CARGO_ENCODED_RUSTFLAGS RUSTFLAGS=-Dwarnings \
+    cargo "$MSRV_TOOLCHAIN" check -p native-theme --all-features --locked --target-dir "$MSRV_TARGET_DIR"
 if [ -n "$TARGET" ]; then
     if [ "$TARGET" = "x86_64-apple-darwin" ]; then
         platform_feature=macos
@@ -178,6 +235,13 @@ if [ -n "$TARGET" ]; then
 fi
 test_step "test (native-theme)" tests -p native-theme
 test_step "test (native-theme, Linux features)" tests -p native-theme --features "$NT_FEATURES"
+# The gpui connector's 0.8.0 mapping, from the plan's M0, step 4 on (rule 7),
+# with the features check_release.sh tests the connector with.
+GPUI_FEATURES="native,watch"
+step "check (native-theme-gpui, all targets, native, watch)" \
+    cargo check -p native-theme-gpui --all-targets --features "$GPUI_FEATURES"
+test_step "connector parity (native-theme-gpui, native, watch)" \
+    parity_tests -p native-theme-gpui --features "$GPUI_FEATURES" --lib next::parity
 step "docs (native-theme)" \
     env RUSTDOCFLAGS="-D warnings" cargo doc -p native-theme --no-deps
 step "docs, private items (native-theme, Linux features)" \
