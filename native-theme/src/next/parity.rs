@@ -6,9 +6,11 @@
 //! resolved theme, and asserts that every key of the slice has exactly one row, that no row names a key that
 //! does not exist (rows written by hand excepted), and that every home parses and names only what the spec
 //! declares (the vocabulary below, written from spec §§2-5). Every problem found is listed before the test
-//! fails.
+//! fails. The value half, [`compare`], compares each row's old value with the values at its homes.
 //!
 //! Scaffolding of the 0.8.0 work: deleted at the 0.8.0 cut.
+
+mod compare;
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -112,7 +114,7 @@ struct Row {
     difference_reason: Option<String>,
     difference_citation: Option<String>,
     difference_values: Option<BTreeMap<String, toml::Value>>,
-    // Read by people and by the second half; this half only requires it to be text.
+    // Read by people; the tests only require it to be text.
     #[allow(dead_code)]
     note: Option<String>,
 }
@@ -1057,9 +1059,6 @@ fn the_checks_catch_what_they_check() -> TestResult {
 }
 
 // ---------------------------------------------------------------------------------------------------------
-// SECOND HALF — not written yet (the next task, after the kde-breeze builder exists): for each scheme, resolve
-// the 0.8.0 `kde-breeze` and compare, row by row, the value of each key in 0.7.2's serialisation (or of the
-// hand-written field) with the value at each of its homes, applying `homes_by_preset`, `if_null`,
-// `only_if_null`, `home_fallback` and the conversions the rows' notes name, and skipping only the listed
-// differences of the preset. No test stands here until then.
+// The value half is `compare` (`parity/compare.rs`). The tests that run it on a preset's builder and on a
+// reader's fixture come with the kde-breeze builder (the next task); until then its own tests stand there.
 // ---------------------------------------------------------------------------------------------------------
