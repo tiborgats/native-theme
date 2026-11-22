@@ -109,6 +109,10 @@ struct Row {
     only_if_null: Option<String>,
     home_fallback: Option<String>,
     null_reference: Option<String>,
+    context: Option<RowContext>,
+    #[serde(default)]
+    unstated_if_unset: bool,
+    null_means: Option<NullMeans>,
     #[serde(default)]
     hand: bool,
     difference_presets: Option<Vec<String>>,
@@ -118,6 +122,31 @@ struct Row {
     // Read by people; the tests only require it to be text.
     #[allow(dead_code)]
     note: Option<String>,
+}
+
+/// A row's `context`: the `ThemeContext` values its homes are read with in place of the defaults (spec §3).
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+struct RowContext {
+    window_active: bool,
+}
+
+impl RowContext {
+    /// `ctx` with this row's values in place of its own.
+    fn applied_to(
+        self,
+        ctx: &crate::next::query::ThemeContext,
+    ) -> crate::next::query::ThemeContext {
+        ctx.clone().with_window_active(self.window_active)
+    }
+}
+
+/// What a row's null `key` states at its homes.
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq)]
+enum NullMeans {
+    /// `"none"`: the home has no outline, `Stroke::None` with the `STROKE` bit set.
+    #[serde(rename = "none")]
+    NoOutline,
 }
 
 /// The dotted keys of every leaf of `value` under `prefix`. An object whose keys all begin with a capital
@@ -723,12 +752,28 @@ enum Home {
     Snapshot,
     Metric,
     Part,
+    Window,
 }
+
+/// The getters of `WindowChrome` a home may name (spec §4), with their kinds.
+const WINDOW_GETTERS: &[(&str, Kind)] = &[("frame", P), ("title_bar", P), ("title", T)];
 
 /// `home` parsed against the vocabulary, or what is wrong with it.
 fn parse_home(home: &str, globals: &BTreeSet<String>) -> Result<Home, String> {
     if globals.contains(home) {
         return Ok(Home::Global);
+    }
+    if let Some(rest) = home.strip_prefix("window.") {
+        let (getter, property) = rest.split_once("(normal).").ok_or_else(|| {
+            format!("`{home}`: a window home is `window.<getter>(normal).<property>`")
+        })?;
+        let kind = WINDOW_GETTERS
+            .iter()
+            .find(|(name, _)| *name == getter)
+            .map(|(_, kind)| *kind)
+            .ok_or_else(|| format!("`{home}`: `WindowChrome` has no getter `{getter}`"))?;
+        check_property(home, kind, property)?;
+        return Ok(Home::Window);
     }
     if let Some(field) = home.strip_prefix("snapshot.context.") {
         return if CONTEXT_FIELDS.contains(&field) {
@@ -782,17 +827,24 @@ fn parse_home(home: &str, globals: &BTreeSet<String>) -> Result<Home, String> {
         }
         (None, None) => {}
     }
+    check_property(home, kind, property)?;
+    Ok(Home::Part)
+}
+
+/// Checks that `property` is a property of a part of `kind`.
+fn check_property(home: &str, kind: Kind, property: &str) -> Result<(), String> {
     let properties = match kind {
         Kind::P => PART_PROPERTIES,
         Kind::T => TEXT_PROPERTIES,
         Kind::I => ICON_PROPERTIES,
     };
-    if !properties.contains(&property) {
-        return Err(format!(
+    if properties.contains(&property) {
+        Ok(())
+    } else {
+        Err(format!(
             "`{home}`: `{property}` is no property of a {kind:?} part"
-        ));
+        ))
     }
-    Ok(Home::Part)
 }
 
 /// Checks `<states>[; <axis>=<value>, …]` for a widget of `query_kind`.
@@ -925,6 +977,17 @@ fn problems(table: &Table, keys: &BTreeSet<String>) -> Vec<String> {
                 ));
             }
         }
+        if row.null_means.is_some() {
+            let by_preset = row.homes_by_preset.values().flatten();
+            for home in row.homes.iter().chain(by_preset) {
+                let stroke = home.ends_with(".stroke.color") || home.ends_with(".stroke.width");
+                if !stroke || parse_home(home, &globals) != Ok(Home::Part) {
+                    found.push(format!(
+                        "`{key}`: null_means needs a part's stroke at every home, not `{home}`"
+                    ));
+                }
+            }
+        }
         if let Some(fallback) = &row.home_fallback {
             if row.homes.len() != 1 || !row.homes_by_preset.is_empty() {
                 found.push(format!("`{key}`: home_fallback needs exactly one home"));
@@ -1003,9 +1066,15 @@ fn the_checks_catch_what_they_check() -> TestResult {
         "scrollbar.track(NONE; orientation=Vertical).min_size[0]",
         "list.row(NONE; alternate=true).fill",
         "snapshot.context.motion",
+        "window.title_bar(normal).fill",
+        "window.title(normal).color",
     ] {
         assert!(parse_home(good, &globals).is_ok(), "{good}");
     }
+    assert_eq!(
+        parse_home("window.frame(normal).corners", &globals),
+        Ok(Home::Window)
+    );
     for bad in [
         "colors.nowhere",
         "nowidget.body(NONE).fill",
@@ -1022,6 +1091,11 @@ fn the_checks_catch_what_they_check() -> TestResult {
         "snapshot.colors.view.background",
         "button.body(HOVER|HOVER).fill",
         "button.body(NONE; variant=Primary, variant=Flat).fill",
+        "window.title_bar.fill",
+        "window.title_bar(NONE).fill",
+        "window.caption(normal).fill",
+        "window.title(normal).fill",
+        "window.frame(normal).family",
     ] {
         assert!(parse_home(bad, &globals).is_err(), "{bad}");
     }
@@ -1054,8 +1128,22 @@ fn the_checks_catch_what_they_check() -> TestResult {
         difference_reason = "a reason"
         difference_citation = "a citation"
         difference_values = { "adwaita" = "unstated" }
+
+        [[row]]
+        key = "button.gone"
+        homes = ["button.body(NONE).min_size[1]", "button.body(NONE).stroke.width"]
+        null_means = "none"
         "#,
     )?;
+    for bad in [
+        "null_means = \"unset\"",
+        "context = { window_active = false, scheme = \"Dark\" }",
+        "unstated_if_unset = 1",
+    ] {
+        let row =
+            format!("[[row]]\nkey = \"button.min_width\"\nhomes = [\"layout.widget_gap\"]\n{bad}");
+        assert!(toml::from_str::<Table>(&row).is_err(), "{bad}");
+    }
     let found = problems(&table, &keys);
     for expected in [
         "`button.min_height`: no row",
@@ -1067,6 +1155,8 @@ fn the_checks_catch_what_they_check() -> TestResult {
         "`button.min_width`: difference_values must name exactly the difference_presets",
         "`button.min_width`: null_reference `HOVERED` is no set of states",
         "`button.gone`: no home on `kde-breeze`",
+        "`button.gone`: null_means needs a part's stroke at every home, \
+         not `button.body(NONE).min_size[1]`",
     ] {
         assert!(
             found.iter().any(|p| p.contains(expected)),
@@ -1118,6 +1208,15 @@ fn expected_skip(key: &str) -> Option<compare::Skip> {
 /// each in the form `serde_json` gives its field's type (`Resolved.mode` as the variant's name).
 fn old_kde_breeze(mode: ColorMode) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
     old_resolved(&Theme::preset(PRESET)?, mode)
+}
+
+/// The JSON serialisation of the variant of `theme` that [`old_resolved`] resolves for `mode`, unresolved
+/// (the table's `unstated_if_unset`).
+fn old_unresolved(
+    theme: &Theme,
+    mode: ColorMode,
+) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
+    Ok(serde_json::to_value(theme.pick_variant(mode)?)?)
 }
 
 /// 0.7.2's `theme` resolved for `mode` as the comparator reads it (see [`old_kde_breeze`]).
@@ -1196,8 +1295,15 @@ fn model_parity_kde_breeze() -> TestResult {
         (ColorMode::Dark, ThemeContext::dark()),
     ] {
         let old = old_kde_breeze(mode)?;
-        let new = NextTheme::preset(Preset::KdeBreeze).resolve(&ctx);
-        let report = compare::compare(&old, &new, None, Preset::KdeBreeze)?;
+        let unresolved = old_unresolved(&Theme::preset(PRESET)?, mode)?;
+        let theme = NextTheme::preset(Preset::KdeBreeze);
+        let new = theme.resolve(&ctx);
+        let with_context = |context: RowContext| theme.resolve(&context.applied_to(&ctx));
+        let extra = compare::Extra {
+            unresolved: Some(&unresolved),
+            with_context: Some(&with_context),
+        };
+        let report = compare::compare(&old, &new, None, Preset::KdeBreeze, &extra)?;
         println!("{mode:?}: {report}");
         assert_eq!(report.totals.rows, table.row.len());
         for row in &report.rows {
@@ -1246,11 +1352,12 @@ const KDE_FIXTURES: usize = 8;
 /// the theme: the reader's pure function (`kde::from_kde_content_pure`) at the font DPI the reader states,
 /// its theme merged over `kde-breeze` as the pipeline merges a reader's result (`pipeline.rs`, `replay`),
 /// resolved for the reader's scheme with the rows written by hand added as [`old_kde_breeze`] adds them,
-/// and the reader's `accessibility` block at its key.
+/// and the reader's `accessibility` block at its key; also the merged theme's variant unresolved
+/// ([`old_unresolved`]).
 #[cfg(all(target_os = "linux", feature = "kde"))]
 fn old_kde_reader(
     content: &str,
-) -> Result<(serde_json::Value, String), Box<dyn std::error::Error>> {
+) -> Result<(serde_json::Value, serde_json::Value, String), Box<dyn std::error::Error>> {
     let (reader, _, accessibility) =
         crate::kde::from_kde_content_pure(content, Some(crate::detect::LINUX_FONT_DPI))?;
     let mode = if reader.dark.is_some() {
@@ -1261,6 +1368,7 @@ fn old_kde_reader(
     let mut merged = Theme::preset(PRESET)?;
     merged.merge(&reader);
     let mut old = old_resolved(&merged, mode)?;
+    let unresolved = old_unresolved(&merged, mode)?;
     let map = old
         .as_object_mut()
         .ok_or("the resolved theme does not serialise as an object")?;
@@ -1273,7 +1381,7 @@ fn old_kde_reader(
             "reduce_transparency": accessibility.reduce_transparency,
         }),
     );
-    Ok((old, reader.name.to_string()))
+    Ok((old, unresolved, reader.name.to_string()))
 }
 
 /// Reader parity of the kde-breeze builder: for every file of `tests/fixtures/kde/`, the 0.7.2 reader
@@ -1315,14 +1423,25 @@ fn reader_parity_on(
     use crate::next::preset::{Preset, Theme as NextTheme};
     use crate::next::reader::kde::snapshot_from_kdeglobals;
 
-    let (old, old_name) = old_kde_reader(content)?;
+    let (old, unresolved, old_name) = old_kde_reader(content)?;
     let mut ini = crate::kde::create_kde_parser();
     crate::kde::read_kconfig(&mut ini, content);
     let snapshot = snapshot_from_kdeglobals(&ini, None, None);
-    let new = NextTheme::preset(Preset::KdeBreeze)
-        .with_system_overrides(snapshot.overrides.clone())
-        .resolve(&snapshot.context);
-    let report = compare::compare(&old, &new, Some(&snapshot.context), Preset::KdeBreeze)?;
+    let theme =
+        NextTheme::preset(Preset::KdeBreeze).with_system_overrides(snapshot.overrides.clone());
+    let new = theme.resolve(&snapshot.context);
+    let with_context = |context: RowContext| theme.resolve(&context.applied_to(&snapshot.context));
+    let extra = compare::Extra {
+        unresolved: Some(&unresolved),
+        with_context: Some(&with_context),
+    };
+    let report = compare::compare(
+        &old,
+        &new,
+        Some(&snapshot.context),
+        Preset::KdeBreeze,
+        &extra,
+    )?;
     println!("{name}: {report}");
     assert_eq!(report.totals.rows, table.row.len(), "{name}");
     assert_eq!(&*new.name, old_name, "{name}");

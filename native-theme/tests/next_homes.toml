@@ -1,6 +1,5 @@
 # The table of homes of the 0.8.0 work (docs/v0.8.0-plan.md, section 1, rule 2): for each field of 0.7.2's
-# resolved theme in the first slice (the globals and `button`, `checkbox`, `list`, `scrollbar`, `tooltip`), where
-# its value lives in the 0.8.0 model. src/next/parity.rs checks the rows against 0.7.2's serialisation and the
+# resolved theme, where its value lives in the 0.8.0 model. src/next/parity.rs checks the rows against 0.7.2's serialisation and the
 # spec's vocabulary; the same rows place a preset's constants and port a consumer's reads. Scaffolding of the
 # 0.8.0 work: deleted at the 0.8.0 cut.
 #
@@ -14,14 +13,29 @@
 #   homes_by_preset      optional. `{ "<preset>" = [homes] }`: the homes for that preset in place of `homes`, where
 #                        the field means something else there.
 #   if_null              optional. An old key: where `key` is null, the homes hold that key's value (0.7.2's
-#                        fallback, e.g. `radio_indicator_width` unset means `indicator_width`).
+#                        fallback, e.g. `radio_indicator_width` unset means `indicator_width`). Where that key is
+#                        null too, its own row's `if_null` is followed; where the chain ends in a null key, the
+#                        row is compared as a null key.
 #   only_if_null         optional. An old key: the row is compared only where that key is null.
 #   home_fallback        optional, with one home. Where the `Option` slot of that home is `None` (a `Typography`
 #                        slot the platform does not define), this home is compared instead.
 #   null_reference       optional. States joined by `|` (`CHECKED`): where `key` is null, a home whose state holds
 #                        these states and more is compared with the same property at these states, not at `NONE`
 #                        (a `HOVER|CHECKED` home whose reference is `CHECKED`); see the paragraph below the homes.
-#   hand                 optional, default false. The row is written by hand: its key is not in the serialisation.
+#   context              optional. `{ window_active = false }`: the homes of the row are read from the theme resolved
+#                        with these `ThemeContext` values in place of the defaults (spec §3, `window_active`); `key`
+#                        is read from 0.7.2's one resolved theme.
+#   unstated_if_unset    optional, default false. 0.7.2's resolver gives this field a value of its own where the
+#                        theme states none (`validate_border`: transparent, 0, `false`; a hover fill taken from the
+#                        container). Where the unresolved 0.7.2 theme that was resolved (the preset's scheme; in
+#                        reader parity the preset merged with the reader's output) leaves the field `None`, the row
+#                        is compared as if `key` were null; where it states a value, as any other row. The field's
+#                        path there is the key's, a border's leaf by its serde name (`corner_radius_px`,
+#                        `line_width_px`).
+#   null_means           optional. `"none"`: where `key` is null, the theme states that the home has no outline: the
+#                        home's `stroke` is `Stroke::None` with the `STROKE` bit set (0.7.2: "`None` draws no
+#                        outline"), whatever the reference state holds.
+#   hand                optional, default false. The row is written by hand: its key is not in the serialisation.
 #   difference_presets   optional, with the three keys below. The presets on which the row is a listed difference
 #   difference_reason      (plan, rule 2): what differs and why,
 #   difference_citation    and the source of the corrected value,
@@ -49,13 +63,19 @@
 #                                    then optionally `; ` and axis values joined by `, `: `variant=Primary`,
 #                                    `shape=Pill`, `alternate=true`, `orientation=Vertical`, `size=Small`,
 #                                    `surface=View`, `position=First`.
+#   window.<getter>(normal).<property>
+#                                    `WindowChrome`'s `frame`, `title_bar` or `title` (spec §4) at
+#                                    `WindowState::default()`: `window.title_bar(normal).fill`.
 #
 # A part's property is a field of `PartStyle` (`fill`, `stroke.color`, `stroke.width`, `corners`, `shadows`,
 # `opacity`, `padding.top` .. `padding.left`, `margin.top` .. `margin.left`, `min_size[0]` (width), `min_size[1]`
 # (height), `max_size[0]`, `max_size[1]`, `focus`, `ripple`, `transition`, `cursor`, `transform`), of `TextStyle`
 # (`family`, `color`, `size_px`, `defined_size`, `weight`, `style`, `width`, `line_height`, `letter_spacing`,
 # `optical_size`, `decoration`, `blend_mode`) or of `IconStyle` (`size`, `color`, `opacity`, `weight`,
-# `rendering_mode`, `stroke_width`, `blend_mode`), by the part's kind. A 0.7.2 `None` at a part's property is the
+# `rendering_mode`, `stroke_width`, `blend_mode`), by the part's kind. `stroke.color` and `stroke.width` are the two
+# fields of the home's `Stroke::Uniform`; both share the one `STROKE` bit. `<widget>.<part>` may be
+# `text_area.<part>`: `input.*` serves `input` and `text_area` as `checkbox.*` serves `checkbox` and `radio`. A 0.7.2
+# `None` at a part's property is the
 # property's `stated` bit clear; for a state, no rule, so the query returns what it returns without that state
 # (spec §5, notes to the table): the test compares the property at the home's state, value and `stated` bit,
 # with the same property at the reference state, `NONE` unless `null_reference` names another. `checkbox.*` serves `checkbox` and `radio`: such a row names a home on each.
@@ -654,6 +674,7 @@ homes = [
     "checkbox.indicator(HOVER|CHECKED).stroke.color",
     "radio.indicator(HOVER|CHECKED).stroke.color",
 ]
+null_reference = "CHECKED"
 
 [[row]]
 key = "checkbox.disabled_background"
@@ -663,6 +684,7 @@ homes = [
     "checkbox.indicator(DISABLED|CHECKED).fill",
     "radio.indicator(DISABLED|CHECKED).fill",
 ]
+null_reference = "CHECKED"
 
 [[row]]
 key = "checkbox.unchecked_background"

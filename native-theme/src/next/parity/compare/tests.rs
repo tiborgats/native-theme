@@ -826,11 +826,16 @@ const EQUAL_THOUGH_STATED: &[&str] = &[
 
 #[test]
 fn kde_breeze_against_a_theme_with_nothing_stated() -> TestResult {
-    let resolved = crate::theme::Theme::preset("kde-breeze")?
-        .resolve_with(ColorMode::Light, &ResolutionContext::for_tests())?;
+    let theme = crate::theme::Theme::preset("kde-breeze")?;
+    let resolved = theme.resolve_with(ColorMode::Light, &ResolutionContext::for_tests())?;
     let old = serde_json::to_value(&resolved.variant)?;
+    let unresolved = serde_json::to_value(theme.pick_variant(ColorMode::Light)?)?;
     let new = nothing_stated(Preset::KdeBreeze, ThemeContext::light());
-    let report = compare(&old, &new, None, Preset::KdeBreeze)?;
+    let extra = Extra {
+        unresolved: Some(&unresolved),
+        with_context: None,
+    };
+    let report = compare(&old, &new, None, Preset::KdeBreeze, &extra)?;
     let table: Table = toml::from_str(HOMES)?;
     assert_eq!(report.totals.rows, table.row.len());
     assert_eq!(
@@ -1251,5 +1256,198 @@ fn a_fallback_key_missing_from_old_is_an_error_and_an_absent_slot_is_unstated() 
     assert_eq!(report.mismatched_keys(), vec!["x.v"], "{report}");
     let report = one_row("typography.caption.size_px", Value::Null, &theme)?;
     assert!(report.mismatched_keys().is_empty(), "{report}");
+    Ok(())
+}
+
+const IN_A_CONTEXT: &str = r#"
+[[row]]
+key = "x.inactive"
+homes = ["colors.link"]
+context = { window_active = false }
+[[row]]
+key = "x.active"
+homes = ["colors.link"]
+"#;
+
+#[test]
+fn a_row_with_a_context_reads_its_homes_from_the_theme_resolved_with_it() -> TestResult {
+    let theme = theme();
+    let asked = std::cell::Cell::new(None);
+    let with_context = |context: RowContext| {
+        asked.set(Some(context));
+        let mut t = nothing_stated(
+            Preset::KdeBreeze,
+            context.applied_to(&ThemeContext::light()),
+        );
+        t.colors.link = srgb(HOVER_FILL);
+        t
+    };
+    let extra = Extra {
+        unresolved: None,
+        with_context: Some(&with_context),
+    };
+    let rows = rows(IN_A_CONTEXT)?;
+    let old = json!({ "x": { "inactive": "#d6ecf8", "active": "#3daee9" } });
+    let report = compare_rows_with(&rows, &old, &theme, None, Preset::KdeBreeze, &extra)?;
+    assert!(report.mismatched_keys().is_empty(), "{report}");
+    assert_eq!(
+        asked.get(),
+        Some(RowContext {
+            window_active: false
+        })
+    );
+    let swapped = json!({ "x": { "inactive": "#3daee9", "active": "#3daee9" } });
+    let report = compare_rows_with(&rows, &swapped, &theme, None, Preset::KdeBreeze, &extra)?;
+    assert_eq!(report.mismatched_keys(), vec!["x.inactive"], "{report}");
+    // Without the theme resolved with the context: an error naming the row.
+    match compare_rows(&rows, &old, &theme, None, Preset::KdeBreeze) {
+        Err(e) => assert!(e.starts_with("row `x.inactive`"), "{e}"),
+        Ok(report) => return Err(format!("no error: {report}").into()),
+    }
+    Ok(())
+}
+
+const UNSTATED_IF_UNSET: &str = r#"
+[[row]]
+key = "u.hover_border"
+homes = ["button.body(HOVER).stroke.color"]
+unstated_if_unset = true
+[[row]]
+key = "u.border.corner_radius"
+homes = ["button.body(NONE).corners"]
+unstated_if_unset = true
+"#;
+
+#[test]
+fn unstated_if_unset_compares_a_field_the_unresolved_theme_leaves_unset_as_null() -> TestResult {
+    let theme = theme();
+    let rows = rows(UNSTATED_IF_UNSET)?;
+    // 0.7.2's resolver made up the hover border; the theme states a radius of 5.
+    let old = json!({ "u": { "hover_border": "#ffffff", "border": { "corner_radius": 5.0 } } });
+    let report_on = |unresolved: &Value| {
+        let extra = Extra {
+            unresolved: Some(unresolved),
+            with_context: None,
+        };
+        compare_rows_with(&rows, &old, &theme, None, Preset::KdeBreeze, &extra)
+    };
+    // The hover border unset: compared as null, so as the rest state's stroke. The radius stated, by its
+    // serde name: compared as any other row.
+    let unset = json!({ "u": { "border": { "corner_radius_px": 5.0 } } });
+    let report = report_on(&unset)?;
+    assert!(report.mismatched_keys().is_empty(), "{report}");
+    assert_eq!(
+        report.rows.first().and_then(|r| r.value.clone()),
+        Some(Value::Null)
+    );
+    // Stated, the hover border is compared as any other row.
+    let stated =
+        json!({ "u": { "hover_border": "#ffffff", "border": { "corner_radius_px": 5.0 } } });
+    let report = report_on(&stated)?;
+    assert_eq!(report.mismatched_keys(), vec!["u.hover_border"], "{report}");
+    // A border's leaf is read by its serde name only: by its field's name it is unset, so the stated
+    // radius at the rest state mismatches the null.
+    let by_field_name = json!({ "u": { "border": { "corner_radius": 5.0 } } });
+    let report = report_on(&by_field_name)?;
+    assert_eq!(
+        report.mismatched_keys(),
+        vec!["u.border.corner_radius"],
+        "{report}"
+    );
+    // Without the unresolved theme: an error naming the row.
+    match compare_rows(&rows, &old, &theme, None, Preset::KdeBreeze) {
+        Err(e) => assert!(e.starts_with("row `u.hover_border`"), "{e}"),
+        Ok(report) => return Err(format!("no error: {report}").into()),
+    }
+    Ok(())
+}
+
+const NO_OUTLINE: &str = r#"
+[[row]]
+key = "m.stroke"
+homes = ["button.body(NONE).stroke.color", "button.body(HOVER).stroke.color"]
+null_means = "none"
+"#;
+
+#[test]
+fn null_means_none_requires_a_stated_stroke_of_none() -> TestResult {
+    let rows = rows(NO_OUTLINE)?;
+    let null = json!({ "m": { "stroke": null } });
+    for (theme, equal) in [
+        (with_body(vec![PartProp::Stroke(Stroke::None)]), true),
+        // Unstated at every state: equal to the reference, but no outline is not stated.
+        (with_body(vec![]), false),
+        (theme(), false),
+    ] {
+        let report = compare_rows(&rows, &null, &theme, None, Preset::KdeBreeze)?;
+        assert_eq!(report.mismatched_keys().is_empty(), equal, "{report}");
+    }
+    // A stated key is compared as any other: the stroke's colour at both homes.
+    let stated = json!({ "m": { "stroke": "#bcbec0" } });
+    let report = compare_rows(&rows, &stated, &theme(), None, Preset::KdeBreeze)?;
+    assert!(report.mismatched_keys().is_empty(), "{report}");
+    Ok(())
+}
+
+const IF_NULL_CHAIN: &str = r#"
+[[row]]
+key = "i.a"
+homes = ["layout.border_width"]
+if_null = "i.b"
+[[row]]
+key = "i.b"
+homes = ["layout.border_width"]
+if_null = "i.c"
+[[row]]
+key = "i.c"
+homes = ["layout.border_width"]
+"#;
+
+#[test]
+fn if_null_follows_the_chain_of_null_keys() -> TestResult {
+    let theme = theme();
+    let rows = rows(IF_NULL_CHAIN)?;
+    let old = json!({ "i": { "a": null, "b": null, "c": NUMBER } });
+    let report = compare_rows(&rows, &old, &theme, None, Preset::KdeBreeze)?;
+    assert!(report.mismatched_keys().is_empty(), "{report}");
+    assert_eq!(
+        report.rows.first().and_then(|r| r.value.clone()),
+        Some(json!(NUMBER))
+    );
+    // The chain ends in a null key: the row is compared as a null key.
+    let all_null = json!({ "i": { "a": null, "b": null, "c": null } });
+    let report = compare_rows(&rows, &all_null, &theme, None, Preset::KdeBreeze)?;
+    assert_eq!(
+        report.rows.first().and_then(|r| r.value.clone()),
+        Some(Value::Null)
+    );
+    // A chain that returns to a key is an error naming the row.
+    let looped = IF_NULL_CHAIN.replacen("if_null = \"i.c\"", "if_null = \"i.a\"", 1);
+    match compare_rows(
+        &self::rows(&looped)?,
+        &all_null,
+        &theme,
+        None,
+        Preset::KdeBreeze,
+    ) {
+        Err(e) => assert!(e.contains("returns to `i.a`"), "{e}"),
+        Ok(report) => return Err(format!("no error: {report}").into()),
+    }
+    Ok(())
+}
+
+#[test]
+fn a_window_home_parses_and_reads_as_no_slot() -> TestResult {
+    let theme = theme();
+    for value in [json!("#ffffff"), Value::Null] {
+        let report = one_row("window.title_bar(normal).fill", value.clone(), &theme)?;
+        let Some(Outcome::Mismatch(homes)) = report.rows.first().map(|r| &r.outcome) else {
+            return Err(format!("{value}: no mismatch: {report}").into());
+        };
+        assert!(
+            homes.iter().all(|m| m.new.starts_with("no slot")),
+            "{report}"
+        );
+    }
     Ok(())
 }

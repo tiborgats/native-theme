@@ -20,6 +20,14 @@
 //! continuous corners) is a value no 0.7.2 field holds, so a mismatch. A colour is compared by its 8-bit
 //! channels only where every channel is finite and in 0..=1; any other colour is a mismatch.
 //!
+//! The table's keys that change how a row is read: `if_null` is followed along the chain of the rows of
+//! the keys it names while their values are null; `unstated_if_unset` compares the row as if its key were
+//! null where the unresolved 0.7.2 theme leaves the field unset ([`Extra::unresolved`]); `null_means =
+//! "none"` requires, where the key is null, `Stroke::None` with the `STROKE` bit set at every home, whatever
+//! the reference state holds; `context` reads the homes from the theme resolved with it
+//! ([`Extra::with_context`]). A home in `WindowChrome` (`window.<getter>(normal).<property>`) parses but
+//! reads as "no slot", a mismatch, until the model holds `WindowChrome`.
+//!
 //! A row written by hand names a field that does not serialise; it is read from `old` at its key where the
 //! caller has added it there, in the form `serde_json` gives the field's type (`Resolved.mode`, whose
 //! `ColorMode` has no serialisation, as the variant's name: `"Light"`, `"Dark"`), and skipped where the key
@@ -32,7 +40,7 @@ use std::str::FromStr;
 
 use serde_json::Value;
 
-use super::{HOMES, Row, Table};
+use super::{HOMES, NullMeans, Row, RowContext, Table};
 use crate::IconSet;
 use crate::next::color::Color;
 use crate::next::geometry::{CornerCurve, CornerRadius, Stroke, StrokeAlign};
@@ -234,21 +242,33 @@ impl fmt::Display for Report {
 // The comparison.
 // ---------------------------------------------------------------------------------------------------------
 
+/// What some rows read beside the two resolved themes.
+#[derive(Default)]
+pub(super) struct Extra<'a> {
+    /// The JSON serialisation of the unresolved 0.7.2 theme that `old` was resolved from (the variant of
+    /// its scheme), which the `unstated_if_unset` rows read; a field it leaves `None` is absent from it.
+    pub(super) unresolved: Option<&'a Value>,
+    /// The 0.8.0 theme resolved with a row's `context` in place of the defaults, which the `context` rows
+    /// read their homes from.
+    pub(super) with_context: Option<&'a dyn Fn(RowContext) -> ResolvedTheme>,
+}
+
 /// The report of the table of homes on `preset`: `old` is the JSON serialisation of 0.7.2's resolved theme
 /// (with any row written by hand added at its key), `new` the 0.8.0 resolved theme, `snapshot_context` the
-/// reader's context where a snapshot is compared. An error names the row whose home or old value cannot be
-/// read.
+/// reader's context where a snapshot is compared, `extra` what the rows of the keys `unstated_if_unset` and
+/// `context` read. An error names the row whose home or old value cannot be read.
 pub(super) fn compare(
     old: &Value,
     new: &ResolvedTheme,
     snapshot_context: Option<&ThemeContext>,
     preset: Preset,
+    extra: &Extra<'_>,
 ) -> Result<Report, String> {
     let table: Table = toml::from_str(HOMES).map_err(|e| e.to_string())?;
-    compare_rows(&table.row, old, new, snapshot_context, preset)
+    compare_rows_with(&table.row, old, new, snapshot_context, preset, extra)
 }
 
-/// [`compare`] on `rows`.
+/// [`compare`] on `rows`, without [`Extra`].
 pub(super) fn compare_rows(
     rows: &[Row],
     old: &Value,
@@ -256,9 +276,21 @@ pub(super) fn compare_rows(
     snapshot_context: Option<&ThemeContext>,
     preset: Preset,
 ) -> Result<Report, String> {
+    compare_rows_with(rows, old, new, snapshot_context, preset, &Extra::default())
+}
+
+/// [`compare`] on `rows`.
+pub(super) fn compare_rows_with(
+    rows: &[Row],
+    old: &Value,
+    new: &ResolvedTheme,
+    snapshot_context: Option<&ThemeContext>,
+    preset: Preset,
+    extra: &Extra<'_>,
+) -> Result<Report, String> {
     let mut report = Report::default();
     for row in rows {
-        let result = compare_row(row, old, new, snapshot_context, preset)
+        let result = compare_row(row, rows, old, new, snapshot_context, preset, extra)
             .map_err(|e| format!("row `{}`: {e}", row.key))?;
         report.push(result);
     }
@@ -267,12 +299,22 @@ pub(super) fn compare_rows(
 
 const SNAPSHOT_PREFIX: &str = "snapshot.context.";
 
+/// The prefix of a home in `WindowChrome` (spec §4), which the model does not hold yet: such a home reads
+/// as "no slot".
+const WINDOW_PREFIX: &str = "window.";
+
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the row, its table and the inputs of `compare_rows_with`"
+)]
 fn compare_row(
     row: &Row,
+    rows: &[Row],
     old: &Value,
     new: &ResolvedTheme,
     snapshot_context: Option<&ThemeContext>,
     preset: Preset,
+    extra: &Extra<'_>,
 ) -> Result<RowReport, String> {
     let skipped = |skip| RowReport {
         key: row.key.clone(),
@@ -301,18 +343,51 @@ fn compare_row(
         None if row.hand => return Ok(skipped(Skip::HandKeyAbsent)),
         None => return Err("its key is not in old".to_owned()),
     };
-    let value = match (value, &row.if_null) {
-        (Value::Null, Some(other)) => {
-            lookup(old, other).ok_or_else(|| format!("its if_null key `{other}` is not in old"))?
+    let value = if row.unstated_if_unset {
+        let unresolved = extra
+            .unresolved
+            .ok_or("unstated_if_unset needs the unresolved 0.7.2 theme")?;
+        if unresolved_states(unresolved, &row.key) {
+            value
+        } else {
+            &Value::Null
         }
-        (value, _) => value,
+    } else {
+        value
     };
+    let value = follow_if_null(row, rows, value, old)?;
     let (value, old_null) = match listed_difference(row, preset)? {
         Some(listed) => (listed, false),
         None => (value.clone(), value.is_null()),
     };
+    let with_context;
+    let new = match row.context {
+        Some(context) => {
+            let resolve = extra
+                .with_context
+                .ok_or("its context needs the 0.8.0 theme resolved with it")?;
+            with_context = resolve(context);
+            &with_context
+        }
+        None => new,
+    };
     let mut mismatches = Vec::new();
     for home in homes {
+        if old_null && row.null_means == Some(NullMeans::NoOutline) {
+            let style = part_style_at(home, new)?
+                .ok_or_else(|| format!("null_means: `{home}` is no part's stroke"))?;
+            let stated = style.stated.contains(PartStated::STROKE);
+            if !stated || style.stroke != Stroke::None {
+                let bit = if stated { "stated" } else { "unstated" };
+                mismatches.push(Mismatch {
+                    key: row.key.clone(),
+                    home: home.clone(),
+                    old: "null: no outline, `Stroke::None` with STROKE stated".to_owned(),
+                    new: format!("{:?}, STROKE {bit}", style.stroke),
+                });
+            }
+            continue;
+        }
         if old_null && let Some(reference) = reference_home(home, row.null_reference.as_deref())? {
             let got = read(home, new, snapshot_context)?;
             let at_reference = read(&reference, new, snapshot_context)?;
@@ -376,6 +451,9 @@ fn compare_row(
 /// holds all its flags and more, else `NONE`; the axes are kept. `None` for any other home (no query, or the
 /// state `NONE`), where an old `null` is "unstated".
 fn reference_home(home: &str, reference: Option<&str>) -> Result<Option<String>, String> {
+    if home.starts_with(WINDOW_PREFIX) {
+        return Ok(None);
+    }
     let Some((head, after)) = home.split_once('(') else {
         return Ok(None);
     };
@@ -409,6 +487,57 @@ fn reference_home(home: &str, reference: Option<&str>) -> Result<Option<String>,
 fn lookup<'a>(old: &'a Value, key: &str) -> Option<&'a Value> {
     key.split('.')
         .try_fold(old, |value, segment| value.get(segment))
+}
+
+/// The leaves of a 0.7.2 border whose serde name is not their field's name (`model/border.rs`).
+const BORDER_SERDE_NAMES: [(&str, &str); 3] = [
+    ("corner_radius", "corner_radius_px"),
+    ("corner_radius_lg", "corner_radius_lg_px"),
+    ("line_width", "line_width_px"),
+];
+
+/// Whether the unresolved 0.7.2 theme `unresolved` states the field of `key`: the field's path there is
+/// the key's, a border's leaf by its serde name; a field the theme leaves `None` is absent.
+fn unresolved_states(unresolved: &Value, key: &str) -> bool {
+    let path = match key.rsplit_once('.') {
+        Some((parent, leaf)) if parent == "border" || parent.ends_with(".border") => {
+            match BORDER_SERDE_NAMES.iter().find(|(name, _)| *name == leaf) {
+                Some((_, serde_name)) => format!("{parent}.{serde_name}"),
+                None => key.to_owned(),
+            }
+        }
+        _ => key.to_owned(),
+    };
+    lookup(unresolved, &path).is_some_and(|v| !v.is_null())
+}
+
+/// `value`, the old value of `row`'s key, or where it is null the value its `if_null` chain ends in: the
+/// `if_null` key's value, and where that is null too, the value its own row's `if_null` names, and so on;
+/// where the chain ends in a null key, null.
+fn follow_if_null<'a>(
+    row: &Row,
+    rows: &[Row],
+    value: &'a Value,
+    old: &'a Value,
+) -> Result<&'a Value, String> {
+    let mut value = value;
+    let mut next = row.if_null.as_deref();
+    let mut seen = vec![row.key.as_str()];
+    while value.is_null()
+        && let Some(other) = next
+    {
+        if seen.contains(&other) {
+            return Err(format!("its if_null chain returns to `{other}`"));
+        }
+        seen.push(other);
+        value =
+            lookup(old, other).ok_or_else(|| format!("its if_null key `{other}` is not in old"))?;
+        next = rows
+            .iter()
+            .find(|r| r.key == other)
+            .and_then(|r| r.if_null.as_deref());
+    }
+    Ok(value)
 }
 
 /// The value 0.8.0 has at every home of `row` on `preset` where the row is a listed difference there:
@@ -467,6 +596,8 @@ enum Got {
     Unstated,
     /// An `Option<TextStyle>` slot of `Typography` that is `None` (the row's `home_fallback` applies).
     NoSlot,
+    /// A home in `WindowChrome`, which the model does not hold yet: a mismatch whatever the old value.
+    NoWindowChrome,
     Color(Color),
     F32(f32),
     Int(u64),
@@ -492,6 +623,7 @@ impl fmt::Display for Got {
         match self {
             Self::Unstated => f.write_str("unstated"),
             Self::NoSlot => f.write_str("no slot"),
+            Self::NoWindowChrome => f.write_str("no slot (no `WindowChrome` yet)"),
             Self::Color(c) => {
                 let [r, g, b, a] = c.to_srgb8();
                 write!(f, "{c:?} = 8-bit [{r}, {g}, {b}, {a}]")
@@ -518,6 +650,7 @@ fn equal(old: &Value, got: &Got) -> Result<bool, String> {
         (Got::ShadowsNone, Value::Null) => Ok(false),
         (Got::ShadowsNone, Value::Bool(enabled)) => Ok(!*enabled),
         (Got::ShadowsUnstated | Got::ShadowsNone, _) => Err(kind_error()),
+        (Got::NoWindowChrome, _) => Ok(false),
         (Got::Unstated | Got::NoSlot, old) => Ok(old.is_null()),
         (_, Value::Null) | (Got::Other(_), _) => Ok(false),
         (Got::Color(c), Value::String(s)) => {
@@ -581,6 +714,9 @@ fn read(
     }
     if home == "name" {
         return Ok(Got::Str(theme.name.to_string()));
+    }
+    if home.starts_with(WINDOW_PREFIX) {
+        return Ok(Got::NoWindowChrome);
     }
     let (head, rest) = home.split_once('.').ok_or_else(unreadable)?;
     let got = match head {
@@ -888,6 +1024,23 @@ fn ruled_part(theme: &ResolvedTheme, widget: &str, rest: &str) -> Result<Option<
         Some((Ruled::Text(style), property)) => text_property(&style, property),
         Some((Ruled::Icon(style), property)) => icon_property(&style, property),
         None => None,
+    })
+}
+
+/// The part style at `home`, a part's property (`tooltip.panel.<property>` or a ruled part's), `None`
+/// where the home is no part the comparator reads or a text or icon part.
+fn part_style_at(home: &str, theme: &ResolvedTheme) -> Result<Option<PartStyle>, String> {
+    let Some((widget, rest)) = home.split_once('.') else {
+        return Ok(None);
+    };
+    if widget == "tooltip" {
+        return Ok(rest
+            .starts_with("panel.")
+            .then(|| theme.tooltip.panel.clone()));
+    }
+    Ok(match ruled_style(theme, widget, rest)? {
+        Some((Ruled::Part(style), _)) => Some(style),
+        Some((Ruled::Text(_) | Ruled::Icon(_), _)) | None => None,
     })
 }
 
