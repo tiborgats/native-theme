@@ -15,6 +15,15 @@
 //! no control size and the contrast level `Normal` only; a query for anything
 //! else returns the part's base style.
 //!
+//! A part's exclusive state group names only the flags that part has a rule
+//! for: a state without data of its own returns what the query returns
+//! without that state, so a flag the part does not style removes no other.
+//! The groups: the button's body `DISABLED, PRESSED, HOVER`; the check box's
+//! and the radio button's indicator `DISABLED, HOVER`; the list's header and
+//! the scroll bar's handle `PRESSED, HOVER`; every other part (the labels,
+//! the check mark, the dot, the list's container, row and header separator,
+//! the scroll bar's groove) none.
+//!
 //! Of the context it acts on the scheme alone. The contrast, the motion
 //! preference, the text scale, the direction and the accessibility and
 //! window flags change nothing here: no row of the parity table needs them.
@@ -92,6 +101,7 @@ struct SchemeConstants {
     checkbox_checked: u32,
     checkbox_frame: u32,
     view_foreground: u32,
+    checkbox_disabled_foreground: u32,
     list_alternate_row: u32,
     list_header_hover: u32,
     list_header_pressed: u32,
@@ -114,6 +124,12 @@ const LIGHT: SchemeConstants = SchemeConstants {
     window_background: 0xeff0_f1ff,
     // `defaults.text_color`: platform-facts.md (§2.1.3): [Colors:Window] ForegroundNormal
     // 35,38,41 (BreezeLight.colors:137, breeze v6.7.5)
+    // `defaults.danger_text_color`, `warning_text_color`, `success_text_color`,
+    // `info_text_color`: platform-facts.md (§2.1.4): [Colors:Window] ForegroundNormal 35,38,41
+    // (BreezeLight.colors:137, breeze v6.7.5)
+    // `defaults.selection_inactive_text_color`: platform-facts.md (§2.1.3):
+    // selection_inactive_text_color, [Colors:Window] ForegroundNormal 35,38,41
+    // (BreezeLight.colors:137, breeze v6.7.5)
     window_foreground: 0x2326_29ff,
     // `defaults.muted_color`: platform-facts.md (§2.1.3): [Colors:Window] ForegroundInactive
     // 112,125,138 (BreezeLight.colors:133, breeze v6.7.5)
@@ -125,9 +141,17 @@ const LIGHT: SchemeConstants = SchemeConstants {
     view_background: 0xffff_ffff,
     // `defaults.selection_background`: platform-facts.md (§2.1.3): [Colors:Selection]
     // BackgroundNormal 61,174,233 (BreezeLight.colors:87, breeze v6.7.5)
+    // `button.hover_border_color`: platform-facts.md (§2.3): hover_border_color and
+    // focus_border_color: a non-flat button's pen turns Highlight, [Colors:Selection]
+    // BackgroundNormal 61,174,233 (BreezeLight.colors:87, breeze v6.7.5), while hovered, pressed
+    // or keyboard-focused (breezehelper.cpp:710-712 at breeze f0b1d75)
+    // `button.focus_border_color`: 0.7.2 kde-breeze.toml (uncited)
+    // `checkbox.border.color`: platform-facts.md (§2.5): checked, palette.highlight(),
+    // [Colors:Selection] BackgroundNormal
     selection_background: 0x3dae_e9ff,
-    // `defaults.selection_text_color`: platform-facts.md (§2.1.3): [Colors:Selection]
-    // ForegroundNormal 255,255,255 (BreezeLight.colors:95, breeze v6.7.5)
+    // `defaults.selection_text_color`, also `defaults.accent_text_color`: platform-facts.md
+    // (§2.1.3): [Colors:Selection] ForegroundNormal 255,255,255 (BreezeLight.colors:95, breeze
+    // v6.7.5)
     selection_foreground: 0xffff_ffff,
     // `defaults.selection_inactive_background`: platform-facts.md (§2.1.3):
     // selection_inactive_background, KColorUtils::tint([Colors:Window] BackgroundNormal
@@ -139,6 +163,10 @@ const LIGHT: SchemeConstants = SchemeConstants {
     // `defaults.accent_color`: platform-facts.md (§2.1.3): BreezeLight.colors has no [General]
     // AccentColor, so [Colors:View] DecorationFocus 61,174,233 (BreezeLight.colors:116, breeze
     // v6.7.5)
+    // `checkbox.hover_border_color`: platform-facts.md (§2.5): focusColor(), [Colors:View]
+    // DecorationFocus 61,174,233 (BreezeLight.colors:116, breeze v6.7.5): under the pointer the
+    // box's or radio's outline is stroked in it, checked or not (breezehelper.cpp:895-907,
+    // :1041-1054 at breeze f0b1d75)
     accent: 0x3dae_e9ff,
     // `defaults.focus_ring_color`: platform-facts.md (§2.1.5): focus_ring_color: Breeze's
     // keyboard focus band, [Colors:Selection] BackgroundNormal 61,174,233
@@ -167,12 +195,26 @@ const LIGHT: SchemeConstants = SchemeConstants {
     info: 0x3dae_e9ff,
     // `light.defaults.icon_theme`: 0.7.2 kde-breeze.toml (uncited)
     icon_theme: "breeze",
-    // `checkbox.unchecked_background`, also `button.background_color` and
-    // `list.header_background`: platform-facts.md (§2.5): [Colors:Button] BackgroundNormal
+    // `checkbox.unchecked_background`: platform-facts.md (§2.5): [Colors:Button] BackgroundNormal
     // 252,252,252
+    // `button.background_color`: 0.7.2 kde-breeze.toml (uncited)
+    // `button.hover_background`: platform-facts.md (§2.3): ← background_color, no hover fill: a
+    // non-flat button's fill is palette.button() unless it is down, checked or the default
+    // button, and hover only sets the pen to Highlight (breezehelper.cpp:693-707, :710-712)
+    // `list.header_background`: platform-facts.md (§2.15): [Colors:Button] BackgroundNormal
+    // 252,252,252 (BreezeLight.colors:31, breeze v6.7.5): Breeze fills a QHeaderView section with
+    // QPalette::Button and never reads the Header set for it (breezestyle.cpp:6827, :6838-6839 at
+    // breeze f0b1d75; measured)
     button_background: 0xfcfc_fcff,
-    // `button.font.color`, also `list.header_font.color`: platform-facts.md (§2.3):
+    // `button.font.color`: platform-facts.md (§2.3): [Colors:Button] ForegroundNormal 35,38,41
+    // (BreezeLight.colors:39, breeze v6.7.5)
+    // `button.hover_text_color`, `button.checked_text_color`: 0.7.2 kde-breeze.toml (uncited)
+    // `button.default_button_text_color`: platform-facts.md (§2.3): default_button_text_color,
     // [Colors:Button] ForegroundNormal 35,38,41 (BreezeLight.colors:39, breeze v6.7.5)
+    // `list.header_font.color`: platform-facts.md (§2.15): [Colors:Button] ForegroundNormal
+    // 35,38,41 (BreezeLight.colors:39, breeze v6.7.5): Qt letters a QHeaderView section in
+    // QPalette::ButtonText (qcommonstyle.cpp:1659-1660; Breeze does not override CE_HeaderLabel;
+    // measured)
     button_foreground: 0x2326_29ff,
     // `button.border.color`: platform-facts.md (§2.3): border.color, the plain button frame,
     // mix([Colors:Button] BackgroundNormal 252,252,252 (BreezeLight.colors:31), [Colors:Button]
@@ -196,8 +238,11 @@ const LIGHT: SchemeConstants = SchemeConstants {
     // default_button_border_color, mix(Highlight #3daee9, mix(Button, ButtonText, frameContrast
     // 0.2) #d1d1d2, 0.5) (breezehelper.cpp:700-702 at breeze f0b1d75; measured)
     button_default_frame: 0x87c0_ddff,
-    // `button.disabled_background`, also `checkbox.disabled_background`: platform-facts.md
-    // (§2.1.6): Disabled [Colors:Button] BackgroundNormal / ForegroundNormal, KColorScheme 6.31.0
+    // `button.disabled_background`: platform-facts.md (§2.1.6): Disabled [Colors:Button]
+    // BackgroundNormal / ForegroundNormal, KColorScheme 6.31.0
+    // `checkbox.disabled_background`: platform-facts.md (§2.1.6): Disabled [Colors:Button]
+    // BackgroundNormal (the box) / [Colors:Window] ForegroundNormal (the label), KColorScheme
+    // 6.31.0
     button_disabled_background: 0xf0f0_f0ff,
     // `button.disabled_text_color`: 0.7.2 kde-breeze.toml (uncited)
     button_disabled_foreground: 0xa8a9_aaff,
@@ -207,9 +252,16 @@ const LIGHT: SchemeConstants = SchemeConstants {
     // `checkbox.unchecked_border_color`: platform-facts.md (§2.5): separatorColor(),
     // mix(Window, WindowText, 0.2)
     checkbox_frame: 0xc6c8_c9ff,
-    // `checkbox.indicator_color`, also `list.item_font.color`: platform-facts.md (§2.5):
-    // palette.text(), [Colors:View] ForegroundNormal
+    // `checkbox.indicator_color`: platform-facts.md (§2.5): palette.text(), [Colors:View]
+    // ForegroundNormal
+    // `list.item_font.color`: platform-facts.md (§2.15): [Colors:View] ForegroundNormal 35,38,41
+    // (BreezeLight.colors:123, breeze v6.7.5)
+    // `list.hover_text_color`: platform-facts.md (§2.15): hover_text_color ← item_font.color,
+    // [Colors:View] ForegroundNormal 35,38,41 (BreezeLight.colors:123): a hovered row is lettered
+    // QPalette::Text
     view_foreground: 0x2326_29ff,
+    // `checkbox.disabled_text_color`: 0.7.2 kde-breeze.toml (uncited)
+    checkbox_disabled_foreground: 0xa0a1_a3ff,
     // `list.alternate_row_background`: platform-facts.md (§2.15): [Colors:View]
     // BackgroundAlternate 247,247,247 (BreezeLight.colors:114, breeze v6.7.5)
     list_alternate_row: 0xf7f7_f7ff,
@@ -259,6 +311,8 @@ const LIGHT: SchemeConstants = SchemeConstants {
     // `scrollbar.thumb_hover_color`: platform-facts.md (§2.8): [Colors:View] DecorationHover at
     // half alpha over the window (breezehelper.cpp:292, :1284; breezestyle.cpp:6400-6405 at
     // breeze f0b1d75)
+    // `scrollbar.thumb_active_color`: platform-facts.md (§2.8): no pressed colour of its own, the
+    // hovered one
     scrollbar_thumb_hover: 0x96cf_edff,
     // `tooltip.background_color`: 0.7.2 kde-breeze.toml (uncited)
     tooltip_background: 0xf7f7_f7ff,
@@ -274,6 +328,12 @@ const DARK: SchemeConstants = SchemeConstants {
     window_background: 0x2023_26ff,
     // `defaults.text_color`: platform-facts.md (§2.1.3): [Colors:Window] ForegroundNormal
     // 252,252,252 (BreezeDark.colors:138, breeze v6.7.5)
+    // `defaults.danger_text_color`, `warning_text_color`, `success_text_color`,
+    // `info_text_color`: platform-facts.md (§2.1.4): [Colors:Window] ForegroundNormal 252,252,252
+    // (BreezeDark.colors:138, breeze v6.7.5)
+    // `defaults.selection_inactive_text_color`: platform-facts.md (§2.1.3):
+    // selection_inactive_text_color, [Colors:Window] ForegroundNormal 252,252,252
+    // (BreezeDark.colors:138, breeze v6.7.5)
     window_foreground: 0xfcfc_fcff,
     // `defaults.muted_color`: platform-facts.md (§2.1.3): [Colors:Window] ForegroundInactive
     // 161,169,177 (BreezeDark.colors:134, breeze v6.7.5)
@@ -285,9 +345,17 @@ const DARK: SchemeConstants = SchemeConstants {
     view_background: 0x1416_18ff,
     // `defaults.selection_background`: platform-facts.md (§2.1.3): [Colors:Selection]
     // BackgroundNormal 61,174,233 (BreezeDark.colors:88, breeze v6.7.5)
+    // `button.hover_border_color`: platform-facts.md (§2.3): hover_border_color and
+    // focus_border_color: a non-flat button's pen turns Highlight, [Colors:Selection]
+    // BackgroundNormal 61,174,233 (BreezeDark.colors:88, breeze v6.7.5), while hovered, pressed
+    // or keyboard-focused (breezehelper.cpp:710-712 at breeze f0b1d75)
+    // `button.focus_border_color`: 0.7.2 kde-breeze.toml (uncited)
+    // `checkbox.border.color`: platform-facts.md (§2.5): checked, palette.highlight(),
+    // [Colors:Selection] BackgroundNormal
     selection_background: 0x3dae_e9ff,
-    // `defaults.selection_text_color`: platform-facts.md (§2.1.3): [Colors:Selection]
-    // ForegroundNormal 252,252,252 (BreezeDark.colors:96, breeze v6.7.5)
+    // `defaults.selection_text_color`, also `defaults.accent_text_color`: platform-facts.md
+    // (§2.1.3): [Colors:Selection] ForegroundNormal 252,252,252 (BreezeDark.colors:96, breeze
+    // v6.7.5)
     selection_foreground: 0xfcfc_fcff,
     // `defaults.selection_inactive_background`: platform-facts.md (§2.1.3):
     // selection_inactive_background, KColorUtils::tint([Colors:Window] BackgroundNormal
@@ -299,6 +367,10 @@ const DARK: SchemeConstants = SchemeConstants {
     // `defaults.accent_color`: platform-facts.md (§2.1.3): BreezeDark.colors has no [General]
     // AccentColor, so [Colors:View] DecorationFocus 61,174,233 (BreezeDark.colors:117, breeze
     // v6.7.5)
+    // `checkbox.hover_border_color`: platform-facts.md (§2.5): focusColor(), [Colors:View]
+    // DecorationFocus 61,174,233 (BreezeDark.colors:117, breeze v6.7.5): under the pointer the
+    // box's or radio's outline is stroked in it, checked or not (breezehelper.cpp:895-907,
+    // :1041-1054 at breeze f0b1d75)
     accent: 0x3dae_e9ff,
     // `defaults.focus_ring_color`: platform-facts.md (§2.1.5): focus_ring_color: Breeze's
     // keyboard focus band, [Colors:Selection] BackgroundNormal 61,174,233
@@ -327,12 +399,26 @@ const DARK: SchemeConstants = SchemeConstants {
     info: 0x3dae_e9ff,
     // `dark.defaults.icon_theme`: 0.7.2 kde-breeze.toml (uncited)
     icon_theme: "breeze-dark",
-    // `checkbox.unchecked_background`, also `button.background_color` and
-    // `list.header_background`: platform-facts.md (§2.5): [Colors:Button] BackgroundNormal
+    // `checkbox.unchecked_background`: platform-facts.md (§2.5): [Colors:Button] BackgroundNormal
     // 41,44,48 (BreezeDark.colors:32)
+    // `button.background_color`: 0.7.2 kde-breeze.toml (uncited)
+    // `button.hover_background`: platform-facts.md (§2.3): ← background_color, no hover fill: a
+    // non-flat button's fill is palette.button() unless it is down, checked or the default
+    // button, and hover only sets the pen to Highlight (breezehelper.cpp:693-707, :710-712)
+    // `list.header_background`: platform-facts.md (§2.15): [Colors:Button] BackgroundNormal
+    // 41,44,48 (BreezeDark.colors:32, breeze v6.7.5): Breeze fills a QHeaderView section with
+    // QPalette::Button and never reads the Header set for it (breezestyle.cpp:6827, :6838-6839 at
+    // breeze f0b1d75; measured)
     button_background: 0x292c_30ff,
-    // `button.font.color`, also `list.header_font.color`: platform-facts.md (§2.3):
+    // `button.font.color`: platform-facts.md (§2.3): [Colors:Button] ForegroundNormal 252,252,252
+    // (BreezeDark.colors:40, breeze v6.7.5)
+    // `button.hover_text_color`, `button.checked_text_color`: 0.7.2 kde-breeze.toml (uncited)
+    // `button.default_button_text_color`: platform-facts.md (§2.3): default_button_text_color,
     // [Colors:Button] ForegroundNormal 252,252,252 (BreezeDark.colors:40, breeze v6.7.5)
+    // `list.header_font.color`: platform-facts.md (§2.15): [Colors:Button] ForegroundNormal
+    // 252,252,252 (BreezeDark.colors:40, breeze v6.7.5): Qt letters a QHeaderView section in
+    // QPalette::ButtonText (qcommonstyle.cpp:1659-1660; Breeze does not override CE_HeaderLabel;
+    // measured)
     button_foreground: 0xfcfc_fcff,
     // `button.border.color`: platform-facts.md (§2.3): border.color, the plain button frame,
     // mix([Colors:Button] BackgroundNormal 41,44,48 (BreezeDark.colors:32), [Colors:Button]
@@ -356,8 +442,11 @@ const DARK: SchemeConstants = SchemeConstants {
     // default_button_border_color, mix(Highlight #3daee9, mix(Button, ButtonText, frameContrast
     // 0.2) #535659, 0.5) (breezehelper.cpp:700-702 at breeze f0b1d75; measured)
     button_default_frame: 0x4882_a1ff,
-    // `button.disabled_background`, also `checkbox.disabled_background`: platform-facts.md
-    // (§2.1.6): Disabled [Colors:Button] BackgroundNormal / ForegroundNormal, KColorScheme 6.31.0
+    // `button.disabled_background`: platform-facts.md (§2.1.6): Disabled [Colors:Button]
+    // BackgroundNormal / ForegroundNormal, KColorScheme 6.31.0
+    // `checkbox.disabled_background`: platform-facts.md (§2.1.6): Disabled [Colors:Button]
+    // BackgroundNormal (the box) / [Colors:Window] ForegroundNormal (the label), KColorScheme
+    // 6.31.0
     button_disabled_background: 0x272a_2eff,
     // `button.disabled_text_color`: 0.7.2 kde-breeze.toml (uncited)
     button_disabled_foreground: 0x6d6f_72ff,
@@ -367,9 +456,16 @@ const DARK: SchemeConstants = SchemeConstants {
     // `checkbox.unchecked_border_color`: platform-facts.md (§2.5): separatorColor(),
     // mix(Window, WindowText, 0.2)
     checkbox_frame: 0x4c4e_51ff,
-    // `checkbox.indicator_color`, also `list.item_font.color`: platform-facts.md (§2.5):
-    // palette.text(), [Colors:View] ForegroundNormal
+    // `checkbox.indicator_color`: platform-facts.md (§2.5): palette.text(), [Colors:View]
+    // ForegroundNormal
+    // `list.item_font.color`: platform-facts.md (§2.15): [Colors:View] ForegroundNormal
+    // 252,252,252 (BreezeDark.colors:124, breeze v6.7.5)
+    // `list.hover_text_color`: platform-facts.md (§2.15): hover_text_color ← item_font.color,
+    // [Colors:View] ForegroundNormal 252,252,252 (BreezeDark.colors:124): a hovered row is
+    // lettered QPalette::Text
     view_foreground: 0xfcfc_fcff,
+    // `checkbox.disabled_text_color`: 0.7.2 kde-breeze.toml (uncited)
+    checkbox_disabled_foreground: 0x686a_6cff,
     // `list.alternate_row_background`: platform-facts.md (§2.15): [Colors:View]
     // BackgroundAlternate 29,31,34 (BreezeDark.colors:115, breeze v6.7.5)
     list_alternate_row: 0x1d1f_22ff,
@@ -420,6 +516,8 @@ const DARK: SchemeConstants = SchemeConstants {
     // `scrollbar.thumb_hover_color`: platform-facts.md (§2.8): [Colors:View] DecorationHover at
     // half alpha over the window (breezehelper.cpp:292, :1284; breezestyle.cpp:6400-6405 at
     // breeze f0b1d75)
+    // `scrollbar.thumb_active_color`: platform-facts.md (§2.8): no pressed colour of its own, the
+    // hovered one
     scrollbar_thumb_hover: 0x2f68_88ff,
     // `tooltip.background_color`: platform-facts.md (§2.7): [Colors:Tooltip] BackgroundNormal
     // 41,44,48 (BreezeDark.colors:102)
@@ -660,13 +758,22 @@ const TOOLTIP_PADDING_VERTICAL: f32 = 3.0;
 // `tooltip.max_width`: 0.7.2 kde-breeze.toml (uncited)
 const TOOLTIP_MAX_WIDTH: f32 = 300.0;
 
-/// The state precedence of every ruled part: disabled over pressed over hover
-/// (spec §3's example; 0.7.2's pressed colours win over its hover colours).
-const STATES: &[&[WidgetState]] = &[&[
+/// The state precedence of a part with rules for disabled, pressed and
+/// hover: disabled over pressed over hover (spec §3's example; 0.7.2's
+/// pressed colours win over its hover colours).
+const DISABLED_PRESSED_HOVER: &[&[WidgetState]] = &[&[
     WidgetState::DISABLED,
     WidgetState::PRESSED,
     WidgetState::HOVER,
 ]];
+
+/// The state precedence of a part with rules for disabled and hover but none
+/// for pressed: disabled over hover.
+const DISABLED_HOVER: &[&[WidgetState]] = &[&[WidgetState::DISABLED, WidgetState::HOVER]];
+
+/// The state precedence of a part with rules for pressed and hover but none
+/// for disabled: pressed over hover.
+const PRESSED_HOVER: &[&[WidgetState]] = &[&[WidgetState::PRESSED, WidgetState::HOVER]];
 
 /// The font DPI a point size converts at: 0.7.2's on every desktop but
 /// macOS (`ResolutionContext::from_system`, `src/resolve/context.rs`; spec
@@ -1000,7 +1107,7 @@ fn button(
             shape: None,
         })
     };
-    let body = RuleBuilder::with_exclusive(PartStyle::default(), STATES)
+    let body = RuleBuilder::with_exclusive(PartStyle::default(), DISABLED_PRESSED_HOVER)
         .base([
             fill(color(c.button_background)),
             outline(layout, color(c.button_frame)),
@@ -1011,7 +1118,6 @@ fn button(
             )),
             PartProp::MinSize([Some(BUTTON_MIN_WIDTH), None]),
         ])
-        .rule(primary(), [fill(roles.accent.fill)])
         .rule(
             RuleSelector::on(WidgetState::CHECKED),
             [fill(color(c.button_checked))],
@@ -1025,34 +1131,36 @@ fn button(
         )
         // `button.hover_border_color`: platform-facts.md (§2.3), "a non-flat button's pen turns
         // Highlight, [Colors:Selection] BackgroundNormal, while hovered, pressed or
-        // keyboard-focused": the selection's background.
+        // keyboard-focused": KDE's selection colour, which a portal accent does not replace
+        // (0.7.2's `apply_kde_accent` leaves this field on kdeglobals' colour).
         .rules(
             [
                 RuleSelector::on(WidgetState::HOVER),
                 RuleSelector::on(WidgetState::PRESSED),
                 RuleSelector::on(WidgetState::FOCUS_VISIBLE),
             ],
-            [outline(layout, roles.selection.background)],
+            [outline(layout, color(c.selection_background))],
         )
         .rule(
             RuleSelector::on(WidgetState::PRESSED),
             [fill(color(c.button_pressed))],
         )
+        // The primary fill stays in every state but the disabled one, as 0.7.2's connectors
+        // keep `primary_background` (egui: "regardless of state", gpui: its active colour
+        // derived from it).
+        .rule(primary(), [fill(roles.accent.fill)])
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
             [fill(color(c.button_disabled_background))],
         )
         .build();
-    let label = RuleBuilder::with_exclusive(
-        label(&typography.body, Some(color(c.button_foreground))),
-        STATES,
-    )
-    .rule(primary(), [TextProp::Color(roles.accent.foreground)])
-    .rule(
-        RuleSelector::on(WidgetState::DISABLED),
-        [TextProp::Color(color(c.button_disabled_foreground))],
-    )
-    .build();
+    let label = RuleBuilder::new(label(&typography.body, Some(color(c.button_foreground))))
+        .rule(primary(), [TextProp::Color(roles.accent.foreground)])
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED),
+            [TextProp::Color(color(c.button_disabled_foreground))],
+        )
+        .build();
     ButtonWidget::new(
         WidgetOrigin::Native,
         body,
@@ -1066,20 +1174,17 @@ fn button(
 
 /// The box of a check box or the circle of a radio button, which 0.7.2's
 /// `checkbox.*` serves both: Button's background in a separator-coloured
-/// frame, no shadow; checked, the checked fill in the selection's colour
+/// frame, no shadow; checked, the checked fill in KDE's selection colour
 /// (`checkbox.border.color`: platform-facts.md (§2.5), "checked,
 /// palette.highlight(), `[Colors:Selection]` BackgroundNormal"); under the
-/// pointer, checked or not, the frame in the accent
+/// pointer, checked or not, the frame in `[Colors:View]` DecorationFocus
 /// (`checkbox.hover_border_color`: platform-facts.md (§2.5), "focusColor(),
-/// `[Colors:View]` DecorationFocus", the accent's source), and no fill of its
-/// own ("Breeze adds no fill under the pointer"); disabled, the disabled
-/// button's background.
-fn indicator(
-    c: &SchemeConstants,
-    roles: &ColorRoles,
-    layout: &LayoutMetrics,
-) -> RuleBuilder<PartStyle, PartProp> {
-    RuleBuilder::with_exclusive(PartStyle::default(), STATES)
+/// `[Colors:View]` DecorationFocus"), and no fill of its own ("Breeze adds no
+/// fill under the pointer"); disabled, the disabled button's background. A
+/// portal accent replaces neither frame colour (0.7.2's `apply_kde_accent`
+/// leaves both fields on kdeglobals' colours).
+fn indicator(c: &SchemeConstants, layout: &LayoutMetrics) -> RuleBuilder<PartStyle, PartProp> {
+    RuleBuilder::with_exclusive(PartStyle::default(), DISABLED_HOVER)
         .base([
             fill(color(c.button_background)),
             outline(layout, color(c.checkbox_frame)),
@@ -1092,12 +1197,12 @@ fn indicator(
             RuleSelector::on(WidgetState::CHECKED),
             [
                 fill(color(c.checkbox_checked)),
-                outline(layout, roles.selection.background),
+                outline(layout, color(c.selection_background)),
             ],
         )
         .rule(
             RuleSelector::on(WidgetState::HOVER),
-            [outline(layout, roles.accent.fill)],
+            [outline(layout, color(c.accent))],
         )
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
@@ -1106,14 +1211,14 @@ fn indicator(
 }
 
 /// The label of a check box or a radio button: the UI font in its colour;
-/// disabled, the disabled text's colour (`checkbox.disabled_text_color`:
-/// platform-facts.md (§2.1.6), Disabled `[Colors:Window]` ForegroundNormal,
-/// the source of the disabled text role).
-fn check_label(roles: &ColorRoles, typography: &Typography) -> RuleSet<TextStyle, TextProp> {
-    RuleBuilder::with_exclusive(label(&typography.body, None), STATES)
+/// disabled, the check box's own disabled text colour, which the system's
+/// disabled text does not replace (0.7.2's reader leaves
+/// `checkbox.disabled_text_color` on the preset's value).
+fn check_label(c: &SchemeConstants, typography: &Typography) -> RuleSet<TextStyle, TextProp> {
+    RuleBuilder::new(label(&typography.body, None))
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
-            [TextProp::Color(roles.disabled_text)],
+            [TextProp::Color(color(c.checkbox_disabled_foreground))],
         )
         .build()
 }
@@ -1134,9 +1239,9 @@ fn checkbox(
         .build();
     CheckboxWidget::new(
         WidgetOrigin::Native,
-        indicator(c, roles, layout).base([corners(layout)]).build(),
+        indicator(c, layout).base([corners(layout)]).build(),
         checkmark,
-        check_label(roles, typography),
+        check_label(c, typography),
         CHECKBOX_LABEL_GAP,
         // 0.7.2: `checkbox.disabled_opacity` is `defaults.disabled_opacity` where unstated.
         Some(roles.disabled_opacity),
@@ -1160,9 +1265,9 @@ fn radio(
         .build();
     RadioWidget::new(
         WidgetOrigin::Native,
-        indicator(c, roles, layout).build(),
+        indicator(c, layout).build(),
         dot,
-        check_label(roles, typography),
+        check_label(c, typography),
         CHECKBOX_LABEL_GAP,
         // 0.7.2: `checkbox.disabled_opacity` is `defaults.disabled_opacity` where unstated.
         Some(roles.disabled_opacity),
@@ -1194,7 +1299,7 @@ fn list(
         variant: None,
         alternate: Some(true),
     });
-    let row = RuleBuilder::with_exclusive(PartStyle::default(), STATES)
+    let row = RuleBuilder::new(PartStyle::default())
         .base([PartProp::Margin(Edges::symmetric(
             LIST_ROW_MARGIN_VERTICAL,
             LIST_ROW_MARGIN_HORIZONTAL,
@@ -1202,30 +1307,29 @@ fn list(
         .rule(alternate, [fill(color(c.list_alternate_row))])
         .rule(
             RuleSelector::on(WidgetState::HOVER),
-            [
-                fill(color(c.list_row_hover)),
-                outline(layout, color(c.list_row_hover_frame)),
-            ],
+            [fill(color(c.list_row_hover))],
+        )
+        // `list.hover_border_color`: "the 1 px outline of a hovered, unselected row".
+        .rule(
+            RuleSelector::on(WidgetState::HOVER).except(WidgetState::SELECTED),
+            [outline(layout, color(c.list_row_hover_frame))],
         )
         .rule(
             RuleSelector::on(WidgetState::SELECTED),
             [fill(roles.selection.background)],
         )
         .build();
-    let item_label = RuleBuilder::with_exclusive(
-        label(&typography.body, Some(color(c.view_foreground))),
-        STATES,
-    )
-    .rule(
-        RuleSelector::on(WidgetState::SELECTED),
-        [TextProp::Color(roles.selection.foreground)],
-    )
-    .rule(
-        RuleSelector::on(WidgetState::DISABLED),
-        [TextProp::Color(color(c.view_disabled_foreground))],
-    )
-    .build();
-    let header = RuleBuilder::with_exclusive(PartStyle::default(), STATES)
+    let item_label = RuleBuilder::new(label(&typography.body, Some(color(c.view_foreground))))
+        .rule(
+            RuleSelector::on(WidgetState::SELECTED),
+            [TextProp::Color(roles.selection.foreground)],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED),
+            [TextProp::Color(color(c.view_disabled_foreground))],
+        )
+        .build();
+    let header = RuleBuilder::with_exclusive(PartStyle::default(), PRESSED_HOVER)
         .base([fill(color(c.button_background))])
         .rule(
             RuleSelector::on(WidgetState::HOVER),
@@ -1282,7 +1386,7 @@ fn scrollbar(c: &SchemeConstants) -> ScrollbarWidget {
     )
     .build();
     let thumb = exact(
-        RuleBuilder::with_exclusive(PartStyle::default(), STATES)
+        RuleBuilder::with_exclusive(PartStyle::default(), PRESSED_HOVER)
             .base([fill(color(c.scrollbar_thumb))]),
         SCROLLBAR_THUMB_WIDTH,
     )
@@ -1333,3 +1437,6 @@ fn tooltip(
         label(&typography.body, Some(color(c.tooltip_foreground))),
     )
 }
+
+#[cfg(test)]
+mod tests;

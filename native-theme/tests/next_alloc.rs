@@ -16,9 +16,9 @@ use std::sync::Arc;
 
 use native_theme::next::{
     BlendMode, ButtonQuery, Color, Corners, FocusIndicator, FocusKind, FocusTrigger, GradientStop,
-    IconStated, ListQuery, MaterialKind, MaterialSpec, Paint, PaintLayer, PartStated, PartStyle,
-    Preset, ResolvedTheme, RippleSpec, ShadowLayer, Stroke, StrokeAlign, StrokeSide, StyleQuery,
-    TextStated, Theme, ThemeContext, Timing, Transition, WidgetState,
+    IconStated, ListQuery, MaterialKind, MaterialSpec, Orientation, Paint, PaintLayer, PartStated,
+    PartStyle, Preset, ResolvedTheme, RippleSpec, ShadowLayer, Stroke, StrokeAlign, StrokeSide,
+    StyleQuery, TextStated, Theme, ThemeContext, Timing, Transition, WidgetState,
 };
 
 #[global_allocator]
@@ -153,6 +153,22 @@ fn query_every_part(theme: &ResolvedTheme, state: WidgetState) {
     black_box(theme.list.header_label(list));
     black_box(theme.list.header_separator(list));
     black_box(theme.list.parts(list));
+    // The axes the builder has rules for: the primary variant, an alternate
+    // row and both orientations of the scroll bar.
+    let primary = ButtonQuery::primary().state(state);
+    black_box(theme.button.body(primary));
+    black_box(theme.button.label(primary));
+    black_box(theme.button.parts(primary));
+    let alternate = ListQuery::new(state).alternate(true);
+    black_box(theme.list.row(alternate));
+    black_box(theme.list.item_label(alternate));
+    black_box(theme.list.parts(alternate));
+    for orientation in [Orientation::Horizontal, Orientation::Vertical] {
+        let bar = q.orientation(orientation);
+        black_box(theme.scrollbar.track(bar));
+        black_box(theme.scrollbar.thumb(bar));
+        black_box(theme.scrollbar.parts(bar));
+    }
 }
 
 #[test]
@@ -197,6 +213,21 @@ fn queries_and_clones_allocate_nothing_and_the_theme_fits_its_budget() {
             theme.scrollbar.thumb(WidgetState::PRESSED).fill
                 != theme.scrollbar.thumb(WidgetState::NONE).fill
         );
+        dhat::assert_eq!(
+            theme.button.body(ButtonQuery::primary()).fill,
+            Paint::Solid(theme.colors.accent.fill)
+        );
+        dhat::assert!(
+            theme
+                .list
+                .row(ListQuery::new(WidgetState::NONE).alternate(true))
+                .stated
+                .contains(PartStated::FILL)
+        );
+        let vertical = StyleQuery::<()>::new(WidgetState::NONE).orientation(Orientation::Vertical);
+        let horizontal = vertical.orientation(Orientation::Horizontal);
+        dhat::assert!(theme.scrollbar.thumb(vertical).min_size[0].is_some());
+        dhat::assert!(theme.scrollbar.thumb(horizontal).min_size[1].is_some());
         drop(black_box(theme));
     }
 

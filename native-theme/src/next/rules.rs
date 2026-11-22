@@ -373,13 +373,6 @@ impl<M: Default> RuleSelector<M> {
     }
 }
 
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "called by the presets' builders, from the next task of M0"
-    )
-)]
 impl<M> RuleSelector<M> {
     /// This selector, also requiring that none of `states` is set.
     pub(crate) fn except(mut self, states: WidgetState) -> Self {
@@ -388,18 +381,39 @@ impl<M> RuleSelector<M> {
     }
 
     /// This selector, limited to `size`.
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "called by the builders of presets with control sizes (plan, M1)"
+        )
+    )]
     pub(crate) fn size(mut self, size: ControlSize) -> Self {
         self.size = Some(size);
         self
     }
 
     /// This selector, limited to `surface`.
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "called by the builders of presets with surface rules (plan, M1)"
+        )
+    )]
     pub(crate) fn surface(mut self, surface: Surface) -> Self {
         self.surface = Some(surface);
         self
     }
 
     /// This selector, limited to `position`.
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "called by the builders of presets with grouped controls (plan, M1)"
+        )
+    )]
     pub(crate) fn position(mut self, position: GroupPosition) -> Self {
         self.position = Some(position);
         self
