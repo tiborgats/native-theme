@@ -8,8 +8,9 @@ use super::geometry::Stroke;
 use super::icons::{IconSizes, IconThemeSpec};
 use super::layout::LayoutMetrics;
 use super::motion::{CaretSpec, MotionTokens, UiTimings};
+use super::palette::Palette;
 use super::presets::kde;
-use super::query::{ThemeContext, sanitized_text_scale};
+use super::query::{Contrast, Scheme, ThemeContext, sanitized_text_scale};
 use super::reader::SystemOverrides;
 use super::roles::{
     AccentColors, ColorRoles, RoleOrigin, SelectionColors, StatusColors, SurfaceColors,
@@ -93,37 +94,108 @@ impl Preset {
     }
 }
 
-/// A theme to resolve: a preset, the context it resolves for by default and
-/// the system's settings, where given (spec §6).
+/// A function run on the resolved theme (spec §6, resolution step 4).
+type Transform = Arc<dyn Fn(&mut ResolvedTheme) + Send + Sync>;
+
+/// A theme's palettes (spec §6, the three palette methods): one that locks
+/// the effective scheme to its own, or one slot per scheme.
+#[derive(Clone, Debug, PartialEq)]
+enum Palettes {
+    /// [`Theme::with_palette`]'s palette.
+    Lock(Arc<Palette>),
+    /// [`Theme::with_palettes`]' and [`Theme::with_palette_for`]'s palettes.
+    Slots {
+        light: Option<Arc<Palette>>,
+        dark: Option<Arc<Palette>>,
+    },
+}
+
+impl Palettes {
+    /// No palette.
+    const NONE: Self = Self::Slots {
+        light: None,
+        dark: None,
+    };
+
+    /// The palette for `scheme`: the locking palette, else the slot of
+    /// `scheme`.
+    fn active(&self, scheme: Scheme) -> Option<&Palette> {
+        match self {
+            Self::Lock(palette) => Some(palette),
+            Self::Slots { light, dark } => match scheme {
+                Scheme::Light => light.as_deref(),
+                Scheme::Dark => dark.as_deref(),
+            },
+        }
+    }
+}
+
+/// A theme to resolve: a preset, the context it resolves for by default, the
+/// system's settings, a name, palettes, an accent and transforms, each where
+/// given (spec §6).
 ///
 /// [`resolve`](Self::resolve) runs the preset's builder. Only `kde-breeze`'s
-/// is written, without the system's settings so far; every other preset
-/// resolves to a theme that states nothing (plan, M1, M2): scaffolding until
-/// each preset's builder lands, not a theme to draw with.
+/// is written, and it does not apply the palette or the accent yet; every
+/// other preset resolves to a theme that states nothing (plan, M1, M2):
+/// scaffolding until each preset's builder lands, not a theme to draw with.
 //
-// Not built yet, each with its milestone (plan, M1): `with_name`; the
-// palettes (`with_palette`, `with_palettes`, `with_palette_for`,
-// `preserve_palette_in_high_contrast`); `with_accent`; `with_patch`;
-// `with_transform`; `from_system`, `from_system_with_preset`,
-// `from_system_or_default`; `for_current_platform`; `from_toml`;
-// `diagnostics`.
-#[derive(Clone, Debug)]
+// Not built yet, each with its milestone (plan, M1): `with_patch`;
+// `from_system`, `from_system_with_preset`, `from_system_or_default`;
+// `for_current_platform`; `from_toml`; `diagnostics`.
+#[derive(Clone)]
 pub struct Theme {
     preset: Preset,
+    name: Option<Arc<str>>,
     context: ThemeContext,
     system: Option<Arc<SystemOverrides>>,
+    palettes: Palettes,
+    accent: Option<Color>,
+    preserve_palette_in_high_contrast: bool,
+    // `patches: Vec<ThemePatch>` comes with the `ThemePatch` type (plan, M1).
+    transforms: Vec<Transform>,
+}
+
+impl std::fmt::Debug for Theme {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Theme")
+            .field("preset", &self.preset)
+            .field("name", &self.name)
+            .field("context", &self.context)
+            .field("system", &self.system)
+            .field("palettes", &self.palettes)
+            .field("accent", &self.accent)
+            .field(
+                "preserve_palette_in_high_contrast",
+                &self.preserve_palette_in_high_contrast,
+            )
+            .field("transforms", &self.transforms.len())
+            .finish()
+    }
 }
 
 impl Theme {
     /// The theme of `preset`, for the default context, without system
-    /// settings.
+    /// settings, name, palette, accent or transform.
     #[must_use]
     pub fn preset(preset: Preset) -> Self {
         Self {
             preset,
+            name: None,
             context: ThemeContext::default(),
             system: None,
+            palettes: Palettes::NONE,
+            accent: None,
+            preserve_palette_in_high_contrast: false,
+            transforms: Vec::new(),
         }
+    }
+
+    /// This theme with the explicit name `name`, which names every resolved
+    /// theme (spec §6, resolution step 2).
+    #[must_use]
+    pub fn with_name(mut self, name: impl Into<Arc<str>>) -> Self {
+        self.name = Some(name.into());
+        self
     }
 
     /// The context [`resolve_current`](Self::resolve_current) resolves for.
@@ -152,33 +224,158 @@ impl Theme {
         self
     }
 
+    /// This theme with the palette `palette`, which locks the effective
+    /// scheme to the palette's own. It replaces the palettes of
+    /// [`with_palettes`](Self::with_palettes) and
+    /// [`with_palette_for`](Self::with_palette_for).
+    #[must_use]
+    pub fn with_palette(mut self, palette: Palette) -> Self {
+        self.palettes = Palettes::Lock(Arc::new(palette));
+        self
+    }
+
+    /// This theme with the palette `light` for the light scheme and `dark`
+    /// for the dark one, which follow the context's scheme. It replaces the
+    /// palette of [`with_palette`](Self::with_palette).
+    #[must_use]
+    pub fn with_palettes(mut self, light: Palette, dark: Palette) -> Self {
+        self.palettes = Palettes::Slots {
+            light: Some(Arc::new(light)),
+            dark: Some(Arc::new(dark)),
+        };
+        self
+    }
+
+    /// This theme with the palette `palette` for `scheme`, the other
+    /// scheme's palette kept where [`with_palettes`](Self::with_palettes) or
+    /// this method gave one. It replaces the palette of
+    /// [`with_palette`](Self::with_palette).
+    #[must_use]
+    pub fn with_palette_for(mut self, scheme: Scheme, palette: Palette) -> Self {
+        let (mut light, mut dark) = match self.palettes {
+            Palettes::Lock(_) => (None, None),
+            Palettes::Slots { light, dark } => (light, dark),
+        };
+        let palette = Some(Arc::new(palette));
+        match scheme {
+            Scheme::Light => light = palette,
+            Scheme::Dark => dark = palette,
+        }
+        self.palettes = Palettes::Slots { light, dark };
+        self
+    }
+
+    /// This theme keeping its palette and its explicit accent in a resolve
+    /// for `Contrast::High` where `preserve` is true; where it is false (the
+    /// default), the system's high-contrast colours replace both (spec §6,
+    /// resolution step 1).
+    #[must_use]
+    pub fn preserve_palette_in_high_contrast(mut self, preserve: bool) -> Self {
+        self.preserve_palette_in_high_contrast = preserve;
+        self
+    }
+
+    /// This theme with the explicit accent `accent`, laid over the
+    /// palette's (spec §6, resolution step 2).
+    #[must_use]
+    pub fn with_accent(mut self, accent: Color) -> Self {
+        self.accent = Some(accent);
+        self
+    }
+
+    /// This theme with `f` run on every resolved theme, after the transforms
+    /// given before it (spec §6, resolution step 4).
+    #[must_use]
+    pub fn with_transform(
+        mut self,
+        f: impl Fn(&mut ResolvedTheme) + Send + Sync + 'static,
+    ) -> Self {
+        self.transforms.push(Arc::new(f));
+        self
+    }
+
     /// The preset.
     #[must_use]
     pub fn preset_id(&self) -> Preset {
         self.preset
     }
 
-    /// The theme resolved for `ctx`, its text scale sanitized (clamped to
-    /// `0.5..=4.0`, 1.0 where it is not finite); its name is the system's theme name where the
-    /// system settings state one and were not read in the other scheme (spec §6, resolution
-    /// step 2), else the preset's display name.
+    /// The theme resolved for `ctx` (spec §6, "Resolution Algorithm"): the
+    /// effective context and the active palette (step 1), the preset's
+    /// builder run with them (step 2), then the transforms in the order
+    /// given (step 4).
+    ///
+    /// The name is the explicit name, else the active palette's, else the
+    /// system's theme name unless the system was read in the other scheme
+    /// than the effective one, else the preset's display name.
     #[must_use]
     pub fn resolve(&self, ctx: &ThemeContext) -> ResolvedTheme {
+        let (effective, inputs) = self.effective_inputs(ctx);
+        let scheme = effective.scheme;
+        let mut resolved = build(self.preset, effective.clone(), &inputs);
+        resolved.context = effective;
+        resolved.name = self
+            .name
+            .clone()
+            .or_else(|| inputs.palette.map(|palette| palette.name.clone()))
+            .or_else(|| {
+                inputs
+                    .system
+                    .filter(|system| system.scheme.is_none_or(|s| s == scheme))
+                    .and_then(|system| system.theme_name.clone())
+            })
+            .unwrap_or_else(|| Arc::from(self.preset.display_name()));
+        for transform in &self.transforms {
+            transform(&mut resolved);
+        }
+        resolved
+    }
+
+    /// Resolution step 1 (spec §6): the effective context for `ctx` and the
+    /// inputs the preset's builder gets.
+    ///
+    /// The text scale is sanitized (clamped to `0.5..=4.0`, 1.0 where it is
+    /// not finite). A contrast level is available for a scheme where the
+    /// preset defines it ([`contrast_levels`]) or the system's settings carry
+    /// colours for that scheme and level. Where `High` is requested and
+    /// available for `ctx.scheme`, and the theme does not
+    /// [preserve](Self::preserve_palette_in_high_contrast) its palette, no
+    /// palette and no explicit accent are passed on. Otherwise the active
+    /// palette (the locking one, else the slot of the context's scheme) sets
+    /// the effective scheme to its own. The effective contrast is the
+    /// requested level where it is available for the effective scheme, else
+    /// the nearest level below it that the preset defines.
+    fn effective_inputs(&self, ctx: &ThemeContext) -> (ThemeContext, ResolveInputs<'_>) {
+        let system = self.system.as_deref();
+        let levels = contrast_levels(self.preset);
+        let available = |scheme: Scheme, level: Contrast| {
+            levels.contains(&level) || system.is_some_and(|s| s.colors_for(scheme, level).is_some())
+        };
         let mut effective = ctx.clone();
         effective.text_scale = sanitized_text_scale(ctx.text_scale);
-        let scheme = effective.scheme;
-        let inputs = ResolveInputs {
-            system: self.system.as_deref(),
-            accent: None,
+        let requested = ctx.contrast;
+        let suspended = requested == Contrast::High
+            && available(ctx.scheme, Contrast::High)
+            && !self.preserve_palette_in_high_contrast;
+        let palette = if suspended {
+            None
+        } else {
+            self.palettes.active(ctx.scheme)
         };
-        let mut resolved = build(self.preset, effective, &inputs);
-        resolved.name = self
-            .system
-            .as_ref()
-            .filter(|system| system.scheme.is_none_or(|s| s == scheme))
-            .and_then(|system| system.theme_name.clone())
-            .unwrap_or_else(|| Arc::from(self.preset.display_name()));
-        resolved
+        if let Some(palette) = palette {
+            effective.scheme = palette.scheme;
+        }
+        effective.contrast = if available(effective.scheme, requested) {
+            requested
+        } else {
+            nearest_defined_below(levels, requested)
+        };
+        let inputs = ResolveInputs {
+            system,
+            palette,
+            accent: if suspended { None } else { self.accent },
+        };
+        (effective, inputs)
     }
 
     /// The theme resolved for its own [`context`](Self::context).
@@ -202,19 +399,47 @@ fn build(preset: Preset, context: ThemeContext, inputs: &ResolveInputs<'_>) -> R
     }
 }
 
+/// The contrast levels `preset`'s builder defines (spec §1, "Axis values
+/// without data"), each list holding `Normal`.
+fn contrast_levels(preset: Preset) -> &'static [Contrast] {
+    match preset {
+        Preset::KdeBreeze => kde::CONTRAST_LEVELS,
+        // The theme with nothing stated (`nothing_stated`) defines `Normal`
+        // only.
+        Preset::Adwaita
+        | Preset::MacosMonterey
+        | Preset::MacosTahoe
+        | Preset::Windows11
+        | Preset::Material3
+        | Preset::Ios13 => &[Contrast::Normal],
+    }
+}
+
+/// The nearest level below `requested` that `levels` holds, `Normal` where
+/// none above it does: every preset defines `Normal` ([`contrast_levels`]).
+fn nearest_defined_below(levels: &[Contrast], requested: Contrast) -> Contrast {
+    match requested {
+        Contrast::High if levels.contains(&Contrast::Increased) => Contrast::Increased,
+        Contrast::Normal | Contrast::Increased | Contrast::High => Contrast::Normal,
+    }
+}
+
 /// What a platform builder resolves from besides the context: the system's
-/// settings and an explicit accent.
-///
-/// The spec's `palette: Option<&'a Palette>` field comes with the `Palette`
-/// type (plan, M1).
+/// settings, the active palette and an explicit accent (spec §6, resolution
+/// step 2).
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct ResolveInputs<'a> {
     /// The system's settings, where read.
     pub(crate) system: Option<&'a SystemOverrides>,
+    /// The active palette, where there is one.
+    pub(crate) palette: Option<&'a Palette>,
     /// An explicit accent.
     #[cfg_attr(
         not(test),
-        expect(dead_code, reason = "read once `Theme::with_accent` lands (plan, M1)")
+        expect(
+            dead_code,
+            reason = "read by the builders' accent derivations (plan, M2)"
+        )
     )]
     pub(crate) accent: Option<Color>,
 }
@@ -394,6 +619,7 @@ pub(crate) fn nothing_stated(preset: Preset, context: ThemeContext) -> ResolvedT
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::next::reader::OsColors;
 
     #[test]
     fn names_round_trip_and_are_distinct() {
@@ -416,12 +642,263 @@ mod tests {
     #[test]
     fn resolve_inputs_hold_what_they_are_given() {
         let system = SystemOverrides::default();
+        let p = palette("P", Scheme::Dark);
         let inputs = ResolveInputs {
             system: Some(&system),
+            palette: Some(&p),
             accent: Some(Color::WHITE),
         };
         assert_eq!(inputs.system, Some(&system));
+        assert_eq!(inputs.palette, Some(&p));
         assert_eq!(inputs.accent, Some(Color::WHITE));
+    }
+
+    /// A palette named `name` for `scheme`, its colours the defaults.
+    fn palette(name: &str, scheme: Scheme) -> Palette {
+        let c = Color::default();
+        Palette::new(
+            name, scheme, c, c, c, c, c, c, c, c, c, c, c, c, c, c, c, c, c, c, c, c,
+        )
+    }
+
+    /// The name of the palette `theme` passes to its builder for `ctx`, and
+    /// the effective scheme.
+    fn active(theme: &Theme, ctx: &ThemeContext) -> (Option<String>, Scheme) {
+        let (effective, inputs) = theme.effective_inputs(ctx);
+        (inputs.palette.map(|p| p.name.to_string()), effective.scheme)
+    }
+
+    fn named(name: &str) -> Option<String> {
+        Some(name.to_owned())
+    }
+
+    #[test]
+    fn a_locking_palette_sets_the_scheme_a_pair_follows_the_context() {
+        let light = ThemeContext::light();
+        let dark = ThemeContext::dark();
+        let locked = Theme::preset(Preset::KdeBreeze).with_palette(palette("D", Scheme::Dark));
+        assert_eq!(active(&locked, &light), (named("D"), Scheme::Dark));
+        assert_eq!(active(&locked, &dark), (named("D"), Scheme::Dark));
+        assert_eq!(locked.resolve(&light).context.scheme, Scheme::Dark);
+        assert!(locked.resolve(&light).is_dark());
+
+        let pair = Theme::preset(Preset::KdeBreeze)
+            .with_palettes(palette("L", Scheme::Light), palette("D", Scheme::Dark));
+        assert_eq!(active(&pair, &light), (named("L"), Scheme::Light));
+        assert_eq!(active(&pair, &dark), (named("D"), Scheme::Dark));
+        assert_eq!(pair.resolve(&light).context.scheme, Scheme::Light);
+        assert_eq!(pair.resolve(&dark).context.scheme, Scheme::Dark);
+
+        let one = Theme::preset(Preset::KdeBreeze)
+            .with_palette_for(Scheme::Dark, palette("D", Scheme::Dark));
+        assert_eq!(active(&one, &dark), (named("D"), Scheme::Dark));
+        assert_eq!(active(&one, &light), (None, Scheme::Light));
+
+        // A slot's palette sets the effective scheme to its own.
+        let crossed = Theme::preset(Preset::KdeBreeze)
+            .with_palette_for(Scheme::Light, palette("D", Scheme::Dark));
+        assert_eq!(active(&crossed, &light), (named("D"), Scheme::Dark));
+    }
+
+    #[test]
+    fn the_three_palette_methods_replace_one_another() {
+        let light = ThemeContext::light();
+        let dark = ThemeContext::dark();
+        let base = Theme::preset(Preset::KdeBreeze);
+        let lock = || palette("X", Scheme::Dark);
+        let pair = || (palette("L", Scheme::Light), palette("D", Scheme::Dark));
+
+        // `with_palettes` clears the lock.
+        let (l, d) = pair();
+        let t = base.clone().with_palette(lock()).with_palettes(l, d);
+        assert_eq!(active(&t, &light), (named("L"), Scheme::Light));
+
+        // `with_palette` clears both slots.
+        let (l, d) = pair();
+        let t = base.clone().with_palettes(l, d).with_palette(lock());
+        assert_eq!(active(&t, &light), (named("X"), Scheme::Dark));
+        assert_eq!(active(&t, &dark), (named("X"), Scheme::Dark));
+
+        // `with_palette_for` clears the lock and sets one slot only.
+        let t = base
+            .clone()
+            .with_palette(lock())
+            .with_palette_for(Scheme::Dark, palette("D2", Scheme::Dark));
+        assert_eq!(active(&t, &light), (None, Scheme::Light));
+        assert_eq!(active(&t, &dark), (named("D2"), Scheme::Dark));
+
+        let (l, d) = pair();
+        let t = base
+            .clone()
+            .with_palettes(l, d)
+            .with_palette_for(Scheme::Dark, palette("D2", Scheme::Dark));
+        assert_eq!(active(&t, &light), (named("L"), Scheme::Light));
+        assert_eq!(active(&t, &dark), (named("D2"), Scheme::Dark));
+
+        let t = base
+            .with_palette_for(Scheme::Light, palette("L2", Scheme::Light))
+            .with_palette_for(Scheme::Dark, palette("D2", Scheme::Dark));
+        assert_eq!(active(&t, &light), (named("L2"), Scheme::Light));
+        assert_eq!(active(&t, &dark), (named("D2"), Scheme::Dark));
+    }
+
+    fn with_contrast(ctx: ThemeContext, contrast: Contrast) -> ThemeContext {
+        ThemeContext { contrast, ..ctx }
+    }
+
+    /// System settings carrying colours for `(scheme, contrast)`.
+    fn system_with(scheme: Scheme, contrast: Contrast) -> SystemOverrides {
+        SystemOverrides {
+            color_schemes: vec![((scheme, contrast), OsColors::default())],
+            ..SystemOverrides::default()
+        }
+    }
+
+    #[test]
+    fn every_preset_defines_the_normal_contrast() {
+        for preset in Preset::ALL {
+            assert!(
+                contrast_levels(*preset).contains(&Contrast::Normal),
+                "{preset:?}"
+            );
+        }
+        assert_eq!(contrast_levels(Preset::KdeBreeze), &[Contrast::Normal]);
+    }
+
+    #[test]
+    fn a_contrast_without_data_resolves_to_the_nearest_defined_below() {
+        assert_eq!(
+            nearest_defined_below(&[Contrast::Normal], Contrast::High),
+            Contrast::Normal
+        );
+        assert_eq!(
+            nearest_defined_below(&[Contrast::Normal, Contrast::Increased], Contrast::High),
+            Contrast::Increased
+        );
+        assert_eq!(
+            nearest_defined_below(&[Contrast::Normal, Contrast::High], Contrast::Increased),
+            Contrast::Normal
+        );
+        let theme = Theme::preset(Preset::KdeBreeze);
+        for level in [Contrast::Increased, Contrast::High] {
+            let ctx = with_contrast(ThemeContext::light(), level);
+            assert_eq!(theme.resolve(&ctx).context.contrast, Contrast::Normal);
+        }
+        // The system's colours make a level available.
+        let ctx = with_contrast(ThemeContext::light(), Contrast::Increased);
+        let t = theme.with_system_overrides(system_with(Scheme::Light, Contrast::Increased));
+        assert_eq!(t.resolve(&ctx).context.contrast, Contrast::Increased);
+    }
+
+    #[test]
+    fn high_without_high_data_keeps_the_palette_and_the_accent() {
+        let ctx = with_contrast(ThemeContext::light(), Contrast::High);
+        let theme = Theme::preset(Preset::KdeBreeze)
+            .with_palettes(palette("L", Scheme::Light), palette("D", Scheme::Dark))
+            .with_accent(Color::WHITE);
+        for t in [
+            theme.clone(),
+            // Colours for the other scheme do not make `High` available here.
+            theme
+                .clone()
+                .with_system_overrides(system_with(Scheme::Dark, Contrast::High)),
+        ] {
+            let (effective, inputs) = t.effective_inputs(&ctx);
+            assert_eq!(effective.contrast, Contrast::Normal);
+            assert_eq!(inputs.palette.map(|p| &*p.name), Some("L"));
+            assert_eq!(inputs.accent, Some(Color::WHITE));
+            assert_eq!(t.resolve(&ctx).context.contrast, Contrast::Normal);
+        }
+    }
+
+    #[test]
+    fn high_with_system_high_colours_suspends_the_palette_and_the_accent() {
+        let ctx = with_contrast(ThemeContext::light(), Contrast::High);
+        let theme = Theme::preset(Preset::KdeBreeze)
+            .with_system_overrides(system_with(Scheme::Light, Contrast::High))
+            .with_accent(Color::WHITE);
+        for t in [
+            theme.clone().with_palette(palette("X", Scheme::Dark)),
+            theme
+                .clone()
+                .with_palettes(palette("L", Scheme::Light), palette("D", Scheme::Dark)),
+        ] {
+            let (effective, inputs) = t.effective_inputs(&ctx);
+            assert_eq!(effective.contrast, Contrast::High);
+            assert_eq!(effective.scheme, Scheme::Light);
+            assert_eq!(inputs.palette, None);
+            assert_eq!(inputs.accent, None);
+            let resolved = t.resolve(&ctx);
+            assert_eq!(resolved.context.contrast, Contrast::High);
+            assert_eq!(&*resolved.name, "KDE Breeze");
+
+            let kept = t.preserve_palette_in_high_contrast(true);
+            let (effective, inputs) = kept.effective_inputs(&ctx);
+            assert!(inputs.palette.is_some());
+            assert_eq!(inputs.accent, Some(Color::WHITE));
+            // The locking palette's scheme has no `High` colours: the nearest
+            // level below that the preset defines.
+            let want = if effective.scheme == Scheme::Light {
+                Contrast::High
+            } else {
+                Contrast::Normal
+            };
+            assert_eq!(effective.contrast, want);
+            assert_eq!(kept.resolve(&ctx).context.contrast, want);
+        }
+
+        // `High` not available for the context's scheme keeps the palette,
+        // whose scheme then has the system's `High` colours.
+        let t = Theme::preset(Preset::KdeBreeze)
+            .with_system_overrides(system_with(Scheme::Dark, Contrast::High))
+            .with_palette(palette("X", Scheme::Dark));
+        let (effective, inputs) = t.effective_inputs(&ctx);
+        assert_eq!(inputs.palette.map(|p| &*p.name), Some("X"));
+        assert_eq!(effective.scheme, Scheme::Dark);
+        assert_eq!(effective.contrast, Contrast::High);
+    }
+
+    #[test]
+    fn the_name_follows_its_precedence() {
+        let system = SystemOverrides {
+            theme_name: Some(Arc::from("System")),
+            ..SystemOverrides::default()
+        };
+        let theme = Theme::preset(Preset::KdeBreeze);
+        let with_system = theme.clone().with_system_overrides(system.clone());
+        let with_palette = with_system
+            .clone()
+            .with_palettes(palette("Pal", Scheme::Light), palette("Pal", Scheme::Dark));
+        let ctx = ThemeContext::light();
+        assert_eq!(
+            &*with_palette.clone().with_name("Mine").resolve(&ctx).name,
+            "Mine"
+        );
+        assert_eq!(&*with_palette.resolve(&ctx).name, "Pal");
+        assert_eq!(&*with_system.resolve(&ctx).name, "System");
+        assert_eq!(&*theme.resolve(&ctx).name, "KDE Breeze");
+        // A system read in one scheme names no resolve in the other.
+        let read_light = theme.with_system_overrides(SystemOverrides {
+            scheme: Some(Scheme::Light),
+            ..system
+        });
+        assert_eq!(&*read_light.resolve(&ctx).name, "System");
+        assert_eq!(
+            &*read_light.resolve(&ThemeContext::dark()).name,
+            "KDE Breeze"
+        );
+    }
+
+    #[test]
+    fn transforms_run_in_order_after_the_name() {
+        let theme = Theme::preset(Preset::KdeBreeze)
+            .with_name("Mine")
+            .with_transform(|t| t.name = Arc::from("First"))
+            .with_transform(|t| t.name = Arc::from("Second"));
+        assert_eq!(&*theme.resolve_current().name, "Second");
+        let debug = format!("{theme:?}");
+        assert!(debug.contains("transforms: 2"), "{debug}");
+        assert!(debug.contains("Mine"), "{debug}");
     }
 
     fn assert_clone_debug_send_sync<T: Clone + std::fmt::Debug + Send + Sync>() {}

@@ -9,8 +9,9 @@
 //! colour is taken from the roles, not from a second copy of the constant.
 //! The system's colours apply where `SystemOverrides` carries colours for the
 //! scheme and contrast resolved for; what 0.7.2's KDE reader derives from
-//! them, the builder derives (spec §8, "The KDE part"). An explicit accent
-//! ([`ResolveInputs::accent`]) is not read yet.
+//! them, the builder derives (spec §8, "The KDE part"). The active palette
+//! ([`ResolveInputs::palette`]) and an explicit accent
+//! ([`ResolveInputs::accent`]) are not read yet.
 //!
 //! Defined by the preset (spec §1, "Axis values without data"): the variant
 //! `ButtonVariant::Primary` (0.7.2's `primary_*` fields), a list's alternate
@@ -114,7 +115,7 @@ use crate::next::platform::kde_selection_inactive::kde_selection_inactive;
 use crate::next::platform::kde_shade::{KdeShadeRole, kde_shade};
 use crate::next::preset::{Preset, ResolveInputs};
 use crate::next::query::{
-    ButtonVariant, ListVariant, Orientation, Scheme, ThemeContext, WidgetState,
+    ButtonVariant, Contrast, ListVariant, Orientation, Scheme, ThemeContext, WidgetState,
 };
 use crate::next::reader::{OsColors, OsFont, SystemOverrides};
 use crate::next::roles::{
@@ -1278,8 +1279,15 @@ fn inactive_selection(
 // The builder
 // ---------------------------------------------------------------------------
 
+/// The contrast levels the preset defines (spec §1, "Axis values without
+/// data"): `Normal` only, as the module documentation says.
+pub(crate) const CONTRAST_LEVELS: &[Contrast] = &[Contrast::Normal];
+
 /// The theme of `kde-breeze` for `ctx.scheme`, from the preset's constants
 /// and the system's settings in `inputs`, where given.
+// `inputs.palette` and `inputs.accent` are not applied yet: the palette's
+// and the accent's derivations (`kde_accent`, spec §6, resolution step 2)
+// are the KDE unit of the plan's M2.
 pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> ResolvedTheme {
     let mut scheme_colors = match ctx.scheme {
         Scheme::Light => LIGHT,
