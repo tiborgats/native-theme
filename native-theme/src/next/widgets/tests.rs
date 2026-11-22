@@ -234,6 +234,7 @@ fn list_getters_evaluate_their_rule_sets() {
     };
     let container = part_rules(RED, GREEN, BLUE, alternate);
     let row = part_rules(GREEN, BLUE, RED, alternate);
+    let highlight = part_rules(RED, BLUE, GREEN, alternate);
     let item_label = text_rules(BLUE, RED);
     let header = part_rules(BLUE, GREEN, RED, alternate);
     let header_label = text_rules(RED, GREEN);
@@ -242,6 +243,7 @@ fn list_getters_evaluate_their_rule_sets() {
         WidgetOrigin::Native,
         container.clone(),
         row.clone(),
+        highlight.clone(),
         item_label.clone(),
         header.clone(),
         header_label.clone(),
@@ -258,6 +260,7 @@ fn list_getters_evaluate_their_rule_sets() {
             });
             assert_eq!(list.container(query), container.eval(&query));
             assert_eq!(list.row(query), row.eval(&query));
+            assert_eq!(list.highlight(query), highlight.eval(&query));
             assert_eq!(list.item_label(query), item_label.eval(&query));
             assert_eq!(list.header(query), header.eval(&query));
             assert_eq!(list.header_label(query), header_label.eval(&query));
@@ -267,6 +270,7 @@ fn list_getters_evaluate_their_rule_sets() {
                 ListParts {
                     container: list.container(query),
                     row: list.row(query),
+                    highlight: list.highlight(query),
                     item_label: list.item_label(query),
                     header: list.header(query),
                     header_label: list.header_label(query),

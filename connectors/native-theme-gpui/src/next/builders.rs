@@ -154,16 +154,16 @@ pub(crate) fn table(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
 }
 
 /// The row's inset that 0.7.2's `list.border.padding` holds: per side, the
-/// row's stated margin plus its stated padding, an unstated one counting as
-/// none, and unset where neither is stated on that side. The table of homes
-/// places the field at the row's margin on kde-breeze (Breeze's highlight
-/// margins, spec §5, L4) and at its padding elsewhere, so the sum is 0.7.2's
-/// value on every preset without naming one; whether a margin is drawn as a
-/// margin rather than as padding is decided with captures in a later
-/// milestone.
-fn row_inset(row: &PartStyle) -> [Option<f32>; 4] {
-    let side = |bit: PartStated, v: f32| row.stated.contains(bit).then_some(v);
-    let m = &row.margin;
+/// highlight's stated margin plus the row's stated padding, an unstated one
+/// counting as none, and unset where neither is stated on that side. The
+/// table of homes places the field at the highlight's margin on kde-breeze
+/// (Breeze's highlight margins, spec §5, L4) and at the row's padding
+/// elsewhere, so the sum is 0.7.2's value on every preset without naming
+/// one; whether a margin is drawn as a margin rather than as padding is
+/// decided with captures in a later milestone.
+fn row_inset(row: &PartStyle, highlight: &PartStyle) -> [Option<f32>; 4] {
+    let side = |bit: PartStated, v: f32| highlight.stated.contains(bit).then_some(v);
+    let m = &highlight.margin;
     let [mt, mr, mb, ml] = [
         side(PartStated::MARGIN_TOP, m.top),
         side(PartStated::MARGIN_RIGHT, m.right),
@@ -187,7 +187,7 @@ pub(crate) fn list_item(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
     let row = l.row(WidgetState::NONE);
     Ok(geometry::list_item_from(
         row.min_size[1],
-        row_inset(&row),
+        row_inset(&row, &l.highlight(WidgetState::NONE)),
         &font(&l.item_label(WidgetState::NONE), "list.item_label(NONE)")?,
         line_height(r),
         r.context.text_scale,

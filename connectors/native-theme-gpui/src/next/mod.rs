@@ -301,8 +301,14 @@ pub(crate) fn slice_colors(r: &ResolvedTheme) -> Mapped<SliceColors> {
         scrollbar_thumb_hover: fill(&s.thumb(WidgetState::HOVER), "scrollbar.thumb(HOVER).fill")?,
         button_hover_bg: fill(&b.body(WidgetState::HOVER), "button.body(HOVER).fill")?,
         button_active_bg: state_fill(&b.body(WidgetState::PRESSED), "button.body(PRESSED).fill")?,
-        list_hover_bg: fill(&l.row(WidgetState::HOVER), "list.row(HOVER).fill")?,
-        list_selection_bg: fill(&l.row(WidgetState::SELECTED), "list.row(SELECTED).fill")?,
+        list_hover_bg: fill(
+            &l.highlight(WidgetState::HOVER),
+            "list.highlight(HOVER).fill",
+        )?,
+        list_selection_bg: fill(
+            &l.highlight(WidgetState::SELECTED),
+            "list.highlight(SELECTED).fill",
+        )?,
         shadow: hsla(c.shadow),
     })
 }

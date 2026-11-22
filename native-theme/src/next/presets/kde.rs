@@ -860,7 +860,7 @@ const LIST_ROW_MARGIN_HORIZONTAL: f32 = 2.0;
 const LIST_ROW_MARGIN_VERTICAL: f32 = 1.0;
 
 /// The radius of a list row's highlight (spec §5, `L4`).
-// `list.row` corners: docs/issues/0004_kde-leftovers-rationale.md (E5, L4): Breeze rounds a list's
+// `list.highlight` corners: docs/issues/0004_kde-leftovers-rationale.md (E5, L4): Breeze rounds a list's
 // highlight 4.5 and draws a table's square
 const LIST_ROW_RADIUS: f32 = 4.5;
 
@@ -1871,10 +1871,10 @@ fn radio(
 /// The list or table view: the view's background in the default frame
 /// (`list.background_color`: platform-facts.md (§2.15), `[Colors:View]`
 /// BackgroundNormal, the source of the view role; 0.7.2: `list.border.color`
-/// is `defaults.border.color` where unstated); rows with Breeze's highlight
-/// margins and radius (a table's square), the alternate row's fill, the
-/// hovered row's tint and outline, in a view without the focus from the
-/// inactive selection colour, and the selection (0.7.2: `list.selection_background` and
+/// is `defaults.border.color` where unstated); rows with the alternate row's
+/// fill; over them the highlight with Breeze's margins and radius (a table's
+/// square), the hovered row's tint and outline, in a view without the focus
+/// from the inactive selection colour, and the selection (0.7.2: `list.selection_background` and
 /// `selection_text_color` are the selection's where unstated); the view's
 /// text, which a hovered row keeps (`list.hover_text_color`: "←
 /// item_font.color"); headers in Button's colours. 0.7.2 states no row or
@@ -1904,14 +1904,17 @@ fn list(
     // pixel exact and the fill's within one 8-bit step, a residual not explained.
     let unfocused_hover = WidgetState::HOVER.union(WidgetState::UNFOCUSED_VIEW);
     let inactive_highlight = c.selection_unfocused_background;
-    // `L4`: the corners are the highlight's, so only the rules that draw one state them.
-    let highlight_corners = PartProp::Corners(Corners::uniform(LIST_ROW_RADIUS));
     let row = RuleBuilder::new(PartStyle::default())
+        .rule(alternate, [fill(c.list_alternate_row)])
+        .build();
+    // `L4`: the highlight is inset by Breeze's margins; its corners are stated only by the rules
+    // that draw one.
+    let highlight_corners = PartProp::Corners(Corners::uniform(LIST_ROW_RADIUS));
+    let highlight = RuleBuilder::new(PartStyle::default())
         .base([PartProp::Margin(Edges::symmetric(
             LIST_ROW_MARGIN_VERTICAL,
             LIST_ROW_MARGIN_HORIZONTAL,
         ))])
-        .rule(alternate, [fill(c.list_alternate_row)])
         .rule(
             RuleSelector::on(WidgetState::HOVER),
             [fill(c.list_row_hover), highlight_corners.clone()],
@@ -1970,6 +1973,7 @@ fn list(
         WidgetOrigin::Native,
         container,
         row,
+        highlight,
         item_label,
         header,
         header_label,

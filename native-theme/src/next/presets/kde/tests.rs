@@ -50,7 +50,10 @@ fn a_portal_accent_replaces_the_accent_and_the_selection_but_not_the_kde_frames(
         assert_eq!(theme.colors.text_selection.background, selection);
         assert_eq!(theme.colors.focus_ring, focus_ring_of(selection));
         assert_eq!(
-            theme.list.row(ListQuery::new(WidgetState::SELECTED)).fill,
+            theme
+                .list
+                .highlight(ListQuery::new(WidgetState::SELECTED))
+                .fill,
             Paint::Solid(selection)
         );
         assert_eq!(
@@ -320,16 +323,16 @@ fn a_primary_button_keeps_the_accent_fill_when_pressed_checked_or_default() {
 #[test]
 fn a_selected_row_has_no_hover_outline() {
     for theme in both_schemes() {
-        let hover = theme.list.row(ListQuery::new(WidgetState::HOVER));
-        let rest = theme.list.row(ListQuery::new(WidgetState::NONE));
+        let hover = theme.list.highlight(ListQuery::new(WidgetState::HOVER));
+        let rest = theme.list.highlight(ListQuery::new(WidgetState::NONE));
         assert_ne!(hover.stroke, rest.stroke, "{:?}", theme.context.scheme);
         let selected = WidgetState::SELECTED;
         let hovered_selected = theme
             .list
-            .row(ListQuery::new(selected.union(WidgetState::HOVER)));
+            .highlight(ListQuery::new(selected.union(WidgetState::HOVER)));
         assert_eq!(
             hovered_selected.stroke,
-            theme.list.row(ListQuery::new(selected)).stroke,
+            theme.list.highlight(ListQuery::new(selected)).stroke,
             "{:?}",
             theme.context.scheme
         );
@@ -363,10 +366,10 @@ fn pressed_changes_nothing_on_a_part_without_a_pressed_rule() {
             assert_eq!(
                 theme
                     .list
-                    .row(ListQuery::new(pressed_hover).alternate(alternate)),
+                    .highlight(ListQuery::new(pressed_hover).alternate(alternate)),
                 theme
                     .list
-                    .row(ListQuery::new(WidgetState::HOVER).alternate(alternate)),
+                    .highlight(ListQuery::new(WidgetState::HOVER).alternate(alternate)),
                 "{scheme:?} alternate {alternate}"
             );
         }
@@ -437,7 +440,7 @@ fn a_hovered_row_in_a_view_without_the_focus_is_drawn_from_the_inactive_group() 
         ),
     ] {
         let scheme = theme.context.scheme;
-        let row = theme.list.row(ListQuery::new(UNFOCUSED_HOVER));
+        let row = theme.list.highlight(ListQuery::new(UNFOCUSED_HOVER));
         let fill = solid(&row.fill).ok_or("no fill")?;
         let stroke = outline_color(&row.stroke).ok_or("no outline")?;
         assert_eq!(
@@ -472,7 +475,11 @@ fn a_hovered_row_without_the_focus_is_over_the_hovered_row_and_under_the_selecti
     for theme in both_schemes() {
         let scheme = theme.context.scheme;
         for alternate in [false, true] {
-            let row = |state| theme.list.row(ListQuery::new(state).alternate(alternate));
+            let row = |state| {
+                theme
+                    .list
+                    .highlight(ListQuery::new(state).alternate(alternate))
+            };
             let (hover, unfocused) = (row(WidgetState::HOVER), row(UNFOCUSED_HOVER));
             assert_ne!(unfocused.fill, hover.fill, "{scheme:?} {alternate}");
             assert_ne!(unfocused.stroke, hover.stroke, "{scheme:?} {alternate}");
@@ -504,7 +511,7 @@ fn a_hovered_row_without_the_focus_follows_the_system_s_inactive_selection() -> 
         .resolve(&snapshot.context);
     let breeze = Theme::preset(Preset::KdeBreeze).resolve(&snapshot.context);
     let inactive = Color::from_srgb8(0x6d, 0x3b, 0x0e, 0xff);
-    let row = theme.list.row(ListQuery::new(UNFOCUSED_HOVER));
+    let row = theme.list.highlight(ListQuery::new(UNFOCUSED_HOVER));
     let fill = solid(&row.fill).ok_or("no fill")?;
     let stroke = outline_color(&row.stroke).ok_or("no outline")?;
     assert_eq!(fill.to_srgb8(), inactive.with_alpha(0.3).to_srgb8());
@@ -529,9 +536,11 @@ fn a_hovered_row_without_the_focus_follows_the_system_s_inactive_selection() -> 
 
 /// `L4`, a row's own box: the highlight's radius,
 /// `docs/issues/0004_kde-leftovers-rationale.md` (E5, L4): "Breeze rounds a
-/// list's highlight 4.5 and draws a table's square", so a row at rest, an
-/// alternate one too, states no corners; the highlight's margins as before
-/// (`list.border.padding`, platform-facts.md (§2.15)).
+/// list's highlight 4.5 and draws a table's square", so a highlight at rest,
+/// an alternate row's too, states no corners; the highlight's margins as
+/// before (`list.border.padding`, platform-facts.md (§2.15)). The row itself
+/// keeps the stripe and states neither margins nor corners nor the hover and
+/// selection fills (spec §5, "The list's `row` and `highlight`").
 #[test]
 fn a_row_s_highlight_is_rounded_4_5_and_a_table_row_is_square() {
     for theme in both_schemes() {
@@ -539,7 +548,7 @@ fn a_row_s_highlight_is_rounded_4_5_and_a_table_row_is_square() {
         for alternate in [false, true] {
             let rest = theme
                 .list
-                .row(ListQuery::new(WidgetState::NONE).alternate(alternate));
+                .highlight(ListQuery::new(WidgetState::NONE).alternate(alternate));
             assert!(
                 !rest.stated.contains(PartStated::CORNERS),
                 "{scheme:?} {alternate}"
@@ -553,11 +562,31 @@ fn a_row_s_highlight_is_rounded_4_5_and_a_table_row_is_square() {
             WidgetState::SELECTED.union(WidgetState::HOVER),
         ] {
             for alternate in [false, true] {
-                let row = theme.list.row(ListQuery::new(state).alternate(alternate));
-                assert_eq!(row.corners, Corners::uniform(4.5), "{scheme:?} {state:?}");
+                let query = ListQuery::new(state).alternate(alternate);
+                let highlight = theme.list.highlight(query);
                 assert_eq!(
-                    row.margin,
+                    highlight.corners,
+                    Corners::uniform(4.5),
+                    "{scheme:?} {state:?}"
+                );
+                assert_eq!(
+                    highlight.margin,
                     Edges::symmetric(1.0, 2.0),
+                    "{scheme:?} {state:?}"
+                );
+                let row = theme.list.row(query);
+                let rest = theme
+                    .list
+                    .row(ListQuery::new(WidgetState::NONE).alternate(alternate));
+                assert_eq!(row, rest, "{scheme:?} {state:?} {alternate}");
+                let own = PartStated::MARGIN_TOP | PartStated::CORNERS | PartStated::STROKE;
+                assert!(
+                    !row.stated.intersects(own),
+                    "{scheme:?} {state:?} {alternate}"
+                );
+                assert_eq!(
+                    row.stated.contains(PartStated::FILL),
+                    alternate,
                     "{scheme:?} {state:?}"
                 );
             }
@@ -570,7 +599,7 @@ fn a_row_s_highlight_is_rounded_4_5_and_a_table_row_is_square() {
         ] {
             let table = theme
                 .list
-                .row(ListQuery::from(ListVariant::Table).state(state));
+                .highlight(ListQuery::from(ListVariant::Table).state(state));
             assert_eq!(table.corners, Corners::NONE, "{scheme:?} {state:?}");
             assert!(table.stated.contains(PartStated::CORNERS));
         }

@@ -241,6 +241,7 @@ fn theme() -> ResolvedTheme {
         WidgetOrigin::Native,
         empty_part(),
         row,
+        empty_part(),
         empty_text(),
         empty_part(),
         empty_text(),

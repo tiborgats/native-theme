@@ -338,6 +338,7 @@ const WIDGETS: &[Widget] = &[
         parts: &[
             ("container", P),
             ("row", P),
+            ("highlight", P),
             ("item_label", T),
             ("header", P),
             ("header_label", T),

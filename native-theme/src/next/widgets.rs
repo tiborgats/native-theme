@@ -386,6 +386,12 @@ impl ScrollbarWidget {
 
 /// A list or table view. A row's and a header's least heights are
 /// `row.min_size[1]` and `header.min_size[1]`.
+///
+/// `row` is the row's whole rectangle (an alternate row's stripe, the
+/// height, the content's padding); `highlight` is the box that marks a
+/// hovered or selected row, drawn over `row` inset by its `margin`, with its
+/// `corners`. A `highlight` whose margin and corners are unstated covers the
+/// row's rectangle (spec §5, "The list's `row` and `highlight`").
 #[derive(Clone, Debug, PartialEq)]
 #[non_exhaustive]
 pub struct ListWidget {
@@ -395,6 +401,7 @@ pub struct ListWidget {
     pub grid_color: Color,
     container: PartRules<ListMatcher>,
     row: PartRules<ListMatcher>,
+    highlight: PartRules<ListMatcher>,
     item_label: TextRules<ListMatcher>,
     header: PartRules<ListMatcher>,
     header_label: TextRules<ListMatcher>,
@@ -409,6 +416,8 @@ pub struct ListParts {
     pub container: PartStyle,
     /// A row.
     pub row: PartStyle,
+    /// The box that marks a hovered or selected row.
+    pub highlight: PartStyle,
     /// A row's text.
     pub item_label: TextStyle,
     /// A column header.
@@ -429,6 +438,7 @@ impl ListWidget {
         origin: WidgetOrigin,
         container: PartRules<ListMatcher>,
         row: PartRules<ListMatcher>,
+        highlight: PartRules<ListMatcher>,
         item_label: TextRules<ListMatcher>,
         header: PartRules<ListMatcher>,
         header_label: TextRules<ListMatcher>,
@@ -440,6 +450,7 @@ impl ListWidget {
             grid_color,
             container,
             row,
+            highlight,
             item_label,
             header,
             header_label,
@@ -463,6 +474,13 @@ impl ListWidget {
     #[must_use]
     pub fn row(&self, query: impl Into<ListQuery>) -> PartStyle {
         self.row.eval(&query.into())
+    }
+
+    /// The style of the box that marks a hovered or selected row for
+    /// `query`.
+    #[must_use]
+    pub fn highlight(&self, query: impl Into<ListQuery>) -> PartStyle {
+        self.highlight.eval(&query.into())
     }
 
     /// A row's text style for `query`.
@@ -496,6 +514,7 @@ impl ListWidget {
         ListParts {
             container: self.container.eval(&query),
             row: self.row.eval(&query),
+            highlight: self.highlight.eval(&query),
             item_label: self.item_label.eval(&query),
             header: self.header.eval(&query),
             header_label: self.header_label.eval(&query),
@@ -624,6 +643,7 @@ impl ResolvedTheme {
             ("scrollbar.thumb", self.scrollbar.thumb.dead_rules()),
             ("list.container", self.list.container.dead_rules()),
             ("list.row", self.list.row.dead_rules()),
+            ("list.highlight", self.list.highlight.dead_rules()),
             ("list.item_label", self.list.item_label.dead_rules()),
             ("list.header", self.list.header.dead_rules()),
             ("list.header_label", self.list.header_label.dead_rules()),

@@ -810,7 +810,7 @@ homes = ["list.row(NONE; alternate=true).fill"]
 
 [[row]]
 key = "list.selection_background"
-homes = ["list.row(SELECTED).fill"]
+homes = ["list.highlight(SELECTED).fill"]
 
 [[row]]
 key = "list.selection_text_color"
@@ -847,7 +847,8 @@ note = "unset: FILL unstated, and a connector draws list.grid_color"
 
 [[row]]
 key = "list.hover_background"
-homes = ["list.row(HOVER).fill"]
+homes = ["list.highlight(HOVER).fill"]
+unstated_if_unset = true
 
 [[row]]
 key = "list.hover_text_color"
@@ -855,7 +856,7 @@ homes = ["list.item_label(HOVER).color"]
 
 [[row]]
 key = "list.hover_border_color"
-homes = ["list.row(HOVER).stroke.color"]
+homes = ["list.highlight(HOVER).stroke.color"]
 
 [[row]]
 key = "list.disabled_text_color"
@@ -930,25 +931,25 @@ note = "true: the SHADOWS bit unstated; false: SHADOWS stated with shadows = Non
 [[row]]
 key = "list.border.padding.top"
 homes = ["list.row(NONE).padding.top"]
-homes_by_preset = { "kde-breeze" = ["list.row(NONE).margin.top"] }
+homes_by_preset = { "kde-breeze" = ["list.highlight(NONE).margin.top"] }
 note = "kde-breeze's list.border.padding holds Breeze's highlight margins (spec §5, L4)"
 
 [[row]]
 key = "list.border.padding.right"
 homes = ["list.row(NONE).padding.right"]
-homes_by_preset = { "kde-breeze" = ["list.row(NONE).margin.right"] }
+homes_by_preset = { "kde-breeze" = ["list.highlight(NONE).margin.right"] }
 note = "kde-breeze's list.border.padding holds Breeze's highlight margins (spec §5, L4)"
 
 [[row]]
 key = "list.border.padding.bottom"
 homes = ["list.row(NONE).padding.bottom"]
-homes_by_preset = { "kde-breeze" = ["list.row(NONE).margin.bottom"] }
+homes_by_preset = { "kde-breeze" = ["list.highlight(NONE).margin.bottom"] }
 note = "kde-breeze's list.border.padding holds Breeze's highlight margins (spec §5, L4)"
 
 [[row]]
 key = "list.border.padding.left"
 homes = ["list.row(NONE).padding.left"]
-homes_by_preset = { "kde-breeze" = ["list.row(NONE).margin.left"] }
+homes_by_preset = { "kde-breeze" = ["list.highlight(NONE).margin.left"] }
 note = "kde-breeze's list.border.padding holds Breeze's highlight margins (spec §5, L4)"
 
 # --- scrollbar ---

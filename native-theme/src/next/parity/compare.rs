@@ -1007,6 +1007,7 @@ fn ruled_style<'a>(
         ("scrollbar", "thumb") => Ruled::Part(theme.scrollbar.thumb(q.style()?)),
         ("list", "container") => Ruled::Part(theme.list.container(q.list()?)),
         ("list", "row") => Ruled::Part(theme.list.row(q.list()?)),
+        ("list", "highlight") => Ruled::Part(theme.list.highlight(q.list()?)),
         ("list", "item_label") => Ruled::Text(theme.list.item_label(q.list()?)),
         ("list", "header") => Ruled::Part(theme.list.header(q.list()?)),
         ("list", "header_label") => Ruled::Text(theme.list.header_label(q.list()?)),
