@@ -1069,3 +1069,305 @@ homes = ["tooltip.panel.padding.bottom"]
 [[row]]
 key = "tooltip.border.padding.left"
 homes = ["tooltip.panel.padding.left"]
+
+# --- menu ---
+
+[[row]]
+key = "menu.background_color"
+homes = ["menu.panel(NONE).fill"]
+
+[[row]]
+key = "menu.separator_color"
+homes = ["menu.separator(NONE).fill"]
+note = "spec §5: a separator part's colour is its fill"
+
+[[row]]
+key = "menu.row_height"
+homes = [
+    "menu.item(NONE).min_size[1]",
+    "menu.item(NONE).max_size[1]",
+]
+note = "exact: min = max"
+
+[[row]]
+key = "menu.min_row_height"
+homes = ["menu.item(NONE).min_size[1]"]
+only_if_null = "menu.row_height"
+note = "not applied where row_height is stated (0.7.2 doc)"
+
+[[row]]
+key = "menu.icon_text_gap"
+homes = ["menu.icon_text_gap"]
+
+[[row]]
+key = "menu.icon_size"
+homes = ["menu.icon(NONE).size"]
+
+[[row]]
+key = "menu.hover_background"
+homes = ["menu.item(HOVER).fill"]
+
+[[row]]
+key = "menu.hover_text_color"
+homes = ["menu.item_label(HOVER).color"]
+
+[[row]]
+key = "menu.disabled_text_color"
+homes = ["menu.item_label(DISABLED).color"]
+
+[[row]]
+key = "menu.hover_border_color"
+homes = ["menu.item(HOVER).stroke.color"]
+note = "width = layout.border_width, corners = menu.border.corner_radius (no key of its own); the pressed item's outline (none where active_background is stated) is a state combination without a 0.7.2 field (spec §3)"
+
+[[row]]
+key = "menu.bar_hover_background"
+homes = ["menu_bar.item(HOVER).fill"]
+
+[[row]]
+key = "menu.bar_open_background"
+homes = ["menu_bar.item(OPEN).fill"]
+if_null = "menu.bar_hover_background"
+note = "0.7.2 doc: None = bar_hover_background; both null: compared as a null key (header, if_null)"
+
+[[row]]
+key = "menu.bar_hover_text_color"
+homes = [
+    "menu_bar.item_label(HOVER).color",
+    "menu_bar.item_label(OPEN).color",
+]
+note = "0.7.2 doc: \"under the pointer or open\""
+
+[[row]]
+key = "menu.bar_padding_horizontal"
+homes = [
+    "menu_bar.item(NONE).padding.left",
+    "menu_bar.item(NONE).padding.right",
+]
+
+[[row]]
+key = "menu.bar_padding_vertical"
+homes = [
+    "menu_bar.item(NONE).padding.top",
+    "menu_bar.item(NONE).padding.bottom",
+]
+
+[[row]]
+key = "menu.active_background"
+homes = ["menu.item(HOVER|PRESSED).fill"]
+null_reference = "HOVER"
+note = "0.7.2 doc: None = a pressed item keeps the hover look (spec §3, state combinations)"
+
+[[row]]
+key = "menu.active_text_color"
+homes = ["menu.item_label(HOVER|PRESSED).color"]
+null_reference = "HOVER"
+note = "0.7.2 doc: None = hover_text_color"
+
+[[row]]
+key = "menu.panel_padding_horizontal"
+homes = [
+    "menu.panel(NONE).padding.left",
+    "menu.panel(NONE).padding.right",
+]
+
+[[row]]
+key = "menu.panel_padding_vertical"
+homes = [
+    "menu.panel(NONE).padding.top",
+    "menu.panel(NONE).padding.bottom",
+]
+
+[[row]]
+key = "menu.font.family"
+homes = ["menu.item_label(NONE).family"]
+note = "not a home on menu_bar.item_label: 0.7.2 has no menu-bar font (D-X5)"
+
+[[row]]
+key = "menu.font.size"
+homes = ["menu.item_label(NONE).size_px"]
+note = "not a home on menu_bar.item_label: 0.7.2 has no menu-bar font (D-X5)"
+
+[[row]]
+key = "menu.font.defined_size"
+homes = ["menu.item_label(NONE).defined_size"]
+note = "not a home on menu_bar.item_label: 0.7.2 has no menu-bar font (D-X5)"
+
+[[row]]
+key = "menu.font.weight"
+homes = ["menu.item_label(NONE).weight"]
+note = "not a home on menu_bar.item_label: 0.7.2 has no menu-bar font (D-X5)"
+
+[[row]]
+key = "menu.font.style"
+homes = ["menu.item_label(NONE).style"]
+note = "not a home on menu_bar.item_label: 0.7.2 has no menu-bar font (D-X5)"
+
+[[row]]
+key = "menu.font.color"
+homes = ["menu.item_label(NONE).color"]
+note = "not a home on menu_bar.item_label: 0.7.2 has no menu-bar font (D-X5)"
+
+[[row]]
+key = "menu.border.color"
+homes = ["menu.item(NONE).stroke.color"]
+unstated_if_unset = true
+
+[[row]]
+key = "menu.border.corner_radius"
+homes = ["menu.item(NONE).corners"]
+homes_by_preset = { "material-3" = ["menu.panel(NONE).corners"] }
+unstated_if_unset = true
+note = "Corners::uniform(radius)"
+
+[[row]]
+key = "menu.border.line_width"
+homes = ["menu.item(NONE).stroke.width"]
+unstated_if_unset = true
+
+[[row]]
+key = "menu.border.shadow_enabled"
+homes = ["menu.panel(NONE).shadows"]
+unstated_if_unset = true
+note = "true: the SHADOWS bit unstated; false: SHADOWS stated with shadows = None (spec §5, notes to the table, border.shadow_enabled)"
+
+[[row]]
+key = "menu.border.padding.top"
+homes = ["menu.item(NONE).padding.top"]
+note = "0.7.2 doc: insets an item's contents from its highlight's edges"
+
+[[row]]
+key = "menu.border.padding.right"
+homes = ["menu.item(NONE).padding.right"]
+note = "0.7.2 doc: insets an item's contents from its highlight's edges"
+
+[[row]]
+key = "menu.border.padding.bottom"
+homes = ["menu.item(NONE).padding.bottom"]
+note = "0.7.2 doc: insets an item's contents from its highlight's edges"
+
+[[row]]
+key = "menu.border.padding.left"
+homes = ["menu.item(NONE).padding.left"]
+note = "0.7.2 doc: insets an item's contents from its highlight's edges"
+
+# --- tab ---
+
+[[row]]
+key = "tab.background_color"
+homes = ["tab.tab(NONE).fill"]
+
+[[row]]
+key = "tab.active_background"
+homes = ["tab.tab(SELECTED).fill"]
+
+[[row]]
+key = "tab.active_text_color"
+homes = ["tab.label(SELECTED).color"]
+
+[[row]]
+key = "tab.bar_background"
+homes = ["tab.bar(NONE).fill"]
+
+[[row]]
+key = "tab.min_width"
+homes = ["tab.tab(NONE).min_size[0]"]
+
+[[row]]
+key = "tab.min_height"
+homes = ["tab.tab(NONE).min_size[1]"]
+
+[[row]]
+key = "tab.item_gap"
+homes = ["tab.item_gap"]
+
+[[row]]
+key = "tab.active_indicator_color"
+homes = ["tab.indicator(SELECTED).fill"]
+
+[[row]]
+key = "tab.active_indicator_width"
+homes = [
+    "tab.indicator(SELECTED).min_size[1]",
+    "tab.indicator(SELECTED).max_size[1]",
+]
+note = "exact thickness: TabIndicatorSide is Top or Bottom only"
+
+[[row]]
+key = "tab.active_indicator_side"
+homes = ["tab.indicator_side"]
+
+[[row]]
+key = "tab.active_outward_corner_radius"
+homes = ["tab.active_outward_corner_radius"]
+
+[[row]]
+key = "tab.hover_text_color"
+homes = ["tab.label(HOVER).color"]
+note = "0.7.2 R-W: unset = tab.font.color, never null"
+
+[[row]]
+key = "tab.hover_background"
+homes = ["tab.tab(HOVER).fill"]
+
+[[row]]
+key = "tab.font.family"
+homes = ["tab.label(NONE).family"]
+
+[[row]]
+key = "tab.font.size"
+homes = ["tab.label(NONE).size_px"]
+
+[[row]]
+key = "tab.font.defined_size"
+homes = ["tab.label(NONE).defined_size"]
+
+[[row]]
+key = "tab.font.weight"
+homes = ["tab.label(NONE).weight"]
+
+[[row]]
+key = "tab.font.style"
+homes = ["tab.label(NONE).style"]
+
+[[row]]
+key = "tab.font.color"
+homes = ["tab.label(NONE).color"]
+
+[[row]]
+key = "tab.border.color"
+homes = ["tab.tab(SELECTED).stroke.color"]
+unstated_if_unset = true
+
+[[row]]
+key = "tab.border.corner_radius"
+homes = ["tab.tab(SELECTED).corners"]
+unstated_if_unset = true
+note = "Corners::uniform(radius): one radius as 0.7.2 holds it; that only the top corners take it (platform-facts §2.11) is not in the 0.7.2 model"
+
+[[row]]
+key = "tab.border.line_width"
+homes = ["tab.tab(SELECTED).stroke.width"]
+unstated_if_unset = true
+
+[[row]]
+key = "tab.border.shadow_enabled"
+homes = ["tab.tab(NONE).shadows"]
+unstated_if_unset = true
+note = "true: the SHADOWS bit unstated; false: SHADOWS stated with shadows = None (spec §5, notes to the table, border.shadow_enabled)"
+
+[[row]]
+key = "tab.border.padding.top"
+homes = ["tab.tab(NONE).padding.top"]
+
+[[row]]
+key = "tab.border.padding.right"
+homes = ["tab.tab(NONE).padding.right"]
+
+[[row]]
+key = "tab.border.padding.bottom"
+homes = ["tab.tab(NONE).padding.bottom"]
+
+[[row]]
+key = "tab.border.padding.left"
+homes = ["tab.tab(NONE).padding.left"]

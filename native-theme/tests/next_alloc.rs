@@ -1,6 +1,6 @@
 //! Allocation counts of the 0.8.0 model (spec §11, item 1; plan, rule 6),
 //! through the public API: every part getter and `parts(query)` of the
-//! first slice's ruled widgets on the resolved `kde-breeze`, light and dark,
+//! model's ruled widgets on the resolved `kde-breeze`, light and dark,
 //! over a list of states, and the clone of a returned `PartStyle` and of a
 //! style holding every `Arc`-carrying property, allocate nothing; and the
 //! resolved theme's heap bytes, the live bytes after `resolve()` minus
@@ -14,6 +14,7 @@
 use std::hint::black_box;
 use std::sync::Arc;
 
+use native_theme::next::TabQuery;
 use native_theme::next::{
     BlendMode, ButtonQuery, Color, Corners, FocusIndicator, FocusKind, FocusTrigger, GradientStop,
     IconStated, ListQuery, MaterialKind, MaterialSpec, Orientation, Paint, PaintLayer, PartStated,
@@ -171,6 +172,32 @@ fn query_every_part(theme: &ResolvedTheme, state: WidgetState) {
     }
 }
 
+/// Every getter and `parts` of the menu's, the menu bar's and the tab
+/// bar's ruled parts for `state`, each result kept from the optimiser.
+fn query_menus_and_tabs(theme: &ResolvedTheme, state: WidgetState) {
+    let q = StyleQuery::<()>::new(state);
+    let tab = TabQuery::new(state);
+    black_box(theme.menu.panel(q));
+    black_box(theme.menu.item(q));
+    black_box(theme.menu.item_label(q));
+    black_box(theme.menu.shortcut(q));
+    black_box(theme.menu.icon(q));
+    black_box(theme.menu.submenu_arrow(q));
+    black_box(theme.menu.separator(q));
+    black_box(theme.menu.parts(q));
+    black_box(theme.menu_bar.bar(q));
+    black_box(theme.menu_bar.item(q));
+    black_box(theme.menu_bar.item_label(q));
+    black_box(theme.menu_bar.parts(q));
+    black_box(theme.tab.bar(tab));
+    black_box(theme.tab.tab(tab));
+    black_box(theme.tab.label(tab));
+    black_box(theme.tab.indicator(tab));
+    black_box(theme.tab.close_button(tab));
+    black_box(theme.tab.close_icon(tab));
+    black_box(theme.tab.parts(tab));
+}
+
 #[test]
 fn queries_and_clones_allocate_nothing_and_the_theme_fits_its_budget() {
     let _profiler = dhat::Profiler::builder().testing().build();
@@ -191,6 +218,7 @@ fn queries_and_clones_allocate_nothing_and_the_theme_fits_its_budget() {
         for state in STATES {
             let before = dhat::HeapStats::get();
             query_every_part(black_box(&theme), state);
+            query_menus_and_tabs(black_box(&theme), state);
             let after = dhat::HeapStats::get();
             dhat::assert_eq!(after.total_blocks, before.total_blocks);
             dhat::assert_eq!(after.curr_bytes, before.curr_bytes);

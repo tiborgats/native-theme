@@ -6,6 +6,8 @@ use crate::next::query::{
 };
 use crate::next::rules::RuleSelector;
 
+mod menus_tabs_bars;
+
 const RED: Color = Color::rgb(1.0, 0.0, 0.0);
 const GREEN: Color = Color::rgb(0.0, 1.0, 0.0);
 const BLUE: Color = Color::rgb(0.0, 0.0, 1.0);

@@ -134,6 +134,7 @@ use crate::next::widgets::{
     ButtonWidget, CheckboxWidget, ListWidget, RadioWidget, ResolvedTheme, ScrollbarWidget,
     TooltipWidget, WidgetOrigin,
 };
+use crate::next::widgets::{MenuBarWidget, MenuWidget, TabWidget};
 
 // ---------------------------------------------------------------------------
 // The constants
@@ -1394,6 +1395,10 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
         radio: radio(c, &colors, &typography, &layout),
         scrollbar: scrollbar(c),
         list: list(c, &colors, &typography, &layout),
+        // Stated by the plan's M2, KDE unit ("the rest of `kde-breeze`"): nothing yet.
+        tab: TabWidget::unstated(WidgetOrigin::Native),
+        menu: MenuWidget::unstated(WidgetOrigin::Native),
+        menu_bar: MenuBarWidget::unstated(WidgetOrigin::Native),
         tooltip: tooltip(&colors, &typography, &layout),
         custom_colors: BTreeMap::new(),
         custom_metrics: BTreeMap::new(),

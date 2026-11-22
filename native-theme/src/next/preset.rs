@@ -22,6 +22,7 @@ use super::widgets::{
     ButtonWidget, CheckboxWidget, ListWidget, RadioWidget, ResolvedTheme, ScrollbarWidget,
     TooltipWidget, WidgetOrigin,
 };
+use super::widgets::{MenuBarWidget, MenuWidget, TabWidget};
 use crate::IconSet;
 
 /// A bundled platform preset.
@@ -691,6 +692,9 @@ pub(crate) fn nothing_stated(preset: Preset, context: ThemeContext) -> ResolvedT
             part(),
             Color::default(),
         ),
+        tab: TabWidget::unstated(native),
+        menu: MenuWidget::unstated(native),
+        menu_bar: MenuBarWidget::unstated(native),
         tooltip: TooltipWidget::new(native, PartStyle::default(), TextStyle::default()),
         custom_colors: BTreeMap::new(),
         custom_metrics: BTreeMap::new(),

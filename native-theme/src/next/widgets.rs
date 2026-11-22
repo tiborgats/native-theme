@@ -1,6 +1,7 @@
 //! The widgets of a resolved theme and the [`ResolvedTheme`] that holds them
 //! (spec §5): so far the first slice's six, `button`, `checkbox`, `radio`,
-//! `scrollbar`, `list` and `tooltip`.
+//! `scrollbar`, `list` and `tooltip`, and the widgets of their own modules
+//! below.
 //!
 //! A ruled widget holds one rule set per part and answers a query with the
 //! part's concrete style, through a getter per part and a combined
@@ -18,7 +19,9 @@ use super::motion::{CaretSpec, MotionTokens, UiTimings};
 use super::preset::Preset;
 use super::query::{ButtonQuery, ListQuery, Scheme, StyleQuery, ThemeContext};
 use super::roles::ColorRoles;
-use super::rules::{ButtonMatcher, IconProp, ListMatcher, PartProp, RuleSet, TextProp};
+use super::rules::{
+    ButtonMatcher, IconProp, ListMatcher, PartProp, RuleBuilder, RuleSet, TextProp,
+};
 use super::style::{FocusIndicator, IconStyle, PartStyle, TextStyle};
 use super::typography::Typography;
 
@@ -39,6 +42,29 @@ type PartRules<M = ()> = RuleSet<PartStyle, PartProp, M>;
 type TextRules<M = ()> = RuleSet<TextStyle, TextProp, M>;
 /// A rule set of icon styles.
 type IconRules<M = ()> = RuleSet<IconStyle, IconProp, M>;
+
+mod menu;
+mod menu_bar;
+mod tab;
+
+pub use menu::{MenuParts, MenuWidget};
+pub use menu_bar::{MenuBarParts, MenuBarWidget};
+pub use tab::{TabParts, TabWidget};
+
+/// A part rule set that states nothing: an empty base style, no rule.
+fn unstated_part<M>() -> PartRules<M> {
+    RuleBuilder::new(PartStyle::default()).build()
+}
+
+/// A text rule set that states nothing.
+fn unstated_text<M>() -> TextRules<M> {
+    RuleBuilder::new(TextStyle::default()).build()
+}
+
+/// An icon rule set that states nothing.
+fn unstated_icon<M>() -> IconRules<M> {
+    RuleBuilder::new(IconStyle::default()).build()
+}
 
 // ---------------------------------------------------------------------------
 // button
@@ -565,7 +591,8 @@ impl TooltipWidget {
 ///
 /// Inside the crate a builder constructs it by a struct literal; outside it
 /// cannot be constructed (`#[non_exhaustive]`). So far it holds the first
-/// slice's six widgets; `window` and the other 21 widgets follow (plan, M1).
+/// slice's six widgets and those of their own modules; `window` and the
+/// other widgets follow (plan, M1).
 #[derive(Clone, Debug, PartialEq)]
 #[non_exhaustive]
 pub struct ResolvedTheme {
@@ -604,6 +631,12 @@ pub struct ResolvedTheme {
     pub scrollbar: ScrollbarWidget,
     /// The list or table view.
     pub list: ListWidget,
+    /// The tab bar.
+    pub tab: TabWidget,
+    /// The popup menu.
+    pub menu: MenuWidget,
+    /// The menu bar.
+    pub menu_bar: MenuBarWidget,
     /// The tooltip.
     pub tooltip: TooltipWidget,
     /// The application's own colour tokens (empty on the bundled presets).
@@ -629,7 +662,7 @@ impl ResolvedTheme {
     /// widgets, each named `<widget>.<part>`.
     #[cfg(test)]
     pub(crate) fn dead_rules(&self) -> Vec<(&'static str, Vec<usize>)> {
-        vec![
+        let mut all = vec![
             ("button.body", self.button.body.dead_rules()),
             ("button.label", self.button.label.dead_rules()),
             ("button.icon", self.button.icon.dead_rules()),
@@ -651,7 +684,11 @@ impl ResolvedTheme {
                 "list.header_separator",
                 self.list.header_separator.dead_rules(),
             ),
-        ]
+        ];
+        all.extend(self.tab.dead_rules());
+        all.extend(self.menu.dead_rules());
+        all.extend(self.menu_bar.dead_rules());
+        all
     }
 
     /// The shadow layers of elevation `level`; empty beyond the last level.
