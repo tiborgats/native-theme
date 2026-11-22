@@ -56,6 +56,66 @@ impl Preset {
         Self::Ios13,
     ];
 
+    /// The preset of the platform this runs on, without a reader feature
+    /// (spec §6): Linux by the desktop (KDE → `KdeBreeze`, else `Adwaita`),
+    /// macOS by its generation (≥ 26 → `MacosTahoe`, else `MacosMonterey`),
+    /// Windows → `Windows11`, iOS → `Ios13`, Android → `Material3`, any other
+    /// target → `Adwaita`.
+    ///
+    /// The Linux, macOS and Windows answers are 0.7.2's
+    /// [`platform_preset_name`](crate::pipeline::platform_preset_name)'s: the
+    /// desktop the last system read refined (before one, `XDG_CURRENT_DESKTOP`
+    /// and, with the `kde` feature, a `kdeglobals` file), and the macOS
+    /// version read through the `macos` feature, `MacosMonterey` without it.
+    #[must_use]
+    pub fn detect() -> Self {
+        #[cfg(target_os = "linux")]
+        {
+            match crate::detect::system().refined_linux_desktop_sync() {
+                crate::detect::LinuxDesktop::Kde => Self::KdeBreeze,
+                _ => Self::Adwaita,
+            }
+        }
+        #[cfg(all(target_os = "macos", feature = "macos"))]
+        {
+            let generation = crate::pipeline::macos_generation(crate::macos::os_version()).0;
+            if generation.name == Self::MacosTahoe.as_str() {
+                Self::MacosTahoe
+            } else {
+                Self::MacosMonterey
+            }
+        }
+        // Without the reader feature the version is not read, as in 0.7.2;
+        // plan M3 item 2 proves a `SystemVersion.plist` read on a macOS 26
+        // runner before it replaces this.
+        #[cfg(all(target_os = "macos", not(feature = "macos")))]
+        {
+            Self::MacosMonterey
+        }
+        #[cfg(target_os = "windows")]
+        {
+            Self::Windows11
+        }
+        #[cfg(target_os = "ios")]
+        {
+            Self::Ios13
+        }
+        #[cfg(target_os = "android")]
+        {
+            Self::Material3
+        }
+        #[cfg(not(any(
+            target_os = "linux",
+            target_os = "macos",
+            target_os = "windows",
+            target_os = "ios",
+            target_os = "android"
+        )))]
+        {
+            Self::Adwaita
+        }
+    }
+
     /// The preset of the machine-readable name `name` (`"kde-breeze"`), if
     /// there is one.
     #[must_use]
@@ -141,7 +201,7 @@ impl Palettes {
 //
 // Not built yet, each with its milestone (plan, M1): `with_patch`;
 // `from_system`, `from_system_with_preset`, `from_system_or_default`;
-// `for_current_platform`; `from_toml`; `diagnostics`.
+// `from_toml`; `diagnostics`.
 #[derive(Clone)]
 pub struct Theme {
     preset: Preset,
@@ -188,6 +248,13 @@ impl Theme {
             preserve_palette_in_high_contrast: false,
             transforms: Vec::new(),
         }
+    }
+
+    /// The theme of the platform's preset ([`Preset::detect`]), as
+    /// [`preset`](Self::preset) makes it.
+    #[must_use]
+    pub fn for_current_platform() -> Self {
+        Self::preset(Preset::detect())
     }
 
     /// This theme with the explicit name `name`, which names every resolved
@@ -650,6 +717,22 @@ mod tests {
         assert_eq!(Preset::KdeBreeze.display_name(), "KDE Breeze");
         assert_eq!(Preset::from_name("KDE Breeze"), None);
         assert_eq!(Preset::from_name("catppuccin-mocha"), None);
+    }
+
+    /// On the platforms 0.7.2 answers for, `detect` gives its preset.
+    #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+    #[test]
+    fn detect_agrees_with_0_7_2_on_this_host() {
+        assert_eq!(
+            Preset::detect().as_str(),
+            crate::pipeline::platform_preset_name().name
+        );
+    }
+
+    #[test]
+    fn for_current_platform_is_the_detected_preset() {
+        let theme = Theme::for_current_platform();
+        assert_eq!(theme.preset_id(), Preset::detect());
     }
 
     #[test]
