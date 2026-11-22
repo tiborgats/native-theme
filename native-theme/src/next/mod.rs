@@ -12,8 +12,10 @@
 //! [`LayoutMetrics`](crate::next::LayoutMetrics),
 //! [`UiTimings`](crate::next::UiTimings),
 //! [`MotionTokens`](crate::next::MotionTokens),
-//! [`CaretSpec`](crate::next::CaretSpec)) and what a reader carries
-//! ([`SystemOverrides`](crate::next::SystemOverrides)).
+//! [`CaretSpec`](crate::next::CaretSpec)), what a reader carries
+//! ([`SystemOverrides`](crate::next::SystemOverrides)), the presets
+//! ([`Preset`](crate::next::Preset)) and the first slice's widgets in a
+//! [`ResolvedTheme`](crate::next::ResolvedTheme).
 
 /// The methods and operators of a bit set over an unsigned integer whose
 /// `ALL` constant holds every defined bit: `bits`, `from_bits_truncate`,
@@ -108,12 +110,14 @@ mod icons;
 mod layout;
 mod motion;
 mod paint;
+mod preset;
 mod query;
 mod reader;
 mod roles;
 mod rules;
 mod style;
 mod typography;
+mod widgets;
 mod window;
 
 pub use color::Color;
@@ -131,6 +135,7 @@ pub use motion::{
 pub use paint::{
     BlendMode, ComplexPaint, GradientStop, MaterialKind, MaterialSpec, Paint, PaintLayer,
 };
+pub use preset::Preset;
 pub use query::{
     ButtonKind, ButtonQuery, ButtonShape, ButtonVariant, Contrast, ControlSize, Direction,
     GroupPosition, InputQuery, InputVariant, ListKind, ListQuery, ListVariant, MotionPreference,
@@ -153,6 +158,10 @@ pub use style::{
     TextStated, TextStyle,
 };
 pub use typography::{Antialiasing, FontHinting, SubpixelOrder, TextRendering, Typography};
+pub use widgets::{
+    ButtonParts, ButtonWidget, CheckboxParts, CheckboxWidget, ListParts, ListWidget, RadioParts,
+    RadioWidget, ResolvedTheme, ScrollbarParts, ScrollbarWidget, TooltipWidget, WidgetOrigin,
+};
 pub use window::{CaptionButtonKind, CaptionLayout, EdgeFlags};
 
 #[cfg(test)]

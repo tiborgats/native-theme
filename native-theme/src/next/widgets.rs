@@ -1,0 +1,662 @@
+//! The widgets of a resolved theme and the [`ResolvedTheme`] that holds them
+//! (spec §5): so far the first slice's six, `button`, `checkbox`, `radio`,
+//! `scrollbar`, `list` and `tooltip`.
+//!
+//! A ruled widget holds one rule set per part and answers a query with the
+//! part's concrete style, through a getter per part and a combined
+//! `parts(query)`; a static widget holds its parts as public fields. Nothing
+//! outside the crate constructs a widget or a resolved theme (spec §6).
+
+use std::collections::BTreeMap;
+use std::sync::Arc;
+
+use super::color::Color;
+use super::geometry::ShadowLayer;
+use super::icons::IconThemeSpec;
+use super::layout::LayoutMetrics;
+use super::motion::{CaretSpec, MotionTokens, UiTimings};
+use super::preset::Preset;
+use super::query::{ButtonQuery, ListQuery, Scheme, StyleQuery, ThemeContext};
+use super::roles::ColorRoles;
+use super::rules::{ButtonMatcher, IconProp, ListMatcher, PartProp, RuleSet, TextProp};
+use super::style::{FocusIndicator, IconStyle, PartStyle, TextStyle};
+use super::typography::Typography;
+
+/// Whether a widget is the platform's own control or one the crate
+/// synthesizes for a platform that lacks it (spec §5).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum WidgetOrigin {
+    /// The platform's own control, styled from its sources.
+    Native,
+    /// A control the platform does not have, styled by the crate from the
+    /// platform's own roles, typography and corners (its labelled estimate).
+    Synthesized,
+}
+
+/// A rule set of part styles.
+type PartRules<M = ()> = RuleSet<PartStyle, PartProp, M>;
+/// A rule set of text styles.
+type TextRules<M = ()> = RuleSet<TextStyle, TextProp, M>;
+/// A rule set of icon styles.
+type IconRules<M = ()> = RuleSet<IconStyle, IconProp, M>;
+
+// ---------------------------------------------------------------------------
+// button
+// ---------------------------------------------------------------------------
+
+/// A push button.
+#[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
+pub struct ButtonWidget {
+    /// Native or synthesized.
+    pub origin: WidgetOrigin,
+    /// The space between the icon and the label, in logical pixels.
+    pub icon_text_gap: f32,
+    /// The opacity of the whole disabled button drawn as one group; `None`
+    /// where no source states it.
+    pub disabled_opacity: Option<f32>,
+    body: PartRules<ButtonMatcher>,
+    label: TextRules<ButtonMatcher>,
+    icon: IconRules<ButtonMatcher>,
+}
+
+/// The parts of a button for one query.
+#[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
+pub struct ButtonParts {
+    /// The button's body.
+    pub body: PartStyle,
+    /// Its label.
+    pub label: TextStyle,
+    /// Its icon.
+    pub icon: IconStyle,
+}
+
+impl ButtonWidget {
+    /// A button of these rule sets and metrics.
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "called by the kde-breeze builder, the next task of M0"
+        )
+    )]
+    pub(crate) fn new(
+        origin: WidgetOrigin,
+        body: PartRules<ButtonMatcher>,
+        label: TextRules<ButtonMatcher>,
+        icon: IconRules<ButtonMatcher>,
+        icon_text_gap: f32,
+        disabled_opacity: Option<f32>,
+    ) -> Self {
+        Self {
+            origin,
+            icon_text_gap,
+            disabled_opacity,
+            body,
+            label,
+            icon,
+        }
+    }
+
+    /// Whether the button is the platform's own control.
+    #[must_use]
+    pub fn is_native(&self) -> bool {
+        self.origin == WidgetOrigin::Native
+    }
+
+    /// The body's style for `query`.
+    #[must_use]
+    pub fn body(&self, query: impl Into<ButtonQuery>) -> PartStyle {
+        self.body.eval(&query.into())
+    }
+
+    /// The label's style for `query`.
+    #[must_use]
+    pub fn label(&self, query: impl Into<ButtonQuery>) -> TextStyle {
+        self.label.eval(&query.into())
+    }
+
+    /// The icon's style for `query`.
+    #[must_use]
+    pub fn icon(&self, query: impl Into<ButtonQuery>) -> IconStyle {
+        self.icon.eval(&query.into())
+    }
+
+    /// Every part's style for `query`.
+    #[must_use]
+    pub fn parts(&self, query: impl Into<ButtonQuery>) -> ButtonParts {
+        let query = query.into();
+        ButtonParts {
+            body: self.body.eval(&query),
+            label: self.label.eval(&query),
+            icon: self.icon.eval(&query),
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// checkbox
+// ---------------------------------------------------------------------------
+
+/// A check box.
+#[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
+pub struct CheckboxWidget {
+    /// Native or synthesized.
+    pub origin: WidgetOrigin,
+    /// The space between the indicator and the label, in logical pixels.
+    pub label_gap: f32,
+    /// The opacity of the whole disabled check box drawn as one group;
+    /// `None` where no source states it.
+    pub disabled_opacity: Option<f32>,
+    indicator: PartRules,
+    checkmark: IconRules,
+    label: TextRules,
+}
+
+/// The parts of a check box for one query.
+#[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
+pub struct CheckboxParts {
+    /// The box.
+    pub indicator: PartStyle,
+    /// The check mark.
+    pub checkmark: IconStyle,
+    /// The label.
+    pub label: TextStyle,
+}
+
+impl CheckboxWidget {
+    /// A check box of these rule sets and metrics.
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "called by the kde-breeze builder, the next task of M0"
+        )
+    )]
+    pub(crate) fn new(
+        origin: WidgetOrigin,
+        indicator: PartRules,
+        checkmark: IconRules,
+        label: TextRules,
+        label_gap: f32,
+        disabled_opacity: Option<f32>,
+    ) -> Self {
+        Self {
+            origin,
+            label_gap,
+            disabled_opacity,
+            indicator,
+            checkmark,
+            label,
+        }
+    }
+
+    /// Whether the check box is the platform's own control.
+    #[must_use]
+    pub fn is_native(&self) -> bool {
+        self.origin == WidgetOrigin::Native
+    }
+
+    /// The box's style for `query`.
+    #[must_use]
+    pub fn indicator(&self, query: impl Into<StyleQuery>) -> PartStyle {
+        self.indicator.eval(&query.into())
+    }
+
+    /// The check mark's style for `query`.
+    #[must_use]
+    pub fn checkmark(&self, query: impl Into<StyleQuery>) -> IconStyle {
+        self.checkmark.eval(&query.into())
+    }
+
+    /// The label's style for `query`.
+    #[must_use]
+    pub fn label(&self, query: impl Into<StyleQuery>) -> TextStyle {
+        self.label.eval(&query.into())
+    }
+
+    /// Every part's style for `query`.
+    #[must_use]
+    pub fn parts(&self, query: impl Into<StyleQuery>) -> CheckboxParts {
+        let query = query.into();
+        CheckboxParts {
+            indicator: self.indicator.eval(&query),
+            checkmark: self.checkmark.eval(&query),
+            label: self.label.eval(&query),
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// radio
+// ---------------------------------------------------------------------------
+
+/// A radio button.
+#[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
+pub struct RadioWidget {
+    /// Native or synthesized.
+    pub origin: WidgetOrigin,
+    /// The space between the indicator and the label, in logical pixels.
+    pub label_gap: f32,
+    /// The opacity of the whole disabled radio button drawn as one group;
+    /// `None` where no source states it.
+    pub disabled_opacity: Option<f32>,
+    indicator: PartRules,
+    dot: PartRules,
+    label: TextRules,
+}
+
+/// The parts of a radio button for one query.
+#[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
+pub struct RadioParts {
+    /// The circle.
+    pub indicator: PartStyle,
+    /// The dot inside it.
+    pub dot: PartStyle,
+    /// The label.
+    pub label: TextStyle,
+}
+
+impl RadioWidget {
+    /// A radio button of these rule sets and metrics.
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "called by the kde-breeze builder, the next task of M0"
+        )
+    )]
+    pub(crate) fn new(
+        origin: WidgetOrigin,
+        indicator: PartRules,
+        dot: PartRules,
+        label: TextRules,
+        label_gap: f32,
+        disabled_opacity: Option<f32>,
+    ) -> Self {
+        Self {
+            origin,
+            label_gap,
+            disabled_opacity,
+            indicator,
+            dot,
+            label,
+        }
+    }
+
+    /// Whether the radio button is the platform's own control.
+    #[must_use]
+    pub fn is_native(&self) -> bool {
+        self.origin == WidgetOrigin::Native
+    }
+
+    /// The circle's style for `query`.
+    #[must_use]
+    pub fn indicator(&self, query: impl Into<StyleQuery>) -> PartStyle {
+        self.indicator.eval(&query.into())
+    }
+
+    /// The dot's style for `query`.
+    #[must_use]
+    pub fn dot(&self, query: impl Into<StyleQuery>) -> PartStyle {
+        self.dot.eval(&query.into())
+    }
+
+    /// The label's style for `query`.
+    #[must_use]
+    pub fn label(&self, query: impl Into<StyleQuery>) -> TextStyle {
+        self.label.eval(&query.into())
+    }
+
+    /// Every part's style for `query`.
+    #[must_use]
+    pub fn parts(&self, query: impl Into<StyleQuery>) -> RadioParts {
+        let query = query.into();
+        RadioParts {
+            indicator: self.indicator.eval(&query),
+            dot: self.dot.eval(&query),
+            label: self.label.eval(&query),
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// scrollbar
+// ---------------------------------------------------------------------------
+
+/// A scroll bar. The groove's thickness is exact: `track.min_size` equals
+/// `max_size` across the bar's axis; the thumb's likewise on `thumb`.
+#[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
+pub struct ScrollbarWidget {
+    /// Native or synthesized.
+    pub origin: WidgetOrigin,
+    /// The thumb's least length along the bar, in logical pixels.
+    pub min_thumb_length: f32,
+    /// Whether the bar overlays the content instead of taking layout space.
+    pub overlay_mode: bool,
+    track: PartRules,
+    thumb: PartRules,
+}
+
+/// The parts of a scroll bar for one query.
+#[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
+pub struct ScrollbarParts {
+    /// The groove.
+    pub track: PartStyle,
+    /// The handle.
+    pub thumb: PartStyle,
+}
+
+impl ScrollbarWidget {
+    /// A scroll bar of these rule sets and metrics.
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "called by the kde-breeze builder, the next task of M0"
+        )
+    )]
+    pub(crate) fn new(
+        origin: WidgetOrigin,
+        track: PartRules,
+        thumb: PartRules,
+        min_thumb_length: f32,
+        overlay_mode: bool,
+    ) -> Self {
+        Self {
+            origin,
+            min_thumb_length,
+            overlay_mode,
+            track,
+            thumb,
+        }
+    }
+
+    /// Whether the scroll bar is the platform's own control.
+    #[must_use]
+    pub fn is_native(&self) -> bool {
+        self.origin == WidgetOrigin::Native
+    }
+
+    /// The groove's style for `query`.
+    #[must_use]
+    pub fn track(&self, query: impl Into<StyleQuery>) -> PartStyle {
+        self.track.eval(&query.into())
+    }
+
+    /// The handle's style for `query`.
+    #[must_use]
+    pub fn thumb(&self, query: impl Into<StyleQuery>) -> PartStyle {
+        self.thumb.eval(&query.into())
+    }
+
+    /// Every part's style for `query`.
+    #[must_use]
+    pub fn parts(&self, query: impl Into<StyleQuery>) -> ScrollbarParts {
+        let query = query.into();
+        ScrollbarParts {
+            track: self.track.eval(&query),
+            thumb: self.thumb.eval(&query),
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// list
+// ---------------------------------------------------------------------------
+
+/// A list or table view. A row's and a header's least heights are
+/// `row.min_size[1]` and `header.min_size[1]`.
+#[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
+pub struct ListWidget {
+    /// Native or synthesized.
+    pub origin: WidgetOrigin,
+    /// The colour of a table's grid lines.
+    pub grid_color: Color,
+    container: PartRules<ListMatcher>,
+    row: PartRules<ListMatcher>,
+    item_label: TextRules<ListMatcher>,
+    header: PartRules<ListMatcher>,
+    header_label: TextRules<ListMatcher>,
+    header_separator: PartRules<ListMatcher>,
+}
+
+/// The parts of a list for one query.
+#[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
+pub struct ListParts {
+    /// The view's frame and background.
+    pub container: PartStyle,
+    /// A row.
+    pub row: PartStyle,
+    /// A row's text.
+    pub item_label: TextStyle,
+    /// A column header.
+    pub header: PartStyle,
+    /// A column header's text.
+    pub header_label: TextStyle,
+    /// The line between column headers.
+    pub header_separator: PartStyle,
+}
+
+impl ListWidget {
+    /// A list of these rule sets and metrics.
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "called by the kde-breeze builder, the next task of M0"
+        )
+    )]
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "one rule set per part of spec §5's table, and its metric"
+    )]
+    pub(crate) fn new(
+        origin: WidgetOrigin,
+        container: PartRules<ListMatcher>,
+        row: PartRules<ListMatcher>,
+        item_label: TextRules<ListMatcher>,
+        header: PartRules<ListMatcher>,
+        header_label: TextRules<ListMatcher>,
+        header_separator: PartRules<ListMatcher>,
+        grid_color: Color,
+    ) -> Self {
+        Self {
+            origin,
+            grid_color,
+            container,
+            row,
+            item_label,
+            header,
+            header_label,
+            header_separator,
+        }
+    }
+
+    /// Whether the list is the platform's own control.
+    #[must_use]
+    pub fn is_native(&self) -> bool {
+        self.origin == WidgetOrigin::Native
+    }
+
+    /// The container's style for `query`.
+    #[must_use]
+    pub fn container(&self, query: impl Into<ListQuery>) -> PartStyle {
+        self.container.eval(&query.into())
+    }
+
+    /// A row's style for `query`.
+    #[must_use]
+    pub fn row(&self, query: impl Into<ListQuery>) -> PartStyle {
+        self.row.eval(&query.into())
+    }
+
+    /// A row's text style for `query`.
+    #[must_use]
+    pub fn item_label(&self, query: impl Into<ListQuery>) -> TextStyle {
+        self.item_label.eval(&query.into())
+    }
+
+    /// A column header's style for `query`.
+    #[must_use]
+    pub fn header(&self, query: impl Into<ListQuery>) -> PartStyle {
+        self.header.eval(&query.into())
+    }
+
+    /// A column header's text style for `query`.
+    #[must_use]
+    pub fn header_label(&self, query: impl Into<ListQuery>) -> TextStyle {
+        self.header_label.eval(&query.into())
+    }
+
+    /// The header separator's style for `query`: its colour is the `fill`.
+    #[must_use]
+    pub fn header_separator(&self, query: impl Into<ListQuery>) -> PartStyle {
+        self.header_separator.eval(&query.into())
+    }
+
+    /// Every part's style for `query`.
+    #[must_use]
+    pub fn parts(&self, query: impl Into<ListQuery>) -> ListParts {
+        let query = query.into();
+        ListParts {
+            container: self.container.eval(&query),
+            row: self.row.eval(&query),
+            item_label: self.item_label.eval(&query),
+            header: self.header.eval(&query),
+            header_label: self.header_label.eval(&query),
+            header_separator: self.header_separator.eval(&query),
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// tooltip
+// ---------------------------------------------------------------------------
+
+/// A tooltip. Its greatest width is `panel.max_size[0]`.
+#[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
+pub struct TooltipWidget {
+    /// Native or synthesized.
+    pub origin: WidgetOrigin,
+    /// The panel.
+    pub panel: PartStyle,
+    /// The text.
+    pub text: TextStyle,
+}
+
+impl TooltipWidget {
+    /// A tooltip of these parts.
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "called by the kde-breeze builder, the next task of M0"
+        )
+    )]
+    pub(crate) fn new(origin: WidgetOrigin, panel: PartStyle, text: TextStyle) -> Self {
+        Self {
+            origin,
+            panel,
+            text,
+        }
+    }
+
+    /// Whether the tooltip is the platform's own control.
+    #[must_use]
+    pub fn is_native(&self) -> bool {
+        self.origin == WidgetOrigin::Native
+    }
+}
+
+// ---------------------------------------------------------------------------
+// ResolvedTheme
+// ---------------------------------------------------------------------------
+
+/// A theme resolved for one context: its identity and context, the global
+/// tokens and the widgets.
+///
+/// Inside the crate a builder constructs it by a struct literal; outside it
+/// cannot be constructed (`#[non_exhaustive]`). So far it holds the first
+/// slice's six widgets; `window` and the other 21 widgets follow (plan, M1).
+#[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
+pub struct ResolvedTheme {
+    /// The theme's name.
+    pub name: Arc<str>,
+    /// The base preset.
+    pub preset: Preset,
+    /// The context it was resolved for, as applied (the scheme a palette
+    /// locks, the text scale sanitized).
+    pub context: ThemeContext,
+    /// The semantic colour roles.
+    pub colors: ColorRoles,
+    /// The text styles.
+    pub typography: Typography,
+    /// The icon theme.
+    pub icons: IconThemeSpec,
+    /// The layout metrics.
+    pub layout: LayoutMetrics,
+    /// The interaction timings.
+    pub timings: UiTimings,
+    /// The motion tokens.
+    pub motion_tokens: MotionTokens,
+    /// The global default focus ring (0.7.2's `defaults.focus_ring_*`).
+    pub focus_ring: FocusIndicator,
+    /// The text caret.
+    pub caret: CaretSpec,
+    /// The elevation levels, `0..N`, each its shadow layers.
+    pub elevations: Arc<[Arc<[ShadowLayer]>]>,
+    /// The push button.
+    pub button: ButtonWidget,
+    /// The check box.
+    pub checkbox: CheckboxWidget,
+    /// The radio button.
+    pub radio: RadioWidget,
+    /// The scroll bar.
+    pub scrollbar: ScrollbarWidget,
+    /// The list or table view.
+    pub list: ListWidget,
+    /// The tooltip.
+    pub tooltip: TooltipWidget,
+    /// The application's own colour tokens (empty on the bundled presets).
+    pub custom_colors: BTreeMap<String, Color>,
+    /// The application's own metric tokens (empty on the bundled presets).
+    pub custom_metrics: BTreeMap<String, f32>,
+}
+
+impl ResolvedTheme {
+    /// Whether the theme was resolved for the dark scheme.
+    #[must_use]
+    pub fn is_dark(&self) -> bool {
+        self.scheme() == Scheme::Dark
+    }
+
+    /// The scheme the theme was resolved for.
+    #[must_use]
+    pub fn scheme(&self) -> Scheme {
+        self.context.scheme
+    }
+
+    /// The shadow layers of elevation `level`; empty beyond the last level.
+    #[must_use]
+    pub fn elevation(&self, level: usize) -> &[ShadowLayer] {
+        self.elevations
+            .get(level)
+            .map(|layers| &**layers)
+            .unwrap_or_default()
+    }
+}
+
+#[cfg(test)]
+mod tests;
