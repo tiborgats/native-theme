@@ -13,8 +13,9 @@ use gpui_component::Size;
 use native_theme::next::{PartStated, PartStyle, ResolvedTheme, TextStated, WidgetState};
 
 use super::{
-    Mapped, Unmapped, fill, font, hsla, padding, radius, scrollbar_geometry, stated, stroke_color,
-    stroke_width, text_color, text_size, uncoloured_font,
+    Mapped, Unmapped, fill, font, hsla, padding, radius, scrollbar_geometry, state_fill,
+    state_stroke_color, state_text_color, stated, stroke_color, stroke_width, text_color,
+    text_size, uncoloured_font,
 };
 use crate::geometry;
 use crate::variants::DefaultButtonStates;
@@ -79,26 +80,23 @@ pub(crate) fn button_disabled(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
     ))
 }
 
-/// [`crate::geometry::button_checked`].
+/// [`crate::geometry::button_checked`]: `button.checked_text_color`,
+/// `button.checked_background` and `button.active_background`, soft options,
+/// where a rule states them for their state (module doc of `next`), else
+/// unset, so the pressed pair stands in as on the 0.7.2 path.
 pub(crate) fn button_checked(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
     let b = &r.button;
     Ok(geometry::button_checked_from(
-        Some(text_color(
+        state_text_color(
             &b.label(WidgetState::CHECKED),
             "button.label(CHECKED).color",
-        )?),
+        )?,
         text_color(
             &b.label(WidgetState::PRESSED),
             "button.label(PRESSED).color",
         )?,
-        Some(fill(
-            &b.body(WidgetState::CHECKED),
-            "button.body(CHECKED).fill",
-        )?),
-        Some(fill(
-            &b.body(WidgetState::PRESSED),
-            "button.body(PRESSED).fill",
-        )?),
+        state_fill(&b.body(WidgetState::CHECKED), "button.body(CHECKED).fill")?,
+        state_fill(&b.body(WidgetState::PRESSED), "button.body(PRESSED).fill")?,
     ))
 }
 
@@ -346,14 +344,25 @@ pub(crate) fn section_gap(r: &ResolvedTheme) -> Mapped<Option<Pixels>> {
 
 /// [`crate::variants::hover_border`], the colour of
 /// [`crate::variants::bordered_button`]'s variant: `button.hover_border_color`
-/// at the hovered body's stroke. A soft option (module doc of `next`): the
-/// query always returns a stroke, so this is never `None`, where 0.7.2's is
-/// `None` on a preset that leaves the field unset.
+/// at the hovered body's stroke, a soft option, where a rule states it for
+/// the state (module doc of `next`), else `None`, as 0.7.2's on a preset that
+/// leaves the field unset.
 pub(crate) fn hover_border(r: &ResolvedTheme) -> Mapped<Option<Hsla>> {
-    Ok(Some(stroke_color(
+    state_stroke_color(
         &r.button.body(WidgetState::HOVER),
         "button.body(HOVER).stroke.color",
-    )?))
+    )
+}
+
+/// The default button's frame hovered and pressed: the hovered body's stroke
+/// where a rule states it for the state (`button.hover_border_color`), else
+/// the default body's stroke (`button.default_button_border_color`, else
+/// `button.border.color`, 0.7.2's fallback).
+fn default_hover_frame(hovered: &PartStyle, default: &PartStyle) -> Mapped<Hsla> {
+    match state_stroke_color(hovered, "button.body(HOVER).stroke.color")? {
+        Some(frame) => Ok(frame),
+        None => stroke_color(default, "button.body(DEFAULT).stroke.color"),
+    }
 }
 
 /// [`crate::variants::default_button_states`], what
@@ -361,20 +370,51 @@ pub(crate) fn hover_border(r: &ResolvedTheme) -> Mapped<Option<Hsla>> {
 /// `button.default_button_background` at the default body's fill,
 /// `button.default_button_text_color` at the default label's colour (a theme
 /// with no rule for the state returns `button.font.color`, 0.7.2's fallback)
-/// and `button.hover_border_color` at the hovered body's stroke. Soft options
-/// (module doc of `next`): never `None`, where 0.7.2's is `None` on a preset
-/// that leaves `button.default_button_background` unset.
+/// and the frame [`default_hover_frame`] gives. `button.default_button_background`
+/// keeps the read of M0.4: never `None`, where 0.7.2's is `None` on a preset
+/// that leaves it unset.
 pub(crate) fn default_button_states(r: &ResolvedTheme) -> Mapped<Option<DefaultButtonStates>> {
     let b = &r.button;
+    let default = b.body(WidgetState::DEFAULT);
     Ok(Some(DefaultButtonStates {
-        hover: fill(&b.body(WidgetState::DEFAULT), "button.body(DEFAULT).fill")?,
+        hover: fill(&default, "button.body(DEFAULT).fill")?,
         foreground: text_color(
             &b.label(WidgetState::DEFAULT),
             "button.label(DEFAULT).color",
         )?,
-        hover_frame: stroke_color(
-            &b.body(WidgetState::HOVER),
-            "button.body(HOVER).stroke.color",
-        )?,
+        hover_frame: default_hover_frame(&b.body(WidgetState::HOVER), &default)?,
     }))
+}
+
+#[cfg(test)]
+mod tests {
+    use native_theme::next::{Color, Stroke};
+
+    use super::*;
+
+    fn stroked(c: Color, from_state: PartStated) -> PartStyle {
+        let mut part = PartStyle::default();
+        part.stroke = Stroke::uniform(1.0, c);
+        part.stated = PartStated::STROKE;
+        part.from_state = from_state;
+        part
+    }
+
+    /// `button.hover_border_color` in the default button's states: without a
+    /// rule for `HOVER` the frame is the default body's, 0.7.2's fallback.
+    #[test]
+    fn a_default_hover_frame_without_a_state_rule_is_the_default_frame() -> Mapped<()> {
+        let red = Color::rgb(1.0, 0.0, 0.0);
+        let blue = Color::rgb(0.0, 0.0, 1.0);
+        let default = stroked(blue, PartStated::default());
+        assert_eq!(
+            default_hover_frame(&stroked(red, PartStated::default()), &default)?,
+            hsla(blue)
+        );
+        assert_eq!(
+            default_hover_frame(&stroked(red, PartStated::STROKE), &default)?,
+            hsla(red)
+        );
+        Ok(())
+    }
 }

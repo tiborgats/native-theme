@@ -12,12 +12,13 @@
 //! the old mapping's (plan, section 1, rule 2). Not exported; the connector
 //! is ported onto it in M4, and the 0.7.2 path is removed at the 0.8.0 cut.
 //!
-//! A 0.7.2 field that is a soft option (`button.active_background`,
-//! `scrollbar.thumb_active_color`, `button.checked_background`, ...) and its
-//! fallback have no counterpart in a query: a state the theme gives no rule
-//! returns the part without that state, so the value read here is always
-//! present, and the old path's own fallback for the unset option is never
-//! taken.
+//! A 0.7.2 field that is a soft option of a state (`button.active_background`,
+//! `scrollbar.thumb_active_color`, `button.checked_background`, ...) is unset
+//! where the theme states nothing for the state; a query at a state the theme
+//! gives no rule returns the part without that state instead. Such a field is
+//! read here only where the property's `from_state` bit is set at the state
+//! (spec §2), and is `None` otherwise, so the old path's own fallback for the
+//! unset option is taken from both models.
 
 pub(crate) mod builders;
 #[cfg(test)]
@@ -130,6 +131,37 @@ fn text_color(text: &TextStyle, home: &'static str) -> Mapped<Hsla> {
         Ok(hsla(text.color))
     } else {
         Err(Unmapped(home))
+    }
+}
+
+/// A part's fill where a rule states it for the queried state (its
+/// `from_state` bit), as [`fill`] reads it; `None` where none does, a soft
+/// option's unset value.
+fn state_fill(part: &PartStyle, home: &'static str) -> Mapped<Option<Hsla>> {
+    if part.from_state.contains(PartStated::FILL) {
+        fill(part, home).map(Some)
+    } else {
+        Ok(None)
+    }
+}
+
+/// A part's stroke colour where a rule states it for the queried state, as
+/// [`stroke_color`] reads it; `None` where none does.
+fn state_stroke_color(part: &PartStyle, home: &'static str) -> Mapped<Option<Hsla>> {
+    if part.from_state.contains(PartStated::STROKE) {
+        stroke_color(part, home).map(Some)
+    } else {
+        Ok(None)
+    }
+}
+
+/// A text style's colour where a rule states it for the queried state, as
+/// [`text_color`] reads it; `None` where none does.
+fn state_text_color(text: &TextStyle, home: &'static str) -> Mapped<Option<Hsla>> {
+    if text.from_state.contains(TextStated::COLOR) {
+        text_color(text, home).map(Some)
+    } else {
+        Ok(None)
     }
 }
 
@@ -268,10 +300,7 @@ pub(crate) fn slice_colors(r: &ResolvedTheme) -> Mapped<SliceColors> {
         scrollbar_thumb: thumb_at_rest(r)?,
         scrollbar_thumb_hover: fill(&s.thumb(WidgetState::HOVER), "scrollbar.thumb(HOVER).fill")?,
         button_hover_bg: fill(&b.body(WidgetState::HOVER), "button.body(HOVER).fill")?,
-        button_active_bg: Some(fill(
-            &b.body(WidgetState::PRESSED),
-            "button.body(PRESSED).fill",
-        )?),
+        button_active_bg: state_fill(&b.body(WidgetState::PRESSED), "button.body(PRESSED).fill")?,
         list_hover_bg: fill(&l.row(WidgetState::HOVER), "list.row(HOVER).fill")?,
         list_selection_bg: fill(&l.row(WidgetState::SELECTED), "list.row(SELECTED).fill")?,
         shadow: hsla(c.shadow),
@@ -357,9 +386,104 @@ pub(crate) fn scrollbar_geometry(r: &ResolvedTheme) -> Mapped<ScrollbarGeometry>
         border: hsla(stated(r.colors.window.border, "colors.window.border")?),
         thumb: thumb_at_rest(r)?,
         thumb_hover: fill(&s.thumb(WidgetState::HOVER), "scrollbar.thumb(HOVER).fill")?,
-        thumb_active: Some(fill(
+        thumb_active: state_fill(
             &s.thumb(WidgetState::PRESSED),
             "scrollbar.thumb(PRESSED).fill",
-        )?),
+        )?,
     }))
+}
+
+#[cfg(test)]
+mod tests {
+    use gpui::{StyleRefinement, Styled as _};
+
+    use super::*;
+
+    const RED: Color = Color::rgb(1.0, 0.0, 0.0);
+    const GREEN: Color = Color::rgb(0.0, 1.0, 0.0);
+    const BLUE: Color = Color::rgb(0.0, 0.0, 1.0);
+
+    /// A part whose fill is `c`, stated, and from a state rule where
+    /// `for_state`.
+    fn filled(c: Color, for_state: bool) -> PartStyle {
+        let mut part = PartStyle::default();
+        part.fill = Paint::Solid(c);
+        part.stated = PartStated::FILL;
+        if for_state {
+            part.from_state = PartStated::FILL;
+        }
+        part
+    }
+
+    /// `button.active_background`: the pressed body's fill without a rule
+    /// for the state is unset, so `assign_secondary` derives
+    /// `secondary_active` as for 0.7.2's `None`.
+    #[test]
+    fn a_pressed_button_fill_without_a_state_rule_is_unset() -> Mapped<()> {
+        assert_eq!(state_fill(&filled(RED, false), "pressed")?, None);
+        assert_eq!(state_fill(&filled(RED, true), "pressed")?, Some(hsla(RED)));
+        Ok(())
+    }
+
+    /// `scrollbar.thumb_active_color`: without a rule for the state the
+    /// pressed thumb is the hovered one, 0.7.2's fallback.
+    #[test]
+    fn a_pressed_thumb_without_a_state_rule_falls_back_to_the_hover_colour() -> Mapped<()> {
+        let source = |pressed: &PartStyle| -> Mapped<ScrollbarSource> {
+            Ok(ScrollbarSource {
+                groove_width: 10.0,
+                thumb_width: 6.0,
+                corner_radius: 3.0,
+                min_thumb_length: 20.0,
+                track: hsla(BLUE),
+                border: hsla(BLUE),
+                thumb: hsla(BLUE),
+                thumb_hover: hsla(GREEN),
+                thumb_active: state_fill(pressed, "scrollbar.thumb(PRESSED).fill")?,
+            })
+        };
+        let unset = geometry_of(&source(&filled(RED, false))?);
+        assert_eq!(unset.thumb_active, hsla(GREEN));
+        let stated = geometry_of(&source(&filled(RED, true))?);
+        assert_eq!(stated.thumb_active, hsla(RED));
+        Ok(())
+    }
+
+    /// `button.checked_text_color` and `button.checked_background`: without
+    /// a rule for `CHECKED` the pressed pair stands in.
+    #[test]
+    fn a_checked_pair_without_a_state_rule_is_the_pressed_pair() -> Mapped<()> {
+        let mut label = TextStyle::default();
+        label.color = RED;
+        label.stated = TextStated::COLOR;
+        assert_eq!(state_text_color(&label, "checked label")?, None);
+        let checked = crate::geometry::button_checked_from(
+            state_text_color(&label, "checked label")?,
+            hsla(GREEN),
+            state_fill(&filled(RED, false), "checked body")?,
+            state_fill(&filled(BLUE, true), "pressed body")?,
+        );
+        assert_eq!(
+            checked,
+            StyleRefinement::default()
+                .text_color(hsla(GREEN))
+                .bg(hsla(BLUE))
+        );
+        label.from_state = TextStated::COLOR;
+        assert_eq!(state_text_color(&label, "checked label")?, Some(hsla(RED)));
+        Ok(())
+    }
+
+    /// `button.hover_border_color`: without a rule for `HOVER` it is unset,
+    /// and no bordered button is built.
+    #[test]
+    fn a_hover_stroke_without_a_state_rule_is_unset() -> Mapped<()> {
+        let mut hovered = PartStyle::default();
+        hovered.stroke = Stroke::uniform(1.0, RED);
+        hovered.stated = PartStated::STROKE;
+        assert_eq!(state_stroke_color(&hovered, "hover")?, None);
+        hovered.from_state = PartStated::STROKE;
+        assert_eq!(state_stroke_color(&hovered, "hover")?, Some(hsla(RED)));
+        Ok(())
+    }
 }
