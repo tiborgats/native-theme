@@ -75,7 +75,7 @@ pub enum CaretShape {
 
 /// Timings of the user interface. Each is `None` where neither the preset
 /// nor the live system states it; the toolkit's own value then applies.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
 #[non_exhaustive]
 pub struct UiTimings {
     /// The delay before a tooltip shows, in milliseconds.
@@ -101,7 +101,7 @@ pub struct UiTimings {
 
 /// The motion tokens of a theme. 0.7.2 has no motion data beyond the
 /// dialog's entrance: each is `None` until a source states it.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
 #[non_exhaustive]
 pub struct MotionTokens {
     /// A fast transition.
@@ -163,5 +163,49 @@ mod tests {
         assert_eq!(c.blink_off_ms, None);
         assert_eq!(c.blink_timeout_ms, None);
         assert_eq!(c.shape, None);
+    }
+
+    #[test]
+    fn timings_default_states_nothing() {
+        let UiTimings {
+            tooltip_show_ms,
+            tooltip_hide_ms,
+            tooltip_reshow_ms,
+            double_click_ms,
+            drag_threshold_px,
+            scrollbar_auto_hide_ms,
+            menu_hover_open_ms,
+            key_repeat_delay_ms,
+            key_repeat_interval_ms,
+        } = UiTimings::default();
+        for ms in [
+            tooltip_show_ms,
+            tooltip_hide_ms,
+            tooltip_reshow_ms,
+            double_click_ms,
+            scrollbar_auto_hide_ms,
+            menu_hover_open_ms,
+            key_repeat_delay_ms,
+            key_repeat_interval_ms,
+        ] {
+            assert_eq!(ms, None);
+        }
+        assert_eq!(drag_threshold_px, None);
+    }
+
+    #[test]
+    fn motion_default_states_nothing() {
+        let MotionTokens {
+            fast,
+            standard,
+            emphasized,
+            spring_spatial,
+            spring_effects,
+            theme_change,
+        } = MotionTokens::default();
+        for transition in [fast, standard, emphasized, spring_spatial, spring_effects] {
+            assert_eq!(transition, None);
+        }
+        assert_eq!(theme_change, None);
     }
 }

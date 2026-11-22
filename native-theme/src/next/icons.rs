@@ -26,7 +26,7 @@ pub struct IconThemeSpec {
 
 /// The icon sizes, in logical pixels; each `None` where unstated, as in
 /// 0.7.2.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
 #[non_exhaustive]
 pub struct IconSizes {
     /// Toolbar buttons' icons.
@@ -73,5 +73,19 @@ mod tests {
         assert_eq!(s.large, None);
         assert_eq!(s.dialog, Some(32.0));
         assert_eq!(s.panel, None);
+    }
+
+    #[test]
+    fn icon_sizes_default_states_nothing() {
+        let IconSizes {
+            toolbar,
+            small,
+            large,
+            dialog,
+            panel,
+        } = IconSizes::default();
+        for size in [toolbar, small, large, dialog, panel] {
+            assert_eq!(size, None);
+        }
     }
 }
