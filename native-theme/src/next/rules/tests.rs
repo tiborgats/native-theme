@@ -2,8 +2,9 @@ use super::*;
 use std::collections::HashSet;
 use std::mem::discriminant;
 
-use crate::next::geometry::StrokeAlign;
+use crate::next::geometry::{StrokeAlign, StrokeSide};
 use crate::next::motion::Timing;
+use crate::next::paint::PaintLayer;
 use crate::next::query::{ButtonQuery, InputQuery, InputVariant, ListQuery};
 use crate::next::style::{DecorationKind, FocusKind, FontSize};
 
@@ -1413,6 +1414,67 @@ fn a_rule_without_properties_after_two_others_is_an_empty_range_at_the_end()
         base()
     );
     Ok(())
+}
+
+#[test]
+fn eval_hands_out_the_rules_own_arcs() {
+    let side = StrokeSide {
+        width: 1.0,
+        paint: Paint::layers(vec![PaintLayer::Solid {
+            color: RED,
+            blend: BlendMode::Normal,
+        }]),
+    };
+    let paint = Paint::layers(vec![PaintLayer::Solid {
+        color: GREEN,
+        blend: BlendMode::Normal,
+    }]);
+    let stroke = Stroke::sides(
+        side.clone(),
+        side.clone(),
+        side.clone(),
+        side,
+        StrokeAlign::Inside,
+    );
+    let (shadows, focus, ripple) = (shadow(), focus(), ripple());
+    let family: Arc<str> = Arc::from("Noto Sans");
+    let part: RuleSet<PartStyle, PartProp> = RuleBuilder::new(base())
+        .rule(
+            on(WidgetState::HOVER),
+            [
+                PartProp::Fill(paint.clone()),
+                PartProp::Stroke(stroke.clone()),
+                PartProp::Shadows(Some(shadows.clone())),
+            ],
+        )
+        // Matched by a `FOCUS_VISIBLE` query only through step 0 of the evaluation contract.
+        .rule(
+            on(WidgetState::FOCUSED),
+            [
+                PartProp::Focus(Some(focus.clone())),
+                PartProp::Ripple(Some(ripple.clone())),
+            ],
+        )
+        .build();
+    let text: RuleSet<TextStyle, TextProp> = RuleBuilder::new(TextStyle::default())
+        .rule(on(WidgetState::HOVER), [TextProp::Family(family.clone())])
+        .build();
+    let query = StyleQuery::<()>::new(WidgetState::HOVER | WidgetState::FOCUS_VISIBLE);
+    let out = part.eval(&query);
+    assert!(
+        matches!((&out.fill, &paint), (Paint::Complex(a), Paint::Complex(b)) if Arc::ptr_eq(a, b))
+    );
+    assert!(
+        matches!((&out.stroke, &stroke), (Stroke::Complex(a), Stroke::Complex(b)) if Arc::ptr_eq(a, b))
+    );
+    assert!(
+        out.shadows
+            .as_ref()
+            .is_some_and(|s| Arc::ptr_eq(s, &shadows))
+    );
+    assert!(out.focus.as_ref().is_some_and(|f| Arc::ptr_eq(f, &focus)));
+    assert!(out.ripple.as_ref().is_some_and(|r| Arc::ptr_eq(r, &ripple)));
+    assert!(Arc::ptr_eq(&text.eval(&query).family, &family));
 }
 
 #[test]

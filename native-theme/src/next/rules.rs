@@ -511,50 +511,6 @@ impl<T, P, M> RuleBuilder<T, P, M> {
     }
 }
 
-/// The rule sets `tests/next_alloc.rs` measures, built by the crate's rule
-/// builder:
-/// a part rule set of `part_base` whose rules are `HOVER` applying
-/// `on_hover`, `FOCUSED` applying `on_focused` and `PRESSED` applying
-/// `on_pressed`, with the exclusive group `DISABLED`, `PRESSED`, `HOVER`;
-/// and a text and an icon rule set of the neutral style with `HOVER`
-/// applying `text_on_hover` and `icon_on_hover`.
-///
-/// A test hook, not API: it exists because that test must be its own binary
-/// (dhat's allocator is the binary's global allocator) and cannot reach the
-/// crate-private builder. It goes when the test queries a preset's widgets.
-#[doc(hidden)]
-#[must_use]
-pub fn __alloc_test_fixtures(
-    part_base: PartStyle,
-    on_hover: Vec<PartProp>,
-    on_focused: Vec<PartProp>,
-    on_pressed: Vec<PartProp>,
-    text_on_hover: Vec<TextProp>,
-    icon_on_hover: Vec<IconProp>,
-) -> (
-    RuleSet<PartStyle, PartProp>,
-    RuleSet<TextStyle, TextProp>,
-    RuleSet<IconStyle, IconProp>,
-) {
-    const GROUPS: &[&[WidgetState]] = &[&[
-        WidgetState::DISABLED,
-        WidgetState::PRESSED,
-        WidgetState::HOVER,
-    ]];
-    let part = RuleBuilder::with_exclusive(part_base, GROUPS)
-        .rule(RuleSelector::on(WidgetState::HOVER), on_hover)
-        .rule(RuleSelector::on(WidgetState::FOCUSED), on_focused)
-        .rule(RuleSelector::on(WidgetState::PRESSED), on_pressed)
-        .build();
-    let text = RuleBuilder::new(TextStyle::default())
-        .rule(RuleSelector::on(WidgetState::HOVER), text_on_hover)
-        .build();
-    let icon = RuleBuilder::new(IconStyle::default())
-        .rule(RuleSelector::on(WidgetState::HOVER), icon_on_hover)
-        .build();
-    (part, text, icon)
-}
-
 /// A rule's property range as stored, `(start, len)`; `(0, 0)` where either
 /// does not fit in a `u32` (beyond `u32::MAX` properties), so that the rule
 /// applies nothing rather than a range it does not own or a truncated one.
