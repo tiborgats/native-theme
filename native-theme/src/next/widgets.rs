@@ -1,7 +1,7 @@
 //! The widgets of a resolved theme and the [`ResolvedTheme`] that holds them
 //! (spec §5): so far the first slice's six, `button`, `checkbox`, `radio`,
-//! `scrollbar`, `list` and `tooltip`, and the ones in this module's
-//! submodules.
+//! `scrollbar`, `list` and `tooltip`, and the widgets of their own modules
+//! below.
 //!
 //! A ruled widget holds one rule set per part and answers a query with the
 //! part's concrete style, through a getter per part and a combined
@@ -19,7 +19,9 @@ use super::motion::{CaretSpec, MotionTokens, UiTimings};
 use super::preset::Preset;
 use super::query::{ButtonQuery, ListQuery, Scheme, StyleQuery, ThemeContext};
 use super::roles::ColorRoles;
-use super::rules::{ButtonMatcher, IconProp, ListMatcher, PartProp, RuleSet, TextProp};
+use super::rules::{
+    ButtonMatcher, IconProp, ListMatcher, PartProp, RuleBuilder, RuleSet, TextProp,
+};
 use super::style::{FocusIndicator, IconStyle, PartStyle, TextStyle};
 use super::typography::Typography;
 use super::window::WindowChrome;
@@ -44,19 +46,46 @@ type IconRules<M = ()> = RuleSet<IconStyle, IconProp, M>;
 
 mod input;
 mod link;
+mod menu;
+mod menu_bar;
 mod progress_bar;
 mod separator;
+mod sidebar;
 mod slider;
 mod spinner;
 mod splitter;
+mod status_bar;
+mod tab;
+mod toolbar;
 
 pub use input::{InputParts, InputWidget};
 pub use link::{LinkParts, LinkWidget};
+pub use menu::{MenuParts, MenuWidget};
+pub use menu_bar::{MenuBarParts, MenuBarWidget};
 pub use progress_bar::{ProgressBarParts, ProgressBarWidget};
 pub use separator::SeparatorWidget;
+pub use sidebar::{SidebarParts, SidebarWidget};
 pub use slider::{SliderParts, SliderWidget};
 pub use spinner::SpinnerWidget;
 pub use splitter::{SplitterParts, SplitterWidget};
+pub use status_bar::StatusBarWidget;
+pub use tab::{TabParts, TabWidget};
+pub use toolbar::{ToolbarParts, ToolbarWidget};
+
+/// A part rule set that states nothing: an empty base style, no rule.
+fn unstated_part<M>() -> PartRules<M> {
+    RuleBuilder::new(PartStyle::default()).build()
+}
+
+/// A text rule set that states nothing.
+fn unstated_text<M>() -> TextRules<M> {
+    RuleBuilder::new(TextStyle::default()).build()
+}
+
+/// An icon rule set that states nothing.
+fn unstated_icon<M>() -> IconRules<M> {
+    RuleBuilder::new(IconStyle::default()).build()
+}
 
 // ---------------------------------------------------------------------------
 // button
@@ -622,6 +651,18 @@ pub struct ResolvedTheme {
     pub scrollbar: ScrollbarWidget,
     /// The list or table view.
     pub list: ListWidget,
+    /// The tab bar.
+    pub tab: TabWidget,
+    /// The popup menu.
+    pub menu: MenuWidget,
+    /// The menu bar.
+    pub menu_bar: MenuBarWidget,
+    /// The sidebar.
+    pub sidebar: SidebarWidget,
+    /// The toolbar.
+    pub toolbar: ToolbarWidget,
+    /// The status bar.
+    pub status_bar: StatusBarWidget,
     /// The tooltip.
     pub tooltip: TooltipWidget,
     /// The window chrome.
@@ -665,7 +706,7 @@ impl ResolvedTheme {
     /// widgets, each named `<widget>.<part>`.
     #[cfg(test)]
     pub(crate) fn dead_rules(&self) -> Vec<(&'static str, Vec<usize>)> {
-        vec![
+        let mut all = vec![
             ("button.body", self.button.body.dead_rules()),
             ("button.label", self.button.label.dead_rules()),
             ("button.icon", self.button.icon.dead_rules()),
@@ -715,7 +756,13 @@ impl ResolvedTheme {
             ("progress_bar.track", self.progress_bar.track.dead_rules()),
             ("progress_bar.fill", self.progress_bar.fill.dead_rules()),
             ("splitter.handle", self.splitter.handle.dead_rules()),
-        ]
+        ];
+        all.extend(self.tab.dead_rules());
+        all.extend(self.menu.dead_rules());
+        all.extend(self.menu_bar.dead_rules());
+        all.extend(self.sidebar.dead_rules());
+        all.extend(self.toolbar.dead_rules());
+        all
     }
 
     /// The shadow layers of elevation `level`; empty beyond the last level.

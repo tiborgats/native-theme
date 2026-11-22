@@ -1,7 +1,7 @@
 //! Allocation counts of the 0.8.0 model (spec §11, item 1; plan, rule 6),
 //! through the public API: every part getter and `parts(query)` of the
-//! ruled widgets and every getter of the window chrome on the resolved
-//! `kde-breeze`, light and dark,
+//! model's ruled widgets and every getter of the window chrome on the
+//! resolved `kde-breeze`, light and dark,
 //! over a list of states, and the clone of a returned `PartStyle` and of a
 //! style holding every `Arc`-carrying property, allocate nothing; and the
 //! resolved theme's heap bytes, the live bytes after `resolve()` minus
@@ -15,6 +15,7 @@
 use std::hint::black_box;
 use std::sync::Arc;
 
+use native_theme::next::TabQuery;
 use native_theme::next::{
     BlendMode, ButtonQuery, Color, Corners, FocusIndicator, FocusKind, FocusTrigger, GradientStop,
     IconStated, ListQuery, MaterialKind, MaterialSpec, Orientation, Paint, PaintLayer, PartStated,
@@ -208,6 +209,45 @@ fn query_every_part(theme: &ResolvedTheme, state: WidgetState) {
     black_box(theme.splitter.parts(q));
 }
 
+/// Every getter and `parts` of the ruled parts of the menu, the menu bar,
+/// the tab bar, the sidebar and the toolbar for `state`, each result kept
+/// from the optimiser.
+fn query_menus_tabs_and_bars(theme: &ResolvedTheme, state: WidgetState) {
+    let q = StyleQuery::<()>::new(state);
+    let tab = TabQuery::new(state);
+    black_box(theme.menu.panel(q));
+    black_box(theme.menu.item(q));
+    black_box(theme.menu.item_label(q));
+    black_box(theme.menu.shortcut(q));
+    black_box(theme.menu.icon(q));
+    black_box(theme.menu.submenu_arrow(q));
+    black_box(theme.menu.separator(q));
+    black_box(theme.menu.parts(q));
+    black_box(theme.menu_bar.bar(q));
+    black_box(theme.menu_bar.item(q));
+    black_box(theme.menu_bar.item_label(q));
+    black_box(theme.menu_bar.parts(q));
+    black_box(theme.tab.bar(tab));
+    black_box(theme.tab.tab(tab));
+    black_box(theme.tab.label(tab));
+    black_box(theme.tab.indicator(tab));
+    black_box(theme.tab.close_button(tab));
+    black_box(theme.tab.close_icon(tab));
+    black_box(theme.tab.parts(tab));
+    black_box(theme.sidebar.container(q));
+    black_box(theme.sidebar.item(q));
+    black_box(theme.sidebar.item_label(q));
+    black_box(theme.sidebar.item_icon(q));
+    black_box(theme.sidebar.section_header(q));
+    black_box(theme.sidebar.parts(q));
+    black_box(theme.toolbar.bar(q));
+    black_box(theme.toolbar.button(q));
+    black_box(theme.toolbar.button_label(q));
+    black_box(theme.toolbar.button_icon(q));
+    black_box(theme.toolbar.separator(q));
+    black_box(theme.toolbar.parts(q));
+}
+
 #[test]
 fn queries_and_clones_allocate_nothing_and_the_theme_fits_its_budget() {
     let _profiler = dhat::Profiler::builder().testing().build();
@@ -228,6 +268,7 @@ fn queries_and_clones_allocate_nothing_and_the_theme_fits_its_budget() {
         for state in STATES {
             let before = dhat::HeapStats::get();
             query_every_part(black_box(&theme), state);
+            query_menus_tabs_and_bars(black_box(&theme), state);
             let after = dhat::HeapStats::get();
             dhat::assert_eq!(after.total_blocks, before.total_blocks);
             dhat::assert_eq!(after.curr_bytes, before.curr_bytes);

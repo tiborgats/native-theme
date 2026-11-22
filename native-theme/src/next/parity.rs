@@ -50,6 +50,11 @@ const SLICE_GROUPS: &[&str] = &[
     "splitter",
     "separator",
     "spinner",
+    "menu",
+    "tab",
+    "sidebar",
+    "toolbar",
+    "status_bar",
 ];
 
 /// The fields of 0.7.2's `Resolved` wrapper beside the resolved theme, which do not serialise
@@ -1211,6 +1216,11 @@ const NOT_PORTED_GROUPS: &[&str] = &[
     "splitter",
     "separator",
     "spinner",
+    "menu",
+    "tab",
+    "sidebar",
+    "toolbar",
+    "status_bar",
 ];
 
 /// The totals of the ported groups' rows on each scheme, `[rows, compared, equal, mismatching, skipped]`:
@@ -1284,16 +1294,18 @@ fn group_totals(report: &compare::Report, ported: bool) -> [usize; 5] {
     totals_in(report, PORTED_GROUPS, ported)
 }
 
+/// Whether the group of the row of `key`, its first segment, is one of `groups`.
+fn in_groups(key: &str, groups: &[&str]) -> bool {
+    groups.contains(&key.split('.').next().unwrap_or(""))
+}
+
 /// The totals of the rows in `groups` (`inside`) or in the others: rows, compared, equal, mismatching,
 /// skipped.
 fn totals_in(report: &compare::Report, groups: &[&str], inside: bool) -> [usize; 5] {
     let rows: Vec<&compare::Outcome> = report
         .rows
         .iter()
-        .filter(|row| {
-            let group = row.key.split('.').next().unwrap_or("");
-            groups.contains(&group) == inside
-        })
+        .filter(|row| in_groups(&row.key, groups) == inside)
         .map(|row| &row.outcome)
         .collect();
     let count = |f: fn(&compare::Outcome) -> bool| rows.iter().filter(|o| f(o)).count();
@@ -1309,8 +1321,8 @@ fn totals_in(report: &compare::Report, groups: &[&str], inside: bool) -> [usize;
 /// Model parity of the kde-breeze builder (plan, section 1, rule 2): 0.7.2's `kde-breeze` and
 /// `Theme::preset(Preset::KdeBreeze)`, light and dark, over the table of homes. Every row's group is a
 /// ported one or one of [`NOT_PORTED_GROUPS`]; zero mismatches in the ported groups, every skip for its
-/// named reason; the rows of the groups not ported yet are counted and reported. No dead rule in any rule
-/// set of the widgets.
+/// named reason; the rows of the groups not ported yet are counted and reported, and the two counts make
+/// the whole table. No dead rule in any rule set of the widgets.
 #[test]
 fn model_parity_kde_breeze() -> TestResult {
     use crate::next::preset::{Preset, Theme as NextTheme};
@@ -1341,7 +1353,11 @@ fn model_parity_kde_breeze() -> TestResult {
         let report = compare::compare(&old, &new, None, Preset::KdeBreeze, &extra)?;
         println!("{mode:?}: {report}");
         assert_eq!(report.totals.rows, table.row.len());
-        for row in &report.rows {
+        for row in report
+            .rows
+            .iter()
+            .filter(|row| in_groups(&row.key, PORTED_GROUPS))
+        {
             let skip = match row.outcome {
                 compare::Outcome::Skipped(skip) => Some(skip),
                 _ => None,
@@ -1349,12 +1365,17 @@ fn model_parity_kde_breeze() -> TestResult {
             assert_eq!(skip, expected_skip(&row.key), "{mode:?}: `{}`", row.key);
         }
         let ported = group_totals(&report, true);
-        let pending = group_totals(&report, false);
+        let not_ported = totals_in(&report, NOT_PORTED_GROUPS, true);
         println!(
             "{mode:?}: [rows, compared, equal, mismatching, skipped] in the ported groups {ported:?}, \
-             in the groups not ported yet {pending:?}"
+             in the groups not ported yet {not_ported:?}"
         );
         assert_eq!(ported, PORTED_TOTALS, "{mode:?}\n{report}");
+        assert_eq!(
+            ported[0].saturating_add(not_ported[0]),
+            table.row.len(),
+            "{mode:?}"
+        );
         let dead: Vec<_> = new
             .dead_rules()
             .into_iter()
@@ -1371,7 +1392,7 @@ fn model_parity_kde_breeze() -> TestResult {
 
 /// The totals of the ported groups' rows on every fixture, `[rows, compared, equal, mismatching, skipped]`:
 /// every row equal but `checkbox.background_color`, skipped where `checkbox.unchecked_background` is
-/// stated (the table's listed differences).
+/// stated (the table's listed differences). The rows of the groups not ported yet are counted, not asserted.
 #[cfg(all(target_os = "linux", feature = "kde"))]
 const READER_TOTALS: [usize; 5] = [200, 199, 199, 0, 1];
 
@@ -1421,7 +1442,7 @@ fn old_kde_reader(
 /// `SystemOverrides` and resolved for the file's context, over the table of homes, the snapshot's context
 /// compared. Zero mismatches over every row of the ported groups, the four `snapshot.context.*` rows
 /// compared and equal, the one skip for its named reason; the rows of the groups not ported yet counted and
-/// reported; the resolved theme's name is the reader's.
+/// reported, the two counts making the whole table; the resolved theme's name is the reader's.
 #[cfg(all(target_os = "linux", feature = "kde"))]
 #[test]
 fn reader_parity_kde() -> TestResult {
@@ -1479,13 +1500,22 @@ fn reader_parity_on(
     assert_eq!(report.totals.rows, table.row.len(), "{name}");
     assert_eq!(&*new.name, old_name, "{name}");
     let totals = group_totals(&report, true);
-    let pending = group_totals(&report, false);
+    let not_ported = totals_in(&report, NOT_PORTED_GROUPS, true);
     println!(
         "{name}: [rows, compared, equal, mismatching, skipped] in the ported groups {totals:?}, \
-         in the groups not ported yet {pending:?}"
+         in the groups not ported yet {not_ported:?}"
     );
     assert_eq!(totals, READER_TOTALS, "{name}\n{report}");
-    for row in &report.rows {
+    assert_eq!(
+        totals[0].saturating_add(not_ported[0]),
+        table.row.len(),
+        "{name}"
+    );
+    for row in report
+        .rows
+        .iter()
+        .filter(|row| in_groups(&row.key, PORTED_GROUPS))
+    {
         let skip = match row.outcome {
             compare::Outcome::Skipped(skip) => Some(skip),
             _ => None,

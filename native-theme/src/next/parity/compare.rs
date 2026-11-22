@@ -45,12 +45,13 @@ use super::{HOMES, NullMeans, Row, RowContext, Table};
 use crate::IconSet;
 use crate::next::color::Color;
 use crate::next::geometry::{CornerCurve, CornerRadius, Stroke, StrokeAlign};
+use crate::next::layout::TabIndicatorSide;
 use crate::next::paint::Paint;
 use crate::next::preset::Preset;
 use crate::next::query::{
     ButtonKind, ButtonQuery, ButtonShape, ButtonVariant, Contrast, ControlSize, GroupPosition,
     InputQuery, InputVariant, ListKind, ListQuery, ListVariant, MotionPreference, Orientation,
-    Scheme, StyleQuery, Surface, ThemeContext, WidgetState,
+    Scheme, StyleQuery, Surface, TabQuery, TabVariant, ThemeContext, WidgetState,
 };
 use crate::next::roles::SurfaceColors;
 use crate::next::style::{
@@ -84,6 +85,16 @@ const SCHEMES: [(ColorMode, Scheme); 2] = [
 const FOCUS_TRIGGERS: [(bool, FocusTrigger); 2] = [
     (true, FocusTrigger::KeyboardOnly),
     (false, FocusTrigger::Always),
+];
+
+/// 0.7.2's `TabIndicatorSide` (`src/model/tab_indicator_side.rs`, serialised in lowercase) to 0.8.0's
+/// (`layout.rs`).
+const TAB_INDICATOR_SIDES: [(crate::theme::TabIndicatorSide, TabIndicatorSide); 2] = [
+    (crate::theme::TabIndicatorSide::Top, TabIndicatorSide::Top),
+    (
+        crate::theme::TabIndicatorSide::Bottom,
+        TabIndicatorSide::Bottom,
+    ),
 ];
 
 /// The variant of 0.7.2's `FontSize` (`src/model/font.rs`, serialised externally tagged, `{"Pt": 10.0}`)
@@ -609,6 +620,7 @@ enum Got {
     FocusTrigger(FocusTrigger),
     Motion(MotionPreference),
     Contrast(Contrast),
+    TabIndicatorSide(TabIndicatorSide),
     /// A part's `shadows` with the `SHADOWS` bit clear.
     ShadowsUnstated,
     /// A part's `shadows` stated as `None`.
@@ -694,6 +706,14 @@ fn equal(old: &Value, got: &Got) -> Result<bool, String> {
         // The table's notes: `reduce_motion` is `motion != Full`, `high_contrast` is `contrast != Normal`.
         (Got::Motion(motion), Value::Bool(b)) => Ok((*motion != MotionPreference::Full) == *b),
         (Got::Contrast(contrast), Value::Bool(b)) => Ok((*contrast != Contrast::Normal) == *b),
+        (Got::TabIndicatorSide(side), _) => {
+            for (old_side, new_side) in TAB_INDICATOR_SIDES {
+                if serde_json::to_value(old_side).map_err(|e| e.to_string())? == *old {
+                    return Ok(new_side == *side);
+                }
+            }
+            Err(kind_error())
+        }
         _ => Err(kind_error()),
     }
 }
@@ -726,6 +746,7 @@ fn read(
         "focus_ring" => focus_ring(theme, rest),
         "caret" => caret(theme, rest),
         "tooltip" => tooltip(theme, rest),
+        "status_bar" => status_bar(theme, rest),
         widget => match metric(theme, widget, rest) {
             Some(got) => Some(got),
             None => ruled_part(theme, widget, rest).map_err(|e| format!("`{home}`: {e}"))?,
@@ -965,6 +986,15 @@ fn tooltip(theme: &ResolvedTheme, rest: &str) -> Option<Got> {
     }
 }
 
+fn status_bar(theme: &ResolvedTheme, rest: &str) -> Option<Got> {
+    match rest.split_once('.')? {
+        ("bar", property) => part_property(&theme.status_bar.bar, property),
+        ("label", property) => text_property(&theme.status_bar.label, property),
+        ("separator", property) => part_property(&theme.status_bar.separator, property),
+        _ => None,
+    }
+}
+
 /// A direct metric of a widget.
 fn metric(theme: &ResolvedTheme, widget: &str, name: &str) -> Option<Got> {
     Some(match (widget, name) {
@@ -994,6 +1024,16 @@ fn metric(theme: &ResolvedTheme, widget: &str, name: &str) -> Option<Got> {
         ("spinner", "min_diameter") => Got::F32(theme.spinner.min_diameter),
         ("spinner", "stroke_width") => Got::F32(theme.spinner.stroke_width),
         ("spinner", "period_ms") => Got::Int(u64::from(theme.spinner.period_ms)),
+        ("tab", "item_gap") => opt_f32(theme.tab.item_gap),
+        ("tab", "indicator_side") => theme
+            .tab
+            .indicator_side
+            .map_or(Got::Unstated, Got::TabIndicatorSide),
+        ("tab", "active_outward_corner_radius") => opt_f32(theme.tab.active_outward_corner_radius),
+        ("menu", "icon_text_gap") => Got::F32(theme.menu.icon_text_gap),
+        ("menu_bar", "item_gap") => opt_f32(theme.menu_bar.item_gap),
+        ("sidebar", "item_gap") => opt_f32(theme.sidebar.item_gap),
+        ("toolbar", "item_gap") => opt_f32(theme.toolbar.item_gap),
         _ => return None,
     })
 }
@@ -1055,6 +1095,32 @@ fn ruled_style<'a>(
         ("progress_bar", "track") => Ruled::Part(theme.progress_bar.track(q.style()?)),
         ("progress_bar", "fill") => Ruled::Part(theme.progress_bar.fill(q.style()?)),
         ("splitter", "handle") => Ruled::Part(theme.splitter.handle(q.style()?)),
+        ("tab", "bar") => Ruled::Part(theme.tab.bar(q.tab()?)),
+        ("tab", "tab") => Ruled::Part(theme.tab.tab(q.tab()?)),
+        ("tab", "label") => Ruled::Text(theme.tab.label(q.tab()?)),
+        ("tab", "indicator") => Ruled::Part(theme.tab.indicator(q.tab()?)),
+        ("tab", "close_button") => Ruled::Part(theme.tab.close_button(q.tab()?)),
+        ("tab", "close_icon") => Ruled::Icon(theme.tab.close_icon(q.tab()?)),
+        ("menu", "panel") => Ruled::Part(theme.menu.panel(q.style()?)),
+        ("menu", "item") => Ruled::Part(theme.menu.item(q.style()?)),
+        ("menu", "item_label") => Ruled::Text(theme.menu.item_label(q.style()?)),
+        ("menu", "shortcut") => Ruled::Text(theme.menu.shortcut(q.style()?)),
+        ("menu", "icon") => Ruled::Icon(theme.menu.icon(q.style()?)),
+        ("menu", "submenu_arrow") => Ruled::Icon(theme.menu.submenu_arrow(q.style()?)),
+        ("menu", "separator") => Ruled::Part(theme.menu.separator(q.style()?)),
+        ("menu_bar", "bar") => Ruled::Part(theme.menu_bar.bar(q.style()?)),
+        ("menu_bar", "item") => Ruled::Part(theme.menu_bar.item(q.style()?)),
+        ("menu_bar", "item_label") => Ruled::Text(theme.menu_bar.item_label(q.style()?)),
+        ("sidebar", "container") => Ruled::Part(theme.sidebar.container(q.style()?)),
+        ("sidebar", "item") => Ruled::Part(theme.sidebar.item(q.style()?)),
+        ("sidebar", "item_label") => Ruled::Text(theme.sidebar.item_label(q.style()?)),
+        ("sidebar", "item_icon") => Ruled::Icon(theme.sidebar.item_icon(q.style()?)),
+        ("sidebar", "section_header") => Ruled::Text(theme.sidebar.section_header(q.style()?)),
+        ("toolbar", "bar") => Ruled::Part(theme.toolbar.bar(q.style()?)),
+        ("toolbar", "button") => Ruled::Part(theme.toolbar.button(q.style()?)),
+        ("toolbar", "button_label") => Ruled::Text(theme.toolbar.button_label(q.style()?)),
+        ("toolbar", "button_icon") => Ruled::Icon(theme.toolbar.button_icon(q.style()?)),
+        ("toolbar", "separator") => Ruled::Part(theme.toolbar.separator(q.style()?)),
         _ => return Ok(None),
     };
     Ok(Some((style, property)))
@@ -1508,6 +1574,26 @@ impl<'a> Query<'a> {
             kind.alternate = named("alternate", a, &[("true", true), ("false", false)])?;
         }
         Ok(self.base().variant(kind))
+    }
+
+    fn tab(&self) -> Result<TabQuery, String> {
+        if self.shape.is_some() || self.alternate.is_some() {
+            return Err("a tab's query has no axis but `variant`".to_owned());
+        }
+        let mut variant = TabVariant::default();
+        if let Some(v) = self.variant {
+            variant = named(
+                "variant",
+                v,
+                &[
+                    ("Standard", TabVariant::Standard),
+                    ("Document", TabVariant::Document),
+                    ("Pill", TabVariant::Pill),
+                    ("Segmented", TabVariant::Segmented),
+                ],
+            )?;
+        }
+        Ok(self.base().variant(variant))
     }
 }
 

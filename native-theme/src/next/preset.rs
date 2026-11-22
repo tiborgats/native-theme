@@ -26,6 +26,9 @@ use super::widgets::{
     InputWidget, LinkWidget, ProgressBarWidget, SeparatorWidget, SliderWidget, SpinnerWidget,
     SplitterWidget,
 };
+use super::widgets::{
+    MenuBarWidget, MenuWidget, SidebarWidget, StatusBarWidget, TabWidget, ToolbarWidget,
+};
 use super::window::{CaptionLayout, WindowChrome};
 use crate::IconSet;
 
@@ -697,6 +700,12 @@ pub(crate) fn nothing_stated(preset: Preset, context: ThemeContext) -> ResolvedT
             part(),
             Color::default(),
         ),
+        tab: TabWidget::unstated(native),
+        menu: MenuWidget::unstated(native),
+        menu_bar: MenuBarWidget::unstated(native),
+        sidebar: SidebarWidget::unstated(native),
+        toolbar: ToolbarWidget::unstated(native),
+        status_bar: StatusBarWidget::unstated(native),
         tooltip: TooltipWidget::new(native, PartStyle::default(), TextStyle::default()),
         window: WindowChrome::new(
             native,

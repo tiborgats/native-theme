@@ -174,6 +174,10 @@ pub use widgets::{
     InputParts, InputWidget, LinkParts, LinkWidget, ProgressBarParts, ProgressBarWidget,
     SeparatorWidget, SliderParts, SliderWidget, SpinnerWidget, SplitterParts, SplitterWidget,
 };
+pub use widgets::{
+    MenuBarParts, MenuBarWidget, MenuParts, MenuWidget, SidebarParts, SidebarWidget,
+    StatusBarWidget, TabParts, TabWidget, ToolbarParts, ToolbarWidget,
+};
 pub use window::{CaptionButtonKind, CaptionLayout, EdgeFlags, WindowChrome, WindowState};
 
 #[cfg(test)]
