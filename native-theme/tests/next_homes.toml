@@ -1,0 +1,1039 @@
+# The table of homes of the 0.8.0 work (docs/v0.8.0-plan.md, section 1, rule 2): for each field of 0.7.2's
+# resolved theme in the first slice (the globals and `button`, `checkbox`, `list`, `scrollbar`, `tooltip`), where
+# its value lives in the 0.8.0 model. tests/next_parity.rs checks the rows against 0.7.2's serialisation and the
+# spec's vocabulary; the same rows place a preset's constants and port a consumer's reads. Scaffolding of the
+# 0.8.0 work: deleted at the 0.8.0 cut.
+#
+# One row per 0.7.2 field, every row of the same form, an array of tables `[[row]]` with these keys:
+#
+#   key                  required. The old field as `serde_json` serialises 0.7.2's `ResolvedTheme`: the dotted
+#                        path of its leaf (`button.font.size`); an enum value such as a font's `defined_size` is
+#                        one leaf. A row with `hand = true` names a field that does not serialise: the `Resolved`
+#                        wrapper's (`Resolved.mode`) and 0.7.2's `Theme.layout` and `SystemTheme.accessibility`.
+#   homes                required, one or more. Where the value lives in the 0.8.0 model; each home is compared.
+#   homes_by_preset      optional. `{ "<preset>" = [homes] }`: the homes for that preset in place of `homes`, where
+#                        the field means something else there.
+#   if_null              optional. An old key: where `key` is null, the homes hold that key's value (0.7.2's
+#                        fallback, e.g. `radio_indicator_width` unset means `indicator_width`).
+#   only_if_null         optional. An old key: the row is compared only where that key is null.
+#   home_fallback        optional, with one home. Where the `Option` slot of that home is `None` (a `Typography`
+#                        slot the platform does not define), this home is compared instead.
+#   hand                 optional, default false. The row is written by hand: its key is not in the serialisation.
+#   difference_presets   optional, with the two keys below. The presets on which the row is a listed difference
+#   difference_reason      (plan, rule 2): what differs and why,
+#   difference_citation    and the source of the corrected value.
+#   note                 optional. How a value converts where the home's type is not the old field's.
+#
+# A home is one of:
+#
+#   <global>                         a field of the resolved theme outside the widgets, by its path in spec §§4-5:
+#                                    `colors.view.background`, `typography.body.size_px`, `icons.sizes.toolbar`,
+#                                    `layout.border_width`, `timings.tooltip_show_ms`, `focus_ring.stroke.color`,
+#                                    `context.scheme`.
+#   <widget>.<metric>                a direct metric of a widget (spec §5's table): `button.icon_text_gap`.
+#   <widget>.<part>.<property>       a part of a static widget: `tooltip.panel.fill`.
+#   <widget>.<part>(<query>).<property>
+#                                    a part of a ruled widget as its query returns it. <query> is the state, `NONE`
+#                                    for the rest state or `WidgetState` bits joined by `|` (`HOVER|CHECKED`),
+#                                    then optionally `; ` and axis values joined by `, `: `variant=Primary`,
+#                                    `shape=Pill`, `alternate=true`, `orientation=Vertical`, `size=Small`,
+#                                    `surface=View`, `position=First`.
+#
+# A part's property is a field of `PartStyle` (`fill`, `stroke.color`, `stroke.width`, `corners`, `shadows`,
+# `opacity`, `padding.top` .. `padding.left`, `margin.top` .. `margin.left`, `min_size[0]` (width), `min_size[1]`
+# (height), `max_size[0]`, `max_size[1]`, `focus`, `ripple`, `transition`, `cursor`, `transform`), of `TextStyle`
+# (`family`, `color`, `size_px`, `defined_size`, `weight`, `style`, `width`, `line_height`, `letter_spacing`,
+# `optical_size`, `decoration`, `blend_mode`) or of `IconStyle` (`size`, `color`, `opacity`, `weight`,
+# `rendering_mode`, `stroke_width`, `blend_mode`), by the part's kind. A 0.7.2 `None` at a part's property is the
+# property's `stated` bit clear; for a state, no rule, so the query returns what it returns without that state
+# (spec §5, notes to the table). `checkbox.*` serves `checkbox` and `radio`: such a row names a home on each.
+
+# --- defaults ---
+
+[[row]]
+key = "defaults.font.family"
+homes = ["typography.body.family"]
+
+[[row]]
+key = "defaults.font.size"
+homes = ["typography.body.size_px"]
+
+[[row]]
+key = "defaults.font.defined_size"
+homes = ["typography.body.defined_size"]
+
+[[row]]
+key = "defaults.font.weight"
+homes = ["typography.body.weight"]
+
+[[row]]
+key = "defaults.font.style"
+homes = ["typography.body.style"]
+
+[[row]]
+key = "defaults.font.color"
+homes = ["typography.body.color"]
+
+[[row]]
+key = "defaults.line_height"
+homes = ["typography.line_height_multiplier"]
+
+[[row]]
+key = "defaults.font_whole_pixels"
+homes = ["typography.font_whole_pixels"]
+
+[[row]]
+key = "defaults.mono_font.family"
+homes = ["typography.monospace.family"]
+
+[[row]]
+key = "defaults.mono_font.size"
+homes = ["typography.monospace.size_px"]
+
+[[row]]
+key = "defaults.mono_font.defined_size"
+homes = ["typography.monospace.defined_size"]
+
+[[row]]
+key = "defaults.mono_font.weight"
+homes = ["typography.monospace.weight"]
+
+[[row]]
+key = "defaults.mono_font.style"
+homes = ["typography.monospace.style"]
+
+[[row]]
+key = "defaults.mono_font.color"
+homes = ["typography.monospace.color"]
+
+[[row]]
+key = "defaults.background_color"
+homes = ["colors.window.background"]
+
+[[row]]
+key = "defaults.text_color"
+homes = ["colors.window.foreground"]
+
+[[row]]
+key = "defaults.accent_color"
+homes = ["colors.accent.fill"]
+
+[[row]]
+key = "defaults.accent_text_color"
+homes = ["colors.accent.foreground"]
+
+[[row]]
+key = "defaults.surface_color"
+homes = ["colors.view.background"]
+
+[[row]]
+key = "defaults.muted_color"
+homes = ["colors.window.foreground_muted"]
+
+[[row]]
+key = "defaults.shadow_color"
+homes = ["colors.shadow"]
+
+[[row]]
+key = "defaults.link_color"
+homes = ["colors.link"]
+
+[[row]]
+key = "defaults.selection_background"
+homes = ["colors.selection.background"]
+
+[[row]]
+key = "defaults.selection_text_color"
+homes = ["colors.selection.foreground"]
+
+[[row]]
+key = "defaults.selection_inactive_background"
+homes = ["colors.selection.unfocused_background"]
+
+[[row]]
+key = "defaults.selection_inactive_text_color"
+homes = ["colors.selection.unfocused_foreground"]
+
+[[row]]
+key = "defaults.text_selection_background"
+homes = ["colors.text_selection.background"]
+
+[[row]]
+key = "defaults.text_selection_color"
+homes = ["colors.text_selection.foreground"]
+
+[[row]]
+key = "defaults.disabled_text_color"
+homes = ["colors.disabled_text"]
+
+[[row]]
+key = "defaults.danger_color"
+homes = ["colors.error.fill"]
+
+[[row]]
+key = "defaults.danger_text_color"
+homes = ["colors.error.foreground"]
+
+[[row]]
+key = "defaults.warning_color"
+homes = ["colors.warning.fill"]
+
+[[row]]
+key = "defaults.warning_text_color"
+homes = ["colors.warning.foreground"]
+
+[[row]]
+key = "defaults.success_color"
+homes = ["colors.success.fill"]
+
+[[row]]
+key = "defaults.success_text_color"
+homes = ["colors.success.foreground"]
+
+[[row]]
+key = "defaults.info_color"
+homes = ["colors.info.fill"]
+
+[[row]]
+key = "defaults.info_text_color"
+homes = ["colors.info.foreground"]
+
+[[row]]
+key = "defaults.border.color"
+homes = ["colors.window.border"]
+
+[[row]]
+key = "defaults.border.corner_radius"
+homes = ["layout.corner_radius"]
+
+[[row]]
+key = "defaults.border.corner_radius_lg"
+homes = ["layout.corner_radius_lg"]
+
+[[row]]
+key = "defaults.border.line_width"
+homes = ["layout.border_width"]
+
+[[row]]
+key = "defaults.border.opacity"
+homes = ["layout.border_opacity"]
+
+[[row]]
+key = "defaults.border.shadow_enabled"
+homes = ["layout.shadow_enabled"]
+
+[[row]]
+key = "defaults.disabled_opacity"
+homes = ["colors.disabled_opacity"]
+
+[[row]]
+key = "defaults.focus_ring_color"
+homes = [
+    "colors.focus_ring",
+    "focus_ring.stroke.color",
+]
+
+[[row]]
+key = "defaults.focus_ring_width"
+homes = ["focus_ring.stroke.width"]
+
+[[row]]
+key = "defaults.focus_ring_offset"
+homes = ["focus_ring.offset"]
+
+[[row]]
+key = "defaults.focus_ring_keyboard_only"
+homes = ["focus_ring.trigger"]
+note = "Some(true): Some(FocusTrigger::KeyboardOnly); Some(false): Some(FocusTrigger::Always); None: None"
+
+[[row]]
+key = "defaults.icon_sizes.toolbar"
+homes = ["icons.sizes.toolbar"]
+
+[[row]]
+key = "defaults.icon_sizes.small"
+homes = ["icons.sizes.small"]
+
+[[row]]
+key = "defaults.icon_sizes.large"
+homes = ["icons.sizes.large"]
+
+[[row]]
+key = "defaults.icon_sizes.dialog"
+homes = ["icons.sizes.dialog"]
+
+[[row]]
+key = "defaults.icon_sizes.panel"
+homes = ["icons.sizes.panel"]
+
+# --- text_scale ---
+
+[[row]]
+key = "text_scale.caption.size"
+homes = ["typography.caption.size_px"]
+home_fallback = "typography.body.size_px"
+
+[[row]]
+key = "text_scale.caption.weight"
+homes = ["typography.caption.weight"]
+home_fallback = "typography.body.weight"
+
+[[row]]
+key = "text_scale.caption.line_height"
+homes = ["typography.caption.line_height"]
+home_fallback = "typography.body.line_height"
+
+[[row]]
+key = "text_scale.section_heading.size"
+homes = ["typography.headline.size_px"]
+home_fallback = "typography.body.size_px"
+
+[[row]]
+key = "text_scale.section_heading.weight"
+homes = ["typography.headline.weight"]
+home_fallback = "typography.body.weight"
+
+[[row]]
+key = "text_scale.section_heading.line_height"
+homes = ["typography.headline.line_height"]
+home_fallback = "typography.body.line_height"
+
+[[row]]
+key = "text_scale.dialog_title.size"
+homes = ["typography.title1.size_px"]
+home_fallback = "typography.body.size_px"
+
+[[row]]
+key = "text_scale.dialog_title.weight"
+homes = ["typography.title1.weight"]
+home_fallback = "typography.body.weight"
+
+[[row]]
+key = "text_scale.dialog_title.line_height"
+homes = ["typography.title1.line_height"]
+home_fallback = "typography.body.line_height"
+
+[[row]]
+key = "text_scale.display.size"
+homes = ["typography.display.size_px"]
+home_fallback = "typography.body.size_px"
+
+[[row]]
+key = "text_scale.display.weight"
+homes = ["typography.display.weight"]
+home_fallback = "typography.body.weight"
+
+[[row]]
+key = "text_scale.display.line_height"
+homes = ["typography.display.line_height"]
+home_fallback = "typography.body.line_height"
+
+# --- Resolved ---
+
+[[row]]
+key = "Resolved.mode"
+homes = ["context.scheme"]
+hand = true
+note = "ColorMode::Light: Scheme::Light; ColorMode::Dark: Scheme::Dark"
+
+[[row]]
+key = "Resolved.icon_set"
+homes = ["icons.set"]
+hand = true
+
+[[row]]
+key = "Resolved.icon_theme"
+homes = ["icons.theme"]
+hand = true
+
+[[row]]
+key = "Resolved.icon_theme_explicit"
+homes = ["icons.theme_explicit"]
+hand = true
+
+# --- layout ---
+
+[[row]]
+key = "layout.widget_gap"
+homes = ["layout.widget_gap"]
+hand = true
+note = "0.7.2's Theme.layout (LayoutTheme), not a field of the resolved theme"
+
+[[row]]
+key = "layout.container_margin"
+homes = ["layout.container_margin"]
+hand = true
+note = "0.7.2's Theme.layout (LayoutTheme), not a field of the resolved theme"
+
+[[row]]
+key = "layout.window_margin"
+homes = ["layout.window_margin"]
+hand = true
+note = "0.7.2's Theme.layout (LayoutTheme), not a field of the resolved theme"
+
+[[row]]
+key = "layout.section_gap"
+homes = ["layout.section_gap"]
+hand = true
+note = "0.7.2's Theme.layout (LayoutTheme), not a field of the resolved theme"
+
+# --- accessibility ---
+
+[[row]]
+key = "accessibility.text_scaling_factor"
+homes = ["context.text_scale"]
+hand = true
+note = "0.7.2's SystemTheme.accessibility; the builder applies text_scale, so sizes are compared at 1.0"
+
+[[row]]
+key = "accessibility.reduce_motion"
+homes = ["context.motion"]
+hand = true
+note = "true if and only if motion != MotionPreference::Full; KDE's AnimationDurationFactor of 0 is MotionPreference::None"
+
+[[row]]
+key = "accessibility.high_contrast"
+homes = ["context.contrast"]
+hand = true
+note = "true if and only if contrast != Contrast::Normal"
+
+[[row]]
+key = "accessibility.reduce_transparency"
+homes = ["context.reduced_transparency"]
+hand = true
+
+# --- button ---
+
+[[row]]
+key = "button.background_color"
+homes = ["button.body(NONE).fill"]
+
+[[row]]
+key = "button.primary_background"
+homes = ["button.body(NONE; variant=Primary).fill"]
+
+[[row]]
+key = "button.primary_text_color"
+homes = ["button.label(NONE; variant=Primary).color"]
+
+[[row]]
+key = "button.min_width"
+homes = ["button.body(NONE).min_size[0]"]
+
+[[row]]
+key = "button.min_height"
+homes = ["button.body(NONE).min_size[1]"]
+difference_presets = ["kde-breeze"]
+difference_reason = "0.7.2's 32 is the height at the default font, not a minimum (issue #4 Z1): on kde-breeze min_size[1] is None, unstated"
+difference_citation = "docs/issues/0004_kde-leftovers-rationale.md §3 (Sizes that are not minimums, or have no source); docs/v0.8.0-spec.md §5, notes to the table (Z1, button.min_height)"
+
+[[row]]
+key = "button.icon_text_gap"
+homes = ["button.icon_text_gap"]
+
+[[row]]
+key = "button.disabled_opacity"
+homes = ["button.disabled_opacity"]
+
+[[row]]
+key = "button.hover_background"
+homes = ["button.body(HOVER).fill"]
+
+[[row]]
+key = "button.hover_text_color"
+homes = ["button.label(HOVER).color"]
+
+[[row]]
+key = "button.active_text_color"
+homes = ["button.label(PRESSED).color"]
+
+[[row]]
+key = "button.disabled_text_color"
+homes = ["button.label(DISABLED).color"]
+
+[[row]]
+key = "button.active_background"
+homes = ["button.body(PRESSED).fill"]
+
+[[row]]
+key = "button.disabled_background"
+homes = ["button.body(DISABLED).fill"]
+
+[[row]]
+key = "button.checked_background"
+homes = ["button.body(CHECKED).fill"]
+
+[[row]]
+key = "button.checked_text_color"
+homes = ["button.label(CHECKED).color"]
+
+[[row]]
+key = "button.hover_border_color"
+homes = [
+    "button.body(HOVER).stroke.color",
+    "button.body(PRESSED).stroke.color",
+]
+note = "a pressed button keeps the hover border (0.7.2's field doc)"
+
+[[row]]
+key = "button.focus_border_color"
+homes = ["button.body(FOCUS_VISIBLE).stroke.color"]
+
+[[row]]
+key = "button.default_button_background"
+homes = ["button.body(DEFAULT).fill"]
+
+[[row]]
+key = "button.default_button_text_color"
+homes = ["button.label(DEFAULT).color"]
+
+[[row]]
+key = "button.default_button_border_color"
+homes = ["button.body(DEFAULT).stroke.color"]
+
+[[row]]
+key = "button.font.family"
+homes = ["button.label(NONE).family"]
+
+[[row]]
+key = "button.font.size"
+homes = ["button.label(NONE).size_px"]
+
+[[row]]
+key = "button.font.defined_size"
+homes = ["button.label(NONE).defined_size"]
+
+[[row]]
+key = "button.font.weight"
+homes = ["button.label(NONE).weight"]
+
+[[row]]
+key = "button.font.style"
+homes = ["button.label(NONE).style"]
+
+[[row]]
+key = "button.font.color"
+homes = ["button.label(NONE).color"]
+
+[[row]]
+key = "button.border.color"
+homes = ["button.body(NONE).stroke.color"]
+
+[[row]]
+key = "button.border.corner_radius"
+homes = ["button.body(NONE).corners"]
+note = "Corners::uniform(radius)"
+
+[[row]]
+key = "button.border.line_width"
+homes = ["button.body(NONE).stroke.width"]
+
+[[row]]
+key = "button.border.shadow_enabled"
+homes = ["button.body(NONE).shadows"]
+note = "true: the SHADOWS bit unstated; false: SHADOWS stated with shadows = None (spec §5, notes to the table, border.shadow_enabled)"
+
+[[row]]
+key = "button.border.padding.top"
+homes = ["button.body(NONE).padding.top"]
+
+[[row]]
+key = "button.border.padding.right"
+homes = ["button.body(NONE).padding.right"]
+
+[[row]]
+key = "button.border.padding.bottom"
+homes = ["button.body(NONE).padding.bottom"]
+
+[[row]]
+key = "button.border.padding.left"
+homes = ["button.body(NONE).padding.left"]
+
+# --- checkbox ---
+
+[[row]]
+key = "checkbox.background_color"
+homes = [
+    "checkbox.indicator(NONE).fill",
+    "radio.indicator(NONE).fill",
+]
+only_if_null = "checkbox.unchecked_background"
+difference_presets = ["kde-breeze"]
+difference_reason = "not compared while checkbox.unchecked_background is stated: the connectors draw the unchecked box as unchecked_background, else background_color, and read background_color nowhere else; nothing drawn differs"
+difference_citation = "docs/v0.8.0-spec.md §5, notes to the table (checkbox.unchecked_background, checkbox.background_color)"
+
+[[row]]
+key = "checkbox.checked_background"
+homes = [
+    "checkbox.indicator(CHECKED).fill",
+    "radio.indicator(CHECKED).fill",
+]
+
+[[row]]
+key = "checkbox.indicator_color"
+homes = [
+    "checkbox.checkmark(CHECKED).color",
+    "radio.dot(CHECKED).fill",
+]
+
+[[row]]
+key = "checkbox.indicator_width"
+homes = [
+    "checkbox.indicator(NONE).min_size[0]",
+    "checkbox.indicator(NONE).max_size[0]",
+    "checkbox.indicator(NONE).min_size[1]",
+    "checkbox.indicator(NONE).max_size[1]",
+]
+
+[[row]]
+key = "checkbox.radio_indicator_width"
+homes = [
+    "radio.indicator(NONE).min_size[0]",
+    "radio.indicator(NONE).max_size[0]",
+    "radio.indicator(NONE).min_size[1]",
+    "radio.indicator(NONE).max_size[1]",
+]
+if_null = "checkbox.indicator_width"
+
+[[row]]
+key = "checkbox.radio_dot_diameter"
+homes = [
+    "radio.dot(NONE).min_size[0]",
+    "radio.dot(NONE).max_size[0]",
+    "radio.dot(NONE).min_size[1]",
+    "radio.dot(NONE).max_size[1]",
+]
+
+[[row]]
+key = "checkbox.check_mark_stroke_width"
+homes = ["checkbox.checkmark(NONE).stroke_width"]
+
+[[row]]
+key = "checkbox.label_gap"
+homes = [
+    "checkbox.label_gap",
+    "radio.label_gap",
+]
+
+[[row]]
+key = "checkbox.disabled_opacity"
+homes = [
+    "checkbox.disabled_opacity",
+    "radio.disabled_opacity",
+]
+
+[[row]]
+key = "checkbox.disabled_text_color"
+homes = [
+    "checkbox.label(DISABLED).color",
+    "radio.label(DISABLED).color",
+]
+
+[[row]]
+key = "checkbox.hover_background"
+homes = [
+    "checkbox.indicator(HOVER).fill",
+    "radio.indicator(HOVER).fill",
+]
+
+[[row]]
+key = "checkbox.hover_border_color"
+homes = [
+    "checkbox.indicator(HOVER).stroke.color",
+    "radio.indicator(HOVER).stroke.color",
+    "checkbox.indicator(HOVER|CHECKED).stroke.color",
+    "radio.indicator(HOVER|CHECKED).stroke.color",
+]
+
+[[row]]
+key = "checkbox.disabled_background"
+homes = [
+    "checkbox.indicator(DISABLED).fill",
+    "radio.indicator(DISABLED).fill",
+    "checkbox.indicator(DISABLED|CHECKED).fill",
+    "radio.indicator(DISABLED|CHECKED).fill",
+]
+
+[[row]]
+key = "checkbox.unchecked_background"
+homes = [
+    "checkbox.indicator(NONE).fill",
+    "radio.indicator(NONE).fill",
+]
+if_null = "checkbox.background_color"
+
+[[row]]
+key = "checkbox.unchecked_border_color"
+homes = [
+    "checkbox.indicator(NONE).stroke.color",
+    "radio.indicator(NONE).stroke.color",
+]
+if_null = "checkbox.border.color"
+
+[[row]]
+key = "checkbox.font.family"
+homes = [
+    "checkbox.label(NONE).family",
+    "radio.label(NONE).family",
+]
+
+[[row]]
+key = "checkbox.font.size"
+homes = [
+    "checkbox.label(NONE).size_px",
+    "radio.label(NONE).size_px",
+]
+
+[[row]]
+key = "checkbox.font.defined_size"
+homes = [
+    "checkbox.label(NONE).defined_size",
+    "radio.label(NONE).defined_size",
+]
+
+[[row]]
+key = "checkbox.font.weight"
+homes = [
+    "checkbox.label(NONE).weight",
+    "radio.label(NONE).weight",
+]
+
+[[row]]
+key = "checkbox.font.style"
+homes = [
+    "checkbox.label(NONE).style",
+    "radio.label(NONE).style",
+]
+
+[[row]]
+key = "checkbox.font.color"
+homes = [
+    "checkbox.label(NONE).color",
+    "radio.label(NONE).color",
+]
+
+[[row]]
+key = "checkbox.border.color"
+homes = [
+    "checkbox.indicator(CHECKED).stroke.color",
+    "radio.indicator(CHECKED).stroke.color",
+]
+
+[[row]]
+key = "checkbox.border.corner_radius"
+homes = ["checkbox.indicator(NONE).corners"]
+note = "Corners::uniform(radius); not a radio home (a radio is round)"
+
+[[row]]
+key = "checkbox.border.line_width"
+homes = [
+    "checkbox.indicator(NONE).stroke.width",
+    "radio.indicator(NONE).stroke.width",
+]
+
+[[row]]
+key = "checkbox.border.shadow_enabled"
+homes = [
+    "checkbox.indicator(NONE).shadows",
+    "radio.indicator(NONE).shadows",
+]
+note = "true: the SHADOWS bit unstated; false: SHADOWS stated with shadows = None (spec §5, notes to the table, border.shadow_enabled)"
+
+[[row]]
+key = "checkbox.border.padding.top"
+homes = [
+    "checkbox.indicator(NONE).padding.top",
+    "radio.indicator(NONE).padding.top",
+]
+
+[[row]]
+key = "checkbox.border.padding.right"
+homes = [
+    "checkbox.indicator(NONE).padding.right",
+    "radio.indicator(NONE).padding.right",
+]
+
+[[row]]
+key = "checkbox.border.padding.bottom"
+homes = [
+    "checkbox.indicator(NONE).padding.bottom",
+    "radio.indicator(NONE).padding.bottom",
+]
+
+[[row]]
+key = "checkbox.border.padding.left"
+homes = [
+    "checkbox.indicator(NONE).padding.left",
+    "radio.indicator(NONE).padding.left",
+]
+
+# --- list ---
+
+[[row]]
+key = "list.background_color"
+homes = ["list.container(NONE).fill"]
+
+[[row]]
+key = "list.alternate_row_background"
+homes = ["list.row(NONE; alternate=true).fill"]
+
+[[row]]
+key = "list.selection_background"
+homes = ["list.row(SELECTED).fill"]
+
+[[row]]
+key = "list.selection_text_color"
+homes = ["list.item_label(SELECTED).color"]
+
+[[row]]
+key = "list.header_background"
+homes = ["list.header(NONE).fill"]
+
+[[row]]
+key = "list.grid_color"
+homes = ["list.grid_color"]
+
+[[row]]
+key = "list.row_height"
+homes = ["list.row(NONE).min_size[1]"]
+
+[[row]]
+key = "list.header_height"
+homes = ["list.header(NONE).min_size[1]"]
+
+[[row]]
+key = "list.header_hover_background"
+homes = ["list.header(HOVER).fill"]
+
+[[row]]
+key = "list.header_active_background"
+homes = ["list.header(PRESSED).fill"]
+
+[[row]]
+key = "list.header_separator_color"
+homes = ["list.header_separator(NONE).fill"]
+note = "unset: FILL unstated, and a connector draws list.grid_color"
+
+[[row]]
+key = "list.hover_background"
+homes = ["list.row(HOVER).fill"]
+
+[[row]]
+key = "list.hover_text_color"
+homes = ["list.item_label(HOVER).color"]
+
+[[row]]
+key = "list.hover_border_color"
+homes = ["list.row(HOVER).stroke.color"]
+
+[[row]]
+key = "list.disabled_text_color"
+homes = ["list.item_label(DISABLED).color"]
+
+[[row]]
+key = "list.item_font.family"
+homes = ["list.item_label(NONE).family"]
+
+[[row]]
+key = "list.item_font.size"
+homes = ["list.item_label(NONE).size_px"]
+
+[[row]]
+key = "list.item_font.defined_size"
+homes = ["list.item_label(NONE).defined_size"]
+
+[[row]]
+key = "list.item_font.weight"
+homes = ["list.item_label(NONE).weight"]
+
+[[row]]
+key = "list.item_font.style"
+homes = ["list.item_label(NONE).style"]
+
+[[row]]
+key = "list.item_font.color"
+homes = ["list.item_label(NONE).color"]
+
+[[row]]
+key = "list.header_font.family"
+homes = ["list.header_label(NONE).family"]
+
+[[row]]
+key = "list.header_font.size"
+homes = ["list.header_label(NONE).size_px"]
+
+[[row]]
+key = "list.header_font.defined_size"
+homes = ["list.header_label(NONE).defined_size"]
+
+[[row]]
+key = "list.header_font.weight"
+homes = ["list.header_label(NONE).weight"]
+
+[[row]]
+key = "list.header_font.style"
+homes = ["list.header_label(NONE).style"]
+
+[[row]]
+key = "list.header_font.color"
+homes = ["list.header_label(NONE).color"]
+
+[[row]]
+key = "list.border.color"
+homes = ["list.container(NONE).stroke.color"]
+
+[[row]]
+key = "list.border.corner_radius"
+homes = ["list.container(NONE).corners"]
+note = "Corners::uniform(radius)"
+
+[[row]]
+key = "list.border.line_width"
+homes = ["list.container(NONE).stroke.width"]
+
+[[row]]
+key = "list.border.shadow_enabled"
+homes = ["list.container(NONE).shadows"]
+note = "true: the SHADOWS bit unstated; false: SHADOWS stated with shadows = None (spec §5, notes to the table, border.shadow_enabled)"
+
+[[row]]
+key = "list.border.padding.top"
+homes = ["list.row(NONE).padding.top"]
+homes_by_preset = { "kde-breeze" = ["list.row(NONE).margin.top"] }
+note = "kde-breeze's list.border.padding holds Breeze's highlight margins (spec §5, L4)"
+
+[[row]]
+key = "list.border.padding.right"
+homes = ["list.row(NONE).padding.right"]
+homes_by_preset = { "kde-breeze" = ["list.row(NONE).margin.right"] }
+note = "kde-breeze's list.border.padding holds Breeze's highlight margins (spec §5, L4)"
+
+[[row]]
+key = "list.border.padding.bottom"
+homes = ["list.row(NONE).padding.bottom"]
+homes_by_preset = { "kde-breeze" = ["list.row(NONE).margin.bottom"] }
+note = "kde-breeze's list.border.padding holds Breeze's highlight margins (spec §5, L4)"
+
+[[row]]
+key = "list.border.padding.left"
+homes = ["list.row(NONE).padding.left"]
+homes_by_preset = { "kde-breeze" = ["list.row(NONE).margin.left"] }
+note = "kde-breeze's list.border.padding holds Breeze's highlight margins (spec §5, L4)"
+
+# --- scrollbar ---
+
+[[row]]
+key = "scrollbar.track_color"
+homes = ["scrollbar.track(NONE).fill"]
+
+[[row]]
+key = "scrollbar.thumb_color"
+homes = ["scrollbar.thumb(NONE).fill"]
+homes_by_preset = { "kde-breeze" = ["scrollbar.thumb(UNFOCUSED_VIEW).fill"] }
+note = "kde-breeze: 0.7.2's value is the plain handle, the one in a view without the focus (spec §5, S3)"
+
+[[row]]
+key = "scrollbar.thumb_hover_color"
+homes = ["scrollbar.thumb(HOVER).fill"]
+
+[[row]]
+key = "scrollbar.groove_width"
+homes = [
+    "scrollbar.track(NONE; orientation=Vertical).min_size[0]",
+    "scrollbar.track(NONE; orientation=Vertical).max_size[0]",
+    "scrollbar.track(NONE; orientation=Horizontal).min_size[1]",
+    "scrollbar.track(NONE; orientation=Horizontal).max_size[1]",
+]
+
+[[row]]
+key = "scrollbar.min_thumb_length"
+homes = ["scrollbar.min_thumb_length"]
+
+[[row]]
+key = "scrollbar.thumb_width"
+homes = [
+    "scrollbar.thumb(NONE; orientation=Vertical).min_size[0]",
+    "scrollbar.thumb(NONE; orientation=Vertical).max_size[0]",
+    "scrollbar.thumb(NONE; orientation=Horizontal).min_size[1]",
+    "scrollbar.thumb(NONE; orientation=Horizontal).max_size[1]",
+]
+
+[[row]]
+key = "scrollbar.overlay_mode"
+homes = ["scrollbar.overlay_mode"]
+
+[[row]]
+key = "scrollbar.thumb_active_color"
+homes = ["scrollbar.thumb(PRESSED).fill"]
+
+# --- tooltip ---
+
+[[row]]
+key = "tooltip.background_color"
+homes = ["tooltip.panel.fill"]
+
+[[row]]
+key = "tooltip.max_width"
+homes = ["tooltip.panel.max_size[0]"]
+
+[[row]]
+key = "tooltip.show_delay"
+homes = ["timings.tooltip_show_ms"]
+
+[[row]]
+key = "tooltip.font.family"
+homes = ["tooltip.text.family"]
+
+[[row]]
+key = "tooltip.font.size"
+homes = ["tooltip.text.size_px"]
+
+[[row]]
+key = "tooltip.font.defined_size"
+homes = ["tooltip.text.defined_size"]
+
+[[row]]
+key = "tooltip.font.weight"
+homes = ["tooltip.text.weight"]
+
+[[row]]
+key = "tooltip.font.style"
+homes = ["tooltip.text.style"]
+
+[[row]]
+key = "tooltip.font.color"
+homes = ["tooltip.text.color"]
+
+[[row]]
+key = "tooltip.border.color"
+homes = ["tooltip.panel.stroke.color"]
+
+[[row]]
+key = "tooltip.border.corner_radius"
+homes = ["tooltip.panel.corners"]
+note = "Corners::uniform(radius)"
+
+[[row]]
+key = "tooltip.border.line_width"
+homes = ["tooltip.panel.stroke.width"]
+
+[[row]]
+key = "tooltip.border.shadow_enabled"
+homes = ["tooltip.panel.shadows"]
+note = "true: the SHADOWS bit unstated; false: SHADOWS stated with shadows = None (spec §5, notes to the table, border.shadow_enabled)"
+
+[[row]]
+key = "tooltip.border.padding.top"
+homes = ["tooltip.panel.padding.top"]
+
+[[row]]
+key = "tooltip.border.padding.right"
+homes = ["tooltip.panel.padding.right"]
+
+[[row]]
+key = "tooltip.border.padding.bottom"
+homes = ["tooltip.panel.padding.bottom"]
+
+[[row]]
+key = "tooltip.border.padding.left"
+homes = ["tooltip.panel.padding.left"]
