@@ -215,6 +215,33 @@ impl IconRole {
         }
     }
 
+    /// Whether the role's icon is mirrored in a right-to-left layout.
+    ///
+    /// `true` for the roles a platform source says flip:
+    /// - `NavBack` and `NavForward`: Apple's HIG *Right to left* ("Flip an
+    ///   interface icon that shows forward or backward motion", read
+    ///   2026-11-22); Google Fonts' *Material Icons Guide*, "Which icons
+    ///   should be mirrored for RTL?" (`arrow back`, `arrow forward`, read
+    ///   2026-11-22); KDE's `KStandardAction` swaps Back's and Forward's
+    ///   icons under right to left (`kconfigwidgets@939320a3
+    ///   src/kstandardaction.cpp`);
+    /// - `ActionUndo` and `ActionRedo`: the same Google list (`undo`,
+    ///   `redo`).
+    ///
+    /// `StatusCheck` is `false` by the HIG ("universal symbols and marks
+    /// like the checkmark … avoid flipping them"). No source classifies the
+    /// other roles, which return `false` unclassified: `Help` is not one
+    /// answer by direction (Google: icons with a question mark "need to be
+    /// mirrored in Arabic and Farsi, but not in Hebrew"), and the HIG's rule
+    /// for real-world objects holds only "in general".
+    #[must_use]
+    pub const fn mirrors_in_rtl(self) -> bool {
+        matches!(
+            self,
+            Self::NavBack | Self::NavForward | Self::ActionUndo | Self::ActionRedo
+        )
+    }
+
     /// All icon role variants, useful for iteration and exhaustive testing.
     ///
     /// Contains every variant, one for each role, in declaration order.
@@ -924,6 +951,25 @@ mod tests {
     #[test]
     fn icon_role_all_has_42_variants() {
         assert_eq!(IconRole::ALL.len(), 42);
+    }
+
+    #[test]
+    fn only_the_sourced_roles_mirror_in_rtl() {
+        let mirrored: Vec<IconRole> = IconRole::ALL
+            .iter()
+            .copied()
+            .filter(|role| role.mirrors_in_rtl())
+            .collect();
+        assert_eq!(
+            mirrored,
+            [
+                IconRole::ActionUndo,
+                IconRole::ActionRedo,
+                IconRole::NavBack,
+                IconRole::NavForward,
+            ]
+        );
+        assert!(!IconRole::StatusCheck.mirrors_in_rtl());
     }
 
     #[test]
