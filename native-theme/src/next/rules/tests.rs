@@ -1080,3 +1080,216 @@ fn size_px_clears_defined_size() {
     let tall = applied(text, TextProp::LineHeight(18.0));
     assert_eq!(tall.defined_size, Some(FontSize::Pt(10.0)));
 }
+
+// ---------------------------------------------------------------------------
+// The builder.
+// ---------------------------------------------------------------------------
+
+const PRIMARY: ButtonMatcher = ButtonMatcher {
+    variant: Some(ButtonVariant::Primary),
+    shape: None,
+};
+
+/// A button body as a preset writes it: a base of five stated properties,
+/// one exclusive group, rules on states, on a variant, a size and an
+/// orientation, and one property list shared by two selectors.
+fn built_body() -> RuleSet<PartStyle, PartProp, ButtonMatcher> {
+    const GROUPS: &[&[WidgetState]] = &[&[
+        WidgetState::DISABLED,
+        WidgetState::PRESSED,
+        WidgetState::HOVER,
+    ]];
+    RuleBuilder::new(PartStyle::default())
+        .base([
+            fill(BLUE),
+            PartProp::Stroke(Stroke::uniform(1.0, RED)),
+            PartProp::Corners(Corners::uniform(4.0)),
+            PartProp::Padding(Edges::all(6.0)),
+            PartProp::MinSize([Some(80.0), None]),
+        ])
+        .exclusive(GROUPS)
+        .rule(
+            RuleSelector::on(WidgetState::HOVER),
+            [fill(GREEN), PartProp::Stroke(Stroke::uniform(1.0, GREEN))],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::HOVER | WidgetState::FOCUS_VISIBLE),
+            [PartProp::Stroke(Stroke::uniform(2.0, BLUE))],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::NONE).matcher(PRIMARY),
+            [fill(RED)],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::NONE).size(ControlSize::Small),
+            [PartProp::MinSize([None, Some(20.0)])],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::NONE).orientation(Orientation::Vertical),
+            [PartProp::MinSize([Some(30.0), None])],
+        )
+        .rules(
+            [
+                RuleSelector::on(WidgetState::PRESSED),
+                RuleSelector::on(WidgetState::CHECKED).except(WidgetState::DISABLED),
+            ],
+            [fill(Color::BLACK), PartProp::Opacity(0.5)],
+        )
+        .build()
+}
+
+#[test]
+fn the_builder_states_the_base_and_orders_the_rules() {
+    let body = built_body();
+    let rest = body.eval(&ButtonQuery::new(WidgetState::NONE));
+    assert_eq!(
+        rest,
+        PartStyle {
+            fill: Paint::Solid(BLUE),
+            stroke: Stroke::uniform(1.0, RED),
+            corners: Corners::uniform(4.0),
+            padding: Edges::all(6.0),
+            min_size: [Some(80.0), None],
+            stated: PartStated::FILL
+                | PartStated::STROKE
+                | PartStated::CORNERS
+                | PartStated::PADDING_TOP
+                | PartStated::PADDING_RIGHT
+                | PartStated::PADDING_BOTTOM
+                | PartStated::PADDING_LEFT,
+            ..PartStyle::default()
+        }
+    );
+    let hover = body.eval(&ButtonQuery::new(WidgetState::HOVER));
+    assert_eq!(hover.fill, Paint::Solid(GREEN));
+    assert_eq!(hover.stroke, Stroke::uniform(1.0, GREEN));
+    let keyboard = body.eval(&ButtonQuery::new(
+        WidgetState::HOVER | WidgetState::FOCUS_VISIBLE,
+    ));
+    assert_eq!(keyboard.fill, Paint::Solid(GREEN));
+    assert_eq!(keyboard.stroke, Stroke::uniform(2.0, BLUE));
+    assert_eq!(body.eval(&ButtonQuery::primary()).fill, Paint::Solid(RED));
+    let small = body.eval(&ButtonQuery::new(WidgetState::NONE).size(ControlSize::Small));
+    assert_eq!(small.min_size, [Some(80.0), Some(20.0)]);
+    let vertical = body.eval(
+        &ButtonQuery::new(WidgetState::NONE)
+            .size(ControlSize::Small)
+            .orientation(Orientation::Vertical),
+    );
+    assert_eq!(vertical.min_size, [Some(30.0), Some(20.0)]);
+    // The exclusive group: pressed wins over hover, so the hover rules do not apply.
+    let pressed = body.eval(&ButtonQuery::new(WidgetState::PRESSED | WidgetState::HOVER));
+    assert_eq!(pressed.fill, Paint::Solid(Color::BLACK));
+    assert_eq!(pressed.stroke, Stroke::uniform(1.0, RED));
+    assert_eq!(pressed.opacity, 0.5);
+}
+
+#[test]
+fn a_shared_property_list_is_stored_once() -> Result<(), &'static str> {
+    let body = built_body();
+    // Base 5 stated properties are not in the list; the rules hold 2 + 1 + 1 + 1 + 1 + 2.
+    assert_eq!(body.props.len(), 8);
+    assert_eq!(body.rules.len(), 7);
+    let pressed = body.rules.get(5).ok_or("a sixth rule")?;
+    let checked = body.rules.get(6).ok_or("a seventh rule")?;
+    assert_eq!((pressed.start, pressed.len), (checked.start, checked.len));
+    assert_eq!((pressed.start, pressed.len), (6, 2));
+    let checked = body.eval(&ButtonQuery::new(WidgetState::CHECKED));
+    assert_eq!(checked.fill, Paint::Solid(Color::BLACK));
+    assert_eq!(checked.opacity, 0.5);
+    let disabled = body.eval(&ButtonQuery::new(
+        WidgetState::CHECKED | WidgetState::DISABLED,
+    ));
+    assert_eq!(disabled.fill, Paint::Solid(BLUE));
+    Ok(())
+}
+
+#[test]
+fn selector_shorthands_set_their_fields() {
+    let built = RuleSelector::on(WidgetState::HOVER)
+        .except(WidgetState::DISABLED)
+        .size(ControlSize::Large)
+        .surface(Surface::Sidebar)
+        .position(GroupPosition::First)
+        .orientation(Orientation::Vertical)
+        .matcher(PRIMARY);
+    assert_eq!(
+        built,
+        RuleSelector {
+            required_states: WidgetState::HOVER,
+            forbidden_states: WidgetState::DISABLED,
+            size: Some(ControlSize::Large),
+            surface: Some(Surface::Sidebar),
+            position: Some(GroupPosition::First),
+            orientation: Some(Orientation::Vertical),
+            matcher: PRIMARY,
+        }
+    );
+}
+
+#[test]
+fn new_is_the_builder() {
+    let selector = on(WidgetState::HOVER);
+    let by_new = RuleSet::new(base(), &[], vec![(selector, vec![fill(RED), fill(GREEN)])]);
+    let by_builder = RuleBuilder::new(base())
+        .rule(selector, [fill(RED), fill(GREEN)])
+        .build();
+    assert_eq!(by_new, by_builder);
+}
+
+#[test]
+fn dead_rules_lists_the_rules_that_cannot_match() {
+    const GROUPS: &[&[WidgetState]] = &[
+        &[
+            WidgetState::DISABLED,
+            WidgetState::PRESSED,
+            WidgetState::HOVER,
+        ],
+        &[WidgetState::CHECKED, WidgetState::INDETERMINATE],
+    ];
+    let rules: RuleSet<PartStyle, PartProp> = RuleBuilder::new(base())
+        .exclusive(GROUPS)
+        .rule(RuleSelector::on(WidgetState::HOVER), [fill(RED)])
+        // Two flags of the first group: never both after normalisation.
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED | WidgetState::HOVER),
+            [fill(RED)],
+        )
+        // One flag of each group: can match.
+        .rule(
+            RuleSelector::on(WidgetState::HOVER | WidgetState::CHECKED),
+            [fill(RED)],
+        )
+        // Required and forbidden intersect.
+        .rule(
+            RuleSelector::on(WidgetState::FOCUSED | WidgetState::SELECTED)
+                .except(WidgetState::SELECTED),
+            [fill(RED)],
+        )
+        // Two flags of the second group.
+        .rule(
+            RuleSelector::on(WidgetState::CHECKED | WidgetState::INDETERMINATE),
+            [fill(RED)],
+        )
+        // Forbidden flags of one group are no conflict.
+        .rule(
+            RuleSelector::on(WidgetState::CHECKED)
+                .except(WidgetState::PRESSED | WidgetState::HOVER),
+            [fill(RED)],
+        )
+        .build();
+    assert_eq!(rules.dead_rules(), vec![1, 3, 4]);
+}
+
+#[test]
+fn a_clean_rule_set_has_no_dead_rules() {
+    assert!(built_body().dead_rules().is_empty());
+    // Without exclusive groups, two required flags are no conflict.
+    let free: RuleSet<PartStyle, PartProp> = RuleBuilder::new(base())
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED | WidgetState::HOVER),
+            [fill(RED)],
+        )
+        .build();
+    assert!(free.dead_rules().is_empty());
+}

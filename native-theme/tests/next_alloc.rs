@@ -13,10 +13,10 @@ use std::hint::black_box;
 use std::sync::Arc;
 
 use native_theme::next::{
-    BlendMode, Color, Corners, FocusIndicator, FocusKind, FocusTrigger, GradientStop, IconProp,
-    IconStated, IconStyle, MaterialKind, MaterialSpec, Paint, PaintLayer, PartProp, PartStated,
-    PartStyle, RippleSpec, RuleSelector, RuleSet, ShadowLayer, Stroke, StrokeAlign, StrokeSide,
-    StyleQuery, TextProp, TextStated, TextStyle, Timing, Transition, WidgetState,
+    __alloc_test_fixtures, BlendMode, Color, Corners, FocusIndicator, FocusKind, FocusTrigger,
+    GradientStop, IconProp, IconStated, IconStyle, MaterialKind, MaterialSpec, Paint, PaintLayer,
+    PartProp, PartStated, PartStyle, RippleSpec, RuleSet, ShadowLayer, Stroke, StrokeAlign,
+    StrokeSide, StyleQuery, TextProp, TextStated, TextStyle, Timing, Transition, WidgetState,
 };
 
 #[global_allocator]
@@ -125,12 +125,6 @@ fn plain_base() -> PartStyle {
     style
 }
 
-fn selector(required: WidgetState) -> RuleSelector {
-    let mut s = RuleSelector::default();
-    s.required_states = required;
-    s
-}
-
 /// The `Arc`s the part rules apply, kept to compare by pointer.
 struct PartArcs {
     fill: Paint,
@@ -140,39 +134,34 @@ struct PartArcs {
     ripple: Arc<RippleSpec>,
 }
 
-fn part_rule_set(arcs: &PartArcs) -> RuleSet<PartStyle, PartProp> {
-    const GROUPS: &[&[WidgetState]] = &[&[
-        WidgetState::DISABLED,
-        WidgetState::PRESSED,
-        WidgetState::HOVER,
-    ]];
-    RuleSet::new(
+/// The three rule sets, built by the crate's rule builder through its test
+/// hook: the part rules apply `arcs` on `HOVER` and, on `FOCUSED`, the focus
+/// and the ripple; the text and icon rules apply their properties on `HOVER`.
+fn rule_sets(
+    arcs: &PartArcs,
+    family: &Arc<str>,
+) -> (
+    RuleSet<PartStyle, PartProp>,
+    RuleSet<TextStyle, TextProp>,
+    RuleSet<IconStyle, IconProp>,
+) {
+    __alloc_test_fixtures(
         plain_base(),
-        GROUPS,
         vec![
-            (
-                selector(WidgetState::HOVER),
-                vec![
-                    PartProp::Fill(arcs.fill.clone()),
-                    PartProp::Stroke(arcs.stroke.clone()),
-                    PartProp::Shadows(Some(arcs.shadows.clone())),
-                    PartProp::Transition(Some(transition())),
-                ],
-            ),
-            (
-                // Matches a `FOCUS_VISIBLE` query only through step 0 of the
-                // evaluation contract.
-                selector(WidgetState::FOCUSED),
-                vec![
-                    PartProp::Focus(Some(arcs.focus.clone())),
-                    PartProp::Ripple(Some(arcs.ripple.clone())),
-                ],
-            ),
-            (
-                selector(WidgetState::PRESSED),
-                vec![PartProp::Fill(Paint::solid(Color::BLACK))],
-            ),
+            PartProp::Fill(arcs.fill.clone()),
+            PartProp::Stroke(arcs.stroke.clone()),
+            PartProp::Shadows(Some(arcs.shadows.clone())),
+            PartProp::Transition(Some(transition())),
         ],
+        // Matches a `FOCUS_VISIBLE` query only through step 0 of the
+        // evaluation contract.
+        vec![
+            PartProp::Focus(Some(arcs.focus.clone())),
+            PartProp::Ripple(Some(arcs.ripple.clone())),
+        ],
+        vec![PartProp::Fill(Paint::solid(Color::BLACK))],
+        vec![TextProp::Family(family.clone()), TextProp::SizePx(13.0)],
+        vec![IconProp::Size(16.0), IconProp::Color(ACCENT)],
     )
 }
 
@@ -202,26 +191,9 @@ fn eval_and_clone_allocate_nothing_and_live_bytes_are_reported() {
         focus: focus(),
         ripple: ripple(),
     };
-    let rules = part_rule_set(&arcs);
-    let query = StyleQuery::<()>::new(WidgetState::HOVER | WidgetState::FOCUS_VISIBLE);
-
     let family: Arc<str> = Arc::from("Noto Sans");
-    let text_rules: RuleSet<TextStyle, TextProp> = RuleSet::new(
-        TextStyle::default(),
-        &[],
-        vec![(
-            selector(WidgetState::HOVER),
-            vec![TextProp::Family(family.clone()), TextProp::SizePx(13.0)],
-        )],
-    );
-    let icon_rules: RuleSet<IconStyle, IconProp> = RuleSet::new(
-        IconStyle::default(),
-        &[],
-        vec![(
-            selector(WidgetState::HOVER),
-            vec![IconProp::Size(16.0), IconProp::Color(ACCENT)],
-        )],
-    );
+    let (rules, text_rules, icon_rules) = rule_sets(&arcs, &family);
+    let query = StyleQuery::<()>::new(WidgetState::HOVER | WidgetState::FOCUS_VISIBLE);
 
     let before = dhat::HeapStats::get();
     let cloned = black_box(&style).clone();

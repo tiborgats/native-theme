@@ -219,33 +219,53 @@ pub struct RuleSet<T, P, M = ()> {
 impl<T, P, M> RuleSet<T, P, M> {
     /// A rule set of `base` (its `stated` bits saying what it states), the
     /// ordered `exclusive` state groups, and `rules` in order, each a
-    /// selector and the properties it applies.
-    ///
-    /// The provisional constructor of the 0.8.0 work, until its rule
-    /// builder is written.
-    #[must_use]
-    pub fn new(
+    /// selector and the properties it applies; the tests' shorthand for
+    /// [`RuleBuilder`].
+    #[cfg(test)]
+    pub(crate) fn new(
         base: T,
         exclusive: &'static [&'static [WidgetState]],
         rules: Vec<(RuleSelector<M>, Vec<P>)>,
     ) -> Self {
-        let mut entries = Vec::with_capacity(rules.len());
-        let mut props = Vec::new();
-        for (selector, rule_props) in rules {
-            let (start, len) = stored_range(props.len(), rule_props.len());
-            props.extend(rule_props);
-            entries.push(RuleEntry {
-                selector,
-                start,
-                len,
-            });
-        }
-        Self {
-            base,
-            exclusive,
-            rules: Arc::from(entries),
-            props: Arc::from(props),
-        }
+        rules
+            .into_iter()
+            .fold(
+                RuleBuilder::new(base).exclusive(exclusive),
+                |builder, (selector, props)| builder.rule(selector, props),
+            )
+            .build()
+    }
+
+    /// The indices of the rules that can never match: a rule whose required
+    /// states hold two flags of one exclusive group (evaluation keeps only
+    /// one of them), or whose required and forbidden states intersect.
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "asserted empty by the presets' tests, from the next task of M0"
+        )
+    )]
+    pub(crate) fn dead_rules(&self) -> Vec<usize> {
+        let two_of_a_group = |required: WidgetState| {
+            self.exclusive.iter().any(|group| {
+                group
+                    .iter()
+                    .filter(|flag| required.contains(**flag))
+                    .nth(1)
+                    .is_some()
+            })
+        };
+        self.rules
+            .iter()
+            .enumerate()
+            .filter(|(_, entry)| {
+                let s = &entry.selector;
+                s.required_states.intersects(s.forbidden_states)
+                    || two_of_a_group(s.required_states)
+            })
+            .map(|(index, _)| index)
+            .collect()
     }
 
     /// Steps 0 to 4 of the evaluation contract, applying each property with
@@ -307,6 +327,229 @@ impl<M> RuleSet<IconStyle, IconProp, M> {
     {
         self.eval_with(query, apply_icon)
     }
+}
+
+/// A style onto which a property of kind `P` applies, setting its `stated`
+/// bit.
+pub(crate) trait Patched<P> {
+    /// Applies `prop`.
+    fn apply(&mut self, prop: &P);
+}
+
+impl Patched<PartProp> for PartStyle {
+    fn apply(&mut self, prop: &PartProp) {
+        apply_part(self, prop);
+    }
+}
+
+impl Patched<TextProp> for TextStyle {
+    fn apply(&mut self, prop: &TextProp) {
+        apply_text(self, prop);
+    }
+}
+
+impl Patched<IconProp> for IconStyle {
+    fn apply(&mut self, prop: &IconProp) {
+        apply_icon(self, prop);
+    }
+}
+
+/// Selectors as a preset writes them: `RuleSelector::on(HOVER)`, then the
+/// axes it is limited to.
+impl<M: Default> RuleSelector<M> {
+    /// The selector of every query whose state holds all of `states`.
+    pub(crate) fn on(states: WidgetState) -> Self {
+        Self {
+            required_states: states,
+            ..Self::default()
+        }
+    }
+}
+
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "called by the presets' builders, from the next task of M0"
+    )
+)]
+impl<M> RuleSelector<M> {
+    /// This selector, also requiring that none of `states` is set.
+    pub(crate) fn except(mut self, states: WidgetState) -> Self {
+        self.forbidden_states |= states;
+        self
+    }
+
+    /// This selector, limited to `size`.
+    pub(crate) fn size(mut self, size: ControlSize) -> Self {
+        self.size = Some(size);
+        self
+    }
+
+    /// This selector, limited to `surface`.
+    pub(crate) fn surface(mut self, surface: Surface) -> Self {
+        self.surface = Some(surface);
+        self
+    }
+
+    /// This selector, limited to `position`.
+    pub(crate) fn position(mut self, position: GroupPosition) -> Self {
+        self.position = Some(position);
+        self
+    }
+
+    /// This selector, limited to `orientation`.
+    pub(crate) fn orientation(mut self, orientation: Orientation) -> Self {
+        self.orientation = Some(orientation);
+        self
+    }
+
+    /// This selector, limited to the variants `matcher` matches.
+    pub(crate) fn matcher(mut self, matcher: M) -> Self {
+        self.matcher = matcher;
+        self
+    }
+}
+
+/// The writer of a part's rule set: a base style, the exclusive state
+/// groups, then the rules in order, their properties pushed into one flat
+/// list that [`build`](Self::build) turns into the rule set's single
+/// allocation.
+///
+/// ```text
+/// RuleBuilder::new(PartStyle::default())
+///     .base([Fill(face), Stroke(frame), Corners(radius), Padding(edges), MinSize(size)])
+///     .exclusive(&[&[DISABLED, PRESSED, HOVER]])
+///     .rule(RuleSelector::on(HOVER), [Fill(hover_face), Stroke(hover_frame)])
+///     .rule(RuleSelector::on(NONE).orientation(Vertical), [MinSize(width)])
+///     .rules([RuleSelector::on(CHECKED), RuleSelector::on(PRESSED)], [Fill(sunken)])
+///     .build()
+/// ```
+#[derive(Debug)]
+pub(crate) struct RuleBuilder<T, P, M = ()> {
+    base: T,
+    exclusive: &'static [&'static [WidgetState]],
+    rules: Vec<RuleEntry<M>>,
+    props: Vec<P>,
+}
+
+impl<T, P, M> RuleBuilder<T, P, M> {
+    /// A builder whose base is `base`, with the `stated` bits it carries.
+    pub(crate) fn new(base: T) -> Self {
+        Self {
+            base,
+            exclusive: &[],
+            rules: Vec::new(),
+            props: Vec::new(),
+        }
+    }
+
+    /// The base with `props` applied and stated.
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "called by the presets' builders, from the next task of M0"
+        )
+    )]
+    pub(crate) fn base(mut self, props: impl IntoIterator<Item = P>) -> Self
+    where
+        T: Patched<P>,
+    {
+        for prop in props {
+            self.base.apply(&prop);
+        }
+        self
+    }
+
+    /// The ordered exclusive state groups (evaluation contract, step 1).
+    pub(crate) fn exclusive(mut self, groups: &'static [&'static [WidgetState]]) -> Self {
+        self.exclusive = groups;
+        self
+    }
+
+    /// A rule: where `selector` matches, `props` apply.
+    pub(crate) fn rule(
+        self,
+        selector: RuleSelector<M>,
+        props: impl IntoIterator<Item = P>,
+    ) -> Self {
+        self.rules([selector], props)
+    }
+
+    /// One rule per selector, in order, each applying the same `props`,
+    /// which are stored once.
+    pub(crate) fn rules(
+        mut self,
+        selectors: impl IntoIterator<Item = RuleSelector<M>>,
+        props: impl IntoIterator<Item = P>,
+    ) -> Self {
+        let start = self.props.len();
+        self.props.extend(props);
+        let (start, len) = stored_range(start, self.props.len().saturating_sub(start));
+        self.rules
+            .extend(selectors.into_iter().map(|selector| RuleEntry {
+                selector,
+                start,
+                len,
+            }));
+        self
+    }
+
+    /// The rule set.
+    pub(crate) fn build(self) -> RuleSet<T, P, M> {
+        RuleSet {
+            base: self.base,
+            exclusive: self.exclusive,
+            rules: Arc::from(self.rules),
+            props: Arc::from(self.props),
+        }
+    }
+}
+
+/// The rule sets `tests/next_alloc.rs` measures, built by the crate's rule
+/// builder:
+/// a part rule set of `part_base` whose rules are `HOVER` applying
+/// `on_hover`, `FOCUSED` applying `on_focused` and `PRESSED` applying
+/// `on_pressed`, with the exclusive group `DISABLED`, `PRESSED`, `HOVER`;
+/// and a text and an icon rule set of the neutral style with `HOVER`
+/// applying `text_on_hover` and `icon_on_hover`.
+///
+/// A test hook, not API: it exists because that test must be its own binary
+/// (dhat's allocator is the binary's global allocator) and cannot reach the
+/// crate-private builder. It goes when the test queries a preset's widgets.
+#[doc(hidden)]
+#[must_use]
+pub fn __alloc_test_fixtures(
+    part_base: PartStyle,
+    on_hover: Vec<PartProp>,
+    on_focused: Vec<PartProp>,
+    on_pressed: Vec<PartProp>,
+    text_on_hover: Vec<TextProp>,
+    icon_on_hover: Vec<IconProp>,
+) -> (
+    RuleSet<PartStyle, PartProp>,
+    RuleSet<TextStyle, TextProp>,
+    RuleSet<IconStyle, IconProp>,
+) {
+    const GROUPS: &[&[WidgetState]] = &[&[
+        WidgetState::DISABLED,
+        WidgetState::PRESSED,
+        WidgetState::HOVER,
+    ]];
+    let part = RuleBuilder::new(part_base)
+        .exclusive(GROUPS)
+        .rule(RuleSelector::on(WidgetState::HOVER), on_hover)
+        .rule(RuleSelector::on(WidgetState::FOCUSED), on_focused)
+        .rule(RuleSelector::on(WidgetState::PRESSED), on_pressed)
+        .build();
+    let text = RuleBuilder::new(TextStyle::default())
+        .rule(RuleSelector::on(WidgetState::HOVER), text_on_hover)
+        .build();
+    let icon = RuleBuilder::new(IconStyle::default())
+        .rule(RuleSelector::on(WidgetState::HOVER), icon_on_hover)
+        .build();
+    (part, text, icon)
 }
 
 /// A rule's property range as stored, `(start, len)`; `(0, 0)` where either

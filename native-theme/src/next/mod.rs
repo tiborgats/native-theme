@@ -149,6 +149,8 @@ pub use reader::{
 pub use roles::{
     AccentColors, ColorRoles, RoleOrigin, SelectionColors, StatusColors, SurfaceColors,
 };
+#[doc(hidden)]
+pub use rules::__alloc_test_fixtures;
 pub use rules::{
     ButtonMatcher, IconProp, ListMatcher, PartProp, RuleSelector, RuleSet, TextProp, VariantMatcher,
 };
