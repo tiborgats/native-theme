@@ -1284,11 +1284,8 @@ fn old_kde_reader(
 #[cfg(all(target_os = "linux", feature = "kde"))]
 #[test]
 fn reader_parity_kde() -> TestResult {
-    use crate::next::preset::{Preset, Theme as NextTheme};
-    use crate::next::reader::kde::snapshot_from_kdeglobals;
-
     let table: Table = toml::from_str(HOMES)?;
-    let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/kde");
+    let dir = kde_fixtures();
     let mut paths = std::fs::read_dir(&dir)?
         .map(|entry| entry.map(|e| e.path()))
         .collect::<Result<Vec<_>, _>>()?;
@@ -1296,37 +1293,109 @@ fn reader_parity_kde() -> TestResult {
     assert_eq!(paths.len(), KDE_FIXTURES, "the files of {dir:?}");
     for path in &paths {
         let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
-        let content = std::fs::read_to_string(path)?;
-        let (old, old_name) = old_kde_reader(&content)?;
-        let mut ini = crate::kde::create_kde_parser();
-        crate::kde::read_kconfig(&mut ini, &content);
-        let snapshot = snapshot_from_kdeglobals(&ini, None, None);
-        let new = NextTheme::preset(Preset::KdeBreeze)
-            .with_system_overrides(snapshot.overrides.clone())
-            .resolve(&snapshot.context);
-        let report = compare::compare(&old, &new, Some(&snapshot.context), Preset::KdeBreeze)?;
-        println!("{name}: {report}");
-        assert_eq!(report.totals.rows, table.row.len(), "{name}");
-        assert_eq!(&*new.name, old_name, "{name}");
-        let totals = totals_in(&report, &[], false);
-        println!("{name}: [rows, compared, equal, mismatching, skipped] {totals:?}");
-        assert_eq!(totals, READER_TOTALS, "{name}\n{report}");
-        assert_eq!(report.totals.mismatches, 0, "{name}\n{report}");
-        for row in &report.rows {
-            let skip = match row.outcome {
-                compare::Outcome::Skipped(skip) => Some(skip),
-                _ => None,
-            };
-            let expected =
-                (row.key == "checkbox.background_color").then_some(compare::Skip::OtherKeyStated);
-            assert_eq!(skip, expected, "{name}: `{}`", row.key);
-            if row.key.starts_with("accessibility.") {
-                assert!(
-                    matches!(row.outcome, compare::Outcome::Equal),
-                    "{name}: `{}`",
-                    row.key
-                );
-            }
+        reader_parity_on(name, &std::fs::read_to_string(path)?, &table)?;
+    }
+    Ok(())
+}
+
+/// The folder of the KDE fixtures.
+#[cfg(all(target_os = "linux", feature = "kde"))]
+fn kde_fixtures() -> std::path::PathBuf {
+    std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/kde")
+}
+
+/// Reader parity of the kde-breeze builder on the kdeglobals `content` named `name`, as
+/// [`reader_parity_kde`] states it for each file; the 0.7.2 reader path's theme.
+#[cfg(all(target_os = "linux", feature = "kde"))]
+fn reader_parity_on(
+    name: &str,
+    content: &str,
+    table: &Table,
+) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
+    use crate::next::preset::{Preset, Theme as NextTheme};
+    use crate::next::reader::kde::snapshot_from_kdeglobals;
+
+    let (old, old_name) = old_kde_reader(content)?;
+    let mut ini = crate::kde::create_kde_parser();
+    crate::kde::read_kconfig(&mut ini, content);
+    let snapshot = snapshot_from_kdeglobals(&ini, None, None);
+    let new = NextTheme::preset(Preset::KdeBreeze)
+        .with_system_overrides(snapshot.overrides.clone())
+        .resolve(&snapshot.context);
+    let report = compare::compare(&old, &new, Some(&snapshot.context), Preset::KdeBreeze)?;
+    println!("{name}: {report}");
+    assert_eq!(report.totals.rows, table.row.len(), "{name}");
+    assert_eq!(&*new.name, old_name, "{name}");
+    let totals = totals_in(&report, &[], false);
+    println!("{name}: [rows, compared, equal, mismatching, skipped] {totals:?}");
+    assert_eq!(totals, READER_TOTALS, "{name}\n{report}");
+    assert_eq!(report.totals.mismatches, 0, "{name}\n{report}");
+    for row in &report.rows {
+        let skip = match row.outcome {
+            compare::Outcome::Skipped(skip) => Some(skip),
+            _ => None,
+        };
+        let expected =
+            (row.key == "checkbox.background_color").then_some(compare::Skip::OtherKeyStated);
+        assert_eq!(skip, expected, "{name}: `{}`", row.key);
+        if row.key.starts_with("accessibility.") {
+            assert!(
+                matches!(row.outcome, compare::Outcome::Equal),
+                "{name}: `{}`",
+                row.key
+            );
+        }
+    }
+    Ok(old)
+}
+
+/// Reader parity on kdeglobals texts that move off their defaults the settings no fixture
+/// states: Breeze Light's file with `[KDE] frameContrast=0.5`, `contrast=3` and
+/// `[ColorEffects:Inactive] ChangeSelectionColor=false`, and with only `[ColorEffects:Inactive]
+/// Enable=false`. Zero mismatches on both, and every row those settings feed differs from the
+/// plain file's, so that equality proves the builder used them.
+#[cfg(all(target_os = "linux", feature = "kde"))]
+#[test]
+fn reader_parity_kde_settings() -> TestResult {
+    const INACTIVE_SELECTION: [&str; 2] = [
+        "defaults.selection_inactive_background",
+        "defaults.selection_inactive_text_color",
+    ];
+    let table: Table = toml::from_str(HOMES)?;
+    let plain = std::fs::read_to_string(kde_fixtures().join("breeze-light.ini"))?;
+    let base = reader_parity_on("breeze-light.ini", &plain, &table)?;
+    let contrasts = plain.replacen("[KDE]\n", "[KDE]\nframeContrast=0.5\ncontrast=3\n", 1);
+    assert_ne!(contrasts, plain, "no [KDE] group in breeze-light.ini");
+    let settings = format!("{contrasts}\n[ColorEffects:Inactive]\nChangeSelectionColor=false\n");
+    let effects_off = format!("{plain}\n[ColorEffects:Inactive]\nEnable=false\n");
+    let fed_by_settings = [
+        "button.border.color",
+        "button.default_button_border_color",
+        "checkbox.unchecked_border_color",
+        "list.header_separator_color",
+        "list.grid_color",
+    ]
+    .into_iter()
+    .chain(INACTIVE_SELECTION)
+    .collect::<Vec<_>>();
+    for (name, content, fed) in [
+        (
+            "frameContrast, contrast, ChangeSelectionColor",
+            settings,
+            fed_by_settings,
+        ),
+        (
+            "inactive effects off",
+            effects_off,
+            INACTIVE_SELECTION.to_vec(),
+        ),
+    ] {
+        let old = reader_parity_on(name, &content, &table)?;
+        for key in fed {
+            let pointer = format!("/{}", key.replace('.', "/"));
+            let got = old.pointer(&pointer);
+            assert!(got.is_some(), "{name}: no `{key}`");
+            assert_ne!(got, base.pointer(&pointer), "{name}: `{key}`");
         }
     }
     Ok(())

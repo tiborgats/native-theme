@@ -160,11 +160,13 @@ impl Theme {
 
     /// The theme resolved for `ctx`, its text scale sanitized (clamped to
     /// `0.5..=4.0`, 1.0 where it is not finite); its name is the system's theme name where the
-    /// system settings state one, else the preset's display name.
+    /// system settings state one and were not read in the other scheme (spec §6, resolution
+    /// step 2), else the preset's display name.
     #[must_use]
     pub fn resolve(&self, ctx: &ThemeContext) -> ResolvedTheme {
         let mut effective = ctx.clone();
         effective.text_scale = sanitized_text_scale(ctx.text_scale);
+        let scheme = effective.scheme;
         let inputs = ResolveInputs {
             system: self.system.as_deref(),
             accent: None,
@@ -173,6 +175,7 @@ impl Theme {
         resolved.name = self
             .system
             .as_ref()
+            .filter(|system| system.scheme.is_none_or(|s| s == scheme))
             .and_then(|system| system.theme_name.clone())
             .unwrap_or_else(|| Arc::from(self.preset.display_name()));
         resolved
@@ -492,9 +495,23 @@ mod tests {
             theme_name: Some(Arc::from("Breeze Dark")),
             ..SystemOverrides::default()
         };
-        let named = theme.with_system_overrides(system.clone());
+        let named = theme.clone().with_system_overrides(system.clone());
         assert_eq!(named.system_overrides(), Some(&system));
         assert_eq!(&*named.resolve_current().name, "Breeze Dark");
+        // A system read in one scheme names only a resolve for that scheme.
+        use crate::next::query::Scheme;
+        let read_in = |scheme| {
+            theme.clone().with_system_overrides(SystemOverrides {
+                scheme: Some(scheme),
+                theme_name: Some(Arc::from("BreezeLight")),
+                ..SystemOverrides::default()
+            })
+        };
+        let light = read_in(Scheme::Light);
+        assert_eq!(&*light.resolve(&ThemeContext::light()).name, "BreezeLight");
+        assert_eq!(&*light.resolve(&ThemeContext::dark()).name, "KDE Breeze");
+        let dark = read_in(Scheme::Dark);
+        assert_eq!(&*dark.resolve(&ThemeContext::light()).name, "KDE Breeze");
     }
 
     /// The position of `preset` in declaration order, by a `match` without a

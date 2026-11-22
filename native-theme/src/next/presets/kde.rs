@@ -84,77 +84,88 @@ use crate::next::widgets::{
 // The constants
 // ---------------------------------------------------------------------------
 
-/// The constants `kde-breeze.toml` states for one scheme: the colours as
-/// 8-bit sRGB `0xRRGGBBAA`, and the icon theme.
-struct SchemeConstants {
-    window_background: u32,
-    window_foreground: u32,
-    window_foreground_muted: u32,
-    window_border: u32,
-    view_background: u32,
-    selection_background: u32,
-    selection_foreground: u32,
-    selection_unfocused_background: u32,
-    accent: u32,
-    focus_ring: u32,
-    link: u32,
-    disabled_text: u32,
-    shadow: u32,
-    error: u32,
-    warning: u32,
-    success: u32,
-    info: u32,
+/// The colours of one scheme the builder works from, and its icon theme: the
+/// constants `kde-breeze.toml` states, each colour from its 8-bit sRGB
+/// channels ([`srgb8`]); where the system's colours apply, each replaced by
+/// the system's setting where the system states it, and each colour 0.7.2's
+/// KDE reader derives replaced by that derivation where the system states
+/// every colour it reads ([`lay_system_over`]).
+#[derive(Clone, Copy)]
+struct SchemeColors {
+    window_background: Color,
+    window_foreground: Color,
+    window_foreground_muted: Color,
+    window_border: Color,
+    view_background: Color,
+    selection_background: Color,
+    selection_foreground: Color,
+    selection_unfocused_background: Color,
+    accent: Color,
+    focus_ring: Color,
+    link: Color,
+    disabled_text: Color,
+    shadow: Color,
+    error: Color,
+    warning: Color,
+    success: Color,
+    info: Color,
     icon_theme: &'static str,
-    button_background: u32,
-    button_foreground: u32,
-    button_frame: u32,
-    button_checked: u32,
-    button_pressed: u32,
-    button_default: u32,
-    button_default_frame: u32,
-    button_disabled_background: u32,
-    button_disabled_foreground: u32,
-    checkbox_checked: u32,
-    checkbox_frame: u32,
-    view_foreground: u32,
-    checkbox_disabled_foreground: u32,
-    list_alternate_row: u32,
-    list_header_hover: u32,
-    list_header_pressed: u32,
-    list_header_separator: u32,
-    list_row_hover: u32,
-    list_row_hover_frame: u32,
-    view_disabled_foreground: u32,
-    list_grid: u32,
-    scrollbar_track: u32,
-    scrollbar_thumb: u32,
-    scrollbar_thumb_hover: u32,
-    tooltip_background: u32,
-    tooltip_foreground: u32,
+    button_background: Color,
+    button_foreground: Color,
+    button_frame: Color,
+    button_checked: Color,
+    button_pressed: Color,
+    button_default: Color,
+    button_default_frame: Color,
+    button_disabled_background: Color,
+    button_disabled_foreground: Color,
+    checkbox_checked: Color,
+    checkbox_frame: Color,
+    view_foreground: Color,
+    checkbox_disabled_foreground: Color,
+    list_alternate_row: Color,
+    list_header_hover: Color,
+    list_header_pressed: Color,
+    list_header_separator: Color,
+    list_row_hover: Color,
+    list_row_hover_frame: Color,
+    view_disabled_foreground: Color,
+    list_grid: Color,
+    scrollbar_track: Color,
+    scrollbar_thumb: Color,
+    scrollbar_thumb_hover: Color,
+    tooltip_background: Color,
+    tooltip_foreground: Color,
+    selection_unfocused_foreground: Color,
+    /// The caret's colour where stated: `[Colors:View]` DecorationFocus where
+    /// the system states it; unstated, 0.7.2's `input.caret_color` rule,
+    /// `defaults.text_color` (`src/resolve/inheritance.rs`,
+    /// `resolve_safety_nets`), the window's foreground.
+    caret: Option<Color>,
+    /// `[Colors:View]` ForegroundInactive, where the system states it.
+    view_foreground_muted: Option<Color>,
+    link_visited: Option<Color>,
 }
 
 /// The light scheme's constants.
-const LIGHT: SchemeConstants = SchemeConstants {
+const LIGHT: SchemeColors = SchemeColors {
     // `defaults.background_color`: platform-facts.md (§2.1.3): [Colors:Window] BackgroundNormal
     // 239,240,241 (BreezeLight.colors:129, breeze v6.7.5)
-    window_background: 0xeff0_f1ff,
+    window_background: srgb8(0xeff0_f1ff),
     // `defaults.text_color`: platform-facts.md (§2.1.3): [Colors:Window] ForegroundNormal
     // 35,38,41 (BreezeLight.colors:137, breeze v6.7.5)
     // `defaults.danger_text_color`, `warning_text_color`, `success_text_color`,
     // `info_text_color`: platform-facts.md (§2.1.4): [Colors:Window] ForegroundNormal 35,38,41
     // (BreezeLight.colors:137, breeze v6.7.5)
-    // `defaults.selection_inactive_text_color`: platform-facts.md (§2.1.3):
-    // selection_inactive_text_color, [Colors:Window] ForegroundNormal 35,38,41
-    // (BreezeLight.colors:137, breeze v6.7.5)
-    window_foreground: 0x2326_29ff,
+    window_foreground: srgb8(0x2326_29ff),
     // `defaults.muted_color`: platform-facts.md (§2.1.3): [Colors:Window] ForegroundInactive
     // 112,125,138 (BreezeLight.colors:133, breeze v6.7.5)
-    window_foreground_muted: 0x707d_8aff,
+    window_foreground_muted: srgb8(0x707d_8aff),
     // `defaults.border.color`: 0.7.2 kde-breeze.toml (uncited)
-    window_border: 0xbcc0_bfff,
+    window_border: srgb8(0xbcc0_bfff),
     // `defaults.surface_color`: platform-facts.md (§2.1.3): [Colors:View] BackgroundNormal
     // 255,255,255 (BreezeLight.colors:115, breeze v6.7.5)
-    view_background: 0xffff_ffff,
+    view_background: srgb8(0xffff_ffff),
     // `defaults.selection_background`: platform-facts.md (§2.1.3): [Colors:Selection]
     // BackgroundNormal 61,174,233 (BreezeLight.colors:87, breeze v6.7.5)
     // `button.hover_border_color`: platform-facts.md (§2.3): hover_border_color and
@@ -164,18 +175,18 @@ const LIGHT: SchemeConstants = SchemeConstants {
     // `button.focus_border_color`: 0.7.2 kde-breeze.toml (uncited)
     // `checkbox.border.color`: platform-facts.md (§2.5): checked, palette.highlight(),
     // [Colors:Selection] BackgroundNormal
-    selection_background: 0x3dae_e9ff,
+    selection_background: srgb8(0x3dae_e9ff),
     // `defaults.selection_text_color`, also `defaults.accent_text_color`: platform-facts.md
     // (§2.1.3): [Colors:Selection] ForegroundNormal 255,255,255 (BreezeLight.colors:95, breeze
     // v6.7.5)
-    selection_foreground: 0xffff_ffff,
+    selection_foreground: srgb8(0xffff_ffff),
     // `defaults.selection_inactive_background`: platform-facts.md (§2.1.3):
     // selection_inactive_background, KColorUtils::tint([Colors:Window] BackgroundNormal
     // 239,240,241, [Colors:Selection] BackgroundNormal 61,174,233, 0.4), as
     // [ColorEffects:Inactive] ChangeSelectionColor=true (BreezeLight.colors:19 at breeze
     // f0b1d75) has KColorScheme build an inactive window's selection from the Window set
     // (kcolorscheme.cpp:304-321 at kcolorscheme 27066d47; measured)
-    selection_unfocused_background: 0xc2e0_f5ff,
+    selection_unfocused_background: srgb8(0xc2e0_f5ff),
     // `defaults.accent_color`: platform-facts.md (§2.1.3): BreezeLight.colors has no [General]
     // AccentColor, so [Colors:View] DecorationFocus 61,174,233 (BreezeLight.colors:116, breeze
     // v6.7.5)
@@ -183,32 +194,32 @@ const LIGHT: SchemeConstants = SchemeConstants {
     // DecorationFocus 61,174,233 (BreezeLight.colors:116, breeze v6.7.5): under the pointer the
     // box's or radio's outline is stroked in it, checked or not (breezehelper.cpp:895-907,
     // :1041-1054 at breeze f0b1d75)
-    accent: 0x3dae_e9ff,
+    accent: srgb8(0x3dae_e9ff),
     // `defaults.focus_ring_color`: platform-facts.md (§2.1.5): focus_ring_color: Breeze's
     // keyboard focus band, [Colors:Selection] BackgroundNormal 61,174,233
     // (BreezeLight.colors:87, breeze v6.7.5) at alpha Blend_Value 0.3 (breezemetrics.h:176)
-    focus_ring: 0x3dae_e94d,
+    focus_ring: srgb8(0x3dae_e94d),
     // `defaults.link_color`: platform-facts.md (§2.1.3): [Colors:View] ForegroundLink
     // 41,128,185 (BreezeLight.colors:120, breeze v6.7.5)
-    link: 0x2980_b9ff,
+    link: srgb8(0x2980_b9ff),
     // `defaults.disabled_text_color`: platform-facts.md (§2.1.3): Disabled [Colors:Window]
     // ForegroundNormal, KColorScheme 6.31.0 [ColorEffects:Disabled]
-    disabled_text: 0xa0a1_a3ff,
+    disabled_text: srgb8(0xa0a1_a3ff),
     // `defaults.shadow_color`: platform-facts.md (§2.1.3): (none) in Breeze, the preset's own
     // #00000040
-    shadow: 0x0000_0040,
+    shadow: srgb8(0x0000_0040),
     // `defaults.danger_color`: platform-facts.md (§2.1.4): [Colors:View] ForegroundNegative
     // 218,68,83 (BreezeLight.colors:121, breeze v6.7.5)
-    error: 0xda44_53ff,
+    error: srgb8(0xda44_53ff),
     // `defaults.warning_color`: platform-facts.md (§2.1.4): [Colors:View] ForegroundNeutral
     // 246,116,0 (BreezeLight.colors:122, breeze v6.7.5)
-    warning: 0xf674_00ff,
+    warning: srgb8(0xf674_00ff),
     // `defaults.success_color`: platform-facts.md (§2.1.4): [Colors:View] ForegroundPositive
     // 39,174,96 (BreezeLight.colors:124, breeze v6.7.5)
-    success: 0x27ae_60ff,
+    success: srgb8(0x27ae_60ff),
     // `defaults.info_color`: platform-facts.md (§2.1.4): [Colors:View] ForegroundActive
     // 61,174,233 (BreezeLight.colors:118, breeze v6.7.5)
-    info: 0x3dae_e9ff,
+    info: srgb8(0x3dae_e9ff),
     // `light.defaults.icon_theme`: 0.7.2 kde-breeze.toml (uncited)
     icon_theme: "breeze",
     // `checkbox.unchecked_background`: platform-facts.md (§2.5): [Colors:Button] BackgroundNormal
@@ -221,7 +232,7 @@ const LIGHT: SchemeConstants = SchemeConstants {
     // 252,252,252 (BreezeLight.colors:31, breeze v6.7.5): Breeze fills a QHeaderView section with
     // QPalette::Button and never reads the Header set for it (breezestyle.cpp:6827, :6838-6839 at
     // breeze f0b1d75; measured)
-    button_background: 0xfcfc_fcff,
+    button_background: srgb8(0xfcfc_fcff),
     // `button.font.color`: platform-facts.md (§2.3): [Colors:Button] ForegroundNormal 35,38,41
     // (BreezeLight.colors:39, breeze v6.7.5)
     // `button.hover_text_color`, `button.checked_text_color`: 0.7.2 kde-breeze.toml (uncited)
@@ -231,43 +242,43 @@ const LIGHT: SchemeConstants = SchemeConstants {
     // 35,38,41 (BreezeLight.colors:39, breeze v6.7.5): Qt letters a QHeaderView section in
     // QPalette::ButtonText (qcommonstyle.cpp:1659-1660; Breeze does not override CE_HeaderLabel;
     // measured)
-    button_foreground: 0x2326_29ff,
+    button_foreground: srgb8(0x2326_29ff),
     // `button.border.color`: platform-facts.md (§2.3): border.color, the plain button frame,
     // mix([Colors:Button] BackgroundNormal 252,252,252 (BreezeLight.colors:31), [Colors:Button]
     // ForegroundNormal 35,38,41 (BreezeLight.colors:39), frameContrast 0.2)
     // (breezehelper.cpp:697-699 at breeze f0b1d75; measured)
-    button_frame: 0xd1d1_d2ff,
+    button_frame: srgb8(0xd1d1_d2ff),
     // `button.checked_background`: platform-facts.md (§2.3): a checked button is
     // KColorUtils::mix(Button #fcfcfc, ButtonText #232629, 0.125), lettered ButtonText
     // (breezehelper.cpp:695-699, breezestyle.cpp:5350-5362)
-    button_checked: 0xe1e1_e2ff,
+    button_checked: srgb8(0xe1e1_e2ff),
     // `button.active_background`: platform-facts.md (§2.3): a pressed button is
     // KColorUtils::mix(Button, Highlight, Blend_Value 0.3) (breezehelper.cpp:694,
     // breezemetrics.h:176 at breeze f0b1d75); its text inherits font.color, ButtonText in every
     // state (platform-facts.md, breezestyle.cpp:5350-5362)
-    button_pressed: 0xc3e5_f6ff,
+    button_pressed: srgb8(0xc3e5_f6ff),
     // `button.default_button_background`: platform-facts.md (§2.3): default_button_background,
     // KColorUtils::mix(Button #fcfcfc, Highlight #3daee9, 0.2), an active window's default
     // button (breezehelper.cpp:700-702 at breeze f0b1d75; measured)
-    button_default: 0xd6ec_f8ff,
+    button_default: srgb8(0xd6ec_f8ff),
     // `button.default_button_border_color`: platform-facts.md (§2.3):
     // default_button_border_color, mix(Highlight #3daee9, mix(Button, ButtonText, frameContrast
     // 0.2) #d1d1d2, 0.5) (breezehelper.cpp:700-702 at breeze f0b1d75; measured)
-    button_default_frame: 0x87c0_ddff,
+    button_default_frame: srgb8(0x87c0_ddff),
     // `button.disabled_background`: platform-facts.md (§2.1.6): Disabled [Colors:Button]
     // BackgroundNormal / ForegroundNormal, KColorScheme 6.31.0
     // `checkbox.disabled_background`: platform-facts.md (§2.1.6): Disabled [Colors:Button]
     // BackgroundNormal (the box) / [Colors:Window] ForegroundNormal (the label), KColorScheme
     // 6.31.0
-    button_disabled_background: 0xf0f0_f0ff,
+    button_disabled_background: srgb8(0xf0f0_f0ff),
     // `button.disabled_text_color`: 0.7.2 kde-breeze.toml (uncited)
-    button_disabled_foreground: 0xa8a9_aaff,
+    button_disabled_foreground: srgb8(0xa8a9_aaff),
     // `checkbox.checked_background`: platform-facts.md (§2.5): Button #fcfcfc under Selection
     // #3daee9 at alpha 0.3
-    checkbox_checked: 0xc2e4_f6ff,
+    checkbox_checked: srgb8(0xc2e4_f6ff),
     // `checkbox.unchecked_border_color`: platform-facts.md (§2.5): separatorColor(),
     // mix(Window, WindowText, 0.2)
-    checkbox_frame: 0xc6c8_c9ff,
+    checkbox_frame: srgb8(0xc6c8_c9ff),
     // `checkbox.indicator_color`: platform-facts.md (§2.5): palette.text(), [Colors:View]
     // ForegroundNormal
     // `list.item_font.color`: platform-facts.md (§2.15): [Colors:View] ForegroundNormal 35,38,41
@@ -275,90 +286,96 @@ const LIGHT: SchemeConstants = SchemeConstants {
     // `list.hover_text_color`: platform-facts.md (§2.15): hover_text_color ← item_font.color,
     // [Colors:View] ForegroundNormal 35,38,41 (BreezeLight.colors:123): a hovered row is lettered
     // QPalette::Text
-    view_foreground: 0x2326_29ff,
+    view_foreground: srgb8(0x2326_29ff),
     // `checkbox.disabled_text_color`: 0.7.2 kde-breeze.toml (uncited)
-    checkbox_disabled_foreground: 0xa0a1_a3ff,
+    checkbox_disabled_foreground: srgb8(0xa0a1_a3ff),
     // `list.alternate_row_background`: platform-facts.md (§2.15): [Colors:View]
     // BackgroundAlternate 247,247,247 (BreezeLight.colors:114, breeze v6.7.5)
-    list_alternate_row: 0xf7f7_f7ff,
+    list_alternate_row: srgb8(0xf7f7_f7ff),
     // `list.header_hover_background`: platform-facts.md (§2.15): header_hover_background,
     // KColorUtils::mix(Button #fcfcfc, [Colors:View] DecorationHover 61,174,233
     // (BreezeLight.colors:117), 0.2), a hovered header section (breezestyle.cpp:6828-6837 at
     // breeze f0b1d75)
-    list_header_hover: 0xd6ec_f8ff,
+    list_header_hover: srgb8(0xd6ec_f8ff),
     // `list.header_active_background`: platform-facts.md (§2.15): header_active_background,
     // KColorUtils::mix(Button #fcfcfc, [Colors:View] DecorationFocus 61,174,233
     // (BreezeLight.colors:116), 0.2), a pressed header section (breezestyle.cpp:6828-6837 at
     // breeze f0b1d75)
-    list_header_pressed: 0xd6ec_f8ff,
+    list_header_pressed: srgb8(0xd6ec_f8ff),
     // `list.header_separator_color`: platform-facts.md (§2.15): header_separator_color,
     // [Colors:Window] ForegroundNormal 35,38,41 (BreezeLight.colors:137) at alpha frameContrast
     // 0.2, the line on a section's trailing edge and along the header's bottom, none after the
     // last or a lone section (breezestyle.cpp:6803-6893 at breeze f0b1d75; measured)
-    list_header_separator: 0x2326_2933,
+    list_header_separator: srgb8(0x2326_2933),
     // `list.hover_background`: platform-facts.md (§2.15): [Colors:Selection] BackgroundNormal
     // 61,174,233 (BreezeLight.colors:87, breeze v6.7.5) at alpha Blend_Value 0.3, a focused
     // view's hovered row (breezestyle.cpp:4871-4875 at breeze f0b1d75; measured)
-    list_row_hover: 0x3dae_e94d,
+    list_row_hover: srgb8(0x3dae_e94d),
     // `list.hover_border_color`: platform-facts.md (§2.15): hover_border_color,
     // [Colors:Selection] BackgroundNormal 61,174,233 (BreezeLight.colors:87) at alpha 0.8, the
     // 1 px outline of a hovered, unselected row (breezestyle.cpp:4880-4884 at breeze f0b1d75;
     // measured)
-    list_row_hover_frame: 0x3dae_e9cc,
+    list_row_hover_frame: srgb8(0x3dae_e9cc),
     // `list.disabled_text_color`: platform-facts.md (§2.1.6): Disabled [Colors:View]
     // ForegroundNormal, KColorScheme 6.31.0
-    view_disabled_foreground: 0xaaab_acff,
+    view_disabled_foreground: srgb8(0xaaab_acff),
     // `list.grid_color`: platform-facts.md (§2.15): QPalette::Mid, KColorScheme's MidShade of
     // [Colors:Window] BackgroundNormal 239,240,241 (BreezeLight.colors:129, breeze v6.7.5) at
     // [KDE] contrast 4 (BreezeLight.colors:195 at breeze f0b1d75), a QTableView's grid
     // (qcommonstyle.cpp:5126-5128 at qtbase v6.11.0; kcolorscheme.cpp:685 at 27066d47;
     // measured)
-    list_grid: 0xc4c8_ccff,
+    list_grid: srgb8(0xc4c8_ccff),
     // `scrollbar.track_color`: platform-facts.md (§2.8): no fill: Breeze's page controls draw
     // nothing and the scroll area paints the bar's area in its viewport's own colour, Base by a
     // list, Window by a plain area (breezestyle.cpp:1490-1495, :1806-1822 at breeze f0b1d75;
     // measured)
-    scrollbar_track: 0x0000_0000,
+    scrollbar_track: srgb8(0x0000_0000),
     // `scrollbar.thumb_color`: platform-facts.md (§2.8): at rest, the pointer off the bar:
     // WindowText #232629 at 0.5 × 0.7, filled at half of that over Window #eff0f1, so
     // WindowText at 0.175 over Window (breezehelper.cpp:279, :349-355, :1284;
     // breezestyle.cpp:6401-6405 at breeze f0b1d75; measured)
-    scrollbar_thumb: 0xcbcd_cdff,
+    scrollbar_thumb: srgb8(0xcbcd_cdff),
     // `scrollbar.thumb_hover_color`: platform-facts.md (§2.8): [Colors:View] DecorationHover at
     // half alpha over the window (breezehelper.cpp:292, :1284; breezestyle.cpp:6400-6405 at
     // breeze f0b1d75)
     // `scrollbar.thumb_active_color`: platform-facts.md (§2.8): no pressed colour of its own, the
     // hovered one
-    scrollbar_thumb_hover: 0x96cf_edff,
+    scrollbar_thumb_hover: srgb8(0x96cf_edff),
     // `tooltip.background_color`: 0.7.2 kde-breeze.toml (uncited)
-    tooltip_background: 0xf7f7_f7ff,
+    tooltip_background: srgb8(0xf7f7_f7ff),
     // `tooltip.font.color`: platform-facts.md (§2.7): [Colors:Tooltip] ForegroundNormal
     // 35,38,41 (BreezeLight.colors:109, breeze v6.7.5)
-    tooltip_foreground: 0x2326_29ff,
+    tooltip_foreground: srgb8(0x2326_29ff),
+    // `defaults.selection_inactive_text_color`: platform-facts.md (§2.1.3):
+    // selection_inactive_text_color, [Colors:Window] ForegroundNormal 35,38,41
+    // (BreezeLight.colors:137, breeze v6.7.5)
+    selection_unfocused_foreground: srgb8(0x2326_29ff),
+    caret: None,
+    view_foreground_muted: None,
+    // `link.visited_text_color`: platform-facts.md (§2.28): [Colors:View] ForegroundVisited
+    // 155,89,182 (BreezeLight.colors:125, breeze v6.7.5)
+    link_visited: Some(srgb8(0x9b59_b6ff)),
 };
 
 /// The dark scheme's constants.
-const DARK: SchemeConstants = SchemeConstants {
+const DARK: SchemeColors = SchemeColors {
     // `defaults.background_color`: platform-facts.md (§2.1.3): [Colors:Window] BackgroundNormal
     // 32,35,38 (BreezeDark.colors:130, breeze v6.7.5)
-    window_background: 0x2023_26ff,
+    window_background: srgb8(0x2023_26ff),
     // `defaults.text_color`: platform-facts.md (§2.1.3): [Colors:Window] ForegroundNormal
     // 252,252,252 (BreezeDark.colors:138, breeze v6.7.5)
     // `defaults.danger_text_color`, `warning_text_color`, `success_text_color`,
     // `info_text_color`: platform-facts.md (§2.1.4): [Colors:Window] ForegroundNormal 252,252,252
     // (BreezeDark.colors:138, breeze v6.7.5)
-    // `defaults.selection_inactive_text_color`: platform-facts.md (§2.1.3):
-    // selection_inactive_text_color, [Colors:Window] ForegroundNormal 252,252,252
-    // (BreezeDark.colors:138, breeze v6.7.5)
-    window_foreground: 0xfcfc_fcff,
+    window_foreground: srgb8(0xfcfc_fcff),
     // `defaults.muted_color`: platform-facts.md (§2.1.3): [Colors:Window] ForegroundInactive
     // 161,169,177 (BreezeDark.colors:134, breeze v6.7.5)
-    window_foreground_muted: 0xa1a9_b1ff,
+    window_foreground_muted: srgb8(0xa1a9_b1ff),
     // `defaults.border.color`: 0.7.2 kde-breeze.toml (uncited)
-    window_border: 0x4d54_5bff,
+    window_border: srgb8(0x4d54_5bff),
     // `defaults.surface_color`: platform-facts.md (§2.1.3): [Colors:View] BackgroundNormal
     // 20,22,24 (BreezeDark.colors:116, breeze v6.7.5)
-    view_background: 0x1416_18ff,
+    view_background: srgb8(0x1416_18ff),
     // `defaults.selection_background`: platform-facts.md (§2.1.3): [Colors:Selection]
     // BackgroundNormal 61,174,233 (BreezeDark.colors:88, breeze v6.7.5)
     // `button.hover_border_color`: platform-facts.md (§2.3): hover_border_color and
@@ -368,18 +385,18 @@ const DARK: SchemeConstants = SchemeConstants {
     // `button.focus_border_color`: 0.7.2 kde-breeze.toml (uncited)
     // `checkbox.border.color`: platform-facts.md (§2.5): checked, palette.highlight(),
     // [Colors:Selection] BackgroundNormal
-    selection_background: 0x3dae_e9ff,
+    selection_background: srgb8(0x3dae_e9ff),
     // `defaults.selection_text_color`, also `defaults.accent_text_color`: platform-facts.md
     // (§2.1.3): [Colors:Selection] ForegroundNormal 252,252,252 (BreezeDark.colors:96, breeze
     // v6.7.5)
-    selection_foreground: 0xfcfc_fcff,
+    selection_foreground: srgb8(0xfcfc_fcff),
     // `defaults.selection_inactive_background`: platform-facts.md (§2.1.3):
     // selection_inactive_background, KColorUtils::tint([Colors:Window] BackgroundNormal
     // 32,35,38, [Colors:Selection] BackgroundNormal 61,174,233, 0.4), as
     // [ColorEffects:Inactive] ChangeSelectionColor=true (BreezeDark.colors:20 at breeze
     // f0b1d75) has KColorScheme build an inactive window's selection from the Window set
     // (kcolorscheme.cpp:304-321 at kcolorscheme 27066d47; measured)
-    selection_unfocused_background: 0x1b41_55ff,
+    selection_unfocused_background: srgb8(0x1b41_55ff),
     // `defaults.accent_color`: platform-facts.md (§2.1.3): BreezeDark.colors has no [General]
     // AccentColor, so [Colors:View] DecorationFocus 61,174,233 (BreezeDark.colors:117, breeze
     // v6.7.5)
@@ -387,32 +404,32 @@ const DARK: SchemeConstants = SchemeConstants {
     // DecorationFocus 61,174,233 (BreezeDark.colors:117, breeze v6.7.5): under the pointer the
     // box's or radio's outline is stroked in it, checked or not (breezehelper.cpp:895-907,
     // :1041-1054 at breeze f0b1d75)
-    accent: 0x3dae_e9ff,
+    accent: srgb8(0x3dae_e9ff),
     // `defaults.focus_ring_color`: platform-facts.md (§2.1.5): focus_ring_color: Breeze's
     // keyboard focus band, [Colors:Selection] BackgroundNormal 61,174,233
     // (BreezeDark.colors:88, breeze v6.7.5) at alpha Blend_Value 0.3 (breezemetrics.h:176)
-    focus_ring: 0x3dae_e94d,
+    focus_ring: srgb8(0x3dae_e94d),
     // `defaults.link_color`: platform-facts.md (§2.1.3): [Colors:View] ForegroundLink
     // 29,153,243 (BreezeDark.colors:121, breeze v6.7.5)
-    link: 0x1d99_f3ff,
+    link: srgb8(0x1d99_f3ff),
     // `defaults.disabled_text_color`: platform-facts.md (§2.1.3): Disabled [Colors:Window]
     // ForegroundNormal, KColorScheme 6.31.0 [ColorEffects:Disabled]
-    disabled_text: 0x686a_6cff,
+    disabled_text: srgb8(0x686a_6cff),
     // `defaults.shadow_color`: platform-facts.md (§2.1.3): (none) in Breeze, the preset's own
     // #00000060
-    shadow: 0x0000_0060,
+    shadow: srgb8(0x0000_0060),
     // `defaults.danger_color`: platform-facts.md (§2.1.4): [Colors:View] ForegroundNegative
     // 218,68,83 (BreezeDark.colors:122, breeze v6.7.5)
-    error: 0xda44_53ff,
+    error: srgb8(0xda44_53ff),
     // `defaults.warning_color`: platform-facts.md (§2.1.4): [Colors:View] ForegroundNeutral
     // 246,116,0 (BreezeDark.colors:123, breeze v6.7.5)
-    warning: 0xf674_00ff,
+    warning: srgb8(0xf674_00ff),
     // `defaults.success_color`: platform-facts.md (§2.1.4): [Colors:View] ForegroundPositive
     // 39,174,96 (BreezeDark.colors:125, breeze v6.7.5)
-    success: 0x27ae_60ff,
+    success: srgb8(0x27ae_60ff),
     // `defaults.info_color`: platform-facts.md (§2.1.4): [Colors:View] ForegroundActive
     // 61,174,233 (BreezeDark.colors:119, breeze v6.7.5)
-    info: 0x3dae_e9ff,
+    info: srgb8(0x3dae_e9ff),
     // `dark.defaults.icon_theme`: 0.7.2 kde-breeze.toml (uncited)
     icon_theme: "breeze-dark",
     // `checkbox.unchecked_background`: platform-facts.md (§2.5): [Colors:Button] BackgroundNormal
@@ -425,7 +442,7 @@ const DARK: SchemeConstants = SchemeConstants {
     // 41,44,48 (BreezeDark.colors:32, breeze v6.7.5): Breeze fills a QHeaderView section with
     // QPalette::Button and never reads the Header set for it (breezestyle.cpp:6827, :6838-6839 at
     // breeze f0b1d75; measured)
-    button_background: 0x292c_30ff,
+    button_background: srgb8(0x292c_30ff),
     // `button.font.color`: platform-facts.md (§2.3): [Colors:Button] ForegroundNormal 252,252,252
     // (BreezeDark.colors:40, breeze v6.7.5)
     // `button.hover_text_color`, `button.checked_text_color`: 0.7.2 kde-breeze.toml (uncited)
@@ -435,43 +452,43 @@ const DARK: SchemeConstants = SchemeConstants {
     // 252,252,252 (BreezeDark.colors:40, breeze v6.7.5): Qt letters a QHeaderView section in
     // QPalette::ButtonText (qcommonstyle.cpp:1659-1660; Breeze does not override CE_HeaderLabel;
     // measured)
-    button_foreground: 0xfcfc_fcff,
+    button_foreground: srgb8(0xfcfc_fcff),
     // `button.border.color`: platform-facts.md (§2.3): border.color, the plain button frame,
     // mix([Colors:Button] BackgroundNormal 41,44,48 (BreezeDark.colors:32), [Colors:Button]
     // ForegroundNormal 252,252,252 (BreezeDark.colors:40), frameContrast 0.2)
     // (breezehelper.cpp:697-699 at breeze f0b1d75; measured)
-    button_frame: 0x5356_59ff,
+    button_frame: srgb8(0x5356_59ff),
     // `button.checked_background`: platform-facts.md (§2.3): a checked button is
     // KColorUtils::mix(Button #292c30, ButtonText #fcfcfc, 0.125), lettered ButtonText
     // (breezehelper.cpp:695-699, breezestyle.cpp:5350-5362)
-    button_checked: 0x4346_4aff,
+    button_checked: srgb8(0x4346_4aff),
     // `button.active_background`: platform-facts.md (§2.3): a pressed button is
     // KColorUtils::mix(Button, Highlight, Blend_Value 0.3) (breezehelper.cpp:694,
     // breezemetrics.h:176 at breeze f0b1d75); its text inherits font.color, ButtonText in every
     // state (platform-facts.md, breezestyle.cpp:5350-5362)
-    button_pressed: 0x2f53_68ff,
+    button_pressed: srgb8(0x2f53_68ff),
     // `button.default_button_background`: platform-facts.md (§2.3): default_button_background,
     // KColorUtils::mix(Button #292c30, Highlight #3daee9, 0.2), an active window's default
     // button (breezehelper.cpp:700-702 at breeze f0b1d75; measured)
-    button_default: 0x2d46_55ff,
+    button_default: srgb8(0x2d46_55ff),
     // `button.default_button_border_color`: platform-facts.md (§2.3):
     // default_button_border_color, mix(Highlight #3daee9, mix(Button, ButtonText, frameContrast
     // 0.2) #535659, 0.5) (breezehelper.cpp:700-702 at breeze f0b1d75; measured)
-    button_default_frame: 0x4882_a1ff,
+    button_default_frame: srgb8(0x4882_a1ff),
     // `button.disabled_background`: platform-facts.md (§2.1.6): Disabled [Colors:Button]
     // BackgroundNormal / ForegroundNormal, KColorScheme 6.31.0
     // `checkbox.disabled_background`: platform-facts.md (§2.1.6): Disabled [Colors:Button]
     // BackgroundNormal (the box) / [Colors:Window] ForegroundNormal (the label), KColorScheme
     // 6.31.0
-    button_disabled_background: 0x272a_2eff,
+    button_disabled_background: srgb8(0x272a_2eff),
     // `button.disabled_text_color`: 0.7.2 kde-breeze.toml (uncited)
-    button_disabled_foreground: 0x6d6f_72ff,
+    button_disabled_foreground: srgb8(0x6d6f_72ff),
     // `checkbox.checked_background`: platform-facts.md (§2.5): Button #292c30 under Selection
     // #3daee9 at alpha 0.3
-    checkbox_checked: 0x2f53_68ff,
+    checkbox_checked: srgb8(0x2f53_68ff),
     // `checkbox.unchecked_border_color`: platform-facts.md (§2.5): separatorColor(),
     // mix(Window, WindowText, 0.2)
-    checkbox_frame: 0x4c4e_51ff,
+    checkbox_frame: srgb8(0x4c4e_51ff),
     // `checkbox.indicator_color`: platform-facts.md (§2.5): palette.text(), [Colors:View]
     // ForegroundNormal
     // `list.item_font.color`: platform-facts.md (§2.15): [Colors:View] ForegroundNormal
@@ -479,68 +496,77 @@ const DARK: SchemeConstants = SchemeConstants {
     // `list.hover_text_color`: platform-facts.md (§2.15): hover_text_color ← item_font.color,
     // [Colors:View] ForegroundNormal 252,252,252 (BreezeDark.colors:124): a hovered row is
     // lettered QPalette::Text
-    view_foreground: 0xfcfc_fcff,
+    view_foreground: srgb8(0xfcfc_fcff),
     // `checkbox.disabled_text_color`: 0.7.2 kde-breeze.toml (uncited)
-    checkbox_disabled_foreground: 0x686a_6cff,
+    checkbox_disabled_foreground: srgb8(0x686a_6cff),
     // `list.alternate_row_background`: platform-facts.md (§2.15): [Colors:View]
     // BackgroundAlternate 29,31,34 (BreezeDark.colors:115, breeze v6.7.5)
-    list_alternate_row: 0x1d1f_22ff,
+    list_alternate_row: srgb8(0x1d1f_22ff),
     // `list.header_hover_background`: platform-facts.md (§2.15): header_hover_background,
     // KColorUtils::mix(Button #292c30, [Colors:View] DecorationHover 61,174,233
     // (BreezeDark.colors:118), 0.2), a hovered header section (breezestyle.cpp:6828-6837 at
     // breeze f0b1d75)
-    list_header_hover: 0x2d46_55ff,
+    list_header_hover: srgb8(0x2d46_55ff),
     // `list.header_active_background`: platform-facts.md (§2.15): header_active_background,
     // KColorUtils::mix(Button #292c30, [Colors:View] DecorationFocus 61,174,233
     // (BreezeDark.colors:117), 0.2), a pressed header section (breezestyle.cpp:6828-6837 at
     // breeze f0b1d75)
-    list_header_pressed: 0x2d46_55ff,
+    list_header_pressed: srgb8(0x2d46_55ff),
     // `list.header_separator_color`: platform-facts.md (§2.15): header_separator_color,
     // [Colors:Window] ForegroundNormal 252,252,252 (BreezeDark.colors:138) at alpha
     // frameContrast 0.2, the line on a section's trailing edge and along the header's bottom,
     // none after the last or a lone section (breezestyle.cpp:6803-6893 at breeze f0b1d75;
     // measured)
-    list_header_separator: 0xfcfc_fc33,
+    list_header_separator: srgb8(0xfcfc_fc33),
     // `list.hover_background`: platform-facts.md (§2.15): [Colors:Selection] BackgroundNormal
     // 61,174,233 (BreezeDark.colors:88, breeze v6.7.5) at alpha Blend_Value 0.3, a focused
     // view's hovered row (breezestyle.cpp:4871-4875 at breeze f0b1d75; measured)
-    list_row_hover: 0x3dae_e94d,
+    list_row_hover: srgb8(0x3dae_e94d),
     // `list.hover_border_color`: platform-facts.md (§2.15): hover_border_color,
     // [Colors:Selection] BackgroundNormal 61,174,233 (BreezeDark.colors:88) at alpha 0.8, the 1
     // px outline of a hovered, unselected row (breezestyle.cpp:4880-4884 at breeze f0b1d75;
     // measured)
-    list_row_hover_frame: 0x3dae_e9cc,
+    list_row_hover_frame: srgb8(0x3dae_e9cc),
     // `list.disabled_text_color`: platform-facts.md (§2.1.6): Disabled [Colors:View]
     // ForegroundNormal, KColorScheme 6.31.0
-    view_disabled_foreground: 0x6062_63ff,
+    view_disabled_foreground: srgb8(0x6062_63ff),
     // `list.grid_color`: platform-facts.md (§2.15): QPalette::Mid, KColorScheme's MidShade of
     // [Colors:Window] BackgroundNormal 32,35,38 (BreezeDark.colors:130, breeze v6.7.5) at [KDE]
     // contrast 4 (BreezeDark.colors:202 at breeze f0b1d75), a QTableView's grid
     // (qcommonstyle.cpp:5126-5128 at qtbase v6.11.0; kcolorscheme.cpp:685 at 27066d47;
     // measured)
-    list_grid: 0x1c1f_21ff,
+    list_grid: srgb8(0x1c1f_21ff),
     // `scrollbar.track_color`: platform-facts.md (§2.8): no fill: Breeze's page controls draw
     // nothing and the scroll area paints the bar's area in its viewport's own colour, Base by a
     // list, Window by a plain area (breezestyle.cpp:1490-1495, :1806-1822 at breeze f0b1d75;
     // measured)
-    scrollbar_track: 0x0000_0000,
+    scrollbar_track: srgb8(0x0000_0000),
     // `scrollbar.thumb_color`: platform-facts.md (§2.8): at rest, the pointer off the bar:
     // WindowText #fcfcfc at 0.5 × 0.7, filled at half of that over Window #202326, so
     // WindowText at 0.175 over Window (breezehelper.cpp:279, :349-355, :1284;
     // breezestyle.cpp:6401-6405 at breeze f0b1d75; measured)
-    scrollbar_thumb: 0x4649_4bff,
+    scrollbar_thumb: srgb8(0x4649_4bff),
     // `scrollbar.thumb_hover_color`: platform-facts.md (§2.8): [Colors:View] DecorationHover at
     // half alpha over the window (breezehelper.cpp:292, :1284; breezestyle.cpp:6400-6405 at
     // breeze f0b1d75)
     // `scrollbar.thumb_active_color`: platform-facts.md (§2.8): no pressed colour of its own, the
     // hovered one
-    scrollbar_thumb_hover: 0x2f68_88ff,
+    scrollbar_thumb_hover: srgb8(0x2f68_88ff),
     // `tooltip.background_color`: platform-facts.md (§2.7): [Colors:Tooltip] BackgroundNormal
     // 41,44,48 (BreezeDark.colors:102)
-    tooltip_background: 0x292c_30ff,
+    tooltip_background: srgb8(0x292c_30ff),
     // `tooltip.font.color`: platform-facts.md (§2.7): [Colors:Tooltip] ForegroundNormal
     // 252,252,252 (BreezeDark.colors:110, breeze v6.7.5)
-    tooltip_foreground: 0xfcfc_fcff,
+    tooltip_foreground: srgb8(0xfcfc_fcff),
+    // `defaults.selection_inactive_text_color`: platform-facts.md (§2.1.3):
+    // selection_inactive_text_color, [Colors:Window] ForegroundNormal 252,252,252
+    // (BreezeDark.colors:138, breeze v6.7.5)
+    selection_unfocused_foreground: srgb8(0xfcfc_fcff),
+    caret: None,
+    view_foreground_muted: None,
+    // `link.visited_text_color`: platform-facts.md (§2.28): [Colors:View] ForegroundVisited
+    // 155,89,182 (BreezeDark.colors:126, breeze v6.7.5)
+    link_visited: Some(srgb8(0x9b59_b6ff)),
 };
 
 /// The UI font's family.
@@ -893,126 +919,17 @@ const SCROLLBAR_IDLE_HANDLE_ALPHA: f32 = 0.175;
 // The colours from the constants and the system's settings
 // ---------------------------------------------------------------------------
 
-/// The colours of one scheme the builder works from: the colours of
-/// [`SchemeConstants`], each replaced by the system's setting where the system
-/// states it, and each colour 0.7.2's KDE reader derives replaced by that
-/// derivation where the system states every colour it reads
-/// ([`lay_system_over`]); and the four colours beside the constants that
-/// 0.7.2 takes from the system or from another colour.
-struct SchemeColors {
-    window_background: Color,
-    window_foreground: Color,
-    window_foreground_muted: Color,
-    window_border: Color,
-    view_background: Color,
-    selection_background: Color,
-    selection_foreground: Color,
-    selection_unfocused_background: Color,
-    accent: Color,
-    focus_ring: Color,
-    link: Color,
-    disabled_text: Color,
-    shadow: Color,
-    error: Color,
-    warning: Color,
-    success: Color,
-    info: Color,
-    button_background: Color,
-    button_foreground: Color,
-    button_frame: Color,
-    button_checked: Color,
-    button_pressed: Color,
-    button_default: Color,
-    button_default_frame: Color,
-    button_disabled_background: Color,
-    button_disabled_foreground: Color,
-    checkbox_checked: Color,
-    checkbox_frame: Color,
-    view_foreground: Color,
-    checkbox_disabled_foreground: Color,
-    list_alternate_row: Color,
-    list_header_hover: Color,
-    list_header_pressed: Color,
-    list_header_separator: Color,
-    list_row_hover: Color,
-    list_row_hover_frame: Color,
-    view_disabled_foreground: Color,
-    list_grid: Color,
-    scrollbar_track: Color,
-    scrollbar_thumb: Color,
-    scrollbar_thumb_hover: Color,
-    tooltip_background: Color,
-    tooltip_foreground: Color,
-    /// The selected text's colour in a view without the focus:
-    /// platform-facts.md (§2.1.3), `[Colors:Window]` ForegroundNormal, the
-    /// window's foreground (`window_foreground`'s citation).
-    selection_unfocused_foreground: Color,
-    /// The caret's colour: 0.7.2's `input.caret_color`, `defaults.text_color`
-    /// where unstated (`src/resolve/inheritance.rs`, `resolve_safety_nets`),
-    /// `[Colors:View]` DecorationFocus where the system states it.
-    caret: Color,
-    /// `[Colors:View]` ForegroundInactive, where the system states it.
-    view_foreground_muted: Option<Color>,
-    /// `[Colors:View]` ForegroundVisited, where the system states it.
-    link_visited: Option<Color>,
-}
-
-/// The colours of `c` with `os`, the system's colours for the scheme and
-/// contrast resolved for, laid over them where given.
-fn scheme_colors(c: &SchemeConstants, os: Option<&OsColors>) -> SchemeColors {
-    let mut colors = SchemeColors {
-        window_background: color(c.window_background),
-        window_foreground: color(c.window_foreground),
-        window_foreground_muted: color(c.window_foreground_muted),
-        window_border: color(c.window_border),
-        view_background: color(c.view_background),
-        selection_background: color(c.selection_background),
-        selection_foreground: color(c.selection_foreground),
-        selection_unfocused_background: color(c.selection_unfocused_background),
-        accent: color(c.accent),
-        focus_ring: color(c.focus_ring),
-        link: color(c.link),
-        disabled_text: color(c.disabled_text),
-        shadow: color(c.shadow),
-        error: color(c.error),
-        warning: color(c.warning),
-        success: color(c.success),
-        info: color(c.info),
-        button_background: color(c.button_background),
-        button_foreground: color(c.button_foreground),
-        button_frame: color(c.button_frame),
-        button_checked: color(c.button_checked),
-        button_pressed: color(c.button_pressed),
-        button_default: color(c.button_default),
-        button_default_frame: color(c.button_default_frame),
-        button_disabled_background: color(c.button_disabled_background),
-        button_disabled_foreground: color(c.button_disabled_foreground),
-        checkbox_checked: color(c.checkbox_checked),
-        checkbox_frame: color(c.checkbox_frame),
-        view_foreground: color(c.view_foreground),
-        checkbox_disabled_foreground: color(c.checkbox_disabled_foreground),
-        list_alternate_row: color(c.list_alternate_row),
-        list_header_hover: color(c.list_header_hover),
-        list_header_pressed: color(c.list_header_pressed),
-        list_header_separator: color(c.list_header_separator),
-        list_row_hover: color(c.list_row_hover),
-        list_row_hover_frame: color(c.list_row_hover_frame),
-        view_disabled_foreground: color(c.view_disabled_foreground),
-        list_grid: color(c.list_grid),
-        scrollbar_track: color(c.scrollbar_track),
-        scrollbar_thumb: color(c.scrollbar_thumb),
-        scrollbar_thumb_hover: color(c.scrollbar_thumb_hover),
-        tooltip_background: color(c.tooltip_background),
-        tooltip_foreground: color(c.tooltip_foreground),
-        selection_unfocused_foreground: color(c.window_foreground),
-        caret: color(c.window_foreground),
-        view_foreground_muted: None,
-        link_visited: None,
-    };
-    if let Some(os) = os {
-        lay_system_over(&mut colors, os);
-    }
-    colors
+/// The colour of `rgba`, 8-bit sRGB `0xRRGGBBAA`, each channel over 255 as
+/// [`Color::from_srgb8`] takes it.
+const fn srgb8(rgba: u32) -> Color {
+    const SCALE: f32 = u8::MAX as f32;
+    let [r, g, b, a] = rgba.to_be_bytes();
+    Color::new(
+        r as f32 / SCALE,
+        g as f32 / SCALE,
+        b as f32 / SCALE,
+        a as f32 / SCALE,
+    )
 }
 
 /// The system's colours `os` laid over `c` field by field, as 0.7.2's KDE
@@ -1053,7 +970,7 @@ fn lay_system_over(c: &mut SchemeColors, os: &OsColors) {
     replace(&mut c.selection_foreground, highlight_fg);
     replace(&mut c.accent, focus);
     replace(&mut c.link, os.link);
-    c.link_visited = os.link_visited;
+    c.link_visited = os.link_visited.or(c.link_visited);
     replace(&mut c.error, error);
     replace(&mut c.warning, warning);
     replace(&mut c.success, success);
@@ -1063,7 +980,7 @@ fn lay_system_over(c: &mut SchemeColors, os: &OsColors) {
     replace(&mut c.list_alternate_row, os.alternate_row_background);
     replace(&mut c.tooltip_background, tooltip.background);
     replace(&mut c.tooltip_foreground, tooltip.foreground);
-    c.caret = focus.unwrap_or(c.window_foreground);
+    c.caret = focus.or(c.caret);
 
     // The derived colours, each where every colour it reads is stated.
     replace(&mut c.focus_ring, highlight.map(focus_ring_of));
@@ -1267,17 +1184,17 @@ fn inactive_selection(
 /// The theme of `kde-breeze` for `ctx.scheme`, from the preset's constants
 /// and the system's settings in `inputs`, where given.
 pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> ResolvedTheme {
-    let constants = match ctx.scheme {
-        Scheme::Light => &LIGHT,
-        Scheme::Dark => &DARK,
+    let mut scheme_colors = match ctx.scheme {
+        Scheme::Light => LIGHT,
+        Scheme::Dark => DARK,
     };
     let system = inputs.system;
-    let scheme_colors = scheme_colors(
-        constants,
-        system.and_then(|s| s.colors_for(ctx.scheme, ctx.contrast)),
-    );
+    let os = system.and_then(|s| s.colors_for(ctx.scheme, ctx.contrast));
+    if let Some(os) = os {
+        lay_system_over(&mut scheme_colors, os);
+    }
     let c = &scheme_colors;
-    let colors = roles(c, system.and_then(|s| s.accent));
+    let colors = roles(c, os, system.and_then(|s| s.accent));
     let typography = typography(&colors, system);
     let layout = LayoutMetrics {
         widget_gap: Some(WIDGET_GAP),
@@ -1297,7 +1214,7 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
     let (icon_theme, icon_sizes) = system
         .filter(|s| s.scheme.is_none_or(|scheme| scheme == ctx.scheme))
         .and_then(|s| Some((s.icon_theme.clone()?, s.icon_sizes)))
-        .unwrap_or_else(|| (Arc::from(constants.icon_theme), None));
+        .unwrap_or_else(|| (Arc::from(c.icon_theme), None));
     let icon_size = |pick: fn(&IconSizes) -> Option<f32>, preset: f32| {
         icon_sizes.as_ref().and_then(pick).unwrap_or(preset)
     };
@@ -1377,22 +1294,20 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
     }
 }
 
-/// The colour of `rgba`, 8-bit sRGB `0xRRGGBBAA`.
-fn color(rgba: u32) -> Color {
-    let [r, g, b, a] = rgba.to_be_bytes();
-    Color::from_srgb8(r, g, b, a)
-}
-
-/// The colour roles of one scheme from its colours `c` and the system's
-/// accent `accent`, where given. A given accent is the accent's fill and the
+/// The colour roles of one scheme from its colours `c`, the system's colours
+/// `os` for the scheme and contrast resolved for and the system's accent
+/// `system_accent`, where given. The accent is `os`'s, else `system_accent`
+/// (spec §8, "Accent"); a given accent is the accent's fill and the
 /// selection's background (and through it the text selection's) and, at
-/// [`BLEND_VALUE`], the focus ring's colour (spec §8, "Accent"; 0.7.2's
-/// `apply_kde_accent`); the widgets' other colours keep `c`'s KDE colours. The
-/// view's and the tooltip's surfaces hold their KDE colour sets' colours
-/// (`[Colors:View]`, `[Colors:Tooltip]`), the view's muted foreground and the
-/// disabled text's colour `[Colors:View]` ForegroundInactive where the system
-/// states it (spec §8, "Disabled text"), else the preset's disabled colour.
-fn roles(c: &SchemeColors, accent: Option<Color>) -> ColorRoles {
+/// [`BLEND_VALUE`], the focus ring's colour (0.7.2's `apply_kde_accent`); the
+/// widgets' other colours keep `c`'s KDE colours. A focus ring colour `os`
+/// states is the ring's colour as given, and each text selection colour it
+/// states replaces the text selection's. The view's and the tooltip's
+/// surfaces hold their KDE colour sets' colours (`[Colors:View]`,
+/// `[Colors:Tooltip]`), the view's muted foreground and the disabled text's
+/// colour `[Colors:View]` ForegroundInactive where the system states it (spec
+/// §8, "Disabled text"), else the preset's disabled colour.
+fn roles(c: &SchemeColors, os: Option<&OsColors>, system_accent: Option<Color>) -> ColorRoles {
     // `defaults.{danger,warning,success,info}_text_color`: platform-facts.md (§2.1.4), each
     // [Colors:Window] ForegroundNormal, the window's foreground.
     let status = |fill| StatusColors {
@@ -1402,7 +1317,9 @@ fn roles(c: &SchemeColors, accent: Option<Color>) -> ColorRoles {
         origin: RoleOrigin::Native,
     };
     let unstated = SurfaceColors::default();
+    let accent = os.and_then(|os| os.accent).or(system_accent);
     let selection_background = accent.unwrap_or(c.selection_background);
+    let text_selection = os.and_then(|os| os.text_selection).unwrap_or_default();
     ColorRoles {
         window: SurfaceColors::new(
             Some(c.window_background),
@@ -1440,10 +1357,10 @@ fn roles(c: &SchemeColors, accent: Option<Color>) -> ColorRoles {
         // 0.7.2: `text_selection_background` and `text_selection_color` are the selection's
         // where unstated (`src/resolve/inheritance.rs`, `resolve_defaults_internal`).
         text_selection: SelectionColors::new(
-            selection_background,
-            c.selection_foreground,
-            None,
-            None,
+            text_selection.background.unwrap_or(selection_background),
+            text_selection.foreground.unwrap_or(c.selection_foreground),
+            text_selection.unfocused_background,
+            text_selection.unfocused_foreground,
         ),
         find_highlight: None,
         scrim: None,
@@ -1454,8 +1371,10 @@ fn roles(c: &SchemeColors, accent: Option<Color>) -> ColorRoles {
             foreground: c.selection_foreground,
             standalone: None,
         },
-        focus_ring: accent.map_or(c.focus_ring, focus_ring_of),
-        caret: c.caret,
+        focus_ring: os
+            .and_then(|os| os.focus_ring)
+            .unwrap_or_else(|| accent.map_or(c.focus_ring, focus_ring_of)),
+        caret: c.caret.unwrap_or(c.window_foreground),
         link: c.link,
         link_visited: c.link_visited,
         disabled_text: c.view_foreground_muted.unwrap_or(c.disabled_text),
@@ -1570,17 +1489,11 @@ fn typography(colors: &ColorRoles, system: Option<&SystemOverrides>) -> Typograp
     let dpi = system.and_then(|s| s.font_dpi).unwrap_or(FONT_DPI);
     let text = colors.window.foreground;
     let ui = system.and_then(|s| s.ui_font.as_ref());
-    let mut body = font(
-        ui,
-        (FONT_FAMILY, FontSize::Pt(FONT_SIZE_PT), FONT_WEIGHT),
-        text,
-        dpi,
-    );
-    if let Some(size) = body.defined_size {
-        body.line_height = line_height_px(size, dpi);
-        body.stated |= TextStated::LINE_HEIGHT;
-    }
     let ui_size = ui.and_then(|f| f.size);
+    let body_size = ui_size.unwrap_or(FontSize::Pt(FONT_SIZE_PT));
+    let mut body = font(ui, (FONT_FAMILY, body_size, FONT_WEIGHT), text, dpi);
+    body.line_height = line_height_px(body_size, dpi);
+    body.stated |= TextStated::LINE_HEIGHT;
     let heading = |factor: f32, (size, weight): (f32, u16)| match ui_size {
         Some(ui_size) => text_scale_entry(scaled(ui_size, factor), HEADING_WEIGHT, dpi),
         None => text_scale_entry(FontSize::Pt(size), weight, dpi),

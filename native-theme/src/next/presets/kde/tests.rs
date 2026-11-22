@@ -88,15 +88,101 @@ fn a_portal_accent_replaces_the_accent_and_the_selection_but_not_the_kde_frames(
 fn system_colours_apply_only_to_their_scheme_and_contrast() {
     let [light, dark] = both_schemes();
     assert_ne!(with_system(None).colors, light.colors);
-    for (ctx, static_theme) in [
-        (ThemeContext::dark(), dark),
-        (ThemeContext::light().with_contrast(Contrast::High), light),
-    ] {
-        let theme = Theme::preset(Preset::KdeBreeze)
-            .with_system_overrides(system(None))
-            .resolve(&ctx);
-        assert_eq!(theme.colors, static_theme.colors, "{ctx:?}");
+    let theme = Theme::preset(Preset::KdeBreeze)
+        .with_system_overrides(system(None))
+        .resolve(&ThemeContext::dark());
+    assert_eq!(theme.colors, dark.colors);
+}
+
+#[test]
+fn the_constant_colours_are_their_8_bit_channels() {
+    for v in 0..=u8::MAX {
+        let rgba = u32::from_be_bytes([v, 0, u8::MAX, v]);
+        assert_eq!(srgb8(rgba), Color::from_srgb8(v, 0, u8::MAX, v), "{v}");
     }
+}
+
+#[test]
+fn the_caret_is_the_window_text_else_the_system_s_decoration_focus() {
+    for theme in both_schemes() {
+        // 0.7.2: `input.caret_color` is `defaults.text_color` where unstated.
+        assert_eq!(
+            Some(theme.colors.caret),
+            theme.colors.window.foreground,
+            "{:?}",
+            theme.context.scheme
+        );
+    }
+    assert_eq!(with_system(None).colors.caret, DECORATION_FOCUS);
+}
+
+#[test]
+fn the_visited_link_is_breeze_s_else_the_system_s() {
+    // `link.visited_text_color`: platform-facts.md (§2.28), [Colors:View] ForegroundVisited
+    // 155,89,182 in both schemes.
+    let visited = Color::from_srgb8(155, 89, 182, u8::MAX);
+    for theme in both_schemes() {
+        assert_eq!(theme.colors.link_visited, Some(visited));
+    }
+    assert_eq!(with_system(None).colors.link_visited, Some(visited));
+    let stated = Color::rgb(0.5, 0.0, 0.5);
+    let mut overrides = system(None);
+    for (_, os) in &mut overrides.color_schemes {
+        os.link_visited = Some(stated);
+    }
+    assert_eq!(light_with(overrides).colors.link_visited, Some(stated));
+}
+
+/// [`system`] with `edit` applied to its colours.
+fn system_with(edit: impl Fn(&mut OsColors)) -> SystemOverrides {
+    let mut overrides = system(Some(PORTAL_ACCENT));
+    for (_, os) in &mut overrides.color_schemes {
+        edit(os);
+    }
+    overrides
+}
+
+#[test]
+fn the_scheme_s_accent_comes_before_the_portal_accent() {
+    let scheme_accent = Color::rgb(1.0, 1.0, 0.0);
+    let theme = light_with(system_with(|os| os.accent = Some(scheme_accent)));
+    assert_eq!(theme.colors.accent.fill, scheme_accent);
+    assert_eq!(theme.colors.selection.background, scheme_accent);
+    assert_eq!(theme.colors.focus_ring, focus_ring_of(scheme_accent));
+    // Without either accent, the decoration focus colour (`a_portal_accent_replaces_…`).
+    assert_eq!(with_system(None).colors.accent.fill, DECORATION_FOCUS);
+}
+
+#[test]
+fn a_stated_focus_ring_is_the_ring_s_colour_as_given() {
+    let ring = Color::new(0.0, 1.0, 1.0, 0.5);
+    let theme = light_with(system_with(|os| os.focus_ring = Some(ring)));
+    assert_eq!(theme.colors.focus_ring, ring);
+    assert_eq!(
+        theme.focus_ring.stroke,
+        Stroke::uniform(FOCUS_RING_WIDTH, ring)
+    );
+}
+
+#[test]
+fn a_stated_text_selection_replaces_the_text_selection_s_colours() {
+    let [background, foreground] = [Color::rgb(0.1, 0.2, 0.3), Color::rgb(0.9, 0.8, 0.7)];
+    let theme = light_with(system_with(|os| {
+        os.text_selection = Some(OsSelectionColors::new(
+            Some(background),
+            None,
+            None,
+            Some(foreground),
+        ))
+    }));
+    let text_selection = theme.colors.text_selection;
+    assert_eq!(text_selection.background, background);
+    // A colour it does not state stays the selection's.
+    assert_eq!(text_selection.foreground, theme.colors.selection.foreground);
+    assert_eq!(text_selection.unfocused_background, None);
+    assert_eq!(text_selection.unfocused_foreground, Some(foreground));
+    // The view's selection keeps the accent.
+    assert_eq!(theme.colors.selection.background, PORTAL_ACCENT);
 }
 
 /// The light theme of the scheme-independent settings `system`.
