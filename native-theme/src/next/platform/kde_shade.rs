@@ -5,6 +5,13 @@
 /// The five shades a KDE colour scheme derives from a colour, from the
 /// brightest variant to the shadow.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "the shades of the vector table; kde-breeze's `list.grid_color` takes `Mid` alone"
+    )
+)]
 pub(crate) enum KdeShadeRole {
     /// The brightest shade.
     Light,

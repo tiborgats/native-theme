@@ -2,12 +2,15 @@
 //! and dark.
 //!
 //! The builder runs in three steps: the preset's constants, one table per
-//! scheme for the colours and plain constants for the rest; the colour roles
-//! and the globals made from them; the widgets derived from the roles, the
-//! globals and the widget constants. A widget's colour that is a role's
+//! scheme for the colours and plain constants for the rest, with the system's
+//! settings ([`ResolveInputs::system`]) laid over them where given; the
+//! colour roles and the globals made from them; the widgets derived from the
+//! roles, the globals and the colours. A widget's colour that is a role's
 //! colour is taken from the roles, not from a second copy of the constant.
-//! So far it builds the static path: the system's settings
-//! ([`ResolveInputs::system`]) and an explicit accent are not read yet.
+//! The system's colours apply where `SystemOverrides` carries colours for the
+//! scheme and contrast resolved for; what 0.7.2's KDE reader derives from
+//! them, the builder derives (spec §8, "The KDE part"). An explicit accent
+//! ([`ResolveInputs::accent`]) is not read yet.
 //!
 //! Defined by the preset (spec §1, "Axis values without data"): the variant
 //! `ButtonVariant::Primary` (0.7.2's `primary_*` fields) and a list's
@@ -45,8 +48,14 @@ use crate::next::icons::{IconSizes, IconThemeSpec};
 use crate::next::layout::LayoutMetrics;
 use crate::next::motion::{CaretSpec, MotionTokens, UiTimings};
 use crate::next::paint::Paint;
+use crate::next::platform::KdeRoleKind;
+use crate::next::platform::kcu_mix::{kcu_mix_of_mix, kcu_mix_qreal};
+use crate::next::platform::kcu_overlay::kcu_overlay;
+use crate::next::platform::kde_selection_inactive::kde_selection_inactive;
+use crate::next::platform::kde_shade::{KdeShadeRole, kde_shade};
 use crate::next::preset::{Preset, ResolveInputs};
 use crate::next::query::{ButtonVariant, Orientation, Scheme, ThemeContext, WidgetState};
+use crate::next::reader::OsColors;
 use crate::next::roles::{
     AccentColors, ColorRoles, RoleOrigin, SelectionColors, StatusColors, SurfaceColors,
 };
@@ -781,16 +790,472 @@ const PRESSED_HOVER: &[&[WidgetState]] = &[&[WidgetState::PRESSED, WidgetState::
 const FONT_DPI: f32 = 96.0;
 
 // ---------------------------------------------------------------------------
+// The constants of the derivations from the system's colours, each as 0.7.2's
+// KDE reader states and cites it (`src/kde/colors.rs`)
+// ---------------------------------------------------------------------------
+
+/// Breeze's `Metrics::Blend_Value` (breezemetrics.h:176 at breeze v6.7.5), the
+/// alpha of the selection colour over a checked indicator's fill
+/// (breezehelper.cpp:40), of the selection colour over a hovered item-view row
+/// (breezestyle.cpp:4871-4875 at breeze f0b1d75) and of the selection colour in
+/// the keyboard focus band (breezestyle.cpp:6776-6779); docs/platform-facts.md
+/// §2.5, §2.15.
+const BLEND_VALUE: f32 = 0.3;
+
+/// `kdeglobals` `[KDE] frameContrast` where it is unset, KColorScheme's own
+/// default (kcolorscheme.cpp:529-538 at 27066d47; docs/platform-facts.md §2.11).
+const FRAME_CONTRAST_DEFAULT: f64 = 0.2;
+
+/// `kdeglobals` `[KDE] contrast` where it is unset or not an integer,
+/// KColorScheme's own default: `contrastF` is `0.1 * readEntry("contrast", 7)`
+/// (kcolorscheme.cpp:519-527 at kcolorscheme v6.31.0; docs/platform-facts.md
+/// §2.15).
+const CONTRAST_DEFAULT: i32 = 7;
+
+/// Whether KColorScheme builds an inactive window's selection from the Window
+/// set where kdeglobals states neither `[ColorEffects:Inactive]
+/// ChangeSelectionColor` nor the group's `Enable`: true
+/// (kcolorscheme.cpp:304-316 at kcolorscheme v6.31.0).
+const CHANGE_SELECTION_COLOR_DEFAULT: bool = true;
+
+/// How far a checked, non-flat Breeze button's fill moves from `Button`
+/// towards `ButtonText`: `KColorUtils::mix(palette.button(),
+/// palette.buttonText(), 0.125)` (breezehelper.cpp:695-699 at breeze f0b1d75;
+/// docs/platform-facts.md §2.3).
+const CHECKED_BUTTON_MIX: f64 = 0.125;
+
+/// How far a pressed, enabled, non-flat Breeze button's fill moves from
+/// `Button` towards `Highlight`: `KColorUtils::mix(palette.button().color(),
+/// highlightColor, Metrics::Blend_Value)`, the `qreal` 0.3
+/// (breezehelper.cpp:694, breezemetrics.h:176 at breeze f0b1d75;
+/// docs/platform-facts.md §2.3).
+const PRESSED_BUTTON_MIX: f64 = 0.3;
+
+/// How far an active window's default button moves from `Button` towards
+/// `Highlight`: `KColorUtils::mix(palette.button().color(), highlightColor,
+/// 0.2)` (breezehelper.cpp:700-702 at breeze f0b1d75; docs/platform-facts.md
+/// §2.3).
+const DEFAULT_BUTTON_MIX: f64 = 0.2;
+
+/// How far the default button's frame moves from `Highlight` towards the
+/// plain frame, `mix(Button, ButtonText, frameContrast)`: 0.5
+/// (breezehelper.cpp:700-702 at breeze f0b1d75; docs/platform-facts.md §2.3).
+const DEFAULT_BUTTON_FRAME_MIX: f64 = 0.5;
+
+/// How far a hovered or pressed header section moves from `Button` towards
+/// the hover or the focus colour: `KColorUtils::mix(palette.button(),
+/// hoverColor, 0.2)` and `mix(…, focusColor, 0.2)` (breezestyle.cpp:6828-6837
+/// at breeze f0b1d75; docs/platform-facts.md §2.15).
+const HEADER_SECTION_MIX: f64 = 0.2;
+
+/// The alpha of `Highlight` in a hovered item-view row's 1 px outline
+/// (breezestyle.cpp:4880-4884 at breeze f0b1d75; docs/platform-facts.md
+/// §2.15).
+const LIST_HOVER_OUTLINE_ALPHA: f32 = 0.8;
+
+/// The alpha a Breeze scroll-bar handle's colour is filled with over the
+/// window, `overlayColors(bg, alphaColor(fg, 0.5))` (breezehelper.cpp:1284
+/// at breeze f0b1d75; docs/platform-facts.md §2.8).
+const SCROLLBAR_HANDLE_ALPHA: f32 = 0.5;
+
+/// The alpha of the window text over the window in a Breeze scroll-bar handle at
+/// rest, the pointer off the bar: the handle colour `WindowText` at 0.5
+/// (breezehelper.cpp:279), times 0.7 off the bar (breezestyle.cpp:6401-6403),
+/// filled at half of that over the window, `overlayColors(Window, alphaColor(fg,
+/// 0.5))` (breezehelper.cpp:1284, :349-355; breezestyle.cpp:6405) at breeze
+/// f0b1d75, with animations on, their default (breeze.kcfg:45-47);
+/// docs/platform-facts.md §2.8.
+const SCROLLBAR_IDLE_HANDLE_ALPHA: f32 = 0.175;
+
+// ---------------------------------------------------------------------------
+// The colours from the constants and the system's settings
+// ---------------------------------------------------------------------------
+
+/// The colours of one scheme the builder works from: the colours of
+/// [`SchemeConstants`], each replaced by the system's setting where the system
+/// states it, and each colour 0.7.2's KDE reader derives replaced by that
+/// derivation where the system states every colour it reads
+/// ([`lay_system_over`]); and the four colours beside the constants that
+/// 0.7.2 takes from the system or from another colour.
+struct SchemeColors {
+    window_background: Color,
+    window_foreground: Color,
+    window_foreground_muted: Color,
+    window_border: Color,
+    view_background: Color,
+    selection_background: Color,
+    selection_foreground: Color,
+    selection_unfocused_background: Color,
+    accent: Color,
+    focus_ring: Color,
+    link: Color,
+    disabled_text: Color,
+    shadow: Color,
+    error: Color,
+    warning: Color,
+    success: Color,
+    info: Color,
+    button_background: Color,
+    button_foreground: Color,
+    button_frame: Color,
+    button_checked: Color,
+    button_pressed: Color,
+    button_default: Color,
+    button_default_frame: Color,
+    button_disabled_background: Color,
+    button_disabled_foreground: Color,
+    checkbox_checked: Color,
+    checkbox_frame: Color,
+    view_foreground: Color,
+    checkbox_disabled_foreground: Color,
+    list_alternate_row: Color,
+    list_header_hover: Color,
+    list_header_pressed: Color,
+    list_header_separator: Color,
+    list_row_hover: Color,
+    list_row_hover_frame: Color,
+    view_disabled_foreground: Color,
+    list_grid: Color,
+    scrollbar_track: Color,
+    scrollbar_thumb: Color,
+    scrollbar_thumb_hover: Color,
+    tooltip_background: Color,
+    tooltip_foreground: Color,
+    /// The selected text's colour in a view without the focus:
+    /// platform-facts.md (§2.1.3), `[Colors:Window]` ForegroundNormal, the
+    /// window's foreground (`window_foreground`'s citation).
+    selection_unfocused_foreground: Color,
+    /// The caret's colour: 0.7.2's `input.caret_color`, `defaults.text_color`
+    /// where unstated (`src/resolve/inheritance.rs`, `resolve_safety_nets`),
+    /// `[Colors:View]` DecorationFocus where the system states it.
+    caret: Color,
+    /// `[Colors:View]` ForegroundInactive, where the system states it.
+    view_foreground_muted: Option<Color>,
+    /// `[Colors:View]` ForegroundVisited, where the system states it.
+    link_visited: Option<Color>,
+}
+
+/// The colours of `c` with `os`, the system's colours for the scheme and
+/// contrast resolved for, laid over them where given.
+fn scheme_colors(c: &SchemeConstants, os: Option<&OsColors>) -> SchemeColors {
+    let mut colors = SchemeColors {
+        window_background: color(c.window_background),
+        window_foreground: color(c.window_foreground),
+        window_foreground_muted: color(c.window_foreground_muted),
+        window_border: color(c.window_border),
+        view_background: color(c.view_background),
+        selection_background: color(c.selection_background),
+        selection_foreground: color(c.selection_foreground),
+        selection_unfocused_background: color(c.selection_unfocused_background),
+        accent: color(c.accent),
+        focus_ring: color(c.focus_ring),
+        link: color(c.link),
+        disabled_text: color(c.disabled_text),
+        shadow: color(c.shadow),
+        error: color(c.error),
+        warning: color(c.warning),
+        success: color(c.success),
+        info: color(c.info),
+        button_background: color(c.button_background),
+        button_foreground: color(c.button_foreground),
+        button_frame: color(c.button_frame),
+        button_checked: color(c.button_checked),
+        button_pressed: color(c.button_pressed),
+        button_default: color(c.button_default),
+        button_default_frame: color(c.button_default_frame),
+        button_disabled_background: color(c.button_disabled_background),
+        button_disabled_foreground: color(c.button_disabled_foreground),
+        checkbox_checked: color(c.checkbox_checked),
+        checkbox_frame: color(c.checkbox_frame),
+        view_foreground: color(c.view_foreground),
+        checkbox_disabled_foreground: color(c.checkbox_disabled_foreground),
+        list_alternate_row: color(c.list_alternate_row),
+        list_header_hover: color(c.list_header_hover),
+        list_header_pressed: color(c.list_header_pressed),
+        list_header_separator: color(c.list_header_separator),
+        list_row_hover: color(c.list_row_hover),
+        list_row_hover_frame: color(c.list_row_hover_frame),
+        view_disabled_foreground: color(c.view_disabled_foreground),
+        list_grid: color(c.list_grid),
+        scrollbar_track: color(c.scrollbar_track),
+        scrollbar_thumb: color(c.scrollbar_thumb),
+        scrollbar_thumb_hover: color(c.scrollbar_thumb_hover),
+        tooltip_background: color(c.tooltip_background),
+        tooltip_foreground: color(c.tooltip_foreground),
+        selection_unfocused_foreground: color(c.window_foreground),
+        caret: color(c.window_foreground),
+        view_foreground_muted: None,
+        link_visited: None,
+    };
+    if let Some(os) = os {
+        lay_system_over(&mut colors, os);
+    }
+    colors
+}
+
+/// The system's colours `os` laid over `c` field by field, as 0.7.2's KDE
+/// reader lays its result over the preset (`src/kde/colors.rs`,
+/// `populate_colors`; spec §8, "The KDE part"): a colour the system states
+/// replaces the constant it is the setting of; a colour 0.7.2 derives is
+/// derived, with the same inputs, kernel and arguments, only where the system
+/// states every colour it reads, else the constant stays. A missing
+/// `kde_frame_contrast` or `kde_contrast` is KColorScheme's default, and a
+/// missing `kde_effects` changes the selection as KColorScheme's default does
+/// ([`CHANGE_SELECTION_COLOR_DEFAULT`]).
+fn lay_system_over(c: &mut SchemeColors, os: &OsColors) {
+    let surfaces = os.surfaces.clone().unwrap_or_default();
+    let window = surfaces.window.unwrap_or_default();
+    let view = surfaces.view.unwrap_or_default();
+    let button = surfaces.kde_button.unwrap_or_default();
+    let tooltip = surfaces.tooltip.unwrap_or_default();
+    let selection = os.selection.unwrap_or_default();
+    let [error, warning, success, info] = os.status.unwrap_or_default();
+    let frame_contrast = os.kde_frame_contrast.unwrap_or(FRAME_CONTRAST_DEFAULT);
+    let contrast = os.kde_contrast.unwrap_or(CONTRAST_DEFAULT);
+    let change_selection = os
+        .kde_effects
+        .map_or(CHANGE_SELECTION_COLOR_DEFAULT, |e| e.change_selection_color);
+    let (window_bg, window_fg) = (window.background, window.foreground);
+    let (button_bg, button_fg) = (button.background, button.foreground);
+    let (highlight, highlight_fg) = (selection.background, selection.foreground);
+    let (focus, hover) = (os.kde_decoration_focus, os.kde_decoration_hover);
+
+    // The settings, each where stated.
+    replace(&mut c.window_background, window_bg);
+    replace(&mut c.window_foreground, window_fg);
+    replace(&mut c.window_foreground_muted, window.foreground_muted);
+    replace(&mut c.view_background, view.background);
+    replace(&mut c.view_foreground, view.foreground);
+    c.view_foreground_muted = view.foreground_muted;
+    replace(&mut c.selection_background, highlight);
+    replace(&mut c.selection_foreground, highlight_fg);
+    replace(&mut c.accent, focus);
+    replace(&mut c.link, os.link);
+    c.link_visited = os.link_visited;
+    replace(&mut c.error, error);
+    replace(&mut c.warning, warning);
+    replace(&mut c.success, success);
+    replace(&mut c.info, info);
+    replace(&mut c.button_background, button_bg);
+    replace(&mut c.button_foreground, button_fg);
+    replace(&mut c.list_alternate_row, os.alternate_row_background);
+    replace(&mut c.tooltip_background, tooltip.background);
+    replace(&mut c.tooltip_foreground, tooltip.foreground);
+    c.caret = focus.unwrap_or(c.window_foreground);
+
+    // The derived colours, each where every colour it reads is stated.
+    replace(&mut c.focus_ring, highlight.map(focus_ring_of));
+    replace(
+        &mut c.selection_unfocused_background,
+        inactive_selection(
+            highlight,
+            window_bg,
+            highlight,
+            KdeRoleKind::Background,
+            change_selection,
+        ),
+    );
+    replace(
+        &mut c.selection_unfocused_foreground,
+        inactive_selection(
+            highlight_fg,
+            window_fg,
+            highlight,
+            KdeRoleKind::Foreground,
+            change_selection,
+        ),
+    );
+    replace(
+        &mut c.button_checked,
+        button_bg
+            .zip(button_fg)
+            .map(|(bg, fg)| mix(bg, fg, CHECKED_BUTTON_MIX)),
+    );
+    replace(
+        &mut c.button_pressed,
+        button_bg
+            .zip(highlight)
+            .map(|(bg, hl)| mix(bg, hl, PRESSED_BUTTON_MIX)),
+    );
+    replace(
+        &mut c.button_default,
+        button_bg
+            .zip(highlight)
+            .map(|(bg, hl)| mix(bg, hl, DEFAULT_BUTTON_MIX)),
+    );
+    replace(
+        &mut c.button_default_frame,
+        button_bg
+            .zip(button_fg)
+            .zip(highlight)
+            .map(|((bg, fg), hl)| {
+                eight_bit(kcu_mix_of_mix(
+                    rgba(hl),
+                    rgba(bg),
+                    rgba(fg),
+                    frame_contrast,
+                    DEFAULT_BUTTON_FRAME_MIX,
+                ))
+            }),
+    );
+    replace(
+        &mut c.button_frame,
+        button_bg
+            .zip(button_fg)
+            .map(|(bg, fg)| mix(bg, fg, frame_contrast)),
+    );
+    replace(
+        &mut c.checkbox_checked,
+        button_bg
+            .zip(highlight)
+            .map(|(bg, hl)| over(translucent(hl, BLEND_VALUE), bg)),
+    );
+    replace(
+        &mut c.checkbox_frame,
+        window_bg
+            .zip(window_fg)
+            .map(|(bg, fg)| mix(bg, fg, frame_contrast)),
+    );
+    replace(
+        &mut c.list_grid,
+        window_bg.map(|bg| eight_bit(kde_shade(rgba(bg), KdeShadeRole::Mid, contrast as f32))),
+    );
+    replace(
+        &mut c.list_row_hover,
+        highlight.map(|hl| translucent(hl, BLEND_VALUE)),
+    );
+    replace(
+        &mut c.list_row_hover_frame,
+        highlight.map(|hl| translucent(hl, LIST_HOVER_OUTLINE_ALPHA)),
+    );
+    replace(
+        &mut c.list_header_hover,
+        button_bg
+            .zip(hover)
+            .map(|(bg, hv)| mix(bg, hv, HEADER_SECTION_MIX)),
+    );
+    replace(
+        &mut c.list_header_pressed,
+        button_bg
+            .zip(focus)
+            .map(|(bg, fc)| mix(bg, fc, HEADER_SECTION_MIX)),
+    );
+    replace(
+        &mut c.list_header_separator,
+        window_fg.map(|fg| translucent(fg, frame_contrast as f32)),
+    );
+    replace(
+        &mut c.scrollbar_thumb_hover,
+        window_bg
+            .zip(hover)
+            .map(|(bg, hv)| overlay(bg, hv, SCROLLBAR_HANDLE_ALPHA)),
+    );
+    replace(
+        &mut c.scrollbar_thumb,
+        window_bg
+            .zip(window_fg)
+            .map(|(bg, fg)| overlay(bg, fg, SCROLLBAR_IDLE_HANDLE_ALPHA)),
+    );
+}
+
+/// `value` in `slot` where given.
+fn replace(slot: &mut Color, value: Option<Color>) {
+    if let Some(value) = value {
+        *slot = value;
+    }
+}
+
+/// `c` as the kernels take a colour, `[r, g, b, a]`.
+fn rgba(c: Color) -> [f32; 4] {
+    [c.r, c.g, c.b, c.a]
+}
+
+/// A kernel's colour held in 8 bits, as 0.7.2's reader holds every colour it
+/// derives (`Rgba::from_f32`: each channel clamped, times 255, rounded).
+fn eight_bit([r, g, b, a]: [f32; 4]) -> Color {
+    let [r, g, b, a] = Color::new(r, g, b, a).to_srgb8();
+    Color::from_srgb8(r, g, b, a)
+}
+
+/// `KColorUtils::mix(a, b, bias)` in 8 bits.
+fn mix(a: Color, b: Color, bias: f64) -> Color {
+    eight_bit(kcu_mix_qreal(rgba(a), rgba(b), bias))
+}
+
+/// `c` at `alpha`, held in 8 bits.
+fn translucent(c: Color, alpha: f32) -> Color {
+    eight_bit(rgba(c.with_alpha(alpha)))
+}
+
+/// Breeze's keyboard focus band in the selection colour `highlight`: that
+/// colour at [`BLEND_VALUE`] (breezestyle.cpp:6776-6779, breezemetrics.h:176
+/// at breeze f0b1d75; docs/platform-facts.md §2.1.5).
+fn focus_ring_of(highlight: Color) -> Color {
+    translucent(highlight, BLEND_VALUE)
+}
+
+/// `top` painted source-over on the opaque `bottom`, in 8 bits.
+fn over(top: Color, bottom: Color) -> Color {
+    eight_bit(rgba(top.composite_over(bottom)))
+}
+
+/// `KColorUtils::overlayColors(under, paint)` of `paint` given the alpha
+/// `alpha`, in 8 bits.
+fn overlay(under: Color, paint: Color, alpha: f32) -> Color {
+    eight_bit(kcu_overlay(rgba(under), rgba(paint.with_alpha(alpha))))
+}
+
+/// KColorScheme's inactive Selection colour of a role of `kind`, before any
+/// inactive effect ([`kde_selection_inactive`]), where every colour the
+/// kernel reads on its branch is given: the role's own `selection` colour
+/// where `change` is false; else `window`, and for a background role
+/// `selection_background` too. A colour the branch does not read may be
+/// missing (0.7.2's `inactive_selection`); the kernel is handed a read one in
+/// its place.
+fn inactive_selection(
+    selection: Option<Color>,
+    window: Option<Color>,
+    selection_background: Option<Color>,
+    kind: KdeRoleKind,
+    change: bool,
+) -> Option<Color> {
+    let (own, window, selection_background) = if !change {
+        let own = selection?;
+        (own, own, own)
+    } else if kind == KdeRoleKind::Background {
+        let (window, selection_background) = (window?, selection_background?);
+        (window, window, selection_background)
+    } else {
+        let window = window?;
+        (window, window, window)
+    };
+    Some(eight_bit(kde_selection_inactive(
+        rgba(own),
+        rgba(window),
+        rgba(selection_background),
+        kind,
+        change,
+    )))
+}
+
+// ---------------------------------------------------------------------------
 // The builder
 // ---------------------------------------------------------------------------
 
-/// The theme of `kde-breeze` for `ctx.scheme`, from the preset's constants.
-pub(crate) fn resolve(ctx: &ThemeContext, _inputs: &ResolveInputs<'_>) -> ResolvedTheme {
+/// The theme of `kde-breeze` for `ctx.scheme`, from the preset's constants
+/// and the system's settings in `inputs`, where given.
+pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> ResolvedTheme {
     let constants = match ctx.scheme {
         Scheme::Light => &LIGHT,
         Scheme::Dark => &DARK,
     };
-    let colors = roles(constants);
+    let system = inputs.system;
+    let scheme_colors = scheme_colors(
+        constants,
+        system.and_then(|s| s.colors_for(ctx.scheme, ctx.contrast)),
+    );
+    let c = &scheme_colors;
+    let colors = roles(c, system.and_then(|s| s.accent));
     let typography = typography(&colors);
     let layout = LayoutMetrics {
         widget_gap: Some(WIDGET_GAP),
@@ -863,12 +1328,12 @@ pub(crate) fn resolve(ctx: &ThemeContext, _inputs: &ResolveInputs<'_>) -> Resolv
             shape: None,
         },
         elevations: Arc::from([]),
-        button: button(constants, &colors, &typography, &layout),
-        checkbox: checkbox(constants, &colors, &typography, &layout),
-        radio: radio(constants, &colors, &typography, &layout),
-        scrollbar: scrollbar(constants),
-        list: list(constants, &colors, &typography, &layout),
-        tooltip: tooltip(constants, &colors, &typography, &layout),
+        button: button(c, &colors, &typography, &layout),
+        checkbox: checkbox(c, &colors, &typography, &layout),
+        radio: radio(c, &colors, &typography, &layout),
+        scrollbar: scrollbar(c),
+        list: list(c, &colors, &typography, &layout),
+        tooltip: tooltip(&colors, &typography, &layout),
         custom_colors: BTreeMap::new(),
         custom_metrics: BTreeMap::new(),
         colors,
@@ -883,48 +1348,65 @@ fn color(rgba: u32) -> Color {
     Color::from_srgb8(r, g, b, a)
 }
 
-/// The colour roles of one scheme from its constants.
-fn roles(c: &SchemeConstants) -> ColorRoles {
-    let window_foreground = color(c.window_foreground);
-    let selection_foreground = color(c.selection_foreground);
+/// The colour roles of one scheme from its colours `c` and the system's
+/// accent `accent`, where given. A given accent is the accent's fill and the
+/// selection's background (and through it the text selection's) and, at
+/// [`BLEND_VALUE`], the focus ring's colour (spec §8, "Accent"; 0.7.2's
+/// `apply_kde_accent`); the widgets' other colours keep `c`'s KDE colours. The
+/// view's and the tooltip's surfaces hold their KDE colour sets' colours
+/// (`[Colors:View]`, `[Colors:Tooltip]`), the view's muted foreground and the
+/// disabled text's colour `[Colors:View]` ForegroundInactive where the system
+/// states it (spec §8, "Disabled text"), else the preset's disabled colour.
+fn roles(c: &SchemeColors, accent: Option<Color>) -> ColorRoles {
     // `defaults.{danger,warning,success,info}_text_color`: platform-facts.md (§2.1.4), each
     // [Colors:Window] ForegroundNormal, the window's foreground.
     let status = |fill| StatusColors {
-        fill: color(fill),
-        foreground: window_foreground,
+        fill,
+        foreground: c.window_foreground,
         standalone: None,
         origin: RoleOrigin::Native,
     };
     let unstated = SurfaceColors::default();
+    let selection_background = accent.unwrap_or(c.selection_background);
     ColorRoles {
         window: SurfaceColors::new(
-            Some(color(c.window_background)),
-            Some(window_foreground),
-            Some(color(c.window_foreground_muted)),
-            Some(color(c.window_border)),
+            Some(c.window_background),
+            Some(c.window_foreground),
+            Some(c.window_foreground_muted),
+            Some(c.window_border),
             None,
         ),
-        view: SurfaceColors::new(Some(color(c.view_background)), None, None, None, None),
+        view: SurfaceColors::new(
+            Some(c.view_background),
+            Some(c.view_foreground),
+            c.view_foreground_muted,
+            None,
+            None,
+        ),
         header: unstated,
         sidebar: unstated,
         card: unstated,
         dialog: unstated,
         popover: unstated,
-        tooltip: unstated,
+        tooltip: SurfaceColors::new(
+            Some(c.tooltip_background),
+            Some(c.tooltip_foreground),
+            None,
+            None,
+            None,
+        ),
         osd: unstated,
-        // `defaults.selection_inactive_text_color`: platform-facts.md (§2.1.3), [Colors:Window]
-        // ForegroundNormal, the window's foreground.
         selection: SelectionColors::new(
-            color(c.selection_background),
-            selection_foreground,
-            Some(color(c.selection_unfocused_background)),
-            Some(window_foreground),
+            selection_background,
+            c.selection_foreground,
+            Some(c.selection_unfocused_background),
+            Some(c.selection_unfocused_foreground),
         ),
         // 0.7.2: `text_selection_background` and `text_selection_color` are the selection's
         // where unstated (`src/resolve/inheritance.rs`, `resolve_defaults_internal`).
         text_selection: SelectionColors::new(
-            color(c.selection_background),
-            selection_foreground,
+            selection_background,
+            c.selection_foreground,
             None,
             None,
         ),
@@ -933,18 +1415,16 @@ fn roles(c: &SchemeConstants) -> ColorRoles {
         // `defaults.accent_text_color`: platform-facts.md (§2.1.3), [Colors:Selection]
         // ForegroundNormal, the selection's foreground.
         accent: AccentColors {
-            fill: color(c.accent),
-            foreground: selection_foreground,
+            fill: accent.unwrap_or(c.accent),
+            foreground: c.selection_foreground,
             standalone: None,
         },
-        focus_ring: color(c.focus_ring),
-        // 0.7.2: `input.caret_color` is `defaults.text_color` where unstated
-        // (`src/resolve/inheritance.rs`, `resolve_safety_nets`).
-        caret: window_foreground,
-        link: color(c.link),
-        link_visited: None,
-        disabled_text: color(c.disabled_text),
-        shadow: color(c.shadow),
+        focus_ring: accent.map_or(c.focus_ring, focus_ring_of),
+        caret: c.caret,
+        link: c.link,
+        link_visited: c.link_visited,
+        disabled_text: c.view_foreground_muted.unwrap_or(c.disabled_text),
+        shadow: c.shadow,
         disabled_opacity: DISABLED_OPACITY,
         error: status(c.error),
         warning: status(c.warning),
@@ -1096,7 +1576,7 @@ fn label(body: &TextStyle, color: Option<Color>) -> TextStyle {
 /// every state but the disabled one (`button.active_background`'s citation),
 /// and hover changes only its pen (`button.hover_background`: "no hover fill").
 fn button(
-    c: &SchemeConstants,
+    c: &SchemeColors,
     roles: &ColorRoles,
     typography: &Typography,
     layout: &LayoutMetrics,
@@ -1109,8 +1589,8 @@ fn button(
     };
     let body = RuleBuilder::with_exclusive(PartStyle::default(), DISABLED_PRESSED_HOVER)
         .base([
-            fill(color(c.button_background)),
-            outline(layout, color(c.button_frame)),
+            fill(c.button_background),
+            outline(layout, c.button_frame),
             corners(layout),
             PartProp::Padding(Edges::symmetric(
                 BUTTON_PADDING_VERTICAL,
@@ -1120,13 +1600,13 @@ fn button(
         ])
         .rule(
             RuleSelector::on(WidgetState::CHECKED),
-            [fill(color(c.button_checked))],
+            [fill(c.button_checked)],
         )
         .rule(
             RuleSelector::on(WidgetState::DEFAULT),
             [
-                fill(color(c.button_default)),
-                outline(layout, color(c.button_default_frame)),
+                fill(c.button_default),
+                outline(layout, c.button_default_frame),
             ],
         )
         // `button.hover_border_color`: platform-facts.md (§2.3), "a non-flat button's pen turns
@@ -1139,11 +1619,11 @@ fn button(
                 RuleSelector::on(WidgetState::PRESSED),
                 RuleSelector::on(WidgetState::FOCUS_VISIBLE),
             ],
-            [outline(layout, color(c.selection_background))],
+            [outline(layout, c.selection_background)],
         )
         .rule(
             RuleSelector::on(WidgetState::PRESSED),
-            [fill(color(c.button_pressed))],
+            [fill(c.button_pressed)],
         )
         // The primary fill stays in every state but the disabled one, as 0.7.2's connectors
         // keep `primary_background` (egui: "regardless of state", gpui: its active colour
@@ -1151,14 +1631,14 @@ fn button(
         .rule(primary(), [fill(roles.accent.fill)])
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
-            [fill(color(c.button_disabled_background))],
+            [fill(c.button_disabled_background)],
         )
         .build();
-    let label = RuleBuilder::new(label(&typography.body, Some(color(c.button_foreground))))
+    let label = RuleBuilder::new(label(&typography.body, Some(c.button_foreground)))
         .rule(primary(), [TextProp::Color(roles.accent.foreground)])
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
-            [TextProp::Color(color(c.button_disabled_foreground))],
+            [TextProp::Color(c.button_disabled_foreground)],
         )
         .build();
     ButtonWidget::new(
@@ -1183,11 +1663,11 @@ fn button(
 /// fill under the pointer"); disabled, the disabled button's background. A
 /// portal accent replaces neither frame colour (0.7.2's `apply_kde_accent`
 /// leaves both fields on kdeglobals' colours).
-fn indicator(c: &SchemeConstants, layout: &LayoutMetrics) -> RuleBuilder<PartStyle, PartProp> {
+fn indicator(c: &SchemeColors, layout: &LayoutMetrics) -> RuleBuilder<PartStyle, PartProp> {
     RuleBuilder::with_exclusive(PartStyle::default(), DISABLED_HOVER)
         .base([
-            fill(color(c.button_background)),
-            outline(layout, color(c.checkbox_frame)),
+            fill(c.button_background),
+            outline(layout, c.checkbox_frame),
             // `checkbox.border.shadow_enabled`: platform-facts.md (§2.5): no shadow
             PartProp::Shadows(None),
             PartProp::MinSize([Some(CHECKBOX_INDICATOR_SIZE); 2]),
@@ -1196,17 +1676,17 @@ fn indicator(c: &SchemeConstants, layout: &LayoutMetrics) -> RuleBuilder<PartSty
         .rule(
             RuleSelector::on(WidgetState::CHECKED),
             [
-                fill(color(c.checkbox_checked)),
-                outline(layout, color(c.selection_background)),
+                fill(c.checkbox_checked),
+                outline(layout, c.selection_background),
             ],
         )
         .rule(
             RuleSelector::on(WidgetState::HOVER),
-            [outline(layout, color(c.accent))],
+            [outline(layout, c.accent)],
         )
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
-            [fill(color(c.button_disabled_background))],
+            [fill(c.button_disabled_background)],
         )
 }
 
@@ -1214,11 +1694,11 @@ fn indicator(c: &SchemeConstants, layout: &LayoutMetrics) -> RuleBuilder<PartSty
 /// disabled, the check box's own disabled text colour, which the system's
 /// disabled text does not replace (0.7.2's reader leaves
 /// `checkbox.disabled_text_color` on the preset's value).
-fn check_label(c: &SchemeConstants, typography: &Typography) -> RuleSet<TextStyle, TextProp> {
+fn check_label(c: &SchemeColors, typography: &Typography) -> RuleSet<TextStyle, TextProp> {
     RuleBuilder::new(label(&typography.body, None))
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
-            [TextProp::Color(color(c.checkbox_disabled_foreground))],
+            [TextProp::Color(c.checkbox_disabled_foreground)],
         )
         .build()
 }
@@ -1226,16 +1706,14 @@ fn check_label(c: &SchemeConstants, typography: &Typography) -> RuleSet<TextStyl
 /// The check box: [`indicator`] with the default corners, a check mark in
 /// the view's text colour, [`check_label`].
 fn checkbox(
-    c: &SchemeConstants,
+    c: &SchemeColors,
     roles: &ColorRoles,
     typography: &Typography,
     layout: &LayoutMetrics,
 ) -> CheckboxWidget {
     let checkmark = RuleBuilder::new(IconStyle::default())
-        .base([
-            IconProp::Color(color(c.view_foreground)),
-            IconProp::StrokeWidth(Some(CHECK_MARK_STROKE_WIDTH)),
-        ])
+        .base(roles.view.foreground.map(IconProp::Color))
+        .base([IconProp::StrokeWidth(Some(CHECK_MARK_STROKE_WIDTH))])
         .build();
     CheckboxWidget::new(
         WidgetOrigin::Native,
@@ -1251,14 +1729,14 @@ fn checkbox(
 /// The radio button: [`indicator`] (0.7.2 states no corners for it), a dot
 /// in the view's text colour (`checkbox.indicator_color`), [`check_label`].
 fn radio(
-    c: &SchemeConstants,
+    c: &SchemeColors,
     roles: &ColorRoles,
     typography: &Typography,
     layout: &LayoutMetrics,
 ) -> RadioWidget {
     let dot = RuleBuilder::new(PartStyle::default())
+        .base(roles.view.foreground.map(fill))
         .base([
-            fill(color(c.view_foreground)),
             PartProp::MinSize([Some(RADIO_DOT_SIZE); 2]),
             PartProp::MaxSize([Some(RADIO_DOT_SIZE); 2]),
         ])
@@ -1285,7 +1763,7 @@ fn radio(
 /// item_font.color"); headers in Button's colours. 0.7.2 states no row or
 /// header height ("sizes to content").
 fn list(
-    c: &SchemeConstants,
+    c: &SchemeColors,
     roles: &ColorRoles,
     typography: &Typography,
     layout: &LayoutMetrics,
@@ -1304,46 +1782,45 @@ fn list(
             LIST_ROW_MARGIN_VERTICAL,
             LIST_ROW_MARGIN_HORIZONTAL,
         ))])
-        .rule(alternate, [fill(color(c.list_alternate_row))])
+        .rule(alternate, [fill(c.list_alternate_row)])
         .rule(
             RuleSelector::on(WidgetState::HOVER),
-            [fill(color(c.list_row_hover))],
+            [fill(c.list_row_hover)],
         )
         // `list.hover_border_color`: "the 1 px outline of a hovered, unselected row".
         .rule(
             RuleSelector::on(WidgetState::HOVER).except(WidgetState::SELECTED),
-            [outline(layout, color(c.list_row_hover_frame))],
+            [outline(layout, c.list_row_hover_frame)],
         )
         .rule(
             RuleSelector::on(WidgetState::SELECTED),
             [fill(roles.selection.background)],
         )
         .build();
-    let item_label = RuleBuilder::new(label(&typography.body, Some(color(c.view_foreground))))
+    let item_label = RuleBuilder::new(label(&typography.body, roles.view.foreground))
         .rule(
             RuleSelector::on(WidgetState::SELECTED),
             [TextProp::Color(roles.selection.foreground)],
         )
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
-            [TextProp::Color(color(c.view_disabled_foreground))],
+            [TextProp::Color(c.view_disabled_foreground)],
         )
         .build();
     let header = RuleBuilder::with_exclusive(PartStyle::default(), PRESSED_HOVER)
-        .base([fill(color(c.button_background))])
+        .base([fill(c.button_background)])
         .rule(
             RuleSelector::on(WidgetState::HOVER),
-            [fill(color(c.list_header_hover))],
+            [fill(c.list_header_hover)],
         )
         .rule(
             RuleSelector::on(WidgetState::PRESSED),
-            [fill(color(c.list_header_pressed))],
+            [fill(c.list_header_pressed)],
         )
         .build();
-    let header_label =
-        RuleBuilder::new(label(&typography.body, Some(color(c.button_foreground)))).build();
+    let header_label = RuleBuilder::new(label(&typography.body, Some(c.button_foreground))).build();
     let header_separator = RuleBuilder::new(PartStyle::default())
-        .base([fill(color(c.list_header_separator))])
+        .base([fill(c.list_header_separator)])
         .build();
     ListWidget::new(
         WidgetOrigin::Native,
@@ -1353,7 +1830,7 @@ fn list(
         header,
         header_label,
         header_separator,
-        color(c.list_grid),
+        c.list_grid,
     )
 }
 
@@ -1362,7 +1839,7 @@ fn list(
 /// hovered one serves the pressed one too (`scrollbar.thumb_active_color`:
 /// platform-facts.md (§2.8), "no pressed colour of its own, the hovered
 /// one").
-fn scrollbar(c: &SchemeConstants) -> ScrollbarWidget {
+fn scrollbar(c: &SchemeColors) -> ScrollbarWidget {
     let exact = |builder: RuleBuilder<PartStyle, PartProp>, thickness: f32| {
         builder
             .rule(
@@ -1381,13 +1858,13 @@ fn scrollbar(c: &SchemeConstants) -> ScrollbarWidget {
             )
     };
     let track = exact(
-        RuleBuilder::new(PartStyle::default()).base([fill(color(c.scrollbar_track))]),
+        RuleBuilder::new(PartStyle::default()).base([fill(c.scrollbar_track)]),
         SCROLLBAR_GROOVE_WIDTH,
     )
     .build();
     let thumb = exact(
         RuleBuilder::with_exclusive(PartStyle::default(), PRESSED_HOVER)
-            .base([fill(color(c.scrollbar_thumb))]),
+            .base([fill(c.scrollbar_thumb)]),
         SCROLLBAR_THUMB_WIDTH,
     )
     .rules(
@@ -1395,7 +1872,7 @@ fn scrollbar(c: &SchemeConstants) -> ScrollbarWidget {
             RuleSelector::on(WidgetState::HOVER),
             RuleSelector::on(WidgetState::PRESSED),
         ],
-        [fill(color(c.scrollbar_thumb_hover))],
+        [fill(c.scrollbar_thumb_hover)],
     )
     .build();
     ScrollbarWidget::new(
@@ -1407,34 +1884,33 @@ fn scrollbar(c: &SchemeConstants) -> ScrollbarWidget {
     )
 }
 
-/// The tooltip: its own colours in the default frame (0.7.2: `tooltip.border`
-/// is `defaults.border` where unstated) with ToolTip_FrameWidth's padding.
-fn tooltip(
-    c: &SchemeConstants,
-    roles: &ColorRoles,
-    typography: &Typography,
-    layout: &LayoutMetrics,
-) -> TooltipWidget {
+/// The tooltip: the tooltip surface's colours in the default frame (0.7.2:
+/// `tooltip.border` is `defaults.border` where unstated) with
+/// ToolTip_FrameWidth's padding.
+fn tooltip(roles: &ColorRoles, typography: &Typography, layout: &LayoutMetrics) -> TooltipWidget {
     let mut panel = PartStyle::default();
     let border = roles.window.border.map(|border| outline(layout, border));
-    for prop in [
-        fill(color(c.tooltip_background)),
-        corners(layout),
-        PartProp::Padding(Edges::symmetric(
-            TOOLTIP_PADDING_VERTICAL,
-            TOOLTIP_PADDING_HORIZONTAL,
-        )),
-        PartProp::MaxSize([Some(TOOLTIP_MAX_WIDTH), None]),
-    ]
-    .into_iter()
-    .chain(border)
+    for prop in roles
+        .tooltip
+        .background
+        .map(fill)
+        .into_iter()
+        .chain([
+            corners(layout),
+            PartProp::Padding(Edges::symmetric(
+                TOOLTIP_PADDING_VERTICAL,
+                TOOLTIP_PADDING_HORIZONTAL,
+            )),
+            PartProp::MaxSize([Some(TOOLTIP_MAX_WIDTH), None]),
+        ])
+        .chain(border)
     {
         panel.apply(&prop);
     }
     TooltipWidget::new(
         WidgetOrigin::Native,
         panel,
-        label(&typography.body, Some(color(c.tooltip_foreground))),
+        label(&typography.body, roles.tooltip.foreground),
     )
 }
 

@@ -28,6 +28,13 @@ pub(crate) enum KdeRoleKind {
     /// A foreground role.
     Foreground,
     /// A decoration role.
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "a role kind of the vector table; no colour of kde-breeze is a decoration role's"
+        )
+    )]
     Decoration,
     /// A background role.
     Background,

@@ -1,7 +1,103 @@
 use super::*;
 
 use crate::next::preset::Theme;
-use crate::next::query::{ButtonQuery, ListQuery, StyleQuery};
+use crate::next::query::{ButtonQuery, Contrast, ListQuery, StyleQuery};
+use crate::next::reader::{OsSelectionColors, SystemOverrides};
+
+const SELECTION: Color = Color::rgb(0.0, 0.0, 1.0);
+const DECORATION_FOCUS: Color = Color::rgb(0.0, 1.0, 0.0);
+const PORTAL_ACCENT: Color = Color::rgb(1.0, 0.0, 0.0);
+
+/// The light theme of [`system`].
+fn with_system(accent: Option<Color>) -> ResolvedTheme {
+    Theme::preset(Preset::KdeBreeze)
+        .with_system_overrides(system(accent))
+        .resolve(&ThemeContext::light())
+}
+
+/// A light system stating a selection colour and a decoration focus colour,
+/// with `accent` as its portal accent.
+fn system(accent: Option<Color>) -> SystemOverrides {
+    let os = OsColors {
+        selection: Some(OsSelectionColors {
+            background: Some(SELECTION),
+            ..OsSelectionColors::default()
+        }),
+        kde_decoration_focus: Some(DECORATION_FOCUS),
+        ..OsColors::default()
+    };
+    SystemOverrides {
+        color_schemes: vec![((Scheme::Light, Contrast::Normal), os)],
+        scheme: Some(Scheme::Light),
+        accent,
+        ..SystemOverrides::default()
+    }
+}
+
+#[test]
+fn a_portal_accent_replaces_the_accent_and_the_selection_but_not_the_kde_frames() {
+    for (accent, fill, selection) in [
+        (None, DECORATION_FOCUS, SELECTION),
+        (Some(PORTAL_ACCENT), PORTAL_ACCENT, PORTAL_ACCENT),
+    ] {
+        let theme = with_system(accent);
+        assert_eq!(theme.colors.accent.fill, fill, "{accent:?}");
+        assert_eq!(theme.colors.selection.background, selection, "{accent:?}");
+        assert_eq!(theme.colors.text_selection.background, selection);
+        assert_eq!(theme.colors.focus_ring, focus_ring_of(selection));
+        assert_eq!(
+            theme.list.row(ListQuery::new(WidgetState::SELECTED)).fill,
+            Paint::Solid(selection)
+        );
+        assert_eq!(
+            theme.button.body(ButtonQuery::primary()).fill,
+            Paint::Solid(fill)
+        );
+        // The frames 0.7.2 keeps on kdeglobals' colours.
+        let stroke = |style: PartStyle| match style.stroke {
+            Stroke::Uniform { color, .. } => Some(color),
+            _ => None,
+        };
+        for state in [
+            WidgetState::HOVER,
+            WidgetState::PRESSED,
+            WidgetState::FOCUS_VISIBLE,
+        ] {
+            assert_eq!(
+                stroke(theme.button.body(ButtonQuery::new(state))),
+                Some(SELECTION),
+                "{accent:?} {state:?}"
+            );
+        }
+        assert_eq!(
+            stroke(theme.checkbox.indicator(WidgetState::CHECKED)),
+            Some(SELECTION)
+        );
+        assert_eq!(
+            stroke(theme.checkbox.indicator(WidgetState::HOVER)),
+            Some(DECORATION_FOCUS)
+        );
+        assert_eq!(
+            stroke(theme.radio.indicator(WidgetState::HOVER)),
+            Some(DECORATION_FOCUS)
+        );
+    }
+}
+
+#[test]
+fn system_colours_apply_only_to_their_scheme_and_contrast() {
+    let [light, dark] = both_schemes();
+    assert_ne!(with_system(None).colors, light.colors);
+    for (ctx, static_theme) in [
+        (ThemeContext::dark(), dark),
+        (ThemeContext::light().with_contrast(Contrast::High), light),
+    ] {
+        let theme = Theme::preset(Preset::KdeBreeze)
+            .with_system_overrides(system(None))
+            .resolve(&ctx);
+        assert_eq!(theme.colors, static_theme.colors, "{ctx:?}");
+    }
+}
 
 /// The resolved `kde-breeze` of both schemes, from its constants.
 fn both_schemes() -> [ResolvedTheme; 2] {

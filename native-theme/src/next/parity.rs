@@ -1117,7 +1117,14 @@ fn expected_skip(key: &str) -> Option<compare::Skip> {
 /// resolved theme, with the rows written by hand added from the `Resolved` wrapper and from `Theme.layout`,
 /// each in the form `serde_json` gives its field's type (`Resolved.mode` as the variant's name).
 fn old_kde_breeze(mode: ColorMode) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
-    let theme = Theme::preset(PRESET)?;
+    old_resolved(&Theme::preset(PRESET)?, mode)
+}
+
+/// 0.7.2's `theme` resolved for `mode` as the comparator reads it (see [`old_kde_breeze`]).
+fn old_resolved(
+    theme: &Theme,
+    mode: ColorMode,
+) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
     let resolved = theme.resolve_with(mode, &ResolutionContext::for_tests())?;
     let mut old = serde_json::to_value(&resolved.variant)?;
     let map = old
@@ -1148,12 +1155,18 @@ fn old_kde_breeze(mode: ColorMode) -> Result<serde_json::Value, Box<dyn std::err
 /// The totals of the rows in the ported groups (`ported`) or in the others: rows, compared, equal,
 /// mismatching, skipped.
 fn group_totals(report: &compare::Report, ported: bool) -> [usize; 5] {
+    totals_in(report, PORTED_GROUPS, ported)
+}
+
+/// The totals of the rows in `groups` (`inside`) or in the others: rows, compared, equal, mismatching,
+/// skipped.
+fn totals_in(report: &compare::Report, groups: &[&str], inside: bool) -> [usize; 5] {
     let rows: Vec<&compare::Outcome> = report
         .rows
         .iter()
         .filter(|row| {
             let group = row.key.split('.').next().unwrap_or("");
-            PORTED_GROUPS.contains(&group) == ported
+            groups.contains(&group) == inside
         })
         .map(|row| &row.outcome)
         .collect();
@@ -1210,6 +1223,104 @@ fn model_parity_kde_breeze() -> TestResult {
             .filter(|(_, rules)| !rules.is_empty())
             .collect();
         assert!(dead.is_empty(), "{mode:?}: dead rules {dead:?}");
+    }
+    Ok(())
+}
+
+// Reader parity (plan, section 1, rule 2) on the KDE fixtures: the theme the 0.7.2 KDE reader path produces
+// from a kdeglobals file, and the kde-breeze builder fed the same file as `SystemOverrides`.
+// ---------------------------------------------------------------------------------------------------------
+
+/// The groups of the table whose rows `reader_parity_kde` asserts equal on every fixture so far: those
+/// that carry the system's colours.
+#[cfg(all(target_os = "linux", feature = "kde"))]
+const READER_ASSERTED_GROUPS: &[&str] = &[
+    "defaults",
+    "button",
+    "checkbox",
+    "list",
+    "scrollbar",
+    "tooltip",
+];
+
+/// The number of files in `tests/fixtures/kde/`: breeze-dark.ini, breeze-index.theme, breeze-light.ini,
+/// custom-accent.ini, high-dpi.ini, malformed-values.ini, minimal.ini, missing-groups.ini.
+#[cfg(all(target_os = "linux", feature = "kde"))]
+const KDE_FIXTURES: usize = 8;
+
+/// The 0.7.2 KDE reader path on the kdeglobals `content`, as the comparator reads it, and the name it gives
+/// the theme: the reader's pure function (`kde::from_kde_content_pure`) at the font DPI the reader states,
+/// its theme merged over `kde-breeze` as the pipeline merges a reader's result (`pipeline.rs`, `replay`),
+/// resolved for the reader's scheme with the rows written by hand added as [`old_kde_breeze`] adds them,
+/// and the reader's `accessibility` block at its key.
+#[cfg(all(target_os = "linux", feature = "kde"))]
+fn old_kde_reader(
+    content: &str,
+) -> Result<(serde_json::Value, String), Box<dyn std::error::Error>> {
+    let (reader, _, accessibility) =
+        crate::kde::from_kde_content_pure(content, Some(crate::detect::LINUX_FONT_DPI))?;
+    let mode = if reader.dark.is_some() {
+        ColorMode::Dark
+    } else {
+        ColorMode::Light
+    };
+    let mut merged = Theme::preset(PRESET)?;
+    merged.merge(&reader);
+    let mut old = old_resolved(&merged, mode)?;
+    let map = old
+        .as_object_mut()
+        .ok_or("the resolved theme does not serialise as an object")?;
+    map.insert(
+        "accessibility".to_owned(),
+        serde_json::json!({
+            "text_scaling_factor": accessibility.text_scaling_factor,
+            "reduce_motion": accessibility.reduce_motion,
+            "high_contrast": accessibility.high_contrast,
+            "reduce_transparency": accessibility.reduce_transparency,
+        }),
+    );
+    Ok((old, reader.name.to_string()))
+}
+
+/// Reader parity of the kde-breeze builder: for every file of `tests/fixtures/kde/`, the 0.7.2 reader
+/// path ([`old_kde_reader`]) against `Theme::preset(Preset::KdeBreeze)` given the file's
+/// `SystemOverrides` and resolved for the file's context, over the table of homes, the snapshot's context
+/// compared. Zero mismatches in the groups asserted so far, the others counted; the resolved theme's name
+/// is the reader's.
+#[cfg(all(target_os = "linux", feature = "kde"))]
+#[test]
+fn reader_parity_kde() -> TestResult {
+    use crate::next::preset::{Preset, Theme as NextTheme};
+    use crate::next::reader::kde::snapshot_from_kdeglobals;
+
+    let table: Table = toml::from_str(HOMES)?;
+    let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/kde");
+    let mut paths = std::fs::read_dir(&dir)?
+        .map(|entry| entry.map(|e| e.path()))
+        .collect::<Result<Vec<_>, _>>()?;
+    paths.sort();
+    assert_eq!(paths.len(), KDE_FIXTURES, "the files of {dir:?}");
+    for path in &paths {
+        let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+        let content = std::fs::read_to_string(path)?;
+        let (old, old_name) = old_kde_reader(&content)?;
+        let mut ini = crate::kde::create_kde_parser();
+        crate::kde::read_kconfig(&mut ini, &content);
+        let snapshot = snapshot_from_kdeglobals(&ini, None, None);
+        let new = NextTheme::preset(Preset::KdeBreeze)
+            .with_system_overrides(snapshot.overrides.clone())
+            .resolve(&snapshot.context);
+        let report = compare::compare(&old, &new, Some(&snapshot.context), Preset::KdeBreeze)?;
+        println!("{name}: {report}");
+        assert_eq!(report.totals.rows, table.row.len(), "{name}");
+        assert_eq!(&*new.name, old_name, "{name}");
+        let asserted = totals_in(&report, READER_ASSERTED_GROUPS, true);
+        let counted = totals_in(&report, READER_ASSERTED_GROUPS, false);
+        println!(
+            "{name}: [rows, compared, equal, mismatching, skipped] in the asserted groups {asserted:?}, \
+             in the others {counted:?}"
+        );
+        assert_eq!(asserted[3], 0, "{name}\n{report}");
     }
     Ok(())
 }

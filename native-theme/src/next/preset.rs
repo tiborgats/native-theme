@@ -205,17 +205,14 @@ fn build(preset: Preset, context: ThemeContext, inputs: &ResolveInputs<'_>) -> R
 /// The spec's `palette: Option<&'a Palette>` field comes with the `Palette`
 /// type (plan, M1).
 #[derive(Clone, Copy, Debug)]
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "read by the kde-breeze builder's system path, the next task of M0"
-    )
-)]
 pub(crate) struct ResolveInputs<'a> {
     /// The system's settings, where read.
     pub(crate) system: Option<&'a SystemOverrides>,
     /// An explicit accent.
+    #[cfg_attr(
+        not(test),
+        expect(dead_code, reason = "read once `Theme::with_accent` lands (plan, M1)")
+    )]
     pub(crate) accent: Option<Color>,
 }
 
