@@ -16,18 +16,19 @@
 //! Defined by the preset (spec §1, "Axis values without data"): the variant
 //! `ButtonVariant::Primary` (0.7.2's `primary_*` fields), a list's alternate
 //! rows (`ListKind::alternate`) and a table's row corners
-//! (`ListVariant::Table`), the scroll bar's two orientations, no control size
-//! and the contrast level `Normal` only; a query for anything else returns the
-//! part's base style.
+//! (`ListVariant::Table`), the two orientations of the scroll bar and of the
+//! slider's groove, no control size and the contrast level `Normal` only; a
+//! query for anything else returns the part's base style. A maximized or
+//! full-screen window has no data of its own: its frame and title bar are
+//! the normal window's.
 //!
 //! A part's exclusive state group names only the flags that part has a rule
 //! for: a state without data of its own returns what the query returns
 //! without that state, so a flag the part does not style removes no other.
-//! The groups: the button's body `DISABLED, PRESSED, HOVER`; the check box's
-//! and the radio button's indicator `DISABLED, HOVER`; the list's header and
-//! the scroll bar's handle `PRESSED, HOVER`; every other part (the labels,
-//! the check mark, the dot, the list's container, row and header separator,
-//! the scroll bar's groove) none.
+//! The groups: the button's body, the link's label and the slider's handle
+//! `DISABLED, PRESSED, HOVER`; the check box's and the radio button's
+//! indicator and the text field's frame `DISABLED, HOVER`; the list's header
+//! and the scroll bar's handle `PRESSED, HOVER`; every other part none.
 //!
 //! Where two rules can both match, the later one wins (spec §3, "State
 //! combinations a source does not state"); the precedences, each with its
@@ -51,7 +52,29 @@
 //!   one colour whatever the view's focus (`scrollbar.thumb_hover_color`:
 //!   platform-facts.md (§2.8)). In the view that has the focus no source
 //!   states the handle with the pointer on the bar but off the handle: that
-//!   query (`HOVER_WITHIN`) returns the focused view's handle at rest.
+//!   query (`HOVER_WITHIN`) returns the focused view's handle at rest;
+//! - the text field's frame: the focus outline over the hover outline, as
+//!   Breeze's focus colour "takes precedence over hover" (`focus_border_color`:
+//!   platform-facts.md (§2.4));
+//! - the link's label: the pressed and the hovered colour over the visited
+//!   one and the disabled colour over all, as 0.7.2's egui connector letters
+//!   a link (disabled, then pressed, then hovered, then visited:
+//!   `connectors/native-theme-egui-widgets/src/links.rs`);
+//! - the slider's handle: the hover outline, which the pressed handle keeps,
+//!   over the focus outline (`slider.thumb_border_color`'s citation: "with the
+//!   focus, hover winning");
+//! - the menu's item: the pressed fill over the hovered one, keeping the
+//!   hovered item's outline, which 0.7.2 has no pressed field for; the
+//!   label's disabled colour over its pressed one, as on the button's label;
+//! - the menu bar's title: the open title's fill over the hovered title's
+//!   (`menu.bar_hover_background`'s citation: "fills a hovered title with
+//!   hoverColor …, an open one with focusColor");
+//! - the tab: the selected tab's fill over the hovered tab's, as the hover
+//!   fill replaces "an unselected tab's" (`tab.hover_background`:
+//!   platform-facts.md (§2.11)).
+//!
+//! An inactive window (`ThemeContext::window_active` false) has the `[WM]`
+//! inactive title bar and title colours.
 //!
 //! Issue #4's states (spec §5, "Issue #4's leftovers and their homes"):
 //! - `L2`, a hovered row in a view without the focus, is derived: E5's hover
@@ -105,7 +128,7 @@ use crate::IconSet;
 use crate::next::color::Color;
 use crate::next::geometry::{Corners, Edges, Stroke};
 use crate::next::icons::{IconSizes, IconThemeSpec};
-use crate::next::layout::LayoutMetrics;
+use crate::next::layout::{LayoutMetrics, TabIndicatorSide};
 use crate::next::motion::{CaretSpec, MotionTokens, UiTimings};
 use crate::next::paint::Paint;
 use crate::next::platform::KdeRoleKind;
@@ -126,8 +149,8 @@ use crate::next::rules::{
     TextProp,
 };
 use crate::next::style::{
-    FocusIndicator, FocusKind, FocusTrigger, FontSize, FontStyle, IconStyle, PartStyle, TextStated,
-    TextStyle,
+    DecorationKind, FocusIndicator, FocusKind, FocusTrigger, FontSize, FontStyle, IconStyle,
+    PartStyle, TextDecoration, TextStated, TextStyle,
 };
 use crate::next::typography::{TextRendering, Typography};
 use crate::next::widgets::{
@@ -217,6 +240,23 @@ struct SchemeColors {
     /// `[Colors:View]` ForegroundInactive, where the system states it.
     view_foreground_muted: Option<Color>,
     link_visited: Option<Color>,
+    decoration_hover: Color,
+    placeholder: Color,
+    view_disabled_background: Color,
+    link_disabled: Color,
+    slider_disabled: Color,
+    progress_fill: Color,
+    menu_background: Color,
+    menu_hover: Color,
+    menu_hover_frame: Color,
+    tab_background: Color,
+    tab_selected_background: Color,
+    tab_text: Color,
+    tab_frame: Color,
+    tab_hover: Color,
+    title_bar_background: Color,
+    title_bar_inactive_background: Color,
+    title_bar_inactive_foreground: Color,
 }
 
 /// The light scheme's constants.
@@ -229,14 +269,21 @@ const LIGHT: SchemeColors = SchemeColors {
     // `defaults.danger_text_color`, `warning_text_color`, `success_text_color`,
     // `info_text_color`: platform-facts.md (§2.1.4): [Colors:Window] ForegroundNormal 35,38,41
     // (BreezeLight.colors:137, breeze v6.7.5)
+    // `menu.font.color`: platform-facts.md (§2.6): [Colors:Window] ForegroundNormal 35,38,41
+    // (BreezeLight.colors:137, breeze v6.7.5)
+    // `menu.hover_text_color`: platform-facts.md (§2.6): [Colors:Window] ForegroundNormal
+    // 35,38,41 (BreezeLight.colors:137, breeze v6.7.5): a hovered item keeps the window text;
+    // only a pressed one is HighlightedText (breezestyle.cpp:6155 at breeze f0b1d75; measured)
     window_foreground: srgb8(0x2326_29ff),
     // `defaults.muted_color`: platform-facts.md (§2.1.3): [Colors:Window] ForegroundInactive
     // 112,125,138 (BreezeLight.colors:133, breeze v6.7.5)
     window_foreground_muted: srgb8(0x707d_8aff),
     // `defaults.border.color`: 0.7.2 kde-breeze.toml (uncited)
+    // `slider.disabled_fill_color`, `splitter.hover_color`: 0.7.2 kde-breeze.toml (uncited)
     window_border: srgb8(0xbcc0_bfff),
     // `defaults.surface_color`: platform-facts.md (§2.1.3): [Colors:View] BackgroundNormal
     // 255,255,255 (BreezeLight.colors:115, breeze v6.7.5)
+    // `input.background_color`: 0.7.2 kde-breeze.toml (uncited)
     view_background: srgb8(0xffff_ffff),
     // `defaults.selection_background`: platform-facts.md (§2.1.3): [Colors:Selection]
     // BackgroundNormal 61,174,233 (BreezeLight.colors:87, breeze v6.7.5)
@@ -247,10 +294,14 @@ const LIGHT: SchemeColors = SchemeColors {
     // `button.focus_border_color`: 0.7.2 kde-breeze.toml (uncited)
     // `checkbox.border.color`: platform-facts.md (§2.5): checked, palette.highlight(),
     // [Colors:Selection] BackgroundNormal
+    // `tab.active_indicator_color`: platform-facts.md (§2.11): renderTabBarTab fills a
+    // TabBar_ActiveEffectSize 3 strip of QPalette::Highlight along a North tab's top edge
+    // (breezehelper.cpp:1471-1487, breezemetrics.h:137)
     selection_background: srgb8(0x3dae_e9ff),
     // `defaults.selection_text_color`, also `defaults.accent_text_color`: platform-facts.md
     // (§2.1.3): [Colors:Selection] ForegroundNormal 255,255,255 (BreezeLight.colors:95, breeze
     // v6.7.5)
+    // `menu.active_text_color`, `menu.bar_hover_text_color`: 0.7.2 kde-breeze.toml (uncited)
     selection_foreground: srgb8(0xffff_ffff),
     // `defaults.selection_inactive_background`: platform-facts.md (§2.1.3):
     // selection_inactive_background, KColorUtils::tint([Colors:Window] BackgroundNormal
@@ -266,6 +317,15 @@ const LIGHT: SchemeColors = SchemeColors {
     // DecorationFocus 61,174,233 (BreezeLight.colors:116, breeze v6.7.5): under the pointer the
     // box's or radio's outline is stroked in it, checked or not (breezehelper.cpp:895-907,
     // :1041-1054 at breeze f0b1d75)
+    // `input.focus_border_color`: platform-facts.md (§2.4): [Colors:View] DecorationFocus
+    // 61,174,233 (BreezeLight.colors:116)
+    // `slider.thumb_focus_border_color`, `menu.bar_open_background`: 0.7.2 kde-breeze.toml
+    // (uncited)
+    // `menu.active_background`: platform-facts.md (§2.6): active_background, active_text_color, a
+    // pressed item is the opaque focusColor(), [Colors:View] DecorationFocus 61,174,233
+    // (BreezeLight.colors:116), outlined in it, lettered HighlightedText, [Colors:Selection]
+    // ForegroundNormal 255,255,255 (BreezeLight.colors:95) (breezestyle.cpp:6021-6029, :6155 at
+    // breeze f0b1d75; measured)
     accent: srgb8(0x3dae_e9ff),
     // `defaults.focus_ring_color`: platform-facts.md (§2.1.5): focus_ring_color: Breeze's
     // keyboard focus band, [Colors:Selection] BackgroundNormal 61,174,233
@@ -276,6 +336,8 @@ const LIGHT: SchemeColors = SchemeColors {
     link: srgb8(0x2980_b9ff),
     // `defaults.disabled_text_color`: platform-facts.md (§2.1.3): Disabled [Colors:Window]
     // ForegroundNormal, KColorScheme 6.31.0 [ColorEffects:Disabled]
+    // `menu.disabled_text_color`: platform-facts.md (§2.1.6): Disabled [Colors:Window]
+    // ForegroundNormal, KColorScheme 6.31.0
     disabled_text: srgb8(0xa0a1_a3ff),
     // `defaults.shadow_color`: platform-facts.md (§2.1.3): (none) in Breeze, the preset's own
     // #00000040
@@ -304,6 +366,9 @@ const LIGHT: SchemeColors = SchemeColors {
     // 252,252,252 (BreezeLight.colors:31, breeze v6.7.5): Breeze fills a QHeaderView section with
     // QPalette::Button and never reads the Header set for it (breezestyle.cpp:6827, :6838-6839 at
     // breeze f0b1d75; measured)
+    // `slider.thumb_color`: platform-facts.md (§2.9): Breeze fills the handle with
+    // QPalette::Button, [Colors:Button] BackgroundNormal #fcfcfc (breezestyle.cpp:8122,
+    // breezehelper.cpp:1191-1195; BreezeLight.colors:31, breeze v6.7.5)
     button_background: srgb8(0xfcfc_fcff),
     // `button.font.color`: platform-facts.md (§2.3): [Colors:Button] ForegroundNormal 35,38,41
     // (BreezeLight.colors:39, breeze v6.7.5)
@@ -319,6 +384,15 @@ const LIGHT: SchemeColors = SchemeColors {
     // mix([Colors:Button] BackgroundNormal 252,252,252 (BreezeLight.colors:31), [Colors:Button]
     // ForegroundNormal 35,38,41 (BreezeLight.colors:39), frameContrast 0.2)
     // (breezehelper.cpp:697-699 at breeze f0b1d75; measured)
+    // `slider.thumb_border_color`: platform-facts.md (§2.9): thumb_border_color,
+    // thumb_border_line_width, thumb_hover_border_color, thumb_focus_border_color, the handle is
+    // outlined PenWidth::Frame 1 wide in the plain frame at rest, mix([Colors:Button]
+    // BackgroundNormal 252,252,252 (BreezeLight.colors:31), [Colors:Button] ForegroundNormal
+    // 35,38,41 (BreezeLight.colors:39), frameContrast 0.2), in hoverColor(), [Colors:View]
+    // DecorationHover 61,174,233 (BreezeLight.colors:117), under the pointer, and in
+    // focusColor(), [Colors:View] DecorationFocus 61,174,233 (BreezeLight.colors:116), with the
+    // focus, hover winning (breezestyle.cpp:8122-8128, breezehelper.cpp:248-275 at breeze
+    // f0b1d75; measured)
     button_frame: srgb8(0xd1d1_d2ff),
     // `button.checked_background`: platform-facts.md (§2.3): a checked button is
     // KColorUtils::mix(Button #fcfcfc, ButtonText #232629, 0.125), lettered ButtonText
@@ -350,6 +424,9 @@ const LIGHT: SchemeColors = SchemeColors {
     checkbox_checked: srgb8(0xc2e4_f6ff),
     // `checkbox.unchecked_border_color`: platform-facts.md (§2.5): separatorColor(),
     // mix(Window, WindowText, 0.2)
+    // `menu.separator_color`: platform-facts.md (§2.6): separatorColor(), mix(Window #eff0f1,
+    // WindowText #232629, frameContrast 0.2) (breezestyle.cpp:5984, breezehelper.cpp:329-332 at
+    // breeze f0b1d75; measured)
     checkbox_frame: srgb8(0xc6c8_c9ff),
     // `checkbox.indicator_color`: platform-facts.md (§2.5): palette.text(), [Colors:View]
     // ForegroundNormal
@@ -358,6 +435,7 @@ const LIGHT: SchemeColors = SchemeColors {
     // `list.hover_text_color`: platform-facts.md (§2.15): hover_text_color ← item_font.color,
     // [Colors:View] ForegroundNormal 35,38,41 (BreezeLight.colors:123): a hovered row is lettered
     // QPalette::Text
+    // `input.font.color`: 0.7.2 kde-breeze.toml (uncited)
     view_foreground: srgb8(0x2326_29ff),
     // `checkbox.disabled_text_color`: 0.7.2 kde-breeze.toml (uncited)
     checkbox_disabled_foreground: srgb8(0xa0a1_a3ff),
@@ -378,6 +456,8 @@ const LIGHT: SchemeColors = SchemeColors {
     // [Colors:Window] ForegroundNormal 35,38,41 (BreezeLight.colors:137) at alpha frameContrast
     // 0.2, the line on a section's trailing edge and along the header's bottom, none after the
     // last or a lone section (breezestyle.cpp:6803-6893 at breeze f0b1d75; measured)
+    // `progress_bar.border.color`: platform-facts.md (§2.10): WindowText #232629 at alpha
+    // frameContrast 0.2; PenWidth::Frame 1.001, rounded as defaults.border.line_width_px is
     list_header_separator: srgb8(0x2326_2933),
     // `list.hover_background`: platform-facts.md (§2.15): [Colors:Selection] BackgroundNormal
     // 61,174,233 (BreezeLight.colors:87, breeze v6.7.5) at alpha Blend_Value 0.3, a focused
@@ -390,6 +470,7 @@ const LIGHT: SchemeColors = SchemeColors {
     list_row_hover_frame: srgb8(0x3dae_e9cc),
     // `list.disabled_text_color`: platform-facts.md (§2.1.6): Disabled [Colors:View]
     // ForegroundNormal, KColorScheme 6.31.0
+    // `input.disabled_text_color`: 0.7.2 kde-breeze.toml (uncited)
     view_disabled_foreground: srgb8(0xaaab_acff),
     // `list.grid_color`: platform-facts.md (§2.15): QPalette::Mid, KColorScheme's MidShade of
     // [Colors:Window] BackgroundNormal 239,240,241 (BreezeLight.colors:129, breeze v6.7.5) at
@@ -431,6 +512,68 @@ const LIGHT: SchemeColors = SchemeColors {
     // `link.visited_text_color`: platform-facts.md (§2.28): [Colors:View] ForegroundVisited
     // 155,89,182 (BreezeLight.colors:125, breeze v6.7.5)
     link_visited: Some(srgb8(0x9b59_b6ff)),
+    // `input.hover_border_color`: platform-facts.md (§2.4): [Colors:View] DecorationHover
+    // 61,174,233 (BreezeLight.colors:117)
+    // `slider.thumb_hover_border_color`: 0.7.2 kde-breeze.toml (uncited)
+    // `menu.bar_hover_background`: platform-facts.md (§2.6): bar_hover_background,
+    // bar_open_background, bar_hover_text_color, drawMenuBarItemControl fills a hovered title
+    // with hoverColor, [Colors:View] DecorationHover 61,174,233 (BreezeLight.colors:117), an open
+    // one with focusColor, [Colors:View] DecorationFocus 61,174,233 (BreezeLight.colors:116),
+    // rounded as the menu highlight, and letters it HighlightedText, [Colors:Selection]
+    // ForegroundNormal 255,255,255 (BreezeLight.colors:95); the bar takes
+    // toolbar.background_color (breezestyle.cpp:5841-5945 at breeze f0b1d75; measured)
+    decoration_hover: srgb8(0x3dae_e9ff),
+    // `input.placeholder_color`: platform-facts.md (§2.4): [Colors:View] ForegroundInactive
+    // 112,125,138 (BreezeLight.colors:119, breeze v6.7.5)
+    placeholder: srgb8(0x707d_8aff),
+    // `input.disabled_background`: platform-facts.md (§2.1.6): Disabled [Colors:View]
+    // BackgroundNormal / ForegroundNormal, KColorScheme 6.31.0
+    view_disabled_background: srgb8(0xf3f3_f3ff),
+    // `link.disabled_text_color`: platform-facts.md (§2.1.6): Disabled [Colors:View]
+    // ForegroundLink, KColorScheme 6.31.0
+    link_disabled: srgb8(0xa3ca_e2ff),
+    // `slider.disabled_track_color`, `slider.disabled_thumb_color`: 0.7.2 kde-breeze.toml
+    // (uncited)
+    slider_disabled: srgb8(0xdee0_e2ff),
+    // `progress_bar.fill_color`: platform-facts.md (§2.10): Accent at alpha 0.7 over Window,
+    // KColorUtils::overlayColors(#eff0f1, #3daee9b3)
+    progress_fill: srgb8(0x72c2_ebff),
+    // `menu.background_color`: platform-facts.md (§2.6): frameBackgroundColor(), mix(Window
+    // #eff0f1, Base #ffffff, Blend_Value 0.3), a Qt Widgets menu's panel (breezestyle.cpp:4708,
+    // breezehelper.cpp:200-203, breezemetrics.h:176 at breeze f0b1d75; measured)
+    menu_background: srgb8(0xf4f5_f5ff),
+    // `menu.hover_background`: platform-facts.md (§2.6): [Colors:View] DecorationFocus 61,174,233
+    // (BreezeLight.colors:116, breeze v6.7.5) at alpha Blend_Value 0.3, a layer over the menu
+    // (breezestyle.cpp:6021-6029, breezemetrics.h:176 at breeze f0b1d75; measured)
+    menu_hover: srgb8(0x3dae_e94d),
+    // `menu.hover_border_color`: platform-facts.md (§2.6): hover_border_color,
+    // focusOutlineColor(), KColorUtils::mix([Colors:View] DecorationFocus 61,174,233,
+    // [Colors:Window] ForegroundNormal 35,38,41, 0.15) (breezestyle.cpp:6021-6049,
+    // breezehelper.cpp:172-175 at breeze f0b1d75; measured)
+    menu_hover_frame: srgb8(0x399a_ccff),
+    // `tab.background_color`: platform-facts.md (§2.11): an unselected tab is Window.darker(120),
+    // #eff0f1 → #c7c8c9 (breezehelper.cpp:1495-1496)
+    tab_background: srgb8(0xc7c8_c9ff),
+    // `tab.active_background`: 0.7.2 kde-breeze.toml (uncited)
+    tab_selected_background: srgb8(0xeff0_f1ff),
+    // `tab.active_text_color`, `tab.hover_text_color`: 0.7.2 kde-breeze.toml (uncited)
+    tab_text: srgb8(0x2326_29ff),
+    // `tab.border.color`: platform-facts.md (§2.11): selected tab only, mix(Window #eff0f1,
+    // WindowText #232629, frameContrast 0.2)
+    tab_frame: srgb8(0xc6c8_c9ff),
+    // `tab.hover_background`: platform-facts.md (§2.11): hovered, [Colors:View] DecorationHover
+    // 61,174,233 (BreezeLight.colors:117) at alpha 0.2 replaces the fill
+    // (breezehelper.cpp:1497-1502)
+    tab_hover: srgb8(0x3dae_e933),
+    // `window.title_bar_background`: platform-facts.md (§2.2): [WM] activeBackground 227,229,231
+    // (BreezeLight.colors:197, breeze v6.7.5)
+    title_bar_background: srgb8(0xe3e5_e7ff),
+    // `window.inactive_title_bar_background`: platform-facts.md (§2.2): [WM] inactiveBackground
+    // 239,240,241 (BreezeLight.colors:200, breeze v6.7.5)
+    title_bar_inactive_background: srgb8(0xeff0_f1ff),
+    // `window.inactive_title_bar_text_color`: platform-facts.md (§2.2): [WM] inactiveForeground
+    // 112,125,138 (BreezeLight.colors:202, breeze v6.7.5)
+    title_bar_inactive_foreground: srgb8(0x707d_8aff),
 };
 
 /// The dark scheme's constants.
@@ -443,14 +586,22 @@ const DARK: SchemeColors = SchemeColors {
     // `defaults.danger_text_color`, `warning_text_color`, `success_text_color`,
     // `info_text_color`: platform-facts.md (§2.1.4): [Colors:Window] ForegroundNormal 252,252,252
     // (BreezeDark.colors:138, breeze v6.7.5)
+    // `menu.font.color`: platform-facts.md (§2.6): [Colors:Window] ForegroundNormal 252,252,252
+    // (BreezeDark.colors:138, breeze v6.7.5)
+    // `menu.hover_text_color`: platform-facts.md (§2.6): [Colors:Window] ForegroundNormal
+    // 252,252,252 (BreezeDark.colors:138, breeze v6.7.5): a hovered item keeps the window text;
+    // only a pressed one is HighlightedText (breezestyle.cpp:6155 at breeze f0b1d75; measured)
     window_foreground: srgb8(0xfcfc_fcff),
     // `defaults.muted_color`: platform-facts.md (§2.1.3): [Colors:Window] ForegroundInactive
     // 161,169,177 (BreezeDark.colors:134, breeze v6.7.5)
     window_foreground_muted: srgb8(0xa1a9_b1ff),
     // `defaults.border.color`: 0.7.2 kde-breeze.toml (uncited)
+    // `slider.disabled_fill_color`, `splitter.hover_color`: 0.7.2 kde-breeze.toml (uncited)
     window_border: srgb8(0x4d54_5bff),
     // `defaults.surface_color`: platform-facts.md (§2.1.3): [Colors:View] BackgroundNormal
     // 20,22,24 (BreezeDark.colors:116, breeze v6.7.5)
+    // `input.background_color`: platform-facts.md (§2.4): [Colors:View] BackgroundNormal 20,22,24
+    // (BreezeDark.colors:116)
     view_background: srgb8(0x1416_18ff),
     // `defaults.selection_background`: platform-facts.md (§2.1.3): [Colors:Selection]
     // BackgroundNormal 61,174,233 (BreezeDark.colors:88, breeze v6.7.5)
@@ -461,10 +612,14 @@ const DARK: SchemeColors = SchemeColors {
     // `button.focus_border_color`: 0.7.2 kde-breeze.toml (uncited)
     // `checkbox.border.color`: platform-facts.md (§2.5): checked, palette.highlight(),
     // [Colors:Selection] BackgroundNormal
+    // `tab.active_indicator_color`: platform-facts.md (§2.11): renderTabBarTab fills a
+    // TabBar_ActiveEffectSize 3 strip of QPalette::Highlight along a North tab's top edge
+    // (breezehelper.cpp:1471-1487, breezemetrics.h:137)
     selection_background: srgb8(0x3dae_e9ff),
     // `defaults.selection_text_color`, also `defaults.accent_text_color`: platform-facts.md
     // (§2.1.3): [Colors:Selection] ForegroundNormal 252,252,252 (BreezeDark.colors:96, breeze
     // v6.7.5)
+    // `menu.active_text_color`, `menu.bar_hover_text_color`: 0.7.2 kde-breeze.toml (uncited)
     selection_foreground: srgb8(0xfcfc_fcff),
     // `defaults.selection_inactive_background`: platform-facts.md (§2.1.3):
     // selection_inactive_background, KColorUtils::tint([Colors:Window] BackgroundNormal
@@ -480,6 +635,15 @@ const DARK: SchemeColors = SchemeColors {
     // DecorationFocus 61,174,233 (BreezeDark.colors:117, breeze v6.7.5): under the pointer the
     // box's or radio's outline is stroked in it, checked or not (breezehelper.cpp:895-907,
     // :1041-1054 at breeze f0b1d75)
+    // `input.focus_border_color`: platform-facts.md (§2.4): [Colors:View] DecorationFocus
+    // 61,174,233 (BreezeDark.colors:117)
+    // `slider.thumb_focus_border_color`, `menu.bar_open_background`: 0.7.2 kde-breeze.toml
+    // (uncited)
+    // `menu.active_background`: platform-facts.md (§2.6): active_background, active_text_color, a
+    // pressed item is the opaque focusColor(), [Colors:View] DecorationFocus 61,174,233
+    // (BreezeDark.colors:117), outlined in it, lettered HighlightedText, [Colors:Selection]
+    // ForegroundNormal 252,252,252 (BreezeDark.colors:96) (breezestyle.cpp:6021-6029, :6155 at
+    // breeze f0b1d75; measured)
     accent: srgb8(0x3dae_e9ff),
     // `defaults.focus_ring_color`: platform-facts.md (§2.1.5): focus_ring_color: Breeze's
     // keyboard focus band, [Colors:Selection] BackgroundNormal 61,174,233
@@ -490,6 +654,8 @@ const DARK: SchemeColors = SchemeColors {
     link: srgb8(0x1d99_f3ff),
     // `defaults.disabled_text_color`: platform-facts.md (§2.1.3): Disabled [Colors:Window]
     // ForegroundNormal, KColorScheme 6.31.0 [ColorEffects:Disabled]
+    // `menu.disabled_text_color`: platform-facts.md (§2.1.6): Disabled [Colors:Window]
+    // ForegroundNormal, KColorScheme 6.31.0
     disabled_text: srgb8(0x686a_6cff),
     // `defaults.shadow_color`: platform-facts.md (§2.1.3): (none) in Breeze, the preset's own
     // #00000060
@@ -518,6 +684,9 @@ const DARK: SchemeColors = SchemeColors {
     // 41,44,48 (BreezeDark.colors:32, breeze v6.7.5): Breeze fills a QHeaderView section with
     // QPalette::Button and never reads the Header set for it (breezestyle.cpp:6827, :6838-6839 at
     // breeze f0b1d75; measured)
+    // `slider.thumb_color`: platform-facts.md (§2.9): Breeze fills the handle with
+    // QPalette::Button, [Colors:Button] BackgroundNormal #292c30 (breezestyle.cpp:8122,
+    // breezehelper.cpp:1191-1195; BreezeDark.colors:32, breeze v6.7.5)
     button_background: srgb8(0x292c_30ff),
     // `button.font.color`: platform-facts.md (§2.3): [Colors:Button] ForegroundNormal 252,252,252
     // (BreezeDark.colors:40, breeze v6.7.5)
@@ -533,6 +702,15 @@ const DARK: SchemeColors = SchemeColors {
     // mix([Colors:Button] BackgroundNormal 41,44,48 (BreezeDark.colors:32), [Colors:Button]
     // ForegroundNormal 252,252,252 (BreezeDark.colors:40), frameContrast 0.2)
     // (breezehelper.cpp:697-699 at breeze f0b1d75; measured)
+    // `slider.thumb_border_color`: platform-facts.md (§2.9): thumb_border_color,
+    // thumb_border_line_width, thumb_hover_border_color, thumb_focus_border_color, the handle is
+    // outlined PenWidth::Frame 1 wide in the plain frame at rest, mix([Colors:Button]
+    // BackgroundNormal 41,44,48 (BreezeDark.colors:32), [Colors:Button] ForegroundNormal
+    // 252,252,252 (BreezeDark.colors:40), frameContrast 0.2), in hoverColor(), [Colors:View]
+    // DecorationHover 61,174,233 (BreezeDark.colors:118), under the pointer, and in
+    // focusColor(), [Colors:View] DecorationFocus 61,174,233 (BreezeDark.colors:117), with the
+    // focus, hover winning (breezestyle.cpp:8122-8128, breezehelper.cpp:248-275 at breeze
+    // f0b1d75; measured)
     button_frame: srgb8(0x5356_59ff),
     // `button.checked_background`: platform-facts.md (§2.3): a checked button is
     // KColorUtils::mix(Button #292c30, ButtonText #fcfcfc, 0.125), lettered ButtonText
@@ -564,6 +742,9 @@ const DARK: SchemeColors = SchemeColors {
     checkbox_checked: srgb8(0x2f53_68ff),
     // `checkbox.unchecked_border_color`: platform-facts.md (§2.5): separatorColor(),
     // mix(Window, WindowText, 0.2)
+    // `menu.separator_color`: platform-facts.md (§2.6): separatorColor(), mix(Window #202326,
+    // WindowText #fcfcfc, frameContrast 0.2) (breezestyle.cpp:5984, breezehelper.cpp:329-332 at
+    // breeze f0b1d75; measured)
     checkbox_frame: srgb8(0x4c4e_51ff),
     // `checkbox.indicator_color`: platform-facts.md (§2.5): palette.text(), [Colors:View]
     // ForegroundNormal
@@ -572,6 +753,7 @@ const DARK: SchemeColors = SchemeColors {
     // `list.hover_text_color`: platform-facts.md (§2.15): hover_text_color ← item_font.color,
     // [Colors:View] ForegroundNormal 252,252,252 (BreezeDark.colors:124): a hovered row is
     // lettered QPalette::Text
+    // `input.font.color`: 0.7.2 kde-breeze.toml (uncited)
     view_foreground: srgb8(0xfcfc_fcff),
     // `checkbox.disabled_text_color`: 0.7.2 kde-breeze.toml (uncited)
     checkbox_disabled_foreground: srgb8(0x686a_6cff),
@@ -593,6 +775,8 @@ const DARK: SchemeColors = SchemeColors {
     // frameContrast 0.2, the line on a section's trailing edge and along the header's bottom,
     // none after the last or a lone section (breezestyle.cpp:6803-6893 at breeze f0b1d75;
     // measured)
+    // `progress_bar.border.color`: platform-facts.md (§2.10): WindowText #fcfcfc at alpha
+    // frameContrast 0.2; PenWidth::Frame 1.001, rounded as defaults.border.line_width_px is
     list_header_separator: srgb8(0xfcfc_fc33),
     // `list.hover_background`: platform-facts.md (§2.15): [Colors:Selection] BackgroundNormal
     // 61,174,233 (BreezeDark.colors:88, breeze v6.7.5) at alpha Blend_Value 0.3, a focused
@@ -605,6 +789,7 @@ const DARK: SchemeColors = SchemeColors {
     list_row_hover_frame: srgb8(0x3dae_e9cc),
     // `list.disabled_text_color`: platform-facts.md (§2.1.6): Disabled [Colors:View]
     // ForegroundNormal, KColorScheme 6.31.0
+    // `input.disabled_text_color`: 0.7.2 kde-breeze.toml (uncited)
     view_disabled_foreground: srgb8(0x6062_63ff),
     // `list.grid_color`: platform-facts.md (§2.15): QPalette::Mid, KColorScheme's MidShade of
     // [Colors:Window] BackgroundNormal 32,35,38 (BreezeDark.colors:130, breeze v6.7.5) at [KDE]
@@ -647,6 +832,70 @@ const DARK: SchemeColors = SchemeColors {
     // `link.visited_text_color`: platform-facts.md (§2.28): [Colors:View] ForegroundVisited
     // 155,89,182 (BreezeDark.colors:126, breeze v6.7.5)
     link_visited: Some(srgb8(0x9b59_b6ff)),
+    // `input.hover_border_color`: platform-facts.md (§2.4): [Colors:View] DecorationHover
+    // 61,174,233 (BreezeDark.colors:118)
+    // `slider.thumb_hover_border_color`: 0.7.2 kde-breeze.toml (uncited)
+    // `menu.bar_hover_background`: platform-facts.md (§2.6): bar_hover_background,
+    // bar_open_background, bar_hover_text_color, drawMenuBarItemControl fills a hovered title
+    // with hoverColor, [Colors:View] DecorationHover 61,174,233 (BreezeDark.colors:118), an open
+    // one with focusColor, [Colors:View] DecorationFocus 61,174,233 (BreezeDark.colors:117),
+    // rounded as the menu highlight, and letters it HighlightedText, [Colors:Selection]
+    // ForegroundNormal 252,252,252 (BreezeDark.colors:96); the bar takes
+    // toolbar.background_color (breezestyle.cpp:5841-5945 at breeze f0b1d75; measured)
+    decoration_hover: srgb8(0x3dae_e9ff),
+    // `input.placeholder_color`: platform-facts.md (§2.4): [Colors:View] ForegroundInactive
+    // 161,169,177 (BreezeDark.colors:120, breeze v6.7.5)
+    placeholder: srgb8(0xa1a9_b1ff),
+    // `input.disabled_background`: platform-facts.md (§2.1.6): Disabled [Colors:View]
+    // BackgroundNormal / ForegroundNormal, KColorScheme 6.31.0
+    view_disabled_background: srgb8(0x1315_17ff),
+    // `link.disabled_text_color`: platform-facts.md (§2.1.6): Disabled [Colors:View]
+    // ForegroundLink, KColorScheme 6.31.0
+    link_disabled: srgb8(0x1641_60ff),
+    // `slider.disabled_track_color`, `slider.disabled_thumb_color`: 0.7.2 kde-breeze.toml
+    // (uncited)
+    slider_disabled: srgb8(0x2d30_35ff),
+    // `progress_bar.fill_color`: platform-facts.md (§2.10): Accent at alpha 0.7 over Window,
+    // KColorUtils::overlayColors(#202326, #3daee9b3)
+    progress_fill: srgb8(0x3584_aeff),
+    // `menu.background_color`: platform-facts.md (§2.6): frameBackgroundColor(), mix(Window
+    // #202326, Base #141618, Blend_Value 0.3), a Qt Widgets menu's panel (breezestyle.cpp:4708,
+    // breezehelper.cpp:200-203, breezemetrics.h:176 at breeze f0b1d75; measured)
+    menu_background: srgb8(0x1c1f_22ff),
+    // `menu.hover_background`: platform-facts.md (§2.6): [Colors:View] DecorationFocus 61,174,233
+    // (BreezeDark.colors:117, breeze v6.7.5) at alpha Blend_Value 0.3, a layer over the menu
+    // (breezestyle.cpp:6021-6029, breezemetrics.h:176 at breeze f0b1d75; measured)
+    menu_hover: srgb8(0x3dae_e94d),
+    // `menu.hover_border_color`: platform-facts.md (§2.6): hover_border_color,
+    // focusOutlineColor(), KColorUtils::mix([Colors:View] DecorationFocus 61,174,233
+    // (BreezeDark.colors:117), [Colors:Window] ForegroundNormal 252,252,252
+    // (BreezeDark.colors:138), 0.15) (breezestyle.cpp:6021-6049, breezehelper.cpp:172-175 at
+    // breeze f0b1d75; measured)
+    menu_hover_frame: srgb8(0x5aba_ecff),
+    // `tab.background_color`: platform-facts.md (§2.11): an unselected tab is Window.darker(120),
+    // #202326 → #1b1d20 (breezehelper.cpp:1495-1496)
+    tab_background: srgb8(0x1b1d_20ff),
+    // `tab.active_background`: platform-facts.md (§2.11): ← defaults.background_color,
+    // [Colors:Window] BackgroundNormal 32,35,38 (BreezeDark.colors:130)
+    tab_selected_background: srgb8(0x2023_26ff),
+    // `tab.active_text_color`, `tab.hover_text_color`: 0.7.2 kde-breeze.toml (uncited)
+    tab_text: srgb8(0xfcfc_fcff),
+    // `tab.border.color`: platform-facts.md (§2.11): selected tab only, mix(Window #202326,
+    // WindowText #fcfcfc, frameContrast 0.2)
+    tab_frame: srgb8(0x4c4e_51ff),
+    // `tab.hover_background`: platform-facts.md (§2.11): hovered, [Colors:View] DecorationHover
+    // 61,174,233 (BreezeDark.colors:118) at alpha 0.2 replaces the fill
+    // (breezehelper.cpp:1497-1502)
+    tab_hover: srgb8(0x3dae_e933),
+    // `window.title_bar_background`: platform-facts.md (§2.2): [WM] activeBackground 39,44,49
+    // (BreezeDark.colors:204, breeze v6.7.5)
+    title_bar_background: srgb8(0x272c_31ff),
+    // `window.inactive_title_bar_background`: platform-facts.md (§2.2): [WM] inactiveBackground
+    // 32,36,40 (BreezeDark.colors:207, breeze v6.7.5)
+    title_bar_inactive_background: srgb8(0x2024_28ff),
+    // `window.inactive_title_bar_text_color`: platform-facts.md (§2.2): [WM] inactiveForeground
+    // 161,169,177 (BreezeDark.colors:209, breeze v6.7.5)
+    title_bar_inactive_foreground: srgb8(0xa1a9_b1ff),
 };
 
 /// The UI font's family.
@@ -899,6 +1148,196 @@ const TOOLTIP_PADDING_VERTICAL: f32 = 3.0;
 /// A tooltip's greatest width.
 // `tooltip.max_width`: 0.7.2 kde-breeze.toml (uncited)
 const TOOLTIP_MAX_WIDTH: f32 = 300.0;
+
+/// A single-line text field's least height.
+// `input.min_height`: 0.7.2 kde-breeze.toml (uncited)
+const INPUT_MIN_HEIGHT: f32 = 32.0;
+
+/// A single-line text field's padding left and right.
+// `input.border.padding.left`: platform-facts.md (§2.4): inside the frame line,
+// LineEdit_FrameWidth 6 + QLineEdit's margins 2 / 1 − the 1px line (measured 2026-09-28: 8 / 7
+// from the outer edge)
+const INPUT_PADDING_HORIZONTAL: f32 = 7.0;
+
+/// A single-line text field's padding above and below.
+// `input.border.padding.top`: 0.7.2 kde-breeze.toml (uncited)
+const INPUT_PADDING_VERTICAL: f32 = 6.0;
+
+/// A multi-line text field's padding left and right.
+// `text_area.border.padding.left`: platform-facts.md (§2.29): inside the frame line,
+// Frame_FrameWidth 2 + QTextDocument's documentMargin 4 − the 1px line (measured 2026-09-28: 6
+// from the outer edge)
+const TEXT_AREA_PADDING_HORIZONTAL: f32 = 5.0;
+
+/// A multi-line text field's padding above and below.
+// `text_area.border.padding.top`: 0.7.2 kde-breeze.toml (uncited)
+const TEXT_AREA_PADDING_VERTICAL: f32 = 5.0;
+
+/// A link's background, at rest and hovered.
+// `link.background_color`: 0.7.2 kde-breeze.toml (uncited)
+// `link.hover_background`: platform-facts.md (§2.28): KDE hover_background **(none)**,
+// transparent as background_color
+const LINK_BACKGROUND: Color = srgb8(0x0000_0000);
+
+/// The line a link's text is drawn with.
+// `link.underline_enabled`: 0.7.2 kde-breeze.toml (uncited)
+const LINK_DECORATION: DecorationKind = DecorationKind::Underline;
+
+/// The thickness of a slider's groove across it.
+// `slider.track_height`: 0.7.2 kde-breeze.toml (uncited)
+const SLIDER_TRACK_HEIGHT: f32 = 6.0;
+
+/// The diameter of a slider's handle.
+// `slider.thumb_diameter`: 0.7.2 kde-breeze.toml (uncited)
+const SLIDER_THUMB_DIAMETER: f32 = 20.0;
+
+/// The length of a slider's tick marks.
+// `slider.tick_mark_length`: 0.7.2 kde-breeze.toml (uncited)
+const SLIDER_TICK_LENGTH: f32 = 8.0;
+
+/// The width of a slider handle's outline.
+// `slider.thumb_border_line_width`: 0.7.2 kde-breeze.toml (uncited)
+const SLIDER_THUMB_BORDER_WIDTH: f32 = 1.0;
+
+/// The thickness of a progress bar's groove.
+// `progress_bar.track_height`: 0.7.2 kde-breeze.toml (uncited)
+const PROGRESS_BAR_TRACK_HEIGHT: f32 = 6.0;
+
+/// A progress bar's least length.
+// `progress_bar.min_width`: 0.7.2 kde-breeze.toml (uncited)
+const PROGRESS_BAR_MIN_WIDTH: f32 = 6.0;
+
+/// The width of a progress bar groove's outline.
+// `progress_bar.border.line_width`: 0.7.2 kde-breeze.toml (uncited)
+const PROGRESS_BAR_BORDER_WIDTH: f32 = 1.0;
+
+/// A progress bar's padding left and right.
+// `progress_bar.border.padding.left`: platform-facts.md (§2.10): 0; 0, the contents rect is the
+// groove's with only its length cut to the progress (breezestyle.cpp:2304, :2329-2338)
+const PROGRESS_BAR_PADDING_HORIZONTAL: f32 = 0.0;
+
+/// A progress bar's padding above and below.
+// `progress_bar.border.padding.top`: 0.7.2 kde-breeze.toml (uncited)
+const PROGRESS_BAR_PADDING_VERTICAL: f32 = 0.0;
+
+/// The width of a splitter's divider.
+// `splitter.divider_width`: 0.7.2 kde-breeze.toml (uncited)
+const SPLITTER_DIVIDER_WIDTH: f32 = 1.0;
+
+/// A spinner's diameter.
+// `spinner.diameter`: 0.7.2 kde-breeze.toml (uncited)
+const SPINNER_DIAMETER: f32 = 36.0;
+
+/// A spinner's least diameter.
+// `spinner.min_diameter`: 0.7.2 kde-breeze.toml (uncited)
+const SPINNER_MIN_DIAMETER: f32 = 16.0;
+
+/// The width of a spinner's stroke.
+// `spinner.stroke_width`: 0.7.2 kde-breeze.toml (uncited)
+const SPINNER_STROKE_WIDTH: f32 = 2.0;
+
+/// A menu item's least height.
+// `menu.min_row_height`: platform-facts.md (§2.6): min_row_height, the larger of the text's
+// height, the 20 px arrow and check box columns and the icon column, plus 1, plus
+// MenuItem_MarginHeight 4 above and below: 29 wherever the text line and the icon are 20 px or
+// less, the text + 9 above that (breezestyle.cpp:3663-3667, breezemetrics.h:57, :84, :87 at breeze
+// f0b1d75; measured)
+const MENU_ROW_MIN_HEIGHT: f32 = 29.0;
+
+/// The gap between a menu item's icon and its text.
+// `menu.icon_text_gap`: platform-facts.md (§2.6): icon_text_gap, Qt's icon column is the widest
+// icon + 4, Breeze centres a 16 px icon in it and starts the text MenuItem_ItemSpacing 2 + 1 after
+// the column's last pixel, (20 − 16) / 2 + 2 = 4 (breezestyle.cpp:6096-6099, breezemetrics.h:58
+// at breeze f0b1d75; measured)
+const MENU_ICON_TEXT_GAP: f32 = 4.0;
+
+/// The size of a menu item's icon.
+// `menu.icon_size`: platform-facts.md (§2.6): KIconLoader's Small, 16
+const MENU_ICON_SIZE: f32 = 16.0;
+
+/// The radius of a menu item's highlight.
+// `menu.border.corner_radius`: platform-facts.md (§2.6): border.corner_radius, a hovered item's
+// highlight rounded by frameRadius(PenWidth::Frame), Frame_FrameRadius 5 − 0.5 ×
+// int(PenWidth::Frame) (breezehelper.h:345-348, breezehelper.cpp:384 at breeze f0b1d75)
+const MENU_ITEM_RADIUS: f32 = 4.5;
+
+/// A menu item's padding above and below.
+// `menu.border.padding.top`: platform-facts.md (§2.6): border.padding_vertical,
+// MenuItem_MarginHeight = 4
+const MENU_ITEM_PADDING_VERTICAL: f32 = 4.0;
+
+/// A menu item's padding on its leading side.
+// `menu.border.padding.left`: platform-facts.md (§2.6): border.padding_horizontal, in a menu
+// with icons and no checkable items, KDE's default: 14 left, MenuItem_MarginWidth 4 +
+// MenuItem_TextLeftMargin 8 + (20 − 16) / 2 to a 16 px icon; 27 right, MenuItem_MarginWidth 4 +
+// MenuButton_IndicatorWidth 20 + MenuItem_ItemSpacing 2 + 1; a menu without icons starts its
+// text 16 in (breezestyle.cpp:6053-6065, :6091-6097 at breeze f0b1d75; measured)
+const MENU_ITEM_PADDING_LEFT: f32 = 14.0;
+
+/// A menu item's padding on its trailing side.
+// `menu.border.padding.right`: 0.7.2 kde-breeze.toml (uncited)
+const MENU_ITEM_PADDING_RIGHT: f32 = 27.0;
+
+/// A menu panel's padding left and right.
+// `menu.panel_padding_horizontal`: platform-facts.md (§2.6): panel_padding_horizontal,
+// panel_padding_vertical, PM_MenuHMargin and PM_MenuVMargin = MenuItem_HighlightGap 4 from the
+// panel's outer edge, its 1 px outline included: 3 inside it (breezestyle.cpp:649-651,
+// breezemetrics.h:55 at breeze f0b1d75; measured)
+const MENU_PANEL_PADDING_HORIZONTAL: f32 = 3.0;
+
+/// A menu panel's padding above and below.
+// `menu.panel_padding_vertical`: 0.7.2 kde-breeze.toml (uncited)
+const MENU_PANEL_PADDING_VERTICAL: f32 = 3.0;
+
+/// A menu-bar title's padding left and right.
+// `menu.bar_padding_horizontal`: platform-facts.md (§2.6): bar_padding_horizontal,
+// bar_padding_vertical, MenuBarItem_MarginWidth = 10; MenuBarItem_MarginHeight = 6
+// (breezemetrics.h:93-94, breezestyle.cpp:3598 at breeze f0b1d75; measured)
+const MENU_BAR_PADDING_HORIZONTAL: f32 = 10.0;
+
+/// A menu-bar title's padding above and below.
+// `menu.bar_padding_vertical`: 0.7.2 kde-breeze.toml (uncited)
+const MENU_BAR_PADDING_VERTICAL: f32 = 6.0;
+
+/// A tab's least width.
+// `tab.min_width`: 0.7.2 kde-breeze.toml (uncited)
+const TAB_MIN_WIDTH: f32 = 80.0;
+
+/// A tab's least height.
+// `tab.min_height`: 0.7.2 kde-breeze.toml (uncited)
+const TAB_MIN_HEIGHT: f32 = 30.0;
+
+/// The gap between two tabs.
+// `tab.item_gap`: platform-facts.md (§2.11): QTabBar lays the tabs edge to edge
+// (qtabbar.cpp:459-468)
+const TAB_ITEM_GAP: f32 = 0.0;
+
+/// A tab's padding left and right.
+// `tab.border.padding.left`: platform-facts.md (§2.11): TabBar_TabMarginWidth = 8;
+// TabBar_TabMarginHeight = 4
+const TAB_PADDING_HORIZONTAL: f32 = 8.0;
+
+/// A tab's padding above and below.
+// `tab.border.padding.top`: 0.7.2 kde-breeze.toml (uncited)
+const TAB_PADDING_VERTICAL: f32 = 4.0;
+
+/// The width of the selected tab's outline.
+// `tab.border.line_width`: platform-facts.md (§2.11): PenWidth::Frame = 1.001, rounded as
+// defaults.border.line_width_px is
+const TAB_BORDER_WIDTH: f32 = 1.0;
+
+/// The radius of the selected tab's corners.
+// `tab.border.corner_radius`: platform-facts.md (§2.11): Frame_FrameRadius 5 − 0.5 ×
+// int(PenWidth::Frame), top corners
+const TAB_CORNER_RADIUS: f32 = 4.5;
+
+/// The thickness of the selected tab's indicator.
+// `tab.active_indicator_width`: 0.7.2 kde-breeze.toml (uncited)
+const TAB_INDICATOR_WIDTH: f32 = 3.0;
+
+/// The tab's edge the indicator lies along.
+// `tab.active_indicator_side`: 0.7.2 kde-breeze.toml (uncited)
+const TAB_INDICATOR_SIDE: TabIndicatorSide = TabIndicatorSide::Top;
 
 /// The state precedence of a part with rules for disabled, pressed and
 /// hover: disabled over pressed over hover (spec §3's example; 0.7.2's
@@ -1402,24 +1841,37 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
         radio: radio(c, &colors, &typography, &layout),
         scrollbar: scrollbar(c),
         list: list(c, &colors, &typography, &layout),
+        tab: tab(c, &colors, &typography),
+        menu: menu(c, &typography, &layout),
+        menu_bar: menu_bar(c),
         // Stated by the plan's M2, KDE unit ("the rest of `kde-breeze`"): nothing yet.
-        tab: TabWidget::unstated(WidgetOrigin::Native),
-        menu: MenuWidget::unstated(WidgetOrigin::Native),
-        menu_bar: MenuBarWidget::unstated(WidgetOrigin::Native),
         sidebar: SidebarWidget::unstated(WidgetOrigin::Native),
         toolbar: ToolbarWidget::unstated(WidgetOrigin::Native),
         status_bar: StatusBarWidget::unstated(WidgetOrigin::Native),
         tooltip: tooltip(&colors, &typography, &layout),
-        // Nothing stated yet: plan M2's KDE unit ("the rest of `kde-breeze`").
-        window: WindowChrome::unstated(WidgetOrigin::Native),
-        input: InputWidget::unstated(WidgetOrigin::Native),
-        text_area: InputWidget::unstated(WidgetOrigin::Native),
-        link: LinkWidget::unstated(WidgetOrigin::Native),
-        slider: SliderWidget::unstated(WidgetOrigin::Native),
-        progress_bar: ProgressBarWidget::unstated(WidgetOrigin::Native),
-        splitter: SplitterWidget::unstated(WidgetOrigin::Native),
-        separator: SeparatorWidget::unstated(WidgetOrigin::Native),
-        spinner: SpinnerWidget::unstated(WidgetOrigin::Native),
+        window: window(c, &colors, &typography, &layout, ctx.window_active),
+        input: input(
+            c,
+            &colors,
+            &typography,
+            &layout,
+            Edges::symmetric(INPUT_PADDING_VERTICAL, INPUT_PADDING_HORIZONTAL),
+            Some(INPUT_MIN_HEIGHT),
+        ),
+        text_area: input(
+            c,
+            &colors,
+            &typography,
+            &layout,
+            Edges::symmetric(TEXT_AREA_PADDING_VERTICAL, TEXT_AREA_PADDING_HORIZONTAL),
+            None,
+        ),
+        link: link(c, &colors, &typography),
+        slider: slider(c, &colors),
+        progress_bar: progress_bar(c, &colors, &layout),
+        splitter: splitter(c, &colors),
+        separator: separator(c, &layout),
+        spinner: spinner(&colors),
         custom_colors: BTreeMap::new(),
         custom_metrics: BTreeMap::new(),
         colors,
@@ -2016,24 +2468,7 @@ fn list(
 /// platform-facts.md (§2.8), "no pressed colour of its own, the hovered
 /// one").
 fn scrollbar(c: &SchemeColors) -> ScrollbarWidget {
-    let exact = |builder: RuleBuilder<PartStyle, PartProp>, thickness: f32| {
-        builder
-            .rule(
-                RuleSelector::on(WidgetState::NONE).orientation(Orientation::Vertical),
-                [
-                    PartProp::MinSize([Some(thickness), None]),
-                    PartProp::MaxSize([Some(thickness), None]),
-                ],
-            )
-            .rule(
-                RuleSelector::on(WidgetState::NONE).orientation(Orientation::Horizontal),
-                [
-                    PartProp::MinSize([None, Some(thickness)]),
-                    PartProp::MaxSize([None, Some(thickness)]),
-                ],
-            )
-    };
-    let track = exact(
+    let track = across(
         RuleBuilder::new(PartStyle::default()).base([fill(c.scrollbar_track)]),
         SCROLLBAR_GROOVE_WIDTH,
     )
@@ -2041,7 +2476,7 @@ fn scrollbar(c: &SchemeColors) -> ScrollbarWidget {
     let unfocused_view = c
         .scrollbar_thumb_focused
         .map(|_| RuleSelector::on(WidgetState::UNFOCUSED_VIEW));
-    let thumb = exact(
+    let thumb = across(
         RuleBuilder::with_exclusive(PartStyle::default(), PRESSED_HOVER)
             .base([fill(c.scrollbar_thumb_focused.unwrap_or(c.scrollbar_thumb))]),
         SCROLLBAR_THUMB_WIDTH,
@@ -2097,6 +2532,489 @@ fn tooltip(roles: &ColorRoles, typography: &Typography, layout: &LayoutMetrics) 
         WidgetOrigin::Native,
         panel,
         label(&typography.body, roles.tooltip.foreground),
+    )
+}
+
+/// The window's chrome, in the active window or, where `active` is false,
+/// in an inactive one: the frame in the window's background with the
+/// default border and the large radius (0.7.2: `window.background_color` is
+/// `defaults.background_color` and `window.border` `defaults.border` with
+/// `corner_radius_lg` where unstated); the title bar in the `[WM]` colours;
+/// the title in the UI font (0.7.2: `window.title_bar_font` is
+/// `defaults.font` where unstated), in the inactive title colour in an
+/// inactive window. A maximized or full-screen window has no data of its
+/// own and takes the normal window's styles; no caption button is stated.
+fn window(
+    c: &SchemeColors,
+    roles: &ColorRoles,
+    typography: &Typography,
+    layout: &LayoutMetrics,
+    active: bool,
+) -> WindowChrome {
+    let mut frame = PartStyle::default();
+    for prop in roles
+        .window
+        .background
+        .map(fill)
+        .into_iter()
+        .chain(roles.window.border.map(|border| outline(layout, border)))
+        .chain([PartProp::Corners(Corners::uniform(layout.corner_radius_lg))])
+    {
+        frame.apply(&prop);
+    }
+    let (title_bar_fill, title_color) = if active {
+        (c.title_bar_background, None)
+    } else {
+        (
+            c.title_bar_inactive_background,
+            Some(c.title_bar_inactive_foreground),
+        )
+    };
+    let mut title_bar = PartStyle::default();
+    title_bar.apply(&fill(title_bar_fill));
+    WindowChrome::new(
+        WidgetOrigin::Native,
+        None,
+        frame.clone(),
+        frame,
+        title_bar.clone(),
+        title_bar,
+        label(&typography.body, title_color),
+        RuleBuilder::new(PartStyle::default()).build(),
+        RuleBuilder::new(IconStyle::default()).build(),
+    )
+}
+
+/// A text field, single-line (`input`) or multi-line (`text_area`), with
+/// its own `padding` and least height `min_height`: the view's background
+/// and text in the default frame (0.7.2: `input.border` is
+/// `defaults.border` where unstated, and `text_area.border`'s colour, width,
+/// radius and shadow are `input.border`'s), no shadow, the placeholder in
+/// `[Colors:View]` ForegroundInactive; the outline in `[Colors:View]`
+/// DecorationHover under the pointer and DecorationFocus with the focus,
+/// which wins (platform-facts.md (§2.4), `focus_border_color`: "takes
+/// precedence over hover"); disabled, the disabled view's background and
+/// text (0.7.2: `input.disabled_opacity` is `defaults.disabled_opacity` where
+/// unstated).
+fn input(
+    c: &SchemeColors,
+    roles: &ColorRoles,
+    typography: &Typography,
+    layout: &LayoutMetrics,
+    padding: Edges,
+    min_height: Option<f32>,
+) -> InputWidget {
+    let field = RuleBuilder::with_exclusive(PartStyle::default(), DISABLED_HOVER)
+        .base([fill(c.view_background)])
+        .base(roles.window.border.map(|border| outline(layout, border)))
+        .base([
+            corners(layout),
+            // `input.border.shadow_enabled`: platform-facts.md (§2.4): no shadow
+            PartProp::Shadows(None),
+            PartProp::Padding(padding),
+        ])
+        .base(min_height.map(|height| PartProp::MinSize([None, Some(height)])))
+        .rule(
+            RuleSelector::on(WidgetState::HOVER),
+            [outline(layout, c.decoration_hover)],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::FOCUSED),
+            [outline(layout, c.accent)],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED),
+            [fill(c.view_disabled_background)],
+        )
+        .build();
+    let text = RuleBuilder::new(label(&typography.body, Some(c.view_foreground)))
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED),
+            [TextProp::Color(c.view_disabled_foreground)],
+        )
+        .build();
+    let placeholder = RuleBuilder::new(TextStyle::default())
+        .base([TextProp::Color(c.placeholder)])
+        .build();
+    InputWidget::new(
+        WidgetOrigin::Native,
+        field,
+        text,
+        placeholder,
+        RuleBuilder::new(TextStyle::default()).build(),
+        Some(roles.disabled_opacity),
+    )
+}
+
+/// The hyperlink: no background, at rest or hovered; the UI font in the
+/// link colour, underlined (0.7.2: `link.font` is `defaults.font` with
+/// `defaults.link_color` where unstated), visited in the visited colour,
+/// hovered and pressed in the link colour (0.7.2: `link.hover_text_color`
+/// and `active_text_color` are `link.font.color` where unstated), disabled
+/// in the disabled link colour.
+fn link(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> LinkWidget {
+    let container = RuleBuilder::new(PartStyle::default())
+        .base([fill(LINK_BACKGROUND)])
+        .rule(
+            RuleSelector::on(WidgetState::HOVER),
+            [fill(LINK_BACKGROUND)],
+        )
+        .build();
+    let label = RuleBuilder::with_exclusive(
+        label(&typography.body, Some(roles.link)),
+        DISABLED_PRESSED_HOVER,
+    )
+    .base([TextProp::Decoration(TextDecoration {
+        kind: LINK_DECORATION,
+        color: None,
+        thickness: None,
+    })])
+    .rules(
+        roles
+            .link_visited
+            .map(|_| RuleSelector::on(WidgetState::VISITED)),
+        roles.link_visited.map(TextProp::Color),
+    )
+    .rules(
+        [
+            RuleSelector::on(WidgetState::HOVER),
+            RuleSelector::on(WidgetState::PRESSED),
+        ],
+        [TextProp::Color(roles.link)],
+    )
+    .rule(
+        RuleSelector::on(WidgetState::DISABLED),
+        [TextProp::Color(c.link_disabled)],
+    )
+    .build();
+    LinkWidget::new(WidgetOrigin::Native, container, label)
+}
+
+/// `builder` with the exact `thickness` across its part: the width of a
+/// vertical part, the height of a horizontal one.
+fn across(
+    builder: RuleBuilder<PartStyle, PartProp>,
+    thickness: f32,
+) -> RuleBuilder<PartStyle, PartProp> {
+    builder
+        .rule(
+            RuleSelector::on(WidgetState::NONE).orientation(Orientation::Vertical),
+            [
+                PartProp::MinSize([Some(thickness), None]),
+                PartProp::MaxSize([Some(thickness), None]),
+            ],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::NONE).orientation(Orientation::Horizontal),
+            [
+                PartProp::MinSize([None, Some(thickness)]),
+                PartProp::MaxSize([None, Some(thickness)]),
+            ],
+        )
+}
+
+/// The slider: a groove of an exact thickness in the window's muted text
+/// colour (0.7.2: `slider.track_color` is `defaults.muted_color` where
+/// unstated), filled in the accent up to the value (`fill_color`:
+/// `defaults.accent_color`); a round handle of Button's background in the
+/// plain button frame, its outline DecorationFocus with the focus and
+/// DecorationHover under the pointer or pressed, hover winning
+/// (`slider.thumb_border_color`'s citation: "with the focus, hover
+/// winning"), and no fill of its own under the pointer; disabled, the
+/// disabled fills (0.7.2: `slider.disabled_opacity` is
+/// `defaults.disabled_opacity` where unstated). No tick colour is stated.
+fn slider(c: &SchemeColors, roles: &ColorRoles) -> SliderWidget {
+    let track = across(
+        RuleBuilder::new(PartStyle::default())
+            .base(roles.window.foreground_muted.map(fill))
+            .rule(
+                RuleSelector::on(WidgetState::DISABLED),
+                [fill(c.slider_disabled)],
+            ),
+        SLIDER_TRACK_HEIGHT,
+    )
+    .build();
+    let active_track = RuleBuilder::new(PartStyle::default())
+        .base([fill(roles.accent.fill)])
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED),
+            [fill(c.window_border)],
+        )
+        .build();
+    let handle_outline =
+        |color| PartProp::Stroke(Stroke::uniform(SLIDER_THUMB_BORDER_WIDTH, color));
+    let thumb = RuleBuilder::with_exclusive(PartStyle::default(), DISABLED_PRESSED_HOVER)
+        .base([
+            fill(c.button_background),
+            handle_outline(c.button_frame),
+            PartProp::MinSize([Some(SLIDER_THUMB_DIAMETER); 2]),
+            PartProp::MaxSize([Some(SLIDER_THUMB_DIAMETER); 2]),
+        ])
+        .rule(
+            RuleSelector::on(WidgetState::FOCUSED),
+            [handle_outline(c.accent)],
+        )
+        .rules(
+            [
+                RuleSelector::on(WidgetState::HOVER),
+                RuleSelector::on(WidgetState::PRESSED),
+            ],
+            [handle_outline(c.decoration_hover)],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED),
+            [fill(c.slider_disabled)],
+        )
+        .build();
+    SliderWidget::new(
+        WidgetOrigin::Native,
+        track,
+        active_track,
+        thumb,
+        RuleBuilder::new(PartStyle::default()).build(),
+        SLIDER_TICK_LENGTH,
+        Some(roles.disabled_opacity),
+    )
+}
+
+/// The progress bar: a groove in the window's muted text colour (0.7.2:
+/// `progress_bar.track_color` is `defaults.muted_color` where unstated),
+/// outlined in the window text at the frame contrast, at the default radius
+/// (`progress_bar.border.corner_radius`: `defaults.border.corner_radius`),
+/// no shadow and no padding, of an exact thickness and a least length; the
+/// fill in the accent over the window. No indeterminate period is stated.
+fn progress_bar(c: &SchemeColors, roles: &ColorRoles, layout: &LayoutMetrics) -> ProgressBarWidget {
+    let track = RuleBuilder::new(PartStyle::default())
+        .base(roles.window.foreground_muted.map(fill))
+        .base([
+            PartProp::Stroke(Stroke::uniform(
+                PROGRESS_BAR_BORDER_WIDTH,
+                c.list_header_separator,
+            )),
+            corners(layout),
+            // `progress_bar.border.shadow_enabled`: platform-facts.md (§2.10): no shadow
+            PartProp::Shadows(None),
+            PartProp::Padding(Edges::symmetric(
+                PROGRESS_BAR_PADDING_VERTICAL,
+                PROGRESS_BAR_PADDING_HORIZONTAL,
+            )),
+            PartProp::MinSize([
+                Some(PROGRESS_BAR_MIN_WIDTH),
+                Some(PROGRESS_BAR_TRACK_HEIGHT),
+            ]),
+            PartProp::MaxSize([None, Some(PROGRESS_BAR_TRACK_HEIGHT)]),
+        ])
+        .build();
+    let progress = RuleBuilder::new(PartStyle::default())
+        .base([fill(c.progress_fill)])
+        .build();
+    ProgressBarWidget::new(WidgetOrigin::Native, track, progress, None)
+}
+
+/// The separator: a line in the default border's colour and width (0.7.2:
+/// `separator.line_color` and `line_width` are `defaults.border.color` and
+/// `line_width` where unstated); no inset or margin is stated.
+fn separator(c: &SchemeColors, layout: &LayoutMetrics) -> SeparatorWidget {
+    SeparatorWidget::new(
+        WidgetOrigin::Native,
+        c.window_border,
+        layout.border_width,
+        None,
+        None,
+    )
+}
+
+/// The splitter: a handle in the default border's colour (0.7.2:
+/// `splitter.divider_color` is `defaults.border.color` where unstated) and
+/// its stated hover colour.
+fn splitter(c: &SchemeColors, roles: &ColorRoles) -> SplitterWidget {
+    let handle = RuleBuilder::new(PartStyle::default())
+        .base(roles.window.border.map(fill))
+        .rule(
+            RuleSelector::on(WidgetState::HOVER),
+            [fill(c.window_border)],
+        )
+        .build();
+    SplitterWidget::new(WidgetOrigin::Native, handle, SPLITTER_DIVIDER_WIDTH)
+}
+
+/// The spinner in the accent (0.7.2: `spinner.fill_color` is
+/// `defaults.accent_color` where unstated, `resolve_safety_nets`); no period
+/// is stated.
+fn spinner(roles: &ColorRoles) -> SpinnerWidget {
+    SpinnerWidget::new(
+        WidgetOrigin::Native,
+        roles.accent.fill,
+        SPINNER_DIAMETER,
+        SPINNER_MIN_DIAMETER,
+        SPINNER_STROKE_WIDTH,
+        None,
+    )
+}
+
+/// The menu: Breeze's panel colour with its padding (its frame and shadow
+/// stay the popover's, spec §5); items of a least height with Breeze's
+/// margins and the highlight's radius, hovered in DecorationFocus at the
+/// blend alpha and outlined at the default border width, as 0.7.2's
+/// connectors draw `menu.hover_border_color` (gpui: at
+/// `defaults.border.line_width`), pressed in the opaque DecorationFocus;
+/// the UI font in the window text (0.7.2: `menu.font` is `defaults.font`
+/// where unstated), HighlightedText when pressed, the disabled window text
+/// when disabled; 16 px icons; separators in `separatorColor()`.
+fn menu(c: &SchemeColors, typography: &Typography, layout: &LayoutMetrics) -> MenuWidget {
+    let panel = RuleBuilder::new(PartStyle::default())
+        .base([
+            fill(c.menu_background),
+            PartProp::Padding(Edges::symmetric(
+                MENU_PANEL_PADDING_VERTICAL,
+                MENU_PANEL_PADDING_HORIZONTAL,
+            )),
+        ])
+        .build();
+    let item = RuleBuilder::new(PartStyle::default())
+        .base([
+            PartProp::MinSize([None, Some(MENU_ROW_MIN_HEIGHT)]),
+            PartProp::Padding(Edges::new(
+                MENU_ITEM_PADDING_VERTICAL,
+                MENU_ITEM_PADDING_RIGHT,
+                MENU_ITEM_PADDING_VERTICAL,
+                MENU_ITEM_PADDING_LEFT,
+            )),
+            PartProp::Corners(Corners::uniform(MENU_ITEM_RADIUS)),
+        ])
+        .rule(
+            RuleSelector::on(WidgetState::HOVER),
+            [fill(c.menu_hover), outline(layout, c.menu_hover_frame)],
+        )
+        .rule(RuleSelector::on(WidgetState::PRESSED), [fill(c.accent)])
+        .build();
+    let item_label = RuleBuilder::new(label(&typography.body, Some(c.window_foreground)))
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED),
+            [TextProp::Color(c.selection_foreground)],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED),
+            [TextProp::Color(c.disabled_text)],
+        )
+        .build();
+    let icon = RuleBuilder::new(IconStyle::default())
+        .base([IconProp::Size(MENU_ICON_SIZE)])
+        .build();
+    let separator = RuleBuilder::new(PartStyle::default())
+        .base([fill(c.checkbox_frame)])
+        .build();
+    MenuWidget::new(
+        WidgetOrigin::Native,
+        panel,
+        item,
+        item_label,
+        RuleBuilder::new(TextStyle::default()).build(),
+        icon,
+        RuleBuilder::new(IconStyle::default()).build(),
+        separator,
+        MENU_ICON_TEXT_GAP,
+    )
+}
+
+/// The menu bar's titles: Breeze's margins; a hovered title filled in
+/// DecorationHover and an open one in DecorationFocus, both lettered
+/// HighlightedText. The bar's fill is the toolbar's (spec §5,
+/// `toolbar.background_color`), stated with the toolbar; a title's font has
+/// no 0.7.2 field, so none is stated.
+fn menu_bar(c: &SchemeColors) -> MenuBarWidget {
+    let item = RuleBuilder::new(PartStyle::default())
+        .base([PartProp::Padding(Edges::symmetric(
+            MENU_BAR_PADDING_VERTICAL,
+            MENU_BAR_PADDING_HORIZONTAL,
+        ))])
+        .rule(
+            RuleSelector::on(WidgetState::HOVER),
+            [fill(c.decoration_hover)],
+        )
+        .rule(RuleSelector::on(WidgetState::OPEN), [fill(c.accent)])
+        .build();
+    let item_label = RuleBuilder::new(TextStyle::default())
+        .rules(
+            [
+                RuleSelector::on(WidgetState::HOVER),
+                RuleSelector::on(WidgetState::OPEN),
+            ],
+            [TextProp::Color(c.selection_foreground)],
+        )
+        .build();
+    MenuBarWidget::new(
+        WidgetOrigin::Native,
+        RuleBuilder::new(PartStyle::default()).build(),
+        item,
+        item_label,
+        None,
+    )
+}
+
+/// The tab bar: the bar in the window's background (0.7.2:
+/// `tab.bar_background` is `defaults.background_color` where unstated);
+/// tabs of a least size with Breeze's margins and no shadow, filled
+/// `Window.darker(120)`, hovered in DecorationHover at alpha 0.2, the
+/// selected one in its own fill, outlined and rounded; the UI font in the
+/// window text (0.7.2: `tab.font` is `defaults.font` where unstated); the
+/// selected tab's indicator in the selection colour, of an exact thickness,
+/// along the top edge.
+fn tab(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> TabWidget {
+    let bar = RuleBuilder::new(PartStyle::default())
+        .base(roles.window.background.map(fill))
+        .build();
+    let tab = RuleBuilder::new(PartStyle::default())
+        .base([
+            fill(c.tab_background),
+            PartProp::MinSize([Some(TAB_MIN_WIDTH), Some(TAB_MIN_HEIGHT)]),
+            PartProp::Padding(Edges::symmetric(
+                TAB_PADDING_VERTICAL,
+                TAB_PADDING_HORIZONTAL,
+            )),
+            // `tab.border.shadow_enabled`: platform-facts.md (§2.11): no shadow
+            PartProp::Shadows(None),
+        ])
+        .rule(RuleSelector::on(WidgetState::HOVER), [fill(c.tab_hover)])
+        .rule(
+            RuleSelector::on(WidgetState::SELECTED),
+            [
+                fill(c.tab_selected_background),
+                PartProp::Stroke(Stroke::uniform(TAB_BORDER_WIDTH, c.tab_frame)),
+                PartProp::Corners(Corners::uniform(TAB_CORNER_RADIUS)),
+            ],
+        )
+        .build();
+    let label = RuleBuilder::new(label(&typography.body, roles.window.foreground))
+        .rules(
+            [
+                RuleSelector::on(WidgetState::HOVER),
+                RuleSelector::on(WidgetState::SELECTED),
+            ],
+            [TextProp::Color(c.tab_text)],
+        )
+        .build();
+    let indicator = RuleBuilder::new(PartStyle::default())
+        .rule(
+            RuleSelector::on(WidgetState::SELECTED),
+            [
+                fill(roles.selection.background),
+                PartProp::MinSize([None, Some(TAB_INDICATOR_WIDTH)]),
+                PartProp::MaxSize([None, Some(TAB_INDICATOR_WIDTH)]),
+            ],
+        )
+        .build();
+    TabWidget::new(
+        WidgetOrigin::Native,
+        bar,
+        tab,
+        label,
+        indicator,
+        RuleBuilder::new(PartStyle::default()).build(),
+        RuleBuilder::new(IconStyle::default()).build(),
+        Some(TAB_ITEM_GAP),
+        Some(TAB_INDICATOR_SIDE),
+        None,
     )
 }
 

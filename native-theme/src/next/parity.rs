@@ -1202,11 +1202,6 @@ const PORTED_GROUPS: &[&str] = &[
     "list",
     "scrollbar",
     "tooltip",
-];
-
-/// The groups of the table whose widgets the model holds but whose values the kde-breeze builder does not
-/// state yet (plan, M2's KDE unit): their rows are compared, counted and reported, not asserted.
-const NOT_PORTED_GROUPS: &[&str] = &[
     "window",
     "input",
     "text_area",
@@ -1216,16 +1211,16 @@ const NOT_PORTED_GROUPS: &[&str] = &[
     "splitter",
     "separator",
     "spinner",
-    "menu",
     "tab",
-    "sidebar",
-    "toolbar",
-    "status_bar",
 ];
+
+/// The groups of the table whose widgets the model holds but whose values the kde-breeze builder does not
+/// state yet (plan, M2's KDE unit): their rows are compared, counted and reported, not asserted.
+const NOT_PORTED_GROUPS: &[&str] = &["menu", "sidebar", "toolbar", "status_bar"];
 
 /// The totals of the ported groups' rows on each scheme, `[rows, compared, equal, mismatching, skipped]`:
 /// every row equal but those [`expected_skip`] names, skipped.
-const PORTED_TOTALS: [usize; 5] = [200, 195, 195, 0, 5];
+const PORTED_TOTALS: [usize; 5] = [330, 325, 325, 0, 5];
 
 /// The reason a row of the table is skipped on 0.7.2's `kde-breeze` without a reader's snapshot: the
 /// reader's context rows (`accessibility.*`), and `checkbox.background_color`, compared only where
@@ -1390,9 +1385,27 @@ fn model_parity_kde_breeze() -> TestResult {
 // from a kdeglobals file, and the kde-breeze builder fed the same file as `SystemOverrides`.
 // ---------------------------------------------------------------------------------------------------------
 
-/// The totals of the ported groups' rows on every fixture, `[rows, compared, equal, mismatching, skipped]`:
-/// every row equal but `checkbox.background_color`, skipped where `checkbox.unchecked_background` is
-/// stated (the table's listed differences). The rows of the groups not ported yet are counted, not asserted.
+/// The ported groups whose values the kde-breeze builder also derives from the system's settings, which
+/// reader parity asserts; the other ported groups state the preset's values only so far (plan, M2's KDE
+/// unit) and are counted with the groups not ported yet.
+#[cfg(all(target_os = "linux", feature = "kde"))]
+const READER_PORTED_GROUPS: &[&str] = &[
+    "defaults",
+    "text_scale",
+    "Resolved",
+    "layout",
+    "accessibility",
+    "button",
+    "checkbox",
+    "list",
+    "scrollbar",
+    "tooltip",
+];
+
+/// The totals of the rows of [`READER_PORTED_GROUPS`] on every fixture, `[rows, compared, equal,
+/// mismatching, skipped]`: every row equal but `checkbox.background_color`, skipped where
+/// `checkbox.unchecked_background` is stated (the table's listed differences). The other rows are counted,
+/// not asserted.
 #[cfg(all(target_os = "linux", feature = "kde"))]
 const READER_TOTALS: [usize; 5] = [200, 199, 199, 0, 1];
 
@@ -1440,9 +1453,9 @@ fn old_kde_reader(
 /// Reader parity of the kde-breeze builder: for every file of `tests/fixtures/kde/`, the 0.7.2 reader
 /// path ([`old_kde_reader`]) against `Theme::preset(Preset::KdeBreeze)` given the file's
 /// `SystemOverrides` and resolved for the file's context, over the table of homes, the snapshot's context
-/// compared. Zero mismatches over every row of the ported groups, the four `snapshot.context.*` rows
-/// compared and equal, the one skip for its named reason; the rows of the groups not ported yet counted and
-/// reported, the two counts making the whole table; the resolved theme's name is the reader's.
+/// compared. Zero mismatches over every row of [`READER_PORTED_GROUPS`], the four `snapshot.context.*`
+/// rows compared and equal, the one skip for its named reason; the other rows counted and reported, the
+/// two counts making the whole table; the resolved theme's name is the reader's.
 #[cfg(all(target_os = "linux", feature = "kde"))]
 #[test]
 fn reader_parity_kde() -> TestResult {
@@ -1499,8 +1512,8 @@ fn reader_parity_on(
     println!("{name}: {report}");
     assert_eq!(report.totals.rows, table.row.len(), "{name}");
     assert_eq!(&*new.name, old_name, "{name}");
-    let totals = group_totals(&report, true);
-    let not_ported = totals_in(&report, NOT_PORTED_GROUPS, true);
+    let totals = totals_in(&report, READER_PORTED_GROUPS, true);
+    let not_ported = totals_in(&report, READER_PORTED_GROUPS, false);
     println!(
         "{name}: [rows, compared, equal, mismatching, skipped] in the ported groups {totals:?}, \
          in the groups not ported yet {not_ported:?}"
@@ -1514,7 +1527,7 @@ fn reader_parity_on(
     for row in report
         .rows
         .iter()
-        .filter(|row| in_groups(&row.key, PORTED_GROUPS))
+        .filter(|row| in_groups(&row.key, READER_PORTED_GROUPS))
     {
         let skip = match row.outcome {
             compare::Outcome::Skipped(skip) => Some(skip),

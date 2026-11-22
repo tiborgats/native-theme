@@ -709,3 +709,185 @@ fn the_handle_with_the_pointer_on_the_bar_in_a_view_without_the_focus() {
         );
     }
 }
+
+const DECORATION_HOVER: Color = Color::rgb(1.0, 0.0, 1.0);
+
+/// Breeze's light colours with the hover and the focus decorations told
+/// apart (Breeze gives both #3daee9), so that the rule that wins shows, and
+/// the roles and the globals of them.
+fn distinct_decorations() -> (SchemeColors, ColorRoles, Typography, LayoutMetrics) {
+    let mut c = LIGHT;
+    c.decoration_hover = DECORATION_HOVER;
+    c.accent = DECORATION_FOCUS;
+    let colors = roles(&c, None, None);
+    let typography = typography(&colors, None);
+    let layout = Theme::preset(Preset::KdeBreeze)
+        .resolve(&ThemeContext::light())
+        .layout;
+    (c, colors, typography, layout)
+}
+
+/// A text field's focus outline wins over its hover outline, and a disabled
+/// field has no hover outline.
+#[test]
+fn a_text_field_s_focus_outline_wins_over_its_hover_outline() {
+    let (c, colors, typography, layout) = distinct_decorations();
+    let field = input(&c, &colors, &typography, &layout, Edges::all(0.0), None);
+    let stroke = |state| field.field(state).stroke;
+    assert_eq!(
+        outline_color(&stroke(WidgetState::HOVER)),
+        Some(DECORATION_HOVER)
+    );
+    assert_eq!(
+        outline_color(&stroke(WidgetState::FOCUSED.union(WidgetState::HOVER))),
+        Some(DECORATION_FOCUS)
+    );
+    assert_eq!(
+        field.field(WidgetState::DISABLED.union(WidgetState::HOVER)),
+        field.field(WidgetState::DISABLED)
+    );
+}
+
+/// A hovered or pressed visited link takes the link colour, and a disabled
+/// one the disabled colour, as 0.7.2's egui connector letters it.
+#[test]
+fn a_link_s_hover_pressed_and_disabled_colours_win_over_visited() {
+    for theme in both_schemes() {
+        let scheme = theme.context.scheme;
+        let color = |state| theme.link.label(state).color;
+        assert_eq!(theme.colors.link_visited.map(|_| ()), Some(()));
+        assert_ne!(color(WidgetState::VISITED), color(WidgetState::NONE));
+        for state in [WidgetState::HOVER, WidgetState::PRESSED] {
+            assert_eq!(
+                color(state.union(WidgetState::VISITED)),
+                theme.colors.link,
+                "{scheme:?} {state:?}"
+            );
+        }
+        let disabled = WidgetState::DISABLED.union(WidgetState::VISITED);
+        assert_eq!(
+            color(disabled.union(WidgetState::HOVER)),
+            color(WidgetState::DISABLED),
+            "{scheme:?}"
+        );
+        assert_ne!(
+            color(WidgetState::DISABLED),
+            theme.colors.link,
+            "{scheme:?}"
+        );
+    }
+}
+
+/// A slider handle's hover outline, which the pressed handle keeps, wins
+/// over its focus outline.
+#[test]
+fn a_slider_handle_s_hover_outline_wins_over_its_focus_outline() {
+    let (c, colors, ..) = distinct_decorations();
+    let slider = slider(&c, &colors);
+    let stroke = |state| outline_color(&slider.thumb(state).stroke);
+    assert_eq!(stroke(WidgetState::FOCUSED), Some(DECORATION_FOCUS));
+    for state in [WidgetState::HOVER, WidgetState::PRESSED] {
+        assert_eq!(
+            stroke(state.union(WidgetState::FOCUSED)),
+            Some(DECORATION_HOVER),
+            "{state:?}"
+        );
+    }
+}
+
+/// An open menu-bar title is filled over a hovered one.
+#[test]
+fn an_open_menu_bar_title_is_filled_over_a_hovered_one() {
+    let (c, ..) = distinct_decorations();
+    let menu_bar = menu_bar(&c);
+    let fill = |state| solid(&menu_bar.item(state).fill);
+    assert_eq!(fill(WidgetState::HOVER), Some(DECORATION_HOVER));
+    assert_eq!(
+        fill(WidgetState::OPEN.union(WidgetState::HOVER)),
+        Some(DECORATION_FOCUS)
+    );
+}
+
+/// A pressed menu item is filled in the opaque focus colour and keeps the
+/// hover outline; a hovered selected tab keeps the selected tab's fill.
+#[test]
+fn pressed_and_selected_fills_win_over_hover() {
+    for theme in both_schemes() {
+        let scheme = theme.context.scheme;
+        let pressed = theme
+            .menu
+            .item(WidgetState::HOVER.union(WidgetState::PRESSED));
+        let hovered = theme.menu.item(WidgetState::HOVER);
+        assert_ne!(pressed.fill, hovered.fill, "{scheme:?}");
+        assert_eq!(pressed.stroke, hovered.stroke, "{scheme:?}");
+        let selected = WidgetState::SELECTED;
+        assert_eq!(
+            theme.tab.tab(selected.union(WidgetState::HOVER)).fill,
+            theme.tab.tab(selected).fill,
+            "{scheme:?}"
+        );
+        assert_ne!(
+            theme.tab.tab(WidgetState::HOVER).fill,
+            theme.tab.tab(selected).fill,
+            "{scheme:?}"
+        );
+    }
+}
+
+/// An inactive window has the inactive title bar and title colours and
+/// nothing else changes; a maximized window takes the normal window's styles.
+#[test]
+fn an_inactive_window_has_the_inactive_title_bar() {
+    use crate::next::window::WindowState;
+
+    for ctx in [ThemeContext::light(), ThemeContext::dark()] {
+        let scheme = ctx.scheme;
+        let active = Theme::preset(Preset::KdeBreeze).resolve(&ctx);
+        let inactive =
+            Theme::preset(Preset::KdeBreeze).resolve(&ctx.clone().with_window_active(false));
+        let normal = WindowState::default();
+        let (scheme_colors, [bar, text]) = match scheme {
+            Scheme::Light => (LIGHT, [0xeff0_f1ff_u32, 0x707d_8aff]),
+            Scheme::Dark => (DARK, [0x2024_28ff, 0xa1a9_b1ff]),
+        };
+        assert_eq!(
+            solid(&active.window.title_bar(normal).fill),
+            Some(scheme_colors.title_bar_background),
+            "{scheme:?}"
+        );
+        assert_eq!(
+            solid(&inactive.window.title_bar(normal).fill),
+            Some(srgb8(bar)),
+            "{scheme:?}"
+        );
+        assert_eq!(
+            inactive.window.title(normal).color,
+            srgb8(text),
+            "{scheme:?}"
+        );
+        assert_eq!(
+            active.window.title(normal).color,
+            active.typography.body.color,
+            "{scheme:?}"
+        );
+        assert_eq!(
+            inactive.window.frame(normal),
+            active.window.frame(normal),
+            "{scheme:?}"
+        );
+        let maximized = WindowState {
+            maximized: true,
+            ..WindowState::default()
+        };
+        assert_eq!(
+            active.window.frame(maximized),
+            active.window.frame(normal),
+            "{scheme:?}"
+        );
+        assert_eq!(
+            active.window.title_bar(maximized),
+            active.window.title_bar(normal),
+            "{scheme:?}"
+        );
+    }
+}
