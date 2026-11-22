@@ -99,6 +99,87 @@ fn system_colours_apply_only_to_their_scheme_and_contrast() {
     }
 }
 
+/// The light theme of the scheme-independent settings `system`.
+fn light_with(system: SystemOverrides) -> ResolvedTheme {
+    Theme::preset(Preset::KdeBreeze)
+        .with_system_overrides(system)
+        .resolve(&ThemeContext::light())
+}
+
+#[test]
+fn a_pixel_ui_font_keeps_its_unit_in_the_headings() {
+    let theme = light_with(SystemOverrides {
+        ui_font: Some(OsFont::new(
+            Some(Arc::from("Inter")),
+            Some(FontSize::Px(13.0)),
+            None,
+            Some(FontStyle::Italic),
+            None,
+        )),
+        ..SystemOverrides::default()
+    });
+    let body = &theme.typography.body;
+    assert_eq!(&*body.family, "Inter");
+    assert_eq!(body.defined_size, Some(FontSize::Px(13.0)));
+    assert_eq!(body.size_px, 13.0);
+    // The weight the font does not give is the preset's.
+    assert_eq!(body.weight, FONT_WEIGHT);
+    assert_eq!(body.style, FontStyle::Italic);
+    assert_eq!(body.line_height, LINE_HEIGHT * 13.0);
+    for (entry, factor) in [
+        (&theme.typography.headline, HEADING_LEVEL_2_FACTOR),
+        (&theme.typography.title1, HEADING_LEVEL_1_FACTOR),
+    ] {
+        assert_eq!(
+            entry.as_ref().map(|e| (e.defined_size, e.weight)),
+            Some((Some(FontSize::Px(13.0 * factor)), HEADING_WEIGHT))
+        );
+    }
+    // A label takes the body's family.
+    assert_eq!(
+        &*theme
+            .button
+            .label(ButtonQuery::new(WidgetState::NONE))
+            .family,
+        "Inter"
+    );
+}
+
+#[test]
+fn the_icon_theme_is_dropped_with_its_sizes_where_the_system_was_in_the_other_scheme() {
+    let sizes = IconSizes::new(Some(24.0), None, Some(64.0), None, None);
+    let system = |scheme| SystemOverrides {
+        scheme: Some(scheme),
+        icon_theme: Some(Arc::from("Papirus")),
+        icon_sizes: Some(sizes),
+        ..SystemOverrides::default()
+    };
+    let same = light_with(system(Scheme::Light));
+    assert_eq!(same.icons.theme.as_deref(), Some("Papirus"));
+    assert_eq!(same.icons.sizes.toolbar, Some(24.0));
+    assert_eq!(same.icons.sizes.small, Some(ICON_SMALL));
+    assert_eq!(same.icons.sizes.large, Some(64.0));
+    let other = light_with(system(Scheme::Dark));
+    let [light, _] = both_schemes();
+    assert_eq!(other.icons, light.icons);
+}
+
+#[test]
+fn a_caret_without_blink_keeps_the_preset_s_visible_half() {
+    let theme = light_with(SystemOverrides {
+        caret_blink_off_ms: Some(0),
+        double_click_ms: Some(400),
+        cursor_theme: Some(Arc::from("breeze_cursors")),
+        cursor_size_px: Some(24.0),
+        ..SystemOverrides::default()
+    });
+    assert_eq!(theme.caret.blink_on_ms, Some(CARET_BLINK_ON_MS));
+    assert_eq!(theme.caret.blink_off_ms, Some(0));
+    assert_eq!(theme.timings.double_click_ms, Some(400));
+    assert_eq!(theme.layout.cursor_theme.as_deref(), Some("breeze_cursors"));
+    assert_eq!(theme.layout.cursor_size_px, Some(24.0));
+}
+
 /// The resolved `kde-breeze` of both schemes, from its constants.
 fn both_schemes() -> [ResolvedTheme; 2] {
     [ThemeContext::light(), ThemeContext::dark()]

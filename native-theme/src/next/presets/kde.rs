@@ -27,9 +27,16 @@
 //! the check mark, the dot, the list's container, row and header separator,
 //! the scroll bar's groove) none.
 //!
-//! Of the context it acts on the scheme alone. The contrast, the motion
-//! preference, the text scale, the direction and the accessibility and
-//! window flags change nothing here: no row of the parity table needs them.
+//! The system's scheme-independent settings apply wherever given: the UI,
+//! monospace and caption fonts (with the headings derived from the UI font),
+//! the font DPI, the icon theme and its sizes (unless the system was read in
+//! the other scheme), the cursor, the caret's blink and the double-click and
+//! drag timings.
+//!
+//! Of the context it acts on the scheme, and on the contrast only to pick
+//! the system's colours. The motion preference, the text scale, the
+//! direction and the accessibility and window flags change nothing here: no
+//! row of the parity table needs them.
 //!
 //! Sources: `kde-breeze.toml` of 0.7.2 (`src/presets/kde-breeze.toml`), each
 //! constant with the citation the TOML gives it (`docs/platform-facts.md` by
@@ -55,7 +62,7 @@ use crate::next::platform::kde_selection_inactive::kde_selection_inactive;
 use crate::next::platform::kde_shade::{KdeShadeRole, kde_shade};
 use crate::next::preset::{Preset, ResolveInputs};
 use crate::next::query::{ButtonVariant, Orientation, Scheme, ThemeContext, WidgetState};
-use crate::next::reader::OsColors;
+use crate::next::reader::{OsColors, OsFont, SystemOverrides};
 use crate::next::roles::{
     AccentColors, ColorRoles, RoleOrigin, SelectionColors, StatusColors, SurfaceColors,
 };
@@ -597,6 +604,21 @@ const TITLE1_SIZE_PT: f32 = 13.5;
 /// A dialog title's weight.
 // `text_scale.dialog_title.weight`: 0.7.2 kde-breeze.toml (uncited)
 const TITLE1_WEIGHT: u16 = 400;
+
+/// Kirigami `Heading` level 1 (the default level): the body font's point size
+/// times this (kirigami `8319acc`, `src/controls/Heading.qml:17-18,32`; 0.7.2's
+/// `kde/fonts.rs`).
+const HEADING_LEVEL_1_FACTOR: f32 = 1.35;
+
+/// Kirigami `Heading` level 2: the body font's point size times this
+/// (kirigami `8319acc`, `src/controls/Heading.qml:20-21,32`; 0.7.2's
+/// `kde/fonts.rs`).
+const HEADING_LEVEL_2_FACTOR: f32 = 1.20;
+
+/// Kirigami `Heading`'s weight for its default `type: Heading.Type.Normal`
+/// (kirigami `8319acc`, `src/templates/Heading.qml:89`): `Font.Normal`, CSS
+/// 400 (`src/controls/Heading.qml:35`; 0.7.2's `kde/fonts.rs`).
+const HEADING_WEIGHT: u16 = 400;
 
 /// The default corner radius.
 // `defaults.border.corner_radius`: 0.7.2 kde-breeze.toml (uncited)
@@ -1256,7 +1278,7 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
     );
     let c = &scheme_colors;
     let colors = roles(c, system.and_then(|s| s.accent));
-    let typography = typography(&colors);
+    let typography = typography(&colors, system);
     let layout = LayoutMetrics {
         widget_gap: Some(WIDGET_GAP),
         container_margin: Some(CONTAINER_MARGIN),
@@ -1267,8 +1289,17 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
         border_width: BORDER_WIDTH,
         border_opacity: BORDER_OPACITY,
         shadow_enabled: SHADOW_ENABLED,
-        cursor_size_px: None,
-        cursor_theme: None,
+        cursor_size_px: system.and_then(|s| s.cursor_size_px),
+        cursor_theme: system.and_then(|s| s.cursor_theme.clone()),
+    };
+    // The system's icon theme with its sizes, unless the system was read in
+    // the other scheme (spec §6, resolution step 2).
+    let (icon_theme, icon_sizes) = system
+        .filter(|s| s.scheme.is_none_or(|scheme| scheme == ctx.scheme))
+        .and_then(|s| Some((s.icon_theme.clone()?, s.icon_sizes)))
+        .unwrap_or_else(|| (Arc::from(constants.icon_theme), None));
+    let icon_size = |pick: fn(&IconSizes) -> Option<f32>, preset: f32| {
+        icon_sizes.as_ref().and_then(pick).unwrap_or(preset)
     };
     ResolvedTheme {
         name: Arc::from(Preset::KdeBreeze.display_name()),
@@ -1276,24 +1307,24 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
         context: ctx.clone(),
         icons: IconThemeSpec {
             set: ICON_SET,
-            theme: Some(Arc::from(constants.icon_theme)),
+            theme: Some(icon_theme),
             // 0.7.2's `Resolved::icon_theme_explicit`: the TOML states the theme
             // (`src/model/resolved.rs`).
             theme_explicit: true,
             sizes: IconSizes::new(
-                Some(ICON_TOOLBAR),
-                Some(ICON_SMALL),
-                Some(ICON_LARGE),
-                Some(ICON_DIALOG),
-                Some(ICON_PANEL),
+                Some(icon_size(|s| s.toolbar, ICON_TOOLBAR)),
+                Some(icon_size(|s| s.small, ICON_SMALL)),
+                Some(icon_size(|s| s.large, ICON_LARGE)),
+                Some(icon_size(|s| s.dialog, ICON_DIALOG)),
+                Some(icon_size(|s| s.panel, ICON_PANEL)),
             ),
         },
         timings: UiTimings {
             tooltip_show_ms: Some(TOOLTIP_SHOW_MS),
             tooltip_hide_ms: None,
             tooltip_reshow_ms: None,
-            double_click_ms: None,
-            drag_threshold_px: None,
+            double_click_ms: system.and_then(|s| s.double_click_ms),
+            drag_threshold_px: system.and_then(|s| s.drag_threshold_px),
             scrollbar_auto_hide_ms: None,
             menu_hover_open_ms: None,
             key_repeat_delay_ms: None,
@@ -1322,9 +1353,13 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
         ),
         caret: CaretSpec {
             width: None,
-            blink_on_ms: Some(CARET_BLINK_ON_MS),
-            blink_off_ms: Some(CARET_BLINK_OFF_MS),
-            blink_timeout_ms: None,
+            blink_on_ms: system
+                .and_then(|s| s.caret_blink_on_ms)
+                .or(Some(CARET_BLINK_ON_MS)),
+            blink_off_ms: system
+                .and_then(|s| s.caret_blink_off_ms)
+                .or(Some(CARET_BLINK_OFF_MS)),
+            blink_timeout_ms: system.and_then(|s| s.caret_blink_timeout_ms),
             shape: None,
         },
         elevations: Arc::from([]),
@@ -1433,15 +1468,23 @@ fn roles(c: &SchemeColors, accent: Option<Color>) -> ColorRoles {
     }
 }
 
-/// A point size in logical pixels at [`FONT_DPI`], rounded as Qt rounds it
-/// where [`FONT_WHOLE_PIXELS`] (0.7.2: `src/resolve/validate.rs`, the
+/// A font size in logical pixels at the font DPI `dpi`, rounded as Qt rounds
+/// it where [`FONT_WHOLE_PIXELS`] (0.7.2: `src/resolve/validate.rs`, the
 /// whole-pixel sizes).
-fn font_px(pt: f32) -> f32 {
-    let px = FontSize::Pt(pt).to_logical_px(FONT_DPI);
+fn font_px(size: FontSize, dpi: f32) -> f32 {
+    let px = size.to_logical_px(dpi);
     if FONT_WHOLE_PIXELS {
         qt_whole_px(px)
     } else {
         px
+    }
+}
+
+/// `size` times `factor`, in its unit.
+fn scaled(size: FontSize, factor: f32) -> FontSize {
+    match size {
+        FontSize::Pt(v) => FontSize::Pt(v * factor),
+        FontSize::Px(v) => FontSize::Px(v * factor),
     }
 }
 
@@ -1457,25 +1500,36 @@ fn qt_whole_px(px: f32) -> f32 {
     ((px * 100.0).round() / 100.0).round()
 }
 
-/// The line height of a style of `size_pt` points, in logical pixels: the
-/// multiplier times the size before whole-pixel rounding, converted at
-/// [`FONT_DPI`] (0.7.2's `resolve_text_scale_entry`,
+/// The line height of a style of `size`, in logical pixels: the multiplier
+/// times the size before whole-pixel rounding, in its unit, converted at the
+/// font DPI `dpi` (0.7.2's `resolve_text_scale_entry`,
 /// `src/resolve/inheritance.rs`, then its conversion in `validate`; spec §4,
 /// `Typography`).
-fn line_height_px(size_pt: f32) -> f32 {
-    FontSize::Pt(LINE_HEIGHT * size_pt).to_logical_px(FONT_DPI)
+fn line_height_px(size: FontSize, dpi: f32) -> f32 {
+    scaled(size, LINE_HEIGHT).to_logical_px(dpi)
 }
 
-/// A font as 0.7.2 resolves it: its family, size, weight and colour (where
-/// given) stated, and its style, which 0.7.2 resolves to normal where the
-/// theme states none (`src/resolve/validate_helpers.rs`, `require_font`).
-fn font(family: &str, size_pt: f32, weight: u16, color: Option<Color>) -> TextStyle {
+/// A font as 0.7.2 resolves it: the system's font `os` laid over the
+/// preset's `family`, `size`, `weight` and normal style field by field (a
+/// field `os` does not give keeps the preset's, 0.7.2's merge); its family,
+/// size, weight and style stated, the style normal where neither states one
+/// (`src/resolve/validate_helpers.rs`, `require_font`); and `color`, where
+/// given.
+fn font(
+    os: Option<&OsFont>,
+    (family, size, weight): (&str, FontSize, u16),
+    color: Option<Color>,
+    dpi: f32,
+) -> TextStyle {
+    let size = os.and_then(|f| f.size).unwrap_or(size);
     let mut font = TextStyle {
-        family: Arc::from(family),
-        size_px: font_px(size_pt),
-        defined_size: Some(FontSize::Pt(size_pt)),
-        weight,
-        style: FontStyle::Normal,
+        family: os
+            .and_then(|f| f.family.clone())
+            .unwrap_or_else(|| Arc::from(family)),
+        size_px: font_px(size, dpi),
+        defined_size: Some(size),
+        weight: os.and_then(|f| f.weight).unwrap_or(weight),
+        style: os.and_then(|f| f.style).unwrap_or(FontStyle::Normal),
         stated: TextStated::FAMILY | TextStated::SIZE_PX | TextStated::WEIGHT | TextStated::STYLE,
         ..TextStyle::default()
     };
@@ -1488,44 +1542,84 @@ fn font(family: &str, size_pt: f32, weight: u16, color: Option<Color>) -> TextSt
 
 /// A text-scale entry as 0.7.2 resolves it: its size, weight and line height
 /// stated, nothing else (0.7.2's `TextScaleEntry`).
-fn text_scale_entry(size_pt: f32, weight: u16) -> TextStyle {
+fn text_scale_entry(size: FontSize, weight: u16, dpi: f32) -> TextStyle {
     TextStyle {
-        size_px: font_px(size_pt),
-        defined_size: Some(FontSize::Pt(size_pt)),
+        size_px: font_px(size, dpi),
+        defined_size: Some(size),
         weight,
-        line_height: line_height_px(size_pt),
+        line_height: line_height_px(size, dpi),
         stated: TextStated::SIZE_PX | TextStated::WEIGHT | TextStated::LINE_HEIGHT,
         ..TextStyle::default()
     }
 }
 
-/// The text styles. The fonts' colour is the window's foreground (0.7.2:
-/// `defaults.font.color` is `defaults.text_color`, and `defaults.mono_font`'s
-/// is `defaults.font`'s, where unstated: `resolve_defaults_internal`). The
-/// body's line height follows the text-scale rule (spec §4); `display`, which
-/// 0.7.2 resolves from the body font, is `None` and falls back to the body.
-fn typography(colors: &ColorRoles) -> Typography {
+/// The text styles, with the system's fonts in `system` laid over the
+/// preset's (spec §8, "The KDE part"; 0.7.2's `kde/fonts.rs`,
+/// `populate_fonts`, merged over the preset). The fonts' colour is the
+/// window's foreground (0.7.2: `defaults.font.color` is
+/// `defaults.text_color`, and `defaults.mono_font`'s is `defaults.font`'s,
+/// where unstated: `resolve_defaults_internal`). The caption takes the
+/// caption font's size and weight; where the UI font's size is given, the
+/// headline and the first title are Kirigami's headings of it
+/// ([`HEADING_LEVEL_2_FACTOR`], [`HEADING_LEVEL_1_FACTOR`],
+/// [`HEADING_WEIGHT`]). The body's line height follows the text-scale rule
+/// (spec §4); `display`, which 0.7.2 resolves from the body font, is `None`
+/// and falls back to the body. Sizes convert at the system's font DPI where
+/// given, else at [`FONT_DPI`].
+fn typography(colors: &ColorRoles, system: Option<&SystemOverrides>) -> Typography {
+    let dpi = system.and_then(|s| s.font_dpi).unwrap_or(FONT_DPI);
     let text = colors.window.foreground;
-    let mut body = font(FONT_FAMILY, FONT_SIZE_PT, FONT_WEIGHT, text);
-    body.line_height = line_height_px(FONT_SIZE_PT);
-    body.stated |= TextStated::LINE_HEIGHT;
+    let ui = system.and_then(|s| s.ui_font.as_ref());
+    let mut body = font(
+        ui,
+        (FONT_FAMILY, FontSize::Pt(FONT_SIZE_PT), FONT_WEIGHT),
+        text,
+        dpi,
+    );
+    if let Some(size) = body.defined_size {
+        body.line_height = line_height_px(size, dpi);
+        body.stated |= TextStated::LINE_HEIGHT;
+    }
+    let ui_size = ui.and_then(|f| f.size);
+    let heading = |factor: f32, (size, weight): (f32, u16)| match ui_size {
+        Some(ui_size) => text_scale_entry(scaled(ui_size, factor), HEADING_WEIGHT, dpi),
+        None => text_scale_entry(FontSize::Pt(size), weight, dpi),
+    };
+    let caption = system.and_then(|s| s.caption_font.as_ref());
     Typography {
         display: None,
-        title1: Some(text_scale_entry(TITLE1_SIZE_PT, TITLE1_WEIGHT)),
+        title1: Some(heading(
+            HEADING_LEVEL_1_FACTOR,
+            (TITLE1_SIZE_PT, TITLE1_WEIGHT),
+        )),
         title2: None,
         title3: None,
         title4: None,
-        headline: Some(text_scale_entry(HEADLINE_SIZE_PT, HEADLINE_WEIGHT)),
+        headline: Some(heading(
+            HEADING_LEVEL_2_FACTOR,
+            (HEADLINE_SIZE_PT, HEADLINE_WEIGHT),
+        )),
         body,
         callout: None,
         subheadline: None,
-        caption: Some(text_scale_entry(CAPTION_SIZE_PT, CAPTION_WEIGHT)),
-        monospace: font(MONO_FAMILY, MONO_SIZE_PT, MONO_WEIGHT, text),
+        caption: Some(text_scale_entry(
+            caption
+                .and_then(|f| f.size)
+                .unwrap_or(FontSize::Pt(CAPTION_SIZE_PT)),
+            caption.and_then(|f| f.weight).unwrap_or(CAPTION_WEIGHT),
+            dpi,
+        )),
+        monospace: font(
+            system.and_then(|s| s.monospace_font.as_ref()),
+            (MONO_FAMILY, FontSize::Pt(MONO_SIZE_PT), MONO_WEIGHT),
+            text,
+            dpi,
+        ),
         line_height_multiplier: LINE_HEIGHT,
         fallbacks: Arc::from([]),
         emoji_family: None,
         rendering: TextRendering::default(),
-        font_dpi: FONT_DPI,
+        font_dpi: dpi,
         font_whole_pixels: Some(FONT_WHOLE_PIXELS),
     }
 }

@@ -1231,17 +1231,11 @@ fn model_parity_kde_breeze() -> TestResult {
 // from a kdeglobals file, and the kde-breeze builder fed the same file as `SystemOverrides`.
 // ---------------------------------------------------------------------------------------------------------
 
-/// The groups of the table whose rows `reader_parity_kde` asserts equal on every fixture so far: those
-/// that carry the system's colours.
+/// The totals of the table's rows on every fixture, `[rows, compared, equal, mismatching, skipped]`:
+/// every row equal but `checkbox.background_color`, skipped where `checkbox.unchecked_background` is
+/// stated (the table's listed differences).
 #[cfg(all(target_os = "linux", feature = "kde"))]
-const READER_ASSERTED_GROUPS: &[&str] = &[
-    "defaults",
-    "button",
-    "checkbox",
-    "list",
-    "scrollbar",
-    "tooltip",
-];
+const READER_TOTALS: [usize; 5] = [200, 199, 199, 0, 1];
 
 /// The number of files in `tests/fixtures/kde/`: breeze-dark.ini, breeze-index.theme, breeze-light.ini,
 /// custom-accent.ini, high-dpi.ini, malformed-values.ini, minimal.ini, missing-groups.ini.
@@ -1285,8 +1279,8 @@ fn old_kde_reader(
 /// Reader parity of the kde-breeze builder: for every file of `tests/fixtures/kde/`, the 0.7.2 reader
 /// path ([`old_kde_reader`]) against `Theme::preset(Preset::KdeBreeze)` given the file's
 /// `SystemOverrides` and resolved for the file's context, over the table of homes, the snapshot's context
-/// compared. Zero mismatches in the groups asserted so far, the others counted; the resolved theme's name
-/// is the reader's.
+/// compared. Zero mismatches over every row, the four `snapshot.context.*` rows compared and equal, the
+/// one skip for its named reason; the resolved theme's name is the reader's.
 #[cfg(all(target_os = "linux", feature = "kde"))]
 #[test]
 fn reader_parity_kde() -> TestResult {
@@ -1314,13 +1308,26 @@ fn reader_parity_kde() -> TestResult {
         println!("{name}: {report}");
         assert_eq!(report.totals.rows, table.row.len(), "{name}");
         assert_eq!(&*new.name, old_name, "{name}");
-        let asserted = totals_in(&report, READER_ASSERTED_GROUPS, true);
-        let counted = totals_in(&report, READER_ASSERTED_GROUPS, false);
-        println!(
-            "{name}: [rows, compared, equal, mismatching, skipped] in the asserted groups {asserted:?}, \
-             in the others {counted:?}"
-        );
-        assert_eq!(asserted[3], 0, "{name}\n{report}");
+        let totals = totals_in(&report, &[], false);
+        println!("{name}: [rows, compared, equal, mismatching, skipped] {totals:?}");
+        assert_eq!(totals, READER_TOTALS, "{name}\n{report}");
+        assert_eq!(report.totals.mismatches, 0, "{name}\n{report}");
+        for row in &report.rows {
+            let skip = match row.outcome {
+                compare::Outcome::Skipped(skip) => Some(skip),
+                _ => None,
+            };
+            let expected =
+                (row.key == "checkbox.background_color").then_some(compare::Skip::OtherKeyStated);
+            assert_eq!(skip, expected, "{name}: `{}`", row.key);
+            if row.key.starts_with("accessibility.") {
+                assert!(
+                    matches!(row.outcome, compare::Outcome::Equal),
+                    "{name}: `{}`",
+                    row.key
+                );
+            }
+        }
     }
     Ok(())
 }
