@@ -54,9 +54,12 @@ pub(crate) fn snapshot_from_kdeglobals(
 /// `accessibility.reduce_motion` (`kde::reduce_motion`). Every other field is
 /// the default, as the 0.7.2 reader leaves the rest of its `accessibility`
 /// block: a text scale of 1.0, no high contrast, no reduced transparency.
+// `allow`, not `expect`: rustc 1.88 (the MSRV) does not report a function
+// that only an unused function calls, so an expectation here is unfulfilled
+// there and fulfilled on the current toolchain.
 #[cfg_attr(
     not(test),
-    expect(
+    allow(
         dead_code,
         reason = "called by the KDE reader's `read()` (plan, M2) and the reader parity test"
     )
@@ -82,9 +85,10 @@ pub(crate) fn context_from_kdeglobals(ini: &Ini) -> ThemeContext {
 /// which is left out where the file states none of them. The motion
 /// preference that `[KDE] AnimationDurationFactor = 0` means is the
 /// snapshot's context ([`context_from_kdeglobals`]).
+// `allow`, not `expect`, for the reason given on `context_from_kdeglobals`.
 #[cfg_attr(
     not(test),
-    expect(
+    allow(
         dead_code,
         reason = "called by the KDE reader's `read()` (plan, M2) and the kde-breeze builder's tests"
     )
