@@ -333,9 +333,11 @@ impl Theme {
     }
 
     /// This theme keeping its palette and its explicit accent in a resolve
-    /// for `Contrast::High` where `preserve` is true; where it is false (the
-    /// default), the system's high-contrast colours replace both (spec §6,
-    /// resolution step 1).
+    /// for `Contrast::High` where `preserve` is true. Where it is false (the
+    /// default), a resolve for `High` passes neither on where `High` is
+    /// available for the context's scheme, and does not take `High` while
+    /// either is active: the nearest available level below it is resolved
+    /// with them (spec §6, resolution step 1).
     #[must_use]
     pub fn preserve_palette_in_high_contrast(mut self, preserve: bool) -> Self {
         self.preserve_palette_in_high_contrast = preserve;
@@ -405,17 +407,16 @@ impl Theme {
     /// not finite). A contrast level is available for a scheme where the
     /// preset defines it ([`contrast_levels`]) or the system's settings carry
     /// colours for that scheme and level (an entry of `color_schemes` that
-    /// states at least one value). Where `High` is requested and available
-    /// for `ctx.scheme`, and the theme does not
-    /// [preserve](Self::preserve_palette_in_high_contrast) its palette, no
+    /// states at least one colour, [`OsColors::states_a_colour`]). Where
+    /// `High` is requested and available for `ctx.scheme`, and the theme does
+    /// not [preserve](Self::preserve_palette_in_high_contrast) its palette, no
     /// palette and no explicit accent are passed on. Otherwise the active
     /// palette (the locking one, else the slot of the context's scheme) sets
     /// the effective scheme to its own. The effective contrast is the
     /// requested level where it is available for the effective scheme, else
-    /// the nearest level below it that the preset defines; but `High` meets
-    /// an active palette or a passed accent only where the theme preserves
-    /// them: otherwise the nearest level below `High` that is available for
-    /// the effective scheme is taken.
+    /// the nearest level below it that is available for the effective
+    /// scheme; `High` meets an active palette or a passed accent only where
+    /// the theme preserves them, and otherwise is not taken either.
     fn effective_inputs(&self, ctx: &ThemeContext) -> (ThemeContext, ResolveInputs<'_>) {
         let system = self.system.as_deref();
         let levels = contrast_levels(self.preset);
@@ -423,7 +424,7 @@ impl Theme {
             levels.contains(&level)
                 || system
                     .and_then(|s| s.colors_for(scheme, level))
-                    .is_some_and(|colors| *colors != OsColors::default())
+                    .is_some_and(OsColors::states_a_colour)
         };
         let mut effective = ctx.clone();
         effective.text_scale = sanitized_text_scale(ctx.text_scale);
@@ -443,12 +444,10 @@ impl Theme {
         let high_withheld = requested == Contrast::High
             && !self.preserve_palette_in_high_contrast
             && (palette.is_some() || accent.is_some());
-        effective.contrast = if high_withheld {
-            nearest_below(requested, |level| available(effective.scheme, level))
-        } else if available(effective.scheme, requested) {
+        effective.contrast = if !high_withheld && available(effective.scheme, requested) {
             requested
         } else {
-            nearest_below(requested, |level| levels.contains(&level))
+            nearest_below(requested, |level| available(effective.scheme, level))
         };
         let inputs = ResolveInputs {
             system,
@@ -699,6 +698,7 @@ pub(crate) fn nothing_stated(preset: Preset, context: ThemeContext) -> ResolvedT
 
 #[cfg(test)]
 mod tests {
+    use super::super::reader::{KdeColorEffects, OsSelectionColors, OsSurfaceOverrides};
     use super::*;
 
     #[test]
@@ -733,20 +733,6 @@ mod tests {
     fn for_current_platform_is_the_detected_preset() {
         let theme = Theme::for_current_platform();
         assert_eq!(theme.preset_id(), Preset::detect());
-    }
-
-    #[test]
-    fn resolve_inputs_hold_what_they_are_given() {
-        let system = SystemOverrides::default();
-        let p = palette("P", Scheme::Dark);
-        let inputs = ResolveInputs {
-            system: Some(&system),
-            palette: Some(&p),
-            accent: Some(Color::WHITE),
-        };
-        assert_eq!(inputs.system, Some(&system));
-        assert_eq!(inputs.palette, Some(&p));
-        assert_eq!(inputs.accent, Some(Color::WHITE));
     }
 
     /// A palette named `name` for `scheme`, its colours the defaults.
@@ -869,8 +855,127 @@ mod tests {
             OsColors::default(),
         ));
         assert_eq!(empty.effective_inputs(&ctx).0.contrast, Contrast::Normal);
-        let stated = theme.with_system_overrides(system_with(Scheme::Light, Contrast::High));
+        let stated = theme
+            .clone()
+            .with_system_overrides(system_with(Scheme::Light, Contrast::High));
         assert_eq!(stated.effective_inputs(&ctx).0.contrast, Contrast::High);
+
+        // The contrast scalars, the effects and an empty status array state
+        // no colour.
+        let effects = KdeColorEffects::new(None, None, true);
+        for colors in [
+            OsColors {
+                kde_contrast: Some(7),
+                ..OsColors::default()
+            },
+            OsColors {
+                kde_frame_contrast: Some(0.2),
+                kde_effects: Some(effects),
+                ..OsColors::default()
+            },
+            OsColors {
+                status: Some([None; 4]),
+                surfaces: Some(OsSurfaceOverrides {
+                    window: Some(SurfaceColors::default()),
+                    ..OsSurfaceOverrides::default()
+                }),
+                selection: Some(OsSelectionColors::default()),
+                ..OsColors::default()
+            },
+        ] {
+            assert!(!colors.states_a_colour(), "{colors:?}");
+            let t = theme.clone().with_system_overrides(system_entry(
+                Scheme::Light,
+                Contrast::High,
+                colors,
+            ));
+            assert_eq!(t.effective_inputs(&ctx).0.contrast, Contrast::Normal);
+        }
+
+        // A nested colour states one.
+        let c = Some(Color::WHITE);
+        let surface = SurfaceColors {
+            divider: c,
+            ..SurfaceColors::default()
+        };
+        for colors in [
+            OsColors {
+                status: Some([None, None, None, c]),
+                ..OsColors::default()
+            },
+            OsColors {
+                surfaces: Some(OsSurfaceOverrides {
+                    kde_button: Some(surface),
+                    ..OsSurfaceOverrides::default()
+                }),
+                ..OsColors::default()
+            },
+            OsColors {
+                text_selection: Some(OsSelectionColors {
+                    unfocused_foreground: c,
+                    ..OsSelectionColors::default()
+                }),
+                ..OsColors::default()
+            },
+            OsColors {
+                kde_decoration_hover: c,
+                ..OsColors::default()
+            },
+        ] {
+            assert!(colors.states_a_colour(), "{colors:?}");
+            let t = theme.clone().with_system_overrides(system_entry(
+                Scheme::Light,
+                Contrast::High,
+                colors,
+            ));
+            assert_eq!(t.effective_inputs(&ctx).0.contrast, Contrast::High);
+        }
+    }
+
+    /// Without the level requested, the nearest level below it that is
+    /// available for the effective scheme: the system's `Increased` colours
+    /// make it available, with or without an accent.
+    #[test]
+    fn a_missing_level_falls_back_to_the_nearest_available_below() {
+        let ctx = with_contrast(ThemeContext::light(), Contrast::High);
+        let theme = Theme::preset(Preset::KdeBreeze);
+        let increased = theme
+            .clone()
+            .with_system_overrides(system_with(Scheme::Light, Contrast::Increased));
+        assert_eq!(
+            increased.effective_inputs(&ctx).0.contrast,
+            Contrast::Increased
+        );
+        assert_eq!(
+            increased.resolve(&ctx).context.contrast,
+            Contrast::Increased
+        );
+        let accented = increased.with_accent(Color::WHITE);
+        let (effective, inputs) = accented.effective_inputs(&ctx);
+        assert_eq!(effective.contrast, Contrast::Increased);
+        assert_eq!(inputs.accent, Some(Color::WHITE));
+        assert_eq!(theme.effective_inputs(&ctx).0.contrast, Contrast::Normal);
+        assert_eq!(
+            theme
+                .with_accent(Color::WHITE)
+                .effective_inputs(&ctx)
+                .0
+                .contrast,
+            Contrast::Normal
+        );
+    }
+
+    /// The builder resolves for the effective context, not the one asked
+    /// for: a dark palette resolved for a light context gives the dark
+    /// scheme's icon theme.
+    #[test]
+    fn the_builder_receives_the_effective_context() {
+        let theme = Theme::preset(Preset::KdeBreeze);
+        let dark = theme.resolve(&ThemeContext::dark()).icons.theme;
+        let light = theme.resolve(&ThemeContext::light()).icons.theme;
+        assert_ne!(dark, light);
+        let locked = theme.with_palette(palette("D", Scheme::Dark));
+        assert_eq!(locked.resolve(&ThemeContext::light()).icons.theme, dark);
     }
 
     #[test]
@@ -963,7 +1068,7 @@ mod tests {
             assert!(inputs.palette.is_some());
             assert_eq!(inputs.accent, Some(Color::WHITE));
             // The locking palette's scheme has no `High` colours: the nearest
-            // level below that the preset defines.
+            // level below that is available for it.
             let want = if effective.scheme == Scheme::Light {
                 Contrast::High
             } else {

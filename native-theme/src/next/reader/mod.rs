@@ -207,6 +207,46 @@ impl OsColors {
             kde_effects,
         }
     }
+
+    /// Whether these colours state at least one colour: a colour field,
+    /// nested ones included; the contrast scalars and the effects state none
+    /// (spec §6, resolution step 1).
+    pub(crate) fn states_a_colour(&self) -> bool {
+        let Self {
+            surfaces,
+            selection,
+            text_selection,
+            accent,
+            focus_ring,
+            link,
+            link_visited,
+            status,
+            alternate_row_background,
+            kde_decoration_focus,
+            kde_decoration_hover,
+            kde_frame_contrast: _,
+            kde_contrast: _,
+            kde_effects: _,
+        } = self;
+        surfaces
+            .as_ref()
+            .is_some_and(OsSurfaceOverrides::states_a_colour)
+            || [selection, text_selection]
+                .into_iter()
+                .any(|s| s.as_ref().is_some_and(OsSelectionColors::states_a_colour))
+            || status.is_some_and(|status| status.iter().any(Option::is_some))
+            || [
+                accent,
+                focus_ring,
+                link,
+                link_visited,
+                alternate_row_background,
+                kde_decoration_focus,
+                kde_decoration_hover,
+            ]
+            .into_iter()
+            .any(Option::is_some)
+    }
 }
 
 /// `SelectionColors` with every colour optional: a system may state one colour of a pair (0.7.2 takes each alone).
@@ -238,6 +278,24 @@ impl OsSelectionColors {
             unfocused_background,
             unfocused_foreground,
         }
+    }
+
+    /// Whether any of the four colours is stated.
+    fn states_a_colour(&self) -> bool {
+        let Self {
+            background,
+            foreground,
+            unfocused_background,
+            unfocused_foreground,
+        } = self;
+        [
+            background,
+            foreground,
+            unfocused_background,
+            unfocused_foreground,
+        ]
+        .into_iter()
+        .any(Option::is_some)
     }
 }
 
@@ -308,6 +366,52 @@ impl OsSurfaceOverrides {
             title_bar_inactive,
             kde_button,
         }
+    }
+
+    /// Whether any surface states a colour.
+    fn states_a_colour(&self) -> bool {
+        let Self {
+            window,
+            view,
+            header,
+            sidebar,
+            card,
+            dialog,
+            popover,
+            tooltip,
+            osd,
+            title_bar,
+            title_bar_inactive,
+            kde_button,
+        } = self;
+        [
+            window,
+            view,
+            header,
+            sidebar,
+            card,
+            dialog,
+            popover,
+            tooltip,
+            osd,
+            title_bar,
+            title_bar_inactive,
+            kde_button,
+        ]
+        .into_iter()
+        .flatten()
+        .any(|s| {
+            let SurfaceColors {
+                background,
+                foreground,
+                foreground_muted,
+                border,
+                divider,
+            } = s;
+            [background, foreground, foreground_muted, border, divider]
+                .into_iter()
+                .any(Option::is_some)
+        })
     }
 }
 
