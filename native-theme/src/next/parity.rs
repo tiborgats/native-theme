@@ -108,6 +108,7 @@ struct Row {
     if_null: Option<String>,
     only_if_null: Option<String>,
     home_fallback: Option<String>,
+    null_reference: Option<String>,
     #[serde(default)]
     hand: bool,
     difference_presets: Option<Vec<String>>,
@@ -911,6 +912,14 @@ fn problems(table: &Table, keys: &BTreeSet<String>) -> Vec<String> {
                 found.push(format!("`{key}`: {field} `{other}` is no key of the slice"));
             }
         }
+        if let Some(reference) = &row.null_reference {
+            let parses = reference.split('|').all(|state| STATES.contains(&state));
+            if reference == "NONE" || !parses {
+                found.push(format!(
+                    "`{key}`: null_reference `{reference}` is no set of states"
+                ));
+            }
+        }
         if let Some(fallback) = &row.home_fallback {
             if row.homes.len() != 1 || !row.homes_by_preset.is_empty() {
                 found.push(format!("`{key}`: home_fallback needs exactly one home"));
@@ -1021,6 +1030,7 @@ fn the_checks_catch_what_they_check() -> TestResult {
         [[row]]
         key = "button.min_width"
         homes = ["button.body(NONE).min_size[0]"]
+        null_reference = "HOVERED"
 
         [[row]]
         key = "button.gone"
@@ -1049,6 +1059,7 @@ fn the_checks_catch_what_they_check() -> TestResult {
         "`accessibility.reduce_motion`: no row written by hand",
         "`layout.gone`: written by hand, but no field",
         "`button.min_width`: difference_values must name exactly the difference_presets",
+        "`button.min_width`: null_reference `HOVERED` is no set of states",
     ] {
         assert!(
             found.iter().any(|p| p.contains(expected)),

@@ -18,6 +18,9 @@
 #   only_if_null         optional. An old key: the row is compared only where that key is null.
 #   home_fallback        optional, with one home. Where the `Option` slot of that home is `None` (a `Typography`
 #                        slot the platform does not define), this home is compared instead.
+#   null_reference       optional. States joined by `|` (`CHECKED`): where `key` is null, a home whose state holds
+#                        these states and more is compared with the same property at these states, not at `NONE`
+#                        (a `HOVER|CHECKED` home whose reference is `CHECKED`); see the paragraph below the homes.
 #   hand                 optional, default false. The row is written by hand: its key is not in the serialisation.
 #   difference_presets   optional, with the three keys below. The presets on which the row is a listed difference
 #   difference_reason      (plan, rule 2): what differs and why,
@@ -54,7 +57,8 @@
 # `optical_size`, `decoration`, `blend_mode`) or of `IconStyle` (`size`, `color`, `opacity`, `weight`,
 # `rendering_mode`, `stroke_width`, `blend_mode`), by the part's kind. A 0.7.2 `None` at a part's property is the
 # property's `stated` bit clear; for a state, no rule, so the query returns what it returns without that state
-# (spec §5, notes to the table). `checkbox.*` serves `checkbox` and `radio`: such a row names a home on each.
+# (spec §5, notes to the table): the test compares the property at the home's state, value and `stated` bit,
+# with the same property at the reference state, `NONE` unless `null_reference` names another. `checkbox.*` serves `checkbox` and `radio`: such a row names a home on each.
 
 # --- defaults ---
 

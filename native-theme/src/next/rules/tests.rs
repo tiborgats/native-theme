@@ -192,7 +192,7 @@ fn clearing_focused_clears_focus_visible() {
     assert_eq!(normalize(query, GROUPS), WidgetState::DISABLED);
     let rules = one_rule(on(WidgetState::FOCUS_VISIBLE));
     let rules = RuleSet {
-        exclusive: Arc::from(GROUPS),
+        exclusive: GROUPS,
         ..rules
     };
     assert_eq!(
@@ -551,7 +551,7 @@ fn rule_with_out_of_range_props_is_skipped() {
     // ranges at u32::MAX.
     let rules: RuleSet<PartStyle, PartProp> = RuleSet {
         base: base(),
-        exclusive: Arc::from([]),
+        exclusive: &[],
         rules: Arc::from(vec![
             entry(0, 1),
             entry(1, 2),
@@ -579,7 +579,7 @@ fn a_range_beyond_u32_is_stored_empty() -> Result<(), std::num::TryFromIntError>
     // An empty range applies nothing.
     let rules: RuleSet<PartStyle, PartProp> = RuleSet {
         base: base(),
-        exclusive: Arc::from([]),
+        exclusive: &[],
         rules: Arc::from(vec![RuleEntry {
             selector: RuleSelector::default(),
             start: 0,
@@ -1099,7 +1099,7 @@ fn built_body() -> RuleSet<PartStyle, PartProp, ButtonMatcher> {
         WidgetState::PRESSED,
         WidgetState::HOVER,
     ]];
-    RuleBuilder::new(PartStyle::default())
+    RuleBuilder::with_exclusive(PartStyle::default(), GROUPS)
         .base([
             fill(BLUE),
             PartProp::Stroke(Stroke::uniform(1.0, RED)),
@@ -1107,7 +1107,6 @@ fn built_body() -> RuleSet<PartStyle, PartProp, ButtonMatcher> {
             PartProp::Padding(Edges::all(6.0)),
             PartProp::MinSize([Some(80.0), None]),
         ])
-        .exclusive(GROUPS)
         .rule(
             RuleSelector::on(WidgetState::HOVER),
             [fill(GREEN), PartProp::Stroke(Stroke::uniform(1.0, GREEN))],
@@ -1253,8 +1252,7 @@ fn dead_rules_lists_the_rules_that_cannot_match() {
         ],
         &[WidgetState::CHECKED, WidgetState::INDETERMINATE],
     ];
-    let rules: RuleSet<PartStyle, PartProp> = RuleBuilder::new(base())
-        .exclusive(GROUPS)
+    let rules: RuleSet<PartStyle, PartProp> = RuleBuilder::with_exclusive(base(), GROUPS)
         .rule(RuleSelector::on(WidgetState::HOVER), [fill(RED)])
         // Two flags of the first group: never both after normalisation.
         .rule(
@@ -1340,8 +1338,7 @@ fn requiring_focus_visible_and_forbidding_focused_is_dead() {
 #[test]
 fn requiring_focus_visible_with_a_group_rival_of_focused_is_dead() {
     const GROUPS: &[&[WidgetState]] = &[&[WidgetState::DISABLED, WidgetState::FOCUSED]];
-    let rules: RuleSet<PartStyle, PartProp> = RuleBuilder::new(base())
-        .exclusive(GROUPS)
+    let rules: RuleSet<PartStyle, PartProp> = RuleBuilder::with_exclusive(base(), GROUPS)
         .rule(
             RuleSelector::on(WidgetState::DISABLED | WidgetState::FOCUS_VISIBLE),
             [fill(RED)],
@@ -1358,9 +1355,7 @@ fn requiring_focus_visible_with_a_group_rival_of_focused_is_dead() {
 }
 
 #[test]
-fn exclusive_called_twice_appends_the_groups() {
-    const FIRST: &[&[WidgetState]] = &[&[WidgetState::DISABLED, WidgetState::HOVER]];
-    const SECOND: &[&[WidgetState]] = &[&[WidgetState::CHECKED, WidgetState::SELECTED]];
+fn the_groups_given_at_creation_are_the_rule_sets_groups() {
     const BOTH: &[&[WidgetState]] = &[
         &[WidgetState::DISABLED, WidgetState::HOVER],
         &[WidgetState::CHECKED, WidgetState::SELECTED],
@@ -1371,13 +1366,14 @@ fn exclusive_called_twice_appends_the_groups() {
             .rule(RuleSelector::on(WidgetState::SELECTED), [fill(GREEN)])
             .build()
     };
-    let twice = rules(RuleBuilder::new(base()).exclusive(FIRST).exclusive(SECOND));
-    assert_eq!(twice, rules(RuleBuilder::new(base()).exclusive(BOTH)));
+    let grouped = rules(RuleBuilder::with_exclusive(base(), BOTH));
+    assert!(std::ptr::eq(grouped.exclusive, BOTH));
+    assert!(rules(RuleBuilder::new(base())).exclusive.is_empty());
     // Both groups normalise: DISABLED drops HOVER, CHECKED drops SELECTED.
     let query =
         WidgetState::DISABLED | WidgetState::HOVER | WidgetState::CHECKED | WidgetState::SELECTED;
     assert_eq!(
-        fill_of(&twice.eval(&StyleQuery::<()>::new(query))),
+        fill_of(&grouped.eval(&StyleQuery::<()>::new(query))),
         Some(BLUE)
     );
 }

@@ -211,8 +211,8 @@ struct RuleEntry<M> {
 #[derive(Clone, Debug, PartialEq)]
 pub struct RuleSet<T, P, M = ()> {
     base: T,
-    exclusive: Arc<[&'static [WidgetState]]>, // e.g. [&[DISABLED, PRESSED, HOVER]]
-    rules: Arc<[RuleEntry<M>]>,               // RuleSelector<M> + (start: u32, len: u32)
+    exclusive: &'static [&'static [WidgetState]], // e.g. &[&[DISABLED, PRESSED, HOVER]]
+    rules: Arc<[RuleEntry<M>]>,                   // RuleSelector<M> + (start: u32, len: u32)
     props: Arc<[P]>, // single flat allocation at resolve(); zero-alloc Clone
 }
 
@@ -230,7 +230,7 @@ impl<T, P, M> RuleSet<T, P, M> {
         rules
             .into_iter()
             .fold(
-                RuleBuilder::new(base).exclusive(exclusive),
+                RuleBuilder::with_exclusive(base, exclusive),
                 |builder, (selector, props)| builder.rule(selector, props),
             )
             .build()
@@ -282,7 +282,7 @@ impl<T, P, M> RuleSet<T, P, M> {
         T: Clone,
         M: VariantMatcher<V>,
     {
-        let state = normalize(query.state, &self.exclusive);
+        let state = normalize(query.state, self.exclusive);
         let mut out = self.base.clone();
         for entry in self.rules.iter() {
             if !entry.selector.matches(state, query) {
@@ -418,15 +418,14 @@ impl<M> RuleSelector<M> {
     }
 }
 
-/// The writer of a part's rule set: a base style, the exclusive state
-/// groups, then the rules in order, their properties pushed into one flat
-/// list that [`build`](Self::build) turns into the rule set's single
-/// allocation.
+/// The writer of a part's rule set: a base style and the exclusive state
+/// groups, given once where the builder is created, then the rules in
+/// order, their properties pushed into one flat list that
+/// [`build`](Self::build) turns into the rule set's single allocation.
 ///
 /// ```text
-/// RuleBuilder::new(PartStyle::default())
+/// RuleBuilder::with_exclusive(PartStyle::default(), &[&[DISABLED, PRESSED, HOVER]])
 ///     .base([Fill(face), Stroke(frame), Corners(radius), Padding(edges), MinSize(size)])
-///     .exclusive(&[&[DISABLED, PRESSED, HOVER]])
 ///     .rule(RuleSelector::on(HOVER), [Fill(hover_face), Stroke(hover_frame)])
 ///     .rule(RuleSelector::on(NONE).orientation(Vertical), [MinSize(width)])
 ///     .rules([RuleSelector::on(CHECKED), RuleSelector::on(PRESSED)], [Fill(sunken)])
@@ -435,17 +434,25 @@ impl<M> RuleSelector<M> {
 #[derive(Debug)]
 pub(crate) struct RuleBuilder<T, P, M = ()> {
     base: T,
-    exclusive: Vec<&'static [WidgetState]>,
+    exclusive: &'static [&'static [WidgetState]],
     rules: Vec<RuleEntry<M>>,
     props: Vec<P>,
 }
 
 impl<T, P, M> RuleBuilder<T, P, M> {
-    /// A builder whose base is `base`, with the `stated` bits it carries.
+    /// A builder whose base is `base`, with the `stated` bits it carries,
+    /// and no exclusive state group.
     pub(crate) fn new(base: T) -> Self {
+        Self::with_exclusive(base, &[])
+    }
+
+    /// A builder whose base is `base`, with the `stated` bits it carries,
+    /// and the ordered exclusive state groups `exclusive` (evaluation
+    /// contract, step 1).
+    pub(crate) fn with_exclusive(base: T, exclusive: &'static [&'static [WidgetState]]) -> Self {
         Self {
             base,
-            exclusive: Vec::new(),
+            exclusive,
             rules: Vec::new(),
             props: Vec::new(),
         }
@@ -466,13 +473,6 @@ impl<T, P, M> RuleBuilder<T, P, M> {
         for prop in props {
             self.base.apply(&prop);
         }
-        self
-    }
-
-    /// The ordered exclusive state groups (evaluation contract, step 1),
-    /// after the groups of any earlier call.
-    pub(crate) fn exclusive(mut self, groups: &'static [&'static [WidgetState]]) -> Self {
-        self.exclusive.extend_from_slice(groups);
         self
     }
 
@@ -511,7 +511,7 @@ impl<T, P, M> RuleBuilder<T, P, M> {
     pub(crate) fn build(self) -> RuleSet<T, P, M> {
         RuleSet {
             base: self.base,
-            exclusive: Arc::from(self.exclusive),
+            exclusive: self.exclusive,
             rules: Arc::from(self.rules),
             props: Arc::from(self.props),
         }
@@ -548,8 +548,7 @@ pub fn __alloc_test_fixtures(
         WidgetState::PRESSED,
         WidgetState::HOVER,
     ]];
-    let part = RuleBuilder::new(part_base)
-        .exclusive(GROUPS)
+    let part = RuleBuilder::with_exclusive(part_base, GROUPS)
         .rule(RuleSelector::on(WidgetState::HOVER), on_hover)
         .rule(RuleSelector::on(WidgetState::FOCUSED), on_focused)
         .rule(RuleSelector::on(WidgetState::PRESSED), on_pressed)

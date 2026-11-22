@@ -7,7 +7,9 @@
 //! declarations), a font's `defined_size` against [`FontSize`], and an old `null` against "unstated" at the
 //! home: the `stated` bit clear for a part's property (per side for padding and margin), `None` for an
 //! `Option` slot, metric or global. An old value against an unstated home is a mismatch, and so is an old
-//! `null` against a stated one. Spec §5's notes add the special homes: a part's `shadows` against 0.7.2's
+//! `null` against a stated one. An old `null` at a ruled part's property under a state is no rule for that
+//! state (spec §5, notes to the table): the property there, value and `stated` bit, must equal the same
+//! property at the reference state, `NONE` or the row's `null_reference` where the home's state holds it. Spec §5's notes add the special homes: a part's `shadows` against 0.7.2's
 //! `border.shadow_enabled` (`false` is `SHADOWS` stated with `shadows = None`, `true` is `SHADOWS`
 //! unstated), a stroke's colour and width read out of `Stroke::Uniform` and a corner radius out of
 //! `CornerRadius::Uniform`; any other form there (a gradient fill, a per-side stroke, a pill) is a value no
@@ -297,12 +299,25 @@ fn compare_row(
         }
         (value, _) => value,
     };
-    let value = match listed_difference(row, preset)? {
-        Some(listed) => listed,
-        None => value.clone(),
+    let (value, old_null) = match listed_difference(row, preset)? {
+        Some(listed) => (listed, false),
+        None => (value.clone(), value.is_null()),
     };
     let mut mismatches = Vec::new();
     for home in homes {
+        if old_null && let Some(reference) = reference_home(home, row.null_reference.as_deref())? {
+            let got = read(home, new, snapshot_context)?;
+            let at_reference = read(&reference, new, snapshot_context)?;
+            if got != at_reference {
+                mismatches.push(Mismatch {
+                    key: row.key.clone(),
+                    home: format!("{home} against {reference}"),
+                    old: format!("null: no rule, as at the reference ({at_reference})"),
+                    new: got.to_string(),
+                });
+            }
+            continue;
+        }
         let (shown, got) = match (read(home, new, snapshot_context)?, &row.home_fallback) {
             (Got::NoSlot, Some(fallback)) => (
                 format!("{home} -> {fallback}"),
@@ -329,6 +344,40 @@ fn compare_row(
         value: Some(value),
         outcome,
     })
+}
+
+/// Where an old `null` compares `home` when the home is a ruled part's property at a state: the same
+/// property at the reference state, which is `reference` (a row's `null_reference`) where the home's state
+/// holds all its flags and more, else `NONE`; the axes are kept. `None` for any other home (no query, or the
+/// state `NONE`), where an old `null` is "unstated".
+fn reference_home(home: &str, reference: Option<&str>) -> Result<Option<String>, String> {
+    let Some((head, after)) = home.split_once('(') else {
+        return Ok(None);
+    };
+    let Some((query, property)) = after.split_once(").") else {
+        return Ok(None);
+    };
+    let (states, axes) = match query.split_once("; ") {
+        Some((states, axes)) => (states, Some(axes)),
+        None => (query, None),
+    };
+    let state = Query::parse(states)?.state;
+    if state.is_empty() {
+        return Ok(None);
+    }
+    let reference = match reference {
+        Some(text) => {
+            let named = Query::parse(text)?.state;
+            if state.contains(named) && state != named {
+                text
+            } else {
+                "NONE"
+            }
+        }
+        None => "NONE",
+    };
+    let axes = axes.map(|a| format!("; {a}")).unwrap_or_default();
+    Ok(Some(format!("{head}({reference}{axes}).{property}")))
 }
 
 /// The value at the dotted `key` of `old`.

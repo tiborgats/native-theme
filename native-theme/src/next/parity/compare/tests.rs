@@ -435,6 +435,87 @@ fn a_listed_difference_compares_the_value_stated_for_its_preset() -> TestResult 
     Ok(())
 }
 
+const NULL_AT_A_STATE: &str = r#"
+[[row]]
+key = "n.hover_stroke"
+homes = ["button.body(HOVER).stroke.color"]
+[[row]]
+key = "n.hover_fill"
+homes = ["button.body(HOVER).fill"]
+[[row]]
+key = "n.rest_fill"
+homes = ["button.body(NONE).fill"]
+[[row]]
+key = "n.checked_hover"
+homes = ["checkbox.indicator(HOVER).stroke.color", "checkbox.indicator(HOVER|CHECKED).stroke.color"]
+null_reference = "CHECKED"
+[[row]]
+key = "n.checked_hover_against_rest"
+homes = ["checkbox.indicator(HOVER|CHECKED).stroke.color"]
+[[row]]
+key = "n.hover_opacity"
+homes = ["checkbox.indicator(HOVER).opacity"]
+"#;
+
+#[test]
+fn an_old_null_under_a_state_is_the_property_at_the_reference_state() -> TestResult {
+    let old = json!({ "n": {
+        "hover_stroke": null,
+        "hover_fill": null,
+        "rest_fill": null,
+        "checked_hover": null,
+        "checked_hover_against_rest": null,
+        "hover_opacity": null,
+    } });
+    let mut t = theme();
+    let indicator = RuleBuilder::new(PartStyle::default())
+        .base([PartProp::Stroke(Stroke::uniform(1.0, srgb(STROKE)))])
+        .rule(
+            RuleSelector::on(WidgetState::CHECKED),
+            [PartProp::Stroke(Stroke::uniform(1.0, srgb(COLOR)))],
+        )
+        // The default opacity, stated: the value is the rest state's, its bit is not.
+        .rule(
+            RuleSelector::on(WidgetState::HOVER),
+            [PartProp::Opacity(1.0)],
+        )
+        .build();
+    t.checkbox = CheckboxWidget::new(
+        WidgetOrigin::Native,
+        indicator,
+        RuleBuilder::new(IconStyle::default()).build(),
+        RuleBuilder::new(TextStyle::default()).build(),
+        6.0,
+        None,
+    );
+    let report = compare_rows(&rows(NULL_AT_A_STATE)?, &old, &t, None, Preset::KdeBreeze)?;
+    // No rule for the state: equal to the rest state (the button's stroke) or to the named reference
+    // (`CHECKED` for the `HOVER|CHECKED` home, `NONE` for the `HOVER` home of the same row). A rule that
+    // changes the property's value or its `stated` bit at the state, or a home at the rest state that
+    // states the property, mismatches.
+    assert_eq!(
+        report.mismatched_keys(),
+        vec![
+            "n.hover_fill",
+            "n.rest_fill",
+            "n.checked_hover_against_rest",
+            "n.hover_opacity"
+        ],
+        "{report}"
+    );
+    let Some(Outcome::Mismatch(homes)) = report.rows.get(4).map(|r| &r.outcome) else {
+        return Err(format!("the fifth row does not mismatch: {report}").into());
+    };
+    assert_eq!(
+        homes.iter().map(|m| m.home.as_str()).collect::<Vec<_>>(),
+        vec![
+            "checkbox.indicator(HOVER|CHECKED).stroke.color against \
+             checkbox.indicator(NONE).stroke.color"
+        ]
+    );
+    Ok(())
+}
+
 const FALLBACKS: &str = r#"
 [[row]]
 key = "f.radio_width"
