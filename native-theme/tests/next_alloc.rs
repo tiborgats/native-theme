@@ -195,6 +195,16 @@ fn query_every_part(theme: &ResolvedTheme, state: WidgetState) {
     black_box(theme.link.container(q));
     black_box(theme.link.label(q));
     black_box(theme.link.parts(q));
+    black_box(theme.slider.track(q));
+    black_box(theme.slider.active_track(q));
+    black_box(theme.slider.thumb(q));
+    black_box(theme.slider.tick(q));
+    black_box(theme.slider.parts(q));
+    black_box(theme.progress_bar.track(q));
+    black_box(theme.progress_bar.fill(q));
+    black_box(theme.progress_bar.parts(q));
+    black_box(theme.splitter.handle(q));
+    black_box(theme.splitter.parts(q));
 }
 
 #[test]

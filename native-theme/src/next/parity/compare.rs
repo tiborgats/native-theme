@@ -979,6 +979,12 @@ fn metric(theme: &ResolvedTheme, widget: &str, name: &str) -> Option<Got> {
         ("list", "grid_color") => Got::Color(theme.list.grid_color),
         ("input", "disabled_opacity") => opt_f32(theme.input.disabled_opacity),
         ("text_area", "disabled_opacity") => opt_f32(theme.text_area.disabled_opacity),
+        ("slider", "tick_length") => Got::F32(theme.slider.tick_length),
+        ("slider", "disabled_opacity") => opt_f32(theme.slider.disabled_opacity),
+        ("progress_bar", "indeterminate_period_ms") => {
+            Got::Int(u64::from(theme.progress_bar.indeterminate_period_ms))
+        }
+        ("splitter", "divider_width") => Got::F32(theme.splitter.divider_width),
         _ => return None,
     })
 }
@@ -1033,6 +1039,13 @@ fn ruled_style<'a>(
         ("text_area", "helper_text") => Ruled::Text(theme.text_area.helper_text(q.input()?)),
         ("link", "container") => Ruled::Part(theme.link.container(q.style()?)),
         ("link", "label") => Ruled::Text(theme.link.label(q.style()?)),
+        ("slider", "track") => Ruled::Part(theme.slider.track(q.style()?)),
+        ("slider", "active_track") => Ruled::Part(theme.slider.active_track(q.style()?)),
+        ("slider", "thumb") => Ruled::Part(theme.slider.thumb(q.style()?)),
+        ("slider", "tick") => Ruled::Part(theme.slider.tick(q.style()?)),
+        ("progress_bar", "track") => Ruled::Part(theme.progress_bar.track(q.style()?)),
+        ("progress_bar", "fill") => Ruled::Part(theme.progress_bar.fill(q.style()?)),
+        ("splitter", "handle") => Ruled::Part(theme.splitter.handle(q.style()?)),
         _ => return Ok(None),
     };
     Ok(Some((style, property)))

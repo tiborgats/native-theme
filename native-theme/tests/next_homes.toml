@@ -1412,3 +1412,153 @@ homes = ["link.label(NONE).style"]
 key = "link.font.color"
 homes = ["link.label(NONE).color"]
 note = "inherits defaults.link_color, not defaults.font.color (connectors/native-theme-gpui/src/contract.rs, link row)"
+
+# --- slider ---
+
+[[row]]
+key = "slider.fill_color"
+homes = ["slider.active_track(NONE).fill"]
+
+[[row]]
+key = "slider.track_color"
+homes = ["slider.track(NONE).fill"]
+
+[[row]]
+key = "slider.thumb_color"
+homes = ["slider.thumb(NONE).fill"]
+
+[[row]]
+key = "slider.track_height"
+homes = [
+    "slider.track(NONE; orientation=Horizontal).min_size[1]",
+    "slider.track(NONE; orientation=Horizontal).max_size[1]",
+    "slider.track(NONE; orientation=Vertical).min_size[0]",
+    "slider.track(NONE; orientation=Vertical).max_size[0]",
+]
+note = "exact across the axis, as scrollbar.groove_width (M0); active_track's thickness has no 0.7.2 key of its own and is not a home"
+
+[[row]]
+key = "slider.thumb_diameter"
+homes = [
+    "slider.thumb(NONE).min_size[0]",
+    "slider.thumb(NONE).max_size[0]",
+    "slider.thumb(NONE).min_size[1]",
+    "slider.thumb(NONE).max_size[1]",
+]
+
+[[row]]
+key = "slider.tick_mark_length"
+homes = ["slider.tick_length"]
+
+[[row]]
+key = "slider.disabled_opacity"
+homes = ["slider.disabled_opacity"]
+
+[[row]]
+key = "slider.thumb_hover_color"
+homes = ["slider.thumb(HOVER).fill"]
+
+[[row]]
+key = "slider.disabled_fill_color"
+homes = ["slider.active_track(DISABLED).fill"]
+
+[[row]]
+key = "slider.disabled_track_color"
+homes = ["slider.track(DISABLED).fill"]
+
+[[row]]
+key = "slider.disabled_thumb_color"
+homes = ["slider.thumb(DISABLED).fill"]
+
+[[row]]
+key = "slider.thumb_border_color"
+homes = ["slider.thumb(NONE).stroke.color"]
+
+[[row]]
+key = "slider.thumb_border_line_width"
+homes = ["slider.thumb(NONE).stroke.width"]
+note = "0 draws no outline in any state (0.7.2 doc)"
+
+[[row]]
+key = "slider.thumb_hover_border_color"
+homes = [
+    "slider.thumb(HOVER).stroke.color",
+    "slider.thumb(PRESSED).stroke.color",
+    "slider.thumb(HOVER|FOCUSED).stroke.color",
+]
+note = "0.7.2 doc: pointer on it and while dragged (PRESSED, as scrollbar.thumb_active_color), over the focus outline (HOVER wins over FOCUSED); None = thumb_border_color = the NONE reference"
+
+[[row]]
+key = "slider.thumb_focus_border_color"
+homes = ["slider.thumb(FOCUSED).stroke.color"]
+
+# --- progress_bar ---
+
+[[row]]
+key = "progress_bar.fill_color"
+homes = ["progress_bar.fill(NONE).fill"]
+
+[[row]]
+key = "progress_bar.track_color"
+homes = ["progress_bar.track(NONE).fill"]
+
+[[row]]
+key = "progress_bar.track_height"
+homes = [
+    "progress_bar.track(NONE).min_size[1]",
+    "progress_bar.track(NONE).max_size[1]",
+]
+note = "exact; 0.7.2 bars are horizontal (no orientation axis value needed: Horizontal is the default); the fill part not a home"
+
+[[row]]
+key = "progress_bar.min_width"
+homes = ["progress_bar.track(NONE).min_size[0]"]
+
+[[row]]
+key = "progress_bar.border.color"
+homes = ["progress_bar.track(NONE).stroke.color"]
+
+[[row]]
+key = "progress_bar.border.corner_radius"
+homes = ["progress_bar.track(NONE).corners"]
+note = "Corners::uniform(radius)"
+
+[[row]]
+key = "progress_bar.border.line_width"
+homes = ["progress_bar.track(NONE).stroke.width"]
+
+[[row]]
+key = "progress_bar.border.shadow_enabled"
+homes = ["progress_bar.track(NONE).shadows"]
+note = "true: SHADOWS unstated; false: SHADOWS stated, None (spec §5 notes)"
+
+[[row]]
+key = "progress_bar.border.padding.top"
+homes = ["progress_bar.track(NONE).padding.top"]
+
+[[row]]
+key = "progress_bar.border.padding.right"
+homes = ["progress_bar.track(NONE).padding.right"]
+
+[[row]]
+key = "progress_bar.border.padding.bottom"
+homes = ["progress_bar.track(NONE).padding.bottom"]
+
+[[row]]
+key = "progress_bar.border.padding.left"
+homes = ["progress_bar.track(NONE).padding.left"]
+
+# --- splitter ---
+
+[[row]]
+key = "splitter.divider_width"
+homes = ["splitter.divider_width"]
+
+[[row]]
+key = "splitter.divider_color"
+homes = ["splitter.handle(NONE).fill"]
+
+[[row]]
+key = "splitter.hover_color"
+homes = ["splitter.handle(HOVER).fill"]
+note = "0.7.2 R-W: unset = divider_color, never null"

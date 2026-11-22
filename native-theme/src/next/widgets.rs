@@ -43,9 +43,15 @@ type IconRules<M = ()> = RuleSet<IconStyle, IconProp, M>;
 
 mod input;
 mod link;
+mod progress_bar;
+mod slider;
+mod splitter;
 
 pub use input::{InputParts, InputWidget};
 pub use link::{LinkParts, LinkWidget};
+pub use progress_bar::{ProgressBarParts, ProgressBarWidget};
+pub use slider::{SliderParts, SliderWidget};
+pub use splitter::{SplitterParts, SplitterWidget};
 
 // ---------------------------------------------------------------------------
 // button
@@ -621,6 +627,12 @@ pub struct ResolvedTheme {
     pub text_area: InputWidget,
     /// The hyperlink.
     pub link: LinkWidget,
+    /// The slider.
+    pub slider: SliderWidget,
+    /// The progress bar.
+    pub progress_bar: ProgressBarWidget,
+    /// The splitter.
+    pub splitter: SplitterWidget,
     /// The application's own colour tokens (empty on the bundled presets).
     pub custom_colors: BTreeMap<String, Color>,
     /// The application's own metric tokens (empty on the bundled presets).
@@ -687,6 +699,13 @@ impl ResolvedTheme {
             ),
             ("link.container", self.link.container.dead_rules()),
             ("link.label", self.link.label.dead_rules()),
+            ("slider.track", self.slider.track.dead_rules()),
+            ("slider.active_track", self.slider.active_track.dead_rules()),
+            ("slider.thumb", self.slider.thumb.dead_rules()),
+            ("slider.tick", self.slider.tick.dead_rules()),
+            ("progress_bar.track", self.progress_bar.track.dead_rules()),
+            ("progress_bar.fill", self.progress_bar.fill.dead_rules()),
+            ("splitter.handle", self.splitter.handle.dead_rules()),
         ]
     }
 

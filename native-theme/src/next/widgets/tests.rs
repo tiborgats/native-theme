@@ -418,8 +418,80 @@ fn link_getters_evaluate_their_rule_sets() {
 }
 
 #[test]
+fn slider_getters_evaluate_their_rule_sets() {
+    let track = part_rules(RED, GREEN, BLUE, ());
+    let active_track = part_rules(GREEN, BLUE, RED, ());
+    let thumb = part_rules(BLUE, RED, GREEN, ());
+    let tick = part_rules(RED, BLUE, GREEN, ());
+    let slider = SliderWidget::new(
+        WidgetOrigin::Native,
+        track.clone(),
+        active_track.clone(),
+        thumb.clone(),
+        tick.clone(),
+        6.0,
+        None,
+    );
+    assert!(slider.is_native());
+    assert_eq!(slider.tick_length, 6.0);
+    assert_eq!(slider.disabled_opacity, None);
+    for state in states() {
+        for orientation in [Orientation::Horizontal, Orientation::Vertical] {
+            let query = StyleQuery::new(state).orientation(orientation);
+            assert_eq!(slider.track(query), track.eval(&query));
+            assert_eq!(slider.active_track(query), active_track.eval(&query));
+            assert_eq!(slider.thumb(query), thumb.eval(&query));
+            assert_eq!(slider.tick(query), tick.eval(&query));
+            assert_eq!(
+                slider.parts(query),
+                SliderParts {
+                    track: slider.track(query),
+                    active_track: slider.active_track(query),
+                    thumb: slider.thumb(query),
+                    tick: slider.tick(query),
+                }
+            );
+        }
+    }
+}
+
+#[test]
+fn progress_bar_and_splitter_getters_evaluate_their_rule_sets() {
+    let track = part_rules(RED, GREEN, BLUE, ());
+    let fill = part_rules(GREEN, BLUE, RED, ());
+    let handle = part_rules(BLUE, RED, GREEN, ());
+    let bar = ProgressBarWidget::new(WidgetOrigin::Native, track.clone(), fill.clone(), 1000);
+    let splitter = SplitterWidget::new(WidgetOrigin::Native, handle.clone(), 4.0);
+    assert!(bar.is_native() && splitter.is_native());
+    assert_eq!(bar.indeterminate_period_ms, 1000);
+    assert_eq!(splitter.divider_width, 4.0);
+    for state in states() {
+        let query = StyleQuery::new(state);
+        assert_eq!(bar.track(query), track.eval(&query));
+        assert_eq!(bar.fill(query), fill.eval(&query));
+        assert_eq!(
+            bar.parts(query),
+            ProgressBarParts {
+                track: bar.track(query),
+                fill: bar.fill(query),
+            }
+        );
+        assert_eq!(splitter.handle(query), handle.eval(&query));
+        assert_eq!(
+            splitter.parts(query),
+            SplitterParts {
+                handle: splitter.handle(query),
+            }
+        );
+    }
+}
+
+#[test]
 fn the_widgets_added_in_m1_are_clone_debug_eq_send_sync() {
     assert_send_sync_clone_debug_eq::<crate::next::window::WindowChrome>();
     assert_send_sync_clone_debug_eq::<InputWidget>();
     assert_send_sync_clone_debug_eq::<LinkWidget>();
+    assert_send_sync_clone_debug_eq::<SliderWidget>();
+    assert_send_sync_clone_debug_eq::<ProgressBarWidget>();
+    assert_send_sync_clone_debug_eq::<SplitterWidget>();
 }

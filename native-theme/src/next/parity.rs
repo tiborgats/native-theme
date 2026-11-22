@@ -44,6 +44,9 @@ const SLICE_GROUPS: &[&str] = &[
     "input",
     "text_area",
     "link",
+    "slider",
+    "progress_bar",
+    "splitter",
 ];
 
 /// The fields of 0.7.2's `Resolved` wrapper beside the resolved theme, which do not serialise
@@ -1195,7 +1198,15 @@ const PORTED_GROUPS: &[&str] = &[
 
 /// The groups of the table whose widgets the model holds but whose values the kde-breeze builder does not
 /// state yet (plan, M2's KDE unit): their rows are compared, counted and reported, not asserted.
-const NOT_PORTED_GROUPS: &[&str] = &["window", "input", "text_area", "link"];
+const NOT_PORTED_GROUPS: &[&str] = &[
+    "window",
+    "input",
+    "text_area",
+    "link",
+    "slider",
+    "progress_bar",
+    "splitter",
+];
 
 /// The totals of the ported groups' rows on each scheme, `[rows, compared, equal, mismatching, skipped]`:
 /// every row equal but those [`expected_skip`] names, skipped.
