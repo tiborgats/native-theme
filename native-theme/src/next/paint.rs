@@ -37,9 +37,11 @@ impl Paint {
     /// One rule for [`Paint::Solid`] and for layers, a solid paint being one
     /// solid layer: each solid layer stands for its colour and each material
     /// for its [`fallback`](MaterialSpec::fallback); of these, the topmost
-    /// opaque one, else (no layer opaque) the topmost one. `None` for
-    /// [`Paint::None`] and for layers that are all gradients, which have no
-    /// single colour a source states.
+    /// opaque one, else (no layer opaque) the topmost one. A material counts
+    /// as opaque only where its fallback colour is, so a material above an
+    /// opaque solid layer whose fallback is translucent does not win over
+    /// that layer. `None` for [`Paint::None`] and for layers that are all
+    /// gradients, which have no single colour a source states.
     #[must_use]
     pub fn fallback_color(&self) -> Option<Color> {
         match self {
@@ -309,6 +311,23 @@ mod tests {
             Paint::layers(vec![gradient(), gradient()]).fallback_color(),
             None
         );
+    }
+
+    #[test]
+    fn a_translucent_material_fallback_does_not_win_over_an_opaque_solid_below() {
+        let half_grey = Color::new(0.5, 0.5, 0.5, 0.5);
+        let paint = Paint::layers(vec![
+            solid(Color::WHITE),
+            PaintLayer::Material(material(MaterialKind::Acrylic, half_grey)),
+        ]);
+        assert_eq!(paint.fallback_color(), Some(Color::WHITE));
+        // With an opaque fallback the material is the topmost opaque layer.
+        let grey = Color::rgb(0.5, 0.5, 0.5);
+        let paint = Paint::layers(vec![
+            solid(Color::WHITE),
+            PaintLayer::Material(material(MaterialKind::Acrylic, grey)),
+        ]);
+        assert_eq!(paint.fallback_color(), Some(grey));
     }
 
     #[test]

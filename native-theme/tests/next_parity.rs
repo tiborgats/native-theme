@@ -44,9 +44,47 @@ const RESOLVED_WRAPPER_KEYS: &[&str] = &[
     "Resolved.icon_theme_explicit",
 ];
 
-/// The first segments a row written by hand may have: the `Resolved` wrapper, and 0.7.2's `Theme.layout` and
-/// `SystemTheme.accessibility`, which are not fields of the resolved theme.
-const HAND_GROUPS: &[&str] = &["Resolved", "layout", "accessibility"];
+/// The fields of 0.7.2's `Theme.layout`, which is not a field of the resolved theme
+/// (`native-theme/src/model/widgets/mod.rs`, `LayoutTheme`).
+const LAYOUT_KEYS: &[&str] = &[
+    "layout.widget_gap",
+    "layout.container_margin",
+    "layout.window_margin",
+    "layout.section_gap",
+];
+
+/// The fields of 0.7.2's `SystemTheme.accessibility`, which is not a field of the resolved theme
+/// (`native-theme/src/lib.rs`, `AccessibilityPreferences`).
+const ACCESSIBILITY_KEYS: &[&str] = &[
+    "accessibility.text_scaling_factor",
+    "accessibility.reduce_motion",
+    "accessibility.high_contrast",
+    "accessibility.reduce_transparency",
+];
+
+/// Every key a row written by hand must name, and the only ones it may.
+fn hand_keys() -> impl Iterator<Item = &'static str> {
+    RESOLVED_WRAPPER_KEYS
+        .iter()
+        .chain(LAYOUT_KEYS)
+        .chain(ACCESSIBILITY_KEYS)
+        .copied()
+}
+
+/// The fields of `ThemeContext` (spec §3), named after `context.` (the resolved theme's) or
+/// `snapshot.context.` (the reader's, `SystemSnapshot::context`, spec §8).
+const CONTEXT_FIELDS: &[&str] = &[
+    "scheme",
+    "contrast",
+    "motion",
+    "reduced_transparency",
+    "bold_text",
+    "button_shapes",
+    "differentiate_without_color",
+    "window_active",
+    "text_scale",
+    "direction",
+];
 
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -69,6 +107,7 @@ struct Row {
     difference_presets: Option<Vec<String>>,
     difference_reason: Option<String>,
     difference_citation: Option<String>,
+    difference_values: Option<BTreeMap<String, toml::Value>>,
     // Read by people and by the second half; this half only requires it to be text.
     #[allow(dead_code)]
     note: Option<String>,
@@ -520,21 +559,7 @@ fn globals() -> BTreeSet<String> {
         }
     };
     add("", &["name", "preset"]);
-    add(
-        "context.",
-        &[
-            "scheme",
-            "contrast",
-            "motion",
-            "reduced_transparency",
-            "bold_text",
-            "button_shapes",
-            "differentiate_without_color",
-            "window_active",
-            "text_scale",
-            "direction",
-        ],
-    );
+    add("context.", CONTEXT_FIELDS);
     let surface_fields = [
         "background",
         "foreground",
@@ -688,6 +713,7 @@ fn globals() -> BTreeSet<String> {
 #[derive(Debug, PartialEq)]
 enum Home {
     Global,
+    Snapshot,
     Metric,
     Part,
 }
@@ -696,6 +722,13 @@ enum Home {
 fn parse_home(home: &str, globals: &BTreeSet<String>) -> Result<Home, String> {
     if globals.contains(home) {
         return Ok(Home::Global);
+    }
+    if let Some(field) = home.strip_prefix("snapshot.context.") {
+        return if CONTEXT_FIELDS.contains(&field) {
+            Ok(Home::Snapshot)
+        } else {
+            Err(format!("`{home}`: `{field}` is no field of `ThemeContext`"))
+        };
     }
     let (widget_name, rest) = home
         .split_once('.')
@@ -762,16 +795,24 @@ fn check_query(home: &str, query_kind: QueryKind, query: &str) -> Result<(), Str
         None => (query, None),
     };
     if states != "NONE" {
+        let mut seen = BTreeSet::new();
         for state in states.split('|') {
             if !STATES.contains(&state) {
                 return Err(format!("`{home}`: no state `{state}`"));
             }
+            if !seen.insert(state) {
+                return Err(format!("`{home}`: the state `{state}` is named twice"));
+            }
         }
     }
+    let mut seen = BTreeSet::new();
     for axis in axes.into_iter().flat_map(|a| a.split(", ")) {
         let (name, value) = axis
             .split_once('=')
             .ok_or_else(|| format!("`{home}`: an axis is `<name>=<value>`, not `{axis}`"))?;
+        if !seen.insert(name) {
+            return Err(format!("`{home}`: the axis `{name}` is named twice"));
+        }
         let values = axis_values(query_kind, name)
             .ok_or_else(|| format!("`{home}`: the widget's query has no axis `{name}`"))?;
         if !values.contains(&value) {
@@ -808,8 +849,8 @@ fn problems(table: &Table, keys: &BTreeSet<String>) -> Vec<String> {
             found.push(format!("`{key}`: {n} rows"));
         }
     }
-    for key in RESOLVED_WRAPPER_KEYS {
-        if !table.row.iter().any(|r| r.key == *key && r.hand) {
+    for key in hand_keys() {
+        if !table.row.iter().any(|r| r.key == key && r.hand) {
             found.push(format!("`{key}`: no row written by hand"));
         }
     }
@@ -823,9 +864,11 @@ fn problems(table: &Table, keys: &BTreeSet<String>) -> Vec<String> {
                     "`{key}`: marked as written by hand, but it serialises"
                 ));
             }
-            let group = key.split('.').next().unwrap_or_default();
-            if !HAND_GROUPS.contains(&group) {
-                found.push(format!("`{key}`: written by hand outside {HAND_GROUPS:?}"));
+            if !hand_keys().any(|k| k == key) {
+                found.push(format!(
+                    "`{key}`: written by hand, but no field of 0.7.2's `Resolved` wrapper, \
+                     `LayoutTheme` or `AccessibilityPreferences`"
+                ));
             }
         } else if !keys.contains(key) {
             found.push(format!("`{key}`: no such key in 0.7.2's serialisation"));
@@ -875,18 +918,36 @@ fn problems(table: &Table, keys: &BTreeSet<String>) -> Vec<String> {
             }
         }
 
-        // A listed difference states its presets, its reason and its citation.
+        // A listed difference states its presets, its reason, its citation and, for each of its presets
+        // and no other, the value 0.8.0 has at the homes: "unstated" or a single value, not a table or array.
         match (
             &row.difference_presets,
             &row.difference_reason,
             &row.difference_citation,
+            &row.difference_values,
         ) {
-            (None, None, None) => {}
-            (Some(presets), Some(reason), Some(citation))
-                if !presets.is_empty() && !reason.is_empty() && !citation.is_empty() => {}
+            (None, None, None, None) => {}
+            (Some(presets), Some(reason), Some(citation), Some(values))
+                if !presets.is_empty() && !reason.is_empty() && !citation.is_empty() =>
+            {
+                let named: BTreeSet<&str> = presets.iter().map(String::as_str).collect();
+                let valued: BTreeSet<&str> = values.keys().map(String::as_str).collect();
+                if named != valued {
+                    found.push(format!(
+                        "`{key}`: difference_values must name exactly the difference_presets"
+                    ));
+                }
+                for (preset, value) in values {
+                    if matches!(value, toml::Value::Table(_) | toml::Value::Array(_)) {
+                        found.push(format!(
+                            "`{key}`: difference_values for `{preset}` is not a single value"
+                        ));
+                    }
+                }
+            }
             _ => found.push(format!(
                 "`{key}`: a listed difference needs non-empty difference_presets, \
-                 difference_reason and difference_citation"
+                 difference_reason, difference_citation and difference_values"
             )),
         }
     }
@@ -921,6 +982,7 @@ fn the_checks_catch_what_they_check() -> TestResult {
         "checkbox.indicator(HOVER|CHECKED).stroke.color",
         "scrollbar.track(NONE; orientation=Vertical).min_size[0]",
         "list.row(NONE; alternate=true).fill",
+        "snapshot.context.motion",
     ] {
         assert!(parse_home(good, &globals).is_ok(), "{good}");
     }
@@ -936,6 +998,10 @@ fn the_checks_catch_what_they_check() -> TestResult {
         "button.body(NONE; variant=Huge).fill",
         "button.body(NONE).min_size[2]",
         "button.body(NONE.fill",
+        "snapshot.context.nowhere",
+        "snapshot.colors.view.background",
+        "button.body(HOVER|HOVER).fill",
+        "button.body(NONE; variant=Primary, variant=Flat).fill",
     ] {
         assert!(parse_home(bad, &globals).is_err(), "{bad}");
     }
@@ -953,20 +1019,36 @@ fn the_checks_catch_what_they_check() -> TestResult {
         [[row]]
         key = "button.gone"
         homes = ["button.body(NONE).min_size[1]"]
+
+        [[row]]
+        key = "layout.gone"
+        homes = ["layout.widget_gap"]
+        hand = true
+
+        [[row]]
+        key = "button.min_width"
+        homes = ["button.body(NONE).min_size[0]"]
+        difference_presets = ["kde-breeze"]
+        difference_reason = "a reason"
+        difference_citation = "a citation"
+        difference_values = { "adwaita" = "unstated" }
         "#,
     )?;
     let found = problems(&table, &keys);
-    assert!(
-        found
-            .iter()
-            .any(|p| p.contains("`button.min_height`: no row"))
-    );
-    assert!(
-        found
-            .iter()
-            .any(|p| p.contains("`button.gone`: no such key"))
-    );
-    assert!(found.iter().any(|p| p.contains("`Resolved.mode`")));
+    for expected in [
+        "`button.min_height`: no row",
+        "`button.gone`: no such key",
+        "`Resolved.mode`: no row written by hand",
+        "`layout.section_gap`: no row written by hand",
+        "`accessibility.reduce_motion`: no row written by hand",
+        "`layout.gone`: written by hand, but no field",
+        "`button.min_width`: difference_values must name exactly the difference_presets",
+    ] {
+        assert!(
+            found.iter().any(|p| p.contains(expected)),
+            "{expected}: {found:?}"
+        );
+    }
     Ok(())
 }
 

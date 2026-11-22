@@ -19,9 +19,14 @@
 #   home_fallback        optional, with one home. Where the `Option` slot of that home is `None` (a `Typography`
 #                        slot the platform does not define), this home is compared instead.
 #   hand                 optional, default false. The row is written by hand: its key is not in the serialisation.
-#   difference_presets   optional, with the two keys below. The presets on which the row is a listed difference
+#   difference_presets   optional, with the three keys below. The presets on which the row is a listed difference
 #   difference_reason      (plan, rule 2): what differs and why,
-#   difference_citation    and the source of the corrected value.
+#   difference_citation    and the source of the corrected value,
+#   difference_values      and `{ "<preset>" = <value> }` for each of those presets: the value 0.8.0 has at every
+#                          home of the row on that preset, which the test compares in place of the old value. The
+#                          string "unstated" is a part property's `stated` bit clear or an `Option` slot's `None`
+#                          (a `min_size[1]` of `None`); any other value is the home's value in the old field's
+#                          serialised form (a number, a bool, a colour as its hex string).
 #   note                 optional. How a value converts where the home's type is not the old field's.
 #
 # A home is one of:
@@ -29,7 +34,10 @@
 #   <global>                         a field of the resolved theme outside the widgets, by its path in spec §§4-5:
 #                                    `colors.view.background`, `typography.body.size_px`, `icons.sizes.toolbar`,
 #                                    `layout.border_width`, `timings.tooltip_show_ms`, `focus_ring.stroke.color`,
-#                                    `context.scheme`.
+#                                    `context.scheme` (the resolved theme's context: the level actually used).
+#   snapshot.context.<field>         a field of the reader's context, `SystemSnapshot::context` (spec §8), which
+#                                    holds what the system states and can differ from the resolved theme's
+#                                    `context` (spec §3): `snapshot.context.motion`.
 #   <widget>.<metric>                a direct metric of a widget (spec §5's table): `button.icon_text_gap`.
 #   <widget>.<part>.<property>       a part of a static widget: `tooltip.panel.fill`.
 #   <widget>.<part>(<query>).<property>
@@ -381,25 +389,25 @@ note = "0.7.2's Theme.layout (LayoutTheme), not a field of the resolved theme"
 
 [[row]]
 key = "accessibility.text_scaling_factor"
-homes = ["context.text_scale"]
+homes = ["snapshot.context.text_scale"]
 hand = true
 note = "0.7.2's SystemTheme.accessibility; the builder applies text_scale, so sizes are compared at 1.0"
 
 [[row]]
 key = "accessibility.reduce_motion"
-homes = ["context.motion"]
+homes = ["snapshot.context.motion"]
 hand = true
 note = "true if and only if motion != MotionPreference::Full; KDE's AnimationDurationFactor of 0 is MotionPreference::None"
 
 [[row]]
 key = "accessibility.high_contrast"
-homes = ["context.contrast"]
+homes = ["snapshot.context.contrast"]
 hand = true
 note = "true if and only if contrast != Contrast::Normal"
 
 [[row]]
 key = "accessibility.reduce_transparency"
-homes = ["context.reduced_transparency"]
+homes = ["snapshot.context.reduced_transparency"]
 hand = true
 
 # --- button ---
@@ -426,6 +434,7 @@ homes = ["button.body(NONE).min_size[1]"]
 difference_presets = ["kde-breeze"]
 difference_reason = "0.7.2's 32 is the height at the default font, not a minimum (issue #4 Z1): on kde-breeze min_size[1] is None, unstated"
 difference_citation = "docs/issues/0004_kde-leftovers-rationale.md §3 (Sizes that are not minimums, or have no source); docs/v0.8.0-spec.md §5, notes to the table (Z1, button.min_height)"
+difference_values = { "kde-breeze" = "unstated" }
 
 [[row]]
 key = "button.icon_text_gap"
@@ -558,9 +567,6 @@ homes = [
     "radio.indicator(NONE).fill",
 ]
 only_if_null = "checkbox.unchecked_background"
-difference_presets = ["kde-breeze"]
-difference_reason = "not compared while checkbox.unchecked_background is stated: the connectors draw the unchecked box as unchecked_background, else background_color, and read background_color nowhere else; nothing drawn differs"
-difference_citation = "docs/v0.8.0-spec.md §5, notes to the table (checkbox.unchecked_background, checkbox.background_color)"
 
 [[row]]
 key = "checkbox.checked_background"
@@ -660,7 +666,6 @@ homes = [
     "checkbox.indicator(NONE).fill",
     "radio.indicator(NONE).fill",
 ]
-if_null = "checkbox.background_color"
 
 [[row]]
 key = "checkbox.unchecked_border_color"

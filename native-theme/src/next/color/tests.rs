@@ -312,6 +312,13 @@ fn assert_near(actual: f32, expected: f64) {
     );
 }
 
+fn assert_near_relative(actual: f32, expected: f64) {
+    assert!(
+        (f64::from(actual) - expected).abs() <= expected.abs() * 1e-6,
+        "{actual} != {expected}"
+    );
+}
+
 #[test]
 fn luminance_vectors_pin_the_coefficients_and_the_threshold() {
     // Expected values from
@@ -324,7 +331,9 @@ fn luminance_vectors_pin_the_coefficients_and_the_threshold() {
     assert_near(breeze_blue.relative_luminance(), 0.371_473_96);
     assert_near(breeze_blue.contrast_ratio(Color::WHITE), 2.491_257_1);
     // Linear segment (0.04 <= 0.04045): green alone, 0.7152 × 0.04 / 12.92 = 0.002214241.
-    assert_near(
+    // The power segment gives 0.0022139013 there (a threshold of 0.03928 or 0.0031308),
+    // 1.5e-4 of the value away: a relative tolerance of 1e-6 tells them apart.
+    assert_near_relative(
         Color::rgb(0.0, 0.04, 0.0).relative_luminance(),
         0.002_214_241_5,
     );
@@ -338,6 +347,27 @@ fn luminance_is_finite_after_the_cast() {
     assert_eq!(huge, 0.0);
     let ratio = Color::rgb(f32::MAX, 0.0, 0.0).contrast_ratio(Color::WHITE);
     assert!(ratio.is_finite() && ratio >= 1.0);
+}
+
+#[test]
+fn infinite_terms_of_opposite_sign_give_zero_not_nan() {
+    let plus = Color::new(f32::INFINITY, 0.25, f32::INFINITY, 0.5);
+    let minus = Color::new(f32::NEG_INFINITY, 0.75, f32::INFINITY, 1.0);
+    // Source over: +inf × 0.5 + −inf × 0.5 is NaN, which gives 0.0; +inf + +inf stays +inf.
+    let over = plus.composite_over(minus);
+    assert_eq!(over.r, 0.0);
+    assert_eq!(over.b, f32::INFINITY);
+    assert!((over.g - 0.5).abs() < 1e-6, "{over:?}");
+    assert_eq!(over.a, 1.0);
+    // color-mix at 0.5: the same red and blue channels.
+    let mixed = plus.mix_srgb(minus, 0.5);
+    assert_eq!(mixed.r, 0.0);
+    assert_eq!(mixed.b, f32::INFINITY);
+    assert!(!mixed.g.is_nan() && !mixed.a.is_nan(), "{mixed:?}");
+    // Alpha weights of opposite infinite sign: the alpha and every channel 0.0, never NaN.
+    let up = Color::new(0.5, 0.5, 0.5, f32::INFINITY);
+    let down = Color::new(0.5, 0.5, 0.5, f32::NEG_INFINITY);
+    assert_eq!(channels(up.mix_srgb(down, 0.5)), [0.0; 4]);
 }
 
 #[test]

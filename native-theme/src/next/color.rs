@@ -260,7 +260,8 @@ impl Color {
     /// `self` composited over `backdrop` by Porter-Duff source-over, in
     /// gamma-encoded sRGB on premultiplied values (the module's sources); a
     /// result of alpha 0 is [`Color::TRANSPARENT`]. A colour of weight zero
-    /// contributes nothing, whatever its channels hold.
+    /// contributes nothing, whatever its channels hold; a result channel that
+    /// is NaN (infinite terms of opposite sign) gives 0.0.
     #[must_use]
     pub fn composite_over(self, backdrop: Self) -> Self {
         let back = backdrop.a * (1.0 - self.a);
@@ -268,7 +269,7 @@ impl Color {
         if a.is_nan() || a <= 0.0 {
             return Self::TRANSPARENT;
         }
-        let channel = |s: f32, b: f32| (weighted(s, self.a) + weighted(b, back)) / a;
+        let channel = |s: f32, b: f32| nan_to_zero((weighted(s, self.a) + weighted(b, back)) / a);
         Self {
             r: channel(self.r, backdrop.r),
             g: channel(self.g, backdrop.g),
@@ -281,7 +282,8 @@ impl Color {
     /// values (the module's sources): `t = 0.0` gives `self`, `t = 1.0`
     /// gives `other`. `t` is clamped to `0.0..=1.0`; a non-finite `t` gives
     /// 0.0. A colour of weight zero contributes nothing, whatever its
-    /// channels hold.
+    /// channels hold; a result channel that is NaN (infinite terms of
+    /// opposite sign) gives 0.0.
     #[must_use]
     pub fn mix_srgb(self, other: Self, t: f32) -> Self {
         let t = clamp_unit(t);
@@ -289,17 +291,17 @@ impl Color {
         let a = ws + wo;
         let channel = |x: f32, y: f32| {
             let premultiplied = weighted(x, ws) + weighted(y, wo);
-            if a == 0.0 {
+            nan_to_zero(if a == 0.0 {
                 premultiplied
             } else {
                 premultiplied / a
-            }
+            })
         };
         Self {
             r: channel(self.r, other.r),
             g: channel(self.g, other.g),
             b: channel(self.b, other.b),
-            a,
+            a: nan_to_zero(a),
         }
     }
 
@@ -432,6 +434,11 @@ fn clamp_unit(v: f32) -> f32 {
     } else {
         0.0
     }
+}
+
+/// `v`, or 0.0 where it is NaN.
+fn nan_to_zero(v: f32) -> f32 {
+    if v.is_nan() { 0.0 } else { v }
 }
 
 /// `channel × weight`, or 0.0 where the weight is zero: a term of weight zero
