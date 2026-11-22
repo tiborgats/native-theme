@@ -20,7 +20,7 @@ use native_theme::next::{
     PartStyle, Preset, ResolvedTheme, RippleSpec, ShadowLayer, Stroke, StrokeAlign, StrokeSide,
     StyleQuery, TextStated, Theme, ThemeContext, Timing, Transition, WidgetState,
 };
-use native_theme::next::{CaptionButtonKind, EdgeFlags, WindowState};
+use native_theme::next::{CaptionButtonKind, EdgeFlags, InputQuery, WindowState};
 
 #[global_allocator]
 static ALLOC: dhat::Alloc = dhat::Alloc;
@@ -184,6 +184,17 @@ fn query_every_part(theme: &ResolvedTheme, state: WidgetState) {
         black_box(theme.window.caption_button(kind, state));
         black_box(theme.window.caption_icon(kind, state));
     }
+    let input = InputQuery::new(state);
+    for field in [&theme.input, &theme.text_area] {
+        black_box(field.field(input));
+        black_box(field.text(input));
+        black_box(field.placeholder(input));
+        black_box(field.helper_text(input));
+        black_box(field.parts(input));
+    }
+    black_box(theme.link.container(q));
+    black_box(theme.link.label(q));
+    black_box(theme.link.parts(q));
 }
 
 #[test]

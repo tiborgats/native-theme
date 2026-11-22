@@ -41,6 +41,12 @@ type TextRules<M = ()> = RuleSet<TextStyle, TextProp, M>;
 /// A rule set of icon styles.
 type IconRules<M = ()> = RuleSet<IconStyle, IconProp, M>;
 
+mod input;
+mod link;
+
+pub use input::{InputParts, InputWidget};
+pub use link::{LinkParts, LinkWidget};
+
 // ---------------------------------------------------------------------------
 // button
 // ---------------------------------------------------------------------------
@@ -609,6 +615,12 @@ pub struct ResolvedTheme {
     pub tooltip: TooltipWidget,
     /// The window chrome.
     pub window: WindowChrome,
+    /// The single-line text field.
+    pub input: InputWidget,
+    /// The multi-line text field.
+    pub text_area: InputWidget,
+    /// The hyperlink.
+    pub link: LinkWidget,
     /// The application's own colour tokens (empty on the bundled presets).
     pub custom_colors: BTreeMap<String, Color>,
     /// The application's own metric tokens (empty on the bundled presets).
@@ -659,6 +671,22 @@ impl ResolvedTheme {
                 self.window.caption_button.dead_rules(),
             ),
             ("window.caption_icon", self.window.caption_icon.dead_rules()),
+            ("input.field", self.input.field.dead_rules()),
+            ("input.text", self.input.text.dead_rules()),
+            ("input.placeholder", self.input.placeholder.dead_rules()),
+            ("input.helper_text", self.input.helper_text.dead_rules()),
+            ("text_area.field", self.text_area.field.dead_rules()),
+            ("text_area.text", self.text_area.text.dead_rules()),
+            (
+                "text_area.placeholder",
+                self.text_area.placeholder.dead_rules(),
+            ),
+            (
+                "text_area.helper_text",
+                self.text_area.helper_text.dead_rules(),
+            ),
+            ("link.container", self.link.container.dead_rules()),
+            ("link.label", self.link.label.dead_rules()),
         ]
     }
 

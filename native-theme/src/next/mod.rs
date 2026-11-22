@@ -170,6 +170,7 @@ pub use widgets::{
     ButtonParts, ButtonWidget, CheckboxParts, CheckboxWidget, ListParts, ListWidget, RadioParts,
     RadioWidget, ResolvedTheme, ScrollbarParts, ScrollbarWidget, TooltipWidget, WidgetOrigin,
 };
+pub use widgets::{InputParts, InputWidget, LinkParts, LinkWidget};
 pub use window::{CaptionButtonKind, CaptionLayout, EdgeFlags, WindowChrome, WindowState};
 
 #[cfg(test)]

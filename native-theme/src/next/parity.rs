@@ -41,6 +41,9 @@ const SLICE_GROUPS: &[&str] = &[
     "scrollbar",
     "tooltip",
     "window",
+    "input",
+    "text_area",
+    "link",
 ];
 
 /// The fields of 0.7.2's `Resolved` wrapper beside the resolved theme, which do not serialise
@@ -225,7 +228,8 @@ use Kind::{I, P, T};
 
 /// Spec §5, "Complete 27-Widget Contract Table", with its notes: every widget has `origin`, and
 /// `disabled_opacity` is a metric of `button`, `input`, `checkbox`, `radio`, `slider`, `switch`, `combo_box`
-/// and `segmented_control`.
+/// and `segmented_control`, and of `text_area`, an `InputWidget` that takes `input`'s `disabled_opacity`
+/// (the notes' homes of `input.*`).
 const WIDGETS: &[Widget] = &[
     Widget {
         name: "button",
@@ -253,7 +257,7 @@ const WIDGETS: &[Widget] = &[
             ("placeholder", T),
             ("helper_text", T),
         ],
-        metrics: &["origin"],
+        metrics: &["origin", "disabled_opacity"],
     },
     Widget {
         name: "checkbox",
@@ -1191,7 +1195,7 @@ const PORTED_GROUPS: &[&str] = &[
 
 /// The groups of the table whose widgets the model holds but whose values the kde-breeze builder does not
 /// state yet (plan, M2's KDE unit): their rows are compared, counted and reported, not asserted.
-const NOT_PORTED_GROUPS: &[&str] = &["window"];
+const NOT_PORTED_GROUPS: &[&str] = &["window", "input", "text_area", "link"];
 
 /// The totals of the ported groups' rows on each scheme, `[rows, compared, equal, mismatching, skipped]`:
 /// every row equal but those [`expected_skip`] names, skipped.

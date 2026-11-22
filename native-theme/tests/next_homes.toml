@@ -1153,3 +1153,262 @@ note = "no preset states it: unstated"
 key = "window.border.padding.left"
 homes = ["window.frame(normal).padding.left"]
 note = "no preset states it: unstated"
+
+# --- input ---
+
+[[row]]
+key = "input.background_color"
+homes = [
+    "input.field(NONE).fill",
+    "text_area.field(NONE).fill",
+]
+
+[[row]]
+key = "input.placeholder_color"
+homes = [
+    "input.placeholder(NONE).color",
+    "text_area.placeholder(NONE).color",
+]
+
+[[row]]
+key = "input.caret_color"
+homes = ["colors.caret"]
+note = "spec §4: the caret colour is stated in ColorRoles only; 0.7.2 safety net: unset = defaults.text_color"
+
+[[row]]
+key = "input.caret_blink_on"
+homes = ["caret.blink_on_ms"]
+
+[[row]]
+key = "input.caret_blink_off"
+homes = ["caret.blink_off_ms"]
+
+[[row]]
+key = "input.caret_blink_timeout"
+homes = ["caret.blink_timeout_ms"]
+
+[[row]]
+key = "input.selection_background"
+homes = ["colors.text_selection.background"]
+note = "plan Appendix A; same home as defaults.text_selection_background: no preset or reader states input.selection_* apart (grep)"
+
+[[row]]
+key = "input.selection_text_color"
+homes = ["colors.text_selection.foreground"]
+note = "as input.selection_background"
+
+[[row]]
+key = "input.min_height"
+homes = ["input.field(NONE).min_size[1]"]
+
+[[row]]
+key = "input.disabled_opacity"
+homes = [
+    "input.disabled_opacity",
+    "text_area.disabled_opacity",
+]
+
+[[row]]
+key = "input.disabled_text_color"
+homes = [
+    "input.text(DISABLED).color",
+    "text_area.text(DISABLED).color",
+]
+
+[[row]]
+key = "input.hover_border_color"
+homes = [
+    "input.field(HOVER).stroke.color",
+    "text_area.field(HOVER).stroke.color",
+]
+
+[[row]]
+key = "input.focus_border_color"
+homes = [
+    "input.field(FOCUSED).stroke.color",
+    "text_area.field(FOCUSED).stroke.color",
+]
+
+[[row]]
+key = "input.disabled_background"
+homes = [
+    "input.field(DISABLED).fill",
+    "text_area.field(DISABLED).fill",
+]
+
+[[row]]
+key = "input.font.family"
+homes = [
+    "input.text(NONE).family",
+    "text_area.text(NONE).family",
+]
+
+[[row]]
+key = "input.font.size"
+homes = [
+    "input.text(NONE).size_px",
+    "text_area.text(NONE).size_px",
+]
+
+[[row]]
+key = "input.font.defined_size"
+homes = [
+    "input.text(NONE).defined_size",
+    "text_area.text(NONE).defined_size",
+]
+
+[[row]]
+key = "input.font.weight"
+homes = [
+    "input.text(NONE).weight",
+    "text_area.text(NONE).weight",
+]
+
+[[row]]
+key = "input.font.style"
+homes = [
+    "input.text(NONE).style",
+    "text_area.text(NONE).style",
+]
+
+[[row]]
+key = "input.font.color"
+homes = [
+    "input.text(NONE).color",
+    "text_area.text(NONE).color",
+]
+
+[[row]]
+key = "input.border.color"
+homes = ["input.field(NONE).stroke.color"]
+
+[[row]]
+key = "input.border.corner_radius"
+homes = ["input.field(NONE).corners"]
+note = "Corners::uniform(radius)"
+
+[[row]]
+key = "input.border.line_width"
+homes = ["input.field(NONE).stroke.width"]
+
+[[row]]
+key = "input.border.shadow_enabled"
+homes = ["input.field(NONE).shadows"]
+note = "true: SHADOWS unstated; false: SHADOWS stated, None (spec §5 notes)"
+
+[[row]]
+key = "input.border.padding.top"
+homes = ["input.field(NONE).padding.top"]
+
+[[row]]
+key = "input.border.padding.right"
+homes = ["input.field(NONE).padding.right"]
+
+[[row]]
+key = "input.border.padding.bottom"
+homes = ["input.field(NONE).padding.bottom"]
+
+[[row]]
+key = "input.border.padding.left"
+homes = ["input.field(NONE).padding.left"]
+
+# --- text_area ---
+
+[[row]]
+key = "text_area.border.color"
+homes = ["text_area.field(NONE).stroke.color"]
+note = "0.7.2 R-W: unset = input.border's"
+
+[[row]]
+key = "text_area.border.corner_radius"
+homes = ["text_area.field(NONE).corners"]
+note = "Corners::uniform(radius); 0.7.2 R-W: unset = input.border's"
+
+[[row]]
+key = "text_area.border.line_width"
+homes = ["text_area.field(NONE).stroke.width"]
+note = "0.7.2 R-W: unset = input.border's"
+
+[[row]]
+key = "text_area.border.shadow_enabled"
+homes = ["text_area.field(NONE).shadows"]
+note = "true: SHADOWS unstated; false: SHADOWS stated, None; 0.7.2 R-W: unset = input.border's"
+
+[[row]]
+key = "text_area.border.padding.top"
+homes = ["text_area.field(NONE).padding.top"]
+note = "the multi-line field's own; None where unstated"
+
+[[row]]
+key = "text_area.border.padding.right"
+homes = ["text_area.field(NONE).padding.right"]
+note = "the multi-line field's own; None where unstated"
+
+[[row]]
+key = "text_area.border.padding.bottom"
+homes = ["text_area.field(NONE).padding.bottom"]
+note = "the multi-line field's own; None where unstated"
+
+[[row]]
+key = "text_area.border.padding.left"
+homes = ["text_area.field(NONE).padding.left"]
+note = "the multi-line field's own; None where unstated"
+
+# --- link ---
+
+[[row]]
+key = "link.visited_text_color"
+homes = ["link.label(VISITED).color"]
+note = "R-U: unset = defaults.link_color; colors.link_visited (Option) not a home: 0.7.2 has no global visited colour"
+
+[[row]]
+key = "link.underline_enabled"
+homes = ["link.label(NONE).decoration"]
+note = "true: DecorationKind::Underline; false: DecorationKind::None, stated (spec §5: underline policy via label(state).decoration)"
+
+[[row]]
+key = "link.background_color"
+homes = ["link.container(NONE).fill"]
+
+[[row]]
+key = "link.hover_background"
+homes = ["link.container(HOVER).fill"]
+
+[[row]]
+key = "link.hover_text_color"
+homes = ["link.label(HOVER).color"]
+note = "0.7.2 R-W: unset = link.font.color"
+
+[[row]]
+key = "link.active_text_color"
+homes = ["link.label(PRESSED).color"]
+note = "0.7.2 R-W: unset = link.font.color"
+
+[[row]]
+key = "link.disabled_text_color"
+homes = ["link.label(DISABLED).color"]
+
+[[row]]
+key = "link.font.family"
+homes = ["link.label(NONE).family"]
+
+[[row]]
+key = "link.font.size"
+homes = ["link.label(NONE).size_px"]
+
+[[row]]
+key = "link.font.defined_size"
+homes = ["link.label(NONE).defined_size"]
+
+[[row]]
+key = "link.font.weight"
+homes = ["link.label(NONE).weight"]
+
+[[row]]
+key = "link.font.style"
+homes = ["link.label(NONE).style"]
+
+[[row]]
+key = "link.font.color"
+homes = ["link.label(NONE).color"]
+note = "inherits defaults.link_color, not defaults.font.color (connectors/native-theme-gpui/src/contract.rs, link row)"

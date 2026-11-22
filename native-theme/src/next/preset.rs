@@ -22,6 +22,7 @@ use super::widgets::{
     ButtonWidget, CheckboxWidget, ListWidget, RadioWidget, ResolvedTheme, ScrollbarWidget,
     TooltipWidget, WidgetOrigin,
 };
+use super::widgets::{InputWidget, LinkWidget};
 use super::window::{CaptionLayout, WindowChrome};
 use crate::IconSet;
 
@@ -705,6 +706,9 @@ pub(crate) fn nothing_stated(preset: Preset, context: ThemeContext) -> ResolvedT
             part(),
             icon(),
         ),
+        input: InputWidget::new(native, part(), text(), text(), text(), None),
+        text_area: InputWidget::new(native, part(), text(), text(), text(), None),
+        link: LinkWidget::new(native, part(), text()),
         custom_colors: BTreeMap::new(),
         custom_metrics: BTreeMap::new(),
     }

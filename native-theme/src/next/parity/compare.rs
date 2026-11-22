@@ -16,8 +16,9 @@
 //! `border.shadow_enabled` (`false` is `SHADOWS` stated with `shadows = None`, `true` is `SHADOWS`
 //! unstated), a part's stroke colour and width read out of `Stroke::Uniform` inside the edge (`Stroke::None`
 //! is the width 0.0 and no colour) and a corner radius out of `CornerRadius::Uniform` with circular corners
-//! (`CornerRadius::None` is 0.0); any other form there (a gradient fill, a per-side or centred stroke, a pill,
-//! continuous corners) is a value no 0.7.2 field holds, so a mismatch. A colour is compared by its 8-bit
+//! (`CornerRadius::None` is 0.0), and a text's `decoration` against 0.7.2's `underline_enabled` (a plain
+//! underline is `true`, no line `false`); any other form there (a gradient fill, a per-side or centred
+//! stroke, a pill, continuous corners, a coloured underline) is a value no 0.7.2 field holds, so a mismatch. A colour is compared by its 8-bit
 //! channels only where every channel is finite and in 0..=1; any other colour is a mismatch.
 //!
 //! The table's keys that change how a row is read: `if_null` is followed along the chain of the rows of
@@ -48,13 +49,13 @@ use crate::next::paint::Paint;
 use crate::next::preset::Preset;
 use crate::next::query::{
     ButtonKind, ButtonQuery, ButtonShape, ButtonVariant, Contrast, ControlSize, GroupPosition,
-    ListKind, ListQuery, ListVariant, MotionPreference, Orientation, Scheme, StyleQuery, Surface,
-    ThemeContext, WidgetState,
+    InputQuery, InputVariant, ListKind, ListQuery, ListVariant, MotionPreference, Orientation,
+    Scheme, StyleQuery, Surface, ThemeContext, WidgetState,
 };
 use crate::next::roles::SurfaceColors;
 use crate::next::style::{
-    FocusTrigger, FontSize, FontStyle, IconStated, IconStyle, PartStated, PartStyle, TextStated,
-    TextStyle,
+    DecorationKind, FocusTrigger, FontSize, FontStyle, IconStated, IconStyle, PartStated,
+    PartStyle, TextDecoration, TextStated, TextStyle,
 };
 use crate::next::widgets::ResolvedTheme;
 use crate::next::window::WindowState;
@@ -976,6 +977,8 @@ fn metric(theme: &ResolvedTheme, widget: &str, name: &str) -> Option<Got> {
         ("scrollbar", "min_thumb_length") => Got::F32(theme.scrollbar.min_thumb_length),
         ("scrollbar", "overlay_mode") => Got::Bool(theme.scrollbar.overlay_mode),
         ("list", "grid_color") => Got::Color(theme.list.grid_color),
+        ("input", "disabled_opacity") => opt_f32(theme.input.disabled_opacity),
+        ("text_area", "disabled_opacity") => opt_f32(theme.text_area.disabled_opacity),
         _ => return None,
     })
 }
@@ -1020,6 +1023,16 @@ fn ruled_style<'a>(
         ("list", "header") => Ruled::Part(theme.list.header(q.list()?)),
         ("list", "header_label") => Ruled::Text(theme.list.header_label(q.list()?)),
         ("list", "header_separator") => Ruled::Part(theme.list.header_separator(q.list()?)),
+        ("input", "field") => Ruled::Part(theme.input.field(q.input()?)),
+        ("input", "text") => Ruled::Text(theme.input.text(q.input()?)),
+        ("input", "placeholder") => Ruled::Text(theme.input.placeholder(q.input()?)),
+        ("input", "helper_text") => Ruled::Text(theme.input.helper_text(q.input()?)),
+        ("text_area", "field") => Ruled::Part(theme.text_area.field(q.input()?)),
+        ("text_area", "text") => Ruled::Text(theme.text_area.text(q.input()?)),
+        ("text_area", "placeholder") => Ruled::Text(theme.text_area.placeholder(q.input()?)),
+        ("text_area", "helper_text") => Ruled::Text(theme.text_area.helper_text(q.input()?)),
+        ("link", "container") => Ruled::Part(theme.link.container(q.style()?)),
+        ("link", "label") => Ruled::Text(theme.link.label(q.style()?)),
         _ => return Ok(None),
     };
     Ok(Some((style, property)))
@@ -1107,6 +1120,7 @@ fn text_bit(property: &str) -> Option<TextStated> {
         "style" => TextStated::STYLE,
         "line_height" => TextStated::LINE_HEIGHT,
         "letter_spacing" => TextStated::LETTER_SPACING,
+        "decoration" => TextStated::DECORATION,
         _ => return None,
     })
 }
@@ -1212,8 +1226,19 @@ fn text_property(style: &TextStyle, property: &str) -> Option<Got> {
         "style" => stated(TextStated::STYLE, Got::FontStyle(style.style)),
         "line_height" => stated(TextStated::LINE_HEIGHT, Got::F32(style.line_height)),
         "letter_spacing" => stated(TextStated::LETTER_SPACING, Got::F32(style.letter_spacing)),
+        "decoration" => stated(TextStated::DECORATION, decoration(&style.decoration)),
         _ => return None,
     })
+}
+
+/// A text's decoration as 0.7.2's `underline_enabled` holds it: a plain underline is `true`, no line
+/// `false`; a decoration with its own colour or thickness, or another line, is a form no 0.7.2 field holds.
+fn decoration(decoration: &TextDecoration) -> Got {
+    match (decoration.kind, decoration.color, decoration.thickness) {
+        (DecorationKind::Underline, None, None) => Got::Bool(true),
+        (DecorationKind::None, None, None) => Got::Bool(false),
+        _ => Got::Other(format!("{decoration:?}")),
+    }
 }
 
 fn icon_property(style: &IconStyle, property: &str) -> Option<Got> {
@@ -1417,6 +1442,27 @@ impl<'a> Query<'a> {
             )?;
         }
         Ok(self.base().variant(kind))
+    }
+
+    fn input(&self) -> Result<InputQuery, String> {
+        if self.shape.is_some() || self.alternate.is_some() {
+            return Err("an input's query has no axis but `variant`".to_owned());
+        }
+        let mut variant = InputVariant::default();
+        if let Some(v) = self.variant {
+            variant = named(
+                "variant",
+                v,
+                &[
+                    ("Standard", InputVariant::Standard),
+                    ("Outlined", InputVariant::Outlined),
+                    ("Filled", InputVariant::Filled),
+                    ("Search", InputVariant::Search),
+                    ("Borderless", InputVariant::Borderless),
+                ],
+            )?;
+        }
+        Ok(self.base().variant(variant))
     }
 
     fn list(&self) -> Result<ListQuery, String> {

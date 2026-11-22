@@ -1398,6 +1398,9 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
         tooltip: tooltip(&colors, &typography, &layout),
         // Nothing stated yet: plan M2's KDE unit ("the rest of `kde-breeze`").
         window: unstated.window,
+        input: unstated.input,
+        text_area: unstated.text_area,
+        link: unstated.link,
         custom_colors: BTreeMap::new(),
         custom_metrics: BTreeMap::new(),
         colors,

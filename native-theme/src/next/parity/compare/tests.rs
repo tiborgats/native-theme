@@ -11,6 +11,7 @@ use crate::next::rules::{
 use crate::next::widgets::{
     ButtonWidget, CheckboxWidget, ListWidget, RadioWidget, ScrollbarWidget, WidgetOrigin,
 };
+use crate::next::widgets::{InputWidget, LinkWidget};
 use crate::next::window::{CaptionLayout, EdgeFlags, WindowChrome};
 use crate::resolve::ResolutionContext;
 
@@ -789,7 +790,8 @@ fn an_unreadable_home_or_old_value_is_an_error_naming_the_row() -> TestResult {
     for (home, key) in [
         ("button.body(NONE).transform", "e.v"),
         ("button.body(NONE).focus", "e.v"),
-        ("input.field(NONE).fill", "e.v"),
+        ("switch.track(NONE).fill", "e.v"),
+        ("input.field(NONE; shape=Pill).fill", "e.v"),
         ("colors.error.origin", "e.v"),
         ("typography.rendering.hinting", "e.v"),
         ("button.body(HOVERED).fill", "e.v"),
@@ -1440,6 +1442,77 @@ fn if_null_follows_the_chain_of_null_keys() -> TestResult {
     ) {
         Err(e) => assert!(e.contains("returns to `i.a`"), "{e}"),
         Ok(report) => return Err(format!("no error: {report}").into()),
+    }
+    Ok(())
+}
+
+#[test]
+fn a_decoration_reads_as_underline_enabled_and_an_input_home_takes_its_variant() -> TestResult {
+    let mut theme = theme();
+    let underline = TextDecoration {
+        kind: DecorationKind::Underline,
+        color: None,
+        thickness: None,
+    };
+    let label = RuleBuilder::new(TextStyle::default())
+        .base([crate::next::rules::TextProp::Decoration(underline)])
+        .rule(
+            RuleSelector::on(WidgetState::HOVER),
+            [crate::next::rules::TextProp::Decoration(TextDecoration {
+                kind: DecorationKind::None,
+                ..underline
+            })],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED),
+            [crate::next::rules::TextProp::Decoration(TextDecoration {
+                color: Some(srgb(COLOR)),
+                ..underline
+            })],
+        )
+        .build();
+    theme.link = LinkWidget::new(
+        WidgetOrigin::Native,
+        RuleBuilder::new(PartStyle::default()).build(),
+        label,
+    );
+    let search = RuleBuilder::new(PartStyle::default())
+        .rule(
+            RuleSelector::on(WidgetState::NONE).matcher(Some(InputVariant::Search)),
+            [PartProp::MinSize([None, Some(30.0)])],
+        )
+        .build();
+    let empty_text = || RuleBuilder::new(TextStyle::default()).build();
+    theme.input = InputWidget::new(
+        WidgetOrigin::Native,
+        search,
+        empty_text(),
+        empty_text(),
+        empty_text(),
+        Some(0.5),
+    );
+    for (home, value, equal) in [
+        ("link.label(NONE).decoration", json!(true), true),
+        ("link.label(NONE).decoration", json!(false), false),
+        ("link.label(HOVER).decoration", json!(false), true),
+        ("link.label(PRESSED).decoration", json!(true), false),
+        ("link.label(PRESSED).decoration", json!(false), false),
+        (
+            "input.field(NONE; variant=Search).min_size[1]",
+            json!(30.0),
+            true,
+        ),
+        ("input.field(NONE).min_size[1]", Value::Null, true),
+        ("input.disabled_opacity", json!(0.5), true),
+        ("text_area.disabled_opacity", Value::Null, true),
+    ] {
+        let report = one_row(home, value.clone(), &theme)?;
+        let outcome = report.rows.first().map(|r| &r.outcome);
+        assert_eq!(
+            matches!(outcome, Some(Outcome::Equal)),
+            equal,
+            "{home} {value}: {report}"
+        );
     }
     Ok(())
 }

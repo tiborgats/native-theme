@@ -350,3 +350,76 @@ fn elevation_reads_each_level_and_is_empty_beyond_the_last() {
     let flat = nothing_stated(Preset::KdeBreeze, ThemeContext::light());
     assert!(flat.elevation(0).is_empty());
 }
+
+#[test]
+fn input_getters_evaluate_their_rule_sets() {
+    use crate::next::query::{InputQuery, InputVariant};
+    let field = part_rules(RED, GREEN, BLUE, Some(InputVariant::Search));
+    let text = text_rules(GREEN, BLUE);
+    let placeholder = text_rules(BLUE, RED);
+    let helper_text = text_rules(RED, BLUE);
+    let input = InputWidget::new(
+        WidgetOrigin::Native,
+        field.clone(),
+        text.clone(),
+        placeholder.clone(),
+        helper_text.clone(),
+        Some(1.0),
+    );
+    assert!(input.is_native());
+    assert_eq!(input.disabled_opacity, Some(1.0));
+    for state in states() {
+        for variant in [InputVariant::Standard, InputVariant::Search] {
+            let query = InputQuery::new(state).variant(variant);
+            assert_eq!(input.field(query), field.eval(&query));
+            assert_eq!(input.text(query), text.eval(&query));
+            assert_eq!(input.placeholder(query), placeholder.eval(&query));
+            assert_eq!(input.helper_text(query), helper_text.eval(&query));
+            assert_eq!(
+                input.parts(query),
+                InputParts {
+                    field: input.field(query),
+                    text: input.text(query),
+                    placeholder: input.placeholder(query),
+                    helper_text: input.helper_text(query),
+                }
+            );
+        }
+    }
+    // The variant reaches the rule: pressed fills blue only on a search field.
+    let pressed = WidgetState::PRESSED;
+    assert_eq!(input.field(pressed).fill, Paint::Solid(RED));
+    assert_eq!(
+        input
+            .field(InputQuery::from(InputVariant::Search).state(pressed))
+            .fill,
+        Paint::Solid(BLUE)
+    );
+}
+
+#[test]
+fn link_getters_evaluate_their_rule_sets() {
+    let container = part_rules(RED, GREEN, BLUE, ());
+    let label = text_rules(BLUE, RED);
+    let link = LinkWidget::new(WidgetOrigin::Native, container.clone(), label.clone());
+    assert!(link.is_native());
+    for state in states() {
+        let query = StyleQuery::new(state);
+        assert_eq!(link.container(query), container.eval(&query));
+        assert_eq!(link.label(query), label.eval(&query));
+        assert_eq!(
+            link.parts(query),
+            LinkParts {
+                container: link.container(query),
+                label: link.label(query),
+            }
+        );
+    }
+}
+
+#[test]
+fn the_widgets_added_in_m1_are_clone_debug_eq_send_sync() {
+    assert_send_sync_clone_debug_eq::<crate::next::window::WindowChrome>();
+    assert_send_sync_clone_debug_eq::<InputWidget>();
+    assert_send_sync_clone_debug_eq::<LinkWidget>();
+}
