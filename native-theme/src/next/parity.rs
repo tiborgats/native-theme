@@ -1077,6 +1077,123 @@ fn the_checks_catch_what_they_check() -> TestResult {
 }
 
 // ---------------------------------------------------------------------------------------------------------
-// The value half is `compare` (`parity/compare.rs`). The tests that run it on a preset's builder and on a
-// reader's fixture come with the kde-breeze builder (the next task); until then its own tests stand there.
+// The value half, `compare` (`parity/compare.rs`), on the kde-breeze builder. Its test on a reader's fixture
+// comes with the builder's system path (the next task).
 // ---------------------------------------------------------------------------------------------------------
+
+/// The groups of the table (a row's group is its key's first segment) whose rows the kde-breeze builder
+/// ports so far: each of their rows is compared and equal, or skipped for a reason [`expected_skip`] names.
+const PORTED_GROUPS: &[&str] = &[
+    "defaults",
+    "text_scale",
+    "Resolved",
+    "layout",
+    "accessibility",
+];
+
+/// The totals of the ported groups' rows on each scheme, `[rows, compared, equal, mismatching, skipped]`:
+/// every row equal but the four reader's context rows, skipped.
+const PORTED_TOTALS: [usize; 5] = [77, 73, 73, 0, 4];
+
+/// The reason a row of the table is skipped on 0.7.2's `kde-breeze` without a reader's snapshot: the
+/// reader's context rows (`accessibility.*`), and `checkbox.background_color`, compared only where
+/// `checkbox.unchecked_background` is unset (the table's listed differences).
+fn expected_skip(key: &str) -> Option<compare::Skip> {
+    if key.starts_with("accessibility.") {
+        Some(compare::Skip::NoSnapshot)
+    } else if key == "checkbox.background_color" {
+        Some(compare::Skip::OtherKeyStated)
+    } else {
+        None
+    }
+}
+
+/// 0.7.2's resolved `kde-breeze` of `mode` as the comparator reads it: the JSON serialisation of the
+/// resolved theme, with the rows written by hand added from the `Resolved` wrapper and from `Theme.layout`,
+/// each in the form `serde_json` gives its field's type (`Resolved.mode` as the variant's name).
+fn old_kde_breeze(mode: ColorMode) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
+    let theme = Theme::preset(PRESET)?;
+    let resolved = theme.resolve_with(mode, &ResolutionContext::for_tests())?;
+    let mut old = serde_json::to_value(&resolved.variant)?;
+    let map = old
+        .as_object_mut()
+        .ok_or("the resolved theme does not serialise as an object")?;
+    map.insert(
+        "Resolved".to_owned(),
+        serde_json::json!({
+            "mode": format!("{:?}", resolved.mode),
+            "icon_set": serde_json::to_value(resolved.icon_set)?,
+            "icon_theme": resolved.icon_theme.as_deref(),
+            "icon_theme_explicit": resolved.icon_theme_explicit,
+        }),
+    );
+    let layout = &theme.layout;
+    map.insert(
+        "layout".to_owned(),
+        serde_json::json!({
+            "widget_gap": layout.widget_gap,
+            "container_margin": layout.container_margin,
+            "window_margin": layout.window_margin,
+            "section_gap": layout.section_gap,
+        }),
+    );
+    Ok(old)
+}
+
+/// The totals of the rows in the ported groups (`ported`) or in the others: rows, compared, equal,
+/// mismatching, skipped.
+fn group_totals(report: &compare::Report, ported: bool) -> [usize; 5] {
+    let rows: Vec<&compare::Outcome> = report
+        .rows
+        .iter()
+        .filter(|row| {
+            let group = row.key.split('.').next().unwrap_or("");
+            PORTED_GROUPS.contains(&group) == ported
+        })
+        .map(|row| &row.outcome)
+        .collect();
+    let count = |f: fn(&compare::Outcome) -> bool| rows.iter().filter(|o| f(o)).count();
+    [
+        rows.len(),
+        count(|o| !matches!(o, compare::Outcome::Skipped(_))),
+        count(|o| matches!(o, compare::Outcome::Equal)),
+        count(|o| matches!(o, compare::Outcome::Mismatch(_))),
+        count(|o| matches!(o, compare::Outcome::Skipped(_))),
+    ]
+}
+
+/// Model parity of the kde-breeze builder (plan, section 1, rule 2): 0.7.2's `kde-breeze` and
+/// `Theme::preset(Preset::KdeBreeze)`, light and dark, over the table of homes. Zero mismatches in the
+/// groups ported so far, every skip for its named reason; the mismatches of the other groups are counted.
+#[test]
+fn model_parity_kde_breeze() -> TestResult {
+    use crate::next::preset::{Preset, Theme as NextTheme};
+    use crate::next::query::ThemeContext;
+
+    let table: Table = toml::from_str(HOMES)?;
+    for (mode, ctx) in [
+        (ColorMode::Light, ThemeContext::light()),
+        (ColorMode::Dark, ThemeContext::dark()),
+    ] {
+        let old = old_kde_breeze(mode)?;
+        let new = NextTheme::preset(Preset::KdeBreeze).resolve(&ctx);
+        let report = compare::compare(&old, &new, None, Preset::KdeBreeze)?;
+        println!("{mode:?}: {report}");
+        assert_eq!(report.totals.rows, table.row.len());
+        for row in &report.rows {
+            let skip = match row.outcome {
+                compare::Outcome::Skipped(skip) => Some(skip),
+                _ => None,
+            };
+            assert_eq!(skip, expected_skip(&row.key), "{mode:?}: `{}`", row.key);
+        }
+        let ported = group_totals(&report, true);
+        let pending = group_totals(&report, false);
+        println!(
+            "{mode:?}: [rows, compared, equal, mismatching, skipped] in the ported groups {ported:?}, \
+             in the groups not ported yet {pending:?}"
+        );
+        assert_eq!(ported, PORTED_TOTALS, "{mode:?}\n{report}");
+    }
+    Ok(())
+}

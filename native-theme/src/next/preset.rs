@@ -8,6 +8,7 @@ use super::geometry::Stroke;
 use super::icons::{IconSizes, IconThemeSpec};
 use super::layout::LayoutMetrics;
 use super::motion::{CaretSpec, MotionTokens, UiTimings};
+use super::presets::kde;
 use super::query::{ThemeContext, sanitized_text_scale};
 use super::reader::SystemOverrides;
 use super::roles::{
@@ -95,10 +96,10 @@ impl Preset {
 /// A theme to resolve: a preset, the context it resolves for by default and
 /// the system's settings, where given (spec §6).
 ///
-/// [`resolve`](Self::resolve) runs the preset's builder. No preset's builder
-/// is written yet, so every preset resolves to a theme that states nothing
-/// (plan, M1): scaffolding until each preset's builder lands, not a theme to
-/// draw with.
+/// [`resolve`](Self::resolve) runs the preset's builder. Only `kde-breeze`'s
+/// is written, without the system's settings so far; every other preset
+/// resolves to a theme that states nothing (plan, M1, M2): scaffolding until
+/// each preset's builder lands, not a theme to draw with.
 //
 // Not built yet, each with its milestone (plan, M1): `with_name`; the
 // palettes (`with_palette`, `with_palettes`, `with_palette_for`,
@@ -164,7 +165,11 @@ impl Theme {
     pub fn resolve(&self, ctx: &ThemeContext) -> ResolvedTheme {
         let mut effective = ctx.clone();
         effective.text_scale = sanitized_text_scale(ctx.text_scale);
-        let mut resolved = build(self.preset, effective);
+        let inputs = ResolveInputs {
+            system: self.system.as_deref(),
+            accent: None,
+        };
+        let mut resolved = build(self.preset, effective, &inputs);
         resolved.name = self
             .system
             .as_ref()
@@ -180,12 +185,12 @@ impl Theme {
     }
 }
 
-/// The preset's builder run for `context`: until each preset's builder is
-/// written (plan, M1), the theme with nothing stated.
-fn build(preset: Preset, context: ThemeContext) -> ResolvedTheme {
+/// The preset's builder run for `context` and `inputs`: for a preset whose
+/// builder is not written yet (plan, M1, M2), the theme with nothing stated.
+fn build(preset: Preset, context: ThemeContext, inputs: &ResolveInputs<'_>) -> ResolvedTheme {
     match preset {
         Preset::Adwaita => nothing_stated(preset, context),
-        Preset::KdeBreeze => nothing_stated(preset, context),
+        Preset::KdeBreeze => kde::resolve(&context, inputs),
         Preset::MacosMonterey => nothing_stated(preset, context),
         Preset::MacosTahoe => nothing_stated(preset, context),
         Preset::Windows11 => nothing_stated(preset, context),
@@ -204,7 +209,7 @@ fn build(preset: Preset, context: ThemeContext) -> ResolvedTheme {
     not(test),
     expect(
         dead_code,
-        reason = "read by the kde-breeze builder, the next task of M0"
+        reason = "read by the kde-breeze builder's system path, the next task of M0"
     )
 )]
 pub(crate) struct ResolveInputs<'a> {
@@ -510,13 +515,19 @@ mod tests {
     }
 
     #[test]
-    fn every_preset_resolves_through_the_builder_match_to_nothing_stated() {
+    fn every_preset_resolves_through_the_builder_match() {
         let positions: Vec<usize> = Preset::ALL.iter().map(|p| position(*p)).collect();
         assert_eq!(positions, (0..7).collect::<Vec<_>>());
         let ctx = ThemeContext::dark();
         for preset in Preset::ALL {
             let resolved = Theme::preset(*preset).resolve(&ctx);
-            assert_eq!(resolved, nothing_stated(*preset, ctx.clone()), "{preset:?}");
+            // kde-breeze's builder is written; every other preset states nothing yet.
+            let built = *preset == Preset::KdeBreeze;
+            assert_eq!(
+                resolved != nothing_stated(*preset, ctx.clone()),
+                built,
+                "{preset:?}"
+            );
             assert_eq!(resolved.preset, *preset);
             assert_eq!(&*resolved.name, preset.display_name());
         }

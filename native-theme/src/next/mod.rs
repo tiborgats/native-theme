@@ -122,6 +122,7 @@ mod parity;
 )]
 mod platform;
 mod preset;
+mod presets;
 mod query;
 mod reader;
 mod roles;
