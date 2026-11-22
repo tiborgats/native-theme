@@ -186,4 +186,13 @@ fn constructors_take_every_field() {
     let entry = DiagnosticEntry::new("kde", "no colour scheme file".to_owned());
     assert_eq!(entry.source, "kde");
     assert_eq!(entry.message, "no colour scheme file");
+
+    let overrides = SystemOverrides {
+        scheme: Some(Scheme::Dark),
+        ..SystemOverrides::default()
+    };
+    let snapshot = SystemSnapshot::new(Preset::KdeBreeze, ThemeContext::dark(), overrides.clone());
+    assert_eq!(snapshot.preset, Preset::KdeBreeze);
+    assert_eq!(snapshot.context, ThemeContext::dark());
+    assert_eq!(snapshot.overrides, overrides);
 }

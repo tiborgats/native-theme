@@ -156,7 +156,7 @@ pub use query::{
 pub use reader::{
     DiagnosticEntry, KdeColorEffect, KdeColorEffects, KdeContrastEffect, KdeIntensityEffect,
     KdeStateEffects, OsColors, OsFont, OsSelectionColors, OsSurfaceOverrides, SystemOverrides,
-    WindowsAccentRamp,
+    SystemSnapshot, WindowsAccentRamp,
 };
 pub use roles::{
     AccentColors, ColorRoles, RoleOrigin, SelectionColors, StatusColors, SurfaceColors,
@@ -216,5 +216,6 @@ mod tests {
         assert_send_sync_clone_debug::<CaretSpec>();
         assert_send_sync_clone_debug::<CaptionLayout>();
         assert_send_sync_clone_debug::<SystemOverrides>();
+        assert_send_sync_clone_debug::<SystemSnapshot>();
     }
 }

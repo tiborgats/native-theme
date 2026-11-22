@@ -26,8 +26,9 @@ fn os_font(family: &str, size: FontSize, weight: u16) -> Option<OsFont> {
     })
 }
 
-/// What `overrides_from_kdeglobals` states for every file, the scheme and the
-/// font DPI, with `colors` as the scheme's entry.
+/// What `overrides_from_kdeglobals` states for every file, the scheme, the
+/// font DPI and the name of a file without `[General] ColorScheme`, with
+/// `colors` as the scheme's entry.
 fn expected(scheme: Scheme, colors: Option<OsColors>) -> SystemOverrides {
     SystemOverrides {
         color_schemes: colors
@@ -35,6 +36,7 @@ fn expected(scheme: Scheme, colors: Option<OsColors>) -> SystemOverrides {
             .into_iter()
             .collect(),
         scheme: Some(scheme),
+        theme_name: Some(Arc::from("KDE")),
         font_dpi: Some(96.0),
         ..SystemOverrides::default()
     }
@@ -249,11 +251,99 @@ fn icon_sizes_are_dropped_without_an_icon_theme() {
 }
 
 #[test]
-fn an_empty_file_states_only_the_scheme_and_the_font_dpi() {
+fn an_empty_file_states_only_the_scheme_the_font_dpi_and_the_name() {
     assert_eq!(
         overrides_from_kdeglobals(&parsed(""), None, None),
         expected(Scheme::Light, None)
     );
+}
+
+/// Each fixture's scheme and motion preference, read from the files by eye:
+/// `[Colors:Window] BackgroundNormal` (49,54,59 and the like dark, 239,240,241
+/// light, none light) and `[KDE] AnimationDurationFactor` (0 in the two dark
+/// Breeze files).
+const FIXTURE_CONTEXTS: &[(&str, Scheme, MotionPreference)] = &[
+    ("breeze-dark.ini", Scheme::Dark, MotionPreference::None),
+    ("breeze-index.theme", Scheme::Light, MotionPreference::Full),
+    ("breeze-light.ini", Scheme::Light, MotionPreference::Full),
+    ("custom-accent.ini", Scheme::Dark, MotionPreference::None),
+    ("high-dpi.ini", Scheme::Dark, MotionPreference::Full),
+    ("malformed-values.ini", Scheme::Dark, MotionPreference::Full),
+    ("minimal.ini", Scheme::Dark, MotionPreference::Full),
+    ("missing-groups.ini", Scheme::Dark, MotionPreference::Full),
+];
+
+#[test]
+fn every_fixture_gives_its_context_and_snapshot() -> TestResult {
+    let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/kde");
+    let mut files = 0_usize;
+    for entry in std::fs::read_dir(&dir)? {
+        let path = entry?.path();
+        let name = path
+            .file_name()
+            .and_then(|n| n.to_str())
+            .ok_or("a fixture's name")?;
+        let &(_, scheme, motion) = FIXTURE_CONTEXTS
+            .iter()
+            .find(|(file, _, _)| *file == name)
+            .ok_or_else(|| format!("no expected context for {name}"))?;
+        let content = std::fs::read_to_string(&path)?;
+        let ini = parsed(&content);
+        let context = context_from_kdeglobals(&ini);
+        let mut want = ThemeContext::default().with_scheme(scheme);
+        want.motion = motion;
+        assert_eq!(context, want, "{name}");
+        // The 0.7.2 reader's `accessibility` block of the same file.
+        let (_, _, accessibility) = crate::kde::from_kde_content_pure(&content, Some(96.0))?;
+        assert_eq!(
+            context.motion != MotionPreference::Full,
+            accessibility.reduce_motion,
+            "{name}"
+        );
+        assert_eq!(
+            context.contrast != Contrast::Normal,
+            accessibility.high_contrast
+        );
+        assert_eq!(context.text_scale, accessibility.text_scaling_factor);
+        assert_eq!(
+            context.reduced_transparency,
+            accessibility.reduce_transparency
+        );
+        let snapshot = snapshot_from_kdeglobals(&ini, None, None);
+        assert_eq!(snapshot.preset, Preset::KdeBreeze, "{name}");
+        assert_eq!(snapshot.context, context, "{name}");
+        assert_eq!(
+            snapshot.overrides,
+            overrides_from_kdeglobals(&ini, None, None),
+            "{name}"
+        );
+        assert_eq!(snapshot.overrides.scheme, Some(scheme), "{name}");
+        files = files.saturating_add(1);
+    }
+    assert_eq!(
+        files,
+        FIXTURE_CONTEXTS.len(),
+        "the fixtures of tests/fixtures/kde/"
+    );
+    Ok(())
+}
+
+#[test]
+fn only_a_zero_animation_factor_means_no_motion() {
+    let motion = |content: &str| context_from_kdeglobals(&parsed(content)).motion;
+    assert_eq!(
+        motion("[KDE]\nAnimationDurationFactor=0\n"),
+        MotionPreference::None
+    );
+    assert_eq!(
+        motion("[KDE]\nAnimationDurationFactor= 0.0 \n"),
+        MotionPreference::None
+    );
+    for factor in ["0.5", "1", "-1", "inf", "NaN", "none", ""] {
+        let content = format!("[KDE]\nAnimationDurationFactor={factor}\n");
+        assert_eq!(motion(&content), MotionPreference::Full, "{factor}");
+    }
+    assert_eq!(motion(""), MotionPreference::Full);
 }
 
 #[test]

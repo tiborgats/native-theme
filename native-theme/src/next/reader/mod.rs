@@ -11,11 +11,38 @@ use std::sync::Arc;
 
 use super::color::Color;
 use super::icons::IconSizes;
-use super::query::{Contrast, Scheme};
+use super::preset::Preset;
+use super::query::{Contrast, Scheme, ThemeContext};
 use super::roles::SurfaceColors;
 use super::style::{FontSize, FontStyle, FontWidth};
 use super::typography::TextRendering;
 use super::window::CaptionLayout;
+
+/// Returned by a reader: the detected preset, the initial live
+/// [`ThemeContext`] and the [`SystemOverrides`]. Keeping `context` outside
+/// `SystemOverrides` keeps `Theme::context()` the single source of truth.
+#[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
+pub struct SystemSnapshot {
+    /// The preset the system's settings belong to.
+    pub preset: Preset,
+    /// The context the system was in when read.
+    pub context: ThemeContext,
+    /// The system's settings.
+    pub overrides: SystemOverrides,
+}
+
+impl SystemSnapshot {
+    /// A snapshot of these fields.
+    #[must_use]
+    pub fn new(preset: Preset, context: ThemeContext, overrides: SystemOverrides) -> Self {
+        Self {
+            preset,
+            context,
+            overrides,
+        }
+    }
+}
 
 /// The system's settings as a reader gives them, or as an application with
 /// its own source of system settings states them.
