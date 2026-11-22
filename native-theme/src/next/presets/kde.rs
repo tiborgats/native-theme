@@ -1030,7 +1030,7 @@ fn lay_system_over(c: &mut SchemeColors, os: &OsColors) {
     let surfaces = os.surfaces.clone().unwrap_or_default();
     let window = surfaces.window.unwrap_or_default();
     let view = surfaces.view.unwrap_or_default();
-    let button = surfaces.kde_button.unwrap_or_default();
+    let button = surfaces.button.unwrap_or_default();
     let tooltip = surfaces.tooltip.unwrap_or_default();
     let selection = os.selection.unwrap_or_default();
     let [error, warning, success, info] = os.status.unwrap_or_default();

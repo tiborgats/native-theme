@@ -177,7 +177,7 @@ fn os_colors(ini: &Ini) -> OsColors {
             color(ini, "WM", "inactiveForeground"),
             None,
         ),
-        kde_button: set(ini, "Colors:Button", false),
+        button: set(ini, "Colors:Button", false),
         ..OsSurfaceOverrides::default()
     };
     let selection = OsSelectionColors {

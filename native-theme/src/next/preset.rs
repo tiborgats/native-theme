@@ -906,7 +906,7 @@ mod tests {
             },
             OsColors {
                 surfaces: Some(OsSurfaceOverrides {
-                    kde_button: Some(surface),
+                    button: Some(surface),
                     ..OsSurfaceOverrides::default()
                 }),
                 ..OsColors::default()
@@ -920,6 +920,10 @@ mod tests {
             },
             OsColors {
                 kde_decoration_hover: c,
+                ..OsColors::default()
+            },
+            OsColors {
+                grid: c,
                 ..OsColors::default()
             },
         ] {

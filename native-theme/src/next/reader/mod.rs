@@ -1,11 +1,12 @@
 //! What the live OS readers carry: the system's settings as read, each
 //! optional, for the platform builders to lay over a preset.
 //!
-//! `SystemOverrides` holds everything the 0.7.2 KDE reader reads; the other
-//! 0.7.2 readers' slots are added before each is ported. A slot that another
+//! `SystemOverrides` holds everything the four 0.7.2 readers read (KDE, the
+//! XDG portal for GNOME, macOS, Windows); what a 0.7.2 reader derives from its
+//! reads for the widgets is its preset's builder's. A slot that more than one
 //! system can fill is named for what it holds (`alternate_row_background`,
-//! `title_bar`, `menu_font`, `icon_sizes`); one whose notion is KDE's own is
-//! named `kde_…`.
+//! `title_bar`, `button`, `menu_font`, `icon_sizes`, `disabled_text`,
+//! `scrollbar_width_px`); one whose notion is KDE's own is named `kde_…`.
 
 use std::sync::Arc;
 
@@ -50,11 +51,14 @@ impl SystemSnapshot {
 #[non_exhaustive]
 pub struct SystemOverrides {
     // Context-scoped color overrides (0–4 entries; applied ONLY when matching effective `(Scheme, Contrast)`).
-    // macOS populates Light/Dark × Normal/Increased; KDE/Windows populate the active OS `(Scheme, Contrast)`.
+    // KDE populates the scheme it read, at `Normal`; macOS `(Light, Normal)` and `(Dark, Normal)`, the two appearances the
+    // 0.7.2 reader reads; Windows `(scheme, High)`, and only under high contrast; the portal reader none.
     /// The colours per `(Scheme, Contrast)`, 0 to 4 entries, each applied
-    /// only where the effective scheme and contrast match it. macOS fills
-    /// Light and Dark × Normal and Increased; KDE and Windows the system's
-    /// active pair.
+    /// only where the effective scheme and contrast match it. KDE fills the
+    /// scheme it read, at `Normal`; macOS `(Light, Normal)` and `(Dark,
+    /// Normal)`, the two appearances the 0.7.2 reader reads; Windows
+    /// `(scheme, High)`, and only under high contrast; the portal reader
+    /// none.
     pub color_schemes: Vec<((Scheme, Contrast), OsColors)>,
     // Scheme-independent OS overrides
     /// The scheme the system was in when read; every reader sets it.
@@ -62,11 +66,12 @@ pub struct SystemOverrides {
     /// The theme's name, e.g. the KDE colour scheme's display name.
     pub theme_name: Option<Arc<str>>, // e.g. KDE color scheme display name
     /// The accent setting that is one value for every scheme (the XDG
-    /// portal's `accent-color`); the fallback where the active
-    /// [`OsColors::accent`] is `None`.
-    pub accent: Option<Color>, // the accent setting that is one value for every scheme (the XDG portal's `accent-color`); fallback when active OsColors.accent is None
-    /// Windows' accent shades, `AccentLight1..3` and `AccentDark1..3`.
-    pub windows_accent_ramp: Option<WindowsAccentRamp>, // AccentLight1..3, AccentDark1..3
+    /// portal's `accent-color`, Windows' `UIColorType::Accent`); the fallback
+    /// where the active [`OsColors::accent`] is `None`.
+    pub accent: Option<Color>, // the accent setting that is one value for every scheme (the XDG portal's `accent-color`, Windows' `UIColorType::Accent`); fallback when active OsColors.accent is None
+    /// Windows' accent shades, `AccentLight1..3` and `AccentDark1..3`, each
+    /// shade `None` where its read failed.
+    pub windows_accent_ramp: Option<WindowsAccentRamp>, // AccentLight1..3, AccentDark1..3, each shade `None` where its read failed
     /// The user interface font.
     pub ui_font: Option<OsFont>,
     /// The monospace font.
@@ -74,22 +79,31 @@ pub struct SystemOverrides {
     /// The caption font (KDE `[General] smallestReadableFont`): its size and
     /// weight are `typography.caption`'s, as in 0.7.2.
     pub caption_font: Option<OsFont>, // KDE `[General] smallestReadableFont`: its size and weight are `typography.caption`'s, as in 0.7.2
-    /// The menu font (KDE `[General] menuFont`).
-    pub menu_font: Option<OsFont>, // KDE `[General] menuFont`
+    /// The menu font (KDE `[General] menuFont`, Windows `lfMenuFont`, macOS
+    /// `NSFont.menuFontOfSize`).
+    pub menu_font: Option<OsFont>, // KDE `[General] menuFont`, Windows `lfMenuFont`, macOS `NSFont.menuFontOfSize`
     /// The toolbar font (KDE `[General] toolBarFont`).
     pub toolbar_font: Option<OsFont>, // KDE `[General] toolBarFont`
-    /// The title bar font (KDE `[WM] activeFont`).
-    pub title_bar_font: Option<OsFont>, // KDE `[WM] activeFont`
+    /// The title bar font (KDE `[WM] activeFont`, GNOME `titlebar-font`,
+    /// Windows `lfCaptionFont`, macOS `NSFont.titleBarFontOfSize`).
+    pub title_bar_font: Option<OsFont>, // KDE `[WM] activeFont`, GNOME `titlebar-font`, Windows `lfCaptionFont`, macOS `NSFont.titleBarFontOfSize`
+    /// The status bar font (Windows `lfStatusFont`, "the font used in status
+    /// bars and tooltips").
+    pub status_bar_font: Option<OsFont>, // Windows `lfStatusFont` ("the font used in status bars and tooltips")
+    /// The tooltip font (macOS `NSFont.toolTipsFontOfSize`).
+    pub tooltip_font: Option<OsFont>, // macOS `NSFont.toolTipsFontOfSize`
     /// The font DPI.
     pub font_dpi: Option<f32>,
     /// How text is rendered.
     pub text_rendering: Option<TextRendering>,
     /// The icon theme.
     pub icon_theme: Option<Arc<str>>,
-    /// The default sizes of `icon_theme` (KDE: its `index.theme`, with
-    /// KIconTheme's own default for a key the file lacks); `None` where they
-    /// were not read; used and dropped together with `icon_theme`.
-    pub icon_sizes: Option<IconSizes>, // the default sizes of `icon_theme` (KDE: its `index.theme`, with KIconTheme's own default for a key the file lacks); `None` where they were not read; used and dropped together with `icon_theme`
+    /// The icon sizes the system states; `None` where none was read. KDE:
+    /// the default sizes of `icon_theme` (its `index.theme`, with
+    /// KIconTheme's own default for a key the file lacks), used and dropped
+    /// together with `icon_theme`. Windows: `SM_CXSMICON` and `SM_CXICON` as
+    /// `small` and `large`, with no `icon_theme`: they hold in every scheme.
+    pub icon_sizes: Option<IconSizes>, // the icon sizes the system states; `None` where none was read. KDE: the default sizes of `icon_theme` (its `index.theme`, with KIconTheme's own default for a key the file lacks), used and dropped together with `icon_theme`. Windows: `SM_CXSMICON` and `SM_CXICON` as `small` and `large`, with no `icon_theme`: they hold in every scheme
     /// The pointer cursor theme.
     pub cursor_theme: Option<Arc<str>>,
     /// The pointer cursor's size, in logical pixels.
@@ -113,6 +127,16 @@ pub struct SystemOverrides {
     /// 0.7.2 reader reads it); it overrides the preset's
     /// `scrollbar.overlay_mode`.
     pub overlay_scrollbars: Option<bool>, // the user's scroller style (macOS `NSScroller.preferredScrollerStyle`, GNOME's overlay setting as its 0.7.2 reader reads it); overrides the preset's `scrollbar.overlay_mode`
+    /// The scroll bar's thickness as the system states it (Windows
+    /// `SM_CXVSCROLL`; macOS the scroller's width at the regular size and
+    /// the preferred style, the one width the 0.7.2 reader reads); the
+    /// groove's exact thickness.
+    pub scrollbar_width_px: Option<f32>, // the scroll bar's thickness as the system states it (Windows `SM_CXVSCROLL`; macOS the scroller's width at the regular size and the preferred style, the one width the 0.7.2 reader reads); the groove's exact thickness
+    /// The scroll bar handle's least length (Windows `SM_CYVTHUMB`);
+    /// `scrollbar.min_thumb_length`.
+    pub scrollbar_min_thumb_length_px: Option<f32>, // Windows `SM_CYVTHUMB`; `scrollbar.min_thumb_length`
+    /// The system's line width (Windows `SM_CXBORDER`); `layout.border_width`.
+    pub border_width_px: Option<f32>, // the system's line width (Windows `SM_CXBORDER`); `layout.border_width`
     /// Non-fatal partial fallbacks of the read.
     pub diagnostics: Vec<DiagnosticEntry>, // non-fatal partial fallbacks
 }
@@ -134,7 +158,7 @@ impl SystemOverrides {
 #[derive(Clone, Debug, Default, PartialEq)]
 #[non_exhaustive]
 pub struct OsColors {
-    /// Per-surface optional overrides (`window`..`osd`, both title bars + optional KDE `[Colors:Button]`).
+    /// Per-surface optional overrides (`window`..`osd`, both title bars, the button's face and text).
     pub surfaces: Option<OsSurfaceOverrides>,
     /// The selection in a view.
     pub selection: Option<OsSelectionColors>,
@@ -151,8 +175,21 @@ pub struct OsColors {
     pub link_visited: Option<Color>,
     /// The status colours, `[error, warning, success, info]`.
     pub status: Option<[Option<Color>; 4]>, // [error, warning, success, info]
-    /// A view's alternate row (KDE `[Colors:View] BackgroundAlternate`).
-    pub alternate_row_background: Option<Color>, // a view's alternate row (KDE `[Colors:View] BackgroundAlternate`)
+    /// Disabled text (macOS `disabledControlTextColor`; Windows
+    /// `COLOR_GRAYTEXT` under high contrast); KDE leaves it `None`: its
+    /// disabled text is `view.foreground_muted`.
+    pub disabled_text: Option<Color>, // disabled text (macOS `disabledControlTextColor`; Windows `COLOR_GRAYTEXT` under high contrast); KDE leaves it `None`: its disabled text is `view.foreground_muted`
+    /// A text field's placeholder (macOS `placeholderTextColor`).
+    pub placeholder: Option<Color>, // a text field's placeholder (macOS `placeholderTextColor`)
+    /// The text caret (macOS `textInsertionPointColor`, from macOS 14).
+    pub caret: Option<Color>, // the text caret (macOS `textInsertionPointColor`, from macOS 14)
+    /// A table view's column header text (macOS `headerTextColor`).
+    pub list_header_foreground: Option<Color>, // a table view's column header text (macOS `headerTextColor`)
+    /// A table view's grid lines (macOS `gridColor`); `list.grid_color`.
+    pub grid: Option<Color>, // a table view's grid lines (macOS `gridColor`); `list.grid_color`
+    /// A view's alternate row (KDE `[Colors:View] BackgroundAlternate`,
+    /// macOS `alternatingContentBackgroundColors[1]`).
+    pub alternate_row_background: Option<Color>, // a view's alternate row (KDE `[Colors:View] BackgroundAlternate`, macOS `alternatingContentBackgroundColors[1]`)
     /// KDE `[Colors:View] DecorationFocus`.
     pub kde_decoration_focus: Option<Color>, // KDE `[Colors:View] DecorationFocus`
     /// KDE `[Colors:View] DecorationHover`.
@@ -183,6 +220,11 @@ impl OsColors {
         link: Option<Color>,
         link_visited: Option<Color>,
         status: Option<[Option<Color>; 4]>,
+        disabled_text: Option<Color>,
+        placeholder: Option<Color>,
+        caret: Option<Color>,
+        list_header_foreground: Option<Color>,
+        grid: Option<Color>,
         alternate_row_background: Option<Color>,
         kde_decoration_focus: Option<Color>,
         kde_decoration_hover: Option<Color>,
@@ -199,6 +241,11 @@ impl OsColors {
             link,
             link_visited,
             status,
+            disabled_text,
+            placeholder,
+            caret,
+            list_header_foreground,
+            grid,
             alternate_row_background,
             kde_decoration_focus,
             kde_decoration_hover,
@@ -221,6 +268,11 @@ impl OsColors {
             link,
             link_visited,
             status,
+            disabled_text,
+            placeholder,
+            caret,
+            list_header_foreground,
+            grid,
             alternate_row_background,
             kde_decoration_focus,
             kde_decoration_hover,
@@ -240,6 +292,11 @@ impl OsColors {
                 focus_ring,
                 link,
                 link_visited,
+                disabled_text,
+                placeholder,
+                caret,
+                list_header_foreground,
+                grid,
                 alternate_row_background,
                 kde_decoration_focus,
                 kde_decoration_hover,
@@ -322,13 +379,16 @@ pub struct OsSurfaceOverrides {
     /// An on-screen display.
     pub osd: Option<SurfaceColors>,
     /// The active window's title bar: `background`, `foreground` (KDE `[WM]
-    /// activeBackground`, `activeForeground`).
-    pub title_bar: Option<SurfaceColors>, // the active window's title bar: `background`, `foreground` (KDE `[WM] activeBackground`, `activeForeground`)
+    /// activeBackground`, `activeForeground`; macOS `windowFrameTextColor`
+    /// as `foreground` alone).
+    pub title_bar: Option<SurfaceColors>, // the active window's title bar: `background`, `foreground` (KDE `[WM] activeBackground`, `activeForeground`; macOS `windowFrameTextColor` as `foreground` alone)
     /// An inactive window's title bar (KDE `[WM] inactiveBackground`,
     /// `inactiveForeground`).
     pub title_bar_inactive: Option<SurfaceColors>, // an inactive window's (KDE `[WM] inactiveBackground`, `inactiveForeground`)
-    /// KDE's seventh colour set (`[Colors:Button]`).
-    pub kde_button: Option<SurfaceColors>, // KDE's 7th color set (`[Colors:Button]`)
+    /// A button's face and text: KDE's seventh colour set
+    /// (`[Colors:Button]`), Windows `COLOR_BTNFACE` and `COLOR_BTNTEXT` under
+    /// high contrast.
+    pub button: Option<SurfaceColors>, // a button's face and text: KDE's 7th colour set (`[Colors:Button]`), Windows `COLOR_BTNFACE` and `COLOR_BTNTEXT` under high contrast
 }
 
 impl OsSurfaceOverrides {
@@ -350,7 +410,7 @@ impl OsSurfaceOverrides {
         osd: Option<SurfaceColors>,
         title_bar: Option<SurfaceColors>,
         title_bar_inactive: Option<SurfaceColors>,
-        kde_button: Option<SurfaceColors>,
+        button: Option<SurfaceColors>,
     ) -> Self {
         Self {
             window,
@@ -364,7 +424,7 @@ impl OsSurfaceOverrides {
             osd,
             title_bar,
             title_bar_inactive,
-            kde_button,
+            button,
         }
     }
 
@@ -382,7 +442,7 @@ impl OsSurfaceOverrides {
             osd,
             title_bar,
             title_bar_inactive,
-            kde_button,
+            button,
         } = self;
         [
             window,
@@ -396,7 +456,7 @@ impl OsSurfaceOverrides {
             osd,
             title_bar,
             title_bar_inactive,
-            kde_button,
+            button,
         ]
         .into_iter()
         .flatten()
@@ -581,10 +641,11 @@ impl OsFont {
 /// Windows' accent shades.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct WindowsAccentRamp {
-    /// `AccentLight1..3`.
-    pub light: [Color; 3], // AccentLight1..3
+    /// `AccentLight1..3`; a shade is `None` where its read failed (0.7.2
+    /// reads each shade alone).
+    pub light: [Option<Color>; 3], // AccentLight1..3; a shade is `None` where its read failed (0.7.2 reads each shade alone)
     /// `AccentDark1..3`.
-    pub dark: [Color; 3], // AccentDark1..3
+    pub dark: [Option<Color>; 3], // AccentDark1..3
 }
 
 /// A non-fatal partial fallback of a read.

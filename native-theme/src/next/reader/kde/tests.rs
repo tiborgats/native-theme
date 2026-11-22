@@ -98,7 +98,7 @@ fn breeze_light() {
                 None,
                 None,
             )),
-            kde_button: Some(SurfaceColors::new(
+            button: Some(SurfaceColors::new(
                 rgb(252, 252, 252),
                 rgb(35, 38, 41),
                 None,
@@ -187,7 +187,7 @@ fn partial() {
                 None,
                 None,
             )),
-            kde_button: Some(SurfaceColors::new(
+            button: Some(SurfaceColors::new(
                 rgb(49, 54, 59),
                 rgb(239, 240, 241),
                 None,
@@ -480,10 +480,10 @@ const COLOUR_KEYS: &[(&str, &str, Slot)] = &[
         c.alternate_row_background
     }),
     ("Colors:Button", "BackgroundNormal", |c| {
-        surfaces(c).kde_button.and_then(|s| s.background)
+        surfaces(c).button.and_then(|s| s.background)
     }),
     ("Colors:Button", "ForegroundNormal", |c| {
-        surfaces(c).kde_button.and_then(|s| s.foreground)
+        surfaces(c).button.and_then(|s| s.foreground)
     }),
     ("Colors:Selection", "BackgroundNormal", |c| {
         c.selection.and_then(|s| s.background)

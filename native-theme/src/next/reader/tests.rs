@@ -65,11 +65,17 @@ fn defaults_state_nothing() {
     assert_eq!(o.scheme, None);
     assert_eq!(o.ui_font, None);
     assert_eq!(o.icon_sizes, None);
+    assert_eq!(o.status_bar_font, None);
+    assert_eq!(o.tooltip_font, None);
+    assert_eq!(o.scrollbar_width_px, None);
+    assert_eq!(o.scrollbar_min_thumb_length_px, None);
+    assert_eq!(o.border_width_px, None);
     assert!(o.diagnostics.is_empty());
     assert_eq!(
         OsColors::default(),
         OsColors::new(
-            None, None, None, None, None, None, None, None, None, None, None, None, None, None
+            None, None, None, None, None, None, None, None, None, None, None, None, None, None,
+            None, None, None, None, None
         )
     );
     assert_eq!(
@@ -110,7 +116,7 @@ fn constructors_take_every_field() {
     assert_eq!(surfaces.window, Some(surface));
     assert_eq!(surfaces.title_bar, Some(surface));
     assert_eq!(surfaces.title_bar_inactive, None);
-    assert_eq!(surfaces.kde_button, Some(surface));
+    assert_eq!(surfaces.button, Some(surface));
 
     let selection = OsSelectionColors::new(Some(RED), None, None, Some(GREEN));
     assert_eq!(selection.background, Some(RED));
@@ -150,6 +156,11 @@ fn constructors_take_every_field() {
         None,
         None,
         Some([Some(RED), None, None, Some(GREEN)]),
+        Some(RED),
+        None,
+        Some(GREEN),
+        None,
+        Some(RED),
         Some(GREEN),
         Some(RED),
         None,
@@ -163,6 +174,11 @@ fn constructors_take_every_field() {
     assert_eq!(colors.accent, Some(RED));
     assert_eq!(colors.focus_ring, Some(GREEN));
     assert_eq!(colors.status, Some([Some(RED), None, None, Some(GREEN)]));
+    assert_eq!(colors.disabled_text, Some(RED));
+    assert_eq!(colors.placeholder, None);
+    assert_eq!(colors.caret, Some(GREEN));
+    assert_eq!(colors.list_header_foreground, None);
+    assert_eq!(colors.grid, Some(RED));
     assert_eq!(colors.alternate_row_background, Some(GREEN));
     assert_eq!(colors.kde_decoration_focus, Some(RED));
     assert_eq!(colors.kde_decoration_hover, None);
