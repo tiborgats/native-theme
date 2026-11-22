@@ -11,7 +11,7 @@ use super::motion::{CaretSpec, MotionTokens, UiTimings};
 use super::palette::Palette;
 use super::presets::kde;
 use super::query::{Contrast, Scheme, ThemeContext, sanitized_text_scale};
-use super::reader::SystemOverrides;
+use super::reader::{OsColors, SystemOverrides};
 use super::roles::{
     AccentColors, ColorRoles, RoleOrigin, SelectionColors, StatusColors, SurfaceColors,
 };
@@ -337,19 +337,26 @@ impl Theme {
     /// The text scale is sanitized (clamped to `0.5..=4.0`, 1.0 where it is
     /// not finite). A contrast level is available for a scheme where the
     /// preset defines it ([`contrast_levels`]) or the system's settings carry
-    /// colours for that scheme and level. Where `High` is requested and
-    /// available for `ctx.scheme`, and the theme does not
+    /// colours for that scheme and level (an entry of `color_schemes` that
+    /// states at least one value). Where `High` is requested and available
+    /// for `ctx.scheme`, and the theme does not
     /// [preserve](Self::preserve_palette_in_high_contrast) its palette, no
     /// palette and no explicit accent are passed on. Otherwise the active
     /// palette (the locking one, else the slot of the context's scheme) sets
     /// the effective scheme to its own. The effective contrast is the
     /// requested level where it is available for the effective scheme, else
-    /// the nearest level below it that the preset defines.
+    /// the nearest level below it that the preset defines; but `High` meets
+    /// an active palette or a passed accent only where the theme preserves
+    /// them: otherwise the nearest level below `High` that is available for
+    /// the effective scheme is taken.
     fn effective_inputs(&self, ctx: &ThemeContext) -> (ThemeContext, ResolveInputs<'_>) {
         let system = self.system.as_deref();
         let levels = contrast_levels(self.preset);
         let available = |scheme: Scheme, level: Contrast| {
-            levels.contains(&level) || system.is_some_and(|s| s.colors_for(scheme, level).is_some())
+            levels.contains(&level)
+                || system
+                    .and_then(|s| s.colors_for(scheme, level))
+                    .is_some_and(|colors| *colors != OsColors::default())
         };
         let mut effective = ctx.clone();
         effective.text_scale = sanitized_text_scale(ctx.text_scale);
@@ -365,15 +372,21 @@ impl Theme {
         if let Some(palette) = palette {
             effective.scheme = palette.scheme;
         }
-        effective.contrast = if available(effective.scheme, requested) {
+        let accent = if suspended { None } else { self.accent };
+        let high_withheld = requested == Contrast::High
+            && !self.preserve_palette_in_high_contrast
+            && (palette.is_some() || accent.is_some());
+        effective.contrast = if high_withheld {
+            nearest_below(requested, |level| available(effective.scheme, level))
+        } else if available(effective.scheme, requested) {
             requested
         } else {
-            nearest_defined_below(levels, requested)
+            nearest_below(requested, |level| levels.contains(&level))
         };
         let inputs = ResolveInputs {
             system,
             palette,
-            accent: if suspended { None } else { self.accent },
+            accent,
         };
         (effective, inputs)
     }
@@ -415,11 +428,12 @@ fn contrast_levels(preset: Preset) -> &'static [Contrast] {
     }
 }
 
-/// The nearest level below `requested` that `levels` holds, `Normal` where
-/// none above it does: every preset defines `Normal` ([`contrast_levels`]).
-fn nearest_defined_below(levels: &[Contrast], requested: Contrast) -> Contrast {
+/// The nearest level below `requested` for which `has` holds, `Normal` where
+/// it holds for none above it: every preset defines `Normal`
+/// ([`contrast_levels`]).
+fn nearest_below(requested: Contrast, has: impl Fn(Contrast) -> bool) -> Contrast {
     match requested {
-        Contrast::High if levels.contains(&Contrast::Increased) => Contrast::Increased,
+        Contrast::High if has(Contrast::Increased) => Contrast::Increased,
         Contrast::Normal | Contrast::Increased | Contrast::High => Contrast::Normal,
     }
 }
@@ -619,7 +633,6 @@ pub(crate) fn nothing_stated(preset: Preset, context: ThemeContext) -> ResolvedT
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::next::reader::OsColors;
 
     #[test]
     fn names_round_trip_and_are_distinct() {
@@ -746,12 +759,35 @@ mod tests {
         ThemeContext { contrast, ..ctx }
     }
 
-    /// System settings carrying colours for `(scheme, contrast)`.
-    fn system_with(scheme: Scheme, contrast: Contrast) -> SystemOverrides {
+    /// System settings whose entry for `(scheme, contrast)` is `colors`.
+    fn system_entry(scheme: Scheme, contrast: Contrast, colors: OsColors) -> SystemOverrides {
         SystemOverrides {
-            color_schemes: vec![((scheme, contrast), OsColors::default())],
+            color_schemes: vec![((scheme, contrast), colors)],
             ..SystemOverrides::default()
         }
+    }
+
+    /// System settings carrying colours for `(scheme, contrast)`.
+    fn system_with(scheme: Scheme, contrast: Contrast) -> SystemOverrides {
+        let colors = OsColors {
+            accent: Some(Color::WHITE),
+            ..OsColors::default()
+        };
+        system_entry(scheme, contrast, colors)
+    }
+
+    #[test]
+    fn only_an_entry_stating_a_colour_makes_a_level_available() {
+        let ctx = with_contrast(ThemeContext::light(), Contrast::High);
+        let theme = Theme::preset(Preset::KdeBreeze);
+        let empty = theme.clone().with_system_overrides(system_entry(
+            Scheme::Light,
+            Contrast::High,
+            OsColors::default(),
+        ));
+        assert_eq!(empty.effective_inputs(&ctx).0.contrast, Contrast::Normal);
+        let stated = theme.with_system_overrides(system_with(Scheme::Light, Contrast::High));
+        assert_eq!(stated.effective_inputs(&ctx).0.contrast, Contrast::High);
     }
 
     #[test]
@@ -767,16 +803,23 @@ mod tests {
 
     #[test]
     fn a_contrast_without_data_resolves_to_the_nearest_defined_below() {
+        let holds = |levels: &'static [Contrast]| move |level| levels.contains(&level);
         assert_eq!(
-            nearest_defined_below(&[Contrast::Normal], Contrast::High),
+            nearest_below(Contrast::High, holds(&[Contrast::Normal])),
             Contrast::Normal
         );
         assert_eq!(
-            nearest_defined_below(&[Contrast::Normal, Contrast::Increased], Contrast::High),
+            nearest_below(
+                Contrast::High,
+                holds(&[Contrast::Normal, Contrast::Increased])
+            ),
             Contrast::Increased
         );
         assert_eq!(
-            nearest_defined_below(&[Contrast::Normal, Contrast::High], Contrast::Increased),
+            nearest_below(
+                Contrast::Increased,
+                holds(&[Contrast::Normal, Contrast::High])
+            ),
             Contrast::Normal
         );
         let theme = Theme::preset(Preset::KdeBreeze);
@@ -847,15 +890,46 @@ mod tests {
             assert_eq!(kept.resolve(&ctx).context.contrast, want);
         }
 
-        // `High` not available for the context's scheme keeps the palette,
-        // whose scheme then has the system's `High` colours.
+        // `High` not available for the context's scheme keeps the palette;
+        // its scheme has the system's `High` colours, but `High` meets an
+        // active palette only where the theme preserves it.
         let t = Theme::preset(Preset::KdeBreeze)
             .with_system_overrides(system_with(Scheme::Dark, Contrast::High))
+            .with_palette(palette("X", Scheme::Dark))
+            .with_accent(Color::WHITE);
+        let (effective, inputs) = t.effective_inputs(&ctx);
+        assert_eq!(inputs.palette.map(|p| &*p.name), Some("X"));
+        assert_eq!(inputs.accent, Some(Color::WHITE));
+        assert_eq!(effective.scheme, Scheme::Dark);
+        assert_eq!(effective.contrast, Contrast::Normal);
+        assert_eq!(t.resolve(&ctx).context.contrast, Contrast::Normal);
+    }
+
+    #[test]
+    fn high_withheld_from_a_palette_takes_the_nearest_available_level() {
+        let ctx = with_contrast(ThemeContext::light(), Contrast::High);
+        let mut system = system_with(Scheme::Dark, Contrast::High);
+        system
+            .color_schemes
+            .extend(system_with(Scheme::Dark, Contrast::Increased).color_schemes);
+        let t = Theme::preset(Preset::KdeBreeze)
+            .with_system_overrides(system)
             .with_palette(palette("X", Scheme::Dark));
+        assert_eq!(t.effective_inputs(&ctx).0.contrast, Contrast::Increased);
+    }
+
+    #[test]
+    fn a_preserved_palette_meets_high_where_its_scheme_has_it() {
+        let ctx = with_contrast(ThemeContext::light(), Contrast::High);
+        let t = Theme::preset(Preset::KdeBreeze)
+            .with_system_overrides(system_with(Scheme::Dark, Contrast::High))
+            .with_palette(palette("X", Scheme::Dark))
+            .preserve_palette_in_high_contrast(true);
         let (effective, inputs) = t.effective_inputs(&ctx);
         assert_eq!(inputs.palette.map(|p| &*p.name), Some("X"));
         assert_eq!(effective.scheme, Scheme::Dark);
         assert_eq!(effective.contrast, Contrast::High);
+        assert_eq!(t.resolve(&ctx).context.contrast, Contrast::High);
     }
 
     #[test]
@@ -976,7 +1050,6 @@ mod tests {
         assert_eq!(named.system_overrides(), Some(&system));
         assert_eq!(&*named.resolve_current().name, "Breeze Dark");
         // A system read in one scheme names only a resolve for that scheme.
-        use crate::next::query::Scheme;
         let read_in = |scheme| {
             theme.clone().with_system_overrides(SystemOverrides {
                 scheme: Some(scheme),
