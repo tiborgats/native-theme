@@ -45,7 +45,8 @@ use super::{HOMES, NullMeans, Row, RowContext, Table};
 use crate::IconSet;
 use crate::next::color::Color;
 use crate::next::geometry::{CornerCurve, CornerRadius, Stroke, StrokeAlign};
-use crate::next::layout::TabIndicatorSide;
+use crate::next::layout::{DialogButtonOrder, TabIndicatorSide};
+use crate::next::motion::DialogEntranceStyle;
 use crate::next::paint::Paint;
 use crate::next::preset::Preset;
 use crate::next::query::{
@@ -96,6 +97,47 @@ const TAB_INDICATOR_SIDES: [(crate::theme::TabIndicatorSide, TabIndicatorSide); 
         TabIndicatorSide::Bottom,
     ),
 ];
+
+/// 0.7.2's `DialogButtonOrder` (`src/model/dialog_order.rs`, serialised in snake case) to 0.8.0's
+/// (`layout.rs`).
+const DIALOG_BUTTON_ORDERS: [(crate::theme::DialogButtonOrder, DialogButtonOrder); 2] = [
+    (
+        crate::theme::DialogButtonOrder::PrimaryRight,
+        DialogButtonOrder::PrimaryRight,
+    ),
+    (
+        crate::theme::DialogButtonOrder::PrimaryLeft,
+        DialogButtonOrder::PrimaryLeft,
+    ),
+];
+
+/// 0.7.2's `DialogEntranceStyle` (`src/model/dialog_entrance_style.rs`, serialised in snake case) to
+/// 0.8.0's (`motion.rs`), which adds `Fade` and `None`.
+const DIALOG_ENTRANCES: [(crate::theme::DialogEntranceStyle, DialogEntranceStyle); 2] = [
+    (
+        crate::theme::DialogEntranceStyle::ScaleFade,
+        DialogEntranceStyle::ScaleFade,
+    ),
+    (
+        crate::theme::DialogEntranceStyle::FadeRise,
+        DialogEntranceStyle::FadeRise,
+    ),
+];
+
+/// Whether `old`, the serialisation of a 0.7.2 enum value, maps to `new` in `table`; `None` where no entry
+/// of `table` serialises to `old`.
+fn same_variant<O: serde::Serialize, N: PartialEq>(
+    old: &Value,
+    table: &[(O, N)],
+    new: &N,
+) -> Result<Option<bool>, String> {
+    for (old_variant, new_variant) in table {
+        if serde_json::to_value(old_variant).map_err(|e| e.to_string())? == *old {
+            return Ok(Some(new_variant == new));
+        }
+    }
+    Ok(None)
+}
 
 /// The variant of 0.7.2's `FontSize` (`src/model/font.rs`, serialised externally tagged, `{"Pt": 10.0}`)
 /// that 0.8.0's `FontSize` (spec §2) of the same name is, and its value.
@@ -621,6 +663,8 @@ enum Got {
     Motion(MotionPreference),
     Contrast(Contrast),
     TabIndicatorSide(TabIndicatorSide),
+    DialogButtonOrder(DialogButtonOrder),
+    DialogEntrance(DialogEntranceStyle),
     /// A part's `shadows` with the `SHADOWS` bit clear.
     ShadowsUnstated,
     /// A part's `shadows` stated as `None`.
@@ -714,6 +758,12 @@ fn equal(old: &Value, got: &Got) -> Result<bool, String> {
             }
             Err(kind_error())
         }
+        (Got::DialogButtonOrder(order), _) => {
+            same_variant(old, &DIALOG_BUTTON_ORDERS, order)?.ok_or_else(kind_error)
+        }
+        (Got::DialogEntrance(entrance), _) => {
+            same_variant(old, &DIALOG_ENTRANCES, entrance)?.ok_or_else(kind_error)
+        }
         _ => Err(kind_error()),
     }
 }
@@ -747,6 +797,8 @@ fn read(
         "caret" => caret(theme, rest),
         "tooltip" => tooltip(theme, rest),
         "status_bar" => status_bar(theme, rest),
+        "popover" => popover(theme, rest),
+        "dialog" => dialog(theme, rest),
         widget => match metric(theme, widget, rest) {
             Some(got) => Some(got),
             None => ruled_part(theme, widget, rest).map_err(|e| format!("`{home}`: {e}"))?,
@@ -995,6 +1047,34 @@ fn status_bar(theme: &ResolvedTheme, rest: &str) -> Option<Got> {
     }
 }
 
+fn popover(theme: &ResolvedTheme, rest: &str) -> Option<Got> {
+    match rest.split_once('.')? {
+        ("panel", property) => part_property(&theme.popover.panel, property),
+        ("arrow", property) => part_property(&theme.popover.arrow, property),
+        ("text", property) => text_property(&theme.popover.text, property),
+        _ => None,
+    }
+}
+
+fn dialog(theme: &ResolvedTheme, rest: &str) -> Option<Got> {
+    let d = &theme.dialog;
+    match rest {
+        "button_gap" => return Some(Got::F32(d.button_gap)),
+        "button_order" => {
+            return Some(d.button_order.map_or(Got::Unstated, Got::DialogButtonOrder));
+        }
+        "entrance" => return Some(d.entrance.map_or(Got::Unstated, Got::DialogEntrance)),
+        _ => {}
+    }
+    match rest.split_once('.')? {
+        ("panel", property) => part_property(&d.panel, property),
+        ("title", property) => text_property(&d.title, property),
+        ("body", property) => text_property(&d.body, property),
+        ("icon", property) => icon_property(&d.icon, property),
+        _ => None,
+    }
+}
+
 /// A direct metric of a widget.
 fn metric(theme: &ResolvedTheme, widget: &str, name: &str) -> Option<Got> {
     Some(match (widget, name) {
@@ -1034,6 +1114,12 @@ fn metric(theme: &ResolvedTheme, widget: &str, name: &str) -> Option<Got> {
         ("menu_bar", "item_gap") => opt_f32(theme.menu_bar.item_gap),
         ("sidebar", "item_gap") => opt_f32(theme.sidebar.item_gap),
         ("toolbar", "item_gap") => opt_f32(theme.toolbar.item_gap),
+        ("switch", "label_gap") => opt_f32(theme.switch.label_gap),
+        ("switch", "show_state_glyphs") => theme
+            .switch
+            .show_state_glyphs
+            .map_or(Got::Unstated, Got::Bool),
+        ("switch", "disabled_opacity") => opt_f32(theme.switch.disabled_opacity),
         _ => return None,
     })
 }
@@ -1121,6 +1207,9 @@ fn ruled_style<'a>(
         ("toolbar", "button_label") => Ruled::Text(theme.toolbar.button_label(q.style()?)),
         ("toolbar", "button_icon") => Ruled::Icon(theme.toolbar.button_icon(q.style()?)),
         ("toolbar", "separator") => Ruled::Part(theme.toolbar.separator(q.style()?)),
+        ("switch", "track") => Ruled::Part(theme.switch.track(q.style()?)),
+        ("switch", "thumb") => Ruled::Part(theme.switch.thumb(q.style()?)),
+        ("switch", "label") => Ruled::Text(theme.switch.label(q.style()?)),
         _ => return Ok(None),
     };
     Ok(Some((style, property)))

@@ -170,6 +170,7 @@ pub use widgets::{
     ButtonParts, ButtonWidget, CheckboxParts, CheckboxWidget, ListParts, ListWidget, RadioParts,
     RadioWidget, ResolvedTheme, ScrollbarParts, ScrollbarWidget, TooltipWidget, WidgetOrigin,
 };
+pub use widgets::{DialogWidget, PopoverWidget, SwitchParts, SwitchWidget};
 pub use widgets::{
     InputParts, InputWidget, LinkParts, LinkWidget, ProgressBarParts, ProgressBarWidget,
     SeparatorWidget, SliderParts, SliderWidget, SpinnerWidget, SplitterParts, SplitterWidget,

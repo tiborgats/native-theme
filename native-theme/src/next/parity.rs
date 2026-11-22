@@ -55,6 +55,9 @@ const SLICE_GROUPS: &[&str] = &[
     "sidebar",
     "toolbar",
     "status_bar",
+    "popover",
+    "switch",
+    "dialog",
 ];
 
 /// The fields of 0.7.2's `Resolved` wrapper beside the resolved theme, which do not serialise
@@ -1221,6 +1224,9 @@ const NOT_PORTED_GROUPS: &[&str] = &[
     "sidebar",
     "toolbar",
     "status_bar",
+    "popover",
+    "switch",
+    "dialog",
 ];
 
 /// The totals of the ported groups' rows on each scheme, `[rows, compared, equal, mismatching, skipped]`:

@@ -44,10 +44,12 @@ type TextRules<M = ()> = RuleSet<TextStyle, TextProp, M>;
 /// A rule set of icon styles.
 type IconRules<M = ()> = RuleSet<IconStyle, IconProp, M>;
 
+mod dialog;
 mod input;
 mod link;
 mod menu;
 mod menu_bar;
+mod popover;
 mod progress_bar;
 mod separator;
 mod sidebar;
@@ -55,13 +57,16 @@ mod slider;
 mod spinner;
 mod splitter;
 mod status_bar;
+mod switch;
 mod tab;
 mod toolbar;
 
+pub use dialog::DialogWidget;
 pub use input::{InputParts, InputWidget};
 pub use link::{LinkParts, LinkWidget};
 pub use menu::{MenuParts, MenuWidget};
 pub use menu_bar::{MenuBarParts, MenuBarWidget};
+pub use popover::PopoverWidget;
 pub use progress_bar::{ProgressBarParts, ProgressBarWidget};
 pub use separator::SeparatorWidget;
 pub use sidebar::{SidebarParts, SidebarWidget};
@@ -69,6 +74,7 @@ pub use slider::{SliderParts, SliderWidget};
 pub use spinner::SpinnerWidget;
 pub use splitter::{SplitterParts, SplitterWidget};
 pub use status_bar::StatusBarWidget;
+pub use switch::{SwitchParts, SwitchWidget};
 pub use tab::{TabParts, TabWidget};
 pub use toolbar::{ToolbarParts, ToolbarWidget};
 
@@ -683,6 +689,12 @@ pub struct ResolvedTheme {
     pub separator: SeparatorWidget,
     /// The busy indicator.
     pub spinner: SpinnerWidget,
+    /// The popover.
+    pub popover: PopoverWidget,
+    /// The on/off switch.
+    pub switch: SwitchWidget,
+    /// The dialog.
+    pub dialog: DialogWidget,
     /// The application's own colour tokens (empty on the bundled presets).
     pub custom_colors: BTreeMap<String, Color>,
     /// The application's own metric tokens (empty on the bundled presets).
@@ -762,6 +774,7 @@ impl ResolvedTheme {
         all.extend(self.menu_bar.dead_rules());
         all.extend(self.sidebar.dead_rules());
         all.extend(self.toolbar.dead_rules());
+        all.extend(self.switch.dead_rules());
         all
     }
 

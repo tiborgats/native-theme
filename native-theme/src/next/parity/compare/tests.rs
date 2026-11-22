@@ -790,7 +790,7 @@ fn an_unreadable_home_or_old_value_is_an_error_naming_the_row() -> TestResult {
     for (home, key) in [
         ("button.body(NONE).transform", "e.v"),
         ("button.body(NONE).focus", "e.v"),
-        ("switch.track(NONE).fill", "e.v"),
+        ("switch.knob(NONE).fill", "e.v"),
         ("input.field(NONE; shape=Pill).fill", "e.v"),
         ("colors.error.origin", "e.v"),
         ("typography.rendering.hinting", "e.v"),
@@ -826,6 +826,8 @@ const EQUAL_THOUGH_STATED: &[&str] = &[
     "scrollbar.overlay_mode",
     "tooltip.border.shadow_enabled",
     "window.border.shadow_enabled",
+    "popover.border.shadow_enabled",
+    "dialog.border.shadow_enabled",
 ];
 
 #[test]

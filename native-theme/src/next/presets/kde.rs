@@ -134,6 +134,7 @@ use crate::next::widgets::{
     ButtonWidget, CheckboxWidget, ListWidget, RadioWidget, ResolvedTheme, ScrollbarWidget,
     TooltipWidget, WidgetOrigin,
 };
+use crate::next::widgets::{DialogWidget, PopoverWidget, SwitchWidget};
 use crate::next::widgets::{
     InputWidget, LinkWidget, ProgressBarWidget, SeparatorWidget, SliderWidget, SpinnerWidget,
     SplitterWidget,
@@ -1420,6 +1421,9 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
         splitter: SplitterWidget::unstated(WidgetOrigin::Native),
         separator: SeparatorWidget::unstated(WidgetOrigin::Native),
         spinner: SpinnerWidget::unstated(WidgetOrigin::Native),
+        popover: PopoverWidget::unstated(WidgetOrigin::Native),
+        switch: SwitchWidget::unstated(WidgetOrigin::Native),
+        dialog: DialogWidget::unstated(WidgetOrigin::Native),
         custom_colors: BTreeMap::new(),
         custom_metrics: BTreeMap::new(),
         colors,
