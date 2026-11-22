@@ -1091,11 +1091,14 @@ const PORTED_GROUPS: &[&str] = &[
     "accessibility",
     "button",
     "checkbox",
+    "list",
+    "scrollbar",
+    "tooltip",
 ];
 
 /// The totals of the ported groups' rows on each scheme, `[rows, compared, equal, mismatching, skipped]`:
 /// every row equal but those [`expected_skip`] names, skipped.
-const PORTED_TOTALS: [usize; 5] = [140, 135, 135, 0, 5];
+const PORTED_TOTALS: [usize; 5] = [200, 195, 195, 0, 5];
 
 /// The reason a row of the table is skipped on 0.7.2's `kde-breeze` without a reader's snapshot: the
 /// reader's context rows (`accessibility.*`), and `checkbox.background_color`, compared only where
@@ -1167,6 +1170,8 @@ fn group_totals(report: &compare::Report, ported: bool) -> [usize; 5] {
 /// Model parity of the kde-breeze builder (plan, section 1, rule 2): 0.7.2's `kde-breeze` and
 /// `Theme::preset(Preset::KdeBreeze)`, light and dark, over the table of homes. Zero mismatches in the
 /// groups ported so far, every skip for its named reason; the mismatches of the other groups are counted.
+/// With every group ported: zero mismatches over the whole table, and no dead rule in any rule set of the
+/// six widgets.
 #[test]
 fn model_parity_kde_breeze() -> TestResult {
     use crate::next::preset::{Preset, Theme as NextTheme};
@@ -1196,6 +1201,15 @@ fn model_parity_kde_breeze() -> TestResult {
              in the groups not ported yet {pending:?}"
         );
         assert_eq!(ported, PORTED_TOTALS, "{mode:?}\n{report}");
+        // Every group is ported: no row is left out, and no row of the table mismatches.
+        assert_eq!(pending, [0; 5], "{mode:?}\n{report}");
+        assert_eq!(report.totals.mismatches, 0, "{mode:?}\n{report}");
+        let dead: Vec<_> = new
+            .dead_rules()
+            .into_iter()
+            .filter(|(_, rules)| !rules.is_empty())
+            .collect();
+        assert!(dead.is_empty(), "{mode:?}: dead rules {dead:?}");
     }
     Ok(())
 }

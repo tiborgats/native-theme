@@ -606,6 +606,34 @@ impl ResolvedTheme {
         self.context.scheme
     }
 
+    /// The dead rules ([`RuleSet::dead_rules`]) of every rule set of the
+    /// widgets, each named `<widget>.<part>`.
+    #[cfg(test)]
+    pub(crate) fn dead_rules(&self) -> Vec<(&'static str, Vec<usize>)> {
+        vec![
+            ("button.body", self.button.body.dead_rules()),
+            ("button.label", self.button.label.dead_rules()),
+            ("button.icon", self.button.icon.dead_rules()),
+            ("checkbox.indicator", self.checkbox.indicator.dead_rules()),
+            ("checkbox.checkmark", self.checkbox.checkmark.dead_rules()),
+            ("checkbox.label", self.checkbox.label.dead_rules()),
+            ("radio.indicator", self.radio.indicator.dead_rules()),
+            ("radio.dot", self.radio.dot.dead_rules()),
+            ("radio.label", self.radio.label.dead_rules()),
+            ("scrollbar.track", self.scrollbar.track.dead_rules()),
+            ("scrollbar.thumb", self.scrollbar.thumb.dead_rules()),
+            ("list.container", self.list.container.dead_rules()),
+            ("list.row", self.list.row.dead_rules()),
+            ("list.item_label", self.list.item_label.dead_rules()),
+            ("list.header", self.list.header.dead_rules()),
+            ("list.header_label", self.list.header_label.dead_rules()),
+            (
+                "list.header_separator",
+                self.list.header_separator.dead_rules(),
+            ),
+        ]
+    }
+
     /// The shadow layers of elevation `level`; empty beyond the last level.
     #[must_use]
     pub fn elevation(&self, level: usize) -> &[ShadowLayer] {

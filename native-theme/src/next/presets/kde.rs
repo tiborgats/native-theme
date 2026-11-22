@@ -10,9 +10,10 @@
 //! ([`ResolveInputs::system`]) and an explicit accent are not read yet.
 //!
 //! Defined by the preset (spec §1, "Axis values without data"): the variant
-//! `ButtonVariant::Primary` (0.7.2's `primary_*` fields), no control size and
-//! the contrast level `Normal` only; a query for anything else returns the
-//! part's base style.
+//! `ButtonVariant::Primary` (0.7.2's `primary_*` fields) and a list's
+//! alternate rows (`ListKind::alternate`), the scroll bar's two orientations,
+//! no control size and the contrast level `Normal` only; a query for anything
+//! else returns the part's base style.
 //!
 //! Of the context it acts on the scheme alone. The contrast, the motion
 //! preference, the text scale, the direction and the accessibility and
@@ -35,13 +36,14 @@ use crate::next::icons::{IconSizes, IconThemeSpec};
 use crate::next::layout::LayoutMetrics;
 use crate::next::motion::{CaretSpec, MotionTokens, UiTimings};
 use crate::next::paint::Paint;
-use crate::next::preset::{Preset, ResolveInputs, nothing_stated};
-use crate::next::query::{ButtonVariant, Scheme, ThemeContext, WidgetState};
+use crate::next::preset::{Preset, ResolveInputs};
+use crate::next::query::{ButtonVariant, Orientation, Scheme, ThemeContext, WidgetState};
 use crate::next::roles::{
     AccentColors, ColorRoles, RoleOrigin, SelectionColors, StatusColors, SurfaceColors,
 };
 use crate::next::rules::{
-    ButtonMatcher, IconProp, PartProp, RuleBuilder, RuleSelector, RuleSet, TextProp,
+    ButtonMatcher, IconProp, ListMatcher, PartProp, Patched, RuleBuilder, RuleSelector, RuleSet,
+    TextProp,
 };
 use crate::next::style::{
     FocusIndicator, FocusKind, FocusTrigger, FontSize, FontStyle, IconStyle, PartStyle, TextStated,
@@ -49,7 +51,8 @@ use crate::next::style::{
 };
 use crate::next::typography::{TextRendering, Typography};
 use crate::next::widgets::{
-    ButtonWidget, CheckboxWidget, RadioWidget, ResolvedTheme, WidgetOrigin,
+    ButtonWidget, CheckboxWidget, ListWidget, RadioWidget, ResolvedTheme, ScrollbarWidget,
+    TooltipWidget, WidgetOrigin,
 };
 
 // ---------------------------------------------------------------------------
@@ -89,6 +92,19 @@ struct SchemeConstants {
     checkbox_checked: u32,
     checkbox_frame: u32,
     view_foreground: u32,
+    list_alternate_row: u32,
+    list_header_hover: u32,
+    list_header_pressed: u32,
+    list_header_separator: u32,
+    list_row_hover: u32,
+    list_row_hover_frame: u32,
+    view_disabled_foreground: u32,
+    list_grid: u32,
+    scrollbar_track: u32,
+    scrollbar_thumb: u32,
+    scrollbar_thumb_hover: u32,
+    tooltip_background: u32,
+    tooltip_foreground: u32,
 }
 
 /// The light scheme's constants.
@@ -151,11 +167,12 @@ const LIGHT: SchemeConstants = SchemeConstants {
     info: 0x3dae_e9ff,
     // `light.defaults.icon_theme`: 0.7.2 kde-breeze.toml (uncited)
     icon_theme: "breeze",
-    // `checkbox.unchecked_background`, also `button.background_color`: platform-facts.md (§2.5):
-    // [Colors:Button] BackgroundNormal 252,252,252
+    // `checkbox.unchecked_background`, also `button.background_color` and
+    // `list.header_background`: platform-facts.md (§2.5): [Colors:Button] BackgroundNormal
+    // 252,252,252
     button_background: 0xfcfc_fcff,
-    // `button.font.color`: platform-facts.md (§2.3): [Colors:Button] ForegroundNormal 35,38,41
-    // (BreezeLight.colors:39, breeze v6.7.5)
+    // `button.font.color`, also `list.header_font.color`: platform-facts.md (§2.3):
+    // [Colors:Button] ForegroundNormal 35,38,41 (BreezeLight.colors:39, breeze v6.7.5)
     button_foreground: 0x2326_29ff,
     // `button.border.color`: platform-facts.md (§2.3): border.color, the plain button frame,
     // mix([Colors:Button] BackgroundNormal 252,252,252 (BreezeLight.colors:31), [Colors:Button]
@@ -190,9 +207,64 @@ const LIGHT: SchemeConstants = SchemeConstants {
     // `checkbox.unchecked_border_color`: platform-facts.md (§2.5): separatorColor(),
     // mix(Window, WindowText, 0.2)
     checkbox_frame: 0xc6c8_c9ff,
-    // `checkbox.indicator_color`: platform-facts.md (§2.5): palette.text(), [Colors:View]
-    // ForegroundNormal
+    // `checkbox.indicator_color`, also `list.item_font.color`: platform-facts.md (§2.5):
+    // palette.text(), [Colors:View] ForegroundNormal
     view_foreground: 0x2326_29ff,
+    // `list.alternate_row_background`: platform-facts.md (§2.15): [Colors:View]
+    // BackgroundAlternate 247,247,247 (BreezeLight.colors:114, breeze v6.7.5)
+    list_alternate_row: 0xf7f7_f7ff,
+    // `list.header_hover_background`: platform-facts.md (§2.15): header_hover_background,
+    // KColorUtils::mix(Button #fcfcfc, [Colors:View] DecorationHover 61,174,233
+    // (BreezeLight.colors:117), 0.2), a hovered header section (breezestyle.cpp:6828-6837 at
+    // breeze f0b1d75)
+    list_header_hover: 0xd6ec_f8ff,
+    // `list.header_active_background`: platform-facts.md (§2.15): header_active_background,
+    // KColorUtils::mix(Button #fcfcfc, [Colors:View] DecorationFocus 61,174,233
+    // (BreezeLight.colors:116), 0.2), a pressed header section (breezestyle.cpp:6828-6837 at
+    // breeze f0b1d75)
+    list_header_pressed: 0xd6ec_f8ff,
+    // `list.header_separator_color`: platform-facts.md (§2.15): header_separator_color,
+    // [Colors:Window] ForegroundNormal 35,38,41 (BreezeLight.colors:137) at alpha frameContrast
+    // 0.2, the line on a section's trailing edge and along the header's bottom, none after the
+    // last or a lone section (breezestyle.cpp:6803-6893 at breeze f0b1d75; measured)
+    list_header_separator: 0x2326_2933,
+    // `list.hover_background`: platform-facts.md (§2.15): [Colors:Selection] BackgroundNormal
+    // 61,174,233 (BreezeLight.colors:87, breeze v6.7.5) at alpha Blend_Value 0.3, a focused
+    // view's hovered row (breezestyle.cpp:4871-4875 at breeze f0b1d75; measured)
+    list_row_hover: 0x3dae_e94d,
+    // `list.hover_border_color`: platform-facts.md (§2.15): hover_border_color,
+    // [Colors:Selection] BackgroundNormal 61,174,233 (BreezeLight.colors:87) at alpha 0.8, the
+    // 1 px outline of a hovered, unselected row (breezestyle.cpp:4880-4884 at breeze f0b1d75;
+    // measured)
+    list_row_hover_frame: 0x3dae_e9cc,
+    // `list.disabled_text_color`: platform-facts.md (§2.1.6): Disabled [Colors:View]
+    // ForegroundNormal, KColorScheme 6.31.0
+    view_disabled_foreground: 0xaaab_acff,
+    // `list.grid_color`: platform-facts.md (§2.15): QPalette::Mid, KColorScheme's MidShade of
+    // [Colors:Window] BackgroundNormal 239,240,241 (BreezeLight.colors:129, breeze v6.7.5) at
+    // [KDE] contrast 4 (BreezeLight.colors:195 at breeze f0b1d75), a QTableView's grid
+    // (qcommonstyle.cpp:5126-5128 at qtbase v6.11.0; kcolorscheme.cpp:685 at 27066d47;
+    // measured)
+    list_grid: 0xc4c8_ccff,
+    // `scrollbar.track_color`: platform-facts.md (§2.8): no fill: Breeze's page controls draw
+    // nothing and the scroll area paints the bar's area in its viewport's own colour, Base by a
+    // list, Window by a plain area (breezestyle.cpp:1490-1495, :1806-1822 at breeze f0b1d75;
+    // measured)
+    scrollbar_track: 0x0000_0000,
+    // `scrollbar.thumb_color`: platform-facts.md (§2.8): at rest, the pointer off the bar:
+    // WindowText #232629 at 0.5 × 0.7, filled at half of that over Window #eff0f1, so
+    // WindowText at 0.175 over Window (breezehelper.cpp:279, :349-355, :1284;
+    // breezestyle.cpp:6401-6405 at breeze f0b1d75; measured)
+    scrollbar_thumb: 0xcbcd_cdff,
+    // `scrollbar.thumb_hover_color`: platform-facts.md (§2.8): [Colors:View] DecorationHover at
+    // half alpha over the window (breezehelper.cpp:292, :1284; breezestyle.cpp:6400-6405 at
+    // breeze f0b1d75)
+    scrollbar_thumb_hover: 0x96cf_edff,
+    // `tooltip.background_color`: 0.7.2 kde-breeze.toml (uncited)
+    tooltip_background: 0xf7f7_f7ff,
+    // `tooltip.font.color`: platform-facts.md (§2.7): [Colors:Tooltip] ForegroundNormal
+    // 35,38,41 (BreezeLight.colors:109, breeze v6.7.5)
+    tooltip_foreground: 0x2326_29ff,
 };
 
 /// The dark scheme's constants.
@@ -255,11 +327,12 @@ const DARK: SchemeConstants = SchemeConstants {
     info: 0x3dae_e9ff,
     // `dark.defaults.icon_theme`: 0.7.2 kde-breeze.toml (uncited)
     icon_theme: "breeze-dark",
-    // `checkbox.unchecked_background`, also `button.background_color`: platform-facts.md (§2.5):
-    // [Colors:Button] BackgroundNormal 41,44,48 (BreezeDark.colors:32)
+    // `checkbox.unchecked_background`, also `button.background_color` and
+    // `list.header_background`: platform-facts.md (§2.5): [Colors:Button] BackgroundNormal
+    // 41,44,48 (BreezeDark.colors:32)
     button_background: 0x292c_30ff,
-    // `button.font.color`: platform-facts.md (§2.3): [Colors:Button] ForegroundNormal
-    // 252,252,252 (BreezeDark.colors:40, breeze v6.7.5)
+    // `button.font.color`, also `list.header_font.color`: platform-facts.md (§2.3):
+    // [Colors:Button] ForegroundNormal 252,252,252 (BreezeDark.colors:40, breeze v6.7.5)
     button_foreground: 0xfcfc_fcff,
     // `button.border.color`: platform-facts.md (§2.3): border.color, the plain button frame,
     // mix([Colors:Button] BackgroundNormal 41,44,48 (BreezeDark.colors:32), [Colors:Button]
@@ -294,9 +367,66 @@ const DARK: SchemeConstants = SchemeConstants {
     // `checkbox.unchecked_border_color`: platform-facts.md (§2.5): separatorColor(),
     // mix(Window, WindowText, 0.2)
     checkbox_frame: 0x4c4e_51ff,
-    // `checkbox.indicator_color`: platform-facts.md (§2.5): palette.text(), [Colors:View]
-    // ForegroundNormal
+    // `checkbox.indicator_color`, also `list.item_font.color`: platform-facts.md (§2.5):
+    // palette.text(), [Colors:View] ForegroundNormal
     view_foreground: 0xfcfc_fcff,
+    // `list.alternate_row_background`: platform-facts.md (§2.15): [Colors:View]
+    // BackgroundAlternate 29,31,34 (BreezeDark.colors:115, breeze v6.7.5)
+    list_alternate_row: 0x1d1f_22ff,
+    // `list.header_hover_background`: platform-facts.md (§2.15): header_hover_background,
+    // KColorUtils::mix(Button #292c30, [Colors:View] DecorationHover 61,174,233
+    // (BreezeDark.colors:118), 0.2), a hovered header section (breezestyle.cpp:6828-6837 at
+    // breeze f0b1d75)
+    list_header_hover: 0x2d46_55ff,
+    // `list.header_active_background`: platform-facts.md (§2.15): header_active_background,
+    // KColorUtils::mix(Button #292c30, [Colors:View] DecorationFocus 61,174,233
+    // (BreezeDark.colors:117), 0.2), a pressed header section (breezestyle.cpp:6828-6837 at
+    // breeze f0b1d75)
+    list_header_pressed: 0x2d46_55ff,
+    // `list.header_separator_color`: platform-facts.md (§2.15): header_separator_color,
+    // [Colors:Window] ForegroundNormal 252,252,252 (BreezeDark.colors:138) at alpha
+    // frameContrast 0.2, the line on a section's trailing edge and along the header's bottom,
+    // none after the last or a lone section (breezestyle.cpp:6803-6893 at breeze f0b1d75;
+    // measured)
+    list_header_separator: 0xfcfc_fc33,
+    // `list.hover_background`: platform-facts.md (§2.15): [Colors:Selection] BackgroundNormal
+    // 61,174,233 (BreezeDark.colors:88, breeze v6.7.5) at alpha Blend_Value 0.3, a focused
+    // view's hovered row (breezestyle.cpp:4871-4875 at breeze f0b1d75; measured)
+    list_row_hover: 0x3dae_e94d,
+    // `list.hover_border_color`: platform-facts.md (§2.15): hover_border_color,
+    // [Colors:Selection] BackgroundNormal 61,174,233 (BreezeDark.colors:88) at alpha 0.8, the 1
+    // px outline of a hovered, unselected row (breezestyle.cpp:4880-4884 at breeze f0b1d75;
+    // measured)
+    list_row_hover_frame: 0x3dae_e9cc,
+    // `list.disabled_text_color`: platform-facts.md (§2.1.6): Disabled [Colors:View]
+    // ForegroundNormal, KColorScheme 6.31.0
+    view_disabled_foreground: 0x6062_63ff,
+    // `list.grid_color`: platform-facts.md (§2.15): QPalette::Mid, KColorScheme's MidShade of
+    // [Colors:Window] BackgroundNormal 32,35,38 (BreezeDark.colors:130, breeze v6.7.5) at [KDE]
+    // contrast 4 (BreezeDark.colors:202 at breeze f0b1d75), a QTableView's grid
+    // (qcommonstyle.cpp:5126-5128 at qtbase v6.11.0; kcolorscheme.cpp:685 at 27066d47;
+    // measured)
+    list_grid: 0x1c1f_21ff,
+    // `scrollbar.track_color`: platform-facts.md (§2.8): no fill: Breeze's page controls draw
+    // nothing and the scroll area paints the bar's area in its viewport's own colour, Base by a
+    // list, Window by a plain area (breezestyle.cpp:1490-1495, :1806-1822 at breeze f0b1d75;
+    // measured)
+    scrollbar_track: 0x0000_0000,
+    // `scrollbar.thumb_color`: platform-facts.md (§2.8): at rest, the pointer off the bar:
+    // WindowText #fcfcfc at 0.5 × 0.7, filled at half of that over Window #202326, so
+    // WindowText at 0.175 over Window (breezehelper.cpp:279, :349-355, :1284;
+    // breezestyle.cpp:6401-6405 at breeze f0b1d75; measured)
+    scrollbar_thumb: 0x4649_4bff,
+    // `scrollbar.thumb_hover_color`: platform-facts.md (§2.8): [Colors:View] DecorationHover at
+    // half alpha over the window (breezehelper.cpp:292, :1284; breezestyle.cpp:6400-6405 at
+    // breeze f0b1d75)
+    scrollbar_thumb_hover: 0x2f68_88ff,
+    // `tooltip.background_color`: platform-facts.md (§2.7): [Colors:Tooltip] BackgroundNormal
+    // 41,44,48 (BreezeDark.colors:102)
+    tooltip_background: 0x292c_30ff,
+    // `tooltip.font.color`: platform-facts.md (§2.7): [Colors:Tooltip] ForegroundNormal
+    // 252,252,252 (BreezeDark.colors:110, breeze v6.7.5)
+    tooltip_foreground: 0xfcfc_fcff,
 };
 
 /// The UI font's family.
@@ -493,6 +623,43 @@ const CHECK_MARK_STROKE_WIDTH: f32 = 2.0;
 // `checkbox.label_gap`: 0.7.2 kde-breeze.toml (uncited)
 const CHECKBOX_LABEL_GAP: f32 = 4.0;
 
+/// A row's highlight margin left and right (spec §5, `L4`: kde-breeze's
+/// `list.border.padding` holds Breeze's highlight margins).
+// `list.border.padding.left`: platform-facts.md (§2.15): 2; 1
+const LIST_ROW_MARGIN_HORIZONTAL: f32 = 2.0;
+
+/// A row's highlight margin above and below.
+// `list.border.padding.top`: 0.7.2 kde-breeze.toml (uncited)
+const LIST_ROW_MARGIN_VERTICAL: f32 = 1.0;
+
+/// The groove's thickness across the bar.
+// `scrollbar.groove_width`: 0.7.2 kde-breeze.toml (uncited)
+const SCROLLBAR_GROOVE_WIDTH: f32 = 21.0;
+
+/// The handle's thickness across the bar.
+// `scrollbar.thumb_width`: 0.7.2 kde-breeze.toml (uncited)
+const SCROLLBAR_THUMB_WIDTH: f32 = 8.0;
+
+/// The handle's least length along the bar.
+// `scrollbar.min_thumb_length`: 0.7.2 kde-breeze.toml (uncited)
+const SCROLLBAR_MIN_THUMB_LENGTH: f32 = 20.0;
+
+/// Whether the bar overlays the content.
+// `scrollbar.overlay_mode`: 0.7.2 kde-breeze.toml (uncited)
+const SCROLLBAR_OVERLAY: bool = false;
+
+/// A tooltip's padding left and right.
+// `tooltip.border.padding.left`: platform-facts.md (§2.7): ToolTip_FrameWidth = 3
+const TOOLTIP_PADDING_HORIZONTAL: f32 = 3.0;
+
+/// A tooltip's padding above and below.
+// `tooltip.border.padding.top`: 0.7.2 kde-breeze.toml (uncited)
+const TOOLTIP_PADDING_VERTICAL: f32 = 3.0;
+
+/// A tooltip's greatest width.
+// `tooltip.max_width`: 0.7.2 kde-breeze.toml (uncited)
+const TOOLTIP_MAX_WIDTH: f32 = 300.0;
+
 /// The state precedence of every ruled part: disabled over pressed over hover
 /// (spec §3's example; 0.7.2's pressed colours win over its hover colours).
 const STATES: &[&[WidgetState]] = &[&[
@@ -531,7 +698,6 @@ pub(crate) fn resolve(ctx: &ThemeContext, _inputs: &ResolveInputs<'_>) -> Resolv
         cursor_size_px: None,
         cursor_theme: None,
     };
-    let unported = nothing_stated(Preset::KdeBreeze, ctx.clone());
     ResolvedTheme {
         name: Arc::from(Preset::KdeBreeze.display_name()),
         preset: Preset::KdeBreeze,
@@ -593,9 +759,9 @@ pub(crate) fn resolve(ctx: &ThemeContext, _inputs: &ResolveInputs<'_>) -> Resolv
         button: button(constants, &colors, &typography, &layout),
         checkbox: checkbox(constants, &colors, &typography, &layout),
         radio: radio(constants, &colors, &typography, &layout),
-        scrollbar: unported.scrollbar,
-        list: unported.list,
-        tooltip: unported.tooltip,
+        scrollbar: scrollbar(constants),
+        list: list(constants, &colors, &typography, &layout),
+        tooltip: tooltip(constants, &colors, &typography, &layout),
         custom_colors: BTreeMap::new(),
         custom_metrics: BTreeMap::new(),
         colors,
@@ -1000,5 +1166,170 @@ fn radio(
         CHECKBOX_LABEL_GAP,
         // 0.7.2: `checkbox.disabled_opacity` is `defaults.disabled_opacity` where unstated.
         Some(roles.disabled_opacity),
+    )
+}
+
+/// The list or table view: the view's background in the default frame
+/// (`list.background_color`: platform-facts.md (§2.15), `[Colors:View]`
+/// BackgroundNormal, the source of the view role; 0.7.2: `list.border.color`
+/// is `defaults.border.color` where unstated); rows with Breeze's highlight
+/// margins, the alternate row's fill, the hovered row's tint and outline and
+/// the selection (0.7.2: `list.selection_background` and
+/// `selection_text_color` are the selection's where unstated); the view's
+/// text, which a hovered row keeps (`list.hover_text_color`: "←
+/// item_font.color"); headers in Button's colours. 0.7.2 states no row or
+/// header height ("sizes to content").
+fn list(
+    c: &SchemeConstants,
+    roles: &ColorRoles,
+    typography: &Typography,
+    layout: &LayoutMetrics,
+) -> ListWidget {
+    let container = RuleBuilder::new(PartStyle::default())
+        .base(roles.view.background.map(fill))
+        .base(roles.window.border.map(|border| outline(layout, border)))
+        .base([corners(layout)])
+        .build();
+    let alternate = RuleSelector::on(WidgetState::NONE).matcher(ListMatcher {
+        variant: None,
+        alternate: Some(true),
+    });
+    let row = RuleBuilder::with_exclusive(PartStyle::default(), STATES)
+        .base([PartProp::Margin(Edges::symmetric(
+            LIST_ROW_MARGIN_VERTICAL,
+            LIST_ROW_MARGIN_HORIZONTAL,
+        ))])
+        .rule(alternate, [fill(color(c.list_alternate_row))])
+        .rule(
+            RuleSelector::on(WidgetState::HOVER),
+            [
+                fill(color(c.list_row_hover)),
+                outline(layout, color(c.list_row_hover_frame)),
+            ],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::SELECTED),
+            [fill(roles.selection.background)],
+        )
+        .build();
+    let item_label = RuleBuilder::with_exclusive(
+        label(&typography.body, Some(color(c.view_foreground))),
+        STATES,
+    )
+    .rule(
+        RuleSelector::on(WidgetState::SELECTED),
+        [TextProp::Color(roles.selection.foreground)],
+    )
+    .rule(
+        RuleSelector::on(WidgetState::DISABLED),
+        [TextProp::Color(color(c.view_disabled_foreground))],
+    )
+    .build();
+    let header = RuleBuilder::with_exclusive(PartStyle::default(), STATES)
+        .base([fill(color(c.button_background))])
+        .rule(
+            RuleSelector::on(WidgetState::HOVER),
+            [fill(color(c.list_header_hover))],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED),
+            [fill(color(c.list_header_pressed))],
+        )
+        .build();
+    let header_label =
+        RuleBuilder::new(label(&typography.body, Some(color(c.button_foreground)))).build();
+    let header_separator = RuleBuilder::new(PartStyle::default())
+        .base([fill(color(c.list_header_separator))])
+        .build();
+    ListWidget::new(
+        WidgetOrigin::Native,
+        container,
+        row,
+        item_label,
+        header,
+        header_label,
+        header_separator,
+        color(c.list_grid),
+    )
+}
+
+/// The scroll bar: a groove without fill and a handle of exact thicknesses
+/// across the bar; the handle at rest is 0.7.2's plain handle, and the
+/// hovered one serves the pressed one too (`scrollbar.thumb_active_color`:
+/// platform-facts.md (§2.8), "no pressed colour of its own, the hovered
+/// one").
+fn scrollbar(c: &SchemeConstants) -> ScrollbarWidget {
+    let exact = |builder: RuleBuilder<PartStyle, PartProp>, thickness: f32| {
+        builder
+            .rule(
+                RuleSelector::on(WidgetState::NONE).orientation(Orientation::Vertical),
+                [
+                    PartProp::MinSize([Some(thickness), None]),
+                    PartProp::MaxSize([Some(thickness), None]),
+                ],
+            )
+            .rule(
+                RuleSelector::on(WidgetState::NONE).orientation(Orientation::Horizontal),
+                [
+                    PartProp::MinSize([None, Some(thickness)]),
+                    PartProp::MaxSize([None, Some(thickness)]),
+                ],
+            )
+    };
+    let track = exact(
+        RuleBuilder::new(PartStyle::default()).base([fill(color(c.scrollbar_track))]),
+        SCROLLBAR_GROOVE_WIDTH,
+    )
+    .build();
+    let thumb = exact(
+        RuleBuilder::with_exclusive(PartStyle::default(), STATES)
+            .base([fill(color(c.scrollbar_thumb))]),
+        SCROLLBAR_THUMB_WIDTH,
+    )
+    .rules(
+        [
+            RuleSelector::on(WidgetState::HOVER),
+            RuleSelector::on(WidgetState::PRESSED),
+        ],
+        [fill(color(c.scrollbar_thumb_hover))],
+    )
+    .build();
+    ScrollbarWidget::new(
+        WidgetOrigin::Native,
+        track,
+        thumb,
+        SCROLLBAR_MIN_THUMB_LENGTH,
+        SCROLLBAR_OVERLAY,
+    )
+}
+
+/// The tooltip: its own colours in the default frame (0.7.2: `tooltip.border`
+/// is `defaults.border` where unstated) with ToolTip_FrameWidth's padding.
+fn tooltip(
+    c: &SchemeConstants,
+    roles: &ColorRoles,
+    typography: &Typography,
+    layout: &LayoutMetrics,
+) -> TooltipWidget {
+    let mut panel = PartStyle::default();
+    let border = roles.window.border.map(|border| outline(layout, border));
+    for prop in [
+        fill(color(c.tooltip_background)),
+        corners(layout),
+        PartProp::Padding(Edges::symmetric(
+            TOOLTIP_PADDING_VERTICAL,
+            TOOLTIP_PADDING_HORIZONTAL,
+        )),
+        PartProp::MaxSize([Some(TOOLTIP_MAX_WIDTH), None]),
+    ]
+    .into_iter()
+    .chain(border)
+    {
+        panel.apply(&prop);
+    }
+    TooltipWidget::new(
+        WidgetOrigin::Native,
+        panel,
+        label(&typography.body, Some(color(c.tooltip_foreground))),
     )
 }
