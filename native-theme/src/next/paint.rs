@@ -34,20 +34,21 @@ impl Paint {
 
     /// Best single representative solid color (top opaque/fallback layer) for simple toolkits.
     ///
-    /// For [`Paint::Solid`] its colour; for layers, from the top down, the
-    /// first opaque solid layer's colour or the first material's
-    /// [`fallback`](MaterialSpec::fallback); `None` for [`Paint::None`] and
-    /// for layers with neither.
+    /// One rule for [`Paint::Solid`] and for layers, a solid paint being one
+    /// solid layer: each solid layer stands for its colour and each material
+    /// for its [`fallback`](MaterialSpec::fallback); of these, the topmost
+    /// opaque one, else (no layer opaque) the topmost one. `None` for
+    /// [`Paint::None`] and for layers that are all gradients, which have no
+    /// single colour a source states.
     #[must_use]
     pub fn fallback_color(&self) -> Option<Color> {
         match self {
             Self::None => None,
             Self::Solid(c) => Some(*c),
-            Self::Complex(complex) => complex.layers.iter().rev().find_map(|layer| match layer {
-                PaintLayer::Solid { color, .. } if color.a >= 1.0 => Some(*color),
-                PaintLayer::Material(material) => Some(material.fallback),
-                _ => None,
-            }),
+            Self::Complex(complex) => {
+                let colors = || complex.layers.iter().rev().filter_map(PaintLayer::color);
+                colors().find(|c| c.a >= 1.0).or_else(|| colors().next())
+            }
         }
     }
 
@@ -121,6 +122,18 @@ pub enum PaintLayer {
     Material(MaterialSpec),
 }
 
+impl PaintLayer {
+    /// The one colour this layer stands for: a solid layer's colour, a
+    /// material's fallback; `None` for a gradient.
+    fn color(&self) -> Option<Color> {
+        match self {
+            Self::Solid { color, .. } => Some(*color),
+            Self::Material(material) => Some(material.fallback),
+            Self::LinearGradient { .. } | Self::RadialGradient { .. } => None,
+        }
+    }
+}
+
 /// A colour stop of a gradient.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct GradientStop {
@@ -170,18 +183,26 @@ pub struct MaterialSpec {
 }
 
 impl MaterialSpec {
-    /// A material of `kind` drawn as `fallback` where blur is unavailable,
-    /// with neutral settings: no blur, a transparent tint, saturation 1.0,
-    /// and luminosity and noise opacity 0.0.
+    /// A material of every field stated (spec §1, "Constructors"): no source
+    /// states a blur, tint or opacity for a material in general, so none is
+    /// assumed.
     #[must_use]
-    pub fn new(kind: MaterialKind, fallback: Color) -> Self {
+    pub fn new(
+        kind: MaterialKind,
+        blur_radius: f32,
+        tint: Color,
+        saturation: f32,
+        luminosity_opacity: f32,
+        noise_opacity: f32,
+        fallback: Color,
+    ) -> Self {
         Self {
             kind,
-            blur_radius: 0.0,
-            tint: Color::TRANSPARENT,
-            saturation: 1.0,
-            luminosity_opacity: 0.0,
-            noise_opacity: 0.0,
+            blur_radius,
+            tint,
+            saturation,
+            luminosity_opacity,
+            noise_opacity,
             fallback,
         }
     }
@@ -215,6 +236,30 @@ pub enum MaterialKind {
 mod tests {
     use super::*;
 
+    /// A material whose only meaningful field here is its fallback; the
+    /// other fields are arbitrary test values.
+    fn material(kind: MaterialKind, fallback: Color) -> MaterialSpec {
+        MaterialSpec::new(kind, 30.0, Color::TRANSPARENT, 1.0, 0.0, 0.0, fallback)
+    }
+
+    fn solid(color: Color) -> PaintLayer {
+        PaintLayer::Solid {
+            color,
+            blend: BlendMode::Normal,
+        }
+    }
+
+    fn gradient() -> PaintLayer {
+        PaintLayer::LinearGradient {
+            angle_deg: 90.0,
+            stops: Arc::from(vec![GradientStop {
+                offset: 0.0,
+                color: Color::BLACK,
+            }]),
+            blend: BlendMode::Normal,
+        }
+    }
+
     #[test]
     fn fallback_color_takes_the_top_opaque_or_material_layer() {
         assert_eq!(Paint::None.fallback_color(), None);
@@ -225,22 +270,45 @@ mod tests {
         let grey = Color::rgb(0.5, 0.5, 0.5);
         let half_red = Color::new(1.0, 0.0, 0.0, 0.5);
         let paint = Paint::layers(vec![
-            PaintLayer::Material(MaterialSpec::new(MaterialKind::Mica, grey)),
-            PaintLayer::Solid {
-                color: half_red,
-                blend: BlendMode::Normal,
-            },
+            PaintLayer::Material(material(MaterialKind::Mica, grey)),
+            solid(half_red),
         ]);
         assert_eq!(paint.fallback_color(), Some(grey));
-        let gradient_only = Paint::layers(vec![PaintLayer::LinearGradient {
-            angle_deg: 90.0,
-            stops: Arc::from(vec![GradientStop {
-                offset: 0.0,
-                color: Color::BLACK,
-            }]),
-            blend: BlendMode::Normal,
-        }]);
-        assert_eq!(gradient_only.fallback_color(), None);
+        assert_eq!(Paint::layers(vec![gradient()]).fallback_color(), None);
+    }
+
+    #[test]
+    fn fallback_color_is_one_rule_for_solid_and_layers() {
+        let half_red = Color::new(1.0, 0.0, 0.0, 0.5);
+        let half_blue = Color::new(0.0, 0.0, 1.0, 0.5);
+        // A translucent solid paint and the stack of that one layer agree.
+        assert_eq!(Paint::solid(half_red).fallback_color(), Some(half_red));
+        assert_eq!(
+            Paint::layers(vec![solid(half_red)]).fallback_color(),
+            Some(half_red)
+        );
+        // No layer opaque: the topmost solid or material layer, gradients skipped.
+        assert_eq!(
+            Paint::layers(vec![solid(half_red), solid(half_blue), gradient()]).fallback_color(),
+            Some(half_blue)
+        );
+        assert_eq!(
+            Paint::layers(vec![
+                solid(half_red),
+                PaintLayer::Material(material(MaterialKind::Acrylic, half_blue)),
+            ])
+            .fallback_color(),
+            Some(half_blue)
+        );
+        // An opaque layer below translucent ones wins over them.
+        assert_eq!(
+            Paint::layers(vec![solid(Color::WHITE), solid(half_red), gradient()]).fallback_color(),
+            Some(Color::WHITE)
+        );
+        assert_eq!(
+            Paint::layers(vec![gradient(), gradient()]).fallback_color(),
+            None
+        );
     }
 
     #[test]
@@ -253,15 +321,9 @@ mod tests {
         );
         // White, then half black over it (0.5), then half black again: 0.5 × 0.5 = 0.25.
         let paint = Paint::layers(vec![
-            PaintLayer::Material(MaterialSpec::new(MaterialKind::Acrylic, Color::WHITE)),
-            PaintLayer::Solid {
-                color: half_black,
-                blend: BlendMode::Normal,
-            },
-            PaintLayer::Solid {
-                color: half_black,
-                blend: BlendMode::Normal,
-            },
+            PaintLayer::Material(material(MaterialKind::Acrylic, Color::WHITE)),
+            solid(half_black),
+            solid(half_black),
         ]);
         assert_eq!(
             paint.flatten_over(Color::BLACK),
@@ -270,9 +332,23 @@ mod tests {
     }
 
     #[test]
-    fn material_new_is_neutral() {
-        let m = MaterialSpec::new(MaterialKind::KwinBlur, Color::BLACK);
-        assert_eq!(m.saturation, 1.0);
+    fn material_new_takes_every_field() {
+        let tint = Color::new(1.0, 1.0, 1.0, 0.25);
+        let m = MaterialSpec::new(
+            MaterialKind::KwinBlur,
+            12.0,
+            tint,
+            1.5,
+            0.75,
+            0.125,
+            Color::BLACK,
+        );
+        assert_eq!(m.kind, MaterialKind::KwinBlur);
+        assert_eq!(m.blur_radius, 12.0);
+        assert_eq!(m.tint, tint);
+        assert_eq!(m.saturation, 1.5);
+        assert_eq!(m.luminosity_opacity, 0.75);
+        assert_eq!(m.noise_opacity, 0.125);
         assert_eq!(m.fallback, Color::BLACK);
     }
 }

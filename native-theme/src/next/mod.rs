@@ -156,6 +156,8 @@ mod tests {
         assert_send_sync_clone_debug::<TextStyle>();
         assert_send_sync_clone_debug::<IconStyle>();
         assert_send_sync_clone_debug::<RuleSet<PartStyle, PartProp>>();
+        assert_send_sync_clone_debug::<RuleSet<TextStyle, TextProp>>();
+        assert_send_sync_clone_debug::<RuleSet<IconStyle, IconProp>>();
         assert_send_sync_clone_debug::<ThemeContext>();
     }
 }

@@ -78,6 +78,17 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 impl Error {
     /// The coarse category of this error.
+    ///
+    /// Where 0.7.2's `Error` has a corresponding variant, its kind is taken:
+    /// `FeatureDisabled`, `PlatformUnsupported`, `ReaderFailed` and
+    /// `WatchUnavailable` are `Platform`, `UnknownPreset` is `Parse`, `Io` is
+    /// `Io`, and `InvalidTheme` (0.7.2's `ResolutionInvalid` and
+    /// `ResolutionIncomplete`, whose kind `Resolution` this model names
+    /// `Validation`) is `Validation`. Without a 0.7.2 precedent:
+    /// `UnknownPalette` is `Parse`, as `UnknownPreset` (a name that is not
+    /// found), and `InvalidColor` is `Parse` (0.7.2's `Rgba::from_str`
+    /// returns a `ParseColorError` of its own, outside `Error`; in a TOML
+    /// file a bad colour is a TOML error, which is `Parse`).
     #[must_use]
     pub fn kind(&self) -> ErrorKind {
         match self {
@@ -158,6 +169,13 @@ mod tests {
         assert_eq!(
             Error::PlatformUnsupported { platform: "plan9" }.kind(),
             ErrorKind::Platform
+        );
+        assert_eq!(
+            Error::UnknownPalette {
+                name: "x".to_owned()
+            }
+            .kind(),
+            ErrorKind::Parse
         );
     }
 }

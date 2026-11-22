@@ -304,3 +304,63 @@ fn luminance_and_contrast() {
             >= 1.0
     );
 }
+
+fn assert_near(actual: f32, expected: f64) {
+    assert!(
+        (f64::from(actual) - expected).abs() < 1e-6,
+        "{actual} != {expected}"
+    );
+}
+
+#[test]
+fn luminance_vectors_pin_the_coefficients_and_the_threshold() {
+    // Expected values from
+    // python3 -I -c "lin=lambda v: v/12.92 if abs(v)<=0.04045 else ((abs(v)+0.055)/1.055)**2.4;
+    //   L=lambda r,g,b: 0.2126*lin(r)+0.7152*lin(g)+0.0722*lin(b); ..."
+    // Mid grey, power segment: ((0.5 + 0.055) / 1.055)^2.4 = 0.2140411.
+    assert_near(Color::rgb(0.5, 0.5, 0.5).relative_luminance(), 0.214_041_14);
+    // #3daee9 (61, 174, 233): L = 0.3714740; against white (1.05) / (L + 0.05) = 2.491257.
+    let breeze_blue = Color::from_srgb8(61, 174, 233, 255);
+    assert_near(breeze_blue.relative_luminance(), 0.371_473_96);
+    assert_near(breeze_blue.contrast_ratio(Color::WHITE), 2.491_257_1);
+    // Linear segment (0.04 <= 0.04045): green alone, 0.7152 × 0.04 / 12.92 = 0.002214241.
+    assert_near(
+        Color::rgb(0.0, 0.04, 0.0).relative_luminance(),
+        0.002_214_241_5,
+    );
+}
+
+#[test]
+fn luminance_is_finite_after_the_cast() {
+    // f32::MAX gives about 5.6e91 in f64, beyond f32: not finite as an f32, so 0.0.
+    let huge = Color::rgb(f32::MAX, 0.0, 0.0).relative_luminance();
+    assert!(huge.is_finite());
+    assert_eq!(huge, 0.0);
+    let ratio = Color::rgb(f32::MAX, 0.0, 0.0).contrast_ratio(Color::WHITE);
+    assert!(ratio.is_finite() && ratio >= 1.0);
+}
+
+#[test]
+fn a_term_of_weight_zero_contributes_nothing() {
+    let hidden = Color::new(f32::INFINITY, f32::NEG_INFINITY, f32::INFINITY, 0.0);
+    let half_blue = Color::new(0.0, 0.0, 1.0, 0.5);
+    // Transparent source over a backdrop: the backdrop.
+    assert_eq!(hidden.composite_over(half_blue), half_blue);
+    // An opaque source over a transparent backdrop: the source.
+    let opaque = Color::new(0.1, 0.2, 0.3, 1.0);
+    assert_eq!(opaque.composite_over(hidden), opaque);
+    // An opaque source hides a backdrop of any channels: weight (1 − 1) × 1 = 0.
+    let wild_backdrop = Color::new(f32::INFINITY, 0.0, 0.0, 1.0);
+    assert_eq!(opaque.composite_over(wild_backdrop), opaque);
+    // color-mix: t = 0 and t = 1 leave the other colour out; a transparent colour adds nothing.
+    assert_eq!(opaque.mix_srgb(wild_backdrop, 0.0), opaque);
+    assert_eq!(wild_backdrop.mix_srgb(opaque, 1.0), opaque);
+    // Weights 0 and 0.5: alpha 0.5, channels 0.1 × 0.5 / 0.5 and so on.
+    let mixed = hidden.mix_srgb(opaque, 0.5);
+    assert!(
+        [mixed.r, mixed.g, mixed.b, mixed.a]
+            .iter()
+            .all(|c| !c.is_nan())
+    );
+    assert_close(channels(mixed), [0.1, 0.2, 0.3, 0.5]);
+}

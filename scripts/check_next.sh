@@ -11,8 +11,9 @@
 # on native-theme's targets without features and with the Linux features,
 # -D warnings; the strict panic lints on its library with both; its tests with
 # both (cargo nextest where installed, then the doctests through cargo test
-# --doc, as check_release.sh's cargo_tests); its two rustdoc runs,
-# -D warnings; the panic-pattern scan of native-theme/src and the README
+# --doc, as check_release.sh's cargo_tests; each run fails below run_tests'
+# minimum of one passed test); its two rustdoc runs, -D warnings; the
+# panic-pattern scan of native-theme/src and the README
 # versions check. `--target windows` or `--target macos` adds check_release.sh's
 # cross-target clippy and strict-panic steps of native-theme for that target,
 # whose cfg-gated code no host step compiles.
@@ -44,7 +45,7 @@ while [ $# -gt 0 ]; do
             shift 2
             ;;
         -h | --help)
-            sed -n '2,25p' "$0" | sed 's/^# \{0,1\}//'
+            sed -n '2,26p' "$0" | sed 's/^# \{0,1\}//'
             exit 0
             ;;
         *)
@@ -87,6 +88,43 @@ step() {
         printf "ok    %-58s %s\n" "$name" "$elapsed"
     else
         printf "%s\n" "$output" >&2
+        printf "FAIL  %-58s %s\n" "$name" "$elapsed"
+        printf "      failed command: %s\n" "$*" >&2
+        printf "check_next.sh: stopped at the first failure (total %s)\n" \
+            "$(format_elapsed $((SECONDS - TOTAL_START)))" >&2
+        exit 1
+    fi
+}
+
+# test_step <name> <command...>: step for a test run, with the minimum of
+# check_release.sh's run_tests: it fails, too, where the command exits 0 with
+# fewer than one test passed (cargo test's "test result: ok. N passed" per
+# binary and nextest's "N tests run: N passed", summed), since a filter or cfg
+# that matches nothing still exits 0.
+test_step() {
+    local name="$1"
+    shift
+    local min_passed=1
+    local start=$SECONDS
+    local output status
+    output=$("$@" 2>&1)
+    status=$?
+    local total_passed=0
+    if [ "$status" -eq 0 ]; then
+        total_passed=$(printf "%s\n" "$output" |
+            grep -oE 'test result: ok\. [0-9]+ passed|[0-9]+ tests? run: [0-9]+ passed' |
+            awk '{sum += $(NF - 1)} END {print sum+0}')
+    fi
+    local elapsed
+    elapsed=$(format_elapsed $((SECONDS - start)))
+    if [ "$status" -eq 0 ] && [ "$total_passed" -ge "$min_passed" ]; then
+        printf "ok    %-58s %s\n" "$name ($total_passed passed)" "$elapsed"
+    else
+        printf "%s\n" "$output" >&2
+        if [ "$status" -eq 0 ]; then
+            printf "      %s passed, fewer than the minimum of %s: a filter or cfg that matches nothing still exits 0\n" \
+                "$total_passed" "$min_passed" >&2
+        fi
         printf "FAIL  %-58s %s\n" "$name" "$elapsed"
         printf "      failed command: %s\n" "$*" >&2
         printf "check_next.sh: stopped at the first failure (total %s)\n" \
@@ -138,8 +176,8 @@ if [ -n "$TARGET" ]; then
     step "strict-panic (native-theme, no features, $TARGET)" \
         bash scripts/check_strict_panic.sh --target "$TARGET" -p native-theme --lib --no-default-features
 fi
-step "test (native-theme)" tests -p native-theme
-step "test (native-theme, Linux features)" tests -p native-theme --features "$NT_FEATURES"
+test_step "test (native-theme)" tests -p native-theme
+test_step "test (native-theme, Linux features)" tests -p native-theme --features "$NT_FEATURES"
 step "docs (native-theme)" \
     env RUSTDOCFLAGS="-D warnings" cargo doc -p native-theme --no-deps
 step "docs, private items (native-theme, Linux features)" \

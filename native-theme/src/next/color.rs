@@ -259,15 +259,16 @@ impl Color {
 
     /// `self` composited over `backdrop` by Porter-Duff source-over, in
     /// gamma-encoded sRGB on premultiplied values (the module's sources); a
-    /// result of alpha 0 is [`Color::TRANSPARENT`].
+    /// result of alpha 0 is [`Color::TRANSPARENT`]. A colour of weight zero
+    /// contributes nothing, whatever its channels hold.
     #[must_use]
     pub fn composite_over(self, backdrop: Self) -> Self {
-        let under = 1.0 - self.a;
-        let a = self.a + backdrop.a * under;
+        let back = backdrop.a * (1.0 - self.a);
+        let a = self.a + back;
         if a.is_nan() || a <= 0.0 {
             return Self::TRANSPARENT;
         }
-        let channel = |s: f32, b: f32| (s * self.a + b * backdrop.a * under) / a;
+        let channel = |s: f32, b: f32| (weighted(s, self.a) + weighted(b, back)) / a;
         Self {
             r: channel(self.r, backdrop.r),
             g: channel(self.g, backdrop.g),
@@ -279,14 +280,15 @@ impl Color {
     /// CSS `color-mix(in srgb, self (1 − t), other t)` on premultiplied
     /// values (the module's sources): `t = 0.0` gives `self`, `t = 1.0`
     /// gives `other`. `t` is clamped to `0.0..=1.0`; a non-finite `t` gives
-    /// 0.0.
+    /// 0.0. A colour of weight zero contributes nothing, whatever its
+    /// channels hold.
     #[must_use]
     pub fn mix_srgb(self, other: Self, t: f32) -> Self {
         let t = clamp_unit(t);
-        let s = 1.0 - t;
-        let a = self.a * s + other.a * t;
+        let (ws, wo) = (self.a * (1.0 - t), other.a * t);
+        let a = ws + wo;
         let channel = |x: f32, y: f32| {
-            let premultiplied = x * self.a * s + y * other.a * t;
+            let premultiplied = weighted(x, ws) + weighted(y, wo);
             if a == 0.0 {
                 premultiplied
             } else {
@@ -303,17 +305,13 @@ impl Color {
 
     /// WCAG 2.1 relative luminance of the colour channels (alpha is not
     /// used), through the extended transfer function, clamped to at least
-    /// 0.0 (a non-finite result gives 0.0).
+    /// 0.0 (a result that is not finite as an `f32` gives 0.0).
     #[must_use]
     pub fn relative_luminance(self) -> f32 {
-        let l = WCAG_LUMINANCE_R * srgb_to_linear(f64::from(self.r))
+        let l = (WCAG_LUMINANCE_R * srgb_to_linear(f64::from(self.r))
             + WCAG_LUMINANCE_G * srgb_to_linear(f64::from(self.g))
-            + WCAG_LUMINANCE_B * srgb_to_linear(f64::from(self.b));
-        if l.is_finite() {
-            l.max(0.0) as f32
-        } else {
-            0.0
-        }
+            + WCAG_LUMINANCE_B * srgb_to_linear(f64::from(self.b))) as f32;
+        if l.is_finite() { l.max(0.0) } else { 0.0 }
     }
 
     /// WCAG 2.1 contrast ratio of the two colours' relative luminances,
@@ -434,6 +432,12 @@ fn clamp_unit(v: f32) -> f32 {
     } else {
         0.0
     }
+}
+
+/// `channel × weight`, or 0.0 where the weight is zero: a term of weight zero
+/// contributes nothing, so a channel that is not finite cannot make NaN.
+fn weighted(channel: f32, weight: f32) -> f32 {
+    if weight == 0.0 { 0.0 } else { channel * weight }
 }
 
 /// A channel in `0.0..=1.0` times 255, rounded.

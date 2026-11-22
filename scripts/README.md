@@ -379,6 +379,33 @@ removes the step's `--quick` record (without `--commit` or `--quick` it exits
 ./scripts/check_release.sh
 ```
 
+## check_next.sh
+
+The narrow per-task gate of the 0.8.0 work (`docs/v0.8.0-plan.md`, section 1,
+rule 7), for a task whose diff lies wholly in `native-theme/src/next/`,
+`native-theme/tests/next_*` and `native-theme/tests/{vectors,snapshots}/`: the
+core crate's own steps of `check_release.sh`, with its commands, flags and
+feature lists. It runs `cargo fmt --all` (formatting in place), clippy on
+native-theme's targets without features and with the Linux features
+(`-D warnings`), the strict panic lints on its library with both, its tests
+with both (`cargo nextest run` where installed, then `cargo test --doc`, as
+`check_release.sh`'s `cargo_tests`; a test run that passes no test fails, as
+there), its two rustdoc runs (`-D warnings`), the panic-pattern scan of
+`native-theme/src` and the README versions check. `--target windows` or
+`--target macos` adds `check_release.sh`'s cross-target clippy and strict-panic
+steps of native-theme for that target. It leaves to `check_release.sh
+--commit` the MSRV checks, the feature combinations and every other crate.
+Each step prints its name, result and wall time; the first failure prints the
+step's output and stops with a non-zero status. An unknown argument exits 2;
+`--help` prints the usage. Scaffolding of the 0.8.0 work: deleted at the 0.8.0
+cut.
+
+```sh
+./scripts/check_next.sh
+./scripts/check_next.sh --target windows
+./scripts/check_next.sh --target macos
+```
+
 ## step_cache.sh
 
 The step cache of `check_release.sh --commit` and `--quick`, sourced by it in

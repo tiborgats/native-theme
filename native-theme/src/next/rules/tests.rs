@@ -1,5 +1,9 @@
 use super::*;
+use std::collections::HashSet;
+use std::mem::discriminant;
+
 use crate::next::geometry::StrokeAlign;
+use crate::next::motion::Timing;
 use crate::next::query::{ButtonQuery, InputQuery, InputVariant, ListQuery};
 use crate::next::style::{DecorationKind, FocusKind};
 
@@ -57,25 +61,30 @@ fn focus_visible_adds_focused() {
 
 #[test]
 fn exclusive_group_keeps_the_earliest_flag() {
+    // Not in bit order (PRESSED is bit 1, HOVER bit 0, DISABLED bit 6): an evaluator keeping
+    // the lowest bit fails the first query, one keeping the highest bit the second. In each,
+    // the rule of the flag that normalisation clears comes last, so an evaluator that does
+    // not normalise fails both.
     const GROUPS: &[&[WidgetState]] = &[&[
-        WidgetState::DISABLED,
         WidgetState::PRESSED,
         WidgetState::HOVER,
+        WidgetState::DISABLED,
     ]];
     let rules: RuleSet<PartStyle, PartProp> = RuleSet::new(
         base(),
         GROUPS,
         vec![
-            (on(WidgetState::HOVER), vec![fill(RED)]),
             (on(WidgetState::PRESSED), vec![fill(GREEN)]),
+            (on(WidgetState::HOVER), vec![fill(RED)]),
+            (on(WidgetState::DISABLED), vec![fill(Color::BLACK)]),
         ],
     );
     let pressed_hover = StyleQuery::<()>::new(WidgetState::PRESSED | WidgetState::HOVER);
     assert_eq!(fill_of(&rules.eval(&pressed_hover)), Some(GREEN));
-    let disabled_hover = StyleQuery::<()>::new(WidgetState::DISABLED | WidgetState::HOVER);
-    assert_eq!(fill_of(&rules.eval(&disabled_hover)), Some(BLUE));
-    let hover = StyleQuery::<()>::new(WidgetState::HOVER);
-    assert_eq!(fill_of(&rules.eval(&hover)), Some(RED));
+    let hover_disabled = StyleQuery::<()>::new(WidgetState::HOVER | WidgetState::DISABLED);
+    assert_eq!(fill_of(&rules.eval(&hover_disabled)), Some(RED));
+    let disabled = StyleQuery::<()>::new(WidgetState::DISABLED);
+    assert_eq!(fill_of(&rules.eval(&disabled)), Some(Color::BLACK));
     assert_eq!(
         normalize(
             WidgetState::DISABLED
@@ -84,11 +93,116 @@ fn exclusive_group_keeps_the_earliest_flag() {
                 | WidgetState::CHECKED,
             GROUPS
         ),
-        WidgetState::DISABLED | WidgetState::CHECKED
+        WidgetState::PRESSED | WidgetState::CHECKED
+    );
+    assert_eq!(
+        normalize(WidgetState::HOVER | WidgetState::DISABLED, GROUPS),
+        WidgetState::HOVER
     );
     assert_eq!(
         normalize(WidgetState::CHECKED, GROUPS),
         WidgetState::CHECKED
+    );
+}
+
+#[test]
+fn several_exclusive_groups_apply_in_order() {
+    let all4 = WidgetState::PRESSED
+        | WidgetState::HOVER
+        | WidgetState::CHECKED
+        | WidgetState::INDETERMINATE;
+    // Two disjoint groups: both are normalised.
+    assert_eq!(
+        normalize(
+            all4,
+            &[
+                &[WidgetState::PRESSED, WidgetState::HOVER],
+                &[WidgetState::CHECKED, WidgetState::INDETERMINATE],
+            ]
+        ),
+        WidgetState::PRESSED | WidgetState::CHECKED
+    );
+    // Two groups sharing HOVER: the second sees the first's result.
+    let shared = WidgetState::HOVER | WidgetState::PRESSED | WidgetState::DISABLED;
+    // [DISABLED, HOVER] clears HOVER; then [HOVER, PRESSED] finds only PRESSED.
+    assert_eq!(
+        normalize(
+            shared,
+            &[
+                &[WidgetState::DISABLED, WidgetState::HOVER],
+                &[WidgetState::HOVER, WidgetState::PRESSED],
+            ]
+        ),
+        WidgetState::DISABLED | WidgetState::PRESSED
+    );
+    // In the other order: [HOVER, PRESSED] clears PRESSED; then [DISABLED, HOVER] clears HOVER.
+    assert_eq!(
+        normalize(
+            shared,
+            &[
+                &[WidgetState::HOVER, WidgetState::PRESSED],
+                &[WidgetState::DISABLED, WidgetState::HOVER],
+            ]
+        ),
+        WidgetState::DISABLED
+    );
+    // An empty group changes nothing, and the groups after it still apply.
+    assert_eq!(normalize(all4, &[&[]]), all4);
+    assert_eq!(
+        normalize(all4, &[&[], &[WidgetState::HOVER, WidgetState::PRESSED]]),
+        WidgetState::HOVER | WidgetState::CHECKED | WidgetState::INDETERMINATE
+    );
+    // A group naming a flag twice: the earliest set flag stays.
+    const TWICE: &[&[WidgetState]] =
+        &[&[WidgetState::HOVER, WidgetState::PRESSED, WidgetState::HOVER]];
+    assert_eq!(
+        normalize(WidgetState::PRESSED | WidgetState::HOVER, TWICE),
+        WidgetState::HOVER
+    );
+    assert_eq!(normalize(WidgetState::PRESSED, TWICE), WidgetState::PRESSED);
+}
+
+#[test]
+fn focus_visible_is_added_before_the_groups() {
+    // FOCUSED is added first, so the group keeps it and clears HOVER.
+    const GROUPS: &[&[WidgetState]] = &[&[WidgetState::FOCUSED, WidgetState::HOVER]];
+    let query = WidgetState::FOCUS_VISIBLE | WidgetState::HOVER;
+    assert_eq!(
+        normalize(query, GROUPS),
+        WidgetState::FOCUS_VISIBLE | WidgetState::FOCUSED
+    );
+    let rules: RuleSet<PartStyle, PartProp> = RuleSet::new(
+        base(),
+        GROUPS,
+        vec![
+            (on(WidgetState::FOCUSED), vec![fill(GREEN)]),
+            (on(WidgetState::HOVER), vec![fill(RED)]),
+        ],
+    );
+    assert_eq!(
+        fill_of(&rules.eval(&StyleQuery::<()>::new(query))),
+        Some(GREEN)
+    );
+}
+
+#[test]
+fn clearing_focused_clears_focus_visible() {
+    const GROUPS: &[&[WidgetState]] = &[&[WidgetState::DISABLED, WidgetState::FOCUSED]];
+    let query = WidgetState::DISABLED | WidgetState::FOCUS_VISIBLE;
+    assert_eq!(normalize(query, GROUPS), WidgetState::DISABLED);
+    let rules = one_rule(on(WidgetState::FOCUS_VISIBLE));
+    let rules = RuleSet {
+        exclusive: GROUPS,
+        ..rules
+    };
+    assert_eq!(
+        fill_of(&rules.eval(&StyleQuery::<()>::new(query))),
+        Some(BLUE)
+    );
+    // Without the higher-precedence state the keyboard-focus rule matches.
+    assert_eq!(
+        fill_of(&rules.eval(&StyleQuery::<()>::new(WidgetState::FOCUS_VISIBLE))),
+        Some(RED)
     );
 }
 
@@ -432,19 +546,514 @@ fn rule_with_out_of_range_props_is_skipped() {
         start,
         len,
     };
+    // Props [GREEN, RED]: (0, 1) applies GREEN; (1, 2) reaches past the end. Skipped whole,
+    // GREEN stays; clamped to the props in bounds, it would apply RED. The same holds for the
+    // ranges at u32::MAX.
     let rules: RuleSet<PartStyle, PartProp> = RuleSet {
         base: base(),
         exclusive: &[],
         rules: Arc::from(vec![
             entry(0, 1),
-            entry(1, 1),
-            entry(0, 2),
+            entry(1, 2),
             entry(u32::MAX, u32::MAX),
             entry(0, u32::MAX),
         ]),
-        props: Arc::from(vec![fill(RED)]),
+        props: Arc::from(vec![fill(GREEN), fill(RED)]),
     };
     let out = rules.eval(&StyleQuery::<()>::default());
-    assert_eq!(fill_of(&out), Some(RED));
+    assert_eq!(fill_of(&out), Some(GREEN));
     assert_eq!(out.stated, PartStated::FILL);
+}
+
+#[test]
+fn a_range_beyond_u32_is_stored_empty() -> Result<(), std::num::TryFromIntError> {
+    assert_eq!(stored_range(3, 2), (3, 2));
+    let max = usize::try_from(u32::MAX)?;
+    assert_eq!(stored_range(max, max), (u32::MAX, u32::MAX));
+    // One past u32::MAX exists only where usize is wider than 32 bits.
+    if let Some(beyond) = max.checked_add(1) {
+        assert_eq!(stored_range(beyond, 1), (0, 0));
+        assert_eq!(stored_range(1, beyond), (0, 0));
+        assert_eq!(stored_range(beyond, beyond), (0, 0));
+    }
+    // An empty range applies nothing.
+    let rules: RuleSet<PartStyle, PartProp> = RuleSet {
+        base: base(),
+        exclusive: &[],
+        rules: Arc::from(vec![RuleEntry {
+            selector: RuleSelector::default(),
+            start: 0,
+            len: 0,
+        }]),
+        props: Arc::from(vec![fill(RED)]),
+    };
+    assert_eq!(rules.eval(&StyleQuery::<()>::default()), base());
+    Ok(())
+}
+
+/// `style` with `prop` applied by a rule that matches every query.
+fn applied<T: Clone, P>(style: T, prop: P) -> T
+where
+    RuleSet<T, P>: Eval<T>,
+{
+    RuleSet::new(style, &[], vec![(any(), vec![prop])]).eval_default()
+}
+
+/// `eval` on the default query, for the three rule sets alike.
+trait Eval<T> {
+    fn eval_default(&self) -> T;
+}
+
+impl Eval<PartStyle> for RuleSet<PartStyle, PartProp> {
+    fn eval_default(&self) -> PartStyle {
+        self.eval(&StyleQuery::<()>::default())
+    }
+}
+
+impl Eval<TextStyle> for RuleSet<TextStyle, TextProp> {
+    fn eval_default(&self) -> TextStyle {
+        self.eval(&StyleQuery::<()>::default())
+    }
+}
+
+impl Eval<IconStyle> for RuleSet<IconStyle, IconProp> {
+    fn eval_default(&self) -> IconStyle {
+        self.eval(&StyleQuery::<()>::default())
+    }
+}
+
+fn shadow() -> Arc<[ShadowLayer]> {
+    Arc::from(vec![ShadowLayer {
+        offset_x: 0.0,
+        offset_y: 1.0,
+        blur: 2.0,
+        spread: 0.0,
+        color: Color::BLACK,
+        inset: false,
+    }])
+}
+
+fn focus() -> Arc<FocusIndicator> {
+    Arc::new(FocusIndicator::new(
+        FocusKind::Ring,
+        Stroke::uniform(2.0, BLUE),
+        Stroke::None,
+        1.0,
+        None,
+        None,
+    ))
+}
+
+fn ripple() -> Arc<RippleSpec> {
+    Arc::new(RippleSpec::new(RED, true, 100, 200))
+}
+
+fn transition() -> Transition {
+    Transition {
+        duration_ms: 150,
+        delay_ms: 0,
+        timing: Timing::Linear,
+    }
+}
+
+#[test]
+fn each_part_prop_alone_states_exactly_its_property() {
+    let d = PartStyle::default;
+    let sides = Edges::new(1.0, 2.0, 3.0, 4.0);
+    let transform = Transform {
+        rotation_deg: 90.0,
+        ..Transform::IDENTITY
+    };
+    let padding_all = PartStated::PADDING_TOP
+        | PartStated::PADDING_RIGHT
+        | PartStated::PADDING_BOTTOM
+        | PartStated::PADDING_LEFT;
+    let margin_all = PartStated::MARGIN_TOP
+        | PartStated::MARGIN_RIGHT
+        | PartStated::MARGIN_BOTTOM
+        | PartStated::MARGIN_LEFT;
+    let cases = vec![
+        (
+            fill(RED),
+            PartStyle {
+                fill: Paint::Solid(RED),
+                stated: PartStated::FILL,
+                ..d()
+            },
+        ),
+        (
+            PartProp::Stroke(Stroke::uniform(1.0, RED)),
+            PartStyle {
+                stroke: Stroke::uniform(1.0, RED),
+                stated: PartStated::STROKE,
+                ..d()
+            },
+        ),
+        (
+            PartProp::Corners(Corners::uniform(4.0)),
+            PartStyle {
+                corners: Corners::uniform(4.0),
+                stated: PartStated::CORNERS,
+                ..d()
+            },
+        ),
+        (
+            PartProp::Shadows(Some(shadow())),
+            PartStyle {
+                shadows: Some(shadow()),
+                stated: PartStated::SHADOWS,
+                ..d()
+            },
+        ),
+        (
+            PartProp::Opacity(0.5),
+            PartStyle {
+                opacity: 0.5,
+                stated: PartStated::OPACITY,
+                ..d()
+            },
+        ),
+        (
+            PartProp::Transform(transform),
+            PartStyle {
+                transform,
+                stated: PartStated::TRANSFORM,
+                ..d()
+            },
+        ),
+        (
+            PartProp::Padding(sides),
+            PartStyle {
+                padding: sides,
+                stated: padding_all,
+                ..d()
+            },
+        ),
+        (
+            PartProp::PaddingSides(sides, EdgeFlags::TOP | EdgeFlags::LEFT),
+            PartStyle {
+                padding: Edges::new(1.0, 0.0, 0.0, 4.0),
+                stated: PartStated::PADDING_TOP | PartStated::PADDING_LEFT,
+                ..d()
+            },
+        ),
+        (
+            PartProp::Margin(sides),
+            PartStyle {
+                margin: sides,
+                stated: margin_all,
+                ..d()
+            },
+        ),
+        (
+            PartProp::MarginSides(sides, EdgeFlags::RIGHT | EdgeFlags::BOTTOM),
+            PartStyle {
+                margin: Edges::new(0.0, 2.0, 3.0, 0.0),
+                stated: PartStated::MARGIN_RIGHT | PartStated::MARGIN_BOTTOM,
+                ..d()
+            },
+        ),
+        (
+            PartProp::MinSize([Some(10.0), None]),
+            PartStyle {
+                min_size: [Some(10.0), None],
+                ..d()
+            },
+        ),
+        (
+            PartProp::MaxSize([None, Some(20.0)]),
+            PartStyle {
+                max_size: [None, Some(20.0)],
+                ..d()
+            },
+        ),
+        (
+            PartProp::Focus(Some(focus())),
+            PartStyle {
+                focus: Some(focus()),
+                stated: PartStated::FOCUS,
+                ..d()
+            },
+        ),
+        (
+            PartProp::Ripple(Some(ripple())),
+            PartStyle {
+                ripple: Some(ripple()),
+                stated: PartStated::RIPPLE,
+                ..d()
+            },
+        ),
+        (
+            PartProp::Transition(Some(transition())),
+            PartStyle {
+                transition: Some(transition()),
+                stated: PartStated::TRANSITION,
+                ..d()
+            },
+        ),
+        (
+            PartProp::Cursor(Cursor::Pointer),
+            PartStyle {
+                cursor: Cursor::Pointer,
+                stated: PartStated::CURSOR,
+                ..d()
+            },
+        ),
+    ];
+    // Sixteen variants, each once.
+    let variants: HashSet<_> = cases.iter().map(|(p, _)| discriminant(p)).collect();
+    assert_eq!(variants.len(), 16);
+    assert_eq!(cases.len(), 16);
+    for (prop, expected) in cases {
+        assert_eq!(applied(d(), prop.clone()), expected, "{prop:?}");
+    }
+}
+
+#[test]
+fn each_text_prop_alone_states_exactly_its_property() {
+    let d = TextStyle::default;
+    let underline = TextDecoration {
+        kind: DecorationKind::Underline,
+        color: None,
+        thickness: None,
+    };
+    let cases = vec![
+        (
+            TextProp::Family(Arc::from("Noto Sans")),
+            TextStyle {
+                family: Arc::from("Noto Sans"),
+                stated: TextStated::FAMILY,
+                ..d()
+            },
+        ),
+        (
+            TextProp::Color(RED),
+            TextStyle {
+                color: RED,
+                stated: TextStated::COLOR,
+                ..d()
+            },
+        ),
+        (
+            TextProp::SizePx(13.0),
+            TextStyle {
+                size_px: 13.0,
+                stated: TextStated::SIZE_PX,
+                ..d()
+            },
+        ),
+        (
+            TextProp::Weight(700),
+            TextStyle {
+                weight: 700,
+                stated: TextStated::WEIGHT,
+                ..d()
+            },
+        ),
+        (
+            TextProp::Style(FontStyle::Italic),
+            TextStyle {
+                style: FontStyle::Italic,
+                stated: TextStated::STYLE,
+                ..d()
+            },
+        ),
+        (
+            TextProp::Width(FontWidth::new(3)),
+            TextStyle {
+                width: FontWidth::new(3),
+                stated: TextStated::WIDTH,
+                ..d()
+            },
+        ),
+        (
+            TextProp::LineHeight(16.0),
+            TextStyle {
+                line_height: 16.0,
+                stated: TextStated::LINE_HEIGHT,
+                ..d()
+            },
+        ),
+        (
+            TextProp::LetterSpacing(0.5),
+            TextStyle {
+                letter_spacing: 0.5,
+                stated: TextStated::LETTER_SPACING,
+                ..d()
+            },
+        ),
+        (
+            TextProp::OpticalSize(Some(12.0)),
+            TextStyle {
+                optical_size: Some(12.0),
+                stated: TextStated::OPTICAL_SIZE,
+                ..d()
+            },
+        ),
+        (
+            TextProp::Decoration(underline),
+            TextStyle {
+                decoration: underline,
+                stated: TextStated::DECORATION,
+                ..d()
+            },
+        ),
+        (
+            TextProp::BlendMode(BlendMode::Multiply),
+            TextStyle {
+                blend_mode: BlendMode::Multiply,
+                stated: TextStated::BLEND_MODE,
+                ..d()
+            },
+        ),
+    ];
+    // Eleven variants, each once.
+    let variants: HashSet<_> = cases.iter().map(|(p, _)| discriminant(p)).collect();
+    assert_eq!(variants.len(), 11);
+    assert_eq!(cases.len(), 11);
+    for (prop, expected) in cases {
+        assert_eq!(applied(d(), prop.clone()), expected, "{prop:?}");
+    }
+}
+
+#[test]
+fn each_icon_prop_alone_states_exactly_its_property() {
+    let d = IconStyle::default;
+    let cases = vec![
+        (
+            IconProp::Size(16.0),
+            IconStyle {
+                size: 16.0,
+                stated: IconStated::SIZE,
+                ..d()
+            },
+        ),
+        (
+            IconProp::Color(GREEN),
+            IconStyle {
+                color: GREEN,
+                stated: IconStated::COLOR,
+                ..d()
+            },
+        ),
+        (
+            IconProp::Opacity(0.5),
+            IconStyle {
+                opacity: 0.5,
+                stated: IconStated::OPACITY,
+                ..d()
+            },
+        ),
+        (
+            IconProp::Weight(500),
+            IconStyle {
+                weight: 500,
+                stated: IconStated::WEIGHT,
+                ..d()
+            },
+        ),
+        (
+            IconProp::RenderingMode(IconRenderingMode::Palette),
+            IconStyle {
+                rendering_mode: IconRenderingMode::Palette,
+                stated: IconStated::RENDERING_MODE,
+                ..d()
+            },
+        ),
+        (
+            IconProp::StrokeWidth(Some(1.5)),
+            IconStyle {
+                stroke_width: Some(1.5),
+                stated: IconStated::STROKE_WIDTH,
+                ..d()
+            },
+        ),
+        (
+            IconProp::BlendMode(BlendMode::Screen),
+            IconStyle {
+                blend_mode: BlendMode::Screen,
+                stated: IconStated::BLEND_MODE,
+                ..d()
+            },
+        ),
+    ];
+    // Seven variants, each once.
+    let variants: HashSet<_> = cases.iter().map(|(p, _)| discriminant(p)).collect();
+    assert_eq!(variants.len(), 7);
+    assert_eq!(cases.len(), 7);
+    for (prop, expected) in cases {
+        assert_eq!(applied(d(), prop.clone()), expected, "{prop:?}");
+    }
+}
+
+#[test]
+fn a_rules_none_replaces_a_base_some() {
+    let part = PartStyle {
+        shadows: Some(shadow()),
+        focus: Some(focus()),
+        ripple: Some(ripple()),
+        transition: Some(transition()),
+        ..PartStyle::default()
+    };
+    let part_cases = [
+        (
+            PartProp::Shadows(None),
+            PartStyle {
+                shadows: None,
+                stated: PartStated::SHADOWS,
+                ..part.clone()
+            },
+        ),
+        (
+            PartProp::Focus(None),
+            PartStyle {
+                focus: None,
+                stated: PartStated::FOCUS,
+                ..part.clone()
+            },
+        ),
+        (
+            PartProp::Ripple(None),
+            PartStyle {
+                ripple: None,
+                stated: PartStated::RIPPLE,
+                ..part.clone()
+            },
+        ),
+        (
+            PartProp::Transition(None),
+            PartStyle {
+                transition: None,
+                stated: PartStated::TRANSITION,
+                ..part.clone()
+            },
+        ),
+    ];
+    for (prop, expected) in part_cases {
+        assert_eq!(applied(part.clone(), prop.clone()), expected, "{prop:?}");
+    }
+    let text = TextStyle {
+        optical_size: Some(12.0),
+        ..TextStyle::default()
+    };
+    assert_eq!(
+        applied(text.clone(), TextProp::OpticalSize(None)),
+        TextStyle {
+            optical_size: None,
+            stated: TextStated::OPTICAL_SIZE,
+            ..text
+        }
+    );
+    let icon = IconStyle {
+        stroke_width: Some(1.5),
+        ..IconStyle::default()
+    };
+    assert_eq!(
+        applied(icon.clone(), IconProp::StrokeWidth(None)),
+        IconStyle {
+            stroke_width: None,
+            stated: IconStated::STROKE_WIDTH,
+            ..icon
+        }
+    );
 }

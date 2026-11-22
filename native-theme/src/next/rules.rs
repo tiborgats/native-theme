@@ -202,7 +202,8 @@ struct RuleEntry<M> {
 /// A base style and the ordered rules that patch it for a query.
 ///
 /// [`eval`](Self::eval) normalises the query's state (`FOCUS_VISIBLE` adds
-/// `FOCUSED`; in each exclusive group only the earliest set flag stays),
+/// `FOCUSED`; in each exclusive group, in order, only the earliest set flag
+/// stays; where that clears `FOCUSED`, it clears `FOCUS_VISIBLE` too),
 /// clones the base, and applies the properties of every matching rule in
 /// order, the last match winning, setting the `stated` bit of each property
 /// applied. It allocates nothing and never panics.
@@ -230,10 +231,7 @@ impl<T, P, M> RuleSet<T, P, M> {
         let mut entries = Vec::with_capacity(rules.len());
         let mut props = Vec::new();
         for (selector, rule_props) in rules {
-            // Beyond `u32::MAX` properties a range cannot be stored; it is
-            // stored out of bounds instead, and `eval` skips the rule.
-            let start = u32::try_from(props.len()).unwrap_or(u32::MAX);
-            let len = u32::try_from(rule_props.len()).unwrap_or(u32::MAX);
+            let (start, len) = stored_range(props.len(), rule_props.len());
             props.extend(rule_props);
             entries.push(RuleEntry {
                 selector,
@@ -310,9 +308,20 @@ impl<M> RuleSet<IconStyle, IconProp, M> {
     }
 }
 
+/// A rule's property range as stored, `(start, len)`; `(0, 0)` where either
+/// does not fit in a `u32` (beyond `u32::MAX` properties), so that the rule
+/// applies nothing rather than a range it does not own or a truncated one.
+fn stored_range(start: usize, len: usize) -> (u32, u32) {
+    match (u32::try_from(start), u32::try_from(len)) {
+        (Ok(start), Ok(len)) => (start, len),
+        _ => (0, 0),
+    }
+}
+
 /// Steps 0 and 1 of the evaluation contract: `FOCUS_VISIBLE` adds `FOCUSED`;
-/// then for each exclusive group in which any flag is set, only the earliest
-/// set flag stays.
+/// then the exclusive groups in their order, each on the result of the one
+/// before: in a group in which any flag is set, only the earliest set flag
+/// stays. Where that clears `FOCUSED`, `FOCUS_VISIBLE` is cleared too.
 fn normalize(state: WidgetState, exclusive: &[&[WidgetState]]) -> WidgetState {
     let mut state = if state.contains(WidgetState::FOCUS_VISIBLE) {
         state | WidgetState::FOCUSED
@@ -329,7 +338,11 @@ fn normalize(state: WidgetState, exclusive: &[&[WidgetState]]) -> WidgetState {
             .fold(WidgetState::NONE, |acc, flag| acc | *flag);
         state = state.difference(all) | keep;
     }
-    state
+    if state.contains(WidgetState::FOCUSED) {
+        state
+    } else {
+        state.difference(WidgetState::FOCUS_VISIBLE)
+    }
 }
 
 /// The sides of `edges` flagged in `mask` written into `target`, and their

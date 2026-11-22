@@ -330,7 +330,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn constructors() {
+    fn constructors() -> Result<(), String> {
         assert_eq!(Edges::all(2.0), Edges::new(2.0, 2.0, 2.0, 2.0));
         assert_eq!(Edges::symmetric(1.0, 3.0), Edges::new(1.0, 3.0, 1.0, 3.0));
         assert_eq!(Edges::default(), Edges::ZERO);
@@ -353,11 +353,12 @@ mod tests {
             StrokeSide::default(),
             StrokeAlign::Outside,
         ) else {
-            panic!("Stroke::sides must give Stroke::Complex");
+            return Err("Stroke::sides must give Stroke::Complex".to_owned());
         };
         assert_eq!(sides.top, side);
         assert_eq!(sides.right, StrokeSide::default());
         assert_eq!(sides.align, StrokeAlign::Outside);
+        Ok(())
     }
 
     #[test]
