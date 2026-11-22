@@ -22,7 +22,10 @@ use super::widgets::{
     ButtonWidget, CheckboxWidget, ListWidget, RadioWidget, ResolvedTheme, ScrollbarWidget,
     TooltipWidget, WidgetOrigin,
 };
-use super::widgets::{InputWidget, LinkWidget, ProgressBarWidget, SliderWidget, SplitterWidget};
+use super::widgets::{
+    InputWidget, LinkWidget, ProgressBarWidget, SeparatorWidget, SliderWidget, SpinnerWidget,
+    SplitterWidget,
+};
 use super::window::{CaptionLayout, WindowChrome};
 use crate::IconSet;
 
@@ -712,6 +715,21 @@ pub(crate) fn nothing_stated(preset: Preset, context: ThemeContext) -> ResolvedT
         slider: SliderWidget::new(native, part(), part(), part(), part(), f32::default(), None),
         progress_bar: ProgressBarWidget::new(native, part(), part(), u32::default()),
         splitter: SplitterWidget::new(native, part(), f32::default()),
+        separator: SeparatorWidget::new(
+            native,
+            Color::default(),
+            f32::default(),
+            f32::default(),
+            f32::default(),
+        ),
+        spinner: SpinnerWidget::new(
+            native,
+            Color::default(),
+            f32::default(),
+            f32::default(),
+            f32::default(),
+            u32::default(),
+        ),
         custom_colors: BTreeMap::new(),
         custom_metrics: BTreeMap::new(),
     }

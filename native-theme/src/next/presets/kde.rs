@@ -1404,6 +1404,8 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
         slider: unstated.slider,
         progress_bar: unstated.progress_bar,
         splitter: unstated.splitter,
+        separator: unstated.separator,
+        spinner: unstated.spinner,
         custom_colors: BTreeMap::new(),
         custom_metrics: BTreeMap::new(),
         colors,

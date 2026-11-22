@@ -1,6 +1,7 @@
 //! Allocation counts of the 0.8.0 model (spec §11, item 1; plan, rule 6),
 //! through the public API: every part getter and `parts(query)` of the
-//! first slice's ruled widgets on the resolved `kde-breeze`, light and dark,
+//! ruled widgets and every getter of the window chrome on the resolved
+//! `kde-breeze`, light and dark,
 //! over a list of states, and the clone of a returned `PartStyle` and of a
 //! style holding every `Arc`-carrying property, allocate nothing; and the
 //! resolved theme's heap bytes, the live bytes after `resolve()` minus

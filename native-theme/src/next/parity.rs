@@ -1,5 +1,6 @@
-//! Model parity of the 0.8.0 work (plan, section 1, rule 2) on the first slice: the globals and 0.7.2's
-//! `button`, `checkbox`, `list`, `scrollbar` and `tooltip`, on `kde-breeze`.
+//! Model parity of the 0.8.0 work (plan, section 1, rule 2) on the slice: the globals, 0.7.2's `button`,
+//! `checkbox`, `list`, `scrollbar` and `tooltip`, and the widgets the model has added since
+//! ([`SLICE_GROUPS`]), on `kde-breeze`.
 //!
 //! This half checks the table of homes, `tests/next_homes.toml`, against both models: it resolves 0.7.2's
 //! `kde-breeze` (light and dark) with 0.7.2's public API, takes the keys from the JSON serialisation of the
@@ -47,6 +48,8 @@ const SLICE_GROUPS: &[&str] = &[
     "slider",
     "progress_bar",
     "splitter",
+    "separator",
+    "spinner",
 ];
 
 /// The fields of 0.7.2's `Resolved` wrapper beside the resolved theme, which do not serialise
@@ -1206,6 +1209,8 @@ const NOT_PORTED_GROUPS: &[&str] = &[
     "slider",
     "progress_bar",
     "splitter",
+    "separator",
+    "spinner",
 ];
 
 /// The totals of the ported groups' rows on each scheme, `[rows, compared, equal, mismatching, skipped]`:

@@ -985,6 +985,15 @@ fn metric(theme: &ResolvedTheme, widget: &str, name: &str) -> Option<Got> {
             Got::Int(u64::from(theme.progress_bar.indeterminate_period_ms))
         }
         ("splitter", "divider_width") => Got::F32(theme.splitter.divider_width),
+        ("separator", "color") => Got::Color(theme.separator.color),
+        ("separator", "thickness") => Got::F32(theme.separator.thickness),
+        ("separator", "inset") => Got::F32(theme.separator.inset),
+        ("separator", "margin") => Got::F32(theme.separator.margin),
+        ("spinner", "color") => Got::Color(theme.spinner.color),
+        ("spinner", "diameter") => Got::F32(theme.spinner.diameter),
+        ("spinner", "min_diameter") => Got::F32(theme.spinner.min_diameter),
+        ("spinner", "stroke_width") => Got::F32(theme.spinner.stroke_width),
+        ("spinner", "period_ms") => Got::Int(u64::from(theme.spinner.period_ms)),
         _ => return None,
     })
 }

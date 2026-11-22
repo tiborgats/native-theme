@@ -1562,3 +1562,32 @@ homes = ["splitter.handle(NONE).fill"]
 key = "splitter.hover_color"
 homes = ["splitter.handle(HOVER).fill"]
 note = "0.7.2 R-W: unset = divider_color, never null"
+
+# --- separator ---
+
+[[row]]
+key = "separator.line_color"
+homes = ["separator.color"]
+
+[[row]]
+key = "separator.line_width"
+homes = ["separator.thickness"]
+
+# --- spinner ---
+
+[[row]]
+key = "spinner.fill_color"
+homes = ["spinner.color"]
+note = "0.7.2 safety net: unset = defaults.accent_color"
+
+[[row]]
+key = "spinner.diameter"
+homes = ["spinner.diameter"]
+
+[[row]]
+key = "spinner.min_diameter"
+homes = ["spinner.min_diameter"]
+
+[[row]]
+key = "spinner.stroke_width"
+homes = ["spinner.stroke_width"]

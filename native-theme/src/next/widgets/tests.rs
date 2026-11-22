@@ -487,6 +487,33 @@ fn progress_bar_and_splitter_getters_evaluate_their_rule_sets() {
 }
 
 #[test]
+fn separator_and_spinner_hold_their_metrics() {
+    let separator = SeparatorWidget::new(WidgetOrigin::Synthesized, RED, 1.0, 2.0, 3.0);
+    assert!(!separator.is_native());
+    assert_eq!(
+        (
+            separator.color,
+            separator.thickness,
+            separator.inset,
+            separator.margin
+        ),
+        (RED, 1.0, 2.0, 3.0)
+    );
+    let spinner = SpinnerWidget::new(WidgetOrigin::Native, BLUE, 24.0, 16.0, 2.0, 1000);
+    assert!(spinner.is_native());
+    assert_eq!(
+        (
+            spinner.color,
+            spinner.diameter,
+            spinner.min_diameter,
+            spinner.stroke_width,
+            spinner.period_ms
+        ),
+        (BLUE, 24.0, 16.0, 2.0, 1000)
+    );
+}
+
+#[test]
 fn the_widgets_added_in_m1_are_clone_debug_eq_send_sync() {
     assert_send_sync_clone_debug_eq::<crate::next::window::WindowChrome>();
     assert_send_sync_clone_debug_eq::<InputWidget>();
@@ -494,4 +521,6 @@ fn the_widgets_added_in_m1_are_clone_debug_eq_send_sync() {
     assert_send_sync_clone_debug_eq::<SliderWidget>();
     assert_send_sync_clone_debug_eq::<ProgressBarWidget>();
     assert_send_sync_clone_debug_eq::<SplitterWidget>();
+    assert_send_sync_clone_debug_eq::<SeparatorWidget>();
+    assert_send_sync_clone_debug_eq::<SpinnerWidget>();
 }

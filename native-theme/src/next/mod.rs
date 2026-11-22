@@ -172,7 +172,7 @@ pub use widgets::{
 };
 pub use widgets::{
     InputParts, InputWidget, LinkParts, LinkWidget, ProgressBarParts, ProgressBarWidget,
-    SliderParts, SliderWidget, SplitterParts, SplitterWidget,
+    SeparatorWidget, SliderParts, SliderWidget, SpinnerWidget, SplitterParts, SplitterWidget,
 };
 pub use window::{CaptionButtonKind, CaptionLayout, EdgeFlags, WindowChrome, WindowState};
 

@@ -1,6 +1,7 @@
 //! The widgets of a resolved theme and the [`ResolvedTheme`] that holds them
 //! (spec §5): so far the first slice's six, `button`, `checkbox`, `radio`,
-//! `scrollbar`, `list` and `tooltip`.
+//! `scrollbar`, `list` and `tooltip`, and the ones in this module's
+//! submodules.
 //!
 //! A ruled widget holds one rule set per part and answers a query with the
 //! part's concrete style, through a getter per part and a combined
@@ -44,13 +45,17 @@ type IconRules<M = ()> = RuleSet<IconStyle, IconProp, M>;
 mod input;
 mod link;
 mod progress_bar;
+mod separator;
 mod slider;
+mod spinner;
 mod splitter;
 
 pub use input::{InputParts, InputWidget};
 pub use link::{LinkParts, LinkWidget};
 pub use progress_bar::{ProgressBarParts, ProgressBarWidget};
+pub use separator::SeparatorWidget;
 pub use slider::{SliderParts, SliderWidget};
+pub use spinner::SpinnerWidget;
 pub use splitter::{SplitterParts, SplitterWidget};
 
 // ---------------------------------------------------------------------------
@@ -633,6 +638,10 @@ pub struct ResolvedTheme {
     pub progress_bar: ProgressBarWidget,
     /// The splitter.
     pub splitter: SplitterWidget,
+    /// The separator line.
+    pub separator: SeparatorWidget,
+    /// The busy indicator.
+    pub spinner: SpinnerWidget,
     /// The application's own colour tokens (empty on the bundled presets).
     pub custom_colors: BTreeMap<String, Color>,
     /// The application's own metric tokens (empty on the bundled presets).
