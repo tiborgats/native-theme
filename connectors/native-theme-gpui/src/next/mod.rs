@@ -153,14 +153,25 @@ fn font_style(style: FontStyle) -> Option<gpui::FontStyle> {
 }
 
 /// A text style as the builders' [`Font`], where its family, size, weight,
-/// slant and colour are stated. The size is the model's, which the theme's
-/// text scale has already scaled.
+/// slant and colour are stated: for the builders that set the colour. The
+/// size is the model's, which the theme's text scale has already scaled.
 fn font<'a>(text: &'a TextStyle, home: &'static str) -> Mapped<Font<'a>> {
-    let needed = TextStated::FAMILY
-        | TextStated::SIZE_PX
-        | TextStated::WEIGHT
-        | TextStated::STYLE
-        | TextStated::COLOR;
+    font_of(text, home, TextStated::COLOR)
+}
+
+/// A text style as the builders' [`Font`], where its family, size, weight
+/// and slant are stated: for the builders that hand it to
+/// `geometry::text`, which sets no colour and does not read the font's. The
+/// colour carried is the style's, stated or not.
+fn uncoloured_font<'a>(text: &'a TextStyle, home: &'static str) -> Mapped<Font<'a>> {
+    font_of(text, home, TextStated::default())
+}
+
+/// [`font`] and [`uncoloured_font`]: the four properties every builder reads
+/// and `also`.
+fn font_of<'a>(text: &'a TextStyle, home: &'static str, also: TextStated) -> Mapped<Font<'a>> {
+    let needed =
+        TextStated::FAMILY | TextStated::SIZE_PX | TextStated::WEIGHT | TextStated::STYLE | also;
     if !text.stated.contains(needed) {
         return Err(Unmapped(home));
     }
@@ -193,6 +204,14 @@ fn focus_band_of(r: &ResolvedTheme) -> Mapped<bool> {
 /// where 0.7.2's `scrollbar.thumb_color` lives on kde-breeze (spec §5, S3);
 /// a theme with no rule for that state returns the plain thumb, the field's
 /// home elsewhere.
+///
+/// That makes `thumb(UNFOCUSED_VIEW)` the one query that returns 0.7.2's
+/// `thumb_color`, the plain handle, on every preset, whichever of the two
+/// the preset states it at: kde-breeze's rest state is the handle of the
+/// view that has the focus, and the plain handle is its `UNFOCUSED_VIEW`
+/// rule; a preset without an `UNFOCUSED_VIEW` rule returns its base there.
+/// When the widgets are ported, the connector sets the bit from the view's
+/// real focus instead.
 fn thumb_at_rest(r: &ResolvedTheme) -> Mapped<Hsla> {
     fill(
         &r.scrollbar.thumb(WidgetState::UNFOCUSED_VIEW),

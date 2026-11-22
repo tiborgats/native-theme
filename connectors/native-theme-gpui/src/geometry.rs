@@ -535,8 +535,27 @@ pub fn menu_item(n: Native<'_>) -> StyleRefinement {
 #[must_use]
 pub fn list_item(n: Native<'_>) -> StyleRefinement {
     let l = &n.resolved.list;
-    let r = with_height_rule(StyleRefinement::default(), l.row_height, n);
-    with_coloured_text(with_padding(r, &l.border.padding), &l.item_font, n)
+    list_item_from(
+        l.row_height,
+        sides_of(&l.border.padding),
+        &font_of(&l.item_font, n),
+        n.resolved.defaults.line_height,
+        n.accessibility.text_scale_factor(),
+    )
+}
+
+/// [`list_item`] of the stated row height `row_height`, the padding's sides
+/// `sides` (top, right, bottom, left), the row's font `font`, the line height
+/// `line_height` and the text-scaling factor `text_scale`.
+pub(crate) fn list_item_from(
+    row_height: Option<f32>,
+    sides: [Option<f32>; 4],
+    font: &Font<'_>,
+    line_height: f32,
+    text_scale: f32,
+) -> StyleRefinement {
+    let r = height_rule(StyleRefinement::default(), row_height, text_scale);
+    coloured_text(padding(r, sides), font, line_height)
 }
 
 /// Application-built `Tooltip` (`src/tooltip.rs:125-130` → `:131`).
@@ -813,7 +832,12 @@ pub fn dialog_entrance(n: Native<'_>) -> Option<DialogEntrance> {
 /// it fits, and which [`button`]'s own height would push out of the field.
 #[must_use]
 pub fn input_group_button(n: Native<'_>) -> StyleRefinement {
-    StyleRefinement::default().rounded(px(n.resolved.button.border.corner_radius))
+    input_group_button_from(n.resolved.button.border.corner_radius)
+}
+
+/// [`input_group_button`] of the button radius `radius`.
+pub(crate) fn input_group_button_from(radius: f32) -> StyleRefinement {
+    StyleRefinement::default().rounded(px(radius))
 }
 
 /// `DialogFooter` (`src/dialog/footer.rs:52` → `:56`).
@@ -1849,25 +1873,30 @@ pub fn link(n: Native<'_>) -> StyleRefinement {
 /// Space between adjacent widgets.
 #[must_use]
 pub fn widget_gap(layout: &LayoutTheme) -> Option<Pixels> {
-    layout.widget_gap.map(px)
+    layout_metric(layout.widget_gap)
 }
 
 /// Padding inside containers.
 #[must_use]
 pub fn container_margin(layout: &LayoutTheme) -> Option<Pixels> {
-    layout.container_margin.map(px)
+    layout_metric(layout.container_margin)
 }
 
 /// Padding inside the main window.
 #[must_use]
 pub fn window_margin(layout: &LayoutTheme) -> Option<Pixels> {
-    layout.window_margin.map(px)
+    layout_metric(layout.window_margin)
 }
 
 /// Space between major content sections.
 #[must_use]
 pub fn section_gap(layout: &LayoutTheme) -> Option<Pixels> {
-    layout.section_gap.map(px)
+    layout_metric(layout.section_gap)
+}
+
+/// One of the four layout metrics above, `None` where the theme states none.
+pub(crate) fn layout_metric(v: Option<f32>) -> Option<Pixels> {
+    v.map(px)
 }
 
 #[cfg(test)]

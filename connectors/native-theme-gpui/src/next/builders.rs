@@ -1,21 +1,23 @@
-//! The `geometry` builders of the slice's widgets, from the 0.8.0 model:
-//! each reads what its 0.7.2 builder reads, at its home in the table of
-//! homes, and hands it to the function that builder hands its own reads to.
+//! The `geometry` builders of the slice's widgets, and the values the
+//! connector feeds the slice's `variants` with, from the 0.8.0 model: each
+//! reads what its 0.7.2 builder reads, at its home in the table of homes, and
+//! hands it to the function that builder hands its own reads to.
 //!
 //! The text sizes are the model's, which the theme's text scale has already
 //! scaled; the control-height rule takes that scale from the theme's
 //! context, where the 0.7.2 builders take it from the accessibility
 //! preferences.
 
-use gpui::{Pixels, StyleRefinement};
+use gpui::{Hsla, Pixels, StyleRefinement};
 use gpui_component::Size;
-use native_theme::next::{PartStated, ResolvedTheme, TextStated, WidgetState};
+use native_theme::next::{PartStated, PartStyle, ResolvedTheme, TextStated, WidgetState};
 
 use super::{
     Mapped, Unmapped, fill, font, hsla, padding, radius, scrollbar_geometry, stated, stroke_color,
-    stroke_width, text_color, text_size,
+    stroke_width, text_color, text_size, uncoloured_font,
 };
 use crate::geometry;
+use crate::variants::DefaultButtonStates;
 
 /// `defaults.line_height`'s home.
 fn line_height(r: &ResolvedTheme) -> f32 {
@@ -50,7 +52,7 @@ pub(crate) fn button_label(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
     let label = r.button.label(WidgetState::NONE);
     Ok(geometry::text(
         StyleRefinement::default(),
-        &font(&label, "button.label(NONE)")?,
+        &uncoloured_font(&label, "button.label(NONE)")?,
         line_height(r),
     ))
 }
@@ -116,7 +118,7 @@ pub(crate) fn checkbox(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
     let label = r.checkbox.label(WidgetState::NONE);
     Ok(geometry::text(
         geometry::label_gap(r.checkbox.label_gap),
-        &font(&label, "checkbox.label(NONE)")?,
+        &uncoloured_font(&label, "checkbox.label(NONE)")?,
         line_height(r),
     ))
 }
@@ -148,8 +150,49 @@ pub(crate) fn table(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
     let label = r.list.item_label(WidgetState::NONE);
     Ok(geometry::text(
         StyleRefinement::default(),
-        &font(&label, "list.item_label(NONE)")?,
+        &uncoloured_font(&label, "list.item_label(NONE)")?,
         line_height(r),
+    ))
+}
+
+/// The row's inset that 0.7.2's `list.border.padding` holds: per side, the
+/// row's stated margin plus its stated padding, an unstated one counting as
+/// none, and unset where neither is stated on that side. The table of homes
+/// places the field at the row's margin on kde-breeze (Breeze's highlight
+/// margins, spec §5, L4) and at its padding elsewhere, so the sum is 0.7.2's
+/// value on every preset without naming one; whether a margin is drawn as a
+/// margin rather than as padding is decided with captures in a later
+/// milestone.
+fn row_inset(row: &PartStyle) -> [Option<f32>; 4] {
+    let side = |bit: PartStated, v: f32| row.stated.contains(bit).then_some(v);
+    let m = &row.margin;
+    let [mt, mr, mb, ml] = [
+        side(PartStated::MARGIN_TOP, m.top),
+        side(PartStated::MARGIN_RIGHT, m.right),
+        side(PartStated::MARGIN_BOTTOM, m.bottom),
+        side(PartStated::MARGIN_LEFT, m.left),
+    ];
+    let [pt, pr, pb, pl] = padding(row);
+    let sum = |m: Option<f32>, p: Option<f32>| match (m, p) {
+        (Some(m), Some(p)) => Some(m + p),
+        (Some(v), None) | (None, Some(v)) => Some(v),
+        (None, None) => None,
+    };
+    [sum(mt, pt), sum(mr, pr), sum(mb, pb), sum(ml, pl)]
+}
+
+/// [`crate::geometry::list_item`]: `list.row_height` at the row's height,
+/// `list.border.padding` as [`row_inset`] reads it, `list.item_font` at the
+/// item label.
+pub(crate) fn list_item(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    let l = &r.list;
+    let row = l.row(WidgetState::NONE);
+    Ok(geometry::list_item_from(
+        row.min_size[1],
+        row_inset(&row),
+        &font(&l.item_label(WidgetState::NONE), "list.item_label(NONE)")?,
+        line_height(r),
+        r.context.text_scale,
     ))
 }
 
@@ -263,4 +306,75 @@ pub(crate) fn scrollbar_gutter(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
         r.scrollbar.overlay_mode,
         scrollbar_geometry(r)?.track_width,
     ))
+}
+
+/// [`crate::geometry::input_group_button`]: `button.border.corner_radius`.
+pub(crate) fn input_group_button(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    Ok(geometry::input_group_button_from(radius(
+        &r.button.body(WidgetState::NONE),
+        "button.body(NONE).corners",
+    )?))
+}
+
+/// [`crate::geometry::editor`]: `defaults.line_height` alone.
+pub(crate) fn editor(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    Ok(geometry::line_height_of(
+        StyleRefinement::default(),
+        line_height(r),
+    ))
+}
+
+/// [`crate::geometry::widget_gap`].
+pub(crate) fn widget_gap(r: &ResolvedTheme) -> Mapped<Option<Pixels>> {
+    Ok(geometry::layout_metric(r.layout.widget_gap))
+}
+
+/// [`crate::geometry::container_margin`].
+pub(crate) fn container_margin(r: &ResolvedTheme) -> Mapped<Option<Pixels>> {
+    Ok(geometry::layout_metric(r.layout.container_margin))
+}
+
+/// [`crate::geometry::window_margin`].
+pub(crate) fn window_margin(r: &ResolvedTheme) -> Mapped<Option<Pixels>> {
+    Ok(geometry::layout_metric(r.layout.window_margin))
+}
+
+/// [`crate::geometry::section_gap`].
+pub(crate) fn section_gap(r: &ResolvedTheme) -> Mapped<Option<Pixels>> {
+    Ok(geometry::layout_metric(r.layout.section_gap))
+}
+
+/// [`crate::variants::hover_border`], the colour of
+/// [`crate::variants::bordered_button`]'s variant: `button.hover_border_color`
+/// at the hovered body's stroke. A soft option (module doc of `next`): the
+/// query always returns a stroke, so this is never `None`, where 0.7.2's is
+/// `None` on a preset that leaves the field unset.
+pub(crate) fn hover_border(r: &ResolvedTheme) -> Mapped<Option<Hsla>> {
+    Ok(Some(stroke_color(
+        &r.button.body(WidgetState::HOVER),
+        "button.body(HOVER).stroke.color",
+    )?))
+}
+
+/// [`crate::variants::default_button_states`], what
+/// [`crate::variants::default_button`] gives its variant:
+/// `button.default_button_background` at the default body's fill,
+/// `button.default_button_text_color` at the default label's colour (a theme
+/// with no rule for the state returns `button.font.color`, 0.7.2's fallback)
+/// and `button.hover_border_color` at the hovered body's stroke. Soft options
+/// (module doc of `next`): never `None`, where 0.7.2's is `None` on a preset
+/// that leaves `button.default_button_background` unset.
+pub(crate) fn default_button_states(r: &ResolvedTheme) -> Mapped<Option<DefaultButtonStates>> {
+    let b = &r.button;
+    Ok(Some(DefaultButtonStates {
+        hover: fill(&b.body(WidgetState::DEFAULT), "button.body(DEFAULT).fill")?,
+        foreground: text_color(
+            &b.label(WidgetState::DEFAULT),
+            "button.label(DEFAULT).color",
+        )?,
+        hover_frame: stroke_color(
+            &b.body(WidgetState::HOVER),
+            "button.body(HOVER).stroke.color",
+        )?,
+    }))
 }

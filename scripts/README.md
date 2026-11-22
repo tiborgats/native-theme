@@ -395,9 +395,10 @@ with all its features, in the build folder of its own that the section uses
 and deletes when the run ends), its tests with both feature sets (`cargo
 nextest run` where installed, then `cargo test --doc`, as `check_release.sh`'s
 `cargo_tests`; a test run that passes no test fails, as there), from the
-plan's M0, step 4 on, `cargo check` of the gpui connector's targets and its
-parity test (`next::parity`), both with the features `check_release.sh` tests
-the connector with (`native,watch`), the core crate's two rustdoc runs
+plan's M0, step 4 on, clippy on the gpui connector's targets (`-D warnings`,
+the command `check_release.sh` lints it with) and its parity test
+(`next::parity`), both with the features `check_release.sh` tests the
+connector with (`native,watch`), the core crate's two rustdoc runs
 (`-D warnings`), the panic-pattern scan of `native-theme/src` and the README
 versions check. `--target windows` or `--target macos` adds
 `check_release.sh`'s cross-target clippy and strict-panic steps of

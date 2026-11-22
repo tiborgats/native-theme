@@ -17,8 +17,9 @@
 # its tests with both feature sets (cargo nextest where installed, then the
 # doctests through cargo test --doc, as check_release.sh's cargo_tests; each
 # run fails below run_tests' minimum of one passed test); from the plan's M0,
-# step 4 on, cargo check of the gpui connector's targets and its parity test
-# (next::parity), with the features check_release.sh tests it with; the core
+# step 4 on, clippy on the gpui connector's targets, -D warnings, as
+# check_release.sh lints it, and its parity test (next::parity), both with the
+# features check_release.sh tests it with; the core
 # crate's two rustdoc runs, -D warnings; the panic-pattern scan of
 # native-theme/src and the README versions check. `--target windows` or
 # `--target macos` adds check_release.sh's cross-target clippy and
@@ -52,7 +53,7 @@ while [ $# -gt 0 ]; do
             shift 2
             ;;
         -h | --help)
-            sed -n '2,33p' "$0" | sed 's/^# \{0,1\}//'
+            sed -n '2,34p' "$0" | sed 's/^# \{0,1\}//'
             exit 0
             ;;
         *)
@@ -238,8 +239,8 @@ test_step "test (native-theme, Linux features)" tests -p native-theme --features
 # The gpui connector's 0.8.0 mapping, from the plan's M0, step 4 on (rule 7),
 # with the features check_release.sh tests the connector with.
 GPUI_FEATURES="native,watch"
-step "check (native-theme-gpui, all targets, native, watch)" \
-    cargo check -p native-theme-gpui --all-targets --features "$GPUI_FEATURES"
+step "clippy (native-theme-gpui, native, watch)" \
+    cargo clippy -p native-theme-gpui --all-targets --features "$GPUI_FEATURES" -- -D warnings
 test_step "connector parity (native-theme-gpui, native, watch)" \
     parity_tests -p native-theme-gpui --features "$GPUI_FEATURES" --lib next::parity
 step "docs (native-theme)" \

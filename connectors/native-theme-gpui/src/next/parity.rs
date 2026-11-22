@@ -29,19 +29,33 @@
 //!   field by field (`Pixels`, `Hsla`).
 //! - The `geometry` builders: `StyleRefinement`, `gpui_component::Size` and
 //!   `Option<Pixels>`, each by its `PartialEq`.
+//! - The `variants` builders, whose `ButtonCustomVariant` has neither
+//!   `Debug` nor `PartialEq` and needs an `App`: through the connector's own
+//!   values that feed them, each by its `PartialEq` — `bordered_button` by
+//!   `variants::hover_border` (`Option<Hsla>`), `default_button` by
+//!   `variants::default_button_states` (`Option<DefaultButtonStates>`) and
+//!   `ghost_button`, which reads only the theme, by the three `ThemeColor`
+//!   fields it takes; the `ThemeColor` fields the first two take beside those
+//!   are compared as colour leaves.
 //!
 //! A difference is allowed only as an entry of [`DIFFERENCES`], with its
 //! reason, and is compared in the form its entry gives; an entry that no
-//! longer differs fails. The list of colour leaves ([`SLICE_SLOTS`]) is held
-//! against the contract tables: every slot they name is in it, or in
-//! [`OUTSIDE_SLICE`] with the field outside the slice it comes from, or in
-//! [`EXCLUDED`] with a reason.
+//! longer differs fails. A leaf that compares only the connector's fallback
+//! on a preset, the preset stating none of the field it reads, is named in
+//! [`FALLBACK_ONLY`], which fails once the preset states the field. The list
+//! of colour leaves ([`SLICE_SLOTS`]) is held against the contract tables:
+//! every slot they name is in it, or in [`OUTSIDE_SLICE`] with the field
+//! outside the slice it comes from, or in [`EXCLUDED`] with a reason. The
+//! builders compared are held against the public functions of
+//! `src/geometry.rs` and `src/variants.rs`: each is compared or in
+//! [`BUILDERS_OUTSIDE_SLICE`] with a field outside the slice it reads.
 
 use std::fmt::Debug;
 
-use gpui::{Hsla, SharedString};
+use gpui::{Hsla, Length, SharedString, px};
 use gpui_component::theme::{Theme as GpuiTheme, ThemeConfig, ThemeToken};
 use native_theme::next::{Preset, ThemeContext};
+use native_theme::theme::LayoutTheme;
 
 use crate::{AccessibilityPreferences, ColorMode, Native, ResolvedTheme};
 
@@ -247,6 +261,11 @@ struct Difference {
     reason: &'static str,
 }
 
+/// The button height 0.7.2's kde-breeze states, `button.min_height` in
+/// `native-theme/src/presets/kde-breeze.toml`, which [`DIFFERENCES`]' entry
+/// names.
+const KDE_BREEZE_BUTTON_HEIGHT_PX: f32 = 32.0;
+
 /// The listed differences.
 const DIFFERENCES: &[Difference] = &[Difference {
     leaf: "geometry::button",
@@ -260,11 +279,89 @@ const DIFFERENCES: &[Difference] = &[Difference {
              other field of the refinement is equal",
 }];
 
+/// A leaf that, on the presets named, compares only the connector's own
+/// fallback: the 0.7.2 field it reads is unset there, and the 0.8.0 home
+/// unstated. The test asserts the field unset on each, so an entry fails, and
+/// is to be removed, once such a preset states it.
+struct FallbackOnly {
+    leaf: &'static str,
+    field: &'static str,
+    presets: &'static [&'static str],
+    unset: fn(&ResolvedTheme) -> bool,
+}
+
+/// The leaves compared on their fallback only.
+const FALLBACK_ONLY: &[FallbackOnly] = &[
+    FallbackOnly {
+        leaf: "geometry::data_table_size",
+        field: "list.row_height",
+        presets: &["kde-breeze"],
+        unset: |t| t.list.row_height.is_none(),
+    },
+    FallbackOnly {
+        leaf: "geometry::list_header_height",
+        field: "list.header_height",
+        presets: &["kde-breeze"],
+        unset: |t| t.list.header_height.is_none(),
+    },
+];
+
+/// The public builders of `src/geometry.rs` and `src/variants.rs` that read a
+/// field outside the slice, each with one such field: not mapped by the
+/// 0.8.0 side yet.
+const BUILDERS_OUTSIDE_SLICE: &[(&str, &str)] = &[
+    ("geometry::input", "input.min_height"),
+    ("geometry::text_area", "text_area.border.padding"),
+    ("geometry::menu_item", "menu.row_height"),
+    ("geometry::popover", "popover.border.padding"),
+    ("geometry::status_bar", "status_bar.font"),
+    ("geometry::dialog", "dialog.min_width"),
+    ("geometry::dialog_entrance", "dialog.entrance"),
+    ("geometry::dialog_footer", "dialog.button_gap"),
+    ("geometry::dialog_title", "dialog.title_font"),
+    ("geometry::dialog_description", "dialog.body_font"),
+    ("geometry::progress", "progress_bar.track_height"),
+    ("geometry::group_box_content", "card.border.padding"),
+    ("geometry::accordion_title", "expander.header_height"),
+    ("geometry::accordion", "expander.border.color"),
+    ("geometry::accordion_hover", "expander.hover_background"),
+    ("geometry::select", "combo_box.font"),
+    ("geometry::combobox", "combo_box.font"),
+    ("geometry::title_bar", "window.title_bar_font"),
+    (
+        "geometry::title_bar_inactive",
+        "window.inactive_title_bar_background",
+    ),
+    ("geometry::toolbar", "toolbar.font"),
+    ("geometry::spinner_size", "spinner.diameter"),
+    ("geometry::icon_size_toolbar", "toolbar.icon_size"),
+    ("geometry::dialog_max_width", "dialog.max_width"),
+    ("geometry::input_height", "input.min_height"),
+    ("geometry::input_fill", "input.background_color"),
+    ("geometry::combo_box_fill", "combo_box.background_color"),
+    (
+        "geometry::toolbar_button_rest",
+        "toolbar.button_hover_border_color",
+    ),
+    (
+        "geometry::toolbar_button_checked",
+        "toolbar.button_checked_background",
+    ),
+    ("geometry::link", "link.font"),
+    ("variants::switch_color", "switch.checked_background"),
+    (
+        "variants::toolbar_button",
+        "toolbar.button_hover_background",
+    ),
+];
+
 /// The leaves compared and the differences found, for one preset and scheme.
 struct Report {
     label: String,
     preset: &'static str,
     compared: usize,
+    /// The leaves compared or found unmapped, by name.
+    seen: Vec<String>,
     failures: Vec<String>,
 }
 
@@ -275,14 +372,21 @@ impl Report {
             label: format!("{preset}/{scheme}"),
             preset,
             compared: 0,
+            seen: Vec::new(),
             failures: Vec::new(),
         }
+    }
+
+    /// Count `leaf` as compared.
+    fn count(&mut self, leaf: &str) {
+        self.compared += 1;
+        self.seen.push(leaf.to_owned());
     }
 
     /// Compare one leaf; a listed difference fails here, being compared in
     /// its own form by the caller.
     fn leaf<T: PartialEq + Debug>(&mut self, leaf: &str, old: T, new: T) {
-        self.compared += 1;
+        self.count(leaf);
         if old != new {
             self.failures.push(format!(
                 "{}: {leaf}: 0.7.2 {old:?}, 0.8.0 {new:?}",
@@ -296,6 +400,7 @@ impl Report {
         match new {
             Ok(v) => Some(v),
             Err(super::Unmapped(home)) => {
+                self.seen.push(leaf.to_owned());
                 self.failures
                     .push(format!("{}: {leaf}: 0.8.0 lacks {home}", self.label));
                 None
@@ -310,22 +415,29 @@ impl Report {
     }
 }
 
-/// The two resolved themes of `preset` for `is_dark`.
+/// The two resolved themes of `preset` for `is_dark`, and 0.7.2's layout,
+/// which its theme holds beside the variants.
 fn resolve(
     key: &str,
     preset: Preset,
     is_dark: bool,
-) -> crate::Result<(ResolvedTheme, native_theme::next::ResolvedTheme)> {
+) -> crate::Result<(
+    ResolvedTheme,
+    LayoutTheme,
+    native_theme::next::ResolvedTheme,
+)> {
     let (mode, ctx) = if is_dark {
         (ColorMode::Dark, ThemeContext::dark())
     } else {
         (ColorMode::Light, ThemeContext::light())
     };
-    let old = crate::Theme::preset(key)?
+    let theme = crate::Theme::preset(key)?;
+    let layout = theme.layout.clone();
+    let old = theme
         .into_variant(mode)?
         .into_resolved(&native_theme::ResolutionContext::for_tests())?;
     let new = native_theme::next::Theme::preset(preset).resolve(&ctx);
-    Ok((old, new))
+    Ok((old, layout, new))
 }
 
 /// The theme's leaves the slice feeds: the colours, their tokens and
@@ -378,6 +490,15 @@ fn compare_theme(
     report.leaf("shadow", o.shadow, n.shadow);
     report.leaf("focus_ring", o.focus_ring, n.focus_ring);
     report.leaf("scrollbar_mode", o.scrollbar_mode, n.scrollbar_mode);
+    // `variants::ghost_button` reads these three fields and nothing else.
+    let ghost = |t: &GpuiTheme| {
+        (
+            t.colors.secondary_foreground,
+            t.colors.secondary_hover,
+            t.colors.secondary_active,
+        )
+    };
+    report.leaf("variants::ghost_button", ghost(o), ghost(n));
     let (o, n) = (&old_config, &new_config);
     report.leaf("config.mode", o.mode, n.mode);
     report.leaf("config.font_family", &o.font_family, &n.font_family);
@@ -447,26 +568,48 @@ fn compare_scrollbar(
     );
 }
 
+/// Compare a leaf's two values, the 0.8.0 one where mapped.
+fn compare_mapped<T: PartialEq + Debug>(
+    report: &mut Report,
+    leaf: &str,
+    old: T,
+    new: super::Mapped<T>,
+) {
+    if let Some(n) = report.mapped(leaf, new) {
+        report.leaf(leaf, old, n);
+    }
+}
+
 /// Compare a builder's two outputs.
 macro_rules! builder {
     ($report:expr, $old:expr, $new:expr, $name:ident) => {
-        if let Some(n) = $report.mapped(
+        compare_mapped(
+            $report,
             concat!("geometry::", stringify!($name)),
+            crate::geometry::$name(Native::unscaled($old)),
             super::builders::$name($new),
-        ) {
-            $report.leaf(
-                concat!("geometry::", stringify!($name)),
-                crate::geometry::$name(Native::unscaled($old)),
-                n,
-            );
-        }
+        )
     };
 }
 
-/// The `geometry` builders of the slice's widgets.
+/// Compare a layout metric's two values.
+macro_rules! layout_metric {
+    ($report:expr, $layout:expr, $new:expr, $name:ident) => {
+        compare_mapped(
+            $report,
+            concat!("geometry::", stringify!($name)),
+            crate::geometry::$name($layout),
+            super::builders::$name($new),
+        )
+    };
+}
+
+/// The `geometry` builders of the slice's widgets, and the `variants`
+/// builders through the values the connector feeds them with.
 fn compare_builders(
     report: &mut Report,
     old: &ResolvedTheme,
+    layout: &LayoutTheme,
     new: &native_theme::next::ResolvedTheme,
 ) {
     let button = "geometry::button";
@@ -474,10 +617,11 @@ fn compare_builders(
         let o = crate::geometry::button(Native::unscaled(old));
         match report.listed(button) {
             Some(listed) => {
-                report.compared += 1;
+                report.count(button);
                 let mut corrected = o.clone();
                 corrected.size.height = None;
-                if o.size.height.is_none() || corrected != n {
+                let stated = Some(Length::from(px(KDE_BREEZE_BUTTON_HEIGHT_PX)));
+                if o.size.height != stated || n.size.height.is_some() || corrected != n {
                     report.failures.push(format!(
                         "{}: {button}: the listed difference ({}) no longer describes \
                          it: 0.7.2 {o:?}, 0.8.0 {n:?}",
@@ -507,6 +651,44 @@ fn compare_builders(
     builder!(report, old, new, icon_size_dialog);
     builder!(report, old, new, icon_size_panel);
     builder!(report, old, new, scrollbar_gutter);
+    builder!(report, old, new, input_group_button);
+    builder!(report, old, new, editor);
+    builder!(report, old, new, list_item);
+    layout_metric!(report, layout, new, widget_gap);
+    layout_metric!(report, layout, new, container_margin);
+    layout_metric!(report, layout, new, window_margin);
+    layout_metric!(report, layout, new, section_gap);
+    compare_mapped(
+        report,
+        "variants::bordered_button",
+        crate::variants::hover_border(Native::unscaled(old)),
+        super::builders::hover_border(new),
+    );
+    compare_mapped(
+        report,
+        "variants::default_button",
+        crate::variants::default_button_states(Native::unscaled(old)),
+        super::builders::default_button_states(new),
+    );
+}
+
+/// Every leaf of `preset` for `is_dark`, compared.
+fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Result<Report> {
+    let (old, layout, new) = resolve(key, preset, is_dark)?;
+    let mut report = Report::new(key, is_dark);
+    compare_theme(&mut report, &old, &new, is_dark);
+    compare_scrollbar(&mut report, &old, &new);
+    compare_builders(&mut report, &old, &layout, &new);
+    for entry in FALLBACK_ONLY {
+        if entry.presets.contains(&key) && !(entry.unset)(&old) {
+            report.failures.push(format!(
+                "{}: {}: {} is stated, so the leaf no longer compares only the fallback: \
+                 remove the preset from its FALLBACK_ONLY entry",
+                report.label, entry.leaf, entry.field
+            ));
+        }
+    }
+    Ok(report)
 }
 
 #[test]
@@ -514,11 +696,7 @@ fn the_slice_maps_to_the_same_leaves_from_both_models() -> crate::Result<()> {
     let mut failures = Vec::new();
     for &(key, preset) in PRESETS {
         for is_dark in [false, true] {
-            let (old, new) = resolve(key, preset, is_dark)?;
-            let mut report = Report::new(key, is_dark);
-            compare_theme(&mut report, &old, &new, is_dark);
-            compare_scrollbar(&mut report, &old, &new);
-            compare_builders(&mut report, &old, &new);
+            let report = compare_all(key, preset, is_dark)?;
             println!("{}: {} leaves compared", report.label, report.compared);
             failures.extend(report.failures);
         }
@@ -529,6 +707,75 @@ fn the_slice_maps_to_the_same_leaves_from_both_models() -> crate::Result<()> {
         failures.len(),
         failures.join("\n")
     );
+    Ok(())
+}
+
+/// The names of the top-level `pub fn`s of the source `src`, each after
+/// `module::`.
+fn public_fns(module: &str, src: &str) -> Vec<String> {
+    src.lines()
+        .filter_map(|line| line.strip_prefix("pub fn "))
+        .filter_map(|rest| rest.split(['(', '<']).next())
+        .map(|name| format!("{module}::{name}"))
+        .collect()
+}
+
+#[test]
+fn every_builder_is_compared_or_accounted_for() -> crate::Result<()> {
+    let public: Vec<String> = public_fns("geometry", include_str!("../geometry.rs"))
+        .into_iter()
+        .chain(public_fns("variants", include_str!("../variants.rs")))
+        .collect();
+    let mut compared = Vec::new();
+    for &(key, preset) in PRESETS {
+        for is_dark in [false, true] {
+            compared.extend(compare_all(key, preset, is_dark)?.seen);
+        }
+    }
+    let outside = |b: &str| BUILDERS_OUTSIDE_SLICE.iter().any(|(name, _)| *name == b);
+    let missing: Vec<&String> = public
+        .iter()
+        .filter(|b| !compared.contains(b) && !outside(b))
+        .collect();
+    let both: Vec<&String> = public
+        .iter()
+        .filter(|b| compared.contains(b) && outside(b))
+        .collect();
+    let unknown: Vec<&str> = BUILDERS_OUTSIDE_SLICE
+        .iter()
+        .map(|(name, _)| *name)
+        .filter(|name| !public.iter().any(|b| b == name))
+        .collect();
+    assert!(
+        !public.is_empty() && missing.is_empty() && both.is_empty() && unknown.is_empty(),
+        "public builders neither compared nor in BUILDERS_OUTSIDE_SLICE: {missing:?}; \
+         compared and in BUILDERS_OUTSIDE_SLICE: {both:?}; in BUILDERS_OUTSIDE_SLICE but \
+         no public builder: {unknown:?}"
+    );
+    Ok(())
+}
+
+#[test]
+fn every_fallback_only_entry_names_a_compared_leaf_and_a_covered_preset() -> crate::Result<()> {
+    for entry in FALLBACK_ONLY {
+        for preset in entry.presets {
+            let covered = PRESETS.iter().find(|(key, _)| key == preset);
+            assert!(
+                covered.is_some(),
+                "{}: {preset} is not a preset the test covers",
+                entry.leaf
+            );
+            let Some(&(key, p)) = covered else {
+                continue;
+            };
+            let report = compare_all(key, p, false)?;
+            assert!(
+                report.seen.iter().any(|leaf| leaf == entry.leaf),
+                "{}: not a leaf the test compares",
+                entry.leaf
+            );
+        }
+    }
     Ok(())
 }
 
