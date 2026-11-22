@@ -399,8 +399,7 @@ fn outline_color(stroke: &Stroke) -> Option<Color> {
 }
 
 /// Whether each channel of `got` is within one 8-bit step of the measured
-/// pixel `measured`, `0xRRGGBB`: the measurement is 8-bit, and Qt blends a
-/// translucent colour over a pixel in 8 bits.
+/// pixel `measured`, `0xRRGGBB`.
 fn near_pixel(got: Color, measured: u32) -> bool {
     let [_, r, g, b] = measured.to_be_bytes();
     let [got_r, got_g, got_b, _] = got.to_srgb8();
@@ -411,41 +410,57 @@ fn near_pixel(got: Color, measured: u32) -> bool {
 
 const UNFOCUSED_HOVER: WidgetState = WidgetState::HOVER.union(WidgetState::UNFOCUSED_VIEW);
 
-/// `L2`, a hovered row in a view without the focus:
+/// `L2`, a hovered row in a view without the focus, is derived: E5's hover
+/// alphas, 0.3 for the fill and 0.8 for the outline, on the Inactive group's
+/// Highlight, the inactive selection #c2e0f5 / #1b4155
+/// (`selection_inactive_background`: platform-facts.md (§2.1.3)).
 /// `docs/issues/0004_kde-leftovers-rationale.md` (L2) measures the row #ecf5fb /
-/// #16232b and the outline's pixel #cce5f7 / #1a3a4b, the rows drawn from the
-/// Inactive group; Breeze fills a hovered row with Highlight at 0.3 and
-/// outlines it 1 px in Highlight at 0.8, the line lying half a pixel in over a
-/// half-covered edge pixel (E5).
+/// #16232b and the outline's pixel #cce5f7 / #1a3a4b. The outline's pixel is
+/// exact, the line lying half a pixel in over a half-covered edge pixel (E5).
+/// The fill is within one 8-bit step: over the view the rule gives #edf6fc /
+/// #16232a; that residual is not explained.
 #[test]
 fn a_hovered_row_in_a_view_without_the_focus_is_drawn_from_the_inactive_group() -> TestResult {
     let [light, dark] = both_schemes();
-    for (theme, row_pixel, edge_pixel) in [
-        (light, 0x00ec_f5fb, 0x00cc_e5f7),
-        (dark, 0x0016_232b, 0x001a_3a4b),
+    for (theme, inactive_highlight, row_pixel, edge_pixel) in [
+        (
+            light,
+            Color::from_srgb8(0xc2, 0xe0, 0xf5, 0xff),
+            0x00ec_f5fb,
+            [0xcc, 0xe5, 0xf7, 0xff],
+        ),
+        (
+            dark,
+            Color::from_srgb8(0x1b, 0x41, 0x55, 0xff),
+            0x0016_232b,
+            [0x1a, 0x3a, 0x4b, 0xff],
+        ),
     ] {
         let scheme = theme.context.scheme;
         let row = theme.list.row(ListQuery::new(UNFOCUSED_HOVER));
         let fill = solid(&row.fill).ok_or("no fill")?;
         let stroke = outline_color(&row.stroke).ok_or("no outline")?;
+        assert_eq!(
+            fill.to_srgb8(),
+            inactive_highlight.with_alpha(0.3).to_srgb8(),
+            "{scheme:?}"
+        );
+        assert_eq!(
+            stroke.to_srgb8(),
+            inactive_highlight.with_alpha(0.8).to_srgb8(),
+            "{scheme:?}"
+        );
         let view = theme.colors.view.background.ok_or("no view background")?;
         assert!(
             near_pixel(fill.composite_over(view), row_pixel),
             "{scheme:?} {fill:?}"
         );
         let half_covered = fill.with_alpha(fill.a * 0.5).composite_over(view);
-        assert!(
-            near_pixel(stroke.composite_over(half_covered), edge_pixel),
+        assert_eq!(
+            stroke.composite_over(half_covered).to_srgb8(),
+            edge_pixel,
             "{scheme:?} {stroke:?}"
         );
-        // The rule: the Inactive group's Highlight, the inactive selection, at 0.3 and at 0.8.
-        let inactive = theme
-            .colors
-            .selection
-            .unfocused_background
-            .ok_or("no inactive selection")?;
-        assert_eq!(fill.to_srgb8(), inactive.with_alpha(0.3).to_srgb8());
-        assert_eq!(stroke.to_srgb8(), inactive.with_alpha(0.8).to_srgb8());
     }
     Ok(())
 }
@@ -471,8 +486,9 @@ fn a_hovered_row_without_the_focus_is_over_the_hovered_row_and_under_the_selecti
 
 /// `L2` on a colour scheme other than Breeze's: the hovered row of a view
 /// without the focus takes that scheme's inactive selection colour at 0.3 and
-/// at 0.8 (E5); the inactive selection is the one reader parity proves equal
-/// to 0.7.2's `selection_inactive_background` on this file.
+/// at 0.8 (E5). The file states no inactive selection; KColorScheme builds it
+/// from the file's Window and Selection colours, and 0.7.2's KDE reader gives
+/// #6d3b0e on this file (`selection_inactive_background`).
 #[cfg(all(target_os = "linux", feature = "kde"))]
 #[test]
 fn a_hovered_row_without_the_focus_follows_the_system_s_inactive_selection() -> TestResult {
@@ -487,53 +503,71 @@ fn a_hovered_row_without_the_focus_follows_the_system_s_inactive_selection() -> 
         .with_system_overrides(snapshot.overrides)
         .resolve(&snapshot.context);
     let breeze = Theme::preset(Preset::KdeBreeze).resolve(&snapshot.context);
-    let inactive = theme
-        .colors
-        .selection
-        .unfocused_background
-        .ok_or("no inactive selection")?;
-    assert_ne!(Some(inactive), breeze.colors.selection.unfocused_background);
+    let inactive = Color::from_srgb8(0x6d, 0x3b, 0x0e, 0xff);
     let row = theme.list.row(ListQuery::new(UNFOCUSED_HOVER));
     let fill = solid(&row.fill).ok_or("no fill")?;
     let stroke = outline_color(&row.stroke).ok_or("no outline")?;
     assert_eq!(fill.to_srgb8(), inactive.with_alpha(0.3).to_srgb8());
     assert_eq!(stroke.to_srgb8(), inactive.with_alpha(0.8).to_srgb8());
-    // `S3` on the same file: the focused view's handle unstated, the plain one derived.
-    assert!(
-        !theme
-            .scrollbar
-            .thumb(WidgetState::NONE)
-            .stated
-            .contains(PartStated::FILL)
-    );
+    // `S3` on the same file: the plain handle, derived, in every view.
+    let plain = theme.scrollbar.thumb(WidgetState::UNFOCUSED_VIEW);
     assert_ne!(
-        theme.scrollbar.thumb(WidgetState::UNFOCUSED_VIEW).fill,
+        plain.fill,
         breeze.scrollbar.thumb(WidgetState::UNFOCUSED_VIEW).fill
+    );
+    assert_eq!(theme.scrollbar.thumb(WidgetState::NONE), plain);
+    // `S4` on the same file: derived from the file's window colours.
+    let bar_hover = theme.scrollbar.thumb(BAR_HOVER_UNFOCUSED);
+    assert!(bar_hover.stated.contains(PartStated::FILL));
+    assert_ne!(bar_hover.fill, plain.fill);
+    assert_ne!(
+        bar_hover.fill,
+        breeze.scrollbar.thumb(BAR_HOVER_UNFOCUSED).fill
     );
     Ok(())
 }
 
-/// `L4`, a row's own box: its radius,
-/// `docs/issues/0004_kde-leftovers-rationale.md` (L4, E5): "Breeze rounds a
-/// list's highlight 4.5 and draws a table's square"; the highlight's margins
-/// as before (`list.border.padding`, platform-facts.md (§2.15)).
+/// `L4`, a row's own box: the highlight's radius,
+/// `docs/issues/0004_kde-leftovers-rationale.md` (E5, L4): "Breeze rounds a
+/// list's highlight 4.5 and draws a table's square", so a row at rest, an
+/// alternate one too, states no corners; the highlight's margins as before
+/// (`list.border.padding`, platform-facts.md (§2.15)).
 #[test]
-fn a_row_is_rounded_4_5_and_a_table_row_is_square() {
+fn a_row_s_highlight_is_rounded_4_5_and_a_table_row_is_square() {
     for theme in both_schemes() {
         let scheme = theme.context.scheme;
+        for alternate in [false, true] {
+            let rest = theme
+                .list
+                .row(ListQuery::new(WidgetState::NONE).alternate(alternate));
+            assert!(
+                !rest.stated.contains(PartStated::CORNERS),
+                "{scheme:?} {alternate}"
+            );
+            assert_eq!(rest.margin, Edges::symmetric(1.0, 2.0), "{scheme:?}");
+        }
+        for state in [
+            WidgetState::HOVER,
+            UNFOCUSED_HOVER,
+            WidgetState::SELECTED,
+            WidgetState::SELECTED.union(WidgetState::HOVER),
+        ] {
+            for alternate in [false, true] {
+                let row = theme.list.row(ListQuery::new(state).alternate(alternate));
+                assert_eq!(row.corners, Corners::uniform(4.5), "{scheme:?} {state:?}");
+                assert_eq!(
+                    row.margin,
+                    Edges::symmetric(1.0, 2.0),
+                    "{scheme:?} {state:?}"
+                );
+            }
+        }
         for state in [
             WidgetState::NONE,
             WidgetState::HOVER,
             UNFOCUSED_HOVER,
             WidgetState::SELECTED,
         ] {
-            let row = theme.list.row(ListQuery::new(state));
-            assert_eq!(row.corners, Corners::uniform(4.5), "{scheme:?} {state:?}");
-            assert_eq!(
-                row.margin,
-                Edges::symmetric(1.0, 2.0),
-                "{scheme:?} {state:?}"
-            );
             let table = theme
                 .list
                 .row(ListQuery::from(ListVariant::Table).state(state));
@@ -572,27 +606,67 @@ fn the_handle_of_the_focused_view_and_of_a_view_without_the_focus() {
 }
 
 /// `S3` under the system's colours: Breeze's measured handle is no other
-/// scheme's colour, so the focused view's handle is unstated; the plain
-/// handle stays, and no rule is dead.
+/// scheme's colour, and Breeze's rule, `focusColor()` through the idle
+/// handle's overlay, does not reproduce it (#d0e4ef / #253b48 on Breeze's
+/// colours), so the handle at rest is the plain handle in every view, as
+/// 0.7.2 draws it. A system without window colours states no `S4`: that
+/// query returns the plain handle. No rule is dead.
 #[test]
-fn the_focused_view_s_handle_is_unstated_under_the_system_s_colours() {
+fn the_handle_at_rest_is_the_plain_handle_under_the_system_s_colours() {
     let theme = with_system(None);
-    assert!(
-        !theme
-            .scrollbar
-            .thumb(WidgetState::NONE)
-            .stated
-            .contains(PartStated::FILL)
-    );
     let [light, _] = both_schemes();
-    assert_eq!(
-        theme.scrollbar.thumb(WidgetState::UNFOCUSED_VIEW),
-        light.scrollbar.thumb(WidgetState::UNFOCUSED_VIEW)
-    );
+    let plain = light.scrollbar.thumb(WidgetState::UNFOCUSED_VIEW);
+    for state in [
+        WidgetState::NONE,
+        WidgetState::UNFOCUSED_VIEW,
+        WidgetState::HOVER_WITHIN,
+        BAR_HOVER_UNFOCUSED,
+    ] {
+        assert_eq!(theme.scrollbar.thumb(state), plain, "{state:?}");
+    }
+    assert!(plain.stated.contains(PartStated::FILL));
     let dead: Vec<_> = theme
         .dead_rules()
         .into_iter()
         .filter(|(_, rules)| !rules.is_empty())
         .collect();
     assert!(dead.is_empty(), "{dead:?}");
+}
+
+const BAR_HOVER_UNFOCUSED: WidgetState =
+    WidgetState::HOVER_WITHIN.union(WidgetState::UNFOCUSED_VIEW);
+
+/// `S4`, the handle of a view without the focus with the pointer on the bar
+/// but off the handle: the idle handle's overlay at the factor 1, #bcbebf /
+/// #57595b (`scrollbar.thumb_color`: platform-facts.md (§2.8), computed). The
+/// hovered and the pressed handle are over it; in the view that has the focus
+/// no source states this state, and the query returns the focused view's
+/// handle at rest.
+#[test]
+fn the_handle_with_the_pointer_on_the_bar_in_a_view_without_the_focus() {
+    let [light, dark] = both_schemes();
+    for (theme, bar_hover) in [
+        (light, [0xbc, 0xbe, 0xbf, 0xff]),
+        (dark, [0x57, 0x59, 0x5b, 0xff]),
+    ] {
+        let scheme = theme.context.scheme;
+        let thumb = |state| theme.scrollbar.thumb(state);
+        assert_eq!(
+            solid(&thumb(BAR_HOVER_UNFOCUSED).fill).map(Color::to_srgb8),
+            Some(bar_hover),
+            "{scheme:?}"
+        );
+        for state in [WidgetState::HOVER, WidgetState::PRESSED] {
+            assert_eq!(
+                thumb(state.union(BAR_HOVER_UNFOCUSED)),
+                thumb(state),
+                "{scheme:?} {state:?}"
+            );
+        }
+        assert_eq!(
+            thumb(WidgetState::HOVER_WITHIN),
+            thumb(WidgetState::NONE),
+            "{scheme:?}"
+        );
+    }
 }

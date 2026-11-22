@@ -34,18 +34,48 @@
 //! - the button's body: the primary fill over the pressed, checked and
 //!   default fills, as 0.7.2's connectors keep `primary_background` in every
 //!   state, and the disabled fill over it;
-//! - the list's row: a table's square corners over the row's radius
-//!   (`docs/issues/0004_kde-leftovers-rationale.md`, E5: "Breeze rounds a
-//!   list's highlight 4.5 and draws a table's square"); the hovered row of a
-//!   view without the focus (`HOVER | UNFOCUSED_VIEW`) over the hovered row
-//!   (`HOVER`), as such a view draws its rows from the Inactive group (the
-//!   rationale, L2); the selection's fill over both, and neither hover outline
-//!   on a selected row, as Breeze fills and outlines "a hovered, unselected
-//!   row" (the rationale, E5);
-//! - the scroll bar's handle: the hovered and the pressed handle over the
-//!   handle of a view without the focus (`UNFOCUSED_VIEW`), as 0.7.2's
-//!   hovered handle has one colour whatever the view's focus
-//!   (`scrollbar.thumb_hover_color`: platform-facts.md (§2.8)).
+//! - the list's row: the hovered row of a view without the focus
+//!   (`HOVER | UNFOCUSED_VIEW`) over the hovered row (`HOVER`), as such a
+//!   view draws its rows from the Inactive group
+//!   (`docs/issues/0004_kde-leftovers-rationale.md`, L2); the selection's fill
+//!   over both, and neither hover outline on a selected row, as Breeze fills
+//!   and outlines "a hovered, unselected row" (the rationale, E5); a table's
+//!   square corners over the highlight's radius, the table's rule last (E5:
+//!   "Breeze rounds a list's highlight 4.5 and draws a table's square");
+//! - the scroll bar's handle: the handle of a view without the focus with the
+//!   pointer on the bar but off the handle (`HOVER_WITHIN | UNFOCUSED_VIEW`)
+//!   over that view's handle (`UNFOCUSED_VIEW`), its rule after that one;
+//!   the hovered and the pressed handle over both, their rules last, as the
+//!   pointer on the handle is on the bar too and 0.7.2's hovered handle has
+//!   one colour whatever the view's focus (`scrollbar.thumb_hover_color`:
+//!   platform-facts.md (§2.8)). In the view that has the focus no source
+//!   states the handle with the pointer on the bar but off the handle: that
+//!   query (`HOVER_WITHIN`) returns the focused view's handle at rest.
+//!
+//! Issue #4's states (spec §5, "Issue #4's leftovers and their homes"):
+//! - `L2`, a hovered row in a view without the focus, is derived: E5's hover
+//!   alphas, 0.3 for the fill and 0.8 for the outline, applied to the
+//!   Highlight of the Inactive colour group, the inactive selection (the
+//!   rationale, L2: such a view's rows are "drawn … from the Inactive
+//!   group"). Against the rationale's measurements the rule gives the
+//!   outline's edge pixel exactly (#cce5f7 / #1a3a4b, under E5's
+//!   half-covered pixel) and the row's fill within one 8-bit step (#edf6fc /
+//!   #16232a over the view, measured #ecf5fb / #16232b); that residual is
+//!   not explained.
+//! - `L4`, a row's own box: its highlight margins in the row's base, and the
+//!   highlight's 4.5 corners on the rules that draw a highlight (the hovered
+//!   rows and the selection), so a row at rest, an alternate row's stripe
+//!   too, states no corners.
+//! - `S3`, the handle in the view that has the focus: Breeze's measured
+//!   colour. Under the system's colours the handle at rest is the plain
+//!   handle in every view, as 0.7.2 draws it: Breeze's rule, `focusColor()`
+//!   (platform-facts.md (§2.8)), through the idle handle's overlay gives
+//!   #d0e4ef / #253b48 on Breeze's colours, not the measured #b1d9ef /
+//!   #2a546b, so no derivation from another scheme's colours is stated.
+//! - `S4`, the handle of a view without the focus with the pointer on the
+//!   bar but off the handle: the idle handle's overlay at the factor 1
+//!   instead of 0.7 (platform-facts.md (§2.8)), from the window's colours
+//!   where they are stated.
 //!
 //! The system's scheme-independent settings apply wherever given: the UI,
 //! monospace and caption fonts (with the headings derived from the UI font),
@@ -65,7 +95,7 @@
 //! `src/resolve/validate_helpers.rs`) where 0.7.2 fills a value the TOML does
 //! not state; `docs/issues/0004_kde-leftovers-rationale.md` for issue #4's
 //! states 0.7.2 has no field for (spec §5, "Issue #4's leftovers and their
-//! homes": `L2`, `L4`, `S3`).
+//! homes": `L2`, `L4`, `S3`, `S4`).
 
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -162,9 +192,14 @@ struct SchemeColors {
     tooltip_foreground: Color,
     selection_unfocused_foreground: Color,
     /// The handle in the view that has the focus: Breeze's measured colour,
-    /// for which no rule from the scheme's colours is stated, so unstated
+    /// which no derivation from the scheme's colours reproduces, so none
     /// where the system's colours apply.
     scrollbar_thumb_focused: Option<Color>,
+    /// The handle of a view without the focus with the pointer on the bar
+    /// but off the handle: no constant; [`resolve`] computes it from the
+    /// window's colours ([`bar_hover_handle`]), under the system's colours
+    /// only where the system states both.
+    scrollbar_thumb_bar_hover: Option<Color>,
     /// The caret's colour where stated: `[Colors:View]` DecorationFocus where
     /// the system states it; unstated, 0.7.2's `input.caret_color` rule,
     /// `defaults.text_color` (`src/resolve/inheritance.rs`,
@@ -381,6 +416,7 @@ const LIGHT: SchemeColors = SchemeColors {
     // `scrollbar.thumb` in the view that has the focus: docs/issues/0004_kde-leftovers-rationale.md
     // (S3): measured #b1d9ef (docs/evidence/breeze-offscreen/2026-11-13/)
     scrollbar_thumb_focused: Some(srgb8(0xb1d9_efff)),
+    scrollbar_thumb_bar_hover: None,
     caret: None,
     view_foreground_muted: None,
     // `link.visited_text_color`: platform-facts.md (§2.28): [Colors:View] ForegroundVisited
@@ -596,6 +632,7 @@ const DARK: SchemeColors = SchemeColors {
     // `scrollbar.thumb` in the view that has the focus: docs/issues/0004_kde-leftovers-rationale.md
     // (S3): measured #2a546b (docs/evidence/breeze-offscreen/2026-11-13/)
     scrollbar_thumb_focused: Some(srgb8(0x2a54_6bff)),
+    scrollbar_thumb_bar_hover: None,
     caret: None,
     view_foreground_muted: None,
     // `link.visited_text_color`: platform-facts.md (§2.28): [Colors:View] ForegroundVisited
@@ -822,8 +859,8 @@ const LIST_ROW_MARGIN_HORIZONTAL: f32 = 2.0;
 const LIST_ROW_MARGIN_VERTICAL: f32 = 1.0;
 
 /// The radius of a list row's highlight (spec §5, `L4`).
-// `list.row` corners: docs/issues/0004_kde-leftovers-rationale.md (L4, E5): Breeze rounds a list's
-// highlight 4.5 and draws a table's square (breeze f0b1d753)
+// `list.row` corners: docs/issues/0004_kde-leftovers-rationale.md (E5, L4): Breeze rounds a list's
+// highlight 4.5 and draws a table's square
 const LIST_ROW_RADIUS: f32 = 4.5;
 
 /// The groove's thickness across the bar.
@@ -953,6 +990,14 @@ const SCROLLBAR_HANDLE_ALPHA: f32 = 0.5;
 /// f0b1d75, with animations on, their default (breeze.kcfg:45-47);
 /// docs/platform-facts.md §2.8.
 const SCROLLBAR_IDLE_HANDLE_ALPHA: f32 = 0.175;
+
+/// The alpha of the window text over the window in a Breeze scroll-bar handle
+/// with the pointer on the bar but off the handle: the handle colour
+/// `WindowText` at 0.5 (breezehelper.cpp:279), times the factor 1 on the bar
+/// in place of 0.7 (breezestyle.cpp:6401-6403), filled at half of that over
+/// the window (breezehelper.cpp:1284, :349-355; breezestyle.cpp:6405) at
+/// breeze f0b1d75; docs/platform-facts.md §2.8.
+const SCROLLBAR_BAR_HOVER_HANDLE_ALPHA: f32 = 0.25;
 
 // ---------------------------------------------------------------------------
 // The colours from the constants and the system's settings
@@ -1136,6 +1181,17 @@ fn lay_system_over(c: &mut SchemeColors, os: &OsColors) {
             .zip(window_fg)
             .map(|(bg, fg)| overlay(bg, fg, SCROLLBAR_IDLE_HANDLE_ALPHA)),
     );
+    c.scrollbar_thumb_bar_hover = window_bg
+        .zip(window_fg)
+        .map(|(bg, fg)| bar_hover_handle(bg, fg));
+}
+
+/// Breeze's handle of a view without the focus with the pointer on the bar
+/// but off the handle, over the window `window` with the window text `text`:
+/// the idle handle's overlay at the factor 1 ([`SCROLLBAR_BAR_HOVER_HANDLE_ALPHA`];
+/// platform-facts.md (§2.8)).
+fn bar_hover_handle(window: Color, text: Color) -> Color {
+    overlay(window, text, SCROLLBAR_BAR_HOVER_HANDLE_ALPHA)
 }
 
 /// `value` in `slot` where given.
@@ -1229,6 +1285,10 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
         Scheme::Light => LIGHT,
         Scheme::Dark => DARK,
     };
+    scheme_colors.scrollbar_thumb_bar_hover = Some(bar_hover_handle(
+        scheme_colors.window_background,
+        scheme_colors.window_foreground,
+    ));
     let system = inputs.system;
     let os = system.and_then(|s| s.colors_for(ctx.scheme, ctx.contrast));
     if let Some(os) = os {
@@ -1832,22 +1892,21 @@ fn list(
     });
     // `L2`: a view without the focus draws its rows from the Inactive group
     // (docs/issues/0004_kde-leftovers-rationale.md, L2), so its hovered row takes the inactive
-    // selection colour at the alphas of a focused view's (E5).
+    // selection colour at the alphas of a focused view's (E5): derived, the outline's measured
+    // pixel exact and the fill's within one 8-bit step, a residual not explained.
     let unfocused_hover = WidgetState::HOVER.union(WidgetState::UNFOCUSED_VIEW);
     let inactive_highlight = c.selection_unfocused_background;
+    // `L4`: the corners are the highlight's, so only the rules that draw one state them.
+    let highlight_corners = PartProp::Corners(Corners::uniform(LIST_ROW_RADIUS));
     let row = RuleBuilder::new(PartStyle::default())
-        .base([
-            PartProp::Margin(Edges::symmetric(
-                LIST_ROW_MARGIN_VERTICAL,
-                LIST_ROW_MARGIN_HORIZONTAL,
-            )),
-            PartProp::Corners(Corners::uniform(LIST_ROW_RADIUS)),
-        ])
-        .rule(table, [PartProp::Corners(Corners::NONE)])
+        .base([PartProp::Margin(Edges::symmetric(
+            LIST_ROW_MARGIN_VERTICAL,
+            LIST_ROW_MARGIN_HORIZONTAL,
+        ))])
         .rule(alternate, [fill(c.list_alternate_row)])
         .rule(
             RuleSelector::on(WidgetState::HOVER),
-            [fill(c.list_row_hover)],
+            [fill(c.list_row_hover), highlight_corners.clone()],
         )
         // `list.hover_border_color`: "the 1 px outline of a hovered, unselected row".
         .rule(
@@ -1856,7 +1915,10 @@ fn list(
         )
         .rule(
             RuleSelector::on(unfocused_hover),
-            [fill(translucent(inactive_highlight, BLEND_VALUE))],
+            [
+                fill(translucent(inactive_highlight, BLEND_VALUE)),
+                highlight_corners.clone(),
+            ],
         )
         .rule(
             RuleSelector::on(unfocused_hover).except(WidgetState::SELECTED),
@@ -1867,8 +1929,9 @@ fn list(
         )
         .rule(
             RuleSelector::on(WidgetState::SELECTED),
-            [fill(roles.selection.background)],
+            [fill(roles.selection.background), highlight_corners],
         )
+        .rule(table, [PartProp::Corners(Corners::NONE)])
         .build();
     let item_label = RuleBuilder::new(label(&typography.body, roles.view.foreground))
         .rule(
@@ -1909,7 +1972,9 @@ fn list(
 
 /// The scroll bar: a groove without fill and a handle of exact thicknesses
 /// across the bar; the handle at rest is the focused view's handle (spec §5,
-/// `S3`) where stated, and in a view without the focus 0.7.2's plain handle;
+/// `S3`) where stated, with 0.7.2's plain handle in a view without the focus,
+/// else the plain handle in every view; in a view without the focus with the
+/// pointer on the bar but off the handle, the handle of `S4` where stated;
 /// the hovered one serves the pressed one too (`scrollbar.thumb_active_color`:
 /// platform-facts.md (§2.8), "no pressed colour of its own, the hovered
 /// one").
@@ -1936,14 +2001,20 @@ fn scrollbar(c: &SchemeColors) -> ScrollbarWidget {
         SCROLLBAR_GROOVE_WIDTH,
     )
     .build();
+    let unfocused_view = c
+        .scrollbar_thumb_focused
+        .map(|_| RuleSelector::on(WidgetState::UNFOCUSED_VIEW));
     let thumb = exact(
         RuleBuilder::with_exclusive(PartStyle::default(), PRESSED_HOVER)
-            .base(c.scrollbar_thumb_focused.map(fill)),
+            .base([fill(c.scrollbar_thumb_focused.unwrap_or(c.scrollbar_thumb))]),
         SCROLLBAR_THUMB_WIDTH,
     )
-    .rule(
-        RuleSelector::on(WidgetState::UNFOCUSED_VIEW),
-        [fill(c.scrollbar_thumb)],
+    .rules(unfocused_view, [fill(c.scrollbar_thumb)])
+    .rules(
+        c.scrollbar_thumb_bar_hover.map(|_| {
+            RuleSelector::on(WidgetState::HOVER_WITHIN.union(WidgetState::UNFOCUSED_VIEW))
+        }),
+        c.scrollbar_thumb_bar_hover.map(fill),
     )
     .rules(
         [
