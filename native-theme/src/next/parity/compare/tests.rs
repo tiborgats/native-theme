@@ -521,6 +521,101 @@ fn an_old_null_under_a_state_is_the_property_at_the_reference_state() -> TestRes
     Ok(())
 }
 
+const STATED_FOR_A_STATE: &str = r#"
+[[row]]
+key = "s.hover_fill"
+homes = ["button.body(HOVER).fill"]
+[[row]]
+key = "s.pressed_fill"
+homes = ["button.body(PRESSED).fill"]
+[[row]]
+key = "s.checked_hover"
+homes = ["checkbox.indicator(HOVER|CHECKED).stroke.color"]
+null_reference = "CHECKED"
+"#;
+
+/// [`theme`] with a button body that restates its rest fill for `HOVER`, and a check box indicator with a
+/// stroke for `CHECKED`.
+fn stated_for_a_state() -> ResolvedTheme {
+    let mut t = theme();
+    t.button = ButtonWidget::new(
+        WidgetOrigin::Native,
+        RuleBuilder::new(PartStyle::default())
+            .base([PartProp::Fill(Paint::Solid(srgb(FACE)))])
+            .rule(
+                RuleSelector::on(WidgetState::HOVER),
+                [PartProp::Fill(Paint::Solid(srgb(FACE)))],
+            )
+            .build(),
+        RuleBuilder::new(TextStyle::default()).build(),
+        RuleBuilder::new(IconStyle::default()).build(),
+        4.0,
+        None,
+    );
+    t.checkbox = CheckboxWidget::new(
+        WidgetOrigin::Native,
+        RuleBuilder::new(PartStyle::default())
+            .base([PartProp::Stroke(Stroke::uniform(1.0, srgb(STROKE)))])
+            .rule(
+                RuleSelector::on(WidgetState::CHECKED),
+                [PartProp::Stroke(Stroke::uniform(1.0, srgb(COLOR)))],
+            )
+            .build(),
+        RuleBuilder::new(IconStyle::default()).build(),
+        RuleBuilder::new(TextStyle::default()).build(),
+        6.0,
+        None,
+    );
+    t
+}
+
+#[test]
+fn an_old_null_under_a_state_needs_its_from_state_bit_as_at_the_reference() -> TestResult {
+    let old = json!({ "s": { "hover_fill": null, "pressed_fill": null, "checked_hover": null } });
+    let report = compare_rows(
+        &rows(STATED_FOR_A_STATE)?,
+        &old,
+        &stated_for_a_state(),
+        None,
+        Preset::KdeBreeze,
+    )?;
+    // The hover fill equals the rest fill, but a rule states it for `HOVER`: 0.7.2's null says there is
+    // none. No rule for `PRESSED`, and the `CHECKED` rule sets the bit at the reference too: equal.
+    assert_eq!(report.mismatched_keys(), vec!["s.hover_fill"], "{report}");
+    let Some(Outcome::Mismatch(homes)) = report.rows.first().map(|r| &r.outcome) else {
+        return Err(format!("the first row does not mismatch: {report}").into());
+    };
+    assert_eq!(
+        homes
+            .iter()
+            .map(|m| (m.home.as_str(), m.new.ends_with("`from_state` set")))
+            .collect::<Vec<_>>(),
+        vec![(
+            "button.body(HOVER).fill against button.body(NONE).fill",
+            true
+        )]
+    );
+    Ok(())
+}
+
+#[test]
+fn an_old_value_under_a_state_is_compared_whatever_its_from_state_bit() -> TestResult {
+    // FACE, the value stated for `HOVER`.
+    let report = one_row(
+        "button.body(HOVER).fill",
+        json!("#fcfcfc"),
+        &stated_for_a_state(),
+    )?;
+    assert!(report.mismatched_keys().is_empty(), "{report}");
+    let other = one_row(
+        "button.body(HOVER).fill",
+        json!("#000000"),
+        &stated_for_a_state(),
+    )?;
+    assert_eq!(other.mismatched_keys(), vec!["x.v"], "{other}");
+    Ok(())
+}
+
 const FALLBACKS: &str = r#"
 [[row]]
 key = "f.radio_width"

@@ -9,7 +9,10 @@
 //! `Option` slot, metric or global. An old value against an unstated home is a mismatch, and so is an old
 //! `null` against a stated one. An old `null` at a ruled part's property under a state is no rule for that
 //! state (spec §5, notes to the table): the property there, value and `stated` bit, must equal the same
-//! property at the reference state, `NONE` or the row's `null_reference` where the home's state holds it. Spec §5's notes add the special homes: a part's `shadows` against 0.7.2's
+//! property at the reference state, `NONE` or the row's `null_reference` where the home's state holds it,
+//! and so must its `from_state` bit, which is clear at `NONE` (spec §2: a value stated for the state, even
+//! one equal to the reference's, is a rule for it; a `null_reference` state's own rule sets the bit at both).
+//! An old value at such a home is compared as any other, whatever its `from_state` bit. Spec §5's notes add the special homes: a part's `shadows` against 0.7.2's
 //! `border.shadow_enabled` (`false` is `SHADOWS` stated with `shadows = None`, `true` is `SHADOWS`
 //! unstated), a part's stroke colour and width read out of `Stroke::Uniform` inside the edge (`Stroke::None`
 //! is the width 0.0 and no colour) and a corner radius out of `CornerRadius::Uniform` with circular corners
@@ -320,6 +323,23 @@ fn compare_row(
                     old: format!("null: no rule, as at the reference ({at_reference})"),
                     new: got.to_string(),
                 });
+            } else {
+                let (here, there) = (from_state_at(home, new)?, from_state_at(&reference, new)?);
+                if here != there {
+                    let shown = |bit: Option<bool>| match bit {
+                        Some(true) => "set",
+                        Some(false) | None => "clear",
+                    };
+                    mismatches.push(Mismatch {
+                        key: row.key.clone(),
+                        home: format!("{home} against {reference}"),
+                        old: format!(
+                            "null: no rule, `from_state` as at the reference ({})",
+                            shown(there)
+                        ),
+                        new: format!("{got}, `from_state` {}", shown(here)),
+                    });
+                }
             }
             continue;
         }
@@ -816,9 +836,20 @@ fn metric(theme: &ResolvedTheme, widget: &str, name: &str) -> Option<Got> {
     })
 }
 
-/// `<part>(<query>).<property>` of a ruled widget, `None` where the widget or part is none the comparator
-/// reads, an error where the query does not parse.
-fn ruled_part(theme: &ResolvedTheme, widget: &str, rest: &str) -> Result<Option<Got>, String> {
+/// A ruled part's style for a home's query.
+enum Ruled {
+    Part(PartStyle),
+    Text(TextStyle),
+    Icon(IconStyle),
+}
+
+/// `<part>(<query>).<property>` of a ruled widget: the style of the part for the query and the property,
+/// `None` where the widget or part is none the comparator reads, an error where the query does not parse.
+fn ruled_style<'a>(
+    theme: &ResolvedTheme,
+    widget: &str,
+    rest: &'a str,
+) -> Result<Option<(Ruled, &'a str)>, String> {
     let Some((part, after)) = rest.split_once('(') else {
         return Ok(None);
     };
@@ -826,27 +857,97 @@ fn ruled_part(theme: &ResolvedTheme, widget: &str, rest: &str) -> Result<Option<
         return Ok(None);
     };
     let q = Query::parse(query)?;
-    Ok(match (widget, part) {
-        ("button", "body") => part_property(&theme.button.body(q.button()?), property),
-        ("button", "label") => text_property(&theme.button.label(q.button()?), property),
-        ("button", "icon") => icon_property(&theme.button.icon(q.button()?), property),
-        ("checkbox", "indicator") => part_property(&theme.checkbox.indicator(q.style()?), property),
-        ("checkbox", "checkmark") => icon_property(&theme.checkbox.checkmark(q.style()?), property),
-        ("checkbox", "label") => text_property(&theme.checkbox.label(q.style()?), property),
-        ("radio", "indicator") => part_property(&theme.radio.indicator(q.style()?), property),
-        ("radio", "dot") => part_property(&theme.radio.dot(q.style()?), property),
-        ("radio", "label") => text_property(&theme.radio.label(q.style()?), property),
-        ("scrollbar", "track") => part_property(&theme.scrollbar.track(q.style()?), property),
-        ("scrollbar", "thumb") => part_property(&theme.scrollbar.thumb(q.style()?), property),
-        ("list", "container") => part_property(&theme.list.container(q.list()?), property),
-        ("list", "row") => part_property(&theme.list.row(q.list()?), property),
-        ("list", "item_label") => text_property(&theme.list.item_label(q.list()?), property),
-        ("list", "header") => part_property(&theme.list.header(q.list()?), property),
-        ("list", "header_label") => text_property(&theme.list.header_label(q.list()?), property),
-        ("list", "header_separator") => {
-            part_property(&theme.list.header_separator(q.list()?), property)
-        }
-        _ => None,
+    let style = match (widget, part) {
+        ("button", "body") => Ruled::Part(theme.button.body(q.button()?)),
+        ("button", "label") => Ruled::Text(theme.button.label(q.button()?)),
+        ("button", "icon") => Ruled::Icon(theme.button.icon(q.button()?)),
+        ("checkbox", "indicator") => Ruled::Part(theme.checkbox.indicator(q.style()?)),
+        ("checkbox", "checkmark") => Ruled::Icon(theme.checkbox.checkmark(q.style()?)),
+        ("checkbox", "label") => Ruled::Text(theme.checkbox.label(q.style()?)),
+        ("radio", "indicator") => Ruled::Part(theme.radio.indicator(q.style()?)),
+        ("radio", "dot") => Ruled::Part(theme.radio.dot(q.style()?)),
+        ("radio", "label") => Ruled::Text(theme.radio.label(q.style()?)),
+        ("scrollbar", "track") => Ruled::Part(theme.scrollbar.track(q.style()?)),
+        ("scrollbar", "thumb") => Ruled::Part(theme.scrollbar.thumb(q.style()?)),
+        ("list", "container") => Ruled::Part(theme.list.container(q.list()?)),
+        ("list", "row") => Ruled::Part(theme.list.row(q.list()?)),
+        ("list", "item_label") => Ruled::Text(theme.list.item_label(q.list()?)),
+        ("list", "header") => Ruled::Part(theme.list.header(q.list()?)),
+        ("list", "header_label") => Ruled::Text(theme.list.header_label(q.list()?)),
+        ("list", "header_separator") => Ruled::Part(theme.list.header_separator(q.list()?)),
+        _ => return Ok(None),
+    };
+    Ok(Some((style, property)))
+}
+
+/// `<part>(<query>).<property>` of a ruled widget, `None` where the widget or part is none the comparator
+/// reads, an error where the query does not parse.
+fn ruled_part(theme: &ResolvedTheme, widget: &str, rest: &str) -> Result<Option<Got>, String> {
+    Ok(match ruled_style(theme, widget, rest)? {
+        Some((Ruled::Part(style), property)) => part_property(&style, property),
+        Some((Ruled::Text(style), property)) => text_property(&style, property),
+        Some((Ruled::Icon(style), property)) => icon_property(&style, property),
+        None => None,
+    })
+}
+
+/// Whether the property at the ruled part's `home` got its value from a rule that requires a state (its
+/// `from_state` bit); `None` for a property without a bit (a size, `defined_size`), an error for a home
+/// that is no ruled part's property.
+fn from_state_at(home: &str, theme: &ResolvedTheme) -> Result<Option<bool>, String> {
+    let unreadable = || format!("the home `{home}` is no ruled part's property");
+    let (widget, rest) = home.split_once('.').ok_or_else(unreadable)?;
+    let (style, property) = ruled_style(theme, widget, rest)?.ok_or_else(unreadable)?;
+    Ok(match style {
+        Ruled::Part(style) => part_bit(property).map(|bit| style.from_state.contains(bit)),
+        Ruled::Text(style) => text_bit(property).map(|bit| style.from_state.contains(bit)),
+        Ruled::Icon(style) => icon_bit(property).map(|bit| style.from_state.contains(bit)),
+    })
+}
+
+/// The bit of a part's property the comparator reads, `None` for a size (it has none).
+fn part_bit(property: &str) -> Option<PartStated> {
+    Some(match property {
+        "fill" => PartStated::FILL,
+        "stroke.color" | "stroke.width" => PartStated::STROKE,
+        "corners" => PartStated::CORNERS,
+        "shadows" => PartStated::SHADOWS,
+        "opacity" => PartStated::OPACITY,
+        "padding.top" => PartStated::PADDING_TOP,
+        "padding.right" => PartStated::PADDING_RIGHT,
+        "padding.bottom" => PartStated::PADDING_BOTTOM,
+        "padding.left" => PartStated::PADDING_LEFT,
+        "margin.top" => PartStated::MARGIN_TOP,
+        "margin.right" => PartStated::MARGIN_RIGHT,
+        "margin.bottom" => PartStated::MARGIN_BOTTOM,
+        "margin.left" => PartStated::MARGIN_LEFT,
+        _ => return None,
+    })
+}
+
+/// The bit of a text property the comparator reads, `None` for `defined_size` (it has none).
+fn text_bit(property: &str) -> Option<TextStated> {
+    Some(match property {
+        "family" => TextStated::FAMILY,
+        "color" => TextStated::COLOR,
+        "size_px" => TextStated::SIZE_PX,
+        "weight" => TextStated::WEIGHT,
+        "style" => TextStated::STYLE,
+        "line_height" => TextStated::LINE_HEIGHT,
+        "letter_spacing" => TextStated::LETTER_SPACING,
+        _ => return None,
+    })
+}
+
+/// The bit of an icon property the comparator reads.
+fn icon_bit(property: &str) -> Option<IconStated> {
+    Some(match property {
+        "size" => IconStated::SIZE,
+        "color" => IconStated::COLOR,
+        "opacity" => IconStated::OPACITY,
+        "weight" => IconStated::WEIGHT,
+        "stroke_width" => IconStated::STROKE_WIDTH,
+        _ => return None,
     })
 }
 
