@@ -52,6 +52,11 @@ pub(crate) fn overrides_from_kdeglobals(
     let colors = os_colors(ini);
     let mut caret = crate::model::InputTheme::default();
     caret_blink(ini, &mut caret);
+    let icon_theme = icon_theme(ini).map(Arc::from);
+    // The sizes are the named theme's: without a theme they are dropped with it.
+    let icon_sizes = icon_sizes
+        .filter(|_| icon_theme.is_some())
+        .map(|s| IconSizes::new(s.toolbar, s.small, s.large, s.dialog, s.panel));
     SystemOverrides {
         color_schemes: stated(colors)
             .map(|colors| ((scheme, Contrast::Normal), colors))
@@ -67,9 +72,8 @@ pub(crate) fn overrides_from_kdeglobals(
         toolbar_font: font(ini, "General", "toolBarFont"),
         title_bar_font: font(ini, "WM", "activeFont"),
         font_dpi: Some(crate::detect::LINUX_FONT_DPI),
-        icon_theme: icon_theme(ini).map(Arc::from),
-        icon_sizes: icon_sizes
-            .map(|s| IconSizes::new(s.toolbar, s.small, s.large, s.dialog, s.panel)),
+        icon_theme,
+        icon_sizes,
         // The value as the 0.7.2 reader parses it (`kde::reduce_motion`), a
         // non-finite one refused.
         animation_scale: ini

@@ -211,8 +211,8 @@ struct RuleEntry<M> {
 #[derive(Clone, Debug, PartialEq)]
 pub struct RuleSet<T, P, M = ()> {
     base: T,
-    exclusive: &'static [&'static [WidgetState]], // e.g. &[&[DISABLED, PRESSED, HOVER]]
-    rules: Arc<[RuleEntry<M>]>,                   // RuleSelector<M> + (start: u32, len: u32)
+    exclusive: Arc<[&'static [WidgetState]]>, // e.g. [&[DISABLED, PRESSED, HOVER]]
+    rules: Arc<[RuleEntry<M>]>,               // RuleSelector<M> + (start: u32, len: u32)
     props: Arc<[P]>, // single flat allocation at resolve(); zero-alloc Clone
 }
 
@@ -238,7 +238,10 @@ impl<T, P, M> RuleSet<T, P, M> {
 
     /// The indices of the rules that can never match: a rule whose required
     /// states hold two flags of one exclusive group (evaluation keeps only
-    /// one of them), or whose required and forbidden states intersect.
+    /// one of them), or whose required and forbidden states intersect. A
+    /// required `FOCUS_VISIBLE` counts as requiring `FOCUSED` too, as
+    /// evaluation adds it (step 0) and clears `FOCUS_VISIBLE` with it
+    /// (step 1).
     #[cfg_attr(
         not(test),
         expect(
@@ -261,8 +264,12 @@ impl<T, P, M> RuleSet<T, P, M> {
             .enumerate()
             .filter(|(_, entry)| {
                 let s = &entry.selector;
-                s.required_states.intersects(s.forbidden_states)
-                    || two_of_a_group(s.required_states)
+                let required = if s.required_states.contains(WidgetState::FOCUS_VISIBLE) {
+                    s.required_states | WidgetState::FOCUSED
+                } else {
+                    s.required_states
+                };
+                required.intersects(s.forbidden_states) || two_of_a_group(required)
             })
             .map(|(index, _)| index)
             .collect()
@@ -275,7 +282,7 @@ impl<T, P, M> RuleSet<T, P, M> {
         T: Clone,
         M: VariantMatcher<V>,
     {
-        let state = normalize(query.state, self.exclusive);
+        let state = normalize(query.state, &self.exclusive);
         let mut out = self.base.clone();
         for entry in self.rules.iter() {
             if !entry.selector.matches(state, query) {
@@ -428,7 +435,7 @@ impl<M> RuleSelector<M> {
 #[derive(Debug)]
 pub(crate) struct RuleBuilder<T, P, M = ()> {
     base: T,
-    exclusive: &'static [&'static [WidgetState]],
+    exclusive: Vec<&'static [WidgetState]>,
     rules: Vec<RuleEntry<M>>,
     props: Vec<P>,
 }
@@ -438,7 +445,7 @@ impl<T, P, M> RuleBuilder<T, P, M> {
     pub(crate) fn new(base: T) -> Self {
         Self {
             base,
-            exclusive: &[],
+            exclusive: Vec::new(),
             rules: Vec::new(),
             props: Vec::new(),
         }
@@ -462,9 +469,10 @@ impl<T, P, M> RuleBuilder<T, P, M> {
         self
     }
 
-    /// The ordered exclusive state groups (evaluation contract, step 1).
+    /// The ordered exclusive state groups (evaluation contract, step 1),
+    /// after the groups of any earlier call.
     pub(crate) fn exclusive(mut self, groups: &'static [&'static [WidgetState]]) -> Self {
-        self.exclusive = groups;
+        self.exclusive.extend_from_slice(groups);
         self
     }
 
@@ -478,21 +486,24 @@ impl<T, P, M> RuleBuilder<T, P, M> {
     }
 
     /// One rule per selector, in order, each applying the same `props`,
-    /// which are stored once.
+    /// which are stored once; with no selector, nothing is stored.
     pub(crate) fn rules(
         mut self,
         selectors: impl IntoIterator<Item = RuleSelector<M>>,
         props: impl IntoIterator<Item = P>,
     ) -> Self {
+        let mut selectors = selectors.into_iter().peekable();
+        if selectors.peek().is_none() {
+            return self;
+        }
         let start = self.props.len();
         self.props.extend(props);
         let (start, len) = stored_range(start, self.props.len().saturating_sub(start));
-        self.rules
-            .extend(selectors.into_iter().map(|selector| RuleEntry {
-                selector,
-                start,
-                len,
-            }));
+        self.rules.extend(selectors.map(|selector| RuleEntry {
+            selector,
+            start,
+            len,
+        }));
         self
     }
 
@@ -500,7 +511,7 @@ impl<T, P, M> RuleBuilder<T, P, M> {
     pub(crate) fn build(self) -> RuleSet<T, P, M> {
         RuleSet {
             base: self.base,
-            exclusive: self.exclusive,
+            exclusive: Arc::from(self.exclusive),
             rules: Arc::from(self.rules),
             props: Arc::from(self.props),
         }

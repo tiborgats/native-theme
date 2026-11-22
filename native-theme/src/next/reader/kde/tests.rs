@@ -226,6 +226,29 @@ fn malformed() {
 }
 
 #[test]
+fn icon_sizes_are_dropped_without_an_icon_theme() {
+    let icon_sizes = parse_icon_sizes_from_content(&parsed(BREEZE_INDEX));
+    let sized =
+        |content: &str| overrides_from_kdeglobals(&parsed(content), Some(icon_sizes.clone()), None);
+    assert_eq!(sized("").icon_theme, None);
+    assert_eq!(sized("").icon_sizes, None);
+    assert_eq!(sized("[Icons]\nTheme=\n").icon_sizes, None);
+    let named = sized("[Icons]\nTheme=breeze\n");
+    assert_eq!(named.icon_theme, Some(Arc::from("breeze")));
+    assert_eq!(
+        named.icon_sizes,
+        Some(IconSizes::new(
+            icon_sizes.toolbar,
+            icon_sizes.small,
+            icon_sizes.large,
+            icon_sizes.dialog,
+            icon_sizes.panel,
+        ))
+    );
+    assert!(icon_sizes.toolbar.is_some());
+}
+
+#[test]
 fn an_empty_file_states_only_the_scheme_and_the_font_dpi() {
     assert_eq!(
         overrides_from_kdeglobals(&parsed(""), None, None),

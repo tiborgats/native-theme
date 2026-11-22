@@ -1,5 +1,6 @@
 use super::*;
 use crate::next::paint::Paint;
+use crate::next::preset::nothing_stated;
 use crate::next::query::{
     ButtonKind, ButtonVariant, ListKind, ListVariant, Orientation, WidgetState,
 };
@@ -308,4 +309,40 @@ fn widgets_and_resolved_theme_are_clone_debug_eq_send_sync() {
     assert_send_sync_clone_debug_eq::<ListWidget>();
     assert_send_sync_clone_debug_eq::<TooltipWidget>();
     assert_send_sync_clone_debug_eq::<ResolvedTheme>();
+}
+
+#[test]
+fn scheme_and_is_dark_follow_the_context() {
+    let light = nothing_stated(Preset::KdeBreeze, ThemeContext::light());
+    assert_eq!(light.scheme(), Scheme::Light);
+    assert!(!light.is_dark());
+    let dark = nothing_stated(Preset::KdeBreeze, ThemeContext::dark());
+    assert_eq!(dark.scheme(), Scheme::Dark);
+    assert!(dark.is_dark());
+}
+
+#[test]
+fn elevation_reads_each_level_and_is_empty_beyond_the_last() {
+    let layer = |blur: f32| ShadowLayer {
+        offset_x: 0.0,
+        offset_y: 1.0,
+        blur,
+        spread: 0.0,
+        color: RED,
+        inset: false,
+    };
+    let none: Arc<[ShadowLayer]> = Arc::from([]);
+    let one: Arc<[ShadowLayer]> = Arc::from([layer(2.0)]);
+    let two: Arc<[ShadowLayer]> = Arc::from([layer(4.0), layer(8.0)]);
+    let theme = ResolvedTheme {
+        elevations: Arc::from([none, one, two]),
+        ..nothing_stated(Preset::KdeBreeze, ThemeContext::light())
+    };
+    assert!(theme.elevation(0).is_empty());
+    assert_eq!(theme.elevation(1), &[layer(2.0)]);
+    assert_eq!(theme.elevation(2), &[layer(4.0), layer(8.0)]);
+    assert!(theme.elevation(3).is_empty());
+    assert!(theme.elevation(usize::MAX).is_empty());
+    let flat = nothing_stated(Preset::KdeBreeze, ThemeContext::light());
+    assert!(flat.elevation(0).is_empty());
 }

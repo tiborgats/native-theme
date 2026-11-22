@@ -192,7 +192,7 @@ fn clearing_focused_clears_focus_visible() {
     assert_eq!(normalize(query, GROUPS), WidgetState::DISABLED);
     let rules = one_rule(on(WidgetState::FOCUS_VISIBLE));
     let rules = RuleSet {
-        exclusive: GROUPS,
+        exclusive: Arc::from(GROUPS),
         ..rules
     };
     assert_eq!(
@@ -551,7 +551,7 @@ fn rule_with_out_of_range_props_is_skipped() {
     // ranges at u32::MAX.
     let rules: RuleSet<PartStyle, PartProp> = RuleSet {
         base: base(),
-        exclusive: &[],
+        exclusive: Arc::from([]),
         rules: Arc::from(vec![
             entry(0, 1),
             entry(1, 2),
@@ -579,7 +579,7 @@ fn a_range_beyond_u32_is_stored_empty() -> Result<(), std::num::TryFromIntError>
     // An empty range applies nothing.
     let rules: RuleSet<PartStyle, PartProp> = RuleSet {
         base: base(),
-        exclusive: &[],
+        exclusive: Arc::from([]),
         rules: Arc::from(vec![RuleEntry {
             selector: RuleSelector::default(),
             start: 0,
@@ -1190,10 +1190,16 @@ fn a_shared_property_list_is_stored_once() -> Result<(), &'static str> {
     // Base 5 stated properties are not in the list; the rules hold 2 + 1 + 1 + 1 + 1 + 2.
     assert_eq!(body.props.len(), 8);
     assert_eq!(body.rules.len(), 7);
+    // Each rule's range follows the lists before it: hover 2, keyboard 1, primary 1, small 1,
+    // vertical 1, then pressed and checked sharing one list of 2.
+    let ranges: Vec<(u32, u32)> = body.rules.iter().map(|r| (r.start, r.len)).collect();
+    assert_eq!(
+        ranges,
+        vec![(0, 2), (2, 1), (3, 1), (4, 1), (5, 1), (6, 2), (6, 2)]
+    );
     let pressed = body.rules.get(5).ok_or("a sixth rule")?;
     let checked = body.rules.get(6).ok_or("a seventh rule")?;
     assert_eq!((pressed.start, pressed.len), (checked.start, checked.len));
-    assert_eq!((pressed.start, pressed.len), (6, 2));
     let checked = body.eval(&ButtonQuery::new(WidgetState::CHECKED));
     assert_eq!(checked.fill, Paint::Solid(Color::BLACK));
     assert_eq!(checked.opacity, 0.5);
@@ -1292,4 +1298,132 @@ fn a_clean_rule_set_has_no_dead_rules() {
         )
         .build();
     assert!(free.dead_rules().is_empty());
+}
+
+/// Every state flag, for the tests that evaluate a rule set against all
+/// combinations of them.
+fn every_state() -> impl Iterator<Item = WidgetState> {
+    (0..=u16::from(u8::MAX)).map(|bits| {
+        [
+            WidgetState::HOVER,
+            WidgetState::PRESSED,
+            WidgetState::FOCUSED,
+            WidgetState::DISABLED,
+            WidgetState::FOCUS_VISIBLE,
+            WidgetState::CHECKED,
+            WidgetState::SELECTED,
+            WidgetState::UNFOCUSED_VIEW,
+        ]
+        .into_iter()
+        .enumerate()
+        .filter(|(i, _)| bits & (1 << i) != 0)
+        .fold(WidgetState::NONE, |acc, (_, flag)| acc | flag)
+    })
+}
+
+#[test]
+fn requiring_focus_visible_and_forbidding_focused_is_dead() {
+    let rules: RuleSet<PartStyle, PartProp> = RuleBuilder::new(base())
+        .rule(
+            RuleSelector::on(WidgetState::FOCUS_VISIBLE).except(WidgetState::FOCUSED),
+            [fill(RED)],
+        )
+        .build();
+    assert_eq!(rules.dead_rules(), vec![0]);
+    // Step 0 adds FOCUSED to every query holding FOCUS_VISIBLE: no query matches.
+    assert!(
+        every_state()
+            .all(|state| fill_of(&rules.eval(&StyleQuery::<()>::new(state))) == Some(BLUE))
+    );
+}
+
+#[test]
+fn requiring_focus_visible_with_a_group_rival_of_focused_is_dead() {
+    const GROUPS: &[&[WidgetState]] = &[&[WidgetState::DISABLED, WidgetState::FOCUSED]];
+    let rules: RuleSet<PartStyle, PartProp> = RuleBuilder::new(base())
+        .exclusive(GROUPS)
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED | WidgetState::FOCUS_VISIBLE),
+            [fill(RED)],
+        )
+        // FOCUS_VISIBLE alone is no conflict.
+        .rule(RuleSelector::on(WidgetState::FOCUS_VISIBLE), [fill(GREEN)])
+        .build();
+    assert_eq!(rules.dead_rules(), vec![0]);
+    // Step 1 keeps DISABLED, clears FOCUSED and with it FOCUS_VISIBLE: the first rule never
+    // applies.
+    assert!(
+        every_state().all(|state| fill_of(&rules.eval(&StyleQuery::<()>::new(state))) != Some(RED))
+    );
+}
+
+#[test]
+fn exclusive_called_twice_appends_the_groups() {
+    const FIRST: &[&[WidgetState]] = &[&[WidgetState::DISABLED, WidgetState::HOVER]];
+    const SECOND: &[&[WidgetState]] = &[&[WidgetState::CHECKED, WidgetState::SELECTED]];
+    const BOTH: &[&[WidgetState]] = &[
+        &[WidgetState::DISABLED, WidgetState::HOVER],
+        &[WidgetState::CHECKED, WidgetState::SELECTED],
+    ];
+    let rules = |builder: RuleBuilder<PartStyle, PartProp>| {
+        builder
+            .rule(RuleSelector::on(WidgetState::HOVER), [fill(RED)])
+            .rule(RuleSelector::on(WidgetState::SELECTED), [fill(GREEN)])
+            .build()
+    };
+    let twice = rules(RuleBuilder::new(base()).exclusive(FIRST).exclusive(SECOND));
+    assert_eq!(twice, rules(RuleBuilder::new(base()).exclusive(BOTH)));
+    // Both groups normalise: DISABLED drops HOVER, CHECKED drops SELECTED.
+    let query =
+        WidgetState::DISABLED | WidgetState::HOVER | WidgetState::CHECKED | WidgetState::SELECTED;
+    assert_eq!(
+        fill_of(&twice.eval(&StyleQuery::<()>::new(query))),
+        Some(BLUE)
+    );
+}
+
+#[test]
+fn rules_with_no_selector_store_nothing() {
+    let rules: RuleSet<PartStyle, PartProp> = RuleBuilder::new(base())
+        .rule(RuleSelector::on(WidgetState::HOVER), [fill(RED)])
+        .rules([], [fill(GREEN), PartProp::Opacity(0.5)])
+        .build();
+    assert_eq!(rules.props.len(), 1);
+    assert_eq!(rules.rules.len(), 1);
+    assert_eq!(
+        rules,
+        RuleBuilder::new(base())
+            .rule(RuleSelector::on(WidgetState::HOVER), [fill(RED)])
+            .build()
+    );
+}
+
+#[test]
+fn a_rule_without_properties_after_two_others_is_an_empty_range_at_the_end()
+-> Result<(), &'static str> {
+    let rules: RuleSet<PartStyle, PartProp> = RuleBuilder::new(base())
+        .rule(RuleSelector::on(WidgetState::HOVER), [fill(RED)])
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED),
+            [fill(GREEN), PartProp::Opacity(0.5)],
+        )
+        .rule(RuleSelector::on(WidgetState::CHECKED), [])
+        .build();
+    assert_eq!(rules.props.len(), 3);
+    let empty = rules.rules.get(2).ok_or("a third rule")?;
+    assert_eq!((empty.start, empty.len), (3, 0));
+    assert_eq!(
+        rules.eval(&StyleQuery::<()>::new(WidgetState::CHECKED)),
+        base()
+    );
+    Ok(())
+}
+
+#[test]
+fn build_with_no_rules_is_the_base() {
+    let rules: RuleSet<PartStyle, PartProp> = RuleBuilder::new(base()).build();
+    assert!(rules.rules.is_empty());
+    assert!(rules.props.is_empty());
+    assert!(rules.exclusive.is_empty());
+    assert!(every_state().all(|state| rules.eval(&StyleQuery::<()>::new(state)) == base()));
 }
