@@ -11,7 +11,7 @@ use crate::next::rules::{
 use crate::next::widgets::{
     ButtonWidget, CheckboxWidget, ListWidget, RadioWidget, ScrollbarWidget, WidgetOrigin,
 };
-use crate::next::window::EdgeFlags;
+use crate::next::window::{CaptionLayout, EdgeFlags, WindowChrome};
 use crate::resolve::ResolutionContext;
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
@@ -823,6 +823,7 @@ const EQUAL_THOUGH_STATED: &[&str] = &[
     "list.border.shadow_enabled",
     "scrollbar.overlay_mode",
     "tooltip.border.shadow_enabled",
+    "window.border.shadow_enabled",
 ];
 
 #[test]
@@ -832,9 +833,15 @@ fn kde_breeze_against_a_theme_with_nothing_stated() -> TestResult {
     let old = serde_json::to_value(&resolved.variant)?;
     let unresolved = serde_json::to_value(theme.pick_variant(ColorMode::Light)?)?;
     let new = nothing_stated(Preset::KdeBreeze, ThemeContext::light());
+    let with_context = |context: RowContext| {
+        nothing_stated(
+            Preset::KdeBreeze,
+            context.applied_to(&ThemeContext::light()),
+        )
+    };
     let extra = Extra {
         unresolved: Some(&unresolved),
-        with_context: None,
+        with_context: Some(&with_context),
     };
     let report = compare(&old, &new, None, Preset::KdeBreeze, &extra)?;
     let table: Table = toml::from_str(HOMES)?;
@@ -1438,16 +1445,42 @@ fn if_null_follows_the_chain_of_null_keys() -> TestResult {
 }
 
 #[test]
-fn a_window_home_parses_and_reads_as_no_slot() -> TestResult {
-    let theme = theme();
-    for value in [json!("#ffffff"), Value::Null] {
-        let report = one_row("window.title_bar(normal).fill", value.clone(), &theme)?;
-        let Some(Outcome::Mismatch(homes)) = report.rows.first().map(|r| &r.outcome) else {
-            return Err(format!("{value}: no mismatch: {report}").into());
-        };
-        assert!(
-            homes.iter().all(|m| m.new.starts_with("no slot")),
-            "{report}"
+fn a_window_home_reads_its_getter_at_the_normal_state() -> TestResult {
+    let mut theme = theme();
+    let stated_fill = |hex: u32| PartStyle {
+        fill: Paint::Solid(srgb(hex)),
+        stated: PartStated::FILL,
+        ..PartStyle::default()
+    };
+    theme.window = WindowChrome::new(
+        WidgetOrigin::Native,
+        CaptionLayout::new(Arc::from([]), Arc::from([])),
+        PartStyle {
+            corners: Corners::uniform(4.0),
+            stated: PartStated::CORNERS,
+            ..PartStyle::default()
+        },
+        PartStyle::default(),
+        stated_fill(0xffffff),
+        stated_fill(0x000000),
+        TextStyle::default(),
+        RuleBuilder::new(PartStyle::default()).build(),
+        RuleBuilder::new(IconStyle::default()).build(),
+    );
+    for (home, value, equal) in [
+        ("window.title_bar(normal).fill", json!("#ffffff"), true),
+        ("window.title_bar(normal).fill", Value::Null, false),
+        ("window.frame(normal).corners", json!(4.0), true),
+        ("window.frame(normal).fill", Value::Null, true),
+        ("window.title(normal).color", Value::Null, true),
+        ("window.title(normal).color", json!("#ffffff"), false),
+    ] {
+        let report = one_row(home, value.clone(), &theme)?;
+        let outcome = report.rows.first().map(|r| &r.outcome);
+        assert_eq!(
+            matches!(outcome, Some(Outcome::Equal)),
+            equal,
+            "{home} {value}: {report}"
         );
     }
     Ok(())

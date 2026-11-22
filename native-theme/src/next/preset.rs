@@ -22,6 +22,7 @@ use super::widgets::{
     ButtonWidget, CheckboxWidget, ListWidget, RadioWidget, ResolvedTheme, ScrollbarWidget,
     TooltipWidget, WidgetOrigin,
 };
+use super::window::{CaptionLayout, WindowChrome};
 use crate::IconSet;
 
 /// A bundled platform preset.
@@ -527,8 +528,9 @@ pub(crate) struct ResolveInputs<'a> {
 /// The theme of `preset` for `context` that states nothing: every `Option`
 /// `None`, every `stated` bit clear, every rule set empty over a default
 /// base, `name` the preset's display name. A field the spec declares without
-/// `Option` holds its type's default; the three whose types have none hold
-/// what their sources state: every widget's origin is
+/// `Option` holds its type's default, and the window's caption layout names
+/// no button; the three whose types have none hold what their sources state:
+/// every widget's origin is
 /// [`WidgetOrigin::Native`] (spec §5: `Synthesized` is only for a control
 /// the platform does not have, and an unsourced property of a native control
 /// is left unstated), a status colour's origin is the preset's provenance
@@ -692,6 +694,17 @@ pub(crate) fn nothing_stated(preset: Preset, context: ThemeContext) -> ResolvedT
             Color::default(),
         ),
         tooltip: TooltipWidget::new(native, PartStyle::default(), TextStyle::default()),
+        window: WindowChrome::new(
+            native,
+            CaptionLayout::new(Arc::from([]), Arc::from([])),
+            PartStyle::default(),
+            PartStyle::default(),
+            PartStyle::default(),
+            PartStyle::default(),
+            TextStyle::default(),
+            part(),
+            icon(),
+        ),
         custom_colors: BTreeMap::new(),
         custom_metrics: BTreeMap::new(),
     }

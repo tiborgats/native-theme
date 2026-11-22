@@ -21,6 +21,7 @@ use super::roles::ColorRoles;
 use super::rules::{ButtonMatcher, IconProp, ListMatcher, PartProp, RuleSet, TextProp};
 use super::style::{FocusIndicator, IconStyle, PartStyle, TextStyle};
 use super::typography::Typography;
+use super::window::WindowChrome;
 
 /// Whether a widget is the platform's own control or one the crate
 /// synthesizes for a platform that lacks it (spec §5).
@@ -564,8 +565,8 @@ impl TooltipWidget {
 /// tokens and the widgets.
 ///
 /// Inside the crate a builder constructs it by a struct literal; outside it
-/// cannot be constructed (`#[non_exhaustive]`). So far it holds the first
-/// slice's six widgets; `window` and the other 21 widgets follow (plan, M1).
+/// cannot be constructed (`#[non_exhaustive]`). The widgets it does not hold
+/// yet follow (plan, M1).
 #[derive(Clone, Debug, PartialEq)]
 #[non_exhaustive]
 pub struct ResolvedTheme {
@@ -606,6 +607,8 @@ pub struct ResolvedTheme {
     pub list: ListWidget,
     /// The tooltip.
     pub tooltip: TooltipWidget,
+    /// The window chrome.
+    pub window: WindowChrome,
     /// The application's own colour tokens (empty on the bundled presets).
     pub custom_colors: BTreeMap<String, Color>,
     /// The application's own metric tokens (empty on the bundled presets).
@@ -651,6 +654,11 @@ impl ResolvedTheme {
                 "list.header_separator",
                 self.list.header_separator.dead_rules(),
             ),
+            (
+                "window.caption_button",
+                self.window.caption_button.dead_rules(),
+            ),
+            ("window.caption_icon", self.window.caption_icon.dead_rules()),
         ]
     }
 

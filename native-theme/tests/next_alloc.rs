@@ -20,6 +20,7 @@ use native_theme::next::{
     PartStyle, Preset, ResolvedTheme, RippleSpec, ShadowLayer, Stroke, StrokeAlign, StrokeSide,
     StyleQuery, TextStated, Theme, ThemeContext, Timing, Transition, WidgetState,
 };
+use native_theme::next::{CaptionButtonKind, EdgeFlags, WindowState};
 
 #[global_allocator]
 static ALLOC: dhat::Alloc = dhat::Alloc;
@@ -168,6 +169,20 @@ fn query_every_part(theme: &ResolvedTheme, state: WidgetState) {
         black_box(theme.scrollbar.track(bar));
         black_box(theme.scrollbar.thumb(bar));
         black_box(theme.scrollbar.parts(bar));
+    }
+    // The window chrome: a normal window and a maximized, tiled one.
+    let mut tiled = WindowState::default();
+    tiled.maximized = true;
+    tiled.tiled = EdgeFlags::LEFT | EdgeFlags::TOP;
+    for window in [WindowState::default(), tiled] {
+        black_box(theme.window.frame(window));
+        black_box(theme.window.title_bar(window));
+        black_box(theme.window.title_bar_height(window));
+        black_box(theme.window.title(window));
+    }
+    for kind in [CaptionButtonKind::Close, CaptionButtonKind::Minimize] {
+        black_box(theme.window.caption_button(kind, state));
+        black_box(theme.window.caption_icon(kind, state));
     }
 }
 

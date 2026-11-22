@@ -25,8 +25,8 @@
 //! null where the unresolved 0.7.2 theme leaves the field unset ([`Extra::unresolved`]); `null_means =
 //! "none"` requires, where the key is null, `Stroke::None` with the `STROKE` bit set at every home, whatever
 //! the reference state holds; `context` reads the homes from the theme resolved with it
-//! ([`Extra::with_context`]). A home in `WindowChrome` (`window.<getter>(normal).<property>`) parses but
-//! reads as "no slot", a mismatch, until the model holds `WindowChrome`.
+//! ([`Extra::with_context`]). A home in `WindowChrome` (`window.<getter>(normal).<property>`) reads the
+//! getter at `WindowState::default()`.
 //!
 //! A row written by hand names a field that does not serialise; it is read from `old` at its key where the
 //! caller has added it there, in the form `serde_json` gives the field's type (`Resolved.mode`, whose
@@ -57,6 +57,7 @@ use crate::next::style::{
     TextStyle,
 };
 use crate::next::widgets::ResolvedTheme;
+use crate::next::window::WindowState;
 use crate::theme::ColorMode;
 
 // ---------------------------------------------------------------------------------------------------------
@@ -299,8 +300,7 @@ pub(super) fn compare_rows_with(
 
 const SNAPSHOT_PREFIX: &str = "snapshot.context.";
 
-/// The prefix of a home in `WindowChrome` (spec §4), which the model does not hold yet: such a home reads
-/// as "no slot".
+/// The prefix of a home in `WindowChrome` (spec §4).
 const WINDOW_PREFIX: &str = "window.";
 
 #[allow(
@@ -596,8 +596,6 @@ enum Got {
     Unstated,
     /// An `Option<TextStyle>` slot of `Typography` that is `None` (the row's `home_fallback` applies).
     NoSlot,
-    /// A home in `WindowChrome`, which the model does not hold yet: a mismatch whatever the old value.
-    NoWindowChrome,
     Color(Color),
     F32(f32),
     Int(u64),
@@ -623,7 +621,6 @@ impl fmt::Display for Got {
         match self {
             Self::Unstated => f.write_str("unstated"),
             Self::NoSlot => f.write_str("no slot"),
-            Self::NoWindowChrome => f.write_str("no slot (no `WindowChrome` yet)"),
             Self::Color(c) => {
                 let [r, g, b, a] = c.to_srgb8();
                 write!(f, "{c:?} = 8-bit [{r}, {g}, {b}, {a}]")
@@ -650,7 +647,6 @@ fn equal(old: &Value, got: &Got) -> Result<bool, String> {
         (Got::ShadowsNone, Value::Null) => Ok(false),
         (Got::ShadowsNone, Value::Bool(enabled)) => Ok(!*enabled),
         (Got::ShadowsUnstated | Got::ShadowsNone, _) => Err(kind_error()),
-        (Got::NoWindowChrome, _) => Ok(false),
         (Got::Unstated | Got::NoSlot, old) => Ok(old.is_null()),
         (_, Value::Null) | (Got::Other(_), _) => Ok(false),
         (Got::Color(c), Value::String(s)) => {
@@ -715,8 +711,8 @@ fn read(
     if home == "name" {
         return Ok(Got::Str(theme.name.to_string()));
     }
-    if home.starts_with(WINDOW_PREFIX) {
-        return Ok(Got::NoWindowChrome);
+    if let Some(rest) = home.strip_prefix(WINDOW_PREFIX) {
+        return window(theme, rest).ok_or_else(unreadable);
     }
     let (head, rest) = home.split_once('.').ok_or_else(unreadable)?;
     let got = match head {
@@ -948,6 +944,18 @@ fn caret(theme: &ResolvedTheme, rest: &str) -> Option<Got> {
     })
 }
 
+/// `<getter>(normal).<property>` of `WindowChrome`, at `WindowState::default()`.
+fn window(theme: &ResolvedTheme, rest: &str) -> Option<Got> {
+    let (getter, property) = rest.split_once("(normal).")?;
+    let normal = WindowState::default();
+    match getter {
+        "frame" => part_property(&theme.window.frame(normal), property),
+        "title_bar" => part_property(&theme.window.title_bar(normal), property),
+        "title" => text_property(&theme.window.title(normal), property),
+        _ => None,
+    }
+}
+
 fn tooltip(theme: &ResolvedTheme, rest: &str) -> Option<Got> {
     match rest.split_once('.')? {
         ("panel", property) => part_property(&theme.tooltip.panel, property),
@@ -1038,6 +1046,14 @@ fn part_style_at(home: &str, theme: &ResolvedTheme) -> Result<Option<PartStyle>,
         return Ok(rest
             .starts_with("panel.")
             .then(|| theme.tooltip.panel.clone()));
+    }
+    if widget == "window" {
+        let normal = WindowState::default();
+        return Ok(match rest.split_once("(normal).") {
+            Some(("frame", _)) => Some(theme.window.frame(normal)),
+            Some(("title_bar", _)) => Some(theme.window.title_bar(normal)),
+            _ => None,
+        });
     }
     Ok(match ruled_style(theme, widget, rest)? {
         Some((Ruled::Part(style), _)) => Some(style),

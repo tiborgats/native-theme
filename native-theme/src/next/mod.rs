@@ -170,7 +170,7 @@ pub use widgets::{
     ButtonParts, ButtonWidget, CheckboxParts, CheckboxWidget, ListParts, ListWidget, RadioParts,
     RadioWidget, ResolvedTheme, ScrollbarParts, ScrollbarWidget, TooltipWidget, WidgetOrigin,
 };
-pub use window::{CaptionButtonKind, CaptionLayout, EdgeFlags};
+pub use window::{CaptionButtonKind, CaptionLayout, EdgeFlags, WindowChrome, WindowState};
 
 #[cfg(test)]
 mod tests {

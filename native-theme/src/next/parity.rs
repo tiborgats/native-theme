@@ -30,7 +30,8 @@ const HOMES: &str = include_str!(concat!(
 /// The preset of the slice.
 const PRESET: &str = "kde-breeze";
 
-/// The first segments of the slice's keys in 0.7.2's resolved theme: its globals and the five widgets.
+/// The first segments of the slice's keys in 0.7.2's resolved theme: its globals, the first slice's five
+/// widgets and the widgets the model has added since.
 const SLICE_GROUPS: &[&str] = &[
     "defaults",
     "text_scale",
@@ -39,6 +40,7 @@ const SLICE_GROUPS: &[&str] = &[
     "list",
     "scrollbar",
     "tooltip",
+    "window",
 ];
 
 /// The fields of 0.7.2's `Resolved` wrapper beside the resolved theme, which do not serialise
@@ -1187,6 +1189,10 @@ const PORTED_GROUPS: &[&str] = &[
     "tooltip",
 ];
 
+/// The groups of the table whose widgets the model holds but whose values the kde-breeze builder does not
+/// state yet (plan, M2's KDE unit): their rows are compared, counted and reported, not asserted.
+const NOT_PORTED_GROUPS: &[&str] = &["window"];
+
 /// The totals of the ported groups' rows on each scheme, `[rows, compared, equal, mismatching, skipped]`:
 /// every row equal but those [`expected_skip`] names, skipped.
 const PORTED_TOTALS: [usize; 5] = [200, 195, 195, 0, 5];
@@ -1281,16 +1287,24 @@ fn totals_in(report: &compare::Report, groups: &[&str], inside: bool) -> [usize;
 }
 
 /// Model parity of the kde-breeze builder (plan, section 1, rule 2): 0.7.2's `kde-breeze` and
-/// `Theme::preset(Preset::KdeBreeze)`, light and dark, over the table of homes. Zero mismatches in the
-/// groups ported so far, every skip for its named reason; the mismatches of the other groups are counted.
-/// With every group ported: zero mismatches over the whole table, and no dead rule in any rule set of the
-/// six widgets.
+/// `Theme::preset(Preset::KdeBreeze)`, light and dark, over the table of homes. Every row's group is a
+/// ported one or one of [`NOT_PORTED_GROUPS`]; zero mismatches in the ported groups, every skip for its
+/// named reason; the rows of the groups not ported yet are counted and reported. No dead rule in any rule
+/// set of the widgets.
 #[test]
 fn model_parity_kde_breeze() -> TestResult {
     use crate::next::preset::{Preset, Theme as NextTheme};
     use crate::next::query::ThemeContext;
 
     let table: Table = toml::from_str(HOMES)?;
+    for row in &table.row {
+        let group = row.key.split('.').next().unwrap_or("");
+        assert!(
+            PORTED_GROUPS.contains(&group) != NOT_PORTED_GROUPS.contains(&group),
+            "`{}`: its group is not exactly one of the ported and the not ported groups",
+            row.key
+        );
+    }
     for (mode, ctx) in [
         (ColorMode::Light, ThemeContext::light()),
         (ColorMode::Dark, ThemeContext::dark()),
@@ -1321,9 +1335,6 @@ fn model_parity_kde_breeze() -> TestResult {
              in the groups not ported yet {pending:?}"
         );
         assert_eq!(ported, PORTED_TOTALS, "{mode:?}\n{report}");
-        // Every group is ported: no row is left out, and no row of the table mismatches.
-        assert_eq!(pending, [0; 5], "{mode:?}\n{report}");
-        assert_eq!(report.totals.mismatches, 0, "{mode:?}\n{report}");
         let dead: Vec<_> = new
             .dead_rules()
             .into_iter()
@@ -1338,7 +1349,7 @@ fn model_parity_kde_breeze() -> TestResult {
 // from a kdeglobals file, and the kde-breeze builder fed the same file as `SystemOverrides`.
 // ---------------------------------------------------------------------------------------------------------
 
-/// The totals of the table's rows on every fixture, `[rows, compared, equal, mismatching, skipped]`:
+/// The totals of the ported groups' rows on every fixture, `[rows, compared, equal, mismatching, skipped]`:
 /// every row equal but `checkbox.background_color`, skipped where `checkbox.unchecked_background` is
 /// stated (the table's listed differences).
 #[cfg(all(target_os = "linux", feature = "kde"))]
@@ -1388,8 +1399,9 @@ fn old_kde_reader(
 /// Reader parity of the kde-breeze builder: for every file of `tests/fixtures/kde/`, the 0.7.2 reader
 /// path ([`old_kde_reader`]) against `Theme::preset(Preset::KdeBreeze)` given the file's
 /// `SystemOverrides` and resolved for the file's context, over the table of homes, the snapshot's context
-/// compared. Zero mismatches over every row, the four `snapshot.context.*` rows compared and equal, the
-/// one skip for its named reason; the resolved theme's name is the reader's.
+/// compared. Zero mismatches over every row of the ported groups, the four `snapshot.context.*` rows
+/// compared and equal, the one skip for its named reason; the rows of the groups not ported yet counted and
+/// reported; the resolved theme's name is the reader's.
 #[cfg(all(target_os = "linux", feature = "kde"))]
 #[test]
 fn reader_parity_kde() -> TestResult {
@@ -1446,10 +1458,13 @@ fn reader_parity_on(
     println!("{name}: {report}");
     assert_eq!(report.totals.rows, table.row.len(), "{name}");
     assert_eq!(&*new.name, old_name, "{name}");
-    let totals = totals_in(&report, &[], false);
-    println!("{name}: [rows, compared, equal, mismatching, skipped] {totals:?}");
+    let totals = group_totals(&report, true);
+    let pending = group_totals(&report, false);
+    println!(
+        "{name}: [rows, compared, equal, mismatching, skipped] in the ported groups {totals:?}, \
+         in the groups not ported yet {pending:?}"
+    );
     assert_eq!(totals, READER_TOTALS, "{name}\n{report}");
-    assert_eq!(report.totals.mismatches, 0, "{name}\n{report}");
     for row in &report.rows {
         let skip = match row.outcome {
             compare::Outcome::Skipped(skip) => Some(skip),
@@ -1472,7 +1487,7 @@ fn reader_parity_on(
 /// Reader parity on kdeglobals texts that move off their defaults the settings no fixture
 /// states: Breeze Light's file with `[KDE] frameContrast=0.5`, `contrast=3` and
 /// `[ColorEffects:Inactive] ChangeSelectionColor=false`, and with only `[ColorEffects:Inactive]
-/// Enable=false`. Zero mismatches on both, and every row those settings feed differs from the
+/// Enable=false`. Zero mismatches in the ported groups on both, and every row those settings feed differs from the
 /// plain file's, so that equality proves the builder used them.
 #[cfg(all(target_os = "linux", feature = "kde"))]
 #[test]

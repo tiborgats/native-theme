@@ -1069,3 +1069,87 @@ homes = ["tooltip.panel.padding.bottom"]
 [[row]]
 key = "tooltip.border.padding.left"
 homes = ["tooltip.panel.padding.left"]
+
+# --- window ---
+
+[[row]]
+key = "window.background_color"
+homes = ["window.frame(normal).fill"]
+
+[[row]]
+key = "window.title_bar_background"
+homes = ["window.title_bar(normal).fill"]
+
+[[row]]
+key = "window.inactive_title_bar_background"
+homes = ["window.title_bar(normal).fill"]
+context = { window_active = false }
+note = "plan Appendix A, spec §3 window_active; 0.7.2 R-W: unset = title_bar_background, so never null"
+
+[[row]]
+key = "window.inactive_title_bar_text_color"
+homes = ["window.title(normal).color"]
+context = { window_active = false }
+note = "0.7.2 R-W: unset = title_bar_font.color, never null"
+
+[[row]]
+key = "window.title_bar_font.family"
+homes = ["window.title(normal).family"]
+
+[[row]]
+key = "window.title_bar_font.size"
+homes = ["window.title(normal).size_px"]
+
+[[row]]
+key = "window.title_bar_font.defined_size"
+homes = ["window.title(normal).defined_size"]
+
+[[row]]
+key = "window.title_bar_font.weight"
+homes = ["window.title(normal).weight"]
+
+[[row]]
+key = "window.title_bar_font.style"
+homes = ["window.title(normal).style"]
+
+[[row]]
+key = "window.title_bar_font.color"
+homes = ["window.title(normal).color"]
+
+[[row]]
+key = "window.border.color"
+homes = ["window.frame(normal).stroke.color"]
+
+[[row]]
+key = "window.border.corner_radius"
+homes = ["window.frame(normal).corners"]
+note = "Corners::uniform(radius); border_kind full_lg (defaults.border.corner_radius_lg)"
+
+[[row]]
+key = "window.border.line_width"
+homes = ["window.frame(normal).stroke.width"]
+
+[[row]]
+key = "window.border.shadow_enabled"
+homes = ["window.frame(normal).shadows"]
+note = "true: SHADOWS unstated; false: SHADOWS stated, None (spec §5 notes)"
+
+[[row]]
+key = "window.border.padding.top"
+homes = ["window.frame(normal).padding.top"]
+note = "no preset states it: unstated"
+
+[[row]]
+key = "window.border.padding.right"
+homes = ["window.frame(normal).padding.right"]
+note = "no preset states it: unstated"
+
+[[row]]
+key = "window.border.padding.bottom"
+homes = ["window.frame(normal).padding.bottom"]
+note = "no preset states it: unstated"
+
+[[row]]
+key = "window.border.padding.left"
+homes = ["window.frame(normal).padding.left"]
+note = "no preset states it: unstated"
