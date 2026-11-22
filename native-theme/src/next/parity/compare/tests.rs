@@ -1527,7 +1527,7 @@ fn a_window_home_reads_its_getter_at_the_normal_state() -> TestResult {
     };
     theme.window = WindowChrome::new(
         WidgetOrigin::Native,
-        CaptionLayout::new(Arc::from([]), Arc::from([])),
+        Some(CaptionLayout::new(Arc::from([]), Arc::from([]))),
         PartStyle {
             corners: Corners::uniform(4.0),
             stated: PartStated::CORNERS,

@@ -1,6 +1,6 @@
 //! The hyperlink, `link` (spec §5).
 
-use super::{PartRules, TextRules, WidgetOrigin};
+use super::{PartRules, TextRules, WidgetOrigin, unstated_part, unstated_text};
 use crate::next::query::StyleQuery;
 use crate::next::style::{PartStyle, TextStyle};
 
@@ -32,6 +32,12 @@ impl LinkWidget {
             container,
             label,
         }
+    }
+
+    /// A hyperlink that states nothing: every part's base style empty, no
+    /// rule.
+    pub(crate) fn unstated(origin: WidgetOrigin) -> Self {
+        Self::new(origin, unstated_part(), unstated_text())
     }
 
     /// Whether the hyperlink is the platform's own control.

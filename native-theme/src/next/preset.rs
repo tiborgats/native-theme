@@ -29,7 +29,7 @@ use super::widgets::{
 use super::widgets::{
     MenuBarWidget, MenuWidget, SidebarWidget, StatusBarWidget, TabWidget, ToolbarWidget,
 };
-use super::window::{CaptionLayout, WindowChrome};
+use super::window::WindowChrome;
 use crate::IconSet;
 
 /// A bundled platform preset.
@@ -535,8 +535,8 @@ pub(crate) struct ResolveInputs<'a> {
 /// The theme of `preset` for `context` that states nothing: every `Option`
 /// `None`, every `stated` bit clear, every rule set empty over a default
 /// base, `name` the preset's display name. A field the spec declares without
-/// `Option` holds its type's default, and the window's caption layout names
-/// no button; the three whose types have none hold what their sources state:
+/// `Option` holds its type's default; the three whose types have none hold
+/// what their sources state:
 /// every widget's origin is
 /// [`WidgetOrigin::Native`] (spec §5: `Synthesized` is only for a control
 /// the platform does not have, and an unsourced property of a native control
@@ -707,32 +707,15 @@ pub(crate) fn nothing_stated(preset: Preset, context: ThemeContext) -> ResolvedT
         toolbar: ToolbarWidget::unstated(native),
         status_bar: StatusBarWidget::unstated(native),
         tooltip: TooltipWidget::new(native, PartStyle::default(), TextStyle::default()),
-        window: WindowChrome::new(
-            native,
-            CaptionLayout::new(Arc::from([]), Arc::from([])),
-            PartStyle::default(),
-            PartStyle::default(),
-            PartStyle::default(),
-            PartStyle::default(),
-            TextStyle::default(),
-            part(),
-            icon(),
-        ),
-        input: InputWidget::new(native, part(), text(), text(), text(), None),
-        text_area: InputWidget::new(native, part(), text(), text(), text(), None),
-        link: LinkWidget::new(native, part(), text()),
-        slider: SliderWidget::new(native, part(), part(), part(), part(), f32::default(), None),
-        progress_bar: ProgressBarWidget::new(native, part(), part(), None),
-        splitter: SplitterWidget::new(native, part(), f32::default()),
-        separator: SeparatorWidget::new(native, Color::default(), f32::default(), None, None),
-        spinner: SpinnerWidget::new(
-            native,
-            Color::default(),
-            f32::default(),
-            f32::default(),
-            f32::default(),
-            None,
-        ),
+        window: WindowChrome::unstated(native),
+        input: InputWidget::unstated(native),
+        text_area: InputWidget::unstated(native),
+        link: LinkWidget::unstated(native),
+        slider: SliderWidget::unstated(native),
+        progress_bar: ProgressBarWidget::unstated(native),
+        splitter: SplitterWidget::unstated(native),
+        separator: SeparatorWidget::unstated(native),
+        spinner: SpinnerWidget::unstated(native),
         custom_colors: BTreeMap::new(),
         custom_metrics: BTreeMap::new(),
     }
@@ -1344,6 +1327,7 @@ mod tests {
         assert!(t.tooltip.text.stated.is_empty());
         assert!(t.typography.body.stated.is_empty());
         assert_eq!(t.typography.caption, None);
+        assert_eq!(t.window.caption_layout, None);
         assert_eq!(t.button.disabled_opacity, None);
         assert_eq!(t.colors.window, SurfaceColors::default());
         assert_eq!(t.icons.theme, None);

@@ -1,6 +1,6 @@
 //! The slider, `slider` (spec §5).
 
-use super::{PartRules, WidgetOrigin};
+use super::{PartRules, WidgetOrigin, unstated_part};
 use crate::next::query::StyleQuery;
 use crate::next::style::PartStyle;
 
@@ -57,6 +57,20 @@ impl SliderWidget {
             thumb,
             tick,
         }
+    }
+
+    /// A slider that states nothing: every part's base style empty, no rule,
+    /// the tick length its type's default, no disabled opacity.
+    pub(crate) fn unstated(origin: WidgetOrigin) -> Self {
+        Self::new(
+            origin,
+            unstated_part(),
+            unstated_part(),
+            unstated_part(),
+            unstated_part(),
+            f32::default(),
+            None,
+        )
     }
 
     /// Whether the slider is the platform's own control.

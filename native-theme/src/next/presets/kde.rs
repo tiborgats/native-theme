@@ -113,7 +113,7 @@ use crate::next::platform::kcu_mix::{kcu_mix_of_mix, kcu_mix_qreal};
 use crate::next::platform::kcu_overlay::kcu_overlay;
 use crate::next::platform::kde_selection_inactive::kde_selection_inactive;
 use crate::next::platform::kde_shade::{KdeShadeRole, kde_shade};
-use crate::next::preset::{Preset, ResolveInputs, nothing_stated};
+use crate::next::preset::{Preset, ResolveInputs};
 use crate::next::query::{
     ButtonVariant, Contrast, ListVariant, Orientation, Scheme, ThemeContext, WidgetState,
 };
@@ -135,8 +135,13 @@ use crate::next::widgets::{
     TooltipWidget, WidgetOrigin,
 };
 use crate::next::widgets::{
+    InputWidget, LinkWidget, ProgressBarWidget, SeparatorWidget, SliderWidget, SpinnerWidget,
+    SplitterWidget,
+};
+use crate::next::widgets::{
     MenuBarWidget, MenuWidget, SidebarWidget, StatusBarWidget, TabWidget, ToolbarWidget,
 };
+use crate::next::window::WindowChrome;
 
 // ---------------------------------------------------------------------------
 // The constants
@@ -1330,7 +1335,6 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
     let icon_size = |pick: fn(&IconSizes) -> Option<f32>, preset: f32| {
         icon_sizes.as_ref().and_then(pick).unwrap_or(preset)
     };
-    let unstated = nothing_stated(Preset::KdeBreeze, ctx.clone());
     ResolvedTheme {
         name: Arc::from(Preset::KdeBreeze.display_name()),
         preset: Preset::KdeBreeze,
@@ -1407,15 +1411,15 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
         status_bar: StatusBarWidget::unstated(WidgetOrigin::Native),
         tooltip: tooltip(&colors, &typography, &layout),
         // Nothing stated yet: plan M2's KDE unit ("the rest of `kde-breeze`").
-        window: unstated.window,
-        input: unstated.input,
-        text_area: unstated.text_area,
-        link: unstated.link,
-        slider: unstated.slider,
-        progress_bar: unstated.progress_bar,
-        splitter: unstated.splitter,
-        separator: unstated.separator,
-        spinner: unstated.spinner,
+        window: WindowChrome::unstated(WidgetOrigin::Native),
+        input: InputWidget::unstated(WidgetOrigin::Native),
+        text_area: InputWidget::unstated(WidgetOrigin::Native),
+        link: LinkWidget::unstated(WidgetOrigin::Native),
+        slider: SliderWidget::unstated(WidgetOrigin::Native),
+        progress_bar: ProgressBarWidget::unstated(WidgetOrigin::Native),
+        splitter: SplitterWidget::unstated(WidgetOrigin::Native),
+        separator: SeparatorWidget::unstated(WidgetOrigin::Native),
+        spinner: SpinnerWidget::unstated(WidgetOrigin::Native),
         custom_colors: BTreeMap::new(),
         custom_metrics: BTreeMap::new(),
         colors,

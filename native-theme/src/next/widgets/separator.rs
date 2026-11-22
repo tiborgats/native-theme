@@ -39,6 +39,12 @@ impl SeparatorWidget {
         }
     }
 
+    /// A separator that states nothing: the colour and thickness their
+    /// types' defaults, no inset, no margin.
+    pub(crate) fn unstated(origin: WidgetOrigin) -> Self {
+        Self::new(origin, Color::default(), f32::default(), None, None)
+    }
+
     /// Whether the separator is the platform's own control.
     #[must_use]
     pub fn is_native(&self) -> bool {

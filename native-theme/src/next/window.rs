@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use super::geometry::{CornerRadius, Corners, ShadowLayer};
 use super::query::{ControlSize, GroupPosition, Orientation, StyleQuery, Surface, WidgetState};
-use super::rules::{IconProp, PartProp, RuleSet};
+use super::rules::{IconProp, PartProp, RuleBuilder, RuleSet};
 use super::style::{IconStyle, PartStyle, TextStyle};
 use super::widgets::WidgetOrigin;
 
@@ -120,8 +120,10 @@ type CaptionIconRules = RuleSet<IconStyle, IconProp, Option<CaptionButtonKind>>;
 pub struct WindowChrome {
     /// Native or synthesized.
     pub origin: WidgetOrigin,
-    /// The title bar's buttons at its two ends.
-    pub caption_layout: CaptionLayout,
+    /// The title bar's buttons at its two ends; `None` where no source
+    /// states the platform's buttons (an empty layout is a stated "no
+    /// buttons").
+    pub caption_layout: Option<CaptionLayout>,
     frame: FrameStyle,
     frame_maximized: FrameStyle,
     title_bar: PartStyle,
@@ -141,7 +143,7 @@ impl WindowChrome {
     )]
     pub(crate) fn new(
         origin: WidgetOrigin,
-        caption_layout: CaptionLayout,
+        caption_layout: Option<CaptionLayout>,
         frame: PartStyle,
         frame_maximized: PartStyle,
         title_bar: PartStyle,
@@ -161,6 +163,22 @@ impl WindowChrome {
             caption_button,
             caption_icon,
         }
+    }
+
+    /// Window chrome that states nothing: no caption layout, every style
+    /// empty, the caption rule sets empty over a default base.
+    pub(crate) fn unstated(origin: WidgetOrigin) -> Self {
+        Self::new(
+            origin,
+            None,
+            PartStyle::default(),
+            PartStyle::default(),
+            PartStyle::default(),
+            PartStyle::default(),
+            TextStyle::default(),
+            RuleBuilder::new(PartStyle::default()).build(),
+            RuleBuilder::new(IconStyle::default()).build(),
+        )
     }
 
     /// Whether the chrome is the platform's own.
@@ -314,7 +332,10 @@ mod tests {
             .build();
         WindowChrome::new(
             WidgetOrigin::Native,
-            CaptionLayout::new(Arc::from([]), Arc::from([CaptionButtonKind::Close])),
+            Some(CaptionLayout::new(
+                Arc::from([]),
+                Arc::from([CaptionButtonKind::Close]),
+            )),
             frame,
             maximized,
             bar(30.0),

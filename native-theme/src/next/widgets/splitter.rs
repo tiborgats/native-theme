@@ -1,6 +1,6 @@
 //! The splitter, `splitter` (spec §5).
 
-use super::{PartRules, WidgetOrigin};
+use super::{PartRules, WidgetOrigin, unstated_part};
 use crate::next::query::StyleQuery;
 use crate::next::style::PartStyle;
 
@@ -31,6 +31,12 @@ impl SplitterWidget {
             divider_width,
             handle,
         }
+    }
+
+    /// A splitter that states nothing: the handle's base style empty, no
+    /// rule, the width its type's default.
+    pub(crate) fn unstated(origin: WidgetOrigin) -> Self {
+        Self::new(origin, unstated_part(), f32::default())
     }
 
     /// Whether the splitter is the platform's own control.

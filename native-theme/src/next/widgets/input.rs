@@ -1,6 +1,6 @@
 //! The text input, `input` and `text_area` (spec §5).
 
-use super::{PartRules, TextRules, WidgetOrigin};
+use super::{PartRules, TextRules, WidgetOrigin, unstated_part, unstated_text};
 use crate::next::query::{InputQuery, InputVariant};
 use crate::next::style::{PartStyle, TextStyle};
 
@@ -52,6 +52,19 @@ impl InputWidget {
             placeholder,
             helper_text,
         }
+    }
+
+    /// A text input that states nothing: every part's base style empty, no
+    /// rule, no metric.
+    pub(crate) fn unstated(origin: WidgetOrigin) -> Self {
+        Self::new(
+            origin,
+            unstated_part(),
+            unstated_text(),
+            unstated_text(),
+            unstated_text(),
+            None,
+        )
     }
 
     /// Whether the text input is the platform's own control.
