@@ -60,6 +60,8 @@ const SLICE_GROUPS: &[&str] = &[
     "dialog",
     "combo_box",
     "segmented_control",
+    "card",
+    "expander",
 ];
 
 /// The fields of 0.7.2's `Resolved` wrapper beside the resolved theme, which do not serialise
@@ -1231,6 +1233,8 @@ const NOT_PORTED_GROUPS: &[&str] = &[
     "dialog",
     "combo_box",
     "segmented_control",
+    "card",
+    "expander",
 ];
 
 /// The totals of the ported groups' rows on each scheme, `[rows, compared, equal, mismatching, skipped]`:

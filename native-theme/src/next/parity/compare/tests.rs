@@ -828,6 +828,7 @@ const EQUAL_THOUGH_STATED: &[&str] = &[
     "window.border.shadow_enabled",
     "popover.border.shadow_enabled",
     "dialog.border.shadow_enabled",
+    "card.border.shadow_enabled",
 ];
 
 #[test]

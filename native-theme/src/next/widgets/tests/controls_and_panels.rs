@@ -1,8 +1,8 @@
-//! The tests of `popover`, `switch`, `dialog`, `combo_box` and
-//! `segmented_control`.
+//! The tests of `popover`, `switch`, `dialog`, `combo_box`,
+//! `segmented_control`, `card` and `expander`.
 
 use super::*;
-use crate::next::layout::DialogButtonOrder;
+use crate::next::layout::{ArrowSide, DialogButtonOrder};
 use crate::next::motion::DialogEntranceStyle;
 
 #[test]
@@ -108,6 +108,63 @@ fn segmented_control_getters_evaluate_their_rule_sets() {
 }
 
 #[test]
+fn card_getters_evaluate_their_rule_set() {
+    let container = part_rules(RED, GREEN, BLUE, ());
+    let card = CardWidget::new(WidgetOrigin::Native, container.clone());
+    assert!(card.is_native());
+    for state in states() {
+        let query = StyleQuery::new(state);
+        assert_eq!(card.container(query), container.eval(&query));
+        assert_eq!(
+            card.parts(query),
+            CardParts {
+                container: card.container(query),
+            }
+        );
+    }
+}
+
+#[test]
+fn expander_getters_evaluate_their_rule_sets() {
+    let container = part_rules(RED, GREEN, BLUE, ());
+    let header = part_rules(GREEN, BLUE, RED, ());
+    let header_label = text_rules(BLUE, RED);
+    let arrow = icon_rules(RED, GREEN);
+    let expander = ExpanderWidget::new(
+        WidgetOrigin::Native,
+        container.clone(),
+        header.clone(),
+        header_label.clone(),
+        arrow.clone(),
+        Some(ArrowSide::Leading),
+        Some(4.0),
+        Some(16.0),
+        Some(false),
+    );
+    assert!(expander.is_native());
+    assert_eq!(expander.arrow_side, Some(ArrowSide::Leading));
+    assert_eq!(expander.arrow_gap, Some(4.0));
+    assert_eq!(expander.content_indent, Some(16.0));
+    assert_eq!(expander.frame_enabled, Some(false));
+    for state in states() {
+        let query = StyleQuery::new(state);
+        assert_eq!(expander.container(query), container.eval(&query));
+        assert_eq!(expander.header(query), header.eval(&query));
+        assert_eq!(expander.header_label(query), header_label.eval(&query));
+        assert_eq!(expander.arrow(query), arrow.eval(&query));
+        assert_eq!(
+            expander.parts(query),
+            ExpanderParts {
+                container: expander.container(query),
+                header: expander.header(query),
+                header_label: expander.header_label(query),
+                arrow: expander.arrow(query),
+            }
+        );
+    }
+}
+
+#[test]
 fn popover_holds_its_parts() {
     let panel = PartStyle {
         fill: Paint::Solid(RED),
@@ -186,6 +243,10 @@ fn the_unstated_controls_and_panels_state_nothing() {
         let control = theme.segmented_control.parts(q);
         assert!(control.track.stated.is_empty() && control.segment.stated.is_empty());
         assert!(control.label.stated.is_empty() && control.separator.stated.is_empty());
+        assert!(theme.card.parts(q).container.stated.is_empty());
+        let expander = theme.expander.parts(q);
+        assert!(expander.container.stated.is_empty() && expander.header.stated.is_empty());
+        assert!(expander.header_label.stated.is_empty() && expander.arrow.stated.is_empty());
     }
     let popover = &theme.popover;
     assert!(popover.panel.stated.is_empty() && popover.arrow.stated.is_empty());
@@ -203,6 +264,11 @@ fn the_unstated_controls_and_panels_state_nothing() {
     assert_eq!(theme.combo_box.arrow_area_width, None);
     assert_eq!(theme.combo_box.disabled_opacity, None);
     assert_eq!(theme.segmented_control.disabled_opacity, None);
+    assert!(theme.card.is_native() && theme.expander.is_native());
+    assert_eq!(theme.expander.arrow_side, None);
+    assert_eq!(theme.expander.arrow_gap, None);
+    assert_eq!(theme.expander.content_indent, None);
+    assert_eq!(theme.expander.frame_enabled, None);
 }
 
 // Spec §1, "Thread safety & traits".
@@ -213,4 +279,6 @@ fn controls_and_panels_are_clone_debug_eq_send_sync() {
     assert_send_sync_clone_debug_eq::<DialogWidget>();
     assert_send_sync_clone_debug_eq::<ComboBoxWidget>();
     assert_send_sync_clone_debug_eq::<SegmentedControlWidget>();
+    assert_send_sync_clone_debug_eq::<CardWidget>();
+    assert_send_sync_clone_debug_eq::<ExpanderWidget>();
 }

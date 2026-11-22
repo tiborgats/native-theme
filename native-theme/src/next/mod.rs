@@ -171,8 +171,9 @@ pub use widgets::{
     RadioWidget, ResolvedTheme, ScrollbarParts, ScrollbarWidget, TooltipWidget, WidgetOrigin,
 };
 pub use widgets::{
-    ComboBoxParts, ComboBoxWidget, DialogWidget, PopoverWidget, SegmentedControlParts,
-    SegmentedControlWidget, SwitchParts, SwitchWidget,
+    CardParts, CardWidget, ComboBoxParts, ComboBoxWidget, DialogWidget, ExpanderParts,
+    ExpanderWidget, PopoverWidget, SegmentedControlParts, SegmentedControlWidget, SwitchParts,
+    SwitchWidget,
 };
 pub use widgets::{
     InputParts, InputWidget, LinkParts, LinkWidget, ProgressBarParts, ProgressBarWidget,

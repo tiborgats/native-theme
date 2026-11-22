@@ -23,7 +23,8 @@ use super::widgets::{
     TooltipWidget, WidgetOrigin,
 };
 use super::widgets::{
-    ComboBoxWidget, DialogWidget, PopoverWidget, SegmentedControlWidget, SwitchWidget,
+    CardWidget, ComboBoxWidget, DialogWidget, ExpanderWidget, PopoverWidget,
+    SegmentedControlWidget, SwitchWidget,
 };
 use super::widgets::{
     InputWidget, LinkWidget, ProgressBarWidget, SeparatorWidget, SliderWidget, SpinnerWidget,
@@ -724,6 +725,8 @@ pub(crate) fn nothing_stated(preset: Preset, context: ThemeContext) -> ResolvedT
         dialog: DialogWidget::unstated(native),
         combo_box: ComboBoxWidget::unstated(native),
         segmented_control: SegmentedControlWidget::unstated(native),
+        card: CardWidget::unstated(native),
+        expander: ExpanderWidget::unstated(native),
         custom_colors: BTreeMap::new(),
         custom_metrics: BTreeMap::new(),
     }

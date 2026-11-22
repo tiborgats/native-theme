@@ -2680,3 +2680,141 @@ homes = ["segmented_control.segment(NONE).padding.bottom"]
 [[row]]
 key = "segmented_control.border.padding.left"
 homes = ["segmented_control.segment(NONE).padding.left"]
+
+# --- card ---
+
+[[row]]
+key = "card.background_color"
+homes = ["card.container(NONE).fill"]
+
+[[row]]
+key = "card.border.color"
+homes = ["card.container(NONE).stroke.color"]
+unstated_if_unset = true
+
+[[row]]
+key = "card.border.corner_radius"
+homes = ["card.container(NONE).corners"]
+unstated_if_unset = true
+note = "Corners::uniform(radius)"
+
+[[row]]
+key = "card.border.line_width"
+homes = ["card.container(NONE).stroke.width"]
+unstated_if_unset = true
+
+[[row]]
+key = "card.border.shadow_enabled"
+homes = ["card.container(NONE).shadows"]
+unstated_if_unset = true
+note = "true: the SHADOWS bit unstated; false: SHADOWS stated with shadows = None (spec §5, notes to the table, border.shadow_enabled)"
+
+[[row]]
+key = "card.border.padding.top"
+homes = ["card.container(NONE).padding.top"]
+
+[[row]]
+key = "card.border.padding.right"
+homes = ["card.container(NONE).padding.right"]
+
+[[row]]
+key = "card.border.padding.bottom"
+homes = ["card.container(NONE).padding.bottom"]
+
+[[row]]
+key = "card.border.padding.left"
+homes = ["card.container(NONE).padding.left"]
+
+# --- expander ---
+
+[[row]]
+key = "expander.header_height"
+homes = ["expander.header(NONE).min_size[1]"]
+note = "a height, min alone as list.row_height (M0)"
+
+[[row]]
+key = "expander.arrow_icon_size"
+homes = ["expander.arrow(NONE).size"]
+
+[[row]]
+key = "expander.hover_background"
+homes = ["expander.header(HOVER).fill"]
+
+[[row]]
+key = "expander.arrow_color"
+homes = ["expander.arrow(NONE).color"]
+
+[[row]]
+key = "expander.arrow_side"
+homes = ["expander.arrow_side"]
+
+[[row]]
+key = "expander.arrow_gap"
+homes = ["expander.arrow_gap"]
+
+[[row]]
+key = "expander.content_indent"
+homes = ["expander.content_indent"]
+
+[[row]]
+key = "expander.frame_enabled"
+homes = ["expander.frame_enabled"]
+
+[[row]]
+key = "expander.font.family"
+homes = ["expander.header_label(NONE).family"]
+
+[[row]]
+key = "expander.font.size"
+homes = ["expander.header_label(NONE).size_px"]
+
+[[row]]
+key = "expander.font.defined_size"
+homes = ["expander.header_label(NONE).defined_size"]
+
+[[row]]
+key = "expander.font.weight"
+homes = ["expander.header_label(NONE).weight"]
+
+[[row]]
+key = "expander.font.style"
+homes = ["expander.header_label(NONE).style"]
+
+[[row]]
+key = "expander.font.color"
+homes = ["expander.header_label(NONE).color"]
+
+[[row]]
+key = "expander.border.color"
+homes = ["expander.container(NONE).stroke.color"]
+note = "drawn where frame_enabled (0.7.2 doc)"
+
+[[row]]
+key = "expander.border.corner_radius"
+homes = ["expander.container(NONE).corners"]
+note = "Corners::uniform(radius)"
+
+[[row]]
+key = "expander.border.line_width"
+homes = ["expander.container(NONE).stroke.width"]
+
+[[row]]
+key = "expander.border.shadow_enabled"
+homes = ["expander.container(NONE).shadows"]
+note = "true: SHADOWS unstated; false: SHADOWS stated, None (spec §5 notes)"
+
+[[row]]
+key = "expander.border.padding.top"
+homes = ["expander.header(NONE).padding.top"]
+
+[[row]]
+key = "expander.border.padding.right"
+homes = ["expander.header(NONE).padding.right"]
+
+[[row]]
+key = "expander.border.padding.bottom"
+homes = ["expander.header(NONE).padding.bottom"]
+
+[[row]]
+key = "expander.border.padding.left"
+homes = ["expander.header(NONE).padding.left"]

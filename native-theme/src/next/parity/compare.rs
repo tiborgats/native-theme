@@ -45,7 +45,7 @@ use super::{HOMES, NullMeans, Row, RowContext, Table};
 use crate::IconSet;
 use crate::next::color::Color;
 use crate::next::geometry::{CornerCurve, CornerRadius, Stroke, StrokeAlign};
-use crate::next::layout::{DialogButtonOrder, TabIndicatorSide};
+use crate::next::layout::{ArrowSide, DialogButtonOrder, TabIndicatorSide};
 use crate::next::motion::DialogEntranceStyle;
 use crate::next::paint::Paint;
 use crate::next::preset::Preset;
@@ -122,6 +122,12 @@ const DIALOG_ENTRANCES: [(crate::theme::DialogEntranceStyle, DialogEntranceStyle
         crate::theme::DialogEntranceStyle::FadeRise,
         DialogEntranceStyle::FadeRise,
     ),
+];
+
+/// 0.7.2's `ArrowSide` (`src/model/arrow_side.rs`, serialised in lowercase) to 0.8.0's (`layout.rs`).
+const ARROW_SIDES: [(crate::theme::ArrowSide, ArrowSide); 2] = [
+    (crate::theme::ArrowSide::Leading, ArrowSide::Leading),
+    (crate::theme::ArrowSide::Trailing, ArrowSide::Trailing),
 ];
 
 /// Whether `old`, the serialisation of a 0.7.2 enum value, maps to `new` in `table`; `None` where no entry
@@ -665,6 +671,7 @@ enum Got {
     TabIndicatorSide(TabIndicatorSide),
     DialogButtonOrder(DialogButtonOrder),
     DialogEntrance(DialogEntranceStyle),
+    ArrowSide(ArrowSide),
     /// A part's `shadows` with the `SHADOWS` bit clear.
     ShadowsUnstated,
     /// A part's `shadows` stated as `None`.
@@ -764,6 +771,7 @@ fn equal(old: &Value, got: &Got) -> Result<bool, String> {
         (Got::DialogEntrance(entrance), _) => {
             same_variant(old, &DIALOG_ENTRANCES, entrance)?.ok_or_else(kind_error)
         }
+        (Got::ArrowSide(side), _) => same_variant(old, &ARROW_SIDES, side)?.ok_or_else(kind_error),
         _ => Err(kind_error()),
     }
 }
@@ -1128,6 +1136,16 @@ fn metric(theme: &ResolvedTheme, widget: &str, name: &str) -> Option<Got> {
         ("segmented_control", "disabled_opacity") => {
             opt_f32(theme.segmented_control.disabled_opacity)
         }
+        ("expander", "arrow_side") => theme
+            .expander
+            .arrow_side
+            .map_or(Got::Unstated, Got::ArrowSide),
+        ("expander", "arrow_gap") => opt_f32(theme.expander.arrow_gap),
+        ("expander", "content_indent") => opt_f32(theme.expander.content_indent),
+        ("expander", "frame_enabled") => theme
+            .expander
+            .frame_enabled
+            .map_or(Got::Unstated, Got::Bool),
         _ => return None,
     })
 }
@@ -1229,6 +1247,11 @@ fn ruled_style<'a>(
         ("segmented_control", "separator") => {
             Ruled::Part(theme.segmented_control.separator(q.style()?))
         }
+        ("card", "container") => Ruled::Part(theme.card.container(q.style()?)),
+        ("expander", "container") => Ruled::Part(theme.expander.container(q.style()?)),
+        ("expander", "header") => Ruled::Part(theme.expander.header(q.style()?)),
+        ("expander", "header_label") => Ruled::Text(theme.expander.header_label(q.style()?)),
+        ("expander", "arrow") => Ruled::Icon(theme.expander.arrow(q.style()?)),
         _ => return Ok(None),
     };
     Ok(Some((style, property)))
