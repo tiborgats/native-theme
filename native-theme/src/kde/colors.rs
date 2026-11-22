@@ -6,7 +6,7 @@ use super::shade::{KdeShadeRole, kde_shade};
 use crate::Rgba;
 
 /// Look up a color key from a KDE INI section and parse it as RGB.
-fn get_color(ini: &configparser::ini::Ini, section: &str, key: &str) -> Option<Rgba> {
+pub(crate) fn get_color(ini: &configparser::ini::Ini, section: &str, key: &str) -> Option<Rgba> {
     let value = ini.get(section, key)?;
     super::parse_rgb(&value)
 }
@@ -540,7 +540,7 @@ fn mid_shade(window: Rgba, contrast: i32) -> Rgba {
 /// any other value, or none, is `None`. Breeze's schemes write these two
 /// forms; KConfig's whole boolean syntax was not read, so no other form is
 /// accepted.
-fn kconfig_bool(value: Option<String>) -> Option<bool> {
+pub(crate) fn kconfig_bool(value: Option<String>) -> Option<bool> {
     let value = value?;
     let value = value.trim();
     if value.eq_ignore_ascii_case("true") {

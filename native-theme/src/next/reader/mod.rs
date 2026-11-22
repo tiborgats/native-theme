@@ -474,5 +474,7 @@ impl DiagnosticEntry {
     }
 }
 
+#[cfg(all(target_os = "linux", feature = "kde"))]
+mod kde;
 #[cfg(test)]
 mod tests;
