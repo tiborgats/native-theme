@@ -2473,3 +2473,210 @@ homes = ["dialog.panel.padding.bottom"]
 [[row]]
 key = "dialog.border.padding.left"
 homes = ["dialog.panel.padding.left"]
+
+# --- combo_box ---
+
+[[row]]
+key = "combo_box.background_color"
+homes = ["combo_box.field(NONE).fill"]
+
+[[row]]
+key = "combo_box.min_height"
+homes = ["combo_box.field(NONE).min_size[1]"]
+
+[[row]]
+key = "combo_box.min_width"
+homes = ["combo_box.field(NONE).min_size[0]"]
+
+[[row]]
+key = "combo_box.arrow_icon_size"
+homes = ["combo_box.chevron(NONE).size"]
+
+[[row]]
+key = "combo_box.arrow_area_width"
+homes = ["combo_box.arrow_area_width"]
+
+[[row]]
+key = "combo_box.disabled_opacity"
+homes = ["combo_box.disabled_opacity"]
+
+[[row]]
+key = "combo_box.disabled_text_color"
+homes = ["combo_box.label(DISABLED).color"]
+
+[[row]]
+key = "combo_box.hover_background"
+homes = ["combo_box.field(HOVER).fill"]
+
+[[row]]
+key = "combo_box.hover_border_color"
+homes = ["combo_box.field(HOVER).stroke.color"]
+
+[[row]]
+key = "combo_box.disabled_background"
+homes = ["combo_box.field(DISABLED).fill"]
+
+[[row]]
+key = "combo_box.open_background"
+homes = [
+    "combo_box.field(OPEN).fill",
+    "combo_box.field(OPEN|HOVER).fill",
+]
+null_reference = "HOVER"
+note = "0.7.2 doc: open \"whatever the pointer does\" (OPEN wins over HOVER); None = the pointer's state; null_reference applies to the OPEN|HOVER home"
+
+[[row]]
+key = "combo_box.open_border_color"
+homes = [
+    "combo_box.field(OPEN).stroke.color",
+    "combo_box.field(OPEN|HOVER).stroke.color",
+]
+null_reference = "HOVER"
+note = "as open_background; width = border.line_width"
+
+[[row]]
+key = "combo_box.font.family"
+homes = ["combo_box.label(NONE).family"]
+
+[[row]]
+key = "combo_box.font.size"
+homes = ["combo_box.label(NONE).size_px"]
+
+[[row]]
+key = "combo_box.font.defined_size"
+homes = ["combo_box.label(NONE).defined_size"]
+
+[[row]]
+key = "combo_box.font.weight"
+homes = ["combo_box.label(NONE).weight"]
+
+[[row]]
+key = "combo_box.font.style"
+homes = ["combo_box.label(NONE).style"]
+
+[[row]]
+key = "combo_box.font.color"
+homes = ["combo_box.label(NONE).color"]
+
+[[row]]
+key = "combo_box.border.color"
+homes = ["combo_box.field(NONE).stroke.color"]
+
+[[row]]
+key = "combo_box.border.corner_radius"
+homes = ["combo_box.field(NONE).corners"]
+note = "Corners::uniform(radius)"
+
+[[row]]
+key = "combo_box.border.line_width"
+homes = ["combo_box.field(NONE).stroke.width"]
+
+[[row]]
+key = "combo_box.border.shadow_enabled"
+homes = ["combo_box.field(NONE).shadows"]
+note = "true: SHADOWS unstated; false: SHADOWS stated, None (spec §5 notes)"
+
+[[row]]
+key = "combo_box.border.padding.top"
+homes = ["combo_box.field(NONE).padding.top"]
+
+[[row]]
+key = "combo_box.border.padding.right"
+homes = ["combo_box.field(NONE).padding.right"]
+
+[[row]]
+key = "combo_box.border.padding.bottom"
+homes = ["combo_box.field(NONE).padding.bottom"]
+
+[[row]]
+key = "combo_box.border.padding.left"
+homes = ["combo_box.field(NONE).padding.left"]
+
+# --- segmented_control ---
+
+[[row]]
+key = "segmented_control.background_color"
+homes = ["segmented_control.track(NONE).fill"]
+
+[[row]]
+key = "segmented_control.active_background"
+homes = ["segmented_control.segment(SELECTED).fill"]
+
+[[row]]
+key = "segmented_control.active_text_color"
+homes = ["segmented_control.label(SELECTED).color"]
+
+[[row]]
+key = "segmented_control.segment_height"
+homes = ["segmented_control.segment(NONE).min_size[1]"]
+note = "a height, min alone as list.row_height (M0)"
+
+[[row]]
+key = "segmented_control.separator_width"
+homes = ["segmented_control.separator_width"]
+
+[[row]]
+key = "segmented_control.disabled_opacity"
+homes = ["segmented_control.disabled_opacity"]
+
+[[row]]
+key = "segmented_control.hover_background"
+homes = ["segmented_control.segment(HOVER).fill"]
+
+[[row]]
+key = "segmented_control.font.family"
+homes = ["segmented_control.label(NONE).family"]
+
+[[row]]
+key = "segmented_control.font.size"
+homes = ["segmented_control.label(NONE).size_px"]
+
+[[row]]
+key = "segmented_control.font.defined_size"
+homes = ["segmented_control.label(NONE).defined_size"]
+
+[[row]]
+key = "segmented_control.font.weight"
+homes = ["segmented_control.label(NONE).weight"]
+
+[[row]]
+key = "segmented_control.font.style"
+homes = ["segmented_control.label(NONE).style"]
+
+[[row]]
+key = "segmented_control.font.color"
+homes = ["segmented_control.label(NONE).color"]
+
+[[row]]
+key = "segmented_control.border.color"
+homes = ["segmented_control.track(NONE).stroke.color"]
+
+[[row]]
+key = "segmented_control.border.corner_radius"
+homes = ["segmented_control.track(NONE).corners"]
+note = "Corners::uniform(radius)"
+
+[[row]]
+key = "segmented_control.border.line_width"
+homes = ["segmented_control.track(NONE).stroke.width"]
+
+[[row]]
+key = "segmented_control.border.shadow_enabled"
+homes = ["segmented_control.track(NONE).shadows"]
+note = "true: SHADOWS unstated; false: SHADOWS stated, None (spec §5 notes)"
+
+[[row]]
+key = "segmented_control.border.padding.top"
+homes = ["segmented_control.segment(NONE).padding.top"]
+
+[[row]]
+key = "segmented_control.border.padding.right"
+homes = ["segmented_control.segment(NONE).padding.right"]
+
+[[row]]
+key = "segmented_control.border.padding.bottom"
+homes = ["segmented_control.segment(NONE).padding.bottom"]
+
+[[row]]
+key = "segmented_control.border.padding.left"
+homes = ["segmented_control.segment(NONE).padding.left"]

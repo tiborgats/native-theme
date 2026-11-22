@@ -44,6 +44,7 @@ type TextRules<M = ()> = RuleSet<TextStyle, TextProp, M>;
 /// A rule set of icon styles.
 type IconRules<M = ()> = RuleSet<IconStyle, IconProp, M>;
 
+mod combo_box;
 mod dialog;
 mod input;
 mod link;
@@ -51,6 +52,7 @@ mod menu;
 mod menu_bar;
 mod popover;
 mod progress_bar;
+mod segmented_control;
 mod separator;
 mod sidebar;
 mod slider;
@@ -61,6 +63,7 @@ mod switch;
 mod tab;
 mod toolbar;
 
+pub use combo_box::{ComboBoxParts, ComboBoxWidget};
 pub use dialog::DialogWidget;
 pub use input::{InputParts, InputWidget};
 pub use link::{LinkParts, LinkWidget};
@@ -68,6 +71,7 @@ pub use menu::{MenuParts, MenuWidget};
 pub use menu_bar::{MenuBarParts, MenuBarWidget};
 pub use popover::PopoverWidget;
 pub use progress_bar::{ProgressBarParts, ProgressBarWidget};
+pub use segmented_control::{SegmentedControlParts, SegmentedControlWidget};
 pub use separator::SeparatorWidget;
 pub use sidebar::{SidebarParts, SidebarWidget};
 pub use slider::{SliderParts, SliderWidget};
@@ -695,6 +699,10 @@ pub struct ResolvedTheme {
     pub switch: SwitchWidget,
     /// The dialog.
     pub dialog: DialogWidget,
+    /// The combo box.
+    pub combo_box: ComboBoxWidget,
+    /// The segmented control.
+    pub segmented_control: SegmentedControlWidget,
     /// The application's own colour tokens (empty on the bundled presets).
     pub custom_colors: BTreeMap<String, Color>,
     /// The application's own metric tokens (empty on the bundled presets).
@@ -775,6 +783,8 @@ impl ResolvedTheme {
         all.extend(self.sidebar.dead_rules());
         all.extend(self.toolbar.dead_rules());
         all.extend(self.switch.dead_rules());
+        all.extend(self.combo_box.dead_rules());
+        all.extend(self.segmented_control.dead_rules());
         all
     }
 

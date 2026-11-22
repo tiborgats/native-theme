@@ -1120,6 +1120,14 @@ fn metric(theme: &ResolvedTheme, widget: &str, name: &str) -> Option<Got> {
             .show_state_glyphs
             .map_or(Got::Unstated, Got::Bool),
         ("switch", "disabled_opacity") => opt_f32(theme.switch.disabled_opacity),
+        ("combo_box", "arrow_area_width") => opt_f32(theme.combo_box.arrow_area_width),
+        ("combo_box", "disabled_opacity") => opt_f32(theme.combo_box.disabled_opacity),
+        ("segmented_control", "separator_width") => {
+            Got::F32(theme.segmented_control.separator_width)
+        }
+        ("segmented_control", "disabled_opacity") => {
+            opt_f32(theme.segmented_control.disabled_opacity)
+        }
         _ => return None,
     })
 }
@@ -1210,6 +1218,17 @@ fn ruled_style<'a>(
         ("switch", "track") => Ruled::Part(theme.switch.track(q.style()?)),
         ("switch", "thumb") => Ruled::Part(theme.switch.thumb(q.style()?)),
         ("switch", "label") => Ruled::Text(theme.switch.label(q.style()?)),
+        ("combo_box", "field") => Ruled::Part(theme.combo_box.field(q.style()?)),
+        ("combo_box", "label") => Ruled::Text(theme.combo_box.label(q.style()?)),
+        ("combo_box", "chevron") => Ruled::Icon(theme.combo_box.chevron(q.style()?)),
+        ("segmented_control", "track") => Ruled::Part(theme.segmented_control.track(q.style()?)),
+        ("segmented_control", "segment") => {
+            Ruled::Part(theme.segmented_control.segment(q.style()?))
+        }
+        ("segmented_control", "label") => Ruled::Text(theme.segmented_control.label(q.style()?)),
+        ("segmented_control", "separator") => {
+            Ruled::Part(theme.segmented_control.separator(q.style()?))
+        }
         _ => return Ok(None),
     };
     Ok(Some((style, property)))

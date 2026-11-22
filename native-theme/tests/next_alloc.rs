@@ -248,14 +248,24 @@ fn query_menus_tabs_and_bars(theme: &ResolvedTheme, state: WidgetState) {
     black_box(theme.toolbar.parts(q));
 }
 
-/// Every getter and `parts` of the ruled parts of the switch for `state`,
-/// each result kept from the optimiser.
+/// Every getter and `parts` of the ruled parts of the switch, the combo box
+/// and the segmented control for `state`, each result kept from the
+/// optimiser.
 fn query_controls(theme: &ResolvedTheme, state: WidgetState) {
     let q = StyleQuery::<()>::new(state);
     black_box(theme.switch.track(q));
     black_box(theme.switch.thumb(q));
     black_box(theme.switch.label(q));
     black_box(theme.switch.parts(q));
+    black_box(theme.combo_box.field(q));
+    black_box(theme.combo_box.label(q));
+    black_box(theme.combo_box.chevron(q));
+    black_box(theme.combo_box.parts(q));
+    black_box(theme.segmented_control.track(q));
+    black_box(theme.segmented_control.segment(q));
+    black_box(theme.segmented_control.label(q));
+    black_box(theme.segmented_control.separator(q));
+    black_box(theme.segmented_control.parts(q));
 }
 
 #[test]
