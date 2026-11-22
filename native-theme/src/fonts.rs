@@ -3,7 +3,8 @@
 //! [`select_face`] is the one matcher — CSS Fonts Module Level 4 §5.1
 //! "Localized name matching" and §5.2 "Matching font styles" over a list of
 //! face descriptions — and needs no font database, so it is compiled
-//! unconditionally. Behind the `system-fonts` feature, `system_face` runs
+//! unconditionally; [`select_face_with_width`] is the same matcher for a
+//! desired width other than normal. Behind the `system-fonts` feature, `system_face` runs
 //! it over the system font database, loaded once per process, and returns
 //! the chosen face's bytes; on macOS the system UI font is found by its file
 //! through Core Text, because no font database files it under the name the
@@ -55,16 +56,7 @@ pub fn select_face(
     weight: u16,
     style: FontStyle,
 ) -> Option<usize> {
-    let wanted = unicase::UniCase::new(family);
-    let mut candidates: Vec<(usize, &FaceTraits<'_>)> = faces
-        .iter()
-        .enumerate()
-        .filter(|(_, face)| {
-            face.families
-                .iter()
-                .any(|name| unicase::UniCase::new(*name) == wanted)
-        })
-        .collect();
+    let mut candidates = family_candidates(faces, family);
     if candidates.is_empty() {
         return None;
     }
@@ -72,6 +64,56 @@ pub fn select_face(
     keep_best(&mut candidates, |face| style_rank(face.style, style));
     keep_best(&mut candidates, |face| weight_rank(face.weight, weight));
     candidates.first().map(|(index, _)| *index)
+}
+
+/// The index in `faces` of the face CSS Fonts Module Level 4 selects for
+/// `family`, `weight`, `style` and the desired `width`, or `None` where no
+/// face records `family`.
+///
+/// [`select_face`] with a desired width in place of the normal one: the
+/// candidates are those of §5.1 "Localized name matching", as there, and
+/// the three steps of §5.2 "Matching font styles" narrow them in the order
+/// that section sets, `font-width` first, then `font-style` and
+/// `font-weight` as in [`select_face`]. `width` and [`FaceTraits::width`]
+/// are OS/2 `usWidthClass` values, `5` being normal (100 %); the classes
+/// rise with the width percentage, so the §5.2 `font-width` rule is applied
+/// to them unchanged: the desired width first; for a desired width at or
+/// below normal, narrower widths descending, then wider ascending; above
+/// normal, wider widths ascending, then narrower descending.
+#[must_use]
+pub fn select_face_with_width(
+    faces: &[FaceTraits<'_>],
+    family: &str,
+    weight: u16,
+    style: FontStyle,
+    width: u16,
+) -> Option<usize> {
+    let mut candidates = family_candidates(faces, family);
+    if candidates.is_empty() {
+        return None;
+    }
+    keep_best(&mut candidates, |face| width_rank_for(face.width, width));
+    keep_best(&mut candidates, |face| style_rank(face.style, style));
+    keep_best(&mut candidates, |face| weight_rank(face.weight, weight));
+    candidates.first().map(|(index, _)| *index)
+}
+
+/// §5.1: the faces one of whose family names equals `family` under Unicode
+/// default caseless matching, with their indices in `faces`.
+fn family_candidates<'f, 'a>(
+    faces: &'f [FaceTraits<'a>],
+    family: &str,
+) -> Vec<(usize, &'f FaceTraits<'a>)> {
+    let wanted = unicase::UniCase::new(family);
+    faces
+        .iter()
+        .enumerate()
+        .filter(|(_, face)| {
+            face.families
+                .iter()
+                .any(|name| unicase::UniCase::new(*name) == wanted)
+        })
+        .collect()
 }
 
 /// Keep the candidates of the lowest rank.
@@ -91,6 +133,21 @@ fn width_rank(width: u16) -> (u8, u16) {
         std::cmp::Ordering::Equal => (0, 0),
         std::cmp::Ordering::Less => (1, NORMAL.saturating_sub(width)),
         std::cmp::Ordering::Greater => (2, width),
+    }
+}
+
+/// §5.2 `font-width` for the desired width `wanted`: `(group, distance)`,
+/// lower first.
+fn width_rank_for(face: u16, wanted: u16) -> (u8, u16) {
+    const NORMAL: u16 = 5;
+    let narrower = wanted.saturating_sub(face);
+    let wider = face.saturating_sub(wanted);
+    match face.cmp(&wanted) {
+        std::cmp::Ordering::Equal => (0, 0),
+        std::cmp::Ordering::Less if wanted <= NORMAL => (1, narrower),
+        std::cmp::Ordering::Less => (2, narrower),
+        std::cmp::Ordering::Greater if wanted <= NORMAL => (2, wider),
+        std::cmp::Ordering::Greater => (1, wider),
     }
 }
 
@@ -550,6 +607,116 @@ mod tests {
         assert_eq!(select_face(&faces, "F", 400, N), Some(2));
         let tie = [face(&["F"], 5, N, 400), face(&["F"], 5, N, 400)];
         assert_eq!(select_face(&tie, "F", 400, N), Some(0));
+    }
+
+    /// §5.2 `font-width`, desired width at or below normal: the desired
+    /// width, then narrower widths descending, then wider ascending.
+    #[test]
+    fn a_narrow_width_looks_narrower_first_then_wider() {
+        let faces = [
+            face(&["F"], 5, N, 400),
+            face(&["F"], 3, N, 400),
+            face(&["F"], 1, N, 400),
+        ];
+        assert_eq!(select_face_with_width(&faces, "F", 400, N, 3), Some(1));
+        assert_eq!(select_face_with_width(&faces, "F", 400, N, 4), Some(1));
+        let wider_only = [face(&["F"], 7, N, 400), face(&["F"], 5, N, 400)];
+        assert_eq!(select_face_with_width(&wider_only, "F", 400, N, 3), Some(1));
+        let narrower_or_wider = [face(&["F"], 5, N, 400), face(&["F"], 2, N, 400)];
+        assert_eq!(
+            select_face_with_width(&narrower_or_wider, "F", 400, N, 4),
+            Some(1)
+        );
+    }
+
+    /// §5.2 `font-width`, desired width above normal: the desired width,
+    /// then wider widths ascending, then narrower descending.
+    #[test]
+    fn a_wide_width_looks_wider_first_then_narrower() {
+        let faces = [
+            face(&["F"], 9, N, 400),
+            face(&["F"], 5, N, 400),
+            face(&["F"], 7, N, 400),
+        ];
+        assert_eq!(select_face_with_width(&faces, "F", 400, N, 7), Some(2));
+        assert_eq!(select_face_with_width(&faces, "F", 400, N, 6), Some(2));
+        let narrower_only = [face(&["F"], 3, N, 400), face(&["F"], 5, N, 400)];
+        assert_eq!(
+            select_face_with_width(&narrower_only, "F", 400, N, 7),
+            Some(1)
+        );
+        let wider_or_narrower = [face(&["F"], 6, N, 400), face(&["F"], 9, N, 400)];
+        assert_eq!(
+            select_face_with_width(&wider_or_narrower, "F", 400, N, 8),
+            Some(1)
+        );
+    }
+
+    /// The width step narrows before style and weight, as in `select_face`.
+    #[test]
+    fn a_desired_width_outranks_style_and_weight() {
+        let faces = [
+            face(&["F"], 5, N, 400),
+            face(&["F"], 3, I, 700),
+            face(&["F"], 3, I, 400),
+        ];
+        assert_eq!(select_face_with_width(&faces, "F", 400, N, 3), Some(2));
+        assert_eq!(select_face_with_width(&faces, "Other", 400, N, 3), None);
+    }
+
+    /// At the normal width the width-aware matcher picks what `select_face`
+    /// picks, on the inputs of the tests above.
+    #[test]
+    fn at_normal_width_both_matchers_agree() {
+        let normal = |weight| face(&["F"], 5, N, weight);
+        let sets: Vec<Vec<FaceTraits<'static>>> = vec![
+            vec![face(&["Inter"], 5, N, 400), face(&["Roboto"], 5, N, 400)],
+            vec![],
+            vec![face(&["Segoe UI", "Segoe UI Regular"], 5, N, 400)],
+            vec![
+                face(&["F"], 3, N, 400),
+                face(&["F"], 7, N, 400),
+                face(&["F"], 5, N, 400),
+            ],
+            vec![
+                face(&["F"], 2, N, 400),
+                face(&["F"], 7, N, 400),
+                face(&["F"], 3, N, 400),
+            ],
+            vec![face(&["F"], 8, N, 400), face(&["F"], 6, N, 400)],
+            vec![face(&["F"], 5, N, 400), face(&["F"], 5, O, 400)],
+            vec![face(&["F"], 5, N, 400), face(&["F"], 5, I, 400)],
+            vec![face(&["F"], 5, I, 400), face(&["F"], 5, O, 400)],
+            vec![face(&["F"], 5, O, 400), face(&["F"], 5, I, 400)],
+            vec![normal(300), normal(450)],
+            vec![normal(600), normal(300)],
+            vec![normal(400), normal(500)],
+            vec![normal(700), normal(400)],
+            vec![normal(350), normal(200)],
+            vec![normal(700), normal(350)],
+            vec![normal(600), normal(800)],
+            vec![normal(500), normal(600)],
+            vec![
+                face(&["F"], 3, N, 400),
+                face(&["F"], 5, I, 700),
+                face(&["F"], 5, I, 400),
+            ],
+            vec![normal(400), normal(400)],
+        ];
+        let families = ["inter", "INTER", "Helvetica", "segoe ui regular", "F"];
+        for faces in &sets {
+            for family in families {
+                for weight in [300, 400, 450, 500, 700] {
+                    for style in [N, I, O] {
+                        assert_eq!(
+                            select_face_with_width(faces, family, weight, style, 5),
+                            select_face(faces, family, weight, style),
+                            "{family} {weight} {style:?}"
+                        );
+                    }
+                }
+            }
+        }
     }
 
     /// The macOS system UI font's documented name, caselessly, and nothing
