@@ -18,7 +18,7 @@
 # doctests through cargo test --doc, as check_release.sh's cargo_tests; each
 # run fails below run_tests' minimum of one passed test); from the plan's M0,
 # step 4 on, clippy on the gpui connector's targets, -D warnings, as
-# check_release.sh lints it, and its parity test (next::parity), both with the
+# check_release.sh lints it, and its 0.8.0 mapping tests and parity test (next::), both with the
 # features check_release.sh tests it with; the core
 # crate's two rustdoc runs, -D warnings; the panic-pattern scan of
 # native-theme/src and the README versions check. `--target windows` or
@@ -241,8 +241,8 @@ test_step "test (native-theme, Linux features)" tests -p native-theme --features
 GPUI_FEATURES="native,watch"
 step "clippy (native-theme-gpui, native, watch)" \
     cargo clippy -p native-theme-gpui --all-targets --features "$GPUI_FEATURES" -- -D warnings
-test_step "connector parity (native-theme-gpui, native, watch)" \
-    parity_tests -p native-theme-gpui --features "$GPUI_FEATURES" --lib next::parity
+test_step "0.8.0 mapping tests and connector parity (native-theme-gpui, native, watch)" \
+    parity_tests -p native-theme-gpui --features "$GPUI_FEATURES" --lib next::
 step "docs (native-theme)" \
     env RUSTDOCFLAGS="-D warnings" cargo doc -p native-theme --no-deps
 step "docs, private items (native-theme, Linux features)" \

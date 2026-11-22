@@ -105,8 +105,8 @@ pub(crate) fn default_button_rest(r: &ResolvedTheme) -> Mapped<Option<StyleRefin
     let b = &r.button;
     let default = b.body(WidgetState::DEFAULT);
     Ok(geometry::default_button_rest_from(
-        Some(fill(&default, "button.body(DEFAULT).fill")?),
-        Some(stroke_color(&default, "button.body(DEFAULT).stroke.color")?),
+        state_fill(&default, "button.body(DEFAULT).fill")?,
+        state_stroke_color(&default, "button.body(DEFAULT).stroke.color")?,
         stroke_color(&b.body(WidgetState::NONE), "button.body(NONE).stroke.color")?,
     ))
 }
@@ -370,14 +370,17 @@ fn default_hover_frame(hovered: &PartStyle, default: &PartStyle) -> Mapped<Hsla>
 /// `button.default_button_background` at the default body's fill,
 /// `button.default_button_text_color` at the default label's colour (a theme
 /// with no rule for the state returns `button.font.color`, 0.7.2's fallback)
-/// and the frame [`default_hover_frame`] gives. `button.default_button_background`
-/// keeps the read of M0.4: never `None`, where 0.7.2's is `None` on a preset
-/// that leaves it unset.
+/// and the frame [`default_hover_frame`] gives. `DEFAULT` is a state, so
+/// `button.default_button_background` is unset, and the states `None` as in
+/// 0.7.2, where no rule states the default body's fill (its `from_state` bit).
 pub(crate) fn default_button_states(r: &ResolvedTheme) -> Mapped<Option<DefaultButtonStates>> {
     let b = &r.button;
     let default = b.body(WidgetState::DEFAULT);
+    let Some(hover) = state_fill(&default, "button.body(DEFAULT).fill")? else {
+        return Ok(None);
+    };
     Ok(Some(DefaultButtonStates {
-        hover: fill(&default, "button.body(DEFAULT).fill")?,
+        hover,
         foreground: text_color(
             &b.label(WidgetState::DEFAULT),
             "button.label(DEFAULT).color",
