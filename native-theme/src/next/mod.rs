@@ -110,6 +110,14 @@ mod icons;
 mod layout;
 mod motion;
 mod paint;
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "called by the kde-breeze builder, the next task of M0"
+    )
+)]
+mod platform;
 mod preset;
 mod query;
 mod reader;
