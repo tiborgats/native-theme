@@ -12,14 +12,18 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use native_theme::resolve::ResolutionContext;
-use native_theme::theme::{ColorMode, Theme};
 use serde::Deserialize;
+
+use crate::resolve::ResolutionContext;
+use crate::theme::{ColorMode, Theme};
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
 /// The table of homes.
-const HOMES: &str = include_str!("next_homes.toml");
+const HOMES: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/tests/next_homes.toml"
+));
 
 /// The preset of the slice.
 const PRESET: &str = "kde-breeze";

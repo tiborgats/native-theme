@@ -1,6 +1,6 @@
 # The table of homes of the 0.8.0 work (docs/v0.8.0-plan.md, section 1, rule 2): for each field of 0.7.2's
 # resolved theme in the first slice (the globals and `button`, `checkbox`, `list`, `scrollbar`, `tooltip`), where
-# its value lives in the 0.8.0 model. tests/next_parity.rs checks the rows against 0.7.2's serialisation and the
+# its value lives in the 0.8.0 model. src/next/parity.rs checks the rows against 0.7.2's serialisation and the
 # spec's vocabulary; the same rows place a preset's constants and port a consumer's reads. Scaffolding of the
 # 0.8.0 work: deleted at the 0.8.0 cut.
 #

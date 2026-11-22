@@ -110,6 +110,8 @@ mod icons;
 mod layout;
 mod motion;
 mod paint;
+#[cfg(test)]
+mod parity;
 #[cfg_attr(
     not(test),
     expect(
