@@ -1605,11 +1605,8 @@ note = "spec §5: a separator part's colour is its fill"
 
 [[row]]
 key = "menu.row_height"
-homes = [
-    "menu.item(NONE).min_size[1]",
-    "menu.item(NONE).max_size[1]",
-]
-note = "exact: min = max"
+homes = ["menu.item(NONE).max_size[1]"]
+note = "exact: a preset with an exact row height states it as both min_size[1] and max_size[1] (spec §5's menu row); min_size[1] is menu.min_row_height's home, so it is not compared here"
 
 [[row]]
 key = "menu.min_row_height"
