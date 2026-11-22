@@ -19,6 +19,7 @@ mod kde_color_common;
 pub(crate) mod kde_selection_inactive;
 pub(crate) mod kde_shade;
 pub(crate) mod qt_lighter;
+pub(crate) mod qt_tint;
 #[cfg(test)]
 mod vectors;
 
