@@ -246,6 +246,14 @@ pub mod geometry;
 #[cfg(all(test, target_os = "linux", feature = "system-icons"))]
 use native_theme_test_fixtures as icon_fixture;
 pub mod icons;
+// `allow`, not `expect`: whether rustc reports an item that only an unused
+// item reaches differs between toolchains, so an expectation could be
+// unfulfilled on one of them.
+#[allow(
+    dead_code,
+    reason = "the 0.8.0 mapping, read by nothing until its parity test, and by that until M4 ports the connector onto it"
+)]
+mod next;
 #[cfg(test)]
 mod showcase;
 pub mod variants;
@@ -362,40 +370,18 @@ pub fn to_theme(
     } else {
         GpuiThemeMode::Light
     };
-    let d = &resolved.defaults;
-
     let mut theme = GpuiTheme::from(&theme_color);
     // Issue 53: Theme.transparent is set by Theme::from() to
     // Hsla::transparent_black() and is intentionally left unchanged.
     // It's used internally by gpui-component for transparent overlays.
-    theme.mode = mode;
-    theme.font_family = font_family(&d.font.family);
-    // §3.4: gpui-component's `WindowState` root plugin sets the window rem
-    // to font_size (gpui-component 0.10.0 src/root.rs:725), so scaling these two sizes scales every rem-relative
-    // size in gpui-component, as the platform toolkit scales its own text.
-    theme.font_size = px(prefs.scaled(d.font.size));
-    theme.mono_font_family = font_family(&d.mono_font.family);
-    theme.mono_font_size = px(prefs.scaled(d.mono_font.size));
-    theme.radius = px(d.border.corner_radius);
-    theme.radius_lg = px(d.border.corner_radius_lg);
+    apply_scalars(
+        &mut theme,
+        &ThemeScalars::from_resolved(resolved, is_dark, prefs),
+    );
     // The corner radius of a client-decorated window, which gpui-component's
     // WindowBorder, Root and TitleBar round (gpui-component
     // src/window_border.rs:28-29): the window's own, `window.border`'s.
     theme.window_radius = px(resolved.window.border.corner_radius);
-    theme.shadow = d.border.shadow_enabled;
-
-    // §8.3 and D4: the band is drawn where the ring has a width and the
-    // platform does not show it for keyboard focus only; its width and offset
-    // have no receiver.
-    theme.focus_ring = crate::colors::focus_band_on(d);
-
-    // §8.3: Scrolling (overlay, auto-hide) when the platform draws overlay
-    // scrollbars, Always otherwise.
-    theme.scrollbar_mode = if resolved.scrollbar.overlay_mode {
-        ScrollbarMode::Scrolling
-    } else {
-        ScrollbarMode::Always
-    };
 
     // Rationale B5: the theme's caret blink; where it states none, upstream's
     // default stays, and `apply` installs the application's.
@@ -424,6 +410,84 @@ pub fn to_theme(
         theme.light_theme = config;
     }
     theme
+}
+
+/// The values of the global theme that [`to_theme`] and
+/// [`config::to_theme_config`] take from the first slice of the 0.8.0 work
+/// (its globals), read from a 0.7.2 resolved theme by
+/// [`ThemeScalars::from_resolved`] and from the 0.8.0 model by the
+/// connector's `next` module: the families as [`font_family`] gives them,
+/// the sizes already scaled.
+pub(crate) struct ThemeScalars {
+    pub(crate) is_dark: bool,
+    pub(crate) font_family: SharedString,
+    pub(crate) font_size: f32,
+    pub(crate) mono_font_family: SharedString,
+    pub(crate) mono_font_size: f32,
+    pub(crate) radius: f32,
+    pub(crate) radius_lg: f32,
+    pub(crate) shadow: bool,
+    /// Whether gpui-component's focus band is on for any focus
+    /// (`colors::focus_band`).
+    pub(crate) focus_band: bool,
+    /// Whether the platform draws overlay scrollbars.
+    pub(crate) overlay_scrollbars: bool,
+}
+
+impl ThemeScalars {
+    /// The values of a 0.7.2 resolved theme, its sizes scaled by `prefs`.
+    pub(crate) fn from_resolved(
+        resolved: &ResolvedTheme,
+        is_dark: bool,
+        prefs: &AccessibilityPreferences,
+    ) -> Self {
+        let d = &resolved.defaults;
+        Self {
+            is_dark,
+            font_family: font_family(&d.font.family),
+            font_size: prefs.scaled(d.font.size),
+            mono_font_family: font_family(&d.mono_font.family),
+            mono_font_size: prefs.scaled(d.mono_font.size),
+            radius: d.border.corner_radius,
+            radius_lg: d.border.corner_radius_lg,
+            shadow: d.border.shadow_enabled,
+            focus_band: crate::colors::focus_band_on(d),
+            overlay_scrollbars: resolved.scrollbar.overlay_mode,
+        }
+    }
+}
+
+/// Write `s` onto `theme`: its `mode`, fonts, radii, `shadow`, `focus_ring`
+/// and `scrollbar_mode`.
+pub(crate) fn apply_scalars(theme: &mut GpuiTheme, s: &ThemeScalars) {
+    theme.mode = if s.is_dark {
+        GpuiThemeMode::Dark
+    } else {
+        GpuiThemeMode::Light
+    };
+    theme.font_family = s.font_family.clone();
+    // §3.4: gpui-component's `WindowState` root plugin sets the window rem
+    // to font_size (gpui-component 0.10.0 src/root.rs:725), so scaling these two sizes scales every rem-relative
+    // size in gpui-component, as the platform toolkit scales its own text.
+    theme.font_size = px(s.font_size);
+    theme.mono_font_family = s.mono_font_family.clone();
+    theme.mono_font_size = px(s.mono_font_size);
+    theme.radius = px(s.radius);
+    theme.radius_lg = px(s.radius_lg);
+    theme.shadow = s.shadow;
+
+    // §8.3 and D4: the band is drawn where the ring has a width and the
+    // platform does not show it for keyboard focus only; its width and offset
+    // have no receiver.
+    theme.focus_ring = s.focus_band;
+
+    // §8.3: Scrolling (overlay, auto-hide) when the platform draws overlay
+    // scrollbars, Always otherwise.
+    theme.scrollbar_mode = if s.overlay_scrollbars {
+        ScrollbarMode::Scrolling
+    } else {
+        ScrollbarMode::Always
+    };
 }
 
 /// Load a bundled preset and convert it to a gpui-component [`GpuiTheme`] in one call.

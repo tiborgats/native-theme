@@ -35,11 +35,8 @@ pub fn to_theme_config(
     mode: GpuiThemeMode,
     prefs: &native_theme::AccessibilityPreferences,
 ) -> ThemeConfig {
-    let d = &resolved.defaults;
     let is_dark = mode.is_dark();
 
-    let radius = d.border.corner_radius.round() as usize;
-    let radius_lg = d.border.corner_radius_lg.round() as usize;
     let window_radius = resolved.window.border.corner_radius.round() as usize;
 
     // Issue 5: populate ThemeConfigColors from computed ThemeColor
@@ -60,27 +57,35 @@ pub fn to_theme_config(
     let mut config = ThemeConfig::default();
     config.name = SharedString::from(name.to_string());
     config.mode = mode;
-
-    // Font sizes are in logical pixels (pt-to-px conversion handled during
-    // resolution). Scaled (§3.4, §5.3) so Theme::change reproduces the
-    // scaled sizes.
-    config.font_family = Some(crate::font_family(&d.font.family));
-    config.font_size = Some(prefs.scaled(d.font.size));
-    config.mono_font_family = Some(crate::font_family(&d.mono_font.family));
-    config.mono_font_size = Some(prefs.scaled(d.mono_font.size));
-
-    config.radius = Some(radius);
-    config.radius_lg = Some(radius_lg);
+    apply_config_scalars(
+        &mut config,
+        &crate::ThemeScalars::from_resolved(resolved, is_dark, prefs),
+    );
     // Stated, not left None: Theme::change keeps the previous theme's window
     // radius for a config without one (gpui-component
     // src/theme/schema.rs:1117-1119).
     config.window_radius = Some(window_radius);
-    config.shadow = Some(d.border.shadow_enabled);
 
     config.colors = colors;
 
     config.highlight = Some(highlight);
     config
+}
+
+/// Write the slice's values `s` onto `config`: its fonts, its radii rounded
+/// to whole pixels, and `shadow`.
+pub(crate) fn apply_config_scalars(config: &mut ThemeConfig, s: &crate::ThemeScalars) {
+    // Font sizes are in logical pixels (pt-to-px conversion handled during
+    // resolution). Scaled (§3.4, §5.3) so Theme::change reproduces the
+    // scaled sizes.
+    config.font_family = Some(s.font_family.clone());
+    config.font_size = Some(s.font_size);
+    config.mono_font_family = Some(s.mono_font_family.clone());
+    config.mono_font_size = Some(s.mono_font_size);
+
+    config.radius = Some(s.radius.round() as usize);
+    config.radius_lg = Some(s.radius_lg.round() as usize);
+    config.shadow = Some(s.shadow);
 }
 
 /// The highlighter style for `mode` that [`crate::to_theme`] installs and
@@ -146,7 +151,9 @@ pub(crate) fn highlight_style(
 /// `blue`, `green`, `yellow`, `magenta`, `cyan` and their `_light` variants)
 /// are private in `ThemeConfigColors` (`schema.rs:660-694`) and stay `None`,
 /// as does `group_box_title_foreground`.
-fn theme_color_to_config_colors(tc: &gpui_component::theme::ThemeColor) -> ThemeConfigColors {
+pub(crate) fn theme_color_to_config_colors(
+    tc: &gpui_component::theme::ThemeColor,
+) -> ThemeConfigColors {
     let h = |c: gpui::Hsla| -> Option<SharedString> { Some(SharedString::from(hsla_to_hex(c))) };
 
     // ThemeConfigColors keeps the 12 base-palette fields (red, blue, green,

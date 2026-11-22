@@ -18,7 +18,12 @@ use crate::derive::{active_color, hover_color, light_variant};
 ///
 /// The input is clamped to [0.0, 1.0] per channel before conversion.
 pub(crate) fn rgba_to_hsla(rgba: native_theme::color::Rgba) -> Hsla {
-    let [r, g, b, a] = rgba.to_f32_array();
+    channels_to_hsla(rgba.to_f32_array())
+}
+
+/// `[r, g, b, a]`, each clamped to [0.0, 1.0], as `gpui::Hsla`: the
+/// conversion of [`rgba_to_hsla`], for both models.
+pub(crate) fn channels_to_hsla([r, g, b, a]: [f32; 4]) -> Hsla {
     let gpui_rgba = gpui::Rgba {
         r: r.clamp(0.0, 1.0),
         g: g.clamp(0.0, 1.0),
@@ -72,7 +77,9 @@ pub(crate) fn hsla_to_hex(c: Hsla) -> String {
     }
 }
 
-/// Pre-converted HSLA colors extracted from a [`ResolvedTheme`].
+/// Pre-converted HSLA colors extracted from a [`ResolvedTheme`]: the ones
+/// outside the first slice of the 0.8.0 work, whose colours are
+/// [`SliceColors`].
 ///
 /// Built once in [`to_theme_color()`] and passed by reference to all
 /// assign helper functions, replacing 10-15 parameter signatures.
@@ -81,8 +88,6 @@ pub(crate) fn hsla_to_hex(c: Hsla) -> String {
 /// Some (e.g. `muted`) are derived from defaults via blending.
 struct ResolvedColors {
     bg: Hsla,
-    fg: Hsla,
-    accent: Hsla,
     // The item highlight gpui-component calls `accent` (menu, list, completion
     // and calendar hover): the platform's menu hover pair, which is the selection
     // colour on macOS, a tint of the focus colour on KDE, and a subtle fill elsewhere.
@@ -90,43 +95,25 @@ struct ResolvedColors {
     menu_hover_fg: Hsla,
     sidebar_selection_bg: Hsla,
     sidebar_selection_fg: Hsla,
-    border: Hsla,
     // Issue 2: `muted` is the muted *background* slot (derived from surface),
-    // and `muted_fg` is the muted *foreground* (d.muted IS the muted foreground).
+    // and `SliceColors::muted_fg` is the muted *foreground* (d.muted IS the
+    // muted foreground).
     muted: Hsla,
-    muted_fg: Hsla,
+    // The slice's colours that the derivations below blend over `bg`, as
+    // `SliceColors` holds them.
+    border: Hsla,
     primary: Hsla,
-    primary_fg: Hsla,
     secondary: Hsla,
-    secondary_fg: Hsla,
-    danger: Hsla,
-    danger_fg: Hsla,
-    success: Hsla,
-    success_fg: Hsla,
-    warning: Hsla,
-    warning_fg: Hsla,
-    info: Hsla,
-    info_fg: Hsla,
     selection: Hsla,
     link: Hsla,
-    ring: Hsla,
     input: Hsla,
     sidebar: Hsla,
     sidebar_fg: Hsla,
     sidebar_border: Hsla,
     popover: Hsla,
     popover_fg: Hsla,
-    list_bg: Hsla,
-    // The line between rows and columns, which the model states separately
-    // from the generic border.
-    list_grid: Hsla,
-    // The header row's own fill and text, which the model states separately
-    // from the list body (`list.header_background`, `list.header_font`).
-    list_header_bg: Hsla,
-    list_header_fg: Hsla,
-    alternate_row: Hsla,
     // Issue 20: per-widget colors cached to avoid repeated rgba_to_hsla calls
-    // in assign_tab_sidebar() and assign_misc().
+    // in assign_tab_sidebar() and assign_misc_rest().
     tab_bg: Hsla,
     tab_active_bg: Hsla,
     tab_active_fg: Hsla,
@@ -137,25 +124,119 @@ struct ResolvedColors {
     tab_fg: Hsla,
     title_bar_bg: Hsla,
     window_border: Hsla,
-    scrollbar_track: Hsla,
-    scrollbar_thumb: Hsla,
-    scrollbar_thumb_hover: Hsla,
     slider_fill: Hsla,
     slider_thumb: Hsla,
     switch_unchecked: Hsla,
     switch_thumb: Hsla,
     progress_fill: Hsla,
     input_caret: Hsla,
-    // Phase 54: direct theme reads for interactive state colors
-    button_hover_bg: Hsla,
-    button_active_bg: Option<Hsla>,
-    list_hover_bg: Hsla,
-    list_selection_bg: Hsla,
     // Upstream's `link_hover` and `link_active` are link *text* colours
     // (`theme_color.rs:182-183`), so these are the platform's hover and
     // pressed link text, not its hover fill.
     link_hover_fg: Hsla,
     link_active_fg: Hsla,
+}
+
+/// The colours of the first slice of the 0.8.0 work (the globals and
+/// `button`, `checkbox`, `list`, `scrollbar` and `tooltip`) that the
+/// `ThemeColor` fields [`assign_slice`] writes are made of: read from a 0.7.2
+/// [`ResolvedTheme`] by [`SliceColors::from_resolved`], and from the 0.8.0
+/// model by the connector's `next` module, so both models share everything
+/// after the read.
+pub(crate) struct SliceColors {
+    pub(crate) fg: Hsla,
+    pub(crate) accent: Hsla,
+    pub(crate) border: Hsla,
+    pub(crate) muted_fg: Hsla,
+    pub(crate) primary: Hsla,
+    pub(crate) primary_fg: Hsla,
+    pub(crate) secondary: Hsla,
+    pub(crate) secondary_fg: Hsla,
+    pub(crate) danger: Hsla,
+    pub(crate) danger_fg: Hsla,
+    pub(crate) success: Hsla,
+    pub(crate) success_fg: Hsla,
+    pub(crate) warning: Hsla,
+    pub(crate) warning_fg: Hsla,
+    pub(crate) info: Hsla,
+    pub(crate) info_fg: Hsla,
+    /// The focus ring's colour as the theme states it; `ring` is
+    /// [`ring_colour`] of it.
+    pub(crate) focus_ring: Hsla,
+    /// Whether gpui-component's focus band is on for any focus
+    /// ([`focus_band`]).
+    pub(crate) focus_band: bool,
+    pub(crate) list_bg: Hsla,
+    // The line between rows and columns, which the model states separately
+    // from the generic border.
+    pub(crate) list_grid: Hsla,
+    // The header row's own fill and text, which the model states separately
+    // from the list body (`list.header_background`, `list.header_font`).
+    pub(crate) list_header_bg: Hsla,
+    pub(crate) list_header_fg: Hsla,
+    pub(crate) alternate_row: Hsla,
+    pub(crate) scrollbar_track: Hsla,
+    pub(crate) scrollbar_thumb: Hsla,
+    pub(crate) scrollbar_thumb_hover: Hsla,
+    // Phase 54: direct theme reads for interactive state colors
+    pub(crate) button_hover_bg: Hsla,
+    pub(crate) button_active_bg: Option<Hsla>,
+    pub(crate) list_hover_bg: Hsla,
+    pub(crate) list_selection_bg: Hsla,
+    /// The shadow colour the overlay takes its hue from.
+    pub(crate) shadow: Hsla,
+}
+
+impl SliceColors {
+    /// The slice's colours of a 0.7.2 resolved theme.
+    pub(crate) fn from_resolved(resolved: &ResolvedTheme) -> Self {
+        let d = &resolved.defaults;
+        Self {
+            fg: rgba_to_hsla(d.text_color),
+            accent: rgba_to_hsla(d.accent_color),
+            border: rgba_to_hsla(d.border.color),
+            // Issue 2: d.muted IS the muted foreground color (subdued text).
+            muted_fg: rgba_to_hsla(d.muted_color),
+            primary: rgba_to_hsla(resolved.button.primary_background),
+            primary_fg: rgba_to_hsla(resolved.button.primary_text_color),
+            secondary: rgba_to_hsla(resolved.button.background_color),
+            secondary_fg: rgba_to_hsla(resolved.button.font.color),
+            danger: rgba_to_hsla(d.danger_color),
+            danger_fg: rgba_to_hsla(d.danger_text_color),
+            success: rgba_to_hsla(d.success_color),
+            success_fg: rgba_to_hsla(d.success_text_color),
+            warning: rgba_to_hsla(d.warning_color),
+            warning_fg: rgba_to_hsla(d.warning_text_color),
+            info: rgba_to_hsla(d.info_color),
+            info_fg: rgba_to_hsla(d.info_text_color),
+            focus_ring: rgba_to_hsla(d.focus_ring_color),
+            focus_band: focus_band_on(d),
+            list_bg: rgba_to_hsla(resolved.list.background_color),
+            list_grid: rgba_to_hsla(resolved.list.grid_color),
+            list_header_bg: rgba_to_hsla(resolved.list.header_background),
+            list_header_fg: rgba_to_hsla(resolved.list.header_font.color),
+            alternate_row: rgba_to_hsla(resolved.list.alternate_row_background),
+            scrollbar_track: rgba_to_hsla(resolved.scrollbar.track_color),
+            scrollbar_thumb: rgba_to_hsla(resolved.scrollbar.thumb_color),
+            scrollbar_thumb_hover: rgba_to_hsla(resolved.scrollbar.thumb_hover_color),
+            button_hover_bg: rgba_to_hsla(resolved.button.hover_background),
+            button_active_bg: resolved.button.active_background.map(rgba_to_hsla),
+            list_hover_bg: rgba_to_hsla(resolved.list.hover_background),
+            list_selection_bg: rgba_to_hsla(resolved.list.selection_background),
+            shadow: rgba_to_hsla(d.shadow_color),
+        }
+    }
+
+    /// The five colours the six base hues take.
+    fn base_hues(&self) -> BaseHues {
+        BaseHues {
+            accent: self.accent,
+            danger: self.danger,
+            success: self.success,
+            warning: self.warning,
+            info: self.info,
+        }
+    }
 }
 
 /// Build a complete [`ThemeColor`] from a [`ResolvedTheme`].
@@ -176,42 +257,27 @@ pub fn to_theme_color(
     is_dark: bool,
     reduce_transparency: bool,
 ) -> ThemeColor {
-    let d = &resolved.defaults;
+    let slice = SliceColors::from_resolved(resolved);
     // The window's own fill, which the model states and which inherits
     // `defaults.background_color`; upstream's `background` token is the window
     // surface (`title_bar.rs:347`, `tab/tab.rs:301`).
     let bg = rgba_to_hsla(resolved.window.background_color);
-    let fg = rgba_to_hsla(d.text_color);
+    let fg = slice.fg;
 
-    // Issue 2: d.muted IS the muted foreground color (subdued text).
     // The muted *background* slot (Skeleton, Switch bg) uses a derived bg.
     // Muted background: 10% foreground overlaid on background.
-    let muted_fg = rgba_to_hsla(d.muted_color);
     let muted_bg = bg.blend(fg.opacity(0.1));
 
     let c = ResolvedColors {
         bg,
-        fg,
-        accent: rgba_to_hsla(d.accent_color),
         menu_hover_bg: rgba_to_hsla(resolved.menu.hover_background),
         menu_hover_fg: rgba_to_hsla(resolved.menu.hover_text_color),
         sidebar_selection_bg: rgba_to_hsla(resolved.sidebar.selection_background),
         sidebar_selection_fg: rgba_to_hsla(resolved.sidebar.selection_text_color),
-        border: rgba_to_hsla(d.border.color),
         muted: muted_bg,
-        muted_fg,
-        primary: rgba_to_hsla(resolved.button.primary_background),
-        primary_fg: rgba_to_hsla(resolved.button.primary_text_color),
-        secondary: rgba_to_hsla(resolved.button.background_color),
-        secondary_fg: rgba_to_hsla(resolved.button.font.color),
-        danger: rgba_to_hsla(d.danger_color),
-        danger_fg: rgba_to_hsla(d.danger_text_color),
-        success: rgba_to_hsla(d.success_color),
-        success_fg: rgba_to_hsla(d.success_text_color),
-        warning: rgba_to_hsla(d.warning_color),
-        warning_fg: rgba_to_hsla(d.warning_text_color),
-        info: rgba_to_hsla(d.info_color),
-        info_fg: rgba_to_hsla(d.info_text_color),
+        border: slice.border,
+        primary: slice.primary,
+        secondary: slice.secondary,
         // Upstream's `selection` is the *input* selection background
         // (`theme_color.rs:230`, `input/input.rs:568`), which the model states
         // as `input.selection_background`; `defaults.selection_background` is
@@ -220,18 +286,12 @@ pub fn to_theme_color(
         // The link's own text colour (`link.rs:76`), which inherits
         // `defaults.link_color` rather than `defaults.font.color`.
         link: rgba_to_hsla(resolved.link.font.color),
-        ring: rgba_to_hsla(ring_colour(d)),
         input: rgba_to_hsla(resolved.input.border.color),
         sidebar: rgba_to_hsla(resolved.sidebar.background_color),
         sidebar_fg: rgba_to_hsla(resolved.sidebar.font.color),
         sidebar_border: rgba_to_hsla(resolved.sidebar.border.color),
         popover: rgba_to_hsla(resolved.popover.background_color),
         popover_fg: rgba_to_hsla(resolved.popover.font.color),
-        list_bg: rgba_to_hsla(resolved.list.background_color),
-        list_grid: rgba_to_hsla(resolved.list.grid_color),
-        list_header_bg: rgba_to_hsla(resolved.list.header_background),
-        list_header_fg: rgba_to_hsla(resolved.list.header_font.color),
-        alternate_row: rgba_to_hsla(resolved.list.alternate_row_background),
         // Issue 20: per-widget colors
         tab_bg: rgba_to_hsla(resolved.tab.background_color),
         tab_active_bg: rgba_to_hsla(resolved.tab.active_background),
@@ -241,45 +301,60 @@ pub fn to_theme_color(
         tab_fg: rgba_to_hsla(resolved.tab.font.color),
         title_bar_bg: rgba_to_hsla(resolved.window.title_bar_background),
         window_border: rgba_to_hsla(resolved.window.border.color),
-        scrollbar_track: rgba_to_hsla(resolved.scrollbar.track_color),
-        scrollbar_thumb: rgba_to_hsla(resolved.scrollbar.thumb_color),
-        scrollbar_thumb_hover: rgba_to_hsla(resolved.scrollbar.thumb_hover_color),
         slider_fill: rgba_to_hsla(resolved.slider.fill_color),
         slider_thumb: rgba_to_hsla(resolved.slider.thumb_color),
         switch_unchecked: rgba_to_hsla(resolved.switch.unchecked_background),
         switch_thumb: rgba_to_hsla(resolved.switch.thumb_background),
         progress_fill: rgba_to_hsla(resolved.progress_bar.fill_color),
         input_caret: rgba_to_hsla(resolved.input.caret_color),
-        // Phase 54: direct theme reads for interactive state colors
-        button_hover_bg: rgba_to_hsla(resolved.button.hover_background),
-        button_active_bg: resolved.button.active_background.map(rgba_to_hsla),
-        list_hover_bg: rgba_to_hsla(resolved.list.hover_background),
-        list_selection_bg: rgba_to_hsla(resolved.list.selection_background),
         link_hover_fg: rgba_to_hsla(resolved.link.hover_text_color),
         link_active_fg: rgba_to_hsla(resolved.link.active_text_color),
     };
 
     let mut tc = ThemeColor::default();
 
+    assign_slice(&mut tc, &slice, is_dark, reduce_transparency);
     assign_core(&mut tc, &c);
-    assign_primary(&mut tc, &c, is_dark);
-    assign_secondary(&mut tc, &c, is_dark);
-    assign_status(&mut tc, &c, is_dark);
-    assign_buttons(&mut tc);
+    assign_hovers(&mut tc, c.bg);
     assign_list_table(&mut tc, &c, resolved);
     assign_tab_sidebar(&mut tc, &c);
-    assign_charts(&mut tc, &c);
-    assign_misc(&mut tc, &c, resolved, is_dark, reduce_transparency);
-    assign_base_colors(&mut tc, &BasePaletteInputs::from_colors(&c), is_dark);
+    assign_misc(&mut tc, &c, resolved, is_dark);
+    assign_base_lights(&mut tc, c.bg, is_dark);
 
     tc
 }
 
+/// Every `ThemeColor` field the slice's colours alone feed, the same for
+/// both models; [`to_theme_color`] assigns the other fields after it, some
+/// of them from fields this one wrote.
+pub(crate) fn assign_slice(
+    tc: &mut ThemeColor,
+    c: &SliceColors,
+    is_dark: bool,
+    reduce_transparency: bool,
+) {
+    assign_slice_core(tc, c);
+    assign_primary(tc, c, is_dark);
+    assign_secondary(tc, c, is_dark);
+    assign_status(tc, c, is_dark);
+    assign_buttons(tc);
+    assign_list_table_slice(tc, c);
+    assign_charts(tc, c);
+    assign_misc_slice(tc, c, is_dark, reduce_transparency);
+    assign_base_hues(tc, &c.base_hues());
+}
+
 // ---------- helper assignment functions ----------
+
+fn assign_slice_core(tc: &mut ThemeColor, c: &SliceColors) {
+    tc.foreground = c.fg;
+    tc.border = c.border;
+    tc.muted_foreground = c.muted_fg;
+    tc.ring = ring_colour(c.focus_ring, c.focus_band);
+}
 
 fn assign_core(tc: &mut ThemeColor, c: &ResolvedColors) {
     tc.background = c.bg;
-    tc.foreground = c.fg;
     // `accent` is upstream's item highlight, not the platform's accent colour
     // (gpui-component `src/theme/schema.rs:268-269`); see `ResolvedColors`.
     // `Toggle` reads the same token for its pressed state
@@ -288,11 +363,8 @@ fn assign_core(tc: &mut ThemeColor, c: &ResolvedColors) {
     // seven readers to its one, and no value serves both. Tier U.
     tc.accent = c.menu_hover_bg;
     tc.accent_foreground = c.menu_hover_fg;
-    tc.border = c.border;
     tc.muted = c.muted;
-    tc.muted_foreground = c.muted_fg;
     tc.input = c.input;
-    tc.ring = c.ring;
     tc.selection = c.selection;
     tc.link = c.link;
     // Both are text colours upstream, each the `fg` of a `Button::link` over
@@ -305,14 +377,31 @@ fn assign_core(tc: &mut ThemeColor, c: &ResolvedColors) {
     tc.link_active = c.link_active_fg;
 }
 
-fn assign_primary(tc: &mut ThemeColor, c: &ResolvedColors, is_dark: bool) {
+fn assign_primary(tc: &mut ThemeColor, c: &SliceColors, is_dark: bool) {
     tc.primary = c.primary;
     tc.primary_foreground = c.primary_fg;
-    tc.primary_hover = hover_color(c.primary, c.bg);
     tc.primary_active = active_color(c.primary, is_dark);
+    tc.sidebar_primary = c.primary;
+    tc.sidebar_primary_foreground = c.primary_fg;
 }
 
-fn assign_secondary(tc: &mut ThemeColor, c: &ResolvedColors, is_dark: bool) {
+/// The hover fills derived over the window's own fill `bg`, of the fields
+/// [`assign_slice`] wrote, and the button fields that copy them.
+fn assign_hovers(tc: &mut ThemeColor, bg: Hsla) {
+    tc.primary_hover = hover_color(tc.primary, bg);
+    tc.danger_hover = hover_color(tc.danger, bg);
+    tc.success_hover = hover_color(tc.success, bg);
+    tc.warning_hover = hover_color(tc.warning, bg);
+    tc.info_hover = hover_color(tc.info, bg);
+
+    tc.button_primary_hover = tc.primary_hover;
+    tc.button_danger_hover = tc.danger_hover;
+    tc.button_info_hover = tc.info_hover;
+    tc.button_success_hover = tc.success_hover;
+    tc.button_warning_hover = tc.warning_hover;
+}
+
+fn assign_secondary(tc: &mut ThemeColor, c: &SliceColors, is_dark: bool) {
     tc.secondary = c.secondary;
     tc.secondary_foreground = c.secondary_fg;
     tc.secondary_hover = c.button_hover_bg;
@@ -329,25 +418,21 @@ fn assign_secondary(tc: &mut ThemeColor, c: &ResolvedColors, is_dark: bool) {
 /// platform already has, and on the community presets it can make the label
 /// *worse* than what the theme gives. A connector that overrode the
 /// platform's own choice here would be inventing a colour.
-fn assign_status(tc: &mut ThemeColor, c: &ResolvedColors, is_dark: bool) {
+fn assign_status(tc: &mut ThemeColor, c: &SliceColors, is_dark: bool) {
     tc.danger = c.danger;
     tc.danger_foreground = c.danger_fg;
-    tc.danger_hover = hover_color(c.danger, c.bg);
     tc.danger_active = active_color(c.danger, is_dark);
 
     tc.success = c.success;
     tc.success_foreground = c.success_fg;
-    tc.success_hover = hover_color(c.success, c.bg);
     tc.success_active = active_color(c.success, is_dark);
 
     tc.warning = c.warning;
     tc.warning_foreground = c.warning_fg;
-    tc.warning_hover = hover_color(c.warning, c.bg);
     tc.warning_active = active_color(c.warning, is_dark);
 
     tc.info = c.info;
     tc.info_foreground = c.info_fg;
-    tc.info_hover = hover_color(c.info, c.bg);
     tc.info_active = active_color(c.info, is_dark);
 
     tc.chart_bullish = c.success;
@@ -386,37 +471,30 @@ fn assign_buttons(tc: &mut ThemeColor) {
     tc.button_secondary_foreground = tc.secondary_foreground;
 
     tc.button_primary = tc.primary;
-    tc.button_primary_hover = tc.primary_hover;
     tc.button_primary_active = tc.primary_active;
     tc.button_primary_foreground = tc.primary_foreground;
 
     tc.button_danger = tc.danger;
-    tc.button_danger_hover = tc.danger_hover;
     tc.button_danger_active = tc.danger_active;
     tc.button_danger_foreground = tc.danger_foreground;
 
     tc.button_info = tc.info;
-    tc.button_info_hover = tc.info_hover;
     tc.button_info_active = tc.info_active;
     tc.button_info_foreground = tc.info_foreground;
 
     tc.button_success = tc.success;
-    tc.button_success_hover = tc.success_hover;
     tc.button_success_active = tc.success_active;
     tc.button_success_foreground = tc.success_foreground;
 
     tc.button_warning = tc.warning;
-    tc.button_warning_hover = tc.warning_hover;
     tc.button_warning_active = tc.warning_active;
     tc.button_warning_foreground = tc.warning_foreground;
 }
 
-fn assign_list_table(tc: &mut ThemeColor, c: &ResolvedColors, resolved: &ResolvedTheme) {
+fn assign_list_table_slice(tc: &mut ThemeColor, c: &SliceColors) {
     tc.list = c.list_bg;
     tc.list_hover = c.list_hover_bg;
     tc.list_active = c.list_selection_bg;
-    // List active border: 60% primary over background.
-    tc.list_active_border = c.bg.blend(c.primary.opacity(0.6));
     tc.list_even = c.alternate_row;
     // The column header's own fill, which upstream paints as the header row
     // (`table/column.rs:302`, `table/state.rs:1864, :2131`,
@@ -434,7 +512,6 @@ fn assign_list_table(tc: &mut ThemeColor, c: &ResolvedColors, resolved: &Resolve
     tc.table = c.list_bg;
     tc.table_hover = tc.list_hover;
     tc.table_active = tc.list_active;
-    tc.table_active_border = tc.list_active_border;
     tc.table_even = tc.list_even;
     tc.table_head = c.list_header_bg;
     // The header row's own text (`table/table.rs:200`,
@@ -444,6 +521,14 @@ fn assign_list_table(tc: &mut ThemeColor, c: &ResolvedColors, resolved: &Resolve
     // The grid line between rows and columns (`table/table.rs:203`,
     // `table/state.rs:1716`), which the model states as `list.grid_color`.
     tc.table_row_border = c.list_grid;
+    // The footer's text: see `table_foot` in `assign_list_table`.
+    tc.table_foot_foreground = c.muted_fg;
+}
+
+fn assign_list_table(tc: &mut ThemeColor, c: &ResolvedColors, resolved: &ResolvedTheme) {
+    // List active border: 60% primary over background.
+    tc.list_active_border = c.bg.blend(c.primary.opacity(0.6));
+    tc.table_active_border = tc.list_active_border;
     // The grid of a chart (`chart/mod.rs:493`, `chart/bar_chart.rs:878`,
     // `chart/radar_chart.rs:507`): a set of separating lines, so the model's
     // separator colour (issue #4's D2); `list.grid_color` is a table's grid,
@@ -455,7 +540,6 @@ fn assign_list_table(tc: &mut ThemeColor, c: &ResolvedColors, resolved: &Resolve
     // kind, so these stay the window's own background and muted text rather
     // than naming a native footer value there is none of.
     tc.table_foot = c.bg;
-    tc.table_foot_foreground = c.muted_fg;
 }
 
 fn assign_tab_sidebar(tc: &mut ThemeColor, c: &ResolvedColors) {
@@ -478,8 +562,6 @@ fn assign_tab_sidebar(tc: &mut ThemeColor, c: &ResolvedColors) {
     tc.sidebar_accent = c.sidebar_selection_bg;
     tc.sidebar_accent_foreground = c.sidebar_selection_fg;
     tc.sidebar_border = c.sidebar_border;
-    tc.sidebar_primary = c.primary;
-    tc.sidebar_primary_foreground = c.primary_fg;
 
     // Title bar / window (Issue 20: via ResolvedColors cache)
     tc.title_bar = c.title_bar_bg;
@@ -487,7 +569,7 @@ fn assign_tab_sidebar(tc: &mut ThemeColor, c: &ResolvedColors) {
     tc.window_border = c.window_border;
 }
 
-fn assign_charts(tc: &mut ThemeColor, c: &ResolvedColors) {
+fn assign_charts(tc: &mut ThemeColor, c: &SliceColors) {
     // Distribute 5 chart colors evenly around the hue wheel (~72 degrees apart).
     // Preserves accent's lightness for palette coherence.
     // Chart colors: ensure minimum 0.3 saturation for visibility.
@@ -519,26 +601,13 @@ fn assign_charts(tc: &mut ThemeColor, c: &ResolvedColors) {
     };
 }
 
-fn assign_misc(
+fn assign_misc_slice(
     tc: &mut ThemeColor,
-    c: &ResolvedColors,
-    resolved: &ResolvedTheme,
+    c: &SliceColors,
     is_dark: bool,
     reduce_transparency: bool,
 ) {
-    tc.popover = c.popover;
-    tc.popover_foreground = c.popover_fg;
-
-    tc.accordion = c.bg;
-
-    // Group box: lower opacity in dark mode (0.3) to preserve background contrast;
-    // light mode uses 0.4. Diverges from upstream's uniform 0.5.
-    tc.group_box =
-        c.bg.blend(c.secondary.opacity(if is_dark { 0.3 } else { 0.4 }));
     tc.group_box_foreground = c.fg;
-
-    // Description list label: subtle 20% border tint over background.
-    tc.description_list_label = c.bg.blend(c.border.opacity(0.2));
     tc.description_list_label_foreground = c.muted_fg;
 
     // The overlay is the scrim gpui-component lays over the window behind a
@@ -548,7 +617,7 @@ fn assign_misc(
     // scrim would hide the whole window. Transparent black is upstream's own
     // colour for no overlay (dialog/dialog.rs:335-337); the backdrop still
     // takes the clicks, whatever its colour.
-    let shadow = rgba_to_hsla(resolved.defaults.shadow_color);
+    let shadow = c.shadow;
     tc.overlay = if reduce_transparency {
         Hsla::transparent_black()
     } else {
@@ -561,10 +630,31 @@ fn assign_misc(
     };
 
     // Issue 68: use resolved scrollbar track color instead of plain bg
-    // Issue 20: via ResolvedColors cache
     tc.scrollbar = c.scrollbar_track;
     tc.scrollbar_thumb = c.scrollbar_thumb;
     tc.scrollbar_thumb_hover = c.scrollbar_thumb_hover;
+
+    tc.skeleton = c.secondary;
+
+    // Drag border: 65% primary overlay for visible drag indicator.
+    tc.drag_border = c.primary.opacity(0.65);
+    // Drop target: 20% primary overlay for subtle target highlight.
+    tc.drop_target = c.primary.opacity(0.2);
+}
+
+fn assign_misc(tc: &mut ThemeColor, c: &ResolvedColors, resolved: &ResolvedTheme, is_dark: bool) {
+    tc.popover = c.popover;
+    tc.popover_foreground = c.popover_fg;
+
+    tc.accordion = c.bg;
+
+    // Group box: lower opacity in dark mode (0.3) to preserve background contrast;
+    // light mode uses 0.4. Diverges from upstream's uniform 0.5.
+    tc.group_box =
+        c.bg.blend(c.secondary.opacity(if is_dark { 0.3 } else { 0.4 }));
+
+    // Description list label: subtle 20% border tint over background.
+    tc.description_list_label = c.bg.blend(c.border.opacity(0.2));
 
     // Per-widget resolved slider colors (Issue 20: via ResolvedColors cache)
     tc.slider_bar = c.slider_fill;
@@ -585,21 +675,13 @@ fn assign_misc(
     // Per-widget resolved caret from input (Issue 20: via ResolvedColors cache)
     tc.caret = c.input_caret;
 
-    tc.skeleton = c.secondary;
-
-    // Drag border: 65% primary overlay for visible drag indicator.
-    tc.drag_border = c.primary.opacity(0.65);
-    // Drop target: 20% primary overlay for subtle target highlight.
-    tc.drop_target = c.primary.opacity(0.2);
-
     // Status bar: direct sources (spec §6.2).
     tc.status_bar = rgba_to_hsla(resolved.status_bar.background_color);
     tc.status_bar_border = rgba_to_hsla(resolved.status_bar.border.color);
 }
 
-/// The six native colours the 12 base-palette fields derive from.
-pub(crate) struct BasePaletteInputs {
-    bg: Hsla,
+/// The five native colours the six base hues (`red` … `cyan`) take.
+struct BaseHues {
     accent: Hsla,
     danger: Hsla,
     success: Hsla,
@@ -607,29 +689,26 @@ pub(crate) struct BasePaletteInputs {
     info: Hsla,
 }
 
-impl BasePaletteInputs {
-    fn from_colors(c: &ResolvedColors) -> Self {
-        Self {
-            bg: c.bg,
-            accent: c.accent,
-            danger: c.danger,
-            success: c.success,
-            warning: c.warning,
-            info: c.info,
-        }
-    }
+/// The six native colours the 12 base-palette fields derive from.
+pub(crate) struct BasePaletteInputs {
+    bg: Hsla,
+    hues: BaseHues,
+}
 
+impl BasePaletteInputs {
     /// The same six values [`to_theme_color`] reads, straight from `defaults`.
     pub(crate) fn from_resolved(resolved: &ResolvedTheme) -> Self {
         let d = &resolved.defaults;
         Self {
             // The window's own fill, as `to_theme_color` reads it.
             bg: rgba_to_hsla(resolved.window.background_color),
-            accent: rgba_to_hsla(d.accent_color),
-            danger: rgba_to_hsla(d.danger_color),
-            success: rgba_to_hsla(d.success_color),
-            warning: rgba_to_hsla(d.warning_color),
-            info: rgba_to_hsla(d.info_color),
+            hues: BaseHues {
+                accent: rgba_to_hsla(d.accent_color),
+                danger: rgba_to_hsla(d.danger_color),
+                success: rgba_to_hsla(d.success_color),
+                warning: rgba_to_hsla(d.warning_color),
+                info: rgba_to_hsla(d.info_color),
+            },
         }
     }
 }
@@ -691,37 +770,46 @@ pub(crate) fn copy_base_palette(from: &ThemeColor, to: &mut Theme) -> bool {
 }
 
 fn assign_base_colors(tc: &mut ThemeColor, c: &BasePaletteInputs, is_dark: bool) {
-    // Issue 3: _light variants use mode-aware derivation. On dark themes,
-    // blending toward a dark bg *darkens* the color (wrong); instead we
-    // increase lightness for a visible tinted background.
+    assign_base_hues(tc, &c.hues);
+    assign_base_lights(tc, c.bg, is_dark);
+}
+
+/// The six base hues: four status colours, and two fixed hues.
+fn assign_base_hues(tc: &mut ThemeColor, c: &BaseHues) {
     tc.red = c.danger;
-    tc.red_light = light_variant(c.bg, c.danger, is_dark);
     tc.green = c.success;
-    tc.green_light = light_variant(c.bg, c.success, is_dark);
     tc.blue = c.info;
-    tc.blue_light = light_variant(c.bg, c.info, is_dark);
     tc.yellow = c.warning;
-    tc.yellow_light = light_variant(c.bg, c.warning, is_dark);
     // Magenta: fixed hue, but saturation and lightness from accent.
     // Cap saturation at 0.85 to prevent oversaturation in generated hues.
-    let magenta = Hsla {
+    tc.magenta = Hsla {
         h: 0.833,
         s: c.accent.s.min(0.85),
         l: c.accent.l,
         a: 1.0,
     };
-    tc.magenta = magenta;
-    tc.magenta_light = light_variant(c.bg, magenta, is_dark);
     // Cyan: fixed hue, but saturation and lightness from info.
     // Same 0.85 saturation cap as magenta.
-    let cyan = Hsla {
+    tc.cyan = Hsla {
         h: 0.5,
         s: c.info.s.min(0.85),
         l: c.info.l,
         a: 1.0,
     };
-    tc.cyan = cyan;
-    tc.cyan_light = light_variant(c.bg, cyan, is_dark);
+}
+
+/// The six `_light` variants of the base hues [`assign_base_hues`] wrote,
+/// over the window's own fill `bg`.
+fn assign_base_lights(tc: &mut ThemeColor, bg: Hsla, is_dark: bool) {
+    // Issue 3: _light variants use mode-aware derivation. On dark themes,
+    // blending toward a dark bg *darkens* the color (wrong); instead we
+    // increase lightness for a visible tinted background.
+    tc.red_light = light_variant(bg, tc.red, is_dark);
+    tc.green_light = light_variant(bg, tc.green, is_dark);
+    tc.blue_light = light_variant(bg, tc.blue, is_dark);
+    tc.yellow_light = light_variant(bg, tc.yellow, is_dark);
+    tc.magenta_light = light_variant(bg, tc.magenta, is_dark);
+    tc.cyan_light = light_variant(bg, tc.cyan, is_dark);
 }
 
 /// One channel of [`hsla_to_hex`]: `v` clamped to `0.0..=1.0`, times 255,
@@ -801,21 +889,22 @@ pub(crate) fn restore_capped(native: &CappedNatives, to: &mut Theme) -> bool {
 /// the connector's `Root` plugin (`FocusBand`) turns it on for a focus that followed a key
 /// (docs/issues/0004_kde-open-items-rationale.md D4).
 pub(crate) fn focus_band_on(d: &ResolvedDefaults) -> bool {
-    d.focus_ring_width > 0.0 && d.focus_ring_keyboard_only != Some(true)
+    focus_band(d.focus_ring_width, d.focus_ring_keyboard_only == Some(true))
 }
 
-/// The colour of `ThemeColor::ring`: the theme's ring where the band is on for any focus
-/// (`focus_band_on`). Elsewhere that colour without its alpha: `ring` there colours what
-/// gpui-component draws in it at the token's own alpha, a focused control's border or 1 px
-/// line and a keyboard-focused `Tab`'s 2 px inset ring (the band the `Root` plugin turns on
-/// and a `Slider`'s thumb ring set their own alpha).
-pub(crate) fn ring_colour(d: &ResolvedDefaults) -> native_theme::color::Rgba {
-    let c = d.focus_ring_color;
-    if focus_band_on(d) {
-        c
-    } else {
-        native_theme::color::Rgba::new(c.r, c.g, c.b, 255)
-    }
+/// [`focus_band_on`] of a ring `width` wide that the platform shows for
+/// keyboard focus only where `keyboard_only`.
+pub(crate) fn focus_band(width: f32, keyboard_only: bool) -> bool {
+    width > 0.0 && !keyboard_only
+}
+
+/// The colour of `ThemeColor::ring`: the theme's ring `ring` where the band is on for any
+/// focus (`band`, [`focus_band`]). Elsewhere that colour without its alpha: `ring` there
+/// colours what gpui-component draws in it at the token's own alpha, a focused control's
+/// border or 1 px line and a keyboard-focused `Tab`'s 2 px inset ring (the band the `Root`
+/// plugin turns on and a `Slider`'s thumb ring set their own alpha).
+pub(crate) fn ring_colour(ring: Hsla, band: bool) -> Hsla {
+    if band { ring } else { Hsla { a: 1.0, ..ring } }
 }
 
 #[cfg(test)]

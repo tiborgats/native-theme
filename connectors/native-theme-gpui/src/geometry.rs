@@ -110,14 +110,42 @@ use native_theme::theme::{DialogEntranceStyle, LayoutTheme, ResolvedFontSpec, Re
 use crate::Native;
 use crate::colors::rgba_to_hsla;
 
-/// `font.size × s` in pixels (spec §9.4).
-fn scaled_text_size(font: &ResolvedFontSpec, n: Native<'_>) -> Pixels {
-    px(crate::scaled_text_size(font.size, n.accessibility))
+/// `font.size × s` (spec §9.4).
+fn scaled_text_size(font: &ResolvedFontSpec, n: Native<'_>) -> f32 {
+    crate::scaled_text_size(font.size, n.accessibility)
 }
 
-/// CSS weight (100–900) as GPUI's `FontWeight`.
-fn weight_of(font: &ResolvedFontSpec) -> FontWeight {
-    FontWeight(f32::from(font.weight))
+/// A CSS weight (100–900) as GPUI's `FontWeight`.
+pub(crate) fn css_weight(weight: u16) -> FontWeight {
+    FontWeight(f32::from(weight))
+}
+
+/// A font as the builders set it, read from a 0.7.2 resolved theme by
+/// [`font_of`] and from the 0.8.0 model by the connector's `next` module:
+/// the family as the theme states it, the size already scaled by the
+/// text-scaling factor, the CSS weight, the slant and the colour.
+pub(crate) struct Font<'a> {
+    pub(crate) family: &'a std::sync::Arc<str>,
+    pub(crate) size: f32,
+    pub(crate) weight: u16,
+    pub(crate) style: gpui::FontStyle,
+    pub(crate) color: Hsla,
+}
+
+/// The [`Font`] of a 0.7.2 font spec, its size scaled by `n`'s factor.
+fn font_of<'a>(font: &'a ResolvedFontSpec, n: Native<'_>) -> Font<'a> {
+    Font {
+        family: &font.family,
+        size: scaled_text_size(font, n),
+        weight: font.weight,
+        style: crate::font_style(font.style),
+        color: rgba_to_hsla(font.color),
+    }
+}
+
+/// A 0.7.2 padding's four sides, top, right, bottom, left.
+fn sides_of(p: &ResolvedPadding) -> [Option<f32>; 4] {
+    [p.top, p.right, p.bottom, p.left]
 }
 
 /// Family, text size, weight and style from a font spec, at the platform's
@@ -136,10 +164,15 @@ fn weight_of(font: &ResolvedFontSpec) -> FontWeight {
 /// refinement (`src/dialog/title.rs:44` → `:45`), so wrapped text would
 /// otherwise be spaced by a metric of gpui's or upstream's own.
 fn with_text(r: StyleRefinement, font: &ResolvedFontSpec, n: Native<'_>) -> StyleRefinement {
-    let mut r = with_line_height(r.text_size(scaled_text_size(font, n)), n)
-        .font_family(crate::font_family(&font.family))
-        .font_weight(weight_of(font));
-    r.text_style().font_style = Some(crate::font_style(font.style));
+    text(r, &font_of(font, n), n.resolved.defaults.line_height)
+}
+
+/// [`with_text`] of a [`Font`] at the line height `line_height`.
+pub(crate) fn text(r: StyleRefinement, font: &Font<'_>, line_height: f32) -> StyleRefinement {
+    let mut r = line_height_of(r.text_size(px(font.size)), line_height)
+        .font_family(crate::font_family(font.family))
+        .font_weight(css_weight(font.weight));
+    r.text_style().font_style = Some(font.style);
     r
 }
 
@@ -147,7 +180,12 @@ fn with_text(r: StyleRefinement, font: &ResolvedFontSpec, n: Native<'_>) -> Styl
 /// builders that set a control's line height and no text size, [`button`],
 /// [`input_height`] and [`editor`].
 fn with_line_height(r: StyleRefinement, n: Native<'_>) -> StyleRefinement {
-    r.line_height(relative(n.resolved.defaults.line_height))
+    line_height_of(r, n.resolved.defaults.line_height)
+}
+
+/// [`with_line_height`] of the line height `line_height`.
+pub(crate) fn line_height_of(r: StyleRefinement, line_height: f32) -> StyleRefinement {
+    r.line_height(relative(line_height))
 }
 
 /// Family, text size, weight, style and colour from a font spec.
@@ -165,25 +203,42 @@ fn with_coloured_text(
     font: &ResolvedFontSpec,
     n: Native<'_>,
 ) -> StyleRefinement {
-    with_text(r, font, n).text_color(rgba_to_hsla(font.color))
+    coloured_text(r, &font_of(font, n), n.resolved.defaults.line_height)
+}
+
+/// [`with_coloured_text`] of a [`Font`] at the line height `line_height`.
+pub(crate) fn coloured_text(
+    r: StyleRefinement,
+    font: &Font<'_>,
+    line_height: f32,
+) -> StyleRefinement {
+    text(r, font, line_height).text_color(font.color)
 }
 
 /// Each side the theme states, and no other: an unstated side leaves the
 /// receiving widget's own padding in place.
 fn with_padding(r: StyleRefinement, p: &ResolvedPadding) -> StyleRefinement {
-    let r = match p.top {
+    padding(r, sides_of(p))
+}
+
+/// [`with_padding`] of the four sides top, right, bottom, left.
+pub(crate) fn padding(
+    r: StyleRefinement,
+    [top, right, bottom, left]: [Option<f32>; 4],
+) -> StyleRefinement {
+    let r = match top {
         Some(v) => r.pt(px(v)),
         None => r,
     };
-    let r = match p.right {
+    let r = match right {
         Some(v) => r.pr(px(v)),
         None => r,
     };
-    let r = match p.bottom {
+    let r = match bottom {
         Some(v) => r.pb(px(v)),
         None => r,
     };
-    match p.left {
+    match left {
         Some(v) => r.pl(px(v)),
         None => r,
     }
@@ -202,10 +257,19 @@ fn with_padding(r: StyleRefinement, p: &ResolvedPadding) -> StyleRefinement {
 /// text and padding. Without a stated height the control keeps the toolkit's
 /// own height.
 fn with_height_rule(r: StyleRefinement, stated: Option<f32>, n: Native<'_>) -> StyleRefinement {
+    height_rule(r, stated, n.accessibility.text_scale_factor())
+}
+
+/// [`with_height_rule`] at the text-scaling factor `text_scale`.
+pub(crate) fn height_rule(
+    r: StyleRefinement,
+    stated: Option<f32>,
+    text_scale: f32,
+) -> StyleRefinement {
     let Some(stated) = stated else {
         return r;
     };
-    if n.accessibility.text_scale_factor() <= 1.0 {
+    if text_scale <= 1.0 {
         r.h(px(stated))
     } else {
         r.min_h(px(stated)).h_auto()
@@ -219,15 +283,44 @@ fn with_height_rule(r: StyleRefinement, stated: Option<f32>, n: Native<'_>) -> S
 #[must_use]
 pub fn button(n: Native<'_>) -> StyleRefinement {
     let b = &n.resolved.button;
-    let r = with_height_rule(
-        with_line_height(StyleRefinement::default(), n),
-        Some(b.min_height),
-        n,
+    button_from(&ButtonFrame {
+        line_height: n.resolved.defaults.line_height,
+        text_scale: n.accessibility.text_scale_factor(),
+        min_width: b.min_width,
+        min_height: Some(b.min_height),
+        padding: sides_of(&b.border.padding),
+        radius: b.border.corner_radius,
+        border_width: b.border.line_width,
+        border_color: rgba_to_hsla(b.border.color),
+        weight: b.font.weight,
+    })
+}
+
+/// The theme's values [`button`] is made of, read from either model.
+pub(crate) struct ButtonFrame {
+    pub(crate) line_height: f32,
+    pub(crate) text_scale: f32,
+    pub(crate) min_width: f32,
+    /// The stated height, `None` where the theme states none.
+    pub(crate) min_height: Option<f32>,
+    pub(crate) padding: [Option<f32>; 4],
+    pub(crate) radius: f32,
+    pub(crate) border_width: f32,
+    pub(crate) border_color: Hsla,
+    pub(crate) weight: u16,
+}
+
+/// [`button`] of `b`.
+pub(crate) fn button_from(b: &ButtonFrame) -> StyleRefinement {
+    let r = height_rule(
+        line_height_of(StyleRefinement::default(), b.line_height),
+        b.min_height,
+        b.text_scale,
     );
-    with_padding(r.min_w(px(b.min_width)), &b.border.padding)
-        .rounded(px(b.border.corner_radius))
-        .border(px(b.border.line_width))
-        .border_color(rgba_to_hsla(b.border.color))
+    padding(r.min_w(px(b.min_width)), b.padding)
+        .rounded(px(b.radius))
+        .border(px(b.border_width))
+        .border_color(b.border_color)
         // The weight, and deliberately not the size. This refinement lands on
         // the button's outer element (`button/button.rs:764`), and GPUI
         // cascades text style to descendants: the label is a child that sets
@@ -240,7 +333,7 @@ pub fn button(n: Native<'_>) -> StyleRefinement {
         // `content_style`, `pub(crate)` upstream (Tier U). Since 0.7.1 the
         // size it would shadow is `text_sm` at Medium (`sizing.rs:337-343`);
         // [`button_label`] gives a child label the platform's size.
-        .font_weight(weight_of(&b.font))
+        .font_weight(css_weight(b.weight))
 }
 
 /// The text of a `Button`'s label, passed as the button's child: `button.font`'s
@@ -480,28 +573,54 @@ pub fn list_item(n: Native<'_>) -> StyleRefinement {
 #[must_use]
 pub fn tooltip(n: Native<'_>) -> StyleRefinement {
     let t = &n.resolved.tooltip;
-    let shadow = if t.border.shadow_enabled {
-        let ink = rgba_to_hsla(n.resolved.defaults.shadow_color);
-        TOOLTIP_SHADOW
+    let frame = tooltip_frame(&TooltipFrame {
+        padding: sides_of(&t.border.padding),
+        radius: t.border.corner_radius,
+        background: rgba_to_hsla(t.background_color),
+        border_width: t.border.line_width,
+        border_color: rgba_to_hsla(t.border.color),
+    });
+    with_tooltip_shadow(
+        with_coloured_text(frame, &t.font, n),
+        t.border
+            .shadow_enabled
+            .then(|| rgba_to_hsla(n.resolved.defaults.shadow_color)),
+    )
+}
+
+/// The theme's values [`tooltip`]'s bubble is made of, read from either
+/// model.
+pub(crate) struct TooltipFrame {
+    pub(crate) padding: [Option<f32>; 4],
+    pub(crate) radius: f32,
+    pub(crate) background: Hsla,
+    pub(crate) border_width: f32,
+    pub(crate) border_color: Hsla,
+}
+
+/// [`tooltip`]'s bubble of `t`, before its text and shadow.
+pub(crate) fn tooltip_frame(t: &TooltipFrame) -> StyleRefinement {
+    padding(StyleRefinement::default(), t.padding)
+        .rounded(px(t.radius))
+        .bg(t.background)
+        .border(px(t.border_width))
+        .border_color(t.border_color)
+}
+
+/// `r` with [`tooltip`]'s shadow in the colour `ink`, where the theme gives
+/// the tooltip a shadow, and with no shadow where `ink` is `None`.
+pub(crate) fn with_tooltip_shadow(mut r: StyleRefinement, ink: Option<Hsla>) -> StyleRefinement {
+    let shadow = match ink {
+        Some(ink) => TOOLTIP_SHADOW
             .iter()
             .map(|&(y, blur, spread)| {
                 BoxShadow::new(px(0.), px(y), ink)
                     .blur_radius(px(blur))
                     .spread_radius(px(spread))
             })
-            .collect()
-    } else {
-        Vec::new()
+            .collect(),
+        None => Vec::new(),
     };
-    let mut r = with_coloured_text(
-        with_padding(StyleRefinement::default(), &t.border.padding)
-            .rounded(px(t.border.corner_radius))
-            .bg(rgba_to_hsla(t.background_color))
-            .border(px(t.border.line_width))
-            .border_color(rgba_to_hsla(t.border.color)),
-        &t.font,
-        n,
-    );
     r.box_shadow = Some(shadow);
     r
 }
@@ -547,11 +666,27 @@ const TOOLTIP_SHADOW: [(f32, f32, f32); 2] = [(4., 6., -1.), (2., 4., -2.)];
 #[must_use]
 pub fn tooltip_content(n: Native<'_>) -> StyleRefinement {
     let t = &n.resolved.tooltip;
-    let upstream_side = TOOLTIP_UPSTREAM_PX_REM
-        * crate::scaled_text_size(n.resolved.defaults.font.size, n.accessibility);
-    let left = t.border.padding.left.unwrap_or(upstream_side);
-    let right = t.border.padding.right.unwrap_or(upstream_side);
-    let inner = t.max_width - left - right - 2.0 * t.border.line_width;
+    tooltip_content_from(
+        t.max_width,
+        [t.border.padding.left, t.border.padding.right],
+        t.border.line_width,
+        crate::scaled_text_size(n.resolved.defaults.font.size, n.accessibility),
+    )
+}
+
+/// [`tooltip_content`] of a tooltip `max_width` wide with the given left and
+/// right paddings and an edge `border_width` wide, under the rem `rem`, the
+/// scaled `defaults.font.size`.
+pub(crate) fn tooltip_content_from(
+    max_width: f32,
+    [left, right]: [Option<f32>; 2],
+    border_width: f32,
+    rem: f32,
+) -> StyleRefinement {
+    let upstream_side = TOOLTIP_UPSTREAM_PX_REM * rem;
+    let left = left.unwrap_or(upstream_side);
+    let right = right.unwrap_or(upstream_side);
+    let inner = max_width - left - right - 2.0 * border_width;
     StyleRefinement::default().max_w(px(inner.max(0.0)))
 }
 
@@ -742,11 +877,27 @@ pub fn dialog_description(n: Native<'_>) -> StyleRefinement {
 pub fn list(n: Native<'_>) -> StyleRefinement {
     let l = &n.resolved.list;
     let b = &l.border;
+    list_from(
+        b.line_width,
+        rgba_to_hsla(b.color),
+        b.corner_radius,
+        rgba_to_hsla(l.background_color),
+    )
+}
+
+/// [`list`] of an edge `border_width` wide in `border_color`, corners of
+/// `radius` and the fill `background`.
+pub(crate) fn list_from(
+    border_width: f32,
+    border_color: Hsla,
+    radius: f32,
+    background: Hsla,
+) -> StyleRefinement {
     StyleRefinement::default()
-        .border(px(b.line_width))
-        .border_color(rgba_to_hsla(b.color))
-        .rounded(px(b.corner_radius))
-        .bg(rgba_to_hsla(l.background_color))
+        .border(px(border_width))
+        .border_color(border_color)
+        .rounded(px(radius))
+        .bg(background)
         .overflow_hidden()
 }
 
@@ -838,7 +989,12 @@ pub fn accordion_hover(n: Native<'_>) -> StyleRefinement {
 /// widget's value standing in for another's. Only the text colour separates
 /// the two.
 fn checkbox_metrics(n: Native<'_>) -> StyleRefinement {
-    StyleRefinement::default().gap(px(n.resolved.checkbox.label_gap))
+    label_gap(n.resolved.checkbox.label_gap)
+}
+
+/// [`checkbox_metrics`] of the gap `gap` between the indicator and the label.
+pub(crate) fn label_gap(gap: f32) -> StyleRefinement {
+    StyleRefinement::default().gap(px(gap))
 }
 
 /// `Checkbox` (`src/checkbox.rs:281-293` → `:294`); the indicator is an inner
@@ -1117,10 +1273,25 @@ pub fn spinner_size(n: Native<'_>) -> Size {
 #[must_use]
 pub fn data_table_size(n: Native<'_>) -> Size {
     let l = &n.resolved.list;
-    let stated = l
-        .row_height
-        .map_or_else(|| Size::Medium.table_row_height(), px);
-    Size::Size(table_row_height(stated, &l.item_font, n))
+    data_table_size_from(
+        l.row_height,
+        scaled_text_size(&l.item_font, n),
+        n.resolved.defaults.line_height,
+        n.accessibility.text_scale_factor(),
+    )
+}
+
+/// [`data_table_size`] of the stated row height `row_height`, the scaled
+/// size `font_size` of `list.item_font`, the line height `line_height` and
+/// the text-scaling factor `text_scale`.
+pub(crate) fn data_table_size_from(
+    row_height: Option<f32>,
+    font_size: f32,
+    line_height: f32,
+    text_scale: f32,
+) -> Size {
+    let stated = row_height.map_or_else(|| Size::Medium.table_row_height(), px);
+    Size::Size(row_height_fit(stated, font_size, line_height, text_scale))
 }
 
 /// For `DataTable::header_row_height` (`src/table/data_table.rs:151`):
@@ -1137,8 +1308,23 @@ pub fn data_table_size(n: Native<'_>) -> Size {
 #[must_use]
 pub fn list_header_height(n: Native<'_>) -> Option<Pixels> {
     let l = &n.resolved.list;
-    l.header_height
-        .map(|h| table_row_height(px(h), &l.item_font, n))
+    list_header_height_from(
+        l.header_height,
+        scaled_text_size(&l.item_font, n),
+        n.resolved.defaults.line_height,
+        n.accessibility.text_scale_factor(),
+    )
+}
+
+/// [`list_header_height`] of the stated header height `header_height`, with
+/// [`data_table_size_from`]'s other inputs.
+pub(crate) fn list_header_height_from(
+    header_height: Option<f32>,
+    font_size: f32,
+    line_height: f32,
+    text_scale: f32,
+) -> Option<Pixels> {
+    header_height.map(|h| row_height_fit(px(h), font_size, line_height, text_scale))
 }
 
 /// The bottom border upstream draws under a `DataTable` row and under its
@@ -1148,18 +1334,30 @@ const TABLE_ROW_BORDER: f32 = 1.0;
 
 /// A `DataTable` row's height by the control-height rule (module doc): at a
 /// text-scaling factor of 1 or less `stated`, verbatim; above 1 at least the
-/// line box of `font`'s scaled size at `defaults.line_height`, rounded up,
-/// upstream's own top and bottom cell padding for `Size::Size` and the row's
-/// bottom border ([`TABLE_ROW_BORDER`]). A `Size` is a number, so the growth
-/// the single-line controls get from an automatic height is computed here.
-fn table_row_height(stated: Pixels, font: &ResolvedFontSpec, n: Native<'_>) -> Pixels {
-    if n.accessibility.text_scale_factor() <= 1.0 {
+/// line box of the scaled font size `font_size` at the line height
+/// `line_height` (`defaults.line_height`), rounded up, upstream's own top and
+/// bottom cell padding for `Size::Size` and the row's bottom border
+/// ([`TABLE_ROW_BORDER`]). A `Size` is a number, so the growth the
+/// single-line controls get from an automatic height is computed here.
+fn row_height_fit(stated: Pixels, font_size: f32, line_height: f32, text_scale: f32) -> Pixels {
+    if text_scale <= 1.0 {
         return stated;
     }
     let padding = Size::Size(stated).table_cell_padding();
-    let line = (f32::from(scaled_text_size(font, n)) * n.resolved.defaults.line_height).ceil();
+    let line = (font_size * line_height).ceil();
     let fit = line + f32::from(padding.top) + f32::from(padding.bottom) + TABLE_ROW_BORDER;
     px(f32::from(stated).max(fit))
+}
+
+/// [`row_height_fit`] of a 0.7.2 font spec under `n`, as the tests state it.
+#[cfg(test)]
+fn table_row_height(stated: Pixels, font: &ResolvedFontSpec, n: Native<'_>) -> Pixels {
+    row_height_fit(
+        stated,
+        scaled_text_size(font, n),
+        n.resolved.defaults.line_height,
+        n.accessibility.text_scale_factor(),
+    )
 }
 
 /// `Icon::with_size` for toolbar icons: `toolbar.icon_size`, which inherits
@@ -1172,25 +1370,30 @@ pub fn icon_size_toolbar(n: Native<'_>) -> Size {
 /// `Icon::with_size` for small icons (`defaults.icon_sizes.small`).
 #[must_use]
 pub fn icon_size_small(n: Native<'_>) -> Size {
-    Size::Size(px(n.resolved.defaults.icon_sizes.small))
+    icon_size(n.resolved.defaults.icon_sizes.small)
 }
 
 /// `Icon::with_size` for large icons (`defaults.icon_sizes.large`).
 #[must_use]
 pub fn icon_size_large(n: Native<'_>) -> Size {
-    Size::Size(px(n.resolved.defaults.icon_sizes.large))
+    icon_size(n.resolved.defaults.icon_sizes.large)
 }
 
 /// `Icon::with_size` for dialog icons (`defaults.icon_sizes.dialog`).
 #[must_use]
 pub fn icon_size_dialog(n: Native<'_>) -> Size {
-    Size::Size(px(n.resolved.defaults.icon_sizes.dialog))
+    icon_size(n.resolved.defaults.icon_sizes.dialog)
 }
 
 /// `Icon::with_size` for panel icons (`defaults.icon_sizes.panel`).
 #[must_use]
 pub fn icon_size_panel(n: Native<'_>) -> Size {
-    Size::Size(px(n.resolved.defaults.icon_sizes.panel))
+    icon_size(n.resolved.defaults.icon_sizes.panel)
+}
+
+/// The `Size` of an icon `size` pixels square.
+pub(crate) fn icon_size(size: f32) -> Size {
+    Size::Size(px(size))
 }
 
 // --- Scroll containers --------------------------------------------------------
@@ -1221,11 +1424,19 @@ pub fn icon_size_panel(n: Native<'_>) -> Size {
 /// padding inside the scrolled box and the bar lands beside it.
 #[must_use]
 pub fn scrollbar_gutter(n: Native<'_>) -> StyleRefinement {
-    if n.resolved.scrollbar.overlay_mode {
+    scrollbar_gutter_from(
+        n.resolved.scrollbar.overlay_mode,
+        crate::base_layer::scrollbar_geometry(n.resolved).track_width,
+    )
+}
+
+/// [`scrollbar_gutter`] of scrollbars that are overlays where `overlay`, in
+/// a track `track_width` wide.
+pub(crate) fn scrollbar_gutter_from(overlay: bool, track_width: Pixels) -> StyleRefinement {
+    if overlay {
         return StyleRefinement::default();
     }
-    let width = crate::base_layer::scrollbar_geometry(n.resolved).track_width;
-    StyleRefinement::default().pr(width)
+    StyleRefinement::default().pr(track_width)
 }
 
 // --- Builder helpers (spec §9.3) ----------------------------------------------
@@ -1365,12 +1576,27 @@ fn unit(opacity: f32) -> f32 {
 #[must_use]
 pub fn button_disabled(n: Native<'_>) -> StyleRefinement {
     let b = &n.resolved.button;
+    button_disabled_from(
+        b.disabled_background.map(rgba_to_hsla),
+        rgba_to_hsla(b.background_color),
+        rgba_to_hsla(b.disabled_text_color),
+        b.disabled_opacity,
+    )
+}
+
+/// [`button_disabled`] of the disabled fill `fill` (`None` where the theme
+/// states none), the resting fill `rest`, the label colour `text` and the
+/// opacity `opacity`.
+pub(crate) fn button_disabled_from(
+    fill: Option<Hsla>,
+    rest: Hsla,
+    text: Hsla,
+    opacity: f32,
+) -> StyleRefinement {
     StyleRefinement::default()
-        .bg(rgba_to_hsla(
-            b.disabled_background.unwrap_or(b.background_color),
-        ))
-        .text_color(rgba_to_hsla(b.disabled_text_color))
-        .opacity(unit(b.disabled_opacity))
+        .bg(fill.unwrap_or(rest))
+        .text_color(text)
+        .opacity(unit(opacity))
 }
 
 /// The fill and label colour of a toggle `Button` that is on
@@ -1390,11 +1616,26 @@ pub fn button_disabled(n: Native<'_>) -> StyleRefinement {
 #[must_use]
 pub fn button_checked(n: Native<'_>) -> StyleRefinement {
     let b = &n.resolved.button;
-    let r = StyleRefinement::default().text_color(rgba_to_hsla(
-        b.checked_text_color.unwrap_or(b.active_text_color),
-    ));
-    match b.checked_background.or(b.active_background) {
-        Some(fill) => r.bg(rgba_to_hsla(fill)),
+    button_checked_from(
+        b.checked_text_color.map(rgba_to_hsla),
+        rgba_to_hsla(b.active_text_color),
+        b.checked_background.map(rgba_to_hsla),
+        b.active_background.map(rgba_to_hsla),
+    )
+}
+
+/// [`button_checked`] of the checked label colour and fill, each `None`
+/// where the theme states none, and the pressed ones, which stand in for
+/// them there.
+pub(crate) fn button_checked_from(
+    checked_text: Option<Hsla>,
+    pressed_text: Hsla,
+    checked_fill: Option<Hsla>,
+    pressed_fill: Option<Hsla>,
+) -> StyleRefinement {
+    let r = StyleRefinement::default().text_color(checked_text.unwrap_or(pressed_text));
+    match checked_fill.or(pressed_fill) {
+        Some(fill) => r.bg(fill),
         None => r,
     }
 }
@@ -1488,12 +1729,26 @@ pub fn toolbar_button_checked(n: Native<'_>) -> StyleRefinement {
 #[must_use]
 pub fn default_button_rest(n: Native<'_>) -> Option<StyleRefinement> {
     let b = &n.resolved.button;
-    let fill = b.default_button_background?;
-    let frame = b.default_button_border_color.unwrap_or(b.border.color);
+    default_button_rest_from(
+        b.default_button_background.map(rgba_to_hsla),
+        b.default_button_border_color.map(rgba_to_hsla),
+        rgba_to_hsla(b.border.color),
+    )
+}
+
+/// [`default_button_rest`] of the default button's fill and frame, each
+/// `None` where the theme states none, and the ordinary button's frame
+/// `border`, which stands in for the default one there.
+pub(crate) fn default_button_rest_from(
+    fill: Option<Hsla>,
+    frame: Option<Hsla>,
+    border: Hsla,
+) -> Option<StyleRefinement> {
+    let fill = fill?;
     Some(
         StyleRefinement::default()
-            .bg(rgba_to_hsla(fill))
-            .border_color(rgba_to_hsla(frame)),
+            .bg(fill)
+            .border_color(frame.unwrap_or(border)),
     )
 }
 
@@ -1547,7 +1802,12 @@ fn checked_pen(
 /// row. Apply it only while `active_highlight` is on.
 #[must_use]
 pub fn list_item_selected(n: Native<'_>) -> StyleRefinement {
-    StyleRefinement::default().text_color(rgba_to_hsla(n.resolved.list.selection_text_color))
+    list_item_selected_from(rgba_to_hsla(n.resolved.list.selection_text_color))
+}
+
+/// [`list_item_selected`] of the selected row's text colour `text`.
+pub(crate) fn list_item_selected_from(text: Hsla) -> StyleRefinement {
+    StyleRefinement::default().text_color(text)
 }
 
 /// `Link` (`src/link.rs:70-90`): `link.underline_enabled`, and the link's

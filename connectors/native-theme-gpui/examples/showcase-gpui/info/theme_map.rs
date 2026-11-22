@@ -62,7 +62,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "background",
                 t.background,
-                "native-theme-gpui/colors.rs:281",
+                "native-theme-gpui/colors.rs:357",
             ),
             |i| i.config("model", "window.background_color"),
         ),
@@ -71,7 +71,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "foreground",
                 t.foreground,
-                "native-theme-gpui/colors.rs:282",
+                "native-theme-gpui/colors.rs:350",
             ),
             |i| i.config("model", "defaults.text_color"),
         ),
@@ -80,7 +80,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "accent",
                 t.accent,
-                "native-theme-gpui/colors.rs:289",
+                "native-theme-gpui/colors.rs:364",
             ),
             |i| {
                 i.config("model", "menu.hover_background").config("derived", "none: the model field as it is. gpui-component's accent is its item highlight, not the platform's accent colour, so it takes the menu's hover (native-theme-gpui/colors.rs, assign_core)")
@@ -91,7 +91,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "accent_foreground",
                 t.accent_foreground,
-                "native-theme-gpui/colors.rs:290",
+                "native-theme-gpui/colors.rs:365",
             ),
             |i| i.config("model", "menu.hover_text_color"),
         ),
@@ -100,12 +100,12 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "border",
                 t.border,
-                "native-theme-gpui/colors.rs:291",
+                "native-theme-gpui/colors.rs:351",
             ),
             |i| i.config("model", "defaults.border.color"),
         ),
         ThemeToken::Muted => (
-            claim("value", "muted", t.muted, "native-theme-gpui/colors.rs:292"),
+            claim("value", "muted", t.muted, "native-theme-gpui/colors.rs:366"),
             |i| {
                 i.config("model", "defaults.text_color, window.background_color").config("derived", "defaults.text_color faded to 10% of its alpha and blended over window.background_color (native-theme-gpui/colors.rs, to_theme_color)")
             },
@@ -115,16 +115,16 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "muted_foreground",
                 t.muted_foreground,
-                "native-theme-gpui/colors.rs:293",
+                "native-theme-gpui/colors.rs:352",
             ),
             |i| i.config("model", "defaults.muted_color"),
         ),
         ThemeToken::Input => (
-            claim("value", "input", t.input, "native-theme-gpui/colors.rs:294"),
+            claim("value", "input", t.input, "native-theme-gpui/colors.rs:367"),
             |i| i.config("model", "input.border.color"),
         ),
         ThemeToken::Ring => (
-            claim("value", "ring", t.ring, "native-theme-gpui/colors.rs:295"),
+            claim("value", "ring", t.ring, "native-theme-gpui/colors.rs:353"),
             |i| {
                 i.config("model", "defaults.focus_ring_color, defaults.focus_ring_width_px, defaults.focus_ring_keyboard_only").config("derived", "the colour as stated where gpui-component's band is on for any focus; made opaque where the theme says keyboard only or its ring width is not above 0: there ring colours a focused control's border or line and a Tab's keyboard ring, and the band after a key press takes it with its alpha set to 0.5 (native-theme-gpui/colors.rs, ring_colour)")
             },
@@ -134,16 +134,16 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "selection",
                 t.selection,
-                "native-theme-gpui/colors.rs:296",
+                "native-theme-gpui/colors.rs:368",
             ),
             |i| i.config("model", "input.selection_background"),
         ),
         ThemeToken::Caret => (
-            claim("value", "caret", t.caret, "native-theme-gpui/colors.rs:586"),
+            claim("value", "caret", t.caret, "native-theme-gpui/colors.rs:676"),
             |i| i.config("model", "input.caret_color"),
         ),
         ThemeToken::Link => (
-            claim("value", "link", t.link, "native-theme-gpui/colors.rs:297"),
+            claim("value", "link", t.link, "native-theme-gpui/colors.rs:369"),
             |i| i.config("model", "link.font.color"),
         ),
         ThemeToken::LinkHover => (
@@ -151,7 +151,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "link_hover",
                 t.link_hover,
-                "native-theme-gpui/colors.rs:304",
+                "native-theme-gpui/colors.rs:376",
             ),
             |i| i.config("model", "link.hover_text_color"),
         ),
@@ -160,7 +160,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "link_active",
                 t.link_active,
-                "native-theme-gpui/colors.rs:305",
+                "native-theme-gpui/colors.rs:377",
             ),
             |i| i.config("model", "link.active_text_color"),
         ),
@@ -169,7 +169,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "overlay",
                 t.overlay,
-                "native-theme-gpui/colors.rs:552",
+                "native-theme-gpui/colors.rs:621",
             ),
             |i| {
                 i.config("model", "defaults.shadow_color").config("derived", "transparent black where reduced transparency is asked for: upstream's own colour for no overlay (dialog/dialog.rs:335-337), so no scrim is drawn; else defaults.shadow_color's hue, saturation and lightness at an alpha of 0.5 in dark mode and 0.4 in light (native-theme-gpui/colors.rs, assign_misc)")
@@ -180,7 +180,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "primary",
                 t.primary,
-                "native-theme-gpui/colors.rs:309",
+                "native-theme-gpui/colors.rs:381",
             ),
             |i| i.config("model", "button.primary_background"),
         ),
@@ -189,7 +189,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "primary_foreground",
                 t.primary_foreground,
-                "native-theme-gpui/colors.rs:310",
+                "native-theme-gpui/colors.rs:382",
             ),
             |i| i.config("model", "button.primary_text_color"),
         ),
@@ -198,7 +198,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "primary_hover",
                 t.primary_hover,
-                "native-theme-gpui/colors.rs:311",
+                "native-theme-gpui/colors.rs:391",
             ),
             |i| {
                 hover(i.config(
@@ -212,7 +212,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "primary_active",
                 t.primary_active,
-                "native-theme-gpui/colors.rs:312",
+                "native-theme-gpui/colors.rs:383",
             ),
             |i| active(i.config("model", "button.primary_background")),
         ),
@@ -221,7 +221,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "secondary",
                 t.secondary,
-                "native-theme-gpui/colors.rs:316",
+                "native-theme-gpui/colors.rs:405",
             ),
             |i| i.config("model", "button.background_color"),
         ),
@@ -230,7 +230,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "secondary_foreground",
                 t.secondary_foreground,
-                "native-theme-gpui/colors.rs:317",
+                "native-theme-gpui/colors.rs:406",
             ),
             |i| i.config("model", "button.font.color"),
         ),
@@ -239,7 +239,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "secondary_hover",
                 t.secondary_hover,
-                "native-theme-gpui/colors.rs:318",
+                "native-theme-gpui/colors.rs:407",
             ),
             |i| i.config("model", "button.hover_background"),
         ),
@@ -248,7 +248,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "secondary_active",
                 t.secondary_active,
-                "native-theme-gpui/colors.rs:319",
+                "native-theme-gpui/colors.rs:408",
             ),
             |i| {
                 active(i.config("model", "button.active_background, else button.background_color").config("derived", "button.active_background where the model states one; where it states none, button.background_color through active_color (native-theme-gpui/colors.rs, assign_secondary)"))
@@ -259,7 +259,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "button",
                 t.button,
-                "native-theme-gpui/colors.rs:365",
+                "native-theme-gpui/colors.rs:450",
             ),
             |i| {
                 i.config("model", "button.background_color").config(
@@ -273,7 +273,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "button_hover",
                 t.button_hover,
-                "native-theme-gpui/colors.rs:380",
+                "native-theme-gpui/colors.rs:465",
             ),
             |i| {
                 i.config("model", "button.hover_background, button.background_color").config("derived", "secondary_hover laid over button, source-over: an opaque secondary_hover stands as it is, and a translucent one is composited over the idle fill, covering the layer's alpha plus the fill's times what the layer leaves (native-theme-gpui/colors.rs, over)")
@@ -284,7 +284,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "button_active",
                 t.button_active,
-                "native-theme-gpui/colors.rs:381",
+                "native-theme-gpui/colors.rs:466",
             ),
             |i| {
                 active(i.config("model", "button.background_color, the composite's base; and button.active_background, else button.background_color, for secondary_active").config("derived", "secondary_active laid over button, source-over: an opaque secondary_active stands as it is, and a translucent one is composited over the idle fill, covering the layer's alpha plus the fill's times what the layer leaves (native-theme-gpui/colors.rs, over)"))
@@ -296,7 +296,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                     "value",
                     "button_foreground",
                     t.button_foreground,
-                    "native-theme-gpui/colors.rs:382",
+                    "native-theme-gpui/colors.rs:467",
                 ),
                 |i| {
                     i.config("model", "button.font.color").config("copied", "secondary_foreground's value (native-theme-gpui/colors.rs, assign_buttons)")
@@ -308,7 +308,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "button_secondary",
                 t.button_secondary,
-                "native-theme-gpui/colors.rs:383",
+                "native-theme-gpui/colors.rs:468",
             ),
             |i| {
                 i.config("model", "button.background_color").config(
@@ -322,7 +322,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "button_secondary_hover",
                 t.button_secondary_hover,
-                "native-theme-gpui/colors.rs:384",
+                "native-theme-gpui/colors.rs:469",
             ),
             |i| {
                 i.config("model", "button.hover_background, button.background_color").config("derived", "secondary_hover laid over button_secondary, source-over: an opaque secondary_hover stands as it is, and a translucent one is composited over the idle fill, covering the layer's alpha plus the fill's times what the layer leaves (native-theme-gpui/colors.rs, over)")
@@ -333,7 +333,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "button_secondary_active",
                 t.button_secondary_active,
-                "native-theme-gpui/colors.rs:385",
+                "native-theme-gpui/colors.rs:470",
             ),
             |i| {
                 active(i.config("model", "button.background_color, the composite's base; and button.active_background, else button.background_color, for secondary_active").config("derived", "secondary_active laid over button_secondary, source-over: an opaque secondary_active stands as it is, and a translucent one is composited over the idle fill, covering the layer's alpha plus the fill's times what the layer leaves (native-theme-gpui/colors.rs, over)"))
@@ -345,7 +345,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                     "value",
                     "button_secondary_foreground",
                     t.button_secondary_foreground,
-                    "native-theme-gpui/colors.rs:386",
+                    "native-theme-gpui/colors.rs:471",
                 ),
                 |i| {
                     i.config("model", "button.font.color").config("copied", "secondary_foreground's value (native-theme-gpui/colors.rs, assign_buttons)")
@@ -357,7 +357,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "button_primary",
                 t.button_primary,
-                "native-theme-gpui/colors.rs:388",
+                "native-theme-gpui/colors.rs:473",
             ),
             |i| {
                 i.config("model", "button.primary_background").config(
@@ -371,7 +371,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "button_primary_hover",
                 t.button_primary_hover,
-                "native-theme-gpui/colors.rs:389",
+                "native-theme-gpui/colors.rs:397",
             ),
             |i| {
                 hover(
@@ -391,7 +391,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "button_primary_active",
                 t.button_primary_active,
-                "native-theme-gpui/colors.rs:390",
+                "native-theme-gpui/colors.rs:474",
             ),
             |i| {
                 active(i.config("model", "button.primary_background").config(
@@ -405,7 +405,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "button_primary_foreground",
                 t.button_primary_foreground,
-                "native-theme-gpui/colors.rs:391",
+                "native-theme-gpui/colors.rs:475",
             ),
             |i| {
                 i.config("model", "button.primary_text_color").config(
@@ -419,7 +419,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "button_danger",
                 t.button_danger,
-                "native-theme-gpui/colors.rs:393",
+                "native-theme-gpui/colors.rs:477",
             ),
             |i| {
                 i.config("model", "defaults.danger_color").config(
@@ -434,7 +434,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                     "value",
                     "button_danger_hover",
                     t.button_danger_hover,
-                    "native-theme-gpui/colors.rs:394",
+                    "native-theme-gpui/colors.rs:398",
                 ),
                 |i| {
                     hover(i.config("model", "defaults.danger_color, window.background_color").config("copied", "danger_hover's value (native-theme-gpui/colors.rs, assign_buttons)"))
@@ -446,7 +446,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "button_danger_active",
                 t.button_danger_active,
-                "native-theme-gpui/colors.rs:395",
+                "native-theme-gpui/colors.rs:478",
             ),
             |i| {
                 active(i.config("model", "defaults.danger_color").config(
@@ -460,7 +460,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "button_danger_foreground",
                 t.button_danger_foreground,
-                "native-theme-gpui/colors.rs:396",
+                "native-theme-gpui/colors.rs:479",
             ),
             |i| {
                 i.config("model", "defaults.danger_text_color").config(
@@ -474,7 +474,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "button_info",
                 t.button_info,
-                "native-theme-gpui/colors.rs:398",
+                "native-theme-gpui/colors.rs:481",
             ),
             |i| {
                 i.config("model", "defaults.info_color").config(
@@ -505,7 +505,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "button_info_active",
                 t.button_info_active,
-                "native-theme-gpui/colors.rs:400",
+                "native-theme-gpui/colors.rs:482",
             ),
             |i| {
                 active(i.config("model", "defaults.info_color").config(
@@ -519,7 +519,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "button_info_foreground",
                 t.button_info_foreground,
-                "native-theme-gpui/colors.rs:401",
+                "native-theme-gpui/colors.rs:483",
             ),
             |i| {
                 i.config("model", "defaults.info_text_color").config(
@@ -533,7 +533,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "button_success",
                 t.button_success,
-                "native-theme-gpui/colors.rs:403",
+                "native-theme-gpui/colors.rs:485",
             ),
             |i| {
                 i.config("model", "defaults.success_color").config(
@@ -548,7 +548,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                     "value",
                     "button_success_hover",
                     t.button_success_hover,
-                    "native-theme-gpui/colors.rs:404",
+                    "native-theme-gpui/colors.rs:400",
                 ),
                 |i| {
                     hover(i.config("model", "defaults.success_color, window.background_color").config("copied", "success_hover's value (native-theme-gpui/colors.rs, assign_buttons)"))
@@ -560,7 +560,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "button_success_active",
                 t.button_success_active,
-                "native-theme-gpui/colors.rs:405",
+                "native-theme-gpui/colors.rs:486",
             ),
             |i| {
                 active(i.config("model", "defaults.success_color").config(
@@ -574,7 +574,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "button_success_foreground",
                 t.button_success_foreground,
-                "native-theme-gpui/colors.rs:406",
+                "native-theme-gpui/colors.rs:487",
             ),
             |i| {
                 i.config("model", "defaults.success_text_color").config(
@@ -588,7 +588,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "button_warning",
                 t.button_warning,
-                "native-theme-gpui/colors.rs:408",
+                "native-theme-gpui/colors.rs:489",
             ),
             |i| {
                 i.config("model", "defaults.warning_color").config(
@@ -603,7 +603,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                     "value",
                     "button_warning_hover",
                     t.button_warning_hover,
-                    "native-theme-gpui/colors.rs:409",
+                    "native-theme-gpui/colors.rs:401",
                 ),
                 |i| {
                     hover(i.config("model", "defaults.warning_color, window.background_color").config("copied", "warning_hover's value (native-theme-gpui/colors.rs, assign_buttons)"))
@@ -615,7 +615,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "button_warning_active",
                 t.button_warning_active,
-                "native-theme-gpui/colors.rs:410",
+                "native-theme-gpui/colors.rs:490",
             ),
             |i| {
                 active(i.config("model", "defaults.warning_color").config(
@@ -629,7 +629,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "button_warning_foreground",
                 t.button_warning_foreground,
-                "native-theme-gpui/colors.rs:411",
+                "native-theme-gpui/colors.rs:491",
             ),
             |i| {
                 i.config("model", "defaults.warning_text_color").config(
@@ -643,7 +643,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "danger",
                 t.danger,
-                "native-theme-gpui/colors.rs:333",
+                "native-theme-gpui/colors.rs:422",
             ),
             |i| i.config("model", "defaults.danger_color"),
         ),
@@ -652,7 +652,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "danger_foreground",
                 t.danger_foreground,
-                "native-theme-gpui/colors.rs:334",
+                "native-theme-gpui/colors.rs:423",
             ),
             |i| i.config("model", "defaults.danger_text_color"),
         ),
@@ -661,7 +661,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "danger_hover",
                 t.danger_hover,
-                "native-theme-gpui/colors.rs:335",
+                "native-theme-gpui/colors.rs:392",
             ),
             |i| hover(i.config("model", "defaults.danger_color, window.background_color")),
         ),
@@ -670,12 +670,12 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "danger_active",
                 t.danger_active,
-                "native-theme-gpui/colors.rs:336",
+                "native-theme-gpui/colors.rs:424",
             ),
             |i| active(i.config("model", "defaults.danger_color")),
         ),
         ThemeToken::Red => (
-            claim("value", "red", t.red, "native-theme-gpui/colors.rs:697"),
+            claim("value", "red", t.red, "native-theme-gpui/colors.rs:779"),
             |i| i.config("model", "defaults.danger_color"),
         ),
         ThemeToken::RedLight => (
@@ -683,7 +683,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "red_light",
                 t.red_light,
-                "native-theme-gpui/colors.rs:698",
+                "native-theme-gpui/colors.rs:807",
             ),
             |i| light(i.config("model", "defaults.danger_color, window.background_color")),
         ),
@@ -692,7 +692,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "success",
                 t.success,
-                "native-theme-gpui/colors.rs:338",
+                "native-theme-gpui/colors.rs:426",
             ),
             |i| i.config("model", "defaults.success_color"),
         ),
@@ -701,7 +701,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "success_foreground",
                 t.success_foreground,
-                "native-theme-gpui/colors.rs:339",
+                "native-theme-gpui/colors.rs:427",
             ),
             |i| i.config("model", "defaults.success_text_color"),
         ),
@@ -710,7 +710,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "success_hover",
                 t.success_hover,
-                "native-theme-gpui/colors.rs:340",
+                "native-theme-gpui/colors.rs:393",
             ),
             |i| hover(i.config("model", "defaults.success_color, window.background_color")),
         ),
@@ -719,12 +719,12 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "success_active",
                 t.success_active,
-                "native-theme-gpui/colors.rs:341",
+                "native-theme-gpui/colors.rs:428",
             ),
             |i| active(i.config("model", "defaults.success_color")),
         ),
         ThemeToken::Green => (
-            claim("value", "green", t.green, "native-theme-gpui/colors.rs:699"),
+            claim("value", "green", t.green, "native-theme-gpui/colors.rs:780"),
             |i| i.config("model", "defaults.success_color"),
         ),
         ThemeToken::GreenLight => (
@@ -732,7 +732,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "green_light",
                 t.green_light,
-                "native-theme-gpui/colors.rs:700",
+                "native-theme-gpui/colors.rs:808",
             ),
             |i| light(i.config("model", "defaults.success_color, window.background_color")),
         ),
@@ -741,7 +741,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "warning",
                 t.warning,
-                "native-theme-gpui/colors.rs:343",
+                "native-theme-gpui/colors.rs:430",
             ),
             |i| i.config("model", "defaults.warning_color"),
         ),
@@ -750,7 +750,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "warning_foreground",
                 t.warning_foreground,
-                "native-theme-gpui/colors.rs:344",
+                "native-theme-gpui/colors.rs:431",
             ),
             |i| i.config("model", "defaults.warning_text_color"),
         ),
@@ -759,7 +759,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "warning_hover",
                 t.warning_hover,
-                "native-theme-gpui/colors.rs:345",
+                "native-theme-gpui/colors.rs:394",
             ),
             |i| hover(i.config("model", "defaults.warning_color, window.background_color")),
         ),
@@ -768,7 +768,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "warning_active",
                 t.warning_active,
-                "native-theme-gpui/colors.rs:346",
+                "native-theme-gpui/colors.rs:432",
             ),
             |i| active(i.config("model", "defaults.warning_color")),
         ),
@@ -777,7 +777,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "yellow",
                 t.yellow,
-                "native-theme-gpui/colors.rs:703",
+                "native-theme-gpui/colors.rs:782",
             ),
             |i| i.config("model", "defaults.warning_color"),
         ),
@@ -786,12 +786,12 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "yellow_light",
                 t.yellow_light,
-                "native-theme-gpui/colors.rs:704",
+                "native-theme-gpui/colors.rs:810",
             ),
             |i| light(i.config("model", "defaults.warning_color, window.background_color")),
         ),
         ThemeToken::Info => (
-            claim("value", "info", t.info, "native-theme-gpui/colors.rs:348"),
+            claim("value", "info", t.info, "native-theme-gpui/colors.rs:434"),
             |i| i.config("model", "defaults.info_color"),
         ),
         ThemeToken::InfoForeground => (
@@ -799,7 +799,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "info_foreground",
                 t.info_foreground,
-                "native-theme-gpui/colors.rs:349",
+                "native-theme-gpui/colors.rs:435",
             ),
             |i| i.config("model", "defaults.info_text_color"),
         ),
@@ -808,7 +808,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "info_hover",
                 t.info_hover,
-                "native-theme-gpui/colors.rs:350",
+                "native-theme-gpui/colors.rs:395",
             ),
             |i| hover(i.config("model", "defaults.info_color, window.background_color")),
         ),
@@ -817,12 +817,12 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "info_active",
                 t.info_active,
-                "native-theme-gpui/colors.rs:351",
+                "native-theme-gpui/colors.rs:436",
             ),
             |i| active(i.config("model", "defaults.info_color")),
         ),
         ThemeToken::Blue => (
-            claim("value", "blue", t.blue, "native-theme-gpui/colors.rs:701"),
+            claim("value", "blue", t.blue, "native-theme-gpui/colors.rs:781"),
             |i| i.config("model", "defaults.info_color"),
         ),
         ThemeToken::BlueLight => (
@@ -830,7 +830,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "blue_light",
                 t.blue_light,
-                "native-theme-gpui/colors.rs:702",
+                "native-theme-gpui/colors.rs:809",
             ),
             |i| light(i.config("model", "defaults.info_color, window.background_color")),
         ),
@@ -839,7 +839,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "list",
                 t.colors.list,
-                "native-theme-gpui/colors.rs:415",
+                "native-theme-gpui/colors.rs:495",
             ),
             |i| i.config("model", "list.background_color"),
         ),
@@ -848,7 +848,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "list_active",
                 t.list_active,
-                "native-theme-gpui/colors.rs:417",
+                "native-theme-gpui/colors.rs:497",
             ),
             |i| i.config("model", "list.selection_background"),
         ),
@@ -857,7 +857,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "list_active_border",
                 t.list_active_border,
-                "native-theme-gpui/colors.rs:419",
+                "native-theme-gpui/colors.rs:530",
             ),
             |i| {
                 list_active_border(i.config(
@@ -871,7 +871,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "list_even",
                 t.list_even,
-                "native-theme-gpui/colors.rs:420",
+                "native-theme-gpui/colors.rs:498",
             ),
             |i| i.config("model", "list.alternate_row_background"),
         ),
@@ -880,7 +880,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "list_head",
                 t.list_head,
-                "native-theme-gpui/colors.rs:426",
+                "native-theme-gpui/colors.rs:504",
             ),
             |i| i.config("model", "list.header_background"),
         ),
@@ -889,7 +889,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "list_hover",
                 t.list_hover,
-                "native-theme-gpui/colors.rs:416",
+                "native-theme-gpui/colors.rs:496",
             ),
             |i| i.config("model", "list.hover_background"),
         ),
@@ -898,14 +898,14 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "list_highlight_foreground",
                 t.list_highlight_foreground,
-                "native-theme-gpui/colors.rs:432",
+                "native-theme-gpui/colors.rs:510",
             ),
             |i| {
                 i.config("model", "defaults.text_color").config("derived", "the model states no colour for the part of a row that matches a search, so the row's resting text colour, foreground's value (native-theme-gpui/colors.rs, assign_list_table)")
             },
         ),
         ThemeToken::Table => (
-            claim("value", "table", t.table, "native-theme-gpui/colors.rs:434"),
+            claim("value", "table", t.table, "native-theme-gpui/colors.rs:512"),
             |i| i.config("model", "list.background_color"),
         ),
         ThemeToken::TableActive => (
@@ -913,7 +913,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "table_active",
                 t.table_active,
-                "native-theme-gpui/colors.rs:436",
+                "native-theme-gpui/colors.rs:514",
             ),
             |i| {
                 i.config("model", "list.selection_background").config(
@@ -927,7 +927,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "table_active_border",
                 t.table_active_border,
-                "native-theme-gpui/colors.rs:437",
+                "native-theme-gpui/colors.rs:531",
             ),
             |i| {
                 list_active_border(i.config("model", "button.primary_background, window.background_color").config("copied", "list_active_border's value (native-theme-gpui/colors.rs, assign_list_table)"))
@@ -938,7 +938,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "table_even",
                 t.table_even,
-                "native-theme-gpui/colors.rs:438",
+                "native-theme-gpui/colors.rs:515",
             ),
             |i| {
                 i.config("model", "list.alternate_row_background").config(
@@ -952,7 +952,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "table_head",
                 t.table_head,
-                "native-theme-gpui/colors.rs:439",
+                "native-theme-gpui/colors.rs:516",
             ),
             |i| i.config("model", "list.header_background"),
         ),
@@ -961,7 +961,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "table_head_foreground",
                 t.table_head_foreground,
-                "native-theme-gpui/colors.rs:443",
+                "native-theme-gpui/colors.rs:520",
             ),
             |i| i.config("model", "list.header_font.color"),
         ),
@@ -970,7 +970,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "table_foot",
                 t.table_foot,
-                "native-theme-gpui/colors.rs:457",
+                "native-theme-gpui/colors.rs:542",
             ),
             |i| {
                 i.config("model", "window.background_color").config("derived", "the model states no footer colour of any kind, so the window's own background (native-theme-gpui/colors.rs, assign_list_table)")
@@ -981,7 +981,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "table_foot_foreground",
                 t.table_foot_foreground,
-                "native-theme-gpui/colors.rs:458",
+                "native-theme-gpui/colors.rs:525",
             ),
             |i| {
                 i.config("model", "defaults.muted_color").config("derived", "the model states no footer colour of any kind, so the muted text colour (native-theme-gpui/colors.rs, assign_list_table)")
@@ -992,7 +992,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "table_hover",
                 t.table_hover,
-                "native-theme-gpui/colors.rs:435",
+                "native-theme-gpui/colors.rs:513",
             ),
             |i| {
                 i.config("model", "list.hover_background").config(
@@ -1006,12 +1006,12 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "table_row_border",
                 t.table_row_border,
-                "native-theme-gpui/colors.rs:446",
+                "native-theme-gpui/colors.rs:523",
             ),
             |i| i.config("model", "list.grid_color"),
         ),
         ThemeToken::Tab => (
-            claim("value", "tab", t.tab, "native-theme-gpui/colors.rs:463"),
+            claim("value", "tab", t.tab, "native-theme-gpui/colors.rs:547"),
             |i| i.config("model", "tab.background_color"),
         ),
         ThemeToken::TabActive => (
@@ -1019,7 +1019,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "tab_active",
                 t.tab_active,
-                "native-theme-gpui/colors.rs:464",
+                "native-theme-gpui/colors.rs:548",
             ),
             |i| i.config("model", "tab.active_background"),
         ),
@@ -1028,7 +1028,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "tab_active_foreground",
                 t.tab_active_foreground,
-                "native-theme-gpui/colors.rs:465",
+                "native-theme-gpui/colors.rs:549",
             ),
             |i| i.config("model", "tab.active_text_color"),
         ),
@@ -1037,7 +1037,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "tab_bar",
                 t.tab_bar,
-                "native-theme-gpui/colors.rs:466",
+                "native-theme-gpui/colors.rs:550",
             ),
             |i| i.config("model", "tab.bar_background"),
         ),
@@ -1046,7 +1046,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "tab_bar_segmented",
                 t.tab_bar_segmented,
-                "native-theme-gpui/colors.rs:473",
+                "native-theme-gpui/colors.rs:557",
             ),
             |i| i.config("model", "segmented_control.background_color"),
         ),
@@ -1055,7 +1055,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "tab_foreground",
                 t.tab_foreground,
-                "native-theme-gpui/colors.rs:474",
+                "native-theme-gpui/colors.rs:558",
             ),
             |i| i.config("model", "tab.font.color"),
         ),
@@ -1064,7 +1064,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "sidebar",
                 t.sidebar,
-                "native-theme-gpui/colors.rs:476",
+                "native-theme-gpui/colors.rs:560",
             ),
             |i| i.config("model", "sidebar.background_color"),
         ),
@@ -1073,7 +1073,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "sidebar_foreground",
                 t.sidebar_foreground,
-                "native-theme-gpui/colors.rs:477",
+                "native-theme-gpui/colors.rs:561",
             ),
             |i| i.config("model", "sidebar.font.color"),
         ),
@@ -1082,7 +1082,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "sidebar_accent",
                 t.sidebar_accent,
-                "native-theme-gpui/colors.rs:478",
+                "native-theme-gpui/colors.rs:562",
             ),
             |i| i.config("model", "sidebar.selection_background"),
         ),
@@ -1091,7 +1091,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "sidebar_accent_foreground",
                 t.sidebar_accent_foreground,
-                "native-theme-gpui/colors.rs:479",
+                "native-theme-gpui/colors.rs:563",
             ),
             |i| i.config("model", "sidebar.selection_text_color"),
         ),
@@ -1100,7 +1100,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "sidebar_border",
                 t.sidebar_border,
-                "native-theme-gpui/colors.rs:480",
+                "native-theme-gpui/colors.rs:564",
             ),
             |i| i.config("model", "sidebar.border.color"),
         ),
@@ -1109,7 +1109,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "sidebar_primary",
                 t.sidebar_primary,
-                "native-theme-gpui/colors.rs:481",
+                "native-theme-gpui/colors.rs:384",
             ),
             |i| i.config("model", "button.primary_background"),
         ),
@@ -1118,7 +1118,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "sidebar_primary_foreground",
                 t.sidebar_primary_foreground,
-                "native-theme-gpui/colors.rs:482",
+                "native-theme-gpui/colors.rs:385",
             ),
             |i| i.config("model", "button.primary_text_color"),
         ),
@@ -1127,7 +1127,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "scrollbar",
                 t.scrollbar,
-                "native-theme-gpui/colors.rs:565",
+                "native-theme-gpui/colors.rs:633",
             ),
             |i| i.config("model", "scrollbar.track_color"),
         ),
@@ -1136,7 +1136,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "scrollbar_thumb",
                 t.scrollbar_thumb,
-                "native-theme-gpui/colors.rs:566",
+                "native-theme-gpui/colors.rs:634",
             ),
             |i| i.config("model", "scrollbar.thumb_color"),
         ),
@@ -1145,7 +1145,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "scrollbar_thumb_hover",
                 t.scrollbar_thumb_hover,
-                "native-theme-gpui/colors.rs:567",
+                "native-theme-gpui/colors.rs:635",
             ),
             |i| i.config("model", "scrollbar.thumb_hover_color"),
         ),
@@ -1154,7 +1154,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "accordion",
                 t.accordion,
-                "native-theme-gpui/colors.rs:532",
+                "native-theme-gpui/colors.rs:649",
             ),
             |i| i.config("model", "window.background_color"),
         ),
@@ -1163,7 +1163,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "group_box",
                 t.group_box,
-                "native-theme-gpui/colors.rs:536",
+                "native-theme-gpui/colors.rs:653",
             ),
             |i| {
                 i.config("model", "button.background_color, window.background_color").config("derived", "button.background_color faded to 40% of its alpha in light mode and to 30% in dark, blended over window.background_color (native-theme-gpui/colors.rs, assign_misc)")
@@ -1174,7 +1174,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "group_box_foreground",
                 t.group_box_foreground,
-                "native-theme-gpui/colors.rs:538",
+                "native-theme-gpui/colors.rs:610",
             ),
             |i| i.config("model", "defaults.text_color"),
         ),
@@ -1183,7 +1183,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "chart_1",
                 t.chart_1,
-                "native-theme-gpui/colors.rs:497",
+                "native-theme-gpui/colors.rs:579",
             ),
             |i| i.config("model", "defaults.accent_color"),
         ),
@@ -1192,7 +1192,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "chart_2",
                 t.chart_2,
-                "native-theme-gpui/colors.rs:500",
+                "native-theme-gpui/colors.rs:582",
             ),
             |i| {
                 i.config("model", "defaults.accent_color").config("derived", "defaults.accent_color's hue turned 0.2 of the way round the wheel, its saturation raised to at least 0.3, its lightness and alpha kept (native-theme-gpui/colors.rs, assign_charts)")
@@ -1203,7 +1203,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "chart_3",
                 t.chart_3,
-                "native-theme-gpui/colors.rs:505",
+                "native-theme-gpui/colors.rs:587",
             ),
             |i| {
                 i.config("model", "defaults.accent_color").config("derived", "defaults.accent_color's hue turned 0.4 of the way round the wheel, its saturation raised to at least 0.3, its lightness and alpha kept (native-theme-gpui/colors.rs, assign_charts)")
@@ -1214,7 +1214,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "chart_4",
                 t.chart_4,
-                "native-theme-gpui/colors.rs:510",
+                "native-theme-gpui/colors.rs:592",
             ),
             |i| {
                 i.config("model", "defaults.accent_color").config("derived", "defaults.accent_color's hue turned 0.6 of the way round the wheel, its saturation raised to at least 0.3, its lightness and alpha kept (native-theme-gpui/colors.rs, assign_charts)")
@@ -1225,7 +1225,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "chart_5",
                 t.chart_5,
-                "native-theme-gpui/colors.rs:515",
+                "native-theme-gpui/colors.rs:597",
             ),
             |i| {
                 i.config("model", "defaults.accent_color").config("derived", "defaults.accent_color's hue turned 0.8 of the way round the wheel, its saturation raised to at least 0.3, its lightness and alpha kept (native-theme-gpui/colors.rs, assign_charts)")
@@ -1236,7 +1236,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "chart_bullish",
                 t.chart_bullish,
-                "native-theme-gpui/colors.rs:353",
+                "native-theme-gpui/colors.rs:438",
             ),
             |i| i.config("model", "defaults.success_color"),
         ),
@@ -1245,7 +1245,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "chart_bearish",
                 t.chart_bearish,
-                "native-theme-gpui/colors.rs:354",
+                "native-theme-gpui/colors.rs:439",
             ),
             |i| i.config("model", "defaults.danger_color"),
         ),
@@ -1254,7 +1254,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "chart_grid",
                 t.chart_grid,
-                "native-theme-gpui/colors.rs:452",
+                "native-theme-gpui/colors.rs:537",
             ),
             |i| i.config("model", "separator.line_color"),
         ),
@@ -1263,7 +1263,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "description_list_label",
                 t.description_list_label,
-                "native-theme-gpui/colors.rs:541",
+                "native-theme-gpui/colors.rs:657",
             ),
             |i| {
                 i.config("model", "defaults.border.color, window.background_color").config("derived", "defaults.border.color faded to 20% of its alpha and blended over window.background_color (native-theme-gpui/colors.rs, assign_misc)")
@@ -1274,7 +1274,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "description_list_label_foreground",
                 t.description_list_label_foreground,
-                "native-theme-gpui/colors.rs:542",
+                "native-theme-gpui/colors.rs:611",
             ),
             |i| i.config("model", "defaults.muted_color"),
         ),
@@ -1283,7 +1283,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "drag_border",
                 t.drag_border,
-                "native-theme-gpui/colors.rs:591",
+                "native-theme-gpui/colors.rs:640",
             ),
             |i| {
                 i.config("model", "button.primary_background").config("derived", "button.primary_background faded to 65% of its alpha, so translucent (native-theme-gpui/colors.rs, assign_misc)")
@@ -1294,7 +1294,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "drop_target",
                 t.drop_target,
-                "native-theme-gpui/colors.rs:593",
+                "native-theme-gpui/colors.rs:642",
             ),
             |i| {
                 i.config("model", "button.primary_background").config("derived", "button.primary_background faded to 20% of its alpha, so translucent (native-theme-gpui/colors.rs, assign_misc)")
@@ -1305,7 +1305,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "popover",
                 t.popover,
-                "native-theme-gpui/colors.rs:529",
+                "native-theme-gpui/colors.rs:646",
             ),
             |i| i.config("model", "popover.background_color"),
         ),
@@ -1314,7 +1314,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "popover_foreground",
                 t.popover_foreground,
-                "native-theme-gpui/colors.rs:530",
+                "native-theme-gpui/colors.rs:647",
             ),
             |i| i.config("model", "popover.font.color"),
         ),
@@ -1323,7 +1323,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "progress_bar",
                 t.progress_bar,
-                "native-theme-gpui/colors.rs:583",
+                "native-theme-gpui/colors.rs:673",
             ),
             |i| i.config("model", "progress_bar.fill_color"),
         ),
@@ -1332,7 +1332,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "skeleton",
                 t.skeleton,
-                "native-theme-gpui/colors.rs:588",
+                "native-theme-gpui/colors.rs:637",
             ),
             |i| i.config("model", "button.background_color"),
         ),
@@ -1341,7 +1341,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "slider_bar",
                 t.slider_bar,
-                "native-theme-gpui/colors.rs:570",
+                "native-theme-gpui/colors.rs:660",
             ),
             |i| i.config("model", "slider.fill_color"),
         ),
@@ -1350,7 +1350,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "slider_thumb",
                 t.slider_thumb,
-                "native-theme-gpui/colors.rs:571",
+                "native-theme-gpui/colors.rs:661",
             ),
             |i| i.config("model", "slider.thumb_color"),
         ),
@@ -1359,7 +1359,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "switch",
                 t.switch,
-                "native-theme-gpui/colors.rs:574",
+                "native-theme-gpui/colors.rs:664",
             ),
             |i| {
                 i.config("model", "switch.unchecked_background").config("derived", "none: the model field as it is. ThemeColor has no field for a checked switch, so the connector maps switch.checked_background nowhere (native-theme-gpui/colors.rs, assign_misc)")
@@ -1370,7 +1370,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "switch_thumb",
                 t.switch_thumb,
-                "native-theme-gpui/colors.rs:580",
+                "native-theme-gpui/colors.rs:670",
             ),
             |i| i.config("model", "switch.thumb_background"),
         ),
@@ -1379,7 +1379,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "status_bar",
                 t.status_bar,
-                "native-theme-gpui/colors.rs:596",
+                "native-theme-gpui/colors.rs:679",
             ),
             |i| i.config("model", "status_bar.background_color"),
         ),
@@ -1388,7 +1388,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "status_bar_border",
                 t.status_bar_border,
-                "native-theme-gpui/colors.rs:597",
+                "native-theme-gpui/colors.rs:680",
             ),
             |i| i.config("model", "status_bar.border.color"),
         ),
@@ -1397,7 +1397,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "title_bar",
                 t.title_bar,
-                "native-theme-gpui/colors.rs:485",
+                "native-theme-gpui/colors.rs:567",
             ),
             |i| i.config("model", "window.title_bar_background"),
         ),
@@ -1406,7 +1406,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "title_bar_border",
                 t.title_bar_border,
-                "native-theme-gpui/colors.rs:486",
+                "native-theme-gpui/colors.rs:568",
             ),
             |i| i.config("model", "window.border.color"),
         ),
@@ -1415,7 +1415,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "window_border",
                 t.window_border,
-                "native-theme-gpui/colors.rs:487",
+                "native-theme-gpui/colors.rs:569",
             ),
             |i| i.config("model", "window.border.color"),
         ),
@@ -1424,7 +1424,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "magenta",
                 t.magenta,
-                "native-theme-gpui/colors.rs:707",
+                "native-theme-gpui/colors.rs:785",
             ),
             |i| {
                 i.config("model", "defaults.accent_color").config("derived", "hue 0.833, a literal, with defaults.accent_color's lightness and its saturation capped at 0.85, opaque (native-theme-gpui/colors.rs, assign_base_colors)")
@@ -1435,14 +1435,14 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "magenta_light",
                 t.magenta_light,
-                "native-theme-gpui/colors.rs:714",
+                "native-theme-gpui/colors.rs:811",
             ),
             |i| {
                 light(i.config("model", "defaults.accent_color, window.background_color").config("derived", "magenta as its own swatch states it, through light_variant (native-theme-gpui/colors.rs, assign_base_colors)"))
             },
         ),
         ThemeToken::Cyan => (
-            claim("value", "cyan", t.cyan, "native-theme-gpui/colors.rs:717"),
+            claim("value", "cyan", t.cyan, "native-theme-gpui/colors.rs:793"),
             |i| {
                 i.config("model", "defaults.info_color").config("derived", "hue 0.5, a literal, with defaults.info_color's lightness and its saturation capped at 0.85, opaque (native-theme-gpui/colors.rs, assign_base_colors)")
             },
@@ -1452,7 +1452,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "cyan_light",
                 t.cyan_light,
-                "native-theme-gpui/colors.rs:724",
+                "native-theme-gpui/colors.rs:812",
             ),
             |i| {
                 light(i.config("model", "defaults.info_color, window.background_color").config("derived", "cyan as its own swatch states it, through light_variant (native-theme-gpui/colors.rs, assign_base_colors)"))
