@@ -892,7 +892,7 @@ fn ruled_part(theme: &ResolvedTheme, widget: &str, rest: &str) -> Result<Option<
 }
 
 /// Whether the property at the ruled part's `home` got its value from a rule that requires a state (its
-/// `from_state` bit); `None` for a property without a bit (a size, `defined_size`), an error for a home
+/// `from_state` bit); `None` for a property without a bit (`defined_size`), an error for a home
 /// that is no ruled part's property.
 fn from_state_at(home: &str, theme: &ResolvedTheme) -> Result<Option<bool>, String> {
     let unreadable = || format!("the home `{home}` is no ruled part's property");
@@ -905,9 +905,11 @@ fn from_state_at(home: &str, theme: &ResolvedTheme) -> Result<Option<bool>, Stri
     })
 }
 
-/// The bit of a part's property the comparator reads, `None` for a size (it has none).
+/// The `from_state` bit of a part's property the comparator reads.
 fn part_bit(property: &str) -> Option<PartStated> {
     Some(match property {
+        "min_size[0]" | "min_size[1]" => PartStated::MIN_SIZE,
+        "max_size[0]" | "max_size[1]" => PartStated::MAX_SIZE,
         "fill" => PartStated::FILL,
         "stroke.color" | "stroke.width" => PartStated::STROKE,
         "corners" => PartStated::CORNERS,

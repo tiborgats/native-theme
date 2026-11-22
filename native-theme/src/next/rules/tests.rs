@@ -396,7 +396,7 @@ fn stated_bits_follow_the_applied_properties() {
     );
     assert_eq!(
         all.eval(&StyleQuery::<()>::default()).stated,
-        PartStated::ALL
+        PartStated::ALL.difference(PartStated::MIN_SIZE | PartStated::MAX_SIZE)
     );
     let unstated: RuleSet<PartStyle, PartProp> = RuleSet::new(
         PartStyle::default(),
@@ -593,7 +593,7 @@ fn a_range_beyond_u32_is_stored_empty() -> Result<(), std::num::TryFromIntError>
 }
 
 /// `style` with `prop` applied by a rule that matches every query.
-fn applied<T: Clone, P>(style: T, prop: P) -> T
+fn applied<T: Clone + Patched<P>, P>(style: T, prop: P) -> T
 where
     RuleSet<T, P>: Eval<T>,
 {
@@ -1519,8 +1519,144 @@ fn a_state_rule_sets_the_bits_of_exactly_its_properties() {
         padded
             .eval(&StyleQuery::<()>::new(WidgetState::HOVER))
             .from_state,
-        PartStated::PADDING_TOP | PartStated::PADDING_LEFT
+        PartStated::PADDING_TOP | PartStated::PADDING_LEFT | PartStated::MIN_SIZE
     );
+}
+
+#[test]
+fn a_size_written_for_a_state_sets_its_bit_in_from_state_alone() {
+    let rules: RuleSet<PartStyle, PartProp> = RuleBuilder::new(PartStyle::default())
+        .base([PartProp::MinSize([Some(8.0), Some(8.0)])])
+        .rule(
+            on(WidgetState::HOVER),
+            [PartProp::MinSize([Some(12.0), None])],
+        )
+        .rule(
+            on(WidgetState::PRESSED),
+            [PartProp::MaxSize([None, Some(20.0)])],
+        )
+        .rule(
+            any().size(ControlSize::Small),
+            [PartProp::MaxSize([Some(30.0), None])],
+        )
+        .build();
+    let rest = rules.eval(&StyleQuery::<()>::default());
+    assert!(rest.from_state.is_empty());
+    let hover = rules.eval(&StyleQuery::<()>::new(WidgetState::HOVER));
+    assert_eq!(hover.min_size, [Some(12.0), Some(8.0)]);
+    assert_eq!(hover.from_state, PartStated::MIN_SIZE);
+    assert!(
+        !hover
+            .stated
+            .intersects(PartStated::MIN_SIZE | PartStated::MAX_SIZE)
+    );
+    let pressed = rules.eval(&StyleQuery::<()>::new(WidgetState::PRESSED));
+    assert_eq!(pressed.from_state, PartStated::MAX_SIZE);
+    // A later stateless rule writing the size clears its bit.
+    let small = rules.eval(&StyleQuery::<()>::new(WidgetState::PRESSED).size(ControlSize::Small));
+    assert_eq!(small.max_size, [Some(30.0), Some(20.0)]);
+    assert!(small.from_state.is_empty());
+    assert!(small.stated.is_empty());
+}
+
+#[test]
+fn a_stateless_side_clears_only_its_own_bit() {
+    let rules: RuleSet<PartStyle, PartProp> = RuleBuilder::new(PartStyle::default())
+        .rule(on(WidgetState::HOVER), [PartProp::Padding(Edges::all(4.0))])
+        .rule(
+            any(),
+            [PartProp::PaddingSides(Edges::all(1.0), EdgeFlags::TOP)],
+        )
+        .rule(
+            on(WidgetState::HOVER),
+            [PartProp::MarginSides(
+                Edges::all(2.0),
+                EdgeFlags::BOTTOM | EdgeFlags::RIGHT,
+            )],
+        )
+        .build();
+    let hover = rules.eval(&StyleQuery::<()>::new(WidgetState::HOVER));
+    assert_eq!(
+        hover.from_state,
+        PartStated::PADDING_RIGHT
+            | PartStated::PADDING_BOTTOM
+            | PartStated::PADDING_LEFT
+            | PartStated::MARGIN_RIGHT
+            | PartStated::MARGIN_BOTTOM
+    );
+    assert!(hover.stated.contains(PartStated::PADDING_TOP));
+}
+
+#[test]
+fn from_state_follows_the_normalised_state() {
+    let body = built_body();
+    let pressed = body.eval(&ButtonQuery::new(WidgetState::PRESSED));
+    let both = body.eval(&ButtonQuery::new(WidgetState::PRESSED | WidgetState::HOVER));
+    assert_eq!(both.from_state, pressed.from_state);
+    assert_eq!(both.from_state, PartStated::FILL | PartStated::OPACITY);
+    // DISABLED ranks first and clears FOCUSED, and FOCUS_VISIBLE with it: the
+    // keyboard-focus rule does not match, and nothing comes from a state.
+    const GROUPS: &[&[WidgetState]] = &[&[WidgetState::DISABLED, WidgetState::FOCUSED]];
+    let rules: RuleSet<PartStyle, PartProp> = RuleSet::new(
+        base(),
+        GROUPS,
+        vec![(on(WidgetState::FOCUS_VISIBLE), vec![fill(RED)])],
+    );
+    let out = rules.eval(&StyleQuery::<()>::new(
+        WidgetState::DISABLED | WidgetState::FOCUS_VISIBLE,
+    ));
+    assert_eq!(fill_of(&out), Some(BLUE));
+    assert!(out.from_state.is_empty());
+}
+
+#[test]
+fn size_px_from_a_state_sets_its_bit() {
+    let rules: RuleSet<TextStyle, TextProp> = RuleBuilder::new(TextStyle::default())
+        .base([TextProp::SizePx(10.0)])
+        .rule(on(WidgetState::SELECTED), [TextProp::SizePx(12.0)])
+        .build();
+    let selected = rules.eval(&StyleQuery::<()>::new(WidgetState::SELECTED));
+    assert_eq!(selected.size_px, 12.0);
+    assert_eq!(selected.from_state, TextStated::SIZE_PX);
+    assert!(
+        rules
+            .eval(&StyleQuery::<()>::default())
+            .from_state
+            .is_empty()
+    );
+}
+
+#[test]
+fn build_clears_the_base_from_state() {
+    let mut part = base();
+    part.from_state = PartStated::FILL | PartStated::MIN_SIZE;
+    let parts: RuleSet<PartStyle, PartProp> = RuleBuilder::new(part).build();
+    assert!(parts.base.from_state.is_empty());
+    let text = TextStyle {
+        from_state: TextStated::COLOR,
+        ..TextStyle::default()
+    };
+    let texts: RuleSet<TextStyle, TextProp> =
+        RuleBuilder::with_exclusive(text, &[&[WidgetState::HOVER]]).build();
+    assert!(texts.base.from_state.is_empty());
+    let icon = IconStyle {
+        from_state: IconStated::SIZE,
+        ..IconStyle::default()
+    };
+    let icons: RuleSet<IconStyle, IconProp> = RuleBuilder::new(icon).build();
+    assert!(icons.base.from_state.is_empty());
+}
+
+#[test]
+fn style_sizes() {
+    use std::mem::size_of;
+    println!(
+        "PartStyle {} B, TextStyle {} B, IconStyle {} B",
+        size_of::<PartStyle>(),
+        size_of::<TextStyle>(),
+        size_of::<IconStyle>()
+    );
+    assert!(size_of::<PartStyle>() <= 256);
 }
 
 #[test]

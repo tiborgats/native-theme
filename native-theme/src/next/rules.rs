@@ -228,7 +228,10 @@ impl<T, P, M> RuleSet<T, P, M> {
         base: T,
         exclusive: &'static [&'static [WidgetState]],
         rules: Vec<(RuleSelector<M>, Vec<P>)>,
-    ) -> Self {
+    ) -> Self
+    where
+        T: Patched<P>,
+    {
         rules
             .into_iter()
             .fold(
@@ -344,11 +347,18 @@ impl<M> RuleSet<IconStyle, IconProp, M> {
 pub(crate) trait Patched<P> {
     /// Applies `prop`.
     fn apply(&mut self, prop: &P);
+
+    /// Clears every `from_state` bit.
+    fn clear_from_state(&mut self);
 }
 
 impl Patched<PartProp> for PartStyle {
     fn apply(&mut self, prop: &PartProp) {
         apply_part(self, prop, false);
+    }
+
+    fn clear_from_state(&mut self) {
+        self.from_state = PartStated::default();
     }
 }
 
@@ -356,11 +366,19 @@ impl Patched<TextProp> for TextStyle {
     fn apply(&mut self, prop: &TextProp) {
         apply_text(self, prop, false);
     }
+
+    fn clear_from_state(&mut self) {
+        self.from_state = TextStated::default();
+    }
 }
 
 impl Patched<IconProp> for IconStyle {
     fn apply(&mut self, prop: &IconProp) {
         apply_icon(self, prop, false);
+    }
+
+    fn clear_from_state(&mut self) {
+        self.from_state = IconStated::default();
     }
 }
 
@@ -517,10 +535,18 @@ impl<T, P, M> RuleBuilder<T, P, M> {
         self
     }
 
-    /// The rule set.
-    pub(crate) fn build(self) -> RuleSet<T, P, M> {
+    /// The rule set. Its base's `from_state` is empty, whatever bits the
+    /// base given to [`new`](Self::new) or
+    /// [`with_exclusive`](Self::with_exclusive) carried (evaluation
+    /// contract, step 3).
+    pub(crate) fn build(self) -> RuleSet<T, P, M>
+    where
+        T: Patched<P>,
+    {
+        let mut base = self.base;
+        base.clear_from_state();
         RuleSet {
-            base: self.base,
+            base,
             exclusive: self.exclusive,
             rules: Arc::from(self.rules),
             props: Arc::from(self.props),
@@ -594,8 +620,13 @@ fn apply_sides(
     written
 }
 
-/// Each `Some` dimension of `size` written into `target`.
-fn merge_size(target: &mut [Option<f32>; 2], size: &[Option<f32>; 2]) {
+/// Each `Some` dimension of `size` written into `target`; returns `bit`
+/// where a dimension was written, else nothing.
+fn merge_size(
+    target: &mut [Option<f32>; 2],
+    size: &[Option<f32>; 2],
+    bit: PartStated,
+) -> PartStated {
     let [width, height] = target;
     let [new_width, new_height] = size;
     if new_width.is_some() {
@@ -604,7 +635,16 @@ fn merge_size(target: &mut [Option<f32>; 2], size: &[Option<f32>; 2]) {
     if new_height.is_some() {
         *height = *new_height;
     }
+    if new_width.is_some() || new_height.is_some() {
+        bit
+    } else {
+        PartStated::default()
+    }
 }
+
+/// The bits a size writes, which go to `from_state` alone: in `stated` each
+/// dimension's `Option` says it.
+const SIZE_BITS: PartStated = PartStated::MIN_SIZE.union(PartStated::MAX_SIZE);
 
 const PADDING_BITS: [PartStated; 4] = [
     PartStated::PADDING_TOP,
@@ -622,7 +662,9 @@ const MARGIN_BITS: [PartStated; 4] = [
 
 /// `prop` written into `style`, its `stated` bits set, and its `from_state`
 /// bits set where the rule requires a state (`from_state`), cleared
-/// otherwise.
+/// otherwise. A size has no `stated` bit; its `from_state` bit
+/// ([`PartStated::MIN_SIZE`], [`PartStated::MAX_SIZE`]) follows the last
+/// rule that wrote either dimension.
 fn apply_part(style: &mut PartStyle, prop: &PartProp, from_state: bool) {
     let bits = match prop {
         PartProp::Fill(v) => {
@@ -653,14 +695,8 @@ fn apply_part(style: &mut PartStyle, prop: &PartProp, from_state: bool) {
         PartProp::PaddingSides(v, mask) => apply_sides(&mut style.padding, v, *mask, PADDING_BITS),
         PartProp::Margin(v) => apply_sides(&mut style.margin, v, EdgeFlags::ALL, MARGIN_BITS),
         PartProp::MarginSides(v, mask) => apply_sides(&mut style.margin, v, *mask, MARGIN_BITS),
-        PartProp::MinSize(v) => {
-            merge_size(&mut style.min_size, v);
-            PartStated::default()
-        }
-        PartProp::MaxSize(v) => {
-            merge_size(&mut style.max_size, v);
-            PartStated::default()
-        }
+        PartProp::MinSize(v) => merge_size(&mut style.min_size, v, PartStated::MIN_SIZE),
+        PartProp::MaxSize(v) => merge_size(&mut style.max_size, v, PartStated::MAX_SIZE),
         PartProp::Focus(v) => {
             style.focus = v.clone();
             PartStated::FOCUS
@@ -678,7 +714,7 @@ fn apply_part(style: &mut PartStyle, prop: &PartProp, from_state: bool) {
             PartStated::CURSOR
         }
     };
-    style.stated |= bits;
+    style.stated |= bits.difference(SIZE_BITS);
     style.from_state = if from_state {
         style.from_state | bits
     } else {

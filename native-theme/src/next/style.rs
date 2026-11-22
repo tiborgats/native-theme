@@ -189,6 +189,12 @@ impl Default for PartStyle {
 /// meanings of `None` apart: bit clear, the theme states nothing and the toolkit's own applies; bit set, the
 /// theme states that the part has none. An empty shadow list is not used. The same holds for the `Option`
 /// fields of `TextStyle` and `IconStyle`.
+///
+/// In [`PartStyle::from_state`] the type has two bits more,
+/// [`MIN_SIZE`](Self::MIN_SIZE) and [`MAX_SIZE`](Self::MAX_SIZE), one each
+/// for both dimensions: a rule that requires a state wrote that size (a
+/// hover thickness). They are never set in [`PartStyle::stated`], where each
+/// dimension's `Option` says whether it is stated.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub struct PartStated(u32);
 
@@ -229,8 +235,15 @@ impl PartStated {
     pub const TRANSITION: Self = Self(1 << 16);
     /// `cursor` is stated.
     pub const CURSOR: Self = Self(1 << 17);
-    /// Every property.
-    pub const ALL: Self = Self((1 << 18) - 1);
+    /// `min_size` was written by a rule that requires a state, either
+    /// dimension: set only in `from_state`, never in `stated`.
+    pub const MIN_SIZE: Self = Self(1 << 18);
+    /// `max_size` was written by a rule that requires a state, either
+    /// dimension: set only in `from_state`, never in `stated`.
+    pub const MAX_SIZE: Self = Self(1 << 19);
+    /// Every bit, [`MIN_SIZE`](Self::MIN_SIZE) and
+    /// [`MAX_SIZE`](Self::MAX_SIZE) included.
+    pub const ALL: Self = Self((1 << 20) - 1);
 }
 
 bit_set!(PartStated, u32);
@@ -541,7 +554,7 @@ mod tests {
         assert_eq!(!s & s, PartStated::default());
         assert_eq!((!s).union(s), PartStated::ALL);
         assert_eq!((!PartStated::default()).bits(), PartStated::ALL.bits());
-        assert_eq!((!PartStated::default()).bits() >> 18, 0);
+        assert_eq!((!PartStated::default()).bits() >> 20, 0);
         assert_eq!(PartStated::from_bits_truncate(u32::MAX), PartStated::ALL);
         let mut t = PartStated::default();
         t |= PartStated::CURSOR;
@@ -568,6 +581,8 @@ mod tests {
             PartStated::RIPPLE,
             PartStated::TRANSITION,
             PartStated::CURSOR,
+            PartStated::MIN_SIZE,
+            PartStated::MAX_SIZE,
         ]
         .into_iter()
         .fold(PartStated::default(), |acc, b| acc | b);
