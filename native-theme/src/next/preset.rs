@@ -8,7 +8,7 @@ use super::geometry::Stroke;
 use super::icons::{IconSizes, IconThemeSpec};
 use super::layout::LayoutMetrics;
 use super::motion::{CaretSpec, MotionTokens, UiTimings};
-use super::query::{TEXT_SCALE_DEFAULT, TEXT_SCALE_MAX, TEXT_SCALE_MIN, ThemeContext};
+use super::query::{ThemeContext, sanitized_text_scale};
 use super::reader::SystemOverrides;
 use super::roles::{
     AccentColors, ColorRoles, RoleOrigin, SelectionColors, StatusColors, SurfaceColors,
@@ -157,8 +157,8 @@ impl Theme {
         self.preset
     }
 
-    /// The theme resolved for `ctx`, its text scale sanitized (finite and in
-    /// `0.5..=4.0`, else 1.0); its name is the system's theme name where the
+    /// The theme resolved for `ctx`, its text scale sanitized (clamped to
+    /// `0.5..=4.0`, 1.0 where it is not finite); its name is the system's theme name where the
     /// system settings state one, else the preset's display name.
     #[must_use]
     pub fn resolve(&self, ctx: &ThemeContext) -> ResolvedTheme {
@@ -177,16 +177,6 @@ impl Theme {
     #[must_use]
     pub fn resolve_current(&self) -> ResolvedTheme {
         self.resolve(self.context())
-    }
-}
-
-/// `scale` where it is finite and in `0.5..=4.0`, else the default 1.0
-/// (spec §6, resolution step 1).
-fn sanitized_text_scale(scale: f32) -> f32 {
-    if (TEXT_SCALE_MIN..=TEXT_SCALE_MAX).contains(&scale) {
-        scale
-    } else {
-        TEXT_SCALE_DEFAULT
     }
 }
 
@@ -443,8 +433,8 @@ mod tests {
             (f32::NAN, 1.0),
             (f32::INFINITY, 1.0),
             (f32::NEG_INFINITY, 1.0),
-            (0.1, 1.0),
-            (9.0, 1.0),
+            (0.1, 0.5),
+            (9.0, 4.0),
             (0.5, 0.5),
             (4.0, 4.0),
             (1.25, 1.25),
@@ -455,6 +445,11 @@ mod tests {
             };
             let resolved = theme.resolve(&ctx);
             assert_eq!(resolved.context.text_scale, used, "{given}");
+            assert_eq!(
+                ThemeContext::default().with_text_scale(given).text_scale,
+                used,
+                "{given}"
+            );
             assert_eq!(
                 resolved.context,
                 ThemeContext {

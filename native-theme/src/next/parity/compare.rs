@@ -11,9 +11,11 @@
 //! state (spec §5, notes to the table): the property there, value and `stated` bit, must equal the same
 //! property at the reference state, `NONE` or the row's `null_reference` where the home's state holds it. Spec §5's notes add the special homes: a part's `shadows` against 0.7.2's
 //! `border.shadow_enabled` (`false` is `SHADOWS` stated with `shadows = None`, `true` is `SHADOWS`
-//! unstated), a stroke's colour and width read out of `Stroke::Uniform` and a corner radius out of
-//! `CornerRadius::Uniform`; any other form there (a gradient fill, a per-side stroke, a pill) is a value no
-//! 0.7.2 field holds, so a mismatch.
+//! unstated), a part's stroke colour and width read out of `Stroke::Uniform` inside the edge (`Stroke::None`
+//! is the width 0.0 and no colour) and a corner radius out of `CornerRadius::Uniform` with circular corners
+//! (`CornerRadius::None` is 0.0); any other form there (a gradient fill, a per-side or centred stroke, a pill,
+//! continuous corners) is a value no 0.7.2 field holds, so a mismatch. A colour is compared by its 8-bit
+//! channels only where every channel is finite and in 0..=1; any other colour is a mismatch.
 //!
 //! A row written by hand names a field that does not serialise; it is read from `old` at its key where the
 //! caller has added it there, in the form `serde_json` gives the field's type (`Resolved.mode`, whose
@@ -30,7 +32,7 @@ use serde_json::Value;
 use super::{HOMES, Row, Table};
 use crate::IconSet;
 use crate::next::color::Color;
-use crate::next::geometry::{CornerRadius, Stroke};
+use crate::next::geometry::{CornerCurve, CornerRadius, Stroke, StrokeAlign};
 use crate::next::paint::Paint;
 use crate::next::preset::Preset;
 use crate::next::query::{
@@ -278,6 +280,9 @@ fn compare_row(
         .homes_by_preset
         .get(preset.as_str())
         .unwrap_or(&row.homes);
+    if homes.is_empty() {
+        return Err(format!("no home on `{}`", preset.as_str()));
+    }
     if snapshot_context.is_none() && homes.iter().any(|h| h.starts_with(SNAPSHOT_PREFIX)) {
         return Ok(skipped(Skip::NoSnapshot));
     }
@@ -497,7 +502,9 @@ fn equal(old: &Value, got: &Got) -> Result<bool, String> {
         (_, Value::Null) | (Got::Other(_), _) => Ok(false),
         (Got::Color(c), Value::String(s)) => {
             let rgba = crate::Rgba::from_str(s).map_err(|_| kind_error())?;
-            Ok(c.to_srgb8() == [rgba.r, rgba.g, rgba.b, rgba.a])
+            // `to_srgb8` clamps and maps a non-finite channel to 0: only a colour every channel of which is
+            // finite and in 0..=1 is compared by its 8-bit values.
+            Ok(c.clamped() == *c && c.to_srgb8() == [rgba.r, rgba.g, rgba.b, rgba.a])
         }
         (Got::F32(v), Value::Number(n)) => {
             let x = n.as_f64().ok_or_else(kind_error)?;
@@ -852,6 +859,19 @@ fn stroke_field(stroke: &Stroke, field: &str) -> Option<Got> {
     })
 }
 
+/// A part's stroke field: as [`stroke_field`], but a `Stroke::Uniform` lies inside the edge, as 0.7.2's
+/// padding (measured from the stroke's inner edge, spec §2) implies, or it is a form no 0.7.2 field holds;
+/// and no stroke is the width 0.0 (and no colour).
+fn part_stroke(stroke: &Stroke, field: &str) -> Option<Got> {
+    Some(match (stroke, field) {
+        (Stroke::None, "width") => Got::F32(0.0),
+        (Stroke::Uniform { align, .. }, "color" | "width") if *align != StrokeAlign::Inside => {
+            Got::Other(format!("{stroke:?}"))
+        }
+        _ => return stroke_field(stroke, field),
+    })
+}
+
 fn part_property(style: &PartStyle, property: &str) -> Option<Got> {
     let stated = |bit: PartStated, got: Got| {
         if style.stated.contains(bit) {
@@ -870,13 +890,14 @@ fn part_property(style: &PartStyle, property: &str) -> Option<Got> {
                 other => Got::Other(format!("{other:?}")),
             },
         ),
-        "stroke.color" => stated(PartStated::STROKE, stroke_field(&style.stroke, "color")?),
-        "stroke.width" => stated(PartStated::STROKE, stroke_field(&style.stroke, "width")?),
+        "stroke.color" => stated(PartStated::STROKE, part_stroke(&style.stroke, "color")?),
+        "stroke.width" => stated(PartStated::STROKE, part_stroke(&style.stroke, "width")?),
         "corners" => stated(
             PartStated::CORNERS,
-            match style.corners.radius {
-                CornerRadius::Uniform(r) => Got::F32(r),
-                other => Got::Other(format!("{other:?}")),
+            match (style.corners.radius, style.corners.curve) {
+                (CornerRadius::None, _) => Got::F32(0.0),
+                (CornerRadius::Uniform(r), CornerCurve::Circular) => Got::F32(r),
+                _ => Got::Other(format!("{:?}", style.corners)),
             },
         ),
         "shadows" => match (style.stated.contains(PartStated::SHADOWS), &style.shadows) {

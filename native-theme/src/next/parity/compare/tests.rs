@@ -2,10 +2,15 @@ use super::*;
 use serde_json::json;
 use std::sync::Arc;
 
-use crate::next::geometry::{Corners, Edges};
+use crate::next::geometry::{Corners, Edges, ShadowLayer, StrokeSide};
+use crate::next::paint::{BlendMode, GradientStop, PaintLayer};
 use crate::next::preset::nothing_stated;
-use crate::next::rules::{ListMatcher, PartProp, RuleBuilder, RuleSelector};
-use crate::next::widgets::{ButtonWidget, CheckboxWidget, ListWidget, RadioWidget, WidgetOrigin};
+use crate::next::rules::{
+    ButtonMatcher, IconProp, ListMatcher, PartProp, RuleBuilder, RuleSelector,
+};
+use crate::next::widgets::{
+    ButtonWidget, CheckboxWidget, ListWidget, RadioWidget, ScrollbarWidget, WidgetOrigin,
+};
 use crate::next::window::EdgeFlags;
 use crate::resolve::ResolutionContext;
 
@@ -760,5 +765,396 @@ fn kde_breeze_against_a_theme_with_nothing_stated() -> TestResult {
     }
     assert_eq!(equal_though_stated, EQUAL_THOUGH_STATED, "{report}");
     assert!(report.totals.mismatches > 0, "{report}");
+    Ok(())
+}
+
+/// The report of one row: `home` against the old value `value`.
+fn one_row(
+    home: &str,
+    value: Value,
+    theme: &ResolvedTheme,
+) -> Result<Report, Box<dyn std::error::Error>> {
+    let table = format!("[[row]]\nkey = \"x.v\"\nhomes = [\"{home}\"]\n");
+    let old = json!({ "x": { "v": value } });
+    Ok(compare_rows(
+        &rows(&table)?,
+        &old,
+        theme,
+        None,
+        Preset::KdeBreeze,
+    )?)
+}
+
+/// [`theme`] with a button whose body's base states `props`.
+fn with_body(props: Vec<PartProp>) -> ResolvedTheme {
+    let mut t = theme();
+    t.button = ButtonWidget::new(
+        WidgetOrigin::Native,
+        RuleBuilder::new(PartStyle::default()).base(props).build(),
+        RuleBuilder::new(TextStyle::default()).build(),
+        RuleBuilder::new(IconStyle::default()).build(),
+        4.0,
+        None,
+    );
+    t
+}
+
+#[test]
+fn a_chosen_home_list_that_is_empty_is_an_error() -> TestResult {
+    let table = "[[row]]\nkey = \"x.v\"\nhomes = [\"colors.link\"]\n\
+                 homes_by_preset = { \"kde-breeze\" = [] }\n";
+    let old = json!({ "x": { "v": "#3daee9" } });
+    let theme = theme();
+    match compare_rows(&rows(table)?, &old, &theme, None, Preset::KdeBreeze) {
+        Err(e) => assert!(e.starts_with("row `x.v`"), "{e}"),
+        Ok(report) => return Err(format!("no error: {report}").into()),
+    }
+    // On another preset the row's own homes are read.
+    let report = compare_rows(&rows(table)?, &old, &theme, None, Preset::Adwaita)?;
+    assert!(report.mismatched_keys().is_empty(), "{report}");
+    Ok(())
+}
+
+#[test]
+fn a_colour_out_of_range_or_not_finite_mismatches() -> TestResult {
+    let mut t = theme();
+    for (color, equal) in [
+        (Color::new(1.0, 0.0, 0.0, 1.0), true),
+        (Color::new(1.3, 0.0, 0.0, 1.0), false),
+        (Color::new(1.0, f32::NAN, 0.0, 1.0), false),
+        (Color::new(1.0, -0.1, 0.0, 1.0), false),
+        (Color::new(1.0, 0.0, 0.0, 1.3), false),
+        (Color::new(1.0, 0.0, f32::INFINITY, 1.0), false),
+    ] {
+        t.colors.link = color;
+        let report = one_row("colors.link", json!("#ff0000"), &t)?;
+        assert_eq!(
+            report.mismatched_keys().is_empty(),
+            equal,
+            "{color:?}: {report}"
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn a_part_property_of_a_form_0_7_2_does_not_hold_mismatches() -> TestResult {
+    let c = srgb(STROKE);
+    let side = || StrokeSide {
+        width: 1.0,
+        paint: Paint::Solid(c),
+    };
+    let sides = || Stroke::sides(side(), side(), side(), side(), StrokeAlign::Inside);
+    let gradient = Paint::layers([PaintLayer::LinearGradient {
+        angle_deg: 0.0,
+        stops: Arc::from([
+            GradientStop {
+                offset: 0.0,
+                color: c,
+            },
+            GradientStop {
+                offset: 1.0,
+                color: c,
+            },
+        ]),
+        blend: BlendMode::Normal,
+    }]);
+    let layered = Paint::layers([PaintLayer::Solid {
+        color: c,
+        blend: BlendMode::Normal,
+    }]);
+    let per_corner = Corners {
+        radius: CornerRadius::PerCorner {
+            top_left: 5.0,
+            top_right: 5.0,
+            bottom_right: 5.0,
+            bottom_left: 5.0,
+        },
+        curve: CornerCurve::Circular,
+    };
+    let shadow = || PartProp::Shadows(Some(Arc::from([ShadowLayer::default()])));
+    let color = json!("#bcbec0");
+    let cases: Vec<(PartProp, &str, Value, bool)> = vec![
+        // The forms 0.7.2 holds.
+        (PartProp::Fill(Paint::Solid(c)), "fill", color.clone(), true),
+        (
+            PartProp::Corners(Corners::uniform(5.0)),
+            "corners",
+            json!(5.0),
+            true,
+        ),
+        (
+            PartProp::Corners(Corners::default()),
+            "corners",
+            json!(0.0),
+            true,
+        ),
+        (
+            PartProp::Stroke(Stroke::uniform(1.0, c)),
+            "stroke.width",
+            json!(1.0),
+            true,
+        ),
+        (
+            PartProp::Stroke(Stroke::uniform(1.0, c)),
+            "stroke.color",
+            color.clone(),
+            true,
+        ),
+        (
+            PartProp::Stroke(Stroke::None),
+            "stroke.width",
+            json!(0.0),
+            true,
+        ),
+        (
+            PartProp::Stroke(Stroke::uniform(0.0, c)),
+            "stroke.width",
+            json!(0.0),
+            true,
+        ),
+        (
+            PartProp::Stroke(Stroke::uniform(0.0, c)),
+            "stroke.color",
+            color.clone(),
+            true,
+        ),
+        // The forms it does not.
+        (PartProp::Fill(gradient), "fill", color.clone(), false),
+        (PartProp::Fill(layered), "fill", color.clone(), false),
+        (PartProp::Fill(Paint::None), "fill", color.clone(), false),
+        (
+            PartProp::Corners(Corners::continuous(5.0)),
+            "corners",
+            json!(5.0),
+            false,
+        ),
+        (
+            PartProp::Corners(Corners::pill()),
+            "corners",
+            json!(5.0),
+            false,
+        ),
+        (PartProp::Corners(per_corner), "corners", json!(5.0), false),
+        (
+            PartProp::Stroke(Stroke::None),
+            "stroke.color",
+            color.clone(),
+            false,
+        ),
+        (
+            PartProp::Stroke(Stroke::uniform_aligned(1.0, c, StrokeAlign::Center)),
+            "stroke.width",
+            json!(1.0),
+            false,
+        ),
+        (
+            PartProp::Stroke(Stroke::uniform_aligned(1.0, c, StrokeAlign::Outside)),
+            "stroke.color",
+            color.clone(),
+            false,
+        ),
+        (PartProp::Stroke(sides()), "stroke.width", json!(1.0), false),
+        (
+            PartProp::Stroke(sides()),
+            "stroke.color",
+            color.clone(),
+            false,
+        ),
+        (shadow(), "shadows", json!(true), false),
+        (shadow(), "shadows", json!(false), false),
+    ];
+    for (prop, property, value, equal) in cases {
+        let shown = format!("{prop:?} at {property} against {value}");
+        let report = one_row(
+            &format!("button.body(NONE).{property}"),
+            value,
+            &with_body(vec![prop]),
+        )?;
+        assert_eq!(
+            report.mismatched_keys().is_empty(),
+            equal,
+            "{shown}: {report}"
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn an_icon_part_reads_its_colour_and_stroke_width() -> TestResult {
+    let checkbox = |checkmark| {
+        CheckboxWidget::new(
+            WidgetOrigin::Native,
+            RuleBuilder::new(PartStyle::default()).build(),
+            checkmark,
+            RuleBuilder::new(TextStyle::default()).build(),
+            4.0,
+            None,
+        )
+    };
+    let mut t = theme();
+    t.checkbox = checkbox(
+        RuleBuilder::new(IconStyle::default())
+            .base([IconProp::StrokeWidth(Some(2.0))])
+            .rule(
+                RuleSelector::on(WidgetState::CHECKED),
+                [IconProp::Color(srgb(STROKE))],
+            )
+            .build(),
+    );
+    for (home, value, equal) in [
+        ("checkbox.checkmark(CHECKED).color", json!("#bcbec0"), true),
+        ("checkbox.checkmark(NONE).color", json!("#bcbec0"), false),
+        ("checkbox.checkmark(NONE).stroke_width", json!(2.0), true),
+        (
+            "checkbox.checkmark(NONE).stroke_width",
+            json!(next_up(2.0)),
+            false,
+        ),
+    ] {
+        let report = one_row(home, value, &t)?;
+        assert_eq!(
+            report.mismatched_keys().is_empty(),
+            equal,
+            "{home}: {report}"
+        );
+    }
+    // A stroke width stated as `None` is no 0.7.2 value.
+    t.checkbox = checkbox(
+        RuleBuilder::new(IconStyle::default())
+            .base([IconProp::StrokeWidth(None)])
+            .build(),
+    );
+    let report = one_row("checkbox.checkmark(NONE).stroke_width", json!(2.0), &t)?;
+    assert_eq!(report.mismatched_keys(), vec!["x.v"], "{report}");
+    Ok(())
+}
+
+#[test]
+fn the_variant_and_orientation_axes_reach_the_query() -> TestResult {
+    let mut t = theme();
+    let primary = RuleSelector::on(WidgetState::NONE).matcher(ButtonMatcher {
+        variant: Some(ButtonVariant::Primary),
+        shape: None,
+    });
+    t.button = ButtonWidget::new(
+        WidgetOrigin::Native,
+        RuleBuilder::new(PartStyle::default())
+            .rule(primary, [PartProp::Fill(Paint::Solid(srgb(COLOR)))])
+            .build(),
+        RuleBuilder::new(TextStyle::default()).build(),
+        RuleBuilder::new(IconStyle::default()).build(),
+        4.0,
+        None,
+    );
+    let vertical = RuleSelector::on(WidgetState::NONE).orientation(Orientation::Vertical);
+    t.scrollbar = ScrollbarWidget::new(
+        WidgetOrigin::Native,
+        RuleBuilder::new(PartStyle::default())
+            .rule(vertical, [PartProp::MinSize([Some(21.0), None])])
+            .build(),
+        RuleBuilder::new(PartStyle::default()).build(),
+        20.0,
+        false,
+    );
+    for (home, value, equal) in [
+        (
+            "button.body(NONE; variant=Primary).fill",
+            json!("#3daee9"),
+            true,
+        ),
+        ("button.body(NONE).fill", json!("#3daee9"), false),
+        (
+            "button.body(NONE; variant=Flat).fill",
+            json!("#3daee9"),
+            false,
+        ),
+        (
+            "scrollbar.track(NONE; orientation=Vertical).min_size[0]",
+            json!(21.0),
+            true,
+        ),
+        (
+            "scrollbar.track(NONE; orientation=Horizontal).min_size[0]",
+            json!(21.0),
+            false,
+        ),
+    ] {
+        let report = one_row(home, value, &t)?;
+        assert_eq!(
+            report.mismatched_keys().is_empty(),
+            equal,
+            "{home}: {report}"
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn every_size_and_side_is_read_from_its_own_field() -> TestResult {
+    let mut t = theme();
+    t.checkbox = CheckboxWidget::new(
+        WidgetOrigin::Native,
+        RuleBuilder::new(PartStyle::default())
+            .base([
+                PartProp::MinSize([Some(10.0), Some(20.0)]),
+                PartProp::MaxSize([Some(30.0), Some(40.0)]),
+                PartProp::Padding(Edges::new(1.0, 2.0, 3.0, 4.0)),
+                PartProp::Margin(Edges::new(5.0, 6.0, 7.0, 8.0)),
+            ])
+            .build(),
+        RuleBuilder::new(IconStyle::default()).build(),
+        RuleBuilder::new(TextStyle::default()).build(),
+        4.0,
+        None,
+    );
+    let fields: [(&str, f32); 12] = [
+        ("min_size[0]", 10.0),
+        ("min_size[1]", 20.0),
+        ("max_size[0]", 30.0),
+        ("max_size[1]", 40.0),
+        ("padding.top", 1.0),
+        ("padding.right", 2.0),
+        ("padding.bottom", 3.0),
+        ("padding.left", 4.0),
+        ("margin.top", 5.0),
+        ("margin.right", 6.0),
+        ("margin.bottom", 7.0),
+        ("margin.left", 8.0),
+    ];
+    // Each field holds its own value and no other field's.
+    for (field, own) in fields {
+        for (_, value) in fields {
+            let home = format!("checkbox.indicator(NONE).{field}");
+            let report = one_row(&home, json!(value), &t)?;
+            assert_eq!(
+                report.mismatched_keys().is_empty(),
+                value.to_bits() == own.to_bits(),
+                "{home} against {value}: {report}"
+            );
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn a_fallback_key_missing_from_old_is_an_error_and_an_absent_slot_is_unstated() -> TestResult {
+    let theme = theme();
+    let old = json!({ "x": { "v": null } });
+    for field in ["if_null", "only_if_null"] {
+        let table =
+            format!("[[row]]\nkey = \"x.v\"\nhomes = [\"colors.link\"]\n{field} = \"x.gone\"\n");
+        match compare_rows(&rows(&table)?, &old, &theme, None, Preset::KdeBreeze) {
+            Err(e) => assert!(e.contains("`x.gone` is not in old"), "{field}: {e}"),
+            Ok(report) => return Err(format!("{field}: no error, {report}").into()),
+        }
+    }
+    // An absent `Typography` slot without `home_fallback`: unstated, so a value mismatches and a null is
+    // equal.
+    assert_eq!(theme.typography.caption, None);
+    let report = one_row("typography.caption.size_px", json!(10.0), &theme)?;
+    assert_eq!(report.mismatched_keys(), vec!["x.v"], "{report}");
+    let report = one_row("typography.caption.size_px", Value::Null, &theme)?;
+    assert!(report.mismatched_keys().is_empty(), "{report}");
     Ok(())
 }

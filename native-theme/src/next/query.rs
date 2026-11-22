@@ -35,6 +35,16 @@ pub(crate) const TEXT_SCALE_MAX: f32 = 4.0;
 /// The default text scale (spec §3, `ThemeContext::text_scale`).
 pub(crate) const TEXT_SCALE_DEFAULT: f32 = 1.0;
 
+/// `scale` clamped to `0.5..=4.0`, or the default 1.0 where it is not finite
+/// (spec §3, `ThemeContext::text_scale`; §6, resolution step 1).
+pub(crate) fn sanitized_text_scale(scale: f32) -> f32 {
+    if scale.is_finite() {
+        scale.clamp(TEXT_SCALE_MIN, TEXT_SCALE_MAX)
+    } else {
+        TEXT_SCALE_DEFAULT
+    }
+}
+
 impl Default for ThemeContext {
     fn default() -> Self {
         Self {
@@ -123,14 +133,10 @@ impl ThemeContext {
     }
 
     /// This context with the text scale `scale`, clamped to `0.5..=4.0`; a
-    /// NaN gives the default, 1.0.
+    /// value that is not finite gives the default, 1.0.
     #[must_use]
     pub fn with_text_scale(mut self, scale: f32) -> Self {
-        self.text_scale = if scale.is_nan() {
-            TEXT_SCALE_DEFAULT
-        } else {
-            scale.clamp(TEXT_SCALE_MIN, TEXT_SCALE_MAX)
-        };
+        self.text_scale = sanitized_text_scale(scale);
         self
     }
 
@@ -683,7 +689,8 @@ mod tests {
         assert_eq!(light.clone().with_text_scale(0.1).text_scale, 0.5);
         assert_eq!(light.clone().with_text_scale(2.0).text_scale, 2.0);
         assert_eq!(light.clone().with_text_scale(f32::NAN).text_scale, 1.0);
-        assert_eq!(light.with_text_scale(f32::INFINITY).text_scale, 4.0);
+        assert_eq!(light.clone().with_text_scale(f32::INFINITY).text_scale, 1.0);
+        assert_eq!(light.with_text_scale(f32::NEG_INFINITY).text_scale, 1.0);
     }
 
     #[test]

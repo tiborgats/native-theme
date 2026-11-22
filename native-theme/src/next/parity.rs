@@ -885,6 +885,11 @@ fn problems(table: &Table, keys: &BTreeSet<String>) -> Vec<String> {
         if row.homes.is_empty() {
             found.push(format!("`{key}`: no home"));
         }
+        for (preset, homes) in &row.homes_by_preset {
+            if homes.is_empty() {
+                found.push(format!("`{key}`: no home on `{preset}`"));
+            }
+        }
         let by_preset = row.homes_by_preset.values().flatten();
         for home in row.homes.iter().chain(by_preset) {
             if let Err(e) = parse_home(home, &globals) {
@@ -1035,6 +1040,7 @@ fn the_checks_catch_what_they_check() -> TestResult {
         [[row]]
         key = "button.gone"
         homes = ["button.body(NONE).min_size[1]"]
+        homes_by_preset = { "kde-breeze" = [] }
 
         [[row]]
         key = "layout.gone"
@@ -1060,6 +1066,7 @@ fn the_checks_catch_what_they_check() -> TestResult {
         "`layout.gone`: written by hand, but no field",
         "`button.min_width`: difference_values must name exactly the difference_presets",
         "`button.min_width`: null_reference `HOVERED` is no set of states",
+        "`button.gone`: no home on `kde-breeze`",
     ] {
         assert!(
             found.iter().any(|p| p.contains(expected)),
