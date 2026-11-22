@@ -31,6 +31,22 @@ fuse `1.0f - (s * f)` (no unfused-distinguishing input found). Run from
 anywhere:
 
     python3 -I scripts/generate_qt_color_vectors.py
+
+With `--qt-lighter` the script writes instead
+native-theme/tests/vectors/qt_lighter.tsv, the table of the clean-room
+`qt_lighter`: `QColor(r, g, b, a).lighter(factor)` called through PySide6, and
+what that `QColor` reports, its 8-bit channels and the 16-bit ones it holds.
+No Qt code is transcribed here: the rows are Qt's own results. The table holds
+Breeze's selection colour at 110, edge colours at the edge factors, alphas, a
+factor whose product with the value passes 32 bits, inputs on which a build
+that does not fuse a multiply-add gives another colour (found outside this
+script, with the describer's model), and, from 20 000 seeded random inputs, up
+to 40 on which the plain rule (the HSV value times factor/100, clamped, in f64
+on the 8-bit channels) gives another colour than Qt, and 24 more. That mode has
+its own pin, PySide6 6.12.0 (Qt 6.12.0), which it refuses to run without; the
+default mode, its pin and its tables are unchanged:
+
+    python3 -I scripts/generate_qt_color_vectors.py --qt-lighter
 """
 
 import json
@@ -313,8 +329,159 @@ def main():
           f"{lerp_unfused} unfused)")
 
 
+LIGHTER_QT_VERSION = "6.12.0"
+LIGHTER_OUTPUT = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
+    os.pardir, "native-theme", "tests", "vectors", "qt_lighter.tsv",
+)
+LIGHTER_SEED = 20261122
+LIGHTER_PLAIN_FAILURES = 40
+LIGHTER_OTHERS = 24
+# Breeze's highlight, `[Colors:Selection]` `BackgroundNormal`: 61,174,233 in
+# both native-theme/tests/fixtures/kde/breeze-light.ini and breeze-dark.ini.
+LIGHTER_BREEZE = (61, 174, 233, 255)
+# Its lighter(110) as issue #4 measured it on Breeze Light
+# (docs/issues/0004_kde-leftovers-rationale.md, L3).
+LIGHTER_BREEZE_MEASURED = "#44bfffff"
+LIGHTER_FACTORS = [0, -10, 50, 100, 101, 110, 150, 200, 1000]
+LIGHTER_COLOURS = [
+    (0, 0, 0, 255),        # black
+    (255, 255, 255, 255),  # white
+    (1, 1, 1, 255),        # greys
+    (64, 64, 64, 255),
+    (128, 128, 128, 255),
+    (192, 192, 192, 255),
+    (254, 254, 254, 255),
+    (255, 0, 0, 255),      # the primaries and secondaries
+    (0, 255, 0, 255),
+    (0, 0, 255, 255),
+    (255, 255, 0, 255),
+    (0, 255, 255, 255),
+    (255, 0, 255, 255),
+    (232, 100, 50, 255),   # the value overflows at 110, 150 and 200
+    (200, 120, 40, 255),   # at 150 and 200, not at 110
+    (150, 60, 90, 255),    # at 200 only
+    (0, 90, 180, 255),     # fully saturated, value below the maximum
+    (255, 128, 0, 255),    # fully saturated, value at the maximum
+    (128, 128, 129, 255),  # nearly achromatic
+    (200, 201, 200, 255),
+]
+LIGHTER_ALPHA_COLOURS = [(61, 174, 233), (255, 255, 255), (232, 100, 50)]
+LIGHTER_ALPHAS = [0, 128]
+LIGHTER_ALPHA_FACTORS = [50, 110, 200]
+# 65537 times the largest value is 2^32 - 1; 65538 times it passes 2^32.
+LIGHTER_WIDE = [((255, 0, 0, 255), 65537), ((255, 0, 0, 255), 65538),
+                ((255, 255, 255, 255), 65538), ((61, 174, 233, 255), 2147483647)]
+# Inputs at 110 on which a build that rounds the conversion back to RGB's
+# products separately, instead of in one fused multiply-add, gives another
+# 8-bit colour (found with the describer's model, outside this script), and
+# the colour PySide6 6.12.0 gave for each when this table was made: the script
+# refuses a build that gives another.
+LIGHTER_FUSED = {
+    (4, 5, 20): "#040516ff", (5, 20, 4): "#051604ff", (9, 15, 222): "#0a10f4ff",
+    (10, 15, 50): "#0b1037ff", (4, 20, 5): "#041605ff", (5, 4, 20): "#050416ff",
+    (9, 222, 15): "#0af410ff", (10, 50, 15): "#0b3710ff",
+}
+
+
+def lighter_row(rgba, factor):
+    """The row of `QColor(rgba).lighter(factor)`, as Qt reports it."""
+    color = QtGui.QColor(*rgba).lighter(factor)
+    if not color.isValid() or color.spec() != QtGui.QColor.Spec.Rgb:
+        sys.exit(f"QColor{rgba}.lighter({factor}) is not a valid RGB colour")
+    stored = color.rgba64()
+    channels8 = (color.red(), color.green(), color.blue(), color.alpha())
+    channels16 = (stored.red(), stored.green(), stored.blue(), stored.alpha())
+    return (rgba, factor, channels8, channels16)
+
+
+def plain_lighter(rgb, factor):
+    """The plain rule, this script's own: the HSV value times factor/100,
+    clamped to 1, in f64 on the 8-bit channels, rounded to 8 bits."""
+    import colorsys
+
+    h, s, v = colorsys.rgb_to_hsv(*(c / 255 for c in rgb))
+    return tuple(round(c * 255) for c in colorsys.hsv_to_rgb(h, s, min(v * factor / 100, 1.0)))
+
+
+def hex8(channels):
+    return "#" + "".join(f"{c:02x}" for c in channels)
+
+
+def lighter_main():
+    import PySide6
+
+    if QtCore.qVersion() != LIGHTER_QT_VERSION or PySide6.__version__ != LIGHTER_QT_VERSION:
+        sys.exit(f"qt_lighter.tsv is PySide6 {LIGHTER_QT_VERSION}'s (Qt {LIGHTER_QT_VERSION}); "
+                 f"this is PySide6 {PySide6.__version__} (Qt {QtCore.qVersion()})")
+
+    fixed = [(LIGHTER_BREEZE, 110)]
+    fixed += [(c, f) for c in LIGHTER_COLOURS for f in LIGHTER_FACTORS]
+    fixed += [((*c, a), f) for c in LIGHTER_ALPHA_COLOURS for a in LIGHTER_ALPHAS for f in LIGHTER_ALPHA_FACTORS]
+    fixed += LIGHTER_WIDE
+    fixed += [((*c, 255), 110) for c in LIGHTER_FUSED]
+    fixed = list(dict.fromkeys(fixed))
+    fixed_rows = [lighter_row(c, f) for c, f in fixed]
+
+    breeze = hex8(fixed_rows[0][2])
+    if breeze != LIGHTER_BREEZE_MEASURED:
+        sys.exit(f"Breeze's highlight at 110 is {breeze} here, not the measured {LIGHTER_BREEZE_MEASURED}")
+    for (rgba, factor, channels8, _) in fixed_rows:
+        expected = LIGHTER_FUSED.get(rgba[:3]) if rgba[3] == 255 and factor == 110 else None
+        if expected is not None and hex8(channels8) != expected:
+            sys.exit(f"QColor{rgba}.lighter(110) is {hex8(channels8)} here, not {expected}: this build "
+                     "does not fuse the multiply-adds the table's reference build fuses")
+
+    rng = random.Random(LIGHTER_SEED)
+    failing, others = [], []
+    for _ in range(RANDOM_INPUTS):
+        rgba = (rng.randrange(256), rng.randrange(256), rng.randrange(256), rng.randrange(256))
+        factor = rng.randint(1, 400)
+        row = lighter_row(rgba, factor)
+        (failing if plain_lighter(rgba[:3], factor) != row[2][:3] else others).append(row)
+    rng.shuffle(others)
+    picked = fixed_rows + failing[:LIGHTER_PLAIN_FAILURES] + others[:LIGHTER_OTHERS]
+
+    def srgb(channels16):
+        return "srgb(" + ", ".join(f"{f32(c / 65535):.9g}" for c in channels16) + ")"
+
+    lines = [
+        "# function: qt_lighter",
+        "# route: public_api",
+        f"# source: qtbase@{LIGHTER_QT_VERSION}",
+        "# generations: kde-breeze",
+        "# generator: scripts/generate_qt_color_vectors.py",
+        "# inputs: c:colour factor:number",
+        "# outputs: result:colour stored:colour",
+        f"# written by scripts/generate_qt_color_vectors.py --qt-lighter with PySide6 {LIGHTER_QT_VERSION}",
+        f"# (Qt {LIGHTER_QT_VERSION}); do not edit. Each row is QColor(c).lighter(factor): `result` the",
+        "# 8-bit red(), green(), blue() and alpha() it reports, `stored` the 16-bit channels it holds,",
+        "# each over 65535 as a float. Breeze's selection colour (61,174,233, the same in Breeze Light",
+        "# and Breeze Dark) at 110; black, white, greys, the primaries and secondaries, colours whose",
+        "# value overflows at 110, 150 and 200, fully saturated and nearly achromatic ones at the",
+        f"# factors {', '.join(str(f) for f in LIGHTER_FACTORS)}; alphas 0 and 128; factors whose",
+        f"# product with the value passes 32 bits; {len(LIGHTER_FUSED)} inputs on which a build that does not fuse",
+        "# the multiply-adds of the conversion back to RGB gives another colour; then, of",
+        f"# {RANDOM_INPUTS} seeded random inputs (seed {LIGHTER_SEED}; factors 1 to 400), up to",
+        f"# {LIGHTER_PLAIN_FAILURES} on which the plain rule (the HSV value times factor/100, clamped, in",
+        f"# f64 on the 8-bit channels) gives another colour than Qt ({len(failing)} did), and"
+        f" {LIGHTER_OTHERS} more.",
+        "c\tfactor\tresult\tstored",
+    ]
+    for rgba, factor, channels8, channels16 in picked:
+        lines.append(f"{hex8(rgba)}\t{factor}\t{hex8(channels8)}\t{srgb(channels16)}")
+    with open(LIGHTER_OUTPUT, "w", encoding="utf-8") as out:
+        out.write("\n".join(lines) + "\n")
+    print(f"wrote {os.path.normpath(LIGHTER_OUTPUT)}: {len(picked)} rows ({len(fixed_rows)} fixed, "
+          f"{min(len(failing), LIGHTER_PLAIN_FAILURES)} of {len(failing)} plain-rule failures, "
+          f"{min(len(others), LIGHTER_OTHERS)} more)")
+
+
 APP = QtGui.QGuiApplication(sys.argv[:1])
 ENGINE = QtQml.QQmlEngine()
 
 if __name__ == "__main__":
-    main()
+    if sys.argv[1:] == ["--qt-lighter"]:
+        lighter_main()
+    else:
+        main()
