@@ -249,9 +249,12 @@ pub mod icons;
 // `allow`, not `expect`: whether rustc reports an item that only an unused
 // item reaches differs between toolchains, so an expectation could be
 // unfulfilled on one of them.
-#[allow(
-    dead_code,
-    reason = "the 0.8.0 mapping, read by nothing until its parity test, and by that until M4 ports the connector onto it"
+#[cfg_attr(
+    not(test),
+    allow(
+        dead_code,
+        reason = "the 0.8.0 mapping, read by its parity test until M4 ports the connector onto it"
+    )
 )]
 mod next;
 #[cfg(test)]

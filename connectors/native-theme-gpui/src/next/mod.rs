@@ -20,6 +20,8 @@
 //! taken.
 
 pub(crate) mod builders;
+#[cfg(test)]
+mod parity;
 
 use std::rc::Rc;
 

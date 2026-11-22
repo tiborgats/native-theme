@@ -971,6 +971,17 @@ fn covered_fields() -> Vec<&'static str> {
         .collect()
 }
 
+/// Every `ThemeColor` field the three tables name, `ROWS`', `COMPUTED_ROWS`'
+/// and `DERIVED`'s, in that order: the list the 0.8.0 mapping's parity test
+/// (`crate::next::parity`) accounts for slot by slot.
+pub(crate) fn table_slots() -> Vec<&'static str> {
+    ROWS.iter()
+        .map(|row| row.slot)
+        .chain(COMPUTED_ROWS.iter().map(|row| row.slot))
+        .chain(DERIVED.iter().map(|(name, _)| *name))
+        .collect()
+}
+
 /// Why kde-breeze, adwaita, macos-monterey, macos-tahoe and windows-11 leave
 /// `link.hover_background` transparent.
 const LINK_HOVER_NONE: &str = "docs/platform-facts.md:1698 (§2.28) states no \
