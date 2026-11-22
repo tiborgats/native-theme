@@ -1089,11 +1089,13 @@ const PORTED_GROUPS: &[&str] = &[
     "Resolved",
     "layout",
     "accessibility",
+    "button",
+    "checkbox",
 ];
 
 /// The totals of the ported groups' rows on each scheme, `[rows, compared, equal, mismatching, skipped]`:
-/// every row equal but the four reader's context rows, skipped.
-const PORTED_TOTALS: [usize; 5] = [77, 73, 73, 0, 4];
+/// every row equal but those [`expected_skip`] names, skipped.
+const PORTED_TOTALS: [usize; 5] = [140, 135, 135, 0, 5];
 
 /// The reason a row of the table is skipped on 0.7.2's `kde-breeze` without a reader's snapshot: the
 /// reader's context rows (`accessibility.*`), and `checkbox.background_color`, compared only where

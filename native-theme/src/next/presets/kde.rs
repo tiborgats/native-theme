@@ -9,9 +9,10 @@
 //! So far it builds the static path: the system's settings
 //! ([`ResolveInputs::system`]) and an explicit accent are not read yet.
 //!
-//! Defined by the preset (spec §1, "Axis values without data"): no variant,
-//! no control size and the contrast level `Normal` only; a query for anything
-//! else returns the part's base style.
+//! Defined by the preset (spec §1, "Axis values without data"): the variant
+//! `ButtonVariant::Primary` (0.7.2's `primary_*` fields), no control size and
+//! the contrast level `Normal` only; a query for anything else returns the
+//! part's base style.
 //!
 //! Of the context it acts on the scheme alone. The contrast, the motion
 //! preference, the text scale, the direction and the accessibility and
@@ -29,20 +30,27 @@ use std::sync::Arc;
 
 use crate::IconSet;
 use crate::next::color::Color;
-use crate::next::geometry::Stroke;
+use crate::next::geometry::{Corners, Edges, Stroke};
 use crate::next::icons::{IconSizes, IconThemeSpec};
 use crate::next::layout::LayoutMetrics;
 use crate::next::motion::{CaretSpec, MotionTokens, UiTimings};
+use crate::next::paint::Paint;
 use crate::next::preset::{Preset, ResolveInputs, nothing_stated};
-use crate::next::query::{Scheme, ThemeContext};
+use crate::next::query::{ButtonVariant, Scheme, ThemeContext, WidgetState};
 use crate::next::roles::{
     AccentColors, ColorRoles, RoleOrigin, SelectionColors, StatusColors, SurfaceColors,
 };
+use crate::next::rules::{
+    ButtonMatcher, IconProp, PartProp, RuleBuilder, RuleSelector, RuleSet, TextProp,
+};
 use crate::next::style::{
-    FocusIndicator, FocusKind, FocusTrigger, FontSize, FontStyle, TextStated, TextStyle,
+    FocusIndicator, FocusKind, FocusTrigger, FontSize, FontStyle, IconStyle, PartStyle, TextStated,
+    TextStyle,
 };
 use crate::next::typography::{TextRendering, Typography};
-use crate::next::widgets::ResolvedTheme;
+use crate::next::widgets::{
+    ButtonWidget, CheckboxWidget, RadioWidget, ResolvedTheme, WidgetOrigin,
+};
 
 // ---------------------------------------------------------------------------
 // The constants
@@ -69,6 +77,18 @@ struct SchemeConstants {
     success: u32,
     info: u32,
     icon_theme: &'static str,
+    button_background: u32,
+    button_foreground: u32,
+    button_frame: u32,
+    button_checked: u32,
+    button_pressed: u32,
+    button_default: u32,
+    button_default_frame: u32,
+    button_disabled_background: u32,
+    button_disabled_foreground: u32,
+    checkbox_checked: u32,
+    checkbox_frame: u32,
+    view_foreground: u32,
 }
 
 /// The light scheme's constants.
@@ -131,6 +151,48 @@ const LIGHT: SchemeConstants = SchemeConstants {
     info: 0x3dae_e9ff,
     // `light.defaults.icon_theme`: 0.7.2 kde-breeze.toml (uncited)
     icon_theme: "breeze",
+    // `checkbox.unchecked_background`, also `button.background_color`: platform-facts.md (§2.5):
+    // [Colors:Button] BackgroundNormal 252,252,252
+    button_background: 0xfcfc_fcff,
+    // `button.font.color`: platform-facts.md (§2.3): [Colors:Button] ForegroundNormal 35,38,41
+    // (BreezeLight.colors:39, breeze v6.7.5)
+    button_foreground: 0x2326_29ff,
+    // `button.border.color`: platform-facts.md (§2.3): border.color, the plain button frame,
+    // mix([Colors:Button] BackgroundNormal 252,252,252 (BreezeLight.colors:31), [Colors:Button]
+    // ForegroundNormal 35,38,41 (BreezeLight.colors:39), frameContrast 0.2)
+    // (breezehelper.cpp:697-699 at breeze f0b1d75; measured)
+    button_frame: 0xd1d1_d2ff,
+    // `button.checked_background`: platform-facts.md (§2.3): a checked button is
+    // KColorUtils::mix(Button #fcfcfc, ButtonText #232629, 0.125), lettered ButtonText
+    // (breezehelper.cpp:695-699, breezestyle.cpp:5350-5362)
+    button_checked: 0xe1e1_e2ff,
+    // `button.active_background`: platform-facts.md (§2.3): a pressed button is
+    // KColorUtils::mix(Button, Highlight, Blend_Value 0.3) (breezehelper.cpp:694,
+    // breezemetrics.h:176 at breeze f0b1d75); its text inherits font.color, ButtonText in every
+    // state (platform-facts.md, breezestyle.cpp:5350-5362)
+    button_pressed: 0xc3e5_f6ff,
+    // `button.default_button_background`: platform-facts.md (§2.3): default_button_background,
+    // KColorUtils::mix(Button #fcfcfc, Highlight #3daee9, 0.2), an active window's default
+    // button (breezehelper.cpp:700-702 at breeze f0b1d75; measured)
+    button_default: 0xd6ec_f8ff,
+    // `button.default_button_border_color`: platform-facts.md (§2.3):
+    // default_button_border_color, mix(Highlight #3daee9, mix(Button, ButtonText, frameContrast
+    // 0.2) #d1d1d2, 0.5) (breezehelper.cpp:700-702 at breeze f0b1d75; measured)
+    button_default_frame: 0x87c0_ddff,
+    // `button.disabled_background`, also `checkbox.disabled_background`: platform-facts.md
+    // (§2.1.6): Disabled [Colors:Button] BackgroundNormal / ForegroundNormal, KColorScheme 6.31.0
+    button_disabled_background: 0xf0f0_f0ff,
+    // `button.disabled_text_color`: 0.7.2 kde-breeze.toml (uncited)
+    button_disabled_foreground: 0xa8a9_aaff,
+    // `checkbox.checked_background`: platform-facts.md (§2.5): Button #fcfcfc under Selection
+    // #3daee9 at alpha 0.3
+    checkbox_checked: 0xc2e4_f6ff,
+    // `checkbox.unchecked_border_color`: platform-facts.md (§2.5): separatorColor(),
+    // mix(Window, WindowText, 0.2)
+    checkbox_frame: 0xc6c8_c9ff,
+    // `checkbox.indicator_color`: platform-facts.md (§2.5): palette.text(), [Colors:View]
+    // ForegroundNormal
+    view_foreground: 0x2326_29ff,
 };
 
 /// The dark scheme's constants.
@@ -193,6 +255,48 @@ const DARK: SchemeConstants = SchemeConstants {
     info: 0x3dae_e9ff,
     // `dark.defaults.icon_theme`: 0.7.2 kde-breeze.toml (uncited)
     icon_theme: "breeze-dark",
+    // `checkbox.unchecked_background`, also `button.background_color`: platform-facts.md (§2.5):
+    // [Colors:Button] BackgroundNormal 41,44,48 (BreezeDark.colors:32)
+    button_background: 0x292c_30ff,
+    // `button.font.color`: platform-facts.md (§2.3): [Colors:Button] ForegroundNormal
+    // 252,252,252 (BreezeDark.colors:40, breeze v6.7.5)
+    button_foreground: 0xfcfc_fcff,
+    // `button.border.color`: platform-facts.md (§2.3): border.color, the plain button frame,
+    // mix([Colors:Button] BackgroundNormal 41,44,48 (BreezeDark.colors:32), [Colors:Button]
+    // ForegroundNormal 252,252,252 (BreezeDark.colors:40), frameContrast 0.2)
+    // (breezehelper.cpp:697-699 at breeze f0b1d75; measured)
+    button_frame: 0x5356_59ff,
+    // `button.checked_background`: platform-facts.md (§2.3): a checked button is
+    // KColorUtils::mix(Button #292c30, ButtonText #fcfcfc, 0.125), lettered ButtonText
+    // (breezehelper.cpp:695-699, breezestyle.cpp:5350-5362)
+    button_checked: 0x4346_4aff,
+    // `button.active_background`: platform-facts.md (§2.3): a pressed button is
+    // KColorUtils::mix(Button, Highlight, Blend_Value 0.3) (breezehelper.cpp:694,
+    // breezemetrics.h:176 at breeze f0b1d75); its text inherits font.color, ButtonText in every
+    // state (platform-facts.md, breezestyle.cpp:5350-5362)
+    button_pressed: 0x2f53_68ff,
+    // `button.default_button_background`: platform-facts.md (§2.3): default_button_background,
+    // KColorUtils::mix(Button #292c30, Highlight #3daee9, 0.2), an active window's default
+    // button (breezehelper.cpp:700-702 at breeze f0b1d75; measured)
+    button_default: 0x2d46_55ff,
+    // `button.default_button_border_color`: platform-facts.md (§2.3):
+    // default_button_border_color, mix(Highlight #3daee9, mix(Button, ButtonText, frameContrast
+    // 0.2) #535659, 0.5) (breezehelper.cpp:700-702 at breeze f0b1d75; measured)
+    button_default_frame: 0x4882_a1ff,
+    // `button.disabled_background`, also `checkbox.disabled_background`: platform-facts.md
+    // (§2.1.6): Disabled [Colors:Button] BackgroundNormal / ForegroundNormal, KColorScheme 6.31.0
+    button_disabled_background: 0x272a_2eff,
+    // `button.disabled_text_color`: 0.7.2 kde-breeze.toml (uncited)
+    button_disabled_foreground: 0x6d6f_72ff,
+    // `checkbox.checked_background`: platform-facts.md (§2.5): Button #292c30 under Selection
+    // #3daee9 at alpha 0.3
+    checkbox_checked: 0x2f53_68ff,
+    // `checkbox.unchecked_border_color`: platform-facts.md (§2.5): separatorColor(),
+    // mix(Window, WindowText, 0.2)
+    checkbox_frame: 0x4c4e_51ff,
+    // `checkbox.indicator_color`: platform-facts.md (§2.5): palette.text(), [Colors:View]
+    // ForegroundNormal
+    view_foreground: 0xfcfc_fcff,
 };
 
 /// The UI font's family.
@@ -353,6 +457,50 @@ const CARET_BLINK_ON_MS: u32 = 500;
 // `input.caret_blink_off`: platform-facts.md (§2.4): the other half, hidden
 const CARET_BLINK_OFF_MS: u32 = 500;
 
+/// A button's least width.
+// `button.min_width`: platform-facts.md (§2.3): min_width, Button_MinWidth 80 plus the frame's 2 a
+// side less the 1 px shadow inset a side, the visible box (breezestyle.cpp:3555-3564,
+// breezehelper.cpp:670-671 at breeze f0b1d75)
+const BUTTON_MIN_WIDTH: f32 = 82.0;
+
+/// A button's padding left and right.
+// `button.border.padding.left`: platform-facts.md (§2.3): Button_MarginWidth = 6, both axes
+const BUTTON_PADDING_HORIZONTAL: f32 = 6.0;
+
+/// A button's padding above and below.
+// `button.border.padding.top`: 0.7.2 kde-breeze.toml (uncited)
+const BUTTON_PADDING_VERTICAL: f32 = 6.0;
+
+/// The space between a button's icon and its label.
+// `button.icon_text_gap`: 0.7.2 kde-breeze.toml (uncited)
+const BUTTON_ICON_TEXT_GAP: f32 = 4.0;
+
+/// The side of a check box's box and of a radio button's circle (0.7.2:
+/// `radio_indicator_width` unset means `indicator_width`).
+// `checkbox.indicator_width`: 0.7.2 kde-breeze.toml (uncited)
+const CHECKBOX_INDICATOR_SIZE: f32 = 20.0;
+
+/// The diameter of a radio button's dot.
+// `checkbox.radio_dot_diameter`: platform-facts.md (§2.5): Breeze's dot, radius (18 - 12) / 2 = 3
+const RADIO_DOT_SIZE: f32 = 6.0;
+
+/// The width of a check mark's pen.
+// `checkbox.check_mark_stroke_width`: platform-facts.md (§2.5): Breeze's check pen, PenWidth::Frame
+// * 2 = 2.002
+const CHECK_MARK_STROKE_WIDTH: f32 = 2.0;
+
+/// The space between a check box's or radio button's indicator and its label.
+// `checkbox.label_gap`: 0.7.2 kde-breeze.toml (uncited)
+const CHECKBOX_LABEL_GAP: f32 = 4.0;
+
+/// The state precedence of every ruled part: disabled over pressed over hover
+/// (spec §3's example; 0.7.2's pressed colours win over its hover colours).
+const STATES: &[&[WidgetState]] = &[&[
+    WidgetState::DISABLED,
+    WidgetState::PRESSED,
+    WidgetState::HOVER,
+]];
+
 /// The font DPI a point size converts at: 0.7.2's on every desktop but
 /// macOS (`ResolutionContext::from_system`, `src/resolve/context.rs`; spec
 /// §4, `Typography::font_dpi`).
@@ -370,6 +518,19 @@ pub(crate) fn resolve(ctx: &ThemeContext, _inputs: &ResolveInputs<'_>) -> Resolv
     };
     let colors = roles(constants);
     let typography = typography(&colors);
+    let layout = LayoutMetrics {
+        widget_gap: Some(WIDGET_GAP),
+        container_margin: Some(CONTAINER_MARGIN),
+        window_margin: Some(WINDOW_MARGIN),
+        section_gap: Some(SECTION_GAP),
+        corner_radius: CORNER_RADIUS,
+        corner_radius_lg: CORNER_RADIUS_LG,
+        border_width: BORDER_WIDTH,
+        border_opacity: BORDER_OPACITY,
+        shadow_enabled: SHADOW_ENABLED,
+        cursor_size_px: None,
+        cursor_theme: None,
+    };
     let unported = nothing_stated(Preset::KdeBreeze, ctx.clone());
     ResolvedTheme {
         name: Arc::from(Preset::KdeBreeze.display_name()),
@@ -388,19 +549,6 @@ pub(crate) fn resolve(ctx: &ThemeContext, _inputs: &ResolveInputs<'_>) -> Resolv
                 Some(ICON_DIALOG),
                 Some(ICON_PANEL),
             ),
-        },
-        layout: LayoutMetrics {
-            widget_gap: Some(WIDGET_GAP),
-            container_margin: Some(CONTAINER_MARGIN),
-            window_margin: Some(WINDOW_MARGIN),
-            section_gap: Some(SECTION_GAP),
-            corner_radius: CORNER_RADIUS,
-            corner_radius_lg: CORNER_RADIUS_LG,
-            border_width: BORDER_WIDTH,
-            border_opacity: BORDER_OPACITY,
-            shadow_enabled: SHADOW_ENABLED,
-            cursor_size_px: None,
-            cursor_theme: None,
         },
         timings: UiTimings {
             tooltip_show_ms: Some(TOOLTIP_SHOW_MS),
@@ -442,9 +590,9 @@ pub(crate) fn resolve(ctx: &ThemeContext, _inputs: &ResolveInputs<'_>) -> Resolv
             shape: None,
         },
         elevations: Arc::from([]),
-        button: unported.button,
-        checkbox: unported.checkbox,
-        radio: unported.radio,
+        button: button(constants, &colors, &typography, &layout),
+        checkbox: checkbox(constants, &colors, &typography, &layout),
+        radio: radio(constants, &colors, &typography, &layout),
         scrollbar: unported.scrollbar,
         list: unported.list,
         tooltip: unported.tooltip,
@@ -452,6 +600,7 @@ pub(crate) fn resolve(ctx: &ThemeContext, _inputs: &ResolveInputs<'_>) -> Resolv
         custom_metrics: BTreeMap::new(),
         colors,
         typography,
+        layout,
     }
 }
 
@@ -626,4 +775,230 @@ fn typography(colors: &ColorRoles) -> Typography {
         font_dpi: FONT_DPI,
         font_whole_pixels: Some(FONT_WHOLE_PIXELS),
     }
+}
+
+// ---------------------------------------------------------------------------
+// The widgets
+// ---------------------------------------------------------------------------
+
+/// A part's fill of one colour.
+fn fill(color: Color) -> PartProp {
+    PartProp::Fill(Paint::Solid(color))
+}
+
+/// A part's outline in `color`, inside its edge, at the default border width
+/// (0.7.2: a widget's `border.line_width` is `defaults.border.line_width`
+/// where unstated, `resolve_border_inheritance`).
+fn outline(layout: &LayoutMetrics, color: Color) -> PartProp {
+    PartProp::Stroke(Stroke::uniform(layout.border_width, color))
+}
+
+/// A part's corners at the default radius (0.7.2: a widget's
+/// `border.corner_radius` is `defaults.border.corner_radius` where unstated,
+/// `resolve_border_inheritance`).
+fn corners(layout: &LayoutMetrics) -> PartProp {
+    PartProp::Corners(Corners::uniform(layout.corner_radius))
+}
+
+/// A widget's label: the UI font (0.7.2: a widget's font is `defaults.font`
+/// where unstated, `resolve_font_inheritance`) without its line height, which
+/// no 0.7.2 widget font has, in `color` where given, else in the UI font's.
+fn label(body: &TextStyle, color: Option<Color>) -> TextStyle {
+    let mut label = body.clone();
+    label.line_height = TextStyle::default().line_height;
+    label.stated = label.stated.difference(TextStated::LINE_HEIGHT);
+    if let Some(color) = color {
+        label.color = color;
+        label.stated |= TextStated::COLOR;
+    }
+    label
+}
+
+/// The push button. Breeze's button has one look in every variant but the
+/// primary one, which 0.7.2 fills with the accent: platform-facts.md (§2.3),
+/// "Breeze has no primary variant; the pair inherits the accent and its text,
+/// the accent-filled button" (0.7.2: `primary_background` and
+/// `primary_text_color` are `defaults.accent_color` and
+/// `defaults.accent_text_color` where unstated). Its text is ButtonText in
+/// every state but the disabled one (`button.active_background`'s citation),
+/// and hover changes only its pen (`button.hover_background`: "no hover fill").
+fn button(
+    c: &SchemeConstants,
+    roles: &ColorRoles,
+    typography: &Typography,
+    layout: &LayoutMetrics,
+) -> ButtonWidget {
+    let primary = || {
+        RuleSelector::on(WidgetState::NONE).matcher(ButtonMatcher {
+            variant: Some(ButtonVariant::Primary),
+            shape: None,
+        })
+    };
+    let body = RuleBuilder::with_exclusive(PartStyle::default(), STATES)
+        .base([
+            fill(color(c.button_background)),
+            outline(layout, color(c.button_frame)),
+            corners(layout),
+            PartProp::Padding(Edges::symmetric(
+                BUTTON_PADDING_VERTICAL,
+                BUTTON_PADDING_HORIZONTAL,
+            )),
+            PartProp::MinSize([Some(BUTTON_MIN_WIDTH), None]),
+        ])
+        .rule(primary(), [fill(roles.accent.fill)])
+        .rule(
+            RuleSelector::on(WidgetState::CHECKED),
+            [fill(color(c.button_checked))],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::DEFAULT),
+            [
+                fill(color(c.button_default)),
+                outline(layout, color(c.button_default_frame)),
+            ],
+        )
+        // `button.hover_border_color`: platform-facts.md (§2.3), "a non-flat button's pen turns
+        // Highlight, [Colors:Selection] BackgroundNormal, while hovered, pressed or
+        // keyboard-focused": the selection's background.
+        .rules(
+            [
+                RuleSelector::on(WidgetState::HOVER),
+                RuleSelector::on(WidgetState::PRESSED),
+                RuleSelector::on(WidgetState::FOCUS_VISIBLE),
+            ],
+            [outline(layout, roles.selection.background)],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED),
+            [fill(color(c.button_pressed))],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED),
+            [fill(color(c.button_disabled_background))],
+        )
+        .build();
+    let label = RuleBuilder::with_exclusive(
+        label(&typography.body, Some(color(c.button_foreground))),
+        STATES,
+    )
+    .rule(primary(), [TextProp::Color(roles.accent.foreground)])
+    .rule(
+        RuleSelector::on(WidgetState::DISABLED),
+        [TextProp::Color(color(c.button_disabled_foreground))],
+    )
+    .build();
+    ButtonWidget::new(
+        WidgetOrigin::Native,
+        body,
+        label,
+        RuleBuilder::new(IconStyle::default()).build(),
+        BUTTON_ICON_TEXT_GAP,
+        // 0.7.2: `button.disabled_opacity` is `defaults.disabled_opacity` where unstated.
+        Some(roles.disabled_opacity),
+    )
+}
+
+/// The box of a check box or the circle of a radio button, which 0.7.2's
+/// `checkbox.*` serves both: Button's background in a separator-coloured
+/// frame, no shadow; checked, the checked fill in the selection's colour
+/// (`checkbox.border.color`: platform-facts.md (§2.5), "checked,
+/// palette.highlight(), `[Colors:Selection]` BackgroundNormal"); under the
+/// pointer, checked or not, the frame in the accent
+/// (`checkbox.hover_border_color`: platform-facts.md (§2.5), "focusColor(),
+/// `[Colors:View]` DecorationFocus", the accent's source), and no fill of its
+/// own ("Breeze adds no fill under the pointer"); disabled, the disabled
+/// button's background.
+fn indicator(
+    c: &SchemeConstants,
+    roles: &ColorRoles,
+    layout: &LayoutMetrics,
+) -> RuleBuilder<PartStyle, PartProp> {
+    RuleBuilder::with_exclusive(PartStyle::default(), STATES)
+        .base([
+            fill(color(c.button_background)),
+            outline(layout, color(c.checkbox_frame)),
+            // `checkbox.border.shadow_enabled`: platform-facts.md (§2.5): no shadow
+            PartProp::Shadows(None),
+            PartProp::MinSize([Some(CHECKBOX_INDICATOR_SIZE); 2]),
+            PartProp::MaxSize([Some(CHECKBOX_INDICATOR_SIZE); 2]),
+        ])
+        .rule(
+            RuleSelector::on(WidgetState::CHECKED),
+            [
+                fill(color(c.checkbox_checked)),
+                outline(layout, roles.selection.background),
+            ],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::HOVER),
+            [outline(layout, roles.accent.fill)],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED),
+            [fill(color(c.button_disabled_background))],
+        )
+}
+
+/// The label of a check box or a radio button: the UI font in its colour;
+/// disabled, the disabled text's colour (`checkbox.disabled_text_color`:
+/// platform-facts.md (§2.1.6), Disabled `[Colors:Window]` ForegroundNormal,
+/// the source of the disabled text role).
+fn check_label(roles: &ColorRoles, typography: &Typography) -> RuleSet<TextStyle, TextProp> {
+    RuleBuilder::with_exclusive(label(&typography.body, None), STATES)
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED),
+            [TextProp::Color(roles.disabled_text)],
+        )
+        .build()
+}
+
+/// The check box: [`indicator`] with the default corners, a check mark in
+/// the view's text colour, [`check_label`].
+fn checkbox(
+    c: &SchemeConstants,
+    roles: &ColorRoles,
+    typography: &Typography,
+    layout: &LayoutMetrics,
+) -> CheckboxWidget {
+    let checkmark = RuleBuilder::new(IconStyle::default())
+        .base([
+            IconProp::Color(color(c.view_foreground)),
+            IconProp::StrokeWidth(Some(CHECK_MARK_STROKE_WIDTH)),
+        ])
+        .build();
+    CheckboxWidget::new(
+        WidgetOrigin::Native,
+        indicator(c, roles, layout).base([corners(layout)]).build(),
+        checkmark,
+        check_label(roles, typography),
+        CHECKBOX_LABEL_GAP,
+        // 0.7.2: `checkbox.disabled_opacity` is `defaults.disabled_opacity` where unstated.
+        Some(roles.disabled_opacity),
+    )
+}
+
+/// The radio button: [`indicator`] (0.7.2 states no corners for it), a dot
+/// in the view's text colour (`checkbox.indicator_color`), [`check_label`].
+fn radio(
+    c: &SchemeConstants,
+    roles: &ColorRoles,
+    typography: &Typography,
+    layout: &LayoutMetrics,
+) -> RadioWidget {
+    let dot = RuleBuilder::new(PartStyle::default())
+        .base([
+            fill(color(c.view_foreground)),
+            PartProp::MinSize([Some(RADIO_DOT_SIZE); 2]),
+            PartProp::MaxSize([Some(RADIO_DOT_SIZE); 2]),
+        ])
+        .build();
+    RadioWidget::new(
+        WidgetOrigin::Native,
+        indicator(c, roles, layout).build(),
+        dot,
+        check_label(roles, typography),
+        CHECKBOX_LABEL_GAP,
+        // 0.7.2: `checkbox.disabled_opacity` is `defaults.disabled_opacity` where unstated.
+        Some(roles.disabled_opacity),
+    )
 }

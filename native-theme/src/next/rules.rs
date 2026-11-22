@@ -459,13 +459,6 @@ impl<T, P, M> RuleBuilder<T, P, M> {
     }
 
     /// The base with `props` applied and stated.
-    #[cfg_attr(
-        not(test),
-        expect(
-            dead_code,
-            reason = "called by the presets' builders, from the next task of M0"
-        )
-    )]
     pub(crate) fn base(mut self, props: impl IntoIterator<Item = P>) -> Self
     where
         T: Patched<P>,
