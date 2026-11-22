@@ -5325,6 +5325,31 @@ under *Closed items from M7 close (2026-10-16): items carried to M8, M9a and the
 ### Connectors: an unstated `button.active_background` gives egui's and gpui's pressed fill two colours
 - [ ] [1.0] For the maintainer to decide. Where a theme states neither `button.checked_background` nor `button.active_background` (macos-tahoe, `macos-tahoe.toml` `[light.button]` and `[dark.button]`; neither inherits, `docs/inheritance-rules.toml:409`, `:411`), the two connectors give a pressed button different fills, and the showcases' Basic "On" toggle shows it. egui's connector presses in `button.hover_background` (`active_background.unwrap_or(hover_background)`, `connectors/native-theme-egui/src/style/roles.rs:206` and `src/style/base.rs:354` at 5de1f8b1), and the egui showcase draws the toggle in that leaf, naming it under Not themeable (`pages/basic.rs`, the toggle's `fill_instead`). gpui's connector derives a colour no theme states, `secondary_active` = `active_color(secondary, is_dark)` (`connectors/native-theme-gpui/src/colors.rs:315-322`, `src/derive.rs:40`), and lays it over the button fill as `button_active` (`colors.rs:381`); `geometry::button_checked` sets no fill there (`src/geometry.rs:1339-1342`), so the gpui toggle keeps upstream's selected fill in that token. Each showcase draws its toolkit's own pressed look, and the colours differ because the connectors' fallbacks do. Copying gpui's derived colour into the egui showcase would draw a colour the theme does not state, and the egui toggle would then disagree with egui's own pressed button, so the showcase keeps reading theme data (M9c B1 item 13 (e)). macos-tahoe is offered on macOS alone. Settle before 1.0 whether the connectors share one fallback for an unstated `button.active_background`.
 
+### KDE: what 0.8.0's first slice left of issue #4's list and scroll bar items (2026-11-22)
+
+- [ ] [1.0] The `kde-breeze` builder of the 0.8.0 model (`native-theme/src/next/presets/kde.rs`) states issue #4's
+      `L2`, `L4` (corners and margins), `S3` and `S4` (`docs/issues/0004_kde-leftovers-rationale.md`; the homes are
+      in `docs/v0.8.0-spec.md` §5). Left, for the KDE unit of the 0.8.0 plan's `M2`:
+      - **S1**, the scroll bar's line along its inner edge: `docs/platform-facts.md` §2.8 states the rule (a 1 px
+        line of `Text` at alpha `frameContrast`, measured #d3d4d4 / #424445), but no gathered source states which
+        physical side the inner edge is for each orientation and under right-to-left; read it in Breeze's
+        `breezestyle.cpp` before writing `scrollbar.track.stroke`.
+      - **S2**, the handle's outline: no value in the rationale or in `docs/platform-facts.md` §2.8.
+      - **L4**, a row's padding: no value in the rationale.
+      - **S3 under another colour scheme**: the focused view's handle is stated on the static preset only
+        (#b1d9ef / #2a546b, measured). `docs/platform-facts.md` §2.8 names `focusColor()`, but that colour through
+        the idle handle's overlay gives #d0e4ef / #253b48, not the measurement, so the rule is not known; under
+        system colours the handle at rest is the plain one in every view, as in 0.7.2.
+      - **S4 in the view that has the focus**: no source states the handle while the pointer is on the bar but off
+        the handle there; the query returns that view's handle at rest.
+      - **L2's fill**: the rule (the Inactive group's Highlight at alpha 0.3) gives #edf6fc / #16232a over the
+        view's background against the measured #ecf5fb / #16232b, one 8-bit step in both schemes; the outline's
+        pixels are exact. Not explained (no single 8-bit rounding of the blend gives both).
+      - A selected row in a view without the focus still has the active selection's fill; `colors.selection`
+        carries the unfocused pair, which a `SELECTED | UNFOCUSED_VIEW` rule would use.
+      - The nested mix behind `button.default_button_border_color` (`kcu_mix_of_mix`) has no vector table of its
+        own; reader parity on the Breeze fixtures and the custom accent proves it.
+
 ### Showcases: gpui's keyboard shield also stops its own macOS menu shortcuts
 - [ ] [1.0] For the maintainer to decide. Under `--capture`, `--screenshot` and `--dump-layout` on macOS, gpui's keyboard shield stops ⌘Q, ⌘H, ⌥⌘H, ⌘M and ⌘W too, which are its own keymap bindings: a key equivalent reaches gpui's window first (gpui-pre-macos 0.3.9 `src/window.rs:2572-2574`, `handle_key_equivalent`, and `:2659-2668`, the event reported as handled where it did not propagate), and the shield stops every keystroke (`cx.intercept_keystrokes`, gpui-pre 0.3.9 `src/window.rs:6075-6092`, installed by the gpui showcase's `apply_cli_args`). The egui showcase leaves AppKit's predefined items (Close, Quit, Hide, Hide Others, Minimize) running there, as its `shields_keyboard` doc says since M9c B1 FR-M3 (d2e34ccc), and drops only the showcase's own menu actions. Read from the source, not run on macOS. Settle before 1.0 whether the two shields cover the same keys.
 
