@@ -45,11 +45,17 @@ type IconRules<M = ()> = RuleSet<IconStyle, IconProp, M>;
 
 mod menu;
 mod menu_bar;
+mod sidebar;
+mod status_bar;
 mod tab;
+mod toolbar;
 
 pub use menu::{MenuParts, MenuWidget};
 pub use menu_bar::{MenuBarParts, MenuBarWidget};
+pub use sidebar::{SidebarParts, SidebarWidget};
+pub use status_bar::StatusBarWidget;
 pub use tab::{TabParts, TabWidget};
+pub use toolbar::{ToolbarParts, ToolbarWidget};
 
 /// A part rule set that states nothing: an empty base style, no rule.
 fn unstated_part<M>() -> PartRules<M> {
@@ -637,6 +643,12 @@ pub struct ResolvedTheme {
     pub menu: MenuWidget,
     /// The menu bar.
     pub menu_bar: MenuBarWidget,
+    /// The sidebar.
+    pub sidebar: SidebarWidget,
+    /// The toolbar.
+    pub toolbar: ToolbarWidget,
+    /// The status bar.
+    pub status_bar: StatusBarWidget,
     /// The tooltip.
     pub tooltip: TooltipWidget,
     /// The application's own colour tokens (empty on the bundled presets).
@@ -688,6 +700,8 @@ impl ResolvedTheme {
         all.extend(self.tab.dead_rules());
         all.extend(self.menu.dead_rules());
         all.extend(self.menu_bar.dead_rules());
+        all.extend(self.sidebar.dead_rules());
+        all.extend(self.toolbar.dead_rules());
         all
     }
 

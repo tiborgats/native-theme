@@ -1,5 +1,6 @@
 //! Model parity of the 0.8.0 work (plan, section 1, rule 2) on the first slice: the globals and 0.7.2's
-//! `button`, `checkbox`, `list`, `scrollbar` and `tooltip`, on `kde-breeze`.
+//! `button`, `checkbox`, `list`, `scrollbar` and `tooltip`, on `kde-breeze`; and on the widgets the model
+//! adds after it (plan, M1), whose rows the kde-breeze builder does not state yet.
 //!
 //! This half checks the table of homes, `tests/next_homes.toml`, against both models: it resolves 0.7.2's
 //! `kde-breeze` (light and dark) with 0.7.2's public API, takes the keys from the JSON serialisation of the
@@ -42,6 +43,9 @@ const SLICE_GROUPS: &[&str] = &[
     "tooltip",
     "menu",
     "tab",
+    "sidebar",
+    "toolbar",
+    "status_bar",
 ];
 
 /// The fields of 0.7.2's `Resolved` wrapper beside the resolved theme, which do not serialise
@@ -1192,7 +1196,7 @@ const PORTED_GROUPS: &[&str] = &[
 
 /// The groups of the table whose widgets the model holds but the kde-breeze builder does not state yet (plan,
 /// M2, the KDE unit): their rows are compared, counted and reported, not asserted.
-const PENDING_GROUPS: &[&str] = &["menu", "tab"];
+const PENDING_GROUPS: &[&str] = &["menu", "tab", "sidebar", "toolbar", "status_bar"];
 
 /// The totals of the ported groups' rows on each scheme, `[rows, compared, equal, mismatching, skipped]`:
 /// every row equal but those [`expected_skip`] names, skipped.

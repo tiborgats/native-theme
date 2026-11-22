@@ -134,7 +134,9 @@ use crate::next::widgets::{
     ButtonWidget, CheckboxWidget, ListWidget, RadioWidget, ResolvedTheme, ScrollbarWidget,
     TooltipWidget, WidgetOrigin,
 };
-use crate::next::widgets::{MenuBarWidget, MenuWidget, TabWidget};
+use crate::next::widgets::{
+    MenuBarWidget, MenuWidget, SidebarWidget, StatusBarWidget, TabWidget, ToolbarWidget,
+};
 
 // ---------------------------------------------------------------------------
 // The constants
@@ -1399,6 +1401,9 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
         tab: TabWidget::unstated(WidgetOrigin::Native),
         menu: MenuWidget::unstated(WidgetOrigin::Native),
         menu_bar: MenuBarWidget::unstated(WidgetOrigin::Native),
+        sidebar: SidebarWidget::unstated(WidgetOrigin::Native),
+        toolbar: ToolbarWidget::unstated(WidgetOrigin::Native),
+        status_bar: StatusBarWidget::unstated(WidgetOrigin::Native),
         tooltip: tooltip(&colors, &typography, &layout),
         custom_colors: BTreeMap::new(),
         custom_metrics: BTreeMap::new(),

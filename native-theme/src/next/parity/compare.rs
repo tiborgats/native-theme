@@ -749,6 +749,7 @@ fn read(
         "focus_ring" => focus_ring(theme, rest),
         "caret" => caret(theme, rest),
         "tooltip" => tooltip(theme, rest),
+        "status_bar" => status_bar(theme, rest),
         widget => match metric(theme, widget, rest) {
             Some(got) => Some(got),
             None => ruled_part(theme, widget, rest).map_err(|e| format!("`{home}`: {e}"))?,
@@ -976,6 +977,15 @@ fn tooltip(theme: &ResolvedTheme, rest: &str) -> Option<Got> {
     }
 }
 
+fn status_bar(theme: &ResolvedTheme, rest: &str) -> Option<Got> {
+    match rest.split_once('.')? {
+        ("bar", property) => part_property(&theme.status_bar.bar, property),
+        ("label", property) => text_property(&theme.status_bar.label, property),
+        ("separator", property) => part_property(&theme.status_bar.separator, property),
+        _ => None,
+    }
+}
+
 /// A direct metric of a widget.
 fn metric(theme: &ResolvedTheme, widget: &str, name: &str) -> Option<Got> {
     Some(match (widget, name) {
@@ -996,6 +1006,8 @@ fn metric(theme: &ResolvedTheme, widget: &str, name: &str) -> Option<Got> {
         ("tab", "active_outward_corner_radius") => opt_f32(theme.tab.active_outward_corner_radius),
         ("menu", "icon_text_gap") => Got::F32(theme.menu.icon_text_gap),
         ("menu_bar", "item_gap") => opt_f32(theme.menu_bar.item_gap),
+        ("sidebar", "item_gap") => opt_f32(theme.sidebar.item_gap),
+        ("toolbar", "item_gap") => opt_f32(theme.toolbar.item_gap),
         _ => return None,
     })
 }
@@ -1056,6 +1068,16 @@ fn ruled_style<'a>(
         ("menu_bar", "bar") => Ruled::Part(theme.menu_bar.bar(q.style()?)),
         ("menu_bar", "item") => Ruled::Part(theme.menu_bar.item(q.style()?)),
         ("menu_bar", "item_label") => Ruled::Text(theme.menu_bar.item_label(q.style()?)),
+        ("sidebar", "container") => Ruled::Part(theme.sidebar.container(q.style()?)),
+        ("sidebar", "item") => Ruled::Part(theme.sidebar.item(q.style()?)),
+        ("sidebar", "item_label") => Ruled::Text(theme.sidebar.item_label(q.style()?)),
+        ("sidebar", "item_icon") => Ruled::Icon(theme.sidebar.item_icon(q.style()?)),
+        ("sidebar", "section_header") => Ruled::Text(theme.sidebar.section_header(q.style()?)),
+        ("toolbar", "bar") => Ruled::Part(theme.toolbar.bar(q.style()?)),
+        ("toolbar", "button") => Ruled::Part(theme.toolbar.button(q.style()?)),
+        ("toolbar", "button_label") => Ruled::Text(theme.toolbar.button_label(q.style()?)),
+        ("toolbar", "button_icon") => Ruled::Icon(theme.toolbar.button_icon(q.style()?)),
+        ("toolbar", "separator") => Ruled::Part(theme.toolbar.separator(q.style()?)),
         _ => return Ok(None),
     };
     Ok(Some((style, property)))

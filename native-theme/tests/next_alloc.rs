@@ -172,9 +172,10 @@ fn query_every_part(theme: &ResolvedTheme, state: WidgetState) {
     }
 }
 
-/// Every getter and `parts` of the menu's, the menu bar's and the tab
-/// bar's ruled parts for `state`, each result kept from the optimiser.
-fn query_menus_and_tabs(theme: &ResolvedTheme, state: WidgetState) {
+/// Every getter and `parts` of the ruled parts of the menu, the menu bar,
+/// the tab bar, the sidebar and the toolbar for `state`, each result kept
+/// from the optimiser.
+fn query_menus_tabs_and_bars(theme: &ResolvedTheme, state: WidgetState) {
     let q = StyleQuery::<()>::new(state);
     let tab = TabQuery::new(state);
     black_box(theme.menu.panel(q));
@@ -196,6 +197,18 @@ fn query_menus_and_tabs(theme: &ResolvedTheme, state: WidgetState) {
     black_box(theme.tab.close_button(tab));
     black_box(theme.tab.close_icon(tab));
     black_box(theme.tab.parts(tab));
+    black_box(theme.sidebar.container(q));
+    black_box(theme.sidebar.item(q));
+    black_box(theme.sidebar.item_label(q));
+    black_box(theme.sidebar.item_icon(q));
+    black_box(theme.sidebar.section_header(q));
+    black_box(theme.sidebar.parts(q));
+    black_box(theme.toolbar.bar(q));
+    black_box(theme.toolbar.button(q));
+    black_box(theme.toolbar.button_label(q));
+    black_box(theme.toolbar.button_icon(q));
+    black_box(theme.toolbar.separator(q));
+    black_box(theme.toolbar.parts(q));
 }
 
 #[test]
@@ -218,7 +231,7 @@ fn queries_and_clones_allocate_nothing_and_the_theme_fits_its_budget() {
         for state in STATES {
             let before = dhat::HeapStats::get();
             query_every_part(black_box(&theme), state);
-            query_menus_and_tabs(black_box(&theme), state);
+            query_menus_tabs_and_bars(black_box(&theme), state);
             let after = dhat::HeapStats::get();
             dhat::assert_eq!(after.total_blocks, before.total_blocks);
             dhat::assert_eq!(after.curr_bytes, before.curr_bytes);
