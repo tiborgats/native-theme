@@ -162,3 +162,9 @@ native-theme-test-fixtures = { path = "../tools/test-fixtures" }
 pollster = "1.0"
 proptest = "1.11"
 serde_json = "1.0.151"
+
+# The 0.8.0 model's speed (spec §11, item 2): medians of std::time batches, no
+# harness and no dependency.
+[[bench]]
+name = "next_resolve"
+harness = false
