@@ -11,8 +11,9 @@ use crate::next::style::PartStyle;
 pub struct ProgressBarWidget {
     /// Native or synthesized.
     pub origin: WidgetOrigin,
-    /// The period of the indeterminate animation, in milliseconds.
-    pub indeterminate_period_ms: u32,
+    /// The period of the indeterminate animation, in milliseconds; `None`
+    /// where no source states it.
+    pub indeterminate_period_ms: Option<u32>,
     pub(super) track: PartRules,
     pub(super) fill: PartRules,
 }
@@ -33,7 +34,7 @@ impl ProgressBarWidget {
         origin: WidgetOrigin,
         track: PartRules,
         fill: PartRules,
-        indeterminate_period_ms: u32,
+        indeterminate_period_ms: Option<u32>,
     ) -> Self {
         Self {
             origin,

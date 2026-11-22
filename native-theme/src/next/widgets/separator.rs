@@ -14,10 +14,11 @@ pub struct SeparatorWidget {
     /// The line's thickness, in logical pixels.
     pub thickness: f32,
     /// The inset of the line's ends from its container's edges, in logical
-    /// pixels.
-    pub inset: f32,
-    /// The space on either side of the line, in logical pixels.
-    pub margin: f32,
+    /// pixels; `None` where no source states it.
+    pub inset: Option<f32>,
+    /// The space on either side of the line, in logical pixels; `None` where
+    /// no source states it.
+    pub margin: Option<f32>,
 }
 
 impl SeparatorWidget {
@@ -26,8 +27,8 @@ impl SeparatorWidget {
         origin: WidgetOrigin,
         color: Color,
         thickness: f32,
-        inset: f32,
-        margin: f32,
+        inset: Option<f32>,
+        margin: Option<f32>,
     ) -> Self {
         Self {
             origin,

@@ -462,10 +462,15 @@ fn progress_bar_and_splitter_getters_evaluate_their_rule_sets() {
     let track = part_rules(RED, GREEN, BLUE, ());
     let fill = part_rules(GREEN, BLUE, RED, ());
     let handle = part_rules(BLUE, RED, GREEN, ());
-    let bar = ProgressBarWidget::new(WidgetOrigin::Native, track.clone(), fill.clone(), 1000);
+    let bar = ProgressBarWidget::new(
+        WidgetOrigin::Native,
+        track.clone(),
+        fill.clone(),
+        Some(1000),
+    );
     let splitter = SplitterWidget::new(WidgetOrigin::Native, handle.clone(), 4.0);
     assert!(bar.is_native() && splitter.is_native());
-    assert_eq!(bar.indeterminate_period_ms, 1000);
+    assert_eq!(bar.indeterminate_period_ms, Some(1000));
     assert_eq!(splitter.divider_width, 4.0);
     for state in states() {
         let query = StyleQuery::new(state);
@@ -490,7 +495,7 @@ fn progress_bar_and_splitter_getters_evaluate_their_rule_sets() {
 
 #[test]
 fn separator_and_spinner_hold_their_metrics() {
-    let separator = SeparatorWidget::new(WidgetOrigin::Synthesized, RED, 1.0, 2.0, 3.0);
+    let separator = SeparatorWidget::new(WidgetOrigin::Synthesized, RED, 1.0, Some(2.0), Some(3.0));
     assert!(!separator.is_native());
     assert_eq!(
         (
@@ -499,9 +504,9 @@ fn separator_and_spinner_hold_their_metrics() {
             separator.inset,
             separator.margin
         ),
-        (RED, 1.0, 2.0, 3.0)
+        (RED, 1.0, Some(2.0), Some(3.0))
     );
-    let spinner = SpinnerWidget::new(WidgetOrigin::Native, BLUE, 24.0, 16.0, 2.0, 1000);
+    let spinner = SpinnerWidget::new(WidgetOrigin::Native, BLUE, 24.0, 16.0, 2.0, Some(1000));
     assert!(spinner.is_native());
     assert_eq!(
         (
@@ -511,8 +516,15 @@ fn separator_and_spinner_hold_their_metrics() {
             spinner.stroke_width,
             spinner.period_ms
         ),
-        (BLUE, 24.0, 16.0, 2.0, 1000)
+        (BLUE, 24.0, 16.0, 2.0, Some(1000))
     );
+    let theme = nothing_stated(Preset::KdeBreeze, ThemeContext::light());
+    assert_eq!(
+        (theme.separator.inset, theme.separator.margin),
+        (None, None)
+    );
+    assert_eq!(theme.spinner.period_ms, None);
+    assert_eq!(theme.progress_bar.indeterminate_period_ms, None);
 }
 
 #[test]

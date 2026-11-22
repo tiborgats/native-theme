@@ -17,8 +17,9 @@ pub struct SpinnerWidget {
     pub min_diameter: f32,
     /// The arc's stroke width, in logical pixels.
     pub stroke_width: f32,
-    /// The period of one turn, in milliseconds.
-    pub period_ms: u32,
+    /// The period of one turn, in milliseconds; `None` where no source states
+    /// it.
+    pub period_ms: Option<u32>,
 }
 
 impl SpinnerWidget {
@@ -29,7 +30,7 @@ impl SpinnerWidget {
         diameter: f32,
         min_diameter: f32,
         stroke_width: f32,
-        period_ms: u32,
+        period_ms: Option<u32>,
     ) -> Self {
         Self {
             origin,

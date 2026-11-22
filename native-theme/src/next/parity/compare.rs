@@ -1012,18 +1012,18 @@ fn metric(theme: &ResolvedTheme, widget: &str, name: &str) -> Option<Got> {
         ("slider", "tick_length") => Got::F32(theme.slider.tick_length),
         ("slider", "disabled_opacity") => opt_f32(theme.slider.disabled_opacity),
         ("progress_bar", "indeterminate_period_ms") => {
-            Got::Int(u64::from(theme.progress_bar.indeterminate_period_ms))
+            opt_u32(theme.progress_bar.indeterminate_period_ms)
         }
         ("splitter", "divider_width") => Got::F32(theme.splitter.divider_width),
         ("separator", "color") => Got::Color(theme.separator.color),
         ("separator", "thickness") => Got::F32(theme.separator.thickness),
-        ("separator", "inset") => Got::F32(theme.separator.inset),
-        ("separator", "margin") => Got::F32(theme.separator.margin),
+        ("separator", "inset") => opt_f32(theme.separator.inset),
+        ("separator", "margin") => opt_f32(theme.separator.margin),
         ("spinner", "color") => Got::Color(theme.spinner.color),
         ("spinner", "diameter") => Got::F32(theme.spinner.diameter),
         ("spinner", "min_diameter") => Got::F32(theme.spinner.min_diameter),
         ("spinner", "stroke_width") => Got::F32(theme.spinner.stroke_width),
-        ("spinner", "period_ms") => Got::Int(u64::from(theme.spinner.period_ms)),
+        ("spinner", "period_ms") => opt_u32(theme.spinner.period_ms),
         ("tab", "item_gap") => opt_f32(theme.tab.item_gap),
         ("tab", "indicator_side") => theme
             .tab
