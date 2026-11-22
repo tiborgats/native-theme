@@ -21,6 +21,10 @@ targets = [
 [features]
 # No feature is needed to load, merge and resolve presets and TOML files.
 # Each OS-specific dependency is compiled only on its own target.
+default = ["palettes"]
+
+# The 15 bundled community colour palettes (`next::Palette::from_name`).
+palettes = []
 
 # The KDE Plasma reader: kdeglobals (Linux).
 kde = ["dep:configparser"]

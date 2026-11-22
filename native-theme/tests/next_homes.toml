@@ -2151,3 +2151,670 @@ homes = ["status_bar.bar.padding.bottom"]
 [[row]]
 key = "status_bar.border.padding.left"
 homes = ["status_bar.bar.padding.left"]
+
+# --- popover ---
+
+[[row]]
+key = "popover.background_color"
+homes = ["popover.panel.fill"]
+note = "0.7.2 safety net: unset = defaults.background_color; as tooltip.background_color (M0): not colors.popover.background"
+
+[[row]]
+key = "popover.font.family"
+homes = ["popover.text.family"]
+
+[[row]]
+key = "popover.font.size"
+homes = ["popover.text.size_px"]
+
+[[row]]
+key = "popover.font.defined_size"
+homes = ["popover.text.defined_size"]
+
+[[row]]
+key = "popover.font.weight"
+homes = ["popover.text.weight"]
+
+[[row]]
+key = "popover.font.style"
+homes = ["popover.text.style"]
+
+[[row]]
+key = "popover.font.color"
+homes = ["popover.text.color"]
+
+[[row]]
+key = "popover.border.color"
+homes = ["popover.panel.stroke.color"]
+
+[[row]]
+key = "popover.border.corner_radius"
+homes = ["popover.panel.corners"]
+note = "Corners::uniform(radius); full_lg"
+
+[[row]]
+key = "popover.border.line_width"
+homes = ["popover.panel.stroke.width"]
+
+[[row]]
+key = "popover.border.shadow_enabled"
+homes = ["popover.panel.shadows"]
+note = "true: SHADOWS unstated; false: SHADOWS stated, None (spec §5 notes)"
+
+[[row]]
+key = "popover.border.padding.top"
+homes = ["popover.panel.padding.top"]
+
+[[row]]
+key = "popover.border.padding.right"
+homes = ["popover.panel.padding.right"]
+
+[[row]]
+key = "popover.border.padding.bottom"
+homes = ["popover.panel.padding.bottom"]
+
+[[row]]
+key = "popover.border.padding.left"
+homes = ["popover.panel.padding.left"]
+
+# --- switch ---
+
+[[row]]
+key = "switch.checked_background"
+homes = ["switch.track(CHECKED).fill"]
+
+[[row]]
+key = "switch.unchecked_background"
+homes = ["switch.track(NONE).fill"]
+
+[[row]]
+key = "switch.thumb_background"
+homes = ["switch.thumb(CHECKED).fill"]
+note = "the on thumb; the off thumb is unchecked_thumb_background's row, whose if_null is this key"
+
+[[row]]
+key = "switch.unchecked_thumb_background"
+homes = ["switch.thumb(NONE).fill"]
+if_null = "switch.thumb_background"
+note = "0.7.2 doc: None = thumb_background"
+
+[[row]]
+key = "switch.track_width"
+homes = [
+    "switch.track(NONE).min_size[0]",
+    "switch.track(NONE).max_size[0]",
+]
+
+[[row]]
+key = "switch.track_height"
+homes = [
+    "switch.track(NONE).min_size[1]",
+    "switch.track(NONE).max_size[1]",
+]
+
+[[row]]
+key = "switch.thumb_diameter"
+homes = [
+    "switch.thumb(CHECKED).min_size[0]",
+    "switch.thumb(CHECKED).max_size[0]",
+    "switch.thumb(CHECKED).min_size[1]",
+    "switch.thumb(CHECKED).max_size[1]",
+]
+note = "the on thumb, as thumb_background"
+
+[[row]]
+key = "switch.unchecked_thumb_diameter"
+homes = [
+    "switch.thumb(NONE).min_size[0]",
+    "switch.thumb(NONE).max_size[0]",
+    "switch.thumb(NONE).min_size[1]",
+    "switch.thumb(NONE).max_size[1]",
+]
+if_null = "switch.thumb_diameter"
+note = "0.7.2 doc: None = thumb_diameter"
+
+[[row]]
+key = "switch.track_radius"
+homes = ["switch.track(NONE).corners"]
+note = "Corners::uniform(radius)"
+
+[[row]]
+key = "switch.disabled_opacity"
+homes = ["switch.disabled_opacity"]
+
+[[row]]
+key = "switch.hover_checked_background"
+homes = ["switch.track(HOVER|CHECKED).fill"]
+null_reference = "CHECKED"
+
+[[row]]
+key = "switch.hover_unchecked_background"
+homes = ["switch.track(HOVER).fill"]
+
+[[row]]
+key = "switch.disabled_checked_background"
+homes = ["switch.track(DISABLED|CHECKED).fill"]
+null_reference = "CHECKED"
+note = "0.7.2 doc: None = the enabled colour"
+
+[[row]]
+key = "switch.disabled_unchecked_background"
+homes = ["switch.track(DISABLED).fill"]
+
+[[row]]
+key = "switch.disabled_thumb_color"
+homes = [
+    "switch.thumb(DISABLED).fill",
+    "switch.thumb(DISABLED|CHECKED).fill",
+]
+null_reference = "CHECKED"
+note = "both states; null_reference applies only to the DISABLED|CHECKED home (M0's checkbox.disabled_background has none: E.4)"
+
+[[row]]
+key = "switch.unchecked_track_border_color"
+homes = ["switch.track(NONE).stroke.color"]
+null_means = "none"
+
+[[row]]
+key = "switch.checked_track_border_color"
+homes = ["switch.track(CHECKED).stroke.color"]
+null_means = "none"
+
+[[row]]
+key = "switch.disabled_unchecked_track_border_color"
+homes = ["switch.track(DISABLED).stroke.color"]
+note = "0.7.2 doc: None = the enabled one = the NONE reference"
+
+[[row]]
+key = "switch.disabled_checked_track_border_color"
+homes = ["switch.track(DISABLED|CHECKED).stroke.color"]
+null_reference = "CHECKED"
+
+[[row]]
+key = "switch.track_border_line_width"
+homes = ["switch.track(NONE).stroke.width"]
+null_means = "none"
+
+[[row]]
+key = "switch.thumb_border_color"
+homes = [
+    "switch.thumb(NONE).stroke.color",
+    "switch.thumb(CHECKED).stroke.color",
+]
+null_means = "none"
+
+[[row]]
+key = "switch.thumb_border_line_width"
+homes = ["switch.thumb(NONE).stroke.width"]
+null_means = "none"
+
+# --- dialog ---
+
+[[row]]
+key = "dialog.background_color"
+homes = ["dialog.panel.fill"]
+note = "0.7.2 safety net: unset = defaults.background_color"
+
+[[row]]
+key = "dialog.min_width"
+homes = ["dialog.panel.min_size[0]"]
+note = "spec §5 (Z2): no source; listed differences, if any, are M2's"
+
+[[row]]
+key = "dialog.max_width"
+homes = ["dialog.panel.max_size[0]"]
+note = "Z2, as min_width"
+
+[[row]]
+key = "dialog.min_height"
+homes = ["dialog.panel.min_size[1]"]
+note = "Z2"
+
+[[row]]
+key = "dialog.max_height"
+homes = ["dialog.panel.max_size[1]"]
+note = "Z2"
+
+[[row]]
+key = "dialog.button_gap"
+homes = ["dialog.button_gap"]
+
+[[row]]
+key = "dialog.icon_size"
+homes = ["dialog.icon.size"]
+note = "spec §5 (Z3): IconStated::SIZE clear where unstated; every preset states a value today, so unstated ones are listed differences of M2"
+
+[[row]]
+key = "dialog.button_order"
+homes = ["dialog.button_order"]
+
+[[row]]
+key = "dialog.entrance"
+homes = ["dialog.entrance"]
+
+[[row]]
+key = "dialog.title_font.family"
+homes = ["dialog.title.family"]
+
+[[row]]
+key = "dialog.title_font.size"
+homes = ["dialog.title.size_px"]
+
+[[row]]
+key = "dialog.title_font.defined_size"
+homes = ["dialog.title.defined_size"]
+
+[[row]]
+key = "dialog.title_font.weight"
+homes = ["dialog.title.weight"]
+
+[[row]]
+key = "dialog.title_font.style"
+homes = ["dialog.title.style"]
+
+[[row]]
+key = "dialog.title_font.color"
+homes = ["dialog.title.color"]
+
+[[row]]
+key = "dialog.body_font.family"
+homes = ["dialog.body.family"]
+
+[[row]]
+key = "dialog.body_font.size"
+homes = ["dialog.body.size_px"]
+
+[[row]]
+key = "dialog.body_font.defined_size"
+homes = ["dialog.body.defined_size"]
+
+[[row]]
+key = "dialog.body_font.weight"
+homes = ["dialog.body.weight"]
+
+[[row]]
+key = "dialog.body_font.style"
+homes = ["dialog.body.style"]
+
+[[row]]
+key = "dialog.body_font.color"
+homes = ["dialog.body.color"]
+
+[[row]]
+key = "dialog.border.color"
+homes = ["dialog.panel.stroke.color"]
+
+[[row]]
+key = "dialog.border.corner_radius"
+homes = ["dialog.panel.corners"]
+note = "Corners::uniform(radius); full_lg"
+
+[[row]]
+key = "dialog.border.line_width"
+homes = ["dialog.panel.stroke.width"]
+
+[[row]]
+key = "dialog.border.shadow_enabled"
+homes = ["dialog.panel.shadows"]
+note = "true: SHADOWS unstated; false: SHADOWS stated, None (spec §5 notes)"
+
+[[row]]
+key = "dialog.border.padding.top"
+homes = ["dialog.panel.padding.top"]
+
+[[row]]
+key = "dialog.border.padding.right"
+homes = ["dialog.panel.padding.right"]
+
+[[row]]
+key = "dialog.border.padding.bottom"
+homes = ["dialog.panel.padding.bottom"]
+
+[[row]]
+key = "dialog.border.padding.left"
+homes = ["dialog.panel.padding.left"]
+
+# --- combo_box ---
+
+[[row]]
+key = "combo_box.background_color"
+homes = ["combo_box.field(NONE).fill"]
+
+[[row]]
+key = "combo_box.min_height"
+homes = ["combo_box.field(NONE).min_size[1]"]
+
+[[row]]
+key = "combo_box.min_width"
+homes = ["combo_box.field(NONE).min_size[0]"]
+
+[[row]]
+key = "combo_box.arrow_icon_size"
+homes = ["combo_box.chevron(NONE).size"]
+
+[[row]]
+key = "combo_box.arrow_area_width"
+homes = ["combo_box.arrow_area_width"]
+
+[[row]]
+key = "combo_box.disabled_opacity"
+homes = ["combo_box.disabled_opacity"]
+
+[[row]]
+key = "combo_box.disabled_text_color"
+homes = ["combo_box.label(DISABLED).color"]
+
+[[row]]
+key = "combo_box.hover_background"
+homes = ["combo_box.field(HOVER).fill"]
+
+[[row]]
+key = "combo_box.hover_border_color"
+homes = ["combo_box.field(HOVER).stroke.color"]
+
+[[row]]
+key = "combo_box.disabled_background"
+homes = ["combo_box.field(DISABLED).fill"]
+
+[[row]]
+key = "combo_box.open_background"
+homes = [
+    "combo_box.field(OPEN).fill",
+    "combo_box.field(OPEN|HOVER).fill",
+]
+null_reference = "HOVER"
+note = "0.7.2 doc: open \"whatever the pointer does\" (OPEN wins over HOVER); None = the pointer's state; null_reference applies to the OPEN|HOVER home"
+
+[[row]]
+key = "combo_box.open_border_color"
+homes = [
+    "combo_box.field(OPEN).stroke.color",
+    "combo_box.field(OPEN|HOVER).stroke.color",
+]
+null_reference = "HOVER"
+note = "as open_background; width = border.line_width"
+
+[[row]]
+key = "combo_box.font.family"
+homes = ["combo_box.label(NONE).family"]
+
+[[row]]
+key = "combo_box.font.size"
+homes = ["combo_box.label(NONE).size_px"]
+
+[[row]]
+key = "combo_box.font.defined_size"
+homes = ["combo_box.label(NONE).defined_size"]
+
+[[row]]
+key = "combo_box.font.weight"
+homes = ["combo_box.label(NONE).weight"]
+
+[[row]]
+key = "combo_box.font.style"
+homes = ["combo_box.label(NONE).style"]
+
+[[row]]
+key = "combo_box.font.color"
+homes = ["combo_box.label(NONE).color"]
+
+[[row]]
+key = "combo_box.border.color"
+homes = ["combo_box.field(NONE).stroke.color"]
+
+[[row]]
+key = "combo_box.border.corner_radius"
+homes = ["combo_box.field(NONE).corners"]
+note = "Corners::uniform(radius)"
+
+[[row]]
+key = "combo_box.border.line_width"
+homes = ["combo_box.field(NONE).stroke.width"]
+
+[[row]]
+key = "combo_box.border.shadow_enabled"
+homes = ["combo_box.field(NONE).shadows"]
+note = "true: SHADOWS unstated; false: SHADOWS stated, None (spec §5 notes)"
+
+[[row]]
+key = "combo_box.border.padding.top"
+homes = ["combo_box.field(NONE).padding.top"]
+
+[[row]]
+key = "combo_box.border.padding.right"
+homes = ["combo_box.field(NONE).padding.right"]
+
+[[row]]
+key = "combo_box.border.padding.bottom"
+homes = ["combo_box.field(NONE).padding.bottom"]
+
+[[row]]
+key = "combo_box.border.padding.left"
+homes = ["combo_box.field(NONE).padding.left"]
+
+# --- segmented_control ---
+
+[[row]]
+key = "segmented_control.background_color"
+homes = ["segmented_control.track(NONE).fill"]
+
+[[row]]
+key = "segmented_control.active_background"
+homes = ["segmented_control.segment(SELECTED).fill"]
+
+[[row]]
+key = "segmented_control.active_text_color"
+homes = ["segmented_control.label(SELECTED).color"]
+
+[[row]]
+key = "segmented_control.segment_height"
+homes = ["segmented_control.segment(NONE).min_size[1]"]
+note = "a height, min alone as list.row_height (M0)"
+
+[[row]]
+key = "segmented_control.separator_width"
+homes = ["segmented_control.separator_width"]
+
+[[row]]
+key = "segmented_control.disabled_opacity"
+homes = ["segmented_control.disabled_opacity"]
+
+[[row]]
+key = "segmented_control.hover_background"
+homes = ["segmented_control.segment(HOVER).fill"]
+
+[[row]]
+key = "segmented_control.font.family"
+homes = ["segmented_control.label(NONE).family"]
+
+[[row]]
+key = "segmented_control.font.size"
+homes = ["segmented_control.label(NONE).size_px"]
+
+[[row]]
+key = "segmented_control.font.defined_size"
+homes = ["segmented_control.label(NONE).defined_size"]
+
+[[row]]
+key = "segmented_control.font.weight"
+homes = ["segmented_control.label(NONE).weight"]
+
+[[row]]
+key = "segmented_control.font.style"
+homes = ["segmented_control.label(NONE).style"]
+
+[[row]]
+key = "segmented_control.font.color"
+homes = ["segmented_control.label(NONE).color"]
+
+[[row]]
+key = "segmented_control.border.color"
+homes = ["segmented_control.track(NONE).stroke.color"]
+
+[[row]]
+key = "segmented_control.border.corner_radius"
+homes = ["segmented_control.track(NONE).corners"]
+note = "Corners::uniform(radius)"
+
+[[row]]
+key = "segmented_control.border.line_width"
+homes = ["segmented_control.track(NONE).stroke.width"]
+
+[[row]]
+key = "segmented_control.border.shadow_enabled"
+homes = ["segmented_control.track(NONE).shadows"]
+note = "true: SHADOWS unstated; false: SHADOWS stated, None (spec §5 notes)"
+
+[[row]]
+key = "segmented_control.border.padding.top"
+homes = ["segmented_control.segment(NONE).padding.top"]
+
+[[row]]
+key = "segmented_control.border.padding.right"
+homes = ["segmented_control.segment(NONE).padding.right"]
+
+[[row]]
+key = "segmented_control.border.padding.bottom"
+homes = ["segmented_control.segment(NONE).padding.bottom"]
+
+[[row]]
+key = "segmented_control.border.padding.left"
+homes = ["segmented_control.segment(NONE).padding.left"]
+
+# --- card ---
+
+[[row]]
+key = "card.background_color"
+homes = ["card.container(NONE).fill"]
+
+[[row]]
+key = "card.border.color"
+homes = ["card.container(NONE).stroke.color"]
+unstated_if_unset = true
+
+[[row]]
+key = "card.border.corner_radius"
+homes = ["card.container(NONE).corners"]
+unstated_if_unset = true
+note = "Corners::uniform(radius)"
+
+[[row]]
+key = "card.border.line_width"
+homes = ["card.container(NONE).stroke.width"]
+unstated_if_unset = true
+
+[[row]]
+key = "card.border.shadow_enabled"
+homes = ["card.container(NONE).shadows"]
+unstated_if_unset = true
+note = "true: the SHADOWS bit unstated; false: SHADOWS stated with shadows = None (spec §5, notes to the table, border.shadow_enabled)"
+
+[[row]]
+key = "card.border.padding.top"
+homes = ["card.container(NONE).padding.top"]
+
+[[row]]
+key = "card.border.padding.right"
+homes = ["card.container(NONE).padding.right"]
+
+[[row]]
+key = "card.border.padding.bottom"
+homes = ["card.container(NONE).padding.bottom"]
+
+[[row]]
+key = "card.border.padding.left"
+homes = ["card.container(NONE).padding.left"]
+
+# --- expander ---
+
+[[row]]
+key = "expander.header_height"
+homes = ["expander.header(NONE).min_size[1]"]
+note = "a height, min alone as list.row_height (M0)"
+
+[[row]]
+key = "expander.arrow_icon_size"
+homes = ["expander.arrow(NONE).size"]
+
+[[row]]
+key = "expander.hover_background"
+homes = ["expander.header(HOVER).fill"]
+
+[[row]]
+key = "expander.arrow_color"
+homes = ["expander.arrow(NONE).color"]
+
+[[row]]
+key = "expander.arrow_side"
+homes = ["expander.arrow_side"]
+
+[[row]]
+key = "expander.arrow_gap"
+homes = ["expander.arrow_gap"]
+
+[[row]]
+key = "expander.content_indent"
+homes = ["expander.content_indent"]
+
+[[row]]
+key = "expander.frame_enabled"
+homes = ["expander.frame_enabled"]
+
+[[row]]
+key = "expander.font.family"
+homes = ["expander.header_label(NONE).family"]
+
+[[row]]
+key = "expander.font.size"
+homes = ["expander.header_label(NONE).size_px"]
+
+[[row]]
+key = "expander.font.defined_size"
+homes = ["expander.header_label(NONE).defined_size"]
+
+[[row]]
+key = "expander.font.weight"
+homes = ["expander.header_label(NONE).weight"]
+
+[[row]]
+key = "expander.font.style"
+homes = ["expander.header_label(NONE).style"]
+
+[[row]]
+key = "expander.font.color"
+homes = ["expander.header_label(NONE).color"]
+
+[[row]]
+key = "expander.border.color"
+homes = ["expander.container(NONE).stroke.color"]
+note = "drawn where frame_enabled (0.7.2 doc)"
+
+[[row]]
+key = "expander.border.corner_radius"
+homes = ["expander.container(NONE).corners"]
+note = "Corners::uniform(radius)"
+
+[[row]]
+key = "expander.border.line_width"
+homes = ["expander.container(NONE).stroke.width"]
+
+[[row]]
+key = "expander.border.shadow_enabled"
+homes = ["expander.container(NONE).shadows"]
+note = "true: SHADOWS unstated; false: SHADOWS stated, None (spec §5 notes)"
+
+[[row]]
+key = "expander.border.padding.top"
+homes = ["expander.header(NONE).padding.top"]
+
+[[row]]
+key = "expander.border.padding.right"
+homes = ["expander.header(NONE).padding.right"]
+
+[[row]]
+key = "expander.border.padding.bottom"
+homes = ["expander.header(NONE).padding.bottom"]
+
+[[row]]
+key = "expander.border.padding.left"
+homes = ["expander.header(NONE).padding.left"]

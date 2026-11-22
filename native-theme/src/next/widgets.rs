@@ -1,7 +1,7 @@
 //! The widgets of a resolved theme and the [`ResolvedTheme`] that holds them
-//! (spec §5): so far the first slice's six, `button`, `checkbox`, `radio`,
-//! `scrollbar`, `list` and `tooltip`, and the widgets of their own modules
-//! below.
+//! (spec §5): the first slice's six, `button`, `checkbox`, `radio`,
+//! `scrollbar`, `list` and `tooltip`, here, and the other 21 in the modules
+//! below (`text_area` is an `InputWidget`).
 //!
 //! A ruled widget holds one rule set per part and answers a query with the
 //! part's concrete style, through a getter per part and a combined
@@ -44,31 +44,45 @@ type TextRules<M = ()> = RuleSet<TextStyle, TextProp, M>;
 /// A rule set of icon styles.
 type IconRules<M = ()> = RuleSet<IconStyle, IconProp, M>;
 
+mod card;
+mod combo_box;
+mod dialog;
+mod expander;
 mod input;
 mod link;
 mod menu;
 mod menu_bar;
+mod popover;
 mod progress_bar;
+mod segmented_control;
 mod separator;
 mod sidebar;
 mod slider;
 mod spinner;
 mod splitter;
 mod status_bar;
+mod switch;
 mod tab;
 mod toolbar;
 
+pub use card::{CardParts, CardWidget};
+pub use combo_box::{ComboBoxParts, ComboBoxWidget};
+pub use dialog::DialogWidget;
+pub use expander::{ExpanderParts, ExpanderWidget};
 pub use input::{InputParts, InputWidget};
 pub use link::{LinkParts, LinkWidget};
 pub use menu::{MenuParts, MenuWidget};
 pub use menu_bar::{MenuBarParts, MenuBarWidget};
+pub use popover::PopoverWidget;
 pub use progress_bar::{ProgressBarParts, ProgressBarWidget};
+pub use segmented_control::{SegmentedControlParts, SegmentedControlWidget};
 pub use separator::SeparatorWidget;
 pub use sidebar::{SidebarParts, SidebarWidget};
 pub use slider::{SliderParts, SliderWidget};
 pub use spinner::SpinnerWidget;
 pub use splitter::{SplitterParts, SplitterWidget};
 pub use status_bar::StatusBarWidget;
+pub use switch::{SwitchParts, SwitchWidget};
 pub use tab::{TabParts, TabWidget};
 pub use toolbar::{ToolbarParts, ToolbarWidget};
 
@@ -611,8 +625,8 @@ impl TooltipWidget {
 /// tokens and the widgets.
 ///
 /// Inside the crate a builder constructs it by a struct literal; outside it
-/// cannot be constructed (`#[non_exhaustive]`). The widgets it does not hold
-/// yet follow (plan, M1).
+/// cannot be constructed (`#[non_exhaustive]`). It holds spec §5's 27
+/// widgets.
 #[derive(Clone, Debug, PartialEq)]
 #[non_exhaustive]
 pub struct ResolvedTheme {
@@ -641,48 +655,62 @@ pub struct ResolvedTheme {
     pub caret: CaretSpec,
     /// The elevation levels, `0..N`, each its shadow layers.
     pub elevations: Arc<[Arc<[ShadowLayer]>]>,
+    /// The window chrome.
+    pub window: WindowChrome,
     /// The push button.
     pub button: ButtonWidget,
+    /// The single-line text field.
+    pub input: InputWidget,
+    /// The multi-line text field.
+    pub text_area: InputWidget,
     /// The check box.
     pub checkbox: CheckboxWidget,
     /// The radio button.
     pub radio: RadioWidget,
+    /// The on/off switch.
+    pub switch: SwitchWidget,
+    /// The slider.
+    pub slider: SliderWidget,
+    /// The progress bar.
+    pub progress_bar: ProgressBarWidget,
     /// The scroll bar.
     pub scrollbar: ScrollbarWidget,
-    /// The list or table view.
-    pub list: ListWidget,
     /// The tab bar.
     pub tab: TabWidget,
     /// The popup menu.
     pub menu: MenuWidget,
     /// The menu bar.
     pub menu_bar: MenuBarWidget,
+    /// The list or table view.
+    pub list: ListWidget,
     /// The sidebar.
     pub sidebar: SidebarWidget,
     /// The toolbar.
     pub toolbar: ToolbarWidget,
     /// The status bar.
     pub status_bar: StatusBarWidget,
+    /// The combo box.
+    pub combo_box: ComboBoxWidget,
+    /// The segmented control.
+    pub segmented_control: SegmentedControlWidget,
+    /// The expander.
+    pub expander: ExpanderWidget,
+    /// The card.
+    pub card: CardWidget,
+    /// The popover.
+    pub popover: PopoverWidget,
+    /// The dialog.
+    pub dialog: DialogWidget,
     /// The tooltip.
     pub tooltip: TooltipWidget,
-    /// The window chrome.
-    pub window: WindowChrome,
-    /// The single-line text field.
-    pub input: InputWidget,
-    /// The multi-line text field.
-    pub text_area: InputWidget,
-    /// The hyperlink.
-    pub link: LinkWidget,
-    /// The slider.
-    pub slider: SliderWidget,
-    /// The progress bar.
-    pub progress_bar: ProgressBarWidget,
+    /// The busy indicator.
+    pub spinner: SpinnerWidget,
     /// The splitter.
     pub splitter: SplitterWidget,
     /// The separator line.
     pub separator: SeparatorWidget,
-    /// The busy indicator.
-    pub spinner: SpinnerWidget,
+    /// The hyperlink.
+    pub link: LinkWidget,
     /// The application's own colour tokens (empty on the bundled presets).
     pub custom_colors: BTreeMap<String, Color>,
     /// The application's own metric tokens (empty on the bundled presets).
@@ -762,6 +790,11 @@ impl ResolvedTheme {
         all.extend(self.menu_bar.dead_rules());
         all.extend(self.sidebar.dead_rules());
         all.extend(self.toolbar.dead_rules());
+        all.extend(self.switch.dead_rules());
+        all.extend(self.combo_box.dead_rules());
+        all.extend(self.segmented_control.dead_rules());
+        all.extend(self.card.dead_rules());
+        all.extend(self.expander.dead_rules());
         all
     }
 

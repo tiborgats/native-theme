@@ -248,6 +248,33 @@ fn query_menus_tabs_and_bars(theme: &ResolvedTheme, state: WidgetState) {
     black_box(theme.toolbar.parts(q));
 }
 
+/// Every getter and `parts` of the ruled parts of the switch, the combo box,
+/// the segmented control, the card and the expander for `state`, each
+/// result kept from the optimiser.
+fn query_controls(theme: &ResolvedTheme, state: WidgetState) {
+    let q = StyleQuery::<()>::new(state);
+    black_box(theme.switch.track(q));
+    black_box(theme.switch.thumb(q));
+    black_box(theme.switch.label(q));
+    black_box(theme.switch.parts(q));
+    black_box(theme.combo_box.field(q));
+    black_box(theme.combo_box.label(q));
+    black_box(theme.combo_box.chevron(q));
+    black_box(theme.combo_box.parts(q));
+    black_box(theme.segmented_control.track(q));
+    black_box(theme.segmented_control.segment(q));
+    black_box(theme.segmented_control.label(q));
+    black_box(theme.segmented_control.separator(q));
+    black_box(theme.segmented_control.parts(q));
+    black_box(theme.card.container(q));
+    black_box(theme.card.parts(q));
+    black_box(theme.expander.container(q));
+    black_box(theme.expander.header(q));
+    black_box(theme.expander.header_label(q));
+    black_box(theme.expander.arrow(q));
+    black_box(theme.expander.parts(q));
+}
+
 #[test]
 fn queries_and_clones_allocate_nothing_and_the_theme_fits_its_budget() {
     let _profiler = dhat::Profiler::builder().testing().build();
@@ -269,6 +296,7 @@ fn queries_and_clones_allocate_nothing_and_the_theme_fits_its_budget() {
             let before = dhat::HeapStats::get();
             query_every_part(black_box(&theme), state);
             query_menus_tabs_and_bars(black_box(&theme), state);
+            query_controls(black_box(&theme), state);
             let after = dhat::HeapStats::get();
             dhat::assert_eq!(after.total_blocks, before.total_blocks);
             dhat::assert_eq!(after.curr_bytes, before.curr_bytes);

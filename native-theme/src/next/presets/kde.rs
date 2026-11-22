@@ -158,6 +158,10 @@ use crate::next::widgets::{
     TooltipWidget, WidgetOrigin,
 };
 use crate::next::widgets::{
+    CardWidget, ComboBoxWidget, DialogWidget, ExpanderWidget, PopoverWidget,
+    SegmentedControlWidget, SwitchWidget,
+};
+use crate::next::widgets::{
     InputWidget, LinkWidget, ProgressBarWidget, SeparatorWidget, SliderWidget, SpinnerWidget,
     SplitterWidget,
 };
@@ -1872,6 +1876,14 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
         splitter: splitter(c, &colors),
         separator: separator(c, &layout),
         spinner: spinner(&colors),
+        // Stated by the plan's M2, KDE unit ("the rest of `kde-breeze`"): nothing yet.
+        popover: PopoverWidget::unstated(WidgetOrigin::Native),
+        switch: SwitchWidget::unstated(WidgetOrigin::Native),
+        dialog: DialogWidget::unstated(WidgetOrigin::Native),
+        combo_box: ComboBoxWidget::unstated(WidgetOrigin::Native),
+        segmented_control: SegmentedControlWidget::unstated(WidgetOrigin::Native),
+        card: CardWidget::unstated(WidgetOrigin::Native),
+        expander: ExpanderWidget::unstated(WidgetOrigin::Native),
         custom_colors: BTreeMap::new(),
         custom_metrics: BTreeMap::new(),
         colors,
