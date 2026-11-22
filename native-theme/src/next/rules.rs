@@ -207,7 +207,9 @@ struct RuleEntry<M> {
 /// stays; where that clears `FOCUSED`, it clears `FOCUS_VISIBLE` too),
 /// clones the base, and applies the properties of every matching rule in
 /// order, the last match winning, setting the `stated` bit of each property
-/// applied. It allocates nothing and never panics.
+/// applied. A rule whose `required_states` is not empty also sets the
+/// property's `from_state` bit; one without required states clears it. It
+/// allocates nothing and never panics.
 #[derive(Clone, Debug, PartialEq)]
 pub struct RuleSet<T, P, M = ()> {
     base: T,
@@ -276,8 +278,8 @@ impl<T, P, M> RuleSet<T, P, M> {
     }
 
     /// Steps 0 to 4 of the evaluation contract, applying each property with
-    /// `apply`.
-    fn eval_with<V>(&self, query: &StyleQuery<V>, apply: fn(&mut T, &P)) -> T
+    /// `apply`, told whether the rule as written requires a state.
+    fn eval_with<V>(&self, query: &StyleQuery<V>, apply: fn(&mut T, &P, bool)) -> T
     where
         T: Clone,
         M: VariantMatcher<V>,
@@ -295,8 +297,9 @@ impl<T, P, M> RuleSet<T, P, M> {
             let Some(props) = self.props.get(start..start.saturating_add(len)) else {
                 continue;
             };
+            let from_state = !entry.selector.required_states.is_empty();
             for prop in props {
-                apply(&mut out, prop);
+                apply(&mut out, prop, from_state);
             }
         }
         out
@@ -337,7 +340,7 @@ impl<M> RuleSet<IconStyle, IconProp, M> {
 }
 
 /// A style onto which a property of kind `P` applies, setting its `stated`
-/// bit.
+/// bit; as no state rule writes it, its `from_state` bit is cleared.
 pub(crate) trait Patched<P> {
     /// Applies `prop`.
     fn apply(&mut self, prop: &P);
@@ -345,19 +348,19 @@ pub(crate) trait Patched<P> {
 
 impl Patched<PartProp> for PartStyle {
     fn apply(&mut self, prop: &PartProp) {
-        apply_part(self, prop);
+        apply_part(self, prop, false);
     }
 }
 
 impl Patched<TextProp> for TextStyle {
     fn apply(&mut self, prop: &TextProp) {
-        apply_text(self, prop);
+        apply_text(self, prop, false);
     }
 }
 
 impl Patched<IconProp> for IconStyle {
     fn apply(&mut self, prop: &IconProp) {
-        apply_icon(self, prop);
+        apply_icon(self, prop, false);
     }
 }
 
@@ -562,32 +565,33 @@ fn normalize(state: WidgetState, exclusive: &[&[WidgetState]]) -> WidgetState {
     }
 }
 
-/// The sides of `edges` flagged in `mask` written into `target`, and their
-/// bits (`[top, right, bottom, left]`) set in `stated`.
+/// The sides of `edges` flagged in `mask` written into `target`; returns
+/// their bits (`[top, right, bottom, left]`).
 fn apply_sides(
     target: &mut Edges,
-    stated: &mut PartStated,
     edges: &Edges,
     mask: EdgeFlags,
     bits: [PartStated; 4],
-) {
+) -> PartStated {
     let [top, right, bottom, left] = bits;
+    let mut written = PartStated::default();
     if mask.contains(EdgeFlags::TOP) {
         target.top = edges.top;
-        *stated |= top;
+        written |= top;
     }
     if mask.contains(EdgeFlags::RIGHT) {
         target.right = edges.right;
-        *stated |= right;
+        written |= right;
     }
     if mask.contains(EdgeFlags::BOTTOM) {
         target.bottom = edges.bottom;
-        *stated |= bottom;
+        written |= bottom;
     }
     if mask.contains(EdgeFlags::LEFT) {
         target.left = edges.left;
-        *stated |= left;
+        written |= left;
     }
+    written
 }
 
 /// Each `Some` dimension of `size` written into `target`.
@@ -616,164 +620,167 @@ const MARGIN_BITS: [PartStated; 4] = [
     PartStated::MARGIN_LEFT,
 ];
 
-fn apply_part(style: &mut PartStyle, prop: &PartProp) {
-    match prop {
+/// `prop` written into `style`, its `stated` bits set, and its `from_state`
+/// bits set where the rule requires a state (`from_state`), cleared
+/// otherwise.
+fn apply_part(style: &mut PartStyle, prop: &PartProp, from_state: bool) {
+    let bits = match prop {
         PartProp::Fill(v) => {
             style.fill = v.clone();
-            style.stated |= PartStated::FILL;
+            PartStated::FILL
         }
         PartProp::Stroke(v) => {
             style.stroke = v.clone();
-            style.stated |= PartStated::STROKE;
+            PartStated::STROKE
         }
         PartProp::Corners(v) => {
             style.corners = *v;
-            style.stated |= PartStated::CORNERS;
+            PartStated::CORNERS
         }
         PartProp::Shadows(v) => {
             style.shadows = v.clone();
-            style.stated |= PartStated::SHADOWS;
+            PartStated::SHADOWS
         }
         PartProp::Opacity(v) => {
             style.opacity = *v;
-            style.stated |= PartStated::OPACITY;
+            PartStated::OPACITY
         }
         PartProp::Transform(v) => {
             style.transform = *v;
-            style.stated |= PartStated::TRANSFORM;
+            PartStated::TRANSFORM
         }
-        PartProp::Padding(v) => {
-            apply_sides(
-                &mut style.padding,
-                &mut style.stated,
-                v,
-                EdgeFlags::ALL,
-                PADDING_BITS,
-            );
+        PartProp::Padding(v) => apply_sides(&mut style.padding, v, EdgeFlags::ALL, PADDING_BITS),
+        PartProp::PaddingSides(v, mask) => apply_sides(&mut style.padding, v, *mask, PADDING_BITS),
+        PartProp::Margin(v) => apply_sides(&mut style.margin, v, EdgeFlags::ALL, MARGIN_BITS),
+        PartProp::MarginSides(v, mask) => apply_sides(&mut style.margin, v, *mask, MARGIN_BITS),
+        PartProp::MinSize(v) => {
+            merge_size(&mut style.min_size, v);
+            PartStated::default()
         }
-        PartProp::PaddingSides(v, mask) => {
-            apply_sides(
-                &mut style.padding,
-                &mut style.stated,
-                v,
-                *mask,
-                PADDING_BITS,
-            );
+        PartProp::MaxSize(v) => {
+            merge_size(&mut style.max_size, v);
+            PartStated::default()
         }
-        PartProp::Margin(v) => {
-            apply_sides(
-                &mut style.margin,
-                &mut style.stated,
-                v,
-                EdgeFlags::ALL,
-                MARGIN_BITS,
-            );
-        }
-        PartProp::MarginSides(v, mask) => {
-            apply_sides(&mut style.margin, &mut style.stated, v, *mask, MARGIN_BITS);
-        }
-        PartProp::MinSize(v) => merge_size(&mut style.min_size, v),
-        PartProp::MaxSize(v) => merge_size(&mut style.max_size, v),
         PartProp::Focus(v) => {
             style.focus = v.clone();
-            style.stated |= PartStated::FOCUS;
+            PartStated::FOCUS
         }
         PartProp::Ripple(v) => {
             style.ripple = v.clone();
-            style.stated |= PartStated::RIPPLE;
+            PartStated::RIPPLE
         }
         PartProp::Transition(v) => {
             style.transition = *v;
-            style.stated |= PartStated::TRANSITION;
+            PartStated::TRANSITION
         }
         PartProp::Cursor(v) => {
             style.cursor = *v;
-            style.stated |= PartStated::CURSOR;
+            PartStated::CURSOR
         }
-    }
+    };
+    style.stated |= bits;
+    style.from_state = if from_state {
+        style.from_state | bits
+    } else {
+        style.from_state.difference(bits)
+    };
 }
 
-fn apply_text(style: &mut TextStyle, prop: &TextProp) {
-    match prop {
+/// As [`apply_part`], for a text property.
+fn apply_text(style: &mut TextStyle, prop: &TextProp, from_state: bool) {
+    let bits = match prop {
         TextProp::Family(v) => {
             style.family = v.clone();
-            style.stated |= TextStated::FAMILY;
+            TextStated::FAMILY
         }
         TextProp::Color(v) => {
             style.color = *v;
-            style.stated |= TextStated::COLOR;
+            TextStated::COLOR
         }
         TextProp::SizePx(v) => {
             style.size_px = *v;
             style.defined_size = None;
-            style.stated |= TextStated::SIZE_PX;
+            TextStated::SIZE_PX
         }
         TextProp::Weight(v) => {
             style.weight = *v;
-            style.stated |= TextStated::WEIGHT;
+            TextStated::WEIGHT
         }
         TextProp::Style(v) => {
             style.style = *v;
-            style.stated |= TextStated::STYLE;
+            TextStated::STYLE
         }
         TextProp::Width(v) => {
             style.width = *v;
-            style.stated |= TextStated::WIDTH;
+            TextStated::WIDTH
         }
         TextProp::LineHeight(v) => {
             style.line_height = *v;
-            style.stated |= TextStated::LINE_HEIGHT;
+            TextStated::LINE_HEIGHT
         }
         TextProp::LetterSpacing(v) => {
             style.letter_spacing = *v;
-            style.stated |= TextStated::LETTER_SPACING;
+            TextStated::LETTER_SPACING
         }
         TextProp::OpticalSize(v) => {
             style.optical_size = *v;
-            style.stated |= TextStated::OPTICAL_SIZE;
+            TextStated::OPTICAL_SIZE
         }
         TextProp::Decoration(v) => {
             style.decoration = *v;
-            style.stated |= TextStated::DECORATION;
+            TextStated::DECORATION
         }
         TextProp::BlendMode(v) => {
             style.blend_mode = *v;
-            style.stated |= TextStated::BLEND_MODE;
+            TextStated::BLEND_MODE
         }
-    }
+    };
+    style.stated |= bits;
+    style.from_state = if from_state {
+        style.from_state | bits
+    } else {
+        style.from_state.difference(bits)
+    };
 }
 
-fn apply_icon(style: &mut IconStyle, prop: &IconProp) {
-    match prop {
+/// As [`apply_part`], for an icon property.
+fn apply_icon(style: &mut IconStyle, prop: &IconProp, from_state: bool) {
+    let bits = match prop {
         IconProp::Size(v) => {
             style.size = *v;
-            style.stated |= IconStated::SIZE;
+            IconStated::SIZE
         }
         IconProp::Color(v) => {
             style.color = *v;
-            style.stated |= IconStated::COLOR;
+            IconStated::COLOR
         }
         IconProp::Opacity(v) => {
             style.opacity = *v;
-            style.stated |= IconStated::OPACITY;
+            IconStated::OPACITY
         }
         IconProp::Weight(v) => {
             style.weight = *v;
-            style.stated |= IconStated::WEIGHT;
+            IconStated::WEIGHT
         }
         IconProp::RenderingMode(v) => {
             style.rendering_mode = *v;
-            style.stated |= IconStated::RENDERING_MODE;
+            IconStated::RENDERING_MODE
         }
         IconProp::StrokeWidth(v) => {
             style.stroke_width = *v;
-            style.stated |= IconStated::STROKE_WIDTH;
+            IconStated::STROKE_WIDTH
         }
         IconProp::BlendMode(v) => {
             style.blend_mode = *v;
-            style.stated |= IconStated::BLEND_MODE;
+            IconStated::BLEND_MODE
         }
-    }
+    };
+    style.stated |= bits;
+    style.from_state = if from_state {
+        style.from_state | bits
+    } else {
+        style.from_state.difference(bits)
+    };
 }
 
 #[cfg(test)]

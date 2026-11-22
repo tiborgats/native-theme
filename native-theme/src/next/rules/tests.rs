@@ -1485,3 +1485,121 @@ fn build_with_no_rules_is_the_base() {
     assert!(rules.exclusive.is_empty());
     assert!(every_state().all(|state| rules.eval(&StyleQuery::<()>::new(state)) == base()));
 }
+
+// ---------------------------------------------------------------------------
+// `from_state`.
+// ---------------------------------------------------------------------------
+
+#[test]
+fn the_base_has_no_from_state_bits() {
+    let body = built_body();
+    assert!(body.base.from_state.is_empty());
+    let rest = body.eval(&ButtonQuery::new(WidgetState::NONE));
+    assert!(!rest.stated.is_empty());
+    assert!(rest.from_state.is_empty());
+}
+
+#[test]
+fn a_state_rule_sets_the_bits_of_exactly_its_properties() {
+    let body = built_body();
+    let hover = body.eval(&ButtonQuery::new(WidgetState::HOVER));
+    assert_eq!(hover.from_state, PartStated::FILL | PartStated::STROKE);
+    let pressed = body.eval(&ButtonQuery::new(WidgetState::PRESSED));
+    assert_eq!(pressed.from_state, PartStated::FILL | PartStated::OPACITY);
+    let padded: RuleSet<PartStyle, PartProp> = RuleBuilder::new(base())
+        .rule(
+            on(WidgetState::HOVER),
+            [
+                PartProp::PaddingSides(Edges::all(2.0), EdgeFlags::TOP | EdgeFlags::LEFT),
+                PartProp::MinSize([Some(10.0), None]),
+            ],
+        )
+        .build();
+    assert_eq!(
+        padded
+            .eval(&StyleQuery::<()>::new(WidgetState::HOVER))
+            .from_state,
+        PartStated::PADDING_TOP | PartStated::PADDING_LEFT
+    );
+}
+
+#[test]
+fn a_later_stateless_rule_clears_the_bit_of_what_it_overwrites() {
+    let rules: RuleSet<PartStyle, PartProp> = RuleBuilder::new(base())
+        .rule(on(WidgetState::HOVER), [fill(RED), PartProp::Opacity(0.5)])
+        .rule(any(), [fill(GREEN)])
+        .build();
+    let out = rules.eval(&StyleQuery::<()>::new(WidgetState::HOVER));
+    assert_eq!(fill_of(&out), Some(GREEN));
+    assert_eq!(out.from_state, PartStated::OPACITY);
+    assert_eq!(out.stated, PartStated::FILL | PartStated::OPACITY);
+}
+
+#[test]
+fn a_focused_rule_matched_through_focus_visible_sets_the_bit() {
+    let rules = one_rule(on(WidgetState::FOCUSED));
+    let out = rules.eval(&StyleQuery::<()>::new(WidgetState::FOCUS_VISIBLE));
+    assert_eq!(fill_of(&out), Some(RED));
+    assert_eq!(out.from_state, PartStated::FILL);
+}
+
+#[test]
+fn a_rule_on_axes_alone_sets_no_bit() {
+    let body = built_body();
+    let primary = body.eval(&ButtonQuery::primary());
+    assert_eq!(primary.fill, Paint::Solid(RED));
+    assert!(primary.from_state.is_empty());
+    let forbidding = one_rule(RuleSelector {
+        forbidden_states: WidgetState::DISABLED,
+        size: Some(ControlSize::Small),
+        ..any()
+    });
+    let small =
+        forbidding.eval(&StyleQuery::<()>::new(WidgetState::HOVER).size(ControlSize::Small));
+    assert_eq!(fill_of(&small), Some(RED));
+    assert!(small.from_state.is_empty());
+}
+
+#[test]
+fn text_from_state_follows_the_rules() {
+    let rules: RuleSet<TextStyle, TextProp> = RuleBuilder::new(TextStyle::default())
+        .base([TextProp::Color(BLUE), TextProp::Weight(400)])
+        .rule(
+            on(WidgetState::HOVER),
+            [TextProp::Color(RED), TextProp::Weight(700)],
+        )
+        .rule(any(), [TextProp::Weight(600)])
+        .build();
+    assert!(
+        rules
+            .eval(&StyleQuery::<()>::default())
+            .from_state
+            .is_empty()
+    );
+    let hover = rules.eval(&StyleQuery::<()>::new(WidgetState::HOVER));
+    assert_eq!(hover.color, RED);
+    assert_eq!(hover.weight, 600);
+    assert_eq!(hover.from_state, TextStated::COLOR);
+}
+
+#[test]
+fn icon_from_state_follows_the_rules() {
+    let rules: RuleSet<IconStyle, IconProp> = RuleBuilder::new(IconStyle::default())
+        .base([IconProp::Color(BLUE), IconProp::Size(16.0)])
+        .rule(
+            on(WidgetState::DISABLED),
+            [IconProp::Color(RED), IconProp::Opacity(0.5)],
+        )
+        .rule(any(), [IconProp::Opacity(0.25)])
+        .build();
+    assert!(
+        rules
+            .eval(&StyleQuery::<()>::default())
+            .from_state
+            .is_empty()
+    );
+    let disabled = rules.eval(&StyleQuery::<()>::new(WidgetState::DISABLED));
+    assert_eq!(disabled.color, RED);
+    assert_eq!(disabled.opacity, 0.25);
+    assert_eq!(disabled.from_state, IconStated::COLOR);
+}

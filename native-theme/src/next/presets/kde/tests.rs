@@ -615,14 +615,20 @@ fn the_handle_of_the_focused_view_and_of_a_view_without_the_focus() {
 fn the_handle_at_rest_is_the_plain_handle_under_the_system_s_colours() {
     let theme = with_system(None);
     let [light, _] = both_schemes();
-    let plain = light.scrollbar.thumb(WidgetState::UNFOCUSED_VIEW);
+    // The drawn handle, not which rule wrote it: the view without the focus
+    // states its handle by a rule on its state.
+    let drawn = |thumb: PartStyle| PartStyle {
+        from_state: PartStated::default(),
+        ..thumb
+    };
+    let plain = drawn(light.scrollbar.thumb(WidgetState::UNFOCUSED_VIEW));
     for state in [
         WidgetState::NONE,
         WidgetState::UNFOCUSED_VIEW,
         WidgetState::HOVER_WITHIN,
         BAR_HOVER_UNFOCUSED,
     ] {
-        assert_eq!(theme.scrollbar.thumb(state), plain, "{state:?}");
+        assert_eq!(drawn(theme.scrollbar.thumb(state)), plain, "{state:?}");
     }
     assert!(plain.stated.contains(PartStated::FILL));
     let dead: Vec<_> = theme

@@ -109,6 +109,17 @@ impl RippleSpec {
 /// A property whose bit in [`stated`](Self::stated) is clear is not stated by
 /// the theme: it holds its neutral default and a connector keeps the
 /// toolkit's own value.
+///
+/// A property whose bit in [`from_state`](Self::from_state) is set got its
+/// value from a rule whose `required_states` is not empty, i.e. a value the
+/// theme states *for this state*. A query returns the resting value for a
+/// state without a rule, and a value stated equal to the resting one looks
+/// the same, so the bit says which it is. Where it is clear for a state the
+/// toolkit has its own treatment of (a pressed fill, a hover outline), the
+/// theme states nothing for that state and a connector keeps the toolkit's
+/// own treatment, exactly as for an unstated property; where it is set, the
+/// theme's value is drawn. A rule that matches by variant, size, surface,
+/// position or orientation alone sets no bit.
 #[derive(Clone, Debug, PartialEq)]
 #[non_exhaustive]
 pub struct PartStyle {
@@ -142,7 +153,10 @@ pub struct PartStyle {
     pub cursor: Cursor, // 1 B
     /// Which properties the theme states.
     pub stated: PartStated, // 4 B  which properties the theme states
-} // Total <= 256 B (240 B as laid out by rustc 2024); zero heap allocation on Clone.
+    /// Which properties got their value from a rule that requires a state
+    /// flag of the query.
+    pub from_state: PartStated, // 4 B
+} // Total <= 256 B (240 B as laid out by rustc 1.100, `from_state` included); zero heap allocation on Clone.
 
 impl Default for PartStyle {
     fn default() -> Self {
@@ -162,6 +176,7 @@ impl Default for PartStyle {
             transition: None,
             cursor: Cursor::Default,
             stated: PartStated::default(),
+            from_state: PartStated::default(),
         }
     }
 }
@@ -223,7 +238,8 @@ bit_set!(PartStated, u32);
 /// The style of a part's text.
 ///
 /// A property whose bit in [`stated`](Self::stated) is clear is not stated by
-/// the theme, as for [`PartStyle`].
+/// the theme, and one whose bit in [`from_state`](Self::from_state) is set
+/// got its value from a rule that requires a state, as for [`PartStyle`].
 #[derive(Clone, Debug, PartialEq)]
 #[non_exhaustive]
 pub struct TextStyle {
@@ -264,6 +280,9 @@ pub struct TextStyle {
     pub blend_mode: BlendMode,
     /// Which properties the theme states.
     pub stated: TextStated,
+    /// Which properties got their value from a rule that requires a state
+    /// flag of the query.
+    pub from_state: TextStated,
 }
 
 impl Default for TextStyle {
@@ -282,6 +301,7 @@ impl Default for TextStyle {
             decoration: TextDecoration::default(),
             blend_mode: BlendMode::Normal,
             stated: TextStated::default(),
+            from_state: TextStated::default(),
         }
     }
 }
@@ -425,7 +445,8 @@ impl Default for FontWidth {
 /// The style of a part's icon.
 ///
 /// A property whose bit in [`stated`](Self::stated) is clear is not stated by
-/// the theme, as for [`PartStyle`].
+/// the theme, and one whose bit in [`from_state`](Self::from_state) is set
+/// got its value from a rule that requires a state, as for [`PartStyle`].
 #[derive(Clone, Debug, PartialEq)]
 #[non_exhaustive]
 pub struct IconStyle {
@@ -445,6 +466,9 @@ pub struct IconStyle {
     pub blend_mode: BlendMode,
     /// Which properties the theme states.
     pub stated: IconStated, // e.g. `SIZE` clear where no source states the glyph's size (issue #4 `Z3`)
+    /// Which properties got their value from a rule that requires a state
+    /// flag of the query.
+    pub from_state: IconStated,
 }
 
 impl Default for IconStyle {
@@ -458,6 +482,7 @@ impl Default for IconStyle {
             stroke_width: None,
             blend_mode: BlendMode::Normal,
             stated: IconStated::default(),
+            from_state: IconStated::default(),
         }
     }
 }
@@ -563,6 +588,7 @@ mod tests {
         assert_eq!(part.opacity, 1.0);
         assert_eq!(part.transform, Transform::IDENTITY);
         assert!(part.stated.is_empty());
+        assert!(part.from_state.is_empty());
         let text = TextStyle::default();
         assert_eq!(text.weight, 400);
         assert_eq!(text.width, FontWidth::NORMAL);
