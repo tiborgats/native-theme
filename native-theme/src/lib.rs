@@ -279,6 +279,11 @@ pub mod kde;
 pub(crate) mod kde_metrics;
 /// Theme data model types, public through [`theme`].
 mod model;
+/// The 0.8.0 theme model, under construction beside this one.
+///
+/// Not a stable API: it changes with every step of the 0.8.0 work, and none
+/// of it is re-exported from the crate root.
+pub mod next;
 pub mod pipeline;
 pub mod presets;
 /// Internal `ThemeReader` trait (see module docs for Option A rationale).
