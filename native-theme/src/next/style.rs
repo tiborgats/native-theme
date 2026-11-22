@@ -233,6 +233,19 @@ pub struct TextStyle {
     pub color: Color,
     /// The font size, in logical pixels.
     pub size_px: f32,
+    /// The size in its source's unit, before `font_dpi`, whole-pixel
+    /// rounding and `text_scale` (0.7.2's `defined_size`); `None` where the
+    /// source gives none.
+    ///
+    /// It is what a display of the size shows and what an application
+    /// re-derives the size from at its own DPI: `size_px` cannot give it back
+    /// after rounding, nor tell a pixel size from a point size. It belongs to
+    /// `size_px`: it has no [`TextStated`] bit and no [`TextProp`] of its own,
+    /// and [`TextProp::SizePx`] clears it.
+    ///
+    /// [`TextProp`]: crate::next::TextProp
+    /// [`TextProp::SizePx`]: crate::next::TextProp::SizePx
+    pub defined_size: Option<FontSize>,
     /// The weight.
     pub weight: u16, // CSS 100..=900
     /// The slant.
@@ -259,6 +272,7 @@ impl Default for TextStyle {
             family: Arc::from(""),
             color: Color::BLACK,
             size_px: 0.0,
+            defined_size: None,
             weight: 400,
             style: FontStyle::Normal,
             width: FontWidth::NORMAL,
@@ -342,6 +356,32 @@ pub enum FontStyle {
     Italic,
     /// Oblique.
     Oblique,
+}
+
+/// A font size in the unit its source states (0.7.2's `FontSize`): a
+/// preset's point or pixel constant, a `QFont` string's point or pixel size.
+#[derive(Clone, Copy, Debug, PartialEq)]
+// no `Default`: the type stands only in `Option` fields, where a default would be an invented value
+pub enum FontSize {
+    /// Typographic points (1/72 inch).
+    Pt(f32),
+    /// Logical pixels.
+    Px(f32),
+}
+
+/// Points per inch: a point is 1/72 inch (0.7.2's `FontSize::to_logical_px`).
+const POINTS_PER_INCH: f32 = 72.0;
+
+impl FontSize {
+    /// The size in logical pixels at `font_dpi`: `Pt(v)` is
+    /// `v * font_dpi / 72`, `Px(v)` is `v` whatever the DPI.
+    #[must_use]
+    pub fn to_logical_px(self, font_dpi: f32) -> f32 {
+        match self {
+            Self::Pt(v) => v * font_dpi / POINTS_PER_INCH,
+            Self::Px(v) => v,
+        }
+    }
 }
 
 /// The width class of a font, OpenType OS/2 `usWidthClass` `1..=9`.
@@ -527,10 +567,20 @@ mod tests {
         assert_eq!(text.weight, 400);
         assert_eq!(text.width, FontWidth::NORMAL);
         assert_eq!(text.color, Color::BLACK);
+        assert_eq!(text.defined_size, None);
         let icon = IconStyle::default();
         assert_eq!(icon.opacity, 1.0);
         assert_eq!(icon.weight, 400);
         assert_eq!(FontWidth::default().value(), 5);
+    }
+
+    #[test]
+    fn font_size_to_logical_px() {
+        // 10 pt at 96 DPI: 10 × 96 / 72 = 13.333…; at 72 DPI the point is the pixel.
+        assert!((FontSize::Pt(10.0).to_logical_px(96.0) - 40.0 / 3.0).abs() < 1e-5);
+        assert_eq!(FontSize::Pt(10.0).to_logical_px(72.0), 10.0);
+        assert_eq!(FontSize::Px(14.0).to_logical_px(96.0), 14.0);
+        assert_eq!(FontSize::Px(14.0).to_logical_px(144.0), 14.0);
     }
 
     #[test]

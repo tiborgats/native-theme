@@ -5,7 +5,7 @@ use std::mem::discriminant;
 use crate::next::geometry::StrokeAlign;
 use crate::next::motion::Timing;
 use crate::next::query::{ButtonQuery, InputQuery, InputVariant, ListQuery};
-use crate::next::style::{DecorationKind, FocusKind};
+use crate::next::style::{DecorationKind, FocusKind, FontSize};
 
 const RED: Color = Color::rgb(1.0, 0.0, 0.0);
 const GREEN: Color = Color::rgb(0.0, 1.0, 0.0);
@@ -1056,4 +1056,27 @@ fn a_rules_none_replaces_a_base_some() {
             ..icon
         }
     );
+}
+
+#[test]
+fn size_px_clears_defined_size() {
+    let text = TextStyle {
+        size_px: 13.0,
+        defined_size: Some(FontSize::Pt(10.0)),
+        stated: TextStated::SIZE_PX,
+        ..TextStyle::default()
+    };
+    assert_eq!(
+        applied(text.clone(), TextProp::SizePx(16.0)),
+        TextStyle {
+            size_px: 16.0,
+            defined_size: None,
+            ..text.clone()
+        }
+    );
+    // Every other property leaves it.
+    let bold = applied(text.clone(), TextProp::Weight(700));
+    assert_eq!(bold.defined_size, Some(FontSize::Pt(10.0)));
+    let tall = applied(text, TextProp::LineHeight(18.0));
+    assert_eq!(tall.defined_size, Some(FontSize::Pt(10.0)));
 }

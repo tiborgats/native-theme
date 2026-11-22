@@ -63,8 +63,9 @@ pub enum TextProp {
     Family(Arc<str>),
     /// `color`.
     Color(Color),
-    /// `size_px`.
-    SizePx(f32),
+    /// `size_px`; it also clears `defined_size` (a rule that sets a pixel
+    /// size carries no source unit).
+    SizePx(f32), // also clears `defined_size` (§2)
     /// `weight`.
     Weight(u16),
     /// `style`.
@@ -488,6 +489,7 @@ fn apply_text(style: &mut TextStyle, prop: &TextProp) {
         }
         TextProp::SizePx(v) => {
             style.size_px = *v;
+            style.defined_size = None;
             style.stated |= TextStated::SIZE_PX;
         }
         TextProp::Weight(v) => {

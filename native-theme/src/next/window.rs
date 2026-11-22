@@ -1,5 +1,7 @@
 //! Window chrome.
 
+use std::sync::Arc;
+
 /// A set of a rectangle's edges, as bits of a `u8`.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub struct EdgeFlags(u8);
@@ -20,6 +22,39 @@ impl EdgeFlags {
 }
 
 bit_set!(EdgeFlags, u8);
+
+/// A button of a window's title bar.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum CaptionButtonKind {
+    /// Closes the window.
+    Close,
+    /// Minimises the window.
+    Minimize,
+    /// Maximises the window.
+    Maximize,
+    /// Restores a maximised window.
+    Restore,
+}
+
+/// The title bar's buttons at its leading and trailing ends (GNOME's
+/// `button-layout`, KDE's `kwinrc`).
+#[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
+pub struct CaptionLayout {
+    /// The buttons at the leading end.
+    pub leading: Arc<[CaptionButtonKind]>,
+    /// The buttons at the trailing end.
+    pub trailing: Arc<[CaptionButtonKind]>,
+}
+
+impl CaptionLayout {
+    /// A layout of these fields.
+    #[must_use]
+    pub fn new(leading: Arc<[CaptionButtonKind]>, trailing: Arc<[CaptionButtonKind]>) -> Self {
+        Self { leading, trailing }
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -48,5 +83,18 @@ mod tests {
         assert_eq!(m, EdgeFlags::LEFT);
         assert!(EdgeFlags::default().is_empty());
         assert_eq!(EdgeFlags::ALL.difference(tb), !tb);
+    }
+
+    #[test]
+    fn caption_layout_constructor() {
+        let layout = CaptionLayout::new(
+            Arc::from([CaptionButtonKind::Close]),
+            Arc::from([CaptionButtonKind::Minimize, CaptionButtonKind::Maximize]),
+        );
+        assert_eq!(&*layout.leading, &[CaptionButtonKind::Close]);
+        assert_eq!(
+            &*layout.trailing,
+            &[CaptionButtonKind::Minimize, CaptionButtonKind::Maximize]
+        );
     }
 }

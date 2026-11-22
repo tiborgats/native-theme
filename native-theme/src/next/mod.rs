@@ -4,8 +4,16 @@
 //! [`Corners`](crate::next::Corners) and their kin), the part styles
 //! ([`PartStyle`](crate::next::PartStyle), [`TextStyle`](crate::next::TextStyle),
 //! [`IconStyle`](crate::next::IconStyle)), the draw-loop query
-//! ([`StyleQuery`](crate::next::StyleQuery)) and the rule evaluator
-//! ([`RuleSet`](crate::next::RuleSet)).
+//! ([`StyleQuery`](crate::next::StyleQuery)), the rule evaluator
+//! ([`RuleSet`](crate::next::RuleSet)), the global tokens' types
+//! ([`ColorRoles`](crate::next::ColorRoles),
+//! [`Typography`](crate::next::Typography),
+//! [`IconThemeSpec`](crate::next::IconThemeSpec),
+//! [`LayoutMetrics`](crate::next::LayoutMetrics),
+//! [`UiTimings`](crate::next::UiTimings),
+//! [`MotionTokens`](crate::next::MotionTokens),
+//! [`CaretSpec`](crate::next::CaretSpec)) and what a reader carries
+//! ([`SystemOverrides`](crate::next::SystemOverrides)).
 
 /// The methods and operators of a bit set over an unsigned integer whose
 /// `ALL` constant holds every defined bit: `bits`, `from_bits_truncate`,
@@ -96,11 +104,16 @@ macro_rules! bit_set {
 mod color;
 mod error;
 mod geometry;
+mod icons;
+mod layout;
 mod motion;
 mod paint;
 mod query;
+mod reader;
+mod roles;
 mod rules;
 mod style;
+mod typography;
 mod window;
 
 pub use color::Color;
@@ -109,7 +122,12 @@ pub use geometry::{
     ComplexStroke, CornerCurve, CornerRadius, Corners, Cursor, Edges, ShadowLayer, Stroke,
     StrokeAlign, StrokeSide, Transform,
 };
-pub use motion::{Timing, Transition};
+pub use icons::{IconSizes, IconThemeSpec};
+pub use layout::{ArrowSide, DialogButtonOrder, LayoutMetrics, TabIndicatorSide};
+pub use motion::{
+    CaretShape, CaretSpec, DialogEntranceStyle, MotionTokens, ThemeChangePolicy, Timing,
+    Transition, UiTimings,
+};
 pub use paint::{
     BlendMode, ComplexPaint, GradientStop, MaterialKind, MaterialSpec, Paint, PaintLayer,
 };
@@ -118,15 +136,24 @@ pub use query::{
     GroupPosition, InputQuery, InputVariant, ListKind, ListQuery, ListVariant, MotionPreference,
     Orientation, Scheme, StyleQuery, Surface, TabQuery, TabVariant, ThemeContext, WidgetState,
 };
+pub use reader::{
+    DiagnosticEntry, KdeColorEffect, KdeColorEffects, KdeContrastEffect, KdeIntensityEffect,
+    KdeStateEffects, OsColors, OsFont, OsSelectionColors, OsSurfaceOverrides, SystemOverrides,
+    WindowsAccentRamp,
+};
+pub use roles::{
+    AccentColors, ColorRoles, RoleOrigin, SelectionColors, StatusColors, SurfaceColors,
+};
 pub use rules::{
     ButtonMatcher, IconProp, ListMatcher, PartProp, RuleSelector, RuleSet, TextProp, VariantMatcher,
 };
 pub use style::{
-    DecorationKind, FocusIndicator, FocusKind, FocusTrigger, FontStyle, FontWidth,
+    DecorationKind, FocusIndicator, FocusKind, FocusTrigger, FontSize, FontStyle, FontWidth,
     IconRenderingMode, IconStated, IconStyle, PartStated, PartStyle, RippleSpec, TextDecoration,
     TextStated, TextStyle,
 };
-pub use window::EdgeFlags;
+pub use typography::{Antialiasing, FontHinting, SubpixelOrder, TextRendering, Typography};
+pub use window::{CaptionButtonKind, CaptionLayout, EdgeFlags};
 
 #[cfg(test)]
 mod tests {
@@ -159,5 +186,14 @@ mod tests {
         assert_send_sync_clone_debug::<RuleSet<TextStyle, TextProp>>();
         assert_send_sync_clone_debug::<RuleSet<IconStyle, IconProp>>();
         assert_send_sync_clone_debug::<ThemeContext>();
+        assert_send_sync_clone_debug::<ColorRoles>();
+        assert_send_sync_clone_debug::<Typography>();
+        assert_send_sync_clone_debug::<IconThemeSpec>();
+        assert_send_sync_clone_debug::<LayoutMetrics>();
+        assert_send_sync_clone_debug::<UiTimings>();
+        assert_send_sync_clone_debug::<MotionTokens>();
+        assert_send_sync_clone_debug::<CaretSpec>();
+        assert_send_sync_clone_debug::<CaptionLayout>();
+        assert_send_sync_clone_debug::<SystemOverrides>();
     }
 }
