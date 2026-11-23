@@ -51,6 +51,10 @@ pub(crate) struct MenuCell {
     pub hover_border: Option<Rgba>,
     /// The menu bar title's horizontal and vertical padding, reported here where not finite.
     pub bar_padding: [Read<f32>; 2],
+    /// The menu bar title's fill under the pointer and open.
+    pub bar_fill: [Option<Rgba>; 2],
+    /// The menu bar title's text under the pointer and open.
+    pub bar_text: [Option<Rgba>; 2],
     pub separator: Option<Rgba>,
     pub padding: Sides,
     pub row_height: Read<f32>,
@@ -362,6 +366,11 @@ impl CellSource {
                     m.bar_padding_vertical
                         .map(|v| (v, "menu.bar_padding_vertical")),
                 ],
+                bar_fill: [
+                    m.bar_hover_background,
+                    m.bar_open_background.or(m.bar_hover_background),
+                ],
+                bar_text: [m.bar_hover_text_color; 2],
                 separator: Some(m.separator_color),
                 padding: old_sides(
                     &m.border.padding,

@@ -53,7 +53,7 @@ use crate::style::base::{BaseSource, base_style_from};
 use crate::style::cells::CellSource;
 use crate::style::frames::{FrameSource, surface_frame_from};
 use crate::style::line::{Line, LineAlign};
-use crate::style::roles::{CellInput, role_cell_from};
+use crate::style::roles::{CellInput, MenuBarTitles, role_cell_from};
 use crate::style::variants::{VariantSource, disabled_cell, selected_cell, selected_disabled_cell};
 use crate::{AccessibilityPreferences, Role, Surface};
 
@@ -480,17 +480,19 @@ const RULE_0_ON_A_PRESET: &[Gap] = &[
         ".visuals.widgets.hovered.fg_stroke.color",
         "button.label(HOVER).color",
     ),
+    // the base style's `bg_fill` is the scroll bar's thumb (`base_style_from`, §5.9), the
+    // button's fill its `weak_bg_fill`
     r0(
         "base",
         &[T],
         ".visuals.widgets.hovered.bg_fill",
-        "button.body(HOVER).fill",
+        "scrollbar.thumb(HOVER).fill",
     ),
     r0(
         "base",
         &[W, T],
         ".visuals.widgets.active.bg_fill",
-        "button.body(PRESSED).fill",
+        "scrollbar.thumb(PRESSED).fill",
     ),
     r0(
         "base",
@@ -1256,6 +1258,20 @@ fn the_mapping_agrees_on_both_models() -> crate::Result<()> {
                 &side,
                 &old_ring,
                 &new_ring,
+                &|_, _| None,
+                &mut failures,
+                &mut seen,
+            );
+            let side = Side {
+                what: "MenuBar",
+                preset: key,
+                label: &label,
+                bases: None,
+            };
+            compare(
+                &side,
+                &MenuBarTitles::of(&old_cells.menu),
+                &MenuBarTitles::of(&new_cells.menu),
                 &|_, _| None,
                 &mut failures,
                 &mut seen,

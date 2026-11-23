@@ -5,7 +5,8 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
 
 use crate::fonts::FontPlan;
-use crate::style::{BuildInput, compile, egui_preset};
+use crate::style::base::sanitised_size;
+use crate::style::{SchemeInput, Sources, compile_from, egui_preset};
 use crate::{
     AccessibilityPreferences, ColorMode, IconSet, LayoutTheme, ResolvedTheme, Role, RoleVariant,
     Surface,
@@ -113,6 +114,8 @@ pub(crate) struct SchemeStyles {
     /// The ring the install plugin paints (spec §6.18); `None` for a zero or non-finite width or a
     /// non-finite offset, which paints no ring.
     pub(crate) focus_ring: Option<FocusRing>,
+    /// What [`ThemeAtlas::menu_bar_modifier`] writes over the `Role::Menu` cell.
+    pub(crate) menu_bar: crate::style::roles::MenuBarTitles,
 }
 
 impl SchemeStyles {
@@ -433,11 +436,11 @@ impl ThemeAtlas {
     /// swaps `widgets.open` into the title's style while its menu is open, the same way.
     #[must_use]
     pub fn menu_bar_modifier(&self, theme: egui::Theme) -> egui::style::StyleModifier {
-        let atlas = self.clone();
+        let titles = self.scheme(theme).menu_bar;
         let cell = self.role_modifier(theme, Role::Menu, RoleVariant::Normal);
         egui::style::StyleModifier::new(move |style: &mut egui::Style| {
             cell.apply(style);
-            crate::style::menu_bar_titles(atlas.resolved_for(theme), style);
+            crate::style::menu_bar_titles(&titles, style);
         })
     }
 
@@ -866,18 +869,16 @@ impl<'a> Builder<'a> {
         let widest_glyph = crate::fonts::widest_glyph(&defs);
         let light = compile_scheme(
             egui::Theme::Light,
-            self.light,
+            &Sources::old(self.light, &prefs, &layout),
             &prefs,
-            &layout,
             &defs,
             &mut notes,
             self.style_patch.as_deref(),
         );
         let dark = compile_scheme(
             egui::Theme::Dark,
-            self.dark,
+            &Sources::old(self.dark, &prefs, &layout),
             &prefs,
-            &layout,
             &defs,
             &mut notes,
             self.style_patch.as_deref(),
@@ -908,39 +909,35 @@ impl<'a> Builder<'a> {
 /// One scheme's styles, with spec §6.15's Body row measured on `defs` at the Body size `base_style`
 /// writes. The throw-away `Vec` is deliberate: `base_style` reports the size's leaf; this call
 /// only needs the same sanitised size.
+/// A Body size the theme states none of measures no row, and `extra_text_line_spacing` stays
+/// egui's.
 fn compile_scheme(
     scheme: egui::Theme,
-    theme: &ResolvedTheme,
+    sources: &Sources,
     prefs: &AccessibilityPreferences,
-    layout: &LayoutTheme,
     defs: &egui::FontDefinitions,
     notes: &mut Vec<Note>,
     patch: Option<&dyn Fn(&mut egui::Style)>,
 ) -> SchemeStyles {
+    let [_, body, ..] = sources.base.sizes;
     let row_height = scheme
         .default_style()
         .text_styles
         .get(&egui::TextStyle::Body)
-        .and_then(|own| {
-            let body = crate::style::base::text_size(
-                "defaults.font.size",
-                theme.defaults.font.size,
-                prefs,
-                own.size,
-                &mut Vec::new(),
-            );
+        .zip(body)
+        .and_then(|(own, (size, path))| {
+            let body = sanitised_size(path, size, own.size, &mut Vec::new());
             crate::fonts::body_row_height(defs, body)
         });
-    compile(
-        &BuildInput {
+    compile_from(
+        &SchemeInput {
             scheme,
-            theme,
             prefs,
-            layout,
             row_height,
             defs: Some(defs),
             patch,
         },
+        sources,
         notes,
     )
 }

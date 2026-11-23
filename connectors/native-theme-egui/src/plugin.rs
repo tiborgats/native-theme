@@ -38,6 +38,7 @@ impl FocusRingSource {
 }
 
 /// [`build_focus_ring_from`] of the 0.7.2 model.
+#[cfg(test)]
 pub(crate) fn build_focus_ring(theme: &ResolvedTheme, notes: &mut Vec<Note>) -> Option<FocusRing> {
     build_focus_ring_from(&FocusRingSource::old(theme), notes)
 }

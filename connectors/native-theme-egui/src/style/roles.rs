@@ -4,19 +4,21 @@ use egui::{FontFamily, FontId, TextStyle};
 
 use native_theme::theme::ResolvedPadding;
 
+#[cfg(test)]
+use super::BuildInput;
 use super::base::{
     Read, Sides, button_padding_of, length, margin_of, opacity, radius, sanitised_size, stroke,
 };
 use super::cells::{CellSource, Outline, PanelEdge, Text};
+use super::push_note;
 use super::states::{
     BorderEntries, BorderSource, FillField, FillSource, Layer, OpenFrom, StateSource, TextSource,
     Unstated, state_borders, write_states_with,
 };
-use super::{BuildInput, push_note};
 use crate::convert::{
     Rgba, button_padding_outside, clamp_length, composite_over, padding_with_line, to_color32,
 };
-use crate::{Note, ResolvedTheme, Role};
+use crate::{Note, Role};
 
 /// What a role cell is built with besides its source: the scheme, epaint's Body row (§6.15),
 /// the font definitions a stated row height is fitted on ([`fit_row_padding`]), and whether a
@@ -31,6 +33,7 @@ pub(crate) struct CellInput<'a> {
 
 impl<'a> CellInput<'a> {
     /// The 0.7.2 model's: an unstated hover or press copies.
+    #[cfg(test)]
     pub(crate) fn old(input: &BuildInput<'a>) -> Self {
         Self {
             scheme: input.scheme,
@@ -517,33 +520,58 @@ fn menu(
 /// `menu.bar_padding_horizontal` and `menu.bar_padding_vertical`, a finite side through
 /// [`clamp_length`] (a title has no line); a non-finite side keeps the cell's padding and is
 /// reported when the atlas is built (`menu`). Each where stated: unstated, the cell's own look.
+/// The 0.8.0 model's homes are `menu_bar.item(HOVER)`'s and `(OPEN)`'s fill,
+/// `menu_bar.item_label(HOVER)`'s and `(OPEN)`'s colour (the hovered and pressed titles the
+/// former, the open one the latter), and `menu_bar.item(NONE)`'s left and top padding.
 ///
 /// [`ThemeAtlas::menu_bar_modifier`]: crate::ThemeAtlas::menu_bar_modifier
-pub(crate) fn menu_bar_titles(t: &ResolvedTheme, s: &mut egui::Style) {
-    let m = &t.menu;
+pub(crate) fn menu_bar_titles(m: &MenuBarTitles, s: &mut egui::Style) {
     let w = &mut s.visuals.widgets;
     let rest = w.inactive.bg_stroke;
     for e in [&mut w.hovered, &mut w.active, &mut w.open] {
         e.bg_stroke = rest;
     }
-    if let Some(fill) = m.bar_hover_background {
-        w.hovered.weak_bg_fill = to_color32(fill);
-        w.active.weak_bg_fill = to_color32(fill);
-    }
-    if let Some(fill) = m.bar_open_background.or(m.bar_hover_background) {
-        w.open.weak_bg_fill = to_color32(fill);
-    }
-    if let Some(text) = m.bar_hover_text_color {
-        for e in [&mut w.hovered, &mut w.active, &mut w.open] {
-            e.fg_stroke.color = to_color32(text);
+    let [hover_fill, open_fill] = m.fill.map(|c| c.map(to_color32));
+    let [hover_text, open_text] = m.text.map(|c| c.map(to_color32));
+    for (e, fill, text) in [
+        (&mut w.hovered, hover_fill, hover_text),
+        (&mut w.active, hover_fill, hover_text),
+        (&mut w.open, open_fill, open_text),
+    ] {
+        if let Some(fill) = fill {
+            e.weak_bg_fill = fill;
+        }
+        if let Some(text) = text {
+            e.fg_stroke.color = text;
         }
     }
+    let [x, y] = m.padding;
     let padding = &mut s.spacing.button_padding;
-    if let Some(x) = m.bar_padding_horizontal.filter(|x| x.is_finite()) {
+    if let Some(x) = x.filter(|x| x.is_finite()) {
         padding.x = clamp_length(x);
     }
-    if let Some(y) = m.bar_padding_vertical.filter(|y| y.is_finite()) {
+    if let Some(y) = y.filter(|y| y.is_finite()) {
         padding.y = clamp_length(y);
+    }
+}
+
+/// What [`menu_bar_titles`] writes, kept with a scheme's compiled styles: the titles' fill and
+/// text under the pointer and open, and their horizontal and vertical padding.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) struct MenuBarTitles {
+    pub fill: [Option<Rgba>; 2],
+    pub text: [Option<Rgba>; 2],
+    pub padding: [Option<f32>; 2],
+}
+
+impl MenuBarTitles {
+    /// The titles of a menu cell's reads.
+    pub(crate) fn of(m: &super::cells::MenuCell) -> Self {
+        Self {
+            fill: m.bar_fill,
+            text: m.bar_text,
+            padding: m.bar_padding.map(|side| side.map(|(v, _)| v)),
+        }
     }
 }
 

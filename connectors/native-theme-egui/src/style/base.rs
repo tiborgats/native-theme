@@ -7,30 +7,20 @@ use egui::TextStyle;
 
 use native_theme::theme::ResolvedPadding;
 
+#[cfg(test)]
+use super::BuildInput;
 use super::line::LineAlign;
 use super::states::{
     BorderEntries, BorderSource, Edge, FillField, FillSource, Layer, OpenFrom, StateSource,
     TextSource, Unstated, state_borders, write_states_with,
 };
-use super::{BuildInput, push_note, saturates_i8};
+use super::{push_note, saturates_i8};
 use crate::accessors::scaled_text_size;
 use crate::convert::{
     Rgba, button_padding_outside, clamp_length, finite_or, padding_with_line, to_color32,
     to_corner_radius, to_margin, unit_interval,
 };
 use crate::{AccessibilityPreferences, LayoutTheme, Note, ResolvedTheme};
-
-/// §8.5's rule: the scaled size when it is a positive normal `f32`, else `own` — egui's own
-/// size for that slot — with a `Note::ValueSanitised` for `path`.
-pub(crate) fn text_size(
-    path: &'static str,
-    size: f32,
-    prefs: &AccessibilityPreferences,
-    own: f32,
-    notes: &mut Vec<Note>,
-) -> f32 {
-    sanitised_size(path, scaled_text_size(size, prefs), own, notes)
-}
 
 /// A length sink: the non-finite rule with egui's own value, reported, then `clamp_length`
 /// (§7.2). A finite value merely clamped reports nothing.
@@ -369,6 +359,7 @@ fn set_length(sink: &mut f32, read: Read<f32>, own: f32, notes: &mut Vec<Note>) 
 }
 
 /// The base style of `input.scheme` (§3.4) from the 0.7.2 model.
+#[cfg(test)]
 pub(crate) fn base_style(input: &BuildInput<'_>, notes: &mut Vec<Note>) -> egui::Style {
     let src = BaseSource::old(input.theme, input.prefs, input.layout);
     base_style_from(input.scheme, input.row_height, &src, false, notes)

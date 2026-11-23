@@ -419,6 +419,14 @@ pub(crate) fn cell_source(r: &ResolvedTheme) -> CellSource {
                 bar_left.map(|v| (v, "menu_bar.item(NONE).padding.left")),
                 bar_top.map(|v| (v, "menu_bar.item(NONE).padding.top")),
             ],
+            bar_fill: [
+                state_fill(&r.menu_bar.item(S::HOVER)),
+                state_fill(&r.menu_bar.item(S::OPEN)),
+            ],
+            bar_text: [
+                state_text_color(&r.menu_bar.item_label(S::HOVER)),
+                state_text_color(&r.menu_bar.item_label(S::OPEN)),
+            ],
             separator: fill(&m.separator(S::NONE)),
             padding: sides(
                 &item,
