@@ -9,7 +9,7 @@ use native_theme::next::{ResolvedTheme as NextTheme, Stroke, WidgetState};
 use native_theme_gpui::next::{fill_of, padding_of, state_fill_of, text_color_of};
 #[cfg(feature = "widgets")]
 use native_theme_gpui::widgets::{
-    CheckboxLook, SliderLook, SwitchLabelFont, SwitchLook, ThumbOutline,
+    CheckboxLook, SliderLook, SwitchLabelFont, SwitchLabelHome, SwitchLook, ThumbOutline,
 };
 
 use super::{
@@ -1785,41 +1785,41 @@ pub fn native_switch(
     // disabled muted_foreground (gpui-component/switch.rs, Switch::render),
     // at the homes the connector fills those tokens from.
     let info = info.color(match SwitchLook::next_label_home(r, checked, disabled) {
-        Ok("switch.label(NONE).color") => claim(
+        Ok(SwitchLabelHome::Rest) => claim(
             "label",
             "switch.label(NONE).color",
             look.label,
-            "native-theme-gpui/widgets/switch.rs:432",
+            "native-theme-gpui/widgets/switch.rs:437",
         ),
-        Ok("switch.label(CHECKED).color") => claim(
+        Ok(SwitchLabelHome::Checked) => claim(
             "label",
             "switch.label(CHECKED).color",
             look.label,
-            "native-theme-gpui/widgets/switch.rs:433",
+            "native-theme-gpui/widgets/switch.rs:438",
         ),
-        Ok("switch.label(DISABLED).color") => claim(
+        Ok(SwitchLabelHome::Disabled) => claim(
             "label",
             "switch.label(DISABLED).color",
             look.label,
-            "native-theme-gpui/widgets/switch.rs:434",
+            "native-theme-gpui/widgets/switch.rs:439",
         ),
-        Ok("switch.label(DISABLED|CHECKED).color") => claim(
+        Ok(SwitchLabelHome::DisabledChecked) => claim(
             "label",
             "switch.label(DISABLED|CHECKED).color",
             look.label,
-            "native-theme-gpui/widgets/switch.rs:435",
+            "native-theme-gpui/widgets/switch.rs:440",
         ),
-        _ if disabled => claim(
+        Ok(SwitchLabelHome::WindowForegroundMuted) => claim(
             "label",
             "colors.window.foreground_muted",
             look.label,
-            "native-theme-gpui/widgets/switch.rs:441",
+            "native-theme-gpui/widgets/switch.rs:488",
         ),
         _ => claim(
             "label",
             "colors.window.foreground",
             look.label,
-            "native-theme-gpui/widgets/switch.rs:442",
+            "native-theme-gpui/widgets/switch.rs:484",
         ),
     });
     let thumb_home = if checked {
@@ -2206,14 +2206,14 @@ pub fn combo_fill(
                     "showcase",
                 ))
                 .colors(edge_claim(
-                    "hovered edge, over the trigger's",
+                    "hovered edge, in place of the trigger's",
                     "combo_box.field(HOVER).stroke.color",
                     state_stroke_color_of(&r.combo_box.field(WidgetState::HOVER)),
                     width,
                     "showcase",
                 ))
                 .next_geometry("combo_box_fill");
-            info.config("fill", "geometry::combo_box_fill's combo_box.field(NONE).fill, and combo_box.field(HOVER).fill over it under the pointer where a rule states it, which the showcase paints on the element under the trigger and leaves the trigger without a fill: upstream's trigger sets no hover and is not an InteractiveElement (gpui-component/select.rs, Select::render; gpui-component/combobox.rs, Combobox::render); the trigger's edge is combo_box.field(NONE)'s stroke, none where it is 0 wide, over the input edge it paints first, which the showcase sets: geometry::select and geometry::combobox carry no edge colour, since the trigger of a Select or Combobox built with appearance(false) keeps a transparent edge the refinement would colour (gpui-component/select.rs, Select::render; gpui-component/combobox.rs, Combobox::render); and, where a rule states it, combo_box.field(HOVER).stroke.color as an edge the showcase lays over the trigger's under the pointer, for the same reason")
+            info.config("fill", "geometry::combo_box_fill's combo_box.field(NONE).fill, and combo_box.field(HOVER).fill over it under the pointer where a rule states it, which the showcase paints on the element under the trigger and leaves the trigger without a fill: upstream's trigger sets no hover and is not an InteractiveElement (gpui-component/select.rs, Select::render; gpui-component/combobox.rs, Combobox::render); the trigger's edge is combo_box.field(NONE)'s stroke, none where it is 0 wide, over the input edge it paints first, which the showcase sets: geometry::select and geometry::combobox carry no edge colour, since the trigger of a Select or Combobox built with appearance(false) keeps a transparent edge the refinement would colour (gpui-component/select.rs, Select::render; gpui-component/combobox.rs, Combobox::render); and, where a rule states it, combo_box.field(HOVER).stroke.color in place of that edge under the pointer, none where the rule states no stroke, for the same reason: the showcase then draws the edge on an element under the trigger, combo_box.field(NONE)'s at rest, and leaves the trigger's own transparent, so the focused trigger's ring edge stays over it")
         }
         Some((_, Err(home))) => unstated_combo_fill(info, t, combobox, home),
         None => upstream_combo_fill(info, t, combobox),

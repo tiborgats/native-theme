@@ -14,7 +14,7 @@ use native_theme::theme::ResolvedTheme;
 
 use super::{Part, PartBounds, ThemeSource, color, faded, finite, length, over, part_bounds};
 use crate::next::{
-    Mapped, Unmapped, fill, hsla, radius, state_fill, state_text_color_of, stated, text_color_of,
+    Mapped, Unmapped, fill, hsla, radius, state_fill, stated, text_color, text_color_of,
 };
 
 /// The space between the track and the label, which `SwitchTheme` does not
@@ -388,7 +388,8 @@ impl SwitchLook {
     /// The home [`SwitchLook::next_of`] reads the label's colour at, for a
     /// switch of a 0.8.0 theme `checked` or not, `disabled` or not:
     /// `switch.label(<state>).color` where the theme states it (enabled, at
-    /// rest or by a rule; disabled, by a rule for the state); else
+    /// rest or by a rule; disabled, where a rule states it for `DISABLED`,
+    /// as the query with that flag alone says, spec §2); else
     /// gpui-component's own label colour (spec §10, rule 0), the window's
     /// text its switch inherits, `foreground`, which [`crate::next::apply`]
     /// fills from `colors.window.foreground`, and disabled
@@ -403,43 +404,96 @@ impl SwitchLook {
         r: &native_theme::next::ResolvedTheme,
         checked: bool,
         disabled: bool,
-    ) -> Mapped<&'static str> {
+    ) -> Mapped<SwitchLabelHome> {
         next_label(r, checked, disabled).map(|(_, home)| home)
     }
 }
 
-/// The label's colour of a switch of a 0.8.0 theme and its home
+/// Where a switch of a 0.8.0 theme takes its label's colour
 /// ([`SwitchLook::next_label_home`]).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum SwitchLabelHome {
+    /// `switch.label(NONE).color`.
+    Rest,
+    /// `switch.label(CHECKED).color`.
+    Checked,
+    /// `switch.label(DISABLED).color`.
+    Disabled,
+    /// `switch.label(DISABLED|CHECKED).color`.
+    DisabledChecked,
+    /// gpui-component's own, `foreground`, from `colors.window.foreground`.
+    WindowForeground,
+    /// gpui-component's own disabled, `muted_foreground`, from
+    /// `colors.window.foreground_muted`.
+    WindowForegroundMuted,
+}
+
+impl SwitchLabelHome {
+    /// The home, spelt whole.
+    #[must_use]
+    pub fn path(self) -> &'static str {
+        match self {
+            Self::Rest => "switch.label(NONE).color",
+            Self::Checked => "switch.label(CHECKED).color",
+            Self::Disabled => "switch.label(DISABLED).color",
+            Self::DisabledChecked => "switch.label(DISABLED|CHECKED).color",
+            Self::WindowForeground => "colors.window.foreground",
+            Self::WindowForegroundMuted => "colors.window.foreground_muted",
+        }
+    }
+}
+
+/// The label's colour of a switch of a 0.8.0 theme and its home
+/// ([`SwitchLook::next_label_home`]). Disabled, a rule stated for
+/// `DISABLED` is asked with that flag alone first, as
+/// [`CheckboxLook::next_sized`](super::CheckboxLook::next_sized) asks the
+/// disabled fill: a colour stated for `CHECKED` alone is not a disabled
+/// colour, and gpui-component's own `muted_foreground` stands.
 fn next_label(
     r: &native_theme::next::ResolvedTheme,
     checked: bool,
     disabled: bool,
-) -> Mapped<(Hsla, &'static str)> {
-    use native_theme::next::WidgetState;
-    let state = match (checked, disabled) {
-        (false, false) => WidgetState::NONE,
-        (true, false) => WidgetState::CHECKED,
-        (false, true) => WidgetState::DISABLED,
-        (true, true) => WidgetState::DISABLED | WidgetState::CHECKED,
-    };
-    let label = r.switch.label(state);
-    let stated_colour = if disabled {
-        state_text_color_of(&label)
+) -> Mapped<(Hsla, SwitchLabelHome)> {
+    use native_theme::next::{TextStated, WidgetState};
+    let shown = if checked {
+        WidgetState::CHECKED
     } else {
-        text_color_of(&label)
+        WidgetState::NONE
     };
-    let home = match (stated_colour.is_some(), checked, disabled) {
-        (true, false, false) => "switch.label(NONE).color",
-        (true, true, false) => "switch.label(CHECKED).color",
-        (true, false, true) => "switch.label(DISABLED).color",
-        (true, true, true) => "switch.label(DISABLED|CHECKED).color",
-        (false, _, false) => "colors.window.foreground",
-        (false, _, true) => "colors.window.foreground_muted",
+    let home = if disabled {
+        let ruled = r
+            .switch
+            .label(WidgetState::DISABLED)
+            .from_state
+            .contains(TextStated::COLOR);
+        match (ruled, checked) {
+            (true, false) => SwitchLabelHome::Disabled,
+            (true, true) => SwitchLabelHome::DisabledChecked,
+            (false, _) => SwitchLabelHome::WindowForegroundMuted,
+        }
+    } else {
+        match (text_color_of(&r.switch.label(shown)).is_some(), checked) {
+            (true, false) => SwitchLabelHome::Rest,
+            (true, true) => SwitchLabelHome::Checked,
+            (false, _) => SwitchLabelHome::WindowForeground,
+        }
     };
-    let colour = match stated_colour {
-        Some(colour) => colour,
-        None if disabled => hsla(stated(r.colors.window.foreground_muted, home)?),
-        None => hsla(stated(r.colors.window.foreground, home)?),
+    let colour = match home {
+        SwitchLabelHome::WindowForeground => hsla(stated(
+            r.colors.window.foreground,
+            "colors.window.foreground",
+        )?),
+        SwitchLabelHome::WindowForegroundMuted => hsla(stated(
+            r.colors.window.foreground_muted,
+            "colors.window.foreground_muted",
+        )?),
+        SwitchLabelHome::Disabled | SwitchLabelHome::DisabledChecked => {
+            text_color(&r.switch.label(WidgetState::DISABLED | shown), home.path())?
+        }
+        SwitchLabelHome::Rest | SwitchLabelHome::Checked => {
+            text_color(&r.switch.label(shown), home.path())?
+        }
     };
     Ok((colour, home))
 }
@@ -944,13 +998,13 @@ mod tests {
             assert_eq!(rest.label_gap, None);
             assert_eq!(
                 SwitchLook::next_label_home(&r, checked, false)?,
-                "colors.window.foreground"
+                SwitchLabelHome::WindowForeground
             );
             let off = SwitchLook::next_of(&r, checked, true)?;
             assert_eq!(off.label, muted);
             assert_eq!(
                 SwitchLook::next_label_home(&r, checked, true)?,
-                "colors.window.foreground_muted"
+                SwitchLabelHome::WindowForegroundMuted
             );
         }
         let font = SwitchLabelFont::next_of(&r)?;
@@ -982,19 +1036,47 @@ mod tests {
                 ),
         );
         for (checked, disabled, colour, home) in [
-            (false, false, red, "switch.label(NONE).color"),
-            (true, false, red, "switch.label(CHECKED).color"),
-            (false, true, blue, "switch.label(DISABLED).color"),
-            (true, true, blue, "switch.label(DISABLED|CHECKED).color"),
+            (false, false, red, SwitchLabelHome::Rest),
+            (true, false, red, SwitchLabelHome::Checked),
+            (false, true, blue, SwitchLabelHome::Disabled),
+            (true, true, blue, SwitchLabelHome::DisabledChecked),
         ] {
             let look = SwitchLook::next_of(&r, checked, disabled)?;
-            assert_eq!(look.label, hsla(colour), "{home}");
-            assert_eq!(look.label_gap, Some(px(13.0)), "{home}");
+            assert_eq!(look.label, hsla(colour), "{home:?}");
+            assert_eq!(look.label_gap, Some(px(13.0)), "{home:?}");
             assert_eq!(SwitchLook::next_label_home(&r, checked, disabled)?, home);
         }
         let font = SwitchLabelFont::next_of(&r)?;
         assert_eq!(font.size, Some(px(17.0)));
         assert_eq!(font.weight, Some(gpui::FontWeight(700.0)));
+        Ok(())
+    }
+
+    /// A theme stating the label's colour for `CHECKED` alone: the checked
+    /// switch takes it, and the disabled checked one, which no rule for
+    /// `DISABLED` colours, gpui-component's own `muted_foreground`, not the
+    /// checked colour the `DISABLED|CHECKED` query also returns.
+    #[test]
+    fn a_checked_label_colour_is_not_the_disabled_checked_one() -> Mapped<()> {
+        let red = Color::rgb(1.0, 0.0, 0.0);
+        let r = breeze(
+            &ThemePatch::new().switch(
+                SwitchRule::new()
+                    .states(WidgetState::CHECKED)
+                    .label(TextPatch::new().color(red)),
+            ),
+        );
+        let muted = hsla(stated(r.colors.window.foreground_muted, "muted")?);
+        assert_eq!(SwitchLook::next_of(&r, true, false)?.label, hsla(red));
+        assert_eq!(
+            text_color_of(&r.switch.label(WidgetState::DISABLED | WidgetState::CHECKED)),
+            Some(hsla(red))
+        );
+        assert_eq!(SwitchLook::next_of(&r, true, true)?.label, muted);
+        assert_eq!(
+            SwitchLook::next_label_home(&r, true, true)?,
+            SwitchLabelHome::WindowForegroundMuted
+        );
         Ok(())
     }
 }

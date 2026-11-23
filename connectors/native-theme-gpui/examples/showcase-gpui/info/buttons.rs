@@ -383,7 +383,7 @@ fn edge(t: &Theme, kind: ButtonKind, native: Option<&NextTheme>) -> Vec<ColorCla
                 "button.body(HOVER).stroke.color",
                 state_stroke_color_of(&r.button.body(WidgetState::HOVER)),
                 width,
-                "native-theme-gpui/next/builders.rs:828",
+                "native-theme-gpui/next/builders.rs:836",
             )
         }),
         (ButtonKind::Default | ButtonKind::DefaultOutline, true) => Some(claim(

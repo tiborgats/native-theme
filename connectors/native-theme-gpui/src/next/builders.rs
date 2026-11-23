@@ -504,7 +504,9 @@ pub(crate) fn popover(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
     ))
 }
 
-/// [`crate::geometry::dialog`]: the panel's sizes where stated.
+/// [`crate::geometry::dialog`]: the panel's sizes where stated, and its
+/// edge's colour and width (spec §10, rule 2: none is 0 wide), on every
+/// side, where upstream draws one (`src/dialog/dialog.rs:783`, `border_1`).
 pub(crate) fn dialog(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
     let panel = &r.dialog.panel;
     Ok(geometry::dialog_from(&geometry::DialogFrame {
@@ -515,7 +517,7 @@ pub(crate) fn dialog(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
         radius: radius(panel, "dialog.panel.corners")?,
         background: fill(panel, "dialog.panel.fill")?,
         border_color: stroke_color(panel, "dialog.panel.stroke.color")?,
-        border_width: no_line_width(panel),
+        border_width: Some(stroke_width(panel, "dialog.panel.stroke.width")?),
     }))
 }
 
@@ -764,7 +766,13 @@ pub(crate) fn accordion_title(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
     ))
 }
 
-/// [`crate::geometry::accordion`].
+/// [`crate::geometry::accordion`]: the edge's colour, and its width only
+/// where the stroke is stated as none, 0 (spec §10, rule 2). A stated
+/// visible width is not set: the one refinement lands on the `Accordion`,
+/// edged on every side, and on each `AccordionItem`, edged at the bottom
+/// but the last (gpui-component 0.10.0 `src/accordion.rs:108-114`,
+/// `:380-384`), so a width on every side would frame each item, and upstream's
+/// `border_1` and `border_b_1` stand.
 pub(crate) fn accordion(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
     let container = r.expander.container(WidgetState::NONE);
     Ok(geometry::accordion_from(
@@ -1012,8 +1020,7 @@ mod tests {
             .all(|side| *side == zero)
     }
 
-    /// A dialog panel stroked as none: its edge transparent and 0 wide; a
-    /// stroked one keeps upstream's width.
+    /// A dialog panel stroked as none: its edge transparent and 0 wide.
     #[gpui::test]
     fn a_dialog_stroked_as_none_is_built_with_no_line(cx: &mut TestAppContext) {
         let patch = ThemePatch::new()
@@ -1021,12 +1028,28 @@ mod tests {
         built_with_no_line(cx, &patch, |r| Ok(vec![dialog(r)?]));
         let built = installed(cx, &patch).and_then(|r| dialog(&r));
         assert!(built.as_ref().is_ok_and(sets_every_width_to_0), "{built:?}");
-        let stroked = installed(cx, &ThemePatch::new()).and_then(|r| dialog(&r));
+    }
+
+    /// A dialog panel stroked 3 px wide, unlike upstream's `border_1`: its
+    /// edge is the stated colour at the stated width on every side.
+    #[gpui::test]
+    fn a_dialog_is_built_with_its_stated_stroke_width(cx: &mut TestAppContext) {
+        let red = Color::rgb(1.0, 0.0, 0.0);
+        let patch =
+            ThemePatch::new().widget_rules(WidgetPatchMap::new().dialog(
+                DialogPatch::new().panel(PartPatch::new().stroke(Stroke::uniform(3.0, red))),
+            ));
+        let built = installed(cx, &patch).and_then(|r| dialog(&r));
+        let three = Some(AbsoluteLength::Pixels(px(3.0)));
         assert!(
-            stroked
-                .as_ref()
-                .is_ok_and(|style| style.border_widths.top.is_none()),
-            "{stroked:?}"
+            built.as_ref().is_ok_and(|style| {
+                let w = &style.border_widths;
+                style.border_color == Some(hsla(red))
+                    && [&w.top, &w.right, &w.bottom, &w.left]
+                        .into_iter()
+                        .all(|side| *side == three)
+            }),
+            "{built:?}"
         );
     }
 

@@ -2,8 +2,8 @@
 //! 1, rule 2; M4, step 1): each look type's 0.8.0 constructor gives the look
 //! its 0.7.2 constructor gives, and so does each value a control reads beside
 //! its look ([`ThemeSource`]: the ground it is faded over, its focus ring, the
-//! focus ring's trigger, its label's font, the switch's body text and the
-//! spinner's colours), on the presets the connector parity covers, kde-breeze,
+//! focus ring's trigger, its label's font, the switch's body text and label
+//! font and the spinner's colours), on the presets the connector parity covers, kde-breeze,
 //! adwaita, windows-11, macos-monterey, macos-tahoe, material-3 and ios-13,
 //! light and dark, in every state each constructor takes.
 //!
@@ -26,7 +26,7 @@ use native_theme::next::{Preset, ThemeContext, WidgetState};
 
 use super::{
     CheckboxLook, FocusRing, LabelFont, ProgressBarLook, SeparatorLook, SliderLook, SpinnerLook,
-    SwitchLook, TabLook, ThemeSource, ThumbOutline, rgba,
+    SwitchLabelFont, SwitchLook, TabLook, ThemeSource, ThumbOutline, rgba,
 };
 use crate::next::{Mapped, Unmapped};
 use crate::{ColorMode, Native, ResolvedTheme};
@@ -50,22 +50,37 @@ struct Difference {
     reason: &'static str,
 }
 
+/// Every preset compared, for a difference that no 0.8.0 preset's statement
+/// removes.
+const EVERY_PRESET: &[&str] = &[
+    "kde-breeze",
+    "adwaita",
+    "windows-11",
+    "macos-monterey",
+    "macos-tahoe",
+    "material-3",
+    "ios-13",
+];
+
 /// The listed differences.
-const DIFFERENCES: &[Difference] = &[Difference {
-    leaf: "SwitchLook::label disabled",
-    presets: &[
-        "kde-breeze",
-        "adwaita",
-        "windows-11",
-        "macos-monterey",
-        "macos-tahoe",
-        "material-3",
-        "ios-13",
-    ],
-    reason: "no 0.8.0 preset states switch.label, so a disabled switch's label is \
-             gpui-component's own, muted_foreground, colors.window.foreground_muted \
-             (spec §10, rule 0), where the 0.7.2 look took defaults.disabled_text_color",
-}];
+const DIFFERENCES: &[Difference] = &[
+    Difference {
+        leaf: "SwitchLook::label disabled",
+        presets: EVERY_PRESET,
+        reason: "no 0.8.0 preset states switch.label, so a disabled switch's label is \
+                 gpui-component's own, muted_foreground, colors.window.foreground_muted \
+                 (spec §10, rule 0), where the 0.7.2 look took defaults.disabled_text_color",
+    },
+    Difference {
+        leaf: "SwitchLabelFont",
+        presets: EVERY_PRESET,
+        reason: "no 0.8.0 preset states switch.label, so a switch's label is lettered in \
+                 gpui-component's own font (spec §10, rule 0): text_sm \
+                 (input_text_size(Size::Medium)) in the window's family and weight \
+                 (gpui-component 0.10.0 switch.rs, Switch::render), where the 0.7.2 switch \
+                 took the body text's size and weight (SwitchTheme states no label font)",
+    },
+];
 
 /// The leaves compared and the differences found, for one preset and scheme.
 struct Report {
@@ -267,6 +282,19 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
         "",
         o.body_text(),
         given(n.body_text()),
+    );
+    r.leaf(
+        "SwitchLabelFont",
+        "",
+        o.body_text()
+            .map(|(size, line_height, weight)| SwitchLabelFont {
+                family: None,
+                size: Some(size),
+                weight: Some(weight),
+                style: None,
+                line_height,
+            }),
+        SwitchLabelFont::next_of(&new),
     );
     r.leaf(
         "LabelFont checkbox",

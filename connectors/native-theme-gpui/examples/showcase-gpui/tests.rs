@@ -10536,8 +10536,8 @@ fn colour_leaves(value: &serde_json::Value, at: &str, out: &mut Vec<(String, ser
 }
 
 /// A Basic drop-down under the pointer takes
-/// `combo_box.field(HOVER).stroke.color` as an edge the showcase lays over
-/// its trigger (`demo::combo_surface`), under kde-breeze and material-3
+/// `combo_box.field(HOVER).stroke.color` as an edge the showcase draws in
+/// place of its trigger's (`demo::combo_surface`), under kde-breeze and material-3
 /// light, and under kde-breeze light with that home patched in the
 /// installed 0.8.0 theme to `colors.window.foreground`, which a reader of
 /// the unchanged 0.7.2 theme would not draw: with the pointer away no box
@@ -11939,6 +11939,128 @@ fn the_number_edge_is_upstreams_ring_where_no_focus_edge_is_stated() {
         Some(focus)
     );
     assert_eq!(number_edge(true, None, Some(rest), ring), Some(ring));
+}
+
+/// kde-breeze light with a rule for `state` stating no stroke on the
+/// input's field and the combo box's (spec §10, rule 2), which no bundled
+/// preset does; and the input field's edge at rest, which the state's edge
+/// would otherwise keep or take.
+fn stroked_as_none_in(
+    state: native_theme::next::WidgetState,
+) -> (native_theme::next::ResolvedTheme, Option<gpui::Hsla>) {
+    use native_theme::next::{
+        ComboBoxRule, InputRule, PartPatch, Preset, Scheme, Stroke, Theme as NextTheme,
+        ThemeContext, ThemePatch, WidgetState,
+    };
+    let mut r = NextTheme::preset(Preset::KdeBreeze)
+        .resolve(&ThemeContext::default().with_scheme(Scheme::Light));
+    let rest = crate::info::stroke_color_of(&r.input.field(WidgetState::NONE));
+    assert!(
+        rest.is_some_and(|edge| !edge.is_transparent()),
+        "kde-breeze light no longer edges its field, so no edge is taken away: {rest:?}"
+    );
+    let none = || PartPatch::new().stroke(Stroke::None);
+    r.apply_patch(
+        &ThemePatch::new()
+            .input(InputRule::new().states(state).field(none()))
+            .combo_box(ComboBoxRule::new().states(state).field(none())),
+    );
+    (r, rest)
+}
+
+/// A hovered field whose `HOVER` rule states no stroke: the surface the
+/// showcase draws it over (`demo::FieldSurface::of`) is edged in
+/// transparent under the pointer, no edge, not in the edge at rest.
+#[test]
+fn a_hovered_field_stroked_as_none_has_no_edge() {
+    use native_theme::next::WidgetState;
+    let (r, rest) = stroked_as_none_in(WidgetState::HOVER);
+    let surface = crate::demo::FieldSurface::of(
+        &r.input.field(WidgetState::NONE),
+        &r.input.field(WidgetState::HOVER),
+    );
+    assert!(
+        surface
+            .as_ref()
+            .is_some_and(|surface| surface.line.colour == rest),
+        "{surface:?}"
+    );
+    let hover = surface.and_then(|surface| surface.hover);
+    assert!(hover.is_some_and(|edge| edge.is_transparent()), "{hover:?}");
+}
+
+/// A focused number field whose `FOCUSED` rule states no stroke: its frame
+/// (`demo::NumberFrame::of`) is edged in transparent while focused, no
+/// edge, not in upstream's `ring`.
+#[test]
+fn a_focused_number_field_stroked_as_none_has_no_edge() {
+    use crate::demo::{NumberFrame, number_edge};
+    use native_theme::next::WidgetState;
+    let (r, rest) = stroked_as_none_in(WidgetState::FOCUSED);
+    let focus = NumberFrame::of(&r).map(|frame| frame.focus);
+    assert!(
+        focus.is_ok_and(|focus| focus.is_some_and(|edge| edge.is_transparent())),
+        "{focus:?}"
+    );
+    let ring = gpui::hsla(0.6, 0.5, 0.5, 1.0);
+    let edge = number_edge(true, focus.ok().flatten(), rest, ring);
+    assert!(edge.is_some_and(|edge| edge.is_transparent()), "{edge:?}");
+}
+
+/// A hovered drop-down whose `HOVER` rule states no stroke: its look
+/// (`demo::combo_look`) has a transparent hover edge, which the edge drawn
+/// under the trigger takes in place of the one at rest.
+#[test]
+fn a_hovered_drop_down_stroked_as_none_has_no_edge() {
+    use native_theme::next::WidgetState;
+    let (r, _) = stroked_as_none_in(WidgetState::HOVER);
+    let edge = crate::demo::combo_look(&r).map(|look| look.hover_edge);
+    assert!(
+        edge.is_ok_and(|edge| edge.is_some_and(|edge| edge.is_transparent())),
+        "{edge:?}"
+    );
+}
+
+/// A Basic drop-down under kde-breeze light patched with a `HOVER` rule
+/// stating no stroke, installed: at rest it is edged in
+/// `combo_box.field(NONE).stroke.color`; hovered, no edge is painted over
+/// its bounds, the edge at rest not kept under the pointer.
+#[gpui::test]
+fn a_hovered_drop_down_stroked_as_none_draws_no_edge(cx: &mut TestAppContext) {
+    use crate::info::stroke_color_of;
+    use native_theme::next::{ComboBoxRule, PartPatch, Stroke, ThemePatch, WidgetState};
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let r = install_patched_breeze(&mut cx, &showcase, Page::Basic, |_| {
+        Some(
+            ThemePatch::new().combo_box(
+                ComboBoxRule::new()
+                    .states(WidgetState::HOVER)
+                    .field(PartPatch::new().stroke(Stroke::None)),
+            ),
+        )
+    });
+    let Some(r) = r else { return };
+    let rest = stroke_color_of(&r.combo_box.field(WidgetState::NONE));
+    assert!(
+        rest.is_some_and(|edge| !edge.is_transparent()),
+        "kde-breeze light no longer edges its drop-down: {rest:?}"
+    );
+    let field = "basic-select";
+    hover(&mut cx, point(px(4.), px(4.)));
+    draw(&mut cx);
+    let at_rest = painted_edges(&mut cx, field);
+    assert!(
+        rest.is_some_and(|rest| at_rest.contains(&rest)),
+        "a drop-down at rest is not edged in combo_box.field(NONE).stroke.color: {at_rest:?}"
+    );
+    let at = bounds_of(&mut cx, field).center();
+    hover(&mut cx, at);
+    draw(&mut cx);
+    let hovered = painted_edges(&mut cx, field);
+    assert!(
+        hovered.is_empty(),
+        "a hovered drop-down whose HOVER rule states no stroke is edged: {hovered:?}"
+    );
 }
 
 /// Under the macOS presets, which state no `input.field(FOCUSED)` edge, the
@@ -19637,12 +19759,13 @@ fn switch_hover_stated_decides_as_the_switch_look_does() {
 /// `switch.track(<state>).stroke.color` (:282-285); the thumb's outline
 /// `switch.thumb(NONE)` or `(CHECKED).stroke.color` (:292, :293); the thumb
 /// `switch.thumb(<state>).fill` (:273-276); the label
-/// `switch.label(<state>).color` where the theme states it (:432-435), else
-/// gpui-component's own, `colors.window.foreground_muted` disabled (:441),
-/// `colors.window.foreground` enabled (:442) -- as (track, hover, track
-/// outline, thumb outline, thumb, label).
+/// `switch.label(<state>).color` where the theme states it (:437-440), else
+/// gpui-component's own, `colors.window.foreground_muted` disabled (:488),
+/// `colors.window.foreground` enabled (:484), as `SwitchLabelHome` names
+/// them -- as (track, hover, track outline, thumb outline, thumb, label).
 #[cfg(feature = "widgets")]
 fn switch_homes(r: &native_theme::next::ResolvedTheme, checked: bool, disabled: bool) -> [Leaf; 6] {
+    use native_theme_gpui::widgets::SwitchLabelHome;
     let pick = |[none, on, off, off_on]: [Leaf; 4]| match (checked, disabled) {
         (false, false) => none,
         (true, false) => on,
@@ -19739,29 +19862,29 @@ fn switch_homes(r: &native_theme::next::ResolvedTheme, checked: bool, disabled: 
     ]);
     let label = match native_theme_gpui::widgets::SwitchLook::next_label_home(r, checked, disabled)
     {
-        Ok("switch.label(NONE).color") => (
+        Ok(SwitchLabelHome::Rest) => (
             "switch.label(NONE).color",
-            "native-theme-gpui/widgets/switch.rs:432",
+            "native-theme-gpui/widgets/switch.rs:437",
         ),
-        Ok("switch.label(CHECKED).color") => (
+        Ok(SwitchLabelHome::Checked) => (
             "switch.label(CHECKED).color",
-            "native-theme-gpui/widgets/switch.rs:433",
+            "native-theme-gpui/widgets/switch.rs:438",
         ),
-        Ok("switch.label(DISABLED).color") => (
+        Ok(SwitchLabelHome::Disabled) => (
             "switch.label(DISABLED).color",
-            "native-theme-gpui/widgets/switch.rs:434",
+            "native-theme-gpui/widgets/switch.rs:439",
         ),
-        Ok("switch.label(DISABLED|CHECKED).color") => (
+        Ok(SwitchLabelHome::DisabledChecked) => (
             "switch.label(DISABLED|CHECKED).color",
-            "native-theme-gpui/widgets/switch.rs:435",
+            "native-theme-gpui/widgets/switch.rs:440",
         ),
-        _ if disabled => (
+        Ok(SwitchLabelHome::WindowForegroundMuted) => (
             "colors.window.foreground_muted",
-            "native-theme-gpui/widgets/switch.rs:441",
+            "native-theme-gpui/widgets/switch.rs:488",
         ),
         _ => (
             "colors.window.foreground",
-            "native-theme-gpui/widgets/switch.rs:442",
+            "native-theme-gpui/widgets/switch.rs:484",
         ),
     };
     [track, hover, track_outline, thumb_outline, thumb, label]
@@ -20196,11 +20319,11 @@ fn a_switchs_info_reads_its_label_at_its_own_homes() {
             [
                 (
                     "colors.window.foreground",
-                    "native-theme-gpui/widgets/switch.rs:442",
+                    "native-theme-gpui/widgets/switch.rs:484",
                 ),
                 (
                     "colors.window.foreground_muted",
-                    "native-theme-gpui/widgets/switch.rs:441",
+                    "native-theme-gpui/widgets/switch.rs:488",
                 ),
             ],
             "gap_2",
@@ -20211,11 +20334,11 @@ fn a_switchs_info_reads_its_label_at_its_own_homes() {
             [
                 (
                     "switch.label(NONE).color",
-                    "native-theme-gpui/widgets/switch.rs:432",
+                    "native-theme-gpui/widgets/switch.rs:437",
                 ),
                 (
                     "switch.label(DISABLED).color",
-                    "native-theme-gpui/widgets/switch.rs:434",
+                    "native-theme-gpui/widgets/switch.rs:439",
                 ),
             ],
             "switch.label_gap: 13px",

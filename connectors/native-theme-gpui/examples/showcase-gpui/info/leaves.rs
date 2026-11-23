@@ -814,7 +814,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "combo_box.hover_border_color",
-        "gpui: an edge laid over the trigger under the pointer (demo::combo_surface); upstream's trigger has no hover style",
+        "gpui: an edge drawn under the trigger, which takes the place of the trigger's under the pointer (demo::combo_surface); upstream's trigger has no hover style",
     ),
     (
         "",

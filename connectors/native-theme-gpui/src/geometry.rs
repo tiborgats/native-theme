@@ -907,8 +907,8 @@ pub(crate) struct DialogFrame {
     pub(crate) radius: f32,
     pub(crate) background: Hsla,
     pub(crate) border_color: Hsla,
-    /// The edge's width where the theme draws no line, 0; `None` keeps
-    /// upstream's.
+    /// The edge's width where the theme states it (0 where it draws no
+    /// line); `None` keeps upstream's.
     pub(crate) border_width: Option<f32>,
 }
 

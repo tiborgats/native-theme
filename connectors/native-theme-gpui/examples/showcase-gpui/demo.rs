@@ -4262,8 +4262,9 @@ impl FieldSurface {
     /// and `hovered` its part under the pointer, where the theme states the
     /// fill at rest as one colour and the line as [`SurfaceLine::of`] reads
     /// it. Under the pointer the edge is the hovered part's where a rule
-    /// states it for the state; a soft option the theme leaves unstated
-    /// keeps the edge it would cover.
+    /// states it for the state, transparent where the rule states no
+    /// stroke; a soft option the theme leaves unstated keeps the edge it
+    /// would cover.
     pub(crate) fn of(
         rest: &native_theme::next::PartStyle,
         hovered: &native_theme::next::PartStyle,
@@ -4801,13 +4802,14 @@ pub(crate) fn number_edge(
 
 /// What the number field the showcase draws ([`number_input`]) reads of the
 /// installed 0.8.0 theme.
-struct NumberFrame {
+pub(crate) struct NumberFrame {
     /// `geometry::input`'s refinement.
     field: StyleRefinement,
     /// The field's surface, `input.field(NONE)` and `input.field(HOVER)`.
     surface: FieldSurface,
-    /// `input.field(FOCUSED).stroke.color`, where a rule states it.
-    focus: Option<Hsla>,
+    /// `input.field(FOCUSED).stroke.color`, where a rule states it;
+    /// transparent where it states no stroke.
+    pub(crate) focus: Option<Hsla>,
     /// The step glyphs' colour, `button.label(NONE).color`.
     foreground: Hsla,
     /// The step glyphs' size.
@@ -4817,7 +4819,7 @@ struct NumberFrame {
 impl NumberFrame {
     /// What `r` states of the field, or the home it leaves without a value
     /// gpui can take.
-    fn of(r: &native_theme::next::ResolvedTheme) -> Result<Self, &'static str> {
+    pub(crate) fn of(r: &native_theme::next::ResolvedTheme) -> Result<Self, &'static str> {
         let field = next::geometry::input(r).map_err(|unstated| unstated.home())?;
         let surface = FieldSurface::of(
             &r.input.field(WidgetState::NONE),
@@ -5319,8 +5321,21 @@ pub(crate) struct ComboLook {
     /// `combo_box.field(HOVER).fill` laid over the fill at rest, where a
     /// rule states it.
     hover: Option<Hsla>,
-    /// `combo_box.field(HOVER).stroke.color`, where a rule states it.
-    hover_edge: Option<Hsla>,
+    /// `combo_box.field(HOVER).stroke.color`, where a rule states it;
+    /// transparent where it states no stroke.
+    pub(crate) hover_edge: Option<Hsla>,
+}
+
+impl ComboLook {
+    /// The edge [`combo_surface`] draws under the trigger, which then has
+    /// none of its own ([`combo_fill`]): at rest `combo_box.field(NONE)`'s,
+    /// under the pointer [`hover_edge`](Self::hover_edge), where a rule
+    /// states it and the trigger is edged at all.
+    fn hover_edges(&self) -> Option<(Option<Hsla>, Hsla)> {
+        self.hover_edge
+            .filter(|_| self.width > 0.0)
+            .map(|hover| (self.edge, hover))
+    }
 }
 
 /// The [`ComboLook`] `r` states, or the home it leaves without a value gpui
@@ -5346,7 +5361,8 @@ pub(crate) fn combo_look(r: &native_theme::next::ResolvedTheme) -> Result<ComboL
 
 /// A drop-down trigger's edge, `combo_box.field(NONE).stroke.color` (none
 /// where the stroke is stated as none, which `geometry::select` and
-/// `geometry::combobox` draw 0 wide), and no
+/// `geometry::combobox` draw 0 wide; transparent where [`combo_surface`]
+/// draws the edge under the trigger, [`ComboLook::hover_edges`]), and no
 /// fill of its own, for a `Select` or a `Combobox` that is not disabled,
 /// under a 0.8.0 theme that states its [`ComboLook`]; `None` otherwise:
 /// [`combo_surface`] paints `geometry::combo_box_fill`'s fill under it. The
@@ -5359,9 +5375,10 @@ fn combo_fill(cx: &App) -> Option<StyleRefinement> {
     let none = cx.theme().transparent;
     let look = next_resolved(cx).and_then(|r| combo_look(r).ok())?;
     let fill = StyleRefinement::default().bg(none);
-    Some(match look.edge {
-        Some(edge) => fill.border_color(edge),
-        None => fill,
+    Some(match (look.hover_edges(), look.edge) {
+        (Some(_), _) => fill.border_color(none),
+        (None, Some(edge)) => fill.border_color(edge),
+        (None, None) => fill,
     })
 }
 
@@ -5376,15 +5393,18 @@ fn combo_fill(cx: &App) -> Option<StyleRefinement> {
 /// (select.rs:832), so the hover fill is this element's. Without a 0.8.0
 /// theme that states the [`ComboLook`] it is a plain box.
 ///
-/// Where a rule states `combo_box.field(HOVER).stroke.color`, an edge in it
-/// is laid over the trigger's under the pointer: the trigger is no
-/// `InteractiveElement` either. The edge is a child after the trigger, laid
-/// absolutely over it, as wide as `combo_box.field(NONE)`'s stroke and
-/// transparent at rest, with only a hover style of the surface's group:
-/// gpui paints a later child over an earlier one, and an element that only
-/// has a group-hover style gets a `Normal` hitbox, which leaves the
-/// trigger's mouse handling as it is (gpui-pre 0.3.12 `window.rs:891-894`;
-/// `elements/div.rs:2460-2468`).
+/// Where a rule states `combo_box.field(HOVER).stroke.color`, the edge is
+/// drawn under the trigger, which [`combo_fill`] leaves edged in
+/// transparent: `combo_box.field(NONE)`'s at rest and the hovered one under
+/// the pointer, which takes the place of the edge at rest (none where the
+/// rule states no stroke); the trigger is no `InteractiveElement` either.
+/// The edge is a child before the trigger, laid absolutely under it, as
+/// wide as `combo_box.field(NONE)`'s stroke, with only a hover style of the
+/// surface's group: gpui paints a later child over an earlier one, so the
+/// focused trigger's own edge in upstream's `ring` (select.rs:596-598)
+/// stays over it, and an element that only has a group-hover style gets a
+/// `Normal` hitbox, which leaves the trigger's mouse handling as it is
+/// (gpui-pre 0.3.12 `window.rs:891-894`; `elements/div.rs:2460-2468`).
 fn combo_surface(cx: &App, trigger: impl IntoElement) -> Div {
     // Upstream's own `transparent` token, as `combo_fill` takes it.
     let none = cx.theme().transparent;
@@ -5394,34 +5414,36 @@ fn combo_surface(cx: &App, trigger: impl IntoElement) -> Div {
             let width = px(look.width.max(0.0));
             let radius = px(look.radius.max(0.0));
             let (fill, hover) = (look.background, look.hover);
-            let edge = look.hover_edge.filter(|_| width > px(0.0));
+            let edges = look.hover_edges();
             div()
                 .rounded(radius)
                 .bg(fill)
                 .when_some(hover, |surface, hover| {
                     surface.hover(move |style| style.bg(hover))
                 })
-                .when(edge.is_some(), |surface| surface.group(COMBO_HOVER_GROUP))
-                .child(trigger)
-                .when_some(edge, |surface, edge| {
+                .when(edges.is_some(), |surface| surface.group(COMBO_HOVER_GROUP))
+                .when_some(edges, |surface, (rest, hovered)| {
                     surface.child(
                         div()
                             .absolute()
                             .inset_0()
                             .rounded(radius)
                             .border(width)
-                            .border_color(none)
-                            .group_hover(COMBO_HOVER_GROUP, move |style| style.border_color(edge))
+                            .border_color(rest.unwrap_or(none))
+                            .group_hover(COMBO_HOVER_GROUP, move |style| {
+                                style.border_color(hovered)
+                            })
                             .debug_selector(|| "combo-hover-edge".into()),
                     )
                 })
+                .child(trigger)
         }
         None => div().child(trigger),
     }
 }
 
 /// The group [`combo_surface`] names its surface by, whose hover the edge
-/// laid over the trigger listens to.
+/// drawn under the trigger listens to.
 const COMBO_HOVER_GROUP: &str = "showcase-combo-hover";
 
 /// The group a menu row names itself by, whose hover and press its outline
