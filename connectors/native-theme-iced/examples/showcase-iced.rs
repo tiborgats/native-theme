@@ -5067,30 +5067,22 @@ fn load_chrome_icons(
 }
 
 /// `icon` at `size`: an OS theme's in its own colours, a bundled set's in
-/// `color`, its label's colour.
+/// `color`, its label's colour. Where `size` is `None` (a theme that states
+/// none), iced's own: the svg or image's `Length::Shrink`, its own size.
 fn chrome_icon<'a>(
     icon: &IconData,
-    size: f32,
+    size: Option<f32>,
     system: bool,
     color: Color,
 ) -> Option<Element<'a, Message>> {
+    let side = size.map_or(Length::Shrink, Length::Fixed);
     match icon {
         IconData::Svg(_) => {
-            native_theme_iced::icons::to_svg_handle(icon, (!system).then_some(color)).map(
-                |handle| {
-                    svg(handle)
-                        .width(Length::Fixed(size))
-                        .height(Length::Fixed(size))
-                        .into()
-                },
-            )
+            native_theme_iced::icons::to_svg_handle(icon, (!system).then_some(color))
+                .map(|handle| svg(handle).width(side).height(side).into())
         }
-        IconData::Rgba { .. } => native_theme_iced::icons::to_image_handle(icon).map(|handle| {
-            iced::widget::image(handle)
-                .width(Length::Fixed(size))
-                .height(Length::Fixed(size))
-                .into()
-        }),
+        IconData::Rgba { .. } => native_theme_iced::icons::to_image_handle(icon)
+            .map(|handle| iced::widget::image(handle).width(side).height(side).into()),
         _ => None,
     }
 }
@@ -6354,10 +6346,14 @@ fn chrome_tip<'a>(
 /// `selected` shows it on.
 struct IconButton<'a> {
     icon: &'a Option<IconData>,
-    size: f32,
+    /// The icon's size on the installed 0.8.0 theme, `None` where it states
+    /// none: the icon at its own size then ([`chrome_icon`]).
+    size: Option<f32>,
     label: &'static str,
     key: Option<&'static str>,
-    font: &'a ResolvedFontSpec,
+    /// The label's text style on the installed 0.8.0 theme
+    /// ([`Typeset::next_text`]).
+    font: TextStyle,
     padding: Padding,
     selected: bool,
     /// Styled as a toolbar's button, `styles::toolbar_button`.
@@ -6400,8 +6396,8 @@ fn icon_button<'a>(state: &'a State, spec: IconButton<'a>) -> Element<'a, Messag
             }
         }
         None => {
-            let button = button(text(spec.label).themed(spec.font, resolved, &state.accessibility))
-                .padding(spec.padding);
+            let button =
+                button(text(spec.label).next_text(&spec.font, &r.typography)).padding(spec.padding);
             if spec.toolbar {
                 button.style(styles::toolbar_button(resolved, spec.selected))
             } else {
@@ -6667,36 +6663,39 @@ fn menu_bar(state: &State) -> Element<'_, Message> {
 /// The window's toolbar (spec §2.3, platform-facts §2.13): three flat
 /// buttons in the gpui showcase's order -- the command palette, Reload
 /// System Theme and Preferences -- their icons of the chosen icon theme at
-/// `toolbar.icon_size`, in the connector's toolbar (`styles::toolbar`,
-/// filled with `toolbar.background_color`), padded by
-/// `native_theme_iced::toolbar_padding` where the theme states a side, by
+/// `toolbar.button_icon(NONE).size` ([`tool_icon_size`]), their labels in
+/// `toolbar.button_label(NONE)`, in the connector's toolbar
+/// (`styles::toolbar`, filled with `toolbar.background_color`), laid out on
+/// the installed 0.8.0 theme ([`ToolbarLayout`]): padded by
+/// `toolbar.bar(NONE).padding` where the theme states a side, by
 /// `layout.container_margin` where it does not and by [`TOOLBAR_PADDING`]
-/// where that is unstated too, its items `toolbar_item_gap` apart, or
+/// where that is unstated too, its items `toolbar.item_gap` apart, or
 /// `layout.widget_gap` apart where that is unstated, or [`TOOLBAR_GAP`]
 /// where that is unstated too, as the gpui showcase's toolbar, at least
-/// `toolbar_bar_height` tall where the theme states one, growing with its
-/// items above it, as gpui's `geometry::toolbar` takes it as a `min_h`. Under its padding
-/// the connector's rule (`styles::toolbar_rule`), a
-/// `toolbar_border_line_width` line in `toolbar.border.color`, as the
-/// resolved theme states it. §2.13 has no row for that border: on the
-/// presets it is `defaults.border`'s, which docs/inheritance-rules.toml hands
-/// the toolbar, where Breeze draws no toolbar frame (`ToolBar_FrameWidth` 0,
-/// cited in §2.13's padding row); the showcase draws what the theme holds.
+/// `toolbar.bar(NONE).min_size[1]` tall where the theme states one, growing
+/// with its items above it, as gpui's `geometry::toolbar` takes it as a
+/// `min_h`. Under its padding the connector's rule
+/// (`styles::toolbar_rule`), a line `toolbar.bar(NONE).stroke.width` high.
+/// §2.13 has no row for that border; Breeze draws no toolbar frame
+/// (`ToolBar_FrameWidth` 0, cited in §2.13's padding row); the showcase
+/// draws what the theme holds.
 fn toolbar(state: &State) -> Element<'_, Message> {
     let resolved = &state.current_resolved;
-    let layout = &state.layout;
-    let t = &resolved.toolbar;
+    let r = state.next_shown();
     let icons = &state.chrome_icons;
-    let pad = ghost_padding(state.next_shown());
+    let pad = ghost_padding(r);
+    let size = tool_icon_size(r);
+    let font = r.toolbar.button_label(WidgetState::NONE);
+    let layout = ToolbarLayout::of(r);
     let item = |tags, icon, label, key, action| {
         icon_button(
             state,
             IconButton {
                 icon,
-                size: t.icon_size,
+                size,
                 label,
                 key,
-                font: &t.font,
+                font: font.clone(),
                 padding: pad,
                 selected: false,
                 toolbar: true,
@@ -6738,23 +6737,14 @@ fn toolbar(state: &State) -> Element<'_, Message> {
             Message::Open(Overlay::Preferences),
         ),
     ]
-    .spacing(
-        native_theme_iced::toolbar_item_gap(resolved)
-            .or(layout.widget_gap)
-            .unwrap_or(TOOLBAR_GAP),
-    )
+    .spacing(layout.gap)
     .align_y(iced::Center);
-    let padding = native_theme_iced::toolbar_padding(
-        resolved,
-        Padding::from(layout.container_margin.unwrap_or(TOOLBAR_PADDING)),
-    );
-    // `toolbar.bar_height` is the outer height, the line included, and a
-    // least height: a `space` that tall less the line and the padding stands
-    // beside the items, and the row is as tall as the taller of the two.
-    let line = native_theme_iced::toolbar_border_line_width(resolved);
-    let floor = native_theme_iced::toolbar_bar_height(resolved)
-        .map(|h| (h - line - padding.y()).max(0.0))
-        .unwrap_or_default();
+    let ToolbarLayout {
+        padding,
+        line,
+        floor,
+        ..
+    } = layout;
     let bar = container(row![items, space().height(floor)].align_y(iced::Center))
         .padding(padding)
         .width(Fill)
@@ -6767,6 +6757,62 @@ fn toolbar(state: &State) -> Element<'_, Message> {
         ],
     )
     .into()
+}
+
+/// A tool button's icon size, `toolbar.button_icon(NONE).size`, where the
+/// installed 0.8.0 theme states it; `None`, the icon at its own size
+/// ([`chrome_icon`]), where it does not.
+fn tool_icon_size(r: &native_theme::next::ResolvedTheme) -> Option<f32> {
+    let icon = r.toolbar.button_icon(WidgetState::NONE);
+    icon.stated
+        .contains(native_theme::next::IconStated::SIZE)
+        .then_some(icon.size)
+}
+
+/// The toolbar's layout on the installed 0.8.0 theme, as [`toolbar`] draws
+/// it.
+#[derive(Clone, Copy, Debug, PartialEq)]
+struct ToolbarLayout {
+    /// The items' gap: `toolbar.item_gap`, `layout.widget_gap` where that
+    /// is unstated, [`TOOLBAR_GAP`] where that is unstated too.
+    gap: f32,
+    /// The bar's padding: each side `toolbar.bar(NONE).padding` states,
+    /// `layout.container_margin` on a side it leaves unstated,
+    /// [`TOOLBAR_PADDING`] where that is unstated too.
+    padding: Padding,
+    /// The rule's height under the bar: `toolbar.bar(NONE).stroke.width`
+    /// where stated as one stroke, iced's own border's width
+    /// (`Border::default`, no line) where not.
+    line: f32,
+    /// The least height of the row inside the padding:
+    /// `toolbar.bar(NONE).min_size[1]`, the outer height, the line
+    /// included, less the line and the padding, no less than 0; none where
+    /// the theme states no bar height. A `space` that tall stands beside the
+    /// items, and the row is as tall as the taller of the two.
+    floor: f32,
+}
+
+impl ToolbarLayout {
+    fn of(r: &native_theme::next::ResolvedTheme) -> Self {
+        let gap = iced_next::toolbar_item_gap(r)
+            .or(r.layout.widget_gap)
+            .unwrap_or(TOOLBAR_GAP);
+        let padding = iced_next::toolbar_padding(
+            r,
+            Padding::from(r.layout.container_margin.unwrap_or(TOOLBAR_PADDING)),
+        );
+        let line = iced_next::stroke_width_of(&r.toolbar.bar(WidgetState::NONE))
+            .unwrap_or(iced::Border::default().width);
+        let floor = iced_next::toolbar_bar_height(r)
+            .map(|h| (h - line - padding.y()).max(0.0))
+            .unwrap_or_default();
+        Self {
+            gap,
+            padding,
+            line,
+            floor,
+        }
+    }
 }
 
 /// One of the theme settings: `label`, in the side panel's label,
@@ -7580,7 +7626,7 @@ fn page_menu(state: &State) -> Element<'_, Message> {
         .and_then(|icon| {
             chrome_icon(
                 icon,
-                size,
+                Some(size),
                 state.chrome_icons.system,
                 icon_colour(state.next_shown(), &state.current_theme, false),
             )
@@ -7836,10 +7882,10 @@ fn status_bar(state: &State) -> Element<'_, Message> {
         state,
         IconButton {
             icon: &state.chrome_icons.panel,
-            size: resolved.defaults.icon_sizes.small,
+            size: state.next_shown().icons.sizes.small,
             label: "Toggle Side Panel",
             key: Some("B"),
-            font: &s.font,
+            font: state.next_shown().status_bar.label.clone(),
             padding: pad,
             selected: state.side_panel_visible,
             toolbar: false,
@@ -9998,29 +10044,39 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         }
         // ---- toolbar ----
         ("toolbar", "bar_height_px") => {
-            "native_theme_iced::toolbar_bar_height: the bar container's least height, less \
-             the rule's, where stated: a space that tall beside the items, less the padding"
+            "ToolbarLayout: toolbar.bar(NONE).min_size[1] (next::toolbar_bar_height), the bar \
+             container's least height, less the rule's, where stated: a space that tall beside \
+             the items, less the padding; none where unstated"
                 .into()
         }
         ("toolbar", "item_gap_px") => format!(
-            "native_theme_iced::toolbar_item_gap: the buttons' Row::spacing; \
-             layout.widget_gap where unstated, and TOOLBAR_GAP, {TOOLBAR_GAP}px, gpui's \
-             showcase constant, where that is unstated too"
+            "ToolbarLayout: toolbar.item_gap (next::toolbar_item_gap), the buttons' \
+             Row::spacing; layout.widget_gap where unstated, and TOOLBAR_GAP, {TOOLBAR_GAP}px, \
+             gpui's showcase constant, where that is unstated too"
         )
         .into(),
         ("toolbar", "border.line_width_px") => {
-            "native_theme_iced::toolbar_border_line_width: the bottom rule's height, under \
-             the bar's padding"
+            "ToolbarLayout: toolbar.bar(NONE).stroke.width, the bottom rule's height, under \
+             the bar's padding; iced's own border width, no line, where unstated"
                 .into()
         }
         ("toolbar", f) if side(f).is_some() => format!(
-            "native_theme_iced::toolbar_padding: the bar container's padding; \
-             layout.container_margin where unstated, and TOOLBAR_PADDING, \
-             {TOOLBAR_PADDING}px, gpui's showcase constant, where that is unstated too"
+            "ToolbarLayout: the side of toolbar.bar(NONE).padding (next::toolbar_padding), the \
+             bar container's padding; layout.container_margin where unstated, and \
+             TOOLBAR_PADDING, {TOOLBAR_PADDING}px, gpui's showcase constant, where that is \
+             unstated too"
         )
         .into(),
-        ("toolbar", "font") => "the button's text, where the icon set has no icon".into(),
-        ("toolbar", "icon_size_px") => "the svg or image's width and height".into(),
+        ("toolbar", "font") => {
+            "the button's text, where the icon set has no icon, in \
+             toolbar.button_label(NONE) (Typeset::next_text)"
+                .into()
+        }
+        ("toolbar", "icon_size_px") => {
+            "tool_icon_size: the svg or image's width and height, \
+             toolbar.button_icon(NONE).size; its own size where unstated"
+                .into()
+        }
         // ---- side panel, status bar, splitter, separator ----
         ("sidebar", "background_color") => {
             "surface: the panel container's background, sidebar.container(NONE).fill".into()
@@ -10072,6 +10128,11 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
                  toward zero (gpui_rounded)"
             )
             .into()
+        }
+        ("status_bar", "font") if id == "chrome.status_bar.toggle" => {
+            "the button's text, where the icon set has no icon, in \
+             status_bar.label (Typeset::next_text)"
+                .into()
         }
         ("status_bar", "font") => "the text's size and theme_font".into(),
         ("status_bar", "font.color") => {
@@ -10592,6 +10653,11 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         ("defaults", "border.line_width_px") => {
             "the swatch container's border.width, layout.border_width".into()
         }
+        ("defaults", "icon_sizes.small_px") if id == "chrome.status_bar.toggle" => {
+            "the svg or image's width and height, icons.sizes.small; its own size where \
+             unstated"
+                .into()
+        }
         ("defaults", "icon_sizes.small_px" | "icon_sizes.toolbar_px" | "icon_sizes.large_px") => {
             "the svg or image's width and height".into()
         }
@@ -10966,10 +11032,10 @@ fn dialog(state: &State, overlay: Overlay) -> Element<'_, Message> {
         state,
         IconButton {
             icon: &state.chrome_icons.close,
-            size: resolved.defaults.icon_sizes.small,
+            size: state.next_shown().icons.sizes.small,
             label: "Close",
             key: None,
-            font: &resolved.button.font,
+            font: state.next_shown().button.label(WidgetState::NONE),
             padding: Padding::ZERO.left(pad.left).right(pad.right),
             selected: false,
             toolbar: false,
@@ -13572,10 +13638,10 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
             state,
             IconButton {
                 icon,
-                size: resolved.toolbar.icon_size,
+                size: tool_icon_size(state.next_shown()),
                 label,
                 key: None,
-                font: &resolved.toolbar.font,
+                font: state.next_shown().toolbar.button_label(WidgetState::NONE),
                 padding: ghost_padding(state.next_shown()),
                 selected,
                 toolbar: true,
@@ -13679,7 +13745,7 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
             .and_then(|icon| {
                 chrome_icon(
                     icon,
-                    size,
+                    Some(size),
                     icons.system,
                     to_color(resolved.defaults.text_color),
                 )
@@ -28988,6 +29054,75 @@ mod tests {
         }
     }
 
+    /// [`ToolbarLayout`] and [`tool_icon_size`] lay the toolbar out on the
+    /// installed 0.8.0 theme: on every preset, a patch stating the item gap
+    /// (11), the bar's four padding sides (3, 5, 7 and 9), its stroke (2
+    /// wide), its least height (60) and the button icon's size (21) gives
+    /// those, the floor the height less the line and the padding (48); each
+    /// the preset leaves unstated is its fall-back: `layout.widget_gap`, else
+    /// [`TOOLBAR_GAP`]; `layout.container_margin`, else [`TOOLBAR_PADDING`];
+    /// iced's own border width; no floor.
+    #[test]
+    fn the_toolbar_takes_its_layout_from_the_installed_theme() -> Result<(), String> {
+        let patch = native_theme::next::ThemePatch::from_toml(
+            "[widgets.toolbar]\nitem_gap = 11.0\n\n[[widgets.toolbar.rules]]\nbar.padding = { \
+             top = 3.0, right = 5.0, bottom = 7.0, left = 9.0 }\nbar.stroke = { width = 2.0, \
+             color = \"#ff0000\" }\nbar.min_size = [\"none\", 60.0]\nbutton_icon.size = 21.0\n",
+        )
+        .map_err(|error| format!("the toolbar patch: {error:?}"))?;
+        let expected = ToolbarLayout {
+            gap: 11.0,
+            padding: Padding {
+                top: 3.0,
+                right: 5.0,
+                bottom: 7.0,
+                left: 9.0,
+            },
+            line: 2.0,
+            floor: 48.0,
+        };
+        let mut failures = Vec::new();
+        for (label, r) in next_combinations() {
+            let shown = ToolbarLayout::of(&r);
+            let bar = r.toolbar.bar(WidgetState::NONE);
+            let gap = r.layout.widget_gap.unwrap_or(TOOLBAR_GAP);
+            if r.toolbar.item_gap.is_none() && shown.gap != gap {
+                failures.push(format!("{label}: the unstated gap is {}", shown.gap));
+            }
+            let margin = r.layout.container_margin.unwrap_or(TOOLBAR_PADDING);
+            let [top, _, _, left] = iced_next::padding_of(&bar);
+            for (side, stated, drawn) in [
+                ("top", top, shown.padding.top),
+                ("left", left, shown.padding.left),
+            ] {
+                if stated.is_none() && drawn != margin {
+                    failures.push(format!("{label}: the unstated {side} is {drawn}"));
+                }
+            }
+            if !bar.stated.contains(PartStated::STROKE) && shown.line != 0.0 {
+                failures.push(format!("{label}: the unstated rule is {}", shown.line));
+            }
+            if iced_next::toolbar_bar_height(&r).is_none() && shown.floor != 0.0 {
+                failures.push(format!("{label}: the unstated floor is {}", shown.floor));
+            }
+            let mut patched = r.clone();
+            patched.apply_patch(&patch);
+            let laid = ToolbarLayout::of(&patched);
+            if laid != expected {
+                failures.push(format!("{label}: patched, {laid:?}, before {shown:?}"));
+            }
+            let icon = tool_icon_size(&patched);
+            if !matches!(icon, Some(size) if size == 21.0) {
+                failures.push(format!("{label}: patched, the icon is {icon:?}"));
+            }
+        }
+        if failures.is_empty() {
+            Ok(())
+        } else {
+            Err(format!("{failures:#?}"))
+        }
+    }
+
     /// What the route `route` of a flat button's colour leaf `leaf` gets
     /// wrong under `r`, the 0.8.0 theme shown, the button `selected` or not,
     /// showing `shows`, its home `home` ([`ghost_home`]): [`ghost_route`]'s
@@ -35099,9 +35234,10 @@ mod tests {
     /// under every bundled preset in both modes, each expectation read from
     /// the resolved theme. The menu bar's first title sits
     /// `layout.container_margin` in from the bar's left, [`MENU_BAR_PADDING`]
-    /// where that is unstated. The toolbar's first button sits
-    /// `toolbar.border.padding`'s side in from the bar's left and top, else
-    /// `container_margin`, else [`TOOLBAR_PADDING`]. The status bar's items
+    /// where that is unstated. The toolbar's first button sits the side of
+    /// the installed 0.8.0 theme's `toolbar.bar(NONE).padding` in from the
+    /// bar's left and top, else its `layout.container_margin`, else
+    /// [`TOOLBAR_PADDING`]. The status bar's items
     /// sit `status_bar.border.padding`'s side inside the bar, under its top
     /// line, else gpui-component's StatusBar padding: a half of the scaled
     /// `defaults.font.size` at the sides and a quarter above and below; each
@@ -35132,8 +35268,11 @@ mod tests {
             );
             let bar = rect("chrome.toolbar");
             let first = rect("chrome.toolbar.command_palette");
-            let stated = &r.toolbar.border.padding;
-            let left = stated.left.or(margin).unwrap_or(TOOLBAR_PADDING);
+            let next = state.next_shown();
+            let [stated_top, _, _, stated_left] =
+                iced_next::padding_of(&next.toolbar.bar(WidgetState::NONE));
+            let next_margin = next.layout.container_margin;
+            let left = stated_left.or(next_margin).unwrap_or(TOOLBAR_PADDING);
             assert!(
                 near(first.x - bar.x, left),
                 "{preset} (dark: {dark}): the toolbar's first button is {}px in, expected {left}px",
@@ -35141,8 +35280,8 @@ mod tests {
             );
             // A stated bar height centres the row: its top is then not the
             // padding's.
-            if r.toolbar.bar_height.is_none() {
-                let top = stated.top.or(margin).unwrap_or(TOOLBAR_PADDING);
+            if iced_next::toolbar_bar_height(next).is_none() {
+                let top = stated_top.or(next_margin).unwrap_or(TOOLBAR_PADDING);
                 assert!(
                     near(first.y - bar.y, top),
                     "{preset} (dark: {dark}): the toolbar's first button is {}px down, expected \
@@ -35562,8 +35701,9 @@ mod tests {
         state.layout.widget_gap = None;
         state.next_resolved.layout.widget_gap = None;
         assert_eq!(
-            state.current_resolved.toolbar.item_gap, None,
-            "macos-tahoe states a toolbar item gap: this test needs one that does not"
+            state.next_resolved.toolbar.item_gap, None,
+            "macos-tahoe states a toolbar item gap on the 0.8.0 model: this test needs one that \
+             does not"
         );
         let (drawn, _) = drawn_frame(&state);
         let rect = |id: &str| match drawn.get(id) {
