@@ -191,6 +191,7 @@ mod install_tests;
 mod mapping_doc;
 #[cfg(test)]
 mod mapping_tests;
+pub mod next;
 mod plugin;
 mod roles;
 mod style;
@@ -213,7 +214,7 @@ pub use accessors::{
     tooltip_show_delay, warning_text_color, window_title_bar_font, window_title_bar_text_color,
 };
 pub use atlas::Note;
-pub use atlas::{Builder, ThemeAtlas};
+pub use atlas::{Builder, NextBuilder, ThemeAtlas};
 pub use ext::{Loaded, SystemThemeExt, from_preset, from_system, to_theme};
 pub use ext::{NativeThemeUiExt, menu_bar_modifier, role_modifier};
 pub use plugin::register_focus_shape;

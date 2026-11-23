@@ -162,20 +162,27 @@ impl FontPlan {
     /// returning it trips `clippy::double_must_use`.
     #[cfg(feature = "system-fonts")]
     pub fn from_system(t: &ResolvedTheme) -> Self {
+        Self::from_system_for(&requests(t))
+    }
+
+    /// [`FontPlan::from_system`] for the faces `requests` asks for, after either model's read:
+    /// a chain asking for none is given none.
+    #[cfg(feature = "system-fonts")]
+    pub(crate) fn from_system_for(requests: &FaceRequests<'_>) -> Self {
         let mut plan = Self::new();
-        for spec in [&t.defaults.font, &t.defaults.mono_font] {
-            let face = match native_theme::fonts::system_face(&spec.family, spec.weight, spec.style)
+        for spec in requests.iter().flatten() {
+            let face = match native_theme::fonts::system_face(spec.family, spec.weight, spec.style)
             {
                 Some(face) => Some(face),
                 None => {
-                    let substituted = native_theme::fonts::substitute_family_cached(&spec.family)
+                    let substituted = native_theme::fonts::substitute_family_cached(spec.family)
                         .and_then(|substitute| {
                             native_theme::fonts::system_face(&substitute, spec.weight, spec.style)
                         });
                     push_note(
                         &mut plan.notes,
                         Note::FontFamilyUnavailable {
-                            family: Arc::clone(&spec.family),
+                            family: Arc::clone(spec.family),
                             substitute: substituted.as_ref().map(|face| Arc::clone(&face.family)),
                         },
                     );
@@ -188,7 +195,7 @@ impl FontPlan {
             // fontdb's own name for the face (`.SF NS` for "SF Pro") need not equal the theme's.
             if let Some(face) = face {
                 plan = plan.face_at(
-                    &spec.family,
+                    spec.family,
                     Some(face.weight),
                     face.style,
                     FontBytes::Shared(face.data),
@@ -222,9 +229,38 @@ impl FontPlan {
     }
 }
 
+/// The face a theme asks one chain for: its family, weight and style.
+pub(crate) struct FaceRequest<'a> {
+    pub(crate) family: &'a Arc<str>,
+    pub(crate) weight: u16,
+    pub(crate) style: FontStyle,
+}
+
+/// The faces a theme asks the `Proportional` and the `Monospace` chain for, in that order;
+/// `None` for a chain that keeps egui's own face.
+pub(crate) type FaceRequests<'a> = [Option<FaceRequest<'a>>; 2];
+
+impl<'a> FaceRequest<'a> {
+    fn of(spec: &'a ResolvedFontSpec) -> Self {
+        Self {
+            family: &spec.family,
+            weight: spec.weight,
+            style: spec.style,
+        }
+    }
+}
+
+/// The faces a 0.7.2 theme asks for: `defaults.font` and `defaults.mono_font`.
+fn requests(t: &ResolvedTheme) -> FaceRequests<'_> {
+    [
+        Some(FaceRequest::of(&t.defaults.font)),
+        Some(FaceRequest::of(&t.defaults.mono_font)),
+    ]
+}
+
 /// The face among `faces` that `select_face` picks for `spec`, by the rule on [`FontPlan`]:
 /// every face described at width `5`, its own weight, or the asked weight for a variable face.
-fn select<'a>(faces: &[&'a PlannedFace], spec: &ResolvedFontSpec) -> Option<&'a PlannedFace> {
+fn select<'a>(faces: &[&'a PlannedFace], spec: &FaceRequest<'_>) -> Option<&'a PlannedFace> {
     let names: Vec<[&str; 1]> = faces.iter().map(|f| [&*f.family]).collect();
     let traits: Vec<FaceTraits<'_>> = names
         .iter()
@@ -236,7 +272,7 @@ fn select<'a>(faces: &[&'a PlannedFace], spec: &ResolvedFontSpec) -> Option<&'a 
             weight: face.weight.unwrap_or(spec.weight),
         })
         .collect();
-    select_face(&traits, &spec.family, spec.weight, spec.style)
+    select_face(&traits, spec.family, spec.weight, spec.style)
         .and_then(|i| faces.get(i))
         .copied()
 }
@@ -271,6 +307,15 @@ fn select<'a>(faces: &[&'a PlannedFace], spec: &ResolvedFontSpec) -> Option<&'a 
 /// not checked.
 #[must_use]
 pub fn font_definitions(theme: &ResolvedTheme, plan: &FontPlan) -> (FontDefinitions, Vec<Note>) {
+    definitions_for(&requests(theme), plan)
+}
+
+/// [`font_definitions`] for the faces `requests` asks for, after either model's read: a chain
+/// asking for none keeps the base's.
+pub(crate) fn definitions_for(
+    requests: &FaceRequests<'_>,
+    plan: &FontPlan,
+) -> (FontDefinitions, Vec<Note>) {
     let mut defs = plan.base.clone().unwrap_or_default();
     let mut notes = plan.notes.clone();
     // `entry(..).or_default()`, never `get_mut`, and before anything can return: the result
@@ -298,18 +343,14 @@ pub fn font_definitions(theme: &ResolvedTheme, plan: &FontPlan) -> (FontDefiniti
             );
         }
     }
+    let [proportional, monospace] = requests;
     for (family, spec, key) in [
-        (
-            FontFamily::Proportional,
-            &theme.defaults.font,
-            PROPORTIONAL_KEY,
-        ),
-        (
-            FontFamily::Monospace,
-            &theme.defaults.mono_font,
-            MONOSPACE_KEY,
-        ),
+        (FontFamily::Proportional, proportional, PROPORTIONAL_KEY),
+        (FontFamily::Monospace, monospace, MONOSPACE_KEY),
     ] {
+        let Some(spec) = spec else {
+            continue;
+        };
         if select(&all, spec).is_none() {
             // `push_note`: a `from_system` plan already carries this note for a family the OS
             // has no face of and no substitute for (§4.9); it is reported once. A family drawn
@@ -317,7 +358,7 @@ pub fn font_definitions(theme: &ResolvedTheme, plan: &FontPlan) -> (FontDefiniti
             push_note(
                 &mut notes,
                 Note::FontFamilyUnavailable {
-                    family: Arc::clone(&spec.family),
+                    family: Arc::clone(spec.family),
                     substitute: None,
                 },
             );

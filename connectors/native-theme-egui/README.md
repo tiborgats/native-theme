@@ -511,8 +511,11 @@ fn play_pause_icon(ui: &mut egui::Ui) {
         return;
     };
     let scheme = ui.ctx().theme();
+    let Some(theme) = atlas.resolved_for(scheme) else {
+        return;
+    };
     let set = atlas.icon_set();
-    let side = icon_size(atlas.resolved_for(scheme), IconContext::Toolbar);
+    let side = icon_size(theme, IconContext::Toolbar);
     let icon = AppIcon::PlayPause;
     let mut key = IconKey::name(icon.icon_name(set).unwrap_or("play-pause"), set)
         .size(side)
@@ -540,8 +543,11 @@ fn warning_icon(ui: &mut egui::Ui) {
         return;
     };
     let scheme = ui.ctx().theme();
+    let Some(theme) = atlas.resolved_for(scheme) else {
+        return;
+    };
     let role = IconRole::DialogWarning;
-    let side = icon_size(atlas.resolved_for(scheme), IconContext::Toolbar);
+    let side = icon_size(theme, IconContext::Toolbar);
     let mut key = IconKey::role(role, atlas.icon_set())
         .size(side)
         .tint(ui.visuals().warn_fg_color);
@@ -585,7 +591,10 @@ fn spinner(ui: &mut egui::Ui, anim: &AnimatedIcon) {
         return;
     };
     let scheme = ui.ctx().theme();
-    let side = atlas.resolved_for(scheme).spinner.diameter;
+    let Some(theme) = atlas.resolved_for(scheme) else {
+        return;
+    };
+    let side = theme.spinner.diameter;
     let reduce_motion = atlas.accessibility().reduce_motion;
     // The text colour: a Material or Lucide frame is tinted it, and a
     // freedesktop frame's `currentColor` takes it where the frame sets no
@@ -683,6 +692,67 @@ for it. The same slot fills an unscoped slider's rail and handle, a check box an
 radio button. Where the handle is pale, as Breeze's grey is (`kde-breeze`, #cbcdcd /
 #46494b), an unscoped slider's rail all but disappears on the window (1.4:1 /
 1.7:1). A slider inside `Role::Slider` takes `slider.track_color`.
+
+### What the 0.8.0 model states that egui cannot draw
+
+The `next` module maps the 0.8.0 model (`native_theme::next`), which states
+more than 0.7.2 did: `next::to_theme` builds the same `ThemeAtlas` from it,
+and each crate-root accessor has a twin there. Where egui has a receiver,
+`next` wires the value through; where it has none, the value is dropped as
+listed here, and a value the theme leaves unstated is egui's own
+(docs/v0.8.0-spec.md §10, rule 0).
+
+- **The focus ring's kind and alignment.** The install plugin strokes one
+  ring round the focused widget's rect, outside it at the ring's offset
+  (src/plugin.rs, `paint_focus_ring`; `Painter::rect_stroke` with
+  `StrokeKind::Outside`, `egui-0.37.0/src/painter.rs`), in
+  `focus_ring.stroke`'s colour and width, shown as `focus_ring.trigger`
+  says. Its corners are the widget's grown by the offset, or the ring's own
+  outer corners where the theme states `focus_ring.corners`; a second ring
+  inside the first is drawn where it states `inner_stroke` (a second
+  `rect_stroke`, `StrokeKind::Inside`). The stroke's alignment is not
+  drawn: every bundled preset states its ring with `Stroke::uniform`, whose
+  alignment is `Inside` by construction, while the presets describe a ring
+  outside the part at the offset, so the ring lies outside at the offset
+  whatever the alignment says. A `kind` of `Fill` or `Underline` is no
+  ring: `next::to_theme` returns `Unmapped("focus_ring.kind")` for it; a
+  ring or second ring stated per side is `Unmapped`, and so are continuous
+  or concentric corners, which `CornerRadius` (four circular radii,
+  `epaint-0.37.0/src/corner_radius.rs`) cannot hold.
+- **A stroke per side.** egui strokes a rect with one `Stroke`, one width
+  and colour on all four sides (`epaint-0.37.0/src/shapes/rect_shape.rs`,
+  `RectShape::stroke`). Where the theme states a part's stroke per side
+  (`Stroke::Complex`), the part keeps egui's own stroke, as if the theme
+  stated none, and the part reads (`next::stroke_color_of`,
+  `next::stroke_width_of`) return `None`.
+- **Shadows beyond one outset layer.** egui's `Shadow` is one outset
+  shadow: an offset in whole points (`[i8; 2]`), a blur and a spread in
+  whole points (`u8`), and a colour (`epaint-0.37.0/src/shadow.rs`), one
+  per frame (`Frame::shadow`, `egui-0.37.0/src/containers/frame.rs`) and
+  one each for windows and popups (`Visuals::window_shadow`,
+  `popup_shadow`). The atlas draws the first outset layer a surface states
+  (docs/v0.8.0-spec.md §10, rule 2): the window frame's into
+  `window_shadow`, the menu panel's (else the popover panel's) into
+  `popup_shadow`, and each dialog's, popover's, tooltip's, card's and
+  panel's into its frame, its lengths rounded to whole points. An inset layer and every layer after the
+  first are not drawn: `Shadow` has no inset form and a frame takes one
+  shadow. A widget's own shadow (a button's, a field's) is not drawn:
+  egui's `WidgetVisuals` has no shadow (`egui-0.37.0/src/style.rs`).
+- **Gradients and layered fills.** egui fills a shape with one `Color32`
+  (`epaint-0.37.0/src/shapes/rect_shape.rs`, `RectShape::fill`). A fill the
+  theme states as layers (`Paint::Complex`, a gradient among them) is drawn
+  in the one colour the model gives in its place, its fallback colour
+  (docs/v0.8.0-spec.md §10, rule 2), and as egui's own fill where it gives
+  none.
+- **Where a translucent stroke lies.** egui ends a rect's fill at the
+  stroke's inner edge (`epaint-0.37.0/src/tessellator.rs`,
+  `stroke_and_fill_path`), so a stroke the theme lays `Outside` the part is
+  drawn as stated. One it lays `Inside`, over the fill, is handed to egui
+  composited over the fill the state paints, which looks the same; one
+  `Center`ed on the edge is composited over that fill at half its alpha, so
+  the whole band is drawn in the band's mean colour where the platform shows
+  the fill under its inner half only (src/style/line.rs). An opaque stroke
+  is drawn exactly in every alignment.
 
 ## Semver
 

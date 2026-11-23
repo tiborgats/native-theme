@@ -680,7 +680,7 @@ fn the_column_count_holds_the_segmented_control() {
             let bar = &harness
                 .state()
                 .atlas
-                .resolved_for(egui::Theme::Light)
+                .old_resolved(egui::Theme::Light)
                 .scrollbar;
             let floating = if bar.overlay_mode {
                 bar.groove_width
@@ -792,7 +792,7 @@ fn a_page_tab_keeps_eguis_padding_where_the_theme_states_none() {
     let t = harness
         .state()
         .atlas
-        .resolved_for(egui::Theme::Light)
+        .old_resolved(egui::Theme::Light)
         .clone();
     let padding = &t.tab.border.padding;
     assert!(
@@ -1767,7 +1767,7 @@ fn widget_info_carries_the_mapping_notes() {
         let shown = harness.state().registry.shown().cloned().expect("shown");
         assert_eq!(shown.info.kind, kind);
         let (manifest, json) = manifest_and_json(&harness);
-        let t = harness.state().atlas.resolved_for(egui::Theme::Light);
+        let t = harness.state().atlas.old_resolved(egui::Theme::Light);
         assert!(
             t.button.border.padding.left.is_none() && t.button.border.padding.right.is_none(),
             "{TEST_PRESET} states a button padding across, so the padding note shows no default"
@@ -2129,6 +2129,43 @@ fn a_failed_rebuild_keeps_the_installed_fonts() {
         "the rebuild must fail"
     );
     assert_eq!(faces(&harness), before);
+}
+
+/// `adopt` installs no atlas of the 0.8.0 model, whose 0.7.2 themes the pages would lack: the
+/// installed atlas stays, and the theme error says why.
+#[test]
+fn adopt_refuses_an_atlas_of_the_next_model() {
+    use native_theme::next::{Preset, Theme as NextTheme, ThemeContext};
+
+    let mut harness = open_default();
+    harness.run_steps(SETTLE);
+    let ctx = harness.ctx.clone();
+    let before = harness.state().atlas.name().to_owned();
+    let theme = NextTheme::preset(Preset::Adwaita);
+    let [light, light_inactive, dark, dark_inactive] = [
+        ThemeContext::light(),
+        ThemeContext::light().with_window_active(false),
+        ThemeContext::dark(),
+        ThemeContext::dark().with_window_active(false),
+    ]
+    .map(|c| theme.resolve(&c));
+    let next = native_theme_egui::next::to_theme(&light, &light_inactive, &dark, &dark_inactive)
+        .expect("adwaita maps");
+    assert_ne!(
+        next.name(),
+        before,
+        "the two atlases are told apart by name"
+    );
+    harness.state_mut().adopt(&ctx, next);
+    harness.run_steps(SETTLE);
+    assert_eq!(
+        harness.state().theme_error.as_deref(),
+        Some(crate::app::NOT_OLD)
+    );
+    assert_eq!(harness.state().atlas.name(), before);
+    let installed = native_theme_egui::ThemeAtlas::from_ctx(&ctx).expect("an atlas is installed");
+    assert_eq!(installed.name(), before);
+    assert!(installed.resolved_for(egui::Theme::Light).is_some());
 }
 
 /// A preset every platform offers other than [`TEST_PRESET`], and its atlas: the watcher's
@@ -2630,7 +2667,7 @@ fn the_status_bar_is_one_line_and_its_padding_tall() {
     let t = harness
         .state()
         .atlas
-        .resolved_for(egui::Theme::Light)
+        .old_resolved(egui::Theme::Light)
         .clone();
     let size = native_theme_egui::scaled_text_size(
         t.status_bar.font.size,
@@ -2684,7 +2721,7 @@ fn gpui_status_bar_padding(harness: &Harness<'_, App>) -> (f32, f32) {
     let atlas = &harness.state().atlas;
     let rem = atlas
         .accessibility()
-        .scaled(atlas.resolved_for(egui::Theme::Light).defaults.font.size);
+        .scaled(atlas.old_resolved(egui::Theme::Light).defaults.font.size);
     let whole = |length: f32| (length.abs() - 0.5).ceil().copysign(length);
     (whole(rem / 4.0), whole(rem / 2.0))
 }
@@ -2698,7 +2735,7 @@ fn the_status_bar_padding_rounds_a_half_as_gpuis_does() {
     for preset in ["catppuccin-mocha", "material-3", "windows-11"] {
         let harness = open_scaled(preset, "basic", 1.0);
         let atlas = &harness.state().atlas;
-        let t = atlas.resolved_for(egui::Theme::Light).clone();
+        let t = atlas.old_resolved(egui::Theme::Light).clone();
         let p = &t.status_bar.border.padding;
         assert!(
             [p.top, p.right, p.bottom, p.left]
@@ -2913,7 +2950,7 @@ fn the_chrome_bars_take_the_gpui_showcases_padding_where_the_theme_states_none()
     use crate::chrome::{MENU_BAR_PADDING, TOOLBAR_PADDING};
     let harness = open_scaled("macos-tahoe", "basic", 1.0);
     let atlas = &harness.state().atlas;
-    let t = atlas.resolved_for(egui::Theme::Light).clone();
+    let t = atlas.old_resolved(egui::Theme::Light).clone();
     assert_eq!(atlas.layout().container_margin, None);
     let unstated = |p: &native_theme::theme::ResolvedPadding| {
         [p.top, p.right, p.bottom, p.left]
@@ -3035,11 +3072,12 @@ fn the_chrome_bars_take_the_gpui_showcases_padding_where_the_theme_states_none()
 /// The macos-tahoe atlas, built as `from_preset` builds it, with its layout's `widget_gap`
 /// unstated, as no bundled preset leaves it: the case where the chrome's own constants for that
 /// role stand.
-fn tahoe_without_widget_gap() -> native_theme_egui::ThemeAtlas {
+fn tahoe_without_widget_gap() -> Result<native_theme_egui::ThemeAtlas, &'static str> {
     let prefs = AccessibilityPreferences::default();
     let (preset, _) = from_preset("macos-tahoe", false, &prefs).expect("macos-tahoe loads");
+    let preset = crate::app::OldAtlas::of(preset).ok_or("macos-tahoe's 0.7.2 themes")?;
     let [light, dark] =
-        [egui::Theme::Light, egui::Theme::Dark].map(|theme| preset.resolved_for(theme).clone());
+        [egui::Theme::Light, egui::Theme::Dark].map(|theme| preset.old_resolved(theme).clone());
     let mut layout = preset.layout().clone();
     layout.widget_gap = None;
     let mut builder = native_theme_egui::ThemeAtlas::builder(preset.name(), &light, &dark)
@@ -3055,7 +3093,7 @@ fn tahoe_without_widget_gap() -> native_theme_egui::ThemeAtlas {
     {
         builder = builder.fonts(native_theme_egui::fonts::FontPlan::from_system(&light));
     }
-    builder.build()
+    Ok(builder.build())
 }
 
 /// F rows 4 and 5 (pass 6 m2): where the theme states no `layout.widget_gap` and no
@@ -3063,7 +3101,8 @@ fn tahoe_without_widget_gap() -> native_theme_egui::ThemeAtlas {
 /// `THEME_SETTINGS_GAP` apart and the toolbar's items `TOOLBAR_GAP` apart, the gpui showcase's
 /// constants, which the settings' and the toolbar's Widget Info name.
 #[test]
-fn without_a_widget_gap_the_settings_and_the_toolbar_take_the_gpui_showcases_gaps() {
+fn without_a_widget_gap_the_settings_and_the_toolbar_take_the_gpui_showcases_gaps()
+-> Result<(), &'static str> {
     use crate::chrome::{THEME_SETTINGS_GAP, TOOLBAR_GAP};
     let mut harness = open(
         egui::Theme::Light,
@@ -3071,7 +3110,7 @@ fn without_a_widget_gap_the_settings_and_the_toolbar_take_the_gpui_showcases_gap
     );
     harness.run_steps(4);
     let ctx = harness.ctx.clone();
-    harness.state_mut().adopt(&ctx, tahoe_without_widget_gap());
+    harness.state_mut().adopt(&ctx, tahoe_without_widget_gap()?);
     harness.run_steps(4);
     assert_eq!(harness.state().atlas.layout().widget_gap, None);
     let stack = [
@@ -3113,6 +3152,7 @@ fn without_a_widget_gap_the_settings_and_the_toolbar_take_the_gpui_showcases_gap
         "the toolbar's info: {:?}",
         element_notes(&harness, "chrome.toolbar")
     );
+    Ok(())
 }
 
 /// F row 5: where `sidebar.border.padding` states some sides, the side panel keeps them, and a
@@ -3126,7 +3166,7 @@ fn a_side_panel_side_the_theme_leaves_unstated_takes_the_container_margin() {
     let harness = open_scaled("windows-11", "basic", 1.0);
     let atlas = &harness.state().atlas;
     let padding = atlas
-        .resolved_for(egui::Theme::Light)
+        .old_resolved(egui::Theme::Light)
         .sidebar
         .border
         .padding;
@@ -3170,7 +3210,7 @@ fn a_side_panel_side_the_theme_leaves_unstated_takes_the_container_margin() {
     let padding = harness
         .state()
         .atlas
-        .resolved_for(egui::Theme::Light)
+        .old_resolved(egui::Theme::Light)
         .sidebar
         .border
         .padding;
@@ -3211,7 +3251,7 @@ fn a_dialog_side_the_theme_leaves_unstated_is_gpui_components_padding() {
         let border = harness
             .state()
             .atlas
-            .resolved_for(egui::Theme::Light)
+            .old_resolved(egui::Theme::Light)
             .dialog
             .border
             .clone();
@@ -3628,7 +3668,7 @@ fn basic_checkbox_and_radio_rows_fit_the_indicator() {
         let t = harness
             .state()
             .atlas
-            .resolved_for(egui::Theme::Light)
+            .old_resolved(egui::Theme::Light)
             .clone();
         let records = harness.state().registry.records();
         let rects = |kind: &str| -> Vec<egui::Rect> {
@@ -3704,7 +3744,7 @@ fn the_basic_page_applies_the_per_call_leaves() {
         let t = harness
             .state()
             .atlas
-            .resolved_for(egui::Theme::Light)
+            .old_resolved(egui::Theme::Light)
             .clone();
         let rect_of = |kind: &str| {
             harness
@@ -3830,7 +3870,7 @@ fn the_palette_pages_apply_the_per_call_leaves() {
         let t = harness
             .state()
             .atlas
-            .resolved_for(egui::Theme::Light)
+            .old_resolved(egui::Theme::Light)
             .clone();
         for kind in kinds {
             for rect in rects(harness, kind) {
@@ -3874,7 +3914,7 @@ fn the_palette_pages_apply_the_per_call_leaves() {
     let t = harness
         .state()
         .atlas
-        .resolved_for(egui::Theme::Light)
+        .old_resolved(egui::Theme::Light)
         .clone();
     let d = &t.dialog;
     wide_enough(
@@ -3917,7 +3957,7 @@ fn the_palette_pages_apply_the_per_call_leaves() {
         let min_height = harness
             .state()
             .atlas
-            .resolved_for(egui::Theme::Light)
+            .old_resolved(egui::Theme::Light)
             .input
             .min_height;
         for kind in [
@@ -3952,7 +3992,7 @@ fn the_palette_pages_apply_the_per_call_leaves() {
 #[test]
 fn the_inputs_page_frames_its_fields_in_their_own_border() {
     let harness = open_scaled("material-3", "inputs", 1.0);
-    let t = harness.state().atlas.resolved_for(egui::Theme::Light);
+    let t = harness.state().atlas.old_resolved(egui::Theme::Light);
     assert_ne!(
         t.input.border.line_width, t.button.border.line_width,
         "the case this covers: a field's line that is not the button's"
@@ -4101,7 +4141,7 @@ fn galley_font(harness: &Harness<'_, App>, text: &str, within: &[egui::Rect]) ->
 fn the_tables_headers_are_drawn_at_their_weight_and_the_scaled_size() {
     let preset = "material-3";
     let mut basic = open_scaled(preset, "basic", 1.5);
-    let t = basic.state().atlas.resolved_for(egui::Theme::Light).clone();
+    let t = basic.state().atlas.old_resolved(egui::Theme::Light).clone();
     let header_weight = t.list.header_font.weight;
     hold_weights(&mut basic, &[header_weight]);
     let prefs = basic.state().atlas.accessibility().clone();
@@ -4161,7 +4201,7 @@ fn the_text_role_labels_are_drawn_at_their_weight() {
     let t = harness
         .state()
         .atlas
-        .resolved_for(egui::Theme::Light)
+        .old_resolved(egui::Theme::Light)
         .clone();
     let weights: Vec<u16> = ROLES
         .iter()
@@ -4216,7 +4256,7 @@ fn the_tables_headers_take_the_themes_header_height() {
         ("macos-monterey", 1.5),
     ] {
         let basic = open_scaled(preset, "basic", factor);
-        let t = basic.state().atlas.resolved_for(egui::Theme::Light).clone();
+        let t = basic.state().atlas.old_resolved(egui::Theme::Light).clone();
         let stated = native_theme_egui::list_header_height(&t);
         assert_eq!(
             stated.is_some(),
@@ -4335,7 +4375,7 @@ fn the_tables_centre_their_text_in_its_row() {
             ),
         ] {
             let page = open_scaled(preset, tab, 1.0);
-            let t = page.state().atlas.resolved_for(egui::Theme::Light).clone();
+            let t = page.state().atlas.old_resolved(egui::Theme::Light).clone();
             let l = &t.list;
             let stated = native_theme_egui::list_header_height(&t).or(l.row_height);
             let header_height = table_row(&t, 1.0, stated, l.header_font.size, l.header_font.size);
@@ -4776,7 +4816,7 @@ fn the_data_and_theme_map_rows_are_the_themes_row_height() {
     ] {
         for (tab, kind) in [("data", "table cell"), ("theme-map", "theme map cell")] {
             let page = open_scaled(preset, tab, factor);
-            let t = page.state().atlas.resolved_for(egui::Theme::Light).clone();
+            let t = page.state().atlas.old_resolved(egui::Theme::Light).clone();
             let l = &t.list;
             let drawn = native_theme_egui::scaled_text_size(
                 l.item_font.size,
@@ -4970,7 +5010,7 @@ fn the_basic_list_and_table_fills_keep_inside_the_frames_corners() {
         let t = harness
             .state()
             .atlas
-            .resolved_for(egui::Theme::Light)
+            .old_resolved(egui::Theme::Light)
             .clone();
         let l = &t.list;
         let inner = native_theme_egui::convert::to_corner_radius(
@@ -5079,7 +5119,7 @@ fn a_hovered_list_row_is_outlined_where_the_theme_states_it() {
         let t = harness
             .state()
             .atlas
-            .resolved_for(egui::Theme::Light)
+            .old_resolved(egui::Theme::Light)
             .clone();
         let l = &t.list;
         let outline = l.hover_border_color.map(|edge| {
@@ -5245,7 +5285,7 @@ fn a_hovered_row_cut_by_the_list_view_is_outlined_on_its_fill() {
     let t = harness
         .state()
         .atlas
-        .resolved_for(egui::Theme::Light)
+        .old_resolved(egui::Theme::Light)
         .clone();
     let l = &t.list;
     let edge = l
@@ -5357,7 +5397,7 @@ fn the_menu_bar_takes_the_toolbar_fill_and_its_open_title_the_open_fill() {
     let t = harness
         .state()
         .atlas
-        .resolved_for(egui::Theme::Light)
+        .old_resolved(egui::Theme::Light)
         .clone();
     assert_eq!(
         t.toolbar.background_color,
@@ -5421,7 +5461,7 @@ fn the_open_menu_insets_its_first_item_by_the_panel_padding() {
         let t = harness
             .state()
             .atlas
-            .resolved_for(egui::Theme::Light)
+            .old_resolved(egui::Theme::Light)
             .clone();
         let (m, p) = (&t.menu, &t.popover.border);
         let line = native_theme_egui::convert::to_stroke(egui::Stroke::NONE, p.color, p.line_width);
@@ -5488,7 +5528,7 @@ fn the_table_headers_lines_take_the_header_separator_colour() {
         let t = harness
             .state()
             .atlas
-            .resolved_for(egui::Theme::Light)
+            .old_resolved(egui::Theme::Light)
             .clone();
         let l = &t.list;
         let grid = colour(l.grid_color);
@@ -5566,7 +5606,9 @@ fn a_header_section_takes_the_pressed_fill_else_the_hovered_one() {
     let colour = native_theme_egui::convert::to_color32;
     let (atlas, _) = from_preset("kde-breeze", false, &AccessibilityPreferences::default())
         .unwrap_or_else(|error| panic!("kde-breeze: {error}"));
-    let mut t = atlas.resolved_for(egui::Theme::Light).clone();
+    let t = atlas.resolved_for(egui::Theme::Light).cloned();
+    assert!(t.is_some(), "kde-breeze's atlas holds its 0.7.2 themes");
+    let Some(mut t) = t else { return };
     let Some(hovered) = t.list.header_hover_background else {
         panic!("kde-breeze states the hovered section fill");
     };
@@ -5617,6 +5659,8 @@ fn a_selected_row_takes_the_unfocused_pair_while_the_window_is_not_active() {
             .unwrap_or_else(|error| panic!("{preset}: {error}"));
         for scheme in [egui::Theme::Light, egui::Theme::Dark] {
             let t = atlas.resolved_for(scheme);
+            assert!(t.is_some(), "{preset}'s atlas holds its 0.7.2 themes");
+            let Some(t) = t else { continue };
             let d = &t.defaults;
             let list = (
                 colour(t.list.selection_background),
@@ -5678,7 +5722,7 @@ fn a_selected_row_takes_the_unfocused_pair_while_the_window_is_not_active() {
     let l = &harness
         .state()
         .atlas
-        .resolved_for(egui::Theme::Light)
+        .old_resolved(egui::Theme::Light)
         .list
         .clone();
     // kde-breeze's `[light.defaults]`
@@ -5730,7 +5774,7 @@ fn stated_list_and_menu_rows_hold_their_text_at_every_text_scale() {
         let t = harness
             .state()
             .atlas
-            .resolved_for(egui::Theme::Light)
+            .old_resolved(egui::Theme::Light)
             .clone();
         let line_height = t.defaults.line_height;
         let places = harness.state().registry.places();
@@ -5814,7 +5858,7 @@ fn the_expander_header_is_its_stated_height_by_the_row_rule() {
         let t = harness
             .state()
             .atlas
-            .resolved_for(egui::Theme::Light)
+            .old_resolved(egui::Theme::Light)
             .clone();
         let e = &t.expander;
         let (stated, size, line_height) = (e.header_height, e.font.size, t.defaults.line_height);
@@ -6028,7 +6072,7 @@ fn the_side_panel_keeps_its_width_when_widget_info_scrolls() {
             + harness
                 .state()
                 .atlas
-                .resolved_for(theme)
+                .old_resolved(theme)
                 .splitter
                 .divider_width;
         assert_eq!(width_of(&harness), opened);
@@ -6480,7 +6524,7 @@ fn the_basic_page_has_every_group_in_its_column() {
         );
         harness.run_steps(4);
         let count = column_count(
-            harness.state().atlas.resolved_for(egui::Theme::Light),
+            harness.state().atlas.old_resolved(egui::Theme::Light),
             harness.state().atlas.layout(),
             harness.state().demo_state.content_width,
             harness.state().demo_state.segmented_width,
@@ -6557,7 +6601,7 @@ fn the_basic_page_has_every_group_in_its_column() {
         let t = harness
             .state()
             .atlas
-            .resolved_for(egui::Theme::Light)
+            .old_resolved(egui::Theme::Light)
             .clone();
         let list = records
             .iter()
@@ -6619,7 +6663,7 @@ fn the_basic_page_fits_the_window_across() {
             let mut harness = open_scaled_in(theme, "macos-tahoe", "basic", 1.0);
             let state = harness.state();
             let width = count_boundary(
-                state.atlas.resolved_for(theme),
+                state.atlas.old_resolved(theme),
                 state.atlas.layout(),
                 state.demo_state.segmented_width,
                 columns,
@@ -6633,7 +6677,7 @@ fn the_basic_page_fits_the_window_across() {
             );
             assert_eq!(
                 column_count(
-                    state.atlas.resolved_for(theme),
+                    state.atlas.old_resolved(theme),
                     state.atlas.layout(),
                     state.demo_state.content_width,
                     state.demo_state.segmented_width,
@@ -6675,7 +6719,7 @@ fn fits_across(harness: &Harness<'_, App>, theme: egui::Theme, what: &str) {
         .filter(|id| id.starts_with("basic.column_"))
         .count();
     let count = column_count(
-        state.atlas.resolved_for(theme),
+        state.atlas.old_resolved(theme),
         state.atlas.layout(),
         state.demo_state.content_width,
         state.demo_state.segmented_width,
@@ -6748,8 +6792,11 @@ fn windows_11_atlas(
 ) -> native_theme_egui::ThemeAtlas {
     let prefs = AccessibilityPreferences::default();
     let (preset, _) = from_preset("windows-11", false, &prefs).expect("windows-11 loads");
+    let old = crate::app::OldAtlas::of(preset.clone());
+    assert!(old.is_some(), "windows-11's atlas holds its 0.7.2 themes");
+    let Some(preset) = old else { return preset };
     let [mut light, mut dark] =
-        [egui::Theme::Light, egui::Theme::Dark].map(|theme| preset.resolved_for(theme).clone());
+        [egui::Theme::Light, egui::Theme::Dark].map(|theme| preset.old_resolved(theme).clone());
     for resolved in [&mut light, &mut dark] {
         resolved.tab.active_outward_corner_radius = radius;
         edit(resolved);
@@ -6994,7 +7041,7 @@ fn the_tab_bars_draw_the_selected_tabs_outward_corners() {
         let square_feet = open_curving_out(theme, None, |_| {});
         let harness = open_curving_out(theme, Some(4.0), |_| {});
         let state = harness.state();
-        let t = state.atlas.resolved_for(theme).clone();
+        let t = state.atlas.old_resolved(theme).clone();
         assert_eq!(t.tab.border.line_width, 1.0, "windows-11's outline");
         assert_eq!(t.tab.active_outward_corner_radius, Some(4.0));
         let fill = native_theme_egui::convert::to_color32(t.tab.active_background);
@@ -7173,7 +7220,7 @@ fn without_an_outline_the_fill_begins_at_the_radius() {
     let t = harness
         .state()
         .atlas
-        .resolved_for(egui::Theme::Light)
+        .old_resolved(egui::Theme::Light)
         .clone();
     let fill = native_theme_egui::convert::to_color32(t.tab.active_background);
     let far = 4.0 * std::f32::consts::SQRT_2 + 1.0;
@@ -7212,7 +7259,7 @@ fn without_the_radius_the_tab_bars_draw_no_flares() {
         let t = harness
             .state()
             .atlas
-            .resolved_for(egui::Theme::Light)
+            .old_resolved(egui::Theme::Light)
             .clone();
         let fill = native_theme_egui::convert::to_color32(t.tab.active_background);
         let shapes = &harness.output().shapes;
@@ -7258,7 +7305,7 @@ fn a_bottom_indicator_lies_under_the_flares() {
     let t = harness
         .state()
         .atlas
-        .resolved_for(egui::Theme::Light)
+        .old_resolved(egui::Theme::Light)
         .clone();
     let fill = native_theme_egui::convert::to_color32(t.tab.active_background);
     let accent = native_theme_egui::convert::to_color32(t.defaults.accent_color);
@@ -7311,7 +7358,9 @@ fn a_bottom_indicator_lies_under_the_flares() {
 fn the_basic_page_makes_room_for_both_flares() {
     use crate::pages::basic::column_count;
     let atlas = windows_11_atlas(Some(4.0), |_| {});
-    let stated = atlas.resolved_for(egui::Theme::Light).clone();
+    let stated = atlas.resolved_for(egui::Theme::Light).cloned();
+    assert!(stated.is_some(), "the atlas holds its 0.7.2 themes");
+    let Some(stated) = stated else { return };
     let layout = atlas.layout();
     let mut unstated = stated.clone();
     unstated.tab.active_outward_corner_radius = None;
@@ -7364,7 +7413,7 @@ fn section_headings_take_the_section_heading_role() {
         let t = harness
             .state()
             .atlas
-            .resolved_for(egui::Theme::Light)
+            .old_resolved(egui::Theme::Light)
             .clone();
         let prefs = harness.state().atlas.accessibility().clone();
         let role = native_theme_egui::TextRole::SectionHeading;
@@ -7465,7 +7514,7 @@ fn a_held_pointer_hovers_and_presses_the_control_under_it() {
     else {
         panic!("no button (enabled) record");
     };
-    let t = probe.state().atlas.resolved_for(egui::Theme::Light).clone();
+    let t = probe.state().atlas.old_resolved(egui::Theme::Light).clone();
     let hovered = native_theme_egui::convert::to_color32(t.button.hover_background);
     let pressed = t
         .button
@@ -7553,7 +7602,7 @@ fn the_dialog_default_button_is_drawn_in_its_state() {
         harness
     };
     let look = |harness: &Harness<'_, App>| {
-        let t = harness.state().atlas.resolved_for(egui::Theme::Light);
+        let t = harness.state().atlas.old_resolved(egui::Theme::Light);
         native_theme_egui::default_button(t)
     };
 
@@ -7572,7 +7621,7 @@ fn the_dialog_default_button_is_drawn_in_its_state() {
     );
 
     let pressed = held(true, breeze());
-    let t = pressed.state().atlas.resolved_for(egui::Theme::Light);
+    let t = pressed.state().atlas.old_resolved(egui::Theme::Light);
     let Some(active) = t
         .button
         .active_background
@@ -7617,7 +7666,7 @@ fn the_dialog_default_button_is_drawn_in_its_state() {
     else {
         panic!("no {KIND} record under adwaita");
     };
-    let t = adwaita.state().atlas.resolved_for(egui::Theme::Light);
+    let t = adwaita.state().atlas.old_resolved(egui::Theme::Light);
     assert_eq!(native_theme_egui::default_button(t), None);
     let primary = native_theme_egui::convert::to_color32(t.button.primary_background);
     assert_ne!(
@@ -7867,7 +7916,7 @@ fn a_set_preference_is_a_selected_switch() {
 #[test]
 fn the_icons_page_image_is_icon_sized() {
     let harness = open_page(Page::Icons, egui::Theme::Light);
-    let t = harness.state().atlas.resolved_for(harness.ctx.theme());
+    let t = harness.state().atlas.old_resolved(harness.ctx.theme());
     let size =
         native_theme_egui::icons::icon_size(t, native_theme_egui::icons::IconContext::Toolbar);
     let rect = harness
@@ -8192,6 +8241,13 @@ fn the_info_is_the_manifest() {
         for is_dark in [false, true] {
             let (atlas, _) =
                 from_preset(info.key, is_dark, &prefs).expect("a bundled preset builds");
+            let atlas = crate::app::OldAtlas::of(atlas);
+            assert!(
+                atlas.is_some(),
+                "{}'s atlas holds its 0.7.2 themes",
+                info.key
+            );
+            let Some(atlas) = atlas else { continue };
             let theme = if is_dark {
                 egui::Theme::Dark
             } else {
@@ -8338,9 +8394,9 @@ fn the_info_is_the_manifest() {
 /// `serde_json::to_value` of the resolved theme the atlas installs for `theme`, with the four
 /// `layout.` leaves under the manifest's names (§13.1), computed here, not by `info::theme_json`.
 #[cfg(test)]
-fn resolved_json(atlas: &native_theme_egui::ThemeAtlas, theme: egui::Theme) -> serde_json::Value {
+fn resolved_json(atlas: &crate::app::OldAtlas, theme: egui::Theme) -> serde_json::Value {
     let mut json =
-        serde_json::to_value(atlas.resolved_for(theme)).expect("ResolvedTheme serialises");
+        serde_json::to_value(atlas.old_resolved(theme)).expect("ResolvedTheme serialises");
     let layout = atlas.layout();
     if let Some(object) = json.as_object_mut() {
         object.insert(
@@ -9050,7 +9106,10 @@ fn style_literals(source: &str) -> Vec<String> {
 fn a_ms_leaf_reads_its_value() {
     let prefs = AccessibilityPreferences::default();
     let (atlas, _) = from_preset("kde-breeze", false, &prefs).expect("a bundled preset builds");
-    let delay = atlas.resolved_for(egui::Theme::Light).tooltip.show_delay;
+    let atlas = crate::app::OldAtlas::of(atlas);
+    assert!(atlas.is_some(), "kde-breeze's atlas holds its 0.7.2 themes");
+    let Some(atlas) = atlas else { return };
+    let delay = atlas.old_resolved(egui::Theme::Light).tooltip.show_delay;
     assert!(delay.is_some(), "kde-breeze states a tooltip delay");
     let json = crate::info::theme_json(&atlas, egui::Theme::Light).expect("serialises");
     let shown = native_theme_showcase_support::values::leaf_value(
@@ -9533,7 +9592,7 @@ fn the_theme_tabs_section_names_are_the_widget_tabs_semibold() {
         panic!("the Widget tab paints one \"Theme\" section name: {shown:?}");
     };
     let atlas = &harness.state().atlas;
-    let t = atlas.resolved_for(egui::Theme::Light);
+    let t = atlas.old_resolved(egui::Theme::Light);
     let heading = native_theme_egui::text_role_font(
         t,
         native_theme_egui::TextRole::SectionHeading,
@@ -9648,7 +9707,7 @@ fn every_font_label_names_the_drawn_family() {
     let t = harness
         .state()
         .atlas
-        .resolved_for(egui::Theme::Light)
+        .old_resolved(egui::Theme::Light)
         .clone();
     let body = drawn_label(&harness, &t.defaults.font.family, false);
     println!(
@@ -9725,8 +9784,11 @@ fn edited_atlas(
 ) -> native_theme_egui::ThemeAtlas {
     let prefs = AccessibilityPreferences::default();
     let (built, _) = from_preset(preset, false, &prefs).expect("a bundled preset builds");
+    let old = crate::app::OldAtlas::of(built.clone());
+    assert!(old.is_some(), "{preset}'s atlas holds its 0.7.2 themes");
+    let Some(built) = old else { return built };
     let [mut light, mut dark] =
-        [egui::Theme::Light, egui::Theme::Dark].map(|theme| built.resolved_for(theme).clone());
+        [egui::Theme::Light, egui::Theme::Dark].map(|theme| built.old_resolved(theme).clone());
     edit(egui::Theme::Light, &mut light);
     edit(egui::Theme::Dark, &mut dark);
     let mut builder = native_theme_egui::ThemeAtlas::builder(built.name(), &light, &dark)
@@ -9751,7 +9813,7 @@ fn edited_atlas(
 /// (connector `fonts.rs`: the plan registers the light variant's two default families, and
 /// every `FontId` the connector hands out names `Proportional` or `Monospace`).
 fn other_font_label(harness: &Harness<'_, App>, stated: &str, mono: bool) -> String {
-    let light = harness.state().atlas.resolved_for(egui::Theme::Light);
+    let light = harness.state().atlas.old_resolved(egui::Theme::Light);
     let (font, planned) = if mono {
         (
             "the light variant's defaults.mono_font",
@@ -9825,7 +9887,7 @@ fn a_dark_family_of_its_own_is_named_by_the_face_egui_draws() {
     let t = harness
         .state()
         .atlas
-        .resolved_for(egui::Theme::Dark)
+        .old_resolved(egui::Theme::Dark)
         .clone();
     let values = |harness: &Harness<'_, App>| -> Vec<String> {
         harness
@@ -10220,7 +10282,7 @@ fn the_basic_edit_button_starts_checked_and_switches() {
     let t = harness
         .state()
         .atlas
-        .resolved_for(egui::Theme::Light)
+        .old_resolved(egui::Theme::Light)
         .clone();
     let fill = native_theme_egui::toolbar_button_checked_background(&t);
     assert!(
@@ -10335,7 +10397,7 @@ fn the_basic_edit_button_starts_checked_and_switches() {
     let t = harness
         .state()
         .atlas
-        .resolved_for(egui::Theme::Light)
+        .old_resolved(egui::Theme::Light)
         .clone();
     assert!(
         native_theme_egui::toolbar_button_checked_background(&t).is_some(),

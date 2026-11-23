@@ -24,6 +24,11 @@ use crate::palette::to_color;
 /// model states the arc's diameter, stroke width and colour, not its sweep.
 const SWEEP_DEGREES: f32 = 240.0;
 
+/// The arc's period where the theme states none, in milliseconds: a turn a
+/// second, egui's `Spinner`'s speed (egui 0.36.2
+/// `src/widgets/spinner.rs:47-48`, the start angle `time * TAU`).
+const ARC_PERIOD_MS: u32 = 1000;
+
 /// A loading indicator `spinner.diameter` across.
 ///
 /// **The icon set's indicator first.** Where the icon set has an animated
@@ -46,10 +51,13 @@ const SWEEP_DEGREES: f32 = 240.0;
 /// leaves RGBA frames out), or where a turned image is neither SVG nor RGBA,
 /// it draws an arc on a canvas: `spinner.diameter` across its outer edge, in
 /// `spinner.fill_color` at `spinner.stroke_width`, the stroke centred on a
-/// circle of radius `0.5 · (diameter − stroke_width)`. It sweeps 240° and
-/// turns a turn a second, egui's `Spinner`'s widest sweep and speed (egui
-/// 0.36.2 `src/widgets/spinner.rs:47-49`); under reduced motion it stands
-/// still from angle 0. iced has no spinner, and `iced_aw`'s paints one
+/// circle of radius `0.5 · (diameter − stroke_width)`. It sweeps 240°,
+/// egui's `Spinner`'s widest sweep (egui 0.36.2
+/// `src/widgets/spinner.rs:47-49`), and turns once per `spinner.period_ms`
+/// where the 0.8.0 model states it (`next::spinner`), else a turn a second,
+/// egui's speed; under reduced motion it stands still from angle 0. The
+/// period turns the arc alone: an icon set's indicator keeps its own frame
+/// duration or turn. iced has no spinner, and `iced_aw`'s paints one
 /// orbiting dot (iced_aw 0.14.1 `src/widget/spinner.rs`), no arc.
 ///
 /// `spinner.min_diameter` is not read: the spinner offers no size of its own
@@ -78,6 +86,8 @@ pub struct Spinner {
     diameter: f32,
     stroke_width: f32,
     color: Color,
+    /// The arc's period, in milliseconds.
+    period_ms: u32,
 }
 
 /// What a [`Spinner`] draws.
@@ -125,6 +135,10 @@ pub(crate) struct Look {
     pub(crate) color: Color,
     /// `defaults.text_color`: a freedesktop indicator's `currentColor`.
     pub(crate) current_color: Color,
+    /// The 0.8.0 model's `spinner.period_ms`: the arc's period, a turn a
+    /// second ([`ARC_PERIOD_MS`]) where `None`, as the 0.7.2 model states
+    /// none.
+    pub(crate) period_ms: Option<NonZeroU32>,
 }
 
 impl Look {
@@ -136,6 +150,7 @@ impl Look {
             stroke_width: s.stroke_width,
             color: to_color(s.fill_color),
             current_color: to_color(resolved.defaults.text_color),
+            period_ms: None,
         }
     }
 }
@@ -146,7 +161,11 @@ impl Spinner {
     /// icon theme where `None`), never another theme's.
     #[must_use]
     pub fn new(resolved: &ResolvedTheme, icon_set: IconSet, icon_theme: Option<&str>) -> Self {
-        let look = Look::of(resolved);
+        Self::of_look(Look::of(resolved), icon_set, icon_theme)
+    }
+
+    /// [`Spinner::new`] of `look`.
+    pub(crate) fn of_look(look: Look, icon_set: IconSet, icon_theme: Option<&str>) -> Self {
         let color = match icon_set {
             IconSet::Material | IconSet::Lucide => Some(look.color),
             IconSet::Freedesktop => Some(look.current_color),
@@ -159,6 +178,10 @@ impl Spinner {
             diameter: look.diameter,
             stroke_width: look.stroke_width,
             color: look.color,
+            period_ms: match look.period_ms {
+                Some(period) => period.get(),
+                None => ARC_PERIOD_MS,
+            },
         }
     }
 
@@ -222,7 +245,7 @@ impl Spinner {
                 start: if reduce_motion {
                     0.0
                 } else {
-                    arc_start(elapsed)
+                    arc_start(elapsed, self.period_ms)
                 },
             })
             .width(size)
@@ -269,10 +292,14 @@ fn frame_index(elapsed: Duration, frame_ms: NonZeroU32, count: usize) -> usize {
 }
 
 /// The arc's start angle `elapsed` into its animation, in radians clockwise
-/// from the right: a turn a second (see [`Spinner`]), from the sub-second
-/// part alone, which an f32 of the whole seconds loses as they grow.
-fn arc_start(elapsed: Duration) -> f32 {
-    elapsed.subsec_nanos() as f32 / 1e9 * TAU
+/// from the right: a turn every `period_ms` (see [`Spinner`]), the turns
+/// counted in f64, whose fraction keeps nanoseconds for years, where an f32
+/// of the whole time loses them as it grows. `period_ms` is not 0: the
+/// theme's is a `NonZeroU32` ([`Look::period_ms`]), and [`ARC_PERIOD_MS`]
+/// is 1000.
+fn arc_start(elapsed: Duration, period_ms: u32) -> f32 {
+    let turns = elapsed.as_secs_f64() * 1000.0 / f64::from(period_ms);
+    turns.fract() as f32 * TAU
 }
 
 /// The arc a [`Spinner`] draws where the icon set has no indicator: `color`
@@ -349,11 +376,39 @@ mod tests {
     /// seconds, whose step at 1.2e6 s is 0.125 s.
     #[test]
     fn the_arc_turns_exactly_two_weeks_in() {
-        let start = arc_start(Duration::from_millis(1_209_600_050));
+        let start = arc_start(Duration::from_millis(1_209_600_050), ARC_PERIOD_MS);
         assert!(
             (start - 0.05 * TAU).abs() < 1e-4,
             "expected 0.05·TAU, got {start}"
         );
+    }
+
+    /// A stated period turns the arc once per period: 300 ms into a 1200 ms
+    /// period it is a quarter turn round, where the unstated period, a turn
+    /// a second, has it three tenths round; a spinner of a look with no
+    /// period turns a turn a second.
+    #[test]
+    fn the_arc_turns_once_per_stated_period() -> native_theme::Result<()> {
+        let at = Duration::from_millis(1_200 * 1_000 + 300);
+        let quarter = arc_start(at, 1_200);
+        assert!((quarter - 0.25 * TAU).abs() < 1e-4, "got {quarter}");
+        let unstated = arc_start(at, ARC_PERIOD_MS);
+        assert!((unstated - 0.3 * TAU).abs() < 1e-4, "got {unstated}");
+        let (_, resolved) = crate::from_preset("kde-breeze", false)?;
+        let look = Look::of(&resolved);
+        assert_eq!(look.period_ms, None);
+        let spinner = Spinner::of_look(look, IconSet::SfSymbols, None);
+        assert_eq!(spinner.period_ms, ARC_PERIOD_MS);
+        let stated = Spinner::of_look(
+            Look {
+                period_ms: NonZeroU32::new(1_200),
+                ..look
+            },
+            IconSet::SfSymbols,
+            None,
+        );
+        assert_eq!(stated.period_ms, 1_200);
+        Ok(())
     }
 
     #[test]

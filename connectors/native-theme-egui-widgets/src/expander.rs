@@ -148,11 +148,8 @@ impl Expander {
     ) -> ExpanderResponse<R> {
         let atlas = ThemeAtlas::from_ctx(ui.ctx());
         let Some(atlas) = atlas else {
-            return own(ui, self, None, None, add_body);
+            return own(ui, self, Within::NoAtlas, None, add_body);
         };
-        let t = atlas.resolved_for(ui.ctx().theme());
-        let e = &t.expander;
-        let line = scaled_line(t, atlas.accessibility());
         let enabled = self.enabled;
         // The body is drawn in the style the expander is shown in, not in the header's cell,
         // which `native_scope` puts in place of the whole style: a widget in the body is the
@@ -164,13 +161,21 @@ impl Expander {
             ui.native_set_style_with_ring(outer);
             add_body(ui)
         };
+        // An atlas of the 0.8.0 model: the role's cell, egui's own header in it.
+        let Some(t) = atlas.resolved_for(ui.ctx().theme()) else {
+            return scope::open(ui, Role::Expander, enabled, |ui| {
+                own(ui, self, Within::Scope(None), None, add_body)
+            });
+        };
+        let e = &t.expander;
+        let line = scaled_line(t, atlas.accessibility());
         if e.arrow_side.is_none()
             && e.arrow_gap.is_none()
             && e.content_indent.is_none()
             && e.frame_enabled.is_none()
         {
             return scope::open(ui, Role::Expander, enabled, |ui| {
-                own(ui, self, Some(t), line, add_body)
+                own(ui, self, Within::Scope(Some(t)), line, add_body)
             });
         }
         let look = Look::of(t);
@@ -193,13 +198,23 @@ fn scaled_line(t: &ResolvedTheme, prefs: &AccessibilityPreferences) -> Option<f3
         .then(|| (prefs.scaled(t.expander.font.size) * t.defaults.line_height).ceil())
 }
 
+/// Where [`own`] draws egui's own header.
+enum Within<'a> {
+    /// No atlas is installed: the header is disabled by `CollapsingHeader::enabled`.
+    NoAtlas,
+    /// The expander's scope, which `scope::open` has disabled already where the expander is,
+    /// with the 0.7.2 theme whose arrow the header draws, `None` for an atlas of the 0.8.0
+    /// model, whose header keeps egui's own arrow.
+    Scope(Option<&'a ResolvedTheme>),
+}
+
 /// egui's own `CollapsingHeader`, with the connector's arrow where a theme is given; above a
 /// text scale of 1 at least `line`, the scaled line box, and its padding above and below it
 /// tall.
 fn own<R>(
     ui: &mut egui::Ui,
     expander: Expander,
-    t: Option<&ResolvedTheme>,
+    within: Within<'_>,
     line: Option<f32>,
     add_body: impl FnOnce(&mut egui::Ui) -> R,
 ) -> ExpanderResponse<R> {
@@ -239,9 +254,10 @@ fn own<R>(
         .open(open);
     // In the expander's scope, `scope::open` has disabled the `Ui` already, and a second
     // `Ui::disable` would fade it twice (`egui/src/ui.rs:497-502`).
-    let header = match t {
-        Some(t) => header.icon(expander_icon(t)),
-        None => header.enabled(enabled),
+    let header = match within {
+        Within::NoAtlas => header.enabled(enabled),
+        Within::Scope(Some(t)) => header.icon(expander_icon(t)),
+        Within::Scope(None) => header,
     };
     let out = header.show(ui, add_body);
     let rect = out.header_response.rect;

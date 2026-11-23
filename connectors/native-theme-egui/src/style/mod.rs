@@ -2,11 +2,13 @@
 //! §6): egui's own values, with the theme's written into them.
 
 pub(crate) mod base;
+pub(crate) mod cells;
 mod derived;
-mod frames;
-mod roles;
-mod states;
-mod variants;
+pub(crate) mod frames;
+pub(crate) mod line;
+pub(crate) mod roles;
+pub(crate) mod states;
+pub(crate) mod variants;
 
 pub(crate) use roles::menu_bar_titles;
 
@@ -15,7 +17,8 @@ use std::sync::Arc;
 use crate::atlas::{Note, SchemeStyles};
 use crate::{AccessibilityPreferences, LayoutTheme, ResolvedTheme, Role, Surface};
 
-/// Everything one scheme's styles are built from.
+/// Everything one scheme's styles are built from, with the 0.7.2 model's theme.
+#[cfg(test)]
 pub(crate) struct BuildInput<'a> {
     pub scheme: egui::Theme,
     pub theme: &'a ResolvedTheme,
@@ -32,10 +35,64 @@ pub(crate) struct BuildInput<'a> {
     pub patch: Option<&'a dyn Fn(&mut egui::Style)>,
 }
 
+#[cfg(test)]
+impl<'a> BuildInput<'a> {
+    /// What compiling the scheme takes beside the theme's sources.
+    pub(crate) fn scheme_input(&self) -> SchemeInput<'a> {
+        SchemeInput {
+            scheme: self.scheme,
+            prefs: self.prefs,
+            row_height: self.row_height,
+            defs: self.defs,
+            patch: self.patch,
+        }
+    }
+}
+
+/// What one scheme's styles are compiled with beside the [`Sources`] read from its theme.
+pub(crate) struct SchemeInput<'a> {
+    pub scheme: egui::Theme,
+    pub prefs: &'a AccessibilityPreferences,
+    pub row_height: Option<f32>,
+    pub defs: Option<&'a egui::FontDefinitions>,
+    pub patch: Option<&'a dyn Fn(&mut egui::Style)>,
+}
+
+/// What one scheme's styles are read from, filled from either model: [`Sources::old`] from
+/// the 0.7.2 model, `next::build::sources` from the 0.8.0 model's homes.
+pub(crate) struct Sources {
+    pub base: base::BaseSource,
+    pub cells: cells::CellSource,
+    pub variants: variants::VariantSource,
+    pub frames: frames::FrameSource,
+    pub focus_ring: crate::plugin::FocusRingSource,
+    /// Whether a hover or press the sources leave `None` takes egui's own treatment (spec §10,
+    /// rule 0, the 0.8.0 model's) or the 0.7.2 model's copy (§6.1).
+    pub rule_0: bool,
+}
+
+impl Sources {
+    /// The 0.7.2 model's reads, the text sizes scaled by `prefs`.
+    pub(crate) fn old(
+        theme: &ResolvedTheme,
+        prefs: &AccessibilityPreferences,
+        layout: &LayoutTheme,
+    ) -> Self {
+        Self {
+            base: base::BaseSource::old(theme, prefs, layout),
+            cells: cells::CellSource::old(theme, prefs),
+            variants: variants::VariantSource::old(theme),
+            frames: frames::FrameSource::old(theme, layout),
+            focus_ring: crate::plugin::FocusRingSource::old(theme),
+            rule_0: false,
+        }
+    }
+}
+
 /// §4.3's two application-owned adjustments, after all theme data: reduced motion, then the
 /// patch. Run on a `Style` before it is wrapped in its `Arc`, so a cell that shares its
 /// `Normal` `Arc` (§3.4) is adjusted once and stays shared.
-pub(crate) fn finish(style: &mut egui::Style, input: &BuildInput<'_>) {
+pub(crate) fn finish(style: &mut egui::Style, input: &SchemeInput<'_>) {
     if input.prefs.reduce_motion {
         // "no animation": egui reaches the end value at once at `0.0`
         // (`egui/src/animation_manager.rs:56-60`, `:88-93`), and `none()` is egui's own
@@ -68,8 +125,34 @@ pub(crate) fn egui_preset(surface: Surface, base: &egui::Style) -> egui::Frame {
 /// egui's own style for the scheme and egui's own preset frame, so every value the theme does
 /// not supply keeps egui's by construction (§3.4); `base_style`, `role_cell` and
 /// `surface_frame` write the theme's values.
+#[cfg(test)]
 pub(crate) fn compile(input: &BuildInput<'_>, notes: &mut Vec<Note>) -> SchemeStyles {
-    let base = Arc::new(base::base_style(input, notes));
+    let sources = Sources::old(input.theme, input.prefs, input.layout);
+    compile_from(&input.scheme_input(), &sources, notes)
+}
+
+/// One scheme's styles (`compile`, of the 0.7.2 model, in the tests) from the sources of
+/// either model.
+pub(crate) fn compile_from(
+    input: &SchemeInput<'_>,
+    src: &Sources,
+    notes: &mut Vec<Note>,
+) -> SchemeStyles {
+    let base = Arc::new(base::base_style_from(
+        input.scheme,
+        input.row_height,
+        &src.base,
+        src.rule_0,
+        notes,
+    ));
+    let source = &src.cells;
+    let cell_input = roles::CellInput {
+        scheme: input.scheme,
+        row_height: input.row_height,
+        defs: input.defs,
+        rule_0: src.rule_0,
+    };
+    let variant_source = &src.variants;
     let mut cells: [[Arc<egui::Style>; 4]; 25] = std::array::from_fn(|_| {
         [
             Arc::clone(&base),
@@ -79,18 +162,18 @@ pub(crate) fn compile(input: &BuildInput<'_>, notes: &mut Vec<Note>) -> SchemeSt
         ]
     });
     for (slot, role) in cells.iter_mut().zip(Role::all()) {
-        let mut normal = roles::role_cell(*role, &base, input, notes);
+        let mut normal = roles::role_cell_from(*role, &base, source, &cell_input, notes);
         let finished = |mut style: egui::Style| {
             finish(&mut style, input);
             Arc::new(style)
         };
-        let selected = variants::selected_cell(*role, &normal, input, notes);
+        let selected = variants::selected_cell(*role, &normal, variant_source, &cell_input, notes);
         let selected_disabled = selected
             .as_ref()
-            .and_then(|s| variants::selected_disabled_cell(*role, s, input, notes))
+            .and_then(|s| variants::selected_disabled_cell(*role, s, variant_source, notes))
             .map(finished);
         let selected = selected.map(finished);
-        let disabled = variants::disabled_cell(*role, &normal, input, notes).map(finished);
+        let disabled = variants::disabled_cell(*role, &normal, variant_source, notes).map(finished);
         finish(&mut normal, input);
         let normal = Arc::new(normal);
         let disabled = disabled.unwrap_or_else(|| Arc::clone(&normal));
@@ -103,7 +186,7 @@ pub(crate) fn compile(input: &BuildInput<'_>, notes: &mut Vec<Note>) -> SchemeSt
     }
     let mut frames = [egui::Frame::NONE; 11];
     for (slot, surface) in frames.iter_mut().zip(Surface::all()) {
-        *slot = frames::surface_frame(*surface, &base, input, notes);
+        *slot = frames::surface_frame_from(*surface, &base, &src.frames, input.scheme, notes);
     }
     let mut finished_base = egui::Style::clone(&base);
     finish(&mut finished_base, input);
@@ -111,7 +194,8 @@ pub(crate) fn compile(input: &BuildInput<'_>, notes: &mut Vec<Note>) -> SchemeSt
         base: Arc::new(finished_base),
         cells,
         frames,
-        focus_ring: crate::plugin::build_focus_ring(input.theme, notes),
+        focus_ring: crate::plugin::build_focus_ring_from(&src.focus_ring, notes),
+        menu_bar: roles::MenuBarTitles::of(&src.cells.menu),
     }
 }
 

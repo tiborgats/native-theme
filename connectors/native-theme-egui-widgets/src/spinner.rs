@@ -99,7 +99,7 @@ impl egui::Widget for Spinner {
     fn ui(self, ui: &mut egui::Ui) -> egui::Response {
         let paint = ThemeAtlas::from_ctx(ui.ctx()).and_then(|atlas| {
             let theme = ui.ctx().theme();
-            let t = atlas.resolved_for(theme);
+            let t = atlas.resolved_for(theme)?;
             let s = &t.spinner;
             let look = Look::of(t);
             Some(Paint {

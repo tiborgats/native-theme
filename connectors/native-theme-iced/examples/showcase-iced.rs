@@ -13065,8 +13065,8 @@ fn switch_info(state: &State) -> String {
 // Tab: Buttons
 // ---------------------------------------------------------------------------
 
-/// Why an edge the connector draws from `<table>.border` (`border_of`) is
-/// 0 wide where it is.
+/// Why an edge the connector draws from `<table>.border` is 0 wide where it
+/// is: that border's own line width.
 fn line_zero(table: &str) -> String {
     format!("{table}.border.line_width 0")
 }

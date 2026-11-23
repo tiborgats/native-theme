@@ -76,9 +76,11 @@ impl Look {
     }
 }
 
-/// `ui`'s link look, from the installed atlas in the scheme egui is drawing.
+/// `ui`'s link look, from the installed atlas in the scheme egui is drawing; `None` without
+/// one, or with one of the 0.8.0 model.
 fn link_theme(ui: &egui::Ui) -> Option<Look> {
-    ThemeAtlas::from_ctx(ui.ctx()).map(|atlas| Look::of(atlas.resolved_for(ui.ctx().theme())))
+    ThemeAtlas::from_ctx(ui.ctx())
+        .and_then(|atlas| atlas.resolved_for(ui.ctx().theme()).map(Look::of))
 }
 
 /// egui's `Link` in `link.*`'s colours. `ui` is read for the atlas and the scheme only.

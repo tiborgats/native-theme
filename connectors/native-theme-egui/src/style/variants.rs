@@ -5,33 +5,239 @@
 //! cell, and writes only the variant's leaves (§3.4). A role with no variant data returns
 //! `None`, and `compile` then shares the `Normal` `Arc`, for `SelectedDisabled` the `Disabled`
 //! one.
+//!
+//! The cells read a [`VariantSource`]: [`VariantSource::old`] fills it from the 0.7.2 model,
+//! `next::build::variant_source` from the 0.8.0 model's homes, each value `None` where the
+//! theme states none for the state, and the cell then keeps its `Normal` cell's value there
+//! (spec §10, rule 0): egui's own checked box is its unchecked one with the mark
+//! (`egui/src/widget_style.rs:182-188`), and egui dims a disabled widget by `disabled_alpha`
+//! alone (`egui/src/ui.rs:497-502`).
 
-use crate::convert::to_color32;
-use crate::style::{BuildInput, note_transparent_fill};
-use crate::{Note, Role};
+use egui::style::WidgetVisuals;
+
+use super::base::Read;
+use super::line::{Line, LineAlign};
+use super::roles::CellInput;
+use super::states::{FillField, StateLine, Unstated, state_borders};
+use crate::convert::{Rgba, to_color32};
+use crate::style::note_transparent_fill;
+use crate::{Note, ResolvedTheme, Role};
+
+/// A role's disabled look: its label's or text's colour, its fill with the place a note names
+/// it by, and the role's resting outline that fill is drawn under, with where it lies.
+pub(crate) struct Disabled {
+    pub text: Option<Rgba>,
+    pub fill: Read<Rgba>,
+    pub outline: Option<Rgba>,
+    pub align: LineAlign,
+}
+
+/// The checked box.
+pub(crate) struct CheckedBox {
+    pub fill: Read<Rgba>,
+    pub outline: Option<Rgba>,
+    pub align: LineAlign,
+    /// The hovered and the pressed checked box's fill.
+    pub state_fill: [Read<Rgba>; 2],
+    /// The hovered and the pressed checked box's outline.
+    pub state_border: [Option<StateLine>; 2],
+    /// The checked box's fill where the theme states a disabled fill.
+    pub disabled_fill: Read<Rgba>,
+}
+
+/// The primary button's disabled look: its fill where the theme states one, and the label
+/// that fill is lettered in.
+pub(crate) struct PrimaryDisabled {
+    pub fill: Option<Rgba>,
+    pub text: Option<Rgba>,
+}
+
+/// Every variant cell's reads.
+pub(crate) struct VariantSource {
+    pub button: Disabled,
+    pub primary: PrimaryDisabled,
+    pub combo_box: Disabled,
+    pub checkbox: Disabled,
+    pub checked: CheckedBox,
+    pub input: Disabled,
+    pub slider_track: Read<Rgba>,
+    pub slider_fill: Option<Rgba>,
+    /// The unchecked and the checked switch's track.
+    pub switch: [Option<Rgba>; 2],
+    pub menu: Option<Rgba>,
+    pub list: Option<Rgba>,
+    pub link: Option<Rgba>,
+}
+
+impl VariantSource {
+    /// The 0.7.2 model's reads: a disabled fill the model leaves `None` is the role's own
+    /// (§6.3), and every outline lies `Outside`, drawn as given.
+    pub(crate) fn old(t: &ResolvedTheme) -> Self {
+        let disabled = |text, fill| Disabled {
+            text: Some(text),
+            fill: Some(fill),
+            outline: None,
+            align: LineAlign::Outside,
+        };
+        let k = &t.checkbox;
+        Self {
+            button: disabled(
+                t.button.disabled_text_color,
+                (
+                    t.button
+                        .disabled_background
+                        .unwrap_or(t.button.background_color),
+                    "button.disabled_background",
+                ),
+            ),
+            primary: PrimaryDisabled {
+                fill: t.button.disabled_background,
+                text: Some(t.button.disabled_text_color),
+            },
+            combo_box: disabled(
+                t.combo_box.disabled_text_color,
+                (
+                    t.combo_box
+                        .disabled_background
+                        .unwrap_or(t.combo_box.background_color),
+                    "combo_box.disabled_background",
+                ),
+            ),
+            checkbox: disabled(
+                k.disabled_text_color,
+                match (k.disabled_background, k.unchecked_background) {
+                    (Some(c), _) => (c, "checkbox.disabled_background"),
+                    (None, Some(c)) => (c, "checkbox.unchecked_background"),
+                    (None, None) => (k.background_color, "checkbox.background_color"),
+                },
+            ),
+            checked: CheckedBox {
+                fill: Some((k.checked_background, "checkbox.checked_background")),
+                outline: Some(k.border.color),
+                align: LineAlign::Outside,
+                state_fill: [None; 2],
+                state_border: [StateLine::colour(k.hover_border_color); 2],
+                disabled_fill: k
+                    .disabled_background
+                    .map(|c| (c, "checkbox.disabled_background")),
+            },
+            input: disabled(
+                t.input.disabled_text_color,
+                (
+                    t.input
+                        .disabled_background
+                        .unwrap_or(t.input.background_color),
+                    "input.disabled_background",
+                ),
+            ),
+            slider_track: Some(match t.slider.disabled_track_color {
+                Some(c) => (c, "slider.disabled_track_color"),
+                None => (t.slider.track_color, "slider.track_color"),
+            }),
+            slider_fill: Some(t.slider.disabled_fill_color.unwrap_or(t.slider.fill_color)),
+            switch: [
+                Some(
+                    t.switch
+                        .disabled_unchecked_background
+                        .unwrap_or(t.switch.unchecked_background),
+                ),
+                Some(
+                    t.switch
+                        .disabled_checked_background
+                        .unwrap_or(t.switch.checked_background),
+                ),
+            ],
+            menu: Some(t.menu.disabled_text_color),
+            list: Some(t.list.disabled_text_color),
+            link: Some(t.link.disabled_text_color),
+        }
+    }
+}
+
+/// `entry`'s outline, `outline` where it lies over the fill the entry paints (`painted`), drawn
+/// over that fill ([`Line::over`]); an outline that lies `Outside` or none stays as written.
+fn outline_over(
+    entry: &mut WidgetVisuals,
+    outline: Option<Rgba>,
+    align: LineAlign,
+    painted: FillField,
+) {
+    if let Some(color) = outline {
+        let fill = match painted {
+            FillField::Bg => entry.bg_fill,
+            FillField::Weak => entry.weak_bg_fill,
+        };
+        entry.bg_stroke.color = Line {
+            color: to_color32(color),
+            align,
+        }
+        .over(Some(fill));
+    }
+}
+
+/// A fill read as egui's colour, reported where its alpha is `0` (§6.4).
+fn noted(read: Read<Rgba>, notes: &mut Vec<Note>) -> Option<egui::Color32> {
+    read.map(|(c, path)| {
+        let c = to_color32(c);
+        note_transparent_fill(c, path, notes);
+        c
+    })
+}
+
+/// A disabled label's colour, where stated, in the entries a disabled widget's and a plain
+/// label's text are painted from: `inactive` and `noninteractive`.
+fn labels(w: &mut egui::style::Widgets, text: Option<Rgba>) {
+    if let Some(text) = text.map(to_color32) {
+        w.inactive.fg_stroke.color = text;
+        w.noninteractive.fg_stroke.color = text;
+    }
+}
 
 /// The `Selected` cell of `role`, or `None` where the role's selected look lives in its
 /// `Normal` cell (`Button`, `Tab`, `SegmentedControl`, `Switch`, §6.2) or the role has none.
 pub(crate) fn selected_cell(
     role: Role,
     normal: &egui::Style,
-    input: &BuildInput<'_>,
+    src: &VariantSource,
+    input: &CellInput<'_>,
     notes: &mut Vec<Note>,
 ) -> Option<egui::Style> {
     if role != Role::Checkbox {
         return None;
     }
-    let t = input.theme;
+    let k = &src.checked;
     let mut style = normal.clone();
     // The checked box: `checkbox_style` fills from the state's `bg_fill`
     // (`egui/src/widget_style.rs:182`) and outlines from `bg_stroke` (`:184`), and its hover
     // outline, where stated, under the pointer; the mark keeps `indicator_color` in `fg_stroke`
     // (§5.3). `checkbox.hover_background` is the unchecked box's hover fill, so the hovered
     // entry holds the checked fill too (§6.4).
-    let fill = to_color32(t.checkbox.checked_background);
-    note_transparent_fill(fill, "checkbox.checked_background", notes);
-    let outline = to_color32(t.checkbox.border.color);
+    let own = input.scheme.default_style();
+    let unstated = if input.rule_0 {
+        Unstated::Egui(&own.visuals.widgets)
+    } else {
+        Unstated::Copy
+    };
     let w = &mut style.visuals.widgets;
+    if let Some(fill) = noted(k.fill, notes) {
+        for entry in [
+            &mut w.noninteractive,
+            &mut w.inactive,
+            &mut w.hovered,
+            &mut w.active,
+            &mut w.open,
+        ] {
+            entry.bg_fill = fill;
+        }
+        // Under the pointer and on a press, the fill the theme states for the state, else what
+        // `unstated` gives for the checked fill at rest.
+        let own_fill = |e: &WidgetVisuals| e.bg_fill;
+        let [hover, press] = k.state_fill;
+        let hovered = noted(hover, notes).unwrap_or_else(|| unstated.hovered(fill, own_fill));
+        w.active.bg_fill =
+            noted(press, notes).unwrap_or_else(|| unstated.active(fill, hovered, own_fill));
+        w.hovered.bg_fill = hovered;
+    }
     for entry in [
         &mut w.noninteractive,
         &mut w.inactive,
@@ -39,14 +245,16 @@ pub(crate) fn selected_cell(
         &mut w.active,
         &mut w.open,
     ] {
-        entry.bg_fill = fill;
-        entry.bg_stroke.color = outline;
+        outline_over(entry, k.outline, k.align, FillField::Bg);
     }
-    if let Some(hover) = t.checkbox.hover_border_color {
-        let hover = to_color32(hover);
-        w.hovered.bg_stroke.color = hover;
-        w.active.bg_stroke.color = hover;
-    }
+    state_borders(
+        w,
+        k.state_border,
+        k.align,
+        Some(FillField::Bg),
+        unstated,
+        notes,
+    );
     Some(style)
 }
 
@@ -56,28 +264,34 @@ pub(crate) fn selected_cell(
 pub(crate) fn selected_disabled_cell(
     role: Role,
     selected: &egui::Style,
-    input: &BuildInput<'_>,
+    src: &VariantSource,
     notes: &mut Vec<Note>,
 ) -> Option<egui::Style> {
     if role != Role::Checkbox {
         return None;
     }
-    let t = input.theme;
+    let k = &src.checked;
     let mut style = selected.clone();
     let v = &mut style.visuals;
     // The label in the disabled text colour, as the `Disabled` cell's (§6.3), checked or not.
-    let text = to_color32(t.checkbox.disabled_text_color);
-    v.override_text_color = Some(text);
+    let text = src.checkbox.text.map(to_color32);
+    if text.is_some() {
+        v.override_text_color = text;
+    }
     // The disabled rule (docs/platform-facts.md §2.1.6): where the theme states a disabled
     // fill the box takes it, and the mark the disabled text colour, as the `Disabled` cell's
     // box does; where it states none the platform dims by opacity alone, and the box is its
     // checked self, `checked_background` and the `indicator_color` mark, which
-    // `disabled_alpha` fades. The outline stays the checked box's, `checkbox.border.color`.
-    if let Some(fill) = t.checkbox.disabled_background {
+    // `disabled_alpha` fades. The outline stays the checked box's, `checkbox.border.color`,
+    // drawn over the disabled fill where it lies over it.
+    if let Some((fill, path)) = k.disabled_fill {
         let fill = to_color32(fill);
-        note_transparent_fill(fill, "checkbox.disabled_background", notes);
+        note_transparent_fill(fill, path, notes);
         v.widgets.inactive.bg_fill = fill;
-        v.widgets.inactive.fg_stroke.color = text;
+        if let Some(text) = text {
+            v.widgets.inactive.fg_stroke.color = text;
+        }
+        outline_over(&mut v.widgets.inactive, k.outline, k.align, FillField::Bg);
     }
     Some(style)
 }
@@ -86,10 +300,9 @@ pub(crate) fn selected_disabled_cell(
 pub(crate) fn disabled_cell(
     role: Role,
     normal: &egui::Style,
-    input: &BuildInput<'_>,
+    src: &VariantSource,
     notes: &mut Vec<Note>,
 ) -> Option<egui::Style> {
-    let t = input.theme;
     let mut style = normal.clone();
     let v = &mut style.visuals;
     match role {
@@ -99,100 +312,90 @@ pub(crate) fn disabled_cell(
         // states a disabled fill. With none, it dims by opacity alone (docs/platform-facts.md
         // §2.1.6), and the primary button keeps its own pair.
         Role::Button => {
-            let text = to_color32(t.button.disabled_text_color);
-            v.widgets.inactive.weak_bg_fill = to_color32(
-                t.button
-                    .disabled_background
-                    .unwrap_or(t.button.background_color),
-            );
-            v.widgets.inactive.fg_stroke.color = text;
-            v.widgets.noninteractive.fg_stroke.color = text;
-            if let Some(fill) = t.button.disabled_background {
+            let d = &src.button;
+            if let Some((fill, _)) = d.fill {
+                v.widgets.inactive.weak_bg_fill = to_color32(fill);
+                outline_over(&mut v.widgets.inactive, d.outline, d.align, FillField::Weak);
+            }
+            labels(&mut v.widgets, d.text);
+            if let Some(fill) = src.primary.fill {
                 v.selection.bg_fill = to_color32(fill);
-                v.selection.stroke.color = text;
+                if let Some(text) = src.primary.text {
+                    v.selection.stroke.color = to_color32(text);
+                }
             }
         }
         // `button_frame` fills the trigger from `weak_bg_fill` (`egui/src/containers/combo_box.rs:460`).
         Role::ComboBox => {
-            let fill = t
-                .combo_box
-                .disabled_background
-                .unwrap_or(t.combo_box.background_color);
-            let text = to_color32(t.combo_box.disabled_text_color);
-            v.widgets.inactive.weak_bg_fill = to_color32(fill);
-            v.widgets.inactive.fg_stroke.color = text;
-            v.widgets.noninteractive.fg_stroke.color = text;
+            let d = &src.combo_box;
+            if let Some((fill, _)) = d.fill {
+                v.widgets.inactive.weak_bg_fill = to_color32(fill);
+                outline_over(&mut v.widgets.inactive, d.outline, d.align, FillField::Weak);
+            }
+            labels(&mut v.widgets, d.text);
         }
         // The box fills from `bg_fill` (`egui/src/widget_style.rs:182`); the label reads
         // `override_text_color` (`:133-136`) and the mark strokes `inactive.fg_stroke` (`:188`).
         Role::Checkbox => {
-            let (fill, path) = match (
-                t.checkbox.disabled_background,
-                t.checkbox.unchecked_background,
-            ) {
-                (Some(c), _) => (c, "checkbox.disabled_background"),
-                (None, Some(c)) => (c, "checkbox.unchecked_background"),
-                (None, None) => (t.checkbox.background_color, "checkbox.background_color"),
-            };
-            note_transparent_fill(to_color32(fill), path, notes);
-            let text = to_color32(t.checkbox.disabled_text_color);
-            v.widgets.inactive.bg_fill = to_color32(fill);
-            v.override_text_color = Some(text);
-            v.widgets.inactive.fg_stroke.color = text;
+            let d = &src.checkbox;
+            if let Some((fill, path)) = d.fill {
+                let fill = to_color32(fill);
+                note_transparent_fill(fill, path, notes);
+                v.widgets.inactive.bg_fill = fill;
+                outline_over(&mut v.widgets.inactive, d.outline, d.align, FillField::Bg);
+            }
+            if let Some(text) = d.text.map(to_color32) {
+                v.override_text_color = Some(text);
+                v.widgets.inactive.fg_stroke.color = text;
+            }
         }
         // A `TextEdit` fills from `Visuals::text_edit_bg_color()`
         // (`egui/src/widgets/text_edit/builder.rs:739`) and takes its text colour from
         // `inactive` in every state (`:480-483`).
         Role::Input => {
-            let fill = t
-                .input
-                .disabled_background
-                .unwrap_or(t.input.background_color);
-            let text = to_color32(t.input.disabled_text_color);
-            v.text_edit_bg_color = Some(to_color32(fill));
-            v.widgets.inactive.fg_stroke.color = text;
-            v.widgets.noninteractive.fg_stroke.color = text;
+            let d = &src.input;
+            if let Some((fill, _)) = d.fill {
+                v.text_edit_bg_color = Some(to_color32(fill));
+            }
+            labels(&mut v.widgets, d.text);
         }
         // The rail is always `inactive.bg_fill` (`egui/src/widgets/slider.rs:775`) and the
         // trailing fill `selection.bg_fill` (`:802`).
         Role::Slider => {
-            let (track, path) = match t.slider.disabled_track_color {
-                Some(c) => (c, "slider.disabled_track_color"),
-                None => (t.slider.track_color, "slider.track_color"),
-            };
-            note_transparent_fill(to_color32(track), path, notes);
-            v.widgets.inactive.bg_fill = to_color32(track);
-            v.selection.bg_fill =
-                to_color32(t.slider.disabled_fill_color.unwrap_or(t.slider.fill_color));
+            if let Some((track, path)) = src.slider_track {
+                let track = to_color32(track);
+                note_transparent_fill(track, path, notes);
+                v.widgets.inactive.bg_fill = track;
+            }
+            if let Some(fill) = src.slider_fill {
+                v.selection.bg_fill = to_color32(fill);
+            }
         }
         // The substitute `Button::new(..).selected(checked)`: unchecked it fills from the state's
         // `weak_bg_fill`, checked from `selection.bg_fill` in every state (§6.2, §6.3).
         Role::Switch => {
-            v.widgets.inactive.weak_bg_fill = to_color32(
-                t.switch
-                    .disabled_unchecked_background
-                    .unwrap_or(t.switch.unchecked_background),
-            );
-            v.selection.bg_fill = to_color32(
-                t.switch
-                    .disabled_checked_background
-                    .unwrap_or(t.switch.checked_background),
-            );
+            let [unchecked, checked] = src.switch;
+            if let Some(fill) = unchecked {
+                v.widgets.inactive.weak_bg_fill = to_color32(fill);
+            }
+            if let Some(fill) = checked {
+                v.selection.bg_fill = to_color32(fill);
+            }
         }
         // A disabled item is a `Button` in `WidgetState::Inactive`; a plain label in the menu
         // reads `noninteractive` (§5.2).
-        Role::Menu => {
-            let text = to_color32(t.menu.disabled_text_color);
-            v.widgets.inactive.fg_stroke.color = text;
-            v.widgets.noninteractive.fg_stroke.color = text;
-        }
+        Role::Menu => labels(&mut v.widgets, src.menu),
         // Cells are `Label`s, painted from `Visuals::text_color()` (§5.4).
         Role::List => {
-            v.widgets.noninteractive.fg_stroke.color = to_color32(t.list.disabled_text_color);
+            if let Some(text) = src.list {
+                v.widgets.noninteractive.fg_stroke.color = to_color32(text);
+            }
         }
         // `Link::ui` paints with `hyperlink_color` alone (`egui/src/widgets/hyperlink.rs:47`).
         Role::Link => {
-            v.hyperlink_color = to_color32(t.link.disabled_text_color);
+            if let Some(text) = src.link {
+                v.hyperlink_color = to_color32(text);
+            }
         }
         _ => return None,
     }

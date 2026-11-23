@@ -410,7 +410,7 @@ fn menu_modifier(
     let theme = ui.ctx().theme();
     let atlas = ThemeAtlas::from_ctx(ui.ctx())?;
     let role_style = atlas.role_modifier(theme, role, variant);
-    let t = atlas.resolved_for(theme);
+    let t = atlas.resolved_for(theme)?;
     let border = t.popover.border.clone();
     // the sides the menu role pads (`menu_margin`) keep its padding
     let (h, v) = (
@@ -479,7 +479,9 @@ fn grow_rows(ui: &mut egui::Ui, role: Role) {
     let Some(atlas) = ThemeAtlas::from_ctx(ui.ctx()) else {
         return;
     };
-    let t = atlas.resolved_for(ui.ctx().theme());
+    let Some(t) = atlas.resolved_for(ui.ctx().theme()) else {
+        return;
+    };
     let size = match role {
         Role::Menu if t.menu.row_height.is_some() => t.menu.font.size,
         Role::Expander => t.expander.font.size,
@@ -705,7 +707,7 @@ pub(crate) fn surfaced(
         .then(|| ThemeAtlas::from_ctx(ui.ctx()))
         .flatten()
         .and_then(|atlas| {
-            let padding = atlas.resolved_for(ui.ctx().theme()).dialog.border.padding;
+            let padding = atlas.resolved_for(ui.ctx().theme())?.dialog.border.padding;
             chrome.frame.inner_margin = native_theme_egui::convert::to_margin(
                 chrome.frame.inner_margin,
                 &unstated_as(&padding, DIALOG_PADDING_PX),
@@ -1272,7 +1274,7 @@ pub(crate) struct DrawnFamilies<'a> {
 impl<'a> DrawnFamilies<'a> {
     /// The families `atlas` draws in, the fonts read from `ctx`, which has run a pass
     /// (`Context::fonts` panics before the first, `egui/src/context.rs:1097-1106`).
-    pub(crate) fn of(ctx: &egui::Context, atlas: &'a ThemeAtlas) -> Self {
+    pub(crate) fn of(ctx: &egui::Context, atlas: &'a crate::app::OldAtlas) -> Self {
         let first = |family: egui::FontFamily| {
             ctx.fonts(|f| {
                 f.definitions()
@@ -1281,7 +1283,7 @@ impl<'a> DrawnFamilies<'a> {
                     .and_then(|faces| faces.first().cloned())
             })
         };
-        let light = &atlas.resolved_for(egui::Theme::Light).defaults;
+        let light = &atlas.old_resolved(egui::Theme::Light).defaults;
         let mut families = Self {
             unavailable: unavailable_families(atlas.notes()),
             invalid: invalid_families(atlas.notes()),
@@ -1380,10 +1382,10 @@ impl Semibold {
     /// them, each where epaint can load it ([`Semibold::add_face`]); none otherwise, and the
     /// text keeps the regular face. One `native_theme::fonts::system_face` per weight
     /// registered.
-    pub(crate) fn register(&mut self, ctx: &egui::Context, atlas: &ThemeAtlas) {
+    pub(crate) fn register(&mut self, ctx: &egui::Context, atlas: &crate::app::OldAtlas) {
         #[cfg(feature = "system-fonts")]
         {
-            let light = atlas.resolved_for(egui::Theme::Light);
+            let light = atlas.old_resolved(egui::Theme::Light);
             let body = &light.defaults.font;
             self.registrations = self.registrations.saturating_add(1);
             let mut families = vec![(
@@ -1391,7 +1393,7 @@ impl Semibold {
                 egui::FontFamily::Name(SEMIBOLD_FAMILY.into()),
             )];
             for scheme in [egui::Theme::Light, egui::Theme::Dark] {
-                let t = atlas.resolved_for(scheme);
+                let t = atlas.old_resolved(scheme);
                 let s = &t.text_scale;
                 for weight in [
                     s.caption.weight,
@@ -1547,7 +1549,8 @@ pub(crate) fn heading_text(ui: &egui::Ui, text: impl Into<String>) -> egui::Rich
 /// (`Spacing::extra_text_line_spacing`, which egui adds between rows, never above the first); a
 /// `TextStyle` is a font and nothing more, so a line box shorter than the row — Adwaita's 1.21 of
 /// a Cantarell-sized font — is reachable only per text, `RichText::line_height`
-/// (`egui/src/widget_text.rs:174`). Without an installed atlas, the text as it is.
+/// (`egui/src/widget_text.rs:174`). Without an installed atlas of the 0.7.2 model, the text as
+/// it is.
 pub(crate) fn lined(
     ui: &egui::Ui,
     text: impl Into<String>,
@@ -1562,13 +1565,16 @@ pub(crate) fn lined(
         .override_font_id
         .as_ref()
         .map_or_else(|| style.resolve(ui.style()).size, |font| font.size);
-    let multiplier = atlas.resolved_for(ui.ctx().theme()).defaults.line_height;
-    text.line_height(Some(size * multiplier))
+    let Some(t) = atlas.resolved_for(ui.ctx().theme()) else {
+        return text;
+    };
+    text.line_height(Some(size * t.defaults.line_height))
 }
 
 /// Text in one of the theme's text-scale roles (`text_scale.*`): its size and line height
 /// through `text_role_font` and `text_role_line_height`, its weight through
-/// [`weighted_family`], in the text colour. Without an installed atlas, egui's `Body` text.
+/// [`weighted_family`], in the text colour. Without an installed atlas of the 0.7.2 model,
+/// egui's `Body` text.
 pub(crate) fn role_text(
     ui: &egui::Ui,
     role: native_theme_egui::TextRole,
@@ -1578,7 +1584,9 @@ pub(crate) fn role_text(
     let Some(atlas) = ThemeAtlas::from_ctx(ui.ctx()) else {
         return egui::RichText::new(text).color(colour);
     };
-    let t = atlas.resolved_for(ui.ctx().theme());
+    let Some(t) = atlas.resolved_for(ui.ctx().theme()) else {
+        return egui::RichText::new(text).color(colour);
+    };
     let prefs = atlas.accessibility();
     let size = native_theme_egui::text_role_font(t, role, prefs).size;
     let weight = native_theme_egui::text_role_weight(t, role);

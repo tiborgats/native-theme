@@ -13,7 +13,7 @@ use native_theme::icons::IconRole;
 use native_theme::icons::IconSet;
 use native_theme_egui::convert::{to_color32, to_corner_radius, to_margin, to_stroke};
 use native_theme_egui::{
-    Role, RoleVariant, Surface, TextRole, ThemeAtlas, default_button, input_frame,
+    Role, RoleVariant, Surface, TextRole, default_button, input_frame,
     list_header_active_background, list_header_font, list_header_height,
     list_header_hover_background, selection_inactive_background, selection_inactive_text_color,
     text_area_frame,
@@ -32,6 +32,7 @@ use native_theme_egui_widgets::switch::Switch;
 use native_theme_showcase_support::rows;
 
 use super::{DemoState, caption};
+use crate::app::OldAtlas;
 use crate::demo::{self, Registry};
 
 /// The width of the Basic page's text fields, drop-down, number input, slider and progress
@@ -221,11 +222,11 @@ fn group(
     ix: usize,
     reg: &mut Registry,
     state: &mut DemoState,
-    atlas: &ThemeAtlas,
+    atlas: &OldAtlas,
     ui: &mut egui::Ui,
     chosen: &(IconSet, Option<String>),
 ) {
-    let t = atlas.resolved_for(ui.ctx().theme());
+    let t = atlas.old_resolved(ui.ctx().theme());
     match ix {
         0 => buttons(reg, atlas, ui),
         1 => checkboxes(reg, atlas, ui),
@@ -263,14 +264,14 @@ fn group(
 pub(crate) fn show(
     reg: &mut Registry,
     state: &mut DemoState,
-    atlas: &ThemeAtlas,
+    atlas: &OldAtlas,
     ui: &mut egui::Ui,
     chosen: &(IconSet, Option<String>),
 ) {
     let gap = atlas.layout().section_gap.unwrap_or_default();
     let origin = ui.cursor().min;
     let count = column_count(
-        atlas.resolved_for(ui.ctx().theme()),
+        atlas.old_resolved(ui.ctx().theme()),
         atlas.layout(),
         state.content_width,
         state.segmented_width,
@@ -531,8 +532,8 @@ fn remember_width(ui: &egui::Ui, key: &str, rect: egui::Rect) {
 /// The Buttons group: two rows of two buttons and a third of three, each row wrapping onto a
 /// further line where the column is too narrow for it (`horizontal_wrapped`), as the gpui
 /// (`flex_wrap`) and iced (`Row::wrap`) pages' rows wrap.
-fn buttons(reg: &mut Registry, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
-    let t = atlas.resolved_for(ui.ctx().theme());
+fn buttons(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
+    let t = atlas.old_resolved(ui.ctx().theme());
     let normal = RoleVariant::Normal;
     // `button.min_width`, which egui's `Button` never reads from the style: it raises only its
     // height, to `interact_size.y` (`button.min_height` in the button scope), so the width is
@@ -672,8 +673,8 @@ fn buttons(reg: &mut Registry, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
 }
 
 /// The Checkboxes group.
-fn checkboxes(reg: &mut Registry, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
-    let t = atlas.resolved_for(ui.ctx().theme());
+fn checkboxes(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
+    let t = atlas.old_resolved(ui.ctx().theme());
     let normal = RoleVariant::Normal;
     // Each control shows one state and is held in it: a click changes a copy made for the pass.
     // One per row, each in its own checkbox scope, whose `interact_size.y` is the indicator.
@@ -895,8 +896,8 @@ fn text_field(
 
 /// Text inputs (the focused one their fourth row), the text area, the slider.
 /// The Text inputs group.
-fn text_inputs(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
-    let t = atlas.resolved_for(ui.ctx().theme());
+fn text_inputs(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, ui: &mut egui::Ui) {
+    let t = atlas.old_resolved(ui.ctx().theme());
     let normal = RoleVariant::Normal;
 
     heading(reg, ui, "basic.text_inputs.heading", "Text inputs");
@@ -932,8 +933,8 @@ fn text_inputs(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui
 }
 
 /// The Text area group.
-fn text_area(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
-    let t = atlas.resolved_for(ui.ctx().theme());
+fn text_area(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, ui: &mut egui::Ui) {
+    let t = atlas.old_resolved(ui.ctx().theme());
     let normal = RoleVariant::Normal;
     heading(reg, ui, "basic.text_area.heading", "Text area");
     let id = ui.make_persistent_id("basic/area");
@@ -996,8 +997,8 @@ fn progress_bar(reg: &mut Registry, ui: &mut egui::Ui) {
 /// The Drop-down group: the companion crate's drop-down (docs/archive/todo_egui-widgets-spec.md §4.6),
 /// egui's own `ComboBox` in the combo-box scope, as tall as its text and padding make it, at
 /// least `combo_box.min_height`, where egui's square arrow box would make it taller.
-fn drop_down(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
-    let t = atlas.resolved_for(ui.ctx().theme());
+fn drop_down(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, ui: &mut egui::Ui) {
+    let t = atlas.old_resolved(ui.ctx().theme());
     let normal = RoleVariant::Normal;
     heading(reg, ui, "basic.drop_down.heading", "Drop-down");
     let current = FRUITS.get(state.basic_combo).copied().unwrap_or_default();
@@ -1037,8 +1038,8 @@ fn drop_down(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: 
 
 /// The switches, the number input, the spinner, the segmented control, a card.
 /// The Number input group.
-fn number_input(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
-    let t = atlas.resolved_for(ui.ctx().theme());
+fn number_input(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, ui: &mut egui::Ui) {
+    let t = atlas.old_resolved(ui.ctx().theme());
     let normal = RoleVariant::Normal;
 
     // A number input: egui's `DragValue`, the number field egui has, in the input role's
@@ -1186,8 +1187,8 @@ fn typography_line(
 }
 
 /// The Typography group.
-fn typography(reg: &mut Registry, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
-    let t = atlas.resolved_for(ui.ctx().theme());
+fn typography(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
+    let t = atlas.old_resolved(ui.ctx().theme());
     let normal = RoleVariant::Normal;
 
     // One line in each of the theme's text roles: the text-scale roles through
@@ -1266,7 +1267,7 @@ fn separator(reg: &mut Registry, ui: &mut egui::Ui) {
 }
 
 /// The List group.
-fn list_group(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
+fn list_group(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, ui: &mut egui::Ui) {
     heading(reg, ui, "basic.list.heading", "List");
     list(reg, state, atlas, ui);
 }
@@ -1283,11 +1284,11 @@ fn list_group(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui:
 fn icon_buttons(
     reg: &mut Registry,
     state: &mut DemoState,
-    atlas: &ThemeAtlas,
+    atlas: &OldAtlas,
     ui: &mut egui::Ui,
     chosen: &(IconSet, Option<String>),
 ) {
-    let t = atlas.resolved_for(ui.ctx().theme());
+    let t = atlas.old_resolved(ui.ctx().theme());
     let size = t.toolbar.icon_size;
     let (set, icon_theme) = chosen;
     demo::scoped_container(
@@ -1483,11 +1484,11 @@ fn icons(
 fn icons_group(
     reg: &mut Registry,
     state: &mut DemoState,
-    atlas: &ThemeAtlas,
+    atlas: &OldAtlas,
     ui: &mut egui::Ui,
     chosen: &(IconSet, Option<String>),
 ) {
-    let t = atlas.resolved_for(ui.ctx().theme());
+    let t = atlas.old_resolved(ui.ctx().theme());
     heading(reg, ui, "basic.icons.heading", "Icons");
     icon_buttons(reg, state, atlas, ui, chosen);
     icons(reg, t, ui, chosen);
@@ -1562,15 +1563,15 @@ fn expander(reg: &mut Registry, ui: &mut egui::Ui) {
 }
 
 /// The Table group.
-fn table_group(reg: &mut Registry, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
+fn table_group(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
     heading(reg, ui, "basic.table.heading", "Table");
     table(reg, atlas, ui);
 }
 
 /// The Card group: the card surface's frame (`card.background_color`, `card.border.*`),
 /// `BASIC_WIDE` across its border.
-fn card(reg: &mut Registry, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
-    let t = atlas.resolved_for(ui.ctx().theme());
+fn card(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
+    let t = atlas.old_resolved(ui.ctx().theme());
     let normal = RoleVariant::Normal;
     heading(reg, ui, "basic.card.heading", "Card");
     // A side of the card's padding the theme leaves unstated is the container margin, inside
@@ -1693,8 +1694,8 @@ fn row_metrics(
 /// `list.hover_text_color` while hovered, outlined there in `list.hover_border_color` at
 /// `defaults.border.line_width` where the theme states it, the fill rounded where it meets the
 /// frame (`inner_corners`).
-fn list(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
-    let t = atlas.resolved_for(ui.ctx().theme());
+fn list(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, ui: &mut egui::Ui) {
+    let t = atlas.old_resolved(ui.ctx().theme());
     let l = &t.list;
     let mut rows_drawn: Vec<egui::Response> = Vec::new();
     let mut labels_drawn: Vec<egui::Rect> = Vec::new();
@@ -1976,8 +1977,8 @@ pub(crate) fn header_section_fill(
 /// `list.grid_color` line between the columns through the header and the rows and a horizontal
 /// one under the header, each `separator.line_width` wide, inside the cell it closes, the
 /// header's share of them in `list.header_separator_color` where the theme states it (E7).
-fn table(reg: &mut Registry, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
-    let t = atlas.resolved_for(ui.ctx().theme());
+fn table(reg: &mut Registry, atlas: &OldAtlas, ui: &mut egui::Ui) {
+    let t = atlas.old_resolved(ui.ctx().theme());
     let prefs = atlas.accessibility();
     let l = &t.list;
     let mut places: Vec<(String, egui::Rect)> = Vec::new();
