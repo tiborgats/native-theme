@@ -1,11 +1,13 @@
 //! Connector parity of the whole mapping (docs/v0.8.0-plan.md, section 1, rule 2; M4, step 1):
-//! what the connector hands to egui, compiled from the 0.7.2 model by the crate root's path and
-//! from the 0.8.0 model by [`super`], is equal on every preset of
+//! what the connector hands to egui, the atlas the crate root's builder makes of the 0.7.2 model
+//! and the one [`super::to_theme`] makes of the 0.8.0 model, is equal on every preset of
 //! [`super::root_parity::PRESETS`], light and dark.
 //!
-//! The 0.7.2 side is resolved as [`super::root_parity::resolve`] resolves it, and compiled with
-//! the default preferences, whose text scale is 1, as the 0.8.0 theme is resolved for, and the
-//! preset's `LayoutTheme`.
+//! The 0.7.2 side is resolved as [`super::root_parity::resolve`] resolves it, and built with
+//! the default preferences, whose text scale is 1, as the 0.8.0 theme is resolved for, the
+//! preset's `LayoutTheme` and no font plan, so both atlases measure the Body row on egui's
+//! default faces. The 0.8.0 side is built from each scheme's theme and the same theme resolved
+//! for a window that is not active.
 //!
 //! The form of comparison per egui type the connector produces:
 //!
@@ -27,10 +29,12 @@
 //! - The notes (`Note`) name the leaf whose value was sanitised, saturated or transparent, a
 //!   0.7.2 leaf on one side and its 0.8.0 home on the other: not compared.
 //!
-//! Compared so far: the base style, each role's `Normal` cell and its `Selected`, `Disabled`
-//! and `SelectedDisabled` cells where the role has them, each surface's frame, the
-//! `WindowTitleBar`'s from the theme resolved for an inactive window as well, and the focus
-//! ring. A difference is allowed only as a listed one, per leaf (a `*` segment standing for
+//! Compared, per scheme of the two atlases: the base style, each role's `Normal` cell and its
+//! `Selected`, `Disabled` and `SelectedDisabled` cells where the role has one of its own (the
+//! atlas sharing the `Normal` cell, for `SelectedDisabled` the `Disabled` one, in place of a
+//! cell a role has none of, which is then the same on both sides), each surface's frame, the
+//! `WindowTitleBar`'s from the theme resolved for an inactive window as well, the focus ring and
+//! the menu bar's titles. A difference is allowed only as a listed one, per leaf (a `*` segment standing for
 //! any one, an entry naming the leaf itself taken first) and preset, with its cause, from which
 //! the test computes the value the 0.8.0 side must hold there; an entry that differs nowhere
 //! on a preset it names is stale and fails. A cell's leaf that holds its base style's value on
@@ -42,20 +46,19 @@
 //! model gap, listed in [`RULE_0_ON_A_PRESET`] with the 0.8.0 home the preset leaves unstated;
 //! every other one in [`DIFFERENCES`].
 
+use std::sync::Arc;
+
 use egui::style::{WidgetVisuals, Widgets};
 use native_theme::next::{Preset, ThemeContext};
 
-use super::build::{base_source, cell_source, focus_ring_source, frame_source, variant_source};
+use super::build::{base_source, cell_source, frame_source, variant_source};
 use super::root_parity::{PRESETS, resolve};
+use crate::atlas::SchemeStyles;
 use crate::convert::to_color32;
-use crate::plugin::{FocusRingSource, build_focus_ring_from};
-use crate::style::base::{BaseSource, base_style_from};
 use crate::style::cells::CellSource;
-use crate::style::frames::{FrameSource, surface_frame_from};
+use crate::style::frames::FrameSource;
 use crate::style::line::{Line, LineAlign};
-use crate::style::roles::{CellInput, MenuBarTitles, role_cell_from};
-use crate::style::variants::{VariantSource, disabled_cell, selected_cell, selected_disabled_cell};
-use crate::{AccessibilityPreferences, Role, Surface};
+use crate::{AccessibilityPreferences, Role, RoleVariant, Surface};
 
 /// Why a leaf differs, which gives the value the 0.8.0 side holds there.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -909,15 +912,6 @@ fn compare(
     }
 }
 
-/// The Body row height `Builder::build` measures for a source's Body size, on egui's
-/// default faces.
-fn row_height(src: &BaseSource) -> Option<f32> {
-    let [_, body, ..] = src.sizes;
-    body.and_then(|(size, _)| {
-        crate::fonts::body_row_height(&egui::FontDefinitions::default(), size)
-    })
-}
-
 /// The entry of `widgets` a `.visuals.widgets.<entry>.…` path names.
 fn entry<'a>(widgets: &'a Widgets, path: &str) -> Option<&'a WidgetVisuals> {
     match path.split('.').nth(3)? {
@@ -958,35 +952,33 @@ fn frame_align(surface: Surface, src: &FrameSource) -> Option<LineAlign> {
     })
 }
 
-/// The variant cells compared, in [`variant_cells`]' order.
-const VARIANTS: [&str; 3] = ["Selected", "Disabled", "SelectedDisabled"];
+/// The variant cells compared, each by its name.
+const VARIANTS: [(&str, RoleVariant); 3] = [
+    ("Selected", RoleVariant::Selected),
+    ("Disabled", RoleVariant::Disabled),
+    ("SelectedDisabled", RoleVariant::SelectedDisabled),
+];
 
-/// A role's `Selected`, `Disabled` and `SelectedDisabled` cells from its `Normal` cell, as
-/// `style::compile` builds them; `None` where the role has none of its own.
-fn variant_cells(
-    role: Role,
-    normal: &egui::Style,
-    src: &VariantSource,
-    scheme: egui::Theme,
-    rule_0: bool,
-) -> [Option<egui::Style>; 3] {
-    let input = CellInput {
-        scheme,
-        row_height: None,
-        defs: None,
-        rule_0,
+/// Whether a role's cell in `variant` is a cell of its own, not the one the atlas shares in
+/// its place: the `Normal` cell for `Selected` and `Disabled`, the `Disabled` one for
+/// `SelectedDisabled`.
+fn own_cell(styles: &SchemeStyles, role: Role, variant: RoleVariant) -> bool {
+    let shared = match variant {
+        RoleVariant::Normal => return false,
+        RoleVariant::Selected | RoleVariant::Disabled => RoleVariant::Normal,
+        RoleVariant::SelectedDisabled => RoleVariant::Disabled,
     };
-    let mut notes = Vec::new();
-    let selected = selected_cell(role, normal, src, &input, &mut notes);
-    let both = selected
-        .as_ref()
-        .and_then(|s| selected_disabled_cell(role, s, src, &mut notes));
-    let disabled = disabled_cell(role, normal, src, &mut notes);
-    [selected, disabled, both]
+    !Arc::ptr_eq(styles.cell(role, variant), styles.cell(role, shared))
+}
+
+/// The leaves of a role's `Selected` cell, where it has one of its own.
+fn selected_leaves(styles: &SchemeStyles, role: Role) -> Option<Vec<(String, String)>> {
+    own_cell(styles, role, RoleVariant::Selected)
+        .then(|| leaves(&format!("{:#?}", styles.cell(role, RoleVariant::Selected))))
 }
 
 #[test]
-fn the_mapping_agrees_on_both_models() -> crate::Result<()> {
+fn the_atlas_agrees_on_both_models() -> Result<(), Box<dyn std::error::Error>> {
     let mut failures = Vec::new();
     let mut seen = Vec::new();
     if PRESETS.iter().map(|(key, _)| *key).ne(ALL.iter().copied()) {
@@ -1004,27 +996,41 @@ fn the_mapping_agrees_on_both_models() -> crate::Result<()> {
             g.diff.what, g.home
         ));
     }
+    let prefs = AccessibilityPreferences::default();
     for &(key, preset) in PRESETS {
         let layout = native_theme::theme::Theme::preset(key)?.layout;
-        for (is_dark, scheme) in [(false, egui::Theme::Light), (true, egui::Theme::Dark)] {
-            let (old, new) = resolve(key, preset, is_dark)?;
-            let label = format!("{key}/{}", if is_dark { "dark" } else { "light" });
-            let old_src = BaseSource::old(&old, &AccessibilityPreferences::default(), &layout);
-            let new_src = base_source(&new);
-            let old_base = base_style_from(
-                scheme,
-                row_height(&old_src),
-                &old_src,
+        let (old_light, new_light) = resolve(key, preset, false)?;
+        let (old_dark, new_dark) = resolve(key, preset, true)?;
+        let resolve_inactive = |ctx: ThemeContext| {
+            native_theme::next::Theme::preset(preset).resolve(&ctx.with_window_active(false))
+        };
+        let light_inactive = resolve_inactive(ThemeContext::light());
+        let dark_inactive = resolve_inactive(ThemeContext::dark());
+        let old_atlas = crate::ThemeAtlas::builder(key, &old_light, &old_dark)
+            .layout(&layout)
+            .accessibility(&prefs)
+            .build();
+        let new_atlas = super::to_theme(&new_light, &light_inactive, &new_dark, &dark_inactive)?;
+        for (is_dark, scheme, old, new, inactive) in [
+            (
                 false,
-                &mut Vec::new(),
-            );
-            let new_base = base_style_from(
-                scheme,
-                row_height(&new_src),
-                &new_src,
+                egui::Theme::Light,
+                &old_light,
+                &new_light,
+                &light_inactive,
+            ),
+            (
                 true,
-                &mut Vec::new(),
-            );
+                egui::Theme::Dark,
+                &old_dark,
+                &new_dark,
+                &dark_inactive,
+            ),
+        ] {
+            let label = format!("{key}/{}", if is_dark { "dark" } else { "light" });
+            let (old_styles, new_styles) = (old_atlas.scheme(scheme), new_atlas.scheme(scheme));
+            let (old_base, new_base) = (&*old_styles.base, &*new_styles.base);
+            let new_src = base_source(new);
             let own = leaves(&format!("{:#?}", scheme.default_style()));
             let old_leaves = leaves(&format!("{old_base:#?}"));
             let new_leaves = leaves(&format!("{new_base:#?}"));
@@ -1057,30 +1063,18 @@ fn the_mapping_agrees_on_both_models() -> crate::Result<()> {
             };
             compare(
                 &side,
-                &old_base,
-                &new_base,
+                old_base,
+                new_base,
                 &base_expected,
                 &mut failures,
                 &mut seen,
             );
-            let defs = egui::FontDefinitions::default();
-            let old_cells = CellSource::old(&old, &AccessibilityPreferences::default());
-            let new_cells = cell_source(&new);
-            let old_variant_src = VariantSource::old(&old);
-            let new_variant_src = variant_source(&new);
+            let new_cells = cell_source(new);
+            let new_variant_src = variant_source(new);
             for role in Role::all() {
                 let what = format!("{role:?}");
-                let cell = |base: &egui::Style, src: &CellSource, rule_0, row| {
-                    let input = CellInput {
-                        scheme,
-                        row_height: row,
-                        defs: Some(&defs),
-                        rule_0,
-                    };
-                    role_cell_from(*role, base, src, &input, &mut Vec::new())
-                };
-                let old_cell = cell(&old_base, &old_cells, false, row_height(&old_src));
-                let new_cell = cell(&new_base, &new_cells, true, row_height(&new_src));
+                let old_cell = &**old_styles.cell(*role, RoleVariant::Normal);
+                let new_cell = &**new_styles.cell(*role, RoleVariant::Normal);
                 let new_cell_leaves = leaves(&format!("{new_cell:#?}"));
                 let pressed = |path: &str| {
                     (path.contains(".hovered.") || path.contains(".active."))
@@ -1123,39 +1117,36 @@ fn the_mapping_agrees_on_both_models() -> crate::Result<()> {
                 };
                 compare(
                     &side,
-                    &old_cell,
-                    &new_cell,
+                    old_cell,
+                    new_cell,
                     &cell_expected,
                     &mut failures,
                     &mut seen,
                 );
                 let old_normal_leaves = leaves(&format!("{old_cell:#?}"));
-                let old_variants = variant_cells(*role, &old_cell, &old_variant_src, scheme, false);
-                let new_variants = variant_cells(*role, &new_cell, &new_variant_src, scheme, true);
-                let old_selected_leaves =
-                    old_variants[0].as_ref().map(|s| leaves(&format!("{s:#?}")));
-                let new_selected_leaves =
-                    new_variants[0].as_ref().map(|s| leaves(&format!("{s:#?}")));
-                for (i, (name, (o, n))) in VARIANTS
-                    .iter()
-                    .zip(old_variants.iter().zip(&new_variants))
-                    .enumerate()
-                {
+                let old_selected_leaves = selected_leaves(old_styles, *role);
+                let new_selected_leaves = selected_leaves(new_styles, *role);
+                for (name, variant) in VARIANTS {
                     let what = format!("{role:?}/{name}");
-                    let (Some(o), Some(n)) = (o, n) else {
-                        if o.is_some() != n.is_some() {
-                            failures.push(format!("{label}: {what}: a cell on one model only"));
-                        }
+                    let has = own_cell(old_styles, *role, variant);
+                    if has != own_cell(new_styles, *role, variant) {
+                        failures.push(format!("{label}: {what}: a cell on one model only"));
+                    }
+                    if !has {
                         continue;
-                    };
+                    }
+                    let (o, n) = (
+                        &**old_styles.cell(*role, variant),
+                        &**new_styles.cell(*role, variant),
+                    );
                     // `SelectedDisabled` is copied from `Selected`, the others from `Normal`
-                    let (old_from, new_from) = match (i, &old_selected_leaves, &new_selected_leaves)
-                    {
-                        (2, Some(o), Some(n)) => (o, n),
-                        _ => (&old_normal_leaves, &new_cell_leaves),
-                    };
+                    let (old_from, new_from) =
+                        match (variant, &old_selected_leaves, &new_selected_leaves) {
+                            (RoleVariant::SelectedDisabled, Some(o), Some(n)) => (o, n),
+                            _ => (&old_normal_leaves, &new_cell_leaves),
+                        };
                     let n_leaves = leaves(&format!("{n:#?}"));
-                    let checked = i != 1;
+                    let checked = variant != RoleVariant::Disabled;
                     let variant_expected = |path: &str, cause: Cause| match cause {
                         Cause::Rule0 | Cause::Egui => leaf_at(&own, path),
                         Cause::StateKeepsBase | Cause::Base => leaf_at(&new_leaves, path),
@@ -1195,28 +1186,16 @@ fn the_mapping_agrees_on_both_models() -> crate::Result<()> {
                     compare(&side, o, n, &variant_expected, &mut failures, &mut seen);
                 }
             }
-            let inactive = native_theme::next::Theme::preset(preset).resolve(
-                &if is_dark {
-                    ThemeContext::dark()
-                } else {
-                    ThemeContext::light()
-                }
-                .with_window_active(false),
-            );
-            let old_frames = FrameSource::old(&old, &layout);
-            let new_frames = frame_source(&new, &inactive);
+            let new_frames = frame_source(new, inactive);
             let own_style = scheme.default_style();
             for surface in Surface::all() {
                 let what = format!("{surface:?}");
-                let frame = |base: &egui::Style, src: &FrameSource| {
-                    surface_frame_from(*surface, base, src, scheme, &mut Vec::new())
-                };
-                let old_frame = frame(&old_base, &old_frames);
-                let new_frame = frame(&new_base, &new_frames);
+                let old_frame = old_styles.frame(*surface);
+                let new_frame = new_styles.frame(*surface);
                 let preset_leaves = |base: &egui::Style| {
                     leaves(&format!("{:#?}", crate::style::egui_preset(*surface, base)))
                 };
-                let (old_preset, new_preset) = (preset_leaves(&old_base), preset_leaves(&new_base));
+                let (old_preset, new_preset) = (preset_leaves(old_base), preset_leaves(new_base));
                 let own_preset = preset_leaves(&own_style);
                 let align = frame_align(*surface, &new_frames);
                 let frame_expected = |path: &str, cause: Cause| match (cause, align) {
@@ -1246,8 +1225,6 @@ fn the_mapping_agrees_on_both_models() -> crate::Result<()> {
                     &mut seen,
                 );
             }
-            let old_ring = build_focus_ring_from(&FocusRingSource::old(&old), &mut Vec::new());
-            let new_ring = build_focus_ring_from(&focus_ring_source(&new), &mut Vec::new());
             let side = Side {
                 what: "FocusRing",
                 preset: key,
@@ -1256,8 +1233,8 @@ fn the_mapping_agrees_on_both_models() -> crate::Result<()> {
             };
             compare(
                 &side,
-                &old_ring,
-                &new_ring,
+                &old_styles.focus_ring,
+                &new_styles.focus_ring,
                 &|_, _| None,
                 &mut failures,
                 &mut seen,
@@ -1270,8 +1247,8 @@ fn the_mapping_agrees_on_both_models() -> crate::Result<()> {
             };
             compare(
                 &side,
-                &MenuBarTitles::of(&old_cells.menu),
-                &MenuBarTitles::of(&new_cells.menu),
+                &old_styles.menu_bar,
+                &new_styles.menu_bar,
                 &|_, _| None,
                 &mut failures,
                 &mut seen,
