@@ -799,6 +799,39 @@ const fn checked(
     }
 }
 
+/// The reason of a toolbar button whose hovered and pressed fill the 0.8.0
+/// theme states nothing for.
+const TOOLBAR_STATE_FILLS: &str = "the theme states no fill for the hovered or the pressed \
+     toolbar button: 0.7.2 leaves toolbar.button_hover_background and \
+     toolbar.button_active_background unset on these presets, which its connector drew in \
+     the push button's button.hover_background and button.active_background; no rule for \
+     HOVER or PRESSED states toolbar.button's fill, the toolbar button's own home \
+     (native-theme/tests/next_homes.toml, rows toolbar.button_hover_background and \
+     toolbar.button_active_background), and a control unfilled at rest does not borrow the \
+     push button's state fills, so the fill is as styles::in_state gives it against iced's \
+     own secondary button, the toolbar button's fill at rest being none \
+     (docs/v0.8.0-spec.md §2, from_state; §10, rule 0)";
+
+/// A toolbar button on `presets` whose hovered, pressed and checked fill
+/// the theme states nothing for ([`TOOLBAR_STATE_FILLS`], [`CHECKED`]).
+const fn unfilled_toolbar(presets: &'static [&'static str]) -> Difference {
+    Difference {
+        leaf: "toolbar_button",
+        presets,
+        listed: Listed {
+            states: States {
+                hover_fill: true,
+                pressed_fill: true,
+                checked: true,
+                ..States::STATED
+            },
+            ..Listed::aligned(LineAlign::Outside)
+        },
+        stated: &[],
+        reason: &[TOOLBAR_STATE_FILLS, CHECKED],
+    }
+}
+
 /// The reason of a checked button whose fill and label the 0.8.0 theme
 /// states and 0.7.2 does not.
 const STATED_CHECKED: &str = "0.7.2 states no button.checked_background or \
@@ -1047,9 +1080,8 @@ macro_rules! toolbar_widths {
 /// A toolbar button's outline width ([`toolbar_widths`]).
 const TOOLBAR_WIDTHS: [Stated; 8] = toolbar_widths!();
 
-/// macos-tahoe's toolbar button: [`TOOLBAR_WIDTHS`] and the button's
-/// hovered and pressed fill.
-const TAHOE_TOOLBAR: &[&[Stated]] = &[&BUTTON_STATE_FILLS, &TOOLBAR_WIDTHS];
+/// macos-tahoe's toolbar button: [`TOOLBAR_WIDTHS`].
+const TAHOE_TOOLBAR: &[&[Stated]] = &[&TOOLBAR_WIDTHS];
 
 /// A button's hovered and pressed stroke colour.
 const STATE_STROKES: &[&[Stated]] = &[&[button_stroke!(HOVER;), button_stroke!(PRESSED;)]];
@@ -1099,9 +1131,8 @@ const MONTEREY_BUTTON: &[&[Stated]] = &[
     ],
 ];
 
-/// macos-monterey's toolbar button: the button's hovered and pressed fill
-/// and pressed label.
-const MONTEREY_TOOLBAR: &[&[Stated]] = &[&BUTTON_STATE_FILLS, &[PRESSED_LABEL]];
+/// macos-monterey's toolbar button: the button's pressed label.
+const MONTEREY_TOOLBAR: &[&[Stated]] = &[&[PRESSED_LABEL]];
 
 /// A check box's hovered stroke, checked or not (`checkbox.indicator(HOVER)`,
 /// `indicator(HOVER|CHECKED)` where a rule for HOVER states it).
@@ -1311,18 +1342,15 @@ const DIFFERENCES: &[Difference] = &[
         LineAlign::Outside,
         TOGGLE_PRESSED_STROKE,
     ),
-    checked(
-        "toolbar_button",
-        &["macos-tahoe"],
-        LineAlign::Outside,
-        false,
-    )
-    .stating(TAHOE_TOOLBAR, &[CHECKED, STATED]),
+    unfilled_toolbar(&["macos-tahoe"])
+        .stating(TAHOE_TOOLBAR, &[TOOLBAR_STATE_FILLS, CHECKED, STATED]),
     Difference {
         leaf: "toolbar_button",
         presets: &["ios-13"],
         listed: Listed {
             states: States {
+                hover_fill: true,
+                pressed_fill: true,
                 checked: true,
                 ..States::STATED
             },
@@ -1330,16 +1358,11 @@ const DIFFERENCES: &[Difference] = &[
             ..Listed::aligned(LineAlign::Outside)
         },
         stated: &[&TOOLBAR_WIDTHS],
-        reason: &[CHECKED, STATED_CHECKED, STATED],
+        reason: &[TOOLBAR_STATE_FILLS, CHECKED, STATED_CHECKED, STATED],
     },
-    checked(
-        "toolbar_button",
-        &["macos-monterey"],
-        LineAlign::Outside,
-        false,
-    )
-    .stating(MONTEREY_TOOLBAR, &[CHECKED, STATED]),
-    checked("toolbar_button", &["material-3"], LineAlign::Outside, false),
+    unfilled_toolbar(&["macos-monterey"])
+        .stating(MONTEREY_TOOLBAR, &[TOOLBAR_STATE_FILLS, CHECKED, STATED]),
+    unfilled_toolbar(&["material-3"]),
     // windows-11's primary variant lays its stroke inside the box, the plain
     // button's outside (`button.body(NONE; variant=Primary).stroke`); its
     // default button is the primary one.
@@ -2439,7 +2462,7 @@ fn compare_styles(
             "toolbar_button",
             o::toolbar_button(old, checked),
             n::toolbar_button(new, checked),
-            |l: Listed| o::toolbar_button_from(&at(l), &t.aligned(l.align), checked),
+            |l: Listed| o::toolbar_button_from(&at(l), &t.listed(l), checked),
             button,
             flags
         );

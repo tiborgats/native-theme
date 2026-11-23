@@ -862,19 +862,26 @@ pub(crate) struct ToolbarButtonSource {
 }
 
 impl ToolbarButtonSource {
-    /// The 0.7.2 model's reads.
+    /// The 0.7.2 model's reads: an unset hovered or pressed fill is the
+    /// push button's, `button.hover_background` and
+    /// `button.active_background` (the button's hovered one where that is
+    /// unset), as [`ButtonSource::of`] reads them.
     pub(crate) fn of(resolved: &ResolvedTheme) -> Self {
         let t = &resolved.toolbar;
+        let b = &resolved.button;
         let line = |c: Option<Rgba>| c.map(|c| Line::outside(to_color(c)));
         let checked_hover = line(
             t.button_hover_border_color
                 .or(t.button_checked_border_color),
         );
+        let hover = t.button_hover_background.unwrap_or(b.hover_background);
+        let active = t
+            .button_active_background
+            .or(b.active_background)
+            .unwrap_or(b.hover_background);
         Self {
-            hover_background: t.button_hover_background.map(|c| Layer::Color(to_color(c))),
-            active_background: t
-                .button_active_background
-                .map(|c| Layer::Color(to_color(c))),
+            hover_background: Some(Layer::Color(to_color(hover))),
+            active_background: Some(Layer::Color(to_color(active))),
             checked_background: t.button_checked_background.map(to_color),
             hover_border_color: line(t.button_hover_border_color),
             checked_border_color: line(t.button_checked_border_color),
@@ -898,6 +905,19 @@ impl ToolbarButtonSource {
             ..self
         }
     }
+
+    /// [`Self::aligned`], and the state fills `listed` names unset, for the
+    /// parity test's expected values.
+    #[cfg(test)]
+    pub(crate) fn listed(self, listed: crate::next::parity::Listed) -> Self {
+        let s = listed.states;
+        let a = self.aligned(listed.align);
+        Self {
+            hover_background: a.hover_background.filter(|_| !s.hover_fill),
+            active_background: a.active_background.filter(|_| !s.pressed_fill),
+            ..a
+        }
+    }
 }
 
 /// [`toolbar_button`] of what it reads.
@@ -909,18 +929,12 @@ pub(crate) fn toolbar_button_from(
     use iced_widget::button::{Status, Style};
 
     // The layers are painted as given: a toolbar button has no fill at rest
-    // for them to lie over. Where the theme states a layer for neither the
-    // toolbar nor the button, the fill and the label are as [`in_state`]
-    // gives them against iced's own neutral class, the toolbar button's
-    // fill at rest being none.
-    let hovered = t
-        .hover_background
-        .or(b.hover_background)
-        .map(Layer::as_given);
-    let pressed = t
-        .active_background
-        .or(b.active_background)
-        .map(Layer::as_given);
+    // for them to lie over. Where the toolbar's source gives no layer for a
+    // state, the fill and the label are as [`in_state`] gives them against
+    // iced's own neutral class (spec §10, rule 0), the toolbar button's fill
+    // at rest being none.
+    let hovered = t.hover_background.map(Layer::as_given);
+    let pressed = t.active_background.map(Layer::as_given);
     let checked_fill = t.checked_background;
 
     let label = b.label;

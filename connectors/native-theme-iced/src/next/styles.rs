@@ -176,6 +176,9 @@ pub fn button_toggle(
 /// [`button_primary`]'s fill and label in the same status, a stated
 /// `button.label(CHECKED)` laid over, and a stated checked fill lettered in
 /// it, else in the label at rest, as [`button_toggle`] (spec §10, rule 0a).
+/// A hovered or pressed fill is `toolbar.button(HOVER)`'s or
+/// `toolbar.button(PRESSED)`'s where a rule states it, else iced's own
+/// (spec §10, rule 0), never the push button's.
 ///
 /// # Errors
 ///

@@ -133,6 +133,34 @@ fn a_toolbar_button_fades_its_label_by_a_stated_opacity() -> TestResult {
     Ok(())
 }
 
+/// A toolbar button whose toolbar states no hovered or pressed fill is drawn
+/// in iced's own there (spec §10, rule 0), never in the push button's.
+#[test]
+fn a_toolbar_button_leaves_an_unstated_state_fill_to_iced() -> TestResult {
+    use crate::styles::Layer;
+    use iced_widget::button::Status;
+    let push = Some(Layer::Whole(IcedColor::from_rgb8(0xf0, 0xa0, 0x14)));
+    for (preset, r) in every_preset() {
+        let mut t = super::toolbar_button_source(&r)?;
+        t.hover_background = None;
+        t.active_background = None;
+        let mut b = super::button_source(&r)?;
+        let theme = to_theme(&r)?;
+        let without = crate::styles::toolbar_button_from(&b, &t, false);
+        b.hover_background = push;
+        b.active_background = push;
+        let with = crate::styles::toolbar_button_from(&b, &t, false);
+        for status in [Status::Hovered, Status::Pressed] {
+            assert_eq!(
+                with(&theme, status).background,
+                without(&theme, status).background,
+                "{preset:?} {status:?}"
+            );
+        }
+    }
+    Ok(())
+}
+
 /// A field whose theme states no disabled opacity is drawn in the disabled
 /// colours the theme states, not faded again.
 #[test]
