@@ -120,8 +120,9 @@ pub(crate) enum Added {
 /// states nothing for (spec §2, `from_state`), each then as
 /// [`crate::styles::in_state`] gives it: the hovered and the pressed fill,
 /// stroke and label, a focused field's and an open drop-down's stroke, a
-/// switch's hovered thumb and a slider's filled rail under the pointer and
-/// dragged.
+/// switch's hovered thumb, a slider's filled rail under the pointer and
+/// dragged, and a checked button's fill (`checked`: drawn as the primary
+/// button's, spec §10, rule 0a).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub(crate) struct States {
     pub hover_fill: bool,
@@ -134,6 +135,7 @@ pub(crate) struct States {
     pub open_stroke: bool,
     pub hover_thumb: bool,
     pub rail: bool,
+    pub checked: bool,
 }
 
 impl States {
@@ -149,6 +151,7 @@ impl States {
         open_stroke: false,
         hover_thumb: false,
         rail: false,
+        checked: false,
     };
 }
 
@@ -512,6 +515,49 @@ const fn pressed(
     }
 }
 
+/// The reason of a checked button the 0.8.0 theme states no checked fill
+/// for.
+const CHECKED: &str = "the theme states no fill for the checked button: 0.7.2 leaves \
+     button.checked_background (or toolbar.button_checked_background) unset \
+     (docs/inheritance-rules.toml, [no_inheritance]: the pressed pair shows a checked toggle), \
+     which its connector drew in the pressed button's fill and label; iced's button has no \
+     checked status, and the 0.8.0 theme has no rule for CHECKED that states button.body's \
+     (or toolbar.button's) fill, so the checked button is drawn in the connector's primary \
+     button's fill and label in the same status, iced's own way of marking a chosen button, a \
+     stated button.label(CHECKED) laid over, its outline, corners and shadow the unchecked \
+     button's (docs/v0.8.0-spec.md §10, rule 0a)";
+
+/// A button whose checked fill the theme states nothing for on `presets`,
+/// its strokes laid at `align`, and with `pressed_fill` its pressed fill
+/// too.
+const fn checked(
+    leaf: &'static str,
+    presets: &'static [&'static str],
+    align: LineAlign,
+    pressed_fill: bool,
+) -> Difference {
+    Difference {
+        leaf,
+        presets,
+        listed: Listed {
+            states: States {
+                pressed_fill,
+                checked: true,
+                ..States::STATED
+            },
+            ..Listed::aligned(align)
+        },
+        reason: match (align, pressed_fill) {
+            (LineAlign::Outside, false) => &[CHECKED],
+            (LineAlign::Outside, true) => &[PRESSED, CHECKED],
+            (LineAlign::Inside, false) => &[INSIDE, CHECKED],
+            (LineAlign::Inside, true) => &[INSIDE, PRESSED, CHECKED],
+            (LineAlign::Center, false) => &[CENTER, CHECKED],
+            (LineAlign::Center, true) => &[CENTER, PRESSED, CHECKED],
+        },
+    }
+}
+
 /// The reason of a scroll bar handle whose outline and corners the 0.8.0
 /// theme states.
 const SCROLLER_OUTLINE: &str = "the theme states the scroll bar handle's outline and \
@@ -561,12 +607,26 @@ const fn breeze_scroller(presets: &'static [&'static str], rest: iced_core::Colo
 const DIFFERENCES: &[Difference] = &[
     // button.body(NONE), its states and its variants; macos-tahoe states a
     // hovered fill and no pressed one (`body(PRESSED)`), nor does the
-    // toolbar (`toolbar.button(PRESSED)`).
+    // toolbar (`toolbar.button(PRESSED)`). The macOS and iOS presets state
+    // no checked fill (`body(CHECKED)`, `toolbar.button(CHECKED)`), nor does
+    // material-3's toolbar.
     inside("button", &["macos-monterey"]),
-    inside("button_toggle", &["macos-monterey"]),
+    checked(
+        "button_toggle",
+        &["macos-monterey"],
+        LineAlign::Inside,
+        false,
+    ),
     pressed("button", &["macos-tahoe"], LineAlign::Inside),
-    pressed("button_toggle", &["macos-tahoe"], LineAlign::Inside),
-    pressed("toolbar_button", &["macos-tahoe"], LineAlign::Outside),
+    checked("button_toggle", &["macos-tahoe"], LineAlign::Inside, true),
+    checked("toolbar_button", &["macos-tahoe"], LineAlign::Outside, true),
+    checked("button_toggle", &["ios-13"], LineAlign::Outside, false),
+    checked(
+        "toolbar_button",
+        &["macos-monterey", "material-3", "ios-13"],
+        LineAlign::Outside,
+        false,
+    ),
     // windows-11's primary variant lays its stroke inside the box, the plain
     // button's outside (`button.body(NONE; variant=Primary).stroke`); its
     // default button is the primary one.

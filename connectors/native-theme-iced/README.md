@@ -804,6 +804,16 @@ rule 0).
   (`iced_aw` 0.14.1 `src/widget/selection_list/list.rs`), so
   `list.highlight`'s margin and corners (spec §5, issue #4's leftovers,
   `L4`) are not drawn.
+- **A checked button.** iced's button has no checked status. iced marks a
+  chosen button by its primary class: its own `todos` example draws the
+  chosen filter with `button::primary` (iced 0.14.0
+  `examples/todos/src/main.rs`). So where the theme states no checked fill
+  (`button.body(CHECKED)`, `toolbar.button(CHECKED)`: the macOS and iOS
+  presets, and material-3's toolbar), `next::styles::button_toggle` and
+  `next::styles::toolbar_button` draw a checked button in the primary
+  button's fill and label in the same status, a label the theme states for
+  `CHECKED` laid over; its outline, corners and shadow are the unchecked
+  button's (spec §10, rule 0a).
 
 ## Common recipes
 

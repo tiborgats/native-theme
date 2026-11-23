@@ -257,9 +257,10 @@ fn a_stated_no_fill_for_a_state_paints_nothing() -> TestResult {
 /// the state takes, of iced's own neutral button, what iced changes for the
 /// status (iced_widget 0.14.2 `button::secondary`: the hovered fill, and
 /// nothing pressed), and keeps the theme's value at rest for the rest; a
-/// checked toggle that states no checked look is that pressed button, and a
-/// toolbar button with no hovered or pressed look of its own or of the
-/// button's is flat where iced makes no change.
+/// checked toggle that states no checked look is the primary button in the
+/// same status (spec §10, rule 0a), and a toolbar button with no hovered or
+/// pressed look of its own or of the button's is flat where iced makes no
+/// change.
 #[test]
 fn an_unstated_state_is_iceds_change_to_the_secondary_button() -> TestResult {
     use iced_widget::button::Status;
@@ -330,10 +331,17 @@ fn an_unstated_state_is_iceds_change_to_the_secondary_button() -> TestResult {
         );
         assert_eq!(style.text_color, label, "{preset:?} toolbar");
 
+        let primary = super::button_primary(&r)?;
         for status in [Status::Active, Status::Hovered, Status::Pressed] {
-            let style = toggle(&theme, status);
-            assert_eq!(style.background, fill, "{preset:?} checked {status:?}");
-            assert_eq!(style.text_color, label, "{preset:?} checked {status:?}");
+            let (style, shown) = (toggle(&theme, status), primary(&theme, status));
+            assert_eq!(
+                style.background, shown.background,
+                "{preset:?} checked {status:?}"
+            );
+            assert_eq!(
+                style.text_color, shown.text_color,
+                "{preset:?} checked {status:?}"
+            );
         }
     }
     assert!(changed > 0, "no preset shows iced's hovered change");
@@ -1342,5 +1350,99 @@ fn an_aw_tab_sidebar_and_list_no_hover_rule_states_are_iced_aws_own() -> TestRes
         "iced_aw's own hovered fills and list label covered: {iceds:?}"
     );
     assert_eq!(tab_label, 0, "iced_aw changes no hovered tab label");
+    Ok(())
+}
+
+/// A checked toggle and toolbar button whose theme states no checked fill
+/// are the primary button's fill and label in the same status (spec §10,
+/// rule 0a), which differ from the unchecked button at rest, a stated
+/// checked label laid over, the outline the unchecked button's; a stated
+/// checked fill wins.
+#[test]
+fn an_unstated_checked_fill_is_the_primary_buttons() -> TestResult {
+    use iced_widget::button::Status;
+    let mut unstated = (0, 0);
+    for (preset, r) in every_preset() {
+        let theme = to_theme(&r)?;
+        let primary = super::button_primary(&r)?;
+        let plain = super::button(&r)?;
+        let label = r.button.label(WidgetState::CHECKED);
+        let checked_label = label
+            .from_state
+            .contains(TextStated::COLOR)
+            .then(|| text_color(&label, "label"))
+            .transpose()?;
+        for (stated, style, counted) in [
+            (
+                r.button.body(WidgetState::CHECKED),
+                Box::new(super::button_toggle(&r, true)?)
+                    as Box<dyn Fn(&iced_core::theme::Theme, Status) -> iced_widget::button::Style>,
+                &mut unstated.0,
+            ),
+            (
+                r.toolbar.button(WidgetState::CHECKED),
+                Box::new(super::toolbar_button(&r, true)?),
+                &mut unstated.1,
+            ),
+        ] {
+            if stated.from_state.contains(PartStated::FILL) {
+                continue;
+            }
+            *counted += 1;
+            for status in [Status::Active, Status::Hovered, Status::Pressed] {
+                let (checked, shown) = (style(&theme, status), primary(&theme, status));
+                assert_eq!(
+                    checked.background, shown.background,
+                    "{preset:?} {status:?}"
+                );
+                assert_eq!(
+                    checked.text_color,
+                    checked_label.unwrap_or(shown.text_color),
+                    "{preset:?} {status:?}"
+                );
+                assert_eq!(
+                    checked.border.radius,
+                    plain(&theme, status).border.radius,
+                    "{preset:?} {status:?}"
+                );
+            }
+            assert_ne!(
+                style(&theme, Status::Active).background,
+                plain(&theme, Status::Active).background,
+                "{preset:?}"
+            );
+        }
+    }
+    assert!(
+        unstated.0 > 0 && unstated.1 > 0,
+        "unstated checked fills covered: {unstated:?}"
+    );
+
+    let patch = ThemePatch::new()
+        .button(
+            ButtonRule::new()
+                .states(WidgetState::CHECKED)
+                .body(PartPatch::new().fill(Paint::Solid(DISTINCT))),
+        )
+        .toolbar(
+            ToolbarRule::new()
+                .states(WidgetState::CHECKED)
+                .button(PartPatch::new().fill(Paint::Solid(DISTINCT))),
+        );
+    for (preset, r) in every_preset_with(&patch) {
+        let theme = to_theme(&r)?;
+        for status in [Status::Active, Status::Hovered, Status::Pressed] {
+            assert_eq!(
+                super::button_toggle(&r, true)?(&theme, status).background,
+                Some(Background::Color(to_color(DISTINCT))),
+                "{preset:?} {status:?}"
+            );
+            assert_eq!(
+                super::toolbar_button(&r, true)?(&theme, status).background,
+                Some(Background::Color(to_color(DISTINCT))),
+                "{preset:?} {status:?}"
+            );
+        }
+    }
     Ok(())
 }

@@ -453,6 +453,11 @@ pub(crate) struct ButtonSource {
     pub active_background: Option<Layer>,
     pub disabled_background: Option<Color>,
     pub checked_background: Option<Color>,
+    /// Where the theme states no checked fill, whether a checked button is
+    /// drawn in the primary button's fill and label in the same status, by
+    /// which iced marks a chosen button (the 0.8.0 model: spec §10, rule
+    /// 0a), else in the pressed pair (0.7.2's chain).
+    pub checked_primary: bool,
     pub label: Color,
     pub hover_label: Option<Color>,
     pub active_label: Option<Color>,
@@ -496,6 +501,7 @@ impl ButtonSource {
             active_background: Some(Layer::Color(b.active_background.map_or(hover, to_color))),
             disabled_background: b.disabled_background.map(to_color),
             checked_background: b.checked_background.map(to_color),
+            checked_primary: false,
             label: to_color(b.font.color),
             hover_label: Some(to_color(b.hover_text_color)),
             active_label: Some(to_color(b.active_text_color)),
@@ -584,6 +590,8 @@ impl ButtonSource {
             primary_pressed_border_color: a
                 .primary_pressed_border_color
                 .filter(|_| !s.pressed_stroke),
+            checked_background: a.checked_background.filter(|_| !s.checked),
+            checked_primary: a.checked_primary || s.checked,
             ..a
         }
     }
@@ -708,6 +716,7 @@ pub(crate) fn button_toggle_from(
     use iced_widget::button::{Status, Style};
 
     let plain = button_from(b);
+    let primary = button_primary_from(b);
 
     let source = *b;
     let opacity = b.disabled_opacity;
@@ -717,13 +726,14 @@ pub(crate) fn button_toggle_from(
         if !checked {
             return style;
         }
-        // A checked fill the theme does not state is the pressed button's,
-        // fill and label, each as [`in_state`] gives it where the theme
-        // states no pressed one either; a checked label it states is laid
-        // over it. A stated
-        // checked fill is lettered in the checked label, else the pressed
-        // one the theme states, else the label at rest.
-        let pressed = plain(theme, Status::Pressed);
+        // A checked fill the theme does not state is, on the 0.8.0 model,
+        // the primary button's in the same status, fill and label (disabled,
+        // its pair at rest, faded below as the checked pair is); on 0.7.2's,
+        // the pressed button's, each as [`in_state`] gives it where the
+        // theme states no pressed one either. A checked label the theme
+        // states is laid over either. A stated checked fill is lettered in
+        // the checked label, else the pressed one the theme states, else
+        // the label at rest.
         let (fill, label) = match source.checked_background {
             Some(fill) => (
                 fill,
@@ -732,10 +742,21 @@ pub(crate) fn button_toggle_from(
                     .or(source.active_label)
                     .unwrap_or(source.label),
             ),
-            None => (
-                painted(pressed.background),
-                source.checked_label.unwrap_or(pressed.text_color),
-            ),
+            None => {
+                let shown = if source.checked_primary {
+                    let at = match status {
+                        Status::Disabled => Status::Active,
+                        _ => status,
+                    };
+                    primary(theme, at)
+                } else {
+                    plain(theme, Status::Pressed)
+                };
+                (
+                    painted(shown.background),
+                    source.checked_label.unwrap_or(shown.text_color),
+                )
+            }
         };
         let outline = source.border;
         let (background, text_color, border) = match status {
@@ -908,6 +929,8 @@ pub(crate) fn toolbar_button_from(
         ..b.border
     };
     let t = *t;
+    let primary = button_primary_from(b);
+    let checked_primary = b.checked_primary;
 
     move |theme, status| {
         let iced = Style::default();
@@ -927,11 +950,21 @@ pub(crate) fn toolbar_button_from(
         };
         let (hovered, hovered_label) = state(hovered, hover_label, Status::Hovered);
         let (pressed, pressed_label) = state(pressed, active_label, Status::Pressed);
-        let checked_label = match checked_fill {
-            Some(_) => checked_label.unwrap_or(pressed_label),
-            None => pressed_label,
+        // A checked fill the theme does not state is, on the 0.8.0 model,
+        // the primary button's in the same status, fill and label, a
+        // checked label the theme states laid over it; on 0.7.2's, the
+        // pressed toolbar button's.
+        let (fill, checked_label) = match (checked_fill, status) {
+            (None, Status::Active | Status::Hovered | Status::Pressed) if checked_primary => {
+                let shown = primary(theme, status);
+                (
+                    painted(shown.background),
+                    checked_label.unwrap_or(shown.text_color),
+                )
+            }
+            (Some(fill), _) => (fill, checked_label.unwrap_or(pressed_label)),
+            (None, _) => (pressed, pressed_label),
         };
-        let fill = checked_fill.unwrap_or(pressed);
         let (background, text_color, line) = match (checked, status) {
             (false, Status::Active) => (Color::TRANSPARENT, label, None),
             (false, Status::Hovered) => (hovered, hovered_label, t.hover_border_color),

@@ -65,6 +65,7 @@ fn button_source(r: &ResolvedTheme) -> Mapped<ButtonSource> {
             "button.body(DISABLED).fill",
         )?,
         checked_background: state_fill(&b.body(WidgetState::CHECKED), "button.body(CHECKED).fill")?,
+        checked_primary: true,
         label: text_color(&b.label(WidgetState::NONE), "button.label(NONE).color")?,
         hover_label: state_text_color(&b.label(WidgetState::HOVER), "button.label(HOVER).color")?,
         active_label: state_text_color(
@@ -150,7 +151,12 @@ pub fn button(
     Ok(old::button_from(&button_source(r)?))
 }
 
-/// [`crate::styles::button_toggle`].
+/// [`crate::styles::button_toggle`]: iced's button has no checked status,
+/// so a checked toggle whose theme states no checked fill
+/// (`button.body(CHECKED)`) is drawn in [`button_primary`]'s fill and label
+/// in the same status, a stated `button.label(CHECKED)` laid over; its
+/// outline, corners and shadow are the unchecked button's (spec §10, rule
+/// 0a).
 ///
 /// # Errors
 ///
@@ -164,7 +170,11 @@ pub fn button_toggle(
     Ok(old::button_toggle_from(&button_source(r)?, checked))
 }
 
-/// [`crate::styles::toolbar_button`].
+/// [`crate::styles::toolbar_button`]: a checked button whose theme states
+/// no checked fill (`toolbar.button(CHECKED)`) is drawn in
+/// [`button_primary`]'s fill and label in the same status, a stated
+/// `button.label(CHECKED)` laid over, as [`button_toggle`] (spec §10, rule
+/// 0a).
 ///
 /// # Errors
 ///
