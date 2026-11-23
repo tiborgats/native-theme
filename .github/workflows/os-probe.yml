@@ -25,7 +25,7 @@ on:
         required: false
         default: ""
       passes:
-        description: "The probe job's passes, comma-separated without spaces (probe, button, symbols, sdk-headers, button-focus, focus-transition, button-contrast, button-accent, button-not-key, button-inactive, button-key-not-main, button-main-not-key, button-inactive-contrast, probe-rt-off, probe-contrast, probe-tinting-off, probe-rt-tinting-off, probe-accent, probe-contrast-accent, button-focus-accent, reads, reads-accent, reads-rtl, events, motion, motion-reduce-motion-off, colors, colors-highlight-red, probe-not-key, app-bundle); empty runs every pass, each pass of each image a job of its own. The image's settings and wallpaper are recorded always"
+        description: "The probe job's passes, comma-separated without spaces (probe, button, symbols, sdk-headers, button-focus, focus-transition, button-contrast, button-accent, button-not-key, button-inactive, button-key-not-main, button-main-not-key, button-inactive-contrast, probe-rt-off, probe-contrast, probe-tinting-off, probe-rt-tinting-off, probe-accent, probe-contrast-accent, button-focus-accent, reads, reads-accent, reads-rtl, events, motion, motion-reduce-motion-off, colors, colors-highlight-red, probe-not-key, app-bundle, controls); empty runs every pass, each pass of each image a job of its own. The image's settings and wallpaper are recorded always"
         required: false
         default: ""
       images:
@@ -85,7 +85,7 @@ jobs:
                    "probe-rt-off", "probe-contrast", "probe-tinting-off", "probe-rt-tinting-off",
                    "probe-accent", "probe-contrast-accent", "button-focus-accent", "reads",
                    "reads-accent", "reads-rtl", "events", "motion", "motion-reduce-motion-off",
-                   "colors", "colors-highlight-red", "probe-not-key", "app-bundle"]
+                   "colors", "colors-highlight-red", "probe-not-key", "app-bundle", "controls"]
           asked = [p for p in os.environ["PASSES"].split(",") if p] or every
           unknown = [p for p in asked if p not in every]
           if unknown:
@@ -182,6 +182,42 @@ jobs:
           } > "$out/environment.txt" 2>&1
           cat "$out/environment.txt"
           cargo run -p native-theme-os-probe --release -- --out "$out" --button-pass
+      # The controls pass (M2.FS4 of the 0.8.0 plan): the controls other than
+      # the push buttons in one key window (check boxes, disclosure buttons, a
+      # pop-up, a text field, a segmented control, a switch, a slider, two
+      # tables, a tab view, a split view, a box and a toolbar button), each
+      # hovered by a posted mouse-moved event and pressed by a real mouse-down
+      # captured during the press, every state over the window's background
+      # and the black, white and grey backdrops, into button-pass-controls/;
+      # probe.toml's [macos.button_pass.controls] method says how. It posts
+      # mouse and key events, so Accessibility and PostEvent access are
+      # granted to the built probe's path as for the button pass.
+      - name: Run the controls pass (macOS)
+        if: runner.os == 'macOS' && matrix.pass == 'controls'
+        continue-on-error: true
+        run: |
+          set +e
+          out=os-probe-out/button-pass-controls
+          probe="$PWD/target/release/native-theme-os-probe"
+          mkdir -p "$out"
+          cargo build -p native-theme-os-probe --release
+          {
+            sw_vers; echo "sw_vers: exit $?"
+            xcode-select -p; echo "xcode-select -p: exit $?"
+            xcodebuild -version; echo "xcodebuild -version: exit $?"
+            vtool -show-build "$probe"; echo "vtool -show-build: exit $?"
+            rustc -V
+            system_profiler SPDisplaysDataType; echo "system_profiler SPDisplaysDataType: exit $?"
+            for service in kTCCServiceAccessibility kTCCServicePostEvent; do
+              sudo sqlite3 "/Library/Application Support/com.apple.TCC/TCC.db" \
+                "INSERT OR REPLACE INTO access (service, client, client_type, auth_value, auth_reason, auth_version) \
+                 VALUES ('$service', '$probe', 1, 2, 4, 1);"
+              echo "grant $service to $probe: exit $?"
+            done
+          } > "$out/environment.txt" 2>&1
+          cat "$out/environment.txt"
+          "$probe" --out "$out" --button-pass --controls
+          echo "probe: exit $?"
       # The symbols pass (pass MP-symbols of the 0.8.0 measurement plan; U102,
       # U324, U613): the SF Symbol configuration and image size AppKit gives
       # each place (image view, buttons and segmented controls per control

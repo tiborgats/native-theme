@@ -12,7 +12,8 @@
 //!
 //! Usage: `native-theme-os-probe [--out <dir>] [--not-key] [--button-pass
 //! [--focus | --focus-transition | --not-key | --inactive | --key-not-main |
-//! --main-not-key | --motion | --events]] [--symbols | --reads | --colors]`. `--out` (or `--out=<dir>`) names the
+//! --main-not-key | --motion | --events | --controls]] [--symbols | --reads |
+//! --colors]`. `--out` (or `--out=<dir>`) names the
 //! output directory, `os-probe-out` by default; `--not-key`, macOS only,
 //! makes the key-window section capture its window after a second window has
 //! taken the key; `--button-pass`, macOS only, runs the button pass alone:
@@ -28,7 +29,10 @@
 //! round a plain focusable view. `--button-pass --motion` records presses,
 //! radio buttons, a search field's cancel button, interrupted focus rings
 //! and carets; `--button-pass --events` posts clicks, drags, hovers and
-//! typing and reads what AppKit made of them; `--colors`, macOS only, the
+//! typing and reads what AppKit made of them; `--button-pass --controls`
+//! hovers and presses the other controls (check box, pop-up, disclosure,
+//! text field, tables, segmented control, slider, switch, tab view, split
+//! view, box, toolbar) over every backdrop; `--colors`, macOS only, the
 //! colours pass alone: every NSColor and Core Animation's colour
 //! interpolation.
 
@@ -66,7 +70,7 @@ mod windows;
 use std::path::PathBuf;
 use std::process::ExitCode;
 
-const USAGE: &str = "usage: native-theme-os-probe [--out <dir>] [--not-key] [--button-pass [--focus | --focus-transition | --not-key | --inactive | --key-not-main | --main-not-key | --motion | --events]] [--symbols | --reads | --colors]   (default: os-probe-out; --not-key, macOS only: the key-window section, or the button pass, captures its windows after another window took the key; --button-pass, macOS only: the button pass alone; --focus, --focus-transition and --inactive, with --button-pass only: each button focused in turn, the screen recorded while two buttons are focused and unfocused, or another application active; --key-not-main and --main-not-key, with --button-pass only: each sheet a panel that is key while another window is main, or each sheet's window main while a panel is key; --motion and --events, with --button-pass only: scripted screen recordings of presses, radios, a search field and carets, or posted clicks, drags, hovers and typing; --symbols, macOS only: the symbols pass alone; --reads, macOS only: the reads pass alone; --colors, macOS only: the colours pass alone)";
+const USAGE: &str = "usage: native-theme-os-probe [--out <dir>] [--not-key] [--button-pass [--focus | --focus-transition | --not-key | --inactive | --key-not-main | --main-not-key | --motion | --events | --controls]] [--symbols | --reads | --colors]   (default: os-probe-out; --not-key, macOS only: the key-window section, or the button pass, captures its windows after another window took the key; --button-pass, macOS only: the button pass alone; --focus, --focus-transition and --inactive, with --button-pass only: each button focused in turn, the screen recorded while two buttons are focused and unfocused, or another application active; --key-not-main and --main-not-key, with --button-pass only: each sheet a panel that is key while another window is main, or each sheet's window main while a panel is key; --motion and --events, with --button-pass only: scripted screen recordings of presses, radios, a search field and carets, or posted clicks, drags, hovers and typing; --controls, with --button-pass only: the other controls hovered and pressed by posted mouse events over every backdrop; --symbols, macOS only: the symbols pass alone; --reads, macOS only: the reads pass alone; --colors, macOS only: the colours pass alone)";
 
 /// What the command line asks for.
 #[derive(Debug, PartialEq, Eq)]
@@ -96,6 +100,8 @@ struct Options {
     motion: bool,
     /// Whether the button pass posts its events scripts instead.
     events: bool,
+    /// Whether the button pass hovers and presses its other controls instead.
+    controls: bool,
     /// Whether the macOS probe runs the colours pass alone.
     colors: bool,
 }
@@ -124,6 +130,7 @@ fn parse_args_from(args: impl IntoIterator<Item = std::ffi::OsString>) -> Result
     let mut reads = false;
     let mut motion = false;
     let mut events = false;
+    let mut controls = false;
     let mut colors = false;
     let mut args = args.into_iter();
     while let Some(arg) = args.next() {
@@ -153,6 +160,7 @@ fn parse_args_from(args: impl IntoIterator<Item = std::ffi::OsString>) -> Result
             Some("--reads") => reads = true,
             Some("--motion") => motion = true,
             Some("--events") => events = true,
+            Some("--controls") => controls = true,
             Some("--colors") => colors = true,
             Some("--out") => match args.next() {
                 Some(dir) => out = PathBuf::from(dir),
@@ -170,11 +178,18 @@ fn parse_args_from(args: impl IntoIterator<Item = std::ffi::OsString>) -> Result
             }
         }
     }
-    if (focus || inactive || focus_transition || key_not_main || main_not_key || motion || events)
+    if (focus
+        || inactive
+        || focus_transition
+        || key_not_main
+        || main_not_key
+        || motion
+        || events
+        || controls)
         && !button_pass
     {
         return Err(format!(
-            "--focus, --focus-transition, --inactive, --key-not-main, --main-not-key, --motion and --events need --button-pass\n{USAGE}"
+            "--focus, --focus-transition, --inactive, --key-not-main, --main-not-key, --motion, --events and --controls need --button-pass\n{USAGE}"
         ));
     }
     if [
@@ -186,6 +201,7 @@ fn parse_args_from(args: impl IntoIterator<Item = std::ffi::OsString>) -> Result
         main_not_key,
         motion,
         events,
+        controls,
     ]
     .iter()
     .filter(|set| **set)
@@ -194,7 +210,7 @@ fn parse_args_from(args: impl IntoIterator<Item = std::ffi::OsString>) -> Result
         && button_pass
     {
         return Err(format!(
-            "the button pass takes one of --focus, --focus-transition, --not-key, --inactive, --key-not-main, --main-not-key, --motion and --events\n{USAGE}"
+            "the button pass takes one of --focus, --focus-transition, --not-key, --inactive, --key-not-main, --main-not-key, --motion, --events and --controls\n{USAGE}"
         ));
     }
     if [symbols, reads, colors].iter().filter(|set| **set).count() > 1
@@ -217,6 +233,7 @@ fn parse_args_from(args: impl IntoIterator<Item = std::ffi::OsString>) -> Result
         reads,
         motion,
         events,
+        controls,
         colors,
     })
 }
@@ -272,6 +289,8 @@ fn run(options: &Options) -> ExitCode {
             macos::ButtonMode::Motion
         } else if options.events {
             macos::ButtonMode::Events
+        } else if options.controls {
+            macos::ButtonMode::Controls
         } else if options.not_key {
             macos::ButtonMode::NotKey
         } else {
@@ -343,6 +362,7 @@ mod tests {
             reads: false,
             motion: false,
             events: false,
+            controls: false,
             colors: false,
         })
     }
@@ -406,6 +426,7 @@ mod tests {
                 reads: false,
                 motion: false,
                 events: false,
+                controls: false,
                 colors: false,
             })
         };
@@ -435,6 +456,7 @@ mod tests {
                 reads: false,
                 motion: false,
                 events: false,
+                controls: false,
                 colors: false,
             })
         };
@@ -465,6 +487,7 @@ mod tests {
                 reads: false,
                 motion: false,
                 events: false,
+                controls: false,
                 colors: false,
             })
         );
@@ -494,6 +517,7 @@ mod tests {
                 reads: false,
                 motion: false,
                 events: false,
+                controls: false,
                 colors: false,
             })
         );

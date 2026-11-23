@@ -17,6 +17,7 @@
 //! (`--focus`), a second window of the probe key (`--not-key`), and another
 //! application active (`--inactive`).
 
+mod controls;
 mod events;
 mod extras;
 mod motion;
@@ -127,6 +128,9 @@ const HOVER_STEPS: u32 = 20;
 /// How long after the mouse-down the click capture is taken.
 const CLICK_CAPTURE_DELAY: std::time::Duration = std::time::Duration::from_millis(1000);
 
+/// The virtual key code of Escape (`kVK_Escape`, HIToolbox's Events.h).
+const ESCAPE_KEY_CODE: u16 = 0x35;
+
 /// The most steps the pump waits for a click capture and its mouse-up.
 const CLICK_WAIT_STEPS: u32 = 300;
 
@@ -160,6 +164,9 @@ pub(crate) enum Mode {
     /// No sheet: posted clicks, drags, hovers and typing, read and recorded
     /// ([`events`]).
     Events,
+    /// No button sheet: the other controls hovered and pressed by posted
+    /// mouse events, each state over every backdrop ([`controls`]).
+    Controls,
 }
 
 impl Mode {
@@ -174,6 +181,7 @@ impl Mode {
             Mode::MainNotKey => "main_not_key",
             Mode::Motion => "motion",
             Mode::Events => "events",
+            Mode::Controls => "controls",
         }
     }
 
@@ -205,6 +213,9 @@ impl Mode {
             }
             Mode::Events => {
                 "no sheet is captured; a window of its own made key, the application active, and posted clicks, drags, hovers and typing read and recorded (events)"
+            }
+            Mode::Controls => {
+                "no button sheet is captured; one sheet of other controls (controls), its window made key and main, the application active; normal, each control hovered and each control pressed, every state over every backdrop"
             }
         }
     }
@@ -954,10 +965,14 @@ pub(super) fn button_pass_table(
         any_key: Cell::new(false),
     };
 
-    if matches!(mode, Mode::FocusTransition | Mode::Motion | Mode::Events) {
+    if matches!(
+        mode,
+        Mode::FocusTransition | Mode::Motion | Mode::Events | Mode::Controls
+    ) {
         let (key, table) = match mode {
             Mode::Motion => ("motion", motion::motion_table(&pass, version)),
             Mode::Events => ("events", events::events_table(&pass)),
+            Mode::Controls => ("controls", controls::controls_table(&pass)),
             _ => (
                 "focus_transition",
                 transition::transition_table(&pass, version),
@@ -1193,9 +1208,12 @@ impl Pass<'_> {
                 }
                 main
             }
-            Mode::Key | Mode::Focus | Mode::FocusTransition | Mode::Motion | Mode::Events => {
-                None
-            }
+            Mode::Key
+            | Mode::Focus
+            | Mode::FocusTransition
+            | Mode::Motion
+            | Mode::Events
+            | Mode::Controls => None,
         };
         out::put(&mut *t, "isKeyWindow", out::boolean(window.isKeyWindow()));
         out::put(&mut *t, "isMainWindow", out::boolean(window.isMainWindow()));
@@ -2016,7 +2034,38 @@ impl Pass<'_> {
     ) -> Option<Rgba> {
         let at = self.quartz(centre(window, case));
         let file = format!("clicked-{}.png", case.name);
-        let path: PathBuf = dir.join(&file);
+        let rgba = self.click_at(t, window, dir, rel, &file, at, false);
+        out::put(
+            t,
+            "highlighted_after",
+            out::boolean(
+                case.button
+                    .as_ref()
+                    .and_then(|b| b.cell())
+                    .is_some_and(|cell| cell.isHighlighted()),
+            ),
+        );
+        rgba
+    }
+
+    /// Press at `at` (Quartz's global points) with a real mouse-down and
+    /// capture the window to `<dir>/<file>` from a second thread while the
+    /// control tracks the mouse on this one; the second thread posts the
+    /// mouse-up once the capture is done, and then, where `escape` is set,
+    /// an Escape key down and up (a pop-up's menu that the mouse-up left
+    /// open is closed by it).
+    #[allow(clippy::too_many_arguments)]
+    fn click_at(
+        &self,
+        t: &mut Table,
+        window: &NSWindow,
+        dir: &Path,
+        rel: &str,
+        file: &str,
+        at: NSPoint,
+        escape: bool,
+    ) -> Option<Rgba> {
+        let path: PathBuf = dir.join(file);
         let Some(down) =
             CGEvent::new_mouse_event(None, CGEventType::LeftMouseDown, at, CGMouseButton::Left)
         else {
@@ -2037,6 +2086,13 @@ impl Pass<'_> {
                 CGEvent::new_mouse_event(None, CGEventType::LeftMouseUp, at, CGMouseButton::Left);
             let created = up.is_some();
             CGEvent::post(CGEventTapLocation::HIDEventTap, up.as_deref());
+            if escape {
+                std::thread::sleep(CLICK_CAPTURE_DELAY);
+                for key_down in [true, false] {
+                    let key = CGEvent::new_keyboard_event(None, ESCAPE_KEY_CODE, key_down);
+                    CGEvent::post(CGEventTapLocation::HIDEventTap, key.as_deref());
+                }
+            }
             (captured, created)
         });
         CGEvent::post(CGEventTapLocation::HIDEventTap, Some(&*down));
@@ -2055,16 +2111,6 @@ impl Pass<'_> {
             "key_status_read",
             out::text(
                 "before the mouse-down and after the mouse-up: the main thread is in the button's mouse tracking while the capture is taken",
-            ),
-        );
-        out::put(
-            t,
-            "highlighted_after",
-            out::boolean(
-                case.button
-                    .as_ref()
-                    .and_then(|b| b.cell())
-                    .is_some_and(|cell| cell.isHighlighted()),
             ),
         );
         read_capture(t, captured, &path, &format!("{rel}/{file}"))

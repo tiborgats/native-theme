@@ -338,7 +338,9 @@ fn recordings<'a>(
             cursor: false,
             actions: Vec::new(),
             posts,
-            sample: Some(Retained::into_super(Retained::into_super(c.radio_a.clone()))),
+            sample: Some(Retained::into_super(Retained::into_super(
+                c.radio_a.clone(),
+            ))),
             sample_cursor: false,
         },
     ));
