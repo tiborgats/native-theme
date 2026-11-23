@@ -1900,6 +1900,115 @@ fn model_parity_material_3() -> TestResult {
     Ok(())
 }
 
+// ---------------------------------------------------------------------------------------------------------
+// The value half on the ios-13 builder (plan, M2's iOS unit), static path: the same comparator and table.
+// ---------------------------------------------------------------------------------------------------------
+
+/// The groups of the table whose rows the ios-13 builder ports so far: each of their rows is compared and
+/// equal, or skipped for a reason [`ios_13_expected_skip`] names.
+const IOS_13_PORTED_GROUPS: &[&str] = PORTED_GROUPS;
+
+/// The groups of the table whose values the ios-13 builder does not state yet: their rows are compared,
+/// counted and reported, not asserted.
+const IOS_13_NOT_PORTED_GROUPS: &[&str] = &[];
+
+/// The totals of the ported groups' rows on each scheme, `[rows, compared, equal, mismatching, skipped]`:
+/// every row equal but those [`ios_13_expected_skip`] names, skipped.
+const IOS_13_PORTED_TOTALS: [usize; 5] = [563, 558, 558, 0, 5];
+
+/// The resolution context 0.7.2 resolves `ios-13` in: Apple's font DPI, 72, "where a point is a pixel"
+/// (spec §4, `Typography::font_dpi`: "72.0 Apple"), as [`MACOS_RESOLUTION_CONTEXT`] states it.
+/// 0.7.2's `ResolutionContext::from_system` gives 72 on macOS alone (`src/resolve/context.rs`).
+const IOS_RESOLUTION_CONTEXT: ResolutionContext = MACOS_RESOLUTION_CONTEXT;
+
+/// The reason a row of the table is skipped on 0.7.2's `ios-13`, which has no reader: the reader's
+/// context rows (`accessibility.*`); `checkbox.background_color`, compared only where
+/// `checkbox.unchecked_background` is unset, which `ios-13.toml` states.
+fn ios_13_expected_skip(key: &str) -> Option<compare::Skip> {
+    if key.starts_with("accessibility.") {
+        Some(compare::Skip::NoSnapshot)
+    } else if key == "checkbox.background_color" {
+        Some(compare::Skip::OtherKeyStated)
+    } else {
+        None
+    }
+}
+
+/// Model parity of the ios-13 builder (plan, section 1, rule 2): 0.7.2's `ios-13` at Apple's font DPI
+/// ([`IOS_RESOLUTION_CONTEXT`]) and `Theme::preset(Preset::Ios13)`, light and dark, over the table of
+/// homes. Every row's group is one of [`IOS_13_PORTED_GROUPS`] or one of [`IOS_13_NOT_PORTED_GROUPS`];
+/// zero mismatches in the ported groups, every skip for its named reason; the rows of the groups not
+/// ported yet are counted and reported, and the two counts make the whole table. No dead rule in any rule
+/// set of the widgets.
+#[test]
+fn model_parity_ios_13() -> TestResult {
+    use crate::next::preset::{Preset, Theme as NextTheme};
+    use crate::next::query::ThemeContext;
+
+    let table: Table = toml::from_str(HOMES)?;
+    for row in &table.row {
+        let group = row.key.split('.').next().unwrap_or("");
+        assert!(
+            IOS_13_PORTED_GROUPS.contains(&group) != IOS_13_NOT_PORTED_GROUPS.contains(&group),
+            "`{}`: its group is not exactly one of the ported and the not ported groups",
+            row.key
+        );
+    }
+    for (mode, ctx) in [
+        (ColorMode::Light, ThemeContext::light()),
+        (ColorMode::Dark, ThemeContext::dark()),
+    ] {
+        let theme_072 = Theme::preset("ios-13")?;
+        let old = old_resolved_in(&theme_072, mode, &IOS_RESOLUTION_CONTEXT)?;
+        let unresolved = old_unresolved(&theme_072, mode)?;
+        let theme = NextTheme::preset(Preset::Ios13);
+        let new = theme.resolve(&ctx);
+        let with_context = |context: RowContext| theme.resolve(&context.applied_to(&ctx));
+        let extra = compare::Extra {
+            unresolved: Some(&unresolved),
+            with_context: Some(&with_context),
+        };
+        let report = compare::compare(&old, &new, None, Preset::Ios13, &extra)?;
+        println!("{mode:?}: {report}");
+        assert_eq!(report.totals.rows, table.row.len());
+        for row in report
+            .rows
+            .iter()
+            .filter(|row| in_groups(&row.key, IOS_13_PORTED_GROUPS))
+        {
+            let skip = match row.outcome {
+                compare::Outcome::Skipped(skip) => Some(skip),
+                _ => None,
+            };
+            assert_eq!(
+                skip,
+                ios_13_expected_skip(&row.key),
+                "{mode:?}: `{}`",
+                row.key
+            );
+        }
+        let ported = totals_in(&report, IOS_13_PORTED_GROUPS, true);
+        let not_ported = totals_in(&report, IOS_13_NOT_PORTED_GROUPS, true);
+        println!(
+            "{mode:?}: [rows, compared, equal, mismatching, skipped] in the ported groups {ported:?}, \
+             in the groups not ported yet {not_ported:?}"
+        );
+        assert_eq!(ported, IOS_13_PORTED_TOTALS, "{mode:?}\n{report}");
+        assert_eq!(
+            ported[0].saturating_add(not_ported[0]),
+            table.row.len(),
+            "{mode:?}"
+        );
+        let dead: Vec<_> = new
+            .dead_rules()
+            .into_iter()
+            .filter(|(_, rules)| !rules.is_empty())
+            .collect();
+        assert!(dead.is_empty(), "{mode:?}: dead rules {dead:?}");
+    }
+    Ok(())
+}
+
 // Reader parity (plan, section 1, rule 2) on the KDE fixtures: the theme the 0.7.2 KDE reader path produces
 // from a kdeglobals file, and the kde-breeze builder fed the same file as `SystemOverrides`.
 // ---------------------------------------------------------------------------------------------------------
