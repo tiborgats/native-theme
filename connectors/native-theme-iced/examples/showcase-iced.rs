@@ -5277,12 +5277,13 @@ fn menu_item_radius(m: &native_theme::next::MenuWidget) -> Option<f32> {
 /// A menu's row, as the model's menu item (platform-facts §2.6): no fill at
 /// rest, its label `menu.item_label(NONE).color`; `menu.item(HOVER).fill`
 /// and `menu.item_label(HOVER).color` under the pointer, outlined by
-/// `menu.item(HOVER).stroke` where a `HOVER` rule states it; pressed, the
-/// item hovered and pressed, `menu.item(HOVER|PRESSED)`'s fill and outline
-/// and `menu.item_label(HOVER|PRESSED).color`, so a pressed row keeps the
-/// hovered look where no `PRESSED` rule states otherwise (kde-breeze's
-/// pressed fill keeps the hovered outline); `menu.item_label(DISABLED).color`
-/// disabled; rounded by [`menu_item_radius`]. Each property a status leaves
+/// `menu.item(HOVER).stroke` where a `HOVER` rule states it; pressed,
+/// `menu.item(PRESSED).fill`, outlined by `menu.item(PRESSED).stroke` where
+/// a `PRESSED` rule states it, and `menu.item_label(PRESSED).color`, the
+/// pressed state asked alone (spec §2, `from_state`: a query of `HOVER` and
+/// `PRESSED` would take a `HOVER` rule's values as the pressed row's);
+/// `menu.item_label(DISABLED).color` disabled; rounded by
+/// [`menu_item_radius`]. Each property a status leaves
 /// unstated is iced's own flat button's, `button::text` ([`in_state`]). iced
 /// draws a button's border on its bounds, over the padding (iced_widget
 /// 0.14.2 `src/button.rs:379-385`), so the outline moves nothing; and it
@@ -5306,7 +5307,7 @@ fn menu_row(
         (fill, text, edge)
     };
     let hovered = lit(WidgetState::HOVER);
-    let pressed = lit(WidgetState::HOVER | WidgetState::PRESSED);
+    let pressed = lit(WidgetState::PRESSED);
     let disabled_label = iced_next::state_text_color_of(&m.item_label(WidgetState::DISABLED));
     let radius = menu_item_radius(m);
     move |theme, status| {
@@ -9009,7 +9010,7 @@ fn menu_route(r: &native_theme::next::ResolvedTheme, leaf: &str, title: bool) ->
     let ink = |text: TextStyle| iced_next::state_text_color_of(&text).is_some();
     let stroke = |part: PartStyle| part.from_state.contains(PartStated::STROKE);
     let hover = WidgetState::HOVER;
-    let pressed = WidgetState::HOVER | WidgetState::PRESSED;
+    let pressed = WidgetState::PRESSED;
     let route = match leaf {
         "menu.background_color" if iced_next::fill_of(&m.panel(WidgetState::NONE)).is_some() => {
             "menu_bar_style: menu_background, menu.panel(NONE).fill"
@@ -9084,21 +9085,18 @@ fn menu_route(r: &native_theme::next::ResolvedTheme, leaf: &str, title: bool) ->
             "not drawn: menu.item(HOVER).stroke is unstated, and menu_row outlines no row, as \
              iced's own flat button (button::text) outlines none"
         }
-        "menu.hover_border_color" => {
-            "menu_row: the Hovered and Pressed border, menu.item(HOVER).stroke.color, where no \
-             PRESSED rule restates the stroke"
-        }
+        "menu.hover_border_color" => "menu_row: the Hovered border, menu.item(HOVER).stroke.color",
         "menu.active_background" if !fill(m.item(pressed)) => {
-            "not drawn: menu.item(HOVER|PRESSED).fill is unstated, and iced's own flat button \
+            "not drawn: menu.item(PRESSED).fill is unstated, and iced's own flat button \
              (button::text) has no fill"
         }
-        "menu.active_background" => "menu_row: the Pressed fill, menu.item(HOVER|PRESSED).fill",
+        "menu.active_background" => "menu_row: the Pressed fill, menu.item(PRESSED).fill",
         "menu.active_text_color" if !ink(m.item_label(pressed)) => {
-            "not drawn: menu.item_label(HOVER|PRESSED).color is unstated, so the Pressed label \
-             is iced's own flat button's (button::text)"
+            "not drawn: menu.item_label(PRESSED).color is unstated, so the Pressed label is \
+             iced's own flat button's (button::text)"
         }
         "menu.active_text_color" => {
-            "menu_row: the Pressed text_color, menu.item_label(HOVER|PRESSED).color"
+            "menu_row: the Pressed text_color, menu.item_label(PRESSED).color"
         }
         "popover.border.color" if menu_frame(r).stated.contains(PartStated::STROKE) => {
             if m.panel(WidgetState::NONE)
@@ -9579,8 +9577,9 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
                 .into()
         }
         ("defaults", "border.line_width_px") if under("chrome.menu.") => {
-            "menu_row: the Hovered and Pressed border's width, menu.item(HOVER).stroke.width, \
-             where a HOVER rule states the stroke"
+            "menu_row: the Hovered border's width, menu.item(HOVER).stroke.width, where a HOVER \
+             rule states the stroke, and the Pressed one's, menu.item(PRESSED).stroke.width, \
+             where a PRESSED rule states it"
                 .into()
         }
         ("menu", "row_height_px") if resolved.menu.row_height.is_none() => {
@@ -29970,6 +29969,15 @@ mod tests {
         (inked, pixels.len())
     }
 
+    /// The keys of the presets the Theme row installs, the 0.8.0 model's.
+    #[cfg(feature = "iced_aw")]
+    fn installed_presets() -> impl Iterator<Item = &'static str> {
+        native_theme::theme::Theme::list_presets()
+            .iter()
+            .filter(|preset| Preset::from_name(preset.key).is_some())
+            .map(|preset| preset.key)
+    }
+
     /// A state showing the Extra page under `preset` in `mode`, the side
     /// panel hidden, at a text scale of 1.
     #[cfg(feature = "iced_aw")]
@@ -30463,13 +30471,14 @@ mod tests {
     /// and the open tab's fill set apart, in each bar the open first tab's
     /// fill reaches 1.5 to 3 further out on each side in its bottom row than
     /// at its middle (the flares, about 2; a flare about another node lies
-    /// elsewhere), and with the radius unstated not at all. With
-    /// `tab.bar_background` set apart too, the room beside each bar, 3.5
-    /// left of the open tab at its middle, is the bar's colour, as the bar
-    /// is, and beside the `Tabs`' content panel, below its bar, it is not.
+    /// elsewhere), and with the radius unstated not at all. With the 0.8.0
+    /// tab strip's fill, `tab.bar(NONE).fill`, set apart too, the room
+    /// beside each bar, 3.5 left of the open tab at its middle, is that
+    /// colour, the strip the bar lies on ([`surface`]), and beside the
+    /// `Tabs`' content panel, below its bar, it is not.
     #[cfg(feature = "iced_aw")]
     #[test]
-    fn the_extra_tab_bars_curve_out_at_the_open_tabs_feet() {
+    fn the_extra_tab_bars_curve_out_at_the_open_tabs_feet() -> Result<(), String> {
         let [open_fill, bar_fill] = ["#13579b", "#579b13"].map(spliced_colour);
         let is = |image: &image::RgbaImage, x: u32, y: u32, colour| {
             let want = to_color(colour).into_rgba8();
@@ -30481,7 +30490,10 @@ mod tests {
             let mut state = extra_state("windows-11", AppColorMode::Light);
             state.current_resolved.tab.active_outward_corner_radius = radius;
             state.current_resolved.tab.active_background = open_fill;
-            state.current_resolved.tab.bar_background = bar_fill;
+            for next in [&mut state.next_resolved, &mut state.next_inactive] {
+                *next = with_home(next, "tab.bar(NONE).fill", "#579b13")
+                    .ok_or("no patch reaches tab.bar(NONE).fill")?;
+            }
             let bar_height = aw_bar_height(&state);
             let (image, rects, scale) = extra_frame(&state, |_| {});
             let Some(tabs) = rects.get(probes::AW_TABS).copied() else {
@@ -30527,33 +30539,34 @@ mod tests {
                 let room = ((x0 - 3.5) * scale).floor() as u32;
                 assert!(
                     is(&image, room, mid_y, bar_fill),
-                    "{bar}: the room beside the bar is {:?}, not tab.bar_background",
+                    "{bar}: the room beside the bar is {:?}, not tab.bar(NONE).fill",
                     image.get_pixel_checked(room, mid_y).map(|p| p.0)
                 );
                 if bar == "Tabs" {
                     let below = px(tabs.y + bar_height + 10.0);
                     assert!(
                         !is(&image, room, below, bar_fill),
-                        "the Tabs' content panel is flanked by tab.bar_background"
+                        "the Tabs' content panel is flanked by tab.bar(NONE).fill"
                     );
                 }
             }
         }
+        Ok(())
     }
 
     /// M9b Step 8 I3 (ux): the Extra page's stand-alone `TabBar` neither
     /// wraps nor clips a label: iced_aw lays each label out at its
     /// `text_size` plus one on iced's default line, 1.3 of that (iced_aw
     /// 0.14.1 `src/widget/tab_bar.rs:390-404`, `layout_text`), and draws it
-    /// clipped to that box (`:900-917`), so under kde-breeze and
-    /// catppuccin-mocha, in both modes, each label's box is one such line
-    /// tall and at least as wide as the label shaped on one line, inside its
-    /// tab, and each tab is at least `tab.min_width` wide.
+    /// clipped to that box (`:900-917`), so under every preset the Theme row
+    /// installs ([`installed_presets`]), in both modes, each label's box is
+    /// one such line tall and at least as wide as the label shaped on one
+    /// line, inside its tab, and each tab is at least `tab.min_width` wide.
     #[cfg(feature = "iced_aw")]
     #[test]
     fn the_extra_tab_bar_labels_are_one_whole_line() {
         let mut faults = Vec::new();
-        for preset in ["kde-breeze", "catppuccin-mocha"] {
+        for preset in installed_presets() {
             for mode in [AppColorMode::Light, AppColorMode::Dark] {
                 let state = extra_state(preset, mode);
                 let t = &state.current_resolved.tab;
@@ -30603,15 +30616,16 @@ mod tests {
     /// padded [`AW_TAB_LABEL_PADDING`] inside the tab's padding (iced_aw
     /// 0.14.1 `src/widget/tab_bar.rs:398-417`, `:490-495`), so a label stays
     /// on one line where its tab holds its one-line width and those
-    /// paddings. Under kde-breeze and catppuccin-mocha, in both modes, at
-    /// the stated `tab.min_width` and with it spliced to 20 px, narrower
-    /// than "One", each tab, as the layout dump records it, holds its label
-    /// so and is at least `tab.min_width` wide.
+    /// paddings. Under every preset the Theme row installs
+    /// ([`installed_presets`]), in both modes, at the stated `tab.min_width`
+    /// and with it spliced to 20 px, narrower than "One", each tab, as the
+    /// layout dump records it, holds its label so and is at least
+    /// `tab.min_width` wide.
     #[cfg(feature = "iced_aw")]
     #[test]
     fn the_basic_tab_labels_are_one_whole_line() {
         let mut faults = Vec::new();
-        for preset in ["kde-breeze", "catppuccin-mocha"] {
+        for preset in installed_presets() {
             for mode in [AppColorMode::Light, AppColorMode::Dark] {
                 for narrow in [false, true] {
                     let mut state = page_state(preset, Tab::Basic);
@@ -30919,8 +30933,9 @@ mod tests {
     /// M9-097 (theme-data): the Extra page's `TabBar` spaces its tabs
     /// `tab.item_gap` apart where the theme states it, and by iced_aw's own
     /// spacing, none, where it does not (`DEFAULT_SPACING`, iced_aw 0.14.1
-    /// `src/widget/tab_bar.rs:43`), over every bundled preset in both modes
-    /// (adwaita and kde-breeze state 0): its tabs are all one width,
+    /// `src/widget/tab_bar.rs:43`), over every preset the Theme row installs
+    /// ([`installed_presets`]) in both modes (adwaita and kde-breeze state
+    /// 0): its tabs are all one width,
     /// [`aw_tab_width`] (`tab.min_width`, or the widest label's where that is
     /// wider), and each label is centred in its tab, so two neighbours'
     /// labels are that width and the gap apart. The `Tabs` beside it take the same gap:
@@ -30949,9 +30964,9 @@ mod tests {
             })
         };
         let mut faults = Vec::new();
-        for info in native_theme::theme::Theme::list_presets() {
+        for preset in installed_presets() {
             for mode in [AppColorMode::Light, AppColorMode::Dark] {
-                let state = extra_state(info.key, mode);
+                let state = extra_state(preset, mode);
                 let t = &state.current_resolved.tab;
                 let padding = native_theme_iced::stated_padding(&t.border.padding)
                     .unwrap_or(Padding::new(AW_TAB_PADDING));
@@ -30960,9 +30975,8 @@ mod tests {
                 let [overview, details] = centres(&state);
                 if (details - overview - want).abs() > 0.5 {
                     faults.push(format!(
-                        "{} {mode:?}: the TabBar's tabs are {} apart, the tab width {width} \
-                         and tab.item_gap {:?}",
-                        info.key,
+                        "{preset} {mode:?}: the TabBar's tabs are {} apart, the tab width \
+                         {width} and tab.item_gap {:?}",
                         details - overview,
                         t.item_gap
                     ));
@@ -32410,13 +32424,14 @@ mod tests {
     /// under kde-breeze a hovered menu row is outlined in Breeze's
     /// `focusOutlineColor()`, #399acc light and #5abaec dark, 1 px wide and
     /// rounded 4.5 as its highlight, filled `menu.item(HOVER).fill`; E2: a
-    /// pressed one is filled `menu.item(HOVER|PRESSED).fill`, Breeze's
-    /// #3daee9, lettered #ffffff light and #fcfcfc dark, and keeps the
-    /// hovered outline, as the 0.8.0 preset states no `PRESSED` stroke; at
-    /// rest and disabled no row is outlined. With a `PRESSED` label stated on
-    /// the theme (#f0a014) a pressed row is lettered in it and a hovered one
-    /// is not. Under adwaita, which states no outline, no row is outlined in
-    /// any status.
+    /// pressed one is filled `menu.item(PRESSED).fill`, Breeze's #3daee9,
+    /// lettered #ffffff light and #fcfcfc dark, and has iced's own flat
+    /// button's border, as no `PRESSED` rule of the 0.8.0 preset states a
+    /// stroke and the pressed row is asked with `PRESSED` alone; at rest and
+    /// disabled no row is outlined. With a `PRESSED` label (#f0a014) and a
+    /// `PRESSED` stroke (#2468ac) stated on the theme a pressed row is
+    /// lettered and outlined in them and a hovered one is not. Under adwaita,
+    /// which states no outline, no row is outlined in any status.
     #[test]
     fn menu_rows_outline_and_press_as_stated() -> Result<(), String> {
         let statuses = [
@@ -32454,7 +32469,8 @@ mod tests {
             });
             if pressed_fill.as_deref() != Some("#3daee9")
                 || color_to_hex(pressed.text_color) != pressed_text
-                || format!("{:?}", pressed.border) != format!("{border:?}")
+                || pressed.border.width != 0.0
+                || pressed.border.radius != iced::border::Radius::new(4.5)
             {
                 failures.push(format!("{label}: the pressed row is {pressed:?}"));
             }
@@ -32465,7 +32481,8 @@ mod tests {
                 }
             }
             let lettered = with_home(r, "menu.item_label(PRESSED).color", "#f0a014")
-                .ok_or("no patch reaches menu.item_label(PRESSED).color")?;
+                .and_then(|r| with_home(&r, "menu.item(PRESSED).stroke.color", "#2468ac"))
+                .ok_or("no patch reaches menu.item_label(PRESSED) or menu.item(PRESSED)")?;
             let row = menu_row(&lettered);
             let (pressed, hovered) = (
                 row(theme, button::Status::Pressed),
@@ -32473,9 +32490,12 @@ mod tests {
             );
             if color_to_hex(pressed.text_color) != "#f0a014"
                 || color_to_hex(hovered.text_color) == "#f0a014"
+                || color_to_hex(pressed.border.color) != "#2468ac"
+                || color_to_hex(hovered.border.color) == "#2468ac"
             {
                 failures.push(format!(
-                    "{label}, a PRESSED label stated: pressed {pressed:?}, hovered {hovered:?}"
+                    "{label}, a PRESSED label and stroke stated: pressed {pressed:?}, \
+                     hovered {hovered:?}"
                 ));
             }
         }
@@ -32483,10 +32503,9 @@ mod tests {
             let label = format!("adwaita dark {dark}");
             let state = loaded("adwaita", dark);
             let r = state.next_shown();
-            if r.menu
-                .item(WidgetState::HOVER | WidgetState::PRESSED)
-                .from_state
-                .contains(PartStated::STROKE)
+            if [WidgetState::HOVER, WidgetState::PRESSED]
+                .iter()
+                .any(|state| r.menu.item(*state).from_state.contains(PartStated::STROKE))
             {
                 return Err(format!("{label} states an outline"));
             }
