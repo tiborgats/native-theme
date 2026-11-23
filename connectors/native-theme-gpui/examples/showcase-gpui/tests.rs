@@ -4081,26 +4081,28 @@ fn the_tab_rows_draw_what_tab_states(cx: &mut TestAppContext) {
     }
 }
 
-/// Under windows-11 with an outward corner radius of 4 set on it, installed
-/// as the connector installs a theme, after the showcase opens: the selected
-/// page tab curves out at both feet. At each, about the centre 4 outside and
-/// 4 above the foot, set the outline's width in, a flare is painted clipped
-/// to its 4px square: its fill in tab.active_background and its outline in
-/// tab.border.color, as `widgets::TabBar` draws them.
+/// Under the 0.8.0 windows-11 with an outward corner radius of 4 set on it,
+/// installed as the 0.8.0 theme after the showcase opens: the selected page
+/// tab curves out at both feet. At each, about the centre 4 outside and 4
+/// above the foot, set the outline's width in, a flare is painted clipped
+/// to its 4px square: its fill in tab.tab(SELECTED).fill and its outline in
+/// tab.tab(SELECTED).stroke's colour, as `widgets::TabBar` draws them.
 #[cfg(feature = "widgets")]
 #[gpui::test]
 fn the_selected_page_tab_curves_out_where_the_theme_states_it(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     show(&mut cx, &showcase, Page::Basic);
     let is_dark = read(&mut cx, &showcase, |this, _| this.is_dark);
-    let (theme, r) = windows_11_curving_out(is_dark);
-    cx.update(|_window, cx| {
-        let prefs = native_theme_gpui::AccessibilityPreferences::default();
-        native_theme_gpui::apply(theme, &r, &prefs, cx);
-    });
-    cx.run_until_parked();
+    let r = windows_11_curving_out(is_dark);
+    install_next(&mut cx, &r);
     draw(&mut cx);
-    let look = native_theme_gpui::widgets::TabLook::of(&r).expect("windows-11's tab look builds");
+    let look = native_theme_gpui::widgets::TabLook::next_of(&r);
+    assert!(
+        look.as_ref()
+            .is_ok_and(|look| look.outward_radius == Some(px(4.))),
+        "windows-11's tab look does not build with flares of 4: {look:?}"
+    );
+    let Ok(look) = look else { return };
     let tab = bounds_of(&mut cx, Page::Basic.tab());
     let w = f32::from(look.border_width);
     let feet = [
@@ -6180,18 +6182,18 @@ fn the_basic_page_counts_its_columns_from_the_theme() {
     }
 }
 
-/// The `windows-11` theme, light or, with `is_dark`, dark, resolved as the
-/// connector resolves a preset, with `tab.active_outward_corner_radius` set
-/// on it to 4, the value the preset states (G3 T15), so the tests hold
-/// spec §12.2's numbers whatever the preset says; a resolved theme's fields
-/// are public.
+/// The 0.8.0 `windows-11` theme, light or, with `is_dark`, dark, with
+/// `tab.active_outward_corner_radius` set on it to 4, the value the preset
+/// states (G3 T15), so the tests hold spec §12.2's numbers whatever the
+/// preset says; a resolved theme's fields are public.
 #[cfg(feature = "widgets")]
-fn windows_11_curving_out(is_dark: bool) -> (Theme, native_theme_gpui::ResolvedTheme) {
-    let prefs = native_theme_gpui::AccessibilityPreferences::default();
-    let (theme, mut r) =
-        native_theme_gpui::from_preset("windows-11", is_dark, &prefs).expect("windows-11 loads");
+fn windows_11_curving_out(is_dark: bool) -> native_theme::next::ResolvedTheme {
+    use native_theme::next::{Preset, Scheme, Theme as NextTheme, ThemeContext};
+    let scheme = if is_dark { Scheme::Dark } else { Scheme::Light };
+    let mut r =
+        NextTheme::preset(Preset::Windows11).resolve(&ThemeContext::default().with_scheme(scheme));
     r.tab.active_outward_corner_radius = Some(4.0);
-    (theme, r)
+    r
 }
 
 /// The Basic page's column rule makes room for both of the selected tab's
@@ -13035,43 +13037,45 @@ fn the_menu_popups_rows_are_refined_as_geometry_menu_item() {
     }
 }
 
-/// A label the showcase draws in a widget's font (`demo::text_in`: the side
-/// panel's labels, the tab rows' labels without `widgets`, the segments, the
-/// native expander's titles and the Basic table's cells) takes the font as
-/// the connector's `with_text` sets it (M9-013, M9-040): family, size,
-/// weight and style as `geometry::table` sets `list.item_font`, the Basic
-/// table cells' font, and its line box, the scaled size by
-/// `defaults.line_height`, read from a fixture whose font is italic in a
-/// family other than the window's.
+/// A label the showcase draws in a widget's 0.8.0 font
+/// (`demo::next_text_in`: the tab rows' labels without `widgets`, the
+/// segments, the expander's titles and the Basic table's cells) takes the
+/// font as the connector's builders set it (M9-013, M9-040): family, size,
+/// weight and slant as `next::geometry::table` sets `list.item_label(NONE)`,
+/// the Basic table cells' font, and its line box, `demo::line_box`, read
+/// from kde-breeze at text scales 1 and 2 with that label patched italic in
+/// the monospace family, other than the body's.
 #[test]
-fn a_label_in_a_widgets_font_takes_it_as_with_text_does() {
-    use native_theme_gpui::Native;
-    let resolved = native_theme::theme::Theme::preset("kde-breeze")
-        .ok()
-        .and_then(|t| t.into_variant(native_theme::theme::ColorMode::Light).ok())
-        .and_then(|v| {
-            v.into_resolved(&native_theme::ResolutionContext::for_tests())
-                .ok()
-        });
-    assert!(resolved.is_some(), "kde-breeze light does not resolve");
-    let Some(mut resolved) = resolved else { return };
-    let family = resolved.defaults.mono_font.family.clone();
-    assert_ne!(
-        family, resolved.defaults.font.family,
-        "kde-breeze's mono family is now the window's, which this test needs apart"
-    );
-    resolved.list.item_font.family = family;
-    resolved.list.item_font.style = native_theme::theme::FontStyle::Italic;
-    let line_height = resolved.defaults.line_height;
+fn a_label_in_a_widgets_font_takes_it_as_with_text_does() -> Result<(), String> {
+    use native_theme::next::{
+        FontStyle, ListRule, Preset, Scheme, TextPatch, Theme as NextTheme, ThemeContext,
+        ThemePatch, WidgetState,
+    };
     for scale in [1.0, 2.0] {
-        let mut prefs = native_theme_gpui::AccessibilityPreferences::default();
-        prefs.text_scaling_factor = scale;
-        let n = Native {
-            resolved: &resolved,
-            accessibility: &prefs,
-        };
-        let expected = geometry::table(n).text;
-        let mut label = crate::demo::text_in(&n, &resolved.list.item_font, "label");
+        let mut r = NextTheme::preset(Preset::KdeBreeze).resolve(
+            &ThemeContext::default()
+                .with_scheme(Scheme::Light)
+                .with_text_scale(scale),
+        );
+        let family = r.typography.monospace.family.clone();
+        assert_ne!(
+            family, r.typography.body.family,
+            "kde-breeze's monospace family is now the body's, which this test needs apart"
+        );
+        r.apply_patch(&ThemePatch::new().list(
+            ListRule::new().item_label(TextPatch::new().family(family).style(FontStyle::Italic)),
+        ));
+        let style = r.list.item_label(WidgetState::NONE);
+        let expected = native_theme_gpui::next::geometry::table(&r)
+            .map_err(|e| e.to_string())?
+            .text;
+        let label =
+            crate::demo::next_text_in(&r.typography, &style, "list.item_label(NONE)", "label");
+        assert!(
+            label.is_some(),
+            "at text scale {scale} the patched label gives no font"
+        );
+        let Some(mut label) = label else { continue };
         let text = label.style().text.clone();
         assert_eq!(
             (
@@ -13093,56 +13097,54 @@ fn a_label_in_a_widgets_font_takes_it_as_with_text_does() {
             Some(gpui::FontStyle::Italic),
             "at text scale {scale} the label is not in the fixture's italic"
         );
-        assert_eq!(
-            expected.line_height,
-            Some(gpui::relative(line_height)),
-            "with_text no longer sets defaults.line_height as a fraction of the size"
-        );
-        let size = native_theme_gpui::scaled_text_size(resolved.list.item_font.size, &prefs);
+        let line = crate::demo::line_box(&r.typography, &style);
         assert_eq!(
             text.line_height,
-            Some(px(size * line_height).into()),
-            "at text scale {scale} the label's line box is not the scaled size by defaults.line_height"
+            Some(px(line).into()),
+            "at text scale {scale} the label's line box is not demo::line_box's {line}px"
         );
     }
+    Ok(())
 }
 
-/// `demo::text_in` maps every `FontStyle` to gpui's as the connector's own
-/// `font_style` does (native-theme-gpui `src/lib.rs`, private to the crate),
-/// read through `geometry::table`, which applies it to `list.item_font`, the
-/// Basic table cells' font.
+/// `demo::next_text_in` maps every `FontStyle` to gpui's as the connector's
+/// own `font_style` does (native-theme-gpui `src/next/mod.rs`, private to
+/// the crate), read through `next::geometry::table`, which applies it to
+/// `list.item_label(NONE)`, the Basic table cells' font, patched to each
+/// slant over kde-breeze light.
 #[test]
-fn text_ins_style_is_the_connectors_on_every_font_style() {
-    use native_theme::theme::FontStyle;
-    use native_theme_gpui::Native;
-    let resolved = native_theme::theme::Theme::preset("kde-breeze")
-        .ok()
-        .and_then(|t| t.into_variant(native_theme::theme::ColorMode::Light).ok())
-        .and_then(|v| {
-            v.into_resolved(&native_theme::ResolutionContext::for_tests())
-                .ok()
-        });
-    assert!(resolved.is_some(), "kde-breeze light does not resolve");
-    let Some(mut resolved) = resolved else { return };
-    let prefs = native_theme_gpui::AccessibilityPreferences::default();
-    for style in [FontStyle::Normal, FontStyle::Italic, FontStyle::Oblique] {
-        resolved.list.item_font.style = style;
-        let n = Native {
-            resolved: &resolved,
-            accessibility: &prefs,
-        };
-        let connector = geometry::table(n).text.font_style;
-        let mut label = crate::demo::text_in(&n, &resolved.list.item_font, "label");
+fn text_ins_style_is_the_connectors_on_every_font_style() -> Result<(), String> {
+    use native_theme::next::{
+        FontStyle, ListRule, Preset, Scheme, TextPatch, Theme as NextTheme, ThemeContext,
+        ThemePatch, WidgetState,
+    };
+    for slant in [FontStyle::Normal, FontStyle::Italic, FontStyle::Oblique] {
+        let mut r = NextTheme::preset(Preset::KdeBreeze)
+            .resolve(&ThemeContext::default().with_scheme(Scheme::Light));
+        r.apply_patch(
+            &ThemePatch::new().list(ListRule::new().item_label(TextPatch::new().style(slant))),
+        );
+        let style = r.list.item_label(WidgetState::NONE);
+        let connector = native_theme_gpui::next::geometry::table(&r)
+            .map_err(|e| e.to_string())?
+            .text
+            .font_style;
+        let label =
+            crate::demo::next_text_in(&r.typography, &style, "list.item_label(NONE)", "label");
+        assert!(label.is_some(), "the label in {slant:?} gives no font");
+        let Some(mut label) = label else { continue };
         assert_eq!(
             label.style().text.font_style,
             connector,
-            "text_in draws {style:?} otherwise than the connector's font_style"
+            "next_text_in draws {slant:?} otherwise than the connector's font_style"
         );
     }
+    Ok(())
 }
 
 /// The font lines of the showcase's own Widget Info name a family the
-/// system lacks as `info::drawn_font` does, with the substitute gpui is
+/// system lacks as `info::typography::text_style_font` does, with the
+/// substitute gpui is
 /// asked for, where the chrome menus' line named no family and the
 /// theme-drawn Checkbox's and TabBar's named the stated family alone.
 ///
@@ -13161,7 +13163,7 @@ fn a_substituted_family_is_named_in_every_own_font_line() {
                 .ok()
         });
     assert!(resolved.is_some(), "kde-breeze light does not resolve");
-    let Some(mut resolved) = resolved else { return };
+    let Some(resolved) = resolved else { return };
     let absent: std::sync::Arc<str> = "Native Theme Absent Sans".into();
     #[cfg(feature = "system-fonts")]
     let installed =
@@ -13182,18 +13184,18 @@ fn a_substituted_family_is_named_in_every_own_font_line() {
         return;
     }
     let label = native_theme_showcase_support::status::family_label(&absent, Some(drawn.as_ref()));
-    resolved.tab.font.family = absent.clone();
     let next = {
         use native_theme::next::{
-            CheckboxRule, MenuRule, Preset, Scheme, TextPatch, Theme as NextTheme, ThemeContext,
-            ThemePatch,
+            CheckboxRule, MenuRule, Preset, Scheme, TabRule, TextPatch, Theme as NextTheme,
+            ThemeContext, ThemePatch,
         };
         let mut next = NextTheme::preset(Preset::KdeBreeze)
             .resolve(&ThemeContext::default().with_scheme(Scheme::Light));
         next.apply_patch(
             &ThemePatch::new()
                 .checkbox(CheckboxRule::new().label(TextPatch::new().family(absent.clone())))
-                .menu(MenuRule::new().item_label(TextPatch::new().family(absent.clone()))),
+                .menu(MenuRule::new().item_label(TextPatch::new().family(absent.clone())))
+                .tab(TabRule::new().label(TextPatch::new().family(absent.clone()))),
         );
         next
     };
@@ -13226,7 +13228,7 @@ fn a_substituted_family_is_named_in_every_own_font_line() {
         (
             "the theme-drawn TabBar",
             line(
-                crate::info::layout::native_tab_row(&resolved, "widgets::TabBar"),
+                crate::info::layout::native_tab_row(&theme, &next, "widgets::TabBar"),
                 "font",
             ),
         ),
@@ -19296,7 +19298,7 @@ fn the_tables_header_sections_take_the_hovered_and_pressed_fills(cx: &mut TestAp
 /// The labels the showcase lays out one `defaults.line_height` line tall
 /// name the route that does it (M9-031): widgets::Switch's label, the side
 /// panel's labels in demo::next_text_in's line box (the installed 0.8.0
-/// theme's), the segments in demo::text_in's, the tab
+/// theme's), the segments in demo::next_text_in's, the tab
 /// rows' labels in widgets::TabBar's, the expander's title and body, and
 /// the status bar's text in geometry::status_bar's; none says "not applied"
 /// or names gpui's own line height. The status bar's toggle and environment
@@ -19326,7 +19328,11 @@ fn the_line_height_and_status_gap_routes_name_what_applies_them() {
             "defaults.line_height",
             "demo::next_text_in",
         ),
-        ("basic.expander.", "defaults.line_height", "demo::text_in"),
+        (
+            "basic.expander.",
+            "defaults.line_height",
+            "demo::next_text_in",
+        ),
         (
             "chrome.status_bar",
             "defaults.line_height",
@@ -20056,37 +20062,6 @@ fn the_dump_readings_take_the_capture_wait() {
         crate::DUMP_POLL.saturating_mul(readings),
         native_theme_showcase_support::CAPTURE_WAIT
     );
-}
-
-/// Every bundled preset in both modes, resolved as the tests resolve a
-/// preset, named `<preset> <mode>`, with the gpui theme the connector
-/// builds from it: what an info built under each one reads.
-fn every_bundled_variant() -> Vec<(String, native_theme_gpui::ResolvedTheme, Theme)> {
-    use native_theme::theme::ColorMode;
-    let prefs = native_theme_gpui::AccessibilityPreferences::default();
-    let mut out = Vec::new();
-    for preset in native_theme::theme::Theme::list_presets() {
-        for mode in [ColorMode::Light, ColorMode::Dark] {
-            let resolved = native_theme::theme::Theme::preset(preset.key)
-                .ok()
-                .and_then(|t| t.into_variant(mode).ok())
-                .and_then(|v| {
-                    v.into_resolved(&native_theme::ResolutionContext::for_tests())
-                        .ok()
-                });
-            assert!(
-                resolved.is_some(),
-                "{} {mode:?} does not resolve",
-                preset.key
-            );
-            let Some(r) = resolved else { continue };
-            let dark = mode == ColorMode::Dark;
-            let t = native_theme_gpui::to_theme(&r, preset.key, dark, &prefs);
-            let name = format!("{} {}", preset.key, if dark { "dark" } else { "light" });
-            out.push((name, r, t));
-        }
-    }
-    out
 }
 
 /// Every preset of the 0.8.0 model (`native_theme::next::Preset::ALL`) in
@@ -23075,15 +23050,19 @@ fn every_tool_buttons_size_note_follows_the_stated_padding() {
 }
 
 /// A TabBar built from gpui-component's -- the chrome tab rows of a build
-/// without `widgets`, and of every build without a native theme -- is a
-/// per-Size height that `tab.min_height` raises where a native theme is
-/// installed (`demo::tab_bar` gives each Tab `min_h`): its info says so
-/// there, and that nothing applies it only where none is (M9-036). The
-/// default build draws the theme's rows with `widgets::TabBar`, so the info
-/// is built here as the build without `widgets` builds it.
+/// without `widgets`, and of every build without a 0.8.0 theme -- is a
+/// per-Size height that `tab.tab(NONE).min_size[1]` raises where a 0.8.0
+/// theme is installed and states it (`demo::tab_bar` gives each Tab `min_h`
+/// through `demo::next_tab`): its info says so there, upstream's own where
+/// the theme states none, and that nothing applies it only where no theme
+/// is (M9-036). The default build draws the theme's rows with
+/// `widgets::TabBar`, so the info is built here as the build without
+/// `widgets` builds it. Every bundled preset states the height, so the
+/// unstated case is the note's own function, given none.
 #[test]
 fn an_upstream_tab_bars_height_note_follows_the_native_theme() {
-    let variants = every_bundled_variant();
+    use native_theme::next::WidgetState;
+    let variants = every_next_variant();
     let height = |info: &WidgetInfo| {
         info.not_themeable
             .iter()
@@ -23092,6 +23071,13 @@ fn an_upstream_tab_bars_height_note_follows_the_native_theme() {
             .unwrap_or_default()
     };
     for (name, r, t) in &variants {
+        let stated = r.tab.tab(WidgetState::NONE).min_size[1];
+        assert!(
+            stated.is_some(),
+            "{name} states no tab.tab(NONE).min_size[1]: the stated case is not covered"
+        );
+        let Some(stated) = stated else { continue };
+        let px = format!("{}px", crate::info::px_text(stated));
         for (which, info) in [
             (
                 "inspector",
@@ -23104,11 +23090,20 @@ fn an_upstream_tab_bars_height_note_follows_the_native_theme() {
         ] {
             let note = height(&info);
             assert!(
-                note.contains("tab.min_height") && !note.contains("Nothing applies it"),
-                "{name}: the {which} tab bar's height note denies tab.min_height, which each Tab takes: {note:?}"
+                note.contains("tab.tab(NONE).min_size[1]")
+                    && note.contains(&px)
+                    && !note.contains("Nothing applies it"),
+                "{name}: the {which} tab bar's height note does not give tab.tab(NONE).min_size[1], {px}, which each Tab takes: {note:?}"
             );
         }
     }
+    let unstated = crate::info::tab_height_note(Some(None));
+    assert!(
+        unstated.contains("upstream's own")
+            && unstated.contains("states no tab.tab(NONE).min_size[1]")
+            && !unstated.contains("Nothing applies it"),
+        "a theme that states no tab height: {unstated:?}"
+    );
     let Some((_, _, t)) = variants.first() else {
         return;
     };
@@ -23123,36 +23118,55 @@ fn an_upstream_tab_bars_height_note_follows_the_native_theme() {
 }
 
 /// Every theme-drawn tab row's info marks the selected tab as
-/// `widgets::TabBar` does, from `TabLook::of(..).indicator`: a line
-/// `tab.active_indicator_width` thick along `tab.active_indicator_side` in
-/// `tab.active_indicator_color` where the look has one, claimed then and
-/// only then, and none where it has not; and it gives the gap the look lays
-/// the tabs apart by, `tab.item_gap` (M9-045). Over every bundled preset in
-/// both modes, one with the indicator's colour taken away, and one whose
-/// non-finite length leaves no look at all.
+/// `widgets::TabBar` does, from `TabLook::next_of(..).indicator`: a line
+/// `tab.indicator(SELECTED).min_size[1]` thick along `tab.indicator_side`
+/// in `tab.indicator(SELECTED).fill` where the look has one, claimed then
+/// and only then, and none where it has not; and it gives the gap the look
+/// lays the tabs apart by, `tab.item_gap` (M9-045). Over every bundled
+/// preset in both schemes, each one with an indicator patched to the other
+/// side, and one whose selected tab's stroke, patched per side, leaves no
+/// look at all.
 #[cfg(feature = "widgets")]
 #[test]
-fn every_native_tab_rows_selection_mark_is_the_looks() {
-    let mut variants: Vec<(String, native_theme_gpui::ResolvedTheme)> = every_bundled_variant()
-        .into_iter()
-        .map(|(name, r, _)| (name, r))
-        .collect();
-    if let Some((name, r)) = variants.first().cloned() {
-        let mut r = r;
-        r.tab.active_indicator_color = None;
-        variants.push((format!("{name}, no indicator colour"), r));
+fn every_native_tab_rows_selection_mark_is_the_looks() -> Result<(), String> {
+    use native_theme::next::{TabIndicatorSide, TabRule, ThemePatch};
+    use native_theme_gpui::widgets::TabLook;
+    let mut variants: Vec<(String, native_theme::next::ResolvedTheme, Theme)> =
+        every_next_variant();
+    let mut turned = Vec::new();
+    for (name, r, t) in &variants {
+        let side = r.tab.indicator_side;
+        if let (Ok(look), Some(side)) = (TabLook::next_of(r), side)
+            && look.indicator.is_some()
+        {
+            let other = match side {
+                TabIndicatorSide::Top => TabIndicatorSide::Bottom,
+                _ => TabIndicatorSide::Top,
+            };
+            let mut r = r.clone();
+            r.tab.indicator_side = Some(other);
+            turned.push((format!("{name}, indicator turned"), r, t.clone()));
+        }
     }
+    assert!(
+        !turned.is_empty(),
+        "no preset states an indicator to turn: the patched side is not covered"
+    );
+    variants.extend(turned);
     let mut seen = (false, false);
-    for (name, r) in &variants {
-        let look = native_theme_gpui::widgets::TabLook::of(r);
-        assert!(look.is_some(), "{name}: the tab look does not build");
-        let Some(look) = look else { continue };
-        let info = crate::info::layout::native_tab_row(r, "widgets::TabBar");
+    for (name, r, t) in &variants {
+        let look = TabLook::next_of(r);
+        assert!(
+            look.is_ok(),
+            "{name}: the tab look does not build: {look:?}"
+        );
+        let Ok(look) = look else { continue };
+        let info = crate::info::layout::native_tab_row(t, r, "widgets::TabBar");
         let mark = shown_note(Some(&info), "selection mark").unwrap_or_default();
         let claimed = info
             .colors
             .iter()
-            .find(|c| c.field == "active_indicator_color")
+            .find(|c| c.field == "tab.indicator(SELECTED).fill")
             .map(|c| c.value);
         match look.indicator {
             Some(line) => {
@@ -23163,9 +23177,9 @@ fn every_native_tab_rows_selection_mark_is_the_looks() {
                 };
                 let width = format!("{}px", crate::info::px_text(f32::from(line.width)));
                 assert!(
-                    mark.contains("tab.active_indicator_width")
+                    mark.contains("tab.indicator(SELECTED).min_size[1]")
                         && mark.contains(&width)
-                        && mark.contains("tab.active_indicator_side")
+                        && mark.contains("tab.indicator_side")
                         && words(&mark).contains(side),
                     "{name}: the selection mark is not the look's {width} line along the {side}: {mark:?}"
                 );
@@ -23212,31 +23226,57 @@ fn every_native_tab_rows_selection_mark_is_the_looks() {
         seen.0 && seen.1,
         "the presets did not cover both an indicator and none: {seen:?}"
     );
-    // A length that is not finite: TabLook::of builds no look, the bar is
-    // gpui-component's, and the info gives that reason, not a theme that
-    // states no indicator.
-    let Some((name, mut r)) = variants.first().cloned() else {
-        return;
+    // A selected tab's stroke per side, which gpui cannot draw: TabLook
+    // builds no look, the bar is gpui-component's, and the info gives that
+    // reason, not a theme that states no indicator.
+    let Some((name, mut r, t)) = variants.first().cloned() else {
+        return Ok(());
     };
-    r.tab.min_width = f32::NAN;
-    assert!(
-        native_theme_gpui::widgets::TabLook::of(&r).is_none(),
-        "{name}: a non-finite tab.min_width still builds a tab look"
+    let colour = r
+        .colors
+        .window
+        .border
+        .ok_or(format!("{name} states no colors.window.border"))?;
+    let side = || native_theme::next::StrokeSide {
+        width: 1.,
+        paint: native_theme::next::Paint::Solid(colour),
+    };
+    r.apply_patch(
+        &ThemePatch::new().tab(
+            TabRule::new()
+                .states(native_theme::next::WidgetState::SELECTED)
+                .tab(native_theme::next::PartPatch::new().stroke(
+                    native_theme::next::Stroke::sides(
+                        side(),
+                        side(),
+                        side(),
+                        side(),
+                        native_theme::next::StrokeAlign::Inside,
+                    ),
+                )),
+        ),
     );
-    let info = crate::info::layout::native_tab_row(&r, "widgets::TabBar");
+    assert!(
+        TabLook::next_of(&r).is_err(),
+        "{name}: a selected tab's stroke per side still builds a tab look"
+    );
+    let info = crate::info::layout::native_tab_row(&t, &r, "widgets::TabBar");
     for what in ["selection mark", "gap"] {
         let text = shown_note(Some(&info), what).unwrap_or_default();
         assert!(
-            text.contains("not finite") && !text.contains("states no indicator"),
-            "{name}, a non-finite length: the {what} line does not give that reason: {text:?}"
+            text.contains("tab.tab(SELECTED).stroke")
+                && text.contains("TabBar::fallback")
+                && !text.contains("states no indicator"),
+            "{name}, a stroke per side: the {what} line does not give that reason: {text:?}"
         );
     }
     assert!(
         info.colors
             .iter()
-            .all(|c| c.field != "active_indicator_color"),
-        "{name}, a non-finite length: an indicator colour is claimed that no look draws"
+            .all(|c| c.field != "tab.indicator(SELECTED).fill"),
+        "{name}, a stroke per side: an indicator colour is claimed that no look draws"
     );
+    Ok(())
 }
 
 /// A theme-drawn tab row's info gives the selected tab's outward corners as
@@ -23245,11 +23285,17 @@ fn every_native_tab_rows_selection_mark_is_the_looks() {
 /// feet and the outline as before where it does not.
 #[cfg(feature = "widgets")]
 #[test]
-fn the_native_tab_rows_info_gives_its_outward_corners() {
-    let (_, stated) = windows_11_curving_out(false);
+fn the_native_tab_rows_info_gives_its_outward_corners() -> Result<(), String> {
+    let stated = windows_11_curving_out(false);
+    let t = native_theme_gpui::next::to_theme(&stated).map_err(|e| e.to_string())?;
+    let look = native_theme_gpui::widgets::TabLook::next_of(&stated);
+    assert!(
+        look.as_ref().is_ok_and(|look| look.border_width > px(0.)),
+        "windows-11's selected tab has no outline whose bottom edge the curve could replace: {look:?}"
+    );
     let mut unstated = stated.clone();
     unstated.tab.active_outward_corner_radius = None;
-    let info = crate::info::layout::native_tab_row(&stated, "widgets::TabBar");
+    let info = crate::info::layout::native_tab_row(&t, &stated, "widgets::TabBar");
     let corners = shown_note(Some(&info), "outward corners").unwrap_or_default();
     assert!(
         corners.starts_with("tab.active_outward_corner_radius, 4px")
@@ -23262,7 +23308,7 @@ fn the_native_tab_rows_info_gives_its_outward_corners() {
         outline.contains("no bottom edge"),
         "the outline keeps a bottom edge: {outline:?}"
     );
-    let info = crate::info::layout::native_tab_row(&unstated, "widgets::TabBar");
+    let info = crate::info::layout::native_tab_row(&t, &unstated, "widgets::TabBar");
     let corners = shown_note(Some(&info), "outward corners").unwrap_or_default();
     assert!(
         corners.starts_with("none: the theme states no outward corners"),
@@ -23273,6 +23319,7 @@ fn the_native_tab_rows_info_gives_its_outward_corners() {
         !outline.contains("no bottom edge"),
         "unstated, the outline has no bottom edge: {outline:?}"
     );
+    Ok(())
 }
 
 /// `tab.active_outward_corner_radius_px` has its route on each element the

@@ -590,27 +590,6 @@ pub fn px_text(v: f32) -> String {
     s.trim_end_matches('0').trim_end_matches('.').to_string()
 }
 
-/// `font` as `demo::text_in`, the connector's `with_text` (geometry.rs) and
-/// its widgets' labels (widgets/mod.rs, `font_text`) draw text in it, for a
-/// font line of the showcase's own Widget Info: the family as `status::family_label` names what gpui is asked for
-/// (`native_theme_gpui::font_family`), the stated size the text-scaling
-/// factor scales, the weight, the style where it is not normal, and the line
-/// box.
-pub fn drawn_font(font: &native_theme::theme::ResolvedFontSpec) -> String {
-    let drawn = native_theme_gpui::font_family(&font.family);
-    let style = match font.style {
-        native_theme::theme::FontStyle::Normal => "",
-        native_theme::theme::FontStyle::Italic => ", italic",
-        native_theme::theme::FontStyle::Oblique => ", oblique",
-    };
-    format!(
-        "{}, {}px scaled by the text-scaling factor, weight {}{style}, at defaults.line_height",
-        native_theme_showcase_support::status::family_label(&font.family, Some(&drawn)),
-        px_text(font.size),
-        font.weight
-    )
-}
-
 /// An icon's colour of the installed 0.8.0 theme as gpui paints it
 /// ([`next_stated`]), `None` where the theme states none and the widget
 /// keeps the toolkit's own (spec §10, rule 0).

@@ -1060,7 +1060,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "basic.expander",
         "defaults.line_height",
-        "gpui: the title's line box, expander.font's size by it (demo::text_in), and the body Label's (demo::body_label)",
+        "gpui: the title's line box, expander.font's size by it (demo::next_text_in), and the body Label's (demo::body_label)",
     ),
     (
         "basic.card",

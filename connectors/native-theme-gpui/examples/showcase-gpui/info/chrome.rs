@@ -942,12 +942,9 @@ pub fn theme_settings(widget_gap: Option<Pixels>, own: Pixels) -> WidgetInfo {
 
 /// What an Underline `TabBar` at `Size::Small` paints and how it is laid
 /// out, under `variant`: gpui-component's, each Tab given `native`'s
-/// `tab.min_height` where a native theme is installed (`demo::tab_bar`).
-fn underline_tab_bar(
-    t: &Theme,
-    variant: &'static str,
-    native: Option<&ResolvedTheme>,
-) -> WidgetInfo {
+/// `tab.tab(NONE).min_size[1]` where a 0.8.0 theme is installed and states
+/// it (`demo::tab_bar`, `demo::next_tab`).
+fn underline_tab_bar(t: &Theme, variant: &'static str, native: Option<&NextTheme>) -> WidgetInfo {
     WidgetInfo::new("TabBar")
         .variant(variant)
         .color(claim(
@@ -998,35 +995,53 @@ fn underline_tab_bar(
         )
         .not_themeable(
             "height",
-            match native {
-                Some(r) => format!(
-                    "a per-Size literal set with .h() over the caller's style, which tab.min_height, {}px, raises: demo::tab_bar gives each Tab it as min_h through the Tab's style, which its own h does not clear (tab/tab.rs, Tab::render)",
-                    px_text(r.tab.min_height)
-                ),
-                None => "a per-Size literal set with .h() over the caller's style, but a Tab never sets min_h, which leaves tab.min_height a receiver. Nothing applies it: there is no geometry::tab -- our gap (tab/tab.rs, Tab::render)".to_string(),
-            },
+            tab_height_note(native.map(|r| r.tab.tab(WidgetState::NONE).min_size[1])),
         )
 }
 
+/// An upstream Underline tab's height note, where `min_height` is the
+/// installed 0.8.0 theme's `tab.tab(NONE).min_size[1]` (`None` where no
+/// 0.8.0 theme is installed, `Some(None)` where it states none).
+pub(crate) fn tab_height_note(min_height: Option<Option<f32>>) -> String {
+    match min_height {
+        Some(Some(height)) => format!(
+            "a per-Size literal set with .h() over the caller's style, which tab.tab(NONE).min_size[1], {}px, raises: demo::tab_bar gives each Tab it as min_h through the Tab's style, which its own h does not clear (tab/tab.rs, Tab::render)",
+            px_text(height)
+        ),
+        Some(None) => "a per-Size literal set with .h() over the caller's style, upstream's own, as the theme states no tab.tab(NONE).min_size[1] for demo::tab_bar to give each Tab as min_h (tab/tab.rs, Tab::render)".to_string(),
+        None => "a per-Size literal set with .h() over the caller's style, but a Tab never sets min_h, which leaves tab.tab(NONE).min_size[1] a receiver. Nothing applies it: there is no geometry::tab -- our gap (tab/tab.rs, Tab::render)".to_string(),
+    }
+}
+
 /// The inspector's TabBar (spec §2.6, §4.4): chrome, so it reports itself,
-/// unlike the content below it. `native` is the installed native theme,
-/// whose `tab.min_height` each Tab takes.
-pub fn inspector_tab_bar(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
+/// unlike the content below it. `native` is the installed 0.8.0 theme, whose
+/// `tab.tab(NONE).min_size[1]` each Tab takes.
+pub fn inspector_tab_bar(t: &Theme, native: Option<&NextTheme>) -> WidgetInfo {
     underline_tab_bar(t, "Underline, small", native).instance(
         "tabs",
         "Widget, the info the pointer settled on, and Theme, what the theme and the window set that no widget carries",
     )
 }
 
-/// What `native`'s tab theme sets on a chrome TabBar's tabs where a native
-/// theme is installed (`demo::tab_bar`): each label a child in `tab.font`,
-/// each tab at least `tab.min_width` by `tab.min_height`.
-pub fn tab_font(info: WidgetInfo, native: Option<&ResolvedTheme>) -> WidgetInfo {
+/// What `native`'s tab theme sets on a chrome TabBar's tabs where a 0.8.0
+/// theme is installed (`demo::tab_bar`, `demo::next_tab`): each label a
+/// child in `tab.label(NONE)` where it gives a font gpui can letter it in,
+/// each tab at least `tab.tab(NONE)`'s stated least size.
+pub fn tab_font(info: WidgetInfo, native: Option<&NextTheme>) -> WidgetInfo {
     match native {
         Some(r) => info
-            .config("font", format!("tab.font: {}, on each label, a child over the text_sm the Tab sets on itself (tab/tab.rs, RenderOnce for Tab)", super::drawn_font(&r.tab.font)))
-            .config("size", format!("each tab at least tab.min_width, {}px, by tab.min_height, {}px, through the Tab's style, which its own h does not clear (tab/tab.rs, RenderOnce for Tab)", px_text(r.tab.min_width), px_text(r.tab.min_height))),
-        None => info.not_themeable("font", "text_sm, the Tab's own: no native theme is installed (tab/tab.rs, RenderOnce for Tab)"),
+            .config(
+                "font",
+                super::layout::folder_tab_font(&r.typography, &r.tab.label(WidgetState::NONE)),
+            )
+            .config(
+                "size",
+                super::layout::folder_tab_size(r.tab.tab(WidgetState::NONE).min_size),
+            ),
+        None => info.not_themeable(
+            "font",
+            "text_sm, the Tab's own: no native theme is installed (tab/tab.rs, RenderOnce for Tab)",
+        ),
     }
 }
 
@@ -1043,9 +1058,9 @@ pub fn tab_bar_padding(container_margin: Option<Pixels>) -> String {
 }
 
 /// The content panel's page TabBar (spec S3), with upstream's menu of every
-/// tab. `native` is the installed native theme, whose `tab.min_height` each
-/// Tab takes.
-pub fn page_tab_bar(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
+/// tab. `native` is the installed 0.8.0 theme, whose
+/// `tab.tab(NONE).min_size[1]` each Tab takes.
+pub fn page_tab_bar(t: &Theme, native: Option<&NextTheme>) -> WidgetInfo {
     underline_tab_bar(t, "Underline, small, menu", native)
         .instance(
             "tabs",

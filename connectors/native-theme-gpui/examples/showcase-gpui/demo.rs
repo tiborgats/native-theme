@@ -101,7 +101,7 @@ use gpui_component::{
     v_flex,
 };
 use native_theme::next::WidgetState;
-use native_theme::theme::{FontStyle, IconSet, ResolvedFontSpec, ResolvedPadding};
+use native_theme::theme::{IconSet, ResolvedFontSpec, ResolvedPadding};
 use native_theme_gpui::icons::with_spin_animation;
 use native_theme_gpui::next;
 #[cfg(feature = "widgets")]
@@ -2304,29 +2304,28 @@ pub(crate) fn tab_bar(
     let menu_icon = menu_icon.and_then(SampleIcon::glyph);
     #[cfg(not(feature = "widgets"))]
     let _ = &menu_icon;
-    let native = old_native(cx);
-    let resolved = native.as_ref().map(|n| n.resolved);
+    let native = next_resolved(cx);
     let (id, info_id, menu, bar_info) = match kind {
         TabBarKind::Inspector => (
             "inspector-tabs",
             "chrome-inspector-tabs",
             false,
-            info::inspector_tab_bar(cx.theme(), resolved),
+            info::inspector_tab_bar(cx.theme(), native),
         ),
         TabBarKind::Pages => (
             "page-tabs",
             "chrome-page-tabs",
             true,
-            info::page_tab_bar(cx.theme(), resolved),
+            info::page_tab_bar(cx.theme(), native),
         ),
     };
     let tabs: Vec<(&'static str, &'static str)> = tabs.into_iter().collect();
     #[cfg(feature = "widgets")]
-    if let Some(n) = &native {
+    if let Some(r) = native {
         return native_tab_bar(
             ui,
             cx,
-            n,
+            r,
             kind,
             container_margin,
             tabs,
@@ -2335,7 +2334,7 @@ pub(crate) fn tab_bar(
             on_click,
         );
     }
-    let mut bar_info = info::tab_font(bar_info, resolved)
+    let mut bar_info = info::tab_font(bar_info, native)
         .instance("padding", info::tab_bar_padding(container_margin));
     if container_margin.is_some() {
         bar_info = bar_info.next_geometry("container_margin");
@@ -2348,18 +2347,8 @@ pub(crate) fn tab_bar(
         .with_size(Size::Small)
         .when_some(container_margin, |bar, margin| bar.px(margin))
         .children(tabs.into_iter().map(|(label, selector)| {
-            // The label as a child in `tab.font`, over the `text_sm` the Tab
-            // sets on itself (tab/tab.rs, `RenderOnce for Tab`), and the
-            // tab at least `tab.min_width` by `tab.min_height`, through its
-            // style, which its own `h` does not clear.
-            let tab = match &native {
-                Some(n) => {
-                    let t = &n.resolved.tab;
-                    Tab::new()
-                        .child(text_in(n, &t.font, label))
-                        .min_w(px(t.min_width))
-                        .min_h(px(t.min_height))
-                }
+            let tab = match native {
+                Some(r) => next_tab(r, label),
                 None => Tab::new().label(label),
             };
             tab.debug_selector(move || selector.into())
@@ -2412,17 +2401,17 @@ fn native_tabs(tabs: &[(&'static str, &'static str)]) -> Vec<widgets::Tab> {
         .collect()
 }
 
-/// A tab row under a native theme: the connector's `widgets::TabBar`, which
-/// draws exactly what `tab.*` states (ISSUES D7). The model states no
-/// tab-bar rule; the page row alone is parted from the page by the theme's
-/// `separator.*` line, under it (`native_tab_bar`), as the iced and egui
-/// showcases part theirs.
+/// A tab row under a 0.8.0 theme: the connector's `widgets::TabBar`, which
+/// draws exactly what `tab.*` states (ISSUES D7), as `TabLook::next_of`
+/// reads it. The model states no tab-bar rule; the page row alone is parted
+/// from the page by the theme's `separator.*` line, under it
+/// (`native_tab_bar`), as the iced and egui showcases part theirs.
 #[cfg(feature = "widgets")]
-fn native_tab_strip(_n: &Native<'_>, id: &'static str) -> widgets::TabBar {
+fn native_tab_strip(id: &'static str) -> widgets::TabBar {
     widgets::TabBar::new(id)
 }
 
-/// [`tab_bar`] under a native theme: a [`native_tab_strip`], inset by
+/// [`tab_bar`] under the 0.8.0 theme `r`: a [`native_tab_strip`], inset by
 /// `container_margin` as upstream's bar is (the rule runs its full width),
 /// the page row's tabs scrolling sideways where they do not fit, with the
 /// menu of every page after them, showing `menu_icon`.
@@ -2431,7 +2420,7 @@ fn native_tab_strip(_n: &Native<'_>, id: &'static str) -> widgets::TabBar {
 fn native_tab_bar(
     ui: &Entity<InfoRegistry>,
     cx: &App,
-    n: &Native<'_>,
+    r: &native_theme::next::ResolvedTheme,
     kind: TabBarKind,
     container_margin: Option<Pixels>,
     tabs: Vec<(&'static str, &'static str)>,
@@ -2448,7 +2437,7 @@ fn native_tab_bar(
         ),
         TabBarKind::Pages => ("page-tabs", "chrome-page-tabs", true, NATIVE_TAB_BAR_MENU),
     };
-    let mut bar_info = info::layout::native_tab_row(n.resolved, variant)
+    let mut bar_info = info::layout::native_tab_row(cx.theme(), r, variant)
         .instance("padding", info::tab_bar_padding(container_margin))
         .instance("click", "selects the tab; the showcase keeps the state. A tab the bar clips is scrolled just into view (widgets::TabBar, ScrollHandle::scroll_to_item)");
     if container_margin.is_some() {
@@ -2504,7 +2493,7 @@ fn native_tab_bar(
         })
         .anchor(gpui::Anchor::TopRight)
     });
-    let bar = native_tab_strip(n, id)
+    let bar = native_tab_strip(id)
         .w_full()
         .when_some(container_margin, |bar, margin| bar.px(margin))
         .when_some(elements::part_observer(ui, info_id), |bar, observer| {
@@ -2520,8 +2509,8 @@ fn native_tab_bar(
     if kind != TabBarKind::Pages {
         return bar;
     }
-    // The page row's rule, `separator.line_width` thick in
-    // `separator.line_color`, under the strip, laid out after it: the rule
+    // The page row's rule, `separator.thickness` thick in
+    // `separator.color`, under the strip, laid out after it: the rule
     // takes the room it is drawn in, `widgets::Separator`'s line, one device
     // pixel at least, so it covers none of the strip's last row of pixels.
     div()
@@ -2546,53 +2535,12 @@ pub(crate) const NATIVE_TAB_BAR: &str = "widgets::TabBar";
 #[cfg(feature = "widgets")]
 pub(crate) const NATIVE_TAB_BAR_MENU: &str = "widgets::TabBar, menu";
 
-/// `text` in `font` as the connector's `with_text` sets a font (geometry.rs):
-/// its family through `native_theme_gpui::font_family`, its size scaled by
-/// the text-scaling factor, its weight and style, one [`line_height_of`]
-/// tall. A widget's label the showcase draws as the widget's child.
-pub(crate) fn text_in(n: &Native<'_>, font: &ResolvedFontSpec, text: &'static str) -> Div {
-    let mut label = div()
-        .font_family(native_theme_gpui::font_family(&font.family))
-        .text_size(text_size_of(n, font))
-        .line_height(line_height_of(n, font))
-        .font_weight(FontWeight(f32::from(font.weight)))
-        .child(text);
-    // The connector's own mapping, `font_style` (native-theme-gpui
-    // src/lib.rs:834-840), is private to its crate.
-    label.text_style().font_style = Some(match font.style {
-        FontStyle::Normal => gpui::FontStyle::Normal,
-        FontStyle::Italic => gpui::FontStyle::Italic,
-        FontStyle::Oblique => gpui::FontStyle::Oblique,
-    });
-    label
-}
-
-/// `font`'s size, scaled by the text-scaling factor, as the connector's
-/// builders scale theirs.
-fn text_size_of(n: &Native<'_>, font: &ResolvedFontSpec) -> Pixels {
-    px(native_theme_gpui::scaled_text_size(
-        font.size,
-        n.accessibility,
-    ))
-}
-
-/// One line of `font`: its scaled size by `defaults.line_height`, the line
-/// box the model states for text (docs/property-registry.toml,
-/// `defaults.line_height`), in place of gpui's own, which is the golden
-/// ratio (gpui-pre style.rs, `phi`).
-fn line_height_of(n: &Native<'_>, font: &ResolvedFontSpec) -> Pixels {
-    px(f32::from(text_size_of(n, font)) * n.resolved.defaults.line_height)
-}
-
 /// A `TabBar` of upstream's default variant, `TabVariant::Tab`, over
 /// `labels`, `selected` the one shown; a click hands `on_click` the index of
 /// the tab clicked.
 ///
-/// What the theme states reaches it per call where upstream leaves a seam:
-/// each label is a child in `tab.font` ([`text_in`]) over the `text_sm`
-/// the Tab sets on itself (tab/tab.rs, `RenderOnce for Tab`), and each tab
-/// is at least `tab.min_width` wide and `tab.min_height` tall through the
-/// Tab's style, which its own `h` does not clear.
+/// What the installed 0.8.0 theme states reaches it per call where upstream
+/// leaves a seam ([`next_tab`]).
 pub(crate) fn tab_row(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -2601,17 +2549,17 @@ pub(crate) fn tab_row(
     selected: usize,
     on_click: impl Fn(&usize, &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
-    let native = old_native(cx);
+    let native = next_resolved(cx);
     #[cfg(feature = "widgets")]
-    if let Some(n) = &native {
+    if let Some(r) = native {
         let tabs: Vec<(&'static str, &'static str)> =
             labels.iter().map(|&label| (label, label)).collect();
         let shown = labels.get(selected).copied().unwrap_or("none");
-        let row_info = info::layout::native_tab_row(n.resolved, NATIVE_TAB_BAR)
+        let row_info = info::layout::native_tab_row(cx.theme(), r, NATIVE_TAB_BAR)
             .instance("tabs", labels.join(", "))
             .instance("selected", shown)
             .instance("click", "selects the tab; the showcase keeps the state");
-        return native_tab_strip(n, id)
+        return native_tab_strip(id)
             .wrap()
             .when_some(elements::part_observer(ui, id), |bar, observer| {
                 bar.on_part_bounds(observer)
@@ -2622,20 +2570,9 @@ pub(crate) fn tab_row(
             .info(ui, id, row_info)
             .debug_selector(move || id.into());
     }
-    let row_info = info::layout::tab_row(
-        cx.theme(),
-        labels,
-        selected,
-        native.as_ref().map(|n| n.resolved),
-    );
-    let tabs = labels.iter().map(|&label| match &native {
-        Some(n) => {
-            let t = &n.resolved.tab;
-            Tab::new()
-                .child(text_in(n, &t.font, label))
-                .min_w(px(t.min_width))
-                .min_h(px(t.min_height))
-        }
+    let row_info = info::layout::tab_row(cx.theme(), labels, selected, native);
+    let tabs = labels.iter().map(|&label| match native {
+        Some(r) => next_tab(r, label),
         None => Tab::new().label(label),
     });
     TabBar::new(id)
@@ -2644,6 +2581,28 @@ pub(crate) fn tab_row(
         .on_click(on_click)
         .info(ui, id, row_info)
         .debug_selector(move || id.into())
+}
+
+/// An upstream `Tab` labelled `label`, given what the 0.8.0 theme `r`
+/// states where upstream leaves a seam: the label a child in
+/// `tab.label(NONE)` ([`next_text_in`]), over the `text_sm` the Tab sets on
+/// itself (tab/tab.rs, `RenderOnce for Tab`), where the theme gives a font
+/// gpui can letter it in, else upstream's own label; the tab at least
+/// `tab.tab(NONE)`'s stated least width and height, through the Tab's
+/// style, which its own `h` does not clear, upstream's own where unstated.
+fn next_tab(r: &native_theme::next::ResolvedTheme, label: &'static str) -> Tab {
+    let [min_w, min_h] = r.tab.tab(WidgetState::NONE).min_size;
+    let tab = match next_text_in(
+        &r.typography,
+        &r.tab.label(WidgetState::NONE),
+        "tab.label(NONE)",
+        label,
+    ) {
+        Some(text) => Tab::new().child(text),
+        None => Tab::new().label(label),
+    };
+    tab.when_some(min_w, |tab, w| tab.min_w(px(w)))
+        .when_some(min_h, |tab, h| tab.min_h(px(h)))
 }
 
 /// The height of the panel under the Folder TabBar. The model states none,
@@ -2683,20 +2642,7 @@ pub(crate) fn folder_tab_row(
         info::layout::next_folder_tab_row(cx.theme(), labels, selected, disabled, native);
     let tabs = labels.iter().enumerate().map(|(ix, &label)| {
         let tab = match native {
-            Some(r) => {
-                let [min_w, min_h] = r.tab.tab(WidgetState::NONE).min_size;
-                let tab = match next_text_in(
-                    &r.typography,
-                    &r.tab.label(WidgetState::NONE),
-                    "tab.label(NONE)",
-                    label,
-                ) {
-                    Some(text) => Tab::new().child(text),
-                    None => Tab::new().label(label),
-                };
-                tab.when_some(min_w, |tab, w| tab.min_w(px(w)))
-                    .when_some(min_h, |tab, h| tab.min_h(px(h)))
-            }
+            Some(r) => next_tab(r, label),
             None => Tab::new().label(label),
         };
         tab.disabled(ix == disabled)
@@ -7969,15 +7915,16 @@ pub(crate) fn mono_sample(cx: &App, text: &'static str) -> Div {
         })
 }
 
-/// [`text_in`] on the 0.8.0 model: plain text reading `text` in `style`, one
-/// of `typography`'s text styles, which the theme's text scale has already
-/// scaled: its family, size, weight and slant, and its line box, the style's
+/// Plain text reading `text` in `style`, a widget's label drawn as the
+/// widget's child, one of `typography`'s text styles, which the theme's text
+/// scale has already scaled: its family, size, weight and slant, and its
+/// line box, the style's
 /// `line_height` where stated, else its size by
 /// `typography.line_height_multiplier` (spec §4, `Typography`; §5, "A text
 /// part's `line_height`"). `None` where `style`, read at its home `home`,
 /// gives no font gpui can letter it in (the connector's check,
 /// `next::label_font_unmapped`).
-fn next_text_in(
+pub(crate) fn next_text_in(
     typography: &native_theme::next::Typography,
     style: &native_theme::next::TextStyle,
     home: &'static str,
