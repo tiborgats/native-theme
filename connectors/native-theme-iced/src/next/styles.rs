@@ -733,7 +733,7 @@ fn shadow(part: &PartStyle) -> Option<Shadow> {
 /// rounds the popup and the item highlight with one radius, which is
 /// `menu.item`'s corners where the theme states them (spec §5,
 /// `menu.border`), else `menu.panel`'s (material-3's container shape,
-/// platform-facts.md §2.6); the panel's shadow is [`shadow`]'s. Each value
+/// platform-facts.md §2.6); the panel's shadow is `shadow`'s. Each value
 /// the theme leaves unstated is iced's own.
 ///
 /// # Errors
@@ -955,7 +955,7 @@ fn segmented_source(r: &ResolvedTheme) -> Mapped<SegmentedSource> {
 
 /// [`crate::styles::segmented_control`]: the group fill and the outline,
 /// its stroke laid over the group by its alignment, and the track's shadow
-/// as [`shadow`] gives it.
+/// as `shadow` gives it.
 ///
 /// # Errors
 ///
@@ -1037,7 +1037,7 @@ pub fn expander(
 }
 
 /// [`crate::styles::expander_frame`], with the container's shadow as
-/// [`shadow`] gives it where the frame is drawn.
+/// `shadow` gives it where the frame is drawn.
 ///
 /// # Errors
 ///

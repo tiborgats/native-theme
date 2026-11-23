@@ -2119,7 +2119,7 @@ pub(crate) fn radio_from(
 /// The track is `switch.checked_background` or `.unchecked_background` by
 /// `is_toggled`, with `.hover_*` layered over it where the theme states one
 /// (where it states nothing for the hovered switch, the track and the thumb
-/// are as [`in_state`] gives them, spec §2 `from_state`: iced's own track
+/// are as `in_state` gives them, spec §2 `from_state`: iced's own track
 /// is the same under the pointer, so it is the track at rest, and iced's
 /// own thumb changes; 0.7.2's unset hover is the switch at rest) and
 /// `.disabled_*` replacing it, as given. The thumb is
@@ -2164,7 +2164,7 @@ pub(crate) fn radio_from(
 /// (`docs/platform-facts.md` §2.21: libadwaita and macOS outline neither,
 /// WinUI and Material only the off track). iced draws both inside their
 /// quads, in place of the fill under them, so each outline is emitted over
-/// the fill under it in each state as it lies ([`Line::over`]): the 0.7.2
+/// the fill under it in each state as it lies (`Line::over`): the 0.7.2
 /// model's track outline inside the track, as the platforms stroke it, and
 /// its thumb outline as given. `text_color` has no native source and comes from
 /// `toggler::default(theme, status)`: the model states no font for a switch,
@@ -2505,8 +2505,8 @@ pub(crate) fn toggler_from(
 /// field looks no different -- its label is `combo_box.font.color` and its
 /// border is `combo_box.border.*`, its colour `.hover_border_color` under the
 /// pointer where the theme states one, the stroke over the fill it lies on
-/// ([`Line::over`]). Where the 0.8.0 model states nothing for the hovered
-/// field, its fill and stroke are as [`in_state`] gives them (spec §2,
+/// (`Line::over`). Where the 0.8.0 model states nothing for the hovered
+/// field, its fill and stroke are as `in_state` gives them (spec §2,
 /// `from_state`): iced's own fill is the same under the pointer, so it is
 /// the fill at rest, and iced's own border colour changes. The placeholder is
 /// `input.placeholder_color`: the model states it once, for every field that
@@ -2516,7 +2516,7 @@ pub(crate) fn toggler_from(
 /// layered over the idle fill, as the hover fill is, and outlined in
 /// `.open_border_color`: Breeze draws an open combo box as a pressed button,
 /// framed in its focus colour (platform-facts §2.24). An open field off the
-/// pointer whose fill or border the theme leaves unset is as [`in_state`]
+/// pointer whose fill or border the theme leaves unset is as `in_state`
 /// gives it, the fill at rest and iced's own open border colour; under the
 /// pointer (`Opened` carries whether it is on the field,
 /// `pick_list.rs:838-849`) the hovered fill or border where the theme

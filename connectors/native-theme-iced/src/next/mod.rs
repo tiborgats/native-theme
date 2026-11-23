@@ -32,7 +32,7 @@
 //! unset option is taken from both models.
 //!
 //! A border's stroke is read as stated, with its alignment
-//! ([`crate::styles::Line`]), and the shared style function hands iced its
+//! (`crate::styles::Line`), and the shared style function hands iced its
 //! colour as iced on wgpu paints it over the fill that state paints: iced
 //! ends a widget's fill at the border's inner edge (`iced_wgpu` 0.14.0,
 //! `src/shader/quad/solid.wgsl`), so an `Outside` stroke is drawn as stated;
@@ -216,7 +216,7 @@ pub fn stroke_width_of(part: &PartStyle) -> Option<f32> {
 
 /// A part's corner radius, where stated as one circular radius, as square
 /// corners, which are no radius, or as a pill, which iced rounds by a radius
-/// its renderers clamp to half the shorter side ([`crate::styles::pill`]);
+/// its renderers clamp to half the shorter side (`crate::styles::pill`);
 /// `None` where it is not stated, or stated in a form iced cannot draw
 /// (per-corner radii, a continuous curve).
 #[cfg(feature = "widgets")]
@@ -1211,7 +1211,7 @@ pub(crate) fn tab_flares_look(r: &ResolvedTheme) -> Mapped<Option<crate::tab_fla
     ))
 }
 
-/// [`crate::tab_flares`]: `tabs` with the selected tab's outward bottom
+/// [`crate::tab_flares()`]: `tabs` with the selected tab's outward bottom
 /// corners drawn over it where the theme states
 /// `tab.active_outward_corner_radius`; `tabs` as it is where it states none.
 ///
@@ -1284,7 +1284,7 @@ pub(crate) fn ring_look(
     .map(|look| look.with(inner, corners)))
 }
 
-/// [`crate::focus_ring`]: `field`, and round it while it holds the keyboard
+/// [`crate::focus_ring()`]: `field`, and round it while it holds the keyboard
 /// focus, the theme's focus ring, its curves the field's `corner_radius`
 /// grown by the ring's offset, or the ring's own corners where the theme
 /// states them, and the second ring inside it where the theme states one.
@@ -1396,7 +1396,7 @@ pub fn system_font_family(text: &TextStyle) -> Mapped<std::sync::Arc<str>> {
 
 /// [`crate::font`] of a text style (`typography.body`,
 /// `button.label(NONE)`, ...): the iced `Font` its family, weight and slant
-/// are drawn in, at its width class ([`stretch`]) where the style states
+/// are drawn in, at its width class (`stretch`) where the style states
 /// one, iced's normal stretch where it states none.
 ///
 /// # Errors

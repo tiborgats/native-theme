@@ -37,7 +37,7 @@ pub(crate) fn line(part: &PartStyle, home: &'static str) -> Mapped<Line> {
     }
 }
 
-/// [`line`], or, where the part states no stroke (`Stroke::None`), no
+/// [`line()`], or, where the part states no stroke (`Stroke::None`), no
 /// stroke ([`Line::none`]), which iced draws 0 wide.
 pub(crate) fn line_or_none(part: &PartStyle, home: &'static str) -> Mapped<Line> {
     match part.stroke {
@@ -119,7 +119,7 @@ pub(crate) fn corner_radii(corners: &Corners, home: &'static str) -> Mapped<Radi
 }
 
 /// A part's border as iced outlines a widget, of a part a resolved theme
-/// always states it for: the stroke ([`line`]) and its width, a stated
+/// always states it for: the stroke ([`line()`]) and its width, a stated
 /// `Stroke::None` being no width in iced's own colour, and the corner
 /// radius.
 pub(crate) fn outline_of(
