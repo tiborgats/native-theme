@@ -5,6 +5,7 @@
 //!
 //! Requires the `widgets` feature (on by default).
 
+use iced_core::Border;
 use iced_core::theme::Theme;
 use native_theme::next::{
     ButtonQuery, PartStated, ResolvedTheme, Stroke, WidgetState, WindowState,
@@ -14,7 +15,9 @@ use super::{
     Mapped, Unmapped, border, fill, state_fill, state_stroke_color, state_text_color, stated,
     text_color, to_color,
 };
-use crate::styles::{self as old, ButtonSource, LinkSource, ToolbarButtonSource, UNFADED};
+use crate::styles::{
+    self as old, ButtonSource, InputSource, LinkSource, ToolbarButtonSource, UNFADED,
+};
 
 /// A widget's disabled opacity: the stated one, or, where the theme states
 /// none, [`UNFADED`], iced's own disabled look, which fades nothing.
@@ -248,6 +251,80 @@ pub fn button_link(
         )?,
         disabled_opacity: r.colors.disabled_opacity,
     }))
+}
+
+/// [`InputSource`] of the 0.8.0 model: `input`'s colours, with `border` as
+/// the field's border (`input`'s or `text_area`'s field at rest), and the
+/// focus indicator.
+fn input_source(r: &ResolvedTheme, border: Border) -> Mapped<InputSource> {
+    let i = &r.input;
+    let ring = &r.focus_ring;
+    Ok(InputSource {
+        background: fill(&i.field(WidgetState::NONE), "input.field(NONE).fill")?,
+        disabled_background: state_fill(
+            &i.field(WidgetState::DISABLED),
+            "input.field(DISABLED).fill",
+        )?,
+        text: text_color(&i.text(WidgetState::NONE), "input.text(NONE).color")?,
+        disabled_text: text_color(&i.text(WidgetState::DISABLED), "input.text(DISABLED).color")?,
+        disabled_opacity: opacity(i.disabled_opacity),
+        border,
+        hover_border_color: state_stroke_color(
+            &i.field(WidgetState::HOVER),
+            "input.field(HOVER).stroke.color",
+        )?,
+        focus_border_color: state_stroke_color(
+            &i.field(WidgetState::FOCUSED),
+            "input.field(FOCUSED).stroke.color",
+        )?,
+        focus_ring_color: to_color(r.colors.focus_ring),
+        focus_ring_width: match &ring.stroke {
+            Stroke::None => 0.0,
+            Stroke::Uniform { width, .. } => *width,
+            _ => return Err(Unmapped("focus_ring.stroke.width")),
+        },
+        focus_ring_offset: ring.offset,
+        placeholder: text_color(
+            &i.placeholder(WidgetState::NONE),
+            "input.placeholder(NONE).color",
+        )?,
+        selection: to_color(r.colors.text_selection.background),
+    })
+}
+
+/// [`crate::styles::text_input`].
+///
+/// # Errors
+///
+/// [`super::Unmapped`] where the theme states no value the field needs.
+pub fn text_input(
+    r: &ResolvedTheme,
+) -> Mapped<
+    impl Fn(&Theme, iced_widget::text_input::Status) -> iced_widget::text_input::Style + Clone + use<>,
+> {
+    let field = r.input.field(WidgetState::NONE);
+    Ok(old::text_input_from(&input_source(
+        r,
+        border!(field, "input.field(NONE)")?,
+    )?))
+}
+
+/// [`crate::styles::text_editor`]: `input`'s colours on the text area's
+/// border.
+///
+/// # Errors
+///
+/// [`super::Unmapped`] where the theme states no value the field needs.
+pub fn text_editor(
+    r: &ResolvedTheme,
+) -> Mapped<
+    impl Fn(&Theme, iced_widget::text_editor::Status) -> iced_widget::text_editor::Style + Clone + use<>,
+> {
+    let field = r.text_area.field(WidgetState::NONE);
+    Ok(old::text_editor_from(&input_source(
+        r,
+        border!(field, "text_area.field(NONE)")?,
+    )?))
 }
 
 /// [`crate::styles::progress_bar`].

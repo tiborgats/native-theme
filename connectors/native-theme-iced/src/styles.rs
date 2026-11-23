@@ -873,19 +873,19 @@ struct InputColors {
 }
 
 impl InputColors {
-    fn new(i: &ResolvedInputTheme, border: &ResolvedWidgetBorder, d: &ResolvedDefaults) -> Self {
-        let idle = to_color(i.background_color);
+    fn new(i: &InputSource) -> Self {
+        let idle = i.background;
         // A translucent disabled fill replaces the idle one and lets the
         // window through, so it is emitted as given.
-        let disabled = to_color(i.disabled_background.unwrap_or(i.background_color));
-        let text = to_color(i.font.color);
+        let disabled = i.disabled_background.unwrap_or(i.background);
+        let text = i.text;
         let opacity = i.disabled_opacity;
 
         // Both border soft options fall back to the border's own color: the
         // platform saying the field does not change outline in that state.
-        let border = border_of(border);
-        let outlined = |color: Option<Rgba>| Border {
-            color: color.map_or(border.color, to_color),
+        let border = i.border;
+        let outlined = |color: Option<Color>| Border {
+            color: color.unwrap_or(border.color),
             ..border
         };
         // An inset focus ring (offset -width: libadwaita's `outline-offset:
@@ -902,11 +902,11 @@ impl InputColors {
         // with a gap (an offset below minus the width) is not a border iced
         // can draw; there a focused field recolours its rest line, and
         // `crate::focus_ring` draws the ring round the field it wraps.
-        let focus_color = i.focus_border_color.unwrap_or(d.focus_ring_color);
-        let focused = if d.focus_ring_width > 0.0 && d.focus_ring_offset == -d.focus_ring_width {
+        let focus_color = i.focus_border_color.unwrap_or(i.focus_ring_color);
+        let focused = if i.focus_ring_width > 0.0 && i.focus_ring_offset == -i.focus_ring_width {
             Border {
-                color: composite_over(to_color(focus_color), idle),
-                width: border.width.max(d.focus_ring_width),
+                color: composite_over(focus_color, idle),
+                width: border.width.max(i.focus_ring_width),
                 ..border
             }
         } else {
@@ -920,8 +920,49 @@ impl InputColors {
             disabled: (
                 faded(disabled, opacity),
                 faded_border(border, opacity),
-                faded(to_color(i.disabled_text_color), opacity),
+                faded(i.disabled_text, opacity),
             ),
+            placeholder: i.placeholder,
+            selection: i.selection,
+        }
+    }
+}
+
+/// What the field styles read, of either model: the field's colours, its
+/// border, and the focus ring's colour, width and offset.
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct InputSource {
+    pub background: Color,
+    pub disabled_background: Option<Color>,
+    pub text: Color,
+    pub disabled_text: Color,
+    pub disabled_opacity: f32,
+    pub border: Border,
+    pub hover_border_color: Option<Color>,
+    pub focus_border_color: Option<Color>,
+    pub focus_ring_color: Color,
+    pub focus_ring_width: f32,
+    pub focus_ring_offset: f32,
+    pub placeholder: Color,
+    pub selection: Color,
+}
+
+impl InputSource {
+    /// The 0.7.2 model's reads: `input.*` with `border` as the field's
+    /// border.
+    fn of(i: &ResolvedInputTheme, border: &ResolvedWidgetBorder, d: &ResolvedDefaults) -> Self {
+        Self {
+            background: to_color(i.background_color),
+            disabled_background: i.disabled_background.map(to_color),
+            text: to_color(i.font.color),
+            disabled_text: to_color(i.disabled_text_color),
+            disabled_opacity: i.disabled_opacity,
+            border: border_of(border),
+            hover_border_color: i.hover_border_color.map(to_color),
+            focus_border_color: i.focus_border_color.map(to_color),
+            focus_ring_color: to_color(d.focus_ring_color),
+            focus_ring_width: d.focus_ring_width,
+            focus_ring_offset: d.focus_ring_offset,
             placeholder: to_color(i.placeholder_color),
             selection: to_color(i.selection_background),
         }
@@ -956,9 +997,21 @@ pub fn text_input(
     resolved: &ResolvedTheme,
 ) -> impl Fn(&Theme, iced_widget::text_input::Status) -> iced_widget::text_input::Style + Clone + use<>
 {
+    text_input_from(&InputSource::of(
+        &resolved.input,
+        &resolved.input.border,
+        &resolved.defaults,
+    ))
+}
+
+/// [`text_input`] of what it reads.
+pub(crate) fn text_input_from(
+    s: &InputSource,
+) -> impl Fn(&Theme, iced_widget::text_input::Status) -> iced_widget::text_input::Style + Clone + use<>
+{
     use iced_widget::text_input::{Status, Style};
 
-    let input = InputColors::new(&resolved.input, &resolved.input.border, &resolved.defaults);
+    let input = InputColors::new(s);
 
     move |theme, status| {
         let iced = iced_widget::text_input::default(theme, status);
@@ -1001,13 +1054,21 @@ pub fn text_editor(
     resolved: &ResolvedTheme,
 ) -> impl Fn(&Theme, iced_widget::text_editor::Status) -> iced_widget::text_editor::Style + Clone + use<>
 {
-    use iced_widget::text_editor::{Status, Style};
-
-    let input = InputColors::new(
+    text_editor_from(&InputSource::of(
         &resolved.input,
         &resolved.text_area.border,
         &resolved.defaults,
-    );
+    ))
+}
+
+/// [`text_editor`] of what it reads.
+pub(crate) fn text_editor_from(
+    s: &InputSource,
+) -> impl Fn(&Theme, iced_widget::text_editor::Status) -> iced_widget::text_editor::Style + Clone + use<>
+{
+    use iced_widget::text_editor::{Status, Style};
+
+    let input = InputColors::new(s);
 
     move |_theme, status| {
         let (background, border, value) = match status {

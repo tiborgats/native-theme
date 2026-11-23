@@ -100,8 +100,7 @@ pub type Mapped<T> = Result<T, Unmapped>;
 
 /// A colour of the model as iced's: the same four gamma-encoded channels
 /// with straight alpha.
-#[must_use]
-pub fn to_color(c: Color) -> IcedColor {
+pub(crate) fn to_color(c: Color) -> IcedColor {
     IcedColor {
         r: c.r,
         g: c.g,
@@ -274,7 +273,7 @@ fn mode_of(r: &ResolvedTheme) -> ColorMode {
 /// # Errors
 ///
 /// [`Unmapped`] where the theme states no window background or foreground.
-pub fn to_palette(r: &ResolvedTheme) -> Mapped<iced_core::theme::Palette> {
+pub(crate) fn to_palette(r: &ResolvedTheme) -> Mapped<iced_core::theme::Palette> {
     let c = &r.colors;
     Ok(iced_core::theme::Palette {
         background: to_color(stated(c.window.background, "colors.window.background")?),

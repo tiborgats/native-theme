@@ -80,12 +80,15 @@ const DIFFERENCES: &[Difference] = &[
             "tooltip",
             "container_card",
             "dialog",
+            "text_input",
+            "text_editor",
         ],
         presets: &["windows-11", "macos-monterey", "macos-tahoe"],
         field: "Style.border: Border.color",
         reason: "the part's border is a translucent stroke the theme lays inside the box, over the \
              fill (button.body(NONE), progress_bar.track(NONE), tooltip.panel, \
-             card.container(NONE), dialog.panel: stroke with StrokeAlign::Inside, the \
+             card.container(NONE), dialog.panel, input.field(NONE), text_area.field(NONE): \
+             stroke with StrokeAlign::Inside, the \
              alignment Stroke::uniform gives); iced on wgpu ends the fill at \
              the border's inner edge, so the connector hands iced the stroke composited over the \
              fill, where 0.7.2 handed it the stated colour, which showed the window through the \
@@ -363,6 +366,43 @@ fn compare_styles(
         n::button_link(new),
         button
     );
+
+    {
+        use iced_widget::text_input::Status;
+        let field = [
+            Status::Active,
+            Status::Hovered,
+            Status::Focused { is_hovered: false },
+            Status::Focused { is_hovered: true },
+            Status::Disabled,
+        ];
+        style!(
+            report,
+            themes,
+            "text_input",
+            o::text_input(old),
+            n::text_input(new),
+            field
+        );
+    }
+    {
+        use iced_widget::text_editor::Status;
+        let field = [
+            Status::Active,
+            Status::Hovered,
+            Status::Focused { is_hovered: false },
+            Status::Focused { is_hovered: true },
+            Status::Disabled,
+        ];
+        style!(
+            report,
+            themes,
+            "text_editor",
+            o::text_editor(old),
+            n::text_editor(new),
+            field
+        );
+    }
 
     surface!(
         report,
