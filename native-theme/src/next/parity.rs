@@ -1794,6 +1794,112 @@ fn model_parity_macos_tahoe() -> TestResult {
     )
 }
 
+// ---------------------------------------------------------------------------------------------------------
+// The value half on the material-3 builder (plan, M2's Material unit), static path: the same comparator and
+// table.
+// ---------------------------------------------------------------------------------------------------------
+
+/// The groups of the table whose rows the material-3 builder ports so far: each of their rows is compared
+/// and equal, or skipped for a reason [`material_3_expected_skip`] names.
+const MATERIAL_3_PORTED_GROUPS: &[&str] = PORTED_GROUPS;
+
+/// The groups of the table whose values the material-3 builder does not state yet: their rows are
+/// compared, counted and reported, not asserted.
+const MATERIAL_3_NOT_PORTED_GROUPS: &[&str] = &[];
+
+/// The totals of the ported groups' rows on each scheme, `[rows, compared, equal, mismatching, skipped]`:
+/// every row equal but those [`material_3_expected_skip`] names, skipped.
+const MATERIAL_3_PORTED_TOTALS: [usize; 5] = [563, 557, 557, 0, 6];
+
+/// The reason a row of the table is skipped on 0.7.2's `material-3`, which has no reader: the reader's
+/// context rows (`accessibility.*`); `checkbox.background_color`, compared only where
+/// `checkbox.unchecked_background` is unset, and `menu.min_row_height`, compared only where
+/// `menu.row_height` is unset, both of which `material-3.toml` states.
+fn material_3_expected_skip(key: &str) -> Option<compare::Skip> {
+    if key.starts_with("accessibility.") {
+        Some(compare::Skip::NoSnapshot)
+    } else if key == "checkbox.background_color" || key == "menu.min_row_height" {
+        Some(compare::Skip::OtherKeyStated)
+    } else {
+        None
+    }
+}
+
+/// Model parity of the material-3 builder (plan, section 1, rule 2): 0.7.2's `material-3` and
+/// `Theme::preset(Preset::Material3)`, light and dark, over the table of homes. Every row's group is one
+/// of [`MATERIAL_3_PORTED_GROUPS`] or one of [`MATERIAL_3_NOT_PORTED_GROUPS`]; zero mismatches in the
+/// ported groups, every skip for its named reason; the rows of the groups not ported yet are counted and
+/// reported, and the two counts make the whole table. No dead rule in any rule set of the widgets.
+#[test]
+fn model_parity_material_3() -> TestResult {
+    use crate::next::preset::{Preset, Theme as NextTheme};
+    use crate::next::query::ThemeContext;
+
+    let table: Table = toml::from_str(HOMES)?;
+    for row in &table.row {
+        let group = row.key.split('.').next().unwrap_or("");
+        assert!(
+            MATERIAL_3_PORTED_GROUPS.contains(&group)
+                != MATERIAL_3_NOT_PORTED_GROUPS.contains(&group),
+            "`{}`: its group is not exactly one of the ported and the not ported groups",
+            row.key
+        );
+    }
+    for (mode, ctx) in [
+        (ColorMode::Light, ThemeContext::light()),
+        (ColorMode::Dark, ThemeContext::dark()),
+    ] {
+        let theme_072 = Theme::preset("material-3")?;
+        let old = old_resolved(&theme_072, mode)?;
+        let unresolved = old_unresolved(&theme_072, mode)?;
+        let theme = NextTheme::preset(Preset::Material3);
+        let new = theme.resolve(&ctx);
+        let with_context = |context: RowContext| theme.resolve(&context.applied_to(&ctx));
+        let extra = compare::Extra {
+            unresolved: Some(&unresolved),
+            with_context: Some(&with_context),
+        };
+        let report = compare::compare(&old, &new, None, Preset::Material3, &extra)?;
+        println!("{mode:?}: {report}");
+        assert_eq!(report.totals.rows, table.row.len());
+        for row in report
+            .rows
+            .iter()
+            .filter(|row| in_groups(&row.key, MATERIAL_3_PORTED_GROUPS))
+        {
+            let skip = match row.outcome {
+                compare::Outcome::Skipped(skip) => Some(skip),
+                _ => None,
+            };
+            assert_eq!(
+                skip,
+                material_3_expected_skip(&row.key),
+                "{mode:?}: `{}`",
+                row.key
+            );
+        }
+        let ported = totals_in(&report, MATERIAL_3_PORTED_GROUPS, true);
+        let not_ported = totals_in(&report, MATERIAL_3_NOT_PORTED_GROUPS, true);
+        println!(
+            "{mode:?}: [rows, compared, equal, mismatching, skipped] in the ported groups {ported:?}, \
+             in the groups not ported yet {not_ported:?}"
+        );
+        assert_eq!(ported, MATERIAL_3_PORTED_TOTALS, "{mode:?}\n{report}");
+        assert_eq!(
+            ported[0].saturating_add(not_ported[0]),
+            table.row.len(),
+            "{mode:?}"
+        );
+        let dead: Vec<_> = new
+            .dead_rules()
+            .into_iter()
+            .filter(|(_, rules)| !rules.is_empty())
+            .collect();
+        assert!(dead.is_empty(), "{mode:?}: dead rules {dead:?}");
+    }
+    Ok(())
+}
+
 // Reader parity (plan, section 1, rule 2) on the KDE fixtures: the theme the 0.7.2 KDE reader path produces
 // from a kdeglobals file, and the kde-breeze builder fed the same file as `SystemOverrides`.
 // ---------------------------------------------------------------------------------------------------------
