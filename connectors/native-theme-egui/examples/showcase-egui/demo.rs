@@ -9,8 +9,8 @@ use native_theme_egui::{
     NativeThemeUiExt as _, Note, Role, RoleVariant, Surface, icons, menu_bar_modifier,
     role_modifier,
 };
+use native_theme_showcase_support::DIALOG_PADDING_PX;
 use native_theme_showcase_support::status::DrawnFamily;
-use native_theme_showcase_support::{DIALOG_PADDING_PX, rows};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum Seam {
@@ -391,15 +391,16 @@ pub(crate) fn info(kind: &'static str, seams: Vec<Seam>) -> InstanceInfo {
     }
 }
 
-/// `role`'s modifier for an open menu (`MenuConfig::style`): the popup framed by
-/// `popover.border`'s colour, line width and radius, where the base style frames every menu by
-/// `defaults.border` (`Frame::popup` reads `window_stroke` and `menu_corner_radius`), padded
-/// inside that border by the menu role's `menu.panel_padding_horizontal` and
-/// `panel_padding_vertical` where the theme states them (E4: kde-breeze 3, the items 3 + the
-/// 1 px line from the panel's edge), else by `popover.border.padding` on each side the theme
-/// states, where egui pads by its own `menu_margin` (`Frame::popup`,
+/// `role`'s modifier for an open menu (`MenuConfig::style`), of the installed 0.8.0 theme: the
+/// popup framed by `popover.panel`'s stroke colour, stroke width and corner radius, each where
+/// the theme states it, where the base style frames every menu by the window border
+/// (`Frame::popup` reads `window_stroke` and `menu_corner_radius`), padded inside that border by
+/// the menu role's `menu.panel(NONE).padding` on each side the theme states it (E4: kde-breeze
+/// 3, the items 3 + the 1 px line from the panel's edge), else by `popover.panel.padding` on
+/// each side the theme states, where egui pads by its own `menu_margin` (`Frame::popup`,
 /// `egui/src/containers/frame.rs:220-230`, a frame whose total margin is that margin and its
-/// stroke), and its rows one under another, `menu.row_height` apart where the theme states it:
+/// stroke), and its rows one under another, `menu.item(NONE).min_size[1]` apart where the theme
+/// states it:
 /// the theme states no gap between two menu rows, where egui would put `item_spacing.y`
 /// between them.
 fn menu_modifier(
@@ -407,31 +408,48 @@ fn menu_modifier(
     role: Role,
     variant: RoleVariant,
 ) -> Option<egui::style::StyleModifier> {
+    use native_theme::next::WidgetState;
+    use native_theme_egui::next::{padding_of, radius_of, stroke_color_of, stroke_width_of};
     let theme = ui.ctx().theme();
     let atlas = crate::app::OldAtlas::from_ctx(ui.ctx())?;
     let role_style = atlas.role_modifier(theme, role, variant);
-    let t = atlas.old_resolved(theme);
-    let border = t.popover.border.clone();
-    // the sides the menu role pads (`menu_margin`) keep its padding
-    let (h, v) = (
-        t.menu.panel_padding_horizontal.is_some(),
-        t.menu.panel_padding_vertical.is_some(),
+    let r = atlas.next_shown(ui.ctx())?;
+    let panel = &r.popover.panel;
+    let (color, width, radius) = (
+        stroke_color_of(panel),
+        stroke_width_of(panel),
+        radius_of(panel),
     );
-    let unstated = |stated: bool, side: Option<f32>| side.filter(|_| !stated);
+    // the sides the menu role pads (`menu_margin`) keep its padding
+    let (menu, popover) = (
+        padding_of(&r.menu.panel(WidgetState::NONE)),
+        padding_of(panel),
+    );
+    let [top, right, bottom, left] =
+        std::array::from_fn(|side| match (menu.get(side), popover.get(side)) {
+            (Some(None), Some(&side)) => side,
+            _ => None,
+        });
     let padding = native_theme::theme::ResolvedPadding {
-        top: unstated(v, border.padding.top),
-        right: unstated(h, border.padding.right),
-        bottom: unstated(v, border.padding.bottom),
-        left: unstated(h, border.padding.left),
+        top,
+        right,
+        bottom,
+        left,
     };
     Some(egui::style::StyleModifier::new(
         move |style: &mut egui::Style| {
-            use native_theme_egui::convert::{to_corner_radius, to_margin, to_stroke};
+            use native_theme_egui::convert::{to_corner_radius, to_margin};
             role_style.apply(style);
-            style.visuals.window_stroke =
-                to_stroke(style.visuals.window_stroke, border.color, border.line_width);
-            style.visuals.menu_corner_radius =
-                to_corner_radius(style.visuals.menu_corner_radius, border.corner_radius);
+            if let Some(color) = color {
+                style.visuals.window_stroke.color = color;
+            }
+            if let Some(width) = width {
+                style.visuals.window_stroke.width = width;
+            }
+            if let Some(radius) = radius {
+                style.visuals.menu_corner_radius =
+                    to_corner_radius(style.visuals.menu_corner_radius, radius);
+            }
             style.spacing.menu_margin = to_margin(style.spacing.menu_margin, &padding);
             style.spacing.item_spacing.y = 0.0;
         },
@@ -463,39 +481,46 @@ pub(crate) fn scoped(
     response
 }
 
-/// In `role`'s scope, where it is `Role::Menu` or `Role::Expander`: a stated `menu.row_height`
-/// or `expander.header_height`, which the connector writes into `interact_size.y`, the least
-/// height egui's `Button` gives a row (`egui/src/widgets/button.rs:306-309`) and its
-/// `CollapsingHeader` a header (`egui/src/containers/collapsing_header.rs:531-532`), grown above
-/// a text scale of 1 to at least the row's line box in `menu.font` or `expander.font` at
-/// `defaults.line_height`, rounded up, and its padding (`button_padding` above and below), as
-/// gpui's menu rows grow (`geometry::menu_item`, `with_height_rule`) and the iced showcase's
-/// (`rows::scaled_height`): the one rule every stated row height takes (M9-150; for the
+/// In `role`'s scope, where it is `Role::Menu` or `Role::Expander`: a stated
+/// `menu.item(NONE).min_size[1]` or `expander.header(NONE).min_size[1]` of the installed 0.8.0
+/// theme, which the connector writes into `interact_size.y`, the least height egui's `Button`
+/// gives a row (`egui/src/widgets/button.rs:306-309`) and its `CollapsingHeader` a header
+/// (`egui/src/containers/collapsing_header.rs:531-532`), grown above a text scale of 1 to at
+/// least the row's line box in `menu.item_label(NONE)` or `expander.header_label(NONE)`
+/// ([`next_line_box`]), rounded up, and its padding (`button_padding` above and below)
+/// ([`next_grown`]), as gpui's menu rows grow (`geometry::menu_item`, `with_height_rule`) and
+/// the iced showcase's (`rows::scaled_height`); an unstated height is egui's own and is not
+/// grown: the one rule every stated row height takes (M9-150; for the
 /// expander the controller's ruling of 2026-10-23, M9c T6b). At a factor of 1 or less the stated
 /// height stands, and the connector fits the cell's vertical padding to it
 /// (`style::roles::fit_row_padding`), so the row is drawn that tall. The companion crate's
 /// `Expander` opens the scope again and follows the rule itself.
 fn grow_rows(ui: &mut egui::Ui, role: Role) {
-    let Some(atlas) = crate::app::OldAtlas::from_ctx(ui.ctx()) else {
-        return;
-    };
-    let t = atlas.old_resolved(ui.ctx().theme());
-    let size = match role {
-        Role::Menu if t.menu.row_height.is_some() => t.menu.font.size,
-        Role::Expander => t.expander.font.size,
-        _ => return,
-    };
+    use native_theme::next::WidgetState;
     // the stated height as the connector wrote it, sanitised
     let stated = ui.spacing().interact_size.y;
     let padding = 2.0 * ui.spacing().button_padding.y;
-    ui.spacing_mut().interact_size.y = rows::scaled_height(
-        stated,
-        atlas.accessibility(),
-        size,
-        t.defaults.line_height,
-        padding,
-        0.0,
-    );
+    let grown = next_value(ui, |r| {
+        let (height, label) = match role {
+            Role::Menu => (
+                r.menu.item(WidgetState::NONE).min_size[1],
+                r.menu.item_label(WidgetState::NONE),
+            ),
+            Role::Expander => (
+                r.expander.header(WidgetState::NONE).min_size[1],
+                r.expander.header_label(WidgetState::NONE),
+            ),
+            _ => return None,
+        };
+        height.map(|_| {
+            let line = next_line_box(r, &label, label.size_px);
+            next_grown(r, stated, line, padding, 0.0)
+        })
+    })
+    .flatten();
+    if let Some(grown) = grown {
+        ui.spacing_mut().interact_size.y = grown;
+    }
 }
 
 /// A widget of the companion crate `native-theme-egui-widgets`, which opens `role`'s scope in
@@ -701,11 +726,18 @@ pub(crate) fn surfaced(
         title_frame: title.then(|| ui.native_frame(Surface::WindowTitleBar)),
         modifier: role.and_then(|(r, v)| role_modifier(ui, r, v)),
     };
+    // the installed 0.8.0 theme's `dialog.panel.padding`, gpui-component's on each side it
+    // leaves unstated
     let unstated = (surface == Surface::Dialog)
-        .then(|| crate::app::OldAtlas::from_ctx(ui.ctx()))
+        .then(|| next_value(ui, |r| native_theme_egui::next::padding_of(&r.dialog.panel)))
         .flatten()
-        .and_then(|atlas| {
-            let padding = atlas.old_resolved(ui.ctx().theme()).dialog.border.padding;
+        .and_then(|[top, right, bottom, left]| {
+            let padding = native_theme::theme::ResolvedPadding {
+                top,
+                right,
+                bottom,
+                left,
+            };
             chrome.frame.inner_margin = native_theme_egui::convert::to_margin(
                 chrome.frame.inner_margin,
                 &unstated_as(&padding, DIALOG_PADDING_PX),

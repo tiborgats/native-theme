@@ -3357,26 +3357,27 @@ fn a_side_panel_side_the_theme_leaves_unstated_takes_the_container_margin() {
     }
 }
 
-/// G, H and I: each side of a dialog takes the stated `dialog.border.padding` side, else
-/// gpui-component's 16 px (`DIALOG_PADDING_PX`) inside the border line, as the gpui showcase's
-/// `Dialog` draws, where egui's popup margin stood: the Overlays page's modal under
-/// [`UNSTATED_PRESET`], which states no dialog padding, and under kde-breeze, which states every
-/// side, each installed through the Theme row's path on any platform. Under the first Widget
-/// Info names the padding on the modal's frame; under kde-breeze it does not.
+/// G, H and I: each side of a dialog takes the installed 0.8.0 theme's stated
+/// `dialog.panel.padding` side, else gpui-component's 16 px (`DIALOG_PADDING_PX`) inside the
+/// panel's line, as the gpui showcase's `Dialog` draws, where egui's popup margin stood: the
+/// Overlays page's modal under [`UNSTATED_PRESET`], which states no dialog padding, and under
+/// kde-breeze, which states every side, each installed through the Theme row's path on any
+/// platform. Under the first Widget Info names the padding on the modal's frame; under
+/// kde-breeze it does not. Under [`UNSTATED_PRESET`] with the padding patched to twice
+/// gpui-component's on every side, which the 0.7.2 `dialog.border.padding` beside it leaves
+/// unstated, the body lies the patched padding inside the line and the info names no padding.
 #[test]
-fn a_dialog_side_the_theme_leaves_unstated_is_gpui_components_padding() {
+fn a_dialog_side_the_theme_leaves_unstated_is_gpui_components_padding() -> Result<(), String> {
+    use native_theme::next::{DialogPatch, Edges, PartPatch, ThemePatch, WidgetPatchMap};
+    use native_theme_egui::next::{padding_of, stroke_width_of};
     use native_theme_showcase_support::DIALOG_PADDING_PX;
-    for preset in [UNSTATED_PRESET, "kde-breeze"] {
-        let mut harness = open_page_under(Page::Overlays, egui::Theme::Light, preset);
+    fn check(
+        harness: &mut Harness<'static, App>,
+        r: &native_theme::next::ResolvedTheme,
+        preset: &str,
+    ) -> Result<(), String> {
         harness.get_by_label("Open modal").click();
         harness.run_steps(SETTLE);
-        let border = harness
-            .state()
-            .atlas
-            .old_resolved(egui::Theme::Light)
-            .dialog
-            .border
-            .clone();
         let rect = |kind: &str| {
             harness
                 .state()
@@ -3385,16 +3386,19 @@ fn a_dialog_side_the_theme_leaves_unstated_is_gpui_components_padding() {
                 .iter()
                 .find(|r| r.info.kind == kind)
                 .map(|r| r.rect)
-                .unwrap_or_else(|| panic!("{preset}: no {kind} record"))
+                .ok_or(format!("{preset}: no {kind} record"))
         };
-        let (frame, body) = (rect("modal"), rect("modal body"));
-        let side = |stated: Option<f32>| stated.unwrap_or(DIALOG_PADDING_PX) + border.line_width;
-        let p = &border.padding;
+        let (frame, body) = (rect("modal")?, rect("modal body")?);
+        let line = stroke_width_of(&r.dialog.panel)
+            .ok_or(format!("{preset} states no dialog.panel stroke width"))?;
+        let padding = padding_of(&r.dialog.panel);
+        let [top, right, bottom, left] =
+            padding.map(|stated| stated.unwrap_or(DIALOG_PADDING_PX) + line);
         for (what, distance, expected) in [
-            ("top", body.top() - frame.top(), side(p.top)),
-            ("right", frame.right() - body.right(), side(p.right)),
-            ("bottom", frame.bottom() - body.bottom(), side(p.bottom)),
-            ("left", body.left() - frame.left(), side(p.left)),
+            ("top", body.top() - frame.top(), top),
+            ("right", frame.right() - body.right(), right),
+            ("bottom", frame.bottom() - body.bottom(), bottom),
+            ("left", body.left() - frame.left(), left),
         ] {
             assert!(
                 (distance - expected).abs() < 0.5,
@@ -3402,28 +3406,72 @@ fn a_dialog_side_the_theme_leaves_unstated_is_gpui_components_padding() {
                  {expected}"
             );
         }
-        hover_and_settle(&mut harness, frame.left_top() + egui::vec2(2.0, 2.0));
+        hover_and_settle(harness, frame.left_top() + egui::vec2(2.0, 2.0));
         let shown = harness
             .state()
             .registry
             .shown()
             .cloned()
-            .unwrap_or_else(|| panic!("{preset}: nothing shown over the modal's frame"));
+            .ok_or(format!("{preset}: nothing shown over the modal's frame"))?;
         assert!(shown.info.seams.contains(&Seam::Surface(Surface::Dialog)));
         let noted = shown
             .info
             .not_themeable
             .iter()
             .any(|(_, note)| note.contains("DIALOG_PADDING_PX"));
-        let unstated = [p.top, p.right, p.bottom, p.left]
-            .iter()
-            .any(Option::is_none);
         assert_eq!(
-            noted, unstated,
+            noted,
+            padding.iter().any(Option::is_none),
             "{preset}: the modal's info: {:?}",
             shown.info.not_themeable
         );
+        Ok(())
     }
+    for preset in [UNSTATED_PRESET, "kde-breeze"] {
+        let mut harness = open_page_under(Page::Overlays, egui::Theme::Light, preset);
+        let r = harness
+            .state()
+            .atlas
+            .next_resolved(egui::Theme::Light)
+            .ok_or(format!("{preset}: no 0.8.0 theme installed"))?
+            .clone();
+        let stated = padding_of(&r.dialog.panel).map(|side| side.is_some());
+        let want = [preset == "kde-breeze"; 4];
+        assert_eq!(
+            stated, want,
+            "{preset}: the dialog.panel.padding sides stated"
+        );
+        check(&mut harness, &r, preset)?;
+    }
+    let (mut harness, r) =
+        open_patched(Page::Overlays, egui::Theme::Light, UNSTATED_PRESET, |_| {
+            Some(
+                ThemePatch::new().widget_rules(
+                    WidgetPatchMap::new().dialog(
+                        DialogPatch::new()
+                            .panel(PartPatch::new().padding(Edges::all(2.0 * DIALOG_PADDING_PX))),
+                    ),
+                ),
+            )
+        })?;
+    let old = harness
+        .state()
+        .atlas
+        .old_resolved(egui::Theme::Light)
+        .dialog
+        .border
+        .padding;
+    assert_eq!(
+        (old.top, old.right, old.bottom, old.left),
+        (None, None, None, None),
+        "the 0.7.2 {UNSTATED_PRESET} states a dialog padding, so the patch proves nothing"
+    );
+    assert_eq!(
+        padding_of(&r.dialog.panel),
+        [Some(2.0 * DIALOG_PADDING_PX); 4],
+        "the patched dialog.panel.padding"
+    );
+    check(&mut harness, &r, "patched ios-13")
 }
 
 /// The Overlays page's `Area` floats beside its anchor label; scrolled with the page in a
@@ -4532,6 +4580,31 @@ fn grown(stated: f32, factor: f32, size: f32, line_height: f32, padding: f32, ru
         return stated;
     }
     stated.max((size * factor * line_height).ceil() + padding + rule)
+}
+
+/// [`grown`] on the 0.8.0 theme `r`, resolved at its text scale: a stated row height verbatim at
+/// a text scale of 1 or less; above 1 at least the line box of `label`, its own line height
+/// where the theme states one, else its size, which the resolve has scaled already, at the
+/// theme's line height (`next::line_height`), rounded up, with `padding` (the row's top and
+/// bottom together).
+fn next_rule(
+    r: &native_theme::next::ResolvedTheme,
+    stated: f32,
+    label: &native_theme::next::TextStyle,
+    padding: f32,
+) -> f32 {
+    if r.context.text_scale <= 1.0 {
+        return stated;
+    }
+    let line = if label
+        .stated
+        .contains(native_theme::next::TextStated::LINE_HEIGHT)
+    {
+        label.line_height
+    } else {
+        label.size_px * native_theme_egui::next::line_height(r)
+    };
+    stated.max(line.ceil() + padding)
 }
 
 /// Each of `weights` held under the family the showcase registers a face at that weight in
@@ -6069,15 +6142,25 @@ fn the_menu_bar_takes_the_toolbar_fill_and_its_open_title_the_open_fill() {
     );
 }
 
-/// S10 (E4's geometry): the open Theme menu's popup, framed by `demo::menu_modifier`, insets its
-/// first item by the menu's `panel_padding_*` where the theme states them, inside the popup's
-/// line: kde-breeze light 3 + 1 from the frame's edge on the top and the left. adwaita states no
-/// panel padding, and its item lies `popover.border.padding` inside the line. The frame is the
-/// `Shape::Rect` egui paints for `Frame::popup` (`epaint::StrokeKind::Inside` on its outer
-/// rectangle, `egui-0.37.0/src/containers/frame.rs:468-476`), in the menu's fill and the popover
-/// line.
+/// S10 (E4's geometry): the open Theme menu's popup, framed by `demo::menu_modifier` on the
+/// installed 0.8.0 theme, insets its first item by `menu.panel(NONE).padding` on each side the
+/// theme states it, else by `popover.panel.padding`, inside the popup's line, `popover.panel`'s
+/// stroke: kde-breeze light 3 + 1 from the frame's edge on the top and the left; adwaita states
+/// no menu panel padding, and its item lies `popover.panel.padding` inside the line. Under
+/// kde-breeze with the popover's stroke patched to `colors.window.border` and the menu panel's
+/// padding to twice the preset's, which the 0.7.2 `popover.border.color` and
+/// `menu.panel_padding_*` beside them are not, the frame is drawn in the patched line and the
+/// item lies twice as far inside it. The frame is the `Shape::Rect` egui paints for
+/// `Frame::popup` (`epaint::StrokeKind::Inside` on its outer rectangle,
+/// `egui-0.37.0/src/containers/frame.rs:468-476`), in `menu.panel(NONE)`'s fill and the
+/// popover's line.
 #[test]
-fn the_open_menu_insets_its_first_item_by_the_panel_padding() {
+fn the_open_menu_insets_its_first_item_by_the_panel_padding() -> Result<(), String> {
+    use native_theme::next::{
+        Edges, MenuRule, PartPatch, PopoverPatch, ResolvedTheme, Stroke, ThemePatch,
+        WidgetPatchMap, WidgetState,
+    };
+    use native_theme_egui::next::{fill_of, padding_of, stroke_color_of, stroke_width_of};
     fn walk(shape: &egui::Shape, out: &mut Vec<egui::epaint::RectShape>) {
         match shape {
             egui::Shape::Vec(inner) => inner.iter().for_each(|s| walk(s, out)),
@@ -6085,19 +6168,24 @@ fn the_open_menu_insets_its_first_item_by_the_panel_padding() {
             _ => {}
         }
     }
-    let colour = native_theme_egui::convert::to_color32;
-    for preset in ["kde-breeze", "adwaita"] {
-        let mut harness = open_scaled(preset, "basic", 1.0);
+    // the first item's distance from the popup frame's edge, and the distance `r` puts it at:
+    // the menu panel's padding where stated, else the popover's, with the popover's line
+    fn inset(
+        harness: &mut Harness<'static, App>,
+        r: &ResolvedTheme,
+        preset: &str,
+    ) -> Result<(egui::Vec2, egui::Vec2), String> {
         harness.state_mut().open_menu = Some("theme".to_string());
         harness.run_steps(SETTLE);
-        let t = harness
-            .state()
-            .atlas
-            .old_resolved(egui::Theme::Light)
-            .clone();
-        let (m, p) = (&t.menu, &t.popover.border);
-        let line = native_theme_egui::convert::to_stroke(egui::Stroke::NONE, p.color, p.line_width);
-        let item = place_of(&harness, "chrome.menu.theme.reload");
+        let panel = &r.popover.panel;
+        let line = egui::Stroke::new(
+            stroke_width_of(panel)
+                .ok_or(format!("{preset} states no popover.panel stroke width"))?,
+            stroke_color_of(panel).ok_or(format!("{preset} states no popover.panel stroke"))?,
+        );
+        let fill = fill_of(&r.menu.panel(WidgetState::NONE))
+            .ok_or(format!("{preset} states no menu.panel(NONE).fill"))?;
+        let item = place_of(harness, "chrome.menu.theme.reload");
         let mut rects = Vec::new();
         harness
             .output()
@@ -6106,45 +6194,104 @@ fn the_open_menu_insets_its_first_item_by_the_panel_padding() {
             .for_each(|clipped| walk(&clipped.shape, &mut rects));
         let frames: Vec<_> = rects
             .iter()
-            .filter(|r| {
-                r.stroke == line
-                    && r.fill == colour(m.background_color)
-                    && r.stroke_kind == egui::StrokeKind::Inside
-                    && r.rect.contains_rect(item)
+            .filter(|f| {
+                f.stroke == line
+                    && f.fill == fill
+                    && f.stroke_kind == egui::StrokeKind::Inside
+                    && f.rect.contains_rect(item)
             })
             .collect();
-        assert_eq!(
-            frames.len(),
-            1,
-            "{preset}: the popup's frame round {item:?}"
-        );
-        let inset = item.min - frames[0].rect.min;
-        let want = if preset == "kde-breeze" {
-            assert_eq!(
-                (m.panel_padding_horizontal, m.panel_padding_vertical),
-                (Some(3.0), Some(3.0))
-            );
-            assert_eq!(line.width, 1.0);
-            egui::vec2(3.0 + 1.0, 3.0 + 1.0)
-        } else {
-            assert_eq!(
-                (m.panel_padding_horizontal, m.panel_padding_vertical),
-                (None, None),
-                "{preset} states no panel padding"
-            );
-            let (left, top) = (
-                p.padding
-                    .left
-                    .expect("adwaita states the popover's padding"),
-                p.padding.top.expect("adwaita states the popover's padding"),
-            );
-            egui::vec2(left + line.width, top + line.width)
+        let [frame] = frames.as_slice() else {
+            return Err(format!(
+                "{preset}: {} popup frames round {item:?} in {line:?} and {fill:?}",
+                frames.len()
+            ));
         };
+        let (menu, popover) = (
+            padding_of(&r.menu.panel(WidgetState::NONE)),
+            padding_of(panel),
+        );
+        let side = |i: usize, name: &str| -> Result<f32, String> {
+            let stated = menu.get(i).copied().flatten();
+            let fallback = popover.get(i).copied().flatten();
+            stated
+                .or(fallback)
+                .map(|v| v + line.width)
+                .ok_or(format!("{preset} states no padding on the {name}"))
+        };
+        Ok((
+            item.min - frame.rect.min,
+            egui::vec2(side(3, "left")?, side(0, "top")?),
+        ))
+    }
+    for preset in ["kde-breeze", "adwaita"] {
+        let mut harness = open_page_under(Page::Basic, egui::Theme::Light, preset);
+        let r = harness
+            .state()
+            .atlas
+            .next_resolved(egui::Theme::Light)
+            .ok_or(format!("{preset}: no 0.8.0 theme installed"))?
+            .clone();
+        let menu = padding_of(&r.menu.panel(WidgetState::NONE));
+        if preset == "kde-breeze" {
+            assert_eq!(menu, [Some(3.0); 4], "{preset}: menu.panel(NONE).padding");
+            assert_eq!(stroke_width_of(&r.popover.panel), Some(1.0));
+        } else {
+            assert_eq!(menu, [None; 4], "{preset} states no menu panel padding");
+        }
+        let (inset, want) = inset(&mut harness, &r, preset)?;
         assert!(
             near(inset.x, want.x) && near(inset.y, want.y),
             "{preset}: the first item {inset:?} from the frame's edge, want {want:?}"
         );
     }
+    let (mut harness, r) = open_patched(Page::Basic, egui::Theme::Light, "kde-breeze", |r| {
+        let [Some(top), Some(right), Some(bottom), Some(left)] =
+            padding_of(&r.menu.panel(WidgetState::NONE))
+        else {
+            return None;
+        };
+        let width = stroke_width_of(&r.popover.panel)?;
+        Some(
+            // `widget_rules` replaces the map the `menu` rule is pushed into: it goes first
+            ThemePatch::new()
+                .widget_rules(WidgetPatchMap::new().popover(PopoverPatch::new().panel(
+                    PartPatch::new().stroke(Stroke::uniform(width, r.colors.window.border?)),
+                )))
+                .menu(MenuRule::new().panel(PartPatch::new().padding(Edges::new(
+                    2.0 * top,
+                    2.0 * right,
+                    2.0 * bottom,
+                    2.0 * left,
+                )))),
+        )
+    })?;
+    let old = harness
+        .state()
+        .atlas
+        .old_resolved(egui::Theme::Light)
+        .clone();
+    let patched = stroke_color_of(&r.popover.panel);
+    assert_ne!(
+        patched,
+        Some(native_theme_egui::convert::to_color32(
+            old.popover.border.color
+        )),
+        "the patched popover stroke is the 0.7.2 popover.border.color, so the patch proves nothing"
+    );
+    let menu = padding_of(&r.menu.panel(WidgetState::NONE));
+    assert_eq!(menu, [Some(6.0); 4], "the patched menu.panel(NONE).padding");
+    assert_ne!(
+        old.menu.panel_padding_vertical,
+        Some(6.0),
+        "the 0.7.2 menu.panel_padding_vertical is the patched one"
+    );
+    let (inset, want) = inset(&mut harness, &r, "patched kde-breeze")?;
+    assert!(
+        near(inset.x, want.x) && near(inset.y, want.y),
+        "patched kde-breeze: the first item {inset:?} from the frame's edge, want {want:?}"
+    );
+    Ok(())
 }
 
 /// E7 (issue #4's leftovers): the Basic table's line under the header and its column line over
@@ -6383,30 +6530,40 @@ fn a_selected_row_takes_the_unfocused_pair_while_the_window_is_not_active() {
 /// list and menu rows do (`geometry::list_item`, `geometry::menu_item`: the stated height at a
 /// factor of 1 or less, a minimum around the drawn text and padding above it) and as the iced
 /// showcase's Basic list and window menu rows do. At 1 the Basic list's rows are
-/// `list.row_height` (macos-monterey, material-3) and the window's menu rows `menu.row_height`
-/// (adwaita, macos-monterey, material-3), macos-monterey's 22 px row too, whose 17.33 px menu
-/// font's line box and stated 3 + 3 padding overrun it: the connector narrows the padding to fit
+/// `list.row_height` (macos-monterey, material-3) of the 0.7.2 theme the list still reads, and
+/// the window's menu rows the installed 0.8.0 theme's `menu.item(NONE).min_size[1]` (adwaita,
+/// macos-monterey, material-3), macos-monterey's 22 px row too, whose 17.33 px menu font's line
+/// box and stated 3 + 3 padding overrun it: the connector narrows the padding to fit
 /// (`style::roles::fit_row_padding`), where egui's `Button`, which takes the stated height as
 /// its least (`interact_size.y`), drew the row 27 tall; at 1.5 and 1.75 each is the
-/// stated height or the line box of its font at its scaled size and `defaults.line_height`,
-/// rounded up, plus its padding (`list.border.padding`, the menu's button padding), whichever is
-/// more, computed from the theme at test time ([`grown`]): 1.75 puts macos-monterey's menu line
-/// box at 36.09, which egui's own growth would leave a pixel short of the rounded-up 37.
+/// stated height or the line box of its font at its scaled size and line height, rounded up,
+/// plus its padding (`list.border.padding`, the menu's button padding), whichever is more,
+/// computed from the theme at test time ([`grown`], and [`next_rule`] for the 0.8.0 theme,
+/// whose sizes are scaled already): 1.75 puts macos-monterey's menu line box at 36.09, which
+/// egui's own growth would leave a pixel short of the rounded-up 37.
 #[test]
-fn stated_list_and_menu_rows_hold_their_text_at_every_text_scale() {
+fn stated_list_and_menu_rows_hold_their_text_at_every_text_scale() -> Result<(), String> {
+    use native_theme::next::WidgetState;
+    use native_theme_egui::next::{padding_of, stroke_width_of};
     let mut faults = Vec::new();
     let mut seen = (0, 0);
     for (preset, factor) in ["adwaita", "macos-monterey", "material-3"]
         .into_iter()
         .flat_map(|preset| [(preset, 1.0), (preset, 1.5), (preset, 1.75)])
     {
-        let mut harness = open_scaled(preset, "basic", factor);
+        let mut harness = open_page_scaled(Page::Basic, preset, factor);
         harness.state_mut().open_menu = Some("theme".to_string());
         harness.run_steps(4);
         let t = harness
             .state()
             .atlas
             .old_resolved(egui::Theme::Light)
+            .clone();
+        let r = harness
+            .state()
+            .atlas
+            .next_resolved(egui::Theme::Light)
+            .ok_or(format!("{preset}: no 0.8.0 theme installed"))?
             .clone();
         let line_height = t.defaults.line_height;
         let places = harness.state().registry.places();
@@ -6439,18 +6596,23 @@ fn stated_list_and_menu_rows_hold_their_text_at_every_text_scale() {
                 )),
             );
         }
-        let m = &t.menu;
-        if let Some(h) = m.row_height {
+        let item = r.menu.item(WidgetState::NONE);
+        if let Some(h) = item.min_size[1] {
             seen.1 += 1;
-            // the menu scope's button padding above and below: a stated side and the border's
-            // width, egui's menu padding (0 vertically, `egui/src/containers/menu.rs:23`) on a
-            // side the theme leaves unstated (src/convert.rs, `to_button_padding`,
-            // `padding_with_border`)
-            let side = |stated: Option<f32>| stated.map_or(0.0, |v| v + m.border.line_width);
-            let padding = side(m.border.padding.top) + side(m.border.padding.bottom);
+            // the menu scope's button padding above and below: each stated side with the
+            // item's line width where the theme states one, egui's menu padding (none
+            // vertically, `egui/src/containers/menu.rs:23`) on a side the theme leaves unstated
+            // (src/style/base.rs, `button_padding_of`)
+            let width = stroke_width_of(&item);
+            let [top, _, bottom, _] = padding_of(&item);
+            let padding: f32 = [top, bottom]
+                .into_iter()
+                .flatten()
+                .flat_map(|side| std::iter::once(side).chain(width))
+                .sum();
             check(
                 "chrome.menu.theme.light",
-                grown(h, factor, m.font.size, line_height, padding, 0.0),
+                next_rule(&r, h, &r.menu.item_label(WidgetState::NONE), padding),
             );
         }
     }
@@ -6459,12 +6621,15 @@ fn stated_list_and_menu_rows_hold_their_text_at_every_text_scale() {
         "no preset states a row height: {seen:?}"
     );
     assert!(faults.is_empty(), "{faults:#?}");
+    Ok(())
 }
 
-/// M9-150's class for the expander: a stated `expander.header_height` follows the one rule every
-/// stated row height takes, the stated height at a text scale of 1 or less and above 1 at least
-/// the line box of `expander.font` at its scaled size and `defaults.line_height`, rounded up,
-/// plus the header's own padding (controller's ruling, 2026-10-23, M9c T6b). The Basic page's
+/// M9-150's class for the expander: the installed 0.8.0 theme's stated
+/// `expander.header(NONE).min_size[1]` follows the one rule every stated row height takes, the
+/// stated height at a text scale of 1 or less and above 1 at least the line box of
+/// `expander.header_label(NONE)` at its size, which the resolve has scaled already, and the
+/// theme's line height, rounded up ([`next_rule`]), plus the header's own padding
+/// (controller's ruling, 2026-10-23, M9c T6b). The Basic page's
 /// expander (the companion crate's: painted under kde-breeze and adwaita, egui's own
 /// `CollapsingHeader` under material-3 and ios-13), whose title is one line box tall
 /// (`demo::lined`), is exactly the rule's height. The Containers page's two egui headers in the
@@ -6479,28 +6644,42 @@ fn stated_list_and_menu_rows_hold_their_text_at_every_text_scale() {
 /// 35 px row 53), material-3's the rule's 61 (its 40 px row 60), and ios-13's 54 px row equals
 /// its 53.95 line box rounded up, all three 58.
 #[test]
-fn the_expander_header_is_its_stated_height_by_the_row_rule() {
+fn the_expander_header_is_its_stated_height_by_the_row_rule() -> Result<(), String> {
+    use native_theme::next::WidgetState;
+    use native_theme_egui::next::{padding_of, stroke_width_of};
     let mut faults = Vec::new();
     for (preset, factor) in ["kde-breeze", "adwaita", "material-3", "ios-13"]
         .into_iter()
         .flat_map(|preset| [(preset, 1.0), (preset, 1.5), (preset, 2.0)])
     {
-        let mut harness = open_scaled(preset, "basic", factor);
+        let mut harness = open_page_scaled(Page::Basic, preset, factor);
         harness.run_steps(2);
-        let t = harness
+        let r = harness
             .state()
             .atlas
-            .old_resolved(egui::Theme::Light)
+            .next_resolved(egui::Theme::Light)
+            .ok_or(format!("{preset}: no 0.8.0 theme installed"))?
             .clone();
-        let e = &t.expander;
-        let (stated, size, line_height) = (e.header_height, e.font.size, t.defaults.line_height);
+        let e = &r.expander;
+        let header = e.header(WidgetState::NONE);
+        let label = e.header_label(WidgetState::NONE);
+        let stated = header.min_size[1].ok_or(format!(
+            "{preset} states no expander.header(NONE).min_size[1]"
+        ))?;
         // the expander scope's vertical button padding above 1: §5's pair rule over the base
-        // style's (src/convert.rs, `to_button_padding`, `padding_with_border`), a stated side
-        // and the border's width
+        // style's (src/style/cells.rs, `ExpanderCell::outside_padding`; src/convert.rs,
+        // `button_padding_outside`), a stated side and, where the expander is framed, the
+        // container's line width
         let own = harness.ctx.global_style().spacing.button_padding.y;
-        let p = &e.border.padding;
-        let side = |stated: Option<f32>| stated.map_or(own, |v| v + e.border.line_width);
-        let scope = f32::midpoint(side(p.top), side(p.bottom));
+        let framed = e.frame_enabled == Some(true);
+        let line: f32 = framed
+            .then(|| stroke_width_of(&e.container(WidgetState::NONE)))
+            .flatten()
+            .into_iter()
+            .sum();
+        let [top, _, bottom, _] = padding_of(&header);
+        let side = |stated: Option<f32>| stated.map_or(own, |v| v + line);
+        let scope = f32::midpoint(side(top), side(bottom));
         // the painted header pads by each stated side, the scope's padding where unstated
         // (native-theme-egui-widgets `expander.rs`, `header`); egui's own by the scope's twice
         let painted = e.arrow_side.is_some()
@@ -6508,11 +6687,11 @@ fn the_expander_header_is_its_stated_height_by_the_row_rule() {
             || e.content_indent.is_some()
             || e.frame_enabled.is_some();
         let padding = if painted {
-            p.top.unwrap_or(scope) + p.bottom.unwrap_or(scope)
+            top.unwrap_or(scope) + bottom.unwrap_or(scope)
         } else {
             scope + scope
         };
-        let want = grown(stated, factor, size, line_height, padding, 0.0);
+        let want = next_rule(&r, stated, &label, padding);
         match harness
             .state()
             .registry
@@ -6528,7 +6707,7 @@ fn the_expander_header_is_its_stated_height_by_the_row_rule() {
                 "{preset} at {factor}: the Basic header is not placed"
             )),
         }
-        let mut harness = open_scaled(preset, "containers", factor);
+        let mut harness = open_page_scaled(Page::Containers, preset, factor);
         harness.run_steps(2);
         // egui's own header is the taller of its least height, `interact_size.y`, and its title
         // and its padding above and below (`egui/src/containers/collapsing_header.rs:531-532`).
@@ -6537,7 +6716,7 @@ fn the_expander_header_is_its_stated_height_by_the_row_rule() {
         // whose row is taller than the line box grows the header past the rule. The title's row
         // is read off its painted galley: the header is exactly the taller of the two, bounded
         // below by the rule and above by its title and padding.
-        let rule = grown(stated, factor, size, line_height, scope + scope, 0.0);
+        let rule = next_rule(&r, stated, &label, scope + scope);
         for (kind, title) in [
             (
                 "CollapsingHeader (expander_icon)",
@@ -6592,6 +6771,7 @@ fn the_expander_header_is_its_stated_height_by_the_row_rule() {
         }
     }
     assert!(faults.is_empty(), "{faults:#?}");
+    Ok(())
 }
 
 /// The Containers page's `CollapsingHeader` draws its arrow with `next::expander_icon` of the
