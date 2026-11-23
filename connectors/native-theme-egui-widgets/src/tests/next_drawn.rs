@@ -1056,8 +1056,10 @@ fn drawn_expander(ctx: &egui::Context) -> (egui::FullOutput, egui::Response, Par
 /// painted header (kde-breeze, adwaita) and on egui's own (material-3): the stated
 /// `expander.header(NONE)` height grown to the line box of `expander.header_label(NONE)`'s size
 /// times `typography.line_height_multiplier`, rounded up, and the padding above and below it.
-/// That size holds the text scale already (it is rounded after scaling, so it is not 0.7.2's
-/// unrounded scaled size), so a header that scaled it a second time would be taller.
+/// That size holds the text scale already, so a header that scaled it a second time would be
+/// taller; it is not 0.7.2's scaled size: kde-breeze's is rounded after scaling (spec §6,
+/// step 2), and material-3's follows Android's non-linear font scaling (`FontScaleConverter`,
+/// 14 sp to 26 dp at a scale of 2.0) where 0.7.2 multiplied.
 #[test]
 fn the_expander_header_grows_by_its_line_box_once() -> TestResult {
     use crate::expander::Layout;

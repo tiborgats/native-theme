@@ -2193,19 +2193,22 @@ fn a_disabled_knob_takes_the_rest_outline_faded() {
 /// and string literals blanked, each named by its path under `src/`.
 fn painting_sources() -> std::io::Result<Vec<(String, String)>> {
     let src = Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+    // Compared by path components, so the skip holds with either separator.
+    let skipped = [
+        PathBuf::from("tests.rs"),
+        PathBuf::from("tests"),
+        Path::new("next").join("parity.rs"),
+    ];
     let mut out = Vec::new();
     let mut dirs = vec![src.clone()];
     while let Some(dir) = dirs.pop() {
         for entry in std::fs::read_dir(&dir)? {
             let path = entry?.path();
-            let name = path
-                .strip_prefix(&src)
-                .map_err(std::io::Error::other)?
-                .to_string_lossy()
-                .to_string();
-            if ["tests.rs", "tests", "next/parity.rs"].contains(&name.as_str()) {
+            let relative = path.strip_prefix(&src).map_err(std::io::Error::other)?;
+            if skipped.iter().any(|s| s.as_path() == relative) {
                 continue;
             }
+            let name = relative.to_string_lossy().to_string();
             if path.is_dir() {
                 dirs.push(path);
                 continue;
