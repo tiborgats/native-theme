@@ -1,0 +1,6 @@
+aqua.normal.push: measure_button_layers label #000000d8 (31 px, fill #00000013); measure_controls label #000000d8 (31 px, fill #00000013, rect cell) same
+aqua.highlighted.push: measure_button_layers label #000000d7 (31 px, fill #0000002a); measure_controls label #000000d7 (31 px, fill #0000002a, rect cell) same
+aqua.pressed.push: measure_button_layers label #000000d7 (31 px, fill #0000002a); measure_controls label #000000d7 (31 px, fill #0000002a, rect cell) same
+darkAqua.normal.push: measure_button_layers label #ffffffd8 (55 px, fill #ffffff13); measure_controls label #ffffffd8 (55 px, fill #ffffff13, rect cell) same
+darkAqua.highlighted.push: measure_button_layers label #ffffffd9 (55 px, fill #ffffff2a); measure_controls label #ffffffd9 (55 px, fill #ffffff2a, rect cell) same
+darkAqua.pressed.push: measure_button_layers label #ffffffd9 (55 px, fill #ffffff2a); measure_controls label #ffffffd9 (55 px, fill #ffffff2a, rect cell) same
