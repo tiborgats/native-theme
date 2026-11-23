@@ -12,7 +12,7 @@ use native_theme::next::{
     TextPatch, TextStated, Theme, ThemeContext, ThemePatch, ToolbarRule, WidgetState,
 };
 
-use super::super::borders::line;
+use super::super::borders::{line, line_or_none};
 use super::super::{fill, text_color, to_color, to_theme};
 use crate::styles::ICED_DISABLED_BUTTON_ALPHA;
 
@@ -88,7 +88,7 @@ fn a_button_with_no_disabled_opacity_halves_only_what_the_theme_leaves_to_iced()
             text_color(&r.button.label(WidgetState::NONE), "label")?
                 .scale_alpha(ICED_DISABLED_BUTTON_ALPHA)
         };
-        let stroke = line(&r.button.body(WidgetState::NONE), "stroke")?;
+        let stroke = line_or_none(&r.button.body(WidgetState::NONE), "stroke")?;
 
         assert_eq!(
             background_color(style.background),
@@ -625,8 +625,8 @@ fn a_menu_is_framed_by_its_own_stroke_where_stated() -> TestResult {
     Ok(())
 }
 
-/// A dragged thumb is the pressed fill the theme states, laid over the
-/// thumb's own; a translucent thumb stroke inside the thumb is laid over
+/// A dragged thumb is the pressed fill the theme states, the state's whole
+/// fill (spec §9, step 2); a translucent thumb stroke inside the thumb is laid over
 /// the fill each status paints.
 #[test]
 fn the_slider_thumb_takes_its_pressed_fill_and_its_aligned_stroke() -> TestResult {
@@ -650,7 +650,7 @@ fn the_slider_thumb_takes_its_pressed_fill_and_its_aligned_stroke() -> TestResul
         let theme = to_theme(&r)?;
         let slider = super::slider(&r)?;
         let thumb = fill(&r.slider.thumb(WidgetState::NONE), "fill")?;
-        let pressed = crate::styles::composite_over(to_color(layer), thumb);
+        let pressed = to_color(layer);
         for (status, under) in [(Status::Active, thumb), (Status::Dragged, pressed)] {
             let style = slider(&theme, status);
             assert_eq!(
@@ -948,10 +948,7 @@ fn an_unstated_press_is_not_the_hovered_look() -> TestResult {
         let button = super::button(&r)?;
         assert_eq!(
             background_color(button(&theme, Status::Hovered).background),
-            Some(crate::styles::composite_over(
-                to_color(layer),
-                to_color(DISTINCT)
-            )),
+            Some(to_color(layer)),
             "{preset:?}"
         );
         assert_eq!(
@@ -1606,5 +1603,109 @@ fn a_field_takes_its_inset_rings_colour_from_the_rings_stroke() -> TestResult {
         }
     }
     assert!(covered > 0, "a field with no focused stroke covered");
+    Ok(())
+}
+
+/// A state's fill on the 0.8.0 model is the whole fill the part shows in
+/// that state (spec §9, step 2), painted as given: a translucent hovered
+/// fill a rule states is the style's, not composited over the resting
+/// fill, and so is an opaque one.
+#[test]
+fn a_stated_hovered_fill_is_the_states_own() -> TestResult {
+    use iced_widget::{button, checkbox, pick_list, slider, toggler};
+
+    for (marker, color) in [
+        (
+            "#ff00ff80",
+            IcedColor::from_rgba8(0xff, 0, 0xff, 128.0 / 255.0),
+        ),
+        ("#f0a014", IcedColor::from_rgb8(0xf0, 0xa0, 0x14)),
+    ] {
+        let rule = |widget: &str, part: &str| {
+            format!(
+                "[[widgets.{widget}.rules]]\nstates = [\"hover\"]\n{part}.fill = \"{marker}\"\n"
+            )
+        };
+        let patch = [
+            rule("button", "body"),
+            rule("checkbox", "indicator"),
+            rule("switch", "track"),
+            rule("combo_box", "field"),
+            rule("slider", "thumb"),
+        ]
+        .concat();
+        let r = Theme::preset(Preset::KdeBreeze)
+            .with_patch(ThemePatch::from_toml(&patch)?)
+            .resolve(&ThemeContext::light());
+        let theme = to_theme(&r)?;
+        let fills = [
+            (
+                "button",
+                background_color(super::button(&r)?(&theme, button::Status::Hovered).background),
+            ),
+            (
+                "checkbox",
+                background_color(Some(
+                    super::checkbox(&r)?(&theme, checkbox::Status::Hovered { is_checked: false })
+                        .background,
+                )),
+            ),
+            (
+                "toggler",
+                background_color(Some(
+                    super::toggler(&r)?(&theme, toggler::Status::Hovered { is_toggled: false })
+                        .background,
+                )),
+            ),
+            (
+                "pick_list",
+                background_color(Some(
+                    super::pick_list(&r)?(&theme, pick_list::Status::Hovered).background,
+                )),
+            ),
+            (
+                "slider",
+                background_color(Some(
+                    super::slider(&r)?(&theme, slider::Status::Hovered)
+                        .handle
+                        .background,
+                )),
+            ),
+        ];
+        for (what, fill) in fills {
+            assert_eq!(fill, Some(color), "{what} {marker}");
+        }
+    }
+    Ok(())
+}
+
+/// On the macOS presets, whose button the pointer does not change
+/// (`platform-facts.md` §2.3), the hovered button's fill is its resting
+/// fill wherever the preset states it so: the state's own fill, not a layer
+/// laid over the rest again.
+#[test]
+fn a_macos_buttons_hovered_fill_is_its_resting_one() -> TestResult {
+    use iced_widget::button::Status;
+
+    let mut tried = 0;
+    for preset in [Preset::MacosMonterey, Preset::MacosTahoe] {
+        for ctx in [ThemeContext::light(), ThemeContext::dark()] {
+            let r = Theme::preset(preset).resolve(&ctx);
+            let hover = r.button.body(WidgetState::HOVER);
+            let rest = fill(&r.button.body(WidgetState::NONE), "fill")?;
+            if !hover.from_state.contains(PartStated::FILL) || fill(&hover, "fill")? != rest {
+                continue;
+            }
+            tried += 1;
+            let theme = to_theme(&r)?;
+            let style = super::button(&r)?;
+            assert_eq!(
+                background_color(style(&theme, Status::Hovered).background),
+                background_color(style(&theme, Status::Active).background),
+                "{preset:?}"
+            );
+        }
+    }
+    assert!(tried > 0, "no macOS preset states its hover as rest");
     Ok(())
 }

@@ -931,3 +931,84 @@ fn the_checked_boxs_state_fills_follow_rule_0() -> Result<(), Box<dyn std::error
     );
     Ok(())
 }
+
+/// The controls whose hovered and pressed fills the 0.7.2 model states as layers over the idle
+/// fill, each with the role whose cell draws it, the widget and part whose hovered fill a rule
+/// states, and whether the entry paints `weak_bg_fill` (else `bg_fill`).
+const STATE_FILLS: [(crate::Role, &str, &str, bool); 5] = [
+    (crate::Role::Button, "button", "body", true),
+    (crate::Role::Checkbox, "checkbox", "indicator", false),
+    (crate::Role::Switch, "switch", "track", true),
+    (crate::Role::ComboBox, "combo_box", "field", true),
+    (
+        crate::Role::SegmentedControl,
+        "segmented_control",
+        "segment",
+        true,
+    ),
+];
+
+/// A state's fill on the 0.8.0 model is the whole fill the part shows in that state (spec §9,
+/// step 2), written as given: a translucent hovered fill a rule states is the entry's, not
+/// composited over the resting fill, and so is an opaque one.
+#[test]
+fn a_stated_hovered_fill_is_the_states_own() -> Result<(), Box<dyn std::error::Error>> {
+    for (marker, color) in [
+        (
+            "#ff00ff80",
+            egui::Color32::from_rgba_unmultiplied(0xff, 0, 0xff, 0x80),
+        ),
+        ("#f0a014", egui::Color32::from_rgb(0xf0, 0xa0, 0x14)),
+    ] {
+        for (role, widget, part, weak) in STATE_FILLS {
+            let patch = format!(
+                "[[widgets.{widget}.rules]]\nstates = [\"hover\"]\n{part}.fill = \"{marker}\"\n"
+            );
+            let atlas = patched_light(Preset::KdeBreeze, &patch)?;
+            let cell = atlas
+                .scheme(egui::Theme::Light)
+                .cell(role, crate::RoleVariant::Normal);
+            let hovered = &cell.visuals.widgets.hovered;
+            let fill = if weak {
+                hovered.weak_bg_fill
+            } else {
+                hovered.bg_fill
+            };
+            assert_eq!(fill, color, "{role:?} {marker}");
+        }
+    }
+    Ok(())
+}
+
+/// On the macOS presets, whose button the pointer does not change (`platform-facts.md` §2.3),
+/// the hovered button's fill is its resting fill wherever the preset states it so: the state's
+/// own fill, not a layer laid over the rest again.
+#[test]
+fn a_macos_buttons_hovered_fill_is_its_resting_one() -> Result<(), Box<dyn std::error::Error>> {
+    let mut tried = Vec::new();
+    for preset in [Preset::MacosMonterey, Preset::MacosTahoe] {
+        for (scheme, ctx) in [
+            (egui::Theme::Light, ThemeContext::light()),
+            (egui::Theme::Dark, ThemeContext::dark()),
+        ] {
+            let r = Theme::preset(preset).resolve(&ctx);
+            let body = |s| super::build::state_fill(&r.button.body(s));
+            let rest = super::build::fill(&r.button.body(WidgetState::NONE));
+            if body(WidgetState::HOVER).is_none() || body(WidgetState::HOVER) != rest {
+                continue;
+            }
+            tried.push((preset, scheme));
+            let atlas = patched_light(preset, "")?;
+            let widgets = &atlas.scheme(scheme).base.visuals.widgets;
+            assert_eq!(
+                widgets.hovered.weak_bg_fill, widgets.inactive.weak_bg_fill,
+                "{preset:?} {scheme:?}"
+            );
+        }
+    }
+    assert!(
+        !tried.is_empty(),
+        "no macOS preset states its hover as rest"
+    );
+    Ok(())
+}

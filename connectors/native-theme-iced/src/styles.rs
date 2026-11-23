@@ -373,21 +373,26 @@ fn disabled_button(
 }
 
 /// A state's fill as the theme states it, where the style lays it over the
-/// fill under it: a colour, or no fill (a stated `Paint::None`), which
-/// paints nothing in that state whatever lies under it. The 0.7.2 model
-/// states every such fill as a colour.
+/// fill under it: a colour, the state's whole fill, or no fill (a stated
+/// `Paint::None`), which paints nothing in that state whatever lies under
+/// it. The 0.7.2 model states every such fill as a colour; the 0.8.0 model
+/// as a whole fill or none (spec §9, step 2).
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) enum Layer {
     Color(Color),
+    /// The fill the part shows in the state, painted as given, as its rest
+    /// fill is: a translucent one over what lies under the part.
+    Whole(Color),
     Nothing,
 }
 
 impl Layer {
     /// The fill painted where this layer lies over `base`: the colour
-    /// composited over it ([`composite_over`]), or nothing.
+    /// composited over it ([`composite_over`]), the whole fill, or nothing.
     pub(crate) fn over(self, base: Color) -> Color {
         match self {
             Self::Color(color) => composite_over(color, base),
+            Self::Whole(color) => color,
             Self::Nothing => Color::TRANSPARENT,
         }
     }
@@ -395,7 +400,7 @@ impl Layer {
     /// The fill painted where this layer is painted as given.
     pub(crate) fn as_given(self) -> Color {
         match self {
-            Self::Color(color) => color,
+            Self::Color(color) | Self::Whole(color) => color,
             Self::Nothing => Color::TRANSPARENT,
         }
     }
@@ -550,7 +555,8 @@ impl ButtonSource {
         }
     }
 
-    /// The hovered and the pressed fill: each layer over the idle fill. A
+    /// The hovered and the pressed fill: each layer over the idle fill (a
+    /// whole fill as it is, [`Layer::over`]). A
     /// layer `None` is a state the theme states no fill for, whose fill is
     /// then as [`in_state`] gives it against iced's own (spec §2,
     /// `from_state`; spec §10, rule 0).

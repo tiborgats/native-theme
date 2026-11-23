@@ -23,13 +23,13 @@ use crate::styles::{
     SegmentedSource, SliderSource, SwitchSource, ToolbarButtonSource,
 };
 
-/// A part's fill, where stated, as a layer the style lays over the fill
-/// under it: its colour as [`fill`] reads it, or, for a stated
-/// `Paint::None`, no fill, which paints nothing in that state.
+/// A part's fill, where stated, as the state's whole fill (spec §9, step
+/// 2): its colour as [`fill`] reads it, or, for a stated `Paint::None`, no
+/// fill, which paints nothing in that state.
 fn layer(part: &PartStyle, home: &'static str) -> Mapped<Layer> {
     match part.fill {
         Paint::None if part.stated.contains(PartStated::FILL) => Ok(Layer::Nothing),
-        _ => fill(part, home).map(Layer::Color),
+        _ => fill(part, home).map(Layer::Whole),
     }
 }
 
