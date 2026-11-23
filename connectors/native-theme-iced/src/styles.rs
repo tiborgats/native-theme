@@ -280,29 +280,39 @@ impl Outline {
 /// The alpha iced's own button classes scale a disabled button's fill and
 /// label by (iced_widget 0.14.2 `src/button.rs`, `fn disabled`:
 /// `scale_alpha(0.5)`), its disabled look where a theme states no opacity.
-const ICED_DISABLED_BUTTON_ALPHA: f32 = 0.5;
+pub(crate) const ICED_DISABLED_BUTTON_ALPHA: f32 = 0.5;
 
-/// A disabled button's fill, label and border: faded by the theme's
-/// `opacity` ([`faded`]), or, where the theme states none, as iced's own
-/// classes fade a disabled button, the fill and the label at
-/// [`ICED_DISABLED_BUTTON_ALPHA`] and the border as it is (spec §10, rule 0).
+/// A disabled button's fill, label and border, of the disabled `fill` and
+/// `label` where the theme states them and the `idle` pair the button keeps
+/// where it does not. Where the theme states a disabled `opacity`, the pair
+/// is faded by it ([`faded`]) and the border is its stroke over the fill,
+/// faded too. Where it states none, a disabled colour it states is drawn as
+/// stated, and one it leaves to iced is faded as iced's own classes fade a
+/// disabled button, to [`ICED_DISABLED_BUTTON_ALPHA`]; the border is its
+/// stroke over the fill so painted, which iced's classes leave as it is
+/// (spec §10, rule 0).
 fn disabled_button(
-    fill: Color,
-    label: Color,
-    border: Border,
+    fill: Option<Color>,
+    idle: Color,
+    label: Option<Color>,
+    idle_label: Color,
+    outline: Outline,
     opacity: Option<f32>,
 ) -> (Color, Color, Border) {
     match opacity {
-        Some(opacity) => (
-            faded(fill, opacity),
-            faded(label, opacity),
-            faded_border(border, opacity),
-        ),
-        None => (
-            fill.scale_alpha(ICED_DISABLED_BUTTON_ALPHA),
-            label.scale_alpha(ICED_DISABLED_BUTTON_ALPHA),
-            border,
-        ),
+        Some(opacity) => {
+            let fill = fill.unwrap_or(idle);
+            (
+                faded(fill, opacity),
+                faded(label.unwrap_or(idle_label), opacity),
+                faded_border(outline.over(fill), opacity),
+            )
+        }
+        None => {
+            let fill = fill.unwrap_or(idle.scale_alpha(ICED_DISABLED_BUTTON_ALPHA));
+            let label = label.unwrap_or(idle_label.scale_alpha(ICED_DISABLED_BUTTON_ALPHA));
+            (fill, label, outline.over(fill))
+        }
     }
 }
 
@@ -358,10 +368,14 @@ pub(crate) struct ButtonSource {
     pub label: Color,
     pub hover_label: Color,
     pub active_label: Color,
-    pub disabled_label: Color,
+    /// The disabled label where the theme states one.
+    pub disabled_label: Option<Color>,
     pub checked_label: Option<Color>,
     pub disabled_opacity: Option<f32>,
     pub border: Outline,
+    /// The primary button's own border: 0.7.2's `border`, which the model
+    /// gives every button.
+    pub primary_border: Outline,
     pub hover_border_color: Option<Line>,
     /// The border of a pressed button: 0.7.2's `hover_border_color`, which a
     /// pressed button keeps.
@@ -392,10 +406,11 @@ impl ButtonSource {
             label: to_color(b.font.color),
             hover_label: to_color(b.hover_text_color),
             active_label: to_color(b.active_text_color),
-            disabled_label: to_color(b.disabled_text_color),
+            disabled_label: Some(to_color(b.disabled_text_color)),
             checked_label: b.checked_text_color.map(to_color),
             disabled_opacity: Some(b.disabled_opacity),
             border: Outline::of(&b.border),
+            primary_border: Outline::of(&b.border),
             hover_border_color: line(b.hover_border_color),
             pressed_border_color: line(b.hover_border_color),
             primary_background: to_color(b.primary_background),
@@ -444,9 +459,19 @@ impl ButtonSource {
         let line = |l: Option<Line>| l.map(|l| l.aligned(align));
         Self {
             border: self.border.aligned(align),
+            primary_border: self.primary_border.aligned(align),
             hover_border_color: line(self.hover_border_color),
             pressed_border_color: line(self.pressed_border_color),
             default_border_color: line(self.default_border_color),
+            ..self
+        }
+    }
+
+    /// The source of the primary button: its own border in place of the
+    /// plain one.
+    fn primary(self) -> Self {
+        Self {
+            border: self.primary_border,
             ..self
         }
     }
@@ -461,14 +486,10 @@ pub(crate) fn button_from(
     let source = *b;
     let idle = b.background;
     let (hovered, pressed) = b.layered();
-    // A translucent disabled fill replaces the idle one and lets the window
-    // through, so it is emitted as given rather than composited.
-    let disabled = b.disabled_background.unwrap_or(b.background);
 
     let label = b.label;
     let hovered_label = b.hover_label;
     let pressed_label = b.active_label;
-    let disabled_label = b.disabled_label;
     let opacity = b.disabled_opacity;
 
     move |_theme, status| {
@@ -478,9 +499,17 @@ pub(crate) fn button_from(
             Status::Active => (idle, label, outline.over(idle)),
             Status::Hovered => (hovered, hovered_label, outline.over(hovered)),
             Status::Pressed => (pressed, pressed_label, outline.over(pressed)),
-            Status::Disabled => {
-                disabled_button(disabled, disabled_label, outline.over(disabled), opacity)
-            }
+            // A translucent disabled fill replaces the idle one and lets the
+            // window through, so it is emitted as given rather than
+            // composited.
+            Status::Disabled => disabled_button(
+                source.disabled_background,
+                idle,
+                source.disabled_label,
+                label,
+                outline,
+                opacity,
+            ),
         };
         Style {
             background: Some(Background::Color(background)),
@@ -545,13 +574,17 @@ pub(crate) fn button_toggle_from(
         let outline = source.outline_at(status);
         let (background, text_color, border) = match status {
             Status::Active | Status::Hovered | Status::Pressed => (fill, label, outline.over(fill)),
-            Status::Disabled => {
-                let (disabled, disabled_label) = match source.disabled_background {
-                    Some(background) => (background, source.disabled_label),
-                    None => (fill, label),
-                };
-                disabled_button(disabled, disabled_label, outline.over(disabled), opacity)
-            }
+            Status::Disabled => match source.disabled_background {
+                Some(_) => disabled_button(
+                    source.disabled_background,
+                    fill,
+                    source.disabled_label,
+                    source.label,
+                    outline,
+                    opacity,
+                ),
+                None => disabled_button(None, fill, None, label, outline, opacity),
+            },
         };
         Style {
             background: Some(Background::Color(background)),
@@ -693,7 +726,12 @@ pub(crate) fn toolbar_button_from(
         Some(_) => b.checked_label.unwrap_or(b.active_label),
         None => b.active_label,
     };
-    let disabled_label = b.disabled_label;
+    // A disabled label the theme leaves to iced is the label at rest, faded
+    // as iced's own classes fade it where the theme states no opacity.
+    let disabled_label = b.disabled_label.unwrap_or(match b.disabled_opacity {
+        Some(_) => b.label,
+        None => b.label.scale_alpha(ICED_DISABLED_BUTTON_ALPHA),
+    });
 
     let outline = Outline {
         line: Line::outside(Color::TRANSPARENT),
@@ -758,9 +796,9 @@ pub(crate) fn class_button(
 
     let idle = fill;
     let idle_label = label;
-    let (disabled, disabled_label) = match b.disabled_background {
-        Some(background) => (background, b.disabled_label),
-        None => (idle, idle_label),
+    let disabled = match b.disabled_background {
+        Some(_) => (b.disabled_background, idle, b.disabled_label, b.label),
+        None => (None, idle, None, idle_label),
     };
     let opacity = b.disabled_opacity;
     let source = *b;
@@ -782,8 +820,9 @@ pub(crate) fn class_button(
                 outline.over(painted(iced.background)),
             ),
             Status::Disabled => {
+                let (fill, idle, label, idle_label) = disabled;
                 let (fill, label, border) =
-                    disabled_button(disabled, disabled_label, outline.over(disabled), opacity);
+                    disabled_button(fill, idle, label, idle_label, outline, opacity);
                 (Some(Background::Color(fill)), label, border)
             }
         };
@@ -805,7 +844,9 @@ pub(crate) fn class_button(
 ///
 /// The idle pair is the platform's primary pair, `button.primary_background`
 /// and `.primary_text_color`; see `class_button` for the disabled state and
-/// the border. The model states no hovered and no pressed primary fill, so
+/// the border, which is the primary variant's own where the 0.8.0 model
+/// states one (windows-11 lays its stroke inside the box, the plain button's
+/// outside). The model states no hovered and no pressed primary fill, so
 /// those two are iced's own derivation -- but from the primary fill, not from
 /// the palette slot `button::primary` reads. That slot is
 /// `defaults.accent_color`, and a platform may state a primary fill that is
@@ -829,6 +870,7 @@ pub(crate) fn button_primary_from(
 ) -> impl Fn(&Theme, iced_widget::button::Status) -> iced_widget::button::Style + Clone + use<> {
     use iced_widget::button::{Status, Style};
 
+    let b = &b.primary();
     let class = class_button(
         b,
         b.primary_background,
@@ -1058,12 +1100,12 @@ pub(crate) fn button_link_from(
     }
 }
 
-/// The `input.*` values [`text_input`] and [`text_editor`] both emit, as the
-/// model states one `InputTheme` for both: the fill, the border and the value
-/// of a field at rest, hovered, focused and disabled, and the two colours
-/// every state shares. The border at rest is the one `border` names: the
-/// single-line field's `input.border`, or the multi-line field's own
-/// `text_area.border`; its hovered and focused colours are `input.*`'s.
+/// The values [`text_input`] and [`text_editor`] each emit, of the field's
+/// [`InputSource`]: the fill, the border and the value of a field at rest,
+/// hovered, focused and disabled, and the two colours every state shares.
+/// The 0.7.2 model states one `InputTheme` for both fields, the multi-line
+/// one's border at rest being its own `text_area.border`; the 0.8.0 model
+/// gives the editor every colour of its own, from `text_area`.
 #[derive(Clone, Copy)]
 struct InputColors {
     active: (Color, Border, Color),
@@ -1115,6 +1157,7 @@ impl InputColors {
         // disabled field is: not at all (iced_widget 0.14.2
         // `src/text_input.rs`, `default`, `Status::Disabled`).
         let fade = |color: Color| opacity.map_or(color, |opacity| faded(color, opacity));
+        let disabled_border = border.over(disabled);
 
         Self {
             active: (idle, border.over(idle), text),
@@ -1123,8 +1166,8 @@ impl InputColors {
             disabled: (
                 fade(disabled),
                 Border {
-                    color: fade(border.line.over(disabled)),
-                    ..border.over(disabled)
+                    color: fade(disabled_border.color),
+                    ..disabled_border
                 },
                 fade(i.disabled_text),
             ),
@@ -1369,7 +1412,7 @@ pub fn checkbox(
 
 /// The fills and the border colours a box, or a radio, that is not disabled
 /// shows, of either model: the 0.7.2 model states one `CheckboxTheme` for
-/// both controls. The two hover options are soft, `None` where unset.
+/// both controls. The three hover options are soft, `None` where unset.
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct CheckFills {
     pub checked: Color,

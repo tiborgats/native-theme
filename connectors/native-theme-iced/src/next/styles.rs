@@ -26,6 +26,7 @@ fn button_source(r: &ResolvedTheme) -> Mapped<ButtonSource> {
     let rest = b.body(WidgetState::NONE);
     let hover = b.body(WidgetState::HOVER);
     let default = b.body(WidgetState::DEFAULT);
+    let primary = b.body(ButtonQuery::primary());
     let c = &r.colors;
     Ok(ButtonSource {
         background: fill(&rest, "button.body(NONE).fill")?,
@@ -42,7 +43,7 @@ fn button_source(r: &ResolvedTheme) -> Mapped<ButtonSource> {
             &b.label(WidgetState::PRESSED),
             "button.label(PRESSED).color",
         )?,
-        disabled_label: text_color(
+        disabled_label: state_text_color(
             &b.label(WidgetState::DISABLED),
             "button.label(DISABLED).color",
         )?,
@@ -52,15 +53,13 @@ fn button_source(r: &ResolvedTheme) -> Mapped<ButtonSource> {
         )?,
         disabled_opacity: b.disabled_opacity,
         border: outline!(rest, "button.body(NONE)")?,
+        primary_border: outline!(primary, "button.body(NONE; variant=Primary)")?,
         hover_border_color: state_line(&hover, "button.body(HOVER).stroke.color")?,
         pressed_border_color: state_line(
             &b.body(WidgetState::PRESSED),
             "button.body(PRESSED).stroke.color",
         )?,
-        primary_background: fill(
-            &b.body(ButtonQuery::primary()),
-            "button.body(NONE; variant=Primary).fill",
-        )?,
+        primary_background: fill(&primary, "button.body(NONE; variant=Primary).fill")?,
         primary_label: text_color(
             &b.label(ButtonQuery::primary()),
             "button.label(NONE; variant=Primary).color",
@@ -485,3 +484,6 @@ pub fn application(
         "window.frame(normal).fill",
     )?))
 }
+
+#[cfg(test)]
+mod tests;

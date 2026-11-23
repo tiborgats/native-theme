@@ -208,6 +208,11 @@ mod tests {
             on_its_fill(&p)?,
             crate::styles::composite_over(to_color(TRANSLUCENT), half)
         );
+        // Source-over of (0, 0, 0, 0.25) on (0.2, 0.4, 0.6, 0.5): alpha
+        // 0.25 + 0.5 × 0.75 = 0.625, red 0.2 × 0.5 × 0.75 / 0.625 = 0.12.
+        let band = on_its_fill(&p)?;
+        assert!((band.a - 0.625).abs() < 1e-6, "{band:?}");
+        assert!((band.r - 0.12).abs() < 1e-6, "{band:?}");
         Ok(())
     }
 

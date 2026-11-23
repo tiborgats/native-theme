@@ -124,15 +124,17 @@ pub(crate) fn stated<T>(v: Option<T>, home: &'static str) -> Mapped<T> {
 
 /// A part's fill, where stated: its one colour, or, for a layered paint,
 /// the colour a toolkit that paints one colour renders in its place
-/// (spec §10, rule 2; [`Paint::fallback_color`]).
+/// (spec §10, rule 2; [`Paint::fallback_color`]). A stated `Paint::None` is
+/// no fill, which the shared style functions hand iced as the transparent
+/// colour, a fill iced paints nothing of.
 pub(crate) fn fill(part: &PartStyle, home: &'static str) -> Mapped<IcedColor> {
     if !part.stated.contains(PartStated::FILL) {
         return Err(Unmapped(home));
     }
     match &part.fill {
+        Paint::None => Ok(IcedColor::TRANSPARENT),
         Paint::Solid(c) => Ok(to_color(*c)),
         paint @ Paint::Complex(_) => paint.fallback_color().map(to_color).ok_or(Unmapped(home)),
-        _ => Err(Unmapped(home)),
     }
 }
 

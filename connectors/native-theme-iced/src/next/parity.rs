@@ -97,8 +97,17 @@ const DIFFERENCES: &[Difference] = &[
     // button.body(NONE), its states and its variants.
     inside("button", MACOS),
     inside("button_toggle", MACOS),
-    inside("button_primary", MACOS),
-    inside("button_default", MACOS),
+    // windows-11's primary variant lays its stroke inside the box, the plain
+    // button's outside (`button.body(NONE; variant=Primary).stroke`); its
+    // default button is the primary one.
+    inside(
+        "button_primary",
+        &["windows-11", "macos-monterey", "macos-tahoe"],
+    ),
+    inside(
+        "button_default",
+        &["windows-11", "macos-monterey", "macos-tahoe"],
+    ),
     inside("button_danger", MACOS),
     inside("button_success", MACOS),
     inside("button_warning", MACOS),
