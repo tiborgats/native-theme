@@ -1220,15 +1220,15 @@ const PORTED_GROUPS: &[&str] = &[
     "spinner",
     "tab",
     "menu",
+    "toolbar",
+    "status_bar",
+    "sidebar",
+    "popover",
 ];
 
 /// The groups of the table whose widgets the model holds but whose values the kde-breeze builder does not
 /// state yet (plan, M2's KDE unit): their rows are compared, counted and reported, not asserted.
 const NOT_PORTED_GROUPS: &[&str] = &[
-    "sidebar",
-    "toolbar",
-    "status_bar",
-    "popover",
     "switch",
     "dialog",
     "combo_box",
@@ -1239,7 +1239,7 @@ const NOT_PORTED_GROUPS: &[&str] = &[
 
 /// The totals of the ported groups' rows on each scheme, `[rows, compared, equal, mismatching, skipped]`:
 /// every row equal but those [`expected_skip`] names, skipped.
-const PORTED_TOTALS: [usize; 5] = [363, 358, 358, 0, 5];
+const PORTED_TOTALS: [usize; 5] = [434, 429, 429, 0, 5];
 
 /// The reason a row of the table is skipped on 0.7.2's `kde-breeze` without a reader's snapshot: the
 /// reader's context rows (`accessibility.*`), and `checkbox.background_color`, compared only where

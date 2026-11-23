@@ -385,6 +385,51 @@ fn pressed_changes_nothing_on_a_part_without_a_pressed_rule() {
     }
 }
 
+#[test]
+fn a_checked_toolbar_button_keeps_its_fill_and_takes_the_hover_outline() {
+    for theme in both_schemes() {
+        let scheme = theme.context.scheme;
+        let checked = theme.toolbar.button(WidgetState::CHECKED);
+        let hover = theme.toolbar.button(WidgetState::HOVER);
+        assert_ne!(checked.stroke, hover.stroke, "{scheme:?}");
+        for state in [WidgetState::HOVER, WidgetState::PRESSED] {
+            let both = theme.toolbar.button(state.union(WidgetState::CHECKED));
+            assert_eq!(both.fill, checked.fill, "{scheme:?} {state:?}");
+            assert_eq!(both.stroke, hover.stroke, "{scheme:?} {state:?}");
+        }
+        let pressed_hover = WidgetState::PRESSED.union(WidgetState::HOVER);
+        assert_eq!(
+            theme.toolbar.button(pressed_hover),
+            theme.toolbar.button(WidgetState::PRESSED),
+            "{scheme:?}"
+        );
+    }
+}
+
+#[test]
+fn a_hovered_selected_sidebar_item_is_the_selected_item() {
+    for theme in both_schemes() {
+        let scheme = theme.context.scheme;
+        let selected = WidgetState::SELECTED;
+        let hovered_selected = selected.union(WidgetState::HOVER);
+        assert_ne!(
+            theme.sidebar.item(WidgetState::HOVER),
+            theme.sidebar.item(selected),
+            "{scheme:?}"
+        );
+        assert_eq!(
+            theme.sidebar.item(hovered_selected),
+            theme.sidebar.item(selected),
+            "{scheme:?}"
+        );
+        assert_eq!(
+            theme.sidebar.item_label(hovered_selected),
+            theme.sidebar.item_label(selected),
+            "{scheme:?}"
+        );
+    }
+}
+
 /// The colour of a solid fill.
 fn solid(paint: &Paint) -> Option<Color> {
     match paint {

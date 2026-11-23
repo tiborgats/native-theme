@@ -71,7 +71,21 @@
 //!   hoverColor …, an open one with focusColor");
 //! - the tab: the selected tab's fill over the hovered tab's, as the hover
 //!   fill replaces "an unselected tab's" (`tab.hover_background`:
-//!   platform-facts.md (§2.11)).
+//!   platform-facts.md (§2.11));
+//! - the toolbar's button: the checked fill over the hovered and the pressed
+//!   fills, as 0.7.2's gpui connector draws a toolbar button that is on (a
+//!   selected button takes no hover or press style:
+//!   `connectors/native-theme-gpui/src/geometry.rs`,
+//!   `toolbar_button_checked`), and the pressed fill over the hovered one;
+//!   the hover outline, which the pressed button keeps, over the checked
+//!   outline, as 0.7.2's `toolbar.button_checked_border_color` documents
+//!   ("under the pointer and pressed `button_hover_border_color` applies");
+//! - the sidebar's item: the selected item's fill over the hovered item's, as
+//!   0.7.2's egui connector puts `sidebar.selection_background` in the
+//!   selection's fill and `hover_background` in the hovered widgets' fill
+//!   (`connectors/native-theme-egui/src/mapping.md`) and egui fills a
+//!   selected item with the selection's fill over its hovered look (egui
+//!   0.37.0 `src/style.rs`, `Style::interact_selectable`).
 //!
 //! An inactive window (`ThemeContext::window_active` false) has the `[WM]`
 //! inactive title bar and title colours.
@@ -261,6 +275,12 @@ struct SchemeColors {
     title_bar_background: Color,
     title_bar_inactive_background: Color,
     title_bar_inactive_foreground: Color,
+    toolbar_background: Color,
+    toolbar_border: Color,
+    toolbar_button_pressed: Color,
+    toolbar_button_checked: Color,
+    sidebar_hover: Color,
+    popover_border: Color,
 }
 
 /// The light scheme's constants.
@@ -288,6 +308,10 @@ const LIGHT: SchemeColors = SchemeColors {
     // `defaults.surface_color`: platform-facts.md (§2.1.3): [Colors:View] BackgroundNormal
     // 255,255,255 (BreezeLight.colors:115, breeze v6.7.5)
     // `input.background_color`: 0.7.2 kde-breeze.toml (uncited)
+    // `sidebar.background_color`: platform-facts.md (§2.12): [Colors:View] BackgroundNormal
+    // 255,255,255 (BreezeLight.colors:115, breeze v6.7.5): the KDE HIG's sidebar is the
+    // non-modal GlobalDrawer, which Kirigami docks in the View set (GlobalDrawer.qml:337), and
+    // System Settings' sidebar sets the View set too (CategoriesPage.qml:19-20)
     view_background: srgb8(0xffff_ffff),
     // `defaults.selection_background`: platform-facts.md (§2.1.3): [Colors:Selection]
     // BackgroundNormal 61,174,233 (BreezeLight.colors:87, breeze v6.7.5)
@@ -301,6 +325,9 @@ const LIGHT: SchemeColors = SchemeColors {
     // `tab.active_indicator_color`: platform-facts.md (§2.11): renderTabBarTab fills a
     // TabBar_ActiveEffectSize 3 strip of QPalette::Highlight along a North tab's top edge
     // (breezehelper.cpp:1471-1487, breezemetrics.h:137)
+    // `toolbar.button_hover_border_color`: platform-facts.md (§2.13): [Colors:Selection]
+    // BackgroundNormal 61,174,233 (BreezeLight.colors:87, breeze v6.7.5), the pen of a hovered,
+    // focused or pressed flat button (breezehelper.cpp:710-712 at breeze f0b1d75)
     selection_background: srgb8(0x3dae_e9ff),
     // `defaults.selection_text_color`, also `defaults.accent_text_color`: platform-facts.md
     // (§2.1.3): [Colors:Selection] ForegroundNormal 255,255,255 (BreezeLight.colors:95, breeze
@@ -397,6 +424,11 @@ const LIGHT: SchemeColors = SchemeColors {
     // focusColor(), [Colors:View] DecorationFocus 61,174,233 (BreezeLight.colors:116), with the
     // focus, hover winning (breezestyle.cpp:8122-8128, breezehelper.cpp:248-275 at breeze
     // f0b1d75; measured)
+    // `toolbar.button_checked_border_color`: platform-facts.md (§2.13):
+    // button_checked_border_color, a checked flat button keeps the plain button pen,
+    // mix([Colors:Button] BackgroundNormal 252,252,252 (BreezeLight.colors:31), [Colors:Button]
+    // ForegroundNormal 35,38,41 (BreezeLight.colors:39), frameContrast 0.2)
+    // (breezehelper.cpp:681-684, :697-699 at breeze f0b1d75; measured)
     button_frame: srgb8(0xd1d1_d2ff),
     // `button.checked_background`: platform-facts.md (§2.3): a checked button is
     // KColorUtils::mix(Button #fcfcfc, ButtonText #232629, 0.125), lettered ButtonText
@@ -440,6 +472,8 @@ const LIGHT: SchemeColors = SchemeColors {
     // [Colors:View] ForegroundNormal 35,38,41 (BreezeLight.colors:123): a hovered row is lettered
     // QPalette::Text
     // `input.font.color`: 0.7.2 kde-breeze.toml (uncited)
+    // `sidebar.font.color`: platform-facts.md (§2.12): [Colors:View] ForegroundNormal 35,38,41
+    // (BreezeLight.colors:123, breeze v6.7.5), as the Window set's (:137)
     view_foreground: srgb8(0x2326_29ff),
     // `checkbox.disabled_text_color`: 0.7.2 kde-breeze.toml (uncited)
     checkbox_disabled_foreground: srgb8(0xa0a1_a3ff),
@@ -578,6 +612,32 @@ const LIGHT: SchemeColors = SchemeColors {
     // `window.inactive_title_bar_text_color`: platform-facts.md (§2.2): [WM] inactiveForeground
     // 112,125,138 (BreezeLight.colors:202, breeze v6.7.5)
     title_bar_inactive_foreground: srgb8(0x707d_8aff),
+    // `toolbar.background_color`: platform-facts.md §2.13 background_color: Breeze fills a
+    // QMainWindow's tools area with the Header set's Window colour, [Colors:Header]
+    // BackgroundNormal #dee0e2 (BreezeLight.colors:59, breezestyle.cpp:1322, :1341-1347), where the
+    // scheme has Header colours (both Breeze schemes, BreezeLight.colors:57) and the decoration's
+    // border size is automatic, None or NoSides: the default, as BorderSizeAuto reads true when
+    // kwinrc does not set it (breezehelper.cpp:1913)
+    toolbar_background: srgb8(0xdee0_e2ff),
+    // `toolbar.border.color`: platform-facts.md §2.13 border.color, border.line_width: no frame
+    // round the toolbar (ToolBar_FrameWidth = 0), but a 1px line along the bottom of a
+    // QMainWindow's tools area (breezestyle.cpp:1349-1350; qpainter.cpp:3647-3654), the edge the
+    // connectors draw: the Header set's separatorColor(), KColorUtils::mix(Header bg, Header fg,
+    // frameContrast 0.2), #b9bbbd
+    toolbar_border: srgb8(0xb9bb_bdff),
+    // `toolbar.button_active_background`: platform-facts.md (§2.13): Highlight at Blend_Value
+    // 0.3, a layer (breezehelper.cpp:679-680, :40; breezemetrics.h:176 at breeze f0b1d75)
+    toolbar_button_pressed: srgb8(0x3dae_e94d),
+    // `toolbar.button_checked_background`: platform-facts.md (§2.13): [Colors:Button]
+    // ForegroundNormal 35,38,41 (BreezeLight.colors:39, breeze v6.7.5) at 0.125
+    // (breezehelper.cpp:681-684 at breeze f0b1d75)
+    toolbar_button_checked: srgb8(0x2326_2920),
+    // `sidebar.hover_background`: 0.7.2 kde-breeze.toml (uncited)
+    sidebar_hover: srgb8(0x93ce_e9ff),
+    // `popover.border.color`: platform-facts.md §2.16 border.color: qqc2-desktop-style's Popup
+    // strokes linearInterpolation(backgroundColor, textColor, frameContrast 0.2) of the Window set
+    // (Popup.qml:50, colorutils.cpp:61-80), #c2c5c9
+    popover_border: srgb8(0xc2c5_c9ff),
 };
 
 /// The dark scheme's constants.
@@ -606,6 +666,10 @@ const DARK: SchemeColors = SchemeColors {
     // 20,22,24 (BreezeDark.colors:116, breeze v6.7.5)
     // `input.background_color`: platform-facts.md (§2.4): [Colors:View] BackgroundNormal 20,22,24
     // (BreezeDark.colors:116)
+    // `sidebar.background_color`: platform-facts.md (§2.12): [Colors:View] BackgroundNormal
+    // 20,22,24 (BreezeDark.colors:116, breeze v6.7.5): the KDE HIG's sidebar is the non-modal
+    // GlobalDrawer, which Kirigami docks in the View set (GlobalDrawer.qml:337), and System
+    // Settings' sidebar sets the View set too (CategoriesPage.qml:19-20)
     view_background: srgb8(0x1416_18ff),
     // `defaults.selection_background`: platform-facts.md (§2.1.3): [Colors:Selection]
     // BackgroundNormal 61,174,233 (BreezeDark.colors:88, breeze v6.7.5)
@@ -619,6 +683,9 @@ const DARK: SchemeColors = SchemeColors {
     // `tab.active_indicator_color`: platform-facts.md (§2.11): renderTabBarTab fills a
     // TabBar_ActiveEffectSize 3 strip of QPalette::Highlight along a North tab's top edge
     // (breezehelper.cpp:1471-1487, breezemetrics.h:137)
+    // `toolbar.button_hover_border_color`: platform-facts.md (§2.13): [Colors:Selection]
+    // BackgroundNormal 61,174,233 (BreezeDark.colors:88, breeze v6.7.5), the pen of a hovered,
+    // focused or pressed flat button (breezehelper.cpp:710-712 at breeze f0b1d75)
     selection_background: srgb8(0x3dae_e9ff),
     // `defaults.selection_text_color`, also `defaults.accent_text_color`: platform-facts.md
     // (§2.1.3): [Colors:Selection] ForegroundNormal 252,252,252 (BreezeDark.colors:96, breeze
@@ -715,6 +782,11 @@ const DARK: SchemeColors = SchemeColors {
     // focusColor(), [Colors:View] DecorationFocus 61,174,233 (BreezeDark.colors:117), with the
     // focus, hover winning (breezestyle.cpp:8122-8128, breezehelper.cpp:248-275 at breeze
     // f0b1d75; measured)
+    // `toolbar.button_checked_border_color`: platform-facts.md (§2.13):
+    // button_checked_border_color, a checked flat button keeps the plain button pen,
+    // mix([Colors:Button] BackgroundNormal 41,44,48 (BreezeDark.colors:32), [Colors:Button]
+    // ForegroundNormal 252,252,252 (BreezeDark.colors:40), frameContrast 0.2)
+    // (breezehelper.cpp:681-684, :697-699 at breeze f0b1d75; measured)
     button_frame: srgb8(0x5356_59ff),
     // `button.checked_background`: platform-facts.md (§2.3): a checked button is
     // KColorUtils::mix(Button #292c30, ButtonText #fcfcfc, 0.125), lettered ButtonText
@@ -758,6 +830,8 @@ const DARK: SchemeColors = SchemeColors {
     // [Colors:View] ForegroundNormal 252,252,252 (BreezeDark.colors:124): a hovered row is
     // lettered QPalette::Text
     // `input.font.color`: 0.7.2 kde-breeze.toml (uncited)
+    // `sidebar.font.color`: platform-facts.md (§2.12): [Colors:View] ForegroundNormal
+    // 252,252,252 (BreezeDark.colors:124, breeze v6.7.5), as the Window set's (:138)
     view_foreground: srgb8(0xfcfc_fcff),
     // `checkbox.disabled_text_color`: 0.7.2 kde-breeze.toml (uncited)
     checkbox_disabled_foreground: srgb8(0x686a_6cff),
@@ -900,6 +974,32 @@ const DARK: SchemeColors = SchemeColors {
     // `window.inactive_title_bar_text_color`: platform-facts.md (§2.2): [WM] inactiveForeground
     // 161,169,177 (BreezeDark.colors:209, breeze v6.7.5)
     title_bar_inactive_foreground: srgb8(0xa1a9_b1ff),
+    // `toolbar.background_color`: platform-facts.md §2.13 background_color: Breeze fills a
+    // QMainWindow's tools area with the Header set's Window colour, [Colors:Header]
+    // BackgroundNormal #292c30 (BreezeDark.colors:60, breezestyle.cpp:1322, :1341-1347), where the
+    // scheme has Header colours (both Breeze schemes, BreezeLight.colors:57) and the decoration's
+    // border size is automatic, None or NoSides: the default, as BorderSizeAuto reads true when
+    // kwinrc does not set it (breezehelper.cpp:1913)
+    toolbar_background: srgb8(0x292c_30ff),
+    // `toolbar.border.color`: platform-facts.md §2.13 border.color, border.line_width: no frame
+    // round the toolbar (ToolBar_FrameWidth = 0), but a 1px line along the bottom of a
+    // QMainWindow's tools area (breezestyle.cpp:1349-1350; qpainter.cpp:3647-3654), the edge the
+    // connectors draw: the Header set's separatorColor(), KColorUtils::mix(Header bg, Header fg,
+    // frameContrast 0.2), #535659
+    toolbar_border: srgb8(0x5356_59ff),
+    // `toolbar.button_active_background`: platform-facts.md (§2.13): Highlight at Blend_Value
+    // 0.3, a layer (breezehelper.cpp:679-680, :40; breezemetrics.h:176 at breeze f0b1d75)
+    toolbar_button_pressed: srgb8(0x3dae_e94d),
+    // `toolbar.button_checked_background`: platform-facts.md (§2.13): [Colors:Button]
+    // ForegroundNormal 252,252,252 (BreezeDark.colors:40, breeze v6.7.5) at 0.125
+    // (breezehelper.cpp:681-684 at breeze f0b1d75)
+    toolbar_button_checked: srgb8(0xfcfc_fc20),
+    // `sidebar.hover_background`: 0.7.2 kde-breeze.toml (uncited)
+    sidebar_hover: srgb8(0x2e4a_5eff),
+    // `popover.border.color`: platform-facts.md §2.16 border.color: qqc2-desktop-style's Popup
+    // strokes linearInterpolation(backgroundColor, textColor, frameContrast 0.2) of the Window set
+    // (Popup.qml:50, colorutils.cpp:61-80), #474c51
+    popover_border: srgb8(0x474c_51ff),
 };
 
 /// The UI font's family.
@@ -1342,6 +1442,56 @@ const TAB_INDICATOR_WIDTH: f32 = 3.0;
 /// The tab's edge the indicator lies along.
 // `tab.active_indicator_side`: 0.7.2 kde-breeze.toml (uncited)
 const TAB_INDICATOR_SIDE: TabIndicatorSide = TabIndicatorSide::Top;
+
+/// The gap between two toolbar items.
+// `toolbar.item_gap`: platform-facts.md (§2.13): ToolBar_ItemSpacing = 0
+const TOOLBAR_ITEM_GAP: f32 = 0.0;
+
+/// The width of the toolbar's line.
+// `toolbar.border.line_width`: 0.7.2 kde-breeze.toml (uncited)
+const TOOLBAR_BORDER_WIDTH: f32 = 1.0;
+
+/// The toolbar's padding left and right.
+// `toolbar.border.padding.left`: platform-facts.md (§2.13): ToolBar_ItemMargin = 6 on all four
+// sides
+const TOOLBAR_PADDING_HORIZONTAL: f32 = 6.0;
+
+/// The toolbar's padding above and below.
+// `toolbar.border.padding.top`: 0.7.2 kde-breeze.toml (uncited)
+const TOOLBAR_PADDING_VERTICAL: f32 = 6.0;
+
+/// A hovered toolbar button's fill.
+// `toolbar.button_hover_background`: platform-facts.md (§2.13): a hovered flat button's fill is
+// alphaColor(Highlight, 0), nothing (breezehelper.cpp:688-691 at breeze f0b1d75); its hover
+// shows as the outline below
+const TOOLBAR_BUTTON_HOVER_BACKGROUND: Color = srgb8(0x0000_0000);
+
+/// The status bar's padding above.
+// `status_bar.border.padding.top`: 0.7.2 kde-breeze.toml (uncited)
+const STATUS_BAR_PADDING_TOP: f32 = 3.0;
+
+/// The status bar's padding on its trailing side.
+// `status_bar.border.padding.right`: platform-facts.md (§2.14): QStatusBar, 2 left, 3 top / 2
+// bottom; 14 right, the size grip's 1 + 13px (qstatusbar.cpp:466-467, qsizegrip.cpp:198-202),
+// which Breeze paints as nothing (breezestyle.cpp:1505-1506), in a window that is not maximized
+const STATUS_BAR_PADDING_RIGHT: f32 = 14.0;
+
+/// The status bar's padding below.
+// `status_bar.border.padding.bottom`: 0.7.2 kde-breeze.toml (uncited)
+const STATUS_BAR_PADDING_BOTTOM: f32 = 2.0;
+
+/// The status bar's padding on its leading side.
+// `status_bar.border.padding.left`: 0.7.2 kde-breeze.toml (uncited)
+const STATUS_BAR_PADDING_LEFT: f32 = 2.0;
+
+/// A popover's padding left and right.
+// `popover.border.padding.left`: platform-facts.md (§2.16): the Popup's padding: 12 on all four
+// sides (Popup.qml:24)
+const POPOVER_PADDING_HORIZONTAL: f32 = 12.0;
+
+/// A popover's padding above and below.
+// `popover.border.padding.top`: 0.7.2 kde-breeze.toml (uncited)
+const POPOVER_PADDING_VERTICAL: f32 = 12.0;
 
 /// The state precedence of a part with rules for disabled, pressed and
 /// hover: disabled over pressed over hover (spec §3's example; 0.7.2's
@@ -1848,10 +1998,14 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
         tab: tab(c, &colors, &typography),
         menu: menu(c, &typography, &layout),
         menu_bar: menu_bar(c),
-        // Stated by the plan's M2, KDE unit ("the rest of `kde-breeze`"): nothing yet.
-        sidebar: SidebarWidget::unstated(WidgetOrigin::Native),
-        toolbar: ToolbarWidget::unstated(WidgetOrigin::Native),
-        status_bar: StatusBarWidget::unstated(WidgetOrigin::Native),
+        sidebar: sidebar(c, &colors, &typography, &layout),
+        toolbar: toolbar(
+            c,
+            &typography,
+            &layout,
+            icon_size(|s| s.toolbar, ICON_TOOLBAR),
+        ),
+        status_bar: status_bar(&colors, &typography, &layout),
         tooltip: tooltip(&colors, &typography, &layout),
         window: window(c, &colors, &typography, &layout, ctx.window_active),
         input: input(
@@ -1876,8 +2030,8 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
         splitter: splitter(c, &colors),
         separator: separator(c, &layout),
         spinner: spinner(&colors),
+        popover: popover(c, &colors, &typography, &layout),
         // Stated by the plan's M2, KDE unit ("the rest of `kde-breeze`"): nothing yet.
-        popover: PopoverWidget::unstated(WidgetOrigin::Native),
         switch: SwitchWidget::unstated(WidgetOrigin::Native),
         dialog: DialogWidget::unstated(WidgetOrigin::Native),
         combo_box: ComboBoxWidget::unstated(WidgetOrigin::Native),
@@ -2932,9 +3086,12 @@ fn menu(c: &SchemeColors, typography: &Typography, layout: &LayoutMetrics) -> Me
 /// The menu bar's titles: Breeze's margins; a hovered title filled in
 /// DecorationHover and an open one in DecorationFocus, both lettered
 /// HighlightedText. The bar's fill is the toolbar's (spec §5,
-/// `toolbar.background_color`), stated with the toolbar; a title's font has
-/// no 0.7.2 field, so none is stated.
+/// `toolbar.background_color`); a title's font has no 0.7.2 field, so none
+/// is stated.
 fn menu_bar(c: &SchemeColors) -> MenuBarWidget {
+    let bar = RuleBuilder::new(PartStyle::default())
+        .base([fill(c.toolbar_background)])
+        .build();
     let item = RuleBuilder::new(PartStyle::default())
         .base([PartProp::Padding(Edges::symmetric(
             MENU_BAR_PADDING_VERTICAL,
@@ -2955,13 +3112,7 @@ fn menu_bar(c: &SchemeColors) -> MenuBarWidget {
             [TextProp::Color(c.selection_foreground)],
         )
         .build();
-    MenuBarWidget::new(
-        WidgetOrigin::Native,
-        RuleBuilder::new(PartStyle::default()).build(),
-        item,
-        item_label,
-        None,
-    )
+    MenuBarWidget::new(WidgetOrigin::Native, bar, item, item_label, None)
 }
 
 /// The tab bar: the bar in the window's background (0.7.2:
@@ -3027,6 +3178,187 @@ fn tab(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> TabWidg
         Some(TAB_ITEM_GAP),
         Some(TAB_INDICATOR_SIDE),
         None,
+    )
+}
+
+/// The toolbar: Breeze's tools area in the Header set's colour with its line
+/// at its own width, the default radius (0.7.2: `toolbar.border`'s radius is
+/// `defaults.border.corner_radius` where unstated), no shadow and
+/// ToolBar_ItemMargin's padding; its items edge to edge. Its buttons are
+/// flat: nothing at rest; hovered, a transparent fill outlined in Highlight;
+/// pressed, Highlight at the blend alpha, outlined so; checked, ButtonText at
+/// 0.125 in the plain button pen, outlined in Highlight under the pointer and
+/// pressed (0.7.2's `button_checked_border_color`); each outline at the
+/// default border width (0.7.2: drawn at `button.border.line_width`, which
+/// is `defaults.border.line_width` where unstated). The labels in the UI
+/// font (0.7.2: `toolbar.font` is `defaults.font` where unstated), the icons
+/// at the toolbar's icon size `icon_size` (0.7.2: `toolbar.icon_size` is
+/// `defaults.icon_sizes.toolbar` where unstated).
+fn toolbar(
+    c: &SchemeColors,
+    typography: &Typography,
+    layout: &LayoutMetrics,
+    icon_size: f32,
+) -> ToolbarWidget {
+    let bar = RuleBuilder::new(PartStyle::default())
+        .base([
+            fill(c.toolbar_background),
+            PartProp::Stroke(Stroke::uniform(TOOLBAR_BORDER_WIDTH, c.toolbar_border)),
+            corners(layout),
+            // `toolbar.border.shadow_enabled`: platform-facts.md §2.13 border.shadow_enabled:
+            // CE_ToolBar paints nothing, no shadow
+            PartProp::Shadows(None),
+            PartProp::Padding(Edges::symmetric(
+                TOOLBAR_PADDING_VERTICAL,
+                TOOLBAR_PADDING_HORIZONTAL,
+            )),
+        ])
+        .build();
+    let hover_outline = outline(layout, c.selection_background);
+    let button = RuleBuilder::new(PartStyle::default())
+        .rule(
+            RuleSelector::on(WidgetState::HOVER),
+            [fill(TOOLBAR_BUTTON_HOVER_BACKGROUND), hover_outline.clone()],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED),
+            [fill(c.toolbar_button_pressed), hover_outline.clone()],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::CHECKED),
+            [
+                fill(c.toolbar_button_checked),
+                outline(layout, c.button_frame),
+            ],
+        )
+        .rules(
+            [
+                RuleSelector::on(WidgetState::HOVER | WidgetState::CHECKED),
+                RuleSelector::on(WidgetState::PRESSED | WidgetState::CHECKED),
+            ],
+            [hover_outline],
+        )
+        .build();
+    let button_icon = RuleBuilder::new(IconStyle::default())
+        .base([IconProp::Size(icon_size)])
+        .build();
+    ToolbarWidget::new(
+        WidgetOrigin::Native,
+        bar,
+        button,
+        RuleBuilder::new(label(&typography.body, None)).build(),
+        button_icon,
+        RuleBuilder::new(PartStyle::default()).build(),
+        Some(TOOLBAR_ITEM_GAP),
+    )
+}
+
+/// The status bar: the window's background in the default line (0.7.2:
+/// `status_bar.background_color` is `defaults.background_color`, and the
+/// colour and width of `status_bar.border` `defaults.border`'s, where
+/// unstated) with QStatusBar's padding; the UI font (0.7.2: `status_bar.font`
+/// is `defaults.font` where unstated).
+fn status_bar(
+    roles: &ColorRoles,
+    typography: &Typography,
+    layout: &LayoutMetrics,
+) -> StatusBarWidget {
+    let mut bar = PartStyle::default();
+    for prop in roles
+        .window
+        .background
+        .map(fill)
+        .into_iter()
+        .chain(roles.window.border.map(|border| outline(layout, border)))
+        .chain([PartProp::Padding(Edges::new(
+            STATUS_BAR_PADDING_TOP,
+            STATUS_BAR_PADDING_RIGHT,
+            STATUS_BAR_PADDING_BOTTOM,
+            STATUS_BAR_PADDING_LEFT,
+        ))])
+    {
+        bar.apply(&prop);
+    }
+    StatusBarWidget::new(
+        WidgetOrigin::Native,
+        bar,
+        label(&typography.body, None),
+        PartStyle::default(),
+    )
+}
+
+/// The sidebar: the view's background in the default line (0.7.2: the
+/// colour and width of `sidebar.border` are `defaults.border`'s where
+/// unstated); a hovered item in the preset's hover fill, the selected one in
+/// the selection's colours (0.7.2: `sidebar.selection_background` and
+/// `selection_text_color` are `defaults.selection_background` and
+/// `selection_text_color` where unstated); the UI font in the view's text
+/// (0.7.2: `sidebar.font` is `defaults.font` where unstated).
+fn sidebar(
+    c: &SchemeColors,
+    roles: &ColorRoles,
+    typography: &Typography,
+    layout: &LayoutMetrics,
+) -> SidebarWidget {
+    let container = RuleBuilder::new(PartStyle::default())
+        .base([fill(c.view_background)])
+        .base(roles.window.border.map(|border| outline(layout, border)))
+        .build();
+    let item = RuleBuilder::new(PartStyle::default())
+        .rule(
+            RuleSelector::on(WidgetState::HOVER),
+            [fill(c.sidebar_hover)],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::SELECTED),
+            [fill(roles.selection.background)],
+        )
+        .build();
+    let item_label = RuleBuilder::new(label(&typography.body, Some(c.view_foreground)))
+        .rule(
+            RuleSelector::on(WidgetState::SELECTED),
+            [TextProp::Color(roles.selection.foreground)],
+        )
+        .build();
+    SidebarWidget::new(
+        WidgetOrigin::Native,
+        container,
+        item,
+        item_label,
+        RuleBuilder::new(IconStyle::default()).build(),
+        RuleBuilder::new(TextStyle::default()).build(),
+        None,
+    )
+}
+
+/// The popover: the window's background (0.7.2: `popover.background_color`
+/// is `defaults.background_color` where unstated, `resolve_safety_nets`) in
+/// the Popup's line at the default width with the large radius (0.7.2:
+/// `popover.border`'s width and radius are `defaults.border`'s line width
+/// and `corner_radius_lg` where unstated) and the Popup's padding; the UI
+/// font (0.7.2: `popover.font` is `defaults.font` where unstated).
+fn popover(
+    c: &SchemeColors,
+    roles: &ColorRoles,
+    typography: &Typography,
+    layout: &LayoutMetrics,
+) -> PopoverWidget {
+    let mut panel = PartStyle::default();
+    for prop in roles.window.background.map(fill).into_iter().chain([
+        outline(layout, c.popover_border),
+        PartProp::Corners(Corners::uniform(layout.corner_radius_lg)),
+        PartProp::Padding(Edges::symmetric(
+            POPOVER_PADDING_VERTICAL,
+            POPOVER_PADDING_HORIZONTAL,
+        )),
+    ]) {
+        panel.apply(&prop);
+    }
+    PopoverWidget::new(
+        WidgetOrigin::Native,
+        panel,
+        PartStyle::default(),
+        label(&typography.body, None),
     )
 }
 
