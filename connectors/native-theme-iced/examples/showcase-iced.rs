@@ -6371,17 +6371,19 @@ fn surface(
 }
 
 /// `content` with the tooltip `tip` on its `position` side, in the
-/// platform's tooltip: the bubble `styles::tooltip`, padded by
-/// `tooltip.border.padding` where iced can carry it ([`tooltip_padding`]),
-/// iced's own padding otherwise; the tip at most `tooltip.max_width` wide,
-/// which is no `Style` field, so the tip's own container is given it; the
-/// bubble [`tooltip_gap`] from `content`; shown after `tooltip.show_delay`
-/// ([`ShowDelay`]). Every tooltip of the showcase is built here, the
-/// chrome's, the Basic page's and the Display page's, so one rule places
-/// them all; the tip's text is the caller's, in `tooltip.font` on the
-/// theme's line height ([`Typeset::themed`]). Where not `shown`, the same
-/// tooltip draws nothing of its own, for a caller whose `tip` is then empty
-/// ([`icon_theme_picker`]).
+/// platform's tooltip on the installed 0.8.0 theme: the bubble
+/// `iced_next::styles::tooltip` (`tooltip.panel` and `tooltip.text.color`;
+/// iced's own tooltip where it leaves one of them unstated), padded by
+/// `tooltip.panel.padding` where iced can carry it
+/// ([`next_tooltip_padding`]), iced's own padding otherwise; the tip at
+/// most `tooltip.panel.max_size`'s width wide, which is no `Style` field,
+/// so the tip's own container is given it (no bound where unstated); the
+/// bubble [`next_tooltip_gap`] from `content`; shown after
+/// `timings.tooltip_show_ms` ([`ShowDelay`]). Every tooltip of the showcase
+/// is built here, the chrome's, the Basic page's and the Display page's, so
+/// one rule places them all; the tip's text is the caller's. Where not
+/// `shown`, the same tooltip draws nothing of its own, for a caller whose
+/// `tip` is then empty ([`icon_theme_picker`]).
 fn showcase_tooltip<'a>(
     state: &'a State,
     content: impl Into<Element<'a, Message>>,
@@ -6389,16 +6391,17 @@ fn showcase_tooltip<'a>(
     position: tooltip::Position,
     shown: bool,
 ) -> Element<'a, Message> {
-    let resolved = &state.current_resolved;
-    let tip = tooltip(
-        content,
-        container(tip).max_width(resolved.tooltip.max_width),
-        position,
-    )
-    .gap(tooltip_gap(resolved, &state.accessibility))
-    .style(styles::tooltip(resolved))
-    .show_delay(resolved);
-    match (shown, tooltip_padding(resolved)) {
+    let r = state.next_shown();
+    let tip = container(tip);
+    let tip = match r.tooltip.panel.max_size[0] {
+        Some(width) => tip.max_width(width),
+        None => tip,
+    };
+    let tip = tooltip(content, tip, position)
+        .gap(next_tooltip_gap(r))
+        .next_style(iced_next::styles::tooltip(r), |tip, style| tip.style(style))
+        .show_delay(r);
+    match (shown, next_tooltip_padding(r)) {
         (true, Some(padding)) => tip.padding(padding).into(),
         (true, None) => tip.into(),
         // The same tooltip, so the tree keeps its shape and `content` its
@@ -6410,20 +6413,23 @@ fn showcase_tooltip<'a>(
     }
 }
 
-/// A chrome tooltip's tip: `label` and, where it has one, the key binding of
-/// `key`, `layout.widget_gap` apart, in `tooltip.font`.
+/// A chrome tooltip's tip on the installed 0.8.0 theme: `label` and, where
+/// it has one, the key binding of `key`, `layout.widget_gap` apart (iced's
+/// own row, nothing between, where unstated), in `tooltip.text`
+/// ([`Typeset::next_text`]).
 fn chrome_tip<'a>(
     state: &'a State,
     label: &'static str,
     key: Option<&'static str>,
 ) -> Element<'a, Message> {
-    let resolved = &state.current_resolved;
-    let a11y = &state.accessibility;
-    let font = &resolved.tooltip.font;
-    let mut tip = row![text(label).themed(font, resolved, a11y)]
-        .spacing(Gaps::from_layout(&state.layout).widget);
+    let r = state.next_shown();
+    let style = &r.tooltip.text;
+    let mut tip = row![text(label).next_text(style, &r.typography)];
+    if let Some(gap) = r.layout.widget_gap {
+        tip = tip.spacing(gap);
+    }
     if let Some(key) = key {
-        tip = tip.push(text(binding(key)).themed(font, resolved, a11y));
+        tip = tip.push(text(binding(key)).next_text(style, &r.typography));
     }
     drawn_probe(probes::CHROME_TIP, tip)
 }
@@ -10989,14 +10995,22 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         }
         // ---- tooltip ----
         ("tooltip", "font") => "the tip's text size and theme_font".into(),
-        ("tooltip", "max_width_px") => "the tip container's max_width".into(),
+        ("tooltip", "max_width_px") => {
+            "showcase_tooltip: the tip container's max_width, tooltip.panel.max_size's width; \
+             no bound where unstated"
+                .into()
+        }
         ("tooltip", "show_delay_ms") => {
-            "tooltip_show_delay: Tooltip::delay; iced's own, none, where unstated".into()
+            "showcase_tooltip: Tooltip::delay, timings.tooltip_show_ms; iced's own, none, where \
+             unstated"
+                .into()
         }
         ("tooltip", "border.corner_radius_px") => "styles::tooltip: border.radius".into(),
         ("tooltip", "border.line_width_px") => "styles::tooltip: border.width".into(),
         ("tooltip", f) if side(f).is_some() => {
-            "Tooltip::padding where all four sides are equal; iced's own otherwise".into()
+            "next_tooltip_padding: Tooltip::padding, the side of tooltip.panel.padding plus \
+             tooltip.panel.stroke.width where all four sides are equal; iced's own otherwise"
+                .into()
         }
         // ---- link ----
         ("link", "font") => "the span's size and theme_font".into(),
@@ -12731,6 +12745,33 @@ fn bubble_padding(resolved: &ResolvedTheme) -> f32 {
     tooltip_padding(resolved).unwrap_or(ICED_TOOLTIP_PADDING)
 }
 
+/// [`tooltip_padding`] on the installed 0.8.0 theme: where
+/// `tooltip.panel.padding` states all four sides alike, that side plus the
+/// width of the border the bubble draws over it,
+/// `tooltip.panel.stroke.width` where `iced_next::styles::tooltip` gives
+/// the bubble its style; where it gives none, iced's own tooltip draws no
+/// border (`container::Style::default()`), and the side alone pads it.
+/// Unequal or unstated sides have no receiver: `None`, and iced's own
+/// padding stands.
+fn next_tooltip_padding(r: &native_theme::next::ResolvedTheme) -> Option<f32> {
+    let [top, right, bottom, left] = iced_next::padding_of(&r.tooltip.panel);
+    let side = top?;
+    let border = match iced_next::styles::tooltip(r) {
+        Ok(_) => iced_next::stroke_width_of(&r.tooltip.panel),
+        Err(_) => None,
+    };
+    [right, bottom, left]
+        .iter()
+        .all(|s| *s == Some(side))
+        .then(|| border.map_or(side, |width| side + width))
+}
+
+/// [`bubble_padding`] on the installed 0.8.0 theme: [`next_tooltip_padding`]
+/// where iced can carry the theme's, [`ICED_TOOLTIP_PADDING`] otherwise.
+fn next_bubble_padding(r: &native_theme::next::ResolvedTheme) -> f32 {
+    next_tooltip_padding(r).unwrap_or(ICED_TOOLTIP_PADDING)
+}
+
 /// A tooltip's gap to its control, in rems: gpui-component's `Tooltip`
 /// margin, `m_3` (gpui-component 0.9.1 `src/tooltip.rs:118`), `rems(0.75)`
 /// (gpui-pre-macros 0.3.12 `src/styles.rs:959-961`), which it lays around
@@ -12749,13 +12790,14 @@ const TOOLTIP_GAP_REMS: f32 = 0.75;
 /// The gap between every tooltip of the showcase and its control,
 /// [`TOOLTIP_GAP_REMS`] of gpui-component's rem, its `Theme::font_size`
 /// (gpui-component 0.9.1 `src/root.rs:714`), which the gpui connector fills
-/// with the scaled `defaults.font.size` (as [`status_bar_padding`]). iced
-/// places a tooltip by its control alone: its `FollowCursor` lays the bubble
-/// over the pointer, above it, with no gap (iced_widget 0.14.2
-/// `src/tooltip.rs:509-516`), not off it as gpui's, so iced's tooltips keep
-/// the gpui bubble's distance from their control rather than the pointer.
-fn tooltip_gap(resolved: &ResolvedTheme, a11y: &AccessibilityPreferences) -> f32 {
-    gpui_rems(TOOLTIP_GAP_REMS, resolved, a11y)
+/// with the installed 0.8.0 theme's `typography.body.size_px`, the text
+/// scale already applied ([`next_gpui_rems`]). iced places a tooltip by its
+/// control alone: its `FollowCursor` lays the bubble over the pointer, above
+/// it, with no gap (iced_widget 0.14.2 `src/tooltip.rs:509-516`), not off it
+/// as gpui's, so iced's tooltips keep the gpui bubble's distance from their
+/// control rather than the pointer.
+fn next_tooltip_gap(r: &native_theme::next::ResolvedTheme) -> f32 {
+    next_gpui_rems(TOOLTIP_GAP_REMS, r)
 }
 
 /// `rems` of gpui-component's rem, its `Theme::font_size` (gpui-component
@@ -12768,13 +12810,13 @@ fn gpui_rems(rems: f32, resolved: &ResolvedTheme, a11y: &AccessibilityPreference
 }
 
 /// What Widget Info says of a tooltip's gap to its control, which the theme
-/// does not state: [`tooltip_gap`]'s value under the installed theme, and
-/// its rule.
+/// does not state: [`next_tooltip_gap`]'s value under the installed 0.8.0
+/// theme, and its rule.
 fn tooltip_gap_text(state: &State) -> String {
     format!(
-        "{}, gpui-component's tooltip margin, m_3: three quarters of the scaled \
-         defaults.font.size (tooltip_gap; gpui-component tooltip.rs:118)",
-        px_text(tooltip_gap(&state.current_resolved, &state.accessibility))
+        "{}, gpui-component's tooltip margin, m_3: three quarters of \
+         typography.body.size_px (next_tooltip_gap; gpui-component tooltip.rs:118)",
+        px_text(next_tooltip_gap(state.next_shown()))
     )
 }
 
@@ -13068,7 +13110,7 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
         tagged(id, pushed.on_press_maybe(on_press)).loose()
     };
     // The bubble is the tip padded as `showcase_tooltip` pads it.
-    let tip_padding = bubble_padding(resolved);
+    let tip_padding = next_bubble_padding(state.next_shown());
     let tip = showcase_tooltip(
         state,
         push(
@@ -19784,13 +19826,6 @@ fn next_theme_mono_font(r: &native_theme::next::ResolvedTheme) -> Option<iced::F
 /// [`gpui_rems`] on the 0.8.0 model: `rems` of gpui-component's rem, which
 /// the gpui connector fills with the body size the 0.8.0 theme resolved,
 /// the text scale already applied (`typography.body.size_px`).
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "the page groups call it as they move to the 0.8.0 model"
-    )
-)]
 fn next_gpui_rems(rems: f32, r: &native_theme::next::ResolvedTheme) -> f32 {
     r.typography.body.size_px * rems
 }
@@ -19846,15 +19881,16 @@ fn next_colour(c: native_theme::next::Color) -> Color {
 
 /// Gives a tooltip the theme's show delay.
 trait ShowDelay {
-    /// The tip waits `tooltip.show_delay` before it opens
-    /// ([`native_theme_iced::tooltip_show_delay`]) where the theme states
-    /// one; where it states none, iced's own delay, none, stays.
-    fn show_delay(self, resolved: &ResolvedTheme) -> Self;
+    /// The tip waits the installed 0.8.0 theme's `timings.tooltip_show_ms`
+    /// before it opens (`native_theme_iced::next::tooltip_show_delay`) where
+    /// the theme states one; where it states none, iced's own delay, none,
+    /// stays.
+    fn show_delay(self, r: &native_theme::next::ResolvedTheme) -> Self;
 }
 
 impl ShowDelay for iced::widget::Tooltip<'_, Message> {
-    fn show_delay(self, resolved: &ResolvedTheme) -> Self {
-        match native_theme_iced::tooltip_show_delay(resolved) {
+    fn show_delay(self, r: &native_theme::next::ResolvedTheme) -> Self {
+        match native_theme_iced::next::tooltip_show_delay(r) {
             Some(delay) => self.delay(delay),
             None => self,
         }
@@ -21986,17 +22022,12 @@ mod tests {
     /// Where the system icon theme cannot be detected, the Icon theme
     /// drop-down's hover text says why, as its `system` row's label leaves
     /// the reason out; where it is detected, the drop-down has no tooltip.
-    /// The tip is the platform's, below the drop-down, no wider than
-    /// `tooltip.max_width`.
+    /// The tip is the platform's, below the drop-down, no wider than the
+    /// installed 0.8.0 theme's `tooltip.panel.max_size` width (kde-breeze
+    /// states one).
     #[test]
     fn the_icon_theme_drop_down_says_on_hover_why_the_system_theme_is_unavailable() {
         recording(|| {
-            let (theme, mut resolved) = match native_theme_iced::from_preset("kde-breeze", false) {
-                Ok(installed) => installed,
-                Err(error) => panic!("kde-breeze: {error}"),
-            };
-            resolved.tooltip.show_delay = None;
-            let max_width = resolved.tooltip.max_width;
             fn failing() -> native_theme::Result<String> {
                 Err(native_theme::error::Error::PlatformUnsupported {
                     platform: "the test's failing detection",
@@ -22009,12 +22040,14 @@ mod tests {
                 (failing as fn() -> native_theme::Result<String>, true),
                 (detected, false),
             ] {
-                let state = State {
-                    current_theme: theme.clone(),
-                    current_resolved: resolved.clone(),
-                    detect_icon_theme: detect,
-                    ..State::default()
-                };
+                let mut state = loaded("kde-breeze", false);
+                state.detect_icon_theme = detect;
+                splice_next(&mut state, |r| r.timings.tooltip_show_ms = None);
+                let max_width = state.next_shown().tooltip.panel.max_size[0];
+                assert!(
+                    max_width.is_some(),
+                    "kde-breeze states no tooltip max width"
+                );
                 let iced_theme = super::theme(&state);
                 let mut ui: Simulator<'_, Message> =
                     Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
@@ -22044,8 +22077,9 @@ mod tests {
                             "the tip {tip:?} is not below the drop-down {picker:?}"
                         );
                         assert!(
-                            tip.width <= max_width + 0.01,
-                            "the tip {tip:?} is wider than tooltip.max_width {max_width}"
+                            max_width.is_none_or(|max_width| tip.width <= max_width + 0.01),
+                            "the tip {tip:?} is wider than tooltip.panel.max_size's width \
+                             {max_width:?}"
                         );
                     }
                     (true, None) => panic!("a failed detection: no tip with the pointer on it"),
@@ -22056,23 +22090,26 @@ mod tests {
         })
     }
 
-    /// A state for the Icon theme tooltip's tests: kde-breeze light, the tip
-    /// shown at once, the system icon theme's detection `detect`, the side
-    /// panel `width` wide in a window of [`WINDOW_SIZE`].
+    /// A state for the Icon theme tooltip's tests: kde-breeze light on both
+    /// models, the tip shown at once, the system icon theme's detection
+    /// `detect`, the side panel `width` wide in a window of [`WINDOW_SIZE`].
     fn icon_theme_tip_state(detect: fn() -> native_theme::Result<String>, width: f32) -> State {
-        let (theme, mut resolved) = match native_theme_iced::from_preset("kde-breeze", false) {
-            Ok(installed) => installed,
-            Err(error) => panic!("kde-breeze: {error}"),
-        };
-        resolved.tooltip.show_delay = None;
+        let mut state = loaded("kde-breeze", false);
+        splice_next(&mut state, |r| r.timings.tooltip_show_ms = None);
         State {
-            current_theme: theme,
-            current_resolved: resolved,
             detect_icon_theme: detect,
             window_width: WINDOW_SIZE.0,
             side_panel_width: width,
-            ..State::default()
+            ..state
         }
+    }
+
+    /// `state`'s installed 0.8.0 theme, in the active window and the
+    /// inactive one, changed by `splice`: what a test changes of what the
+    /// parts on the 0.8.0 model draw.
+    fn splice_next(state: &mut State, splice: impl Fn(&mut native_theme::next::ResolvedTheme)) {
+        splice(&mut state.next_resolved);
+        splice(&mut state.next_inactive);
     }
 
     /// A detection of the system icon theme that fails.
@@ -25109,6 +25146,66 @@ mod tests {
         );
     }
 
+    /// [`next_tooltip_padding`], which every tooltip takes: on the 0.8.0
+    /// model's presets the same as on 0.7.2's
+    /// ([`the_basic_tooltip_takes_a_uniform_stated_padding`]),
+    /// `tooltip.panel.padding` plus the stroke where all four sides are
+    /// alike (kde-breeze's 3 and 1, macos-monterey's 4 and 0.5), iced's own
+    /// where they are not (adwaita, windows-11); four sides of 6 a patch
+    /// states give 6 plus the stroke, and with the panel's fill unstated the
+    /// bubble is iced's own, which draws no border, so the side alone.
+    #[test]
+    fn every_tooltip_takes_a_uniform_stated_padding_on_the_0_8_0_model() -> Result<(), String> {
+        let patch = |toml: &str| {
+            native_theme::next::ThemePatch::from_toml(toml)
+                .map_err(|error| format!("the patch {toml:?}: {error:?}"))
+        };
+        let sides = patch(
+            "[widgets.tooltip]\npanel.padding = { top = 6.0, right = 6.0, bottom = 6.0, left = \
+             6.0 }\n",
+        )?;
+        let mut failures = Vec::new();
+        for (preset, expected) in [
+            ("kde-breeze", Some(3.0 + 1.0)),
+            ("macos-monterey", Some(4.0 + 0.5)),
+            ("adwaita", None),
+            ("windows-11", None),
+        ] {
+            let state = loaded(preset, false);
+            let r = state.next_shown();
+            if next_tooltip_padding(r) != expected {
+                failures.push(format!("{preset}: {:?}", next_tooltip_padding(r)));
+            }
+            if next_bubble_padding(r) != expected.unwrap_or(ICED_TOOLTIP_PADDING) {
+                failures.push(format!("{preset}: the bubble's {}", next_bubble_padding(r)));
+            }
+            let mut patched = r.clone();
+            patched.apply_patch(&sides);
+            let stroke = iced_next::stroke_width_of(&patched.tooltip.panel);
+            if next_tooltip_padding(&patched) != stroke.map(|width| 6.0 + width) {
+                failures.push(format!(
+                    "{preset}: four sides of 6 and the stroke {stroke:?} give {:?}",
+                    next_tooltip_padding(&patched)
+                ));
+            }
+            patched.tooltip.panel.stated =
+                patched.tooltip.panel.stated.difference(PartStated::FILL);
+            if iced_next::styles::tooltip(&patched).is_ok() {
+                failures.push(format!("{preset}: an unfilled panel still has its style"));
+            } else if next_tooltip_padding(&patched) != Some(6.0) {
+                failures.push(format!(
+                    "{preset}: iced's own bubble gives {:?}",
+                    next_tooltip_padding(&patched)
+                ));
+            }
+        }
+        if failures.is_empty() {
+            Ok(())
+        } else {
+            Err(format!("{failures:#?}"))
+        }
+    }
+
     /// The Basic tab's tooltip takes `tooltip.border.padding` plus the border
     /// line where the theme states all four sides alike (kde-breeze's 3,
     /// macos-monterey's 4), and iced's own padding where it does not: iced's
@@ -25138,30 +25235,29 @@ mod tests {
         }
     }
 
-    /// The Basic tab's tooltip waits `tooltip.show_delay` before it opens:
-    /// the pointer resting on its button, the bubble is drawn at once where
-    /// the theme states no delay (catppuccin-mocha: iced's own, none), once
-    /// the delay has passed where it states a short one, and not yet where
-    /// it states a long one. iced's `Tooltip` opens on the first event after
-    /// the delay (iced_widget 0.14.2 `src/tooltip.rs:223-245`), and a
-    /// snapshot sends one, `RedrawRequested`.
+    /// The Basic tab's tooltip waits the installed 0.8.0 theme's
+    /// `timings.tooltip_show_ms` before it opens: the pointer resting on its
+    /// button, the bubble is drawn at once where the theme states no delay
+    /// (iced's own, none), once the delay has passed where it states a short
+    /// one, and not yet where it states a long one. iced's `Tooltip` opens on
+    /// the first event after the delay (iced_widget 0.14.2
+    /// `src/tooltip.rs:223-245`), and a snapshot sends one, `RedrawRequested`.
     #[test]
     fn the_basic_tooltip_waits_the_themes_show_delay() {
         recording(|| {
-            for (delay, opens) in [(None, true), (Some(1_u16), true), (Some(60_000), false)] {
-                let (theme, mut resolved) =
+            for (delay, opens) in [(None, true), (Some(1_u32), true), (Some(60_000), false)] {
+                let (theme, resolved) =
                     match native_theme_iced::from_preset("catppuccin-mocha", false) {
                         Ok(installed) => installed,
                         Err(error) => panic!("catppuccin-mocha: {error}"),
                     };
-                assert_eq!(resolved.tooltip.show_delay, None, "catppuccin-mocha");
-                resolved.tooltip.show_delay = delay;
-                let state = State {
+                let mut state = State {
                     current_theme: theme,
                     current_resolved: resolved,
                     active_tab: Tab::Basic,
                     ..State::default()
                 };
+                splice_next(&mut state, |r| r.timings.tooltip_show_ms = delay);
                 let theme = super::theme(&state);
                 let mut ui: Simulator<'_, Message> =
                     Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
@@ -25204,26 +25300,25 @@ mod tests {
         OnElement(&'static str),
     }
 
-    /// The Display page drawn under catppuccin-mocha with its
-    /// `tooltip.show_delay` set to `delay`, the side panel hidden, with the
-    /// pointer resting at `rest` past three frames, as
+    /// The Display page drawn under catppuccin-mocha with the installed
+    /// 0.8.0 theme's `timings.tooltip_show_ms` set to `delay`, the side panel
+    /// hidden, with the pointer resting at `rest` past three frames, as
     /// [`the_basic_tooltip_waits_the_themes_show_delay`] rests it.
-    fn hovered_frame(delay: Option<u16>, rest: Rest) -> iced_test::simulator::Snapshot {
+    fn hovered_frame(delay: Option<u32>, rest: Rest) -> iced_test::simulator::Snapshot {
         recording(|| {
-            let (theme, mut resolved) =
-                match native_theme_iced::from_preset("catppuccin-mocha", false) {
-                    Ok(installed) => installed,
-                    Err(error) => panic!("catppuccin-mocha: {error}"),
-                };
-            assert_eq!(resolved.tooltip.show_delay, None, "catppuccin-mocha");
-            resolved.tooltip.show_delay = delay;
-            let state = State {
+            let (theme, resolved) = match native_theme_iced::from_preset("catppuccin-mocha", false)
+            {
+                Ok(installed) => installed,
+                Err(error) => panic!("catppuccin-mocha: {error}"),
+            };
+            let mut state = State {
                 current_theme: theme,
                 current_resolved: resolved,
                 active_tab: Tab::Display,
                 side_panel_visible: false,
                 ..State::default()
             };
+            splice_next(&mut state, |r| r.timings.tooltip_show_ms = delay);
             let theme = super::theme(&state);
             let mut ui: Simulator<'_, Message> =
                 Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
@@ -25284,7 +25379,7 @@ mod tests {
         }
     }
 
-    /// The other five tooltips wait `tooltip.show_delay` too, as the Basic
+    /// The other five tooltips wait `timings.tooltip_show_ms` too, as the Basic
     /// one does ([`the_basic_tooltip_waits_the_themes_show_delay`]): the
     /// chrome's (on the status bar's side-panel toggle here) and the Display
     /// page's four. With the pointer on each one's control, a theme that
@@ -25296,7 +25391,7 @@ mod tests {
     /// it changes with time.
     #[test]
     fn every_tooltip_waits_the_themes_show_delay() {
-        const LONG: Option<u16> = Some(60_000);
+        const LONG: Option<u32> = Some(60_000);
         assert!(
             same_frame(
                 &hovered_frame(LONG, Rest::Away),
@@ -25365,7 +25460,8 @@ mod tests {
     }
 
     /// The tooltips' Widget Info names the gap's rule and its value, the
-    /// installed theme's [`tooltip_gap`] (M9-083): the Basic bubble's "Not
+    /// installed 0.8.0 theme's [`next_tooltip_gap`] (M9-083), resolved at
+    /// the text scale where the 0.8.0 model has the preset: the Basic bubble's "Not
     /// themeable" line and the Display page's info, which gives
     /// `tooltip.max_width` under Theme config and not under Not themeable
     /// (M9-089), the bubble's padding and the show delay under Theme config
@@ -25389,7 +25485,6 @@ mod tests {
             };
             let mut accessibility = AccessibilityPreferences::default();
             accessibility.text_scaling_factor = factor;
-            let gap = px_text(tooltip_gap(&resolved, &accessibility));
             let padding = (
                 format!("padding: {}, ", px_text(bubble_padding(&resolved))),
                 tooltip_padding(&resolved).is_some(),
@@ -25402,12 +25497,16 @@ mod tests {
                 None => ("delay: none, iced's own".to_string(), false),
             };
             let max_width = format!("{:.0}px", resolved.tooltip.max_width);
-            let state = State {
+            let mut state = State {
                 current_theme: theme,
                 current_resolved: resolved,
                 accessibility,
                 ..State::default()
             };
+            if Preset::from_name(preset).is_some() {
+                rescaled(&mut state, preset, false);
+            }
+            let gap = px_text(next_tooltip_gap(state.next_shown()));
             let lines = iced_not_themeable(&state, bubble);
             if !lines.iter().any(|line| {
                 line.starts_with("gap to its control: ")
@@ -25457,29 +25556,28 @@ mod tests {
         assert!(failures.is_empty(), "{failures:#?}");
     }
 
-    /// The Display page drawn under `preset` light, as `splice` leaves its
-    /// resolved theme, its tooltips opening at once, the side panel hidden:
-    /// per tooltip, Top, Bottom, Left and Right, the button's bounds and,
-    /// with the pointer resting on the button past three frames, the tip's
-    /// as drawn.
+    /// The Display page drawn under `preset` light on both models, as
+    /// `splice` leaves its 0.7.2 resolved theme (the tips' text) and
+    /// `splice_tip` its installed 0.8.0 one (the bubble), its tooltips
+    /// opening at once, the side panel hidden: per tooltip, Top, Bottom, Left
+    /// and Right, the button's bounds and, with the pointer resting on the
+    /// button past three frames, the tip's as drawn.
     fn display_tips(
         preset: &str,
         splice: impl Fn(&mut ResolvedTheme),
-    ) -> Vec<(Rectangle, Rectangle)> {
+        splice_tip: impl Fn(&mut native_theme::next::ResolvedTheme),
+    ) -> Result<Vec<(Rectangle, Rectangle)>, String> {
         recording(|| {
-            let (theme, mut resolved) = match native_theme_iced::from_preset(preset, false) {
-                Ok(installed) => installed,
-                Err(error) => panic!("{preset}: {error}"),
-            };
-            resolved.tooltip.show_delay = None;
-            splice(&mut resolved);
-            let state = State {
-                current_theme: theme,
-                current_resolved: resolved,
+            let mut state = State {
                 active_tab: Tab::Display,
                 side_panel_visible: false,
-                ..State::default()
+                ..loaded(preset, false)
             };
+            splice(&mut state.current_resolved);
+            splice_next(&mut state, |r| {
+                r.timings.tooltip_show_ms = None;
+                splice_tip(r);
+            });
             let theme = super::theme(&state);
             probes::DISPLAY_TOOLTIPS
                 .into_iter()
@@ -25488,7 +25586,7 @@ mod tests {
                     let mut ui: Simulator<'_, Message> =
                         Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
                     if let Err(error) = ui.snapshot(&theme) {
-                        panic!("the interface did not draw: {error}");
+                        return Err(format!("the interface did not draw: {error}"));
                     }
                     let button = probe_bounds(&mut ui, control);
                     let at = button.center();
@@ -25496,14 +25594,14 @@ mod tests {
                     let _ = ui.simulate([Event::Mouse(mouse::Event::CursorMoved { position: at })]);
                     for _ in 0..3 {
                         if let Err(error) = ui.snapshot(&theme) {
-                            panic!("the interface did not draw: {error}");
+                            return Err(format!("the interface did not draw: {error}"));
                         }
                     }
                     match drawn_layout().get(tip) {
-                        Some(rect) => (button, *rect),
-                        None => {
-                            panic!("{preset}: {tip} is not drawn with the pointer on {control}")
-                        }
+                        Some(rect) => Ok((button, *rect)),
+                        None => Err(format!(
+                            "{preset}: {tip} is not drawn with the pointer on {control}"
+                        )),
                     }
                 })
                 .collect()
@@ -25511,37 +25609,37 @@ mod tests {
     }
 
     /// The Display page's four tooltips take the tooltip's theme, as the
-    /// chrome's and the Basic page's do (M9-089): kde-breeze's
-    /// `tooltip.border.padding` (3 on every side) spliced 10 wider moves
-    /// each tip 10 further from its button, `tooltip.max_width` spliced to
-    /// half the narrowest tip wraps every tip inside it, and each tip is one
-    /// line `defaults.line_height` times its scaled size tall, a spliced
-    /// line height included.
+    /// chrome's and the Basic page's do (M9-089): the installed 0.8.0
+    /// kde-breeze's `tooltip.panel.padding` (3 on every side) spliced 10
+    /// wider moves each tip 10 further from its button, its
+    /// `tooltip.panel.max_size` width spliced to half the narrowest tip
+    /// wraps every tip inside it, and each tip, whose text is still the
+    /// 0.7.2 theme's, is one line `defaults.line_height` times its scaled
+    /// size tall, a spliced line height included.
     #[test]
-    fn the_display_tooltips_take_the_tooltip_theme() {
+    fn the_display_tooltips_take_the_tooltip_theme() -> Result<(), String> {
         const WIDER: f32 = 10.0;
-        let base = display_tips("kde-breeze", |_| {});
+        let base = display_tips("kde-breeze", |_| {}, |_| {})?;
+        let kde_next = loaded("kde-breeze", false).next_shown().clone();
         let (_, kde) = match native_theme_iced::from_preset("kde-breeze", false) {
             Ok(installed) => installed,
             Err(error) => panic!("kde-breeze: {error}"),
         };
         let a11y = AccessibilityPreferences::default();
-        let stated = match tooltip_padding(&kde) {
-            Some(padding) => padding,
-            None => panic!("kde-breeze states no uniform tooltip padding"),
-        };
+        let stated = next_tooltip_padding(&kde_next)
+            .ok_or("kde-breeze states no uniform tooltip padding on the 0.8.0 model")?;
         let mut failures = Vec::new();
 
-        let wider = |r: &mut ResolvedTheme| {
-            let p = &mut r.tooltip.border.padding;
+        let wider = |r: &mut native_theme::next::ResolvedTheme| {
+            let p = &mut r.tooltip.panel.padding;
             for side in [&mut p.top, &mut p.right, &mut p.bottom, &mut p.left] {
-                *side = side.map(|s| s + WIDER);
+                *side += WIDER;
             }
         };
-        let mut spliced = kde.clone();
+        let mut spliced = kde_next.clone();
         wider(&mut spliced);
-        assert_eq!(tooltip_padding(&spliced), Some(stated + WIDER));
-        let padded = display_tips("kde-breeze", wider);
+        assert_eq!(next_tooltip_padding(&spliced), Some(stated + WIDER));
+        let padded = display_tips("kde-breeze", |_| {}, wider)?;
         for (side, ((_, before), (_, after))) in ["top", "bottom", "left", "right"]
             .into_iter()
             .zip(base.iter().zip(&padded))
@@ -25554,7 +25652,7 @@ mod tests {
             };
             if (moved - WIDER).abs() > 0.01 {
                 failures.push(format!(
-                    "{side}: tooltip.border.padding {WIDER} wider moves the tip {moved}"
+                    "{side}: tooltip.panel.padding {WIDER} wider moves the tip {moved}"
                 ));
             }
         }
@@ -25564,21 +25662,30 @@ mod tests {
             .map(|(_, tip)| tip.width)
             .fold(f32::INFINITY, f32::min);
         let max_width = (narrowest / 2.0).floor();
-        let wrapped = display_tips("kde-breeze", |r| r.tooltip.max_width = max_width);
+        let wrapped = display_tips(
+            "kde-breeze",
+            |_| {},
+            |r| r.tooltip.panel.max_size[0] = Some(max_width),
+        )?;
         for (side, ((_, before), (_, after))) in ["top", "bottom", "left", "right"]
             .into_iter()
             .zip(base.iter().zip(&wrapped))
         {
             if after.width > max_width + 0.01 || after.height <= before.height {
                 failures.push(format!(
-                    "{side}: tooltip.max_width {max_width} leaves the tip {}x{}, {}x{} before",
+                    "{side}: tooltip.panel.max_size width {max_width} leaves the tip {}x{}, {}x{} \
+                     before",
                     after.width, after.height, before.width, before.height
                 ));
             }
         }
 
         let line_height = kde.defaults.line_height + 0.5;
-        let taller = display_tips("kde-breeze", |r| r.defaults.line_height = line_height);
+        let taller = display_tips(
+            "kde-breeze",
+            |r| r.defaults.line_height = line_height,
+            |_| {},
+        )?;
         let size = scaled_text_size(kde.tooltip.font.size, &a11y);
         for (lh, tips) in [(kde.defaults.line_height, &base), (line_height, &taller)] {
             for (side, (_, tip)) in ["top", "bottom", "left", "right"].into_iter().zip(tips) {
@@ -25591,34 +25698,32 @@ mod tests {
                 }
             }
         }
-        assert!(failures.is_empty(), "{failures:#?}");
+        if failures.is_empty() {
+            Ok(())
+        } else {
+            Err(format!("{failures:#?}"))
+        }
     }
 
-    /// Every tooltip stands [`tooltip_gap`] from its control, the one rule
-    /// of gpui-component's tooltip (M9-083): the Basic page's bubble below
-    /// its button, and the Display page's four tips beyond their buttons'
-    /// edges by the gap and the bubble's padding, under kde-breeze, which
-    /// states a uniform tooltip padding, and adwaita, which states none
-    /// iced can carry ([`ICED_TOOLTIP_PADDING`] then).
+    /// Every tooltip stands [`next_tooltip_gap`] from its control, the one
+    /// rule of gpui-component's tooltip (M9-083): the Basic page's bubble
+    /// below its button, and the Display page's four tips beyond their
+    /// buttons' edges by the gap and the bubble's padding, under the
+    /// installed 0.8.0 kde-breeze, which states a uniform tooltip padding,
+    /// and adwaita, which states none iced can carry
+    /// ([`ICED_TOOLTIP_PADDING`] then).
     #[test]
     fn every_tooltip_stands_the_gap_from_its_control() {
         recording(|| {
             let mut failures = Vec::new();
             for preset in ["kde-breeze", "adwaita"] {
-                let (theme, mut resolved) = match native_theme_iced::from_preset(preset, false) {
-                    Ok(installed) => installed,
-                    Err(error) => panic!("{preset}: {error}"),
-                };
-                resolved.tooltip.show_delay = None;
-                let gap = tooltip_gap(&resolved, &AccessibilityPreferences::default());
-                let padding = bubble_padding(&resolved);
-
-                let state = State {
-                    current_theme: theme,
-                    current_resolved: resolved,
+                let mut state = State {
                     active_tab: Tab::Basic,
-                    ..State::default()
+                    ..loaded(preset, false)
                 };
+                splice_next(&mut state, |r| r.timings.tooltip_show_ms = None);
+                let gap = next_tooltip_gap(state.next_shown());
+                let padding = next_bubble_padding(state.next_shown());
                 let iced_theme = super::theme(&state);
                 let mut ui: Simulator<'_, Message> =
                     Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
@@ -25654,9 +25759,15 @@ mod tests {
                 drop(ui);
 
                 let want = gap + padding;
-                for (side, (button, tip)) in ["top", "bottom", "left", "right"]
-                    .into_iter()
-                    .zip(display_tips(preset, |_| {}))
+                let tips = match display_tips(preset, |_| {}, |_| {}) {
+                    Ok(tips) => tips,
+                    Err(error) => {
+                        failures.push(error);
+                        Vec::new()
+                    }
+                };
+                for (side, (button, tip)) in
+                    ["top", "bottom", "left", "right"].into_iter().zip(tips)
                 {
                     let stands = match side {
                         "top" => button.y - (tip.y + tip.height),
@@ -25676,28 +25787,21 @@ mod tests {
         })
     }
 
-    /// The chrome's tooltips stand [`tooltip_gap`] and the bubble's padding
+    /// The chrome's tooltips stand [`next_tooltip_gap`] and the bubble's padding
     /// from their control too (M9-083), the toolbar's below its button and
     /// the status bar's side-panel toggle's above it: below, at the window's
     /// bottom edge, iced's `snap_within_viewport` (on by default, iced_widget
     /// 0.14.2 `src/tooltip.rs:105`, `:525-545`) would pull the bubble back
     /// over the toggle, and gpui's own tooltip turns above the pointer there
-    /// (gpui-pre 0.3.12 `src/window.rs:4070-4079`). Under kde-breeze light.
+    /// (gpui-pre 0.3.12 `src/window.rs:4070-4079`). Under kde-breeze light
+    /// on both models.
     #[test]
     fn the_chrome_tooltips_stand_the_gap_from_their_control() {
         recording(|| {
-            let (theme, mut resolved) = match native_theme_iced::from_preset("kde-breeze", false) {
-                Ok(installed) => installed,
-                Err(error) => panic!("kde-breeze: {error}"),
-            };
-            resolved.tooltip.show_delay = None;
-            let want = tooltip_gap(&resolved, &AccessibilityPreferences::default())
-                + bubble_padding(&resolved);
-            let state = State {
-                current_theme: theme,
-                current_resolved: resolved,
-                ..State::default()
-            };
+            let mut state = loaded("kde-breeze", false);
+            splice_next(&mut state, |r| r.timings.tooltip_show_ms = None);
+            let want =
+                next_tooltip_gap(state.next_shown()) + next_bubble_padding(state.next_shown());
             let iced_theme = super::theme(&state);
             let mut failures = Vec::new();
             for (control, above) in [
