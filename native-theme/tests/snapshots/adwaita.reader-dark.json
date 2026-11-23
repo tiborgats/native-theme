@@ -834,9 +834,9 @@
   },
   "switch": {
     "origin": "native",
-    "label_side": null,
-    "label_gap": null,
-    "label_gap_stretches": null,
+    "label_side": "leading",
+    "label_gap": 6.0,
+    "label_gap_stretches": true,
     "show_state_glyphs": null,
     "disabled_opacity": 0.5,
     "track": {
@@ -925,7 +925,50 @@
       ]
     },
     "label": {
-      "base": {}
+      "base": {
+        "family": "Cantarell",
+        "color": "#ffffff",
+        "size_px": 14.666667,
+        "weight": 400,
+        "style": "normal",
+        "defined_size": {
+          "pt": 11.0
+        }
+      },
+      "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "label": {
+            "color": "#ffffff"
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "label": {
+            "color": "#ffffff"
+          }
+        },
+        {
+          "states": [
+            "checked"
+          ],
+          "label": {
+            "color": "#ffffff"
+          }
+        },
+        {
+          "states": [
+            "disabled"
+          ],
+          "label": {
+            "color": "srgb(1, 1, 1, 0.5)"
+          }
+        }
+      ]
     }
   },
   "slider": {

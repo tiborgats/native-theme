@@ -879,9 +879,9 @@
   },
   "switch": {
     "origin": "native",
-    "label_side": null,
-    "label_gap": null,
-    "label_gap_stretches": null,
+    "label_side": "trailing",
+    "label_gap": 12.0,
+    "label_gap_stretches": false,
     "show_state_glyphs": null,
     "disabled_opacity": 1.0,
     "track": {
@@ -996,7 +996,50 @@
       ]
     },
     "label": {
-      "base": {}
+      "base": {
+        "family": "Segoe UI",
+        "color": "#ffffff",
+        "size_px": 14.0,
+        "weight": 400,
+        "style": "normal",
+        "defined_size": {
+          "pt": 10.5
+        }
+      },
+      "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "label": {
+            "color": "#ffffff"
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "label": {
+            "color": "#ffffff"
+          }
+        },
+        {
+          "states": [
+            "checked"
+          ],
+          "label": {
+            "color": "#ffffff"
+          }
+        },
+        {
+          "states": [
+            "disabled"
+          ],
+          "label": {
+            "color": "#ffffff5d"
+          }
+        }
+      ]
     }
   },
   "slider": {

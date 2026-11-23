@@ -54,18 +54,44 @@ struct Difference {
 const DIFFERENCES: &[Difference] = &[
     Difference {
         leaf: "SwitchLook::label disabled",
-        presets: &[
-            "kde-breeze",
-            "adwaita",
-            "windows-11",
-            "macos-monterey",
-            "macos-tahoe",
-            "ios-13",
-        ],
+        presets: &["macos-monterey", "macos-tahoe", "ios-13"],
         reason: "the 0.8.0 preset states no disabled colour of switch.label, so a disabled \
                  switch's label is gpui-component's own, muted_foreground, \
                  colors.window.foreground_muted (spec §10, rule 0), where the 0.7.2 look took \
                  defaults.disabled_text_color",
+    },
+    Difference {
+        leaf: "SwitchLook::label disabled",
+        presets: &["kde-breeze", "adwaita"],
+        reason: "0.7.2 has no switch label and the look took defaults.disabled_text_color; the \
+                 0.8.0 presets state the platform's disabled switch label: kde-breeze \
+                 qqc2-desktop-style's, the Disabled [Colors:Window] text at its opacity 0.6 \
+                 (#a0a1a399 / #686a6c99: Switch.qml:72, :75 at qqc2-desktop-style v6.31.0; \
+                 plasmadesktoptheme.cpp:273-274 at Kirigami 8319acc7), adwaita AdwSwitchRow's \
+                 title, the row's text at --disabled-opacity 50 % (#00000666 / #ffffff80: \
+                 _labels.scss:8-10, _colors.scss:37, :100, :320 at libadwaita 1.10.0)",
+    },
+    Difference {
+        leaf: "SwitchLook::label",
+        presets: &["adwaita"],
+        reason: "0.7.2 has no switch label and the look took the window's text, #2e3436 in \
+                 light (no source at libadwaita, next/presets/adwaita.rs); the 0.8.0 adwaita \
+                 states AdwSwitchRow's title in the row's text, view_fg_color and \
+                 card_fg_color RGB(0 0 6 / 80%) (#000006cc: _lists.scss:5-7, :521; \
+                 _misc.scss:202-204; _colors.scss:37, :62 at libadwaita 1.10.0); in dark both \
+                 are white",
+    },
+    Difference {
+        leaf: "SwitchLook::label_gap",
+        presets: &["kde-breeze", "windows-11", "adwaita"],
+        reason: "0.7.2 has no switch label, so the look has no gap and gpui-component's own \
+                 is drawn; the 0.8.0 presets state the platform's: kde-breeze 4, \
+                 qqc2-desktop-style's Switch spacing, Kirigami.Units.smallSpacing \
+                 (Switch.qml:26, :70 at qqc2-desktop-style v6.31.0; units.cpp:37 at Kirigami \
+                 8319acc7); windows-11 12, ToggleSwitch's fixed column \
+                 (ToggleSwitch_themeresources.xaml:499-503 at microsoft-ui-xaml 8463f45); \
+                 adwaita 6, the least gap of AdwSwitchRow's header box (_lists.scss:132 at \
+                 libadwaita 1.10.0)",
     },
     Difference {
         leaf: "SwitchLook::label disabled",
@@ -339,9 +365,16 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
             // leaves the rest of the look compared.
             let unlabelled = |look: SwitchLook| SwitchLook {
                 label: gpui::transparent_black(),
+                label_gap: None,
                 hover_track: None,
                 ..look
             };
+            r.leaf(
+                "SwitchLook::label_gap",
+                &state,
+                old_switch.map(|look| look.label_gap),
+                new_switch.map(|look| look.label_gap),
+            );
             r.leaf(
                 "SwitchLook",
                 &state,

@@ -834,9 +834,9 @@
   },
   "switch": {
     "origin": "native",
-    "label_side": null,
-    "label_gap": null,
-    "label_gap_stretches": null,
+    "label_side": "leading",
+    "label_gap": 6.0,
+    "label_gap_stretches": true,
     "show_state_glyphs": null,
     "disabled_opacity": 0.5,
     "track": {
@@ -925,7 +925,50 @@
       ]
     },
     "label": {
-      "base": {}
+      "base": {
+        "family": "Inter",
+        "color": "#000006cc",
+        "size_px": 16.0,
+        "weight": 700,
+        "style": "normal",
+        "defined_size": {
+          "pt": 12.0
+        }
+      },
+      "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "label": {
+            "color": "#000006cc"
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "label": {
+            "color": "#000006cc"
+          }
+        },
+        {
+          "states": [
+            "checked"
+          ],
+          "label": {
+            "color": "#000006cc"
+          }
+        },
+        {
+          "states": [
+            "disabled"
+          ],
+          "label": {
+            "color": "#00000666"
+          }
+        }
+      ]
     }
   },
   "slider": {

@@ -200,7 +200,9 @@ use crate::IconSet;
 use crate::next::color::Color;
 use crate::next::geometry::{Corners, Edges, Stroke, StrokeAlign, StrokeSide};
 use crate::next::icons::{IconSizes, IconThemeSpec};
-use crate::next::layout::{ArrowSide, DialogButtonOrder, LayoutMetrics, TabIndicatorSide};
+use crate::next::layout::{
+    ArrowSide, DialogButtonOrder, LabelSide, LayoutMetrics, TabIndicatorSide,
+};
 use crate::next::motion::{CaretSpec, DialogEntranceStyle, MotionTokens, UiTimings};
 use crate::next::paint::Paint;
 use crate::next::palette::Palette;
@@ -1792,6 +1794,17 @@ const SWITCH_THUMB_DIAMETER: f32 = 18.0;
 // default 1 (SwitchIndicator.qml:65-79)
 const SWITCH_THUMB_BORDER_WIDTH: f32 = 1.0;
 
+/// The gap between a switch's track and its label.
+// `switch.label_gap`: qqc2-desktop-style's Switch `spacing: Kirigami.Units.smallSpacing`
+// (Switch.qml:26, the label's left padding the indicator's width plus it, :70, at
+// qqc2-desktop-style v6.31.0), `smallSpacing(4)` (units.cpp:37 at Kirigami 8319acc7)
+const SWITCH_LABEL_GAP: f32 = 4.0;
+
+/// The opacity a disabled switch draws its label at.
+// `switch.label`: `opacity: control.enabled ? 1 : 0.6` (Switch.qml:72 at qqc2-desktop-style
+// v6.31.0)
+const SWITCH_LABEL_DISABLED_OPACITY: f32 = 0.6;
+
 /// The gap between a dialog's buttons.
 // `dialog.button_gap`: 0.7.2 kde-breeze.toml (uncited)
 const DIALOG_BUTTON_GAP: f32 = 6.0;
@@ -2853,7 +2866,7 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
         separator: separator(c, &layout),
         spinner: spinner(&colors),
         popover: popover(c, &colors, &typography, &layout),
-        switch: switch(c, &colors),
+        switch: switch(c, &colors, &typography),
         dialog: dialog(&colors, &typography, &layout, motion),
         combo_box: combo_box(c, &colors, &typography, &layout, ctx.direction),
         segmented_control: segmented_control(c, &colors, &typography, &layout),
@@ -4536,6 +4549,32 @@ fn popover(
     )
 }
 
+/// The switch's label, qqc2-desktop-style's Switch's own: `control.font`,
+/// the General font (Switch.qml:74 at qqc2-desktop-style v6.31.0;
+/// qquicktheme.cpp:41, :97 at qtdeclarative v6.11.2; kdeplatformtheme.cpp:140-141,
+/// :176-178 at plasma-integration v6.5.3), in `Kirigami.Theme.textColor`
+/// (:75), `[Colors:Window]` ForegroundNormal (plasmadesktoptheme.cpp:289 at
+/// Kirigami 8319acc7), which hover, press and the on state leave alone
+/// (Switch.qml:64-83 reads none of them); disabled, the Disabled group's
+/// (plasmadesktoptheme.cpp:273-274), Disabled `[Colors:Window]`
+/// ForegroundNormal, at [`SWITCH_LABEL_DISABLED_OPACITY`] (:72), on or off.
+fn switch_label(c: &SchemeColors, typography: &Typography) -> RuleSet<TextStyle, TextProp> {
+    let same = [
+        RuleSelector::on(WidgetState::HOVER),
+        RuleSelector::on(WidgetState::PRESSED),
+        RuleSelector::on(WidgetState::CHECKED),
+    ];
+    RuleBuilder::new(label(&typography.body, Some(c.window_foreground)))
+        .rules(same, [TextProp::Color(c.window_foreground)])
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED),
+            [TextProp::Color(
+                c.disabled_text.mul_alpha(SWITCH_LABEL_DISABLED_OPACITY),
+            )],
+        )
+        .build()
+}
+
 /// The switch: qqc2-desktop-style's SwitchIndicator, a track of an exact
 /// size and radius, off in the Button set's tint and on in Highlight laid
 /// over it, outlined in handleBorderColor off and in Highlight on; a round
@@ -4545,8 +4584,9 @@ fn popover(
 /// disabled, the Disabled group's colours for the track, its outline and the
 /// handle, the on track's apart (0.7.2: `switch.disabled_opacity` is
 /// `defaults.disabled_opacity` where unstated). No fill reads the pointer, so
-/// no hover rule.
-fn switch(c: &SchemeColors, roles: &ColorRoles) -> SwitchWidget {
+/// no hover rule. Its label [`switch_label`], after the track at
+/// [`SWITCH_LABEL_GAP`], keeping to it.
+fn switch(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> SwitchWidget {
     let track_outline = |color| PartProp::Stroke(Stroke::uniform(SWITCH_TRACK_BORDER_WIDTH, color));
     let track = RuleBuilder::new(PartStyle::default())
         .base([
@@ -4618,10 +4658,16 @@ fn switch(c: &SchemeColors, roles: &ColorRoles) -> SwitchWidget {
         WidgetOrigin::Native,
         track,
         thumb,
-        RuleBuilder::new(TextStyle::default()).build(),
-        None,
-        None,
-        None,
+        switch_label(c, typography),
+        // `label_side`, `label_gap`, `label_gap_stretches`: qqc2-desktop-style's Switch draws the
+        // indicator at the control's left padding and its label after it, the label's left
+        // padding the indicator's width plus `spacing` (Switch.qml:31-33, :70 at
+        // qqc2-desktop-style v6.31.0), `spacing: Kirigami.Units.smallSpacing` (:26), 4
+        // (units.cpp:37 at Kirigami 8319acc7), the label left-aligned (:79), so it keeps to the
+        // switch.
+        Some(LabelSide::Trailing),
+        Some(SWITCH_LABEL_GAP),
+        Some(false),
         None,
         // 0.7.2: `switch.disabled_opacity` is `defaults.disabled_opacity` where unstated.
         Some(roles.disabled_opacity),

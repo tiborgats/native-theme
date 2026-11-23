@@ -188,7 +188,7 @@ use crate::IconSet;
 use crate::next::color::Color;
 use crate::next::geometry::{Corners, Stroke};
 use crate::next::icons::{IconSizes, IconThemeSpec};
-use crate::next::layout::{DialogButtonOrder, LayoutMetrics};
+use crate::next::layout::{DialogButtonOrder, LabelSide, LayoutMetrics};
 use crate::next::motion::{CaretSpec, MotionTokens, UiTimings};
 use crate::next::paint::Paint;
 use crate::next::palette::Palette;
@@ -2254,10 +2254,17 @@ fn switch(c: &SchemeColors, roles: &ColorRoles) -> SwitchWidget {
         WidgetOrigin::Native,
         track,
         thumb,
+        // The label's colours and font: no source (iOS's switch draws no label; the list row's
+        // text is unpublished, "system default styling").
         RuleBuilder::new(TextStyle::default()).build(),
+        // `label_side`, `label_gap_stretches`: "In iOS, iPadOS, watchOS, and tvOS, the label and
+        // switch fill as much horizontal space as the toggle's parent offers by aligning the
+        // label's leading edge and the switch's trailing edge with the containing view's
+        // respective leading and trailing edges" (Apple, SwiftUI `ToggleStyle.switch`,
+        // developer.apple.com, read 2026-11-23). `label_gap`: unmeasured (the iOS host).
+        Some(LabelSide::Leading),
         None,
-        None,
-        None,
+        Some(true),
         None,
         Some(roles.disabled_opacity),
     )

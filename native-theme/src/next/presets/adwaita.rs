@@ -137,7 +137,9 @@ use crate::IconSet;
 use crate::next::color::Color;
 use crate::next::geometry::{Corners, Edges, Stroke};
 use crate::next::icons::{IconSizes, IconThemeSpec};
-use crate::next::layout::{ArrowSide, DialogButtonOrder, LayoutMetrics, TabIndicatorSide};
+use crate::next::layout::{
+    ArrowSide, DialogButtonOrder, LabelSide, LayoutMetrics, TabIndicatorSide,
+};
 use crate::next::motion::{CaretSpec, DialogEntranceStyle, MotionTokens, UiTimings};
 use crate::next::paint::Paint;
 use crate::next::palette::Palette;
@@ -185,6 +187,9 @@ use crate::next::window::WindowChrome;
 struct SchemeColors {
     window_background: Color,
     window_foreground: Color,
+    /// libadwaita's `window_fg_color`, which `view_fg_color` and
+    /// `card_fg_color` equal: a list row's text.
+    row_foreground: Color,
     window_foreground_muted: Color,
     window_border: Color,
     view_background: Color,
@@ -263,6 +268,9 @@ const LIGHT: SchemeColors = SchemeColors {
     // `tab.active_text_color`, `tab.hover_text_color`, `window.title_bar_font.color`,
     // `expander.arrow_color`: 0.7.2 adwaita.toml (uncited)
     window_foreground: srgb8(0x2e34_36ff),
+    // `switch.label`: window_fg_color, view_fg_color and card_fg_color RGB(0 0 6 / 80%)
+    // (_colors.scss:33, :37, :62 at libadwaita 1.10.0); 0.8 × 255 = 204 = 0xcc
+    row_foreground: srgb8(0x0000_06cc),
     // `defaults.muted_color`: ❓ platform-facts.md (§2.1.3): no source for #929292 at libadwaita
     // 1.10.0 (docs/todo.md, "Presets: colours with no reproducible source")
     window_foreground_muted: srgb8(0x9292_92ff),
@@ -447,6 +455,9 @@ const DARK: SchemeColors = SchemeColors {
     // `tab.active_text_color`, `tab.hover_text_color`, `window.title_bar_font.color`,
     // `expander.arrow_color`: 0.7.2 adwaita.toml (uncited)
     window_foreground: srgb8(0xffff_ffff),
+    // `switch.label`: window_fg_color, view_fg_color and card_fg_color white (_colors.scss:96,
+    // :100, :124 at libadwaita 1.10.0)
+    row_foreground: srgb8(0xffff_ffff),
     // `defaults.muted_color`: 0.7.2 adwaita.toml (uncited)
     window_foreground_muted: srgb8(0x9292_92ff),
     // `defaults.border.color`: platform-facts.md (§2.1.3): $border_color, white at
@@ -1097,6 +1108,13 @@ const SWITCH_TRACK_RADIUS: f32 = 14.0;
 // `switch.thumb_diameter`: 0.7.2 adwaita.toml (uncited)
 const SWITCH_THUMB_DIAMETER: f32 = 20.0;
 
+/// The least gap between a switch row's title and its switch, which the
+/// title's expanding box widens to the row's free width.
+// `switch.label_gap`: the header box's `border-spacing: 6px` (_lists.scss:132), between the
+// title box, `hexpand` True (adw-action-row.ui:40-43), and the suffixes box, the switch's
+// (adw-action-row.ui:91-94; adw-switch-row.c:161), at libadwaita 1.10.0
+const SWITCH_LABEL_GAP: f32 = 6.0;
+
 /// The dialog's least width.
 // `dialog.min_width`: 0.7.2 adwaita.toml (uncited)
 const DIALOG_MIN_WIDTH: f32 = 300.0;
@@ -1340,6 +1358,7 @@ fn lay_palette_over(c: &mut SchemeColors, p: &Palette, scheme: Scheme) {
     c.popover_background = p.surface_bg;
     c.tooltip_background = p.tooltip_bg;
     c.window_foreground = p.foreground;
+    c.row_foreground = p.foreground;
     c.tooltip_foreground = p.foreground;
     c.window_foreground_muted = p.foreground_muted;
     c.window_border = p.border;
@@ -1524,7 +1543,7 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
         separator: separator(c, &layout),
         spinner: spinner(&colors),
         popover: popover(c, &typography, &layout),
-        switch: switch(c, &colors),
+        switch: switch(c, &colors, &typography),
         dialog: dialog(
             &colors,
             &typography,
@@ -2835,8 +2854,10 @@ fn popover(c: &SchemeColors, typography: &Typography, layout: &LayoutMetrics) ->
 /// with their hover colours; a thumb of an exact diameter, its colour when
 /// off where stated, else its colour when on (0.7.2's fallback of
 /// `unchecked_thumb_background`). 0.7.2 states no outline for either ("`None`
-/// draws no outline").
-fn switch(c: &SchemeColors, roles: &ColorRoles) -> SwitchWidget {
+/// draws no outline"). Its label [`switch_label`], `AdwSwitchRow`'s title,
+/// before the track, at least [`SWITCH_LABEL_GAP`] from it, the title taking
+/// the row's free width.
+fn switch(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> SwitchWidget {
     let size = [Some(SWITCH_TRACK_WIDTH), Some(SWITCH_TRACK_HEIGHT)];
     let track = RuleBuilder::new(PartStyle::default())
         .base([
@@ -2887,14 +2908,43 @@ fn switch(c: &SchemeColors, roles: &ColorRoles) -> SwitchWidget {
         WidgetOrigin::Native,
         track,
         thumb,
-        RuleBuilder::new(TextStyle::default()).build(),
-        None,
-        None,
-        None,
+        switch_label(c, typography),
+        // `label_side`, `label_gap_stretches`: libadwaita's labelled switch is `AdwSwitchRow`, its
+        // title first and expanding (adw-action-row.ui:40-43), the switch a suffix at the row's
+        // end (adw-switch-row.c:161; adw-action-row.ui:91-94, at libadwaita 1.10.0).
+        Some(LabelSide::Leading),
+        Some(SWITCH_LABEL_GAP),
+        Some(true),
         None,
         // 0.7.2: `switch.disabled_opacity` is `defaults.disabled_opacity` where unstated.
         Some(roles.disabled_opacity),
     )
+}
+
+/// The switch's label, `AdwSwitchRow`'s title: the row's text,
+/// `view_fg_color` in a list and `card_fg_color` in a boxed list
+/// (_lists.scss:5-7, :521; _misc.scss:202-204 at libadwaita 1.10.0), in the
+/// body font, whose family, size and weight its rule leaves (:146-151); a
+/// hovered, pressed or on row changes only its background and the switch's
+/// (:75-78, :592-601; _switch.scss:8-9, :36-55; adw-switch-row.c:217-227);
+/// insensitive, on or off, the title fades to [`DISABLED_OPACITY`]
+/// (`label:disabled { filter: Opacity(var(--disabled-opacity)) }`,
+/// _labels.scss:8-10; _colors.scss:320).
+fn switch_label(c: &SchemeColors, typography: &Typography) -> RuleSet<TextStyle, TextProp> {
+    let same = [
+        RuleSelector::on(WidgetState::HOVER),
+        RuleSelector::on(WidgetState::PRESSED),
+        RuleSelector::on(WidgetState::CHECKED),
+    ];
+    RuleBuilder::new(label(&typography.body, Some(c.row_foreground)))
+        .rules(same, [TextProp::Color(c.row_foreground)])
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED),
+            [TextProp::Color(
+                c.row_foreground.mul_alpha(DISABLED_OPACITY),
+            )],
+        )
+        .build()
 }
 
 /// The dialog: its panel in the dialog's background where a palette states

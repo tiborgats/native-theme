@@ -983,9 +983,9 @@
   },
   "switch": {
     "origin": "native",
-    "label_side": null,
-    "label_gap": null,
-    "label_gap_stretches": null,
+    "label_side": "trailing",
+    "label_gap": 4.0,
+    "label_gap_stretches": false,
     "show_state_glyphs": null,
     "disabled_opacity": 1.0,
     "track": {
@@ -1109,7 +1109,50 @@
       ]
     },
     "label": {
-      "base": {}
+      "base": {
+        "family": "Noto Sans",
+        "color": "#eff0f1",
+        "size_px": 13.0,
+        "weight": 400,
+        "style": "normal",
+        "defined_size": {
+          "pt": 10.0
+        }
+      },
+      "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "label": {
+            "color": "#eff0f1"
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "label": {
+            "color": "#eff0f1"
+          }
+        },
+        {
+          "states": [
+            "checked"
+          ],
+          "label": {
+            "color": "#eff0f1"
+          }
+        },
+        {
+          "states": [
+            "disabled"
+          ],
+          "label": {
+            "color": "#686a6c99"
+          }
+        }
+      ]
     }
   },
   "slider": {

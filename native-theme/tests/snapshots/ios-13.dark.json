@@ -861,9 +861,9 @@
   },
   "switch": {
     "origin": "native",
-    "label_side": null,
+    "label_side": "leading",
     "label_gap": null,
-    "label_gap_stretches": null,
+    "label_gap_stretches": true,
     "show_state_glyphs": null,
     "disabled_opacity": 0.3,
     "track": {

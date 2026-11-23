@@ -926,9 +926,11 @@ mod tests {
     /// Where the theme states no label, its colour is gpui-component's own:
     /// the window's text, disabled `muted_foreground`, at the homes
     /// `next::apply` fills them from; no gap and no font property is taken.
+    /// ios-13 states none of them (no source).
     #[test]
     fn an_unstated_switch_label_is_gpui_components_own() -> Mapped<()> {
-        let r = breeze(&ThemePatch::new());
+        let r = Theme::preset(Preset::Ios13)
+            .resolve(&ThemeContext::default().with_scheme(Scheme::Light));
         let text = hsla(stated(r.colors.window.foreground, "foreground")?);
         let muted = hsla(stated(r.colors.window.foreground_muted, "muted")?);
         for checked in [false, true] {

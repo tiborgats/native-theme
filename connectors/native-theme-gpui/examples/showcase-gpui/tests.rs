@@ -20053,7 +20053,9 @@ fn a_switchs_info_reads_its_label_at_its_own_homes() {
         Theme::preset(Preset::KdeBreeze)
             .resolve(&ThemeContext::default().with_scheme(Scheme::Light))
     };
-    let plain = breeze();
+    // ios-13 states no label (no source), so its switch's label is gpui-component's own.
+    let plain =
+        Theme::preset(Preset::Ios13).resolve(&ThemeContext::default().with_scheme(Scheme::Light));
     let mut patched = breeze();
     patched.apply_patch(
         &ThemePatch::new()

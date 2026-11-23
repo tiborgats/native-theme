@@ -178,7 +178,7 @@ use crate::IconSet;
 use crate::next::color::Color;
 use crate::next::geometry::{Corners, Edges, Stroke, StrokeAlign};
 use crate::next::icons::{IconSizes, IconThemeSpec};
-use crate::next::layout::{ArrowSide, DialogButtonOrder, LayoutMetrics};
+use crate::next::layout::{ArrowSide, DialogButtonOrder, LabelSide, LayoutMetrics};
 use crate::next::motion::{CaretSpec, DialogEntranceStyle, MotionTokens, UiTimings};
 use crate::next::paint::Paint;
 use crate::next::palette::Palette;
@@ -1273,6 +1273,10 @@ const SWITCH_THUMB_DIAMETER: f32 = 12.0;
 // 1; the on track's stroke is drawn at ToggleSwitchOnStrokeThickness 0, so
 // checked_track_border_color stays unset (platform-facts.md)
 const SWITCH_TRACK_BORDER_WIDTH: f32 = 1.0;
+// `switch.label_gap`: the template's columns, the switch in column 0, then
+// `<ColumnDefinition Width="12" MaxWidth="12" />`, the On and Off content in column 2
+// (ToggleSwitch_themeresources.xaml:499-503, :505-507 at microsoft-ui-xaml 8463f45)
+const SWITCH_LABEL_GAP: f32 = 12.0;
 
 // `dialog.min_width`: 0.7.2 windows-11.toml (uncited)
 const DIALOG_MIN_WIDTH: f32 = 320.0;
@@ -1641,7 +1645,7 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
         separator: separator(c, &colors, &layout),
         spinner: spinner(c),
         popover: popover(c, &colors, &typography, &layout),
-        switch: switch(c),
+        switch: switch(c, &typography),
         dialog: dialog(c, &colors, &typography, units, &layout, motion),
         combo_box: combo_box(c, &colors, &typography, &layout, direction),
         segmented_control: segmented_control(c, &hc, &typography, &layout),
@@ -3377,8 +3381,9 @@ fn switch_hover_on(c: &SchemeColors) -> Color {
 /// `checked_track_border_color` unset: "`None` draws no outline"), with
 /// their hover fills, and disabled, off and on; a thumb of an exact diameter,
 /// off in the muted text, on in the accent's text, with no outline (0.7.2
-/// states none for it).
-fn switch(c: &SchemeColors) -> SwitchWidget {
+/// states none for it); its On and Off content [`switch_label`], after the
+/// track at [`SWITCH_LABEL_GAP`], keeping to it.
+fn switch(c: &SchemeColors, typography: &Typography) -> SwitchWidget {
     let size = [Some(SWITCH_TRACK_WIDTH), Some(SWITCH_TRACK_HEIGHT)];
     let track = RuleBuilder::new(PartStyle::default())
         .base([
@@ -3441,14 +3446,43 @@ fn switch(c: &SchemeColors) -> SwitchWidget {
         WidgetOrigin::Native,
         track,
         thumb,
-        RuleBuilder::new(TextStyle::default()).build(),
-        None,
-        None,
-        None,
+        switch_label(c, typography),
+        // `label_side`, `label_gap_stretches`: the template's inner grid is
+        // `HorizontalAlignment="Left"`, its columns `Auto`, 12, `Auto`, the content after the
+        // switch (ToggleSwitch_themeresources.xaml:493-503, :505-506 at microsoft-ui-xaml
+        // 8463f45), so the label keeps to the track.
+        Some(LabelSide::Trailing),
+        Some(SWITCH_LABEL_GAP),
+        Some(false),
         None,
         // 0.7.2: `switch.disabled_opacity` is `defaults.disabled_opacity` where unstated.
         Some(DISABLED_OPACITY),
     )
+}
+
+/// The switch's On and Off content: the content presenters'
+/// `Foreground` is the style's, `ToggleSwitchContentForeground` =
+/// `TextFillColorPrimaryBrush` (ToggleSwitch_themeresources.xaml:505-506,
+/// :191, :127 and :7 at microsoft-ui-xaml 8463f45), the body's colour, in
+/// `ContentControlThemeFontFamily` at `ControlContentThemeFontSize` 14
+/// (:195-196; generic.xaml:3939, :3961), the body font, Normal weight (the
+/// style sets none, :190-202); the PointerOver, Pressed and On states animate
+/// no presenter's `Foreground` (:245-324, :461-487), and `Disabled` sets both
+/// to `ToggleSwitchContentForegroundDisabled` = `TextFillColorDisabledBrush`
+/// (:325-336, :128 and :8), on or off.
+fn switch_label(c: &SchemeColors, typography: &Typography) -> RuleSet<TextStyle, TextProp> {
+    let same = [
+        RuleSelector::on(WidgetState::HOVER),
+        RuleSelector::on(WidgetState::PRESSED),
+        RuleSelector::on(WidgetState::CHECKED),
+    ];
+    RuleBuilder::new(label(&typography.body, None))
+        .rules(same, [TextProp::Color(typography.body.color)])
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED),
+            [TextProp::Color(c.disabled_text)],
+        )
+        .build()
 }
 
 /// The dialog: its panel in the dialog's background where a palette states
