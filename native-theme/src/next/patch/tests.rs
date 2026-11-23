@@ -3,7 +3,7 @@ use super::*;
 use crate::next::geometry::StrokeAlign;
 use crate::next::preset::{Preset, Theme};
 use crate::next::query::{ButtonQuery, ListQuery};
-use crate::next::style::PartStated;
+use crate::next::style::{FocusKind, PartStated};
 use crate::next::window::WindowState;
 
 const RED: Color = Color::rgb(1.0, 0.0, 0.0);
@@ -138,6 +138,106 @@ fn scales_are_clamped() {
             .spacing_scale,
         Some(0.0)
     );
+    let zero = ThemePatch::new().corner_scale(-0.0).corner_scale;
+    assert_eq!(zero, Some(0.0));
+    assert!(zero.is_some_and(f32::is_sign_positive));
+}
+
+/// Whether `theme` holds a number that is not a number anywhere.
+fn has_nan(theme: &ResolvedTheme) -> bool {
+    format!("{theme:?}").contains("NaN")
+}
+
+#[test]
+fn a_scale_written_to_the_field_is_clamped_again() -> Result<(), String> {
+    let base = breeze();
+    let mut patch = ThemePatch::new();
+    patch.corner_scale = Some(f32::NAN);
+    patch.spacing_scale = Some(-1.0);
+    let theme = patched([patch]);
+    assert!(!has_nan(&theme));
+    let rest = ButtonQuery::default();
+    assert_eq!(
+        theme.button.body(rest).corners,
+        base.button.body(rest).corners
+    );
+    assert_eq!(theme.layout.corner_radius, base.layout.corner_radius);
+    assert_eq!(theme.button.body(rest).padding, Edges::ZERO);
+    assert_eq!(theme.button.icon_text_gap, 0.0);
+    assert!(radius(&theme.button.body(rest).corners)? > 0.0);
+    Ok(())
+}
+
+#[test]
+fn a_scaled_value_stays_finite() -> Result<(), String> {
+    let theme = patched([
+        ThemePatch::new()
+            .corner_scale(f32::INFINITY)
+            .spacing_scale(f32::INFINITY),
+        ThemePatch::new().corner_scale(0.0).spacing_scale(0.0),
+    ]);
+    assert!(!has_nan(&theme));
+    let rest = ButtonQuery::default();
+    assert_eq!(radius(&theme.button.body(rest).corners)?, 0.0);
+    assert_eq!(theme.button.body(rest).padding, Edges::ZERO);
+    assert_eq!(theme.layout.corner_radius, 0.0);
+    assert_eq!(theme.layout.corner_radius_lg, 0.0);
+    assert_eq!(theme.button.icon_text_gap, 0.0);
+    let scaled = patched([ThemePatch::new().corner_scale(f32::INFINITY)]);
+    assert_eq!(scaled.layout.corner_radius_lg, f32::MAX);
+    Ok(())
+}
+
+#[test]
+fn a_value_that_is_not_finite_is_not_applied() {
+    let base = breeze();
+    let hover = ButtonQuery::new(WidgetState::HOVER);
+    let mut colors = ColorPatch::new();
+    colors.window.background = Some(Color { r: f32::NAN, ..RED });
+    colors.window.foreground = Some(RED);
+    colors.error.fill = Some(Color {
+        a: f32::INFINITY,
+        ..RED
+    });
+    let theme = patched([ThemePatch::new()
+        .color_overrides(colors)
+        .widget_rules(
+            WidgetPatchMap::new()
+                .button(ButtonPatch::new().icon_text_gap(f32::NAN))
+                .separator(SeparatorPatch::new().margin(f32::INFINITY)),
+        )
+        .button(
+            ButtonRule::new().states(WidgetState::HOVER).body(
+                PartPatch::new()
+                    .opacity(f32::NAN)
+                    .stroke(Stroke::uniform(f32::NAN, RED))
+                    .fill(Paint::Solid(RED)),
+            ),
+        )
+        .custom_metric("rail", f32::NAN)
+        .custom_color("gutter", Color { g: f32::NAN, ..RED })
+        .custom_color("ruler", BLUE)]);
+    assert!(!has_nan(&theme));
+    assert_eq!(
+        theme.colors.window.background,
+        base.colors.window.background
+    );
+    assert_eq!(theme.colors.window.foreground, Some(RED));
+    assert_eq!(theme.colors.error, base.colors.error);
+    assert_eq!(theme.button.body(hover).fill, Paint::Solid(RED));
+    assert_eq!(
+        theme.button.body(hover).opacity,
+        base.button.body(hover).opacity
+    );
+    assert_eq!(
+        theme.button.body(hover).stroke,
+        base.button.body(hover).stroke
+    );
+    assert_eq!(theme.button.icon_text_gap, base.button.icon_text_gap);
+    assert_eq!(theme.separator.margin, base.separator.margin);
+    assert_eq!(theme.custom_metrics.get("rail"), None);
+    assert_eq!(theme.custom_colors.get("gutter"), None);
+    assert_eq!(theme.custom_colors.get("ruler"), Some(&BLUE));
 }
 
 #[test]
@@ -178,6 +278,10 @@ fn a_patch_of_valid_values_validates() -> Result<(), String> {
     let patch = ThemePatch::new()
         .corner_scale(0.0)
         .color_overrides(colors)
+        .widget_rules(
+            WidgetPatchMap::new()
+                .tooltip(TooltipPatch::new().panel(PartPatch::new().fill(Paint::Solid(RED)))),
+        )
         .button(
             ButtonRule::new().body(
                 PartPatch::new()
@@ -188,11 +292,18 @@ fn a_patch_of_valid_values_validates() -> Result<(), String> {
                     .margin(Edges::all(-1.0)),
             ),
         )
-        .widget_rules(
-            WidgetPatchMap::new()
-                .tooltip(TooltipPatch::new().panel(PartPatch::new().fill(Paint::Solid(RED)))),
-        )
         .custom_metric("offset", -3.0);
+    let rule = patch
+        .widget_rules
+        .button
+        .rules
+        .first()
+        .ok_or("the button rule was not kept")?;
+    assert_eq!(rule.body.margin, Some(Edges::all(-1.0)));
+    assert_eq!(
+        patch.widget_rules.tooltip.panel.fill,
+        Some(Paint::Solid(RED))
+    );
     patch.validate().map_err(|e| e.to_string())?;
     ThemePatch::new().validate().map_err(|e| e.to_string())
 }
@@ -384,6 +495,33 @@ fn monospace_family_replaces_only_the_monospace_family() {
 }
 
 #[test]
+fn the_body_and_monospace_slots_never_take_each_others_family() {
+    let same = ThemePatch::new()
+        .font_family("Same Family")
+        .monospace_family("Same Family");
+    let theme = patched([same.clone()]);
+    assert_eq!(&*theme.typography.body.family, "Same Family");
+    assert_eq!(&*theme.typography.monospace.family, "Same Family");
+    let mono = patched([
+        same.clone(),
+        ThemePatch::new().monospace_family("Patch Mono"),
+    ]);
+    assert_eq!(&*mono.typography.monospace.family, "Patch Mono");
+    assert_eq!(&*mono.typography.body.family, "Same Family");
+    let ui = patched([same.clone(), ThemePatch::new().font_family("Patch Sans")]);
+    assert_eq!(&*ui.typography.body.family, "Patch Sans");
+    assert_eq!(&*ui.typography.monospace.family, "Same Family");
+    let both = patched([
+        same,
+        ThemePatch::new()
+            .font_family("Patch Sans")
+            .monospace_family("Patch Mono"),
+    ]);
+    assert_eq!(&*both.typography.body.family, "Patch Sans");
+    assert_eq!(&*both.typography.monospace.family, "Patch Mono");
+}
+
+#[test]
 fn corner_scale_scales_the_radii_and_nothing_else() -> Result<(), String> {
     let base = breeze();
     let theme = patched([ThemePatch::new().corner_scale(SCALE)]);
@@ -448,6 +586,135 @@ fn spacing_scale_scales_padding_margins_and_gaps() -> Result<(), String> {
         base.scrollbar.min_thumb_length
     );
     Ok(())
+}
+
+#[test]
+fn corner_scale_scales_per_corner_and_concentric_radii() -> Result<(), String> {
+    let per_corner = Corners {
+        radius: CornerRadius::PerCorner {
+            top_left: 1.0,
+            top_right: 2.0,
+            bottom_right: 3.0,
+            bottom_left: 4.0,
+        },
+        ..Corners::NONE
+    };
+    let concentric = Corners {
+        radius: CornerRadius::Concentric {
+            inset: 2.0,
+            min_radius: 3.0,
+        },
+        ..Corners::NONE
+    };
+    let rules = ThemePatch::new()
+        .button(
+            ButtonRule::new()
+                .states(WidgetState::HOVER)
+                .body(PartPatch::new().corners(per_corner)),
+        )
+        .button(
+            ButtonRule::new()
+                .states(WidgetState::PRESSED)
+                .body(PartPatch::new().corners(concentric)),
+        );
+    let theme = patched([rules, ThemePatch::new().corner_scale(SCALE)]);
+    assert_eq!(
+        theme
+            .button
+            .body(ButtonQuery::new(WidgetState::HOVER))
+            .corners,
+        Corners {
+            radius: CornerRadius::PerCorner {
+                top_left: 1.0 * SCALE,
+                top_right: 2.0 * SCALE,
+                bottom_right: 3.0 * SCALE,
+                bottom_left: 4.0 * SCALE,
+            },
+            ..Corners::NONE
+        }
+    );
+    assert_eq!(
+        theme
+            .button
+            .body(ButtonQuery::new(WidgetState::PRESSED))
+            .corners,
+        Corners {
+            radius: CornerRadius::Concentric {
+                inset: 2.0,
+                min_radius: 3.0 * SCALE,
+            },
+            ..Corners::NONE
+        }
+    );
+    Ok(())
+}
+
+#[test]
+fn scales_reach_a_static_part() -> Result<(), String> {
+    let base = breeze();
+    let theme = patched([ThemePatch::new().corner_scale(SCALE).spacing_scale(SCALE)]);
+    let (before, after) = (&base.tooltip.panel, &theme.tooltip.panel);
+    assert_ne!(before.padding, Edges::ZERO);
+    assert!(radius(&before.corners)? > 0.0);
+    assert_eq!(after.padding, scaled_edges(before.padding));
+    assert_eq!(after.corners, scaled(before.corners, SCALE)?);
+    Ok(())
+}
+
+#[test]
+fn spacing_scale_scales_the_separator_margin() {
+    // kde-breeze states no margin of its separator: an earlier patch does.
+    let margin = 3.0;
+    let earlier = ThemePatch::new()
+        .widget_rules(WidgetPatchMap::new().separator(SeparatorPatch::new().margin(margin)));
+    let theme = patched([earlier, ThemePatch::new().spacing_scale(SCALE)]);
+    assert_eq!(theme.separator.margin, Some(margin * SCALE));
+}
+
+#[test]
+fn corner_scale_leaves_the_outward_radius_and_focus_corners_alone() -> Result<(), String> {
+    let focus_corners = Corners::uniform(3.0);
+    let focus = FocusIndicator::new(
+        FocusKind::Ring,
+        Stroke::uniform(1.0, RED),
+        Stroke::None,
+        1.0,
+        Some(focus_corners),
+        None,
+    );
+    let earlier = ThemePatch::new()
+        .widget_rules(WidgetPatchMap::new().tab(TabPatch::new().active_outward_corner_radius(5.0)))
+        .button(
+            ButtonRule::new()
+                .states(WidgetState::FOCUSED)
+                .body(PartPatch::new().focus(Some(Arc::new(focus)))),
+        );
+    let theme = patched([earlier, ThemePatch::new().corner_scale(SCALE)]);
+    assert_eq!(theme.tab.active_outward_corner_radius, Some(5.0));
+    let focused = theme.button.body(ButtonQuery::new(WidgetState::FOCUSED));
+    let indicator = focused.focus.ok_or("no focus indicator")?;
+    assert_eq!(indicator.corners, Some(focus_corners));
+    Ok(())
+}
+
+#[test]
+fn an_appended_rule_without_required_states_clears_from_state() {
+    let base = breeze();
+    let hover = ButtonQuery::new(WidgetState::HOVER);
+    // kde-breeze's hover rule states the button's outline.
+    assert!(
+        base.button
+            .body(hover)
+            .from_state
+            .contains(PartStated::STROKE)
+    );
+    let stroke = Stroke::uniform(1.0, RED);
+    let theme =
+        patched([ThemePatch::new()
+            .button(ButtonRule::new().body(PartPatch::new().stroke(stroke.clone())))]);
+    let body = theme.button.body(hover);
+    assert_eq!(body.stroke, stroke);
+    assert!(!body.from_state.contains(PartStated::STROKE));
 }
 
 #[test]

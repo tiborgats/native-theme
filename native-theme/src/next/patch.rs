@@ -214,7 +214,9 @@ macro_rules! widget_patch {
             manual_serde
             #[doc = concat!(
                 "A rule appended to the parts of `", stringify!($widget),
-                "`: where its selector matches, each part's patch applies, after the preset's rules."
+                "`: where its selector matches, each part's patch applies, after the preset's rules ",
+                "and under each part's exclusive groups as the preset declared them, so a rule meant ",
+                "only for an enabled widget states `not_states(DISABLED)`."
             )]
             pub struct $Rule {
                 /// Where the rule applies.
@@ -266,13 +268,14 @@ macro_rules! widget_patch {
 
             /// Sets the metrics this patch states and appends its rules to
             /// each part, in order; a rule that states nothing of a part
-            /// appends nothing to it.
+            /// appends nothing to it. A value that is not finite is left
+            /// out.
             fn apply_to(&self, widget: &mut $Widget) {
-                $( if let Some(value) = self.$set { widget.$set = value; } )*
-                $( if let Some(value) = self.$opt { widget.$opt = Some(value); } )*
+                $( if let Some(value) = self.$set.filter(Finite::all_finite) { widget.$set = value; } )*
+                $( if let Some(value) = self.$opt.filter(Finite::all_finite) { widget.$opt = Some(value); } )*
                 $(
                     widget.$part.append(self.rules.iter().filter_map(|rule| {
-                        let props: Vec<_> = rule.$part.to_props().collect();
+                        let props: Vec<_> = rule.$part.to_props().filter(Finite::all_finite).collect();
                         (!props.is_empty()).then_some((rule.selector, props))
                     }));
                 )*
@@ -389,12 +392,13 @@ macro_rules! widget_patch {
             }
 
             /// Sets the metrics this patch states and applies each part's
-            /// properties onto the part.
+            /// properties onto the part. A value that is not finite is left
+            /// out.
             fn apply_to(&self, widget: &mut $Widget) {
-                $( if let Some(value) = self.$set { widget.$set = value; } )*
-                $( if let Some(value) = self.$opt { widget.$opt = Some(value); } )*
+                $( if let Some(value) = self.$set.filter(Finite::all_finite) { widget.$set = value; } )*
+                $( if let Some(value) = self.$opt.filter(Finite::all_finite) { widget.$opt = Some(value); } )*
                 $(
-                    for prop in self.$part.to_props() {
+                    for prop in self.$part.to_props().filter(Finite::all_finite) {
                         widget.$part.apply(&prop);
                     }
                 )*
@@ -1305,17 +1309,256 @@ impl WidgetPatchMap {
 // The application (resolution step 3)
 // ---------------------------------------------------------------------------
 
-/// `value` written into `slot` where stated.
-fn set<T: Copy>(slot: &mut T, value: Option<T>) {
-    if let Some(value) = value {
+/// A value of a patch whose every number is finite. `with_patch` does not
+/// validate: a value that is not finite is not applied, and the rest of the
+/// patch is (spec §6, resolution step 3).
+trait Finite {
+    fn all_finite(&self) -> bool;
+}
+
+/// The values of a patch that hold no number.
+macro_rules! finite_without_numbers {
+    ($($ty:ty),* $(,)?) => {
+        $(
+            impl Finite for $ty {
+                fn all_finite(&self) -> bool {
+                    true
+                }
+            }
+        )*
+    };
+}
+
+finite_without_numbers!(
+    bool,
+    u32,
+    TabIndicatorSide,
+    ArrowSide,
+    DialogButtonOrder,
+    DialogEntranceStyle,
+);
+
+impl Finite for f32 {
+    fn all_finite(&self) -> bool {
+        self.is_finite()
+    }
+}
+
+impl<T: Finite> Finite for Option<T> {
+    fn all_finite(&self) -> bool {
+        self.as_ref().is_none_or(Finite::all_finite)
+    }
+}
+
+impl<T: Finite> Finite for [T] {
+    fn all_finite(&self) -> bool {
+        self.iter().all(Finite::all_finite)
+    }
+}
+
+impl<T: Finite, const N: usize> Finite for [T; N] {
+    fn all_finite(&self) -> bool {
+        self.iter().all(Finite::all_finite)
+    }
+}
+
+impl<T: Finite + ?Sized> Finite for Arc<T> {
+    fn all_finite(&self) -> bool {
+        (**self).all_finite()
+    }
+}
+
+impl Finite for Color {
+    fn all_finite(&self) -> bool {
+        [self.r, self.g, self.b, self.a].all_finite()
+    }
+}
+
+impl Finite for Paint {
+    fn all_finite(&self) -> bool {
+        match self {
+            Self::None => true,
+            Self::Solid(color) => color.all_finite(),
+            Self::Complex(complex) => complex.layers.all_finite(),
+        }
+    }
+}
+
+impl Finite for PaintLayer {
+    fn all_finite(&self) -> bool {
+        match self {
+            Self::Solid { color, .. } => color.all_finite(),
+            Self::LinearGradient {
+                angle_deg, stops, ..
+            } => angle_deg.is_finite() && stops.all_finite(),
+            Self::RadialGradient {
+                center,
+                radius,
+                stops,
+                ..
+            } => center.all_finite() && radius.is_finite() && stops.all_finite(),
+            Self::Material(material) => {
+                [
+                    material.blur_radius,
+                    material.saturation,
+                    material.luminosity_opacity,
+                    material.noise_opacity,
+                ]
+                .all_finite()
+                    && material.tint.all_finite()
+                    && material.fallback.all_finite()
+            }
+        }
+    }
+}
+
+impl Finite for GradientStop {
+    fn all_finite(&self) -> bool {
+        self.offset.is_finite() && self.color.all_finite()
+    }
+}
+
+impl Finite for Stroke {
+    fn all_finite(&self) -> bool {
+        match self {
+            Self::None => true,
+            Self::Uniform { width, color, .. } => width.is_finite() && color.all_finite(),
+            Self::Complex(complex) => {
+                [&complex.top, &complex.right, &complex.bottom, &complex.left]
+                    .into_iter()
+                    .all(|side| side.width.is_finite() && side.paint.all_finite())
+            }
+        }
+    }
+}
+
+impl Finite for Corners {
+    fn all_finite(&self) -> bool {
+        match self.radius {
+            CornerRadius::None | CornerRadius::Pill => true,
+            CornerRadius::Uniform(r) => r.is_finite(),
+            CornerRadius::PerCorner {
+                top_left,
+                top_right,
+                bottom_right,
+                bottom_left,
+            } => [top_left, top_right, bottom_right, bottom_left].all_finite(),
+            CornerRadius::Concentric { inset, min_radius } => [inset, min_radius].all_finite(),
+        }
+    }
+}
+
+impl Finite for ShadowLayer {
+    fn all_finite(&self) -> bool {
+        [self.offset_x, self.offset_y, self.blur, self.spread].all_finite()
+            && self.color.all_finite()
+    }
+}
+
+impl Finite for Transform {
+    fn all_finite(&self) -> bool {
+        self.scale.all_finite()
+            && self.rotation_deg.is_finite()
+            && self.translation.all_finite()
+            && self.origin.all_finite()
+    }
+}
+
+impl Finite for Edges {
+    fn all_finite(&self) -> bool {
+        [self.top, self.right, self.bottom, self.left].all_finite()
+    }
+}
+
+impl Finite for FocusIndicator {
+    fn all_finite(&self) -> bool {
+        self.stroke.all_finite()
+            && self.inner_stroke.all_finite()
+            && self.offset.is_finite()
+            && self.corners.all_finite()
+    }
+}
+
+impl Finite for Transition {
+    fn all_finite(&self) -> bool {
+        match self.timing {
+            Timing::CubicBezier(x1, y1, x2, y2) => [x1, y1, x2, y2].all_finite(),
+            Timing::Spring {
+                mass,
+                stiffness,
+                damping,
+            } => [mass, stiffness, damping].all_finite(),
+            Timing::Linear | Timing::Steps(_) | Timing::SineInOut | Timing::ExpoOut => true,
+        }
+    }
+}
+
+impl Finite for PartProp {
+    fn all_finite(&self) -> bool {
+        match self {
+            Self::Fill(paint) => paint.all_finite(),
+            Self::Stroke(stroke) => stroke.all_finite(),
+            Self::Corners(corners) => corners.all_finite(),
+            Self::Shadows(shadows) => shadows.all_finite(),
+            Self::Opacity(opacity) => opacity.is_finite(),
+            Self::Transform(transform) => transform.all_finite(),
+            Self::Padding(edges)
+            | Self::PaddingSides(edges, _)
+            | Self::Margin(edges)
+            | Self::MarginSides(edges, _) => edges.all_finite(),
+            Self::MinSize(size) | Self::MaxSize(size) => size.all_finite(),
+            Self::Focus(focus) => focus.all_finite(),
+            Self::Ripple(ripple) => ripple
+                .as_ref()
+                .is_none_or(|ripple| ripple.color.all_finite()),
+            Self::Transition(transition) => transition.all_finite(),
+            Self::Cursor(_) => true,
+        }
+    }
+}
+
+impl Finite for TextProp {
+    fn all_finite(&self) -> bool {
+        match self {
+            Self::Color(color) => color.all_finite(),
+            Self::SizePx(value) | Self::LineHeight(value) | Self::LetterSpacing(value) => {
+                value.is_finite()
+            }
+            Self::OpticalSize(size) => size.all_finite(),
+            Self::Decoration(decoration) => {
+                decoration.color.all_finite() && decoration.thickness.all_finite()
+            }
+            Self::Family(_)
+            | Self::Weight(_)
+            | Self::Style(_)
+            | Self::Width(_)
+            | Self::BlendMode(_) => true,
+        }
+    }
+}
+
+impl Finite for IconProp {
+    fn all_finite(&self) -> bool {
+        match self {
+            Self::Size(value) | Self::Opacity(value) => value.is_finite(),
+            Self::Color(color) => color.all_finite(),
+            Self::StrokeWidth(width) => width.all_finite(),
+            Self::Weight(_) | Self::RenderingMode(_) | Self::BlendMode(_) => true,
+        }
+    }
+}
+
+/// `value` written into `slot` where stated and finite.
+fn set<T: Copy + Finite>(slot: &mut T, value: Option<T>) {
+    if let Some(value) = value.filter(Finite::all_finite) {
         *slot = value;
     }
 }
 
-/// `value` written into the optional `slot` where stated.
-fn set_some<T: Copy>(slot: &mut Option<T>, value: Option<T>) {
-    if value.is_some() {
-        *slot = value;
+/// `value` written into the optional `slot` where stated and finite.
+fn set_some<T: Copy + Finite>(slot: &mut Option<T>, value: Option<T>) {
+    if let Some(value) = value.filter(Finite::all_finite) {
+        *slot = Some(value);
     }
 }
 
@@ -1348,9 +1591,13 @@ impl AccentPatch {
 
 impl StatusPatch {
     /// The roles it states written, the status taking the origin `Custom`
-    /// where it states any.
+    /// where it writes any.
     fn apply_to(&self, roles: &mut StatusColors) {
-        if *self == Self::default() {
+        let writes = [self.fill, self.foreground, self.standalone]
+            .into_iter()
+            .flatten()
+            .any(|color| color.all_finite());
+        if !writes {
             return;
         }
         set(&mut roles.fill, self.fill);
@@ -1402,8 +1649,9 @@ struct Rescale {
 
 impl Rescale {
     /// The walk of `patch` over a theme of `typography`: the UI family it
-    /// replaces is the body's, the monospace one the monospace slot's; `None`
-    /// where the patch states no family and no scale.
+    /// replaces is the body's, the monospace one the monospace slot's; each
+    /// scale clamped again as the setters clamp it (the fields are public);
+    /// `None` where the patch states no family and no scale.
     fn new(patch: &ThemePatch, typography: &Typography) -> Option<Self> {
         let rescale = Self {
             ui: patch
@@ -1414,8 +1662,8 @@ impl Rescale {
                 .monospace_family
                 .clone()
                 .map(|new| (typography.monospace.family.clone(), new)),
-            corner: patch.corner_scale,
-            spacing: patch.spacing_scale,
+            corner: patch.corner_scale.map(clamped_scale),
+            spacing: patch.spacing_scale.map(clamped_scale),
         };
         let changes = rescale.ui.is_some()
             || rescale.mono.is_some()
@@ -1440,21 +1688,21 @@ impl Rescale {
             return;
         };
         corners.radius = match corners.radius {
-            CornerRadius::Uniform(r) => CornerRadius::Uniform(r * k),
+            CornerRadius::Uniform(r) => CornerRadius::Uniform(scaled(r, k)),
             CornerRadius::PerCorner {
                 top_left,
                 top_right,
                 bottom_right,
                 bottom_left,
             } => CornerRadius::PerCorner {
-                top_left: top_left * k,
-                top_right: top_right * k,
-                bottom_right: bottom_right * k,
-                bottom_left: bottom_left * k,
+                top_left: scaled(top_left, k),
+                top_right: scaled(top_right, k),
+                bottom_right: scaled(bottom_right, k),
+                bottom_left: scaled(bottom_left, k),
             },
             CornerRadius::Concentric { inset, min_radius } => CornerRadius::Concentric {
                 inset,
-                min_radius: min_radius * k,
+                min_radius: scaled(min_radius, k),
             },
             other => other,
         };
@@ -1465,16 +1713,16 @@ impl Rescale {
             return;
         };
         *edges = Edges::new(
-            edges.top * k,
-            edges.right * k,
-            edges.bottom * k,
-            edges.left * k,
+            scaled(edges.top, k),
+            scaled(edges.right, k),
+            scaled(edges.bottom, k),
+            scaled(edges.left, k),
         );
     }
 
     fn gap(&self, gap: &mut f32) {
         if let Some(k) = self.spacing {
-            *gap *= k;
+            *gap = scaled(*gap, k);
         }
     }
 
@@ -1500,8 +1748,10 @@ impl Rescale {
     }
 
     /// The walk over the whole theme: the typography slots (the body and the
-    /// monospace slot always take their new family), the layout's radii and
-    /// gaps, the widgets' parts and `*_gap` metrics, and the window chrome.
+    /// monospace slot take their own new family and never the other's, even
+    /// where the UI and the monospace family are one), the layout's radii and
+    /// gaps, the widgets' parts, `*_gap` metrics and the separator's margin,
+    /// and the window chrome.
     fn theme(&self, theme: &mut ResolvedTheme) {
         let typography = &mut theme.typography;
         for slot in [
@@ -1524,19 +1774,16 @@ impl Rescale {
             (&mut typography.body, &self.ui),
             (&mut typography.monospace, &self.mono),
         ] {
-            match family {
-                Some((_, new)) => {
-                    slot.family = new.clone();
-                    slot.stated |= TextStated::FAMILY;
-                }
-                None => self.style(slot),
+            if let Some((_, new)) = family {
+                slot.family = new.clone();
+                slot.stated |= TextStated::FAMILY;
             }
         }
 
         let layout = &mut theme.layout;
         if let Some(k) = self.corner {
-            layout.corner_radius *= k;
-            layout.corner_radius_lg *= k;
+            layout.corner_radius = scaled(layout.corner_radius, k);
+            layout.corner_radius_lg = scaled(layout.corner_radius_lg, k);
         }
         for gap in [
             &mut layout.widget_gap,
@@ -1564,6 +1811,7 @@ impl Rescale {
         self.optional_gap(&mut theme.toolbar.item_gap);
         self.optional_gap(&mut theme.expander.arrow_gap);
         self.gap(&mut theme.dialog.button_gap);
+        self.optional_gap(&mut theme.separator.margin);
 
         let window = &mut theme.window;
         window.edit_parts(|part| self.style(part), |text| self.style(text));
@@ -1668,6 +1916,11 @@ impl ResolvedTheme {
     /// static widgets' part patches and the direct metrics; the custom
     /// tokens, merged. A patch's scales therefore leave the rules it
     /// appends as they are written.
+    ///
+    /// It does not validate ([`ThemePatch::validate`] is the strict path): a
+    /// value of the patch that is not finite is not applied and the rest is,
+    /// each scale is clamped as the setters clamp it, and every scaled value
+    /// is kept finite.
     pub fn apply_patch(&mut self, patch: &ThemePatch) {
         patch.color_overrides.apply_to(&mut self.colors);
         if let Some(rescale) = Rescale::new(patch, &self.typography) {
@@ -1678,12 +1931,14 @@ impl ResolvedTheme {
             patch
                 .custom_colors
                 .iter()
+                .filter(|(_, color)| color.all_finite())
                 .map(|(key, color)| (key.clone(), *color)),
         );
         self.custom_metrics.extend(
             patch
                 .custom_metrics
                 .iter()
+                .filter(|(_, value)| value.is_finite())
                 .map(|(key, value)| (key.clone(), *value)),
         );
     }
@@ -1700,6 +1955,13 @@ impl ResolvedTheme {
 /// a transform. Within a patch the fields apply in the order they are
 /// declared here (spec §6, resolution step 3), so a patch's scales do not
 /// touch the rules it appends.
+///
+/// `with_patch` does not validate ([`validate`](Self::validate) and, with
+/// the `toml` feature, `from_toml` are the strict path): a value that is not
+/// finite is not applied and the rest of the patch is, so a resolve never
+/// emits `NaN`. A rule appended to a part is evaluated under the part's
+/// exclusive groups as the preset declared them: a rule meant only for an
+/// enabled widget says so with `not_states(DISABLED)`.
 ///
 /// ```text
 /// ThemePatch::new().button(ButtonRule::new().variant(Primary).states(HOVER).body(PartPatch::new().fill(..)))
@@ -1814,14 +2076,21 @@ impl From<ThemePatch> for PatchFile {
     }
 }
 
-/// A scale as the setters take it: clamped to the finite values `>= 0.0`, and
-/// `1.0` (no change) where it is not a number.
+/// A scale as the setters take it: clamped to the finite values `>= 0.0`
+/// (`-0.0` taken as `0.0`), and `1.0` (no change) where it is not a number.
 fn clamped_scale(scale: f32) -> f32 {
     if scale.is_nan() {
         1.0
+    } else if scale <= 0.0 {
+        0.0
     } else {
-        scale.clamp(0.0, f32::MAX)
+        scale.min(f32::MAX)
     }
+}
+
+/// `value` scaled by `k`, kept finite: clamped to `±f32::MAX`.
+fn scaled(value: f32, k: f32) -> f32 {
+    (value * k).clamp(-f32::MAX, f32::MAX)
 }
 
 /// One shortcut per ruled widget: `ThemePatch::new().button(rule)` appends
@@ -1909,7 +2178,9 @@ impl ThemePatch {
         self
     }
 
-    /// This patch with its widget patches replaced.
+    /// This patch with its widget patches replaced: the whole map, the
+    /// rules appended before through the shortcuts (`ThemePatch::button`
+    /// and the others) included.
     #[must_use]
     pub fn widget_rules(mut self, widgets: WidgetPatchMap) -> Self {
         self.widget_rules = widgets;
