@@ -6737,7 +6737,9 @@ fn menu_bar_row(r: &native_theme::next::ResolvedTheme) -> Option<Color> {
 /// System Theme and Preferences -- their icons of the chosen icon theme at
 /// `toolbar.button_icon(NONE).size` ([`tool_icon_size`]), their labels in
 /// `toolbar.button_label(NONE)`, in the connector's toolbar
-/// (`styles::toolbar`, filled with `toolbar.background_color`), laid out on
+/// (`iced_next::styles::toolbar`, filled with `toolbar.bar(NONE).fill`, its
+/// text `toolbar.button_label(NONE).color`; iced's own container where the
+/// theme leaves either unstated), laid out on
 /// the installed 0.8.0 theme ([`ToolbarLayout`]): padded by
 /// `toolbar.bar(NONE).padding` where the theme states a side, by
 /// `layout.container_margin` where it does not and by [`TOOLBAR_PADDING`]
@@ -6747,12 +6749,13 @@ fn menu_bar_row(r: &native_theme::next::ResolvedTheme) -> Option<Color> {
 /// `toolbar.bar(NONE).min_size[1]` tall where the theme states one, growing
 /// with its items above it, as gpui's `geometry::toolbar` takes it as a
 /// `min_h`. Under its padding the connector's rule
-/// (`styles::toolbar_rule`), a line `toolbar.bar(NONE).stroke.width` high.
+/// (`iced_next::styles::toolbar_rule`, `toolbar.bar(NONE).stroke.color`;
+/// iced's own rule where unstated), a line `toolbar.bar(NONE).stroke.width`
+/// high.
 /// §2.13 has no row for that border; Breeze draws no toolbar frame
 /// (`ToolBar_FrameWidth` 0, cited in §2.13's padding row); the showcase
 /// draws what the theme holds.
 fn toolbar(state: &State) -> Element<'_, Message> {
-    let resolved = &state.current_resolved;
     let r = state.next_shown();
     let icons = &state.chrome_icons;
     let pad = ghost_padding(r);
@@ -6820,12 +6823,14 @@ fn toolbar(state: &State) -> Element<'_, Message> {
     let bar = container(row![items, space().height(floor)].align_y(iced::Center))
         .padding(padding)
         .width(Fill)
-        .style(styles::toolbar(resolved));
+        .next_style(iced_next::styles::toolbar(r), |bar, style| bar.style(style));
     tagged(
         "chrome.toolbar",
         column![
             bar,
-            rule::horizontal(line).style(styles::toolbar_rule(resolved))
+            rule::horizontal(line)
+                .next_style(iced_next::styles::toolbar_rule(r), |line, style| line
+                    .style(style))
         ],
     )
     .into()
@@ -23922,15 +23927,19 @@ mod tests {
         assert!(total > 0, "the coverage table found nothing");
 
         // Every public style function the connector ships is demonstrated,
-        // itself or through the connector function that applies it.
+        // itself, its 0.8.0 style of the same name (`iced_next::styles`), or
+        // through the connector function that applies it.
         for function in public_functions(include_str!("../src/styles.rs")) {
             let call = format!("styles::{function}");
+            let next = format!("iced_next::styles::{function}");
             let applied_by = CONNECTOR_DRESSED
                 .iter()
                 .filter(|(_, style, _)| *style == call)
                 .any(|(_, _, wrapper)| !call_sites(&source, wrapper).is_empty());
             assert!(
-                !call_sites(&source, &call).is_empty() || applied_by,
+                !call_sites(&source, &call).is_empty()
+                    || !call_sites(&source, &next).is_empty()
+                    || applied_by,
                 "styles::{function} has no call site in the showcase"
             );
         }
@@ -34057,8 +34066,9 @@ mod tests {
     /// `toolbar.bar(NONE).fill` (#dee0e2 in kde-breeze light, where the
     /// window's differs), and the page tabs' caret menu keeps the window's,
     /// `window.frame(normal).fill`: drawn under kde-breeze light, the menu
-    /// bar's row at its left margin and past its last title, and the caret
-    /// button's corner, at rest, which shows its bar through it.
+    /// bar's row at its left margin and past its last title, the toolbar's
+    /// top left corner, in its padding, and the caret button's corner, at
+    /// rest, which shows its bar through it.
     #[test]
     fn the_menu_bar_row_is_the_toolbars_fill() {
         let mut state = State {
@@ -34104,6 +34114,7 @@ mod tests {
         let bar = rect_of("chrome.menu_bar");
         let help = rect_of("chrome.menu_bar.help");
         let caret = rect_of("chrome.page_tabs.menu");
+        let toolbar = rect_of("chrome.toolbar");
         let spot = |x: f32, y: f32| Rectangle {
             x,
             y,
@@ -34120,6 +34131,11 @@ mod tests {
             (
                 "the menu bar past its last title",
                 spot(help.x + help.width + 1.0, bar.center_y()),
+                tools,
+            ),
+            (
+                "the toolbar's top left corner",
+                spot(toolbar.x, toolbar.y),
                 tools,
             ),
             ("the caret button's corner", spot(caret.x, caret.y), window),
