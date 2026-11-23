@@ -902,7 +902,7 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
         scrollbar: scrollbar(c, &colors),
         list: list(c, &colors, &typography, &layout),
         tab: tab(c, &colors, &typography),
-        menu: menu(c, &colors, &typography, &layout),
+        menu: menu(c, &colors, &typography),
         menu_bar: menu_bar(&colors),
         sidebar: sidebar(c, &colors, &typography, &layout),
         toolbar: toolbar(&colors, &typography, &layout),
@@ -1839,21 +1839,17 @@ fn spinner(roles: &ColorRoles) -> SpinnerWidget {
 }
 
 /// The menu: the panel in the window's background (0.7.2:
-/// `menu.background_color` is `defaults.background_color` where unstated)
-/// at the default radius; a hovered item in the selection's colours (0.7.2:
-/// `menu.hover_*` stated equal to the selection's), a disabled item's text
-/// its own colour; icons at the toolbar's size (0.7.2: `menu.icon_size` is
-/// `defaults.icon_sizes.toolbar` where unstated); the separator in the
-/// default border colour (`menu.separator_color` likewise).
-fn menu(
-    c: &SchemeColors,
-    roles: &ColorRoles,
-    typography: &Typography,
-    layout: &LayoutMetrics,
-) -> MenuWidget {
+/// `menu.background_color` is `defaults.background_color` where unstated),
+/// its corners unstated (no source gives iOS's menu container radius:
+/// platform-facts.md (§2.6) has no iOS column, 0.7.2 states none); a hovered
+/// item in the selection's colours (0.7.2: `menu.hover_*` stated equal to the
+/// selection's), a disabled item's text its own colour; icons at the
+/// toolbar's size (0.7.2: `menu.icon_size` is `defaults.icon_sizes.toolbar`
+/// where unstated); the separator in the default border colour
+/// (`menu.separator_color` likewise).
+fn menu(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> MenuWidget {
     let panel = RuleBuilder::new(PartStyle::default())
         .base(roles.window.background.map(fill))
-        .base([corners(layout.corner_radius)])
         .build();
     let item = RuleBuilder::new(PartStyle::default())
         .rule(
