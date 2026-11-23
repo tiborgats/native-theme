@@ -451,9 +451,20 @@ pub(crate) struct GnomePortalData {
     pub(crate) gsettings_high_contrast: Option<bool>,
 }
 
+impl GnomePortalData {
+    /// The portal's accent colour, `None` where it gave none or one with a
+    /// component outside 0.0..=1.0 (per the XDG spec, out of range means
+    /// "unset"), held in 8 bits.
+    pub(crate) fn accent(&self) -> Option<crate::Rgba> {
+        let (r, g, b) = self.accent_rgb?;
+        ((0.0..=1.0).contains(&r) && (0.0..=1.0).contains(&g) && (0.0..=1.0).contains(&b))
+            .then(|| crate::Rgba::from_f32(r as f32, g as f32, b as f32, 1.0))
+    }
+}
+
 /// Whether the user asked for high contrast: the portal's `contrast`, or
 /// gsettings' `high-contrast` where the portal gives none (GNOME < 44).
-fn effective_high_contrast(data: &GnomePortalData) -> bool {
+pub(crate) fn effective_high_contrast(data: &GnomePortalData) -> bool {
     data.high_contrast || data.gsettings_high_contrast == Some(true)
 }
 
@@ -525,12 +536,7 @@ fn build_gnome_variant_pure(data: &GnomePortalData) -> crate::ThemeMode {
     let mut variant = crate::ThemeMode::default();
 
     // Apply accent color with range validation
-    if let Some((r, g, b)) = data.accent_rgb
-        && (0.0..=1.0).contains(&r)
-        && (0.0..=1.0).contains(&g)
-        && (0.0..=1.0).contains(&b)
-    {
-        let rgba = crate::Rgba::from_f32(r as f32, g as f32, b as f32, 1.0);
+    if let Some(rgba) = data.accent() {
         apply_gnome_accent(
             &mut variant,
             &rgba,
@@ -577,35 +583,43 @@ fn build_gnome_variant_pure(data: &GnomePortalData) -> crate::ThemeMode {
         variant.scrollbar.overlay_mode = Some(overlay);
     }
 
-    // The caret's blink: the three keys of gsettings-desktop-schemas 51.0
-    // `schemas/org.gnome.desktop.interface.gschema.xml.in:63-85` (read
-    // 2026-11-14): `cursor-blink`, a boolean, default true; `cursor-blink-time`,
-    // an integer within 100..=2500, default 1200, the whole blink cycle in
-    // milliseconds; `cursor-blink-timeout`, an integer within 1..=2147483647,
-    // default 10, the seconds after which the caret stops blinking. GTK 4.24.1
-    // takes them as its settings `gtk-cursor-blink`, `gtk-cursor-blink-time`
-    // and `gtk-cursor-blink-timeout` (`gtk/gtksettings.c`), and its text
-    // widget's blink callback (`blink_cb`, `gtk/gtktext.c`) shows the caret
-    // and stops the blink once the time-out has passed, which is the model's
-    // time-out. The cycle is halved into both durations; a caret that does not
-    // blink is stated whatever the cycle; a time-out past `u32::MAX`
-    // milliseconds (about 49.7 days) is stated as `u32::MAX`.
-    if let Some(time) = data.cursor_blink_time {
-        let half = time.checked_div(2);
-        variant.input.caret_blink_on = half;
-        variant.input.caret_blink_off = half;
-    }
-    if data.cursor_blink == Some(false) {
-        variant.input.caret_blink_off = Some(0);
-    }
-    if let Some(seconds) = data.cursor_blink_timeout {
-        variant.input.caret_blink_timeout = Some(seconds.saturating_mul(1000));
-    }
+    caret_blink(data, &mut variant.input);
 
     // ── Icon theme (GNOME-04) ────────────────────────────────────────────
     variant.defaults.icon_theme = data.icon_theme.clone().map(std::borrow::Cow::Owned);
 
     variant
+}
+
+/// The caret's blink `data` states, written into `input`'s
+/// `caret_blink_on`, `caret_blink_off` and `caret_blink_timeout`, each only
+/// where stated.
+///
+/// The three keys of gsettings-desktop-schemas 51.0
+/// `schemas/org.gnome.desktop.interface.gschema.xml.in:63-85` (read
+/// 2026-11-14): `cursor-blink`, a boolean, default true; `cursor-blink-time`,
+/// an integer within 100..=2500, default 1200, the whole blink cycle in
+/// milliseconds; `cursor-blink-timeout`, an integer within 1..=2147483647,
+/// default 10, the seconds after which the caret stops blinking. GTK 4.24.1
+/// takes them as its settings `gtk-cursor-blink`, `gtk-cursor-blink-time`
+/// and `gtk-cursor-blink-timeout` (`gtk/gtksettings.c`), and its text
+/// widget's blink callback (`blink_cb`, `gtk/gtktext.c`) shows the caret
+/// and stops the blink once the time-out has passed, which is the model's
+/// time-out. The cycle is halved into both durations; a caret that does not
+/// blink is stated whatever the cycle; a time-out past `u32::MAX`
+/// milliseconds (about 49.7 days) is stated as `u32::MAX`.
+pub(crate) fn caret_blink(data: &GnomePortalData, input: &mut crate::model::InputTheme) {
+    if let Some(time) = data.cursor_blink_time {
+        let half = time.checked_div(2);
+        input.caret_blink_on = half;
+        input.caret_blink_off = half;
+    }
+    if data.cursor_blink == Some(false) {
+        input.caret_blink_off = Some(0);
+    }
+    if let Some(seconds) = data.cursor_blink_timeout {
+        input.caret_blink_timeout = Some(seconds.saturating_mul(1000));
+    }
 }
 
 /// Whether on a session of `session_type` the toolkit's own scale factor
@@ -623,7 +637,7 @@ fn build_gnome_variant_pure(data: &GnomePortalData) -> crate::ThemeMode {
 /// text-scaling factor is applied nowhere. Neither crate's Wayland backend
 /// reads `Xft.dpi` or XSETTINGS (only their `x11` modules do), so a native
 /// Wayland client's scale factor does not carry the text-scaling factor.
-fn toolkit_scale_carries_text_scale(session_type: Option<&str>) -> bool {
+pub(crate) fn toolkit_scale_carries_text_scale(session_type: Option<&str>) -> bool {
     session_type == Some("x11")
 }
 
@@ -632,7 +646,7 @@ fn toolkit_scale_carries_text_scale(session_type: Option<&str>) -> bool {
 /// On an X11 session the text-scaling factor is reported as none
 /// ([`toolkit_scale_carries_text_scale`]), since the toolkit applied it.
 /// Zero I/O.
-fn build_gnome_spec_pure(data: &GnomePortalData) -> crate::ReaderResult {
+pub(crate) fn build_gnome_spec_pure(data: &GnomePortalData) -> crate::ReaderResult {
     let mut accessibility = accessibility_from_gnome_data(data);
     if toolkit_scale_carries_text_scale(data.session_type.as_deref()) {
         accessibility.text_scaling_factor =
@@ -653,15 +667,39 @@ fn build_gnome_spec_pure(data: &GnomePortalData) -> crate::ReaderResult {
 
 /// Build a ReaderResult from what the portal answered (`None` for a setting
 /// it did not give), the session type ([`crate::detect::session_type`]) and
-/// the gsettings values `gsetting` reads, one read per key.
+/// the gsettings values `gsetting` reads, one read per key
+/// ([`gnome_data`]).
+#[cfg(test)]
 pub(crate) fn build_theme(
     scheme: Option<ColorScheme>,
     accent: Option<Color>,
     contrast: Contrast,
     reduced_motion: Option<ReducedMotion>,
     session_type: Option<String>,
-    mut gsetting: impl FnMut(&str, &str) -> Option<String>,
+    gsetting: impl FnMut(&str, &str) -> Option<String>,
 ) -> crate::ReaderResult {
+    build_gnome_spec_pure(&gnome_data(
+        scheme,
+        accent,
+        contrast,
+        reduced_motion,
+        session_type,
+        gsetting,
+    ))
+}
+
+/// The settings of a GNOME read: what the portal answered (`None` for a
+/// setting it did not give), the session type
+/// ([`crate::detect::session_type`]) and the gsettings values `gsetting`
+/// reads, one read per key, each parsed as the reader parses it.
+pub(crate) fn gnome_data(
+    scheme: Option<ColorScheme>,
+    accent: Option<Color>,
+    contrast: Contrast,
+    reduced_motion: Option<ReducedMotion>,
+    session_type: Option<String>,
+    mut gsetting: impl FnMut(&str, &str) -> Option<String>,
+) -> GnomePortalData {
     let portal_dark = scheme.map(|scheme| matches!(scheme, ColorScheme::PreferDark));
     let is_dark = crate::detect::color_scheme_is_dark(portal_dark, &mut gsetting).unwrap_or(false);
     let reduce_motion = crate::detect::gnome_reduce_motion(
@@ -674,7 +712,7 @@ pub(crate) fn build_theme(
             .and_then(|s| s.parse::<u32>().ok())
             .filter(|n| range.contains(n))
     };
-    let data = GnomePortalData {
+    GnomePortalData {
         is_dark,
         accent_rgb: accent.map(|c| (c.red(), c.green(), c.blue())),
         high_contrast: matches!(contrast, Contrast::High),
@@ -700,8 +738,7 @@ pub(crate) fn build_theme(
             "org.gnome.desktop.a11y.interface",
             "high-contrast",
         )),
-    };
-    build_gnome_spec_pure(&data)
+    }
 }
 
 /// Whether the portal's `reduced-motion` setting asks for reduced motion.
@@ -754,39 +791,46 @@ pub(crate) struct GnomeReader;
 #[async_trait::async_trait]
 impl crate::reader::ThemeReader for GnomeReader {
     async fn read(&self) -> crate::Result<crate::ReaderResult> {
-        // Connect to the portal and read the four appearance settings, each
-        // of which can fail independently, all within one deadline.
-        let (scheme, accent, contrast, reduced_motion) = with_deadline(
-            async {
-                let settings = ashpd::desktop::settings::Settings::new().await.ok()?;
-                let scheme = settings.color_scheme().await.ok();
-                let accent = settings.accent_color().await.ok();
-                let contrast = settings.contrast().await.unwrap_or_default();
-                let reduced_motion = settings.reduced_motion().await.ok();
-                Some((scheme, accent, contrast, reduced_motion))
-            },
-            PORTAL_DEADLINE,
-        )
-        .await
-        .flatten()
-        .unwrap_or_default();
-
-        let start = std::time::Instant::now();
-        Ok(build_theme(
-            scheme,
-            accent,
-            contrast,
-            reduced_motion,
-            crate::detect::session_type(),
-            |schema, key| {
-                read_gsetting(
-                    schema,
-                    key,
-                    GSETTINGS_DEADLINE.saturating_sub(start.elapsed()),
-                )
-            },
-        ))
+        Ok(build_gnome_spec_pure(&read_gnome_data().await))
     }
+}
+
+/// The settings of the live GNOME desktop, as [`GnomeReader`] reads them:
+/// the portal's four appearance settings, each of which can fail
+/// independently, all within one [`PORTAL_DEADLINE`], then the gsettings
+/// keys within one [`GSETTINGS_DEADLINE`] and the session type
+/// ([`gnome_data`]).
+pub(crate) async fn read_gnome_data() -> GnomePortalData {
+    let (scheme, accent, contrast, reduced_motion) = with_deadline(
+        async {
+            let settings = ashpd::desktop::settings::Settings::new().await.ok()?;
+            let scheme = settings.color_scheme().await.ok();
+            let accent = settings.accent_color().await.ok();
+            let contrast = settings.contrast().await.unwrap_or_default();
+            let reduced_motion = settings.reduced_motion().await.ok();
+            Some((scheme, accent, contrast, reduced_motion))
+        },
+        PORTAL_DEADLINE,
+    )
+    .await
+    .flatten()
+    .unwrap_or_default();
+
+    let start = std::time::Instant::now();
+    gnome_data(
+        scheme,
+        accent,
+        contrast,
+        reduced_motion,
+        crate::detect::session_type(),
+        |schema, key| {
+            read_gsetting(
+                schema,
+                key,
+                GSETTINGS_DEADLINE.saturating_sub(start.elapsed()),
+            )
+        },
+    )
 }
 
 /// Read KDE theme from kdeglobals, then overlay portal accent color if available.

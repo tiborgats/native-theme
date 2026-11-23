@@ -12,7 +12,16 @@
 //! generated on that branch by `tools/kde-vectors` from the sources their
 //! headers name; the generator is not on this branch. `kcu_mix_of_mix.tsv`
 //! was generated on this branch, by the harness its header names.
+//!
+//! The `adwaita` preset's kernel, `adw_standalone`, libadwaita's standalone
+//! colour as GTK 4.24.1 computes it for libadwaita 1.10.0, was written in the
+//! same clean room from GTK's observed output, its table
+//! `adw_standalone.tsv` generated on rc1 by `tools/gnome-vectors`. It is
+//! carried with one change, the cube root's first guess read with `let …
+//! else` in place of a zero fallback, on a branch no input reaches (a
+//! division by three).
 
+pub(crate) mod adw_standalone;
 pub(crate) mod kcu_mix;
 pub(crate) mod kcu_overlay;
 pub(crate) mod kcu_tint;

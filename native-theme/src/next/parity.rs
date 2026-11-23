@@ -1399,6 +1399,110 @@ fn model_parity_kde_breeze() -> TestResult {
     Ok(())
 }
 
+// ---------------------------------------------------------------------------------------------------------
+// The value half on the adwaita builder (plan, M2's GNOME unit), static path: the same comparator and table.
+// ---------------------------------------------------------------------------------------------------------
+
+/// The groups of the table whose rows the adwaita builder ports so far: each of their rows is compared and
+/// equal, or skipped for a reason [`adwaita_expected_skip`] names. Every group, as for kde-breeze.
+const ADWAITA_PORTED_GROUPS: &[&str] = PORTED_GROUPS;
+
+/// The groups of the table whose values the adwaita builder does not state yet: their rows are compared,
+/// counted and reported, not asserted.
+const ADWAITA_NOT_PORTED_GROUPS: &[&str] = &[];
+
+/// The totals of the ported groups' rows on each scheme, `[rows, compared, equal, mismatching, skipped]`:
+/// every row equal but those [`adwaita_expected_skip`] names, skipped.
+const ADWAITA_PORTED_TOTALS: [usize; 5] = [563, 557, 557, 0, 6];
+
+/// The reason a row of the table is skipped on 0.7.2's `adwaita` without a reader's snapshot: the reader's
+/// context rows (`accessibility.*`); `checkbox.background_color`, compared only where
+/// `checkbox.unchecked_background` is unset, and `menu.min_row_height`, compared only where
+/// `menu.row_height` is unset, both of which `adwaita.toml` states.
+fn adwaita_expected_skip(key: &str) -> Option<compare::Skip> {
+    if key.starts_with("accessibility.") {
+        Some(compare::Skip::NoSnapshot)
+    } else if key == "checkbox.background_color" || key == "menu.min_row_height" {
+        Some(compare::Skip::OtherKeyStated)
+    } else {
+        None
+    }
+}
+
+/// Model parity of the adwaita builder (plan, section 1, rule 2): 0.7.2's `adwaita` and
+/// `Theme::preset(Preset::Adwaita)`, light and dark, over the table of homes. Every row's group is one of
+/// [`ADWAITA_PORTED_GROUPS`] or one of [`ADWAITA_NOT_PORTED_GROUPS`]; zero mismatches in the ported groups,
+/// every skip for its named reason; the rows of the groups not ported yet are counted and reported, and the
+/// two counts make the whole table. No dead rule in any rule set of the widgets.
+#[test]
+fn model_parity_adwaita() -> TestResult {
+    use crate::next::preset::{Preset, Theme as NextTheme};
+    use crate::next::query::ThemeContext;
+
+    let table: Table = toml::from_str(HOMES)?;
+    for row in &table.row {
+        let group = row.key.split('.').next().unwrap_or("");
+        assert!(
+            ADWAITA_PORTED_GROUPS.contains(&group) != ADWAITA_NOT_PORTED_GROUPS.contains(&group),
+            "`{}`: its group is not exactly one of the ported and the not ported groups",
+            row.key
+        );
+    }
+    for (mode, ctx) in [
+        (ColorMode::Light, ThemeContext::light()),
+        (ColorMode::Dark, ThemeContext::dark()),
+    ] {
+        let theme_072 = Theme::preset("adwaita")?;
+        let old = old_resolved(&theme_072, mode)?;
+        let unresolved = old_unresolved(&theme_072, mode)?;
+        let theme = NextTheme::preset(Preset::Adwaita);
+        let new = theme.resolve(&ctx);
+        let with_context = |context: RowContext| theme.resolve(&context.applied_to(&ctx));
+        let extra = compare::Extra {
+            unresolved: Some(&unresolved),
+            with_context: Some(&with_context),
+        };
+        let report = compare::compare(&old, &new, None, Preset::Adwaita, &extra)?;
+        println!("{mode:?}: {report}");
+        assert_eq!(report.totals.rows, table.row.len());
+        for row in report
+            .rows
+            .iter()
+            .filter(|row| in_groups(&row.key, ADWAITA_PORTED_GROUPS))
+        {
+            let skip = match row.outcome {
+                compare::Outcome::Skipped(skip) => Some(skip),
+                _ => None,
+            };
+            assert_eq!(
+                skip,
+                adwaita_expected_skip(&row.key),
+                "{mode:?}: `{}`",
+                row.key
+            );
+        }
+        let ported = totals_in(&report, ADWAITA_PORTED_GROUPS, true);
+        let not_ported = totals_in(&report, ADWAITA_NOT_PORTED_GROUPS, true);
+        println!(
+            "{mode:?}: [rows, compared, equal, mismatching, skipped] in the ported groups {ported:?}, \
+             in the groups not ported yet {not_ported:?}"
+        );
+        assert_eq!(ported, ADWAITA_PORTED_TOTALS, "{mode:?}\n{report}");
+        assert_eq!(
+            ported[0].saturating_add(not_ported[0]),
+            table.row.len(),
+            "{mode:?}"
+        );
+        let dead: Vec<_> = new
+            .dead_rules()
+            .into_iter()
+            .filter(|(_, rules)| !rules.is_empty())
+            .collect();
+        assert!(dead.is_empty(), "{mode:?}: dead rules {dead:?}");
+    }
+    Ok(())
+}
+
 // Reader parity (plan, section 1, rule 2) on the KDE fixtures: the theme the 0.7.2 KDE reader path produces
 // from a kdeglobals file, and the kde-breeze builder fed the same file as `SystemOverrides`.
 // ---------------------------------------------------------------------------------------------------------
@@ -1431,20 +1535,21 @@ fn old_kde_reader(
     } else {
         ColorMode::Light
     };
-    let (old, unresolved) = old_merged_reader(&reader, mode, &accessibility)?;
+    let (old, unresolved) = old_merged_reader(PRESET, &reader, mode, &accessibility)?;
     Ok((old, unresolved, reader.name.to_string()))
 }
 
-/// A 0.7.2 reader's theme `reader` merged over `kde-breeze`, resolved for `mode` with the rows written by
-/// hand ([`old_resolved`]) and the reader's `accessibility` block at its key, and unresolved
-/// ([`old_unresolved`]).
-#[cfg(all(target_os = "linux", feature = "kde"))]
+/// A 0.7.2 reader's theme `reader` merged over the 0.7.2 preset `preset`, resolved for `mode` with the
+/// rows written by hand ([`old_resolved`]) and the reader's `accessibility` block at its key, and
+/// unresolved ([`old_unresolved`]).
+#[cfg(all(target_os = "linux", any(feature = "kde", feature = "portal")))]
 fn old_merged_reader(
+    preset: &str,
     reader: &Theme,
     mode: ColorMode,
     accessibility: &crate::AccessibilityPreferences,
 ) -> Result<(serde_json::Value, serde_json::Value), Box<dyn std::error::Error>> {
-    let mut merged = Theme::preset(PRESET)?;
+    let mut merged = Theme::preset(preset)?;
     merged.merge(reader);
     let mut old = old_resolved(&merged, mode)?;
     let unresolved = old_unresolved(&merged, mode)?;
@@ -1507,14 +1612,45 @@ fn reader_parity_on(
     let mut ini = crate::kde::create_kde_parser();
     crate::kde::read_kconfig(&mut ini, content);
     let snapshot = snapshot_from_kdeglobals(&ini, None, None);
-    assert_reader_parity(name, &old, &unresolved, &old_name, &snapshot, table)?;
+    assert_reader_parity(
+        name,
+        &old,
+        &unresolved,
+        &old_name,
+        &snapshot,
+        table,
+        &KDE_READER_EXPECTED,
+    )?;
     Ok(old)
 }
 
-/// Reader parity of the kde-breeze builder given `snapshot` against the 0.7.2 reader path's theme `old`
-/// (`unresolved` before its resolution, `old_name` its name), as [`reader_parity_kde`] states it for each
-/// file.
+/// What reader parity expects of a preset's builder on one input: its totals in the ported groups
+/// (`[rows, compared, equal, mismatching, skipped]`), the reason a row is skipped for, and the keys of
+/// the rows that differ, each a listed difference with its reason given where the input is stated.
+#[cfg(all(target_os = "linux", any(feature = "kde", feature = "portal")))]
+struct ReaderExpected<'a> {
+    /// The totals in the ported groups.
+    totals: [usize; 5],
+    /// The reason the row of a key is skipped for, `None` where it is compared.
+    skip: fn(&str) -> Option<compare::Skip>,
+    /// The keys of the rows that differ.
+    listed: &'a [&'a str],
+}
+
+/// The kde-breeze builder's reader parity on every KDE fixture: every row of the ported groups equal but
+/// `checkbox.background_color`, skipped where `checkbox.unchecked_background` is stated (the table's
+/// listed differences).
 #[cfg(all(target_os = "linux", feature = "kde"))]
+const KDE_READER_EXPECTED: ReaderExpected<'static> = ReaderExpected {
+    totals: READER_TOTALS,
+    skip: |key| (key == "checkbox.background_color").then_some(compare::Skip::OtherKeyStated),
+    listed: &[],
+};
+
+/// Reader parity of the builder of `snapshot`'s preset given `snapshot` against the 0.7.2 reader path's
+/// theme `old` (`unresolved` before its resolution, `old_name` its name), as [`reader_parity_kde`] states
+/// it for each file, with `expected`'s totals, skips and listed differences.
+#[cfg(all(target_os = "linux", any(feature = "kde", feature = "portal")))]
 fn assert_reader_parity(
     name: &str,
     old: &serde_json::Value,
@@ -1522,12 +1658,13 @@ fn assert_reader_parity(
     old_name: &str,
     snapshot: &crate::next::reader::SystemSnapshot,
     table: &Table,
+    expected: &ReaderExpected<'_>,
 ) -> TestResult {
-    use crate::next::preset::{Preset, Theme as NextTheme};
+    use crate::next::preset::Theme as NextTheme;
 
     // 0.7.2 applies neither the motion setting nor the text scale to the theme: the theme is
     // resolved with both at their defaults and the animation scale unset, and the settings are
-    // compared through their own rows (spec §8, "The KDE part", *Context*).
+    // compared through their own rows (spec §8, "Every reader", *Context*).
     let mut overrides = snapshot.overrides.clone();
     overrides.animation_scale = None;
     let defaults = crate::next::query::ThemeContext::default();
@@ -1536,20 +1673,14 @@ fn assert_reader_parity(
         text_scale: defaults.text_scale,
         ..snapshot.context.clone()
     };
-    let theme = NextTheme::preset(Preset::KdeBreeze).with_system_overrides(overrides);
+    let theme = NextTheme::preset(snapshot.preset).with_system_overrides(overrides);
     let new = theme.resolve(&context);
     let with_context = |row: RowContext| theme.resolve(&row.applied_to(&context));
     let extra = compare::Extra {
         unresolved: Some(unresolved),
         with_context: Some(&with_context),
     };
-    let report = compare::compare(
-        old,
-        &new,
-        Some(&snapshot.context),
-        Preset::KdeBreeze,
-        &extra,
-    )?;
+    let report = compare::compare(old, &new, Some(&snapshot.context), snapshot.preset, &extra)?;
     println!("{name}: {report}");
     assert_eq!(report.totals.rows, table.row.len(), "{name}");
     assert_eq!(&*new.name, old_name, "{name}");
@@ -1559,7 +1690,17 @@ fn assert_reader_parity(
         "{name}: [rows, compared, equal, mismatching, skipped] in the ported groups {totals:?}, \
          in the groups not ported yet {not_ported:?}"
     );
-    assert_eq!(totals, READER_TOTALS, "{name}\n{report}");
+    let mismatching: Vec<&str> = report
+        .rows
+        .iter()
+        .filter(|row| {
+            in_groups(&row.key, PORTED_GROUPS)
+                && matches!(row.outcome, compare::Outcome::Mismatch(_))
+        })
+        .map(|row| row.key.as_str())
+        .collect();
+    assert_eq!(mismatching, expected.listed, "{name}\n{report}");
+    assert_eq!(totals, expected.totals, "{name}\n{report}");
     assert_eq!(
         totals[0].saturating_add(not_ported[0]),
         table.row.len(),
@@ -1574,9 +1715,7 @@ fn assert_reader_parity(
             compare::Outcome::Skipped(skip) => Some(skip),
             _ => None,
         };
-        let expected =
-            (row.key == "checkbox.background_color").then_some(compare::Skip::OtherKeyStated);
-        assert_eq!(skip, expected, "{name}: `{}`", row.key);
+        assert_eq!(skip, (expected.skip)(&row.key), "{name}: `{}`", row.key);
         if row.key.starts_with("accessibility.") {
             assert!(
                 matches!(row.outcome, compare::Outcome::Equal),
@@ -1612,7 +1751,7 @@ fn live_system_parity_kde() -> TestResult {
         .output
         .to_theme(&result.name, result.icon_set, &result.layout);
     let (old, unresolved) =
-        old_merged_reader(&reader, result.output.mode(), &result.accessibility)?;
+        old_merged_reader(PRESET, &reader, result.output.mode(), &result.accessibility)?;
     let theme = NextTheme::from_system()?;
     println!("0.8.0 diagnostics: {:?}", theme.diagnostics());
     assert_eq!(theme.preset_id(), Preset::KdeBreeze);
@@ -1631,6 +1770,7 @@ fn live_system_parity_kde() -> TestResult {
         &result.name,
         &snapshot,
         &table,
+        &KDE_READER_EXPECTED,
     )?;
     println!("the live desktop: equal through the 0.7.2 and the 0.8.0 path");
     Ok(())
@@ -1694,3 +1834,419 @@ fn reader_parity_kde_settings() -> TestResult {
     }
     Ok(())
 }
+
+// ---------------------------------------------------------------------------------------------------------
+// The GNOME reader: the clean-room Pango parser against 0.7.2's parse (plan, M2, "The reader").
+// ---------------------------------------------------------------------------------------------------------
+
+/// A font as 0.7.2's `gnome::parse_gnome_font_to_fontspec` returns it: family, size (its unit and value),
+/// weight and style.
+#[cfg(all(target_os = "linux", feature = "portal"))]
+type FontOutputs = Option<(
+    Option<String>,
+    Option<(&'static str, f32)>,
+    Option<u16>,
+    Option<String>,
+)>;
+
+/// The rows of the clean-room Pango parser's table (`tests/vectors/reader.pango_font_description.tsv`,
+/// Pango 1.58.2) whose font, as the GNOME reader reads it (`reader::portal::font`), differs from 0.7.2's
+/// parse of the same string: each the input and both outputs, 0.7.2's first.
+#[cfg(all(target_os = "linux", feature = "portal"))]
+fn pango_rows_differing_from_072() -> Result<Vec<(String, FontOutputs, FontOutputs)>, String> {
+    use crate::next::reader::pango_font_description::tests::table_rows;
+
+    let old_size = |size: crate::model::font::FontSize| match size {
+        crate::model::font::FontSize::Pt(v) => ("Pt", v),
+        crate::model::font::FontSize::Px(v) => ("Px", v),
+    };
+    let new_size = |size: crate::next::style::FontSize| match size {
+        crate::next::style::FontSize::Pt(v) => ("Pt", v),
+        crate::next::style::FontSize::Px(v) => ("Px", v),
+    };
+    Ok(table_rows()?
+        .into_iter()
+        .filter_map(|(_, input, _)| {
+            let old: FontOutputs = crate::gnome::parse_gnome_font_to_fontspec(&input).map(|f| {
+                (
+                    f.family.map(|family| family.to_string()),
+                    f.size.map(old_size),
+                    f.weight,
+                    f.style.map(|style| format!("{style:?}")),
+                )
+            });
+            let new: FontOutputs = crate::next::reader::portal::font(Some(&input)).map(|f| {
+                (
+                    f.family.map(|family| family.to_string()),
+                    f.size.map(new_size),
+                    f.weight,
+                    f.style.map(|style| format!("{style:?}")),
+                )
+            });
+            (old != new).then_some((input, old, new))
+        })
+        .collect())
+}
+
+/// The number of the table's 263 rows on which the two parses differ, each where Pango's own output
+/// (the table's) differs from 0.7.2's: a size not on Pango's grid of 1/1024 (`Sans 10.3`, `Sans 0.0005`,
+/// `Sans 7.00048828125`, `Sans 7.000488281`), or below its half step, which Pango stores as 0, no size
+/// (`Sans 0.0001`, `Sans 0.0004`); a hexadecimal size (`Sans 0x10`, `Sans 0x1p3px`); a vertical tab before
+/// a number (`Sans \v11`, `Sans \v\v+11px`, `Sans weight=\v700 11`, `Sans weight=\v-0 11`); a quoted
+/// family (`'Cantarell' 11`: 0.7.2 strips the string's leading quote, Pango keeps both).
+#[cfg(all(target_os = "linux", feature = "portal"))]
+const PANGO_ROWS_DIFFERING: usize = 13;
+
+/// The plan's first test of the clean-room Pango parser: its vector table run through the GNOME reader's
+/// font parse and through 0.7.2's, compared on the outputs 0.7.2's function returns (family, size, weight,
+/// style). The rows that differ are printed and counted ([`PANGO_ROWS_DIFFERING`]); they are the reader
+/// parity's listed differences of the parser (plan, Appendix B: the clean-room parser replaces 0.7.2's
+/// whatever this test shows, the table its citation).
+#[cfg(all(target_os = "linux", feature = "portal"))]
+#[test]
+fn pango_parser_table_against_072() -> TestResult {
+    let differing = pango_rows_differing_from_072()?;
+    for (input, old, new) in &differing {
+        println!("{input:?}\n  0.7.2 {old:?}\n  0.8.0 {new:?}");
+    }
+    assert_eq!(differing.len(), PANGO_ROWS_DIFFERING);
+    Ok(())
+}
+
+// ---------------------------------------------------------------------------------------------------------
+// Reader parity (plan, section 1, rule 2) on GNOME: the theme the 0.7.2 GNOME reader path produces from the
+// portal's data (`gnome::build_gnome_spec_pure`), and the adwaita builder fed the same data as
+// `SystemOverrides` (`reader::portal::snapshot_from_gnome_data`).
+// ---------------------------------------------------------------------------------------------------------
+
+/// The 0.7.2 GNOME reader path on the portal's data `data`, as the comparator reads it, and the name it
+/// gives the theme: the reader's pure function (`gnome::build_gnome_spec_pure`), its theme merged over
+/// `adwaita` as the pipeline merges a reader's result, resolved for the reader's scheme with the rows
+/// written by hand and the reader's `accessibility` block ([`old_merged_reader`]); also the merged
+/// theme's variant unresolved.
+#[cfg(all(target_os = "linux", feature = "portal"))]
+fn old_gnome_reader(
+    data: &crate::gnome::GnomePortalData,
+) -> Result<(serde_json::Value, serde_json::Value, String), Box<dyn std::error::Error>> {
+    let result = crate::gnome::build_gnome_spec_pure(data);
+    let reader = result
+        .output
+        .to_theme(&result.name, result.icon_set, &result.layout);
+    let (old, unresolved) = old_merged_reader(
+        "adwaita",
+        &reader,
+        result.output.mode(),
+        &result.accessibility,
+    )?;
+    Ok((old, unresolved, result.name.to_string()))
+}
+
+/// The portal's data of 0.7.2's GNOME reader tests (`gnome/mod.rs`, `default_gnome_data`): light, no
+/// accent, the fonts `Cantarell 11`, `Source Code Pro 10` and `Cantarell Bold 11`, a text-scaling factor
+/// of 1.0, overlay scroll bars, the icon theme `Adwaita`.
+#[cfg(all(target_os = "linux", feature = "portal"))]
+fn default_gnome_data() -> crate::gnome::GnomePortalData {
+    crate::gnome::GnomePortalData {
+        is_dark: false,
+        accent_rgb: None,
+        high_contrast: false,
+        reduce_motion: None,
+        font_name: Some("Cantarell 11".to_owned()),
+        monospace_font_name: Some("Source Code Pro 10".to_owned()),
+        titlebar_font: Some("Cantarell Bold 11".to_owned()),
+        text_scaling_factor: Some(1.0),
+        session_type: None,
+        overlay_scrolling: Some(true),
+        cursor_blink: None,
+        cursor_blink_time: None,
+        cursor_blink_timeout: None,
+        icon_theme: Some("Adwaita".to_owned()),
+        gsettings_high_contrast: None,
+    }
+}
+
+/// An accent of 0.7.2's GNOME reader tests as the portal gives it: each 8-bit channel over 255.
+#[cfg(all(target_os = "linux", feature = "portal"))]
+fn portal_accent((r, g, b): (u8, u8, u8)) -> Option<(f64, f64, f64)> {
+    Some((
+        f64::from(r) / 255.0,
+        f64::from(g) / 255.0,
+        f64::from(b) / 255.0,
+    ))
+}
+
+/// The cases of GNOME's reader parity: the data of 0.7.2's GNOME reader tests (`gnome/mod.rs`), each
+/// named, with the keys of the rows that differ, each a listed difference. The accents are libadwaita's
+/// blue and purple (`#3584e4`, `#9141ac`, the tests' documented accents).
+#[cfg(all(target_os = "linux", feature = "portal"))]
+pub(crate) fn gnome_cases() -> Vec<(
+    &'static str,
+    crate::gnome::GnomePortalData,
+    &'static [&'static str],
+)> {
+    const BLUE: (u8, u8, u8) = (0x35, 0x84, 0xe4);
+    const PURPLE: (u8, u8, u8) = (0x91, 0x41, 0xac);
+    let base = default_gnome_data;
+    let with = |f: fn(&mut crate::gnome::GnomePortalData)| {
+        let mut data = base();
+        f(&mut data);
+        data
+    };
+    vec![
+        ("the default data", base(), &[]),
+        ("dark", with(|d| d.is_dark = true), &[]),
+        (
+            "blue accent, light",
+            with(|d| d.accent_rgb = portal_accent(BLUE)),
+            &[],
+        ),
+        (
+            "blue accent, dark",
+            with(|d| {
+                d.is_dark = true;
+                d.accent_rgb = portal_accent(BLUE);
+            }),
+            &[],
+        ),
+        (
+            "purple accent, light",
+            with(|d| d.accent_rgb = portal_accent(PURPLE)),
+            &[],
+        ),
+        (
+            "purple accent, dark",
+            with(|d| {
+                d.is_dark = true;
+                d.accent_rgb = portal_accent(PURPLE);
+            }),
+            &[],
+        ),
+        (
+            "purple accent, high contrast from the portal",
+            with(|d| {
+                d.accent_rgb = portal_accent(PURPLE);
+                d.high_contrast = true;
+            }),
+            &[],
+        ),
+        (
+            "blue accent, dark, high contrast from gsettings",
+            with(|d| {
+                d.is_dark = true;
+                d.accent_rgb = portal_accent(BLUE);
+                d.gsettings_high_contrast = Some(true);
+            }),
+            &[],
+        ),
+        // Listed: under `Contrast::High` the adwaita builder draws the preset's focus ring, and the
+        // focused text field's outline, at libadwaita's `$focus_border_color_hc` alpha of 0.8 (its
+        // module documentation; spec §8, "The GNOME part": `adwaita` defines `High` for that value);
+        // 0.7.2's reader changes that alpha only through a portal accent, and without one keeps the
+        // preset's ring at 0.5. libadwaita 1.10.0 draws the ring under `prefers-contrast: more` in
+        // `$focus_border_color_hc` (`_drawing.scss:24-26`), `var(--accent-color)` at 80 %
+        // (`_colors.scss:261`, `:308`), and `--accent-color` is the standalone colour of
+        // `--accent-bg-color` whatever gives that accent, the default one too (`_colors.scss:166-170`).
+        (
+            "high contrast without an accent",
+            with(|d| d.high_contrast = true),
+            &["defaults.focus_ring_color", "input.focus_border_color"],
+        ),
+        (
+            "an accent out of range",
+            with(|d| d.accent_rgb = Some((1.5, 0.0, 0.0))),
+            &[],
+        ),
+        (
+            "reduced motion",
+            with(|d| d.reduce_motion = Some(true)),
+            &[],
+        ),
+        (
+            "a text scale on Wayland",
+            with(|d| {
+                d.text_scaling_factor = Some(1.5);
+                d.session_type = Some("wayland".to_owned());
+            }),
+            &[],
+        ),
+        (
+            "a text scale on X11",
+            with(|d| {
+                d.text_scaling_factor = Some(1.5);
+                d.session_type = Some("x11".to_owned());
+            }),
+            &[],
+        ),
+        (
+            "Adwaita Sans 14",
+            with(|d| d.font_name = Some("Adwaita Sans 14".to_owned())),
+            &[],
+        ),
+        (
+            "Adwaita Sans 14px",
+            with(|d| d.font_name = Some("Adwaita Sans 14px".to_owned())),
+            &[],
+        ),
+        (
+            "Inter Bold 12",
+            with(|d| d.font_name = Some("Inter Bold 12".to_owned())),
+            &[],
+        ),
+        (
+            "Cantarell Bold Italic 11",
+            with(|d| d.font_name = Some("Cantarell Bold Italic 11".to_owned())),
+            &[],
+        ),
+        // Listed: the Pango parser's difference (`pango_parser_table_against_072`): Pango stores 10.3
+        // points as 10547/1024 (10.299805), its table's size for `Sans 10.3`, where 0.7.2 parses 10.3;
+        // every size taken from the UI font differs by that much.
+        (
+            "a size off Pango's grid",
+            with(|d| d.font_name = Some("Sans 10.3".to_owned())),
+            UI_FONT_SIZE_KEYS,
+        ),
+        (
+            "a font without a size",
+            with(|d| d.font_name = Some("Adwaita Sans".to_owned())),
+            &[],
+        ),
+        (
+            "no fonts",
+            with(|d| {
+                d.font_name = None;
+                d.monospace_font_name = None;
+                d.titlebar_font = None;
+            }),
+            &[],
+        ),
+        (
+            "no overlay scroll bars",
+            with(|d| d.overlay_scrolling = Some(false)),
+            &[],
+        ),
+        (
+            "a blink cycle and a time-out",
+            with(|d| {
+                d.cursor_blink_time = Some(1000);
+                d.cursor_blink_timeout = Some(5);
+            }),
+            &[],
+        ),
+        (
+            "a caret that does not blink",
+            with(|d| {
+                d.cursor_blink = Some(false);
+                d.cursor_blink_time = Some(1200);
+            }),
+            &[],
+        ),
+        (
+            "another icon theme",
+            with(|d| d.icon_theme = Some("Papirus".to_owned())),
+            &[],
+        ),
+    ]
+}
+
+/// Reader parity of the adwaita builder: for every case of [`gnome_cases`], the 0.7.2 reader path
+/// ([`old_gnome_reader`]) against `Theme::preset(Preset::Adwaita)` given the case's `SystemOverrides` and
+/// resolved for its context (its motion level and text scale at their defaults, as 0.7.2 applies
+/// neither), over the table of homes, the snapshot's context compared. Over every row of the ported
+/// groups: the rows of the case's listed differences differ, every other row is equal or skipped for its
+/// named reason (`checkbox.background_color` and `menu.min_row_height`, as in the model parity), the
+/// four `accessibility.*` rows compared and equal; the resolved theme's name is the reader's.
+#[cfg(all(target_os = "linux", feature = "portal"))]
+#[test]
+fn reader_parity_gnome() -> TestResult {
+    use crate::next::reader::portal::snapshot_from_gnome_data;
+
+    let table: Table = toml::from_str(HOMES)?;
+    let skip = |key: &str| {
+        (key == "checkbox.background_color" || key == "menu.min_row_height")
+            .then_some(compare::Skip::OtherKeyStated)
+    };
+    for (name, data, listed) in gnome_cases() {
+        let (old, unresolved, old_name) = old_gnome_reader(&data)?;
+        let snapshot = snapshot_from_gnome_data(&data);
+        let [rows, compared, ..] = GNOME_READER_ROWS;
+        let expected = ReaderExpected {
+            totals: [
+                rows,
+                compared,
+                compared.saturating_sub(listed.len()),
+                listed.len(),
+                rows.saturating_sub(compared),
+            ],
+            skip,
+            listed,
+        };
+        assert_reader_parity(
+            name,
+            &old,
+            &unresolved,
+            &old_name,
+            &snapshot,
+            &table,
+            &expected,
+        )?;
+    }
+    Ok(())
+}
+
+/// The keys of the rows whose values the UI font's size gives on adwaita, in the table's order: the body's
+/// and every widget font's size and defined size, the text-scale entries' sizes and line heights, the
+/// dialog title's size and defined size.
+#[cfg(all(target_os = "linux", feature = "portal"))]
+const UI_FONT_SIZE_KEYS: &[&str] = &[
+    "defaults.font.size",
+    "defaults.font.defined_size",
+    "text_scale.caption.size",
+    "text_scale.caption.line_height",
+    "text_scale.section_heading.size",
+    "text_scale.section_heading.line_height",
+    "text_scale.dialog_title.size",
+    "text_scale.dialog_title.line_height",
+    "text_scale.display.size",
+    "text_scale.display.line_height",
+    "button.font.size",
+    "button.font.defined_size",
+    "checkbox.font.size",
+    "checkbox.font.defined_size",
+    "list.item_font.size",
+    "list.item_font.defined_size",
+    "list.header_font.size",
+    "list.header_font.defined_size",
+    "tooltip.font.size",
+    "tooltip.font.defined_size",
+    "input.font.size",
+    "input.font.defined_size",
+    "link.font.size",
+    "link.font.defined_size",
+    "menu.font.size",
+    "menu.font.defined_size",
+    "tab.font.size",
+    "tab.font.defined_size",
+    "sidebar.font.size",
+    "sidebar.font.defined_size",
+    "toolbar.font.size",
+    "toolbar.font.defined_size",
+    "status_bar.font.size",
+    "status_bar.font.defined_size",
+    "popover.font.size",
+    "popover.font.defined_size",
+    "dialog.title_font.size",
+    "dialog.title_font.defined_size",
+    "dialog.body_font.size",
+    "dialog.body_font.defined_size",
+    "combo_box.font.size",
+    "combo_box.font.defined_size",
+    "segmented_control.font.size",
+    "segmented_control.font.defined_size",
+    "expander.font.size",
+    "expander.font.defined_size",
+];
+
+/// The rows of the ported groups on every GNOME case and the rows of them compared: all but
+/// `checkbox.background_color` and `menu.min_row_height`, skipped.
+#[cfg(all(target_os = "linux", feature = "portal"))]
+const GNOME_READER_ROWS: [usize; 2] = [563, 561];

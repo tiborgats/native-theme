@@ -677,6 +677,25 @@ pub(super) mod kde;
     reason = "the clean room's helper, placed unchanged: Qt's qGray truncates by its definition, and the divisor is the constant 32"
 )]
 mod kde_color_scheme;
+/// Pango's `pango_font_description_from_string`: the clean-room parser of
+/// `v0.8.0-rc1` (`src/cleanroom_readers/pango_font_description.rs`), carried
+/// with its vector test, `tests/vectors/reader.pango_font_description.tsv`;
+/// its one change, a hexadecimal digit read with `let … else` in place of a
+/// zero fallback, is on a branch no input reaches.
+#[cfg(all(target_os = "linux", feature = "portal"))]
+#[allow(
+    dead_code,
+    reason = "the clean room's parser, placed unchanged: the fields the reader does not keep are read by its vector test alone"
+)]
+#[allow(
+    clippy::collapsible_if,
+    clippy::manual_ignore_case_cmp,
+    clippy::type_complexity,
+    reason = "the clean room's parser, its style kept as written: style lints only"
+)]
+pub(super) mod pango_font_description;
+#[cfg(all(target_os = "linux", feature = "portal"))]
+pub(super) mod portal;
 /// Qt's `QFont::fromString`: the clean-room parser of `v0.8.0-rc1`
 /// (`src/cleanroom_readers/qfont_from_string.rs`), carried unchanged with its
 /// vector test, `tests/vectors/reader.qfont_from_string.tsv`.
