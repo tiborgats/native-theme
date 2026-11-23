@@ -6519,7 +6519,6 @@ fn icon_button<'a>(state: &'a State, spec: IconButton<'a>) -> Element<'a, Messag
 /// model states no menu-bar inset.
 fn menu_bar(state: &State) -> Element<'_, Message> {
     let r = state.next_shown();
-    let gap = Gaps::from_layout(&state.layout);
     let font = r.menu.item_label(WidgetState::NONE);
     let pad = next_menu_row_padding(r);
     // A row's stated height, grown above a text scale of 1 to hold its line
@@ -6616,7 +6615,7 @@ fn menu_bar(state: &State) -> Element<'_, Message> {
                 drawn,
                 font.size_px,
                 pad,
-                gap.widget,
+                r.layout.widget_gap,
             )
         });
         let items = entries
@@ -7870,7 +7869,7 @@ fn page_menu(state: &State) -> Element<'_, Message> {
             drawn,
             font.size_px,
             pad,
-            Gaps::from_layout(&state.layout).widget,
+            state.next_shown().layout.widget_gap,
         )
     });
     MenuBar::new(vec![Item::with_menu(
@@ -11226,13 +11225,13 @@ fn iced_not_themeable(state: &State, element: &ShowcaseElement) -> Vec<Cow<'stat
         ],
         "Menu" if state.current_resolved.popover.border.shadow_enabled => vec![
             "menu width: its widest row, the label and the shortcut \
-             layout.widget_gap apart inside the row's padding"
+             layout.widget_gap apart (none where unstated) inside the row's padding"
                 .into(),
             "shadow geometry: iced_aw's menu_shadow".into(),
         ],
         "Menu" => vec![
             "menu width: its widest row, the label and the shortcut \
-             layout.widget_gap apart inside the row's padding"
+             layout.widget_gap apart (none where unstated) inside the row's padding"
                 .into(),
         ],
         "Menu shortcut" => vec!["shortcut colour: the row's label colour".into()],
@@ -17681,8 +17680,11 @@ impl MenuEntry {
 }
 
 /// How wide a drop-down menu of a `MenuBar` is, as the gpui and egui
-/// showcases size theirs: its widest row -- the label, then `gap` and the
-/// shortcut where the row has one -- inside the row's padding `pad`. Each
+/// showcases size theirs: its widest row -- the label, then `gap` (none
+/// where it is `None`, the window's menus on a theme that leaves
+/// `layout.widget_gap` unstated, whose rows then hold the label and the
+/// shortcut with nothing between) and the shortcut where the row has one --
+/// inside the row's padding `pad`. Each
 /// text is measured as iced shapes it in `font` at `size`, once per install
 /// ([`LabelWidths`]).
 ///
@@ -17696,14 +17698,15 @@ fn menu_width<'a>(
     font: iced::Font,
     size: f32,
     pad: Padding,
-    gap: f32,
+    gap: Option<f32>,
 ) -> f32 {
     let width = |content: &str| widths.width(content, font, size);
     let widest = rows
         .into_iter()
-        .map(|(label, shortcut)| match shortcut {
-            Some(shortcut) => width(label) + gap + width(&shortcut),
-            None => width(label),
+        .map(|(label, shortcut)| match (shortcut, gap) {
+            (Some(shortcut), Some(gap)) => width(label) + gap + width(&shortcut),
+            (Some(shortcut), None) => width(label) + width(&shortcut),
+            (None, _) => width(label),
         })
         .fold(0.0, f32::max);
     pad.left + widest + pad.right
@@ -18575,7 +18578,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
             theme_font(&menu_t.font),
             scaled_text_size(menu_t.font.size, a11y),
             item_pad,
-            gap.widget,
+            Some(gap.widget),
         );
         let items = entries
             .into_iter()
@@ -34737,7 +34740,8 @@ mod tests {
 
     /// A window menu is as wide as its widest row, as the gpui and egui
     /// showcases' are: opened, the Theme menu's rows are each the widest
-    /// row's label, and its shortcut `layout.widget_gap` after it, inside
+    /// row's label, and its shortcut the installed 0.8.0 theme's
+    /// `layout.widget_gap` after it (right after it where unstated), inside
     /// the row's padding, measured as iced shapes them; Preferences' shortcut
     /// sits flush right in its row, inside the padding.
     #[test]
@@ -34758,9 +34762,10 @@ mod tests {
             let widest = ["Reload System Theme", "System", "Light", "Dark"]
                 .into_iter()
                 .map(measured)
-                .chain([measured("Preferences…")
-                    + Gaps::from_layout(&state.layout).widget
-                    + measured(&binding(","))])
+                .chain([match state.next_shown().layout.widget_gap {
+                    Some(gap) => measured("Preferences…") + gap + measured(&binding(",")),
+                    None => measured("Preferences…") + measured(&binding(",")),
+                }])
                 .fold(0.0, f32::max);
             let mut ui: Simulator<'_, Message> =
                 Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
