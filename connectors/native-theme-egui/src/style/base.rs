@@ -11,8 +11,8 @@ use native_theme::theme::ResolvedPadding;
 use super::BuildInput;
 use super::line::LineAlign;
 use super::states::{
-    BorderEntries, BorderSource, Edge, FillField, FillSource, Layer, OpenFrom, StateSource,
-    TextSource, Unstated, state_borders, write_states_with,
+    BorderEntries, BorderSource, Edge, FillField, FillSource, Layer, OpenFrom, StateLine,
+    StateSource, TextSource, Unstated, state_borders, write_states_with,
 };
 use super::{push_note, saturates_i8};
 use crate::accessors::scaled_text_size;
@@ -161,8 +161,8 @@ pub(crate) struct ButtonStates {
     pub border: Edge,
     pub border_paths: [&'static str; 2],
     pub align: LineAlign,
-    /// The hovered and the pressed or focused border's colour (egui's `active` is both).
-    pub state_border: [Option<Rgba>; 2],
+    /// The hovered and the pressed or focused border (egui's `active` is both).
+    pub state_border: [Option<StateLine>; 2],
 }
 
 impl ButtonStates {
@@ -184,12 +184,12 @@ impl ButtonStates {
             align: LineAlign::Outside,
             // a theme that states both and they differ: a pressed button takes the focus border
             state_border: [
-                Some(b.hover_border_color.unwrap_or(b.border.color)),
-                Some(
+                StateLine::colour(Some(b.hover_border_color.unwrap_or(b.border.color))),
+                StateLine::colour(Some(
                     b.focus_border_color
                         .or(b.hover_border_color)
                         .unwrap_or(b.border.color),
-                ),
+                )),
             ],
         }
     }
@@ -606,7 +606,14 @@ pub(crate) fn base_style_from(
     // the hovered button's border, which a pressed one keeps, and the focused one's; egui's
     // `active` is press and keyboard focus alike (`Response::widget_state`, egui 0.37.0
     // src/widget_style/mod.rs:212-222). Each over the fill its entry paints (`Line::over`).
-    state_borders(w, b.state_border, b.align, Some(FillField::Weak), unstated);
+    state_borders(
+        w,
+        b.state_border,
+        b.align,
+        Some(FillField::Weak),
+        unstated,
+        notes,
+    );
     // `bg_fill`: the scrollbar thumb, which every unscoped `ScrollArea` handle paints (§5.9)
     let [thumb, thumb_hover, _] = src.thumb;
     write_states_with(

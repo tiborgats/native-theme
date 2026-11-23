@@ -5,7 +5,7 @@
 
 use super::base::{ButtonStates, Read, Sides};
 use super::line::LineAlign;
-use super::states::Edge;
+use super::states::{Edge, StateLine};
 use crate::accessors::scaled_text_size;
 use crate::convert::{Rgba, padding_with_line};
 use crate::{AccessibilityPreferences, ResolvedTheme};
@@ -65,10 +65,11 @@ pub(crate) struct MenuCell {
 }
 
 pub(crate) struct InputCell {
-    pub text: Option<Rgba>,
+    /// The text at rest, hovered and pressed.
+    pub text: [Option<Rgba>; 3],
     pub outline: Outline,
     /// The hovered and the pressed field's border.
-    pub state_border: [Option<Rgba>; 2],
+    pub state_border: [Option<StateLine>; 2],
     pub placeholder: Option<Rgba>,
     pub selection: Option<Rgba>,
     pub selection_text: Option<Rgba>,
@@ -78,12 +79,13 @@ pub(crate) struct InputCell {
 }
 
 pub(crate) struct CheckboxCell {
-    /// The unchecked box at rest and hovered.
-    pub fill: [Read<Rgba>; 2],
-    pub mark: Option<Rgba>,
+    /// The unchecked box at rest, hovered and pressed.
+    pub fill: [Read<Rgba>; 3],
+    /// The check mark at rest, hovered and pressed.
+    pub mark: [Option<Rgba>; 3],
     pub outline: Outline,
     /// The hovered and the pressed box's outline.
-    pub state_border: [Option<Rgba>; 2],
+    pub state_border: [Option<StateLine>; 2],
     pub mark_width: Read<f32>,
     pub label: Text,
     pub indicator: Read<f32>,
@@ -113,8 +115,8 @@ pub(crate) struct SliderCell {
     pub track: Read<Rgba>,
     pub disabled_opacity: Read<f32>,
     pub thumb_diameter: Read<f32>,
-    /// The thumb at rest and hovered.
-    pub thumb: [Read<Rgba>; 2],
+    /// The thumb at rest, hovered and pressed.
+    pub thumb: [Read<Rgba>; 3],
     /// The rail's radius (§6.8).
     pub radius: Option<f32>,
 }
@@ -127,9 +129,10 @@ pub(crate) struct ProgressBarCell {
 }
 
 pub(crate) struct TabCell {
-    /// The tab at rest and hovered.
-    pub fill: [Read<Rgba>; 2],
-    pub text: [Option<Rgba>; 2],
+    /// The tab at rest, hovered and pressed.
+    pub fill: [Read<Rgba>; 3],
+    /// The label at rest, hovered and pressed.
+    pub text: [Option<Rgba>; 3],
     pub outline: Outline,
     pub selected_fill: Option<Rgba>,
     pub selected_text: Option<Rgba>,
@@ -150,7 +153,10 @@ pub(crate) struct SidebarCell {
     pub panel: PanelCell,
     pub selection: Option<Rgba>,
     pub selection_text: Option<Rgba>,
-    pub hover: Read<Rgba>,
+    /// An item's hovered and pressed fill.
+    pub item_fill: [Read<Rgba>; 2],
+    /// An item's hovered and pressed label.
+    pub item_text: [Option<Rgba>; 2],
 }
 
 pub(crate) struct ToolbarCell {
@@ -159,7 +165,10 @@ pub(crate) struct ToolbarCell {
     pub item_gap: Read<f32>,
     /// A tool button's hovered and pressed fill.
     pub button_fill: [Option<Rgba>; 2],
-    pub button_border: Option<Rgba>,
+    /// A tool button's hovered and pressed outline colour.
+    pub button_border: [Option<Rgba>; 2],
+    /// A tool button's hovered and pressed label.
+    pub button_text: [Option<Rgba>; 2],
     pub padding: Sides,
 }
 
@@ -170,7 +179,8 @@ pub(crate) struct ListCell {
     pub width: Read<f32>,
     pub radius: Read<f32>,
     pub row_height: Read<f32>,
-    pub hover: Read<Rgba>,
+    /// A row's hovered and pressed highlight.
+    pub highlight: [Read<Rgba>; 2],
     pub item: Text,
     pub header_text: Option<Rgba>,
 }
@@ -182,8 +192,8 @@ pub(crate) struct SeparatorCell {
 
 pub(crate) struct SwitchCell {
     pub checked: Option<Rgba>,
-    /// The unchecked track at rest and hovered.
-    pub fill: [Read<Rgba>; 2],
+    /// The unchecked track at rest, hovered and pressed.
+    pub fill: [Read<Rgba>; 3],
     pub radius: Read<f32>,
     pub height: Read<f32>,
     pub disabled_opacity: Read<f32>,
@@ -196,12 +206,14 @@ pub(crate) struct SpinnerCell {
 }
 
 pub(crate) struct ComboBoxCell {
-    /// The field at rest and hovered.
-    pub fill: [Read<Rgba>; 2],
+    /// The field at rest, hovered and pressed.
+    pub fill: [Read<Rgba>; 3],
     pub text: Text,
+    /// The label hovered and pressed.
+    pub text_states: [Option<Rgba>; 2],
     pub outline: Outline,
     /// The hovered and the pressed field's border.
-    pub state_border: [Option<Rgba>; 2],
+    pub state_border: [Option<StateLine>; 2],
     pub open_fill: Option<Rgba>,
     pub open_border: Option<Rgba>,
     pub min_height: Read<f32>,
@@ -212,9 +224,11 @@ pub(crate) struct ComboBoxCell {
 }
 
 pub(crate) struct SegmentedControlCell {
-    /// The segment at rest and hovered.
-    pub fill: [Read<Rgba>; 2],
+    /// The segment at rest, hovered and pressed.
+    pub fill: [Read<Rgba>; 3],
     pub text: Text,
+    /// The label hovered and pressed.
+    pub text_states: [Option<Rgba>; 2],
     pub outline: Outline,
     pub selected_fill: Option<Rgba>,
     pub selected_text: Option<Rgba>,
@@ -225,8 +239,11 @@ pub(crate) struct SegmentedControlCell {
 }
 
 pub(crate) struct ExpanderCell {
-    pub hover: Read<Rgba>,
+    /// The header's hovered and pressed fill.
+    pub fill: [Read<Rgba>; 2],
     pub text: Text,
+    /// The header's label hovered and pressed.
+    pub text_states: [Option<Rgba>; 2],
     pub outline: Outline,
     pub header_height: Read<f32>,
     pub padding: Sides,
@@ -257,6 +274,8 @@ impl ExpanderCell {
 pub(crate) struct SplitterCell {
     pub color: Option<Rgba>,
     pub hover: Option<Rgba>,
+    /// The drag line's colour.
+    pub pressed: Option<Rgba>,
     pub width: Read<f32>,
 }
 
@@ -401,13 +420,15 @@ impl CellSource {
                 size: scaled(m.font.size, "menu.font.size"),
             },
             input: InputCell {
-                text: Some(i.font.color),
+                text: [Some(i.font.color), None, None],
                 outline: old_outline(
                     &i.border,
                     ["input.border.corner_radius", "input.border.line_width"],
                 ),
                 // §6.4: `None` copies `border.color`; the pressed field keeps the hovered one
-                state_border: [Some(i.hover_border_color.unwrap_or(i.border.color)); 2],
+                state_border: [StateLine::colour(Some(
+                    i.hover_border_color.unwrap_or(i.border.color),
+                )); 2],
                 placeholder: Some(i.placeholder_color),
                 selection: Some(i.selection_background),
                 selection_text: Some(i.selection_text_color),
@@ -431,8 +452,9 @@ impl CellSource {
                         None => (k.background_color, "checkbox.background_color"),
                     }),
                     k.hover_background.map(|h| (h, "checkbox.hover_background")),
+                    None,
                 ],
-                mark: Some(k.indicator_color),
+                mark: [Some(k.indicator_color), None, None],
                 outline: Outline {
                     edge: Edge {
                         color: Some(k.unchecked_border_color.unwrap_or(k.border.color)),
@@ -444,7 +466,7 @@ impl CellSource {
                     ],
                     align: LineAlign::Outside,
                 },
-                state_border: [k.hover_border_color; 2],
+                state_border: [StateLine::colour(k.hover_border_color); 2],
                 mark_width: k
                     .check_mark_stroke_width
                     .map(|v| (v, "checkbox.check_mark_stroke_width")),
@@ -491,6 +513,7 @@ impl CellSource {
                     Some((sl.thumb_color, "slider.thumb_color")),
                     sl.thumb_hover_color
                         .map(|c| (c, "slider.thumb_hover_color")),
+                    None,
                 ],
                 radius,
             },
@@ -509,8 +532,9 @@ impl CellSource {
                 fill: [
                     Some((tb.background_color, "tab.background_color")),
                     tb.hover_background.map(|h| (h, "tab.hover_background")),
+                    None,
                 ],
-                text: [Some(tb.font.color), Some(tb.hover_text_color)],
+                text: [Some(tb.font.color), Some(tb.hover_text_color), None],
                 outline: old_outline(
                     &tb.border,
                     ["tab.border.corner_radius", "tab.border.line_width"],
@@ -539,7 +563,11 @@ impl CellSource {
                 },
                 selection: Some(t.sidebar.selection_background),
                 selection_text: Some(t.sidebar.selection_text_color),
-                hover: Some((t.sidebar.hover_background, "sidebar.hover_background")),
+                item_fill: [
+                    Some((t.sidebar.hover_background, "sidebar.hover_background")),
+                    None,
+                ],
+                item_text: [None; 2],
             },
             toolbar: ToolbarCell {
                 panel: PanelCell {
@@ -553,7 +581,8 @@ impl CellSource {
                     t.toolbar.button_hover_background,
                     t.toolbar.button_active_background,
                 ],
-                button_border: t.toolbar.button_hover_border_color,
+                button_border: [t.toolbar.button_hover_border_color, None],
+                button_text: [None; 2],
                 padding: old_sides(
                     &t.toolbar.border.padding,
                     [
@@ -576,7 +605,10 @@ impl CellSource {
                 width: Some((t.list.border.line_width, "list.border.line_width")),
                 radius: Some((t.list.border.corner_radius, "list.border.corner_radius")),
                 row_height: t.list.row_height.map(|v| (v, "list.row_height")),
-                hover: Some((t.list.hover_background, "list.hover_background")),
+                highlight: [
+                    Some((t.list.hover_background, "list.hover_background")),
+                    None,
+                ],
                 item: text(&t.list.item_font, "list.item_font.size"),
                 header_text: Some(t.list.header_font.color),
             },
@@ -591,6 +623,7 @@ impl CellSource {
                     t.switch
                         .hover_unchecked_background
                         .map(|h| (h, "switch.hover_unchecked_background")),
+                    None,
                 ],
                 radius: Some((t.switch.track_radius, "switch.track_radius")),
                 height: Some((t.switch.track_height, "switch.track_height")),
@@ -606,8 +639,10 @@ impl CellSource {
                     Some((cb.background_color, "combo_box.background_color")),
                     cb.hover_background
                         .map(|h| (h, "combo_box.hover_background")),
+                    None,
                 ],
                 text: text(&cb.font, "combo_box.font.size"),
+                text_states: [None; 2],
                 outline: old_outline(
                     &cb.border,
                     [
@@ -615,7 +650,7 @@ impl CellSource {
                         "combo_box.border.line_width",
                     ],
                 ),
-                state_border: [cb.hover_border_color; 2],
+                state_border: [StateLine::colour(cb.hover_border_color); 2],
                 open_fill: cb.open_background,
                 open_border: cb.open_border_color,
                 min_height: Some((cb.min_height, "combo_box.min_height")),
@@ -639,8 +674,10 @@ impl CellSource {
                     Some((sc.background_color, "segmented_control.background_color")),
                     sc.hover_background
                         .map(|h| (h, "segmented_control.hover_background")),
+                    None,
                 ],
                 text: text(&sc.font, "segmented_control.font.size"),
+                text_states: [None; 2],
                 outline: old_outline(
                     &sc.border,
                     [
@@ -664,8 +701,12 @@ impl CellSource {
                 disabled_opacity: Some((sc.disabled_opacity, "segmented_control.disabled_opacity")),
             },
             expander: ExpanderCell {
-                hover: x.hover_background.map(|h| (h, "expander.hover_background")),
+                fill: [
+                    x.hover_background.map(|h| (h, "expander.hover_background")),
+                    None,
+                ],
                 text: text(&x.font, "expander.font.size"),
+                text_states: [None; 2],
                 outline: old_outline(
                     &x.border,
                     [
@@ -690,6 +731,7 @@ impl CellSource {
             splitter: SplitterCell {
                 color: Some(t.splitter.divider_color),
                 hover: Some(t.splitter.hover_color),
+                pressed: None,
                 width: Some((t.splitter.divider_width, "splitter.divider_width")),
             },
             scaled_up: prefs.text_scale_factor() > 1.0,

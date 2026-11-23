@@ -154,3 +154,96 @@ fn to_theme_builds_each_scheme_from_its_own_theme() -> Result<(), super::Unmappe
     }
     Ok(())
 }
+
+/// The atlas `to_theme` builds from `preset` with `patch` laid over it.
+fn patched_light(
+    preset: Preset,
+    patch: &str,
+) -> Result<crate::ThemeAtlas, Box<dyn std::error::Error>> {
+    let theme = Theme::preset(preset).with_patch(ThemePatch::from_toml(patch)?);
+    let [light, light_inactive, dark, dark_inactive] = [
+        ThemeContext::light(),
+        ThemeContext::light().with_window_active(false),
+        ThemeContext::dark(),
+        ThemeContext::dark().with_window_active(false),
+    ]
+    .map(|ctx| theme.resolve(&ctx));
+    let atlas = super::to_theme(&light, &light_inactive, &dark, &dark_inactive)?;
+    Ok(atlas)
+}
+
+/// The primary button in a disabled scope takes the fill and the label a rule states for the
+/// primary button's disabled state (`button.body(primary + DISABLED)`,
+/// `button.label(primary + DISABLED)`), not the plain button's.
+#[test]
+fn the_disabled_primary_button_reads_its_own_state() -> Result<(), Box<dyn std::error::Error>> {
+    let rule = "[[widgets.button.rules]]\nstates = [\"disabled\"]\n";
+    let plain = patched_light(
+        Preset::KdeBreeze,
+        &format!("{rule}body.fill = \"#ff00ff\"\nlabel.color = \"#00ff00\"\n"),
+    )?;
+    let primary = patched_light(
+        Preset::KdeBreeze,
+        &format!(
+            "{rule}variant = \"primary\"\nbody.fill = \"#0000ff\"\nlabel.color = \"#ffff00\"\n"
+        ),
+    )?;
+    let cell = primary
+        .scheme(egui::Theme::Light)
+        .cell(crate::Role::Button, crate::RoleVariant::Disabled);
+    assert_eq!(cell.visuals.selection.bg_fill, egui::Color32::BLUE);
+    assert_eq!(cell.visuals.selection.stroke.color, egui::Color32::YELLOW);
+    let plain_primary = &plain
+        .scheme(egui::Theme::Light)
+        .cell(crate::Role::Button, crate::RoleVariant::Disabled)
+        .visuals
+        .selection;
+    // a rule for every button's disabled state holds for the primary one too
+    assert_eq!(
+        plain_primary.bg_fill,
+        egui::Color32::from_rgb(0xff, 0, 0xff)
+    );
+    Ok(())
+}
+
+/// A tool button's pressed outline is the one a rule states for `toolbar.button(PRESSED)`;
+/// unstated, egui's own pressed outline (spec §10, rule 0), never the hovered one.
+#[test]
+fn a_tool_buttons_pressed_outline_is_its_own() -> Result<(), Box<dyn std::error::Error>> {
+    let hover = "[[widgets.toolbar.rules]]\nstates = [\"hover\"]\n\
+                 button.stroke = { width = 1.0, color = \"#ff00ff\" }\n";
+    // a preset that states no pressed tool-button outline
+    let (_, preset) = PRESETS
+        .iter()
+        .find(|(_, p)| {
+            !Theme::preset(*p)
+                .resolve(&ThemeContext::light())
+                .toolbar
+                .button(WidgetState::PRESSED)
+                .from_state
+                .contains(native_theme::next::PartStated::STROKE)
+        })
+        .ok_or("every preset states a pressed tool-button outline")?;
+    let styles = patched_light(*preset, hover)?;
+    let w = &styles
+        .scheme(egui::Theme::Light)
+        .cell(crate::Role::Toolbar, crate::RoleVariant::Normal)
+        .visuals
+        .widgets;
+    let magenta = egui::Color32::from_rgb(0xff, 0, 0xff);
+    assert_eq!(w.hovered.bg_stroke.color, magenta);
+    let own = egui::Theme::Light.default_style().visuals.widgets;
+    assert_eq!(w.active.bg_stroke.color, own.active.bg_stroke.color);
+    let pressed = format!(
+        "{hover}[[widgets.toolbar.rules]]\nstates = [\"pressed\"]\n\
+         button.stroke = {{ width = 1.0, color = \"#00ff00\" }}\n"
+    );
+    let styles = patched_light(Preset::KdeBreeze, &pressed)?;
+    let w = &styles
+        .scheme(egui::Theme::Light)
+        .cell(crate::Role::Toolbar, crate::RoleVariant::Normal)
+        .visuals
+        .widgets;
+    assert_eq!(w.active.bg_stroke.color, egui::Color32::GREEN);
+    Ok(())
+}

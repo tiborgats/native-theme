@@ -18,7 +18,7 @@ use egui::style::WidgetVisuals;
 use super::base::Read;
 use super::line::{Line, LineAlign};
 use super::roles::CellInput;
-use super::states::{FillField, Unstated, state_borders};
+use super::states::{FillField, StateLine, Unstated, state_borders};
 use crate::convert::{Rgba, to_color32};
 use crate::style::note_transparent_fill;
 use crate::{Note, ResolvedTheme, Role};
@@ -40,16 +40,22 @@ pub(crate) struct CheckedBox {
     /// The hovered and the pressed checked box's fill.
     pub state_fill: [Read<Rgba>; 2],
     /// The hovered and the pressed checked box's outline.
-    pub state_border: [Option<Rgba>; 2],
+    pub state_border: [Option<StateLine>; 2],
     /// The checked box's fill where the theme states a disabled fill.
     pub disabled_fill: Read<Rgba>,
+}
+
+/// The primary button's disabled look: its fill where the theme states one, and the label
+/// that fill is lettered in.
+pub(crate) struct PrimaryDisabled {
+    pub fill: Option<Rgba>,
+    pub text: Option<Rgba>,
 }
 
 /// Every variant cell's reads.
 pub(crate) struct VariantSource {
     pub button: Disabled,
-    /// The primary button's fill where the theme states a disabled fill.
-    pub primary: Option<Rgba>,
+    pub primary: PrimaryDisabled,
     pub combo_box: Disabled,
     pub checkbox: Disabled,
     pub checked: CheckedBox,
@@ -84,7 +90,10 @@ impl VariantSource {
                     "button.disabled_background",
                 ),
             ),
-            primary: t.button.disabled_background,
+            primary: PrimaryDisabled {
+                fill: t.button.disabled_background,
+                text: Some(t.button.disabled_text_color),
+            },
             combo_box: disabled(
                 t.combo_box.disabled_text_color,
                 (
@@ -107,7 +116,7 @@ impl VariantSource {
                 outline: Some(k.border.color),
                 align: LineAlign::Outside,
                 state_fill: [None; 2],
-                state_border: [k.hover_border_color; 2],
+                state_border: [StateLine::colour(k.hover_border_color); 2],
                 disabled_fill: k
                     .disabled_background
                     .map(|c| (c, "checkbox.disabled_background")),
@@ -238,7 +247,14 @@ pub(crate) fn selected_cell(
     ] {
         outline_over(entry, k.outline, k.align, FillField::Bg);
     }
-    state_borders(w, k.state_border, k.align, Some(FillField::Bg), unstated);
+    state_borders(
+        w,
+        k.state_border,
+        k.align,
+        Some(FillField::Bg),
+        unstated,
+        notes,
+    );
     Some(style)
 }
 
@@ -302,9 +318,9 @@ pub(crate) fn disabled_cell(
                 outline_over(&mut v.widgets.inactive, d.outline, d.align, FillField::Weak);
             }
             labels(&mut v.widgets, d.text);
-            if let Some(fill) = src.primary {
+            if let Some(fill) = src.primary.fill {
                 v.selection.bg_fill = to_color32(fill);
-                if let Some(text) = d.text {
+                if let Some(text) = src.primary.text {
                     v.selection.stroke.color = to_color32(text);
                 }
             }

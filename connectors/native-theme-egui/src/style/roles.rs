@@ -129,7 +129,7 @@ pub(crate) fn role_cell_from(
 /// writes (D7).
 fn keeps_resting_stroke(role: Role, src: &CellSource) -> bool {
     match role {
-        Role::Toolbar => src.toolbar.button_border.is_none(),
+        Role::Toolbar => src.toolbar.button_border.iter().all(Option::is_none),
         Role::Scrollbar
         | Role::Slider
         | Role::Sidebar
@@ -284,13 +284,14 @@ fn fit_row_padding(s: &mut egui::Style, stated: Read<f32>, slot: TextStyle, cx: 
     }
 }
 
-/// A role's text colour in all five entries: the roles §6.1 names that state a text colour
-/// and no hover or pressed one. Unstated, the entries keep theirs.
-fn text_in_all(idle: Option<Rgba>) -> Option<TextSource> {
-    idle.map(|idle| TextSource {
-        idle: Some(idle),
-        hover: None,
-        active: None,
+/// A role's text colour in all five entries (the roles §6.1 names that state a text colour)
+/// and the hovered and pressed colours the theme states, an unstated one what [`Unstated`]
+/// gives. With none stated, the entries keep theirs.
+fn text_states(idle: Option<Rgba>, [hover, active]: [Option<Rgba>; 2]) -> Option<TextSource> {
+    (idle.is_some() || hover.is_some() || active.is_some()).then_some(TextSource {
+        idle,
+        hover,
+        active,
         in_noninteractive: true,
     })
 }
@@ -351,6 +352,7 @@ fn button(
         st.align,
         Some(FillField::Weak),
         cx.unstated,
+        notes,
     );
     // the selected (primary) button: `button_style` reads `selection.*` regardless of state (§6.2)
     set_selection(s, b.primary_fill, b.primary_text);
@@ -587,7 +589,7 @@ fn input_role(
         &mut s.visuals.widgets,
         &StateSource {
             fill: None,
-            text: text_in_all(i.text),
+            text: text_states(i.text[0], [i.text[1], i.text[2]]),
             border: border_all(&i.outline),
             open: OpenFrom::Inactive,
         },
@@ -601,6 +603,7 @@ fn input_role(
         i.outline.align,
         None,
         cx.unstated,
+        notes,
     );
     if let Some(c) = i.placeholder {
         s.visuals.weak_text_color = Some(to_color32(c));
@@ -626,10 +629,10 @@ fn checkbox(
                 field: FillField::Bg,
                 idle: k.fill[0],
                 hover: k.fill[1],
-                active: None,
+                active: k.fill[2],
                 layer: Layer::Composite,
             }),
-            text: text_in_all(k.mark), // the check mark is `fg_stroke` (§5.3)
+            text: text_states(k.mark[0], [k.mark[1], k.mark[2]]), // the check mark is `fg_stroke` (§5.3)
             border: border_all(&k.outline),
             open: OpenFrom::Inactive,
         },
@@ -645,6 +648,7 @@ fn checkbox(
         k.outline.align,
         Some(FillField::Bg),
         cx.unstated,
+        notes,
     );
     // The check mark is a line in the state's `fg_stroke` (`egui/src/widgets/checkbox.rs:151-158`,
     // `check_stroke` from `widget_style.rs:131`, `:188`), so its width is the stroke width, one in
@@ -805,7 +809,7 @@ fn tab(
                 field: FillField::Weak,
                 idle: tb.fill[0],
                 hover: tb.fill[1],
-                active: None,
+                active: tb.fill[2],
                 // a row highlight (C17): it replaces the idle tab's fill and lies over the tab
                 // bar, as Breeze paints it (docs/platform-facts.md §2.11, `background_color`)
                 layer: Layer::AsGiven,
@@ -813,7 +817,7 @@ fn tab(
             text: Some(TextSource {
                 idle: tb.text[0],
                 hover: tb.text[1],
-                active: None,
+                active: tb.text[2],
                 in_noninteractive: true,
             }),
             border: border_all(&tb.outline),
@@ -848,6 +852,7 @@ fn panel(
     own: &egui::Style,
     p: &super::cells::PanelCell,
     fill: Option<FillSource>,
+    text: [Option<Rgba>; 2],
     cx: &Cx<'_>,
     notes: &mut Vec<Note>,
 ) {
@@ -856,7 +861,7 @@ fn panel(
         &mut s.visuals.widgets,
         &StateSource {
             fill,
-            text: text_in_all(p.text.color),
+            text: text_states(p.text.color, text),
             border: None, // a container edge (§6.1)
             open: OpenFrom::Inactive,
         },
@@ -879,11 +884,11 @@ fn sidebar(
     let fill = FillSource {
         field: FillField::Weak,
         idle: None,
-        hover: sb.hover,
-        active: None,
+        hover: sb.item_fill[0],
+        active: sb.item_fill[1],
         layer: Layer::AsGiven, // a row highlight (§6.1)
     };
-    panel(s, own, &sb.panel, Some(fill), cx, notes);
+    panel(s, own, &sb.panel, Some(fill), sb.item_text, cx, notes);
 }
 
 fn toolbar(
@@ -905,20 +910,24 @@ fn toolbar(
         own.spacing.item_spacing.x,
         notes,
     );
-    panel(s, own, &tb.panel, None, cx, notes);
+    panel(s, own, &tb.panel, None, tb.button_text, cx, notes);
     // D7: a flat tool button's hovered and pressed states, each field where stated and as
     // stated, not composited; the rest is the button's own
     let w = &mut s.visuals.widgets;
     let [hover, active] = tb.button_fill;
     set_color(&mut w.hovered.weak_bg_fill, hover);
     set_color(&mut w.active.weak_bg_fill, active);
-    // the colour only, the width stays the base's; `active` is also egui's keyboard-focused
-    // state, so a tool button reached by Tab shows the outline, which a Qt toolbar button,
-    // taking no focus, never shows
-    if let Some(edge) = tb.button_border {
-        let edge = to_color32(edge);
-        w.hovered.bg_stroke.color = edge;
-        w.active.bg_stroke.color = edge;
+    // the colour only, the width stays the base's, an unstated one what `unstated` gives;
+    // `active` is also egui's keyboard-focused state, so a tool button reached by Tab shows
+    // the outline, which a Qt toolbar button, taking no focus, never shows
+    if tb.button_border.iter().any(Option::is_some) {
+        let [hover, active] = tb.button_border;
+        let own = |e: &egui::style::WidgetVisuals| e.bg_stroke.color;
+        let rest = w.inactive.bg_stroke.color;
+        let hovered = hover.map_or_else(|| cx.unstated.hovered(rest, own), to_color32);
+        w.active.bg_stroke.color =
+            active.map_or_else(|| cx.unstated.active(rest, hovered, own), to_color32);
+        w.hovered.bg_stroke.color = hovered;
     }
 }
 
@@ -929,7 +938,7 @@ fn status_bar(
     cx: &Cx<'_>,
     notes: &mut Vec<Note>,
 ) {
-    panel(s, own, &src.status_bar, None, cx, notes);
+    panel(s, own, &src.status_bar, None, [None; 2], cx, notes);
 }
 
 fn list(
@@ -961,8 +970,8 @@ fn list(
             fill: Some(FillSource {
                 field: FillField::Bg,
                 idle: None,
-                hover: l.hover,
-                active: None,
+                hover: l.highlight[0],
+                active: l.highlight[1],
                 layer: Layer::AsGiven, // a row highlight (§6.1)
             }),
             text: None,
@@ -1010,7 +1019,7 @@ fn switch(
                 field: FillField::Weak,
                 idle: sw.fill[0],
                 hover: sw.fill[1],
-                active: None,
+                active: sw.fill[2],
                 layer: Layer::Composite,
             }),
             text: None,
@@ -1065,10 +1074,10 @@ fn combo_box(
                 field: FillField::Weak,
                 idle: cb.fill[0],
                 hover: cb.fill[1],
-                active: None,
+                active: cb.fill[2],
                 layer: Layer::Composite,
             }),
-            text: text_in_all(cb.text.color),
+            text: text_states(cb.text.color, cb.text_states),
             border: border_all(&cb.outline),
             open: OpenFrom::Inactive,
         },
@@ -1083,6 +1092,7 @@ fn combo_box(
         cb.outline.align,
         Some(FillField::Weak),
         cx.unstated,
+        notes,
     );
     // E10: an open combo box, drawn from `open` under `ComboBox::CLASS_OPEN` whatever the
     // pointer does (egui-0.37.0/src/theme/default_style.rs:41-45), as Breeze draws it: the fill
@@ -1132,10 +1142,10 @@ fn segmented_control(
                 field: FillField::Weak,
                 idle: sc.fill[0],
                 hover: sc.fill[1],
-                active: None,
+                active: sc.fill[2],
                 layer: Layer::Composite,
             }),
-            text: text_in_all(sc.text.color),
+            text: text_states(sc.text.color, sc.text_states),
             border: border_all(&sc.outline),
             open: OpenFrom::Inactive,
         },
@@ -1179,11 +1189,11 @@ fn expander(
             fill: Some(FillSource {
                 field: FillField::Weak,
                 idle: None,
-                hover: x.hover,
-                active: None,
+                hover: x.fill[0],
+                active: x.fill[1],
                 layer: Layer::AsGiven, // over no idle fill of its own (§6.1)
             }),
-            text: text_in_all(x.text.color),
+            text: text_states(x.text.color, x.text_states),
             border: border_all(&x.outline),
             open: OpenFrom::Inactive,
         },

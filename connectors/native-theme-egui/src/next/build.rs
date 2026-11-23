@@ -23,8 +23,8 @@ use crate::style::cells::{
 };
 use crate::style::frames::{FrameSource, SurfaceSource};
 use crate::style::line::LineAlign;
-use crate::style::states::Edge;
-use crate::style::variants::{CheckedBox, Disabled, VariantSource};
+use crate::style::states::{Edge, StateLine};
+use crate::style::variants::{CheckedBox, Disabled, PrimaryDisabled, VariantSource};
 
 /// A colour of the 0.8.0 model as the 0.7.2 model's: its 8-bit sRGB channels with straight
 /// alpha, which the builders convert as they convert a 0.7.2 colour.
@@ -77,8 +77,20 @@ pub(crate) fn line(part: &PartStyle) -> Option<Rgba> {
     }
 }
 
+/// The border a rule states for the queried state (its `from_state` bit): its colour as
+/// [`line()`] reads it and its width, with `home`, the width's; `None` where no rule states the
+/// stroke.
+pub(crate) fn state_line(part: &PartStyle, home: &'static str) -> Option<StateLine> {
+    part.from_state
+        .contains(PartStated::STROKE)
+        .then(|| StateLine {
+            color: line(part),
+            width: stroke_width_of(part).map(|w| (w, home)),
+        })
+}
+
 /// [`line()`] where a rule states it for the queried state (its `from_state` bit).
-pub(crate) fn state_line(part: &PartStyle) -> Option<Rgba> {
+pub(crate) fn state_line_color(part: &PartStyle) -> Option<Rgba> {
     part.from_state
         .contains(PartStated::STROKE)
         .then(|| line(part))
@@ -274,8 +286,12 @@ fn button_states(r: &ResolvedTheme) -> ButtonStates {
         // egui's `active` is press and keyboard focus alike: the focus ring's border where
         // the theme states one, else the pressed one
         state_border: [
-            state_line(&hover),
-            state_line(&b.body(WidgetState::FOCUS_VISIBLE)).or_else(|| state_line(&pressed)),
+            state_line(&hover, "button.body(HOVER).stroke.width"),
+            state_line(
+                &b.body(WidgetState::FOCUS_VISIBLE),
+                "button.body(FOCUS_VISIBLE).stroke.width",
+            )
+            .or_else(|| state_line(&pressed, "button.body(PRESSED).stroke.width")),
         ],
     }
 }
@@ -338,6 +354,23 @@ fn icon_color(icon: &IconStyle) -> Option<Rgba> {
     icon.stated
         .contains(IconStated::COLOR)
         .then(|| rgba(icon.color))
+}
+
+/// [`icon_color`] where a rule states it for the queried state (its `from_state` bit).
+fn state_icon_color(icon: &IconStyle) -> Option<Rgba> {
+    icon.from_state
+        .contains(IconStated::COLOR)
+        .then(|| icon_color(icon))
+        .flatten()
+}
+
+/// A text style's hovered and pressed colours where a rule states them for the state, the
+/// text style `at` gives for a state.
+fn hover_press_text(at: impl Fn(WidgetState) -> TextStyle) -> [Option<Rgba>; 2] {
+    [
+        state_text_color(&at(WidgetState::HOVER)),
+        state_text_color(&at(WidgetState::PRESSED)),
+    ]
 }
 
 /// An icon's size, where stated, with its home.
@@ -415,7 +448,7 @@ pub(crate) fn cell_source(r: &ResolvedTheme) -> CellSource {
                 state_text_color(&m.item_label(S::HOVER)),
             ],
             outline: menu_outline(&item, &m.panel(S::NONE)),
-            hover_border: state_line(&m.item(S::HOVER)),
+            hover_border: state_line_color(&m.item(S::HOVER)),
             bar_padding: [
                 bar_left.map(|v| (v, "menu_bar.item(NONE).padding.left")),
                 bar_top.map(|v| (v, "menu_bar.item(NONE).padding.top")),
@@ -454,7 +487,10 @@ pub(crate) fn cell_source(r: &ResolvedTheme) -> CellSource {
             size: size(&m.item_label(S::NONE), "menu.item_label(NONE).size_px"),
         },
         input: InputCell {
-            text: text_color(&i.text(S::NONE)),
+            text: {
+                let [hover, press] = hover_press_text(|s| i.text(s));
+                [text_color(&i.text(S::NONE)), hover, press]
+            },
             outline: outline(
                 &field,
                 [
@@ -463,8 +499,8 @@ pub(crate) fn cell_source(r: &ResolvedTheme) -> CellSource {
                 ],
             ),
             state_border: [
-                state_line(&i.field(S::HOVER)),
-                state_line(&i.field(S::PRESSED)),
+                state_line(&i.field(S::HOVER), "input.field(HOVER).stroke.width"),
+                state_line(&i.field(S::PRESSED), "input.field(PRESSED).stroke.width"),
             ],
             placeholder: text_color(&i.placeholder(S::NONE)),
             selection: Some(rgba(r.colors.text_selection.background)),
@@ -485,8 +521,13 @@ pub(crate) fn cell_source(r: &ResolvedTheme) -> CellSource {
             fill: [
                 fill_at(&indicator, "checkbox.indicator(NONE).fill"),
                 state_fill_at(&k.indicator(S::HOVER), "checkbox.indicator(HOVER).fill"),
+                state_fill_at(&k.indicator(S::PRESSED), "checkbox.indicator(PRESSED).fill"),
             ],
-            mark: icon_color(&k.checkmark(S::CHECKED)),
+            mark: [
+                icon_color(&k.checkmark(S::CHECKED)),
+                state_icon_color(&k.checkmark(S::HOVER)),
+                state_icon_color(&k.checkmark(S::PRESSED)),
+            ],
             outline: outline(
                 &indicator,
                 [
@@ -495,8 +536,14 @@ pub(crate) fn cell_source(r: &ResolvedTheme) -> CellSource {
                 ],
             ),
             state_border: [
-                state_line(&k.indicator(S::HOVER)),
-                state_line(&k.indicator(S::PRESSED)),
+                state_line(
+                    &k.indicator(S::HOVER),
+                    "checkbox.indicator(HOVER).stroke.width",
+                ),
+                state_line(
+                    &k.indicator(S::PRESSED),
+                    "checkbox.indicator(PRESSED).stroke.width",
+                ),
             ],
             mark_width: k
                 .checkmark(S::NONE)
@@ -538,6 +585,7 @@ pub(crate) fn cell_source(r: &ResolvedTheme) -> CellSource {
             thumb: [
                 fill_at(&sl.thumb(S::NONE), "slider.thumb(NONE).fill"),
                 state_fill_at(&sl.thumb(S::HOVER), "slider.thumb(HOVER).fill"),
+                state_fill_at(&sl.thumb(S::PRESSED), "slider.thumb(PRESSED).fill"),
             ],
             radius: Some(r.layout.corner_radius),
         },
@@ -551,10 +599,12 @@ pub(crate) fn cell_source(r: &ResolvedTheme) -> CellSource {
             fill: [
                 fill_at(&tab, "tab.tab(NONE).fill"),
                 state_fill_at(&tb.tab(S::HOVER), "tab.tab(HOVER).fill"),
+                state_fill_at(&tb.tab(S::PRESSED), "tab.tab(PRESSED).fill"),
             ],
             text: [
                 text_color(&tb.label(S::NONE)),
                 state_text_color(&tb.label(S::HOVER)),
+                state_text_color(&tb.label(S::PRESSED)),
             ],
             // the selected tab's outline is the tab's (the table of homes' `tab.border` rows)
             outline: outline(
@@ -591,7 +641,11 @@ pub(crate) fn cell_source(r: &ResolvedTheme) -> CellSource {
             },
             selection: state_fill(&side.item(S::SELECTED)),
             selection_text: state_text_color(&side.item_label(S::SELECTED)),
-            hover: state_fill_at(&side.item(S::HOVER), "sidebar.item(HOVER).fill"),
+            item_fill: [
+                state_fill_at(&side.item(S::HOVER), "sidebar.item(HOVER).fill"),
+                state_fill_at(&side.item(S::PRESSED), "sidebar.item(PRESSED).fill"),
+            ],
+            item_text: hover_press_text(|s| side.item_label(s)),
         },
         toolbar: ToolbarCell {
             panel: PanelCell {
@@ -608,7 +662,11 @@ pub(crate) fn cell_source(r: &ResolvedTheme) -> CellSource {
                 state_fill(&tool.button(S::HOVER)),
                 state_fill(&tool.button(S::PRESSED)),
             ],
-            button_border: state_line(&tool.button(S::HOVER)),
+            button_border: [
+                state_line_color(&tool.button(S::HOVER)),
+                state_line_color(&tool.button(S::PRESSED)),
+            ],
+            button_text: hover_press_text(|s| tool.button_label(s)),
             padding: sides(
                 &bar,
                 [
@@ -631,7 +689,10 @@ pub(crate) fn cell_source(r: &ResolvedTheme) -> CellSource {
             width: stroke_width_of(&list_box).map(|v| (v, "list.container(NONE).stroke.width")),
             radius: radius_of(&list_box).map(|v| (v, "list.container(NONE).corners")),
             row_height: l.row(S::NONE).min_size[1].map(|v| (v, "list.row(NONE).min_size[1]")),
-            hover: state_fill_at(&l.highlight(S::HOVER), "list.highlight(HOVER).fill"),
+            highlight: [
+                state_fill_at(&l.highlight(S::HOVER), "list.highlight(HOVER).fill"),
+                state_fill_at(&l.highlight(S::PRESSED), "list.highlight(PRESSED).fill"),
+            ],
             item: text(&l.item_label(S::NONE), "list.item_label(NONE).size_px"),
             header_text: text_color(&l.header_label(S::NONE)),
         },
@@ -644,6 +705,7 @@ pub(crate) fn cell_source(r: &ResolvedTheme) -> CellSource {
             fill: [
                 fill_at(&sw_track, "switch.track(NONE).fill"),
                 state_fill_at(&sw.track(S::HOVER), "switch.track(HOVER).fill"),
+                state_fill_at(&sw.track(S::PRESSED), "switch.track(PRESSED).fill"),
             ],
             radius: radius_of(&sw_track).map(|v| (v, "switch.track(NONE).corners")),
             height: sw_track.min_size[1].map(|v| (v, "switch.track(NONE).min_size[1]")),
@@ -658,8 +720,10 @@ pub(crate) fn cell_source(r: &ResolvedTheme) -> CellSource {
             fill: [
                 fill_at(&cb_field, "combo_box.field(NONE).fill"),
                 state_fill_at(&cb.field(S::HOVER), "combo_box.field(HOVER).fill"),
+                state_fill_at(&cb.field(S::PRESSED), "combo_box.field(PRESSED).fill"),
             ],
             text: text(&cb.label(S::NONE), "combo_box.label(NONE).size_px"),
+            text_states: hover_press_text(|s| cb.label(s)),
             outline: outline(
                 &cb_field,
                 [
@@ -668,11 +732,14 @@ pub(crate) fn cell_source(r: &ResolvedTheme) -> CellSource {
                 ],
             ),
             state_border: [
-                state_line(&cb.field(S::HOVER)),
-                state_line(&cb.field(S::PRESSED)),
+                state_line(&cb.field(S::HOVER), "combo_box.field(HOVER).stroke.width"),
+                state_line(
+                    &cb.field(S::PRESSED),
+                    "combo_box.field(PRESSED).stroke.width",
+                ),
             ],
             open_fill: state_fill(&cb.field(S::OPEN)),
-            open_border: state_line(&cb.field(S::OPEN)),
+            open_border: state_line_color(&cb.field(S::OPEN)),
             min_height: cb_field.min_size[1].map(|v| (v, "combo_box.field(NONE).min_size[1]")),
             arrow: icon_size(&cb.chevron(S::NONE), "combo_box.chevron(NONE).size"),
             arrow_area: cb
@@ -696,8 +763,13 @@ pub(crate) fn cell_source(r: &ResolvedTheme) -> CellSource {
                     &sc.segment(S::HOVER),
                     "segmented_control.segment(HOVER).fill",
                 ),
+                state_fill_at(
+                    &sc.segment(S::PRESSED),
+                    "segmented_control.segment(PRESSED).fill",
+                ),
             ],
             text: text(&sc.label(S::NONE), "segmented_control.label(NONE).size_px"),
+            text_states: hover_press_text(|s| sc.label(s)),
             outline: outline(
                 &sc_track,
                 [
@@ -721,11 +793,15 @@ pub(crate) fn cell_source(r: &ResolvedTheme) -> CellSource {
             disabled_opacity: opacity_at(sc.disabled_opacity, "segmented_control.disabled_opacity"),
         },
         expander: ExpanderCell {
-            hover: state_fill_at(&x.header(S::HOVER), "expander.header(HOVER).fill"),
+            fill: [
+                state_fill_at(&x.header(S::HOVER), "expander.header(HOVER).fill"),
+                state_fill_at(&x.header(S::PRESSED), "expander.header(PRESSED).fill"),
+            ],
             text: text(
                 &x.header_label(S::NONE),
                 "expander.header_label(NONE).size_px",
             ),
+            text_states: hover_press_text(|s| x.header_label(s)),
             outline: outline(
                 &x.container(S::NONE),
                 [
@@ -750,6 +826,7 @@ pub(crate) fn cell_source(r: &ResolvedTheme) -> CellSource {
         splitter: SplitterCell {
             color: fill(&r.splitter.handle(S::NONE)),
             hover: state_fill(&r.splitter.handle(S::HOVER)),
+            pressed: state_fill(&r.splitter.handle(S::PRESSED)),
             width: Some((r.splitter.divider_width, "splitter.divider_width")),
         },
         scaled_up: r.context.text_scale > 1.0,
@@ -781,9 +858,16 @@ pub(crate) fn variant_source(r: &ResolvedTheme) -> VariantSource {
     let i = &r.input;
     let checked = k.indicator(S::CHECKED);
     let (checked_outline, checked_align) = edge(&checked);
+    let primary_disabled = ButtonQuery::primary().with_state(S::DISABLED);
     // the combined state's outline where a rule states one for `state` alone
-    let checked_state_line = |state: WidgetState| {
-        state_line(&k.indicator(state)).and_then(|_| line(&k.indicator(state | S::CHECKED)))
+    let checked_state_line = |state: WidgetState, home: &'static str| {
+        state_line_color(&k.indicator(state)).map(|_| {
+            let both = k.indicator(state | S::CHECKED);
+            StateLine {
+                color: line(&both),
+                width: stroke_width_of(&both).map(|w| (w, home)),
+            }
+        })
     };
     // the combined state's fill where a rule states one for `state` alone
     let checked_state_fill = |state: WidgetState, home: &'static str| {
@@ -797,7 +881,10 @@ pub(crate) fn variant_source(r: &ResolvedTheme) -> VariantSource {
             "button.body(DISABLED).fill",
             &b.body(S::NONE),
         ),
-        primary: state_fill(&b.body(S::DISABLED)),
+        primary: PrimaryDisabled {
+            fill: state_fill(&b.body(primary_disabled)),
+            text: state_text_color(&b.label(primary_disabled)),
+        },
         combo_box: disabled(
             &cb.label(S::DISABLED),
             &cb.field(S::DISABLED),
@@ -818,7 +905,13 @@ pub(crate) fn variant_source(r: &ResolvedTheme) -> VariantSource {
                 checked_state_fill(S::HOVER, "checkbox.indicator(HOVER|CHECKED).fill"),
                 checked_state_fill(S::PRESSED, "checkbox.indicator(PRESSED|CHECKED).fill"),
             ],
-            state_border: [checked_state_line(S::HOVER), checked_state_line(S::PRESSED)],
+            state_border: [
+                checked_state_line(S::HOVER, "checkbox.indicator(HOVER|CHECKED).stroke.width"),
+                checked_state_line(
+                    S::PRESSED,
+                    "checkbox.indicator(PRESSED|CHECKED).stroke.width",
+                ),
+            ],
             disabled_fill: state_fill(&k.indicator(S::DISABLED)).and_then(|_| {
                 fill_at(
                     &k.indicator(S::DISABLED | S::CHECKED),

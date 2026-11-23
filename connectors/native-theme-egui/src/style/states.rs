@@ -4,7 +4,7 @@ use egui::style::{WidgetVisuals, Widgets};
 
 use native_theme::theme::ResolvedWidgetBorder;
 
-use super::base::{radius, stroke};
+use super::base::{Read, radius, stroke};
 use super::line::{Line, LineAlign};
 use super::note_transparent_fill;
 use crate::Note;
@@ -305,15 +305,35 @@ pub(crate) fn write_states_with(
     }
 }
 
-/// The hovered and the pressed entry's border colour, over what [`write_states_with`] wrote
-/// there: each stated one composited over the fill its entry paints (`painted`, [`Line::over`]),
-/// an unstated one what `unstated` gives.
+/// A hovered or pressed border the theme states for its state: its colour and its width, each
+/// `None` where it states none.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub(crate) struct StateLine {
+    pub color: Option<Rgba>,
+    pub width: Read<f32>,
+}
+
+impl StateLine {
+    /// A stated colour alone, the width left to the entry: the 0.7.2 model's state borders.
+    pub(crate) fn colour(color: Option<Rgba>) -> Option<Self> {
+        color.map(|c| Self {
+            color: Some(c),
+            width: None,
+        })
+    }
+}
+
+/// The hovered and the pressed entry's border, over what [`write_states_with`] wrote there,
+/// each property apart: a stated colour composited over the fill its entry paints (`painted`,
+/// [`Line::over`]) and a stated width laid over the entry's; an unstated one what `unstated`
+/// gives.
 pub(crate) fn state_borders(
     widgets: &mut Widgets,
-    [hover, active]: [Option<Rgba>; 2],
+    [hover, active]: [Option<StateLine>; 2],
     align: LineAlign,
     painted: Option<FillField>,
     unstated: Unstated<'_>,
+    notes: &mut Vec<Note>,
 ) {
     let line = |c: Rgba, entry: &WidgetVisuals| {
         Line {
@@ -322,17 +342,27 @@ pub(crate) fn state_borders(
         }
         .over(painted.map(|f| fill_of(entry, f)))
     };
+    let (hover, active) = (hover.unwrap_or_default(), active.unwrap_or_default());
     let own = |e: &WidgetVisuals| e.bg_stroke.color;
-    let hovered = match hover {
+    let hovered = match hover.color {
         Some(c) => line(c, &widgets.hovered),
         None => unstated.hovered(widgets.hovered.bg_stroke.color, own),
     };
-    let active = match active {
+    let active_color = match active.color {
         Some(c) => line(c, &widgets.active),
         None => unstated.active(widgets.active.bg_stroke.color, hovered, own),
     };
-    widgets.hovered.bg_stroke.color = hovered;
-    widgets.active.bg_stroke.color = active;
+    let own_width = |e: &WidgetVisuals| e.bg_stroke.width;
+    let mut width = |state: Read<f32>, entry: &WidgetVisuals| {
+        state.map(|(w, path)| stroke(path, entry.bg_stroke, entry.bg_stroke.color, w, notes).width)
+    };
+    let hovered_width = width(hover.width, &widgets.hovered)
+        .unwrap_or_else(|| unstated.hovered(widgets.hovered.bg_stroke.width, own_width));
+    let active_width = width(active.width, &widgets.active).unwrap_or_else(|| {
+        unstated.active(widgets.active.bg_stroke.width, hovered_width, own_width)
+    });
+    widgets.hovered.bg_stroke = egui::Stroke::new(hovered_width, hovered);
+    widgets.active.bg_stroke = egui::Stroke::new(active_width, active_color);
 }
 
 #[cfg(test)]

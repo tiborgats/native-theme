@@ -73,7 +73,7 @@ pub(crate) fn apply_role(
             slider_thumb_colours(style, src.slider.thumb, unstated, notes);
         }
         Role::Spinner => spinner_size(style, &src.spinner, notes),
-        Role::Splitter => splitter_strokes(style, &src.splitter, notes),
+        Role::Splitter => splitter_strokes(style, &src.splitter, unstated, notes),
         Role::Toolbar => toolbar_bar_height(style, &src.toolbar, notes),
         Role::ComboBox => combo_box_arrow_area(style, src.combo_box.arrow_area, notes),
         Role::Expander => {
@@ -141,12 +141,13 @@ fn pressed_thumb(style: &mut egui::Style, (c, path): (Rgba, &'static str), notes
 }
 
 /// The hovered and pressed handle: the hovered thumb, or the resting one where the platform
-/// states none — the one route by which the resting thumb reaches the screen (§5.5) —; `active
-/// := hovered` (§6.1). A thumb the theme states neither of keeps the entries' own; under rule 0
-/// an unstated hover takes egui's own where egui's entries change the fill.
+/// states none — the one route by which the resting thumb reaches the screen (§5.5) —; the
+/// pressed thumb, or what `unstated` gives (the 0.7.2 model's copy: `active := hovered`, §6.1).
+/// A thumb the theme states none of keeps the entries' own; under rule 0 an unstated hover or
+/// press takes egui's own where egui's entries change the fill.
 fn slider_thumb_colours(
     style: &mut egui::Style,
-    [rest, hover]: [Read<Rgba>; 2],
+    [rest, hover, press]: [Read<Rgba>; 3],
     unstated: Unstated<'_>,
     notes: &mut Vec<Note>,
 ) {
@@ -157,26 +158,32 @@ fn slider_thumb_colours(
         note_transparent_fill(c, path, notes);
         c
     };
-    let (hovered, active) = match hover {
-        Some(hover) => {
-            let c = written(hover);
-            (c, c)
-        }
+    let rest_fill = rest.map_or(w.hovered.bg_fill, |(c, _)| to_color32(c));
+    let hovered = match hover {
+        Some(hover) => written(hover),
         None => {
-            let rest = rest.map_or(w.hovered.bg_fill, &mut written);
-            let hovered = unstated.hovered(rest, own);
-            (hovered, unstated.active(rest, hovered, own))
+            if let Some(rest) = rest {
+                written(rest);
+            }
+            unstated.hovered(rest_fill, own)
         }
     };
+    let active = press.map_or_else(|| unstated.active(rest_fill, hovered, own), &mut written);
     w.hovered.bg_fill = hovered;
     w.active.bg_fill = active;
 }
 
-/// The splitter's three lines (`egui/src/containers/panel.rs:906-911`), one width, the drag line
-/// in the hover colour since the model states no drag colour. `to_stroke`'s rule applies to the
+/// The splitter's three lines (`egui/src/containers/panel.rs:906-911`), one width: the resting
+/// line, the hover line and the drag line, the last in the pressed colour, else what `unstated`
+/// gives for it (the 0.7.2 model's copy: the hover line). `to_stroke`'s rule applies to the
 /// width: a non-finite `divider_width` keeps each stroke's own width, the colours are still
 /// written, and the leaf is reported. Each of the three where stated.
-fn splitter_strokes(style: &mut egui::Style, sp: &SplitterCell, notes: &mut Vec<Note>) {
+fn splitter_strokes(
+    style: &mut egui::Style,
+    sp: &SplitterCell,
+    unstated: Unstated<'_>,
+    notes: &mut Vec<Note>,
+) {
     if let Some((width, path)) = sp.width
         && !width.is_finite()
     {
@@ -189,9 +196,15 @@ fn splitter_strokes(style: &mut egui::Style, sp: &SplitterCell, notes: &mut Vec<
             .map_or(own.width, |(v, _)| clamp_length(finite_or(v, own.width)));
         egui::Stroke::new(width, color.map_or(own.color, to_color32))
     };
+    let rest = w.active.fg_stroke.color;
     w.noninteractive.bg_stroke = line(w.noninteractive.bg_stroke, sp.color);
     w.hovered.fg_stroke = line(w.hovered.fg_stroke, sp.hover);
-    w.active.fg_stroke = w.hovered.fg_stroke;
+    let own = |e: &egui::style::WidgetVisuals| e.fg_stroke.color;
+    let drag = sp.pressed.map_or_else(
+        || unstated.active(rest, w.hovered.fg_stroke.color, own),
+        to_color32,
+    );
+    w.active.fg_stroke = egui::Stroke::new(w.hovered.fg_stroke.width, drag);
 }
 
 // ---- D2: slider thumb diameter (§6.6) ----------------------------------------------------------
@@ -199,8 +212,8 @@ fn splitter_strokes(style: &mut egui::Style, sp: &SplitterCell, notes: &mut Vec<
 /// egui's knob chain (`egui/src/widgets/slider.rs:957-959`, `:885`, `:815`): `thickness` is the
 /// Body row height floored at `interact_size.y`, the handle radius `thickness / 2.5`, the disc
 /// `handle_r + expansion` and its outline tessellated outside that. The atlas sets
-/// `interact_size.y = 1.25 · d` (the reciprocal of egui's `0.8`) and one `expansion` in every
-/// state so the painted knob, outline included, is `slider.thumb_diameter` across at every text
+/// `interact_size.y = 1.25 · d` (the reciprocal of egui's `0.8`) and each state's `expansion`
+/// less that state's own outline width so the painted knob, outline included, is `slider.thumb_diameter` across at every text
 /// size; `row` is the Body row height of §6.15, `Some` only when finite and positive.
 fn slider_geometry(
     style: &mut egui::Style,
@@ -216,14 +229,13 @@ fn slider_geometry(
         sanitised(path, notes);
         base_y
     };
-    let w = style.visuals.widgets.inactive.fg_stroke.width; // every state's width (§6.1): finite, >= 0.0
     let e = match row {
         Some(h) if d.is_finite() => {
             let thickness = h.max(style.spacing.interact_size.y); // `slider.rs:957-959`
             // 0.8 and 0.5: egui's chain and a midpoint (§6.17); `.min(0.0)` only ever shrinks
-            ((clamp_length(d) - 0.8 * thickness) * 0.5).min(0.0) - w
+            ((clamp_length(d) - 0.8 * thickness) * 0.5).min(0.0)
         }
-        _ => -w, // no row height, or no finite diameter: exact wherever the floor does not bite
+        _ => 0.0, // no row height, or no finite diameter: exact wherever the floor does not bite
     };
     let wv = &mut style.visuals.widgets;
     for entry in [
@@ -233,7 +245,9 @@ fn slider_geometry(
         &mut wv.active,
         &mut wv.open,
     ] {
-        entry.expansion = e;
+        // the entry's own outline width (finite, >= 0.0), which egui widens in a state the
+        // theme states no width for (spec §10, rule 0), so the knob keeps its diameter there
+        entry.expansion = e - entry.fg_stroke.width;
     }
 }
 
@@ -481,7 +495,7 @@ mod tests {
     }
 
     fn splitter_strokes(s: &mut egui::Style, t: &ResolvedTheme, n: &mut Vec<Note>) {
-        super::splitter_strokes(s, &source(t).splitter, n);
+        super::splitter_strokes(s, &source(t).splitter, Unstated::Copy, n);
     }
 
     fn toolbar_bar_height(s: &mut egui::Style, t: &ResolvedTheme, n: &mut Vec<Note>) {
@@ -646,19 +660,22 @@ mod tests {
 
     // ---- D2, §6.6 -------------------------------------------------------------------------
 
-    /// Where the Body row does not bite, `thickness = 1.25 · d` and `e = −w`: the painted knob,
-    /// outline included, is `d` across.
+    /// Where the Body row does not bite, `thickness = 1.25 · d` and `e = −w`, `w` each state's
+    /// own outline width: the painted knob, outline included, is `d` across in every state,
+    /// egui's own wider outline under the pointer and on a press (spec §10, rule 0) among them.
     #[test]
     fn d2_the_knob_is_the_diameter_where_the_row_does_not_bite() {
         let mut t = theme();
         t.slider.thumb_diameter = 20.0;
         let mut s = start();
-        let w = s.visuals.widgets.inactive.fg_stroke.width;
+        let w = &s.visuals.widgets;
+        assert_ne!(w.inactive.fg_stroke.width, w.hovered.fg_stroke.width);
+        assert_ne!(w.inactive.fg_stroke.width, w.active.fg_stroke.width);
         let mut notes = Vec::new();
         slider_geometry(&mut s, &t, Some(15.0), &mut notes);
         assert_eq!(s.spacing.interact_size.y, 25.0);
         for e in entries(&s.visuals.widgets) {
-            assert_eq!(e.expansion, -w);
+            assert_eq!(e.expansion, -e.fg_stroke.width);
         }
         assert!(notes.is_empty());
     }
@@ -687,7 +704,7 @@ mod tests {
         let mut t = theme();
         t.slider.thumb_diameter = 20.0;
         let mut s = start();
-        let w = s.visuals.widgets.inactive.fg_stroke.width;
+        let w = s.visuals.widgets.hovered.fg_stroke.width;
         slider_geometry(&mut s, &t, None, &mut Vec::new());
         assert_eq!(
             s.visuals.widgets.hovered.expansion, -w,
@@ -700,7 +717,7 @@ mod tests {
         slider_geometry(&mut s, &t, Some(h), &mut Vec::new());
         assert_eq!(s.spacing.interact_size.y, 0.0);
         assert_eq!(
-            s.visuals.widgets.inactive.expansion,
+            s.visuals.widgets.hovered.expansion,
             ((0.0 - 0.8 * h.max(0.0)) * 0.5).min(0.0) - w
         );
 
@@ -721,7 +738,7 @@ mod tests {
             start().spacing.interact_size.y,
             "egui's own value"
         );
-        assert_eq!(s.visuals.widgets.active.expansion, -w);
+        assert_eq!(s.visuals.widgets.hovered.expansion, -w);
         assert_eq!(sanitised(&notes, "slider.thumb_diameter"), 1);
     }
 
