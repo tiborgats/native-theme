@@ -736,7 +736,7 @@ const SLIDER_TRACK_HEIGHT: f32 = 4.0;
 // UISlider's (M2c-21)
 const SLIDER_THUMB_DIAMETER: f32 = 28.0;
 // `slider.tick_mark_length`: no UIKit source. The same range control's ticks are 1 x 3, under a
-// FIXME that says the values need correcting (RenderThemeIOS.mm:796-800)
+// WebKit comment that says the values need correcting (RenderThemeIOS.mm:796-800)
 const SLIDER_TICK_LENGTH: f32 = 4.0;
 
 // `spinner.diameter`: 0.7.2 ios-13.toml (uncited)
