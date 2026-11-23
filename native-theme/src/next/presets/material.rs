@@ -25,8 +25,8 @@
 //! at the key shadow's opacity (the scheme's `shadow` is its tone 0, black
 //! whatever the seed); the warning's and the success's colours, which
 //! Material has no role for; the state colours 0.7.2 states without a
-//! source (the expander's hover layer, the link's hover layer, pressed and
-//! disabled colours, the scroll bar's pressed handle).
+//! source (the link's hover layer, pressed and disabled colours, the scroll
+//! bar's pressed handle).
 //!
 //! A palette states the roles its slots name (spec §7, "The roles a palette
 //! states"), and each slot whose Material colour is the colour of the
@@ -106,13 +106,15 @@
 //!   the hovered entry holds the checked fill too":
 //!   `connectors/native-theme-egui/src/style/variants.rs`); the disabled fill
 //!   over both, checked or not (0.7.2's `checkbox.disabled_background`, which
-//!   the table of homes compares at `DISABLED | CHECKED` too);
+//!   the table of homes compares at `DISABLED | CHECKED` too); the check
+//!   box's pressed layer and outline over its hovered ones, the pointer that
+//!   presses being over it;
 //! - the switch's track: the disabled off track over the checked one and the
 //!   disabled on track (`DISABLED | CHECKED`) over every other; its thumb: the
 //!   disabled thumb over the checked one (0.7.2's `switch.disabled_*`
 //!   colours, stated for the disabled control whatever its value);
 //! - the text field's and the combo box's outline: the focused outline over
-//!   the hovered one, as Material's focused field keeps its focused outline
+//!   the hovered and pressed one, as Material's focused field keeps its focused outline
 //!   under the pointer (`_md-comp-outlined-text-field.scss`, the focus tokens
 //!   beside the hover tokens; 0.7.2 states the two apart);
 //! - the scroll bar's handle: the pressed colour over the hovered one;
@@ -123,9 +125,11 @@
 //!   the hover colour in the hovered widgets' fill
 //!   (`connectors/native-theme-egui/src/mapping.md`) and egui fills a
 //!   selected item with the selection's fill over its hovered look (egui
-//!   0.37.0 `src/style.rs`, `Style::interact_selectable`). Their labels: the
-//!   selected colour over the hovered one, for the same reason, and on the
-//!   list the disabled colour over both.
+//!   0.37.0 `src/style.rs`, `Style::interact_selectable`); the pressed layer
+//!   over the hovered one, the selected fill over both. Their labels: the
+//!   selected colour over the hovered and pressed one, for the same reason,
+//!   and on the list the disabled colour over both;
+//! - the expander's header: the pressed layer over the hovered one.
 //!
 //! The fill under an outline (spec §2, "Fill and stroke";
 //! `.superpowers/sdd/v0.8.0-plan/M2/fill-stroke-decision.md`): no source the
@@ -182,7 +186,7 @@ use crate::IconSet;
 use crate::next::color::Color;
 use crate::next::geometry::{Corners, Edges, Stroke};
 use crate::next::icons::{IconSizes, IconThemeSpec};
-use crate::next::layout::{DialogButtonOrder, LayoutMetrics, TabIndicatorSide};
+use crate::next::layout::{DialogButtonOrder, LabelSide, LayoutMetrics, TabIndicatorSide};
 use crate::next::motion::{CaretSpec, DialogEntranceStyle, MotionTokens, UiTimings};
 use crate::next::paint::Paint;
 use crate::next::palette::Palette;
@@ -256,7 +260,6 @@ struct SchemeColors {
     disabled_track: Color,
     button_hover: Color,
     button_pressed: Color,
-    expander_hover: Color,
     link_pressed: Color,
     link_disabled: Color,
     link_hover_layer: Color,
@@ -443,6 +446,8 @@ const LIGHT: SchemeColors = SchemeColors {
     // on-surface at 0.08 (_md-comp-navigation-drawer.scss:92, :103)
     // `tab.hover_background`: with-label-text-inactive-hover: on-surface at hover opacity 0.08
     // (_md-comp-primary-navigation-tab.scss:59-61)
+    // `expander.hover_background`: no expander in Material 3 (platform-facts.md (§2.27)); a
+    // full-width row's hover layer, on-surface at 0.08 (_md-comp-list.scss:85-88)
     hover_layer: srgb8(0x1d1b_2014),
     // `switch.disabled_unchecked_background`: disabled-unselected-track-color
     // surface-container-highest at disabled-track-opacity 0.12 (_md-comp-switch.scss:37, :46)
@@ -453,8 +458,6 @@ const LIGHT: SchemeColors = SchemeColors {
     // `button.active_background`: on-secondary-container at pressed-state-layer-opacity 0.12 over
     // secondary-container (_md-comp-filled-tonal-button.scss:85-88; _md-sys-state.scss:20)
     button_pressed: srgb8(0xd0c6_dfff),
-    // `expander.hover_background`: 0.7.2 material-3.toml (uncited)
-    expander_hover: srgb8(0x1c1b_1f14),
     // `link.active_text_color`: 0.7.2 material-3.toml (uncited)
     link_pressed: srgb8(0x4f3d_8aff),
     // `link.disabled_text_color`: 0.7.2 material-3.toml (uncited)
@@ -653,6 +656,8 @@ const DARK: SchemeColors = SchemeColors {
     // on-surface at 0.08 (_md-comp-navigation-drawer.scss:92, :103)
     // `tab.hover_background`: with-label-text-inactive-hover: on-surface at hover opacity 0.08
     // (_md-comp-primary-navigation-tab.scss:59-61)
+    // `expander.hover_background`: no expander in Material 3 (platform-facts.md (§2.27)); a
+    // full-width row's hover layer, on-surface at 0.08 (_md-comp-list.scss:85-88)
     hover_layer: srgb8(0xe6e0_e914),
     // `switch.disabled_unchecked_background`: disabled-unselected-track-color
     // surface-container-highest at disabled-track-opacity 0.12 (_md-comp-switch.scss:37, :46)
@@ -663,8 +668,6 @@ const DARK: SchemeColors = SchemeColors {
     // `button.active_background`: on-secondary-container at pressed-state-layer-opacity 0.12 over
     // secondary-container (_md-comp-filled-tonal-button.scss:85-88; _md-sys-state.scss:20)
     button_pressed: srgb8(0x5d56_6bff),
-    // `expander.hover_background`: 0.7.2 material-3.toml (uncited)
-    expander_hover: srgb8(0xe6e1_e514),
     // `link.active_text_color`: 0.7.2 material-3.toml (uncited)
     link_pressed: srgb8(0xe8de_ffff),
     // `link.disabled_text_color`: 0.7.2 material-3.toml (uncited)
@@ -1124,6 +1127,23 @@ const DISABLED_CONTAINER_OPACITY: f32 = 0.12;
 /// (`_md-comp-filled-button.scss:45-46`).
 const DISABLED_CONTENT_OPACITY: f32 = 0.38;
 
+/// The opacity of a disabled check box's, radio button's or switch's label,
+/// 0.6: no M3 token states one (`_md-comp-checkbox.scss` and
+/// `_md-comp-switch.scss` have no label token; platform-facts.md (§2.5)), so
+/// Android's, where the three inherit `android:Widget.CompoundButton`'s
+/// `textColor` `?attr/textColorPrimaryDisableOnly` (AOSP
+/// `core/res/res/values/styles.xml:386` at android-15.0.0_r1), which a
+/// Material 3 theme sets to `m3_primary_text_disable_only` /
+/// `m3_dark_primary_text_disable_only` (`themes_base.xml:251`, `:581`):
+/// on-background, at `material_emphasis_medium` = 0.6 under
+/// `state_enabled="false"` (`m3_primary_text_disable_only.xml:19`;
+/// `dimens.xml:21`); the switch, the check box and the radio set no text
+/// colour of their own (`materialswitch/res/values/styles.xml:17-29`,
+/// `checkbox/res/values/styles.xml:26-28`,
+/// `radiobutton/res/values/styles.xml:19-33`; material-components-android
+/// 66c334b).
+const DISABLED_LABEL_OPACITY: f32 = 0.6;
+
 /// The switch's disabled track opacity, 0.12 (`_md-comp-switch.scss:37`).
 const DISABLED_TRACK_OPACITY: f32 = 0.12;
 
@@ -1298,7 +1318,7 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
         separator: separator(c, &layout),
         spinner: spinner(&colors),
         popover: popover(c, &colors, &typography),
-        switch: switch(c, &colors),
+        switch: switch(c, &colors, &typography),
         dialog: dialog(c, &colors, &typography, units, motion),
         combo_box: combo_box(c, &colors, &typography, &layout, units, direction),
         segmented_control: segmented_control(c, &colors, &typography, &layout),
@@ -1597,6 +1617,21 @@ fn typography(c: &SchemeColors, text_scale: f32) -> Typography {
         units,
     );
     body.stated |= TextStated::LINE_HEIGHT;
+    // The monospace font's line height, which no source states: the multiplier times its size
+    // (spec §4, `Typography`: `body` and `monospace` follow a slot's rule).
+    let mut monospace = font(
+        MONO_FAMILY,
+        FontSize::Px(MONO_SIZE_PX),
+        MONO_WEIGHT,
+        text,
+        units,
+    );
+    monospace.line_height = line_height_px(
+        FontSize::Px(LINE_HEIGHT * MONO_SIZE_PX),
+        monospace.size_px,
+        units,
+    );
+    monospace.stated |= TextStated::LINE_HEIGHT;
     Typography {
         display: Some(text_scale_entry(
             FontSize::Px(DISPLAY_SIZE_PX),
@@ -1628,13 +1663,7 @@ fn typography(c: &SchemeColors, text_scale: f32) -> Typography {
             CAPTION_LINE_HEIGHT_PX,
             units,
         )),
-        monospace: font(
-            MONO_FAMILY,
-            FontSize::Px(MONO_SIZE_PX),
-            MONO_WEIGHT,
-            text,
-            units,
-        ),
+        monospace,
         line_height_multiplier: LINE_HEIGHT,
         fallbacks: Arc::from([]),
         emoji_family: None,
@@ -1740,10 +1769,15 @@ fn button(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> Butt
             PartProp::MinSize([Some(BUTTON_MIN_WIDTH), Some(BUTTON_MIN_HEIGHT)]),
         ])
         .rule(RuleSelector::on(WidgetState::CHECKED), [fill(c.secondary)])
-        .rule(RuleSelector::on(WidgetState::HOVER), [fill(c.button_hover)])
+        // Hovered and pressed, no outline: the filled tonal button has no outline token in any
+        // state (_md-comp-filled-tonal-button.scss, its tokens :37-99).
+        .rule(
+            RuleSelector::on(WidgetState::HOVER),
+            [fill(c.button_hover), PartProp::Stroke(Stroke::None)],
+        )
         .rule(
             RuleSelector::on(WidgetState::PRESSED),
-            [fill(c.button_pressed)],
+            [fill(c.button_pressed), PartProp::Stroke(Stroke::None)],
         )
         .rule(primary(), [fill(roles.accent.fill)])
         .rule(
@@ -1791,8 +1825,20 @@ fn button(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> Butt
 /// outline at its own width, no shadow; under the pointer the hover layer;
 /// checked, the accent's fill (0.7.2: `checkbox.checked_background` is
 /// `defaults.accent_color` where unstated) in its own outline colour; disabled,
-/// the disabled fill, checked or not.
-fn indicator(c: &SchemeColors, roles: &ColorRoles, size: f32) -> RuleBuilder<PartStyle, PartProp> {
+/// the disabled fill, checked or not. Where `checkbox`, the check box's own
+/// unchecked states (the radio button's tokens are not read): hovered and
+/// pressed the outline in on-surface (unselected-hover-outline-color,
+/// unselected-pressed-outline-color, `_md-comp-checkbox.scss:111-112`,
+/// `:121-122`), pressed the pressed state layer, primary at the pressed
+/// opacity (unselected-pressed-state-layer-color, `:124-127`), laid where the
+/// hover layer is.
+fn indicator(
+    c: &SchemeColors,
+    roles: &ColorRoles,
+    size: f32,
+    checkbox: bool,
+) -> RuleBuilder<PartStyle, PartProp> {
+    let outline = stroke(CHECKBOX_BORDER_WIDTH, c.on_surface);
     RuleBuilder::new(PartStyle::default())
         .base([
             fill(TRANSPARENT),
@@ -1803,6 +1849,17 @@ fn indicator(c: &SchemeColors, roles: &ColorRoles, size: f32) -> RuleBuilder<Par
             PartProp::MaxSize([Some(size); 2]),
         ])
         .rule(RuleSelector::on(WidgetState::HOVER), [fill(c.hover_layer)])
+        .rules(
+            checkbox.then(|| RuleSelector::on(WidgetState::HOVER)),
+            [outline.clone()],
+        )
+        .rules(
+            checkbox.then(|| RuleSelector::on(WidgetState::PRESSED)),
+            [
+                fill(c.primary.mul_alpha(PRESSED_STATE_LAYER_OPACITY)),
+                outline,
+            ],
+        )
         .rule(
             RuleSelector::on(WidgetState::CHECKED),
             [
@@ -1817,12 +1874,39 @@ fn indicator(c: &SchemeColors, roles: &ColorRoles, size: f32) -> RuleBuilder<Par
 }
 
 /// The label of a check box or a radio button: the UI font in its colour;
-/// disabled, the disabled text's colour.
-fn check_label(roles: &ColorRoles, typography: &Typography) -> RuleSet<TextStyle, TextProp> {
+/// disabled, that colour at [`DISABLED_LABEL_OPACITY`].
+fn check_label(typography: &Typography) -> RuleSet<TextStyle, TextProp> {
     RuleBuilder::new(label(&typography.body, None))
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
-            [TextProp::Color(roles.disabled_text)],
+            [TextProp::Color(
+                typography.body.color.mul_alpha(DISABLED_LABEL_OPACITY),
+            )],
+        )
+        .build()
+}
+
+/// The switch's label, Android's `MaterialSwitch` text: as [`check_label`],
+/// and hovered, pressed and on in its rest colour, which the colour selector
+/// keeps but where disabled (`m3_primary_text_disable_only.xml:19-20` and
+/// its dark twin, reading `state_enabled` alone, material-components-android
+/// 66c334b), stated before the disabled rule, which replaces it. Its font is
+/// the UI font, body-medium: `textAppearanceBodyMedium`
+/// (`materialswitch/res/values/styles.xml:27`), 14 px at the regular weight
+/// (platform-facts.md (§2.1.1) `size`, `weight`).
+fn switch_label(typography: &Typography) -> RuleSet<TextStyle, TextProp> {
+    let same = [
+        RuleSelector::on(WidgetState::HOVER),
+        RuleSelector::on(WidgetState::PRESSED),
+        RuleSelector::on(WidgetState::CHECKED),
+    ];
+    RuleBuilder::new(label(&typography.body, None))
+        .rules(same, [TextProp::Color(typography.body.color)])
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED),
+            [TextProp::Color(
+                typography.body.color.mul_alpha(DISABLED_LABEL_OPACITY),
+            )],
         )
         .build()
 }
@@ -1832,19 +1916,35 @@ fn check_label(roles: &ColorRoles, typography: &Typography) -> RuleSet<TextStyle
 /// `defaults.accent_text_color` where unstated) at its own stroke width,
 /// [`check_label`].
 fn checkbox(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> CheckboxWidget {
+    // Hovered and pressed, the mark as at rest: selected-hover-icon-color and
+    // selected-pressed-icon-color = selected-icon-color = on-primary
+    // (_md-comp-checkbox.scss:73, :79, :83).
     let checkmark = RuleBuilder::new(IconStyle::default())
         .base([
             IconProp::Color(roles.accent.foreground),
             IconProp::StrokeWidth(Some(CHECK_MARK_STROKE_WIDTH)),
         ])
+        .rules(
+            [
+                RuleSelector::on(WidgetState::HOVER),
+                RuleSelector::on(WidgetState::PRESSED),
+            ],
+            [IconProp::Color(roles.accent.foreground)],
+        )
+        // Disabled, the mark (drawn checked only) in surface: selected-disabled-icon-color
+        // (_md-comp-checkbox.scss:50).
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED),
+            [IconProp::Color(c.surface)],
+        )
         .build();
     CheckboxWidget::new(
         WidgetOrigin::Native,
-        indicator(c, roles, CHECKBOX_INDICATOR_SIZE)
+        indicator(c, roles, CHECKBOX_INDICATOR_SIZE, true)
             .base([corners(CHECKBOX_CORNER_RADIUS)])
             .build(),
         checkmark,
-        check_label(roles, typography),
+        check_label(typography),
         CHECKBOX_LABEL_GAP,
         // 0.7.2: `checkbox.disabled_opacity` is `defaults.disabled_opacity` where unstated.
         Some(roles.disabled_opacity),
@@ -1864,9 +1964,9 @@ fn radio(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> Radio
         .build();
     RadioWidget::new(
         WidgetOrigin::Native,
-        indicator(c, roles, RADIO_INDICATOR_SIZE).build(),
+        indicator(c, roles, RADIO_INDICATOR_SIZE, false).build(),
         dot,
-        check_label(roles, typography),
+        check_label(typography),
         CHECKBOX_LABEL_GAP,
         // 0.7.2: `checkbox.disabled_opacity` is `defaults.disabled_opacity` where unstated.
         Some(roles.disabled_opacity),
@@ -1903,8 +2003,14 @@ fn list(
         .base([padding_sides(LIST_ROW_PADDING_HORIZONTAL)])
         .rule(alternate, [fill(c.surface)])
         .build();
+    // Pressed, the pressed state layer: list-item-pressed-state-layer-color on-surface at the
+    // pressed opacity (_md-comp-list.scss:186-189).
     let highlight = RuleBuilder::new(PartStyle::default())
         .rule(RuleSelector::on(WidgetState::HOVER), [fill(c.hover_layer)])
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED),
+            [fill(c.on_surface.mul_alpha(PRESSED_STATE_LAYER_OPACITY))],
+        )
         .rule(
             RuleSelector::on(WidgetState::SELECTED),
             [fill(roles.selection.background)],
@@ -2103,8 +2209,13 @@ fn input(
             PartProp::Padding(padding),
         ])
         .base(min_height.map(|height| PartProp::MinSize([None, Some(height)])))
-        .rule(
-            RuleSelector::on(WidgetState::HOVER),
+        // `input.hover_border_color`, and pressed the same: no pressed outline token, the pointer
+        // that presses hovers (hover-outline-color = on-surface, _md-comp-outlined-text-field.scss:87-88)
+        .rules(
+            [
+                RuleSelector::on(WidgetState::HOVER),
+                RuleSelector::on(WidgetState::PRESSED),
+            ],
             [stroke(layout.border_width, c.on_surface)],
         )
         .rule(
@@ -2112,11 +2223,20 @@ fn input(
             [stroke(layout.border_width, c.primary)],
         )
         .build();
+    // Hovered and pressed, the text as at rest: hover-input-text-color = input-text-color =
+    // on-surface (_md-comp-outlined-text-field.scss:83, :93), no pressed token.
     let text = RuleBuilder::new(sized(
         label(&typography.body, Some(c.on_surface)),
         FontSize::Px(INPUT_FONT_SIZE_PX),
         units,
     ))
+    .rules(
+        [
+            RuleSelector::on(WidgetState::HOVER),
+            RuleSelector::on(WidgetState::PRESSED),
+        ],
+        [TextProp::Color(c.on_surface)],
+    )
     .rule(
         RuleSelector::on(WidgetState::DISABLED),
         [TextProp::Color(roles.disabled_text)],
@@ -2373,17 +2493,28 @@ fn tab(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> TabWidg
             PartProp::Stroke(Stroke::None),
         ])
         .rule(RuleSelector::on(WidgetState::HOVER), [fill(c.hover_layer)])
+        // Pressed, inactive-pressed-state-layer-color primary at the pressed opacity
+        // (_md-comp-primary-navigation-tab.scss:63-66).
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED),
+            [fill(c.primary.mul_alpha(PRESSED_STATE_LAYER_OPACITY))],
+        )
         .rule(
             RuleSelector::on(WidgetState::SELECTED),
             roles.window.background.map(fill),
         )
         .build();
+    // Pressed, with-label-text-inactive-pressed-label-text-color = on-surface
+    // (_md-comp-primary-navigation-tab.scss:99-100).
     let label = RuleBuilder::new(weighted(
         label(&typography.body, Some(c.on_surface_variant)),
         TAB_FONT_WEIGHT,
     ))
-    .rule(
-        RuleSelector::on(WidgetState::HOVER),
+    .rules(
+        [
+            RuleSelector::on(WidgetState::HOVER),
+            RuleSelector::on(WidgetState::PRESSED),
+        ],
         [TextProp::Color(c.on_surface)],
     )
     .rule(
@@ -2435,6 +2566,9 @@ fn toolbar(roles: &ColorRoles, typography: &Typography, units: FontUnits) -> Too
     let button_icon = RuleBuilder::new(IconStyle::default())
         .base([IconProp::Size(ICON_TOOLBAR)])
         .build();
+    // The buttons' text hovered and pressed as at rest: an on-surface label keeps its colour under
+    // its state layer (text button: hover-label-text-color = pressed-label-text-color =
+    // label-text-color, _md-comp-text-button.scss:42, :67, :46).
     ToolbarWidget::new(
         WidgetOrigin::Native,
         bar,
@@ -2444,6 +2578,13 @@ fn toolbar(roles: &ColorRoles, typography: &Typography, units: FontUnits) -> Too
             FontSize::Px(TOOLBAR_FONT_SIZE_PX),
             units,
         ))
+        .rules(
+            [
+                RuleSelector::on(WidgetState::HOVER),
+                RuleSelector::on(WidgetState::PRESSED),
+            ],
+            [TextProp::Color(typography.body.color)],
+        )
         .build(),
         button_icon,
         RuleBuilder::new(PartStyle::default()).build(),
@@ -2495,17 +2636,36 @@ fn sidebar(
         .base(border(roles, layout.border_width))
         .base([padding_sides(SIDEBAR_PADDING_HORIZONTAL)])
         .build();
+    // Pressed, inactive-pressed-state-layer-color on-secondary-container at the pressed opacity
+    // (_md-comp-navigation-drawer.scss:111-112, :160-161).
     let item = RuleBuilder::new(PartStyle::default())
         .rule(RuleSelector::on(WidgetState::HOVER), [fill(c.hover_layer)])
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED),
+            [fill(
+                c.on_secondary_container
+                    .mul_alpha(PRESSED_STATE_LAYER_OPACITY),
+            )],
+        )
         .rule(
             RuleSelector::on(WidgetState::SELECTED),
             [fill(roles.selection.background)],
         )
         .build();
+    // Hovered and pressed, inactive-hover-label-text-color and inactive-pressed-label-text-color
+    // = on-surface (_md-comp-navigation-drawer.scss:101-102, :109-110; rest on-surface-variant,
+    // :106-107).
     let item_label = RuleBuilder::new(weighted(
         label(&typography.body, Some(c.on_surface_variant)),
         SIDEBAR_FONT_WEIGHT,
     ))
+    .rules(
+        [
+            RuleSelector::on(WidgetState::HOVER),
+            RuleSelector::on(WidgetState::PRESSED),
+        ],
+        [TextProp::Color(c.on_surface)],
+    )
     .rule(
         RuleSelector::on(WidgetState::SELECTED),
         [TextProp::Color(roles.selection.foreground)],
@@ -2558,8 +2718,9 @@ fn popover(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> Pop
 /// `switch.hover_checked_background`), and disabled, off in its fill and
 /// outline and on in its fill with no outline; a thumb with no outline (0.7.2
 /// states none for it), off in the outline colour and smaller, on in the
-/// accent's text and larger, disabled in its own colour.
-fn switch(c: &SchemeColors, roles: &ColorRoles) -> SwitchWidget {
+/// accent's text and larger, disabled in its own colour; its label
+/// ([`switch_label`]) before the track, the space left over between them.
+fn switch(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> SwitchWidget {
     let size = [Some(SWITCH_TRACK_WIDTH), Some(SWITCH_TRACK_HEIGHT)];
     let track = RuleBuilder::new(PartStyle::default())
         .base([
@@ -2571,9 +2732,13 @@ fn switch(c: &SchemeColors, roles: &ColorRoles) -> SwitchWidget {
         ])
         // `switch.hover_unchecked_background`: unselected-hover-track-color =
         // surface-container-highest (_md-comp-switch.scss:116), the rest fill, stated for `HOVER`
-        // (spec §2, `from_state`), before the rules of the states that replace it.
-        .rule(
-            RuleSelector::on(WidgetState::HOVER),
+        // (spec §2, `from_state`), before the rules of the states that replace it; pressed the
+        // same, unselected-pressed-track-color = unselected-track-color (:131-132, :135-136).
+        .rules(
+            [
+                RuleSelector::on(WidgetState::HOVER),
+                RuleSelector::on(WidgetState::PRESSED),
+            ],
             [fill(c.surface_container_highest)],
         )
         .rule(
@@ -2616,8 +2781,16 @@ fn switch(c: &SchemeColors, roles: &ColorRoles) -> SwitchWidget {
         WidgetOrigin::Native,
         track,
         thumb,
-        RuleBuilder::new(TextStyle::default()).build(),
+        switch_label(typography),
+        // `label_side`, `label_gap_stretches`: Android's `MaterialSwitch` draws its text at the
+        // start and the switch at the view's end edge, the text keeping the switch's width plus
+        // `switchPadding` free there (material-components-android 66c334b
+        // `materialswitch/res/values/styles.xml:26`; androidx `SwitchCompat.java:1217-1219`,
+        // `:1392-1400`). `label_gap`: unstated until it is read whether the switch's width there
+        // is its visible track.
+        Some(LabelSide::Leading),
         None,
+        Some(true),
         None,
         // 0.7.2: `switch.disabled_opacity` is `defaults.disabled_opacity` where unstated.
         Some(roles.disabled_opacity),
@@ -2711,16 +2884,40 @@ fn combo_box(
             )),
             PartProp::MinSize([Some(COMBO_BOX_MIN_WIDTH), Some(COMBO_BOX_MIN_HEIGHT)]),
         ])
-        .rule(
-            RuleSelector::on(WidgetState::HOVER),
-            [stroke(layout.border_width, c.on_surface)],
+        // Hovered and pressed, the outline in on-surface, the hover outline: no pressed outline
+        // token, the pointer that presses hovers (text-field-hover-outline-color = on-surface,
+        // _md-comp-outlined-select.scss:168-169, passed as hover-outline-color,
+        // _outlined-select.scss:123); the fill as at rest: the outlined select passes the field no
+        // container colour or state layer (_outlined-select.scss:42-48), whose :hover changes only
+        // its outline and which has no pressed rule (field/internal/_outlined-field.scss:247-257).
+        .rules(
+            [
+                RuleSelector::on(WidgetState::HOVER),
+                RuleSelector::on(WidgetState::PRESSED),
+            ],
+            roles
+                .window
+                .background
+                .map(fill)
+                .into_iter()
+                .chain([stroke(layout.border_width, c.on_surface)]),
         )
         .build();
+    // Hovered and pressed, the text as at rest: text-field-hover-input-text-color =
+    // text-field-input-text-color = on-surface (_md-comp-outlined-select.scss:162-163, :179), no
+    // pressed token.
     let label = RuleBuilder::new(sized(
         label(&typography.body, None),
         FontSize::Px(COMBO_BOX_FONT_SIZE_PX),
         units,
     ))
+    .rules(
+        [
+            RuleSelector::on(WidgetState::HOVER),
+            RuleSelector::on(WidgetState::PRESSED),
+        ],
+        [TextProp::Color(typography.body.color)],
+    )
     .rule(
         RuleSelector::on(WidgetState::DISABLED),
         [TextProp::Color(roles.disabled_text)],
@@ -2769,12 +2966,29 @@ fn segmented_control(
             padding_sides(SEGMENT_PADDING_HORIZONTAL),
         ])
         .rule(RuleSelector::on(WidgetState::HOVER), [fill(c.hover_layer)])
+        // Pressed, unselected-pressed-state-layer-color on-surface
+        // (_md-comp-outlined-segmented-button.scss:109-110) at its pressed-state-layer-opacity,
+        // the focus opacity 0.12 (:67-68).
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED),
+            [fill(c.on_surface.mul_alpha(PRESSED_STATE_LAYER_OPACITY))],
+        )
         .rule(
             RuleSelector::on(WidgetState::SELECTED),
             [fill(c.secondary_container)],
         )
         .build();
+    // Hovered and pressed, the text as at rest: unselected-hover-label-text-color and
+    // unselected-pressed-label-text-color = unselected-label-text-color = on-surface
+    // (_md-comp-outlined-segmented-button.scss:100-101, :107-108, :104).
     let label = RuleBuilder::new(weighted(label(&typography.body, None), SEGMENT_FONT_WEIGHT))
+        .rules(
+            [
+                RuleSelector::on(WidgetState::HOVER),
+                RuleSelector::on(WidgetState::PRESSED),
+            ],
+            [TextProp::Color(typography.body.color)],
+        )
         .rule(
             RuleSelector::on(WidgetState::SELECTED),
             [TextProp::Color(c.on_secondary_container)],
@@ -2794,13 +3008,15 @@ fn segmented_control(
 }
 
 /// The card, Material's filled card: `surface-container-highest`, or the
-/// card's background where a palette states it, with its own corners. 0.7.2
-/// states no outline, shadow or padding for it.
+/// card's background where a palette states it, with its own corners and no
+/// outline (platform-facts.md (§2.26) `border.color` none for the filled card,
+/// `border.line_width` 0). 0.7.2 states no outline, shadow or padding for it.
 fn card(c: &SchemeColors, roles: &ColorRoles) -> CardWidget {
     let container = RuleBuilder::new(PartStyle::default())
         .base([
             fill(roles.card.background.unwrap_or(c.surface_container_highest)),
             corners(CARD_CORNER_RADIUS),
+            PartProp::Stroke(Stroke::None),
         ])
         .build();
     CardWidget::new(WidgetOrigin::Native, container)
@@ -2808,8 +3024,15 @@ fn card(c: &SchemeColors, roles: &ColorRoles) -> CardWidget {
 
 /// The expander: the default border, its colour, radius and width
 /// (`resolve_border_inheritance`; the default shadow, which is on); a header
-/// of a least height, its hover layer; the arrow's size and colour. 0.7.2
+/// of a least height, its hover and pressed layers; the arrow's size and
+/// colour; the title in the UI font, hovered and pressed as at rest. 0.7.2
 /// states no padding, arrow side or gap, indent or frame for it.
+///
+/// Material 3 has no expander (platform-facts.md (§2.27)): its states follow
+/// the token set's rule for a full-width row whose label is the layer's
+/// colour, one state layer of on-surface at the hover and the pressed
+/// opacities, the label keeping its colour under it (`_md-comp-list.scss`:
+/// layer `:85-88`, `:186-189`; label `:81-82`, `:182-183` = `:91`).
 fn expander(
     c: &SchemeColors,
     roles: &ColorRoles,
@@ -2822,9 +3045,19 @@ fn expander(
         .build();
     let header = RuleBuilder::new(PartStyle::default())
         .base([PartProp::MinSize([None, Some(EXPANDER_HEADER_HEIGHT)])])
+        .rule(RuleSelector::on(WidgetState::HOVER), [fill(c.hover_layer)])
         .rule(
-            RuleSelector::on(WidgetState::HOVER),
-            [fill(c.expander_hover)],
+            RuleSelector::on(WidgetState::PRESSED),
+            [fill(c.on_surface.mul_alpha(PRESSED_STATE_LAYER_OPACITY))],
+        )
+        .build();
+    let title = RuleBuilder::new(label(&typography.body, None))
+        .rules(
+            [
+                RuleSelector::on(WidgetState::HOVER),
+                RuleSelector::on(WidgetState::PRESSED),
+            ],
+            [TextProp::Color(typography.body.color)],
         )
         .build();
     let arrow = RuleBuilder::new(IconStyle::default())
@@ -2837,7 +3070,7 @@ fn expander(
         WidgetOrigin::Native,
         container,
         header,
-        RuleBuilder::new(label(&typography.body, None)).build(),
+        title,
         arrow,
         None,
         None,

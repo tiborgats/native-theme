@@ -355,16 +355,30 @@ fn pressed_changes_nothing_on_a_part_without_a_pressed_rule() {
             let hover = StyleQuery::<()>::new(WidgetState::HOVER.union(checked));
             let both = StyleQuery::<()>::new(pressed_hover.union(checked));
             assert_eq!(
-                theme.checkbox.indicator(both),
-                theme.checkbox.indicator(hover),
-                "{scheme:?} {checked:?}"
-            );
-            assert_eq!(
                 theme.radio.indicator(both),
                 theme.radio.indicator(hover),
                 "{scheme:?} {checked:?}"
             );
         }
+        // The check box: checked, pressed changes nothing; unchecked, only the fill, Button
+        // `darker(110)` (renderCheckBoxBackground, breezehelper.cpp:862 at breeze f0b1d75).
+        let checked_hover = StyleQuery::<()>::new(WidgetState::HOVER | WidgetState::CHECKED);
+        assert_eq!(
+            theme
+                .checkbox
+                .indicator(StyleQuery::<()>::new(pressed_hover | WidgetState::CHECKED)),
+            theme.checkbox.indicator(checked_hover),
+            "{scheme:?}"
+        );
+        let hover = theme.checkbox.indicator(WidgetState::HOVER);
+        let mut pressed = theme.checkbox.indicator(pressed_hover);
+        let darker = match scheme {
+            Scheme::Light => Color::from_srgb8(0xe5, 0xe5, 0xe5, 0xff),
+            Scheme::Dark => Color::from_srgb8(0x25, 0x28, 0x2c, 0xff),
+        };
+        assert_eq!(pressed.fill, Paint::Solid(darker), "{scheme:?}");
+        pressed.fill = hover.fill.clone();
+        assert_eq!(pressed, hover, "{scheme:?}");
         for alternate in [false, true] {
             assert_eq!(
                 theme

@@ -186,7 +186,7 @@ use crate::IconSet;
 use crate::next::color::Color;
 use crate::next::geometry::{Corners, Edges, Stroke};
 use crate::next::icons::{IconSizes, IconThemeSpec};
-use crate::next::layout::{ArrowSide, DialogButtonOrder, LayoutMetrics};
+use crate::next::layout::{ArrowSide, DialogButtonOrder, LabelSide, LayoutMetrics};
 use crate::next::motion::{CaretSpec, MotionTokens, UiTimings};
 use crate::next::paint::Paint;
 use crate::next::palette::Palette;
@@ -250,10 +250,12 @@ struct SchemeColors {
     info: Color,
     status_foreground: Color,
     button_background: Color,
-    button_hover: Color,
     button_pressed: Option<Color>,
     button_disabled: Color,
     button_foreground: Color,
+    /// The pressed push button's label colour, `None` where it keeps
+    /// [`SchemeColors::button_foreground`].
+    button_pressed_foreground: Option<Color>,
     /// The colour a checked toggle's fill mixes into the accent, by
     /// [`BUTTON_CHECKED_MIX`], pressed by [`BUTTON_CHECKED_PRESSED_MIX`] and
     /// disabled by [`BUTTON_CHECKED_DISABLED_MIX`]; `None` where the
@@ -375,11 +377,10 @@ const MONTEREY_LIGHT: SchemeColors = SchemeColors {
     status_foreground: srgb8(0x0000_00d8),
     // `button.background_color`: platform-facts.md (§2.3): controlColor, probe
     button_background: srgb8(0xffff_ffff),
-    // `button.hover_background`: Interactive state colors (platform-facts.md section 2.3 macOS)
-    button_hover: srgb8(0xe0e0_e5ff),
-    // `button.active_background`: soft_option: CoreUI pressed highlight -- slightly darker than
-    // hover
-    button_pressed: Some(srgb8(0xd6d6_dbff)),
+    // `button.active_background`: `docs/facts/macos/button.toml` on `v0.8.0-rc1` at `78ee0efd`,
+    // `button.body.fill` states [pressed] (measured, os-probe run 41006842699, macOS 15,
+    // layers-key-push.toml `key.push.aqua.pressed.*-plain.fill`)
+    button_pressed: Some(srgb8(0xf0f0_f0ff)),
     // `button.disabled_background`: platform-facts.md (§2.3): the bezel at half its alpha, white at
     // 128/255 (measured, os-probe run 40348854007,
     // renders/aqua/push_button-regular-disabled@2x.png, not key); over background_color #f6f6f6
@@ -387,6 +388,11 @@ const MONTEREY_LIGHT: SchemeColors = SchemeColors {
     // `button.font.color`: platform-facts.md (§2.3): controlTextColor, probe; over the button's
     // fill #272727
     button_foreground: srgb8(0x0000_00d8),
+    // `button.active_text_color`: `docs/facts/macos/button.toml` on `v0.8.0-rc1` at `78ee0efd`,
+    // `button.label.text.fill` scheme:light states [pressed] (measured, os-probe run 41006842699,
+    // macOS 15, layers-key-push.toml `key.push.aqua.pressed.regular-plain.label`), opaque over the
+    // pressed fill #f0f0f0
+    button_pressed_foreground: Some(srgb8(0x2424_24ff)),
     // `button.checked_background`, `button.checked_text_color`: unstated: a checked toggle in a
     // key window of macOS 12-15 draws a gradient, pending (U141) in the parked facts
     // (`docs/facts/macos/button.toml` on `v0.8.0-rc1` at `78ee0efd`)
@@ -594,10 +600,10 @@ const MONTEREY_DARK: SchemeColors = SchemeColors {
     // `button.background_color`: platform-facts.md (§2.3): controlColor, probe; over the window
     // background #656565
     button_background: srgb8(0xffff_ff3f),
-    // `button.hover_background`: Interactive state colors (platform-facts.md section 2.3 macOS)
-    button_hover: srgb8(0x4444_46ff),
-    // `button.active_background`: soft_option: CoreUI pressed highlight -- brighter than hover
-    button_pressed: Some(srgb8(0x4e4e_50ff)),
+    // `button.active_background`: `docs/facts/macos/button.toml` on `v0.8.0-rc1` at `78ee0efd`,
+    // `button.body.fill` states [pressed] (measured, os-probe run 41006842699, macOS 15,
+    // layers-key-push.toml `key.push.darkAqua.pressed.*-plain.fill`)
+    button_pressed: Some(srgb8(0xffff_ff5c)),
     // `button.disabled_background`: platform-facts.md (§2.3): the bezel at half its alpha, white at
     // 32/255 (measured, os-probe run 40348854007,
     // renders/darkAqua/push_button-regular-disabled@2x.png, not key); over background_color #4c4c4c
@@ -605,6 +611,10 @@ const MONTEREY_DARK: SchemeColors = SchemeColors {
     // `button.font.color`: platform-facts.md (§2.3): controlTextColor, probe; over the button's
     // fill #e7e7e7
     button_foreground: srgb8(0xffff_ffd8),
+    // `button.active_text_color`: as at rest: `docs/facts/macos/button.toml` on `v0.8.0-rc1` at
+    // `78ee0efd` states no dark pressed `button.label.text.fill` (the pressed capture reads
+    // #ffffffd9, the rest #ffffffda; os-probe run 41006842699, macOS 15)
+    button_pressed_foreground: None,
     // `button.checked_background`, `button.checked_text_color`: unstated: a checked toggle in a
     // key window of macOS 12-15 draws a gradient, pending (U141) in the parked facts
     // (`docs/facts/macos/button.toml` on `v0.8.0-rc1` at `78ee0efd`)
@@ -813,11 +823,10 @@ const TAHOE_LIGHT: SchemeColors = SchemeColors {
     // `button.background_color`: platform-facts.md (§2.3): drawn in secondarySystemFillColor's
     // value (measured; probe); over background_color #ebebeb
     button_background: srgb8(0x0000_0014),
-    // `button.hover_background`: no macOS 26 source (platform-facts.md): macos-monterey's value;
-    // the inherited defaults.background_color (inheritance-rules.toml, a wrong safety net) is the
-    // window's opaque colour, which would hide the translucent button on hover
-    button_hover: srgb8(0xe0e0_e5ff),
-    button_pressed: None,
+    // `button.active_background`: `docs/facts/macos/button.toml` on `v0.8.0-rc1` at `78ee0efd`,
+    // `button.body.fill` states [pressed] (measured, os-probe run 41006842699, macOS 26,
+    // layers-key-push.toml `key.push.aqua.pressed.regular-plain.fill`)
+    button_pressed: Some(srgb8(0x0000_002a)),
     // `button.disabled_background`: platform-facts.md (§2.3): the bezel at half its alpha, black at
     // 10/255 (measured, os-probe run 40348854007, renders/aqua/push_button-regular-disabled@2x.png,
     // not key); over background_color #f5f5f5
@@ -825,6 +834,10 @@ const TAHOE_LIGHT: SchemeColors = SchemeColors {
     // `button.font.color`: platform-facts.md (§2.3): controlTextColor, probe; over the button's
     // fill #242424
     button_foreground: srgb8(0x0000_00d8),
+    // `button.active_text_color`: as at rest: `docs/facts/macos/button.toml` on `v0.8.0-rc1` at
+    // `78ee0efd` states one `button.label.text.fill` per scheme for every state but the disabled
+    // and default ones (the pressed capture reads #000000d7; os-probe run 41006842699, macOS 26)
+    button_pressed_foreground: None,
     // `button.checked_background`: a checked toggle's fill is mix(accent, #000000, 0.025)
     // (measured, os-probe run 41006842699, macOS 26.6.2, both accents at every size: #0077f9 under
     // #007aff, #db373c under #e0383e; `docs/facts/macos/button.toml` on `v0.8.0-rc1` at
@@ -1012,11 +1025,10 @@ const TAHOE_DARK: SchemeColors = SchemeColors {
     // `button.background_color`: platform-facts.md (§2.3): drawn in secondarySystemFillColor's
     // value (measured; probe); over background_color #303030
     button_background: srgb8(0xffff_ff14),
-    // `button.hover_background`: no macOS 26 source (platform-facts.md): macos-monterey's value;
-    // the inherited defaults.background_color (inheritance-rules.toml, a wrong safety net) is the
-    // window's opaque colour, which would hide the translucent button on hover
-    button_hover: srgb8(0x4444_46ff),
-    button_pressed: None,
+    // `button.active_background`: `docs/facts/macos/button.toml` on `v0.8.0-rc1` at `78ee0efd`,
+    // `button.body.fill` states [pressed] (measured, os-probe run 41006842699, macOS 26,
+    // layers-key-push.toml `key.push.darkAqua.pressed.regular-plain.fill`)
+    button_pressed: Some(srgb8(0xffff_ff2a)),
     // `button.disabled_background`: platform-facts.md (§2.3): the bezel at half its alpha, white at
     // 10/255 (measured, os-probe run 40348854007,
     // renders/darkAqua/push_button-regular-disabled@2x.png, not key); over background_color #272727
@@ -1024,6 +1036,10 @@ const TAHOE_DARK: SchemeColors = SchemeColors {
     // `button.font.color`: platform-facts.md (§2.3): controlTextColor, probe; over the button's
     // fill #dfdfdf
     button_foreground: srgb8(0xffff_ffd8),
+    // `button.active_text_color`: as at rest: `docs/facts/macos/button.toml` on `v0.8.0-rc1` at
+    // `78ee0efd` states one `button.label.text.fill` per scheme for every state but the disabled
+    // and default ones (the pressed capture reads #ffffffd9; os-probe run 41006842699, macOS 26)
+    button_pressed_foreground: None,
     // `button.checked_background`: a checked toggle's fill is mix(accent, #ffffff, 0.025)
     // (measured, os-probe run 41006842699, macOS 26.6.2, both accents at every size: #077dff under
     // #007aff, #ff575b under #ff5257; `docs/facts/macos/button.toml` on `v0.8.0-rc1` at
@@ -1206,6 +1222,9 @@ struct Generation {
     button_padding_horizontal: f32,
     button_icon_text_gap: f32,
     button_shadow_enabled: Option<bool>,
+    /// Whether the push button's bezel is outlined in the default line;
+    /// `false` where the measurement reads no stroke.
+    button_outlined: bool,
     checkbox_shadow_enabled: bool,
     checkbox_indicator_width: f32,
     checkbox_label_gap: f32,
@@ -1381,6 +1400,9 @@ const MONTEREY: Generation = Generation {
     // `button.icon_text_gap`: 0.7.2 macos-monterey.toml (uncited)
     button_icon_text_gap: 4.0,
     button_shadow_enabled: None,
+    // `button.border`: 0.7.2's default line; the bezel's stroke on macOS 15 is pending (U135) in
+    // `docs/facts/macos/button.toml` on `v0.8.0-rc1` at `78ee0efd`
+    button_outlined: true,
     // `checkbox.border.shadow_enabled`: platform-facts.md (§2.5): no shadow
     checkbox_shadow_enabled: false,
     // `checkbox.indicator_width`: platform-facts.md (§2.5): imageRectForBounds 14 x 14 (probe); the
@@ -1680,6 +1702,10 @@ const TAHOE: Generation = Generation {
     // `button.border.shadow_enabled`: platform-facts.md (§2.3): no shadow (measured: nothing drawn
     // outside the bezel)
     button_shadow_enabled: Some(false),
+    // `button.border`: no stroke: `docs/facts/macos/button.toml` on `v0.8.0-rc1` at `78ee0efd`
+    // states `button.body.stroke` absent (measured, os-probe run 41006842699, macOS 26,
+    // layers-key-push.toml `key.push.<appearance>.normal.regular-plain.stroke` absent)
+    button_outlined: false,
     // `checkbox.border.shadow_enabled`: platform-facts.md (§2.5): no shadow (measured)
     checkbox_shadow_enabled: false,
     // `checkbox.indicator_width`: platform-facts.md (§2.5): imageRectForBounds 16 x 16 (probe)
@@ -2089,7 +2115,7 @@ fn resolve(g: &Generation, ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Re
         toolbar: toolbar(c, g, &typography, &layout),
         status_bar: status_bar(c, &typography, &layout),
         popover: popover(c, &colors, &typography, &layout),
-        switch: switch(c, g, &colors),
+        switch: switch(c, g, &colors, &typography),
         dialog: dialog(c, g, &colors, &typography, &layout, motion, units),
         combo_box: combo_box(c, g, &colors, &typography, &layout, ctx.direction),
         segmented_control: segmented_control(c, g, &colors, &typography, &layout),
@@ -2473,6 +2499,20 @@ fn typography(
     let line_size = ui.and_then(|f| f.size).unwrap_or(body_size);
     body.line_height = line_height_px(line_size, g.line_height, units);
     body.stated |= TextStated::LINE_HEIGHT;
+    // The monospace font's line height, which no source states: the multiplier times its size
+    // (spec §4, `Typography`: `body` and `monospace` follow a slot's rule).
+    let mono_size = FontSize::Pt(g.mono_size_pt);
+    let mut monospace = laid_over(
+        font(g.mono_family, mono_size, g.mono_weight, text, units),
+        mono,
+        units,
+    );
+    monospace.line_height = line_height_px(
+        mono.and_then(|f| f.size).unwrap_or(mono_size),
+        g.line_height,
+        units,
+    );
+    monospace.stated |= TextStated::LINE_HEIGHT;
     let entry = |size, weight| Some(text_scale_entry(g, size, weight, units));
     Typography {
         display: entry(g.display_size_pt, g.display_weight),
@@ -2485,17 +2525,7 @@ fn typography(
         callout: None,
         subheadline: None,
         caption: entry(g.caption_size_pt, g.caption_weight),
-        monospace: laid_over(
-            font(
-                g.mono_family,
-                FontSize::Pt(g.mono_size_pt),
-                g.mono_weight,
-                text,
-                units,
-            ),
-            mono,
-            units,
-        ),
+        monospace,
         line_height_multiplier: g.line_height,
         fallbacks: Arc::from([]),
         emoji_family: None,
@@ -2572,9 +2602,10 @@ fn label(body: &TextStyle, color: Option<Color>) -> TextStyle {
     label
 }
 
-/// The push button: its fill in the default line and radius (0.7.2:
-/// `button.border` is `defaults.border` where unstated) with its padding and
-/// least size; hovered, pressed (`macos-monterey` only) and disabled fills;
+/// The push button: its fill in the default line where the generation draws
+/// one ([`Generation::button_outlined`]; 0.7.2: `button.border` is
+/// `defaults.border` where unstated) and radius, with its padding and least
+/// size; hovered as at rest, the measured pressed fill and the disabled fill;
 /// checked (`macos-tahoe` only), the accent in force mixed with
 /// [`SchemeColors::button_checked_mix_with`] by [`BUTTON_CHECKED_MIX`], with
 /// its own label colour, pressed by [`BUTTON_CHECKED_PRESSED_MIX`], disabled
@@ -2582,9 +2613,9 @@ fn label(body: &TextStyle, color: Option<Color>) -> TextStyle {
 /// with its own disabled label colour; the primary variant in the accent
 /// with its text (0.7.2: `primary_background` and `primary_text_color` are
 /// `defaults.accent_color` and `accent_text_color` where unstated). Its text
-/// keeps its colour hovered and pressed (0.7.2: `hover_text_color` and
-/// `active_text_color` are `button.font.color` where unstated), and is the
-/// disabled text when disabled (`defaults.disabled_text_color`).
+/// keeps its colour hovered, takes
+/// [`SchemeColors::button_pressed_foreground`] pressed where stated, and is
+/// the disabled text when disabled (`defaults.disabled_text_color`).
 fn button(
     c: &SchemeColors,
     g: &Generation,
@@ -2598,10 +2629,28 @@ fn button(
             shape: None,
         })
     };
+    let stroke = if g.button_outlined {
+        outline(layout, c.border)
+    } else {
+        PartProp::Stroke(Stroke::None)
+    };
+    // Hovered, the bezel as at rest: hover draws nothing on a push button, every hovered push
+    // button differs from its normal capture in 0 pixels (`docs/facts/macos/state-models.toml` on
+    // `v0.8.0-rc1`, `hover` not an axis; os-probe runs 41006842699, macOS 15, and 40969040283,
+    // macOS 26, button-pass/probe.toml `…hovered.regular-*.diff_from_normal`). Pressed, the
+    // measured fill; where no stroke is drawn, none pressed either (layers-key-push.toml
+    // `key.push.<appearance>.pressed.regular-plain.stroke` absent, run 41006842699, macOS 26).
+    let pressed = c.button_pressed.map(|pressed| {
+        let mut props = vec![fill(pressed)];
+        if !g.button_outlined {
+            props.push(stroke.clone());
+        }
+        props
+    });
     let body = RuleBuilder::new(PartStyle::default())
         .base([
             fill(c.button_background),
-            outline(layout, c.border),
+            stroke.clone(),
             corners(layout),
             PartProp::Padding(Edges::new(
                 g.button_padding_top,
@@ -2612,11 +2661,15 @@ fn button(
             PartProp::MinSize([Some(g.button_min_width), Some(g.button_min_height)]),
         ])
         .base(g.button_shadow_enabled.and_then(no_shadow))
-        .rule(RuleSelector::on(WidgetState::HOVER), [fill(c.button_hover)])
+        .rule(
+            RuleSelector::on(WidgetState::HOVER),
+            [fill(c.button_background), stroke],
+        )
         .rules(
-            c.button_pressed
+            pressed
+                .as_ref()
                 .map(|_| RuleSelector::on(WidgetState::PRESSED)),
-            c.button_pressed.map(fill),
+            pressed.into_iter().flatten(),
         )
         .rules(
             c.button_checked_mix_with
@@ -2649,7 +2702,19 @@ fn button(
             }),
         )
         .build();
+    // Hovered, the label as at rest (the measurement above); pressed, the measured label where
+    // the generation states one, else as at rest.
     let label = RuleBuilder::new(label(&typography.body, Some(c.button_foreground)))
+        .rule(
+            RuleSelector::on(WidgetState::HOVER),
+            [TextProp::Color(c.button_foreground)],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED),
+            [TextProp::Color(
+                c.button_pressed_foreground.unwrap_or(c.button_foreground),
+            )],
+        )
         .rules(
             c.button_checked_foreground
                 .map(|_| RuleSelector::on(WidgetState::CHECKED)),
@@ -3496,7 +3561,12 @@ fn popover(
 /// `thumb_diameter` and `thumb_background` where unset), in its colour with
 /// no outline, disabled in the preset's disabled colour where the scheme
 /// states one.
-fn switch(c: &SchemeColors, g: &Generation, roles: &ColorRoles) -> SwitchWidget {
+fn switch(
+    c: &SchemeColors,
+    g: &Generation,
+    roles: &ColorRoles,
+    typography: &Typography,
+) -> SwitchWidget {
     let size = [Some(g.switch_track_width), Some(g.switch_track_height)];
     let disabled_on = roles
         .accent
@@ -3550,12 +3620,22 @@ fn switch(c: &SchemeColors, g: &Generation, roles: &ColorRoles) -> SwitchWidget 
         c.switch_disabled_thumb.map(fill),
     )
     .build();
+    // The label: a text label in labelColor (platform-facts.md (§2.1.1) `color`), the system font
+    // at its size and weight (platform-facts.md (§2.1.1) `family`, `size`, `weight`; AppKit's
+    // `NSTextField(labelWithString:)` "uses the system default font"); its hovered, pressed, on
+    // and disabled colours and its gap are unmeasured (SwiftUI's `Toggle`, the probe's plan). It
+    // leads and keeps to the switch: "A toggle style that displays a leading label and a trailing
+    // switch", "In macOS, the style uses a minimum of horizontal space by aligning the trailing
+    // edge of the label with the leading edge of the switch" (Apple, SwiftUI
+    // `ToggleStyle.switch`, developer.apple.com, read 2026-11-23).
     SwitchWidget::new(
         WidgetOrigin::Native,
         track,
         thumb,
-        RuleBuilder::new(TextStyle::default()).build(),
+        RuleBuilder::new(label(&typography.body, None)).build(),
+        Some(LabelSide::Leading),
         None,
+        Some(false),
         None,
         // 0.7.2: `switch.disabled_opacity` is `defaults.disabled_opacity` where unstated.
         Some(roles.disabled_opacity),

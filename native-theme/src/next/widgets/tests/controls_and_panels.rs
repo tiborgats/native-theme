@@ -2,7 +2,7 @@
 //! `segmented_control`, `card` and `expander`.
 
 use super::*;
-use crate::next::layout::{ArrowSide, DialogButtonOrder};
+use crate::next::layout::{ArrowSide, DialogButtonOrder, LabelSide};
 use crate::next::motion::DialogEntranceStyle;
 
 #[test]
@@ -15,12 +15,16 @@ fn switch_getters_evaluate_their_rule_sets() {
         track.clone(),
         thumb.clone(),
         label.clone(),
+        Some(LabelSide::Trailing),
         Some(6.0),
+        Some(false),
         Some(true),
         Some(1.0),
     );
     assert!(switch.is_native());
+    assert_eq!(switch.label_side, Some(LabelSide::Trailing));
     assert_eq!(switch.label_gap, Some(6.0));
+    assert_eq!(switch.label_gap_stretches, Some(false));
     assert_eq!(switch.show_state_glyphs, Some(true));
     assert_eq!(switch.disabled_opacity, Some(1.0));
     for state in states() {
@@ -255,7 +259,9 @@ fn the_unstated_controls_and_panels_state_nothing() {
     assert!(dialog.panel.stated.is_empty() && dialog.title.stated.is_empty());
     assert!(dialog.body.stated.is_empty() && dialog.icon.stated.is_empty());
     assert!(theme.switch.is_native() && popover.is_native() && dialog.is_native());
+    assert_eq!(theme.switch.label_side, None);
     assert_eq!(theme.switch.label_gap, None);
+    assert_eq!(theme.switch.label_gap_stretches, None);
     assert_eq!(theme.switch.show_state_glyphs, None);
     assert_eq!(theme.switch.disabled_opacity, None);
     assert_eq!(dialog.button_order, None);

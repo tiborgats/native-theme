@@ -33,7 +33,10 @@
 //! "none"` requires, where the key is null, `Stroke::None` with the `STROKE` bit set at every home, whatever
 //! the reference state holds; `context` reads the homes from the theme resolved with it
 //! ([`Extra::with_context`]). A home in `WindowChrome` (`window.<getter>(normal).<property>`) reads the
-//! getter at `WindowState::default()`.
+//! getter at `WindowState::default()`. A listed difference (`difference_presets`) compares, on each of its
+//! presets, the value `difference_values` gives in place of the old one: one value for every home, or one
+//! per home where the row's homes differ; "none" at a part's stroke requires `Stroke::None` with the
+//! `STROKE` bit set there, as `null_means = "none"` does.
 //!
 //! A row written by hand names a field that does not serialise; it is read from `old` at its key where the
 //! caller has added it there, in the form `serde_json` gives the field's type (`Resolved.mode`, whose
@@ -41,7 +44,7 @@
 //! is absent. A home this module cannot read, or an old value not of its home's kind, is an error naming the
 //! row, never a skip.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 use std::str::FromStr;
 
@@ -423,8 +426,9 @@ fn compare_row(
         value
     };
     let value = follow_if_null(row, rows, value, old)?;
-    let (value, old_null) = match listed_difference(row, preset, new.context.scheme)? {
-        Some(listed) => (listed, false),
+    let listed = listed_difference(row, preset, new.context.scheme, homes)?;
+    let (value, old_null) = match &listed {
+        Some(listed) => (listed.shown(), false),
         None => (value.clone(), value.is_null()),
     };
     let with_context;
@@ -440,19 +444,31 @@ fn compare_row(
     };
     let mut mismatches = Vec::new();
     for home in homes {
+        let value = match &listed {
+            Some(listed) => listed.at(home)?,
+            None => &value,
+        };
         if old_null && row.null_means == Some(NullMeans::NoOutline) {
-            let style = part_style_at(home, new)?
-                .ok_or_else(|| format!("null_means: `{home}` is no part's stroke"))?;
-            let stated = style.stated.contains(PartStated::STROKE);
-            if !stated || style.stroke != Stroke::None {
-                let bit = if stated { "stated" } else { "unstated" };
-                mismatches.push(Mismatch {
-                    key: row.key.clone(),
-                    home: home.clone(),
-                    old: "null: no outline, `Stroke::None` with STROKE stated".to_owned(),
-                    new: format!("{:?}, STROKE {bit}", style.stroke),
-                });
+            mismatches.extend(no_outline_mismatch(
+                row,
+                home,
+                new,
+                "null: no outline, `Stroke::None` with STROKE stated",
+            )?);
+            continue;
+        }
+        if listed.is_some() && is_no_outline(value) {
+            if !is_stroke_home(home) {
+                return Err(format!(
+                    "the difference value \"{NO_OUTLINE}\" at `{home}`, which is no part's stroke"
+                ));
             }
+            mismatches.extend(no_outline_mismatch(
+                row,
+                home,
+                new,
+                "listed: no outline, `Stroke::None` with STROKE stated",
+            )?);
             continue;
         }
         if old_null && let Some(reference) = reference_home(home, row.null_reference.as_deref())? {
@@ -492,11 +508,11 @@ fn compare_row(
             ),
             (got, _) => (home.clone(), got),
         };
-        if !equal(&value, &got).map_err(|e| format!("at `{home}`: {e}"))? {
+        if !equal(value, &got).map_err(|e| format!("at `{home}`: {e}"))? {
             mismatches.push(Mismatch {
                 key: row.key.clone(),
                 home: shown,
-                old: show_old(&value),
+                old: show_old(value),
                 new: got.to_string(),
             });
         }
@@ -510,7 +526,7 @@ fn compare_row(
                 home: home.clone(),
                 old: format!(
                     "{}, stated for the state: a rule, `from_state` set",
-                    show_old(&value)
+                    show_old(value)
                 ),
                 new: format!("{got}, `from_state` clear"),
             });
@@ -652,10 +668,91 @@ fn follow_if_null<'a>(
     Ok(value)
 }
 
-/// The value 0.8.0 has at every home of `row` on `preset` in `scheme` where the row is a listed
-/// difference there (a table of `light` and `dark` gives the scheme's): "unstated" as `null`, any other
-/// value as JSON.
-fn listed_difference(row: &Row, preset: Preset, scheme: Scheme) -> Result<Option<Value>, String> {
+/// The mismatch at `home`, a part's stroke, of `row` where it is not `Stroke::None` with the `STROKE` bit
+/// set, `expected` saying what the row requires; `None` where it is.
+fn no_outline_mismatch(
+    row: &Row,
+    home: &str,
+    new: &ResolvedTheme,
+    expected: &str,
+) -> Result<Option<Mismatch>, String> {
+    let style = part_style_at(home, new)?
+        .ok_or_else(|| format!("no outline: `{home}` is no part's stroke"))?;
+    let stated = style.stated.contains(PartStated::STROKE);
+    if stated && style.stroke == Stroke::None {
+        return Ok(None);
+    }
+    let bit = if stated { "stated" } else { "unstated" };
+    Ok(Some(Mismatch {
+        key: row.key.clone(),
+        home: home.to_owned(),
+        old: expected.to_owned(),
+        new: format!("{:?}, STROKE {bit}", style.stroke),
+    }))
+}
+
+/// The value a listed difference that names "none" gives a part's stroke: `Stroke::None` with the `STROKE`
+/// bit set.
+const NO_OUTLINE: &str = "none";
+
+/// Whether `value` of a listed difference at a home is [`NO_OUTLINE`].
+fn is_no_outline(value: &Value) -> bool {
+    value.as_str() == Some(NO_OUTLINE)
+}
+
+/// Whether `home` is a part's stroke colour or width, where a listed difference may name [`NO_OUTLINE`].
+pub(super) fn is_stroke_home(home: &str) -> bool {
+    home.ends_with(".stroke.color") || home.ends_with(".stroke.width")
+}
+
+/// Whether a table of a row's `difference_values` for a preset is the form with a value per scheme (a key
+/// `light` or `dark`, which no home is), not the form with a value per home.
+pub(super) fn is_per_scheme(table: &toml::Table) -> bool {
+    table.contains_key("light") || table.contains_key("dark")
+}
+
+/// The values 0.8.0 has at the homes of a listed difference.
+enum Listed {
+    /// One value at every home.
+    All(Value),
+    /// A value per home, by home: every home of the row on the preset, and no other.
+    PerHome(BTreeMap<String, Value>),
+}
+
+impl Listed {
+    /// The value at `home`.
+    fn at(&self, home: &str) -> Result<&Value, String> {
+        match self {
+            Self::All(value) => Ok(value),
+            Self::PerHome(values) => values
+                .get(home)
+                .ok_or_else(|| format!("no difference value for the home `{home}`")),
+        }
+    }
+
+    /// The listed value for the report: the one value, or an object of the values by home.
+    fn shown(&self) -> Value {
+        match self {
+            Self::All(value) => value.clone(),
+            Self::PerHome(values) => Value::Object(
+                values
+                    .iter()
+                    .map(|(home, value)| (home.clone(), value.clone()))
+                    .collect(),
+            ),
+        }
+    }
+}
+
+/// The values 0.8.0 has at the homes `homes` of `row` on `preset` in `scheme` where the row is a listed
+/// difference there: one value for every home, or a table of them by home naming exactly `homes`; each a
+/// single value or a table of `light` and `dark`, which gives the scheme's.
+fn listed_difference(
+    row: &Row,
+    preset: Preset,
+    scheme: Scheme,
+    homes: &[String],
+) -> Result<Option<Listed>, String> {
     let listed = row
         .difference_presets
         .iter()
@@ -669,6 +766,28 @@ fn listed_difference(row: &Row, preset: Preset, scheme: Scheme) -> Result<Option
         .as_ref()
         .and_then(|values| values.get(preset.as_str()))
         .ok_or_else(|| format!("no difference_values for `{}`", preset.as_str()))?;
+    let per_home = match value {
+        toml::Value::Table(table) if !is_per_scheme(table) => table,
+        single => return Ok(Some(Listed::All(listed_value(single, preset, scheme)?))),
+    };
+    let named: BTreeSet<&str> = per_home.keys().map(String::as_str).collect();
+    let expected: BTreeSet<&str> = homes.iter().map(String::as_str).collect();
+    if named != expected {
+        return Err(format!(
+            "the difference_values for `{}` name the homes {named:?}, not the row's {expected:?}",
+            preset.as_str()
+        ));
+    }
+    per_home
+        .iter()
+        .map(|(home, value)| Ok((home.clone(), listed_value(value, preset, scheme)?)))
+        .collect::<Result<_, String>>()
+        .map(|values| Some(Listed::PerHome(values)))
+}
+
+/// One value of a listed difference on `preset` in `scheme` (a table of `light` and `dark` gives the
+/// scheme's): "unstated" as `null`, any other value as JSON.
+fn listed_value(value: &toml::Value, preset: Preset, scheme: Scheme) -> Result<Value, String> {
     let value = match value {
         toml::Value::Table(schemes) => {
             let name = match scheme {
@@ -685,11 +804,11 @@ fn listed_difference(row: &Row, preset: Preset, scheme: Scheme) -> Result<Option
         other => other,
     };
     match value {
-        toml::Value::String(s) if s == "unstated" => Ok(Some(Value::Null)),
-        toml::Value::String(s) => Ok(Some(Value::String(s.clone()))),
-        toml::Value::Integer(i) => Ok(Some(Value::from(*i))),
-        toml::Value::Float(x) => Ok(Some(Value::from(*x))),
-        toml::Value::Boolean(b) => Ok(Some(Value::Bool(*b))),
+        toml::Value::String(s) if s == "unstated" => Ok(Value::Null),
+        toml::Value::String(s) => Ok(Value::String(s.clone())),
+        toml::Value::Integer(i) => Ok(Value::from(*i)),
+        toml::Value::Float(x) => Ok(Value::from(*x)),
+        toml::Value::Boolean(b) => Ok(Value::Bool(*b)),
         other => Err(format!("difference value `{other}` is not a single value")),
     }
 }

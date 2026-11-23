@@ -649,7 +649,7 @@ pub(crate) fn base_style_from(
                 idle,
                 hover,
                 active,
-                layer: Layer::Composite,
+                layer: Layer::of_states(rule_0),
             }),
             text: Some(TextSource {
                 idle: b.label[0],

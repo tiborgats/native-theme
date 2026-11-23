@@ -50,35 +50,187 @@ struct Difference {
     reason: &'static str,
 }
 
-/// Every preset compared, for a difference that no 0.8.0 preset's statement
-/// removes.
-const EVERY_PRESET: &[&str] = &[
-    "kde-breeze",
-    "adwaita",
-    "windows-11",
-    "macos-monterey",
-    "macos-tahoe",
-    "material-3",
-    "ios-13",
-];
-
 /// The listed differences.
 const DIFFERENCES: &[Difference] = &[
     Difference {
         leaf: "SwitchLook::label disabled",
-        presets: EVERY_PRESET,
-        reason: "no 0.8.0 preset states switch.label, so a disabled switch's label is \
-                 gpui-component's own, muted_foreground, colors.window.foreground_muted \
-                 (spec §10, rule 0), where the 0.7.2 look took defaults.disabled_text_color",
+        presets: &["macos-monterey", "macos-tahoe", "ios-13"],
+        reason: "the 0.8.0 preset states no disabled colour of switch.label, so a disabled \
+                 switch's label is gpui-component's own, muted_foreground, \
+                 colors.window.foreground_muted (spec §10, rule 0), where the 0.7.2 look took \
+                 defaults.disabled_text_color",
+    },
+    Difference {
+        leaf: "SwitchLook::label disabled",
+        presets: &["kde-breeze", "adwaita"],
+        reason: "0.7.2 has no switch label and the look took defaults.disabled_text_color; the \
+                 0.8.0 presets state the platform's disabled switch label: kde-breeze \
+                 qqc2-desktop-style's, the Disabled [Colors:Window] text at its opacity 0.6 \
+                 (#a0a1a399 / #686a6c99: Switch.qml:72, :75 at qqc2-desktop-style v6.31.0; \
+                 plasmadesktoptheme.cpp:273-274 at Kirigami 8319acc7), adwaita AdwSwitchRow's \
+                 title, the row's text at --disabled-opacity 50 % (#00000666 / #ffffff80: \
+                 _labels.scss:8-10, _colors.scss:37, :100, :320 at libadwaita 1.10.0)",
+    },
+    Difference {
+        leaf: "SwitchLook::label",
+        presets: &["adwaita"],
+        reason: "0.7.2 has no switch label and the look took the window's text, #2e3436 in \
+                 light (no source at libadwaita, next/presets/adwaita.rs); the 0.8.0 adwaita \
+                 states AdwSwitchRow's title in the row's text, view_fg_color and \
+                 card_fg_color RGB(0 0 6 / 80%) (#000006cc: _lists.scss:5-7, :521; \
+                 _misc.scss:202-204; _colors.scss:37, :62 at libadwaita 1.10.0); in dark both \
+                 are white",
+    },
+    Difference {
+        leaf: "SwitchLook::label_gap",
+        presets: &["kde-breeze", "windows-11", "adwaita"],
+        reason: "0.7.2 has no switch label, so the look has no gap and gpui-component's own \
+                 is drawn; the 0.8.0 presets state the platform's: kde-breeze 4, \
+                 qqc2-desktop-style's Switch spacing, Kirigami.Units.smallSpacing \
+                 (Switch.qml:26, :70 at qqc2-desktop-style v6.31.0; units.cpp:37 at Kirigami \
+                 8319acc7); windows-11 12, ToggleSwitch's fixed column \
+                 (ToggleSwitch_themeresources.xaml:499-503 at microsoft-ui-xaml 8463f45); \
+                 adwaita 6, the least gap of AdwSwitchRow's header box (_lists.scss:132 at \
+                 libadwaita 1.10.0)",
+    },
+    Difference {
+        leaf: "SwitchLook::label disabled",
+        presets: &["material-3"],
+        reason: "0.7.2 has no switch label and the look took defaults.disabled_text_color, \
+                 on-surface at 0.38; the 0.8.0 material-3 states Android's MaterialSwitch \
+                 text, on-background at material_emphasis_medium 0.6 when disabled \
+                 (#1d1b2099 / #e6e0e999: android:Widget.CompoundButton's textColor \
+                 ?attr/textColorPrimaryDisableOnly, AOSP core/res/res/values/styles.xml:386 at \
+                 android-15.0.0_r1; m3_primary_text_disable_only.xml:19, dimens.xml:21, \
+                 materialswitch/res/values/styles.xml:17-29 at material-components-android \
+                 66c334b)",
+    },
+    Difference {
+        leaf: "CheckboxLook::of label disabled",
+        presets: &["material-3"],
+        reason: "0.7.2's disabled check box label is defaults.disabled_text_color, on-surface \
+                 at 0.38, an inheritance no source states for it (no M3 token for the label); \
+                 the 0.8.0 material-3 states Android's, the label's colour at \
+                 material_emphasis_medium 0.6 (#1d1b2099 / #e6e0e999: \
+                 android:Widget.CompoundButton's textColor ?attr/textColorPrimaryDisableOnly, \
+                 AOSP core/res/res/values/styles.xml:386 at android-15.0.0_r1; \
+                 checkbox/res/values/styles.xml:26-28, m3_primary_text_disable_only.xml:19, \
+                 dimens.xml:21 at material-components-android 66c334b; \
+                 native-theme/tests/next_homes.toml, row checkbox.disabled_text_color, a listed \
+                 difference); the disabled checked mark is surface where 0.7.2 draws it in \
+                 its disabled label colour (selected-disabled-icon-color, \
+                 _md-comp-checkbox.scss:50, v0_192 at material-web cbd34a8; the look reads \
+                 checkbox.checkmark(DISABLED|CHECKED).color, CheckboxLook::next_of)",
+    },
+    Difference {
+        leaf: "CheckboxLook::radio label disabled",
+        presets: &["material-3"],
+        reason: "as the check box's (CheckboxLook::of label disabled): the radio button's \
+                 label inherits the same textColor (radiobutton/res/values/styles.xml:19-33 at \
+                 material-components-android 66c334b sets none), so 0.6 where 0.7.2 has 0.38, \
+                 the disabled dot with it",
+    },
+    Difference {
+        leaf: "CheckboxLook::of hover_border",
+        presets: &["material-3"],
+        reason: "0.7.2 states no checkbox.hover_border_color, so the look has no hover \
+                 outline; the 0.8.0 material-3 states an unchecked check box's outline for \
+                 HOVER, on-surface (unselected-hover-outline-color, _md-comp-checkbox.scss:111-112, \
+                 v0_192 at material-web cbd34a8; native-theme/tests/next_homes.toml, row \
+                 checkbox.hover_border_color, a listed difference); so an enabled box hovers in \
+                 on-surface, a checked one in its checked outline",
+    },
+    Difference {
+        leaf: "TabLook::hover",
+        presets: &["adwaita"],
+        reason: "0.7.2's tab.hover_background #e8e8e8 / #3a3a3e is its uncited menu hover; \
+                 0.8.0's adwaita states libadwaita's notebook tab hover, $hover_color, the \
+                 window text at 7 % (#0000060e / #ffffff12), a layer the look composites \
+                 over the bar (_notebook.scss:127-129, _colors.scss:268, :33, :96 at \
+                 libadwaita 1.10.0; native-theme/tests/next_homes.toml, row \
+                 tab.hover_background, a listed difference)",
+    },
+    Difference {
+        leaf: "CheckboxLook::of hover_border",
+        presets: &["adwaita", "windows-11"],
+        reason: "0.7.2 states no checkbox.hover_border_color, so the look has no hover \
+                 outline; 0.8.0 states the unchecked box's outline for HOVER \
+                 (native-theme/tests/next_homes.toml, row checkbox.hover_border_color, a \
+                 listed difference): adwaita's $trough_hover_color (_checks.scss:20-35 at \
+                 libadwaita 1.10.0), windows-11's rest ControlStrongStrokeColorDefault, which \
+                 WinUI keeps (CheckBox_themeresources.xaml:218, :42 at microsoft-ui-xaml \
+                 8463f45); so an enabled box hovers in the outline stated there, a checked one \
+                 in its checked outline",
+    },
+    Difference {
+        leaf: "CheckboxLook::of hover_fill",
+        presets: &["windows-11"],
+        reason: "0.7.2's checkbox.hover_background, an uncited #0000000a / #ffffff0f, is a \
+                 layer the look composites over the unchecked fill; 0.8.0's windows-11 states \
+                 WinUI's whole hovered fill, which the look takes as it is (spec §9, step 2): \
+                 ControlAltFillColorTertiary #0000000f / #ffffff0b \
+                 (CheckBoxCheckBackgroundFillUncheckedPointerOver, CheckBox_themeresources.xaml:230, \
+                 :54; Common_themeresources_any.xaml:235, :31 at microsoft-ui-xaml 8463f45; \
+                 native-theme/tests/next_homes.toml, row checkbox.hover_background, a listed \
+                 difference)",
+    },
+    Difference {
+        leaf: "CheckboxLook::radio hover_fill",
+        presets: &["windows-11"],
+        reason: "as the check box's (CheckboxLook::of hover_fill): the radio button's \
+                 RadioButtonOuterEllipseFillPointerOver is the same ControlAltFillColorTertiary \
+                 (RadioButton_themeresources.xaml:139, :23 at microsoft-ui-xaml 8463f45)",
+    },
+    Difference {
+        leaf: "SwitchLook hover_track",
+        presets: &["windows-11"],
+        reason: "0.7.2's switch.hover_checked_background is the window colour at alpha 0.1, \
+                 a layer the look composites over the on track; 0.8.0's windows-11 states \
+                 WinUI's whole hovered fill, which the look takes as it is (spec §9, step 2): \
+                 AccentFillColorSecondary, the accent's fill at 0.9 opacity \
+                 (ToggleSwitchFillOnPointerOver, ToggleSwitch_themeresources.xaml:144, :24; \
+                 Common_themeresources_any.xaml:330, :126 at microsoft-ui-xaml 8463f45; \
+                 native-theme/tests/next_homes.toml, row switch.hover_checked_background, a \
+                 listed difference)",
+    },
+    Difference {
+        leaf: "CheckboxLook::radio hover_border",
+        presets: &["adwaita"],
+        reason: "0.7.2 states no checkbox.hover_border_color, so the look has no hover \
+                 outline; 0.8.0's adwaita states an unchecked radio's outline for HOVER, \
+                 $trough_hover_color, which libadwaita draws on a hovered unchecked check and \
+                 radio alike (_checks.scss:20-35 at libadwaita 1.10.0; \
+                 native-theme/tests/next_homes.toml, row checkbox.hover_border_color, a listed \
+                 difference); so an enabled radio hovers in the outline stated there, a checked \
+                 one in its checked outline",
     },
     Difference {
         leaf: "SwitchLabelFont",
-        presets: EVERY_PRESET,
-        reason: "no 0.8.0 preset states switch.label, so a switch's label is lettered in \
-                 gpui-component's own font (spec §10, rule 0): text_sm \
-                 (input_text_size(Size::Medium)) in the window's family and weight \
-                 (gpui-component 0.10.0 switch.rs, Switch::render), where the 0.7.2 switch \
-                 took the body text's size and weight (SwitchTheme states no label font)",
+        presets: &["ios-13"],
+        reason: "the 0.8.0 ios-13 states no font of switch.label (no source: iOS's switch \
+                 draws no label), so a switch's label is lettered in gpui-component's own font \
+                 (spec §10, rule 0): text_sm (input_text_size(Size::Medium)) in the window's \
+                 family and weight (gpui-component 0.10.0 switch.rs, Switch::render), where \
+                 the 0.7.2 switch took the body text's size and weight (SwitchTheme states no \
+                 label font)",
+    },
+    Difference {
+        leaf: "SwitchLabelFont",
+        presets: &[
+            "kde-breeze",
+            "adwaita",
+            "windows-11",
+            "macos-monterey",
+            "macos-tahoe",
+            "material-3",
+        ],
+        reason: "the 0.8.0 presets state switch.label as the platform's switch label, the \
+                 body font (kde-breeze qqc2-desktop-style's control.font, adwaita \
+                 AdwSwitchRow's title, windows-11 ToggleSwitch's content, macOS the body \
+                 font, material-3 Android's MaterialSwitch text), its family and slant \
+                 included, where the 0.7.2 switch took the body text's size and weight alone \
+                 and left the family and slant to the window's (SwitchTheme states no label \
+                 font); the size and weight are the same",
     },
 ];
 
@@ -198,7 +350,25 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
         SpinnerLook::of(&old),
         SpinnerLook::next_of(&new),
     );
-    r.leaf("TabLook", "", TabLook::of(&old), TabLook::next_of(&new));
+    let (old_tab, new_tab) = (TabLook::of(&old), TabLook::next_of(&new));
+    // The hover fill apart, so a listed difference of it leaves the rest of
+    // the look compared.
+    let unhovered = |look: TabLook| TabLook {
+        hover: gpui::transparent_black(),
+        ..look
+    };
+    r.leaf(
+        "TabLook",
+        "",
+        old_tab.map(unhovered),
+        new_tab.map(unhovered),
+    );
+    r.leaf(
+        "TabLook::hover",
+        "",
+        old_tab.map(|look| look.hover),
+        new_tab.map(|look| look.hover),
+    );
     for disabled in [false, true] {
         let state = format!(" disabled={disabled}");
         r.leaf(
@@ -223,13 +393,27 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
             // leaves the rest of the look compared.
             let unlabelled = |look: SwitchLook| SwitchLook {
                 label: gpui::transparent_black(),
+                label_gap: None,
+                hover_track: None,
                 ..look
             };
+            r.leaf(
+                "SwitchLook::label_gap",
+                &state,
+                old_switch.map(|look| look.label_gap),
+                new_switch.map(|look| look.label_gap),
+            );
             r.leaf(
                 "SwitchLook",
                 &state,
                 old_switch.map(unlabelled),
                 new_switch.map(unlabelled),
+            );
+            r.leaf(
+                "SwitchLook hover_track",
+                &state,
+                old_switch.map(|look| look.hover_track),
+                new_switch.map(|look| look.hover_track),
             );
             r.leaf(
                 if disabled {
@@ -241,17 +425,95 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
                 old_switch.map(|look| look.label),
                 new_switch.map(|look| look.label),
             );
-            r.leaf(
-                "CheckboxLook::of",
-                &state,
+            // The hover outline and the hover fill apart, so a listed difference of either leaves
+            // the rest of the look compared.
+            // The label apart too, so a listed difference of the disabled label leaves the rest
+            // of the look compared; disabled with it the mark, which the look draws in the
+            // label's disabled colour where a disabled fill is stated (`CheckboxLook::next_of`).
+            let unframed = |look: CheckboxLook| CheckboxLook {
+                hover_border: None,
+                hover_fill: None,
+                label: gpui::transparent_black(),
+                mark: if disabled {
+                    gpui::transparent_black()
+                } else {
+                    look.mark
+                },
+                ..look
+            };
+            let text = |look: CheckboxLook| {
+                (
+                    if disabled {
+                        look.mark
+                    } else {
+                        gpui::transparent_black()
+                    },
+                    look.label,
+                )
+            };
+            let (old_box, new_box) = (
                 CheckboxLook::of(&old, checked, disabled),
                 CheckboxLook::next_of(&new, checked, disabled),
             );
             r.leaf(
-                "CheckboxLook::radio",
+                "CheckboxLook::of",
                 &state,
+                old_box.map(unframed),
+                new_box.map(unframed),
+            );
+            r.leaf(
+                if disabled {
+                    "CheckboxLook::of label disabled"
+                } else {
+                    "CheckboxLook::of label"
+                },
+                &state,
+                old_box.map(text),
+                new_box.map(text),
+            );
+            r.leaf(
+                "CheckboxLook::of hover_border",
+                &state,
+                old_box.map(|look| look.hover_border),
+                new_box.map(|look| look.hover_border),
+            );
+            r.leaf(
+                "CheckboxLook::of hover_fill",
+                &state,
+                old_box.map(|look| look.hover_fill),
+                new_box.map(|look| look.hover_fill),
+            );
+            let (old_radio, new_radio) = (
                 CheckboxLook::radio(&old, checked, disabled),
                 CheckboxLook::next_radio(&new, checked, disabled),
+            );
+            r.leaf(
+                "CheckboxLook::radio",
+                &state,
+                old_radio.map(unframed),
+                new_radio.map(unframed),
+            );
+            r.leaf(
+                if disabled {
+                    "CheckboxLook::radio label disabled"
+                } else {
+                    "CheckboxLook::radio label"
+                },
+                &state,
+                old_radio.map(text),
+                new_radio.map(text),
+            );
+            r.leaf(
+                "CheckboxLook::radio hover_border",
+                &state,
+                old_radio.map(|look| look.hover_border),
+                new_radio.map(|look| look.hover_border),
+            );
+            r.leaf(
+                "CheckboxLook::radio hover_fill",
+                &state,
+                old_radio.map(|look| look.hover_fill),
+                new_radio.map(|look| look.hover_fill),
             );
         }
     }

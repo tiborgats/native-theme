@@ -373,21 +373,26 @@ fn disabled_button(
 }
 
 /// A state's fill as the theme states it, where the style lays it over the
-/// fill under it: a colour, or no fill (a stated `Paint::None`), which
-/// paints nothing in that state whatever lies under it. The 0.7.2 model
-/// states every such fill as a colour.
+/// fill under it: a colour, the state's whole fill, or no fill (a stated
+/// `Paint::None`), which paints nothing in that state whatever lies under
+/// it. The 0.7.2 model states every such fill as a colour; the 0.8.0 model
+/// as a whole fill or none (spec §9, step 2).
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) enum Layer {
     Color(Color),
+    /// The fill the part shows in the state, painted as given, as its rest
+    /// fill is: a translucent one over what lies under the part.
+    Whole(Color),
     Nothing,
 }
 
 impl Layer {
     /// The fill painted where this layer lies over `base`: the colour
-    /// composited over it ([`composite_over`]), or nothing.
+    /// composited over it ([`composite_over`]), the whole fill, or nothing.
     pub(crate) fn over(self, base: Color) -> Color {
         match self {
             Self::Color(color) => composite_over(color, base),
+            Self::Whole(color) => color,
             Self::Nothing => Color::TRANSPARENT,
         }
     }
@@ -395,7 +400,7 @@ impl Layer {
     /// The fill painted where this layer is painted as given.
     pub(crate) fn as_given(self) -> Color {
         match self {
-            Self::Color(color) => color,
+            Self::Color(color) | Self::Whole(color) => color,
             Self::Nothing => Color::TRANSPARENT,
         }
     }
@@ -550,7 +555,8 @@ impl ButtonSource {
         }
     }
 
-    /// The hovered and the pressed fill: each layer over the idle fill. A
+    /// The hovered and the pressed fill: each layer over the idle fill (a
+    /// whole fill as it is, [`Layer::over`]). A
     /// layer `None` is a state the theme states no fill for, whose fill is
     /// then as [`in_state`] gives it against iced's own (spec §2,
     /// `from_state`; spec §10, rule 0).
@@ -856,19 +862,26 @@ pub(crate) struct ToolbarButtonSource {
 }
 
 impl ToolbarButtonSource {
-    /// The 0.7.2 model's reads.
+    /// The 0.7.2 model's reads: an unset hovered or pressed fill is the
+    /// push button's, `button.hover_background` and
+    /// `button.active_background` (the button's hovered one where that is
+    /// unset), as [`ButtonSource::of`] reads them.
     pub(crate) fn of(resolved: &ResolvedTheme) -> Self {
         let t = &resolved.toolbar;
+        let b = &resolved.button;
         let line = |c: Option<Rgba>| c.map(|c| Line::outside(to_color(c)));
         let checked_hover = line(
             t.button_hover_border_color
                 .or(t.button_checked_border_color),
         );
+        let hover = t.button_hover_background.unwrap_or(b.hover_background);
+        let active = t
+            .button_active_background
+            .or(b.active_background)
+            .unwrap_or(b.hover_background);
         Self {
-            hover_background: t.button_hover_background.map(|c| Layer::Color(to_color(c))),
-            active_background: t
-                .button_active_background
-                .map(|c| Layer::Color(to_color(c))),
+            hover_background: Some(Layer::Color(to_color(hover))),
+            active_background: Some(Layer::Color(to_color(active))),
             checked_background: t.button_checked_background.map(to_color),
             hover_border_color: line(t.button_hover_border_color),
             checked_border_color: line(t.button_checked_border_color),
@@ -892,6 +905,19 @@ impl ToolbarButtonSource {
             ..self
         }
     }
+
+    /// [`Self::aligned`], and the state fills `listed` names unset, for the
+    /// parity test's expected values.
+    #[cfg(test)]
+    pub(crate) fn listed(self, listed: crate::next::parity::Listed) -> Self {
+        let s = listed.states;
+        let a = self.aligned(listed.align);
+        Self {
+            hover_background: a.hover_background.filter(|_| !s.hover_fill),
+            active_background: a.active_background.filter(|_| !s.pressed_fill),
+            ..a
+        }
+    }
 }
 
 /// [`toolbar_button`] of what it reads.
@@ -903,18 +929,12 @@ pub(crate) fn toolbar_button_from(
     use iced_widget::button::{Status, Style};
 
     // The layers are painted as given: a toolbar button has no fill at rest
-    // for them to lie over. Where the theme states a layer for neither the
-    // toolbar nor the button, the fill and the label are as [`in_state`]
-    // gives them against iced's own neutral class, the toolbar button's
-    // fill at rest being none.
-    let hovered = t
-        .hover_background
-        .or(b.hover_background)
-        .map(Layer::as_given);
-    let pressed = t
-        .active_background
-        .or(b.active_background)
-        .map(Layer::as_given);
+    // for them to lie over. Where the toolbar's source gives no layer for a
+    // state, the fill and the label are as [`in_state`] gives them against
+    // iced's own neutral class (spec §10, rule 0), the toolbar button's fill
+    // at rest being none.
+    let hovered = t.hover_background.map(Layer::as_given);
+    let pressed = t.active_background.map(Layer::as_given);
     let checked_fill = t.checked_background;
 
     let label = b.label;
@@ -1871,6 +1891,9 @@ pub(crate) struct CheckboxSource {
     pub disabled_opacity: Option<f32>,
     /// The check mark.
     pub mark: Color,
+    /// The checked disabled box's mark, where the theme states a disabled
+    /// mark.
+    pub disabled_mark: Option<Color>,
     pub label: Color,
     pub disabled_label: Color,
     pub border_width: f32,
@@ -1887,6 +1910,7 @@ impl CheckboxSource {
             checked_disabled_background: c.disabled_background.map(to_color),
             disabled_opacity: Some(c.disabled_opacity),
             mark: to_color(c.indicator_color),
+            disabled_mark: None,
             label: to_color(c.font.color),
             disabled_label: to_color(c.disabled_text_color),
             border_width: c.border.line_width,
@@ -1935,6 +1959,7 @@ pub(crate) fn checkbox_from(
     let opacity = c.disabled_opacity;
 
     let mark = c.mark;
+    let disabled_mark = c.disabled_mark;
     let label = c.label;
     let disabled_label = c.disabled_label;
 
@@ -1978,7 +2003,8 @@ pub(crate) fn checkbox_from(
             // on-accent color, and a disabled box no longer shows the accent,
             // so the mark takes the one foreground the platform states for
             // everything it dims -- the same field the disabled label takes.
-            // With no disabled fill stated the box is its enabled self. The
+            // With no disabled fill stated the box is its enabled self. A
+            // disabled mark the theme states is drawn in its own colour. The
             // box is then faded by `checkbox.disabled_opacity` as one widget
             // over the ground: the border and the mark on the fill.
             Status::Disabled { is_checked } => {
@@ -1991,6 +2017,7 @@ pub(crate) fn checkbox_from(
                     Some(fill) => (fill, disabled_label),
                     None => (at_rest, mark),
                 };
+                let mark = disabled_mark.filter(|_| is_checked).unwrap_or(mark);
                 let fill = composite_over(background, ground);
                 (
                     fade(ground, background),

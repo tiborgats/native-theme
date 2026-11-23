@@ -19,11 +19,33 @@ pub(crate) enum FillField {
 }
 
 /// How a stated hover or pressed colour reaches its entry (§6.1): a state layer composited
-/// over the idle fill (C17), or a row highlight and a thumb colour written as given.
+/// over the idle fill (C17), or a row highlight, a thumb colour and a 0.8.0 theme's state fill
+/// written as given.
 #[derive(Clone, Copy, Debug)]
 pub(crate) enum Layer {
     Composite,
     AsGiven,
+}
+
+impl Layer {
+    /// How a control's hovered and pressed fills reach their entries: on the 0.7.2 model, layers
+    /// composited over the idle fill (C17); on the 0.8.0 model (`rule_0`), each state's whole
+    /// fill, written as given (spec §9, step 2).
+    pub(crate) fn of_states(rule_0: bool) -> Self {
+        if rule_0 {
+            Self::AsGiven
+        } else {
+            Self::Composite
+        }
+    }
+
+    /// `color` as its entry takes it: composited over `idle` where it is a layer over it.
+    pub(crate) fn paint(self, color: Rgba, idle: Option<Rgba>) -> egui::Color32 {
+        match (self, idle) {
+            (Self::Composite, Some(idle)) => composite_over(color, idle),
+            _ => to_color32(color),
+        }
+    }
 }
 
 /// What `open` copies: `inactive` for every role but `Menu`, whose open item stays
@@ -205,10 +227,7 @@ pub(crate) fn write_states_with(
             }
             None => fill_of(&widgets.inactive, f.field),
         };
-        let over = |layer: Rgba| match (f.layer, f.idle) {
-            (Layer::Composite, Some((idle_rgba, _))) => composite_over(layer, idle_rgba),
-            _ => to_color32(layer),
-        };
+        let over = |layer: Rgba| f.layer.paint(layer, f.idle.map(|(c, _)| c));
         let own = |e: &WidgetVisuals| fill_of(e, f.field);
         let hovered = match f.hover {
             Some((c, path)) => {

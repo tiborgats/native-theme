@@ -1,11 +1,31 @@
 //! The scaffold the platform builders share (spec §6, resolution step 2):
 //! the physical sides of a reading direction, the linear text scale, and the
-//! motion preference with the system's animation scale.
+//! motion preference with the system's animation scale, and the rules of a
+//! state that keeps a text's resting colour.
 
 use crate::next::geometry::Edges;
 use crate::next::motion::{DialogEntranceStyle, MotionTokens, ThemeChangePolicy, Transition};
-use crate::next::query::{Direction, MotionPreference};
-use crate::next::style::FontSize;
+use crate::next::query::{Direction, MotionPreference, WidgetState};
+use crate::next::rules::{RuleSelector, TextProp};
+use crate::next::style::{FontSize, TextStated, TextStyle};
+
+/// The selectors of `states` and the colour `text` states, for the rules that
+/// state that resting colour for each of `states`, where the platform keeps
+/// it (spec §2, `from_state`); no selector where `text` states no colour.
+pub(crate) fn rest_color_rules<const N: usize>(
+    text: &TextStyle,
+    states: [WidgetState; N],
+) -> (Vec<RuleSelector>, Option<TextProp>) {
+    let color = text
+        .stated
+        .contains(TextStated::COLOR)
+        .then_some(TextProp::Color(text.color));
+    let selectors = match color {
+        Some(_) => states.into_iter().map(RuleSelector::on).collect(),
+        None => Vec::new(),
+    };
+    (selectors, color)
+}
 
 /// `edges`, stated for a left-to-right layout, on the physical sides of
 /// `direction`: as given from left to right, its left and right sides

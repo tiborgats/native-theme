@@ -16,9 +16,7 @@ use super::states::{
     BorderEntries, BorderSource, FillField, FillSource, Layer, OpenFrom, StateLine, StateSource,
     TextSource, Unstated, state_borders, write_states_with,
 };
-use crate::convert::{
-    Rgba, button_padding_outside, clamp_length, composite_over, padding_with_line, to_color32,
-};
+use crate::convert::{Rgba, button_padding_outside, clamp_length, padding_with_line, to_color32};
 use crate::{Note, Role};
 
 /// What a role cell is built with besides its source: the scheme, epaint's Body row (§6.15),
@@ -52,6 +50,8 @@ struct Cx<'a> {
     defs: Option<&'a egui::FontDefinitions>,
     scaled_up: bool,
     unstated: Unstated<'a>,
+    /// How a control's hovered, pressed and open fills reach their entries.
+    layer: Layer,
 }
 
 /// One role's `Normal` cell from the 0.7.2 model.
@@ -85,6 +85,7 @@ pub(crate) fn role_cell_from(
         } else {
             Unstated::Copy
         },
+        layer: Layer::of_states(input.rule_0),
     };
     let mut s = base.clone();
     match role {
@@ -327,7 +328,7 @@ fn button(
                 idle,
                 hover,
                 active,
-                layer: Layer::Composite,
+                layer: cx.layer,
             }),
             text: Some(TextSource {
                 idle: st.label[0],
@@ -642,7 +643,7 @@ fn checkbox(
                 idle: k.fill[0],
                 hover: k.fill[1],
                 active: k.fill[2],
-                layer: Layer::Composite,
+                layer: cx.layer,
             }),
             text: text_states(k.mark[0], [k.mark[1], k.mark[2]]), // the check mark is `fg_stroke` (§5.3)
             border: border_all(&k.outline),
@@ -1090,7 +1091,7 @@ fn switch(
                 idle: sw.fill[0],
                 hover: sw.fill[1],
                 active: sw.fill[2],
-                layer: Layer::Composite,
+                layer: cx.layer,
             }),
             text: None,
             border: None,
@@ -1145,7 +1146,7 @@ fn combo_box(
                 idle: cb.fill[0],
                 hover: cb.fill[1],
                 active: cb.fill[2],
-                layer: Layer::Composite,
+                layer: cx.layer,
             }),
             text: text_states(cb.text.color, cb.text_states),
             border: border_all(&cb.outline),
@@ -1166,13 +1167,10 @@ fn combo_box(
     );
     // E10: an open combo box, drawn from `open` under `ComboBox::CLASS_OPEN` whatever the
     // pointer does (egui-0.37.0/src/theme/default_style.rs:41-45), as Breeze draws it: the fill
-    // a state layer over the idle fill, as the hover's (opaque is exact), the border at the width
-    // `write_states` put there. Unstated, `open` keeps the resting look.
+    // as the hover's reaches its entry (a 0.7.2 state layer over the idle fill, opaque is exact),
+    // the border at the width `write_states` put there. Unstated, `open` keeps the resting look.
     if let Some(fill) = cb.open_fill {
-        s.visuals.widgets.open.weak_bg_fill = match cb.fill[0] {
-            Some((idle, _)) => composite_over(fill, idle),
-            None => to_color32(fill),
-        };
+        s.visuals.widgets.open.weak_bg_fill = cx.layer.paint(fill, cb.fill[0].map(|(c, _)| c));
     }
     set_color(&mut s.visuals.widgets.open.bg_stroke.color, cb.open_border);
     set_length(
@@ -1213,7 +1211,7 @@ fn segmented_control(
                 idle: sc.fill[0],
                 hover: sc.fill[1],
                 active: sc.fill[2],
-                layer: Layer::Composite,
+                layer: cx.layer,
             }),
             text: text_states(sc.text.color, sc.text_states),
             border: border_all(&sc.outline),

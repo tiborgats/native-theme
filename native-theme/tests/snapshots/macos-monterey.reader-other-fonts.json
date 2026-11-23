@@ -183,6 +183,7 @@
       "size_px": 11.0,
       "weight": 500,
       "style": "normal",
+      "line_height": 13.09,
       "defined_size": {
         "pt": 11.0
       }
@@ -333,7 +334,11 @@
             "hover"
           ],
           "body": {
-            "fill": "#e0e0e5"
+            "fill": "#ffffff",
+            "stroke": {
+              "width": 0.5,
+              "color": "#c8c8c8"
+            }
           }
         },
         {
@@ -341,7 +346,7 @@
             "pressed"
           ],
           "body": {
-            "fill": "#d6d6db"
+            "fill": "#f0f0f0"
           }
         },
         {
@@ -372,6 +377,22 @@
         }
       },
       "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "label": {
+            "color": "#000000d8"
+          }
+        },
+        {
+          "states": [
+            "pressed"
+          ],
+          "label": {
+            "color": "#242424"
+          }
+        },
         {
           "variant": "primary",
           "label": {
@@ -667,7 +688,9 @@
   },
   "switch": {
     "origin": "native",
+    "label_side": "leading",
     "label_gap": null,
+    "label_gap_stretches": false,
     "show_state_glyphs": null,
     "disabled_opacity": 1.0,
     "track": {
@@ -761,7 +784,16 @@
       ]
     },
     "label": {
-      "base": {}
+      "base": {
+        "family": "Helvetica Neue",
+        "color": "#000000",
+        "size_px": 12.0,
+        "weight": 300,
+        "style": "normal",
+        "defined_size": {
+          "pt": 12.0
+        }
+      }
     }
   },
   "slider": {

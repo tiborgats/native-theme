@@ -328,16 +328,18 @@ fn a_default_buttons_unstated_properties_are_eguis_own() -> Result<(), Box<dyn s
                 own_width += usize::from(width.is_none());
                 let width = width.unwrap_or(stock.inactive.bg_stroke.width);
                 assert_eq!(button.stroke.width, width, "{at}");
+                // a hovered frame stated as none is no line (spec §10, rule 2)
                 let hover = b.body(WidgetState::HOVER);
-                match super::state_stroke_color_of(&hover) {
-                    Some(c) => assert_eq!(button.hover_stroke.color, c, "{at}"),
-                    None => {
-                        own_hover += 1;
-                        assert_eq!(
-                            button.hover_stroke.color, stock.hovered.bg_stroke.color,
-                            "{at}"
-                        );
-                    }
+                if hover.from_state.contains(PartStated::STROKE) {
+                    let stated =
+                        super::state_stroke_color_of(&hover).unwrap_or(egui::Color32::TRANSPARENT);
+                    assert_eq!(button.hover_stroke.color, stated, "{at}");
+                } else {
+                    own_hover += 1;
+                    assert_eq!(
+                        button.hover_stroke.color, stock.hovered.bg_stroke.color,
+                        "{at}"
+                    );
                 }
                 // the hovered width is its own state's, egui's own where the theme states none
                 if hover.from_state.contains(PartStated::STROKE) {
@@ -353,13 +355,14 @@ fn a_default_buttons_unstated_properties_are_eguis_own() -> Result<(), Box<dyn s
             }
         }
     }
-    assert!(own_hover > 0, "no preset leaves the hovered frame unstated");
+    // the presets' and patches' cases, both kinds of hovered frame among them where a preset
+    // gives each; each unstated value alone is `each_unstated_default_button_value_is_eguis_own`'s
     assert!(
-        own_hover_width > 0,
-        "no preset leaves the hovered width unstated"
+        own_hover < 4 * PRESETS.len(),
+        "no preset states the hovered frame"
     );
-    let fallbacks = [own_text, own_frame, own_width];
-    println!("label, frame, width fallbacks: {fallbacks:?}");
+    let fallbacks = [own_text, own_frame, own_width, own_hover, own_hover_width];
+    println!("label, frame, width, hovered frame, hovered width fallbacks: {fallbacks:?}");
     Ok(())
 }
 
@@ -646,16 +649,31 @@ fn a_tab_and_a_segment_outline_each_state_by_rule_0() -> Result<(), Box<dyn std:
         // and width, both of which egui's stock entries change from rest
         assert_eq!(w.active.bg_stroke, own.active.bg_stroke, "{role:?}");
     }
-    // adwaita states no tab outline: the tab keeps the base's in every state
-    let atlas = patched_light(Preset::Adwaita, "")?;
+    // a preset stating no tab outline at rest, hover or press: the tab keeps the base's in
+    // every state
+    let (key, preset) = PRESETS
+        .iter()
+        .find(|(_, p)| {
+            let r = Theme::preset(*p).resolve(&ThemeContext::light());
+            [WidgetState::NONE, WidgetState::HOVER, WidgetState::PRESSED]
+                .into_iter()
+                .all(|s| {
+                    !r.tab
+                        .tab(s)
+                        .stated
+                        .contains(native_theme::next::PartStated::STROKE)
+                })
+        })
+        .ok_or("every preset states a tab outline at rest, hover or press")?;
+    let atlas = patched_light(*preset, "")?;
     let styles = atlas.scheme(egui::Theme::Light);
     let tab = &styles
         .cell(crate::Role::Tab, crate::RoleVariant::Normal)
         .visuals
         .widgets;
     let base = &styles.base.visuals.widgets;
-    assert_eq!(tab.hovered.bg_stroke, base.hovered.bg_stroke);
-    assert_eq!(tab.active.bg_stroke, base.active.bg_stroke);
+    assert_eq!(tab.hovered.bg_stroke, base.hovered.bg_stroke, "{key}");
+    assert_eq!(tab.active.bg_stroke, base.active.bg_stroke, "{key}");
     Ok(())
 }
 
@@ -928,6 +946,140 @@ fn the_checked_boxs_state_fills_follow_rule_0() -> Result<(), Box<dyn std::error
     assert!(
         !tried.is_empty(),
         "no preset leaves both state fills unstated"
+    );
+    Ok(())
+}
+
+/// The controls whose hovered and pressed fills the 0.7.2 model states as layers over the idle
+/// fill, each with the role whose cell draws it, the widget and part whose hovered fill a rule
+/// states, and whether the entry paints `weak_bg_fill` (else `bg_fill`).
+const STATE_FILLS: [(crate::Role, &str, &str, bool); 5] = [
+    (crate::Role::Button, "button", "body", true),
+    (crate::Role::Checkbox, "checkbox", "indicator", false),
+    (crate::Role::Switch, "switch", "track", true),
+    (crate::Role::ComboBox, "combo_box", "field", true),
+    (
+        crate::Role::SegmentedControl,
+        "segmented_control",
+        "segment",
+        true,
+    ),
+];
+
+/// A state's fill on the 0.8.0 model is the whole fill the part shows in that state (spec §9,
+/// step 2), written as given: a translucent hovered fill a rule states is the entry's, not
+/// composited over the resting fill, and so is an opaque one.
+#[test]
+fn a_stated_hovered_fill_is_the_states_own() -> Result<(), Box<dyn std::error::Error>> {
+    for (marker, color) in [
+        (
+            "#ff00ff80",
+            egui::Color32::from_rgba_unmultiplied(0xff, 0, 0xff, 0x80),
+        ),
+        ("#f0a014", egui::Color32::from_rgb(0xf0, 0xa0, 0x14)),
+    ] {
+        for (role, widget, part, weak) in STATE_FILLS {
+            let patch = format!(
+                "[[widgets.{widget}.rules]]\nstates = [\"hover\"]\n{part}.fill = \"{marker}\"\n"
+            );
+            let atlas = patched_light(Preset::KdeBreeze, &patch)?;
+            let cell = atlas
+                .scheme(egui::Theme::Light)
+                .cell(role, crate::RoleVariant::Normal);
+            let hovered = &cell.visuals.widgets.hovered;
+            let fill = if weak {
+                hovered.weak_bg_fill
+            } else {
+                hovered.bg_fill
+            };
+            assert_eq!(fill, color, "{role:?} {marker}");
+        }
+    }
+    Ok(())
+}
+
+/// The rows and items whose hovered and pressed fills the cells read as given, each as
+/// [`STATE_FILLS`] names it.
+const ROW_FILLS: [(crate::Role, &str, &str, bool); 3] = [
+    (crate::Role::List, "list", "highlight", false),
+    (crate::Role::Sidebar, "sidebar", "item", true),
+    (crate::Role::Tab, "tab", "tab", true),
+];
+
+/// A hovered or pressed fill a rule states as none is transparent (spec §10, rule 2), not
+/// unstated: the entry draws no fill, where an unstated one would keep egui's own or the base's.
+#[test]
+fn a_state_fill_stated_as_none_is_transparent() -> Result<(), Box<dyn std::error::Error>> {
+    let plain = patched_light(Preset::KdeBreeze, "")?;
+    for (state, pressed) in [("hover", false), ("pressed", true)] {
+        for (role, widget, part, weak) in STATE_FILLS.into_iter().chain(ROW_FILLS) {
+            let fill = |atlas: &crate::ThemeAtlas| {
+                let cell = atlas
+                    .scheme(egui::Theme::Light)
+                    .cell(role, crate::RoleVariant::Normal);
+                let w = &cell.visuals.widgets;
+                let entry = if pressed { &w.active } else { &w.hovered };
+                if weak {
+                    entry.weak_bg_fill
+                } else {
+                    entry.bg_fill
+                }
+            };
+            let patch = format!(
+                "[[widgets.{widget}.rules]]\nstates = [\"{state}\"]\n{part}.fill = \"none\"\n"
+            );
+            let atlas = patched_light(Preset::KdeBreeze, &patch)?;
+            assert_ne!(
+                fill(&plain),
+                egui::Color32::TRANSPARENT,
+                "{role:?} {state}: the preset's own fill proves nothing"
+            );
+            assert_eq!(fill(&atlas), egui::Color32::TRANSPARENT, "{role:?} {state}");
+        }
+    }
+    Ok(())
+}
+
+/// On the macOS presets, whose button the pointer does not change (`platform-facts.md` §2.3),
+/// the hovered button's fill is its resting fill wherever the preset states it so: the state's
+/// own fill, not a layer laid over the rest again.
+#[test]
+fn a_macos_buttons_hovered_fill_is_its_resting_one() -> Result<(), Box<dyn std::error::Error>> {
+    let mut tried = Vec::new();
+    let mut layered_would_differ = 0;
+    for preset in [Preset::MacosMonterey, Preset::MacosTahoe] {
+        for (scheme, ctx) in [
+            (egui::Theme::Light, ThemeContext::light()),
+            (egui::Theme::Dark, ThemeContext::dark()),
+        ] {
+            let r = Theme::preset(preset).resolve(&ctx);
+            let body = |s| super::build::state_fill(&r.button.body(s));
+            let rest = super::build::fill(&r.button.body(WidgetState::NONE));
+            let Some(rest_fill) = rest else { continue };
+            if body(WidgetState::HOVER).is_none() || body(WidgetState::HOVER) != rest {
+                continue;
+            }
+            if crate::convert::composite_over(rest_fill, rest_fill)
+                != crate::convert::to_color32(rest_fill)
+            {
+                layered_would_differ += 1;
+            }
+            tried.push((preset, scheme));
+            let atlas = patched_light(preset, "")?;
+            let widgets = &atlas.scheme(scheme).base.visuals.widgets;
+            assert_eq!(
+                widgets.hovered.weak_bg_fill, widgets.inactive.weak_bg_fill,
+                "{preset:?} {scheme:?}"
+            );
+        }
+    }
+    assert!(
+        !tried.is_empty(),
+        "no macOS preset states its hover as rest"
+    );
+    assert!(
+        layered_would_differ > 0,
+        "no macOS scheme's rest fill is translucent, so the test cannot tell a whole fill from a layered one"
     );
     Ok(())
 }
