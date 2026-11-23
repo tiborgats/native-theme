@@ -8,7 +8,7 @@ use native_theme_egui::{
 };
 use native_theme_egui_widgets::combo_box::ComboBox;
 use native_theme_egui_widgets::switch::Switch;
-use native_theme_showcase_support::{rows, status};
+use native_theme_showcase_support::{cli, rows, status};
 
 use crate::{
     LEFT_PANEL_WIDTH,
@@ -854,8 +854,8 @@ fn status_bar_padding(atlas: &crate::app::OldAtlas, theme: egui::Theme) -> (f32,
 }
 
 /// The status bar's environment items (`status::environment_drawn`, the three showcases'
-/// text): the desktop, the preset by its key (`default` by the preset it builds on) and the
-/// mode, the font by the family egui draws (`demo::DrawnFamilies`) in its defined unit (§8.7),
+/// text): the desktop, the preset by its key (`default` by the preset it builds on), with the
+/// palette laid over it, and the mode, the font by the family egui draws (`demo::DrawnFamilies`) in its defined unit (§8.7),
 /// the text-scaling factor and the flags that are set.
 pub(crate) fn environment(app: &App, ctx: &egui::Context) -> Vec<String> {
     let theme = ctx.theme();
@@ -869,13 +869,21 @@ pub(crate) fn environment(app: &App, ctx: &egui::Context) -> Vec<String> {
         ThemeChoice::Default => rows::default_label(&app.default_preset),
         ThemeChoice::Preset(key) => key.clone(),
     };
+    // The palette laid over it, as the gpui showcase's status bar names it (`kde-breeze +
+    // dracula`).
+    let preset = match app.settings.palette {
+        Some(palette) => format!("{preset} + {palette}"),
+        None => preset,
+    };
     let families = crate::demo::DrawnFamilies::of(ctx, &app.atlas);
     status::environment_drawn(
         &preset,
         mode,
         &t.defaults.font,
         families.drawn_at(&t.defaults.font.family, false),
-        Some(app.atlas.accessibility()),
+        // What the user asked for: the installed theme's context can hold a level back
+        // (`OldAtlas::contrast_held`).
+        Some(app.atlas.asked()),
     )
 }
 
@@ -1098,9 +1106,13 @@ fn setting_label(
     })
 }
 
-/// Theme (`ComboBox` of `default` and the platform's presets), Mode (`ComboBox` of System,
-/// Light and Dark), Icon theme (`ComboBox`), each under its label and as wide as the panel: the
-/// gpui showcase's theme settings (`showcase-gpui/demo.rs:1620-1645`, `chrome.rs:254-299`).
+/// Theme (`ComboBox` of `default` and the platform's presets), Palette (`ComboBox` of `none`
+/// and the bundled palettes, [`crate::app::palette_rows`]), Mode (`ComboBox` of System, Light
+/// and Dark), Icon theme (`ComboBox`), each under its label and as wide as the panel: the gpui
+/// showcase's theme settings (`showcase-gpui/demo.rs:1620-1645`, `chrome.rs:254-299`), the
+/// Palette row between Theme and Mode as there. The Palette row is no element of the list,
+/// which has no palette row; its label's hover text says what the pages still on the 0.7.2
+/// model show under a palette ([`crate::app::PALETTE_TOOLTIP`]).
 fn settings_rows(app: &mut App, ui: &mut egui::Ui, body: demo::Applied) {
     let ctx = ui.ctx().clone();
     let theme = ctx.theme();
@@ -1110,6 +1122,20 @@ fn settings_rows(app: &mut App, ui: &mut egui::Ui, body: demo::Applied) {
         .find(|(choice, _)| *choice == app.settings.theme)
         .map(|(_, label)| label.clone())
         .unwrap_or_default();
+    let palette_rows = crate::app::palette_rows();
+    let current_palette = app.settings.palette.unwrap_or(cli::NO_PALETTE).to_owned();
+    // Where High contrast resolved the theme without the palette chosen (spec §6, resolution
+    // step 1), the hover text says that too.
+    let mut palette_hover = crate::app::PALETTE_TOOLTIP.to_owned();
+    if let Some(held) = app
+        .atlas
+        .contrast_held(theme)
+        .filter(|held| held.by_palette)
+    {
+        palette_hover.push(' ');
+        palette_hover.push_str(&held.sentence());
+        palette_hover.push('.');
+    }
     let current_mode = app.settings.mode;
     // The shared crate's icon-theme rows (`rows::icon_rows`): `default` where the theme names an
     // available icon theme, `system`, the installed themes, Lucide, Material; the gpui
@@ -1138,7 +1164,7 @@ fn settings_rows(app: &mut App, ui: &mut egui::Ui, body: demo::Applied) {
         body,
         Setting {
             label: "Theme",
-            element: "chrome.side_panel.settings.theme",
+            element: Some("chrome.side_panel.settings.theme"),
             kind: "ComboBox · Theme",
             row_kind: "Theme row",
             rows: &theme_rows,
@@ -1147,13 +1173,28 @@ fn settings_rows(app: &mut App, ui: &mut egui::Ui, body: demo::Applied) {
             hover: None,
         },
     );
+    let picked_palette = setting(
+        registry,
+        ui,
+        body,
+        Setting {
+            label: "Palette",
+            element: None,
+            kind: "ComboBox · Palette",
+            row_kind: "Palette row",
+            rows: &palette_rows,
+            current: &app.settings.palette,
+            current_text: current_palette,
+            hover: Some(palette_hover),
+        },
+    );
     let picked_mode = setting(
         registry,
         ui,
         body,
         Setting {
             label: "Mode",
-            element: "chrome.side_panel.settings.mode",
+            element: Some("chrome.side_panel.settings.mode"),
             kind: "ComboBox · Mode",
             row_kind: "Mode row",
             current_text: Action::SetMode(current_mode).label().to_string(),
@@ -1168,7 +1209,7 @@ fn settings_rows(app: &mut App, ui: &mut egui::Ui, body: demo::Applied) {
         body,
         Setting {
             label: "Icon theme",
-            element: "chrome.side_panel.settings.icon_theme",
+            element: Some("chrome.side_panel.settings.icon_theme"),
             kind: "ComboBox · Icon theme",
             row_kind: "Icon theme row",
             current_text: current_icon.to_string(),
@@ -1186,6 +1227,9 @@ fn settings_rows(app: &mut App, ui: &mut egui::Ui, body: demo::Applied) {
         app.settings.theme = choice;
         app.install(&ctx);
     }
+    if let Some(palette) = picked_palette {
+        app.choose_palette(palette, &ctx);
+    }
     if let Some(mode) = picked_mode {
         app.set_mode(mode, &ctx);
     }
@@ -1201,7 +1245,8 @@ fn settings_rows(app: &mut App, ui: &mut egui::Ui, body: demo::Applied) {
 struct Setting<'a, T> {
     label: &'static str,
     /// The drop-down's element in `docs/showcase-elements.toml`; its label's is `<element>_label`.
-    element: &'static str,
+    /// `None` for a row the list has no element of.
+    element: Option<&'static str>,
     kind: &'static str,
     row_kind: &'static str,
     rows: &'a [(T, String)],
@@ -1222,7 +1267,9 @@ fn setting<T: Clone + PartialEq>(
     setting: Setting<'_, T>,
 ) -> Option<T> {
     let label = setting_label(registry, ui, body, setting.label);
-    registry.tag(&format!("{}_label", setting.element), &label);
+    if let Some(element) = setting.element {
+        registry.tag(&format!("{element}_label"), &label);
+    }
     let label = label.id;
     let mut picked = None;
     let element = setting.element;
@@ -1274,7 +1321,9 @@ fn setting<T: Clone + PartialEq>(
             }
         },
     );
-    registry.tag(element, &combo);
+    if let Some(element) = element {
+        registry.tag(element, &combo);
+    }
     picked
 }
 
@@ -1925,7 +1974,8 @@ fn preference_row(
 
 /// Preferences: a `Window` in the window surfaces, its body `Role::Window`, its
 /// title in the title-bar font and colour (§4.7, §14 item 2b); a change
-/// rebuilds with `Builder::accessibility` through `App::install` (§4.3).
+/// resolves the 0.8.0 theme again in the context the preferences give, and builds the 0.7.2
+/// atlas with `Builder::accessibility`, through `App::install` (§4.3).
 pub(crate) fn preferences(app: &mut App, ui: &mut egui::Ui) {
     if !app.preferences_open {
         return;
@@ -1937,13 +1987,16 @@ pub(crate) fn preferences(app: &mut App, ui: &mut egui::Ui) {
         .color(window_title_bar_text_color(t, true));
     // `dialog.max_width`, a required size (`f32` on the resolved theme).
     let dialog_width = t.dialog.max_width;
-    // The user's request: the atlas's preferences are the effective ones, which carry the OS's
-    // Reduce motion request, so with no request of the user's the switch starts off.
+    // The user's request: the preferences the install asked for are the effective ones, which
+    // carry the OS's Reduce motion request, so with no request of the user's the switch starts
+    // off. Not the installed theme's context, which holds back a contrast level the theme does
+    // not define (`OldAtlas::contrast_held`).
     let mut prefs = app.settings.prefs.clone().unwrap_or_else(|| {
-        let mut prefs = app.atlas.accessibility().clone();
+        let mut prefs = app.atlas.asked().clone();
         prefs.reduce_motion = false;
         prefs
     });
+    let high_contrast = high_contrast_text(app.atlas.contrast_held(ctx.theme()));
     let before = prefs.clone();
     // Whether the text-scaling field is still being dragged, or was just let go of.
     let mut scale_dragged = false;
@@ -1986,7 +2039,7 @@ pub(crate) fn preferences(app: &mut App, ui: &mut egui::Ui) {
                     body.add(registry, ui, "Label · description", |ui| {
                         ui.label(
                             egui::RichText::new(
-                                "Installed with native_theme_egui's Builder::accessibility",
+                                "Resolved into the 0.8.0 theme's context, installed with ThemeAtlas::next_builder",
                             )
                             .small()
                             .weak(),
@@ -2039,13 +2092,13 @@ pub(crate) fn preferences(app: &mut App, ui: &mut egui::Ui) {
                                 (
                                     "switch · high contrast",
                                     "High contrast",
-                                    "high_contrast: stored with the atlas, which builds no differently for it",
+                                    high_contrast.as_str(),
                                     &mut prefs.high_contrast,
                                 ),
                                 (
                                     "switch · reduce transparency",
                                     "Reduce transparency",
-                                    "reduce_transparency: stored with the atlas, which builds no differently for it",
+                                    "reduce_transparency: the context the 0.8.0 theme is resolved in carries it",
                                     &mut prefs.reduce_transparency,
                                 ),
                             ] {
@@ -2089,9 +2142,22 @@ pub(crate) fn preferences(app: &mut App, ui: &mut egui::Ui) {
         .settings
         .prefs
         .as_ref()
-        .is_some_and(|p| p != app.atlas.accessibility());
+        .is_some_and(|p| p != app.atlas.asked());
     if differs && !scale_dragged && (changed || scale_settled) {
         app.install(&ctx);
+    }
+}
+
+/// What the Preferences dialog's High contrast row says: the switch shows the preference asked
+/// for, and the 0.8.0 theme, which the installed styles are built from, is resolved at High
+/// contrast where it defines that level; where it is resolved at a lower one, why
+/// ([`crate::app::ContrastHeld::sentence`]), as the iced showcase's `high_contrast_text`.
+fn high_contrast_text(held: Option<&crate::app::ContrastHeld>) -> String {
+    let asked = "high_contrast: the 0.8.0 theme, which the installed styles are built from, is \
+                 resolved at High contrast where its preset or the desktop defines that level";
+    match held {
+        Some(held) => format!("{asked}; {}", held.sentence()),
+        None => asked.to_string(),
     }
 }
 

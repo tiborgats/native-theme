@@ -19,8 +19,11 @@ use crate::{
     apply_cli_args,
 };
 
-/// A community preset every platform offers (`native-theme/src/presets.rs:69`).
-pub(crate) const TEST_PRESET: &str = "catppuccin-mocha";
+/// A platform preset every platform offers (`native-theme/src/presets.rs`, `PRESET_INFOS`: it
+/// names no platform), which the 0.8.0 model has a `Preset` of, so the Theme row and `--theme`
+/// take it (`cli::next_theme_key`): the community presets of the 0.7.2 model are palettes in the
+/// 0.8.0 one.
+pub(crate) const TEST_PRESET: &str = "material-3";
 
 /// The showcase under a named preset, never the desktop's theme (§13 T11), in a window of the
 /// size `main` opens (the harness's own default is 800 × 600, `egui_kittest/src/builder.rs:34`).
@@ -79,6 +82,7 @@ pub(crate) fn cli(pairs: &[(&str, &str)]) -> CliArgs {
             "--icon-set" => cli.icon_set = value,
             "--screenshot" => cli.screenshot = value,
             "--open-menu" => cli.open_menu = value,
+            "--palette" => cli.palette = value,
             other => panic!("the tests do not pass {other}"),
         }
     }
@@ -523,6 +527,9 @@ fn the_chrome_is_where_the_layout_puts_it() {
     let theme = harness
         .get_by_role_and_label(Role::ComboBox, "Theme")
         .rect();
+    let palette = harness
+        .get_by_role_and_label(Role::ComboBox, "Palette")
+        .rect();
     let mode = harness.get_by_role_and_label(Role::ComboBox, "Mode").rect();
     let icon = harness
         .get_by_role_and_label(Role::ComboBox, "Icon theme")
@@ -543,7 +550,12 @@ fn the_chrome_is_where_the_layout_puts_it() {
         .find(|n| inspector_tabs.contains(&n.accesskit_node().locate().0))
         .expect("the inspector's Theme tab")
         .rect();
-    assert!(theme.bottom() <= mode.top() && mode.bottom() <= icon.top());
+    // The Palette row between Theme and Mode, as the gpui showcase's.
+    assert!(
+        theme.bottom() <= palette.top()
+            && palette.bottom() <= mode.top()
+            && mode.bottom() <= icon.top()
+    );
     // Each label sits above its control, as wide as its text, at the control's left edge; the
     // controls are as wide as the panel's content (parity item 1).
     let labels: Vec<egui::Rect> = harness
@@ -554,7 +566,7 @@ fn the_chrome_is_where_the_layout_puts_it() {
         .filter(|r| r.info.kind == "Label · theme setting")
         .map(|r| r.rect)
         .collect();
-    assert_eq!(labels.len(), 3, "three setting labels: {labels:?}");
+    assert_eq!(labels.len(), 4, "four setting labels: {labels:?}");
     let panel = harness
         .state()
         .registry
@@ -563,7 +575,7 @@ fn the_chrome_is_where_the_layout_puts_it() {
         .find(|r| r.info.kind == "Side panel")
         .map(|r| r.rect)
         .expect("the side panel records itself");
-    for (label, control) in labels.iter().zip([theme, mode, icon]) {
+    for (label, control) in labels.iter().zip([theme, palette, mode, icon]) {
         assert!(
             label.bottom() <= control.top() && (label.left() - control.left()).abs() < 1.0,
             "label {label:?} is not above its control {control:?}"
@@ -614,9 +626,13 @@ fn the_chrome_is_where_the_layout_puts_it() {
         tab.top() >= page_top && tab.bottom() <= first_item,
         "the page tabs are not above the page"
     );
-    harness.get_by_role_and_label(Role::Button, "Icons").click();
+    // A tab in view: under TEST_PRESET the row of tabs runs past the panel, the Icons tab
+    // behind the row's Pages button.
+    harness
+        .get_by_role_and_label(Role::Button, "Buttons")
+        .click();
     harness.run_steps(2);
-    assert_eq!(harness.state().settings.page, Page::Icons);
+    assert_eq!(harness.state().settings.page, Page::Buttons);
 }
 
 /// M9x CI item 9, the controller's rulings (M9-166, and item 15(1) of the round 2-3 review):
@@ -625,10 +641,10 @@ fn the_chrome_is_where_the_layout_puts_it() {
 /// column's left edge, and in the last column may reach into the page's right margin but keeps
 /// `layout.widget_gap` from the content panel's edge, under every bundled
 /// preset at a text scale of 1 and of 2.25, the largest, where three columns, the old floor,
-/// left it past the window under macos-monterey, macos-tahoe and ios-13; and the four Linux
-/// parity presets keep their columns at a text scale of 1: kde-breeze, adwaita and
-/// catppuccin-mocha five, material-3 four (the window's own content width). It prints each
-/// preset's count.
+/// left it past the window under macos-monterey, macos-tahoe and ios-13; and the three Linux
+/// platform presets the Theme row offers keep their columns at a text scale of 1: kde-breeze
+/// and adwaita five, material-3 four (the window's own content width). It prints each preset's
+/// count.
 #[test]
 fn the_column_count_holds_the_segmented_control() {
     let mut faults = Vec::new();
@@ -700,12 +716,7 @@ fn the_column_count_holds_the_segmented_control() {
             }
         }
     }
-    for (preset, want) in [
-        ("kde-breeze", 5),
-        ("adwaita", 5),
-        ("catppuccin-mocha", 5),
-        ("material-3", 4),
-    ] {
+    for (preset, want) in [("kde-breeze", 5), ("adwaita", 5), ("material-3", 4)] {
         let mut harness = open(
             egui::Theme::Light,
             cli(&[("--theme", preset), ("--tab", "basic")]),
@@ -1584,6 +1595,24 @@ fn open_page(page: Page, theme: egui::Theme) -> Harness<'static, App> {
     harness
 }
 
+/// A platform preset that states what the community presets of the 0.7.2 model left unstated
+/// (no `button.border.padding`, `dialog.border.padding` or `list.header_height`,
+/// `native-theme/src/presets/ios-13.toml`), for the tests of what the showcase draws in their
+/// place. A preset of another platform but iOS, so [`open_page_under`] installs it.
+const UNSTATED_PRESET: &str = "ios-13";
+
+/// [`open_page`], then `preset` installed through the Theme row's path (`App::install`), on any
+/// platform: `--theme` takes this platform's presets alone (`cli::next_theme_key`).
+fn open_page_under(page: Page, theme: egui::Theme, preset: &str) -> Harness<'static, App> {
+    let mut harness = open_page(page, theme);
+    let ctx = harness.ctx.clone();
+    harness.state_mut().settings.theme = ThemeChoice::Preset(preset.to_owned());
+    harness.state_mut().install(&ctx);
+    harness.run_steps(4);
+    assert_eq!(harness.state().theme_error, None, "{preset} installs");
+    harness
+}
+
 /// The AccessKit roles egui gives a widget: from egui 0.37.0 on a widget names its `Role` itself
 /// in its `WidgetInfo`, and `WidgetType`, which egui 0.36.2 mapped to a role, is that `Role`
 /// under its old name, the variants egui renamed tabled at `egui-0.37.0/src/lib.rs:642-659`
@@ -1614,7 +1643,10 @@ const WIDGET_ROLES: &[Role] = &[
 fn every_widget_reports_itself() {
     for theme in [egui::Theme::Light, egui::Theme::Dark] {
         for page in Page::ALL {
-            let mut harness = open_page(page, theme);
+            // Under kde-breeze, installed on any platform: under TEST_PRESET a node of the
+            // Containers page stays under the status bar after `scroll_to_me`, with the 0.7.2
+            // atlas installed as with the 0.8.0 one.
+            let mut harness = open_page_under(page, theme, "kde-breeze");
             let hold = harness
                 .state()
                 .hold_zone
@@ -1737,7 +1769,8 @@ fn every_page_names_its_inputs() {
 /// Widget Info states what egui draws where a `mapping.toml` row records it in its `note` (E5,
 /// E7): under TEST_PRESET, which states no `button.border.padding` and a check box radius above
 /// egui's cap, a button's padding and least-height rows and a checked box's radius row carry
-/// their row's note after the route.
+/// their row's note after the route: under [`UNSTATED_PRESET`], which states no
+/// `button.border.padding`, and whose check box radius is its `defaults.border.corner_radius`.
 #[test]
 fn widget_info_carries_the_mapping_notes() {
     let note = |manifest: &Manifest, leaf: &str| {
@@ -1761,7 +1794,7 @@ fn widget_info_carries_the_mapping_notes() {
             &["checkbox.border.corner_radius", "checkbox.indicator_width"][..],
         ),
     ] {
-        let mut harness = open_page(page, egui::Theme::Light);
+        let mut harness = open_page_under(page, egui::Theme::Light, UNSTATED_PRESET);
         let pos = centre_of(&harness, kind);
         hover_and_settle(&mut harness, pos);
         let shown = harness.state().registry.shown().cloned().expect("shown");
@@ -1770,13 +1803,14 @@ fn widget_info_carries_the_mapping_notes() {
         let t = harness.state().atlas.old_resolved(egui::Theme::Light);
         assert!(
             t.button.border.padding.left.is_none() && t.button.border.padding.right.is_none(),
-            "{TEST_PRESET} states a button padding across, so the padding note shows no default"
+            "{UNSTATED_PRESET} states a button padding across, so the padding note shows no \
+             default"
         );
         let view = crate::info::InfoView::of(
             &shown,
             &elements,
             &manifest,
-            (&json, TEST_PRESET),
+            (&json, UNSTATED_PRESET),
             (&harness.state().atlas, &harness.ctx),
         );
         for leaf in leaves {
@@ -1991,14 +2025,14 @@ fn the_context_menus_target_is_the_base_style_and_its_menu_the_menu_role() {
 #[test]
 fn the_toggle_that_is_on_names_the_leaf_its_fill_is_drawn_in() {
     let prefs = AccessibilityPreferences::default();
-    let (key, t) = Theme::list_presets_for_platform()
-        .into_iter()
-        .find_map(|info| {
-            let (_, t) = from_preset(info.key, false, &prefs).ok()?;
-            t.button
-                .checked_background
-                .is_none()
-                .then_some((info.key, t))
+    // The platform presets of the 0.8.0 model, installed through the Theme row's path on any
+    // platform: no Linux one leaves `button.checked_background` unstated.
+    let (key, t) = native_theme::next::Preset::ALL
+        .iter()
+        .map(|preset| preset.as_str())
+        .find_map(|key| {
+            let (_, t) = from_preset(key, false, &prefs).ok()?;
+            t.button.checked_background.is_none().then_some((key, t))
         })
         .expect("a preset offered here states no button.checked_background");
     let fill = if t.button.active_background.is_some() {
@@ -2006,10 +2040,9 @@ fn the_toggle_that_is_on_names_the_leaf_its_fill_is_drawn_in() {
     } else {
         "button.hover_background"
     };
-    let mut harness = open(
-        egui::Theme::Light,
-        cli(&[("--theme", key), ("--variant", "light"), ("--tab", "basic")]),
-    );
+    let mut harness = open_page_under(Page::Basic, egui::Theme::Light, key);
+    let ctx = harness.ctx.clone();
+    harness.state_mut().set_mode(ModeChoice::Light, &ctx);
     harness.run_steps(4);
     let pos = centre_of(&harness, "toggle button (on)");
     hover_and_settle(&mut harness, pos);
@@ -2131,8 +2164,9 @@ fn a_failed_rebuild_keeps_the_installed_fonts() {
     assert_eq!(faces(&harness), before);
 }
 
-/// `adopt` installs no atlas of the 0.8.0 model, whose 0.7.2 themes the pages would lack: the
-/// installed atlas stays, and the theme error says why.
+/// `adopt` installs no atlas of the 0.8.0 model alone, whose 0.7.2 themes the pages would lack:
+/// the installed atlas, the showcase's own of the 0.8.0 model, stays, and the theme error says
+/// why.
 #[test]
 fn adopt_refuses_an_atlas_of_the_next_model() {
     use native_theme::next::{Preset, Theme as NextTheme, ThemeContext};
@@ -2165,13 +2199,21 @@ fn adopt_refuses_an_atlas_of_the_next_model() {
     assert_eq!(harness.state().atlas.name(), before);
     let installed = native_theme_egui::ThemeAtlas::from_ctx(&ctx).expect("an atlas is installed");
     assert_eq!(installed.name(), before);
-    assert!(installed.resolved_for(egui::Theme::Light).is_some());
+    assert!(installed.next_resolved_for(egui::Theme::Light).is_some());
 }
 
-/// A preset every platform offers other than [`TEST_PRESET`], and its atlas: the watcher's
-/// rebuilt atlas in the hand-off tests, told from the installed one by its name.
+/// A platform preset other than [`TEST_PRESET`], installed through `App::install` on any
+/// platform, and its atlas: the watcher's rebuilt atlas in the hand-off tests, told from the
+/// installed one by its name.
 #[cfg(feature = "watch")]
-const OTHER_PRESET: &str = "nord";
+const OTHER_PRESET: &str = "windows-11";
+
+/// [`preset_atlas`] as the watcher's record holds a rebuild: the 0.7.2 atlas with its themes.
+#[cfg(feature = "watch")]
+fn rebuilt(name: &str) -> Result<crate::app::OldAtlas, crate::app::BuildError> {
+    crate::app::OldAtlas::of(preset_atlas(name))
+        .ok_or_else(|| crate::app::BuildError::Next(crate::app::NOT_OLD.to_owned()))
+}
 
 #[cfg(feature = "watch")]
 fn preset_atlas(name: &str) -> native_theme_egui::ThemeAtlas {
@@ -2200,7 +2242,7 @@ fn watch_failure() -> native_theme::error::Error {
 /// selection rebuilt, by `install`'s own result, and not the stale atlas over the pick.
 #[cfg(feature = "watch")]
 #[test]
-fn a_hand_off_built_for_an_earlier_selection_installs_the_current_one() {
+fn a_hand_off_built_for_an_earlier_selection_installs_the_current_one() -> Result<(), String> {
     let mut harness = open_default();
     harness.run_steps(SETTLE);
     let ctx = harness.ctx.clone();
@@ -2213,33 +2255,39 @@ fn a_hand_off_built_for_an_earlier_selection_installs_the_current_one() {
         read,
         "the install published a new selection"
     );
-    App::record_rebuild(&app.rebuilt, read, Ok(preset_atlas(TEST_PRESET))).unwrap();
+    let installed = app.atlas.name().to_owned();
+    App::record_rebuild(&app.rebuilt, read, rebuilt(TEST_PRESET)).map_err(|e| e.to_string())?;
     app.theme_error = Some("an earlier failure".to_string());
     app.take_rebuilt(&ctx);
-    assert_eq!(app.atlas.name(), preset_name(OTHER_PRESET));
+    assert_eq!(app.atlas.name(), installed);
+    assert_ne!(app.atlas.name(), preset_name(TEST_PRESET));
     assert_eq!(
         app.theme_error, None,
         "the current selection's install succeeded"
     );
+    Ok(())
 }
 
 /// M9-115: a rebuild that returned before the user's install read the record is covered by that
 /// install: its hand-off installs nothing.
 #[cfg(feature = "watch")]
 #[test]
-fn a_hand_off_an_install_has_covered_installs_nothing() {
+fn a_hand_off_an_install_has_covered_installs_nothing() -> Result<(), String> {
     let mut harness = open_default();
     harness.run_steps(SETTLE);
     let ctx = harness.ctx.clone();
     let app = harness.state_mut();
     let read = app.generation();
-    App::record_rebuild(&app.rebuilt, read, Ok(preset_atlas(TEST_PRESET))).unwrap();
+    App::record_rebuild(&app.rebuilt, read, rebuilt(TEST_PRESET)).map_err(|e| e.to_string())?;
     app.settings.theme = ThemeChoice::Preset(OTHER_PRESET.to_string());
     app.install(&ctx);
+    let installed = app.atlas.name().to_owned();
     app.theme_error = Some("an earlier failure".to_string());
     app.take_rebuilt(&ctx);
-    assert_eq!(app.atlas.name(), preset_name(OTHER_PRESET));
+    assert_eq!(app.atlas.name(), installed);
+    assert_ne!(app.atlas.name(), preset_name(TEST_PRESET));
     assert_eq!(app.theme_error.as_deref(), Some("an earlier failure"));
+    Ok(())
 }
 
 /// M9-114, M9-115: the watcher's `rebuild` records the generation of the selection it read; a
@@ -2261,7 +2309,7 @@ fn a_hand_off_built_for_the_current_selection_installs_it_and_clears_the_theme_e
         .map(|(number, generation, _)| (*number, *generation));
     assert_eq!(recorded, Some((1, app.generation())));
     let current = app.generation();
-    App::record_rebuild(&app.rebuilt, current, Ok(preset_atlas(OTHER_PRESET))).unwrap();
+    assert!(App::record_rebuild(&app.rebuilt, current, rebuilt(OTHER_PRESET)).is_ok());
     app.theme_error = Some("an earlier failure".to_string());
     app.take_rebuilt(&ctx);
     assert_eq!(app.atlas.name(), preset_name(OTHER_PRESET));
@@ -2281,7 +2329,7 @@ fn the_watchers_rebuild_error_is_shown_until_a_later_install() {
     let fail = |h: &mut Harness<'_, App>| {
         let app = h.state_mut();
         let current = app.generation();
-        App::record_rebuild(&app.rebuilt, current, Err(watch_failure())).unwrap_err();
+        assert!(App::record_rebuild(&app.rebuilt, current, Err(watch_failure().into())).is_err());
         app.watcher_last_error = Some(watch_failure().to_string());
         h.run_steps(SETTLE);
     };
@@ -2290,7 +2338,7 @@ fn the_watchers_rebuild_error_is_shown_until_a_later_install() {
     assert!(shown(&harness), "a failed rebuild is shown");
     let app = harness.state_mut();
     let current = app.generation();
-    App::record_rebuild(&app.rebuilt, current, Ok(preset_atlas(OTHER_PRESET))).unwrap();
+    assert!(App::record_rebuild(&app.rebuilt, current, rebuilt(OTHER_PRESET)).is_ok());
     app.take_rebuilt(&ctx);
     harness.run_steps(SETTLE);
     assert!(!shown(&harness), "the next rebuild was installed");
@@ -2361,7 +2409,7 @@ fn a_failed_picks_error_stays_through_the_watchers_rebuilds() {
     app.install(&ctx);
     let error = app.theme_error.clone();
     assert!(error.is_some(), "the pick must fail");
-    App::record_rebuild(&app.rebuilt, read, Ok(preset_atlas(TEST_PRESET))).unwrap();
+    assert!(App::record_rebuild(&app.rebuilt, read, rebuilt(TEST_PRESET)).is_ok());
     app.take_rebuilt(&ctx);
     assert_eq!(app.atlas.name(), drawn);
     assert_eq!(app.theme_error, error, "a rebuild of the theme drawn");
@@ -2383,7 +2431,7 @@ fn a_mode_switch_leaves_a_rebuild_in_flight_current() {
     let app = harness.state_mut();
     let read = app.generation();
     app.set_mode(ModeChoice::Dark, &ctx);
-    App::record_rebuild(&app.rebuilt, read, Ok(preset_atlas(OTHER_PRESET))).unwrap();
+    assert!(App::record_rebuild(&app.rebuilt, read, rebuilt(OTHER_PRESET)).is_ok());
     app.take_rebuilt(&ctx);
     assert_eq!(app.atlas.name(), preset_name(OTHER_PRESET));
 }
@@ -2522,7 +2570,7 @@ fn a_preset_under_the_system_mode_follows_the_os() {
     };
     let mut harness = open(
         egui::Theme::Light,
-        cli(&[("--theme", "catppuccin-mocha"), ("--variant", "system")]),
+        cli(&[("--theme", TEST_PRESET), ("--variant", "system")]),
     );
     harness.run_steps(SETTLE);
     assert_eq!(harness.state().settings.mode, ModeChoice::System);
@@ -2942,7 +2990,7 @@ fn every_record_notes(harness: &Harness<'_, App>, id: &str, parts: &[&str]) -> b
 /// scaled `defaults.font.size` (a quarter of it above and below, a half at the sides, each
 /// rounded to a whole point a half toward zero, [`gpui_status_bar_padding`]), where egui's own
 /// panel margin stood. macos-tahoe is a preset of
-/// another platform here, so it is installed directly. Under catppuccin-mocha, which states
+/// another platform here, so it is installed directly. Under [`TEST_PRESET`], which states
 /// `container_margin` but no toolbar padding, the toolbar's unstated sides are noted as that
 /// margin (I m3, J m3 (a)); kde-breeze states every side of both bars and notes none.
 #[test]
@@ -3113,22 +3161,37 @@ fn without_a_widget_gap_the_settings_and_the_toolbar_take_the_gpui_showcases_gap
     harness.state_mut().adopt(&ctx, tahoe_without_widget_gap()?);
     harness.run_steps(4);
     assert_eq!(harness.state().atlas.layout().widget_gap, None);
+    // The Palette row, between Theme and Mode, is no element of the list: its label and its
+    // drop-down are found by their records.
+    let records = harness.state().registry.records();
+    let record = |kind: &str, nth: usize| {
+        records
+            .iter()
+            .filter(|r| r.info.kind == kind)
+            .nth(nth)
+            .map(|r| (kind.to_owned(), r.rect))
+    };
+    let placed = |id: &str| Some((id.to_owned(), place_of(&harness, id)));
     let stack = [
-        "chrome.side_panel.settings.theme_label",
-        "chrome.side_panel.settings.theme",
-        "chrome.side_panel.settings.mode_label",
-        "chrome.side_panel.settings.mode",
-        "chrome.side_panel.settings.icon_theme_label",
-        "chrome.side_panel.settings.icon_theme",
+        placed("chrome.side_panel.settings.theme_label"),
+        placed("chrome.side_panel.settings.theme"),
+        record("Label · theme setting", 1),
+        record("ComboBox · Palette", 0),
+        placed("chrome.side_panel.settings.mode_label"),
+        placed("chrome.side_panel.settings.mode"),
+        placed("chrome.side_panel.settings.icon_theme_label"),
+        placed("chrome.side_panel.settings.icon_theme"),
     ];
+    let stack: Option<Vec<(String, egui::Rect)>> = stack.into_iter().collect();
+    let stack = stack.ok_or("the Palette row's label and drop-down are recorded")?;
     for pair in stack.windows(2) {
-        let (above, below) = (place_of(&harness, pair[0]), place_of(&harness, pair[1]));
+        let [(above_id, above), (below_id, below)] = pair else {
+            continue;
+        };
         assert!(
             (below.top() - above.bottom() - THEME_SETTINGS_GAP).abs() < 0.5,
-            "{} is {} below {}",
-            pair[1],
+            "{below_id} is {} below {above_id}",
             below.top() - above.bottom(),
-            pair[0]
         );
     }
     assert!(
@@ -3234,18 +3297,15 @@ fn a_side_panel_side_the_theme_leaves_unstated_takes_the_container_margin() {
 
 /// G, H and I: each side of a dialog takes the stated `dialog.border.padding` side, else
 /// gpui-component's 16 px (`DIALOG_PADDING_PX`) inside the border line, as the gpui showcase's
-/// `Dialog` draws, where egui's popup margin stood: the Overlays page's modal under nord, which
-/// states no dialog padding, and under kde-breeze, which states every side. Under nord Widget
+/// `Dialog` draws, where egui's popup margin stood: the Overlays page's modal under
+/// [`UNSTATED_PRESET`], which states no dialog padding, and under kde-breeze, which states every
+/// side, each installed through the Theme row's path on any platform. Under the first Widget
 /// Info names the padding on the modal's frame; under kde-breeze it does not.
 #[test]
 fn a_dialog_side_the_theme_leaves_unstated_is_gpui_components_padding() {
     use native_theme_showcase_support::DIALOG_PADDING_PX;
-    for preset in ["nord", "kde-breeze"] {
-        let mut harness = open(
-            egui::Theme::Light,
-            cli(&[("--theme", preset), ("--tab", "overlays")]),
-        );
-        harness.run_steps(4);
+    for preset in [UNSTATED_PRESET, "kde-breeze"] {
+        let mut harness = open_page_under(Page::Overlays, egui::Theme::Light, preset);
         harness.get_by_label("Open modal").click();
         harness.run_steps(SETTLE);
         let border = harness
@@ -3318,6 +3378,13 @@ fn the_area_stays_inside_the_page() {
                 .expect("the showcase starts under a bundled preset")
         });
     harness.run_steps(4);
+    // kde-breeze, on any platform: TEST_PRESET's bars leave the short window no room to scroll
+    // the page in.
+    let ctx = harness.ctx.clone();
+    harness.state_mut().settings.theme = ThemeChoice::Preset("kde-breeze".to_owned());
+    harness.state_mut().install(&ctx);
+    harness.run_steps(4);
+    assert_eq!(harness.state().theme_error, None);
     let rect_of = |harness: &Harness<'_, App>, kind: &str| {
         harness
             .state()
@@ -4234,7 +4301,7 @@ fn the_text_role_labels_are_drawn_at_their_weight() {
 
 /// The tables' header rows are `list_header_height` tall where the theme states one
 /// (material-3, macos-monterey), else a row's height where the theme states one, else a row
-/// (catppuccin-mocha): on the Basic page's painted table (its `basic.table.header` place) a row
+/// ([`UNSTATED_PRESET`]): on the Basic page's painted table (its `basic.table.header` place) a row
 /// of the header font, `list.border.padding` above and below its line (`pages/basic.rs`,
 /// `row_metrics`); on the Data and Theme Map pages' `TableBuilder`s egui's own
 /// `interact_size.y` where the theme states no `list.row_height`, or the header font's line
@@ -4250,9 +4317,9 @@ fn the_text_role_labels_are_drawn_at_their_weight() {
 fn the_tables_headers_take_the_themes_header_height() {
     for (preset, factor) in [
         ("material-3", 1.0),
-        (TEST_PRESET, 1.0),
+        (UNSTATED_PRESET, 1.0),
         ("material-3", 1.5),
-        (TEST_PRESET, 1.5),
+        (UNSTATED_PRESET, 1.5),
         ("macos-monterey", 1.5),
     ] {
         let basic = open_scaled(preset, "basic", factor);
@@ -4260,7 +4327,7 @@ fn the_tables_headers_take_the_themes_header_height() {
         let stated = native_theme_egui::list_header_height(&t);
         assert_eq!(
             stated.is_some(),
-            preset != TEST_PRESET,
+            preset != UNSTATED_PRESET,
             "{preset}: the preset's header height"
         );
         let l = &t.list;
@@ -6517,7 +6584,7 @@ fn the_basic_page_has_every_group_in_its_column() {
         named,
         "the controls are listed per group, in order"
     );
-    for (preset, expected) in [("kde-breeze", 5), ("material-3", 4), (TEST_PRESET, 5)] {
+    for (preset, expected) in [("kde-breeze", 5), ("material-3", 4), ("adwaita", 5)] {
         let mut harness = open(
             egui::Theme::Light,
             cli(&[("--theme", preset), ("--tab", "basic")]),
@@ -6639,7 +6706,7 @@ fn the_basic_page_has_every_group_in_its_column() {
 }
 
 /// The Basic page never needs sideways scrolling at the window's default size, 1280 × 720, in
-/// both modes, under the four presets the captures compare: every element it places ends inside
+/// both modes, under the three Linux presets the Theme row offers: every element it places ends inside
 /// the content panel, and it lays out the columns its rule counts from the panel's width. It may
 /// be taller than its area (material-3 is): it then scrolls, and the test reports it. The
 /// columns are as far apart as `column_count` counts them (M9-105), so the page fits at a
@@ -6651,7 +6718,7 @@ fn the_basic_page_has_every_group_in_its_column() {
 #[test]
 fn the_basic_page_fits_the_window_across() {
     use crate::pages::basic::column_count;
-    for preset in ["kde-breeze", "material-3", "catppuccin-mocha", "adwaita"] {
+    for preset in ["kde-breeze", "material-3", "adwaita"] {
         for theme in [egui::Theme::Light, egui::Theme::Dark] {
             let mut harness = open(theme, cli(&[("--theme", preset), ("--tab", "basic")]));
             harness.run_steps(4);
@@ -7404,7 +7471,7 @@ fn the_basic_page_makes_room_for_both_flares() {
 #[test]
 fn section_headings_take_the_section_heading_role() {
     let mut other_weight = Vec::new();
-    for preset in ["kde-breeze", "catppuccin-mocha", "adwaita"] {
+    for preset in ["kde-breeze", TEST_PRESET, "adwaita"] {
         let mut harness = open(
             egui::Theme::Light,
             cli(&[("--theme", preset), ("--tab", "basic")]),
@@ -8671,8 +8738,9 @@ fn every_seam_is_recorded() {
 
 /// `IconCache`'s condition, held lexically: the images it keeps name the connector's icon URIs,
 /// which `ThemeAtlas::install` and `ThemeAtlas::clear` forget (`forget_icons`), so outside the
-/// tests an atlas is installed, cleared or its icons forgotten only in `App::adopt`, and
-/// `App::adopt` clears the cache beside it. A spelling of these calls the patterns miss (an
+/// tests an atlas is installed, cleared or its icons forgotten only in `App::adopt_pair`, which
+/// every install goes through (`App::adopt` of a 0.7.2 atlas alone included), and
+/// `App::adopt_pair` clears the cache beside it. A spelling of these calls the patterns miss (an
 /// atlas bound to a name other than `atlas`) is left to review.
 #[test]
 fn only_app_adopt_installs_or_clears_an_atlas() {
@@ -8689,10 +8757,10 @@ fn only_app_adopt_installs_or_clears_an_atlas() {
         if path.ends_with("tests.rs") {
             continue;
         }
-        // `App::adopt`'s body, from its first brace to the one that closes it.
+        // `App::adopt_pair`'s body, from its first brace to the one that closes it.
         let adopt = path
             .ends_with("app.rs")
-            .then(|| source.find("fn adopt("))
+            .then(|| source.find("fn adopt_pair("))
             .flatten()
             .and_then(|start| {
                 let open = start + source.get(start..)?.find('{')?;
@@ -8731,10 +8799,13 @@ fn only_app_adopt_installs_or_clears_an_atlas() {
             }
         }
     }
-    assert!(in_adopt > 0, "the detector read no install in App::adopt");
+    assert!(
+        in_adopt > 0,
+        "the detector read no install in App::adopt_pair"
+    );
     assert!(
         adopt_clears_the_cache,
-        "App::adopt installs the atlas but does not clear the showcase's IconCache"
+        "App::adopt_pair installs the atlas but does not clear the showcase's IconCache"
     );
 }
 
@@ -8819,7 +8890,12 @@ fn every_role_and_surface_is_demonstrated() {
 
 #[test]
 fn the_chrome_reports_itself() {
-    let mut harness = open_page(Page::Buttons, egui::Theme::Light);
+    // Under UNSTATED_PRESET, installed on any platform, where every part below keeps a point of
+    // its own with and without `system-fonts` (measured): under TEST_PRESET without
+    // `system-fonts` the page tabs fill their bar, and under adwaita, kde-breeze and windows-11
+    // the side panel's rows and margins leave it no point outside its children's interact
+    // radius, nor the page tabs theirs.
+    let mut harness = open_page_under(Page::Buttons, egui::Theme::Light, UNSTATED_PRESET);
     let radius = harness.ctx.global_style().interaction.interact_radius;
     // The inspector's content is the hold zone, where nothing is chosen (§10.4).
     let hold = harness
@@ -9156,13 +9232,14 @@ fn is_icon_element(id: &str) -> bool {
 /// R11 §C: the layout dump holds exactly the list's elements the showcase draws. On the Basic
 /// page at rest every element of the list is drawn but those shown only under a condition
 /// (`when`: an open menu, a hover, a tooltip), and the showcase places no id the list lacks;
-/// each parent the list measures an element against is placed where the element is.
+/// each parent the list measures an element against is placed where the element is. Under
+/// adwaita, whose page has the five columns the list names (`basic.column_5`).
 #[test]
 fn the_layout_dump_names_every_listed_element_the_basic_page_draws() {
     let elements = listed_elements();
     let ids: BTreeSet<&str> = elements.iter().map(|e| e.id.as_str()).collect();
     for theme in [egui::Theme::Light, egui::Theme::Dark] {
-        let harness = open_page(Page::Basic, theme);
+        let harness = open_page_under(Page::Basic, theme, "adwaita");
         let places = harness.state().registry.places();
         let unknown: Vec<&String> = places
             .keys()
@@ -10815,4 +10892,246 @@ fn the_icon_cache_is_forgotten_where_the_icon_choice_changes() -> std::io::Resul
         native_theme_test_fixtures::write_indicator_theme(icons, "breeze", SVG)?;
         native_theme_test_fixtures::write_indicator_theme(icons, "breeze-dark", SVG)
     })
+}
+
+/// The Theme row offers `default`, then this platform's presets the 0.8.0 model has a `Preset`
+/// of, and no community preset of the 0.7.2 model, whose colours are palettes in the 0.8.0 one:
+/// every preset row is one of `Preset::ALL`, the list the gpui showcase's parity lists are
+/// asserted against too.
+#[test]
+fn the_theme_row_offers_the_08_models_presets_of_this_platform() {
+    use native_theme::next::Preset;
+    let harness = open_default();
+    let rows = harness.state().theme_rows();
+    assert!(
+        matches!(rows.first(), Some((ThemeChoice::Default, _))),
+        "the first row is default: {rows:?}"
+    );
+    let offered: BTreeSet<&str> = rows
+        .iter()
+        .filter_map(|(choice, _)| match choice {
+            ThemeChoice::Preset(key) => Some(key.as_str()),
+            ThemeChoice::Default => None,
+        })
+        .collect();
+    let here: BTreeSet<&str> = Theme::list_presets_for_platform()
+        .iter()
+        .map(|info| info.key)
+        .filter(|key| Preset::from_name(key).is_some())
+        .collect();
+    assert_eq!(offered, here);
+    assert!(offered.contains(TEST_PRESET));
+    for key in &offered {
+        assert!(
+            Preset::ALL.iter().any(|preset| preset.as_str() == *key),
+            "{key} is no preset of the 0.8.0 model"
+        );
+    }
+    for info in Theme::list_presets() {
+        if Preset::from_name(info.key).is_none() {
+            assert!(!offered.contains(info.key), "{} is offered", info.key);
+        }
+    }
+}
+
+/// `--palette` lays a bundled palette over the preset in the 0.8.0 model alone: both scheme
+/// slots' installed 0.8.0 theme take the palette's name, its scheme and its window colour, read
+/// from `Palette::from_name`, not a literal; the pages' 0.7.2 theme is the preset alone in the
+/// palette's scheme; the status bar names both, as the gpui showcase's does. The Palette row's
+/// `none` brings back the preset's own colours in each scheme.
+#[test]
+fn a_palette_is_laid_over_the_preset_in_the_08_model_only() -> Result<(), String> {
+    let dracula = native_theme::next::Palette::from_name("dracula").ok_or("dracula is bundled")?;
+    assert_eq!(
+        dracula.scheme,
+        native_theme::next::Scheme::Dark,
+        "dracula is not dark, so locking the light slot to it proves nothing"
+    );
+    let mut harness = open(
+        egui::Theme::Light,
+        cli(&[("--theme", TEST_PRESET), ("--palette", "dracula")]),
+    );
+    harness.run_steps(SETTLE);
+    {
+        let app = harness.state();
+        assert_eq!(app.settings.palette, Some("dracula"));
+        assert_eq!(app.theme_error, None);
+        let prefs = app.atlas.asked().clone();
+        let (_, preset_dark) =
+            from_preset(TEST_PRESET, true, &prefs).map_err(|error| error.to_string())?;
+        for theme in [egui::Theme::Light, egui::Theme::Dark] {
+            let next = app
+                .atlas
+                .next_resolved(theme)
+                .ok_or("no 0.8.0 theme installed")?;
+            assert_eq!(next.name, dracula.name, "{theme:?}");
+            assert!(next.is_dark(), "{theme:?}: dracula did not lock the scheme");
+            assert_eq!(
+                next.colors.window.background,
+                Some(dracula.window_bg),
+                "{theme:?}: the window background is not dracula's"
+            );
+            assert!(
+                app.atlas.old_resolved(theme) == &preset_dark,
+                "{theme:?}: the 0.7.2 theme is not the preset alone in the palette's scheme"
+            );
+        }
+        let status = crate::chrome::environment(app, &harness.ctx).join(" · ");
+        assert!(
+            status.contains(&format!("{TEST_PRESET} + dracula")),
+            "the status bar does not name the palette: {status}"
+        );
+    }
+    let ctx = harness.ctx.clone();
+    harness.state_mut().choose_palette(None, &ctx);
+    harness.run_steps(SETTLE);
+    let app = harness.state();
+    assert_eq!(app.theme_error, None);
+    for (theme, dark) in [(egui::Theme::Light, false), (egui::Theme::Dark, true)] {
+        let next = app
+            .atlas
+            .next_resolved(theme)
+            .ok_or("no 0.8.0 theme installed")?;
+        assert_ne!(next.name, dracula.name, "{theme:?}");
+        assert_eq!(next.is_dark(), dark, "{theme:?}");
+    }
+    Ok(())
+}
+
+/// High contrast shows what the user asked for: turned on under [`TEST_PRESET`], which defines
+/// no High level, the preferences the install asked for hold it, the installed 0.8.0 theme is
+/// resolved at Normal, and why is kept for the Preferences dialog's row
+/// (`ContrastHeld::sentence`, docs/v0.8.0-spec.md §6).
+#[test]
+fn high_contrast_shows_the_request_and_why_the_theme_holds_it_back() -> Result<(), String> {
+    use native_theme::next::Contrast;
+    let mut harness = open_default();
+    harness.run_steps(SETTLE);
+    let mut prefs = harness.state().atlas.asked().clone();
+    prefs.high_contrast = true;
+    harness.state_mut().settings.prefs = Some(prefs);
+    let ctx = harness.ctx.clone();
+    harness.state_mut().install(&ctx);
+    harness.run_steps(SETTLE);
+    let atlas = &harness.state().atlas;
+    assert!(atlas.asked().high_contrast);
+    let next = atlas
+        .next_resolved(egui::Theme::Light)
+        .ok_or("no 0.8.0 theme installed")?;
+    assert_eq!(next.context.contrast, Contrast::Normal);
+    let held = atlas
+        .contrast_held(egui::Theme::Light)
+        .ok_or("the held contrast is not kept")?;
+    assert_eq!(
+        (held.asked, held.used, held.by_palette),
+        (Contrast::High, Contrast::Normal, false)
+    );
+    assert!(
+        held.sentence()
+            .contains("resolved at Normal contrast, not the High asked for"),
+        "{}",
+        held.sentence()
+    );
+    Ok(())
+}
+
+/// The showcase starts under `default`, the desktop's own theme as the 0.8.0 model reads it;
+/// where that read fails (a build without the reader features), the platform's preset is
+/// installed in its place, the Theme row shows that preset, never `default`, and the banner
+/// reports the read's error.
+#[test]
+fn a_failed_desktop_read_starts_the_platform_preset_and_says_so() {
+    let mut harness = open(egui::Theme::Light, CliArgs::default());
+    harness.run_steps(SETTLE);
+    let app = harness.state();
+    let old_read = native_theme::SystemTheme::from_system().is_ok();
+    match crate::app::read_next_system() {
+        Err(error) if old_read => {
+            assert_eq!(
+                app.settings.theme,
+                ThemeChoice::Preset(app.default_preset.clone())
+            );
+            let shown = app.theme_error.clone().unwrap_or_default();
+            assert!(
+                shown.contains(&error) && shown.contains("fallback"),
+                "the banner: {shown:?}"
+            );
+        }
+        Ok(_) if old_read => assert_eq!(app.settings.theme, ThemeChoice::Default),
+        _ => assert!(app.theme_error.is_some()),
+    }
+}
+
+/// The page groups' helpers on the 0.8.0 model read the installed 0.8.0 theme the window shows:
+/// `next_value` its values, `next_lined` its line height, `next_role_text` a text role's size and
+/// line height, `next_metric` a layout gap; beside it the theme for an inactive window, and
+/// `next_unstated_as` fills the unstated sides only.
+#[test]
+fn the_next_helpers_read_the_installed_08_theme() -> Result<(), String> {
+    use native_theme_egui::{TextRole, next};
+    let mut harness = open_default();
+    harness.run_steps(SETTLE);
+    let atlas =
+        crate::app::OldAtlas::from_ctx(&harness.ctx).ok_or("no atlas kept in the context")?;
+    let theme = harness.ctx.theme();
+    let active = atlas.next_resolved(theme).ok_or("no 0.8.0 theme")?.clone();
+    let inactive = atlas
+        .next_inactive(theme)
+        .ok_or("no inactive 0.8.0 theme")?;
+    assert!(active.context.window_active && !inactive.context.window_active);
+    assert_eq!(inactive.name, active.name);
+
+    // A context of its own, holding the showcase's atlas as `App::adopt_pair` keeps it, whose
+    // viewport reports no focus: the active theme is shown.
+    let ctx = egui::Context::default();
+    ctx.set_theme(theme);
+    ctx.data_mut(|d| d.insert_temp(egui::Id::NULL, atlas.clone()));
+    let mut read = None;
+    let mut output = ctx.run_ui(egui::RawInput::default(), |ui| {
+        let style = ui.style().clone();
+        let job = |text: egui::RichText| {
+            egui::WidgetText::from(text)
+                .into_layout_job(&style, egui::FontSelection::Default, egui::Align::Center)
+                .sections
+                .first()
+                .map(|s| (s.format.font_id.size, s.format.line_height))
+        };
+        let body = egui::TextStyle::Body.resolve(&style).size;
+        read = Some((
+            crate::demo::next_value(ui, |r| r.name.to_string()),
+            job(crate::demo::next_lined(ui, "x", egui::TextStyle::Body)),
+            body,
+            job(crate::demo::next_role_text(
+                ui,
+                TextRole::SectionHeading,
+                "x",
+            )),
+            crate::demo::next_metric(ui, |layout| layout.widget_gap),
+        ));
+    });
+    // No painter takes the pass's textures.
+    output.textures_delta.clear();
+    let (name, lined, body, role, gap) = read.ok_or("the pass ran no UI")?;
+    assert_eq!(name.as_deref(), Some(&*active.name));
+    assert_eq!(
+        lined.and_then(|(_, line_height)| line_height),
+        Some(body * next::line_height(&active))
+    );
+    assert_eq!(
+        role,
+        Some((
+            next::text_role_font(&active, TextRole::SectionHeading).size,
+            Some(next::text_role_line_height(
+                &active,
+                TextRole::SectionHeading
+            ))
+        ))
+    );
+    assert_eq!(gap, active.layout.widget_gap);
+    let padding = crate::demo::next_unstated_as([Some(1.0), None, Some(3.0), None], 7.0);
+    assert_eq!(
+        [padding.top, padding.right, padding.bottom, padding.left],
+        [Some(1.0), Some(7.0), Some(3.0), Some(7.0)]
+    );
+    Ok(())
 }

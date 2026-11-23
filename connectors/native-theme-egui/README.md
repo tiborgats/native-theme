@@ -799,10 +799,22 @@ per-instance Widget Info for every widget on screen. It opens on the Basic
 page, the controls all three showcases draw — buttons, checkboxes, radio
 buttons, text, text fields, a drop-down, a slider and a progress bar — in
 the same order and states, packed onto one screen, so the three showcases'
-captures compare control by control. Its flags `--theme`, `--variant`,
-`--icon-set`, `--tab` and `--screenshot` start it on a given preset,
-variant, icon set and tab, or capture the window with its title bar to a
-PNG (macOS and Windows; on Linux the capture scripts take it). The window
+captures compare control by control. The side panel's theme settings are
+Theme, Palette, Mode and Icon theme, as the gpui showcase's. Theme offers
+`default`, the desktop's own theme, and the platform presets meant for the
+platform it runs on (`kde-breeze` on KDE Plasma, `adwaita` on Linux,
+`windows-11` on Windows, `macos-monterey`, `macos-tahoe` and `ios-13` on
+macOS, and `material-3` everywhere); Palette lays one of the bundled
+palettes (`Palette::BUNDLED_NAMES`) over it, or `none`, the preset's own
+colours, and locks both schemes to the palette's. The installed egui styles
+and frames are built from the 0.8.0 theme of that choice
+(`ThemeAtlas::next_builder`); the showcase's own refinements on the pages
+and the chrome still read the 0.7.2 preset, which has no palettes, until
+their pages move to the 0.8.0 model, as the Palette row's hover text says.
+Its flags `--theme`, `--palette`, `--variant`, `--icon-set`, `--tab` and
+`--screenshot` start it on a given preset, palette, variant, icon set and
+tab, or capture the window with its title bar to a PNG (macOS and Windows;
+on Linux the capture scripts take it). The window
 opens at 1280 × 720; with `--screenshot`, or `--capture` for a capture
 taken by another tool, it opens at that size whatever size the desktop
 remembers for it. `--pointer X,Y` holds the pointer at that point of the

@@ -408,9 +408,9 @@ fn menu_modifier(
     variant: RoleVariant,
 ) -> Option<egui::style::StyleModifier> {
     let theme = ui.ctx().theme();
-    let atlas = ThemeAtlas::from_ctx(ui.ctx())?;
+    let atlas = crate::app::OldAtlas::from_ctx(ui.ctx())?;
     let role_style = atlas.role_modifier(theme, role, variant);
-    let t = atlas.resolved_for(theme)?;
+    let t = atlas.old_resolved(theme);
     let border = t.popover.border.clone();
     // the sides the menu role pads (`menu_margin`) keep its padding
     let (h, v) = (
@@ -476,12 +476,10 @@ pub(crate) fn scoped(
 /// (`style::roles::fit_row_padding`), so the row is drawn that tall. The companion crate's
 /// `Expander` opens the scope again and follows the rule itself.
 fn grow_rows(ui: &mut egui::Ui, role: Role) {
-    let Some(atlas) = ThemeAtlas::from_ctx(ui.ctx()) else {
+    let Some(atlas) = crate::app::OldAtlas::from_ctx(ui.ctx()) else {
         return;
     };
-    let Some(t) = atlas.resolved_for(ui.ctx().theme()) else {
-        return;
-    };
+    let t = atlas.old_resolved(ui.ctx().theme());
     let size = match role {
         Role::Menu if t.menu.row_height.is_some() => t.menu.font.size,
         Role::Expander => t.expander.font.size,
@@ -704,10 +702,10 @@ pub(crate) fn surfaced(
         modifier: role.and_then(|(r, v)| role_modifier(ui, r, v)),
     };
     let unstated = (surface == Surface::Dialog)
-        .then(|| ThemeAtlas::from_ctx(ui.ctx()))
+        .then(|| crate::app::OldAtlas::from_ctx(ui.ctx()))
         .flatten()
         .and_then(|atlas| {
-            let padding = atlas.resolved_for(ui.ctx().theme())?.dialog.border.padding;
+            let padding = atlas.old_resolved(ui.ctx().theme()).dialog.border.padding;
             chrome.frame.inner_margin = native_theme_egui::convert::to_margin(
                 chrome.frame.inner_margin,
                 &unstated_as(&padding, DIALOG_PADDING_PX),
@@ -1557,7 +1555,7 @@ pub(crate) fn lined(
     style: egui::TextStyle,
 ) -> egui::RichText {
     let text = egui::RichText::new(text);
-    let Some(atlas) = ThemeAtlas::from_ctx(ui.ctx()) else {
+    let Some(atlas) = crate::app::OldAtlas::from_ctx(ui.ctx()) else {
         return text;
     };
     let size = ui
@@ -1565,10 +1563,131 @@ pub(crate) fn lined(
         .override_font_id
         .as_ref()
         .map_or_else(|| style.resolve(ui.style()).size, |font| font.size);
-    let Some(t) = atlas.resolved_for(ui.ctx().theme()) else {
+    let t = atlas.old_resolved(ui.ctx().theme());
+    text.line_height(Some(size * t.defaults.line_height))
+}
+
+/// [`lined`] on the 0.8.0 model: `text` one line box tall, the font's size times the installed
+/// 0.8.0 theme's line height (`next::line_height`, the body text's); without an installed
+/// 0.8.0 theme, the text as it is.
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "the page groups call it as they move to the 0.8.0 model"
+    )
+)]
+pub(crate) fn next_lined(
+    ui: &egui::Ui,
+    text: impl Into<String>,
+    style: egui::TextStyle,
+) -> egui::RichText {
+    let text = egui::RichText::new(text);
+    let size = ui
+        .style()
+        .override_font_id
+        .as_ref()
+        .map_or_else(|| style.resolve(ui.style()).size, |font| font.size);
+    match next_value(ui, native_theme_egui::next::line_height) {
+        Some(line_height) => text.line_height(Some(size * line_height)),
+        None => text,
+    }
+}
+
+/// The value `build` gives for the installed 0.8.0 theme the window shows
+/// (`OldAtlas::next_shown`: the scheme egui draws, for an inactive window while it is not
+/// focused), as the gpui showcase's `support::next_value`; `None` without an installed 0.8.0
+/// theme.
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "the page groups call it as they move to the 0.8.0 model"
+    )
+)]
+pub(crate) fn next_value<T>(
+    ui: &egui::Ui,
+    build: impl FnOnce(&native_theme::next::ResolvedTheme) -> T,
+) -> Option<T> {
+    let atlas = crate::app::OldAtlas::from_ctx(ui.ctx())?;
+    atlas.next_shown(ui.ctx()).map(build)
+}
+
+/// One of the four layout metrics of the installed 0.8.0 theme (`layout.widget_gap`,
+/// `container_margin`, `window_margin` or `section_gap`), as `build` reads it from the theme's
+/// layout: `None` where the theme states none, and without an installed 0.8.0 theme, as the
+/// gpui showcase's `support::next_metric`.
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "the page groups call it as they move to the 0.8.0 model"
+    )
+)]
+pub(crate) fn next_metric(
+    ui: &egui::Ui,
+    build: fn(&native_theme::next::LayoutMetrics) -> Option<f32>,
+) -> Option<f32> {
+    next_value(ui, |r| build(&r.layout)).flatten()
+}
+
+/// [`unstated_as`] on the 0.8.0 model: the sides of `padding` (`next::padding_of`, top, right,
+/// bottom, left) with each unstated one `fallback`.
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "the page groups call it as they move to the 0.8.0 model"
+    )
+)]
+pub(crate) fn next_unstated_as(
+    padding: [Option<f32>; 4],
+    fallback: f32,
+) -> native_theme::theme::ResolvedPadding {
+    let [top, right, bottom, left] = padding.map(|side| Some(side.unwrap_or(fallback)));
+    native_theme::theme::ResolvedPadding {
+        top,
+        right,
+        bottom,
+        left,
+    }
+}
+
+/// [`role_text`] on the 0.8.0 model: text in the installed 0.8.0 theme's text role `role`, its
+/// size and line height through `next::text_role_font` and `next::text_role_line_height`, which
+/// the theme's resolve has scaled already, its weight through [`weighted_family`], in the text
+/// colour; without an installed 0.8.0 theme, egui's `Body` text.
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "the page groups call it as they move to the 0.8.0 model"
+    )
+)]
+pub(crate) fn next_role_text(
+    ui: &egui::Ui,
+    role: native_theme_egui::TextRole,
+    text: impl Into<String>,
+) -> egui::RichText {
+    use native_theme_egui::next;
+    let colour = ui.visuals().text_color();
+    let text = egui::RichText::new(text).color(colour);
+    let Some((size, line_height, weight, body_weight)) = next_value(ui, |r| {
+        (
+            next::text_role_font(r, role).size,
+            next::text_role_line_height(r, role),
+            next::text_role_weight(r, role),
+            next::font_weight(r),
+        )
+    }) else {
         return text;
     };
-    text.line_height(Some(size * t.defaults.line_height))
+    let family = match body_weight {
+        Ok(body_weight) => weighted_family(ui, weight, body_weight),
+        Err(_) => egui::FontFamily::Proportional,
+    };
+    text.font(egui::FontId::new(size, family))
+        .line_height(Some(line_height))
 }
 
 /// Text in one of the theme's text-scale roles (`text_scale.*`): its size and line height
@@ -1581,12 +1700,10 @@ pub(crate) fn role_text(
     text: impl Into<String>,
 ) -> egui::RichText {
     let colour = ui.visuals().text_color();
-    let Some(atlas) = ThemeAtlas::from_ctx(ui.ctx()) else {
+    let Some(atlas) = crate::app::OldAtlas::from_ctx(ui.ctx()) else {
         return egui::RichText::new(text).color(colour);
     };
-    let Some(t) = atlas.resolved_for(ui.ctx().theme()) else {
-        return egui::RichText::new(text).color(colour);
-    };
+    let t = atlas.old_resolved(ui.ctx().theme());
     let prefs = atlas.accessibility();
     let size = native_theme_egui::text_role_font(t, role, prefs).size;
     let weight = native_theme_egui::text_role_weight(t, role);

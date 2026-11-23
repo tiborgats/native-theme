@@ -1472,7 +1472,14 @@ fn icons(
                     continue;
                 };
                 wrap_before(ui, id);
-                let icon = demo::base(reg, ui, "Image · icon", |ui| ui.add(image));
+                // Drawn in the base style it is recorded with: the row's own height above is
+                // the row's alone, not the icon's.
+                let icon = ui
+                    .scope(|ui| {
+                        *ui.style_mut() = ui.ctx().global_style().as_ref().clone();
+                        demo::base(reg, ui, "Image · icon", |ui| ui.add(image))
+                    })
+                    .inner;
                 reg.tag(id, &icon);
                 remember_width(ui, id, icon.rect);
             }
