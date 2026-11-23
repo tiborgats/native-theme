@@ -3310,11 +3310,9 @@ const BASIC_FILLS: [(&str, &str, PartOf); 5] = [
 #[cfg(feature = "widgets")]
 #[gpui::test]
 fn the_basic_controls_paint_the_themes_colours(cx: &mut TestAppContext) {
-    use native_theme::color::Rgba;
     use native_theme::next::{
         CheckboxRule, Color, Paint, PartPatch, SliderRule, SwitchRule, ThemePatch, WidgetState,
     };
-    use native_theme_gpui::ResolvedTheme;
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     let sentinels = [0x12, 0x24, 0x36, 0x48, 0x5a].map(|g| Color::from_srgb8(0x81, g, 0x3c, 0xff));
     let [box_on, box_off, track_on, track_off, rail] = sentinels;
@@ -3364,11 +3362,6 @@ fn the_basic_controls_paint_the_themes_colours(cx: &mut TestAppContext) {
     for preset in ["kde-breeze", "material-3"] {
         use_preset(&mut cx, &showcase, preset);
         show(&mut cx, &showcase, Page::Basic);
-        let expect = |cx: &mut VisualTestContext, pick: fn(&ResolvedTheme) -> Rgba| {
-            read(cx, &showcase, |_, cx| {
-                native_color(cx, |n| pick(n.resolved))
-            })
-        };
         for (control, home, part) in BASIC_FILLS {
             let want = read(&mut cx, &showcase, |_, cx| {
                 crate::support::next_resolved(cx)
@@ -3381,13 +3374,16 @@ fn the_basic_controls_paint_the_themes_colours(cx: &mut TestAppContext) {
                 "{preset}: {control} is not painted in {home}"
             );
         }
-        // The progress bar's Look still reads the 0.7.2 theme.
-        let want = expect(&mut cx, |r: &ResolvedTheme| r.progress_bar.track_color)
-            .filter(|c| !c.is_transparent());
+        let want = read(&mut cx, &showcase, |_, cx| {
+            crate::support::next_resolved(cx).and_then(|r| {
+                native_theme_gpui::next::fill_of(&r.progress_bar.track(WidgetState::NONE))
+            })
+        })
+        .filter(|c| !c.is_transparent());
         assert_eq!(
             painted_fill(&mut cx, "basic-progress"),
             want,
-            "{preset}: basic-progress is not painted in progress_bar.track_color"
+            "{preset}: basic-progress is not painted in progress_bar.track(NONE).fill"
         );
     }
 }
@@ -3489,7 +3485,7 @@ fn a_link_is_underlined_at_rest_only_where_the_theme_says(cx: &mut TestAppContex
 }
 
 /// The Empty state's info prints the size its icon is drawn at (M9-058):
-/// the installed theme's `defaults.icon_sizes.large` where a native theme is
+/// the installed theme's `icons.sizes.large` where a native theme is
 /// installed (kde-breeze), and upstream's size where none is, in place of
 /// the literals "32px, or 48px on KDE".
 #[gpui::test]
@@ -3498,16 +3494,15 @@ fn the_empty_states_info_prints_its_icons_size(cx: &mut TestAppContext) {
     use_preset(&mut cx, &showcase, "kde-breeze");
     choose_icon_theme(&mut cx, &showcase, "gpui-component built-in (Lucide)");
     show(&mut cx, &showcase, Page::Feedback);
-    let large = resolved_theme(&mut cx, &showcase).defaults.icon_sizes.large;
+    let large = next_theme(&mut cx, &showcase).and_then(|r| r.icons.sizes.large);
+    assert!(large.is_some(), "kde-breeze states no icons.sizes.large");
+    let Some(large) = large else { return };
     let line = |info: &Option<WidgetInfo>| {
         info.as_ref()
             .and_then(|info| note_of(&info.config, "icon size").map(str::to_string))
     };
     let info = settle_on(&mut cx, &showcase, "feedback-empty");
-    let want = format!(
-        "defaults.icon_sizes.large, {}px",
-        crate::info::px_text(large)
-    );
+    let want = format!("icons.sizes.large, {}px", crate::info::px_text(large));
     assert!(
         line(&info).is_some_and(|text| text.starts_with(&want)),
         "under kde-breeze the Empty state's icon size line does not print {want:?}: {info:?}"
@@ -6241,15 +6236,9 @@ fn the_basic_controls_take_the_themes_sizes(cx: &mut TestAppContext) {
     for preset in ["kde-breeze", "material-3"] {
         use_preset(&mut cx, &showcase, preset);
         show(&mut cx, &showcase, Page::Basic);
-        let r = read(&mut cx, &showcase, |_, cx| {
-            crate::support::old_resolved(cx).cloned()
-        });
         let next = next_theme(&mut cx, &showcase);
-        assert!(
-            r.is_some() && next.is_some(),
-            "{preset}: no native theme is installed"
-        );
-        let (Some(r), Some(next)) = (r, next) else {
+        assert!(next.is_some(), "{preset}: no native theme is installed");
+        let Some(next) = next else {
             return;
         };
         let rest = native_theme::next::WidgetState::NONE;
@@ -6294,14 +6283,14 @@ fn the_basic_controls_take_the_themes_sizes(cx: &mut TestAppContext) {
         );
         let bar = size(&mut cx, "native-progress");
         assert_eq!(
-            bar.height,
-            px(r.progress_bar.track_height),
-            "{preset}: progress_bar.track_height"
+            Some(bar.height),
+            next.progress_bar.track(rest).min_size[1].map(px),
+            "{preset}: progress_bar.track(NONE).min_size[1]"
         );
         let spinner = size(&mut cx, "native-spinner");
         assert_eq!(
             spinner.width,
-            px(r.spinner.diameter.max(r.spinner.min_diameter)),
+            px(next.spinner.diameter.max(next.spinner.min_diameter)),
             "{preset}: spinner.diameter"
         );
     }
@@ -6309,7 +6298,7 @@ fn the_basic_controls_take_the_themes_sizes(cx: &mut TestAppContext) {
 
 /// Under a native theme the Feedback page's Small, Medium and Large Spinners
 /// are all the connector's theme-drawn widget, one look at three sizes:
-/// `SpinnerLook::of_size`'s diameters, which strictly increase.
+/// `SpinnerLook::next_of_size`'s diameters, which strictly increase.
 #[cfg(feature = "widgets")]
 #[gpui::test]
 fn the_feedback_spinners_are_the_platforms_at_three_sizes(cx: &mut TestAppContext) {
@@ -6319,9 +6308,7 @@ fn the_feedback_spinners_are_the_platforms_at_three_sizes(cx: &mut TestAppContex
     for preset in ["kde-breeze", "material-3"] {
         use_preset(&mut cx, &showcase, preset);
         show(&mut cx, &showcase, Page::Feedback);
-        let r = read(&mut cx, &showcase, |_, cx| {
-            crate::support::old_resolved(cx).cloned()
-        });
+        let r = next_theme(&mut cx, &showcase);
         assert!(r.is_some(), "{preset}: no native theme is installed");
         let Some(r) = r else { return };
         let mut widths = Vec::new();
@@ -6331,11 +6318,11 @@ fn the_feedback_spinners_are_the_platforms_at_three_sizes(cx: &mut TestAppContex
             ("feedback-spinner-large", SpinnerKind::Large),
         ] {
             let width = bounds_of(&mut cx, id).size.width;
-            let look = SpinnerLook::of_size(&r, kind.size());
+            let look = SpinnerLook::next_of_size(&r, kind.size());
             assert_eq!(
                 Some(width),
-                look.map(|look| look.diameter),
-                "{preset}: {id} is not SpinnerLook::of_size's diameter"
+                look.ok().map(|look| look.diameter),
+                "{preset}: {id} is not SpinnerLook::next_of_size's diameter"
             );
             let info = settle_on(&mut cx, &showcase, id);
             assert!(
@@ -6350,6 +6337,74 @@ fn the_feedback_spinners_are_the_platforms_at_three_sizes(cx: &mut TestAppContex
             "{preset}: the spinners' widths do not increase: {widths:?}"
         );
     }
+}
+
+/// A theme-drawn Spinner's info claims the colours the widget draws at the
+/// homes it reads -- the arc and a monochrome bundled set's indicator in
+/// `spinner.color`, a turned icon theme's indicator in
+/// `colors.window.foreground` -- over every bundled preset in both modes;
+/// and where the theme states no value gpui can take at a home the widget
+/// reads, which no bundled preset does, the info names gpui-component's own
+/// Spinner, that home and upstream's colour.
+#[cfg(feature = "widgets")]
+#[test]
+fn a_theme_drawn_spinner_claims_the_homes_it_draws_from() {
+    use crate::demo::{SpinnerIcons, SpinnerKind};
+    use crate::info::feedback::{native_spinner, spinner_by_upstream};
+    use crate::info::next_stated;
+    use native_theme::theme::IconSet;
+    let arc = SpinnerIcons::default();
+    let tinted = SpinnerIcons {
+        set: Some(IconSet::Material),
+        indicator: true,
+        ..SpinnerIcons::default()
+    };
+    let turned = SpinnerIcons {
+        set: Some(IconSet::Freedesktop),
+        indicator: true,
+        spins: true,
+        ..SpinnerIcons::default()
+    };
+    for (name, r, t) in every_next_variant() {
+        let colour = next_stated(r.spinner.color);
+        let info = native_spinner(&r, &t, SpinnerKind::Medium, false, &arc);
+        assert_eq!(
+            claim_as(&info, "arc"),
+            Some(("spinner.color", colour)),
+            "{name}: {info:?}"
+        );
+        let info = native_spinner(&r, &t, SpinnerKind::Small, false, &tinted);
+        assert_eq!(
+            claim_as(&info, "indicator"),
+            Some(("spinner.color", colour)),
+            "{name}: {info:?}"
+        );
+        let info = native_spinner(&r, &t, SpinnerKind::Large, false, &turned);
+        assert_eq!(
+            claim_as(&info, "indicator"),
+            r.colors
+                .window
+                .foreground
+                .map(|c| ("colors.window.foreground", next_stated(c))),
+            "{name}: {info:?}"
+        );
+    }
+    let t = Theme::default();
+    let home = "colors.window.foreground";
+    let upstream = spinner_by_upstream(&t, SpinnerKind::Medium, false, home);
+    assert!(
+        note_of(&upstream.config, "drawn by").is_some_and(|text| {
+            text.starts_with("gpui-component's own Spinner")
+                && text.contains(home)
+                && text.contains("Spinner::render")
+        }),
+        "{upstream:?}"
+    );
+    assert_eq!(
+        claim_as(&upstream, "icon, inherited foreground"),
+        Some(("foreground", t.foreground)),
+        "{upstream:?}"
+    );
 }
 
 /// The Basic List shows three of its eight rows: its box is three rows and
@@ -20624,45 +20679,73 @@ fn the_app_menus_claim_a_menu_edge_only_where_one_is_drawn() {
 }
 
 /// A theme-drawn ProgressBar claims its frame only where it draws one
-/// (M9-057): `progress_bar.border.color` where `progress_bar.border.line_width`
-/// is above 0, none where it is 0 (adwaita, windows-11, material-3), and
-/// its frame line names no question only the archived spec holds -- over
-/// every bundled preset in both modes.
+/// (M9-057): `progress_bar.track(NONE).stroke.color` where the stroke
+/// `ProgressBarLook::next_of` reads is above 0 wide, none where it is none or
+/// 0 wide, and its frame line names no question only the archived spec
+/// holds -- over every bundled preset in both modes; and where the theme
+/// states no value gpui can take at a home the look reads, which no bundled
+/// preset does, the info names gpui-component's own Progress and that home.
 #[cfg(feature = "widgets")]
 #[test]
 fn a_theme_drawn_progress_bar_claims_a_frame_only_where_one_is_drawn() {
-    use crate::info::stated;
+    use native_theme_gpui::widgets::ProgressBarLook;
     let mut branches = (false, false);
-    for (name, r, _) in every_bundled_variant() {
-        let p = &r.progress_bar;
-        let info = crate::info::feedback::native_progress(&r, "Progress", Some(40.), false);
+    for (name, r, t) in every_next_variant() {
+        let look = ProgressBarLook::next_of(&r);
+        assert!(
+            look.is_ok(),
+            "{name}: the progress bar's look does not map: {look:?}"
+        );
+        let Ok(look) = look else { continue };
+        let info = crate::info::feedback::native_progress(&r, &t, "Progress", Some(40.), false);
         let line = note_of(&info.config, "frame");
         assert!(
             info.to_text().find("OPEN O4").is_none(),
             "{name}: the ProgressBar's info cites OPEN O4, which no open entry holds: {info:?}"
         );
-        if p.border.line_width > 0.0 {
+        assert_eq!(
+            claim_as(&info, "fill"),
+            Some(("progress_bar.fill(NONE).fill", look.fill)),
+            "{name}: the ProgressBar's info does not claim its fill: {info:?}"
+        );
+        if f32::from(look.border_width) > 0.0 {
             branches.0 = true;
             assert_eq!(
                 claim_as(&info, "frame"),
-                Some(("border", stated(p.border.color))),
-                "{name}: the ProgressBar's info does not claim the progress_bar.border.color it is framed in: {info:?}"
+                Some(("progress_bar.track(NONE).stroke.color", look.border)),
+                "{name}: the ProgressBar's info does not claim the stroke it is framed in: {info:?}"
             );
         } else {
             branches.1 = true;
             assert_eq!(
                 claim_as(&info, "frame"),
                 None,
-                "{name}: the ProgressBar's info claims a frame progress_bar.border.line_width 0 does not draw: {info:?}"
+                "{name}: the ProgressBar's info claims a frame a stroke 0 wide does not draw: {info:?}"
             );
             assert!(
-                line.is_some_and(
-                    |text| text.starts_with("none: progress_bar.border.line_width is 0")
-                ),
+                line.is_some_and(|text| text
+                    .starts_with("none: progress_bar.track(NONE).stroke is none or 0 wide")),
                 "{name}: the ProgressBar's frame line does not say none is drawn: {line:?}"
             );
         }
     }
+    let t = Theme::default();
+    let home = "progress_bar.track(NONE).min_size[1]";
+    let upstream = crate::info::feedback::progress_by_upstream(&t, home, "Progress", None, false);
+    assert!(
+        note_of(&upstream.config, "drawn by").is_some_and(|text| {
+            text.starts_with("gpui-component's own Progress")
+                && text.contains(home)
+                && text.contains("ProgressBar::fallback")
+        }),
+        "{upstream:?}"
+    );
+    assert_eq!(upstream.variant.as_deref(), Some("loading"), "{upstream:?}");
+    assert_eq!(
+        claim_as(&upstream, "bar"),
+        Some(("progress_bar", t.progress_bar)),
+        "{upstream:?}"
+    );
     assert_eq!(
         branches,
         (true, true),

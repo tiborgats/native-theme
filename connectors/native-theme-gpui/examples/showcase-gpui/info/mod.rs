@@ -298,10 +298,6 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
         "list.item_font and defaults.line_height as the line height on the table root (table/table.rs, Table::render: text_sm then refine_style)",
     ),
     (
-        "progress",
-        "progress_bar.track_height, border.corner_radius, min_width",
-    ),
-    (
         "group_box_content",
         "the card.border.padding sides the theme states, corner_radius, line_width, color, and card.background_color -- refined last, so the radius, the edge and the fill drawn are the card's, not upstream's radius or the Fill variant's group_box token (group_box.rs, GroupBox)",
     ),
@@ -337,7 +333,6 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
         "toolbar",
         "toolbar.bar_height as the minimum height where the theme states one, item_gap where it states one, the border.padding sides the theme states, background_color, the bottom edge, border.color at border.line_width, toolbar.font's family, size, weight and style, and its colour -- upstream's Toolbar sets no colour (gpui-component/toolbar.rs, RenderOnce for Toolbar) --, and defaults.line_height as the line height",
     ),
-    ("spinner_size", "spinner.diameter"),
     (
         "data_table_size",
         "list.row_height as Size::Size, which table_row_height returns verbatim, or upstream's Medium 32px where the theme states none (sizing.rs, table_row_height); a Size::Size cell sets no text size and inherits the container's, which geometry::table gives list.item_font, where a Medium cell is text_sm (sizing.rs, table_cell_size); above a text scale of 1 at least list.item_font's scaled line box at defaults.line_height, upstream's own cell padding (sizing.rs, table_cell_padding) and the row's 1px bottom border, which upstream draws inside the row (table/state.rs, border_b_1), so the row holds its text",
@@ -459,6 +454,20 @@ pub const NEXT_GEOMETRY_NOTES: &[(&str, &str)] = &[
     (
         "dialog_max_width",
         "dialog.panel.max_size[0], which caps the width: a Dialog's through Dialog::max_w (dialog/dialog.rs, Dialog::max_w), and an AlertDialog's, which has no max_w of its own, through Styled::max_w, landing on the surface with the rest of the refinement (dialog/alert_dialog.rs, AlertDialog; dialog/dialog.rs, Dialog::render); nothing where the theme states none",
+    ),
+    (
+        "progress",
+        "progress_bar.track(NONE).min_size[1] as the height, its corners' radius, and min_size[0] as the least width",
+    ),
+    ("spinner_size", "spinner.diameter"),
+    ("icon_size_large", "icons.sizes.large"),
+    (
+        "tooltip",
+        "the padding sides tooltip.panel states, its corner radius, tooltip.text's font — including its colour, which upstream would otherwise paint with popover_foreground —, typography.line_height_multiplier as the line height (upstream sets none, so wrapped text was spaced by gpui's phi), tooltip.panel.fill and tooltip.panel.stroke.color, which upstream would otherwise paint with the popover's fill and the window's border, the edge tooltip.panel.stroke.width wide in place of upstream's border_1, and shadow_md's two layers in colors.shadow where tooltip.panel states no shadows, no shadow where it states none, in place of upstream's shadow_md (gpui-component/tooltip.rs, Tooltip::render: bg, text_color, border_1, border_color and shadow_md, then refine_style)",
+    ),
+    (
+        "tooltip_content",
+        "tooltip.panel.max_size[0] less the bubble's left and right padding -- the theme's where stated, upstream's px_2 (0.5 rem at typography.body.size_px) where not (gpui-component/tooltip.rs, Tooltip::render) -- and its edge, tooltip.panel.stroke.width on each side, which geometry::tooltip draws in place of upstream's border_1 (gpui-component/tooltip.rs, Tooltip::render), as the max width of the element passed to Tooltip::element, which the text wraps at",
     ),
     (
         "input",
@@ -594,8 +603,8 @@ pub fn stated(color: native_theme::color::Rgba) -> Hsla {
 /// A colour of the installed 0.8.0 theme as gpui paints it, each channel
 /// clamped to [0, 1] as the connector converts one (native-theme-gpui
 /// colors.rs, `channels_to_hsla`): the value of a claim on a global colour
-/// (`colors.focus_ring`) that a theme-drawn widget paints.
-#[cfg(feature = "widgets")]
+/// (`colors.focus_ring`) that a theme-drawn widget paints, or that the
+/// showcase hands a widget itself (`separator.color`).
 pub fn next_stated(color: native_theme::next::Color) -> Hsla {
     Hsla::from(gpui::Rgba {
         r: color.r.clamp(0., 1.),

@@ -1930,37 +1930,37 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "progress_bar.border.color",
-        "gpui: the track's edge (ProgressBarLook)",
+        "gpui: progress_bar.track(NONE).stroke.color, the track's edge (ProgressBarLook::next_of)",
     ),
     (
         "",
         "progress_bar.border.corner_radius_px",
-        "gpui: the track's and the fill's corner radius (ProgressBarLook)",
+        "gpui: progress_bar.track(NONE).corners, the track's and the fill's corner radius (ProgressBarLook::next_of)",
     ),
     (
         "",
         "progress_bar.border.line_width_px",
-        "gpui: the track's border width (ProgressBarLook)",
+        "gpui: progress_bar.track(NONE).stroke.width, the track's border width (ProgressBarLook::next_of)",
     ),
     (
         "",
         "progress_bar.fill_color",
-        "gpui: widgets::ProgressBar's fill (ProgressBarLook)",
+        "gpui: progress_bar.fill(NONE).fill, widgets::ProgressBar's fill (ProgressBarLook::next_of)",
     ),
     (
         "",
         "progress_bar.min_width_px",
-        "gpui: the bar's min_w (widgets::ProgressBar)",
+        "gpui: progress_bar.track(NONE).min_size[0], the bar's min_w (ProgressBarLook::next_of)",
     ),
     (
         "",
         "progress_bar.track_color",
-        "gpui: the track's fill (ProgressBarLook)",
+        "gpui: progress_bar.track(NONE).fill, the track's fill (ProgressBarLook::next_of)",
     ),
     (
         "",
         "progress_bar.track_height_px",
-        "gpui: the bar's height (widgets::ProgressBar)",
+        "gpui: progress_bar.track(NONE).min_size[1], the bar's height (ProgressBarLook::next_of)",
     ),
     // --- scrollbar: gpui-base's, through base_layer -----------------------------
     (
@@ -2211,22 +2211,22 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "spinner.diameter_px",
-        "gpui: the indicator's size at Medium, and the anchor of the other sizes, gpui-component's own ratios to it (SpinnerLook::of_size)",
+        "gpui: spinner.diameter, the indicator's size at Medium, and the anchor of the other sizes, gpui-component's own ratios to it (SpinnerLook::next_of_size)",
     ),
     (
         "",
         "spinner.fill_color",
-        "gpui: the arc, and a monochrome set's indicator tint (SpinnerLook)",
+        "gpui: spinner.color, the arc, and a monochrome set's indicator tint (SpinnerLook::next_of_size, widgets::Spinner)",
     ),
     (
         "",
         "spinner.min_diameter_px",
-        "gpui: the floor under the indicator's size, at every Size (SpinnerLook::of_size)",
+        "gpui: spinner.min_diameter, the floor under the indicator's size, at every Size (SpinnerLook::next_of_size)",
     ),
     (
         "",
         "spinner.stroke_width_px",
-        "gpui: the arc's stroke, for a set with no indicator (SpinnerLook)",
+        "gpui: spinner.stroke_width, the arc's stroke, for a set with no indicator (SpinnerLook::next_of_size)",
     ),
     // --- splitter: demo::resize_handles --------------------------------------------
     (

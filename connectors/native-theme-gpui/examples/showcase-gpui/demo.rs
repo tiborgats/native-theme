@@ -1751,6 +1751,13 @@ pub(crate) fn tooltip_delay(cx: &App) -> Option<Duration> {
     native_value(cx, |n| native_theme_gpui::tooltip_show_delay(n.resolved)).flatten()
 }
 
+/// [`tooltip_delay`] on the 0.8.0 model: the installed theme's
+/// `timings.tooltip_show_ms`, `None` where it states none or before
+/// `next::apply` ran.
+pub(crate) fn next_tooltip_delay(cx: &App) -> Option<Duration> {
+    next_value(cx, next::tooltip_show_delay).flatten()
+}
+
 /// A tooltip reading `text` and the key binding of `action`, built by the
 /// application and refined by `geometry::tooltip`, for the element that
 /// wraps a chrome Button; and whether a native theme refined it.
@@ -6677,8 +6684,8 @@ pub(crate) fn severity_alert(
 }
 
 /// A `Progress` bar at `value` percent, or loading (indeterminate) where
-/// `value` is `None`, refined by `geometry::progress`; `label` names it in
-/// its info, as the page's label beside it does.
+/// `value` is `None`, refined by `next::geometry::progress`; `label` names
+/// it in its info, as the page's label beside it does.
 pub(crate) fn progress(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -6687,7 +6694,7 @@ pub(crate) fn progress(
     value: Option<f32>,
 ) -> Stateful<Div> {
     #[cfg(feature = "widgets")]
-    if let Some(r) = old_resolved(cx) {
+    if let Some(r) = next_resolved(cx) {
         return widgets::ProgressBar::new(id)
             .value(value.unwrap_or_default())
             .loading(value.is_none())
@@ -6698,17 +6705,17 @@ pub(crate) fn progress(
             .info(
                 ui,
                 id,
-                info::feedback::native_progress(r, label, value, cx.reduce_motion()),
+                info::feedback::native_progress(r, cx.theme(), label, value, cx.reduce_motion()),
             )
             .debug_selector(move || id.into());
     }
     let mut bar_info = info::feedback::progress(cx.theme(), label, value, cx.reduce_motion());
-    native_info(
+    next_native_info(
         Progress::new(id)
             .value(value.unwrap_or_default())
             .loading(value.is_none()),
         cx,
-        geometry::progress,
+        next::geometry::progress,
         "progress",
         &mut bar_info,
     )
@@ -6746,20 +6753,22 @@ pub(crate) fn progress_circle(
     kind: CircleKind,
 ) -> Stateful<Div> {
     let circle = ProgressCircle::new(id);
-    let spinner_size = native_value(cx, geometry::spinner_size);
-    let (circle, styled) = match kind {
-        CircleKind::Value => (circle.value(73.0), false),
-        CircleKind::ValueLarge => (circle.value(100.0).with_size(Size::Large), false),
-        CircleKind::Indeterminate => match spinner_size {
-            Some(size) => (circle.loading(true).with_size(size), true),
-            None => (circle.loading(true), false),
+    let spinner_size = next_value(cx, next::geometry::spinner_size);
+    let styled = kind == CircleKind::Indeterminate && matches!(spinner_size, Some(Ok(_)));
+    let mut circle_info =
+        info::feedback::progress_circle(cx.theme(), kind, styled, cx.reduce_motion());
+    let circle = match kind {
+        CircleKind::Value => circle.value(73.0),
+        CircleKind::ValueLarge => circle.value(100.0).with_size(Size::Large),
+        CircleKind::Indeterminate => match info::next_native_value(
+            cx,
+            next::geometry::spinner_size,
+            "spinner_size",
+            &mut circle_info,
+        ) {
+            Some(size) => circle.loading(true).with_size(size),
+            None => circle.loading(true),
         },
-    };
-    let circle_info = info::feedback::progress_circle(cx.theme(), kind, styled, cx.reduce_motion());
-    let circle_info = if styled {
-        circle_info.geometry("spinner_size")
-    } else {
-        circle_info
     };
     circle
         .info(ui, id, circle_info)
@@ -6819,9 +6828,9 @@ pub(crate) fn spinner(
 ) -> Stateful<Div> {
     // The theme states one spinner, `spinner.*`: every size is drawn from
     // it, Medium at its diameter and Small and Large at gpui-component's own
-    // ratios to that (`widgets::SpinnerLook::of_size`).
+    // ratios to that (`widgets::SpinnerLook::next_of_size`).
     #[cfg(feature = "widgets")]
-    if let Some(r) = old_resolved(cx) {
+    if let Some(r) = next_resolved(cx) {
         return widgets::Spinner::new(id)
             .with_size(kind.size())
             .icon_set(icons.set)
@@ -6829,33 +6838,32 @@ pub(crate) fn spinner(
             .info(
                 ui,
                 id,
-                info::feedback::native_spinner(r, kind, cx.reduce_motion(), icons),
+                info::feedback::native_spinner(r, cx.theme(), kind, cx.reduce_motion(), icons),
             )
             .debug_selector(move || id.into());
     }
     #[cfg(not(feature = "widgets"))]
     let _ = icons;
-    let (size, styled) = match kind {
-        SpinnerKind::Small | SpinnerKind::Large => (kind.size(), false),
-        SpinnerKind::Medium => match native_value(cx, geometry::spinner_size) {
-            Some(size) => (size, true),
-            None => (kind.size(), false),
-        },
-    };
-    let native = old_native(cx);
-    let spinner_info = info::feedback::spinner(
+    let styled = kind == SpinnerKind::Medium
+        && matches!(next_value(cx, next::geometry::spinner_size), Some(Ok(_)));
+    let mut spinner_info = info::feedback::spinner(
         cx.theme(),
         kind,
         styled,
         cx.reduce_motion(),
-        native.as_ref().map(|n| n.resolved),
+        next_resolved(cx),
     );
-    let spinner_info = if styled {
-        spinner_info.geometry("spinner_size")
-    } else {
-        spinner_info
+    let size = match kind {
+        SpinnerKind::Small | SpinnerKind::Large => kind.size(),
+        SpinnerKind::Medium => info::next_native_value(
+            cx,
+            next::geometry::spinner_size,
+            "spinner_size",
+            &mut spinner_info,
+        )
+        .unwrap_or(kind.size()),
     };
-    let fill = native_color(cx, |n| n.resolved.spinner.fill_color);
+    let fill = next_value(cx, |r| info::next_stated(r.spinner.color));
     Spinner::new()
         .with_size(size)
         .when_some(fill, |spinner, fill| spinner.color(fill))
@@ -6962,13 +6970,16 @@ pub(crate) fn empty(
 ) -> Stateful<Div> {
     // The size `icon.sized` draws the icon at where a native theme is
     // installed.
-    let large = native_value(cx, geometry::icon_size_large);
-    let empty_info = info::feedback::empty(cx.theme(), title, description, icon, large);
-    let empty_info = if icon.shown() && large.is_some() {
-        empty_info.geometry("icon_size_large")
-    } else {
-        empty_info
-    };
+    let large = next_value(cx, next::geometry::icon_size_large).and_then(Result::ok);
+    let mut empty_info = info::feedback::empty(cx.theme(), title, description, icon, large);
+    if icon.shown() {
+        let _ = info::next_native_value(
+            cx,
+            next::geometry::icon_size_large,
+            "icon_size_large",
+            &mut empty_info,
+        );
+    }
     Empty::new()
         .header(
             EmptyHeader::new()
@@ -6977,7 +6988,7 @@ pub(crate) fn empty(
                         .with_variant(EmptyMediaVariant::Icon)
                         // An empty state's icon is the large one; `EmptyMedia`
                         // takes it as a plain child, so the size survives.
-                        .children(icon.glyph_sized(cx, geometry::icon_size_large)),
+                        .children(icon.next_glyph_sized(cx, next::geometry::icon_size_large)),
                 )
                 .title(EmptyTitle::new().child(title))
                 .description(EmptyDescription::new().child(description)),
@@ -7063,10 +7074,10 @@ pub(crate) fn badge(
     let target = labelled(
         ui,
         cx,
-        native_info(
+        next_native_info(
             Button::new(id),
             cx,
-            geometry::button,
+            next::geometry::button,
             "button",
             &mut badge_info,
         ),
@@ -7134,11 +7145,14 @@ pub(crate) fn marker(
         info::feedback::marker(cx.theme(), kind, text, cx.reduce_motion(), plain_icon);
     let marker = Marker::new();
     let marker = match kind {
-        MarkerKind::Plain => match icon.glyph_sized(cx, geometry::icon_size_small) {
+        MarkerKind::Plain => match icon.next_glyph_sized(cx, next::geometry::icon_size_small) {
             Some(drawn) => {
-                if native_value(cx, geometry::icon_size_small).is_some() {
-                    marker_info = marker_info.geometry("icon_size_small");
-                }
+                let _ = info::next_native_value(
+                    cx,
+                    next::geometry::icon_size_small,
+                    "icon_size_small",
+                    &mut marker_info,
+                );
                 marker.icon(MarkerIcon::new().child(drawn))
             }
             None => marker,
@@ -7172,7 +7186,7 @@ pub(crate) fn tooltip_button(
         cx.theme(),
         None,
         false,
-        tooltip_delay(cx),
+        next_tooltip_delay(cx),
         gpui_base::TooltipDefaults::global(cx),
         label,
         &text,
@@ -7180,10 +7194,10 @@ pub(crate) fn tooltip_button(
     let button = labelled(
         ui,
         cx,
-        native_info(
+        next_native_info(
             Button::new(id),
             cx,
-            geometry::button,
+            next::geometry::button,
             "button",
             &mut tooltip_info,
         ),
@@ -7214,32 +7228,32 @@ pub(crate) fn built_tooltip_button(
     kind: ButtonKind,
 ) -> Stateful<Div> {
     let kind = kind.built(cx);
-    let style = native_geometry(cx, geometry::tooltip);
-    let content = native_geometry(cx, geometry::tooltip_content);
-    let delay = tooltip_delay(cx);
+    let styled = matches!(next_geometry(cx, next::geometry::tooltip), Some(Ok(_)));
+    let delay = next_tooltip_delay(cx);
     let mut tooltip_info = info::feedback::tooltip(
         cx.theme(),
         Some(kind),
-        style.is_some(),
+        styled,
         delay,
         gpui_base::TooltipDefaults::global(cx),
         label,
         text,
     );
-    let button = native_info(
+    let button = next_native_info(
         kind.apply(Button::new(id), cx),
         cx,
-        geometry::button,
+        next::geometry::button,
         "button",
         &mut tooltip_info,
     );
     let button = labelled(ui, cx, button, id, label);
-    if style.is_some() {
-        tooltip_info = tooltip_info.geometry("tooltip");
-    }
-    if content.is_some() {
-        tooltip_info = tooltip_info.geometry("tooltip_content");
-    }
+    let style = info::next_native_value(cx, next::geometry::tooltip, "tooltip", &mut tooltip_info);
+    let content = info::next_native_value(
+        cx,
+        next::geometry::tooltip_content,
+        "tooltip_content",
+        &mut tooltip_info,
+    );
     InfoExt::info(button, ui, id, tooltip_info)
         .debug_selector(move || id.into())
         .tooltip(move |window, cx| {
@@ -7269,10 +7283,10 @@ pub(crate) fn notification_button(
     let button = labelled(
         ui,
         cx,
-        native_info(
+        next_native_info(
             Button::new(id),
             cx,
-            geometry::button,
+            next::geometry::button,
             "button",
             &mut button_info,
         ),

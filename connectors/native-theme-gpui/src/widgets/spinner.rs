@@ -600,7 +600,7 @@ impl SpinnerLook {
             Some(Self {
                 diameter: diameter.max(min),
                 stroke: length(s.stroke_width)?,
-                color: crate::next::hsla(s.color),
+                color: crate::next::hsla(r.spinner.color),
             })
         };
         finite(look(), "spinner.diameter")
