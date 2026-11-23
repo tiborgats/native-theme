@@ -5125,33 +5125,35 @@ fn in_state<T: PartialEq>(stated: Option<T>, rest: T, iced: (T, T)) -> T {
 }
 
 /// A flat button in the platform's button state colours, built from the
-/// homes the gpui connector's `variants::ghost_button` takes: no fill and
-/// no frame at rest, its label `button.label(NONE).color`; under the
-/// pointer and pressed the flat button's states ([`flat`], `variant=Flat`,
-/// as the gpui connector's `secondary_hover` and `secondary_active` read
-/// them), `button.body(HOVER;variant=Flat).fill` and
+/// homes the gpui connector's `variants::ghost_button` takes, each the flat
+/// button's ([`flat`], `variant=Flat`, as the gpui connector's
+/// `secondary_hover` and `secondary_active` read them): no fill and no
+/// frame at rest, its label `button.label(NONE;variant=Flat).color`;
+/// `button.body(HOVER;variant=Flat).fill` and
 /// `button.label(HOVER;variant=Flat).color` under the pointer,
 /// `button.body(PRESSED;variant=Flat).fill` and
 /// `button.label(PRESSED;variant=Flat).color` while pressed, and while
-/// `selected`, as a toggle that is on; `button.label(DISABLED).color`
-/// disabled; rounded by `button.body(NONE).corners`. A rule that names no
-/// variant answers the flat button's query too, so where no rule states the
-/// flat button it takes the button's own states. Each property the theme leaves unstated
-/// in a status is iced's own flat button's, `button::text` ([`in_state`]:
-/// iced's value where it changes the property in that status, else the
-/// theme's at rest). The toolbar's buttons take `styles::toolbar_button`.
+/// `selected`, as a toggle that is on;
+/// `button.label(DISABLED;variant=Flat).color` disabled; rounded by
+/// `button.body(NONE;variant=Flat).corners`. A rule that names no variant
+/// answers the flat button's query too, so where no rule states the flat
+/// button it takes the button's own states. Each property the theme leaves
+/// unstated in a status is iced's own flat button's, `button::text`
+/// ([`in_state`]: iced's value where it changes the property in that
+/// status, else the theme's at rest). The toolbar's buttons take
+/// `styles::toolbar_button`.
 fn ghost_button(
     r: &native_theme::next::ResolvedTheme,
     selected: bool,
 ) -> impl Fn(&Theme, button::Status) -> button::Style + use<> {
     let b = &r.button;
-    let label = iced_next::text_color_of(&b.label(WidgetState::NONE));
+    let label = iced_next::text_color_of(&b.label(flat(WidgetState::NONE)));
     let hover = iced_next::state_fill_of(&b.body(flat(WidgetState::HOVER)));
     let hover_label = iced_next::state_text_color_of(&b.label(flat(WidgetState::HOVER)));
     let pressed = iced_next::state_fill_of(&b.body(flat(WidgetState::PRESSED)));
     let pressed_label = iced_next::state_text_color_of(&b.label(flat(WidgetState::PRESSED)));
-    let disabled_label = iced_next::state_text_color_of(&b.label(WidgetState::DISABLED));
-    let radius = iced_next::radius_of(&b.body(WidgetState::NONE));
+    let disabled_label = iced_next::state_text_color_of(&b.label(flat(WidgetState::DISABLED)));
+    let radius = iced_next::radius_of(&b.body(flat(WidgetState::NONE)));
     move |theme, status| {
         let shown = match status {
             button::Status::Disabled => status,
@@ -5184,14 +5186,17 @@ fn ghost_button(
     }
 }
 
-/// The padding of a flat button: the sides `button.body(NONE).padding`
-/// states, iced's own button padding, `button::DEFAULT_PADDING`, on a side
-/// it leaves unstated. No line width is added: a flat button draws no
-/// border at rest, and a toolbar button's hover outline
-/// (`styles::toolbar_button`) is drawn on its bounds, over the padding, so
-/// it moves nothing.
+/// The padding of a flat button: the sides
+/// `button.body(NONE;variant=Flat).padding` states ([`flat`]), iced's own
+/// button padding, `button::DEFAULT_PADDING`, on a side it leaves unstated.
+/// No line width is added: a flat button draws no border at rest, and a
+/// toolbar button's hover outline (`styles::toolbar_button`) is drawn on its
+/// bounds, over the padding, so it moves nothing.
 fn ghost_padding(r: &native_theme::next::ResolvedTheme) -> Padding {
-    stated_sides(&r.button.body(WidgetState::NONE), button::DEFAULT_PADDING)
+    stated_sides(
+        &r.button.body(flat(WidgetState::NONE)),
+        button::DEFAULT_PADDING,
+    )
 }
 
 /// The query of a flat button in `state`: `ButtonQuery::flat`, the
@@ -8555,7 +8560,7 @@ fn element_info_view<'a>(
 
 /// Widget Info's Copy button: flat, `ghost` (a [`ghost_button`]), its label
 /// the side panel's text colour at rest, `sidebar.item_label(NONE).color`,
-/// where the other flat buttons' is `button.label(NONE).color`; `ghost`'s
+/// where the other flat buttons' is `button.label(NONE;variant=Flat).color`; `ghost`'s
 /// own where the theme leaves it unstated.
 fn copy_button(
     ghost: impl Fn(&Theme, button::Status) -> button::Style,
@@ -9291,7 +9296,7 @@ const OS_ICON_COLOURS: &str = "not drawn: an OS icon theme's icon keeps the colo
 #[cfg(test)]
 fn ghost_home(leaf: &str) -> Option<&'static str> {
     Some(match leaf {
-        "button.font.color" => "button.label(NONE).color",
+        "button.font.color" => "button.label(NONE;variant=Flat).color",
         "button.hover_background" => "button.body(HOVER;variant=Flat).fill",
         "button.hover_text_color" => "button.label(HOVER;variant=Flat).color",
         "button.active_background" => "button.body(PRESSED;variant=Flat).fill",
@@ -9315,7 +9320,7 @@ fn ghost_route(
     os_icon: bool,
 ) -> String {
     let b = &r.button;
-    let label = iced_next::text_color_of(&b.label(WidgetState::NONE)).is_some();
+    let label = iced_next::text_color_of(&b.label(flat(WidgetState::NONE))).is_some();
     let hover = iced_next::state_fill_of(&b.body(flat(WidgetState::HOVER))).is_some();
     let hover_label = iced_next::state_text_color_of(&b.label(flat(WidgetState::HOVER))).is_some();
     let pressed = iced_next::state_fill_of(&b.body(flat(WidgetState::PRESSED))).is_some();
@@ -9325,7 +9330,7 @@ fn ghost_route(
         "button.font.color" => match (icon, selected) {
             (true, _) if os_icon => OS_ICON_COLOURS,
             _ if !label => {
-                "not drawn: button.label(NONE).color is unstated, so the label at rest is iced's \
+                "not drawn: button.label(NONE;variant=Flat).color is unstated, so the label at rest is iced's \
                  own flat button's (button::text)"
             }
             (true, true) if pressed_label => {
@@ -9333,11 +9338,11 @@ fn ghost_route(
                  button.label(PRESSED;variant=Flat).color"
             }
             (true, true) => {
-                "icon_colour: the icon's colour while selected, button.label(NONE).color, \
+                "icon_colour: the icon's colour while selected, button.label(NONE;variant=Flat).color, \
                  where button.label(PRESSED;variant=Flat).color is unstated"
             }
             (true, false) => {
-                "icon_colour: the icon's colour, set as the icon loads, button.label(NONE).color"
+                "icon_colour: the icon's colour, set as the icon loads, button.label(NONE;variant=Flat).color"
             }
             (false, true) if pressed_label => {
                 "not drawn: the toggle is selected, and ghost_button gives its label \
@@ -9345,12 +9350,12 @@ fn ghost_route(
             }
             (false, true) => {
                 "ghost_button: the label's text_color while selected, in every status, \
-                 button.label(NONE).color, where button.label(PRESSED;variant=Flat).color is \
+                 button.label(NONE;variant=Flat).color, where button.label(PRESSED;variant=Flat).color is \
                  unstated"
             }
             (false, false) => {
                 "ghost_button: the label's text_color at rest, and pressed where \
-                 button.label(PRESSED;variant=Flat).color is unstated, button.label(NONE).color"
+                 button.label(PRESSED;variant=Flat).color is unstated, button.label(NONE;variant=Flat).color"
             }
         },
         "button.hover_background" => match (selected, hover) {
@@ -10193,7 +10198,7 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
                 .into()
         }
         ("button", "border.corner_radius_px") if ghost => {
-            "ghost_button: button::Style::border.radius, button.body(NONE).corners, iced's own \
+            "ghost_button: button::Style::border.radius, button.body(NONE;variant=Flat).corners, iced's own \
              flat button's (button::text) where unstated"
                 .into()
         }
@@ -10212,12 +10217,12 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
             "Button::padding, the side as stated (none where unstated)".into()
         }
         ("button", f) if side(f).is_some() && tool => {
-            "ghost_padding: Button::padding, the side of button.body(NONE).padding as stated, \
+            "ghost_padding: Button::padding, the side of button.body(NONE;variant=Flat).padding as stated, \
              iced's own where unstated (the outline under the pointer is drawn over it)"
                 .into()
         }
         ("button", f) if side(f).is_some() && ghost => {
-            "ghost_padding: Button::padding, the side of button.body(NONE).padding as stated, \
+            "ghost_padding: Button::padding, the side of button.body(NONE;variant=Flat).padding as stated, \
              iced's own where unstated (a flat button draws no border)"
                 .into()
         }
@@ -11513,7 +11518,7 @@ fn dialog(state: &State, overlay: Overlay) -> Element<'_, Message> {
             size: state.next_shown().icons.sizes.small,
             label: "Close",
             key: None,
-            font: state.next_shown().button.label(WidgetState::NONE),
+            font: state.next_shown().button.label(flat(WidgetState::NONE)),
             padding: Padding::ZERO.left(pad.left).right(pad.right),
             selected: false,
             toolbar: false,
@@ -29193,10 +29198,36 @@ mod tests {
             .collect()
     }
 
+    /// Every state flag of the 0.8.0 model by its name in a theme file
+    /// (`WidgetState`'s serde form, `native-theme/src/next/serial.rs`).
+    const STATE_NAMES: [&str; 19] = [
+        "hover",
+        "pressed",
+        "focused",
+        "focus_within",
+        "focus_visible",
+        "unfocused_view",
+        "disabled",
+        "checked",
+        "selected",
+        "indeterminate",
+        "open",
+        "default",
+        "invalid",
+        "read_only",
+        "visited",
+        "dragged",
+        "drop_target",
+        "scrolled",
+        "hover_within",
+    ];
+
     /// The TOML of a patch that states `colour` at `home`, a colour home of
     /// the 0.8.0 model ([`is_home`]), the property `fill`, `stroke.color`
     /// or, of a text part, `color`: a rule of the home's states appended to
-    /// a ruled widget's (none for `NONE`, which every query matches), of the
+    /// a ruled widget's (for `NONE`, a rule that forbids every state, so it
+    /// answers the query at rest alone and leaves the other states' rules
+    /// as the preset orders them; spec §9, step 3, `not_states`), of the
     /// variant `;variant=<Variant>` after them names (`button.body(HOVER;
     /// variant=Flat).fill` written without the space), a
     /// static widget's part patch, or the colour role. A stroke is stated
@@ -29239,7 +29270,11 @@ mod tests {
                     .map(|state| format!("\"{}\"", state.to_lowercase()))
                     .collect();
                 let states = if names.is_empty() {
-                    String::new()
+                    let every: Vec<String> = STATE_NAMES
+                        .iter()
+                        .map(|name| format!("\"{name}\""))
+                        .collect();
+                    format!("not_states = [{}]\n", every.join(", "))
                 } else {
                     format!("states = [{}]\n", names.join(", "))
                 };
@@ -29516,16 +29551,16 @@ mod tests {
     }
 
     /// [`ghost_padding`] pads a flat button by the sides
-    /// `button.body(NONE).padding` states and by iced's own button padding
-    /// on a side it leaves unstated: on every preset of the 0.8.0 model,
-    /// four sides stated on the theme (3, 5, 7 and 9; a patch states all
-    /// four) pad it so; each side the preset leaves unstated is
-    /// `button::DEFAULT_PADDING`'s.
+    /// `button.body(NONE;variant=Flat).padding` states and by iced's own
+    /// button padding on a side it leaves unstated: on every preset of the
+    /// 0.8.0 model, four sides stated on the theme for the flat button (3,
+    /// 5, 7 and 9; a patch's flat rule states all four) pad it so; each side
+    /// the preset leaves unstated is `button::DEFAULT_PADDING`'s.
     #[test]
     fn a_flat_button_takes_the_stated_sides_of_the_buttons_padding() -> Result<(), String> {
         let patch = native_theme::next::ThemePatch::from_toml(
-            "[[widgets.button.rules]]\nbody.padding = { top = 3.0, right = 5.0, bottom = 7.0, \
-             left = 9.0 }\n",
+            "[[widgets.button.rules]]\nvariant = \"flat\"\nbody.padding = { top = 3.0, right = \
+             5.0, bottom = 7.0, left = 9.0 }\n",
         )
         .map_err(|error| format!("the padding patch: {error:?}"))?;
         let own = button::DEFAULT_PADDING;
@@ -29533,7 +29568,7 @@ mod tests {
         for (label, r) in next_combinations() {
             let shown = ghost_padding(&r);
             let [top, right, bottom, left] =
-                iced_next::padding_of(&r.button.body(WidgetState::NONE));
+                iced_next::padding_of(&r.button.body(flat(WidgetState::NONE)));
             for (side, stated, drawn, iced) in [
                 ("top", top, shown.top, own.top),
                 ("right", right, shown.right, own.right),
@@ -29815,10 +29850,7 @@ mod tests {
             if stated == route {
                 faults.push(format!("stating {home} does not change \"{route}\""));
             }
-        } else if !not_drawn || !home.contains("(NONE)") {
-            // A home at rest is patched by a rule every state's query
-            // matches, which restates the other states too: only a route
-            // that draws it is held to what that patch moves.
+        } else {
             faults.extend(check(r, route, "as shown"));
         }
         faults
@@ -30012,12 +30044,7 @@ mod tests {
                 if route.contains(other) {
                     fault("iced_aw draws the tab in another status");
                 }
-            } else if let Some(home) = tab_home(leaf)
-                // An open tab's rest is patched by a rule every query
-                // matches, which restates the open tab too: only a closed
-                // tab is held to what that patch moves.
-                && !(open && home.contains("(NONE)"))
-            {
+            } else if let Some(home) = tab_home(leaf) {
                 let route_on = |patched: &native_theme::next::ResolvedTheme| {
                     shown_tab_route(id, leaf, open).map_or_else(
                         || tab_route(patched, leaf).unwrap_or_default(),
