@@ -3,11 +3,12 @@
 use native_theme_egui::convert::{composite_over, to_color32, to_corner_radius};
 use native_theme_egui::egui::{self, accesskit};
 use native_theme_egui::native_theme::color::Rgba;
+use native_theme_egui::native_theme::next::{ResolvedTheme as NextResolvedTheme, WidgetState};
 use native_theme_egui::native_theme::theme::ResolvedSwitchTheme;
 use native_theme_egui::{ResolvedTheme, Role, ThemeAtlas, register_focus_shape};
 
 use crate::parts::Parts;
-use crate::scope;
+use crate::{next, scope};
 
 /// A two-state switch: `switch.*`'s track and thumb, the label after it.
 ///
@@ -50,8 +51,14 @@ use crate::scope;
 /// The focus ring surrounds the track (`register_focus_shape`). AccessKit sees a
 /// `Role::Switch`, toggled as the value is.
 ///
-/// With no atlas installed, or a switch size that is not finite, it adds `egui::Checkbox`,
-/// egui's own two-state control.
+/// Under an atlas of the 0.8.0 model each of these is read at its home: `switch.track` and
+/// `switch.thumb` at the switch's state, the label in `switch.label`'s colour where stated, else
+/// the body text's, `switch.label_gap` after the track where stated, else egui's own
+/// `icon_spacing`; a track or thumb stroke stated as none is no outline.
+///
+/// With no atlas installed, a switch size that is not finite, or a 0.8.0 theme that states no
+/// track size, checked thumb size, track or checked thumb fill, or corners egui can draw, it
+/// adds `egui::Checkbox`, egui's own two-state control.
 #[must_use = "You should put this widget in a ui with `ui.add(widget);`"]
 pub struct Switch<'a> {
     on: &'a mut bool,
@@ -95,21 +102,57 @@ impl<'a> Switch<'a> {
 }
 
 /// The track and thumb sizes, every one finite.
-#[derive(Clone, Copy)]
-struct Geometry {
-    track: egui::Vec2,
-    radius: f32,
-    thumb: f32,
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) struct Geometry {
+    pub(crate) track: egui::Vec2,
+    pub(crate) radius: f32,
+    pub(crate) thumb: f32,
     /// The thumb while off: `unchecked_thumb_diameter`, or `thumb`.
-    unchecked_thumb: f32,
+    pub(crate) unchecked_thumb: f32,
     /// `track_border_line_width`; `None` draws no track outline.
-    track_border: Option<f32>,
+    pub(crate) track_border: Option<f32>,
     /// `thumb_border_line_width`; `None` draws no thumb outline.
-    thumb_border: Option<f32>,
+    pub(crate) thumb_border: Option<f32>,
+    /// The space between the track and the label; `None`, egui's own `Spacing::icon_spacing`.
+    pub(crate) label_gap: Option<f32>,
 }
 
 impl Geometry {
-    fn of(sw: &ResolvedSwitchTheme) -> Option<Self> {
+    /// The geometry of a switch of a 0.8.0 theme: the track's minimum size and corners at
+    /// rest, the thumb's minimum width checked and at rest (the checked one where the theme
+    /// states none at rest), the outlines' widths at rest (a stroke stated as none is no
+    /// outline) and `switch.label_gap`; `None` where the theme states no track or checked
+    /// thumb size, or corners egui cannot draw as one radius, which sends the switch to egui's
+    /// own counterpart.
+    pub(crate) fn next_of(r: &NextResolvedTheme) -> Option<Self> {
+        let sw = &r.switch;
+        let track = sw.track(WidgetState::NONE);
+        let rest_thumb = sw.thumb(WidgetState::NONE);
+        let [width, height] = track.min_size;
+        let (width, height) = (scope::length(width?)?, scope::length(height?)?);
+        let [thumb, _] = sw.thumb(WidgetState::CHECKED).min_size;
+        let thumb = scope::length(thumb?)?;
+        let [unchecked_thumb, _] = rest_thumb.min_size;
+        let unchecked_thumb = match unchecked_thumb {
+            Some(d) => scope::length(d)?,
+            None => thumb,
+        };
+        let border = |width: Option<f32>| match width {
+            Some(w) => scope::length(w).map(Some),
+            None => Some(None),
+        };
+        Some(Self {
+            track: egui::vec2(width, height),
+            radius: scope::length(next::radius(&track, width, height)?)?,
+            thumb,
+            unchecked_thumb,
+            track_border: border(next::stroke_width(&track))?,
+            thumb_border: border(next::stroke_width(&rest_thumb))?,
+            label_gap: border(sw.label_gap)?,
+        })
+    }
+
+    pub(crate) fn of(sw: &ResolvedSwitchTheme) -> Option<Self> {
         let thumb = scope::length(sw.thumb_diameter)?;
         let unchecked_thumb = match sw.unchecked_thumb_diameter {
             Some(d) => scope::length(d)?,
@@ -129,6 +172,7 @@ impl Geometry {
             unchecked_thumb,
             track_border: border(sw.track_border_line_width)?,
             thumb_border: border(sw.thumb_border_line_width)?,
+            label_gap: None,
         })
     }
 }
@@ -151,15 +195,83 @@ pub(crate) struct Look {
     pub(crate) disabled_unchecked_track_border_color: Option<Rgba>,
     pub(crate) disabled_checked_track_border_color: Option<Rgba>,
     pub(crate) thumb_border_color: Option<Rgba>,
-    /// `defaults.font.color`: the label.
-    pub(crate) text: Rgba,
-    /// `defaults.disabled_text_color`: a disabled switch's label.
-    pub(crate) disabled_text: Rgba,
-    /// `defaults.background_color`: the colour faded over where no backdrop is given.
-    pub(crate) background: Rgba,
+    /// `defaults.font.color`: the label; `None`, egui's own.
+    pub(crate) text: Option<Rgba>,
+    /// `defaults.disabled_text_color`: a disabled switch's label; `None`, egui's own.
+    pub(crate) disabled_text: Option<Rgba>,
+    /// `defaults.background_color`: the colour faded over where no backdrop is given; `None`,
+    /// egui's own fade of a disabled widget.
+    pub(crate) background: Option<Rgba>,
 }
 
 impl Look {
+    /// The colours of a switch of a 0.8.0 theme, at the homes of the 0.7.2 fields `of` reads:
+    /// `switch.track` and `switch.thumb` at `NONE`, `CHECKED`, `DISABLED` and
+    /// `DISABLED|CHECKED`; a hovered track's fill where a rule for `HOVER` states it (read at
+    /// `HOVER|CHECKED` on a checked switch, as the query with that flag alone says, spec §2,
+    /// `from_state`); the label's colour at `switch.label`, else the body text's
+    /// (`typography.body.color`), a disabled one's at `switch.label(DISABLED)` where a rule
+    /// states it, else `colors.disabled_text`; the window's background as the ground. `None`
+    /// where the theme states no track fill or checked thumb fill, which sends the switch to
+    /// egui's own counterpart.
+    pub(crate) fn next_of(r: &NextResolvedTheme) -> Option<Self> {
+        let sw = &r.switch;
+        let track = |s: WidgetState| sw.track(s);
+        let thumb = |s: WidgetState| sw.thumb(s);
+        let (on, off, off_on) = (
+            WidgetState::CHECKED,
+            WidgetState::DISABLED,
+            WidgetState::DISABLED | WidgetState::CHECKED,
+        );
+        let hover = track(WidgetState::HOVER);
+        Some(Self {
+            checked_background: next::fill(&track(on))?,
+            hover_checked_background: next::ruled_fill(
+                &hover,
+                &track(WidgetState::HOVER | WidgetState::CHECKED),
+            ),
+            unchecked_background: next::fill(&track(WidgetState::NONE))?,
+            hover_unchecked_background: next::ruled_fill(&hover, &hover),
+            disabled_checked_background: next::ruled_fill(&track(off), &track(off_on)),
+            disabled_unchecked_background: next::ruled_fill(&track(off), &track(off)),
+            thumb_background: next::fill(&thumb(on))?,
+            unchecked_thumb_background: next::fill(&thumb(WidgetState::NONE)),
+            disabled_thumb_color: next::ruled_fill(&thumb(off), &thumb(off)),
+            unchecked_track_border_color: next::stroke(&track(WidgetState::NONE)),
+            checked_track_border_color: next::stroke(&track(on)),
+            disabled_unchecked_track_border_color: next::ruled_stroke(&track(off), &track(off)),
+            disabled_checked_track_border_color: next::ruled_stroke(&track(off), &track(off_on)),
+            thumb_border_color: next::stroke(&thumb(WidgetState::NONE)),
+            text: next::text(&sw.label(WidgetState::NONE)).or_else(|| next::body_text(r)),
+            disabled_text: Some(
+                next::state_text(&sw.label(off)).unwrap_or(next::rgba(r.colors.disabled_text)),
+            ),
+            background: next::window_background(r),
+        })
+    }
+
+    /// The colours as the switch paints them, so two looks that paint alike compare equal: the
+    /// thumb at rest, which `None` gives as the checked one, given as that one, and a hover
+    /// layer that paints its track as it is at rest none.
+    #[cfg(test)]
+    pub(crate) fn painted(self) -> Self {
+        let layer = |hover: Option<Rgba>, base: Rgba| {
+            hover.filter(|&hover| composite_over(hover, base) != to_color32(base))
+        };
+        Self {
+            hover_checked_background: layer(self.hover_checked_background, self.checked_background),
+            hover_unchecked_background: layer(
+                self.hover_unchecked_background,
+                self.unchecked_background,
+            ),
+            unchecked_thumb_background: Some(
+                self.unchecked_thumb_background
+                    .unwrap_or(self.thumb_background),
+            ),
+            ..self
+        }
+    }
+
     pub(crate) fn of(t: &ResolvedTheme) -> Self {
         let sw = &t.switch;
         Self {
@@ -177,9 +289,9 @@ impl Look {
             disabled_unchecked_track_border_color: sw.disabled_unchecked_track_border_color,
             disabled_checked_track_border_color: sw.disabled_checked_track_border_color,
             thumb_border_color: sw.thumb_border_color,
-            text: t.defaults.font.color,
-            disabled_text: t.defaults.disabled_text_color,
-            background: t.defaults.background_color,
+            text: Some(t.defaults.font.color),
+            disabled_text: Some(t.defaults.disabled_text_color),
+            background: Some(t.defaults.background_color),
         }
     }
 }
@@ -206,12 +318,20 @@ impl egui::Widget for Switch<'_> {
         // takes back.
         let as_one = (!enabled && ui.is_enabled()) || crate::fade::outer_fade(ui).is_some();
         let paint = ThemeAtlas::from_ctx(ui.ctx()).and_then(|atlas| {
-            let t = atlas.resolved_for(ui.ctx().theme())?;
-            let sw = Look::of(t);
-            Geometry::of(&t.switch).map(|geometry| Paint {
+            let theme = ui.ctx().theme();
+            let (sw, geometry) = match atlas.resolved_for(theme) {
+                Some(t) => (Look::of(t), Geometry::of(&t.switch)?),
+                None => {
+                    let r = atlas.next_resolved_for(theme)?;
+                    (Look::next_of(r)?, Geometry::next_of(r)?)
+                }
+            };
+            Some(Paint {
                 geometry,
                 sw,
-                ground: as_one.then(|| backdrop.unwrap_or_else(|| to_color32(sw.background))),
+                ground: as_one
+                    .then(|| backdrop.or_else(|| sw.background.map(to_color32)))
+                    .flatten(),
             })
         });
         match paint {
@@ -274,7 +394,9 @@ fn switch_ui(
     let rect_id = egui::IdSalt::new("native-theme-egui-widgets::switch");
     atoms.push_left(egui::Atom::custom(rect_id, atom));
 
+    let gap = g.label_gap.unwrap_or(ui.spacing().icon_spacing);
     let mut prepared = egui::WidgetAtom::new(atoms)
+        .gap(gap)
         .sense(egui::Sense::click())
         .min_size(min_size)
         .allocate(ui);
@@ -307,7 +429,8 @@ fn switch_ui(
     let position = ui
         .ctx()
         .animate_bool_with_time(prepared.response.id, checked, time);
-    let text = to_color32(if enabled { sw.text } else { sw.disabled_text });
+    let text = if enabled { sw.text } else { sw.disabled_text };
+    let text = text.map_or(prepared.container.fallback_text_color, to_color32);
     prepared.container.fallback_text_color = ground.map_or(text, |ground| as_one(ground, text));
     let laid = prepared.paint(ui);
     let Some(atom_rect) = laid.rect(rect_id) else {
@@ -407,10 +530,7 @@ fn switch_ui(
         egui::Rect::from_center_size(centre, egui::Vec2::splat(diameter)),
     );
     if let Some(size) = label_size {
-        parts.push(
-            "label",
-            crate::parts::text_after(atom_rect, ui.spacing().icon_spacing, size),
-        );
+        parts.push("label", crate::parts::text_after(atom_rect, gap, size));
     }
     parts.store(ui.ctx(), laid.response.id);
     laid.response

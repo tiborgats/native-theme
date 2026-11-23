@@ -136,6 +136,7 @@ pub mod slider;
 pub mod spinner;
 pub mod switch;
 
+mod next;
 mod scope;
 
 pub use native_theme_egui as connector;

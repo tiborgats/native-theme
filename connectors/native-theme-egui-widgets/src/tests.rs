@@ -32,6 +32,8 @@ use crate::slider::Slider;
 use crate::spinner::Spinner;
 use crate::switch::Switch;
 
+mod next_drawn;
+
 // ---- harness ----------------------------------------------------------------------------------
 
 /// A `kde-breeze` light theme, resolved as the connector resolves it.
@@ -338,7 +340,8 @@ fn in_scope(
     .inner
 }
 
-/// Under an atlas of the 0.8.0 model, which holds no 0.7.2 theme, each widget, enabled and
+/// Under an atlas of the 0.8.0 model, which holds no 0.7.2 theme, each widget not yet drawn
+/// from it (`next_drawn` tests those that are), enabled and
 /// disabled, paints what egui's own counterpart paints: in the caller's `Ui`, or in its
 /// role's scope where the widget opens one. A widget with no `enabled` of its own is disabled
 /// by its calling `Ui`. The disabled expander is faded once, by its scope's `Ui::disable`, not
@@ -350,15 +353,6 @@ fn under_a_next_atlas_every_widget_is_its_egui_counterpart() {
         Box::new(move |ui, enabled| ui.add_enabled_ui(enabled, add).inner)
     };
     let cases: Vec<(&str, Add, Add)> = vec![
-        (
-            "switch",
-            Box::new(|ui, enabled| ui.add(Switch::new(&mut true).label("Wi-Fi").enabled(enabled))),
-            Box::new(|ui, enabled| {
-                in_scope(ui, None, false, enabled, |ui| {
-                    ui.add(egui::Checkbox::new(&mut true, "Wi-Fi"))
-                })
-            }),
-        ),
         (
             "slider",
             Box::new(|ui, enabled| {
@@ -2414,21 +2408,33 @@ fn a_disabled_knob_takes_the_rest_outline_faded() {
 
 // ---- T6: no hardcoded values -------------------------------------------------------------------
 
-/// The crate's sources outside its tests, comments and string literals blanked.
-fn painting_sources() -> Vec<(String, String)> {
-    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+/// The crate's sources outside its tests (`tests.rs`, `tests/` and `next/parity.rs`), comments
+/// and string literals blanked, each named by its path under `src/`.
+fn painting_sources() -> std::io::Result<Vec<(String, String)>> {
+    let src = Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
     let mut out = Vec::new();
-    for entry in std::fs::read_dir(&dir).unwrap() {
-        let path = entry.unwrap().path();
-        let name = path.file_name().unwrap().to_string_lossy().to_string();
-        if name == "tests.rs" {
-            continue;
+    let mut dirs = vec![src.clone()];
+    while let Some(dir) = dirs.pop() {
+        for entry in std::fs::read_dir(&dir)? {
+            let path = entry?.path();
+            let name = path
+                .strip_prefix(&src)
+                .map_err(std::io::Error::other)?
+                .to_string_lossy()
+                .to_string();
+            if ["tests.rs", "tests", "next/parity.rs"].contains(&name.as_str()) {
+                continue;
+            }
+            if path.is_dir() {
+                dirs.push(path);
+                continue;
+            }
+            let raw = std::fs::read_to_string(&path)?;
+            let code: Vec<&str> = rendered_lines(&raw).into_iter().map(|(_, l)| l).collect();
+            out.push((name, blank(&code.join("\n"))));
         }
-        let raw = std::fs::read_to_string(&path).unwrap();
-        let code: Vec<&str> = rendered_lines(&raw).into_iter().map(|(_, l)| l).collect();
-        out.push((name, blank(&code.join("\n"))));
     }
-    out
+    Ok(out)
 }
 
 /// `code` with every `//` comment and every string literal replaced by spaces.
@@ -2499,12 +2505,12 @@ fn literals(code: &str) -> Vec<String> {
 /// proportions `0.7` `0.45`, egui's radio dot divisor `3.0` and egui's collapsing-header
 /// arrow share `0.75`.
 #[test]
-fn the_crate_hardcodes_no_values() {
+fn the_crate_hardcodes_no_values() -> std::io::Result<()> {
     let allowed = [
         "0", "0.0", "0.5", "1.0", "240.0", "8", "128", "0.7", "0.45", "3.0", "0.75",
     ];
     let mut found = Vec::new();
-    for (file, code) in painting_sources() {
+    for (file, code) in painting_sources()? {
         for literal in literals(&code) {
             if !allowed.contains(&literal.as_str()) {
                 found.push(format!("{file}: {literal}"));
@@ -2513,6 +2519,7 @@ fn the_crate_hardcodes_no_values() {
     }
     assert!(found.is_empty(), "{found:#?}");
     assert_eq!(literals("x2 1.5 f32 a_1 0..8"), vec!["1.5", "0", "8"]);
+    Ok(())
 }
 
 // ---- T7: the Tier P promotions are still justified --------------------------------------------
