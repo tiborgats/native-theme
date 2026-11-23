@@ -5188,13 +5188,21 @@ fn ghost_button(
     }
 }
 
-/// The padding of a flat button: the sides `button.border.padding` states,
-/// iced's own button padding where it states none. No line width is added:
-/// a flat button draws no border at rest, and a toolbar button's hover
-/// outline (`styles::toolbar_button`) is drawn on its bounds, over the
-/// padding, so it moves nothing.
-fn ghost_padding(resolved: &ResolvedTheme) -> Padding {
-    native_theme_iced::padding_or(&resolved.button.border.padding, button::DEFAULT_PADDING)
+/// The padding of a flat button: the sides `button.body(NONE).padding`
+/// states, iced's own button padding, `button::DEFAULT_PADDING`, on a side
+/// it leaves unstated. No line width is added: a flat button draws no
+/// border at rest, and a toolbar button's hover outline
+/// (`styles::toolbar_button`) is drawn on its bounds, over the padding, so
+/// it moves nothing.
+fn ghost_padding(r: &native_theme::next::ResolvedTheme) -> Padding {
+    let own = button::DEFAULT_PADDING;
+    let [top, right, bottom, left] = iced_next::padding_of(&r.button.body(WidgetState::NONE));
+    Padding {
+        top: top.unwrap_or(own.top),
+        right: right.unwrap_or(own.right),
+        bottom: bottom.unwrap_or(own.bottom),
+        left: left.unwrap_or(own.left),
+    }
 }
 
 /// A stroke of the 0.8.0 model as iced draws it on a widget it paints
@@ -6679,7 +6687,7 @@ fn toolbar(state: &State) -> Element<'_, Message> {
     let layout = &state.layout;
     let t = &resolved.toolbar;
     let icons = &state.chrome_icons;
-    let pad = ghost_padding(resolved);
+    let pad = ghost_padding(state.next_shown());
     let item = |tags, icon, label, key, action| {
         icon_button(
             state,
@@ -7625,7 +7633,7 @@ fn page_menu(state: &State) -> Element<'_, Message> {
         tagged(
             "chrome.page_tabs.menu",
             button(caret)
-                .padding(ghost_padding(resolved))
+                .padding(ghost_padding(state.next_shown()))
                 .style(ghost_button(state.next_shown(), false))
                 .on_press(Message::MenuOpened),
         ),
@@ -7823,7 +7831,7 @@ fn status_bar(state: &State) -> Element<'_, Message> {
     let gap = Gaps::from_layout(&state.layout);
     let s = &resolved.status_bar;
     // A flat button padded as the toolbar's are, by the button's own sides.
-    let pad = ghost_padding(resolved);
+    let pad = ghost_padding(state.next_shown());
     let toggle = icon_button(
         state,
         IconButton {
@@ -9698,12 +9706,13 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
             "Button::padding, the side as stated (none where unstated)".into()
         }
         ("button", f) if side(f).is_some() && tool => {
-            "ghost_padding: Button::padding, the side as stated (the outline under the \
-             pointer is drawn over it)"
+            "ghost_padding: Button::padding, the side of button.body(NONE).padding as stated, \
+             iced's own where unstated (the outline under the pointer is drawn over it)"
                 .into()
         }
         ("button", f) if side(f).is_some() && ghost => {
-            "ghost_padding: Button::padding, the side as stated (a flat button draws no border)"
+            "ghost_padding: Button::padding, the side of button.body(NONE).padding as stated, \
+             iced's own where unstated (a flat button draws no border)"
                 .into()
         }
         ("button", f) if side(f).is_some() => {
@@ -10725,7 +10734,7 @@ fn inspector_widget(state: &State) -> Element<'_, Message> {
         )
         .into();
     };
-    let pad = ghost_padding(resolved);
+    let pad = ghost_padding(state.next_shown());
     let copy =
         button(text("Copy").role(&resolved.text_scale.caption, resolved, &state.accessibility))
             .padding(Padding::ZERO.left(pad.left).right(pad.right))
@@ -10952,7 +10961,7 @@ fn dialog(state: &State, overlay: Overlay) -> Element<'_, Message> {
         Overlay::Preferences => ("Preferences", preferences(state)),
         Overlay::About => ("About", about(state)),
     };
-    let pad = ghost_padding(resolved);
+    let pad = ghost_padding(state.next_shown());
     let close = icon_button(
         state,
         IconButton {
@@ -13567,7 +13576,7 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
                 label,
                 key: None,
                 font: &resolved.toolbar.font,
-                padding: ghost_padding(resolved),
+                padding: ghost_padding(state.next_shown()),
                 selected,
                 toolbar: true,
                 action,
@@ -28932,6 +28941,51 @@ mod tests {
         assert_eq!(in_state(Some(3), 1, (5, 7)), 3);
         assert_eq!(in_state(None, 1, (5, 7)), 7);
         assert_eq!(in_state(None, 1, (5, 5)), 1);
+    }
+
+    /// [`ghost_padding`] pads a flat button by the sides
+    /// `button.body(NONE).padding` states and by iced's own button padding
+    /// on a side it leaves unstated: on every preset of the 0.8.0 model,
+    /// four sides stated on the theme (3, 5, 7 and 9; a patch states all
+    /// four) pad it so; each side the preset leaves unstated is
+    /// `button::DEFAULT_PADDING`'s.
+    #[test]
+    fn a_flat_button_takes_the_stated_sides_of_the_buttons_padding() -> Result<(), String> {
+        let patch = native_theme::next::ThemePatch::from_toml(
+            "[[widgets.button.rules]]\nbody.padding = { top = 3.0, right = 5.0, bottom = 7.0, \
+             left = 9.0 }\n",
+        )
+        .map_err(|error| format!("the padding patch: {error:?}"))?;
+        let own = button::DEFAULT_PADDING;
+        let mut failures = Vec::new();
+        for (label, r) in next_combinations() {
+            let shown = ghost_padding(&r);
+            let [top, right, bottom, left] =
+                iced_next::padding_of(&r.button.body(WidgetState::NONE));
+            for (side, stated, drawn, iced) in [
+                ("top", top, shown.top, own.top),
+                ("right", right, shown.right, own.right),
+                ("bottom", bottom, shown.bottom, own.bottom),
+                ("left", left, shown.left, own.left),
+            ] {
+                if stated.is_none() && drawn != iced {
+                    failures.push(format!("{label}: the unstated {side} is {drawn}"));
+                }
+            }
+            let mut patched = r.clone();
+            patched.apply_patch(&patch);
+            let padded = ghost_padding(&patched);
+            if (padded.top, padded.right, padded.bottom, padded.left) != (3.0, 5.0, 7.0, 9.0) {
+                failures.push(format!(
+                    "{label}: with the four sides stated, {padded:?}, before {shown:?}"
+                ));
+            }
+        }
+        if failures.is_empty() {
+            Ok(())
+        } else {
+            Err(format!("{failures:#?}"))
+        }
     }
 
     /// What the route `route` of a flat button's colour leaf `leaf` gets
