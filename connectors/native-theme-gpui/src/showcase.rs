@@ -2562,11 +2562,13 @@ fn value_reads_field(value: &str, field: &str) -> bool {
 /// (`info/mod.rs`), by the property: the part's or the text's value where the
 /// theme states it. At a state other than `NONE` the helper's `state_` form
 /// may stand in its place, which reads the value only where a rule states it
-/// for that state, as 0.7.2's soft option of a state.
+/// for that state, as 0.7.2's soft option of a state. A text's `color` and an
+/// icon's (`expander.arrow(NONE).color`) each have a helper of their own.
 const HOME_PROPERTIES: &[(&str, &str)] = &[
     ("fill", "fill_of"),
     ("stroke.color", "stroke_color_of"),
     ("color", "text_color_of"),
+    ("color", "icon_color_of"),
 ];
 
 /// Whether a claim's `field` is in the 0.8.0 form: a home as the table of
@@ -2683,15 +2685,18 @@ fn home_value_finding(value: &str, field: &str) -> Option<String> {
                 .to_string(),
         );
     };
-    let Some(&(_, helper)) = HOME_PROPERTIES.iter().find(|(p, _)| *p == property) else {
+    let mut helpers: Vec<String> = Vec::new();
+    for (_, helper) in HOME_PROPERTIES.iter().filter(|(p, _)| *p == property) {
+        helpers.push(helper.to_string());
+        if states != ["NONE"] {
+            helpers.push(format!("state_{helper}"));
+        }
+    }
+    if helpers.is_empty() {
         return Some(format!("no helper of HOME_PROPERTIES reads `{property}`"));
-    };
+    }
     let mut wanted: Vec<String> = states.iter().map(|s| format!("WidgetState::{s}")).collect();
     wanted.sort();
-    let mut helpers = vec![helper.to_string()];
-    if states != ["NONE"] {
-        helpers.push(format!("state_{helper}"));
-    }
     let read = helpers.iter().any(|helper| {
         calls_of(&code, helper)
             .iter()

@@ -101,7 +101,7 @@ use gpui_component::{
     v_flex,
 };
 use native_theme::next::WidgetState;
-use native_theme::theme::{ArrowSide, FontStyle, IconSet, ResolvedFontSpec, ResolvedPadding};
+use native_theme::theme::{FontStyle, IconSet, ResolvedFontSpec, ResolvedPadding};
 use native_theme_gpui::icons::with_spin_animation;
 use native_theme_gpui::next;
 #[cfg(feature = "widgets")]
@@ -8450,7 +8450,7 @@ pub(crate) fn accordion(
 /// The Basic page's two expanders, as `spec` describes them: an item per
 /// `(title, body id, body)`, open as `open` says; a click on a title hands
 /// `on_toggle` which are open after it. Each body is a body-text Label that
-/// reports itself. Under a native theme the showcase draws them as
+/// reports itself. Under an installed 0.8.0 theme the showcase draws them as
 /// `expander.*` states them ([`native_expander`]); without one they are
 /// upstream's Accordion, an item each.
 pub(crate) fn expander(
@@ -8459,8 +8459,8 @@ pub(crate) fn expander(
     spec: ExpanderSpec,
     on_toggle: impl Fn(&[bool; 2], &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
-    if let Some(n) = old_native(cx) {
-        return native_expander(ui, cx, &n, spec, Rc::new(on_toggle));
+    if let Some(r) = next_resolved(cx) {
+        return native_expander(ui, cx, r, spec, Rc::new(on_toggle));
     }
     let ExpanderSpec {
         id,
@@ -8523,15 +8523,93 @@ pub(crate) struct ExpanderArrows {
     pub trailing_open: SampleIcon,
 }
 
-/// An expander row's side padding where `expander.border.padding` states no
-/// side, the space between its title and its arrow where `arrow_gap` is
-/// unstated, and its body's side and bottom padding in a frame the theme
-/// does not state: upstream's `AccordionItem`'s at the default Size
-/// (accordion.rs, `RenderOnce for AccordionItem`: the trigger's `px_3` and
-/// `gap_3`, the panel's `pb_2` and `px_3`).
+/// An expander row's side and top-and-bottom padding where
+/// `expander.header(NONE)` states no side, the space between its title and
+/// its arrow where `arrow_gap` is unstated, its body's side and bottom
+/// padding in a frame the theme does not state, and its title's size where
+/// `expander.header_label(NONE)` gives no font gpui can letter it in:
+/// upstream's `AccordionItem`'s at the default Size (accordion.rs,
+/// `RenderOnce for AccordionItem`: the trigger's `px_3`, `py_2` and `gap_3`,
+/// the panel's `pb_2` and `px_3`, the item's `text_size`).
 const EXPANDER_PADDING_X: Rems = rems(0.75);
+const EXPANDER_PADDING_Y: Rems = rems(0.5);
 const EXPANDER_ARROW_GAP: Rems = rems(0.75);
 const EXPANDER_BODY_BOTTOM: Rems = rems(0.5);
+pub(crate) const EXPANDER_TITLE_SIZE: Rems = rems(0.875);
+
+/// An expander frame's line width where `expander.container(NONE)` states
+/// no stroke: upstream's bordered Accordion's `border_1` (accordion.rs,
+/// `RenderOnce for Accordion`).
+pub(crate) const EXPANDER_LINE_WIDTH: Pixels = px(1.);
+
+/// What [`native_expander`] draws under an installed 0.8.0 theme, each value
+/// read at its home, `None` where the theme states none; the expander then
+/// takes upstream's Accordion's own for that property alone (spec §10, rule
+/// 0), as each field says.
+#[derive(Clone)]
+pub(crate) struct ExpanderLook {
+    /// `expander.container(NONE).stroke.color`; else upstream's `border`.
+    pub line: Option<Hsla>,
+    /// `expander.container(NONE).stroke.width`; else
+    /// [`EXPANDER_LINE_WIDTH`].
+    pub line_width: Option<f32>,
+    /// `expander.container(NONE).corners`; else upstream's `radius_lg`.
+    pub radius: Option<f32>,
+    /// `expander.header_label(NONE)`, the title's font where it gives one
+    /// gpui can letter it in (`next_text_in`); else upstream's `font_medium`
+    /// at [`EXPANDER_TITLE_SIZE`].
+    pub font: native_theme::next::TextStyle,
+    /// `expander.header_label(NONE).color`; else upstream's: `foreground` on
+    /// an open item's title row, none on a closed one's.
+    pub text: Option<Hsla>,
+    /// `expander.arrow(NONE).color`; else upstream's `muted_foreground`.
+    pub arrow: Option<Hsla>,
+    /// `expander.arrow(NONE).size`; else upstream's `xsmall` arrow.
+    pub arrow_size: Option<f32>,
+    /// `expander.header(HOVER).fill` where a rule states it for `HOVER`;
+    /// else none, as upstream's title row has no hover style of its own.
+    pub hover: Option<Hsla>,
+    /// `expander.header(NONE).min_size[1]`; else a title row as tall as its
+    /// content and padding, as upstream's, which sets no height.
+    pub header_height: Option<f32>,
+    /// `expander.header(NONE)`'s padding, top, right, bottom, left
+    /// (`next::padding_of`); else upstream's `px_3` and `py_2`.
+    pub padding: [Option<f32>; 4],
+    pub arrow_side: Option<native_theme::next::ArrowSide>,
+    pub arrow_gap: Option<f32>,
+    pub content_indent: Option<f32>,
+    pub frame_enabled: Option<bool>,
+}
+
+impl ExpanderLook {
+    /// The expander's look under `r`.
+    pub(crate) fn next_of(r: &native_theme::next::ResolvedTheme) -> Self {
+        let e = &r.expander;
+        let container = e.container(WidgetState::NONE);
+        let header = e.header(WidgetState::NONE);
+        let font = e.header_label(WidgetState::NONE);
+        let arrow = e.arrow(WidgetState::NONE);
+        Self {
+            line: next::stroke_color_of(&container),
+            line_width: next::stroke_width_of(&container),
+            radius: next::radius_of(&container),
+            text: next::text_color_of(&font),
+            arrow: info::icon_color_of(&arrow),
+            arrow_size: arrow
+                .stated
+                .contains(native_theme::next::IconStated::SIZE)
+                .then_some(arrow.size),
+            hover: next::state_fill_of(&e.header(WidgetState::HOVER)),
+            header_height: header.min_size[1],
+            padding: next::padding_of(&header),
+            arrow_side: e.arrow_side,
+            arrow_gap: e.arrow_gap,
+            content_indent: e.content_indent,
+            frame_enabled: e.frame_enabled,
+            font,
+        }
+    }
+}
 
 /// How far an expander item's arrow is turned, of a whole turn: an open
 /// item's `open_turn` where its arrow is the closed one's chevron turned, none
@@ -8547,28 +8625,30 @@ pub(crate) fn expander_arrow_turn(closed_is_raster: bool, is_open: bool, open_tu
     }
 }
 
-/// [`expander`] under a native theme, drawn by the showcase as `expander.*`
-/// states it (ISSUES D8): where `frame_enabled` is true, each item framed by
-/// `expander.border` on its own, `layout.widget_gap` from the next; where it
-/// is unstated, the whole framed and the items parted by its line, as
+/// [`expander`] under an installed 0.8.0 theme, drawn by the showcase as
+/// `expander.*` states it ([`ExpanderLook`], ISSUES D8): where
+/// `frame_enabled` is true, each item framed by `expander.container(NONE)`'s
+/// stroke on its own, `layout.widget_gap` from the next; where it is
+/// unstated, the whole framed and the items parted by its line, as
 /// upstream's bordered `Accordion` frames them; and none of either where it
-/// is false (KDE's `KCollapsibleGroupBox` draws neither, docs/platform-facts.md
-/// §2.27); each title row `header_height` tall (`geometry::accordion_title`)
-/// in `expander.font`, `hover_background` under the pointer; its arrow
-/// `arrow_icon_size` in `arrow_color` (the title's colour where that is
-/// unstated), on the `arrow_side` the theme states, `arrow_gap` from the
-/// title; the body `content_indent` in from the leading edge. Where the
-/// theme states no side the arrow is upstream's, after the title. The arrow
-/// is a chevron of the chosen icon theme, none where that theme has none: a
-/// trailing arrow ChevronDown, turned while the item is open, as upstream's,
-/// and a leading one ChevronRight turned down while it is open, as Breeze
-/// and the HIG draw a leading arrow (§2.27). Upstream builds its arrow, its
-/// glyph, size and colour, inline, where no caller reaches them
-/// (accordion.rs, `RenderOnce for AccordionItem`).
+/// is false (KDE's `KCollapsibleGroupBox` draws neither,
+/// docs/platform-facts.md §2.27); each title row
+/// `expander.header(NONE).min_size[1]` tall in `expander.header_label(NONE)`,
+/// `expander.header(HOVER).fill` under the pointer; its arrow
+/// `expander.arrow(NONE)`'s size and colour, on the `arrow_side` the theme
+/// states, `arrow_gap` from the title; the body `content_indent` in from the
+/// leading edge. Where the theme states no side the arrow is upstream's,
+/// after the title; any other value it leaves unstated is upstream's own
+/// (spec §10, rule 0). The arrow is a chevron of the chosen icon theme, none
+/// where that theme has none: a trailing arrow ChevronDown, turned while the
+/// item is open, as upstream's, and a leading one ChevronRight turned down
+/// while it is open, as Breeze and the HIG draw a leading arrow (§2.27).
+/// Upstream builds its arrow, its glyph, size and colour, inline, where no
+/// caller reaches them (accordion.rs, `RenderOnce for AccordionItem`).
 fn native_expander(
     ui: &Entity<InfoRegistry>,
     cx: &App,
-    n: &Native<'_>,
+    r: &native_theme::next::ResolvedTheme,
     spec: ExpanderSpec,
     on_toggle: ExpanderToggle,
 ) -> Stateful<Div> {
@@ -8580,15 +8660,18 @@ fn native_expander(
         gap,
         arrows,
     } = spec;
-    let e = &n.resolved.expander;
-    let colour = info::stated;
-    let line = colour(e.border.color);
-    let line_width = px(e.border.line_width);
-    let text = colour(e.font.color);
-    let arrow = colour(e.arrow_color.unwrap_or(e.font.color));
-    let hover = e.hover_background.map(colour);
-    let title_style = geometry::accordion_title(*n);
-    let leading = e.arrow_side == Some(ArrowSide::Leading);
+    let look = ExpanderLook::next_of(r);
+    let t = cx.theme();
+    let line = look.line.unwrap_or(t.border);
+    let line_width = look.line_width.map_or(EXPANDER_LINE_WIDTH, px);
+    let text = look.text;
+    let open_text = text.unwrap_or(t.foreground);
+    let arrow = look.arrow.unwrap_or(t.muted_foreground);
+    let arrow_size = look
+        .arrow_size
+        .map_or(Size::XSmall, |size| Size::Size(px(size)));
+    let hover = look.hover;
+    let leading = look.arrow_side == Some(native_theme::next::ArrowSide::Leading);
     // A leading arrow points at the title while closed and down while open;
     // a trailing one down while closed and up while open (§2.27,
     // `arrow_side`).
@@ -8598,11 +8681,8 @@ fn native_expander(
         (&arrows.trailing, &arrows.trailing_open, 0.5)
     };
     let sized = |icon: &SampleIcon| {
-        icon.glyph().map(|glyph| {
-            glyph
-                .with_size(Size::Size(px(e.arrow_icon_size)))
-                .text_color(arrow)
-        })
+        icon.glyph()
+            .map(|glyph| glyph.with_size(arrow_size).text_color(arrow))
     };
     let glyph = sized(chevron);
     // Pixels do not turn: an open item's arrow is then the set's chevron of
@@ -8613,26 +8693,27 @@ fn native_expander(
         glyph.clone()
     };
     let expander_info = info::layout::native_expander(
-        n.resolved,
+        r,
+        t,
         items.map(|(title, _, _)| title),
         open,
-        chevron,
-        turned,
+        [chevron, turned],
         gap,
-    )
-    .geometry("accordion_title");
+    );
     // KDE's expander has no frame and no line between items (§2.27); where
     // the theme states nothing the frame stays, as upstream's.
-    let framed = e.frame_enabled != Some(false);
-    let arrow_gap: DefiniteLength = match e.arrow_gap {
+    let framed = look.frame_enabled != Some(false);
+    let arrow_gap: DefiniteLength = match look.arrow_gap {
         Some(gap) => px(gap).into(),
         None => EXPANDER_ARROW_GAP.into(),
     };
-    let body_indent: DefiniteLength = match e.content_indent {
+    let body_indent: DefiniteLength = match look.content_indent {
         Some(indent) => px(indent).into(),
         None => EXPANDER_PADDING_X.into(),
     };
-    let radius = px(e.border.corner_radius.max(0.0));
+    let radius = look
+        .radius
+        .map_or(t.radius_lg, |radius| px(radius.max(0.0)));
     let last = items.len().saturating_sub(1);
     // Framed where the theme states the frame, each item is an expander of
     // its own, framed on its own and `layout.widget_gap` from the next, as
@@ -8642,7 +8723,7 @@ fn native_expander(
     // corners and the last's bottom ones rounded -- so an item's box is its
     // part of the frame, its line included, and the line between two items
     // the one above's bottom edge.
-    let own_frames = e.frame_enabled == Some(true);
+    let own_frames = look.frame_enabled == Some(true);
     let shared_frame = framed && !own_frames;
     with_gap(v_flex(), if shared_frame { None } else { gap })
         .w(width)
@@ -8675,17 +8756,30 @@ fn native_expander(
                         .children(shows)
                         .children(listed.map(|[_, _, arrow, _]| elements::record(ui, arrow)))
                 });
-                let title = text_in(n, &e.font, title)
-                    .relative()
-                    .children(listed.map(|[_, _, _, title]| elements::record(ui, title)));
-                let header = padded(
-                    h_flex().id((id, ix)).w_full().items_center().gap(arrow_gap),
-                    &e.border.padding,
-                    Some(EXPANDER_PADDING_X),
-                    None,
+                let title = next_text_in(
+                    &r.typography,
+                    &look.font,
+                    "expander.header_label(NONE)",
+                    title,
                 )
-                .refine_style(&title_style)
-                .text_color(text)
+                .unwrap_or_else(|| {
+                    div()
+                        .font_medium()
+                        .text_size(EXPANDER_TITLE_SIZE)
+                        .child(title)
+                })
+                .relative()
+                .children(listed.map(|[_, _, _, title]| elements::record(ui, title)));
+                let header = next_padded(
+                    h_flex().id((id, ix)).w_full().items_center().gap(arrow_gap),
+                    look.padding,
+                    Some(EXPANDER_PADDING_X),
+                    Some(EXPANDER_PADDING_Y),
+                )
+                .when_some(look.header_height, |header, height| header.h(px(height)))
+                .when_some(text.or(is_open.then_some(open_text)), |header, text| {
+                    header.text_color(text)
+                })
                 .when_some(hover, |header, hover| {
                     header.hover(move |style| style.bg(hover))
                 })
@@ -8712,7 +8806,7 @@ fn native_expander(
                 // above its body, as a layout spaces rows; framed where it
                 // states nothing, they pad their body as upstream's
                 // AccordionItem does.
-                let spaced = match e.frame_enabled {
+                let spaced = match look.frame_enabled {
                     Some(true) | Some(false) => gap,
                     None => None,
                 };

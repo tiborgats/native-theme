@@ -3,22 +3,24 @@
 use gpui::Pixels;
 use gpui_component::theme::Theme;
 use native_theme::next::{ResolvedTheme as NextTheme, WidgetState};
+use native_theme::theme::ResolvedPadding;
 #[cfg(feature = "widgets")]
 use native_theme::theme::TabIndicatorSide;
-use native_theme::theme::{ArrowSide, ResolvedExpanderTheme, ResolvedPadding};
 use native_theme_gpui::ResolvedTheme;
-use native_theme_gpui::next::{fill_of, padding_of};
+use native_theme_gpui::next::{fill_of, padding_of, state_fill_of, text_color_of};
 #[cfg(feature = "widgets")]
 use native_theme_gpui::widgets::{SeparatorLook, TabLook};
 
 use super::{
     WidgetInfo,
     chrome::{GhostContent, chrome_icon_note, ghost_colours},
-    claim, drawn_font, edge_claim, px_text, stated, stated_claim, stroke_color_of, stroke_width_of,
+    claim, drawn_font, edge_claim, icon_color_of, px_text, stated, stated_claim, stroke_color_of,
+    stroke_width_of,
 };
 use crate::Page;
 use crate::demo::{
-    FOLDER_TAB_HEIGHT, GroupBoxKind, SEGMENT_PADDING, SeparatorKind, SpacingBox, StepperKind,
+    ExpanderLook, FOLDER_TAB_HEIGHT, GroupBoxKind, SEGMENT_PADDING, SeparatorKind, SpacingBox,
+    StepperKind,
 };
 use crate::support::{ChromeIcon, GRID_LAYOUT_ITEMS, SampleIcon, layout_value};
 
@@ -705,48 +707,74 @@ pub fn folder_tab_size(min_size: [Option<f32>; 2]) -> String {
 }
 
 /// The expanders the showcase draws as `r`'s `expander.*` states them
-/// (`demo::native_expander`), reading `titles`, each `open` or not, their
-/// arrow `arrow`, of the chosen icon theme -- `turned`, the chevron an open
-/// item shows where the set gives `arrow` as pixels, or as an SVG in
-/// several colours, drawn as an image, which does not turn -- and `gap`, the
-/// `layout.widget_gap` that parts the items where the theme states the
-/// frame.
+/// (`demo::native_expander`, `demo::ExpanderLook`), on `t`, the
+/// gpui-component theme whose own values stand where `r` states none,
+/// reading `titles`, each `open` or not, their arrow `arrow`, of the chosen
+/// icon theme -- `turned`, the chevron an open item shows where the set
+/// gives `arrow` as pixels, or as an SVG in several colours, drawn as an
+/// image, which does not turn -- and `gap`, the `layout.widget_gap` that
+/// parts the items where the theme states the frame.
 pub fn native_expander(
-    r: &ResolvedTheme,
+    r: &NextTheme,
+    t: &Theme,
     titles: [&'static str; 2],
     open: [bool; 2],
-    arrow: &SampleIcon,
-    turned: &SampleIcon,
+    [arrow, turned]: [&SampleIcon; 2],
     gap: Option<Pixels>,
 ) -> WidgetInfo {
-    let e = &r.expander;
-    // The frame is drawn at expander.border.line_width unless
-    // frame_enabled is false: KDE's expander draws none (§2.27).
+    let look = ExpanderLook::next_of(r);
+    let e = &look;
+    // The frame is drawn at the stated stroke's width, upstream's border_1
+    // where it states none, unless frame_enabled is false: KDE's expander
+    // draws none (§2.27).
     let frame_width = Some(match e.frame_enabled {
         Some(false) => 0.0,
-        _ => e.border.line_width,
+        _ => e
+            .line_width
+            .unwrap_or(f32::from(crate::demo::EXPANDER_LINE_WIDTH)),
     });
-    let edge = match e.frame_enabled {
-        Some(true) => edge_claim(
+    let edge = match (e.frame_enabled == Some(true), e.line.is_some()) {
+        (true, true) => edge_claim(
             "each item's frame",
-            "border",
-            Some(e.border.color),
+            "expander.container(NONE).stroke.color",
+            stroke_color_of(&r.expander.container(WidgetState::NONE)),
             frame_width,
             "showcase",
         ),
-        _ => edge_claim(
+        (true, false) => edge_claim(
+            "each item's frame",
+            "border",
+            Some(t.border),
+            frame_width,
+            "showcase",
+        ),
+        (false, true) => edge_claim(
+            "frame and the line between items",
+            "expander.container(NONE).stroke.color",
+            stroke_color_of(&r.expander.container(WidgetState::NONE)),
+            frame_width,
+            "showcase",
+        ),
+        (false, false) => edge_claim(
             "frame and the line between items",
             "border",
-            Some(e.border.color),
+            Some(t.border),
             frame_width,
             "showcase",
         ),
     };
+    let title = stated_claim(
+        "title",
+        "expander.header_label(NONE).color",
+        text_color_of(&r.expander.header_label(WidgetState::NONE)),
+        "showcase",
+    )
+    .unwrap_or_else(|| claim("open title", "foreground", t.foreground, "showcase"));
     let info = WidgetInfo::new("Expander")
         .variant("drawn by the showcase")
         .colors(edge)
-        .color(claim("title", "font", stated(e.font.color), "showcase"));
-    let leading = e.arrow_side == Some(ArrowSide::Leading);
+        .color(title);
+    let leading = e.arrow_side == Some(native_theme::next::ArrowSide::Leading);
     let glyph = match (leading, arrow.is_raster()) {
         (true, false) => {
             "ChevronRight, before the title and turned down while open, as Breeze and the HIG draw a leading arrow"
@@ -781,14 +809,22 @@ pub fn native_expander(
         let info = if arrow.is_raster() {
             info
         } else {
-            info.color(claim(
-                "arrow",
-                "arrow_color",
-                stated(e.arrow_color.unwrap_or(e.font.color)),
-                "showcase",
-            ))
+            info.color(
+                stated_claim(
+                    "arrow",
+                    "expander.arrow(NONE).color",
+                    icon_color_of(&r.expander.arrow(WidgetState::NONE)),
+                    "showcase",
+                )
+                .unwrap_or_else(|| {
+                    claim("arrow", "muted_foreground", t.muted_foreground, "showcase")
+                }),
+            )
         };
-        info.config("arrow", format!("expander.arrow_icon_size, {}px", px_text(e.arrow_icon_size)))
+        info.config("arrow", match e.arrow_size {
+            Some(size) => format!("expander.arrow(NONE).size, {}px", px_text(size)),
+            None => "not stated: upstream's xsmall arrow (gpui-component/accordion.rs, AccordionItem::render)".to_string(),
+        })
         .config("arrow side", match e.arrow_side {
             Some(side) => format!("expander.arrow_side, {side:?}"),
             None => "not stated: upstream's Accordion's, after the title (gpui-component/accordion.rs, AccordionItem::render)".to_string(),
@@ -802,14 +838,14 @@ pub fn native_expander(
     };
     let info = match stated_claim(
         "hovered title",
-        "hover_background",
-        e.hover_background,
+        "expander.header(HOVER).fill",
+        state_fill_of(&r.expander.header(WidgetState::HOVER)),
         "showcase",
     ) {
         Some(hover) => info.color(hover),
         None => info.not_themeable(
             "hover",
-            "none: the theme states no expander.hover_background",
+            "none: no rule states expander.header(HOVER).fill, and upstream's title row has no hover style of its own (gpui-component/accordion.rs, AccordionItem::hover)",
         ),
     };
     let shown: Vec<&str> = titles
@@ -818,15 +854,8 @@ pub fn native_expander(
         .filter(|(_, open)| *open)
         .map(|(title, _)| *title)
         .collect();
-    info.config(
-        "title row",
-        format!(
-            "expander.header_height, {}px, the title in expander.font: {}",
-            px_text(e.header_height),
-            drawn_font(&e.font)
-        ),
-    )
-    .config("edge", expander_edge(e, gap))
+    info.config("title row", expander_title_row(e, &r.typography, t))
+    .config("edge", expander_edge(e, t, gap))
     .config(
         "body indent",
         match e.content_indent {
@@ -857,52 +886,100 @@ pub fn native_expander(
     )
 }
 
+/// The title row line of the theme-drawn expander `e`, lettered over
+/// `typography`, on `t`: its height, `expander.header(NONE).min_size[1]`
+/// where stated, else upstream's, which sets none; and its title's font,
+/// `expander.header_label(NONE)` where it gives one gpui can letter it in,
+/// else upstream's.
+pub(crate) fn expander_title_row(
+    e: &ExpanderLook,
+    typography: &native_theme::next::Typography,
+    t: &Theme,
+) -> String {
+    let height = match e.header_height {
+        Some(height) => format!("expander.header(NONE).min_size[1], {}px", px_text(height)),
+        None => "as tall as its content and padding: the theme states no expander.header(NONE).min_size[1], and upstream's sets no height (gpui-component/accordion.rs, AccordionItem::render)".to_string(),
+    };
+    let font = match native_theme_gpui::next::label_font_unmapped(
+        &e.font,
+        "expander.header_label(NONE)",
+    ) {
+        None => format!(
+            "the title in expander.header_label(NONE): {}",
+            super::typography::text_style_font(typography, &e.font)
+        ),
+        Some(unstated) => format!(
+            "the title upstream's, font_medium at {}: the theme states no value gpui can take at {} (gpui-component/accordion.rs, AccordionItem::render; spec §10, rule 0)",
+            super::rems_text(crate::demo::EXPANDER_TITLE_SIZE, t),
+            unstated.home()
+        ),
+    };
+    format!("{height}, {font}")
+}
+
 /// What frames the theme-drawn expander `e` and parts its items, the
 /// items `gap` (`layout.widget_gap`) apart where each is framed on its own.
-fn expander_edge(e: &ResolvedExpanderTheme, gap: Option<Pixels>) -> String {
-    let b = &e.border;
+pub(crate) fn expander_edge(e: &ExpanderLook, t: &Theme, gap: Option<Pixels>) -> String {
+    let colour = match e.line {
+        Some(_) => "expander.container(NONE).stroke.color",
+        None => "upstream's border, as the theme states no expander.container(NONE).stroke.color",
+    };
+    let width = match e.line_width {
+        Some(width) => format!(
+            "expander.container(NONE).stroke.width, {}px",
+            px_text(width)
+        ),
+        None => format!(
+            "upstream's border_1, {}px, as the theme states no expander.container(NONE).stroke.width",
+            px_text(f32::from(crate::demo::EXPANDER_LINE_WIDTH))
+        ),
+    };
+    let radius = match e.radius {
+        Some(radius) => format!(
+            "expander.container(NONE).corners, {}px",
+            px_text(radius.max(0.0))
+        ),
+        None => format!(
+            "upstream's radius_lg, {}px, as the theme states no expander.container(NONE).corners",
+            px_text(t.radius_lg.as_f32())
+        ),
+    };
     match e.frame_enabled {
         Some(false) => {
             "none: expander.frame_enabled is false, no frame and no line between the items"
                 .to_string()
         }
-        _ if b.line_width <= 0.0 => format!(
-            "none: expander.border.line_width is 0; the items are still rounded by its corner_radius, {}px",
-            px_text(b.corner_radius)
+        _ if e.line_width.is_some_and(|width| width <= 0.0) => format!(
+            "none: expander.container(NONE).stroke.width is 0; the items are still rounded by {radius}"
         ),
         Some(true) => {
             let apart = match gap {
                 Some(gap) => format!("layout.widget_gap, {}px, apart", px_text(gap.as_f32())),
                 None => "with no gap between them: layout.widget_gap is unstated".to_string(),
             };
-            format!(
-                "each item framed on its own by expander.border.color at expander.border.line_width, {}px, radius {}px, {apart}",
-                px_text(b.line_width),
-                px_text(b.corner_radius)
-            )
+            format!("each item framed on its own by {colour} at {width}, radius {radius}, {apart}")
         }
         None => format!(
-            "expander.border.color at expander.border.line_width, {}px, radius {}px, round the whole and between the items, as upstream's bordered Accordion frames them: expander.frame_enabled is unstated",
-            px_text(b.line_width),
-            px_text(b.corner_radius)
+            "{colour} at {width}, radius {radius}, round the whole and between the items, as upstream's bordered Accordion frames them: expander.frame_enabled is unstated"
         ),
     }
 }
 
 /// How the theme-drawn expander `e` pads its title rows, side by side, and
-/// its body: a stated `expander.border.padding` side as it states it, an
-/// unstated left or right by upstream's px_3, an unstated top or bottom by
-/// none (`demo::native_expander`, through `demo::padded`); the body right
+/// its body: a stated `expander.header(NONE)` padding side as it states it,
+/// an unstated left or right by upstream's px_3, an unstated top or bottom
+/// by upstream's py_2 (`demo::native_expander`, through
+/// `demo::next_padded`); the body right
 /// and below as upstream's AccordionItem pads it wherever no `gap`
 /// (`layout.widget_gap`) parts it from its title: inside the frame
 /// upstream's draws, where `frame_enabled` is unstated, and where the
 /// layout states no gap.
-fn expander_padding(e: &ResolvedExpanderTheme, gap: Option<Pixels>) -> String {
-    let p = &e.border.padding;
+pub(crate) fn expander_padding(e: &ExpanderLook, gap: Option<Pixels>) -> String {
+    let [top, right, bottom, left] = e.padding;
     let side = |name: &str, value: Option<f32>, across: bool| match (value, across) {
         (Some(v), _) => format!("{name} {}px", px_text(v)),
         (None, true) => format!("{name} upstream's px_3 (EXPANDER_PADDING_X)"),
-        (None, false) => format!("{name} none"),
+        (None, false) => format!("{name} upstream's py_2 (EXPANDER_PADDING_Y)"),
     };
     let body = match (e.frame_enabled, gap) {
         (Some(_), Some(_)) => {
@@ -916,11 +993,11 @@ fn expander_padding(e: &ResolvedExpanderTheme, gap: Option<Pixels>) -> String {
         }
     };
     format!(
-        "expander.border.padding on each title row: {}, {}, {}, {}; {body}",
-        side("top", p.top, false),
-        side("right", p.right, true),
-        side("bottom", p.bottom, false),
-        side("left", p.left, true),
+        "expander.header(NONE).padding on each title row: {}, {}, {}, {}; {body}",
+        side("top", top, false),
+        side("right", right, true),
+        side("bottom", bottom, false),
+        side("left", left, true),
     )
 }
 

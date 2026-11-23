@@ -3614,7 +3614,8 @@ fn the_tables_headers_take_the_themes_header_height(cx: &mut TestAppContext) {
 }
 
 /// The Basic expander draws what `expander.*` states (ISSUES D8): each title
-/// row `header_height` tall, its arrow `arrow_icon_size` across; and the
+/// row `expander.header(NONE).min_size[1]` tall, its arrow
+/// `expander.arrow(NONE).size` across, both checked stated first; and the
 /// Basic card is padded inside its `card.container(NONE)` stroke by the
 /// padding that part states, and by `layout.container_margin` on a side it
 /// states none for (ISSUES D9), a card being a container -- each read from
@@ -3628,13 +3629,17 @@ fn the_expander_and_the_card_take_the_themes_sizes(cx: &mut TestAppContext) {
     for preset in ["kde-breeze", "material-3"] {
         use_preset(&mut cx, &showcase, preset);
         show(&mut cx, &showcase, Page::Basic);
-        let (header, arrow) = read(&mut cx, &showcase, |_, cx| {
-            native_value(cx, |n| {
-                let e = &n.resolved.expander;
-                (e.header_height, e.arrow_icon_size)
-            })
+        let stated = read(&mut cx, &showcase, |_, cx| {
+            crate::support::next_value(cx, crate::demo::ExpanderLook::next_of)
         })
-        .unwrap_or_default();
+        .map(|look| (look.header_height, look.arrow_size));
+        assert!(
+            matches!(stated, Some((Some(_), Some(_)))),
+            "{preset}: the theme no longer states the expander's header height and arrow size: {stated:?}"
+        );
+        let Some((Some(header), Some(arrow))) = stated else {
+            continue;
+        };
         let (card_left, card_line) = read(&mut cx, &showcase, |_, cx| {
             crate::support::next_value(cx, |r| {
                 let container = r.card.container(native_theme::next::WidgetState::NONE);
@@ -3650,13 +3655,13 @@ fn the_expander_and_the_card_take_the_themes_sizes(cx: &mut TestAppContext) {
             assert_eq!(
                 bounds_of(&mut cx, row).size.height,
                 px(header),
-                "{preset}: {row} is not expander.header_height"
+                "{preset}: {row} is not expander.header(NONE).min_size[1]"
             );
             let arrow_box = bounds_of(&mut cx, icon).size;
             assert_eq!(
                 (arrow_box.width, arrow_box.height),
                 (px(arrow), px(arrow)),
-                "{preset}: {icon} is not expander.arrow_icon_size"
+                "{preset}: {icon} is not expander.arrow(NONE).size"
             );
         }
         let margin = next_layout_metric(&mut cx, &showcase, next::geometry::container_margin);
@@ -3819,7 +3824,7 @@ fn the_cards_padding_line_names_where_each_side_comes_from() {
 /// Every expected value is the resolved theme's, read at test time.
 #[gpui::test]
 fn the_native_expanders_info_says_what_it_frames_and_pads(cx: &mut TestAppContext) {
-    use crate::info::{px_text, stated};
+    use crate::info::px_text;
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     without_motion(&mut cx);
     let mut cases = (false, false, false, false, false);
@@ -3835,15 +3840,30 @@ fn the_native_expanders_info_says_what_it_frames_and_pads(cx: &mut TestAppContex
             install_next_layout(&mut cx, &showcase, |layout| layout.widget_gap = None);
         }
         show(&mut cx, &showcase, Page::Basic);
-        let r = resolved_theme(&mut cx, &showcase);
-        let e = &r.expander;
+        let look = read(&mut cx, &showcase, |_, cx| {
+            crate::support::next_value(cx, crate::demo::ExpanderLook::next_of)
+        });
+        assert!(
+            look.as_ref()
+                .is_some_and(|e| e.line.is_some() && e.line_width.is_some()),
+            "{preset}: no 0.8.0 theme is installed, or it states no expander frame"
+        );
+        let Some(e) = look else {
+            continue;
+        };
         let gap = next_layout_metric(&mut cx, &showcase, next::geometry::widget_gap);
-        let info = settle_on(&mut cx, &showcase, "basic-expander-header-0")
-            .unwrap_or_else(|| panic!("{preset}: the expander's item shows no info"));
-        let framed = e.frame_enabled != Some(false) && e.border.line_width > 0.0;
+        let info = settle_on(&mut cx, &showcase, "basic-expander-header-0");
+        assert!(
+            info.is_some(),
+            "{preset}: the expander's item shows no info"
+        );
+        let Some(info) = info else {
+            continue;
+        };
+        let framed = e.frame_enabled != Some(false) && e.line_width.is_some_and(|w| w > 0.0);
         assert_eq!(
-            claim_of(&info, "border"),
-            framed.then(|| stated(e.border.color)),
+            claim_of(&info, "expander.container(NONE).stroke.color"),
+            e.line.filter(|_| framed),
             "{preset}: the expander's info claims a frame colour where none is drawn, or none where one is: {info:?}"
         );
         let edge = note_of(&info.config, "edge").unwrap_or_default();
@@ -3864,8 +3884,8 @@ fn the_native_expanders_info_says_what_it_frames_and_pads(cx: &mut TestAppContex
                 for want in [
                     "each item framed on its own".to_string(),
                     format!(
-                        "expander.border.color at expander.border.line_width, {}px",
-                        px_text(e.border.line_width)
+                        "expander.container(NONE).stroke.color at expander.container(NONE).stroke.width, {}px",
+                        px_text(e.line_width.unwrap_or_default())
                     ),
                     apart,
                 ] {
@@ -3878,12 +3898,12 @@ fn the_native_expanders_info_says_what_it_frames_and_pads(cx: &mut TestAppContex
             _ => {}
         }
         let padding = note_of(&info.config, "padding").unwrap_or_default();
-        let p = &e.border.padding;
+        let [top, right, bottom, left] = e.padding;
         for (side, value, across) in [
-            ("top", p.top, false),
-            ("right", p.right, true),
-            ("bottom", p.bottom, false),
-            ("left", p.left, true),
+            ("top", top, false),
+            ("right", right, true),
+            ("bottom", bottom, false),
+            ("left", left, true),
         ] {
             let want = match (value, across) {
                 (Some(v), _) => format!("{side} {}px", px_text(v)),
@@ -3891,7 +3911,7 @@ fn the_native_expanders_info_says_what_it_frames_and_pads(cx: &mut TestAppContex
                     cases.2 = true;
                     format!("{side} upstream's px_3")
                 }
-                (None, false) => format!("{side} none"),
+                (None, false) => format!("{side} upstream's py_2"),
             };
             assert!(
                 padding.contains(&want),
@@ -3912,6 +3932,78 @@ fn the_native_expanders_info_says_what_it_frames_and_pads(cx: &mut TestAppContex
         (true, true, true, true, true),
         "the presets no longer cover an unframed expander, one framed per item, an unstated side, a frame the theme leaves unstated, and a stated frame with no widget_gap"
     );
+}
+
+/// Where a theme states none of the expander's frame, title row and
+/// padding, which no bundled preset leaves unstated, the theme-drawn
+/// expander's info lines name upstream's own for each (spec §10, rule 0):
+/// the frame at `border_1` and `radius_lg`, the title row as tall as its
+/// content, `py_2` and `px_3`; and where the theme states them, the stated
+/// values instead.
+#[test]
+fn an_expander_the_theme_leaves_unstated_names_upstreams_own() {
+    use crate::demo::ExpanderLook;
+    use crate::info::layout::{expander_edge, expander_padding, expander_title_row};
+    let t = Theme::default();
+    let e = ExpanderLook {
+        line: None,
+        line_width: None,
+        radius: None,
+        font: native_theme::next::TextStyle::default(),
+        text: None,
+        arrow: None,
+        arrow_size: None,
+        hover: None,
+        header_height: None,
+        padding: [None; 4],
+        arrow_side: None,
+        arrow_gap: None,
+        content_indent: None,
+        frame_enabled: None,
+    };
+    let r = native_theme::next::Theme::preset(native_theme::next::Preset::KdeBreeze)
+        .resolve(&native_theme::next::ThemeContext::default());
+    let stated = ExpanderLook {
+        line_width: Some(2.),
+        radius: Some(3.),
+        header_height: Some(30.),
+        padding: [Some(4.), Some(5.), Some(4.), Some(5.)],
+        ..e.clone()
+    };
+    for (look, line, want) in [
+        (&e, expander_edge(&e, &t, None), "upstream's border_1, 1px"),
+        (&e, expander_edge(&e, &t, None), "upstream's radius_lg"),
+        (&e, expander_padding(&e, None), "top upstream's py_2"),
+        (&e, expander_padding(&e, None), "left upstream's px_3"),
+        (
+            &e,
+            expander_title_row(&e, &r.typography, &t),
+            "as tall as its content and padding",
+        ),
+        (
+            &stated,
+            expander_edge(&stated, &t, None),
+            "expander.container(NONE).stroke.width, 2px",
+        ),
+        (
+            &stated,
+            expander_edge(&stated, &t, None),
+            "expander.container(NONE).corners, 3px",
+        ),
+        (&stated, expander_padding(&stated, None), "top 4px"),
+        (&stated, expander_padding(&stated, None), "left 5px"),
+        (
+            &stated,
+            expander_title_row(&stated, &r.typography, &t),
+            "expander.header(NONE).min_size[1], 30px",
+        ),
+    ] {
+        assert!(
+            line.contains(want),
+            "the line {line:?} of {:?} does not say {want:?}",
+            look.padding
+        );
+    }
 }
 
 /// The tab rows draw exactly what `tab.*` states (ISSUES D7), through the

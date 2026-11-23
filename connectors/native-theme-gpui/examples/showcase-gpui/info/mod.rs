@@ -250,10 +250,6 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
         "button.min_height by the control-height rule (defaults.line_height as the line height; the stated height at a text scale of 1 or less, a minimum with an automatic height above 1), min_width, the border.padding sides the theme states, corner_radius, line_width, color, and button.font.weight but not its size (spec §9.2)",
     ),
     (
-        "accordion_title",
-        "expander.header_height, and expander.font.color over the foreground upstream sets on an open item's title row first; a closed one's sets none (gpui-component/accordion.rs, AccordionItem::render)",
-    ),
-    (
         "icon_size_toolbar",
         "toolbar.icon_size, which inherits defaults.icon_sizes.toolbar",
     ),
@@ -613,6 +609,15 @@ pub fn drawn_font(font: &native_theme::theme::ResolvedFontSpec) -> String {
         px_text(font.size),
         font.weight
     )
+}
+
+/// An icon's colour of the installed 0.8.0 theme as gpui paints it
+/// ([`next_stated`]), `None` where the theme states none and the widget
+/// keeps the toolkit's own (spec §10, rule 0).
+pub fn icon_color_of(icon: &native_theme::next::IconStyle) -> Option<Hsla> {
+    icon.stated
+        .contains(native_theme::next::IconStated::COLOR)
+        .then(|| next_stated(icon.color))
 }
 
 /// A font of the installed 0.8.0 theme as a theme-drawn widget's label draws
