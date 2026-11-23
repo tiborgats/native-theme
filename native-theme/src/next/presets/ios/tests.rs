@@ -470,7 +470,7 @@ fn an_explicit_accent_replaces_the_palette_s_accent_slots() {
 }
 
 /// The checked button: its fill over the hovered and the pressed fills, its
-/// pressed fill when pressed too, its label over the pressed one; the
+/// pressed fill and label when pressed too, its label over the pressed one; the
 /// primary and the disabled looks over it. The colours are the default
 /// tint's and stay under another accent.
 #[test]
@@ -501,7 +501,15 @@ fn a_checked_button_has_the_selected_toggle_s_colours() {
             );
             assert_eq!(
                 theme.button.label(checked(WidgetState::PRESSED)).color,
-                c.button_checked_foreground,
+                c.button_checked_pressed_foreground,
+                "{scheme:?}"
+            );
+            assert_eq!(
+                theme
+                    .button
+                    .label(checked(WidgetState::PRESSED | WidgetState::HOVER))
+                    .color,
+                c.button_checked_pressed_foreground,
                 "{scheme:?}"
             );
             assert_eq!(

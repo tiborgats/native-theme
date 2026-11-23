@@ -406,6 +406,15 @@
           }
         },
         {
+          "states": [
+            "pressed",
+            "checked"
+          ],
+          "label": {
+            "color": "#2390ff"
+          }
+        },
+        {
           "variant": "primary",
           "label": {
             "color": "#ffffff"

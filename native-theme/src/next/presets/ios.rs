@@ -85,7 +85,9 @@
 //!   pressed fill over it, as UIKit draws a selected toggle, highlighted or
 //!   not, in fills of its own (`docs/facts/ios/button.toml` on `v0.8.0-rc1`
 //!   at `78ee0efd`), under the primary and the disabled fills. Its label: the
-//!   checked colour over the pressed one, the primary text over it, the
+//!   checked colour over the pressed one, and the checked and pressed colour
+//!   over it, as UIKit draws a highlighted selected toggle's title in a
+//!   colour of its own (the same facts), the primary text over them, the
 //!   disabled text over every other (`mapping.md`,
 //!   `button.disabled_text_color`);
 //! - the check box's and the radio button's indicator: the checked fill and
@@ -260,6 +262,8 @@ struct SchemeColors {
     button_checked_pressed: Color,
     /// A checked toggle's label under the default tint.
     button_checked_foreground: Color,
+    /// A checked toggle's label while pressed, under the default tint.
+    button_checked_pressed_foreground: Color,
     disabled_fill: Color,
     disabled_label: Color,
     row_hover: Color,
@@ -375,6 +379,9 @@ const LIGHT: SchemeColors = SchemeColors {
     // `button.checked_text_color`: the default tint (the same run,
     // `cells.light.gray.*.selected.label_fill`, the plain style the same)
     button_checked_foreground: srgb8(0x007a_ffff),
+    // the same, pressed: the default tint at 0xbf (the same run,
+    // `cells.light.gray.*.selected_highlighted.label_fill`, the plain style the same)
+    button_checked_pressed_foreground: srgb8(0x007a_ffbf),
     // `button.disabled_background`, `checkbox.disabled_background`,
     // `combo_box.disabled_background`: 0.7.2 ios-13.toml (uncited)
     disabled_fill: srgb8(0xe5e5_ea80),
@@ -525,6 +532,9 @@ const DARK: SchemeColors = SchemeColors {
     // `button.checked_text_color`: the default tint (the same run,
     // `cells.dark.gray.*.selected.label_fill`, the plain style the same)
     button_checked_foreground: srgb8(0x0a84_ffff),
+    // the same, pressed: #2390ff (the same run,
+    // `cells.dark.gray.*.selected_highlighted.label_fill`, the plain style the same)
+    button_checked_pressed_foreground: srgb8(0x2390_ffff),
     // `button.disabled_background`, `checkbox.disabled_background`,
     // `combo_box.disabled_background`: 0.7.2 ios-13.toml (uncited)
     disabled_fill: srgb8(0x2c2c_2e80),
@@ -1342,7 +1352,7 @@ fn label(body: &TextStyle, color: Option<Color>) -> TextStyle {
 /// The push button, WebKit's iOS button: `opaqueSecondaryFill` in the
 /// default border (0.7.2's `resolve_border_inheritance`), at the default
 /// radius, of least sizes; hovered and pressed its own fills; checked, and
-/// checked and pressed, UIKit's selected toggle's fills, with its label; the
+/// checked and pressed, UIKit's selected toggle's fills, with its labels; the
 /// primary variant in the accent (0.7.2: `primary_background` is
 /// `defaults.accent_color` where unstated); disabled, its disabled fill. Its
 /// label `systemBlue`, which a pressed button keeps, primary the accent's
@@ -1403,6 +1413,10 @@ fn button(
         .rule(
             RuleSelector::on(WidgetState::CHECKED),
             [TextProp::Color(c.button_checked_foreground)],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::CHECKED | WidgetState::PRESSED),
+            [TextProp::Color(c.button_checked_pressed_foreground)],
         )
         .rule(primary(), [TextProp::Color(roles.accent.foreground)])
         .rule(

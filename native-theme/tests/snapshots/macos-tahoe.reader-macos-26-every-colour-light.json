@@ -346,6 +346,15 @@
           }
         },
         {
+          "states": [
+            "pressed",
+            "checked"
+          ],
+          "body": {
+            "fill": "srgb(0.0069019613, 0.352, 0.013803923, 1)"
+          }
+        },
+        {
           "variant": "primary",
           "body": {
             "fill": "#026604"
@@ -357,6 +366,15 @@
           ],
           "body": {
             "fill": "#0000000a"
+          }
+        },
+        {
+          "states": [
+            "disabled",
+            "checked"
+          ],
+          "body": {
+            "fill": "srgb(0.007529412, 0.384, 0.015058824, 0.44)"
           }
         }
       ]
@@ -393,6 +411,15 @@
           ],
           "label": {
             "color": "#127624"
+          }
+        },
+        {
+          "states": [
+            "disabled",
+            "checked"
+          ],
+          "label": {
+            "color": "#ffffff20"
           }
         }
       ]

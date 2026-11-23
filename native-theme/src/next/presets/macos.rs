@@ -51,8 +51,10 @@
 //! An explicit accent, or else a palette's `accent`, is written as given;
 //! no colour is computed from it (spec §6, step 2;
 //! `.superpowers/sdd/v0.8.0-plan/M2/units/accent-decision.md`) but
-//! `macos-tahoe`'s checked button fill, its measured mix
-//! ([`BUTTON_CHECKED_MIX`]): it is the accent's fill, and so the checked
+//! `macos-tahoe`'s checked button fills, at rest, pressed and disabled, its
+//! measured mixes ([`BUTTON_CHECKED_MIX`], [`BUTTON_CHECKED_PRESSED_MIX`],
+//! [`BUTTON_CHECKED_DISABLED_MIX`] at [`BUTTON_CHECKED_DISABLED_ALPHA`]):
+//! it is the accent's fill, and so the checked
 //! fills, the slider's and the progress bar's fill, `macos-tahoe`'s selected
 //! segment and the disabled on switch's track at its generation's alpha; the
 //! selection's background; the text selection, which takes the selection's
@@ -97,11 +99,16 @@
 //!   it; the label's disabled colour over the primary text; on
 //!   `macos-tahoe` the checked fill and label over the hovered look, as
 //!   hover draws nothing on a macOS 26 push button (`platform-facts.md`
-//!   §2.3, `hover_border_color`), the primary look over the checked one, as
-//!   over the hovered and the pressed ones, and the disabled look over it by
-//!   egui's order (the parked facts measure a pressed and a disabled
-//!   checked toggle in looks of their own, which this preset does not
-//!   state);
+//!   §2.3, `hover_border_color`), and the checked and pressed fill over the
+//!   checked one, as AppKit draws a pressed checked toggle in a fill of its
+//!   own (`docs/facts/macos/button.toml` on `v0.8.0-rc1` at `78ee0efd`); the
+//!   primary look over both, as over the hovered and the pressed ones, and
+//!   the disabled look over it by egui's order; the checked and disabled
+//!   fill and label over the disabled look, the primary one included, as
+//!   AppKit draws a disabled checked toggle in a look of its own (the same
+//!   facts), pressed or not, as a disabled and pressed button draws as a
+//!   disabled one (the same facts: run 42272240639's disabled-and-pressed
+//!   and disabled layers of 402 buttons are the same pixels);
 //! - the check box's and the radio button's indicator: the checked fill and
 //!   outline over the hovered fill, as 0.7.2's egui widgets draw a checked
 //!   box or circle in its checked look whatever the pointer does (the
@@ -248,11 +255,15 @@ struct SchemeColors {
     button_disabled: Color,
     button_foreground: Color,
     /// The colour a checked toggle's fill mixes into the accent, by
-    /// [`BUTTON_CHECKED_MIX`]; `None` where the generation states no checked
-    /// fill.
+    /// [`BUTTON_CHECKED_MIX`], pressed by [`BUTTON_CHECKED_PRESSED_MIX`] and
+    /// disabled by [`BUTTON_CHECKED_DISABLED_MIX`]; `None` where the
+    /// generation states no checked fill.
     button_checked_mix_with: Option<Color>,
     /// A checked toggle's label; `None` where the generation states none.
     button_checked_foreground: Option<Color>,
+    /// A disabled checked toggle's label; `None` where the generation states
+    /// none.
+    button_checked_disabled_foreground: Option<Color>,
     checkbox_hover: Option<Color>,
     checkbox_unchecked: Color,
     checkbox_unchecked_border: Color,
@@ -381,6 +392,7 @@ const MONTEREY_LIGHT: SchemeColors = SchemeColors {
     // (`docs/facts/macos/button.toml` on `v0.8.0-rc1` at `78ee0efd`)
     button_checked_mix_with: None,
     button_checked_foreground: None,
+    button_checked_disabled_foreground: None,
     // `checkbox.hover_background`: soft_option: checkbox hover state -- subtle highlight
     checkbox_hover: Some(srgb8(0xe0e0_e5ff)),
     // `checkbox.unchecked_background`: platform-facts.md (§2.5): ← background_color, the unchecked
@@ -598,6 +610,7 @@ const MONTEREY_DARK: SchemeColors = SchemeColors {
     // (`docs/facts/macos/button.toml` on `v0.8.0-rc1` at `78ee0efd`)
     button_checked_mix_with: None,
     button_checked_foreground: None,
+    button_checked_disabled_foreground: None,
     // `checkbox.hover_background`: soft_option: checkbox hover state -- subtle highlight
     checkbox_hover: Some(srgb8(0x4444_46ff)),
     // `checkbox.unchecked_background`: platform-facts.md (§2.5): ← background_color, white at alpha
@@ -816,11 +829,18 @@ const TAHOE_LIGHT: SchemeColors = SchemeColors {
     // (measured, os-probe run 41006842699, macOS 26.6.2, both accents at every size: #0077f9 under
     // #007aff, #db373c under #e0383e; `docs/facts/macos/button.toml` on `v0.8.0-rc1` at
     // `78ee0efd`, from the run's `os-probe-macos-26/tiebreak-derivations.toml`,
-    // `derivation.checked_fill_light_*`)
+    // `derivation.checked_fill_light_*`); pressed, mix(accent, #000000, 0.12) (#006be1 under
+    // #007aff, #c53236 under #e0383e: `derivation.checked_pressed_fill_light_*`); disabled,
+    // alpha(mix(accent, #000000, 0.04), 0.44) (#0076f470 under #007aff, #d6363d71 under #e0383e:
+    // `derivation.checked_disabled_fill_light_*`)
     button_checked_mix_with: Some(srgb8(0x0000_00ff)),
     // `button.checked_text_color`: #ffffff (measured, the same run's
     // `os-probe-macos-26/layers-key-push.toml`, `key.push.aqua.normal.*-toggle_on.label`)
     button_checked_foreground: Some(srgb8(0xffff_ffff)),
+    // a disabled checked toggle's label: #ffffff20 (measured, the same run's
+    // `os-probe-macos-26/layers-key-push.toml`, `key.push.aqua.disabled.*-toggle_on.label`; under
+    // the red accent too, `tiebreak-derivations.toml`, `derivation.checked_disabled_label_light_*`)
+    button_checked_disabled_foreground: Some(srgb8(0xffff_ff20)),
     checkbox_hover: None,
     // `checkbox.unchecked_background`: platform-facts.md (§2.5): macOS 26: the unchecked box is one
     // fill, systemFillColor's value #00000019 (measured, renders/aqua/checkbox-regular-off@2x.png;
@@ -1008,11 +1028,20 @@ const TAHOE_DARK: SchemeColors = SchemeColors {
     // (measured, os-probe run 41006842699, macOS 26.6.2, both accents at every size: #077dff under
     // #007aff, #ff575b under #ff5257; `docs/facts/macos/button.toml` on `v0.8.0-rc1` at
     // `78ee0efd`, from the run's `os-probe-macos-26/tiebreak-derivations.toml`,
-    // `derivation.checked_fill_dark_*`)
+    // `derivation.checked_fill_dark_*`); pressed, mix(accent, #ffffff, 0.12) (#1f8aff under
+    // #007aff, #ff676b under #ff5257: `derivation.checked_pressed_fill_dark_*`); disabled,
+    // alpha(mix(accent, #ffffff, 0.04), 0.44) (#0982ff70 under #007aff, #ff5b5d70 under #ff5257:
+    // `derivation.checked_disabled_fill_dark_*`)
     button_checked_mix_with: Some(srgb8(0xffff_ffff)),
     // `button.checked_text_color`: #ffffff (measured, the same run's
     // `os-probe-macos-26/layers-key-push.toml`, `key.push.darkAqua.normal.*-toggle_on.label`)
     button_checked_foreground: Some(srgb8(0xffff_ffff)),
+    // a disabled checked toggle's label: #ffffff20, the parked facts' value for both schemes
+    // (measured, the same run's `os-probe-macos-26/layers-key-push.toml`,
+    // `key.push.darkAqua.disabled.*-toggle_on.label`, read #fefffe20 or #fdfffe20, within the
+    // facts' tolerance of 2 levels; under the red accent too, `tiebreak-derivations.toml`,
+    // `derivation.checked_disabled_label_dark_*`)
+    button_checked_disabled_foreground: Some(srgb8(0xffff_ff20)),
     checkbox_hover: None,
     // `checkbox.unchecked_background`: platform-facts.md (§2.5): macOS 26: the unchecked box is one
     // fill, systemFillColor's value #ffffff19 (measured,
@@ -1868,6 +1897,23 @@ const FOCUS_RING_ALPHA: u8 = 0x7f;
 /// `derivation.checked_fill_*`).
 const BUTTON_CHECKED_MIX: f32 = 0.025;
 
+/// The weight of the colour `macos-tahoe` mixes into the accent for a
+/// pressed checked toggle's fill: 0.12, in sRGB, as [`BUTTON_CHECKED_MIX`]
+/// is measured (the same facts and run,
+/// `derivation.checked_pressed_fill_*`).
+const BUTTON_CHECKED_PRESSED_MIX: f32 = 0.12;
+
+/// The weight of the colour `macos-tahoe` mixes into the accent for a
+/// disabled checked toggle's fill, which is then at alpha
+/// [`BUTTON_CHECKED_DISABLED_ALPHA`]: 0.04, in sRGB, as
+/// [`BUTTON_CHECKED_MIX`] is measured (the same facts and run,
+/// `derivation.checked_disabled_fill_*`).
+const BUTTON_CHECKED_DISABLED_MIX: f32 = 0.04;
+
+/// The alpha of a disabled checked toggle's fill on `macos-tahoe`: 0.44
+/// (the same facts and run, `derivation.checked_disabled_fill_*`).
+const BUTTON_CHECKED_DISABLED_ALPHA: f32 = 0.44;
+
 /// The colour of `rgba`, 8-bit sRGB `0xRRGGBBAA`, each channel over 255 as
 /// [`Color::from_srgb8`] takes it.
 const fn srgb8(rgba: u32) -> Color {
@@ -2531,8 +2577,10 @@ fn label(body: &TextStyle, color: Option<Color>) -> TextStyle {
 /// least size; hovered, pressed (`macos-monterey` only) and disabled fills;
 /// checked (`macos-tahoe` only), the accent in force mixed with
 /// [`SchemeColors::button_checked_mix_with`] by [`BUTTON_CHECKED_MIX`], with
-/// its own label colour; the primary variant in the accent with its text
-/// (0.7.2: `primary_background` and `primary_text_color` are
+/// its own label colour, pressed by [`BUTTON_CHECKED_PRESSED_MIX`], disabled
+/// by [`BUTTON_CHECKED_DISABLED_MIX`] at [`BUTTON_CHECKED_DISABLED_ALPHA`]
+/// with its own disabled label colour; the primary variant in the accent
+/// with its text (0.7.2: `primary_background` and `primary_text_color` are
 /// `defaults.accent_color` and `accent_text_color` where unstated). Its text
 /// keeps its colour hovered and pressed (0.7.2: `hover_text_color` and
 /// `active_text_color` are `button.font.color` where unstated), and is the
@@ -2576,10 +2624,29 @@ fn button(
             c.button_checked_mix_with
                 .map(|with| fill(roles.accent.fill.mix_srgb(with, BUTTON_CHECKED_MIX))),
         )
+        .rules(
+            c.button_checked_mix_with
+                .map(|_| RuleSelector::on(WidgetState::CHECKED | WidgetState::PRESSED)),
+            c.button_checked_mix_with
+                .map(|with| fill(roles.accent.fill.mix_srgb(with, BUTTON_CHECKED_PRESSED_MIX))),
+        )
         .rule(primary(), [fill(roles.accent.fill)])
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
             [fill(c.button_disabled)],
+        )
+        .rules(
+            c.button_checked_mix_with
+                .map(|_| RuleSelector::on(WidgetState::CHECKED | WidgetState::DISABLED)),
+            c.button_checked_mix_with.map(|with| {
+                fill(
+                    roles
+                        .accent
+                        .fill
+                        .mix_srgb(with, BUTTON_CHECKED_DISABLED_MIX)
+                        .with_alpha(BUTTON_CHECKED_DISABLED_ALPHA),
+                )
+            }),
         )
         .build();
     let label = RuleBuilder::new(label(&typography.body, Some(c.button_foreground)))
@@ -2592,6 +2659,11 @@ fn button(
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
             [TextProp::Color(roles.disabled_text)],
+        )
+        .rules(
+            c.button_checked_disabled_foreground
+                .map(|_| RuleSelector::on(WidgetState::CHECKED | WidgetState::DISABLED)),
+            c.button_checked_disabled_foreground.map(TextProp::Color),
         )
         .build();
     ButtonWidget::new(
