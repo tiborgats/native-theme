@@ -75,13 +75,14 @@ use native_theme::icons::{
 };
 use native_theme::next::{
     Contrast, Direction, MotionPreference, Palette, Preset, Scheme, TextStated, TextStyle,
-    ThemeContext, Typography,
+    ThemeContext, Typography, WidgetState,
 };
 use native_theme::theme::{
     ArrowSide, FontStyle, LayoutTheme, ResolvedFontSpec, ResolvedListTheme, ResolvedMenuTheme,
     ResolvedTextScale, ResolvedTextScaleEntry, ResolvedTheme,
 };
 use native_theme_iced::icons::to_svg_handle;
+use native_theme_iced::next as iced_next;
 use native_theme_iced::palette::to_color;
 use native_theme_iced::styles;
 use native_theme_iced::{
@@ -426,7 +427,7 @@ impl Gaps {
         Self {
             widget: layout.widget_gap.unwrap_or(0.0),
             container: layout.container_margin.unwrap_or(0.0),
-            window: layout.window_margin.unwrap_or(0.0),
+            window: layout.window_margin.unwrap_or_default(),
             section: layout.section_gap.unwrap_or(0.0),
         }
     }
@@ -2770,13 +2771,6 @@ impl State {
     /// The installed 0.8.0 theme a page on the 0.8.0 model reads: resolved
     /// for an inactive window while the window is not active
     /// ([`State::window_active`]), else for an active one.
-    #[cfg_attr(
-        not(test),
-        expect(
-            dead_code,
-            reason = "the page groups call it as they move to the 0.8.0 model"
-        )
-    )]
     fn next_shown(&self) -> &native_theme::next::ResolvedTheme {
         if self.window_active {
             &self.next_resolved
@@ -3659,12 +3653,11 @@ fn view(state: &State) -> Element<'_, Message> {
 
 /// The content panel (spec S3): the page tab row at its top, under it the
 /// theme-error banner where a theme failed to load, then the page, which
-/// scrolls, inside `layout.window_margin`.
+/// scrolls, inside `layout.window_margin` of the 0.7.2 theme the pages still
+/// read (none where that is unstated).
 fn content_panel(state: &State, btn_pad: Padding, inp_pad: Padding) -> Element<'_, Message> {
-    let a11y = &state.accessibility;
-    let gap = Gaps::from_layout(&state.layout);
-    let resolved = &state.current_resolved;
-    let ts = &resolved.text_scale;
+    let r = state.next_shown();
+    let window = Padding::from(Gaps::from_layout(&state.layout).window);
     let tab_content: Element<'_, Message> = match state.active_tab {
         Tab::Basic => view_basic(state, btn_pad, inp_pad),
         Tab::Buttons => view_buttons(state, btn_pad),
@@ -3682,34 +3675,33 @@ fn content_panel(state: &State, btn_pad: Padding, inp_pad: Padding) -> Element<'
 
     let mut panel = column![
         page_tabs(state),
-        tagged("chrome.page_tabs.rule", separator_line(resolved))
+        tagged("chrome.page_tabs.rule", separator_line(r))
     ]
     .width(Fill)
     .height(Fill);
-    // The banner: the platform's own error colour, not the palette slot iced
-    // derives from it, inside the window margin the page has.
+    // The banner: the platform's own error colour, `colors.error.fill`, not
+    // the palette slot iced derives from it, in the caption's style, inside
+    // the window margin the page has.
     if let Some(ref msg) = state.error_message {
-        let danger = to_color(resolved.defaults.danger_color);
+        let danger = next_colour(r.colors.error.fill);
         panel = panel.push(
-            container(
-                text(msg.as_str())
-                    .color(danger)
-                    .role(&ts.caption, resolved, a11y),
-            )
-            .padding(Padding::from(gap.window).bottom(0.0))
+            container(text(msg.as_str()).color(danger).next_text(
+                native_theme_iced::next::text_scale(r).caption,
+                &r.typography,
+            ))
+            .padding(window.bottom(0.0))
             .width(Fill),
         );
     }
+    // The page's margin and scroll bar are the 0.7.2 theme's, which the
+    // pages still on it lay their columns out against (`basic_column_count`).
+    let resolved = &state.current_resolved;
     panel
         .push(
-            scrollable(
-                container(tab_content)
-                    .padding(Padding::from(gap.window))
-                    .width(Fill),
-            )
-            .direction(scrollable::Direction::Vertical(styles::scrollbar(resolved)))
-            .style(styles::scrollable(resolved))
-            .height(Fill),
+            scrollable(container(tab_content).padding(window).width(Fill))
+                .direction(scrollable::Direction::Vertical(styles::scrollbar(resolved)))
+                .style(styles::scrollable(resolved))
+                .height(Fill),
         )
         .into()
 }
@@ -5821,11 +5813,11 @@ impl<'a> From<Underlay<'a>> for Element<'a, Message> {
     }
 }
 
-/// A horizontal separator: `separator.line_width` thick, in
-/// `separator.line_color` (`styles::rule`).
-fn separator_line<'a>(resolved: &ResolvedTheme) -> Element<'a, Message> {
-    rule::horizontal(resolved.separator.line_width)
-        .style(styles::rule(resolved))
+/// A horizontal separator on the 0.8.0 model: `separator.thickness` thick,
+/// in `separator.color` (`iced_next::styles::rule`).
+fn separator_line<'a>(r: &native_theme::next::ResolvedTheme) -> Element<'a, Message> {
+    rule::horizontal(r.separator.thickness)
+        .style(iced_next::styles::rule(r))
         .into()
 }
 
@@ -6382,7 +6374,8 @@ fn toolbar(state: &State) -> Element<'_, Message> {
     .into()
 }
 
-/// One of the theme settings: `label`, in `sidebar.font`, above `control`,
+/// One of the theme settings: `label`, in the side panel's label,
+/// `sidebar.item_label(NONE)` ([`Typeset::next_text`]), above `control`,
 /// [`settings_gap`] apart; `tags` are the list's ids of the label and of the
 /// control.
 fn setting<'a>(
@@ -6391,18 +6384,15 @@ fn setting<'a>(
     label: &'static str,
     control: Element<'a, Message>,
 ) -> Element<'a, Message> {
+    let r = state.next_shown();
     column![
         tagged(
             tags.0,
-            text(label).themed(
-                &state.current_resolved.sidebar.font,
-                &state.current_resolved,
-                &state.accessibility
-            )
+            text(label).next_text(&r.sidebar.item_label(WidgetState::NONE), &r.typography)
         ),
         tagged(tags.1, control),
     ]
-    .spacing(settings_gap(&state.layout))
+    .spacing(settings_gap(r))
     .into()
 }
 
@@ -6416,7 +6406,7 @@ fn setting<'a>(
 /// resolution step 1), that too: on the label, not the drop-down, so it
 /// never covers the drop-down's open menu ([`icon_theme_picker`]).
 fn palette_setting(state: &State) -> Element<'_, Message> {
-    let resolved = &state.current_resolved;
+    let r = state.next_shown();
     let mut tip = PALETTE_TOOLTIP.to_string();
     if let Some(palette) = state
         .theme_palette
@@ -6429,8 +6419,8 @@ fn palette_setting(state: &State) -> Element<'_, Message> {
     }
     let label = showcase_tooltip(
         state,
-        text("Palette").themed(&resolved.sidebar.font, resolved, &state.accessibility),
-        text(tip).themed(&resolved.tooltip.font, resolved, &state.accessibility),
+        text("Palette").next_text(&r.sidebar.item_label(WidgetState::NONE), &r.typography),
+        text(tip).next_text(&r.tooltip.text, &r.typography),
         tooltip::Position::Bottom,
         true,
     );
@@ -6441,50 +6431,82 @@ fn palette_setting(state: &State) -> Element<'_, Message> {
         Message::ThemePaletteSelected,
         None,
     );
-    column![label, picker]
-        .spacing(settings_gap(&state.layout))
-        .into()
+    column![label, picker].spacing(settings_gap(r)).into()
 }
 
 /// The gap between the theme settings' rows, and between each row's label
 /// and its control: `layout.widget_gap`, or [`THEME_SETTINGS_GAP`] where that
 /// is unstated, as the gpui showcase's settings.
-fn settings_gap(layout: &LayoutTheme) -> f32 {
-    layout.widget_gap.unwrap_or(THEME_SETTINGS_GAP)
+fn settings_gap(r: &native_theme::next::ResolvedTheme) -> f32 {
+    r.layout.widget_gap.unwrap_or(THEME_SETTINGS_GAP)
 }
 
-/// `sidebar.border.padding`, where the theme states any side of it: the side
-/// panel's own padding, as the gpui and egui showcases take it. It then pads
-/// the whole panel, a side it leaves unstated by `layout.container_margin`
-/// (none where that is unstated too), with no line width, and the panel's
-/// content adds none ([`side_panel_content_margin`]). `None` where it states
-/// no side.
-fn sidebar_padding(resolved: &ResolvedTheme, layout: &LayoutTheme) -> Option<Padding> {
-    let p = &resolved.sidebar.border.padding;
-    [p.top, p.right, p.bottom, p.left]
-        .iter()
-        .any(Option::is_some)
-        .then(|| {
-            native_theme_iced::padding_or(p, Padding::from(layout.container_margin.unwrap_or(0.0)))
-        })
+/// The padding of the side panel's container, `sidebar.container(NONE)`,
+/// where the theme states any side of it: the side panel's own padding, as
+/// the gpui and egui showcases take it. It then pads the whole panel, a side
+/// it leaves unstated by `layout.container_margin` (none where that is
+/// unstated too), with no line width, and the panel's content adds none
+/// ([`side_panel_content_margin`]). `None` where it states no side.
+fn sidebar_padding(r: &native_theme::next::ResolvedTheme) -> Option<Padding> {
+    panel_padding(
+        native_theme_iced::next::padding_of(&r.sidebar.container(WidgetState::NONE)),
+        r.layout.container_margin,
+    )
+}
+
+/// [`sidebar_padding`] of the sides the panel's container states, top,
+/// right, bottom, left, and the theme's container margin.
+fn panel_padding(sides: [Option<f32>; 4], container_margin: Option<f32>) -> Option<Padding> {
+    let margin = container_margin.map_or(Padding::ZERO, Padding::from);
+    let [top, right, bottom, left] = sides;
+    sides.iter().any(Option::is_some).then(|| Padding {
+        top: top.unwrap_or(margin.top),
+        right: right.unwrap_or(margin.right),
+        bottom: bottom.unwrap_or(margin.bottom),
+        left: left.unwrap_or(margin.left),
+    })
 }
 
 /// The padding of the side panel's settings and of the inspector's content,
-/// and the inspector's tab row's sides: `layout.container_margin` (none where
-/// it is unstated), or none where the theme states the panel's own padding
-/// ([`sidebar_padding`]), which pads them already.
-fn side_panel_content_margin(resolved: &ResolvedTheme, layout: &LayoutTheme) -> f32 {
-    match sidebar_padding(resolved, layout) {
-        Some(_) => 0.0,
-        None => layout.container_margin.unwrap_or(0.0),
+/// and the inspector's tab row's sides: `layout.container_margin`, or `None`
+/// where the theme states the panel's own padding ([`sidebar_padding`]),
+/// which pads them already, or no container margin: no padding.
+fn side_panel_content_margin(r: &native_theme::next::ResolvedTheme) -> Option<f32> {
+    match sidebar_padding(r) {
+        Some(_) => None,
+        None => r.layout.container_margin,
+    }
+}
+
+/// The line height of a single-line control's text, `label`, on the 0.8.0
+/// model: [`native_theme_iced::next::control_line_height`], which makes the
+/// control at least `min_height` tall inside `padding`, where the theme
+/// states that least height; else `label`'s own line box
+/// ([`next_line_box`]).
+fn next_control_line(
+    r: &native_theme::next::ResolvedTheme,
+    label: &TextStyle,
+    min_height: Option<f32>,
+    padding: Padding,
+) -> iced::widget::text::LineHeight {
+    match min_height {
+        Some(min) => native_theme_iced::next::control_line_height(r, label.size_px, min, padding),
+        None => iced::widget::text::LineHeight::Absolute(iced::Pixels(next_line_box(
+            &r.typography,
+            label,
+        ))),
     }
 }
 
 /// A drop-down of the theme settings: as wide as the side panel's content,
-/// in the model's combo box (`styles::pick_list`, `combo_box.font`,
-/// `combo_box_padding`, at least `combo_box.min_height` tall, its arrow
-/// `combo_box.arrow_icon_size`). `menu`, where given, is the messages its
-/// menu's opening and closing send (`PickList::on_open`, `on_close`).
+/// in the model's combo box (`iced_next::styles::pick_list`
+/// and `menu`; its label `combo_box.label(NONE)`, its padding
+/// `native_theme_iced::next::combo_box_padding`, at least
+/// `combo_box.field(NONE).min_size[1]` tall ([`next_control_line`]), its
+/// arrow [`next_arrow_handle`]). A style, a padding or a font the theme
+/// gives iced no value for leaves iced's own (spec §10, rule 0). `menu`,
+/// where given, is the messages its menu's opening and closing send
+/// (`PickList::on_open`, `on_close`).
 fn setting_picker<'a, T>(
     state: &'a State,
     options: Vec<T>,
@@ -6495,22 +6517,24 @@ fn setting_picker<'a, T>(
 where
     T: ToString + PartialEq + Clone + 'a,
 {
-    let resolved = &state.current_resolved;
-    let size = scaled_text_size(resolved.combo_box.font.size, &state.accessibility);
-    let pad = combo_box_padding(resolved);
+    let r = state.next_shown();
+    let label = r.combo_box.label(WidgetState::NONE);
+    // iced's own `PickList` padding, `button::DEFAULT_PADDING` (iced_widget
+    // 0.14.2 `src/pick_list.rs`, `PickList::new`).
+    let pad = native_theme_iced::next::combo_box_padding(r).unwrap_or(button::DEFAULT_PADDING);
+    let min_height = r.combo_box.field(WidgetState::NONE).min_size[1];
     let list = pick_list(options, selected, on_select)
-        .handle(arrow_handle(resolved))
+        .handle(next_arrow_handle(r))
         .padding(pad)
-        .text_line_height(control_line_height(
-            resolved,
-            size,
-            resolved.combo_box.min_height,
-            pad,
-        ))
-        .text_size(size)
-        .font(theme_font(&resolved.combo_box.font))
-        .style(styles::pick_list(resolved))
-        .menu_style(styles::menu(resolved))
+        .text_line_height(next_control_line(r, &label, min_height, pad))
+        .text_size(label.size_px)
+        .next_font(&label, |list, font| list.font(font))
+        .next_style(iced_next::styles::pick_list(r), |list, style| {
+            list.style(style)
+        })
+        .next_style(iced_next::styles::menu(r), |list, style| {
+            list.menu_style(style)
+        })
         .width(Fill);
     match menu {
         Some((opened, closed)) => list.on_open(opened).on_close(closed).into(),
@@ -6563,12 +6587,9 @@ fn icon_theme_picker(state: &State) -> Element<'_, Message> {
             showcase_tooltip(state, picker, space(), tooltip::Position::Bottom, false)
         }
         Err(e) => {
-            let resolved = &state.current_resolved;
-            let tip = text(rows::icon_theme_unavailable(&e)).themed(
-                &resolved.tooltip.font,
-                resolved,
-                &state.accessibility,
-            );
+            let r = state.next_shown();
+            let tip =
+                text(rows::icon_theme_unavailable(&e)).next_text(&r.tooltip.text, &r.typography);
             showcase_tooltip(
                 state,
                 picker,
@@ -6597,14 +6618,19 @@ fn icon_theme_picker(state: &State) -> Element<'_, Message> {
 /// found by its words. Its placeholder, shown while the field is empty,
 /// says so.
 ///
-/// The arrow is the field's icon: [`arrow_handle`]'s chevron at its size,
-/// right-aligned at the right padding's inner edge as the drop-down's is
-/// (`text_input.rs:363-369`; `pick_list.rs:654-657`), no gap before it, as a
-/// drop-down's label runs to that padding (`pick_list.rs:675-684`).
+/// The arrow is the field's icon: [`next_arrow_handle`]'s chevron at its
+/// size, right-aligned at the right padding's inner edge as the drop-down's
+/// is (`text_input.rs:363-369`; `pick_list.rs:654-657`), no gap before it, as
+/// a drop-down's label runs to that padding (`pick_list.rs:675-684`). Where
+/// the theme gives iced no drop-down or field style, the field keeps iced's
+/// own (spec §10, rule 0).
 fn theme_picker(state: &State) -> Element<'_, Message> {
-    let resolved = &state.current_resolved;
-    let size = scaled_text_size(resolved.combo_box.font.size, &state.accessibility);
-    let pad = combo_box_padding(resolved);
+    let r = state.next_shown();
+    let label = r.combo_box.label(WidgetState::NONE);
+    // iced's own `ComboBox` padding, `text_input::DEFAULT_PADDING`
+    // (iced_widget 0.14.2 `src/combo_box.rs`, `ComboBox::new`).
+    let pad = native_theme_iced::next::combo_box_padding(r).unwrap_or(text_input::DEFAULT_PADDING);
+    let min_height = r.combo_box.field(WidgetState::NONE).min_size[1];
     let field = combo_box(
         &state.theme_combo,
         "Filter by name\u{2026}",
@@ -6612,21 +6638,20 @@ fn theme_picker(state: &State) -> Element<'_, Message> {
         Message::ThemeSelected,
     )
     .padding(pad)
-    .line_height(control_line_height(
-        resolved,
-        size,
-        resolved.combo_box.min_height,
-        pad,
-    ))
-    .size(size)
-    .font(theme_font(&resolved.combo_box.font))
-    .input_style(theme_picker_style(
-        styles::pick_list(resolved),
-        styles::text_input(resolved),
-    ))
-    .menu_style(styles::menu(resolved))
+    .line_height(next_control_line(r, &label, min_height, pad))
+    .size(label.size_px)
+    .next_font(&label, |field, font| field.font(font))
+    .next_style(
+        iced_next::styles::pick_list(r).and_then(|picker| {
+            iced_next::styles::text_input(r).map(|input| theme_picker_style(picker, input))
+        }),
+        |field, style| field.input_style(style),
+    )
+    .next_style(iced_next::styles::menu(r), |field, style| {
+        field.menu_style(style)
+    })
     .width(Fill);
-    match arrow_handle(resolved) {
+    match next_arrow_handle(r) {
         pick_list::Handle::Static(arrow) => field.icon(text_input::Icon {
             font: arrow.font,
             code_point: arrow.code_point,
@@ -6701,7 +6726,7 @@ fn inspector_tabs(state: &State) -> Element<'_, Message> {
                 tag: INSPECTOR_TAB_IDS.get(i).copied(),
             })
             .collect(),
-        side_panel_content_margin(&state.current_resolved, &state.layout),
+        side_panel_content_margin(state.next_shown()).unwrap_or_default(),
         None,
         None,
     )
@@ -6712,18 +6737,19 @@ fn inspector_tabs(state: &State) -> Element<'_, Message> {
 /// separator; then the inspector's tabs and its content, which fills the rest
 /// of the panel and scrolls. Filled with `sidebar.background_color`,
 /// lettered in `sidebar.font.color`. As the gpui showcase's: where the theme
-/// states any side of `sidebar.border.padding` ([`sidebar_padding`]), the
-/// whole panel is padded by it and its content adds none; where it states no
-/// side, `layout.container_margin` pads the settings and the inspector's
-/// content and insets the inspector's tab row
+/// states any side of `sidebar.container(NONE).padding`
+/// ([`sidebar_padding`]), the whole panel is padded by it and its content
+/// adds none; where it states no side, `layout.container_margin` pads the
+/// settings and the inspector's content and insets the inspector's tab row
 /// ([`side_panel_content_margin`]), none where that is unstated.
 ///
 /// The panel is as wide as the splitter leaves it, whatever it holds: its
-/// scrollbar, `scrollbar.groove_width` wide where the platform's does not
-/// overlay, is laid out inside that width and moves nothing beside it.
+/// scrollbar (`iced_next::styles::scrollbar`) is laid out
+/// inside that width and moves nothing beside it.
 fn side_panel(state: &State) -> Element<'_, Message> {
     let resolved = &state.current_resolved;
-    let content = side_panel_content_margin(resolved, &state.layout);
+    let r = state.next_shown();
+    let content = side_panel_content_margin(r).map_or(Padding::ZERO, Padding::from);
     let settings = column![
         setting(
             state,
@@ -6764,9 +6790,9 @@ fn side_panel(state: &State) -> Element<'_, Message> {
             icon_theme_picker(state),
         ),
     ]
-    .spacing(settings_gap(&state.layout));
+    .spacing(settings_gap(r));
     let settings = container(tagged("chrome.side_panel.settings", settings))
-        .padding(Padding::from(content))
+        .padding(content)
         .width(Fill);
     let body = match state.inspector_tab {
         InspectorTab::Widget => inspector_widget(state),
@@ -6775,13 +6801,17 @@ fn side_panel(state: &State) -> Element<'_, Message> {
     container(
         column![
             settings,
-            tagged("chrome.side_panel.separator", separator_line(resolved)),
+            tagged("chrome.side_panel.separator", separator_line(r)),
             inspector_tabs(state),
             tagged(
                 "chrome.side_panel.inspector",
-                scrollable(container(body).padding(Padding::from(content)).width(Fill))
-                    .direction(scrollable::Direction::Vertical(styles::scrollbar(resolved)))
-                    .style(styles::scrollable(resolved))
+                scrollable(container(body).padding(content).width(Fill))
+                    .direction(scrollable::Direction::Vertical(
+                        iced_next::styles::scrollbar(r),
+                    ))
+                    .next_style(iced_next::styles::scrollable(r), |bar, style| {
+                        bar.style(style)
+                    })
                     .width(Fill)
                     .height(Fill)
             ),
@@ -6789,7 +6819,7 @@ fn side_panel(state: &State) -> Element<'_, Message> {
         .width(Fill)
         .height(Fill),
     )
-    .padding(sidebar_padding(resolved, &state.layout).unwrap_or(Padding::ZERO))
+    .padding(sidebar_padding(r).unwrap_or(Padding::ZERO))
     .style(surface(resolved, Surface::SidePanel))
     .width(Fill)
     .height(Fill)
@@ -18242,13 +18272,6 @@ trait Typeset {
     /// box ([`next_line_box`]), in its font ([`next_font_from_database`])
     /// where it gives one iced can draw, else in iced's own (spec §10,
     /// rule 0).
-    #[cfg_attr(
-        not(test),
-        expect(
-            dead_code,
-            reason = "the page groups call it as they move to the 0.8.0 model"
-        )
-    )]
     fn next_text(self, style: &TextStyle, typography: &Typography) -> Self;
     /// `body` on the 0.8.0 model: [`next_text`](Typeset::next_text) in
     /// `typography.body`.
@@ -18315,13 +18338,6 @@ impl Typeset for iced::widget::Text<'_> {
 /// `line_height` where stated, else its size by
 /// `typography.line_height_multiplier` (spec §4, `Typography`; §5, "A text
 /// part's `line_height`"), as the gpui showcase's (`demo::line_box`).
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "the page groups call it as they move to the 0.8.0 model"
-    )
-)]
 fn next_line_box(typography: &Typography, style: &TextStyle) -> f32 {
     if style.stated.contains(TextStated::LINE_HEIGHT) {
         style.line_height
@@ -18388,15 +18404,51 @@ fn next_gpui_rems(rems: f32, r: &native_theme::next::ResolvedTheme) -> f32 {
 
 /// [`arrow_handle`] on the 0.8.0 model: the drop-down's chevron at the size
 /// `native_theme_iced::next::pick_list_handle` reads.
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "the page groups call it as they move to the 0.8.0 model"
-    )
-)]
 fn next_arrow_handle(r: &native_theme::next::ResolvedTheme) -> pick_list::Handle<iced::Font> {
     native_theme_iced::next::pick_list_handle::<iced::Renderer>(r)
+}
+
+/// A widget dressed on the 0.8.0 model in a builder's chain: in what the
+/// theme gives iced, and in iced's own where it gives none (spec §10,
+/// rule 0).
+trait NextDressed: Sized {
+    /// `self` given `style` by `apply` where the connector's 0.8.0 mapping
+    /// gives one; iced's own style where the theme lacks a value it needs
+    /// (`native_theme_iced::next::Unmapped`).
+    fn next_style<S>(
+        self,
+        style: native_theme_iced::next::Mapped<S>,
+        apply: impl FnOnce(Self, S) -> Self,
+    ) -> Self {
+        match style {
+            Ok(style) => apply(self, style),
+            Err(_) => self,
+        }
+    }
+
+    /// `self` given the font of `style`, one of the 0.8.0 theme's text
+    /// styles, by `apply` where it gives one iced can draw
+    /// ([`next_font_from_database`]); iced's own font otherwise.
+    fn next_font(self, style: &TextStyle, apply: impl FnOnce(Self, iced::Font) -> Self) -> Self {
+        match next_font_from_database(style, false) {
+            Some(drawn) => apply(self, drawn.font),
+            None => self,
+        }
+    }
+}
+
+impl<T> NextDressed for T {}
+
+/// A colour of the 0.8.0 model as iced's: the same four gamma-encoded
+/// channels with straight alpha, as the connector's own conversion
+/// (`native_theme_iced::next`, `to_color`, which it does not export).
+fn next_colour(c: native_theme::next::Color) -> Color {
+    Color {
+        r: c.r,
+        g: c.g,
+        b: c.b,
+        a: c.a,
+    }
 }
 
 /// Gives a tooltip the theme's show delay.
@@ -18762,13 +18814,6 @@ fn font_from_database(spec: &ResolvedFontSpec, mono: bool) -> Drawn {
 /// slant, at its width class where it states one). `None` where the style
 /// gives no font iced can draw (`next::font`'s `Unmapped`): the text then
 /// keeps iced's own font (spec §10, rule 0).
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "the page groups call it as they move to the 0.8.0 model"
-    )
-)]
 fn next_font_from_database(style: &TextStyle, mono: bool) -> Option<Drawn> {
     let asked = native_theme_iced::next::font(style).ok()?;
     let slant = match style.style {
@@ -20387,17 +20432,21 @@ mod tests {
         );
     }
 
-    /// The Theme row's field carries its arrow: `arrow_handle` gives a
+    /// The Theme row's field carries its arrow: `next_arrow_handle` gives a
     /// `Handle::Static`, the one kind `theme_picker` turns into the field's
-    /// icon, under every bundled preset in both modes, so the row's
-    /// `combo_box.arrow_icon_size_px` route names an icon that is drawn.
+    /// icon, under every preset of the 0.8.0 model in both modes, so the
+    /// row's `combo_box.arrow_icon_size_px` route names an icon that is
+    /// drawn.
     #[test]
     fn the_theme_rows_arrow_is_a_glyph() {
-        for (preset, dark) in every_preset_in_both_modes() {
+        for (preset, dark) in Preset::ALL
+            .iter()
+            .flat_map(|preset| [(preset.as_str(), false), (preset.as_str(), true)])
+        {
             let state = loaded(preset, dark);
             assert!(
                 matches!(
-                    arrow_handle(&state.current_resolved),
+                    next_arrow_handle(state.next_shown()),
                     pick_list::Handle::Static(_)
                 ),
                 "{preset} dark={dark}: the drop-down's arrow is no glyph the Theme row can carry"
@@ -22722,10 +22771,22 @@ mod tests {
             total += sites.len();
 
             for required in row.styles {
+                // A widget on the 0.8.0 model wears the connector's 0.8.0
+                // style of the same name (`iced_next::styles`).
+                let next: Vec<String> = required
+                    .iter()
+                    .filter(|style| style.starts_with("styles::"))
+                    .map(|style| format!("iced_next::{style}"))
+                    .collect();
+                let either: Vec<&str> = required
+                    .iter()
+                    .copied()
+                    .chain(next.iter().map(String::as_str))
+                    .collect();
                 let bare: Vec<String> = sites
                     .iter()
                     .filter(|site| {
-                        !is_dressed(&source, **site, required)
+                        !is_dressed(&source, **site, &either)
                             && !dressed_by_connector(&source, **site, row.ctor)
                     })
                     .map(|site| format!("showcase-iced.rs:{}", line_at(&source, *site)))
@@ -33452,14 +33513,30 @@ mod tests {
 
     /// `preset` installed through `load_theme` in the mode `dark` names,
     /// under the default accessibility preferences, so every size is the
-    /// theme's own.
+    /// theme's own; and, where the 0.8.0 model has the preset, its 0.8.0
+    /// theme in the same mode, which the chrome draws.
     fn loaded(preset: &str, dark: bool) -> State {
         let mut state = State {
             accessibility: native_theme_iced::AccessibilityPreferences::default(),
             ..State::default()
         };
-        let loaded = state.load_theme(&ThemeChoice::Preset(preset.to_string()), dark);
+        let choice = ThemeChoice::Preset(preset.to_string());
+        let loaded = state.load_theme(&choice, dark);
         assert!(loaded.is_ok(), "{preset}: {loaded:?}");
+        // The chrome on the 0.8.0 model draws the 0.8.0 theme of the same
+        // preset, where the 0.8.0 model has it, in the same mode.
+        if Preset::from_name(preset).is_some() {
+            let prefs = state.accessibility.clone();
+            let next = state.next_install(&choice, dark, &prefs);
+            assert!(
+                next.is_ok(),
+                "{preset} on the 0.8.0 model: {:?}",
+                next.err()
+            );
+            if let Ok(next) = next {
+                state.keep_next(next);
+            }
+        }
         state
     }
 
@@ -33830,16 +33907,31 @@ mod tests {
     /// so.
     #[test]
     fn the_side_panel_is_padded_as_gpuis() {
+        use native_theme::next::{Edges, PartPatch, SidebarRule, ThemePatch};
         let spliced = {
             let mut state = loaded("kde-breeze", false);
+            // The route Widget Info shows still reads the 0.7.2 theme.
             state.current_resolved.sidebar.border.padding = native_theme::theme::ResolvedPadding {
                 top: Some(3.0),
                 right: None,
                 bottom: Some(5.0),
                 left: Some(7.0),
             };
+            assert_eq!(
+                sidebar_padding(&state.next_resolved),
+                None,
+                "kde-breeze states a side panel padding: the patch proves nothing"
+            );
+            state.next_resolved.apply_patch(&ThemePatch::new().sidebar(
+                SidebarRule::new().container(PartPatch::new().padding(Edges {
+                    top: 3.0,
+                    right: 6.0,
+                    bottom: 5.0,
+                    left: 7.0,
+                })),
+            ));
             (
-                "kde-breeze with a spliced sidebar padding".to_string(),
+                "kde-breeze with a patched sidebar padding".to_string(),
                 state,
             )
         };
@@ -33858,25 +33950,35 @@ mod tests {
             .chain(std::iter::once(spliced));
         for (case, mut state) in cases {
             state.inspector_tab = InspectorTab::Theme;
+            // The side panel's padding is the 0.8.0 theme's, the page tabs'
+            // sides still the 0.7.2 layout's.
             let margin = state.layout.container_margin;
-            let stated = state.current_resolved.sidebar.border.padding;
-            let own = [stated.top, stated.right, stated.bottom, stated.left]
+            let next = state.next_shown();
+            let next_margin = next.layout.container_margin;
+            let [s_top, s_right, s_bottom, s_left] =
+                native_theme_iced::next::padding_of(&next.sidebar.container(WidgetState::NONE));
+            let own = [s_top, s_right, s_bottom, s_left]
                 .iter()
                 .any(Option::is_some);
+            // An unstated side with no container margin is no padding.
             let panel_side = |side: Option<f32>| {
                 if own {
-                    side.or(margin).unwrap_or(0.0)
+                    side.or(next_margin).unwrap_or_default()
                 } else {
                     0.0
                 }
             };
             let (top, right, bottom, left) = (
-                panel_side(stated.top),
-                panel_side(stated.right),
-                panel_side(stated.bottom),
-                panel_side(stated.left),
+                panel_side(s_top),
+                panel_side(s_right),
+                panel_side(s_bottom),
+                panel_side(s_left),
             );
-            let content = if own { 0.0 } else { margin.unwrap_or(0.0) };
+            let content = if own {
+                0.0
+            } else {
+                next_margin.unwrap_or_default()
+            };
             let (drawn, found) = drawn_frame(&state);
             let rect = |id: &str| match drawn.get(id) {
                 Some(rect) => *rect,
@@ -33938,6 +34040,35 @@ mod tests {
         }
     }
 
+    /// The side panel's padding of the sides its container states: none
+    /// where it states no side; where it states some, each stated side, and
+    /// an unstated one the container margin, or no padding where that is
+    /// unstated too. No preset states some sides only, so the function is
+    /// asked directly.
+    #[test]
+    fn a_side_panel_padding_fills_an_unstated_side_from_the_container_margin() {
+        let some = [Some(3.0), None, Some(5.0), Some(7.0)];
+        assert_eq!(panel_padding([None; 4], Some(9.0)), None);
+        assert_eq!(
+            panel_padding(some, Some(9.0)),
+            Some(Padding {
+                top: 3.0,
+                right: 9.0,
+                bottom: 5.0,
+                left: 7.0,
+            })
+        );
+        assert_eq!(
+            panel_padding(some, None),
+            Some(Padding {
+                top: 3.0,
+                right: 0.0,
+                bottom: 5.0,
+                left: 7.0,
+            })
+        );
+    }
+
     /// F rows 4 and 5, under macos-tahoe with its layout spliced to state no
     /// `widget_gap`: the theme settings' rows, and each label and its
     /// control, are [`THEME_SETTINGS_GAP`] apart, and the toolbar's items,
@@ -33946,7 +34077,12 @@ mod tests {
     #[test]
     fn the_settings_and_the_toolbar_keep_gpuis_gaps_where_the_theme_states_none() {
         let mut state = loaded("macos-tahoe", false);
+        assert!(
+            state.next_resolved.layout.widget_gap.is_some(),
+            "macos-tahoe states no widget gap on the 0.8.0 model: the splice proves nothing"
+        );
         state.layout.widget_gap = None;
+        state.next_resolved.layout.widget_gap = None;
         assert_eq!(
             state.current_resolved.toolbar.item_gap, None,
             "macos-tahoe states a toolbar item gap: this test needs one that does not"
@@ -36002,7 +36138,11 @@ mod tests {
                     continue;
                 }
                 for setter in setters {
-                    if !calls.contains(setter) {
+                    // A widget on the 0.8.0 model takes its font through
+                    // `NextDressed::next_font`, iced's own where the theme's
+                    // text style gives none.
+                    let next_font = setter.ends_with("font") && calls.contains(&"next_font");
+                    if !calls.contains(setter) && !next_font {
                         by_iced.push(format!(
                             "{ctor} at :{} has no {setter}",
                             line_at(&source, site)
