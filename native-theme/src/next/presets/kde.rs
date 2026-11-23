@@ -370,8 +370,9 @@ struct SchemeColors {
     /// `kdeglobals` `[KDE] frameContrast`: the system's where it states it,
     /// else KColorScheme's default ([`FRAME_CONTRAST_DEFAULT`]).
     frame_contrast: f64,
-    /// `kdeglobals` `[KDE] contrast`: the system's where it states it, else
-    /// KColorScheme's default ([`CONTRAST_DEFAULT`]).
+    /// `[KDE] contrast`: Breeze's own ([`BREEZE_CONTRAST`]) in the preset's
+    /// settings; over a system's `kdeglobals`, the system's where it states
+    /// it, else KColorScheme's default ([`CONTRAST_DEFAULT`]).
     contrast: i32,
     /// Whether an inactive window's selection is built from the Window set:
     /// the system's where its effects state it, else KColorScheme's default
@@ -799,7 +800,7 @@ const LIGHT: SchemeColors = SchemeColors {
     // `expander.arrow_color`: 0.7.2 kde-breeze.toml (uncited)
     expander_arrow: srgb8(0x2326_29ff),
     frame_contrast: FRAME_CONTRAST_DEFAULT,
-    contrast: CONTRAST_DEFAULT,
+    contrast: BREEZE_CONTRAST,
     change_selection_color: CHANGE_SELECTION_COLOR_DEFAULT,
 };
 
@@ -1228,7 +1229,7 @@ const DARK: SchemeColors = SchemeColors {
     // `expander.arrow_color`: 0.7.2 kde-breeze.toml (uncited)
     expander_arrow: srgb8(0xfcfc_fcff),
     frame_contrast: FRAME_CONTRAST_DEFAULT,
-    contrast: CONTRAST_DEFAULT,
+    contrast: BREEZE_CONTRAST,
     change_selection_color: CHANGE_SELECTION_COLOR_DEFAULT,
 };
 
@@ -1942,8 +1943,16 @@ const FRAME_CONTRAST_DEFAULT: f64 = 0.2;
 /// `kdeglobals` `[KDE] contrast` where it is unset or not an integer,
 /// KColorScheme's own default: `contrastF` is `0.1 * readEntry("contrast", 7)`
 /// (kcolorscheme.cpp:519-527 at kcolorscheme v6.31.0; docs/platform-facts.md
-/// §2.15).
+/// §2.15). The system path keeps it, as 0.7.2's KDE reader does, for a
+/// `kdeglobals` that does not state `[KDE] contrast` (`src/kde/colors.rs`,
+/// `contrast`).
 const CONTRAST_DEFAULT: i32 = 7;
+
+/// Breeze's own `[KDE] contrast`: both of its colour schemes state 4
+/// (BreezeLight.colors:195, BreezeDark.colors:202, `colors/` at breeze
+/// f0b1d7534aa2356d7336241d0c7051522e8a6b68). The preset's settings carry it,
+/// so its static values and every layer-3 recomputation over them read it.
+const BREEZE_CONTRAST: i32 = 4;
 
 /// Whether KColorScheme builds an inactive window's selection from the Window
 /// set where kdeglobals states neither `[ColorEffects:Inactive]
@@ -2075,7 +2084,9 @@ const fn srgb8(rgba: u32) -> Color {
 /// replaces the constant it is the setting of; a colour 0.7.2 derives is
 /// derived, with the same inputs, kernel and arguments, only where the system
 /// states every colour it reads, else the constant stays. A missing
-/// `kde_frame_contrast` or `kde_contrast` is KColorScheme's default, and a
+/// `kde_frame_contrast` or `kde_contrast` is KColorScheme's default, as in
+/// 0.7.2's reader (not Breeze's own contrast, which only the preset's
+/// settings carry: [`BREEZE_CONTRAST`]), and a
 /// missing `kde_effects` changes the selection as KColorScheme's default does
 /// ([`CHANGE_SELECTION_COLOR_DEFAULT`]).
 fn lay_system_over(c: &mut SchemeColors, os: &OsColors) {

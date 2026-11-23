@@ -1902,11 +1902,33 @@ fn derivations_on_breeze_s_own_settings() {
 }
 
 /// [`derivations_on_breeze_s_own_settings`]' differences on Breeze's light
-/// colours: the derived colour, then the preset's constant. `list_grid`
-/// reads `contrast`, KColorScheme's default 7 where unstated; `kde_shade` at
-/// a contrast of 4 gives both schemes' constants.
-const BREEZE_LIGHT_DIFFERENCES: &[&str] = &["list_grid #bdc1c6 #c4c8cc"];
+/// colours: the derived colour, then the preset's constant. None: `list_grid`
+/// reads Breeze's own contrast 4, at which `kde_shade` gives the constant.
+const BREEZE_LIGHT_DIFFERENCES: &[&str] = &[];
 
 /// [`derivations_on_breeze_s_own_settings`]' differences on Breeze Dark's
 /// colours: the derived colour, then the preset's constant.
-const BREEZE_DARK_DIFFERENCES: &[&str] = &["list_grid #1c1e21 #1c1f21"];
+const BREEZE_DARK_DIFFERENCES: &[&str] = &[];
+
+/// Under a palette whose surface colours are Breeze's own, `list_grid` is
+/// derived again from them at the preset's contrast and gives the constant;
+/// a system that does not state `[KDE] contrast` keeps KColorScheme's 7.
+#[test]
+fn list_grid_under_breeze_s_own_colours_is_the_constant() {
+    for (scheme, breeze) in [(Scheme::Light, LIGHT), (Scheme::Dark, DARK)] {
+        assert_eq!(breeze.contrast, BREEZE_CONTRAST, "{scheme:?}");
+        let p = Palette {
+            scheme,
+            window_bg: breeze.window_background,
+            view_bg: breeze.view_background,
+            header_bg: breeze.toolbar_background,
+            foreground: breeze.window_foreground,
+            ..distinct_palette()
+        };
+        let c = layered(breeze, Some(&p), None);
+        assert_eq!(c.list_grid, breeze.list_grid, "{scheme:?}");
+    }
+    let mut c = LIGHT;
+    lay_system_over(&mut c, &OsColors::default());
+    assert_eq!(c.contrast, CONTRAST_DEFAULT);
+}
