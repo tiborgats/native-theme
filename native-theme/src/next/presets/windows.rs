@@ -273,7 +273,10 @@ struct SchemeColors {
     scrollbar_thumb_hover: Color,
     slider_thumb: Color,
     switch_hover_off: Color,
-    switch_hover_on: Color,
+    /// The hovered on switch's fill where a system colour states it (high
+    /// contrast's `COLOR_BTNFACE`); unstated, [`switch_hover_on`] derives it
+    /// from the accent's fill.
+    switch_hover_on: Option<Color>,
     switch_off_disabled: Color,
     sidebar_background: Color,
     inactive_title: Color,
@@ -556,8 +559,12 @@ const LIGHT: SchemeColors = SchemeColors {
     // #B3FFFFFF (TabView_themeresources.xaml:10; TabView.xaml:327;
     // Common_themeresources_any.xaml:268)
     tab_pressed: srgb8(0xffff_ffb3),
-    // `checkbox.hover_background`: soft_option: Fluent checkbox hover fill
-    checkbox_hover: srgb8(0x0000_000a),
+    // `checkbox.hover_background`: CheckBoxCheckBackgroundFillUncheckedPointerOver =
+    // ControlAltFillColorTertiaryBrush (CheckBox_themeresources.xaml:230), and the radio button's
+    // RadioButtonOuterEllipseFillPointerOver the same brush (RadioButton_themeresources.xaml:139):
+    // ControlAltFillColorTertiary #0F000000 (Common_themeresources_any.xaml:321, :235 at
+    // microsoft-ui-xaml 8463f45), the whole hovered fill in place of the rest one (spec §9, step 2)
+    checkbox_hover: srgb8(0x0000_000f),
     // `tab.hover_background`: soft_option: TabViewItemHeaderBackgroundPointerOver =
     // LayerOnMicaBaseAltFillColorSecondary #0A000000 (TabView_themeresources.xaml:9;
     // Common_themeresources_any.xaml:269), over a transparent rest fill
@@ -600,17 +607,12 @@ const LIGHT: SchemeColors = SchemeColors {
     // Common_themeresources_any.xaml:235 at microsoft-ui-xaml 8463f45) replaces the rest fill;
     // flattened over background_color: 243 × 240/255 = 228.7 → #e5e5e5
     switch_hover_off: srgb8(0xe5e5_e5ff),
-    // `switch.hover_checked_background`: soft_option interactive state colors (Windows Fluent
-    // ToggleSwitch) platform-facts.md (§2.21): ToggleSwitchFillOnPointerOver =
-    // AccentFillColorSecondary, SystemAccentColorDark1 at opacity 0.9
-    // (ToggleSwitch_themeresources.xaml:144; Common_themeresources_any.xaml:330 at
-    // microsoft-ui-xaml 8463f45), in place of the rest fill over the window: 0.9 × S + 0.1 × W. As
-    // the model's hover, a layer over the track S (checked_background), that is the window W
-    // (background_color #f3f3f3) at alpha 0.1, here 25/255, so it follows any accent; over
-    // #0067c0: 243 × 25/255 = 23.8 → 24, 103 × 230/255 + 23.8 = 116.7 → 117, 192 × 230/255 + 23.8
-    // = 197.0 → 197, #1875c5, as WinUI's 0 × 0.9 + 24.3 = 24.3, 103 × 0.9 + 24.3 = 117.0, 192 ×
-    // 0.9 + 24.3 = 197.1
-    switch_hover_on: srgb8(0xf3f3_f319),
+    // `switch.hover_checked_background`: platform-facts.md (§2.21): ToggleSwitchFillOnPointerOver =
+    // AccentFillColorSecondaryBrush (ToggleSwitch_themeresources.xaml:144), SystemAccentColorDark1
+    // at opacity 0.9 (Common_themeresources_any.xaml:330 at microsoft-ui-xaml 8463f45), the whole
+    // hovered fill in place of the rest one (spec §9, step 2): the accent's fill at
+    // ACCENT_FILL_SECONDARY_OPACITY, derived by `switch_hover_on`
+    switch_hover_on: None,
     // `switch.disabled_unchecked_background`: ToggleSwitchFillOffDisabled =
     // ControlAltFillColorDisabled #00FFFFFF (ToggleSwitch_themeresources.xaml:138;
     // Common_themeresources_any.xaml:237)
@@ -897,8 +899,12 @@ const DARK: SchemeColors = SchemeColors {
     // #733A3A3A (TabView_themeresources.xaml:88; TabView.xaml:327;
     // Common_themeresources_any.xaml:64)
     tab_pressed: srgb8(0x3a3a_3a73),
-    // `checkbox.hover_background`: soft_option: Fluent checkbox hover fill
-    checkbox_hover: srgb8(0xffff_ff0f),
+    // `checkbox.hover_background`: CheckBoxCheckBackgroundFillUncheckedPointerOver =
+    // ControlAltFillColorTertiaryBrush (CheckBox_themeresources.xaml:54), and the radio button's
+    // RadioButtonOuterEllipseFillPointerOver the same brush (RadioButton_themeresources.xaml:23):
+    // ControlAltFillColorTertiary #0BFFFFFF (Common_themeresources_any.xaml:117, :31 at
+    // microsoft-ui-xaml 8463f45), the whole hovered fill in place of the rest one (spec §9, step 2)
+    checkbox_hover: srgb8(0xffff_ff0b),
     // `tab.hover_background`: soft_option: TabViewItemHeaderBackgroundPointerOver =
     // LayerOnMicaBaseAltFillColorSecondary #0FFFFFFF (TabView_themeresources.xaml:87;
     // Common_themeresources_any.xaml:65), over a transparent rest fill
@@ -943,17 +949,12 @@ const DARK: SchemeColors = SchemeColors {
     // Common_themeresources_any.xaml:31 at microsoft-ui-xaml 8463f45) replaces the rest fill;
     // flattened over background_color: 255 × 11/255 + 32 × 244/255 = 41.6 → #2a2a2a
     switch_hover_off: srgb8(0x2a2a_2aff),
-    // `switch.hover_checked_background`: soft_option interactive state colors (Windows Fluent
-    // ToggleSwitch) platform-facts.md (§2.21): ToggleSwitchFillOnPointerOver =
-    // AccentFillColorSecondary, SystemAccentColorLight2 at opacity 0.9
-    // (ToggleSwitch_themeresources.xaml:24; Common_themeresources_any.xaml:126 at
-    // microsoft-ui-xaml 8463f45), in place of the rest fill over the window: 0.9 × S + 0.1 × W. As
-    // the model's hover, a layer over the track S (checked_background), that is the window W
-    // (background_color #202020) at alpha 0.1, here 25/255, so it follows any accent; over
-    // #4cc2ff: 76 × 230/255 + 3.1 = 71.7 → 72, 194 × 230/255 + 3.1 = 178.1 → 178, 255 × 230/255 +
-    // 3.1 = 233.1 → 233, #48b2e9, as WinUI's 76 × 0.9 + 3.2 = 71.6, 194 × 0.9 + 3.2 = 177.8, 255 ×
-    // 0.9 + 3.2 = 232.7
-    switch_hover_on: srgb8(0x2020_2019),
+    // `switch.hover_checked_background`: platform-facts.md (§2.21): ToggleSwitchFillOnPointerOver =
+    // AccentFillColorSecondaryBrush (ToggleSwitch_themeresources.xaml:24), SystemAccentColorLight2
+    // at opacity 0.9 (Common_themeresources_any.xaml:126 at microsoft-ui-xaml 8463f45), the whole
+    // hovered fill in place of the rest one (spec §9, step 2): the accent's fill at
+    // ACCENT_FILL_SECONDARY_OPACITY, derived by `switch_hover_on`
+    switch_hover_on: None,
     // `switch.disabled_unchecked_background`: ToggleSwitchFillOffDisabled =
     // ControlAltFillColorDisabled #00FFFFFF (ToggleSwitch_themeresources.xaml:18;
     // Common_themeresources_any.xaml:33)
@@ -1032,6 +1033,10 @@ const SHADOW_ENABLED: bool = true;
 // `defaults.disabled_opacity`: platform-facts.md (§2.1.6): 1.0, WinUI 3 dims a disabled control by
 // its *Disabled brushes alone
 const DISABLED_OPACITY: f32 = 1.0;
+// AccentFillColorSecondaryBrush's opacity over AccentFillColorDefault's colour, SystemAccentColorDark1
+// in light and SystemAccentColorLight2 in dark (Common_themeresources_any.xaml:330, :329 and :126,
+// :125 at microsoft-ui-xaml 8463f45)
+const ACCENT_FILL_SECONDARY_OPACITY: f32 = 0.9;
 // `defaults.focus_ring_width`: 0.7.2 windows-11.toml (uncited)
 const FOCUS_RING_WIDTH: f32 = 2.0;
 // `defaults.focus_ring_offset`: platform-facts.md (§2.1.5): Button FocusVisualMargin -3 around a
@@ -1751,7 +1756,9 @@ impl HighContrast {
         lay(&mut c.focus_ring, self.window_text);
         lay(&mut c.info, self.window_text);
         lay(&mut c.link, self.hotlight);
-        lay(&mut c.switch_hover_on, self.button_face);
+        if let Some(face) = self.button_face {
+            c.switch_hover_on = Some(face);
+        }
         lay(&mut c.inactive_title, self.gray_text);
     }
 }
@@ -3356,6 +3363,15 @@ fn popover(
     )
 }
 
+/// The hovered on switch's whole fill: the system's colour where one states
+/// it (high contrast's `COLOR_BTNFACE`), else `AccentFillColorSecondary`,
+/// the accent's fill at [`ACCENT_FILL_SECONDARY_OPACITY`], so it follows
+/// whichever accent is laid over the preset's.
+fn switch_hover_on(c: &SchemeColors) -> Color {
+    c.switch_hover_on
+        .unwrap_or_else(|| c.accent_fill.mul_alpha(ACCENT_FILL_SECONDARY_OPACITY))
+}
+
 /// The switch: a track of exact sizes and corners, off in its fill and
 /// outline, on in the accent's fill with no outline (0.7.2's
 /// `checked_track_border_color` unset: "`None` draws no outline"), with
@@ -3382,7 +3398,7 @@ fn switch(c: &SchemeColors) -> SwitchWidget {
         )
         .rule(
             RuleSelector::on(WidgetState::HOVER | WidgetState::CHECKED),
-            [fill(c.switch_hover_on)],
+            [fill(switch_hover_on(c))],
         )
         // ToggleSwitchFillOffPressed = ControlAltFillColorQuarternary (ToggleSwitch_themeresources.xaml:137,
         // the Pressed state :294 at microsoft-ui-xaml 8463f45); a checked switch keeps its checked

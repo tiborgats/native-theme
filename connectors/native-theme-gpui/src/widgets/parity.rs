@@ -137,6 +137,37 @@ const DIFFERENCES: &[Difference] = &[
                  in its checked outline",
     },
     Difference {
+        leaf: "CheckboxLook::of hover_fill",
+        presets: &["windows-11"],
+        reason: "0.7.2's checkbox.hover_background, an uncited #0000000a / #ffffff0f, is a \
+                 layer the look composites over the unchecked fill; 0.8.0's windows-11 states \
+                 WinUI's whole hovered fill, which the look takes as it is (spec §9, step 2): \
+                 ControlAltFillColorTertiary #0000000f / #ffffff0b \
+                 (CheckBoxCheckBackgroundFillUncheckedPointerOver, CheckBox_themeresources.xaml:230, \
+                 :54; Common_themeresources_any.xaml:235, :31 at microsoft-ui-xaml 8463f45; \
+                 native-theme/tests/next_homes.toml, row checkbox.hover_background, a listed \
+                 difference)",
+    },
+    Difference {
+        leaf: "CheckboxLook::radio hover_fill",
+        presets: &["windows-11"],
+        reason: "as the check box's (CheckboxLook::of hover_fill): the radio button's \
+                 RadioButtonOuterEllipseFillPointerOver is the same ControlAltFillColorTertiary \
+                 (RadioButton_themeresources.xaml:139, :23 at microsoft-ui-xaml 8463f45)",
+    },
+    Difference {
+        leaf: "SwitchLook hover_track",
+        presets: &["windows-11"],
+        reason: "0.7.2's switch.hover_checked_background is the window colour at alpha 0.1, \
+                 a layer the look composites over the on track; 0.8.0's windows-11 states \
+                 WinUI's whole hovered fill, which the look takes as it is (spec §9, step 2): \
+                 AccentFillColorSecondary, the accent's fill at 0.9 opacity \
+                 (ToggleSwitchFillOnPointerOver, ToggleSwitch_themeresources.xaml:144, :24; \
+                 Common_themeresources_any.xaml:330, :126 at microsoft-ui-xaml 8463f45; \
+                 native-theme/tests/next_homes.toml, row switch.hover_checked_background, a \
+                 listed difference)",
+    },
+    Difference {
         leaf: "CheckboxLook::radio hover_border",
         presets: &["adwaita"],
         reason: "0.7.2 states no checkbox.hover_border_color, so the look has no hover \
@@ -308,6 +339,7 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
             // leaves the rest of the look compared.
             let unlabelled = |look: SwitchLook| SwitchLook {
                 label: gpui::transparent_black(),
+                hover_track: None,
                 ..look
             };
             r.leaf(
@@ -315,6 +347,12 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
                 &state,
                 old_switch.map(unlabelled),
                 new_switch.map(unlabelled),
+            );
+            r.leaf(
+                "SwitchLook hover_track",
+                &state,
+                old_switch.map(|look| look.hover_track),
+                new_switch.map(|look| look.hover_track),
             );
             r.leaf(
                 if disabled {
@@ -326,13 +364,14 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
                 old_switch.map(|look| look.label),
                 new_switch.map(|look| look.label),
             );
-            // The hover outline apart, so a listed difference of it leaves the rest of the look
-            // compared.
+            // The hover outline and the hover fill apart, so a listed difference of either leaves
+            // the rest of the look compared.
             // The label apart too, so a listed difference of the disabled label leaves the rest
             // of the look compared; disabled with it the mark, which the look draws in the
             // label's disabled colour where a disabled fill is stated (`CheckboxLook::next_of`).
             let unframed = |look: CheckboxLook| CheckboxLook {
                 hover_border: None,
+                hover_fill: None,
                 label: gpui::transparent_black(),
                 mark: if disabled {
                     gpui::transparent_black()
@@ -377,6 +416,12 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
                 old_box.map(|look| look.hover_border),
                 new_box.map(|look| look.hover_border),
             );
+            r.leaf(
+                "CheckboxLook::of hover_fill",
+                &state,
+                old_box.map(|look| look.hover_fill),
+                new_box.map(|look| look.hover_fill),
+            );
             let (old_radio, new_radio) = (
                 CheckboxLook::radio(&old, checked, disabled),
                 CheckboxLook::next_radio(&new, checked, disabled),
@@ -402,6 +447,12 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
                 &state,
                 old_radio.map(|look| look.hover_border),
                 new_radio.map(|look| look.hover_border),
+            );
+            r.leaf(
+                "CheckboxLook::radio hover_fill",
+                &state,
+                old_radio.map(|look| look.hover_fill),
+                new_radio.map(|look| look.hover_fill),
             );
         }
     }

@@ -688,7 +688,7 @@
             "hover"
           ],
           "indicator": {
-            "fill": "#ffffff0f"
+            "fill": "#ffffff0b"
           }
         },
         {
@@ -816,7 +816,7 @@
             "hover"
           ],
           "indicator": {
-            "fill": "#ffffff0f"
+            "fill": "#ffffff0b"
           }
         },
         {
@@ -925,7 +925,7 @@
             "checked"
           ],
           "track": {
-            "fill": "#20202019"
+            "fill": "srgb(0, 0, 0.019607844, 0.9)"
           }
         },
         {

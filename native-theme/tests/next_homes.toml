@@ -707,10 +707,10 @@ homes = [
     "checkbox.indicator(HOVER).fill",
     "radio.indicator(HOVER).fill",
 ]
-difference_presets = ["kde-breeze"]
-difference_reason = "0.7.2 leaves it unset (the rest fill by inheritance, no rule); 0.8.0 states the rest fill for the check box's HOVER, where Breeze keeps it (spec §2, from_state); the radio button's HOVER keeps the rest fill unstated"
-difference_citation = "docs/platform-facts.md §2.5 (hover_background): no hover fill, the box keeps palette.button() (breezehelper.cpp:862 at breeze f0b1d75)"
-difference_values = { "kde-breeze" = { light = "#fcfcfc", dark = "#292c30" } }
+difference_presets = ["kde-breeze", "windows-11"]
+difference_reason = "kde-breeze: 0.7.2 leaves it unset (the rest fill by inheritance, no rule); 0.8.0 states the rest fill for the check box's HOVER, where Breeze keeps it (spec §2, from_state); the radio button's HOVER keeps the rest fill unstated; windows-11: 0.7.2's uncited #0000000a / #ffffff0f was a layer over the rest fill; 0.8.0 states WinUI's whole hovered fill (spec §9, step 2), ControlAltFillColorTertiary for the check box and the radio button"
+difference_citation = "kde-breeze: docs/platform-facts.md §2.5 (hover_background): no hover fill, the box keeps palette.button() (breezehelper.cpp:862 at breeze f0b1d75); windows-11: CheckBoxCheckBackgroundFillUncheckedPointerOver and RadioButtonOuterEllipseFillPointerOver = ControlAltFillColorTertiaryBrush (CheckBox_themeresources.xaml:230, :54; RadioButton_themeresources.xaml:139, :23), ControlAltFillColorTertiary #0F000000 / #0BFFFFFF (Common_themeresources_any.xaml:235, :31 at microsoft-ui-xaml 8463f45)"
+difference_values = { "kde-breeze" = { light = "#fcfcfc", dark = "#292c30" }, "windows-11" = { light = "#0000000f", dark = "#ffffff0b" } }
 
 [[row]]
 key = "checkbox.hover_border_color"
@@ -2358,6 +2358,10 @@ homes = ["switch.disabled_opacity"]
 key = "switch.hover_checked_background"
 homes = ["switch.track(HOVER|CHECKED).fill"]
 null_reference = "CHECKED"
+difference_presets = ["windows-11"]
+difference_reason = "0.7.2 states the window colour at alpha 0.1 (#f3f3f319 / #20202019), a layer over the on track; 0.8.0 states WinUI's whole hovered fill (spec §9, step 2), AccentFillColorSecondary: the accent's fill at 0.9 opacity, so it follows the accent the system or a palette gives (the values: the preset's own accent fills #0067c0 / #4cc2ff, which a reader case's accent replaces), and high contrast's ButtonFace"
+difference_citation = "ToggleSwitchFillOnPointerOver = AccentFillColorSecondaryBrush (ToggleSwitch_themeresources.xaml:144, :24; high contrast SystemColorButtonFaceColorBrush, :88), SystemAccentColorDark1 / SystemAccentColorLight2 at Opacity 0.9 (Common_themeresources_any.xaml:330, :126 at microsoft-ui-xaml 8463f45); docs/platform-facts.md §2.21"
+difference_values = { "windows-11" = { light = "#0067c0e6", dark = "#4cc2ffe6" } }
 
 [[row]]
 key = "switch.hover_unchecked_background"

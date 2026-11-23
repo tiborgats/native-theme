@@ -43,10 +43,10 @@ pub struct CheckboxLook {
     pub border_width: Pixels,
     /// The indicator's fill in this state.
     pub fill: Hsla,
-    /// The fill while the pointer is over the control: `hover_background`
-    /// composited over the unchecked fill, or that fill at rest where the
-    /// theme states no hover, and only for an enabled, unchecked control --
-    /// the model states no hover fill for a checked one; `hover_border` frames both.
+    /// The fill while the pointer is over the control: `hover_background` composited over
+    /// the unchecked fill (a 0.8.0 theme's hovered fill, the whole fill, as it is), or that
+    /// fill at rest where the theme states no hover, and only for an enabled, unchecked control
+    /// -- the model states no hover fill for a checked one; `hover_border` frames both.
     pub hover_fill: Option<Hsla>,
     /// The indicator's border colour while the pointer is over the control:
     /// `hover_border_color`, for an enabled control, checked or not; `None`
@@ -426,10 +426,7 @@ impl CheckboxLook {
             (true, Some(fill)) => fill,
             _ => enabled_fill,
         };
-        let hover_fill = (!checked && !disabled).then(|| {
-            c.hover
-                .map_or(c.unchecked, |hover| over(c.unchecked, hover))
-        });
+        let hover_fill = (!checked && !disabled).then(|| c.hover.unwrap_or(c.unchecked));
         let border = if checked {
             c.border
         } else {

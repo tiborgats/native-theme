@@ -193,7 +193,7 @@ impl SwitchLook {
     /// A checked track's hover is read at `HOVER|CHECKED`, where a theme with
     /// no rule for the hover gives the checked track (the table of homes,
     /// `switch.hover_checked_background`, `null_reference`), so it is a
-    /// hover layer where it differs from that track.
+    /// hovered fill where it differs from that track.
     ///
     /// # Errors
     ///
@@ -311,7 +311,7 @@ impl SwitchLook {
     }
 
     fn from_reads(s: &SwitchReads, disabled: bool) -> Option<Self> {
-        let hover_track = (!disabled).then(|| s.hover.map_or(s.base, |hover| over(s.base, hover)));
+        let hover_track = (!disabled).then(|| s.hover.unwrap_or(s.base));
         let outline = |colour: Option<Hsla>, width: Option<f32>| match colour.zip(width) {
             Some((colour, width)) => length(width).map(|width| (Some(colour), width)),
             None => Some((None, px(0.))),
@@ -517,7 +517,7 @@ impl SwitchLabelFont {
 }
 
 /// The values [`SwitchLook::next_of`] builds the look from: the track at rest
-/// in the checked state and at the switch's state, its hover layer, the thumb
+/// in the checked state and at the switch's state, its hovered fill, the thumb
 /// at the switch's state, the outlines' colours and widths (an outline where
 /// both are stated), the label's colour and the sizes.
 struct SwitchReads {

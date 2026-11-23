@@ -2985,9 +2985,14 @@ pub(crate) fn windows_cases() -> Vec<(
         AccessibilityData, AllFonts, CARET_BLINK_NONE, SysColors, WidgetSizing, WindowsSettings,
     };
     const WHITE: crate::Rgba = crate::Rgba::rgb(255, 255, 255);
+    // M2.FS4: the hovered on switch's fill is a listed difference of the table (`next_homes.toml`),
+    // whose value is the preset's accent fill at 0.9, which every case's accent (and high contrast's
+    // button face) replaces.
+    const ACCENT: &[&str] = &["switch.hover_checked_background"];
     const HIGH_CONTRAST: &[&str] = &[
         "button.hover_border_color",
         "checkbox.hover_border_color",
+        "switch.hover_checked_background",
         "expander.hover_background",
     ];
     let shades = || [1, 2, 3, 4, 5, 6].map(|b| Some(crate::Rgba::rgb(0, 0, b)));
@@ -3028,14 +3033,14 @@ pub(crate) fn windows_cases() -> Vec<(
     };
     let base = default_windows_settings;
     vec![
-        ("light, no shade", base(), &[]),
+        ("light, no shade", base(), ACCENT),
         (
             "dark, no shade",
             WindowsSettings {
                 foreground: WHITE,
                 ..base()
             },
-            &[],
+            ACCENT,
         ),
         (
             "light, the shades",
@@ -3043,7 +3048,7 @@ pub(crate) fn windows_cases() -> Vec<(
                 accent_shades: shades(),
                 ..base()
             },
-            &[],
+            ACCENT,
         ),
         (
             "dark, the shades",
@@ -3052,7 +3057,7 @@ pub(crate) fn windows_cases() -> Vec<(
                 accent_shades: shades(),
                 ..base()
             },
-            &[],
+            ACCENT,
         ),
         (
             "light, AccentDark1 unread",
@@ -3064,7 +3069,7 @@ pub(crate) fn windows_cases() -> Vec<(
                 },
                 ..base()
             },
-            &[],
+            ACCENT,
         ),
         (
             "dark, AccentLight2 and AccentLight3 unread",
@@ -3078,7 +3083,7 @@ pub(crate) fn windows_cases() -> Vec<(
                 },
                 ..base()
             },
-            &[],
+            ACCENT,
         ),
         (
             "the named fonts, light",
@@ -3086,7 +3091,7 @@ pub(crate) fn windows_cases() -> Vec<(
                 fonts: named_fonts(),
                 ..base()
             },
-            &[],
+            ACCENT,
         ),
         (
             "the named fonts, dark",
@@ -3095,7 +3100,7 @@ pub(crate) fn windows_cases() -> Vec<(
                 fonts: named_fonts(),
                 ..base()
             },
-            &[],
+            ACCENT,
         ),
         (
             "the icon sizes",
@@ -3103,7 +3108,7 @@ pub(crate) fn windows_cases() -> Vec<(
                 icon_sizes: Some((16.0, 32.0)),
                 ..base()
             },
-            &[],
+            ACCENT,
         ),
         (
             "other icon sizes and metrics",
@@ -3116,7 +3121,7 @@ pub(crate) fn windows_cases() -> Vec<(
                 },
                 ..base()
             },
-            &[],
+            ACCENT,
         ),
         // M2.FS4: the button's hover and pressed outline, the check box's hover outline and the
         // expander header's fill are listed differences of the table (`next_homes.toml`), whose
@@ -3133,7 +3138,7 @@ pub(crate) fn windows_cases() -> Vec<(
                 caret_blink_time: 530,
                 ..base()
             },
-            &[],
+            ACCENT,
         ),
         (
             "another caret blink time",
@@ -3141,7 +3146,7 @@ pub(crate) fn windows_cases() -> Vec<(
                 caret_blink_time: 1200,
                 ..base()
             },
-            &[],
+            ACCENT,
         ),
         (
             "a caret that does not blink",
@@ -3149,7 +3154,7 @@ pub(crate) fn windows_cases() -> Vec<(
                 caret_blink_time: CARET_BLINK_NONE,
                 ..base()
             },
-            &[],
+            ACCENT,
         ),
         (
             "animations and transparency off, a text scale",
@@ -3162,7 +3167,7 @@ pub(crate) fn windows_cases() -> Vec<(
                 }),
                 ..base()
             },
-            &[],
+            ACCENT,
         ),
     ]
 }
