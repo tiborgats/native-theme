@@ -467,6 +467,29 @@ fn menu_hover_fill(r: &ResolvedTheme) -> Mapped<Hsla> {
     )
 }
 
+/// A hovered menu item's label, `accent_foreground`, which gpui-component
+/// letters a hovered item in (gpui-component 0.10.0
+/// `menu/menu_item.rs:122, 134-137`): `menu.item_label(HOVER).color` where a
+/// rule states it for `HOVER` (spec §2, `from_state`); where a rule states
+/// the item's fill (`item`) for `HOVER` and none its label, the label at
+/// rest, `rest` (spec §10, rule 0a: a label is chosen for the fill it lies
+/// on); else gpui-component's own `accent_foreground`, `upstream`, which goes
+/// with its own `accent` fill (spec §10, rule 0).
+fn menu_hover_label(
+    item: &PartStyle,
+    label: &TextStyle,
+    rest: &TextStyle,
+    upstream: Hsla,
+) -> Mapped<Hsla> {
+    if let Some(stated) = state_text_color(label, "menu.item_label(HOVER).color")? {
+        return Ok(stated);
+    }
+    if state_fill(item, "menu.item(HOVER).fill")?.is_some() {
+        return text_color(rest, "menu.item_label(NONE).color");
+    }
+    Ok(upstream)
+}
+
 /// A hovered push button's fill, `secondary_hover`, which gpui-component
 /// paints a hovered button in (gpui-component 0.10.0 `button/button.rs:1194`,
 /// `theme/schema.rs:854`): `button.body(HOVER).fill` where a rule states it
@@ -575,11 +598,10 @@ pub(crate) fn widget_colors(r: &ResolvedTheme) -> Mapped<WidgetColors> {
     Ok(WidgetColors {
         bg: fill(&frame, "window.frame(normal).fill")?,
         menu_hover_bg: menu_hover_fill(r)?,
-        // gpui-component 0.10.0 `menu/menu_item.rs:122, 134-137`: a hovered
-        // item's text turns from `foreground` to `accent_foreground`.
-        menu_hover_fg: state_text_color_or(
+        menu_hover_fg: menu_hover_label(
+            &r.menu.item(WidgetState::HOVER),
             &r.menu.item_label(WidgetState::HOVER),
-            "menu.item_label(HOVER).color",
+            &r.menu.item_label(WidgetState::NONE),
             upstream_colors(r).accent_foreground,
         )?,
         sidebar_selection_bg: fill(
@@ -1552,6 +1574,39 @@ mod tests {
             assert_eq!(widget_colors(&r)?.menu_hover_bg, hsla(RED), "{scheme:?}");
             assert_eq!(theme_color(&r)?.accent, hsla(RED), "{scheme:?}");
         }
+        Ok(())
+    }
+
+    /// Spec §10 rule 0a for a hovered menu item's label: a label is chosen
+    /// for the fill it lies on, so where a rule states the item's fill for
+    /// `HOVER` and none its label, the label is the one at rest, not
+    /// gpui-component's `accent_foreground`, which goes with its own `accent`
+    /// fill; a stated label is taken as stated, and with neither stated the
+    /// label is gpui-component's own.
+    #[test]
+    fn a_stated_menu_hover_fill_keeps_the_label_at_rest() -> Mapped<()> {
+        let upstream = hsla(BLUE);
+        let mut rest = TextStyle::default();
+        rest.color = GREEN;
+        rest.stated = TextStated::COLOR;
+        let unstated = rest.clone();
+        let mut stated = rest.clone();
+        stated.color = RED;
+        stated.from_state = TextStated::COLOR;
+        let fill = filled(RED, true);
+        let own = filled(RED, false);
+        assert_eq!(
+            menu_hover_label(&fill, &unstated, &rest, upstream)?,
+            hsla(GREEN)
+        );
+        assert_eq!(
+            menu_hover_label(&fill, &stated, &rest, upstream)?,
+            hsla(RED)
+        );
+        assert_eq!(
+            menu_hover_label(&own, &unstated, &rest, upstream)?,
+            upstream
+        );
         Ok(())
     }
 
