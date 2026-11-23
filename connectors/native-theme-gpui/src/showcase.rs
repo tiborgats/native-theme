@@ -3049,9 +3049,12 @@ fn citation_finding(
     // there is no upstream read to point at. A line would be worse than
     // useless -- the showcase is what is being edited, so every edit
     // above a self-citation silently invalidates it, which is exactly
-    // what happened when this was first tried.
+    // what happened when this was first tried. A home the showcase draws
+    // (`input.field(HOVER).stroke.color`) is spelt by no line of `src/next`
+    // either: its value check alone holds it, which reads the property's
+    // helper on exactly that part, state and property.
     if claim.cited_at == "showcase" {
-        if code.iter().any(|text| mentions(text, claim.field)) {
+        if is_home(claim.field) || code.iter().any(|text| mentions(text, claim.field)) {
             return None;
         }
         return Some(format!(
@@ -4892,6 +4895,44 @@ pub fn frame(r: &ResolvedTheme, t: &Theme) -> WidgetInfo {
             ("other", "fill", Vec::new(), true, false),
         ]
     );
+}
+
+/// A home claim cited `"showcase"` -- the showcase itself draws the value,
+/// and no line of `src/next` spells that home -- passes on its value check
+/// alone: its value reads the property's helper on exactly that part and
+/// state, and one that queries another state or part fails.
+#[test]
+fn a_showcase_cited_home_claim_is_held_by_its_value() {
+    let claim = |value| Claim {
+        file: "info/inputs.rs",
+        line: 1,
+        widget: "input",
+        call: ClaimCall::Claim,
+        role: "hover border",
+        field: "input.field(HOVER).stroke.color",
+        value,
+        width: None,
+        before: "",
+        cited_at: "showcase",
+    };
+    assert_eq!(
+        claim_finding(
+            &claim("stroke_color_of(&r.input.field(WidgetState::HOVER))"),
+            &[],
+            &[]
+        ),
+        None
+    );
+    for value in [
+        "stroke_color_of(&r.input.field(WidgetState::NONE))",
+        "stroke_color_of(&r.combo_box.field(WidgetState::HOVER))",
+        "fill_of(&r.input.field(WidgetState::HOVER))",
+    ] {
+        assert!(
+            claim_finding(&claim(value), &[], &[]).is_some(),
+            "a showcase-cited home claim passed on a value that queries another state, part or property: {value}"
+        );
+    }
 }
 
 /// The claim gate's 0.8.0 form (docs/v0.8.0-plan.md, section 2, `M4` step
