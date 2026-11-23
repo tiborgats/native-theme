@@ -6,9 +6,64 @@
 //! and the globals made from them; the widgets derived from the roles, the
 //! globals and the colours. A widget's colour that is a role's colour, the
 //! same `md.sys.color` role, is taken from the roles, not from a second copy
-//! of the constant. The preset has no reader. Its palette and an explicit
-//! accent (spec §6, resolution step 2: "`material-3` runs `m3_role` HCT") are
-//! not applied yet; the builder takes the preset's constants alone.
+//! of the constant. The preset has no reader.
+//!
+//! The active palette ([`ResolveInputs::palette`]) and then an explicit
+//! accent ([`ResolveInputs::accent`]) are laid over the constants (spec §6,
+//! resolution step 2, layer 3). An explicit accent, or else a palette's
+//! `accent`, is the seed of Material's dynamic scheme ("`material-3` runs
+//! `m3_role` HCT"; [`m3_role`]), at its standard contrast level, in the
+//! resolved scheme: each `md.sys.color` role the builder reads is the
+//! scheme's role of that name ([`lay_seed_over`]), `surface`, `on-surface`,
+//! `on-surface-variant`, `outline`, `outline-variant`, `surface-variant`,
+//! `primary`, `on-primary`, `secondary`, `on-secondary`,
+//! `secondary-container`, `on-secondary-container`, the three surface
+//! containers, `inverse-surface`, `inverse-on-surface`, `error` and
+//! `on-error`, and so every widget colour the preset takes from them, the
+//! accent's fill (`primary`) and its text among them. A colour that is no
+//! role of the scheme keeps the preset's: the shadow, Material's `shadow`
+//! at the key shadow's opacity (the scheme's `shadow` is its tone 0, black
+//! whatever the seed); the warning's and the success's colours, which
+//! Material has no role for; the state colours 0.7.2 states without a
+//! source (the expander's hover layer, the link's hover layer, pressed and
+//! disabled colours, the scroll bar's pressed handle).
+//!
+//! A palette states the roles its slots name (spec §7, "The roles a palette
+//! states"), and each slot whose Material colour is the colour of the
+//! slot's role replaces that colour and every widget colour the preset takes
+//! from it ([`lay_palette_over`]), over the seed's: `window_bg` is
+//! `surface`, the window's background (0.7.2's `defaults.background_color`),
+//! so also every panel and bar the preset fills with it, the text field's
+//! fill and the list's alternate row; `foreground` is `on-surface`, the
+//! window's text (`defaults.text_color`), in which the preset letters its
+//! widgets, and the text of the eight surfaces (§7: one text colour);
+//! `foreground_muted` is `on-surface-variant` (`defaults.muted_color`);
+//! `border` is `outline` (`defaults.border.color`), so also the switch's off
+//! thumb and outline and the scroll bar's hovered handle; `accent` and
+//! `accent_fg` are `primary` and `on-primary`, laid as given; `error` is
+//! `error`; `warning` and `success` are the warning's and the success's
+//! colours. A slot with no Material colour of its role states its role
+//! alone: `view_bg`, `header_bg`, `sidebar_bg` and `divider`; `surface_bg`,
+//! the card's, the dialog's and the popover's, so their panels; `tooltip_bg`,
+//! the tooltip's, so its panel; `selection_bg` and `selection_fg`, the
+//! selection's, which the unfocused and the text selection take as the
+//! preset takes them from the selection, so the list's and the sidebar's
+//! selected rows; `link`, `caret` and `info` (the info role's text is
+//! `on-primary`, as the preset's is). Under a seed the state colours the
+//! preset states as a role at an opacity are derived again from the roles
+//! as laid ([`derive_state_layers`]; spec §6: a derivation computes again
+//! what reads a colour a slot replaced): `on-surface` at the disabled
+//! container, the disabled content and the hover opacities,
+//! `surface-container-highest` at the disabled track opacity, and the tonal
+//! button's hovered and pressed fills, `on-secondary-container` at the hover
+//! and the pressed opacities over `secondary-container`. Every other colour
+//! keeps the seed's: the tonal button's fills and text, the segmented
+//! control's selected segment, the menu's panel and separator, the outlines
+//! in `outline-variant`, the focus ring (`secondary`). An explicit accent
+//! over a palette replaces its `accent` and `accent_fg`, which are then the
+//! scheme's `primary` and `on-primary` of the explicit seed; the palette's
+//! other slots stand (spec §6: a derivation never replaces a colour a
+//! palette states in a slot of its own).
 //!
 //! The colours are the baseline scheme's `md.sys.color` roles (the header of
 //! 0.7.2's `material-3.toml`): a state layer, a role at an `md.sys.state`
@@ -130,9 +185,11 @@ use crate::next::icons::{IconSizes, IconThemeSpec};
 use crate::next::layout::{DialogButtonOrder, LayoutMetrics, TabIndicatorSide};
 use crate::next::motion::{CaretSpec, DialogEntranceStyle, MotionTokens, UiTimings};
 use crate::next::paint::Paint;
+use crate::next::palette::Palette;
 use crate::next::platform::android_non_linear::{
     PROPORTIONAL_LINE_HEIGHT_ABOVE, android_non_linear, android_non_linear_inverse,
 };
+use crate::next::platform::m3_role::m3_role;
 use crate::next::preset::{Preset, ResolveInputs};
 use crate::next::presets::helpers::{
     Motion, dialog_entrance, motion, motion_tokens, physical_edges,
@@ -1046,6 +1103,30 @@ const EXPANDER_ARROW_SIZE: f32 = 12.0;
 /// over hover.
 const PRESSED_HOVER: &[&[WidgetState]] = &[&[WidgetState::PRESSED, WidgetState::HOVER]];
 
+/// The contrast level the dynamic scheme of a seed is resolved at
+/// ([`m3_role`]): 0, the scheme's standard level, at the one contrast level
+/// the preset defines ([`CONTRAST_LEVELS`]).
+const M3_CONTRAST_LEVEL: f32 = 0.0;
+
+/// `md.sys.state`'s hover state layer opacity, 0.08
+/// (`_md-comp-filled-tonal-button.scss:57-60`; `_md-comp-list.scss:85-87`).
+const HOVER_STATE_LAYER_OPACITY: f32 = 0.08;
+
+/// `md.sys.state`'s pressed state layer opacity, 0.12
+/// (`_md-comp-filled-tonal-button.scss:85-88`; `_md-sys-state.scss:20`).
+const PRESSED_STATE_LAYER_OPACITY: f32 = 0.12;
+
+/// The disabled container's opacity of `on-surface`, 0.12
+/// (`_md-comp-filled-tonal-button.scss:42-46`).
+const DISABLED_CONTAINER_OPACITY: f32 = 0.12;
+
+/// The disabled content's opacity of `on-surface`, 0.38
+/// (`_md-comp-filled-button.scss:45-46`).
+const DISABLED_CONTENT_OPACITY: f32 = 0.38;
+
+/// The switch's disabled track opacity, 0.12 (`_md-comp-switch.scss:37`).
+const DISABLED_TRACK_OPACITY: f32 = 0.12;
+
 /// The font DPI a size converts at: 0.7.2's on every desktop but macOS
 /// (`ResolutionContext::from_system`, `src/resolve/context.rs`; spec §4,
 /// `Typography::font_dpi`). `material-3.toml` states every size in logical
@@ -1073,16 +1154,29 @@ const fn srgb8(rgba: u32) -> Color {
 /// data"): `Normal` alone, as the module documentation says.
 pub(crate) const CONTRAST_LEVELS: &[Contrast] = &[Contrast::Normal];
 
-/// The theme of `material-3` for `ctx.scheme`, from the preset's constants.
-// `inputs` is not read yet: the palette's and the accent's derivations (spec
-// §6, resolution step 2, `m3_role`) are the next task of the plan's Material
-// unit; the preset has no reader.
-pub(crate) fn resolve(ctx: &ThemeContext, _inputs: &ResolveInputs<'_>) -> ResolvedTheme {
-    let c = match ctx.scheme {
-        Scheme::Light => &LIGHT,
-        Scheme::Dark => &DARK,
+/// The theme of `material-3` for `ctx.scheme`, from the preset's constants
+/// with the dynamic scheme of the seed, an explicit accent or else the
+/// active palette's `accent`, laid over them ([`lay_seed_over`]), then the
+/// palette ([`lay_palette_over`]), and under a seed the state colours derived
+/// again ([`derive_state_layers`]), as the module documentation says (spec
+/// §6, resolution step 2). The preset has no reader.
+pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> ResolvedTheme {
+    let mut scheme_colors = match ctx.scheme {
+        Scheme::Light => LIGHT,
+        Scheme::Dark => DARK,
     };
-    let colors = roles(c);
+    let seed = inputs.accent.or(inputs.palette.map(|p| p.accent));
+    if let Some(seed) = seed {
+        lay_seed_over(&mut scheme_colors, seed, ctx.scheme);
+    }
+    if let Some(p) = inputs.palette {
+        lay_palette_over(&mut scheme_colors, p, inputs.accent.is_some());
+    }
+    if seed.is_some() {
+        derive_state_layers(&mut scheme_colors);
+    }
+    let c = &scheme_colors;
+    let colors = roles(c, inputs.palette);
     let typography = typography(c, ctx.text_scale);
     let units = FontUnits {
         dpi: typography.font_dpi,
@@ -1208,7 +1302,7 @@ pub(crate) fn resolve(ctx: &ThemeContext, _inputs: &ResolveInputs<'_>) -> Resolv
         dialog: dialog(c, &colors, &typography, units, motion),
         combo_box: combo_box(c, &colors, &typography, &layout, units, direction),
         segmented_control: segmented_control(c, &colors, &typography, &layout),
-        card: card(c),
+        card: card(c, &colors),
         expander: expander(c, &colors, &typography, &layout),
         custom_colors: BTreeMap::new(),
         custom_metrics: BTreeMap::new(),
@@ -1229,45 +1323,78 @@ pub(crate) fn resolve(ctx: &ThemeContext, _inputs: &ResolveInputs<'_>) -> Resolv
 /// caret is `primary` (`input.caret_color`). The status roles' origins are
 /// Material's (spec §4, `RoleOrigin`): the error role its own, the other
 /// three harmonized.
-fn roles(c: &SchemeColors) -> ColorRoles {
-    let status = |fill, foreground, origin| StatusColors {
+///
+/// The active palette `palette`, whose colours `c` holds already, states
+/// the roles its slots name (spec §7, "The roles a palette states"): the
+/// view's, the header's, the sidebar's, the card's, the dialog's, the
+/// popover's and the tooltip's surfaces with its one text colour, the
+/// window's divider, the selection (the unfocused and the text selection
+/// with it), the link, the caret, the info role's fill, and the four status
+/// colours' origin (`Custom`).
+fn roles(c: &SchemeColors, palette: Option<&Palette>) -> ColorRoles {
+    let origin = |own| {
+        if palette.is_some() {
+            RoleOrigin::Custom
+        } else {
+            own
+        }
+    };
+    let status = |fill, foreground, own| StatusColors {
         fill,
         foreground,
         standalone: None,
-        origin,
+        origin: origin(own),
     };
     let unstated = SurfaceColors::default();
+    let surface = |background: fn(&Palette) -> Color| {
+        palette.map_or(unstated, |p| {
+            SurfaceColors::new(Some(background(p)), Some(p.foreground), None, None, None)
+        })
+    };
+    let (selection_background, selection_foreground) = palette
+        .map_or((c.secondary_container, c.on_secondary_container), |p| {
+            (p.selection_bg, p.selection_fg)
+        });
     ColorRoles {
         window: SurfaceColors::new(
             Some(c.surface),
             Some(c.on_surface),
             Some(c.on_surface_variant),
             Some(c.outline),
+            palette.map(|p| p.divider),
+        ),
+        view: SurfaceColors::new(
+            Some(palette.map_or(c.surface, |p| p.view_bg)),
+            palette.map(|p| p.foreground),
+            None,
+            None,
             None,
         ),
-        view: SurfaceColors::new(Some(c.surface), None, None, None, None),
-        header: unstated,
-        sidebar: unstated,
-        card: unstated,
-        dialog: unstated,
-        popover: unstated,
-        tooltip: SurfaceColors::new(
-            Some(c.inverse_surface),
-            Some(c.inverse_on_surface),
-            None,
-            None,
-            None,
+        header: surface(|p| p.header_bg),
+        sidebar: surface(|p| p.sidebar_bg),
+        card: surface(|p| p.surface_bg),
+        dialog: surface(|p| p.surface_bg),
+        popover: surface(|p| p.surface_bg),
+        tooltip: palette.map_or(
+            SurfaceColors::new(
+                Some(c.inverse_surface),
+                Some(c.inverse_on_surface),
+                None,
+                None,
+                None,
+            ),
+            |p| SurfaceColors::new(Some(p.tooltip_bg), Some(p.foreground), None, None, None),
         ),
         osd: unstated,
         selection: SelectionColors::new(
-            c.secondary_container,
-            c.on_secondary_container,
-            Some(c.secondary_container),
-            Some(c.on_secondary_container),
+            selection_background,
+            selection_foreground,
+            Some(selection_background),
+            Some(selection_foreground),
         ),
         text_selection: SelectionColors::new(
-            c.secondary_container,
-            c.on_secondary_container,
+            selection_background,
+            selection_foreground,
             None,
             None,
         ),
@@ -1279,8 +1406,8 @@ fn roles(c: &SchemeColors) -> ColorRoles {
             standalone: None,
         },
         focus_ring: c.secondary,
-        caret: c.primary,
-        link: c.primary,
+        caret: palette.map_or(c.primary, |p| p.caret),
+        link: palette.map_or(c.primary, |p| p.link),
         // 0.7.2: `link.visited_text_color` is `defaults.link_color` where unstated.
         link_visited: None,
         disabled_text: c.disabled_content,
@@ -1289,8 +1416,89 @@ fn roles(c: &SchemeColors) -> ColorRoles {
         error: status(c.error, c.on_error, RoleOrigin::Native),
         warning: status(c.warning, c.on_warning, RoleOrigin::Harmonized),
         success: status(c.success, c.on_success, RoleOrigin::Harmonized),
-        info: status(c.primary, c.on_primary, RoleOrigin::Harmonized),
+        info: status(
+            palette.map_or(c.primary, |p| p.info),
+            c.on_primary,
+            RoleOrigin::Harmonized,
+        ),
     }
+}
+
+/// The dynamic scheme of the seed `seed` in `scheme` laid over `c`
+/// ([`m3_role`], at [`M3_CONTRAST_LEVEL`]): each field of `c` that is an
+/// `md.sys.color` role takes the scheme's role of its name.
+fn lay_seed_over(c: &mut SchemeColors, seed: Color, scheme: Scheme) {
+    let seed = [seed.r, seed.g, seed.b, seed.a];
+    for (slot, role) in [
+        (&mut c.surface, "surface"),
+        (&mut c.on_surface, "on_surface"),
+        (&mut c.on_surface_variant, "on_surface_variant"),
+        (&mut c.outline, "outline"),
+        (&mut c.outline_variant, "outline_variant"),
+        (&mut c.surface_variant, "surface_variant"),
+        (&mut c.primary, "primary"),
+        (&mut c.on_primary, "on_primary"),
+        (&mut c.secondary, "secondary"),
+        (&mut c.on_secondary, "on_secondary"),
+        (&mut c.secondary_container, "secondary_container"),
+        (&mut c.on_secondary_container, "on_secondary_container"),
+        (&mut c.surface_container, "surface_container"),
+        (&mut c.surface_container_high, "surface_container_high"),
+        (
+            &mut c.surface_container_highest,
+            "surface_container_highest",
+        ),
+        (&mut c.inverse_surface, "inverse_surface"),
+        (&mut c.inverse_on_surface, "inverse_on_surface"),
+        (&mut c.error, "error"),
+        (&mut c.on_error, "on_error"),
+    ] {
+        if let Some([r, g, b, a]) = m3_role(role, seed, M3_CONTRAST_LEVEL, scheme) {
+            *slot = Color::new(r, g, b, a);
+        }
+    }
+}
+
+/// Lays the palette `p` over `c`: each slot whose Material colour is the
+/// colour of the slot's role replaces that colour, as the module
+/// documentation lists; `accent` and `accent_fg` unless an explicit accent
+/// (`explicit_accent`) replaces them. The slots that state only their roles
+/// are read by [`roles`].
+fn lay_palette_over(c: &mut SchemeColors, p: &Palette, explicit_accent: bool) {
+    c.surface = p.window_bg;
+    c.on_surface = p.foreground;
+    c.on_surface_variant = p.foreground_muted;
+    c.outline = p.border;
+    c.error = p.error;
+    c.warning = p.warning;
+    c.success = p.success;
+    if !explicit_accent {
+        c.primary = p.accent;
+        c.on_primary = p.accent_fg;
+    }
+}
+
+/// The state colours of `c` that are a role at an `md.sys.state` or a
+/// disabled opacity, derived again from the roles of `c`: `on-surface` at
+/// the disabled container, the disabled content and the hover opacities;
+/// `surface-container-highest` at the disabled track opacity; the tonal
+/// button's hovered and pressed fills, `on-secondary-container` at the hover
+/// and the pressed opacities composited over `secondary-container`.
+fn derive_state_layers(c: &mut SchemeColors) {
+    c.disabled_container = c.on_surface.mul_alpha(DISABLED_CONTAINER_OPACITY);
+    c.disabled_content = c.on_surface.mul_alpha(DISABLED_CONTENT_OPACITY);
+    c.hover_layer = c.on_surface.mul_alpha(HOVER_STATE_LAYER_OPACITY);
+    c.disabled_track = c
+        .surface_container_highest
+        .mul_alpha(DISABLED_TRACK_OPACITY);
+    c.button_hover = c
+        .on_secondary_container
+        .mul_alpha(HOVER_STATE_LAYER_OPACITY)
+        .composite_over(c.secondary_container);
+    c.button_pressed = c
+        .on_secondary_container
+        .mul_alpha(PRESSED_STATE_LAYER_OPACITY)
+        .composite_over(c.secondary_container);
 }
 
 /// How a font size becomes logical pixels: the font DPI and the text scale
@@ -2279,22 +2487,24 @@ fn sidebar(
     )
 }
 
-/// The popover: the surface container with no outline, in the default border
-/// colour, its own corners (`resolve_border_inheritance`; the default shadow,
-/// which is on), padded above and below; its text in the window's.
+/// The popover: the surface container, or the popover's background where a
+/// palette states it, with no outline, in the default border colour, its own
+/// corners (`resolve_border_inheritance`; the default shadow, which is on),
+/// padded above and below; its text in the window's.
 fn popover(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> PopoverWidget {
     let mut panel = PartStyle::default();
-    for prop in [fill(c.surface_container)]
-        .into_iter()
-        .chain(border(roles, POPOVER_BORDER_WIDTH))
-        .chain([
-            corners(POPOVER_CORNER_RADIUS),
-            PartProp::Padding(Edges::symmetric(
-                POPOVER_PADDING_VERTICAL,
-                POPOVER_PADDING_HORIZONTAL,
-            )),
-        ])
-    {
+    for prop in [fill(
+        roles.popover.background.unwrap_or(c.surface_container),
+    )]
+    .into_iter()
+    .chain(border(roles, POPOVER_BORDER_WIDTH))
+    .chain([
+        corners(POPOVER_CORNER_RADIUS),
+        PartProp::Padding(Edges::symmetric(
+            POPOVER_PADDING_VERTICAL,
+            POPOVER_PADDING_HORIZONTAL,
+        )),
+    ]) {
         panel.apply(&prop);
     }
     PopoverWidget::new(
@@ -2372,7 +2582,8 @@ fn switch(c: &SchemeColors, roles: &ColorRoles) -> SwitchWidget {
     )
 }
 
-/// The dialog: its panel in the high surface container with no outline, in
+/// The dialog: its panel in the high surface container, or in the dialog's
+/// background where a palette states it, with no outline, in
 /// the default border colour, its own corners (`resolve_border_inheritance`;
 /// the default shadow, which is on), its padding and size limits; its title
 /// in the UI font at its own size and weight, its body in the UI font in the
@@ -2386,19 +2597,20 @@ fn dialog(
     motion: Motion,
 ) -> DialogWidget {
     let mut panel = PartStyle::default();
-    for prop in [fill(c.surface_container_high)]
-        .into_iter()
-        .chain(border(roles, DIALOG_BORDER_WIDTH))
-        .chain([
-            corners(DIALOG_CORNER_RADIUS),
-            PartProp::Padding(Edges::symmetric(
-                DIALOG_PADDING_VERTICAL,
-                DIALOG_PADDING_HORIZONTAL,
-            )),
-            PartProp::MinSize([Some(DIALOG_MIN_WIDTH), Some(DIALOG_MIN_HEIGHT)]),
-            PartProp::MaxSize([Some(DIALOG_MAX_WIDTH), Some(DIALOG_MAX_HEIGHT)]),
-        ])
-    {
+    for prop in [fill(
+        roles.dialog.background.unwrap_or(c.surface_container_high),
+    )]
+    .into_iter()
+    .chain(border(roles, DIALOG_BORDER_WIDTH))
+    .chain([
+        corners(DIALOG_CORNER_RADIUS),
+        PartProp::Padding(Edges::symmetric(
+            DIALOG_PADDING_VERTICAL,
+            DIALOG_PADDING_HORIZONTAL,
+        )),
+        PartProp::MinSize([Some(DIALOG_MIN_WIDTH), Some(DIALOG_MIN_HEIGHT)]),
+        PartProp::MaxSize([Some(DIALOG_MAX_WIDTH), Some(DIALOG_MAX_HEIGHT)]),
+    ]) {
         panel.apply(&prop);
     }
     let title = weighted(
@@ -2539,12 +2751,13 @@ fn segmented_control(
     )
 }
 
-/// The card, Material's filled card: `surface-container-highest` with its
-/// own corners. 0.7.2 states no outline, shadow or padding for it.
-fn card(c: &SchemeColors) -> CardWidget {
+/// The card, Material's filled card: `surface-container-highest`, or the
+/// card's background where a palette states it, with its own corners. 0.7.2
+/// states no outline, shadow or padding for it.
+fn card(c: &SchemeColors, roles: &ColorRoles) -> CardWidget {
     let container = RuleBuilder::new(PartStyle::default())
         .base([
-            fill(c.surface_container_highest),
+            fill(roles.card.background.unwrap_or(c.surface_container_highest)),
             corners(CARD_CORNER_RADIUS),
         ])
         .build();
