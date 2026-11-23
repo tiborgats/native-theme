@@ -5,7 +5,7 @@
 //! function returns, in every status of its widget.
 //!
 //! Presets covered: kde-breeze, adwaita, windows-11, macos-monterey,
-//! macos-tahoe and material-3, light and dark ([`PRESETS`]). The 0.7.2 side
+//! macos-tahoe, material-3 and ios-13, light and dark ([`PRESETS`]). The 0.7.2 side
 //! is resolved as the connector's tests resolve it
 //! (`ResolutionContext::for_tests`), with no accessibility scaling; the
 //! 0.8.0 side for the scheme's default context, whose text scale is 1.
@@ -50,6 +50,7 @@ const PRESETS: &[(&str, Preset)] = &[
     ("macos-monterey", Preset::MacosMonterey),
     ("macos-tahoe", Preset::MacosTahoe),
     ("material-3", Preset::Material3),
+    ("ios-13", Preset::Ios13),
 ];
 
 /// A listed difference (plan, section 1, rule 2): the leaf, the presets on
