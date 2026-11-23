@@ -20874,6 +20874,101 @@ fn a_group_box_claims_the_card_edge_only_where_one_is_drawn() {
     }
 }
 
+/// The Accordion's info claims upstream's colours for exactly the parts the
+/// installed 0.8.0 theme's builders leave to it: the border and the line
+/// between items where `next::geometry::accordion` lacks a value, the
+/// titles' colours where `next::geometry::accordion_title` does, both
+/// without a 0.8.0 theme, which alone says the items take no hover -- the
+/// arms with one builder refining and the other not being ones no bundled
+/// preset need reach.
+#[test]
+fn the_accordions_info_claims_upstreams_colours_where_a_builder_lacks_one() {
+    let t = Theme::default();
+    let roles = |info: &WidgetInfo| -> Vec<&str> { info.colors.iter().map(|c| c.role).collect() };
+    let edges = ["border", "line between items"];
+    let titles = ["open item's title", "closed item's title, inherited"];
+    for (refined, edged, titled) in [
+        (None, false, false),
+        (Some((false, false)), false, false),
+        (Some((true, false)), false, true),
+        (Some((false, true)), true, false),
+        (Some((true, true)), true, true),
+    ] {
+        let info = crate::info::layout::next_accordion(&t, false, 3, refined);
+        let claimed = roles(&info);
+        for role in edges {
+            assert_eq!(
+                claimed.contains(&role),
+                !edged,
+                "{refined:?}: the info claims {role} {}",
+                if edged {
+                    "the builder colours"
+                } else {
+                    "only where upstream draws it"
+                }
+            );
+        }
+        for role in titles {
+            assert_eq!(
+                claimed.contains(&role),
+                !titled,
+                "{refined:?}: the info claims {role} {}",
+                if titled {
+                    "the builder colours"
+                } else {
+                    "only where upstream colours it"
+                }
+            );
+        }
+        assert_eq!(
+            note_of(&info.not_themeable, "hover").is_some(),
+            refined.is_none(),
+            "{refined:?}: the hover note is not there exactly without a 0.8.0 theme"
+        );
+    }
+}
+
+/// The Theme Map's "branch" note follows what the installed 0.8.0 theme
+/// states, read off the same queries the connector makes: a
+/// secondary_active swatch says which way `button.body(PRESSED).fill`'s
+/// rule sent it, a list_hover or table_hover swatch which way
+/// `list.highlight(HOVER).fill` did, and any other swatch has none -- each
+/// arm read here, whether or not a bundled preset reaches it.
+#[test]
+fn a_swatchs_branch_note_follows_what_the_theme_states() {
+    use crate::demo::ThemeToken;
+    use crate::info::theme_map::branch_note;
+    for token in [
+        ThemeToken::SecondaryActive,
+        ThemeToken::ButtonActive,
+        ThemeToken::ButtonSecondaryActive,
+    ] {
+        assert!(
+            branch_note(token, true, false)
+                .is_some_and(|n| n.starts_with("a rule states button.body(PRESSED).fill")),
+            "a stated pressed fill's note"
+        );
+        assert!(
+            branch_note(token, false, true)
+                .is_some_and(|n| n.starts_with("no rule states button.body(PRESSED).fill")),
+            "an unstated pressed fill's note"
+        );
+    }
+    for token in [ThemeToken::ListHover, ThemeToken::TableHover] {
+        assert!(
+            branch_note(token, false, true)
+                .is_some_and(|n| n.starts_with("the theme states list.highlight(HOVER).fill")),
+            "a stated hovered row's note"
+        );
+        assert!(
+            branch_note(token, true, false)
+                .is_some_and(|n| n.starts_with("the theme states no list.highlight(HOVER).fill")),
+            "an unstated hovered row's note"
+        );
+    }
+    assert_eq!(branch_note(ThemeToken::Background, true, true), None);
+}
+
 /// The Folder tab row's font and size lines, and the side panel label's
 /// font line, name the installed 0.8.0 theme's homes where it states a font
 /// gpui can letter the label in and a least size, and gpui-component's own

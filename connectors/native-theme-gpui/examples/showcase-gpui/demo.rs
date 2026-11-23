@@ -10286,7 +10286,7 @@ pub(crate) fn swatch(
 ) -> Stateful<Div> {
     let t = cx.theme();
     // What the connector writes the colours under.
-    let native = old_native(cx);
+    let native = next_resolved(cx);
     let value = info::theme_map::row(t, token).value;
     let id = SharedString::from(format!("theme-map-swatch-{}", value.field));
     let label = SharedString::from(format!("{} {}", value.field, as_rgba(value.value)));
