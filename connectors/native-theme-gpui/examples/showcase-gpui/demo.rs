@@ -10190,26 +10190,42 @@ pub(crate) fn toggle_button(
     );
     if let (Some(_), Some(r)) = (&checked, next_resolved(cx)) {
         let b = &r.button;
-        let fill = if next::state_fill_of(&b.body(WidgetState::CHECKED)).is_some() {
-            "button.body(CHECKED).fill"
-        } else if next::state_fill_of(&b.body(WidgetState::PRESSED)).is_some() {
-            "button.body(PRESSED).fill, where no rule states button.body(CHECKED).fill"
-        } else {
-            "gpui-component's own button_active token: the theme states neither button.body(CHECKED).fill nor button.body(PRESSED).fill, so geometry::button_checked sets no fill and upstream's selected fill stands (button/button.rs, ButtonVariant::selected)"
-        };
-        let text = if next::state_text_color_of(&b.label(WidgetState::CHECKED)).is_some() {
-            "button.label(CHECKED).color"
-        } else {
-            "button.label(PRESSED).color, where no rule states button.label(CHECKED).color"
-        };
         button_info = button_info.instance(
             "state",
-            format!("selected: on, filled with {fill} and lettered in {text}"),
+            toggle_state_line(
+                next::state_fill_of(&b.body(WidgetState::CHECKED)).is_some(),
+                next::state_fill_of(&b.body(WidgetState::PRESSED)).is_some(),
+                next::state_text_color_of(&b.label(WidgetState::CHECKED)).is_some(),
+            ),
         );
     }
     let button = refined(button.selected(true).toggled(true), checked.as_ref());
     InfoExt::info(labelled(ui, cx, button, id, label), ui, id, button_info)
         .debug_selector(move || id.into())
+}
+
+/// The toggle button's "state" line: what its checked fill and label are
+/// painted with, from which of `button.body(CHECKED).fill`,
+/// `button.body(PRESSED).fill` and `button.label(CHECKED).color` the theme
+/// states.
+pub(crate) fn toggle_state_line(
+    checked_fill: bool,
+    pressed_fill: bool,
+    checked_label: bool,
+) -> String {
+    let fill = if checked_fill {
+        "button.body(CHECKED).fill"
+    } else if pressed_fill {
+        "button.body(PRESSED).fill, where no rule states button.body(CHECKED).fill"
+    } else {
+        "gpui-component's own button_active token: the theme states neither button.body(CHECKED).fill nor button.body(PRESSED).fill, so geometry::button_checked sets no fill and upstream's selected fill stands (button/button.rs, ButtonVariant::selected)"
+    };
+    let text = if checked_label {
+        "button.label(CHECKED).color"
+    } else {
+        "button.label(PRESSED).color, where no rule states button.label(CHECKED).color"
+    };
+    format!("selected: on, filled with {fill} and lettered in {text}")
 }
 
 /// A dialog's default button, the one Enter activates, reading `label`.
