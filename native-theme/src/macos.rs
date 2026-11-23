@@ -88,25 +88,117 @@ fn apply_accent_fades(v: &mut crate::ThemeMode, disabled_checked_alpha: u8) {
         .map(|a| crate::Rgba::new(a.r, a.g, a.b, disabled_checked_alpha));
 }
 
-/// Per-widget colors read from appearance-dependent NSColor APIs.
-#[cfg(all(target_os = "macos", feature = "macos"))]
-#[derive(Default)]
-struct PerWidgetColors {
-    placeholder: Option<crate::Rgba>,
-    caret: Option<crate::Rgba>,
-    alternate_row: Option<crate::Rgba>,
-    header_foreground: Option<crate::Rgba>,
-    grid_color: Option<crate::Rgba>,
-    title_bar_foreground: Option<crate::Rgba>,
+/// The semantic `NSColor`s read under one appearance, each converted by
+/// `nscolor_to_rgba` (`None` where AppKit cannot convert it): what
+/// [`defaults_of`] and [`apply_per_widget`] write into the reader's variant,
+/// and what the 0.8.0 reader carries as that appearance's entry of
+/// `color_schemes` (`next::reader::macos`).
+#[cfg_attr(not(all(target_os = "macos", feature = "macos")), allow(dead_code))]
+#[derive(Clone, Copy, Debug, Default)]
+pub(crate) struct AppearanceColors {
+    /// `labelColor`.
+    pub(crate) label: Option<crate::Rgba>,
+    /// `controlAccentColor`.
+    pub(crate) control_accent: Option<crate::Rgba>,
+    /// `windowBackgroundColor`.
+    pub(crate) window_background: Option<crate::Rgba>,
+    /// `controlBackgroundColor`.
+    pub(crate) control_background: Option<crate::Rgba>,
+    /// `separatorColor`.
+    pub(crate) separator: Option<crate::Rgba>,
+    /// `secondaryLabelColor`.
+    pub(crate) secondary_label: Option<crate::Rgba>,
+    /// `alternateSelectedControlTextColor`.
+    pub(crate) alternate_selected_control_text: Option<crate::Rgba>,
+    /// `systemRedColor`.
+    pub(crate) system_red: Option<crate::Rgba>,
+    /// `systemOrangeColor`.
+    pub(crate) system_orange: Option<crate::Rgba>,
+    /// `systemGreenColor`.
+    pub(crate) system_green: Option<crate::Rgba>,
+    /// `systemBlueColor`.
+    pub(crate) system_blue: Option<crate::Rgba>,
+    /// `selectedContentBackgroundColor`.
+    pub(crate) selected_content_background: Option<crate::Rgba>,
+    /// `unemphasizedSelectedContentBackgroundColor`.
+    pub(crate) unemphasized_selected_content_background: Option<crate::Rgba>,
+    /// `selectedTextBackgroundColor`.
+    pub(crate) selected_text_background: Option<crate::Rgba>,
+    /// `selectedTextColor`.
+    pub(crate) selected_text: Option<crate::Rgba>,
+    /// `linkColor`.
+    pub(crate) link: Option<crate::Rgba>,
+    /// `keyboardFocusIndicatorColor`.
+    pub(crate) keyboard_focus_indicator: Option<crate::Rgba>,
+    /// `disabledControlTextColor`.
+    pub(crate) disabled_control_text: Option<crate::Rgba>,
+    /// `placeholderTextColor`.
+    pub(crate) placeholder_text: Option<crate::Rgba>,
+    /// `textInsertionPointColor`, read on macOS 14 and later only
+    /// ([`has_text_insertion_point_color`]).
+    pub(crate) text_insertion_point: Option<crate::Rgba>,
+    /// `alternatingContentBackgroundColors[1]` (index 0 is the normal
+    /// background), where the array has two colours.
+    pub(crate) alternate_row: Option<crate::Rgba>,
+    /// `headerTextColor`.
+    pub(crate) header_text: Option<crate::Rgba>,
+    /// `gridColor`.
+    pub(crate) grid: Option<crate::Rgba>,
+    /// `windowFrameTextColor`.
+    pub(crate) window_frame_text: Option<crate::Rgba>,
+}
+
+/// The variant's `defaults` of the colours read under one appearance.
+#[cfg_attr(not(all(target_os = "macos", feature = "macos")), allow(dead_code))]
+fn defaults_of(colors: &AppearanceColors) -> crate::ThemeDefaults {
+    let label = colors.label;
+    crate::ThemeDefaults {
+        accent_color: colors.control_accent,
+        accent_text_color: colors.alternate_selected_control_text,
+        background_color: colors.window_background,
+        text_color: label,
+        surface_color: colors.control_background,
+        // platform-facts.md:1055: border.color is separatorColor on macOS.
+        border: crate::model::border::DefaultsBorderSpec {
+            color: colors.separator,
+            ..Default::default()
+        },
+        muted_color: colors.secondary_label,
+        // shadow_color is not read: NSColor.shadowColor is an opaque black, while the
+        // shadow AppKit draws is NSShadow's default, black at 1/3, which the preset
+        // states (platform-facts.md:1057).
+        danger_color: colors.system_red,
+        danger_text_color: label,
+        warning_color: colors.system_orange,
+        warning_text_color: label,
+        success_color: colors.system_green,
+        success_text_color: label,
+        info_color: colors.system_blue,
+        info_text_color: label,
+        selection_background: colors.selected_content_background,
+        // platform-facts.md §2.1.3 (selection_text_color,
+        // selection_inactive_text_color, text_selection_*):
+        // alternateSelectedControlTextColor on a selection, labelColor on an
+        // unfocused one, which does not adapt;
+        // selectedTextBackgroundColor and selectedTextColor for selected text
+        selection_text_color: colors.alternate_selected_control_text,
+        selection_inactive_background: colors.unemphasized_selected_content_background,
+        selection_inactive_text_color: label,
+        text_selection_background: colors.selected_text_background,
+        text_selection_color: colors.selected_text,
+        link_color: colors.link,
+        focus_ring_color: colors.keyboard_focus_indicator,
+        disabled_text_color: colors.disabled_control_text,
+        ..Default::default()
+    }
 }
 
 /// Read all semantic NSColor values for the current appearance context.
 ///
-/// Returns both the ThemeDefaults and per-widget color data. Must be called
-/// within an `NSAppearance::performAsCurrentDrawingAppearance` block so that
-/// dynamic colors resolve to the correct appearance.
+/// Must be called within an `NSAppearance::performAsCurrentDrawingAppearance`
+/// block so that dynamic colors resolve to the correct appearance.
 #[cfg(all(target_os = "macos", feature = "macos"))]
-fn read_appearance_colors() -> (crate::ThemeDefaults, PerWidgetColors) {
+fn read_appearance_colors() -> AppearanceColors {
     let srgb = NSColorSpace::sRGBColorSpace();
 
     // Bind all NSColor temporaries before borrowing them.
@@ -140,48 +232,6 @@ fn read_appearance_colors() -> (crate::ThemeDefaults, PerWidgetColors) {
     let grid_c = NSColor::gridColor();
     let frame_text_c = NSColor::windowFrameTextColor();
 
-    let label = nscolor_to_rgba(&label_c, &srgb);
-
-    let defaults = crate::ThemeDefaults {
-        accent_color: nscolor_to_rgba(&control_accent, &srgb),
-        accent_text_color: nscolor_to_rgba(&alt_sel_text, &srgb),
-        background_color: nscolor_to_rgba(&window_bg, &srgb),
-        text_color: label,
-        surface_color: nscolor_to_rgba(&control_bg, &srgb),
-        // platform-facts.md:1055: border.color is separatorColor on macOS.
-        border: crate::model::border::DefaultsBorderSpec {
-            color: nscolor_to_rgba(&separator_c, &srgb),
-            ..Default::default()
-        },
-        muted_color: nscolor_to_rgba(&secondary_label, &srgb),
-        // shadow_color is not read: NSColor.shadowColor is an opaque black, while the
-        // shadow AppKit draws is NSShadow's default, black at 1/3, which the preset
-        // states (platform-facts.md:1057).
-        danger_color: nscolor_to_rgba(&system_red, &srgb),
-        danger_text_color: label,
-        warning_color: nscolor_to_rgba(&system_orange, &srgb),
-        warning_text_color: label,
-        success_color: nscolor_to_rgba(&system_green, &srgb),
-        success_text_color: label,
-        info_color: nscolor_to_rgba(&system_blue, &srgb),
-        info_text_color: label,
-        selection_background: nscolor_to_rgba(&sel_content_bg, &srgb),
-        // platform-facts.md §2.1.3 (selection_text_color,
-        // selection_inactive_text_color, text_selection_*):
-        // alternateSelectedControlTextColor on a selection, labelColor on an
-        // unfocused one, which does not adapt;
-        // selectedTextBackgroundColor and selectedTextColor for selected text
-        selection_text_color: nscolor_to_rgba(&alt_sel_text, &srgb),
-        selection_inactive_background: nscolor_to_rgba(&unemph_sel_bg, &srgb),
-        selection_inactive_text_color: label,
-        text_selection_background: nscolor_to_rgba(&sel_text_bg, &srgb),
-        text_selection_color: nscolor_to_rgba(&sel_text, &srgb),
-        link_color: nscolor_to_rgba(&link_c, &srgb),
-        focus_ring_color: nscolor_to_rgba(&focus_c, &srgb),
-        disabled_text_color: nscolor_to_rgba(&disabled_text, &srgb),
-        ..Default::default()
-    };
-
     // Alternate row: index 1 of alternatingContentBackgroundColors (index 0 is normal).
     let alternate_row = if alt_bg_colors.count() >= 2 {
         nscolor_to_rgba(&alt_bg_colors.objectAtIndex(1), &srgb)
@@ -189,25 +239,41 @@ fn read_appearance_colors() -> (crate::ThemeDefaults, PerWidgetColors) {
         None
     };
 
-    let per_widget = PerWidgetColors {
-        placeholder: nscolor_to_rgba(&placeholder_c, &srgb),
-        caret: insertion_point_c
+    AppearanceColors {
+        label: nscolor_to_rgba(&label_c, &srgb),
+        control_accent: nscolor_to_rgba(&control_accent, &srgb),
+        window_background: nscolor_to_rgba(&window_bg, &srgb),
+        control_background: nscolor_to_rgba(&control_bg, &srgb),
+        separator: nscolor_to_rgba(&separator_c, &srgb),
+        secondary_label: nscolor_to_rgba(&secondary_label, &srgb),
+        alternate_selected_control_text: nscolor_to_rgba(&alt_sel_text, &srgb),
+        system_red: nscolor_to_rgba(&system_red, &srgb),
+        system_orange: nscolor_to_rgba(&system_orange, &srgb),
+        system_green: nscolor_to_rgba(&system_green, &srgb),
+        system_blue: nscolor_to_rgba(&system_blue, &srgb),
+        selected_content_background: nscolor_to_rgba(&sel_content_bg, &srgb),
+        unemphasized_selected_content_background: nscolor_to_rgba(&unemph_sel_bg, &srgb),
+        selected_text_background: nscolor_to_rgba(&sel_text_bg, &srgb),
+        selected_text: nscolor_to_rgba(&sel_text, &srgb),
+        link: nscolor_to_rgba(&link_c, &srgb),
+        keyboard_focus_indicator: nscolor_to_rgba(&focus_c, &srgb),
+        disabled_control_text: nscolor_to_rgba(&disabled_text, &srgb),
+        placeholder_text: nscolor_to_rgba(&placeholder_c, &srgb),
+        text_insertion_point: insertion_point_c
             .as_ref()
             .and_then(|c| nscolor_to_rgba(c, &srgb)),
         alternate_row,
-        header_foreground: nscolor_to_rgba(&header_text_c, &srgb),
-        grid_color: nscolor_to_rgba(&grid_c, &srgb),
-        title_bar_foreground: nscolor_to_rgba(&frame_text_c, &srgb),
-    };
-
-    (defaults, per_widget)
+        header_text: nscolor_to_rgba(&header_text_c, &srgb),
+        grid: nscolor_to_rgba(&grid_c, &srgb),
+        window_frame_text: nscolor_to_rgba(&frame_text_c, &srgb),
+    }
 }
 
 /// Read one appearance's colours: [`read_appearance_colors`] inside
 /// `performAsCurrentDrawingAppearance`, so that dynamic colours resolve to
 /// `appearance`.
 #[cfg(all(target_os = "macos", feature = "macos"))]
-fn read_variant(appearance: &NSAppearance) -> (crate::ThemeDefaults, PerWidgetColors) {
+fn read_variant(appearance: &NSAppearance) -> AppearanceColors {
     let data = std::cell::Cell::new(None);
     {
         let block = RcBlock::new(|| data.set(Some(read_appearance_colors())));
@@ -217,16 +283,16 @@ fn read_variant(appearance: &NSAppearance) -> (crate::ThemeDefaults, PerWidgetCo
 }
 
 /// Apply one appearance's per-widget colours to its variant.
-#[cfg(all(target_os = "macos", feature = "macos"))]
-fn apply_per_widget(v: &mut crate::ThemeMode, pw: PerWidgetColors) {
-    v.input.placeholder_color = pw.placeholder;
-    v.input.caret_color = pw.caret;
-    v.list.alternate_row_background = pw.alternate_row;
-    if let Some(color) = pw.header_foreground {
+#[cfg_attr(not(all(target_os = "macos", feature = "macos")), allow(dead_code))]
+fn apply_per_widget(v: &mut crate::ThemeMode, colors: &AppearanceColors) {
+    v.input.placeholder_color = colors.placeholder_text;
+    v.input.caret_color = colors.text_insertion_point;
+    v.list.alternate_row_background = colors.alternate_row;
+    if let Some(color) = colors.header_text {
         v.list.header_font.get_or_insert_default().color = Some(color);
     }
-    v.list.grid_color = pw.grid_color;
-    if let Some(color) = pw.title_bar_foreground {
+    v.list.grid_color = colors.grid;
+    if let Some(color) = colors.window_frame_text {
         v.window.title_bar_font.get_or_insert_default().color = Some(color);
     }
 }
@@ -452,14 +518,55 @@ fn read_per_widget_fonts() -> (crate::FontSpec, crate::FontSpec, crate::FontSpec
     )
 }
 
+/// The font DPI the reader states: macOS's coordinate system uses 72 DPI as
+/// its base. `NSFont.pointSize()` returns Apple points where 1pt = 1 logical
+/// pixel, so the formula pt * 72/72 = pt (identity) is correct.
+pub(crate) const FONT_DPI: f32 = 72.0;
+
 /// Per-widget font and text scale data passed to [`build_theme`].
 ///
 /// Collected once (appearance-independent) and applied to both variants.
 #[cfg_attr(not(all(target_os = "macos", feature = "macos")), allow(dead_code))]
-struct WidgetFontData {
-    menu_font: crate::FontSpec,
-    tooltip_font: crate::FontSpec,
-    title_bar_font: crate::FontSpec,
+#[derive(Clone, Debug)]
+pub(crate) struct WidgetFontData {
+    /// `NSFont.menuFontOfSize(0)`.
+    pub(crate) menu_font: crate::FontSpec,
+    /// `NSFont.toolTipsFontOfSize(0)`.
+    pub(crate) tooltip_font: crate::FontSpec,
+    /// `NSFont.titleBarFontOfSize(0)`.
+    pub(crate) title_bar_font: crate::FontSpec,
+}
+
+/// Everything the reader reads, each as read: what [`reader_result`] builds
+/// the 0.7.2 reader's result from, and the 0.8.0 reader its snapshot
+/// (`next::reader::macos`).
+#[cfg_attr(not(all(target_os = "macos", feature = "macos")), allow(dead_code))]
+#[derive(Clone, Debug)]
+pub(crate) struct MacosSettings {
+    /// The colours under Aqua, `None` where AppKit gives no such appearance.
+    pub(crate) light: Option<AppearanceColors>,
+    /// The colours under Dark Aqua, `None` where AppKit gives no such
+    /// appearance.
+    pub(crate) dark: Option<AppearanceColors>,
+    /// The system font (`read_fonts`).
+    pub(crate) font: crate::FontSpec,
+    /// The monospaced system font (`read_fonts`).
+    pub(crate) mono_font: crate::FontSpec,
+    /// The menu, tool-tip and title-bar fonts (`read_per_widget_fonts`).
+    pub(crate) widget_fonts: WidgetFontData,
+    /// The scroll bar of the user's scroller style
+    /// ([`scrollbar_for_style`]), `None` where not read on the main thread.
+    pub(crate) scrollbar: Option<crate::ScrollbarTheme>,
+    /// `accessibilityDisplayShouldReduceMotion`.
+    pub(crate) reduce_motion: Option<bool>,
+    /// `accessibilityDisplayShouldIncreaseContrast`.
+    pub(crate) increase_contrast: Option<bool>,
+    /// `accessibilityDisplayShouldReduceTransparency`.
+    pub(crate) reduce_transparency: Option<bool>,
+    /// `AppleInterfaceStyle` is dark (`detect::detect_is_dark`).
+    pub(crate) is_dark: bool,
+    /// The running macOS version (`os_version`).
+    pub(crate) version: crate::pipeline::OsVersion,
 }
 
 /// Testable core: assemble a Theme from pre-read color and font data.
@@ -536,6 +643,17 @@ impl crate::reader::ThemeReader for MacosReader {
 
 #[cfg(all(target_os = "macos", feature = "macos"))]
 fn read_macos() -> crate::Result<crate::ReaderResult> {
+    read_macos_settings().map(|settings| reader_result(&settings))
+}
+
+/// Read every setting the reader reads ([`MacosSettings`]): what
+/// [`read_macos`] builds its result from, and the 0.8.0 reader its snapshot
+/// (`next::reader::macos::read`).
+///
+/// Returns `Error::ReaderFailed` if neither light nor dark appearance can be
+/// created.
+#[cfg(all(target_os = "macos", feature = "macos"))]
+pub(crate) fn read_macos_settings() -> crate::Result<MacosSettings> {
     let light_name = NSString::from_str("NSAppearanceNameAqua");
     let dark_name = NSString::from_str("NSAppearanceNameDarkAqua");
 
@@ -558,66 +676,92 @@ fn read_macos() -> crate::Result<crate::ReaderResult> {
         title_bar_font,
     };
 
-    let read = |appearance: Option<&NSAppearance>| match appearance {
-        Some(app) => {
-            let (mut defaults, pw) = read_variant(app);
-            defaults.font = font.clone();
-            defaults.mono_font = mono_font.clone();
-            (defaults, Some(pw))
-        }
-        None => (crate::ThemeDefaults::default(), None),
-    };
-    let (light_defaults, light_pw) = read(light_appearance.as_deref());
-    let (dark_defaults, dark_pw) = read(dark_appearance.as_deref());
-
-    let mut theme = build_theme(light_defaults, dark_defaults, &widget_fonts);
+    let light = light_appearance.as_deref().map(read_variant);
+    let dark = dark_appearance.as_deref().map(read_variant);
 
     // The scroll bar is appearance-independent and requires the main thread.
     let scrollbar = objc2::MainThreadMarker::new().map(read_scrollbar);
-    let disabled_on_alpha = disabled_checked_alpha(os_version());
-    for (variant, pw) in [(&mut theme.light, light_pw), (&mut theme.dark, dark_pw)] {
+
+    // Accessibility flags (appearance-independent).
+    let (reduce_motion, increase_contrast, reduce_transparency) = read_accessibility();
+
+    Ok(MacosSettings {
+        light,
+        dark,
+        font,
+        mono_font,
+        widget_fonts,
+        scrollbar,
+        reduce_motion,
+        increase_contrast,
+        reduce_transparency,
+        is_dark: crate::detect::detect_is_dark(),
+        version: os_version(),
+    })
+}
+
+/// The 0.7.2 reader's result of the settings `settings`: both variants
+/// ([`build_theme`]), each with its appearance's colours, the fonts, the
+/// scroll bar and the disabled on switch's fade, and the accessibility
+/// flags. An appearance that was not read leaves its variant without colours
+/// and without the system and monospaced fonts.
+#[cfg_attr(not(all(target_os = "macos", feature = "macos")), allow(dead_code))]
+pub(crate) fn reader_result(settings: &MacosSettings) -> crate::ReaderResult {
+    let variant_defaults = |colors: Option<&AppearanceColors>| match colors {
+        Some(colors) => {
+            let mut defaults = defaults_of(colors);
+            defaults.font = settings.font.clone();
+            defaults.mono_font = settings.mono_font.clone();
+            defaults
+        }
+        None => crate::ThemeDefaults::default(),
+    };
+    let mut theme = build_theme(
+        variant_defaults(settings.light.as_ref()),
+        variant_defaults(settings.dark.as_ref()),
+        &settings.widget_fonts,
+    );
+
+    let disabled_on_alpha = disabled_checked_alpha(settings.version);
+    for (variant, colors) in [
+        (&mut theme.light, settings.light.as_ref()),
+        (&mut theme.dark, settings.dark.as_ref()),
+    ] {
         let Some(v) = variant else { continue };
-        if let Some(pw) = pw {
-            apply_per_widget(v, pw);
+        if let Some(colors) = colors {
+            apply_per_widget(v, colors);
         }
         apply_accent_fades(v, disabled_on_alpha);
-        if let Some(scrollbar) = &scrollbar {
+        if let Some(scrollbar) = &settings.scrollbar {
             v.scrollbar.merge(scrollbar);
         }
     }
 
-    // Accessibility flags (appearance-independent).
-    let (reduce_motion, high_contrast, reduce_transparency) = read_accessibility();
     let mut acc = crate::AccessibilityPreferences::default();
-    if let Some(rm) = reduce_motion {
+    if let Some(rm) = settings.reduce_motion {
         acc.reduce_motion = rm;
     }
-    if let Some(hc) = high_contrast {
+    if let Some(hc) = settings.increase_contrast {
         acc.high_contrast = hc;
     }
-    if let Some(rt) = reduce_transparency {
+    if let Some(rt) = settings.reduce_transparency {
         acc.reduce_transparency = rt;
     }
-
-    // macOS coordinate system uses 72 DPI as its base.
-    // NSFont.pointSize() returns Apple points where 1pt = 1 logical pixel,
-    // so the formula pt * 72/72 = pt (identity) is correct.
-    let font_dpi = Some(72.0_f32);
 
     let output = crate::ReaderOutput::Dual {
         light: Box::new(theme.light.unwrap_or_default()),
         dark: Box::new(theme.dark.unwrap_or_default()),
-        is_dark: crate::detect::detect_is_dark(),
+        is_dark: settings.is_dark,
     };
 
-    Ok(crate::ReaderResult {
+    crate::ReaderResult {
         output,
         name: theme.name,
         icon_set: theme.icon_set,
         layout: theme.layout,
-        font_dpi,
+        font_dpi: Some(FONT_DPI),
         accessibility: acc,
-    })
+    }
 }
 
 #[cfg(test)]
@@ -1139,7 +1283,7 @@ mod tests {
     #[cfg(all(target_os = "macos", feature = "macos"))]
     #[test]
     fn read_appearance_colors_reads_border_color_from_separator_color() {
-        let (defaults, _) = super::read_appearance_colors();
+        let defaults = super::defaults_of(&super::read_appearance_colors());
         assert!(
             defaults.border.color.is_some(),
             "defaults.border.color should be read from NSColor.separatorColor"
@@ -1152,7 +1296,7 @@ mod tests {
     #[test]
     fn read_appearance_colors_maps_selection_and_shadow_as_platform_facts_names() {
         let srgb = NSColorSpace::sRGBColorSpace();
-        let (defaults, _) = super::read_appearance_colors();
+        let defaults = super::defaults_of(&super::read_appearance_colors());
         assert_eq!(
             defaults.shadow_color, None,
             "NSColor.shadowColor is not the drawn shadow (platform-facts.md:1057)"

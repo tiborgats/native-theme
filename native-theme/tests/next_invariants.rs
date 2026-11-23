@@ -34,6 +34,8 @@ const PRESETS: &[(Preset, &[Contrast])] = &[
     (Preset::KdeBreeze, &[Contrast::Normal]),
     (Preset::Adwaita, &[Contrast::Normal, Contrast::High]),
     (Preset::Windows11, &[Contrast::Normal]),
+    (Preset::MacosMonterey, &[Contrast::Normal]),
+    (Preset::MacosTahoe, &[Contrast::Normal]),
 ];
 
 /// The least contrast ratio of primary text on its surface (spec §11, item 5:
