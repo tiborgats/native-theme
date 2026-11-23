@@ -3,10 +3,10 @@
 # source: qtdeclarative@6.12.0
 # source: qtbase@6.12.0
 # generations: kde-breeze
-# generator: .superpowers/sdd/v0.8.0-plan/M2/tint/generate_qt_tint.py
+# generator: scripts/generate_qt_color_vectors.py
 # inputs: base:colour tint:colour factor:number
 # outputs: result:colour stored:colour
-# written by .superpowers/sdd/v0.8.0-plan/M2/tint/generate_qt_tint.py with PySide6 6.12.0
+# written by scripts/generate_qt_color_vectors.py --qt-tint with PySide6 6.12.0
 # (Qt 6.12.0); do not edit. Each row is Qt.tint(base, Qt.alpha(tint, factor)) run by Qt's
 # QML engine: `result` the 8-bit red(), green(), blue() and alpha() the result reports, `stored`
 # the 16-bit channels it holds, each over 65535 as a float. `tint`'s own alpha is replaced by
