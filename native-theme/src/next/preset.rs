@@ -318,9 +318,12 @@ impl Theme {
     /// failed.
     fn from_read(read: Result<SystemRead, Error>, preset: Option<Preset>) -> Result<Self, Error> {
         match read? {
-            SystemRead::Snapshot(snapshot) => Ok(Self::preset(preset.unwrap_or(snapshot.preset))
-                .with_context(snapshot.context)
-                .with_system_overrides(snapshot.overrides)),
+            SystemRead::Snapshot(snapshot) => {
+                let snapshot = *snapshot;
+                Ok(Self::preset(preset.unwrap_or(snapshot.preset))
+                    .with_context(snapshot.context)
+                    .with_system_overrides(snapshot.overrides))
+            }
             SystemRead::PresetOnly(read_preset, context) => {
                 Ok(Self::preset(preset.unwrap_or(read_preset)).with_context(context))
             }
@@ -333,7 +336,7 @@ impl Theme {
     /// readers are not written yet (plan, M2): `PlatformUnsupported`.
     fn read_system(detected: Preset) -> Result<SystemRead, Error> {
         match detected {
-            Preset::KdeBreeze => Self::read_kde().map(SystemRead::Snapshot),
+            Preset::KdeBreeze => Self::read_kde().map(SystemRead::from),
             Preset::Adwaita => Self::read_adwaita_desktop(),
             _ => Err(Error::PlatformUnsupported {
                 platform: std::env::consts::OS,
@@ -359,7 +362,7 @@ impl Theme {
         }
         #[cfg(not(target_os = "linux"))]
         {
-            Self::read_gnome().map(SystemRead::Snapshot)
+            Self::read_gnome().map(SystemRead::from)
         }
     }
 
@@ -378,8 +381,8 @@ impl Theme {
     ) -> Result<SystemRead, Error> {
         use crate::detect::LinuxDesktop;
         match desktop {
-            LinuxDesktop::Gnome | LinuxDesktop::Budgie => gnome().map(SystemRead::Snapshot),
-            LinuxDesktop::Kde => kde().map(SystemRead::Snapshot),
+            LinuxDesktop::Gnome | LinuxDesktop::Budgie => gnome().map(SystemRead::from),
+            LinuxDesktop::Kde => kde().map(SystemRead::from),
             _ => Ok(SystemRead::PresetOnly(Preset::Adwaita, readerless())),
         }
     }
@@ -663,11 +666,17 @@ impl Theme {
 #[derive(Debug)]
 enum SystemRead {
     /// A reader's snapshot.
-    Snapshot(SystemSnapshot),
+    Snapshot(Box<SystemSnapshot>),
     /// The preset alone, with no system settings, in the context.
     // Built only on Linux, where a desktop may have no reader.
     #[cfg_attr(not(target_os = "linux"), allow(dead_code))]
     PresetOnly(Preset, ThemeContext),
+}
+
+impl From<SystemSnapshot> for SystemRead {
+    fn from(snapshot: SystemSnapshot) -> Self {
+        Self::Snapshot(Box::new(snapshot))
+    }
 }
 
 /// The context of a Linux desktop no reader reads, as 0.7.2's
@@ -1001,7 +1010,7 @@ mod tests {
             let mut ini = crate::kde::create_kde_parser();
             crate::kde::read_kconfig(&mut ini, &std::fs::read_to_string(&path)?);
             let snapshot = snapshot_from_kdeglobals(&ini, None, None);
-            let theme = Theme::from_read(Ok(SystemRead::Snapshot(snapshot.clone())), None)?;
+            let theme = Theme::from_read(Ok(SystemRead::from(snapshot.clone())), None)?;
             assert_eq!(theme.preset_id(), Preset::KdeBreeze, "{path:?}");
             assert_eq!(theme.context(), &snapshot.context, "{path:?}");
             assert_eq!(
@@ -1019,7 +1028,7 @@ mod tests {
                 .resolve(&snapshot.context);
             assert_eq!(theme.resolve_current(), expected, "{path:?}");
             let pinned = Theme::from_read(
-                Ok(SystemRead::Snapshot(snapshot.clone())),
+                Ok(SystemRead::from(snapshot.clone())),
                 Some(Preset::Adwaita),
             )?;
             assert_eq!(pinned.preset_id(), Preset::Adwaita, "{path:?}");
@@ -1047,7 +1056,7 @@ mod tests {
             ..SystemOverrides::default()
         };
         let snapshot = SystemSnapshot::new(Preset::KdeBreeze, ThemeContext::dark(), overrides);
-        let theme = Theme::from_read(Ok(SystemRead::Snapshot(snapshot)), None)?;
+        let theme = Theme::from_read(Ok(SystemRead::from(snapshot)), None)?;
         assert_eq!(theme.diagnostics(), [entry].as_slice());
         assert_eq!(theme.context(), &ThemeContext::dark());
         Ok(())

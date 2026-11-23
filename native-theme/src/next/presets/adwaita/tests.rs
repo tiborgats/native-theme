@@ -500,16 +500,16 @@ fn an_explicit_accent_is_libadwaita_s_accent() {
             solid(&explicit.tab.indicator(WidgetState::SELECTED).fill),
             Some(PURPLE)
         );
-        let mut system = SystemOverrides::default();
-        system.accent = Some(PURPLE);
+        let system = |accent| SystemOverrides {
+            accent: Some(accent),
+            ..SystemOverrides::default()
+        };
         let by_system = Theme::preset(Preset::Adwaita)
-            .with_system_overrides(system)
+            .with_system_overrides(system(PURPLE))
             .resolve(&ctx);
         assert_eq!(explicit, by_system, "{scheme:?}");
-        let mut system = SystemOverrides::default();
-        system.accent = Some(BLUE);
         let over_system = Theme::preset(Preset::Adwaita)
-            .with_system_overrides(system)
+            .with_system_overrides(system(BLUE))
             .with_accent(PURPLE)
             .resolve(&ctx);
         assert_eq!(over_system, explicit, "{scheme:?}");
