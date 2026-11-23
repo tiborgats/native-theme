@@ -31,11 +31,11 @@ use gpui_component::theme::{Theme as GpuiTheme, ThemeColor, ThemeConfig};
 use native_theme::next::{
     ButtonQuery, Color, CornerCurve, CornerRadius, FocusTrigger, FontStyle, ListQuery, Orientation,
     Paint, PartStated, PartStyle, ResolvedTheme, Stroke, StrokeAlign, StyleQuery, TextStated,
-    TextStyle, WidgetState,
+    TextStyle, WidgetState, WindowState,
 };
 
 use crate::base_layer::{ScrollbarGeometry, ScrollbarSource, geometry_of};
-use crate::colors::{SliceColors, assign_slice, channels_to_hsla, focus_band};
+use crate::colors::{SliceColors, WidgetColors, channels_to_hsla, focus_band, theme_color_of};
 use crate::config::{apply_config_scalars, theme_color_to_config_colors};
 use crate::geometry::Font;
 use crate::{ThemeScalars, apply_scalars, font_family};
@@ -313,17 +313,103 @@ pub(crate) fn slice_colors(r: &ResolvedTheme) -> Mapped<SliceColors> {
     })
 }
 
-/// The `ThemeColor` fields the slice feeds, written by the old mapping's
-/// [`assign_slice`]; every other field is `ThemeColor::default()`'s.
+/// A window's frame, normal: not maximized, full screen or tiled.
+fn normal_window() -> WindowState {
+    WindowState::default()
+}
+
+/// The colours outside the slice of a 0.8.0 resolved theme.
+pub(crate) fn widget_colors(r: &ResolvedTheme) -> Mapped<WidgetColors> {
+    let frame = r.window.frame(normal_window());
+    let sidebar = r.sidebar.container(WidgetState::NONE);
+    let tab = &r.tab;
+    let link = &r.link;
+    Ok(WidgetColors {
+        bg: fill(&frame, "window.frame(normal).fill")?,
+        menu_hover_bg: fill(&r.menu.item(WidgetState::HOVER), "menu.item(HOVER).fill")?,
+        menu_hover_fg: text_color(
+            &r.menu.item_label(WidgetState::HOVER),
+            "menu.item_label(HOVER).color",
+        )?,
+        sidebar_selection_bg: fill(
+            &r.sidebar.item(WidgetState::SELECTED),
+            "sidebar.item(SELECTED).fill",
+        )?,
+        sidebar_selection_fg: text_color(
+            &r.sidebar.item_label(WidgetState::SELECTED),
+            "sidebar.item_label(SELECTED).color",
+        )?,
+        selection: hsla(r.colors.text_selection.background),
+        link: text_color(&link.label(WidgetState::NONE), "link.label(NONE).color")?,
+        input: stroke_color(
+            &r.input.field(WidgetState::NONE),
+            "input.field(NONE).stroke.color",
+        )?,
+        sidebar: fill(&sidebar, "sidebar.container(NONE).fill")?,
+        sidebar_fg: text_color(
+            &r.sidebar.item_label(WidgetState::NONE),
+            "sidebar.item_label(NONE).color",
+        )?,
+        sidebar_border: stroke_color(&sidebar, "sidebar.container(NONE).stroke.color")?,
+        popover: fill(&r.popover.panel, "popover.panel.fill")?,
+        popover_fg: text_color(&r.popover.text, "popover.text.color")?,
+        tab_bg: fill(&tab.tab(WidgetState::NONE), "tab.tab(NONE).fill")?,
+        tab_active_bg: fill(&tab.tab(WidgetState::SELECTED), "tab.tab(SELECTED).fill")?,
+        tab_active_fg: text_color(
+            &tab.label(WidgetState::SELECTED),
+            "tab.label(SELECTED).color",
+        )?,
+        tab_bar_bg: fill(&tab.bar(WidgetState::NONE), "tab.bar(NONE).fill")?,
+        segmented_bg: fill(
+            &r.segmented_control.track(WidgetState::NONE),
+            "segmented_control.track(NONE).fill",
+        )?,
+        tab_fg: text_color(&tab.label(WidgetState::NONE), "tab.label(NONE).color")?,
+        title_bar_bg: fill(
+            &r.window.title_bar(normal_window()),
+            "window.title_bar(normal).fill",
+        )?,
+        window_border: stroke_color(&frame, "window.frame(normal).stroke.color")?,
+        slider_fill: fill(
+            &r.slider.active_track(WidgetState::NONE),
+            "slider.active_track(NONE).fill",
+        )?,
+        slider_thumb: fill(
+            &r.slider.thumb(WidgetState::NONE),
+            "slider.thumb(NONE).fill",
+        )?,
+        switch_unchecked: fill(
+            &r.switch.track(WidgetState::NONE),
+            "switch.track(NONE).fill",
+        )?,
+        switch_thumb: fill(
+            &r.switch.thumb(WidgetState::CHECKED),
+            "switch.thumb(CHECKED).fill",
+        )?,
+        progress_fill: fill(
+            &r.progress_bar.fill(WidgetState::NONE),
+            "progress_bar.fill(NONE).fill",
+        )?,
+        input_caret: hsla(r.colors.caret),
+        link_hover_fg: text_color(&link.label(WidgetState::HOVER), "link.label(HOVER).color")?,
+        link_active_fg: text_color(
+            &link.label(WidgetState::PRESSED),
+            "link.label(PRESSED).color",
+        )?,
+        separator: hsla(r.separator.color),
+        status_bar: fill(&r.status_bar.bar, "status_bar.bar.fill")?,
+        status_bar_border: stroke_color(&r.status_bar.bar, "status_bar.bar.stroke.color")?,
+    })
+}
+
+/// The `ThemeColor` fields, written by the old mapping's [`theme_color_of`].
 pub(crate) fn theme_color(r: &ResolvedTheme) -> Mapped<ThemeColor> {
-    let mut tc = ThemeColor::default();
-    assign_slice(
-        &mut tc,
+    Ok(theme_color_of(
         &slice_colors(r)?,
+        &widget_colors(r)?,
         r.is_dark(),
         r.context.reduced_transparency,
-    );
-    Ok(tc)
+    ))
 }
 
 /// The global theme's values the slice feeds. The sizes are the model's,

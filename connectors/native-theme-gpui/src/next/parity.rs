@@ -14,7 +14,7 @@
 //!
 //! - `gpui_component::Theme` has no `PartialEq`, and its `Serialize` skips
 //!   `notification`, `motion` and `cursor_blink`; it is compared leaf by leaf,
-//!   since the 0.8.0 side feeds only the slice's leaves, each leaf by the
+//!   since the 0.8.0 side feeds only the leaves compared here, each leaf by the
 //!   `PartialEq` of its own type, which every leaf compared here has: the
 //!   `ThemeColor` fields (`Hsla`, equal when its four `f32` are, by
 //!   `total_cmp`) and the `ThemeToken` gpui-component derives from each;
@@ -43,9 +43,9 @@
 //! longer differs fails. A leaf that compares only the connector's fallback
 //! on a preset, the preset stating none of the field it reads, is named in
 //! [`FALLBACK_ONLY`], which fails once the preset states the field. The list
-//! of colour leaves ([`SLICE_SLOTS`]) is held against the contract tables:
-//! every slot they name is in it, or in [`OUTSIDE_SLICE`] with the field
-//! outside the slice it comes from, or in [`EXCLUDED`] with a reason. The
+//! of colour leaves ([`SLOTS`]), all 140 `ThemeColor` fields, is held against
+//! the contract tables: every slot they name is in it, or in [`EXCLUDED`]
+//! with a reason. The
 //! builders compared are held against the public functions of
 //! `src/geometry.rs` and `src/variants.rs`: each is compared or in
 //! [`BUILDERS_OUTSIDE_SLICE`] with a field outside the slice it reads.
@@ -62,7 +62,7 @@ use crate::{AccessibilityPreferences, ColorMode, Native, ResolvedTheme};
 /// The presets the test covers: the 0.7.2 key and the 0.8.0 preset.
 const PRESETS: &[(&str, Preset)] = &[("kde-breeze", Preset::KdeBreeze)];
 
-/// One `ThemeColor` field the slice alone feeds: its colour, the token
+/// One `ThemeColor` field: its colour, the token
 /// gpui-component derives from it, and its hex string in the stored config,
 /// where `ThemeConfigColors` has the field public.
 struct Slot {
@@ -93,9 +93,9 @@ macro_rules! slot {
     };
 }
 
-/// The `ThemeColor` fields whose every source is a field of the slice
-/// (`colors::assign_slice`).
-const SLICE_SLOTS: &[Slot] = &[
+/// The `ThemeColor` fields the connector writes (`colors::theme_color_of`):
+/// the slice's (`colors::assign_slice`) first, then the others.
+const SLOTS: &[Slot] = &[
     slot!(foreground),
     slot!(border),
     slot!(muted_foreground),
@@ -180,77 +180,66 @@ const SLICE_SLOTS: &[Slot] = &[
     slot!(yellow, base),
     slot!(magenta, base),
     slot!(cyan, base),
+    slot!(background),
+    slot!(accent),
+    slot!(accent_foreground),
+    slot!(input),
+    slot!(selection),
+    slot!(link),
+    slot!(link_hover),
+    slot!(link_active),
+    slot!(chart_grid),
+    slot!(tab),
+    slot!(tab_active),
+    slot!(tab_active_foreground),
+    slot!(tab_bar),
+    slot!(tab_bar_segmented),
+    slot!(tab_foreground),
+    slot!(sidebar),
+    slot!(sidebar_foreground),
+    slot!(sidebar_accent),
+    slot!(sidebar_accent_foreground),
+    slot!(sidebar_border),
+    slot!(title_bar),
+    slot!(title_bar_border),
+    slot!(window_border),
+    slot!(popover),
+    slot!(popover_foreground),
+    slot!(accordion),
+    slot!(slider_bar),
+    slot!(slider_thumb),
+    slot!(switch),
+    slot!(switch_thumb),
+    slot!(progress_bar),
+    slot!(caret),
+    slot!(status_bar),
+    slot!(status_bar_border),
+    slot!(muted),
+    slot!(primary_hover),
+    slot!(danger_hover),
+    slot!(success_hover),
+    slot!(warning_hover),
+    slot!(info_hover),
+    slot!(button_primary_hover),
+    slot!(button_danger_hover),
+    slot!(button_info_hover),
+    slot!(button_success_hover),
+    slot!(button_warning_hover),
+    slot!(table_foot),
+    slot!(list_active_border),
+    slot!(table_active_border),
+    slot!(group_box),
+    slot!(description_list_label),
+    slot!(red_light, base),
+    slot!(green_light, base),
+    slot!(blue_light, base),
+    slot!(yellow_light, base),
+    slot!(magenta_light, base),
+    slot!(cyan_light, base),
 ];
 
-/// The contract tables' slots with a source outside the slice, each with
-/// that source: not mapped by the 0.8.0 side yet.
-const OUTSIDE_SLICE: &[(&str, &str)] = &[
-    ("background", "window.background_color"),
-    ("accent", "menu.hover_background"),
-    ("accent_foreground", "menu.hover_text_color"),
-    ("input", "input.border.color"),
-    ("selection", "input.selection_background"),
-    ("link", "link.font.color"),
-    ("link_hover", "link.hover_text_color"),
-    ("link_active", "link.active_text_color"),
-    ("chart_grid", "separator.line_color"),
-    ("tab", "tab.background_color"),
-    ("tab_active", "tab.active_background"),
-    ("tab_active_foreground", "tab.active_text_color"),
-    ("tab_bar", "tab.bar_background"),
-    ("tab_bar_segmented", "segmented_control.background_color"),
-    ("tab_foreground", "tab.font.color"),
-    ("sidebar", "sidebar.background_color"),
-    ("sidebar_foreground", "sidebar.font.color"),
-    ("sidebar_accent", "sidebar.selection_background"),
-    ("sidebar_accent_foreground", "sidebar.selection_text_color"),
-    ("sidebar_border", "sidebar.border.color"),
-    ("title_bar", "window.title_bar_background"),
-    ("title_bar_border", "window.border.color"),
-    ("window_border", "window.border.color"),
-    ("popover", "popover.background_color"),
-    ("popover_foreground", "popover.font.color"),
-    ("accordion", "window.background_color"),
-    ("slider_bar", "slider.fill_color"),
-    ("slider_thumb", "slider.thumb_color"),
-    ("switch", "switch.unchecked_background"),
-    ("switch_thumb", "switch.thumb_background"),
-    ("progress_bar", "progress_bar.fill_color"),
-    ("caret", "input.caret_color"),
-    ("status_bar", "status_bar.background_color"),
-    ("status_bar_border", "status_bar.border.color"),
-    ("muted", "window.background_color, under the foreground"),
-    ("primary_hover", "window.background_color, under primary"),
-    ("danger_hover", "window.background_color, under danger"),
-    ("success_hover", "window.background_color, under success"),
-    ("warning_hover", "window.background_color, under warning"),
-    ("info_hover", "window.background_color, under info"),
-    ("button_primary_hover", "a copy of primary_hover"),
-    ("button_danger_hover", "a copy of danger_hover"),
-    ("button_info_hover", "a copy of info_hover"),
-    ("button_success_hover", "a copy of success_hover"),
-    ("button_warning_hover", "a copy of warning_hover"),
-    ("table_foot", "window.background_color"),
-    (
-        "list_active_border",
-        "window.background_color, under primary",
-    ),
-    ("table_active_border", "a copy of list_active_border"),
-    ("group_box", "window.background_color, under secondary"),
-    (
-        "description_list_label",
-        "window.background_color, under the border",
-    ),
-    ("red_light", "window.background_color, under red"),
-    ("green_light", "window.background_color, under green"),
-    ("blue_light", "window.background_color, under blue"),
-    ("yellow_light", "window.background_color, under yellow"),
-    ("magenta_light", "window.background_color, under magenta"),
-    ("cyan_light", "window.background_color, under cyan"),
-];
-
-/// The contract tables' slots whose sources are all in the slice and which
-/// the test does not assert, each with the reason. None so far.
+/// The contract tables' slots the test does not assert, each with the
+/// reason. None so far.
 const EXCLUDED: &[(&str, &str)] = &[];
 
 /// A listed difference (plan, section 1, rule 2): the leaf, the presets on
@@ -479,7 +468,7 @@ fn compare_theme(
         }
     };
     let (old_config, new_config) = (config(&old_theme), config(&new_theme));
-    for slot in SLICE_SLOTS {
+    for slot in SLOTS {
         report.leaf(
             &format!("colors.{}", slot.name),
             (slot.color)(&old_theme),
@@ -830,10 +819,9 @@ fn every_fallback_only_entry_names_a_compared_leaf_and_a_covered_preset() -> cra
 
 #[test]
 fn every_contract_slot_is_compared_or_accounted_for() {
-    let named: Vec<&str> = SLICE_SLOTS
+    let named: Vec<&str> = SLOTS
         .iter()
         .map(|s| s.name)
-        .chain(OUTSIDE_SLICE.iter().map(|(slot, _)| *slot))
         .chain(EXCLUDED.iter().map(|(slot, _)| *slot))
         .collect();
     let tables = crate::contract::table_slots();
