@@ -813,7 +813,7 @@ fn distinct_decorations() -> (SchemeColors, ColorRoles, Typography, LayoutMetric
     let mut c = LIGHT;
     c.decoration_hover = DECORATION_HOVER;
     c.accent = DECORATION_FOCUS;
-    let colors = roles(&c, None, None);
+    let colors = roles(&c, None, None, None, false);
     let typography = typography(&colors, None, ThemeContext::default().text_scale);
     let layout = Theme::preset(Preset::KdeBreeze)
         .resolve(&ThemeContext::light())
@@ -892,8 +892,8 @@ fn a_slider_handle_s_hover_outline_wins_over_its_focus_outline() {
 /// An open menu-bar title is filled over a hovered one.
 #[test]
 fn an_open_menu_bar_title_is_filled_over_a_hovered_one() {
-    let (c, ..) = distinct_decorations();
-    let menu_bar = menu_bar(&c);
+    let (c, colors, ..) = distinct_decorations();
+    let menu_bar = menu_bar(&c, &colors);
     let fill = |state| solid(&menu_bar.item(state).fill);
     assert_eq!(fill(WidgetState::HOVER), Some(DECORATION_HOVER));
     assert_eq!(
@@ -1415,3 +1415,498 @@ fn no_motion_or_an_animation_scale_of_0_removes_the_dialog_s_entrance() {
         assert_eq!(theme.motion_tokens, MotionTokens::default(), "{motion:?}");
     }
 }
+
+// ---------------------------------------------------------------------------
+// The palette and the explicit accent (spec §8, *Palette*, *Explicit accent*)
+// ---------------------------------------------------------------------------
+
+/// The 8-bit opaque colour `0xRRGGBB`.
+fn hex(rgb: u32) -> Color {
+    let [_, r, g, b] = rgb.to_be_bytes();
+    Color::from_srgb8(r, g, b, u8::MAX)
+}
+
+/// A light palette whose every slot has a colour of its own.
+fn distinct_palette() -> Palette {
+    Palette {
+        name: Arc::from("distinct"),
+        scheme: Scheme::Light,
+        window_bg: hex(0xf0e0d0),
+        view_bg: hex(0xfaf5f0),
+        surface_bg: hex(0xe8f0e8),
+        header_bg: hex(0xd8d0f0),
+        sidebar_bg: hex(0xe0f0f8),
+        tooltip_bg: hex(0xf8f0c0),
+        foreground: hex(0x201810),
+        foreground_muted: hex(0x605850),
+        border: hex(0xa09080),
+        divider: hex(0xb0a8a0),
+        accent: hex(0x8020c0),
+        accent_fg: hex(0xfff8e0),
+        selection_bg: hex(0x40a060),
+        selection_fg: hex(0x002010),
+        link: hex(0x1040a0),
+        caret: hex(0xc04010),
+        error: hex(0xc00020),
+        warning: hex(0xc08000),
+        success: hex(0x208020),
+        info: hex(0x2080c0),
+    }
+}
+
+/// The colours of `scheme` with `palette` and `accent` laid over them.
+fn layered(scheme: SchemeColors, palette: Option<&Palette>, accent: Option<Color>) -> SchemeColors {
+    let mut c = scheme;
+    lay_layer_3_over(&mut c, palette, accent);
+    c
+}
+
+/// A colour of [`SchemeColors`] with its name.
+type Field = (&'static str, fn(&SchemeColors) -> Color);
+
+/// The colours no slot and no accent setting replaces.
+const KEPT: &[Field] = &[
+    ("button_background", |c| c.button_background),
+    ("button_foreground", |c| c.button_foreground),
+    ("button_checked", |c| c.button_checked),
+    ("button_frame", |c| c.button_frame),
+    ("switch_frame", |c| c.switch_frame),
+    ("switch_off", |c| c.switch_off),
+    ("toolbar_button_checked", |c| c.toolbar_button_checked),
+    ("list_alternate_row", |c| c.list_alternate_row),
+    ("disabled_text", |c| c.disabled_text),
+    ("shadow", |c| c.shadow),
+    ("button_disabled_background", |c| {
+        c.button_disabled_background
+    }),
+    ("button_disabled_foreground", |c| {
+        c.button_disabled_foreground
+    }),
+    ("checkbox_disabled_foreground", |c| {
+        c.checkbox_disabled_foreground
+    }),
+    ("view_disabled_background", |c| c.view_disabled_background),
+    ("view_disabled_foreground", |c| c.view_disabled_foreground),
+    ("link_disabled", |c| c.link_disabled),
+    ("slider_disabled", |c| c.slider_disabled),
+    ("switch_disabled_off", |c| c.switch_disabled_off),
+    ("switch_disabled_on", |c| c.switch_disabled_on),
+    ("switch_disabled_frame", |c| c.switch_disabled_frame),
+    ("switch_disabled_on_frame", |c| c.switch_disabled_on_frame),
+    ("scrollbar_track", |c| c.scrollbar_track),
+    ("tab_background", |c| c.tab_background),
+    ("tab_selected_background", |c| c.tab_selected_background),
+    ("tab_text", |c| c.tab_text),
+    ("tab_frame", |c| c.tab_frame),
+    ("sidebar_hover", |c| c.sidebar_hover),
+    ("segment_hover", |c| c.segment_hover),
+    ("expander_arrow", |c| c.expander_arrow),
+];
+
+/// The names of the [`KEPT`] colours of `got` that differ from `want`'s.
+fn moved(got: &SchemeColors, want: &SchemeColors) -> Vec<&'static str> {
+    KEPT.iter()
+        .filter(|(_, field)| field(got) != field(want))
+        .map(|(name, _)| *name)
+        .collect()
+}
+
+/// Plasma's accent run (rc1 `docs/facts/kde/accent.toml`, run 41158393408,
+/// tolerance 0): over Breeze's own scheme, the accent, then the selection's
+/// background and foreground, the link and DecorationFocus, DecorationHover
+/// and ForegroundActive Plasma wrote.
+const MEASURED_ACCENT_RUN: [(Scheme, u32, u32, u32, u32, u32); 4] = [
+    (
+        Scheme::Light,
+        0xe5a50a,
+        0xecbf53,
+        0x000000,
+        0xa77807,
+        0xe5a50a,
+    ),
+    (
+        Scheme::Light,
+        0x5e2ca5,
+        0x8e6bbf,
+        0x000000,
+        0x5e2ca5,
+        0x5e2ca5,
+    ),
+    (
+        Scheme::Dark,
+        0xe5a50a,
+        0xa67a0e,
+        0x000000,
+        0xe5a50a,
+        0xe5a50a,
+    ),
+    (
+        Scheme::Dark,
+        0x5e2ca5,
+        0x47257a,
+        0xffffff,
+        0xc7b8ed,
+        0x5e2ca5,
+    ),
+];
+
+fn context(scheme: Scheme) -> ThemeContext {
+    ThemeContext::default().with_scheme(scheme)
+}
+
+/// An explicit accent over Breeze gives Plasma's measured colours.
+#[test]
+fn an_explicit_accent_writes_plasma_s_measured_colours() {
+    for (scheme, accent, selection, text, link, decoration) in MEASURED_ACCENT_RUN {
+        let theme = Theme::preset(Preset::KdeBreeze)
+            .with_accent(hex(accent))
+            .resolve(&context(scheme));
+        let colors = &theme.colors;
+        let what = format!("{scheme:?} #{accent:06x}");
+        assert_eq!(colors.selection.background, hex(selection), "{what}");
+        assert_eq!(colors.selection.foreground, hex(text), "{what}");
+        assert_eq!(colors.link, hex(link), "{what}");
+        assert_eq!(colors.accent.fill, hex(decoration), "{what}");
+        assert_eq!(colors.info.fill, hex(decoration), "{what}");
+        assert_eq!(
+            solid(&theme.menu_bar.item(WidgetState::HOVER).fill),
+            Some(hex(decoration)),
+            "{what}: DecorationHover"
+        );
+        // The accent's text is the selection's, the caret DecorationFocus.
+        assert_eq!(colors.accent.foreground, hex(text), "{what}");
+        assert_eq!(colors.caret, hex(decoration), "{what}");
+        assert_eq!(colors.text_selection.background, hex(selection), "{what}");
+        assert_eq!(colors.focus_ring, focus_ring_of(hex(selection)), "{what}");
+        assert_eq!(colors.info.origin, RoleOrigin::Native, "{what}");
+    }
+}
+
+/// A derived colour that reads an accent setting follows the accent; one that
+/// reads none keeps Breeze's colour, and `S3` is unstated.
+#[test]
+fn an_explicit_accent_moves_only_what_reads_its_settings() {
+    let (_, accent, selection, ..) = MEASURED_ACCENT_RUN[0];
+    let (accent, selection) = (hex(accent), hex(selection));
+    let c = layered(LIGHT, None, Some(accent));
+    assert_eq!(c.menu_hover, translucent(accent, BLEND_VALUE));
+    assert_eq!(c.tab_hover, translucent(accent, TAB_HOVER_ALPHA));
+    assert_eq!(
+        c.button_pressed,
+        mix(LIGHT.button_background, selection, PRESSED_BUTTON_MIX)
+    );
+    assert_eq!(c.focus_ring, focus_ring_of(selection));
+    assert_ne!(c.list_row_hover, LIGHT.list_row_hover);
+    assert_eq!(c.list_grid, LIGHT.list_grid);
+    assert_eq!(c.scrollbar_thumb, LIGHT.scrollbar_thumb);
+    assert_eq!(c.checkbox_frame, LIGHT.checkbox_frame);
+    assert_eq!(c.toolbar_border, LIGHT.toolbar_border);
+    assert_eq!(c.title_bar_background, LIGHT.title_bar_background);
+    assert_eq!(c.scrollbar_thumb_focused, None);
+    assert_eq!(moved(&c, &LIGHT), Vec::<&str>::new());
+}
+
+/// `#00000000` is Plasma's "accent from the colour scheme": no accent.
+#[test]
+fn a_fully_transparent_accent_is_no_accent() {
+    for scheme in [Scheme::Light, Scheme::Dark] {
+        let plain = Theme::preset(Preset::KdeBreeze).resolve(&context(scheme));
+        let zero = Theme::preset(Preset::KdeBreeze)
+            .with_accent(Color::new(0.0, 0.0, 0.0, 0.0))
+            .resolve(&context(scheme));
+        assert!(zero == plain, "{scheme:?}");
+    }
+}
+
+/// A palette replaces the settings table A names and the colours derived
+/// from them, and nothing else.
+#[test]
+fn a_palette_replaces_the_settings_its_slots_name() {
+    let p = distinct_palette();
+    let c = layered(LIGHT, Some(&p), None);
+    for (name, got, want) in [
+        ("window background", c.window_background, p.window_bg),
+        ("view background", c.view_background, p.view_bg),
+        ("tooltip background", c.tooltip_background, p.tooltip_bg),
+        ("header background", c.toolbar_background, p.header_bg),
+        ("[WM] activeBackground", c.title_bar_background, p.header_bg),
+        (
+            "[WM] inactiveBackground",
+            c.title_bar_inactive_background,
+            p.header_bg,
+        ),
+        ("window text", c.window_foreground, p.foreground),
+        ("view text", c.view_foreground, p.foreground),
+        ("tooltip text", c.tooltip_foreground, p.foreground),
+        (
+            "[WM] inactiveForeground",
+            c.title_bar_inactive_foreground,
+            p.foreground,
+        ),
+        (
+            "window muted",
+            c.window_foreground_muted,
+            p.foreground_muted,
+        ),
+        ("placeholder", c.placeholder, p.foreground_muted),
+        ("selection", c.selection_background, p.selection_bg),
+        ("selection text", c.selection_foreground, p.selection_fg),
+        ("DecorationFocus", c.accent, p.accent),
+        ("DecorationHover", c.decoration_hover, p.accent),
+        ("link", c.link, p.link),
+        ("negative", c.error, p.error),
+        ("neutral", c.warning, p.warning),
+        ("positive", c.success, p.success),
+        ("active", c.info, p.info),
+        ("border", c.window_border, p.border),
+    ] {
+        assert_eq!(got, want, "{name}");
+    }
+    assert_eq!(c.title_bar_foreground, Some(p.foreground));
+    assert_eq!(c.view_foreground_muted, Some(p.foreground_muted));
+    assert_eq!(c.caret, Some(p.caret));
+    assert_eq!(c.scrollbar_thumb_focused, None);
+    // Derived again from the settings in force.
+    assert_eq!(
+        c.checkbox_frame,
+        mix(p.window_bg, p.foreground, LIGHT.frame_contrast)
+    );
+    assert_eq!(
+        c.menu_background,
+        mix(p.window_bg, p.view_bg, MENU_PANEL_MIX)
+    );
+    assert_eq!(
+        c.toolbar_border,
+        mix(p.header_bg, p.foreground, LIGHT.frame_contrast)
+    );
+    assert_eq!(c.focus_ring, focus_ring_of(p.selection_bg));
+    assert_eq!(
+        c.button_default,
+        mix(LIGHT.button_background, p.selection_bg, DEFAULT_BUTTON_MIX)
+    );
+    // The Button set and the colours the 0.7.2 reader never replaces stay.
+    assert_eq!(moved(&c, &LIGHT), Vec::<&str>::new());
+}
+
+/// A palette states the roles its slots name (spec §7), and the widgets of
+/// those names draw them; text on a fill is the fill's pair.
+#[test]
+fn a_palette_states_its_roles_and_their_widgets() {
+    let p = distinct_palette();
+    let theme = Theme::preset(Preset::KdeBreeze)
+        .with_palette(p.clone())
+        .resolve(&ThemeContext::light());
+    let colors = &theme.colors;
+    for (name, surface, background) in [
+        ("window", colors.window, p.window_bg),
+        ("view", colors.view, p.view_bg),
+        ("header", colors.header, p.header_bg),
+        ("sidebar", colors.sidebar, p.sidebar_bg),
+        ("card", colors.card, p.surface_bg),
+        ("dialog", colors.dialog, p.surface_bg),
+        ("popover", colors.popover, p.surface_bg),
+        ("tooltip", colors.tooltip, p.tooltip_bg),
+    ] {
+        assert_eq!(surface.background, Some(background), "{name}");
+        assert_eq!(surface.foreground, Some(p.foreground), "{name}");
+    }
+    assert_eq!(colors.window.foreground_muted, Some(p.foreground_muted));
+    assert_eq!(colors.window.border, Some(p.border));
+    assert_eq!(colors.window.divider, Some(p.divider));
+    assert_eq!(colors.disabled_text, p.foreground_muted);
+    assert_eq!(colors.accent.fill, p.accent);
+    assert_eq!(colors.accent.foreground, p.accent_fg);
+    assert_eq!(colors.selection.background, p.selection_bg);
+    assert_eq!(colors.selection.foreground, p.selection_fg);
+    assert_eq!(colors.text_selection.background, p.selection_bg);
+    assert_eq!(colors.text_selection.foreground, p.selection_fg);
+    assert_eq!(colors.focus_ring, focus_ring_of(p.selection_bg));
+    assert_eq!(colors.link, p.link);
+    assert_eq!(colors.caret, p.caret);
+    for (status, fill) in [
+        (colors.error, p.error),
+        (colors.warning, p.warning),
+        (colors.success, p.success),
+        (colors.info, p.info),
+    ] {
+        assert_eq!(status.fill, fill);
+        assert_eq!(status.origin, RoleOrigin::Custom);
+    }
+    let text = |style: TextStyle| style.color;
+    assert_eq!(solid(&theme.dialog.panel.fill), Some(p.surface_bg));
+    assert_eq!(solid(&theme.popover.panel.fill), Some(p.surface_bg));
+    assert_eq!(
+        solid(&theme.card.container(WidgetState::NONE).fill),
+        Some(p.surface_bg)
+    );
+    assert_eq!(
+        solid(&theme.sidebar.container(WidgetState::NONE).fill),
+        Some(p.sidebar_bg)
+    );
+    assert_eq!(theme.separator.color, p.border);
+    assert_eq!(
+        text(theme.menu.item_label(WidgetState::PRESSED)),
+        p.accent_fg
+    );
+    assert_eq!(
+        text(theme.menu_bar.item_label(WidgetState::OPEN)),
+        p.accent_fg
+    );
+    assert_eq!(
+        text(theme.segmented_control.label(WidgetState::SELECTED)),
+        p.selection_fg
+    );
+    assert_eq!(
+        text(theme.button.label(ButtonQuery::primary())),
+        p.accent_fg
+    );
+}
+
+/// Under a palette the system's accent, focus ring and text selection are not
+/// applied: the palette, the later layer, restates those roles.
+#[test]
+fn a_palette_stands_over_the_system_s_accent() {
+    let palette = |system: SystemOverrides| {
+        Theme::preset(Preset::KdeBreeze)
+            .with_system_overrides(system)
+            .with_palette(distinct_palette())
+            .resolve(&ThemeContext::light())
+    };
+    let without = palette(system(None));
+    for system in [
+        system(Some(PORTAL_ACCENT)),
+        system_with(|os| os.accent = Some(PORTAL_ACCENT)),
+        system_with(|os| os.focus_ring = Some(PORTAL_ACCENT)),
+        system_with(|os| {
+            os.text_selection = Some(OsSelectionColors::new(
+                Some(PORTAL_ACCENT),
+                Some(PORTAL_ACCENT),
+                None,
+                None,
+            ))
+        }),
+    ] {
+        assert!(palette(system) == without);
+    }
+}
+
+/// An explicit accent over a palette is written over the palette's view
+/// background and replaces its selection, link and information colour; the
+/// caret stays the palette's, and the accent's text is the selection's.
+#[test]
+fn an_explicit_accent_over_a_palette() {
+    // Over Breeze Dark's view background, Plasma's measured colours for it.
+    let (_, accent, selection, text, link, decoration) = MEASURED_ACCENT_RUN[2];
+    let p = Palette {
+        view_bg: DARK.view_background,
+        ..distinct_palette()
+    };
+    let c = layered(LIGHT, Some(&p), Some(hex(accent)));
+    assert_eq!(c.selection_background, hex(selection));
+    assert_eq!(c.selection_foreground, hex(text));
+    assert_eq!(c.link, hex(link));
+    assert_eq!(c.info, hex(decoration));
+    assert_eq!(c.accent, hex(decoration));
+    assert_eq!(c.caret, Some(p.caret));
+    assert_eq!(c.window_background, p.window_bg);
+    let theme = Theme::preset(Preset::KdeBreeze)
+        .with_palette(p.clone())
+        .with_accent(hex(accent))
+        .resolve(&ThemeContext::light());
+    assert_eq!(theme.colors.accent.foreground, hex(text));
+    assert_eq!(theme.colors.caret, p.caret);
+    assert_eq!(theme.colors.info.origin, RoleOrigin::Custom);
+}
+
+/// Each derived colour computed again on Breeze's own settings, against the
+/// preset's constant: the ones that do not reproduce it (spec §8, *Palette*,
+/// *Derived values*: a derivation on Breeze's own settings need not give the
+/// measured constant). `toolbar_border` is not computed: the preset states
+/// no `[Colors:Header] ForegroundNormal`.
+#[test]
+fn derivations_on_breeze_s_own_settings() {
+    const DERIVED: &[Field] = &[
+        ("focus_ring", |c| c.focus_ring),
+        ("selection_unfocused_background", |c| {
+            c.selection_unfocused_background
+        }),
+        ("selection_unfocused_foreground", |c| {
+            c.selection_unfocused_foreground
+        }),
+        ("button_checked", |c| c.button_checked),
+        ("button_pressed", |c| c.button_pressed),
+        ("button_default", |c| c.button_default),
+        ("button_default_frame", |c| c.button_default_frame),
+        ("button_frame", |c| c.button_frame),
+        ("checkbox_checked", |c| c.checkbox_checked),
+        ("checkbox_frame", |c| c.checkbox_frame),
+        ("list_grid", |c| c.list_grid),
+        ("list_row_hover", |c| c.list_row_hover),
+        ("list_row_hover_frame", |c| c.list_row_hover_frame),
+        ("list_header_hover", |c| c.list_header_hover),
+        ("list_header_pressed", |c| c.list_header_pressed),
+        ("list_header_separator", |c| c.list_header_separator),
+        ("scrollbar_thumb_hover", |c| c.scrollbar_thumb_hover),
+        ("scrollbar_thumb", |c| c.scrollbar_thumb),
+        ("progress_fill", |c| c.progress_fill),
+        ("tab_hover", |c| c.tab_hover),
+        ("toolbar_button_pressed", |c| c.toolbar_button_pressed),
+        ("toolbar_button_checked", |c| c.toolbar_button_checked),
+        ("menu_background", |c| c.menu_background),
+        ("menu_hover", |c| c.menu_hover),
+        ("menu_hover_frame", |c| c.menu_hover_frame),
+        ("popover_border", |c| c.popover_border),
+        ("card_border", |c| c.card_border),
+        ("switch_frame", |c| c.switch_frame),
+        ("switch_off", |c| c.switch_off),
+        ("switch_on", |c| c.switch_on),
+    ];
+    for (scheme, breeze, expected) in [
+        (Scheme::Light, LIGHT, BREEZE_LIGHT_DIFFERENCES),
+        (Scheme::Dark, DARK, BREEZE_DARK_DIFFERENCES),
+    ] {
+        let laid = |value| Laid {
+            value: Some(value),
+            laid: true,
+        };
+        let mut c = breeze;
+        derive(
+            &mut c,
+            &Settings {
+                window_bg: laid(breeze.window_background),
+                window_fg: laid(breeze.window_foreground),
+                view_bg: laid(breeze.view_background),
+                view_fg: laid(breeze.view_foreground),
+                button_bg: laid(breeze.button_background),
+                button_fg: laid(breeze.button_foreground),
+                highlight: laid(breeze.selection_background),
+                highlight_fg: laid(breeze.selection_foreground),
+                focus: laid(breeze.accent),
+                hover: laid(breeze.decoration_hover),
+                header_bg: laid(breeze.toolbar_background),
+                header_fg: Laid {
+                    value: None,
+                    laid: false,
+                },
+            },
+            Recompute::WhereAnInputIsLaid,
+        );
+        let differences: Vec<String> = DERIVED
+            .iter()
+            .filter(|(_, field)| field(&c) != field(&breeze))
+            .map(|(name, field)| format!("{name} {} {}", field(&c), field(&breeze)))
+            .collect();
+        assert_eq!(differences, expected, "{scheme:?}");
+        assert_eq!(c.toolbar_border, breeze.toolbar_border);
+    }
+}
+
+/// [`derivations_on_breeze_s_own_settings`]' differences on Breeze's light
+/// colours: the derived colour, then the preset's constant. `list_grid`
+/// reads `contrast`, KColorScheme's default 7 where unstated; `kde_shade` at
+/// a contrast of 4 gives both schemes' constants.
+const BREEZE_LIGHT_DIFFERENCES: &[&str] = &["list_grid #bdc1c6 #c4c8cc"];
+
+/// [`derivations_on_breeze_s_own_settings`]' differences on Breeze Dark's
+/// colours: the derived colour, then the preset's constant.
+const BREEZE_DARK_DIFFERENCES: &[&str] = &["list_grid #1c1e21 #1c1f21"];

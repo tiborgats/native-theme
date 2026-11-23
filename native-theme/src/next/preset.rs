@@ -540,13 +540,6 @@ pub(crate) struct ResolveInputs<'a> {
     /// The active palette, where there is one.
     pub(crate) palette: Option<&'a Palette>,
     /// An explicit accent.
-    #[cfg_attr(
-        not(test),
-        expect(
-            dead_code,
-            reason = "read by the builders' accent derivations (plan, M2)"
-        )
-    )]
     pub(crate) accent: Option<Color>,
 }
 
