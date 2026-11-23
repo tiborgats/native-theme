@@ -6927,8 +6927,8 @@ fn scale_text(cx: &mut VisualTestContext, showcase: &Entity<Showcase>, factor: f
 }
 
 /// The Input given `geometry::input_height` alone takes the height rule the
-/// refined Input takes: at text scale 1 both are `input.min_height` tall; at
-/// text scale 2 both grow past it.
+/// refined Input takes: at text scale 1 both are
+/// `input.field(NONE).min_size[1]` tall; at text scale 2 both grow past it.
 ///
 /// Above text scale 1 the two do not line up, and this test does not claim
 /// they do. The coordinator's ruling on Task 3 (fix round 1): above scale 1
@@ -6942,17 +6942,23 @@ fn the_height_only_field_takes_the_height_rule(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     use_preset(&mut cx, &showcase, "kde-breeze");
     show(&mut cx, &showcase, Page::Inputs);
-    let stated = cx.update(|_w, cx| native_value(cx, |n| px(n.resolved.input.min_height)));
+    let stated = next_theme(&mut cx, &showcase)
+        .and_then(|r| {
+            r.input
+                .field(native_theme::next::WidgetState::NONE)
+                .min_size[1]
+        })
+        .map(px);
     assert!(
         stated.is_some(),
-        "no native theme is installed, so no field takes the height rule"
+        "no 0.8.0 theme states input.field(NONE).min_size[1], so no field takes the height rule"
     );
     let field = bounds_of(&mut cx, INPUTS_FIELD_HEIGHT_ONLY).size.height;
     let refined = bounds_of(&mut cx, INPUTS_FIELD).size.height;
     assert_eq!(
         Some(field),
         stated,
-        "at text scale 1 the height-only field is not input.min_height tall"
+        "at text scale 1 the height-only field is not input.field(NONE).min_size[1] tall"
     );
     assert_eq!(
         field, refined,
@@ -6964,13 +6970,13 @@ fn the_height_only_field_takes_the_height_rule(cx: &mut TestAppContext) {
     let refined = bounds_of(&mut cx, INPUTS_FIELD).size.height;
     assert!(
         stated.is_some_and(|s| field > s && refined > s),
-        "at text scale 2 the fields did not grow past input.min_height {stated:?}: \
+        "at text scale 2 the fields did not grow past input.field(NONE).min_size[1] {stated:?}: \
          height-only {field:?}, refined {refined:?}"
     );
 }
 
 /// The Textarea keeps its own 90px under `geometry::text_area`, which sets
-/// no height, at text scale 1 and 2, and is padded as `text_area.border`
+/// no height, at text scale 1 and 2, and is padded as `text_area.field(NONE)`
 /// states, the multi-line field's own padding.
 #[gpui::test]
 fn the_textarea_keeps_its_own_height(cx: &mut TestAppContext) {
@@ -6987,7 +6993,7 @@ fn the_textarea_keeps_its_own_height(cx: &mut TestAppContext) {
     assert!(
         info.as_ref()
             .and_then(|i| i.instance.iter().find(|n| n.what == "padding"))
-            .is_some_and(|p| p.text.starts_with("text_area.border.padding")),
+            .is_some_and(|p| p.text.starts_with("the sides text_area.field(NONE) states")),
         "the Textarea's info does not say it takes the text area's padding: {info:?}"
     );
     for factor in [1.0, 2.0] {
@@ -10186,24 +10192,26 @@ fn painted_fill(cx: &mut VisualTestContext, selector: &'static str) -> Option<gp
 }
 
 /// A Basic text field under the pointer is framed by
-/// `input.hover_border_color`, at rest by `input.border.color` (DIFFS H5),
-/// under a preset that states the hover edge.
+/// `input.field(HOVER).stroke.color`, at rest by
+/// `input.field(NONE).stroke.color` (DIFFS H5), under a preset that states
+/// the hover edge.
 #[gpui::test]
 fn a_hovered_field_takes_the_hover_border(cx: &mut TestAppContext) {
+    use crate::info::{state_stroke_color_of, stroke_color_of};
+    use native_theme::next::WidgetState;
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     use_preset(&mut cx, &showcase, "kde-breeze");
     show(&mut cx, &showcase, Page::Basic);
-    let (edge, hovered_edge) = read(&mut cx, &showcase, |_, cx| {
-        (
-            native_color(cx, |n| n.resolved.input.border.color),
-            native_value(cx, |n| n.resolved.input.hover_border_color)
-                .flatten()
-                .map(crate::info::stated),
-        )
-    });
+    let r = next_theme(&mut cx, &showcase);
+    let edge = r
+        .as_ref()
+        .and_then(|r| stroke_color_of(&r.input.field(WidgetState::NONE)));
+    let hovered_edge = r
+        .as_ref()
+        .and_then(|r| state_stroke_color_of(&r.input.field(WidgetState::HOVER)));
     assert!(
-        hovered_edge.is_some(),
-        "kde-breeze states input.hover_border_color"
+        edge.is_some() && hovered_edge.is_some(),
+        "kde-breeze states input.field(NONE).stroke.color and input.field(HOVER).stroke.color"
     );
     let field = "basic-input-placeholder";
     let edge_of = |cx: &mut VisualTestContext| {
@@ -10221,7 +10229,7 @@ fn a_hovered_field_takes_the_hover_border(cx: &mut TestAppContext) {
     assert_eq!(
         edge_of(&mut cx),
         edge,
-        "a field at rest is not input.border.color"
+        "a field at rest is not input.field(NONE).stroke.color"
     );
     let at = bounds_of(&mut cx, field).center();
     hover(&mut cx, at);
@@ -10229,7 +10237,7 @@ fn a_hovered_field_takes_the_hover_border(cx: &mut TestAppContext) {
     assert_eq!(
         edge_of(&mut cx),
         hovered_edge,
-        "a hovered field is not input.hover_border_color"
+        "a hovered field is not input.field(HOVER).stroke.color"
     );
 }
 
@@ -11193,6 +11201,34 @@ fn resolved_theme(
     .expect("a native theme is installed")
 }
 
+/// The installed 0.8.0 theme, which the test installed; `None` before one
+/// is, which the caller asserts against.
+fn next_theme(
+    cx: &mut VisualTestContext,
+    showcase: &Entity<Showcase>,
+) -> Option<native_theme::next::ResolvedTheme> {
+    read(cx, showcase, |_, cx| {
+        crate::support::next_resolved(cx).cloned()
+    })
+}
+
+/// Install `r` as the 0.8.0 theme, as an application that changed the
+/// resolved theme would (`native_theme_gpui::next::apply`), and draw the
+/// frame it produced. A theme that does not install fails the test.
+fn install_next(cx: &mut VisualTestContext, r: &native_theme::next::ResolvedTheme) {
+    let installed = cx.update(|window, cx| {
+        let installed = native_theme_gpui::next::apply(r, cx);
+        window.refresh();
+        installed
+    });
+    assert!(
+        installed.is_ok(),
+        "the changed 0.8.0 theme does not install: {installed:?}"
+    );
+    cx.run_until_parked();
+    draw(cx);
+}
+
 /// The Basic page's text area lists the routes its surface takes (M9-005):
 /// its edge `text_area.border.color`, its hovered edge
 /// `input.hover_border_color` and its fill `input.background_color` are
@@ -11217,27 +11253,32 @@ fn the_text_areas_routes_name_its_surface() {
 }
 
 /// The Inputs page's fixed-height Textarea is drawn over the input surface
-/// the Basic page's takes (M9-004): framed by `text_area.border.color`, and
-/// by `input.hover_border_color` under the pointer, under a preset that
-/// strokes the text area's line and states the hover edge.
+/// the Basic page's takes (M9-004): framed by `text_area.field(NONE)`'s
+/// stroke, and under the pointer by `text_area.field(HOVER).stroke.color`,
+/// under a preset that strokes the text area's field and states its hover
+/// edge.
 #[gpui::test]
 fn the_inputs_pages_textarea_takes_the_hover_edge(cx: &mut TestAppContext) {
-    use crate::info::stated;
+    use crate::info::{state_stroke_color_of, stroke_color_of, stroke_width_of};
+    use native_theme::next::WidgetState;
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     use_preset(&mut cx, &showcase, "kde-breeze");
     show(&mut cx, &showcase, Page::Inputs);
-    let r = resolved_theme(&mut cx, &showcase);
-    let hovered_edge = r.input.hover_border_color.map(stated);
+    let r = next_theme(&mut cx, &showcase);
+    assert!(r.is_some(), "no 0.8.0 theme is installed");
+    let Some(r) = r else { return };
+    let rest = r.text_area.field(WidgetState::NONE);
+    let hovered_edge = state_stroke_color_of(&r.text_area.field(WidgetState::HOVER));
     assert!(
-        r.text_area.border.line_width > 0.0 && hovered_edge.is_some(),
-        "kde-breeze no longer strokes its text area or states input.hover_border_color, which this test reads"
+        stroke_width_of(&rest).is_some_and(|width| width > 0.0) && hovered_edge.is_some(),
+        "kde-breeze no longer strokes its text area or states text_area.field(HOVER).stroke.color, which this test reads"
     );
     hover(&mut cx, point(px(4.), px(4.)));
     draw(&mut cx);
     assert_eq!(
         painted_edge(&mut cx, INPUTS_TEXTAREA),
-        Some(stated(r.text_area.border.color)),
-        "the Textarea at rest is not framed by text_area.border.color"
+        stroke_color_of(&rest),
+        "the Textarea at rest is not framed by text_area.field(NONE).stroke.color"
     );
     let at = bounds_of(&mut cx, INPUTS_TEXTAREA).center();
     hover(&mut cx, at);
@@ -11245,21 +11286,25 @@ fn the_inputs_pages_textarea_takes_the_hover_edge(cx: &mut TestAppContext) {
     assert_eq!(
         painted_edge(&mut cx, INPUTS_TEXTAREA),
         hovered_edge,
-        "the hovered Textarea is not framed by input.hover_border_color"
+        "the hovered Textarea is not framed by text_area.field(HOVER).stroke.color"
     );
 }
 
 /// Where the theme strokes no text-area line, the Inputs page's Textarea
-/// has no edge, at rest or hovered: adwaita's `text_area.border.line_width`
-/// is 0 (it inherits `input.border`'s).
+/// has no edge, at rest or hovered: adwaita's `text_area.field(NONE)`
+/// stroke is 0 wide.
 #[gpui::test]
 fn an_unstroked_textarea_draws_no_edge(cx: &mut TestAppContext) {
+    use native_theme::next::WidgetState;
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     use_preset(&mut cx, &showcase, "adwaita");
     show(&mut cx, &showcase, Page::Inputs);
-    let r = resolved_theme(&mut cx, &showcase);
+    let r = next_theme(&mut cx, &showcase);
     assert!(
-        r.text_area.border.line_width <= 0.0,
+        r.as_ref().is_some_and(|r| {
+            crate::info::stroke_width_of(&r.text_area.field(WidgetState::NONE))
+                .is_some_and(|width| width <= 0.0)
+        }),
         "adwaita now strokes its text area, so this test no longer runs the no-edge case"
     );
     hover(&mut cx, point(px(4.), px(4.)));
@@ -11280,14 +11325,17 @@ fn an_unstroked_textarea_draws_no_edge(cx: &mut TestAppContext) {
 }
 
 /// Both text areas' infos say what their surface draws (M9-004, M9-005,
-/// M9-054): the edge `text_area.border.color`, the hovered edge
-/// `input.hover_border_color`, and the surface line, with no claim of
-/// upstream's `input` token, which the field's own edge no longer shows.
-/// Under adwaita, whose line width is 0, they claim neither edge and say
-/// so.
+/// M9-054): the edge `text_area.field(NONE).stroke.color`, the hovered edge
+/// `text_area.field(HOVER).stroke.color`, and the surface line, with no
+/// claim of upstream's `input` token, which the field's own edge no longer
+/// shows. Under adwaita, whose stroke is 0 wide, they claim neither edge
+/// and say so.
 #[gpui::test]
 fn a_textareas_info_claims_its_surfaces_edges(cx: &mut TestAppContext) {
-    use crate::info::stated;
+    use crate::info::{state_stroke_color_of, stroke_color_of};
+    use native_theme::next::WidgetState;
+    const EDGE: &str = "text_area.field(NONE).stroke.color";
+    const HOVERED: &str = "text_area.field(HOVER).stroke.color";
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     for (page, field) in [
         (Page::Inputs, INPUTS_TEXTAREA),
@@ -11295,25 +11343,31 @@ fn a_textareas_info_claims_its_surfaces_edges(cx: &mut TestAppContext) {
     ] {
         use_preset(&mut cx, &showcase, "kde-breeze");
         show(&mut cx, &showcase, page);
-        let r = resolved_theme(&mut cx, &showcase);
+        let r = next_theme(&mut cx, &showcase);
+        assert!(r.is_some(), "no 0.8.0 theme is installed");
+        let Some(r) = r else { return };
         let info = settle_on(&mut cx, &showcase, field);
         assert!(info.is_some(), "{field} shows no info");
         let Some(info) = info else { return };
-        assert_eq!(
-            claim_of(&info, "border"),
-            Some(stated(r.text_area.border.color)),
-            "{field}'s info does not claim the text_area.border.color its surface is edged with: {info:?}"
+        assert!(
+            stroke_color_of(&r.text_area.field(WidgetState::NONE)).is_some(),
+            "kde-breeze no longer states its text area's edge colour, which this test reads"
         );
         assert_eq!(
-            claim_of(&info, "hover_border_color"),
-            r.input.hover_border_color.map(stated),
-            "{field}'s info does not claim the input.hover_border_color its surface takes under the pointer: {info:?}"
+            claim_of(&info, EDGE),
+            stroke_color_of(&r.text_area.field(WidgetState::NONE)),
+            "{field}'s info does not claim the {EDGE} its surface is edged with: {info:?}"
+        );
+        assert_eq!(
+            claim_of(&info, HOVERED),
+            state_stroke_color_of(&r.text_area.field(WidgetState::HOVER)),
+            "{field}'s info does not claim the {HOVERED} its surface takes under the pointer: {info:?}"
         );
         assert!(
             info.config
                 .iter()
-                .any(|n| n.what == "surface" && n.text.contains("text_area.border")),
-            "{field}'s info carries no surface line naming text_area.border: {info:?}"
+                .any(|n| n.what == "surface" && n.text.contains("text_area.field(NONE)")),
+            "{field}'s info carries no surface line naming text_area.field(NONE): {info:?}"
         );
         assert_eq!(
             claim_of(&info, "input"),
@@ -11326,7 +11380,7 @@ fn a_textareas_info_claims_its_surfaces_edges(cx: &mut TestAppContext) {
         assert!(info.is_some(), "{field} shows no info under adwaita");
         let Some(info) = info else { return };
         assert!(
-            ["border", "hover_border_color", "input"]
+            [EDGE, HOVERED, "input"]
                 .iter()
                 .all(|edge| claim_of(&info, edge).is_none()),
             "{field}'s info claims an edge adwaita does not stroke: {info:?}"
@@ -11336,7 +11390,7 @@ fn a_textareas_info_claims_its_surfaces_edges(cx: &mut TestAppContext) {
                 .iter()
                 .find(|n| n.what == "edge")
                 .map(|n| n.text.as_str()),
-            Some("none: text_area.border.line_width is 0"),
+            Some("none: text_area.field(NONE).stroke.width is 0"),
             "{field}'s info does not say it strokes no edge: {info:?}"
         );
         let surface = info.config.iter().find(|n| n.what == "surface");
@@ -11347,39 +11401,44 @@ fn a_textareas_info_claims_its_surfaces_edges(cx: &mut TestAppContext) {
     }
 }
 
-/// A text area's surface is framed by `text_area.border.color`, not by the
-/// `input.border.color` it inherits in every bundled preset: under
-/// kde-breeze light with its text area's edge colour set to
-/// `defaults.text_color`, a colour of the same theme that differs from
-/// `input.border.color`, both text areas are edged in it at rest, and
-/// their infos claim it.
+/// A text area's surface is framed by `text_area.field(NONE)`'s stroke, not
+/// by `input.field(NONE)`'s, which it matches in every bundled preset:
+/// under kde-breeze light with its text area's stroke recoloured to
+/// `colors.window.foreground` by a theme patch, a colour of the same theme
+/// that differs from the field's edge colour, both text areas are edged in
+/// it at rest, and their infos claim it.
 #[gpui::test]
 fn a_text_area_is_framed_by_its_own_edge_colour(cx: &mut TestAppContext) {
-    use crate::info::stated;
+    use crate::info::{stroke_color_of, stroke_width_of};
+    use native_theme::next::{InputRule, PartPatch, Stroke, ThemePatch, WidgetState};
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     use_light_preset(&mut cx, &showcase, "kde-breeze");
-    let mut r = resolved_theme(&mut cx, &showcase);
-    r.text_area.border.color = r.defaults.text_color;
-    assert_ne!(
-        r.text_area.border.color, r.input.border.color,
-        "kde-breeze light's text colour is its field's edge colour, so the test could not tell the two apart"
-    );
+    let r = next_theme(&mut cx, &showcase);
+    assert!(r.is_some(), "no 0.8.0 theme is installed");
+    let Some(mut r) = r else { return };
+    let width = stroke_width_of(&r.text_area.field(WidgetState::NONE));
     assert!(
-        r.text_area.border.line_width > 0.0,
+        width.is_some_and(|width| width > 0.0),
         "kde-breeze no longer strokes its text area, which this test reads"
     );
-    cx.update(|_window, cx| {
-        let prefs = native_theme::AccessibilityPreferences::default();
-        native_theme_gpui::apply(
-            native_theme_gpui::to_theme(&r, "kde-breeze", false, &prefs),
-            &r,
-            &prefs,
-            cx,
-        );
-    });
-    cx.run_until_parked();
-    draw(&mut cx);
-    let edge = Some(stated(r.text_area.border.color));
+    let Some(width) = width else { return };
+    let ink = r.colors.window.foreground;
+    assert!(
+        ink.is_some(),
+        "kde-breeze light states no window text colour"
+    );
+    let Some(ink) = ink else { return };
+    r.apply_patch(
+        &ThemePatch::new().text_area(
+            InputRule::new().field(PartPatch::new().stroke(Stroke::uniform(width, ink))),
+        ),
+    );
+    let edge = stroke_color_of(&r.text_area.field(WidgetState::NONE));
+    assert!(
+        edge.is_some() && edge != stroke_color_of(&r.input.field(WidgetState::NONE)),
+        "kde-breeze light's text colour is its field's edge colour, so the test could not tell the two apart"
+    );
+    install_next(&mut cx, &r);
     for (page, field) in [
         (Page::Inputs, INPUTS_TEXTAREA),
         (Page::Basic, "basic-textarea"),
@@ -11389,41 +11448,49 @@ fn a_text_area_is_framed_by_its_own_edge_colour(cx: &mut TestAppContext) {
         assert!(info.is_some(), "{field} shows no info");
         let Some(info) = info else { return };
         assert_eq!(
-            claim_of(&info, "border"),
+            claim_of(&info, "text_area.field(NONE).stroke.color"),
             edge,
-            "{field}'s info does not claim text_area.border.color: {info:?}"
+            "{field}'s info does not claim text_area.field(NONE).stroke.color: {info:?}"
         );
         hover(&mut cx, point(px(4.), px(4.)));
         draw(&mut cx);
         assert_eq!(
             painted_edge(&mut cx, field),
             edge,
-            "{field} at rest is not framed by text_area.border.color"
+            "{field} at rest is not framed by text_area.field(NONE).stroke.color"
         );
     }
 }
 
 /// Where the theme strokes no field line, a refined, enabled Input's info
 /// claims no edge and says so (M9-055): under adwaita light
-/// `input.border.line_width` is 0, so the surface strokes nothing, at rest
-/// or under the pointer, and its surface line names no frame.
+/// `input.field(NONE)`'s stroke is 0 wide, so the surface strokes nothing,
+/// at rest or under the pointer, and its surface line names no frame.
 #[gpui::test]
 fn an_unstroked_inputs_info_claims_no_edge(cx: &mut TestAppContext) {
+    use native_theme::next::WidgetState;
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     use_light_preset(&mut cx, &showcase, "adwaita");
     show(&mut cx, &showcase, Page::Inputs);
-    let r = resolved_theme(&mut cx, &showcase);
+    let r = next_theme(&mut cx, &showcase);
     assert!(
-        r.input.border.line_width <= 0.0,
+        r.as_ref().is_some_and(|r| {
+            crate::info::stroke_width_of(&r.input.field(WidgetState::NONE))
+                .is_some_and(|width| width <= 0.0)
+        }),
         "adwaita now strokes its field, so this test no longer runs the no-edge case"
     );
     let info = settle_on(&mut cx, &showcase, INPUTS_FIELD);
     assert!(info.is_some(), "the field shows no info");
     let Some(info) = info else { return };
     assert!(
-        ["border", "hover_border_color", "input"]
-            .iter()
-            .all(|edge| claim_of(&info, edge).is_none()),
+        [
+            "input.field(NONE).stroke.color",
+            "input.field(HOVER).stroke.color",
+            "input"
+        ]
+        .iter()
+        .all(|edge| claim_of(&info, edge).is_none()),
         "the field's info claims an edge adwaita does not stroke: {info:?}"
     );
     assert_eq!(
@@ -11431,7 +11498,7 @@ fn an_unstroked_inputs_info_claims_no_edge(cx: &mut TestAppContext) {
             .iter()
             .find(|n| n.what == "edge")
             .map(|n| n.text.as_str()),
-        Some("none: input.border.line_width is 0"),
+        Some("none: input.field(NONE).stroke.width is 0"),
         "the field's info does not say it strokes no edge: {info:?}"
     );
     let surface = info.config.iter().find(|n| n.what == "surface");
@@ -11443,39 +11510,42 @@ fn an_unstroked_inputs_info_claims_no_edge(cx: &mut TestAppContext) {
 
 /// The Layout page's Form fields are refined as the Inputs page's are
 /// (M9-006): under kde-breeze light they are filled with
-/// `input.background_color`, the view colour, not upstream's
-/// `input_background()`, the window's.
+/// `input.field(NONE).fill`, the view colour, not upstream's
+/// `input_background()`, the window's background in a light theme.
 #[gpui::test]
 fn the_form_fields_take_the_input_fill(cx: &mut TestAppContext) {
-    use crate::info::stated;
+    use native_theme::next::WidgetState;
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     use_light_preset(&mut cx, &showcase, "kde-breeze");
     show(&mut cx, &showcase, Page::Layout);
-    let r = resolved_theme(&mut cx, &showcase);
-    let fill = stated(r.input.background_color);
-    assert_ne!(
-        fill,
-        stated(r.defaults.background_color),
-        "kde-breeze light's field fill is the window's colour, so the fill could not be told from upstream's"
+    let r = next_theme(&mut cx, &showcase);
+    let fill = r
+        .as_ref()
+        .and_then(|r| native_theme_gpui::next::fill_of(&r.input.field(WidgetState::NONE)));
+    let window = cx.update(|_w, cx| Theme::global(cx).background);
+    assert!(
+        fill.is_some_and(|fill| fill != window),
+        "kde-breeze light's field fill is the window's colour, or unstated, so the fill could not be told from upstream's"
     );
     hover(&mut cx, point(px(4.), px(4.)));
     draw(&mut cx);
     for field in ["layout-form-name", "layout-form-email"] {
         assert_eq!(
             painted_fill(&mut cx, field),
-            Some(fill),
-            "the Form's {field} is not filled with input.background_color"
+            fill,
+            "the Form's {field} is not filled with input.field(NONE).fill"
         );
     }
 }
 
 /// A refined, enabled Input's info claims the edge its surface draws,
-/// `input.border.color`, as the showcase's own, and not upstream's `input`
-/// token, which the field's own edge no longer shows (M9-055); the Inputs
-/// page's field and the Layout page's Form field alike.
+/// `input.field(NONE).stroke.color`, as the showcase's own, and not
+/// upstream's `input` token, which the field's own edge no longer shows
+/// (M9-055); the Inputs page's field and the Layout page's Form field alike.
 #[gpui::test]
 fn a_refined_inputs_info_claims_its_surfaces_edge(cx: &mut TestAppContext) {
-    use crate::info::stated;
+    use crate::info::{stroke_color_of, stroke_width_of};
+    use native_theme::next::WidgetState;
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     use_preset(&mut cx, &showcase, "kde-breeze");
     for (page, field) in [
@@ -11483,20 +11553,27 @@ fn a_refined_inputs_info_claims_its_surfaces_edge(cx: &mut TestAppContext) {
         (Page::Layout, "layout-form-name"),
     ] {
         show(&mut cx, &showcase, page);
-        let r = resolved_theme(&mut cx, &showcase);
+        let r = next_theme(&mut cx, &showcase);
+        assert!(r.is_some(), "no 0.8.0 theme is installed");
+        let Some(r) = r else { return };
+        let rest = r.input.field(WidgetState::NONE);
         assert!(
-            r.input.border.line_width > 0.0,
+            stroke_width_of(&rest).is_some_and(|width| width > 0.0)
+                && stroke_color_of(&rest).is_some(),
             "kde-breeze no longer strokes its field, which this test reads"
         );
         let info = settle_on(&mut cx, &showcase, field);
         assert!(info.is_some(), "{field} shows no info");
         let Some(info) = info else { return };
-        let edge = info.colors.iter().find(|c| c.field == "border");
+        let edge = info
+            .colors
+            .iter()
+            .find(|c| c.field == "input.field(NONE).stroke.color");
         assert!(
             edge.is_some_and(
-                |c| c.value == stated(r.input.border.color) && c.cited_at == "showcase"
+                |c| Some(c.value) == stroke_color_of(&rest) && c.cited_at == "showcase"
             ),
-            "{field}'s info does not claim the input.border.color its surface is edged with: {info:?}"
+            "{field}'s info does not claim the input.field(NONE).stroke.color its surface is edged with: {info:?}"
         );
         assert_eq!(
             claim_of(&info, "input"),
@@ -19674,26 +19751,23 @@ fn the_basic_edit_button_is_checked_and_switches(cx: &mut TestAppContext) {
 }
 
 /// A disabled refined field's edge swatch is the colour painted: the
-/// surface's `input.border.color` faded with the field by the opacity
-/// `geometry::input_fill` gives it (`input.disabled_opacity`) -- under the
-/// first preset the preset switch installs (`native_theme::next::Preset`)
-/// whose light field is stroked and faded, chosen at test time, with its
-/// own colours: the swatch is read from the 0.7.2 theme the pages still
-/// read, which under a palette is the preset alone.
+/// surface's `input.field(NONE).stroke.color` faded with the field by the
+/// opacity `geometry::input_fill` gives it (`input.disabled_opacity`) --
+/// under the first preset of the 0.8.0 model whose light field is stroked
+/// and faded, chosen at test time.
 #[gpui::test]
 fn a_disabled_fields_edge_swatch_is_its_faded_edge(cx: &mut TestAppContext) {
-    let preset = every_bundled_variant()
+    let preset = every_next_variant()
         .into_iter()
         .find(|(name, r, _)| {
-            name.ends_with(" light")
-                && r.input.border.line_width > 0.0
-                && r.input.disabled_opacity < 1.0
-                && name
-                    .strip_suffix(" light")
-                    .and_then(native_theme::next::Preset::from_name)
-                    .is_some()
+            name.ends_with(" Light")
+                && crate::info::stroke_width_of(
+                    &r.input.field(native_theme::next::WidgetState::NONE),
+                )
+                .is_some_and(|width| width > 0.0)
+                && r.input.disabled_opacity.is_some_and(|fade| fade < 1.0)
         })
-        .and_then(|(name, _, _)| name.strip_suffix(" light").map(str::to_string));
+        .and_then(|(name, _, _)| name.strip_suffix(" Light").map(str::to_string));
     assert!(
         preset.is_some(),
         "no preset the preset switch installs strokes and fades a disabled field, which this \

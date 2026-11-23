@@ -3,7 +3,7 @@
 use gpui::{App, Hsla, Rems, StyleRefinement, Styled};
 use gpui_component::theme::Theme;
 use native_theme_gpui::Native;
-use native_theme_gpui::next::Mapped;
+use native_theme_gpui::next::{Mapped, Unmapped};
 /// The reads a claim in the 0.8.0 form makes of its home's property: the
 /// connector's own (`native_theme_gpui::next`), each `None` where the theme
 /// states no value gpui can take there, unstated or in a form gpui cannot
@@ -188,6 +188,19 @@ impl WidgetInfo {
             .map_or("(no NEXT_GEOMETRY_NOTES entry)", |(_, what)| *what);
         self.config("geometry", format!("geometry::{builder}: {what}"))
     }
+    /// The "geometry" line for the `next::geometry` builder named `builder`
+    /// where the installed 0.8.0 theme states no value gpui can take at
+    /// `unstated`'s home, which the builder needs: the widget keeps
+    /// gpui-component's own (spec §10, rule 0).
+    pub fn next_unmapped(self, builder: &'static str, unstated: Unmapped) -> Self {
+        self.config(
+            "geometry",
+            format!(
+                "gpui-component's own: the theme states no value gpui can take at {}, which geometry::{builder} needs",
+                unstated.home()
+            ),
+        )
+    }
     pub fn title(&self) -> String {
         match &self.variant {
             Some(v) => format!("{} · {v}", self.kind),
@@ -239,10 +252,6 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     (
         "input",
         "input.min_height by the control-height rule (defaults.line_height as the line height; the stated height at a text scale of 1 or less, a minimum with an automatic height above 1), the border.padding sides the theme states -- which reach the field, because upstream pads it before the refinement (input/input.rs, Input::render: input_px then refine_style) --, border.corner_radius, line_width, input.font including its colour -- the root sets none of its own and the editor paints the field's text in the root's, the window's foreground without it (input/input.rs, Input::render; gpui-base/input/base/element.rs, prepaint)",
-    ),
-    (
-        "text_area",
-        "the multi-line field's own text_area.border padding (docs/platform-facts.md §2.29): the root padded by the rest of each stated side past the Size::Medium editor padding upstream gives a Textarea in render (input/input.rs, Input::render), none below it, an unstated side upstream's; text_area.border.corner_radius and line_width, which inherit the input's, input.font including its colour at defaults.line_height; no height: the rows its state holds size it",
     ),
     (
         "editor",
@@ -378,14 +387,6 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
         "dialog.max_width, which caps the width: a Dialog's through Dialog::max_w (dialog/dialog.rs, Dialog::max_w), and an AlertDialog's, which has no max_w of its own, through Styled::max_w, landing on the surface with the rest of the refinement (dialog/alert_dialog.rs, AlertDialog; dialog/dialog.rs, Dialog::render)",
     ),
     (
-        "input_height",
-        "input.min_height by the control-height rule geometry::input applies (defaults.line_height as the line height; the stated height at a text scale of 1 or less, a minimum with an automatic height above 1), and nothing else of geometry::input",
-    ),
-    (
-        "input_fill",
-        "input.background_color, or for a disabled field input.disabled_background (the enabled fill where the theme states none) and input.disabled_text_color, which the editor halves the alpha of as it does any disabled field's text (gpui-base/input/base/element.rs, prepaint), faded by input.disabled_opacity, over upstream's fill -- Theme::input_background, the window's background in a light theme, and input mixed with transparent when disabled (input/input.rs, input_style and Input::render: bg then refine_style) -- which no ThemeColor field can make the platform's",
-    ),
-    (
         "combo_box_fill",
         "combo_box.background_color, or for a disabled trigger combo_box.disabled_background (the enabled fill where the theme states none) and combo_box.disabled_text_color, faded by combo_box.disabled_opacity in place of upstream's own half fade, over upstream's fill -- Theme::input_background, and input mixed with transparent when disabled (input/input.rs, input_style; gpui-component/select.rs, Select::render; gpui-component/combobox.rs, Combobox::render) -- which no ThemeColor field can make the platform's. The disabled text reaches a Combobox's selected text and not a Select's title, which mutes itself (select.rs, SelectState::display_title)",
     ),
@@ -454,6 +455,22 @@ pub const NEXT_GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
     ("icon_size_toolbar", "toolbar.button_icon(NONE).size"),
     ("icon_size_small", "icons.sizes.small"),
+    (
+        "input",
+        "input.field(NONE).min_size[1] by the control-height rule (typography.line_height_multiplier as the line height; the stated height at a text scale of 1 or less, a minimum with an automatic height above 1; upstream's height where the theme states none), the padding sides input.field(NONE) states -- which reach the field, because upstream pads it before the refinement (input/input.rs, Input::render: input_px then refine_style) --, its corner radius and stroke width, and input.text(NONE)'s font including its colour -- the root sets none of its own and the editor paints the field's text in the root's, the window's foreground without it (input/input.rs, Input::render; gpui-base/input/base/element.rs, prepaint)",
+    ),
+    (
+        "input_height",
+        "input.field(NONE).min_size[1] by the control-height rule geometry::input applies (typography.line_height_multiplier as the line height; the stated height at a text scale of 1 or less, a minimum with an automatic height above 1), and nothing else of geometry::input",
+    ),
+    (
+        "input_fill",
+        "input.field(NONE).fill, or for a disabled field input.field(DISABLED).fill (the fill at rest where no rule states one for the state) and input.text(DISABLED).color, which the editor halves the alpha of as it does any disabled field's text (gpui-base/input/base/element.rs, prepaint), faded by input.disabled_opacity, over upstream's fill -- Theme::input_background, the window's background in a light theme, and input mixed with transparent when disabled (input/input.rs, input_style and Input::render: bg then refine_style) -- which no ThemeColor field can make the platform's",
+    ),
+    (
+        "text_area",
+        "the multi-line field's own padding, the sides text_area.field(NONE) states (docs/platform-facts.md §2.29): the root padded by the rest of each stated side past the Size::Medium editor padding upstream gives a Textarea in render (input/input.rs, Input::render), none below it, an unstated side upstream's; text_area.field(NONE)'s corner radius and stroke width, and input.text(NONE)'s font including its colour at typography.line_height_multiplier; no height: the rows its state holds size it",
+    ),
 ];
 
 /// `w` with the `build` refinement applied and `info` given `build`'s
@@ -509,13 +526,7 @@ pub fn next_native_value<T>(
             Some(value)
         }
         Some(Err(unstated)) => {
-            *info = std::mem::take(info).config(
-                "geometry",
-                format!(
-                    "gpui-component's own: the theme states no value gpui can take at {}, which geometry::{name} needs",
-                    unstated.home()
-                ),
-            );
+            *info = std::mem::take(info).next_unmapped(name, unstated);
             None
         }
         None => None,

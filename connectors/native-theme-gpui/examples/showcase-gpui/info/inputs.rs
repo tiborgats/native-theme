@@ -11,99 +11,112 @@ use native_theme_gpui::widgets::{CheckboxLook, SwitchLook};
 #[cfg(feature = "widgets")]
 use super::percent_text;
 use super::{
-    WidgetInfo, chrome::input_background, claim, edge_claim, px_text, stated, stated_claim,
+    WidgetInfo, chrome::input_background, claim, edge_claim, px_text, state_stroke_color_of,
+    stated, stated_claim, stroke_color_of, stroke_width_of,
 };
 use crate::demo::{InputField, NUMBER_STEP_ACTIVE, NUMBER_STEP_HOVER, WaveformKind};
 use crate::support::SampleIcon;
 
 /// A refined, enabled field's surface, which the showcase draws under the
-/// field (`demo::text_field`): `r`'s `input.background_color` framed by
-/// `input.border.color`, and by `input.hover_border_color` under the
-/// pointer, at `input.border.line_width`.
-pub fn input_surface(info: WidgetInfo, r: &ResolvedTheme) -> WidgetInfo {
-    let b = &r.input.border;
-    let edge = edge_claim(
-        "edge",
-        "border",
-        Some(r.input.border.color),
-        Some(b.line_width),
-        "showcase",
-    );
-    surface(info.colors(edge), r, b.line_width, "input.border")
+/// field (`demo::text_field`), its line `width` wide: `r`'s
+/// `input.field(NONE).fill` framed by that part's stroke, and under the
+/// pointer by `input.field(HOVER).stroke.color` where a rule states it.
+pub fn input_surface(info: WidgetInfo, r: &NextTheme, width: f32) -> WidgetInfo {
+    let info = info
+        .colors(edge_claim(
+            "edge",
+            "input.field(NONE).stroke.color",
+            stroke_color_of(&r.input.field(WidgetState::NONE)),
+            Some(width),
+            "showcase",
+        ))
+        .colors(edge_claim(
+            "hovered edge",
+            "input.field(HOVER).stroke.color",
+            state_stroke_color_of(&r.input.field(WidgetState::HOVER)),
+            Some(width),
+            "showcase",
+        ));
+    surface(info, width, "input")
 }
 
 /// A text area's surface, which the showcase draws under it
-/// (`demo::textarea`, `demo::rows_textarea`): [`input_surface`]'s, framed
-/// by `text_area.border.color` at `text_area.border.line_width`.
-pub fn text_area_surface(info: WidgetInfo, r: &ResolvedTheme) -> WidgetInfo {
-    let b = &r.text_area.border;
-    let edge = edge_claim(
-        "edge",
-        "border",
-        Some(r.text_area.border.color),
-        Some(b.line_width),
-        "showcase",
-    );
-    surface(info.colors(edge), r, b.line_width, "text_area.border")
+/// (`demo::textarea`, `demo::rows_textarea`), its line `width` wide:
+/// [`input_surface`]'s, of the text area's own field,
+/// `text_area.field(NONE)` and `text_area.field(HOVER)`.
+pub fn text_area_surface(info: WidgetInfo, r: &NextTheme, width: f32) -> WidgetInfo {
+    let info = info
+        .colors(edge_claim(
+            "edge",
+            "text_area.field(NONE).stroke.color",
+            stroke_color_of(&r.text_area.field(WidgetState::NONE)),
+            Some(width),
+            "showcase",
+        ))
+        .colors(edge_claim(
+            "hovered edge",
+            "text_area.field(HOVER).stroke.color",
+            state_stroke_color_of(&r.text_area.field(WidgetState::HOVER)),
+            Some(width),
+            "showcase",
+        ));
+    surface(info, width, "text_area")
 }
 
-/// What an input surface framed by `frame` (`input.border` or
-/// `text_area.border`), stroked `line_width` wide, draws beside its edge at
-/// rest: `input.hover_border_color` under the pointer, where stated, and
-/// the surface line. A 0 width draws no edge in either state, and the
-/// surface line then names none.
-fn surface(info: WidgetInfo, r: &ResolvedTheme, line_width: f32, frame: &str) -> WidgetInfo {
-    let info = info.colors(edge_claim(
-        "hovered edge",
-        "hover_border_color",
-        r.input.hover_border_color,
-        Some(line_width),
-        "showcase",
-    ));
-    let info = if line_width > 0.0 {
+/// The surface line of a field of `widget` (`input` or `text_area`) over
+/// its surface, stroked `width` wide. A 0 width draws no edge in either
+/// state, and the line then names none.
+fn surface(info: WidgetInfo, width: f32, widget: &str) -> WidgetInfo {
+    let info = if width > 0.0 {
         info
     } else {
-        info.config("edge", format!("none: {frame}.line_width is 0"))
+        info.config(
+            "edge",
+            format!("none: {widget}.field(NONE).stroke.width is 0"),
+        )
     };
     // The frame is named only where one is stroked.
-    let fill = if line_width > 0.0 {
+    let fill = if width > 0.0 {
         format!(
-            "input.background_color framed by {frame}.color at {frame}.line_width, and by input.hover_border_color (where stated) under the pointer"
+            "{widget}.field(NONE).fill framed by its stroke, and under the pointer by {widget}.field(HOVER).stroke.color, where a rule states it"
         )
     } else {
-        format!("input.background_color, unframed in every state ({frame}.line_width is 0)")
+        format!(
+            "{widget}.field(NONE).fill, unframed in every state ({widget}.field(NONE).stroke.width is 0)"
+        )
     };
     info.config("surface", format!("{fill}, drawn by the showcase under the field, which it leaves without a fill or an edge of its own: Input is Styled only and its root's one state is focused (input/input.rs, Input::render), where its own border in ring still shows over the surface"))
 }
 
 /// `info` of a disabled field over its surface (`demo::faded_surface`),
-/// edged by `r`'s `input.border` and faded with it by `fade`, the opacity
-/// `geometry::input_fill` gives the surface.
-pub fn disabled_input_surface(
-    info: WidgetInfo,
-    r: &ResolvedTheme,
-    fade: Option<f32>,
-) -> WidgetInfo {
+/// edged by `r`'s `input.field(NONE)` stroke and faded with it by `fade`,
+/// the opacity `geometry::input_fill` gives the surface.
+pub fn disabled_input_surface(info: WidgetInfo, r: &NextTheme, fade: Option<f32>) -> WidgetInfo {
     let edge = edge_claim(
         "edge, faded with the field by input.disabled_opacity",
-        "border",
-        Some(r.input.border.color),
-        Some(r.input.border.line_width),
+        "input.field(NONE).stroke.color",
+        stroke_color_of(&r.input.field(WidgetState::NONE)),
+        stroke_width_of(&r.input.field(WidgetState::NONE)),
         "showcase",
     );
-    info.colors(edge.map(|c| super::ColorClaim {
-        value: c.value.opacity(fade.unwrap_or(1.)),
-        ..c
-    }))
-    .instance("disabled text", "input.disabled_text_color, which geometry::input_fill gives a disabled field's root in place of geometry::input's input.font colour, at half its alpha: the editor halves the alpha of a disabled field's text whatever its colour (gpui-base/input/base/element.rs, prepaint)")
-        .config("surface", "geometry::input_fill's fill inside input.border.color's line, none where input.border.line_width is 0, drawn by the showcase under the field, which it leaves without a fill or an edge of its own, the whole faded by input.disabled_opacity: gpui fades each quad on its own (gpui-pre/window.rs, paint_quad) and draws a quad's border over its own fill (gpui-pre-wgpu shaders.wgsl, fs_quad), so a fill under the line would show through the faded line")
+    let faded = edge.map(|c| match fade {
+        Some(fade) => super::ColorClaim {
+            value: c.value.opacity(fade),
+            ..c
+        },
+        None => c,
+    });
+    info.colors(faded)
+    .instance("disabled text", "input.text(DISABLED).color, which geometry::input_fill gives a disabled field's root in place of geometry::input's input.text(NONE).color, at half its alpha: the editor halves the alpha of a disabled field's text whatever its colour (gpui-base/input/base/element.rs, prepaint)")
+        .config("surface", "geometry::input_fill's fill inside input.field(NONE)'s stroke, none where its width is 0, drawn by the showcase under the field, which it leaves without a fill or an edge of its own, the whole faded by input.disabled_opacity: gpui fades each quad on its own (gpui-pre/window.rs, paint_quad) and draws a quad's border over its own fill (gpui-pre-wgpu shaders.wgsl, fs_quad), so a fill under the line would show through the faded line")
 }
 
 /// A single-line `Input` taking the refinement `field` names. `styled` is
-/// whether a native theme is installed, so whether `geometry::input` refined
-/// a `Refined` field and `geometry::input_height` sized a `HeightOnly` one.
-/// Its geometry line is recorded where `demo::text_field` applies the
-/// builder.
+/// whether the installed 0.8.0 theme refined it: a `Refined` field by
+/// `geometry::input` and `geometry::input_fill` over the surface the
+/// showcase draws under it, a `HeightOnly` one by `geometry::input_height`.
+/// Its geometry lines are recorded where `demo::text_field` applies the
+/// builders.
 pub fn input(t: &Theme, field: InputField, styled: bool) -> WidgetInfo {
     let info = WidgetInfo::new("Input");
     let info = match field {
@@ -132,7 +145,7 @@ pub fn input(t: &Theme, field: InputField, styled: bool) -> WidgetInfo {
     // geometry::input refines it with, or else the colour the showcase sets
     // on its window.
     let info = if filled {
-        info.instance("text", "input.font's colour, which geometry::input refines the root with: Input sets no text colour of its own and the editor paints the field's text in the root's (input/input.rs, Input::render; gpui-base/input/base/element.rs, prepaint)")
+        info.instance("text", "input.text(NONE).color, which geometry::input refines the root with: Input sets no text colour of its own and the editor paints the field's text in the root's (input/input.rs, Input::render; gpui-base/input/base/element.rs, prepaint)")
     } else {
         info.color(claim(
             "text, inherited",
@@ -163,7 +176,7 @@ pub fn input(t: &Theme, field: InputField, styled: bool) -> WidgetInfo {
     let info = if filled {
         info
     } else {
-        info.not_themeable("text colour", "none of its own: Input takes only the fill from input_style and drops its foreground (input/input.rs, Input::render), so the text takes the colour the showcase sets on its window; geometry::input gives a refined field input.font's")
+        info.not_themeable("text colour", "none of its own: Input takes only the fill from input_style and drops its foreground (input/input.rs, Input::render), so the text takes the colour the showcase sets on its window; geometry::input gives a refined field input.text(NONE).color")
     };
     let info = info
         .not_themeable("focus ring", "the connector uses the platform's focus_ring_width and focus_ring_keyboard_only only as a switch: upstream drops the ring where Theme::focus_ring is off, which the connector leaves off where the width is 0 or the theme says keyboard only, there but for a focus that followed a key press in a window under Root (styled.rs, FocusableExt::focus_ring_style), and draws it 3px wide with the ring colour's alpha set to 0.5 where it is on (styled.rs, FOCUS_RING_WIDTH), so the platform's width itself is Tier U. The ring is `ring` with that alpha, shown on the InputGroup's info; the OtpInput and Select show `ring` only as their focused border");
@@ -175,7 +188,7 @@ pub fn input(t: &Theme, field: InputField, styled: bool) -> WidgetInfo {
     let info = if filled {
         info
     } else {
-        info.not_themeable("disabled text colour", "the window's text colour at half alpha: the editor dims its own text when disabled, in its paint preparation (gpui-base/input/base/element.rs, prepaint); geometry::input_fill gives a refined disabled field input.disabled_text_color to dim")
+        info.not_themeable("disabled text colour", "the window's text colour at half alpha: the editor dims its own text when disabled, in its paint preparation (gpui-base/input/base/element.rs, prepaint); geometry::input_fill gives a refined disabled field input.text(DISABLED).color to dim")
     };
     let info = info
         .not_themeable("placeholder colour", "Tier U: input.placeholder_color is modelled from each platform's own placeholder colour -- inheritance-rules.toml lists falling back to muted_color as wrong -- but Input hands its editor the shared muted_foreground on every render and takes no colour of its own (input/input.rs, Input::render)");
@@ -183,12 +196,12 @@ pub fn input(t: &Theme, field: InputField, styled: bool) -> WidgetInfo {
         InputField::Refined if styled => info,
         InputField::Refined => info.instance(
             "padding",
-            "upstream's own input_px and input_py for Size::Medium (input/input.rs, Input::render): no native theme is installed, so geometry::input has no padding to give it",
+            "upstream's own input_px and input_py for Size::Medium (input/input.rs, Input::render): geometry::input does not refine it (its geometry line says why), so the theme gives it no padding",
         ),
         InputField::HeightOnly if styled => info
             .instance(
                 "height",
-                "the height rule of the field above without the rest of its refinement: what geometry::input_height is for. At a text scale of 1 or less both are input.min_height tall; above 1 each grows around its own text and padding, and this one's are upstream's text_sm and input_py for Size::Medium (input/input.rs, Input::render), not the platform's, so it no longer lines up with the field above",
+                "the height rule of the field above without the rest of its refinement: what geometry::input_height is for. At a text scale of 1 or less both are input.field(NONE).min_size[1] tall; above 1 each grows around its own text and padding, and this one's are upstream's text_sm and input_py for Size::Medium (input/input.rs, Input::render), not the platform's, so it no longer lines up with the field above",
             )
             .instance(
                 "padding",
@@ -196,17 +209,18 @@ pub fn input(t: &Theme, field: InputField, styled: bool) -> WidgetInfo {
             ),
         InputField::HeightOnly => info.instance(
             "height",
-            "upstream's own for Size::Medium: no native theme is installed, so geometry::input_height has no height to give it",
+            "upstream's own for Size::Medium: no 0.8.0 theme is installed, so geometry::input_height has no height to give it",
         ),
     }
 }
 
-/// A `Textarea`, `filled` by `geometry::input_fill` or not. Its geometry
+/// A `Textarea`, drawn over its field's surface or not (`filled`,
+/// `demo::text_area_surface`). Its geometry
 /// lines are recorded where `demo::surfaced_textarea` applies the builders,
 /// and a filled one's surface where it draws the surface.
 pub fn textarea(t: &Theme, filled: bool) -> WidgetInfo {
     let info = WidgetInfo::new("Textarea");
-    // geometry::text_area letters the field in input.font's colour, over
+    // geometry::text_area letters the field in input.text(NONE).color, over
     // the window's it inherits (a Textarea renders as an Input,
     // input/textarea.rs:221, which drops input_style's foreground,
     // input/input.rs:715): its geometry line names it. A filled field has
@@ -235,10 +249,10 @@ pub fn textarea(t: &Theme, filled: bool) -> WidgetInfo {
             t.ring,
             "gpui-component/input/input.rs:792",
         ))
-        .instance("row height", "defaults.line_height times the text size: geometry::text_area carries the platform's line height, which Input applies after its own 1.25rem (input/input.rs, Input::render: line_height then refine_style), and each row is the window's line height (gpui-base/input/base/element.rs, TextElement::request_layout)")
+        .instance("row height", "typography.line_height_multiplier times the text size: geometry::text_area carries the platform's line height, which Input applies after its own 1.25rem (input/input.rs, Input::render: line_height then refine_style), and each row is the window's line height (gpui-base/input/base/element.rs, TextElement::request_layout)")
         .instance("height", "the showcase's own 90px, set after geometry::text_area, which sets none")
-        .instance("padding", "text_area.border.padding, the multi-line field's own (docs/platform-facts.md §2.29), where it reaches: upstream pads a Textarea's editor in render by its Size's input padding (input/input.rs, Input::render; sizing.rs, input_px and input_py), Size::Medium's 10 across and 8 down here; the Size is the one seam (input/textarea.rs, Textarea::with_size), and it moves every side together by a fixed step, so no stated side reaches the editor through it, and geometry::text_area pads the root by the rest of each stated side; a stated side below the editor's stays the editor's, and an unstated side is upstream's")
-        .instance("refinement", "geometry::text_area: the input's font, and text_area.border's padding, radius and line width, which inherit the input's frame (a Textarea renders as an Input, input/textarea.rs, Textarea::into_input)")
+        .instance("padding", "the sides text_area.field(NONE) states, the multi-line field's own padding (docs/platform-facts.md §2.29), where it reaches: upstream pads a Textarea's editor in render by its Size's input padding (input/input.rs, Input::render; sizing.rs, input_px and input_py), Size::Medium's 10 across and 8 down here; the Size is the one seam (input/textarea.rs, Textarea::with_size), and it moves every side together by a fixed step, so no stated side reaches the editor through it, and geometry::text_area pads the root by the rest of each stated side; a stated side below the editor's stays the editor's, and an unstated side is upstream's")
+        .instance("refinement", "geometry::text_area: input.text(NONE)'s font, and text_area.field(NONE)'s padding, corner radius and stroke width (a Textarea renders as an Input, input/textarea.rs, Textarea::into_input)")
 }
 
 /// A `Textarea` as tall as the rows its state shows: [`textarea`]'s, with
