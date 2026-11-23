@@ -5,6 +5,7 @@ use egui::{FontFamily, FontId, TextStyle};
 use native_theme::theme::{ResolvedPadding, ResolvedWidgetBorder};
 
 use super::base::{button_padding, length, margin, opacity, radius, stroke, text_size};
+use super::line::LineAlign;
 use super::states::{
     BorderEntries, BorderSource, FillField, FillSource, Layer, OpenFrom, StateSource, TextSource,
     write_states,
@@ -247,6 +248,7 @@ fn button(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes:
             border: Some(BorderSource {
                 border: &b.border,
                 paths: ["button.border.corner_radius", "button.border.line_width"],
+                align: LineAlign::Outside,
                 entries: BorderEntries::All, // the `{5}` rows
             }),
             open: OpenFrom::Inactive,
@@ -322,6 +324,7 @@ fn menu(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes: &
             border: Some(BorderSource {
                 border: &m.border,
                 paths: ["menu.border.corner_radius", "menu.border.line_width"],
+                align: LineAlign::Outside,
                 entries: BorderEntries::Interactive, // the item's outline; nothing into the frame's
             }),
             // `active` copies `hovered`, so `menu.active_background` and `active_text_color`
@@ -495,6 +498,7 @@ fn input_role(
             border: Some(BorderSource {
                 border: &i.border,
                 paths: ["input.border.corner_radius", "input.border.line_width"],
+                align: LineAlign::Outside,
                 entries: BorderEntries::All,
             }),
             open: OpenFrom::Inactive,
@@ -564,6 +568,7 @@ fn checkbox(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, note
                     "checkbox.border.corner_radius",
                     "checkbox.border.line_width",
                 ],
+                align: LineAlign::Outside,
                 entries: BorderEntries::All,
             }),
             open: OpenFrom::Inactive,
@@ -792,6 +797,7 @@ fn tab(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes: &m
             border: Some(BorderSource {
                 border: &tb.border,
                 paths: ["tab.border.corner_radius", "tab.border.line_width"],
+                align: LineAlign::Outside,
                 entries: BorderEntries::All,
             }),
             open: OpenFrom::Inactive,
@@ -1118,6 +1124,7 @@ fn combo_box(
                     "combo_box.border.corner_radius",
                     "combo_box.border.line_width",
                 ],
+                align: LineAlign::Outside,
                 entries: BorderEntries::All,
             }),
             open: OpenFrom::Inactive,
@@ -1205,6 +1212,7 @@ fn segmented_control(
                     "segmented_control.border.corner_radius",
                     "segmented_control.border.line_width",
                 ],
+                align: LineAlign::Outside,
                 entries: BorderEntries::All,
             }),
             open: OpenFrom::Inactive,
@@ -1270,6 +1278,7 @@ fn expander(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, note
                     "expander.border.corner_radius",
                     "expander.border.line_width",
                 ],
+                align: LineAlign::Outside,
                 entries: BorderEntries::All,
             }),
             open: OpenFrom::Inactive,

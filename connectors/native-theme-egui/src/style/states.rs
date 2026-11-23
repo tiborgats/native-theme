@@ -5,6 +5,7 @@ use egui::style::{WidgetVisuals, Widgets};
 use native_theme::theme::ResolvedWidgetBorder;
 
 use super::base::{radius, stroke};
+use super::line::{Line, LineAlign};
 use super::note_transparent_fill;
 use crate::Note;
 use crate::convert::{Rgba, composite_over, to_color32};
@@ -66,11 +67,14 @@ pub(crate) struct TextSource {
 
 /// A border: its own colour as stated — the final line colour, into which the model has
 /// already folded `defaults.border.opacity` —, width and radius, into `entries`. `paths` are
-/// the corner-radius and line-width leaves.
+/// the corner-radius and line-width leaves. `align` is where the stroke lies: each entry is
+/// handed the colour composited over the fill that entry paints ([`Line::over`]), the 0.7.2
+/// model's `Outside` stroke as given.
 pub(crate) struct BorderSource<'a> {
     pub border: &'a ResolvedWidgetBorder,
     pub paths: [&'static str; 2],
     pub entries: BorderEntries,
+    pub align: LineAlign,
 }
 
 pub(crate) struct StateSource<'a> {
@@ -170,6 +174,11 @@ pub(crate) fn write_states(widgets: &mut Widgets, src: &StateSource<'_>, notes: 
 
     if let Some(b) = &src.border {
         let [radius_path, width_path] = b.paths;
+        let line = Line {
+            color: to_color32(b.border.color),
+            align: b.align,
+        };
+        let painted = src.fill.as_ref().map(|f| f.field);
         // one stroke and one radius per kind of entry, each over its resting entry's own:
         // egui's stock entries differ (`egui/src/style.rs:1693-1720`), and a hover that
         // fell back to its own would show egui's look, not the platform's (§6.1)
@@ -193,6 +202,8 @@ pub(crate) fn write_states(widgets: &mut Widgets, src: &StateSource<'_>, notes: 
         if matches!(b.entries, BorderEntries::All) {
             let (bg_stroke, corner_radius) = over(&widgets.noninteractive, notes);
             widgets.noninteractive.bg_stroke = bg_stroke;
+            widgets.noninteractive.bg_stroke.color =
+                line.over(painted.map(|f| fill_of(&widgets.noninteractive, f)));
             widgets.noninteractive.corner_radius = corner_radius;
         }
         let (bg_stroke, corner_radius) = over(&widgets.inactive, notes);
@@ -203,6 +214,7 @@ pub(crate) fn write_states(widgets: &mut Widgets, src: &StateSource<'_>, notes: 
             &mut widgets.open,
         ] {
             entry.bg_stroke = bg_stroke;
+            entry.bg_stroke.color = line.over(painted.map(|f| fill_of(entry, f)));
             entry.corner_radius = corner_radius;
         }
     }
@@ -370,6 +382,7 @@ mod tests {
                         border: &t.button.border,
                         paths: ["test.corner_radius", "test.line_width"],
                         entries: BorderEntries::All,
+                        align: LineAlign::Outside,
                     }),
                     open: OpenFrom::Inactive,
                 },

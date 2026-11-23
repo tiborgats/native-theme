@@ -4,6 +4,7 @@
 pub(crate) mod base;
 mod derived;
 mod frames;
+pub(crate) mod line;
 mod roles;
 mod states;
 mod variants;

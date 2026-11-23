@@ -22,6 +22,8 @@
 //! for a reader that shows egui's own there.
 
 #[cfg(test)]
+mod parity;
+#[cfg(test)]
 mod root_parity;
 #[cfg(test)]
 mod tests;

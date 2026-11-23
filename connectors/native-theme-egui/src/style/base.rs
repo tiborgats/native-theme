@@ -378,6 +378,7 @@ pub(crate) fn base_style(input: &BuildInput<'_>, notes: &mut Vec<Note>) -> egui:
                 border: &b.border,
                 paths: ["button.border.corner_radius", "button.border.line_width"],
                 entries: BorderEntries::Interactive,
+                align: super::line::LineAlign::Outside,
             }),
             open: OpenFrom::Inactive,
         },
