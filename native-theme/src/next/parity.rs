@@ -295,7 +295,9 @@ const WIDGETS: &[Widget] = &[
         parts: &[("track", P), ("thumb", P), ("label", T)],
         metrics: &[
             "origin",
+            "label_side",
             "label_gap",
+            "label_gap_stretches",
             "show_state_glyphs",
             "disabled_opacity",
         ],

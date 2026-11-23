@@ -71,6 +71,21 @@ pub enum ArrowSide {
     Trailing,
 }
 
+/// Which side of a switch's track its label sits at (spec §5, "The switch's
+/// label"). Leading and trailing are the reading direction's.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "snake_case")
+)]
+pub enum LabelSide {
+    /// Before the track: GNOME, Android, macOS, iOS.
+    Leading,
+    /// After the track: KDE, Windows.
+    Trailing,
+}
+
 /// Which edge of the active tab its indicator line lies along, for tabs
 /// above their pages (`platform-facts.md` §2.11, `active_indicator_side`).
 /// Tabs below their pages mirror it.

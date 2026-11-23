@@ -3557,6 +3557,8 @@ fn switch(c: &SchemeColors, g: &Generation, roles: &ColorRoles) -> SwitchWidget 
         RuleBuilder::new(TextStyle::default()).build(),
         None,
         None,
+        None,
+        None,
         // 0.7.2: `switch.disabled_opacity` is `defaults.disabled_opacity` where unstated.
         Some(roles.disabled_opacity),
     )

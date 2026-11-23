@@ -2,7 +2,7 @@ use super::*;
 
 use crate::next::geometry::StrokeAlign;
 use crate::next::preset::{Preset, Theme};
-use crate::next::query::{ButtonQuery, ListQuery};
+use crate::next::query::{ButtonQuery, ListQuery, StyleQuery};
 use crate::next::style::{FocusKind, PartStated};
 use crate::next::window::WindowState;
 
@@ -782,6 +782,28 @@ fn widget_rules_append_rules_patch_static_parts_and_set_metrics() {
     assert_eq!(theme.spinner.diameter, base.spinner.diameter);
     assert_eq!(theme.checkbox, base.checkbox);
     assert!(theme.dead_rules().iter().all(|(_, dead)| dead.is_empty()));
+}
+
+#[test]
+fn a_switch_patch_sets_the_label_side_and_stretch() {
+    let base = breeze();
+    let theme = patched([ThemePatch::new().widget_rules(
+        WidgetPatchMap::new().switch(
+            SwitchPatch::new()
+                .label_side(LabelSide::Leading)
+                .label_gap_stretches(true),
+        ),
+    )]);
+    assert_eq!(theme.switch.label_side, Some(LabelSide::Leading));
+    assert_eq!(theme.switch.label_gap_stretches, Some(true));
+    assert_eq!(theme.switch.label_gap, base.switch.label_gap);
+    assert_eq!(
+        theme.switch.show_state_glyphs,
+        base.switch.show_state_glyphs
+    );
+    assert_eq!(theme.switch.disabled_opacity, base.switch.disabled_opacity);
+    let rest: StyleQuery = StyleQuery::default();
+    assert_eq!(theme.switch.parts(rest), base.switch.parts(rest));
 }
 
 #[test]

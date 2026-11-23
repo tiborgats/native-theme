@@ -1246,7 +1246,10 @@ ruled_widget! {
     InputWidget { origin, disabled_opacity; field, text, placeholder, helper_text }
     CheckboxWidget { origin, label_gap, disabled_opacity; indicator, checkmark, label }
     RadioWidget { origin, label_gap, disabled_opacity; indicator, dot, label }
-    SwitchWidget { origin, label_gap, show_state_glyphs, disabled_opacity; track, thumb, label }
+    SwitchWidget {
+        origin, label_side, label_gap, label_gap_stretches, show_state_glyphs, disabled_opacity;
+        track, thumb, label
+    }
     SliderWidget { origin, tick_length, disabled_opacity; track, active_track, thumb, tick }
     ProgressBarWidget { origin, indeterminate_period_ms; track, fill }
     ScrollbarWidget { origin, min_thumb_length, overlay_mode; track, thumb }

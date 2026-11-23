@@ -2195,6 +2195,8 @@ fn switch(c: &SchemeColors, roles: &ColorRoles) -> SwitchWidget {
         RuleBuilder::new(TextStyle::default()).build(),
         None,
         None,
+        None,
+        None,
         Some(roles.disabled_opacity),
     )
 }

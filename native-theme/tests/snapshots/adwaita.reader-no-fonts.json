@@ -834,7 +834,9 @@
   },
   "switch": {
     "origin": "native",
+    "label_side": null,
     "label_gap": null,
+    "label_gap_stretches": null,
     "show_state_glyphs": null,
     "disabled_opacity": 0.5,
     "track": {
