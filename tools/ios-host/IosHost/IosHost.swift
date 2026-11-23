@@ -889,9 +889,9 @@ func cellReads(_ cells: [UIView], in root: UIView, traits: UITraitCollection) ->
 /// outline-disclosure header (`headerMode = .firstItemInSection`, the
 /// accessory's `.header` style, expanded); the switch of an `.insetGrouped`
 /// list row (the cell's default content configuration "Label", the switch its
-/// trailing custom-view accessory) and of SwiftUI's `Toggle("Label")` in a
-/// `Form` (where its view tree holds a UISwitch). Drawn in the render mode:
-/// each at rest, an `.insetGrouped` list's one row (the card), and both switch
+/// trailing custom-view accessory). Drawn in the render mode:
+/// each at rest, an `.insetGrouped` list's one row (the card), SwiftUI's
+/// `Toggle("Label")` in a `Form`, and both switch
 /// rows off and on, the switch disabled, and (UIKit) the row's cell disabled
 /// (`isUserInteractionEnabled = false`, its switch disabled) or (SwiftUI) the
 /// Toggle `.disabled(true)`. The lists' backgrounds are clear, and so are the
@@ -1073,7 +1073,10 @@ func listSpecimens() -> [Specimen] {
     list.append(
         Specimen(
             name: "switch_form", kind: "swiftui", style: "form_toggle", variant: [], sizes: [noSize],
-            states: [.normal, .selected, .disabled, .disabledSelected, .pressed],
+            // Not pressed: the identifier set on the UISwitch in its tree
+            // did not reach the accessibility tree (run 45220318789, the
+            // test waited for it in vain).
+            states: [.normal, .selected, .disabled, .disabledSelected],
             make: { _ in
                 let model = ToggleModel()
                 let host = UIHostingController(rootView: ToggleForm(model: model))
