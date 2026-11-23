@@ -998,6 +998,48 @@ fn a_stated_hovered_fill_is_the_states_own() -> Result<(), Box<dyn std::error::E
     Ok(())
 }
 
+/// The rows and items whose hovered and pressed fills the cells read as given, each as
+/// [`STATE_FILLS`] names it.
+const ROW_FILLS: [(crate::Role, &str, &str, bool); 3] = [
+    (crate::Role::List, "list", "highlight", false),
+    (crate::Role::Sidebar, "sidebar", "item", true),
+    (crate::Role::Tab, "tab", "tab", true),
+];
+
+/// A hovered or pressed fill a rule states as none is transparent (spec §10, rule 2), not
+/// unstated: the entry draws no fill, where an unstated one would keep egui's own or the base's.
+#[test]
+fn a_state_fill_stated_as_none_is_transparent() -> Result<(), Box<dyn std::error::Error>> {
+    let plain = patched_light(Preset::KdeBreeze, "")?;
+    for (state, pressed) in [("hover", false), ("pressed", true)] {
+        for (role, widget, part, weak) in STATE_FILLS.into_iter().chain(ROW_FILLS) {
+            let fill = |atlas: &crate::ThemeAtlas| {
+                let cell = atlas
+                    .scheme(egui::Theme::Light)
+                    .cell(role, crate::RoleVariant::Normal);
+                let w = &cell.visuals.widgets;
+                let entry = if pressed { &w.active } else { &w.hovered };
+                if weak {
+                    entry.weak_bg_fill
+                } else {
+                    entry.bg_fill
+                }
+            };
+            let patch = format!(
+                "[[widgets.{widget}.rules]]\nstates = [\"{state}\"]\n{part}.fill = \"none\"\n"
+            );
+            let atlas = patched_light(Preset::KdeBreeze, &patch)?;
+            assert_ne!(
+                fill(&plain),
+                egui::Color32::TRANSPARENT,
+                "{role:?} {state}: the preset's own fill proves nothing"
+            );
+            assert_eq!(fill(&atlas), egui::Color32::TRANSPARENT, "{role:?} {state}");
+        }
+    }
+    Ok(())
+}
+
 /// On the macOS presets, whose button the pointer does not change (`platform-facts.md` §2.3),
 /// the hovered button's fill is its resting fill wherever the preset states it so: the state's
 /// own fill, not a layer laid over the rest again.
