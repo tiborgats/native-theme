@@ -162,6 +162,8 @@ use crate::next::platform::kcu_mix::{kcu_mix_of_mix, kcu_mix_qreal};
 use crate::next::platform::kcu_overlay::kcu_overlay;
 use crate::next::platform::kde_selection_inactive::kde_selection_inactive;
 use crate::next::platform::kde_shade::{KdeShadeRole, kde_shade};
+use crate::next::platform::kirigami_lerp::kirigami_lerp;
+use crate::next::platform::qt_tint::{qt_tint, tint_stored};
 use crate::next::preset::{Preset, ResolveInputs};
 use crate::next::query::{
     ButtonVariant, Contrast, ListVariant, Orientation, Scheme, ThemeContext, WidgetState,
@@ -287,6 +289,10 @@ struct SchemeColors {
     title_bar_background: Color,
     title_bar_inactive_background: Color,
     title_bar_inactive_foreground: Color,
+    /// The active window's title colour where the system states it, `[WM]
+    /// activeForeground`; unstated, the UI font's colour (0.7.2:
+    /// `window.title_bar_font.color` is `defaults.font.color` where unstated).
+    title_bar_foreground: Option<Color>,
     toolbar_background: Color,
     toolbar_border: Color,
     toolbar_button_pressed: Color,
@@ -659,6 +665,7 @@ const LIGHT: SchemeColors = SchemeColors {
     // `window.inactive_title_bar_text_color`: platform-facts.md (§2.2): [WM] inactiveForeground
     // 112,125,138 (BreezeLight.colors:202, breeze v6.7.5)
     title_bar_inactive_foreground: srgb8(0x707d_8aff),
+    title_bar_foreground: None,
     // `toolbar.background_color`: platform-facts.md §2.13 background_color: Breeze fills a
     // QMainWindow's tools area with the Header set's Window colour, [Colors:Header]
     // BackgroundNormal #dee0e2 (BreezeLight.colors:59, breezestyle.cpp:1322, :1341-1347), where the
@@ -1083,6 +1090,7 @@ const DARK: SchemeColors = SchemeColors {
     // `window.inactive_title_bar_text_color`: platform-facts.md (§2.2): [WM] inactiveForeground
     // 161,169,177 (BreezeDark.colors:209, breeze v6.7.5)
     title_bar_inactive_foreground: srgb8(0xa1a9_b1ff),
+    title_bar_foreground: None,
     // `toolbar.background_color`: platform-facts.md §2.13 background_color: Breeze fills a
     // QMainWindow's tools area with the Header set's Window colour, [Colors:Header]
     // BackgroundNormal #292c30 (BreezeDark.colors:60, breezestyle.cpp:1322, :1341-1347), where the
@@ -1912,6 +1920,45 @@ const SCROLLBAR_IDLE_HANDLE_ALPHA: f32 = 0.175;
 /// breeze f0b1d75; docs/platform-facts.md §2.8.
 const SCROLLBAR_BAR_HOVER_HANDLE_ALPHA: f32 = 0.25;
 
+/// The alpha of the button text a checked flat Breeze button is filled
+/// with, `alphaColor(palette.buttonText().color(), 0.125)`
+/// (breezehelper.cpp:681-684 at breeze f0b1d75; docs/platform-facts.md §2.13).
+const FLAT_CHECKED_ALPHA: f32 = 0.125;
+
+/// How far a Qt Widgets menu's panel moves from `Window` towards `Base`:
+/// `frameBackgroundColor()`, `KColorUtils::mix(Window, Base,
+/// Metrics::Blend_Value)`, the `qreal` 0.3 (`drawPanelMenuPrimitive`,
+/// breezestyle.cpp:4708; breezehelper.cpp:200-203; breezemetrics.h:176 at breeze
+/// f0b1d75; docs/platform-facts.md §2.6).
+const MENU_PANEL_MIX: f64 = 0.3;
+
+/// How far a hovered menu item's outline moves from the focus colour towards
+/// the window text: `focusOutlineColor()`, `KColorUtils::mix(focusColor,
+/// WindowText, 0.15)` (breezehelper.cpp:172-175, breezestyle.cpp:6021-6049 at
+/// breeze f0b1d75; docs/platform-facts.md §2.6).
+const MENU_HOVER_OUTLINE_MIX: f64 = 0.15;
+
+/// The alpha of the hover decoration a hovered, unselected Breeze tab is
+/// filled with, `alphaColor(hoverColor(palette), 0.2)` (breezehelper.cpp:1497
+/// at breeze f0b1d75; docs/platform-facts.md §2.11).
+const TAB_HOVER_ALPHA: f32 = 0.2;
+
+/// The alpha of the accent over the window in a Breeze progress bar's
+/// contents, `alphaColor(fg, 0.7)` (breezehelper.cpp:1216 at breeze f0b1d75;
+/// docs/platform-facts.md §2.10).
+const PROGRESS_FILL_ALPHA: f32 = 0.7;
+
+/// The alpha qqc2-desktop-style's switch tints its off track's text colour
+/// by its background at, `blendBackgroundWithTextColorWithRatio(0.9)`
+/// (`org.kde.desktop/private/SwitchIndicator.qml:49` at v6.31.0;
+/// docs/platform-facts.md §2.21).
+const SWITCH_OFF_TINT_ALPHA: f64 = 0.9;
+
+/// The alpha of the highlight over the switch's on track, `Qt.alpha(
+/// highlightColor, 0.5)` (SwitchIndicator.qml:62 at v6.31.0;
+/// docs/platform-facts.md §2.21).
+const SWITCH_ON_ALPHA: f32 = 0.5;
+
 // ---------------------------------------------------------------------------
 // The colours from the constants and the system's settings
 // ---------------------------------------------------------------------------
@@ -1944,6 +1991,9 @@ fn lay_system_over(c: &mut SchemeColors, os: &OsColors) {
     let view = surfaces.view.unwrap_or_default();
     let button = surfaces.button.unwrap_or_default();
     let tooltip = surfaces.tooltip.unwrap_or_default();
+    let header = surfaces.header.unwrap_or_default();
+    let title_bar = surfaces.title_bar.unwrap_or_default();
+    let title_bar_inactive = surfaces.title_bar_inactive.unwrap_or_default();
     let selection = os.selection.unwrap_or_default();
     let [error, warning, success, info] = os.status.unwrap_or_default();
     let frame_contrast = os.kde_frame_contrast.unwrap_or(FRAME_CONTRAST_DEFAULT);
@@ -1952,17 +2002,26 @@ fn lay_system_over(c: &mut SchemeColors, os: &OsColors) {
         .kde_effects
         .map_or(CHANGE_SELECTION_COLOR_DEFAULT, |e| e.change_selection_color);
     let (window_bg, window_fg) = (window.background, window.foreground);
+    let (view_bg, view_fg) = (view.background, view.foreground);
     let (button_bg, button_fg) = (button.background, button.foreground);
     let (highlight, highlight_fg) = (selection.background, selection.foreground);
     let (focus, hover) = (os.kde_decoration_focus, os.kde_decoration_hover);
+    // KColorScheme takes a key the Header group lacks from `[Colors:Window]`
+    // (0.7.2's toolbar colours, `populate_colors`).
+    let (header_bg, header_fg) = (
+        header.background.or(window_bg),
+        header.foreground.or(window_fg),
+    );
 
     // The settings, each where stated.
     replace(&mut c.window_background, window_bg);
     replace(&mut c.window_foreground, window_fg);
     replace(&mut c.window_foreground_muted, window.foreground_muted);
-    replace(&mut c.view_background, view.background);
-    replace(&mut c.view_foreground, view.foreground);
+    replace(&mut c.view_background, view_bg);
+    replace(&mut c.view_foreground, view_fg);
     c.view_foreground_muted = view.foreground_muted;
+    replace(&mut c.placeholder, view.foreground_muted);
+    replace(&mut c.decoration_hover, hover);
     replace(&mut c.selection_background, highlight);
     replace(&mut c.selection_foreground, highlight_fg);
     replace(&mut c.accent, focus);
@@ -1977,6 +2036,17 @@ fn lay_system_over(c: &mut SchemeColors, os: &OsColors) {
     replace(&mut c.list_alternate_row, os.alternate_row_background);
     replace(&mut c.tooltip_background, tooltip.background);
     replace(&mut c.tooltip_foreground, tooltip.foreground);
+    replace(&mut c.title_bar_background, title_bar.background);
+    c.title_bar_foreground = title_bar.foreground.or(c.title_bar_foreground);
+    replace(
+        &mut c.title_bar_inactive_background,
+        title_bar_inactive.background,
+    );
+    replace(
+        &mut c.title_bar_inactive_foreground,
+        title_bar_inactive.foreground,
+    );
+    replace(&mut c.toolbar_background, header_bg);
     c.caret = focus.or(c.caret);
     // Breeze's measured pixel is not another scheme's colour.
     c.scrollbar_thumb_focused = None;
@@ -2097,6 +2167,110 @@ fn lay_system_over(c: &mut SchemeColors, os: &OsColors) {
     c.scrollbar_thumb_bar_hover = window_bg
         .zip(window_fg)
         .map(|(bg, fg)| bar_hover_handle(bg, fg));
+    replace(
+        &mut c.progress_fill,
+        window_bg
+            .zip(highlight)
+            .map(|(bg, hl)| overlay(bg, hl, PROGRESS_FILL_ALPHA)),
+    );
+    replace(
+        &mut c.tab_hover,
+        hover.map(|hv| translucent(hv, TAB_HOVER_ALPHA)),
+    );
+    replace(
+        &mut c.toolbar_border,
+        header_bg
+            .zip(header_fg)
+            .map(|(bg, fg)| mix(bg, fg, frame_contrast)),
+    );
+    replace(
+        &mut c.toolbar_button_pressed,
+        highlight.map(|hl| translucent(hl, BLEND_VALUE)),
+    );
+    replace(
+        &mut c.toolbar_button_checked,
+        button_fg.map(|fg| translucent(fg, FLAT_CHECKED_ALPHA)),
+    );
+    replace(
+        &mut c.menu_background,
+        window_bg
+            .zip(view_bg)
+            .map(|(window, base)| mix(window, base, MENU_PANEL_MIX)),
+    );
+    replace(
+        &mut c.menu_hover,
+        focus.map(|fc| translucent(fc, BLEND_VALUE)),
+    );
+    replace(
+        &mut c.menu_hover_frame,
+        focus
+            .zip(window_fg)
+            .map(|(fc, fg)| mix(fc, fg, MENU_HOVER_OUTLINE_MIX)),
+    );
+    replace(
+        &mut c.popover_border,
+        window_bg
+            .zip(window_fg)
+            .and_then(|(bg, fg)| interpolate(bg, fg, frame_contrast)),
+    );
+    replace(
+        &mut c.card_border,
+        view_bg
+            .zip(view_fg)
+            .and_then(|(bg, fg)| interpolate(bg, fg, frame_contrast)),
+    );
+    replace(
+        &mut c.switch_frame,
+        button_bg
+            .zip(button_fg)
+            .and_then(|(bg, fg)| interpolate(bg, fg, frame_contrast)),
+    );
+    replace(
+        &mut c.switch_off,
+        button_bg.zip(button_fg).map(|(bg, fg)| {
+            let [r, g, b, a] = qt_tint(fg.to_srgb8(), bg.to_srgb8(), SWITCH_OFF_TINT_ALPHA);
+            Color::from_srgb8(r, g, b, a)
+        }),
+    );
+    replace(
+        &mut c.switch_on,
+        button_bg
+            .zip(button_fg)
+            .zip(highlight)
+            .map(|((bg, fg), hl)| {
+                let off = tint_stored(fg.to_srgb8(), bg.to_srgb8(), SWITCH_OFF_TINT_ALPHA);
+                switch_on_track(off, hl)
+            }),
+    );
+}
+
+/// Kirigami's `ColorUtils::linearInterpolation(one, two, balance)` in 8 bits
+/// ([`kirigami_lerp`]); `None` only for Qt's invalid colour, which no
+/// colour of 8-bit channels and no balance clamped to `0.0..=1.0` gives.
+fn interpolate(one: Color, two: Color, balance: f64) -> Option<Color> {
+    kirigami_lerp(rgba(one), rgba(two), balance).map(eight_bit)
+}
+
+/// qqc2-desktop-style's switch on track: `Qt.alpha(highlight, 0.5)` laid
+/// over the off track `off`, Qt's 16-bit channels ([`tint_stored`]), both at
+/// the precision `QColor` stores them, in exact arithmetic, rounded once to
+/// 8 bits (SwitchIndicator.qml:53-63 at v6.31.0; docs/platform-facts.md
+/// §2.21; 0.7.2's `switch_on_track`, `src/kde/colors.rs`).
+fn switch_on_track(off: [u16; 4], highlight: Color) -> Color {
+    let wide = highlight.to_srgb8().map(|c| u16::from_be_bytes([c, c]));
+    // `QColor::setAlphaF`'s `qRound(alpha · 65535)` in single precision.
+    let alpha = (SWITCH_ON_ALPHA * f32::from(u16::MAX) + 0.5) as u16;
+    let (alpha, inverse) = (f64::from(alpha), f64::from(u16::MAX.saturating_sub(alpha)));
+    let max = f64::from(u16::MAX);
+    // 255 × (h × alpha + o × inverse) is an integer below 2^41, exact in an
+    // f64, so dividing by 65535² rounds only once; the result is at most 255.
+    let channel = |h: u16, o: u16| {
+        let numerator = (f64::from(h) * alpha + f64::from(o) * inverse) * 255.0;
+        (numerator / (max * max)).round() as u8
+    };
+    let [hr, hg, hb, _] = wide;
+    let [or, og, ob, _] = off;
+    Color::from_srgb8(channel(hr, or), channel(hg, og), channel(hb, ob), u8::MAX)
 }
 
 /// Breeze's handle of a view without the focus with the pointer on the bar
@@ -3039,7 +3213,7 @@ fn window(
         frame.apply(&prop);
     }
     let (title_bar_fill, title_color) = if active {
-        (c.title_bar_background, None)
+        (c.title_bar_background, c.title_bar_foreground)
     } else {
         (
             c.title_bar_inactive_background,

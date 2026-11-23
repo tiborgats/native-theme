@@ -1,12 +1,13 @@
 //! The compiled colour kernels of the KDE preset, one file each, taken from
 //! `v0.8.0-rc1` (`native-theme/src/platform/` at 78ee0efd) with their vector
-//! tables in `tests/vectors/`. `kde_shade` and the KDE colour functions
-//! `kcu_mix`, `kcu_tint`, `kcu_overlay` and `kde_selection_inactive`, with
-//! their shared arithmetic in `kde_color_common`, were written in a clean
+//! tables in `tests/vectors/`. `kde_shade`, `kirigami_lerp` and the KDE colour
+//! functions `kcu_mix`, `kcu_tint`, `kcu_overlay` and `kde_selection_inactive`,
+//! with their shared arithmetic in `kde_color_common`, were written in a clean
 //! room, from behavioural descriptions and the vector tables alone (the
 //! plan's D10). No line of KDE's or Qt's code is in them. The tables were
 //! generated on that branch by `tools/kde-vectors` from the sources their
-//! headers name; the generator is not on this branch.
+//! headers name; the generator is not on this branch. `kcu_mix_of_mix.tsv`
+//! was generated on this branch, by the harness its header names.
 
 pub(crate) mod kcu_mix;
 pub(crate) mod kcu_overlay;
@@ -18,6 +19,7 @@ pub(crate) mod kcu_tint;
 mod kde_color_common;
 pub(crate) mod kde_selection_inactive;
 pub(crate) mod kde_shade;
+pub(crate) mod kirigami_lerp;
 pub(crate) mod qt_lighter;
 pub(crate) mod qt_tint;
 #[cfg(test)]

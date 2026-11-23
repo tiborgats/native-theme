@@ -22,19 +22,12 @@ const MAX16: f32 = 65535.0;
 /// and `alpha()`. `tint`'s own alpha plays no part: `Qt.alpha` replaces it by `factor`, clamped
 /// to `[0, 1]` (a NaN as 0). A tint alpha that reads as 255 in 8 bits returns the tint with that
 /// alpha, one that reads as 0 returns the base; between them the tint is blended over the base.
-#[cfg_attr(
-    not(test),
-    allow(
-        dead_code,
-        reason = "called by the kde-breeze builder for the switch track, plan M2 KDE unit"
-    )
-)]
 pub(crate) fn qt_tint(base: [u8; 4], tint: [u8; 4], factor: f64) -> [u8; 4] {
     tint_stored(base, tint, factor).map(to_8bit)
 }
 
 /// The 16-bit channels Qt holds for `Qt.tint(base, Qt.alpha(tint, factor))`.
-fn tint_stored(base: [u8; 4], tint: [u8; 4], factor: f64) -> [u16; 4] {
+pub(crate) fn tint_stored(base: [u8; 4], tint: [u8; 4], factor: f64) -> [u16; 4] {
     let base = base.map(to_16bit);
     let [rt, gt, bt, _] = tint.map(to_16bit);
     let alpha = alpha_held(factor);
