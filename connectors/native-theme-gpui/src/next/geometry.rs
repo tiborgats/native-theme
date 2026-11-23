@@ -100,7 +100,7 @@ builders! {
     icon_size_dialog -> Size;
     icon_size_panel -> Size;
     scrollbar_gutter -> StyleRefinement;
-    dialog_max_width -> Pixels;
+    dialog_max_width -> Option<Pixels>;
     input_height -> StyleRefinement;
     button_disabled -> StyleRefinement;
     button_checked -> StyleRefinement;

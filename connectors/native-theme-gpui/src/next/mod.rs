@@ -34,7 +34,7 @@ pub mod base_layer;
 pub(crate) mod builders;
 pub mod geometry;
 #[cfg(test)]
-mod parity;
+pub(crate) mod parity;
 pub mod variants;
 
 use std::fmt;
@@ -190,6 +190,16 @@ pub(crate) fn state_fill(part: &PartStyle, home: &'static str) -> Mapped<Option<
     }
 }
 
+/// A part's fill where the theme states it, as [`fill`] reads it; `None`
+/// where it states none, and the toolkit's own stays (spec §10, rule 0).
+pub(crate) fn stated_fill(part: &PartStyle, home: &'static str) -> Mapped<Option<Hsla>> {
+    if part.stated.contains(PartStated::FILL) {
+        fill(part, home).map(Some)
+    } else {
+        Ok(None)
+    }
+}
+
 /// A part's stroke colour where a rule states it for the queried state, as
 /// [`stroke_color`] reads it; `None` where none does.
 pub(crate) fn state_stroke_color(part: &PartStyle, home: &'static str) -> Mapped<Option<Hsla>> {
@@ -296,6 +306,30 @@ fn thumb_at_rest(r: &ResolvedTheme) -> Mapped<Hsla> {
     )
 }
 
+/// The opacity of `accent` gpui-component gives `list_hover` where a
+/// `ThemeConfig` states none, its own hovered row; `table_hover` falls back
+/// to `list_hover` (gpui-component 0.10.0 `src/theme/schema.rs`,
+/// `ThemeColor::apply_config`: `list_hover`'s fallback
+/// `self.accent.opacity(0.6)`).
+pub(crate) const UPSTREAM_LIST_HOVER_ACCENT_OPACITY: f32 = 0.6;
+
+/// A hovered list row's fill, `list.highlight(HOVER).fill`, which the theme
+/// colours `list_hover` and `table_hover` with; where the theme states none,
+/// gpui-component's own hovered row, `accent` at
+/// [`UPSTREAM_LIST_HOVER_ACCENT_OPACITY`], so the toolkit's own stays (spec
+/// §10, rule 0). `accent` is the menu's hovered item, which the old mapping
+/// writes there (`colors::assign_core`).
+fn list_row_hover(r: &ResolvedTheme) -> Mapped<Hsla> {
+    let home = "list.highlight(HOVER).fill";
+    match stated_fill(&r.list.highlight(WidgetState::HOVER), home)? {
+        Some(hover) => Ok(hover),
+        None => Ok(
+            fill(&r.menu.item(WidgetState::HOVER), "menu.item(HOVER).fill")?
+                .opacity(UPSTREAM_LIST_HOVER_ACCENT_OPACITY),
+        ),
+    }
+}
+
 /// The slice's colours of a 0.8.0 resolved theme.
 pub(crate) fn slice_colors(r: &ResolvedTheme) -> Mapped<SliceColors> {
     let c = &r.colors;
@@ -346,10 +380,7 @@ pub(crate) fn slice_colors(r: &ResolvedTheme) -> Mapped<SliceColors> {
         scrollbar_thumb_hover: fill(&s.thumb(WidgetState::HOVER), "scrollbar.thumb(HOVER).fill")?,
         button_hover_bg: fill(&b.body(WidgetState::HOVER), "button.body(HOVER).fill")?,
         button_active_bg: state_fill(&b.body(WidgetState::PRESSED), "button.body(PRESSED).fill")?,
-        list_hover_bg: fill(
-            &l.highlight(WidgetState::HOVER),
-            "list.highlight(HOVER).fill",
-        )?,
+        list_hover_bg: list_row_hover(r)?,
         list_selection_bg: fill(
             &l.highlight(WidgetState::SELECTED),
             "list.highlight(SELECTED).fill",

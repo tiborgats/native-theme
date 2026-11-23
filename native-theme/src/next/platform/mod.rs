@@ -37,9 +37,15 @@
 //! one scheme it ports (`TONAL_SPOT` under the 2021 specification), the one
 //! `material-3` runs, and its vector test checks that every row names that
 //! scheme; its vector test reads the table as a unit test here.
+//!
+//! The `ios-13` preset's text scale, `dynamic_type`, is Apple's published
+//! Dynamic Type table (the HIG's, no code), taken from rc1 at the same
+//! commit with its table `dynamic_type.tsv`, which rc1's
+//! `scripts/generate_dynamic_type.py` wrote from the same pages.
 
 pub(crate) mod adw_standalone;
 pub(crate) mod android_non_linear;
+pub(crate) mod dynamic_type;
 pub(crate) mod kcu_mix;
 pub(crate) mod kcu_overlay;
 pub(crate) mod kcu_tint;

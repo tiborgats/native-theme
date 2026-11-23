@@ -6,9 +6,11 @@
 //! resize handles, and every public builder of `src/geometry.rs` and
 //! `src/variants.rs`.
 //!
-//! Presets covered: kde-breeze, adwaita and windows-11, light and dark
-//! ([`PRESETS`]). The 0.7.2 side is resolved as the connector's tests resolve it
-//! (`ResolutionContext::for_tests`), with no accessibility scaling; the
+//! Presets covered: kde-breeze, adwaita, windows-11, macos-monterey,
+//! macos-tahoe and material-3, light and dark ([`PRESETS`]). The 0.7.2 side
+//! is resolved as the connector's tests resolve it
+//! (`ResolutionContext::for_tests`), on the macOS presets at macOS's font DPI
+//! ([`old_context`]), with no accessibility scaling; the
 //! 0.8.0 side for the scheme's default context, whose text scale is 1, and,
 //! for `geometry::title_bar_inactive`, for that context with an inactive
 //! window as well.
@@ -75,6 +77,9 @@ const PRESETS: &[(&str, Preset)] = &[
     ("kde-breeze", Preset::KdeBreeze),
     ("adwaita", Preset::Adwaita),
     ("windows-11", Preset::Windows11),
+    ("macos-monterey", Preset::MacosMonterey),
+    ("macos-tahoe", Preset::MacosTahoe),
+    ("material-3", Preset::Material3),
 ];
 
 /// One `ThemeColor` field: its colour, the token
@@ -316,15 +321,45 @@ const DIFFERENCES: &[Difference] = &[
         presets: &["kde-breeze"],
         reason: "0.7.2 states dialog.max_width, which has no source (issue #4 Z2, as \
                  geometry::dialog's entry); the 0.8.0 kde-breeze leaves \
-                 dialog.panel.max_size[0] unstated, so the 0.8.0 side has no width to give",
+                 dialog.panel.max_size[0] unstated, so the 0.8.0 side gives no width (`None`) \
+                 and the dialog keeps gpui-component's own (docs/v0.8.0-spec.md §10, rule 0)",
+    },
+    Difference {
+        leaf: ROW_HOVER,
+        presets: &["macos-monterey", "macos-tahoe"],
+        reason: "0.7.2 fills an unstated list.hover_background with the list's own background \
+                 (native-theme/src/resolve/inheritance.rs, widget-to-widget: no tint), and the \
+                 connector paints a hovered list and table row with it; the 0.8.0 macOS \
+                 presets leave list.highlight(HOVER).fill unstated (native-theme/tests/\
+                 next_homes.toml, row list.hover_background, unstated_if_unset; \
+                 docs/platform-facts.md §2.15 gives no hover colour for a table row), so the \
+                 0.8.0 theme keeps gpui-component's own hovered row, its accent at 0.6 opacity \
+                 (gpui-component 0.10.0 src/theme/schema.rs, ThemeColor::apply_config), in \
+                 list_hover and table_hover, their tokens and their stored config strings \
+                 (docs/v0.8.0-spec.md §10, rule 0); every other leaf of the theme is equal",
     },
     Difference {
         leaf: "geometry::group_box_content",
-        presets: &["adwaita"],
-        reason: "0.7.2's adwaita.toml states no card.border.color or line_width, and 0.7.2's \
-                 validation fills a card border's unstated fields with transparent and 0 \
-                 (`BorderKind::None`, native-theme/src/resolve/validate_helpers.rs), a value \
-                 no source gives; the 0.8.0 adwaita leaves card.container(NONE).stroke \
+        presets: &["macos-monterey", "macos-tahoe"],
+        reason: "0.7.2's macOS presets state no card.border.color, line_width or corner_radius \
+                 (docs/platform-facts.md §2.26: NSBox's fill and border are not published), and \
+                 0.7.2's validation fills them with transparent, 0 and 0 \
+                 (native-theme/src/resolve/validate_helpers.rs), values no source gives; the \
+                 0.8.0 macOS presets leave card.container(NONE).stroke and its corners unstated \
+                 (native-theme/tests/next_homes.toml, rows card.border.color, \
+                 card.border.line_width and card.border.corner_radius, unstated_if_unset), so the \
+                 0.8.0 refinement sets no border width, no border colour and no corner radius and \
+                 the group box keeps gpui-component's own (docs/v0.8.0-spec.md §10, rule 0); \
+                 every other field of the refinement is equal",
+    },
+    Difference {
+        leaf: "geometry::group_box_content",
+        presets: &["adwaita", "material-3"],
+        reason: "0.7.2's adwaita.toml and material-3.toml state no card.border.color or \
+                 line_width, and 0.7.2's validation fills a card border's unstated fields with \
+                 transparent and 0 (`BorderKind::None`, \
+                 native-theme/src/resolve/validate_helpers.rs), a value no source gives; the \
+                 0.8.0 adwaita and material-3 leave card.container(NONE).stroke \
                  unstated (native-theme/tests/next_homes.toml, rows card.border.color and \
                  card.border.line_width, unstated_if_unset), so the 0.8.0 refinement sets no \
                  border width and no border colour and the group box keeps gpui-component's \
@@ -333,9 +368,71 @@ const DIFFERENCES: &[Difference] = &[
     },
 ];
 
-/// The home the 0.8.0 kde-breeze leaves unstated, which [`DIFFERENCES`]'
-/// `geometry::dialog_max_width` entry names.
-const DIALOG_MAX_WIDTH_HOME: &str = "dialog.panel.max_size[0]";
+/// The presets of [`DIFFERENCES`]' `geometry::group_box_content` entries
+/// whose card leaves its corners unstated beside its stroke.
+const UNSTATED_CARD_CORNERS: &[&str] = &["macos-monterey", "macos-tahoe"];
+
+/// The leaf of [`DIFFERENCES`]' entry for a hovered list or table row: the
+/// `ThemeColor` slots `list_hover` and `table_hover`, their tokens and their
+/// stored config strings, compared by [`row_hover_as_list`].
+const ROW_HOVER: &str = "to_theme: list_hover and table_hover";
+
+/// `theme` with its hovered list and table row as 0.7.2 paints them where
+/// the preset states no hover, the list's own fill (colour, token and the
+/// stored config's string of the theme's mode), where `theme` holds
+/// gpui-component's own hovered row there, its accent at
+/// [`super::UPSTREAM_LIST_HOVER_ACCENT_OPACITY`] ([`DIFFERENCES`]'
+/// [`ROW_HOVER`] entry); `None` where it does not. The colours are compared
+/// by their hex strings, which an upstream rebuild of the theme from its
+/// stored config (`Theme::change`) round-trips them through.
+fn row_hover_as_list(theme: &GpuiTheme) -> Option<GpuiTheme> {
+    let hex = |c: Hsla| Some(SharedString::from(crate::colors::hsla_to_hex(c)));
+    let own = hex(theme
+        .colors
+        .accent
+        .opacity(super::UPSTREAM_LIST_HOVER_ACCENT_OPACITY));
+    let config = if theme.is_dark() {
+        &theme.dark_theme
+    } else {
+        &theme.light_theme
+    };
+    let (c, t, s) = (&theme.colors, &theme.tokens, &config.colors);
+    let upstream = hex(c.list_hover) == own
+        && hex(c.table_hover) == own
+        && t.list_hover == ThemeToken::from(c.list_hover)
+        && t.table_hover == ThemeToken::from(c.table_hover)
+        && s.list_hover == own
+        && s.table_hover == own;
+    if !upstream {
+        return None;
+    }
+    let list = theme.colors.list;
+    let mut patched = theme.clone();
+    patched.colors.list_hover = list;
+    patched.colors.table_hover = list;
+    patched.tokens.list_hover = ThemeToken::from(list);
+    patched.tokens.table_hover = ThemeToken::from(list);
+    let mut stored = (**config).clone();
+    stored.colors.list_hover = hex(list);
+    stored.colors.table_hover = hex(list);
+    let other = if theme.is_dark() {
+        patched.dark_theme = std::rc::Rc::new(stored);
+        &mut patched.light_theme
+    } else {
+        patched.light_theme = std::rc::Rc::new(stored);
+        &mut patched.dark_theme
+    };
+    // The config of the other scheme, stored by an earlier `apply`: its
+    // table row hovers as its list row does, both given the list's fill.
+    if other.colors.list_hover != other.colors.table_hover {
+        return None;
+    }
+    let mut stored = (**other).clone();
+    stored.colors.list_hover = stored.colors.list.clone();
+    stored.colors.table_hover = stored.colors.list.clone();
+    *other = std::rc::Rc::new(stored);
+    Some(patched)
+}
 
 /// A leaf that, on the presets named, compares only the connector's own
 /// fallback: the 0.7.2 field it reads is unset there, and the 0.8.0 home
@@ -424,6 +521,25 @@ impl Report {
     }
 }
 
+/// The font DPI 0.7.2 resolves a theme in on macOS,
+/// `ResolutionContext::from_system`'s there, "where a point is a pixel"
+/// (`native-theme/src/resolve/context.rs`; the model parity's
+/// `MACOS_RESOLUTION_CONTEXT`, `native-theme/src/next/parity.rs`).
+const MACOS_FONT_DPI: f32 = 72.0;
+
+/// The context the 0.7.2 side is resolved in: `ResolutionContext::for_tests`,
+/// on the macOS presets with the font DPI of the platform they describe
+/// ([`MACOS_FONT_DPI`]), so a size in points is the size 0.7.2 gives there.
+pub(crate) fn old_context(preset: Preset) -> native_theme::ResolutionContext {
+    match preset {
+        Preset::MacosMonterey | Preset::MacosTahoe => native_theme::ResolutionContext {
+            font_dpi: MACOS_FONT_DPI,
+            ..native_theme::ResolutionContext::for_tests()
+        },
+        _ => native_theme::ResolutionContext::for_tests(),
+    }
+}
+
 /// The two resolved themes of `preset` for `is_dark`, and 0.7.2's name and
 /// layout, which its theme holds beside the variants.
 fn resolve(
@@ -446,7 +562,7 @@ fn resolve(
     let layout = theme.layout.clone();
     let old = theme
         .into_variant(mode)?
-        .into_resolved(&native_theme::ResolutionContext::for_tests())?;
+        .into_resolved(&old_context(preset))?;
     let new = native_theme::next::Theme::preset(preset).resolve(&ctx);
     Ok((old, name, layout, new))
 }
@@ -479,6 +595,26 @@ fn compare_theme(
     let old_theme = crate::to_theme(old, name, is_dark, &AccessibilityPreferences::DEFAULT);
     let Some(new_theme) = report.mapped("to_theme", super::to_theme(new)) else {
         return;
+    };
+    let new_theme = match report.listed(ROW_HOVER) {
+        Some(listed) => {
+            report.count(ROW_HOVER);
+            match row_hover_as_list(&new_theme) {
+                Some(patched) => patched,
+                None => {
+                    report.failures.push(format!(
+                        "{}: {ROW_HOVER}: the listed difference ({}) no longer describes it: \
+                         0.8.0 list_hover {:?}, table_hover {:?}",
+                        report.label,
+                        listed.reason,
+                        new_theme.colors.list_hover,
+                        new_theme.colors.table_hover
+                    ));
+                    new_theme
+                }
+            }
+        }
+        None => new_theme,
     };
     let failures = report.failures.len();
     let config = |t: &GpuiTheme, own: bool| {
@@ -817,8 +953,16 @@ fn compare_builders(
                 let mut corrected = o.clone();
                 corrected.border_widths = Default::default();
                 corrected.border_color = None;
-                let invented = o.border_widths.top == Some(px(0.0).into())
+                let mut invented = o.border_widths.top == Some(px(0.0).into())
                     && o.border_color == Some(Hsla::transparent_black());
+                if UNSTATED_CARD_CORNERS.contains(&report.preset) {
+                    use gpui::Styled as _;
+                    corrected.corner_radii = Default::default();
+                    invented &= o.corner_radii
+                        == gpui::StyleRefinement::default()
+                            .rounded(px(0.0))
+                            .corner_radii;
+                }
                 if !invented || corrected != n {
                     report.failures.push(format!(
                         "{}: {group_box}: the listed difference ({}) no longer describes \
@@ -864,7 +1008,7 @@ fn compare_builders(
         Some(listed) => {
             report.count(max_width);
             let n = super::builders::dialog_max_width(new);
-            if n != Err(super::Unmapped(DIALOG_MAX_WIDTH_HOME)) {
+            if n != Ok(None) {
                 report.failures.push(format!(
                     "{}: {max_width}: the listed difference ({}) no longer describes it: \
                      0.7.2 {:?}, 0.8.0 {n:?}",
@@ -874,7 +1018,12 @@ fn compare_builders(
                 ));
             }
         }
-        None => builder!(report, old, new, dialog_max_width),
+        None => compare_mapped(
+            report,
+            max_width,
+            Some(crate::geometry::dialog_max_width(Native::unscaled(old))),
+            super::builders::dialog_max_width(new),
+        ),
     }
     let list_item = "geometry::list_item";
     if let Some(n) = report.mapped(list_item, super::builders::list_item(new)) {
@@ -1227,9 +1376,20 @@ fn every_listed_difference_names_a_covered_preset() {
 /// theme (its configs included), gpui-base's resize handles, the base
 /// overrides the connector writes for the current mode, the tooltip show
 /// delay, reduced motion, the stored preferences and the focus band's rule.
-fn installed(cx: &gpui::App) -> Vec<(&'static str, String)> {
+/// Where `row_hover_listed`, the styled theme is given with its hovered row
+/// as 0.7.2's ([`row_hover_as_list`]), or as a failure where it does not
+/// hold gpui-component's own.
+fn installed(cx: &gpui::App, row_hover_listed: bool) -> Vec<(&'static str, String)> {
     let styled = GpuiTheme::global(cx);
     let is_dark = styled.is_dark();
+    let styled_debug = if row_hover_listed {
+        row_hover_as_list(styled).map_or_else(
+            || format!("{ROW_HOVER}: not gpui-component's own hovered row"),
+            |patched| format!("{patched:?}"),
+        )
+    } else {
+        format!("{styled:?}")
+    };
     let base = gpui_base::Theme::global(cx);
     let nt = cx.try_global::<crate::NativeTheme>();
     let overrides = nt
@@ -1239,7 +1399,7 @@ fn installed(cx: &gpui::App) -> Vec<(&'static str, String)> {
         .and_then(|nt| nt.source(is_dark))
         .map(crate::Variant::keyboard_focus_band);
     vec![
-        ("styled theme", format!("{styled:?}")),
+        ("styled theme", styled_debug),
         (
             "base handles",
             format!(
@@ -1297,9 +1457,13 @@ fn apply_both(
         }
         Ok(())
     })?;
-    let after = cx.update(|cx| installed(cx));
+    let row_hover_listed = next
+        && DIFFERENCES
+            .iter()
+            .any(|d| d.leaf == ROW_HOVER && d.presets.contains(&key));
+    let after = cx.update(|cx| installed(cx, row_hover_listed));
     cx.update(|cx| GpuiTheme::change(gpui_component::theme::ThemeMode::Light, None, cx));
-    let switched = cx.update(|cx| installed(cx));
+    let switched = cx.update(|cx| installed(cx, row_hover_listed));
     Ok([after, switched])
 }
 
@@ -1327,5 +1491,273 @@ fn next_apply_installs_what_apply_installs(cx: &mut gpui::TestAppContext) {
             Err(e) => failures.push(format!("{key}: {e}")),
         }
     }
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
+}
+
+/// The names of the top-level `pub fn`s of the source `src` that return a
+/// [`super::Mapped`], each after `module::`.
+fn mapped_fns(module: &str, src: &str) -> Vec<String> {
+    src.lines()
+        .filter(|line| line.contains("-> Mapped<"))
+        .filter_map(|line| line.strip_prefix("pub fn "))
+        .filter_map(|rest| rest.split(['(', '<']).next())
+        .map(|name| format!("{module}::{name}"))
+        .collect()
+}
+
+/// Call each `next::` function that returns a [`super::Mapped`], recording
+/// its name, and its error as a failure.
+macro_rules! succeeds {
+    ($called:expr, $failures:expr, $label:expr, $name:expr, $result:expr) => {{
+        $called.push(String::from($name));
+        if let Err(e) = $result {
+            $failures.push(format!("{}: {}: {e}", $label, $name));
+        }
+    }};
+}
+
+/// [`succeeds`] for each `next::geometry` builder of the form
+/// `fn(&ResolvedTheme) -> Mapped<T>`.
+macro_rules! geometry_succeeds {
+    ($called:expr, $failures:expr, $label:expr, $r:expr, [$($name:ident),* $(,)?]) => {
+        $(
+            succeeds!(
+                $called,
+                $failures,
+                $label,
+                concat!("geometry::", stringify!($name)),
+                super::geometry::$name($r)
+            );
+        )*
+    };
+}
+
+/// Every `next::` function that can report an [`super::Unmapped`] source
+/// succeeds on every covered preset, light and dark: a value the preset
+/// leaves unstated keeps the toolkit's own (docs/v0.8.0-spec.md §10, rule 0)
+/// rather than failing the call.
+#[gpui::test]
+fn every_next_function_succeeds_on_every_covered_preset(cx: &mut gpui::TestAppContext) {
+    let mut called: Vec<String> = Vec::new();
+    let mut failures: Vec<String> = Vec::new();
+    cx.update(gpui_component::init);
+    for &(key, preset) in PRESETS {
+        for is_dark in [false, true] {
+            let label = format!("{key}/{}", if is_dark { "dark" } else { "light" });
+            let ctx = if is_dark {
+                ThemeContext::dark()
+            } else {
+                ThemeContext::light()
+            };
+            let r = native_theme::next::Theme::preset(preset).resolve(&ctx);
+            let inactive = resolve_inactive(preset, is_dark);
+            let (c, f, l) = (&mut called, &mut failures, &label);
+            succeeds!(c, f, l, "root::to_theme", super::to_theme(&r));
+            succeeds!(
+                c,
+                f,
+                l,
+                "root::is_dark_resolved",
+                super::is_dark_resolved(&r)
+            );
+            succeeds!(c, f, l, "root::font_weight", super::font_weight(&r));
+            succeeds!(
+                c,
+                f,
+                l,
+                "root::mono_font_weight",
+                super::mono_font_weight(&r)
+            );
+            succeeds!(
+                c,
+                f,
+                l,
+                "root::dialog_button_order",
+                super::dialog_button_order(&r)
+            );
+            succeeds!(
+                c,
+                f,
+                l,
+                "root::scrollbar_groove_width",
+                super::scrollbar_groove_width(&r)
+            );
+            succeeds!(
+                c,
+                f,
+                l,
+                "root::selection_inactive_background",
+                super::selection_inactive_background(&r)
+            );
+            succeeds!(
+                c,
+                f,
+                l,
+                "root::selection_inactive_text_color",
+                super::selection_inactive_text_color(&r)
+            );
+            succeeds!(
+                c,
+                f,
+                l,
+                "root::list_header_hover_background",
+                super::list_header_hover_background(&r)
+            );
+            succeeds!(
+                c,
+                f,
+                l,
+                "root::list_header_active_background",
+                super::list_header_active_background(&r)
+            );
+            succeeds!(
+                c,
+                f,
+                l,
+                "root::focus_ring_width",
+                super::focus_ring_width(&r)
+            );
+            succeeds!(
+                c,
+                f,
+                l,
+                "base_layer::scrollbar_geometry",
+                super::base_layer::scrollbar_geometry(&r)
+            );
+            succeeds!(
+                c,
+                f,
+                l,
+                "base_layer::resizable_theme",
+                super::base_layer::resizable_theme(&r)
+            );
+            succeeds!(
+                c,
+                f,
+                l,
+                "variants::switch_color",
+                super::variants::switch_color(&r)
+            );
+            geometry_succeeds!(
+                c,
+                f,
+                l,
+                &r,
+                [
+                    button,
+                    button_label,
+                    toggle,
+                    input,
+                    text_area,
+                    editor,
+                    menu_item,
+                    list_item,
+                    tooltip,
+                    tooltip_content,
+                    popover,
+                    status_bar,
+                    dialog,
+                    dialog_entrance,
+                    input_group_button,
+                    dialog_footer,
+                    dialog_title,
+                    dialog_description,
+                    list,
+                    table,
+                    progress,
+                    group_box_content,
+                    accordion_title,
+                    accordion,
+                    accordion_hover,
+                    checkbox,
+                    radio,
+                    select,
+                    combobox,
+                    title_bar,
+                    toolbar,
+                    spinner_size,
+                    data_table_size,
+                    list_header_height,
+                    icon_size_toolbar,
+                    icon_size_small,
+                    icon_size_large,
+                    icon_size_dialog,
+                    icon_size_panel,
+                    scrollbar_gutter,
+                    dialog_max_width,
+                    input_height,
+                    button_disabled,
+                    button_checked,
+                    toolbar_button_rest,
+                    toolbar_button_checked,
+                    default_button_rest,
+                    list_item_selected,
+                    link,
+                    widget_gap,
+                    container_margin,
+                    window_margin,
+                    section_gap,
+                ]
+            );
+            succeeds!(
+                c,
+                f,
+                l,
+                "geometry::title_bar_inactive",
+                super::geometry::title_bar_inactive(&r, &inactive)
+            );
+            for disabled in [false, true] {
+                succeeds!(
+                    c,
+                    f,
+                    l,
+                    "geometry::input_fill",
+                    super::geometry::input_fill(&r, disabled)
+                );
+                succeeds!(
+                    c,
+                    f,
+                    l,
+                    "geometry::combo_box_fill",
+                    super::geometry::combo_box_fill(&r, disabled)
+                );
+            }
+            cx.update(|cx| {
+                succeeds!(
+                    c,
+                    f,
+                    l,
+                    "variants::bordered_button",
+                    super::variants::bordered_button(&r, cx)
+                );
+                succeeds!(
+                    c,
+                    f,
+                    l,
+                    "variants::toolbar_button",
+                    super::variants::toolbar_button(&r, cx)
+                );
+                succeeds!(
+                    c,
+                    f,
+                    l,
+                    "variants::default_button",
+                    super::variants::default_button(&r, cx)
+                );
+                succeeds!(c, f, l, "root::apply", super::apply(&r, cx));
+            });
+        }
+    }
+    let public: Vec<String> = mapped_fns("root", include_str!("mod.rs"))
+        .into_iter()
+        .chain(mapped_fns("base_layer", include_str!("base_layer.rs")))
+        .chain(mapped_fns("variants", include_str!("variants.rs")))
+        .chain(public_fns("geometry", include_str!("../geometry.rs")))
+        .collect();
+    let missing: Vec<&String> = public.iter().filter(|n| !called.contains(n)).collect();
+    assert!(
+        !public.is_empty() && missing.is_empty(),
+        "next:: functions not called: {missing:?}"
+    );
     assert!(failures.is_empty(), "{}", failures.join("\n"));
 }

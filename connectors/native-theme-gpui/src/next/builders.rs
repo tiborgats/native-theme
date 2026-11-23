@@ -559,12 +559,11 @@ pub(crate) fn dialog_description(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
     ))
 }
 
-/// [`crate::geometry::dialog_max_width`].
-pub(crate) fn dialog_max_width(r: &ResolvedTheme) -> Mapped<Pixels> {
-    Ok(px(stated(
-        r.dialog.panel.max_size[0],
-        "dialog.panel.max_size[0]",
-    )?))
+/// [`crate::geometry::dialog_max_width`]; `None` where the theme states no
+/// maximum width (`dialog.panel.max_size[0]`), and the dialog keeps
+/// gpui-component's own.
+pub(crate) fn dialog_max_width(r: &ResolvedTheme) -> Mapped<Option<Pixels>> {
+    Ok(r.dialog.panel.max_size[0].map(px))
 }
 
 /// [`crate::geometry::status_bar`].
@@ -720,15 +719,18 @@ pub(crate) fn progress(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
     ))
 }
 
-/// [`crate::geometry::group_box_content`]. A card whose stroke the theme
-/// leaves unstated gets no border from the refinement, and the group box
-/// keeps gpui-component's own.
+/// [`crate::geometry::group_box_content`]. A card whose stroke or corners
+/// the theme leaves unstated gets no border or no radius from the
+/// refinement, and the group box keeps gpui-component's own.
 pub(crate) fn group_box_content(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
     let container = r.card.container(WidgetState::NONE);
     let stroked = container.stated.contains(PartStated::STROKE);
+    let rounded = container.stated.contains(PartStated::CORNERS);
     Ok(geometry::group_box_content_from(&geometry::CardFrame {
         padding: padding(&container),
-        radius: radius(&container, "card.container(NONE).corners")?,
+        radius: rounded
+            .then(|| radius(&container, "card.container(NONE).corners"))
+            .transpose()?,
         border_width: stroked
             .then(|| stroke_width(&container, "card.container(NONE).stroke.width"))
             .transpose()?,
