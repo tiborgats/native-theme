@@ -28,29 +28,32 @@
 //!   0.7.2 leaf on one side and its 0.8.0 home on the other: not compared.
 //!
 //! Compared so far: the base style, each role's `Normal` cell and its `Selected`, `Disabled`
-//! and `SelectedDisabled` cells where the role has them. A difference is allowed only
-//! as a listed one, per leaf (a `*` segment standing for any one, an entry naming the leaf
-//! itself taken first) and preset, with its cause, from which the test computes the value the
-//! 0.8.0 side must hold there; an entry that differs nowhere on a preset it names is stale and
-//! fails. A cell's leaf that holds its base style's value on both sides differs as the base
-//! does, which the base's comparison lists and checks; a variant cell's leaf that holds the
-//! value of the cell it is copied from (`Normal`, for `SelectedDisabled` `Selected`) likewise.
+//! and `SelectedDisabled` cells where the role has them, and each surface's frame, the
+//! `WindowTitleBar`'s from the theme resolved for an inactive window as well. A difference is
+//! allowed only as a listed one, per leaf (a `*` segment standing for any one, an entry naming
+//! the leaf itself taken first) and preset, with its cause, from which the test computes the
+//! value the 0.8.0 side must hold there; an entry that differs nowhere on a preset it names is
+//! stale and fails. A cell's leaf that holds its base style's value on both sides differs as
+//! the base does, which the base's comparison lists and checks; a variant cell's leaf that
+//! holds the value of the cell it is copied from (`Normal`, for `SelectedDisabled` `Selected`)
+//! likewise, and a frame's leaf that holds egui's own frame's over each side's base style.
 //! A difference that is rule 0 on a state ([`Cause::Rule0`], [`Cause::StateKeepsBase`]) is a
 //! model gap, listed in [`RULE_0_ON_A_PRESET`] with the 0.8.0 home the preset leaves unstated;
 //! every other one in [`DIFFERENCES`].
 
 use egui::style::{WidgetVisuals, Widgets};
-use native_theme::next::Preset;
+use native_theme::next::{Preset, ThemeContext};
 
-use super::build::{base_source, cell_source, variant_source};
+use super::build::{base_source, cell_source, frame_source, variant_source};
 use super::root_parity::{PRESETS, resolve};
 use crate::convert::to_color32;
 use crate::style::base::{BaseSource, base_style_from};
 use crate::style::cells::CellSource;
+use crate::style::frames::{FrameSource, surface_frame_from};
 use crate::style::line::{Line, LineAlign};
 use crate::style::roles::{CellInput, role_cell_from};
 use crate::style::variants::{VariantSource, disabled_cell, selected_cell, selected_disabled_cell};
-use crate::{AccessibilityPreferences, Role};
+use crate::{AccessibilityPreferences, Role, Surface};
 
 /// Why a leaf differs, which gives the value the 0.8.0 side holds there.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -179,6 +182,14 @@ const SPLITTER_DRAG: &str = "the splitter's drag line takes its hover colour \
      model gap)";
 
 const WIDGET_STROKES: &str = ".visuals.widgets.*.bg_stroke.color";
+
+/// A surface's border inside it, drawn over the surface's fill.
+const FRAME_INSIDE: &str = "the surface's translucent border lies inside it in the 0.8.0 theme, \
+     where 0.7.2 stated no alignment: drawn over the surface's fill";
+
+const CARD_OUTLINE: &str = "the 0.8.0 theme states no stroke or corners for the card \
+     (card.container(NONE)) where 0.7.2 gives a transparent zero-width outline and square \
+     corners: the frame keeps egui's `Frame::group` over the 0.8.0 base style";
 
 const DIFFERENCES: &[Difference] = &[
     d(
@@ -373,6 +384,56 @@ const DIFFERENCES: &[Difference] = &[
         WIDGET_STROKES,
         Cause::RestingStroke,
         RESTING,
+    ),
+    d(
+        "Window",
+        &[W, M, T],
+        ".stroke.color",
+        Cause::OverFill,
+        FRAME_INSIDE,
+    ),
+    d(
+        "Dialog",
+        &[W, M, T],
+        ".stroke.color",
+        Cause::OverFill,
+        FRAME_INSIDE,
+    ),
+    d(
+        "Popover",
+        &[A, W, M, T],
+        ".stroke.color",
+        Cause::OverFill,
+        FRAME_INSIDE,
+    ),
+    d(
+        "Tooltip",
+        &[W, M, T],
+        ".stroke.color",
+        Cause::OverFill,
+        FRAME_INSIDE,
+    ),
+    d("Card", &[W], ".stroke.color", Cause::OverFill, FRAME_INSIDE),
+    d(
+        "Card",
+        &[A, M, T, M3, I],
+        ".stroke.width",
+        Cause::Base,
+        CARD_OUTLINE,
+    ),
+    d(
+        "Card",
+        &[A, M, T, M3, I],
+        ".stroke.color",
+        Cause::Base,
+        CARD_OUTLINE,
+    ),
+    d(
+        "Card",
+        &[M, T, I],
+        ".corner_radius.*",
+        Cause::Base,
+        CARD_OUTLINE,
     ),
 ];
 
@@ -868,6 +929,18 @@ fn outline_of(role: Role, src: &CellSource) -> Option<(LineAlign, Option<bool>)>
     })
 }
 
+/// Where a surface's stroke lies on the 0.8.0 side, for a frame that writes one.
+fn frame_align(surface: Surface, src: &FrameSource) -> Option<LineAlign> {
+    Some(match surface {
+        Surface::Window => src.window.align,
+        Surface::Dialog => src.dialog.align,
+        Surface::Popover => src.popover.align,
+        Surface::Tooltip => src.tooltip.align,
+        Surface::Card => src.card.align,
+        Surface::WindowTitleBar | Surface::Panel(_) | Surface::CentralPanel => return None,
+    })
+}
+
 /// The variant cells compared, in [`variant_cells`]' order.
 const VARIANTS: [&str; 3] = ["Selected", "Disabled", "SelectedDisabled"];
 
@@ -1104,6 +1177,57 @@ fn the_mapping_agrees_on_both_models() -> crate::Result<()> {
                     };
                     compare(&side, o, n, &variant_expected, &mut failures, &mut seen);
                 }
+            }
+            let inactive = native_theme::next::Theme::preset(preset).resolve(
+                &if is_dark {
+                    ThemeContext::dark()
+                } else {
+                    ThemeContext::light()
+                }
+                .with_window_active(false),
+            );
+            let old_frames = FrameSource::old(&old, &layout);
+            let new_frames = frame_source(&new, &inactive);
+            let own_style = scheme.default_style();
+            for surface in Surface::all() {
+                let what = format!("{surface:?}");
+                let frame = |base: &egui::Style, src: &FrameSource| {
+                    surface_frame_from(*surface, base, src, scheme, &mut Vec::new())
+                };
+                let old_frame = frame(&old_base, &old_frames);
+                let new_frame = frame(&new_base, &new_frames);
+                let preset_leaves = |base: &egui::Style| {
+                    leaves(&format!("{:#?}", crate::style::egui_preset(*surface, base)))
+                };
+                let (old_preset, new_preset) = (preset_leaves(&old_base), preset_leaves(&new_base));
+                let own_preset = preset_leaves(&own_style);
+                let align = frame_align(*surface, &new_frames);
+                let frame_expected = |path: &str, cause: Cause| match (cause, align) {
+                    (Cause::Egui, _) => leaf_at(&own_preset, path),
+                    (Cause::Base, _) => leaf_at(&new_preset, path),
+                    (Cause::OverFill, Some(align)) if path == ".stroke.color" => {
+                        let line = Line {
+                            color: old_frame.stroke.color,
+                            align,
+                        };
+                        Some(format!("{:?}", line.over(Some(new_frame.fill))))
+                    }
+                    _ => None,
+                };
+                let side = Side {
+                    what: &what,
+                    preset: key,
+                    label: &label,
+                    bases: Some((&old_preset, &new_preset)),
+                };
+                compare(
+                    &side,
+                    &old_frame,
+                    &new_frame,
+                    &frame_expected,
+                    &mut failures,
+                    &mut seen,
+                );
             }
         }
     }

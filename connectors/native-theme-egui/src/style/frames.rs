@@ -8,14 +8,90 @@
 //! the shadow gate keeps egui's geometry (§6.14); a padding side the theme leaves unstated
 //! keeps the preset's, and a stated one is rounded to a whole point, saturating
 //! (`convert::to_margin`, §7.2).
+//!
+//! The frames read a [`FrameSource`]: [`FrameSource::old`] fills it from the 0.7.2 model,
+//! `next::build::frame_source` from the 0.8.0 model's homes, each value `None` where the theme
+//! states none, and the frame then keeps the preset's there (spec §10, rule 0). A stroke that
+//! lies over the frame's fill (`Inside`, `Center`) is drawn over that fill (`style::line`).
 
-use native_theme::color::Rgba;
 use native_theme::theme::ResolvedWidgetBorder;
 
-use super::base::{margin, radius, stroke};
-use crate::convert::{i8_from_f32_saturating, to_color32, to_shadow};
-use crate::style::{BuildInput, push_note, saturates_i8};
-use crate::{Note, PanelSide, Surface};
+use super::base::{Read, Sides, length, margin_of, radius};
+use super::line::{Line, LineAlign};
+use crate::convert::{Rgba, i8_from_f32_saturating, to_color32, to_shadow};
+use crate::style::{push_note, saturates_i8};
+use crate::{LayoutTheme, Note, PanelSide, ResolvedTheme, Surface};
+
+/// One surface's reads: its fill, its outline's colour, width and where it lies, its corner
+/// radius, its padding, and whether it casts a shadow.
+pub(crate) struct SurfaceSource {
+    pub fill: Option<Rgba>,
+    pub stroke: Option<Rgba>,
+    pub width: Read<f32>,
+    pub align: LineAlign,
+    pub radius: Read<f32>,
+    pub padding: Sides,
+    pub shadow: bool,
+}
+
+/// Every surface frame's reads.
+pub(crate) struct FrameSource {
+    pub window: SurfaceSource,
+    /// The title bar's fill on a window that is not active.
+    pub title_bar: Option<Rgba>,
+    pub dialog: SurfaceSource,
+    pub popover: SurfaceSource,
+    pub tooltip: SurfaceSource,
+    pub card: SurfaceSource,
+    pub sidebar: SurfaceSource,
+    pub toolbar: SurfaceSource,
+    pub status_bar: SurfaceSource,
+    /// The colour of a popup surface's shadow.
+    pub shadow_color: Rgba,
+    /// The central panel's inner margin on all four sides.
+    pub window_margin: Option<f32>,
+}
+
+impl FrameSource {
+    /// The 0.7.2 model's reads, every value stated but the padding sides and the window
+    /// margin, which the 0.7.2 model leaves optional; every outline lies `Outside`.
+    pub(crate) fn old(t: &ResolvedTheme, layout: &LayoutTheme) -> Self {
+        Self {
+            window: old_surface(t.window.background_color, &t.window.border, &WINDOW),
+            title_bar: Some(t.window.inactive_title_bar_background),
+            dialog: old_surface(t.dialog.background_color, &t.dialog.border, &DIALOG),
+            popover: old_surface(t.popover.background_color, &t.popover.border, &POPOVER),
+            tooltip: old_surface(t.tooltip.background_color, &t.tooltip.border, &TOOLTIP),
+            card: old_surface(t.card.background_color, &t.card.border, &CARD),
+            sidebar: old_surface(t.sidebar.background_color, &t.sidebar.border, &SIDEBAR),
+            toolbar: old_surface(t.toolbar.background_color, &t.toolbar.border, &TOOLBAR),
+            status_bar: old_surface(
+                t.status_bar.background_color,
+                &t.status_bar.border,
+                &STATUS_BAR,
+            ),
+            shadow_color: t.defaults.shadow_color,
+            window_margin: layout.window_margin,
+        }
+    }
+}
+
+/// A 0.7.2 surface: its fill and its `<widget>.border.*` leaves.
+fn old_surface(fill: Rgba, border: &ResolvedWidgetBorder, paths: &BorderPaths) -> SurfaceSource {
+    let p = &border.padding;
+    SurfaceSource {
+        fill: Some(fill),
+        stroke: Some(border.color),
+        width: Some((border.line_width, paths.line_width)),
+        align: LineAlign::Outside,
+        radius: Some((border.corner_radius, paths.corner_radius)),
+        padding: Sides {
+            values: [p.top, p.right, p.bottom, p.left],
+            paths: paths.padding,
+        },
+        shadow: border.shadow_enabled,
+    }
+}
 
 /// The leaf paths of one widget's border, for `base`'s reporting helpers (§7.2's emission rule).
 struct BorderPaths {
@@ -50,22 +126,35 @@ const SIDEBAR: BorderPaths = border_paths!("sidebar");
 const TOOLBAR: BorderPaths = border_paths!("toolbar");
 const STATUS_BAR: BorderPaths = border_paths!("status_bar");
 
-/// A widget border's stroke over the preset frame's, through `base::stroke`: the width by §6's
-/// rule (a non-finite one keeps the preset's, reported), the widget's own colour as stated,
-/// the final line colour.
-fn border_stroke(
-    own: egui::Stroke,
-    border: &ResolvedWidgetBorder,
-    paths: &BorderPaths,
-    notes: &mut Vec<Note>,
-) -> egui::Stroke {
-    stroke(
-        paths.line_width,
-        own,
-        to_color32(border.color),
-        border.line_width,
-        notes,
-    )
+/// The surface's fill over the preset frame's, where stated.
+fn fill(f: &mut egui::Frame, s: &SurfaceSource) {
+    if let Some(c) = s.fill {
+        f.fill = to_color32(c);
+    }
+}
+
+/// The surface's stroke over the preset frame's, each part where stated: the width by §6's
+/// rule (a non-finite one keeps the preset's, reported), the widget's own colour, the final
+/// line colour, drawn over the frame's fill where it lies over it.
+fn outline(f: &mut egui::Frame, s: &SurfaceSource, notes: &mut Vec<Note>) {
+    if let Some((w, path)) = s.width {
+        f.stroke.width = length(path, w, f.stroke.width, notes);
+    }
+    if let Some(c) = s.stroke {
+        f.stroke.color = Line {
+            color: to_color32(c),
+            align: s.align,
+        }
+        .over(Some(f.fill));
+    }
+}
+
+/// The surface's corner radius and padding over the preset frame's, each where stated.
+fn corners_and_padding(f: &mut egui::Frame, s: &SurfaceSource, notes: &mut Vec<Note>) {
+    if let Some((v, path)) = s.radius {
+        f.corner_radius = radius(path, f.corner_radius, v, notes);
+    }
+    f.inner_margin = margin_of(s.padding.paths, f.inner_margin, s.padding.values, notes);
 }
 
 /// A popup-preset surface — `Dialog`, `Popover`, `Tooltip` (`egui/src/containers/modal.rs:100`,
@@ -73,60 +162,54 @@ fn border_stroke(
 /// over `Frame::popup` (`egui/src/containers/frame.rs:214-221`).
 fn popup_like(
     base: &egui::Style,
-    fill: Rgba,
-    border: &ResolvedWidgetBorder,
-    paths: &BorderPaths,
-    input: &BuildInput<'_>,
+    s: &SurfaceSource,
+    shadow_color: Rgba,
+    scheme: egui::Theme,
     notes: &mut Vec<Note>,
 ) -> egui::Frame {
-    let t = input.theme;
     let mut f = egui::Frame::popup(base);
-    f.fill = to_color32(fill);
-    f.stroke = border_stroke(f.stroke, border, paths, notes);
-    f.corner_radius = radius(
-        paths.corner_radius,
-        f.corner_radius,
-        border.corner_radius,
-        notes,
-    );
+    fill(&mut f, s);
+    outline(&mut f, s, notes);
     // the surface's own gate over egui's own geometry (§6.14), not over the base style's
     // `popup_shadow`, which `defaults.border.shadow_enabled` gates
-    let own = input.scheme.default_style().visuals.popup_shadow;
-    f.shadow = to_shadow(own, t.defaults.shadow_color, border.shadow_enabled);
-    f.inner_margin = margin(paths.padding, f.inner_margin, &border.padding, notes);
+    let own = scheme.default_style().visuals.popup_shadow;
+    f.shadow = to_shadow(own, shadow_color, s.shadow);
+    corners_and_padding(&mut f, s, notes);
     f
 }
 
 /// A panel surface over `Frame::side_top_panel` (`egui/src/containers/frame.rs:185-189`,
 /// `egui/src/containers/panel.rs:948-950`): fill, radius and padding; no stroke, because a
 /// panel's separator line is painted from the parent `Ui`'s style (`panel.rs:906-911`, §4.4).
-fn panel_like(
-    base: &egui::Style,
-    fill: Rgba,
-    border: &ResolvedWidgetBorder,
-    paths: &BorderPaths,
-    notes: &mut Vec<Note>,
-) -> egui::Frame {
+fn panel_like(base: &egui::Style, s: &SurfaceSource, notes: &mut Vec<Note>) -> egui::Frame {
     let mut f = egui::Frame::side_top_panel(base);
-    f.fill = to_color32(fill);
-    f.corner_radius = radius(
-        paths.corner_radius,
-        f.corner_radius,
-        border.corner_radius,
-        notes,
-    );
-    f.inner_margin = margin(paths.padding, f.inner_margin, &border.padding, notes);
+    fill(&mut f, s);
+    corners_and_padding(&mut f, s, notes);
     f
 }
 
-/// The frame of `surface` for one colour scheme, over that scheme's base style (§3.4).
+/// The frame of `surface` for one colour scheme from the 0.7.2 model, over that scheme's base
+/// style.
+#[cfg(test)]
 pub(crate) fn surface_frame(
     surface: Surface,
     base: &egui::Style,
-    input: &BuildInput<'_>,
+    input: &crate::style::BuildInput<'_>,
     notes: &mut Vec<Note>,
 ) -> egui::Frame {
-    let t = input.theme;
+    let src = FrameSource::old(input.theme, input.layout);
+    surface_frame_from(surface, base, &src, input.scheme, notes)
+}
+
+/// The frame of `surface` for one colour scheme, over that scheme's base style, from `src`
+/// (§3.4).
+pub(crate) fn surface_frame_from(
+    surface: Surface,
+    base: &egui::Style,
+    src: &FrameSource,
+    scheme: egui::Theme,
+    notes: &mut Vec<Note>,
+) -> egui::Frame {
     match surface {
         // `Window::frame` (`egui/src/containers/window.rs:265`): fill and stroke; the radius,
         // margin and shadow are `Frame::window`'s (`frame.rs:196-203`), which reads the base
@@ -134,8 +217,8 @@ pub(crate) fn surface_frame(
         // DIRECT rows (§5.2).
         Surface::Window => {
             let mut f = egui::Frame::window(base);
-            f.fill = to_color32(t.window.background_color);
-            f.stroke = border_stroke(f.stroke, &t.window.border, &WINDOW, notes);
+            fill(&mut f, &src.window);
+            outline(&mut f, &src.window, notes);
             f
         }
         // `Window::title_frame` (`window.rs:272`): the window frame with the inactive title-bar
@@ -143,75 +226,32 @@ pub(crate) fn surface_frame(
         // (`window.rs:1426-1428`, §5.2), so this fill shows on a window that is not topmost.
         Surface::WindowTitleBar => {
             let mut f = egui::Frame::window(base);
-            f.fill = to_color32(t.window.inactive_title_bar_background);
+            if let Some(c) = src.title_bar {
+                f.fill = to_color32(c);
+            }
             f
         }
-        Surface::Dialog => popup_like(
-            base,
-            t.dialog.background_color,
-            &t.dialog.border,
-            &DIALOG,
-            input,
-            notes,
-        ),
-        Surface::Popover => popup_like(
-            base,
-            t.popover.background_color,
-            &t.popover.border,
-            &POPOVER,
-            input,
-            notes,
-        ),
-        Surface::Tooltip => popup_like(
-            base,
-            t.tooltip.background_color,
-            &t.tooltip.border,
-            &TOOLTIP,
-            input,
-            notes,
-        ),
+        Surface::Dialog => popup_like(base, &src.dialog, src.shadow_color, scheme, notes),
+        Surface::Popover => popup_like(base, &src.popover, src.shadow_color, scheme, notes),
+        Surface::Tooltip => popup_like(base, &src.tooltip, src.shadow_color, scheme, notes),
         // `Frame::show` (`frame.rs:404`) over `Frame::group` (`:178-183`), which has no fill and
         // no shadow; `card.border.shadow_enabled` is UNMAPPABLE (§5.2), so the shadow stays `NONE`.
         Surface::Card => {
             let mut f = egui::Frame::group(base);
-            f.fill = to_color32(t.card.background_color);
-            f.stroke = border_stroke(f.stroke, &t.card.border, &CARD, notes);
-            f.corner_radius = radius(
-                CARD.corner_radius,
-                f.corner_radius,
-                t.card.border.corner_radius,
-                notes,
-            );
-            f.inner_margin = margin(CARD.padding, f.inner_margin, &t.card.border.padding, notes);
+            fill(&mut f, &src.card);
+            outline(&mut f, &src.card, notes);
+            corners_and_padding(&mut f, &src.card, notes);
             f
         }
-        Surface::Panel(PanelSide::Left | PanelSide::Right) => panel_like(
-            base,
-            t.sidebar.background_color,
-            &t.sidebar.border,
-            &SIDEBAR,
-            notes,
-        ),
-        Surface::Panel(PanelSide::Top) => panel_like(
-            base,
-            t.toolbar.background_color,
-            &t.toolbar.border,
-            &TOOLBAR,
-            notes,
-        ),
-        Surface::Panel(PanelSide::Bottom) => panel_like(
-            base,
-            t.status_bar.background_color,
-            &t.status_bar.border,
-            &STATUS_BAR,
-            notes,
-        ),
+        Surface::Panel(PanelSide::Left | PanelSide::Right) => panel_like(base, &src.sidebar, notes),
+        Surface::Panel(PanelSide::Top) => panel_like(base, &src.toolbar, notes),
+        Surface::Panel(PanelSide::Bottom) => panel_like(base, &src.status_bar, notes),
         // `CentralPanel::frame` (`egui/src/containers/panel.rs:1206`) over `Frame::central_panel`
         // (`frame.rs:191-193`), whose fill carries the base style's `panel_fill`; the inner margin
         // is `layout.window_margin` on all four sides, egui's own where the layout states none (§5.1).
         Surface::CentralPanel => {
             let mut f = egui::Frame::central_panel(base);
-            match input.layout.window_margin {
+            match src.window_margin {
                 Some(m) if m.is_finite() => {
                     if saturates_i8(m) {
                         push_note(
@@ -250,6 +290,7 @@ mod tests {
     use super::*;
     use crate::convert::{clamp_length, to_color32, to_shadow};
     use crate::install_tests::resolved;
+    use crate::style::BuildInput;
     use crate::{AccessibilityPreferences, LayoutTheme, Note, PanelSide, Surface};
 
     fn theme() -> ResolvedTheme {

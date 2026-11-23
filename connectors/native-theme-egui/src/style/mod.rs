@@ -4,7 +4,7 @@
 pub(crate) mod base;
 pub(crate) mod cells;
 mod derived;
-mod frames;
+pub(crate) mod frames;
 pub(crate) mod line;
 pub(crate) mod roles;
 pub(crate) mod states;
@@ -108,8 +108,9 @@ pub(crate) fn compile(input: &BuildInput<'_>, notes: &mut Vec<Note>) -> SchemeSt
         ];
     }
     let mut frames = [egui::Frame::NONE; 11];
+    let frame_source = frames::FrameSource::old(input.theme, input.layout);
     for (slot, surface) in frames.iter_mut().zip(Surface::all()) {
-        *slot = frames::surface_frame(*surface, &base, input, notes);
+        *slot = frames::surface_frame_from(*surface, &base, &frame_source, input.scheme, notes);
     }
     let mut finished_base = egui::Style::clone(&base);
     finish(&mut finished_base, input);

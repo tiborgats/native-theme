@@ -18,6 +18,7 @@ use crate::style::cells::{
     SegmentedControlCell, SeparatorCell, SidebarCell, SliderCell, SpinnerCell, SplitterCell,
     SwitchCell, TabCell, Text, ToolbarCell,
 };
+use crate::style::frames::{FrameSource, SurfaceSource};
 use crate::style::line::LineAlign;
 use crate::style::states::Edge;
 use crate::style::variants::{CheckedBox, Disabled, VariantSource};
@@ -820,5 +821,60 @@ pub(crate) fn variant_source(r: &ResolvedTheme) -> VariantSource {
         menu: state_text_color(&r.menu.item_label(S::DISABLED)),
         list: state_text_color(&r.list.item_label(S::DISABLED)),
         link: state_text_color(&r.link.label(S::DISABLED)),
+    }
+}
+
+/// A surface's frame reads from its part, each with its home: `<home>.stroke.width`,
+/// `<home>.corners` and `<home>.padding.<side>`.
+fn surface(part: &PartStyle, homes: [&'static str; 6]) -> SurfaceSource {
+    let [width, corners, top, right, bottom, left] = homes;
+    let (edge, align) = edge(part);
+    SurfaceSource {
+        fill: fill(part),
+        stroke: edge.color,
+        width: edge.width.map(|v| (v, width)),
+        align,
+        radius: edge.radius.map(|v| (v, corners)),
+        padding: sides(part, [top, right, bottom, left]),
+        shadow: shadowed(part),
+    }
+}
+
+/// The six homes [`surface`] names, of the part whose path is `$p`.
+macro_rules! homes {
+    ($p:literal) => {
+        [
+            concat!($p, ".stroke.width"),
+            concat!($p, ".corners"),
+            concat!($p, ".padding.top"),
+            concat!($p, ".padding.right"),
+            concat!($p, ".padding.bottom"),
+            concat!($p, ".padding.left"),
+        ]
+    };
+}
+
+/// [`FrameSource`] of the 0.8.0 model; `inactive` is the same theme resolved for a window that
+/// is not active (`ThemeContext::window_active` false), whose title bar the
+/// `WindowTitleBar` frame fills from (the table of homes' `window.inactive_title_bar_background`
+/// row).
+pub(crate) fn frame_source(r: &ResolvedTheme, inactive: &ResolvedTheme) -> FrameSource {
+    use WidgetState as S;
+    let window = WindowState::default();
+    FrameSource {
+        window: surface(&r.window.frame(window), homes!("window.frame(normal)")),
+        title_bar: fill(&inactive.window.title_bar(window)),
+        dialog: surface(&r.dialog.panel, homes!("dialog.panel")),
+        popover: surface(&r.popover.panel, homes!("popover.panel")),
+        tooltip: surface(&r.tooltip.panel, homes!("tooltip.panel")),
+        card: surface(&r.card.container(S::NONE), homes!("card.container(NONE)")),
+        sidebar: surface(
+            &r.sidebar.container(S::NONE),
+            homes!("sidebar.container(NONE)"),
+        ),
+        toolbar: surface(&r.toolbar.bar(S::NONE), homes!("toolbar.bar(NONE)")),
+        status_bar: surface(&r.status_bar.bar, homes!("status_bar.bar")),
+        shadow_color: rgba(r.colors.shadow),
+        window_margin: r.layout.window_margin,
     }
 }

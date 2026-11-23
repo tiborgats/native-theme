@@ -84,22 +84,8 @@ pub(crate) fn opacity(path: &'static str, v: f32, own: f32, notes: &mut Vec<Note
 
 /// A four-sided margin: `to_margin` over the sink's own, a non-finite side reported as
 /// sanitised and a saturated one as saturated (§7.2's emission rule). `paths` are the four
-/// side leaves in `to_margin`'s order: top, right, bottom, left.
-pub(crate) fn margin(
-    paths: [&'static str; 4],
-    own: egui::Margin,
-    padding: &ResolvedPadding,
-    notes: &mut Vec<Note>,
-) -> egui::Margin {
-    margin_of(
-        paths,
-        own,
-        [padding.top, padding.right, padding.bottom, padding.left],
-        notes,
-    )
-}
-
-/// [`margin`] of four sides given as top, right, bottom, left, each `None` where unstated.
+/// side leaves in `to_margin`'s order: top, right, bottom, left, and `sides` their values,
+/// each `None` where unstated.
 pub(crate) fn margin_of(
     paths: [&'static str; 4],
     own: egui::Margin,
