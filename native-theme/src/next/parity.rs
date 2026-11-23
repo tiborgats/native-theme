@@ -1274,7 +1274,16 @@ fn old_resolved(
     theme: &Theme,
     mode: ColorMode,
 ) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
-    let resolved = theme.resolve_with(mode, &ResolutionContext::for_tests())?;
+    old_resolved_in(theme, mode, &ResolutionContext::for_tests())
+}
+
+/// [`old_resolved`] in the resolution context `context`.
+fn old_resolved_in(
+    theme: &Theme,
+    mode: ColorMode,
+    context: &ResolutionContext,
+) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
+    let resolved = theme.resolve_with(mode, context)?;
     let mut old = serde_json::to_value(&resolved.variant)?;
     let map = old
         .as_object_mut()
@@ -1606,6 +1615,180 @@ fn model_parity_windows_11() -> TestResult {
         assert!(dead.is_empty(), "{mode:?}: dead rules {dead:?}");
     }
     Ok(())
+}
+
+// ---------------------------------------------------------------------------------------------------------
+// The value half on the macos-monterey and macos-tahoe builders (plan, M2's macOS unit), static path: the
+// same comparator and table.
+// ---------------------------------------------------------------------------------------------------------
+
+/// The groups of the table whose rows the macOS builders port so far: each of their rows is compared and
+/// equal, or skipped for a reason [`macos_expected_skip`] names.
+const MACOS_PORTED_GROUPS: &[&str] = &[
+    "defaults",
+    "text_scale",
+    "Resolved",
+    "layout",
+    "accessibility",
+    "button",
+    "checkbox",
+    "list",
+    "scrollbar",
+    "tooltip",
+    "window",
+    "input",
+    "text_area",
+    "link",
+];
+
+/// The groups of the table whose values the macOS builders do not state yet: their rows are compared,
+/// counted and reported, not asserted.
+const MACOS_NOT_PORTED_GROUPS: &[&str] = &[
+    "slider",
+    "progress_bar",
+    "splitter",
+    "separator",
+    "spinner",
+    "tab",
+    "menu",
+    "toolbar",
+    "status_bar",
+    "sidebar",
+    "popover",
+    "switch",
+    "dialog",
+    "combo_box",
+    "segmented_control",
+    "card",
+    "expander",
+];
+
+/// The totals of the ported groups' rows on each scheme of `macos-monterey`, `[rows, compared, equal,
+/// mismatching, skipped]`: every row equal but those [`macos_expected_skip`] names, skipped.
+const MACOS_MONTEREY_PORTED_TOTALS: [usize; 5] = [267, 262, 262, 0, 5];
+
+/// The totals of the ported groups' rows on each scheme of `macos-tahoe`, as
+/// [`MACOS_MONTEREY_PORTED_TOTALS`].
+const MACOS_TAHOE_PORTED_TOTALS: [usize; 5] = [267, 262, 262, 0, 5];
+
+/// The resolution context 0.7.2 resolves a theme in on macOS: `ResolutionContext::from_system`'s font DPI
+/// there, 72, "where a point is a pixel" (`src/resolve/context.rs`), with the deterministic rest of
+/// `for_tests`.
+const MACOS_RESOLUTION_CONTEXT: ResolutionContext = ResolutionContext {
+    font_dpi: 72.0,
+    button_order: crate::model::DialogButtonOrder::PrimaryRight,
+    icon_theme: None,
+};
+
+/// The reason a row of the table is skipped on 0.7.2's macOS presets without a reader's snapshot: the
+/// reader's context rows (`accessibility.*`); `checkbox.background_color`, compared only where
+/// `checkbox.unchecked_background` is unset, which both macOS TOMLs state.
+fn macos_expected_skip(key: &str) -> Option<compare::Skip> {
+    if key.starts_with("accessibility.") {
+        Some(compare::Skip::NoSnapshot)
+    } else if key == "checkbox.background_color" {
+        Some(compare::Skip::OtherKeyStated)
+    } else {
+        None
+    }
+}
+
+/// Model parity of a macOS builder (plan, section 1, rule 2): 0.7.2's preset `name` and
+/// `Theme::preset(preset)`, light and dark, over the table of homes. Every row's group is one of
+/// [`MACOS_PORTED_GROUPS`] or one of [`MACOS_NOT_PORTED_GROUPS`]; zero mismatches in the ported groups,
+/// every skip for its named reason, the ported groups' totals `totals`; the rows of the groups not ported
+/// yet are counted and reported, and the two counts make the whole table. No dead rule in any rule set of
+/// the widgets.
+fn macos_model_parity(
+    name: &str,
+    preset: crate::next::preset::Preset,
+    totals: [usize; 5],
+) -> TestResult {
+    use crate::next::preset::Theme as NextTheme;
+    use crate::next::query::ThemeContext;
+
+    let table: Table = toml::from_str(HOMES)?;
+    for row in &table.row {
+        let group = row.key.split('.').next().unwrap_or("");
+        assert!(
+            MACOS_PORTED_GROUPS.contains(&group) != MACOS_NOT_PORTED_GROUPS.contains(&group),
+            "`{}`: its group is not exactly one of the ported and the not ported groups",
+            row.key
+        );
+    }
+    for (mode, ctx) in [
+        (ColorMode::Light, ThemeContext::light()),
+        (ColorMode::Dark, ThemeContext::dark()),
+    ] {
+        let theme_072 = Theme::preset(name)?;
+        let old = old_resolved_in(&theme_072, mode, &MACOS_RESOLUTION_CONTEXT)?;
+        let unresolved = old_unresolved(&theme_072, mode)?;
+        let theme = NextTheme::preset(preset);
+        let new = theme.resolve(&ctx);
+        let with_context = |context: RowContext| theme.resolve(&context.applied_to(&ctx));
+        let extra = compare::Extra {
+            unresolved: Some(&unresolved),
+            with_context: Some(&with_context),
+        };
+        let report = compare::compare(&old, &new, None, preset, &extra)?;
+        println!("{name} {mode:?}: {report}");
+        assert_eq!(report.totals.rows, table.row.len());
+        for row in report
+            .rows
+            .iter()
+            .filter(|row| in_groups(&row.key, MACOS_PORTED_GROUPS))
+        {
+            let skip = match row.outcome {
+                compare::Outcome::Skipped(skip) => Some(skip),
+                _ => None,
+            };
+            assert_eq!(
+                skip,
+                macos_expected_skip(&row.key),
+                "{name} {mode:?}: `{}`",
+                row.key
+            );
+        }
+        let ported = totals_in(&report, MACOS_PORTED_GROUPS, true);
+        let not_ported = totals_in(&report, MACOS_NOT_PORTED_GROUPS, true);
+        println!(
+            "{name} {mode:?}: [rows, compared, equal, mismatching, skipped] in the ported groups \
+             {ported:?}, in the groups not ported yet {not_ported:?}"
+        );
+        assert_eq!(ported, totals, "{name} {mode:?}\n{report}");
+        assert_eq!(
+            ported[0].saturating_add(not_ported[0]),
+            table.row.len(),
+            "{name} {mode:?}"
+        );
+        let dead: Vec<_> = new
+            .dead_rules()
+            .into_iter()
+            .filter(|(_, rules)| !rules.is_empty())
+            .collect();
+        assert!(dead.is_empty(), "{name} {mode:?}: dead rules {dead:?}");
+    }
+    Ok(())
+}
+
+/// Model parity of the macos-monterey builder ([`macos_model_parity`]).
+#[test]
+fn model_parity_macos_monterey() -> TestResult {
+    macos_model_parity(
+        "macos-monterey",
+        crate::next::preset::Preset::MacosMonterey,
+        MACOS_MONTEREY_PORTED_TOTALS,
+    )
+}
+
+/// Model parity of the macos-tahoe builder ([`macos_model_parity`]).
+#[test]
+fn model_parity_macos_tahoe() -> TestResult {
+    macos_model_parity(
+        "macos-tahoe",
+        crate::next::preset::Preset::MacosTahoe,
+        MACOS_TAHOE_PORTED_TOTALS,
+    )
 }
 
 // Reader parity (plan, section 1, rule 2) on the KDE fixtures: the theme the 0.7.2 KDE reader path produces
