@@ -7,7 +7,8 @@
 
 use iced_core::theme::Theme;
 use native_theme::next::{
-    ButtonQuery, IconStated, PartStated, PartStyle, ResolvedTheme, Stroke, WidgetState, WindowState,
+    ButtonQuery, IconStated, Paint, PartStated, PartStyle, ResolvedTheme, Stroke, WidgetState,
+    WindowState,
 };
 
 use super::borders::{
@@ -15,9 +16,29 @@ use super::borders::{
 };
 use super::{Mapped, Unmapped, fill, state_fill, state_text_color, stated, text_color, to_color};
 use crate::styles::{
-    self as old, ButtonSource, CheckFills, CheckboxSource, InputSource, Line, LinkSource, Outline,
-    PickListSource, SwitchSource, ToolbarButtonSource,
+    self as old, ButtonSource, CheckFills, CheckboxSource, InputSource, Layer, Line, LinkSource,
+    Outline, PickListSource, SwitchSource, ToolbarButtonSource,
 };
+
+/// A part's fill, where stated, as a layer the style lays over the fill
+/// under it: its colour as [`fill`] reads it, or, for a stated
+/// `Paint::None`, no fill, which paints nothing in that state.
+fn layer(part: &PartStyle, home: &'static str) -> Mapped<Layer> {
+    match part.fill {
+        Paint::None if part.stated.contains(PartStated::FILL) => Ok(Layer::Nothing),
+        _ => fill(part, home).map(Layer::Color),
+    }
+}
+
+/// [`layer`] where a rule states the fill for the queried state (its
+/// `from_state` bit); `None` where none does.
+pub(crate) fn state_layer(part: &PartStyle, home: &'static str) -> Mapped<Option<Layer>> {
+    if part.from_state.contains(PartStated::FILL) {
+        layer(part, home).map(Some)
+    } else {
+        Ok(None)
+    }
+}
 
 /// [`ButtonSource`] of the 0.8.0 model. A state option no rule states for
 /// its state (its `from_state` bit clear) is `None`, and the state is then
@@ -28,21 +49,22 @@ fn button_source(r: &ResolvedTheme) -> Mapped<ButtonSource> {
     let b = &r.button;
     let rest = b.body(WidgetState::NONE);
     let hover = b.body(WidgetState::HOVER);
+    let pressed = b.body(WidgetState::PRESSED);
     let default = b.body(WidgetState::DEFAULT);
     let primary = b.body(ButtonQuery::primary());
     let c = &r.colors;
     Ok(ButtonSource {
         background: fill(&rest, "button.body(NONE).fill")?,
-        hover_background: state_fill(&hover, "button.body(HOVER).fill")?,
-        active_background: state_fill(&b.body(WidgetState::PRESSED), "button.body(PRESSED).fill")?,
+        hover_background: state_layer(&hover, "button.body(HOVER).fill")?,
+        active_background: state_layer(&pressed, "button.body(PRESSED).fill")?,
         disabled_background: state_fill(
             &b.body(WidgetState::DISABLED),
             "button.body(DISABLED).fill",
         )?,
         checked_background: state_fill(&b.body(WidgetState::CHECKED), "button.body(CHECKED).fill")?,
         label: text_color(&b.label(WidgetState::NONE), "button.label(NONE).color")?,
-        hover_label: text_color(&b.label(WidgetState::HOVER), "button.label(HOVER).color")?,
-        active_label: text_color(
+        hover_label: state_text_color(&b.label(WidgetState::HOVER), "button.label(HOVER).color")?,
+        active_label: state_text_color(
             &b.label(WidgetState::PRESSED),
             "button.label(PRESSED).color",
         )?,
@@ -58,9 +80,14 @@ fn button_source(r: &ResolvedTheme) -> Mapped<ButtonSource> {
         border: outline!(rest, "button.body(NONE)")?,
         primary_border: outline!(primary, "button.body(NONE; variant=Primary)")?,
         hover_border_color: state_line(&hover, "button.body(HOVER).stroke.color")?,
-        pressed_border_color: state_line(
-            &b.body(WidgetState::PRESSED),
-            "button.body(PRESSED).stroke.color",
+        pressed_border_color: state_line(&pressed, "button.body(PRESSED).stroke.color")?,
+        primary_hover_border_color: state_line(
+            &b.body(ButtonQuery::primary().state(WidgetState::HOVER)),
+            "button.body(HOVER; variant=Primary).stroke.color",
+        )?,
+        primary_pressed_border_color: state_line(
+            &b.body(ButtonQuery::primary().state(WidgetState::PRESSED)),
+            "button.body(PRESSED; variant=Primary).stroke.color",
         )?,
         primary_background: fill(&primary, "button.body(NONE; variant=Primary).fill")?,
         primary_label: text_color(
@@ -84,8 +111,8 @@ fn toolbar_button_source(r: &ResolvedTheme) -> Mapped<ToolbarButtonSource> {
     let hover = t.button(WidgetState::HOVER);
     let checked = t.button(WidgetState::CHECKED);
     Ok(ToolbarButtonSource {
-        hover_background: state_fill(&hover, "toolbar.button(HOVER).fill")?,
-        active_background: state_fill(
+        hover_background: state_layer(&hover, "toolbar.button(HOVER).fill")?,
+        active_background: state_layer(
             &t.button(WidgetState::PRESSED),
             "toolbar.button(PRESSED).fill",
         )?,
@@ -250,15 +277,24 @@ pub fn button_link(
     impl Fn(&Theme, iced_widget::button::Status) -> iced_widget::button::Style + Clone + use<>,
 > {
     let l = &r.link;
+    let idle = fill(&l.container(WidgetState::NONE), "link.container(NONE).fill")?;
     Ok(old::button_link_from(&LinkSource {
-        background: fill(&l.container(WidgetState::NONE), "link.container(NONE).fill")?,
-        hover_background: state_fill(
+        background: idle,
+        hover_background: state_layer(
             &l.container(WidgetState::HOVER),
             "link.container(HOVER).fill",
         )?,
+        pressed_background: state_layer(
+            &l.container(WidgetState::PRESSED),
+            "link.container(PRESSED).fill",
+        )?
+        .map(|pressed| pressed.over(idle)),
         label: text_color(&l.label(WidgetState::NONE), "link.label(NONE).color")?,
-        hover_label: text_color(&l.label(WidgetState::HOVER), "link.label(HOVER).color")?,
-        active_label: text_color(&l.label(WidgetState::PRESSED), "link.label(PRESSED).color")?,
+        hover_label: state_text_color(&l.label(WidgetState::HOVER), "link.label(HOVER).color")?,
+        active_label: state_text_color(
+            &l.label(WidgetState::PRESSED),
+            "link.label(PRESSED).color",
+        )?,
         disabled_label: text_color(
             &l.label(WidgetState::DISABLED),
             "link.label(DISABLED).color",
@@ -360,6 +396,17 @@ macro_rules! flag_fill {
     };
 }
 
+/// [`flag_fill`] read as a [`layer`].
+macro_rules! flag_layer {
+    ($w:expr, $part:ident, $flag:expr, $query:expr, $home:expr) => {
+        if $w.$part($flag).from_state.contains(PartStated::FILL) {
+            layer(&$w.$part($query), $home).map(Some)
+        } else {
+            Ok(None)
+        }
+    };
+}
+
 /// [`flag_fill`] of the stroke.
 macro_rules! flag_line {
     ($w:expr, $part:ident, $flag:expr, $query:expr, $home:expr) => {
@@ -386,11 +433,11 @@ macro_rules! check_fills {
                 concat!($home, ".indicator(CHECKED).fill"),
             )?,
             unchecked,
-            hover_fill: state_fill(
+            hover_fill: state_layer(
                 &w.indicator(WidgetState::HOVER),
                 concat!($home, ".indicator(HOVER).fill"),
             )?
-            .map(|hover| old::composite_over(hover, unchecked)),
+            .map(|hover| hover.over(unchecked)),
             checked_border: line_or_none(
                 &w.indicator(WidgetState::CHECKED),
                 concat!($home, ".indicator(CHECKED).stroke.color"),
@@ -409,6 +456,10 @@ macro_rules! check_fills {
                 WidgetState::HOVER,
                 WidgetState::HOVER | WidgetState::CHECKED,
                 concat!($home, ".indicator(HOVER|CHECKED).stroke.color")
+            )?,
+            hover_label: state_text_color(
+                &w.label(WidgetState::HOVER),
+                concat!($home, ".label(HOVER).color"),
             )?,
         })
     }};
@@ -544,19 +595,19 @@ fn switch_source(r: &ResolvedTheme) -> Mapped<SwitchSource> {
         disabled_opacity: s.disabled_opacity,
         checked_background: checked,
         unchecked_background: unchecked,
-        hovered_checked_background: flag_fill!(
+        hovered_checked_background: flag_layer!(
             s,
             track,
             WidgetState::HOVER,
             WidgetState::HOVER | WidgetState::CHECKED,
             "switch.track(HOVER|CHECKED).fill"
         )?
-        .map(|hover| old::composite_over(hover, checked)),
-        hovered_unchecked_background: state_fill(
+        .map(|hover| hover.over(checked)),
+        hovered_unchecked_background: state_layer(
             &s.track(WidgetState::HOVER),
             "switch.track(HOVER).fill",
         )?
-        .map(|hover| old::composite_over(hover, unchecked)),
+        .map(|hover| hover.over(unchecked)),
         disabled_checked_background: flag_fill!(
             s,
             track,
@@ -649,20 +700,26 @@ pub fn pick_list(
     let rest = c.field(WidgetState::NONE);
     let hover = c.field(WidgetState::HOVER);
     let open = c.field(WidgetState::OPEN);
+    let open_hover = c.field(WidgetState::OPEN | WidgetState::HOVER);
     let idle = fill(&rest, "combo_box.field(NONE).fill")?;
     Ok(old::pick_list_from(&PickListSource {
         background: idle,
-        hovered_background: state_fill(&hover, "combo_box.field(HOVER).fill")?
-            .map(|hover| old::composite_over(hover, idle)),
+        hovered_background: state_layer(&hover, "combo_box.field(HOVER).fill")?
+            .map(|hover| hover.over(idle)),
         label: text_color(&c.label(WidgetState::NONE), "combo_box.label(NONE).color")?,
         placeholder: text_color(
             &r.input.placeholder(WidgetState::NONE),
             "input.placeholder(NONE).color",
         )?,
-        open_background: state_fill(&open, "combo_box.field(OPEN).fill")?,
+        open_background: state_layer(&open, "combo_box.field(OPEN).fill")?,
+        open_hover_background: state_layer(&open_hover, "combo_box.field(OPEN|HOVER).fill")?,
         border: outline!(rest, "combo_box.field(NONE)")?,
         hover_border_color: state_line(&hover, "combo_box.field(HOVER).stroke.color")?,
         open_border_color: state_line(&open, "combo_box.field(OPEN).stroke.color")?,
+        open_hover_border_color: state_line(
+            &open_hover,
+            "combo_box.field(OPEN|HOVER).stroke.color",
+        )?,
     }))
 }
 

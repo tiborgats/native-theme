@@ -22,13 +22,14 @@
 //!
 //! A difference is allowed only as an entry of [`DIFFERENCES`], with its
 //! reason: a style function whose 0.8.0 stroke lies inside or across the
-//! widget's edge, where 0.7.2 stated no alignment; one whose hovered fill or
-//! stroke the 0.8.0 theme states nothing for, which is iced's own (spec §2,
-//! `from_state`). The entry asserts the value the 0.8.0 side must give: the
-//! 0.7.2 side's own output with each of its strokes laid where the entry
-//! says ([`crate::styles::Line::aligned`]), so the stroke is composited over
-//! the fill each status paints, or over it at half its alpha, and with the
-//! hover options the entry names unset ([`Listed`]); any other value fails. Each (style function, preset)
+//! widget's edge, where 0.7.2 stated no alignment; one whose hovered or
+//! pressed fill, stroke or label the 0.8.0 theme states nothing for, which
+//! is iced's own (spec §2, `from_state`). The entry asserts the value the
+//! 0.8.0 side must give: the 0.7.2 side's own output with each of its
+//! strokes laid where the entry says ([`crate::styles::Line::aligned`]), so
+//! the stroke is composited over the fill each status paints, or over it at
+//! half its alpha, and with the state options the entry names unset
+//! ([`Listed`]); any other value fails. Each (style function, preset)
 //! pair an entry lists must differ in some status, or the entry is stale and
 //! fails.
 
@@ -61,29 +62,37 @@ struct Difference {
 }
 
 /// How a listed style function's 0.8.0 side differs from the 0.7.2 side:
-/// where its strokes lie, and which of its hover options the 0.8.0 theme
+/// where its strokes lie, and which of its state options the 0.8.0 theme
 /// leaves to iced. The expected value is the 0.7.2 side's output with its
 /// strokes laid there and those options unset.
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct Listed {
     pub align: LineAlign,
-    pub hover: Hover,
+    pub states: States,
 }
 
-/// The hover options of a style function's source that the 0.8.0 theme
+/// The state options of a style function's source that the 0.8.0 theme
 /// states nothing for (spec §2, `from_state`), each then iced's own for the
-/// status: the hovered fill, the hovered stroke.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) struct Hover {
-    pub fill: bool,
-    pub stroke: bool,
+/// status: the hovered and the pressed fill, stroke and label.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub(crate) struct States {
+    pub hover_fill: bool,
+    pub hover_stroke: bool,
+    pub hover_label: bool,
+    pub pressed_fill: bool,
+    pub pressed_stroke: bool,
+    pub pressed_label: bool,
 }
 
-impl Hover {
-    /// No hover option left to iced.
+impl States {
+    /// No state option left to iced.
     const STATED: Self = Self {
-        fill: false,
-        stroke: false,
+        hover_fill: false,
+        hover_stroke: false,
+        hover_label: false,
+        pressed_fill: false,
+        pressed_stroke: false,
+        pressed_label: false,
     };
 }
 
@@ -126,33 +135,58 @@ const fn inside(leaf: &'static str, presets: &'static [&'static str]) -> Differe
         presets,
         listed: Listed {
             align: LineAlign::Inside,
-            hover: Hover::STATED,
+            states: States::STATED,
         },
         reason: &[INSIDE],
     }
 }
 
-/// A style function whose hovered fill (`fill`) or stroke (`stroke`) the
-/// theme states nothing for on `presets`, its strokes laid at `align`.
+/// The reason of a pressed link, whose fill the 0.8.0 theme states nothing
+/// for.
+const PRESSED_LINK: &str = "the theme states no fill for the pressed link: 0.7.2's LinkTheme \
+     has no pressed fill, which its connector drew as the idle one; the 0.8.0 theme has no \
+     rule for PRESSED that states link.container's fill (the from_state bit clear when \
+     queried with PRESSED alone), and the connector keeps iced's own text button for that \
+     status, its fill none (iced_widget 0.14.2 src/button.rs, fn text), with the pressed \
+     label the theme states (docs/v0.8.0-spec.md §2, from_state; §10, rule 0)";
+
+/// The reason of a pressed link whose label the 0.8.0 theme states nothing
+/// for either.
+const PRESSED_LINK_LABEL: &str = "nor a label for the pressed link: 0.7.2's preset leaves \
+     link.active_text_color unset and its resolver fills it from link.font.color \
+     (docs/inheritance-rules.toml), a value the 0.8.0 model does not carry \
+     (docs/v0.8.0-spec.md §5); no rule for PRESSED states link.label's colour, and the \
+     label is iced's own text button's for the status";
+
+/// A style function whose hovered state options `states` names the theme
+/// states nothing for on `presets`, its strokes laid at `align`.
 const fn hover(
     leaf: &'static str,
     presets: &'static [&'static str],
     align: LineAlign,
-    fill: bool,
-    stroke: bool,
+    states: States,
 ) -> Difference {
     Difference {
         leaf,
         presets,
-        listed: Listed {
-            align,
-            hover: Hover { fill, stroke },
-        },
+        listed: Listed { align, states },
         reason: match align {
             LineAlign::Outside => &[HOVER],
             LineAlign::Inside => &[INSIDE, HOVER],
             LineAlign::Center => &[CENTER, HOVER],
         },
+    }
+}
+
+/// The hovered state options left to iced: the fill (`fill`), with it the
+/// label of a widget that has one (`label`: a label is iced's own where
+/// the fill it lies on is), and the stroke (`stroke`).
+const fn hovered(fill: bool, label: bool, stroke: bool) -> States {
+    States {
+        hover_fill: fill,
+        hover_label: label,
+        hover_stroke: stroke,
+        ..States::STATED
     }
 }
 
@@ -199,7 +233,7 @@ const DIFFERENCES: &[Difference] = &[
         presets: &["kde-breeze"],
         listed: Listed {
             align: LineAlign::Center,
-            hover: Hover::STATED,
+            states: States::STATED,
         },
         reason: &[CENTER],
     },
@@ -209,51 +243,121 @@ const DIFFERENCES: &[Difference] = &[
     // that is the transparent unchecked stroke too, which iced is handed as
     // the fill under it (0.7.2's `checkbox.unchecked_border_color` is
     // `#00000000`, the home's stroke the same colour, Inside).
-    hover("checkbox", &["kde-breeze"], LineAlign::Outside, true, false),
-    hover("checkbox", HOVER_FILL_ONLY, LineAlign::Outside, false, true),
+    // The label of a box whose hovered fill is iced's is iced's too
+    // (`label(HOVER)`, which no preset states).
+    hover(
+        "checkbox",
+        &["kde-breeze"],
+        LineAlign::Outside,
+        hovered(true, true, false),
+    ),
+    hover(
+        "checkbox",
+        HOVER_FILL_ONLY,
+        LineAlign::Outside,
+        hovered(false, false, true),
+    ),
     hover(
         "checkbox",
         HOVER_FILL_ONLY_INSIDE,
         LineAlign::Inside,
-        false,
-        true,
+        hovered(false, false, true),
     ),
-    hover("checkbox", &["macos-tahoe"], LineAlign::Inside, true, true),
-    hover("radio", &["kde-breeze"], LineAlign::Outside, true, false),
-    hover("radio", HOVER_FILL_ONLY, LineAlign::Outside, false, true),
+    hover(
+        "checkbox",
+        &["macos-tahoe"],
+        LineAlign::Inside,
+        hovered(true, true, true),
+    ),
+    hover(
+        "radio",
+        &["kde-breeze"],
+        LineAlign::Outside,
+        hovered(true, true, false),
+    ),
+    hover(
+        "radio",
+        HOVER_FILL_ONLY,
+        LineAlign::Outside,
+        hovered(false, false, true),
+    ),
     hover(
         "radio",
         HOVER_FILL_ONLY_INSIDE,
         LineAlign::Inside,
-        false,
-        true,
+        hovered(false, false, true),
     ),
-    hover("radio", &["macos-tahoe"], LineAlign::Inside, true, true),
+    hover(
+        "radio",
+        &["macos-tahoe"],
+        LineAlign::Inside,
+        hovered(true, true, true),
+    ),
     // combo_box.field: the hovered fill and stroke (`field(HOVER)`).
     hover(
         "pick_list",
         &["kde-breeze"],
         LineAlign::Outside,
-        true,
-        false,
+        hovered(true, false, false),
     ),
     hover(
         "pick_list",
         &["adwaita", "ios-13"],
         LineAlign::Outside,
-        false,
-        true,
+        hovered(false, false, true),
     ),
     hover(
         "pick_list",
         HOVER_FILL_ONLY_INSIDE,
         LineAlign::Inside,
-        false,
-        true,
+        hovered(false, false, true),
     ),
-    hover("pick_list", &["macos-tahoe"], LineAlign::Inside, true, true),
+    hover(
+        "pick_list",
+        &["macos-tahoe"],
+        LineAlign::Inside,
+        hovered(true, false, true),
+    ),
     // switch.track(HOVER): macos-tahoe states no hovered track.
-    hover("toggler", &["macos-tahoe"], LineAlign::Outside, true, false),
+    hover(
+        "toggler",
+        &["macos-tahoe"],
+        LineAlign::Outside,
+        hovered(true, false, false),
+    ),
+    // link.container(PRESSED): no preset states a pressed link's fill, and
+    // the macOS presets no pressed label (`link.label(PRESSED)`).
+    Difference {
+        leaf: "button_link",
+        presets: &[
+            "kde-breeze",
+            "adwaita",
+            "windows-11",
+            "material-3",
+            "ios-13",
+        ],
+        listed: Listed {
+            align: LineAlign::Outside,
+            states: States {
+                pressed_fill: true,
+                ..States::STATED
+            },
+        },
+        reason: &[PRESSED_LINK],
+    },
+    Difference {
+        leaf: "button_link",
+        presets: MACOS,
+        listed: Listed {
+            align: LineAlign::Outside,
+            states: States {
+                pressed_fill: true,
+                pressed_label: true,
+                ..States::STATED
+            },
+        },
+        reason: &[PRESSED_LINK, PRESSED_LINK_LABEL],
+    },
 ];
 
 /// The leaves compared and the differences found, for one preset and scheme.
@@ -496,8 +600,8 @@ fn compare_styles(
 ) {
     use crate::palette::to_color;
     use crate::styles::{
-        self as o, ButtonSource, CheckFills, CheckboxSource, InputSource, Outline, PickListSource,
-        SwitchSource, ToolbarButtonSource,
+        self as o, ButtonSource, CheckFills, CheckboxSource, InputSource, LinkSource, Outline,
+        PickListSource, SwitchSource, ToolbarButtonSource,
     };
     use iced_widget::button::Status::{Active, Disabled, Hovered, Pressed};
 
@@ -505,53 +609,53 @@ fn compare_styles(
 
     let button = [Active, Hovered, Pressed, Disabled];
     let b = ButtonSource::of(old);
-    let at = move |a| b.aligned(a);
-    style!(
+    let at = move |l: Listed| b.listed(l);
+    listed_style!(
         report,
         themes,
         "button",
         o::button(old),
         n::button(new),
-        |a| o::button_from(&at(a)),
+        |l| o::button_from(&at(l)),
         button
     );
     for checked in [false, true] {
-        style!(
+        listed_style!(
             report,
             themes,
             "button_toggle",
             o::button_toggle(old, checked),
             n::button_toggle(new, checked),
-            |a| o::button_toggle_from(&at(a), checked),
+            |l| o::button_toggle_from(&at(l), checked),
             button
         );
         let t = ToolbarButtonSource::of(old);
-        style!(
+        listed_style!(
             report,
             themes,
             "toolbar_button",
             o::toolbar_button(old, checked),
             n::toolbar_button(new, checked),
-            |a| o::toolbar_button_from(&at(a), &t.aligned(a), checked),
+            |l: Listed| o::toolbar_button_from(&at(l), &t.aligned(l.align), checked),
             button
         );
     }
-    style!(
+    listed_style!(
         report,
         themes,
         "button_primary",
         o::button_primary(old),
         n::button_primary(new),
-        |a| o::button_primary_from(&at(a)),
+        |l| o::button_primary_from(&at(l)),
         button
     );
-    style!(
+    listed_style!(
         report,
         themes,
         "button_default",
         o::button_default(old),
         n::button_default(new),
-        |a| o::button_default_from(&at(a)),
+        |l| o::button_default_from(&at(l)),
         button
     );
     let d = &old.defaults;
@@ -579,8 +683,8 @@ fn compare_styles(
         ),
     ] {
         let (old_theme, new_theme) = themes;
-        let class_old = |a: Option<LineAlign>| {
-            let source = a.map_or(b, |a| b.aligned(a));
+        let class_old = |l: Option<Listed>| {
+            let source = l.map_or(b, |l| b.listed(l));
             o::class_button(&source, to_color(fill), to_color(label), class)
         };
         let old_fn = class_old(None);
@@ -590,17 +694,19 @@ fn compare_styles(
                     &format!("{name}({status:?})"),
                     old_fn(old_theme, status),
                     new_fn(new_theme, status),
-                    |l: Listed| class_old(Some(l.align))(old_theme, status),
+                    |l: Listed| class_old(Some(l))(old_theme, status),
                 );
             }
         }
     }
-    plain!(
+    let link = LinkSource::of(old);
+    listed_style!(
         report,
         themes,
         "button_link",
         o::button_link(old),
         n::button_link(new),
+        |l: Listed| o::button_link_from(&link.listed(l)),
         button
     );
 
@@ -662,7 +768,7 @@ fn compare_styles(
             "checkbox",
             o::checkbox(old),
             n::checkbox(new),
-            |l: Listed| o::checkbox_from(&c.listed(l.align, l.hover), window),
+            |l: Listed| o::checkbox_from(&c.listed(l), window),
             boxes
         );
     }
@@ -683,7 +789,7 @@ fn compare_styles(
             o::radio(old),
             n::radio(new),
             |l: Listed| o::radio_from(
-                fills.listed(l.align, l.hover),
+                fills.listed(l),
                 to_color(c.indicator_color),
                 to_color(c.font.color),
                 c.border.line_width,
@@ -708,7 +814,7 @@ fn compare_styles(
             "toggler",
             o::toggler(old),
             n::toggler(new),
-            |l: Listed| o::toggler_from(&s.listed(l.align, l.hover), window),
+            |l: Listed| o::toggler_from(&s.listed(l), window),
             switches
         );
     }
@@ -727,7 +833,7 @@ fn compare_styles(
             "pick_list",
             o::pick_list(old),
             n::pick_list(new),
-            |l: Listed| o::pick_list_from(&c.listed(l.align, l.hover)),
+            |l: Listed| o::pick_list_from(&c.listed(l)),
             fields
         );
     }
