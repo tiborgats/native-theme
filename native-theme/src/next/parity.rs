@@ -1639,11 +1639,6 @@ const MACOS_PORTED_GROUPS: &[&str] = &[
     "input",
     "text_area",
     "link",
-];
-
-/// The groups of the table whose values the macOS builders do not state yet: their rows are compared,
-/// counted and reported, not asserted.
-const MACOS_NOT_PORTED_GROUPS: &[&str] = &[
     "slider",
     "progress_bar",
     "splitter",
@@ -1663,13 +1658,17 @@ const MACOS_NOT_PORTED_GROUPS: &[&str] = &[
     "expander",
 ];
 
+/// The groups of the table whose values the macOS builders do not state yet: their rows are compared,
+/// counted and reported, not asserted.
+const MACOS_NOT_PORTED_GROUPS: &[&str] = &[];
+
 /// The totals of the ported groups' rows on each scheme of `macos-monterey`, `[rows, compared, equal,
 /// mismatching, skipped]`: every row equal but those [`macos_expected_skip`] names, skipped.
-const MACOS_MONTEREY_PORTED_TOTALS: [usize; 5] = [267, 262, 262, 0, 5];
+const MACOS_MONTEREY_PORTED_TOTALS: [usize; 5] = [563, 557, 557, 0, 6];
 
 /// The totals of the ported groups' rows on each scheme of `macos-tahoe`, as
 /// [`MACOS_MONTEREY_PORTED_TOTALS`].
-const MACOS_TAHOE_PORTED_TOTALS: [usize; 5] = [267, 262, 262, 0, 5];
+const MACOS_TAHOE_PORTED_TOTALS: [usize; 5] = [563, 558, 558, 0, 5];
 
 /// The resolution context 0.7.2 resolves a theme in on macOS: `ResolutionContext::from_system`'s font DPI
 /// there, 72, "where a point is a pixel" (`src/resolve/context.rs`), with the deterministic rest of
@@ -1682,11 +1681,15 @@ const MACOS_RESOLUTION_CONTEXT: ResolutionContext = ResolutionContext {
 
 /// The reason a row of the table is skipped on 0.7.2's macOS presets without a reader's snapshot: the
 /// reader's context rows (`accessibility.*`); `checkbox.background_color`, compared only where
-/// `checkbox.unchecked_background` is unset, which both macOS TOMLs state.
-fn macos_expected_skip(key: &str) -> Option<compare::Skip> {
+/// `checkbox.unchecked_background` is unset, which both macOS TOMLs state; on `macos-monterey`
+/// `menu.min_row_height`, compared only where `menu.row_height` is unset, which `macos-monterey.toml`
+/// states.
+fn macos_expected_skip(preset: crate::next::preset::Preset, key: &str) -> Option<compare::Skip> {
     if key.starts_with("accessibility.") {
         Some(compare::Skip::NoSnapshot)
-    } else if key == "checkbox.background_color" {
+    } else if key == "checkbox.background_color"
+        || (key == "menu.min_row_height" && preset == crate::next::preset::Preset::MacosMonterey)
+    {
         Some(compare::Skip::OtherKeyStated)
     } else {
         None
@@ -1744,7 +1747,7 @@ fn macos_model_parity(
             };
             assert_eq!(
                 skip,
-                macos_expected_skip(&row.key),
+                macos_expected_skip(preset, &row.key),
                 "{name} {mode:?}: `{}`",
                 row.key
             );

@@ -11,17 +11,15 @@
 //! roles, the globals and the constants. A widget's colour that is a role's
 //! colour is taken from the roles, not from a second copy of the constant.
 //! This is the static path: the system's settings, the active palette and an
-//! explicit accent ([`ResolveInputs`]) are not laid over the constants yet,
-//! and the widgets this builder does not state yet are the theme with
-//! nothing stated (`nothing_stated`).
+//! explicit accent ([`ResolveInputs`]) are not laid over the constants yet.
 //!
 //! Defined by the presets (spec §1, "Axis values without data"): the
 //! variant `ButtonVariant::Primary` (0.7.2's `primary_*` fields), a list's
 //! alternate rows (`ListKind::alternate`), the two orientations of the
-//! scroll bar, no control size and the contrast level `Normal` only; a query
-//! for anything else returns the part's base style. A maximized or
-//! full-screen window has no data of its own: its frame and title bar are
-//! the normal window's.
+//! scroll bar and of the slider's groove, no control size and the contrast
+//! level `Normal` only; a query for anything else returns the part's base
+//! style. A maximized or full-screen window has no data of its own: its
+//! frame and title bar are the normal window's.
 //!
 //! No part has an exclusive state group: where two rules can both match,
 //! the later one wins (spec §3, "State combinations a source does not
@@ -43,7 +41,26 @@
 //! - the list's item label: the disabled colour over the selection's text,
 //!   by egui's order above;
 //! - the scroll bar's handle: the pressed fill over the hovered one, by
-//!   egui's order above.
+//!   egui's order above;
+//! - the slider's knob (`macos-monterey`), the menu's item label and the
+//!   pop-up button's field and label: the disabled look over the hovered
+//!   one, by egui's order above;
+//! - the tab, the sidebar's item and the segmented control's segment: the
+//!   selected fill over the hovered fill, as 0.7.2's egui connector puts the
+//!   selection's colour in the selection's fill and the hover colour in the
+//!   hovered widgets' fill (`connectors/native-theme-egui/src/mapping.md`)
+//!   and egui fills a selected item with the selection's fill over its
+//!   hovered look (egui 0.37.0 `src/style.rs`, `Style::interact_selectable`);
+//! - the switch's track: the on track over the hovered off track, the
+//!   hovered on track being the on track (0.7.2's
+//!   `switch.hover_checked_background` unset, which the table of homes
+//!   compares with the on track, `tests/next_homes.toml`); the disabled off
+//!   track over both and the disabled on track (`DISABLED | CHECKED`) over
+//!   every other, as 0.7.2 states each disabled track apart
+//!   (`switch.disabled_unchecked_background`, `disabled_checked_background`).
+//!   The knob: the disabled colour over the rest, on or off
+//!   (`switch.disabled_thumb_color`, which the table compares in both
+//!   states).
 //!
 //! An inactive window (`ThemeContext::window_active` false) has the inactive
 //! title bar: `macos-monterey`'s own, `macos-tahoe`'s the active one (0.7.2:
@@ -56,10 +73,14 @@
 //! whole-pixel rounding for it), and every line height times it too; each
 //! `defined_size` stays the unscaled size (spec §6, resolution step 2). The
 //! motion preference collapses or scales the motion tokens, of which the
-//! presets state none. The contrast, the direction and the accessibility
-//! flags change nothing here: the presets state one contrast level, and
-//! every per-side value the ported widgets state is the same on the left and
-//! on the right.
+//! presets state none, and under no motion the dialog's entrance is
+//! `DialogEntranceStyle::None` (the presets state no entrance). The
+//! direction mirrors the one per-side value the presets state on one side
+//! alone, the pop-up button's padding on the side away from its arrow (the
+//! left from left to right, the right from right to left); every other
+//! per-side value is the same on the left and on the right. The contrast and
+//! the accessibility flags change nothing here: the presets state one
+//! contrast level.
 //!
 //! Short source names in the citations, from the TOMLs' headers: "probe" in
 //! a `macos-monterey` constant's citation is the OS probe's report on macOS
@@ -82,18 +103,23 @@
 //! `src/resolve/validate.rs`, `src/resolve/validate_helpers.rs`) where 0.7.2
 //! fills a value the TOML does not state.
 
+use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use crate::IconSet;
 use crate::next::color::Color;
 use crate::next::geometry::{Corners, Edges, Stroke};
 use crate::next::icons::{IconSizes, IconThemeSpec};
-use crate::next::layout::LayoutMetrics;
+use crate::next::layout::{ArrowSide, DialogButtonOrder, LayoutMetrics};
 use crate::next::motion::{CaretSpec, MotionTokens, UiTimings};
 use crate::next::paint::Paint;
-use crate::next::preset::{Preset, ResolveInputs, nothing_stated};
-use crate::next::presets::helpers::{linear_font_px, motion, motion_tokens};
-use crate::next::query::{ButtonVariant, Contrast, Orientation, Scheme, ThemeContext, WidgetState};
+use crate::next::preset::{Preset, ResolveInputs};
+use crate::next::presets::helpers::{
+    Motion, dialog_entrance, linear_font_px, motion, motion_tokens, physical_edges,
+};
+use crate::next::query::{
+    ButtonVariant, Contrast, Direction, Orientation, Scheme, ThemeContext, WidgetState,
+};
 use crate::next::roles::{
     AccentColors, ColorRoles, RoleOrigin, SelectionColors, StatusColors, SurfaceColors,
 };
@@ -106,10 +132,13 @@ use crate::next::style::{
 };
 use crate::next::typography::{TextRendering, Typography};
 use crate::next::widgets::{
-    ButtonWidget, CheckboxWidget, InputWidget, LinkWidget, ListWidget, RadioWidget, ResolvedTheme,
-    ScrollbarWidget, TooltipWidget, WidgetOrigin,
+    ButtonWidget, CardWidget, CheckboxWidget, ComboBoxWidget, DialogWidget, ExpanderWidget,
+    InputWidget, LinkWidget, ListWidget, MenuBarWidget, MenuWidget, PopoverWidget,
+    ProgressBarWidget, RadioWidget, ResolvedTheme, ScrollbarWidget, SegmentedControlWidget,
+    SeparatorWidget, SidebarWidget, SliderWidget, SpinnerWidget, SplitterWidget, StatusBarWidget,
+    SwitchWidget, TabWidget, ToolbarWidget, TooltipWidget, WidgetOrigin,
 };
-use crate::next::window::WindowChrome;
+use crate::next::window::{EdgeFlags, WindowChrome};
 
 // ---------------------------------------------------------------------------
 // The constants
@@ -169,6 +198,31 @@ struct SchemeColors {
     tooltip_foreground: Color,
     title_bar_background: Color,
     title_bar_inactive_background: Option<Color>,
+    slider_track: Color,
+    slider_thumb: Option<Color>,
+    slider_thumb_hover: Option<Color>,
+    slider_disabled_fill: Color,
+    slider_disabled_track: Option<Color>,
+    slider_disabled_thumb: Option<Color>,
+    spinner: Color,
+    splitter_hover: Option<Color>,
+    menu_hover_foreground: Color,
+    tab_hover: Option<Color>,
+    sidebar_background: Color,
+    switch_unchecked: Color,
+    switch_thumb: Color,
+    switch_hover_unchecked: Option<Color>,
+    switch_disabled_unchecked: Color,
+    switch_disabled_thumb: Option<Color>,
+    combo_background: Color,
+    combo_foreground: Color,
+    combo_hover: Option<Color>,
+    combo_disabled: Option<Color>,
+    segmented_active: Option<Color>,
+    segmented_active_foreground: Option<Color>,
+    segmented_hover: Option<Color>,
+    expander_hover: Option<Color>,
+    expander_arrow: Option<Color>,
 }
 
 /// `macos-monterey`'s light scheme.
@@ -306,6 +360,79 @@ const MONTEREY_LIGHT: SchemeColors = SchemeColors {
     // that is not key while another window of the application is, measured on macOS 14 and 15,
     // which agree (os-probe run 40324458365, os-probe-macos-14/not-key/probe.toml)
     title_bar_inactive_background: Some(srgb8(0xecec_ecff)),
+    // `slider.track_color`: platform-facts.md (§2.9): black at alpha 13/255 (measured, os-probe run
+    // 40348854007, renders/aqua/slider-regular@2x.png; a key window draws #eaeaea over #f6f6f6,
+    // os-probe-macos-14/probe.toml), not muted_color; over background_color #e0e0e0
+    slider_track: srgb8(0x0000_000d),
+    slider_thumb: None,
+    // `slider.thumb_hover_color`: soft_option interactive state colors (platform-facts.md section
+    // 2.9 macOS) slider knob hover -- slightly darker surface
+    slider_thumb_hover: Some(srgb8(0xe0e0_e0ff)),
+    // `slider.disabled_fill_color`: platform-facts.md (§2.9): no value fill when disabled, the bar
+    // black at alpha 7/255 on both sides of the knob (measured, os-probe run 40348854007,
+    // renders/aqua/slider-regular-disabled@2x.png); over background_color #e6e6e6
+    slider_disabled_fill: srgb8(0x0000_0007),
+    // `slider.disabled_track_color`: platform-facts.md (§2.9): black at alpha 7/255 (measured, the
+    // same render); over background_color #e6e6e6
+    slider_disabled_track: Some(srgb8(0x0000_0007)),
+    // `slider.disabled_thumb_color`: platform-facts.md (§2.9): white at alpha 128/255 (measured,
+    // the same render); over background_color #f6f6f6
+    slider_disabled_thumb: Some(srgb8(0xffff_ff80)),
+    // `spinner.fill_color`: platform-facts.md (§2.23): black fins at a graded alpha, the leading
+    // one 82/255 (measured in the probe's renders/aqua/progress_spinning-regular@2x.png); over the
+    // window background #a0a0a0
+    spinner: srgb8(0x0000_0052),
+    // `splitter.hover_color`: Interactive state colors (platform-facts.md section 2.17 macOS)
+    splitter_hover: Some(srgb8(0xd5d5_d5ff)),
+    // `menu.hover_text_color`: platform-facts.md: selectedMenuItemTextColor, probe
+    menu_hover_foreground: srgb8(0xffff_ffff),
+    // `tab.hover_background`: soft_option: tab hover state -- subtle bg shift
+    tab_hover: Some(srgb8(0xe8e8_edff)),
+    // `sidebar.background_color`: platform-facts.md (§2.12): NSVisualEffectView.Material.sidebar's
+    // opaque rendering with Reduce Transparency on, in an active view of a key window, measured on
+    // macOS 14 and 15, which agree (os-probe run 40320895749, os-probe-macos-14/probe.toml)
+    sidebar_background: srgb8(0xf6f6_f6ff),
+    // `switch.unchecked_background`: platform-facts.md (§2.21): black at alpha 26/255 (measured,
+    // renders/aqua/switch-regular-off@2x.png); over background_color #d4d4d4
+    switch_unchecked: srgb8(0x0000_001a),
+    // `switch.thumb_background`: platform-facts.md (§2.21): white (measured)
+    switch_thumb: srgb8(0xffff_ffff),
+    // `switch.hover_unchecked_background`: soft_option interactive state colors (macOS NSSwitch)
+    // NSSwitch hover unchecked -- slightly darker trough
+    switch_hover_unchecked: Some(srgb8(0xc8c8_cdff)),
+    // `switch.disabled_unchecked_background`: platform-facts.md (§2.21): black at alpha 7/255
+    // (measured, os-probe run 40348854007, renders/aqua/switch-regular-disabled-off@2x.png); over
+    // background_color #e6e6e6
+    switch_disabled_unchecked: srgb8(0x0000_0007),
+    // `switch.disabled_thumb_color`: platform-facts.md (§2.21): white at alpha 128/255 (measured,
+    // the same render); over background_color #f6f6f6
+    switch_disabled_thumb: Some(srgb8(0xffff_ff80)),
+    // `combo_box.background_color`: platform-facts.md (§2.24): controlColor, probe
+    combo_background: srgb8(0xffff_ffff),
+    // `combo_box.font.color`: platform-facts.md (§2.24): controlTextColor, probe; over the fill
+    // #272727
+    combo_foreground: srgb8(0x0000_00d8),
+    // `combo_box.hover_background`: soft_option: NSPopUpButton hover -- subtle highlight
+    combo_hover: Some(srgb8(0xe0e0_e5ff)),
+    // `combo_box.disabled_background`: soft_option: NSPopUpButton disabled -- reduced alpha bg
+    combo_disabled: Some(srgb8(0xe8e8_ed80)),
+    // `segmented_control.active_background`: Interactive state colors (platform-facts.md section
+    // 2.25 macOS) platform-facts.md (§2.25): the selected segment in a key window, measured on
+    // macOS 14 and 15, which agree (os-probe run 40320895749, os-probe-macos-14/probe.toml)
+    segmented_active: Some(srgb8(0xffff_ffff)),
+    // `segmented_control.active_text_color`: platform-facts.md (§2.25): labelColor (probe); a key
+    // window's selected label measures within one level of it over the segment on macOS 14 and 15
+    // (os-probe run 40320895749, os-probe-macos-14/renders/key_window/aqua.png)
+    segmented_active_foreground: Some(srgb8(0x0000_00d8)),
+    // `segmented_control.hover_background`: soft_option: NSSegmentedControl hover -- subtle
+    // highlight
+    segmented_hover: Some(srgb8(0xe0e0_e5ff)),
+    // `expander.hover_background`: soft_option interactive state colors (macOS disclosure)
+    // disclosure hover -- subtle highlight
+    expander_hover: Some(srgb8(0xe0e0_e5ff)),
+    // `expander.arrow_color`: NSDisclosureButton triangle color -- no source: the former muted
+    // colour #86868b, not secondaryLabelColor (defaults.muted_color)
+    expander_arrow: Some(srgb8(0x8686_8bff)),
 };
 
 /// `macos-monterey`'s dark scheme.
@@ -442,6 +569,81 @@ const MONTEREY_DARK: SchemeColors = SchemeColors {
     // that is not key while another window of the application is, measured on macOS 14 and 15,
     // which agree (os-probe run 40324458365, os-probe-macos-14/not-key/probe.toml)
     title_bar_inactive_background: Some(srgb8(0x1414_14ff)),
+    // `slider.track_color`: platform-facts.md (§2.9): white at alpha 26/255 (measured, os-probe run
+    // 40348854007, renders/darkAqua/slider-regular@2x.png; a key window draws #3e3e3e over
+    // #282828, os-probe-macos-14/probe.toml), not muted_color; over background_color #474747
+    slider_track: srgb8(0xffff_ff1a),
+    // `slider.thumb_color`: platform-facts.md (§2.9): the knob is white at alpha 128/255
+    // (measured, renders/darkAqua/slider-regular@2x.png); over background_color #999999
+    slider_thumb: Some(srgb8(0xffff_ff80)),
+    slider_thumb_hover: None,
+    // `slider.disabled_fill_color`: soft_option interactive state colors (platform-facts.md
+    // section 2.9 macOS) platform-facts.md (§2.9): no value fill when disabled, the bar white at
+    // alpha 13/255 on both sides of the knob (measured, os-probe run 40348854007,
+    // renders/darkAqua/slider-regular-disabled@2x.png); over background_color #3c3c3c
+    slider_disabled_fill: srgb8(0xffff_ff0d),
+    // `slider.disabled_track_color`: platform-facts.md (§2.9): white at alpha 13/255 (measured, the
+    // same render); over background_color #3c3c3c
+    slider_disabled_track: Some(srgb8(0xffff_ff0d)),
+    // `slider.disabled_thumb_color`: platform-facts.md (§2.9): white at alpha 32/255 (measured, the
+    // same render); over background_color #4c4c4c
+    slider_disabled_thumb: Some(srgb8(0xffff_ff20)),
+    // `spinner.fill_color`: platform-facts.md (§2.23): white fins at a graded alpha, the leading
+    // one 82/255 (measured in the probe's renders/darkAqua/progress_spinning-regular@2x.png); over
+    // the window background #747474
+    spinner: srgb8(0xffff_ff52),
+    // `splitter.hover_color`: Interactive state colors (platform-facts.md section 2.17 macOS)
+    splitter_hover: Some(srgb8(0x3d3d_3dff)),
+    // `menu.hover_text_color`: platform-facts.md: selectedMenuItemTextColor, probe
+    menu_hover_foreground: srgb8(0xffff_ffff),
+    // `tab.hover_background`: soft_option: tab hover state -- subtle bg shift
+    tab_hover: Some(srgb8(0x3a3a_3cff)),
+    // `sidebar.background_color`: platform-facts.md (§2.12): NSVisualEffectView.Material.sidebar's
+    // opaque rendering with Reduce Transparency on, in an active view of a key window, measured on
+    // macOS 14 and 15, which agree (os-probe run 40320895749, os-probe-macos-14/probe.toml)
+    sidebar_background: srgb8(0x3838_38ff),
+    // `switch.unchecked_background`: platform-facts.md (§2.21): white at alpha 26/255 (measured,
+    // renders/darkAqua/switch-regular-off@2x.png); over background_color #474747
+    switch_unchecked: srgb8(0xffff_ff1a),
+    // `switch.thumb_background`: platform-facts.md (§2.21): white at alpha 191/255 (measured)
+    switch_thumb: srgb8(0xffff_ffbf),
+    // `switch.hover_unchecked_background`: soft_option interactive state colors (macOS NSSwitch)
+    // NSSwitch hover unchecked -- slightly brighter trough
+    switch_hover_unchecked: Some(srgb8(0x4a4a_4cff)),
+    // `switch.disabled_unchecked_background`: platform-facts.md (§2.21): white at alpha 7/255
+    // (measured, os-probe run 40348854007, renders/darkAqua/switch-regular-disabled-off@2x.png);
+    // over background_color #383838
+    switch_disabled_unchecked: srgb8(0xffff_ff07),
+    // `switch.disabled_thumb_color`: platform-facts.md (§2.21): white at alpha 64/255 (measured,
+    // the same render); over background_color #656565
+    switch_disabled_thumb: Some(srgb8(0xffff_ff40)),
+    // `combo_box.background_color`: platform-facts.md (§2.24): controlColor, probe; over the window
+    // background #656565
+    combo_background: srgb8(0xffff_ff3f),
+    // `combo_box.font.color`: platform-facts.md (§2.24): controlTextColor, probe; over the fill
+    // #e7e7e7
+    combo_foreground: srgb8(0xffff_ffd8),
+    // `combo_box.hover_background`: soft_option: NSPopUpButton hover -- subtle highlight
+    combo_hover: Some(srgb8(0x4444_46ff)),
+    // `combo_box.disabled_background`: soft_option: NSPopUpButton disabled -- reduced alpha bg
+    combo_disabled: Some(srgb8(0x3a3a_3c80)),
+    // `segmented_control.active_background`: Interactive state colors (platform-facts.md section
+    // 2.25 macOS) platform-facts.md (§2.25): the selected segment in a key window, measured on
+    // macOS 14 and 15, which agree (os-probe run 40320895749, os-probe-macos-14/probe.toml)
+    segmented_active: Some(srgb8(0x6666_66ff)),
+    // `segmented_control.active_text_color`: platform-facts.md (§2.25): labelColor (probe); a key
+    // window's selected label measures within one level of it over the segment on macOS 14 and 15
+    // (os-probe run 40320895749, os-probe-macos-14/renders/key_window/darkAqua.png)
+    segmented_active_foreground: Some(srgb8(0xffff_ffd8)),
+    // `segmented_control.hover_background`: soft_option: NSSegmentedControl hover -- subtle
+    // highlight
+    segmented_hover: Some(srgb8(0x4444_46ff)),
+    // `expander.hover_background`: soft_option interactive state colors (macOS disclosure)
+    // disclosure hover -- subtle highlight
+    expander_hover: Some(srgb8(0x4444_46ff)),
+    // `expander.arrow_color`: NSDisclosureButton triangle color -- no source: the former muted
+    // colour #98989d, not secondaryLabelColor (defaults.muted_color)
+    expander_arrow: Some(srgb8(0x9898_9dff)),
 };
 
 /// `macos-tahoe`'s light scheme.
@@ -573,6 +775,57 @@ const TAHOE_LIGHT: SchemeColors = SchemeColors {
     // 40320895749, os-probe-macos-26/probe.toml)
     title_bar_background: srgb8(0xffff_ffff),
     title_bar_inactive_background: None,
+    // `slider.track_color`: platform-facts.md (§2.9): systemFillColor's value (probe), black at
+    // alpha 25/255 (measured, os-probe run 40348854007, renders/aqua/slider-regular@2x.png; a key
+    // window draws #e4e4e4 over #ffffff, os-probe-macos-26/probe.toml), not muted_color; over
+    // background_color #e6e6e6
+    slider_track: srgb8(0x0000_0019),
+    slider_thumb: None,
+    slider_thumb_hover: None,
+    // `slider.disabled_fill_color`: platform-facts.md (§2.9): no accent when disabled, the bar left
+    // of the knob a grey darker than the track: #dfdfdf over the window's #ffffff in a key window
+    // (os-probe run 40348854007, os-probe-macos-26/probe.toml), black at alpha 32/255; over
+    // background_color #dfdfdf
+    slider_disabled_fill: srgb8(0x0000_0020),
+    slider_disabled_track: None,
+    slider_disabled_thumb: None,
+    // `spinner.fill_color`: platform-facts.md (§2.23): black fins at a graded alpha, the leading
+    // one 82/255 (the render equals macOS 14.8.9's byte for byte); over the window background
+    // #adadad
+    spinner: srgb8(0x0000_0052),
+    splitter_hover: None,
+    // `menu.hover_text_color`: platform-facts.md: selectedMenuItemTextColor, probe
+    menu_hover_foreground: srgb8(0xffff_ffff),
+    tab_hover: None,
+    // `sidebar.background_color`: platform-facts.md (§2.12): NSVisualEffectView.Material.sidebar's
+    // opaque rendering with Reduce Transparency on, in an active view of a key window, measured on
+    // macOS 26 and xcode-27's macOS 27, which agree (os-probe run 40320895749,
+    // os-probe-macos-26/probe.toml)
+    sidebar_background: srgb8(0xf6f6_f6ff),
+    // `switch.unchecked_background`: platform-facts.md (§2.21): black at alpha 25/255 (measured),
+    // systemFillColor's value (probe); over background_color #e6e6e6
+    switch_unchecked: srgb8(0x0000_0019),
+    // `switch.thumb_background`: platform-facts.md (§2.21): white (measured)
+    switch_thumb: srgb8(0xffff_ffff),
+    switch_hover_unchecked: None,
+    // `switch.disabled_unchecked_background`: platform-facts.md (§2.21): black at alpha 13/255
+    // (measured, os-probe run 40348854007, renders/aqua/switch-regular-disabled-off@2x.png); over
+    // background_color #f2f2f2
+    switch_disabled_unchecked: srgb8(0x0000_000d),
+    switch_disabled_thumb: None,
+    // `combo_box.background_color`: platform-facts.md (§2.24): drawn in secondarySystemFillColor's
+    // value (measured; probe); over background_color #ebebeb
+    combo_background: srgb8(0x0000_0014),
+    // `combo_box.font.color`: platform-facts.md (§2.24): labelColor = controlTextColor, probe; over
+    // the fill #242424
+    combo_foreground: srgb8(0x0000_00d8),
+    combo_hover: None,
+    combo_disabled: None,
+    segmented_active: None,
+    segmented_active_foreground: None,
+    segmented_hover: None,
+    expander_hover: None,
+    expander_arrow: None,
 };
 
 /// `macos-tahoe`'s dark scheme.
@@ -704,6 +957,62 @@ const TAHOE_DARK: SchemeColors = SchemeColors {
     // 40320895749, os-probe-macos-26/probe.toml)
     title_bar_background: srgb8(0x1e1e_1eff),
     title_bar_inactive_background: None,
+    // `slider.track_color`: platform-facts.md (§2.9): systemFillColor's value (probe), white at
+    // alpha 25/255 (measured, os-probe run 40348854007, renders/darkAqua/slider-regular@2x.png; a
+    // key window draws #343434 over #1e1e1e, os-probe-macos-26/probe.toml), not muted_color; over
+    // background_color #343434
+    slider_track: srgb8(0xffff_ff19),
+    // `slider.thumb_color`: platform-facts.md (§2.9): white at alpha 217/255 (measured,
+    // renders/darkAqua/slider-regular@2x.png); over background_color #dddddd
+    slider_thumb: Some(srgb8(0xffff_ffd9)),
+    slider_thumb_hover: None,
+    // `slider.disabled_fill_color`: platform-facts.md (§2.9): no accent when disabled, the bar left
+    // of the knob a grey lighter than the track: #393939 over the window's #1e1e1e in a key window
+    // (os-probe run 40348854007, os-probe-macos-26/probe.toml), white at alpha 31/255; over
+    // background_color #393939
+    slider_disabled_fill: srgb8(0xffff_ff1f),
+    slider_disabled_track: None,
+    slider_disabled_thumb: None,
+    // `spinner.fill_color`: platform-facts.md (§2.23): white fins at a graded alpha, the leading
+    // one 82/255 (the render equals macOS 14.8.9's byte for byte); over the window background
+    // #666666
+    spinner: srgb8(0xffff_ff52),
+    splitter_hover: None,
+    // `menu.hover_text_color`: platform-facts.md: selectedMenuItemTextColor, probe
+    menu_hover_foreground: srgb8(0xffff_ffff),
+    tab_hover: None,
+    // `sidebar.background_color`: platform-facts.md (§2.12): NSVisualEffectView.Material.sidebar's
+    // opaque rendering with Reduce Transparency on, in an active view of a key window, measured on
+    // macOS 26 and xcode-27's macOS 27, which agree (os-probe run 40320895749,
+    // os-probe-macos-26/probe.toml)
+    sidebar_background: srgb8(0x3838_38ff),
+    // `switch.unchecked_background`: platform-facts.md (§2.21): white at alpha 25/255 (measured),
+    // systemFillColor's value (probe); over background_color #343434
+    switch_unchecked: srgb8(0xffff_ff19),
+    // `switch.thumb_background`: platform-facts.md (§2.21): white at alpha 221/255 (measured,
+    // renders/darkAqua/switch-regular-off@2x.png)
+    switch_thumb: srgb8(0xffff_ffdd),
+    switch_hover_unchecked: None,
+    // `switch.disabled_unchecked_background`: platform-facts.md (§2.21): white at alpha 13/255
+    // (measured, os-probe run 40348854007, renders/darkAqua/switch-regular-disabled-off@2x.png);
+    // over background_color #292929
+    switch_disabled_unchecked: srgb8(0xffff_ff0d),
+    // `switch.disabled_thumb_color`: platform-facts.md (§2.21): white at alpha 219/255, where the
+    // enabled knob is 221/255 (measured, the same render); over background_color #dfdfdf
+    switch_disabled_thumb: Some(srgb8(0xffff_ffdb)),
+    // `combo_box.background_color`: platform-facts.md (§2.24): drawn in secondarySystemFillColor's
+    // value (measured; probe); over background_color #303030
+    combo_background: srgb8(0xffff_ff14),
+    // `combo_box.font.color`: platform-facts.md (§2.24): labelColor = controlTextColor, probe; over
+    // the fill #dfdfdf
+    combo_foreground: srgb8(0xffff_ffd8),
+    combo_hover: None,
+    combo_disabled: None,
+    segmented_active: None,
+    segmented_active_foreground: None,
+    segmented_hover: None,
+    expander_hover: None,
+    expander_arrow: None,
 };
 
 /// One preset's constants that do not change with the scheme: its metrics,
@@ -779,6 +1088,65 @@ struct Generation {
     tooltip_font_size_pt: f32,
     tooltip_max_width: f32,
     title_bar_font_weight: u16,
+    slider_track_height: f32,
+    slider_thumb_diameter: f32,
+    slider_tick_length: f32,
+    progress_bar_track_height: f32,
+    progress_bar_min_width: f32,
+    progress_bar_padding_vertical: f32,
+    progress_bar_padding_horizontal: f32,
+    progress_bar_shadow_enabled: bool,
+    splitter_divider: Color,
+    splitter_divider_width: f32,
+    spinner_diameter: f32,
+    spinner_min_diameter: f32,
+    spinner_stroke_width: f32,
+    menu_row_height: Option<f32>,
+    menu_icon_text_gap: f32,
+    menu_icon_size: f32,
+    menu_padding_vertical: Option<f32>,
+    menu_padding_horizontal: Option<f32>,
+    tab_min_width: f32,
+    tab_min_height: f32,
+    tab_padding_vertical: Option<f32>,
+    tab_padding_horizontal: Option<f32>,
+    toolbar_bar_height: Option<f32>,
+    toolbar_item_gap: Option<f32>,
+    toolbar_padding_vertical: Option<f32>,
+    toolbar_padding_horizontal: Option<f32>,
+    switch_track_width: f32,
+    switch_track_height: f32,
+    switch_track_radius: f32,
+    switch_thumb_diameter: f32,
+    switch_disabled_checked_alpha: u8,
+    dialog_padding_vertical: Option<f32>,
+    dialog_padding_horizontal: Option<f32>,
+    dialog_min_width: f32,
+    dialog_max_width: f32,
+    dialog_min_height: f32,
+    dialog_max_height: f32,
+    dialog_button_gap: f32,
+    dialog_icon_size: f32,
+    dialog_button_order: DialogButtonOrder,
+    alert_title_size_pt: f32,
+    alert_title_weight: u16,
+    combo_min_width: f32,
+    combo_min_height: f32,
+    combo_arrow_size: f32,
+    combo_padding_top: f32,
+    combo_padding_bottom: f32,
+    combo_padding_left: f32,
+    combo_shadow_enabled: bool,
+    segment_height: f32,
+    segment_separator_width: f32,
+    segment_padding_vertical: Option<f32>,
+    segmented_shadow_enabled: bool,
+    card_padding_vertical: f32,
+    card_padding_horizontal: f32,
+    expander_header_height: f32,
+    expander_arrow_size: f32,
+    expander_arrow_side: ArrowSide,
+    expander_shadow_enabled: bool,
 }
 
 /// `macos-monterey`'s constants.
@@ -928,6 +1296,146 @@ const MONTEREY: Generation = Generation {
     tooltip_max_width: 300.0,
     // `window.title_bar_font.weight`: 0.7.2 macos-monterey.toml (uncited)
     title_bar_font_weight: 700,
+    // `slider.track_height`: platform-facts.md (§2.9): barRectFlipped 4 high (probe)
+    slider_track_height: 4.0,
+    // `slider.thumb_diameter`: platform-facts.md (§2.9): NSSlider knob 20 (measured, macOS 14.8.9
+    // probe render)
+    slider_thumb_diameter: 20.0,
+    // `slider.tick_mark_length`: 0.7.2 macos-monterey.toml (uncited)
+    slider_tick_length: 8.0,
+    // `progress_bar.track_height`: 0.7.2 macos-monterey.toml (uncited)
+    progress_bar_track_height: 6.0,
+    // `progress_bar.min_width`: 0.7.2 macos-monterey.toml (uncited)
+    progress_bar_min_width: 100.0,
+    // `progress_bar.border.padding.top`, `progress_bar.border.padding.bottom`: 0.7.2
+    // macos-monterey.toml (uncited)
+    progress_bar_padding_vertical: 0.0,
+    // `progress_bar.border.padding.left`, `progress_bar.border.padding.right`: platform-facts.md
+    // (§2.10): 0; 0 (measured), the fill starts in the track's first column and covers its rows
+    progress_bar_padding_horizontal: 0.0,
+    // `progress_bar.border.shadow_enabled`: platform-facts.md (§2.10): no shadow
+    progress_bar_shadow_enabled: false,
+    // `splitter.divider_color`: 0.7.2 macos-monterey.toml (uncited)
+    splitter_divider: srgb8(0x0000_0000),
+    // `splitter.divider_width`: platform-facts.md (§2.17): NSSplitView's default .thick divider,
+    // dividerThickness 9 (macOS 14.8.9 probe), dividerColor clear
+    splitter_divider_width: 9.0,
+    // `spinner.diameter`: 0.7.2 macos-monterey.toml (uncited)
+    spinner_diameter: 32.0,
+    // `spinner.min_diameter`: 0.7.2 macos-monterey.toml (uncited)
+    spinner_min_diameter: 10.0,
+    // `spinner.stroke_width`: 0.7.2 macos-monterey.toml (uncited)
+    spinner_stroke_width: 2.0,
+    // `menu.row_height`: 0.7.2 macos-monterey.toml (uncited)
+    menu_row_height: Some(22.0),
+    // `menu.icon_text_gap`: 0.7.2 macos-monterey.toml (uncited)
+    menu_icon_text_gap: 4.0,
+    // `menu.icon_size`: platform-facts.md (§2.6): 16 (cross-project)
+    menu_icon_size: 16.0,
+    // `menu.border.padding.top`, `menu.border.padding.bottom`: 0.7.2 macos-monterey.toml (uncited)
+    menu_padding_vertical: Some(3.0),
+    // `menu.border.padding.left`, `menu.border.padding.right`: platform-facts.md (§2.6): NSMenuItem
+    // 12; 3 (measured)
+    menu_padding_horizontal: Some(12.0),
+    // `tab.min_width`: 0.7.2 macos-monterey.toml (uncited)
+    tab_min_width: 64.0,
+    // `tab.min_height`: 0.7.2 macos-monterey.toml (uncited)
+    tab_min_height: 24.0,
+    // `tab.border.padding.top`, `tab.border.padding.bottom`: 0.7.2 macos-monterey.toml (uncited)
+    tab_padding_vertical: Some(4.0),
+    // `tab.border.padding.left`, `tab.border.padding.right`: platform-facts.md (§2.11): NSTabView
+    // 12; 4 (measured)
+    tab_padding_horizontal: Some(12.0),
+    // `toolbar.bar_height`: platform-facts.md (§2.13): NSToolbar 38
+    toolbar_bar_height: Some(38.0),
+    // `toolbar.item_gap`: platform-facts.md (§2.13): AppKit 8
+    toolbar_item_gap: Some(8.0),
+    // `toolbar.border.padding.top`, `toolbar.border.padding.bottom`: 0.7.2 macos-monterey.toml
+    // (uncited)
+    toolbar_padding_vertical: Some(0.0),
+    // `toolbar.border.padding.left`, `toolbar.border.padding.right`: platform-facts.md (§2.13):
+    // NSToolbar 8 (measured); 0
+    toolbar_padding_horizontal: Some(8.0),
+    // `switch.track_width`: platform-facts.md (§2.21): NSSwitch intrinsicContentSize 38 x 22 (probe)
+    switch_track_width: 38.0,
+    // `switch.track_height`: 0.7.2 macos-monterey.toml (uncited)
+    switch_track_height: 22.0,
+    // `switch.track_radius`: 0.7.2 macos-monterey.toml (uncited)
+    switch_track_radius: 11.0,
+    // `switch.thumb_diameter`: platform-facts.md (§2.21): the knob's fill, 20 (measured)
+    switch_thumb_diameter: 20.0,
+    // `switch.disabled_checked_background`: platform-facts.md (§2.21): accent_color at alpha
+    // 128/255, as macOS draws the enabled on track at one half (measured in a key window, os-probe
+    // run 40348854007, os-probe-macos-14/probe.toml); the macOS reader writes the user's accent at
+    // it; over background_color #76b3f6 in light, over background_color #195699 in dark, where the
+    // key window drew #1f4e81 (probe), macOS's dark on track being darker than the accent it reads
+    switch_disabled_checked_alpha: 0x80,
+    // `dialog.border.padding.top`, `dialog.border.padding.bottom`: 0.7.2 macos-monterey.toml
+    // (uncited)
+    dialog_padding_vertical: Some(20.0),
+    // `dialog.border.padding.left`, `dialog.border.padding.right`: platform-facts.md (§2.22): ~20
+    // (measured)
+    dialog_padding_horizontal: Some(20.0),
+    // `dialog.min_width`: 0.7.2 macos-monterey.toml (uncited)
+    dialog_min_width: 320.0,
+    // `dialog.max_width`: 0.7.2 macos-monterey.toml (uncited)
+    dialog_max_width: 560.0,
+    // `dialog.min_height`: 0.7.2 macos-monterey.toml (uncited)
+    dialog_min_height: 140.0,
+    // `dialog.max_height`: 0.7.2 macos-monterey.toml (uncited)
+    dialog_max_height: 600.0,
+    // `dialog.button_gap`: 0.7.2 macos-monterey.toml (uncited)
+    dialog_button_gap: 12.0,
+    // `dialog.icon_size`: 0.7.2 macos-monterey.toml (uncited)
+    dialog_icon_size: 64.0,
+    // `dialog.button_order`: 0.7.2 macos-monterey.toml (uncited)
+    dialog_button_order: DialogButtonOrder::PrimaryRight,
+    // `dialog.title_font.size`: platform-facts.md (§2.22): the emphasized system font, 13pt Bold
+    alert_title_size_pt: 13.0,
+    // `dialog.title_font.weight`: 0.7.2 macos-monterey.toml (uncited)
+    alert_title_weight: 700,
+    // `combo_box.min_width`: 0.7.2 macos-monterey.toml (uncited)
+    combo_min_width: 120.0,
+    // `combo_box.min_height`: platform-facts.md (§2.24): NSPopUpButton intrinsicContentSize 20
+    // (probe)
+    combo_min_height: 20.0,
+    // `combo_box.arrow_icon_size`: no source: platform-facts.md measures the chevron 6 x 10, which
+    // a square icon size cannot carry
+    combo_arrow_size: 17.0,
+    // `combo_box.border.padding.top`: 0.7.2 macos-monterey.toml (uncited)
+    combo_padding_top: 1.0,
+    // `combo_box.border.padding.bottom`: 0.7.2 macos-monterey.toml (uncited)
+    combo_padding_bottom: 3.0,
+    // `combo_box.border.padding.left`: platform-facts.md (§2.24): 8 left, 1 top / 3 bottom (API,
+    // the title rect, probe), from the bezel's outer edge; the right side holds the arrow
+    combo_padding_left: 8.0,
+    // `combo_box.border.shadow_enabled`: platform-facts.md (§2.24): no shadow
+    combo_shadow_enabled: false,
+    // `segmented_control.segment_height`: platform-facts.md (§2.25): intrinsicContentSize 22 high,
+    // the alignment rect (probe)
+    segment_height: 22.0,
+    // `segmented_control.separator_width`: 0.7.2 macos-monterey.toml (uncited)
+    segment_separator_width: 1.0,
+    // `segmented_control.border.padding.top`, `segmented_control.border.padding.bottom`:
+    // platform-facts.md (§2.25): ~3 (measured)
+    segment_padding_vertical: Some(3.0),
+    // `segmented_control.border.shadow_enabled`: platform-facts.md (§2.25): no shadow
+    segmented_shadow_enabled: false,
+    // `card.border.padding.top`, `card.border.padding.bottom`: 0.7.2 macos-monterey.toml (uncited)
+    card_padding_vertical: 5.0,
+    // `card.border.padding.left`, `card.border.padding.right`: platform-facts.md (§2.26):
+    // NSBox.contentViewMargins, "By default, these are both 5.0" (API); the box's fill and border
+    // are not published (§2.26 background_color, ❓), so the card's fill stays inherited
+    card_padding_horizontal: 5.0,
+    // `expander.header_height`: 0.7.2 macos-monterey.toml (uncited)
+    expander_header_height: 40.0,
+    // `expander.arrow_icon_size`: 0.7.2 macos-monterey.toml (uncited)
+    expander_arrow_size: 13.0,
+    // `expander.arrow_side`: platform-facts.md (§2.27): the HIG's disclosure triangle points in
+    // from the leading edge
+    expander_arrow_side: ArrowSide::Leading,
+    // `expander.border.shadow_enabled`: platform-facts.md (§2.27): no shadow
+    expander_shadow_enabled: false,
 };
 
 /// `macos-tahoe`'s constants.
@@ -1081,6 +1589,149 @@ const TAHOE: Generation = Generation {
     // `window.title_bar_font.weight`: platform-facts.md (§2.2): titleBarFontOfSize:, weight trait
     // 0.4 (probe)
     title_bar_font_weight: 700,
+    // `slider.track_height`: platform-facts.md (§2.9): barRectFlipped 6 high (probe)
+    slider_track_height: 6.0,
+    // `slider.thumb_diameter`: platform-facts.md (§2.9): the knob is a 20 x 16 capsule (probe); its
+    // 16 across the track (docs/archive/todo_v0.7.0_code-review-findings.md, M2a Steps 8-12)
+    slider_thumb_diameter: 16.0,
+    // `slider.tick_mark_length`: platform-facts.md (§2.9): rectOfTickMarkAtIndex 2 x 2 (probe)
+    slider_tick_length: 2.0,
+    // `progress_bar.track_height`: platform-facts.md (§2.10): 8 (measured,
+    // renders/aqua/progress_bar-regular@2x.png in light, renders/darkAqua/progress_bar-regular@2x.png
+    // in dark)
+    progress_bar_track_height: 8.0,
+    // `progress_bar.min_width`: no macOS 26 source (platform-facts.md, (none)): macos-monterey's
+    // value
+    progress_bar_min_width: 100.0,
+    // `progress_bar.border.padding.top`, `progress_bar.border.padding.bottom`: 0.7.2
+    // macos-tahoe.toml (uncited)
+    progress_bar_padding_vertical: 0.0,
+    // `progress_bar.border.padding.left`, `progress_bar.border.padding.right`: platform-facts.md
+    // (§2.10): 0; 0 (measured, macOS 26.6.2), the fill starts in the track's first column and
+    // covers its rows
+    progress_bar_padding_horizontal: 0.0,
+    // `progress_bar.border.shadow_enabled`: platform-facts.md (§2.10): no shadow (measured)
+    progress_bar_shadow_enabled: false,
+    // `splitter.divider_color`: 0.7.2 macos-tahoe.toml (uncited)
+    splitter_divider: srgb8(0x0000_0000),
+    // `splitter.divider_width`: platform-facts.md (§2.17): NSSplitView's default .thick divider,
+    // dividerThickness 9 (probe), dividerColor clear
+    splitter_divider_width: 9.0,
+    // `spinner.diameter`: platform-facts.md (§2.23): sizeToFit 32 regular, 10 mini (probe)
+    spinner_diameter: 32.0,
+    // `spinner.min_diameter`: 0.7.2 macos-tahoe.toml (uncited)
+    spinner_min_diameter: 10.0,
+    // `spinner.stroke_width`: no macOS 26 source (platform-facts.md, (none)): macos-monterey's
+    // value
+    spinner_stroke_width: 2.0,
+    menu_row_height: None,
+    // `menu.icon_text_gap`: no macOS 26 source (platform-facts.md): macos-monterey's value
+    menu_icon_text_gap: 4.0,
+    // `menu.icon_size`: no macOS 26 source (platform-facts.md): macos-monterey's value; the
+    // inherited toolbar size would be the wrong kind
+    menu_icon_size: 16.0,
+    menu_padding_vertical: None,
+    menu_padding_horizontal: None,
+    // `tab.min_width`: no macOS 26 source (platform-facts.md): macos-monterey's values
+    tab_min_width: 64.0,
+    // `tab.min_height`: 0.7.2 macos-tahoe.toml (uncited); the TOML's note on the group: no macOS 26
+    // source (platform-facts.md): macos-monterey's values
+    tab_min_height: 24.0,
+    tab_padding_vertical: None,
+    tab_padding_horizontal: None,
+    toolbar_bar_height: None,
+    toolbar_item_gap: None,
+    toolbar_padding_vertical: None,
+    toolbar_padding_horizontal: None,
+    // `switch.track_width`: platform-facts.md (§2.21): NSSwitch intrinsicContentSize 54 x 24 (probe)
+    switch_track_width: 54.0,
+    // `switch.track_height`: 0.7.2 macos-tahoe.toml (uncited)
+    switch_track_height: 24.0,
+    // `switch.track_radius`: platform-facts.md (§2.21): half the track's height, a pill (the
+    // render's ends are round)
+    switch_track_radius: 12.0,
+    // `switch.thumb_diameter`: platform-facts.md (§2.21): the knob is a 32 x 20 capsule (measured);
+    // its 20 across the track (docs/archive/todo_v0.7.0_code-review-findings.md, M2a Steps 8-12)
+    switch_thumb_diameter: 20.0,
+    // `switch.disabled_checked_background`: platform-facts.md (§2.21): accent_color at alpha
+    // 115/255, as macOS 26 draws the enabled on track at about 0.45 (measured in a key window,
+    // os-probe run 40348854007, os-probe-macos-26/probe.toml); the macOS reader writes the user's
+    // accent at it; over background_color #8cc3ff in light, over background_color #104783 in dark
+    switch_disabled_checked_alpha: 0x73,
+    dialog_padding_vertical: None,
+    dialog_padding_horizontal: None,
+    // `dialog.min_width`: no macOS 26 source (platform-facts.md): macos-monterey's values
+    dialog_min_width: 320.0,
+    // `dialog.max_width`: 0.7.2 macos-tahoe.toml (uncited); the TOML's note on the group: no macOS
+    // 26 source (platform-facts.md): macos-monterey's values
+    dialog_max_width: 560.0,
+    // `dialog.min_height`: 0.7.2 macos-tahoe.toml (uncited); the TOML's note on the group: no
+    // macOS 26 source (platform-facts.md): macos-monterey's values
+    dialog_min_height: 140.0,
+    // `dialog.max_height`: 0.7.2 macos-tahoe.toml (uncited); the TOML's note on the group: no
+    // macOS 26 source (platform-facts.md): macos-monterey's values
+    dialog_max_height: 600.0,
+    // `dialog.button_gap`: 0.7.2 macos-tahoe.toml (uncited); the TOML's note on the group: no
+    // macOS 26 source (platform-facts.md): macos-monterey's values
+    dialog_button_gap: 12.0,
+    // `dialog.icon_size`: 0.7.2 macos-tahoe.toml (uncited); the TOML's note on the group: no macOS
+    // 26 source (platform-facts.md): macos-monterey's values
+    dialog_icon_size: 64.0,
+    // `dialog.button_order`: platform-facts.md (§2.22): the default button rightmost
+    dialog_button_order: DialogButtonOrder::PrimaryRight,
+    // `dialog.title_font.size`: no macOS 26 source (platform-facts.md): macos-monterey's values,
+    // the emphasized system font, 13pt Bold; the inherited defaults.font would be the regular
+    // weight
+    alert_title_size_pt: 13.0,
+    // `dialog.title_font.weight`: 0.7.2 macos-tahoe.toml (uncited); the TOML's note on the group:
+    // no macOS 26 source (platform-facts.md): macos-monterey's values, the emphasized system font,
+    // 13pt Bold; the inherited defaults.font would be the regular weight
+    alert_title_weight: 700,
+    // `combo_box.min_width`: no macOS 26 source (platform-facts.md, (none)): macos-monterey's value
+    combo_min_width: 120.0,
+    // `combo_box.min_height`: platform-facts.md (§2.24): NSPopUpButton intrinsicContentSize 24
+    // (probe)
+    combo_min_height: 24.0,
+    // `combo_box.arrow_icon_size`: no macOS 26 source (platform-facts.md: the chevron is 7 x 10.5,
+    // which a square icon size cannot carry): macos-monterey's value
+    combo_arrow_size: 17.0,
+    // `combo_box.border.padding.top`: 0.7.2 macos-tahoe.toml (uncited)
+    combo_padding_top: 4.0,
+    // `combo_box.border.padding.bottom`: 0.7.2 macos-tahoe.toml (uncited)
+    combo_padding_bottom: 4.0,
+    // `combo_box.border.padding.left`: platform-facts.md (§2.24): the title rect [12, 4, 41, 16] in
+    // the 89 x 24 frame (probe), from its outer edge; the right side holds the arrow
+    combo_padding_left: 12.0,
+    // `combo_box.border.shadow_enabled`: platform-facts.md (§2.24): no shadow (measured)
+    combo_shadow_enabled: false,
+    // `segmented_control.segment_height`: platform-facts.md (§2.25): intrinsicContentSize 24 high,
+    // the alignment rect (probe)
+    segment_height: 24.0,
+    // `segmented_control.separator_width`: no macOS 26 source (platform-facts.md): macos-monterey's
+    // value
+    segment_separator_width: 1.0,
+    segment_padding_vertical: None,
+    // `segmented_control.border.shadow_enabled`: platform-facts.md (§2.25): no shadow (measured)
+    segmented_shadow_enabled: false,
+    // `card.border.padding.top`, `card.border.padding.bottom`: 0.7.2 macos-tahoe.toml (uncited)
+    card_padding_vertical: 5.0,
+    // `card.border.padding.left`, `card.border.padding.right`: platform-facts.md (§2.26):
+    // NSBox.contentViewMargins, "By default, these are both 5.0" (API); on macOS 26 the same,
+    // inferred from the current page, which is not versioned and makes no macOS 26 statement; the
+    // box's fill and border are not published (§2.26 background_color, ❓), so the card's fill
+    // stays inherited
+    card_padding_horizontal: 5.0,
+    // `expander.header_height`: no macOS 26 source (platform-facts.md): macos-monterey's values
+    expander_header_height: 40.0,
+    // `expander.arrow_icon_size`: 0.7.2 macos-tahoe.toml (uncited); the TOML's note on the group: no
+    // macOS 26 source (platform-facts.md): macos-monterey's values
+    expander_arrow_size: 13.0,
+    // `expander.arrow_side`: platform-facts.md (§2.27): the HIG's disclosure triangle points in
+    // from the leading edge
+    expander_arrow_side: ArrowSide::Leading,
+    // `expander.border.shadow_enabled`: no macOS 26 source (platform-facts.md): macos-monterey's
+    // value; the inherited defaults.border.shadow_enabled would be the wrong kind
+    expander_shadow_enabled: false,
 };
 
 /// The font DPI a point size converts at: 72, "where a point is a pixel"
@@ -1121,8 +1772,7 @@ pub(crate) fn resolve_tahoe(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> R
     resolve(&TAHOE, ctx, inputs)
 }
 
-/// The theme of the preset of `g` for `ctx.scheme`. The widgets this builder
-/// does not state yet are the theme with nothing stated's.
+/// The theme of the preset of `g` for `ctx.scheme`.
 fn resolve(g: &Generation, ctx: &ThemeContext, _inputs: &ResolveInputs<'_>) -> ResolvedTheme {
     let c = match ctx.scheme {
         Scheme::Light => &g.light,
@@ -1130,6 +1780,7 @@ fn resolve(g: &Generation, ctx: &ThemeContext, _inputs: &ResolveInputs<'_>) -> R
     };
     let colors = roles(c, g);
     let typography = typography(g, &colors, ctx.text_scale);
+    let motion = motion(ctx.motion, None);
     let layout = LayoutMetrics {
         widget_gap: Some(g.widget_gap),
         container_margin: g.container_margin,
@@ -1143,8 +1794,10 @@ fn resolve(g: &Generation, ctx: &ThemeContext, _inputs: &ResolveInputs<'_>) -> R
         cursor_size_px: None,
         cursor_theme: None,
     };
-    let base = nothing_stated(g.preset, ctx.clone());
     ResolvedTheme {
+        name: Arc::from(g.preset.display_name()),
+        preset: g.preset,
+        context: ctx.clone(),
         icons: IconThemeSpec {
             set: g.icon_set,
             theme: Some(Arc::from(g.icon_theme)),
@@ -1160,7 +1813,7 @@ fn resolve(g: &Generation, ctx: &ThemeContext, _inputs: &ResolveInputs<'_>) -> R
             ),
         },
         timings: UiTimings::default(),
-        motion_tokens: motion_tokens(MotionTokens::default(), motion(ctx.motion, None)),
+        motion_tokens: motion_tokens(MotionTokens::default(), motion),
         // 0.7.2's `defaults.focus_ring_*`: a ring; `focus_ring_keyboard_only` unstated.
         focus_ring: FocusIndicator::new(
             FocusKind::Ring,
@@ -1193,10 +1846,29 @@ fn resolve(g: &Generation, ctx: &ThemeContext, _inputs: &ResolveInputs<'_>) -> R
         ),
         text_area: input(c, g, &colors, &typography, &layout, None, None),
         link: link(c, g, &colors, &typography),
+        slider: slider(c, g, &colors),
+        progress_bar: progress_bar(g, &colors, &layout),
+        splitter: splitter(c, g),
+        separator: separator(c, &layout),
+        spinner: spinner(c, g),
+        menu: menu(c, g, &colors, &typography),
+        menu_bar: menu_bar(c),
+        tab: tab(c, g, &colors, &typography),
+        sidebar: sidebar(c, &colors, &typography, &layout),
+        toolbar: toolbar(c, g, &typography, &layout),
+        status_bar: status_bar(c, &typography, &layout),
+        popover: popover(c, &typography, &layout),
+        switch: switch(c, g, &colors),
+        dialog: dialog(c, g, &colors, &typography, &layout, motion, ctx.text_scale),
+        combo_box: combo_box(c, g, &colors, &typography, &layout, ctx.direction),
+        segmented_control: segmented_control(c, g, &colors, &typography, &layout),
+        card: card(g, &colors),
+        expander: expander(c, g, &typography, &layout),
         colors,
         typography,
         layout,
-        ..base
+        custom_colors: BTreeMap::new(),
+        custom_metrics: BTreeMap::new(),
     }
 }
 
@@ -1890,3 +2562,710 @@ fn link(
         .build();
     LinkWidget::new(WidgetOrigin::Native, container, label)
 }
+
+/// The padding of `vertical` above and below and `horizontal` on each side,
+/// where the preset states both.
+fn symmetric_padding(vertical: Option<f32>, horizontal: Option<f32>) -> Option<PartProp> {
+    vertical
+        .zip(horizontal)
+        .map(|(v, h)| PartProp::Padding(Edges::symmetric(v, h)))
+}
+
+/// `builder` with the exact `size` in both dimensions.
+fn square(
+    builder: RuleBuilder<PartStyle, PartProp>,
+    size: f32,
+) -> RuleBuilder<PartStyle, PartProp> {
+    builder.base([
+        PartProp::MinSize([Some(size); 2]),
+        PartProp::MaxSize([Some(size); 2]),
+    ])
+}
+
+/// The slider: a groove of an exact thickness in its colour, the value's
+/// part in the accent (0.7.2: `slider.fill_color` is `defaults.accent_color`
+/// where unstated), a knob of an exact diameter in its colour where the
+/// scheme states one, else the view's background (0.7.2:
+/// `slider.thumb_color` is `defaults.surface_color` where unstated), with
+/// `macos-monterey`'s hovered knob; disabled, the value's part in its
+/// colour and `macos-monterey`'s groove and knob.
+fn slider(c: &SchemeColors, g: &Generation, roles: &ColorRoles) -> SliderWidget {
+    let track = across(
+        RuleBuilder::new(PartStyle::default()).base([fill(c.slider_track)]),
+        g.slider_track_height,
+    )
+    .rules(
+        c.slider_disabled_track
+            .map(|_| RuleSelector::on(WidgetState::DISABLED)),
+        c.slider_disabled_track.map(fill),
+    )
+    .build();
+    let active_track = RuleBuilder::new(PartStyle::default())
+        .base([fill(roles.accent.fill)])
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED),
+            [fill(c.slider_disabled_fill)],
+        )
+        .build();
+    let thumb = square(
+        RuleBuilder::new(PartStyle::default())
+            .base(c.slider_thumb.or(roles.view.background).map(fill)),
+        g.slider_thumb_diameter,
+    )
+    .rules(
+        c.slider_thumb_hover
+            .map(|_| RuleSelector::on(WidgetState::HOVER)),
+        c.slider_thumb_hover.map(fill),
+    )
+    .rules(
+        c.slider_disabled_thumb
+            .map(|_| RuleSelector::on(WidgetState::DISABLED)),
+        c.slider_disabled_thumb.map(fill),
+    )
+    .build();
+    SliderWidget::new(
+        WidgetOrigin::Native,
+        track,
+        active_track,
+        thumb,
+        RuleBuilder::new(PartStyle::default()).build(),
+        g.slider_tick_length,
+        // 0.7.2: `slider.disabled_opacity` is `defaults.disabled_opacity` where unstated.
+        Some(roles.disabled_opacity),
+    )
+}
+
+/// The progress bar: a groove in the window's muted text (0.7.2:
+/// `progress_bar.track_color` is `defaults.muted_color` where unstated) in
+/// the default line and radius (0.7.2: `progress_bar.border` is
+/// `defaults.border` where unstated), no shadow, unpadded, of an exact height
+/// and a least length; the progress in the accent (`fill_color`:
+/// `defaults.accent_color` where unstated).
+fn progress_bar(g: &Generation, roles: &ColorRoles, layout: &LayoutMetrics) -> ProgressBarWidget {
+    let track = RuleBuilder::new(PartStyle::default())
+        .base(roles.window.foreground_muted.map(fill))
+        .base(roles.window.border.map(|border| outline(layout, border)))
+        .base([
+            corners(layout),
+            PartProp::Padding(Edges::symmetric(
+                g.progress_bar_padding_vertical,
+                g.progress_bar_padding_horizontal,
+            )),
+            PartProp::MinSize([
+                Some(g.progress_bar_min_width),
+                Some(g.progress_bar_track_height),
+            ]),
+            PartProp::MaxSize([None, Some(g.progress_bar_track_height)]),
+        ])
+        .base(no_shadow(g.progress_bar_shadow_enabled))
+        .build();
+    let progress = RuleBuilder::new(PartStyle::default())
+        .base([fill(roles.accent.fill)])
+        .build();
+    ProgressBarWidget::new(WidgetOrigin::Native, track, progress, None)
+}
+
+/// The split view's divider: its handle in its colour, hovered in
+/// `macos-monterey`'s hover colour (`macos-tahoe`: 0.7.2's
+/// `splitter.hover_color` is `divider_color` where unstated, so no rule).
+fn splitter(c: &SchemeColors, g: &Generation) -> SplitterWidget {
+    let handle = RuleBuilder::new(PartStyle::default())
+        .base([fill(g.splitter_divider)])
+        .rules(
+            c.splitter_hover
+                .map(|_| RuleSelector::on(WidgetState::HOVER)),
+            c.splitter_hover.map(fill),
+        )
+        .build();
+    SplitterWidget::new(WidgetOrigin::Native, handle, g.splitter_divider_width)
+}
+
+/// The separator: the default border colour at the default border width
+/// (0.7.2: `separator.line_color` and `line_width` are
+/// `defaults.border.color` and `line_width` where unstated).
+fn separator(c: &SchemeColors, layout: &LayoutMetrics) -> SeparatorWidget {
+    SeparatorWidget::new(
+        WidgetOrigin::Native,
+        c.border,
+        layout.border_width,
+        None,
+        None,
+    )
+}
+
+/// The spinner, in its colour, of its sizes.
+fn spinner(c: &SchemeColors, g: &Generation) -> SpinnerWidget {
+    SpinnerWidget::new(
+        WidgetOrigin::Native,
+        c.spinner,
+        g.spinner_diameter,
+        g.spinner_min_diameter,
+        g.spinner_stroke_width,
+        None,
+    )
+}
+
+/// The menu: its panel in the window's background (0.7.2:
+/// `menu.background_color` is `defaults.background_color` where unstated);
+/// items of `macos-monterey`'s exact height and padding, hovered in the
+/// selection (`menu.hover_background`: `defaults.selection_background` where
+/// unstated); the UI font in the window's text (0.7.2: `menu.font` is
+/// `defaults.font` where unstated), hovered in its own colour, the disabled
+/// text when disabled (`defaults.disabled_text_color`); icons at their size;
+/// separators in the default border colour (`menu.separator_color`:
+/// `defaults.border.color` where unstated). 0.7.2 states no outline,
+/// corners or shadow of the panel.
+fn menu(
+    c: &SchemeColors,
+    g: &Generation,
+    roles: &ColorRoles,
+    typography: &Typography,
+) -> MenuWidget {
+    let panel = RuleBuilder::new(PartStyle::default())
+        .base([fill(c.background)])
+        .build();
+    let item = RuleBuilder::new(PartStyle::default())
+        .base(symmetric_padding(
+            g.menu_padding_vertical,
+            g.menu_padding_horizontal,
+        ))
+        .base(
+            g.menu_row_height
+                .map(|h| PartProp::MinSize([None, Some(h)])),
+        )
+        .base(
+            g.menu_row_height
+                .map(|h| PartProp::MaxSize([None, Some(h)])),
+        )
+        .rule(
+            RuleSelector::on(WidgetState::HOVER),
+            [fill(roles.selection.background)],
+        )
+        .build();
+    let item_label = RuleBuilder::new(label(&typography.body, None))
+        .rule(
+            RuleSelector::on(WidgetState::HOVER),
+            [TextProp::Color(c.menu_hover_foreground)],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED),
+            [TextProp::Color(roles.disabled_text)],
+        )
+        .build();
+    let icon = RuleBuilder::new(IconStyle::default())
+        .base([IconProp::Size(g.menu_icon_size)])
+        .build();
+    let separator = RuleBuilder::new(PartStyle::default())
+        .base([fill(c.border)])
+        .build();
+    MenuWidget::new(
+        WidgetOrigin::Native,
+        panel,
+        item,
+        item_label,
+        RuleBuilder::new(TextStyle::default()).build(),
+        icon,
+        RuleBuilder::new(IconStyle::default()).build(),
+        separator,
+        g.menu_icon_text_gap,
+    )
+}
+
+/// The menu bar: the toolbar's background (0.7.2's
+/// `toolbar.background_color`, `defaults.background_color` where unstated);
+/// 0.7.2 states nothing of its titles.
+fn menu_bar(c: &SchemeColors) -> MenuBarWidget {
+    let bar = RuleBuilder::new(PartStyle::default())
+        .base([fill(c.background)])
+        .build();
+    MenuBarWidget::new(
+        WidgetOrigin::Native,
+        bar,
+        RuleBuilder::new(PartStyle::default()).build(),
+        RuleBuilder::new(TextStyle::default()).build(),
+        None,
+    )
+}
+
+/// The tab bar: the bar and the tabs in the window's background (0.7.2:
+/// `tab.bar_background` and `tab.background_color` are
+/// `defaults.background_color` where unstated), a tab of least sizes with
+/// `macos-monterey`'s padding and hover fill; the selected tab in the
+/// window's background again (`tab.active_background`:
+/// `defaults.background_color` where unstated); the UI font in the window's
+/// text, which a hovered and a selected tab keep (0.7.2: `tab.font` is
+/// `defaults.font`, `hover_text_color` `tab.font.color` and
+/// `active_text_color` `defaults.text_color` where unstated, so no rule).
+/// 0.7.2 states no outline, corners, shadow or indicator.
+fn tab(c: &SchemeColors, g: &Generation, roles: &ColorRoles, typography: &Typography) -> TabWidget {
+    let bar = RuleBuilder::new(PartStyle::default())
+        .base([fill(c.background)])
+        .build();
+    let tab = RuleBuilder::new(PartStyle::default())
+        .base([
+            fill(c.background),
+            PartProp::MinSize([Some(g.tab_min_width), Some(g.tab_min_height)]),
+        ])
+        .base(symmetric_padding(
+            g.tab_padding_vertical,
+            g.tab_padding_horizontal,
+        ))
+        .rules(
+            c.tab_hover.map(|_| RuleSelector::on(WidgetState::HOVER)),
+            c.tab_hover.map(fill),
+        )
+        .rule(
+            RuleSelector::on(WidgetState::SELECTED),
+            roles.window.background.map(fill),
+        )
+        .build();
+    TabWidget::new(
+        WidgetOrigin::Native,
+        bar,
+        tab,
+        RuleBuilder::new(label(&typography.body, None)).build(),
+        RuleBuilder::new(PartStyle::default()).build(),
+        RuleBuilder::new(PartStyle::default()).build(),
+        RuleBuilder::new(IconStyle::default()).build(),
+        None,
+        None,
+        None,
+    )
+}
+
+/// The sidebar: its pane in its own background in the default border colour
+/// and width (0.7.2's partial border inheritance: colour and width only); a
+/// selected item in the selection's colours (0.7.2:
+/// `sidebar.selection_background` and `selection_text_color` are the
+/// selection's where unstated); the UI font in the window's text (0.7.2:
+/// `sidebar.font` is `defaults.font` where unstated; `macos-monterey` states
+/// its colour as that inheritance, labelColor). No hover fill (0.7.2:
+/// `sidebar.hover_background` unset is the pane's fill, "no tint").
+fn sidebar(
+    c: &SchemeColors,
+    roles: &ColorRoles,
+    typography: &Typography,
+    layout: &LayoutMetrics,
+) -> SidebarWidget {
+    let container = RuleBuilder::new(PartStyle::default())
+        .base([fill(c.sidebar_background), outline(layout, c.border)])
+        .build();
+    let item = RuleBuilder::new(PartStyle::default())
+        .rule(
+            RuleSelector::on(WidgetState::SELECTED),
+            [fill(roles.selection.background)],
+        )
+        .build();
+    let item_label = RuleBuilder::new(label(&typography.body, None))
+        .rule(
+            RuleSelector::on(WidgetState::SELECTED),
+            [TextProp::Color(roles.selection.foreground)],
+        )
+        .build();
+    SidebarWidget::new(
+        WidgetOrigin::Native,
+        container,
+        item,
+        item_label,
+        RuleBuilder::new(IconStyle::default()).build(),
+        RuleBuilder::new(TextStyle::default()).build(),
+        None,
+    )
+}
+
+/// The toolbar: the window's background (0.7.2: `toolbar.background_color`
+/// is `defaults.background_color` where unstated) in the default line and
+/// radius (0.7.2: `toolbar.border` is `defaults.border` where unstated) with
+/// `macos-monterey`'s padding, least height and item gap; its buttons'
+/// labels in the UI font (`toolbar.font`: `defaults.font` where unstated),
+/// their icons at the toolbar's size (`toolbar.icon_size`:
+/// `defaults.icon_sizes.toolbar` where unstated). 0.7.2 states no button
+/// fill.
+fn toolbar(
+    c: &SchemeColors,
+    g: &Generation,
+    typography: &Typography,
+    layout: &LayoutMetrics,
+) -> ToolbarWidget {
+    let bar = RuleBuilder::new(PartStyle::default())
+        .base([
+            fill(c.background),
+            outline(layout, c.border),
+            corners(layout),
+        ])
+        .base(symmetric_padding(
+            g.toolbar_padding_vertical,
+            g.toolbar_padding_horizontal,
+        ))
+        .base(
+            g.toolbar_bar_height
+                .map(|h| PartProp::MinSize([None, Some(h)])),
+        )
+        .build();
+    let button_icon = RuleBuilder::new(IconStyle::default())
+        .base([IconProp::Size(g.icon_toolbar)])
+        .build();
+    ToolbarWidget::new(
+        WidgetOrigin::Native,
+        bar,
+        RuleBuilder::new(PartStyle::default()).build(),
+        RuleBuilder::new(label(&typography.body, None)).build(),
+        button_icon,
+        RuleBuilder::new(PartStyle::default()).build(),
+        g.toolbar_item_gap,
+    )
+}
+
+/// The status bar: the window's background (0.7.2:
+/// `status_bar.background_color` is `defaults.background_color` where
+/// unstated) in the default border colour and width (0.7.2's partial border
+/// inheritance: colour and width only); its text in the UI font
+/// (`status_bar.font`: `defaults.font` where unstated).
+fn status_bar(
+    c: &SchemeColors,
+    typography: &Typography,
+    layout: &LayoutMetrics,
+) -> StatusBarWidget {
+    let mut bar = PartStyle::default();
+    for prop in [fill(c.background), outline(layout, c.border)] {
+        bar.apply(&prop);
+    }
+    StatusBarWidget::new(
+        WidgetOrigin::Native,
+        bar,
+        label(&typography.body, None),
+        PartStyle::default(),
+    )
+}
+
+/// The popover: the window's background (0.7.2: `popover.background_color`
+/// is `defaults.background_color` where unstated, `resolve_safety_nets`) in
+/// the default line with the large radius (0.7.2: `popover.border` is
+/// `defaults.border` with `corner_radius_lg` where unstated); its text in the
+/// UI font (`popover.font`: `defaults.font` where unstated).
+fn popover(c: &SchemeColors, typography: &Typography, layout: &LayoutMetrics) -> PopoverWidget {
+    let mut panel = PartStyle::default();
+    for prop in [
+        fill(c.background),
+        outline(layout, c.border),
+        PartProp::Corners(Corners::uniform(layout.corner_radius_lg)),
+    ] {
+        panel.apply(&prop);
+    }
+    PopoverWidget::new(
+        WidgetOrigin::Native,
+        panel,
+        PartStyle::default(),
+        label(&typography.body, None),
+    )
+}
+
+/// The switch: a track of exact sizes and corners with no outline (0.7.2's
+/// track outlines unset: "`None` draws no outline"), off in its fill,
+/// `macos-monterey`'s hovered off fill, on in the accent (0.7.2:
+/// `switch.checked_background` is `defaults.accent_color` where unstated),
+/// whether hovered or not (`hover_checked_background` unset: the enabled
+/// colour); disabled, off in its fill and on in the accent at the preset's
+/// alpha; a knob of an exact diameter, on and off (0.7.2:
+/// `unchecked_thumb_diameter` and `unchecked_thumb_background` are
+/// `thumb_diameter` and `thumb_background` where unset), in its colour with
+/// no outline, disabled in the preset's disabled colour where the scheme
+/// states one.
+fn switch(c: &SchemeColors, g: &Generation, roles: &ColorRoles) -> SwitchWidget {
+    let size = [Some(g.switch_track_width), Some(g.switch_track_height)];
+    let disabled_on = roles
+        .accent
+        .fill
+        .with_alpha(f32::from(g.switch_disabled_checked_alpha) / f32::from(u8::MAX));
+    let track = RuleBuilder::new(PartStyle::default())
+        .base([
+            fill(c.switch_unchecked),
+            PartProp::Stroke(Stroke::None),
+            PartProp::Corners(Corners::uniform(g.switch_track_radius)),
+            PartProp::MinSize(size),
+            PartProp::MaxSize(size),
+        ])
+        .rules(
+            c.switch_hover_unchecked
+                .map(|_| RuleSelector::on(WidgetState::HOVER)),
+            c.switch_hover_unchecked.map(fill),
+        )
+        .rule(
+            RuleSelector::on(WidgetState::CHECKED),
+            [fill(roles.accent.fill)],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED),
+            [fill(c.switch_disabled_unchecked)],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED | WidgetState::CHECKED),
+            [fill(disabled_on)],
+        )
+        .build();
+    let thumb = square(
+        RuleBuilder::new(PartStyle::default())
+            .base([fill(c.switch_thumb), PartProp::Stroke(Stroke::None)]),
+        g.switch_thumb_diameter,
+    )
+    .rules(
+        c.switch_disabled_thumb
+            .map(|_| RuleSelector::on(WidgetState::DISABLED)),
+        c.switch_disabled_thumb.map(fill),
+    )
+    .build();
+    SwitchWidget::new(
+        WidgetOrigin::Native,
+        track,
+        thumb,
+        RuleBuilder::new(TextStyle::default()).build(),
+        None,
+        None,
+        // 0.7.2: `switch.disabled_opacity` is `defaults.disabled_opacity` where unstated.
+        Some(roles.disabled_opacity),
+    )
+}
+
+/// The alert: its panel in the window's background (0.7.2:
+/// `dialog.background_color` is `defaults.background_color` where unstated,
+/// `resolve_safety_nets`) in the default line with the large radius (0.7.2:
+/// `dialog.border` is `defaults.border` with `corner_radius_lg` where
+/// unstated), `macos-monterey`'s padding, its size limits; its title in the
+/// UI font at its own size and weight, its body in the UI font (0.7.2:
+/// `dialog.title_font` and `body_font` are `defaults.font` where unstated);
+/// its icon's size, button gap and order. No entrance is stated; no motion
+/// sets `DialogEntranceStyle::None` (spec §6, resolution step 2).
+fn dialog(
+    c: &SchemeColors,
+    g: &Generation,
+    roles: &ColorRoles,
+    typography: &Typography,
+    layout: &LayoutMetrics,
+    motion: Motion,
+    text_scale: f32,
+) -> DialogWidget {
+    let mut panel = PartStyle::default();
+    for prop in [
+        fill(c.background),
+        outline(layout, c.border),
+        PartProp::Corners(Corners::uniform(layout.corner_radius_lg)),
+        PartProp::MinSize([Some(g.dialog_min_width), Some(g.dialog_min_height)]),
+        PartProp::MaxSize([Some(g.dialog_max_width), Some(g.dialog_max_height)]),
+    ]
+    .into_iter()
+    .chain(symmetric_padding(
+        g.dialog_padding_vertical,
+        g.dialog_padding_horizontal,
+    )) {
+        panel.apply(&prop);
+    }
+    let mut icon = IconStyle::default();
+    icon.apply(&IconProp::Size(g.dialog_icon_size));
+    DialogWidget::new(
+        WidgetOrigin::Native,
+        panel,
+        font(
+            g.font_family,
+            FontSize::Pt(g.alert_title_size_pt),
+            g.alert_title_weight,
+            roles.window.foreground,
+            text_scale,
+        ),
+        label(&typography.body, None),
+        icon,
+        g.dialog_button_gap,
+        Some(g.dialog_button_order),
+        dialog_entrance(None, motion),
+    )
+}
+
+/// The pop-up button: its fill in the default line and radius (0.7.2:
+/// `combo_box.border` is `defaults.border` where unstated), no shadow, of
+/// least sizes, padded above, below and on the left, the side away from the
+/// arrow (the left one mirrored from right to left); `macos-monterey`'s
+/// hovered and disabled fills; the UI font in its colour (0.7.2:
+/// `combo_box.font` is `defaults.font` where unstated), the disabled text
+/// when disabled (`combo_box.disabled_text_color`:
+/// `defaults.disabled_text_color` where unstated); the arrow's size.
+fn combo_box(
+    c: &SchemeColors,
+    g: &Generation,
+    roles: &ColorRoles,
+    typography: &Typography,
+    layout: &LayoutMetrics,
+    direction: Direction,
+) -> ComboBoxWidget {
+    let start = match direction {
+        Direction::Ltr => EdgeFlags::LEFT,
+        Direction::Rtl => EdgeFlags::RIGHT,
+    };
+    let field = RuleBuilder::new(PartStyle::default())
+        .base([
+            fill(c.combo_background),
+            outline(layout, c.border),
+            corners(layout),
+            PartProp::PaddingSides(
+                physical_edges(
+                    Edges::new(
+                        g.combo_padding_top,
+                        g.combo_padding_left,
+                        g.combo_padding_bottom,
+                        g.combo_padding_left,
+                    ),
+                    direction,
+                ),
+                EdgeFlags::TOP | EdgeFlags::BOTTOM | start,
+            ),
+            PartProp::MinSize([Some(g.combo_min_width), Some(g.combo_min_height)]),
+        ])
+        .base(no_shadow(g.combo_shadow_enabled))
+        .rules(
+            c.combo_hover.map(|_| RuleSelector::on(WidgetState::HOVER)),
+            c.combo_hover.map(fill),
+        )
+        .rules(
+            c.combo_disabled
+                .map(|_| RuleSelector::on(WidgetState::DISABLED)),
+            c.combo_disabled.map(fill),
+        )
+        .build();
+    let label = RuleBuilder::new(label(&typography.body, Some(c.combo_foreground)))
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED),
+            [TextProp::Color(roles.disabled_text)],
+        )
+        .build();
+    let chevron = RuleBuilder::new(IconStyle::default())
+        .base([IconProp::Size(g.combo_arrow_size)])
+        .build();
+    ComboBoxWidget::new(
+        WidgetOrigin::Native,
+        field,
+        label,
+        chevron,
+        None,
+        // 0.7.2: `combo_box.disabled_opacity` is `defaults.disabled_opacity` where unstated.
+        Some(roles.disabled_opacity),
+    )
+}
+
+/// The segmented control: a track in the window's background (0.7.2:
+/// `segmented_control.background_color` is `defaults.background_color`
+/// where unstated) in the default line and radius
+/// (`segmented_control.border`: `defaults.border` where unstated), no
+/// shadow; segments of a least height, `macos-monterey`'s padding above and
+/// below and its hover fill, the selected one in `macos-monterey`'s own fill,
+/// else the accent (`active_background`: `defaults.accent_color` where
+/// unstated); the UI font in the window's text (`segmented_control.font`:
+/// `defaults.font` where unstated), the selected one's in
+/// `macos-monterey`'s own colour, else the accent's text
+/// (`active_text_color`: `defaults.accent_text_color` where unstated).
+fn segmented_control(
+    c: &SchemeColors,
+    g: &Generation,
+    roles: &ColorRoles,
+    typography: &Typography,
+    layout: &LayoutMetrics,
+) -> SegmentedControlWidget {
+    let track = RuleBuilder::new(PartStyle::default())
+        .base([
+            fill(c.background),
+            outline(layout, c.border),
+            corners(layout),
+        ])
+        .base(no_shadow(g.segmented_shadow_enabled))
+        .build();
+    let segment = RuleBuilder::new(PartStyle::default())
+        .base([PartProp::MinSize([None, Some(g.segment_height)])])
+        .base(
+            g.segment_padding_vertical
+                .map(|v| PartProp::PaddingSides(Edges::all(v), EdgeFlags::TOP | EdgeFlags::BOTTOM)),
+        )
+        .rules(
+            c.segmented_hover
+                .map(|_| RuleSelector::on(WidgetState::HOVER)),
+            c.segmented_hover.map(fill),
+        )
+        .rule(
+            RuleSelector::on(WidgetState::SELECTED),
+            [fill(c.segmented_active.unwrap_or(roles.accent.fill))],
+        )
+        .build();
+    let segment_label = RuleBuilder::new(label(&typography.body, None))
+        .rule(
+            RuleSelector::on(WidgetState::SELECTED),
+            [TextProp::Color(
+                c.segmented_active_foreground
+                    .unwrap_or(roles.accent.foreground),
+            )],
+        )
+        .build();
+    SegmentedControlWidget::new(
+        WidgetOrigin::Native,
+        track,
+        segment,
+        segment_label,
+        RuleBuilder::new(PartStyle::default()).build(),
+        g.segment_separator_width,
+        // 0.7.2: `segmented_control.disabled_opacity` is `defaults.disabled_opacity` where
+        // unstated.
+        Some(roles.disabled_opacity),
+    )
+}
+
+/// The box: the view's background where a palette states no card's (0.7.2:
+/// `card.background_color` is `defaults.surface_color` where unstated),
+/// padded. 0.7.2 states no outline, corners or shadow of it.
+fn card(g: &Generation, roles: &ColorRoles) -> CardWidget {
+    let container = RuleBuilder::new(PartStyle::default())
+        .base(roles.card.background.or(roles.view.background).map(fill))
+        .base([PartProp::Padding(Edges::symmetric(
+            g.card_padding_vertical,
+            g.card_padding_horizontal,
+        ))])
+        .build();
+    CardWidget::new(WidgetOrigin::Native, container)
+}
+
+/// The disclosure group: the default line and radius (0.7.2:
+/// `expander.border` is `defaults.border` where unstated), no shadow; a
+/// header of a least height with `macos-monterey`'s hover fill; its title in
+/// the UI font (`expander.font`: `defaults.font` where unstated); the
+/// arrow's size, `macos-monterey`'s colour, and its side.
+fn expander(
+    c: &SchemeColors,
+    g: &Generation,
+    typography: &Typography,
+    layout: &LayoutMetrics,
+) -> ExpanderWidget {
+    let container = RuleBuilder::new(PartStyle::default())
+        .base([outline(layout, c.border), corners(layout)])
+        .base(no_shadow(g.expander_shadow_enabled))
+        .build();
+    let header = RuleBuilder::new(PartStyle::default())
+        .base([PartProp::MinSize([None, Some(g.expander_header_height)])])
+        .rules(
+            c.expander_hover
+                .map(|_| RuleSelector::on(WidgetState::HOVER)),
+            c.expander_hover.map(fill),
+        )
+        .build();
+    let arrow = RuleBuilder::new(IconStyle::default())
+        .base([IconProp::Size(g.expander_arrow_size)])
+        .base(c.expander_arrow.map(IconProp::Color))
+        .build();
+    ExpanderWidget::new(
+        WidgetOrigin::Native,
+        container,
+        header,
+        RuleBuilder::new(label(&typography.body, None)).build(),
+        arrow,
+        Some(g.expander_arrow_side),
+        None,
+        None,
+        None,
+    )
+}
+
+#[cfg(test)]
+mod tests;
