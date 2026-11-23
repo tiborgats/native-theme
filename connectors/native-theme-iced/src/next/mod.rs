@@ -55,13 +55,16 @@ pub mod styles;
 
 #[cfg(test)]
 pub(crate) mod parity;
+#[cfg(test)]
+mod root_parity;
 
 use std::fmt;
+use std::time::Duration;
 
 use iced_core::Color as IcedColor;
 use native_theme::next::{
-    Color, InputQuery, Paint, PartStated, PartStyle, ResolvedTheme, Scheme, TextStated, TextStyle,
-    WidgetState,
+    Color, DialogButtonOrder, IconSizes, InputQuery, Orientation, Paint, PartStated, PartStyle,
+    ResolvedTheme, Scheme, Stroke, StyleQuery, TextStated, TextStyle, WidgetState,
 };
 
 use crate::ColorMode;
@@ -170,14 +173,6 @@ pub(crate) fn state_text_color(text: &TextStyle, home: &'static str) -> Mapped<O
     }
 }
 
-/// The theme's colour mode.
-fn mode_of(r: &ResolvedTheme) -> ColorMode {
-    match r.context.scheme {
-        Scheme::Light => ColorMode::Light,
-        Scheme::Dark => ColorMode::Dark,
-    }
-}
-
 /// [`crate::palette::to_palette`]: iced's six-colour palette.
 ///
 /// # Errors
@@ -220,10 +215,223 @@ fn override_colors(r: &ResolvedTheme) -> Mapped<OverrideColors> {
 /// [`Unmapped`] where the theme states no window background or foreground,
 /// no content background or no input placeholder colour.
 pub fn to_theme(r: &ResolvedTheme) -> Mapped<iced_core::theme::Theme> {
+    let mode = match r.context.scheme {
+        Scheme::Light => ColorMode::Light,
+        Scheme::Dark => ColorMode::Dark,
+    };
     Ok(crate::theme_from(
         &r.name,
         to_palette(r)?,
         override_colors(r)?,
-        Some(mode_of(r)),
+        Some(mode),
     ))
+}
+
+// ---------------------------------------------------------------------------
+// The crate root's accessors, each read at its home in the table of homes
+// ---------------------------------------------------------------------------
+
+/// The border width, in logical pixels (`layout.border_width`), for a
+/// border an application draws itself; each style takes its own part's
+/// stroke.
+#[must_use]
+pub fn border_line_width(r: &ResolvedTheme) -> f32 {
+    r.layout.border_width
+}
+
+/// The share of the text colour already folded into every stated border
+/// colour (`layout.border_opacity`).
+#[must_use]
+pub fn border_opacity(r: &ResolvedTheme) -> f32 {
+    r.layout.border_opacity
+}
+
+/// Whether shadows are drawn by default (`layout.shadow_enabled`), for a
+/// surface an application shadows itself; each style casts the shadows its
+/// own part states (`next::styles`).
+#[must_use]
+pub fn border_shadow_enabled(r: &ResolvedTheme) -> bool {
+    r.layout.shadow_enabled
+}
+
+/// [`crate::disabled_opacity`]: the whole widget's fade on top of its
+/// disabled colours (`colors.disabled_opacity`); 1.0 where the platform dims
+/// by colour alone.
+#[must_use]
+pub fn disabled_opacity(r: &ResolvedTheme) -> f32 {
+    r.colors.disabled_opacity
+}
+
+/// The text colour of disabled elements (`colors.disabled_text`), for text
+/// an application draws itself; each style takes its own part's disabled
+/// label.
+#[must_use]
+pub fn disabled_text_color(r: &ResolvedTheme) -> IcedColor {
+    to_color(r.colors.disabled_text)
+}
+
+/// The focus ring's stroke width, in logical pixels
+/// (`focus_ring.stroke.width`); 0 where the ring has no stroke.
+///
+/// # Errors
+///
+/// [`Unmapped`] where the ring's stroke is per side.
+pub fn focus_ring_width(r: &ResolvedTheme) -> Mapped<f32> {
+    match &r.focus_ring.stroke {
+        Stroke::None => Ok(0.0),
+        Stroke::Uniform { width, .. } => Ok(*width),
+        _ => Err(Unmapped("focus_ring.stroke.width")),
+    }
+}
+
+/// The gap between an element's edge and its focus ring, in logical pixels
+/// (`focus_ring.offset`).
+#[must_use]
+pub fn focus_ring_offset(r: &ResolvedTheme) -> f32 {
+    r.focus_ring.offset
+}
+
+/// [`crate::icon_sizes`]: the per-context icon sizes (`icons.sizes`), each
+/// `None` where the theme states none.
+#[must_use]
+pub fn icon_sizes(r: &ResolvedTheme) -> &IconSizes {
+    &r.icons.sizes
+}
+
+/// The four text roles of 0.7.2's `text_scale`, each the typography's style
+/// at its home, or the body's where the theme defines no such role (the
+/// table of homes, rows `text_scale.*`, `home_fallback`).
+#[derive(Clone, Copy, Debug)]
+pub struct TextScale<'a> {
+    /// `typography.caption`.
+    pub caption: &'a TextStyle,
+    /// `typography.headline`.
+    pub section_heading: &'a TextStyle,
+    /// `typography.title1`.
+    pub dialog_title: &'a TextStyle,
+    /// `typography.display`.
+    pub display: &'a TextStyle,
+}
+
+/// [`crate::text_scale`]: the four text roles 0.7.2 names, each a size,
+/// weight and line height as the theme states them, already scaled by the
+/// text scale the theme was resolved for.
+#[must_use]
+pub fn text_scale(r: &ResolvedTheme) -> TextScale<'_> {
+    let t = &r.typography;
+    TextScale {
+        caption: t.caption.as_ref().unwrap_or(&t.body),
+        section_heading: t.headline.as_ref().unwrap_or(&t.body),
+        dialog_title: t.title1.as_ref().unwrap_or(&t.body),
+        display: t.display.as_ref().unwrap_or(&t.body),
+    }
+}
+
+/// [`crate::line_height`]: the line height multiplier
+/// (`typography.line_height_multiplier`), for `LineHeight::Relative`.
+#[must_use]
+pub fn line_height(r: &ResolvedTheme) -> f32 {
+    r.typography.line_height_multiplier
+}
+
+/// A text style's weight, where stated.
+fn text_weight(text: &TextStyle, home: &'static str) -> Mapped<u16> {
+    if text.stated.contains(TextStated::WEIGHT) {
+        Ok(text.weight)
+    } else {
+        Err(Unmapped(home))
+    }
+}
+
+/// [`crate::font_weight`]: the body text's CSS weight
+/// (`typography.body.weight`), for [`crate::to_iced_weight`].
+///
+/// # Errors
+///
+/// [`Unmapped`] where the theme states no body weight.
+pub fn font_weight(r: &ResolvedTheme) -> Mapped<u16> {
+    text_weight(&r.typography.body, "typography.body.weight")
+}
+
+/// [`crate::mono_font_weight`]: the monospace text's CSS weight
+/// (`typography.monospace.weight`).
+///
+/// # Errors
+///
+/// [`Unmapped`] where the theme states no monospace weight.
+pub fn mono_font_weight(r: &ResolvedTheme) -> Mapped<u16> {
+    text_weight(&r.typography.monospace, "typography.monospace.weight")
+}
+
+/// [`crate::dialog_button_order`]: which end of a dialog's button row its
+/// affirmative button sits at (`dialog.button_order`).
+///
+/// # Errors
+///
+/// [`Unmapped`] where the theme states no order.
+pub fn dialog_button_order(r: &ResolvedTheme) -> Mapped<DialogButtonOrder> {
+    stated(r.dialog.button_order, "dialog.button_order")
+}
+
+/// [`crate::dialog_button_gap`]: the space between a dialog's buttons, in
+/// logical pixels (`dialog.button_gap`).
+#[must_use]
+pub fn dialog_button_gap(r: &ResolvedTheme) -> f32 {
+    r.dialog.button_gap
+}
+
+/// [`crate::scrollbar_groove_width`]: the vertical scroll bar's groove
+/// width, in logical pixels (`scrollbar.track(NONE; orientation=Vertical)
+/// .min_size[0]`).
+///
+/// # Errors
+///
+/// [`Unmapped`] where the theme states no groove width.
+pub fn scrollbar_groove_width(r: &ResolvedTheme) -> Mapped<f32> {
+    let vertical = StyleQuery::<()>::new(WidgetState::NONE).orientation(Orientation::Vertical);
+    stated(
+        r.scrollbar.track(vertical).min_size[0],
+        "scrollbar.track(NONE; orientation=Vertical).min_size[0]",
+    )
+}
+
+/// [`crate::list_header_hover_background`]: the fill of a hovered
+/// column-header section, where a rule states one (`list.header(HOVER)
+/// .fill`); `None` where none does.
+///
+/// # Errors
+///
+/// [`Unmapped`] where the fill is stated as a layered paint with no
+/// fallback colour.
+pub fn list_header_hover_background(r: &ResolvedTheme) -> Mapped<Option<IcedColor>> {
+    state_fill(
+        &r.list.header(WidgetState::HOVER),
+        "list.header(HOVER).fill",
+    )
+}
+
+/// [`crate::list_header_active_background`]: the fill of a pressed
+/// column-header section, where a rule states one (`list.header(PRESSED)
+/// .fill`); `None` where none does.
+///
+/// # Errors
+///
+/// [`Unmapped`] where the fill is stated as a layered paint with no
+/// fallback colour.
+pub fn list_header_active_background(r: &ResolvedTheme) -> Mapped<Option<IcedColor>> {
+    state_fill(
+        &r.list.header(WidgetState::PRESSED),
+        "list.header(PRESSED).fill",
+    )
+}
+
+/// [`crate::tooltip_show_delay`]: the delay between the pointer coming to
+/// rest on an element and its tooltip showing (`timings.tooltip_show_ms`),
+/// for `Tooltip::delay`; `None` where the theme states none, a `Tooltip`
+/// then keeping iced's own.
+#[must_use]
+pub fn tooltip_show_delay(r: &ResolvedTheme) -> Option<Duration> {
+    r.timings
+        .tooltip_show_ms
+        .map(|ms| Duration::from_millis(u64::from(ms)))
 }

@@ -213,19 +213,19 @@ reason = "iced draws no focus ring of its own: a focused widget shows its `Focus
 
 [[exception]]
 connector = "iced"
-name = "selection_inactive_background"
+name = ["selection_inactive_background", "next::selection_inactive_background"]
 kind = "absent"
 reason = "iced's text widgets have no unfocused-window state (`text_input::Status` is Active, Hovered, Focused or Disabled, iced_widget 0.14.2 src/text_input.rs:1697-1709), so no style takes an inactive selection"
 
 [[exception]]
 connector = "iced"
-name = "selection_inactive_text_color"
+name = ["selection_inactive_text_color", "next::selection_inactive_text_color"]
 kind = "absent"
 reason = "iced's text widgets have no unfocused-window state (`text_input::Status` is Active, Hovered, Focused or Disabled, iced_widget 0.14.2 src/text_input.rs:1697-1709), so no style takes an inactive selection, and so no style takes its text colour either"
 
 [[exception]]
 connector = "iced"
-name = "selection_text_color"
+name = ["selection_text_color", "next::selection_text_color"]
 kind = "absent"
 reason = "iced's text styles take a selection fill and no selection text colour (`text_input::Style::selection`, `text_editor::Style::selection`, iced_widget 0.14.2 src/text_input.rs:1713-1726, src/text_editor.rs:1425-1436)"
 
@@ -356,6 +356,12 @@ connector = ["gpui", "egui"]
 name = "to_theme_in"
 kind = "absent"
 reason = "the public mode-taking builder is iced's alone (the Step 6 ruling on the mode-taking builder, docs/archive/todo_v0.7.0_code-review-findings.md:11164): iced's `to_theme` leaves the light/dark flag to iced's lightness guess, and `to_theme_in` takes the mode instead. gpui's `to_theme` already takes the mode as `is_dark`, and egui needs nothing: its builder holds both variants and the OS mode (`Builder::os_mode`)"
+
+[[exception]]
+connector = "iced"
+name = ["next::apply", "next::is_dark_resolved"]
+kind = "absent"
+reason = "gpui's `next::apply` installs `next::to_theme` of the 0.8.0 theme as gpui-component's one global `Theme` (connectors/native-theme-gpui/src/next/mod.rs, `apply`'s doc); iced has no theme global: its application hands iced the `Theme` value `next::to_theme` returns. `is_dark_resolved` is gpui's lightness test of the window background; iced's `next::to_theme` takes the theme's own scheme (`context.scheme`) for iced's light/dark flag, and `ResolvedTheme::is_dark` gives it to an application"
 
 [[exception]]
 connector = ["iced", "egui"]
