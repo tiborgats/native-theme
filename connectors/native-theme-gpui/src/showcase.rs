@@ -2281,6 +2281,160 @@ fn value_reads_field(value: &str, field: &str) -> bool {
     named || VALUE_HELPERS.iter().any(|helper| code.contains(helper))
 }
 
+/// The helpers a claim in the 0.8.0 form reads its home's property with
+/// (`info/mod.rs`), by the property: the part's or the text's value where the
+/// theme states it. At a state other than `NONE` the helper's `state_` form
+/// may stand in its place, which reads the value only where a rule states it
+/// for that state, as 0.7.2's soft option of a state.
+const HOME_PROPERTIES: &[(&str, &str)] = &[
+    ("fill", "fill_of"),
+    ("stroke.color", "stroke_color_of"),
+    ("color", "text_color_of"),
+];
+
+/// Whether a claim's `field` is in the 0.8.0 form: a home as the table of
+/// homes (`native-theme/tests/next_homes.toml`) writes it, a query home
+/// `<widget>.<part>(<state>).<property>` or a global's path
+/// (`colors.window.background`). A field of the 0.7.2 form is one
+/// identifier, an upstream token's or a 0.7.2 leaf's name.
+fn is_home(field: &str) -> bool {
+    field.contains('.')
+}
+
+/// The widget, the part, the state's `WidgetState` bits and the property of
+/// a query home, `<widget>.<part>(<state>).<property>`, its state the bits
+/// joined by `|` (`NONE` at rest); `None` for a home of another form, a
+/// global's path or a query with axis values (`NONE; variant=Primary`),
+/// which no claim reads yet.
+fn query_home(field: &str) -> Option<(&str, &str, Vec<&str>, &str)> {
+    let (head, rest) = field.split_once('(')?;
+    let (query, property) = rest.split_once(").")?;
+    let (widget, part) = head.split_once('.')?;
+    let name = |s: &str| {
+        !s.is_empty()
+            && s.chars()
+                .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '_')
+    };
+    let bit = |s: &str| !s.is_empty() && s.chars().all(|c| c.is_ascii_uppercase() || c == '_');
+    let states: Vec<&str> = query.split('|').collect();
+    (name(widget) && name(part) && states.iter().all(|s| bit(s)))
+        .then_some((widget, part, states, property))
+}
+
+/// The arguments of every call of the function `name` in `code`, a value
+/// with its comments, strings and whitespace removed: `name(` where `name`
+/// is not the tail of a longer name, a method or a path's last segment.
+fn calls_of<'a>(code: &'a str, name: &str) -> Vec<&'a str> {
+    let open = format!("{name}(");
+    code.match_indices(open.as_str())
+        .filter(|(at, _)| {
+            code.get(..*at)
+                .and_then(|t| t.chars().next_back())
+                .is_none_or(|c| !(c.is_alphanumeric() || c == '_' || c == '.' || c == ':'))
+        })
+        .filter_map(|(at, _)| {
+            let args = code.get(at + open.len()..)?;
+            let mut depth = 1usize;
+            let end = args.char_indices().find_map(|(i, c)| {
+                match c {
+                    '(' => depth += 1,
+                    ')' => depth -= 1,
+                    _ => {}
+                }
+                (depth == 0).then_some(i)
+            })?;
+            args.get(..end)
+        })
+        .collect()
+}
+
+/// Whether `arg`, a helper's argument, is the query of `widget`'s `part` at
+/// exactly the `WidgetState` bits `states`, sorted, on a theme reached by a
+/// plain path: `&r.button.body(WidgetState::HOVER|WidgetState::CHECKED)`.
+fn queries(arg: &str, widget: &str, part: &str, states: &[String]) -> bool {
+    let arg = arg.trim_start_matches('&').trim_end_matches(',');
+    let call = format!(".{widget}.{part}(");
+    let Some(at) = arg.find(call.as_str()) else {
+        return false;
+    };
+    let receiver = arg.get(..at).unwrap_or("");
+    let path = !receiver.is_empty()
+        && receiver
+            .chars()
+            .all(|c| c.is_alphanumeric() || c == '_' || c == '.');
+    let Some(query) = arg
+        .get(at + call.len()..)
+        .and_then(|rest| rest.strip_suffix(')'))
+    else {
+        return false;
+    };
+    let mut bits: Vec<String> = query
+        .trim_end_matches(',')
+        .split('|')
+        .map(str::to_string)
+        .collect();
+    bits.sort();
+    path && bits == states
+}
+
+/// What is wrong with a value of a claim in the 0.8.0 form, if anything: a
+/// query home's value calls its property's helper (`HOME_PROPERTIES`) on that
+/// widget's part queried at that state, a global's value reads its path.
+fn home_value_finding(value: &str, field: &str) -> Option<String> {
+    let code: String = without_comments_or_strings(value)
+        .chars()
+        .filter(|c| !c.is_whitespace())
+        .collect();
+    if !field.contains('(') {
+        let path = format!(".{field}");
+        let read = code.match_indices(path.as_str()).any(|(at, m)| {
+            code.get(at + m.len()..)
+                .and_then(|t| t.chars().next())
+                .is_none_or(|c| !(c.is_alphanumeric() || c == '_'))
+        });
+        return (!read).then(|| format!("its value `{value}` reads no `{path}`"));
+    }
+    let Some((widget, part, states, property)) = query_home(field) else {
+        return Some(
+            "it is no home the gate reads: <widget>.<part>(<state>).<property>, \
+             the state's bits joined by `|`, or a global's path"
+                .to_string(),
+        );
+    };
+    let Some(&(_, helper)) = HOME_PROPERTIES.iter().find(|(p, _)| *p == property) else {
+        return Some(format!("no helper of HOME_PROPERTIES reads `{property}`"));
+    };
+    let mut wanted: Vec<String> = states.iter().map(|s| format!("WidgetState::{s}")).collect();
+    wanted.sort();
+    let mut helpers = vec![helper.to_string()];
+    if states != ["NONE"] {
+        helpers.push(format!("state_{helper}"));
+    }
+    let read = helpers.iter().any(|helper| {
+        calls_of(&code, helper)
+            .iter()
+            .any(|arg| queries(arg, widget, part, &wanted))
+    });
+    (!read).then(|| {
+        format!(
+            "its value `{value}` calls none of {} on `.{widget}.{part}({})`",
+            helpers.join(", "),
+            wanted.join(" | ")
+        )
+    })
+}
+
+/// Whether `haystack` names the home `home` as a whole: not the tail of a
+/// longer path or name, nor the head of one.
+fn mentions_home(haystack: &str, home: &str) -> bool {
+    haystack.match_indices(home).any(|(at, m)| {
+        let before = haystack.get(..at).and_then(|t| t.chars().next_back());
+        let after = haystack.get(at + m.len()..).and_then(|t| t.chars().next());
+        before.is_none_or(|c| !(c.is_alphanumeric() || c == '_' || c == '.'))
+            && after.is_none_or(|c| !(c.is_alphanumeric() || c == '_'))
+    })
+}
+
 /// Whether `code` reads `field` through a path, `.<field>`.
 fn reads_path(code: &str, field: &str) -> bool {
     code.match_indices('.').any(|(at, _)| {
@@ -2710,6 +2864,14 @@ fn claim_finding(
 /// swatch paints, and it has to be the field the claim names, or the line
 /// cited vouches for a colour nobody shows.
 fn value_finding(claim: &Claim<'_>) -> Option<String> {
+    if is_home(claim.field) && look_fields_read(claim.before, claim.value).is_empty() {
+        return home_value_finding(claim.value, claim.field).map(|why| {
+            format!(
+                "{} [{}] {}:{}: claims `{}`, but {why}",
+                claim.widget, claim.role, claim.file, claim.line, claim.field
+            )
+        });
+    }
     if value_reads_field(claim.value, claim.field)
         || value_reads_bound_field(claim.before, claim.value, claim.field)
         || !look_fields_read(claim.before, claim.value).is_empty()
@@ -2802,7 +2964,12 @@ fn citation_finding(
             lines.len()
         ));
     };
-    if mentions(&span.join("\n"), claim.field) {
+    let named = if is_home(claim.field) {
+        mentions_home(&span.join("\n"), claim.field)
+    } else {
+        mentions(&span.join("\n"), claim.field)
+    };
+    if named {
         return None;
     }
     let shown = span.first().map(|l| l.trim()).unwrap_or("(blank)");
@@ -2920,6 +3087,23 @@ fn reads_edge_colour(value: &str) -> bool {
             .any(|ident| ident.ends_with("_border_color"))
 }
 
+/// Whether a claim's `value` reads a part's stroke colour of the 0.8.0
+/// model, through the helper `HOME_PROPERTIES` names for `stroke.color` or
+/// its `state_` form.
+fn reads_stroke_colour(value: &str) -> bool {
+    let code: String = without_comments_or_strings(value)
+        .chars()
+        .filter(|c| !c.is_whitespace())
+        .collect();
+    HOME_PROPERTIES
+        .iter()
+        .filter(|(property, _)| *property == "stroke.color")
+        .any(|(_, helper)| {
+            !calls_of(&code, helper).is_empty()
+                || !calls_of(&code, &format!("state_{helper}")).is_empty()
+        })
+}
+
 /// Whether a claim's `value` reads the `color` of a binding the code
 /// `before` it binds to a resolved border, `let <b> = &<path>.border;`, as
 /// `info/` binds one: `stated(b.color)` is `<path>.border.color` by another
@@ -2960,10 +3144,12 @@ fn reads_bound_border_colour(before: &str, value: &str) -> bool {
 
 /// Whether `claim` is of an edge colour: its value reads one by path
 /// ([`reads_edge_colour`]), through a bound border
-/// ([`reads_bound_border_colour`]), or off a connector Look, whose edge
+/// ([`reads_bound_border_colour`]), a part's stroke colour of the 0.8.0
+/// model ([`reads_stroke_colour`]), or off a connector Look, whose edge
 /// colours are its `border` and its `<part>_border` ([`look_fields_read`]).
 fn is_edge_claim(claim: &Claim<'_>) -> bool {
     reads_edge_colour(claim.value)
+        || reads_stroke_colour(claim.value)
         || reads_bound_border_colour(claim.before, claim.value)
         || look_fields_read(claim.before, claim.value)
             .iter()
@@ -4551,6 +4737,173 @@ pub fn frame(r: &ResolvedTheme, t: &Theme) -> WidgetInfo {
                 true
             ),
             ("other", "fill", Vec::new(), true, false),
+        ]
+    );
+}
+
+/// The claim gate's 0.8.0 form (docs/v0.8.0-plan.md, section 2, `M4` step
+/// 2), beside the 0.7.2 one the test above holds: a field that is a home
+/// is read through its property's helper on the part queried at exactly
+/// that state, a global by its path, and the cited line names the home
+/// whole; a field of one identifier is still judged as before.
+#[test]
+fn a_claim_in_the_0_8_0_form_names_a_home() {
+    assert!(!is_home("input"));
+    assert!(!is_home("default_button_border_color"));
+    assert!(is_home("button.body(DEFAULT).stroke.color"));
+    assert!(is_home("colors.window.background"));
+    assert_eq!(
+        query_home("toolbar.button(HOVER|CHECKED).stroke.color"),
+        Some((
+            "toolbar",
+            "button",
+            vec!["HOVER", "CHECKED"],
+            "stroke.color"
+        ))
+    );
+    assert_eq!(query_home("button.body(NONE; variant=Primary).fill"), None);
+    assert_eq!(query_home("colors.window.background"), None);
+
+    let passes = [
+        (
+            "fill_of(&r.button.body(WidgetState::DEFAULT))",
+            "button.body(DEFAULT).fill",
+        ),
+        (
+            "state_stroke_color_of(&r.toolbar.button(WidgetState::CHECKED | WidgetState::HOVER))",
+            "toolbar.button(HOVER|CHECKED).stroke.color",
+        ),
+        (
+            "stroke_color_of(\n    &r.toolbar.button(\n        WidgetState::HOVER,\n    ),\n)",
+            "toolbar.button(HOVER).stroke.color",
+        ),
+        (
+            "text_color_of(&n.resolved.button.label(WidgetState::NONE))",
+            "button.label(NONE).color",
+        ),
+        (
+            "stroke_color_of(&r.input.field(WidgetState::NONE)).map(|c| c.opacity(0.5))",
+            "input.field(NONE).stroke.color",
+        ),
+        (
+            "stated(r.colors.window.background)",
+            "colors.window.background",
+        ),
+    ];
+    for (value, field) in passes {
+        assert_eq!(home_value_finding(value, field), None, "{field}: {value}");
+    }
+    let fails = [
+        // Another state, a bit more or less, another part, widget or
+        // property.
+        (
+            "fill_of(&r.button.body(WidgetState::HOVER))",
+            "button.body(DEFAULT).fill",
+        ),
+        (
+            "fill_of(&r.button.body(WidgetState::HOVER | WidgetState::CHECKED))",
+            "button.body(HOVER).fill",
+        ),
+        (
+            "fill_of(&r.button.body(WidgetState::HOVER))",
+            "button.body(HOVER|CHECKED).fill",
+        ),
+        (
+            "fill_of(&r.button.label(WidgetState::NONE))",
+            "button.body(NONE).fill",
+        ),
+        (
+            "fill_of(&r.combo_box.field(WidgetState::NONE))",
+            "input.field(NONE).fill",
+        ),
+        (
+            "stroke_color_of(&r.button.body(WidgetState::NONE))",
+            "button.body(NONE).fill",
+        ),
+        // A state's soft option at rest, where no rule is for a state.
+        (
+            "state_fill_of(&r.button.body(WidgetState::NONE))",
+            "button.body(NONE).fill",
+        ),
+        // A method, a longer name, a receiver that is no path, a read in a
+        // string or a comment.
+        (
+            "x.fill_of(&r.button.body(WidgetState::NONE))",
+            "button.body(NONE).fill",
+        ),
+        (
+            "my_fill_of(&r.button.body(WidgetState::NONE))",
+            "button.body(NONE).fill",
+        ),
+        (
+            "fill_of(&pick(r).button.body(WidgetState::NONE))",
+            "button.body(NONE).fill",
+        ),
+        (
+            "t.button // fill_of(&r.button.body(WidgetState::NONE))",
+            "button.body(NONE).fill",
+        ),
+        // A home the gate does not read, a property no helper reads.
+        (
+            "fill_of(&r.button.body(WidgetState::NONE))",
+            "button.body(NONE; variant=Primary).fill",
+        ),
+        (
+            "fill_of(&r.button.body(WidgetState::NONE))",
+            "button.body(NONE).corners",
+        ),
+        // A global by another path, longer or shorter.
+        (
+            "stated(r.colors.window.background_alt)",
+            "colors.window.background",
+        ),
+        ("stated(r.colors.window)", "colors.window.background"),
+    ];
+    for (value, field) in fails {
+        assert!(
+            home_value_finding(value, field).is_some(),
+            "{field}: {value} passed"
+        );
+    }
+
+    let cited = r#"        state_fill(&default, "button.body(DEFAULT).fill")?,"#;
+    assert!(mentions_home(cited, "button.body(DEFAULT).fill"));
+    assert!(!mentions_home(cited, "button.body(DEFAULT).stroke.color"));
+    assert!(!mentions_home(
+        r#""toolbar.button.body(DEFAULT).fill""#,
+        "button.body(DEFAULT).fill"
+    ));
+    assert!(!mentions_home(
+        r#""button.body(DEFAULT).fill_x""#,
+        "button.body(DEFAULT).fill"
+    ));
+
+    assert!(reads_stroke_colour(
+        "state_stroke_color_of(&r.button.body(WidgetState::HOVER))"
+    ));
+    assert!(reads_stroke_colour(
+        "stroke_color_of(&r.button.body(WidgetState::NONE))"
+    ));
+    assert!(!reads_stroke_colour(
+        "fill_of(&r.button.body(WidgetState::NONE))"
+    ));
+
+    // Through the parser: a claim of each form judged by its own rule, a
+    // stroke colour of the new form an edge colour.
+    let planted = "pub fn both(t: &Theme, r: &ResolvedTheme) -> WidgetInfo {\n    WidgetInfo::new(\"Both\")\n        .color(claim(\"bg\", \"button\", t.button, \"showcase\"))\n        .colors(stated_claim(\"fill\", \"button.body(DEFAULT).fill\", fill_of(&r.button.body(WidgetState::DEFAULT)), \"showcase\"))\n        .colors(stated_claim(\"wrong\", \"button.body(DEFAULT).fill\", fill_of(&r.button.body(WidgetState::NONE)), \"showcase\"))\n        .colors(edge_claim(\"edge\", \"input.field(NONE).stroke.color\", stroke_color_of(&r.input.field(WidgetState::NONE)), width, \"showcase\"))\n        .colors(stated_claim(\"old\", \"input\", fill_of(&r.button.body(WidgetState::NONE)), \"showcase\"))\n}\n";
+    let (planted, _) = claims_in("h.rs", planted);
+    let judged: Vec<(&str, bool, bool)> = planted
+        .iter()
+        .map(|c| (c.role, value_finding(c).is_some(), is_edge_claim(c)))
+        .collect();
+    assert_eq!(
+        judged,
+        vec![
+            ("bg", false, false),
+            ("fill", false, false),
+            ("wrong", true, false),
+            ("edge", false, true),
+            ("old", true, false),
         ]
     );
 }
