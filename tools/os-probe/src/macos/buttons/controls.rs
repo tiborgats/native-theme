@@ -11,11 +11,11 @@ use objc2::rc::Retained;
 use objc2::runtime::ProtocolObject;
 use objc2::{MainThreadOnly, Message};
 use objc2_app_kit::{
-    NSAppearance, NSAppearanceCustomization, NSBezelStyle, NSBox, NSBoxType, NSButton,
-    NSButtonType, NSControl, NSControlSize, NSPopUpButton, NSScrollView, NSSegmentedControl,
-    NSSlider, NSSliderCell, NSSplitView, NSSwitch, NSTabView, NSTabViewItem, NSTableCellView,
-    NSTableColumn, NSTableView, NSTableViewStyle, NSTextField, NSTitlePosition, NSToolbar,
-    NSToolbarItem, NSView, NSWindow,
+    NSAppearance, NSAppearanceCustomization, NSAttributedStringNSStringDrawing, NSBezelStyle,
+    NSBox, NSBoxType, NSButton, NSButtonType, NSControl, NSControlSize, NSPopUpButton,
+    NSScrollView, NSSegmentedControl, NSSlider, NSSliderCell, NSSplitView, NSSwitch, NSTabView,
+    NSTabViewItem, NSTableCellView, NSTableColumn, NSTableView, NSTableViewStyle, NSTextField,
+    NSTitlePosition, NSToolbar, NSToolbarItem, NSView, NSWindow,
 };
 use objc2_foundation::{NSIndexSet, NSPoint, NSRect, NSSize, NSString};
 use toml::{Table, Value};
@@ -64,6 +64,11 @@ const TABLE_TARGET_ROW: isize = 1;
 const SEGMENTS: [&str; 3] = ["One", "Two", "Six"];
 const SEGMENT_WIDTH: f64 = 60.0;
 
+/// The titled disclosure button's width after it is sized to fit (which
+/// leaves it the triangle's width): room for the triangle and the whole
+/// title within its column.
+const DISCLOSURE_WIDTH: f64 = 160.0;
+
 /// The slider's width after it is sized to fit, its range and value.
 const SLIDER_WIDTH: f64 = 160.0;
 const SLIDER_VALUE: f64 = 50.0;
@@ -106,10 +111,13 @@ struct Tabs {
     rects: Vec<Option<NSRect>>,
 }
 
-/// The objects the sheet's views need alive while it is captured.
+/// The objects the sheet's views need alive while it is captured, and the
+/// controls whose parts are read again once the window is shown.
 struct Keep {
     _sources: Vec<Retained<ffi::TableSource>>,
     _delegate: Retained<ffi::ToolbarDelegate>,
+    slider: Retained<NSSlider>,
+    disclosure: Retained<NSButton>,
 }
 
 /// `--button-pass --controls`: the controls sheet, made key, captured per
@@ -117,7 +125,7 @@ struct Keep {
 pub(super) fn controls_table(pass: &Pass<'_>) -> Table {
     let mut t = Table::new();
     out::put(&mut t, "method", out::text(method_text()));
-    let (sheet, targets, tabs, keep) = match build(pass) {
+    let (sheet, mut targets, tabs, keep) = match build(pass) {
         Ok(built) => built,
         Err(reason) => {
             out::put(&mut t, "error", out::unavailable(reason));
@@ -133,6 +141,8 @@ pub(super) fn controls_table(pass: &Pass<'_>) -> Table {
     out::put_table(&mut t, "controls", buttons);
 
     let other = pass.present(window, &mut t);
+    pass.settle(window, SETTLE_STEPS);
+    let knob_at_build = relocate_knob(&mut targets, &keep.slider);
     out::put(
         &mut t,
         "window_backingScaleFactor",
@@ -147,7 +157,20 @@ pub(super) fn controls_table(pass: &Pass<'_>) -> Table {
     let frame_size = window.frame().size;
     let mut placed = Table::new();
     for target in &targets {
-        out::put_table(&mut placed, target.name, target_table(target, frame_size));
+        let mut row = target_table(target, frame_size);
+        match target.name {
+            "slider_knob" => out::put(
+                &mut row,
+                "part_at_build_xywh",
+                match knob_at_build {
+                    Some(r) => rect(r),
+                    None => out::unavailable("the slider's cell is not an NSSliderCell"),
+                },
+            ),
+            "disclosure" => title_reads(&mut row, &keep.disclosure, frame_size),
+            _ => {}
+        }
+        out::put_table(&mut placed, target.name, row);
     }
     out::put_table(&mut t, "targets", placed);
     out::put_table(&mut t, "tabs", tabs_table(&tabs, frame_size));
@@ -438,6 +461,59 @@ fn target_table(target: &Target, frame: NSSize) -> Table {
     t
 }
 
+/// The slider knob's target set to `knobRectFlipped:` as the slider's cell
+/// gives it now (the window shown and drawn); the rect it had at build, read
+/// before the slider's final layout.
+fn relocate_knob(targets: &mut [Target], slider: &NSSlider) -> Option<NSRect> {
+    let knob = slider.cell().and_then(|cell| {
+        cell.downcast_ref::<NSSliderCell>()
+            .map(|c| c.knobRectFlipped(slider.isFlipped()))
+    })?;
+    let target = targets.iter_mut().find(|t| t.name == "slider_knob")?;
+    Some(std::mem::replace(&mut target.part, knob))
+}
+
+/// A titled button's triangle and title: its bounds from the left edge to
+/// the end of the attributed title's width laid from the cell's
+/// `titleRectForBounds:` origin (the bounds where it has no cell), so the
+/// part's centre falls on the button's drawing, not on the room right of it.
+fn titled_part(button: &NSButton) -> NSRect {
+    let b = button.bounds();
+    let Some(cell) = button.cell() else {
+        return b;
+    };
+    let title = cell.titleRectForBounds(b);
+    let end = title.origin.x + button.attributedTitle().size().width;
+    NSRect::new(
+        b.origin,
+        NSSize::new((end - b.origin.x).clamp(0.0, b.size.width), b.size.height),
+    )
+}
+
+/// The titled disclosure button's title: the cell's `titleRectForBounds:`
+/// in the button's coordinates and in the window frame's points from its top
+/// left, and the attributed title's own size (the title is drawn whole where
+/// the rect is at least that wide).
+fn title_reads(t: &mut Table, button: &NSButton, frame: NSSize) {
+    let Some(cell) = button.cell() else {
+        out::put(
+            t,
+            "title_rect_xywh",
+            out::unavailable("the disclosure button has no cell"),
+        );
+        return;
+    };
+    let title = cell.titleRectForBounds(button.bounds());
+    out::put(t, "title_rect_xywh", rect(title));
+    out::put(
+        t,
+        "title_in_window_from_top_left_xywh",
+        rect(in_window(button, title, frame)),
+    );
+    let size = button.attributedTitle().size();
+    out::put(t, "title_size_wh", out::floats(&[size.width, size.height]));
+}
+
 /// The sheet, its targets, the tab view's tab rects and what must stay
 /// alive.
 fn build(pass: &Pass<'_>) -> Result<(Sheet, Vec<Target>, Tabs, Keep), String> {
@@ -491,6 +567,10 @@ fn build(pass: &Pass<'_>) -> Result<(Sheet, Vec<Target>, Tabs, Keep), String> {
     ] {
         place(b, x, 0.0);
     }
+    disclosure.setFrameSize(NSSize::new(
+        DISCLOSURE_WIDTH,
+        disclosure.frame().size.height,
+    ));
     let indicator = |b: &NSButton| {
         b.cell()
             .map(|cell| cell.imageRectForBounds(b.bounds()))
@@ -510,15 +590,19 @@ fn build(pass: &Pass<'_>) -> Result<(Sheet, Vec<Target>, Tabs, Keep), String> {
             reset: Box::new(move || reset_button.setState(state_value(on))),
         });
     }
-    for (name, b) in [
-        ("disclosure", &disclosure),
-        ("push_disclosure", &push_disclosure),
+    for (name, b, part) in [
+        ("disclosure", &disclosure, titled_part(&disclosure)),
+        (
+            "push_disclosure",
+            &push_disclosure,
+            push_disclosure.bounds(),
+        ),
     ] {
         let reset_button = b.retain();
         targets.push(Target {
             name,
             view: view(b),
-            part: b.bounds(),
+            part,
             press: true,
             escape: false,
             reset: Box::new(move || reset_button.setState(state_value(false))),
@@ -562,6 +646,7 @@ fn build(pass: &Pass<'_>) -> Result<(Sheet, Vec<Target>, Tabs, Keep), String> {
     switch.setState(state_value(false));
     control_common(&switch, size);
     place(&switch, c3, 1.0);
+    let popup_button: Retained<NSButton> = Retained::into_super(popup.retain());
     let reset_popup = popup.retain();
     targets.push(Target {
         name: "popup",
@@ -783,8 +868,14 @@ fn build(pass: &Pass<'_>) -> Result<(Sheet, Vec<Target>, Tabs, Keep), String> {
         (
             "disclosure",
             "disclosure",
-            "NSButton, NSButtonTypePushOnPushOff, NSBezelStyleDisclosure, titled, state off",
+            "NSButton, NSButtonTypePushOnPushOff, NSBezelStyleDisclosure, titled, state off, widened to show its whole title",
             &disclosure,
+        ),
+        (
+            "popup",
+            "popup",
+            "NSPopUpButton, two items, the first selected",
+            &popup_button,
         ),
         (
             "push_disclosure",
@@ -817,11 +908,6 @@ fn build(pass: &Pass<'_>) -> Result<(Sheet, Vec<Target>, Tabs, Keep), String> {
         });
     }
     for (name, setup, control) in [
-        (
-            "popup",
-            "NSPopUpButton, two items, the first selected",
-            Retained::into_super(Retained::into_super(popup.retain())),
-        ),
         (
             "text_field",
             "NSTextField, bezeled, editable",
@@ -877,6 +963,8 @@ fn build(pass: &Pass<'_>) -> Result<(Sheet, Vec<Target>, Tabs, Keep), String> {
         Keep {
             _sources: sources,
             _delegate: delegate,
+            slider: slider.retain(),
+            disclosure: disclosure.retain(),
         },
     ))
 }
@@ -1007,7 +1095,7 @@ fn tabs_table(tabs: &Tabs, frame: NSSize) -> Table {
 
 fn method_text() -> String {
     format!(
-        "one titled NSWindow ({} x {} pt content from {}, empty title) holding the button pass's backdrop box and, at the regular control size with systemFontOfSize: of systemFontSizeForControlSize:, sized to fit and centred in rows {ROW_STEP} pt apart from the content's top: row 0 a check box off and one on (title \"{CHECK_TITLE}\"), a disclosure button (titled \"{DISCLOSURE_TITLE}\") and a push disclosure button, both push-on-push-off and off, and a push button (\"{TITLE}\"); row 1 a pop-up button ({POPUP_ITEMS:?}, the first selected), an editable bezeled text field (\"{FIELD_TEXT}\"), a segmented control ({SEGMENTS:?}, each {SEGMENT_WIDTH} pt wide, segment 0 selected) and a switch, off; row 2 a horizontal slider, 0 to {} at {SLIDER_VALUE}, {SLIDER_WIDTH} pt wide; below them two view-based tables of {TABLE_ROWS} rows (one column {TABLE_COLUMN_WIDTH} pt, no header, each cell a label \"{ROW_TEXT}\", no row selected) in scroll views at {} (default style) and {} (NSTableViewStyleSourceList), an NSTabView at {} with tabs {TABS:?} (the first selected, its items without views), a vertical NSSplitView at {} with two empty panes, and an NSBox (NSBoxPrimary, no title) at {}; the window's NSToolbar holds one item whose view is an NSButton (NSBezelStyleToolbar, \"{TITLE}\"); the window made key as a button sheet's; per appearance: normal (the cursor parked right of the window), highlighted (highlight: YES on every NSButton), then per target the cursor moved to the centre of the target's part as the button pass's hovered state moves it, captured over every backdrop (hovered-<target>), and per pressed target, per backdrop, the cursor moved there and a real mouse-down captured during the press as the button pass's clicked state takes it (clicked-<target>[-over-<backdrop>].png; the pop-up's mouse-up followed by an Escape), the control set back after each press (targets: their parts' rects; the table rows: rectOfRow: {TABLE_TARGET_ROW}; the segment: the middle third; the slider: knobRectFlipped:; the tab: tab {TAB_TARGET}'s rect from the tabs table; the split divider: from the first pane's right edge, dividerThickness wide); each layer is solved from the black and white captures as the button pass's (layer_method); diff_from_normal compares a state's capture over the window's background with the normal one inside the target's view frame grown by {DIFF_MARGIN} pt",
+        "one titled NSWindow ({} x {} pt content from {}, empty title) holding the button pass's backdrop box and, at the regular control size with systemFontOfSize: of systemFontSizeForControlSize:, sized to fit and centred in rows {ROW_STEP} pt apart from the content's top: row 0 a check box off and one on (title \"{CHECK_TITLE}\"), a disclosure button (titled \"{DISCLOSURE_TITLE}\", sized to fit, then widened to {DISCLOSURE_WIDTH} pt so its whole title is drawn; targets.disclosure: title_rect_xywh, the cell's titleRectForBounds:, title_size_wh, the attributed title's size) and a push disclosure button, both push-on-push-off and off, and a push button (\"{TITLE}\"); row 1 a pop-up button ({POPUP_ITEMS:?}, the first selected), an editable bezeled text field (\"{FIELD_TEXT}\"), a segmented control ({SEGMENTS:?}, each {SEGMENT_WIDTH} pt wide, segment 0 selected) and a switch, off; row 2 a horizontal slider, 0 to {} at {SLIDER_VALUE}, {SLIDER_WIDTH} pt wide; below them two view-based tables of {TABLE_ROWS} rows (one column {TABLE_COLUMN_WIDTH} pt, no header, each cell a label \"{ROW_TEXT}\", no row selected) in scroll views at {} (default style) and {} (NSTableViewStyleSourceList), an NSTabView at {} with tabs {TABS:?} (the first selected, its items without views), a vertical NSSplitView at {} with two empty panes, and an NSBox (NSBoxPrimary, no title) at {}; the window's NSToolbar holds one item whose view is an NSButton (NSBezelStyleToolbar, \"{TITLE}\"); the window made key as a button sheet's; per appearance: normal (the cursor parked right of the window), highlighted (highlight: YES on every NSButton, the pop-up button among them: each cell highlighted and the control redrawn, the pop-up's menu not opened), then per target the cursor moved to the centre of the target's part as the button pass's hovered state moves it, captured over every backdrop (hovered-<target>), and per pressed target, per backdrop, the cursor moved there and a real mouse-down captured during the press as the button pass's clicked state takes it (clicked-<target>[-over-<backdrop>].png; the pop-up's mouse-up followed by an Escape), the control set back after each press (targets: their parts' rects; the table rows: rectOfRow: {TABLE_TARGET_ROW}; the segment: the middle third; the slider: knobRectFlipped:, read again once the window is shown and settled (part_at_build_xywh: the read at build, before the slider's final layout); the disclosure button: from its left edge to the end of its title, titleRectForBounds:'s origin plus the attributed title's width; the tab: tab {TAB_TARGET}'s rect from the tabs table; the split divider: from the first pane's right edge, dividerThickness wide); each layer is solved from the black and white captures as the button pass's (layer_method); diff_from_normal compares a state's capture over the window's background with the normal one inside the target's view frame grown by {DIFF_MARGIN} pt",
         CONTROLS_CONTENT.width,
         CONTROLS_CONTENT.height,
         point_text(CONTROLS_ORIGIN),
