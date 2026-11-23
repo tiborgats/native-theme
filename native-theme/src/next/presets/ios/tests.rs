@@ -190,7 +190,7 @@ fn at_extra_extra_large_the_sizes_are_the_table_s() {
 }
 
 /// An explicit accent of the tests: a test input, no theme value.
-const RED: u32 = 0xe038_3e;
+const RED: u32 = 0x00e0_383e;
 
 /// The opaque colour of `rgb`, `0xRRGGBB`.
 fn hex(rgb: u32) -> Color {
