@@ -328,16 +328,18 @@ fn a_default_buttons_unstated_properties_are_eguis_own() -> Result<(), Box<dyn s
                 own_width += usize::from(width.is_none());
                 let width = width.unwrap_or(stock.inactive.bg_stroke.width);
                 assert_eq!(button.stroke.width, width, "{at}");
+                // a hovered frame stated as none is no line (spec §10, rule 2)
                 let hover = b.body(WidgetState::HOVER);
-                match super::state_stroke_color_of(&hover) {
-                    Some(c) => assert_eq!(button.hover_stroke.color, c, "{at}"),
-                    None => {
-                        own_hover += 1;
-                        assert_eq!(
-                            button.hover_stroke.color, stock.hovered.bg_stroke.color,
-                            "{at}"
-                        );
-                    }
+                if hover.from_state.contains(PartStated::STROKE) {
+                    let stated =
+                        super::state_stroke_color_of(&hover).unwrap_or(egui::Color32::TRANSPARENT);
+                    assert_eq!(button.hover_stroke.color, stated, "{at}");
+                } else {
+                    own_hover += 1;
+                    assert_eq!(
+                        button.hover_stroke.color, stock.hovered.bg_stroke.color,
+                        "{at}"
+                    );
                 }
                 // the hovered width is its own state's, egui's own where the theme states none
                 if hover.from_state.contains(PartStated::STROKE) {
@@ -353,13 +355,14 @@ fn a_default_buttons_unstated_properties_are_eguis_own() -> Result<(), Box<dyn s
             }
         }
     }
-    assert!(own_hover > 0, "no preset leaves the hovered frame unstated");
+    // the presets' and patches' cases, both kinds of hovered frame among them where a preset
+    // gives each; each unstated value alone is `each_unstated_default_button_value_is_eguis_own`'s
     assert!(
-        own_hover_width > 0,
-        "no preset leaves the hovered width unstated"
+        own_hover < 4 * PRESETS.len(),
+        "no preset states the hovered frame"
     );
-    let fallbacks = [own_text, own_frame, own_width];
-    println!("label, frame, width fallbacks: {fallbacks:?}");
+    let fallbacks = [own_text, own_frame, own_width, own_hover, own_hover_width];
+    println!("label, frame, width, hovered frame, hovered width fallbacks: {fallbacks:?}");
     Ok(())
 }
 
@@ -646,16 +649,31 @@ fn a_tab_and_a_segment_outline_each_state_by_rule_0() -> Result<(), Box<dyn std:
         // and width, both of which egui's stock entries change from rest
         assert_eq!(w.active.bg_stroke, own.active.bg_stroke, "{role:?}");
     }
-    // adwaita states no tab outline: the tab keeps the base's in every state
-    let atlas = patched_light(Preset::Adwaita, "")?;
+    // a preset stating no tab outline at rest, hover or press: the tab keeps the base's in
+    // every state
+    let (key, preset) = PRESETS
+        .iter()
+        .find(|(_, p)| {
+            let r = Theme::preset(*p).resolve(&ThemeContext::light());
+            [WidgetState::NONE, WidgetState::HOVER, WidgetState::PRESSED]
+                .into_iter()
+                .all(|s| {
+                    !r.tab
+                        .tab(s)
+                        .stated
+                        .contains(native_theme::next::PartStated::STROKE)
+                })
+        })
+        .ok_or("every preset states a tab outline at rest, hover or press")?;
+    let atlas = patched_light(*preset, "")?;
     let styles = atlas.scheme(egui::Theme::Light);
     let tab = &styles
         .cell(crate::Role::Tab, crate::RoleVariant::Normal)
         .visuals
         .widgets;
     let base = &styles.base.visuals.widgets;
-    assert_eq!(tab.hovered.bg_stroke, base.hovered.bg_stroke);
-    assert_eq!(tab.active.bg_stroke, base.active.bg_stroke);
+    assert_eq!(tab.hovered.bg_stroke, base.hovered.bg_stroke, "{key}");
+    assert_eq!(tab.active.bg_stroke, base.active.bg_stroke, "{key}");
     Ok(())
 }
 
