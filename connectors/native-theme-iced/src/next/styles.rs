@@ -6,11 +6,13 @@
 //! Requires the `widgets` feature (on by default).
 
 use iced_core::theme::Theme;
-use native_theme::next::{ButtonQuery, ResolvedTheme, WidgetState};
+use native_theme::next::{
+    ButtonQuery, PartStated, ResolvedTheme, Stroke, WidgetState, WindowState,
+};
 
 use super::{
-    Mapped, border, fill, state_fill, state_stroke_color, state_text_color, stated, text_color,
-    to_color,
+    Mapped, Unmapped, border, fill, state_fill, state_stroke_color, state_text_color, stated,
+    text_color, to_color,
 };
 use crate::styles::{self as old, ButtonSource, LinkSource, ToolbarButtonSource, UNFADED};
 
@@ -246,4 +248,144 @@ pub fn button_link(
         )?,
         disabled_opacity: r.colors.disabled_opacity,
     }))
+}
+
+/// [`crate::styles::progress_bar`].
+///
+/// # Errors
+///
+/// [`super::Unmapped`] where the theme states no track or fill colour.
+pub fn progress_bar(
+    r: &ResolvedTheme,
+) -> Mapped<impl Fn(&Theme) -> iced_widget::progress_bar::Style + Clone + use<>> {
+    let p = &r.progress_bar;
+    let track = p.track(WidgetState::NONE);
+    Ok(old::progress_bar_from(
+        fill(&track, "progress_bar.track(NONE).fill")?,
+        fill(&p.fill(WidgetState::NONE), "progress_bar.fill(NONE).fill")?,
+        border!(track, "progress_bar.track(NONE)")?,
+    ))
+}
+
+/// [`crate::styles::rule`]: the separator's colour.
+#[must_use = "this returns the style function; it does not apply it"]
+pub fn rule(r: &ResolvedTheme) -> impl Fn(&Theme) -> iced_widget::rule::Style + Clone + use<> {
+    old::rule_from(to_color(r.separator.color))
+}
+
+/// [`crate::styles::toolbar_rule`]: the toolbar's stroke colour as stated.
+/// The rule is a line of its own under the bar, not a border over the bar's
+/// fill, so no fill is composited under it.
+///
+/// # Errors
+///
+/// [`super::Unmapped`] where the theme states no toolbar stroke of one
+/// colour.
+pub fn toolbar_rule(
+    r: &ResolvedTheme,
+) -> Mapped<impl Fn(&Theme) -> iced_widget::rule::Style + Clone + use<>> {
+    let bar = r.toolbar.bar(WidgetState::NONE);
+    let line = match &bar.stroke {
+        Stroke::Uniform { color, .. } if bar.stated.contains(PartStated::STROKE) => *color,
+        _ => return Err(Unmapped("toolbar.bar(NONE).stroke.color")),
+    };
+    Ok(old::rule_from(to_color(line)))
+}
+
+/// [`crate::styles::pane_grid`]: the splitter's handle under the pointer
+/// and its divider width.
+///
+/// # Errors
+///
+/// [`super::Unmapped`] where the theme states no hovered handle fill.
+pub fn pane_grid(
+    r: &ResolvedTheme,
+) -> Mapped<impl Fn(&Theme) -> iced_widget::pane_grid::Style + Clone + use<>> {
+    let s = &r.splitter;
+    Ok(old::pane_grid_from(
+        fill(&s.handle(WidgetState::HOVER), "splitter.handle(HOVER).fill")?,
+        s.divider_width,
+    ))
+}
+
+/// [`crate::styles::tooltip`].
+///
+/// # Errors
+///
+/// [`super::Unmapped`] where the theme states no panel fill or text colour.
+pub fn tooltip(
+    r: &ResolvedTheme,
+) -> Mapped<impl Fn(&Theme) -> iced_widget::container::Style + Clone + use<>> {
+    let t = &r.tooltip;
+    Ok(old::panel_from(
+        fill(&t.panel, "tooltip.panel.fill")?,
+        Some(text_color(&t.text, "tooltip.text.color")?),
+        Some(border!(t.panel, "tooltip.panel")?),
+    ))
+}
+
+/// [`crate::styles::container_card`].
+///
+/// # Errors
+///
+/// [`super::Unmapped`] where the theme states no card fill.
+pub fn container_card(
+    r: &ResolvedTheme,
+) -> Mapped<impl Fn(&Theme) -> iced_widget::container::Style + Clone + use<>> {
+    let card = r.card.container(WidgetState::NONE);
+    Ok(old::panel_from(
+        fill(&card, "card.container(NONE).fill")?,
+        None,
+        Some(border!(card, "card.container(NONE)")?),
+    ))
+}
+
+/// [`crate::styles::dialog`].
+///
+/// # Errors
+///
+/// [`super::Unmapped`] where the theme states no panel fill or body colour.
+pub fn dialog(
+    r: &ResolvedTheme,
+) -> Mapped<impl Fn(&Theme) -> iced_widget::container::Style + Clone + use<>> {
+    let d = &r.dialog;
+    Ok(old::panel_from(
+        fill(&d.panel, "dialog.panel.fill")?,
+        Some(text_color(&d.body, "dialog.body.color")?),
+        Some(border!(d.panel, "dialog.panel")?),
+    ))
+}
+
+/// [`crate::styles::toolbar`].
+///
+/// # Errors
+///
+/// [`super::Unmapped`] where the theme states no bar fill or button label
+/// colour.
+pub fn toolbar(
+    r: &ResolvedTheme,
+) -> Mapped<impl Fn(&Theme) -> iced_widget::container::Style + Clone + use<>> {
+    let t = &r.toolbar;
+    Ok(old::panel_from(
+        fill(&t.bar(WidgetState::NONE), "toolbar.bar(NONE).fill")?,
+        Some(text_color(
+            &t.button_label(WidgetState::NONE),
+            "toolbar.button_label(NONE).color",
+        )?),
+        None,
+    ))
+}
+
+/// [`crate::styles::application`]: the fill of a normal window's frame.
+///
+/// # Errors
+///
+/// [`super::Unmapped`] where the theme states no frame fill.
+pub fn application(
+    r: &ResolvedTheme,
+) -> Mapped<impl Fn(&Theme) -> iced_core::theme::Style + Clone + use<>> {
+    Ok(old::application_from(fill(
+        &r.window.frame(WindowState::default()),
+        "window.frame(normal).fill",
+    )?))
 }

@@ -1949,14 +1949,21 @@ pub fn scrollbar(resolved: &ResolvedTheme) -> iced_widget::scrollable::Scrollbar
 pub fn progress_bar(
     resolved: &ResolvedTheme,
 ) -> impl Fn(&Theme) -> iced_widget::progress_bar::Style + Clone + use<> {
-    use iced_widget::progress_bar::Style;
-
     let p = &resolved.progress_bar;
+    progress_bar_from(
+        to_color(p.track_color),
+        to_color(p.fill_color),
+        border_of(&p.border),
+    )
+}
 
-    let track = to_color(p.track_color);
-    let filled = to_color(p.fill_color);
-
-    let border = border_of(&p.border);
+/// [`progress_bar`] of what it reads.
+pub(crate) fn progress_bar_from(
+    track: Color,
+    filled: Color,
+    border: Border,
+) -> impl Fn(&Theme) -> iced_widget::progress_bar::Style + Clone + use<> {
+    use iced_widget::progress_bar::Style;
 
     move |_theme| Style {
         background: Background::Color(track),
@@ -1983,9 +1990,14 @@ pub fn progress_bar(
 pub fn rule(
     resolved: &ResolvedTheme,
 ) -> impl Fn(&Theme) -> iced_widget::rule::Style + Clone + use<> {
-    use iced_widget::rule::Style;
+    rule_from(to_color(resolved.separator.line_color))
+}
 
-    let line = to_color(resolved.separator.line_color);
+/// [`rule`] and [`toolbar_rule`] of the line's colour.
+pub(crate) fn rule_from(
+    line: Color,
+) -> impl Fn(&Theme) -> iced_widget::rule::Style + Clone + use<> {
+    use iced_widget::rule::Style;
 
     move |theme| {
         let iced = iced_widget::rule::default(theme);
@@ -2019,14 +2031,18 @@ pub fn rule(
 pub fn pane_grid(
     resolved: &ResolvedTheme,
 ) -> impl Fn(&Theme) -> iced_widget::pane_grid::Style + Clone + use<> {
+    let s = &resolved.splitter;
+    pane_grid_from(to_color(s.hover_color), s.divider_width)
+}
+
+/// [`pane_grid`] of the split's colour and width.
+pub(crate) fn pane_grid_from(
+    color: Color,
+    width: f32,
+) -> impl Fn(&Theme) -> iced_widget::pane_grid::Style + Clone + use<> {
     use iced_widget::pane_grid::{Line, Style};
 
-    let s = &resolved.splitter;
-
-    let split = Line {
-        color: to_color(s.hover_color),
-        width: s.divider_width,
-    };
+    let split = Line { color, width };
 
     move |theme| Style {
         hovered_region: iced_widget::pane_grid::default(theme).hovered_region,
@@ -2054,21 +2070,30 @@ pub fn pane_grid(
 pub fn tooltip(
     resolved: &ResolvedTheme,
 ) -> impl Fn(&Theme) -> iced_widget::container::Style + Clone + use<> {
-    use iced_widget::container::Style;
-
     let t = &resolved.tooltip;
+    panel_from(
+        to_color(t.background_color),
+        Some(to_color(t.font.color)),
+        Some(border_of(&t.border)),
+    )
+}
 
-    let panel = to_color(t.background_color);
-    let label = to_color(t.font.color);
-
-    let border = border_of(&t.border);
+/// The surfaces [`tooltip`], [`container_card`], [`dialog`] and [`toolbar`]
+/// paint, of what they read: the fill, the label colour, and the border, each
+/// `None` that keeps `container::Style::default()`'s.
+pub(crate) fn panel_from(
+    panel: Color,
+    label: Option<Color>,
+    border: Option<Border>,
+) -> impl Fn(&Theme) -> iced_widget::container::Style + Clone + use<> {
+    use iced_widget::container::Style;
 
     move |_theme| {
         let iced = Style::default();
         Style {
-            text_color: Some(label),
+            text_color: label.or(iced.text_color),
             background: Some(Background::Color(panel)),
-            border,
+            border: border.unwrap_or(iced.border),
             shadow: iced.shadow,
             snap: iced.snap,
         }
@@ -2093,24 +2118,12 @@ pub fn tooltip(
 pub fn container_card(
     resolved: &ResolvedTheme,
 ) -> impl Fn(&Theme) -> iced_widget::container::Style + Clone + use<> {
-    use iced_widget::container::Style;
-
     let c = &resolved.card;
-
-    let panel = to_color(c.background_color);
-
-    let border = border_of(&c.border);
-
-    move |_theme| {
-        let iced = Style::default();
-        Style {
-            text_color: iced.text_color,
-            background: Some(Background::Color(panel)),
-            border,
-            shadow: iced.shadow,
-            snap: iced.snap,
-        }
-    }
+    panel_from(
+        to_color(c.background_color),
+        None,
+        Some(border_of(&c.border)),
+    )
 }
 
 /// Where a segment sits in its segmented control, which decides the corners
@@ -2537,25 +2550,12 @@ pub fn expander_frame(
 pub fn dialog(
     resolved: &ResolvedTheme,
 ) -> impl Fn(&Theme) -> iced_widget::container::Style + Clone + use<> {
-    use iced_widget::container::Style;
-
     let d = &resolved.dialog;
-
-    let panel = to_color(d.background_color);
-    let label = to_color(d.body_font.color);
-
-    let border = border_of(&d.border);
-
-    move |_theme| {
-        let iced = Style::default();
-        Style {
-            text_color: Some(label),
-            background: Some(Background::Color(panel)),
-            border,
-            shadow: iced.shadow,
-            snap: iced.snap,
-        }
-    }
+    panel_from(
+        to_color(d.background_color),
+        Some(to_color(d.body_font.color)),
+        Some(border_of(&d.border)),
+    )
 }
 
 /// The platform's toolbar surface, for `container(..).style(..)` on the
@@ -2581,23 +2581,12 @@ pub fn dialog(
 pub fn toolbar(
     resolved: &ResolvedTheme,
 ) -> impl Fn(&Theme) -> iced_widget::container::Style + Clone + use<> {
-    use iced_widget::container::Style;
-
     let t = &resolved.toolbar;
-
-    let bar = to_color(t.background_color);
-    let label = to_color(t.font.color);
-
-    move |_theme| {
-        let iced = Style::default();
-        Style {
-            text_color: Some(label),
-            background: Some(Background::Color(bar)),
-            border: iced.border,
-            shadow: iced.shadow,
-            snap: iced.snap,
-        }
-    }
+    panel_from(
+        to_color(t.background_color),
+        Some(to_color(t.font.color)),
+        None,
+    )
 }
 
 /// The toolbar's bottom edge, for `rule::horizontal(..).style(..)` under the
@@ -2609,19 +2598,7 @@ pub fn toolbar(
 pub fn toolbar_rule(
     resolved: &ResolvedTheme,
 ) -> impl Fn(&Theme) -> iced_widget::rule::Style + Clone + use<> {
-    use iced_widget::rule::Style;
-
-    let line = to_color(resolved.toolbar.border.color);
-
-    move |theme| {
-        let iced = iced_widget::rule::default(theme);
-        Style {
-            color: line,
-            radius: iced.radius,
-            fill_mode: iced.fill_mode,
-            snap: iced.snap,
-        }
-    }
+    rule_from(to_color(resolved.toolbar.border.color))
 }
 
 /// The application's own background and default text, for
@@ -2665,9 +2642,14 @@ pub fn toolbar_rule(
 pub fn application(
     resolved: &ResolvedTheme,
 ) -> impl Fn(&Theme) -> iced_core::theme::Style + Clone + use<> {
-    use iced_core::theme::{Base, Style};
+    application_from(to_color(resolved.window.background_color))
+}
 
-    let background = to_color(resolved.window.background_color);
+/// [`application`] of the window's background.
+pub(crate) fn application_from(
+    background: Color,
+) -> impl Fn(&Theme) -> iced_core::theme::Style + Clone + use<> {
+    use iced_core::theme::{Base, Style};
 
     move |theme| Style {
         background_color: background,

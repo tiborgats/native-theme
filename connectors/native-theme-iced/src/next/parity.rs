@@ -66,25 +66,44 @@ struct Difference {
 }
 
 /// The listed differences.
-const DIFFERENCES: &[Difference] = &[Difference {
-    leaves: &[
-        "button",
-        "button_toggle",
-        "button_primary",
-        "button_default",
-        "button_danger",
-        "button_success",
-        "button_warning",
-    ],
-    presets: &["macos-monterey", "macos-tahoe"],
-    field: "Style.border: Border.color",
-    reason: "the button's border is a translucent stroke the theme lays inside the box, over the \
-             fill (button.body(NONE).stroke, StrokeAlign::Inside); iced on wgpu ends the fill at \
+const DIFFERENCES: &[Difference] = &[
+    Difference {
+        leaves: &[
+            "button",
+            "button_toggle",
+            "button_primary",
+            "button_default",
+            "button_danger",
+            "button_success",
+            "button_warning",
+            "progress_bar",
+            "tooltip",
+            "container_card",
+            "dialog",
+        ],
+        presets: &["windows-11", "macos-monterey", "macos-tahoe"],
+        field: "Style.border: Border.color",
+        reason: "the part's border is a translucent stroke the theme lays inside the box, over the \
+             fill (button.body(NONE), progress_bar.track(NONE), tooltip.panel, \
+             card.container(NONE), dialog.panel: stroke with StrokeAlign::Inside, the \
+             alignment Stroke::uniform gives); iced on wgpu ends the fill at \
              the border's inner edge, so the connector hands iced the stroke composited over the \
              fill, where 0.7.2 handed it the stated colour, which showed the window through the \
              band (docs/v0.8.0-spec.md §2, StrokeAlign; the M2 fill/stroke decision, \
              connector table, iced row)",
-}];
+    },
+    Difference {
+        leaves: &["progress_bar"],
+        presets: &["kde-breeze"],
+        field: "Style.border: Border.color",
+        reason: "Breeze's progress groove is a translucent pen centred on the groove's edge \
+                 (progress_bar.track(NONE).stroke, StrokeAlign::Center); iced on wgpu ends the \
+                 fill at the border's inner edge, so the connector hands iced the band's mean, \
+                 the stroke over the fill at half its alpha, where 0.7.2 handed it the stated \
+                 colour (docs/v0.8.0-spec.md §2, StrokeAlign; the M2 fill/stroke decision, \
+                 connector table, iced row)",
+    },
+];
 
 /// The leaves compared and the differences found, for one preset and scheme.
 struct Report {
@@ -244,6 +263,18 @@ macro_rules! style {
     }};
 }
 
+/// Compare a style function of no status, each side called with its own
+/// iced theme.
+macro_rules! surface {
+    ($report:expr, $themes:expr, $name:literal, $old:expr, $new:expr) => {{
+        let (old_theme, new_theme): (&Theme, &Theme) = $themes;
+        let old = $old;
+        if let Some(new) = $report.mapped($name, $new) {
+            $report.leaf($name, old(old_theme), new(new_theme));
+        }
+    }};
+}
+
 /// The style functions ported so far.
 #[cfg(feature = "widgets")]
 fn compare_styles(
@@ -331,6 +362,46 @@ fn compare_styles(
         o::button_link(old),
         n::button_link(new),
         button
+    );
+
+    surface!(
+        report,
+        themes,
+        "progress_bar",
+        o::progress_bar(old),
+        n::progress_bar(new)
+    );
+    surface!(report, themes, "rule", o::rule(old), Ok(n::rule(new)));
+    surface!(
+        report,
+        themes,
+        "toolbar_rule",
+        o::toolbar_rule(old),
+        n::toolbar_rule(new)
+    );
+    surface!(
+        report,
+        themes,
+        "pane_grid",
+        o::pane_grid(old),
+        n::pane_grid(new)
+    );
+    surface!(report, themes, "tooltip", o::tooltip(old), n::tooltip(new));
+    surface!(
+        report,
+        themes,
+        "container_card",
+        o::container_card(old),
+        n::container_card(new)
+    );
+    surface!(report, themes, "dialog", o::dialog(old), n::dialog(new));
+    surface!(report, themes, "toolbar", o::toolbar(old), n::toolbar(new));
+    surface!(
+        report,
+        themes,
+        "application",
+        o::application(old),
+        n::application(new)
     );
 }
 

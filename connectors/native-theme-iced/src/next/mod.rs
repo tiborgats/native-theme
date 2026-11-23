@@ -205,19 +205,28 @@ pub(crate) fn radius(part: &PartStyle, home: &'static str) -> Mapped<f32> {
 }
 
 /// A part's border as iced outlines a widget, [`crate::styles::border_of`]'s
-/// three values: the stroke's colour ([`stroke_color`]) and width and the
-/// corner radius, each where stated.
+/// three values: the stroke's colour ([`stroke_color`]) and width where the
+/// stroke is stated (a stated `Stroke::None` is no width, its colour
+/// iced's), the corner radius where the corners are, and iced's own
+/// (`Border::default()`, no line and square corners) where they are not
+/// (spec §10, rule 0).
 pub(crate) fn border_of(
     part: &PartStyle,
     color_home: &'static str,
     width_home: &'static str,
     corners_home: &'static str,
 ) -> Mapped<Border> {
-    Ok(Border {
-        color: stroke_color(part, color_home)?,
-        width: stroke_width(part, width_home)?,
-        radius: Radius::new(radius(part, corners_home)?),
-    })
+    let mut border = Border::default();
+    if part.stated.contains(PartStated::STROKE) {
+        border.width = stroke_width(part, width_home)?;
+        if !matches!(part.stroke, Stroke::None) {
+            border.color = stroke_color(part, color_home)?;
+        }
+    }
+    if part.stated.contains(PartStated::CORNERS) {
+        border.radius = Radius::new(radius(part, corners_home)?);
+    }
+    Ok(border)
 }
 
 /// [`border_of`] the part at `$home`, each value's home under it.
