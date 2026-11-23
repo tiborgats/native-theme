@@ -6,16 +6,16 @@ use gpui::{
 };
 use gpui_component::{IconName, h_flex, v_flex};
 
-use native_theme_gpui::geometry;
+use native_theme_gpui::next;
 
 use crate::app::Showcase;
 use crate::demo::{
     self, ButtonKind, ButtonState, DemoButton, DemoCollapsible, GroupBoxKind, SeparatorKind,
     SidebarSample, SpacingBox, StepperKind,
 };
-use crate::pages::{CAROUSEL_SIDE_ROOM, page_root};
+use crate::pages::{CAROUSEL_SIDE_ROOM, next_page_root};
 use crate::support::{
-    NativeStyled as _, STEPPER_STEPS, SampleIcon, frame_drawer, layout_value, with_gap,
+    NativeStyled as _, STEPPER_STEPS, SampleIcon, frame_drawer, layout_value, next_metric, with_gap,
 };
 use crate::{
     LAYOUT_BREADCRUMB, LAYOUT_COLLAPSIBLE, LAYOUT_COLLAPSIBLE_CONTENT, LAYOUT_COLLAPSIBLE_TOGGLE,
@@ -125,13 +125,14 @@ impl Showcase {
     ) -> impl IntoElement + InteractiveElement {
         let ui = &self.info_ui;
         let collapsible_open = self.collapsible_open;
-        // The four layout accessors. `None` where the platform specifies
-        // nothing (platform-facts §2.20), and then no space is drawn for
-        // it, here or round the page -- nothing is invented to fill the gap.
-        let widget_gap = geometry::widget_gap(&self.layout);
-        let container_margin = geometry::container_margin(&self.layout);
-        let window_margin = geometry::window_margin(&self.layout);
-        let section_gap = geometry::section_gap(&self.layout);
+        // The four layout metrics of the installed 0.8.0 theme. `None` where
+        // the platform specifies nothing (platform-facts §2.20), and then no
+        // space is drawn for it, here or round the page -- nothing is
+        // invented to fill the gap.
+        let widget_gap = next_metric(cx, next::geometry::widget_gap);
+        let container_margin = next_metric(cx, next::geometry::container_margin);
+        let window_margin = next_metric(cx, next::geometry::window_margin);
+        let section_gap = next_metric(cx, next::geometry::section_gap);
         let spacing_summary = format!(
             "widget_gap {} · container_margin {} · window_margin {} · section_gap {}",
             layout_value(widget_gap),
@@ -186,7 +187,7 @@ impl Showcase {
         );
         // The page is laid out by the window margin and the section gap it
         // prints.
-        page_root(&self.layout)
+        next_page_root(cx)
             .flex_1()
             // The four layout accessors, applied rather than printed: the outer
             // box takes the platform's window margin, the row inside it the
@@ -196,7 +197,7 @@ impl Showcase {
                 ui,
                 cx,
                 "layout-heading-spacing",
-                "Layout spacing (the four LayoutTheme accessors)",
+                "Layout spacing (the four layout metrics)",
             ))
             .child(demo::spacing_box(
                 ui,

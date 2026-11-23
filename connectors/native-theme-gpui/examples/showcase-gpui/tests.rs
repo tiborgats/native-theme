@@ -3445,10 +3445,10 @@ fn the_disabled_basic_checkbox_paints_the_fill_it_claims(cx: &mut TestAppContext
 }
 
 /// A Link is underlined at rest only where the theme says so (M9-061):
-/// under ios-13 and material-3, which state `link.underline_enabled =
-/// false`, no underline is painted inside the resting Link and its info
-/// claims none and says `geometry::link` removes it; under kde-breeze one is,
-/// and its info claims it.
+/// under ios-13 and material-3, whose installed 0.8.0 themes state
+/// `link.label(NONE).decoration` none, no underline is painted inside the
+/// resting Link and its info claims none and says `geometry::link` removes
+/// it; under kde-breeze one is, and its info claims it.
 #[gpui::test]
 fn a_link_is_underlined_at_rest_only_where_the_theme_says(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
@@ -3456,7 +3456,13 @@ fn a_link_is_underlined_at_rest_only_where_the_theme_says(cx: &mut TestAppContex
     for preset in ["ios-13", "material-3", "kde-breeze"] {
         use_preset(&mut cx, &showcase, preset);
         show(&mut cx, &showcase, Page::Basic);
-        let underlined = resolved_theme(&mut cx, &showcase).link.underline_enabled;
+        let underlined = next_theme(&mut cx, &showcase).is_some_and(|r| {
+            r.link
+                .label(native_theme::next::WidgetState::NONE)
+                .decoration
+                .kind
+                == native_theme::next::DecorationKind::Underline
+        });
         if underlined {
             reached.0 = true;
         } else {
@@ -3475,7 +3481,7 @@ fn a_link_is_underlined_at_rest_only_where_the_theme_says(cx: &mut TestAppContex
         assert_eq!(
             painted,
             usize::from(underlined),
-            "{preset}: link.underline_enabled is {underlined}, and the resting Link paints {painted} underlines"
+            "{preset}: link.label(NONE) underlined is {underlined}, and the resting Link paints {painted} underlines"
         );
         let info = settle_on(&mut cx, &showcase, "basic-link");
         let resting = info.as_ref().is_some_and(|info| {
@@ -3485,7 +3491,7 @@ fn a_link_is_underlined_at_rest_only_where_the_theme_says(cx: &mut TestAppContex
         });
         assert_eq!(
             resting, underlined,
-            "{preset}: link.underline_enabled is {underlined}, and the Link's info claims a resting underline: {resting}: {info:?}"
+            "{preset}: link.label(NONE) underlined is {underlined}, and the Link's info claims a resting underline: {resting}: {info:?}"
         );
         let removed = info.as_ref().is_some_and(|info| {
             info.to_text().contains(
@@ -3494,12 +3500,12 @@ fn a_link_is_underlined_at_rest_only_where_the_theme_says(cx: &mut TestAppContex
         });
         assert_eq!(
             removed, !underlined,
-            "{preset}: link.underline_enabled is {underlined}, and the Link's info says geometry::link removes the underline: {removed}: {info:?}"
+            "{preset}: link.label(NONE) underlined is {underlined}, and the Link's info says geometry::link removes the underline: {removed}: {info:?}"
         );
         assert!(
             info.as_ref()
                 .is_some_and(|info| !info.to_text().contains("no receiver")),
-            "{preset}: the Link's info says link.underline_enabled has no receiver: {info:?}"
+            "{preset}: the Link's info says link.label(NONE).decoration has no receiver: {info:?}"
         );
     }
     assert_eq!(
@@ -3697,15 +3703,18 @@ fn names_the_container_margin(info: &WidgetInfo) -> bool {
 
 /// The card's and the GroupBoxes' infos record `geometry::container_margin`
 /// exactly where it pads a side of their content: where the layout states it
-/// and `card.border.padding` leaves a side unstated, not where the padding
+/// and the card's padding leaves a side unstated, not where the padding
 /// states all four (windows-11 and kde-breeze), which leaves the margin
-/// nothing to pad (the M8 T5 carry-over). Every preset the preset switch
-/// can install (`native_theme::next::Preset::ALL`) in both modes, each
-/// expectation read from the theme installed.
+/// nothing to pad (the M8 T5 carry-over) -- the card's `card.border.padding`
+/// of the 0.7.2 theme it still reads, the GroupBoxes' `card.container(NONE)`
+/// and `layout.container_margin` of the installed 0.8.0 theme. Every preset
+/// the preset switch can install (`native_theme::next::Preset::ALL`) in both
+/// modes, each expectation read from the theme installed.
 #[gpui::test]
 fn the_card_and_the_group_boxes_name_the_container_margin_where_it_pads(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     let mut cases = (false, false);
+    let mut next_cases = (false, false);
     for mode in [AppColorMode::Light, AppColorMode::Dark] {
         switch_mode(&mut cx, mode);
         for preset in native_theme::next::Preset::ALL {
@@ -3740,18 +3749,43 @@ fn the_card_and_the_group_boxes_name_the_container_margin_where_it_pads(cx: &mut
                 if pads { "does not record" } else { "records" },
                 if pads { "an unstated" } else { "no" },
             );
+            let (sides, next_margin) = read(&mut cx, &showcase, |_, cx| {
+                crate::support::next_value(cx, |r| {
+                    (
+                        native_theme_gpui::next::padding_of(
+                            &r.card.container(native_theme::next::WidgetState::NONE),
+                        ),
+                        native_theme_gpui::next::geometry::container_margin(r)
+                            .ok()
+                            .flatten(),
+                    )
+                })
+            })
+            .unwrap_or_default();
+            let next_pads = next_margin.is_some() && sides.iter().any(Option::is_none);
+            if next_margin.is_some() {
+                if next_pads {
+                    next_cases.0 = true;
+                } else {
+                    next_cases.1 = true;
+                }
+            }
             show(&mut cx, &showcase, Page::Layout);
             for group_box in [LAYOUT_GROUP_BOX_NORMAL, LAYOUT_GROUP_BOX_OUTLINE] {
                 let info = settle_on(&mut cx, &showcase, group_box);
                 assert_eq!(
                     info.as_ref().map(names_the_container_margin),
-                    Some(pads),
+                    Some(next_pads),
                     "{} {mode:?}: {group_box}'s info {} geometry::container_margin, and the \
-                     margin pads {} side of card.border.padding {p:?} (container_margin \
-                     {margin:?}): {info:?}",
+                     margin pads {} side of card.container(NONE)'s padding {sides:?} \
+                     (container_margin {next_margin:?}): {info:?}",
                     preset,
-                    if pads { "does not record" } else { "records" },
-                    if pads { "an unstated" } else { "no" },
+                    if next_pads {
+                        "does not record"
+                    } else {
+                        "records"
+                    },
+                    if next_pads { "an unstated" } else { "no" },
                 );
             }
         }
@@ -3761,6 +3795,12 @@ fn the_card_and_the_group_boxes_name_the_container_margin_where_it_pads(cx: &mut
         (true, true),
         "the presets no longer cover a card.border.padding that leaves a side to the margin \
          and one that states all four"
+    );
+    assert_eq!(
+        next_cases,
+        (true, true),
+        "the 0.8.0 presets no longer cover a card.container(NONE) padding that leaves a side \
+         to the margin and one that states all four"
     );
 }
 
@@ -5998,10 +6038,10 @@ fn the_basic_tooltip_is_refined(cx: &mut TestAppContext) {
     );
 }
 
-/// A section heading is set in the theme's section-heading role, as the iced
-/// showcase's section titles are: its info says so, and under kde-breeze,
-/// whose role is 16px (12pt) against a 13px body, the heading is taller
-/// than a body-text label.
+/// A section heading is set in the installed 0.8.0 theme's section-heading
+/// role, `typography.headline`, as the iced showcase's section titles are:
+/// its info says so, and under kde-breeze, whose role is 16px (12pt)
+/// against a 13px body, the heading is taller than a body-text label.
 #[gpui::test]
 fn a_section_heading_takes_the_section_heading_role(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
@@ -6009,9 +6049,17 @@ fn a_section_heading_takes_the_section_heading_role(cx: &mut TestAppContext) {
     show(&mut cx, &showcase, Page::Basic);
     let info = settle_on(&mut cx, &showcase, "basic-heading-buttons");
     assert!(
-        info.as_ref()
-            .is_some_and(|i| i.to_text().contains("text_scale.section_heading")),
-        "the heading's info names no text_scale.section_heading: {info:?}"
+        info.as_ref().is_some_and(|i| i
+            .to_text()
+            .contains("typography.headline, the platform's section heading")),
+        "the heading's info names no typography.headline: {info:?}"
+    );
+    let role = read(&mut cx, &showcase, |_this, cx| {
+        crate::support::next_resolved(cx).map(|r| crate::demo::heading_role(&r.typography))
+    });
+    assert!(
+        matches!(role, Some(Ok(ref role)) if role.home == "typography.headline"),
+        "kde-breeze's 0.8.0 theme gives no headline role: {role:?}"
     );
     let heading = bounds_of(&mut cx, "basic-heading-buttons");
     let body = bounds_of(&mut cx, "basic-type-body");
@@ -8013,10 +8061,10 @@ fn the_mono_sample_takes_the_mono_font(cx: &mut TestAppContext) {
             .and_then(|i| i.config.iter().find(|n| n.what == "size"));
         assert!(
             line.is_some_and(|l| l.text.starts_with(&format!(
-                "{}px: defaults.mono_font.size scaled by the text-scaling factor",
+                "{}px: typography.monospace.size_px, which the theme's text scale has already scaled",
                 crate::info::px_text(size.as_f32())
             ))),
-            "at text scale {scale} the monospace sample's size line does not claim the scaled defaults.mono_font.size: {line:?}"
+            "at text scale {scale} the monospace sample's size line does not claim the scaled typography.monospace.size_px: {line:?}"
         );
     }
 }
@@ -10129,7 +10177,7 @@ fn a_widgets_own_icons_are_named_gpui_components(cx: &mut TestAppContext) {
             "Marker spinner",
             feedback::marker(&t, MarkerKind::Spinner, "text", false, None),
         ),
-        ("Accordion", layout::accordion(&t, false, 3, false)),
+        ("Accordion", layout::next_accordion(&t, false, 3, None)),
         ("Carousel", layout::carousel(&t, false)),
         (
             "Breadcrumb",
@@ -17019,23 +17067,24 @@ fn native_info_records_the_builder_only_when_it_applies_it(cx: &mut TestAppConte
 }
 
 /// The Typography page's code Editor takes the platform's line height
-/// through `geometry::editor` under a native theme, as `demo::editor`
-/// refines it, and its info names the builder (`native_info` records it only
-/// where it applies it, which
-/// `native_info_records_the_builder_only_when_it_applies_it` holds). Its
-/// fill claim is the platform's field fill, which the connector's highlight
-/// theme gives the editor.
+/// through `next::geometry::editor` under the installed 0.8.0 theme, as
+/// `demo::editor` refines it, and its info names the builder
+/// (`next_native_info` records it only where it applies it). Its fill claim
+/// is the platform's field fill, `input.field(NONE).fill`, which the
+/// connector's highlight theme gives the editor.
 #[gpui::test]
 fn the_code_editor_is_refined_by_geometry_editor(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     use_preset(&mut cx, &showcase, "kde-breeze");
-    let r = resolved_theme(&mut cx, &showcase);
+    let r = next_theme(&mut cx, &showcase);
+    assert!(r.is_some(), "no 0.8.0 theme is installed");
+    let Some(r) = r else { return };
     let (line_height, fill) = read(&mut cx, &showcase, |this, cx| {
         let mut info = WidgetInfo::new("Editor");
-        let mut editor = native_info(
+        let mut editor = crate::info::next_native_info(
             gpui_component::input::Editor::new(&this.editor_state),
             cx,
-            geometry::editor,
+            native_theme_gpui::next::geometry::editor,
             "editor",
             &mut info,
         );
@@ -17046,8 +17095,14 @@ fn the_code_editor_is_refined_by_geometry_editor(cx: &mut TestAppContext) {
             .map(|c| c.value);
         (editor.style().text.line_height, fill)
     });
-    assert_eq!(line_height, Some(gpui::relative(r.defaults.line_height)));
-    assert_eq!(fill, Some(crate::info::stated(r.input.background_color)));
+    assert_eq!(
+        line_height,
+        Some(gpui::relative(r.typography.line_height_multiplier))
+    );
+    assert_eq!(
+        fill,
+        native_theme_gpui::next::fill_of(&r.input.field(native_theme::next::WidgetState::NONE))
+    );
     show(&mut cx, &showcase, Page::Typography);
     let shown = settle_on(&mut cx, &showcase, "typography-editor");
     assert!(
@@ -18771,7 +18826,8 @@ fn the_tables_header_sections_take_the_hovered_and_pressed_fills(cx: &mut TestAp
 
 /// The labels the showcase lays out one `defaults.line_height` line tall
 /// name the route that does it (M9-031): widgets::Switch's label, the side
-/// panel's labels and the segments in demo::text_in's line box, the tab
+/// panel's labels in demo::next_text_in's line box (the installed 0.8.0
+/// theme's), the segments in demo::text_in's, the tab
 /// rows' labels in widgets::TabBar's, the expander's title and body, and
 /// the status bar's text in geometry::status_bar's; none says "not applied"
 /// or names gpui's own line height. The status bar's toggle and environment
@@ -18783,7 +18839,7 @@ fn the_line_height_and_status_gap_routes_name_what_applies_them() {
         (
             "chrome.side_panel.settings.",
             "defaults.line_height",
-            "demo::text_in",
+            "demo::next_text_in",
         ),
         (
             "chrome.side_panel.inspector_tabs.",
@@ -19150,6 +19206,47 @@ fn the_toggle_state_line_names_upstreams_fill_where_none_is_stated() {
     assert!(
         checked.contains("filled with button.body(CHECKED).fill and"),
         "{checked}"
+    );
+}
+
+/// The section heading's role where the theme states no headline, as a user
+/// theme may: the body, its line box its size by the multiplier where it
+/// states no line height; and where that style states no size or no weight,
+/// the home, so the heading keeps the showcase's own style. No bundled
+/// preset leaves the headline out, so kde-breeze's is changed by hand.
+#[test]
+fn a_heading_without_a_headline_takes_the_body_or_says_what_is_unstated() {
+    use crate::demo::heading_role;
+    use native_theme::next::TextStated;
+    let r = native_theme::next::Theme::preset(native_theme::next::Preset::KdeBreeze)
+        .resolve(&native_theme::next::ThemeContext::default());
+    let mut typography = r.typography.clone();
+    typography.headline = None;
+    typography.body.stated = typography.body.stated.difference(TextStated::LINE_HEIGHT);
+    let body = &typography.body;
+    assert_eq!(
+        heading_role(&typography).map(|role| (role.home, role.size, role.line_height)),
+        Ok((
+            "typography.body",
+            px(body.size_px),
+            px(body.size_px * typography.line_height_multiplier)
+        ))
+    );
+    typography.body.stated = typography.body.stated.difference(TextStated::WEIGHT);
+    assert_eq!(
+        heading_role(&typography).map(|role| role.home),
+        Err("typography.body.weight")
+    );
+    typography.body.stated = typography.body.stated.difference(TextStated::SIZE_PX);
+    assert_eq!(
+        heading_role(&typography).map(|role| role.home),
+        Err("typography.body.size_px")
+    );
+    let shown = crate::info::text::heading(&Theme::default(), Some(Err("typography.body.size_px")))
+        .to_text();
+    assert!(
+        shown.contains("the theme states no value gpui can take at typography.body.size_px"),
+        "{shown}"
     );
 }
 
@@ -20882,32 +20979,20 @@ fn a_theme_drawn_progress_bar_claims_a_frame_only_where_one_is_drawn() {
     );
 }
 
-/// A GroupBox's and a card's info claim the card edge
-/// `geometry::group_box_content` draws on the content -- `card.border.color`
-/// at `card.border.line_width` -- only where that width is above 0
-/// (windows-11 and kde-breeze at the time of writing), and elsewhere say
-/// none is drawn, an Outline box's note that its own `border_1` gives way to
-/// the 0 width (M9-044); and a card claims no content text, its content
-/// being a Label that paints foreground on its own element (M9-049) --
-/// over every bundled preset in both modes, and with no native theme.
+/// A card's info claims the card edge `geometry::group_box_content` draws
+/// on the content -- `card.border.color` at `card.border.line_width` -- only
+/// where that width is above 0 (windows-11 and kde-breeze at the time of
+/// writing), and elsewhere says none is drawn (M9-044); and it claims no
+/// content text, its content being a Label that paints foreground on its own
+/// element (M9-049) -- over every bundled preset in both modes, and with no
+/// native theme. The GroupBoxes, on the 0.8.0 model:
+/// `a_group_box_claims_the_card_edge_only_where_one_is_drawn`.
 #[test]
-fn a_group_box_and_a_card_claim_the_card_edge_only_where_one_is_drawn() {
-    use crate::demo::GroupBoxKind;
+fn a_card_claims_the_card_edge_only_where_one_is_drawn() {
     use crate::info::{px_text, stated};
     let mut branches = (false, false);
     for (name, r, t) in every_bundled_variant() {
         let width = r.card.border.line_width;
-        let infos = [
-            GroupBoxKind::Normal,
-            GroupBoxKind::Fill,
-            GroupBoxKind::Outline,
-        ]
-        .map(|kind| {
-            (
-                kind,
-                crate::info::layout::group_box(&t, kind, Some(&r), None, "Title"),
-            )
-        });
         let card = crate::info::layout::card(&t, Some(&r), None);
         assert!(
             card.colors
@@ -20915,12 +21000,8 @@ fn a_group_box_and_a_card_claim_the_card_edge_only_where_one_is_drawn() {
                 .all(|c| c.role != "content text" && c.field != "group_box_foreground"),
             "{name}: the card's info claims a content text its Label paints over: {card:?}"
         );
-        let all = infos
-            .iter()
-            .map(|(kind, info)| (Some(*kind), info))
-            .chain([(None, &card)]);
-        for (kind, info) in all {
-            let what = kind.map_or("the card", GroupBoxKind::name);
+        {
+            let (what, info) = ("the card", &card);
             let line = note_of(&info.config, "edge");
             if width > 0.0 {
                 branches.0 = true;
@@ -20944,12 +21025,6 @@ fn a_group_box_and_a_card_claim_the_card_edge_only_where_one_is_drawn() {
                     line.is_some_and(|text| text.starts_with("none: card.border.line_width is 0")),
                     "{name}: {what}'s edge line does not say no edge is drawn: {line:?}"
                 );
-                if kind == Some(GroupBoxKind::Outline) {
-                    assert!(
-                        line.is_some_and(|text| text.contains("border_1 gives way")),
-                        "{name}: the Outline box's edge line does not say its own border_1 gives way to the 0 width: {line:?}"
-                    );
-                }
             }
         }
     }
@@ -20965,6 +21040,273 @@ fn a_group_box_and_a_card_claim_the_card_edge_only_where_one_is_drawn() {
             .iter()
             .all(|c| c.role != "content text" && c.field != "group_box_foreground"),
         "the card's info without a native theme claims a content text its Label paints over: {card:?}"
+    );
+}
+
+/// A GroupBox's info on the 0.8.0 model claims the card edge
+/// `next::geometry::group_box_content` draws on the content --
+/// `card.container(NONE)`'s stroke -- only where it is above 0 wide; says
+/// none is drawn where it is 0 wide, an Outline box's note that its own
+/// `border_1` gives way to it; and where the theme states no stroke, claims
+/// upstream's edge, an Outline box's `border_1` in `border` and none on a
+/// Normal or Fill one -- over every bundled preset in both modes, and a
+/// theme patched to stroke its card as none, which no bundled preset need
+/// do; and it claims no edge or fill of the card without a 0.8.0 theme.
+#[test]
+fn a_group_box_claims_the_card_edge_only_where_one_is_drawn() {
+    use crate::demo::GroupBoxKind;
+    use crate::info::{px_text, stroke_color_of, stroke_width_of};
+    use native_theme::next::{CardRule, PartPatch, Stroke, ThemePatch, WidgetState};
+    let unstroked = every_next_variant()
+        .into_iter()
+        .next()
+        .map(|(name, mut r, t)| {
+            r.apply_patch(
+                &ThemePatch::new()
+                    .card(CardRule::new().container(PartPatch::new().stroke(Stroke::None))),
+            );
+            (format!("{name}, its card stroked as none"), r, t)
+        });
+    assert!(unstroked.is_some(), "no bundled 0.8.0 variant to patch");
+    let mut branches = (false, false, false);
+    for (name, r, t) in every_next_variant().into_iter().chain(unstroked) {
+        let container = r.card.container(WidgetState::NONE);
+        for kind in [
+            GroupBoxKind::Normal,
+            GroupBoxKind::Fill,
+            GroupBoxKind::Outline,
+        ] {
+            let info = crate::info::layout::next_group_box(&t, kind, Some(&r), None, "Title");
+            let what = kind.name();
+            let line = note_of(&info.config, "edge");
+            match stroke_width_of(&container) {
+                Some(width) if width > 0.0 => {
+                    branches.0 = true;
+                    assert_eq!(
+                        claim_as(&info, "edge"),
+                        stroke_color_of(&container)
+                            .map(|colour| ("card.container(NONE).stroke.color", colour)),
+                        "{name}: the {what} box's info does not claim the card.container(NONE) stroke its content is edged with: {info:?}"
+                    );
+                    assert!(
+                        line.is_some_and(|text| text.contains(&format!("{}px", px_text(width)))),
+                        "{name}: the {what} box's edge line does not print the stroke's width: {line:?}"
+                    );
+                }
+                Some(_) => {
+                    branches.1 = true;
+                    assert_eq!(
+                        claim_as(&info, "edge"),
+                        None,
+                        "{name}: the {what} box's info claims an edge a 0 wide stroke does not draw: {info:?}"
+                    );
+                    assert!(
+                        line.is_some_and(|text| text
+                            .starts_with("none: card.container(NONE)'s stroke is 0 wide")),
+                        "{name}: the {what} box's edge line does not say no edge is drawn: {line:?}"
+                    );
+                    if kind == GroupBoxKind::Outline {
+                        assert!(
+                            line.is_some_and(|text| text.contains("border_1 gives way")),
+                            "{name}: the Outline box's edge line does not say its own border_1 gives way to the 0 width: {line:?}"
+                        );
+                    }
+                }
+                None => {
+                    branches.2 = true;
+                    assert_eq!(
+                        claim_as(&info, "edge"),
+                        None,
+                        "{name}: the {what} box's info claims a card edge the theme does not state: {info:?}"
+                    );
+                    if kind == GroupBoxKind::Outline {
+                        assert_eq!(
+                            claim_as(&info, "border"),
+                            Some(("border", t.border)),
+                            "{name}: the Outline box's info does not claim its own border: {info:?}"
+                        );
+                        assert!(
+                            line.is_some_and(
+                                |text| text.starts_with("the Outline variant's own border_1")
+                            ),
+                            "{name}: the Outline box's edge line does not say it keeps its own border: {line:?}"
+                        );
+                    } else {
+                        assert!(
+                            line.is_some_and(|text| text.starts_with(
+                                "none: the theme states no card.container(NONE) stroke"
+                            )),
+                            "{name}: the {what} box's edge line does not say none is drawn: {line:?}"
+                        );
+                    }
+                }
+            }
+        }
+    }
+    assert_eq!(
+        branches,
+        (true, true, true),
+        "no variant edged the card, stroked it as none, or left its stroke unstated, so a branch went unread"
+    );
+    let t = Theme::default();
+    for kind in [
+        GroupBoxKind::Normal,
+        GroupBoxKind::Fill,
+        GroupBoxKind::Outline,
+    ] {
+        let info = crate::info::layout::next_group_box(&t, kind, None, None, "Title");
+        assert!(
+            info.colors.iter().all(|c| !c.field.starts_with("card.")),
+            "the {} box's info without a 0.8.0 theme claims the card: {info:?}",
+            kind.name()
+        );
+    }
+}
+
+/// The Accordion's info claims upstream's colours for exactly the parts the
+/// installed 0.8.0 theme's builders leave to it: the border and the line
+/// between items where `next::geometry::accordion` lacks a value, the
+/// titles' colours where `next::geometry::accordion_title` does, both
+/// without a 0.8.0 theme, which alone says the items take no hover -- the
+/// arms with one builder refining and the other not being ones no bundled
+/// preset need reach.
+#[test]
+fn the_accordions_info_claims_upstreams_colours_where_a_builder_lacks_one() {
+    let t = Theme::default();
+    let roles = |info: &WidgetInfo| -> Vec<&str> { info.colors.iter().map(|c| c.role).collect() };
+    let edges = ["border", "line between items"];
+    let titles = ["open item's title", "closed item's title, inherited"];
+    for (refined, edged, titled) in [
+        (None, false, false),
+        (Some((false, false)), false, false),
+        (Some((true, false)), false, true),
+        (Some((false, true)), true, false),
+        (Some((true, true)), true, true),
+    ] {
+        let info = crate::info::layout::next_accordion(&t, false, 3, refined);
+        let claimed = roles(&info);
+        for role in edges {
+            assert_eq!(
+                claimed.contains(&role),
+                !edged,
+                "{refined:?}: the info claims {role} {}",
+                if edged {
+                    "the builder colours"
+                } else {
+                    "only where upstream draws it"
+                }
+            );
+        }
+        for role in titles {
+            assert_eq!(
+                claimed.contains(&role),
+                !titled,
+                "{refined:?}: the info claims {role} {}",
+                if titled {
+                    "the builder colours"
+                } else {
+                    "only where upstream colours it"
+                }
+            );
+        }
+        assert_eq!(
+            note_of(&info.not_themeable, "hover").is_some(),
+            refined.is_none(),
+            "{refined:?}: the hover note is not there exactly without a 0.8.0 theme"
+        );
+    }
+}
+
+/// The Theme Map's "branch" note follows what the installed 0.8.0 theme
+/// states, read off the same queries the connector makes: a
+/// secondary_active swatch says which way `button.body(PRESSED).fill`'s
+/// rule sent it, a list_hover or table_hover swatch which way
+/// `list.highlight(HOVER).fill` did, and any other swatch has none -- each
+/// arm read here, whether or not a bundled preset reaches it.
+#[test]
+fn a_swatchs_branch_note_follows_what_the_theme_states() {
+    use crate::demo::ThemeToken;
+    use crate::info::theme_map::branch_note;
+    for token in [
+        ThemeToken::SecondaryActive,
+        ThemeToken::ButtonActive,
+        ThemeToken::ButtonSecondaryActive,
+    ] {
+        assert!(
+            branch_note(token, true, false)
+                .is_some_and(|n| n.starts_with("a rule states button.body(PRESSED).fill")),
+            "a stated pressed fill's note"
+        );
+        assert!(
+            branch_note(token, false, true)
+                .is_some_and(|n| n.starts_with("no rule states button.body(PRESSED).fill")),
+            "an unstated pressed fill's note"
+        );
+    }
+    for token in [ThemeToken::ListHover, ThemeToken::TableHover] {
+        assert!(
+            branch_note(token, false, true)
+                .is_some_and(|n| n.starts_with("the theme states list.highlight(HOVER).fill")),
+            "a stated hovered row's note"
+        );
+        assert!(
+            branch_note(token, true, false)
+                .is_some_and(|n| n.starts_with("the theme states no list.highlight(HOVER).fill")),
+            "an unstated hovered row's note"
+        );
+    }
+    assert_eq!(branch_note(ThemeToken::Background, true, true), None);
+}
+
+/// The Folder tab row's font and size lines, and the side panel label's
+/// font line, name the installed 0.8.0 theme's homes where it states a font
+/// gpui can letter the label in and a least size, and gpui-component's own
+/// where it does not -- the second a branch no bundled preset need reach,
+/// so read here off a label style whose properties are all unstated.
+#[test]
+fn the_tab_and_side_panel_labels_name_their_homes_or_upstreams() {
+    use crate::info::chrome::sidebar_label_font;
+    use crate::info::layout::{folder_tab_font, folder_tab_size};
+    use native_theme::next::{TextStated, WidgetState};
+    let variants = every_next_variant();
+    let first = variants.first();
+    assert!(first.is_some(), "no bundled 0.8.0 variant");
+    let Some((name, r, _)) = first else { return };
+    let tab = r.tab.label(WidgetState::NONE);
+    let side = r.sidebar.item_label(WidgetState::NONE);
+    assert!(
+        folder_tab_font(&r.typography, &tab).starts_with("tab.label(NONE): "),
+        "{name}: the tab's font line does not name tab.label(NONE)"
+    );
+    assert!(
+        sidebar_label_font(&r.typography, &side).starts_with("sidebar.item_label(NONE): "),
+        "{name}: the side panel label's font line does not name sidebar.item_label(NONE)"
+    );
+    let mut bare = tab.clone();
+    bare.stated = TextStated::default();
+    let own = folder_tab_font(&r.typography, &bare);
+    assert!(
+        own.starts_with("text_sm, the Tab's own") && own.contains("at tab.label(NONE)"),
+        "an unstated tab label's font line does not say upstream's own: {own}"
+    );
+    let own = sidebar_label_font(&r.typography, &bare);
+    assert!(
+        own.starts_with("text_sm, a rem step, gpui's own")
+            && own.contains("at sidebar.item_label(NONE)"),
+        "an unstated side panel label's font line does not say gpui's own: {own}"
+    );
+    let stated = folder_tab_size([Some(80.), Some(30.)]);
+    assert!(
+        stated.contains("width at least tab.tab(NONE).min_size[0], 80px")
+            && stated.contains("height at least tab.tab(NONE).min_size[1], 30px"),
+        "the stated tab size line: {stated}"
+    );
+    let unstated = folder_tab_size([None, None]);
+    assert!(
+        unstated.contains("width upstream's: the theme states no tab.tab(NONE).min_size[0]")
+            && unstated
+                .contains("height upstream's: the theme states no tab.tab(NONE).min_size[1]"),
+        "the unstated tab size line: {unstated}"
     );
 }
 
@@ -21893,10 +22235,12 @@ fn the_pages_own_distances_are_named_in_their_infos(cx: &mut TestAppContext) {
             ),
         ];
         #[cfg(feature = "widgets")]
-        if let Some(r) = crate::support::old_resolved(cx) {
+        if let Some(look) = crate::support::next_resolved(cx)
+            .and_then(|r| native_theme_gpui::widgets::SeparatorLook::next_of(r).ok())
+        {
             built.push((
                 "a theme-drawn Separator sample",
-                crate::info::layout::native_separator(t, r, true),
+                crate::info::layout::native_separator(t, &look, true),
                 "room",
                 vec![
                     crate::info::rems_text(crate::demo::SEPARATOR_SAMPLE_ROOM, t),

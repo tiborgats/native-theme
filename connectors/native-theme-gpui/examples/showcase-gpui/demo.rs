@@ -260,10 +260,13 @@ impl SampleIcon {
         chrome_icon(&self.drawn, &self.icon)
     }
 
-    /// The `Icon` at the platform's size for the role the builder names, as
-    /// `native_sized` sizes it; `None` where the chosen icon theme has none.
-    fn sized(&self, cx: &App, role: fn(Native<'_>) -> Size) -> Option<Icon> {
-        self.icon().map(|icon| native_sized(cx, icon, role))
+    /// The `Icon` at `size`, a size of the installed 0.8.0 theme, or at its
+    /// own where that is `None`; `None` where the chosen icon theme has none.
+    fn next_sized(&self, size: Option<Size>) -> Option<Icon> {
+        self.icon().map(|icon| match size {
+            Some(size) => icon.with_size(size),
+            None => icon,
+        })
     }
 
     /// The glyph a page sample draws where its widget takes any element,
@@ -294,17 +297,8 @@ impl SampleIcon {
     }
 }
 
-/// `icon` at the platform's size for the role the builder names; its own
+/// `glyph` at the platform's size for the role the builder names; its own
 /// size before `apply` ran.
-fn native_sized(cx: &App, icon: Icon, role: fn(Native<'_>) -> Size) -> Icon {
-    match native_value(cx, role) {
-        Some(size) => icon.with_size(size),
-        None => icon,
-    }
-}
-
-/// `glyph` at the platform's size for the role the builder names, as
-/// [`native_sized`] sizes an `Icon`.
 fn native_sized_glyph(cx: &App, glyph: Glyph, role: fn(Native<'_>) -> Size) -> Glyph {
     match native_value(cx, role) {
         Some(size) => glyph.with_size(size),
@@ -694,6 +688,38 @@ fn leaves_a_side_unstated(padding: &ResolvedPadding) -> bool {
     [padding.top, padding.right, padding.bottom, padding.left]
         .iter()
         .any(Option::is_none)
+}
+
+/// [`padded`] on the 0.8.0 model: `el` padded by the sides of `sides`, a
+/// part's padding as `next::padding_of` reads it (top, right, bottom, left,
+/// each `None` where unstated), and on a side it leaves unstated by `x`
+/// (left and right) or `y` (top and bottom), where given.
+fn next_padded<E: Styled, L: Into<DefiniteLength> + Copy>(
+    el: E,
+    sides: [Option<f32>; 4],
+    x: Option<L>,
+    y: Option<L>,
+) -> E {
+    let [top, right, bottom, left] = sides;
+    let side = |stated: Option<f32>, unstated: Option<L>| -> Option<DefiniteLength> {
+        stated.map(|v| px(v).into()).or(unstated.map(Into::into))
+    };
+    let el = match side(top, y) {
+        Some(v) => el.pt(v),
+        None => el,
+    };
+    let el = match side(right, x) {
+        Some(v) => el.pr(v),
+        None => el,
+    };
+    let el = match side(bottom, y) {
+        Some(v) => el.pb(v),
+        None => el,
+    };
+    match side(left, x) {
+        Some(v) => el.pl(v),
+        None => el,
+    }
 }
 
 /// A menu's title in the showcase's menu bar: the Popover's trigger,
@@ -1224,7 +1250,8 @@ pub(crate) fn menu_bar(
         .info(ui, "chrome-menu-bar", row_info)
 }
 
-/// A `TitleBar` sample, refined by `geometry::title_bar` and reading `label`:
+/// A `TitleBar` sample, refined by `next::geometry::title_bar` and reading
+/// `label`:
 /// the window's own title bar as it is drawn where the window manager leaves
 /// the frame to the application (spec S8), shown while it does not.
 ///
@@ -1243,10 +1270,10 @@ pub(crate) fn title_bar_sample(
 ) -> Div {
     let label: SharedString = label.into();
     let mut bar_info = info::title_bar_sample(cx.theme(), &label);
-    let bar = native_info(
+    let bar = next_native_info(
         TitleBar::new(),
         cx,
-        geometry::title_bar,
+        next::geometry::title_bar,
         "title_bar",
         &mut bar_info,
     )
@@ -1912,27 +1939,30 @@ pub(crate) fn theme_settings<const N: usize>(
 }
 
 /// A label of the side panel reading `text`, `id` its info's id and debug
-/// selector: plain text in `sidebar.font` ([`text_in`]) where a native
-/// theme is installed, in the colour the side panel sets. Not a `Label`:
-/// `Label::render` paints `foreground` on its own element (label.rs:213),
-/// over the sidebar's text colour.
+/// selector: plain text in the installed 0.8.0 theme's
+/// `sidebar.item_label(NONE)` ([`next_text_in`]) where it gives a font gpui
+/// can letter it in, else `text_sm`, in the colour the side panel sets. Not
+/// a `Label`: `Label::render` paints `foreground` on its own element
+/// (label.rs:213), over the sidebar's text colour.
 fn sidebar_label(
     ui: &Entity<InfoRegistry>,
     cx: &App,
     id: &'static str,
     text: &'static str,
 ) -> Stateful<Div> {
-    let native = old_native(cx);
-    let text_div = match &native {
-        Some(n) => text_in(n, &n.resolved.sidebar.font, text),
-        None => div().text_sm().child(text),
-    };
+    let native = next_resolved(cx);
+    let text_div = native
+        .and_then(|r| {
+            next_text_in(
+                &r.typography,
+                &r.sidebar.item_label(WidgetState::NONE),
+                "sidebar.item_label(NONE)",
+                text,
+            )
+        })
+        .unwrap_or_else(|| div().text_sm().child(text));
     text_div
-        .info(
-            ui,
-            id,
-            info::sidebar_label(cx.theme(), native.as_ref().map(|n| n.resolved)),
-        )
+        .info(ui, id, info::sidebar_label(cx.theme(), native))
         .self_start()
         .debug_selector(move || id.into())
 }
@@ -2584,11 +2614,11 @@ pub(crate) const FOLDER_TAB_HEIGHT: Pixels = px(32.);
 /// is meant to sit; a click hands `on_click` the index of the tab clicked.
 /// Each tab is tagged `{id}-tab-{ix}` for the tests.
 ///
-/// What the theme states reaches it per call as [`tab_row`]'s upstream
-/// path takes it: each label a child in `tab.font` ([`text_in`]), each tab
-/// at least `tab.min_width` wide and `tab.min_height` tall. Upstream's
-/// Folder has no seam for the theme's tab shape; `widgets::TabBar` draws
-/// that.
+/// What the installed 0.8.0 theme states reaches it per call: each label a
+/// child in `tab.label(NONE)` ([`next_text_in`]) where the theme gives a
+/// font gpui can letter it in, else upstream's own label; each tab at least
+/// `tab.tab(NONE)`'s stated least width and height. Upstream's Folder has no
+/// seam for the theme's tab shape; `widgets::TabBar` draws that.
 pub(crate) fn folder_tab_row(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -2598,22 +2628,24 @@ pub(crate) fn folder_tab_row(
     disabled: usize,
     on_click: impl Fn(&usize, &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
-    let native = old_native(cx);
-    let row_info = info::layout::folder_tab_row(
-        cx.theme(),
-        labels,
-        selected,
-        disabled,
-        native.as_ref().map(|n| n.resolved),
-    );
+    let native = next_resolved(cx);
+    let row_info =
+        info::layout::next_folder_tab_row(cx.theme(), labels, selected, disabled, native);
     let tabs = labels.iter().enumerate().map(|(ix, &label)| {
-        let tab = match &native {
-            Some(n) => {
-                let t = &n.resolved.tab;
-                Tab::new()
-                    .child(text_in(n, &t.font, label))
-                    .min_w(px(t.min_width))
-                    .min_h(px(t.min_height))
+        let tab = match native {
+            Some(r) => {
+                let [min_w, min_h] = r.tab.tab(WidgetState::NONE).min_size;
+                let tab = match next_text_in(
+                    &r.typography,
+                    &r.tab.label(WidgetState::NONE),
+                    "tab.label(NONE)",
+                    label,
+                ) {
+                    Some(text) => Tab::new().child(text),
+                    None => Tab::new().label(label),
+                };
+                tab.when_some(min_w, |tab, w| tab.min_w(px(w)))
+                    .when_some(min_h, |tab, h| tab.min_h(px(h)))
             }
             None => Tab::new().label(label),
         };
@@ -3548,11 +3580,10 @@ pub(crate) fn alert(
 // Page text (spec §5.3)
 // ---------------------------------------------------------------------------
 
-/// A section heading reading `text`, in the theme's section-heading role
-/// (`text_scale.section_heading`, the section divider of
-/// `docs/platform-facts.md` §2.19): its size and line height, scaled by the
-/// user's text-scaling factor, and its weight, as the iced showcase's section
-/// titles are. Without an installed native theme, upstream's `text_base`,
+/// A section heading reading `text`, in the installed 0.8.0 theme's
+/// section-heading role ([`heading_role`]): its size, line box and weight,
+/// as the iced showcase's section titles are. Without an installed theme,
+/// or where its role states no size or weight, upstream's `text_base`,
 /// semibold. `id` is its info's id and its debug selector.
 pub(crate) fn heading(
     ui: &Entity<InfoRegistry>,
@@ -3560,31 +3591,91 @@ pub(crate) fn heading(
     id: &'static str,
     text: impl Into<SharedString>,
 ) -> Stateful<Div> {
-    let role = native_value(cx, |n| {
-        let h = &n.resolved.text_scale.section_heading;
-        (
-            px(native_theme_gpui::scaled_text_size(h.size, n.accessibility)),
-            px(native_theme_gpui::scaled_text_size(
-                h.line_height,
-                n.accessibility,
-            )),
-            FontWeight(f32::from(h.weight)),
-        )
-    });
+    let role = next_value(cx, |r| heading_role(&r.typography));
     let label = Label::new(text);
     let label = match role {
-        Some((size, line_height, weight)) => label
-            .text_size(size)
-            .line_height(line_height)
-            .font_weight(weight),
-        None => label.text_base().font_semibold(),
+        Some(Ok(role)) => label
+            .text_size(role.size)
+            .line_height(role.line_height)
+            .font_weight(role.weight),
+        _ => label.text_base().font_semibold(),
     };
     label
-        .info(ui, id, info::text::heading(cx.theme(), role.is_some()))
+        .info(ui, id, info::text::heading(cx.theme(), role))
         // As wide as its text, not its column: the space beside a heading
         // is not the heading.
         .self_start()
         .debug_selector(move || id.into())
+}
+
+/// What a section heading is lettered in ([`heading_role`]).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) struct HeadingRole {
+    /// The text style read: `typography.headline`, or `typography.body`
+    /// where the theme states no headline.
+    pub(crate) home: &'static str,
+    /// Its `size_px`, which the theme's text scale has already scaled.
+    pub(crate) size: Pixels,
+    /// Its line box ([`line_box`]).
+    pub(crate) line_height: Pixels,
+    /// Its `weight`.
+    pub(crate) weight: FontWeight,
+}
+
+/// The section heading's role in `typography`: `headline`, the platform's
+/// section heading (`docs/platform-facts.md` §2.19, 0.7.2's
+/// `text_scale.section_heading`), or `body` where the theme states no
+/// headline (spec §4, `Typography`: a caller falls back to `body`). `Err`
+/// with the home where that style states no size or no weight: the heading
+/// keeps the showcase's own style (spec §10, rule 0).
+pub(crate) fn heading_role(
+    typography: &native_theme::next::Typography,
+) -> Result<HeadingRole, &'static str> {
+    use native_theme::next::TextStated;
+    let (style, home, size_home, weight_home) = match &typography.headline {
+        Some(headline) => (
+            headline,
+            "typography.headline",
+            "typography.headline.size_px",
+            "typography.headline.weight",
+        ),
+        None => (
+            &typography.body,
+            "typography.body",
+            "typography.body.size_px",
+            "typography.body.weight",
+        ),
+    };
+    if !style.stated.contains(TextStated::SIZE_PX) {
+        return Err(size_home);
+    }
+    if !style.stated.contains(TextStated::WEIGHT) {
+        return Err(weight_home);
+    }
+    Ok(HeadingRole {
+        home,
+        size: px(style.size_px),
+        line_height: px(line_box(typography, style)),
+        weight: FontWeight(f32::from(style.weight)),
+    })
+}
+
+/// The line box of `style`, one of `typography`'s text styles: its
+/// `line_height` where stated, else its size by
+/// `typography.line_height_multiplier` (spec §4, `Typography`; §5, "A text
+/// part's `line_height`").
+pub(crate) fn line_box(
+    typography: &native_theme::next::Typography,
+    style: &native_theme::next::TextStyle,
+) -> f32 {
+    if style
+        .stated
+        .contains(native_theme::next::TextStated::LINE_HEIGHT)
+    {
+        style.line_height
+    } else {
+        style.size_px * typography.line_height_multiplier
+    }
 }
 
 /// A caption reading `text`, in the muted colour. `id` is its info's id and
@@ -7659,9 +7750,8 @@ pub(crate) fn muted_text(
         .debug_selector(move || id.into())
 }
 
-/// Plain text reading `text` in `defaults.mono_font` ([`text_in`]: its size,
-/// weight and line box as `type_line`'s Monospace line, and its style) where
-/// a native theme is installed, else in the mono family alone.
+/// Plain text reading `text` in the installed 0.8.0 theme's
+/// `typography.monospace` ([`mono_sample`]).
 pub(crate) fn mono_text(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -7672,7 +7762,7 @@ pub(crate) fn mono_text(
         .info(
             ui,
             id,
-            info::typography::mono_text(cx.theme(), old_native(cx).map(|n| n.resolved)),
+            info::typography::mono_text(cx.theme(), next_resolved(cx)),
         )
         .self_start()
         .debug_selector(move || id.into())
@@ -7680,8 +7770,8 @@ pub(crate) fn mono_text(
 
 /// [`mono_text`]'s text: in the installed 0.8.0 theme's
 /// `typography.monospace` ([`next_text_in`]) where one is installed and
-/// states it, else in the 0.7.2 theme's `defaults.mono_font`, else in the
-/// mono family alone.
+/// states a font gpui can letter it in, else in the mono family alone,
+/// gpui's own (spec §10, rule 0).
 pub(crate) fn mono_sample(cx: &App, text: &'static str) -> Div {
     next_resolved(cx)
         .and_then(|r| {
@@ -7692,7 +7782,6 @@ pub(crate) fn mono_sample(cx: &App, text: &'static str) -> Div {
                 text,
             )
         })
-        .or_else(|| native_value(cx, |n| text_in(&n, &n.resolved.defaults.mono_font, text)))
         .unwrap_or_else(|| {
             div()
                 .font_family(cx.theme().mono_font_family.clone())
@@ -7714,7 +7803,7 @@ fn next_text_in(
     home: &'static str,
     text: &'static str,
 ) -> Option<Div> {
-    use native_theme::next::{FontStyle as NextFontStyle, TextStated};
+    use native_theme::next::FontStyle as NextFontStyle;
     if next::label_font_unmapped(style, home).is_some() {
         return None;
     }
@@ -7724,11 +7813,7 @@ fn next_text_in(
         NextFontStyle::Oblique => gpui::FontStyle::Oblique,
         _ => return None,
     };
-    let line = if style.stated.contains(TextStated::LINE_HEIGHT) {
-        style.line_height
-    } else {
-        style.size_px * typography.line_height_multiplier
-    };
+    let line = line_box(typography, style);
     let mut label = div()
         .font_family(native_theme_gpui::font_family(&style.family))
         .text_size(px(style.size_px))
@@ -7747,21 +7832,29 @@ pub(crate) fn link(
     text: &'static str,
     href: &'static str,
 ) -> Stateful<Div> {
-    // The underline `geometry::link` leaves or removes at rest.
-    let underline = native_value(cx, |n| n.resolved.link.underline_enabled);
-    let mut link_info = info::typography::link(cx.theme(), underline)
+    // Where `next::geometry::link` refines it: the underline it leaves or
+    // removes at rest, and one line of `link.label(NONE)` tall.
+    let refined = next_value(cx, |r| {
+        let label = r.link.label(WidgetState::NONE);
+        next::geometry::link(r).ok().map(|_| {
+            (
+                label.decoration.kind == native_theme::next::DecorationKind::Underline,
+                px(label.size_px * r.typography.line_height_multiplier),
+            )
+        })
+    })
+    .flatten();
+    let mut link_info = info::typography::next_link(cx.theme(), refined.map(|(u, _)| u))
         .instance("text", text)
         .instance("target", href);
-    // One line of `link.font` tall (`line_height_of`).
-    let line = native_value(cx, |n| line_height_of(&n, &n.resolved.link.font));
-    native_info(
+    next_native_info(
         Link::new(id).child(text).href(href),
         cx,
-        geometry::link,
+        next::geometry::link,
         "link",
         &mut link_info,
     )
-    .when_some(line, |link, line| link.line_height(line))
+    .when_some(refined, |link, (_, line)| link.line_height(line))
     .info(ui, id, link_info)
     .debug_selector(move || id.into())
 }
@@ -7798,13 +7891,13 @@ pub(crate) fn editor(
     state: &Entity<EditorState>,
     height: Pixels,
 ) -> Stateful<Div> {
-    // Refined by `geometry::editor`, the platform's line height, where a native
-    // theme is installed, the info then given the builder's line.
+    // Refined by `next::geometry::editor`, the platform's line height, where
+    // a 0.8.0 theme is installed, the info then given the builder's line.
     let mut editor_info = info::typography::editor(cx.theme());
-    native_info(
+    next_native_info(
         Editor::new(state),
         cx,
-        geometry::editor,
+        next::geometry::editor,
         "editor",
         &mut editor_info,
     )
@@ -7881,12 +7974,12 @@ pub(crate) fn spacing_box(
     let (frame, box_info) = match kind {
         SpacingBox::Window => {
             let box_info = if padding.is_some() {
-                box_info.geometry("window_margin")
+                box_info.next_geometry("window_margin")
             } else {
                 box_info
             };
             let box_info = if gap.is_some() {
-                box_info.geometry("section_gap")
+                box_info.next_geometry("section_gap")
             } else {
                 box_info
             };
@@ -7894,12 +7987,12 @@ pub(crate) fn spacing_box(
         }
         SpacingBox::Container => {
             let box_info = if padding.is_some() {
-                box_info.geometry("container_margin")
+                box_info.next_geometry("container_margin")
             } else {
                 box_info
             };
             let box_info = if gap.is_some() {
-                box_info.geometry("widget_gap")
+                box_info.next_geometry("widget_gap")
             } else {
                 box_info
             };
@@ -8020,20 +8113,20 @@ impl SeparatorKind {
 /// Separator's info says so.
 pub(crate) const SEPARATOR_SAMPLE_ROOM: Rems = rems(0.25);
 
-/// A `Separator` of `kind`, its line in `separator.line_color` through
-/// `Separator::color` where a native theme is installed.
+/// A `Separator` of `kind`, its line in the installed 0.8.0 theme's
+/// `separator.color` through `Separator::color`.
 pub(crate) fn separator(
     ui: &Entity<InfoRegistry>,
     cx: &App,
     id: &'static str,
     kind: SeparatorKind,
 ) -> Stateful<Div> {
-    // The plain line under a native theme is the connector's: its thickness
-    // is `separator.line_width`, which gpui-component's literal 1px line does
+    // The plain line under a 0.8.0 theme is the connector's: its thickness
+    // is `separator.thickness`, which gpui-component's literal 1px line does
     // not take (separator.rs:78-82).
     #[cfg(feature = "widgets")]
     if kind == SeparatorKind::Horizontal
-        && let Some(r) = old_resolved(cx)
+        && let Some(look) = next_resolved(cx).and_then(|r| widgets::SeparatorLook::next_of(r).ok())
     {
         // A line of docs/showcase-elements.toml takes no room beyond its
         // own, as the iced and egui showcases lay it out; the others keep
@@ -8043,7 +8136,7 @@ pub(crate) fn separator(
             .info(
                 ui,
                 id,
-                info::layout::native_separator(cx.theme(), r, !listed),
+                info::layout::native_separator(cx.theme(), &look, !listed),
             )
             .when(!listed, |separator| separator.py(SEPARATOR_SAMPLE_ROOM))
             .debug_selector(move || id.into());
@@ -8054,15 +8147,11 @@ pub(crate) fn separator(
         SeparatorKind::Dashed => Separator::horizontal_dashed(),
         SeparatorKind::Vertical => Separator::vertical(),
     };
-    let native = old_native(cx);
-    let line = native_color(cx, |n| n.resolved.separator.line_color);
+    let native = next_resolved(cx);
+    let line = native.map(|r| info::next_stated(r.separator.color));
     separator
         .when_some(line, |separator, line| separator.color(line))
-        .info(
-            ui,
-            id,
-            info::layout::separator(cx.theme(), kind, native.as_ref().map(|n| n.resolved)),
-        )
+        .info(ui, id, info::layout::separator(cx.theme(), kind, native))
         // A horizontal Separator's box is as tall as its label and no
         // taller: the line is an absolute child (separator.rs:79-84). The
         // padding leaves something to point at. A vertical one is as tall
@@ -8104,13 +8193,15 @@ impl GroupBoxKind {
 
 /// A `GroupBox` of `kind` titled `title` around `content`, which `about`
 /// describes in its info; its content refined by
-/// `geometry::group_box_content`, which sets the sides `card.border.padding`
-/// states, and padded with `container_margin`, the installed layout's
-/// `geometry::container_margin`, on a side it leaves unstated ([`padded`]).
-/// A group box is a container, and `layout.container_margin` is the padding
-/// inside containers (platform-facts §2.20): it stands in for a Fill or
-/// Outline GroupBox's own `p_4` and a Normal one's none (group_box.rs,
-/// `GroupBox`), as it does in a card.
+/// `next::geometry::group_box_content`, which sets the sides
+/// `card.container(NONE)` states, and padded with `container_margin`, the
+/// installed 0.8.0 theme's `layout.container_margin`, on a side it leaves
+/// unstated ([`next_padded`]). A group box is a container, and
+/// `layout.container_margin` is the padding inside containers
+/// (platform-facts §2.20): it stands in for a Fill or Outline GroupBox's own
+/// `p_4` and a Normal one's none (group_box.rs, `GroupBox`), as it does in a
+/// card. Where the theme states no value gpui can take at a home the builder
+/// reads, the content keeps upstream's look and padding (spec §10, rule 0).
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn group_box(
     ui: &Entity<InfoRegistry>,
@@ -8122,31 +8213,26 @@ pub(crate) fn group_box(
     about: &'static str,
     container_margin: Option<Pixels>,
 ) -> Stateful<Div> {
-    // What `native_info` applies the builder under.
-    let native = old_native(cx);
-    let mut box_info = info::layout::group_box(
-        cx.theme(),
-        kind,
-        native.as_ref().map(|n| n.resolved),
-        container_margin,
-        title,
-    )
-    .instance("content", about);
+    // The theme the builder refines the content from, where it does.
+    let native = next_resolved(cx).filter(|r| next::geometry::group_box_content(r).is_ok());
+    let mut box_info =
+        info::layout::next_group_box(cx.theme(), kind, native, container_margin, title)
+            .instance("content", about);
     // `GroupBox::content_style` takes a refinement rather than being one.
-    let content_style = native_info(
+    let content_style = next_native_info(
         StyleRefinement::default(),
         cx,
-        geometry::group_box_content,
+        next::geometry::group_box_content,
         "group_box_content",
         &mut box_info,
     );
-    let content_style = match (&native, container_margin) {
-        (Some(n), Some(margin)) => {
-            let padding = &n.resolved.card.border.padding;
-            if leaves_a_side_unstated(padding) {
-                box_info = box_info.geometry("container_margin");
+    let content_style = match (native, container_margin) {
+        (Some(r), Some(margin)) => {
+            let sides = next::padding_of(&r.card.container(WidgetState::NONE));
+            if sides.iter().any(Option::is_none) {
+                box_info = box_info.next_geometry("container_margin");
             }
-            padded(content_style, padding, Some(margin), Some(margin))
+            next_padded(content_style, sides, Some(margin), Some(margin))
         }
         _ => content_style,
     };
@@ -8225,17 +8311,19 @@ pub(crate) fn scroll_area(
     height: Pixels,
     items: usize,
 ) -> Stateful<Div> {
-    // What `native_info` applies the builder under.
-    let styled = old_native(cx).is_some();
+    // Whether the connector wrote the installed 0.8.0 theme's scroll bar onto
+    // gpui-base (`next::base_layer::scrollbar_geometry`).
+    let styled =
+        next_value(cx, |r| next::base_layer::scrollbar_geometry(r).is_ok()).unwrap_or(false);
     let mut area_info = info::layout::scroll_area(cx.theme(), styled, items);
-    let viewport = native_info(
+    let viewport = next_native_info(
         div()
             .id(SharedString::from(format!("{id}-viewport")))
             .size_full()
             .debug_selector(move || format!("{id}-viewport"))
             .overflow_y_scrollbar(),
         cx,
-        geometry::scrollbar_gutter,
+        next::geometry::scrollbar_gutter,
         "scrollbar_gutter",
         &mut area_info,
     )
@@ -8264,43 +8352,49 @@ pub(crate) fn scroll_area(
 
 /// The Accordion of the Layout page: an item per `(title, answer id,
 /// answer)`, the first open, their title rows refined by
-/// `geometry::accordion_title`. Each answer is a small Label that reports
-/// itself.
+/// `next::geometry::accordion_title`. Each answer is a small Label that
+/// reports itself.
 pub(crate) fn accordion(
     ui: &Entity<InfoRegistry>,
     cx: &App,
     id: &'static str,
     items: [(&'static str, &'static str, SharedString); 3],
 ) -> Stateful<Div> {
-    let mut accordion_info = info::layout::accordion(
-        cx.theme(),
-        cx.reduce_motion(),
-        items.len(),
-        old_native(cx).is_some(),
-    );
+    // Which of the title rows and the edges the builders refine, where a
+    // 0.8.0 theme is installed.
+    let parts = next_value(cx, |r| {
+        (
+            next::geometry::accordion_title(r).is_ok(),
+            next::geometry::accordion(r).is_ok(),
+        )
+    });
+    let mut accordion_info =
+        info::layout::next_accordion(cx.theme(), cx.reduce_motion(), items.len(), parts);
     // `AccordionItem::title_style` takes a refinement rather than being one.
-    let title_style = native_info(
+    let title_style = next_native_info(
         StyleRefinement::default(),
         cx,
-        geometry::accordion_title,
+        next::geometry::accordion_title,
         "accordion_title",
         &mut accordion_info,
     );
-    let edge = native_geometry(cx, geometry::accordion);
-    let hover = native_geometry(cx, geometry::accordion_hover);
-    if hover.is_some() {
-        accordion_info = accordion_info.geometry("accordion_hover");
-    }
+    let edge = next_geometry(cx, next::geometry::accordion).and_then(Result::ok);
+    let hover = info::next_native_value(
+        cx,
+        next::geometry::accordion_hover,
+        "accordion_hover",
+        &mut accordion_info,
+    );
     items
         .into_iter()
         .enumerate()
         .fold(
             // The edge colour lands on the Accordion's card and on each
             // item's line (accordion.rs:108-114, :380-384).
-            native_info(
+            next_native_info(
                 Accordion::new(id),
                 cx,
-                geometry::accordion,
+                next::geometry::accordion,
                 "accordion",
                 &mut accordion_info,
             ),
@@ -8833,12 +8927,18 @@ pub(crate) fn stepper(
     let mut stepper_info =
         info::layout::stepper(cx.theme(), kind, step, STEPPER_STEPS.len(), &labelled);
     // The indicator is a circle (stepper/trigger.rs:118-123) around the
-    // icon it is given, which keeps its size (`:138-139`).
-    if labelled.iter().any(|(_, icon)| icon.shown())
-        && native_value(cx, geometry::icon_size_small).is_some()
-    {
-        stepper_info = stepper_info.geometry("icon_size_small");
-    }
+    // icon it is given, which keeps its size (`:138-139`): the installed
+    // 0.8.0 theme's `icons.sizes.small`, where it states one.
+    let size = if labelled.iter().any(|(_, icon)| icon.shown()) {
+        info::next_native_value(
+            cx,
+            next::geometry::icon_size_small,
+            "icon_size_small",
+            &mut stepper_info,
+        )
+    } else {
+        None
+    };
     let stepper = match kind {
         StepperKind::Icons => Stepper::new(id),
         StepperKind::Numbers => Stepper::new(id).vertical(),
@@ -8852,9 +8952,7 @@ pub(crate) fn stepper(
                 format!("{id}-step-{}", ix.saturating_add(1)),
                 *text,
             ));
-            let icon = labelled
-                .get(ix)
-                .and_then(|(_, icon)| icon.sized(cx, geometry::icon_size_small));
+            let icon = labelled.get(ix).and_then(|(_, icon)| icon.next_sized(size));
             match icon {
                 Some(icon) => item.icon(icon),
                 None => item,
@@ -8946,10 +9044,10 @@ pub(crate) fn form(
 pub(crate) fn settings(ui: &Entity<InfoRegistry>, cx: &App, id: &'static str) -> Stateful<Div> {
     let mut settings_info = info::layout::settings(cx.theme());
     // One refinement for the three groups, so its line is recorded once.
-    let gutter = native_info(
+    let gutter = next_native_info(
         StyleRefinement::default(),
         cx,
-        geometry::scrollbar_gutter,
+        next::geometry::scrollbar_gutter,
         "scrollbar_gutter",
         &mut settings_info,
     );
@@ -10566,7 +10664,7 @@ pub(crate) fn swatch(
 ) -> Stateful<Div> {
     let t = cx.theme();
     // What the connector writes the colours under.
-    let native = old_native(cx);
+    let native = next_resolved(cx);
     let value = info::theme_map::row(t, token).value;
     let id = SharedString::from(format!("theme-map-swatch-{}", value.field));
     let label = SharedString::from(format!("{} {}", value.field, as_rgba(value.value)));

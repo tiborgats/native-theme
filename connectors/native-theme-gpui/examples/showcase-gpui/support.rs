@@ -437,6 +437,17 @@ pub(crate) fn next_value<T, F: FnOnce(&native_theme::next::ResolvedTheme) -> T>(
     next_resolved(cx).map(build)
 }
 
+/// One of the four layout metrics of the installed 0.8.0 theme, as `build`
+/// (`next::geometry::widget_gap`, `container_margin`, `window_margin` or
+/// `section_gap`) reads it: `None` where the platform specifies none
+/// (platform-facts §2.20), and before `native_theme_gpui::next::apply` ran.
+pub(crate) fn next_metric(
+    cx: &App,
+    build: fn(&native_theme::next::ResolvedTheme) -> Mapped<Option<Pixels>>,
+) -> Option<Pixels> {
+    next_value(cx, build).and_then(Result::ok).flatten()
+}
+
 /// [`native_geometry`] on the 0.8.0 model: the refinement a builder of
 /// `native_theme_gpui::next::geometry` produces for the installed 0.8.0
 /// theme, or the source it lacks (`Unmapped`); `None` before

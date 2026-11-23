@@ -995,17 +995,17 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.side_panel.settings.theme_label",
         "defaults.line_height",
-        "gpui: the label's line box, sidebar.font's size by it (demo::text_in)",
+        "gpui: the label's line box, the installed 0.8.0 theme's sidebar.item_label(NONE) line_height where stated, else its size by typography.line_height_multiplier (demo::next_text_in)",
     ),
     (
         "chrome.side_panel.settings.mode_label",
         "defaults.line_height",
-        "gpui: the label's line box, sidebar.font's size by it (demo::text_in)",
+        "gpui: the label's line box, the installed 0.8.0 theme's sidebar.item_label(NONE) line_height where stated, else its size by typography.line_height_multiplier (demo::next_text_in)",
     ),
     (
         "chrome.side_panel.settings.icon_theme_label",
         "defaults.line_height",
-        "gpui: the label's line box, sidebar.font's size by it (demo::text_in)",
+        "gpui: the label's line box, the installed 0.8.0 theme's sidebar.item_label(NONE) line_height where stated, else its size by typography.line_height_multiplier (demo::next_text_in)",
     ),
     (
         "chrome.side_panel.settings.theme",
@@ -1439,12 +1439,12 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "link.background_color",
-        "gpui: geometry::link's fill, where the Link paints none (gpui-component/link.rs:70-90, render)",
+        "gpui: next::geometry::link's fill, link.container(NONE).fill, where the Link paints none (gpui-component/link.rs:70-90, render)",
     ),
     (
         "",
         "link.font",
-        "gpui: geometry::link's family, size, weight and style",
+        "gpui: next::geometry::link's family, size, weight and style, link.label(NONE)'s",
     ),
     (
         "",
@@ -1464,7 +1464,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "link.underline_enabled",
-        "gpui: geometry::link removes upstream's underline where false",
+        "gpui: next::geometry::link removes upstream's underline where link.label(NONE).decoration is none",
     ),
     // --- list: the Basic page's table, demo::files_table ------------------------
     (
@@ -2148,7 +2148,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "sidebar.font",
-        "gpui: the label's family, size, weight and style (demo::sidebar_label)",
+        "gpui: the label's family, size, weight and style, at sidebar.item_label(NONE) of the installed 0.8.0 theme (demo::sidebar_label)",
     ),
     (
         "chrome.info",
