@@ -924,6 +924,142 @@ fn compare_builders(
     );
 }
 
+/// The crate root's accessors and their [`super`] counterparts, each named
+/// `root::<name>`: colours as gpui's (`to_hsla` of 0.7.2's, the connector's
+/// conversion of the model's), an unset 0.7.2 option against a `None`, and
+/// `text_scale`'s four roles by their size, weight and line height.
+fn compare_root(report: &mut Report, old: &ResolvedTheme, new: &native_theme::next::ResolvedTheme) {
+    use native_theme::next::Color;
+    let c = |color: Color| super::hsla(color);
+    if let Some(n) = report.mapped("root::is_dark_resolved", super::is_dark_resolved(new)) {
+        report.leaf("root::is_dark_resolved", crate::is_dark_resolved(old), n);
+    }
+    report.leaf(
+        "root::border_line_width",
+        crate::border_line_width(old),
+        super::border_line_width(new),
+    );
+    report.leaf(
+        "root::disabled_opacity",
+        crate::disabled_opacity(old),
+        super::disabled_opacity(new),
+    );
+    report.leaf(
+        "root::border_opacity",
+        crate::border_opacity(old),
+        super::border_opacity(new),
+    );
+    report.leaf(
+        "root::border_shadow_enabled",
+        crate::border_shadow_enabled(old),
+        super::border_shadow_enabled(new),
+    );
+    let (o, n) = (crate::icon_sizes(old), super::icon_sizes(new));
+    report.leaf(
+        "root::icon_sizes",
+        [
+            Some(o.toolbar),
+            Some(o.small),
+            Some(o.large),
+            Some(o.dialog),
+            Some(o.panel),
+        ],
+        [n.toolbar, n.small, n.large, n.dialog, n.panel],
+    );
+    let (o, n) = (crate::text_scale(old), super::text_scale(new));
+    report.leaf(
+        "root::text_scale",
+        [&o.caption, &o.section_heading, &o.dialog_title, &o.display]
+            .map(|e| (e.size, e.weight, e.line_height)),
+        [n.caption, n.section_heading, n.dialog_title, n.display]
+            .map(|t| (t.size_px, t.weight, t.line_height)),
+    );
+    report.leaf(
+        "root::line_height",
+        crate::line_height(old),
+        super::line_height(new),
+    );
+    compare_mapped(
+        report,
+        "root::font_weight",
+        crate::font_weight(old),
+        super::font_weight(new),
+    );
+    compare_mapped(
+        report,
+        "root::mono_font_weight",
+        crate::mono_font_weight(old),
+        super::mono_font_weight(new),
+    );
+    compare_mapped(
+        report,
+        "root::dialog_button_order",
+        format!("{:?}", crate::dialog_button_order(old)),
+        super::dialog_button_order(new).map(|order| format!("{order:?}")),
+    );
+    report.leaf(
+        "root::dialog_button_gap",
+        crate::dialog_button_gap(old),
+        super::dialog_button_gap(new),
+    );
+    compare_mapped(
+        report,
+        "root::scrollbar_groove_width",
+        crate::scrollbar_groove_width(old),
+        super::scrollbar_groove_width(new),
+    );
+    report.leaf(
+        "root::selection_text_color",
+        crate::to_hsla(crate::selection_text_color(old)),
+        c(super::selection_text_color(new)),
+    );
+    compare_mapped(
+        report,
+        "root::selection_inactive_background",
+        crate::to_hsla(crate::selection_inactive_background(old)),
+        super::selection_inactive_background(new).map(c),
+    );
+    compare_mapped(
+        report,
+        "root::selection_inactive_text_color",
+        crate::to_hsla(crate::selection_inactive_text_color(old)),
+        super::selection_inactive_text_color(new).map(c),
+    );
+    compare_mapped(
+        report,
+        "root::list_header_hover_background",
+        crate::list_header_hover_background(old).map(crate::to_hsla),
+        super::list_header_hover_background(new).map(|v| v.map(c)),
+    );
+    compare_mapped(
+        report,
+        "root::list_header_active_background",
+        crate::list_header_active_background(old).map(crate::to_hsla),
+        super::list_header_active_background(new).map(|v| v.map(c)),
+    );
+    report.leaf(
+        "root::disabled_text_color",
+        crate::to_hsla(crate::disabled_text_color(old)),
+        c(super::disabled_text_color(new)),
+    );
+    compare_mapped(
+        report,
+        "root::focus_ring_width",
+        crate::focus_ring_width(old),
+        super::focus_ring_width(new),
+    );
+    report.leaf(
+        "root::focus_ring_offset",
+        crate::focus_ring_offset(old),
+        super::focus_ring_offset(new),
+    );
+    report.leaf(
+        "root::tooltip_show_delay",
+        crate::tooltip_show_delay(old),
+        super::tooltip_show_delay(new),
+    );
+}
+
 /// Every leaf of `preset` for `is_dark`, compared.
 fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Result<Report> {
     let (old, name, layout, new) = resolve(key, preset, is_dark)?;
@@ -931,6 +1067,7 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
     compare_theme(&mut report, &old, &name, &new, is_dark);
     compare_scrollbar(&mut report, &old, &new);
     compare_resizable(&mut report, &old, &new);
+    compare_root(&mut report, &old, &new);
     compare_builders(
         &mut report,
         &old,
@@ -995,6 +1132,31 @@ fn every_builder_is_compared() -> crate::Result<()> {
     assert!(
         !public.is_empty() && missing.is_empty(),
         "public builders not compared: {missing:?}"
+    );
+    Ok(())
+}
+
+/// The `pub fn`s of `src/next/mod.rs` compared elsewhere than as
+/// `root::<name>`: `to_theme` leaf by leaf ([`compare_theme`]), and `apply`
+/// by `next::tests`, against [`crate::apply`].
+const NOT_ROOT_ACCESSORS: &[&str] = &["root::to_theme", "root::apply"];
+
+#[test]
+fn every_root_accessor_is_compared() -> crate::Result<()> {
+    let public: Vec<String> = public_fns("root", include_str!("mod.rs"))
+        .into_iter()
+        .filter(|name| !NOT_ROOT_ACCESSORS.contains(&name.as_str()))
+        .collect();
+    let mut compared = Vec::new();
+    for &(key, preset) in PRESETS {
+        for is_dark in [false, true] {
+            compared.extend(compare_all(key, preset, is_dark)?.seen);
+        }
+    }
+    let missing: Vec<&String> = public.iter().filter(|b| !compared.contains(b)).collect();
+    assert!(
+        !public.is_empty() && missing.is_empty(),
+        "public accessors of next not compared: {missing:?}"
     );
     Ok(())
 }
