@@ -1602,15 +1602,56 @@ fn open_page(page: Page, theme: egui::Theme) -> Harness<'static, App> {
 const UNSTATED_PRESET: &str = "ios-13";
 
 /// [`open_page`], then `preset` installed through the Theme row's path (`App::install`), on any
-/// platform: `--theme` takes this platform's presets alone (`cli::next_theme_key`).
+/// platform: `--theme` takes this platform's presets alone (`cli::next_theme_key`). The mode is
+/// `theme`'s first, as the side panel's mode row sets it: an install sets the mode's theme
+/// preference (`App::apply`), and under `System` egui draws the scheme the integration reports,
+/// which the harness reports none of, so egui's fallback, dark (`egui::Options::fallback_theme`).
 fn open_page_under(page: Page, theme: egui::Theme, preset: &str) -> Harness<'static, App> {
     let mut harness = open_page(page, theme);
     let ctx = harness.ctx.clone();
+    let mode = match theme {
+        egui::Theme::Light => ModeChoice::Light,
+        egui::Theme::Dark => ModeChoice::Dark,
+    };
+    harness.state_mut().set_mode(mode, &ctx);
     harness.state_mut().settings.theme = ThemeChoice::Preset(preset.to_owned());
     harness.state_mut().install(&ctx);
     harness.run_steps(4);
     assert_eq!(harness.state().theme_error, None, "{preset} installs");
+    assert_eq!(harness.ctx.theme(), theme, "{preset} is drawn in {theme:?}");
     harness
+}
+
+/// [`open_page_under`], then the patch `patch` makes of the installed 0.8.0 theme of `theme`'s
+/// slot applied onto the four 0.8.0 themes of the showcase's atlas and installed as an install
+/// keeps it (`OldAtlas::patched`, `App::adopt_pair`), the 0.7.2 themes the pages not yet ported
+/// read left as they are, as the gpui showcase's `install_patched_breeze`: a test can make the
+/// 0.7.2 and the 0.8.0 values differ and so prove what it reads. The patched theme of `theme`'s
+/// slot comes back with the harness; `patch` gives `None` where `preset` states nothing the
+/// patch is made of.
+fn open_patched(
+    page: Page,
+    theme: egui::Theme,
+    preset: &str,
+    patch: impl FnOnce(&native_theme::next::ResolvedTheme) -> Option<native_theme::next::ThemePatch>,
+) -> Result<(Harness<'static, App>, native_theme::next::ResolvedTheme), String> {
+    let mut harness = open_page_under(page, theme, preset);
+    let atlas = harness.state().atlas.clone();
+    let r = atlas
+        .next_resolved(theme)
+        .ok_or_else(|| format!("{preset}: no 0.8.0 theme installed"))?;
+    let patch = patch(r).ok_or_else(|| format!("{preset} states nothing the patch is made of"))?;
+    let patched = atlas.patched(&patch)?;
+    let ctx = harness.ctx.clone();
+    harness.state_mut().adopt_pair(&ctx, patched);
+    harness.run_steps(4);
+    let r = harness
+        .state()
+        .atlas
+        .next_resolved(harness.ctx.theme())
+        .ok_or("the patched atlas holds no 0.8.0 theme")?
+        .clone();
+    Ok((harness, r))
 }
 
 /// The AccessKit roles egui gives a widget: from egui 0.37.0 on a widget names its `Role` itself
@@ -4056,6 +4097,110 @@ fn the_palette_pages_apply_the_per_call_leaves() -> Result<(), String> {
         ] {
             assert_noted(&harness, kind, "input.field(NONE).min_size[1]");
         }
+    }
+    Ok(())
+}
+
+/// The least sizes the Buttons and Inputs pages give are the installed 0.8.0 theme's, not the
+/// 0.7.2 theme's beside it: under kde-breeze with `button.body(NONE).min_size[0]` patched to
+/// half as wide again as the preset's own, which the first row of the Buttons page still holds
+/// (a `Button` is no wider than the room its row has left), and `input.field(NONE).min_size[1]`
+/// to twice the preset's own ([`open_patched`]), so neither is the 0.7.2 `button.min_width` or
+/// `input.min_height` any more, every button the
+/// Buttons page builds with `Button::new` is at least the patched width and every field of the
+/// Inputs page at least the patched height, where unpatched the plain button is narrower and
+/// the single-line field lower than that.
+#[test]
+fn the_least_sizes_are_the_08_themes() -> Result<(), String> {
+    use native_theme::next::{ButtonRule, InputRule, PartPatch, ThemePatch, WidgetState};
+    let rect_of = |harness: &Harness<'_, App>, kind: &str| -> Result<egui::Rect, String> {
+        harness
+            .state()
+            .registry
+            .records()
+            .iter()
+            .find(|r| r.info.kind == kind)
+            .map(|r| r.rect)
+            .ok_or_else(|| format!("no record of kind {kind}"))
+    };
+
+    let plain = open_page_under(Page::Buttons, egui::Theme::Light, "kde-breeze");
+    let old_width = plain
+        .state()
+        .atlas
+        .old_resolved(egui::Theme::Light)
+        .button
+        .min_width;
+    let (harness, r) =
+        open_patched(Page::Buttons, egui::Theme::Light, "kde-breeze", |r| {
+            let [width, _] = r.button.body(WidgetState::NONE).min_size;
+            Some(ThemePatch::new().button(
+                ButtonRule::new().body(PartPatch::new().min_size([Some(1.5 * width?), None])),
+            ))
+        })?;
+    let [width, _] = r.button.body(WidgetState::NONE).min_size;
+    let width = width.ok_or("the patch states no button.body(NONE).min_size[0]")?;
+    assert!(
+        width > old_width,
+        "the patched {width} is not wider than the 0.7.2 button.min_width {old_width}"
+    );
+    let unpatched = rect_of(&plain, "button (enabled)")?.width();
+    assert!(
+        unpatched < width - 0.01,
+        "the plain button is {unpatched} wide unpatched, so the patch proves nothing"
+    );
+    for kind in [
+        "button (enabled)",
+        "button (icon and text)",
+        "button (frameless)",
+        "button (shortcut text)",
+        "button (suggested action)",
+        "button (disabled)",
+    ] {
+        let rect = rect_of(&harness, kind)?;
+        assert!(
+            rect.width() >= width - 0.01,
+            "{kind} is {rect:?}, narrower than the patched button.body(NONE).min_size[0] {width}"
+        );
+    }
+
+    let plain = open_page_under(Page::Inputs, egui::Theme::Light, "kde-breeze");
+    let old_height = plain
+        .state()
+        .atlas
+        .old_resolved(egui::Theme::Light)
+        .input
+        .min_height;
+    let (harness, r) =
+        open_patched(Page::Inputs, egui::Theme::Light, "kde-breeze", |r| {
+            let [_, height] = r.input.field(WidgetState::NONE).min_size;
+            Some(ThemePatch::new().input(
+                InputRule::new().field(PartPatch::new().min_size([None, Some(2.0 * height?)])),
+            ))
+        })?;
+    let [_, height] = r.input.field(WidgetState::NONE).min_size;
+    let height = height.ok_or("the patch states no input.field(NONE).min_size[1]")?;
+    assert!(
+        height > old_height,
+        "the patched {height} is not taller than the 0.7.2 input.min_height {old_height}"
+    );
+    let unpatched = rect_of(&plain, "TextEdit (single line)")?.height();
+    assert!(
+        unpatched < height - 0.01,
+        "the single-line field is {unpatched} tall unpatched, so the patch proves nothing"
+    );
+    for kind in [
+        "TextEdit (single line)",
+        "TextEdit (multiline)",
+        "TextEdit (password)",
+        "TextEdit (hint)",
+        "TextEdit (disabled)",
+    ] {
+        let rect = rect_of(&harness, kind)?;
+        assert!(
+            rect.height() >= height - 0.01,
+            "{kind} is {rect:?}, under the patched input.field(NONE).min_size[1] {height}"
+        );
     }
     Ok(())
 }
@@ -11032,8 +11177,11 @@ fn high_contrast_shows_the_request_and_why_the_theme_holds_it_back() -> Result<(
     prefs.high_contrast = true;
     harness.state_mut().settings.prefs = Some(prefs);
     let ctx = harness.ctx.clone();
+    // The light slot read below is the one drawn (`open_page_under`'s mode).
+    harness.state_mut().set_mode(ModeChoice::Light, &ctx);
     harness.state_mut().install(&ctx);
     harness.run_steps(SETTLE);
+    assert_eq!(harness.ctx.theme(), egui::Theme::Light);
     let atlas = &harness.state().atlas;
     assert!(atlas.asked().high_contrast);
     let next = atlas

@@ -481,6 +481,25 @@ pub(crate) fn next_context(
     ctx
 }
 
+/// The atlas the showcase installs of four 0.8.0 themes, `[light, light_inactive, dark,
+/// dark_inactive]`, built by `ThemeAtlas::next_builder` with the OS colour mode `os_mode` and,
+/// where `system-fonts` is on, the OS's faces for the light theme's text
+/// (`next::font_plan_from_system`).
+fn next_atlas(
+    [light, light_inactive, dark, dark_inactive]: [&native_theme::next::ResolvedTheme; 4],
+    os_mode: ColorMode,
+) -> Result<ThemeAtlas, BuildError> {
+    let builder =
+        ThemeAtlas::next_builder(light, light_inactive, dark, dark_inactive).os_mode(os_mode);
+    let unmapped = |e: native_theme_egui::next::Unmapped| {
+        BuildError::Next(format!("Theme '{}' cannot be installed: {e}", light.name))
+    };
+    #[cfg(feature = "system-fonts")]
+    let builder =
+        builder.fonts(native_theme_egui::next::font_plan_from_system(light).map_err(unmapped)?);
+    builder.build().map_err(unmapped)
+}
+
 /// The 0.8.0 themes an install built beside its atlas, per scheme slot (light, then dark):
 /// each for an inactive window, and why its contrast is lower than asked, where it is.
 struct NextSlots {
@@ -598,6 +617,46 @@ impl OldAtlas {
     /// the `Context` alone, as `ThemeAtlas::from_ctx` gives the installed atlas.
     pub(crate) fn from_ctx(ctx: &egui::Context) -> Option<Self> {
         ctx.data(|d| d.get_temp::<Self>(egui::Id::NULL))
+    }
+
+    /// This atlas with `patch` applied onto each of its four 0.8.0 themes
+    /// (`ResolvedTheme::apply_patch`), built as [`App::rebuild_atlas`] builds the installed one,
+    /// with the same OS colour mode; the 0.7.2 themes, the preferences asked for and the held
+    /// contrasts stay as they are, so a test can make the two models' values differ.
+    #[cfg(test)]
+    pub(crate) fn patched(&self, patch: &native_theme::next::ThemePatch) -> Result<Self, String> {
+        let next = self
+            .next
+            .as_deref()
+            .ok_or("the atlas holds no 0.8.0 themes")?;
+        let os_mode = self
+            .atlas
+            .os_mode()
+            .ok_or("the atlas holds no OS colour mode")?;
+        let patched = |r: &native_theme::next::ResolvedTheme| {
+            let mut r = r.clone();
+            r.apply_patch(patch);
+            r
+        };
+        let active = |theme| {
+            self.next_resolved(theme)
+                .map(patched)
+                .ok_or_else(|| format!("no 0.8.0 theme of the {theme:?} slot"))
+        };
+        let (light, dark) = (active(egui::Theme::Light)?, active(egui::Theme::Dark)?);
+        let [light_inactive, dark_inactive] = &next.inactive;
+        let (light_inactive, dark_inactive) = (patched(light_inactive), patched(dark_inactive));
+        let atlas = next_atlas([&light, &light_inactive, &dark, &dark_inactive], os_mode)
+            .map_err(|error| error.to_string())?;
+        Ok(Self {
+            atlas,
+            old: self.old.clone(),
+            asked: self.asked.clone(),
+            next: Some(std::sync::Arc::new(NextSlots {
+                inactive: [light_inactive, dark_inactive],
+                contrast_held: next.contrast_held.clone(),
+            })),
+        })
     }
 }
 
@@ -937,19 +996,12 @@ impl App {
             Some(base) => base.scheme == Scheme::Dark,
             None => native_theme::detect::system_is_dark(),
         };
-        let builder = ThemeAtlas::next_builder(&light, &light_inactive, &dark, &dark_inactive)
-            .os_mode(if os_dark {
-                ColorMode::Dark
-            } else {
-                ColorMode::Light
-            });
-        let unmapped = |e: native_theme_egui::next::Unmapped| {
-            BuildError::Next(format!("Theme '{}' cannot be installed: {e}", light.name))
+        let os_mode = if os_dark {
+            ColorMode::Dark
+        } else {
+            ColorMode::Light
         };
-        #[cfg(feature = "system-fonts")]
-        let builder = builder
-            .fonts(native_theme_egui::next::font_plan_from_system(&light).map_err(unmapped)?);
-        let atlas = builder.build().map_err(unmapped)?;
+        let atlas = next_atlas([&light, &light_inactive, &dark, &dark_inactive], os_mode)?;
         let old_of = |next: &native_theme::next::ResolvedTheme| {
             let scheme = if next.is_dark() {
                 egui::Theme::Dark
