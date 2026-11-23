@@ -11,8 +11,67 @@
 //! writes them over its preset ([`resolve`]); the colour roles and the
 //! globals made from them; the widgets derived from the roles, the globals
 //! and the constants. A widget's colour that is a role's colour is taken
-//! from the roles, not from a second copy of the constant. The active
-//! palette and an explicit accent are not laid over the constants yet.
+//! from the roles, not from a second copy of the constant.
+//!
+//! The active palette ([`ResolveInputs::palette`]) and then an explicit
+//! accent ([`ResolveInputs::accent`]) are laid over the system's settings
+//! (spec §6, resolution step 2, layer 3). A palette states the roles its
+//! slots name (spec §7, "The roles a palette states"), and each slot whose
+//! AppKit colour has the slot's name replaces that colour and every widget
+//! colour the preset takes from it ([`lay_palette_over`]): `window_bg` is
+//! `windowBackgroundColor`, the window's background (0.7.2's
+//! `defaults.background_color`), so also the window's frame and every panel
+//! and bar the preset fills with it (the menu's, the menu bar's, the tab
+//! bar's and the tabs', the toolbar's, the status bar's, the segmented
+//! control's track); `view_bg` is `controlBackgroundColor`, the view's
+//! background (`defaults.surface_color`), so also the list's
+//! (`list.background_color`, the same colour) and the slider's knob where
+//! the scheme states no knob colour; `sidebar_bg` is the sidebar's material, so its pane; `tooltip_bg`
+//! is the tooltip's panel; `foreground` is `labelColor`, the window's text,
+//! in which the preset letters its widgets, the sidebar's items
+//! (`sidebar.font.color`, `labelColor`) and the tooltip's text, and the text
+//! of the eight surfaces (§7: one text colour); `foreground_muted` is
+//! `secondaryLabelColor`, so the scroll bar's handle and the progress bar's
+//! groove; `border` is `separatorColor`, so every outline drawn in the
+//! default border and the separator; `link` is `linkColor`; `caret` is
+//! `textInsertionPointColor`; `error`, `warning`, `success` and `info` are
+//! the status fills; `accent` is written as given as an explicit accent is
+//! (below), and `accent_fg` is the text on it; `selection_bg` and
+//! `selection_fg` are the selection's, which the text selection takes, and
+//! the hovered menu item's text is the selection's text, as it is drawn on
+//! the selection. A slot with no AppKit colour of its name states its role
+//! alone: `header_bg` and `divider` state their roles (the title bar keeps
+//! the preset's colour); `surface_bg` states the card's, the dialog's and
+//! the popover's, so their panels. Every other colour keeps the value of the
+//! layers below: the control fills with their text (the button's, the text
+//! field's, the pop-up button's), the hover fills, the outlines of their own,
+//! every disabled colour, the placeholder, the alternate row, the list's
+//! header, the title bar, the unfocused selection, the status colours' text.
+//!
+//! An explicit accent, or else a palette's `accent`, is written as given;
+//! no colour is computed from it (spec §6, step 2;
+//! `.superpowers/sdd/v0.8.0-plan/M2/units/accent-decision.md`): it is the
+//! accent's fill, and so the checked fills, the slider's and the progress
+//! bar's fill, `macos-tahoe`'s selected segment and the disabled on switch's
+//! track at its generation's alpha; the selection's background; the text
+//! selection, which takes the selection's two colours; the focus ring, at
+//! alpha 0x7F ([`FOCUS_RING_ALPHA`]); the caret, unless a palette states
+//! one ([`lay_accent_over`]). The link, the status colours, the unfocused
+//! selection and the text on the accent and on the selection
+//! (`alternateSelectedControlTextColor`) keep the value of the layers below,
+//! as AppKit keeps them under another accent. An explicit accent over a
+//! palette replaces its `accent`, `accent_fg`, `selection_bg` and
+//! `selection_fg`; the two texts are then the ones of the layers below the
+//! palette, and its `link`, `info` and `caret` stand. Where AppKit draws a
+//! variant of the accent this crate does not compute, the result differs
+//! from AppKit's; for the red accent (`AppleAccentColor` 0, whose
+//! `controlAccentColor` is `#e0383e` in light and `#ff5257` in dark, given as
+//! the accent in each; the OS probe's `accent-red` reads, macOS 14, 15 and
+//! 26), light / dark: the selection is
+//! `#e0383e` / `#ff5257` here, `#c4262b` / `#d13539` in AppKit; the text
+//! selection `#e0383e` / `#ff5257` here, `#f6c4c5` / `#8b5759` in AppKit;
+//! the focus ring `#e0383e7f` / `#ff52577f` here, `#d321277f` / `#ff7a807f`
+//! in AppKit.
 //!
 //! Defined by the presets (spec §1, "Axis values without data"): the
 //! variant `ButtonVariant::Primary` (0.7.2's `primary_*` fields), a list's
@@ -114,6 +173,7 @@ use crate::next::icons::{IconSizes, IconThemeSpec};
 use crate::next::layout::{ArrowSide, DialogButtonOrder, LayoutMetrics};
 use crate::next::motion::{CaretSpec, MotionTokens, UiTimings};
 use crate::next::paint::Paint;
+use crate::next::palette::Palette;
 use crate::next::preset::{Preset, ResolveInputs};
 use crate::next::presets::helpers::{
     Motion, dialog_entrance, linear_font_px, motion, motion_tokens, physical_edges,
@@ -1748,6 +1808,14 @@ const TAHOE: Generation = Generation {
 /// spec §4, `Typography::font_dpi`: "72.0 Apple").
 const FONT_DPI: f32 = 72.0;
 
+/// The focus ring's alpha over an accent laid as given, 0x7F of 255: the
+/// alpha of `keyboardFocusIndicatorColor` under both accents the OS probe
+/// measured (the default and `AppleAccentColor` 0), in both appearances, on
+/// macOS 14, 15 and 26 (spec §6, step 2; `docs/evidence/os-probe/`
+/// `2026-10-26-run-40348854007`, `os-probe-macos-{14,15,26}/probe.toml` and
+/// `os-probe-macos-{14,15,26}/accent-red/probe.toml`).
+const FOCUS_RING_ALPHA: u8 = 0x7f;
+
 /// The colour of `rgba`, 8-bit sRGB `0xRRGGBBAA`, each channel over 255 as
 /// [`Color::from_srgb8`] takes it.
 const fn srgb8(rgba: u32) -> Color {
@@ -1786,8 +1854,9 @@ pub(crate) fn resolve_tahoe(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> R
 /// resolved scheme and contrast ([`lay_system_over`]), the title bar's text
 /// among them; the fonts ([`laid_over`]); the scroller's style and width;
 /// the font DPI. The disabled on switch's track is the accent at the
-/// alpha of `g`'s own generation ([`switch`]). The active palette and an
-/// explicit accent are not applied yet.
+/// alpha of `g`'s own generation ([`switch`]). Then the active palette
+/// ([`lay_palette_over`]) and the explicit accent ([`lay_accent_over`]),
+/// each over the layer below it (spec §6, resolution step 2).
 fn resolve(g: &Generation, ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> ResolvedTheme {
     let system = inputs.system;
     let mut scheme_colors = match ctx.scheme {
@@ -1798,12 +1867,19 @@ fn resolve(g: &Generation, ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Re
     if let Some(os) = os {
         lay_system_over(&mut scheme_colors, os);
     }
+    let explicit_accent = inputs.accent.is_some();
+    if let Some(p) = inputs.palette {
+        lay_palette_over(&mut scheme_colors, p, explicit_accent);
+    }
+    if let Some(accent) = inputs.accent {
+        lay_accent_over(&mut scheme_colors, accent, inputs.palette.is_none());
+    }
     let title_bar_foreground = os
         .and_then(|os| os.surfaces.as_ref())
         .and_then(|s| s.title_bar)
         .and_then(|s| s.foreground);
     let c = &scheme_colors;
-    let colors = roles(c, g);
+    let colors = roles(c, g, inputs.palette);
     let units = FontUnits {
         dpi: system.and_then(|s| s.font_dpi).unwrap_or(FONT_DPI),
         text_scale: ctx.text_scale,
@@ -1914,7 +1990,7 @@ fn resolve(g: &Generation, ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Re
         sidebar: sidebar(c, &colors, &typography, &layout),
         toolbar: toolbar(c, g, &typography, &layout),
         status_bar: status_bar(c, &typography, &layout),
-        popover: popover(c, &typography, &layout),
+        popover: popover(c, &colors, &typography, &layout),
         switch: switch(c, g, &colors),
         dialog: dialog(c, g, &colors, &typography, &layout, motion, units),
         combo_box: combo_box(c, g, &colors, &typography, &layout, ctx.direction),
@@ -1937,29 +2013,51 @@ fn resolve(g: &Generation, ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Re
 /// `defaults.link_color` where unstated, so no visited colour of its own)
 /// and the status colours with their text, Apple's system colours
 /// (`RoleOrigin::SystemColor`).
-fn roles(c: &SchemeColors, g: &Generation) -> ColorRoles {
+///
+/// The active palette `palette`, whose colours `c` holds already, states
+/// the roles its slots name (spec §7, "The roles a palette states"): the
+/// view's, the header's, the sidebar's, the card's, the dialog's, the
+/// popover's and the tooltip's surfaces with its one text colour, the
+/// window's divider, and the four status colours' origin (`Custom`).
+fn roles(c: &SchemeColors, g: &Generation, palette: Option<&Palette>) -> ColorRoles {
+    let origin = if palette.is_some() {
+        RoleOrigin::Custom
+    } else {
+        RoleOrigin::SystemColor
+    };
     let status = |fill| StatusColors {
         fill,
         foreground: c.status_foreground,
         standalone: None,
-        origin: RoleOrigin::SystemColor,
+        origin,
     };
     let unstated = SurfaceColors::default();
+    let surface = |background: fn(&Palette) -> Color| {
+        palette.map_or(unstated, |p| {
+            SurfaceColors::new(Some(background(p)), Some(p.foreground), None, None, None)
+        })
+    };
     ColorRoles {
         window: SurfaceColors::new(
             Some(c.background),
             Some(c.foreground),
             Some(c.muted),
             Some(c.border),
+            palette.map(|p| p.divider),
+        ),
+        view: SurfaceColors::new(
+            Some(c.surface),
+            palette.map(|p| p.foreground),
+            None,
+            None,
             None,
         ),
-        view: SurfaceColors::new(Some(c.surface), None, None, None, None),
-        header: unstated,
-        sidebar: unstated,
-        card: unstated,
-        dialog: unstated,
-        popover: unstated,
-        tooltip: unstated,
+        header: surface(|p| p.header_bg),
+        sidebar: surface(|p| p.sidebar_bg),
+        card: surface(|p| p.surface_bg),
+        dialog: surface(|p| p.surface_bg),
+        popover: surface(|p| p.surface_bg),
+        tooltip: surface(|p| p.tooltip_bg),
         osd: unstated,
         selection: SelectionColors::new(
             c.selection_background,
@@ -2055,6 +2153,58 @@ fn lay_system_over(c: &mut SchemeColors, os: &OsColors) {
     set(&mut c.list_alternate, os.alternate_row_background);
     set(&mut c.list_header_foreground, os.list_header_foreground);
     set(&mut c.list_grid, os.grid);
+}
+
+/// Lays the palette `p` over `c`: each slot whose AppKit colour has its name
+/// replaces that colour and the widget colours the preset takes from it, as
+/// the module documentation lists; the caret is the palette's; the accent's
+/// slots are laid as given ([`lay_accent_over`]) with the palette's selection
+/// over the accent's, which the text selection and the hovered menu item's
+/// text take, unless an explicit accent (`explicit_accent`) replaces them.
+/// The slots that state only their roles are read by [`roles`].
+fn lay_palette_over(c: &mut SchemeColors, p: &Palette, explicit_accent: bool) {
+    c.background = p.window_bg;
+    c.surface = p.view_bg;
+    c.list_background = p.view_bg;
+    c.sidebar_background = p.sidebar_bg;
+    c.tooltip_background = p.tooltip_bg;
+    c.foreground = p.foreground;
+    c.sidebar_foreground = Some(p.foreground);
+    c.tooltip_foreground = p.foreground;
+    c.muted = p.foreground_muted;
+    c.border = p.border;
+    c.link = p.link;
+    c.caret = p.caret;
+    c.error = p.error;
+    c.warning = p.warning;
+    c.success = p.success;
+    c.info = p.info;
+    if explicit_accent {
+        return;
+    }
+    lay_accent_over(c, p.accent, false);
+    c.accent_foreground = p.accent_fg;
+    c.selection_background = p.selection_bg;
+    c.selection_foreground = p.selection_fg;
+    c.text_selection_background = p.selection_bg;
+    c.text_selection_foreground = p.selection_fg;
+    c.menu_hover_foreground = p.selection_fg;
+}
+
+/// Lays the accent `accent` over `c` as given (spec §6, step 2): the
+/// accent's fill, the selection's background, the text selection, which
+/// takes the selection's two colours, the focus ring at
+/// [`FOCUS_RING_ALPHA`], and, where `caret`, the caret. The text on the
+/// accent and on the selection keeps the value of the layers below.
+fn lay_accent_over(c: &mut SchemeColors, accent: Color, caret: bool) {
+    c.accent = accent;
+    c.selection_background = accent;
+    c.text_selection_background = accent;
+    c.text_selection_foreground = c.selection_foreground;
+    c.focus_ring = accent.with_alpha(f32::from(FOCUS_RING_ALPHA) / f32::from(u8::MAX));
+    if caret {
+        c.caret = accent;
+    }
 }
 
 /// The fonts the system states for widgets of their own: the menu's
@@ -3170,15 +3320,21 @@ fn status_bar(
     )
 }
 
-/// The popover: the window's background (0.7.2: `popover.background_color`
-/// is `defaults.background_color` where unstated, `resolve_safety_nets`) in
+/// The popover: the popover's background where a palette states it, else
+/// the window's (0.7.2: `popover.background_color` is
+/// `defaults.background_color` where unstated, `resolve_safety_nets`) in
 /// the default line with the large radius (0.7.2: `popover.border` is
 /// `defaults.border` with `corner_radius_lg` where unstated); its text in the
 /// UI font (`popover.font`: `defaults.font` where unstated).
-fn popover(c: &SchemeColors, typography: &Typography, layout: &LayoutMetrics) -> PopoverWidget {
+fn popover(
+    c: &SchemeColors,
+    roles: &ColorRoles,
+    typography: &Typography,
+    layout: &LayoutMetrics,
+) -> PopoverWidget {
     let mut panel = PartStyle::default();
     for prop in [
-        fill(c.background),
+        fill(roles.popover.background.unwrap_or(c.background)),
         outline(layout, c.border),
         PartProp::Corners(Corners::uniform(layout.corner_radius_lg)),
     ] {
@@ -3258,7 +3414,8 @@ fn switch(c: &SchemeColors, g: &Generation, roles: &ColorRoles) -> SwitchWidget 
     )
 }
 
-/// The alert: its panel in the window's background (0.7.2:
+/// The alert: its panel in the dialog's background where a palette states
+/// it, else in the window's (0.7.2:
 /// `dialog.background_color` is `defaults.background_color` where unstated,
 /// `resolve_safety_nets`) in the default line with the large radius (0.7.2:
 /// `dialog.border` is `defaults.border` with `corner_radius_lg` where
@@ -3278,7 +3435,7 @@ fn dialog(
 ) -> DialogWidget {
     let mut panel = PartStyle::default();
     for prop in [
-        fill(c.background),
+        fill(roles.dialog.background.unwrap_or(c.background)),
         outline(layout, c.border),
         PartProp::Corners(Corners::uniform(layout.corner_radius_lg)),
         PartProp::MinSize([Some(g.dialog_min_width), Some(g.dialog_min_height)]),
