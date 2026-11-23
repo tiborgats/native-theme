@@ -2,7 +2,8 @@
 //! spec §10, rule 4): each widget on the 0.8.0 model, drawn under the atlas of each model of
 //! every platform preset (`crate::next::parity::PRESETS`, asserted against `Preset::ALL`
 //! there), light and dark, in each of its states, paints the same shapes, every difference
-//! listed in [`DIFFERENCES`] with its cause; an entry that no longer differs fails.
+//! listed in [`DIFFERENCES`] with its cause, an outline colour, and a listed case still equal in
+//! every other value of every shape; an entry that no longer differs fails.
 
 use super::*;
 
@@ -151,12 +152,16 @@ fn drawn_alike(cases: &[Case<'_>]) -> Result<Drawn, Box<dyn std::error::Error>> 
                 if a == b && ra.rect == rb.rect {
                     continue;
                 }
-                if DIFFERENCES
+                let is_listed = DIFFERENCES
                     .iter()
-                    .any(|d| d.case == case && d.presets.contains(&key))
-                {
+                    .any(|d| d.case == case && d.presets.contains(&key));
+                // A listed case differs in its outline colour alone: every other value of every
+                // shape is equal.
+                if is_listed {
                     listed.push((key, case));
-                    continue;
+                    if outlines_masked(&a) == outlines_masked(&b) && ra.rect == rb.rect {
+                        continue;
+                    }
                 }
                 let shown = |s: &egui::Shape| match s {
                     egui::Shape::Text(t) => format!(
@@ -174,9 +179,14 @@ fn drawn_alike(cases: &[Case<'_>]) -> Result<Drawn, Box<dyn std::error::Error>> 
                     .map(|(a, b)| format!("\n    0.7.2 {}\n    0.8.0 {}", shown(a), shown(b)))
                     .collect();
                 failures.push(format!(
-                    "{key}/{}: {case}: rect 0.7.2 {:?}, 0.8.0 {:?}; {} and {} shapes; \
+                    "{key}/{}: {case}{}: rect 0.7.2 {:?}, 0.8.0 {:?}; {} and {} shapes; \
                      different:{}",
                     if is_dark { "dark" } else { "light" },
+                    if is_listed {
+                        " (listed: it differs beyond its outline colour)"
+                    } else {
+                        ""
+                    },
                     ra.rect,
                     rb.rect,
                     a.len(),
@@ -187,6 +197,47 @@ fn drawn_alike(cases: &[Case<'_>]) -> Result<Drawn, Box<dyn std::error::Error>> 
         }
     }
     Ok((failures, listed))
+}
+
+/// `shapes` with each outline's colour made transparent, and a rect filled in an outline's
+/// colour (the segmented control's dividers), its width and every other value kept: what a
+/// listed difference, an outline colour, leaves to compare.
+fn outlines_masked(shapes: &[egui::Shape]) -> Vec<egui::Shape> {
+    let none = egui::Color32::TRANSPARENT;
+    let outlines: Vec<egui::Color32> = shapes
+        .iter()
+        .filter_map(|shape| match shape {
+            egui::Shape::Rect(r) if r.stroke.width > 0.0 => Some(r.stroke.color),
+            egui::Shape::Circle(c) if c.stroke.width > 0.0 => Some(c.stroke.color),
+            egui::Shape::Ellipse(e) if e.stroke.width > 0.0 => Some(e.stroke.color),
+            egui::Shape::LineSegment { stroke, .. } if stroke.width > 0.0 => Some(stroke.color),
+            egui::Shape::Path(p) if p.stroke.width > 0.0 => match p.stroke.color {
+                egui::epaint::ColorMode::Solid(c) => Some(c),
+                _ => None,
+            },
+            _ => None,
+        })
+        .collect();
+    shapes
+        .iter()
+        .cloned()
+        .map(|mut shape| {
+            match &mut shape {
+                egui::Shape::Rect(r) => {
+                    r.stroke.color = none;
+                    if outlines.contains(&r.fill) {
+                        r.fill = none;
+                    }
+                }
+                egui::Shape::Circle(c) => c.stroke.color = none,
+                egui::Shape::Ellipse(e) => e.stroke.color = none,
+                egui::Shape::LineSegment { stroke, .. } => stroke.color = none,
+                egui::Shape::Path(p) => p.stroke.color = egui::epaint::ColorMode::Solid(none),
+                _ => {}
+            }
+            shape
+        })
+        .collect()
 }
 
 /// Every listed difference of `cases` that drew alike everywhere it is listed.
