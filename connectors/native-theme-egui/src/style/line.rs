@@ -11,13 +11,6 @@ use egui::Color32;
 
 /// Where a stroke lies against its box's edge (spec §2, `StrokeAlign`).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "Inside and Center come from the 0.8.0 model only, read by `next`'s mapping, built next in M4.E2"
-    )
-)]
 pub(crate) enum LineAlign {
     Outside,
     Inside,
@@ -26,10 +19,6 @@ pub(crate) enum LineAlign {
 
 impl LineAlign {
     /// The 0.8.0 model's alignment; `None` for one this connector does not know.
-    #[cfg_attr(
-        not(test),
-        expect(dead_code, reason = "read by `next`'s mapping, built next in M4.E2")
-    )]
     pub(crate) fn of(align: native_theme::next::StrokeAlign) -> Option<Self> {
         match align {
             native_theme::next::StrokeAlign::Outside => Some(Self::Outside),

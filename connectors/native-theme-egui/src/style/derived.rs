@@ -10,9 +10,10 @@
 use native_theme::theme::ResolvedTheme;
 
 use crate::convert::{
-    clamp_length, expander_padding_border, finite_or, i8_from_f32_saturating, padding_with_border,
-    to_color32, to_corner_radius, to_margin, to_shadow, to_stroke,
+    Rgba, clamp_length, expander_padding_border, finite_or, i8_from_f32_saturating,
+    padding_with_border, to_color32, to_corner_radius, to_margin, to_stroke,
 };
+use crate::style::base::BaseSource;
 use crate::style::{BuildInput, note_transparent_fill, push_note};
 use crate::{Note, Role};
 
@@ -22,23 +23,24 @@ fn sanitised(path: &'static str, notes: &mut Vec<Note>) {
 
 /// The derived writes of the base style: D1 (§6.5), D5 (§6.9) and the two shadow gates (§6.14,
 /// §5.9). Called last in `base_style`, over the values it wrote.
-pub(crate) fn apply_base(style: &mut egui::Style, input: &BuildInput<'_>, notes: &mut Vec<Note>) {
-    let t = input.theme;
-    scrollbar_widths(style, t, notes);
-    scrollbar_pressed_thumb(style, t, notes);
-    // §6.14: only the colour is replaced, egui's geometry kept; `false` is exactly `Shadow::NONE`.
-    // `window_shadow`'s owner is the window's own border, `popup_shadow`'s `defaults.border` (§5.9).
+pub(crate) fn apply_base(style: &mut egui::Style, src: &BaseSource, notes: &mut Vec<Note>) {
+    if let (Some(groove), Some(thumb)) = (src.groove_width, src.thumb_width) {
+        scrollbar_widths(style, groove, thumb, src.overlay_scrollbar, notes);
+    }
+    let [_, _, pressed] = src.thumb;
+    if let Some(pressed) = pressed {
+        pressed_thumb(style, pressed, notes);
+    }
+    // §6.14: the colour is `base_style`'s, egui's geometry kept; `false` is exactly
+    // `Shadow::NONE`. `window_shadow`'s owner is the window's own border, `popup_shadow`'s the
+    // global one (§5.9).
     let v = &mut style.visuals;
-    v.window_shadow = to_shadow(
-        v.window_shadow,
-        t.defaults.shadow_color,
-        t.window.border.shadow_enabled,
-    );
-    v.popup_shadow = to_shadow(
-        v.popup_shadow,
-        t.defaults.shadow_color,
-        t.defaults.border.shadow_enabled,
-    );
+    if !src.window_shadow {
+        v.window_shadow = egui::Shadow::NONE;
+    }
+    if !src.popup_shadow {
+        v.popup_shadow = egui::Shadow::NONE;
+    }
 }
 
 /// The derived writes of one role cell, called last in `role_cell`; a role with none
@@ -80,25 +82,31 @@ pub(crate) fn apply_role(
 /// (`egui/src/style.rs:656-662`). The finiteness test runs on both leaves before any arithmetic:
 /// a non-finite width leaves the whole `ScrollStyle` as the starting style has it — egui's
 /// `ScrollStyle::floating()`, its `Default` (`egui/src/style.rs:585-589`) — never a `0.0` bar.
-fn scrollbar_widths(style: &mut egui::Style, t: &ResolvedTheme, notes: &mut Vec<Note>) {
-    let sb = &t.scrollbar;
+/// Both widths must be stated: [`apply_base`] calls this only then.
+fn scrollbar_widths(
+    style: &mut egui::Style,
+    (groove, groove_path): (f32, &'static str),
+    (thumb, thumb_path): (f32, &'static str),
+    overlay: bool,
+    notes: &mut Vec<Note>,
+) {
     let mut finite = true;
-    if !sb.groove_width.is_finite() {
-        sanitised("scrollbar.groove_width", notes);
+    if !groove.is_finite() {
+        sanitised(groove_path, notes);
         finite = false;
     }
-    if !sb.thumb_width.is_finite() {
-        sanitised("scrollbar.thumb_width", notes);
+    if !thumb.is_finite() {
+        sanitised(thumb_path, notes);
         finite = false;
     }
     if !finite {
         return;
     }
-    let g = clamp_length(sb.groove_width);
-    let thumb = clamp_length(sb.thumb_width).min(g); // the thumb is never wider than the groove
+    let g = clamp_length(groove);
+    let thumb = clamp_length(thumb).min(g); // the thumb is never wider than the groove
     let pad = (g - thumb) * 0.5; // 0.5: the midpoint (§6.17); finite and >= 0.0, as g and thumb are
     let scroll = &mut style.spacing.scroll;
-    if sb.overlay_mode {
+    if overlay {
         scroll.floating = true; // `:503`
         scroll.floating_allocated_width = 0.0; // `:535`: `ScrollStyle::floating()`'s own value; reserves nothing
         scroll.floating_width = thumb; // `:527`: idle thickness
@@ -116,10 +124,15 @@ fn scrollbar_widths(style: &mut egui::Style, t: &ResolvedTheme, notes: &mut Vec<
 /// The pressed thumb: `thumb_active_color`, or `thumb_hover_color` where the platform states
 /// none. Written as given (C17): the thumb sits on a trough egui also paints.
 fn scrollbar_pressed_thumb(style: &mut egui::Style, t: &ResolvedTheme, notes: &mut Vec<Note>) {
-    let (c, path) = match t.scrollbar.thumb_active_color {
+    let pressed = match t.scrollbar.thumb_active_color {
         Some(c) => (c, "scrollbar.thumb_active_color"),
         None => (t.scrollbar.thumb_hover_color, "scrollbar.thumb_hover_color"),
     };
+    pressed_thumb(style, pressed, notes);
+}
+
+/// The pressed thumb's colour, with the place a note names it by, into `active.bg_fill`.
+fn pressed_thumb(style: &mut egui::Style, (c, path): (Rgba, &'static str), notes: &mut Vec<Note>) {
     let c = to_color32(c);
     note_transparent_fill(c, path, notes);
     style.visuals.widgets.active.bg_fill = c;
@@ -394,6 +407,18 @@ mod tests {
 
     fn theme() -> ResolvedTheme {
         resolved("kde-breeze", ColorMode::Light)
+    }
+
+    /// D1 on a 0.7.2 theme's two widths, as `apply_base` calls it.
+    fn scrollbar_widths(s: &mut egui::Style, t: &ResolvedTheme, notes: &mut Vec<Note>) {
+        let sb = &t.scrollbar;
+        super::scrollbar_widths(
+            s,
+            (sb.groove_width, "scrollbar.groove_width"),
+            (sb.thumb_width, "scrollbar.thumb_width"),
+            sb.overlay_mode,
+            notes,
+        );
     }
 
     fn start() -> egui::Style {

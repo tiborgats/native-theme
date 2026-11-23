@@ -259,19 +259,30 @@ pub fn to_margin(
 pub(crate) fn padding_with_border(
     border: &native_theme::theme::ResolvedWidgetBorder,
 ) -> native_theme::theme::ResolvedPadding {
-    let finite = |stated: Option<f32>| stated.filter(|v| v.is_finite());
-    let stated = &border.padding;
-    native_theme::theme::ResolvedWidgetBorder {
-        line_width: clamp_length(finite_or(border.line_width, 0.0)),
-        padding: native_theme::theme::ResolvedPadding {
-            top: finite(stated.top),
-            right: finite(stated.right),
-            bottom: finite(stated.bottom),
-            left: finite(stated.left),
-        },
-        ..border.clone()
+    padding_with_line(&border.padding, border.line_width)
+}
+
+/// [`padding_with_border`] of a padding and a line width given apart: each stated, finite
+/// side plus `clamp_length(finite_or(line_width, 0.0))`, saturated at `f32::MAX` as core's
+/// `ResolvedWidgetBorder::padding_outside` saturates it.
+#[inline]
+#[must_use]
+pub(crate) fn padding_with_line(
+    padding: &native_theme::theme::ResolvedPadding,
+    line_width: f32,
+) -> native_theme::theme::ResolvedPadding {
+    let width = clamp_length(finite_or(line_width, 0.0));
+    let side = |stated: Option<f32>| {
+        stated
+            .filter(|v| v.is_finite())
+            .map(|v| (v + width).min(f32::MAX))
+    };
+    native_theme::theme::ResolvedPadding {
+        top: side(padding.top),
+        right: side(padding.right),
+        bottom: side(padding.bottom),
+        left: side(padding.left),
     }
-    .padding_outside()
 }
 
 /// The expander's border as its padding counts it: `expander.border` with its line width 0
@@ -315,7 +326,16 @@ pub(crate) fn to_button_padding(
     base: egui::Vec2,
     border: &native_theme::theme::ResolvedWidgetBorder,
 ) -> egui::Vec2 {
-    let padding = padding_with_border(border);
+    button_padding_outside(base, &padding_with_border(border))
+}
+
+/// [`to_button_padding`] of a padding already measured from the outside of its border.
+#[inline]
+#[must_use]
+pub(crate) fn button_padding_outside(
+    base: egui::Vec2,
+    padding: &native_theme::theme::ResolvedPadding,
+) -> egui::Vec2 {
     let pair = |a: Option<f32>, b: Option<f32>, own: f32| {
         clamp_length(f32::midpoint(a.unwrap_or(own), b.unwrap_or(own)))
     };

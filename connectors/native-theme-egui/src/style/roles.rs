@@ -7,8 +7,8 @@ use native_theme::theme::{ResolvedPadding, ResolvedWidgetBorder};
 use super::base::{button_padding, length, margin, opacity, radius, stroke, text_size};
 use super::line::LineAlign;
 use super::states::{
-    BorderEntries, BorderSource, FillField, FillSource, Layer, OpenFrom, StateSource, TextSource,
-    write_states,
+    BorderEntries, BorderSource, Edge, FillField, FillSource, Layer, OpenFrom, StateSource,
+    TextSource, write_states,
 };
 use super::{BuildInput, push_note};
 use crate::accessors::scaled_text_size;
@@ -197,7 +197,7 @@ fn optional_length(
 /// and no hover or pressed one.
 fn text_in_all(idle: Rgba) -> Option<TextSource> {
     Some(TextSource {
-        idle,
+        idle: Some(idle),
         hover: None,
         active: None,
         in_noninteractive: true,
@@ -240,13 +240,13 @@ fn button(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes:
                 layer: Layer::Composite,
             }),
             text: Some(TextSource {
-                idle: b.font.color,
+                idle: Some(b.font.color),
                 hover: Some(b.hover_text_color),
                 active: Some(b.active_text_color),
                 in_noninteractive: true, // `button.font.color` → {noninteractive,inactive,open} «Button» (§5.3)
             }),
             border: Some(BorderSource {
-                border: &b.border,
+                border: Edge::old(&b.border),
                 paths: ["button.border.corner_radius", "button.border.line_width"],
                 align: LineAlign::Outside,
                 entries: BorderEntries::All, // the `{5}` rows
@@ -316,13 +316,13 @@ fn menu(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes: &
                 layer: Layer::AsGiven, // a row highlight over the menu's own frame (C17)
             }),
             text: Some(TextSource {
-                idle: m.font.color,
+                idle: Some(m.font.color),
                 hover: Some(m.hover_text_color),
                 active: None,
                 in_noninteractive: true, // `menu.font.color` → {noninteractive,inactive}
             }),
             border: Some(BorderSource {
-                border: &m.border,
+                border: Edge::old(&m.border),
                 paths: ["menu.border.corner_radius", "menu.border.line_width"],
                 align: LineAlign::Outside,
                 entries: BorderEntries::Interactive, // the item's outline; nothing into the frame's
@@ -496,7 +496,7 @@ fn input_role(
             fill: None,
             text: text_in_all(i.font.color),
             border: Some(BorderSource {
-                border: &i.border,
+                border: Edge::old(&i.border),
                 paths: ["input.border.corner_radius", "input.border.line_width"],
                 align: LineAlign::Outside,
                 entries: BorderEntries::All,
@@ -563,7 +563,7 @@ fn checkbox(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, note
             }),
             text: text_in_all(k.indicator_color), // the check mark is `fg_stroke` (§5.3)
             border: Some(BorderSource {
-                border: &border,
+                border: Edge::old(&border),
                 paths: [
                     "checkbox.border.corner_radius",
                     "checkbox.border.line_width",
@@ -789,13 +789,13 @@ fn tab(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes: &m
                 layer: Layer::AsGiven,
             }),
             text: Some(TextSource {
-                idle: tb.font.color,
+                idle: Some(tb.font.color),
                 hover: Some(tb.hover_text_color),
                 active: None,
                 in_noninteractive: true,
             }),
             border: Some(BorderSource {
-                border: &tb.border,
+                border: Edge::old(&tb.border),
                 paths: ["tab.border.corner_radius", "tab.border.line_width"],
                 align: LineAlign::Outside,
                 entries: BorderEntries::All,
@@ -1119,7 +1119,7 @@ fn combo_box(
             }),
             text: text_in_all(cb.font.color),
             border: Some(BorderSource {
-                border: &cb.border,
+                border: Edge::old(&cb.border),
                 paths: [
                     "combo_box.border.corner_radius",
                     "combo_box.border.line_width",
@@ -1207,7 +1207,7 @@ fn segmented_control(
             }),
             text: text_in_all(sc.font.color),
             border: Some(BorderSource {
-                border: &sc.border,
+                border: Edge::old(&sc.border),
                 paths: [
                     "segmented_control.border.corner_radius",
                     "segmented_control.border.line_width",
@@ -1273,7 +1273,7 @@ fn expander(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, note
             }),
             text: text_in_all(x.font.color),
             border: Some(BorderSource {
-                border: &x.border,
+                border: Edge::old(&x.border),
                 paths: [
                     "expander.border.corner_radius",
                     "expander.border.line_width",

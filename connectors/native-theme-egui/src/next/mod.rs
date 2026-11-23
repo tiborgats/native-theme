@@ -21,6 +21,11 @@
 //! stated values as egui takes them, `None` where the theme states none,
 //! for a reader that shows egui's own there.
 
+#[cfg_attr(
+    not(test),
+    expect(dead_code, reason = "`to_theme`, built next in M4.E2, calls it")
+)]
+mod build;
 #[cfg(test)]
 mod parity;
 #[cfg(test)]

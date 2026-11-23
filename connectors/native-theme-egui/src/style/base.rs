@@ -7,13 +7,18 @@ use egui::TextStyle;
 
 use native_theme::theme::{ResolvedPadding, ResolvedWidgetBorder};
 
+use super::line::{Line, LineAlign};
+use super::states::{
+    BorderEntries, BorderSource, Edge, FillField, FillSource, Layer, OpenFrom, StateSource,
+    TextSource, Unstated, write_states_with,
+};
 use super::{BuildInput, push_note, saturates_i8};
 use crate::accessors::scaled_text_size;
 use crate::convert::{
-    clamp_length, finite_or, to_button_padding, to_color32, to_corner_radius, to_margin,
-    unit_interval,
+    Rgba, button_padding_outside, clamp_length, finite_or, padding_with_line, to_color32,
+    to_corner_radius, to_margin, unit_interval,
 };
-use crate::{AccessibilityPreferences, Note};
+use crate::{AccessibilityPreferences, LayoutTheme, Note, ResolvedTheme};
 
 /// §8.5's rule: the scaled size when it is a positive normal `f32`, else `own` — egui's own
 /// size for that slot — with a `Note::ValueSanitised` for `path`.
@@ -24,13 +29,7 @@ pub(crate) fn text_size(
     own: f32,
     notes: &mut Vec<Note>,
 ) -> f32 {
-    let s = scaled_text_size(size, prefs);
-    if s.is_normal() && s > 0.0 {
-        s
-    } else {
-        push_note(notes, Note::ValueSanitised { path });
-        own
-    }
+    sanitised_size(path, scaled_text_size(size, prefs), own, notes)
 }
 
 /// A length sink: the non-finite rule with egui's own value, reported, then `clamp_length`
@@ -92,7 +91,21 @@ pub(crate) fn margin(
     padding: &ResolvedPadding,
     notes: &mut Vec<Note>,
 ) -> egui::Margin {
-    let sides = [padding.top, padding.right, padding.bottom, padding.left];
+    margin_of(
+        paths,
+        own,
+        [padding.top, padding.right, padding.bottom, padding.left],
+        notes,
+    )
+}
+
+/// [`margin`] of four sides given as top, right, bottom, left, each `None` where unstated.
+pub(crate) fn margin_of(
+    paths: [&'static str; 4],
+    own: egui::Margin,
+    sides: [Option<f32>; 4],
+    notes: &mut Vec<Note>,
+) -> egui::Margin {
     for (side, path) in sides.into_iter().zip(paths) {
         if let Some(v) = side {
             if !v.is_finite() {
@@ -102,7 +115,16 @@ pub(crate) fn margin(
             }
         }
     }
-    to_margin(own, padding)
+    let [top, right, bottom, left] = sides;
+    to_margin(
+        own,
+        &ResolvedPadding {
+            top,
+            right,
+            bottom,
+            left,
+        },
+    )
 }
 
 /// `Spacing::button_padding` from a widget's border (§5's pair rule, `to_button_padding`);
@@ -115,12 +137,41 @@ pub(crate) fn button_padding(
     notes: &mut Vec<Note>,
 ) -> egui::Vec2 {
     let p = &border.padding;
-    for (side, path) in [p.top, p.right, p.bottom, p.left].into_iter().zip(paths) {
+    button_padding_of(
+        paths,
+        [p.top, p.right, p.bottom, p.left],
+        Some(border.line_width),
+        own,
+        notes,
+    )
+}
+
+/// [`button_padding`] of four sides given as top, right, bottom, left, each `None` where
+/// unstated, and the border's line width, which a `None` leaves out of the sum.
+pub(crate) fn button_padding_of(
+    paths: [&'static str; 4],
+    sides: [Option<f32>; 4],
+    line_width: Option<f32>,
+    own: egui::Vec2,
+    notes: &mut Vec<Note>,
+) -> egui::Vec2 {
+    for (side, path) in sides.into_iter().zip(paths) {
         if side.is_some_and(|v| !v.is_finite()) {
             push_note(notes, Note::ValueSanitised { path });
         }
     }
-    to_button_padding(own, border)
+    let [top, right, bottom, left] = sides;
+    let padding = ResolvedPadding {
+        top,
+        right,
+        bottom,
+        left,
+    };
+    let outside = match line_width {
+        Some(width) => padding_with_line(&padding, width),
+        None => padding_with_line(&padding, 0.0),
+    };
+    button_padding_outside(own, &outside)
 }
 
 /// §6.15: the theme's line box less epaint's row, floored at egui's `0.0`
@@ -132,73 +183,294 @@ pub(crate) fn line_spacing(line_height: f32, size: f32, row_height: Option<f32>)
     }
 }
 
-/// The base style of `input.scheme` (§3.4): egui's own style for the scheme, assigned.
+/// A value the mapping writes, where the theme states it, with the place a note names it by:
+/// the 0.7.2 leaf, or the 0.8.0 home.
+pub(crate) type Read<T> = Option<(T, &'static str)>;
+
+/// Four sides, top, right, bottom, left, each `None` where unstated, with their places.
+pub(crate) struct Sides {
+    pub values: [Option<f32>; 4],
+    pub paths: [&'static str; 4],
+}
+
+/// The button's states the base style's four interactive entries take (§6.1).
+pub(crate) struct ButtonStates {
+    /// The body's fill at rest, hovered and pressed.
+    pub fill: [Read<Rgba>; 3],
+    /// The label's colour at rest and hovered.
+    pub label: [Option<Rgba>; 2],
+    pub border: Edge,
+    pub border_paths: [&'static str; 2],
+    pub align: LineAlign,
+    /// The hovered and the pressed or focused border's colour (egui's `active` is both).
+    pub state_border: [Option<Rgba>; 2],
+}
+
+/// What the base style and [`crate::style::derived::apply_base`] read, from either model, each
+/// value `None` where the theme states none, so that egui's own stays (spec §10, rule 0).
+pub(crate) struct BaseSource {
+    /// The five slots' sizes, scaled by the text scale: Small, Body, Monospace, Button, Heading.
+    pub sizes: [Read<f32>; 5],
+    pub window_fill: Read<Rgba>,
+    pub text: Option<Rgba>,
+    pub muted: Option<Rgba>,
+    pub shadow: Option<Rgba>,
+    pub link: Option<Rgba>,
+    pub selection: Option<Rgba>,
+    pub selection_text: Option<Rgba>,
+    pub danger: Option<Rgba>,
+    pub warning: Option<Rgba>,
+    /// The border of frames and separators: the window's and `noninteractive`'s stroke.
+    pub border: Edge,
+    pub border_paths: [&'static str; 2],
+    pub radius_lg: Read<f32>,
+    pub disabled_opacity: Read<f32>,
+    pub menu_fill: Option<Rgba>,
+    pub overlay_scrollbar: bool,
+    pub track: Option<Rgba>,
+    pub input_fill: Option<Rgba>,
+    pub alternate_row: Option<Rgba>,
+    pub caret: Option<Rgba>,
+    pub blink_on_ms: Option<u32>,
+    pub blink_off_ms: Option<u32>,
+    pub window_radius: Read<f32>,
+    pub window_padding: Sides,
+    pub min_height: Read<f32>,
+    pub button_padding: Sides,
+    pub indicator_width: Read<f32>,
+    pub label_gap: Read<f32>,
+    pub rail_height: Read<f32>,
+    pub combo_width: Read<f32>,
+    pub tooltip_width: Read<f32>,
+    pub min_thumb: Read<f32>,
+    pub widget_gap: Option<f32>,
+    /// The tooltip's delay, in egui's seconds.
+    pub tooltip_delay: Option<f32>,
+    pub button: ButtonStates,
+    /// The scroll bar's thumb at rest, hovered and pressed.
+    pub thumb: [Read<Rgba>; 3],
+    pub title_bar_fill: Option<Rgba>,
+    pub line_height: Read<f32>,
+    pub groove_width: Read<f32>,
+    pub thumb_width: Read<f32>,
+    pub window_shadow: bool,
+    pub popup_shadow: bool,
+}
+
+impl BaseSource {
+    /// The 0.7.2 model's reads, every value stated, the text sizes scaled by `prefs`.
+    pub(crate) fn old(
+        t: &ResolvedTheme,
+        prefs: &AccessibilityPreferences,
+        layout: &LayoutTheme,
+    ) -> Self {
+        let d = &t.defaults;
+        let b = &t.button;
+        let sb = &t.scrollbar;
+        let scaled = |size: f32, path| Some((scaled_text_size(size, prefs), path));
+        let sides = |p: &ResolvedPadding, paths| Sides {
+            values: [p.top, p.right, p.bottom, p.left],
+            paths,
+        };
+        Self {
+            sizes: [
+                scaled(t.text_scale.caption.size, "text_scale.caption.size"),
+                scaled(d.font.size, "defaults.font.size"),
+                scaled(d.mono_font.size, "defaults.mono_font.size"),
+                scaled(b.font.size, "button.font.size"),
+                scaled(
+                    t.text_scale.section_heading.size,
+                    "text_scale.section_heading.size",
+                ),
+            ],
+            window_fill: Some((d.background_color, "defaults.background_color")),
+            text: Some(d.text_color),
+            muted: Some(d.muted_color),
+            shadow: Some(d.shadow_color),
+            link: Some(d.link_color),
+            selection: Some(d.selection_background),
+            selection_text: Some(d.selection_text_color),
+            danger: Some(d.danger_color),
+            warning: Some(d.warning_color),
+            border: Edge {
+                color: Some(d.border.color),
+                width: Some(d.border.line_width),
+                radius: Some(d.border.corner_radius),
+            },
+            border_paths: [
+                "defaults.border.corner_radius",
+                "defaults.border.line_width",
+            ],
+            radius_lg: Some((
+                d.border.corner_radius_lg,
+                "defaults.border.corner_radius_lg",
+            )),
+            disabled_opacity: Some((d.disabled_opacity, "defaults.disabled_opacity")),
+            menu_fill: Some(t.menu.background_color),
+            overlay_scrollbar: sb.overlay_mode,
+            track: Some(sb.track_color),
+            input_fill: Some(t.input.background_color),
+            alternate_row: Some(t.list.alternate_row_background),
+            caret: Some(t.input.caret_color),
+            blink_on_ms: t.input.caret_blink_on,
+            blink_off_ms: t.input.caret_blink_off,
+            window_radius: Some((t.window.border.corner_radius, "window.border.corner_radius")),
+            window_padding: sides(
+                &t.window.border.padding,
+                [
+                    "window.border.padding.top",
+                    "window.border.padding.right",
+                    "window.border.padding.bottom",
+                    "window.border.padding.left",
+                ],
+            ),
+            min_height: Some((b.min_height, "button.min_height")),
+            button_padding: sides(
+                &b.border.padding,
+                [
+                    "button.border.padding.top",
+                    "button.border.padding.right",
+                    "button.border.padding.bottom",
+                    "button.border.padding.left",
+                ],
+            ),
+            indicator_width: Some((t.checkbox.indicator_width, "checkbox.indicator_width")),
+            label_gap: Some((t.checkbox.label_gap, "checkbox.label_gap")),
+            rail_height: Some((t.slider.track_height, "slider.track_height")),
+            combo_width: Some((t.combo_box.min_width, "combo_box.min_width")),
+            tooltip_width: Some((t.tooltip.max_width, "tooltip.max_width")),
+            min_thumb: Some((sb.min_thumb_length, "scrollbar.min_thumb_length")),
+            widget_gap: layout.widget_gap,
+            // the theme's milliseconds as egui's seconds (`egui/src/style.rs:928`)
+            tooltip_delay: t.tooltip.show_delay.map(|ms| f32::from(ms) / 1000.0),
+            button: ButtonStates {
+                fill: [
+                    Some((b.background_color, "button.background_color")),
+                    Some((b.hover_background, "button.hover_background")),
+                    Some((
+                        b.active_background.unwrap_or(b.hover_background),
+                        "button.active_background",
+                    )), // §6.4
+                ],
+                label: [Some(b.font.color), Some(b.hover_text_color)],
+                border: Edge::old(&b.border),
+                border_paths: ["button.border.corner_radius", "button.border.line_width"],
+                align: LineAlign::Outside,
+                // a theme that states both and they differ: a pressed button takes the focus border
+                state_border: [
+                    Some(b.hover_border_color.unwrap_or(b.border.color)),
+                    Some(
+                        b.focus_border_color
+                            .or(b.hover_border_color)
+                            .unwrap_or(b.border.color),
+                    ),
+                ],
+            },
+            thumb: [
+                Some((sb.thumb_color, "scrollbar.thumb_color")),
+                Some((sb.thumb_hover_color, "scrollbar.thumb_hover_color")),
+                Some(match sb.thumb_active_color {
+                    Some(c) => (c, "scrollbar.thumb_active_color"),
+                    None => (sb.thumb_hover_color, "scrollbar.thumb_hover_color"),
+                }),
+            ],
+            title_bar_fill: Some(t.window.title_bar_background),
+            line_height: Some((d.line_height, "defaults.line_height")),
+            groove_width: Some((sb.groove_width, "scrollbar.groove_width")),
+            thumb_width: Some((sb.thumb_width, "scrollbar.thumb_width")),
+            window_shadow: t.window.border.shadow_enabled,
+            popup_shadow: d.border.shadow_enabled,
+        }
+    }
+}
+
+/// A length sink written where `read` is stated.
+fn set_length(sink: &mut f32, read: Read<f32>, own: f32, notes: &mut Vec<Note>) {
+    if let Some((v, path)) = read {
+        *sink = length(path, v, own, notes);
+    }
+}
+
+/// The base style of `input.scheme` (§3.4) from the 0.7.2 model.
 pub(crate) fn base_style(input: &BuildInput<'_>, notes: &mut Vec<Note>) -> egui::Style {
-    let t = input.theme;
-    let d = &t.defaults;
-    let prefs = input.prefs;
-    let own = input.scheme.default_style();
-    let mut s = input.scheme.default_style();
+    let src = BaseSource::old(input.theme, input.prefs, input.layout);
+    base_style_from(input.scheme, input.row_height, &src, false, notes)
+}
+
+/// The base style of `scheme` (§3.4): egui's own style for the scheme, with what `src` states
+/// written into it. `row_height` is epaint's Body row (§6.15). With `rule_0`, a hover or press
+/// `src` states nothing for takes egui's own treatment (spec §10, rule 0, the 0.8.0 model's);
+/// else the 0.7.2 model's copy (§6.1).
+pub(crate) fn base_style_from(
+    scheme: egui::Theme,
+    row_height: Option<f32>,
+    src: &BaseSource,
+    rule_0: bool,
+    notes: &mut Vec<Note>,
+) -> egui::Style {
+    let own = scheme.default_style();
+    let mut s = scheme.default_style();
+    let unstated = if rule_0 {
+        Unstated::Egui(&own.visuals.widgets)
+    } else {
+        Unstated::Copy
+    };
 
     // §8.5: the five slots, sizes only — the families stay Proportional / Monospace (§8.1)
     let slots = [
-        (
-            TextStyle::Small,
-            "text_scale.caption.size",
-            t.text_scale.caption.size,
-        ),
-        (TextStyle::Body, "defaults.font.size", d.font.size),
-        (
-            TextStyle::Monospace,
-            "defaults.mono_font.size",
-            d.mono_font.size,
-        ),
-        (TextStyle::Button, "button.font.size", t.button.font.size),
-        (
-            TextStyle::Heading,
-            "text_scale.section_heading.size",
-            t.text_scale.section_heading.size,
-        ),
+        TextStyle::Small,
+        TextStyle::Body,
+        TextStyle::Monospace,
+        TextStyle::Button,
+        TextStyle::Heading,
     ];
-    for (slot, path, size) in slots {
-        if let (Some(font), Some(own_font)) =
-            (s.text_styles.get_mut(&slot), own.text_styles.get(&slot))
-        {
-            font.size = text_size(path, size, prefs, own_font.size, notes);
+    for (slot, read) in slots.into_iter().zip(src.sizes) {
+        if let (Some(font), Some(own_font), Some((size, path))) = (
+            s.text_styles.get_mut(&slot),
+            own.text_styles.get(&slot),
+            read,
+        ) {
+            font.size = sanitised_size(path, size, own_font.size, notes);
         }
     }
 
     // §5.1 foundation and §5.9 base owners: visuals
+    let color = |sink: &mut egui::Color32, c: Option<Rgba>| {
+        if let Some(c) = c {
+            *sink = to_color32(c);
+        }
+    };
     let v = &mut s.visuals;
-    v.panel_fill = to_color32(d.background_color);
-    v.weak_text_color = Some(to_color32(d.muted_color));
-    v.window_shadow.color = to_color32(d.shadow_color); // geometry stays egui's; `apply_base` gates it (§6.14)
-    v.popup_shadow.color = to_color32(d.shadow_color);
-    v.hyperlink_color = to_color32(d.link_color);
-    v.selection.bg_fill = to_color32(d.selection_background);
-    v.selection.stroke.color = to_color32(d.selection_text_color); // width stays egui's (§5.1)
-    v.error_fg_color = to_color32(d.danger_color);
-    v.warn_fg_color = to_color32(d.warning_color);
-    v.menu_corner_radius = radius(
-        "defaults.border.corner_radius_lg",
-        own.visuals.menu_corner_radius,
-        d.border.corner_radius_lg,
-        notes,
-    );
-    v.window_stroke = stroke(
-        "defaults.border.line_width",
-        own.visuals.window_stroke,
-        to_color32(d.border.color),
-        d.border.line_width,
-        notes,
-    );
-    v.disabled_alpha = opacity(
-        "defaults.disabled_opacity",
-        d.disabled_opacity,
-        own.visuals.disabled_alpha,
-        notes,
-    );
-    v.window_fill = to_color32(t.menu.background_color); // base owner of window_fill (§5.9)
+    color(&mut v.panel_fill, src.window_fill.map(|(c, _)| c));
+    if let Some(c) = src.muted {
+        v.weak_text_color = Some(to_color32(c));
+    }
+    color(&mut v.window_shadow.color, src.shadow); // geometry stays egui's; `apply_base` gates it (§6.14)
+    color(&mut v.popup_shadow.color, src.shadow);
+    color(&mut v.hyperlink_color, src.link);
+    color(&mut v.selection.bg_fill, src.selection);
+    color(&mut v.selection.stroke.color, src.selection_text); // width stays egui's (§5.1)
+    color(&mut v.error_fg_color, src.danger);
+    color(&mut v.warn_fg_color, src.warning);
+    if let Some((r, path)) = src.radius_lg {
+        v.menu_corner_radius = radius(path, own.visuals.menu_corner_radius, r, notes);
+    }
+    let [radius_path, width_path] = src.border_paths;
+    if let Some(w) = src.border.width {
+        v.window_stroke.width = stroke(
+            width_path,
+            own.visuals.window_stroke,
+            own.visuals.window_stroke.color,
+            w,
+            notes,
+        )
+        .width;
+    }
+    color(&mut v.window_stroke.color, src.border.color);
+    if let Some((o, path)) = src.disabled_opacity {
+        v.disabled_alpha = opacity(path, o, own.visuals.disabled_alpha, notes);
+    }
+    color(&mut v.window_fill, src.menu_fill); // base owner of window_fill (§5.9)
     // egui paints the scroll-bar groove from `extreme_bg_color`, at the three
     // `*_background_opacity` when floating and at 1 when solid
     // (`egui/src/containers/scroll_area.rs:1485-1511`). An overlay bar whose stated track is fully
@@ -206,22 +478,23 @@ pub(crate) fn base_style(input: &BuildInput<'_>, notes: &mut Vec<Note>) -> egui:
     // readers, `Frame::canvas` (`egui/src/containers/frame.rs:231`) and a role-less `ProgressBar`
     // (`egui/src/widgets/progress_bar.rs:140`), with egui's own meaning of it, "e.g. TextEdit
     // background" (`egui/src/style.rs:1513`). A solid bar keeps its stated track there.
-    let no_groove = t.scrollbar.overlay_mode && t.scrollbar.track_color.a == 0;
-    v.extreme_bg_color = to_color32(if no_groove {
-        t.input.background_color
-    } else {
-        t.scrollbar.track_color
-    });
-    v.faint_bg_color = to_color32(t.list.alternate_row_background);
-    v.text_edit_bg_color = Some(to_color32(t.input.background_color));
-    v.text_cursor.stroke.color = to_color32(t.input.caret_color); // width stays egui's (§5.4)
+    let no_groove = src.overlay_scrollbar && src.track.is_some_and(|c| c.a == 0);
+    color(
+        &mut v.extreme_bg_color,
+        if no_groove { src.input_fill } else { src.track },
+    );
+    color(&mut v.faint_bg_color, src.alternate_row);
+    if let Some(c) = src.input_fill {
+        v.text_edit_bg_color = Some(to_color32(c));
+    }
+    color(&mut v.text_cursor.stroke.color, src.caret); // width stays egui's (§5.4)
     // the caret's blink, the theme's milliseconds as egui's seconds; a theme that states no blink
     // keeps egui's own whole, and egui has no time-out, so `input.caret_blink_timeout` has no sink
     // (the caret blink's rationale, B5)
-    if let Some(off) = t.input.caret_blink_off {
+    if let Some(off) = src.blink_off_ms {
         v.text_cursor.blink = off != 0;
         v.text_cursor.off_duration = (f64::from(off) / 1000.0) as f32;
-        if let Some(on) = t.input.caret_blink_on {
+        if let Some(on) = src.blink_on_ms {
             v.text_cursor.on_duration = (f64::from(on) / 1000.0) as f32;
         }
     }
@@ -229,66 +502,50 @@ pub(crate) fn base_style(input: &BuildInput<'_>, notes: &mut Vec<Note>) -> egui:
     // `slider.thumb_diameter` is a diameter, so a round knob; egui's `Rect { aspect_ratio: 0.75 }`
     // (`egui/src/style.rs:1553`) has no theme value behind it (§5.9, §6.6)
     v.handle_shape = egui::style::HandleShape::Circle;
-    v.window_corner_radius = radius(
-        "window.border.corner_radius",
-        own.visuals.window_corner_radius,
-        t.window.border.corner_radius,
-        notes,
-    );
+    if let Some((r, path)) = src.window_radius {
+        v.window_corner_radius = radius(path, own.visuals.window_corner_radius, r, notes);
+    }
 
     // spacing
     let sp = &mut s.spacing;
-    sp.interact_size.y = length(
-        "button.min_height",
-        t.button.min_height,
-        own.spacing.interact_size.y,
+    let osp = &own.spacing;
+    set_length(
+        &mut sp.interact_size.y,
+        src.min_height,
+        osp.interact_size.y,
         notes,
     ); // .x stays inherited (§7.5)
-    sp.button_padding = button_padding(
-        [
-            "button.border.padding.top",
-            "button.border.padding.right",
-            "button.border.padding.bottom",
-            "button.border.padding.left",
-        ],
-        &t.button.border,
-        own.spacing.button_padding,
+    sp.button_padding = button_padding_of(
+        src.button_padding.paths,
+        src.button_padding.values,
+        src.button.border.width,
+        osp.button_padding,
         notes,
     );
-    sp.icon_width = length(
-        "checkbox.indicator_width",
-        t.checkbox.indicator_width,
-        own.spacing.icon_width,
+    set_length(
+        &mut sp.icon_width,
+        src.indicator_width,
+        osp.icon_width,
         notes,
     );
-    sp.icon_spacing = length(
-        "checkbox.label_gap",
-        t.checkbox.label_gap,
-        own.spacing.icon_spacing,
+    set_length(&mut sp.icon_spacing, src.label_gap, osp.icon_spacing, notes);
+    set_length(
+        &mut sp.slider_rail_height,
+        src.rail_height,
+        osp.slider_rail_height,
         notes,
     );
-    sp.slider_rail_height = length(
-        "slider.track_height",
-        t.slider.track_height,
-        own.spacing.slider_rail_height,
+    set_length(&mut sp.combo_width, src.combo_width, osp.combo_width, notes);
+    set_length(
+        &mut sp.tooltip_width,
+        src.tooltip_width,
+        osp.tooltip_width,
         notes,
     );
-    sp.combo_width = length(
-        "combo_box.min_width",
-        t.combo_box.min_width,
-        own.spacing.combo_width,
-        notes,
-    );
-    sp.tooltip_width = length(
-        "tooltip.max_width",
-        t.tooltip.max_width,
-        own.spacing.tooltip_width,
-        notes,
-    );
-    sp.scroll.handle_min_length = length(
-        "scrollbar.min_thumb_length",
-        t.scrollbar.min_thumb_length,
-        own.spacing.scroll.handle_min_length,
+    set_length(
+        &mut sp.scroll.handle_min_length,
+        src.min_thumb,
+        osp.scroll.handle_min_length,
         notes,
     );
     sp.scroll.foreground_color = false; // the handle reads `bg_fill` (§5.5)
@@ -297,18 +554,13 @@ pub(crate) fn base_style(input: &BuildInput<'_>, notes: &mut Vec<Note>) -> egui:
         sp.scroll.active_background_opacity = 0.0;
         sp.scroll.interact_background_opacity = 0.0;
     }
-    sp.window_margin = margin(
-        [
-            "window.border.padding.top",
-            "window.border.padding.right",
-            "window.border.padding.bottom",
-            "window.border.padding.left",
-        ],
-        own.spacing.window_margin,
-        &t.window.border.padding,
+    sp.window_margin = margin_of(
+        src.window_padding.paths,
+        osp.window_margin,
+        src.window_padding.values,
         notes,
     );
-    if let Some(gap) = input.layout.widget_gap {
+    if let Some(gap) = src.widget_gap {
         // §6.16: one number, an asymmetric sink; a non-finite gap keeps egui's own, reported
         if gap.is_finite() {
             sp.item_spacing = egui::Vec2::splat(clamp_length(gap));
@@ -322,88 +574,98 @@ pub(crate) fn base_style(input: &BuildInput<'_>, notes: &mut Vec<Note>) -> egui:
         }
     }
 
-    // the theme's milliseconds as egui's seconds (`egui/src/style.rs:928`); a theme that
-    // states no delay keeps egui's own
-    if let Some(ms) = t.tooltip.show_delay {
-        s.interaction.tooltip_delay = f32::from(ms) / 1000.0;
+    // a theme that states no delay keeps egui's own
+    if let Some(delay) = src.tooltip_delay {
+        s.interaction.tooltip_delay = delay;
     }
 
-    use super::states::{
-        BorderEntries, BorderSource, FillField, FillSource, Layer, OpenFrom, StateSource,
-        TextSource, write_states,
-    };
-    let b = &t.button;
+    let b = &src.button;
     let w = &mut s.visuals.widgets;
+    let ow = &own.visuals.widgets;
     // noninteractive: frames, separators, group boxes and plain labels (§5.9, §6.1)
-    w.noninteractive.fg_stroke.color = to_color32(d.text_color);
-    w.noninteractive.bg_fill = to_color32(d.background_color);
-    super::note_transparent_fill(w.noninteractive.bg_fill, "defaults.background_color", notes);
-    w.noninteractive.weak_bg_fill = to_color32(d.background_color);
-    w.noninteractive.bg_stroke = stroke(
-        "defaults.border.line_width",
-        own.visuals.widgets.noninteractive.bg_stroke,
-        to_color32(d.border.color),
-        d.border.line_width,
-        notes,
-    );
-    w.noninteractive.corner_radius = radius(
-        "defaults.border.corner_radius",
-        own.visuals.widgets.noninteractive.corner_radius,
-        d.border.corner_radius,
-        notes,
-    );
+    color(&mut w.noninteractive.fg_stroke.color, src.text);
+    if let Some((c, path)) = src.window_fill {
+        w.noninteractive.bg_fill = to_color32(c);
+        super::note_transparent_fill(w.noninteractive.bg_fill, path, notes);
+        w.noninteractive.weak_bg_fill = to_color32(c);
+    }
+    if let Some(width) = src.border.width {
+        w.noninteractive.bg_stroke.width = stroke(
+            width_path,
+            ow.noninteractive.bg_stroke,
+            ow.noninteractive.bg_stroke.color,
+            width,
+            notes,
+        )
+        .width;
+    }
+    color(&mut w.noninteractive.bg_stroke.color, src.border.color);
+    if let Some(r) = src.border.radius {
+        w.noninteractive.corner_radius =
+            radius(radius_path, ow.noninteractive.corner_radius, r, notes);
+    }
     // the four interactive entries: what every unscoped control draws with — `theme.button` (§6.1)
-    write_states(
+    let [idle, hover, active] = b.fill;
+    write_states_with(
         w,
         &StateSource {
             fill: Some(FillSource {
                 field: FillField::Weak,
-                idle: Some((b.background_color, "button.background_color")),
-                hover: Some((b.hover_background, "button.hover_background")),
-                active: Some((
-                    b.active_background.unwrap_or(b.hover_background),
-                    "button.active_background",
-                )), // §6.4
+                idle,
+                hover,
+                active,
                 layer: Layer::Composite,
             }),
             text: Some(TextSource {
-                idle: b.font.color,
-                hover: Some(b.hover_text_color),
+                idle: b.label[0],
+                hover: b.label[1],
                 // egui's strong text is `active.text_color()` (`egui/src/style.rs:1147-1149`):
                 // the panel's text, not the pressed button's; the Button cell keeps that (§5.3)
-                active: Some(d.text_color),
-                in_noninteractive: false, // the base's plain text is `defaults.text_color`
+                active: src.text,
+                in_noninteractive: false, // the base's plain text is the window's
             }),
             border: Some(BorderSource {
-                border: &b.border,
-                paths: ["button.border.corner_radius", "button.border.line_width"],
+                border: b.border,
+                paths: b.border_paths,
                 entries: BorderEntries::Interactive,
-                align: super::line::LineAlign::Outside,
+                align: b.align,
             }),
             open: OpenFrom::Inactive,
         },
+        unstated,
         notes,
     );
     // the hovered button's border, which a pressed one keeps, and the focused one's; egui's
     // `active` is press and keyboard focus alike (`Response::widget_state`, egui 0.37.0
-    // src/widget_style/mod.rs:212-222); where a theme states both and they differ, a
-    // pressed button takes the focus border. `None` keeps `button.border.color`.
-    let border = b.border.color;
-    w.hovered.bg_stroke.color = to_color32(b.hover_border_color.unwrap_or(border));
-    w.active.bg_stroke.color = to_color32(
-        b.focus_border_color
-            .or(b.hover_border_color)
-            .unwrap_or(border),
-    );
+    // src/widget_style/mod.rs:212-222). Each over the fill its entry paints (`Line::over`).
+    let line = |c: Rgba, fill: egui::Color32| {
+        Line {
+            color: to_color32(c),
+            align: b.align,
+        }
+        .over(Some(fill))
+    };
+    let own_line = |e: &egui::style::WidgetVisuals| e.bg_stroke.color;
+    let [hover_border, active_border] = b.state_border;
+    let hovered = match hover_border {
+        Some(c) => line(c, w.hovered.weak_bg_fill),
+        None => unstated.hovered(w.hovered.bg_stroke.color, own_line),
+    };
+    let active = match active_border {
+        Some(c) => line(c, w.active.weak_bg_fill),
+        None => unstated.active(w.active.bg_stroke.color, hovered, own_line),
+    };
+    w.hovered.bg_stroke.color = hovered;
+    w.active.bg_stroke.color = active;
     // `bg_fill`: the scrollbar thumb, which every unscoped `ScrollArea` handle paints (§5.9)
-    let sb = &t.scrollbar;
-    write_states(
+    let [thumb, thumb_hover, _] = src.thumb;
+    write_states_with(
         w,
         &StateSource {
             fill: Some(FillSource {
                 field: FillField::Bg,
-                idle: Some((sb.thumb_color, "scrollbar.thumb_color")),
-                hover: Some((sb.thumb_hover_color, "scrollbar.thumb_hover_color")),
+                idle: thumb,
+                hover: thumb_hover,
                 active: None, // D5 (§6.9): `derived::apply_base` writes `active.bg_fill`
                 layer: Layer::AsGiven,
             }),
@@ -411,10 +673,11 @@ pub(crate) fn base_style(input: &BuildInput<'_>, notes: &mut Vec<Note>) -> egui:
             border: None,
             open: OpenFrom::Inactive,
         },
+        unstated,
         notes,
     );
     // the topmost window's title bar reads `open.weak_bg_fill` (`egui/src/containers/window.rs:1427`)
-    w.open.weak_bg_fill = to_color32(t.window.title_bar_background);
+    color(&mut w.open.weak_bg_fill, src.title_bar_fill);
     // §6.1: a hover or press changes only what the platform states, so every entry keeps
     // `inactive`'s stroke width — egui's stock 1.5 / 2.0 (`egui/src/style.rs:1703`, `:1711`) never
     // appear; §6.6's slider knob relies on one width in every state. Every cell inherits it.
@@ -424,20 +687,27 @@ pub(crate) fn base_style(input: &BuildInput<'_>, notes: &mut Vec<Note>) -> egui:
     }
 
     // §6.15: the line spacing, from the Body size the atlas writes and the row `Builder::build` measured
-    if !d.line_height.is_finite() {
-        push_note(
-            notes,
-            Note::ValueSanitised {
-                path: "defaults.line_height",
-            },
-        );
+    if let Some((line_height, path)) = src.line_height {
+        if !line_height.is_finite() {
+            push_note(notes, Note::ValueSanitised { path });
+        }
+        if let Some(body) = s.text_styles.get(&TextStyle::Body) {
+            s.spacing.extra_text_line_spacing = line_spacing(line_height, body.size, row_height);
+        }
     }
-    if let Some(body) = s.text_styles.get(&TextStyle::Body) {
-        s.spacing.extra_text_line_spacing =
-            line_spacing(d.line_height, body.size, input.row_height);
-    }
-    crate::style::derived::apply_base(&mut s, input, notes);
+    crate::style::derived::apply_base(&mut s, src, notes);
     s
+}
+
+/// §8.5's rule on a size already scaled: the size when it is a positive normal `f32`, else
+/// `own` — egui's own size for that slot — with a `Note::ValueSanitised` for `path`.
+pub(crate) fn sanitised_size(path: &'static str, s: f32, own: f32, notes: &mut Vec<Note>) -> f32 {
+    if s.is_normal() && s > 0.0 {
+        s
+    } else {
+        push_note(notes, Note::ValueSanitised { path });
+        own
+    }
 }
 
 #[cfg(test)]

@@ -6,7 +6,7 @@ mod derived;
 mod frames;
 pub(crate) mod line;
 mod roles;
-mod states;
+pub(crate) mod states;
 mod variants;
 
 pub(crate) use roles::menu_bar_titles;
