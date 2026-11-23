@@ -1605,11 +1605,8 @@ note = "spec §5: a separator part's colour is its fill"
 
 [[row]]
 key = "menu.row_height"
-homes = [
-    "menu.item(NONE).min_size[1]",
-    "menu.item(NONE).max_size[1]",
-]
-note = "exact: min = max"
+homes = ["menu.item(NONE).max_size[1]"]
+note = "exact: a preset with an exact row height states it as both min_size[1] and max_size[1] (spec §5's menu row); min_size[1] is menu.min_row_height's home, so it is not compared here"
 
 [[row]]
 key = "menu.min_row_height"
@@ -2358,22 +2355,38 @@ note = "0.7.2 safety net: unset = defaults.background_color"
 [[row]]
 key = "dialog.min_width"
 homes = ["dialog.panel.min_size[0]"]
-note = "spec §5 (Z2): no source; listed differences, if any, are M2's"
+note = "spec §5 (Z2): no source"
+difference_presets = ["kde-breeze"]
+difference_reason = "issue #4 `Z2`: no source"
+difference_citation = "docs/issues/0004_kde-leftovers-rationale.md §3 (Sizes that are not minimums, or have no source); docs/v0.8.0-spec.md §5, notes to the table (Z2)"
+difference_values = { "kde-breeze" = "unstated" }
 
 [[row]]
 key = "dialog.max_width"
 homes = ["dialog.panel.max_size[0]"]
 note = "Z2, as min_width"
+difference_presets = ["kde-breeze"]
+difference_reason = "issue #4 `Z2`: no source"
+difference_citation = "docs/issues/0004_kde-leftovers-rationale.md §3 (Sizes that are not minimums, or have no source); docs/v0.8.0-spec.md §5, notes to the table (Z2)"
+difference_values = { "kde-breeze" = "unstated" }
 
 [[row]]
 key = "dialog.min_height"
 homes = ["dialog.panel.min_size[1]"]
 note = "Z2"
+difference_presets = ["kde-breeze"]
+difference_reason = "issue #4 `Z2`: no source"
+difference_citation = "docs/issues/0004_kde-leftovers-rationale.md §3 (Sizes that are not minimums, or have no source); docs/v0.8.0-spec.md §5, notes to the table (Z2)"
+difference_values = { "kde-breeze" = "unstated" }
 
 [[row]]
 key = "dialog.max_height"
 homes = ["dialog.panel.max_size[1]"]
 note = "Z2"
+difference_presets = ["kde-breeze"]
+difference_reason = "issue #4 `Z2`: no source"
+difference_citation = "docs/issues/0004_kde-leftovers-rationale.md §3 (Sizes that are not minimums, or have no source); docs/v0.8.0-spec.md §5, notes to the table (Z2)"
+difference_values = { "kde-breeze" = "unstated" }
 
 [[row]]
 key = "dialog.button_gap"

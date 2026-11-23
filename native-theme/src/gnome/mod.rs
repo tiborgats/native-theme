@@ -819,24 +819,8 @@ impl crate::reader::ThemeReader for GnomePortalKdeReader {
             <crate::kde::KdeReader as crate::reader::ThemeReader>::read(&crate::kde::KdeReader)
                 .await?;
 
-        // Try to get accent color from portal, within one deadline
-        let accent = with_deadline(
-            async {
-                let settings = ashpd::desktop::settings::Settings::new().await.ok()?;
-                settings.accent_color().await.ok()
-            },
-            PORTAL_DEADLINE,
-        )
-        .await
-        .flatten();
-        let accent = match accent {
-            Some(color) => color,
-            None => return Ok(result),
-        };
-
-        let rgba = match portal_color_to_rgba(&accent) {
-            Some(r) => r,
-            None => return Ok(result),
+        let Some(rgba) = portal_accent().await else {
+            return Ok(result);
         };
 
         // Apply the accent to the reader's variant. The KDE portal's accent is
@@ -857,6 +841,24 @@ impl crate::reader::ThemeReader for GnomePortalKdeReader {
 
         Ok(result)
     }
+}
+
+/// The portal's accent colour (`org.freedesktop.appearance accent-color`),
+/// as the KDE-with-portal readers read it: `None` where the portal does not
+/// answer within [`PORTAL_DEADLINE`], gives no accent, or gives one with a
+/// component outside 0..=1 ([`portal_color_to_rgba`]).
+#[cfg(feature = "kde")]
+pub(crate) async fn portal_accent() -> Option<crate::Rgba> {
+    let accent = with_deadline(
+        async {
+            let settings = ashpd::desktop::settings::Settings::new().await.ok()?;
+            settings.accent_color().await.ok()
+        },
+        PORTAL_DEADLINE,
+    )
+    .await
+    .flatten()?;
+    portal_color_to_rgba(&accent)
 }
 
 /// Detect which desktop portal backend is running from the session bus names.

@@ -1209,11 +1209,6 @@ const PORTED_GROUPS: &[&str] = &[
     "list",
     "scrollbar",
     "tooltip",
-];
-
-/// The groups of the table whose widgets the model holds but whose values the kde-breeze builder does not
-/// state yet (plan, M2's KDE unit): their rows are compared, counted and reported, not asserted.
-const NOT_PORTED_GROUPS: &[&str] = &[
     "window",
     "input",
     "text_area",
@@ -1223,11 +1218,11 @@ const NOT_PORTED_GROUPS: &[&str] = &[
     "splitter",
     "separator",
     "spinner",
-    "menu",
     "tab",
-    "sidebar",
+    "menu",
     "toolbar",
     "status_bar",
+    "sidebar",
     "popover",
     "switch",
     "dialog",
@@ -1237,9 +1232,13 @@ const NOT_PORTED_GROUPS: &[&str] = &[
     "expander",
 ];
 
+/// The groups of the table whose widgets the model holds but whose values the kde-breeze builder does not
+/// state yet (plan, M2's KDE unit): their rows are compared, counted and reported, not asserted.
+const NOT_PORTED_GROUPS: &[&str] = &[];
+
 /// The totals of the ported groups' rows on each scheme, `[rows, compared, equal, mismatching, skipped]`:
 /// every row equal but those [`expected_skip`] names, skipped.
-const PORTED_TOTALS: [usize; 5] = [200, 195, 195, 0, 5];
+const PORTED_TOTALS: [usize; 5] = [563, 558, 558, 0, 5];
 
 /// The reason a row of the table is skipped on 0.7.2's `kde-breeze` without a reader's snapshot: the
 /// reader's context rows (`accessibility.*`), and `checkbox.background_color`, compared only where
@@ -1404,11 +1403,11 @@ fn model_parity_kde_breeze() -> TestResult {
 // from a kdeglobals file, and the kde-breeze builder fed the same file as `SystemOverrides`.
 // ---------------------------------------------------------------------------------------------------------
 
-/// The totals of the ported groups' rows on every fixture, `[rows, compared, equal, mismatching, skipped]`:
-/// every row equal but `checkbox.background_color`, skipped where `checkbox.unchecked_background` is
-/// stated (the table's listed differences). The rows of the groups not ported yet are counted, not asserted.
+/// The totals of the rows of [`PORTED_GROUPS`] on every fixture, `[rows, compared, equal, mismatching,
+/// skipped]`: every row equal but `checkbox.background_color`, skipped where
+/// `checkbox.unchecked_background` is stated (the table's listed differences).
 #[cfg(all(target_os = "linux", feature = "kde"))]
-const READER_TOTALS: [usize; 5] = [200, 199, 199, 0, 1];
+const READER_TOTALS: [usize; 5] = [563, 562, 562, 0, 1];
 
 /// The number of files in `tests/fixtures/kde/`: breeze-dark.ini, breeze-index.theme, breeze-light.ini,
 /// custom-accent.ini, high-dpi.ini, malformed-values.ini, minimal.ini, missing-groups.ini.
@@ -1453,10 +1452,11 @@ fn old_kde_reader(
 
 /// Reader parity of the kde-breeze builder: for every file of `tests/fixtures/kde/`, the 0.7.2 reader
 /// path ([`old_kde_reader`]) against `Theme::preset(Preset::KdeBreeze)` given the file's
-/// `SystemOverrides` and resolved for the file's context, over the table of homes, the snapshot's context
-/// compared. Zero mismatches over every row of the ported groups, the four `snapshot.context.*` rows
-/// compared and equal, the one skip for its named reason; the rows of the groups not ported yet counted and
-/// reported, the two counts making the whole table; the resolved theme's name is the reader's.
+/// `SystemOverrides` and resolved for the file's context (its motion level and text scale at their
+/// defaults, its animation scale unset, as 0.7.2 applies neither), over the table of homes, the
+/// snapshot's context compared. Zero mismatches over every row of [`PORTED_GROUPS`], the four `snapshot.context.*` rows
+/// compared and equal, the one skip for its named reason; the other rows counted and reported, the two
+/// counts making the whole table; the resolved theme's name is the reader's.
 #[cfg(all(target_os = "linux", feature = "kde"))]
 #[test]
 fn reader_parity_kde() -> TestResult {
@@ -1495,10 +1495,20 @@ fn reader_parity_on(
     let mut ini = crate::kde::create_kde_parser();
     crate::kde::read_kconfig(&mut ini, content);
     let snapshot = snapshot_from_kdeglobals(&ini, None, None);
-    let theme =
-        NextTheme::preset(Preset::KdeBreeze).with_system_overrides(snapshot.overrides.clone());
-    let new = theme.resolve(&snapshot.context);
-    let with_context = |context: RowContext| theme.resolve(&context.applied_to(&snapshot.context));
+    // 0.7.2 applies neither the motion setting nor the text scale to the theme: the theme is
+    // resolved with both at their defaults and the animation scale unset, and the settings are
+    // compared through their own rows (spec §8, "The KDE part", *Context*).
+    let mut overrides = snapshot.overrides.clone();
+    overrides.animation_scale = None;
+    let defaults = crate::next::query::ThemeContext::default();
+    let context = crate::next::query::ThemeContext {
+        motion: defaults.motion,
+        text_scale: defaults.text_scale,
+        ..snapshot.context.clone()
+    };
+    let theme = NextTheme::preset(Preset::KdeBreeze).with_system_overrides(overrides);
+    let new = theme.resolve(&context);
+    let with_context = |row: RowContext| theme.resolve(&row.applied_to(&context));
     let extra = compare::Extra {
         unresolved: Some(&unresolved),
         with_context: Some(&with_context),
@@ -1513,8 +1523,8 @@ fn reader_parity_on(
     println!("{name}: {report}");
     assert_eq!(report.totals.rows, table.row.len(), "{name}");
     assert_eq!(&*new.name, old_name, "{name}");
-    let totals = group_totals(&report, true);
-    let not_ported = totals_in(&report, NOT_PORTED_GROUPS, true);
+    let totals = totals_in(&report, PORTED_GROUPS, true);
+    let not_ported = totals_in(&report, PORTED_GROUPS, false);
     println!(
         "{name}: [rows, compared, equal, mismatching, skipped] in the ported groups {totals:?}, \
          in the groups not ported yet {not_ported:?}"
@@ -1573,6 +1583,13 @@ fn reader_parity_kde_settings() -> TestResult {
         "checkbox.unchecked_border_color",
         "list.header_separator_color",
         "list.grid_color",
+        "progress_bar.border.color",
+        "menu.separator_color",
+        "toolbar.border.color",
+        "popover.border.color",
+        "card.border.color",
+        "switch.unchecked_track_border_color",
+        "switch.thumb_border_color",
     ]
     .into_iter()
     .chain(INACTIVE_SELECTION)

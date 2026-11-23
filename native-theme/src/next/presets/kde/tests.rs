@@ -1,7 +1,7 @@
 use super::*;
 
 use crate::next::preset::Theme;
-use crate::next::query::{ButtonQuery, Contrast, ListQuery, StyleQuery};
+use crate::next::query::{ButtonQuery, Contrast, ListQuery, MotionPreference, StyleQuery};
 use crate::next::reader::{OsSelectionColors, SystemOverrides};
 use crate::next::style::PartStated;
 
@@ -338,7 +338,10 @@ fn a_selected_row_has_no_hover_outline() {
         );
         assert_eq!(
             hovered_selected.fill,
-            Paint::Solid(theme.colors.selection.background)
+            Paint::Solid(lighter(
+                theme.colors.selection.background,
+                LIST_SELECTED_HOVER_LIGHTER
+            ))
         );
     }
 }
@@ -381,6 +384,99 @@ fn pressed_changes_nothing_on_a_part_without_a_pressed_rule() {
         assert_eq!(
             theme.scrollbar.thumb(pressed_hover),
             theme.scrollbar.thumb(WidgetState::PRESSED)
+        );
+    }
+}
+
+#[test]
+fn a_checked_toolbar_button_keeps_its_fill_and_takes_the_hover_outline() {
+    for theme in both_schemes() {
+        let scheme = theme.context.scheme;
+        let checked = theme.toolbar.button(WidgetState::CHECKED);
+        let hover = theme.toolbar.button(WidgetState::HOVER);
+        assert_ne!(checked.stroke, hover.stroke, "{scheme:?}");
+        for state in [WidgetState::HOVER, WidgetState::PRESSED] {
+            let both = theme.toolbar.button(state.union(WidgetState::CHECKED));
+            assert_eq!(both.fill, checked.fill, "{scheme:?} {state:?}");
+            assert_eq!(both.stroke, hover.stroke, "{scheme:?} {state:?}");
+        }
+        let pressed_hover = WidgetState::PRESSED.union(WidgetState::HOVER);
+        assert_eq!(
+            theme.toolbar.button(pressed_hover),
+            theme.toolbar.button(WidgetState::PRESSED),
+            "{scheme:?}"
+        );
+    }
+}
+
+#[test]
+fn a_hovered_selected_sidebar_item_is_the_selected_item() {
+    for theme in both_schemes() {
+        let scheme = theme.context.scheme;
+        let selected = WidgetState::SELECTED;
+        let hovered_selected = selected.union(WidgetState::HOVER);
+        assert_ne!(
+            theme.sidebar.item(WidgetState::HOVER),
+            theme.sidebar.item(selected),
+            "{scheme:?}"
+        );
+        assert_eq!(
+            theme.sidebar.item(hovered_selected),
+            theme.sidebar.item(selected),
+            "{scheme:?}"
+        );
+        assert_eq!(
+            theme.sidebar.item_label(hovered_selected),
+            theme.sidebar.item_label(selected),
+            "{scheme:?}"
+        );
+    }
+}
+
+#[test]
+fn an_open_combo_box_ignores_the_pointer_and_a_disabled_one_both() {
+    for theme in both_schemes() {
+        let scheme = theme.context.scheme;
+        let open = theme.combo_box.field(WidgetState::OPEN);
+        assert_ne!(
+            open,
+            theme.combo_box.field(WidgetState::HOVER),
+            "{scheme:?}"
+        );
+        assert_eq!(
+            theme
+                .combo_box
+                .field(WidgetState::OPEN.union(WidgetState::HOVER)),
+            open,
+            "{scheme:?}"
+        );
+        let disabled = theme.combo_box.field(WidgetState::DISABLED);
+        for state in [WidgetState::HOVER, WidgetState::OPEN] {
+            assert_eq!(
+                theme.combo_box.field(state.union(WidgetState::DISABLED)),
+                disabled,
+                "{scheme:?} {state:?}"
+            );
+        }
+    }
+}
+
+#[test]
+fn a_hovered_selected_segment_is_the_selected_segment() {
+    for theme in both_schemes() {
+        let scheme = theme.context.scheme;
+        let selected = WidgetState::SELECTED;
+        assert_ne!(
+            theme.segmented_control.segment(WidgetState::HOVER),
+            theme.segmented_control.segment(selected),
+            "{scheme:?}"
+        );
+        assert_eq!(
+            theme
+                .segmented_control
+                .segment(selected.union(WidgetState::HOVER)),
+            theme.segmented_control.segment(selected),
+            "{scheme:?}"
         );
     }
 }
@@ -483,9 +579,10 @@ fn a_hovered_row_without_the_focus_is_over_the_hovered_row_and_under_the_selecti
             let (hover, unfocused) = (row(WidgetState::HOVER), row(UNFOCUSED_HOVER));
             assert_ne!(unfocused.fill, hover.fill, "{scheme:?} {alternate}");
             assert_ne!(unfocused.stroke, hover.stroke, "{scheme:?} {alternate}");
+            // A selected row takes a selection's fill (`L3`) and no hover outline.
             let selected = row(WidgetState::SELECTED);
             let both = row(UNFOCUSED_HOVER.union(WidgetState::SELECTED));
-            assert_eq!(both.fill, selected.fill, "{scheme:?} {alternate}");
+            assert_ne!(both.fill, unfocused.fill, "{scheme:?} {alternate}");
             assert_eq!(both.stroke, selected.stroke, "{scheme:?} {alternate}");
         }
     }
@@ -516,13 +613,13 @@ fn a_hovered_row_without_the_focus_follows_the_system_s_inactive_selection() -> 
     let stroke = outline_color(&row.stroke).ok_or("no outline")?;
     assert_eq!(fill.to_srgb8(), inactive.with_alpha(0.3).to_srgb8());
     assert_eq!(stroke.to_srgb8(), inactive.with_alpha(0.8).to_srgb8());
-    // `S3` on the same file: the plain handle, derived, in every view.
+    // `S3` on the same file: the plain handle's fill, derived, in every view.
     let plain = theme.scrollbar.thumb(WidgetState::UNFOCUSED_VIEW);
     assert_ne!(
         plain.fill,
         breeze.scrollbar.thumb(WidgetState::UNFOCUSED_VIEW).fill
     );
-    assert_eq!(theme.scrollbar.thumb(WidgetState::NONE), plain);
+    assert_eq!(theme.scrollbar.thumb(WidgetState::NONE).fill, plain.fill);
     // `S4` on the same file: derived from the file's window colours.
     let bar_hover = theme.scrollbar.thumb(BAR_HOVER_UNFOCUSED);
     assert!(bar_hover.stated.contains(PartStated::FILL));
@@ -637,32 +734,29 @@ fn the_handle_of_the_focused_view_and_of_a_view_without_the_focus() {
 /// `S3` under the system's colours: Breeze's measured handle is no other
 /// scheme's colour, and Breeze's rule, `focusColor()` through the idle
 /// handle's overlay, does not reproduce it (#d0e4ef / #253b48 on Breeze's
-/// colours), so the handle at rest is the plain handle in every view, as
-/// 0.7.2 draws it. A system without window colours states no `S4`: that
-/// query returns the plain handle. No rule is dead.
+/// colours), so the handle at rest is filled as the plain handle in every
+/// view, as 0.7.2 draws it; its outline (`S2`) follows the view's focus, from
+/// the system's DecorationFocus. A system without window colours states no
+/// `S4`: that query returns the plain handle. No rule is dead.
 #[test]
 fn the_handle_at_rest_is_the_plain_handle_under_the_system_s_colours() {
     let theme = with_system(None);
     let [light, _] = both_schemes();
-    // The drawn handle, not which rule wrote it: the preset's view without
-    // the focus states its handle by a rule on its state.
-    let drawn = |thumb: PartStyle| PartStyle {
-        from_state: PartStated::default(),
-        ..thumb
-    };
-    let plain = drawn(light.scrollbar.thumb(WidgetState::UNFOCUSED_VIEW));
+    let plain = light.scrollbar.thumb(WidgetState::UNFOCUSED_VIEW);
     for state in [
         WidgetState::NONE,
         WidgetState::UNFOCUSED_VIEW,
         WidgetState::HOVER_WITHIN,
         BAR_HOVER_UNFOCUSED,
     ] {
-        assert_eq!(drawn(theme.scrollbar.thumb(state)), plain, "{state:?}");
-        assert!(
-            theme.scrollbar.thumb(state).from_state.is_empty(),
-            "{state:?}"
-        );
+        let thumb = theme.scrollbar.thumb(state);
+        assert_eq!(thumb.fill, plain.fill, "{state:?}");
+        assert!(!thumb.from_state.contains(PartStated::FILL), "{state:?}");
     }
+    assert_eq!(
+        theme.scrollbar.thumb(WidgetState::NONE).stroke,
+        Stroke::uniform_aligned(1.001, DECORATION_FOCUS.with_alpha(0.2), StrokeAlign::Center)
+    );
     assert!(plain.stated.contains(PartStated::FILL));
     let dead: Vec<_> = theme
         .dead_rules()
@@ -707,5 +801,583 @@ fn the_handle_with_the_pointer_on_the_bar_in_a_view_without_the_focus() {
             thumb(WidgetState::NONE),
             "{scheme:?}"
         );
+    }
+}
+
+const DECORATION_HOVER: Color = Color::rgb(1.0, 0.0, 1.0);
+
+/// Breeze's light colours with the hover and the focus decorations told
+/// apart (Breeze gives both #3daee9), so that the rule that wins shows, and
+/// the roles and the globals of them.
+fn distinct_decorations() -> (SchemeColors, ColorRoles, Typography, LayoutMetrics) {
+    let mut c = LIGHT;
+    c.decoration_hover = DECORATION_HOVER;
+    c.accent = DECORATION_FOCUS;
+    let colors = roles(&c, None, None);
+    let typography = typography(&colors, None, ThemeContext::default().text_scale);
+    let layout = Theme::preset(Preset::KdeBreeze)
+        .resolve(&ThemeContext::light())
+        .layout;
+    (c, colors, typography, layout)
+}
+
+/// A text field's focus outline wins over its hover outline, and a disabled
+/// field has no hover outline.
+#[test]
+fn a_text_field_s_focus_outline_wins_over_its_hover_outline() {
+    let (c, colors, typography, layout) = distinct_decorations();
+    let field = input(&c, &colors, &typography, &layout, Edges::all(0.0), None);
+    let stroke = |state| field.field(state).stroke;
+    assert_eq!(
+        outline_color(&stroke(WidgetState::HOVER)),
+        Some(DECORATION_HOVER)
+    );
+    assert_eq!(
+        outline_color(&stroke(WidgetState::FOCUSED.union(WidgetState::HOVER))),
+        Some(DECORATION_FOCUS)
+    );
+    assert_eq!(
+        field.field(WidgetState::DISABLED.union(WidgetState::HOVER)),
+        field.field(WidgetState::DISABLED)
+    );
+}
+
+/// A hovered or pressed visited link takes the link colour, and a disabled
+/// one the disabled colour, as 0.7.2's egui connector letters it.
+#[test]
+fn a_link_s_hover_pressed_and_disabled_colours_win_over_visited() {
+    for theme in both_schemes() {
+        let scheme = theme.context.scheme;
+        let color = |state| theme.link.label(state).color;
+        assert_eq!(theme.colors.link_visited.map(|_| ()), Some(()));
+        assert_ne!(color(WidgetState::VISITED), color(WidgetState::NONE));
+        for state in [WidgetState::HOVER, WidgetState::PRESSED] {
+            assert_eq!(
+                color(state.union(WidgetState::VISITED)),
+                theme.colors.link,
+                "{scheme:?} {state:?}"
+            );
+        }
+        let disabled = WidgetState::DISABLED.union(WidgetState::VISITED);
+        assert_eq!(
+            color(disabled.union(WidgetState::HOVER)),
+            color(WidgetState::DISABLED),
+            "{scheme:?}"
+        );
+        assert_ne!(
+            color(WidgetState::DISABLED),
+            theme.colors.link,
+            "{scheme:?}"
+        );
+    }
+}
+
+/// A slider handle's hover outline, which the pressed handle keeps, wins
+/// over its focus outline.
+#[test]
+fn a_slider_handle_s_hover_outline_wins_over_its_focus_outline() {
+    let (c, colors, ..) = distinct_decorations();
+    let slider = slider(&c, &colors);
+    let stroke = |state| outline_color(&slider.thumb(state).stroke);
+    assert_eq!(stroke(WidgetState::FOCUSED), Some(DECORATION_FOCUS));
+    for state in [WidgetState::HOVER, WidgetState::PRESSED] {
+        assert_eq!(
+            stroke(state.union(WidgetState::FOCUSED)),
+            Some(DECORATION_HOVER),
+            "{state:?}"
+        );
+    }
+}
+
+/// An open menu-bar title is filled over a hovered one.
+#[test]
+fn an_open_menu_bar_title_is_filled_over_a_hovered_one() {
+    let (c, ..) = distinct_decorations();
+    let menu_bar = menu_bar(&c);
+    let fill = |state| solid(&menu_bar.item(state).fill);
+    assert_eq!(fill(WidgetState::HOVER), Some(DECORATION_HOVER));
+    assert_eq!(
+        fill(WidgetState::OPEN.union(WidgetState::HOVER)),
+        Some(DECORATION_FOCUS)
+    );
+}
+
+/// A pressed menu item is filled in the opaque focus colour and keeps the
+/// hover outline; a hovered selected tab keeps the selected tab's fill.
+#[test]
+fn pressed_and_selected_fills_win_over_hover() {
+    for theme in both_schemes() {
+        let scheme = theme.context.scheme;
+        let pressed = theme
+            .menu
+            .item(WidgetState::HOVER.union(WidgetState::PRESSED));
+        let hovered = theme.menu.item(WidgetState::HOVER);
+        assert_ne!(pressed.fill, hovered.fill, "{scheme:?}");
+        assert_eq!(pressed.stroke, hovered.stroke, "{scheme:?}");
+        let selected = WidgetState::SELECTED;
+        assert_eq!(
+            theme.tab.tab(selected.union(WidgetState::HOVER)).fill,
+            theme.tab.tab(selected).fill,
+            "{scheme:?}"
+        );
+        assert_ne!(
+            theme.tab.tab(WidgetState::HOVER).fill,
+            theme.tab.tab(selected).fill,
+            "{scheme:?}"
+        );
+    }
+}
+
+/// An inactive window has the inactive title bar and title colours and
+/// nothing else changes; a maximized window takes the normal window's styles.
+#[test]
+fn an_inactive_window_has_the_inactive_title_bar() {
+    use crate::next::window::WindowState;
+
+    for ctx in [ThemeContext::light(), ThemeContext::dark()] {
+        let scheme = ctx.scheme;
+        let active = Theme::preset(Preset::KdeBreeze).resolve(&ctx);
+        let inactive =
+            Theme::preset(Preset::KdeBreeze).resolve(&ctx.clone().with_window_active(false));
+        let normal = WindowState::default();
+        let (scheme_colors, [bar, text]) = match scheme {
+            Scheme::Light => (LIGHT, [0xeff0_f1ff_u32, 0x707d_8aff]),
+            Scheme::Dark => (DARK, [0x2024_28ff, 0xa1a9_b1ff]),
+        };
+        assert_eq!(
+            solid(&active.window.title_bar(normal).fill),
+            Some(scheme_colors.title_bar_background),
+            "{scheme:?}"
+        );
+        assert_eq!(
+            solid(&inactive.window.title_bar(normal).fill),
+            Some(srgb8(bar)),
+            "{scheme:?}"
+        );
+        assert_eq!(
+            inactive.window.title(normal).color,
+            srgb8(text),
+            "{scheme:?}"
+        );
+        assert_eq!(
+            active.window.title(normal).color,
+            active.typography.body.color,
+            "{scheme:?}"
+        );
+        assert_eq!(
+            inactive.window.frame(normal),
+            active.window.frame(normal),
+            "{scheme:?}"
+        );
+        let maximized = WindowState {
+            maximized: true,
+            ..WindowState::default()
+        };
+        assert_eq!(
+            active.window.frame(maximized),
+            active.window.frame(normal),
+            "{scheme:?}"
+        );
+        assert_eq!(
+            active.window.title_bar(maximized),
+            active.window.title_bar(normal),
+            "{scheme:?}"
+        );
+    }
+}
+
+const UNFOCUSED_SELECTED: WidgetState = WidgetState::SELECTED.union(WidgetState::UNFOCUSED_VIEW);
+
+/// `L3`, a selected row under the pointer: Breeze fills it with
+/// `Highlight.lighter(110)` (breezestyle.cpp:4876 at breeze f0b1d75), #44bfff,
+/// measured (`docs/issues/0004_kde-leftovers-rationale.md`, L3); under the
+/// system's colours, the system's selection colour through `qt_lighter`.
+#[test]
+fn a_hovered_selected_row_is_the_selection_lighter_110() {
+    let query = ListQuery::new(WidgetState::SELECTED.union(WidgetState::HOVER));
+    for theme in both_schemes() {
+        assert_eq!(
+            theme.list.highlight(query).fill,
+            Paint::Solid(srgb8(0x44bf_ffff)),
+            "{:?}",
+            theme.context.scheme
+        );
+    }
+    let theme = with_system(None);
+    let [r, g, b, a] = qt_lighter(SELECTION.to_srgb8(), 110);
+    let fill = theme.list.highlight(query).fill;
+    assert_eq!(fill, Paint::Solid(Color::from_srgb8(r, g, b, a)));
+    assert_ne!(fill, Paint::Solid(SELECTION));
+}
+
+/// A selected row in a view without the focus: such a view draws its rows
+/// from the Inactive group (`docs/issues/0004_kde-leftovers-rationale.md`,
+/// L2), so its selected row has the inactive selection's fill, #c2e0f5 /
+/// #1b4155 (`selection_inactive_background`: platform-facts.md (§2.1.3)), and
+/// text, `colors.selection`'s unfocused pair, no hover outline, and under the
+/// pointer that fill `lighter(110)` (`L3`; derived, not measured).
+#[test]
+fn a_selected_row_in_a_view_without_the_focus_takes_the_inactive_selection() -> TestResult {
+    let [light, dark] = both_schemes();
+    for (theme, inactive) in [
+        (light, [0xc2, 0xe0, 0xf5, 0xff]),
+        (dark, [0x1b, 0x41, 0x55, 0xff]),
+    ] {
+        let scheme = theme.context.scheme;
+        let selection = theme.colors.selection;
+        let background = selection
+            .unfocused_background
+            .ok_or("no unfocused selection")?;
+        let foreground = selection
+            .unfocused_foreground
+            .ok_or("no unfocused selection text")?;
+        assert_eq!(background.to_srgb8(), inactive, "{scheme:?}");
+        for alternate in [false, true] {
+            let query = |state| ListQuery::new(state).alternate(alternate);
+            let row = theme.list.highlight(query(UNFOCUSED_SELECTED));
+            assert_eq!(row.fill, Paint::Solid(background), "{scheme:?}");
+            assert_eq!(
+                row.stroke,
+                theme.list.highlight(query(WidgetState::SELECTED)).stroke,
+                "{scheme:?}"
+            );
+            assert_eq!(
+                theme
+                    .list
+                    .highlight(query(UNFOCUSED_SELECTED.union(WidgetState::HOVER)))
+                    .fill,
+                Paint::Solid(lighter(background, LIST_SELECTED_HOVER_LIGHTER)),
+                "{scheme:?}"
+            );
+            assert_eq!(
+                theme.list.item_label(query(UNFOCUSED_SELECTED)).color,
+                foreground,
+                "{scheme:?}"
+            );
+            assert_eq!(
+                theme.list.item_label(query(WidgetState::SELECTED)).color,
+                selection.foreground,
+                "{scheme:?}"
+            );
+        }
+    }
+    Ok(())
+}
+
+/// `S1`, the groove's line along its inner edge: `Text` at alpha
+/// frameContrast, #23262933 / #fcfcfc33, 1 px, inside the groove, on its top
+/// row when horizontal in both directions, on its left column when vertical
+/// from left to right and on its right column from right to left
+/// (`Style::drawScrollBarComplexControl`, breezestyle.cpp:8213-8232 at breeze
+/// f0b1d75; `QStyle::alignedRect`, qstyle.cpp:2180-2212 at qtbase v6.11.0).
+#[test]
+fn the_groove_s_line_is_on_the_bar_s_own_side_for_each_orientation_and_direction() {
+    for (scheme, text) in [(Scheme::Light, 0x2326_2933), (Scheme::Dark, 0xfcfc_fc33)] {
+        for direction in [Direction::Ltr, Direction::Rtl] {
+            let ctx = ThemeContext::default()
+                .with_scheme(scheme)
+                .with_direction(direction);
+            let theme = Theme::preset(Preset::KdeBreeze).resolve(&ctx);
+            let line = StrokeSide {
+                width: 1.0,
+                paint: Paint::Solid(srgb8(text)),
+            };
+            let (left, right) = match direction {
+                Direction::Ltr => (line.clone(), StrokeSide::default()),
+                Direction::Rtl => (StrokeSide::default(), line.clone()),
+            };
+            let track = |orientation| {
+                theme
+                    .scrollbar
+                    .track(StyleQuery::new(WidgetState::NONE).orientation(orientation))
+                    .stroke
+            };
+            assert_eq!(
+                track(Orientation::Vertical),
+                Stroke::sides(
+                    StrokeSide::default(),
+                    right,
+                    StrokeSide::default(),
+                    left,
+                    StrokeAlign::Inside
+                ),
+                "{scheme:?} {direction:?}"
+            );
+            assert_eq!(
+                track(Orientation::Horizontal),
+                Stroke::sides(
+                    line,
+                    StrokeSide::default(),
+                    StrokeSide::default(),
+                    StrokeSide::default(),
+                    StrokeAlign::Inside
+                ),
+                "{scheme:?} {direction:?}"
+            );
+        }
+    }
+}
+
+/// `S2`, the handle's outline: a `PenWidth::Frame` pen of 1.001 px centred on
+/// the handle's edge in the handle's own colour at alpha frameContrast
+/// (`Helper::renderScrollBarHandle`, breezehelper.cpp:1274-1287, and
+/// `scrollBarHandleColor`, :277-303 at breeze f0b1d75): WindowText,
+/// #23262933 / #fcfcfc33, in a view without the focus, with the pointer on
+/// the bar too; DecorationFocus, #3daee933, in the view that has it;
+/// DecorationHover, #3daee933, hovered and pressed in every view.
+#[test]
+fn the_handle_s_outline_is_its_own_colour_at_frame_contrast() {
+    let [light, dark] = both_schemes();
+    for (theme, text) in [(light, 0x2326_2933), (dark, 0xfcfc_fc33)] {
+        let scheme = theme.context.scheme;
+        let pen = |rgba| Stroke::uniform_aligned(1.001, srgb8(rgba), StrokeAlign::Center);
+        let stroke = |state| theme.scrollbar.thumb(state).stroke;
+        assert_eq!(stroke(WidgetState::NONE), pen(0x3dae_e933), "{scheme:?}");
+        for state in [WidgetState::UNFOCUSED_VIEW, BAR_HOVER_UNFOCUSED] {
+            assert_eq!(stroke(state), pen(text), "{scheme:?} {state:?}");
+        }
+        for state in [WidgetState::HOVER, WidgetState::PRESSED] {
+            for view in [WidgetState::NONE, WidgetState::UNFOCUSED_VIEW] {
+                assert_eq!(
+                    stroke(state.union(view)),
+                    pen(0x3dae_e933),
+                    "{scheme:?} {state:?} {view:?}"
+                );
+            }
+        }
+    }
+}
+
+/// `L4`, a row's padding: a text-only row's content inset from the row's
+/// rectangle, 7 left and right (the highlight's margin 2, Breeze's
+/// `ItemView_ItemPaddingWidth` 2 and Qt's text margin 3) and 3 above and
+/// below (the margin 1 and `ItemView_ItemPaddingHeight` 2)
+/// (breezehelper.cpp:1759-1799, breezemetrics.h:157-165, breezestyle.cpp:1060-1084
+/// at breeze f0b1d75; qcommonstyle.cpp:1002-1007 at qtbase v6.11.0).
+#[test]
+fn a_row_s_content_is_inset_by_the_margin_breeze_s_padding_and_qt_s_text_margin() {
+    for theme in both_schemes() {
+        for alternate in [false, true] {
+            let row = theme
+                .list
+                .row(ListQuery::new(WidgetState::NONE).alternate(alternate));
+            assert_eq!(row.padding, Edges::symmetric(3.0, 7.0), "{alternate}");
+            assert!(row.stated.contains(
+                PartStated::PADDING_TOP
+                    | PartStated::PADDING_RIGHT
+                    | PartStated::PADDING_BOTTOM
+                    | PartStated::PADDING_LEFT
+            ));
+        }
+    }
+}
+
+/// `Z2`: no source gives KDE's dialog size limits (spec §5, "Issue #4's
+/// leftovers and their homes"), so the panel states neither.
+#[test]
+fn the_dialog_states_no_size_limits() {
+    for theme in both_schemes() {
+        assert_eq!(theme.dialog.panel.min_size, [None, None]);
+        assert_eq!(theme.dialog.panel.max_size, [None, None]);
+    }
+}
+
+/// `stroke` with its left and right sides swapped, where it has sides.
+fn mirrored_stroke(stroke: Stroke) -> Stroke {
+    match stroke {
+        Stroke::Complex(sides) => Stroke::sides(
+            sides.top.clone(),
+            sides.left.clone(),
+            sides.bottom.clone(),
+            sides.right.clone(),
+            sides.align,
+        ),
+        other => other,
+    }
+}
+
+/// Right to left: the theme from left to right with every per-side value
+/// mirrored, the menu item's, the status bar's and the combo box's padding
+/// (stated for a left-to-right layout) and the vertical scroll bar's line
+/// (`S1`), in every state; nothing else differs.
+#[test]
+fn right_to_left_is_left_to_right_mirrored() {
+    for scheme in [Scheme::Light, Scheme::Dark] {
+        let ctx = ThemeContext::default().with_scheme(scheme);
+        let ltr = Theme::preset(Preset::KdeBreeze).resolve(&ctx);
+        let rtl = Theme::preset(Preset::KdeBreeze).resolve(&ctx.with_direction(Direction::Rtl));
+        let padded = |part: PartStyle| PartStyle {
+            padding: physical_edges(part.padding, Direction::Rtl),
+            ..part
+        };
+        for state in [
+            WidgetState::NONE,
+            WidgetState::HOVER,
+            WidgetState::PRESSED,
+            WidgetState::DISABLED,
+        ] {
+            assert_eq!(
+                rtl.menu.item(state),
+                padded(ltr.menu.item(state)),
+                "{scheme:?} {state:?}"
+            );
+        }
+        for state in [
+            WidgetState::NONE,
+            WidgetState::HOVER,
+            WidgetState::OPEN,
+            WidgetState::DISABLED,
+        ] {
+            assert_eq!(
+                rtl.combo_box.field(state),
+                padded(ltr.combo_box.field(state)),
+                "{scheme:?} {state:?}"
+            );
+        }
+        assert_eq!(rtl.status_bar.bar, padded(ltr.status_bar.bar.clone()));
+        for state in [
+            WidgetState::NONE,
+            WidgetState::HOVER,
+            WidgetState::UNFOCUSED_VIEW,
+        ] {
+            let query = |orientation| StyleQuery::new(state).orientation(orientation);
+            let vertical = ltr.scrollbar.track(query(Orientation::Vertical));
+            assert_eq!(
+                rtl.scrollbar.track(query(Orientation::Vertical)),
+                PartStyle {
+                    stroke: mirrored_stroke(vertical.stroke.clone()),
+                    ..vertical
+                },
+                "{scheme:?} {state:?}"
+            );
+            assert_eq!(
+                rtl.scrollbar.track(query(Orientation::Horizontal)),
+                ltr.scrollbar.track(query(Orientation::Horizontal)),
+                "{scheme:?} {state:?}"
+            );
+            for orientation in [Orientation::Horizontal, Orientation::Vertical] {
+                assert_eq!(
+                    rtl.scrollbar.thumb(query(orientation)),
+                    ltr.scrollbar.thumb(query(orientation)),
+                    "{scheme:?} {state:?} {orientation:?}"
+                );
+            }
+        }
+        assert_ne!(rtl.menu, ltr.menu, "{scheme:?}");
+        assert_ne!(rtl.combo_box, ltr.combo_box, "{scheme:?}");
+        assert_ne!(rtl.status_bar, ltr.status_bar, "{scheme:?}");
+        assert_ne!(rtl.scrollbar, ltr.scrollbar, "{scheme:?}");
+        let mut rest = ltr.clone();
+        rest.context = rtl.context.clone();
+        rest.menu = rtl.menu.clone();
+        rest.combo_box = rtl.combo_box.clone();
+        rest.status_bar = rtl.status_bar.clone();
+        rest.scrollbar = rtl.scrollbar.clone();
+        assert_eq!(rest, rtl, "{scheme:?}");
+    }
+}
+
+/// The text scale of the test below.
+const TEXT_SCALE_TWO: f32 = 2.0;
+
+/// The text scale is linear on KDE (spec §6, resolution step 2): at 2.0 every
+/// font size is the size converted at the font DPI times 2, then rounded as
+/// Qt rounds it, so the 10 pt body is 27 px (26.67 rounded), not twice the
+/// rounded 13 px; every line height is twice the one at 1.0; each
+/// `defined_size` stays the unscaled size; nothing but the text changes.
+#[test]
+fn at_text_scale_2_every_font_size_is_doubled_before_qt_s_rounding() -> TestResult {
+    use crate::next::window::WindowState;
+
+    for scheme in [Scheme::Light, Scheme::Dark] {
+        let ctx = ThemeContext::default().with_scheme(scheme);
+        let base = Theme::preset(Preset::KdeBreeze).resolve(&ctx);
+        let double = Theme::preset(Preset::KdeBreeze).resolve(&ctx.with_text_scale(TEXT_SCALE_TWO));
+        assert_eq!(base.typography.body.size_px, 13.0, "{scheme:?}");
+        assert_eq!(double.typography.body.size_px, 27.0, "{scheme:?}");
+        let slots = |t: &ResolvedTheme| -> Result<Vec<TextStyle>, String> {
+            let entry = |slot: &Option<TextStyle>, name: &str| {
+                slot.clone().ok_or_else(|| format!("no {name}"))
+            };
+            Ok(vec![
+                t.typography.body.clone(),
+                t.typography.monospace.clone(),
+                entry(&t.typography.title1, "title1")?,
+                entry(&t.typography.headline, "headline")?,
+                entry(&t.typography.caption, "caption")?,
+                t.button.label(ButtonQuery::new(WidgetState::NONE)),
+                t.menu.item_label(WidgetState::NONE),
+                t.window.title(WindowState::default()),
+            ])
+        };
+        for (one, two) in slots(&base)?.into_iter().zip(slots(&double)?) {
+            let size = one.defined_size.ok_or("no defined size")?;
+            assert_eq!(two.defined_size, Some(size), "{scheme:?}");
+            assert_eq!(
+                two.size_px,
+                qt_whole_px(size.to_logical_px(FONT_DPI) * TEXT_SCALE_TWO),
+                "{scheme:?} {size:?}"
+            );
+            assert_eq!(
+                two.line_height,
+                one.line_height * TEXT_SCALE_TWO,
+                "{scheme:?} {size:?}"
+            );
+        }
+        let rest = ButtonQuery::new(WidgetState::NONE);
+        assert_eq!(
+            double.button.body(rest),
+            base.button.body(rest),
+            "{scheme:?}"
+        );
+        let row = ListQuery::new(WidgetState::NONE);
+        assert_eq!(double.list.row(row), base.list.row(row), "{scheme:?}");
+        assert_eq!(double.layout, base.layout, "{scheme:?}");
+        assert_eq!(double.icons, base.icons, "{scheme:?}");
+    }
+    Ok(())
+}
+
+/// Motion: `MotionPreference::None`, or the system's animation scale
+/// (KDE's `AnimationDurationFactor`) at 0, sets the dialog's entrance to
+/// `DialogEntranceStyle::None` (spec §6, resolution step 2); Kirigami's
+/// `FadeRise` stays under full motion, under a scale above 0 and under
+/// `MotionPreference::Reduced`, for which KDE states no policy. The preset
+/// states no motion token, under any motion.
+#[test]
+fn no_motion_or_an_animation_scale_of_0_removes_the_dialog_s_entrance() {
+    let resolve = |motion: MotionPreference, animation_scale: Option<f32>| {
+        Theme::preset(Preset::KdeBreeze)
+            .with_system_overrides(SystemOverrides {
+                animation_scale,
+                ..SystemOverrides::default()
+            })
+            .resolve(&ThemeContext::light().with_motion(motion))
+    };
+    for (motion, scale) in [
+        (MotionPreference::None, None),
+        (MotionPreference::Full, Some(0.0)),
+        (MotionPreference::Reduced, Some(0.0)),
+    ] {
+        let theme = resolve(motion, scale);
+        assert_eq!(
+            theme.dialog.entrance,
+            Some(DialogEntranceStyle::None),
+            "{motion:?} {scale:?}"
+        );
+        assert_eq!(theme.motion_tokens, MotionTokens::default(), "{motion:?}");
+    }
+    for (motion, scale) in [
+        (MotionPreference::Full, None),
+        (MotionPreference::Full, Some(0.5)),
+        (MotionPreference::Reduced, None),
+    ] {
+        let theme = resolve(motion, scale);
+        assert_eq!(
+            theme.dialog.entrance,
+            Some(DialogEntranceStyle::FadeRise),
+            "{motion:?} {scale:?}"
+        );
+        assert_eq!(theme.motion_tokens, MotionTokens::default(), "{motion:?}");
     }
 }

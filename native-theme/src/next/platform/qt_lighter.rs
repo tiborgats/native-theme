@@ -34,13 +34,6 @@ struct Hsv {
 /// `alpha()`: from factor 100 the HSV value is scaled by `factor / 100` and what passes the
 /// maximum is taken off the saturation; from 1 to 99 it is `darker(10000 / factor)`; at 0 and
 /// below the colour is returned as it is.
-#[cfg_attr(
-    not(test),
-    allow(
-        dead_code,
-        reason = "called by the kde-breeze builder for L3, plan M2 KDE unit"
-    )
-)]
 pub(crate) fn qt_lighter(color: [u8; 4], factor: i32) -> [u8; 4] {
     lighter_stored(color, factor).map(to_8bit)
 }

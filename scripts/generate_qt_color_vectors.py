@@ -47,6 +47,22 @@ its own pin, PySide6 6.12.0 (Qt 6.12.0), which it refuses to run without; the
 default mode, its pin and its tables are unchanged:
 
     python3 -I scripts/generate_qt_color_vectors.py --qt-lighter
+
+With `--qt-tint` the script writes instead
+native-theme/tests/vectors/qt_tint.tsv, the table of the clean-room
+`qt_tint`: `Qt.tint(base, Qt.alpha(tint, factor))` run by Qt's QML engine, and
+what the result reports, its 8-bit channels and the 16-bit ones it holds. No
+Qt code is transcribed here: the rows are Qt's own results. The table holds
+Breeze's two switch inputs at 0.9; on Breeze Light's pair and on QT_TINT's row
+32 the factors at which the tint's 8-bit alpha passes 0 to 1 and 254 to 255
+(the 16-bit alphas found by asking Qt), 0, 1 and two outside [0, 1]; Breeze's
+pairs on bases of alpha 0 and 128; then, from 20 000 seeded random opaque
+pairs at the switch's factor 0.9, up to 40 on which `naive_tint` gives another
+colour, and 24 more; the same from 20 000 seeded random pairs at random
+factors in [0, 1); then 24 random translucent bases at random factors. That
+mode has its own pin, PySide6 6.12.0 (Qt 6.12.0):
+
+    python3 -I scripts/generate_qt_color_vectors.py --qt-tint
 """
 
 import json
@@ -477,11 +493,158 @@ def lighter_main():
           f"{min(len(others), LIGHTER_OTHERS)} more)")
 
 
+TINT_QT_VERSION = "6.12.0"
+TINT_OUTPUT = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
+    os.pardir, "native-theme", "tests", "vectors", "qt_tint.tsv",
+)
+TINT_SEED = 20261123
+TINT_NAIVE_FAILURES = 40
+TINT_OTHERS = 24
+TINT_TRANSLUCENT_RANDOM = 24
+# QT_TINT's row 32 (native-theme/src/kde/qt_color_vectors.rs), where Qt
+# returns the tint itself.
+TINT_ROW32 = ((202, 173, 23), (53, 236, 164))
+TINT_OUTSIDE = [-0.25, 1.25]
+
+
+def tint_run_qml(cases):
+    """cases: (base rgba 8-bit, tint rgb 8-bit, factor). Returns per case
+    (base as Qt stored it, the tint's 16-bit alpha after Qt.alpha, the 16-bit
+    result)."""
+    inputs = [["#%02x%02x%02x%02x" % (b[3], b[0], b[1], b[2]), "#%02x%02x%02x" % t, f] for b, t, f in cases]
+    source = (
+        "import QtQuick\n"
+        "QtObject {\n"
+        "    property var inputs: %s\n"
+        "    property string outputs: JSON.stringify(inputs.map(function (t) {\n"
+        "        var base = Qt.color(t[0]);\n"
+        "        var over = Qt.alpha(Qt.color(t[1]), t[2]);\n"
+        "        var c = Qt.tint(base, over);\n"
+        "        return [[base.r, base.g, base.b, base.a], over.a, [c.r, c.g, c.b, c.a]];\n"
+        "    }))\n"
+        "}\n"
+    ) % json.dumps(inputs)
+    component = QtQml.QQmlComponent(ENGINE)
+    component.setData(source.encode(), QtCore.QUrl())
+    item = component.create()
+    if item is None:
+        sys.exit("\n".join(e.toString() for e in component.errors()))
+
+    def to16(values):
+        stored = [round(v * 65535) for v in values]
+        if any(f32(s / 65535) != v for s, v in zip(stored, values)):
+            sys.exit(f"a component is not a 16-bit channel: {values}")
+        return tuple(stored)
+
+    out = []
+    for (b, t, f), (base, over_a, c) in zip(cases, json.loads(item.property("outputs"))):
+        base16 = to16(base)
+        if base16 != tuple(x * 0x101 for x in b):
+            sys.exit(f"base {b} is stored as {base16}, not each channel times 0x101")
+        out.append((base16, to16([over_a])[0], to16(c)))
+    return out
+
+
+def tint_main():
+    import PySide6
+
+    if QtCore.qVersion() != TINT_QT_VERSION or PySide6.__version__ != TINT_QT_VERSION:
+        sys.exit(f"qt_tint.tsv is PySide6 {TINT_QT_VERSION}'s (Qt {TINT_QT_VERSION}); "
+                 f"this is PySide6 {PySide6.__version__} (Qt {QtCore.qVersion()})")
+
+    # The 16-bit alphas whose 8-bit alpha() Qt reports as 0 and as 255.
+    alpha8 = [QtGui.QColor.fromRgba64(0, 0, 0, x).alpha() for x in range(65536)]
+    last0 = max(x for x in range(65536) if alpha8[x] == 0)
+    first255 = min(x for x in range(65536) if alpha8[x] == 255)
+    # The description's claim: alpha() is the nearest integer to x/257 (no ties exist).
+    mismatch = [x for x in range(65536) if alpha8[x] != (2 * x + 257) // 514]
+    print(f"8-bit alpha 0 up to 16-bit {last0}, 255 from {first255}; "
+          f"nearest-integer(x/257) mismatches: {len(mismatch)}")
+
+    threshold_factors = [x / 65535 for x in (last0, last0 + 1, first255 - 1, first255)]
+    pairs = [((*BREEZE_TINT[0][0], 255), BREEZE_TINT[0][1]), ((*TINT_ROW32[0], 255), TINT_ROW32[1])]
+    fixed = [((*b, 255), t, f) for b, t, f in BREEZE_TINT]
+    fixed += [(b, t, f) for b, t in pairs for f in threshold_factors + [0.0, 1.0] + TINT_OUTSIDE]
+    fixed += [((*BREEZE_TINT[0][0], a), BREEZE_TINT[0][1], 0.9) for a in (0, 128)]
+    fixed += [((*BREEZE_TINT[1][0], a), BREEZE_TINT[1][1], 0.9) for a in (0, 128)]
+
+    rng = random.Random(TINT_SEED)
+    at09 = [((*random_rgb(rng), 255), random_rgb(rng), 0.9) for _ in range(RANDOM_INPUTS)]
+    anyf = [((*random_rgb(rng), 255), random_rgb(rng), rng.random()) for _ in range(RANDOM_INPUTS)]
+    translucent = [((*random_rgb(rng), rng.randrange(256)), random_rgb(rng), rng.random())
+                   for _ in range(TINT_TRANSLUCENT_RANDOM)]
+
+    fixed_out = tint_run_qml(fixed)
+    # The threshold factors must land on the intended 16-bit alphas.
+    for f, x in zip(threshold_factors, (last0, last0 + 1, first255 - 1, first255)):
+        got = tint_run_qml([((0, 0, 0, 255), (0, 0, 0), f)])[0][1]
+        if got != x:
+            sys.exit(f"Qt.alpha(c, {f!r}) holds alpha {got}, not {x}")
+
+    def pick_tints(cases):
+        results = tint_run_qml(cases)
+        failing, others = [], []
+        for case, res in zip(cases, results):
+            b, t, f = case
+            (failing if naive_tint(b[:3], t, f) != res[2][:3] else others).append((case, res))
+        rng.shuffle(others)
+        return failing[:TINT_NAIVE_FAILURES] + others[:TINT_OTHERS], len(failing)
+
+    picked09, failing09 = pick_tints(at09)
+    pickedf, failingf = pick_tints(anyf)
+    translucent_rows = list(zip(translucent, tint_run_qml(translucent)))
+    rows = list(zip(fixed, fixed_out)) + picked09 + pickedf + translucent_rows
+
+    # Branch census, from Qt's own outputs: the result equals the tint as Qt.alpha left it, or the base.
+    as_tint = sum(1 for (b, t, f), (base16, ta, c) in rows if c == (*(x * 0x101 for x in t), ta))
+    as_base = sum(1 for (b, t, f), (base16, ta, c) in rows if c == base16)
+
+    def srgb(channels16):
+        return "srgb(" + ", ".join(f"{f32(c / 65535):.9g}" for c in channels16) + ")"
+
+    lines = [
+        "# function: qt_tint",
+        "# route: public_api",
+        f"# source: qtdeclarative@{TINT_QT_VERSION}",
+        f"# source: qtbase@{TINT_QT_VERSION}",
+        "# generations: kde-breeze",
+        "# generator: scripts/generate_qt_color_vectors.py",
+        "# inputs: base:colour tint:colour factor:number",
+        "# outputs: result:colour stored:colour",
+        f"# written by scripts/generate_qt_color_vectors.py --qt-tint with PySide6 {TINT_QT_VERSION}",
+        f"# (Qt {TINT_QT_VERSION}); do not edit. Each row is Qt.tint(base, Qt.alpha(tint, factor)) run by Qt's",
+        "# QML engine: `result` the 8-bit red(), green(), blue() and alpha() the result reports, `stored`",
+        "# the 16-bit channels it holds, each over 65535 as a float. `tint`'s own alpha is replaced by",
+        "# Qt.alpha (written ff). Breeze's switch inputs (the Button set's text tinted by its background,",
+        "# BreezeLight.colors and BreezeDark.colors) at 0.9; on Breeze Light's pair and on 202,173,23 /",
+        f"# 53,236,164 the factors {last0}/65535, {last0 + 1}/65535, {first255 - 1}/65535 and {first255}/65535",
+        "# (the tint's 8-bit alpha passing 0 to 1 and 254 to 255), 0, 1, -0.25 and 1.25; Breeze's pairs",
+        f"# on bases of alpha 0 and 128; then, of {RANDOM_INPUTS} seeded random opaque pairs (seed {TINT_SEED})",
+        f"# at the switch's 0.9, up to {TINT_NAIVE_FAILURES} on which a naive port (the formula in f64 on the",
+        f"# 8-bit channels, rounded once to 16 bits) gives another colour than Qt ({failing09} did) and",
+        f"# {TINT_OTHERS} more; the same of {RANDOM_INPUTS} pairs at random factors in [0, 1) ({failingf} did);",
+        f"# then {TINT_TRANSLUCENT_RANDOM} random bases of random alpha at random factors.",
+        "base\ttint\tfactor\tresult\tstored",
+    ]
+    for (b, t, f), (base16, ta, c) in rows:
+        channels8 = QtGui.QColor.fromRgba64(*c)
+        result = (channels8.red(), channels8.green(), channels8.blue(), channels8.alpha())
+        lines.append(f"{hex8(b)}\t{hex8((*t, 255))}\t{f!r}\t{hex8(result)}\t{srgb(c)}")
+    with open(TINT_OUTPUT, "w", encoding="utf-8") as out:
+        out.write("\n".join(lines) + "\n")
+    print(f"wrote {os.path.normpath(TINT_OUTPUT)}: {len(rows)} rows ({len(fixed)} fixed, {len(picked09)} at 0.9 "
+          f"[{failing09} naive failures], {len(pickedf)} at random factors [{failingf} naive failures], "
+          f"{len(translucent_rows)} translucent); rows equal to the tint: {as_tint}, to the base: {as_base}")
+
+
 APP = QtGui.QGuiApplication(sys.argv[:1])
 ENGINE = QtQml.QQmlEngine()
 
 if __name__ == "__main__":
     if sys.argv[1:] == ["--qt-lighter"]:
         lighter_main()
+    elif sys.argv[1:] == ["--qt-tint"]:
+        tint_main()
     else:
         main()
