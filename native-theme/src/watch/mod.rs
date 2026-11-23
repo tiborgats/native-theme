@@ -33,12 +33,13 @@
 //! # Signal-only events
 //!
 //! [`ThemeChangeEvent`] carries no theme data. When you receive an event,
-//! call [`detect::invalidate_caches()`](crate::detect::invalidate_caches),
-//! then re-run [`SystemTheme::from_system()`](crate::SystemTheme::from_system)
-//! to get the updated theme: the detection values (dark mode, reduced
-//! motion, the accessibility preferences, the icon theme and, on Linux, the
-//! desktop) stay cached until the caches are cleared, and the OS read takes
-//! its icon theme and desktop from them.
+//! re-run [`SystemTheme::from_system()`](crate::SystemTheme::from_system)
+//! to get the updated theme. Before each event the watcher calls
+//! [`detect::invalidate_caches()`](crate::detect::invalidate_caches): the
+//! detection values (dark mode, reduced motion, the accessibility
+//! preferences, the icon theme and, on Linux, the desktop) stay cached until
+//! the caches are cleared, and the OS read takes its icon theme and desktop
+//! from them.
 //!
 //! # Example
 //!
@@ -52,7 +53,6 @@
 //!
 //! // On your UI thread:
 //! // if let Ok(event) = rx.try_recv() {
-//! //     native_theme::detect::invalidate_caches();
 //! //     let theme = native_theme::SystemTheme::from_system()?;
 //! //     // re-apply theme ...
 //! // }
@@ -78,12 +78,12 @@ use std::thread::JoinHandle;
 ///
 /// This enum carries no theme data -- it is a notification only.
 /// When you receive an event, call
-/// [`detect::invalidate_caches()`](crate::detect::invalidate_caches), then
 /// [`SystemTheme::from_system()`](crate::SystemTheme::from_system)
-/// to read the updated theme; without the first call, the detection values
-/// (dark mode, reduced motion, the accessibility preferences, the icon theme
-/// and, on Linux, the desktop) are the cached ones, and the OS read takes its
-/// icon theme and desktop from them.
+/// to read the updated theme. The watcher has cleared the detection caches
+/// ([`detect::invalidate_caches()`](crate::detect::invalidate_caches)) before
+/// the event, so the detection values (dark mode, reduced motion, the
+/// accessibility preferences, the icon theme and, on Linux, the desktop),
+/// from which the OS read takes its icon theme and desktop, are read again.
 ///
 /// # Non-exhaustive
 ///
@@ -371,7 +371,6 @@ impl Debounce {
 /// // On UI thread:
 /// // match rx.try_recv() {
 /// //     Ok(ThemeChangeEvent::Changed) => {
-/// //         native_theme::detect::invalidate_caches();
 /// //         let theme = native_theme::SystemTheme::from_system()?;
 /// //         // re-apply theme ...
 /// //     }
@@ -380,11 +379,12 @@ impl Debounce {
 /// # Ok::<(), native_theme::error::Error>(())
 /// ```
 ///
-/// Clear the detection caches before the re-read, as above: the detection
-/// values (dark mode, reduced motion, the accessibility preferences, the icon
-/// theme and, on Linux, the desktop) are cached until
-/// [`detect::invalidate_caches()`](crate::detect::invalidate_caches), and the
-/// OS read takes its icon theme and desktop from them.
+/// Before each call of `callback` the watcher calls
+/// [`detect::invalidate_caches()`](crate::detect::invalidate_caches): the
+/// detection values (dark mode, reduced motion, the accessibility
+/// preferences, the icon theme and, on Linux, the desktop) are cached until
+/// then, and the OS read takes its icon theme and desktop from them, so the
+/// re-read above sees the changed settings.
 ///
 /// On macOS the change arrives as a distributed notification, which is
 /// delivered through the process's main run loop, so the application must be
@@ -439,6 +439,7 @@ impl Debounce {
 pub fn on_theme_change(
     callback: impl Fn(ThemeChangeEvent) + Send + 'static,
 ) -> crate::Result<ThemeSubscription> {
+    let callback = invalidating_caches_first(callback);
     #[cfg(target_os = "linux")]
     {
         #[cfg(not(any(feature = "kde", feature = "portal")))]
@@ -495,6 +496,18 @@ pub fn on_theme_change(
     }
 }
 
+/// `callback`, after [`detect::invalidate_caches()`](crate::detect::invalidate_caches)
+/// on each event (spec §8, "Watchers"), so that a read in the callback or
+/// after it sees the changed settings.
+fn invalidating_caches_first(
+    callback: impl Fn(ThemeChangeEvent) + Send + 'static,
+) -> impl Fn(ThemeChangeEvent) + Send + 'static {
+    move |event| {
+        crate::detect::invalidate_caches();
+        callback(event);
+    }
+}
+
 /// A Linux watcher backend.
 #[cfg(target_os = "linux")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -525,6 +538,32 @@ fn linux_backend(desktop: crate::LinuxDesktop) -> Option<LinuxBackend> {
 #[allow(clippy::unwrap_used)]
 mod tests {
     use super::*;
+
+    /// The callback the watcher runs sees the detection caches cleared: an
+    /// accessibility block stored before the event is gone when it runs.
+    #[test]
+    fn the_callback_runs_after_the_caches_are_cleared() {
+        let scaled = |text_scaling_factor: f32| crate::AccessibilityPreferences {
+            text_scaling_factor,
+            ..crate::AccessibilityPreferences::default()
+        };
+        let detection = crate::detect::system();
+        assert_eq!(
+            detection.reader_accessibility_with(|| scaled(1.5)),
+            scaled(1.5)
+        );
+        let seen = std::sync::Arc::new(std::sync::Mutex::new(None));
+        let seen_by_callback = std::sync::Arc::clone(&seen);
+        let callback = invalidating_caches_first(move |event| {
+            let block = crate::detect::system().reader_accessibility_with(|| scaled(2.0));
+            *seen_by_callback.lock().unwrap() = Some((event, block));
+        });
+        callback(ThemeChangeEvent::Changed);
+        assert_eq!(
+            *seen.lock().unwrap(),
+            Some((ThemeChangeEvent::Changed, scaled(2.0)))
+        );
+    }
 
     /// The watcher follows the reader on an unrecognised desktop: a KDE
     /// portal backend gets KDE's watcher (M4-36).
