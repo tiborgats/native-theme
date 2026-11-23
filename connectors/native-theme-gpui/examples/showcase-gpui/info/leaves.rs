@@ -925,12 +925,12 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "basic.icons.large",
         "defaults.icon_sizes.large_px",
-        "gpui: geometry::icon_size_large sizes the icon (demo::sized_icon)",
+        "gpui: icons.sizes.large, next::geometry::icon_size_large sizes the icon (demo::sized_icon)",
     ),
     (
         "basic.icons",
         "defaults.icon_sizes.small_px",
-        "gpui: geometry::icon_size_small sizes the icon (demo::sized_icon)",
+        "gpui: icons.sizes.small, next::geometry::icon_size_small sizes the icon (demo::sized_icon)",
     ),
     (
         "",

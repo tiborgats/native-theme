@@ -19,7 +19,7 @@ use gpui::{
 use gpui_component::{IconName, h_flex, v_flex};
 
 use native_theme::icons::IconRole;
-use native_theme_gpui::{geometry, next};
+use native_theme_gpui::next;
 
 use crate::app::Showcase;
 use crate::demo::{
@@ -139,13 +139,17 @@ const TABLE_SELECTED: usize = 1;
 /// egui showcases' too.
 type SizedIcon = (
     &'static str,
-    fn(native_theme_gpui::Native<'_>) -> gpui_component::Size,
+    fn(&native_theme::next::ResolvedTheme) -> next::Mapped<gpui_component::Size>,
     &'static str,
 );
 const ICONS: [SizedIcon; 3] = [
-    ("basic-icon-small", geometry::icon_size_small, "Small"),
-    ("basic-icon-toolbar", geometry::icon_size_toolbar, "Toolbar"),
-    ("basic-icon-large", geometry::icon_size_large, "Large"),
+    ("basic-icon-small", next::geometry::icon_size_small, "Small"),
+    (
+        "basic-icon-toolbar",
+        next::geometry::icon_size_toolbar,
+        "Toolbar",
+    ),
+    ("basic-icon-large", next::geometry::icon_size_large, "Large"),
 ];
 
 /// A group of the page, as `(heading id, heading)`.

@@ -11127,18 +11127,21 @@ fn role_glyph_of(drawn: &(ChromeIcon, Option<IconName>)) -> Option<Glyph> {
 }
 
 /// native-theme's icon for a role, `drawn`, of the chosen set, at the size
-/// `role` gives it (`geometry::icon_size_small`, `_toolbar`, `_large`),
-/// reporting itself as `variant`. Where the set has no icon for the role,
-/// nothing is drawn -- never another set's.
+/// `role` gives it under the installed 0.8.0 theme
+/// (`next::geometry::icon_size_small`, `_toolbar`, `_large`:
+/// `icons.sizes.small`, `toolbar`, `large`), its own size where the theme
+/// states none ([`next_sized_glyph`]), reporting itself as `variant`. Where
+/// the set has no icon for the role, nothing is drawn -- never another
+/// set's.
 pub(crate) fn sized_icon(
     ui: &Entity<InfoRegistry>,
     cx: &App,
     id: &'static str,
     drawn: &(ChromeIcon, Option<IconName>),
-    role: fn(Native<'_>) -> Size,
+    role: fn(&native_theme::next::ResolvedTheme) -> next::Mapped<Size>,
     variant: &'static str,
 ) -> Stateful<Div> {
-    let shown = role_glyph_of(drawn).map(|icon| native_sized_glyph(cx, icon, role));
+    let shown = role_glyph_of(drawn).map(|icon| next_sized_glyph(cx, icon, role));
     let info = WidgetInfo::new("Icon")
         .variant(variant)
         .instance("icon", "IconRole::FolderOpen, of the chosen set");

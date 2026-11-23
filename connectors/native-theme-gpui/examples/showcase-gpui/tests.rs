@@ -23217,20 +23217,24 @@ fn raster_bounds(cx: &mut VisualTestContext, selector: &'static str) -> Option<B
     cx.debug_bounds(selector)
 }
 
-/// A `geometry::icon_size_*` builder.
+/// A `next::geometry::icon_size_*` builder.
 #[cfg(feature = "material-icons")]
-type IconSizeBuilder = fn(native_theme_gpui::Native<'_>) -> gpui_component::Size;
+type IconSizeBuilder =
+    fn(&native_theme::next::ResolvedTheme) -> native_theme_gpui::next::Mapped<gpui_component::Size>;
 
-/// The side `builder` sizes an icon to under the installed native theme.
+/// The side `builder` sizes an icon to under the installed 0.8.0 theme;
+/// `None` where it gives none, which the caller asserts against.
 #[cfg(feature = "material-icons")]
 fn icon_side(
     cx: &mut VisualTestContext,
     showcase: &Entity<Showcase>,
     builder: IconSizeBuilder,
-) -> Pixels {
-    match read(cx, showcase, |_this, cx| native_value(cx, builder)) {
-        Some(gpui_component::Size::Size(side)) => side,
-        other => panic!("the builder gives no size under the installed preset: {other:?}"),
+) -> Option<Pixels> {
+    match read(cx, showcase, |_this, cx| {
+        crate::support::next_value(cx, builder)
+    }) {
+        Some(Ok(gpui_component::Size::Size(side))) => Some(side),
+        _ => None,
     }
 }
 
@@ -23271,7 +23275,9 @@ fn a_raster_sets_icons_are_drawn_as_images_on_the_basic_page(cx: &mut TestAppCon
     let mut roles: Vec<IconRole> = buttons.iter().map(|(_, _, role, _)| *role).collect();
     roles.push(IconRole::FolderOpen);
     rasterize_icons(&mut cx, &showcase, &[], &roles);
-    let toolbar = icon_side(&mut cx, &showcase, geometry::icon_size_toolbar);
+    let toolbar = icon_side(&mut cx, &showcase, next::geometry::icon_size_toolbar);
+    assert!(toolbar.is_some(), "macos-tahoe states no toolbar icon size");
+    let Some(toolbar) = toolbar else { return };
     let drawn = read(&mut cx, &showcase, |this, cx| {
         this.info_ui.read(cx).layout_drawn()
     });
@@ -23303,17 +23309,45 @@ fn a_raster_sets_icons_are_drawn_as_images_on_the_basic_page(cx: &mut TestAppCon
         );
     }
     let builders: [(&str, IconSizeBuilder); 3] = [
-        ("basic-icon-small", geometry::icon_size_small),
-        ("basic-icon-toolbar", geometry::icon_size_toolbar),
-        ("basic-icon-large", geometry::icon_size_large),
+        ("basic-icon-small", next::geometry::icon_size_small),
+        ("basic-icon-toolbar", next::geometry::icon_size_toolbar),
+        ("basic-icon-large", next::geometry::icon_size_large),
     ];
     for (cell, builder) in builders {
         let side = icon_side(&mut cx, &showcase, builder);
+        assert!(side.is_some(), "macos-tahoe states no size for {cell}");
         let frame = bounds_of(&mut cx, cell);
         assert_eq!(
-            (frame.size.width, frame.size.height),
-            (side, side),
+            Some((frame.size.width, frame.size.height)),
+            side.map(|side| (side, side)),
             "{cell} does not hold the set's FolderOpen image at its size"
+        );
+    }
+    // The installed 0.8.0 theme's sizes, not the 0.7.2 theme kept beside it:
+    // with icons.sizes.small and large swapped, the two cells swap sizes.
+    let r = next_theme(&mut cx, &showcase);
+    let Some(mut r) = r else {
+        assert!(r.is_some(), "no 0.8.0 theme is installed");
+        return;
+    };
+    let sizes = &mut r.icons.sizes;
+    assert!(
+        sizes.small.is_some() && sizes.small != sizes.large,
+        "macos-tahoe's small and large icons are one size: a swap shows nothing"
+    );
+    std::mem::swap(&mut sizes.small, &mut sizes.large);
+    let was = |cx: &mut VisualTestContext, cell| bounds_of(cx, cell).size;
+    let (small, large) = (
+        was(&mut cx, "basic-icon-small"),
+        was(&mut cx, "basic-icon-large"),
+    );
+    install_next(&mut cx, &r);
+    rasterize_icons(&mut cx, &showcase, &[], &roles);
+    for (cell, side) in [("basic-icon-small", large), ("basic-icon-large", small)] {
+        assert_eq!(
+            bounds_of(&mut cx, cell).size,
+            side,
+            "{cell} is not sized by the installed 0.8.0 theme's icons.sizes"
         );
     }
 }
@@ -23586,8 +23620,15 @@ fn a_raster_sets_icons_are_drawn_as_images_in_the_chrome(cx: &mut TestAppContext
     // A page that draws no ChevronDown of its own, so the page row's menu
     // holds the one image of it.
     show(&mut cx, &showcase, Page::Charts);
-    let toolbar = icon_side(&mut cx, &showcase, geometry::icon_size_toolbar);
-    let small = icon_side(&mut cx, &showcase, geometry::icon_size_small);
+    let toolbar = icon_side(&mut cx, &showcase, next::geometry::icon_size_toolbar);
+    let small = icon_side(&mut cx, &showcase, next::geometry::icon_size_small);
+    assert!(
+        toolbar.is_some() && small.is_some(),
+        "windows-11 states no toolbar or small icon size"
+    );
+    let (Some(toolbar), Some(small)) = (toolbar, small) else {
+        return;
+    };
     let drawn = read(&mut cx, &showcase, |this, cx| {
         this.info_ui.read(cx).layout_drawn()
     });
