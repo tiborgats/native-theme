@@ -2228,10 +2228,8 @@ impl SidebarItem for SampleItem {
             &self.drawn,
             &self.set,
         );
-        let icon = chrome_icon(&self.drawn, &self.icon).map(|icon| sidebar_icon_sized(cx, icon));
-        if icon.is_some() && native_value(cx, geometry::icon_size_small).is_some() {
-            item_info = item_info.geometry("icon_size_small");
-        }
+        let icon = chrome_icon(&self.drawn, &self.icon)
+            .map(|icon| sidebar_icon_sized(cx, icon, &mut item_info));
         let item = SidebarMenuItem::new(self.label);
         let item = match icon {
             Some(icon) => item.icon(icon),
@@ -2247,7 +2245,9 @@ impl SidebarItem for SampleItem {
 }
 
 /// `icon` at the size a Sidebar sample's item shows it at: the platform's
-/// small icon size.
+/// small icon size, `next::geometry::icon_size_small` of the installed 0.8.0
+/// theme, which `item_info` is given the line of; the Icon's own size where
+/// the theme states no `icons.sizes.small` (spec §10, rule 0).
 ///
 /// Platform-facts §2.1.8 names macOS's small size the sidebar's, and states
 /// 16px for Windows, KDE and GNOME. The panel size would not fit: KDE states
@@ -2261,8 +2261,13 @@ impl SidebarItem for SampleItem {
 /// It takes the Icon built: a public helper that builds one and does not
 /// report it fails `every_widget_reports_itself`, and the item it is handed
 /// to reports it.
-pub(crate) fn sidebar_icon_sized(cx: &App, icon: Icon) -> Icon {
-    match native_value(cx, geometry::icon_size_small) {
+pub(crate) fn sidebar_icon_sized(cx: &App, icon: Icon, item_info: &mut WidgetInfo) -> Icon {
+    match info::next_native_value(
+        cx,
+        next::geometry::icon_size_small,
+        "icon_size_small",
+        item_info,
+    ) {
         Some(Size::Size(size)) => icon.size(size),
         _ => icon,
     }
@@ -2443,17 +2448,24 @@ fn native_tab_bar(
     if container_margin.is_some() {
         bar_info = bar_info.next_geometry("container_margin");
     }
-    if menu && menu_icon.is_some() {
-        bar_info = bar_info.geometry("icon_size_small");
-    }
+    let menu_icon = menu_icon.filter(|_| menu).map(|icon| {
+        let size = info::next_native_value(
+            cx,
+            next::geometry::icon_size_small,
+            "icon_size_small",
+            &mut bar_info,
+        );
+        glyph_at(icon, size)
+    });
     let labels: Vec<&'static str> = tabs.iter().map(|&(label, _)| label).collect();
     let on_click: TabClick = Rc::new(on_click);
     let on_tab = on_click.clone();
     let tool_box = tool_button_box(cx);
     let ghost = variants::ghost_button(cx);
     let menu = menu.then(|| {
-        // The chosen set's ChevronDown at `geometry::icon_size_small`, where
-        // the set has one, in place of upstream's caret, which draws
+        // The chosen set's ChevronDown at `next::geometry::icon_size_small`
+        // (its own size where the theme states no `icons.sizes.small`, spec
+        // §10, rule 0), where the set has one, in place of upstream's caret, which draws
         // gpui-component's own glyph at a size of its own (button/button.rs,
         // `Caret`); upstream's caret where the set has none, the button
         // otherwise empty. The caret is the Button's child, not its
@@ -2471,11 +2483,7 @@ fn native_tab_bar(
         )
         .accessibility_label("Pages")
         .map(|button| match menu_icon {
-            Some(icon) => button.child(listed_icon(
-                ui,
-                native_sized_glyph(cx, icon, geometry::icon_size_small),
-                Some("chrome.page_tabs.menu.icon"),
-            )),
+            Some(icon) => button.child(listed_icon(ui, icon, Some("chrome.page_tabs.menu.icon"))),
             None => button.child(caret),
         })
         .dropdown_menu(move |menu, _, _| {
@@ -3000,13 +3008,14 @@ const HANDLE_PADDING: Pixels = px(4.);
 pub(crate) const HANDLE_SIZE: Pixels = px(1.);
 
 /// The room the side panel keeps clear at its right edge for the splitter's
-/// line: `splitter.divider_width` beyond the `HANDLE_SIZE` the handle's own
-/// line takes, where the theme states it wider. The handle is absolutely
+/// line: the installed 0.8.0 theme's `splitter.divider_width` beyond the
+/// `HANDLE_SIZE` the handle's own line takes, where the theme states it
+/// wider. The handle is absolutely
 /// placed (resizable/resize_handle.rs, `ResizeHandle`), so no layout makes
 /// room for a wider line; [`resize_handles`] paints it from the boundary
 /// back over this strip, so it takes neither panel's content or margin.
 pub(crate) fn splitter_reserve(cx: &App) -> Option<Pixels> {
-    let width = native_value(cx, |n| px(n.resolved.splitter.divider_width))?;
+    let width = next_value(cx, |r| px(r.splitter.divider_width))?;
     (width > HANDLE_SIZE).then(|| px(f32::from(width) - f32::from(HANDLE_SIZE)))
 }
 
@@ -3059,19 +3068,23 @@ pub(crate) fn resize_handles(
             } else {
                 base.resizable.handle.unwrap_or(base.tokens.colors.border)
             };
-            // The model's splitter: its line `splitter.divider_width` wide,
-            // widened back over the strip the panel before the boundary
-            // keeps clear for it (`splitter_reserve`), since the handle
-            // holds its line in HANDLE_SIZE; `splitter.hover_color`
-            // under the pointer, through the group upstream names the
-            // handle (resizable/resize_handle.rs, `ResizeHandle`).
-            let native = old_native(cx);
-            let splitter = native.as_ref().map(|n| {
-                let s = &n.resolved.splitter;
-                (px(s.divider_width), info::stated(s.hover_color))
+            // The installed 0.8.0 theme's splitter: its line
+            // `splitter.divider_width` wide, widened back over the strip the
+            // panel before the boundary keeps clear for it
+            // (`splitter_reserve`), since the handle holds its line in
+            // HANDLE_SIZE; `splitter.handle(HOVER).fill` under the pointer,
+            // through the group upstream names the handle
+            // (resizable/resize_handle.rs, `ResizeHandle`), where the theme
+            // states one; else upstream's resting colour stays.
+            let native = next_resolved(cx);
+            let splitter = native.map(|r| {
+                let s = &r.splitter;
+                (
+                    px(s.divider_width),
+                    next::fill_of(&s.handle(WidgetState::HOVER)),
+                )
             });
-            let line_info =
-                info::resize_handle(&base, between, native.as_ref().map(|n| n.resolved));
+            let line_info = info::resize_handle(&base, between, native);
             let target = div()
                 .size_full()
                 .info(&ui, id, line_info)
@@ -3090,7 +3103,7 @@ pub(crate) fn resize_handles(
                     .w(width)
                     .bg(line)
                     .debug_selector(|| CHROME_SPLITTER_LINE.into())
-                    .when(!handle.is_active(), |line| {
+                    .when_some(hover.filter(|_| !handle.is_active()), |line, hover| {
                         line.group_hover("handle", move |style| style.bg(hover))
                     }),
                 None => div().size_full().bg(line),

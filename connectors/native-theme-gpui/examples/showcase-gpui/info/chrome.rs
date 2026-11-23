@@ -5,12 +5,11 @@ use std::time::Duration;
 use gpui::Pixels;
 use gpui_component::{Colorize as _, theme::Theme};
 use native_theme::next::{ResolvedTheme as NextTheme, WidgetState};
-use native_theme_gpui::ResolvedTheme;
 use native_theme_gpui::next::{self, fill_of, state_fill_of, state_text_color_of, text_color_of};
 
 use super::{
     ColorClaim, WidgetInfo, buttons::ToolSize, claim, edge_claim, px_text, radius_of,
-    state_stroke_color_of, stated, stated_claim, stroke_color_of, stroke_width_of,
+    state_stroke_color_of, stated_claim, stroke_color_of, stroke_width_of,
 };
 use crate::demo::{PanelToggle, Severity, SheetSide};
 use crate::support::ChromeIcon;
@@ -1560,11 +1559,11 @@ pub fn status_bar(t: &Theme, styled: bool, edge: bool, environment: &str) -> Wid
 
 /// A handle of the window's resizable group (spec §1.1, §4.3.5), between the
 /// panels `between` names. `base` is gpui-base's theme, where the handle's
-/// colours live.
+/// colours live; `native` the installed 0.8.0 theme.
 pub fn resize_handle(
     base: &gpui_base::Theme,
     between: &'static str,
-    native: Option<&ResolvedTheme>,
+    native: Option<&NextTheme>,
 ) -> WidgetInfo {
     let info = WidgetInfo::new("ResizeHandle")
         .variant(between)
@@ -1584,40 +1583,44 @@ pub fn resize_handle(
         ))
         .instance(
             "colour source",
-            "handle and active_handle are gpui-base's fields, always filled: upstream projects border and drag_border into them (theme/mod.rs, Theme::base_theme), and the connector then writes the platform's splitter.divider_color and splitter.hover_color over both (native-theme-gpui/base_layer.rs, resizable_theme). Only where the installed theme has no variant for the current colour mode are border and drag_border written back (native-theme-gpui/lib.rs, base_overrides_for). So the fallbacks gpui-base reads for an unset field, border at rest and ring while pressed, never apply here (gpui-base/resizable/resize_handle.rs, handle_color)",
+            "handle and active_handle are gpui-base's fields, always filled: upstream projects border and drag_border into them (theme/mod.rs, Theme::base_theme), and the connector then writes the platform's splitter.handle(NONE).fill and splitter.handle(HOVER).fill over both (native-theme-gpui/next/mod.rs, resizable_theme), and installs no 0.8.0 theme that leaves either unstated (next/mod.rs, Installed::of). Only where the installed theme has no variant for the current colour mode are border and drag_border written back (native-theme-gpui/lib.rs, base_overrides_for). So the fallbacks gpui-base reads for an unset field, border at rest and ring while pressed, never apply here (gpui-base/resizable/resize_handle.rs, handle_color)",
         )
         .instance(
             "drawn by",
             "the showcase, which with_handle_appearance hands the painted part of each handle to (resizable/panel.rs, with_handle_appearance): it paints the colour upstream would (resizable/resize_handle.rs, handle_color) and lays this info over the hit area. The drag and the cursor stay upstream's",
         );
     let info = match native {
-        Some(r) => info
-            .color(claim(
-                "line under the pointer",
-                "hover_color",
-                stated(r.splitter.hover_color),
-                "showcase",
-            ))
-            .config(
-                "width",
-                format!(
-                    "splitter.divider_width, {}px, which the showcase paints the line at, reaching from the boundary back over the side panel's edge: the handle itself lays out 1px wide with 4px of padding on each side, upstream's constants (resizable/resize_handle.rs, HANDLE_SIZE), and is absolutely placed, so the side panel's content keeps clear of the line by the width beyond that 1px (demo.rs, splitter_reserve), and the line takes a margin of neither panel",
-                    px_text(r.splitter.divider_width)
-                ),
-            )
+        Some(r) => info.config(
+            "width",
+            format!(
+                "splitter.divider_width, {}px, which the showcase paints the line at, reaching from the boundary back over the side panel's edge: the handle itself lays out 1px wide with 4px of padding on each side, upstream's constants (resizable/resize_handle.rs, HANDLE_SIZE), and is absolutely placed, so the side panel's content keeps clear of the line by the width beyond that 1px (demo.rs, splitter_reserve), and the line takes a margin of neither panel",
+                px_text(r.splitter.divider_width)
+            ),
+        ),
+        None => info.not_themeable(
+            "width",
+            "a 1px line, upstream's HANDLE_SIZE: no native theme is installed, so there is no splitter.divider_width (resizable/resize_handle.rs, HANDLE_SIZE)",
+        ),
+    };
+    let hover = native.and_then(|r| {
+        stated_claim(
+            "line under the pointer",
+            "splitter.handle(HOVER).fill",
+            fill_of(&r.splitter.handle(WidgetState::HOVER)),
+            "showcase",
+        )
+    });
+    let info = match hover {
+        Some(hover) => info
+            .color(hover)
             .config(
                 "hover",
-                "splitter.hover_color under the pointer, through the group the handle is named in (resizable/resize_handle.rs, ResizeHandle); while it is pressed, active_handle, which the connector fills with the same colour",
+                "splitter.handle(HOVER).fill under the pointer, through the group the handle is named in (resizable/resize_handle.rs, ResizeHandle); while it is pressed, active_handle, which the connector fills with the same colour",
             ),
-        None => info
-            .not_themeable(
-                "hover",
-                "none: a hovered handle keeps its resting colour; no native theme is installed, so there is no splitter.hover_color to paint (resizable/resize_handle.rs, ResizeHandleState)",
-            )
-            .not_themeable(
-                "width",
-                "a 1px line, upstream's HANDLE_SIZE: no native theme is installed, so there is no splitter.divider_width (resizable/resize_handle.rs, HANDLE_SIZE)",
-            ),
+        None => info.not_themeable(
+            "hover",
+            "none: a hovered handle keeps its resting colour, upstream's own; no native theme states a splitter.handle(HOVER).fill to paint (resizable/resize_handle.rs, ResizeHandleState)",
+        ),
     };
     info
         .instance(

@@ -355,23 +355,7 @@ fn install_by_name(cx: &mut VisualTestContext, showcase: &Entity<Showcase>, name
     installed
 }
 
-/// The installed theme's scrollbar groove width, and whether the platform
-/// draws its scrollbars as overlays; a zero width means no native theme is
-/// installed, which the caller asserts against.
-fn scrollbar_of(cx: &mut VisualTestContext, showcase: &Entity<Showcase>) -> (Pixels, bool) {
-    read(cx, showcase, |_this, cx| {
-        match crate::support::old_native(cx) {
-            Some(n) => (
-                px(native_theme_gpui::scrollbar_groove_width(n.resolved)),
-                n.resolved.scrollbar.overlay_mode,
-            ),
-            None => (px(0.), false),
-        }
-    })
-}
-
-/// [`scrollbar_of`] on the installed 0.8.0 theme: the vertical groove's
-/// width, `scrollbar.track(NONE; orientation=Vertical).min_size[0]`, where
+/// The installed 0.8.0 theme's scrollbar: the vertical groove's width, `scrollbar.track(NONE; orientation=Vertical).min_size[0]`, where
 /// the theme states it, and whether the scrollbar is an overlay; `None`
 /// before a 0.8.0 theme is installed.
 fn next_scrollbar_of(
@@ -407,11 +391,14 @@ fn a_non_overlay_scrollbar_keeps_off_the_content(cx: &mut TestAppContext) {
     for preset in ["kde-breeze", "macos-monterey"] {
         use_preset(&mut cx, &showcase, preset);
         show(&mut cx, &showcase, Page::Inputs);
-        let (groove, overlay) = scrollbar_of(&mut cx, &showcase);
+        let measured = next_scrollbar_of(&mut cx, &showcase);
         assert!(
-            groove > px(0.),
-            "{preset}: no native theme is installed, so nothing was measured"
+            matches!(measured, Some((Some(groove), _)) if groove > px(0.)),
+            "{preset}: no 0.8.0 theme is installed, or it states no groove, so nothing was measured"
         );
+        let Some((Some(groove), overlay)) = measured else {
+            return;
+        };
         let content = bounds_of(&mut cx, CONTENT_SCROLL);
         let page = bounds_of(&mut cx, PAGE_ROOT);
         assert!(
@@ -440,9 +427,11 @@ fn a_page_that_fits_keeps_no_scrollbar_strip(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     use_preset(&mut cx, &showcase, "kde-breeze");
     show(&mut cx, &showcase, Page::Basic);
-    let (groove, overlay) = scrollbar_of(&mut cx, &showcase);
     assert!(
-        !overlay && groove > px(0.),
+        matches!(
+            next_scrollbar_of(&mut cx, &showcase),
+            Some((Some(groove), false)) if groove > px(0.)
+        ),
         "kde-breeze must draw a non-overlay groove"
     );
     let content = bounds_of(&mut cx, CONTENT_SCROLL);
@@ -526,11 +515,14 @@ fn a_settings_row_keeps_off_the_page_scrollbar(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     use_preset(&mut cx, &showcase, "kde-breeze");
     show(&mut cx, &showcase, Page::Layout);
-    let (groove, overlay) = scrollbar_of(&mut cx, &showcase);
+    let measured = next_scrollbar_of(&mut cx, &showcase);
     assert!(
-        !overlay && groove > px(0.),
+        matches!(measured, Some((Some(groove), false)) if groove > px(0.)),
         "kde-breeze must draw a non-overlay groove"
     );
+    let Some((Some(groove), _)) = measured else {
+        return;
+    };
     let frame = bounds_of(&mut cx, "settings-frame");
     let row = bounds_of(&mut cx, PROBE_SETTINGS_ROW);
     assert!(
@@ -3227,8 +3219,9 @@ fn the_page_tabs_navigate(cx: &mut TestAppContext) {
 }
 
 /// The page row's menu icon, the chosen set's ChevronDown, is
-/// `geometry::icon_size_small` as every other small icon is (M9-015), and
-/// the row's info names that builder while the icon shows.
+/// `next::geometry::icon_size_small` of the installed 0.8.0 theme as every
+/// other small icon is (M9-015), and the row's info names that builder while
+/// the icon shows.
 #[cfg(feature = "widgets")]
 #[gpui::test]
 fn the_page_tabs_menu_icon_is_icon_size_small(cx: &mut TestAppContext) {
@@ -3243,7 +3236,7 @@ fn the_page_tabs_menu_icon_is_icon_size_small(cx: &mut TestAppContext) {
     draw(&mut cx);
     let (small, icon) = read(&mut cx, &showcase, |this, cx| {
         (
-            native_value(cx, geometry::icon_size_small),
+            crate::support::next_value(cx, next::geometry::icon_size_small),
             this.info_ui
                 .read(cx)
                 .layout_drawn()
@@ -3252,12 +3245,12 @@ fn the_page_tabs_menu_icon_is_icon_size_small(cx: &mut TestAppContext) {
         )
     });
     let small = match small {
-        Some(gpui_component::Size::Size(small)) => Some(small),
+        Some(Ok(gpui_component::Size::Size(small))) => Some(small),
         _ => None,
     };
     assert!(
         small.is_some(),
-        "geometry::icon_size_small gives no size under kde-breeze"
+        "next::geometry::icon_size_small gives no size under kde-breeze"
     );
     assert!(
         icon.is_some(),
@@ -4979,7 +4972,8 @@ const SIDEBAR_ICON_PRESETS: [(&str, &str); 7] = [
 /// (icon.rs:213-221), so no debug selector gets there. What is checked:
 ///
 /// - the Icon `demo::sidebar_icon_sized` hands an item has the size
-///   `geometry::icon_size_small` gives, read off its style;
+///   `next::geometry::icon_size_small` gives the installed 0.8.0 theme, read
+///   off its style, and the item's info names that builder;
 /// - in the rail, every item's measured bounds lie within the rail's width,
 ///   and no two items overlap. Neither catches an oversized icon on its
 ///   own: an item is as wide as the rail lets it be whatever its icon, and
@@ -5014,13 +5008,20 @@ fn the_sidebar_samples_icons_fit_their_items(cx: &mut TestAppContext) {
         use_preset_with_palette(&mut cx, &showcase, preset, palette);
         let (small, rem) = read(&mut cx, &showcase, |_this, cx| {
             (
-                native_value(cx, geometry::icon_size_small),
+                crate::support::next_value(cx, next::geometry::icon_size_small),
                 gpui_component::ActiveTheme::theme(cx).font_size,
             )
         });
         let small = match small {
-            Some(gpui_component::Size::Size(small)) => small,
-            other => panic!("{preset}: geometry::icon_size_small gives {other:?}, not a size"),
+            Some(Ok(gpui_component::Size::Size(small))) => Some(small),
+            _ => None,
+        };
+        assert!(
+            small.is_some(),
+            "{preset}: next::geometry::icon_size_small gives no size"
+        );
+        let Some(small) = small else {
+            return;
         };
         let row = rems(1.75).to_pixels(rem);
         let expanded = bounds_of(&mut cx, LAYOUT_SIDEBAR_EXPANDED);
@@ -5032,9 +5033,23 @@ fn the_sidebar_samples_icons_fit_their_items(cx: &mut TestAppContext) {
             expanded.size.width
         );
         for (label, icon, expanded_id, _) in LAYOUT_SIDEBAR_ITEMS {
-            let mut icon = read(&mut cx, &showcase, |_this, cx| {
-                crate::demo::sidebar_icon_sized(cx, gpui_component::Icon::new(icon))
+            let (mut icon, item_info) = read(&mut cx, &showcase, |_this, cx| {
+                let mut item_info = WidgetInfo::new("SidebarMenuItem");
+                let icon = crate::demo::sidebar_icon_sized(
+                    cx,
+                    gpui_component::Icon::new(icon),
+                    &mut item_info,
+                );
+                (icon, item_info)
             });
+            assert!(
+                item_info
+                    .config
+                    .iter()
+                    .any(|n| n.what == "geometry"
+                        && n.text.starts_with("geometry::icon_size_small:")),
+                "{preset}: the {label} item's info does not name next::geometry::icon_size_small: {item_info:?}"
+            );
             let size = Styled::style(&mut icon).size.clone();
             assert_eq!(
                 (size.width, size.height),
@@ -7031,7 +7046,7 @@ fn only_an_interactive_run_follows_the_os() {
 
 /// The chrome takes what the theme states: the side panel is filled with
 /// `sidebar.container(NONE).fill`; the splitter is `splitter.divider_width`
-/// wide in `splitter.divider_color`; a menu title under the pointer fills
+/// wide in `splitter.handle(NONE).fill`; a menu title under the pointer fills
 /// with `menu.hover_background`, opens its menu, and a row of it runs its
 /// action; and a page tab is at least `tab.min_width` by `tab.min_height`.
 /// Under material-3 dark, whose splitter is wider than upstream's 1px line.
@@ -7081,12 +7096,12 @@ fn the_chrome_follows_the_theme(cx: &mut TestAppContext) {
         "the text area is not filled with text_area.field(NONE).fill"
     );
 
-    let (divider, width) = read(&mut cx, &showcase, |_this, cx| {
-        (
-            native_color(cx, |n| n.resolved.splitter.divider_color),
-            native_value(cx, |n| n.resolved.splitter.divider_width),
-        )
-    });
+    let divider = next_fill(|r| r.splitter.handle(native_theme::next::WidgetState::NONE));
+    let width = next.as_ref().map(|r| r.splitter.divider_width);
+    assert!(
+        divider.is_some() && width.is_some_and(|w| w > 1.),
+        "no 0.8.0 theme is installed, or it states no splitter fill, or no splitter wider than upstream's 1px line"
+    );
     let line = bounds_of(&mut cx, CHROME_SPLITTER_LINE);
     assert_eq!(
         Some(line.size.width.as_f32()),
@@ -7096,7 +7111,7 @@ fn the_chrome_follows_the_theme(cx: &mut TestAppContext) {
     assert_eq!(
         painted_fill(&mut cx, CHROME_SPLITTER_LINE),
         divider,
-        "the splitter line is not splitter.divider_color"
+        "the splitter line is not splitter.handle(NONE).fill"
     );
 
     let title = bounds_of(&mut cx, "menu-title-View");

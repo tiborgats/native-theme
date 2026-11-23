@@ -469,9 +469,9 @@ pub(crate) fn next_color<
 
 /// Applies a geometry refinement when one is available; the widget keeps
 /// upstream's geometry otherwise.
-/// `.native(cx, geometry::button)`: the builder's refinement when the native
-/// theme is installed, nothing otherwise. Called straight after the
-/// constructor, so any style the call site sets afterwards still wins.
+/// `.next_native(cx, next::geometry::button)`: the builder's refinement when
+/// the native theme is installed, nothing otherwise. Called straight after
+/// the constructor, so any style the call site sets afterwards still wins.
 ///
 /// Every widget in this showcase that has a `geometry` builder takes it, with
 /// three kinds of exception, each marked where it occurs: the "Button Sizes"
@@ -481,22 +481,11 @@ pub(crate) fn next_color<
 /// `DropdownButton` children still take `geometry::button_label` on their
 /// label; it is their frame the group manages.
 pub(crate) trait NativeStyled: Styled + Sized {
-    fn native(self, cx: &App, build: fn(Native<'_>) -> StyleRefinement) -> Self {
-        refined(self, native_geometry(cx, build).as_ref())
-    }
-
-    /// `.next_native(cx, next::geometry::button)`: [`native`](Self::native)
-    /// on the 0.8.0 model, the builder's refinement when a 0.8.0 theme is
+    /// `.next_native(cx, next::geometry::button)`: the builder's
+    /// refinement when a 0.8.0 theme is
     /// installed and states what the builder needs; nothing otherwise, so
     /// the widget keeps upstream's geometry where the theme states none
     /// (spec §10, rule 0).
-    #[cfg_attr(
-        not(test),
-        expect(
-            dead_code,
-            reason = "every widget on the 0.8.0 model so far records the builder in its info, through next_native_value; the tests hold this one"
-        )
-    )]
     fn next_native(
         self,
         cx: &App,
@@ -610,8 +599,10 @@ pub(crate) fn with_gap<W: Styled>(widget: W, gap: Option<Pixels>) -> W {
 /// root the caller sizes, a scroll area filling it, the content at least the
 /// area's height, the scrollbar laid over the root; this one leaves out the root's flex
 /// column, :203-207, and the `gpui_base::ScrollBounce` 0.9.1 wraps the area in, :209-215),
-/// on the application's own `handle`, so the content keeps `geometry::scrollbar_gutter`'s strip
-/// free only while it overflows the area. gpui-base hides the bar while the
+/// on the application's own `handle`, so the content keeps `next::geometry::scrollbar_gutter`'s
+/// strip of the installed 0.8.0 theme free only while it overflows the area;
+/// none where the theme states no scroll bar the builder can take, as
+/// upstream's `Scrollable` keeps none (spec §10, rule 0). gpui-base hides the bar while the
 /// content fits (gpui-base src/scrollbar.rs:1421-1424), and the platform's
 /// bar then takes no room either. The strip follows the last layout's
 /// overflow; a frame whose layout changes it calls `relayout`, which asks
@@ -628,7 +619,7 @@ pub(crate) fn gutter_scroll(
     let overflows = |h: &gpui::ScrollHandle| h.max_offset().y > px(0.);
     let reserved = overflows(handle);
     let content = if reserved {
-        content.native(cx, native_theme_gpui::geometry::scrollbar_gutter)
+        content.next_native(cx, native_theme_gpui::next::geometry::scrollbar_gutter)
     } else {
         content
     };

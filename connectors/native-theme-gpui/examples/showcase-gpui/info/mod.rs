@@ -258,10 +258,6 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     ("icon_size_dialog", "defaults.icon_sizes.dialog"),
     ("icon_size_panel", "defaults.icon_sizes.panel"),
     (
-        "scrollbar_gutter",
-        "scrollbar.groove_width as right padding where scrollbar.overlay_mode is false, and nothing where it is true, because gpui-component overlays the bar on the scroll area instead of putting it beside the content",
-    ),
-    (
         "default_button_rest",
         "button.default_button_background as the fill and button.default_button_border_color (button.border.color where unstated) as the border colour of a dialog's default Button at rest, over variants::default_button, whose rest fill is a fifth of its border colour (button/button.rs, ButtonVariant::bg_color); nothing where the theme states no fill, and the Button is .primary()",
     ),
