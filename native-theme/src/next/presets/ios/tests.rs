@@ -188,3 +188,283 @@ fn at_extra_extra_large_the_sizes_are_the_table_s() {
         );
     }
 }
+
+/// An explicit accent of the tests: a test input, no theme value.
+const RED: u32 = 0xe038_3e;
+
+/// The opaque colour of `rgb`, `0xRRGGBB`.
+fn hex(rgb: u32) -> Color {
+    srgb8((rgb << 8) | 0xff)
+}
+
+/// The constants of `scheme`.
+fn constants(scheme: Scheme) -> SchemeColors {
+    match scheme {
+        Scheme::Light => LIGHT,
+        Scheme::Dark => DARK,
+    }
+}
+
+/// The colour of a solid paint.
+fn solid(paint: &Paint) -> Option<Color> {
+    match paint {
+        Paint::Solid(color) => Some(*color),
+        _ => None,
+    }
+}
+
+/// The colour of a uniform stroke.
+fn stroke_color(stroke: &Stroke) -> Option<Color> {
+    match stroke {
+        Stroke::Uniform { color, .. } => Some(*color),
+        _ => None,
+    }
+}
+
+/// A palette for `scheme` whose every slot has a colour of its own.
+fn distinct_palette(scheme: Scheme) -> Palette {
+    Palette {
+        name: Arc::from("distinct"),
+        scheme,
+        window_bg: hex(0xf0e0d0),
+        view_bg: hex(0xfaf5f0),
+        surface_bg: hex(0xe8f0e8),
+        header_bg: hex(0xd8d0f0),
+        sidebar_bg: hex(0xe0f0f8),
+        tooltip_bg: hex(0xf8f0c0),
+        foreground: hex(0x201810),
+        foreground_muted: hex(0x605850),
+        border: hex(0xa09080),
+        divider: hex(0xb0a8a0),
+        accent: hex(0x8020c0),
+        accent_fg: hex(0xfff8e0),
+        selection_bg: hex(0x40a060),
+        selection_fg: hex(0x002010),
+        link: hex(0x1040a0),
+        caret: hex(0xc04010),
+        error: hex(0xc00020),
+        warning: hex(0xc08000),
+        success: hex(0x208020),
+        info: hex(0x2080c0),
+    }
+}
+
+/// Every widget colour the theme takes from the accent's fill, each by its
+/// name (the module documentation's list).
+fn accent_fills(theme: &ResolvedTheme) -> Vec<(&'static str, Option<Color>)> {
+    let checked = WidgetState::CHECKED;
+    let selected = WidgetState::SELECTED;
+    vec![
+        (
+            "primary button",
+            solid(&theme.button.body(ButtonQuery::primary()).fill),
+        ),
+        (
+            "checked check box",
+            solid(&theme.checkbox.indicator(checked).fill),
+        ),
+        (
+            "checked radio button",
+            solid(&theme.radio.indicator(checked).fill),
+        ),
+        (
+            "slider's filled part",
+            solid(&theme.slider.active_track(WidgetState::NONE).fill),
+        ),
+        (
+            "progress",
+            solid(&theme.progress_bar.fill(WidgetState::NONE).fill),
+        ),
+        ("spinner", Some(theme.spinner.color)),
+        (
+            "selected segment",
+            solid(&theme.segmented_control.segment(selected).fill),
+        ),
+        (
+            "selected tab's label",
+            Some(theme.tab.label(selected).color),
+        ),
+        (
+            "hovered text field",
+            stroke_color(&theme.input.field(WidgetState::HOVER).stroke),
+        ),
+        (
+            "focused text field",
+            stroke_color(&theme.input.field(WidgetState::FOCUSED).stroke),
+        ),
+        (
+            "hovered splitter",
+            solid(&theme.splitter.handle(WidgetState::HOVER).fill),
+        ),
+    ]
+}
+
+/// An explicit accent is written as given (`accent-decision.md`, iOS): the
+/// accent's fill and every widget colour taken from it, the selection, its
+/// unfocused colours (0.7.2 states them as the selection's) and the text
+/// selection with the selection's text; every other role keeps the
+/// preset's, the focus ring, the link, the info role and the caret among
+/// them, and so do WebKit's `systemBlue` texts and the switch's green.
+#[test]
+fn an_explicit_accent_is_written_as_given() {
+    let accent = hex(RED);
+    for scheme in [Scheme::Light, Scheme::Dark] {
+        let ctx = ThemeContext::default().with_scheme(scheme);
+        let plain = Theme::preset(Preset::Ios13).resolve(&ctx);
+        let theme = Theme::preset(Preset::Ios13)
+            .with_accent(accent)
+            .resolve(&ctx);
+        for (name, got) in accent_fills(&theme) {
+            assert_eq!(got, Some(accent), "{scheme:?} {name}");
+        }
+        let foreground = plain.colors.selection.foreground;
+        let mut want = plain.colors.clone();
+        want.accent.fill = accent;
+        want.selection = SelectionColors::new(accent, foreground, Some(accent), Some(foreground));
+        want.text_selection = SelectionColors::new(accent, foreground, None, None);
+        assert_eq!(theme.colors, want, "{scheme:?}");
+        let c = constants(scheme);
+        let normal = ButtonQuery::new(WidgetState::NONE);
+        assert_eq!(theme.button.label(normal).color, c.system_blue);
+        assert_eq!(
+            theme.switch.track(WidgetState::CHECKED).fill,
+            Paint::Solid(c.system_green)
+        );
+        assert_eq!(
+            solid(&theme.menu.item(WidgetState::HOVER).fill),
+            Some(accent)
+        );
+    }
+}
+
+/// A palette states its roles (spec §7) and recolours the widget colours
+/// the preset takes from them; the roles no slot names keep the preset's.
+#[test]
+fn a_palette_states_its_roles() {
+    for scheme in [Scheme::Light, Scheme::Dark] {
+        let p = distinct_palette(scheme);
+        let ctx = ThemeContext::default().with_scheme(scheme);
+        let theme = Theme::preset(Preset::Ios13)
+            .with_palette(p.clone())
+            .resolve(&ctx);
+        let c = constants(scheme);
+        let colors = &theme.colors;
+        assert_eq!(
+            colors.window,
+            SurfaceColors::new(
+                Some(p.window_bg),
+                Some(p.foreground),
+                Some(p.foreground_muted),
+                Some(p.border),
+                Some(p.divider)
+            )
+        );
+        let surface = |bg| SurfaceColors::new(Some(bg), Some(p.foreground), None, None, None);
+        assert_eq!(colors.view, surface(p.view_bg));
+        assert_eq!(colors.header, surface(p.header_bg));
+        assert_eq!(colors.sidebar, surface(p.sidebar_bg));
+        assert_eq!(colors.card, surface(p.surface_bg));
+        assert_eq!(colors.dialog, surface(p.surface_bg));
+        assert_eq!(colors.popover, surface(p.surface_bg));
+        assert_eq!(colors.tooltip, surface(p.tooltip_bg));
+        assert_eq!(colors.accent.fill, p.accent);
+        assert_eq!(colors.accent.foreground, p.accent_fg);
+        assert_eq!(
+            colors.selection,
+            SelectionColors::new(
+                p.selection_bg,
+                p.selection_fg,
+                Some(p.selection_bg),
+                Some(p.selection_fg)
+            )
+        );
+        assert_eq!(
+            colors.text_selection,
+            SelectionColors::new(p.selection_bg, p.selection_fg, None, None)
+        );
+        assert_eq!(colors.link, p.link);
+        assert_eq!(colors.caret, p.caret);
+        for (status, fill) in [
+            (&colors.error, p.error),
+            (&colors.warning, p.warning),
+            (&colors.success, p.success),
+            (&colors.info, p.info),
+        ] {
+            assert_eq!(status.fill, fill);
+            assert_eq!(status.origin, RoleOrigin::Custom);
+        }
+        assert_eq!(colors.focus_ring, c.system_blue);
+        assert_eq!(colors.disabled_text, c.tertiary_label);
+        for (name, got) in accent_fills(&theme) {
+            assert_eq!(got, Some(p.accent), "{scheme:?} {name}");
+        }
+        let none = WidgetState::NONE;
+        assert_eq!(theme.input.field(none).fill, Paint::Solid(p.window_bg));
+        assert_eq!(
+            theme.sidebar.container(none).fill,
+            Paint::Solid(p.sidebar_bg)
+        );
+        assert_eq!(theme.popover.panel.fill, Paint::Solid(p.surface_bg));
+        assert_eq!(theme.card.container(none).fill, Paint::Solid(p.surface_bg));
+        assert_eq!(theme.tooltip.panel.fill, Paint::Solid(p.tooltip_bg));
+        assert_eq!(theme.tooltip.text.color, p.foreground);
+        assert_eq!(theme.input.text(none).color, p.foreground);
+        assert_eq!(theme.separator.color, p.border);
+        assert_eq!(
+            theme.menu.item_label(WidgetState::HOVER).color,
+            p.selection_fg
+        );
+        assert_eq!(
+            theme.switch.track(WidgetState::CHECKED).fill,
+            Paint::Solid(c.system_green)
+        );
+    }
+}
+
+/// An explicit accent over a palette replaces the palette's accent, its
+/// text and its selection, whose texts are then the preset's
+/// (`accent-decision.md`, M7, which iOS follows); every other slot of the
+/// palette stands, its link, informational colour and caret with it.
+#[test]
+fn an_explicit_accent_replaces_the_palette_s_accent_slots() {
+    let accent = hex(RED);
+    for scheme in [Scheme::Light, Scheme::Dark] {
+        let p = distinct_palette(scheme);
+        let ctx = ThemeContext::default().with_scheme(scheme);
+        let theme = Theme::preset(Preset::Ios13)
+            .with_palette(p.clone())
+            .with_accent(accent)
+            .resolve(&ctx);
+        let palette_only = Theme::preset(Preset::Ios13)
+            .with_palette(p.clone())
+            .resolve(&ctx);
+        let c = constants(scheme);
+        let colors = &theme.colors;
+        assert_eq!(colors.accent.fill, accent);
+        assert_eq!(colors.accent.foreground, c.on_accent);
+        let foreground = c.selection_foreground;
+        assert_eq!(
+            colors.selection,
+            SelectionColors::new(accent, foreground, Some(accent), Some(foreground))
+        );
+        assert_eq!(
+            colors.text_selection,
+            SelectionColors::new(accent, foreground, None, None)
+        );
+        assert_eq!(colors.focus_ring, c.system_blue);
+        assert_eq!(colors.caret, p.caret);
+        assert_eq!(colors.link, p.link);
+        assert_eq!(colors.info, palette_only.colors.info);
+        assert_eq!(colors.window, palette_only.colors.window);
+        assert_eq!(colors.card, palette_only.colors.card);
+        assert_eq!(colors.tooltip, palette_only.colors.tooltip);
+        assert_eq!(colors.error, palette_only.colors.error);
+        for (name, got) in accent_fills(&theme) {
+            assert_eq!(got, Some(accent), "{scheme:?} {name}");
+        }
+        assert_eq!(
+            theme.menu.item_label(WidgetState::HOVER).color,
+            c.selection_foreground
+        );
+    }
+}

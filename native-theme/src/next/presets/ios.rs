@@ -18,7 +18,8 @@
 //! bar's fill, the spinner, the selected segment, the selected tab's text,
 //! the hovered and the focused text field's outline, the hovered splitter),
 //! and to the selection's background, which the text selection takes with
-//! the selection's text (`.superpowers/sdd/v0.8.0-plan/M2/units/accent-decision.md`,
+//! the selection's text, and the unfocused selection too, which 0.7.2 states
+//! as the selection's (`.superpowers/sdd/v0.8.0-plan/M2/units/accent-decision.md`,
 //! iOS). The focus ring, the link, the info role, the caret and every text
 //! on the accent keep the preset's: WebKit draws the focus ring, a button's
 //! and a select's text in `systemBlue`, a system colour, not the tint
