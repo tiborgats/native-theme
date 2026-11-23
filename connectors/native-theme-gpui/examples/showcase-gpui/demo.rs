@@ -115,11 +115,13 @@ use crate::elements::{self, ListedExt as _};
 use crate::info::{
     self, InfoExt, InfoRegistry, WidgetInfo, as_rgba, native_info, next_native_info,
 };
+#[cfg(feature = "widgets")]
+use crate::support::old_resolved;
 use crate::support::{
     CAROUSEL_SLIDES, ChatMessage, ChromeIcon, DIFF_DECORATED_LINE, DIFF_DECORATED_PATH,
     GRID_LAYOUT_ITEMS, NativeStyled as _, PresetDelegate, STEPPER_STEPS, SampleIcon,
     SampleListDelegate, SampleTableDelegate, contrast_held, native_color, native_geometry,
-    native_value, next_geometry, next_resolved, next_value, old_native, old_resolved, refined,
+    native_value, next_geometry, next_resolved, next_value, old_native, refined,
     requested_preferences, toolbar_variant, with_gap, with_padding,
 };
 use crate::{
@@ -1500,8 +1502,8 @@ pub(crate) const PALETTE_TOOLTIP: &str = "A palette recolours the preset (0.8.0 
      gpui-component's theme colours and the connector's own widgets are drawn from the 0.8.0 \
      theme with the palette. Still read from the 0.7.2 preset, which has no palettes, until \
      their pages move to the 0.8.0 model: the button variant and rest fill the showcase gives \
-     the Basic page's default-button sample, the checked track of the Switches \
-     built without the widgets feature (Basic, Inputs and Preferences), and the showcase's own \
+     the Basic page's default-button sample, the checked track of the Preferences Switches \
+     built without the widgets feature, and the showcase's own \
      refinements -- its colours, geometry, menus and the side panel's padding and label font.";
 
 /// The palette Select over `state`, refined by `geometry::select`, as wide
@@ -4788,10 +4790,10 @@ pub(crate) fn checkbox(
             .debug_selector(move || id.into());
     }
     let mut checkbox_info = info::inputs::checkbox(cx.theme(), label, checked, disabled);
-    let checkbox = native_info(
+    let checkbox = next_native_info(
         Checkbox::new(id),
         cx,
-        geometry::checkbox,
+        next::geometry::checkbox,
         "checkbox",
         &mut checkbox_info,
     )
@@ -4845,10 +4847,10 @@ pub(crate) fn mixed_checkbox(
     #[cfg(not(feature = "widgets"))]
     let _ = theme_drawn;
     let mut checkbox_info = info::inputs::mixed_checkbox(cx.theme(), label);
-    native_info(
+    next_native_info(
         Checkbox::new(id),
         cx,
-        geometry::checkbox,
+        next::geometry::checkbox,
         "checkbox",
         &mut checkbox_info,
     )
@@ -4899,10 +4901,10 @@ pub(crate) fn radio_group(
     }
     let mut group_info = info::inputs::radio_group(cx.theme(), labels, selected);
     // One refinement, recorded once, for every Radio of the group.
-    let row = native_info(
+    let row = next_native_info(
         StyleRefinement::default(),
         cx,
-        geometry::radio,
+        next::geometry::radio,
         "radio",
         &mut group_info,
     );
@@ -4978,10 +4980,10 @@ pub(crate) fn radio_column(
             .debug_selector(move || id.into());
     }
     let mut group_info = info::inputs::radio_column(cx.theme(), labels, selected);
-    let row = native_info(
+    let row = next_native_info(
         StyleRefinement::default(),
         cx,
-        geometry::radio,
+        next::geometry::radio,
         "radio",
         &mut group_info,
     );
@@ -5004,8 +5006,9 @@ pub(crate) fn radio_column(
 }
 
 /// A `Switch` reading `label`, `checked` or not, its checked track in the
-/// platform's `switch.checked_background` through `Switch::color` and
-/// `variants::switch_color`. A disabled one takes no `on_click`.
+/// installed 0.8.0 theme's `switch.track(CHECKED).fill` through
+/// `Switch::color` and `next::variants::switch_color`. A disabled one takes
+/// no `on_click`.
 pub(crate) fn switch(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -5029,9 +5032,8 @@ pub(crate) fn switch(
             .info(ui, id, switch_info)
             .debug_selector(move || id.into());
     }
-    let native = old_native(cx);
-    let resolved = native.as_ref().map(|n| n.resolved);
-    let checked_background = native.map(variants::switch_color);
+    let theme = next_resolved(cx);
+    let checked_background = theme.and_then(|r| next::variants::switch_color(r).ok());
     Switch::new(id)
         .label(label)
         .checked(checked)
@@ -5041,7 +5043,7 @@ pub(crate) fn switch(
         .info(
             ui,
             id,
-            info::inputs::switch(cx.theme(), label, checked, disabled, resolved),
+            info::inputs::switch(cx.theme(), label, checked, disabled, theme),
         )
         .debug_selector(move || id.into())
 }

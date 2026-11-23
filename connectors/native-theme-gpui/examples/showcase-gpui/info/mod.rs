@@ -334,14 +334,6 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
         "expander.hover_background as an item's title row fill under the pointer, through AccordionItem::hover, where the theme states one; nothing where it does not, so the row stays at rest (gpui-component/accordion.rs, AccordionItem::hover)",
     ),
     (
-        "checkbox",
-        "checkbox.label_gap, checkbox.font, and defaults.line_height as the line height on the row, over upstream's relative(1.); the label column sets its own relative(1.25) (gpui-component/checkbox.rs, RenderOnce for Checkbox)",
-    ),
-    (
-        "radio",
-        "checkbox.label_gap, and checkbox.font including its colour, which the label takes because upstream sets foreground on the row and mutes the label child instead (platform-facts §2.5: radio metrics are the checkbox's), and defaults.line_height as the line height on the row, over upstream's relative(1.); the label column sets its own relative(1.25) (gpui-component/radio.rs, RenderOnce for Radio)",
-    ),
-    (
         "select",
         "combo_box.min_height by the control-height rule (defaults.line_height as the line height; the stated height itself at a text scale of 1 or less, and a minimum with an automatic height above 1), min_width, the border.padding sides the theme states -- but not the right side where combo_box.arrow_area_width is stated: the platform measures it to an arrow column the trigger does not have, its caret sitting inside the padded row, so upstream's own right padding stands --, border.corner_radius, combo_box.font -- and, unlike geometry::combobox, the font's colour as well (native-theme-gpui/geometry.rs, select)",
     ),
@@ -466,6 +458,14 @@ pub const NEXT_GEOMETRY_NOTES: &[(&str, &str)] = &[
     (
         "text_area",
         "the multi-line field's own padding, the sides text_area.field(NONE) states (docs/platform-facts.md §2.29): the root padded by the rest of each stated side past the Size::Medium editor padding upstream gives a Textarea in render (input/input.rs, Input::render), none below it, an unstated side upstream's; text_area.field(NONE)'s corner radius and stroke width, and input.text(NONE)'s font including its colour at typography.line_height_multiplier; no height: the rows its state holds size it",
+    ),
+    (
+        "checkbox",
+        "checkbox.label_gap, checkbox.label(NONE)'s family, size, weight and style but not its colour, and typography.line_height_multiplier as the line height on the row, over upstream's relative(1.); the label column sets its own relative(1.25) (gpui-component/checkbox.rs, RenderOnce for Checkbox)",
+    ),
+    (
+        "radio",
+        "checkbox.label_gap, and checkbox.label(NONE)'s font including its colour, which the label takes because upstream sets foreground on the row and mutes the label child instead (platform-facts §2.5: radio metrics are the checkbox's), and typography.line_height_multiplier as the line height on the row, over upstream's relative(1.); the label column sets its own relative(1.25) (gpui-component/radio.rs, RenderOnce for Radio)",
     ),
     (
         "select",

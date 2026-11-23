@@ -4,17 +4,18 @@
 use gpui::{Hsla, Pixels};
 use gpui_component::theme::Theme;
 use native_theme::next::{ResolvedTheme as NextTheme, WidgetState};
+#[cfg(feature = "widgets")]
 use native_theme_gpui::ResolvedTheme;
 use native_theme_gpui::next::{fill_of, padding_of, state_fill_of, text_color_of};
 #[cfg(feature = "widgets")]
 use native_theme_gpui::widgets::{CheckboxLook, SwitchLook};
 
-#[cfg(feature = "widgets")]
-use super::percent_text;
 use super::{
     WidgetInfo, chrome::input_background, claim, edge_claim, px_text, state_stroke_color_of,
-    stated, stated_claim, stroke_color_of, stroke_width_of,
+    stated_claim, stroke_color_of, stroke_width_of,
 };
+#[cfg(feature = "widgets")]
+use super::{percent_text, stated};
 use crate::demo::{InputField, NUMBER_STEP_ACTIVE, NUMBER_STEP_HOVER, WaveformKind};
 use crate::support::SampleIcon;
 
@@ -682,25 +683,28 @@ pub fn switch(
     label: &'static str,
     checked: bool,
     disabled: bool,
-    native: Option<&ResolvedTheme>,
+    native: Option<&NextTheme>,
 ) -> WidgetInfo {
     let info = WidgetInfo::new("Switch");
+    // The theme whose checked track the showcase hands `Switch::color`
+    // (`demo::switch`): one `variants::switch_color` maps.
+    let native = native.filter(|r| native_theme_gpui::next::variants::switch_color(r).is_ok());
     // A disabled Switch fades its track alone, to half alpha (switch.rs:190);
     // the disabled style is resolved after the checked one (gpui-base
     // switch.rs:117-127). The checked track is the colour `Switch::color`
     // was handed, primary where it was handed none (gpui-component
     // switch.rs:181-184).
     let info = match (checked, disabled, native) {
-        (true, false, Some(r)) => info.color(claim(
+        (true, false, Some(r)) => info.colors(stated_claim(
             "on track",
-            "checked_background",
-            stated(r.switch.checked_background),
+            "switch.track(CHECKED).fill",
+            fill_of(&r.switch.track(WidgetState::CHECKED)),
             "showcase",
         )),
-        (true, true, Some(r)) => info.color(claim(
+        (true, true, Some(r)) => info.colors(stated_claim(
             "on track, at 50%",
-            "checked_background",
-            stated(r.switch.checked_background).opacity(0.5),
+            "switch.track(CHECKED).fill",
+            fill_of(&r.switch.track(WidgetState::CHECKED)).map(|fill| fill.opacity(0.5)),
             "showcase",
         )),
         _ => info,
@@ -778,8 +782,8 @@ pub fn switch(
         info.config("border-radius", format!("fully round: the theme's radius, {}px, is 4px or more, so the track is rounded by its own height instead", t.radius.as_f32()))
     };
     let info = match native {
-        Some(_) => info.config("on track", "switch.checked_background, which the showcase hands Switch::color, a per-instance receiver: ThemeColor has no field for it, so the connector cannot install it (gpui-component/switch.rs, Switch::color)"),
-        None => info.not_themeable("on track", "primary: no native theme is installed, so the showcase has no switch.checked_background to hand Switch::color (gpui-component/switch.rs, Switch::color)"),
+        Some(_) => info.config("on track", "switch.track(CHECKED).fill, through variants::switch_color, which the showcase hands Switch::color, a per-instance receiver: ThemeColor has no field for it, so the connector cannot install it (gpui-component/switch.rs, Switch::color)"),
+        None => info.not_themeable("on track", "primary: no installed 0.8.0 theme states switch.track(CHECKED).fill in a form gpui can take, so the showcase has no checked track to hand Switch::color (gpui-component/switch.rs, Switch::color)"),
     };
     let info = info
         .not_themeable("disabled", "the track at 50%, never the thumb: gpui multiplies each primitive's alpha rather than fading the subtree as a group, so fading both would let the track show through (gpui-component/switch.rs, Switch::render disabled_bg)")

@@ -373,6 +373,13 @@ pub(crate) fn old_native(cx: &App) -> Option<Native<'_>> {
 }
 
 /// The 0.7.2 resolved theme of [`old_native`].
+#[cfg_attr(
+    not(any(test, feature = "widgets")),
+    expect(
+        dead_code,
+        reason = "only the theme-drawn widgets still read the 0.7.2 theme so, until their Looks move to the 0.8.0 model"
+    )
+)]
 pub(crate) fn old_resolved(cx: &App) -> Option<&native_theme::theme::ResolvedTheme> {
     old_native(cx).map(|n| n.resolved)
 }
