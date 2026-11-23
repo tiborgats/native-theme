@@ -905,9 +905,9 @@ where
 }
 
 /// [`crate::RadioLook`] of the 0.8.0 model: the circle's width
-/// (`radio.indicator(NONE).min_size[0]`, the check box's
-/// `checkbox.indicator(NONE).min_size[0]` where the theme states none,
-/// iced's own where it states neither), the gap to the label
+/// (`radio.indicator(NONE).min_size[0]`, iced's own where the theme states
+/// none: spec §10 rule 0; the table of homes already writes 0.7.2's
+/// check-box fallback into the radio's home on the presets), the gap to the label
 /// (`radio.label_gap`), and, where the theme states the dot's size
 /// (`radio.dot(NONE).min_size[0]`), the dot in its checked fill
 /// (`radio.dot(CHECKED).fill`).
@@ -915,7 +915,6 @@ where
 pub(crate) fn radio_look(r: &ResolvedTheme) -> Mapped<crate::RadioLook> {
     let w = &r.radio;
     let [own, _] = w.indicator(WidgetState::NONE).min_size;
-    let [check, _] = r.checkbox.indicator(WidgetState::NONE).min_size;
     let [dot, _] = w.dot(WidgetState::NONE).min_size;
     let dot = match dot {
         Some(d) => Some((
@@ -925,7 +924,7 @@ pub(crate) fn radio_look(r: &ResolvedTheme) -> Mapped<crate::RadioLook> {
         None => None,
     };
     Ok(crate::RadioLook {
-        width: own.or(check),
+        width: own,
         label_gap: w.label_gap,
         dot,
     })
