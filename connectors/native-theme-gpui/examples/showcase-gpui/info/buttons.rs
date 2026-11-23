@@ -633,7 +633,7 @@ pub fn button(
             })
             .not_themeable("cursor", "the default arrow, not not-allowed: Button sets cursor_default, and only a link or text variant asks for a pointer (button/button.rs, Button::render)"),
         (ButtonState::Disabled, None) => match native.and_then(|r| button_disabled(r).err()) {
-            Some(unstated) => info.config("fill and text", format!("gpui-component's own: the theme states no {}, which geometry::button_disabled needs", unstated.home())),
+            Some(unstated) => info.config("fill and text", format!("gpui-component's own: the theme states no value gpui can take at {}, which geometry::button_disabled needs", unstated.home())),
             None => info,
         }
             .not_themeable("text", "muted_foreground at 0.5, so a disabled button does not keep its variant's text colour. button.label(DISABLED).color is modelled and carried, and upstream reads it nowhere (button/button.rs, ButtonVariant::disabled)")

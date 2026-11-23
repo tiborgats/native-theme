@@ -234,7 +234,7 @@ impl CheckboxLook {
         disabled: bool,
     ) -> Mapped<Self> {
         use crate::next::{
-            fill as part_fill, hsla, padding, radius, state_fill, stated, stroke_color,
+            fill as part_fill, hsla, padding_of, radius, state_fill, stated, stroke_color,
             stroke_width, text_color,
         };
         use native_theme::next::{IconStated, PartStated, WidgetState};
@@ -378,7 +378,7 @@ impl CheckboxLook {
                             "radio.indicator(NONE).stroke.width",
                         ),
                     )?,
-                    padding: padding(&rest),
+                    padding: padding_of(&rest),
                     dot: r.radio.dot(WidgetState::NONE).min_size[0],
                     radius: radius(
                         &r.checkbox.indicator(WidgetState::NONE),

@@ -17,7 +17,7 @@ use native_theme::next::{
 };
 
 use super::{
-    Mapped, Unmapped, fill, font, hsla, normal_window, padding, radius, scrollbar_geometry,
+    Mapped, Unmapped, fill, font, hsla, normal_window, padding_of, radius, scrollbar_geometry,
     state_fill, state_stroke_color, state_text_color, stated, stroke_color, stroke_width,
     text_color, text_size, uncoloured_font,
 };
@@ -44,7 +44,7 @@ pub(crate) fn button(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
         text_scale: r.context.text_scale,
         min_width: stated(body.min_size[0], "button.body(NONE).min_size[0]")?,
         min_height: body.min_size[1],
-        padding: padding(&body),
+        padding: padding_of(&body),
         radius: radius(&body, "button.body(NONE).corners")?,
         border_width: stroke_width(&body, "button.body(NONE).stroke.width")?,
         border_color: stroke_color(&body, "button.body(NONE).stroke.color")?,
@@ -174,7 +174,7 @@ fn row_inset(row: &PartStyle, highlight: &PartStyle) -> [Option<f32>; 4] {
         side(PartStated::MARGIN_BOTTOM, m.bottom),
         side(PartStated::MARGIN_LEFT, m.left),
     ];
-    let [pt, pr, pb, pl] = padding(row);
+    let [pt, pr, pb, pl] = padding_of(row);
     let sum = |m: Option<f32>, p: Option<f32>| match (m, p) {
         (Some(m), Some(p)) => Some(m + p),
         (Some(v), None) | (None, Some(v)) => Some(v),
@@ -246,7 +246,7 @@ pub(crate) fn tooltip(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
         (true, Some(_)) => return Err(Unmapped("tooltip.panel.shadows")),
     };
     let frame = geometry::tooltip_frame(&geometry::TooltipFrame {
-        padding: padding(panel),
+        padding: padding_of(panel),
         radius: radius(panel, "tooltip.panel.corners")?,
         background: fill(panel, "tooltip.panel.fill")?,
         border_width: stroke_width(panel, "tooltip.panel.stroke.width")?,
@@ -261,7 +261,7 @@ pub(crate) fn tooltip(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
 /// [`crate::geometry::tooltip_content`].
 pub(crate) fn tooltip_content(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
     let panel = &r.tooltip.panel;
-    let [_, right, _, left] = padding(panel);
+    let [_, right, _, left] = padding_of(panel);
     Ok(geometry::tooltip_content_from(
         stated(panel.max_size[0], "tooltip.panel.max_size[0]")?,
         [left, right],
@@ -352,7 +352,7 @@ pub(crate) fn input(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
     Ok(geometry::input_from(
         &geometry::FieldFrame {
             min_height: field.min_size[1],
-            padding: padding(&field),
+            padding: padding_of(&field),
             radius: radius(&field, "input.field(NONE).corners")?,
             border_width: stroke_width(&field, "input.field(NONE).stroke.width")?,
         },
@@ -369,7 +369,7 @@ pub(crate) fn text_area(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
     Ok(geometry::text_area_from(
         &geometry::FieldFrame {
             min_height: None,
-            padding: padding(&field),
+            padding: padding_of(&field),
             radius: radius(&field, "text_area.field(NONE).corners")?,
             border_width: stroke_width(&field, "text_area.field(NONE).stroke.width")?,
         },
@@ -417,7 +417,7 @@ fn combo_frame(r: &ResolvedTheme) -> Mapped<geometry::ComboFrame> {
     Ok(geometry::ComboFrame {
         field: geometry::FieldFrame {
             min_height: field.min_size[1],
-            padding: padding(&field),
+            padding: padding_of(&field),
             radius: radius(&field, "combo_box.field(NONE).corners")?,
             border_width: stroke_width(&field, "combo_box.field(NONE).stroke.width")?,
         },
@@ -484,7 +484,7 @@ pub(crate) fn menu_item(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
         &geometry::MenuRow {
             row_height: item.max_size[1],
             min_row_height: item.min_size[1],
-            padding: padding(&item),
+            padding: padding_of(&item),
             icon_text_gap: m.icon_text_gap,
         },
         &uncoloured_font(&m.item_label(WidgetState::NONE), "menu.item_label(NONE)")?,
@@ -497,7 +497,7 @@ pub(crate) fn menu_item(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
 pub(crate) fn popover(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
     let panel = &r.popover.panel;
     Ok(geometry::popover_from(
-        padding(panel),
+        padding_of(panel),
         radius(panel, "popover.panel.corners")?,
         stroke_width(panel, "popover.panel.stroke.width")?,
         stroke_color(panel, "popover.panel.stroke.color")?,
@@ -508,7 +508,7 @@ pub(crate) fn popover(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
 pub(crate) fn dialog(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
     let panel = &r.dialog.panel;
     Ok(geometry::dialog_from(&geometry::DialogFrame {
-        padding: padding(panel),
+        padding: padding_of(panel),
         min_width: panel.min_size[0],
         min_height: panel.min_size[1],
         max_height: panel.max_size[1],
@@ -570,7 +570,7 @@ pub(crate) fn dialog_max_width(r: &ResolvedTheme) -> Mapped<Option<Pixels>> {
 pub(crate) fn status_bar(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
     let s = &r.status_bar;
     Ok(geometry::status_bar_from(
-        padding(&s.bar),
+        padding_of(&s.bar),
         &font(&s.label, "status_bar.label")?,
         line_height(r),
     ))
@@ -618,7 +618,7 @@ pub(crate) fn toolbar(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
         &geometry::ToolbarFrame {
             bar_height: bar.min_size[1],
             item_gap: t.item_gap,
-            padding: padding(&bar),
+            padding: padding_of(&bar),
             background: fill(&bar, "toolbar.bar(NONE).fill")?,
             border_width: stroke_width(&bar, "toolbar.bar(NONE).stroke.width")?,
             border_color: stroke_color(&bar, "toolbar.bar(NONE).stroke.color")?,
@@ -653,7 +653,7 @@ pub(crate) fn toolbar_button_rest(r: &ResolvedTheme) -> Mapped<StyleRefinement> 
         )?
         .is_some(),
         stroke_width(&body, "button.body(NONE).stroke.width")?,
-        padding(&body),
+        padding_of(&body),
     ))
 }
 
@@ -727,7 +727,7 @@ pub(crate) fn group_box_content(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
     let stroked = container.stated.contains(PartStated::STROKE);
     let rounded = container.stated.contains(PartStated::CORNERS);
     Ok(geometry::group_box_content_from(&geometry::CardFrame {
-        padding: padding(&container),
+        padding: padding_of(&container),
         radius: rounded
             .then(|| radius(&container, "card.container(NONE).corners"))
             .transpose()?,

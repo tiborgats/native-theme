@@ -819,22 +819,36 @@ fn the_tooltip_notes_name_the_edge_and_the_shadow() {
 }
 
 /// Spec §5.2: every `native_info(w, cx, geometry::X, "Y", info)` records the
-/// builder it applies, `X == Y`, and so does its 0.8.0 form,
-/// `next_native_info(w, cx, next::geometry::X, "Y", info)`.
+/// builder it applies, `X == Y`, and so do its 0.8.0 forms,
+/// `next_native_info(w, cx, next::geometry::X, "Y", info)` and
+/// `next_native_value(cx, next::geometry::X, "Y", info)`.
 #[test]
 fn native_info_names_the_builder_it_applies() {
     let mut findings = Vec::new();
     let mut calls = 0usize;
     for (file, raw) in SHOWCASE_FILES {
         let starts = line_offsets(raw);
-        let opens = ["native_info", "next_native_info"]
-            .into_iter()
-            .flat_map(|name| code_calls(raw, name));
-        for open in opens {
+        // Each call and the index of its builder argument.
+        let opens = [
+            ("native_info", 2),
+            ("next_native_info", 2),
+            ("next_native_value", 1),
+        ]
+        .into_iter()
+        .flat_map(|(name, at)| {
+            code_calls(raw, name)
+                .into_iter()
+                .map(move |open| (open, at))
+        });
+        for (open, at) in opens {
             calls += usize::from(*file != TEST_MODULE);
             let args = call_args(raw, open).unwrap_or_default();
-            let applied = args.get(2).map(|a| a.trim());
-            let recorded = args.get(3).map(|a| a.trim());
+            let applied = args.get(at).map(|a| a.trim());
+            let recorded = args.get(at + 1).map(|a| a.trim());
+            // `next_native_info` hands its own builder and name on.
+            if applied == Some("build") && recorded == Some("name") {
+                continue;
+            }
             let builder = applied
                 .and_then(|a| a.rsplit_once("geometry::"))
                 .map(|(_, builder)| builder);
@@ -866,8 +880,10 @@ fn native_info_names_the_builder_it_applies() {
 ///
 /// A method call only: the path `geometry::x` and the declaration
 /// `fn geometry(` are not calls of it. A call whose argument is not a literal
-/// yields `None`; the one such call is `native_info`'s own `.geometry(name)`,
-/// whose `name` `native_info_names_the_builder_it_applies` holds instead.
+/// yields `None`; the two such calls are `native_info`'s own
+/// `.geometry(name)` and `next_native_value`'s, through which
+/// `next_native_info` records, whose `name`
+/// `native_info_names_the_builder_it_applies` holds instead.
 fn geometry_line_calls(raw: &str) -> Vec<(usize, Option<&str>)> {
     let starts = line_offsets(raw);
     method_calls(raw, "geometry")

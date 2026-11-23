@@ -2041,7 +2041,7 @@ pub fn speech_indicator(t: &Theme, native: Option<StopSquare>, keyboard: bool) -
         None => info.not_themeable(
             "square",
             format!(
-                "size_8, the square upstream gives an icon Button at the default Size, {padding}; a Button with a child is laid out as a labelled one (button/button.rs:693-699, size_8), so the showcase sets it, where no 0.8.0 theme states button.body(NONE).min_size[1] and button.body(NONE).corners"
+                "size_8, the square upstream gives an icon Button at the default Size, {padding}; a Button with a child is laid out as a labelled one (button/button.rs:693-699, size_8), so the showcase sets it, where the installed 0.8.0 theme states no value gpui can take at button.body(NONE).min_size[1] or button.body(NONE).corners"
             ),
         ),
     };

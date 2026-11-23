@@ -6,8 +6,8 @@ use native_theme_gpui::Native;
 use native_theme_gpui::next::Mapped;
 /// The reads a claim in the 0.8.0 form makes of its home's property: the
 /// connector's own (`native_theme_gpui::next`), each `None` where the theme
-/// does not state the value, so the panel shows the toolkit's own there
-/// (spec §10, rule 0).
+/// states no value gpui can take there, unstated or in a form gpui cannot
+/// draw, so the panel shows the toolkit's own there (spec §10, rule 0).
 pub use native_theme_gpui::next::{
     radius_of, state_stroke_color_of, stroke_color_of, stroke_width_of,
 };
@@ -230,7 +230,7 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
     (
         "toggle",
-        "button.font's family, size, weight and style, and defaults.line_height as the line height, on the Toggle: upstream sets text_sm on a Size::Medium Toggle before the caller's refinement, so this size wins (button/toggle.rs, Toggle::render); the text alone -- a Toggle is Ghost by default, a flat button, and the model states no flat-button frame, so upstream's own stands",
+        "button.label(NONE)'s family, size, weight and style, and typography.line_height_multiplier as the line height, on the Toggle: upstream sets text_sm on a Size::Medium Toggle before the caller's refinement, so this size wins (button/toggle.rs, Toggle::render); the text alone -- a Toggle is Ghost by default, a flat button, and the model states no flat-button frame, so upstream's own stands",
     ),
     (
         "input",
@@ -387,11 +387,11 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
     (
         "button_disabled",
-        "button.disabled_background (button.background_color where none is stated) and button.disabled_text_color on a disabled Button, faded by button.disabled_opacity, over upstream's own disabled literals -- input_background() or the variant's token faded, and muted_foreground at 0.5 -- which its disabled style replays the refinement over (button/button.rs, ButtonVariant::disabled and RenderOnce for Button)",
+        "button.body(DISABLED).fill and button.label(DISABLED).color on a disabled Button, faded by button.disabled_opacity, over upstream's own disabled literals -- input_background() or the variant's token faded, and muted_foreground at 0.5 -- which its disabled style replays the refinement over (button/button.rs, ButtonVariant::disabled and RenderOnce for Button)",
     ),
     (
         "button_checked",
-        "button.checked_background and button.checked_text_color on a selected Button, the pressed pair (button.active_background, button.active_text_color) where none is stated, over upstream's selected style -- its button_active token and button_foreground -- which the Button replays the refinement over (button/button.rs, ButtonVariant::selected and RenderOnce for Button)",
+        "button.body(CHECKED).fill and button.label(CHECKED).color on a selected Button, the pressed pair (button.body(PRESSED).fill, button.label(PRESSED).color) where no rule states them for the checked state, over upstream's selected style -- its button_active token and button_foreground -- which the Button replays the refinement over (button/button.rs, ButtonVariant::selected and RenderOnce for Button)",
     ),
     (
         "toolbar_button_rest",
@@ -452,10 +452,10 @@ pub fn native_info<W: Styled>(
 
 /// [`native_info`] on the 0.8.0 model: `w` with the refinement a builder of
 /// `native_theme_gpui::next::geometry` gives for the installed 0.8.0 theme,
-/// and `info` given `build`'s geometry line. Where the theme leaves a value
-/// the builder needs unstated, the widget keeps upstream's geometry and
-/// `info` says which home is unstated (spec §10, rule 0); before `apply` ran
-/// it names no builder.
+/// and `info` given `build`'s geometry line. Where the theme states no value
+/// gpui can take at a home the builder reads (unstated, or in a form gpui
+/// cannot draw), the widget keeps upstream's geometry and `info` names that
+/// home (spec §10, rule 0); before `apply` ran it names no builder.
 pub fn next_native_info<W: Styled>(
     w: W,
     cx: &App,
@@ -469,8 +469,8 @@ pub fn next_native_info<W: Styled>(
 /// What [`next_native_info`] applies, for a builder of any value (a size, a
 /// refinement): the value `build` gives for the installed 0.8.0 theme, and
 /// `info` given `build`'s geometry line; where the theme leaves a value the
-/// builder needs unstated, `None`, so the widget keeps upstream's, and
-/// `info` says which home is unstated (spec §10, rule 0); `None` before
+/// builder needs without a value gpui can take, `None`, so the widget keeps
+/// upstream's, and `info` says at which home (spec §10, rule 0); `None` before
 /// `apply` ran, naming no builder.
 pub fn next_native_value<T>(
     cx: &App,
@@ -487,7 +487,7 @@ pub fn next_native_value<T>(
             *info = std::mem::take(info).config(
                 "geometry",
                 format!(
-                    "gpui-component's own: the theme states no {}, which geometry::{name} needs",
+                    "gpui-component's own: the theme states no value gpui can take at {}, which geometry::{name} needs",
                     unstated.home()
                 ),
             );

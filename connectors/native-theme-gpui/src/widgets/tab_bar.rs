@@ -15,7 +15,7 @@ use gpui_component::StyledExt as _;
 use native_theme::theme::{ResolvedTheme, TabIndicatorSide};
 
 use super::{Part, PartBounds, ThemeSource, color, length, outer_edge, over, part_bounds_above};
-use crate::next::{Mapped, Unmapped, fill, hsla, padding, radius, state_fill, stated, text_color};
+use crate::next::{Mapped, Unmapped, fill, hsla, radius, state_fill, stated, text_color};
 
 /// A tab's side padding where `tab.border.padding` states none:
 /// gpui-component's for a tab at the default `Size` (tab/tab.rs:112-118,
@@ -298,7 +298,7 @@ impl TabLook {
                 },
                 min_width: stated(tab.min_size[0], "tab.tab(NONE).min_size[0]")?,
                 min_height: stated(tab.min_size[1], "tab.tab(NONE).min_size[1]")?,
-                padding: padding(&tab),
+                padding: crate::next::padding_of(&tab),
                 item_gap: t.item_gap,
                 indicator_color: line
                     .stated

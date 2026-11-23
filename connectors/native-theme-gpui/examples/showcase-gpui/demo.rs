@@ -3636,10 +3636,11 @@ impl ButtonKind {
     }
 }
 
-/// `variants::bordered_button` under the installed 0.8.0 theme, where there
-/// is one and a rule of it states a hovered button's stroke.
+/// `variants::bordered_button` under the theme a Button's info is given
+/// ([`button_theme`]), where there is one and a rule of it states a hovered
+/// button's stroke in a form gpui can take.
 fn bordered(cx: &App) -> Option<ButtonCustomVariant> {
-    next_resolved(cx).and_then(|r| next::variants::bordered_button(r, cx).ok().flatten())
+    button_theme(cx).and_then(|r| next::variants::bordered_button(r, cx).ok().flatten())
 }
 
 /// What a Button of the Buttons page is doing.
@@ -3759,6 +3760,7 @@ fn button_turning(
         state,
         icon,
     } = spec;
+    let asked = kind;
     let kind = kind.built(cx);
     // `Button::icon` and `loading_icon` take an `Icon` (`ButtonIcon`) alone
     // (button/button.rs, button/button_icon.rs).
@@ -3786,6 +3788,16 @@ fn button_turning(
         None,
         button_theme(cx),
     );
+    if kind != asked {
+        button_info = button_info.instance(
+            "variant",
+            format!(
+                "{} asked for, built as {}: variants::bordered_button gives no variant, the installed theme having no rule that states a hovered button's stroke, button.body(HOVER).stroke.color, in a form gpui can take, or no value gpui can take at a home geometry::button reads (native-theme-gpui/next/variants.rs, bordered_button)",
+                asked.name(),
+                kind.name()
+            ),
+        );
+    }
     if let Some(icon) = &icon {
         button_info = match state {
             ButtonState::Loading if served => button_info.instance(
@@ -9983,9 +9995,9 @@ fn tool_box_of(n: Native<'_>) -> StyleRefinement {
 
 /// A toggle button that is on: a Default Button reading `label`, refined by
 /// `geometry::button`, shown selected, and refined by
-/// `geometry::button_checked` -- filled with `button.checked_background` and
-/// lettered in `button.checked_text_color`, the pressed pair where the theme
-/// states none. Upstream's selected style would fill it with its
+/// `geometry::button_checked` -- filled with `button.body(CHECKED).fill` and
+/// lettered in `button.label(CHECKED).color`, the pressed pair where no rule
+/// states them for the state. Upstream's selected style would fill it with its
 /// `button_active` token and letter it in `button_foreground`
 /// (button/button.rs, `ButtonVariant::selected`); the Button replays the
 /// caller's style over that state (button/button.rs, `RenderOnce for
@@ -10004,10 +10016,6 @@ pub(crate) fn toggle_button(
         false,
         None,
         button_theme(cx),
-    )
-    .instance(
-        "state",
-        "selected: on, in button.body(CHECKED).fill and button.label(CHECKED).color (the pressed pair where no rule states them for the state)",
     );
     let button = next_native_info(
         Button::new(id),
@@ -10016,13 +10024,19 @@ pub(crate) fn toggle_button(
         "button",
         &mut button_info,
     );
-    let button = next_native_info(
-        button.selected(true).toggled(true),
+    let checked = info::next_native_value(
         cx,
         next::geometry::button_checked,
         "button_checked",
         &mut button_info,
     );
+    if checked.is_some() {
+        button_info = button_info.instance(
+            "state",
+            "selected: on, in button.body(CHECKED).fill and button.label(CHECKED).color (the pressed pair where no rule states them for the state)",
+        );
+    }
+    let button = refined(button.selected(true).toggled(true), checked.as_ref());
     InfoExt::info(labelled(ui, cx, button, id, label), ui, id, button_info)
         .debug_selector(move || id.into())
 }

@@ -1331,12 +1331,11 @@ fn every_builder_is_compared() -> crate::Result<()> {
 /// The `pub fn`s of `src/next/mod.rs` compared elsewhere than as
 /// `root::<name>`: `to_theme` leaf by leaf ([`compare_theme`]), and `apply`
 /// by `next::tests`, against [`crate::apply`]. The part and text reads
-/// (`fill_of` … `state_text_color_of`, `padding`) take a part of the model,
+/// (`fill_of` … `state_text_color_of`, `padding_of`) take a part of the model,
 /// not a theme, and have no 0.7.2 function of their own: the builders and
 /// colours of `next` read through them (`fill`, `stroke_color`, …, the
-/// `Mapped` forms), so they are compared through those; a `state_` form
-/// gates its read on the `from_state` bit its `Mapped` form (`state_fill`,
-/// …) gates on.
+/// `Mapped` forms), so they are compared through those; the `Mapped` form
+/// of a `state_` read (`state_fill`, …) reads through it too.
 const NOT_ROOT_ACCESSORS: &[&str] = &[
     "root::to_theme",
     "root::apply",
@@ -1344,7 +1343,7 @@ const NOT_ROOT_ACCESSORS: &[&str] = &[
     "root::stroke_color_of",
     "root::stroke_width_of",
     "root::radius_of",
-    "root::padding",
+    "root::padding_of",
     "root::text_color_of",
     "root::state_fill_of",
     "root::state_stroke_color_of",

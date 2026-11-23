@@ -104,9 +104,10 @@ pub(crate) fn fill(part: &PartStyle, home: &'static str) -> Mapped<Hsla> {
     stated(fill_of(part), home)
 }
 
-/// A part's fill as [`fill`] reads it, `None` where it is not stated as
-/// one colour: for a reader that shows the toolkit's own there (spec §10,
-/// rule 0), as the showcase's Widget Info does.
+/// A part's fill as [`fill`] reads it, `None` where it is not stated, or
+/// stated in a form gpui cannot paint (not one colour): for a reader that
+/// shows the toolkit's own there (spec §10, rule 0), as the showcase's
+/// Widget Info does.
 pub fn fill_of(part: &PartStyle) -> Option<Hsla> {
     match &part.fill {
         Paint::Solid(c) if part.stated.contains(PartStated::FILL) => Some(hsla(*c)),
@@ -133,7 +134,8 @@ pub(crate) fn stroke_color(part: &PartStyle, home: &'static str) -> Mapped<Hsla>
 }
 
 /// A part's stroke colour as [`stroke_color`] reads it, `None` where it is
-/// not stated as one stroke of one colour.
+/// not stated, or stated in a form gpui cannot draw (not one stroke of one
+/// colour).
 pub fn stroke_color_of(part: &PartStyle) -> Option<Hsla> {
     match &part.stroke {
         Stroke::Uniform { color, .. } if part.stated.contains(PartStated::STROKE) => {
@@ -151,7 +153,8 @@ pub(crate) fn stroke_width(part: &PartStyle, home: &'static str) -> Mapped<f32> 
 }
 
 /// A part's stroke width as [`stroke_width`] reads it, `None` where it is
-/// not stated as one stroke or as none.
+/// not stated, or stated in a form gpui cannot draw (not one stroke, nor
+/// none).
 pub fn stroke_width_of(part: &PartStyle) -> Option<f32> {
     if !part.stated.contains(PartStated::STROKE) {
         return None;
@@ -170,7 +173,9 @@ pub(crate) fn radius(part: &PartStyle, home: &'static str) -> Mapped<f32> {
 }
 
 /// A part's corner radius as [`radius`] reads it, `None` where it is not
-/// stated as one circular radius or as square corners.
+/// stated, or stated in a form gpui cannot draw (not one circular radius,
+/// nor square corners: pill, per-corner or concentric corners, a continuous
+/// curve).
 pub fn radius_of(part: &PartStyle) -> Option<f32> {
     if !part.stated.contains(PartStated::CORNERS) {
         return None;
@@ -184,7 +189,7 @@ pub fn radius_of(part: &PartStyle) -> Option<f32> {
 
 /// A part's padding, top, right, bottom, left, each side where stated, as
 /// 0.7.2's per-side padding.
-pub fn padding(part: &PartStyle) -> [Option<f32>; 4] {
+pub fn padding_of(part: &PartStyle) -> [Option<f32>; 4] {
     let side = |bit: PartStated, v: f32| part.stated.contains(bit).then_some(v);
     let p = &part.padding;
     [
@@ -212,15 +217,31 @@ pub fn text_color_of(text: &TextStyle) -> Option<Hsla> {
 /// `from_state` bit), as [`fill`] reads it; `None` where none does, a soft
 /// option's unset value.
 pub(crate) fn state_fill(part: &PartStyle, home: &'static str) -> Mapped<Option<Hsla>> {
-    if part.from_state.contains(PartStated::FILL) {
-        fill(part, home).map(Some)
-    } else {
-        Ok(None)
+    state_option(
+        state_fill_of(part),
+        part.from_state.contains(PartStated::FILL),
+        home,
+    )
+}
+
+/// A state's soft option as a `Mapped` form reads it through its `_of`
+/// read: the value where it gives one; where it gives none, unset if no
+/// rule states the property for the queried state (`ruled` false), and
+/// the home lacked if one does, in a form gpui cannot take.
+fn state_option(value: Option<Hsla>, ruled: bool, home: &'static str) -> Mapped<Option<Hsla>> {
+    match value {
+        Some(value) => Ok(Some(value)),
+        None if ruled => Err(Unmapped(home)),
+        None => Ok(None),
     }
 }
 
 /// A part's fill as [`state_fill`] reads it, `None` where no rule states it
-/// for the queried state or it is not stated as one colour.
+/// for the queried state, or it is stated in a form gpui cannot paint (not
+/// one colour). The rule is for some flag of the query, not a given one
+/// (spec §2, `from_state`): a reader that keeps the toolkit's own treatment
+/// of one flag over a value stated for another queries with that flag
+/// alone.
 pub fn state_fill_of(part: &PartStyle) -> Option<Hsla> {
     part.from_state
         .contains(PartStated::FILL)
@@ -229,8 +250,11 @@ pub fn state_fill_of(part: &PartStyle) -> Option<Hsla> {
 }
 
 /// A part's stroke colour as [`state_stroke_color`] reads it, `None` where
-/// no rule states it for the queried state or it is not stated as one
-/// stroke of one colour.
+/// no rule states it for the queried state, or it is stated in a form gpui
+/// cannot draw (not one stroke of one colour). The rule is for some flag of
+/// the query, not a given one (spec §2, `from_state`): a reader that keeps
+/// the toolkit's own treatment of one flag over a value stated for another
+/// queries with that flag alone.
 pub fn state_stroke_color_of(part: &PartStyle) -> Option<Hsla> {
     part.from_state
         .contains(PartStated::STROKE)
@@ -239,7 +263,10 @@ pub fn state_stroke_color_of(part: &PartStyle) -> Option<Hsla> {
 }
 
 /// A text style's colour as [`state_text_color`] reads it, `None` where no
-/// rule states it for the queried state or it is not stated.
+/// rule states it for the queried state or it is not stated. The rule is
+/// for some flag of the query, not a given one (spec §2, `from_state`): a
+/// reader that keeps the toolkit's own treatment of one flag over a value
+/// stated for another queries with that flag alone.
 pub fn state_text_color_of(text: &TextStyle) -> Option<Hsla> {
     text.from_state
         .contains(TextStated::COLOR)
@@ -260,21 +287,21 @@ pub(crate) fn stated_fill(part: &PartStyle, home: &'static str) -> Mapped<Option
 /// A part's stroke colour where a rule states it for the queried state, as
 /// [`stroke_color`] reads it; `None` where none does.
 pub(crate) fn state_stroke_color(part: &PartStyle, home: &'static str) -> Mapped<Option<Hsla>> {
-    if part.from_state.contains(PartStated::STROKE) {
-        stroke_color(part, home).map(Some)
-    } else {
-        Ok(None)
-    }
+    state_option(
+        state_stroke_color_of(part),
+        part.from_state.contains(PartStated::STROKE),
+        home,
+    )
 }
 
 /// A text style's colour where a rule states it for the queried state, as
 /// [`text_color`] reads it; `None` where none does.
 fn state_text_color(text: &TextStyle, home: &'static str) -> Mapped<Option<Hsla>> {
-    if text.from_state.contains(TextStated::COLOR) {
-        text_color(text, home).map(Some)
-    } else {
-        Ok(None)
-    }
+    state_option(
+        state_text_color_of(text),
+        text.from_state.contains(TextStated::COLOR),
+        home,
+    )
 }
 
 /// A text style's size, where stated.

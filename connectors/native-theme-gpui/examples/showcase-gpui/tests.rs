@@ -6881,30 +6881,27 @@ fn a_disabled_button_is_filled_with_the_platforms_disabled_fill(cx: &mut TestApp
             "Theme > {item} did not reach Theme::mode, so this proves nothing"
         );
         let stated = read(&mut cx, &showcase, |_this, cx| {
-            native_value(cx, |n| {
-                let b = &n.resolved.button;
-                let [r, g, bl, a] = b
-                    .disabled_background
-                    .unwrap_or(b.background_color)
-                    .to_f32_array();
-                // Faded by `button.disabled_opacity` too, which gpui folds
-                // into the painted fill's alpha.
-                let fade = geometry::button_disabled(n).opacity.unwrap_or(1.);
-                gpui::Hsla::from(gpui::Rgba {
-                    r,
-                    g,
-                    b: bl,
-                    a: a * fade,
+            let b = &crate::support::next_resolved(cx)?.button;
+            // Faded by `button.disabled_opacity` too, which gpui folds into
+            // the painted fill's alpha.
+            let fade = b.disabled_opacity?;
+            native_theme_gpui::next::fill_of(&b.body(native_theme::next::WidgetState::DISABLED))
+                .map(|fill| gpui::Hsla {
+                    a: fill.a * fade,
+                    ..fill
                 })
-            })
         });
-        assert!(stated.is_some(), "no native theme is installed");
+        assert!(
+            stated.is_some(),
+            "no 0.8.0 theme is installed, or it states no button.body(DISABLED).fill or \
+             button.disabled_opacity"
+        );
         show(&mut cx, &showcase, Page::Basic);
         let info = settle_on(&mut cx, &showcase, DISABLED);
         assert_eq!(
             painted_fill(&mut cx, DISABLED),
             stated,
-            "in {item} mode the disabled Button is not filled with button.disabled_background"
+            "in {item} mode the disabled Button is not filled with button.body(DISABLED).fill"
         );
         assert!(
             info.as_ref()
