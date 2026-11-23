@@ -163,49 +163,7 @@ pub fn separator(
 }
 
 /// Each side of a GroupBox's content padding, named by where it comes from:
-/// the side `card.border.padding` states (`geometry::group_box_content`),
-/// else `margin`, the installed layout's `container_margin`, which the
-/// showcase pads an unstated side with where a native theme is installed
-/// (`demo::padded`), else `own`, the variant's own.
-fn content_padding(native: Option<&ResolvedTheme>, margin: Option<Pixels>, own: &str) -> String {
-    let side = |name: &str, stated: Option<f32>| match (native, stated, margin) {
-        (Some(_), Some(v), _) => format!("{name} {}px, card.border's", px_text(v)),
-        (Some(_), None, Some(m)) => {
-            format!("{name} {}px, layout.container_margin", px_text(m.as_f32()))
-        }
-        _ => format!("{name} {own}"),
-    };
-    let p = native.map(|r| r.card.border.padding).unwrap_or_default();
-    format!(
-        "{}; {}; {}; {}. A side card.border.padding leaves unstated takes layout.container_margin, the padding inside containers (platform-facts §2.20), where a native theme is installed and its layout states one, else the variant's own (group_box.rs, GroupBox)",
-        side("top", p.top),
-        side("right", p.right),
-        side("bottom", p.bottom),
-        side("left", p.left),
-    )
-}
-
-/// `info` with the edge `geometry::group_box_content` draws on a GroupBox's
-/// content, `card.border.color` at `card.border.line_width`, and its line:
-/// none where that is 0, which an `outline` box's own edge gives way to.
-fn card_edge(info: WidgetInfo, r: &ResolvedTheme, outline: bool) -> WidgetInfo {
-    let width = r.card.border.line_width;
-    info.colors(edge_claim(
-        "edge",
-        "border",
-        Some(r.card.border.color),
-        Some(width),
-        "native-theme-gpui/geometry.rs:1108",
-    ))
-    .config("edge", match (width > 0.0, outline) {
-        (true, _) => format!("card.border.color at card.border.line_width, {}px, on every variant: geometry::group_box_content sets both on the content, which the GroupBox refines last (group_box.rs, GroupBox) -- over an Outline's own border colour, and on a Normal or Fill box, which draws no edge of its own", px_text(width)),
-        (false, true) => "none: card.border.line_width is 0, and geometry::group_box_content sets that width on the content, which the GroupBox refines last, so the Outline box's own border_1 gives way to it (group_box.rs, GroupBox)".to_string(),
-        (false, false) => "none: card.border.line_width is 0, so geometry::group_box_content draws no edge on the content, and a Normal or Fill box draws none of its own (group_box.rs, GroupBox)".to_string(),
-    })
-}
-
-/// [`content_padding`] on the 0.8.0 model: each side of a GroupBox's
-/// content padding, named by where it comes from: the side
+/// the side
 /// `card.container(NONE)` states (`next::geometry::group_box_content`),
 /// else `margin`, the installed theme's `layout.container_margin`, which the
 /// showcase pads an unstated side with (`demo::next_padded`), else `own`, the
@@ -230,7 +188,7 @@ fn next_content_padding(native: Option<&NextTheme>, margin: Option<Pixels>, own:
     )
 }
 
-/// [`card_edge`] on the 0.8.0 model: `info` with the edge
+/// `info` with the edge
 /// `next::geometry::group_box_content` draws on a GroupBox's content of
 /// `kind`, `card.container(NONE)`'s stroke, and its line: none where the
 /// stroke is 0 wide, which an Outline box's own edge gives way to; where the
@@ -494,29 +452,29 @@ fn upstream_accordion(
         })
 }
 
-/// A card: a Fill `GroupBox` with no title, its content filled with
-/// `native`'s `card.background_color` where a native theme is installed
-/// (`geometry::group_box_content`). Its geometry line is recorded where the
-/// helper applies the builder.
-pub fn card(
-    t: &Theme,
-    native: Option<&ResolvedTheme>,
-    container_margin: Option<Pixels>,
-) -> WidgetInfo {
+/// A card: a Fill `GroupBox` with no title, on the 0.8.0 model. `native` is
+/// the installed 0.8.0 theme `next::geometry::group_box_content` refined its
+/// content from, where it did (`demo::card`): the content then takes
+/// `card.container(NONE)`'s fill and edge. `container_margin` is that
+/// theme's `layout.container_margin`, which pads the sides the theme leaves
+/// unstated. Its geometry line is recorded where the helper applies the
+/// builder.
+pub fn card(t: &Theme, native: Option<&NextTheme>, container_margin: Option<Pixels>) -> WidgetInfo {
     // No content text: the content is a Label, which paints foreground on
     // its own element over the group box's colour (label.rs:213) and
     // reports itself.
     let info = WidgetInfo::new("GroupBox").variant("Fill, a card");
     let info = match native {
-        Some(r) => card_edge(
-            info.color(claim(
+        Some(r) => next_card_edge(
+            info.colors(stated_claim(
                 "fill",
-                "background_color",
-                stated(r.card.background_color),
-                "showcase",
+                "card.container(NONE).fill",
+                fill_of(&r.card.container(WidgetState::NONE)),
+                "native-theme-gpui/next/builders.rs:750",
             )),
+            t,
             r,
-            false,
+            GroupBoxKind::Fill,
         ),
         None => info.color(claim(
             "fill",
@@ -527,8 +485,11 @@ pub fn card(
     };
     let own = "p_4, the Fill variant's own";
     let info = match native {
-        Some(_) => info.config("padding", content_padding(native, container_margin, own)),
-        None => info.not_themeable("padding", content_padding(None, None, own)),
+        Some(_) => info.config(
+            "padding",
+            next_content_padding(native, container_margin, own),
+        ),
+        None => info.not_themeable("padding", next_content_padding(None, None, own)),
     };
     info.instance("content", "a body-text Label, which reports itself")
 }

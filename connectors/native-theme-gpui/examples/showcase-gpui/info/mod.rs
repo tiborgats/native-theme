@@ -250,10 +250,6 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
         "button.min_height by the control-height rule (defaults.line_height as the line height; the stated height at a text scale of 1 or less, a minimum with an automatic height above 1), min_width, the border.padding sides the theme states, corner_radius, line_width, color, and button.font.weight but not its size (spec §9.2)",
     ),
     (
-        "group_box_content",
-        "the card.border.padding sides the theme states, corner_radius, line_width, color, and card.background_color -- refined last, so the radius, the edge and the fill drawn are the card's, not upstream's radius or the Fill variant's group_box token (group_box.rs, GroupBox)",
-    ),
-    (
         "accordion_title",
         "expander.header_height, and expander.font.color over the foreground upstream sets on an open item's title row first; a closed one's sets none (gpui-component/accordion.rs, AccordionItem::render)",
     ),

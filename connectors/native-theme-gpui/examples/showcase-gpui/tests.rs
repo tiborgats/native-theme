@@ -3625,9 +3625,10 @@ fn the_tables_headers_take_the_themes_header_height(cx: &mut TestAppContext) {
 
 /// The Basic expander draws what `expander.*` states (ISSUES D8): each title
 /// row `header_height` tall, its arrow `arrow_icon_size` across; and the
-/// Basic card is padded inside its edge by the padding `card.border` states
-/// (kde-breeze), and by `layout.container_margin` where it states none
-/// (material-3; ISSUES D9), a card being a container.
+/// Basic card is padded inside its `card.container(NONE)` stroke by the
+/// padding that part states, and by `layout.container_margin` on a side it
+/// states none for (ISSUES D9), a card being a container -- each read from
+/// the installed 0.8.0 theme.
 #[gpui::test]
 fn the_expander_and_the_card_take_the_themes_sizes(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
@@ -3637,15 +3638,18 @@ fn the_expander_and_the_card_take_the_themes_sizes(cx: &mut TestAppContext) {
     for preset in ["kde-breeze", "material-3"] {
         use_preset(&mut cx, &showcase, preset);
         show(&mut cx, &showcase, Page::Basic);
-        let (header, arrow, card_padding, card_line) = read(&mut cx, &showcase, |_, cx| {
+        let (header, arrow) = read(&mut cx, &showcase, |_, cx| {
             native_value(cx, |n| {
                 let e = &n.resolved.expander;
-                (
-                    e.header_height,
-                    e.arrow_icon_size,
-                    n.resolved.card.border.padding,
-                    n.resolved.card.border.line_width,
-                )
+                (e.header_height, e.arrow_icon_size)
+            })
+        })
+        .unwrap_or_default();
+        let (card_left, card_line) = read(&mut cx, &showcase, |_, cx| {
+            crate::support::next_value(cx, |r| {
+                let container = r.card.container(native_theme::next::WidgetState::NONE);
+                let [_, _, _, left] = next::padding_of(&container);
+                (left, next::stroke_width_of(&container).unwrap_or_default())
             })
         })
         .unwrap_or_default();
@@ -3667,7 +3671,7 @@ fn the_expander_and_the_card_take_the_themes_sizes(cx: &mut TestAppContext) {
         }
         let margin = next_layout_metric(&mut cx, &showcase, next::geometry::container_margin);
         let (Some(inset), card, text) = (
-            card_padding.left.map(px).or(margin),
+            card_left.map(px).or(margin),
             bounds_of(&mut cx, "basic-card"),
             bounds_of(&mut cx, "basic-card-text"),
         ) else {
@@ -3676,7 +3680,7 @@ fn the_expander_and_the_card_take_the_themes_sizes(cx: &mut TestAppContext) {
         assert_eq!(
             text.left() - card.left(),
             px(card_line) + inset,
-            "{preset}: the card's content is not card.border.padding_left, or \
+            "{preset}: the card's content is not card.container(NONE)'s left padding, or \
              layout.container_margin where that is unstated, inside its edge"
         );
     }
@@ -3693,48 +3697,20 @@ fn names_the_container_margin(info: &WidgetInfo) -> bool {
 /// exactly where it pads a side of their content: where the layout states it
 /// and the card's padding leaves a side unstated, not where the padding
 /// states all four (windows-11 and kde-breeze), which leaves the margin
-/// nothing to pad (the M8 T5 carry-over) -- the card's `card.border.padding`
-/// of the 0.7.2 theme it still reads, the GroupBoxes' `card.container(NONE)`
-/// and `layout.container_margin` of the installed 0.8.0 theme. Every preset
+/// nothing to pad (the M8 T5 carry-over) -- `card.container(NONE)`'s
+/// padding and `layout.container_margin` of the installed 0.8.0 theme, for
+/// the card and the GroupBoxes alike. Every preset
 /// the preset switch can install (`native_theme::next::Preset::ALL`) in both
 /// modes, each expectation read from the theme installed.
 #[gpui::test]
 fn the_card_and_the_group_boxes_name_the_container_margin_where_it_pads(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
-    let mut cases = (false, false);
     let mut next_cases = (false, false);
     for mode in [AppColorMode::Light, AppColorMode::Dark] {
         switch_mode(&mut cx, mode);
         for preset in native_theme::next::Preset::ALL {
             let preset = preset.as_str();
             use_preset(&mut cx, &showcase, preset);
-            let p = resolved_theme(&mut cx, &showcase).card.border.padding;
-            let margin = next_layout_metric(&mut cx, &showcase, next::geometry::container_margin);
-            let pads = margin.is_some()
-                && [p.top, p.right, p.bottom, p.left]
-                    .iter()
-                    .any(Option::is_none);
-            if margin.is_some() {
-                if pads {
-                    cases.0 = true;
-                } else {
-                    cases.1 = true;
-                }
-            }
-            show(&mut cx, &showcase, Page::Basic);
-            // A corner of the card, inside its content's padding, off the
-            // Label that reports itself.
-            let card = bounds_of(&mut cx, "basic-card");
-            let info = settle_at(&mut cx, &showcase, card.origin + point(px(1.), px(1.)));
-            assert_eq!(
-                info.as_ref().map(names_the_container_margin),
-                Some(pads),
-                "{} {mode:?}: the card's info {} geometry::container_margin, and the margin \
-                 pads {} side of card.border.padding {p:?} (container_margin {margin:?}): {info:?}",
-                preset,
-                if pads { "does not record" } else { "records" },
-                if pads { "an unstated" } else { "no" },
-            );
             let (sides, next_margin) = read(&mut cx, &showcase, |_, cx| {
                 crate::support::next_value(cx, |r| {
                     (
@@ -3756,6 +3732,25 @@ fn the_card_and_the_group_boxes_name_the_container_margin_where_it_pads(cx: &mut
                     next_cases.1 = true;
                 }
             }
+            show(&mut cx, &showcase, Page::Basic);
+            // A corner of the card, inside its content's padding, off the
+            // Label that reports itself.
+            let card = bounds_of(&mut cx, "basic-card");
+            let info = settle_at(&mut cx, &showcase, card.origin + point(px(1.), px(1.)));
+            assert_eq!(
+                info.as_ref().map(names_the_container_margin),
+                Some(next_pads),
+                "{} {mode:?}: the card's info {} geometry::container_margin, and the margin \
+                 pads {} side of card.container(NONE)'s padding {sides:?} (container_margin \
+                 {next_margin:?}): {info:?}",
+                preset,
+                if next_pads {
+                    "does not record"
+                } else {
+                    "records"
+                },
+                if next_pads { "an unstated" } else { "no" },
+            );
             show(&mut cx, &showcase, Page::Layout);
             for group_box in [LAYOUT_GROUP_BOX_NORMAL, LAYOUT_GROUP_BOX_OUTLINE] {
                 let info = settle_on(&mut cx, &showcase, group_box);
@@ -3777,12 +3772,6 @@ fn the_card_and_the_group_boxes_name_the_container_margin_where_it_pads(cx: &mut
         }
     }
     assert_eq!(
-        cases,
-        (true, true),
-        "the presets no longer cover a card.border.padding that leaves a side to the margin \
-         and one that states all four"
-    );
-    assert_eq!(
         next_cases,
         (true, true),
         "the 0.8.0 presets no longer cover a card.container(NONE) padding that leaves a side \
@@ -3791,30 +3780,28 @@ fn the_card_and_the_group_boxes_name_the_container_margin_where_it_pads(cx: &mut
 }
 
 /// The card's padding line names each side by where it comes from (the M8
-/// T5 carry-over): `card.border's` for exactly the sides `card.border.padding`
-/// states, and `layout.container_margin` for the rest where the layout states
-/// one, the variant's own `p_4` where it does not; under every bundled preset
+/// T5 carry-over): `card.container(NONE)'s` for exactly the sides
+/// `card.container(NONE)` states a padding for, and
+/// `layout.container_margin` for the rest where the layout states one, the
+/// variant's own `p_4` where it does not; under every bundled 0.8.0 preset
 /// in both modes, with the preset's own layout.
 #[test]
 fn the_cards_padding_line_names_where_each_side_comes_from() {
     use crate::info::px_text;
-    for (name, r, t) in every_bundled_variant() {
-        let key = name.split(' ').next().unwrap_or_default();
-        let layout = native_theme::theme::Theme::preset(key).map(|theme| theme.layout);
-        assert!(layout.is_ok(), "{key} does not load");
-        let Ok(layout) = layout else { continue };
-        let margin = geometry::container_margin(&layout);
+    for (name, r, t) in every_next_variant() {
+        let margin = next::geometry::container_margin(&r).ok().flatten();
         let card = crate::info::layout::card(&t, Some(&r), margin);
         let line = note_of(&card.config, "padding").unwrap_or_default();
-        let p = &r.card.border.padding;
+        let [top, right, bottom, left] =
+            next::padding_of(&r.card.container(native_theme::next::WidgetState::NONE));
         for (side, stated) in [
-            ("top", p.top),
-            ("right", p.right),
-            ("bottom", p.bottom),
-            ("left", p.left),
+            ("top", top),
+            ("right", right),
+            ("bottom", bottom),
+            ("left", left),
         ] {
             let want = match (stated, margin) {
-                (Some(v), _) => format!("{side} {}px, card.border's", px_text(v)),
+                (Some(v), _) => format!("{side} {}px, card.container(NONE)'s", px_text(v)),
                 (None, Some(m)) => {
                     format!("{side} {}px, layout.container_margin", px_text(m.as_f32()))
                 }
@@ -21100,20 +21087,22 @@ fn a_theme_drawn_progress_bar_claims_a_frame_only_where_one_is_drawn() {
     );
 }
 
-/// A card's info claims the card edge `geometry::group_box_content` draws
-/// on the content -- `card.border.color` at `card.border.line_width` -- only
-/// where that width is above 0 (windows-11 and kde-breeze at the time of
-/// writing), and elsewhere says none is drawn (M9-044); and it claims no
-/// content text, its content being a Label that paints foreground on its own
-/// element (M9-049) -- over every bundled preset in both modes, and with no
-/// native theme. The GroupBoxes, on the 0.8.0 model:
-/// `a_group_box_claims_the_card_edge_only_where_one_is_drawn`.
+/// A card's info on the 0.8.0 model claims the card's fill and edge as the
+/// Fill GroupBox's does (`a_group_box_claims_the_card_edge_only_where_one_is_drawn`
+/// holds those to `card.container(NONE)`): the fill
+/// `card.container(NONE).fill`, and the stroke
+/// `next::geometry::group_box_content` draws on the content only where it is
+/// above 0 wide, with the same edge line; and it claims no content text, its
+/// content being a Label that paints foreground on its own element (M9-049)
+/// -- over every bundled preset in both modes, which edge the card at a
+/// width above 0 and leave it unedged both, and with no native theme.
 #[test]
 fn a_card_claims_the_card_edge_only_where_one_is_drawn() {
-    use crate::info::{px_text, stated};
+    use crate::demo::GroupBoxKind;
+    use crate::info::stroke_width_of;
+    use native_theme::next::WidgetState;
     let mut branches = (false, false);
-    for (name, r, t) in every_bundled_variant() {
-        let width = r.card.border.line_width;
+    for (name, r, t) in every_next_variant() {
         let card = crate::info::layout::card(&t, Some(&r), None);
         assert!(
             card.colors
@@ -21121,32 +21110,29 @@ fn a_card_claims_the_card_edge_only_where_one_is_drawn() {
                 .all(|c| c.role != "content text" && c.field != "group_box_foreground"),
             "{name}: the card's info claims a content text its Label paints over: {card:?}"
         );
-        {
-            let (what, info) = ("the card", &card);
-            let line = note_of(&info.config, "edge");
-            if width > 0.0 {
-                branches.0 = true;
-                assert_eq!(
-                    claim_as(info, "edge"),
-                    Some(("border", stated(r.card.border.color))),
-                    "{name}: {what}'s info does not claim the card.border.color its content is edged with: {info:?}"
-                );
-                assert!(
-                    line.is_some_and(|text| text.contains(&format!("{}px", px_text(width)))),
-                    "{name}: {what}'s edge line does not print card.border.line_width: {line:?}"
-                );
-            } else {
-                branches.1 = true;
-                assert_eq!(
-                    claim_as(info, "edge"),
-                    None,
-                    "{name}: {what}'s info claims an edge card.border.line_width 0 does not draw: {info:?}"
-                );
-                assert!(
-                    line.is_some_and(|text| text.starts_with("none: card.border.line_width is 0")),
-                    "{name}: {what}'s edge line does not say no edge is drawn: {line:?}"
-                );
-            }
+        let fill_box =
+            crate::info::layout::next_group_box(&t, GroupBoxKind::Fill, Some(&r), None, "");
+        for role in ["fill", "edge"] {
+            assert_eq!(
+                claim_as(&card, role),
+                claim_as(&fill_box, role),
+                "{name}: the card's {role} claim is not the Fill GroupBox's: {card:?}"
+            );
+        }
+        assert_eq!(
+            note_of(&card.config, "edge"),
+            note_of(&fill_box.config, "edge"),
+            "{name}: the card's edge line is not the Fill GroupBox's"
+        );
+        let fill = native_theme_gpui::next::fill_of(&r.card.container(WidgetState::NONE));
+        assert_eq!(
+            claim_as(&card, "fill"),
+            fill.map(|fill| ("card.container(NONE).fill", fill)),
+            "{name}: the card's info does not claim card.container(NONE).fill: {card:?}"
+        );
+        match stroke_width_of(&r.card.container(WidgetState::NONE)) {
+            Some(width) if width > 0.0 => branches.0 = true,
+            _ => branches.1 = true,
         }
     }
     assert_eq!(

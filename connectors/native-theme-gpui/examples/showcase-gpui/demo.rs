@@ -737,15 +737,6 @@ fn padded<E: Styled, L: Into<DefiniteLength> + Copy>(
     }
 }
 
-/// Whether `padding` leaves a side unstated: the side a fallback, such as
-/// `layout.container_margin`, pads ([`padded`]). Where it states all four,
-/// the fallback pads nothing, and its info line is not recorded.
-fn leaves_a_side_unstated(padding: &ResolvedPadding) -> bool {
-    [padding.top, padding.right, padding.bottom, padding.left]
-        .iter()
-        .any(Option::is_none)
-}
-
 /// [`padded`] on the 0.8.0 model: `el` padded by the sides of `sides`, a
 /// part's padding as `next::padding_of` reads it (top, right, bottom, left,
 /// each `None` where unstated), and on a side it leaves unstated by `x`
@@ -8277,9 +8268,14 @@ pub(crate) fn group_box(
 
 /// A card: a Fill `GroupBox` with no title, `width` wide, around the text
 /// `text`, whose Label reports itself as `text_id`. Its content is refined
-/// by `geometry::group_box_content`, which fills it with
-/// `card.background_color` over the Fill variant's `group_box` token
-/// (group_box.rs, `RenderOnce for GroupBox`).
+/// by `next::geometry::group_box_content`, which fills and edges it with
+/// `card.container(NONE)`'s fill and stroke over the Fill variant's
+/// `group_box` token (group_box.rs, `RenderOnce for GroupBox`) and sets the
+/// padding sides it states, and padded with `container_margin`, the
+/// installed 0.8.0 theme's `layout.container_margin`, on a side it leaves
+/// unstated ([`next_padded`]), as [`group_box`] pads. Where the theme states
+/// no value gpui can take at a home the builder reads, the card keeps
+/// upstream's look and padding (spec §10, rule 0).
 pub(crate) fn card(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -8289,26 +8285,22 @@ pub(crate) fn card(
     width: Pixels,
     container_margin: Option<Pixels>,
 ) -> Stateful<Div> {
-    let native = old_native(cx);
-    let mut card_info = info::layout::card(
-        cx.theme(),
-        native.as_ref().map(|n| n.resolved),
-        container_margin,
-    );
-    let content_style = native_info(
+    let native = next_resolved(cx).filter(|r| next::geometry::group_box_content(r).is_ok());
+    let mut card_info = info::layout::card(cx.theme(), native, container_margin);
+    let content_style = next_native_info(
         StyleRefinement::default(),
         cx,
-        geometry::group_box_content,
+        next::geometry::group_box_content,
         "group_box_content",
         &mut card_info,
     );
-    let content_style = match (&native, container_margin) {
-        (Some(n), Some(margin)) => {
-            let padding = &n.resolved.card.border.padding;
-            if leaves_a_side_unstated(padding) {
+    let content_style = match (native, container_margin) {
+        (Some(r), Some(margin)) => {
+            let sides = next::padding_of(&r.card.container(WidgetState::NONE));
+            if sides.iter().any(Option::is_none) {
                 card_info = card_info.next_geometry("container_margin");
             }
-            padded(content_style, padding, Some(margin), Some(margin))
+            next_padded(content_style, sides, Some(margin), Some(margin))
         }
         _ => content_style,
     };

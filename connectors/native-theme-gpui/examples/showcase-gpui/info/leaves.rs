@@ -510,42 +510,42 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "card.background_color",
-        "gpui: geometry::group_box_content's bg",
+        "gpui: card.container(NONE).fill, next::geometry::group_box_content's bg",
     ),
     (
         "",
         "card.border.color",
-        "gpui: geometry::group_box_content's border colour",
+        "gpui: card.container(NONE).stroke.color, next::geometry::group_box_content's border colour",
     ),
     (
         "",
         "card.border.corner_radius_px",
-        "gpui: geometry::group_box_content's corner radius",
+        "gpui: card.container(NONE).corners, next::geometry::group_box_content's corner radius",
     ),
     (
         "",
         "card.border.line_width_px",
-        "gpui: geometry::group_box_content's border width",
+        "gpui: card.container(NONE).stroke.width, next::geometry::group_box_content's border width",
     ),
     (
         "",
         "card.border.padding_top_px",
-        "gpui: geometry::group_box_content pads the stated side; container_margin the rest",
+        "gpui: card.container(NONE)'s padding side, next::geometry::group_box_content pads the stated side; container_margin the rest (demo::card)",
     ),
     (
         "",
         "card.border.padding_right_px",
-        "gpui: geometry::group_box_content pads the stated side; container_margin the rest",
+        "gpui: card.container(NONE)'s padding side, next::geometry::group_box_content pads the stated side; container_margin the rest (demo::card)",
     ),
     (
         "",
         "card.border.padding_bottom_px",
-        "gpui: geometry::group_box_content pads the stated side; container_margin the rest",
+        "gpui: card.container(NONE)'s padding side, next::geometry::group_box_content pads the stated side; container_margin the rest (demo::card)",
     ),
     (
         "",
         "card.border.padding_left_px",
-        "gpui: geometry::group_box_content pads the stated side; container_margin the rest",
+        "gpui: card.container(NONE)'s padding side, next::geometry::group_box_content pads the stated side; container_margin the rest (demo::card)",
     ),
     (
         "",
