@@ -1165,7 +1165,7 @@ pub(super) fn toggle_notes(info: WidgetInfo, t: &Theme, styled: bool) -> WidgetI
         .config("border-radius", format!("radius: {}px", t.radius.as_f32()))
         .not_themeable("size", "min_w_8 / h_8 at the default Size, upstream's own: the model states no flat-button frame (button/toggle.rs, Toggle::render)");
     if styled {
-        info.config("text", "button.font's size and weight through geometry::toggle, which lands after the text_sm a Medium Toggle sets on itself (button/toggle.rs, Toggle::render)")
+        info.config("text", "button.label(NONE)'s size and weight through geometry::toggle, which lands after the text_sm a Medium Toggle sets on itself (button/toggle.rs, Toggle::render)")
     } else {
         info
     }

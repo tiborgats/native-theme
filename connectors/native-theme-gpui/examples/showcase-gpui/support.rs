@@ -423,13 +423,6 @@ pub(crate) fn next_inactive(cx: &App) -> Option<&native_theme::next::ResolvedThe
 /// [`native_value`] on the 0.8.0 model: the value `build` gives for the
 /// installed 0.8.0 theme, or `None` before `native_theme_gpui::next::apply`
 /// ran.
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "the page groups call it as they move to the 0.8.0 model"
-    )
-)]
 pub(crate) fn next_value<T, F: FnOnce(&native_theme::next::ResolvedTheme) -> T>(
     cx: &App,
     build: F,
@@ -500,13 +493,6 @@ pub(crate) trait NativeStyled: Styled + Sized {
     /// installed and states what the builder needs; nothing otherwise, so
     /// the widget keeps upstream's geometry where the theme states none
     /// (spec §10, rule 0).
-    #[cfg_attr(
-        not(test),
-        expect(
-            dead_code,
-            reason = "the page groups call it as they move to the 0.8.0 model"
-        )
-    )]
     fn next_native(
         self,
         cx: &App,

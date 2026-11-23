@@ -29,8 +29,8 @@ use crate::elements;
 use crate::info::{InfoRegistry, Note, WidgetInfo, as_rgba, leaves, stated};
 use crate::support::{NativeStyled, frame_drawer, with_gap, with_padding};
 use crate::{
-    INSPECTOR_COPY, INSPECTOR_PANEL, INSPECTOR_TABS, INSPECTOR_TITLE, INSPECTOR_TOKENS_NOTE, demo,
-    probe,
+    INSPECTOR_COPY, INSPECTOR_INFO, INSPECTOR_PANEL, INSPECTOR_TABS, INSPECTOR_TITLE,
+    INSPECTOR_TOKENS_NOTE, demo, probe,
 };
 
 /// The inspector's two views, in the order its TabBar shows them.
@@ -76,7 +76,7 @@ pub(crate) struct Inspector {
     /// the hint shown before any hover.
     pub(crate) title_drawn: Option<SharedString>,
     /// Where its content is scrolled (`support::gutter_scroll`).
-    scroll: gpui::ScrollHandle,
+    pub(crate) scroll: gpui::ScrollHandle,
     _registry: Subscription,
 }
 
@@ -146,6 +146,7 @@ impl Inspector {
         let title = SharedString::from(title);
         self.title_drawn = Some(title.clone());
         with_gap(v_flex(), gap)
+            .debug_selector(|| INSPECTOR_INFO.into())
             .child(
                 h_flex()
                     .justify_between()

@@ -12,7 +12,7 @@ pub use native_theme_gpui::next::{
     radius_of, state_stroke_color_of, stroke_color_of, stroke_width_of,
 };
 
-use crate::support::{native_geometry, next_geometry, refined};
+use crate::support::{native_geometry, next_value, refined};
 
 pub mod buttons;
 pub mod charts;
@@ -463,10 +463,25 @@ pub fn next_native_info<W: Styled>(
     name: &'static str,
     info: &mut WidgetInfo,
 ) -> W {
-    match next_geometry(cx, build) {
-        Some(Ok(style)) => {
+    refined(w, next_native_value(cx, build, name, info).as_ref())
+}
+
+/// What [`next_native_info`] applies, for a builder of any value (a size, a
+/// refinement): the value `build` gives for the installed 0.8.0 theme, and
+/// `info` given `build`'s geometry line; where the theme leaves a value the
+/// builder needs unstated, `None`, so the widget keeps upstream's, and
+/// `info` says which home is unstated (spec §10, rule 0); `None` before
+/// `apply` ran, naming no builder.
+pub fn next_native_value<T>(
+    cx: &App,
+    build: fn(&native_theme::next::ResolvedTheme) -> Mapped<T>,
+    name: &'static str,
+    info: &mut WidgetInfo,
+) -> Option<T> {
+    match next_value(cx, build) {
+        Some(Ok(value)) => {
             *info = std::mem::take(info).geometry(name);
-            refined(w, Some(&style))
+            Some(value)
         }
         Some(Err(unstated)) => {
             *info = std::mem::take(info).config(
@@ -476,9 +491,9 @@ pub fn next_native_info<W: Styled>(
                     unstated.home()
                 ),
             );
-            w
+            None
         }
-        None => w,
+        None => None,
     }
 }
 

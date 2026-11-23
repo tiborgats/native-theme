@@ -43,8 +43,8 @@ use crate::{
     DATA_PAGINATION_COMPACT, DATA_TABLE_HEADER, FEEDBACK_ALERT_INFO, FEEDBACK_BADGE_COUNT,
     FEEDBACK_BADGE_DOT, FEEDBACK_CIRCLE_LOADING, FEEDBACK_SPINNER_SMALL, FEEDBACK_TAG_DANGER,
     FEEDBACK_TAG_PRIMARY, INPUTS_CHECKBOX_AUTOSAVE, INPUTS_CHECKBOX_NOTIFICATIONS, INPUTS_FIELD,
-    INPUTS_FIELD_HEIGHT_ONLY, INPUTS_TEXTAREA, INSPECTOR_COPY, INSPECTOR_PANEL, INSPECTOR_TABS,
-    INSPECTOR_TITLE, INSPECTOR_TOKENS_NOTE, LAYOUT_BREADCRUMB, LAYOUT_COLLAPSIBLE,
+    INPUTS_FIELD_HEIGHT_ONLY, INPUTS_TEXTAREA, INSPECTOR_COPY, INSPECTOR_INFO, INSPECTOR_PANEL,
+    INSPECTOR_TABS, INSPECTOR_TITLE, INSPECTOR_TOKENS_NOTE, LAYOUT_BREADCRUMB, LAYOUT_COLLAPSIBLE,
     LAYOUT_COLLAPSIBLE_CONTENT, LAYOUT_COLLAPSIBLE_TOGGLE, LAYOUT_FOLDER_TAB_DISABLED,
     LAYOUT_FOLDER_TAB_LABELS, LAYOUT_FOLDER_TABS, LAYOUT_GROUP_BOX_NORMAL,
     LAYOUT_GROUP_BOX_OUTLINE, LAYOUT_SEPARATOR_DASHED, LAYOUT_SEPARATOR_SOLID,
@@ -2123,6 +2123,68 @@ fn the_side_panel_holds_the_theme_settings_and_the_inspector(cx: &mut TestAppCon
             "{at}: the settings' info does not say its gaps are the showcase's own \
              THEME_SETTINGS_GAP: {gaps:?}"
         );
+    }
+}
+
+/// An info not in the list's form (`inspector::info_sections`) can wrap its
+/// first line, so no height the theme gives holds the whole line: at text
+/// scale 2, with the pointer settled on the Secondary Button, the info's top
+/// is in view, its first line starting inside the inspector's scroll area,
+/// and the rest is reached by scrolling it, the area's content being taller
+/// than the area and its end coming into the area at the furthest offset.
+#[gpui::test]
+fn an_unlisted_info_starts_in_view_and_scrolls_to_its_end(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    for preset in ["adwaita", "kde-breeze"] {
+        use_preset_scaled(&mut cx, &showcase, preset, 2.0);
+        show(&mut cx, &showcase, Page::Buttons);
+        let info = settle_on(&mut cx, &showcase, "buttons-secondary");
+        assert!(
+            info.as_ref()
+                .is_some_and(|info| info.listed.and_then(crate::elements::element).is_none()),
+            "{preset}: the Secondary Button's info is in the list's form, so this proves nothing: \
+             {info:?}"
+        );
+        let room = read(&mut cx, &showcase, |this, cx| {
+            this.info_ui
+                .read(cx)
+                .layout_drawn()
+                .get("chrome.side_panel.inspector")
+                .copied()
+        });
+        let title = bounds_of(&mut cx, INSPECTOR_TITLE);
+        assert!(
+            room.is_some_and(|room| title.top() >= room.top() && title.top() < room.bottom()),
+            "{preset}: the info's first line at {title:?} does not start inside the inspector's \
+             scroll area at {room:?}"
+        );
+        let scroll = read(&mut cx, &showcase, |this, cx| {
+            this.inspector.read(cx).scroll.clone()
+        });
+        let max = scroll.max_offset();
+        assert!(
+            max.y > px(0.),
+            "{preset}: the inspector's content is not taller than its scroll area at {room:?}, so \
+             this proves nothing"
+        );
+        cx.update(|_window, _cx| scroll.set_offset(point(px(0.), -max.y)));
+        draw(&mut cx);
+        let shown = bounds_of(&mut cx, INSPECTOR_INFO);
+        let room = read(&mut cx, &showcase, |this, cx| {
+            this.info_ui
+                .read(cx)
+                .layout_drawn()
+                .get("chrome.side_panel.inspector")
+                .copied()
+        });
+        assert!(
+            room.is_some_and(
+                |room| shown.bottom() <= room.bottom() + px(0.5) && shown.bottom() > room.top()
+            ),
+            "{preset}: scrolled to its furthest, the info at {shown:?} does not end inside the \
+             inspector's scroll area at {room:?}"
+        );
+        cx.update(|_window, _cx| scroll.set_offset(point(px(0.), px(0.))));
     }
 }
 
@@ -17773,7 +17835,7 @@ fn the_synthetic_input_feeds_levels_and_stops_with_the_session(cx: &mut TestAppC
 /// The Inputs page's SpeechIndicator fills a stop button while the synthetic
 /// input captures, as its doc asks a caller to show it
 /// (speech/indicator.rs:45, :52-54): none at rest; while capturing, a square
-/// of the theme's `button.min_height` whose info is the indicator's, and a
+/// of the theme's `button.body(NONE).min_size[1]` whose info is the indicator's, and a
 /// click on it stops the session and takes it away.
 #[gpui::test]
 fn the_speech_indicator_fills_a_stop_button_while_capturing(cx: &mut TestAppContext) {
@@ -17794,11 +17856,29 @@ fn the_speech_indicator_fills_a_stop_button_while_capturing(cx: &mut TestAppCont
     cx.run_until_parked();
     draw(&mut cx);
     let stop = bounds_of(&mut cx, STOP);
-    let side = cx.update(|_window, cx| native_value(cx, |n| px(n.resolved.button.min_height)));
-    assert_eq!(
-        Some(stop.size.height),
-        side,
-        "the stop button is not as high as button.min_height"
+    let (stated, rem) = cx.update(|window, cx| {
+        (
+            crate::support::next_resolved(cx)
+                .and_then(crate::info::inputs::StopSquare::of)
+                .map(|square| px(square.side)),
+            window.rem_size(),
+        )
+    });
+    // Where the theme states no side, upstream's icon-Button square, size_8,
+    // as gpui sizes it at the window's rem.
+    let mut size_8 = gpui::div().size_8();
+    let upstream = match Styled::style(&mut size_8).size.height {
+        Some(gpui::Length::Definite(length)) => {
+            Some(length.to_pixels(gpui::AbsoluteLength::Pixels(Pixels::ZERO), rem))
+        }
+        _ => None,
+    };
+    let side = stated.or(upstream);
+    // Within half a pixel: gpui rounds the layout to whole pixels.
+    assert!(
+        side.is_some_and(|side| (stop.size.height - side).abs() <= px(0.5)),
+        "the stop button at {stop:?} is not as high as button.body(NONE).min_size[1] where the \
+         theme states it, {stated:?}, and size_8 where not, {upstream:?}"
     );
     assert_eq!(
         stop.size.width, stop.size.height,

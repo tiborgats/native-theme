@@ -119,8 +119,8 @@ use crate::support::{
     CAROUSEL_SLIDES, ChatMessage, ChromeIcon, DIFF_DECORATED_LINE, DIFF_DECORATED_PATH,
     GRID_LAYOUT_ITEMS, NativeStyled as _, PresetDelegate, STEPPER_STEPS, SampleIcon,
     SampleListDelegate, SampleTableDelegate, contrast_held, native_color, native_geometry,
-    native_value, next_resolved, old_native, old_resolved, refined, requested_preferences,
-    toolbar_variant, with_gap, with_padding,
+    native_value, next_geometry, next_resolved, old_native, old_resolved, refined,
+    requested_preferences, toolbar_variant, with_gap, with_padding,
 };
 use crate::{
     CHROME_APP_MENU_BAR, CHROME_SIDE_PANEL, CHROME_SIDE_PANEL_CONTENT, CHROME_SIDE_PANEL_SCROLL,
@@ -3956,8 +3956,7 @@ pub(crate) fn toggle(
 ) -> Stateful<Div> {
     // `Toggle::icon` takes an `Icon` alone (button/toggle.rs).
     let icon = &icon.svg_only();
-    // What `native_info` applies the builder under.
-    let styled = old_native(cx).is_some();
+    let styled = toggle_styled(cx);
     let mut toggle_info = info::buttons::toggle(
         cx.theme(),
         icon.shown(),
@@ -3969,11 +3968,17 @@ pub(crate) fn toggle(
         Some(drawn) => Toggle::new(id).icon(drawn),
         None => Toggle::new(id).label(icon_name),
     };
-    native_info(toggle, cx, geometry::toggle, "toggle", &mut toggle_info)
-        .checked(checked)
-        .on_click(on_click)
-        .info(ui, id, toggle_info)
-        .debug_selector(move || id.into())
+    next_native_info(
+        toggle,
+        cx,
+        next::geometry::toggle,
+        "toggle",
+        &mut toggle_info,
+    )
+    .checked(checked)
+    .on_click(on_click)
+    .info(ui, id, toggle_info)
+    .debug_selector(move || id.into())
 }
 
 /// A `ToggleGroup` of unchecked Toggles reading `labels`, each refined by
@@ -3984,18 +3989,22 @@ pub(crate) fn toggle_group(
     id: &'static str,
     labels: &[&'static str],
 ) -> Stateful<Div> {
-    let styled = old_native(cx).is_some();
-    let mut group_info = info::buttons::toggle_group(cx.theme(), styled);
-    if styled {
-        group_info = group_info.geometry("toggle");
-    }
+    let mut group_info = info::buttons::toggle_group(cx.theme(), toggle_styled(cx));
+    // The group's info takes the builder's line, each Toggle its refinement.
+    let _ = info::next_native_value(cx, next::geometry::toggle, "toggle", &mut group_info);
     ToggleGroup::new(id)
-        .children(
-            labels
-                .iter()
-                .map(|&label| Toggle::new(label).label(label).native(cx, geometry::toggle)),
-        )
+        .children(labels.iter().map(|&label| {
+            Toggle::new(label)
+                .label(label)
+                .next_native(cx, next::geometry::toggle)
+        }))
         .info(ui, id, group_info)
+}
+
+/// Whether `next::geometry::toggle` refines a Toggle under the installed
+/// 0.8.0 theme: one is installed and states every value the builder reads.
+fn toggle_styled(cx: &App) -> bool {
+    next_geometry(cx, next::geometry::toggle).is_some_and(|style| style.is_ok())
 }
 
 /// A `Clipboard` copying `value`, reading `label` beside its icon where one
@@ -4957,11 +4966,13 @@ pub(crate) fn rating(
         .value(value)
         .disabled(disabled)
         .when_some(on_click, |rating, on_click| rating.on_click(on_click));
-    let rating = match native_value(cx, geometry::icon_size_small) {
-        Some(size) => {
-            rating_info = rating_info.geometry("icon_size_small");
-            rating.with_size(size)
-        }
+    let rating = match info::next_native_value(
+        cx,
+        next::geometry::icon_size_small,
+        "icon_size_small",
+        &mut rating_info,
+    ) {
+        Some(size) => rating.with_size(size),
         None => rating,
     };
     rating.info(ui, id, rating_info)
@@ -5199,8 +5210,9 @@ pub(crate) fn speech_waveform(
 /// it letters in the platform's button text colour, which the indicator
 /// paints its bars in -- whose only child is the indicator, its padding
 /// removed so the indicator fills it. The Button is a square of
-/// `button.min_height`, rounded by `button.border.corner_radius`, where a
-/// native theme is installed, and upstream's icon-Button square otherwise;
+/// `button.body(NONE).min_size[1]`, rounded by `button.body(NONE).corners`,
+/// where the installed 0.8.0 theme states both, and upstream's icon-Button
+/// square otherwise;
 /// the indicator's stop glyph takes `geometry::icon_size_toolbar`, the size
 /// of the icon the Button stands for. `keyboard_focused` is whether `focus`,
 /// the Button's, has keyboard focus: no pointer reveals the stop glyph then,
@@ -5214,15 +5226,19 @@ pub(crate) fn speech_indicator(
     focus: &gpui::FocusHandle,
     keyboard_focused: bool,
 ) -> Stateful<Div> {
-    let native = old_native(cx);
-    let native_button = native.as_ref().map(|n| &n.resolved.button);
-    let mut indicator_info =
-        info::inputs::speech_indicator(cx.theme(), native_button, keyboard_focused);
-    let square = native_button.map(|b| (px(b.min_height), px(b.border.corner_radius.max(0.))));
-    let glyph = native_value(cx, geometry::icon_size_toolbar);
-    if glyph.is_some() && !keyboard_focused {
-        indicator_info = indicator_info.geometry("icon_size_toolbar");
-    }
+    let stated = next_resolved(cx).and_then(info::inputs::StopSquare::of);
+    let mut indicator_info = info::inputs::speech_indicator(cx.theme(), stated, keyboard_focused);
+    let square = stated.map(|s| (px(s.side), px(s.radius.max(0.))));
+    let glyph = if keyboard_focused {
+        None
+    } else {
+        info::next_native_value(
+            cx,
+            next::geometry::icon_size_toolbar,
+            "icon_size_toolbar",
+            &mut indicator_info,
+        )
+    };
     let button = ButtonKind::Ghost
         .apply(Button::new(id), cx)
         .selected(true)
@@ -9881,11 +9897,12 @@ pub(crate) fn swatch(
 // The Basic page's own samples (Basic v3)
 // ---------------------------------------------------------------------------
 
-/// `button` labelled `label`. Where a native theme is installed, or the label
-/// is an element of docs/showcase-elements.toml, the label is the Button's
-/// child, in the box upstream puts its own `label` in (button/button.rs,
-/// `RenderOnce for Button`: `min_w_0`, `whitespace_nowrap`, `text_ellipsis`):
-/// in `button.font` through `geometry::button_label`, because upstream sizes
+/// `button` labelled `label`. Where the installed 0.8.0 theme states the
+/// font `geometry::button_label` reads, or the label is an element of
+/// docs/showcase-elements.toml, the label is the Button's child, in the box
+/// upstream puts its own `label` in (button/button.rs, `RenderOnce for
+/// Button`: `min_w_0`, `whitespace_nowrap`, `text_ellipsis`): in
+/// `button.label(NONE)`'s font through `geometry::button_label`, because upstream sizes
 /// a `.label()` from the `Size` enum on an element no style reaches, and
 /// recording its bounds where it is listed. The Button is named by the label
 /// as `Button::label` would name it. Otherwise `Button::label`.
@@ -9899,7 +9916,7 @@ pub(crate) fn labelled(
     label: impl Into<SharedString>,
 ) -> Button {
     let label = label.into();
-    let text = native_geometry(cx, geometry::button_label);
+    let text = next_geometry(cx, next::geometry::button_label).and_then(Result::ok);
     let listed = elements::label_of(id);
     if text.is_none() && listed.is_none() {
         return button.label(label);
