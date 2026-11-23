@@ -35,9 +35,48 @@ mod tests {
         Ok(())
     }
 
+    /// The nested mix against `KColorUtils::mix(a, KColorUtils::mix(b, c, inner), outer)` as
+    /// kguiaddons runs it, exact: the 16-bit channels Qt holds, and the unrounded channels.
+    #[test]
+    fn mix_of_mix_vectors() -> TestResult {
+        let rows = rows(include_str!("../../../tests/vectors/kcu_mix_of_mix.tsv"))?;
+        assert_eq!(rows.len(), 102, "row count");
+        for row in &rows {
+            let got = kcu_mix_of_mix(
+                color(row.get("a")?)?,
+                color(row.get("b")?)?,
+                color(row.get("c")?)?,
+                row.get("inner")?.parse::<f64>()?,
+                row.get("outer")?.parse::<f64>()?,
+            );
+            assert_eq!(
+                got.map(|x| (f64::from(x) * 65535.0).round()),
+                rgba64(row.get("result16")?)?,
+                "result16: `{row:?}`"
+            );
+            assert_color(got, output(row.get("result")?)?, row);
+        }
+        Ok(())
+    }
+
+    /// A `rgba64(r, g, b, a)` cell's 16-bit channels.
+    fn rgba64(cell: &str) -> Result<[f64; 4], String> {
+        let channels = cell
+            .strip_prefix("rgba64(")
+            .and_then(|rest| rest.strip_suffix(')'))
+            .ok_or_else(|| format!("no `rgba64(…)` in `{cell}`"))?
+            .split(',')
+            .map(|n| n.trim().parse::<u16>().map(f64::from))
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(|e| format!("{e} in `{cell}`"))?;
+        match channels.as_slice() {
+            [r, g, b, a] => Ok([*r, *g, *b, *a]),
+            _ => Err(format!("no four channels in `{cell}`")),
+        }
+    }
+
     /// At the inner bias 0 and 1 the nested mix is one mix with `b` or `c`: this proves the
-    /// order of the arguments, not the inner mix's storage between 0 and 1, which reader parity
-    /// proves (`button.default_button_border_color` on the Breeze files and the custom accent).
+    /// order of the arguments.
     #[test]
     fn a_mix_of_a_mix_at_the_ends_is_one_mix() {
         let [a, b, c] = [
