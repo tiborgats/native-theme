@@ -795,3 +795,442 @@ pub fn button_content_min_size(r: &ResolvedTheme) -> Mapped<[Option<f32>; 2]> {
         height.map(|h| (h - p.top - p.bottom).max(0.0)),
     ])
 }
+
+// The crate root's widgets, widget parts and fonts, each read at its home
+// ---------------------------------------------------------------------------
+
+/// [`crate::control_line_height`]: the line height for a single-line
+/// control's text that makes the control at least `min_height` tall inside
+/// `padding`: the theme's own line box,
+/// `typography.line_height_multiplier` times `text_size`, where that
+/// reaches the minimum already, and otherwise the height the minimum leaves
+/// inside the padding.
+#[must_use]
+pub fn control_line_height(
+    r: &ResolvedTheme,
+    text_size: f32,
+    min_height: f32,
+    padding: iced_core::Padding,
+) -> iced_core::text::LineHeight {
+    crate::line_height_from(
+        r.typography.line_height_multiplier,
+        text_size,
+        min_height,
+        padding,
+    )
+}
+
+/// [`crate::SwitchLook`] of the 0.8.0 model: the track's least size
+/// (`switch.track(NONE).min_size`), the thumb's diameter on
+/// (`switch.thumb(CHECKED).min_size[0]`) and off (`switch.thumb(NONE)`'s,
+/// the thumb's on where the theme states none).
+#[cfg(feature = "widgets")]
+pub(crate) fn switch_look(r: &ResolvedTheme) -> Mapped<crate::SwitchLook> {
+    let s = &r.switch;
+    let [track_width, track_height] = s.track(WidgetState::NONE).min_size;
+    let [thumb_on, _] = s.thumb(WidgetState::CHECKED).min_size;
+    let [thumb_off, _] = s.thumb(WidgetState::NONE).min_size;
+    let thumb_diameter = stated(thumb_on, "switch.thumb(CHECKED).min_size[0]")?;
+    Ok(crate::SwitchLook {
+        track_width: stated(track_width, "switch.track(NONE).min_size[0]")?,
+        track_height: stated(track_height, "switch.track(NONE).min_size[1]")?,
+        thumb_diameter,
+        unchecked_thumb_diameter: thumb_off.unwrap_or(thumb_diameter),
+    })
+}
+
+/// [`crate::switch`]: a switch at the platform's size, a disabled one faded
+/// over the window (`colors.window.background`).
+///
+/// # Errors
+///
+/// [`Unmapped`] where the theme states no window background, or no value
+/// the switch needs.
+#[cfg(feature = "widgets")]
+pub fn switch<'a, Message, Renderer>(
+    r: &ResolvedTheme,
+    is_toggled: bool,
+    on_toggle: Option<Message>,
+) -> Mapped<iced_core::Element<'a, Message, iced_core::Theme, Renderer>>
+where
+    Message: Clone + 'a,
+    Renderer: iced_core::Renderer + 'a,
+{
+    let window = stated(r.colors.window.background, "colors.window.background")?;
+    switch_over(r, is_toggled, on_toggle, to_color(window))
+}
+
+/// [`crate::switch_over`]: [`switch`] drawn on `backdrop`.
+///
+/// # Errors
+///
+/// [`Unmapped`] where the theme states no value the switch needs.
+#[cfg(feature = "widgets")]
+pub fn switch_over<'a, Message, Renderer>(
+    r: &ResolvedTheme,
+    is_toggled: bool,
+    on_toggle: Option<Message>,
+    backdrop: IcedColor,
+) -> Mapped<iced_core::Element<'a, Message, iced_core::Theme, Renderer>>
+where
+    Message: Clone + 'a,
+    Renderer: iced_core::Renderer + 'a,
+{
+    Ok(crate::switch_from(
+        switch_look(r)?,
+        styles::toggler_over(r, backdrop)?,
+        is_toggled,
+        on_toggle,
+    ))
+}
+
+/// [`crate::RadioLook`] of the 0.8.0 model: the circle's width
+/// (`radio.indicator(NONE).min_size[0]`, the check box's
+/// `checkbox.indicator(NONE).min_size[0]` where the theme states none), the
+/// gap to the label (`radio.label_gap`), and, where the theme states the
+/// dot's size (`radio.dot(NONE).min_size[0]`), the dot in its checked fill
+/// (`radio.dot(CHECKED).fill`).
+#[cfg(feature = "widgets")]
+pub(crate) fn radio_look(r: &ResolvedTheme) -> Mapped<crate::RadioLook> {
+    let w = &r.radio;
+    let [own, _] = w.indicator(WidgetState::NONE).min_size;
+    let [check, _] = r.checkbox.indicator(WidgetState::NONE).min_size;
+    let [dot, _] = w.dot(WidgetState::NONE).min_size;
+    let dot = match dot {
+        Some(d) => Some((
+            d,
+            fill(&w.dot(WidgetState::CHECKED), "radio.dot(CHECKED).fill")?,
+        )),
+        None => None,
+    };
+    Ok(crate::RadioLook {
+        width: stated(own.or(check), "radio.indicator(NONE).min_size[0]")?,
+        label_gap: w.label_gap,
+        dot,
+    })
+}
+
+/// [`crate::radio`]: a radio button at the platform's size, with the
+/// platform's dot where the theme states its size.
+///
+/// # Errors
+///
+/// [`Unmapped`] where the theme states no value the radio needs.
+#[cfg(feature = "widgets")]
+pub fn radio<'a, Message, Renderer>(
+    r: &ResolvedTheme,
+    radio: iced_widget::Radio<'a, Message, iced_core::Theme, Renderer>,
+    is_selected: bool,
+) -> Mapped<iced_core::Element<'a, Message, iced_core::Theme, Renderer>>
+where
+    Message: Clone + 'a,
+    Renderer: iced_core::text::Renderer + 'a,
+{
+    Ok(crate::radio_from(
+        radio_look(r)?,
+        styles::radio(r)?,
+        radio,
+        is_selected,
+    ))
+}
+
+/// The drop-down arrow's size (`combo_box.chevron(NONE).size`), `None`
+/// where the theme states none.
+#[cfg(feature = "widgets")]
+pub(crate) fn chevron_size(r: &ResolvedTheme) -> Option<f32> {
+    let chevron = r.combo_box.chevron(WidgetState::NONE);
+    chevron
+        .stated
+        .contains(IconStated::SIZE)
+        .then_some(chevron.size)
+}
+
+/// [`crate::pick_list_handle`]: the renderer's own downward chevron at the
+/// drop-down arrow's size (`combo_box.chevron(NONE).size`), at the size iced
+/// gives its own handle where the theme states none.
+#[cfg(feature = "widgets")]
+#[must_use]
+pub fn pick_list_handle<Renderer>(
+    r: &ResolvedTheme,
+) -> iced_widget::pick_list::Handle<Renderer::Font>
+where
+    Renderer: iced_core::text::Renderer,
+{
+    crate::handle_at::<Renderer>(chevron_size(r))
+}
+
+/// [`crate::IndicatorLook`] of the 0.8.0 model: the selected tab's
+/// indicator (`tab.indicator(SELECTED)`: its fill, its least height as the
+/// line's thickness) along `tab.indicator_side`, rounded on top as the
+/// selected tab's corners (`tab.tab(SELECTED).corners`) where it runs along
+/// the top, square, iced's own, where the theme states no corners; `None`
+/// where the theme leaves the fill, the thickness or the side unstated, or
+/// states a thickness that is not a positive, finite length.
+#[cfg(feature = "widgets")]
+pub(crate) fn tab_indicator_look(r: &ResolvedTheme) -> Mapped<Option<crate::IndicatorLook>> {
+    use iced_core::alignment::Vertical;
+    use native_theme::next::TabIndicatorSide;
+
+    let t = &r.tab;
+    let indicator = t.indicator(WidgetState::SELECTED);
+    let [_, width] = indicator.min_size;
+    let (Some(width), Some(side)) = (width, t.indicator_side) else {
+        return Ok(None);
+    };
+    if !indicator.stated.contains(PartStated::FILL) || !width.is_finite() || width <= 0.0 {
+        return Ok(None);
+    }
+    let color = fill(&indicator, "tab.indicator(SELECTED).fill")?;
+    let (align, radius) = match side {
+        TabIndicatorSide::Top => {
+            let tab = t.tab(WidgetState::SELECTED);
+            let radius = if tab.stated.contains(PartStated::CORNERS) {
+                crate::top_corners(borders::radius(&tab, "tab.tab(SELECTED).corners")?)
+            } else {
+                iced_core::border::Radius::default()
+            };
+            (Vertical::Top, radius)
+        }
+        TabIndicatorSide::Bottom => (Vertical::Bottom, iced_core::border::Radius::default()),
+    };
+    Ok(Some(crate::IndicatorLook {
+        color,
+        width,
+        align,
+        radius,
+    }))
+}
+
+/// [`crate::tab_indicator`]: `tab` with the selected tab's indicator line
+/// laid over it where `active`; `tab` as it is where not `active`, or where
+/// the theme states no indicator.
+///
+/// # Errors
+///
+/// [`Unmapped`] where the theme states the indicator in a form iced cannot
+/// take.
+#[cfg(feature = "widgets")]
+pub fn tab_indicator<'a, Message, Renderer>(
+    r: &ResolvedTheme,
+    tab: impl Into<iced_core::Element<'a, Message, iced_core::Theme, Renderer>>,
+    active: bool,
+) -> Mapped<iced_core::Element<'a, Message, iced_core::Theme, Renderer>>
+where
+    Message: 'a,
+    Renderer: iced_core::Renderer + 'a,
+{
+    Ok(crate::tab_indicator_with(
+        tab_indicator_look(r)?,
+        tab,
+        active,
+    ))
+}
+
+/// [`crate::tab_indicator_line`]: the line that marks the active tab,
+/// alone; `None` where the theme states no indicator.
+///
+/// # Errors
+///
+/// [`Unmapped`] where the theme states the indicator in a form iced cannot
+/// take.
+#[cfg(feature = "widgets")]
+pub fn tab_indicator_line<'a, Message, Renderer>(
+    r: &ResolvedTheme,
+) -> Mapped<Option<iced_core::Element<'a, Message, iced_core::Theme, Renderer>>>
+where
+    Message: 'a,
+    Renderer: iced_core::Renderer + 'a,
+{
+    Ok(tab_indicator_look(r)?.map(crate::indicator_line))
+}
+
+/// The flares [`tab_flares`] draws: the outward radius
+/// (`tab.active_outward_corner_radius`), the selected tab's fill and
+/// outline (`tab.tab(SELECTED)`); `None` where the theme states no positive,
+/// finite radius.
+#[cfg(feature = "widgets")]
+pub(crate) fn tab_flares_look(r: &ResolvedTheme) -> Mapped<Option<crate::tab_flares::FlareLook>> {
+    let t = &r.tab;
+    let Some(radius) = t.active_outward_corner_radius else {
+        return Ok(None);
+    };
+    let tab = t.tab(WidgetState::SELECTED);
+    let selected = fill(&tab, "tab.tab(SELECTED).fill")?;
+    let (width, outline) = match &tab.stroke {
+        _ if !tab.stated.contains(PartStated::STROKE) => {
+            return Err(Unmapped("tab.tab(SELECTED).stroke"));
+        }
+        Stroke::None => (0.0, IcedColor::TRANSPARENT),
+        Stroke::Uniform { width, color, .. } => (*width, to_color(*color)),
+        _ => return Err(Unmapped("tab.tab(SELECTED).stroke")),
+    };
+    let bottom_line = tab_indicator_look(r)?
+        .is_some_and(|look| look.align == iced_core::alignment::Vertical::Bottom);
+    Ok(crate::tab_flares::flares_look_from(
+        Some(radius),
+        width,
+        selected,
+        outline,
+        bottom_line,
+    ))
+}
+
+/// [`crate::tab_flares`]: `tabs` with the selected tab's outward bottom
+/// corners drawn over it where the theme states
+/// `tab.active_outward_corner_radius`; `tabs` as it is where it states none.
+///
+/// # Errors
+///
+/// [`Unmapped`] where the theme states no fill or outline of the selected
+/// tab the flares need.
+#[cfg(feature = "widgets")]
+pub fn tab_flares<'a, Message, Renderer>(
+    r: &ResolvedTheme,
+    tabs: impl Into<iced_core::Element<'a, Message, iced_core::Theme, Renderer>>,
+    selected: &[usize],
+) -> Mapped<iced_core::Element<'a, Message, iced_core::Theme, Renderer>>
+where
+    Message: 'a,
+    Renderer: iced_core::Renderer + 'a,
+{
+    Ok(crate::tab_flares_with(tab_flares_look(r)?, tabs, selected))
+}
+
+/// The ring [`focus_ring`] draws round a field of corner `radius`: the
+/// ring's stroke (`focus_ring.stroke`), its offset (`focus_ring.offset`)
+/// and whether it shows for keyboard focus only (`focus_ring.trigger`);
+/// `None` where the theme states no stroke, or one inset at the field's
+/// edge.
+#[cfg(feature = "widgets")]
+pub(crate) fn ring_look(
+    r: &ResolvedTheme,
+    radius: f32,
+) -> Mapped<Option<crate::focus_ring::RingLook>> {
+    use native_theme::next::FocusTrigger;
+
+    let f = &r.focus_ring;
+    let (width, color) = match &f.stroke {
+        Stroke::None => return Ok(None),
+        Stroke::Uniform { width, color, .. } => (*width, to_color(*color)),
+        _ => return Err(Unmapped("focus_ring.stroke")),
+    };
+    Ok(crate::focus_ring::ring_look_from(
+        color,
+        width,
+        f.offset,
+        radius,
+        f.trigger == Some(FocusTrigger::KeyboardOnly),
+    ))
+}
+
+/// [`crate::focus_ring`]: `field`, and round it while it holds the keyboard
+/// focus, the theme's focus ring, its curves the field's `corner_radius`
+/// grown by the ring's offset.
+///
+/// # Errors
+///
+/// [`Unmapped`] where the ring's stroke is per side.
+#[cfg(feature = "widgets")]
+pub fn focus_ring<'a, Message, Renderer>(
+    r: &ResolvedTheme,
+    corner_radius: f32,
+    field: impl Into<iced_core::Element<'a, Message, iced_core::Theme, Renderer>>,
+) -> Mapped<iced_core::Element<'a, Message, iced_core::Theme, Renderer>>
+where
+    Message: 'a,
+    Renderer: iced_core::Renderer + 'a,
+{
+    Ok(crate::focus_ring::FocusRing::new(field.into(), ring_look(r, corner_radius)?).into())
+}
+
+/// What [`spinner`] reads: its diameter, stroke width and colour
+/// (`spinner`), and the window's text colour (`colors.window.foreground`)
+/// for a freedesktop indicator's `currentColor`.
+#[cfg(feature = "spinner")]
+pub(crate) fn spinner_look(r: &ResolvedTheme) -> Mapped<crate::spinner::Look> {
+    let s = &r.spinner;
+    let text = stated(r.colors.window.foreground, "colors.window.foreground")?;
+    Ok(crate::spinner::Look {
+        diameter: s.diameter,
+        stroke_width: s.stroke_width,
+        color: to_color(s.color),
+        current_color: to_color(text),
+    })
+}
+
+/// [`crate::Spinner::new`]: the spinner of `icon_set` (for
+/// `IconSet::Freedesktop` the indicator of `icon_theme`, the system's icon
+/// theme where `None`), or an arc at the theme's stroke.
+///
+/// # Errors
+///
+/// [`Unmapped`] where the theme states no window text colour.
+#[cfg(feature = "spinner")]
+pub fn spinner(
+    r: &ResolvedTheme,
+    icon_set: crate::IconSet,
+    icon_theme: Option<&str>,
+) -> Mapped<crate::Spinner> {
+    Ok(crate::Spinner::of_look(
+        spinner_look(r)?,
+        icon_set,
+        icon_theme,
+    ))
+}
+
+/// A text style's slant as the 0.7.2 model's, which the font database
+/// selects a face by, where the style states its family, weight and slant.
+#[cfg(feature = "system-fonts")]
+fn face_style(text: &TextStyle) -> Mapped<native_theme::theme::FontStyle> {
+    use native_theme::next::FontStyle;
+    use native_theme::theme::FontStyle as Slant;
+
+    for (bit, home) in [
+        (TextStated::FAMILY, "TextStyle.family"),
+        (TextStated::WEIGHT, "TextStyle.weight"),
+        (TextStated::STYLE, "TextStyle.style"),
+    ] {
+        if !text.stated.contains(bit) {
+            return Err(Unmapped(home));
+        }
+    }
+    match text.style {
+        FontStyle::Normal => Ok(Slant::Normal),
+        FontStyle::Italic => Ok(Slant::Italic),
+        FontStyle::Oblique => Ok(Slant::Oblique),
+        _ => Err(Unmapped("TextStyle.style")),
+    }
+}
+
+/// [`crate::system_font_family`] of a text style (`typography.body`,
+/// `button.label(NONE)`, ...): the family iced draws its family, weight and
+/// slant in, the platform's substitute where the system lacks the family.
+///
+/// # Errors
+///
+/// [`Unmapped`] where the style states no family, weight or slant, or a
+/// slant iced has no face for.
+#[cfg(feature = "system-fonts")]
+pub fn system_font_family(text: &TextStyle) -> Mapped<std::sync::Arc<str>> {
+    let style = face_style(text)?;
+    Ok(crate::family_drawn(
+        &text.family,
+        text.weight,
+        style,
+        native_theme::fonts::substitute_family_cached,
+    ))
+}
+
+/// [`crate::font`] of a text style (`typography.body`,
+/// `button.label(NONE)`, ...): the iced `Font` its family, weight and slant
+/// are drawn in.
+///
+/// # Errors
+///
+/// [`Unmapped`] where the style states no family, weight or slant, or a
+/// slant iced has no face for.
+#[cfg(feature = "system-fonts")]
+pub fn font(text: &TextStyle) -> Mapped<iced_core::Font> {
+    let style = face_style(text)?;
+    Ok(crate::font_of(&text.family, text.weight, style))
+}

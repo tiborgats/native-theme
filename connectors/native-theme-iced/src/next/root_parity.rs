@@ -361,6 +361,12 @@ fn helpers(p: &mut Pairs, old: &crate::ResolvedTheme, new: &native_theme::next::
         crate::toolbar_padding(old, own),
         super::toolbar_padding(new, own),
     );
+    let (size, min) = (old.defaults.font.size, old.input.min_height);
+    p.pair(
+        "control_line_height",
+        crate::control_line_height(old, size, min, own),
+        super::control_line_height(new, size, min, own),
+    );
     #[cfg(feature = "widgets")]
     {
         p.pair(
@@ -392,6 +398,79 @@ fn helpers(p: &mut Pairs, old: &crate::ResolvedTheme, new: &native_theme::next::
     }
 }
 
+/// The crate root's widgets and widget parts, compared by what each builds
+/// its widget from: the sizes, colours and look its shared builder takes.
+#[cfg(feature = "widgets")]
+fn widgets(p: &mut Pairs, old: &crate::ResolvedTheme, new: &native_theme::next::ResolvedTheme) {
+    let switch = super::switch_look(new);
+    p.pair(
+        "switch",
+        ok((
+            crate::switch_look(old),
+            crate::palette::to_color(old.defaults.background_color),
+        )),
+        switch.and_then(|look| {
+            super::stated(new.colors.window.background, "colors.window.background")
+                .map(|window| (look, super::to_color(window)))
+        }),
+    );
+    p.pair("switch_over", ok(crate::switch_look(old)), switch);
+    p.pair("radio", ok(crate::radio_look(old)), super::radio_look(new));
+    p.pair(
+        "pick_list_handle",
+        Some(old.combo_box.arrow_icon_size),
+        super::chevron_size(new),
+    );
+    let indicator = super::tab_indicator_look(new);
+    p.pair(
+        "tab_indicator",
+        ok(crate::tab_indicator_look(&old.tab)),
+        indicator,
+    );
+    p.pair(
+        "tab_indicator_line",
+        ok(crate::tab_indicator_look(&old.tab)),
+        indicator,
+    );
+    p.pair(
+        "tab_flares",
+        ok(crate::tab_flares::tab_flares_look(&old.tab)),
+        super::tab_flares_look(new),
+    );
+    for radius in [0.0, crate::border_corner_radius(old)] {
+        p.pair(
+            "focus_ring",
+            ok(crate::focus_ring::ring_look(old, radius)),
+            super::ring_look(new, radius),
+        );
+    }
+}
+
+/// The spinner, compared by what it reads of the theme.
+#[cfg(feature = "spinner")]
+fn spinner(p: &mut Pairs, old: &crate::ResolvedTheme, new: &native_theme::next::ResolvedTheme) {
+    p.pair(
+        "spinner",
+        ok(crate::spinner::Look::of(old)),
+        super::spinner_look(new),
+    );
+}
+
+/// The fonts of the body and the monospace text.
+#[cfg(feature = "system-fonts")]
+fn fonts(p: &mut Pairs, old: &crate::ResolvedTheme, new: &native_theme::next::ResolvedTheme) {
+    let d = &old.defaults;
+    let t = &new.typography;
+    for (o, n) in [(&d.font, &t.body), (&d.mono_font, &t.monospace)] {
+        p.pair("font", ok(crate::font(o)), super::font(n));
+        p.pair(
+            "system_font_family",
+            ok(crate::system_font_family(o)),
+            super::system_font_family(n),
+        );
+    }
+}
+
 #[test]
 fn the_crate_roots_functions_agree_on_both_models() -> crate::Result<()> {
     let mut failures = Vec::new();
@@ -407,6 +486,12 @@ fn the_crate_roots_functions_agree_on_both_models() -> crate::Result<()> {
             };
             accessors(&mut p, &old, &new);
             helpers(&mut p, &old, &new);
+            #[cfg(feature = "widgets")]
+            widgets(&mut p, &old, &new);
+            #[cfg(feature = "spinner")]
+            spinner(&mut p, &old, &new);
+            #[cfg(feature = "system-fonts")]
+            fonts(&mut p, &old, &new);
             failures.extend(p.failures);
             seen.extend(p.seen);
         }

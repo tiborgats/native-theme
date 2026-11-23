@@ -144,7 +144,11 @@ impl Spinner {
     /// icon theme where `None`), never another theme's.
     #[must_use]
     pub fn new(resolved: &ResolvedTheme, icon_set: IconSet, icon_theme: Option<&str>) -> Self {
-        let look = Look::of(resolved);
+        Self::of_look(Look::of(resolved), icon_set, icon_theme)
+    }
+
+    /// [`Spinner::new`] of `look`.
+    pub(crate) fn of_look(look: Look, icon_set: IconSet, icon_theme: Option<&str>) -> Self {
         let color = match icon_set {
             IconSet::Material | IconSet::Lucide => Some(look.color),
             IconSet::Freedesktop => Some(look.current_color),

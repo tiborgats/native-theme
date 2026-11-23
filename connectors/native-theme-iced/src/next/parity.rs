@@ -1838,8 +1838,7 @@ fn the_connector_hands_iced_the_same_from_both_models() -> crate::Result<()> {
         }
     }
     for (i, d) in DIFFERENCES.iter().enumerate() {
-        // The `iced_aw` style functions are compared with that feature only.
-        if d.leaf.starts_with("aw::") && !cfg!(feature = "iced_aw") {
+        if !compared_here(d.leaf) {
             continue;
         }
         for &p in d.presets {
@@ -1861,6 +1860,16 @@ fn the_connector_hands_iced_the_same_from_both_models() -> crate::Result<()> {
         failures.join("\n")
     );
     Ok(())
+}
+
+/// Whether this build compares the style function `leaf`: the iced theme in
+/// every build, the `iced_aw` style functions with the `iced_aw` feature,
+/// every other style function with the `widgets` feature, which builds them.
+fn compared_here(leaf: &str) -> bool {
+    let aw = leaf.starts_with("aw::");
+    leaf.starts_with("to_theme")
+        || (aw && cfg!(feature = "iced_aw"))
+        || (!aw && cfg!(feature = "widgets"))
 }
 
 /// A key of [`Difference::presets`] as the preset's key and the scheme it

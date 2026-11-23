@@ -311,6 +311,12 @@ name = ["next::border_color", "next::border_corner_radius", "next::border_corner
 kind = "absent"
 reason = "iced's `next` gives each of iced's crate-root helpers a twin on the 0.8.0 model, and gpui's crate root has none of them, each for the reason its entry above gives for the root name: gpui-component takes the value through the `Theme` that `to_theme` writes, or through a `geometry` builder; gpui's `next` gives its own `to_theme` and each `geometry` builder a twin of the same name on the 0.8.0 model (connectors/native-theme-gpui/src/next/mod.rs, the module's doc), so it has the same receivers and needs none of these"
 
+[[exception]]
+connector = "gpui"
+name = ["next::control_line_height", "next::focus_ring", "next::font", "next::pick_list_handle", "next::radio", "next::spinner", "next::switch", "next::switch_over", "next::system_font_family", "next::tab_flares", "next::tab_indicator", "next::tab_indicator_line"]
+kind = "absent"
+reason = "iced's `next` gives each of iced's crate-root widgets, widget parts and font helpers a twin on the 0.8.0 model (the spinner's is `next::spinner`, `Spinner::new`'s), and gpui has none of them, each for the reason its entry above gives for the root name: gpui's `widgets` module draws its own switch, radio and tab bar, gpui-component its own focus ring, select caret and control heights, and gpui's `geometry` builders set each stated font; gpui's `next` has none of these at its root either, as its crate root has none (connectors/native-theme-gpui/src/next/mod.rs, the module's doc: twins of `to_theme` and of the `geometry`, `variants` and `base_layer` builders)"
+
 # ── installing a theme, and watching the OS ─────────────────────────────────
 
 [[exception]]

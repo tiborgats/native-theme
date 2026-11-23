@@ -48,10 +48,27 @@ pub(crate) struct RingLook {
 /// `styles::text_editor` already draw as the focused field's border.
 pub(crate) fn ring_look(resolved: &ResolvedTheme, radius: f32) -> Option<RingLook> {
     let d = &resolved.defaults;
-    let (width, offset) = (d.focus_ring_width, d.focus_ring_offset);
+    ring_look_from(
+        to_color(d.focus_ring_color),
+        d.focus_ring_width,
+        d.focus_ring_offset,
+        radius,
+        d.focus_ring_keyboard_only == Some(true),
+    )
+}
+
+/// [`ring_look`] of a ring `width` wide in `color`, `offset` out from the
+/// field's edge, round a field of corner `radius`.
+pub(crate) fn ring_look_from(
+    color: Color,
+    width: f32,
+    offset: f32,
+    radius: f32,
+    keyboard_only: bool,
+) -> Option<RingLook> {
     let drawn = width.is_finite() && offset.is_finite() && width > 0.0 && offset != -width;
     drawn.then(|| RingLook {
-        color: to_color(d.focus_ring_color),
+        color,
         width,
         offset,
         radius: if radius.is_finite() {
@@ -59,7 +76,7 @@ pub(crate) fn ring_look(resolved: &ResolvedTheme, radius: f32) -> Option<RingLoo
         } else {
             0.0
         },
-        keyboard_only: d.focus_ring_keyboard_only == Some(true),
+        keyboard_only,
     })
 }
 
