@@ -755,7 +755,7 @@ fn build(preset: Preset, context: ThemeContext, inputs: &ResolveInputs<'_>) -> R
         Preset::MacosTahoe => super::presets::macos::resolve_tahoe(&context, inputs),
         Preset::Windows11 => super::presets::windows::resolve(&context, inputs),
         Preset::Material3 => super::presets::material::resolve(&context, inputs),
-        Preset::Ios13 => nothing_stated(preset, context),
+        Preset::Ios13 => super::presets::ios::resolve(&context, inputs),
     }
 }
 
@@ -768,9 +768,7 @@ fn contrast_levels(preset: Preset) -> &'static [Contrast] {
         Preset::Windows11 => super::presets::windows::CONTRAST_LEVELS,
         Preset::MacosMonterey | Preset::MacosTahoe => super::presets::macos::CONTRAST_LEVELS,
         Preset::Material3 => super::presets::material::CONTRAST_LEVELS,
-        // The theme with nothing stated (`nothing_stated`) defines `Normal`
-        // only.
-        Preset::Ios13 => &[Contrast::Normal],
+        Preset::Ios13 => super::presets::ios::CONTRAST_LEVELS,
     }
 }
 
@@ -810,7 +808,14 @@ pub(crate) struct ResolveInputs<'a> {
 /// files, `icon_set`).
 ///
 /// Scaffolding until each preset's builder lands (plan, M1), not a theme to
-/// draw with.
+/// draw with; every builder is written, so the tests alone use it.
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "every preset's builder is written; the tests compare against it"
+    )
+)]
 pub(crate) fn nothing_stated(preset: Preset, context: ThemeContext) -> ResolvedTheme {
     fn part<M>() -> RuleSet<PartStyle, super::rules::PartProp, M> {
         RuleBuilder::new(PartStyle::default()).build()
@@ -1874,8 +1879,7 @@ mod tests {
         let ctx = ThemeContext::dark();
         for preset in Preset::ALL {
             let resolved = Theme::preset(*preset).resolve(&ctx);
-            // kde-breeze's, adwaita's, windows-11's, the macOS and material-3's builders are
-            // written; every other preset states nothing yet.
+            // Every preset's builder is written.
             let built = matches!(
                 preset,
                 Preset::KdeBreeze
@@ -1884,6 +1888,7 @@ mod tests {
                     | Preset::MacosMonterey
                     | Preset::MacosTahoe
                     | Preset::Material3
+                    | Preset::Ios13
             );
             assert_eq!(
                 resolved != nothing_stated(*preset, ctx.clone()),
