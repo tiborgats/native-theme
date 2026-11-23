@@ -2283,12 +2283,12 @@ fn literals(code: &str) -> Vec<String> {
 
 /// T6: the only numeric literals are §2.3's: `0.5`, the identities `0` `0.0` `1.0`, egui's
 /// spinner constants `240` `8` `128`, egui's slider key step `1.0`, egui's combo-box arrow
-/// proportions `0.7` `0.45`, egui's radio dot divisor `3.0` and egui's collapsing-header
-/// arrow share `0.75`.
+/// proportions `0.7` `0.45`, egui's radio dot divisor `3.0`, egui's collapsing-header
+/// arrow share `0.75` and egui's slider knob divisor `2.5`.
 #[test]
 fn the_crate_hardcodes_no_values() -> std::io::Result<()> {
     let allowed = [
-        "0", "0.0", "0.5", "1.0", "240.0", "8", "128", "0.7", "0.45", "3.0", "0.75",
+        "0", "0.0", "0.5", "1.0", "240.0", "8", "128", "0.7", "0.45", "3.0", "0.75", "2.5",
     ];
     let mut found = Vec::new();
     for (file, code) in painting_sources()? {

@@ -270,7 +270,7 @@ fn compare_all(report: &mut Report, old: &ResolvedTheme, new: &native_theme::nex
         "slider::Look",
         SliderLook,
         Some(SliderLook::of(old)),
-        SliderLook::next_of(new),
+        Some(SliderLook::next_of(new)),
         [
             track_color,
             fill_color,

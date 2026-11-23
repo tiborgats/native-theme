@@ -827,7 +827,7 @@ fn a_slider_thumb_stated_as_none_has_no_outline() -> TestResult {
             Some(0.0),
             "{preset:?}"
         );
-        let look = Look::next_of(&r).ok_or("no look")?;
+        let look = Look::next_of(&r);
         assert_eq!(look.thumb_border_color, None, "{preset:?}");
         let ctx = patched_installed(preset, none)?;
         let add = |ui: &mut egui::Ui| ui.add(Slider::new(&mut 0.5, 0.0..=1.0));
@@ -846,6 +846,55 @@ fn a_slider_thumb_stated_as_none_has_no_outline() -> TestResult {
         outlined > 0,
         "no preset outlines its thumb: the test proves nothing"
     );
+    Ok(())
+}
+
+/// A slider's rail, trailing and knob fills stated as a gradient, which egui cannot paint as one
+/// colour, are each egui's own: the rail and the resting knob in the scope's `inactive.bg_fill`,
+/// the trailing fill only where `slider_trailing_fill` is on; the stated sizes stay (spec §10,
+/// rule 0, per property).
+#[test]
+fn a_slider_fill_egui_cannot_paint_is_egui_s_own() -> TestResult {
+    use crate::slider::{Geometry, Look};
+    let gradient = "{ kind = \"linear_gradient\", angle_deg = 0.0, stops = [{ offset = 0.0, color = \"#ff0000\" }, { offset = 1.0, color = \"#0000ff\" }] }";
+    let patch = format!(
+        "[[widgets.slider.rules]]\nstates = []\ntrack.fill = {gradient}\n\
+         active_track.fill = {gradient}\nthumb.fill = {gradient}\n"
+    );
+    let r = patched(Preset::KdeBreeze, &patch)?;
+    let look = Look::next_of(&r);
+    assert_eq!(
+        (look.track_color, look.fill_color, look.thumb_color),
+        (None, None, None)
+    );
+    let g = Geometry::next_of(&r, 1.0).ok_or("no geometry")?;
+    assert!(g.thumb.is_some() && g.rail.is_some(), "{g:?}");
+    let ctx = patched_installed(Preset::KdeBreeze, &patch)?;
+    let own = std::cell::Cell::new(None);
+    let add = |ui: &mut egui::Ui| {
+        ui.native_scope(Role::Slider, RoleVariant::Normal, |ui| {
+            let v = ui.visuals();
+            own.set(Some((v.widgets.inactive.bg_fill, v.slider_trailing_fill)));
+        });
+        ui.add(Slider::new(&mut 0.5, 0.0..=1.0))
+    };
+    let _ = response(&ctx, at(1.0), add);
+    let (out, r) = response(&ctx, at(1.0), add);
+    let (rest, trailing) = own.get().ok_or("no scope")?;
+    let parts = Parts::of(&r).ok_or("no parts")?;
+    let shapes = flat(&out.shapes);
+    let rail = painted_rect(&shapes, parts.get("track").ok_or("no rail")?).ok_or("no rail")?;
+    assert_eq!(rail.fill, rest);
+    let fill = painted_rect(&shapes, parts.get("fill").ok_or("no fill")?);
+    assert_eq!(fill.is_some(), trailing, "{fill:?}");
+    let knob = shapes
+        .iter()
+        .find_map(|s| match s {
+            egui::Shape::Circle(c) => Some(c.fill),
+            _ => None,
+        })
+        .ok_or("no knob drawn")?;
+    assert_eq!(knob, rest);
     Ok(())
 }
 
