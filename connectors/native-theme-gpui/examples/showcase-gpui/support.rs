@@ -493,6 +493,13 @@ pub(crate) trait NativeStyled: Styled + Sized {
     /// installed and states what the builder needs; nothing otherwise, so
     /// the widget keeps upstream's geometry where the theme states none
     /// (spec §10, rule 0).
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "every widget on the 0.8.0 model so far records the builder in its info, through next_native_value; the tests hold this one"
+        )
+    )]
     fn next_native(
         self,
         cx: &App,

@@ -17862,73 +17862,122 @@ fn the_synthetic_input_feeds_levels_and_stops_with_the_session(cx: &mut TestAppC
 
 /// The Inputs page's SpeechIndicator fills a stop button while the synthetic
 /// input captures, as its doc asks a caller to show it
-/// (speech/indicator.rs:45, :52-54): none at rest; while capturing, a square
-/// of the theme's `button.body(NONE).min_size[1]` whose info is the indicator's, and a
-/// click on it stops the session and takes it away.
+/// (speech/indicator.rs:45, :52-54), under kde-breeze and adwaita, each with
+/// its 0.8.0 theme installed: none at rest; while capturing, a square whose
+/// side is the installed theme's `button.body(NONE).min_size[1]` and whose
+/// painted fill is rounded by `button.body(NONE).corners` where the theme
+/// states both (adwaita must: it states a 34 px minimum height), and
+/// upstream's `size_8` where not; its info is the indicator's, and its
+/// "square" line names that side and radius, or `size_8`; a click on it stops
+/// the session and takes it away.
 #[gpui::test]
 fn the_speech_indicator_fills_a_stop_button_while_capturing(cx: &mut TestAppContext) {
     use gpui_component::speech::SpeechStatus;
+    use native_theme::next::WidgetState;
 
     const STOP: &str = "inputs-speech-indicator";
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
-    use_preset(&mut cx, &showcase, "kde-breeze");
-    show(&mut cx, &showcase, Page::Inputs);
-    assert!(
-        cx.debug_bounds(STOP).is_none(),
-        "a stop button is shown while nothing captures"
-    );
+    for preset in ["kde-breeze", "adwaita"] {
+        use_preset(&mut cx, &showcase, preset);
+        show(&mut cx, &showcase, Page::Inputs);
+        assert!(
+            cx.debug_bounds(STOP).is_none(),
+            "{preset}: a stop button is shown while nothing captures"
+        );
 
-    let state = read(&mut cx, &showcase, |this, _| this.speech_state.clone());
-    cx.update(|_window, cx| state.update(cx, |s, cx| s.start(cx)));
-    cx.executor().advance_clock(Duration::from_secs(1));
-    cx.run_until_parked();
-    draw(&mut cx);
-    let stop = bounds_of(&mut cx, STOP);
-    let (stated, rem) = cx.update(|window, cx| {
-        (
-            crate::support::next_resolved(cx)
-                .and_then(crate::info::inputs::StopSquare::of)
-                .map(|square| px(square.side)),
-            window.rem_size(),
-        )
-    });
-    // Where the theme states no side, upstream's icon-Button square, size_8,
-    // as gpui sizes it at the window's rem.
-    let mut size_8 = gpui::div().size_8();
-    let upstream = match Styled::style(&mut size_8).size.height {
-        Some(gpui::Length::Definite(length)) => {
-            Some(length.to_pixels(gpui::AbsoluteLength::Pixels(Pixels::ZERO), rem))
+        let state = read(&mut cx, &showcase, |this, _| this.speech_state.clone());
+        cx.update(|_window, cx| state.update(cx, |s, cx| s.start(cx)));
+        cx.executor().advance_clock(Duration::from_secs(1));
+        cx.run_until_parked();
+        draw(&mut cx);
+        let stop = bounds_of(&mut cx, STOP);
+        let (body, rem, scale) = cx.update(|window, cx| {
+            (
+                crate::support::next_resolved(cx).map(|r| {
+                    let body = r.button.body(WidgetState::NONE);
+                    (body.min_size[1], native_theme_gpui::next::radius_of(&body))
+                }),
+                window.rem_size(),
+                window.scale_factor(),
+            )
+        });
+        assert!(body.is_some(), "{preset}: no 0.8.0 theme is installed");
+        let stated = body.and_then(|(side, radius)| Some((side?, radius?)));
+        if preset == "adwaita" {
+            assert!(
+                stated.is_some(),
+                "adwaita no longer states button.body(NONE).min_size[1] and one radius for its corners, which this test reads"
+            );
         }
-        _ => None,
-    };
-    let side = stated.or(upstream);
-    // Within half a pixel: gpui rounds the layout to whole pixels.
-    assert!(
-        side.is_some_and(|side| (stop.size.height - side).abs() <= px(0.5)),
-        "the stop button at {stop:?} is not as high as button.body(NONE).min_size[1] where the \
-         theme states it, {stated:?}, and size_8 where not, {upstream:?}"
-    );
-    assert_eq!(
-        stop.size.width, stop.size.height,
-        "the stop button is not square"
-    );
-    let info = settle_on(&mut cx, &showcase, STOP);
-    assert_eq!(
-        info.map(|info| info.kind),
-        Some("SpeechIndicator"),
-        "the inspector does not show the indicator's info on its stop button"
-    );
+        // Where the theme states no side, upstream's icon-Button square,
+        // size_8, as gpui sizes it at the window's rem.
+        let mut size_8 = gpui::div().size_8();
+        let upstream = match Styled::style(&mut size_8).size.height {
+            Some(gpui::Length::Definite(length)) => {
+                Some(length.to_pixels(gpui::AbsoluteLength::Pixels(Pixels::ZERO), rem))
+            }
+            _ => None,
+        };
+        let side = stated.map(|(side, _)| px(side)).or(upstream);
+        // Within half a pixel: gpui rounds the layout to whole pixels.
+        assert!(
+            side.is_some_and(|side| (stop.size.height - side).abs() <= px(0.5)),
+            "{preset}: the stop button at {stop:?} is not as high as button.body(NONE).min_size[1] \
+             where the theme states it, {stated:?}, and size_8 where not, {upstream:?}"
+        );
+        assert_eq!(
+            stop.size.width, stop.size.height,
+            "{preset}: the stop button is not square"
+        );
+        if let Some((_, radius)) = stated {
+            let painted = quads_inside(&mut cx, STOP)
+                .into_iter()
+                .filter(|q| !q.background.is_transparent())
+                .max_by(|a, b| {
+                    let area = |q: &gpui::Quad| q.bounds.size.width.0 * q.bounds.size.height.0;
+                    area(a).total_cmp(&area(b))
+                })
+                .map(|q| q.corner_radii.top_left.0 / scale);
+            assert!(
+                painted.is_some_and(|painted| (painted - radius.max(0.)).abs() < 1e-3),
+                "{preset}: the stop button's fill is rounded by {painted:?}, not button.body(NONE).corners, {radius}"
+            );
+        }
+        let info = settle_on(&mut cx, &showcase, STOP);
+        assert!(
+            info.as_ref()
+                .is_some_and(|info| info.kind == "SpeechIndicator"),
+            "{preset}: the inspector does not show the indicator's info on its stop button: {info:?}"
+        );
+        let Some(info) = info else { return };
+        let square = match stated {
+            Some(_) => info.config.iter().find(|n| n.what == "square"),
+            None => info.not_themeable.iter().find(|n| n.what == "square"),
+        };
+        let names = |text: &str| match stated {
+            Some((side, radius)) => text.starts_with(&format!(
+                "{}px, button.body(NONE).min_size[1], rounded by button.body(NONE).corners, {}px,",
+                crate::info::px_text(side),
+                crate::info::px_text(radius.max(0.))
+            )),
+            None => text.starts_with("size_8,"),
+        };
+        assert!(
+            square.is_some_and(|n| names(&n.text)),
+            "{preset}: the indicator's square line does not name the side and radius it draws, {stated:?}: {square:?}"
+        );
 
-    click(&mut cx, STOP);
-    assert_eq!(
-        cx.read(|cx| state.read(cx).status()),
-        SpeechStatus::Idle,
-        "a click on the stop button did not stop the session"
-    );
-    assert!(
-        cx.debug_bounds(STOP).is_none(),
-        "the stop button stays after the session stopped"
-    );
+        click(&mut cx, STOP);
+        assert_eq!(
+            cx.read(|cx| state.read(cx).status()),
+            SpeechStatus::Idle,
+            "{preset}: a click on the stop button did not stop the session"
+        );
+        assert!(
+            cx.debug_bounds(STOP).is_none(),
+            "{preset}: the stop button stays after the session stopped"
+        );
+    }
 }
 
 /// The Inputs page's bars waveform and its liquid one show different infos:

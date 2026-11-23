@@ -954,14 +954,17 @@ pub fn selection_inactive_text_color(r: &ResolvedTheme) -> Mapped<Color> {
 }
 
 /// A part's fill where a rule states it for the queried state, as a colour
-/// of the model; `None` where none does.
+/// of the model; `None` where none does. A fill stated as none is
+/// transparent, and a layered paint gives its fallback colour (spec §10,
+/// rule 2).
 fn state_fill_color(part: &PartStyle, home: &'static str) -> Mapped<Option<Color>> {
     if !part.from_state.contains(PartStated::FILL) {
         return Ok(None);
     }
     match &part.fill {
+        Paint::None => Ok(Some(Color::TRANSPARENT)),
         Paint::Solid(c) => Ok(Some(*c)),
-        _ => Err(Unmapped(home)),
+        paint @ Paint::Complex(_) => paint.fallback_color().map(Some).ok_or(Unmapped(home)),
     }
 }
 
@@ -971,7 +974,8 @@ fn state_fill_color(part: &PartStyle, home: &'static str) -> Mapped<Option<Color
 ///
 /// # Errors
 ///
-/// [`Unmapped`] where the fill is stated in a form other than one colour.
+/// [`Unmapped`] where the fill is stated as a layered paint with no
+/// fallback colour.
 pub fn list_header_hover_background(r: &ResolvedTheme) -> Mapped<Option<Color>> {
     state_fill_color(
         &r.list.header(WidgetState::HOVER),
@@ -985,7 +989,8 @@ pub fn list_header_hover_background(r: &ResolvedTheme) -> Mapped<Option<Color>> 
 ///
 /// # Errors
 ///
-/// [`Unmapped`] where the fill is stated in a form other than one colour.
+/// [`Unmapped`] where the fill is stated as a layered paint with no
+/// fallback colour.
 pub fn list_header_active_background(r: &ResolvedTheme) -> Mapped<Option<Color>> {
     state_fill_color(
         &r.list.header(WidgetState::PRESSED),

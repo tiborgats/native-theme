@@ -434,6 +434,11 @@ const GEOMETRY_NOTES_FILE: &str = "info/mod.rs";
 /// The table's declaration, up to the `[` its entries follow.
 const GEOMETRY_NOTES_OPEN: &str = "pub const GEOMETRY_NOTES: &[(&str, &str)] = &[";
 
+/// The declaration of the 0.8.0 model's table, `NEXT_GEOMETRY_NOTES`, in the
+/// same file, which `next_native_value` and `WidgetInfo::next_geometry` take
+/// a widget's geometry line from.
+const NEXT_GEOMETRY_NOTES_OPEN: &str = "pub const NEXT_GEOMETRY_NOTES: &[(&str, &str)] = &[";
+
 /// The byte offset of `inner` in `outer`, which it is a slice of.
 fn offset_in(outer: &str, inner: &str) -> usize {
     (inner.as_ptr() as usize).saturating_sub(outer.as_ptr() as usize)
@@ -468,16 +473,39 @@ fn geometry_note_names(info: &str) -> (Vec<(usize, &str)>, Vec<String>) {
 /// so an entry the parse cannot see is never silently missing. The text is
 /// `""` for an entry that has none, which leaves nothing to cite.
 fn geometry_note_entries(info: &str) -> (Vec<(usize, &str, &str)>, Vec<String>) {
+    note_table_entries(info, GEOMETRY_NOTES_OPEN)
+}
+
+/// [`geometry_note_entries`] of `NEXT_GEOMETRY_NOTES`.
+fn next_geometry_note_entries(info: &str) -> (Vec<(usize, &str, &str)>, Vec<String>) {
+    note_table_entries(info, NEXT_GEOMETRY_NOTES_OPEN)
+}
+
+/// The entries of both tables, `GEOMETRY_NOTES` first, and a line for every
+/// part of either that could not be read: every geometry line a widget can
+/// show.
+fn all_geometry_note_entries(info: &str) -> (Vec<(usize, &str, &str)>, Vec<String>) {
+    let (mut entries, mut unreadable) = geometry_note_entries(info);
+    let (next, next_unreadable) = next_geometry_note_entries(info);
+    entries.extend(next);
+    unreadable.extend(next_unreadable);
+    (entries, unreadable)
+}
+
+/// The entries of the table `table_open` declares, as
+/// [`geometry_note_entries`] reads them.
+fn note_table_entries<'a>(
+    info: &'a str,
+    table_open: &str,
+) -> (Vec<(usize, &'a str, &'a str)>, Vec<String>) {
     let starts = line_offsets(info);
     let mut entries = Vec::new();
     let mut unreadable = Vec::new();
-    let Some(open) = info.find(GEOMETRY_NOTES_OPEN) else {
-        unreadable.push(format!(
-            "{GEOMETRY_NOTES_FILE}: no `{GEOMETRY_NOTES_OPEN}` found"
-        ));
+    let Some(open) = info.find(table_open) else {
+        unreadable.push(format!("{GEOMETRY_NOTES_FILE}: no `{table_open}` found"));
         return (entries, unreadable);
     };
-    let bracket = open + GEOMETRY_NOTES_OPEN.len() - 1;
+    let bracket = open + table_open.len() - 1;
     let Some(table) = call_args(info, bracket) else {
         unreadable.push(format!(
             "{GEOMETRY_NOTES_FILE}:{}: the table never closes",
@@ -564,8 +592,10 @@ fn code_calls(raw: &str, name: &str) -> Vec<usize> {
     out
 }
 
-/// Spec §3.3: `GEOMETRY_NOTES` has one entry for every `pub fn` of
-/// geometry.rs and none for anything else -- the value builders as well as
+/// Spec §3.3: every `pub fn` of geometry.rs has an entry in `GEOMETRY_NOTES`
+/// or in `NEXT_GEOMETRY_NOTES`, the 0.8.0 model's table, whose builders
+/// (`next::geometry`) bear the same names; neither table has an entry for
+/// anything else, nor two for one builder -- the value builders as well as
 /// the refinements, because an icon size or a gap is recorded with
 /// `.geometry(name)` too.
 #[test]
@@ -576,9 +606,23 @@ fn every_geometry_builder_has_a_note() {
         "no `pub fn` found in geometry.rs, so this test would pass vacuously"
     );
     let (noted, mut findings) = geometry_note_names(geometry_notes_source());
+    let (next_entries, next_unreadable) = next_geometry_note_entries(geometry_notes_source());
+    findings.extend(next_unreadable);
+    let next_noted: Vec<(usize, &str)> = next_entries
+        .into_iter()
+        .map(|(line, name, _)| (line, name))
+        .collect();
+    assert!(
+        !next_noted.is_empty(),
+        "NEXT_GEOMETRY_NOTES has no entry, so this test would pass vacuously for it"
+    );
 
     for builder in &builders {
-        if !noted.iter().any(|(_, name)| name == builder) {
+        if !noted
+            .iter()
+            .chain(&next_noted)
+            .any(|(_, name)| name == builder)
+        {
             let at = GEOMETRY
                 .lines()
                 .position(|l| {
@@ -591,26 +635,31 @@ fn every_geometry_builder_has_a_note() {
                     |ix| format!("geometry.rs:{}", ix + 1),
                 );
             findings.push(format!(
-                "{at}: geometry::{builder} has no GEOMETRY_NOTES entry"
+                "{at}: geometry::{builder} has no GEOMETRY_NOTES or NEXT_GEOMETRY_NOTES entry"
             ));
         }
     }
-    for (ix, (line, name)) in noted.iter().enumerate() {
-        if !builders.contains(name) {
-            findings.push(format!(
-                "{GEOMETRY_NOTES_FILE}:{line}: an entry for geometry::{name}, which \
-                 geometry.rs does not declare"
-            ));
-        } else if noted.iter().take(ix).any(|(_, earlier)| earlier == name) {
-            findings.push(format!(
-                "{GEOMETRY_NOTES_FILE}:{line}: a second entry for geometry::{name}"
-            ));
+    for (table, entries) in [
+        ("GEOMETRY_NOTES", &noted),
+        ("NEXT_GEOMETRY_NOTES", &next_noted),
+    ] {
+        for (ix, (line, name)) in entries.iter().enumerate() {
+            if !builders.contains(name) {
+                findings.push(format!(
+                    "{GEOMETRY_NOTES_FILE}:{line}: a {table} entry for geometry::{name}, \
+                     which geometry.rs does not declare"
+                ));
+            } else if entries.iter().take(ix).any(|(_, earlier)| earlier == name) {
+                findings.push(format!(
+                    "{GEOMETRY_NOTES_FILE}:{line}: a second {table} entry for geometry::{name}"
+                ));
+            }
         }
     }
 
     assert!(
         findings.is_empty(),
-        "GEOMETRY_NOTES and geometry.rs disagree, so a widget's geometry line \
+        "GEOMETRY_NOTES or NEXT_GEOMETRY_NOTES and geometry.rs disagree, so a widget's geometry line \
          would describe the wrong builder or none:\n  {}",
         findings.join("\n  ")
     );
@@ -703,10 +752,10 @@ fn every_text_builders_note_names_the_whole_font() {
         !builders.is_empty(),
         "no geometry.rs builder calls with_text, so this test would pass vacuously"
     );
-    let (entries, unreadable) = geometry_note_entries(geometry_notes_source());
+    let (entries, unreadable) = all_geometry_note_entries(geometry_notes_source());
     assert!(
         unreadable.is_empty(),
-        "GEOMETRY_NOTES could not be read:\n  {}",
+        "GEOMETRY_NOTES or NEXT_GEOMETRY_NOTES could not be read:\n  {}",
         unreadable.join("\n  ")
     );
     let findings = understated_font_notes(&entries, &builders);
@@ -846,7 +895,8 @@ fn native_info_names_the_builder_it_applies() {
             let applied = args.get(at).map(|a| a.trim());
             let recorded = args.get(at + 1).map(|a| a.trim());
             // `next_native_info` hands its own builder and name on.
-            if applied == Some("build") && recorded == Some("name") {
+            if *file == GEOMETRY_NOTES_FILE && applied == Some("build") && recorded == Some("name")
+            {
                 continue;
             }
             let builder = applied
@@ -898,10 +948,39 @@ fn geometry_line_calls(raw: &str) -> Vec<(usize, Option<&str>)> {
         .collect()
 }
 
+/// Every call in `raw` that records a builder on the 0.8.0 model, which takes
+/// its line from `NEXT_GEOMETRY_NOTES`: a `.next_geometry(` method call, and
+/// a `next_native_info` or `next_native_value` call, as the line it is on,
+/// what it is, and the name it records when that is a single string literal.
+/// `next_native_info` hands its own `name` on, which yields `None`.
+fn next_geometry_line_calls(raw: &str) -> Vec<(usize, &'static str, Option<&str>)> {
+    let starts = &line_offsets(raw);
+    let method = method_calls(raw, "next_geometry").into_iter().map(|open| {
+        let literal = call_args(raw, open)
+            .filter(|args| args.len() == 1)
+            .and_then(|args| args.first().copied())
+            .and_then(unquote);
+        (line_at(starts, open), ".next_geometry", literal)
+    });
+    let applied = [("next_native_info", 3), ("next_native_value", 2)]
+        .into_iter()
+        .flat_map(|(name, at)| {
+            code_calls(raw, name).into_iter().map(move |open| {
+                let literal = call_args(raw, open)
+                    .and_then(|args| args.get(at).copied())
+                    .and_then(|arg| unquote(arg.trim()));
+                (line_at(starts, open), name, literal)
+            })
+        });
+    method.chain(applied).collect()
+}
+
 /// Spec §3.3: a builder named straight to `.geometry("x")` -- the way a value
 /// builder such as `icon_size_small` or `widget_gap` is recorded, since only a
 /// refinement can go through `native_info` -- names a `GEOMETRY_NOTES` entry,
-/// so "(no GEOMETRY_NOTES entry)" never reaches the inspector.
+/// so "(no GEOMETRY_NOTES entry)" never reaches the inspector; and a builder
+/// recorded on the 0.8.0 model (`.next_geometry("x")`, `next_native_info`,
+/// `next_native_value`) names a `NEXT_GEOMETRY_NOTES` entry.
 ///
 /// The test module is left out: it names a builder that does not exist on
 /// purpose, to see that line.
@@ -914,8 +993,16 @@ fn every_recorded_builder_has_a_note() {
          against it:\n  {}",
         unreadable.join("\n  ")
     );
+    let (next_entries, next_unreadable) = next_geometry_note_entries(geometry_notes_source());
+    assert!(
+        next_unreadable.is_empty() && !next_entries.is_empty(),
+        "NEXT_GEOMETRY_NOTES could not be read, so no builder recorded on the 0.8.0 \
+         model can be checked against it:\n  {}",
+        next_unreadable.join("\n  ")
+    );
     let mut findings = Vec::new();
     let mut recorded = 0usize;
+    let mut next_recorded = 0usize;
     for (file, raw) in demo_files() {
         for (line, literal) in geometry_line_calls(raw) {
             recorded += usize::from(literal.is_some());
@@ -927,11 +1014,22 @@ fn every_recorded_builder_has_a_note() {
                 ));
             }
         }
+        for (line, call, literal) in next_geometry_line_calls(raw) {
+            next_recorded += usize::from(literal.is_some());
+            if let Some(name) = literal
+                && !next_entries.iter().any(|(_, noted, _)| *noted == name)
+            {
+                findings.push(format!(
+                    "{file}:{line}: {call} records \"{name}\", which names no \
+                     NEXT_GEOMETRY_NOTES entry"
+                ));
+            }
+        }
     }
     assert!(
-        recorded > 0,
-        "no `.geometry(\"x\")` call found outside the test module, so this test \
-         would pass vacuously"
+        recorded > 0 && next_recorded > 0,
+        "no `.geometry(\"x\")` call, or no builder recorded on the 0.8.0 model, found \
+         outside the test module, so this test would pass vacuously"
     );
     assert!(
         findings.is_empty(),
@@ -990,6 +1088,41 @@ fn the_geometry_note_parsers_do_their_jobs() {
             (7, Some("icon_size_small")),
             (9, Some("icon_size_smal"))
         ]
+    );
+
+    let next = "pub fn next_geometry(self, builder: &'static str) -> Self {\n\
+                \x20   *info = std::mem::take(info).next_geometry(name);\n\
+                }\n\
+                // info.next_geometry(\"commented\")\n\
+                let a = info.next_geometry(\"button_disabled\");\n\
+                let b = next_native_info(w, cx, next::geometry::button, \"button\", &mut info);\n\
+                let c = next_native_value(cx, next::geometry::icon_size_small, \"icon_size_small\", &mut info);\n\
+                let d = info.geometry(\"button\");\n";
+    assert_eq!(
+        next_geometry_line_calls(next),
+        vec![
+            (2, ".next_geometry", None),
+            (5, ".next_geometry", Some("button_disabled")),
+            (6, "next_native_info", Some("button")),
+            (7, "next_native_value", Some("icon_size_small")),
+        ]
+    );
+    let table = "pub const GEOMETRY_NOTES: &[(&str, &str)] = &[\n\
+                 \x20   (\"button\", \"a\"),\n\
+                 ];\n\
+                 pub const NEXT_GEOMETRY_NOTES: &[(&str, &str)] = &[\n\
+                 \x20   (\"toggle\", \"b\"),\n\
+                 ];\n";
+    let names = |(entries, _): (Vec<(usize, &'static str, &'static str)>, Vec<String>)| {
+        entries
+            .into_iter()
+            .map(|(line, name, _)| (line, name))
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(names(geometry_note_entries(table)), vec![(2, "button")]);
+    assert_eq!(
+        names(next_geometry_note_entries(table)),
+        vec![(5, "toggle")]
     );
 }
 
@@ -3383,7 +3516,7 @@ fn the_omission_report() {
                 .flat_map(|(_, what, text)| [what, text]),
         );
     }
-    let (notes, _) = geometry_note_entries(geometry_notes_source());
+    let (notes, _) = all_geometry_note_entries(geometry_notes_source());
     said.extend(notes.into_iter().map(|(_, _, text)| text));
     let said = said.join("\n");
 
@@ -3915,7 +4048,7 @@ fn every_prose_citation_still_exists() {
     // call of its own (spec §3.3).
     let info = geometry_notes_source();
     let starts = line_offsets(info);
-    let (notes, _) = geometry_note_entries(info);
+    let (notes, _) = all_geometry_note_entries(info);
     let geometry_citations: usize = notes
         .iter()
         .map(|(_, _, text)| prose_citations(text).len())

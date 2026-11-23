@@ -3789,14 +3789,19 @@ fn button_turning(
         button_theme(cx),
     );
     if kind != asked {
-        button_info = button_info.instance(
-            "variant",
-            format!(
-                "{} asked for, built as {}: variants::bordered_button gives no variant, the installed theme having no rule that states a hovered button's stroke, button.body(HOVER).stroke.color, in a form gpui can take, or no value gpui can take at a home geometry::button reads (native-theme-gpui/next/variants.rs, bordered_button)",
-                asked.name(),
-                kind.name()
-            ),
+        let built_as = format!(
+            "{} asked for, built as {}: variants::bordered_button gives no variant, the installed theme having no rule that states a hovered button's stroke, button.body(HOVER).stroke.color, in a form gpui can take, or no value gpui can take at a home geometry::button reads (native-theme-gpui/next/variants.rs, bordered_button)",
+            asked.name(),
+            kind.name()
         );
+        match button_info
+            .instance
+            .iter_mut()
+            .find(|n| n.what == "variant")
+        {
+            Some(note) => note.text = format!("{built_as}. {}", note.text),
+            None => button_info = button_info.instance("variant", built_as),
+        }
     }
     if let Some(icon) = &icon {
         button_info = match state {
@@ -3832,7 +3837,7 @@ fn button_turning(
         .filter(|_| state == ButtonState::Disabled)
         .and_then(|r| next::geometry::button_disabled(r).ok());
     if disabled_pair.is_some() {
-        button_info = button_info.geometry("button_disabled");
+        button_info = button_info.next_geometry("button_disabled");
     }
     // A disabled Default Button, the variant upstream draws an edge round
     // (button/button.rs, `RenderOnce for Button`: `border_l_1` and its
@@ -3968,29 +3973,25 @@ pub(crate) fn toggle(
 ) -> Stateful<Div> {
     // `Toggle::icon` takes an `Icon` alone (button/toggle.rs).
     let icon = &icon.svg_only();
-    let styled = toggle_styled(cx);
     let mut toggle_info = info::buttons::toggle(
         cx.theme(),
         icon.shown(),
         icon.note("the Toggle shows the icon's name as its label instead"),
         checked,
-        styled,
     );
     let toggle = match icon.icon() {
         Some(drawn) => Toggle::new(id).icon(drawn),
         None => Toggle::new(id).label(icon_name),
     };
-    next_native_info(
-        toggle,
-        cx,
-        next::geometry::toggle,
-        "toggle",
-        &mut toggle_info,
-    )
-    .checked(checked)
-    .on_click(on_click)
-    .info(ui, id, toggle_info)
-    .debug_selector(move || id.into())
+    let style = info::next_native_value(cx, next::geometry::toggle, "toggle", &mut toggle_info);
+    if style.is_some() {
+        toggle_info = info::buttons::styled_toggle(toggle_info);
+    }
+    refined(toggle, style.as_ref())
+        .checked(checked)
+        .on_click(on_click)
+        .info(ui, id, toggle_info)
+        .debug_selector(move || id.into())
 }
 
 /// A `ToggleGroup` of unchecked Toggles reading `labels`, each refined by
@@ -4001,22 +4002,19 @@ pub(crate) fn toggle_group(
     id: &'static str,
     labels: &[&'static str],
 ) -> Stateful<Div> {
-    let mut group_info = info::buttons::toggle_group(cx.theme(), toggle_styled(cx));
+    let mut group_info = info::buttons::toggle_group(cx.theme());
     // The group's info takes the builder's line, each Toggle its refinement.
-    let _ = info::next_native_value(cx, next::geometry::toggle, "toggle", &mut group_info);
+    let style = info::next_native_value(cx, next::geometry::toggle, "toggle", &mut group_info);
+    if style.is_some() {
+        group_info = info::buttons::styled_toggle(group_info);
+    }
     ToggleGroup::new(id)
-        .children(labels.iter().map(|&label| {
-            Toggle::new(label)
-                .label(label)
-                .next_native(cx, next::geometry::toggle)
-        }))
+        .children(
+            labels
+                .iter()
+                .map(|&label| refined(Toggle::new(label).label(label), style.as_ref())),
+        )
         .info(ui, id, group_info)
-}
-
-/// Whether `next::geometry::toggle` refines a Toggle under the installed
-/// 0.8.0 theme: one is installed and states every value the builder reads.
-fn toggle_styled(cx: &App) -> bool {
-    next_geometry(cx, next::geometry::toggle).is_some_and(|style| style.is_ok())
 }
 
 /// A `Clipboard` copying `value`, reading `label` beside its icon where one
@@ -10030,10 +10028,23 @@ pub(crate) fn toggle_button(
         "button_checked",
         &mut button_info,
     );
-    if checked.is_some() {
+    if let (Some(_), Some(r)) = (&checked, next_resolved(cx)) {
+        let b = &r.button;
+        let fill = if next::state_fill_of(&b.body(WidgetState::CHECKED)).is_some() {
+            "button.body(CHECKED).fill"
+        } else if next::state_fill_of(&b.body(WidgetState::PRESSED)).is_some() {
+            "button.body(PRESSED).fill, where no rule states button.body(CHECKED).fill"
+        } else {
+            "gpui-component's own button_active token: the theme states neither button.body(CHECKED).fill nor button.body(PRESSED).fill, so geometry::button_checked sets no fill and upstream's selected fill stands (button/button.rs, ButtonVariant::selected)"
+        };
+        let text = if next::state_text_color_of(&b.label(WidgetState::CHECKED)).is_some() {
+            "button.label(CHECKED).color"
+        } else {
+            "button.label(PRESSED).color, where no rule states button.label(CHECKED).color"
+        };
         button_info = button_info.instance(
             "state",
-            "selected: on, in button.body(CHECKED).fill and button.label(CHECKED).color (the pressed pair where no rule states them for the state)",
+            format!("selected: on, filled with {fill} and lettered in {text}"),
         );
     }
     let button = refined(button.selected(true).toggled(true), checked.as_ref());
