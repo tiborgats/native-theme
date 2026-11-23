@@ -17,12 +17,13 @@ use objc2::runtime::ProtocolObject;
 use objc2::{MainThreadOnly, Message};
 use objc2_app_kit::{
     NSAppearance, NSAppearanceCustomization, NSAttributedStringNSStringDrawing, NSBezelStyle,
-    NSBox, NSBoxType, NSButton, NSButtonType, NSClipView, NSControl, NSControlSize, NSPopUpButton,
-    NSScrollView, NSScroller, NSScrollerPart, NSScrollerStyle, NSSegmentedControl, NSSlider,
-    NSSliderCell, NSSplitView, NSSwitch, NSTabView, NSTabViewItem, NSTableCellView, NSTableColumn,
-    NSTableView, NSTableViewStyle, NSTextField, NSTitlePosition, NSToolbar, NSToolbarItem, NSView,
-    NSWindow, NSWindowStyleMask,
+    NSBox, NSBoxType, NSButton, NSButtonType, NSClipView, NSControl, NSControlSize, NSEvent,
+    NSPopUpButton, NSScrollView, NSScroller, NSScrollerPart, NSScrollerStyle, NSSegmentedControl,
+    NSSlider, NSSliderCell, NSSplitView, NSSwitch, NSTabView, NSTabViewItem, NSTableCellView,
+    NSTableColumn, NSTableView, NSTableViewStyle, NSTextField, NSTitlePosition, NSToolbar,
+    NSToolbarItem, NSView, NSWindow, NSWindowStyleMask,
 };
+use objc2_core_graphics::{CGEvent, CGEventTapLocation, CGScrollEventUnit};
 use objc2_foundation::{NSIndexSet, NSPoint, NSRect, NSSize, NSString};
 use toml::{Table, Value};
 
@@ -66,6 +67,11 @@ const OVERLAY_SCROLL_FRAME: NSRect =
 
 /// The scroll views' document height, as a multiple of the scroll view's.
 const SCROLL_DOCUMENT_FACTOR: f64 = 3.0;
+
+/// The lines of each scroll `reveal` posts (down, then as many up), and the
+/// run-loop steps after each.
+const REVEAL_LINES: i32 = 1;
+const REVEAL_STEPS: u32 = 2;
 
 /// The toolbar sheet's content size, in points (its window at
 /// `CONTROLS_ORIGIN`, the controls sheet's window closed by then): the
@@ -619,12 +625,12 @@ fn appearance_table(pass: &Pass<'_>, sheet: &Sheet, targets: &[Target], key: &st
         let stem = format!("hovered-{}", target.name);
         let (mut h, rgba) = if target.scroll.is_some() {
             over_backdrops(pass, sheet, &dir, &rel, &stem, &|sub, file| {
-                flash(target);
                 out::put_table(
                     sub,
                     "cursor",
                     pass.move_cursor(window, screen_point(window, target)),
                 );
+                reveal(pass, window, target, sub);
                 pass.shot(window, sub, &dir, &rel, file)
             })
         } else {
@@ -683,9 +689,9 @@ fn press_table(
     let frame = window.frame().size;
     let stem = format!("clicked-{}", target.name);
     let (mut t, window_rgba) = over_backdrops(pass, sheet, dir, rel, &stem, &|sub, file| {
-        flash(target);
         let at = screen_point(window, target);
         out::put_table(sub, "cursor", pass.move_cursor(window, at));
+        reveal(pass, window, target, sub);
         let rgba = pass.click_at(sub, window, dir, rel, file, pass.quartz(at), target.escape);
         out::put(
             sub,
@@ -808,13 +814,52 @@ fn first_responder(window: &NSWindow) -> Value {
     }
 }
 
-/// Flash the scrollers of the target's scroll view, where it has one
-/// (`flashScrollers`), so an overlay scroller's knob is shown for the
-/// capture that follows.
-fn flash(target: &Target) {
-    if let Some(scroll) = &target.scroll {
-        scroll.flashScrollers();
+/// Show the scrollers of the target's scroll view, where it has one, for
+/// the capture that follows (an overlay scroller's knob is drawn only while
+/// shown): with the cursor over it, where the window under the cursor is the
+/// probe's, a scroll of `REVEAL_LINES` lines down and as many up posted at
+/// the cursor, each followed by `REVEAL_STEPS` steps; then the scroll view
+/// scrolled to its middle again and `flashScrollers`; into `t.reveal`.
+fn reveal(pass: &Pass<'_>, window: &NSWindow, target: &Target, t: &mut Table) {
+    let Some(scroll) = &target.scroll else {
+        return;
+    };
+    let mut r = Table::new();
+    let under = NSWindow::windowNumberAtPoint_belowWindowWithWindowNumber(
+        NSEvent::mouseLocation(),
+        0,
+        pass.mtm,
+    );
+    if under == window.windowNumber() {
+        let mut posted = Vec::new();
+        for lines in [REVEAL_LINES, -REVEAL_LINES] {
+            let event =
+                CGEvent::new_scroll_wheel_event2(None, CGScrollEventUnit::Line, 1, lines, 0, 0);
+            posted.push(out::boolean(event.is_some()));
+            CGEvent::post(CGEventTapLocation::HIDEventTap, event.as_deref());
+            pass.settle(window, REVEAL_STEPS);
+        }
+        out::put(&mut r, "scroll_events_created", out::array(posted));
+        if let Some(scroller) = scroll.verticalScroller() {
+            out::put(
+                &mut r,
+                "verticalScroller_doubleValue_after_scroll",
+                out::float(scroller.doubleValue()),
+            );
+        }
+    } else {
+        out::put(
+            &mut r,
+            "scroll",
+            out::unavailable(format!(
+                "the window under the cursor is window {under}, not the probe's {}: no scroll posted",
+                window.windowNumber()
+            )),
+        );
     }
+    scroll_to_middle(scroll);
+    scroll.flashScrollers();
+    out::put_table(t, "reveal", r);
 }
 
 /// For a scroller knob's target, whether its knob is drawn in `capture`
@@ -1819,7 +1864,7 @@ fn tabs_table(tabs: &Tabs, frame: NSSize) -> Table {
 
 fn method_text() -> String {
     format!(
-        "one titled NSWindow ({} x {} pt content from {}, empty title) holding the button pass's backdrop box and, at the regular control size with systemFontOfSize: of systemFontSizeForControlSize:, sized to fit and centred in rows {ROW_STEP} pt apart from the content's top: row 0 a check box off and one on (title \"{CHECK_TITLE}\"), a disclosure button (titled \"{DISCLOSURE_TITLE}\", sized to fit, then widened to {DISCLOSURE_WIDTH} pt; its title is drawn in the cell's titleRectForBounds:, clipped to it where the title is wider; targets.disclosure: title_rect_xywh, that rect, title_size_wh, the attributed title's size) and a push disclosure button, both push-on-push-off and off, and a push button (\"{TITLE}\"); row 1 a pop-up button ({POPUP_ITEMS:?}, the first selected), an editable bezeled text field (\"{FIELD_TEXT}\"), a segmented control ({SEGMENTS:?}, each {SEGMENT_WIDTH} pt wide, segment 0 selected) and, in the fifth column, a switch, off; row 2 a horizontal slider, 0 to {} at {SLIDER_VALUE}, {SLIDER_WIDTH} pt wide; under it two scroll views at {scroll} and {overlay} (x, y), each {} x {} pt with a vertical scroller (autohidesScrollers NO), the first set to NSScrollerStyleLegacy, the second to NSScrollerStyleOverlay, each document view an empty NSView {SCROLL_DOCUMENT_FACTOR} times the scroll view's height, scrolled to its middle, and neither the scroll view nor its clip view drawing a background (drawsBackground NO on both), so the backdrop shows behind the scroller; once the window is shown and settled each scroll view's style read (scroll_views.scrollerStyle_when_shown), set again and the scroll view tiled and scrolled to its middle again (scroll_views: the styles read back after that, drawsBackground and contentView_drawsBackground, each vertical scroller's isHidden, alphaValue, knobProportion and doubleValue, and NSScroller's preferredScrollerStyle), and so again once each appearance is set (<appearance>.scroll_views: scrollerStyle_read, then scrollerStyle_after_set); below them two view-based tables of {TABLE_ROWS} rows (one column {TABLE_COLUMN_WIDTH} pt, no header, each cell a label \"{ROW_TEXT}\", no row selected) in scroll views at {} (default style) and {} (NSTableViewStyleSourceList), an NSTabView at {} with tabs {TABS:?} (the first selected, its items without views), a vertical NSSplitView at {} with two empty panes, and an NSBox (NSBoxPrimary, no title) at {}; the window's NSToolbar holds one item whose view is an NSButton (NSBezelStyleToolbar, \"{TITLE}\"); the window made key as a button sheet's; per appearance: normal (the cursor parked right of the window), highlighted (highlight: YES on every NSButton, the pop-up button among them: each cell highlighted and the control redrawn, the pop-up's menu not opened), then per target the cursor moved to the centre of the target's part as the button pass's hovered state moves it, captured over every backdrop (hovered-<target>), and per pressed target, per backdrop, the cursor moved there and a real mouse-down captured during the press as the button pass's clicked state takes it (clicked-<target>[-over-<backdrop>].png; the pop-up's mouse-up followed by an Escape; firstResponder_class_after_press, the class of the window's first responder read after the mouse-up, before the control is set back: the text field's press makes its field editor the first responder), the control set back after each press (the text field: makeFirstResponder: nil, the first responder's class read back (firstResponder_class_after_reset), and its text set again; the tables: the selection cleared and makeFirstResponder: nil, read back as the text field's; the split view: setPosition:ofDividerAtIndex: 0 to the first pane's right edge read when it was built; the scroll views: scrolled to their middle again); a press is posted only where windowNumberAtPoint: at the press point gives the probe's window (window_at_press_is_ours), else it is skipped and its error recorded; for the scroller knobs the hovered state is taken per backdrop as the press is, and before each hovered and pressed capture the scroll view's flashScrollers shows its scrollers (an overlay scroller's knob is drawn only while shown), then the cursor is moved; knob_drawn: in the capture over the window's background, the pixels of the knob's rect that differ from the scroll view's background read at the middle of its clip view (background_raw), where none does the state's error (the knob is not drawn) (targets: their parts' rects, each read once the window is shown and settled, the cases' reads too; a part whose view is in no window, or that is empty or does not lie within its view's bounds, is the target's error and the target is neither hovered nor pressed; a case whose control is in no window gets an error for its geometry and its layer's measures and is not highlighted; over_backdrop: whether the part lies within the backdrop box and no scroll view or clip view between the target's view (included, with a scroll view's own clip view) and the content view draws a background (backdrop_covered_by: the classes of those that do), where not its layer is the composite over what lies behind it; the table rows: rectOfRow: {TABLE_TARGET_ROW}; the segment: the middle third; the slider: knobRectFlipped:; the disclosure button: from its left edge to the end of the cell's titleRectForBounds:, the slot its title is drawn in; the tab: tab {TAB_TARGET}'s rect from the tabs table; the split divider: from the first pane's right edge, dividerThickness wide; the scroller knobs: the vertical scroller's rectForPart: NSScrollerKnob, in the scroll view's coordinates); each layer is solved from the black and white captures as the button pass's (layer_method); diff_from_normal compares a state's capture over the window's background with the normal one inside the target's view frame grown by {DIFF_MARGIN} pt; then the toolbar sheet (toolbar_sheet, its method)",
+        "one titled NSWindow ({} x {} pt content from {}, empty title) holding the button pass's backdrop box and, at the regular control size with systemFontOfSize: of systemFontSizeForControlSize:, sized to fit and centred in rows {ROW_STEP} pt apart from the content's top: row 0 a check box off and one on (title \"{CHECK_TITLE}\"), a disclosure button (titled \"{DISCLOSURE_TITLE}\", sized to fit, then widened to {DISCLOSURE_WIDTH} pt; its title is drawn in the cell's titleRectForBounds:, clipped to it where the title is wider; targets.disclosure: title_rect_xywh, that rect, title_size_wh, the attributed title's size) and a push disclosure button, both push-on-push-off and off, and a push button (\"{TITLE}\"); row 1 a pop-up button ({POPUP_ITEMS:?}, the first selected), an editable bezeled text field (\"{FIELD_TEXT}\"), a segmented control ({SEGMENTS:?}, each {SEGMENT_WIDTH} pt wide, segment 0 selected) and, in the fifth column, a switch, off; row 2 a horizontal slider, 0 to {} at {SLIDER_VALUE}, {SLIDER_WIDTH} pt wide; under it two scroll views at {scroll} and {overlay} (x, y), each {} x {} pt with a vertical scroller (autohidesScrollers NO), the first set to NSScrollerStyleLegacy, the second to NSScrollerStyleOverlay, each document view an empty NSView {SCROLL_DOCUMENT_FACTOR} times the scroll view's height, scrolled to its middle, and neither the scroll view nor its clip view drawing a background (drawsBackground NO on both), so the backdrop shows behind the scroller; once the window is shown and settled each scroll view's style read (scroll_views.scrollerStyle_when_shown), set again and the scroll view tiled and scrolled to its middle again (scroll_views: the styles read back after that, drawsBackground and contentView_drawsBackground, each vertical scroller's isHidden, alphaValue, knobProportion and doubleValue, and NSScroller's preferredScrollerStyle), and so again once each appearance is set (<appearance>.scroll_views: scrollerStyle_read, then scrollerStyle_after_set); below them two view-based tables of {TABLE_ROWS} rows (one column {TABLE_COLUMN_WIDTH} pt, no header, each cell a label \"{ROW_TEXT}\", no row selected) in scroll views at {} (default style) and {} (NSTableViewStyleSourceList), an NSTabView at {} with tabs {TABS:?} (the first selected, its items without views), a vertical NSSplitView at {} with two empty panes, and an NSBox (NSBoxPrimary, no title) at {}; the window's NSToolbar holds one item whose view is an NSButton (NSBezelStyleToolbar, \"{TITLE}\"); the window made key as a button sheet's; per appearance: normal (the cursor parked right of the window), highlighted (highlight: YES on every NSButton, the pop-up button among them: each cell highlighted and the control redrawn, the pop-up's menu not opened), then per target the cursor moved to the centre of the target's part as the button pass's hovered state moves it, captured over every backdrop (hovered-<target>), and per pressed target, per backdrop, the cursor moved there and a real mouse-down captured during the press as the button pass's clicked state takes it (clicked-<target>[-over-<backdrop>].png; the pop-up's mouse-up followed by an Escape; firstResponder_class_after_press, the class of the window's first responder read after the mouse-up, before the control is set back: the text field's press makes its field editor the first responder), the control set back after each press (the text field: makeFirstResponder: nil, the first responder's class read back (firstResponder_class_after_reset), and its text set again; the tables: the selection cleared and makeFirstResponder: nil, read back as the text field's; the split view: setPosition:ofDividerAtIndex: 0 to the first pane's right edge read when it was built; the scroll views: scrolled to their middle again); a press is posted only where windowNumberAtPoint: at the press point gives the probe's window (window_at_press_is_ours), else it is skipped and its error recorded; for the scroller knobs the hovered state is taken per backdrop as the press is, and before each hovered and pressed capture, once the cursor is over the knob, the scrollers are shown (an overlay scroller's knob is drawn only while shown; reveal): where the window under the cursor is the probe's, a scroll-wheel CGEvent of {REVEAL_LINES} line down and one of as many up posted at the cursor (kCGScrollEventUnitLine), each followed by {REVEAL_STEPS} steps (reveal.verticalScroller_doubleValue_after_scroll), then the scroll view scrolled to its middle again and its flashScrollers; knob_drawn: in the capture over the window's background, the pixels of the knob's rect that differ from the scroll view's background read at the middle of its clip view (background_raw), where none does the state's error (the knob is not drawn) (targets: their parts' rects, each read once the window is shown and settled, the cases' reads too; a part whose view is in no window, or that is empty or does not lie within its view's bounds, is the target's error and the target is neither hovered nor pressed; a case whose control is in no window gets an error for its geometry and its layer's measures and is not highlighted; over_backdrop: whether the part lies within the backdrop box and no scroll view or clip view between the target's view (included, with a scroll view's own clip view) and the content view draws a background (backdrop_covered_by: the classes of those that do), where not its layer is the composite over what lies behind it; the table rows: rectOfRow: {TABLE_TARGET_ROW}; the segment: the middle third; the slider: knobRectFlipped:; the disclosure button: from its left edge to the end of the cell's titleRectForBounds:, the slot its title is drawn in; the tab: tab {TAB_TARGET}'s rect from the tabs table; the split divider: from the first pane's right edge, dividerThickness wide; the scroller knobs: the vertical scroller's rectForPart: NSScrollerKnob, in the scroll view's coordinates); each layer is solved from the black and white captures as the button pass's (layer_method); diff_from_normal compares a state's capture over the window's background with the normal one inside the target's view frame grown by {DIFF_MARGIN} pt; then the toolbar sheet (toolbar_sheet, its method)",
         CONTROLS_CONTENT.width,
         CONTROLS_CONTENT.height,
         point_text(CONTROLS_ORIGIN),
