@@ -30,7 +30,10 @@ type TestResult = Result<(), Box<dyn std::error::Error>>;
 /// defines (spec §1, "Axis values without data"). Every other preset resolves
 /// to a theme that states nothing until its unit of the plan's `M2` adds it
 /// here.
-const PRESETS: &[(Preset, &[Contrast])] = &[(Preset::KdeBreeze, &[Contrast::Normal])];
+const PRESETS: &[(Preset, &[Contrast])] = &[
+    (Preset::KdeBreeze, &[Contrast::Normal]),
+    (Preset::Adwaita, &[Contrast::Normal, Contrast::High]),
+];
 
 /// The least contrast ratio of primary text on its surface (spec §11, item 5:
 /// WCAG 2.2's minimum for large text and user-interface components).

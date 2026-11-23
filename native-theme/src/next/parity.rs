@@ -1399,6 +1399,110 @@ fn model_parity_kde_breeze() -> TestResult {
     Ok(())
 }
 
+// ---------------------------------------------------------------------------------------------------------
+// The value half on the adwaita builder (plan, M2's GNOME unit), static path: the same comparator and table.
+// ---------------------------------------------------------------------------------------------------------
+
+/// The groups of the table whose rows the adwaita builder ports so far: each of their rows is compared and
+/// equal, or skipped for a reason [`adwaita_expected_skip`] names. Every group, as for kde-breeze.
+const ADWAITA_PORTED_GROUPS: &[&str] = PORTED_GROUPS;
+
+/// The groups of the table whose values the adwaita builder does not state yet: their rows are compared,
+/// counted and reported, not asserted.
+const ADWAITA_NOT_PORTED_GROUPS: &[&str] = &[];
+
+/// The totals of the ported groups' rows on each scheme, `[rows, compared, equal, mismatching, skipped]`:
+/// every row equal but those [`adwaita_expected_skip`] names, skipped.
+const ADWAITA_PORTED_TOTALS: [usize; 5] = [563, 557, 557, 0, 6];
+
+/// The reason a row of the table is skipped on 0.7.2's `adwaita` without a reader's snapshot: the reader's
+/// context rows (`accessibility.*`); `checkbox.background_color`, compared only where
+/// `checkbox.unchecked_background` is unset, and `menu.min_row_height`, compared only where
+/// `menu.row_height` is unset, both of which `adwaita.toml` states.
+fn adwaita_expected_skip(key: &str) -> Option<compare::Skip> {
+    if key.starts_with("accessibility.") {
+        Some(compare::Skip::NoSnapshot)
+    } else if key == "checkbox.background_color" || key == "menu.min_row_height" {
+        Some(compare::Skip::OtherKeyStated)
+    } else {
+        None
+    }
+}
+
+/// Model parity of the adwaita builder (plan, section 1, rule 2): 0.7.2's `adwaita` and
+/// `Theme::preset(Preset::Adwaita)`, light and dark, over the table of homes. Every row's group is one of
+/// [`ADWAITA_PORTED_GROUPS`] or one of [`ADWAITA_NOT_PORTED_GROUPS`]; zero mismatches in the ported groups,
+/// every skip for its named reason; the rows of the groups not ported yet are counted and reported, and the
+/// two counts make the whole table. No dead rule in any rule set of the widgets.
+#[test]
+fn model_parity_adwaita() -> TestResult {
+    use crate::next::preset::{Preset, Theme as NextTheme};
+    use crate::next::query::ThemeContext;
+
+    let table: Table = toml::from_str(HOMES)?;
+    for row in &table.row {
+        let group = row.key.split('.').next().unwrap_or("");
+        assert!(
+            ADWAITA_PORTED_GROUPS.contains(&group) != ADWAITA_NOT_PORTED_GROUPS.contains(&group),
+            "`{}`: its group is not exactly one of the ported and the not ported groups",
+            row.key
+        );
+    }
+    for (mode, ctx) in [
+        (ColorMode::Light, ThemeContext::light()),
+        (ColorMode::Dark, ThemeContext::dark()),
+    ] {
+        let theme_072 = Theme::preset("adwaita")?;
+        let old = old_resolved(&theme_072, mode)?;
+        let unresolved = old_unresolved(&theme_072, mode)?;
+        let theme = NextTheme::preset(Preset::Adwaita);
+        let new = theme.resolve(&ctx);
+        let with_context = |context: RowContext| theme.resolve(&context.applied_to(&ctx));
+        let extra = compare::Extra {
+            unresolved: Some(&unresolved),
+            with_context: Some(&with_context),
+        };
+        let report = compare::compare(&old, &new, None, Preset::Adwaita, &extra)?;
+        println!("{mode:?}: {report}");
+        assert_eq!(report.totals.rows, table.row.len());
+        for row in report
+            .rows
+            .iter()
+            .filter(|row| in_groups(&row.key, ADWAITA_PORTED_GROUPS))
+        {
+            let skip = match row.outcome {
+                compare::Outcome::Skipped(skip) => Some(skip),
+                _ => None,
+            };
+            assert_eq!(
+                skip,
+                adwaita_expected_skip(&row.key),
+                "{mode:?}: `{}`",
+                row.key
+            );
+        }
+        let ported = totals_in(&report, ADWAITA_PORTED_GROUPS, true);
+        let not_ported = totals_in(&report, ADWAITA_NOT_PORTED_GROUPS, true);
+        println!(
+            "{mode:?}: [rows, compared, equal, mismatching, skipped] in the ported groups {ported:?}, \
+             in the groups not ported yet {not_ported:?}"
+        );
+        assert_eq!(ported, ADWAITA_PORTED_TOTALS, "{mode:?}\n{report}");
+        assert_eq!(
+            ported[0].saturating_add(not_ported[0]),
+            table.row.len(),
+            "{mode:?}"
+        );
+        let dead: Vec<_> = new
+            .dead_rules()
+            .into_iter()
+            .filter(|(_, rules)| !rules.is_empty())
+            .collect();
+        assert!(dead.is_empty(), "{mode:?}: dead rules {dead:?}");
+    }
+    Ok(())
+}
+
 // Reader parity (plan, section 1, rule 2) on the KDE fixtures: the theme the 0.7.2 KDE reader path produces
 // from a kdeglobals file, and the kde-breeze builder fed the same file as `SystemOverrides`.
 // ---------------------------------------------------------------------------------------------------------

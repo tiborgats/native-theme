@@ -494,7 +494,7 @@ impl Theme {
 /// builder is not written yet (plan, M1, M2), the theme with nothing stated.
 fn build(preset: Preset, context: ThemeContext, inputs: &ResolveInputs<'_>) -> ResolvedTheme {
     match preset {
-        Preset::Adwaita => nothing_stated(preset, context),
+        Preset::Adwaita => super::presets::adwaita::resolve(&context, inputs),
         Preset::KdeBreeze => kde::resolve(&context, inputs),
         Preset::MacosMonterey => nothing_stated(preset, context),
         Preset::MacosTahoe => nothing_stated(preset, context),
@@ -508,11 +508,11 @@ fn build(preset: Preset, context: ThemeContext, inputs: &ResolveInputs<'_>) -> R
 /// without data"), each list holding `Normal`.
 fn contrast_levels(preset: Preset) -> &'static [Contrast] {
     match preset {
+        Preset::Adwaita => super::presets::adwaita::CONTRAST_LEVELS,
         Preset::KdeBreeze => kde::CONTRAST_LEVELS,
         // The theme with nothing stated (`nothing_stated`) defines `Normal`
         // only.
-        Preset::Adwaita
-        | Preset::MacosMonterey
+        Preset::MacosMonterey
         | Preset::MacosTahoe
         | Preset::Windows11
         | Preset::Material3
@@ -1327,8 +1327,9 @@ mod tests {
         let ctx = ThemeContext::dark();
         for preset in Preset::ALL {
             let resolved = Theme::preset(*preset).resolve(&ctx);
-            // kde-breeze's builder is written; every other preset states nothing yet.
-            let built = *preset == Preset::KdeBreeze;
+            // kde-breeze's and adwaita's builders are written; every other preset states
+            // nothing yet.
+            let built = matches!(preset, Preset::KdeBreeze | Preset::Adwaita);
             assert_eq!(
                 resolved != nothing_stated(*preset, ctx.clone()),
                 built,
