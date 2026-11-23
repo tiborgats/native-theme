@@ -556,122 +556,122 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "checkbox.background_color",
-        "gpui: widgets::Checkbox's unchecked fill where unchecked_background is unstated (CheckboxLook)",
+        "gpui: checkbox.indicator(NONE).fill (radio.indicator(NONE).fill), the unchecked indicator's fill (CheckboxLook::next_of)",
     ),
     (
         "",
         "checkbox.border.color",
-        "gpui: the checked indicator's border, and the unchecked one's where unstated (CheckboxLook)",
+        "gpui: checkbox.indicator(CHECKED).stroke.color (radio.indicator(CHECKED)), the checked indicator's border (CheckboxLook::next_of)",
     ),
     (
         "",
         "checkbox.border.corner_radius_px",
-        "gpui: the box's corner radius (widgets::Checkbox; a radio is round)",
+        "gpui: checkbox.indicator(NONE).corners, the box's corner radius (CheckboxLook::next_of; a radio is round)",
     ),
     (
         "",
         "checkbox.border.line_width_px",
-        "gpui: the indicator's border width (widgets::Checkbox)",
+        "gpui: checkbox.indicator(NONE).stroke.width (radio.indicator(NONE)), the indicator's border width (CheckboxLook::next_of)",
     ),
     (
         "",
         "checkbox.border.padding_top_px",
-        "gpui: insets the check mark in the box (widgets::Checkbox, CheckboxLook::mark_size)",
+        "gpui: checkbox.indicator(NONE).padding, the stated side, insets the check mark in the box (CheckboxLook::next_of, CheckboxLook::mark_size)",
     ),
     (
         "",
         "checkbox.border.padding_right_px",
-        "gpui: insets the check mark in the box (widgets::Checkbox, CheckboxLook::mark_size)",
+        "gpui: checkbox.indicator(NONE).padding, the stated side, insets the check mark in the box (CheckboxLook::next_of, CheckboxLook::mark_size)",
     ),
     (
         "",
         "checkbox.border.padding_bottom_px",
-        "gpui: insets the check mark in the box (widgets::Checkbox, CheckboxLook::mark_size)",
+        "gpui: checkbox.indicator(NONE).padding, the stated side, insets the check mark in the box (CheckboxLook::next_of, CheckboxLook::mark_size)",
     ),
     (
         "",
         "checkbox.border.padding_left_px",
-        "gpui: insets the check mark in the box (widgets::Checkbox, CheckboxLook::mark_size)",
+        "gpui: checkbox.indicator(NONE).padding, the stated side, insets the check mark in the box (CheckboxLook::next_of, CheckboxLook::mark_size)",
     ),
     (
         "",
         "checkbox.check_mark_stroke_width_px",
-        "gpui: the check mark's stroke (widgets::Checkbox, stroked_check)",
+        "gpui: checkbox.checkmark(NONE).stroke_width, the check mark's stroke (CheckboxLook::next_of, stroked_check)",
     ),
     (
         "",
         "checkbox.checked_background",
-        "gpui: the checked indicator's fill (CheckboxLook)",
+        "gpui: checkbox.indicator(CHECKED).fill (radio.indicator(CHECKED).fill), the checked indicator's fill (CheckboxLook::next_of)",
     ),
     (
         "",
         "checkbox.disabled_background",
-        "gpui: a disabled indicator's fill where stated (CheckboxLook)",
+        "gpui: checkbox.indicator(DISABLED).fill (DISABLED|CHECKED checked; radio.indicator), a disabled indicator's fill where a rule states it (CheckboxLook::next_of)",
     ),
     (
         "",
         "checkbox.disabled_opacity",
-        "gpui: fades the whole disabled control (widgets::Checkbox)",
+        "gpui: checkbox.disabled_opacity (radio.disabled_opacity), fades the whole disabled control (CheckboxLook::next_of)",
     ),
     (
         "",
         "checkbox.disabled_text_color",
-        "gpui: a disabled control's label, and its mark over a stated disabled fill (CheckboxLook)",
+        "gpui: checkbox.label(DISABLED).color (radio.label(DISABLED)), a disabled control's label, and its mark over a stated disabled fill (CheckboxLook::next_of)",
     ),
     (
         "",
         "checkbox.font",
-        "gpui: the label's family, size, weight and style (widgets::Checkbox, widgets::Radio)",
+        "gpui: checkbox.label(NONE) (radio.label(NONE)), the label's family, size, weight and style (widgets::Checkbox, widgets::Radio)",
     ),
     (
         "",
         "checkbox.font.color",
-        "gpui: the label's colour (CheckboxLook)",
+        "gpui: checkbox.label(NONE).color (radio.label(NONE).color), the label's colour (CheckboxLook::next_of)",
     ),
     (
         "",
         "checkbox.hover_background",
-        "gpui: over the unchecked fill under the pointer; unset, the fill at rest (CheckboxLook)",
+        "gpui: checkbox.indicator(HOVER).fill (radio.indicator(HOVER).fill), over the unchecked fill under the pointer where a rule states it; else the fill at rest (CheckboxLook::next_of)",
     ),
     (
         "",
         "checkbox.hover_border_color",
-        "gpui: the indicator's edge under the pointer (CheckboxLook); unset, the edge at rest",
+        "gpui: checkbox.indicator(HOVER).stroke.color (HOVER|CHECKED checked; radio.indicator), the indicator's edge under the pointer where a rule states it; else the edge at rest (CheckboxLook::next_of)",
     ),
     (
         "",
         "checkbox.indicator_color",
-        "gpui: the check mark's and the radio dot's colour (CheckboxLook)",
+        "gpui: checkbox.checkmark(CHECKED).color and radio.dot(CHECKED).fill, the check mark's and the radio dot's colour (CheckboxLook::next_of)",
     ),
     (
         "",
         "checkbox.indicator_width_px",
-        "gpui: the box's side, the circle's diameter (widgets::Checkbox, widgets::Radio)",
+        "gpui: checkbox.indicator(NONE).min_size[0] (radio.indicator(NONE).min_size[0]), the box's side, the circle's diameter (CheckboxLook::next_of)",
     ),
     (
         "",
         "checkbox.label_gap_px",
-        "gpui: the gap between indicator and label (widgets::Checkbox)",
+        "gpui: checkbox.label_gap (radio.label_gap), the gap between indicator and label (CheckboxLook::next_of)",
     ),
     (
         "",
         "checkbox.radio_dot_diameter_px",
-        "gpui: the selected radio's dot (widgets::Radio)",
+        "gpui: radio.dot(NONE).min_size[0], the selected radio's dot (CheckboxLook::next_radio)",
     ),
     (
         "",
         "checkbox.radio_indicator_width_px",
-        "gpui: the radio's circle, indicator_width where unstated (widgets::Radio, CheckboxLook::radio)",
+        "gpui: radio.indicator(NONE).min_size[0], the radio's circle (CheckboxLook::next_radio)",
     ),
     (
         "",
         "checkbox.unchecked_background",
-        "gpui: the unchecked indicator's fill (CheckboxLook)",
+        "gpui: checkbox.indicator(NONE).fill (radio.indicator(NONE).fill), the unchecked indicator's fill (CheckboxLook::next_of)",
     ),
     (
         "",
         "checkbox.unchecked_border_color",
-        "gpui: the unchecked indicator's border (CheckboxLook)",
+        "gpui: checkbox.indicator(NONE).stroke.color (radio.indicator(NONE)), the unchecked indicator's border (CheckboxLook::next_of)",
     ),
     // --- combo_box: the Combobox of the side panel ------------------------------
     (
@@ -860,7 +860,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "defaults.disabled_text_color",
-        "gpui: a disabled switch's label (SwitchLook)",
+        "gpui: not read by widgets::Switch, whose disabled label is switch.label(DISABLED).color where a rule states it, else gpui-component's own muted_foreground, colors.window.foreground_muted (SwitchLook::next_of)",
     ),
     (
         "",
@@ -890,7 +890,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "basic.switches",
         "defaults.font",
-        "gpui: widgets::Switch's label at its size and weight (switch.rs)",
+        "gpui: not read by widgets::Switch, which letters its label in switch.label(NONE)'s family, size, weight and slant where stated, else gpui-component's own, text_sm in the window's font (SwitchLabelFont::next_of)",
     ),
     (
         "",
@@ -905,7 +905,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "basic.switches",
         "defaults.font.color",
-        "gpui: widgets::Switch's label, defaults.text_color (SwitchLook)",
+        "gpui: widgets::Switch's label where the theme states no switch.label(NONE).color: gpui-component's own, the window's text, colors.window.foreground (SwitchLook::next_of)",
     ),
     (
         "",
@@ -2160,52 +2160,52 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "slider.fill_color",
-        "gpui: the rail's filled stretch (SliderLook)",
+        "gpui: slider.active_track(NONE).fill (DISABLED disabled), the rail's filled stretch (SliderLook::next_of)",
     ),
     (
         "",
         "slider.thumb_color",
-        "gpui: the thumb's fill (SliderLook)",
+        "gpui: slider.thumb(NONE).fill (DISABLED disabled), the thumb's fill (SliderLook::next_of)",
     ),
     (
         "",
         "slider.thumb_diameter_px",
-        "gpui: the thumb's size (widgets::Slider)",
+        "gpui: slider.thumb(NONE).min_size[0], the thumb's size (SliderLook::next_of)",
     ),
     (
         "",
         "slider.thumb_hover_color",
-        "gpui: over the thumb under the pointer (SliderLook); unset, the thumb at rest",
+        "gpui: slider.thumb(HOVER).fill, over the thumb under the pointer where a rule states it; else the thumb at rest (SliderLook::next_of)",
     ),
     (
         "",
         "slider.track_color",
-        "gpui: the rail's fill (SliderLook)",
+        "gpui: slider.track(NONE).fill (DISABLED disabled), the rail's fill (SliderLook::next_of)",
     ),
     (
         "",
         "slider.track_height_px",
-        "gpui: the rail's height (widgets::Slider)",
+        "gpui: slider.track(NONE).min_size[1], the rail's height (SliderLook::next_of)",
     ),
     (
         "basic.slider.control",
         "slider.thumb_border_color",
-        "gpui: the band inside the thumb at rest, in place of upstream's ring (widgets::ThumbOutline)",
+        "gpui: slider.thumb(NONE).stroke.color, the band inside the thumb at rest, in place of upstream's ring (ThumbOutline::next_of)",
     ),
     (
         "basic.slider.control",
         "slider.thumb_border_line_width_px",
-        "gpui: the width of the band inside the thumb; 0 draws none, upstream's ring included (widgets::ThumbOutline)",
+        "gpui: slider.thumb(NONE).stroke.width, the width of the band inside the thumb; 0, or a stroke stated as none, draws none, upstream's ring included (ThumbOutline::next_of)",
     ),
     (
         "basic.slider.control",
         "slider.thumb_hover_border_color",
-        "gpui: the band with the pointer on the thumb, over the focus colour, not while it is dragged (widgets::ThumbOutline)",
+        "gpui: slider.thumb(HOVER).stroke.color, the band with the pointer on the thumb, over the focus colour, not while it is dragged (ThumbOutline::next_of)",
     ),
     (
         "basic.slider.control",
         "slider.thumb_focus_border_color",
-        "gpui: the band on the end thumb while the slider has the focus (widgets::ThumbOutline)",
+        "gpui: slider.thumb(FOCUSED).stroke.color, the band on the end thumb while the slider has the focus (ThumbOutline::next_of)",
     ),
     // --- spinner: widgets::Spinner --------------------------------------------------
     (
@@ -2294,102 +2294,102 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "switch.checked_background",
-        "gpui: the track's fill when on (SwitchLook)",
+        "gpui: switch.track(CHECKED).fill, the track's fill when on (SwitchLook::next_of)",
     ),
     (
         "",
         "switch.disabled_checked_background",
-        "gpui: a disabled switch's track when on, where stated (SwitchLook)",
+        "gpui: switch.track(DISABLED|CHECKED).fill, a disabled switch's track when on (SwitchLook::next_of)",
     ),
     (
         "",
         "switch.checked_track_border_color",
-        "gpui: the on track's outline, track_border_line_width wide, where stated (SwitchLook)",
+        "gpui: switch.track(CHECKED).stroke.color, the on track's outline, switch.track(NONE).stroke.width wide, where stated (SwitchLook::next_of)",
     ),
     (
         "",
         "switch.disabled_checked_track_border_color",
-        "gpui: a disabled on track's outline, where stated; unset, the enabled one (SwitchLook)",
+        "gpui: switch.track(DISABLED|CHECKED).stroke.color, a disabled on track's outline, where stated (SwitchLook::next_of)",
     ),
     (
         "",
         "switch.disabled_opacity",
-        "gpui: fades the whole disabled switch (widgets::Switch)",
+        "gpui: switch.disabled_opacity, fades the whole disabled switch (SwitchLook::next_of, SwitchLook::faded_over)",
     ),
     (
         "",
         "switch.disabled_thumb_color",
-        "gpui: a disabled switch's thumb, where stated (SwitchLook)",
+        "gpui: switch.thumb(DISABLED).fill (DISABLED|CHECKED on), a disabled switch's thumb (SwitchLook::next_of)",
     ),
     (
         "",
         "switch.hover_checked_background",
-        "gpui: over the on track under the pointer (SwitchLook); unset, the track at rest",
+        "gpui: switch.track(HOVER|CHECKED).fill, over the on track under the pointer where it differs from switch.track(CHECKED).fill; else the track at rest (SwitchLook::next_of)",
     ),
     (
         "",
         "switch.hover_unchecked_background",
-        "gpui: over the off track under the pointer (SwitchLook); unset, the track at rest",
+        "gpui: switch.track(HOVER).fill, over the off track under the pointer where a rule states it; else the track at rest (SwitchLook::next_of)",
     ),
     (
         "",
         "switch.thumb_background",
-        "gpui: the thumb's fill (SwitchLook)",
+        "gpui: switch.thumb(CHECKED).fill, the on thumb's fill (SwitchLook::next_of)",
     ),
     (
         "",
         "switch.thumb_border_color",
-        "gpui: the thumb's outline, thumb_border_line_width wide, where stated (SwitchLook)",
+        "gpui: switch.thumb(NONE).stroke.color (CHECKED on), the thumb's outline, switch.thumb(NONE).stroke.width wide, where stated (SwitchLook::next_of)",
     ),
     (
         "",
         "switch.thumb_border_line_width_px",
-        "gpui: the thumb outline's width, inside the thumb (SwitchLook)",
+        "gpui: switch.thumb(NONE).stroke.width, the thumb outline's width, inside the thumb (SwitchLook::next_of)",
     ),
     (
         "",
         "switch.thumb_diameter_px",
-        "gpui: the thumb's size, centred on the track's axis; a thumb taller than its track flush with its ends (SwitchLook)",
+        "gpui: switch.thumb(CHECKED).min_size[0], the on thumb's size, centred on the track's axis; a thumb taller than its track flush with its ends (SwitchLook::next_of)",
     ),
     (
         "",
         "switch.unchecked_thumb_background",
-        "gpui: the off thumb's fill, thumb_background where unstated (SwitchLook)",
+        "gpui: switch.thumb(NONE).fill, the off thumb's fill (SwitchLook::next_of)",
     ),
     (
         "",
         "switch.unchecked_thumb_diameter_px",
-        "gpui: the off thumb's size, thumb_diameter where unstated (SwitchLook)",
+        "gpui: switch.thumb(NONE).min_size[0], the off thumb's size (SwitchLook::next_of)",
     ),
     (
         "",
         "switch.track_border_line_width_px",
-        "gpui: the track outline's width, inside the track (SwitchLook)",
+        "gpui: switch.track(NONE).stroke.width, the track outline's width, inside the track (SwitchLook::next_of)",
     ),
     (
         "",
         "switch.track_height_px",
-        "gpui: the track's height (SwitchLook)",
+        "gpui: switch.track(NONE).min_size[1], the track's height (SwitchLook::next_of)",
     ),
     (
         "",
         "switch.track_radius_px",
-        "gpui: the track's corner radius (SwitchLook)",
+        "gpui: switch.track(NONE).corners, the track's corner radius (SwitchLook::next_of)",
     ),
     (
         "",
         "switch.track_width_px",
-        "gpui: the track's width (SwitchLook)",
+        "gpui: switch.track(NONE).min_size[0], the track's width (SwitchLook::next_of)",
     ),
     (
         "",
         "switch.unchecked_background",
-        "gpui: the track's fill when off (SwitchLook)",
+        "gpui: switch.track(NONE).fill, the track's fill when off (SwitchLook::next_of)",
     ),
     (
         "",
         "switch.unchecked_track_border_color",
-        "gpui: the off track's outline, track_border_line_width wide, where stated (SwitchLook)",
+        "gpui: switch.track(NONE).stroke.color, the off track's outline, switch.track(NONE).stroke.width wide, where stated (SwitchLook::next_of)",
     ),
     // --- tab: widgets::TabBar ----------------------------------------------------
     // The selected tabs before their bars, whose ids are prefixes of theirs.
