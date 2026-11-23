@@ -4,11 +4,14 @@ use std::time::Duration;
 
 use gpui::Pixels;
 use gpui_component::{Colorize as _, theme::Theme};
+use native_theme::next::{ResolvedTheme as NextTheme, WidgetState};
 use native_theme::theme::{ResolvedButtonTheme, ResolvedPadding};
 use native_theme_gpui::ResolvedTheme;
+use native_theme_gpui::next::{self, fill_of, state_fill_of, state_text_color_of, text_color_of};
 
 use super::{
-    ColorClaim, WidgetInfo, buttons::ToolSize, claim, edge_claim, px_text, stated, stated_claim,
+    ColorClaim, WidgetInfo, buttons::ToolSize, claim, edge_claim, px_text, radius_of,
+    state_stroke_color_of, stated, stated_claim, stroke_color_of, stroke_width_of,
 };
 use crate::demo::{PanelToggle, Severity, SheetSide};
 use crate::support::ChromeIcon;
@@ -231,13 +234,13 @@ pub enum MenuHost {
 }
 
 /// The menu-bar row (spec S8), at the top of a window whose frame the window
-/// manager draws, filled with `native`'s `toolbar.background_color` where a
-/// native theme is installed. `margin` is the installed layout's
-/// `layout.container_margin`, which the row borrows, and `own` the showcase's
-/// `MENU_BAR_PADDING`.
+/// manager draws, filled with the installed 0.8.0 theme `native`'s
+/// `menu_bar.bar(NONE).fill` where it states one. `margin` is the installed
+/// layout's `layout.container_margin`, which the row borrows, and `own` the
+/// showcase's `MENU_BAR_PADDING`.
 pub fn menu_bar(
     t: &Theme,
-    native: Option<&ResolvedTheme>,
+    native: Option<&NextTheme>,
     margin: Option<Pixels>,
     own: Pixels,
 ) -> WidgetInfo {
@@ -252,19 +255,26 @@ pub fn menu_bar(
         ),
     };
     let info = WidgetInfo::new("Menu bar");
-    let info = match native {
-        Some(r) => info
-            .color(claim(
+    let fill = native.and_then(|r| fill_of(&r.menu_bar.bar(WidgetState::NONE)));
+    let info = match (native, fill) {
+        (Some(r), Some(_)) => info
+            .colors(stated_claim(
                 "bg",
-                "background_color",
-                stated(r.toolbar.background_color),
+                "menu_bar.bar(NONE).fill",
+                fill_of(&r.menu_bar.bar(WidgetState::NONE)),
                 "showcase",
             ))
             .config(
                 "fill",
-                "toolbar.background_color: the model fills a menu bar as the toolbar, the one tools area Breeze paints (platform-facts §2.6, §2.13)",
+                "menu_bar.bar(NONE).fill, the menu bar's own fill (platform-facts §2.6, §2.13: Breeze fills it as the toolbar, the one tools area it paints)",
             ),
-        None => info
+        (Some(_), None) => info
+            .color(claim("bg (the window's)", "background", t.background, "showcase"))
+            .config(
+                "fill",
+                "none of its own: the theme states no menu_bar.bar(NONE).fill, and the row is the application's own element, with no toolkit fill to keep, so the view's background shows through",
+            ),
+        (None, _) => info
             .color(claim("bg (the window's)", "background", t.background, "showcase"))
             .not_themeable(
                 "fill",
@@ -273,11 +283,11 @@ pub fn menu_bar(
     };
     info.not_themeable(
             "widget",
-            "gpui-component has no menu-bar row, so this row is the application's own h_flex around its menus. The model states no menu-bar widget: its menu is the popup a menu opens, and its rule fills the bar as the toolbar, where a native theme is installed (platform-facts §2.6)",
+            "gpui-component has no menu-bar row, so this row is the application's own h_flex around its menus, filled as the model's menu_bar.bar (platform-facts §2.6)",
         )
         .not_themeable(
             "inset",
-            "the model states no menu-bar inset. The row borrows layout.container_margin, the padding inside containers, so its menus start where the toolbar's buttons do wherever toolbar.border states no left padding of its own: the showcase's choice",
+            "the row does not read menu_bar.bar(NONE)'s padding, which no bundled preset states. It borrows layout.container_margin, the padding inside containers, so its menus start where the toolbar's buttons do wherever toolbar.bar(NONE) states no left padding of its own: the showcase's choice",
         )
         .instance("window", menu_row_window(std::env::consts::OS))
         .instance(
@@ -289,215 +299,291 @@ pub fn menu_bar(
 /// The application's menus as the showcase draws them (spec §2.2), in
 /// `host`: their titles, and the popups they open, in `native`'s menu theme
 /// where a native theme is installed (`demo::app_menus`).
-pub fn app_menus(t: &Theme, host: MenuHost, native: Option<&ResolvedTheme>) -> WidgetInfo {
+pub fn app_menus(t: &Theme, host: MenuHost, native: Option<&NextTheme>) -> WidgetInfo {
     let info = WidgetInfo::new("Menus").variant("drawn by the showcase");
-    let info = match native {
-        Some(r) => {
-            let m = &r.menu;
-            // Which titles the item's hover colours still reach: a title
-            // takes `bar_hover_background` under the pointer and
-            // `bar_open_background`, else that, while open (demo::MenuLook).
-            let line_width = r.defaults.border.line_width;
-            let info = info.color(claim(
-                "title and item text",
-                "color",
-                stated(m.font.color),
-                "showcase",
-            ));
-            let info = match (m.bar_hover_background, m.bar_open_background) {
-                (None, None) => info.color(claim(
-                    "hovered or open title, hovered item",
-                    "hover_background",
-                    stated(m.hover_background),
-                    "showcase",
-                )),
-                (None, Some(_)) => info.color(claim(
-                    "hovered title, hovered item",
-                    "hover_background",
-                    stated(m.hover_background),
-                    "showcase",
-                )),
-                (Some(_), _) => info.color(claim(
-                    "hovered item",
-                    "hover_background",
-                    stated(m.hover_background),
-                    "showcase",
-                )),
-            };
-            let info = match m.bar_hover_text_color {
-                None => info.color(claim(
-                    "its text",
-                    "hover_text_color",
-                    stated(m.hover_text_color),
-                    "showcase",
-                )),
-                Some(_) => info.color(claim(
-                    "a hovered item's text",
-                    "hover_text_color",
-                    stated(m.hover_text_color),
-                    "showcase",
-                )),
-            };
-            let info = match m.bar_open_background {
-                None => info.colors(stated_claim(
-                    "hovered or open title",
-                    "bar_hover_background",
-                    m.bar_hover_background,
-                    "showcase",
-                )),
-                Some(_) => info.colors(stated_claim(
-                    "hovered title",
-                    "bar_hover_background",
-                    m.bar_hover_background,
-                    "showcase",
-                )),
-            };
+    let (info, unstated) = match native.map(|r| (r, crate::demo::MenuLook::next_of(r))) {
+        Some((r, Ok(_))) => (menu_look(info, t, r), None),
+        Some((_, Err(home))) => (info, Some(home)),
+        None => (info, None),
+    };
+    let info = match (native, unstated) {
+        (Some(_), None) => info,
+        (_, unstated) => {
             let info = info
-                .colors(stated_claim(
-                    "open title",
-                    "bar_open_background",
-                    m.bar_open_background,
-                    "showcase",
+                .color(claim(
+                    "menu bg",
+                    "popover",
+                    t.popover,
+                    "gpui-component/styled.rs:190",
                 ))
-                .colors(stated_claim(
-                    "hovered or open title's text",
-                    "bar_hover_text_color",
-                    m.bar_hover_text_color,
-                    "showcase",
-                ))
-                .colors(edge_claim(
-                    "hovered item edge",
-                    "hover_border_color",
-                    m.hover_border_color,
-                    Some(line_width),
-                    "showcase",
-                ))
-                .colors(stated_claim(
-                    "pressed item",
-                    "active_background",
-                    m.active_background,
-                    "showcase",
-                ))
-                .colors(stated_claim(
-                    "pressed item text",
-                    "active_text_color",
-                    m.active_text_color,
-                    "showcase",
-                ));
-            let info = match (m.active_background, m.active_text_color) {
-                (None, None) => info,
-                (Some(_), _) => info.config("pressed item", "menu.active_background while the mouse button is held on an item, with no outline, and menu.active_text_color where stated, else the hover text"),
-                (None, Some(_)) => info.config("pressed item", "the hover look, its outline included, lettered menu.active_text_color while the mouse button is held on an item: the theme states no menu.active_background"),
+                .color(claim("hovered item", "accent", t.accent, "showcase"))
+                .color(claim("menu separator", "border", t.border, "showcase"))
+                .not_themeable(
+                    "menu shadow",
+                    "popover_style's ring and shadow, the popover's own (styled.rs, popover_style)",
+                );
+            let unthemed = match unstated {
+                Some(home) => format!(
+                    "the theme states no value gpui can take at {home}, which the menu's look needs"
+                ),
+                None => "no native theme is installed".to_string(),
             };
-            let info = match (m.hover_border_color, line_width > 0.0) {
-                (Some(_), true) => info.config("hovered item edge", format!("menu.hover_border_color at defaults.border.line_width, {}px, a box over the highlighted item, its padding included, so nothing moves, rounded as the highlight", px_text(line_width))),
-                (Some(_), false) => info.config("hovered item edge", "none: defaults.border.line_width is 0"),
-                (None, _) => info,
-            };
-            let title_sides: Vec<String> = [
-                m.bar_padding_horizontal.map(|x| {
-                    format!(
-                        "menu.bar_padding_horizontal, {}px, at the left and right",
-                        px_text(x)
-                    )
-                }),
-                m.bar_padding_vertical.map(|y| {
-                    format!(
-                        "menu.bar_padding_vertical, {}px, at the top and bottom",
-                        px_text(y)
-                    )
-                }),
-            ]
-            .into_iter()
-            .flatten()
-            .collect();
-            let info = if title_sides.is_empty() {
-                info
-            } else {
-                info.config(
-                    "title padding",
-                    format!(
-                        "{} of each title, over menu.border.padding's sides",
-                        title_sides.join(" and ")
-                    ),
-                )
-            };
-            info.color(claim("menu bg", "background_color", stated(m.background_color), "showcase"))
-                .color(claim("menu separator", "separator_color", stated(m.separator_color), "showcase"))
-                .colors(edge_claim("menu edge", "border", Some(r.popover.border.color), Some(r.popover.border.line_width), "showcase"))
-                .config("font", format!("menu.font: {}, on the titles and the items, as geometry::menu_item sets it", super::drawn_font(&m.font)))
-                .config("highlight", format!("rectangular where menu.border.corner_radius is 0 (platform-facts §2.6: the items are rectangular), here {}px", px_text(m.border.corner_radius)))
-                .config("padding", format!("menu.border.padding's stated sides on each title and item, an item's through geometry::menu_item; on a side left unstated, upstream's own: a title's px_1p5 / py_0p5, and an item's {} at the sides (MENU_ROW_PADDING_X) and nothing above or below, its height the item-height line's (menu/app_menu_bar.rs, AppMenu::render; menu/popup_menu.rs, PopupMenu::render_item)", super::rems_text(crate::demo::MENU_ROW_PADDING_X, t)))
-                .config("item height", match (m.row_height, m.min_row_height) {
-                    (Some(h), _) => format!("menu.row_height, {}px, by geometry::menu_item's control-height rule: the height at a text scale of 1 or less, a minimum with an automatic height above 1", px_text(h)),
-                    (None, Some(least)) => format!("at least menu.min_row_height, {}px, by geometry::menu_item: the font's line and menu.border.padding where they are taller (platform-facts §2.6)", px_text(least)),
-                    (None, None) if m.border.padding.top.is_none() && m.border.padding.bottom.is_none() => format!("{}, upstream's PopupMenu row (menu/popup_menu.rs, PopupMenu::render_item), by the connector's control-height rule: the height at a text scale of 1 or less, a minimum with an automatic height above 1; the theme states neither menu.row_height nor a vertical padding", super::rems_text(crate::demo::MENU_ROW_HEIGHT, t)),
-                    (None, None) => "the font's line and menu.border.padding: the theme states no menu.row_height, the item sizes to its font (platform-facts §2.6)".to_string(),
-                })
-                .config("menu inset", {
-                    let sides: Vec<String> = [
-                        m.panel_padding_horizontal.map(|x| format!("menu.panel_padding_horizontal, {}px, at the left and right", px_text(x))),
-                        m.panel_padding_vertical.map(|y| format!("menu.panel_padding_vertical, {}px, at the top and bottom", px_text(y))),
-                    ]
-                    .into_iter()
-                    .flatten()
-                    .collect();
-                    let rows = if m.panel_padding_vertical.is_some() {
-                        "the items touching".to_string()
-                    } else {
-                        format!("the items {} apart, upstream's gap_y_0p5 (MENU_POPUP_ROW_GAP; menu/popup_menu.rs, PopupMenu::render)", super::rems_text(crate::demo::MENU_POPUP_ROW_GAP, t))
-                    };
-                    if sides.is_empty() {
-                        format!("popover.border.padding's stated sides round the items, upstream's p_1 on an unstated side (menu/popup_menu.rs, PopupMenu::render); {rows}")
-                    } else {
-                        format!("{} inside the frame's line, over popover.border.padding's sides; {rows}", sides.join(" and "))
-                    }
-                })
-                .config("menu edge", if r.popover.border.line_width > 0.0 {
-                    format!("popover.border: {}px, radius {}px (platform-facts §2.6: a menu's popup border is §2.16's)", px_text(r.popover.border.line_width), px_text(r.popover.border.corner_radius))
-                } else {
-                    format!("none: popover.border.line_width is 0; the popup is still rounded by popover.border.corner_radius, {}px (platform-facts §2.6: a menu's popup border is §2.16's)", px_text(r.popover.border.corner_radius))
-                })
-                .config("menu separator", format!("separator.line_width, {}px, one device pixel at least (widgets::Separator)", px_text(r.separator.line_width)))
-        }
-        None => info
-            .color(claim(
-                "menu bg",
-                "popover",
-                t.popover,
-                "gpui-component/styled.rs:190",
-            ))
-            .color(claim("hovered item", "accent", t.accent, "showcase"))
-            .color(claim("menu separator", "border", t.border, "showcase"))
-            .not_themeable(
+            info.not_themeable(
                 "font",
-                "text_sm, a rem step: no native theme is installed, so there is no menu.font",
-            ),
+                format!("text_sm, a rem step, and upstream's look: {unthemed}"),
+            )
+        }
     };
     info.not_themeable(
         "widget",
-        "the showcase's own titles, each opening the showcase's own popup under it as upstream's AppMenu places its menu: upstream's AppMenuBar builds its titles as Small ghost Buttons and its menus as PopupMenus, which set text_sm, a rounded hover in accent and the popover fill on themselves (menu/app_menu_bar.rs, AppMenu::render; menu/popup_menu.rs, PopupMenu::render_item), so menu.font, the rectangular items and menu.background_color would not reach them",
+        "the showcase's own titles, each opening the showcase's own popup under it as upstream's AppMenu places its menu: upstream's AppMenuBar builds its titles as Small ghost Buttons and its menus as PopupMenus, which set text_sm, a rounded hover in accent and the popover fill on themselves (menu/app_menu_bar.rs, AppMenu::render; menu/popup_menu.rs, PopupMenu::render_item), so menu.item_label's font, the rectangular items and menu.panel's fill would not reach them",
     )
     .instance(
         "keyboard",
         "as the AppMenuBar and its PopupMenus answer it (menu/app_menu_bar.rs, AppMenuBar; menu/popup_menu.rs, PopupMenu): with a menu open, Left and Right move to the neighbouring menu, Up and Down between its items, Enter runs the highlighted one and Escape closes the menu, handing the focus back",
     )
     .not_themeable(
-        "menu shadow",
-        "popover_style's ring and shadow, the popover's own (styled.rs, popover_style); the model states popover.border.shadow_enabled and no shadow geometry",
-    )
-    .not_themeable(
         "fill",
         match host {
-            MenuHost::Row if native.is_some() => "none behind the titles: the menu bar's, toolbar.background_color, shows through (platform-facts §2.6, §2.13: the bar takes the toolbar's fill)",
+            MenuHost::Row if native.is_some() => "none behind the titles: the menu bar's, menu_bar.bar(NONE).fill where the theme states one, shows through (platform-facts §2.6, §2.13)",
             MenuHost::Row => "none behind the titles: the window's background shows through, as no native theme is installed",
-            MenuHost::TitleBar => "none behind the titles: the title bar's fill shows through, as the showcase does not repaint under them; the model's menu-bar fill, toolbar.background_color, applies to the menu-bar row (platform-facts §2.6, §2.13)",
+            MenuHost::TitleBar => "none behind the titles: the title bar's fill shows through, as the showcase does not repaint under them; the model's menu-bar fill, menu_bar.bar(NONE).fill, applies to the menu-bar row (platform-facts §2.6, §2.13)",
         },
     )
     .instance(
         "menus",
         "File, View, Theme and Help; each item runs a gpui action, and where the item has a key binding it shows it, and the binding runs the same action",
     )
+}
+
+/// The padding sides `sides` states (top, right, bottom, left, as
+/// `next::padding_of` gives them), each as `<home>.padding.<side>, <v>px`,
+/// joined; `None` where it states none.
+fn stated_sides(home: &str, sides: [Option<f32>; 4]) -> Option<String> {
+    let [top, right, bottom, left] = sides;
+    let named: Vec<String> = [
+        ("top", top),
+        ("right", right),
+        ("bottom", bottom),
+        ("left", left),
+    ]
+    .into_iter()
+    .filter_map(|(side, v)| v.map(|v| format!("{home}.padding.{side}, {}px", px_text(v))))
+    .collect();
+    (!named.is_empty()).then(|| named.join(", "))
+}
+
+/// What the menus painted in the menu look the installed 0.8.0 theme `r`
+/// states (`demo::MenuLook::next_of`) claim and say.
+fn menu_look(info: WidgetInfo, t: &Theme, r: &NextTheme) -> WidgetInfo {
+    let (m, bar) = (&r.menu, &r.menu_bar);
+    let hovered = m.item(WidgetState::HOVER);
+    let rest = m.item(WidgetState::NONE);
+    let panel = m.panel(WidgetState::NONE);
+    let bar_hover = next::state_fill_of(&bar.item(WidgetState::HOVER));
+    let bar_open = next::state_fill_of(&bar.item(WidgetState::OPEN));
+    let bar_hover_text = next::state_text_color_of(&bar.item_label(WidgetState::HOVER));
+    let bar_open_text = next::state_text_color_of(&bar.item_label(WidgetState::OPEN));
+    let edge = next::state_stroke_color_of(&hovered);
+    let edge_width = stroke_width_of(&hovered).filter(|width| *width > 0.0);
+    let active = next::state_fill_of(&m.item(WidgetState::PRESSED));
+    let active_text = next::state_text_color_of(&m.item_label(WidgetState::PRESSED));
+    // Which titles the item's hover colours still reach: a title takes the
+    // bar's hover colours under the pointer and its open ones, else those,
+    // while open (demo::MenuLook).
+    let info = info.colors(stated_claim(
+        "title and item text",
+        "menu.item_label(NONE).color",
+        text_color_of(&r.menu.item_label(WidgetState::NONE)),
+        "showcase",
+    ));
+    let info = match (bar_hover, bar_open) {
+        (None, None) => info.colors(stated_claim(
+            "hovered or open title, hovered item",
+            "menu.item(HOVER).fill",
+            fill_of(&r.menu.item(WidgetState::HOVER)),
+            "showcase",
+        )),
+        (None, Some(_)) => info.colors(stated_claim(
+            "hovered title, hovered item",
+            "menu.item(HOVER).fill",
+            fill_of(&r.menu.item(WidgetState::HOVER)),
+            "showcase",
+        )),
+        (Some(_), _) => info.colors(stated_claim(
+            "hovered item",
+            "menu.item(HOVER).fill",
+            fill_of(&r.menu.item(WidgetState::HOVER)),
+            "showcase",
+        )),
+    };
+    let info = match (bar_hover_text, bar_open_text) {
+        (None, None) => info.colors(stated_claim(
+            "a hovered or open title's text, a hovered item's",
+            "menu.item_label(HOVER).color",
+            text_color_of(&r.menu.item_label(WidgetState::HOVER)),
+            "showcase",
+        )),
+        (None, Some(_)) => info.colors(stated_claim(
+            "a hovered title's text, a hovered item's",
+            "menu.item_label(HOVER).color",
+            text_color_of(&r.menu.item_label(WidgetState::HOVER)),
+            "showcase",
+        )),
+        (Some(_), _) => info.colors(stated_claim(
+            "a hovered item's text",
+            "menu.item_label(HOVER).color",
+            text_color_of(&r.menu.item_label(WidgetState::HOVER)),
+            "showcase",
+        )),
+    };
+    let info = match bar_open {
+        None => info.colors(stated_claim(
+            "hovered or open title",
+            "menu_bar.item(HOVER).fill",
+            state_fill_of(&r.menu_bar.item(WidgetState::HOVER)),
+            "showcase",
+        )),
+        Some(_) => info.colors(stated_claim(
+            "hovered title",
+            "menu_bar.item(HOVER).fill",
+            state_fill_of(&r.menu_bar.item(WidgetState::HOVER)),
+            "showcase",
+        )),
+    };
+    let info = match bar_open_text {
+        None => info.colors(stated_claim(
+            "hovered or open title's text",
+            "menu_bar.item_label(HOVER).color",
+            state_text_color_of(&r.menu_bar.item_label(WidgetState::HOVER)),
+            "showcase",
+        )),
+        Some(_) => info.colors(stated_claim(
+            "hovered title's text",
+            "menu_bar.item_label(HOVER).color",
+            state_text_color_of(&r.menu_bar.item_label(WidgetState::HOVER)),
+            "showcase",
+        )),
+    };
+    let info = info
+        .colors(stated_claim(
+            "open title",
+            "menu_bar.item(OPEN).fill",
+            state_fill_of(&r.menu_bar.item(WidgetState::OPEN)),
+            "showcase",
+        ))
+        .colors(stated_claim(
+            "open title's text",
+            "menu_bar.item_label(OPEN).color",
+            state_text_color_of(&r.menu_bar.item_label(WidgetState::OPEN)),
+            "showcase",
+        ))
+        .colors(edge_claim(
+            "hovered item edge",
+            "menu.item(HOVER).stroke.color",
+            state_stroke_color_of(&r.menu.item(WidgetState::HOVER)),
+            edge_width,
+            "showcase",
+        ))
+        .colors(stated_claim(
+            "pressed item",
+            "menu.item(PRESSED).fill",
+            state_fill_of(&r.menu.item(WidgetState::PRESSED)),
+            "showcase",
+        ))
+        .colors(stated_claim(
+            "pressed item text",
+            "menu.item_label(PRESSED).color",
+            state_text_color_of(&r.menu.item_label(WidgetState::PRESSED)),
+            "showcase",
+        ));
+    let info = match (active, active_text) {
+        (None, None) => info,
+        (Some(_), _) => info.config("pressed item", "the fill a rule states for menu.item(PRESSED), asked of the pressed state alone (spec §2, from_state), while the mouse button is held on an item, with no outline, and the colour one states for menu.item_label(PRESSED), else the hover text"),
+        (None, Some(_)) => info.config("pressed item", "the hover look, its outline included, lettered in the colour a rule states for menu.item_label(PRESSED) while the mouse button is held on an item: no rule states a fill for menu.item(PRESSED)"),
+    };
+    let info = match (edge, edge_width) {
+        (Some(_), Some(width)) => info.config("hovered item edge", format!("the stroke a rule states for menu.item(HOVER), {}px, a box over the highlighted item, its padding included, so nothing moves, rounded as the highlight", px_text(width))),
+        (Some(_), None) => info.config("hovered item edge", "none: the stroke a rule states for menu.item(HOVER) is 0 wide"),
+        (None, _) => info,
+    };
+    let info = match stated_sides(
+        "menu_bar.item(NONE)",
+        next::padding_of(&bar.item(WidgetState::NONE)),
+    ) {
+        Some(sides) => info.config(
+            "title padding",
+            format!("{sides} of each title, over menu.item(NONE)'s sides"),
+        ),
+        None => info,
+    };
+    let info = match crate::demo::MenuRowsFrame::next_of(r) {
+        Ok(frame) => {
+            let (width, radius) = (frame.width.0, frame.radius.0);
+            let (home, edge) = match frame.width.1 {
+                crate::demo::FrameFrom::Menu => (
+                    "menu.panel(NONE)",
+                    edge_claim(
+                        "menu edge",
+                        "menu.panel(NONE).stroke.color",
+                        stroke_color_of(&r.menu.panel(WidgetState::NONE)),
+                        Some(width),
+                        "showcase",
+                    ),
+                ),
+                crate::demo::FrameFrom::Popover => (
+                    "popover.panel",
+                    edge_claim(
+                        "menu edge",
+                        "popover.panel.stroke.color",
+                        stroke_color_of(&r.popover.panel),
+                        Some(width),
+                        "showcase",
+                    ),
+                ),
+            };
+            info.colors(edge)
+                .config("menu edge", if width > 0.0 {
+                    format!("{home}'s stroke, {}px, rounded {}px (platform-facts §2.6: a menu's popup border is §2.16's; the popover's where the menu's panel states none)", px_text(width), px_text(radius))
+                } else {
+                    format!("none: {home}'s stroke is 0 wide; the popup is still rounded {}px (platform-facts §2.6: a menu's popup border is §2.16's)", px_text(radius))
+                })
+        }
+        Err(_) => info,
+    };
+    let [top, _, bottom, _] = next::padding_of(&rest);
+    let [panel_top, _, panel_bottom, _] = next::padding_of(&panel);
+    info.colors(stated_claim("menu bg", "menu.panel(NONE).fill", fill_of(&r.menu.panel(WidgetState::NONE)), "showcase"))
+        .colors(stated_claim("menu separator", "menu.separator(NONE).fill", fill_of(&r.menu.separator(WidgetState::NONE)), "showcase"))
+        .config("font", format!("menu.item_label(NONE): {}, on the titles and the items, as next::geometry::menu_item sets it", super::next_drawn_font(&m.item_label(WidgetState::NONE))))
+        .config("highlight", match radius_of(&rest) {
+            Some(radius) => format!("rounded by menu.item(NONE).corners, {}px (platform-facts §2.6: the items are rectangular where it is 0)", px_text(radius)),
+            None => "square: the theme states no menu.item(NONE).corners gpui can take (platform-facts §2.6: the items are rectangular)".to_string(),
+        })
+        .config("padding", format!("menu.item(NONE)'s stated padding sides on each title and item, an item's through next::geometry::menu_item; on a side left unstated, upstream's own: a title's px_1p5 / py_0p5, and an item's {} at the sides (MENU_ROW_PADDING_X) and nothing above or below, its height the item-height line's (menu/app_menu_bar.rs, AppMenu::render; menu/popup_menu.rs, PopupMenu::render_item)", super::rems_text(crate::demo::MENU_ROW_PADDING_X, t)))
+        .config("item height", match (rest.max_size[1], rest.min_size[1]) {
+            (Some(h), _) => format!("menu.item(NONE).max_size[1], {}px, by next::geometry::menu_item's control-height rule: the height at a text scale of 1 or less, a minimum with an automatic height above 1", px_text(h)),
+            (None, Some(least)) => format!("at least menu.item(NONE).min_size[1], {}px, by next::geometry::menu_item: the font's line and menu.item(NONE)'s padding where they are taller (platform-facts §2.6)", px_text(least)),
+            (None, None) if top.is_none() && bottom.is_none() => format!("{}, upstream's PopupMenu row (menu/popup_menu.rs, PopupMenu::render_item), by the connector's control-height rule: the height at a text scale of 1 or less, a minimum with an automatic height above 1; the theme states neither a size of menu.item(NONE) nor a top or bottom padding", super::rems_text(crate::demo::MENU_ROW_HEIGHT, t)),
+            (None, None) => "the font's line and menu.item(NONE)'s padding: the theme states no size of menu.item(NONE), the item sizes to its font (platform-facts §2.6)".to_string(),
+        })
+        .config("menu inset", {
+            let rows = if panel_top.is_some() || panel_bottom.is_some() {
+                "the items touching".to_string()
+            } else {
+                format!("the items {} apart, upstream's gap_y_0p5 (MENU_POPUP_ROW_GAP; menu/popup_menu.rs, PopupMenu::render)", super::rems_text(crate::demo::MENU_POPUP_ROW_GAP, t))
+            };
+            match stated_sides("menu.panel(NONE)", next::padding_of(&panel)) {
+                None => format!("popover.panel's stated padding sides round the items, upstream's p_1 on an unstated side (menu/popup_menu.rs, PopupMenu::render); {rows}"),
+                Some(sides) => format!("{sides} inside the frame's line, over popover.panel's padding sides; {rows}"),
+            }
+        })
+        .config("menu shadow", if r.popover.panel.stated.contains(native_theme::next::PartStated::SHADOWS) {
+            "none: popover.panel states no shadows".to_string()
+        } else {
+            "upstream's popover_shadow, two layers (gpui-component/styled.rs, popover_shadow), in colors.shadow: the theme states no popover.panel.shadows (spec §10, rule 0), and popover_style's ring gives way to the frame".to_string()
+        })
+        .config("menu separator", format!("separator.thickness, {}px, one device pixel at least (widgets::Separator)", px_text(r.separator.thickness)))
 }
 
 /// What every `PopupMenu` the showcase opens paints -- the Overlays page's
@@ -603,13 +689,14 @@ impl ToolbarGap {
 /// `layout.container_margin`, `own` the showcase's `TOOLBAR_PADDING`, and
 /// `gap` where the gap between the items comes from.
 pub fn toolbar(
-    stated: ResolvedPadding,
+    stated: [Option<f32>; 4],
     margin: Option<Pixels>,
     own: Pixels,
     gap: ToolbarGap,
 ) -> WidgetInfo {
+    let [top, right, bottom, left] = stated;
     let side = |name: &str, value: Option<f32>| match (value, margin) {
-        (Some(v), _) => format!("{name} {}px, toolbar.border's", px_text(v)),
+        (Some(v), _) => format!("{name} {}px, toolbar.bar(NONE).padding.{name}", px_text(v)),
         (None, Some(m)) => format!("{name} {}px, layout.container_margin", px_text(m.as_f32())),
         (None, None) => format!(
             "{name} {}px, TOOLBAR_PADDING, the showcase's own",
@@ -619,20 +706,20 @@ pub fn toolbar(
     WidgetInfo::new("Toolbar")
         .not_themeable(
             "widget",
-            "the application's own h_flex, not gpui-component's Toolbar, which the Buttons page shows (rationale K12): geometry::toolbar gives it the height, gap, fill and padding sides the theme states, and the showcase pads the sides and spaces the items where the theme leaves them unstated, which the padding and gap lines below name",
+            "the application's own h_flex, not gpui-component's Toolbar, which the Buttons page shows (rationale K12): next::geometry::toolbar gives it the height, gap, fill and padding sides the theme states, and the showcase pads the sides and spaces the items where the theme leaves them unstated, which the padding and gap lines below name",
         )
         .config(
             "edge",
-            "the bar's bottom rule, toolbar.border.color at toolbar.border.line_width, inside the bar: geometry::toolbar draws it where a native theme is installed, as the theme states it, and none at a width of 0",
+            "the bar's bottom rule, toolbar.bar(NONE)'s stroke, inside the bar: next::geometry::toolbar draws it as the installed theme states it, and none at a width of 0",
         )
         .instance(
             "padding",
             format!(
-                "{}; {}; {}; {}. A side toolbar.border leaves unstated takes layout.container_margin, and where that is unstated too, TOOLBAR_PADDING, {}px, the showcase's own choice rather than a platform's: the row is the application's own element, with no toolkit default to keep (spec §3.1)",
-                side("top", stated.top),
-                side("right", stated.right),
-                side("bottom", stated.bottom),
-                side("left", stated.left),
+                "{}; {}; {}; {}. A side toolbar.bar(NONE) leaves unstated takes layout.container_margin, and where that is unstated too, TOOLBAR_PADDING, {}px, the showcase's own choice rather than a platform's: the row is the application's own element, with no toolkit default to keep (spec §3.1)",
+                side("top", top),
+                side("right", right),
+                side("bottom", bottom),
+                side("left", left),
                 px_text(own.as_f32()),
             ),
         )

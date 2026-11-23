@@ -250,10 +250,6 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
         "button.min_height by the control-height rule (defaults.line_height as the line height; the stated height at a text scale of 1 or less, a minimum with an automatic height above 1), min_width, the border.padding sides the theme states, corner_radius, line_width, color, and button.font.weight but not its size (spec §9.2)",
     ),
     (
-        "menu_item",
-        "menu.row_height, where the theme states one, by the control-height rule (defaults.line_height as the line height; the stated height at a text scale of 1 or less, a minimum with an automatic height above 1), else menu.min_row_height as a least height the content grows past, the menu.border.padding sides the theme states, menu.icon_text_gap, menu.font",
-    ),
-    (
         "dialog",
         "the dialog.border.padding sides the theme states (an unstated side keeps upstream's 16px; upstream also spaces the sections by max(top, 8px) and a DialogContent by the bottom padding), min_width as the least width, which the width upstream sets after the refinement keeps, min_height, max_height, border.corner_radius, and background_color and border.color over the window's background and border upstream paints the surface with first; the max_height does not reach upstream's Dialog, which sets its own max_h after the refinement (dialog/dialog.rs, RenderOnce for Dialog)",
     ),
@@ -406,6 +402,10 @@ pub const NEXT_GEOMETRY_NOTES: &[(&str, &str)] = &[
     (
         "status_bar",
         "the padding sides status_bar.bar states, and status_bar.label's family, size, weight and style, and its colour, which upstream would otherwise paint with muted_foreground (status_bar.rs, StatusBar::render: text_color then refine_style), and typography.line_height_multiplier as the line height",
+    ),
+    (
+        "toolbar",
+        "toolbar.bar(NONE).min_size[1] as the minimum height where the theme states one, toolbar.item_gap where it states one, the padding sides toolbar.bar(NONE) states, its fill, the bottom edge in its stroke, toolbar.button_label(NONE)'s family, size, weight and style, and its colour -- upstream's Toolbar sets no colour (gpui-component/toolbar.rs, RenderOnce for Toolbar) --, and typography.line_height_multiplier as the line height",
     ),
     (
         "popover",
@@ -644,6 +644,27 @@ pub fn drawn_font(font: &native_theme::theme::ResolvedFontSpec) -> String {
         native_theme_showcase_support::status::family_label(&font.family, Some(&drawn)),
         px_text(font.size),
         font.weight
+    )
+}
+
+/// A font of the installed 0.8.0 theme as a theme-drawn widget's label draws
+/// it (native-theme-gpui/widgets/mod.rs, `LabelFont::next`) and a 0.8.0
+/// builder sets it, for its info's font line: the family as
+/// `status::family_label` names what gpui is asked for, the size the
+/// theme's text scale has already scaled, the weight, the slant where it is
+/// not upright, and the line box.
+pub fn next_drawn_font(text: &native_theme::next::TextStyle) -> String {
+    let drawn = native_theme_gpui::font_family(&text.family);
+    let style = match text.style {
+        native_theme::next::FontStyle::Italic => ", italic",
+        native_theme::next::FontStyle::Oblique => ", oblique",
+        _ => "",
+    };
+    format!(
+        "{}, {}px, weight {}{style}, at typography.line_height_multiplier",
+        native_theme_showcase_support::status::family_label(&text.family, Some(&drawn)),
+        px_text(text.size_px),
+        text.weight
     )
 }
 

@@ -10887,71 +10887,89 @@ fn a_hovered_menu_row_takes_the_hover_border(cx: &mut TestAppContext) {
     }
 }
 
-/// The menu-bar row is filled with `toolbar.background_color` where a
-/// native theme is installed: kde-breeze light's, #dee0e2, which differs
-/// from its window's fill, so the row's fill cannot be the window's showing
-/// through. On macOS the menus are in the system's menu bar and there is no
-/// row.
+/// The menu-bar row is filled with the installed 0.8.0 theme's
+/// `menu_bar.bar(NONE).fill`: kde-breeze light's, which differs from its
+/// window's fill, so the row's fill cannot be the window's showing through.
+/// On macOS the menus are in the system's menu bar and there is no row.
 #[cfg(not(target_os = "macos"))]
 #[gpui::test]
 fn the_menu_bar_takes_the_toolbars_fill(cx: &mut TestAppContext) {
-    use crate::info::stated;
+    use native_theme::next::{WidgetState, WindowState};
+    use native_theme_gpui::next::fill_of;
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     use_light_preset(&mut cx, &showcase, "kde-breeze");
-    let r = resolved_theme(&mut cx, &showcase);
-    let fill = stated(r.toolbar.background_color);
-    assert_ne!(
-        fill,
-        stated(r.window.background_color),
-        "kde-breeze light's toolbar fill is its window's, so the test could not tell them apart"
+    let r = next_theme(&mut cx, &showcase);
+    assert!(r.is_some(), "no 0.8.0 theme is installed");
+    let Some(r) = r else { return };
+    let fill = fill_of(&r.menu_bar.bar(WidgetState::NONE));
+    assert!(
+        fill.is_some() && fill != fill_of(&r.window.frame(WindowState::default())),
+        "kde-breeze light states no menu_bar.bar(NONE).fill apart from its window's, so the test could not tell them apart"
     );
     hover(&mut cx, point(px(1200.), px(700.)));
     draw(&mut cx);
     assert_eq!(
         painted_fill(&mut cx, CHROME_MENU_BAR),
-        Some(fill),
-        "the menu-bar row is not filled with toolbar.background_color"
+        fill,
+        "the menu-bar row is not filled with menu_bar.bar(NONE).fill"
     );
 }
 
 /// A menu title takes the bar's own look where the theme states it
-/// (`MenuLook::title`), under kde-breeze light: open, `menu.bar_open_background`
-/// lettered `bar_hover_text_color`; hovered and closed,
-/// `bar_hover_background`, lettered so too; `bar_padding_horizontal` (10) at
-/// its left and right and `bar_padding_vertical` (6) at its top and bottom,
-/// so it is the label's width + 20 by the line + 12, measured against the
-/// title with every padding 0. kde-breeze's two fills are both #3daee9, so
-/// the open one is set to #f0a014 first (the KDE reader tests' hover
-/// colour, 240,160,20). With the open fill unset, an open title takes the
-/// hover fill. With the three colours cleared, today's look: the item's
-/// `menu.hover_background` lettered `hover_text_color`, open and hovered.
-/// Each text colour is the one the frame laid the title's text out in
+/// (`MenuLook::title`), under kde-breeze light: open, the fill and text a
+/// rule states for `menu_bar.item(OPEN)` and `menu_bar.item_label(OPEN)`;
+/// hovered and closed, those for `HOVER`; `menu_bar.item(NONE)`'s padding at
+/// its sides, measured against the title with every padding 0. kde-breeze's
+/// open fill is patched to `colors.window.border` first, a colour of the same
+/// theme apart from its hover fill. Under adwaita light, whose menu bar
+/// states no item look, a title takes the item's: `menu.item(HOVER).fill`
+/// lettered `menu.item_label(HOVER).color`, open and hovered. Each text
+/// colour is the one the frame laid the title's text out in
 /// (`elements::label_probe`).
 #[gpui::test]
 fn a_menu_title_takes_the_bars_fills_and_padding(cx: &mut TestAppContext) {
-    use crate::info::stated;
+    use native_theme::next::{
+        Edges, MenuBarRule, MenuRule, Paint, PartPatch, ThemePatch, WidgetState,
+    };
+    use native_theme_gpui::next::{
+        fill_of, padding_of, state_fill_of, state_text_color_of, text_color_of,
+    };
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    use_light_preset(&mut cx, &showcase, "kde-breeze");
-    let mut r = resolved_theme(&mut cx, &showcase);
-    let open_fill = native_theme::color::Rgba::new(240, 160, 20, 255);
-    r.menu.bar_open_background = Some(open_fill);
-    let (hover_fill, text) = (r.menu.bar_hover_background, r.menu.bar_hover_text_color);
+    let r = install_patched_breeze(&mut cx, &showcase, Page::Basic, |r| {
+        r.colors.window.border.map(|border| {
+            ThemePatch::new().menu_bar(
+                MenuBarRule::new()
+                    .states(WidgetState::OPEN)
+                    .item(PartPatch::new().fill(Paint::Solid(border))),
+            )
+        })
+    });
+    let Some(mut r) = r else { return };
+    let open_fill = state_fill_of(&r.menu_bar.item(WidgetState::OPEN));
+    let hover_fill = state_fill_of(&r.menu_bar.item(WidgetState::HOVER));
+    let open_text = state_text_color_of(&r.menu_bar.item_label(WidgetState::OPEN));
+    let text = state_text_color_of(&r.menu_bar.item_label(WidgetState::HOVER));
+    let sides = padding_of(&r.menu_bar.item(WidgetState::NONE));
     assert!(
-        hover_fill.is_some()
-            && text.is_some()
-            && r.menu.bar_padding_horizontal == Some(10.)
-            && r.menu.bar_padding_vertical == Some(6.),
-        "kde-breeze light no longer states the menu bar's hover fill, text and 10 by 6 padding, which this test reads"
+        sides.iter().all(Option::is_some),
+        "kde-breeze light no longer states every side of menu_bar.item(NONE)'s padding, which this test reads"
     );
-    let (Some(hover_fill), Some(text)) = (hover_fill, text) else {
+    let [Some(top), Some(right), Some(bottom), Some(left)] = sides else {
         return;
     };
+    assert!(
+        open_fill.is_some()
+            && hover_fill.is_some()
+            && open_fill != hover_fill
+            && text.is_some()
+            && open_text.is_some(),
+        "kde-breeze light no longer states the menu bar's hover fill and text, or the patched open fill is its hover fill"
+    );
     assert_ne!(
-        stated(text),
-        stated(r.menu.hover_text_color),
+        text,
+        text_color_of(&r.menu.item_label(WidgetState::HOVER)),
         "kde-breeze light letters a title as its items, so the test could not tell the two apart"
     );
-    install_breeze_light(&mut cx, &r);
     let ui = read(&mut cx, &showcase, |this, _| this.info_ui.clone());
     let lettered = |cx: &mut VisualTestContext, title: &str| {
         cx.update(|_window, cx| ui.read(cx).label_colours.get(title).copied())
@@ -10964,14 +10982,14 @@ fn a_menu_title_takes_the_bars_fills_and_padding(cx: &mut TestAppContext) {
     open_menu(&mut cx, &showcase, "theme");
     assert_eq!(
         painted_fill(&mut cx, title),
-        Some(stated(open_fill)),
-        "an open menu title is not filled with menu.bar_open_background"
+        open_fill,
+        "an open menu title is not filled with menu_bar.item(OPEN).fill"
     );
     let padded = bounds_of(&mut cx, title).size;
     assert_eq!(
         lettered(&mut cx, title),
-        Some(stated(text)),
-        "an open menu title is not lettered in menu.bar_hover_text_color"
+        open_text,
+        "an open menu title is not lettered in menu_bar.item_label(OPEN).color"
     );
     click(&mut cx, title);
     assert_eq!(
@@ -10987,76 +11005,73 @@ fn a_menu_title_takes_the_bars_fills_and_padding(cx: &mut TestAppContext) {
     draw(&mut cx);
     assert_eq!(
         painted_fill(&mut cx, closed),
-        Some(stated(hover_fill)),
-        "a hovered closed menu title is not filled with menu.bar_hover_background"
+        hover_fill,
+        "a hovered closed menu title is not filled with menu_bar.item(HOVER).fill"
     );
     assert_eq!(
         lettered(&mut cx, closed),
-        Some(stated(text)),
-        "a hovered closed menu title is not lettered in menu.bar_hover_text_color"
+        text,
+        "a hovered closed menu title is not lettered in menu_bar.item_label(HOVER).color"
     );
 
-    r.menu.bar_open_background = None;
-    install_breeze_light(&mut cx, &r);
+    let none = PartPatch::new().padding(Edges::ZERO);
+    r.apply_patch(
+        &ThemePatch::new()
+            .menu_bar(MenuBarRule::new().item(none.clone()))
+            .menu(MenuRule::new().item(none)),
+    );
+    install_next(&mut cx, &r);
     hover(&mut cx, far);
     draw(&mut cx);
-    open_menu(&mut cx, &showcase, "theme");
-    assert_eq!(
-        painted_fill(&mut cx, title),
-        Some(stated(hover_fill)),
-        "with menu.bar_open_background unstated, an open title is not filled with menu.bar_hover_background"
-    );
-    click(&mut cx, title);
-
-    r.menu.bar_hover_background = None;
-    r.menu.bar_hover_text_color = None;
-    install_breeze_light(&mut cx, &r);
-    hover(&mut cx, far);
-    draw(&mut cx);
-    hover(&mut cx, at);
-    draw(&mut cx);
-    let item = stated(r.menu.hover_background);
-    let item_text = stated(r.menu.hover_text_color);
-    assert_eq!(
-        painted_fill(&mut cx, closed),
-        Some(item),
-        "with the bar's fills unstated, a hovered title is not filled with menu.hover_background"
-    );
-    assert_eq!(
-        lettered(&mut cx, closed),
-        Some(item_text),
-        "with the bar's text unstated, a hovered title is not lettered in menu.hover_text_color"
-    );
-    hover(&mut cx, far);
-    draw(&mut cx);
-    open_menu(&mut cx, &showcase, "theme");
-    assert_eq!(
-        painted_fill(&mut cx, title),
-        Some(item),
-        "with the bar's fills unstated, an open title is not filled with menu.hover_background"
-    );
-    assert_eq!(
-        lettered(&mut cx, title),
-        Some(item_text),
-        "with the bar's text unstated, an open title is not lettered in menu.hover_text_color"
-    );
-    click(&mut cx, title);
-
-    r.menu.bar_padding_horizontal = None;
-    r.menu.bar_padding_vertical = None;
-    r.menu.border.padding = native_theme::theme::ResolvedPadding {
-        top: Some(0.),
-        right: Some(0.),
-        bottom: Some(0.),
-        left: Some(0.),
-    };
-    install_breeze_light(&mut cx, &r);
     let bare = bounds_of(&mut cx, title).size;
     assert_eq!(
         (padded.width - bare.width, padded.height - bare.height),
-        (px(20.), px(12.)),
-        "a menu title padded {padded:?} is not its bare {bare:?} + 20 by + 12"
+        (px(left + right), px(top + bottom)),
+        "a menu title padded {padded:?} is not its bare {bare:?} grown by menu_bar.item(NONE)'s padding"
     );
+
+    use_light_preset(&mut cx, &showcase, "adwaita");
+    let a = next_theme(&mut cx, &showcase);
+    assert!(a.is_some(), "no 0.8.0 theme is installed");
+    let Some(a) = a else { return };
+    assert!(
+        state_fill_of(&a.menu_bar.item(WidgetState::HOVER)).is_none()
+            && state_fill_of(&a.menu_bar.item(WidgetState::OPEN)).is_none()
+            && state_text_color_of(&a.menu_bar.item_label(WidgetState::HOVER)).is_none()
+            && state_text_color_of(&a.menu_bar.item_label(WidgetState::OPEN)).is_none(),
+        "adwaita light now states a menu-bar item look, which this test needs unstated"
+    );
+    let item = fill_of(&a.menu.item(WidgetState::HOVER));
+    let item_text = text_color_of(&a.menu.item_label(WidgetState::HOVER));
+    hover(&mut cx, far);
+    draw(&mut cx);
+    let at = bounds_of(&mut cx, closed).center();
+    hover(&mut cx, at);
+    draw(&mut cx);
+    assert_eq!(
+        painted_fill(&mut cx, closed),
+        item,
+        "with the bar's fills unstated, a hovered title is not filled with menu.item(HOVER).fill"
+    );
+    assert_eq!(
+        lettered(&mut cx, closed),
+        item_text,
+        "with the bar's text unstated, a hovered title is not lettered in menu.item_label(HOVER).color"
+    );
+    hover(&mut cx, far);
+    draw(&mut cx);
+    open_menu(&mut cx, &showcase, "theme");
+    assert_eq!(
+        painted_fill(&mut cx, title),
+        item,
+        "with the bar's fills unstated, an open title is not filled with menu.item(HOVER).fill"
+    );
+    assert_eq!(
+        lettered(&mut cx, title),
+        item_text,
+        "with the bar's text unstated, an open title is not lettered in menu.item_label(HOVER).color"
+    );
+    click(&mut cx, title);
 }
 
 /// Where `defaults.border.line_width` is 0, no row is outlined under the
@@ -12785,46 +12800,41 @@ fn the_menu_rows_info_claims_the_menu_leaves(cx: &mut TestAppContext) {
     );
 }
 
-/// The chrome popup's rows and titles take `menu.font` as
-/// `geometry::menu_item` sets it, its style included, and the rows the
-/// builder's control-height rule on `menu.row_height` -- `h` at text scale
-/// 1, `min_h` above it (M9-012) -- read from a fixture whose font is
-/// italic.
+/// The chrome popup's rows and titles take `menu.item_label(NONE)`'s font
+/// as `next::geometry::menu_item` sets it, its style included, and the rows
+/// the builder's control-height rule on `menu.item(NONE).max_size[1]` --
+/// `h` at text scale 1, `min_h` above it (M9-012) -- read from adwaita with
+/// its item label patched italic.
 ///
 /// It guards the plumbing: that `MenuLook::row` and `MenuLook::title` apply
-/// the refinement `MenuLook::of` takes from `geometry::menu_item`. Both
+/// the refinement `MenuLook::next_of` takes from `next::geometry::menu_item`. Both
 /// sides of the comparison are that builder's, so it does not show that the
 /// builder's font and height are the theme's: the connector's own geometry
 /// tests (`src/geometry.rs`) hold that.
 #[test]
 fn the_menu_popups_rows_are_refined_as_geometry_menu_item() {
-    use native_theme_gpui::Native;
-    let resolved = native_theme::theme::Theme::preset("adwaita")
-        .ok()
-        .and_then(|t| t.into_variant(native_theme::theme::ColorMode::Light).ok())
-        .and_then(|v| {
-            v.into_resolved(&native_theme::ResolutionContext::for_tests())
-                .ok()
-        });
-    assert!(resolved.is_some(), "adwaita light does not resolve");
-    let Some(mut resolved) = resolved else { return };
-    assert!(
-        resolved.menu.row_height.is_some(),
-        "adwaita no longer states menu.row_height, which this test reads"
-    );
-    resolved.menu.font.style = native_theme::theme::FontStyle::Italic;
+    use native_theme::next::{
+        FontStyle, MenuRule, Preset, TextPatch, Theme as NextTheme, ThemeContext, ThemePatch,
+        WidgetState,
+    };
     for scale in [1.0, 2.0] {
-        let mut prefs = native_theme_gpui::AccessibilityPreferences::default();
-        prefs.text_scaling_factor = scale;
-        let n = Native {
-            resolved: &resolved,
-            accessibility: &prefs,
-        };
-        let expected = geometry::menu_item(n);
+        let mut resolved = NextTheme::preset(Preset::Adwaita)
+            .resolve(&ThemeContext::default().with_text_scale(scale));
+        assert!(
+            resolved.menu.item(WidgetState::NONE).max_size[1].is_some(),
+            "adwaita no longer states menu.item(NONE).max_size[1], which this test reads"
+        );
+        resolved.apply_patch(
+            &ThemePatch::new()
+                .menu(MenuRule::new().item_label(TextPatch::new().style(FontStyle::Italic))),
+        );
+        let expected = native_theme_gpui::next::geometry::menu_item(&resolved);
+        assert!(expected.is_ok(), "next::geometry::menu_item: {expected:?}");
+        let Ok(expected) = expected else { return };
         assert_eq!(
             expected.text.font_style,
             Some(gpui::FontStyle::Italic),
-            "geometry::menu_item no longer sets the italic fixture's style"
+            "next::geometry::menu_item no longer sets the italic fixture's style"
         );
         // The font as the builder sets it; the colour is the showcase's own,
         // which the builder leaves unset.
@@ -12832,7 +12842,9 @@ fn the_menu_popups_rows_are_refined_as_geometry_menu_item() {
             color: None,
             ..style.text.clone()
         };
-        let look = crate::demo::MenuLook::of(&n);
+        let look = crate::demo::MenuLook::next_of(&resolved);
+        assert!(look.is_ok(), "adwaita's menu has no look: {:?}", look.err());
+        let Ok(look) = look else { return };
         for lit in [false, true] {
             let mut row = look.row(lit);
             let style = row.style();
@@ -13001,18 +13013,18 @@ fn a_substituted_family_is_named_in_every_own_font_line() {
         return;
     }
     let label = native_theme_showcase_support::status::family_label(&absent, Some(drawn.as_ref()));
-    resolved.menu.font.family = absent.clone();
     resolved.tab.font.family = absent.clone();
-    #[cfg(feature = "widgets")]
     let next = {
         use native_theme::next::{
-            CheckboxRule, Preset, Scheme, TextPatch, Theme as NextTheme, ThemeContext, ThemePatch,
+            CheckboxRule, MenuRule, Preset, Scheme, TextPatch, Theme as NextTheme, ThemeContext,
+            ThemePatch,
         };
         let mut next = NextTheme::preset(Preset::KdeBreeze)
             .resolve(&ThemeContext::default().with_scheme(Scheme::Light));
         next.apply_patch(
             &ThemePatch::new()
-                .checkbox(CheckboxRule::new().label(TextPatch::new().family(absent.clone()))),
+                .checkbox(CheckboxRule::new().label(TextPatch::new().family(absent.clone())))
+                .menu(MenuRule::new().item_label(TextPatch::new().family(absent.clone()))),
         );
         next
     };
@@ -13029,7 +13041,7 @@ fn a_substituted_family_is_named_in_every_own_font_line() {
     let mut lines = vec![(
         "the chrome menus",
         line(
-            crate::info::app_menus(&theme, crate::info::MenuHost::Row, Some(&resolved)),
+            crate::info::app_menus(&theme, crate::info::MenuHost::Row, Some(&next)),
             "font",
         ),
     )];
@@ -13604,31 +13616,34 @@ fn the_fallback_stack_copy_is_gpuis() {
 #[test]
 fn a_menu_popup_row_pads_each_side_as_the_theme_states_it() {
     use gpui::DefiniteLength;
-    let prefs = native_theme_gpui::AccessibilityPreferences::default();
-    for (name, r, _) in every_bundled_variant() {
-        let n = native_theme_gpui::Native {
-            resolved: &r,
-            accessibility: &prefs,
-        };
-        let p = r.menu.border.padding;
+    use native_theme::next::WidgetState;
+    for (name, r, _) in every_next_variant() {
+        let p = native_theme_gpui::next::padding_of(&r.menu.item(WidgetState::NONE));
+        let [top, right, bottom, left] = p;
         let side = |stated: Option<f32>, unstated: Option<DefiniteLength>| {
             stated.map(|v| DefiniteLength::from(px(v))).or(unstated)
         };
         let x = Some(DefiniteLength::from(crate::demo::MENU_ROW_PADDING_X));
         let expected = (
-            side(p.top, None),
-            side(p.right, x),
-            side(p.bottom, None),
-            side(p.left, x),
+            side(top, None),
+            side(right, x),
+            side(bottom, None),
+            side(left, x),
         );
-        let look = crate::demo::MenuLook::of(&n);
+        let look = crate::demo::MenuLook::next_of(&r);
+        assert!(
+            look.is_ok(),
+            "{name}: the menu has no look: {:?}",
+            look.err()
+        );
+        let Ok(look) = look else { continue };
         for lit in [false, true] {
             let mut row = look.row(lit);
             let padding = &row.style().padding;
             assert_eq!(
                 (padding.top, padding.right, padding.bottom, padding.left),
                 expected,
-                "{name}: a popup row (lit {lit}) is not padded as menu.border.padding {p:?} states"
+                "{name}: a popup row (lit {lit}) is not padded as menu.item(NONE)'s padding {p:?} states"
             );
         }
     }
@@ -13640,7 +13655,7 @@ fn a_menu_popup_row_pads_each_side_as_the_theme_states_it() {
 /// line's, under every bundled preset in both modes.
 #[test]
 fn the_menus_padding_line_names_what_pads_a_rows_unstated_sides() {
-    for (name, r, t) in every_bundled_variant() {
+    for (name, r, t) in every_next_variant() {
         let sides = format!(
             "an item's {} at the sides (MENU_ROW_PADDING_X) and nothing above or below",
             crate::info::rems_text(crate::demo::MENU_ROW_PADDING_X, &t)
@@ -13658,40 +13673,34 @@ fn the_menus_padding_line_names_what_pads_a_rows_unstated_sides() {
     }
 }
 
-/// Where the theme states neither `menu.row_height` nor a vertical padding
-/// side (catppuccin-mocha), a chrome popup row is `MENU_ROW_HEIGHT` by the
+/// Where the theme states neither a height of `menu.item(NONE)` nor a top
+/// or bottom padding (ios-13), a chrome popup row is `MENU_ROW_HEIGHT` by the
 /// connector's control-height rule (`geometry.rs`, `with_height_rule`): that
 /// height at text scale 1, a minimum with an automatic height above it, so a
 /// scaled font grows the row.
 #[test]
 fn a_menu_popup_rows_fallback_height_follows_the_control_height_rule() {
-    use native_theme_gpui::Native;
-    let resolved = native_theme::theme::Theme::preset("catppuccin-mocha")
-        .ok()
-        .and_then(|t| t.into_variant(native_theme::theme::ColorMode::Dark).ok())
-        .and_then(|v| {
-            v.into_resolved(&native_theme::ResolutionContext::for_tests())
-                .ok()
-        });
-    assert!(resolved.is_some(), "catppuccin-mocha dark does not resolve");
-    let Some(resolved) = resolved else { return };
-    let p = resolved.menu.border.padding;
-    assert!(
-        resolved.menu.row_height.is_none() && p.top.is_none() && p.bottom.is_none(),
-        "catppuccin-mocha now states a menu row height or a vertical padding, which this test needs unstated"
-    );
+    use native_theme::next::{Preset, Theme as NextTheme, ThemeContext, WidgetState};
     let height = gpui::Length::from(crate::demo::MENU_ROW_HEIGHT);
     for (scale, expected) in [
         (1.0, (Some(height), None)),
         (2.0, (Some(gpui::Length::Auto), Some(height))),
     ] {
-        let mut prefs = native_theme_gpui::AccessibilityPreferences::default();
-        prefs.text_scaling_factor = scale;
-        let n = Native {
-            resolved: &resolved,
-            accessibility: &prefs,
-        };
-        let mut row = crate::demo::MenuLook::of(&n).row(false);
+        let resolved = NextTheme::preset(Preset::Ios13)
+            .resolve(&ThemeContext::default().with_text_scale(scale));
+        let item = resolved.menu.item(WidgetState::NONE);
+        let [top, _, bottom, _] = native_theme_gpui::next::padding_of(&item);
+        assert!(
+            item.min_size[1].is_none()
+                && item.max_size[1].is_none()
+                && top.is_none()
+                && bottom.is_none(),
+            "ios-13 now states a menu.item(NONE) height or a top or bottom padding, which this test needs unstated"
+        );
+        let look = crate::demo::MenuLook::next_of(&resolved);
+        assert!(look.is_ok(), "ios-13's menu has no look: {:?}", look.err());
+        let Ok(look) = look else { return };
+        let mut row = look.row(false);
         let style = row.style();
         assert_eq!(
             (style.size.height, style.min_size.height),
@@ -20855,36 +20864,60 @@ fn a_theme_drawn_sliders_info_prints_its_look() {
 }
 
 /// The application's menus claim a `menu edge` only where the popup draws
-/// one (M9-034): `popover.border.color` where `popover.border.line_width`
-/// is above 0, and none where it is 0 (material-3, both modes), its config
-/// line then saying so -- over every bundled preset in both modes.
+/// one (M9-034): the stroke colour of the panel the frame is from
+/// (`demo::MenuRowsFrame`, the menu's panel or the popover's) where that
+/// stroke is above 0 wide, and none where it is 0, its config line then
+/// saying so -- over every bundled preset in both modes.
 #[test]
 fn the_app_menus_claim_a_menu_edge_only_where_one_is_drawn() {
-    use crate::info::{MenuHost, stated};
+    use crate::demo::{FrameFrom, MenuRowsFrame};
+    use crate::info::MenuHost;
+    use native_theme::next::WidgetState;
+    use native_theme_gpui::next::stroke_color_of;
     let mut branches = (false, false);
-    for (name, r, t) in every_bundled_variant() {
+    for (name, r, t) in every_next_variant() {
+        let frame = MenuRowsFrame::next_of(&r);
+        assert!(
+            frame.is_ok(),
+            "{name}: the menu's popup has no frame: {frame:?}"
+        );
+        let Ok(frame) = frame else { continue };
+        let (field, home, colour) = match frame.width.1 {
+            FrameFrom::Menu => (
+                "menu.panel(NONE).stroke.color",
+                "menu.panel(NONE)",
+                stroke_color_of(&r.menu.panel(WidgetState::NONE)),
+            ),
+            FrameFrom::Popover => (
+                "popover.panel.stroke.color",
+                "popover.panel",
+                stroke_color_of(&r.popover.panel),
+            ),
+        };
         let info = crate::info::app_menus(&t, MenuHost::Row, Some(&r));
         let line = note_of(&info.config, "menu edge");
-        if r.popover.border.line_width > 0.0 {
+        if frame.width.0 > 0.0 {
             branches.0 = true;
             assert_eq!(
                 claim_as(&info, "menu edge"),
-                Some(("border", stated(r.popover.border.color))),
-                "{name}: the menus' info does not claim the popover.border.color the popup is edged with: {info:?}"
+                colour.map(|colour| (field, colour)),
+                "{name}: the menus' info does not claim the {field} the popup is edged with: {info:?}"
             );
             assert!(
-                line.is_some_and(|text| text.starts_with("popover.border: ")),
-                "{name}: the menus' edge line does not name popover.border: {line:?}"
+                line.is_some_and(|text| text.starts_with(&format!("{home}'s stroke, "))),
+                "{name}: the menus' edge line does not name {home}'s stroke: {line:?}"
             );
         } else {
             branches.1 = true;
             assert_eq!(
                 claim_as(&info, "menu edge"),
                 None,
-                "{name}: the menus' info claims an edge popover.border.line_width 0 does not draw: {info:?}"
+                "{name}: the menus' info claims an edge a stroke 0 wide does not draw: {info:?}"
             );
             assert!(
-                line.is_some_and(|text| text.starts_with("none: popover.border.line_width is 0")),
+                line.is_some_and(
+                    |text| text.starts_with(&format!("none: {home}'s stroke is 0 wide"))
+                ),
                 "{name}: the menus' edge line does not say no edge is drawn: {line:?}"
             );
         }

@@ -17,7 +17,7 @@ use super::{
     stated_claim, stroke_color_of, stroke_width_of,
 };
 #[cfg(feature = "widgets")]
-use super::{next_stated, percent_text};
+use super::{next_drawn_font, next_stated, percent_text};
 use crate::demo::{InputField, NUMBER_STEP_ACTIVE, NUMBER_STEP_HOVER, WaveformKind};
 use crate::support::SampleIcon;
 
@@ -1011,27 +1011,6 @@ pub(crate) fn drawn_by_upstream(info: WidgetInfo, control: &str, home: &str) -> 
         format!(
             "gpui-component's own {control}, in upstream's colours and sizes: the theme states no value gpui can take at {home}, so widgets::{control} draws upstream's in its place (native-theme-gpui/widgets/checkbox.rs, Parts::render)"
         ),
-    )
-}
-
-/// A font of the installed 0.8.0 theme as a theme-drawn widget's label draws
-/// it (native-theme-gpui/widgets/mod.rs, `LabelFont::next`), for its info's
-/// font line: the family as `status::family_label` names what gpui is asked
-/// for, the size the theme's text scale has already scaled, the weight, the
-/// slant where it is not upright, and the line box.
-#[cfg(feature = "widgets")]
-fn next_drawn_font(text: &TextStyle) -> String {
-    let drawn = native_theme_gpui::font_family(&text.family);
-    let style = match text.style {
-        native_theme::next::FontStyle::Italic => ", italic",
-        native_theme::next::FontStyle::Oblique => ", oblique",
-        _ => "",
-    };
-    format!(
-        "{}, {}px, weight {}{style}, at typography.line_height_multiplier",
-        native_theme_showcase_support::status::family_label(&text.family, Some(&drawn)),
-        px_text(text.size_px),
-        text.weight
     )
 }
 
