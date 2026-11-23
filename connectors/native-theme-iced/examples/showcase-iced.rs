@@ -3216,12 +3216,11 @@ fn reveal_open_tab(state: &mut State) -> iced::Task<Message> {
     if !(available.is_finite() && available > 0.0) {
         return iced::Task::none();
     }
-    let resolved = &state.current_resolved;
-    let gap = resolved.tab.item_gap.unwrap_or(0.0);
-    let room = flare_room(resolved);
+    let gap = next_tab_gap(state.next_shown());
+    let room = next_flare_room(state.next_shown());
     let widths: Vec<f32> = Tab::ALL
         .iter()
-        .map(|tab| tab_width(state, tab.label()))
+        .map(|tab| next_tab_width(state, tab.label()))
         .collect();
     let open = Tab::ALL
         .iter()
@@ -5546,6 +5545,15 @@ fn next_drawn_font(style: &TextStyle) -> Option<iced::Font> {
     next_font_from_database(style, false).map(|drawn| drawn.font)
 }
 
+/// The font a text in `style`, a 0.8.0 text style set by
+/// [`Typeset::next_text`], is drawn in, for a text that must be measured
+/// as it is drawn ([`next_tab_width`]): [`next_drawn_font`], else iced's own
+/// font, `Font::DEFAULT`, which `next_text` leaves the text in (spec §10,
+/// rule 0) and the showcase leaves its renderer's default font.
+fn next_measured_font(style: &TextStyle) -> iced::Font {
+    next_drawn_font(style).unwrap_or(iced::Font::DEFAULT)
+}
+
 /// `menu` `width` wide where the width is known, else `iced_aw`'s own
 /// width ([`next_drawn_font`]).
 fn sized_menu<'a>(
@@ -7352,11 +7360,13 @@ struct TabSpec {
     tag: Option<&'static str>,
 }
 
-/// A tab as the page tabs', the inspector's and, without `iced_aw`, the
-/// Basic page's are: a button in [`tab_style`], `label` in `tab.font`,
-/// padded by `tab.border.padding` inside its border (iced's button padding
-/// on a side it leaves unstated), at least `tab.min_width` by
-/// `tab.min_height`, with the open tab's line where the theme states one.
+/// A tab as, without `iced_aw`, the Basic page's are, on the 0.7.2 theme
+/// until that page moves: a button in [`tab_style`], `label` in
+/// `tab.font`, padded by `tab.border.padding` inside its border (iced's
+/// button padding on a side it leaves unstated), at least `tab.min_width`
+/// by `tab.min_height`, with the open tab's line where the theme states
+/// one. The page tabs and the inspector's take [`next_tab_button`].
+#[cfg(not(feature = "iced_aw"))]
 fn tab_button<'a>(
     state: &'a State,
     label: &'a str,
@@ -7390,6 +7400,94 @@ fn flare_room(resolved: &ResolvedTheme) -> f32 {
         .active_outward_corner_radius
         .filter(|r| r.is_finite() && *r > 0.0)
         .unwrap_or(0.0)
+}
+
+/// A tab of the page tabs and the inspector's, on the installed 0.8.0
+/// theme: a button in [`tab_style`], `label` in `tab.label(NONE)`
+/// ([`Typeset::next_text`]), padded by [`next_tab_padding`], its label at
+/// least [`next_tab_floor`], with the open tab's line where the theme
+/// states one (`iced_next::tab_indicator`, `tab.indicator(SELECTED)`); the
+/// tab alone where the connector cannot map that line.
+fn next_tab_button<'a>(
+    state: &'a State,
+    label: &'a str,
+    open: bool,
+    message: Message,
+) -> Element<'a, Message> {
+    let r = state.next_shown();
+    let pad = next_tab_padding(r);
+    let floor = next_tab_floor(r, pad);
+    let font = r.tab.label(WidgetState::NONE);
+    let tab = || {
+        button(at_least(text(label).next_text(&font, &r.typography), floor))
+            .padding(pad)
+            .style(tab_style(r, open))
+            .on_press(message.clone())
+    };
+    iced_next::tab_indicator(r, tab(), open).unwrap_or_else(|_| tab().into())
+}
+
+/// A tab's padding on the installed 0.8.0 theme: each side
+/// `tab.tab(NONE).padding` states (it holds for every tab, spec §5's table
+/// of homes, `tab.border.padding`) plus the open tab's stroke width,
+/// `tab.tab(SELECTED).stroke.width` (the padding starts at the stroke's
+/// inner edge, spec §2, and every tab keeps that room, as
+/// `padding_inside_border` gives it on the 0.7.2 theme), iced's own border
+/// width, none, where that is unstated; iced's own button padding,
+/// `button::DEFAULT_PADDING`, on a side the theme leaves unstated.
+fn next_tab_padding(r: &native_theme::next::ResolvedTheme) -> Padding {
+    let line = iced_next::stroke_width_of(&r.tab.tab(WidgetState::SELECTED))
+        .unwrap_or(iced::Border::default().width);
+    let [top, right, bottom, left] = iced_next::padding_of(&r.tab.tab(WidgetState::NONE));
+    let own = button::DEFAULT_PADDING;
+    Padding {
+        top: top.map_or(own.top, |side| side + line),
+        right: right.map_or(own.right, |side| side + line),
+        bottom: bottom.map_or(own.bottom, |side| side + line),
+        left: left.map_or(own.left, |side| side + line),
+    }
+}
+
+/// The least size of a tab's label inside its padding `pad`, on the
+/// installed 0.8.0 theme: `tab.tab(NONE).min_size`, the tab's least width
+/// and height, less the padding, never below none; none on an axis the
+/// theme leaves unstated, where the label is its own size.
+fn next_tab_floor(r: &native_theme::next::ResolvedTheme, pad: Padding) -> iced::Size {
+    let [width, height] = r.tab.tab(WidgetState::NONE).min_size;
+    let none = iced::Size::ZERO;
+    iced::Size::new(
+        width.map_or(none.width, |w| (w - pad.x()).max(none.width)),
+        height.map_or(none.height, |h| (h - pad.y()).max(none.height)),
+    )
+}
+
+/// [`flare_room`] on the installed 0.8.0 theme:
+/// `tab.active_outward_corner_radius` where it is a positive, finite
+/// length, the one `iced_next::tab_flares` draws; none otherwise.
+fn next_flare_room(r: &native_theme::next::ResolvedTheme) -> f32 {
+    r.tab
+        .active_outward_corner_radius
+        .filter(|radius| radius.is_finite() && *radius > 0.0)
+        .unwrap_or_default()
+}
+
+/// The gap between the tabs of a [`tab_row`] on the installed 0.8.0 theme:
+/// `tab.item_gap` where stated, a row's own spacing, none, where not.
+fn next_tab_gap(r: &native_theme::next::ResolvedTheme) -> f32 {
+    r.tab.item_gap.unwrap_or_default()
+}
+
+/// The width [`next_tab_button`] lays a tab reading `label` out at: the
+/// label as iced shapes it in `tab.label(NONE)` ([`LabelWidths`],
+/// [`next_measured_font`]), at least [`next_tab_floor`]'s width, inside
+/// [`next_tab_padding`].
+fn next_tab_width(state: &State, label: &'static str) -> f32 {
+    let r = state.next_shown();
+    let pad = next_tab_padding(r);
+    let style = r.tab.label(WidgetState::NONE);
+    let font = next_measured_font(&style);
+    let text = state.label_widths.width(label, font, style.size_px);
+    pad.x() + text.max(next_tab_floor(r, pad).width)
 }
 
 #[cfg(test)]
@@ -7441,7 +7539,10 @@ impl LabelWidths {
 
 /// The width [`tab_button`] lays a tab reading `label` out at: the label as
 /// iced shapes it in `tab.font` ([`LabelWidths`]), at least `tab.min_width`
-/// less the padding, inside the padding.
+/// less the padding, inside the padding. The Basic page's, without
+/// `iced_aw`, on the 0.7.2 theme until that page moves; the page tabs take
+/// [`next_tab_width`].
+#[cfg(not(feature = "iced_aw"))]
 fn tab_width(state: &State, label: &'static str) -> f32 {
     let t = &state.current_resolved.tab;
     let pad = native_theme_iced::padding_inside_border(&t.border, button::DEFAULT_PADDING);
@@ -7553,15 +7654,17 @@ fn reveal_start(
     first
 }
 
-/// A tab row, the page tabs' and the inspector's: each tab a
-/// [`tab_button`], on a strip of `tab.bar_background` whose sides are
+/// A tab row, the page tabs' and the inspector's, on the installed 0.8.0
+/// theme: each tab a [`next_tab_button`], [`next_tab_gap`] apart, on a
+/// strip of `tab.bar(NONE).fill` ([`Surface::TabStrip`]) whose sides are
 /// `margin`, as the gpui showcase's tab bars are inset: the page tabs'
 /// `layout.container_margin`, the inspector's
 /// [`side_panel_content_margin`]. Where the theme states
 /// `tab.active_outward_corner_radius`, the open tab curves out into the bar
-/// at both feet ([`native_theme_iced::tab_flares`], over the row), and the
-/// row keeps that radius free at both ends ([`flare_room`]), inside the
-/// scrollable, so the end tabs' flares show and scroll with them.
+/// at both feet (`iced_next::tab_flares`, over the row; the row alone where
+/// the connector cannot map the flares), and the row keeps that radius
+/// free at both ends ([`next_flare_room`]), inside the scrollable, so the
+/// end tabs' flares show and scroll with them.
 /// More tabs than the strip is wide scroll sideways, with no bar of their
 /// own, as the gpui showcase's do, and the strip shows whole tabs alone
 /// ([`whole_tabs_width`]), so no label is cut at its edge whatever the
@@ -7576,13 +7679,13 @@ fn tab_row<'a>(
     trailing: Option<Element<'a, Message>>,
     strip: Option<(usize, &'a std::cell::Cell<f32>)>,
 ) -> Element<'a, Message> {
-    let resolved = &state.current_resolved;
-    let t = &resolved.tab;
+    let r = state.next_shown();
+    let gap = next_tab_gap(r);
     let open = tabs.iter().position(|spec| spec.open);
-    let room = flare_room(resolved);
+    let room = next_flare_room(r);
     let widths: Vec<f32> = tabs
         .iter()
-        .map(|spec| tab_width(state, spec.label))
+        .map(|spec| next_tab_width(state, spec.label))
         .collect();
     // The room the strip has is known once it is laid out, so the tabs are
     // built there.
@@ -7598,29 +7701,28 @@ fn tab_row<'a>(
         // `reveal_start` clamps it, so a strip that grew shows every tab
         // that fits at once; the strip is scrolled to match on the next
         // message ([`reveal_open_tab`]).
-        let start = start.min(last_start(
-            &widths,
-            t.item_gap.unwrap_or(0.0),
-            room,
-            size.width,
-        ));
-        let row_of = tabs.iter().map(|spec| {
-            let tab = tab_button(state, spec.label, spec.open, spec.message.clone());
-            match spec.tag {
-                Some(tag) => tagged(tag, tab).into(),
-                None => tab,
-            }
-        });
-        // tab.item_gap between the tabs, where stated; a row's own none
+        let start = start.min(last_start(&widths, gap, room, size.width));
+        // The tabs, `tab.item_gap` apart, where stated; a row's own none
         // otherwise.
-        let row_of = match t.item_gap {
-            Some(gap) => row(row_of).spacing(gap),
-            None => row(row_of),
-        }
-        .padding(Padding::ZERO.left(room).right(room));
+        let row_of = || {
+            let tabs = tabs.iter().map(|spec| {
+                let tab = next_tab_button(state, spec.label, spec.open, spec.message.clone());
+                match spec.tag {
+                    Some(tag) => tagged(tag, tab).into(),
+                    None => tab,
+                }
+            });
+            match r.tab.item_gap {
+                Some(gap) => row(tabs).spacing(gap),
+                None => row(tabs),
+            }
+            .padding(Padding::ZERO.left(room).right(room))
+        };
         let row_of: Element<'a, Message> = match open {
-            Some(open) => native_theme_iced::tab_flares(resolved, row_of, &[open]),
-            None => row_of.into(),
+            Some(open) => {
+                iced_next::tab_flares(r, row_of(), &[open]).unwrap_or_else(|_| row_of().into())
+            }
+            None => row_of().into(),
         };
         // The strip scrolls sideways with no bar: a bar laid out under tabs
         // no taller than their labels would cover them, and the page tabs'
@@ -7628,16 +7730,14 @@ fn tab_row<'a>(
         scrollable(row_of)
             .id(id)
             .direction(scrollable::Direction::Horizontal(
-                styles::scrollbar(resolved).width(0.0).scroller_width(0.0),
+                iced_next::styles::scrollbar(r)
+                    .width(0.0)
+                    .scroller_width(0.0),
             ))
-            .style(styles::scrollable(resolved))
-            .width(whole_tabs_width(
-                &widths,
-                t.item_gap.unwrap_or(0.0),
-                room,
-                size.width,
-                start,
-            ))
+            .next_style(iced_next::styles::scrollable(r), |bar, style| {
+                bar.style(style)
+            })
+            .width(whole_tabs_width(&widths, gap, room, size.width, start))
             .into()
     })
     .height(Length::Shrink);
@@ -7657,7 +7757,9 @@ fn tab_row<'a>(
 
 /// The content panel's tab row (spec S3): a tab per page, the shown one
 /// open, and at its right end a flat button opening a menu of every page
-/// (`iced_aw`'s `MenuBar`), as the gpui showcase's tab bar has.
+/// (`iced_aw`'s `MenuBar`), as the gpui showcase's tab bar has; its sides
+/// the installed 0.8.0 theme's `layout.container_margin`, none where
+/// unstated.
 fn page_tabs(state: &State) -> Element<'_, Message> {
     let tabs = Tab::ALL
         .iter()
@@ -7677,7 +7779,11 @@ fn page_tabs(state: &State) -> Element<'_, Message> {
         state,
         ("chrome.page_tabs", TAB_STRIP_ID),
         tabs,
-        state.layout.container_margin.unwrap_or(0.0),
+        state
+            .next_shown()
+            .layout
+            .container_margin
+            .unwrap_or_default(),
         Some(page_menu(state)),
         Some((state.page_tabs_start, &state.page_tabs_room)),
     )
@@ -9272,9 +9378,8 @@ fn tab_route(r: &native_theme::next::ResolvedTheme, leaf: &str) -> Option<String
              a tab at rest"
         }
         "tab.active_background" => {
-            "tab_style: the open tab's background, tab.tab(SELECTED).fill; and \
-             native_theme_iced::tab_flares's flares, where tab.active_outward_corner_radius is \
-             stated"
+            "tab_style: the open tab's background, tab.tab(SELECTED).fill; and the connector's \
+             tab_flares's flares, where tab.active_outward_corner_radius is stated"
         }
         "tab.active_text_color"
             if iced_next::text_color_of(&t.label(WidgetState::SELECTED)).is_none() =>
@@ -9321,9 +9426,9 @@ fn tab_route(r: &native_theme::next::ResolvedTheme, leaf: &str) -> Option<String
              outline"
         }
         "tab.border.color" => {
-            "tab_style: the open tab's border colour, tab.tab(SELECTED).stroke.color; and \
-             native_theme_iced::tab_flares's flares, where tab.active_outward_corner_radius is \
-             stated and tab.border.line_width is positive"
+            "tab_style: the open tab's border colour, tab.tab(SELECTED).stroke.color; and the \
+             connector's tab_flares's flares, where tab.active_outward_corner_radius is stated \
+             and tab.tab(SELECTED).stroke.width is positive"
         }
         _ => return None,
     };
@@ -9509,6 +9614,108 @@ fn menu_layout_route(
             Some((s, _)) => format!(
                 "next_menu_row_padding: Button::padding, menu.item(NONE).padding.{s}, iced's \
                  own where unstated"
+            ),
+            None => return None,
+        },
+    };
+    Some(route)
+}
+
+/// The route of a layout leaf `leaf` of the page tabs or the inspector's
+/// tabs under `r`, the installed 0.8.0 theme, of the tab row where `strip`
+/// ([`tab_row`]), else of a tab ([`next_tab_button`]): what is drawn of the
+/// leaf's 0.8.0 home, naming it, or that the home is unstated and what is
+/// drawn in its place. `None` for a leaf neither lays out.
+fn tab_layout_route(
+    r: &native_theme::next::ResolvedTheme,
+    leaf: &str,
+    strip: bool,
+) -> Option<String> {
+    let t = &r.tab;
+    let tab = t.tab(WidgetState::NONE);
+    let [min_width, min_height] = tab.min_size;
+    let indicator = t.indicator(WidgetState::SELECTED);
+    let [top, right, bottom, left] = iced_next::padding_of(&tab);
+    let side = ["top", "right", "bottom", "left"]
+        .into_iter()
+        .zip([top, right, bottom, left])
+        .find(|(s, _)| leaf == format!("tab.border.padding_{s}_px"));
+    let route = match leaf {
+        "tab.item_gap_px" if t.item_gap.is_none() => {
+            "not drawn: tab.item_gap is unstated; the tabs' row keeps its own spacing, none"
+                .to_owned()
+        }
+        "tab.item_gap_px" => "tab_row: the tabs' Row::spacing, tab.item_gap".to_owned(),
+        "tab.active_outward_corner_radius_px" if next_flare_room(r) == 0.0 => {
+            "not drawn: unstated, or not a positive, finite length; tab_flares draws no flares \
+             and the row keeps no room for them"
+                .to_owned()
+        }
+        "tab.active_outward_corner_radius_px" if strip => {
+            "the row's padding at both ends (next_flare_room)".to_owned()
+        }
+        "tab.active_outward_corner_radius_px" => {
+            "native_theme_iced::next::tab_flares, over the row".to_owned()
+        }
+        "tab.font" => "the label's Text in tab.label(NONE) (Typeset::next_text), measured in it \
+                       for the strip (next_tab_width)"
+            .to_owned(),
+        "defaults.line_height" => {
+            "the label's line box, tab.label(NONE).line_height, else its size times \
+             typography.line_height_multiplier (next_line_box)"
+                .to_owned()
+        }
+        "tab.min_width_px" if min_width.is_none() => {
+            "not drawn: tab.tab(NONE).min_size[0] is unstated; the tab is its label's width \
+             and padding"
+                .to_owned()
+        }
+        "tab.min_width_px" => {
+            "next_tab_floor: at_least(label, ..), tab.tab(NONE).min_size[0] less the padding"
+                .to_owned()
+        }
+        "tab.min_height_px" if min_height.is_none() => {
+            "not drawn: tab.tab(NONE).min_size[1] is unstated; the tab is its label's height \
+             and padding"
+                .to_owned()
+        }
+        "tab.min_height_px" => {
+            "next_tab_floor: at_least(label, ..), tab.tab(NONE).min_size[1] less the padding"
+                .to_owned()
+        }
+        "tab.border.line_width_px" => {
+            "the open tab's border width in tab_style, tab.tab(SELECTED).stroke.width, which \
+             next_tab_padding adds to each stated side of every tab"
+                .to_owned()
+        }
+        "tab.active_indicator_width_px" if indicator.min_size[1].is_none() => {
+            "not drawn: tab.indicator(SELECTED).min_size[1] is unstated, so \
+             native_theme_iced::next::tab_indicator draws no line"
+                .to_owned()
+        }
+        "tab.active_indicator_width_px" => {
+            "native_theme_iced::next::tab_indicator: the line stacked over the open tab, \
+             tab.indicator(SELECTED).min_size[1] thick"
+                .to_owned()
+        }
+        "tab.active_indicator_side" if t.indicator_side.is_none() => {
+            "not drawn: tab.indicator_side is unstated, so native_theme_iced::next::tab_indicator \
+             draws no line"
+                .to_owned()
+        }
+        "tab.active_indicator_side" => {
+            "native_theme_iced::next::tab_indicator: the line along the open tab's \
+             tab.indicator_side"
+                .to_owned()
+        }
+        _ => match side {
+            Some((s, Some(_))) => format!(
+                "next_tab_padding: Button::padding, tab.tab(NONE).padding.{s} plus \
+                 tab.tab(SELECTED).stroke.width"
+            ),
+            Some((s, None)) => format!(
+                "next_tab_padding: Button::padding, iced's own (button::DEFAULT_PADDING): \
+                 tab.tab(NONE).padding.{s} is unstated"
             ),
             None => return None,
         },
@@ -9829,6 +10036,23 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
     }
     if under("basic.list.")
         && let Some(route) = list_route(state.next_shown(), leaf, under("basic.list.frame"))
+    {
+        return if route.starts_with("not drawn") {
+            route
+        } else {
+            format!("iced: {route}")
+        };
+    }
+    let chrome_tabs = (under("chrome.page_tabs")
+        && !under("chrome.page_tabs.menu")
+        && !under("chrome.page_tabs.rule"))
+        || under("chrome.side_panel.inspector_tabs");
+    if chrome_tabs
+        && let Some(route) = tab_layout_route(
+            state.next_shown(),
+            leaf,
+            id == "chrome.page_tabs" || id == "chrome.side_panel.inspector_tabs",
+        )
     {
         return if route.starts_with("not drawn") {
             route
@@ -29304,6 +29528,82 @@ mod tests {
         }
     }
 
+    /// [`next_tab_padding`], [`next_tab_floor`], [`next_tab_gap`],
+    /// [`next_flare_room`] and [`next_tab_width`] lay the page tabs and the
+    /// inspector's out on the installed 0.8.0 theme: on every preset, a side
+    /// `tab.tab(NONE).padding` leaves unstated is `button::DEFAULT_PADDING`'s
+    /// and an axis `tab.tab(NONE).min_size` leaves unstated has no floor; a
+    /// patch stating the four sides (3, 5, 7, 9), the least size (80 by 40),
+    /// the open tab's stroke (2 wide), the gap (6) and the outward radius (4)
+    /// pads each side by its value plus the stroke (5, 7, 9, 11), floors the
+    /// label at the least size less that padding (62 by 26), spaces the tabs
+    /// 6 apart, keeps 4 free
+    /// at both ends and lays a tab out at least 80 wide.
+    #[test]
+    fn the_chrome_tabs_take_their_layout_from_the_installed_theme() -> Result<(), String> {
+        let patch = native_theme::next::ThemePatch::from_toml(
+            "[widgets.tab]\nitem_gap = 6.0\nactive_outward_corner_radius = 4.0\n\n\
+             [[widgets.tab.rules]]\ntab.padding = { top = 3.0, right = 5.0, bottom = 7.0, \
+             left = 9.0 }\ntab.min_size = [80.0, 40.0]\n\n[[widgets.tab.rules]]\nstates = \
+             [\"selected\"]\ntab.stroke = { width = 2.0, color = \"#ff0000\" }\n",
+        )
+        .map_err(|error| format!("the tab patch: {error:?}"))?;
+        let sides = |p: Padding| (p.top, p.right, p.bottom, p.left);
+        let own = button::DEFAULT_PADDING;
+        let mut failures = Vec::new();
+        for (label, r) in next_combinations() {
+            let pad = next_tab_padding(&r);
+            let tab = r.tab.tab(WidgetState::NONE);
+            let stated = iced_next::padding_of(&tab);
+            let drawn = [pad.top, pad.right, pad.bottom, pad.left];
+            let iced = [own.top, own.right, own.bottom, own.left];
+            for (i, side) in stated.into_iter().enumerate() {
+                if side.is_none() && drawn.get(i) != iced.get(i) {
+                    failures.push(format!("{label}: the unstated side {i} is {pad:?}"));
+                }
+            }
+            let floor = next_tab_floor(&r, pad);
+            let [width, height] = tab.min_size;
+            if (width.is_none() && floor.width != 0.0) || (height.is_none() && floor.height != 0.0)
+            {
+                failures.push(format!(
+                    "{label}: an unstated least size floors at {floor:?}"
+                ));
+            }
+            let mut patched = r.clone();
+            patched.apply_patch(&patch);
+            let pad = next_tab_padding(&patched);
+            let floor = next_tab_floor(&patched, pad);
+            if sides(pad) != (5.0, 7.0, 9.0, 11.0) {
+                failures.push(format!("{label}: patched, the padding is {pad:?}"));
+            }
+            if (floor.width, floor.height) != (62.0, 26.0) {
+                failures.push(format!("{label}: patched, the floor is {floor:?}"));
+            }
+            if next_tab_gap(&patched) != 6.0 || next_flare_room(&patched) != 4.0 {
+                failures.push(format!(
+                    "{label}: patched, the gap is {} and the room {}",
+                    next_tab_gap(&patched),
+                    next_flare_room(&patched)
+                ));
+            }
+            let state = State {
+                next_resolved: patched.clone(),
+                next_inactive: patched,
+                ..State::default()
+            };
+            let width = next_tab_width(&state, "Basic");
+            if width < 80.0 {
+                failures.push(format!("{label}: patched, a tab is {width} wide"));
+            }
+        }
+        if failures.is_empty() {
+            Ok(())
+        } else {
+            Err(format!("{failures:#?}"))
+        }
+    }
+
     /// [`ToolbarLayout`] and [`tool_icon_size`] lay the toolbar out on the
     /// installed 0.8.0 theme: on every preset, a patch stating the item gap
     /// (11), the bar's four padding sides (3, 5, 7 and 9), its stroke (2
@@ -30650,7 +30950,8 @@ mod tests {
     /// at a text scale of 1, with `tab.active_outward_corner_radius` set to
     /// `radius` on the resolved theme, the preset's 4 (G3 T15) or another
     /// (spec §12.2's seam: `State::current_resolved`, a resolved theme's
-    /// fields being public).
+    /// fields being public), on the 0.7.2 theme the Basic page reads and
+    /// the installed 0.8.0 one the page tabs and the inspector's read.
     fn curving_out(radius: Option<f32>) -> State {
         let mut state = State {
             accessibility: native_theme_iced::AccessibilityPreferences::default(),
@@ -30665,6 +30966,8 @@ mod tests {
             state.error_message
         );
         state.current_resolved.tab.active_outward_corner_radius = radius;
+        state.next_resolved.tab.active_outward_corner_radius = radius;
+        state.next_inactive.tab.active_outward_corner_radius = radius;
         state
     }
 
@@ -30815,11 +31118,11 @@ mod tests {
         for (id, want) in [
             (
                 "chrome.page_tabs.basic",
-                "native_theme_iced::tab_flares, over the row",
+                "native_theme_iced::next::tab_flares, over the row",
             ),
             (
                 "chrome.side_panel.inspector_tabs.widget",
-                "native_theme_iced::tab_flares, over the row",
+                "native_theme_iced::next::tab_flares, over the row",
             ),
             (
                 "basic.tabs.one",
@@ -30831,10 +31134,13 @@ mod tests {
                     "native_theme_iced::tab_flares, over the row"
                 },
             ),
-            ("chrome.page_tabs", "the row's padding at both ends"),
+            (
+                "chrome.page_tabs",
+                "the row's padding at both ends (next_flare_room)",
+            ),
             (
                 "chrome.side_panel.inspector_tabs",
-                "the row's padding at both ends",
+                "the row's padding at both ends (next_flare_room)",
             ),
             (
                 "basic.tabs.bar",
@@ -30856,7 +31162,7 @@ mod tests {
             for leaf in ["tab.active_background", "tab.border.color"] {
                 let line = route(&state, id, leaf);
                 assert!(
-                    line.contains("native_theme_iced::tab_flares's flares"),
+                    line.contains("the connector's tab_flares's flares"),
                     "{id}: {leaf}: {line}"
                 );
             }
@@ -37134,7 +37440,9 @@ mod tests {
 
     /// Every font the showcase builds comes from `drawable_font`, so role and
     /// widget text carries the theme's family, never iced's generic one
-    /// picked outside it. `family_label` only reads the family a font has.
+    /// picked outside it. `family_label` only reads the family a font has;
+    /// `next_measured_font` names iced's own font only to measure a text
+    /// the theme gives no drawable font.
     #[test]
     fn fonts_are_built_from_the_theme_family() {
         let source = strip_comments_and_strings(SHOWCASE);
@@ -37149,7 +37457,14 @@ mod tests {
             },
             None => panic!("{name} is gone"),
         };
-        let helpers = [body("fn drawable_font"), body("fn family_label")];
+        // `next_measured_font` names iced's own font, which a 0.8.0 text
+        // style that gives none iced can draw leaves its text in, only to
+        // measure that text as it is drawn.
+        let helpers = [
+            body("fn drawable_font"),
+            body("fn family_label"),
+            body("fn next_measured_font"),
+        ];
         let mut generic = Vec::new();
         for token in [
             "Font::DEFAULT",
