@@ -27,7 +27,7 @@ pub(crate) fn show(
 ) {
     let t = atlas.old_resolved(ui.ctx().theme());
     let normal = RoleVariant::Normal;
-    let min = button_min_size(t);
+    let min = button_min_size(atlas.next_shown(ui.ctx()));
 
     caption(
         reg,

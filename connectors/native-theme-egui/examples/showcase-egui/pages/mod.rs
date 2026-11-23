@@ -189,20 +189,34 @@ pub(crate) fn caption(reg: &mut Registry, ui: &mut egui::Ui, text: &str) -> egui
     })
 }
 
-/// The least size of a `Button` a page builds: `button.min_width`, which egui's `Button` never
-/// reads from the style, per call (connector spec §5.3, `Button::min_size`), and no least height
-/// of the page's own: a `Button` raises its height to `interact_size.y`, `button.min_height` in
-/// the button scope, unless it is small (egui 0.36.2 `src/widgets/button.rs:306-309`).
-pub(crate) fn button_min_size(t: &native_theme_egui::ResolvedTheme) -> egui::Vec2 {
-    egui::vec2(t.button.min_width, 0.0)
+/// The least size of a `Button` a page builds: `button.body(NONE).min_size[0]` of the installed
+/// 0.8.0 theme `r`, which egui's `Button` never reads from the style, per call (connector spec
+/// §5.3, `Button::min_size`), and where the theme states none, egui's own, none
+/// (`Button::min_size` starts at `Vec2::ZERO`, egui-0.37.0 `src/widgets/button.rs:67`); and no
+/// least height of the page's own: a `Button` raises its height to `interact_size.y`, the
+/// button scope's, unless it is small (egui 0.36.2 `src/widgets/button.rs:306-309`).
+pub(crate) fn button_min_size(r: Option<&native_theme::next::ResolvedTheme>) -> egui::Vec2 {
+    let [width, _] = r.map_or([None, None], |r| {
+        r.button
+            .body(native_theme::next::WidgetState::NONE)
+            .min_size
+    });
+    egui::vec2(width.unwrap_or_default(), 0.0)
 }
 
-/// The least size of a `TextEdit` a page builds: `input.min_height`, which a `TextEdit` never
-/// reads from the style: one row plus its margin tall, at least its per-instance `min_size`
-/// (connector spec §5.4); and no least width of the page's own: a `TextEdit` is its
-/// `desired_width` wide, `spacing.text_edit_width` unless given one.
-pub(crate) fn input_min_size(t: &native_theme_egui::ResolvedTheme) -> egui::Vec2 {
-    egui::vec2(0.0, t.input.min_height)
+/// The least size of a `TextEdit` a page builds: `input.field(NONE).min_size[1]` of the installed
+/// 0.8.0 theme `r`, which a `TextEdit` never reads from the style: one row plus its margin tall,
+/// at least its per-instance `min_size` (connector spec §5.4), which starts at `Vec2::ZERO`, egui's
+/// own where the theme states none (egui-0.37.0 `src/widgets/text_edit/builder.rs:156`); and no
+/// least width of the page's own: a `TextEdit` is its `desired_width` wide,
+/// `spacing.text_edit_width` unless given one.
+pub(crate) fn input_min_size(r: Option<&native_theme::next::ResolvedTheme>) -> egui::Vec2 {
+    let [_, height] = r.map_or([None, None], |r| {
+        r.input
+            .field(native_theme::next::WidgetState::NONE)
+            .min_size
+    });
+    egui::vec2(0.0, height.unwrap_or_default())
 }
 
 /// A dialog extent the theme states, less the frame's own margins and stroke,

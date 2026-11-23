@@ -3897,13 +3897,13 @@ fn the_basic_page_applies_the_per_call_leaves() {
 /// as they reach Basic. Under windows-11 set directly, which states every one: the Overlays
 /// page's modal is at least `dialog.min_width` × `dialog.min_height` and at most the max
 /// extents; every `Role::Button` kind of the Buttons and Overlays pages built with
-/// `Button::new` is at least `button.min_width` wide, there and under kde-breeze, whose minimum
-/// is wider than egui's buttons; and every `TextEdit (…)` of the Inputs page at least
-/// `input.min_height` tall, there and under adwaita and material-3, whose fields are taller than
-/// egui's. egui's own kinds and its small button keep egui's sizes, as the gpui showcase's small
+/// `Button::new` is at least the 0.8.0 theme's `button.body(NONE).min_size[0]` wide, there and
+/// under kde-breeze, whose minimum is wider than egui's buttons; and every `TextEdit (…)` of the
+/// Inputs page at least `input.field(NONE).min_size[1]` tall, there and under adwaita and
+/// material-3, whose fields are taller than egui's. egui's own kinds and its small button keep egui's sizes, as the gpui showcase's small
 /// button keeps gpui-component's, each saying so under *Not themeable*.
 #[test]
-fn the_palette_pages_apply_the_per_call_leaves() {
+fn the_palette_pages_apply_the_per_call_leaves() -> Result<(), String> {
     fn rects(harness: &Harness<'_, App>, kind: &str) -> Vec<egui::Rect> {
         let rects: Vec<egui::Rect> = harness
             .state()
@@ -3933,26 +3933,31 @@ fn the_palette_pages_apply_the_per_call_leaves() {
             "{kind}: no Not themeable line says {leaf} is not applied: {notes:?}"
         );
     }
-    let wide_enough = |harness: &Harness<'_, App>, kinds: &[&str]| {
-        let t = harness
+    let wide_enough = |harness: &Harness<'_, App>, kinds: &[&str]| -> Result<(), String> {
+        let [min_width, _] = harness
             .state()
             .atlas
-            .old_resolved(egui::Theme::Light)
-            .clone();
+            .next_resolved(harness.ctx.theme())
+            .ok_or("no 0.8.0 theme installed")?
+            .button
+            .body(native_theme::next::WidgetState::NONE)
+            .min_size;
+        let min_width = min_width.ok_or("no button.body(NONE).min_size[0] stated")?;
+        assert!(min_width > 0.0, "a least width that is no case");
         for kind in kinds {
             for rect in rects(harness, kind) {
                 assert!(
-                    rect.width() >= t.button.min_width - 0.01,
-                    "{kind} is {rect:?}, narrower than button.min_width {}",
-                    t.button.min_width
+                    rect.width() >= min_width - 0.01,
+                    "{kind} is {rect:?}, narrower than button.body(NONE).min_size[0] {min_width}"
                 );
             }
         }
+        Ok(())
     };
 
     // windows-11's buttons are as wide as its 64 px already; kde-breeze's 82 px is wider.
     for preset in ["windows-11", "kde-breeze"] {
-        let harness = open_scaled(preset, "buttons", 1.0);
+        let harness = open_page_under(Page::Buttons, egui::Theme::Light, preset);
         wide_enough(
             &harness,
             &[
@@ -3963,21 +3968,18 @@ fn the_palette_pages_apply_the_per_call_leaves() {
                 "button (suggested action)",
                 "button (disabled)",
             ],
-        );
+        )?;
         for kind in [
             "ui.button",
             "ui.small_button",
             "ui.toggle_value",
             "button (small)",
         ] {
-            assert_noted(&harness, kind, "button.min_width");
-        }
-        for kind in ["ui.small_button", "button (small)"] {
-            assert_noted(&harness, kind, "button.min_height");
+            assert_noted(&harness, kind, "button.body(NONE).min_size");
         }
     }
 
-    let mut harness = open_scaled("windows-11", "overlays", 1.0);
+    let mut harness = open_page_under(Page::Overlays, egui::Theme::Light, "windows-11");
     let t = harness
         .state()
         .atlas
@@ -3992,10 +3994,10 @@ fn the_palette_pages_apply_the_per_call_leaves() {
             "open popup button",
             "tooltip button",
         ],
-    );
+    )?;
     harness.get_by_label("Open modal").click();
     harness.run_steps(SETTLE);
-    wide_enough(&harness, &["modal button"]);
+    wide_enough(&harness, &["modal button"])?;
     for modal in rects(&harness, "modal") {
         assert!(
             modal.width() >= d.min_width - 0.01
@@ -4015,18 +4017,23 @@ fn the_palette_pages_apply_the_per_call_leaves() {
     harness.run_steps(SETTLE);
     harness.get_by_label("Open popup").click();
     harness.run_steps(SETTLE);
-    wide_enough(&harness, &["popup item"]);
+    wide_enough(&harness, &["popup item"])?;
 
     // windows-11's fields are as tall as egui's one row and margin already; adwaita's, which
     // states no vertical padding, and material-3's, the tallest stated, are taller than that.
     for preset in ["windows-11", "adwaita", "material-3"] {
-        let harness = open_scaled(preset, "inputs", 1.0);
-        let min_height = harness
+        let harness = open_page_under(Page::Inputs, egui::Theme::Light, preset);
+        let [_, min_height] = harness
             .state()
             .atlas
-            .old_resolved(egui::Theme::Light)
+            .next_resolved(harness.ctx.theme())
+            .ok_or("no 0.8.0 theme installed")?
             .input
-            .min_height;
+            .field(native_theme::next::WidgetState::NONE)
+            .min_size;
+        let min_height =
+            min_height.ok_or_else(|| format!("{preset}: no input.field(NONE).min_size[1]"))?;
+        assert!(min_height > 0.0, "{preset}: a least height that is no case");
         for kind in [
             "TextEdit (single line)",
             "TextEdit (multiline)",
@@ -4037,7 +4044,8 @@ fn the_palette_pages_apply_the_per_call_leaves() {
             for rect in rects(&harness, kind) {
                 assert!(
                     rect.height() >= min_height - 0.01,
-                    "{preset}: {kind} is {rect:?}, under input.min_height {min_height}"
+                    "{preset}: {kind} is {rect:?}, under input.field(NONE).min_size[1] \
+                     {min_height}"
                 );
             }
         }
@@ -4046,31 +4054,46 @@ fn the_palette_pages_apply_the_per_call_leaves() {
             "ui.text_edit_multiline",
             "ui.code_editor",
         ] {
-            assert_noted(&harness, kind, "input.min_height");
+            assert_noted(&harness, kind, "input.field(NONE).min_size[1]");
         }
     }
+    Ok(())
 }
 
-/// The Inputs page builds each field's frame inside its `Role::Input` scope, as `input_frame`
-/// and `text_area_frame` ask, so the frame takes the field's border, not the button's the base
-/// style holds: under material-3, whose button has no line and whose field has one, each
-/// field's frame (the `Shape::Rect` in the field's fill inside its rectangle) is stroked at the
-/// field's `border.line_width` and rounded by its `border.corner_radius`.
+/// The Inputs page builds each field's frame inside its `Role::Input` scope, as
+/// `next::input_frame` and `next::text_area_frame` ask, so the frame takes the field's border,
+/// not the button's the base style holds: under the 0.8.0 material-3, whose button has no line
+/// and whose field has one, each field's frame (the `Shape::Rect` in the field's fill inside its
+/// rectangle) is stroked at `input.field(NONE)`'s (`text_area.field(NONE)`'s) stroke width and
+/// rounded by its corners.
 #[test]
-fn the_inputs_page_frames_its_fields_in_their_own_border() {
-    let harness = open_scaled("material-3", "inputs", 1.0);
-    let t = harness.state().atlas.old_resolved(egui::Theme::Light);
+fn the_inputs_page_frames_its_fields_in_their_own_border() -> Result<(), String> {
+    use native_theme::next::WidgetState;
+    use native_theme_egui::next::{fill_of, radius_of, stroke_width_of};
+    let harness = open_page_under(Page::Inputs, egui::Theme::Light, "material-3");
+    let r = harness
+        .state()
+        .atlas
+        .next_resolved(harness.ctx.theme())
+        .ok_or("no 0.8.0 theme installed")?;
+    let (input, area) = (
+        r.input.field(WidgetState::NONE),
+        r.text_area.field(WidgetState::NONE),
+    );
     assert_ne!(
-        t.input.border.line_width, t.button.border.line_width,
+        stroke_width_of(&input),
+        stroke_width_of(&r.button.body(WidgetState::NONE)),
         "the case this covers: a field's line that is not the button's"
     );
-    let fill = native_theme_egui::convert::to_color32(t.input.background_color);
-    for (kind, border) in [
-        ("TextEdit (single line)", &t.input.border),
-        ("TextEdit (password)", &t.input.border),
-        ("TextEdit (hint)", &t.input.border),
-        ("TextEdit (multiline)", &t.text_area.border),
+    let fill = fill_of(&input).ok_or("no input.field(NONE).fill")?;
+    for (kind, field) in [
+        ("TextEdit (single line)", &input),
+        ("TextEdit (password)", &input),
+        ("TextEdit (hint)", &input),
+        ("TextEdit (multiline)", &area),
     ] {
+        let width = stroke_width_of(field).ok_or_else(|| format!("{kind}: no stroke width"))?;
+        let radius = radius_of(field).ok_or_else(|| format!("{kind}: no corner radius"))?;
         let place = harness
             .state()
             .registry
@@ -4078,7 +4101,7 @@ fn the_inputs_page_frames_its_fields_in_their_own_border() {
             .iter()
             .find(|r| r.info.kind == kind)
             .map(|r| r.rect)
-            .unwrap_or_else(|| panic!("no record of kind {kind}"));
+            .ok_or_else(|| format!("no record of kind {kind}"))?;
         let frames: Vec<(f32, egui::CornerRadius)> = harness
             .output()
             .shapes
@@ -4095,14 +4118,12 @@ fn the_inputs_page_frames_its_fields_in_their_own_border() {
             })
             .collect();
         let want = (
-            border.line_width,
-            native_theme_egui::convert::to_corner_radius(
-                egui::CornerRadius::ZERO,
-                border.corner_radius,
-            ),
+            width,
+            native_theme_egui::convert::to_corner_radius(egui::CornerRadius::ZERO, radius),
         );
         assert_eq!(frames, vec![want], "{kind}: its frame at {place:?}");
     }
+    Ok(())
 }
 
 /// The showcase on `tab` with `preset`'s atlas installed in place of the one it opened with, as

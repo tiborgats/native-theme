@@ -551,13 +551,6 @@ impl OldAtlas {
 
     /// The installed 0.8.0 theme of `theme`'s slot for an active window, `None` for an atlas
     /// of the 0.7.2 model.
-    #[cfg_attr(
-        not(test),
-        expect(
-            dead_code,
-            reason = "the page groups call it as they move to the 0.8.0 model"
-        )
-    )]
     pub(crate) fn next_resolved(
         &self,
         theme: egui::Theme,
@@ -566,13 +559,6 @@ impl OldAtlas {
     }
 
     /// The installed 0.8.0 theme of `theme`'s slot for an inactive window.
-    #[cfg_attr(
-        not(test),
-        expect(
-            dead_code,
-            reason = "the page groups call it as they move to the 0.8.0 model"
-        )
-    )]
     pub(crate) fn next_inactive(
         &self,
         theme: egui::Theme,
@@ -587,13 +573,6 @@ impl OldAtlas {
     /// The installed 0.8.0 theme a page on the 0.8.0 model reads: the scheme egui draws,
     /// resolved for an inactive window while the viewport reports itself unfocused, else for
     /// an active one.
-    #[cfg_attr(
-        not(test),
-        expect(
-            dead_code,
-            reason = "the page groups call it as they move to the 0.8.0 model"
-        )
-    )]
     pub(crate) fn next_shown(
         &self,
         ctx: &egui::Context,
