@@ -1439,12 +1439,12 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "link.background_color",
-        "gpui: geometry::link's fill, where the Link paints none (gpui-component/link.rs:70-90, render)",
+        "gpui: next::geometry::link's fill, link.container(NONE).fill, where the Link paints none (gpui-component/link.rs:70-90, render)",
     ),
     (
         "",
         "link.font",
-        "gpui: geometry::link's family, size, weight and style",
+        "gpui: next::geometry::link's family, size, weight and style, link.label(NONE)'s",
     ),
     (
         "",
@@ -1464,7 +1464,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "link.underline_enabled",
-        "gpui: geometry::link removes upstream's underline where false",
+        "gpui: next::geometry::link removes upstream's underline where link.label(NONE).decoration is none",
     ),
     // --- list: the Basic page's table, demo::files_table ------------------------
     (

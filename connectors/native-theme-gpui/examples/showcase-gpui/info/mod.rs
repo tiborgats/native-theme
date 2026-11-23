@@ -250,10 +250,6 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
         "button.min_height by the control-height rule (defaults.line_height as the line height; the stated height at a text scale of 1 or less, a minimum with an automatic height above 1), min_width, the border.padding sides the theme states, corner_radius, line_width, color, and button.font.weight but not its size (spec §9.2)",
     ),
     (
-        "editor",
-        "defaults.line_height as the line height, over the relative(1.5) upstream's Editor sets on its Input first: the Editor refines the caller's style last (input/editor.rs, Editor::render). Its font is the mono font the theme sets, mono_font_family at mono_font_size",
-    ),
-    (
         "menu_item",
         "menu.row_height, where the theme states one, by the control-height rule (defaults.line_height as the line height; the stated height at a text scale of 1 or less, a minimum with an automatic height above 1), else menu.min_row_height as a least height the content grows past, the menu.border.padding sides the theme states, menu.icon_text_gap, menu.font",
     ),
@@ -413,6 +409,14 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
 /// reads: `WidgetInfo::next_geometry` prints `geometry::<name>: <what>`. A
 /// builder whose every caller is on the 0.8.0 model has its entry here alone.
 pub const NEXT_GEOMETRY_NOTES: &[(&str, &str)] = &[
+    (
+        "editor",
+        "typography.line_height_multiplier as the line height, over the relative(1.5) upstream's Editor sets on its Input first: the Editor refines the caller's style last (input/editor.rs, Editor::render). Its font is the mono font the theme sets, mono_font_family at mono_font_size, typography.monospace's family and size (native-theme-gpui next/mod.rs, theme_scalars)",
+    ),
+    (
+        "link",
+        "link.label(NONE)'s family, size, weight and style, typography.line_height_multiplier as the line height, link.container(NONE).fill as the fill, which upstream paints none of (gpui-component/link.rs, RenderOnce for Link), and no underline where link.label(NONE).decoration is none: upstream underlines a link at rest before the refinement (gpui-component/link.rs, RenderOnce for Link: text_decoration_1 then refine_style), and a zero thickness paints none",
+    ),
     (
         "button",
         "button.body(NONE).min_size[1] by the control-height rule (typography.line_height_multiplier as the line height; the stated height at a text scale of 1 or less, a minimum with an automatic height above 1; upstream's height where the theme states none), button.body(NONE).min_size[0], the padding sides button.body(NONE) states, its corner radius, stroke width and stroke colour, and button.label(NONE).weight but not its size (spec §9.2)",

@@ -121,8 +121,8 @@ use crate::support::{
     CAROUSEL_SLIDES, ChatMessage, ChromeIcon, DIFF_DECORATED_LINE, DIFF_DECORATED_PATH,
     GRID_LAYOUT_ITEMS, NativeStyled as _, PresetDelegate, STEPPER_STEPS, SampleIcon,
     SampleListDelegate, SampleTableDelegate, contrast_held, native_color, native_geometry,
-    native_value, next_geometry, next_resolved, old_native, refined, requested_preferences,
-    toolbar_variant, with_gap, with_padding,
+    native_value, next_geometry, next_resolved, next_value, old_native, refined,
+    requested_preferences, toolbar_variant, with_gap, with_padding,
 };
 use crate::{
     CHROME_APP_MENU_BAR, CHROME_SIDE_PANEL, CHROME_SIDE_PANEL_CONTENT, CHROME_SIDE_PANEL_SCROLL,
@@ -3462,11 +3462,10 @@ pub(crate) fn alert(
 // Page text (spec §5.3)
 // ---------------------------------------------------------------------------
 
-/// A section heading reading `text`, in the theme's section-heading role
-/// (`text_scale.section_heading`, the section divider of
-/// `docs/platform-facts.md` §2.19): its size and line height, scaled by the
-/// user's text-scaling factor, and its weight, as the iced showcase's section
-/// titles are. Without an installed native theme, upstream's `text_base`,
+/// A section heading reading `text`, in the installed 0.8.0 theme's
+/// section-heading role ([`heading_role`]): its size, line box and weight,
+/// as the iced showcase's section titles are. Without an installed theme,
+/// or where its role states no size or weight, upstream's `text_base`,
 /// semibold. `id` is its info's id and its debug selector.
 pub(crate) fn heading(
     ui: &Entity<InfoRegistry>,
@@ -3474,31 +3473,91 @@ pub(crate) fn heading(
     id: &'static str,
     text: impl Into<SharedString>,
 ) -> Stateful<Div> {
-    let role = native_value(cx, |n| {
-        let h = &n.resolved.text_scale.section_heading;
-        (
-            px(native_theme_gpui::scaled_text_size(h.size, n.accessibility)),
-            px(native_theme_gpui::scaled_text_size(
-                h.line_height,
-                n.accessibility,
-            )),
-            FontWeight(f32::from(h.weight)),
-        )
-    });
+    let role = next_value(cx, |r| heading_role(&r.typography));
     let label = Label::new(text);
     let label = match role {
-        Some((size, line_height, weight)) => label
-            .text_size(size)
-            .line_height(line_height)
-            .font_weight(weight),
-        None => label.text_base().font_semibold(),
+        Some(Ok(role)) => label
+            .text_size(role.size)
+            .line_height(role.line_height)
+            .font_weight(role.weight),
+        _ => label.text_base().font_semibold(),
     };
     label
-        .info(ui, id, info::text::heading(cx.theme(), role.is_some()))
+        .info(ui, id, info::text::heading(cx.theme(), role))
         // As wide as its text, not its column: the space beside a heading
         // is not the heading.
         .self_start()
         .debug_selector(move || id.into())
+}
+
+/// What a section heading is lettered in ([`heading_role`]).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) struct HeadingRole {
+    /// The text style read: `typography.headline`, or `typography.body`
+    /// where the theme states no headline.
+    pub(crate) home: &'static str,
+    /// Its `size_px`, which the theme's text scale has already scaled.
+    pub(crate) size: Pixels,
+    /// Its line box ([`line_box`]).
+    pub(crate) line_height: Pixels,
+    /// Its `weight`.
+    pub(crate) weight: FontWeight,
+}
+
+/// The section heading's role in `typography`: `headline`, the platform's
+/// section heading (`docs/platform-facts.md` §2.19, 0.7.2's
+/// `text_scale.section_heading`), or `body` where the theme states no
+/// headline (spec §4, `Typography`: a caller falls back to `body`). `Err`
+/// with the home where that style states no size or no weight: the heading
+/// keeps the showcase's own style (spec §10, rule 0).
+pub(crate) fn heading_role(
+    typography: &native_theme::next::Typography,
+) -> Result<HeadingRole, &'static str> {
+    use native_theme::next::TextStated;
+    let (style, home, size_home, weight_home) = match &typography.headline {
+        Some(headline) => (
+            headline,
+            "typography.headline",
+            "typography.headline.size_px",
+            "typography.headline.weight",
+        ),
+        None => (
+            &typography.body,
+            "typography.body",
+            "typography.body.size_px",
+            "typography.body.weight",
+        ),
+    };
+    if !style.stated.contains(TextStated::SIZE_PX) {
+        return Err(size_home);
+    }
+    if !style.stated.contains(TextStated::WEIGHT) {
+        return Err(weight_home);
+    }
+    Ok(HeadingRole {
+        home,
+        size: px(style.size_px),
+        line_height: px(line_box(typography, style)),
+        weight: FontWeight(f32::from(style.weight)),
+    })
+}
+
+/// The line box of `style`, one of `typography`'s text styles: its
+/// `line_height` where stated, else its size by
+/// `typography.line_height_multiplier` (spec §4, `Typography`; §5, "A text
+/// part's `line_height`").
+pub(crate) fn line_box(
+    typography: &native_theme::next::Typography,
+    style: &native_theme::next::TextStyle,
+) -> f32 {
+    if style
+        .stated
+        .contains(native_theme::next::TextStated::LINE_HEIGHT)
+    {
+        style.line_height
+    } else {
+        style.size_px * typography.line_height_multiplier
+    }
 }
 
 /// A caption reading `text`, in the muted colour. `id` is its info's id and
@@ -7509,9 +7568,8 @@ pub(crate) fn muted_text(
         .debug_selector(move || id.into())
 }
 
-/// Plain text reading `text` in `defaults.mono_font` ([`text_in`]: its size,
-/// weight and line box as `type_line`'s Monospace line, and its style) where
-/// a native theme is installed, else in the mono family alone.
+/// Plain text reading `text` in the installed 0.8.0 theme's
+/// `typography.monospace` ([`mono_sample`]).
 pub(crate) fn mono_text(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -7522,7 +7580,7 @@ pub(crate) fn mono_text(
         .info(
             ui,
             id,
-            info::typography::mono_text(cx.theme(), old_native(cx).map(|n| n.resolved)),
+            info::typography::mono_text(cx.theme(), next_resolved(cx)),
         )
         .self_start()
         .debug_selector(move || id.into())
@@ -7530,8 +7588,8 @@ pub(crate) fn mono_text(
 
 /// [`mono_text`]'s text: in the installed 0.8.0 theme's
 /// `typography.monospace` ([`next_text_in`]) where one is installed and
-/// states it, else in the 0.7.2 theme's `defaults.mono_font`, else in the
-/// mono family alone.
+/// states a font gpui can letter it in, else in the mono family alone,
+/// gpui's own (spec §10, rule 0).
 pub(crate) fn mono_sample(cx: &App, text: &'static str) -> Div {
     next_resolved(cx)
         .and_then(|r| {
@@ -7542,7 +7600,6 @@ pub(crate) fn mono_sample(cx: &App, text: &'static str) -> Div {
                 text,
             )
         })
-        .or_else(|| native_value(cx, |n| text_in(&n, &n.resolved.defaults.mono_font, text)))
         .unwrap_or_else(|| {
             div()
                 .font_family(cx.theme().mono_font_family.clone())
@@ -7564,7 +7621,7 @@ fn next_text_in(
     home: &'static str,
     text: &'static str,
 ) -> Option<Div> {
-    use native_theme::next::{FontStyle as NextFontStyle, TextStated};
+    use native_theme::next::FontStyle as NextFontStyle;
     if next::label_font_unmapped(style, home).is_some() {
         return None;
     }
@@ -7574,11 +7631,7 @@ fn next_text_in(
         NextFontStyle::Oblique => gpui::FontStyle::Oblique,
         _ => return None,
     };
-    let line = if style.stated.contains(TextStated::LINE_HEIGHT) {
-        style.line_height
-    } else {
-        style.size_px * typography.line_height_multiplier
-    };
+    let line = line_box(typography, style);
     let mut label = div()
         .font_family(native_theme_gpui::font_family(&style.family))
         .text_size(px(style.size_px))
@@ -7597,21 +7650,29 @@ pub(crate) fn link(
     text: &'static str,
     href: &'static str,
 ) -> Stateful<Div> {
-    // The underline `geometry::link` leaves or removes at rest.
-    let underline = native_value(cx, |n| n.resolved.link.underline_enabled);
-    let mut link_info = info::typography::link(cx.theme(), underline)
+    // Where `next::geometry::link` refines it: the underline it leaves or
+    // removes at rest, and one line of `link.label(NONE)` tall.
+    let refined = next_value(cx, |r| {
+        let label = r.link.label(WidgetState::NONE);
+        next::geometry::link(r).ok().map(|_| {
+            (
+                label.decoration.kind == native_theme::next::DecorationKind::Underline,
+                px(label.size_px * r.typography.line_height_multiplier),
+            )
+        })
+    })
+    .flatten();
+    let mut link_info = info::typography::next_link(cx.theme(), refined.map(|(u, _)| u))
         .instance("text", text)
         .instance("target", href);
-    // One line of `link.font` tall (`line_height_of`).
-    let line = native_value(cx, |n| line_height_of(&n, &n.resolved.link.font));
-    native_info(
+    next_native_info(
         Link::new(id).child(text).href(href),
         cx,
-        geometry::link,
+        next::geometry::link,
         "link",
         &mut link_info,
     )
-    .when_some(line, |link, line| link.line_height(line))
+    .when_some(refined, |link, (_, line)| link.line_height(line))
     .info(ui, id, link_info)
     .debug_selector(move || id.into())
 }
@@ -7648,13 +7709,13 @@ pub(crate) fn editor(
     state: &Entity<EditorState>,
     height: Pixels,
 ) -> Stateful<Div> {
-    // Refined by `geometry::editor`, the platform's line height, where a native
-    // theme is installed, the info then given the builder's line.
+    // Refined by `next::geometry::editor`, the platform's line height, where
+    // a 0.8.0 theme is installed, the info then given the builder's line.
     let mut editor_info = info::typography::editor(cx.theme());
-    native_info(
+    next_native_info(
         Editor::new(state),
         cx,
-        geometry::editor,
+        next::geometry::editor,
         "editor",
         &mut editor_info,
     )

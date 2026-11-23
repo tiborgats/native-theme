@@ -3424,10 +3424,10 @@ fn the_disabled_basic_checkbox_paints_the_fill_it_claims(cx: &mut TestAppContext
 }
 
 /// A Link is underlined at rest only where the theme says so (M9-061):
-/// under ios-13 and material-3, which state `link.underline_enabled =
-/// false`, no underline is painted inside the resting Link and its info
-/// claims none and says `geometry::link` removes it; under kde-breeze one is,
-/// and its info claims it.
+/// under ios-13 and material-3, whose installed 0.8.0 themes state
+/// `link.label(NONE).decoration` none, no underline is painted inside the
+/// resting Link and its info claims none and says `geometry::link` removes
+/// it; under kde-breeze one is, and its info claims it.
 #[gpui::test]
 fn a_link_is_underlined_at_rest_only_where_the_theme_says(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
@@ -3435,7 +3435,13 @@ fn a_link_is_underlined_at_rest_only_where_the_theme_says(cx: &mut TestAppContex
     for preset in ["ios-13", "material-3", "kde-breeze"] {
         use_preset(&mut cx, &showcase, preset);
         show(&mut cx, &showcase, Page::Basic);
-        let underlined = resolved_theme(&mut cx, &showcase).link.underline_enabled;
+        let underlined = next_theme(&mut cx, &showcase).is_some_and(|r| {
+            r.link
+                .label(native_theme::next::WidgetState::NONE)
+                .decoration
+                .kind
+                == native_theme::next::DecorationKind::Underline
+        });
         if underlined {
             reached.0 = true;
         } else {
@@ -3454,7 +3460,7 @@ fn a_link_is_underlined_at_rest_only_where_the_theme_says(cx: &mut TestAppContex
         assert_eq!(
             painted,
             usize::from(underlined),
-            "{preset}: link.underline_enabled is {underlined}, and the resting Link paints {painted} underlines"
+            "{preset}: link.label(NONE) underlined is {underlined}, and the resting Link paints {painted} underlines"
         );
         let info = settle_on(&mut cx, &showcase, "basic-link");
         let resting = info.as_ref().is_some_and(|info| {
@@ -3464,7 +3470,7 @@ fn a_link_is_underlined_at_rest_only_where_the_theme_says(cx: &mut TestAppContex
         });
         assert_eq!(
             resting, underlined,
-            "{preset}: link.underline_enabled is {underlined}, and the Link's info claims a resting underline: {resting}: {info:?}"
+            "{preset}: link.label(NONE) underlined is {underlined}, and the Link's info claims a resting underline: {resting}: {info:?}"
         );
         let removed = info.as_ref().is_some_and(|info| {
             info.to_text().contains(
@@ -3473,12 +3479,12 @@ fn a_link_is_underlined_at_rest_only_where_the_theme_says(cx: &mut TestAppContex
         });
         assert_eq!(
             removed, !underlined,
-            "{preset}: link.underline_enabled is {underlined}, and the Link's info says geometry::link removes the underline: {removed}: {info:?}"
+            "{preset}: link.label(NONE) underlined is {underlined}, and the Link's info says geometry::link removes the underline: {removed}: {info:?}"
         );
         assert!(
             info.as_ref()
                 .is_some_and(|info| !info.to_text().contains("no receiver")),
-            "{preset}: the Link's info says link.underline_enabled has no receiver: {info:?}"
+            "{preset}: the Link's info says link.label(NONE).decoration has no receiver: {info:?}"
         );
     }
     assert_eq!(
@@ -5956,10 +5962,10 @@ fn the_basic_tooltip_is_refined(cx: &mut TestAppContext) {
     );
 }
 
-/// A section heading is set in the theme's section-heading role, as the iced
-/// showcase's section titles are: its info says so, and under kde-breeze,
-/// whose role is 16px (12pt) against a 13px body, the heading is taller
-/// than a body-text label.
+/// A section heading is set in the installed 0.8.0 theme's section-heading
+/// role, `typography.headline`, as the iced showcase's section titles are:
+/// its info says so, and under kde-breeze, whose role is 16px (12pt)
+/// against a 13px body, the heading is taller than a body-text label.
 #[gpui::test]
 fn a_section_heading_takes_the_section_heading_role(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
@@ -5967,9 +5973,17 @@ fn a_section_heading_takes_the_section_heading_role(cx: &mut TestAppContext) {
     show(&mut cx, &showcase, Page::Basic);
     let info = settle_on(&mut cx, &showcase, "basic-heading-buttons");
     assert!(
-        info.as_ref()
-            .is_some_and(|i| i.to_text().contains("text_scale.section_heading")),
-        "the heading's info names no text_scale.section_heading: {info:?}"
+        info.as_ref().is_some_and(|i| i
+            .to_text()
+            .contains("typography.headline, the platform's section heading")),
+        "the heading's info names no typography.headline: {info:?}"
+    );
+    let role = read(&mut cx, &showcase, |_this, cx| {
+        crate::support::next_resolved(cx).map(|r| crate::demo::heading_role(&r.typography))
+    });
+    assert!(
+        matches!(role, Some(Ok(ref role)) if role.home == "typography.headline"),
+        "kde-breeze's 0.8.0 theme gives no headline role: {role:?}"
     );
     let heading = bounds_of(&mut cx, "basic-heading-buttons");
     let body = bounds_of(&mut cx, "basic-type-body");
@@ -7883,10 +7897,10 @@ fn the_mono_sample_takes_the_mono_font(cx: &mut TestAppContext) {
             .and_then(|i| i.config.iter().find(|n| n.what == "size"));
         assert!(
             line.is_some_and(|l| l.text.starts_with(&format!(
-                "{}px: defaults.mono_font.size scaled by the text-scaling factor",
+                "{}px: typography.monospace.size_px, which the theme's text scale has already scaled",
                 crate::info::px_text(size.as_f32())
             ))),
-            "at text scale {scale} the monospace sample's size line does not claim the scaled defaults.mono_font.size: {line:?}"
+            "at text scale {scale} the monospace sample's size line does not claim the scaled typography.monospace.size_px: {line:?}"
         );
     }
 }
@@ -16758,23 +16772,24 @@ fn native_info_records_the_builder_only_when_it_applies_it(cx: &mut TestAppConte
 }
 
 /// The Typography page's code Editor takes the platform's line height
-/// through `geometry::editor` under a native theme, as `demo::editor`
-/// refines it, and its info names the builder (`native_info` records it only
-/// where it applies it, which
-/// `native_info_records_the_builder_only_when_it_applies_it` holds). Its
-/// fill claim is the platform's field fill, which the connector's highlight
-/// theme gives the editor.
+/// through `next::geometry::editor` under the installed 0.8.0 theme, as
+/// `demo::editor` refines it, and its info names the builder
+/// (`next_native_info` records it only where it applies it). Its fill claim
+/// is the platform's field fill, `input.field(NONE).fill`, which the
+/// connector's highlight theme gives the editor.
 #[gpui::test]
 fn the_code_editor_is_refined_by_geometry_editor(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     use_preset(&mut cx, &showcase, "kde-breeze");
-    let r = resolved_theme(&mut cx, &showcase);
+    let r = next_theme(&mut cx, &showcase);
+    assert!(r.is_some(), "no 0.8.0 theme is installed");
+    let Some(r) = r else { return };
     let (line_height, fill) = read(&mut cx, &showcase, |this, cx| {
         let mut info = WidgetInfo::new("Editor");
-        let mut editor = native_info(
+        let mut editor = crate::info::next_native_info(
             gpui_component::input::Editor::new(&this.editor_state),
             cx,
-            geometry::editor,
+            native_theme_gpui::next::geometry::editor,
             "editor",
             &mut info,
         );
@@ -16785,8 +16800,14 @@ fn the_code_editor_is_refined_by_geometry_editor(cx: &mut TestAppContext) {
             .map(|c| c.value);
         (editor.style().text.line_height, fill)
     });
-    assert_eq!(line_height, Some(gpui::relative(r.defaults.line_height)));
-    assert_eq!(fill, Some(crate::info::stated(r.input.background_color)));
+    assert_eq!(
+        line_height,
+        Some(gpui::relative(r.typography.line_height_multiplier))
+    );
+    assert_eq!(
+        fill,
+        native_theme_gpui::next::fill_of(&r.input.field(native_theme::next::WidgetState::NONE))
+    );
     show(&mut cx, &showcase, Page::Typography);
     let shown = settle_on(&mut cx, &showcase, "typography-editor");
     assert!(
@@ -18889,6 +18910,47 @@ fn the_toggle_state_line_names_upstreams_fill_where_none_is_stated() {
     assert!(
         checked.contains("filled with button.body(CHECKED).fill and"),
         "{checked}"
+    );
+}
+
+/// The section heading's role where the theme states no headline, as a user
+/// theme may: the body, its line box its size by the multiplier where it
+/// states no line height; and where that style states no size or no weight,
+/// the home, so the heading keeps the showcase's own style. No bundled
+/// preset leaves the headline out, so kde-breeze's is changed by hand.
+#[test]
+fn a_heading_without_a_headline_takes_the_body_or_says_what_is_unstated() {
+    use crate::demo::heading_role;
+    use native_theme::next::TextStated;
+    let r = native_theme::next::Theme::preset(native_theme::next::Preset::KdeBreeze)
+        .resolve(&native_theme::next::ThemeContext::default());
+    let mut typography = r.typography.clone();
+    typography.headline = None;
+    typography.body.stated = typography.body.stated.difference(TextStated::LINE_HEIGHT);
+    let body = &typography.body;
+    assert_eq!(
+        heading_role(&typography).map(|role| (role.home, role.size, role.line_height)),
+        Ok((
+            "typography.body",
+            px(body.size_px),
+            px(body.size_px * typography.line_height_multiplier)
+        ))
+    );
+    typography.body.stated = typography.body.stated.difference(TextStated::WEIGHT);
+    assert_eq!(
+        heading_role(&typography).map(|role| role.home),
+        Err("typography.body.weight")
+    );
+    typography.body.stated = typography.body.stated.difference(TextStated::SIZE_PX);
+    assert_eq!(
+        heading_role(&typography).map(|role| role.home),
+        Err("typography.body.size_px")
+    );
+    let shown = crate::info::text::heading(&Theme::default(), Some(Err("typography.body.size_px")))
+        .to_text();
+    assert!(
+        shown.contains("the theme states no value gpui can take at typography.body.size_px"),
+        "{shown}"
     );
 }
 
