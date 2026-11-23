@@ -717,13 +717,16 @@ impl PanelLook {
     /// lines, its leaf and value, and how gpui applies it.
     pub(crate) fn body_min_height(&self, margin: Option<gpui::Pixels>) -> gpui::Pixels {
         let [top, _, bottom, _] = self.copy_padding;
-        let title_row = (self.line + top + bottom).max(self.line);
-        margin.unwrap_or_default()
-            + title_row
-            + self.section_gap
-            + self.line
-            + self.row_gap
-            + self.line * 2.
+        let line = self.line.as_f32();
+        let title_row = (line + top.as_f32() + bottom.as_f32()).max(line);
+        gpui::px(
+            margin.unwrap_or_default().as_f32()
+                + title_row
+                + self.section_gap.as_f32()
+                + line
+                + self.row_gap.as_f32()
+                + line * 2.,
+        )
     }
 
     /// `text` in the panel's type: `sidebar.font` at its line height.
