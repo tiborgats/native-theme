@@ -5379,6 +5379,10 @@ under *Closed items from M7 close (2026-10-16): items carried to M8, M9a and the
       **ios-26** is not bundled: rc1's facts leave at least 30 of the 38 fields without an iOS 26 source (no dialog,
       spinner, expander, splitter, scroll bar, segmented control, tab, tooltip, progress bar, slider thumb, switch,
       icon sizes, check box and menu gaps).
+- [ ] [0.8.x] **macOS list and table row hover**: `docs/platform-facts.md` §2.15 has no source (AppKit publishes no hover
+      colour for a row; the OS probe never hovers one), so the macOS presets leave `list.highlight(HOVER).fill` unstated and
+      the gpui connector shows gpui-component's own hovered row (the accent at 0.6) where 0.7.2 showed the list's own
+      background. Measure it on macOS 14/15/26 (a probe pass hovering a table row) and state it.
 - [ ] [0.8.x] Motion tokens: no bundled preset states any, so no connector maps them yet (gpui-component's
       `MotionTokens` slots and the model's tokens are not paired; built in the first unit that states them).
 
