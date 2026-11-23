@@ -45,7 +45,7 @@ const EGUI_DOT_DIVISOR: f32 = 3.0;
 /// Under an atlas of the 0.8.0 model the radio is drawn from its own homes, laid over the
 /// check box's cell before egui's radio is added: `radio.indicator`'s fill and stroke at rest,
 /// hovered and pressed, `radio.dot`'s fill checked, `radio.label`'s colour and
-/// `radio.disabled_opacity`, each where the theme states it, the cell's elsewhere ([`Over`]).
+/// `radio.disabled_opacity`, each where the theme states it, the cell's elsewhere (`Over`).
 ///
 /// Like egui's, it holds no value: a click is `Response::clicked`, and the caller selects it.
 ///
