@@ -5,12 +5,14 @@
 //! rule 0); a place a note names is the home's.
 
 use native_theme::next::{
-    ButtonQuery, Color, IconStated, IconStyle, ListQuery, Orientation, Paint, PartStated,
-    PartStyle, ResolvedTheme, Stroke, StyleQuery, TextStated, TextStyle, WidgetState, WindowState,
+    ButtonQuery, Color, FocusTrigger, IconStated, IconStyle, ListQuery, Orientation, Paint,
+    PartStated, PartStyle, ResolvedTheme, Stroke, StyleQuery, TextStated, TextStyle, WidgetState,
+    WindowState,
 };
 
 use super::{padding_of, radius_of, stroke_width_of};
 use crate::convert::Rgba;
+use crate::plugin::FocusRingSource;
 use crate::style::base::{BaseSource, ButtonStates, Read, Sides};
 use crate::style::cells::{
     ButtonCell, CellSource, CheckboxCell, ComboBoxCell, DialogCell, ExpanderCell, InputCell,
@@ -876,5 +878,23 @@ pub(crate) fn frame_source(r: &ResolvedTheme, inactive: &ResolvedTheme) -> Frame
         status_bar: surface(&r.status_bar.bar, homes!("status_bar.bar")),
         shadow_color: rgba(r.colors.shadow),
         window_margin: r.layout.window_margin,
+    }
+}
+
+/// [`FocusRingSource`] of the 0.8.0 model: the ring's stroke where it is one stroke of one
+/// colour (a stroke stated as none is a zero width, no ring; a per-side one gives no ring, as
+/// [`super::focus_ring_width`] cannot map it), its offset, and its trigger.
+pub(crate) fn focus_ring_source(r: &ResolvedTheme) -> FocusRingSource {
+    let ring = &r.focus_ring;
+    let (color, width) = match &ring.stroke {
+        Stroke::None => (None, Some(0.0)),
+        Stroke::Uniform { color, width, .. } => (Some(rgba(*color)), Some(*width)),
+        _ => (None, None),
+    };
+    FocusRingSource {
+        color,
+        width: width.map(|v| (v, "focus_ring.stroke.width")),
+        offset: Some((ring.offset, "focus_ring.offset")),
+        keyboard_only: ring.trigger == Some(FocusTrigger::KeyboardOnly),
     }
 }

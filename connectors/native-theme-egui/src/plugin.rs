@@ -7,49 +7,68 @@ use std::sync::Arc;
 use egui::{Context, CornerRadius, Id, Rect, StrokeKind};
 
 use crate::atlas::FocusRing;
-use crate::convert::{clamp_length, to_color32, u8_from_f32_saturating};
+use crate::convert::{Rgba, clamp_length, to_color32, u8_from_f32_saturating};
 use crate::fonts::WidestGlyph;
+use crate::style::base::Read;
 use crate::style::push_note;
 use crate::{ColorMode, Note, ResolvedTheme, ThemeAtlas};
 
-/// Spec §6.18: the ring from `defaults.focus_ring_color`, `focus_ring_width` and
-/// `focus_ring_offset`. A non-finite width or offset is egui's own value — no ring — with a
-/// `Note::ValueSanitised` per leaf; a stated zero width is no ring and no note, as a zero width
-/// is no band in gpui's `focus_band_on` (`connectors/native-theme-gpui/src/colors.rs`). The
-/// offset is kept signed and unclamped: negative means inside the edge
-/// (`docs/platform-facts.md:1110`).
+/// What the focus ring reads, from either model: its colour, width and offset, each `None`
+/// where the theme states none, and whether it shows for the keyboard only.
+/// [`FocusRingSource::old`] fills it from the 0.7.2 model; `next::build::focus_ring_source`
+/// from the 0.8.0 model's `focus_ring`.
+pub(crate) struct FocusRingSource {
+    pub color: Option<Rgba>,
+    pub width: Read<f32>,
+    pub offset: Read<f32>,
+    pub keyboard_only: bool,
+}
+
+impl FocusRingSource {
+    /// The 0.7.2 model's `defaults.focus_ring_*`.
+    pub(crate) fn old(theme: &ResolvedTheme) -> Self {
+        let d = &theme.defaults;
+        Self {
+            color: Some(d.focus_ring_color),
+            width: Some((d.focus_ring_width, "defaults.focus_ring_width")),
+            offset: Some((d.focus_ring_offset, "defaults.focus_ring_offset")),
+            keyboard_only: d.focus_ring_keyboard_only == Some(true),
+        }
+    }
+}
+
+/// [`build_focus_ring_from`] of the 0.7.2 model.
 pub(crate) fn build_focus_ring(theme: &ResolvedTheme, notes: &mut Vec<Note>) -> Option<FocusRing> {
-    let (color, width, offset) = (
-        theme.defaults.focus_ring_color,
-        theme.defaults.focus_ring_width,
-        theme.defaults.focus_ring_offset,
-    );
+    build_focus_ring_from(&FocusRingSource::old(theme), notes)
+}
+
+/// Spec §6.18: the ring from its colour, width and offset. A non-finite width or offset is
+/// egui's own value — no ring — with a `Note::ValueSanitised` per leaf, and so is one the theme
+/// states none of; a stated zero width is no ring and no note, as a zero width is no band in
+/// gpui's `focus_band_on` (`connectors/native-theme-gpui/src/colors.rs`). The offset is kept
+/// signed and unclamped: negative means inside the edge (`docs/platform-facts.md:1110`).
+pub(crate) fn build_focus_ring_from(
+    src: &FocusRingSource,
+    notes: &mut Vec<Note>,
+) -> Option<FocusRing> {
     let mut finite = true;
-    if !width.is_finite() {
-        push_note(
-            notes,
-            Note::ValueSanitised {
-                path: "defaults.focus_ring_width",
-            },
-        );
-        finite = false;
+    for (v, path) in [src.width, src.offset].into_iter().flatten() {
+        if !v.is_finite() {
+            push_note(notes, Note::ValueSanitised { path });
+            finite = false;
+        }
     }
-    if !offset.is_finite() {
-        push_note(
-            notes,
-            Note::ValueSanitised {
-                path: "defaults.focus_ring_offset",
-            },
-        );
-        finite = false;
-    }
+    let (Some(color), Some((width, _)), Some((offset, _))) = (src.color, src.width, src.offset)
+    else {
+        return None;
+    };
     if !finite || width <= 0.0 {
         return None;
     }
     Some(FocusRing {
         stroke: egui::Stroke::new(clamp_length(width), to_color32(color)),
         offset,
-        keyboard_only: theme.defaults.focus_ring_keyboard_only == Some(true),
+        keyboard_only: src.keyboard_only,
     })
 }
 

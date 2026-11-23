@@ -28,15 +28,16 @@
 //!   0.7.2 leaf on one side and its 0.8.0 home on the other: not compared.
 //!
 //! Compared so far: the base style, each role's `Normal` cell and its `Selected`, `Disabled`
-//! and `SelectedDisabled` cells where the role has them, and each surface's frame, the
-//! `WindowTitleBar`'s from the theme resolved for an inactive window as well. A difference is
-//! allowed only as a listed one, per leaf (a `*` segment standing for any one, an entry naming
-//! the leaf itself taken first) and preset, with its cause, from which the test computes the
-//! value the 0.8.0 side must hold there; an entry that differs nowhere on a preset it names is
-//! stale and fails. A cell's leaf that holds its base style's value on both sides differs as
-//! the base does, which the base's comparison lists and checks; a variant cell's leaf that
-//! holds the value of the cell it is copied from (`Normal`, for `SelectedDisabled` `Selected`)
-//! likewise, and a frame's leaf that holds egui's own frame's over each side's base style.
+//! and `SelectedDisabled` cells where the role has them, each surface's frame, the
+//! `WindowTitleBar`'s from the theme resolved for an inactive window as well, and the focus
+//! ring. A difference is allowed only as a listed one, per leaf (a `*` segment standing for
+//! any one, an entry naming the leaf itself taken first) and preset, with its cause, from which
+//! the test computes the value the 0.8.0 side must hold there; an entry that differs nowhere
+//! on a preset it names is stale and fails. A cell's leaf that holds its base style's value on
+//! both sides differs as the base does, which the base's comparison lists and checks; a
+//! variant cell's leaf that holds the value of the cell it is copied from (`Normal`, for
+//! `SelectedDisabled` `Selected`) likewise, and a frame's leaf that holds egui's own frame's
+//! over each side's base style.
 //! A difference that is rule 0 on a state ([`Cause::Rule0`], [`Cause::StateKeepsBase`]) is a
 //! model gap, listed in [`RULE_0_ON_A_PRESET`] with the 0.8.0 home the preset leaves unstated;
 //! every other one in [`DIFFERENCES`].
@@ -44,9 +45,10 @@
 use egui::style::{WidgetVisuals, Widgets};
 use native_theme::next::{Preset, ThemeContext};
 
-use super::build::{base_source, cell_source, frame_source, variant_source};
+use super::build::{base_source, cell_source, focus_ring_source, frame_source, variant_source};
 use super::root_parity::{PRESETS, resolve};
 use crate::convert::to_color32;
+use crate::plugin::{FocusRingSource, build_focus_ring_from};
 use crate::style::base::{BaseSource, base_style_from};
 use crate::style::cells::CellSource;
 use crate::style::frames::{FrameSource, surface_frame_from};
@@ -1229,6 +1231,22 @@ fn the_mapping_agrees_on_both_models() -> crate::Result<()> {
                     &mut seen,
                 );
             }
+            let old_ring = build_focus_ring_from(&FocusRingSource::old(&old), &mut Vec::new());
+            let new_ring = build_focus_ring_from(&focus_ring_source(&new), &mut Vec::new());
+            let side = Side {
+                what: "FocusRing",
+                preset: key,
+                label: &label,
+                bases: None,
+            };
+            compare(
+                &side,
+                &old_ring,
+                &new_ring,
+                &|_, _| None,
+                &mut failures,
+                &mut seen,
+            );
         }
     }
     for preset in Preset::ALL {
