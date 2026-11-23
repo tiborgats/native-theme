@@ -463,6 +463,22 @@ fn menu_hover_fill(r: &ResolvedTheme) -> Mapped<Hsla> {
     )
 }
 
+/// A hovered push button's fill, `secondary_hover`, which gpui-component
+/// paints a hovered button in (gpui-component 0.10.0 `button/button.rs:1194`,
+/// `theme/schema.rs:854`): `button.body(HOVER).fill` where a rule states it
+/// for `HOVER` (spec §2, `from_state`), else gpui-component's own treatment
+/// (spec §10, rule 0): its theme's `secondary_hover` where that theme turns a
+/// button on hover (its `secondary_hover` is not its `secondary`), else the
+/// button at rest, `rest`, as that theme leaves it.
+fn button_hover_fill(part: &PartStyle, rest: Hsla, upstream: &ThemeColor) -> Mapped<Hsla> {
+    let own = if upstream.secondary_hover == upstream.secondary {
+        rest
+    } else {
+        upstream.secondary_hover
+    };
+    state_fill_or(part, "button.body(HOVER).fill", own)
+}
+
 /// A part's fill where a rule states it for the queried state
 /// ([`state_fill`]), else `upstream`, gpui-component's own (spec §10,
 /// rule 0).
@@ -483,6 +499,7 @@ pub(crate) fn slice_colors(r: &ResolvedTheme) -> Mapped<SliceColors> {
     let b = &r.button;
     let l = &r.list;
     let s = &r.scrollbar;
+    let secondary = fill(&b.body(WidgetState::NONE), "button.body(NONE).fill")?;
     Ok(SliceColors {
         fg: hsla(stated(c.window.foreground, "colors.window.foreground")?),
         accent: hsla(c.accent.fill),
@@ -499,7 +516,7 @@ pub(crate) fn slice_colors(r: &ResolvedTheme) -> Mapped<SliceColors> {
             &b.label(ButtonQuery::primary()),
             "button.label(NONE; variant=Primary).color",
         )?,
-        secondary: fill(&b.body(WidgetState::NONE), "button.body(NONE).fill")?,
+        secondary,
         secondary_fg: text_color(&b.label(WidgetState::NONE), "button.label(NONE).color")?,
         danger: hsla(c.error.fill),
         danger_fg: hsla(c.error.foreground),
@@ -525,7 +542,11 @@ pub(crate) fn slice_colors(r: &ResolvedTheme) -> Mapped<SliceColors> {
         scrollbar_track: fill(&s.track(WidgetState::NONE), "scrollbar.track(NONE).fill")?,
         scrollbar_thumb: thumb_at_rest(r)?,
         scrollbar_thumb_hover: fill(&s.thumb(WidgetState::HOVER), "scrollbar.thumb(HOVER).fill")?,
-        button_hover_bg: fill(&b.body(WidgetState::HOVER), "button.body(HOVER).fill")?,
+        button_hover_bg: button_hover_fill(
+            &b.body(WidgetState::HOVER),
+            secondary,
+            &upstream_colors(r),
+        )?,
         button_active_bg: state_fill(&b.body(WidgetState::PRESSED), "button.body(PRESSED).fill")?,
         list_hover_bg: list_row_hover(r)?,
         list_selection_bg: fill(
@@ -1511,6 +1532,48 @@ mod tests {
             );
             assert_eq!(widget_colors(&r)?.menu_hover_bg, hsla(RED), "{scheme:?}");
             assert_eq!(theme_color(&r)?.accent, hsla(RED), "{scheme:?}");
+        }
+        Ok(())
+    }
+
+    /// Spec §10 rule 0 for a hovered push button: its fill where a rule
+    /// states it for `HOVER`, else gpui-component's own `secondary_hover`
+    /// where its theme turns a button on hover, else the button at rest; a
+    /// patched theme's stated hover reaches `secondary_hover` and the
+    /// button's hovered slots.
+    #[test]
+    fn an_unstated_button_hover_is_gpui_components_own() -> Mapped<()> {
+        use native_theme::next::{
+            ButtonRule, PartPatch, Preset, Scheme, Theme, ThemeContext, ThemePatch,
+        };
+        let rest = hsla(GREEN);
+        let mut turning = *ThemeColor::light();
+        turning.secondary = hsla(RED);
+        turning.secondary_hover = hsla(BLUE);
+        let mut keeping = turning;
+        keeping.secondary_hover = keeping.secondary;
+        let unstated = filled(GREEN, false);
+        assert_eq!(button_hover_fill(&unstated, rest, &turning)?, hsla(BLUE));
+        assert_eq!(button_hover_fill(&unstated, rest, &keeping)?, rest);
+        let stated = filled(RED, true);
+        for upstream in [&turning, &keeping] {
+            assert_eq!(button_hover_fill(&stated, rest, upstream)?, hsla(RED));
+        }
+
+        for scheme in [Scheme::Light, Scheme::Dark] {
+            let mut r = Theme::preset(Preset::KdeBreeze)
+                .resolve(&ThemeContext::default().with_scheme(scheme));
+            r.apply_patch(
+                &ThemePatch::new().button(
+                    ButtonRule::new()
+                        .states(WidgetState::HOVER)
+                        .body(PartPatch::new().fill(Paint::Solid(BLUE))),
+                ),
+            );
+            assert_eq!(slice_colors(&r)?.button_hover_bg, hsla(BLUE), "{scheme:?}");
+            let tc = theme_color(&r)?;
+            assert_eq!(tc.secondary_hover, hsla(BLUE), "{scheme:?}");
+            assert_eq!(tc.button_hover, hsla(BLUE), "{scheme:?}");
         }
         Ok(())
     }
