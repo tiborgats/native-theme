@@ -739,6 +739,14 @@
           "checkmark": {
             "color": "#ffffff"
           }
+        },
+        {
+          "states": [
+            "disabled"
+          ],
+          "checkmark": {
+            "color": "#fef7ff"
+          }
         }
       ]
     },

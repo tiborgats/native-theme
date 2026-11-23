@@ -1931,6 +1931,12 @@ fn checkbox(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> Ch
             ],
             [IconProp::Color(roles.accent.foreground)],
         )
+        // Disabled, the mark (drawn checked only) in surface: selected-disabled-icon-color
+        // (_md-comp-checkbox.scss:50).
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED),
+            [IconProp::Color(c.surface)],
+        )
         .build();
     CheckboxWidget::new(
         WidgetOrigin::Native,

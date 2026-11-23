@@ -5972,3 +5972,28 @@ fn a_focused_control_draws_a_next_themes_ring(cx: &mut TestAppContext) {
         "no ring once focused"
     );
 }
+
+/// A disabled checked box's mark is read at its own home where a rule states
+/// it for `DISABLED` (material-3: surface, `_md-comp-checkbox.scss:50`), not
+/// in the label's disabled colour; a theme that states none keeps 0.7.2's
+/// reading, the label's disabled colour where a disabled fill is stated.
+#[test]
+fn a_disabled_mark_is_read_at_its_own_home() -> crate::next::Mapped<()> {
+    use native_theme::next::{Preset, Theme as NextTheme, ThemeContext, WidgetState};
+    for ctx in [ThemeContext::light(), ThemeContext::dark()] {
+        let r = NextTheme::preset(Preset::Material3).resolve(&ctx);
+        let surface = crate::next::hsla(
+            r.checkbox
+                .checkmark(WidgetState::DISABLED | WidgetState::CHECKED)
+                .color,
+        );
+        let look = CheckboxLook::next_of(&r, true, true)?;
+        assert_eq!(look.mark, surface, "{ctx:?}");
+        assert_ne!(look.mark, look.label, "{ctx:?}");
+
+        let kde = NextTheme::preset(Preset::KdeBreeze).resolve(&ctx);
+        let look = CheckboxLook::next_of(&kde, true, true)?;
+        assert_eq!(look.mark, look.label, "{ctx:?}");
+    }
+    Ok(())
+}

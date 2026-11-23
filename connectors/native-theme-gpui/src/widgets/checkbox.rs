@@ -392,6 +392,26 @@ impl CheckboxLook {
                     } else {
                         r.checkbox.label_gap
                     },
+                    disabled_mark: if radio {
+                        let dot = |state| r.radio.dot(state);
+                        if dot(WidgetState::DISABLED)
+                            .from_state
+                            .contains(PartStated::FILL)
+                        {
+                            Some(part_fill(
+                                &dot(WidgetState::DISABLED | WidgetState::CHECKED),
+                                "radio.dot(DISABLED|CHECKED).fill",
+                            )?)
+                        } else {
+                            None
+                        }
+                    } else {
+                        let mark = |state| r.checkbox.checkmark(state);
+                        mark(WidgetState::DISABLED)
+                            .from_state
+                            .contains(IconStated::COLOR)
+                            .then(|| hsla(mark(WidgetState::DISABLED | WidgetState::CHECKED).color))
+                    },
                 },
                 checked,
                 disabled,
@@ -415,10 +435,15 @@ impl CheckboxLook {
         } else {
             c.unchecked_border
         };
-        let (mark, label) = match (disabled, c.disabled_fill) {
-            (true, Some(_)) => (c.disabled_text, c.disabled_text),
-            (true, None) => (c.mark, c.disabled_text),
-            (false, _) => (c.mark, c.label),
+        // Disabled, the mark where a rule states it for `DISABLED`; else, where
+        // the platform's disabled look is a fill of its own, the label's
+        // disabled colour, as 0.7.2 draws it; where it is the control's
+        // opacity alone, the mark itself.
+        let (mark, label) = match (disabled, c.disabled_fill, c.disabled_mark) {
+            (true, _, Some(mark)) => (mark, c.disabled_text),
+            (true, Some(_), None) => (c.disabled_text, c.disabled_text),
+            (true, None, None) => (c.mark, c.disabled_text),
+            (false, ..) => (c.mark, c.label),
         };
         let opacity = super::next_disabled_opacity(disabled, c.disabled_opacity);
         let hover_border = c.hover_border.filter(|_| !disabled);
@@ -501,6 +526,8 @@ struct CheckboxReads {
     radius: f32,
     mark_stroke: Option<f32>,
     label_gap: f32,
+    /// The mark disabled (checked), where a rule states it for `DISABLED`.
+    disabled_mark: Option<Hsla>,
 }
 
 type ChangeHandler = Rc<dyn Fn(&bool, &mut Window, &mut App)>;

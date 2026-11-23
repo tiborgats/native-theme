@@ -91,9 +91,10 @@ const DIFFERENCES: &[Difference] = &[
                  checkbox/res/values/styles.xml:26-28, m3_primary_text_disable_only.xml:19, \
                  dimens.xml:21 at material-components-android 66c334b; \
                  native-theme/tests/next_homes.toml, row checkbox.disabled_text_color, a listed \
-                 difference); the look draws a disabled box's mark in that colour too, where \
-                 a disabled fill is stated (CheckboxLook::next_of, 0.7.2's reading of \
-                 disabled_text_color), so the mark moves with it",
+                 difference); the disabled checked mark is surface where 0.7.2 draws it in \
+                 its disabled label colour (selected-disabled-icon-color, \
+                 _md-comp-checkbox.scss:50, v0_192 at material-web cbd34a8; the look reads \
+                 checkbox.checkmark(DISABLED|CHECKED).color, CheckboxLook::next_of)",
     },
     Difference {
         leaf: "CheckboxLook::radio label disabled",
