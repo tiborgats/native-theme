@@ -1071,7 +1071,10 @@ pub(super) fn input_background(t: &Theme) -> ColorClaim {
 
 /// The theme settings' preset Combobox (spec §3.3), the showcase's preset
 /// switch.
-pub fn preset_combobox(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
+pub fn preset_combobox(
+    t: &Theme,
+    native: Option<&native_theme::next::ResolvedTheme>,
+) -> WidgetInfo {
     let info = WidgetInfo::new("Combobox").variant("searchable").not_themeable(
         "own icons",
         super::own_icons("the caret's ChevronDown (select.rs, Caret), and in its open list Check beside the chosen row (searchable_list/item.rs, SearchableListItemElement) and Inbox while the search matches nothing (gpui-component/combobox.rs, ComboboxState::new)"),
@@ -1148,7 +1151,10 @@ const HIGHLIGHT_OFF: &str = "off: highlight_matches(true) would draw the part of
 
 /// The theme settings' colour-mode Select (spec §3.3): the Inputs page's
 /// Select, choosing System, Light or Dark.
-pub fn color_mode_select(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
+pub fn color_mode_select(
+    t: &Theme,
+    native: Option<&native_theme::next::ResolvedTheme>,
+) -> WidgetInfo {
     super::inputs::select(t, native)
         .instance(
             "modes",
@@ -1166,7 +1172,7 @@ pub fn color_mode_select(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInf
 
 /// The theme settings' palette Select: the Inputs page's Select, choosing
 /// the palette laid over the installed theme.
-pub fn palette_select(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
+pub fn palette_select(t: &Theme, native: Option<&native_theme::next::ResolvedTheme>) -> WidgetInfo {
     super::inputs::select(t, native)
         .instance(
             "palettes",
@@ -1184,7 +1190,10 @@ pub fn palette_select(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
 
 /// The theme settings' icon-theme Select (spec §3.3, S6): the Inputs page's
 /// Select, choosing the icon theme.
-pub fn icon_set_select(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
+pub fn icon_set_select(
+    t: &Theme,
+    native: Option<&native_theme::next::ResolvedTheme>,
+) -> WidgetInfo {
     #[cfg(feature = "svg-rasterize")]
     let answered = "which the connector's widget icons answer from the chosen icon theme where they can (below)";
     #[cfg(not(feature = "svg-rasterize"))]

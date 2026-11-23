@@ -1401,8 +1401,7 @@ pub(crate) fn preset_combobox(
     cx: &App,
     state: &Entity<ComboboxState<PresetDelegate>>,
 ) -> Stateful<Div> {
-    let native = old_native(cx);
-    let mut combobox_info = info::preset_combobox(cx.theme(), native.as_ref().map(|n| n.resolved));
+    let mut combobox_info = info::preset_combobox(cx.theme(), next_resolved(cx));
     let combobox = native_info(
         Combobox::new(state)
             .placeholder("Pick a preset…")
@@ -1426,8 +1425,7 @@ pub(crate) fn color_mode_select(
     cx: &App,
     state: &Entity<SelectState<SearchableVec<SharedString>>>,
 ) -> Stateful<Div> {
-    let native = old_native(cx);
-    let mut select_info = info::color_mode_select(cx.theme(), native.as_ref().map(|n| n.resolved));
+    let mut select_info = info::color_mode_select(cx.theme(), next_resolved(cx));
     let select = native_info(
         Select::new(state),
         cx,
@@ -1453,8 +1451,7 @@ pub(crate) fn icon_set_select(
     state: &Entity<SelectState<SearchableVec<SharedString>>>,
     unavailable: Option<String>,
 ) -> Stateful<Div> {
-    let native = old_native(cx);
-    let mut select_info = info::icon_set_select(cx.theme(), native.as_ref().map(|n| n.resolved));
+    let mut select_info = info::icon_set_select(cx.theme(), next_resolved(cx));
     if let Some(reason) = &unavailable {
         select_info = select_info.instance("system", reason.clone());
     }
@@ -1519,8 +1516,7 @@ pub(crate) fn palette_select(
     cx: &App,
     state: &Entity<SelectState<SearchableVec<SharedString>>>,
 ) -> Stateful<Div> {
-    let native = old_native(cx);
-    let mut select_info = info::palette_select(cx.theme(), native.as_ref().map(|n| n.resolved));
+    let mut select_info = info::palette_select(cx.theme(), next_resolved(cx));
     if let Some(palette) = crate::support::palette_set_aside(cx) {
         select_info =
             select_info.instance("set aside", crate::support::palette_set_aside_text(palette));
@@ -5180,20 +5176,20 @@ fn select_drawn(
     width: Pixels,
     highlight: bool,
 ) -> Stateful<Div> {
-    let native = old_native(cx);
-    let select_info = info::inputs::select(cx.theme(), native.as_ref().map(|n| n.resolved));
+    let theme = next_resolved(cx);
+    let select_info = info::inputs::select(cx.theme(), theme);
     let mut select_info = if highlight {
-        info::inputs::match_highlight(select_info, cx.theme(), native.is_some())
+        info::inputs::match_highlight(select_info, cx.theme(), theme.is_some())
     } else {
         select_info
     };
-    let select = native_info(
+    let select = next_native_info(
         Select::new(state)
             .placeholder(placeholder)
             .highlight_matches(highlight)
             .w(width),
         cx,
-        geometry::select,
+        next::geometry::select,
         "select",
         &mut select_info,
     );
@@ -5203,61 +5199,87 @@ fn select_drawn(
         .debug_selector(move || id.into())
 }
 
-/// A drop-down trigger's edge, `combo_box.border.color`, and no fill of its
-/// own, for a `Select` or a `Combobox` that is not disabled, or `None`
-/// before `apply` ran: [`combo_surface`] paints `geometry::combo_box_fill`'s
-/// fill under it. The trigger paints `input_background()` and `input` first
-/// and refines itself with the caller's style after (select.rs,
-/// `Select::render`; combobox.rs, `Combobox::render`), so these land over
-/// them.
+/// What a drop-down trigger that is not disabled is drawn with under the
+/// installed 0.8.0 theme ([`combo_fill`], [`combo_surface`]).
+pub(crate) struct ComboLook {
+    /// `geometry::combo_box_fill`'s fill, `combo_box.field(NONE).fill`.
+    background: Option<gpui::Fill>,
+    /// `combo_box.field(NONE).stroke.color`.
+    edge: Hsla,
+    /// `combo_box.field(NONE).stroke.width`.
+    width: f32,
+    /// `combo_box.field(NONE)`'s corner radius.
+    radius: f32,
+    /// `combo_box.field(HOVER).fill` laid over the fill at rest, where a
+    /// rule states it.
+    hover: Option<Hsla>,
+    /// `combo_box.field(HOVER).stroke.color`, where a rule states it.
+    hover_edge: Option<Hsla>,
+}
+
+/// The [`ComboLook`] `r` states, or the home it leaves without a value gpui
+/// can take, which the trigger then keeps upstream's fill and edge for.
+pub(crate) fn combo_look(r: &native_theme::next::ResolvedTheme) -> Result<ComboLook, &'static str> {
+    let fill = next::geometry::combo_box_fill(r, false).map_err(|unstated| unstated.home())?;
+    let rest = r.combo_box.field(WidgetState::NONE);
+    let hovered = r.combo_box.field(WidgetState::HOVER);
+    let rest_fill = next::fill_of(&rest).ok_or("combo_box.field(NONE).fill")?;
+    Ok(ComboLook {
+        background: fill.background,
+        edge: next::stroke_color_of(&rest).ok_or("combo_box.field(NONE).stroke.color")?,
+        width: next::stroke_width_of(&rest).ok_or("combo_box.field(NONE).stroke.width")?,
+        radius: next::radius_of(&rest).ok_or("combo_box.field(NONE).corners")?,
+        hover: next::state_fill_of(&hovered)
+            .map(|hover| native_theme_gpui::layer_over(rest_fill, hover)),
+        hover_edge: next::state_stroke_color_of(&hovered),
+    })
+}
+
+/// A drop-down trigger's edge, `combo_box.field(NONE).stroke.color`, and no
+/// fill of its own, for a `Select` or a `Combobox` that is not disabled,
+/// under a 0.8.0 theme that states its [`ComboLook`]; `None` otherwise:
+/// [`combo_surface`] paints `geometry::combo_box_fill`'s fill under it. The
+/// trigger paints `input_background()` and `input` first and refines itself
+/// with the caller's style after (select.rs, `Select::render`; combobox.rs,
+/// `Combobox::render`), so these land over them.
 fn combo_fill(cx: &App) -> Option<StyleRefinement> {
     // Upstream's own `transparent` token, which the trigger starts its edge
     // with (select.rs:570).
     let none = cx.theme().transparent;
-    native_value(cx, |n| {
-        let c = &n.resolved.combo_box;
-        StyleRefinement::default()
-            .bg(none)
-            .border_color(info::stated(c.border.color))
-    })
+    let look = next_resolved(cx).and_then(|r| combo_look(r).ok())?;
+    Some(StyleRefinement::default().bg(none).border_color(look.edge))
 }
 
 /// The surface under a drop-down `trigger` refined by [`combo_fill`]:
-/// `geometry::combo_box_fill`'s fill, `combo_box.background_color`, moved
-/// under the trigger so that under the pointer `combo_box.hover_background`
+/// `geometry::combo_box_fill`'s fill, `combo_box.field(NONE).fill`, moved
+/// under the trigger so that under the pointer `combo_box.field(HOVER).fill`
 /// can be laid over it as the connector lays its layers
 /// (`native_theme_gpui::layer_over`), rounded as the trigger is
-/// (`combo_box.border.corner_radius`, `geometry::select`). Upstream's trigger
-/// sets no hover (select.rs:562-580; combobox.rs:999-1016) and neither
-/// `Select` nor `Combobox` is an `InteractiveElement` (select.rs:832), so the
-/// hover fill is this element's. Before `apply` ran it is a plain box.
+/// (`combo_box.field(NONE)`'s corners, `geometry::select`). Upstream's
+/// trigger sets no hover (select.rs:562-580; combobox.rs:999-1016) and
+/// neither `Select` nor `Combobox` is an `InteractiveElement`
+/// (select.rs:832), so the hover fill is this element's. Without a 0.8.0
+/// theme that states the [`ComboLook`] it is a plain box.
 ///
-/// Where the theme states `combo_box.hover_border_color`, an edge in it is
-/// laid over the trigger's under the pointer: the trigger is no
+/// Where a rule states `combo_box.field(HOVER).stroke.color`, an edge in it
+/// is laid over the trigger's under the pointer: the trigger is no
 /// `InteractiveElement` either. The edge is a child after the trigger, laid
-/// absolutely over it, `combo_box.border.line_width` wide and transparent at
-/// rest, with only a hover style of the surface's group: gpui paints a later
-/// child over an earlier one, and an element that only has a group-hover
-/// style gets a `Normal` hitbox, which leaves the trigger's mouse handling as
-/// it is (gpui-pre 0.3.12 `window.rs:891-894`; `elements/div.rs:2460-2468`).
+/// absolutely over it, as wide as `combo_box.field(NONE)`'s stroke and
+/// transparent at rest, with only a hover style of the surface's group:
+/// gpui paints a later child over an earlier one, and an element that only
+/// has a group-hover style gets a `Normal` hitbox, which leaves the
+/// trigger's mouse handling as it is (gpui-pre 0.3.12 `window.rs:891-894`;
+/// `elements/div.rs:2460-2468`).
 fn combo_surface(cx: &App, trigger: impl IntoElement) -> Div {
     // Upstream's own `transparent` token, as `combo_fill` takes it.
     let none = cx.theme().transparent;
-    let look = native_value(cx, |n| {
-        let c = &n.resolved.combo_box;
-        (
-            geometry::combo_box_fill(n, false).background,
-            c.hover_background.map(|hover| {
-                native_theme_gpui::layer_over(info::stated(c.background_color), info::stated(hover))
-            }),
-            px(c.border.corner_radius.max(0.0)),
-            c.hover_border_color.map(info::stated),
-            px(c.border.line_width.max(0.0)),
-        )
-    });
+    let look = next_resolved(cx).and_then(|r| combo_look(r).ok());
     match look {
-        Some((fill, hover, radius, edge, width)) => {
-            let edge = edge.filter(|_| width > px(0.0));
+        Some(look) => {
+            let width = px(look.width.max(0.0));
+            let radius = px(look.radius.max(0.0));
+            let (fill, hover) = (look.background, look.hover);
+            let edge = look.hover_edge.filter(|_| width > px(0.0));
             div()
                 .rounded(radius)
                 .when_some(fill, |surface, fill| surface.bg(fill))

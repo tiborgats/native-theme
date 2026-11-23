@@ -5,7 +5,7 @@ use gpui::{Hsla, Pixels};
 use gpui_component::theme::Theme;
 use native_theme::next::{ResolvedTheme as NextTheme, WidgetState};
 use native_theme_gpui::ResolvedTheme;
-use native_theme_gpui::next::{fill_of, padding_of, text_color_of};
+use native_theme_gpui::next::{fill_of, padding_of, state_fill_of, text_color_of};
 #[cfg(feature = "widgets")]
 use native_theme_gpui::widgets::{CheckboxLook, SwitchLook};
 
@@ -1685,13 +1685,14 @@ pub fn otp_input(t: &Theme) -> WidgetInfo {
 
 /// A `Select`. Its geometry line is recorded where `demo::select` applies
 /// the builder.
-pub fn select(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
+pub fn select(t: &Theme, native: Option<&NextTheme>) -> WidgetInfo {
     let info = combo_fill(WidgetInfo::new("Select"), t, native, false);
     // The trigger sets text_color(foreground) and then refines its style
-    // (gpui-component/select.rs, SelectState::render), so geometry::select's combo_box.font
-    // colour wins where a native theme is installed.
-    let info = match native {
-        Some(_) => info.instance("trigger text", "combo_box.font's colour, which geometry::select letters the trigger in over upstream's foreground: the trigger sets its text colour and then refines its style (gpui-component/select.rs, SelectState::render)"),
+    // (gpui-component/select.rs, SelectState::render), so geometry::select's
+    // combo_box.label(NONE) colour wins where it applies.
+    let refined = native.filter(|r| native_theme_gpui::next::geometry::select(r).is_ok());
+    let info = match refined {
+        Some(_) => info.instance("trigger text", "combo_box.label(NONE).color, which geometry::select letters the trigger in over upstream's foreground: the trigger sets its text colour and then refines its style (gpui-component/select.rs, SelectState::render)"),
         None => info.color(claim(
             "upstream trigger text",
             "foreground",
@@ -1738,53 +1739,65 @@ pub fn match_highlight(info: WidgetInfo, t: &Theme, native: bool) -> WidgetInfo 
     }
 }
 
-/// A drop-down trigger's fill and edge: `native`'s `combo_box.background_color`,
-/// `geometry::combo_box_fill`'s, which the showcase paints under the trigger
-/// (`demo::combo_surface`), and `combo_box.border.color`, which the showcase
-/// refines the trigger with over upstream's (`demo::combo_fill`), where a
-/// native theme is installed; upstream's
-/// `input_background()` and `input` where none is, the edge read by a
+/// A drop-down trigger's fill and edge: under a 0.8.0 theme `native` that
+/// states the trigger's look (`demo::combo_look`),
+/// `combo_box.field(NONE).fill`, `geometry::combo_box_fill`'s, which the
+/// showcase paints under the trigger (`demo::combo_surface`), and
+/// `combo_box.field(NONE).stroke.color`, which the showcase refines the
+/// trigger with over upstream's (`demo::combo_fill`); upstream's
+/// `input_background()` and `input` otherwise, the edge read by a
 /// `Combobox` where `combobox`, by a `Select` where not.
 pub fn combo_fill(
     info: WidgetInfo,
     t: &Theme,
-    native: Option<&ResolvedTheme>,
+    native: Option<&NextTheme>,
     combobox: bool,
 ) -> WidgetInfo {
-    match native {
-        Some(r) => {
+    let look = native.map(|r| (r, crate::demo::combo_look(r)));
+    match look {
+        Some((r, Ok(_))) => {
+            let width = stroke_width_of(&r.combo_box.field(WidgetState::NONE));
             let info = info
-                .color(claim(
+                .colors(stated_claim(
                     "trigger fill",
-                    "background_color",
-                    stated(r.combo_box.background_color),
+                    "combo_box.field(NONE).fill",
+                    fill_of(&r.combo_box.field(WidgetState::NONE)),
                     "showcase",
                 ))
                 .colors(edge_claim(
                     "trigger border",
-                    "border",
-                    Some(r.combo_box.border.color),
-                    Some(r.combo_box.border.line_width),
+                    "combo_box.field(NONE).stroke.color",
+                    stroke_color_of(&r.combo_box.field(WidgetState::NONE)),
+                    width,
                     "showcase",
                 ))
                 .colors(stated_claim(
                     "hover layer, over the fill",
-                    "hover_background",
-                    r.combo_box.hover_background,
+                    "combo_box.field(HOVER).fill",
+                    state_fill_of(&r.combo_box.field(WidgetState::HOVER)),
                     "showcase",
                 ))
                 .colors(edge_claim(
                     "hovered edge, over the trigger's",
-                    "hover_border_color",
-                    r.combo_box.hover_border_color,
-                    Some(r.combo_box.border.line_width),
+                    "combo_box.field(HOVER).stroke.color",
+                    state_stroke_color_of(&r.combo_box.field(WidgetState::HOVER)),
+                    width,
                     "showcase",
                 ))
-                .geometry("combo_box_fill");
-            info.config("fill", "geometry::combo_box_fill's combo_box.background_color, and combo_box.hover_background over it under the pointer, which the showcase paints on the element under the trigger and leaves the trigger without a fill: upstream's trigger sets no hover and is not an InteractiveElement (gpui-component/select.rs, Select::render; gpui-component/combobox.rs, Combobox::render); the trigger's edge is combo_box.border.color at combo_box.border.line_width, none where that is 0, over the input edge it paints first, which the showcase sets: geometry::select and geometry::combobox carry no edge colour, since the trigger of a Select or Combobox built with appearance(false) keeps a transparent edge the refinement would colour (gpui-component/select.rs, Select::render; gpui-component/combobox.rs, Combobox::render); and, where the theme states it, combo_box.hover_border_color as an edge the showcase lays over the trigger's under the pointer, for the same reason")
+                .next_geometry("combo_box_fill");
+            info.config("fill", "geometry::combo_box_fill's combo_box.field(NONE).fill, and combo_box.field(HOVER).fill over it under the pointer where a rule states it, which the showcase paints on the element under the trigger and leaves the trigger without a fill: upstream's trigger sets no hover and is not an InteractiveElement (gpui-component/select.rs, Select::render; gpui-component/combobox.rs, Combobox::render); the trigger's edge is combo_box.field(NONE)'s stroke, none where it is 0 wide, over the input edge it paints first, which the showcase sets: geometry::select and geometry::combobox carry no edge colour, since the trigger of a Select or Combobox built with appearance(false) keeps a transparent edge the refinement would colour (gpui-component/select.rs, Select::render; gpui-component/combobox.rs, Combobox::render); and, where a rule states it, combo_box.field(HOVER).stroke.color as an edge the showcase lays over the trigger's under the pointer, for the same reason")
         }
-        None => info
-            .color(input_background(t))
+        Some((_, Err(home))) => upstream_combo_fill(info, t, combobox).config(
+            "surface",
+            format!("none: the theme states no value gpui can take at {home}, which the trigger's fill and edge the showcase draws need; the trigger keeps upstream's"),
+        ),
+        None => upstream_combo_fill(info, t, combobox),
+    }
+}
+
+/// [`combo_fill`] where the trigger keeps upstream's fill and edge.
+fn upstream_combo_fill(info: WidgetInfo, t: &Theme, combobox: bool) -> WidgetInfo {
+    info.color(input_background(t))
             .color(if combobox {
                 claim(
                     "trigger border",
@@ -1800,8 +1813,7 @@ pub fn combo_fill(
                     "gpui-component/select.rs:590",
                 )
             })
-            .not_themeable("fill", "input_background(), as an Input's: the window background in light mode, and input mixed toward transparent in dark -- one accessor, two sources (theme/mod.rs, input_background)"),
-    }
+            .not_themeable("fill", "input_background(), as an Input's: the window background in light mode, and input mixed toward transparent in dark -- one accessor, two sources (theme/mod.rs, input_background)")
 }
 
 /// A `ColorPicker`.

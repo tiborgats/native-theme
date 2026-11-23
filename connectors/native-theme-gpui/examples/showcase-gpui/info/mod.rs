@@ -387,10 +387,6 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
         "dialog.max_width, which caps the width: a Dialog's through Dialog::max_w (dialog/dialog.rs, Dialog::max_w), and an AlertDialog's, which has no max_w of its own, through Styled::max_w, landing on the surface with the rest of the refinement (dialog/alert_dialog.rs, AlertDialog; dialog/dialog.rs, Dialog::render)",
     ),
     (
-        "combo_box_fill",
-        "combo_box.background_color, or for a disabled trigger combo_box.disabled_background (the enabled fill where the theme states none) and combo_box.disabled_text_color, faded by combo_box.disabled_opacity in place of upstream's own half fade, over upstream's fill -- Theme::input_background, and input mixed with transparent when disabled (input/input.rs, input_style; gpui-component/select.rs, Select::render; gpui-component/combobox.rs, Combobox::render) -- which no ThemeColor field can make the platform's. The disabled text reaches a Combobox's selected text and not a Select's title, which mutes itself (select.rs, SelectState::display_title)",
-    ),
-    (
         "toolbar_button_rest",
         "where the theme states toolbar.button_hover_border_color, a transparent fill and a transparent border button.border.line_width wide, and each stated side of button.border.padding less that width: a custom variant draws its colour as the border in every state and lays out no border width (button/button.rs, ButtonCustomVariant and RenderOnce for Button), so this hides the edge at rest and keeps the button's size; nothing where the theme states no outline",
     ),
@@ -470,6 +466,14 @@ pub const NEXT_GEOMETRY_NOTES: &[(&str, &str)] = &[
     (
         "text_area",
         "the multi-line field's own padding, the sides text_area.field(NONE) states (docs/platform-facts.md §2.29): the root padded by the rest of each stated side past the Size::Medium editor padding upstream gives a Textarea in render (input/input.rs, Input::render), none below it, an unstated side upstream's; text_area.field(NONE)'s corner radius and stroke width, and input.text(NONE)'s font including its colour at typography.line_height_multiplier; no height: the rows its state holds size it",
+    ),
+    (
+        "select",
+        "combo_box.field(NONE).min_size[1] by the control-height rule (typography.line_height_multiplier as the line height; the stated height itself at a text scale of 1 or less, and a minimum with an automatic height above 1; upstream's height where the theme states none), combo_box.field(NONE).min_size[0] as the least width, the padding sides combo_box.field(NONE) states -- but not the right side where combo_box.arrow_area_width is stated: the platform measures it to an arrow column the trigger does not have, its caret sitting inside the padded row, so upstream's own right padding stands --, its corner radius and stroke width, and combo_box.label(NONE)'s font -- and, unlike geometry::combobox, its colour as well (native-theme-gpui/geometry.rs, select)",
+    ),
+    (
+        "combo_box_fill",
+        "combo_box.field(NONE).fill, or for a disabled trigger combo_box.field(DISABLED).fill (the fill at rest where no rule states one for the state) and combo_box.label(DISABLED).color, faded by combo_box.disabled_opacity in place of upstream's own half fade, over upstream's fill -- Theme::input_background, and input mixed with transparent when disabled (input/input.rs, input_style; gpui-component/select.rs, Select::render; gpui-component/combobox.rs, Combobox::render) -- which no ThemeColor field can make the platform's. The disabled text reaches a Combobox's selected text and not a Select's title, which mutes itself (select.rs, SelectState::display_title)",
     ),
 ];
 

@@ -6693,15 +6693,27 @@ fn the_chrome_follows_the_theme(cx: &mut TestAppContext) {
         sidebar,
         "the side panel is not filled with sidebar.background_color"
     );
+    let next = next_theme(&mut cx, &showcase);
+    let next_fill =
+        |part: fn(&native_theme::next::ResolvedTheme) -> native_theme::next::PartStyle| {
+            next.as_ref()
+                .and_then(|r| native_theme_gpui::next::fill_of(&part(r)))
+        };
+    let drop_down = next_fill(|r| r.combo_box.field(native_theme::next::WidgetState::NONE));
+    let text_area = next_fill(|r| r.text_area.field(native_theme::next::WidgetState::NONE));
+    assert!(
+        drop_down.is_some() && text_area.is_some(),
+        "no 0.8.0 theme is installed, or it states no fill for the drop-down or the text area"
+    );
     assert_eq!(
         painted_fill(&mut cx, "basic-select"),
-        stated(&mut cx, |r| r.combo_box.background_color),
-        "the drop-down is not filled with combo_box.background_color"
+        drop_down,
+        "the drop-down is not filled with combo_box.field(NONE).fill"
     );
     assert_eq!(
         painted_fill(&mut cx, "basic-textarea"),
-        stated(&mut cx, |r| r.input.background_color),
-        "the text area is not filled with input.background_color"
+        text_area,
+        "the text area is not filled with text_area.field(NONE).fill"
     );
 
     let (divider, width) = read(&mut cx, &showcase, |_this, cx| {
@@ -7053,12 +7065,14 @@ fn the_height_only_fields_note_follows_the_native_theme(cx: &mut TestAppContext)
 }
 
 /// The preset Combobox's swatches are the colours it paints: its fill is
-/// `combo_box.background_color`, which the showcase refines the trigger
-/// with over upstream's `input_background()`, and a hovered row is accent at
-/// 70% (searchable_list/item.rs:115) -- checked against that line, since no
-/// row is drawn while the popup is shut.
+/// `combo_box.field(NONE).fill`, which the showcase paints under the
+/// trigger over upstream's `input_background()`, and a hovered row is
+/// accent at 70% (searchable_list/item.rs:115) -- checked against that
+/// line, since no row is drawn while the popup is shut.
 #[gpui::test]
 fn the_preset_combobox_paints_its_fill_swatch_and_names_its_row_hover(cx: &mut TestAppContext) {
+    use native_theme::next::WidgetState;
+    use native_theme_gpui::next::{fill_of, state_fill_of};
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     run_menu_item(&mut cx, "Theme", "Dark");
     assert!(
@@ -7066,9 +7080,10 @@ fn the_preset_combobox_paints_its_fill_swatch_and_names_its_row_hover(cx: &mut T
         "Theme > Dark did not reach Theme::mode, so this proves nothing"
     );
     let info = settle_on(&mut cx, &showcase, PROBE_COMBOBOX);
-    let fill = read(&mut cx, &showcase, |_this, cx| {
-        native_color(cx, |n| n.resolved.combo_box.background_color)
-    });
+    let r = next_theme(&mut cx, &showcase);
+    let fill = r
+        .as_ref()
+        .and_then(|r| fill_of(&r.combo_box.field(WidgetState::NONE)));
     let row = cx.update(|_w, cx| Theme::global(cx).accent.opacity(0.7));
     let swatch = info.as_ref().and_then(|info| {
         info.colors
@@ -7076,26 +7091,27 @@ fn the_preset_combobox_paints_its_fill_swatch_and_names_its_row_hover(cx: &mut T
             .find(|c| c.role == "trigger fill")
             .map(|c| c.value)
     });
-    assert!(fill.is_some(), "no native theme is installed");
+    assert!(
+        fill.is_some(),
+        "no 0.8.0 theme is installed, or it states no drop-down fill"
+    );
     assert_eq!(
         swatch, fill,
-        "the preset Combobox's fill swatch is not combo_box.background_color: {info:?}"
+        "the preset Combobox's fill swatch is not combo_box.field(NONE).fill: {info:?}"
     );
     // `settle_on` leaves the pointer on the Combobox, so the surface under
-    // its trigger shows `combo_box.hover_background` over the fill.
-    let hovered = read(&mut cx, &showcase, |_this, cx| {
-        native_value(cx, |n| {
-            let c = &n.resolved.combo_box;
-            let fill = crate::info::stated(c.background_color);
-            c.hover_background
-                .map_or(fill, |hover| source_over(fill, crate::info::stated(hover)))
-        })
+    // its trigger shows `combo_box.field(HOVER).fill` over the fill, where a
+    // rule states it.
+    let hovered = fill.map(|fill| {
+        r.as_ref()
+            .and_then(|r| state_fill_of(&r.combo_box.field(WidgetState::HOVER)))
+            .map_or(fill, |hover| source_over(fill, hover))
     });
     assert_eq!(
         painted_fill(&mut cx, PROBE_COMBOBOX),
         hovered,
-        "the fill painted under the hovered preset Combobox is not combo_box.hover_background \
-         over combo_box.background_color"
+        "the fill painted under the hovered preset Combobox is not combo_box.field(HOVER).fill \
+         over combo_box.field(NONE).fill"
     );
     let hover = info
         .as_ref()
@@ -11583,9 +11599,9 @@ fn a_refined_inputs_info_claims_its_surfaces_edge(cx: &mut TestAppContext) {
     }
 }
 
-/// Under a native theme `geometry::select` letters a Select's trigger in
-/// `combo_box.font`'s colour, so its info claims no upstream `foreground`
-/// trigger text (M9-055).
+/// Under a 0.8.0 theme `geometry::select` letters a Select's trigger in
+/// `combo_box.label(NONE).color`, so its info claims no upstream
+/// `foreground` trigger text (M9-055).
 #[gpui::test]
 fn a_native_selects_info_claims_no_upstream_trigger_text(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
@@ -11602,10 +11618,9 @@ fn a_native_selects_info_claims_no_upstream_trigger_text(cx: &mut TestAppContext
         .as_ref()
         .and_then(|info| info.instance.iter().find(|n| n.what == "trigger text"));
     assert!(
-        trigger.is_some_and(
-            |n| n.text.contains("combo_box.font") && n.text.contains("geometry::select")
-        ),
-        "the Select's info does not say geometry::select letters its trigger in combo_box.font's colour: {info:?}"
+        trigger.is_some_and(|n| n.text.contains("combo_box.label(NONE).color")
+            && n.text.contains("geometry::select")),
+        "the Select's info does not say geometry::select letters its trigger in combo_box.label(NONE).color: {info:?}"
     );
     // Without a native theme no refinement letters it, and upstream's
     // foreground stands.
