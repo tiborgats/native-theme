@@ -156,10 +156,16 @@
 //! the other scheme), the cursor, the caret's blink and the double-click and
 //! drag timings.
 //!
-//! Of the context it acts on the scheme, and on the contrast only to pick
-//! the system's colours. The motion preference, the text scale, the
-//! direction and the accessibility and window flags change nothing here: no
-//! row of the parity table needs them.
+//! Of the context it acts on the scheme, on the contrast only to pick the
+//! system's colours, and on the direction: from right to left, a value the
+//! preset states per side for a left-to-right layout has its left and right
+//! sides swapped (the menu item's, the status bar's and the combo box's
+//! padding), as Qt lays a widget out mirrored (`QStyle::visualRect`,
+//! qstyle.cpp at qtbase v6.11.0), and the scroll bar's line takes its side
+//! from Breeze's own rule (`S1`); every other per-side value the preset
+//! states is the same on both sides, and it states no per-corner radius. The
+//! motion preference, the text scale and the accessibility flags change
+//! nothing here: no row of the parity table needs them.
 //!
 //! Sources: `kde-breeze.toml` of 0.7.2 (`src/presets/kde-breeze.toml`), each
 //! constant with the citation the TOML gives it (`docs/platform-facts.md` by
@@ -191,6 +197,7 @@ use crate::next::platform::kirigami_lerp::kirigami_lerp;
 use crate::next::platform::qt_lighter::qt_lighter;
 use crate::next::platform::qt_tint::{qt_tint, tint_stored};
 use crate::next::preset::{Preset, ResolveInputs};
+use crate::next::presets::helpers::physical_edges;
 use crate::next::query::{
     ButtonVariant, Contrast, Direction, ListVariant, Orientation, Scheme, ThemeContext, WidgetState,
 };
@@ -2544,7 +2551,7 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
         scrollbar: scrollbar(c, ctx.direction),
         list: list(c, &colors, &typography, &layout),
         tab: tab(c, &colors, &typography),
-        menu: menu(c, &menu_font, &layout),
+        menu: menu(c, &menu_font, &layout, ctx.direction),
         menu_bar: menu_bar(c),
         sidebar: sidebar(c, &colors, &typography, &layout),
         toolbar: toolbar(
@@ -2553,7 +2560,7 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
             &layout,
             icon_size(|s| s.toolbar, ICON_TOOLBAR),
         ),
-        status_bar: status_bar(&colors, &typography, &layout),
+        status_bar: status_bar(&colors, &typography, &layout, ctx.direction),
         tooltip: tooltip(&colors, &typography, &layout),
         window: window(c, &colors, &title_font, &layout, ctx.window_active),
         input: input(
@@ -2581,7 +2588,7 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
         popover: popover(c, &colors, &typography, &layout),
         switch: switch(c, &colors),
         dialog: dialog(&colors, &typography, &layout),
-        combo_box: combo_box(c, &colors, &typography, &layout),
+        combo_box: combo_box(c, &colors, &typography, &layout, ctx.direction),
         segmented_control: segmented_control(c, &colors, &typography, &layout),
         card: card(c, &colors),
         expander: expander(c, &colors, &typography, &layout),
@@ -3692,8 +3699,14 @@ fn spinner(roles: &ColorRoles) -> SpinnerWidget {
 /// the menu font `font` in the window text (0.7.2: `menu.font` is
 /// `defaults.font` where unstated), HighlightedText when pressed, the
 /// disabled window text when disabled; 16 px icons; separators in
-/// `separatorColor()`.
-fn menu(c: &SchemeColors, font: &TextStyle, layout: &LayoutMetrics) -> MenuWidget {
+/// `separatorColor()`. The item's padding is on the physical sides of
+/// `direction`.
+fn menu(
+    c: &SchemeColors,
+    font: &TextStyle,
+    layout: &LayoutMetrics,
+    direction: Direction,
+) -> MenuWidget {
     let panel = RuleBuilder::new(PartStyle::default())
         .base([
             fill(c.menu_background),
@@ -3706,11 +3719,14 @@ fn menu(c: &SchemeColors, font: &TextStyle, layout: &LayoutMetrics) -> MenuWidge
     let item = RuleBuilder::new(PartStyle::default())
         .base([
             PartProp::MinSize([None, Some(MENU_ROW_MIN_HEIGHT)]),
-            PartProp::Padding(Edges::new(
-                MENU_ITEM_PADDING_VERTICAL,
-                MENU_ITEM_PADDING_RIGHT,
-                MENU_ITEM_PADDING_VERTICAL,
-                MENU_ITEM_PADDING_LEFT,
+            PartProp::Padding(physical_edges(
+                Edges::new(
+                    MENU_ITEM_PADDING_VERTICAL,
+                    MENU_ITEM_PADDING_RIGHT,
+                    MENU_ITEM_PADDING_VERTICAL,
+                    MENU_ITEM_PADDING_LEFT,
+                ),
+                direction,
             )),
             PartProp::Corners(Corners::uniform(MENU_ITEM_RADIUS)),
         ])
@@ -3922,12 +3938,13 @@ fn toolbar(
 /// The status bar: the window's background in the default line (0.7.2:
 /// `status_bar.background_color` is `defaults.background_color`, and the
 /// colour and width of `status_bar.border` `defaults.border`'s, where
-/// unstated) with QStatusBar's padding; the UI font (0.7.2: `status_bar.font`
-/// is `defaults.font` where unstated).
+/// unstated) with QStatusBar's padding on the physical sides of `direction`;
+/// the UI font (0.7.2: `status_bar.font` is `defaults.font` where unstated).
 fn status_bar(
     roles: &ColorRoles,
     typography: &Typography,
     layout: &LayoutMetrics,
+    direction: Direction,
 ) -> StatusBarWidget {
     let mut bar = PartStyle::default();
     for prop in roles
@@ -3936,11 +3953,14 @@ fn status_bar(
         .map(fill)
         .into_iter()
         .chain(roles.window.border.map(|border| outline(layout, border)))
-        .chain([PartProp::Padding(Edges::new(
-            STATUS_BAR_PADDING_TOP,
-            STATUS_BAR_PADDING_RIGHT,
-            STATUS_BAR_PADDING_BOTTOM,
-            STATUS_BAR_PADDING_LEFT,
+        .chain([PartProp::Padding(physical_edges(
+            Edges::new(
+                STATUS_BAR_PADDING_TOP,
+                STATUS_BAR_PADDING_RIGHT,
+                STATUS_BAR_PADDING_BOTTOM,
+                STATUS_BAR_PADDING_LEFT,
+            ),
+            direction,
         ))])
     {
         bar.apply(&prop);
@@ -4142,12 +4162,13 @@ fn dialog(roles: &ColorRoles, typography: &Typography, layout: &LayoutMetrics) -
 /// (0.7.2: `combo_box.font` is `defaults.font` where unstated), the disabled
 /// button's text when disabled; the arrow at ArrowSize in its column (0.7.2:
 /// `combo_box.disabled_opacity` is `defaults.disabled_opacity` where
-/// unstated).
+/// unstated). The field's padding is on the physical sides of `direction`.
 fn combo_box(
     c: &SchemeColors,
     roles: &ColorRoles,
     typography: &Typography,
     layout: &LayoutMetrics,
+    direction: Direction,
 ) -> ComboBoxWidget {
     let field = RuleBuilder::with_exclusive(PartStyle::default(), DISABLED_OPEN_HOVER)
         .base([fill(c.button_background)])
@@ -4156,11 +4177,14 @@ fn combo_box(
             corners(layout),
             // `combo_box.border.shadow_enabled`: platform-facts.md (§2.24): no shadow
             PartProp::Shadows(None),
-            PartProp::Padding(Edges::new(
-                COMBO_BOX_PADDING_VERTICAL,
-                COMBO_BOX_PADDING_RIGHT,
-                COMBO_BOX_PADDING_VERTICAL,
-                COMBO_BOX_PADDING_LEFT,
+            PartProp::Padding(physical_edges(
+                Edges::new(
+                    COMBO_BOX_PADDING_VERTICAL,
+                    COMBO_BOX_PADDING_RIGHT,
+                    COMBO_BOX_PADDING_VERTICAL,
+                    COMBO_BOX_PADDING_LEFT,
+                ),
+                direction,
             )),
             PartProp::MinSize([Some(COMBO_BOX_MIN_WIDTH), Some(COMBO_BOX_MIN_HEIGHT)]),
         ])

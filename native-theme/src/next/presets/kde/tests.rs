@@ -1181,3 +1181,98 @@ fn the_dialog_states_no_size_limits() {
         assert_eq!(theme.dialog.panel.max_size, [None, None]);
     }
 }
+
+/// `stroke` with its left and right sides swapped, where it has sides.
+fn mirrored_stroke(stroke: Stroke) -> Stroke {
+    match stroke {
+        Stroke::Complex(sides) => Stroke::sides(
+            sides.top.clone(),
+            sides.left.clone(),
+            sides.bottom.clone(),
+            sides.right.clone(),
+            sides.align,
+        ),
+        other => other,
+    }
+}
+
+/// Right to left: the theme from left to right with every per-side value
+/// mirrored, the menu item's, the status bar's and the combo box's padding
+/// (stated for a left-to-right layout) and the vertical scroll bar's line
+/// (`S1`), in every state; nothing else differs.
+#[test]
+fn right_to_left_is_left_to_right_mirrored() {
+    for scheme in [Scheme::Light, Scheme::Dark] {
+        let ctx = ThemeContext::default().with_scheme(scheme);
+        let ltr = Theme::preset(Preset::KdeBreeze).resolve(&ctx);
+        let rtl = Theme::preset(Preset::KdeBreeze).resolve(&ctx.with_direction(Direction::Rtl));
+        let padded = |part: PartStyle| PartStyle {
+            padding: physical_edges(part.padding, Direction::Rtl),
+            ..part
+        };
+        for state in [
+            WidgetState::NONE,
+            WidgetState::HOVER,
+            WidgetState::PRESSED,
+            WidgetState::DISABLED,
+        ] {
+            assert_eq!(
+                rtl.menu.item(state),
+                padded(ltr.menu.item(state)),
+                "{scheme:?} {state:?}"
+            );
+        }
+        for state in [
+            WidgetState::NONE,
+            WidgetState::HOVER,
+            WidgetState::OPEN,
+            WidgetState::DISABLED,
+        ] {
+            assert_eq!(
+                rtl.combo_box.field(state),
+                padded(ltr.combo_box.field(state)),
+                "{scheme:?} {state:?}"
+            );
+        }
+        assert_eq!(rtl.status_bar.bar, padded(ltr.status_bar.bar.clone()));
+        for state in [
+            WidgetState::NONE,
+            WidgetState::HOVER,
+            WidgetState::UNFOCUSED_VIEW,
+        ] {
+            let query = |orientation| StyleQuery::new(state).orientation(orientation);
+            let vertical = ltr.scrollbar.track(query(Orientation::Vertical));
+            assert_eq!(
+                rtl.scrollbar.track(query(Orientation::Vertical)),
+                PartStyle {
+                    stroke: mirrored_stroke(vertical.stroke.clone()),
+                    ..vertical
+                },
+                "{scheme:?} {state:?}"
+            );
+            assert_eq!(
+                rtl.scrollbar.track(query(Orientation::Horizontal)),
+                ltr.scrollbar.track(query(Orientation::Horizontal)),
+                "{scheme:?} {state:?}"
+            );
+            for orientation in [Orientation::Horizontal, Orientation::Vertical] {
+                assert_eq!(
+                    rtl.scrollbar.thumb(query(orientation)),
+                    ltr.scrollbar.thumb(query(orientation)),
+                    "{scheme:?} {state:?} {orientation:?}"
+                );
+            }
+        }
+        assert_ne!(rtl.menu, ltr.menu, "{scheme:?}");
+        assert_ne!(rtl.combo_box, ltr.combo_box, "{scheme:?}");
+        assert_ne!(rtl.status_bar, ltr.status_bar, "{scheme:?}");
+        assert_ne!(rtl.scrollbar, ltr.scrollbar, "{scheme:?}");
+        let mut rest = ltr.clone();
+        rest.context = rtl.context.clone();
+        rest.menu = rtl.menu.clone();
+        rest.combo_box = rtl.combo_box.clone();
+        rest.status_bar = rtl.status_bar.clone();
+        rest.scrollbar = rtl.scrollbar.clone();
+        assert_eq!(rest, rtl, "{scheme:?}");
+    }
+}
