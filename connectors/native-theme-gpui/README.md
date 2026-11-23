@@ -922,7 +922,7 @@ Theme::update(cx, |theme| theme.table_active = theme.table_active.alpha(0.25));
 ```
 
 One more limit is gpui's own and concerns the builders from the 0.8.0
-model. **A translucent stroke shows the whole fill under
+model (`native_theme_gpui::next`). **A translucent stroke shows the whole fill under
 it.** The 0.8.0 model says how far a part's fill runs under its stroke: under
 the whole band (`StrokeAlign::Inside`), to the band's centre line (`Center`,
 as Breeze draws a scroll bar's handle), or to its inner edge (`Outside`). gpui

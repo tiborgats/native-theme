@@ -246,17 +246,7 @@ pub mod geometry;
 #[cfg(all(test, target_os = "linux", feature = "system-icons"))]
 use native_theme_test_fixtures as icon_fixture;
 pub mod icons;
-// `allow`, not `expect`: whether rustc reports an item that only an unused
-// item reaches differs between toolchains, so an expectation could be
-// unfulfilled on one of them.
-#[cfg_attr(
-    not(test),
-    allow(
-        dead_code,
-        reason = "the 0.8.0 mapping, read by its parity test until M4 ports the connector onto it"
-    )
-)]
-mod next;
+pub mod next;
 #[cfg(test)]
 mod showcase;
 pub mod variants;

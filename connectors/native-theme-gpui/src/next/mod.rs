@@ -1,17 +1,26 @@
-//! The 0.8.0 mapping, under construction: what the connector hands to gpui,
-//! computed from the 0.8.0 model (`native_theme::next`): the whole
-//! gpui-component theme, with every `ThemeColor` field and its stored
-//! config, the scroll bar's and the resize handles' values for gpui-base,
-//! and every `geometry` and `variants` builder (docs/v0.8.0-plan.md, M4,
-//! step 1).
+//! The connector on the 0.8.0 model ([`native_theme::next`]), beside the
+//! 0.7.2 one until the 0.8.0 cut removes the latter: what the connector
+//! hands to gpui, computed from a [`native_theme::next::ResolvedTheme`].
+//!
+//! [`to_theme`] builds the whole gpui-component theme, as [`crate::to_theme`]
+//! does; [`geometry`], [`variants`] and [`base_layer`] hold one function for
+//! each public function of [`crate::geometry`], [`crate::variants`] and
+//! [`crate::base_layer`] that reads the native theme, of the same name. Each
+//! takes the 0.8.0 resolved theme, which carries its name, its scheme and
+//! the context it was resolved for (text scale, reduced transparency), so no
+//! name, mode or accessibility preferences are passed; and each returns
+//! [`Mapped`]: the value, or the [`Unmapped`] source it needs that the theme
+//! leaves unstated, where the 0.7.2 function, whose fields are always set,
+//! returns the value alone. Where the theme states nothing for a value the
+//! toolkit has one of its own for, the toolkit's stays (spec §10, rule 0).
 //!
 //! Each function reads the model where the table of homes
 //! (`native-theme/tests/next_homes.toml`) places the 0.7.2 field the old
 //! mapping reads, by the query its row names, and hands the values to the
 //! function the old mapping hands its own reads to, so the two share
 //! everything after the read. `parity` proves the leaves equal to the old
-//! mapping's (plan, section 1, rule 2). Not exported; the connector is
-//! ported onto it in M4, and the 0.7.2 path is removed at the 0.8.0 cut.
+//! mapping's (docs/v0.8.0-plan.md, section 1, rule 2), and lists where they
+//! differ with the reason.
 //!
 //! A 0.7.2 field that is a soft option of a state (`button.active_background`,
 //! `scrollbar.thumb_active_color`, `button.checked_background`, ...) is unset
@@ -21,10 +30,14 @@
 //! (spec §2), and is `None` otherwise, so the old path's own fallback for the
 //! unset option is taken from both models.
 
+pub mod base_layer;
 pub(crate) mod builders;
+pub mod geometry;
 #[cfg(test)]
 mod parity;
+pub mod variants;
 
+use std::fmt;
 use std::rc::Rc;
 
 use gpui::{Hsla, SharedString};
@@ -42,16 +55,33 @@ use crate::config::{apply_config_scalars, highlight_style_of, theme_color_to_con
 use crate::geometry::Font;
 use crate::{ThemeScalars, apply_scalars, caret_blink_of, font_family};
 
-/// A source a leaf needs that the theme leaves unstated, or states in a form
-/// no 0.7.2 field holds (a gradient fill, a per-side stroke, a pill): its home
-/// in the table of homes. The 0.7.2 path has no such case, its resolved
-/// fields being always set; the 0.8.0 path reports it rather than inventing
-/// the value.
+/// A source a value needs that the theme leaves unstated, or states in a
+/// form the connector cannot hand to gpui (a gradient fill, a per-side
+/// stroke, a pill): its place in the 0.8.0 model, as a query and a property
+/// (`button.body(NONE).stroke.width`). The 0.7.2 path has no such case, its
+/// resolved fields being always set; the 0.8.0 path reports it rather than
+/// inventing the value.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) struct Unmapped(pub(crate) &'static str);
+pub struct Unmapped(pub(crate) &'static str);
 
-/// A leaf of the 0.8.0 mapping, or the source it lacks.
-pub(crate) type Mapped<T> = Result<T, Unmapped>;
+impl Unmapped {
+    /// The source's place in the 0.8.0 model.
+    #[must_use]
+    pub fn home(&self) -> &'static str {
+        self.0
+    }
+}
+
+impl fmt::Display for Unmapped {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "the theme states no value gpui can take at {}", self.0)
+    }
+}
+
+impl std::error::Error for Unmapped {}
+
+/// A value of the 0.8.0 mapping, or the source it lacks.
+pub type Mapped<T> = Result<T, Unmapped>;
 
 /// A colour of the model as gpui's: the connector's conversion
 /// ([`channels_to_hsla`]).
@@ -472,13 +502,28 @@ fn theme_mode(r: &ResolvedTheme) -> ThemeMode {
     }
 }
 
-/// The gpui-component theme: [`theme_color`]'s colours and the tokens
-/// gpui-component derives from them, [`theme_scalars`]' values, and, in the
-/// slot of its mode, a `ThemeConfig` of the theme's name and the same values
-/// and colours. `transparent`, `notification`, `list`, `sheet` and `motion`,
-/// which the model states nothing for, `cursor_blink` where the theme states
-/// no blink, and the other mode's slot are gpui-component's defaults.
-pub(crate) fn to_theme(r: &ResolvedTheme) -> Mapped<GpuiTheme> {
+/// The gpui-component theme of `r`, as [`crate::to_theme`] builds it from a
+/// 0.7.2 resolved theme.
+///
+/// It sets all 140 `ThemeColor` fields (and the `tokens` gpui-component
+/// derives from them), `mode` (the theme's scheme), `font_family`,
+/// `font_size`, `mono_font_family`, `mono_font_size`, `radius`, `radius_lg`,
+/// `window_radius` (the window frame's corners), `shadow`, `focus_ring`,
+/// `scrollbar_mode`, `highlight_theme` and, where the theme states a caret
+/// blink, `cursor_blink`, and stores a `ThemeConfig` of the theme's name and
+/// the same values in the slot of its mode, for gpui-component's own mode
+/// switches; the other mode's slot stays `ThemeConfig::default()`. The sizes
+/// are the model's, which the theme's text scale has already scaled, and the
+/// colours follow the context's reduced transparency. `transparent`,
+/// `notification`, `list`, `sheet` and `motion` stay gpui-component's
+/// defaults, as [`crate::to_theme`] leaves them, and so does `cursor_blink`
+/// where the theme states no blink.
+///
+/// # Errors
+///
+/// [`Unmapped`] where the theme leaves a value the theme needs unstated, or
+/// states it in a form gpui cannot take.
+pub fn to_theme(r: &ResolvedTheme) -> Mapped<GpuiTheme> {
     let tc = theme_color(r)?;
     let scalars = theme_scalars(r)?;
     let mut theme = GpuiTheme::from(&tc);
