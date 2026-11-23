@@ -191,16 +191,20 @@ jobs:
       # and the black, white and grey backdrops, into button-pass-controls/;
       # probe.toml's [macos.button_pass.controls] method says how. It posts
       # mouse and key events, so Accessibility and PostEvent access are
-      # granted to the built probe's path as for the button pass.
+      # granted to the built probe's path as for the button pass. The step
+      # fails where the build fails, where the probe exits non-zero (it does
+      # where [macos.button_pass.controls] holds an error) or wrote no
+      # probe.toml; the upload still runs.
       - name: Run the controls pass (macOS)
         if: runner.os == 'macOS' && matrix.pass == 'controls'
-        continue-on-error: true
         run: |
           set +e
           out=os-probe-out/button-pass-controls
           probe="$PWD/target/release/native-theme-os-probe"
           mkdir -p "$out"
           cargo build -p native-theme-os-probe --release
+          status=$?
+          if [ $status -ne 0 ]; then echo "cargo build: exit $status"; exit $status; fi
           {
             sw_vers; echo "sw_vers: exit $?"
             xcode-select -p; echo "xcode-select -p: exit $?"
@@ -217,7 +221,10 @@ jobs:
           } > "$out/environment.txt" 2>&1
           cat "$out/environment.txt"
           "$probe" --out "$out" --button-pass --controls
-          echo "probe: exit $?"
+          status=$?
+          echo "probe: exit $status"
+          if [ ! -s "$out/probe.toml" ]; then echo "no $out/probe.toml"; exit 1; fi
+          exit $status
       # The symbols pass (pass MP-symbols of the 0.8.0 measurement plan; U102,
       # U324, U613): the SF Symbol configuration and image size AppKit gives
       # each place (image view, buttons and segmented controls per control

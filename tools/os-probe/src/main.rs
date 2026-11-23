@@ -317,7 +317,24 @@ fn run(options: &Options) -> ExitCode {
         return ExitCode::FAILURE;
     }
     eprintln!("wrote {}", path.display());
+    if options.controls && pass_error(&doc, &["macos", "button_pass", "controls"]) {
+        eprintln!("the controls pass wrote an error: [macos.button_pass.controls] error");
+        return ExitCode::FAILURE;
+    }
     ExitCode::SUCCESS
+}
+
+/// Whether the pass's table at `path` holds an `error` (the pass could not
+/// run).
+#[cfg(any(target_os = "macos", target_os = "windows"))]
+fn pass_error(doc: &toml::Table, path: &[&str]) -> bool {
+    let mut table = Some(doc);
+    for key in path {
+        table = table
+            .and_then(|t| t.get(*key))
+            .and_then(toml::Value::as_table);
+    }
+    table.is_some_and(|t| t.contains_key("error"))
 }
 
 /// The `[probe]` table: what ran, where.
@@ -534,6 +551,9 @@ mod tests {
         assert!(parse(&["--button-pass", "--events"]).is_ok());
         assert!(parse(&["--motion"]).is_err());
         assert!(parse(&["--button-pass", "--motion", "--events"]).is_err());
+        assert!(parse(&["--button-pass", "--controls"]).is_ok());
+        assert!(parse(&["--controls"]).is_err());
+        assert!(parse(&["--button-pass", "--controls", "--events"]).is_err());
         assert!(parse(&["--colors"]).is_ok());
         assert!(parse(&["--colors", "--reads"]).is_err());
         assert!(parse(&["--colors", "--button-pass"]).is_err());

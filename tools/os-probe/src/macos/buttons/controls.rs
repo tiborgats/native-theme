@@ -26,7 +26,8 @@ use super::{
 };
 use crate::macos::layer::Rgba;
 use crate::macos::{
-    APPEARANCES, SETTLE_STEPS, control_common, ffi, ns, pixel_index, point_text, rect, state_value,
+    APPEARANCES, SETTLE_STEPS, control_common, ffi, ns, pixel_index, point_text, rect, rect_text,
+    state_value,
 };
 use crate::out;
 
@@ -105,6 +106,39 @@ struct Target {
     reset: Box<dyn Fn()>,
 }
 
+/// A target as `build` makes it: its part is found in its view
+/// (`locate`) once the window is shown and settled.
+struct Pending {
+    name: &'static str,
+    view: Retained<NSView>,
+    part: Part,
+    press: bool,
+    escape: bool,
+    reset: Box<dyn Fn()>,
+}
+
+/// How a target's part is found in its view.
+#[derive(Clone, Copy)]
+enum Part {
+    /// The view's bounds.
+    Bounds,
+    /// A check box's indicator: its cell's `imageRectForBounds:`.
+    Indicator,
+    /// A titled button's triangle and title (`titled_part`).
+    Titled,
+    /// The middle segment of a segmented control of segments of one width.
+    MiddleThird,
+    /// A slider's knob: its cell's `knobRectFlipped:`.
+    Knob,
+    /// A table's row `TABLE_TARGET_ROW`: `rectOfRow:`.
+    Row,
+    /// The tab view's tab `TAB_TARGET` (`tab_rects`).
+    Tab,
+    /// A split view's divider: from the first pane's right edge,
+    /// `dividerThickness` wide, the view's height.
+    Divider,
+}
+
 /// The tab view and each tab's rect in its coordinates, where found.
 struct Tabs {
     view: Retained<NSTabView>,
@@ -112,11 +146,12 @@ struct Tabs {
 }
 
 /// The objects the sheet's views need alive while it is captured, and the
-/// controls whose parts are read again once the window is shown.
+/// views read once the window is shown.
 struct Keep {
     _sources: Vec<Retained<ffi::TableSource>>,
+    tables: Vec<Retained<NSTableView>>,
     _delegate: Retained<ffi::ToolbarDelegate>,
-    slider: Retained<NSSlider>,
+    tab_view: Retained<NSTabView>,
     disclosure: Retained<NSButton>,
 }
 
@@ -125,7 +160,7 @@ struct Keep {
 pub(super) fn controls_table(pass: &Pass<'_>) -> Table {
     let mut t = Table::new();
     out::put(&mut t, "method", out::text(method_text()));
-    let (sheet, mut targets, tabs, keep) = match build(pass) {
+    let (sheet, pending, keep) = match build(pass) {
         Ok(built) => built,
         Err(reason) => {
             out::put(&mut t, "error", out::unavailable(reason));
@@ -133,16 +168,49 @@ pub(super) fn controls_table(pass: &Pass<'_>) -> Table {
         }
     };
     let window = &sheet.window;
+    let other = pass.present(window, &mut t);
+    pass.settle(window, SETTLE_STEPS);
+
     let mut buttons = Table::new();
     let frame_size = window.frame().size;
     for case in &sheet.cases {
         out::put_table(&mut buttons, &case.name, case_table(case, frame_size));
     }
     out::put_table(&mut t, "controls", buttons);
-
-    let other = pass.present(window, &mut t);
-    pass.settle(window, SETTLE_STEPS);
-    let knob_at_build = relocate_knob(&mut targets, &keep.slider);
+    let tabs = Tabs {
+        rects: tab_rects(&keep.tab_view),
+        view: keep.tab_view.clone(),
+    };
+    let backdrop_rect = from_top_left(&sheet.backdrop, frame_size);
+    let mut placed = Table::new();
+    let mut targets: Vec<Target> = Vec::new();
+    for p in pending {
+        match locate(&p, &tabs) {
+            Ok(part) => targets.push(Target {
+                name: p.name,
+                view: p.view,
+                part,
+                press: p.press,
+                escape: p.escape,
+                reset: p.reset,
+            }),
+            Err(reason) => {
+                let mut row = Table::new();
+                out::put(
+                    &mut row,
+                    "class",
+                    out::text(p.view.class().name().to_string_lossy()),
+                );
+                out::put(
+                    &mut row,
+                    "view_in_window_from_top_left_xywh",
+                    rect(from_top_left(&p.view, frame_size)),
+                );
+                out::put(&mut row, "error", out::unavailable(reason));
+                out::put_table(&mut placed, p.name, row);
+            }
+        }
+    }
     out::put(
         &mut t,
         "window_backingScaleFactor",
@@ -154,21 +222,16 @@ pub(super) fn controls_table(pass: &Pass<'_>) -> Table {
         "backdrop_point_xy",
         out::floats(&[sheet.backdrop_point().x, sheet.backdrop_point().y]),
     );
-    let frame_size = window.frame().size;
-    let mut placed = Table::new();
     for target in &targets {
         let mut row = target_table(target, frame_size);
-        match target.name {
-            "slider_knob" => out::put(
-                &mut row,
-                "part_at_build_xywh",
-                match knob_at_build {
-                    Some(r) => rect(r),
-                    None => out::unavailable("the slider's cell is not an NSSliderCell"),
-                },
-            ),
-            "disclosure" => title_reads(&mut row, &keep.disclosure, frame_size),
-            _ => {}
+        let part = in_window(&target.view, target.part, frame_size);
+        out::put(
+            &mut row,
+            "over_backdrop",
+            out::boolean(contains(backdrop_rect, part)),
+        );
+        if target.name == "disclosure" {
+            title_reads(&mut row, &keep.disclosure, frame_size);
         }
         out::put_table(&mut placed, target.name, row);
     }
@@ -196,6 +259,10 @@ pub(super) fn controls_table(pass: &Pass<'_>) -> Table {
         other.orderOut(None);
         other.close();
     }
+    for table in &keep.tables {
+        ffi::set_table_source(table, None);
+    }
+    window.setToolbar(None);
     drop(keep);
     t
 }
@@ -461,16 +528,84 @@ fn target_table(target: &Target, frame: NSSize) -> Table {
     t
 }
 
-/// The slider knob's target set to `knobRectFlipped:` as the slider's cell
-/// gives it now (the window shown and drawn); the rect it had at build, read
-/// before the slider's final layout.
-fn relocate_knob(targets: &mut [Target], slider: &NSSlider) -> Option<NSRect> {
-    let knob = slider.cell().and_then(|cell| {
-        cell.downcast_ref::<NSSliderCell>()
-            .map(|c| c.knobRectFlipped(slider.isFlipped()))
-    })?;
-    let target = targets.iter_mut().find(|t| t.name == "slider_knob")?;
-    Some(std::mem::replace(&mut target.part, knob))
+/// Whether `inner` lies within `outer`, edges included.
+fn contains(outer: NSRect, inner: NSRect) -> bool {
+    inner.origin.x >= outer.origin.x
+        && inner.origin.y >= outer.origin.y
+        && inner.origin.x + inner.size.width <= outer.origin.x + outer.size.width
+        && inner.origin.y + inner.size.height <= outer.origin.y + outer.size.height
+}
+
+/// A pending target's part in its view's coordinates, read now (the window
+/// shown and settled); an error where the view cannot give it, where it is
+/// empty, or where it does not lie within the view's bounds.
+fn locate(p: &Pending, tabs: &Tabs) -> Result<NSRect, String> {
+    let view = &*p.view;
+    let b = view.bounds();
+    let part = match p.part {
+        Part::Bounds => b,
+        Part::Indicator => view
+            .downcast_ref::<NSButton>()
+            .and_then(|button| button.cell())
+            .map(|cell| cell.imageRectForBounds(b))
+            .ok_or("the check box has no button cell")?,
+        Part::Titled => view
+            .downcast_ref::<NSButton>()
+            .map(titled_part)
+            .ok_or("the view is not an NSButton")?,
+        Part::MiddleThird => NSRect::new(
+            NSPoint::new(b.origin.x + b.size.width / 3.0, b.origin.y),
+            NSSize::new(b.size.width / 3.0, b.size.height),
+        ),
+        Part::Knob => {
+            let slider = view
+                .downcast_ref::<NSSlider>()
+                .ok_or("the view is not an NSSlider")?;
+            slider
+                .cell()
+                .and_then(|cell| {
+                    cell.downcast_ref::<NSSliderCell>()
+                        .map(|c| c.knobRectFlipped(slider.isFlipped()))
+                })
+                .ok_or("the slider's cell is not an NSSliderCell")?
+        }
+        Part::Row => view
+            .downcast_ref::<NSTableView>()
+            .map(|table| table.rectOfRow(TABLE_TARGET_ROW))
+            .ok_or("the view is not an NSTableView")?,
+        Part::Tab => tabs
+            .rects
+            .get(TAB_TARGET)
+            .copied()
+            .flatten()
+            .ok_or("tabViewItemAtPoint: found no rect for the target tab")?,
+        Part::Divider => {
+            let split = view
+                .downcast_ref::<NSSplitView>()
+                .ok_or("the view is not an NSSplitView")?;
+            let first = split
+                .subviews()
+                .iter()
+                .next()
+                .map(|v| v.frame())
+                .ok_or("the split view has no subview")?;
+            NSRect::new(
+                NSPoint::new(first.origin.x + first.size.width, b.origin.y),
+                NSSize::new(split.dividerThickness(), b.size.height),
+            )
+        }
+    };
+    if part.size.width <= 0.0 || part.size.height <= 0.0 {
+        return Err(format!("the part {} is empty", rect_text(part)));
+    }
+    if !contains(b, part) {
+        return Err(format!(
+            "the part {} does not lie within the view's bounds {}",
+            rect_text(part),
+            rect_text(b)
+        ));
+    }
+    Ok(part)
 }
 
 /// A titled button's triangle and title: its bounds from the left edge to
@@ -516,13 +651,13 @@ fn title_reads(t: &mut Table, button: &NSButton, frame: NSSize) {
 
 /// The sheet, its targets, the tab view's tab rects and what must stay
 /// alive.
-fn build(pass: &Pass<'_>) -> Result<(Sheet, Vec<Target>, Tabs, Keep), String> {
+fn build(pass: &Pass<'_>) -> Result<(Sheet, Vec<Pending>, Keep), String> {
     let mtm = pass.mtm;
     let (window, content, backdrop) = sheet_window(mtm, CONTROLS_ORIGIN, CONTROLS_CONTENT, false)?;
     let height = CONTROLS_CONTENT.height;
     let size = NSControlSize::Regular;
     let mut cases: Vec<Case> = Vec::new();
-    let mut targets: Vec<Target> = Vec::new();
+    let mut targets: Vec<Pending> = Vec::new();
 
     let place = |control: &NSControl, x: f64, row: f64| {
         super::place(control, &content, x, row, height);
@@ -571,35 +706,26 @@ fn build(pass: &Pass<'_>) -> Result<(Sheet, Vec<Target>, Tabs, Keep), String> {
         DISCLOSURE_WIDTH,
         disclosure.frame().size.height,
     ));
-    let indicator = |b: &NSButton| {
-        b.cell()
-            .map(|cell| cell.imageRectForBounds(b.bounds()))
-            .ok_or_else(|| "the check box has no cell".to_owned())
-    };
     for (name, b, on) in [
         ("checkbox_off", &check_off, false),
         ("checkbox_on", &check_on, true),
     ] {
         let reset_button = b.retain();
-        targets.push(Target {
+        targets.push(Pending {
             name,
             view: view(b),
-            part: indicator(b)?,
+            part: Part::Indicator,
             press: true,
             escape: false,
             reset: Box::new(move || reset_button.setState(state_value(on))),
         });
     }
     for (name, b, part) in [
-        ("disclosure", &disclosure, titled_part(&disclosure)),
-        (
-            "push_disclosure",
-            &push_disclosure,
-            push_disclosure.bounds(),
-        ),
+        ("disclosure", &disclosure, Part::Titled),
+        ("push_disclosure", &push_disclosure, Part::Bounds),
     ] {
         let reset_button = b.retain();
-        targets.push(Target {
+        targets.push(Pending {
             name,
             view: view(b),
             part,
@@ -608,10 +734,10 @@ fn build(pass: &Pass<'_>) -> Result<(Sheet, Vec<Target>, Tabs, Keep), String> {
             reset: Box::new(move || reset_button.setState(state_value(false))),
         });
     }
-    targets.push(Target {
+    targets.push(Pending {
         name: "push",
         view: view(&push),
-        part: push.bounds(),
+        part: Part::Bounds,
         press: true,
         escape: false,
         reset: Box::new(|| {}),
@@ -645,43 +771,39 @@ fn build(pass: &Pass<'_>) -> Result<(Sheet, Vec<Target>, Tabs, Keep), String> {
     let switch = NSSwitch::new(mtm);
     switch.setState(state_value(false));
     control_common(&switch, size);
-    place(&switch, c3, 1.0);
+    place(&switch, c4, 1.0);
     let popup_button: Retained<NSButton> = Retained::into_super(popup.retain());
     let reset_popup = popup.retain();
-    targets.push(Target {
+    targets.push(Pending {
         name: "popup",
         view: view(&popup),
-        part: popup.bounds(),
+        part: Part::Bounds,
         press: true,
         escape: true,
         reset: Box::new(move || reset_popup.selectItemAtIndex(0)),
     });
-    targets.push(Target {
+    targets.push(Pending {
         name: "text_field",
         view: view(&field),
-        part: field.bounds(),
+        part: Part::Bounds,
         press: false,
         escape: false,
         reset: Box::new(|| {}),
     });
-    let b = segmented.bounds();
     let reset_segmented = segmented.retain();
-    targets.push(Target {
+    targets.push(Pending {
         name: "segment",
         view: view(&segmented),
-        part: NSRect::new(
-            NSPoint::new(b.origin.x + b.size.width / 3.0, b.origin.y),
-            NSSize::new(b.size.width / 3.0, b.size.height),
-        ),
+        part: Part::MiddleThird,
         press: true,
         escape: false,
         reset: Box::new(move || reset_segmented.setSelectedSegment(0)),
     });
     let reset_switch = switch.retain();
-    targets.push(Target {
+    targets.push(Pending {
         name: "switch_off",
         view: view(&switch),
-        part: switch.bounds(),
+        part: Part::Bounds,
         press: true,
         escape: false,
         reset: Box::new(move || reset_switch.setState(state_value(false))),
@@ -696,18 +818,11 @@ fn build(pass: &Pass<'_>) -> Result<(Sheet, Vec<Target>, Tabs, Keep), String> {
     control_common(&slider, size);
     place(&slider, c0, 2.0);
     slider.setFrameSize(NSSize::new(SLIDER_WIDTH, slider.frame().size.height));
-    let knob = slider
-        .cell()
-        .and_then(|cell| {
-            cell.downcast_ref::<NSSliderCell>()
-                .map(|c| c.knobRectFlipped(slider.isFlipped()))
-        })
-        .ok_or_else(|| "the slider's cell is not an NSSliderCell".to_owned())?;
     let reset_slider = slider.retain();
-    targets.push(Target {
+    targets.push(Pending {
         name: "slider_knob",
         view: view(&slider),
-        part: knob,
+        part: Part::Knob,
         press: true,
         escape: false,
         reset: Box::new(move || reset_slider.setDoubleValue(SLIDER_VALUE)),
@@ -715,6 +830,7 @@ fn build(pass: &Pass<'_>) -> Result<(Sheet, Vec<Target>, Tabs, Keep), String> {
 
     // The tables: one in the default style, one in the source-list style.
     let mut sources = Vec::new();
+    let mut tables = Vec::new();
     for (name, frame, style) in [
         ("table_row", TABLE_FRAME, None),
         (
@@ -729,15 +845,18 @@ fn build(pass: &Pass<'_>) -> Result<(Sheet, Vec<Target>, Tabs, Keep), String> {
         scroll.tile();
         table.tile();
         sources.push(source);
+        tables.push(table.retain());
         let reset_table = table.retain();
-        targets.push(Target {
+        let reset_window = window.retain();
+        targets.push(Pending {
             name,
             view: view(&table),
-            part: table.rectOfRow(TABLE_TARGET_ROW),
+            part: Part::Row,
             press: true,
             escape: false,
             reset: Box::new(move || {
                 reset_table.selectRowIndexes_byExtendingSelection(&NSIndexSet::new(), false);
+                reset_window.makeFirstResponder(None);
             }),
         });
         cases.push(Case {
@@ -766,21 +885,11 @@ fn build(pass: &Pass<'_>) -> Result<(Sheet, Vec<Target>, Tabs, Keep), String> {
     }
     tab_view.selectTabViewItemAtIndex(0);
     content.addSubview(&tab_view);
-    let tabs = Tabs {
-        rects: tab_rects(&tab_view),
-        view: tab_view.retain(),
-    };
-    let tab_part = tabs
-        .rects
-        .get(TAB_TARGET)
-        .copied()
-        .flatten()
-        .ok_or_else(|| "tabViewItemAtPoint: found no rect for the target tab".to_owned())?;
     let reset_tabs = tab_view.retain();
-    targets.push(Target {
+    targets.push(Pending {
         name: "tab",
         view: view(&tab_view),
-        part: tab_part,
+        part: Part::Tab,
         press: true,
         escape: false,
         reset: Box::new(move || reset_tabs.selectTabViewItemAtIndex(0)),
@@ -795,20 +904,10 @@ fn build(pass: &Pass<'_>) -> Result<(Sheet, Vec<Target>, Tabs, Keep), String> {
     }
     split.adjustSubviews();
     content.addSubview(&split);
-    let first = split
-        .subviews()
-        .iter()
-        .next()
-        .map(|v| v.frame())
-        .ok_or_else(|| "the split view has no subview".to_owned())?;
-    let thickness = split.dividerThickness();
-    targets.push(Target {
+    targets.push(Pending {
         name: "split_divider",
         view: view(&split),
-        part: NSRect::new(
-            NSPoint::new(first.origin.x + first.size.width, 0.0),
-            NSSize::new(thickness, split.bounds().size.height),
-        ),
+        part: Part::Divider,
         press: false,
         escape: false,
         reset: Box::new(|| {}),
@@ -818,10 +917,10 @@ fn build(pass: &Pass<'_>) -> Result<(Sheet, Vec<Target>, Tabs, Keep), String> {
     card.setBoxType(NSBoxType::Primary);
     card.setTitlePosition(NSTitlePosition::NoTitle);
     content.addSubview(&card);
-    targets.push(Target {
+    targets.push(Pending {
         name: "box",
         view: view(&card),
-        part: card.bounds(),
+        part: Part::Bounds,
         press: false,
         escape: false,
         reset: Box::new(|| {}),
@@ -843,10 +942,10 @@ fn build(pass: &Pass<'_>) -> Result<(Sheet, Vec<Target>, Tabs, Keep), String> {
         NSToolbar::initWithIdentifier(NSToolbar::alloc(mtm), &ns("NativeThemeOsProbeControls"));
     toolbar.setDelegate(Some(ProtocolObject::from_ref(&*delegate)));
     window.setToolbar(Some(&toolbar));
-    targets.push(Target {
+    targets.push(Pending {
         name: "toolbar_button",
         view: view(&toolbar_button),
-        part: toolbar_button.bounds(),
+        part: Part::Bounds,
         press: true,
         escape: false,
         reset: Box::new(|| {}),
@@ -959,11 +1058,11 @@ fn build(pass: &Pass<'_>) -> Result<(Sheet, Vec<Target>, Tabs, Keep), String> {
     Ok((
         sheet,
         targets,
-        tabs,
         Keep {
             _sources: sources,
+            tables,
             _delegate: delegate,
-            slider: slider.retain(),
+            tab_view,
             disclosure: disclosure.retain(),
         },
     ))
@@ -1095,7 +1194,7 @@ fn tabs_table(tabs: &Tabs, frame: NSSize) -> Table {
 
 fn method_text() -> String {
     format!(
-        "one titled NSWindow ({} x {} pt content from {}, empty title) holding the button pass's backdrop box and, at the regular control size with systemFontOfSize: of systemFontSizeForControlSize:, sized to fit and centred in rows {ROW_STEP} pt apart from the content's top: row 0 a check box off and one on (title \"{CHECK_TITLE}\"), a disclosure button (titled \"{DISCLOSURE_TITLE}\", sized to fit, then widened to {DISCLOSURE_WIDTH} pt so its whole title is drawn; targets.disclosure: title_rect_xywh, the cell's titleRectForBounds:, title_size_wh, the attributed title's size) and a push disclosure button, both push-on-push-off and off, and a push button (\"{TITLE}\"); row 1 a pop-up button ({POPUP_ITEMS:?}, the first selected), an editable bezeled text field (\"{FIELD_TEXT}\"), a segmented control ({SEGMENTS:?}, each {SEGMENT_WIDTH} pt wide, segment 0 selected) and a switch, off; row 2 a horizontal slider, 0 to {} at {SLIDER_VALUE}, {SLIDER_WIDTH} pt wide; below them two view-based tables of {TABLE_ROWS} rows (one column {TABLE_COLUMN_WIDTH} pt, no header, each cell a label \"{ROW_TEXT}\", no row selected) in scroll views at {} (default style) and {} (NSTableViewStyleSourceList), an NSTabView at {} with tabs {TABS:?} (the first selected, its items without views), a vertical NSSplitView at {} with two empty panes, and an NSBox (NSBoxPrimary, no title) at {}; the window's NSToolbar holds one item whose view is an NSButton (NSBezelStyleToolbar, \"{TITLE}\"); the window made key as a button sheet's; per appearance: normal (the cursor parked right of the window), highlighted (highlight: YES on every NSButton, the pop-up button among them: each cell highlighted and the control redrawn, the pop-up's menu not opened), then per target the cursor moved to the centre of the target's part as the button pass's hovered state moves it, captured over every backdrop (hovered-<target>), and per pressed target, per backdrop, the cursor moved there and a real mouse-down captured during the press as the button pass's clicked state takes it (clicked-<target>[-over-<backdrop>].png; the pop-up's mouse-up followed by an Escape), the control set back after each press (targets: their parts' rects; the table rows: rectOfRow: {TABLE_TARGET_ROW}; the segment: the middle third; the slider: knobRectFlipped:, read again once the window is shown and settled (part_at_build_xywh: the read at build, before the slider's final layout); the disclosure button: from its left edge to the end of its title, titleRectForBounds:'s origin plus the attributed title's width; the tab: tab {TAB_TARGET}'s rect from the tabs table; the split divider: from the first pane's right edge, dividerThickness wide); each layer is solved from the black and white captures as the button pass's (layer_method); diff_from_normal compares a state's capture over the window's background with the normal one inside the target's view frame grown by {DIFF_MARGIN} pt",
+        "one titled NSWindow ({} x {} pt content from {}, empty title) holding the button pass's backdrop box and, at the regular control size with systemFontOfSize: of systemFontSizeForControlSize:, sized to fit and centred in rows {ROW_STEP} pt apart from the content's top: row 0 a check box off and one on (title \"{CHECK_TITLE}\"), a disclosure button (titled \"{DISCLOSURE_TITLE}\", sized to fit, then widened to {DISCLOSURE_WIDTH} pt so its whole title is drawn; targets.disclosure: title_rect_xywh, the cell's titleRectForBounds:, title_size_wh, the attributed title's size) and a push disclosure button, both push-on-push-off and off, and a push button (\"{TITLE}\"); row 1 a pop-up button ({POPUP_ITEMS:?}, the first selected), an editable bezeled text field (\"{FIELD_TEXT}\"), a segmented control ({SEGMENTS:?}, each {SEGMENT_WIDTH} pt wide, segment 0 selected) and, in the fifth column, a switch, off; row 2 a horizontal slider, 0 to {} at {SLIDER_VALUE}, {SLIDER_WIDTH} pt wide; below them two view-based tables of {TABLE_ROWS} rows (one column {TABLE_COLUMN_WIDTH} pt, no header, each cell a label \"{ROW_TEXT}\", no row selected) in scroll views at {} (default style) and {} (NSTableViewStyleSourceList), an NSTabView at {} with tabs {TABS:?} (the first selected, its items without views), a vertical NSSplitView at {} with two empty panes, and an NSBox (NSBoxPrimary, no title) at {}; the window's NSToolbar holds one item whose view is an NSButton (NSBezelStyleToolbar, \"{TITLE}\"); the window made key as a button sheet's; per appearance: normal (the cursor parked right of the window), highlighted (highlight: YES on every NSButton, the pop-up button among them: each cell highlighted and the control redrawn, the pop-up's menu not opened), then per target the cursor moved to the centre of the target's part as the button pass's hovered state moves it, captured over every backdrop (hovered-<target>), and per pressed target, per backdrop, the cursor moved there and a real mouse-down captured during the press as the button pass's clicked state takes it (clicked-<target>[-over-<backdrop>].png; the pop-up's mouse-up followed by an Escape), the control set back after each press (targets: their parts' rects, each read once the window is shown and settled, the cases' reads too; a part that is empty or does not lie within its view's bounds is the target's error and the target is neither hovered nor pressed; over_backdrop: whether the part lies within the backdrop box, where not (the toolbar's) its layer is the composite over what lies behind it; the table rows: rectOfRow: {TABLE_TARGET_ROW}; the segment: the middle third; the slider: knobRectFlipped:; the disclosure button: from its left edge to the end of its title, titleRectForBounds:'s origin plus the attributed title's width; the tab: tab {TAB_TARGET}'s rect from the tabs table; the split divider: from the first pane's right edge, dividerThickness wide); each layer is solved from the black and white captures as the button pass's (layer_method); diff_from_normal compares a state's capture over the window's background with the normal one inside the target's view frame grown by {DIFF_MARGIN} pt",
         CONTROLS_CONTENT.width,
         CONTROLS_CONTENT.height,
         point_text(CONTROLS_ORIGIN),
