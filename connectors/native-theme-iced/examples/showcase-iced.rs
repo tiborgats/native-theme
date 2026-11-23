@@ -5516,44 +5516,72 @@ fn title_padding(m: &ResolvedMenuTheme, rows: Padding) -> Padding {
 }
 
 /// A tab of the page and inspector tab rows, as the model's tab
-/// (platform-facts §2.11): `tab.background_color` and `tab.font.color` at
-/// rest; `tab.active_background` and `.active_text_color` while it is the
-/// open one; `tab.hover_background` (the rest fill where the theme states
-/// none) and `.hover_text_color` under the pointer. `tab.border` frames the
-/// open tab only, rounding its top corners, as `styles::aw::tab_bar` does
-/// (platform-facts §2.11): the model states no outline for another tab, so
-/// it has none, and square corners.
+/// (platform-facts §2.11): `tab.tab(NONE).fill` and `tab.label(NONE).color`
+/// at rest; `tab.tab(SELECTED).fill` and `tab.label(SELECTED).color` while
+/// it is the open one, in every status; `tab.tab(HOVER).fill` and
+/// `tab.label(HOVER).color` under the pointer and pressed, where a `HOVER`
+/// rule states them. `tab.tab(SELECTED)`'s stroke frames the open tab only,
+/// composited over its fill as the stroke's alignment lays it
+/// ([`next_edge`]), and its corners round the open tab's top corners, as
+/// `styles::aw::tab_bar` frames it (spec §5, `tab.border`: the selected
+/// tab's stroke and corners); another tab has no outline and square
+/// corners. Each property the theme leaves unstated is the rest's, and at
+/// rest iced's own flat button's, `button::text` ([`in_state`]).
 fn tab_style(
-    resolved: &ResolvedTheme,
+    r: &native_theme::next::ResolvedTheme,
     selected: bool,
 ) -> impl Fn(&Theme, button::Status) -> button::Style + use<> {
-    let t = &resolved.tab;
-    let rest = to_color(t.background_color);
-    let label = to_color(t.font.color);
-    let active = to_color(t.active_background);
-    let active_label = to_color(t.active_text_color);
-    let hover = to_color(t.hover_background.unwrap_or(t.background_color));
-    let hover_label = to_color(t.hover_text_color);
-    let border = if selected {
-        iced::Border {
-            color: to_color(t.border.color),
-            width: t.border.line_width,
-            radius: iced::border::Radius::new(0.0).top(t.border.corner_radius),
-        }
+    let t = &r.tab;
+    let open = t.tab(WidgetState::SELECTED);
+    let rest = (
+        iced_next::fill_of(&t.tab(WidgetState::NONE)),
+        iced_next::text_color_of(&t.label(WidgetState::NONE)),
+    );
+    let lit = if selected {
+        (
+            iced_next::fill_of(&open),
+            iced_next::text_color_of(&t.label(WidgetState::SELECTED)),
+        )
     } else {
-        iced::Border::default()
+        (
+            iced_next::state_fill_of(&t.tab(WidgetState::HOVER)),
+            iced_next::state_text_color_of(&t.label(WidgetState::HOVER)),
+        )
     };
-    move |_theme, status| {
-        let (background, text_color) = match status {
-            _ if selected => (active, active_label),
-            button::Status::Hovered | button::Status::Pressed => (hover, hover_label),
-            button::Status::Active | button::Status::Disabled => (rest, label),
+    let edge = selected
+        .then(|| next_edge(&open, lit.0.or(rest.0).unwrap_or(Color::TRANSPARENT)))
+        .flatten();
+    let top = selected.then(|| iced_next::radius_of(&open)).flatten();
+    move |theme, status| {
+        let shown = match status {
+            _ if selected => button::Status::Active,
+            button::Status::Hovered | button::Status::Pressed => button::Status::Hovered,
+            button::Status::Active | button::Status::Disabled => button::Status::Active,
         };
+        let at_rest = button::text(theme, button::Status::Active);
+        let own = button::text(theme, shown);
+        let (fill, text) = if selected || shown == button::Status::Hovered {
+            lit
+        } else {
+            (None, None)
+        };
+        let border = edge.unwrap_or(own.border);
         button::Style {
-            background: Some(iced::Background::Color(background)),
-            text_color,
-            border,
-            ..button::Style::default()
+            background: in_state(
+                fill.map(|fill| Some(iced::Background::Color(fill))),
+                rest.0.map(iced::Background::Color),
+                (at_rest.background, own.background),
+            ),
+            text_color: in_state(
+                text,
+                rest.1.unwrap_or(at_rest.text_color),
+                (at_rest.text_color, own.text_color),
+            ),
+            border: top.map_or(border, |top| iced::Border {
+                radius: iced::border::Radius::new(0.0).top(top),
+                ..border
+            }),
+            ..own
         }
     }
 }
@@ -7123,7 +7151,7 @@ fn tab_button<'a>(
         min,
     ))
     .padding(pad)
-    .style(tab_style(resolved, open))
+    .style(tab_style(state.next_shown(), open))
     .on_press(message);
     native_theme_iced::tab_indicator(resolved, tab, open)
 }
@@ -8999,6 +9027,78 @@ fn ghost_route(
     route.to_owned()
 }
 
+/// The route of a colour leaf `leaf` of a tab [`tab_style`] draws under
+/// `r`: what it draws of the leaf's 0.8.0 home, naming it, or that the home
+/// is unstated and what is drawn in its place. `None` for a leaf it does
+/// not read. The open and closed tab's leaves it does not draw are
+/// [`shown_tab_route`]'s.
+fn tab_route(r: &native_theme::next::ResolvedTheme, leaf: &str) -> Option<String> {
+    let t = &r.tab;
+    let open = t.tab(WidgetState::SELECTED);
+    let route = match leaf {
+        "tab.active_background" if iced_next::fill_of(&open).is_none() => {
+            "not drawn: tab.tab(SELECTED).fill is unstated, so tab_style fills the open tab as \
+             a tab at rest"
+        }
+        "tab.active_background" => {
+            "tab_style: the open tab's background, tab.tab(SELECTED).fill; and \
+             native_theme_iced::tab_flares's flares, where tab.active_outward_corner_radius is \
+             stated"
+        }
+        "tab.active_text_color"
+            if iced_next::text_color_of(&t.label(WidgetState::SELECTED)).is_none() =>
+        {
+            "not drawn: tab.label(SELECTED).color is unstated, so tab_style letters the open tab \
+             as a tab at rest"
+        }
+        "tab.active_text_color" => {
+            "tab_style: the open tab's text colour, tab.label(SELECTED).color"
+        }
+        "tab.background_color" if iced_next::fill_of(&t.tab(WidgetState::NONE)).is_none() => {
+            "not drawn: tab.tab(NONE).fill is unstated, so a tab at rest has iced's own flat \
+             button's fill (button::text), none"
+        }
+        "tab.background_color" => "tab_style: a tab's background at rest, tab.tab(NONE).fill",
+        "tab.hover_background"
+            if iced_next::state_fill_of(&t.tab(WidgetState::HOVER)).is_none() =>
+        {
+            "not drawn: tab.tab(HOVER).fill is unstated; tab_style fills a tab under the pointer \
+             as at rest"
+        }
+        "tab.hover_background" => {
+            "tab_style: a tab's background under the pointer and pressed, tab.tab(HOVER).fill"
+        }
+        "tab.hover_text_color"
+            if iced_next::state_text_color_of(&t.label(WidgetState::HOVER)).is_none() =>
+        {
+            "not drawn: tab.label(HOVER).color is unstated, so a tab's label under the pointer is \
+             iced's own flat button's (button::text)"
+        }
+        "tab.hover_text_color" => {
+            "tab_style: a tab's text colour under the pointer and pressed, tab.label(HOVER).color"
+        }
+        "tab.font.color" if iced_next::text_color_of(&t.label(WidgetState::NONE)).is_none() => {
+            "not drawn: tab.label(NONE).color is unstated, so a tab's label at rest is iced's own \
+             flat button's (button::text)"
+        }
+        "tab.font.color" => "tab_style: a tab's text colour at rest, tab.label(NONE).color",
+        "tab.border.color"
+            if iced_next::stroke_color_of(&open).is_none()
+                || !iced_next::stroke_width_of(&open).is_some_and(|width| width > 0.0) =>
+        {
+            "not drawn: tab.tab(SELECTED).stroke is unstated or none, so the open tab has no \
+             outline"
+        }
+        "tab.border.color" => {
+            "tab_style: the open tab's border colour, tab.tab(SELECTED).stroke.color; and \
+             native_theme_iced::tab_flares's flares, where tab.active_outward_corner_radius is \
+             stated and tab.border.line_width is positive"
+        }
+        _ => return None,
+    };
+    Some(route.to_owned())
+}
+
 /// The route of a window menu's colour leaf `leaf` under `r`, of a title of
 /// the menu bar where `title` ([`menu_title`]), else of a menu's row or
 /// panel ([`menu_row`], [`menu_bar_style`]): what the function draws of
@@ -9301,6 +9401,15 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
             .into_iter()
             .find(|s| field == format!("border.padding_{s}_px"))
     };
+    if table == "tab"
+        && let Some(route) = tab_route(state.next_shown(), leaf)
+    {
+        return if route.starts_with("not drawn") {
+            route
+        } else {
+            format!("iced: {route}")
+        };
+    }
     if (table == "menu" || under("chrome.menu"))
         && let Some(route) = menu_route(state.next_shown(), leaf, under("chrome.menu_bar."))
     {
@@ -9816,20 +9925,7 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         ("tab", "active_outward_corner_radius_px") => {
             "native_theme_iced::tab_flares, over the row".into()
         }
-        ("tab", "active_background") => {
-            "tab_style: the open tab's background; and native_theme_iced::tab_flares's flares, \
-             where tab.active_outward_corner_radius is stated"
-                .into()
-        }
-        ("tab", "active_text_color") => "tab_style: the open tab's text colour".into(),
-        ("tab", "background_color") => "tab_style: a tab's background at rest".into(),
-        ("tab", "hover_background") if resolved.tab.hover_background.is_none() => {
-            "not drawn: unstated; tab_style takes tab.background_color under the pointer".into()
-        }
-        ("tab", "hover_background") => "tab_style: a tab's background under the pointer".into(),
-        ("tab", "hover_text_color") => "tab_style: a tab's text colour under the pointer".into(),
         ("tab", "font") => "the label's size and theme_font".into(),
-        ("tab", "font.color") => "tab_style: a tab's text colour at rest".into(),
         #[cfg(feature = "iced_aw")]
         ("tab", "min_width_px" | "min_height_px") if under("basic.tabs.") => {
             "TabBar::tab_width, tab.min_width or the wider label inside iced_aw's \
@@ -9840,14 +9936,12 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         ("tab", "min_width_px" | "min_height_px") => {
             "at_least(label, ..): the minimum less the padding".into()
         }
-        ("tab", "border.color") => {
-            "tab_style: the open tab's border colour; and native_theme_iced::tab_flares's \
-             flares, where tab.active_outward_corner_radius is stated and \
-             tab.border.line_width is positive"
-                .into()
+        ("tab", "border.corner_radius_px") => {
+            "the open tab's top corners in tab_style, tab.tab(SELECTED).corners".into()
         }
-        ("tab", "border.corner_radius_px") => "the open tab's top corners".into(),
-        ("tab", "border.line_width_px") => "the open tab's border width".into(),
+        ("tab", "border.line_width_px") => {
+            "the open tab's border width in tab_style, tab.tab(SELECTED).stroke.width".into()
+        }
         #[cfg(feature = "iced_aw")]
         ("tab", f) if side(f).is_some() && under("basic.tabs.") => {
             "TabBar::padding, where every side is stated".into()
@@ -23239,6 +23333,7 @@ mod tests {
         ("button::text", "fn ghost_button("),
         ("button::text", "fn menu_row("),
         ("button::text", "fn menu_title("),
+        ("button::text", "fn tab_style("),
     ];
 
     /// Whether the use of `class` at `at` in `source` lies in the body of a
@@ -27550,43 +27645,68 @@ mod tests {
     }
 
     /// The page and inspector tab rows frame the open tab only, with
-    /// `tab.border`, its top corners rounded: the other tabs have no outline
-    /// and square corners, in every status.
+    /// `tab.tab(SELECTED)`'s stroke, as wide as stated (none where
+    /// unstated), its top corners rounded by `tab.tab(SELECTED).corners`:
+    /// the other tabs have no outline and square corners, in every status.
+    /// kde-breeze states a frame; a frame colour stated on the theme
+    /// (#2468ac) outlines the open tab and no other.
     #[test]
-    fn only_the_open_tab_is_framed() {
-        for (preset, is_dark) in [
+    fn only_the_open_tab_is_framed() -> Result<(), String> {
+        let mut failures = Vec::new();
+        for (preset, dark) in [
             ("kde-breeze", false),
             ("kde-breeze", true),
             ("material-3", true),
         ] {
-            let resolved = match native_theme_iced::from_preset(preset, is_dark) {
-                Ok((_, resolved)) => resolved,
-                Err(error) => panic!("{preset}: {error}"),
-            };
-            let b = &resolved.tab.border;
+            let label = format!("{preset} dark {dark}");
+            let state = loaded(preset, dark);
+            let r = state.next_shown();
+            let theme = &state.current_theme;
+            let frame = r.tab.tab(WidgetState::SELECTED);
+            let width = iced_next::stroke_width_of(&frame);
+            let top = iced_next::radius_of(&frame);
+            if preset == "kde-breeze" && !width.is_some_and(|width| width > 0.0) {
+                failures.push(format!("{label}: the open tab's frame is {width:?} wide"));
+            }
+            let marked = with_home(r, "tab.tab(SELECTED).stroke.color", "#2468ac")
+                .ok_or("no patch reaches tab.tab(SELECTED).stroke.color")?;
             for status in [
                 button::Status::Active,
                 button::Status::Hovered,
                 button::Status::Pressed,
                 button::Status::Disabled,
             ] {
-                let open = tab_style(&resolved, true)(&Theme::Light, status).border;
-                assert_eq!(
-                    (open.color, open.width, open.radius),
-                    (
-                        to_color(b.color),
-                        b.line_width,
-                        iced::border::Radius::new(0.0).top(b.corner_radius)
-                    ),
-                    "{preset} {is_dark}: the open tab's frame ({status:?})"
+                let open = tab_style(r, true)(theme, status).border;
+                let square = iced::border::Radius::new(0.0);
+                if !width.map_or(open.width == 0.0, |width| open.width == width)
+                    || open.radius != top.map_or(square, |top| square.top(top))
+                {
+                    failures.push(format!(
+                        "{label}, {status:?}: the open tab's frame {open:?}"
+                    ));
+                }
+                let other = tab_style(r, false)(theme, status).border;
+                if other.width != 0.0 || other.radius != square {
+                    failures.push(format!(
+                        "{label}, {status:?}: another tab's frame {other:?}"
+                    ));
+                }
+                let (open, other) = (
+                    tab_style(&marked, true)(theme, status).border,
+                    tab_style(&marked, false)(theme, status).border,
                 );
-                let other = tab_style(&resolved, false)(&Theme::Light, status).border;
-                assert_eq!(
-                    (other.width, other.radius),
-                    (0.0, iced::border::Radius::new(0.0)),
-                    "{preset} {is_dark}: another tab's frame ({status:?})"
-                );
+                if color_to_hex(open.color) != "#2468ac" || other.width != 0.0 {
+                    failures.push(format!(
+                        "{label}, {status:?}: with a frame colour stated, open {open:?}, \
+                         another {other:?}"
+                    ));
+                }
             }
+        }
+        if failures.is_empty() {
+            Ok(())
+        } else {
+            Err(format!("{failures:#?}"))
         }
     }
 
@@ -28139,15 +28259,21 @@ mod tests {
         "toolbar.button_active_background",
         "toolbar.button_checked_background",
     ];
-    const TAB_COLOURS: &[&str] = &[
-        "tab.background_color",
-        "tab.font.color",
-        "tab.hover_background",
-        "tab.hover_text_color",
-        "tab.active_background",
-        "tab.active_text_color",
-        "tab.border.color",
-    ];
+
+    /// The home of a tab's colour leaf `leaf`, which [`tab_style`] reads:
+    /// `None` for a leaf it does not read.
+    fn tab_home(leaf: &str) -> Option<&'static str> {
+        Some(match leaf {
+            "tab.background_color" => "tab.tab(NONE).fill",
+            "tab.font.color" => "tab.label(NONE).color",
+            "tab.hover_background" => "tab.tab(HOVER).fill",
+            "tab.hover_text_color" => "tab.label(HOVER).color",
+            "tab.active_background" => "tab.tab(SELECTED).fill",
+            "tab.active_text_color" => "tab.label(SELECTED).color",
+            "tab.border.color" => "tab.tab(SELECTED).stroke.color",
+            _ => return None,
+        })
+    }
 
     /// `r` with its colour leaf `leaf` set to a colour no bundled theme
     /// states; `None` where the theme leaves the leaf unstated, so that
@@ -28350,6 +28476,9 @@ mod tests {
                 .map(|open| next_buttons(&theme, &menu_title(r, open)))
                 .join("|"),
             "menu_popup_padding" => format!("{:?}", menu_popup_padding(r)),
+            "tab_style" => [false, true]
+                .map(|selected| next_buttons(&theme, &tab_style(r, selected)))
+                .join("|"),
             "menu_bar_style" => {
                 let style = menu_bar_style(r);
                 AW_STATUSES
@@ -28508,13 +28637,8 @@ mod tests {
 
     /// What the route `route` of a flat button's colour leaf `leaf` gets
     /// wrong under `r`, the 0.8.0 theme shown, the button `selected` or not,
-    /// showing `shows`: a route that says the leaf's home, `home`
-    /// ([`ghost_home`]), is drawn where stating it in two colours in turn
-    /// moves nothing [`ghost_drawn`] draws, or not drawn where it does, or
-    /// that does not name it; one that calls the home unstated where stating
-    /// it does not change the route; and the same of [`ghost_route`]'s
-    /// route on `r` with the home stated, so that a home `r` leaves
-    /// unstated is tested too.
+    /// showing `shows`, its home `home` ([`ghost_home`]): [`ghost_route`]'s
+    /// route held to what [`ghost_drawn`] draws ([`home_route_faults`]).
     fn flat_route_faults(
         r: &native_theme::next::ResolvedTheme,
         leaf: &str,
@@ -28524,16 +28648,40 @@ mod tests {
         shows: Shows,
     ) -> Vec<String> {
         let (icon, os_icon) = (shows != Shows::Label, shows == Shows::OsIcon);
+        home_route_faults(
+            r,
+            home,
+            route,
+            |patched| ghost_route(patched, leaf, selected, icon, os_icon),
+            |r| ghost_drawn(r, selected, shows),
+        )
+    }
+
+    /// What the route `route` of a colour leaf whose 0.8.0 home is `home`
+    /// gets wrong under `r`, the 0.8.0 theme shown, where `route_on` routes
+    /// the leaf on a theme and `drawn` draws what reads it: a route that says
+    /// the home is drawn where stating it in two colours in turn moves
+    /// nothing `drawn` draws, or not drawn where it does, or that does not
+    /// name it; one that calls the home unstated where stating it does not
+    /// change the route; and the same of `route_on`'s route on `r` with the
+    /// home stated, so that a home `r` leaves unstated is tested too.
+    fn home_route_faults(
+        r: &native_theme::next::ResolvedTheme,
+        home: &str,
+        route: &str,
+        route_on: impl Fn(&native_theme::next::ResolvedTheme) -> String,
+        drawn: impl Fn(&native_theme::next::ResolvedTheme) -> String,
+    ) -> Vec<String> {
         let Some(patched) = with_home(r, home, "#13579b") else {
             return vec![format!("no patch reaches {home}")];
         };
-        let stated = ghost_route(&patched, leaf, selected, icon, os_icon);
+        let stated = route_on(&patched);
         let check = |theme: &native_theme::next::ResolvedTheme, route: &str, on: &str| {
-            let moved = home_moves(theme, home, |r| ghost_drawn(r, selected, shows));
+            let moved = home_moves(theme, home, &drawn);
             let drawn = !route.starts_with("not drawn");
             let mut faults = Vec::new();
             if moved != Some(drawn) {
-                faults.push(format!("{on}: the flat button's drawing, \"{route}\""));
+                faults.push(format!("{on}: the drawing, \"{route}\""));
             }
             if drawn && !route.contains(home) {
                 faults.push(format!("{on}: \"{route}\" names no {home}"));
@@ -28582,8 +28730,11 @@ mod tests {
 
     /// What `tab_style` draws of a tab under `r`, `open` or not, in each
     /// status a pointer can give it, as text.
-    fn tab_drawn(r: &ResolvedTheme, open: bool) -> String {
-        let theme = native_theme_iced::to_theme(r, "splice");
+    fn tab_drawn(r: &native_theme::next::ResolvedTheme, open: bool) -> String {
+        let theme = match native_theme_iced::next::to_theme(r) {
+            Ok(theme) => theme,
+            Err(error) => return format!("no iced theme: {error:?}"),
+        };
         let style = tab_style(r, open);
         [
             button::Status::Active,
@@ -28614,11 +28765,12 @@ mod tests {
     /// Which tab of each listed row `state` draws open, by id: the rows
     /// drawn by the functions the window draws them with
     /// ([`basic_tab_row`], [`page_tabs`], [`inspector_tabs`];
-    /// [`tab_rows_frame`]) with `tab.active_background` spliced to a colour
-    /// of its own, which `tab_style` and `styles::aw::tab_bar` fill the open
-    /// tab with: a tab is open where most of its pixels are that colour. Read
-    /// from the drawing, not from the state, so a row that gives a tab the
-    /// wrong `open` is seen.
+    /// [`tab_rows_frame`]) with the open tab's fill set to a colour of its
+    /// own, the 0.8.0 theme's `tab.tab(SELECTED).fill`, which `tab_style`
+    /// fills the open tab with, and the 0.7.2 theme's `tab.active_background`,
+    /// which `styles::aw::tab_bar` does: a tab is open where most of its
+    /// pixels are that colour. Read from the drawing, not from the state, so
+    /// a row that gives a tab the wrong `open` is seen.
     fn drawn_open(state: &mut State) -> BTreeMap<&'static str, bool> {
         let mark: native_theme::color::Rgba = match "#13579b".parse() {
             Ok(colour) => colour,
@@ -28626,9 +28778,16 @@ mod tests {
         };
         let want = to_color(mark).into_rgba8();
         let theirs = state.current_resolved.tab.active_background;
+        let kept = (state.next_resolved.clone(), state.next_inactive.clone());
         state.current_resolved.tab.active_background = mark;
+        for next in [&mut state.next_resolved, &mut state.next_inactive] {
+            if let Some(marked) = with_home(next, "tab.tab(SELECTED).fill", "#13579b") {
+                *next = marked;
+            }
+        }
         let (image, laid, scale) = tab_rows_frame(state);
         state.current_resolved.tab.active_background = theirs;
+        (state.next_resolved, state.next_inactive) = kept;
         let mut open = BTreeMap::new();
         for tab in TAB_ROWS.into_iter().flatten() {
             let Some(rect) = laid.get(tab) else {
@@ -28732,10 +28891,23 @@ mod tests {
                 if route.contains(other) {
                     fault("iced_aw draws the tab in another status");
                 }
-            } else if TAB_COLOURS.contains(&leaf)
-                && moves(r, leaf, |r| tab_drawn(r, open)) == not_drawn
+            } else if let Some(home) = tab_home(leaf)
+                // An open tab's rest is patched by a rule every query
+                // matches, which restates the open tab too: only a closed
+                // tab is held to what that patch moves.
+                && !(open && home.contains("(NONE)"))
             {
-                fault("tab_style's drawing");
+                let route_on = |patched: &native_theme::next::ResolvedTheme| {
+                    shown_tab_route(id, leaf, open).map_or_else(
+                        || tab_route(patched, leaf).unwrap_or_default(),
+                        str::to_owned,
+                    )
+                };
+                for what in home_route_faults(state.next_shown(), home, route, route_on, |r| {
+                    tab_drawn(r, open)
+                }) {
+                    fault(&format!("tab_style: {what}"));
+                }
             }
         }
         if element.name == "Spinner" && state.basic_spinner.is_indicator() {
@@ -29623,9 +29795,12 @@ mod tests {
     }
 
     /// M9-073: the Basic page's tabs are the theme's tabs in either build,
-    /// as the page tab strip's are: under kde-breeze light, splicing
-    /// `tab.active_background` fills the open tab in it, splicing
-    /// `tab.font.color` moves the other tab's label, and splicing
+    /// as the page tab strip's are: under kde-breeze light, the open tab's
+    /// fill set apart (the 0.8.0 theme's `tab.tab(SELECTED).fill`, which
+    /// `tab_style` reads, and the 0.7.2 theme's `tab.active_background`,
+    /// which `styles::aw::tab_bar` reads) fills the open tab in it, a tab's
+    /// label colour set apart (`tab.label(NONE).color`, `tab.font.color`)
+    /// moves the other tab's label, and splicing
     /// `tab.min_width` sizes the other tab to it; a click on the second tab
     /// opens it, which then takes the open tab's fill.
     #[test]
@@ -29663,7 +29838,16 @@ mod tests {
                 .count();
             (inked, pixels.len())
         };
+        let next_theirs = (state.next_resolved.clone(), state.next_inactive.clone());
+        let mark = |state: &mut State, home: &str| {
+            for next in [&mut state.next_resolved, &mut state.next_inactive] {
+                if let Some(marked) = with_home(next, home, "#13579b") {
+                    *next = marked;
+                }
+            }
+        };
         state.current_resolved.tab.active_background = fill;
+        mark(&mut state, "tab.tab(SELECTED).fill");
         let (image, rects, _) = basic_frame(&state);
         let (inked, of) = filled(&image, rect(&rects, "basic.tabs.one"));
         assert!(
@@ -29682,7 +29866,9 @@ mod tests {
         let _ = drive(&mut state, |ui| click_last_text(ui, "One"));
 
         state.current_resolved = theirs.clone();
+        (state.next_resolved, state.next_inactive) = next_theirs.clone();
         state.current_resolved.tab.font.color = fill;
+        mark(&mut state, "tab.label(NONE).color");
         let (image, _, _) = basic_frame(&state);
         assert_ne!(
             pixels_in(&image, two, scale),
@@ -29691,6 +29877,7 @@ mod tests {
         );
 
         state.current_resolved = theirs;
+        (state.next_resolved, state.next_inactive) = next_theirs;
         let wide = two.width.max(one.width) + 37.0;
         state.current_resolved.tab.min_width = wide;
         let (_, rects, _) = basic_frame(&state);
@@ -32346,9 +32533,6 @@ mod tests {
         Some(match function {
             "styles::toolbar_button" => [false, true]
                 .map(|checked| buttons(&styles::toolbar_button(r, checked)))
-                .join("|"),
-            "tab_style" => [false, true]
-                .map(|selected| buttons(&tab_style(r, selected)))
                 .join("|"),
             "list_row" => [false, true]
                 .map(|selected| {
