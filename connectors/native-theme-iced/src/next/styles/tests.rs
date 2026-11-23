@@ -1446,3 +1446,64 @@ fn an_unstated_checked_fill_is_the_primary_buttons() -> TestResult {
     }
     Ok(())
 }
+
+/// A stated checked fill the theme states no checked label for is lettered
+/// in the label at rest, not in a stated pressed label (spec §10, rule 0a:
+/// no chain of the connector's own), on the toggle and the toolbar button.
+#[test]
+fn a_stated_checked_fill_without_a_checked_label_is_lettered_at_rest() -> TestResult {
+    use iced_widget::button::Status;
+    let patch = ThemePatch::new()
+        .button(
+            ButtonRule::new()
+                .states(WidgetState::CHECKED)
+                .body(PartPatch::new().fill(Paint::Solid(DISTINCT))),
+        )
+        .button(
+            ButtonRule::new()
+                .states(WidgetState::PRESSED)
+                .label(TextPatch::new().color(LABEL)),
+        )
+        .toolbar(
+            ToolbarRule::new()
+                .states(WidgetState::CHECKED)
+                .button(PartPatch::new().fill(Paint::Solid(DISTINCT))),
+        );
+    let mut covered = 0;
+    for (preset, r) in every_preset_with(&patch) {
+        let pressed = r.button.label(WidgetState::PRESSED);
+        assert!(pressed.from_state.contains(TextStated::COLOR), "{preset:?}");
+        assert_eq!(
+            text_color(&pressed, "pressed label")?,
+            to_color(LABEL),
+            "{preset:?}"
+        );
+        if r.button
+            .label(WidgetState::CHECKED)
+            .from_state
+            .contains(TextStated::COLOR)
+        {
+            continue;
+        }
+        covered += 1;
+        let at_rest = text_color(&r.button.label(WidgetState::NONE), "label")?;
+        assert_ne!(at_rest, to_color(LABEL), "{preset:?}");
+        let theme = to_theme(&r)?;
+        let toggle = super::button_toggle(&r, true)?;
+        let toolbar = super::toolbar_button(&r, true)?;
+        for status in [Status::Active, Status::Hovered, Status::Pressed] {
+            assert_eq!(
+                toggle(&theme, status).text_color,
+                at_rest,
+                "{preset:?} {status:?}"
+            );
+            assert_eq!(
+                toolbar(&theme, status).text_color,
+                at_rest,
+                "{preset:?} {status:?}"
+            );
+        }
+    }
+    assert!(covered > 0, "a theme with no checked label covered");
+    Ok(())
+}

@@ -456,7 +456,9 @@ pub(crate) struct ButtonSource {
     /// Where the theme states no checked fill, whether a checked button is
     /// drawn in the primary button's fill and label in the same status, by
     /// which iced marks a chosen button (the 0.8.0 model: spec §10, rule
-    /// 0a), else in the pressed pair (0.7.2's chain).
+    /// 0a), else in the pressed pair (0.7.2's chain); and whether a stated
+    /// checked fill the theme states no checked label for is lettered in
+    /// the label at rest (0.8.0), else in the pressed one (0.7.2).
     pub checked_primary: bool,
     pub label: Color,
     pub hover_label: Option<Color>,
@@ -732,16 +734,17 @@ pub(crate) fn button_toggle_from(
         // the pressed button's, each as [`in_state`] gives it where the
         // theme states no pressed one either. A checked label the theme
         // states is laid over either. A stated checked fill is lettered in
-        // the checked label, else the pressed one the theme states, else
-        // the label at rest.
+        // the checked label, else, on the 0.8.0 model, the label at rest
+        // (spec §10, rule 0a: no chain of the connector's own); on 0.7.2's,
+        // the pressed one the theme states, else the label at rest.
         let (fill, label) = match source.checked_background {
-            Some(fill) => (
-                fill,
-                source
-                    .checked_label
-                    .or(source.active_label)
-                    .unwrap_or(source.label),
-            ),
+            Some(fill) => {
+                let pressed = source.active_label.filter(|_| !source.checked_primary);
+                (
+                    fill,
+                    source.checked_label.or(pressed).unwrap_or(source.label),
+                )
+            }
             None => {
                 let shown = if source.checked_primary {
                     let at = match status {
@@ -953,7 +956,10 @@ pub(crate) fn toolbar_button_from(
         // A checked fill the theme does not state is, on the 0.8.0 model,
         // the primary button's in the same status, fill and label, a
         // checked label the theme states laid over it; on 0.7.2's, the
-        // pressed toolbar button's.
+        // pressed toolbar button's. A stated checked fill is lettered in the
+        // checked label, else, on the 0.8.0 model, the label at rest (spec
+        // §10, rule 0a: no chain of the connector's own); on 0.7.2's, the
+        // pressed one.
         let (fill, checked_label) = match (checked_fill, status) {
             (None, Status::Active | Status::Hovered | Status::Pressed) if checked_primary => {
                 let shown = primary(theme, status);
@@ -962,6 +968,7 @@ pub(crate) fn toolbar_button_from(
                     checked_label.unwrap_or(shown.text_color),
                 )
             }
+            (Some(fill), _) if checked_primary => (fill, checked_label.unwrap_or(label)),
             (Some(fill), _) => (fill, checked_label.unwrap_or(pressed_label)),
             (None, _) => (pressed, pressed_label),
         };

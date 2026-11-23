@@ -155,8 +155,9 @@ pub fn button(
 /// so a checked toggle whose theme states no checked fill
 /// (`button.body(CHECKED)`) is drawn in [`button_primary`]'s fill and label
 /// in the same status, a stated `button.label(CHECKED)` laid over; its
-/// outline, corners and shadow are the unchecked button's (spec §10, rule
-/// 0a).
+/// outline, corners and shadow are the unchecked button's. A stated checked
+/// fill is lettered in `button.label(CHECKED)` where stated, else in the
+/// label at rest (spec §10, rule 0a).
 ///
 /// # Errors
 ///
@@ -173,8 +174,8 @@ pub fn button_toggle(
 /// [`crate::styles::toolbar_button`]: a checked button whose theme states
 /// no checked fill (`toolbar.button(CHECKED)`) is drawn in
 /// [`button_primary`]'s fill and label in the same status, a stated
-/// `button.label(CHECKED)` laid over, as [`button_toggle`] (spec §10, rule
-/// 0a).
+/// `button.label(CHECKED)` laid over, and a stated checked fill lettered in
+/// it, else in the label at rest, as [`button_toggle`] (spec §10, rule 0a).
 ///
 /// # Errors
 ///
