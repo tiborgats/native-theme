@@ -6,7 +6,9 @@ use native_theme::next::{ResolvedTheme as NextTheme, WidgetState};
 #[cfg(feature = "widgets")]
 use native_theme::theme::TabIndicatorSide;
 use native_theme_gpui::ResolvedTheme;
-use native_theme_gpui::next::{fill_of, padding_of, state_fill_of, text_color_of};
+use native_theme_gpui::next::{
+    fill_of, padding_of, state_fill_of, state_text_color_of, text_color_of,
+};
 #[cfg(feature = "widgets")]
 use native_theme_gpui::widgets::{SeparatorLook, TabLook};
 
@@ -1233,19 +1235,13 @@ pub(crate) fn segmented_lines(
             "none, as upstream's segmented TabBar draws none: the theme states no segmented_control.track(NONE).stroke gpui can draw (tab/tab_bar.rs, TabBar::render); the track is rounded by {radius}"
         ),
     };
-    let colour = match s.separator {
-        Some(_) => "segmented_control.separator(NONE).fill",
-        None => {
-            "upstream's border, the colour its Separator draws a line in, as the theme states no segmented_control.separator(NONE).fill (separator.rs, Separator::render)"
-        }
-    };
-    let separators = if s.separator_width > 0.0 {
-        format!(
-            "segmented_control.separator_width, {}px, in {colour} between segments",
-            px_text(s.separator_width)
-        )
-    } else {
-        "none: segmented_control.separator_width is 0".to_string()
+    let separators = match s.separator_line() {
+        None => "none, as upstream's segmented TabBar draws no line between its segments: the theme states no segmented_control.separator(NONE).fill (tab/tab_bar.rs, TabBar::render)".to_string(),
+        Some((_, width)) if width > 0.0 => format!(
+            "segmented_control.separator_width, {}px, in segmented_control.separator(NONE).fill between segments",
+            px_text(width)
+        ),
+        Some(_) => "none: segmented_control.separator_width is 0".to_string(),
     };
     [size, font, border, separators]
 }
@@ -1273,20 +1269,22 @@ pub fn segmented(
                 .unwrap_or_else(|| claim("selected segment", "background", t.background, "showcase"));
             let selected_label = stated_claim("selected label", "segmented_control.label(SELECTED).color", text_color_of(&r.segmented_control.label(WidgetState::SELECTED)), "showcase")
                 .unwrap_or_else(|| claim("selected label", "tab_active_foreground", t.tab_active_foreground, "showcase"));
-            // The line left of every segment but the first.
-            let lines = (labels.len() > 1).then_some(s.separator_width);
-            let separators = match s.separator {
-                Some(_) => edge_claim("separators", "segmented_control.separator(NONE).fill", fill_of(&r.segmented_control.separator(WidgetState::NONE)), lines, "showcase"),
-                None => edge_claim("separators", "border", Some(t.border), lines, "showcase"),
-            };
+            let hovered_label = stated_claim("hovered label", "segmented_control.label(HOVER).color", state_text_color_of(&r.segmented_control.label(WidgetState::HOVER)), "showcase")
+                .unwrap_or_else(|| claim("hovered label", "tab_active_foreground", t.tab_active_foreground, "showcase"));
+            // The line left of every segment but the first, where one is drawn.
+            let separators = s.separator_line().map(|(_, width)| {
+                let lines = (labels.len() > 1).then_some(width);
+                edge_claim("separators", "segmented_control.separator(NONE).fill", fill_of(&r.segmented_control.separator(WidgetState::NONE)), lines, "showcase")
+            });
             let info = WidgetInfo::new("Segmented control")
                 .variant("drawn by the showcase")
                 .color(track)
                 .color(label)
                 .color(selected_fill)
                 .color(selected_label)
+                .color(hovered_label)
                 .colors(edge_claim("border", "segmented_control.track(NONE).stroke.color", stroke_color_of(&r.segmented_control.track(WidgetState::NONE)), s.frame_width(), "showcase"))
-                .colors(separators);
+                .colors(separators.flatten());
             let info = match stated_claim("hovered segment", "segmented_control.segment(HOVER).fill", state_fill_of(&r.segmented_control.segment(WidgetState::HOVER)), "showcase") {
                 Some(hover) => info.color(hover),
                 None => info.not_themeable("hover", "none: no rule states segmented_control.segment(HOVER).fill, and upstream's unselected segment keeps a transparent fill under the pointer (tab/tab.rs, TabVariant::hovered)"),

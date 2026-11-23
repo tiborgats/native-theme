@@ -2026,7 +2026,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "segmented_control.border.color",
-        "gpui: segmented_control.track(NONE).stroke.color, the frame, none where unstated as upstream's; the lines between segments in segmented_control.separator(NONE).fill, upstream's border where unstated (demo::segmented, SegmentedLook)",
+        "gpui: segmented_control.track(NONE).stroke.color, the frame, none where unstated as upstream's; the lines between segments in segmented_control.separator(NONE).fill, none where unstated, as upstream's segmented TabBar draws none (demo::segmented, SegmentedLook)",
     ),
     (
         "",
@@ -2081,7 +2081,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "segmented_control.separator_width_px",
-        "gpui: segmented_control.separator_width, the line left of each segment after the first (demo::segmented)",
+        "gpui: segmented_control.separator_width, the line left of each segment after the first, where segmented_control.separator(NONE).fill states its colour (demo::segmented)",
     ),
     // --- separator ------------------------------------------------------------------
     (

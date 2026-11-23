@@ -18833,8 +18833,8 @@ fn the_segmented_controls_padding_line_names_each_side() {
 /// corners, frame and separator colour, which no bundled preset leaves
 /// unstated, the theme-drawn control's info lines name upstream's own for
 /// each (spec §10, rule 0): `SEGMENT_HEIGHT`, `text_sm`, `radius_lg`, no
-/// frame and the `border` its Separator draws in; and where the theme states
-/// them, the stated values instead.
+/// frame and no line between segments, as upstream's segmented `TabBar`
+/// draws none; and where the theme states them, the stated values instead.
 #[test]
 fn a_segmented_control_the_theme_leaves_unstated_names_upstreams_own() {
     use crate::demo::SegmentedLook;
@@ -18853,6 +18853,7 @@ fn a_segmented_control_the_theme_leaves_unstated_names_upstreams_own() {
         font: native_theme::next::TextStyle::default(),
         text: None,
         selected_text: None,
+        hover_text: None,
         separator: None,
         separator_width: 1.,
     };
@@ -18884,7 +18885,11 @@ fn a_segmented_control_the_theme_leaves_unstated_names_upstreams_own() {
             "none, as upstream's segmented TabBar draws none",
         ),
         (&unstated, "border", "upstream's radius_lg"),
-        (&unstated, "separators", "upstream's border"),
+        (
+            &unstated,
+            "separators",
+            "none, as upstream's segmented TabBar draws no line",
+        ),
         (
             &stated,
             "size",
@@ -18913,6 +18918,80 @@ fn a_segmented_control_the_theme_leaves_unstated_names_upstreams_own() {
             "the {what} line {line:?} does not say {want:?}"
         );
     }
+}
+
+/// The theme-drawn segmented control's hovered label and its lines between
+/// segments: kde-breeze states neither `segmented_control.label(HOVER).color`
+/// nor `separator(NONE).fill`, so its info claims upstream's own hovered
+/// label, `tab_active_foreground` (tab/tab.rs, `TabVariant::hovered`), and
+/// no separator colour, upstream's segmented `TabBar` drawing no line; with
+/// both patched to `colors.window.border`, it claims the stated homes.
+#[test]
+fn a_segmented_controls_hovered_label_and_separators_follow_what_the_theme_states()
+-> Result<(), String> {
+    use native_theme::next::{
+        Paint, PartPatch, SegmentedControlRule, TextPatch, ThemePatch, WidgetState,
+    };
+    let mut r = native_theme::next::Theme::preset(native_theme::next::Preset::KdeBreeze)
+        .resolve(&native_theme::next::ThemeContext::default());
+    // kde-breeze's gpui theme gives tab_active_foreground its
+    // tab_foreground, so it is set to the theme's border, which differs, to
+    // tell the two apart.
+    let mut t = native_theme_gpui::next::to_theme(&r).map_err(|e| e.to_string())?;
+    t.tab_active_foreground = t.border;
+    assert_ne!(
+        t.tab_active_foreground, t.tab_foreground,
+        "the border is the tab_foreground"
+    );
+    let labels = &crate::pages::basic::BASIC_SEGMENTS;
+    let claimed = |r: &native_theme::next::ResolvedTheme, role: &str| {
+        crate::info::layout::segmented(&t, labels, 0, Some(r))
+            .colors
+            .iter()
+            .find(|c| c.role == role)
+            .map(|c| (c.field, c.value))
+    };
+    assert!(
+        native_theme_gpui::next::state_text_color_of(
+            &r.segmented_control.label(WidgetState::HOVER)
+        )
+        .is_none()
+            && native_theme_gpui::next::fill_of(&r.segmented_control.separator(WidgetState::NONE))
+                .is_none(),
+        "kde-breeze now states segmented_control.label(HOVER).color or separator(NONE).fill"
+    );
+    assert_eq!(
+        claimed(&r, "hovered label"),
+        Some(("tab_active_foreground", t.tab_active_foreground))
+    );
+    assert_eq!(claimed(&r, "separators"), None);
+    let border = r
+        .colors
+        .window
+        .border
+        .ok_or("kde-breeze states no colors.window.border")?;
+    r.apply_patch(
+        &ThemePatch::new().segmented_control(
+            SegmentedControlRule::new()
+                .states(WidgetState::HOVER)
+                .label(TextPatch::new().color(border)),
+        ),
+    );
+    r.apply_patch(&ThemePatch::new().segmented_control(
+        SegmentedControlRule::new().separator(PartPatch::new().fill(Paint::Solid(border))),
+    ));
+    let stated =
+        native_theme_gpui::next::fill_of(&r.segmented_control.separator(WidgetState::NONE))
+            .ok_or("the patched separator(NONE).fill is not one colour")?;
+    assert_eq!(
+        claimed(&r, "hovered label"),
+        Some(("segmented_control.label(HOVER).color", stated))
+    );
+    assert_eq!(
+        claimed(&r, "separators"),
+        Some(("segmented_control.separator(NONE).fill", stated))
+    );
+    Ok(())
 }
 
 /// `--open-menu theme` opens the Theme menu, so the layout dump holds its

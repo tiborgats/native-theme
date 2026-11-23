@@ -2782,11 +2782,17 @@ pub(crate) struct SegmentedLook {
     /// `segmented_control.label(SELECTED).color`; else upstream's
     /// `tab_active_foreground` (tab/tab.rs, `TabVariant::selected`).
     pub selected_text: Option<Hsla>,
+    /// `segmented_control.label(HOVER).color` where a rule states it for
+    /// `HOVER`, an unselected segment's label under the pointer; else
+    /// upstream's `tab_active_foreground` (tab/tab.rs, `TabVariant::hovered`).
+    pub hover_text: Option<Hsla>,
     /// `segmented_control.separator(NONE).fill`, the line before each
-    /// segment after the first; else upstream's `border`, the colour its
-    /// `Separator` draws a line in (separator.rs, `Separator::render`).
+    /// segment after the first; else no line, as upstream's segmented
+    /// `TabBar` draws none between its segments (tab/tab_bar.rs,
+    /// `TabBar::render`).
     pub separator: Option<Hsla>,
-    /// `segmented_control.separator_width`, the line's width.
+    /// `segmented_control.separator_width`, the line's width where a line
+    /// is drawn.
     pub separator_width: f32,
 }
 
@@ -2807,6 +2813,7 @@ impl SegmentedLook {
             font: s.label(WidgetState::NONE),
             text: next::text_color_of(&s.label(WidgetState::NONE)),
             selected_text: next::text_color_of(&s.label(WidgetState::SELECTED)),
+            hover_text: next::state_text_color_of(&s.label(WidgetState::HOVER)),
             separator: next::fill_of(&s.separator(WidgetState::NONE)),
             separator_width: s.separator_width,
         }
@@ -2815,6 +2822,13 @@ impl SegmentedLook {
     /// The frame's line width; none where no frame is drawn.
     pub(crate) fn frame_width(&self) -> Option<f32> {
         self.frame.map(|(_, width)| width.max(0.0))
+    }
+
+    /// The line between segments, its colour and width; none where the
+    /// theme states no `separator(NONE).fill`, as upstream draws none.
+    pub(crate) fn separator_line(&self) -> Option<(Hsla, f32)> {
+        self.separator
+            .map(|colour| (colour, self.separator_width.max(0.0)))
     }
 }
 
@@ -2843,8 +2857,9 @@ fn segment_label(
 /// rounded up, as gpui's text element rounds a line's width up (gpui-pre
 /// 0.3.12 `src/elements/text.rs:772`), inside the segment's stated side
 /// padding ([`SEGMENT_PADDING`] on a side left unstated), the
-/// `separator_width` line before each segment after the first, and the
-/// frame's line width at both ends. The Basic page's column count holds it
+/// `separator_width` line before each segment after the first where one is
+/// drawn, and the frame's line width at both ends. The Basic page's column
+/// count holds it
 /// (M9-166): the segments stay on one row.
 pub(crate) fn segmented_width(
     window: &Window,
@@ -2905,8 +2920,9 @@ pub(crate) fn segmented_width(
         )
     };
     let segments: f32 = labels.iter().map(|label| shaped(label) + padding).sum();
-    let lines = labels.len().saturating_sub(1) as f32 * look.separator_width;
-    // No frame, as upstream's, takes no room.
+    // No line between segments and no frame, as upstream's, take no room.
+    let line: f32 = look.separator_line().iter().map(|(_, width)| width).sum();
+    let lines = labels.len().saturating_sub(1) as f32 * line;
     let edges: f32 = look.frame_width().iter().map(|width| width + width).sum();
     segments + lines + edges
 }
@@ -2926,10 +2942,12 @@ pub(crate) fn segmented_width(
 /// on a left or right side left unstated), in `label(NONE)`; the selected
 /// one filled with `segment(SELECTED).fill` and labelled in
 /// `label(SELECTED).color`; the others filled with `segment(HOVER).fill`
-/// under the pointer; neighbours parted by a `separator_width` line in
-/// `separator(NONE).fill`; the whole framed by `track(NONE)`'s stroke on its
-/// fill. A value the theme leaves unstated is upstream's own (spec §10, rule
-/// 0). Without a 0.8.0 theme it is upstream's segmented `TabBar`.
+/// and labelled in `label(HOVER).color` under the pointer; neighbours
+/// parted by a `separator_width` line in `separator(NONE).fill` where the
+/// theme states it, by none where it does not; the whole framed by
+/// `track(NONE)`'s stroke on its fill. A value the theme leaves unstated is
+/// upstream's own (spec §10, rule 0). Without a 0.8.0 theme it is
+/// upstream's segmented `TabBar`.
 pub(crate) fn segmented(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -2951,11 +2969,11 @@ pub(crate) fn segmented(
             .debug_selector(move || id.into());
     };
     let look = SegmentedLook::next_of(r);
-    let separator_width = look.separator_width;
-    let separator = look.separator.unwrap_or(t.border);
+    let separator = look.separator_line();
     let selected_fill = look.selected.unwrap_or(t.background);
     let text = look.text.unwrap_or(t.tab_foreground);
     let selected_text = look.selected_text.unwrap_or(t.tab_active_foreground);
+    let hover_text = look.hover_text.unwrap_or(t.tab_active_foreground);
     let segment_height = look.segment_height.map_or(SEGMENT_HEIGHT, px);
     let on_click = Rc::new(on_click);
     let segments = labels.iter().enumerate().map(|(ix, &label)| {
@@ -2971,20 +2989,23 @@ pub(crate) fn segmented(
         .flex_none()
         .items_center()
         .min_h(segment_height)
-        .when(ix > 0, |segment| {
-            segment
-                .border_l(px(separator_width))
-                .border_color(separator)
+        .when_some(separator.filter(|_| ix > 0), |segment, (line, width)| {
+            segment.border_l(px(width)).border_color(line)
         })
         .map(|segment| match (active, look.hover) {
             (true, _) => segment.bg(selected_fill).text_color(selected_text),
-            (false, Some(hover)) => segment.text_color(text).hover(move |style| style.bg(hover)),
-            (false, None) => segment.text_color(text),
+            (false, Some(hover)) => segment
+                .text_color(text)
+                .hover(move |style| style.bg(hover).text_color(hover_text)),
+            (false, None) => segment
+                .text_color(text)
+                .hover(move |style| style.text_color(hover_text)),
         })
         .child(segment_label(&r.typography, &look, label))
         // The segment inside its dividing line -- an absolute child is
         // laid out inside the border -- and the line, the segment's left
-        // border, `separator_width` wide, out over it.
+        // border, `separator_width` wide, out over it; where no line is
+        // drawn, the divider is the segment's left edge, no width.
         .children(elements::segment_of(id, ix).map(|(segment, divider)| {
             div()
                 .absolute()
@@ -2995,8 +3016,10 @@ pub(crate) fn segmented(
                         .absolute()
                         .top_0()
                         .bottom_0()
-                        .left(px(-separator_width))
-                        .w(px(separator_width))
+                        .map(|edge| match separator {
+                            Some((_, width)) => edge.left(px(-width)).w(px(width)),
+                            None => edge.left_0().w_0(),
+                        })
                         .child(elements::record(ui, divider))
                 }))
         }))
