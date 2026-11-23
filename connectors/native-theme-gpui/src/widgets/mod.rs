@@ -592,7 +592,7 @@ fn text_size(size: f32, n: Native<'_>) -> Pixels {
 // The installed theme, of either model
 // ---------------------------------------------------------------------------
 
-use native_theme::next::{FocusTrigger, TextStated, TextStyle};
+use native_theme::next::{FocusTrigger, TextStyle};
 
 use crate::ActiveNativeTheme as _;
 use crate::next::{Mapped, Unmapped};
@@ -688,7 +688,7 @@ impl<'a> ThemeSource<'a> {
     /// text-scaling factor, `defaults.line_height` and `defaults.font.weight`
     /// (`typography.body.size_px`, `typography.line_height_multiplier`,
     /// `typography.body.weight`); `None` where the 0.8.0 theme states no body
-    /// size or weight.
+    /// size or weight ([`crate::next::body_text_unmapped`]).
     fn body_text(self) -> Option<(Pixels, f32, FontWeight)> {
         match self {
             Self::Old(n) => {
@@ -700,15 +700,14 @@ impl<'a> ThemeSource<'a> {
                 ))
             }
             Self::Next(r) => {
-                let body = &r.typography.body;
-                if !body.stated.contains(TextStated::SIZE_PX) {
+                if crate::next::body_text_unmapped(r).is_some() {
                     return None;
                 }
-                let weight = crate::next::font_weight(r).ok()?;
+                let body = &r.typography.body;
                 Some((
                     px(body.size_px),
                     r.typography.line_height_multiplier,
-                    FontWeight(f32::from(weight)),
+                    FontWeight(f32::from(body.weight)),
                 ))
             }
         }

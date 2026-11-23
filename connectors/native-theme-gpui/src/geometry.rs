@@ -893,6 +893,7 @@ pub fn dialog(n: Native<'_>) -> StyleRefinement {
         radius: d.border.corner_radius,
         background: rgba_to_hsla(d.background_color),
         border_color: rgba_to_hsla(d.border.color),
+        border_width: None,
     })
 }
 
@@ -906,6 +907,9 @@ pub(crate) struct DialogFrame {
     pub(crate) radius: f32,
     pub(crate) background: Hsla,
     pub(crate) border_color: Hsla,
+    /// The edge's width where the theme draws no line, 0; `None` keeps
+    /// upstream's.
+    pub(crate) border_width: Option<f32>,
 }
 
 /// [`dialog`] of the frame `d`.
@@ -914,6 +918,9 @@ pub(crate) fn dialog_from(d: &DialogFrame) -> StyleRefinement {
         .rounded(px(d.radius))
         .bg(d.background)
         .border_color(d.border_color);
+    if let Some(w) = d.border_width {
+        r = r.border(px(w));
+    }
     if let Some(w) = d.min_width {
         r = r.min_w(px(w));
     }
@@ -1154,12 +1161,17 @@ pub(crate) fn accordion_title_from(height: f32, text: Hsla) -> StyleRefinement {
 /// changes no pixel; it is what honours a source that states one of its own.
 #[must_use]
 pub fn accordion(n: Native<'_>) -> StyleRefinement {
-    accordion_from(rgba_to_hsla(n.resolved.expander.border.color))
+    accordion_from(rgba_to_hsla(n.resolved.expander.border.color), None)
 }
 
-/// [`accordion`] of the expander's border colour.
-pub(crate) fn accordion_from(border: Hsla) -> StyleRefinement {
-    StyleRefinement::default().border_color(border)
+/// [`accordion`] of the expander's border colour, and of its edge's width
+/// where the theme draws no line, 0 (`None` keeps upstream's).
+pub(crate) fn accordion_from(border: Hsla, width: Option<f32>) -> StyleRefinement {
+    let style = StyleRefinement::default().border_color(border);
+    match width {
+        Some(width) => style.border(px(width)),
+        None => style,
+    }
 }
 
 /// For `AccordionItem::hover` (`src/accordion.rs:230-233`): the title row's

@@ -12,7 +12,7 @@ use gpui::{Hsla, Pixels, StyleRefinement, px};
 use gpui_component::Size;
 use gpui_component::dialog::DialogEntrance;
 use native_theme::next::{
-    DecorationKind, DialogEntranceStyle, IconStated, PartStated, PartStyle, ResolvedTheme,
+    DecorationKind, DialogEntranceStyle, IconStated, PartStated, PartStyle, ResolvedTheme, Stroke,
     TextStated, WidgetState,
 };
 
@@ -515,7 +515,15 @@ pub(crate) fn dialog(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
         radius: radius(panel, "dialog.panel.corners")?,
         background: fill(panel, "dialog.panel.fill")?,
         border_color: stroke_color(panel, "dialog.panel.stroke.color")?,
+        border_width: no_line_width(panel),
     }))
+}
+
+/// 0 where `part`'s stroke is stated as none, which draws no line (spec
+/// §10, rule 2): a builder that sets only the edge's colour sets its width
+/// there too; `None` elsewhere, where it keeps upstream's.
+fn no_line_width(part: &PartStyle) -> Option<f32> {
+    (part.stated.contains(PartStated::STROKE) && matches!(part.stroke, Stroke::None)).then_some(0.0)
 }
 
 /// [`crate::geometry::dialog_entrance`]: the two styles 0.7.2 has as its
@@ -758,10 +766,11 @@ pub(crate) fn accordion_title(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
 
 /// [`crate::geometry::accordion`].
 pub(crate) fn accordion(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
-    Ok(geometry::accordion_from(stroke_color(
-        &r.expander.container(WidgetState::NONE),
-        "expander.container(NONE).stroke.color",
-    )?))
+    let container = r.expander.container(WidgetState::NONE);
+    Ok(geometry::accordion_from(
+        stroke_color(&container, "expander.container(NONE).stroke.color")?,
+        no_line_width(&container),
+    ))
 }
 
 /// [`crate::geometry::accordion_hover`]: `expander.hover_background`, a soft
@@ -992,13 +1001,33 @@ mod tests {
         built_with_no_line(cx, &patch, |r| Ok(vec![popover(r)?]));
     }
 
-    /// A dialog panel stroked as none: its edge transparent, the builder
-    /// stating no width.
+    /// Whether `style` sets every border width to 0, as a builder that sets
+    /// only an edge's colour must where the stroke is none: upstream's width
+    /// would otherwise stand.
+    fn sets_every_width_to_0(style: &StyleRefinement) -> bool {
+        let w = &style.border_widths;
+        let zero = Some(AbsoluteLength::Pixels(px(0.0)));
+        [&w.top, &w.right, &w.bottom, &w.left]
+            .into_iter()
+            .all(|side| *side == zero)
+    }
+
+    /// A dialog panel stroked as none: its edge transparent and 0 wide; a
+    /// stroked one keeps upstream's width.
     #[gpui::test]
     fn a_dialog_stroked_as_none_is_built_with_no_line(cx: &mut TestAppContext) {
         let patch = ThemePatch::new()
             .widget_rules(WidgetPatchMap::new().dialog(DialogPatch::new().panel(none())));
         built_with_no_line(cx, &patch, |r| Ok(vec![dialog(r)?]));
+        let built = installed(cx, &patch).and_then(|r| dialog(&r));
+        assert!(built.as_ref().is_ok_and(sets_every_width_to_0), "{built:?}");
+        let stroked = installed(cx, &ThemePatch::new()).and_then(|r| dialog(&r));
+        assert!(
+            stroked
+                .as_ref()
+                .is_ok_and(|style| style.border_widths.top.is_none()),
+            "{stroked:?}"
+        );
     }
 
     /// A toolbar bar stroked as none.
@@ -1016,10 +1045,19 @@ mod tests {
     }
 
     /// An expander container stroked as none: the accordion's edge
-    /// transparent, the builder stating no width.
+    /// transparent and 0 wide; a stroked one keeps upstream's width.
     #[gpui::test]
     fn an_accordion_stroked_as_none_is_built_with_no_line(cx: &mut TestAppContext) {
         let patch = ThemePatch::new().expander(ExpanderRule::new().container(none()));
         built_with_no_line(cx, &patch, |r| Ok(vec![accordion(r)?]));
+        let built = installed(cx, &patch).and_then(|r| accordion(&r));
+        assert!(built.as_ref().is_ok_and(sets_every_width_to_0), "{built:?}");
+        let stroked = installed(cx, &ThemePatch::new()).and_then(|r| accordion(&r));
+        assert!(
+            stroked
+                .as_ref()
+                .is_ok_and(|style| style.border_widths.top.is_none()),
+            "{stroked:?}"
+        );
     }
 }

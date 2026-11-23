@@ -904,6 +904,19 @@ pub fn font_weight(r: &ResolvedTheme) -> Mapped<u16> {
     text_weight(&r.typography.body, "typography.body.weight")
 }
 
+/// Where the theme gives no body text a label can take its size and weight
+/// from, the home it leaves unstated, `typography.body.size_px` or
+/// `typography.body.weight`; `None` where it states both. The check a
+/// theme-drawn widget's body-text label passes (`widgets`,
+/// `ThemeSource::body_text`).
+#[must_use]
+pub fn body_text_unmapped(r: &ResolvedTheme) -> Option<Unmapped> {
+    if !r.typography.body.stated.contains(TextStated::SIZE_PX) {
+        return Some(Unmapped("typography.body.size_px"));
+    }
+    font_weight(r).err()
+}
+
 /// [`crate::mono_font_weight`]: the monospace text's CSS weight
 /// (`typography.monospace.weight`).
 ///

@@ -5972,3 +5972,33 @@ fn a_focused_control_draws_a_next_themes_ring(cx: &mut TestAppContext) {
         "no ring once focused"
     );
 }
+
+/// The body text of a 0.8.0 theme: kde-breeze light states its size and
+/// weight, which `ThemeSource::body_text` takes; with either left unstated,
+/// `next::body_text_unmapped` names that home and there is no body text.
+#[test]
+fn a_next_themes_body_text_is_none_where_its_size_or_weight_is_unstated() {
+    use native_theme::next::{Preset, TextStated, ThemeContext};
+    let theme =
+        || native_theme::next::Theme::preset(Preset::KdeBreeze).resolve(&ThemeContext::light());
+    let r = theme();
+    assert_eq!(crate::next::body_text_unmapped(&r), None);
+    let body = &r.typography.body;
+    assert_eq!(
+        ThemeSource::Next(&r).body_text(),
+        Some((
+            px(body.size_px),
+            r.typography.line_height_multiplier,
+            gpui::FontWeight(f32::from(body.weight)),
+        ))
+    );
+    for (unstated, home) in [
+        (TextStated::SIZE_PX, "typography.body.size_px"),
+        (TextStated::WEIGHT, "typography.body.weight"),
+    ] {
+        let mut r = theme();
+        r.typography.body.stated = r.typography.body.stated.difference(unstated);
+        assert_eq!(crate::next::body_text_unmapped(&r), Some(Unmapped(home)));
+        assert_eq!(ThemeSource::Next(&r).body_text(), None, "{home}");
+    }
+}

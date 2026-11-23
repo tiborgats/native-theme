@@ -1385,9 +1385,12 @@ fn every_builder_is_compared() -> crate::Result<()> {
 /// `Mapped` forms), so they are compared through those; the `Mapped` form
 /// of a `state_` read (`state_fill`, …) reads through it too.
 /// `label_font_unmapped` takes a text style and is `uncoloured_font`'s
-/// check, which the builders read through.
+/// check, which the builders read through; `body_text_unmapped` is
+/// `ThemeSource::body_text`'s check, compared through it (`widgets`'s
+/// parity, `ThemeSource::body_text`).
 const NOT_ROOT_ACCESSORS: &[&str] = &[
     "root::label_font_unmapped",
+    "root::body_text_unmapped",
     "root::to_theme",
     "root::apply",
     "root::fill_of",

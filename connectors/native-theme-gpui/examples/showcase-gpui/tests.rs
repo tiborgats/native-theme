@@ -10584,6 +10584,15 @@ fn a_hovered_drop_down_takes_the_hover_border(cx: &mut TestAppContext) {
             Some(hovered),
             "{preset}'s drop-down is edged in its hover colour at rest, so the test could not tell the two apart"
         );
+        if preset == "kde-breeze, patched" {
+            let breeze = native_theme::next::Theme::preset(native_theme::next::Preset::KdeBreeze)
+                .resolve(&native_theme::next::ThemeContext::light());
+            assert_ne!(
+                stroke_color_of(&breeze.combo_box.field(WidgetState::HOVER)),
+                Some(hovered),
+                "kde-breeze light already edges its hovered drop-down in colors.window.foreground, so the patched case would pass on the unpatched theme"
+            );
+        }
         let field = "basic-select";
         hover(&mut cx, point(px(4.), px(4.)));
         draw(&mut cx);
@@ -18761,6 +18770,68 @@ fn the_toggle_state_line_names_upstreams_fill_where_none_is_stated() {
     );
 }
 
+/// The gpui-component arms no bundled preset reaches, read off what the
+/// theme states: the mixed checkbox's label says gpui-component's where the
+/// widget does not draw the theme's look; the theme-drawn Switch's and
+/// Slider's infos, where the theme leaves a home without a value gpui can
+/// take, and the slider's thumb outline, where it states no stroke gpui can
+/// draw, each name gpui-component's own and the home, and keep their state
+/// and keyboard lines.
+#[test]
+fn the_upstream_arms_of_the_switch_slider_and_mixed_label_say_so() {
+    use crate::demo::mixed_label;
+    assert_eq!(mixed_label(true), "Mixed, theme-drawn");
+    assert_eq!(mixed_label(false), "Mixed, gpui-component's");
+    #[cfg(feature = "widgets")]
+    {
+        use crate::info::inputs::{slider_by_upstream, switch_by_upstream, upstream_thumb_outline};
+        let home = "switch.track(NONE).min_size[0]";
+        let switch = switch_by_upstream(WidgetInfo::new("Switch"), home, "Wi-Fi", true, true);
+        assert!(
+            note_of(&switch.config, "drawn by").is_some_and(|text| {
+                text.starts_with("gpui-component's own Switch")
+                    && text.contains(home)
+                    && text.contains("Switch::row")
+            }),
+            "{switch:?}"
+        );
+        assert_eq!(note_of(&switch.instance, "label"), Some("Wi-Fi"));
+        assert_eq!(switch.variant.as_deref(), Some("on, disabled"));
+        assert!(switch.colors.is_empty(), "{switch:?}");
+        let home = "slider.thumb(NONE).fill";
+        let slider = slider_by_upstream(WidgetInfo::new("Slider"), home, true);
+        assert!(
+            note_of(&slider.config, "drawn by").is_some_and(|text| {
+                text.starts_with("gpui-component's own Slider")
+                    && text.contains(home)
+                    && text.contains("Slider::render")
+            }),
+            "{slider:?}"
+        );
+        assert!(
+            note_of(&slider.instance, "keyboard").is_some_and(|text| text.contains("range")),
+            "{slider:?}"
+        );
+        assert!(slider.colors.is_empty(), "{slider:?}");
+        let home = "slider.thumb(NONE).stroke";
+        let unmapped = upstream_thumb_outline(WidgetInfo::new("Slider"), Some(home));
+        assert!(
+            note_of(&unmapped.not_themeable, "thumb outline").is_some_and(|text| {
+                text.starts_with("gpui-component's own: a 1px ring")
+                    && text.ends_with(&format!("no stroke gpui can draw at {home}"))
+            }),
+            "{unmapped:?}"
+        );
+        let unstated = upstream_thumb_outline(WidgetInfo::new("Slider"), None);
+        assert!(
+            note_of(&unstated.not_themeable, "thumb outline").is_some_and(|text| {
+                text.ends_with("the theme states no slider.thumb(NONE).stroke")
+            }),
+            "{unstated:?}"
+        );
+    }
+}
+
 /// A Toggle and a ToggleGroup the installed 0.8.0 theme styles through
 /// `geometry::toggle` say so in their "text" line, which names
 /// `button.label(NONE)`'s size and weight and the builder; under kde-breeze,
@@ -19475,19 +19546,100 @@ fn checkbox_homes(
     [fill, hover, hover_edge, border, mark, label]
 }
 
+/// `switch_hover_stated` decides as `SwitchLook::next_of` does, on
+/// kde-breeze light patched so that a rule with no required state clears
+/// the hovered track's fill (`not_states(CHECKED)`, spec §2: a later rule
+/// without required states clears the `from_state` bit) and the tracks are
+/// translucent, so that a hover layer laid over the track shows: a `HOVER`
+/// rule; one beside a `HOVER|CHECKED` rule differing from the checked
+/// track, and beside one equal to it; a `HOVER|CHECKED` rule alone, which
+/// the query with `HOVER` alone does not see (spec §2, `from_state`); none.
+#[cfg(feature = "widgets")]
+#[test]
+fn switch_hover_stated_decides_as_the_switch_look_does() {
+    use crate::info::inputs::switch_hover_stated;
+    use native_theme::next::{
+        Color, Paint, PartPatch, Preset, Scheme, SwitchRule, Theme as NextTheme, ThemeContext,
+        ThemePatch, WidgetState,
+    };
+    use native_theme_gpui::widgets::SwitchLook;
+    let tint = |r, g, b| Paint::solid(Color::rgb(r, g, b).with_alpha(0.5));
+    let (rest, on) = (tint(0.2, 0.2, 0.2), tint(0.1, 0.3, 0.9));
+    let (hover, hover_on) = (tint(0.6, 0.6, 0.6), tint(0.9, 0.1, 0.1));
+    let rule = |states: WidgetState, fill: &Paint| {
+        SwitchRule::new()
+            .states(states)
+            .track(PartPatch::new().fill(fill.clone()))
+    };
+    let hovered_on = WidgetState::HOVER | WidgetState::CHECKED;
+    let cases = [
+        ("no hover rule", vec![], false),
+        ("a HOVER rule", vec![rule(WidgetState::HOVER, &hover)], true),
+        (
+            "a HOVER rule and a HOVER|CHECKED rule differing from CHECKED",
+            vec![
+                rule(WidgetState::HOVER, &hover),
+                rule(hovered_on, &hover_on),
+            ],
+            true,
+        ),
+        (
+            "a HOVER rule and a HOVER|CHECKED rule equal to CHECKED",
+            vec![rule(WidgetState::HOVER, &hover), rule(hovered_on, &on)],
+            true,
+        ),
+        (
+            "a HOVER|CHECKED rule alone",
+            vec![rule(hovered_on, &hover_on)],
+            false,
+        ),
+    ];
+    for (case, rules, stated) in cases {
+        let patch = rules.into_iter().fold(
+            ThemePatch::new()
+                .switch(
+                    SwitchRule::new()
+                        .not_states(WidgetState::CHECKED)
+                        .track(PartPatch::new().fill(rest.clone())),
+                )
+                .switch(rule(WidgetState::CHECKED, &on)),
+            ThemePatch::switch,
+        );
+        let mut r = NextTheme::preset(Preset::KdeBreeze)
+            .resolve(&ThemeContext::default().with_scheme(Scheme::Light));
+        r.apply_patch(&patch);
+        for checked in [false, true] {
+            let layered = SwitchLook::next_of(&r, checked, false)
+                .map(|look| look.hover_track != Some(look.track))
+                .map_err(|unstated| unstated.home());
+            assert_eq!(
+                layered,
+                Ok(stated),
+                "{case}, checked {checked}: SwitchLook::next_of"
+            );
+            assert_eq!(
+                switch_hover_stated(&r, checked),
+                stated,
+                "{case}, checked {checked}: switch_hover_stated"
+            );
+        }
+    }
+}
+
 /// The home each colour of a switch's look is read at, `checked` or not,
 /// `disabled` or not, as `SwitchLook::next_of` reads them, with the line of
 /// widgets/switch.rs that spells it: the track `switch.track(<state>).fill`
-/// (:256-259) at the switch's state; the hover
-/// `switch.track(HOVER).fill` (:240), or `switch.track(HOVER|CHECKED).fill`
-/// (:236) where it differs from the checked track, over the track, else the
-/// track at rest (:231); the track's outline
-/// `switch.track(<state>).stroke.color` (:275-278); the thumb's outline
-/// `switch.thumb(NONE)` or `(CHECKED).stroke.color` (:285, :286); the thumb
-/// `switch.thumb(<state>).fill` (:266-269); the label
-/// `switch.label(<state>).color` where the theme states it (:425-428), else
-/// gpui-component's own, `colors.window.foreground_muted` disabled (:434),
-/// `colors.window.foreground` enabled (:435) -- as (track, hover, track
+/// (:263-266) at the switch's state; the hover
+/// `switch.track(HOVER).fill` (:247), or `switch.track(HOVER|CHECKED).fill`
+/// (:241) checked, over the track, where a rule states the hovered track's
+/// fill (`switch.track(HOVER).from_state`), else the track at rest (:232);
+/// the track's outline
+/// `switch.track(<state>).stroke.color` (:282-285); the thumb's outline
+/// `switch.thumb(NONE)` or `(CHECKED).stroke.color` (:292, :293); the thumb
+/// `switch.thumb(<state>).fill` (:273-276); the label
+/// `switch.label(<state>).color` where the theme states it (:432-435), else
+/// gpui-component's own, `colors.window.foreground_muted` disabled (:441),
+/// `colors.window.foreground` enabled (:442) -- as (track, hover, track
 /// outline, thumb outline, thumb, label).
 #[cfg(feature = "widgets")]
 fn switch_homes(r: &native_theme::next::ResolvedTheme, checked: bool, disabled: bool) -> [Leaf; 6] {
@@ -19500,114 +19652,116 @@ fn switch_homes(r: &native_theme::next::ResolvedTheme, checked: bool, disabled: 
     let track = pick([
         (
             "switch.track(NONE).fill",
-            "native-theme-gpui/widgets/switch.rs:256",
+            "native-theme-gpui/widgets/switch.rs:263",
         ),
         (
             "switch.track(CHECKED).fill",
-            "native-theme-gpui/widgets/switch.rs:257",
+            "native-theme-gpui/widgets/switch.rs:264",
         ),
         (
             "switch.track(DISABLED).fill",
-            "native-theme-gpui/widgets/switch.rs:258",
+            "native-theme-gpui/widgets/switch.rs:265",
         ),
         (
             "switch.track(DISABLED|CHECKED).fill",
-            "native-theme-gpui/widgets/switch.rs:259",
+            "native-theme-gpui/widgets/switch.rs:266",
         ),
     ]);
-    let hover = match (
-        checked,
-        crate::info::inputs::switch_hover_stated(r, checked),
-    ) {
+    let hover_ruled = r
+        .switch
+        .track(native_theme::next::WidgetState::HOVER)
+        .from_state
+        .contains(native_theme::next::PartStated::FILL);
+    let hover = match (checked, hover_ruled) {
         (false, true) => (
             "switch.track(HOVER).fill",
-            "native-theme-gpui/widgets/switch.rs:240",
+            "native-theme-gpui/widgets/switch.rs:247",
         ),
         (true, true) => (
             "switch.track(HOVER|CHECKED).fill",
-            "native-theme-gpui/widgets/switch.rs:236",
+            "native-theme-gpui/widgets/switch.rs:241",
         ),
         (false, false) => (
             "switch.track(NONE).fill",
-            "native-theme-gpui/widgets/switch.rs:231",
+            "native-theme-gpui/widgets/switch.rs:232",
         ),
         (true, false) => (
             "switch.track(CHECKED).fill",
-            "native-theme-gpui/widgets/switch.rs:231",
+            "native-theme-gpui/widgets/switch.rs:232",
         ),
     };
     let track_outline = pick([
         (
             "switch.track(NONE).stroke.color",
-            "native-theme-gpui/widgets/switch.rs:275",
+            "native-theme-gpui/widgets/switch.rs:282",
         ),
         (
             "switch.track(CHECKED).stroke.color",
-            "native-theme-gpui/widgets/switch.rs:276",
+            "native-theme-gpui/widgets/switch.rs:283",
         ),
         (
             "switch.track(DISABLED).stroke.color",
-            "native-theme-gpui/widgets/switch.rs:277",
+            "native-theme-gpui/widgets/switch.rs:284",
         ),
         (
             "switch.track(DISABLED|CHECKED).stroke.color",
-            "native-theme-gpui/widgets/switch.rs:278",
+            "native-theme-gpui/widgets/switch.rs:285",
         ),
     ]);
     let thumb_outline = if checked {
         (
             "switch.thumb(CHECKED).stroke.color",
-            "native-theme-gpui/widgets/switch.rs:286",
+            "native-theme-gpui/widgets/switch.rs:293",
         )
     } else {
         (
             "switch.thumb(NONE).stroke.color",
-            "native-theme-gpui/widgets/switch.rs:285",
+            "native-theme-gpui/widgets/switch.rs:292",
         )
     };
     let thumb = pick([
         (
             "switch.thumb(NONE).fill",
-            "native-theme-gpui/widgets/switch.rs:266",
+            "native-theme-gpui/widgets/switch.rs:273",
         ),
         (
             "switch.thumb(CHECKED).fill",
-            "native-theme-gpui/widgets/switch.rs:267",
+            "native-theme-gpui/widgets/switch.rs:274",
         ),
         (
             "switch.thumb(DISABLED).fill",
-            "native-theme-gpui/widgets/switch.rs:268",
+            "native-theme-gpui/widgets/switch.rs:275",
         ),
         (
             "switch.thumb(DISABLED|CHECKED).fill",
-            "native-theme-gpui/widgets/switch.rs:269",
+            "native-theme-gpui/widgets/switch.rs:276",
         ),
     ]);
     let label = match native_theme_gpui::widgets::SwitchLook::next_label_home(r, checked, disabled)
     {
         Ok("switch.label(NONE).color") => (
             "switch.label(NONE).color",
-            "native-theme-gpui/widgets/switch.rs:425",
+            "native-theme-gpui/widgets/switch.rs:432",
         ),
         Ok("switch.label(CHECKED).color") => (
             "switch.label(CHECKED).color",
-            "native-theme-gpui/widgets/switch.rs:426",
+            "native-theme-gpui/widgets/switch.rs:433",
         ),
         Ok("switch.label(DISABLED).color") => (
             "switch.label(DISABLED).color",
-            "native-theme-gpui/widgets/switch.rs:427",
+            "native-theme-gpui/widgets/switch.rs:434",
         ),
         Ok("switch.label(DISABLED|CHECKED).color") => (
             "switch.label(DISABLED|CHECKED).color",
-            "native-theme-gpui/widgets/switch.rs:428",
+            "native-theme-gpui/widgets/switch.rs:435",
         ),
         _ if disabled => (
             "colors.window.foreground_muted",
-            "native-theme-gpui/widgets/switch.rs:434",
+            "native-theme-gpui/widgets/switch.rs:441",
         ),
         _ => (
             "colors.window.foreground",
-            "native-theme-gpui/widgets/switch.rs:435",
+            "native-theme-gpui/widgets/switch.rs:442",
         ),
     };
     [track, hover, track_outline, thumb_outline, thumb, label]
@@ -20042,11 +20196,11 @@ fn a_switchs_info_reads_its_label_at_its_own_homes() {
             [
                 (
                     "colors.window.foreground",
-                    "native-theme-gpui/widgets/switch.rs:435",
+                    "native-theme-gpui/widgets/switch.rs:442",
                 ),
                 (
                     "colors.window.foreground_muted",
-                    "native-theme-gpui/widgets/switch.rs:434",
+                    "native-theme-gpui/widgets/switch.rs:441",
                 ),
             ],
             "gap_2",
@@ -20057,11 +20211,11 @@ fn a_switchs_info_reads_its_label_at_its_own_homes() {
             [
                 (
                     "switch.label(NONE).color",
-                    "native-theme-gpui/widgets/switch.rs:425",
+                    "native-theme-gpui/widgets/switch.rs:432",
                 ),
                 (
                     "switch.label(DISABLED).color",
-                    "native-theme-gpui/widgets/switch.rs:427",
+                    "native-theme-gpui/widgets/switch.rs:434",
                 ),
             ],
             "switch.label_gap: 13px",
@@ -20165,7 +20319,7 @@ fn a_theme_drawn_sliders_info_prints_its_look() {
                     Some(look.thumb_color),
                     (
                         "slider.thumb(NONE).fill",
-                        "native-theme-gpui/widgets/slider.rs:306",
+                        "native-theme-gpui/widgets/slider.rs:304",
                     ),
                 ),
                 ("hover", look.hover_thumb, hover),

@@ -2714,7 +2714,8 @@ fn mentions_home(haystack: &str, home: &str) -> bool {
 
 /// Whether the cited `span` names the home `home`: spelt whole
 /// ([`mentions_home`]), or, for a global's path (`colors.focus_ring`), read
-/// in code at that path off a theme binding, `r.colors.focus_ring`, the
+/// in code at that path off a binding of a 0.8.0 theme, one of the names
+/// the connector gives it ([`THEME_BINDINGS`]), `r.colors.focus_ring`, the
 /// binding no field of a longer path and no longer name after it -- a
 /// global has no query for its reader to spell.
 fn names_home(span: &str, home: &str) -> bool {
@@ -2732,11 +2733,16 @@ fn names_home(span: &str, home: &str) -> bool {
             .trim_end_matches(|c: char| c.is_alphanumeric() || c == '_')
             .len();
         let after = code.get(at + m.len()..).and_then(|t| t.chars().next());
-        binding < head.len()
+        head.get(binding..)
+            .is_some_and(|name| THEME_BINDINGS.contains(&name))
             && !head.get(..binding).is_some_and(|t| t.ends_with('.'))
             && after.is_none_or(|c| !(c.is_alphanumeric() || c == '_'))
     })
 }
+
+/// The names the connector binds a 0.8.0 theme to, `r` and `resolved`, off
+/// which [`names_home`] takes a global read at its path.
+const THEME_BINDINGS: &[&str] = &["r", "resolved"];
 
 /// Whether `code` reads `field` through a path, `.<field>`.
 fn reads_path(code: &str, field: &str) -> bool {
@@ -5247,7 +5253,9 @@ fn a_claim_in_the_0_8_0_form_names_a_home() {
     let ring = "            color: crate::next::hsla(r.colors.focus_ring),";
     assert!(names_home(ring, "colors.focus_ring"));
     assert!(names_home(cited, "button.body(DEFAULT).fill"));
+    assert!(names_home("hsla(resolved.colors.caret)", "colors.caret"));
     for (line, home) in [
+        ("hsla(theme.colors.caret)", "colors.caret"),
         ("hsla(r.colors.focus_ring_width)", "colors.focus_ring"),
         ("hsla(r.other.colors.focus_ring)", "colors.focus_ring"),
         ("hsla(.colors.focus_ring)", "colors.focus_ring"),

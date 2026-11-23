@@ -190,10 +190,11 @@ impl SwitchLook {
     /// ([`SwitchLook::next_label_home`]), `switch.label_gap` where stated
     /// and `switch.disabled_opacity`.
     ///
-    /// A checked track's hover is read at `HOVER|CHECKED`, where a theme with
-    /// no rule for the hover gives the checked track (the table of homes,
-    /// `switch.hover_checked_background`, `null_reference`), so it is a
-    /// hover layer where it differs from that track.
+    /// A checked track's hover is read at `HOVER|CHECKED` where a rule states
+    /// the hovered track's fill, as the query with that flag alone says
+    /// (`switch.track(HOVER).from_state`, spec §2): a value stated equal to
+    /// the checked track's is a hover layer too, and none is drawn where no
+    /// rule states one.
     ///
     /// # Errors
     ///
@@ -205,7 +206,7 @@ impl SwitchLook {
         checked: bool,
         disabled: bool,
     ) -> Mapped<Self> {
-        use native_theme::next::WidgetState;
+        use native_theme::next::{PartStated, WidgetState};
         // The home of a property at the switch's state, for `Unmapped`:
         // each spelt whole, so a claim can cite the line that names it.
         let at = |[none, on, off, off_on]: [&'static str; 4]| match (checked, disabled) {
@@ -231,11 +232,17 @@ impl SwitchLook {
             at_rest("switch.track(NONE).fill", "switch.track(CHECKED).fill"),
         )?;
         let hover = if checked {
-            let hovered = fill(
-                &s.track(WidgetState::HOVER | WidgetState::CHECKED),
-                "switch.track(HOVER|CHECKED).fill",
-            )?;
-            (hovered != base).then_some(hovered)
+            if s.track(WidgetState::HOVER)
+                .from_state
+                .contains(PartStated::FILL)
+            {
+                Some(fill(
+                    &s.track(WidgetState::HOVER | WidgetState::CHECKED),
+                    "switch.track(HOVER|CHECKED).fill",
+                )?)
+            } else {
+                None
+            }
         } else {
             state_fill(&s.track(WidgetState::HOVER), "switch.track(HOVER).fill")?
         };
