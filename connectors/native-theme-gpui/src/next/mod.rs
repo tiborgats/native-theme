@@ -32,8 +32,8 @@ use gpui_base::ResizableTheme;
 use gpui_component::theme::{Theme as GpuiTheme, ThemeColor, ThemeConfig, ThemeMode};
 use native_theme::next::{
     ButtonQuery, Color, CornerCurve, CornerRadius, FocusTrigger, FontStyle, ListQuery, Orientation,
-    Paint, PartStated, PartStyle, ResolvedTheme, Stroke, StrokeAlign, StyleQuery, TextStated,
-    TextStyle, WidgetState, WindowState,
+    Paint, PartStated, PartStyle, ResolvedTheme, Stroke, StyleQuery, TextStated, TextStyle,
+    WidgetState, WindowState,
 };
 
 use crate::base_layer::{ScrollbarGeometry, ScrollbarSource, geometry_of, resizable_theme_of};
@@ -43,7 +43,7 @@ use crate::geometry::Font;
 use crate::{ThemeScalars, apply_scalars, caret_blink_of, font_family};
 
 /// A source a leaf needs that the theme leaves unstated, or states in a form
-/// no 0.7.2 field holds (a gradient fill, a centred stroke, a pill): its home
+/// no 0.7.2 field holds (a gradient fill, a per-side stroke, a pill): its home
 /// in the table of homes. The 0.7.2 path has no such case, its resolved
 /// fields being always set; the 0.8.0 path reports it rather than inventing
 /// the value.
@@ -72,31 +72,39 @@ fn fill(part: &PartStyle, home: &'static str) -> Mapped<Hsla> {
     }
 }
 
-/// A part's stroke colour, where stated as one stroke inside the edge.
+/// A part's stroke colour, where stated as one stroke of one colour, in any
+/// alignment.
+///
+/// gpui paints a quad's border over its background, inside its bounds, so
+/// the fill runs under the whole border: `StrokeAlign::Inside` (spec §2,
+/// below `PartStyle`), which it draws from the stated colours. Under an
+/// opaque stroke the three alignments paint the same picture, so `Center`
+/// and `Outside` are drawn exactly from the stated colours too. A
+/// translucent `Center` or `Outside` stroke shows the fill under the whole
+/// band where the theme has it end at the band's centre line or inner edge;
+/// no border colour can take the fill away there, and each builder gives a
+/// part as one style refinement, which gpui paints as one quad, so gpui's
+/// extent stays and the connector's README records the limit (spec §10,
+/// rule 4).
 fn stroke_color(part: &PartStyle, home: &'static str) -> Mapped<Hsla> {
     match &part.stroke {
-        Stroke::Uniform {
-            color,
-            align: StrokeAlign::Inside,
-            ..
-        } if part.stated.contains(PartStated::STROKE) => Ok(hsla(*color)),
+        Stroke::Uniform { color, .. } if part.stated.contains(PartStated::STROKE) => {
+            Ok(hsla(*color))
+        }
         _ => Err(Unmapped(home)),
     }
 }
 
-/// A part's stroke width, where stated as one stroke inside the edge, or as
-/// none, which is no width.
+/// A part's stroke width, where stated as one stroke, in any alignment (the
+/// band lies inside the part's box in each, spec §2), or as none, which is
+/// no width.
 fn stroke_width(part: &PartStyle, home: &'static str) -> Mapped<f32> {
     if !part.stated.contains(PartStated::STROKE) {
         return Err(Unmapped(home));
     }
     match &part.stroke {
         Stroke::None => Ok(0.0),
-        Stroke::Uniform {
-            width,
-            align: StrokeAlign::Inside,
-            ..
-        } => Ok(*width),
+        Stroke::Uniform { width, .. } => Ok(*width),
         _ => Err(Unmapped(home)),
     }
 }
@@ -528,6 +536,7 @@ pub(crate) fn resizable_theme(r: &ResolvedTheme) -> Mapped<ResizableTheme> {
 #[cfg(test)]
 mod tests {
     use gpui::{StyleRefinement, Styled as _};
+    use native_theme::next::StrokeAlign;
 
     use super::*;
 
@@ -604,6 +613,70 @@ mod tests {
         label.from_state = TextStated::COLOR;
         assert_eq!(state_text_color(&label, "checked label")?, Some(hsla(RED)));
         Ok(())
+    }
+
+    /// A part stroked in `color`, `width` wide, aligned `align`, stated.
+    fn stroked(width: f32, color: Color, align: StrokeAlign) -> PartStyle {
+        let mut part = PartStyle::default();
+        part.stroke = Stroke::uniform_aligned(width, color, align);
+        part.stated = PartStated::STROKE;
+        part
+    }
+
+    /// A stroke inside the fill's edge: gpui's own extent, the stated
+    /// colour and width, opaque or translucent.
+    #[test]
+    fn an_inside_stroke_is_drawn_as_stated() -> Mapped<()> {
+        for color in [RED, RED.with_alpha(0.25)] {
+            let part = stroked(1.0, color, StrokeAlign::Inside);
+            assert_eq!(stroke_color(&part, "inside")?, hsla(color));
+            assert_eq!(stroke_width(&part, "inside")?, 1.0);
+        }
+        Ok(())
+    }
+
+    /// A stroke centred on the fill's edge: exact from the stated colour
+    /// where opaque; translucent, the stated colour over gpui's whole fill,
+    /// the limit the README records.
+    #[test]
+    fn a_centred_stroke_is_drawn_in_its_stated_colour() -> Mapped<()> {
+        for color in [GREEN, GREEN.with_alpha(0.2)] {
+            let part = stroked(1.001, color, StrokeAlign::Center);
+            assert_eq!(stroke_color(&part, "center")?, hsla(color));
+            assert_eq!(stroke_width(&part, "center")?, 1.001);
+        }
+        Ok(())
+    }
+
+    /// A stroke around the fill: as the centred one.
+    #[test]
+    fn an_outside_stroke_is_drawn_in_its_stated_colour() -> Mapped<()> {
+        for color in [BLUE, BLUE.with_alpha(0.5)] {
+            let part = stroked(2.0, color, StrokeAlign::Outside);
+            assert_eq!(stroke_color(&part, "outside")?, hsla(color));
+            assert_eq!(stroke_width(&part, "outside")?, 2.0);
+        }
+        Ok(())
+    }
+
+    /// An unstated stroke stays unmapped in every alignment, and a stated
+    /// absent one is no width.
+    #[test]
+    fn an_unstated_stroke_is_unmapped_in_every_alignment() {
+        for align in [
+            StrokeAlign::Inside,
+            StrokeAlign::Center,
+            StrokeAlign::Outside,
+        ] {
+            let mut part = stroked(1.0, RED, align);
+            part.stated = PartStated::default();
+            assert_eq!(stroke_color(&part, "home"), Err(Unmapped("home")));
+            assert_eq!(stroke_width(&part, "home"), Err(Unmapped("home")));
+        }
+        let mut none = PartStyle::default();
+        none.stated = PartStated::STROKE;
+        assert_eq!(stroke_width(&none, "home"), Ok(0.0));
+        assert_eq!(stroke_color(&none, "home"), Err(Unmapped("home")));
     }
 
     /// `button.hover_border_color`: without a rule for `HOVER` it is unset,
