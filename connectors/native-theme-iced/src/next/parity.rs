@@ -51,11 +51,20 @@
 //! the entry names unset ([`Listed`]); any other value fails. Each (style function, preset)
 //! pair an entry lists must differ in some status, or the entry is stale and
 //! fails.
+//!
+//! An entry may also name `Style` fields the 0.8.0 preset states at a home
+//! where 0.7.2's resolver gave another value ([`Stated`], M2.FS4): in the
+//! statuses it names, the expected value is that output with each such
+//! field set to the home's value through the conversion the 0.8.0 builder
+//! gives it (a state's fill as its whole fill, a stroke laid over the fill
+//! the style paints, [`crate::styles::Line::over`]), never through the
+//! 0.8.0 style function itself; a home the 0.8.0 theme leaves unstated
+//! fails.
 
 use std::fmt::Debug;
 
 use iced_core::theme::Theme;
-use native_theme::next::{Preset, ThemeContext};
+use native_theme::next::{ButtonQuery, PartStyle, Preset, ThemeContext, WidgetState};
 
 use super::LineAlign;
 use crate::{ColorMode, ResolvedTheme};
@@ -78,7 +87,230 @@ struct Difference {
     leaf: &'static str,
     presets: &'static [&'static str],
     listed: Listed,
+    /// The fields the preset states ([`Stated`]), in groups.
+    stated: &'static [&'static [Stated]],
     reason: &'static [&'static str],
+}
+
+impl Difference {
+    /// This entry with the `Style` fields `stated` names set to their
+    /// homes' values, for `reason`.
+    const fn stating(
+        self,
+        stated: &'static [&'static [Stated]],
+        reason: &'static [&'static str],
+    ) -> Self {
+        Self {
+            stated,
+            reason,
+            ..self
+        }
+    }
+}
+
+/// A `Style` field the 0.8.0 preset states at a home where 0.7.2's
+/// resolver gave another value: in the statuses of state `at` (the
+/// widget's status, with the checked or selected flag of a style function
+/// drawn checked or selected), `field` is set to `home`'s value.
+#[derive(Clone, Copy, Debug)]
+struct Stated {
+    at: WidgetState,
+    field: Field,
+    home: Home,
+}
+
+/// [`Stated`] in the statuses of `at`.
+const fn set(at: WidgetState, field: Field, home: Home) -> Stated {
+    Stated { at, field, home }
+}
+
+/// A `Style` field a [`Stated`] sets, in the order they are set: a stroke
+/// colour is laid over the fill as set before it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+enum Field {
+    /// `background`.
+    Background,
+    /// A slider's `handle.background`.
+    HandleBackground,
+    /// `text_color`.
+    TextColor,
+    /// A check box's `icon_color`.
+    IconColor,
+    /// `border.width`.
+    BorderWidth,
+    /// `border.color` (a radio's `border_color`): the stroke laid over the
+    /// fill the style paints ([`crate::styles::Line::over`]).
+    BorderColor,
+}
+
+impl Field {
+    const ALL: [Self; 6] = [
+        Self::Background,
+        Self::HandleBackground,
+        Self::TextColor,
+        Self::IconColor,
+        Self::BorderWidth,
+        Self::BorderColor,
+    ];
+}
+
+/// A home's value as the 0.8.0 builder reads it: a fill (a stated
+/// `Paint::None` transparent, [`super::fill_of`]) or a text colour; a
+/// stroke width ([`super::stroke_width_of`]); the part whose stroke the
+/// builder lays over the fill ([`super::borders::line_or_none`]), on a
+/// disabled button `faded` by its opacity (`crate::styles::faded`); a
+/// colour of a disabled control the builder fades as one widget over the
+/// `ground` by `opacity`, painted on `under` composited over the ground (or
+/// on the ground itself), [`crate::styles::faded_as_one`].
+#[derive(Clone, Debug)]
+#[cfg_attr(not(feature = "widgets"), allow(dead_code))]
+enum Value {
+    Color(iced_core::Color),
+    Width(f32),
+    Stroke {
+        part: Box<PartStyle>,
+        faded: Option<f32>,
+    },
+    Faded {
+        color: iced_core::Color,
+        under: Option<iced_core::Color>,
+        ground: iced_core::Color,
+        opacity: Option<f32>,
+    },
+}
+
+/// A 0.8.0 home: its path and its value where the theme states it for its
+/// state (a rule for the state, its `from_state` bit; at rest, its `stated`
+/// bit).
+#[derive(Clone, Copy)]
+struct Home {
+    path: &'static str,
+    value: fn(&native_theme::next::ResolvedTheme) -> Option<Value>,
+}
+
+impl Debug for Home {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.path)
+    }
+}
+
+/// The readers of a [`Home`]'s value: each reads `part` where `gate`, the
+/// part queried with the state whose rule decides, states the property for
+/// `state` (a rule for the state, its `from_state` bit; at rest, its
+/// `stated` bit).
+mod read {
+    use native_theme::next::{PartStated, PartStyle, TextStated, TextStyle, WidgetState};
+
+    use super::Value;
+
+    /// Whether `gate` states `bit` for `state`.
+    fn part_stated(gate: &PartStyle, bit: PartStated, state: WidgetState) -> bool {
+        if state == WidgetState::NONE {
+            gate.stated.contains(bit)
+        } else {
+            gate.from_state.contains(bit)
+        }
+    }
+
+    /// The fill.
+    pub(super) fn fill(part: &PartStyle, gate: &PartStyle, state: WidgetState) -> Option<Value> {
+        part_stated(gate, PartStated::FILL, state)
+            .then(|| crate::next::fill_of(part))
+            .flatten()
+            .map(Value::Color)
+    }
+
+    /// The stroke, colour and alignment, or none.
+    pub(super) fn stroke(part: &PartStyle, gate: &PartStyle, state: WidgetState) -> Option<Value> {
+        part_stated(gate, PartStated::STROKE, state).then(|| Value::Stroke {
+            part: Box::new(part.clone()),
+            faded: None,
+        })
+    }
+
+    /// The stroke's width, none 0.
+    pub(super) fn width(part: &PartStyle, gate: &PartStyle, state: WidgetState) -> Option<Value> {
+        part_stated(gate, PartStated::STROKE, state)
+            .then(|| crate::next::stroke_width_of(part))
+            .flatten()
+            .map(Value::Width)
+    }
+
+    /// A text style's colour.
+    pub(super) fn color(text: &TextStyle, gate: &TextStyle, state: WidgetState) -> Option<Value> {
+        let stated = if state == WidgetState::NONE {
+            gate.stated
+        } else {
+            gate.from_state
+        };
+        stated
+            .contains(TextStated::COLOR)
+            .then(|| crate::next::text_color_of(text))
+            .flatten()
+            .map(Value::Color)
+    }
+}
+
+/// The [`Home`] `<widget>.<part>(<STATE>).<property>`, read by [`read`]'s
+/// `<property>` (`fill`, `stroke`, `width`, a text style's `color`);
+/// `<STATE>` one state or several joined by `|`; `; Primary` the primary
+/// button's variant; `by <FLAG>` read at `<STATE>` where a rule for `<FLAG>`
+/// alone states it, as the builder reads a checked box under the pointer
+/// (`borders::flagged`).
+macro_rules! home {
+    ($r:ident, $w:ident . $p:ident ($($s:ident)|+)) => {
+        Home {
+            path: concat!(
+                stringify!($w), ".", stringify!($p), "(", stringify!($($s)|+), ").",
+                stringify!($r)
+            ),
+            value: |t| {
+                let s = $(WidgetState::$s)|+;
+                let part = t.$w.$p(s);
+                read::$r(&part, &part, s)
+            },
+        }
+    };
+    ($r:ident, $w:ident . $p:ident ($($s:ident)|+; Primary)) => {
+        Home {
+            path: concat!(
+                stringify!($w), ".", stringify!($p), "(", stringify!($($s)|+),
+                "; variant=Primary).", stringify!($r)
+            ),
+            value: |t| {
+                let s = $(WidgetState::$s)|+;
+                let part = t.$w.$p(ButtonQuery::primary().state(s));
+                read::$r(&part, &part, s)
+            },
+        }
+    };
+    ($r:ident, $w:ident . $p:ident ($($s:ident)|+) by $f:ident) => {
+        Home {
+            path: concat!(
+                stringify!($w), ".", stringify!($p), "(", stringify!($($s)|+), ").",
+                stringify!($r), " where a rule for ", stringify!($f), " states it"
+            ),
+            value: |t| {
+                let f = WidgetState::$f;
+                read::$r(&t.$w.$p($(WidgetState::$s)|+), &t.$w.$p(f), f)
+            },
+        }
+    };
+    (stroke, $w:ident . $p:ident ($($q:tt)+) faded by $ow:ident . $of:ident) => {
+        Home {
+            path: concat!(
+                stringify!($w), ".", stringify!($p), "(", stringify!($($q)+), ").stroke, faded \
+                 by ", stringify!($ow), ".", stringify!($of)
+            ),
+            value: |t| match (home!(stroke, $w.$p($($q)+)).value)(t)? {
+                Value::Stroke { part, .. } => Some(Value::Stroke {
+                    part,
+                    faded: t.$ow.$of,
+                }),
+                _ => None,
+            },
+        }
+    };
 }
 
 /// How a listed style function's 0.8.0 side differs from the 0.7.2 side:
@@ -220,6 +452,7 @@ const fn inside(leaf: &'static str, presets: &'static [&'static str]) -> Differe
             iced_stroke: false,
             added: Added::Nothing,
         },
+        stated: &[],
         reason: &[INSIDE],
     }
 }
@@ -293,6 +526,7 @@ const fn aw(
             iced_stroke: own.0,
             added: Added::Nothing,
         },
+        stated: &[],
         reason,
     }
 }
@@ -370,6 +604,7 @@ const fn hover(
             iced_stroke: false,
             added: Added::Nothing,
         },
+        stated: &[],
         reason: match align {
             LineAlign::Outside => &[HOVER],
             LineAlign::Inside => &[INSIDE, HOVER],
@@ -464,6 +699,7 @@ const fn field(
             },
             ..Listed::aligned(align)
         },
+        stated: &[],
         reason: match (align, focus) {
             (LineAlign::Outside, false) => &[FIELD_HOVER],
             (LineAlign::Outside, true) => &[FIELD_HOVER, FIELD_FOCUS],
@@ -475,12 +711,8 @@ const fn field(
     }
 }
 
-/// The presets on which a check box and a radio state a hover fill and no
-/// hover stroke, the stroke outside the box.
-const HOVER_FILL_ONLY: &[&str] = &["adwaita", "material-3", "ios-13"];
-
-/// The presets on which a check box, a radio and a drop-down field state a
-/// hover fill and no hover stroke, the stroke inside the box.
+/// The presets on which a drop-down field states a hover fill and no hover
+/// stroke, the stroke inside the box.
 const HOVER_FILL_ONLY_INSIDE: &[&str] = &["windows-11", "macos-monterey"];
 
 /// The reason of a pressed widget the 0.8.0 theme states no fill for.
@@ -514,6 +746,7 @@ const fn pressed(
             },
             ..Listed::aligned(align)
         },
+        stated: &[],
         reason: match align {
             LineAlign::Outside => &[PRESSED],
             LineAlign::Inside => &[INSIDE, PRESSED],
@@ -554,6 +787,7 @@ const fn checked(
             },
             ..Listed::aligned(align)
         },
+        stated: &[],
         reason: match (align, pressed_fill) {
             (LineAlign::Outside, false) => &[CHECKED],
             (LineAlign::Outside, true) => &[PRESSED, CHECKED],
@@ -598,6 +832,7 @@ const fn stated_checked(
             added: Added::CheckedButton,
             ..Listed::aligned(align)
         },
+        stated: &[],
         reason: match (align, pressed_fill) {
             (LineAlign::Outside, false) => &[STATED_CHECKED],
             (LineAlign::Outside, true) => &[PRESSED, STATED_CHECKED],
@@ -650,30 +885,415 @@ const fn breeze_scroller(presets: &'static [&'static str], rest: iced_core::Colo
             },
             ..Listed::aligned(LineAlign::Outside)
         },
+        stated: &[],
         reason: &[SCROLLER_OUTLINE],
     }
 }
 
+/// The reason of a `Style` field the 0.8.0 preset states at a home where
+/// 0.7.2's resolver gave another value.
+const STATED: &str = "the 0.8.0 preset states the field's home, from the source its comment \
+     there cites (M2.FS4), where 0.7.2's resolver gave the resting value, another state's, a \
+     layer laid over the resting fill or a stroke the platform does not draw (macos-tahoe's \
+     push button bezel, stroked as none: no line, 0 wide, spec §10, rule 2): the field is the \
+     home's value as the 0.8.0 builder hands it to iced, a state's fill its whole fill \
+     (docs/v0.8.0-spec.md §9, step 2), a stroke laid over the fill the style paints";
+
+/// The `Style` fields `stated` names on `presets`, the strokes laid at
+/// `align`, no state option left to iced.
+const fn stated_fields(
+    leaf: &'static str,
+    presets: &'static [&'static str],
+    align: LineAlign,
+    stated: &'static [&'static [Stated]],
+) -> Difference {
+    Difference {
+        leaf,
+        presets,
+        listed: Listed::aligned(align),
+        stated,
+        reason: match align {
+            LineAlign::Outside => &[STATED],
+            LineAlign::Inside => &[INSIDE, STATED],
+            LineAlign::Center => &[CENTER, STATED],
+        },
+    }
+}
+
+/// The [`WidgetState`] of the flags joined by `|`, in a constant.
+macro_rules! at {
+    ($($s:ident)|+) => {
+        WidgetState::NONE $(.union(WidgetState::$s))+
+    };
+}
+
+/// A button's outline at rest and disabled (`button.body(NONE)`), and under
+/// the pointer and pressed (`body(HOVER)`, `body(PRESSED)`), of the state
+/// `$flag` joins (a checked toggle's): its width and its stroke.
+macro_rules! button_outline {
+    ($($flag:ident)?; $($variant:ident)?) => {
+        [
+            set(at!(NONE $(| $flag)?), Field::BorderWidth, home!(width, button.body(NONE $(; $variant)?))),
+            set(at!(NONE $(| $flag)?), Field::BorderColor, home!(stroke, button.body(NONE $(; $variant)?))),
+            set(at!(DISABLED $(| $flag)?), Field::BorderWidth, home!(width, button.body(NONE $(; $variant)?))),
+            set(
+                at!(DISABLED $(| $flag)?),
+                Field::BorderColor,
+                home!(stroke, button.body(NONE $(; $variant)?) faded by button.disabled_opacity),
+            ),
+            set(at!(HOVER $(| $flag)?), Field::BorderWidth, home!(width, button.body(HOVER $(; $variant)?))),
+            set(at!(HOVER $(| $flag)?), Field::BorderColor, home!(stroke, button.body(HOVER $(; $variant)?))),
+            set(at!(PRESSED $(| $flag)?), Field::BorderWidth, home!(width, button.body(PRESSED $(; $variant)?))),
+            set(at!(PRESSED $(| $flag)?), Field::BorderColor, home!(stroke, button.body(PRESSED $(; $variant)?))),
+        ]
+    };
+}
+
+/// The hovered and the pressed fill of a button (`button.body(HOVER)`,
+/// `body(PRESSED)`).
+const BUTTON_STATE_FILLS: [Stated; 2] = [
+    set(
+        at!(HOVER),
+        Field::Background,
+        home!(fill, button.body(HOVER)),
+    ),
+    set(
+        at!(PRESSED),
+        Field::Background,
+        home!(fill, button.body(PRESSED)),
+    ),
+];
+
+/// A button's outline in every status ([`button_outline`]).
+const BUTTON_OUTLINE: [Stated; 8] = button_outline!(;);
+
+/// A checked toggle's outline in every status.
+const CHECKED_OUTLINE: [Stated; 8] = button_outline!(CHECKED;);
+
+/// The primary button's outline in every status.
+const PRIMARY_OUTLINE: [Stated; 8] = button_outline!(; Primary);
+
+/// macos-tahoe's push button: [`BUTTON_STATE_FILLS`] and
+/// [`BUTTON_OUTLINE`].
+const TAHOE_BUTTON: &[&[Stated]] = &[&BUTTON_STATE_FILLS, &BUTTON_OUTLINE];
+
+/// A toggle on macos-tahoe: [`TAHOE_BUTTON`], checked [`CHECKED_OUTLINE`].
+const TAHOE_TOGGLE: &[&[Stated]] = &[&BUTTON_STATE_FILLS, &BUTTON_OUTLINE, &CHECKED_OUTLINE];
+
+/// A toggle's outline, checked or not.
+const TOGGLE_OUTLINE: &[&[Stated]] = &[&BUTTON_OUTLINE, &CHECKED_OUTLINE];
+
+/// A button's stroke colour in the state `$s` (with `| $flag`, a checked
+/// toggle's), of the primary variant with `Primary`.
+macro_rules! button_stroke {
+    ($s:ident $(| $flag:ident)?; $($v:ident)?) => {
+        set(
+            at!($s $(| $flag)?),
+            Field::BorderColor,
+            home!(stroke, button.body($s $(; $v)?)),
+        )
+    };
+}
+
+/// A toolbar button's outline width, the button's at rest
+/// (`button.body(NONE)`), in every status, checked or not.
+macro_rules! toolbar_widths {
+    () => {
+        [
+            set(
+                at!(NONE),
+                Field::BorderWidth,
+                home!(width, button.body(NONE)),
+            ),
+            set(
+                at!(DISABLED),
+                Field::BorderWidth,
+                home!(width, button.body(NONE)),
+            ),
+            set(
+                at!(HOVER),
+                Field::BorderWidth,
+                home!(width, button.body(NONE)),
+            ),
+            set(
+                at!(PRESSED),
+                Field::BorderWidth,
+                home!(width, button.body(NONE)),
+            ),
+            set(
+                at!(CHECKED),
+                Field::BorderWidth,
+                home!(width, button.body(NONE)),
+            ),
+            set(
+                at!(DISABLED | CHECKED),
+                Field::BorderWidth,
+                home!(width, button.body(NONE)),
+            ),
+            set(
+                at!(HOVER | CHECKED),
+                Field::BorderWidth,
+                home!(width, button.body(NONE)),
+            ),
+            set(
+                at!(PRESSED | CHECKED),
+                Field::BorderWidth,
+                home!(width, button.body(NONE)),
+            ),
+        ]
+    };
+}
+
+/// A toolbar button's outline width ([`toolbar_widths`]).
+const TOOLBAR_WIDTHS: [Stated; 8] = toolbar_widths!();
+
+/// macos-tahoe's toolbar button: [`TOOLBAR_WIDTHS`] and the button's
+/// hovered and pressed fill.
+const TAHOE_TOOLBAR: &[&[Stated]] = &[&BUTTON_STATE_FILLS, &TOOLBAR_WIDTHS];
+
+/// A button's hovered and pressed stroke colour.
+const STATE_STROKES: &[&[Stated]] = &[&[button_stroke!(HOVER;), button_stroke!(PRESSED;)]];
+
+/// A toggle's hovered and pressed stroke colour, checked or not.
+const TOGGLE_STATE_STROKES: &[&[Stated]] = &[&[
+    button_stroke!(HOVER;),
+    button_stroke!(PRESSED;),
+    button_stroke!(HOVER | CHECKED;),
+    button_stroke!(PRESSED | CHECKED;),
+]];
+
+/// The primary button's hovered and pressed stroke colour.
+const PRIMARY_STATE_STROKES: &[&[Stated]] = &[&[
+    button_stroke!(HOVER; Primary),
+    button_stroke!(PRESSED; Primary),
+]];
+
+/// A button's pressed stroke colour.
+const PRESSED_STROKE: &[&[Stated]] = &[&[button_stroke!(PRESSED;)]];
+
+/// A toggle's pressed stroke colour, checked or not.
+const TOGGLE_PRESSED_STROKE: &[&[Stated]] =
+    &[&[button_stroke!(PRESSED;), button_stroke!(PRESSED | CHECKED;)]];
+
+/// A button's pressed label (`button.label(PRESSED)`).
+const PRESSED_LABEL: Stated = set(
+    at!(PRESSED),
+    Field::TextColor,
+    home!(color, button.label(PRESSED)),
+);
+
+/// macos-monterey's push button: the hovered fill and stroke, the pressed
+/// fill and label, and the stroke at rest laid over the pressed fill (no
+/// rule for PRESSED states one, and iced's secondary button keeps its
+/// border pressed, iced_widget 0.14.2 `src/button.rs`, fn secondary).
+const MONTEREY_BUTTON: &[&[Stated]] = &[
+    &BUTTON_STATE_FILLS,
+    &[
+        PRESSED_LABEL,
+        button_stroke!(HOVER;),
+        set(
+            at!(PRESSED),
+            Field::BorderColor,
+            home!(stroke, button.body(NONE)),
+        ),
+    ],
+];
+
+/// macos-monterey's toolbar button: the button's hovered and pressed fill
+/// and pressed label.
+const MONTEREY_TOOLBAR: &[&[Stated]] = &[&BUTTON_STATE_FILLS, &[PRESSED_LABEL]];
+
+/// A check box's hovered stroke, checked or not (`checkbox.indicator(HOVER)`,
+/// `indicator(HOVER|CHECKED)` where a rule for HOVER states it).
+const CHECK_HOVER_STROKES: [Stated; 2] = [
+    set(
+        at!(HOVER),
+        Field::BorderColor,
+        home!(stroke, checkbox.indicator(HOVER)),
+    ),
+    set(
+        at!(HOVER | CHECKED),
+        Field::BorderColor,
+        home!(stroke, checkbox.indicator(HOVER | CHECKED) by HOVER),
+    ),
+];
+
+/// windows-11's check box under the pointer: the unchecked box's fill and
+/// stroke, the checked box's stroke.
+const W11_CHECK_HOVER: &[Stated] = &[
+    set(
+        at!(HOVER),
+        Field::Background,
+        home!(fill, checkbox.indicator(HOVER)),
+    ),
+    CHECK_HOVER_STROKES[0],
+    CHECK_HOVER_STROKES[1],
+];
+
+/// The expander header's hovered and pressed fill (`expander.header(HOVER)`,
+/// `header(PRESSED)`).
+const EXPANDER_FILLS: [Stated; 2] = [
+    set(
+        at!(HOVER),
+        Field::Background,
+        home!(fill, expander.header(HOVER)),
+    ),
+    set(
+        at!(PRESSED),
+        Field::Background,
+        home!(fill, expander.header(PRESSED)),
+    ),
+];
+
+/// A radio's hovered stroke (`radio.indicator(HOVER)`).
+const RADIO_HOVER_STROKE: &[Stated] = &[set(
+    at!(HOVER),
+    Field::BorderColor,
+    home!(stroke, radio.indicator(HOVER)),
+)];
+
+/// windows-11's radio under the pointer: the unselected circle's fill, and
+/// its stroke at rest laid over it (no rule for HOVER states one, and iced's
+/// own radio keeps its border colour under the pointer, iced_widget 0.14.2
+/// `src/radio.rs`, fn default).
+const W11_RADIO_HOVER: &[Stated] = &[
+    set(
+        at!(HOVER),
+        Field::Background,
+        home!(fill, radio.indicator(HOVER)),
+    ),
+    set(
+        at!(HOVER),
+        Field::BorderColor,
+        home!(stroke, radio.indicator(NONE)),
+    ),
+];
+
+/// A disabled check box's label (`checkbox.label(DISABLED)`), faded as one
+/// widget over the window by `checkbox.disabled_opacity`.
+const CHECK_DISABLED_LABEL: Home = Home {
+    path: "checkbox.label(DISABLED).color, faded as one over colors.window.background by \
+           checkbox.disabled_opacity",
+    value: |t| {
+        let c = &t.checkbox;
+        Some(Value::Faded {
+            color: super::text_color_of(&c.label(WidgetState::DISABLED))?,
+            under: None,
+            ground: super::to_color(t.colors.window.background?),
+            opacity: c.disabled_opacity,
+        })
+    },
+};
+
+/// The mark of a disabled check box whose disabled fill the theme states
+/// (`checkbox.indicator(DISABLED)`): the disabled label's colour on that
+/// fill, faded as one widget over the window.
+const CHECK_DISABLED_MARK: Home = Home {
+    path: "checkbox.label(DISABLED).color on checkbox.indicator(DISABLED).fill, faded as one \
+           over colors.window.background by checkbox.disabled_opacity",
+    value: |t| disabled_mark(t, WidgetState::DISABLED),
+};
+
+/// [`CHECK_DISABLED_MARK`] of a checked box, on
+/// `checkbox.indicator(DISABLED|CHECKED)` where a rule for DISABLED states
+/// its fill.
+const CHECKED_DISABLED_MARK: Home = Home {
+    path: "checkbox.label(DISABLED).color on checkbox.indicator(DISABLED|CHECKED).fill, faded \
+           as one over colors.window.background by checkbox.disabled_opacity",
+    value: |t| disabled_mark(t, WidgetState::DISABLED.union(WidgetState::CHECKED)),
+};
+
+/// [`CHECK_DISABLED_MARK`] at `state`.
+fn disabled_mark(t: &native_theme::next::ResolvedTheme, state: WidgetState) -> Option<Value> {
+    let c = &t.checkbox;
+    if !c
+        .indicator(WidgetState::DISABLED)
+        .from_state
+        .contains(native_theme::next::PartStated::FILL)
+    {
+        return None;
+    }
+    Some(Value::Faded {
+        color: super::text_color_of(&c.label(WidgetState::DISABLED))?,
+        under: Some(super::fill_of(&c.indicator(state))?),
+        ground: super::to_color(t.colors.window.background?),
+        opacity: c.disabled_opacity,
+    })
+}
+
+/// material-3's check box: the hovered stroke, checked or not, and the
+/// disabled label and mark.
+const M3_CHECK: &[Stated] = &[
+    CHECK_HOVER_STROKES[0],
+    CHECK_HOVER_STROKES[1],
+    set(at!(DISABLED), Field::TextColor, CHECK_DISABLED_LABEL),
+    set(
+        at!(DISABLED | CHECKED),
+        Field::TextColor,
+        CHECK_DISABLED_LABEL,
+    ),
+    set(at!(DISABLED), Field::IconColor, CHECK_DISABLED_MARK),
+    set(
+        at!(DISABLED | CHECKED),
+        Field::IconColor,
+        CHECKED_DISABLED_MARK,
+    ),
+];
+
 /// The listed differences.
 const DIFFERENCES: &[Difference] = &[
-    // button.body(NONE), its states and its variants; macos-tahoe states a
-    // hovered fill and no pressed one (`body(PRESSED)`), nor does the
-    // toolbar (`toolbar.button(PRESSED)`). macos-monterey states no checked
-    // fill (`body(CHECKED)`), and macos-tahoe and ios-13 state one 0.7.2
-    // has no field for; monterey, tahoe, material-3 and ios-13 state no
-    // checked toolbar fill (`toolbar.button(CHECKED)`), ios-13 a checked
-    // label.
-    inside("button", &["macos-monterey"]),
+    // button.body(NONE), its states and its variants. macos-monterey states
+    // no checked fill (`body(CHECKED)`), and macos-tahoe and ios-13 state
+    // one 0.7.2 has no field for; monterey, tahoe, material-3 and ios-13
+    // state no checked toolbar fill (`toolbar.button(CHECKED)`), ios-13 a
+    // checked label. The FS4 presets state monterey's and tahoe's hovered
+    // and pressed fills, tahoe's bezel stroked as none, ios-13's outline,
+    // and the hovered and pressed strokes of material-3 and windows-11.
+    inside("button", &["macos-monterey"]).stating(MONTEREY_BUTTON, &[INSIDE, STATED]),
     checked(
         "button_toggle",
         &["macos-monterey"],
         LineAlign::Inside,
         false,
+    )
+    .stating(MONTEREY_BUTTON, &[INSIDE, CHECKED, STATED]),
+    stated_fields("button", &["macos-tahoe"], LineAlign::Inside, TAHOE_BUTTON),
+    stated_checked("button_toggle", &["macos-tahoe"], LineAlign::Inside, false)
+        .stating(TAHOE_TOGGLE, &[INSIDE, STATED_CHECKED, STATED]),
+    stated_fields(
+        "button",
+        &["ios-13"],
+        LineAlign::Outside,
+        &[&BUTTON_OUTLINE],
     ),
-    pressed("button", &["macos-tahoe"], LineAlign::Inside),
-    stated_checked("button_toggle", &["macos-tahoe"], LineAlign::Inside, true),
-    stated_checked("button_toggle", &["ios-13"], LineAlign::Outside, false),
-    checked("toolbar_button", &["macos-tahoe"], LineAlign::Outside, true),
+    stated_checked("button_toggle", &["ios-13"], LineAlign::Outside, false)
+        .stating(TOGGLE_OUTLINE, &[STATED_CHECKED, STATED]),
+    stated_fields("button", &["material-3"], LineAlign::Outside, STATE_STROKES),
+    stated_fields(
+        "button_toggle",
+        &["material-3"],
+        LineAlign::Outside,
+        TOGGLE_STATE_STROKES,
+    ),
+    stated_fields(
+        "button",
+        &["windows-11"],
+        LineAlign::Outside,
+        PRESSED_STROKE,
+    ),
+    stated_fields(
+        "button_toggle",
+        &["windows-11"],
+        LineAlign::Outside,
+        TOGGLE_PRESSED_STROKE,
+    ),
+    checked(
+        "toolbar_button",
+        &["macos-tahoe"],
+        LineAlign::Outside,
+        false,
+    )
+    .stating(TAHOE_TOOLBAR, &[CHECKED, STATED]),
     Difference {
         leaf: "toolbar_button",
         presets: &["ios-13"],
@@ -685,28 +1305,133 @@ const DIFFERENCES: &[Difference] = &[
             added: Added::CheckedButton,
             ..Listed::aligned(LineAlign::Outside)
         },
-        reason: &[CHECKED, STATED_CHECKED],
+        stated: &[&TOOLBAR_WIDTHS],
+        reason: &[CHECKED, STATED_CHECKED, STATED],
     },
     checked(
         "toolbar_button",
-        &["macos-monterey", "material-3"],
+        &["macos-monterey"],
         LineAlign::Outside,
         false,
-    ),
+    )
+    .stating(MONTEREY_TOOLBAR, &[CHECKED, STATED]),
+    checked("toolbar_button", &["material-3"], LineAlign::Outside, false),
     // windows-11's primary variant lays its stroke inside the box, the plain
     // button's outside (`button.body(NONE; variant=Primary).stroke`); its
     // default button is the primary one.
-    inside(
+    inside("button_primary", &["windows-11", "macos-monterey"]),
+    inside("button_default", &["windows-11", "macos-monterey"]),
+    stated_fields(
         "button_primary",
-        &["windows-11", "macos-monterey", "macos-tahoe"],
+        &["macos-tahoe"],
+        LineAlign::Inside,
+        &[&PRIMARY_OUTLINE],
     ),
-    inside(
+    stated_fields(
         "button_default",
-        &["windows-11", "macos-monterey", "macos-tahoe"],
+        &["macos-tahoe"],
+        LineAlign::Inside,
+        &[&PRIMARY_OUTLINE],
     ),
-    inside("button_danger", MACOS),
-    inside("button_success", MACOS),
-    inside("button_warning", MACOS),
+    stated_fields(
+        "button_primary",
+        &["ios-13"],
+        LineAlign::Outside,
+        &[&PRIMARY_OUTLINE],
+    ),
+    stated_fields(
+        "button_default",
+        &["ios-13"],
+        LineAlign::Outside,
+        &[&PRIMARY_OUTLINE],
+    ),
+    stated_fields(
+        "button_primary",
+        &["material-3"],
+        LineAlign::Outside,
+        PRIMARY_STATE_STROKES,
+    ),
+    stated_fields(
+        "button_default",
+        &["material-3"],
+        LineAlign::Outside,
+        PRIMARY_STATE_STROKES,
+    ),
+    inside("button_danger", &["macos-monterey"]),
+    inside("button_success", &["macos-monterey"]),
+    inside("button_warning", &["macos-monterey"]),
+    stated_fields(
+        "button_danger",
+        &["macos-tahoe"],
+        LineAlign::Inside,
+        &[&BUTTON_OUTLINE],
+    ),
+    stated_fields(
+        "button_success",
+        &["macos-tahoe"],
+        LineAlign::Inside,
+        &[&BUTTON_OUTLINE],
+    ),
+    stated_fields(
+        "button_warning",
+        &["macos-tahoe"],
+        LineAlign::Inside,
+        &[&BUTTON_OUTLINE],
+    ),
+    stated_fields(
+        "button_danger",
+        &["ios-13"],
+        LineAlign::Outside,
+        &[&BUTTON_OUTLINE],
+    ),
+    stated_fields(
+        "button_success",
+        &["ios-13"],
+        LineAlign::Outside,
+        &[&BUTTON_OUTLINE],
+    ),
+    stated_fields(
+        "button_warning",
+        &["ios-13"],
+        LineAlign::Outside,
+        &[&BUTTON_OUTLINE],
+    ),
+    stated_fields(
+        "button_danger",
+        &["material-3"],
+        LineAlign::Outside,
+        STATE_STROKES,
+    ),
+    stated_fields(
+        "button_success",
+        &["material-3"],
+        LineAlign::Outside,
+        STATE_STROKES,
+    ),
+    stated_fields(
+        "button_warning",
+        &["material-3"],
+        LineAlign::Outside,
+        STATE_STROKES,
+    ),
+    stated_fields(
+        "button_danger",
+        &["windows-11"],
+        LineAlign::Outside,
+        PRESSED_STROKE,
+    ),
+    stated_fields(
+        "button_success",
+        &["windows-11"],
+        LineAlign::Outside,
+        PRESSED_STROKE,
+    ),
+    stated_fields(
+        "button_warning",
+        &["windows-11"],
+        LineAlign::Outside,
+        PRESSED_STROKE,
+    ),
     // input.field(NONE) and text_area.field(NONE), the macOS presets'
     // inside the box; input.field(HOVER), text_area.field(HOVER) and
     // (FOCUSED): adwaita states no hovered stroke, the macOS presets
@@ -733,6 +1458,7 @@ const DIFFERENCES: &[Difference] = &[
             iced_stroke: false,
             added: Added::Nothing,
         },
+        stated: &[],
         reason: &[CENTER],
     },
     // checkbox.indicator and radio.indicator: the hovered fill and stroke
@@ -741,25 +1467,33 @@ const DIFFERENCES: &[Difference] = &[
     // that is the transparent unchecked stroke too, which iced is handed as
     // the fill under it (0.7.2's `checkbox.unchecked_border_color` is
     // `#00000000`, the home's stroke the same colour, Inside).
-    // The label of a box whose hovered fill is iced's is iced's too
-    // (`label(HOVER)`, which no preset states).
+    // The FS4 presets state kde-breeze's hovered box as 0.7.2 drew it,
+    // adwaita's and material-3's hovered stroke, windows-11's hovered fill
+    // and stroke, and material-3's disabled label (`label(DISABLED)`).
     hover(
         "checkbox",
-        &["kde-breeze"],
-        LineAlign::Outside,
-        hovered(true, true, false),
-    ),
-    hover(
-        "checkbox",
-        HOVER_FILL_ONLY,
+        &["ios-13"],
         LineAlign::Outside,
         hovered(false, false, true),
     ),
+    stated_fields(
+        "checkbox",
+        &["adwaita"],
+        LineAlign::Outside,
+        &[&CHECK_HOVER_STROKES],
+    ),
+    stated_fields("checkbox", &["material-3"], LineAlign::Outside, &[M3_CHECK]),
     hover(
         "checkbox",
-        HOVER_FILL_ONLY_INSIDE,
+        &["macos-monterey"],
         LineAlign::Inside,
         hovered(false, false, true),
+    ),
+    stated_fields(
+        "checkbox",
+        &["windows-11"],
+        LineAlign::Inside,
+        &[W11_CHECK_HOVER],
     ),
     hover(
         "checkbox",
@@ -775,9 +1509,21 @@ const DIFFERENCES: &[Difference] = &[
     ),
     hover(
         "radio",
-        HOVER_FILL_ONLY_INSIDE,
+        &["macos-monterey"],
         LineAlign::Inside,
         hovered(false, false, true),
+    ),
+    stated_fields(
+        "radio",
+        &["windows-11"],
+        LineAlign::Inside,
+        &[W11_RADIO_HOVER],
+    ),
+    stated_fields(
+        "radio",
+        &["adwaita"],
+        LineAlign::Outside,
+        &[RADIO_HOVER_STROKE],
     ),
     hover(
         "radio",
@@ -803,13 +1549,13 @@ const DIFFERENCES: &[Difference] = &[
         hovered(true, false, true),
     ),
     open(&["material-3"], LineAlign::Outside, States::STATED),
-    // switch.thumb(HOVER): no preset states a hovered thumb.
+    // switch.thumb(HOVER): no preset states a hovered thumb; windows-11
+    // states the checked track's hovered fill (`track(HOVER|CHECKED)`).
     Difference {
         leaf: "toggler",
         presets: &[
             "kde-breeze",
             "adwaita",
-            "windows-11",
             "macos-monterey",
             "macos-tahoe",
             "material-3",
@@ -822,7 +1568,25 @@ const DIFFERENCES: &[Difference] = &[
             },
             ..Listed::aligned(LineAlign::Outside)
         },
+        stated: &[],
         reason: &[HOVER_THUMB],
+    },
+    Difference {
+        leaf: "toggler",
+        presets: &["windows-11"],
+        listed: Listed {
+            states: States {
+                hover_thumb: true,
+                ..States::STATED
+            },
+            ..Listed::aligned(LineAlign::Outside)
+        },
+        stated: &[&[set(
+            at!(HOVER | CHECKED),
+            Field::Background,
+            home!(fill, switch.track(HOVER | CHECKED) by HOVER),
+        )]],
+        reason: &[HOVER_THUMB, STATED],
     },
     // The menu's frame, popover.panel's stroke over menu.panel's fill.
     inside(
@@ -831,15 +1595,11 @@ const DIFFERENCES: &[Difference] = &[
     ),
     // slider.active_track(HOVER) and (PRESSED): no preset states them;
     // slider.thumb(HOVER): no hovered thumb fill (macos-monterey: in its dark
-    // scheme).
+    // scheme); kde-breeze and windows-11 state the hovered and the pressed
+    // thumb's (`thumb(HOVER)`, `thumb(PRESSED)`).
     Difference {
         leaf: "slider",
-        presets: &[
-            "kde-breeze",
-            "windows-11",
-            "macos-monterey/dark",
-            "macos-tahoe",
-        ],
+        presets: &["macos-monterey/dark", "macos-tahoe"],
         listed: Listed {
             states: States {
                 hover_fill: true,
@@ -848,6 +1608,7 @@ const DIFFERENCES: &[Difference] = &[
             },
             ..Listed::aligned(LineAlign::Outside)
         },
+        stated: &[],
         reason: &[HOVER, SLIDER_RAIL],
     },
     Difference {
@@ -860,7 +1621,32 @@ const DIFFERENCES: &[Difference] = &[
             },
             ..Listed::aligned(LineAlign::Outside)
         },
+        stated: &[],
         reason: &[SLIDER_RAIL],
+    },
+    Difference {
+        leaf: "slider",
+        presets: &["kde-breeze", "windows-11"],
+        listed: Listed {
+            states: States {
+                rail: true,
+                ..States::STATED
+            },
+            ..Listed::aligned(LineAlign::Outside)
+        },
+        stated: &[&[
+            set(
+                at!(HOVER),
+                Field::HandleBackground,
+                home!(fill, slider.thumb(HOVER)),
+            ),
+            set(
+                at!(PRESSED),
+                Field::HandleBackground,
+                home!(fill, slider.thumb(PRESSED)),
+            ),
+        ]],
+        reason: &[SLIDER_RAIL, STATED],
     },
     // Breeze's handle outline (scrollbar.thumb(UNFOCUSED_VIEW), (HOVER) and
     // (PRESSED): stroke and corners).
@@ -880,6 +1666,7 @@ const DIFFERENCES: &[Difference] = &[
             iced_stroke: false,
             added: Added::Nothing,
         },
+        stated: &[],
         reason: &[PRESSED_THUMB],
     },
     Difference {
@@ -896,28 +1683,43 @@ const DIFFERENCES: &[Difference] = &[
             iced_stroke: false,
             added: Added::Nothing,
         },
+        stated: &[],
         reason: &[PRESSED_THUMB, INHERITED_THUMB_HOVER],
     },
     // segmented_control.track(NONE).stroke over the group fill.
     inside("segmented_control", MACOS_WINDOWS),
-    // segmented_control.segment(PRESSED) and expander.header(PRESSED): no
-    // preset states them; macos-tahoe states no hovered fill either.
-    pressed(
+    // segmented_control.segment(PRESSED) and expander.header(PRESSED): the
+    // macOS and iOS presets state none, the others' FS4 presets do,
+    // kde-breeze's pressed segment as 0.7.2 drew it (and kde-breeze's,
+    // windows-11's and material-3's hovered header, `header(HOVER)`);
+    // macos-tahoe states no hovered fill either.
+    pressed("segment", &["macos-monterey", "ios-13"], LineAlign::Outside),
+    stated_fields(
         "segment",
-        &[
-            "kde-breeze",
-            "adwaita",
-            "windows-11",
-            "macos-monterey",
-            "material-3",
-            "ios-13",
-        ],
+        &["adwaita", "windows-11", "material-3"],
         LineAlign::Outside,
+        &[&[set(
+            at!(PRESSED),
+            Field::Background,
+            home!(fill, segmented_control.segment(PRESSED)),
+        )]],
     ),
     pressed(
         "expander",
-        &["adwaita", "macos-monterey", "material-3", "ios-13"],
+        &["macos-monterey", "ios-13"],
         LineAlign::Outside,
+    ),
+    stated_fields(
+        "expander",
+        &["adwaita"],
+        LineAlign::Outside,
+        &[&[EXPANDER_FILLS[1]]],
+    ),
+    stated_fields(
+        "expander",
+        &["kde-breeze", "windows-11", "material-3"],
+        LineAlign::Outside,
+        &[&EXPANDER_FILLS],
     ),
     // iced_aw: card.container(NONE).
     inside("aw::card", &["windows-11"]),
@@ -993,6 +1795,7 @@ const DIFFERENCES: &[Difference] = &[
             },
             ..Listed::aligned(LineAlign::Outside)
         },
+        stated: &[],
         reason: &[HOVER_LINK_LABEL],
     },
 ];
@@ -1031,6 +1834,50 @@ impl Report {
         new: T,
         expected: impl Fn(Listed) -> T,
     ) {
+        self.compare(leaf, old, new, |d| {
+            if d.stated.is_empty() {
+                Ok(expected(d.listed))
+            } else {
+                Err("it names stated fields, which this value has none of".to_owned())
+            }
+        });
+    }
+
+    /// [`Self::leaf`] of a style a [`Stated`] can set fields of, in a
+    /// status of state `at`: the expected value is `expected`'s with each
+    /// field the entry states at `at` set to its home's value on `theme`.
+    #[cfg(feature = "widgets")]
+    fn stated_leaf<T: PartialEq + Debug + Fields>(
+        &mut self,
+        leaf: &str,
+        at: WidgetState,
+        (old, new): (T, T),
+        expected: impl Fn(Listed) -> T,
+        theme: &native_theme::next::ResolvedTheme,
+    ) {
+        self.compare(leaf, old, new, |d| {
+            let mut style = expected(d.listed);
+            for field in Field::ALL {
+                let here = |s: &&Stated| s.at == at && s.field == field;
+                for s in d.stated.iter().copied().flatten().filter(here) {
+                    let value = (s.home.value)(theme)
+                        .ok_or_else(|| format!("{:?} names {:?}, unstated", s.field, s.home))?;
+                    style.set(field, value)?;
+                }
+            }
+            Ok(style)
+        });
+    }
+
+    /// Compare one leaf against the value `expected` gives for the entry
+    /// that lists its style function on this preset, if any.
+    fn compare<T: PartialEq + Debug>(
+        &mut self,
+        leaf: &str,
+        old: T,
+        new: T,
+        expected: impl Fn(&Difference) -> Result<T, String>,
+    ) {
         self.compared += 1;
         let function = leaf.split('(').next().unwrap_or(leaf);
         let listed = DIFFERENCES.iter().enumerate().find_map(|(i, d)| {
@@ -1049,7 +1896,14 @@ impl Report {
             return;
         };
         let listed = entry.listed;
-        let expected = expected(listed);
+        let expected = match expected(entry) {
+            Ok(expected) => expected,
+            Err(why) => {
+                self.failures
+                    .push(format!("{}: {leaf}: listed, but {why}", self.label));
+                return;
+            }
+        };
         if expected == new {
             if old != new {
                 self.listed_seen.push((i, function.to_owned(), key));
@@ -1057,9 +1911,9 @@ impl Report {
         } else {
             let diff = debug_diff(&format!("{expected:?}"), &format!("{new:?}"));
             self.failures.push(format!(
-                "{}: {leaf}: listed as {listed:?}, but not the expected value (expected -> \
-                 0.8.0): {diff}",
-                self.label
+                "{}: {leaf}: listed as {listed:?}, stating {:?}, but not the expected value \
+                 (expected -> 0.8.0): {diff}",
+                self.label, entry.stated
             ));
         }
     }
@@ -1218,10 +2072,259 @@ macro_rules! listed_style {
     }};
 }
 
+/// [`listed_style`] of a style whose fields a [`Stated`] can set, each
+/// status at its state with `$flags` (a checked or selected style
+/// function's flag), the homes read on `$resolved`.
+#[cfg(feature = "widgets")]
+macro_rules! stated_style {
+    ($report:expr, $themes:expr, $resolved:expr, $name:literal, $old:expr, $new:expr, $listed:expr, $statuses:expr, $flags:expr) => {{
+        let (old_theme, new_theme): (&Theme, &Theme) = $themes;
+        let old = $old;
+        let listed = $listed;
+        if let Some(new) = $report.mapped($name, $new) {
+            for status in $statuses {
+                $report.stated_leaf(
+                    &format!("{}({status:?})", $name),
+                    status.at() | $flags,
+                    (old(old_theme, status), new(new_theme, status)),
+                    |l: Listed| listed(l)(old_theme, status),
+                    $resolved,
+                );
+            }
+        }
+    }};
+}
+
 /// A style function of no status as one of a single status.
 #[cfg(feature = "widgets")]
 fn surface<T>(f: impl Fn(&Theme) -> T + Clone) -> impl Fn(&Theme, ()) -> T + Clone {
     move |theme, ()| f(theme)
+}
+
+/// A widget's status as the state the 0.8.0 theme is queried with.
+#[cfg(feature = "widgets")]
+trait AtState {
+    fn at(&self) -> WidgetState;
+}
+
+/// `flag` where `on`, else no state.
+#[cfg(feature = "widgets")]
+fn flag_if(on: bool, flag: WidgetState) -> WidgetState {
+    if on { flag } else { WidgetState::NONE }
+}
+
+#[cfg(feature = "widgets")]
+impl AtState for iced_widget::button::Status {
+    fn at(&self) -> WidgetState {
+        match self {
+            Self::Active => WidgetState::NONE,
+            Self::Hovered => WidgetState::HOVER,
+            Self::Pressed => WidgetState::PRESSED,
+            Self::Disabled => WidgetState::DISABLED,
+        }
+    }
+}
+
+#[cfg(feature = "widgets")]
+impl AtState for iced_widget::checkbox::Status {
+    fn at(&self) -> WidgetState {
+        let checked = |on| flag_if(on, WidgetState::CHECKED);
+        match *self {
+            Self::Active { is_checked } => checked(is_checked),
+            Self::Hovered { is_checked } => WidgetState::HOVER | checked(is_checked),
+            Self::Disabled { is_checked } => WidgetState::DISABLED | checked(is_checked),
+        }
+    }
+}
+
+#[cfg(feature = "widgets")]
+impl AtState for iced_widget::radio::Status {
+    fn at(&self) -> WidgetState {
+        let checked = |on| flag_if(on, WidgetState::CHECKED);
+        match *self {
+            Self::Active { is_selected } => checked(is_selected),
+            Self::Hovered { is_selected } => WidgetState::HOVER | checked(is_selected),
+        }
+    }
+}
+
+#[cfg(feature = "widgets")]
+impl AtState for iced_widget::toggler::Status {
+    fn at(&self) -> WidgetState {
+        let checked = |on| flag_if(on, WidgetState::CHECKED);
+        match *self {
+            Self::Active { is_toggled } => checked(is_toggled),
+            Self::Hovered { is_toggled } => WidgetState::HOVER | checked(is_toggled),
+            Self::Disabled { is_toggled } => WidgetState::DISABLED | checked(is_toggled),
+        }
+    }
+}
+
+#[cfg(feature = "widgets")]
+impl AtState for iced_widget::slider::Status {
+    fn at(&self) -> WidgetState {
+        match self {
+            Self::Active => WidgetState::NONE,
+            Self::Hovered => WidgetState::HOVER,
+            Self::Dragged => WidgetState::PRESSED,
+        }
+    }
+}
+
+/// A style whose fields a [`Stated`] sets: each field it has, set as the
+/// 0.8.0 builder hands iced its home's value; a field it has not fails.
+#[cfg(feature = "widgets")]
+trait Fields {
+    fn set(&mut self, field: Field, value: Value) -> Result<(), String>;
+}
+
+/// The colour `value` is, for `field`.
+#[cfg(feature = "widgets")]
+fn color_of(field: Field, value: &Value) -> Result<iced_core::Color, String> {
+    use crate::styles::{composite_over, faded_as_one};
+    match *value {
+        Value::Color(c) => Ok(c),
+        Value::Faded {
+            color,
+            under,
+            ground,
+            opacity,
+        } => {
+            let under = under.map_or(ground, |fill| composite_over(fill, ground));
+            Ok(opacity.map_or(color, |opacity| faded_as_one(ground, under, color, opacity)))
+        }
+        Value::Width(_) | Value::Stroke { .. } => {
+            Err(format!("{field:?} takes a colour, not {value:?}"))
+        }
+    }
+}
+
+/// The width `value` is, for `field`.
+#[cfg(feature = "widgets")]
+fn width_of(field: Field, value: &Value) -> Result<f32, String> {
+    match value {
+        Value::Width(w) => Ok(*w),
+        _ => Err(format!("{field:?} takes a width, not {value:?}")),
+    }
+}
+
+/// The colour iced is handed for the stroke of the part `value` is, laid
+/// over `fill`, as the builder reads and lays it
+/// ([`super::borders::line_or_none`], [`crate::styles::Line::over`]), and
+/// faded where the value says.
+#[cfg(feature = "widgets")]
+fn line_over(
+    field: Field,
+    value: &Value,
+    fill: iced_core::Color,
+) -> Result<iced_core::Color, String> {
+    match value {
+        Value::Stroke { part, faded } => super::borders::line_or_none(part, "the stated stroke")
+            .map(|line| {
+                let color = line.over(fill);
+                faded.map_or(color, |opacity| crate::styles::faded(color, opacity))
+            })
+            .map_err(|u| format!("{field:?}: {u:?}")),
+        _ => Err(format!("{field:?} takes a stroke, not {value:?}")),
+    }
+}
+
+/// A field `style` has not.
+#[cfg(feature = "widgets")]
+fn no_field(field: Field, style: &str) -> Result<(), String> {
+    Err(format!("{style} has no field {field:?}"))
+}
+
+#[cfg(feature = "widgets")]
+impl Fields for iced_widget::button::Style {
+    fn set(&mut self, field: Field, value: Value) -> Result<(), String> {
+        use iced_core::Background;
+        match field {
+            Field::Background => {
+                self.background = Some(Background::Color(color_of(field, &value)?))
+            }
+            Field::TextColor => self.text_color = color_of(field, &value)?,
+            Field::BorderWidth => self.border.width = width_of(field, &value)?,
+            Field::BorderColor => {
+                let fill = crate::styles::painted(self.background);
+                self.border.color = line_over(field, &value, fill)?;
+            }
+            Field::HandleBackground | Field::IconColor => return no_field(field, "button::Style"),
+        }
+        Ok(())
+    }
+}
+
+#[cfg(feature = "widgets")]
+impl Fields for iced_widget::checkbox::Style {
+    fn set(&mut self, field: Field, value: Value) -> Result<(), String> {
+        use iced_core::Background;
+        match field {
+            Field::Background => self.background = Background::Color(color_of(field, &value)?),
+            Field::TextColor => self.text_color = Some(color_of(field, &value)?),
+            Field::IconColor => self.icon_color = color_of(field, &value)?,
+            Field::BorderColor => {
+                let fill = crate::styles::painted(Some(self.background));
+                self.border.color = line_over(field, &value, fill)?;
+            }
+            Field::HandleBackground | Field::BorderWidth => {
+                return no_field(field, "checkbox::Style");
+            }
+        }
+        Ok(())
+    }
+}
+
+#[cfg(feature = "widgets")]
+impl Fields for iced_widget::radio::Style {
+    fn set(&mut self, field: Field, value: Value) -> Result<(), String> {
+        use iced_core::Background;
+        match field {
+            Field::Background => self.background = Background::Color(color_of(field, &value)?),
+            Field::BorderColor => {
+                let fill = crate::styles::painted(Some(self.background));
+                self.border_color = line_over(field, &value, fill)?;
+            }
+            Field::HandleBackground | Field::TextColor | Field::IconColor | Field::BorderWidth => {
+                return no_field(field, "radio::Style");
+            }
+        }
+        Ok(())
+    }
+}
+
+#[cfg(feature = "widgets")]
+impl Fields for iced_widget::toggler::Style {
+    fn set(&mut self, field: Field, value: Value) -> Result<(), String> {
+        use iced_core::Background;
+        match field {
+            Field::Background => self.background = Background::Color(color_of(field, &value)?),
+            Field::HandleBackground
+            | Field::TextColor
+            | Field::IconColor
+            | Field::BorderWidth
+            | Field::BorderColor => return no_field(field, "toggler::Style"),
+        }
+        Ok(())
+    }
+}
+
+#[cfg(feature = "widgets")]
+impl Fields for iced_widget::slider::Style {
+    fn set(&mut self, field: Field, value: Value) -> Result<(), String> {
+        use iced_core::Background;
+        match field {
+            Field::HandleBackground => {
+                self.handle.background = Background::Color(color_of(field, &value)?);
+            }
+            Field::Background
+            | Field::TextColor
+            | Field::IconColor
+            | Field::BorderWidth
+            | Field::BorderColor => return no_field(field, "slider::Style"),
+        }
+        Ok(())
+    }
 }
 
 /// Compare a style function that has no stroke the theme aligns: an
@@ -1258,7 +2361,6 @@ fn compare_styles(
         SegmentedSource, SliderSource, SwitchSource, ToolbarButtonSource,
     };
     use iced_widget::button::Status::{Active, Disabled, Hovered, Pressed};
-    use native_theme::next::WidgetState;
 
     use super::styles as n;
 
@@ -1280,53 +2382,65 @@ fn compare_styles(
             Added::Nothing | Added::ScrollerOutline { .. } => s,
         }
     };
-    listed_style!(
+    let none = WidgetState::NONE;
+    stated_style!(
         report,
         themes,
+        new,
         "button",
         o::button(old),
         n::button(new),
         |l| o::button_from(&at(l)),
-        button
+        button,
+        none
     );
     for checked in [false, true] {
-        listed_style!(
+        let flags = flag_if(checked, WidgetState::CHECKED);
+        stated_style!(
             report,
             themes,
+            new,
             "button_toggle",
             o::button_toggle(old, checked),
             n::button_toggle(new, checked),
             |l| o::button_toggle_from(&at(l), checked),
-            button
+            button,
+            flags
         );
         let t = ToolbarButtonSource::of(old);
-        listed_style!(
+        stated_style!(
             report,
             themes,
+            new,
             "toolbar_button",
             o::toolbar_button(old, checked),
             n::toolbar_button(new, checked),
             |l: Listed| o::toolbar_button_from(&at(l), &t.aligned(l.align), checked),
-            button
+            button,
+            flags
         );
     }
-    listed_style!(
+    stated_style!(
         report,
         themes,
+        new,
         "button_primary",
         o::button_primary(old),
         n::button_primary(new),
         |l| o::button_primary_from(&at(l)),
-        button
+        button,
+        none
     );
-    listed_style!(
+    stated_style!(
         report,
         themes,
+        new,
         "button_default",
         o::button_default(old),
         n::button_default(new),
         |l| o::button_default_from(&at(l)),
-        button
+        button,
+        none
     );
     let d = &old.defaults;
     for (name, fill, label, class, new_fn) in [
@@ -1360,11 +2474,12 @@ fn compare_styles(
         let old_fn = class_old(None);
         if let Some(new_fn) = report.mapped(name, new_fn) {
             for status in button {
-                report.leaf(
+                report.stated_leaf(
                     &format!("{name}({status:?})"),
-                    old_fn(old_theme, status),
-                    new_fn(new_theme, status),
+                    status.at(),
+                    (old_fn(old_theme, status), new_fn(new_theme, status)),
                     |l: Listed| class_old(Some(l))(old_theme, status),
+                    new,
                 );
             }
         }
@@ -1432,14 +2547,16 @@ fn compare_styles(
         });
         let c = CheckboxSource::of(old);
         let window = to_color(old.defaults.background_color);
-        listed_style!(
+        stated_style!(
             report,
             themes,
+            new,
             "checkbox",
             o::checkbox(old),
             n::checkbox(new),
             |l: Listed| o::checkbox_from(&c.listed(l), window),
-            boxes
+            boxes,
+            none
         );
     }
     {
@@ -1452,9 +2569,10 @@ fn compare_styles(
         });
         let c = &old.checkbox;
         let fills = CheckFills::of(c);
-        listed_style!(
+        stated_style!(
             report,
             themes,
+            new,
             "radio",
             o::radio(old),
             n::radio(new),
@@ -1464,7 +2582,8 @@ fn compare_styles(
                 to_color(c.font.color),
                 c.border.line_width,
             ),
-            circles
+            circles,
+            none
         );
     }
     {
@@ -1478,14 +2597,16 @@ fn compare_styles(
         });
         let s = SwitchSource::of(old);
         let window = to_color(old.defaults.background_color);
-        listed_style!(
+        stated_style!(
             report,
             themes,
+            new,
             "toggler",
             o::toggler(old),
             n::toggler(new),
             |l: Listed| o::toggler_from(&s.listed(l), window),
-            switches
+            switches,
+            none
         );
     }
     {
@@ -1521,14 +2642,16 @@ fn compare_styles(
     {
         use iced_widget::slider::Status;
         let s = SliderSource::of(old);
-        listed_style!(
+        stated_style!(
             report,
             themes,
+            new,
             "slider",
             o::slider(old),
             n::slider(new),
             |l: Listed| o::slider_from(&s.listed(l)),
-            [Status::Active, Status::Hovered, Status::Dragged]
+            [Status::Active, Status::Hovered, Status::Dragged],
+            none
         );
     }
     {
@@ -1606,28 +2729,32 @@ fn compare_styles(
                 SegmentPosition::Last,
                 SegmentPosition::Only,
             ] {
-                listed_style!(
+                stated_style!(
                     report,
                     themes,
+                    new,
                     "segment",
                     o::segment(old, selected, position),
                     n::segment(new, selected, position),
                     |l: Listed| o::segment_from(&sc.listed(l), selected, position),
-                    button
+                    button,
+                    flag_if(selected, WidgetState::SELECTED)
                 );
             }
         }
     }
     {
         let x = ExpanderSource::of(old);
-        listed_style!(
+        stated_style!(
             report,
             themes,
+            new,
             "expander",
             o::expander(old),
             n::expander(new),
             |l: Listed| o::expander_from(&x.listed(l)),
-            button
+            button,
+            none
         );
         style!(
             report,
@@ -2086,6 +3213,16 @@ fn split_key(key: &str) -> (&str, Option<&str>) {
 fn every_listed_difference_names_a_covered_preset_once() {
     for (i, d) in DIFFERENCES.iter().enumerate() {
         assert!(!d.reason.is_empty(), "{}: no reason", d.leaf);
+        let stated = || d.stated.iter().copied().flatten();
+        for (j, s) in stated().enumerate() {
+            assert!(
+                !stated().take(j).any(|t| t.at == s.at && t.field == s.field),
+                "{}: {:?} stated twice at {:?}",
+                d.leaf,
+                s.field,
+                s.at
+            );
+        }
         for p in d.presets {
             let (preset, scheme) = split_key(p);
             assert!(
