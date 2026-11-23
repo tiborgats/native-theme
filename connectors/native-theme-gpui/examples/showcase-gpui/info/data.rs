@@ -2,7 +2,9 @@
 
 use gpui_component::{Colorize as _, attachment::AttachmentStatus, theme::Theme};
 
+use native_theme::next::{ResolvedTheme as NextTheme, WidgetState};
 use native_theme_gpui::ResolvedTheme;
+use native_theme_gpui::next::fill_of;
 
 use super::{
     ColorClaim, WidgetInfo,
@@ -49,9 +51,11 @@ pub fn description_list(t: &Theme, items: usize, columns: usize) -> WidgetInfo {
 
 /// The striped, bordered `DataTable`: its frame and fill. Its rows report
 /// themselves (`data_table_row`). `styled` where a native theme is installed,
-/// so the table takes `geometry::data_table_size` and its container
-/// `geometry::table`; `header` where the theme states `list.header_height`,
-/// which the header row takes through `geometry::list_header_height`.
+/// so the table takes `next::geometry::data_table_size` and its container
+/// `next::geometry::table`; `header` where the theme states
+/// `list.header(NONE).min_size[1]`, which the header row takes through
+/// `next::geometry::list_header_height`. Their geometry lines are recorded
+/// where `demo::data_table` applies them.
 pub fn data_table(
     t: &Theme,
     rows: usize,
@@ -107,13 +111,11 @@ pub fn data_table(
                          and the text its container gives the cells",
         );
     let info = if styled && header {
-        info.geometry("data_table_size")
-            .geometry("table")
-            .geometry("list_header_height")
+        info
     } else if styled {
-        info.geometry("data_table_size").geometry("table").not_themeable("header height", "the body rows' height: the theme states no list.header_height, and a header row height left unset matches the body rows (table/state.rs, header_row_height)")
+        info.not_themeable("header height", "the body rows' height: the theme states no list.header(NONE).min_size[1], and a header row height left unset matches the body rows (table/state.rs, header_row_height)")
     } else {
-        info.not_themeable("row height", "upstream's Medium 32px: with no native theme installed nothing states list.row_height (sizing.rs, table_row_height)")
+        info.not_themeable("row height", "upstream's Medium 32px: with no native theme installed nothing states list.row(NONE).min_size[1] (sizing.rs, table_row_height)")
             .not_themeable("text", "text_sm, which a Medium cell sets on itself (sizing.rs, table_cell_size)")
     };
     info.config("keyboard focus", "a focused DataTable takes `ring` while the last input was a key press, so a click alone shows none of it, an arrow key after the click does, and a mouse move takes it away: its edge in `ring`, with the focus ring outside it where the theme's focus_ring is on (gpui-component/styled.rs:250-271, focus_style); DataTable::new turns it on (table/data_table.rs:114, 255-262)")
@@ -696,24 +698,25 @@ pub fn pagination(t: &Theme, compact: bool, page: usize, pages: usize, gap: bool
 /// The fill every List and Tree row lacks.
 const NO_LIST_FILL: &str = "none: a ListItem paints no idle background (list/list_item.rs, ListItem::render), so the fill of the box around the rows shows through";
 
-/// The fill of the box around a List's or a Tree's rows: `list.background_color`,
-/// which `geometry::list` paints on it, where a native theme is installed.
-fn list_fill(info: WidgetInfo, native: Option<&ResolvedTheme>) -> WidgetInfo {
-    match native {
-        Some(r) => info.color(claim(
+/// The fill of the box around a List's or a Tree's rows:
+/// `list.container(NONE).fill`, which `next::geometry::list` paints on it,
+/// where the installed 0.8.0 theme `native` gives that builder all it reads.
+fn list_fill(info: WidgetInfo, native: Option<&NextTheme>) -> WidgetInfo {
+    match native.filter(|r| native_theme_gpui::next::geometry::list(r).is_ok()) {
+        Some(r) => info.colors(stated_claim(
             "fill",
-            "background_color",
-            stated(r.list.background_color),
-            "native-theme-gpui/geometry.rs:1050",
+            "list.container(NONE).fill",
+            fill_of(&r.list.container(WidgetState::NONE)),
+            "native-theme-gpui/next/builders.rs:146",
         )),
-        None => info.not_themeable("fill", "none: no native theme is installed, so geometry::list, which paints list.background_color on the box around the rows, does not apply, and ThemeColor::list has no reader (list/list_item.rs, ListItem::render)"),
+        None => info.not_themeable("fill", "none: no native theme is installed, or it states no value gpui can take at a home geometry::list reads, so geometry::list, which paints list.container(NONE).fill on the box around the rows, does not apply, and ThemeColor::list has no reader (list/list_item.rs, ListItem::render)"),
     }
 }
 
 /// The List, with the box around it that is its frame and its fill. Its
 /// geometry line is recorded where `demo::list` applies the builder; its
 /// rows report themselves (`list_row`).
-pub fn list(rows: usize, native: Option<&ResolvedTheme>) -> WidgetInfo {
+pub fn list(rows: usize, native: Option<&NextTheme>) -> WidgetInfo {
     list_fill(WidgetInfo::new("List").variant("selectable"), native)
         .not_themeable("even rows", "the list_even token has no reader anywhere in gpui-component or gpui-base: a List paints every row the same, and the connector writes the slot for nothing (Tier U)")
         .instance("frame", "List paints no frame of its own (list/list.rs, RenderOnce for List), so the frame is the application's: the box around it")
@@ -726,19 +729,19 @@ pub fn list(rows: usize, native: Option<&ResolvedTheme>) -> WidgetInfo {
 fn scrollbar_room(styled: bool, gutter: Option<gpui::Pixels>) -> String {
     match (styled, gutter) {
         (_, Some(gutter)) => format!(
-            "{}px, scrollbar.groove_width: the List and the Tree lay their scrollbar over the rows' right end (gpui-component/list/list.rs, List::render; gpui-component/tree.rs, Tree), and the theme's is no overlay (scrollbar.overlay_mode false), so the row ends that groove short of it (demo::list_gutter)",
+            "{}px, scrollbar.track(NONE; orientation=Vertical).min_size[0]: the List and the Tree lay their scrollbar over the rows' right end (gpui-component/list/list.rs, List::render; gpui-component/tree.rs, Tree), and the theme's is no overlay (scrollbar.overlay_mode false), so the row ends that groove short of it (demo::list_gutter)",
             px_text(gutter.as_f32())
         ),
-        (true, None) => "none: the theme's scrollbar is an overlay (scrollbar.overlay_mode), which the List and the Tree lay over the rows' right end".to_string(),
-        (false, None) => "none: no native theme is installed, and the List and the Tree lay their scrollbar over the rows' right end".to_string(),
+        (true, None) => "none: the theme's scrollbar is an overlay (scrollbar.overlay_mode), or the theme states no groove width (scrollbar.track(NONE; orientation=Vertical).min_size[0]), and the List and the Tree lay their scrollbar over the rows' right end".to_string(),
+        (false, None) => "none: no native theme is installed, or it states no value gpui can take at a home geometry::list_item reads, and the List and the Tree lay their scrollbar over the rows' right end".to_string(),
     }
 }
 
 /// What a `ListItem` row reading `label` paints in `state`, for the List and
 /// the Tree, keeping `gutter` clear for the scrollbar where the theme's is
-/// no overlay. `styled` is whether a native theme is installed, so whether
-/// the row took `geometry::list_item`, whose line is recorded where the row
-/// applies it.
+/// no overlay. `styled` is whether the row took `next::geometry::list_item`,
+/// a native theme being installed and stating what it reads, whose line is
+/// recorded where the row applies it.
 fn list_item(
     t: &Theme,
     label: &str,
@@ -806,17 +809,17 @@ fn list_item(
         .instance("right margin", scrollbar_room(styled, gutter));
     // The label is plain text, so it takes the row's own text style: the
     // foreground and text_base ListItem sets (list/list_item.rs:204-205),
-    // which geometry::list_item then refines with list.item_font, colour
-    // included -- a colour no ThemeColor field holds. A selected row is
-    // refined by geometry::list_item_selected after it, over that colour.
+    // which geometry::list_item then refines with list.item_label(NONE),
+    // colour included -- a colour no ThemeColor field holds. A selected row
+    // is refined by geometry::list_item_selected after it, over that colour.
     let selected = matches!(
         state,
         ListRowState::Selected | ListRowState::SelectedRightClicked
     );
     if styled && selected {
-        info.instance("text", "list.selection_text_color, which geometry::list_item_selected sets on the selected row over list.item_font's colour; the size is list.item_font's, from geometry::list_item, over the text_base and foreground ListItem sets first (list/list_item.rs, ListItem::render)")
+        info.instance("text", "list.item_label(SELECTED).color, which geometry::list_item_selected sets on the selected row where the theme states it (its geometry line says whether it did) over list.item_label(NONE)'s colour; the size is list.item_label(NONE)'s, from geometry::list_item, over the text_base and foreground ListItem sets first (list/list_item.rs, ListItem::render)")
     } else if styled {
-        info.instance("text", "list.item_font's size and colour, which geometry::list_item refines the row with over the text_base and foreground ListItem sets first (list/list_item.rs, ListItem::render)")
+        info.instance("text", "list.item_label(NONE)'s size and colour, which geometry::list_item refines the row with over the text_base and foreground ListItem sets first (list/list_item.rs, ListItem::render)")
     } else {
         info.color(claim(
             "text",
@@ -824,7 +827,7 @@ fn list_item(
             t.foreground,
             "gpui-component/list/list_item.rs:207",
         ))
-        .not_themeable("text size", "text_base, ListItem's own: no native theme is installed, so geometry::list_item has no font to give the row (list/list_item.rs, ListItem::render)")
+        .not_themeable("text size", "text_base, ListItem's own: no native theme is installed, or it states no value gpui can take at a home geometry::list_item reads, so geometry::list_item gives the row no font (list/list_item.rs, ListItem::render)")
     }
 }
 
@@ -844,7 +847,7 @@ pub fn list_row(
             ListRowState::Selected | ListRowState::SelectedRightClicked
         )
     {
-        info.not_themeable("window not active", "the same list pair: a ListItem paints its selected fill, list_active, after the caller's style whatever the window's state (list/list_item.rs, ListItem::render), and a text colour without its fill is no pair, so defaults.selection_inactive_background and selection_inactive_text_color are not drawn here; the Basic table's selected row draws them where the theme gives that selection a fill of its own")
+        info.not_themeable("window not active", "the same list pair: a ListItem paints its selected fill, list_active, after the caller's style whatever the window's state (list/list_item.rs, ListItem::render), and a text colour without its fill is no pair, so colors.selection.unfocused_background and unfocused_foreground are not drawn here; the Basic table's selected row draws them where the theme gives that selection a fill of its own")
     } else {
         info
     }
@@ -853,7 +856,7 @@ pub fn list_row(
 /// The Tree, with the box around it that is its frame. Its geometry line is
 /// recorded where `demo::tree` applies the builder; its rows report
 /// themselves (`tree_row`).
-pub fn tree(native: Option<&ResolvedTheme>) -> WidgetInfo {
+pub fn tree(native: Option<&NextTheme>) -> WidgetInfo {
     list_fill(WidgetInfo::new("Tree"), native)
         .not_themeable("indent", "none here, and none upstream: Tree::new takes a render_item closure and tree.rs draws no row content of its own (gpui-component/tree.rs, Tree), so a row's indent is whatever the application's closure applies -- this demo's applies none")
         .not_themeable("disclosure icon", "the same: tree.rs contains no icon, so a chevron would be the closure's to draw. The panel used to claim a hardcoded ChevronRight, which is in neither this demo nor upstream")

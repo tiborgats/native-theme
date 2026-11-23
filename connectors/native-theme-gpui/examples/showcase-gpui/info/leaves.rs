@@ -1636,53 +1636,57 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "basic.list.",
         "list.hover_border_color",
-        "gpui: an unselected row's outline under the pointer, a box over the row in its suffix, on the corners of its fill (demo::ListRow)",
+        "gpui: list.highlight(HOVER).stroke, an unselected row's outline under the pointer, a box over the row in its suffix, on the corners of its fill (demo::ListRow)",
     ),
     (
         "basic.list.row_",
         "list.border.corner_radius_px",
-        "gpui: the first row's fill takes the frame's inner radius, this less list.border.line_width, on its top corners and the last row's on its bottom corners (demo::ListRow)",
+        "gpui: list.container(NONE).corners, the first row's fill takes the frame's inner radius, this less list.container(NONE).stroke.width, on its top corners and the last row's on its bottom corners (demo::ListRow)",
     ),
     (
         "basic.list.row_",
         "list.border.line_width_px",
-        "gpui: geometry::list's line, which the rows lie inside; taken off the frame's radius for the inner radius of the first and last rows' corners (demo::ListRow)",
+        "gpui: list.container(NONE).stroke.width, next::geometry::list's line, which the rows lie inside; taken off the frame's radius for the inner radius of the first and last rows' corners (demo::ListRow)",
     ),
-    ("", "list.background_color", "gpui: geometry::list's fill"),
+    (
+        "",
+        "list.background_color",
+        "gpui: list.container(NONE).fill, next::geometry::list's fill",
+    ),
     (
         "",
         "list.border.color",
-        "gpui: geometry::list's border colour",
+        "gpui: list.container(NONE).stroke.color, next::geometry::list's border colour",
     ),
     (
         "",
         "list.border.corner_radius_px",
-        "gpui: geometry::list's corner radius",
+        "gpui: list.container(NONE).corners, next::geometry::list's corner radius",
     ),
     (
         "",
         "list.border.line_width_px",
-        "gpui: geometry::list's border width",
+        "gpui: list.container(NONE).stroke.width, next::geometry::list's border width",
     ),
     (
         "",
         "list.border.padding_top_px",
-        "gpui: geometry::list_item pads each row by the stated side",
+        "gpui: list.row(NONE).padding, with list.highlight(NONE)'s margin, next::geometry::list_item pads each row by the stated side",
     ),
     (
         "",
         "list.border.padding_right_px",
-        "gpui: geometry::list_item pads each row by the stated side",
+        "gpui: list.row(NONE).padding, with list.highlight(NONE)'s margin, next::geometry::list_item pads each row by the stated side",
     ),
     (
         "",
         "list.border.padding_bottom_px",
-        "gpui: geometry::list_item pads each row by the stated side",
+        "gpui: list.row(NONE).padding, with list.highlight(NONE)'s margin, next::geometry::list_item pads each row by the stated side",
     ),
     (
         "",
         "list.border.padding_left_px",
-        "gpui: geometry::list_item pads each row by the stated side",
+        "gpui: list.row(NONE).padding, with list.highlight(NONE)'s margin, next::geometry::list_item pads each row by the stated side",
     ),
     (
         "",
@@ -1692,22 +1696,22 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "list.hover_text_color",
-        "gpui: the label's colour under the pointer (demo::ListRow)",
+        "gpui: list.item_label(HOVER).color, the label's colour under the pointer (demo::ListRow)",
     ),
     (
         "",
         "list.item_font",
-        "gpui: geometry::list_item's family, size, weight and style",
+        "gpui: list.item_label(NONE), next::geometry::list_item's family, size, weight and style",
     ),
     (
         "",
         "list.item_font.color",
-        "gpui: geometry::list_item's text colour",
+        "gpui: list.item_label(NONE).color, next::geometry::list_item's text colour",
     ),
     (
         "",
         "list.row_height_px",
-        "gpui: geometry::list_item's height where stated (control-height rule)",
+        "gpui: list.row(NONE).min_size[1], next::geometry::list_item's height where stated (control-height rule)",
     ),
     (
         "",
@@ -1717,7 +1721,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "list.selection_text_color",
-        "gpui: geometry::list_item_selected's text colour on the selected row (demo::ListRow)",
+        "gpui: list.item_label(SELECTED).color, next::geometry::list_item_selected's text colour on the selected row (demo::ListRow)",
     ),
     // --- menu: the showcase's MenuBar (demo::MenuTitle, MenuBar::popup) ---------
     (

@@ -258,10 +258,6 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
         "menu.row_height, where the theme states one, by the control-height rule (defaults.line_height as the line height; the stated height at a text scale of 1 or less, a minimum with an automatic height above 1), else menu.min_row_height as a least height the content grows past, the menu.border.padding sides the theme states, menu.icon_text_gap, menu.font",
     ),
     (
-        "list_item",
-        "list.row_height, where the theme states one, by the control-height rule (defaults.line_height as the line height; the stated height at a text scale of 1 or less, a minimum with an automatic height above 1), the list.border.padding sides the theme states, and list.item_font including its colour -- upstream labels the row with foreground before applying it (list/list_item.rs, ListItem::render)",
-    ),
-    (
         "tooltip",
         "the tooltip.border.padding sides the theme states, corner_radius, tooltip.font — including its colour, which upstream would otherwise paint with popover_foreground —, defaults.line_height as the line height (upstream sets none, so wrapped text was spaced by gpui's phi), tooltip.background_color and tooltip.border.color, which upstream would otherwise paint with the popover's fill and the window's border, the edge tooltip.border.line_width wide in place of upstream's border_1, and shadow_md's two layers in defaults.shadow_color where tooltip.border.shadow_enabled holds, no shadow where it does not, in place of upstream's shadow_md (gpui-component/tooltip.rs, Tooltip::render: bg, text_color, border_1, border_color and shadow_md, then refine_style)",
     ),
@@ -288,14 +284,6 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     (
         "dialog_description",
         "dialog.body_font including its colour, which upstream would otherwise paint with muted_foreground (dialog/description.rs, DialogDescription::render), and defaults.line_height as the line height",
-    ),
-    (
-        "list",
-        "list.border line width, colour and corner radius, a clip to that radius, and list.background_color as the fill: neither List nor Tree paints one, nor a ListItem at rest (list/list_item.rs, ListItem::render)",
-    ),
-    (
-        "table",
-        "list.item_font and defaults.line_height as the line height on the table root (table/table.rs, Table::render: text_sm then refine_style)",
     ),
     (
         "group_box_content",
@@ -334,10 +322,6 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
         "toolbar.bar_height as the minimum height where the theme states one, item_gap where it states one, the border.padding sides the theme states, background_color, the bottom edge, border.color at border.line_width, toolbar.font's family, size, weight and style, and its colour -- upstream's Toolbar sets no colour (gpui-component/toolbar.rs, RenderOnce for Toolbar) --, and defaults.line_height as the line height",
     ),
     (
-        "data_table_size",
-        "list.row_height as Size::Size, which table_row_height returns verbatim, or upstream's Medium 32px where the theme states none (sizing.rs, table_row_height); a Size::Size cell sets no text size and inherits the container's, which geometry::table gives list.item_font, where a Medium cell is text_sm (sizing.rs, table_cell_size); above a text scale of 1 at least list.item_font's scaled line box at defaults.line_height, upstream's own cell padding (sizing.rs, table_cell_padding) and the row's 1px bottom border, which upstream draws inside the row (table/state.rs, border_b_1), so the row holds its text",
-    ),
-    (
         "list_header_height",
         "list.header_height, the height of a table's header row, which DataTable::header_row_height takes (table/data_table.rs, DataTable::header_row_height); where the theme states none, nothing is set and the header keeps the body rows' height (table/state.rs, header_row_height); above a text scale of 1 at least list.item_font's scaled line box at defaults.line_height, upstream's own cell padding and the header row's 1px bottom border (table/state.rs, border_b_1): a Size::Size header cell sets no text size and inherits the container's, which geometry::table gives list.item_font (sizing.rs, table_cell_size)",
     ),
@@ -368,10 +352,6 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     (
         "default_button_rest",
         "button.default_button_background as the fill and button.default_button_border_color (button.border.color where unstated) as the border colour of a dialog's default Button at rest, over variants::default_button, whose rest fill is a fifth of its border colour (button/button.rs, ButtonVariant::bg_color); nothing where the theme states no fill, and the Button is .primary()",
-    ),
-    (
-        "list_item_selected",
-        "list.selection_text_color on a selected ListItem's text, over the foreground upstream sets on every row before the refinement -- or geometry::list_item's list.item_font colour: while list.active_highlight is on, gpui-component's default, upstream marks a selected row by its fill alone, painted after the refinement; with it off, it letters the row accent_foreground on accent after the refinement, so this colour does not reach it; and it mutes a row that is not selectable after the refinement too (list/list_item.rs, ListItem::render)",
     ),
     (
         "link",
@@ -468,6 +448,30 @@ pub const NEXT_GEOMETRY_NOTES: &[(&str, &str)] = &[
     (
         "tooltip_content",
         "tooltip.panel.max_size[0] less the bubble's left and right padding -- the theme's where stated, upstream's px_2 (0.5 rem at typography.body.size_px) where not (gpui-component/tooltip.rs, Tooltip::render) -- and its edge, tooltip.panel.stroke.width on each side, which geometry::tooltip draws in place of upstream's border_1 (gpui-component/tooltip.rs, Tooltip::render), as the max width of the element passed to Tooltip::element, which the text wraps at",
+    ),
+    (
+        "list",
+        "list.container(NONE)'s stroke width, stroke colour and corner radius, a clip to that radius, and list.container(NONE).fill as the fill: neither List nor Tree paints one, nor a ListItem at rest (list/list_item.rs, ListItem::render)",
+    ),
+    (
+        "list_item",
+        "list.row(NONE).min_size[1], where the theme states one, by the control-height rule (typography.line_height_multiplier as the line height; the stated height at a text scale of 1 or less, a minimum with an automatic height above 1), the padding sides list.row(NONE) states, each with the margin list.highlight(NONE) states on that side, and list.item_label(NONE)'s font including its colour -- upstream labels the row with foreground before applying it (list/list_item.rs, ListItem::render)",
+    ),
+    (
+        "list_item_selected",
+        "list.item_label(SELECTED).color on a selected ListItem's text, over the foreground upstream sets on every row before the refinement -- or geometry::list_item's list.item_label(NONE) colour: while list.active_highlight is on, gpui-component's default, upstream marks a selected row by its fill alone, painted after the refinement; with it off, it letters the row accent_foreground on accent after the refinement, so this colour does not reach it; and it mutes a row that is not selectable after the refinement too (list/list_item.rs, ListItem::render)",
+    ),
+    (
+        "table",
+        "list.item_label(NONE)'s family, size, weight and style, and typography.line_height_multiplier as the line height, on the table root (table/table.rs, Table::render: text_sm then refine_style)",
+    ),
+    (
+        "data_table_size",
+        "list.row(NONE).min_size[1] as Size::Size, which table_row_height returns verbatim, or upstream's Medium 32px where the theme states none (sizing.rs, table_row_height); a Size::Size cell sets no text size and inherits the container's, which geometry::table gives list.item_label(NONE), where a Medium cell is text_sm (sizing.rs, table_cell_size); above a text scale of 1 at least list.item_label(NONE)'s scaled line box at typography.line_height_multiplier, upstream's own cell padding (sizing.rs, table_cell_padding) and the row's 1px bottom border, which upstream draws inside the row (table/state.rs, border_b_1), so the row holds its text",
+    ),
+    (
+        "list_header_height",
+        "list.header(NONE).min_size[1], the height of a table's header row, which DataTable::header_row_height takes (table/data_table.rs, DataTable::header_row_height); where the theme states none, nothing is set and the header keeps the body rows' height (table/state.rs, header_row_height); above a text scale of 1 at least list.item_label(NONE)'s scaled line box at typography.line_height_multiplier, upstream's own cell padding and the header row's 1px bottom border (table/state.rs, border_b_1): a Size::Size header cell sets no text size and inherits the container's, which geometry::table gives list.item_label(NONE) (sizing.rs, table_cell_size)",
     ),
     (
         "input",

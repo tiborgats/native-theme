@@ -370,6 +370,26 @@ fn scrollbar_of(cx: &mut VisualTestContext, showcase: &Entity<Showcase>) -> (Pix
     })
 }
 
+/// [`scrollbar_of`] on the installed 0.8.0 theme: the vertical groove's
+/// width, `scrollbar.track(NONE; orientation=Vertical).min_size[0]`, where
+/// the theme states it, and whether the scrollbar is an overlay; `None`
+/// before a 0.8.0 theme is installed.
+fn next_scrollbar_of(
+    cx: &mut VisualTestContext,
+    showcase: &Entity<Showcase>,
+) -> Option<(Option<Pixels>, bool)> {
+    read(cx, showcase, |_this, cx| {
+        crate::support::next_resolved(cx).map(|r| {
+            (
+                native_theme_gpui::next::scrollbar_groove_width(r)
+                    .ok()
+                    .map(px),
+                r.scrollbar.overlay_mode,
+            )
+        })
+    })
+}
+
 /// A scrollbar that is not an overlay keeps off the content.
 ///
 /// gpui-component overlays its scrollbar on the scroll area whatever the
@@ -759,12 +779,17 @@ fn the_list_frames_agree_with_the_list_theme(cx: &mut TestAppContext) {
     for preset in ["material-3", "windows-11"] {
         use_preset(&mut cx, &showcase, preset);
         let native = read(&mut cx, &showcase, |_this, cx| {
-            let b = |f: fn(&native_theme::theme::ResolvedWidgetBorder) -> f32| {
-                native_value(cx, |n| px(f(&n.resolved.list.border)))
-            };
-            b(|b| b.corner_radius).zip(b(|b| b.line_width))
+            let container = crate::support::next_resolved(cx)?
+                .list
+                .container(native_theme::next::WidgetState::NONE);
+            let radius = native_theme_gpui::next::radius_of(&container)?;
+            let width = native_theme_gpui::next::stroke_width_of(&container)?;
+            Some((px(radius), px(width)))
         });
-        let frame = cx.update(|_w, cx| native_geometry(cx, geometry::list));
+        let frame = cx.update(|_w, cx| {
+            crate::support::next_geometry(cx, native_theme_gpui::next::geometry::list)
+                .and_then(Result::ok)
+        });
         assert!(
             native.is_some() && frame.is_some(),
             "{preset}: no native theme is installed, so nothing was measured"
@@ -3533,7 +3558,8 @@ fn the_empty_states_info_prints_its_icons_size(cx: &mut TestAppContext) {
 /// Both tables draw their header row `list.header_height` tall where the
 /// theme states it (adwaita, 30), and as tall as a body row is drawn where it
 /// does not (kde-breeze, which states no header height): the Data page's
-/// `DataTable` at `geometry::data_table_size`'s row height, the Basic page's
+/// `DataTable` at `next::geometry::data_table_size`'s row height (its header
+/// at `list.header(NONE).min_size[1]`), the Basic page's
 /// table at `list.row_height`, or else its padding and the header font's line,
 /// on the pixel grid.
 #[gpui::test]
@@ -3541,7 +3567,8 @@ fn the_tables_headers_take_the_themes_header_height(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     for preset in ["adwaita", "kde-breeze"] {
         use_preset(&mut cx, &showcase, preset);
-        let (stated, data_row, basic_row) = read(&mut cx, &showcase, |_, cx| {
+        // The Basic page's table still reads the 0.7.2 theme.
+        let (stated, basic_row) = read(&mut cx, &showcase, |_, cx| {
             native_value(cx, |n| {
                 let l = &n.resolved.list;
                 let pad = &l.border.padding;
@@ -3549,7 +3576,6 @@ fn the_tables_headers_take_the_themes_header_height(cx: &mut TestAppContext) {
                     * n.resolved.defaults.line_height;
                 (
                     geometry::list_header_height(n),
-                    geometry::data_table_size(n).table_row_height(),
                     px(l.row_height
                         .unwrap_or(pad.top.unwrap_or(0.) + line + pad.bottom.unwrap_or(0.))),
                 )
@@ -3561,10 +3587,31 @@ fn the_tables_headers_take_the_themes_header_height(cx: &mut TestAppContext) {
             preset == "adwaita",
             "precondition: {preset}'s header height"
         );
+        // The DataTable reads the installed 0.8.0 theme.
+        let next = read(&mut cx, &showcase, |_, cx| {
+            crate::support::next_resolved(cx).map(|r| {
+                (
+                    native_theme_gpui::next::geometry::list_header_height(r),
+                    native_theme_gpui::next::geometry::data_table_size(r),
+                )
+            })
+        });
+        assert!(
+            matches!(next, Some((Ok(_), Ok(_)))),
+            "{preset}: no 0.8.0 theme is installed, or it maps no table height: {next:?}"
+        );
+        let Some((Ok(next_stated), Ok(next_size))) = next else {
+            return;
+        };
+        assert_eq!(
+            next_stated.is_some(),
+            preset == "adwaita",
+            "precondition: {preset}'s list.header(NONE).min_size[1]"
+        );
         show(&mut cx, &showcase, Page::Data);
         assert_eq!(
             bounds_of(&mut cx, DATA_TABLE_HEADER).size.height,
-            stated.unwrap_or(data_row),
+            next_stated.unwrap_or(next_size.table_row_height()),
             "{preset}: the DataTable's header row"
         );
         show(&mut cx, &showcase, Page::Basic);
@@ -6416,12 +6463,18 @@ fn the_basic_list_shows_three_rows(cx: &mut TestAppContext) {
     show(&mut cx, &showcase, Page::Basic);
     let list = bounds_of(&mut cx, "basic-list");
     let row = bounds_of(&mut cx, "basic-list-row-0");
-    let frame = read(&mut cx, &showcase, |_this, cx| {
-        native_value(cx, |n| n.resolved.list.border.line_width)
-    })
-    .map(px);
-    assert!(frame.is_some(), "no native theme is installed");
-    let frame = frame.unwrap_or_default();
+    let frame = next_theme(&mut cx, &showcase)
+        .and_then(|r| {
+            native_theme_gpui::next::stroke_width_of(
+                &r.list.container(native_theme::next::WidgetState::NONE),
+            )
+        })
+        .map(px);
+    assert!(
+        frame.is_some(),
+        "no native theme is installed, or it states no list.container(NONE).stroke.width"
+    );
+    let Some(frame) = frame else { return };
     assert_eq!(
         list.size.height,
         row.size.height * 3. + frame + frame,
@@ -6435,8 +6488,8 @@ fn the_basic_list_shows_three_rows(cx: &mut TestAppContext) {
     );
     assert!(
         info.as_ref()
-            .is_some_and(|i| i.to_text().contains("list.selection_text_color")),
-        "the selected row's text is not list.selection_text_color: {info:?}"
+            .is_some_and(|i| i.to_text().contains("list.item_label(SELECTED).color")),
+        "the selected row's text is not list.item_label(SELECTED).color: {info:?}"
     );
 }
 
@@ -7492,13 +7545,18 @@ fn a_moved_column_keeps_its_data(cx: &mut TestAppContext) {
 }
 
 /// A List row's text is plain text, so it takes the list font
-/// `geometry::list_item` gives the row, and its info says so; without a
-/// native theme it is ListItem's own foreground.
+/// `next::geometry::list_item` gives the row, and its info says so; without
+/// a native theme it is ListItem's own foreground.
 #[gpui::test]
 fn a_list_rows_text_is_the_list_font(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     show(&mut cx, &showcase, Page::Data);
-    let styled = cx.update(|_w, cx| native_value(cx, |_| ()).is_some());
+    let styled = cx.update(|_w, cx| {
+        matches!(
+            crate::support::next_geometry(cx, native_theme_gpui::next::geometry::list_item),
+            Some(Ok(_))
+        )
+    });
     let info = settle_on(&mut cx, &showcase, "data-list-row-0");
     let text_claim = info
         .as_ref()
@@ -7506,12 +7564,12 @@ fn a_list_rows_text_is_the_list_font(cx: &mut TestAppContext) {
     let font_note = info.as_ref().is_some_and(|info| {
         info.instance
             .iter()
-            .any(|n| n.what == "text" && n.text.starts_with("list.item_font"))
+            .any(|n| n.what == "text" && n.text.starts_with("list.item_label(NONE)"))
     });
     if styled {
         assert!(
             text_claim.is_none() && font_note,
-            "the row takes list.item_font, and its info does not say so: {info:?}"
+            "the row takes list.item_label(NONE), and its info does not say so: {info:?}"
         );
     } else {
         assert_eq!(
@@ -7546,36 +7604,36 @@ fn a_tree_row_reports_itself(cx: &mut TestAppContext) {
 }
 
 /// A List row and a Tree row under the pointer letter their label in
-/// `list.hover_text_color` (M9-008), and in `list.item_font`'s colour at
-/// rest. The label is plain text, so it is painted in the text colour it is
-/// laid out under, which the registry records per row (a text colour is no
-/// quad of the scene). kde-breeze light states the same colour for its list
-/// text and its hovered list text, so the hovered one is set to the theme's
-/// accent, a colour of the same theme that differs from both.
+/// `list.item_label(HOVER).color` (M9-008), and in
+/// `list.item_label(NONE)`'s colour at rest. The label is plain text, so it
+/// is painted in the text colour it is laid out under, which the registry
+/// records per row (a text colour is no quad of the scene). kde-breeze light
+/// states the same colour for its list text and its hovered list text, so
+/// the hovered one is patched to the theme's `colors.window.border`, a
+/// colour of the same theme that differs from both.
 #[gpui::test]
 fn a_hovered_list_or_tree_row_letters_its_label_in_the_lists_hover_text_colour(
     cx: &mut TestAppContext,
 ) {
-    use crate::info::stated;
+    use native_theme::next::{ListRule, TextPatch, ThemePatch, WidgetState};
+    use native_theme_gpui::next::{state_text_color_of, text_color_of};
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
-    use_light_preset(&mut cx, &showcase, "kde-breeze");
-    let mut r = resolved_theme(&mut cx, &showcase);
-    r.list.hover_text_color = r.defaults.accent_color;
-    assert_ne!(
-        r.list.hover_text_color, r.list.item_font.color,
-        "kde-breeze light's accent is its list text, so the test could not tell the two apart"
-    );
-    cx.update(|_window, cx| {
-        let prefs = native_theme::AccessibilityPreferences::default();
-        native_theme_gpui::apply(
-            native_theme_gpui::to_theme(&r, "kde-breeze", false, &prefs),
-            &r,
-            &prefs,
-            cx,
-        );
+    let r = install_patched_breeze(&mut cx, &showcase, Page::Data, |r| {
+        r.colors.window.border.map(|border| {
+            ThemePatch::new().list(
+                ListRule::new()
+                    .states(WidgetState::HOVER)
+                    .item_label(TextPatch::new().color(border)),
+            )
+        })
     });
-    cx.run_until_parked();
-    show(&mut cx, &showcase, Page::Data);
+    let Some(r) = r else { return };
+    let rest = text_color_of(&r.list.item_label(WidgetState::NONE));
+    let hovered = state_text_color_of(&r.list.item_label(WidgetState::HOVER));
+    assert!(
+        rest.is_some() && hovered.is_some() && rest != hovered,
+        "the patched list.item_label(HOVER).color is not told apart from list.item_label(NONE)'s: {rest:?} / {hovered:?}"
+    );
     let ui = read(&mut cx, &showcase, |this, _| this.info_ui.clone());
     for row in ["data-list-row-0", "data-tree-row-1"] {
         let text = |cx: &mut VisualTestContext| {
@@ -7583,16 +7641,16 @@ fn a_hovered_list_or_tree_row_letters_its_label_in_the_lists_hover_text_colour(
         };
         assert_eq!(
             text(&mut cx),
-            Some(stated(r.list.item_font.color)),
-            "{row}: the label at rest is not list.item_font's colour"
+            rest,
+            "{row}: the label at rest is not list.item_label(NONE)'s colour"
         );
         let bounds = bounds_of(&mut cx, row);
         hover(&mut cx, bounds.center());
         draw(&mut cx);
         assert_eq!(
             text(&mut cx),
-            Some(stated(r.list.hover_text_color)),
-            "{row}: the label under the pointer is not list.hover_text_color"
+            hovered,
+            "{row}: the label under the pointer is not list.item_label(HOVER).color"
         );
         hover(&mut cx, point(px(0.), px(0.)));
         draw(&mut cx);
@@ -7600,7 +7658,7 @@ fn a_hovered_list_or_tree_row_letters_its_label_in_the_lists_hover_text_colour(
 }
 
 /// A selected List or Tree row's info says its text is
-/// `list.selection_text_color`, which `geometry::list_item_selected` sets
+/// `list.item_label(SELECTED).color`, which `geometry::list_item_selected` sets
 /// over the list font's colour (M9-056), and an unselected one's says the
 /// list font's colour and names the hovered text the showcase sets
 /// (M9-008), under a native theme.
@@ -7626,9 +7684,9 @@ fn a_selected_list_or_tree_rows_info_names_the_selection_text_colour(cx: &mut Te
         let info = settle_on(&mut cx, &showcase, selected);
         let says = text(&info).unwrap_or_default();
         assert!(
-            says.starts_with("list.selection_text_color")
+            says.starts_with("list.item_label(SELECTED).color")
                 && says.contains("geometry::list_item_selected"),
-            "{selected}: the selected row's text is list.selection_text_color through \
+            "{selected}: the selected row's text is list.item_label(SELECTED).color through \
                  geometry::list_item_selected, and its info says {says:?}"
         );
         assert!(
@@ -7638,8 +7696,8 @@ fn a_selected_list_or_tree_rows_info_names_the_selection_text_colour(cx: &mut Te
         let info = settle_on(&mut cx, &showcase, unselected);
         let says = text(&info).unwrap_or_default();
         assert!(
-            says.starts_with("list.item_font"),
-            "{unselected}: the unselected row's text is list.item_font's, and its info says {says:?}"
+            says.starts_with("list.item_label(NONE)"),
+            "{unselected}: the unselected row's text is list.item_label(NONE)'s, and its info says {says:?}"
         );
         assert!(
             hovered_text(&info),
@@ -7660,12 +7718,21 @@ fn a_tree_row_keeps_clear_of_a_scrollbar_that_is_no_overlay(cx: &mut TestAppCont
     for preset in ["kde-breeze", "macos-monterey"] {
         use_preset(&mut cx, &showcase, preset);
         show(&mut cx, &showcase, Page::Data);
-        let (groove, overlay) = scrollbar_of(&mut cx, &showcase);
+        let measured = next_scrollbar_of(&mut cx, &showcase);
+        let edge = next_theme(&mut cx, &showcase).and_then(|r| {
+            native_theme_gpui::next::stroke_width_of(
+                &r.list.container(native_theme::next::WidgetState::NONE),
+            )
+        });
         assert!(
-            groove > px(0.),
-            "{preset}: no native theme is installed, so nothing was measured"
+            measured.is_some_and(|(groove, _)| groove.is_some_and(|g| g > px(0.)))
+                && edge.is_some(),
+            "{preset}: no native theme is installed, or it states no groove width or list edge, so nothing was measured"
         );
-        let edge = px(resolved_theme(&mut cx, &showcase).list.border.line_width);
+        let (Some((Some(groove), overlay)), Some(edge)) = (measured, edge) else {
+            return;
+        };
+        let edge = px(edge);
         let gutter = if overlay { px(0.) } else { groove };
         let tree = bounds_of(&mut cx, TREE_DEMO);
         let row = bounds_of(&mut cx, "data-tree-row-1");
@@ -7682,20 +7749,28 @@ fn a_tree_row_keeps_clear_of_a_scrollbar_that_is_no_overlay(cx: &mut TestAppCont
 
 /// A List's and a Tree's row's Widget Info names the room it keeps for the
 /// scrollbar (`demo::list_gutter`): the groove's width,
-/// `scrollbar.groove_width`, where the theme's scrollbar is no overlay
-/// (kde-breeze), and none where it is one (macos-monterey).
+/// `scrollbar.track(NONE; orientation=Vertical).min_size[0]`, where the
+/// theme's scrollbar is no overlay (kde-breeze), and none where it is one
+/// (macos-monterey).
 #[gpui::test]
 fn a_list_or_tree_rows_info_names_the_scrollbar_room_it_keeps(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     for preset in ["kde-breeze", "macos-monterey"] {
         use_preset(&mut cx, &showcase, preset);
         show(&mut cx, &showcase, Page::Data);
-        let (groove, overlay) = scrollbar_of(&mut cx, &showcase);
+        let measured = next_scrollbar_of(&mut cx, &showcase);
+        assert!(
+            measured.is_some_and(|(groove, _)| groove.is_some()),
+            "{preset}: no native theme is installed, or it states no groove width"
+        );
+        let Some((Some(groove), overlay)) = measured else {
+            return;
+        };
         let says = if overlay {
             "none: the theme's scrollbar is an overlay".to_string()
         } else {
             format!(
-                "{}px, scrollbar.groove_width",
+                "{}px, scrollbar.track(NONE; orientation=Vertical).min_size[0]",
                 crate::info::px_text(groove.as_f32())
             )
         };
@@ -11297,17 +11372,24 @@ fn a_hovered_list_row_takes_the_hover_border(cx: &mut TestAppContext) {
 }
 
 /// The Data page's unselected Tree row under the pointer is outlined in
-/// `list.hover_border_color` at `defaults.border.line_width`, a box in its
-/// suffix (`demo::tree_row`), and at rest it is not, under kde-breeze light.
+/// `list.highlight(HOVER)`'s stroke, a box in its suffix
+/// (`demo::tree_row`), and at rest it is not, under kde-breeze light.
 #[gpui::test]
 fn a_hovered_tree_row_takes_the_hover_border(cx: &mut TestAppContext) {
-    use crate::info::stated;
+    use native_theme::next::WidgetState;
+    use native_theme_gpui::next::{state_stroke_color_of, stroke_width_of};
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     use_light_preset(&mut cx, &showcase, "kde-breeze");
     show(&mut cx, &showcase, Page::Data);
-    let r = resolved_theme(&mut cx, &showcase);
-    let edge = r.list.hover_border_color.map(stated);
-    assert!(edge.is_some(), "kde-breeze states list.hover_border_color");
+    let r = next_theme(&mut cx, &showcase);
+    let edge = r.as_ref().and_then(|r| {
+        let hovered = r.list.highlight(WidgetState::HOVER);
+        Some((state_stroke_color_of(&hovered)?, stroke_width_of(&hovered)?))
+    });
+    assert!(
+        edge.is_some(),
+        "kde-breeze states list.highlight(HOVER)'s stroke"
+    );
     let row = "data-tree-row-1";
     hover(&mut cx, point(px(1200.), px(8900.)));
     draw(&mut cx);
@@ -11321,10 +11403,10 @@ fn a_hovered_tree_row_takes_the_hover_border(cx: &mut TestAppContext) {
     draw(&mut cx);
     assert_eq!(
         last_edge_inside(&mut cx, row),
-        edge.map(|e| (e, r.defaults.border.line_width)),
-        "the hovered tree row is not outlined in list.hover_border_color at defaults.border.line_width"
+        edge,
+        "the hovered tree row is not outlined in list.highlight(HOVER)'s stroke"
     );
-    if let Some(edge) = edge {
+    if let Some((edge, _)) = edge {
         assert_eq!(
             painted_edges(&mut cx, row).last(),
             Some(&edge),

@@ -273,16 +273,9 @@ impl SampleIcon {
         chrome_glyph(&self.drawn, &self.icon)
     }
 
-    /// The glyph at the platform's size for the role the builder names, as
-    /// `native_sized_glyph` sizes it; `None` where the chosen icon theme has
-    /// none.
-    fn glyph_sized(&self, cx: &App, role: fn(Native<'_>) -> Size) -> Option<Glyph> {
-        self.glyph()
-            .map(|glyph| native_sized_glyph(cx, glyph, role))
-    }
-
-    /// [`glyph_sized`](Self::glyph_sized) on the 0.8.0 model, sized as
-    /// [`next_sized_glyph`] sizes it.
+    /// The glyph at the installed 0.8.0 theme's size for the role the
+    /// builder names, as [`next_sized_glyph`] sizes it; `None` where the
+    /// chosen icon theme has none.
     fn next_glyph_sized(
         &self,
         cx: &App,
@@ -5731,9 +5724,10 @@ pub(crate) fn description_list(
 }
 
 /// The striped, bordered `DataTable` over `state`, `height` tall, its header
-/// row `geometry::list_header_height` tall where the theme states one and
-/// its body rows' height otherwise. Its rows report themselves through the
-/// delegate, which builds them with `data_table_header` and `data_table_row`.
+/// row `next::geometry::list_header_height` tall where the theme states one
+/// and its body rows' height otherwise. Its rows report themselves through
+/// the delegate, which builds them with `data_table_header` and
+/// `data_table_row`.
 pub(crate) fn data_table(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -5745,20 +5739,39 @@ pub(crate) fn data_table(
         let delegate = state.read(cx).delegate();
         (delegate.rows.len(), delegate.columns.len())
     };
-    // What `native_value` and `.native` apply the builders under.
-    let styled = old_native(cx).is_some();
-    let header = native_value(cx, geometry::list_header_height).flatten();
-    DataTable::new(state)
-        .with_size(native_value(cx, geometry::data_table_size).unwrap_or_default())
+    let header = next_value(cx, next::geometry::list_header_height);
+    let mut table_info = info::data::data_table(
+        cx.theme(),
+        rows,
+        columns,
+        next_resolved(cx).is_some(),
+        matches!(header, Some(Ok(Some(_)))),
+    );
+    let size = info::next_native_value(
+        cx,
+        next::geometry::data_table_size,
+        "data_table_size",
+        &mut table_info,
+    );
+    let style = info::next_native_value(cx, next::geometry::table, "table", &mut table_info);
+    let header = match header {
+        Some(Ok(Some(height))) => {
+            table_info = table_info.next_geometry("list_header_height");
+            Some(height)
+        }
+        Some(Err(unstated)) => {
+            table_info = table_info.next_unmapped("list_header_height", unstated);
+            None
+        }
+        Some(Ok(None)) | None => None,
+    };
+    let table = DataTable::new(state)
+        .with_size(size.unwrap_or_default())
         .when_some(header, DataTable::header_row_height)
         .stripe(true)
         .bordered(true)
-        .info(
-            ui,
-            id,
-            info::data::data_table(cx.theme(), rows, columns, styled, header.is_some()),
-        )
-        .native(cx, geometry::table)
+        .info(ui, id, table_info);
+    refined(table, style.as_ref())
         .h(height)
         .debug_selector(move || id.into())
 }
@@ -5876,8 +5889,8 @@ impl<E: ChildElement + 'static> RenderOnce for Reported<E> {
     }
 }
 
-/// A declarative `Table` named `label`, refined by `geometry::table`: a
-/// header reading `head` above a body row for each of `rows`. The header
+/// A declarative `Table` named `label`, refined by `next::geometry::table`:
+/// a header reading `head` above a body row for each of `rows`. The header
 /// and every body row report themselves.
 pub(crate) fn table(
     ui: &Entity<InfoRegistry>,
@@ -5889,8 +5902,14 @@ pub(crate) fn table(
 ) -> Stateful<Div> {
     let t = cx.theme();
     let mut table_info = info::data::table(t, rows.len());
-    let table = native_info(Table::new(), cx, geometry::table, "table", &mut table_info)
-        .accessibility_label(label);
+    let table = next_native_info(
+        Table::new(),
+        cx,
+        next::geometry::table,
+        "table",
+        &mut table_info,
+    )
+    .accessibility_label(label);
     let header = Reported::new(
         TableHeader::new().child(TableRow::new().children(head.map(|h| TableHead::new().child(h)))),
         ui,
@@ -5961,10 +5980,11 @@ pub(crate) fn pagination(
 }
 
 /// A box `width` by `height` around the List over `state`, refined by
-/// `geometry::list`, which frames it and fills it with
-/// `list.background_color`; `selector` is its debug selector. A List paints
-/// no frame and no fill of its own (list/list.rs, `RenderOnce for List`), so
-/// the box is its frame and its fill; the rows report themselves (`ListRow`).
+/// `next::geometry::list`, which frames it and fills it with
+/// `list.container(NONE).fill`; `selector` is its debug selector. A List
+/// paints no frame and no fill of its own (list/list.rs, `RenderOnce for
+/// List`), so the box is its frame and its fill; the rows report themselves
+/// (`ListRow`).
 pub(crate) fn list(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -5974,15 +5994,11 @@ pub(crate) fn list(
     width: Pixels,
     height: Pixels,
 ) -> Stateful<Div> {
-    let native = old_native(cx);
-    let mut list_info = info::data::list(
-        state.read(cx).delegate().items.len(),
-        native.as_ref().map(|n| n.resolved),
-    );
-    native_info(
+    let mut list_info = info::data::list(state.read(cx).delegate().items.len(), next_resolved(cx));
+    next_native_info(
         div().w(width).h(height),
         cx,
-        geometry::list,
+        next::geometry::list,
         "list",
         &mut list_info,
     )
@@ -6089,38 +6105,44 @@ impl Selectable for ListRow {
 const LIST_ROW_GROUP: &str = "list-row";
 
 /// The colour a List or Tree row under the pointer letters its label in:
-/// `list.hover_text_color`, with its config line recorded in `row_info`.
-/// The ListItem's own hover sets its fill alone, inside render
-/// (list/list_item.rs:231), so the label takes the colour from the row's
-/// group hover (`row_label`). `None` on a selected row, which does not hover
-/// (:228-229), and where no native theme is installed.
+/// `list.item_label(HOVER).color`, where a rule states it for `HOVER`, with
+/// its config line recorded in `row_info`. The ListItem's own hover sets its
+/// fill alone, inside render (list/list_item.rs:231), so the label takes the
+/// colour from the row's group hover (`row_label`). `None` on a selected
+/// row, which does not hover (:228-229), and where no native theme is
+/// installed.
 fn list_hover_text(cx: &App, selected: bool, row_info: &mut WidgetInfo) -> Option<Hsla> {
     let hover_text = (!selected)
-        .then(|| native_color(cx, |n| n.resolved.list.hover_text_color))
+        .then(|| {
+            next_value(cx, |r| {
+                next::state_text_color_of(&r.list.item_label(WidgetState::HOVER))
+            })
+        })
+        .flatten()
         .flatten();
     if hover_text.is_some() {
         *row_info = std::mem::take(row_info).config(
             "hovered text",
-            "list.hover_text_color, which the showcase sets on the label while the row is hovered",
+            "list.item_label(HOVER).color, which the showcase sets on the label while the row is hovered",
         );
     }
     hover_text
 }
 
 /// The outline a List or Tree row under the pointer is edged in:
-/// `list.hover_border_color` at `defaults.border.line_width`, where `shown`,
-/// the theme states it and the width is above 0, with its colour claim and
-/// config line recorded in `row_info`. A ListItem's own hover sets its fill
-/// alone (list/list_item.rs:229-235), so the outline is a box of the
-/// showcase's over the row ([`hover_edge`]). `None` where no native theme
-/// is installed.
+/// `list.highlight(HOVER)`'s stroke, where `shown`, a rule states it for
+/// `HOVER` and its width is above 0, with its colour claim and config line
+/// recorded in `row_info`. A ListItem's own hover sets its fill alone
+/// (list/list_item.rs:229-235), so the outline is a box of the showcase's
+/// over the row ([`hover_edge`]). `None` where no native theme is installed.
 fn list_hover_edge(cx: &App, shown: bool, row_info: &mut WidgetInfo) -> Option<(Hsla, Pixels)> {
-    let n = old_native(cx)?;
-    let width = n.resolved.defaults.border.line_width;
+    use native_theme_gpui::next::state_stroke_color_of;
+    let r = next_resolved(cx)?;
+    let width = info::stroke_width_of(&r.list.highlight(WidgetState::HOVER))?;
     let claim = info::edge_claim(
         "hovered edge",
-        "hover_border_color",
-        n.resolved.list.hover_border_color.filter(|_| shown),
+        "list.highlight(HOVER).stroke.color",
+        state_stroke_color_of(&r.list.highlight(WidgetState::HOVER)).filter(|_| shown),
         Some(width),
         "showcase",
     )?;
@@ -6130,7 +6152,7 @@ fn list_hover_edge(cx: &App, shown: bool, row_info: &mut WidgetInfo) -> Option<(
         .config(
             "hovered edge",
             format!(
-                "list.hover_border_color at defaults.border.line_width, {}px, a box the showcase lays over the row while it is hovered, on the shape of its hover fill",
+                "list.highlight(HOVER).stroke, {}px, a box the showcase lays over the row while it is hovered, on the shape of its hover fill",
                 info::px_text(width)
             ),
         );
@@ -6194,48 +6216,65 @@ fn probed_label(label: Stateful<Div>, ui: &Entity<InfoRegistry>, id: &str) -> St
 }
 
 /// The room a List's or a Tree's row leaves for the scrollbar: its groove,
-/// where the theme's scrollbar is not an overlay
-/// (`geometry::scrollbar_gutter`'s width); `None` for an overlay, or before
-/// `apply` ran.
+/// `scrollbar.track(NONE; orientation=Vertical).min_size[0]`, where the
+/// theme's scrollbar is not an overlay (`next::geometry::scrollbar_gutter`'s
+/// width); `None` for an overlay, where the theme states no groove width, or
+/// before `apply` ran.
 fn list_gutter(cx: &App) -> Option<Pixels> {
-    native_value(cx, |n| {
-        (!n.resolved.scrollbar.overlay_mode)
-            .then(|| native_theme_gpui::base_layer::scrollbar_geometry(n.resolved).track_width)
+    next_value(cx, |r| {
+        (!r.scrollbar.overlay_mode)
+            .then(|| next::scrollbar_groove_width(r).ok().map(px))
+            .flatten()
     })
     .flatten()
+}
+
+/// The inner radius of `next::geometry::list`'s frame under `r`:
+/// `list.container(NONE)`'s corner radius less its stroke width, none below
+/// zero; `None` where the theme states either in no form gpui can take. A
+/// fill where a row meets the frame is rounded by it on the corners it meets
+/// (`ListRow::at_edges`), as [`list_inner_radius`] rounds it on the 0.7.2
+/// model.
+fn next_list_inner_radius(r: &native_theme::next::ResolvedTheme) -> Option<Pixels> {
+    let container = r.list.container(WidgetState::NONE);
+    let radius = info::radius_of(&container)?;
+    let width = info::stroke_width_of(&container)?;
+    Some(px((radius - width).max(0.0)))
 }
 
 impl RenderOnce for ListRow {
     fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
         let id = format!("{}-{}", self.prefix, self.ix);
         let state = ListRowState::of(self.selected, self.right_clicked);
-        // What `native_info` applies the builder under.
-        let styled = old_native(cx).is_some();
+        let styled = matches!(next_geometry(cx, next::geometry::list_item), Some(Ok(_)));
         let mut row_info =
             info::data::list_row(cx.theme(), &self.label, state, styled, list_gutter(cx));
-        // A selected row's text in `list.selection_text_color`, over the
-        // list font's colour `geometry::list_item` gives every row: the row
-        // refines itself with its style after its own `foreground`
+        // A selected row's text in `list.item_label(SELECTED).color`, over
+        // the list font's colour `next::geometry::list_item` gives every row:
+        // the row refines itself with its style after its own `foreground`
         // (list/list_item.rs, `RenderOnce for ListItem`).
-        let selected_text = self
-            .selected
-            .then(|| native_geometry(cx, geometry::list_item_selected))
-            .flatten();
-        if selected_text.is_some() {
-            row_info = row_info.geometry("list_item_selected");
-        }
+        let selected_text = if self.selected {
+            info::next_native_value(
+                cx,
+                next::geometry::list_item_selected,
+                "list_item_selected",
+                &mut row_info,
+            )
+        } else {
+            None
+        };
         // Not on a right-clicked row, which does not hover either
         // (list/list_item.rs, `ListItem::render`).
         let hover_text = (!self.right_clicked)
             .then(|| list_hover_text(cx, self.selected, &mut row_info))
             .flatten();
         let edge = list_hover_edge(cx, !self.selected && !self.right_clicked, &mut row_info);
-        let inner = native_value(cx, |n| list_inner_radius(&n.resolved.list.border));
+        let inner = next_value(cx, next_list_inner_radius).flatten();
         let [first, last] = self.edges;
-        let item = native_info(
+        let item = next_native_info(
             ListItem::new(SharedString::from(id.clone())),
             cx,
-            geometry::list_item,
+            next::geometry::list_item,
             "list_item",
             &mut row_info,
         )
@@ -6281,10 +6320,10 @@ impl RenderOnce for ListRow {
 }
 
 /// A box `width` by `height` around the Tree over `state`, refined by
-/// `geometry::list`, which frames it and fills it with
-/// `list.background_color`. A tree is a list view and the model gives it no
-/// theme of its own, so its frame and fill are the list's; the rows report
-/// themselves (`tree_row`).
+/// `next::geometry::list`, which frames it and fills it with
+/// `list.container(NONE).fill`. A tree is a list view and the model gives it
+/// no theme of its own, so its frame and fill are the list's; the rows
+/// report themselves (`tree_row`).
 pub(crate) fn tree(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -6293,13 +6332,12 @@ pub(crate) fn tree(
     width: Pixels,
     height: Pixels,
 ) -> Stateful<Div> {
-    let native = old_native(cx);
-    let mut tree_info = info::data::tree(native.as_ref().map(|n| n.resolved));
+    let mut tree_info = info::data::tree(next_resolved(cx));
     let rows = ui.clone();
-    native_info(
+    next_native_info(
         div().w(width).h(height),
         cx,
-        geometry::list,
+        next::geometry::list,
         "list",
         &mut tree_info,
     )
@@ -6330,27 +6368,31 @@ fn tree_row(
     selected: bool,
 ) -> ListItem {
     let id = format!("data-tree-row-{ix}");
-    // What `native_info` applies the builder under.
-    let styled = old_native(cx).is_some();
+    let styled = matches!(next_geometry(cx, next::geometry::list_item), Some(Ok(_)));
     let mut row_info = info::data::tree_row(cx.theme(), &label, selected, styled, list_gutter(cx));
-    // As a List row's: a selected row's text in `list.selection_text_color`,
-    // a hovered one's in `list.hover_text_color`.
-    let selected_text = selected
-        .then(|| native_geometry(cx, geometry::list_item_selected))
-        .flatten();
-    if selected_text.is_some() {
-        row_info = row_info.geometry("list_item_selected");
-    }
+    // As a List row's: a selected row's text in
+    // `list.item_label(SELECTED).color`, a hovered one's in
+    // `list.item_label(HOVER).color`.
+    let selected_text = if selected {
+        info::next_native_value(
+            cx,
+            next::geometry::list_item_selected,
+            "list_item_selected",
+            &mut row_info,
+        )
+    } else {
+        None
+    };
     // The Tree marks a row right-clicked only after this closure built it
     // (tree.rs, `RenderOnce for Tree`), and gives the closure no way to
     // learn it, so unlike a List row's this label and outline cannot leave
     // out a right-clicked row, which does not hover.
     let hover_text = list_hover_text(cx, selected, &mut row_info);
     let edge = list_hover_edge(cx, !selected, &mut row_info);
-    let item = native_info(
+    let item = next_native_info(
         ListItem::new(SharedString::from(id.clone())),
         cx,
-        geometry::list_item,
+        next::geometry::list_item,
         "list_item",
         &mut row_info,
     )
@@ -6598,12 +6640,20 @@ pub(crate) fn attachment(
         description,
     } = spec;
     let mut card_info = info::data::attachment(cx.theme(), status, file, on_click.is_some(), &icon);
-    if icon.shown() && native_value(cx, geometry::icon_size_small).is_some() {
-        card_info = card_info.geometry("icon_size_small");
+    if icon.shown() {
+        let _ = info::next_native_value(
+            cx,
+            next::geometry::icon_size_small,
+            "icon_size_small",
+            &mut card_info,
+        );
     }
     let card = Attachment::new()
         .status(status)
-        .media(AttachmentMedia::new().children(icon.glyph_sized(cx, geometry::icon_size_small)))
+        .media(
+            AttachmentMedia::new()
+                .children(icon.next_glyph_sized(cx, next::geometry::icon_size_small)),
+        )
         .content(
             AttachmentContent::new()
                 .title(AttachmentTitle::new(file).status(status))
