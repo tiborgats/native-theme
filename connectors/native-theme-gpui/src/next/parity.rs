@@ -505,18 +505,22 @@ const DIFFERENCES: &[Difference] = &[
                  same run, macOS 26, layers-key-push.toml \
                  `key.push.<appearance>.pressed.regular-plain.fill`); native-theme/tests/\
                  next_homes.toml, rows button.hover_background and button.active_background, \
-                 listed differences. So secondary_hover, button_hover and \
-                 button_secondary_hover are the rest fill and secondary_active, button_active \
-                 and button_secondary_active the pressed one, each the whole fill of its state \
-                 (spec §9, step 2; crate::colors::assign_buttons), their tokens and their \
+                 listed differences. So button_hover and button_secondary_hover are the rest \
+                 fill and button_active and button_secondary_active the pressed one, each the \
+                 whole fill of its state (spec §9, step 2; crate::colors::assign_buttons), and \
+                 secondary_hover and secondary_active, the flat button's home \
+                 (button.body(HOVER; variant=Flat), button.body(PRESSED; variant=Flat)), which \
+                 the same rules with no variant state, the same two; their tokens and their \
                  stored config strings; every other leaf of the theme is equal",
     },
     Difference {
         leaf: "variants::ghost_button",
         presets: &["macos-monterey", "macos-tahoe"],
         reason: "the ghost variant reads secondary_hover and secondary_active beside \
-                 secondary_foreground, which the BUTTON_STATES entry's sources set to the push \
-                 button's rest fill (hover draws nothing on macOS) and its measured pressed fill \
+                 secondary_foreground, the flat button's home (button.body(HOVER; \
+                 variant=Flat), button.body(PRESSED; variant=Flat)), which the macOS presets' \
+                 button rules with no variant state as the rest fill (hover draws nothing on \
+                 macOS) and the measured pressed fill \
                  (docs/facts/macos/state-models.toml and docs/facts/macos/button.toml on \
                  v0.8.0-rc1 at 78ee0efd; os-probe runs 41006842699 and 40969040283), where \
                  0.7.2 gives #e0e0e5 / #444446 and its soft option or derived layer; \
@@ -600,20 +604,22 @@ const UNSTROKED_HOVER: &[&str] = &["material-3"];
 /// which 0.7.2 states an expander hover fill the 0.8.0 preset replaces.
 const RESTATED_ACCORDION_HOVER: &[&str] = &["material-3"];
 
-/// The leaf of [`DIFFERENCES`]' entry for the push button's hovered and
-/// pressed fills: the `ThemeColor` slots of [`STATE_SLOTS`], their tokens
+/// The leaf of [`DIFFERENCES`]' entry for the push button's and the flat
+/// button's hovered and pressed fills: the `ThemeColor` slots of
+/// [`STATE_SLOTS`], their tokens
 /// and their stored config strings, compared by [`button_states_as`].
 const BUTTON_STATES: &str = "to_theme: the push button's hovered and pressed slots";
 
 /// One `ThemeColor` slot of [`BUTTON_STATES`]: its colour, its token and its
-/// stored config string, and what the connector makes of the push button's
-/// hovered and pressed fills for it (`colors::assign_secondary`,
-/// `colors::assign_buttons`) where the hovered fill is the rest fill.
+/// stored config string, and what the connector makes of the button states
+/// for it (`super::button_states`, `super::flat_button_states`) where each
+/// hovered fill is its rest fill: the flat button's for `secondary_hover`
+/// and `secondary_active`, the push button's for the others.
 struct StateSlot {
     color: fn(&mut ThemeColor) -> &mut Hsla,
     token: fn(&mut ThemeTokens) -> &mut ThemeToken,
     config: fn(&mut ThemeConfigColors) -> &mut Option<SharedString>,
-    derived: fn(Hsla, Hsla) -> Hsla,
+    derived: fn(ButtonStates) -> Hsla,
 }
 
 /// The slots of [`BUTTON_STATES`].
@@ -622,61 +628,76 @@ const STATE_SLOTS: [StateSlot; 6] = [
         color: |c| &mut c.secondary_hover,
         token: |t| &mut t.secondary_hover,
         config: |s| &mut s.secondary_hover,
-        derived: |hover, _| hover,
+        derived: |s| s.flat.0,
     },
     StateSlot {
         color: |c| &mut c.secondary_active,
         token: |t| &mut t.secondary_active,
         config: |s| &mut s.secondary_active,
-        derived: |_, pressed| pressed,
+        derived: |s| s.flat.1,
     },
     StateSlot {
         color: |c| &mut c.button_hover,
         token: |t| &mut t.button_hover,
         config: |s| &mut s.button_hover,
-        derived: |hover, _| hover,
+        derived: |s| s.push.0,
     },
     StateSlot {
         color: |c| &mut c.button_active,
         token: |t| &mut t.button_active,
         config: |s| &mut s.button_active,
-        derived: |_, pressed| pressed,
+        derived: |s| s.push.1,
     },
     StateSlot {
         color: |c| &mut c.button_secondary_hover,
         token: |t| &mut t.button_secondary_hover,
         config: |s| &mut s.button_secondary_hover,
-        derived: |hover, _| hover,
+        derived: |s| s.push.0,
     },
     StateSlot {
         color: |c| &mut c.button_secondary_active,
         token: |t| &mut t.button_secondary_active,
         config: |s| &mut s.button_secondary_active,
-        derived: |_, pressed| pressed,
+        derived: |s| s.push.1,
     },
 ];
 
-/// The push button's hovered and pressed fills of `new`, where a rule states
-/// each for its state and the hovered one is the rest fill (hover draws
-/// nothing): the form [`DIFFERENCES`]' [`BUTTON_STATES`] entry describes;
-/// `None` where they are not.
-fn button_states_of(new: &native_theme::next::ResolvedTheme) -> Option<(Hsla, Hsla)> {
-    use native_theme::next::WidgetState;
-    let b = &new.button;
-    let hover = super::state_fill_of(&b.body(WidgetState::HOVER))?;
-    let pressed = super::state_fill_of(&b.body(WidgetState::PRESSED))?;
-    (super::fill_of(&b.body(WidgetState::NONE)) == Some(hover)).then_some((hover, pressed))
+/// The hovered and pressed fills of the push button, `push`, and of the flat
+/// button, `flat`, whose home the controls unfilled at rest read
+/// (`secondary_hover`, `secondary_active`; `super::flat_button_states`).
+#[derive(Clone, Copy)]
+struct ButtonStates {
+    push: (Hsla, Hsla),
+    flat: (Hsla, Hsla),
 }
 
-/// The push button's hovered and pressed fills of each scheme, light and
-/// dark ([`button_states_of`]), `None` where a scheme's are not given.
-type SchemeStates = [Option<(Hsla, Hsla)>; 2];
+/// The hovered and pressed fills of `new`'s push button and flat button,
+/// where a rule states each for its state and each hovered one is its rest
+/// fill (hover draws nothing): the form [`DIFFERENCES`]' [`BUTTON_STATES`]
+/// entry describes; `None` where they are not.
+fn button_states_of(new: &native_theme::next::ResolvedTheme) -> Option<ButtonStates> {
+    use native_theme::next::{ButtonQuery, WidgetState};
+    let b = &new.button;
+    let of = |query: ButtonQuery| {
+        let hover = super::state_fill_of(&b.body(query.state(WidgetState::HOVER)))?;
+        let pressed = super::state_fill_of(&b.body(query.state(WidgetState::PRESSED)))?;
+        (super::fill_of(&b.body(query)) == Some(hover)).then_some((hover, pressed))
+    };
+    Some(ButtonStates {
+        push: of(ButtonQuery::new(WidgetState::NONE))?,
+        flat: of(ButtonQuery::flat())?,
+    })
+}
+
+/// The button states of each scheme, light and dark ([`button_states_of`]),
+/// `None` where a scheme's are not given.
+type SchemeStates = [Option<ButtonStates>; 2];
 
 /// `theme` with the slots of [`BUTTON_STATES`] as 0.7.2 gives them: the
 /// colours and tokens of `from`, a theme of the same scheme, and the stored
 /// config strings of `stored` (light, dark), where `theme` holds what the
-/// connector derives from `states`, each scheme's hovered fill (its rest
-/// fill) and pressed fill ([`button_states_of`]); `None` where it does not.
+/// connector derives from `states`, each scheme's hovered fills (their rest
+/// fills) and pressed fills ([`button_states_of`]); `None` where it does not.
 /// A scheme without `states` keeps its stored config, which is to be
 /// `stored`'s already. The colours are compared by their hex strings, which
 /// an upstream rebuild of the theme from its stored config
@@ -689,18 +710,18 @@ fn button_states_as(
 ) -> Option<GpuiTheme> {
     let hex = |c: Hsla| Some(SharedString::from(crate::colors::hsla_to_hex(c)));
     let [light, dark] = states;
-    let (hover, pressed) = if theme.is_dark() { dark } else { light }?;
+    let own_states = if theme.is_dark() { dark } else { light }?;
     let c = &theme.colors;
     if [c.secondary, c.button, c.button_secondary]
         .iter()
-        .any(|&rest| hex(rest) != hex(hover))
+        .any(|&rest| hex(rest) != hex(own_states.push.0))
     {
         return None;
     }
     let mut patched = theme.clone();
     let mut from = from.clone();
     for slot in &STATE_SLOTS {
-        let derived = (slot.derived)(hover, pressed);
+        let derived = (slot.derived)(own_states);
         let color = (slot.color)(&mut patched.colors);
         let own = *color;
         if hex(own) != hex(derived) {
@@ -723,7 +744,7 @@ fn button_states_as(
         for slot in &STATE_SLOTS {
             let (have, old) = ((slot.config)(&mut colors), (slot.config)(&mut source));
             match states {
-                Some((hover, pressed)) if *have == hex((slot.derived)(hover, pressed)) => {
+                Some(states) if *have == hex((slot.derived)(states)) => {
                     *have = old.clone();
                 }
                 None if have == old => {}
@@ -1090,8 +1111,10 @@ fn compare_theme(
     match report.listed(ghost_button) {
         Some(listed) => {
             report.count(ghost_button);
-            let stated = button_states_of(new)
-                .map(|(hover, pressed)| (o.colors.secondary_foreground, hover, pressed));
+            let stated = button_states_of(new).map(|s| {
+                let (hover, pressed) = s.flat;
+                (o.colors.secondary_foreground, hover, pressed)
+            });
             if stated != Some(new_ghost) {
                 report.failures.push(format!(
                     "{}: {ghost_button}: the listed difference ({}) no longer describes it: \
@@ -2039,8 +2062,8 @@ fn every_listed_difference_names_a_covered_preset() {
 /// as 0.7.2's ([`row_hover_as_list`]), or as a failure where it does not
 /// hold gpui-component's own; where `button_states` is given, the 0.7.2
 /// side's styled theme at the same point and the 0.8.0 preset's hovered and
-/// pressed fills of each scheme ([`button_states_of`]), with the push
-/// button's hovered and pressed slots as that theme's ([`button_states_as`]),
+/// pressed fills of each scheme ([`button_states_of`]), with the button
+/// state slots of [`BUTTON_STATES`] as that theme's ([`button_states_as`]),
 /// or as a failure where they are not what the connector derives from the
 /// fills. The styled theme itself is returned beside.
 fn installed(

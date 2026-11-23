@@ -490,8 +490,9 @@ fn menu_hover_label(
     Ok(upstream)
 }
 
-/// A hovered push button's fill, `secondary_hover`, which gpui-component
-/// paints a hovered button in (gpui-component 0.10.0 `button/button.rs:1194`,
+/// A hovered push button's fill, `button_hover` and `button_secondary_hover`
+/// ([`button_states`]), which gpui-component paints a hovered button in
+/// (gpui-component 0.10.0 `button/button.rs:1194`,
 /// `theme/schema.rs:854`): `button.body(HOVER).fill` where a rule states it
 /// for `HOVER` (spec §2, `from_state`), else gpui-component's own treatment
 /// (spec §10, rule 0): its theme's `secondary_hover` where that theme turns a
@@ -506,8 +507,9 @@ fn button_hover_fill(part: &PartStyle, rest: Hsla, upstream: &ThemeColor) -> Map
     state_fill_or(part, "button.body(HOVER).fill", own)
 }
 
-/// A pressed push button's fill, `secondary_active`, which gpui-component
-/// paints a pressed button in (gpui-component 0.10.0 `button/button.rs:1278`,
+/// A pressed push button's fill, `button_active` and
+/// `button_secondary_active` ([`button_states`]), which gpui-component paints
+/// a pressed button in (gpui-component 0.10.0 `button/button.rs:1278`,
 /// `theme/schema.rs:855`): `button.body(PRESSED).fill` where a rule states it
 /// for `PRESSED` (spec §2, `from_state`), else gpui-component's own treatment
 /// (spec §10, rule 0): its theme's `secondary_active` where that theme turns
@@ -700,7 +702,8 @@ pub(crate) fn widget_colors(r: &ResolvedTheme) -> Mapped<WidgetColors> {
 }
 
 /// The `ThemeColor` fields, written by the old mapping's [`theme_color_of`],
-/// but for the push button's hovered and pressed slots ([`button_states`]).
+/// but for the push button's hovered and pressed slots ([`button_states`])
+/// and the flat button's ([`flat_button_states`]).
 pub(crate) fn theme_color(r: &ResolvedTheme) -> Mapped<ThemeColor> {
     let mut tc = theme_color_of(
         &slice_colors(r)?,
@@ -709,12 +712,47 @@ pub(crate) fn theme_color(r: &ResolvedTheme) -> Mapped<ThemeColor> {
         r.context.reduced_transparency,
     );
     button_states(&mut tc);
+    let (hover, pressed) = flat_button_states(r)?;
+    tc.secondary_hover = hover;
+    tc.secondary_active = pressed;
     Ok(tc)
 }
 
+/// The flat button's hovered and pressed fills, `secondary_hover` and
+/// `secondary_active`, which gpui-component paints the controls unfilled at
+/// rest in: the ghost button (`variants::ghost_button`; gpui-component
+/// 0.10.0 `button/button.rs:984, 987, 1346`), the title bar's buttons
+/// (`title_bar.rs:184, 193`), the Outline tab (`tab/tab.rs:234`), the
+/// calendar's days (`time/calendar.rs:184`), the stepper's trigger
+/// (`stepper/trigger.rs:130-131`), the dock's tab panel
+/// (`dock/tab_panel.rs:545-546`) and a pressed table cell
+/// (`table/state.rs:1916`). Each is `button.body(<state>; variant=Flat).fill`
+/// where a rule states it for that state alone (spec §2, `from_state`),
+/// else gpui-component's own (spec §10, rule 0). A rule that names no variant
+/// is the flat button's too (spec §2), so a theme that states no flat rule
+/// gives it the push button's stated fills.
+fn flat_button_states(r: &ResolvedTheme) -> Mapped<(Hsla, Hsla)> {
+    let b = &r.button;
+    let upstream = upstream_colors(r);
+    let flat = ButtonQuery::flat();
+    Ok((
+        state_fill_or(
+            &b.body(flat.state(WidgetState::HOVER)),
+            "button.body(HOVER; variant=Flat).fill",
+            upstream.secondary_hover,
+        )?,
+        state_fill_or(
+            &b.body(flat.state(WidgetState::PRESSED)),
+            "button.body(PRESSED; variant=Flat).fill",
+            upstream.secondary_active,
+        )?,
+    ))
+}
+
 /// The filled buttons' hovered and pressed slots, `button_hover`,
-/// `button_active` and their `button_secondary_*` pair: the state's own fill,
-/// `secondary_hover` and `secondary_active` as the read gives them. The 0.8.0
+/// `button_active` and their `button_secondary_*` pair: the push button's
+/// own fill of the state, which the read gives `secondary_hover` and
+/// `secondary_active` before [`flat_button_states`] replaces them. The 0.8.0
 /// model states each state's whole fill, any state layer pre-baked into it
 /// (spec §9, step 2), and gpui-component paints it in place of the rest fill,
 /// over what lies under the button as the rest fill is; the old mapping
@@ -1743,6 +1781,74 @@ mod tests {
                 assert_eq!(
                     [tc.button_active, tc.button_secondary_active],
                     [hsla(BLUE); 2],
+                    "{preset:?} {scheme:?}"
+                );
+            }
+        }
+        Ok(())
+    }
+
+    /// The controls unfilled at rest read the flat button's hovered and
+    /// pressed fills, `secondary_hover` and `secondary_active`: a flat rule
+    /// reaches them and not the push button's slots; where no rule states
+    /// the flat button's state, gpui-component's own (spec §10, rule 0).
+    #[test]
+    fn the_unfilled_controls_take_the_flat_buttons_states() -> Mapped<()> {
+        use native_theme::next::{
+            ButtonRule, ButtonVariant, PartPatch, Preset, Scheme, Theme, ThemeContext, ThemePatch,
+        };
+        for preset in Preset::ALL {
+            for scheme in [Scheme::Light, Scheme::Dark] {
+                let mut r =
+                    Theme::preset(*preset).resolve(&ThemeContext::default().with_scheme(scheme));
+                let b = &r.button;
+                let upstream = upstream_colors(&r);
+                let flat = ButtonQuery::flat();
+                let tc = theme_color(&r)?;
+                for (state, own, slot) in [
+                    (
+                        WidgetState::HOVER,
+                        upstream.secondary_hover,
+                        tc.secondary_hover,
+                    ),
+                    (
+                        WidgetState::PRESSED,
+                        upstream.secondary_active,
+                        tc.secondary_active,
+                    ),
+                ] {
+                    let stated = state_fill(&b.body(flat.state(state)), "flat")?;
+                    assert_eq!(
+                        slot,
+                        stated.unwrap_or(own),
+                        "{preset:?} {scheme:?} {state:?}"
+                    );
+                }
+                let push = [tc.button_hover, tc.button_active];
+                r.apply_patch(
+                    &ThemePatch::new()
+                        .button(
+                            ButtonRule::new()
+                                .variant(ButtonVariant::Flat)
+                                .states(WidgetState::HOVER)
+                                .body(PartPatch::new().fill(Paint::Solid(BLUE))),
+                        )
+                        .button(
+                            ButtonRule::new()
+                                .variant(ButtonVariant::Flat)
+                                .states(WidgetState::PRESSED)
+                                .body(PartPatch::new().fill(Paint::Solid(RED))),
+                        ),
+                );
+                let tc = theme_color(&r)?;
+                assert_eq!(
+                    [tc.secondary_hover, tc.secondary_active],
+                    [hsla(BLUE), hsla(RED)],
+                    "{preset:?} {scheme:?}"
+                );
+                assert_eq!(
+                    [tc.button_hover, tc.button_active],
+                    push,
                     "{preset:?} {scheme:?}"
                 );
             }
