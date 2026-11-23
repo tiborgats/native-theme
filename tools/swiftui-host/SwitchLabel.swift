@@ -9,7 +9,9 @@
 //
 // One titled window (empty title), key, the application active, its content
 // a flipped view holding one NSHostingView per item at a known frame, each
-// item leading-aligned and vertically centred in it: the Toggle off, on, off
+// item leading-aligned and vertically centred in it: SwiftUI's
+// `DisclosureGroup("Label", isExpanded:)` collapsed (bound to a constant, so
+// a click does not expand it; the expander's header); the Toggle off, on, off
 // `.disabled(true)` and on `.disabled(true)` (each bound to a constant, so a
 // click does not turn it); for comparison, `Text("Label")` in the
 // foreground styles primary, secondary, tertiary and quaternary and at the
@@ -19,7 +21,10 @@
 // -o -l <windowNumber>`); each Toggle's switch (the NSSwitch its view tree
 // holds) hovered by a posted mouse-moved CGEvent at its centre, captured 1 s
 // later; and pressed by a posted left-mouse-down there, captured 0.6 s later
-// while held, then released; the cursor parked right of the window between.
+// while held, then released; the DisclosureGroup's chevron and its label
+// likewise, each hovered and pressed at its centre as the rest capture shows
+// it (disclosureParts, recorded as [[disclosure_parts]]); the cursor parked
+// right of the window between.
 // Writes <out-dir>/switch-label.toml (the environment, the system colours in
 // sRGB per appearance, each item's frame and view tree in the window frame's
 // points from its top left, each capture) and <out-dir>/<appearance>/<state>.png.
@@ -54,7 +59,7 @@ func srgb(_ color: NSColor) -> String {
 }
 
 let itemWidth: CGFloat = 280
-let itemHeight: CGFloat = 40
+let itemHeight: CGFloat = 34
 let itemGap: CGFloat = 4
 let inset: CGFloat = 20
 
@@ -66,6 +71,9 @@ func hosted<Content: View>(_ content: Content) -> NSView {
 @MainActor
 func makeItems() -> [Item] {
     var items: [Item] = [
+        Item(
+            name: "disclosure",
+            view: hosted(DisclosureGroup("Label", isExpanded: .constant(false)) { Text("Content") })),
         Item(name: "toggle_off", view: hosted(Toggle("Label", isOn: .constant(false)).toggleStyle(.switch))),
         Item(name: "toggle_on", view: hosted(Toggle("Label", isOn: .constant(true)).toggleStyle(.switch))),
         Item(
@@ -101,6 +109,8 @@ func tree(_ root: NSView, window: NSWindow) -> [String] {
         var line = "{ path = \(quoted(path)), class = \(quoted(String(describing: type(of: view)))), frame_pt = \(rectText(frame))"
         if let toggle = view as? NSSwitch {
             line += ", switch_state = \(toggle.state.rawValue), enabled = \(toggle.isEnabled)"
+        } else if let button = view as? NSButton {
+            line += ", bezel_style = \(button.bezelStyle.rawValue), button_state = \(button.state.rawValue)"
         }
         if let field = view as? NSTextField {
             line += ", font_pt = \(number(field.font?.pointSize ?? 0)), font = \(quoted(field.font?.fontName ?? "absent"))"
@@ -120,6 +130,15 @@ func tree(_ root: NSView, window: NSWindow) -> [String] {
 @MainActor
 func topLeft(_ rect: CGRect, window: NSWindow) -> CGRect {
     CGRect(x: rect.minX, y: window.frame.height - rect.maxY, width: rect.width, height: rect.height)
+}
+
+@MainActor
+func firstButton(_ root: NSView) -> NSButton? {
+    if let found = root as? NSButton, !(root is NSSwitch) { return found }
+    for child in root.subviews {
+        if let found = firstButton(child) { return found }
+    }
+    return nil
 }
 
 @MainActor
@@ -201,6 +220,73 @@ final class Host: NSObject, NSApplicationDelegate {
             let failed = self.run()
             exit(failed ? 1 : 0)
         }
+    }
+
+    /// The DisclosureGroup's chevron and label in the window frame's points
+    /// from its top left, found in the rest capture (`png`): in the item's
+    /// rect, the columns holding a pixel more than 24 levels (summed over
+    /// r, g, b) from the item's right-end pixel; the first run of such
+    /// columns is the chevron, the columns after the first gap of 2 or more
+    /// pixels the label; each part's rows are its inked rows.
+    @MainActor
+    func disclosureParts(_ png: String) -> (chevron: CGRect, label: CGRect)? {
+        guard let window, let item = items.first(where: { $0.name == "disclosure" }),
+            let source = CGImageSourceCreateWithURL(URL(fileURLWithPath: png) as CFURL, nil),
+            let image = CGImageSourceCreateImageAtIndex(source, 0, nil),
+            let space = CGColorSpace(name: CGColorSpace.sRGB),
+            let context = CGContext(
+                data: nil, width: image.width, height: image.height, bitsPerComponent: 8,
+                bytesPerRow: image.width * 4, space: space, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+        else { return nil }
+        context.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
+        guard let data = context.data else { return nil }
+        let bytes = data.bindMemory(to: UInt8.self, capacity: image.width * image.height * 4)
+        let scale = window.backingScaleFactor
+        let rect = topLeft(item.view.convert(item.view.bounds, to: nil), window: window)
+        let x0 = Int(rect.minX * scale), x1 = min(image.width, Int(rect.maxX * scale))
+        let y0 = Int(rect.minY * scale), y1 = min(image.height, Int(rect.maxY * scale))
+        guard x1 - 2 > x0, y1 > y0 else { return nil }
+        func pixel(_ x: Int, _ y: Int) -> [Int] {
+            let offset = (y * image.width + x) * 4
+            return [Int(bytes[offset]), Int(bytes[offset + 1]), Int(bytes[offset + 2])]
+        }
+        let background = pixel(x1 - 2, (y0 + y1) / 2)
+        func inked(_ x: Int, _ y: Int) -> Bool { zip(pixel(x, y), background).map { abs($0 - $1) }.reduce(0, +) > 24 }
+        let columns = (x0..<x1).filter { x in (y0..<y1).contains { inked(x, $0) } }
+        guard let first = columns.first else { return nil }
+        var chevronEnd = first
+        var labelStart: Int?
+        for x in columns.dropFirst() {
+            if labelStart == nil && x - chevronEnd <= 2 { chevronEnd = x } else if labelStart == nil { labelStart = x }
+        }
+        guard let labelStart, let labelEnd = columns.last else { return nil }
+        func part(_ from: Int, _ to: Int) -> CGRect {
+            let rows = (y0..<y1).filter { y in (from...to).contains { inked($0, y) } }
+            let top = rows.first ?? y0
+            let bottom = rows.last ?? y1
+            return CGRect(
+                x: CGFloat(from) / scale, y: CGFloat(top) / scale, width: CGFloat(to - from + 1) / scale,
+                height: CGFloat(bottom - top + 1) / scale)
+        }
+        return (part(first, chevronEnd), part(labelStart, labelEnd))
+    }
+
+    /// Where `target` is hovered and pressed, in CG global points: a Toggle's
+    /// NSSwitch centre; the DisclosureGroup's chevron's or label's centre
+    /// (disclosureParts of `restPNG`).
+    @MainActor
+    func targetPoint(_ target: String, restPNG: String) -> CGPoint? {
+        guard let window else { return nil }
+        if target.hasPrefix("disclosure") {
+            guard let parts = disclosureParts(restPNG) else { return nil }
+            let rect = target == "disclosure_chevron" ? parts.chevron : parts.label
+            let inWindow = CGRect(x: rect.minX, y: window.frame.height - rect.maxY, width: rect.width, height: rect.height)
+            return globalCentre(inWindow, window: window)
+        }
+        guard let item = items.first(where: { $0.name == target }), let toggle = firstSwitch(item.view) else {
+            return nil
+        }
+        return globalCentre(toggle.convert(toggle.bounds, to: nil), window: window)
     }
 
     /// The pass, off the main thread (the main thread keeps running the
@@ -307,15 +393,22 @@ final class Host: NSObject, NSApplicationDelegate {
                     """)
             }
             shoot("normal", target: "none", point: nil, held: false)
-            for target in ["toggle_off", "toggle_on"] {
-                let centre: CGPoint? = onMain {
-                    guard let window = self.window, let item = self.items.first(where: { $0.name == target }),
-                        let toggle = firstSwitch(item.view)
-                    else { return nil }
-                    return globalCentre(toggle.convert(toggle.bounds, to: nil), window: window)
-                }
+            let parts: String = onMain {
+                guard let parts = self.disclosureParts("\(folder)/normal.png") else { return "absent" }
+                return "{ chevron_pt = \(rectText(parts.chevron)), label_pt = \(rectText(parts.label)) }"
+            }
+            captures.append(
+                """
+                [[disclosure_parts]]
+                appearance = \(quoted(name.rawValue))
+                found_in = "normal.png"
+                parts = \(parts)
+
+                """)
+            for target in ["toggle_off", "toggle_on", "disclosure_chevron", "disclosure_label"] {
+                let centre: CGPoint? = onMain { self.targetPoint(target, restPNG: "\(folder)/normal.png") }
                 guard let centre else {
-                    notes.append("\(name.rawValue) \(target): no NSSwitch in its view tree, not hovered or pressed")
+                    notes.append("\(name.rawValue) \(target): no control in its view tree to aim at, not hovered or pressed")
                     continue
                 }
                 if !post(.mouseMoved, at: centre) { failures.append("\(target): mouse-moved event not made") }

@@ -1145,6 +1145,23 @@ jobs:
             if [ -f "$out/probe.toml" ]; then echo "probe.toml written"; else echo "no probe.toml"; fi
           } > "$out/run.txt" 2>&1
           cat "$out/run.txt"
+      # Every macOS pass but sdk-headers captures with `screencapture` (a
+      # window's PNG, or a .mov recording); a pass where none of them was
+      # written is red, whatever the probe's exit status (run 45208260830's
+      # macOS 26 controls job: 248 captures failed, the job green). A capture
+      # is counted as a PNG that is not an offscreen render (those end in -1x
+      # or -2x) and not a frame cut from a recording, or a .mov; the probe's
+      # own failure messages ("screencapture …") are counted and printed.
+      - name: Check that the captures were written (macOS)
+        if: runner.os == 'macOS' && matrix.pass != 'sdk-headers'
+        run: |
+          captures=$(find os-probe-out \( -name '*.png' ! -name '*-1x.png' ! -name '*-2x.png' ! -path '*-frames/*' \) -o -name '*.mov' | wc -l | tr -d ' ')
+          failures=$(grep -rhoE 'screencapture [^"]*' os-probe-out 2>/dev/null | grep -cE 'exited with|could not|cannot run|timed out|wrote no') || true
+          echo "captures written: $captures; screencapture failures reported: $failures"
+          if [ "$captures" -eq 0 ]; then
+            echo "::error::no capture was written (screencapture failures reported: $failures)"
+            exit 1
+          fi
       - name: Upload the probe's output
         if: always()
         uses: actions/upload-artifact@v7
@@ -1244,6 +1261,9 @@ jobs:
           status=${PIPESTATUS[0]}
           echo "switch-label: exit $status" | tee -a "$out/environment.txt"
           [ -f "$out/switch-label.toml" ] || { echo "no switch-label.toml"; exit 1; }
+          captures=$(find "$out" -name '*.png' | wc -l | tr -d ' ')
+          echo "captures written: $captures"
+          if [ "$captures" -eq 0 ]; then echo "::error::no capture was written"; exit 1; fi
           exit $status
       - name: Upload the captures
         if: always() && runner.os == 'macOS'
