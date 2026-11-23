@@ -2254,7 +2254,7 @@ fn a_loading_progress_bar_stands_still_under_reduced_motion(cx: &mut TestAppCont
 /// `spinner.diameter`, and the arc for a set without one.
 #[gpui::test]
 fn the_spinner_is_the_icon_sets_indicator_or_an_arc(cx: &mut TestAppContext) {
-    use native_theme::theme::IconSet;
+    use native_theme::icons::IconSet;
     let cx = window_with(
         cx,
         Some(("kde-breeze", ColorMode::Light)),

@@ -10,7 +10,7 @@ use egui::class::Classes;
 use egui::widget_style::{ButtonStyle, CheckboxStyle, StyleArgs, WidgetState};
 use native_theme::AccessibilityPreferences;
 use native_theme::icons::IconRole;
-use native_theme::theme::IconSet;
+use native_theme::icons::IconSet;
 use native_theme_egui::convert::{to_color32, to_corner_radius, to_margin, to_stroke};
 use native_theme_egui::{
     Role, RoleVariant, Surface, TextRole, ThemeAtlas, default_button, input_frame,

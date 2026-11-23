@@ -19,12 +19,12 @@ use gpui_component::{
 
 #[cfg(target_os = "linux")]
 use native_theme::detect::system_icon_theme;
+use native_theme::icons::IconSet;
 use native_theme::icons::{
     FreedesktopLoader, IconData, IconRole, IconSetChoice, LucideLoader, MaterialLoader,
     SegoeFluentLoader, SfSymbolsLoader,
 };
 use native_theme::next::{Contrast, Palette, Preset};
-use native_theme::theme::IconSet;
 use native_theme_gpui::icons::{IconUse, load_gpui_icon, mask_drawable};
 use native_theme_gpui::next::Mapped;
 use native_theme_gpui::{AccessibilityPreferences, ActiveNativeTheme, Native};

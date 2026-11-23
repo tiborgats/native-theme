@@ -197,7 +197,8 @@ pub fn menu_bar_modifier(ui: &egui::Ui) -> Option<egui::style::StyleModifier> {
     ThemeAtlas::from_ctx(ui.ctx()).map(|atlas| atlas.menu_bar_modifier(theme))
 }
 
-use native_theme::theme::{ColorMode, IconSet, ResolvedTheme, Theme};
+use native_theme::icons::IconSet;
+use native_theme::theme::{ColorMode, ResolvedTheme, Theme};
 use native_theme::{AccessibilityPreferences, ResolutionContext, Result, SystemTheme};
 use std::borrow::Cow;
 

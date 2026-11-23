@@ -65,13 +65,13 @@ use iced_aw::{Card, ContextMenu, SelectionList, Spinner, TabBar, TabLabel, Tabs}
 
 use iced::Subscription;
 use native_theme::icons::{
-    AnimatedIcon, FreedesktopLoader, IconData, IconRole, IconSetChoice, LucideLoader,
+    AnimatedIcon, FreedesktopLoader, IconData, IconRole, IconSet, IconSetChoice, LucideLoader,
     MaterialLoader, SegoeFluentLoader, SfSymbolsLoader, TransformAnimation, default_icon_choice,
     list_freedesktop_themes, load_icon_indicator,
 };
 use native_theme::theme::{
-    ArrowSide, FontStyle, IconSet, LayoutTheme, ResolvedFontSpec, ResolvedListTheme,
-    ResolvedMenuTheme, ResolvedTextScale, ResolvedTextScaleEntry, ResolvedTheme,
+    ArrowSide, FontStyle, LayoutTheme, ResolvedFontSpec, ResolvedListTheme, ResolvedMenuTheme,
+    ResolvedTextScale, ResolvedTextScaleEntry, ResolvedTheme,
 };
 use native_theme_iced::icons::to_svg_handle;
 use native_theme_iced::palette::to_color;

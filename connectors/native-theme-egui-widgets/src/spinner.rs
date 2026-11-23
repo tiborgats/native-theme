@@ -10,10 +10,10 @@ use native_theme_egui::egui::emath::Numeric as _;
 use native_theme_egui::egui::mutex::Mutex;
 use native_theme_egui::icons::{self, IconKey};
 use native_theme_egui::native_theme::color::Rgba;
+use native_theme_egui::native_theme::icons::IconSet;
 use native_theme_egui::native_theme::icons::{
     AnimatedIcon, FreedesktopLoader, load_icon_indicator,
 };
-use native_theme_egui::native_theme::theme::IconSet;
 use native_theme_egui::{ResolvedTheme, Role, ThemeAtlas};
 
 use crate::scope;
