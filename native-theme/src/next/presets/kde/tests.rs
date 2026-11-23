@@ -338,7 +338,10 @@ fn a_selected_row_has_no_hover_outline() {
         );
         assert_eq!(
             hovered_selected.fill,
-            Paint::Solid(theme.colors.selection.background)
+            Paint::Solid(lighter(
+                theme.colors.selection.background,
+                LIST_SELECTED_HOVER_LIGHTER
+            ))
         );
     }
 }
@@ -576,9 +579,10 @@ fn a_hovered_row_without_the_focus_is_over_the_hovered_row_and_under_the_selecti
             let (hover, unfocused) = (row(WidgetState::HOVER), row(UNFOCUSED_HOVER));
             assert_ne!(unfocused.fill, hover.fill, "{scheme:?} {alternate}");
             assert_ne!(unfocused.stroke, hover.stroke, "{scheme:?} {alternate}");
+            // A selected row takes a selection's fill (`L3`) and no hover outline.
             let selected = row(WidgetState::SELECTED);
             let both = row(UNFOCUSED_HOVER.union(WidgetState::SELECTED));
-            assert_eq!(both.fill, selected.fill, "{scheme:?} {alternate}");
+            assert_ne!(both.fill, unfocused.fill, "{scheme:?} {alternate}");
             assert_eq!(both.stroke, selected.stroke, "{scheme:?} {alternate}");
         }
     }
@@ -609,13 +613,13 @@ fn a_hovered_row_without_the_focus_follows_the_system_s_inactive_selection() -> 
     let stroke = outline_color(&row.stroke).ok_or("no outline")?;
     assert_eq!(fill.to_srgb8(), inactive.with_alpha(0.3).to_srgb8());
     assert_eq!(stroke.to_srgb8(), inactive.with_alpha(0.8).to_srgb8());
-    // `S3` on the same file: the plain handle, derived, in every view.
+    // `S3` on the same file: the plain handle's fill, derived, in every view.
     let plain = theme.scrollbar.thumb(WidgetState::UNFOCUSED_VIEW);
     assert_ne!(
         plain.fill,
         breeze.scrollbar.thumb(WidgetState::UNFOCUSED_VIEW).fill
     );
-    assert_eq!(theme.scrollbar.thumb(WidgetState::NONE), plain);
+    assert_eq!(theme.scrollbar.thumb(WidgetState::NONE).fill, plain.fill);
     // `S4` on the same file: derived from the file's window colours.
     let bar_hover = theme.scrollbar.thumb(BAR_HOVER_UNFOCUSED);
     assert!(bar_hover.stated.contains(PartStated::FILL));
@@ -730,32 +734,29 @@ fn the_handle_of_the_focused_view_and_of_a_view_without_the_focus() {
 /// `S3` under the system's colours: Breeze's measured handle is no other
 /// scheme's colour, and Breeze's rule, `focusColor()` through the idle
 /// handle's overlay, does not reproduce it (#d0e4ef / #253b48 on Breeze's
-/// colours), so the handle at rest is the plain handle in every view, as
-/// 0.7.2 draws it. A system without window colours states no `S4`: that
-/// query returns the plain handle. No rule is dead.
+/// colours), so the handle at rest is filled as the plain handle in every
+/// view, as 0.7.2 draws it; its outline (`S2`) follows the view's focus, from
+/// the system's DecorationFocus. A system without window colours states no
+/// `S4`: that query returns the plain handle. No rule is dead.
 #[test]
 fn the_handle_at_rest_is_the_plain_handle_under_the_system_s_colours() {
     let theme = with_system(None);
     let [light, _] = both_schemes();
-    // The drawn handle, not which rule wrote it: the preset's view without
-    // the focus states its handle by a rule on its state.
-    let drawn = |thumb: PartStyle| PartStyle {
-        from_state: PartStated::default(),
-        ..thumb
-    };
-    let plain = drawn(light.scrollbar.thumb(WidgetState::UNFOCUSED_VIEW));
+    let plain = light.scrollbar.thumb(WidgetState::UNFOCUSED_VIEW);
     for state in [
         WidgetState::NONE,
         WidgetState::UNFOCUSED_VIEW,
         WidgetState::HOVER_WITHIN,
         BAR_HOVER_UNFOCUSED,
     ] {
-        assert_eq!(drawn(theme.scrollbar.thumb(state)), plain, "{state:?}");
-        assert!(
-            theme.scrollbar.thumb(state).from_state.is_empty(),
-            "{state:?}"
-        );
+        let thumb = theme.scrollbar.thumb(state);
+        assert_eq!(thumb.fill, plain.fill, "{state:?}");
+        assert!(!thumb.from_state.contains(PartStated::FILL), "{state:?}");
     }
+    assert_eq!(
+        theme.scrollbar.thumb(WidgetState::NONE).stroke,
+        Stroke::uniform_aligned(1.001, DECORATION_FOCUS.with_alpha(0.2), StrokeAlign::Center)
+    );
     assert!(plain.stated.contains(PartStated::FILL));
     let dead: Vec<_> = theme
         .dead_rules()
@@ -982,5 +983,201 @@ fn an_inactive_window_has_the_inactive_title_bar() {
             active.window.title_bar(normal),
             "{scheme:?}"
         );
+    }
+}
+
+const UNFOCUSED_SELECTED: WidgetState = WidgetState::SELECTED.union(WidgetState::UNFOCUSED_VIEW);
+
+/// `L3`, a selected row under the pointer: Breeze fills it with
+/// `Highlight.lighter(110)` (breezestyle.cpp:4876 at breeze f0b1d75), #44bfff,
+/// measured (`docs/issues/0004_kde-leftovers-rationale.md`, L3); under the
+/// system's colours, the system's selection colour through `qt_lighter`.
+#[test]
+fn a_hovered_selected_row_is_the_selection_lighter_110() {
+    let query = ListQuery::new(WidgetState::SELECTED.union(WidgetState::HOVER));
+    for theme in both_schemes() {
+        assert_eq!(
+            theme.list.highlight(query).fill,
+            Paint::Solid(srgb8(0x44bf_ffff)),
+            "{:?}",
+            theme.context.scheme
+        );
+    }
+    let theme = with_system(None);
+    let [r, g, b, a] = qt_lighter(SELECTION.to_srgb8(), 110);
+    let fill = theme.list.highlight(query).fill;
+    assert_eq!(fill, Paint::Solid(Color::from_srgb8(r, g, b, a)));
+    assert_ne!(fill, Paint::Solid(SELECTION));
+}
+
+/// A selected row in a view without the focus: such a view draws its rows
+/// from the Inactive group (`docs/issues/0004_kde-leftovers-rationale.md`,
+/// L2), so its selected row has the inactive selection's fill, #c2e0f5 /
+/// #1b4155 (`selection_inactive_background`: platform-facts.md (§2.1.3)), and
+/// text, `colors.selection`'s unfocused pair, no hover outline, and under the
+/// pointer that fill `lighter(110)` (`L3`; derived, not measured).
+#[test]
+fn a_selected_row_in_a_view_without_the_focus_takes_the_inactive_selection() -> TestResult {
+    let [light, dark] = both_schemes();
+    for (theme, inactive) in [
+        (light, [0xc2, 0xe0, 0xf5, 0xff]),
+        (dark, [0x1b, 0x41, 0x55, 0xff]),
+    ] {
+        let scheme = theme.context.scheme;
+        let selection = theme.colors.selection;
+        let background = selection
+            .unfocused_background
+            .ok_or("no unfocused selection")?;
+        let foreground = selection
+            .unfocused_foreground
+            .ok_or("no unfocused selection text")?;
+        assert_eq!(background.to_srgb8(), inactive, "{scheme:?}");
+        for alternate in [false, true] {
+            let query = |state| ListQuery::new(state).alternate(alternate);
+            let row = theme.list.highlight(query(UNFOCUSED_SELECTED));
+            assert_eq!(row.fill, Paint::Solid(background), "{scheme:?}");
+            assert_eq!(
+                row.stroke,
+                theme.list.highlight(query(WidgetState::SELECTED)).stroke,
+                "{scheme:?}"
+            );
+            assert_eq!(
+                theme
+                    .list
+                    .highlight(query(UNFOCUSED_SELECTED.union(WidgetState::HOVER)))
+                    .fill,
+                Paint::Solid(lighter(background, LIST_SELECTED_HOVER_LIGHTER)),
+                "{scheme:?}"
+            );
+            assert_eq!(
+                theme.list.item_label(query(UNFOCUSED_SELECTED)).color,
+                foreground,
+                "{scheme:?}"
+            );
+            assert_eq!(
+                theme.list.item_label(query(WidgetState::SELECTED)).color,
+                selection.foreground,
+                "{scheme:?}"
+            );
+        }
+    }
+    Ok(())
+}
+
+/// `S1`, the groove's line along its inner edge: `Text` at alpha
+/// frameContrast, #23262933 / #fcfcfc33, 1 px, inside the groove, on its top
+/// row when horizontal in both directions, on its left column when vertical
+/// from left to right and on its right column from right to left
+/// (`Style::drawScrollBarComplexControl`, breezestyle.cpp:8213-8232 at breeze
+/// f0b1d75; `QStyle::alignedRect`, qstyle.cpp:2180-2212 at qtbase v6.11.0).
+#[test]
+fn the_groove_s_line_is_on_the_bar_s_own_side_for_each_orientation_and_direction() {
+    for (scheme, text) in [(Scheme::Light, 0x2326_2933), (Scheme::Dark, 0xfcfc_fc33)] {
+        for direction in [Direction::Ltr, Direction::Rtl] {
+            let ctx = ThemeContext::default()
+                .with_scheme(scheme)
+                .with_direction(direction);
+            let theme = Theme::preset(Preset::KdeBreeze).resolve(&ctx);
+            let line = StrokeSide {
+                width: 1.0,
+                paint: Paint::Solid(srgb8(text)),
+            };
+            let (left, right) = match direction {
+                Direction::Ltr => (line.clone(), StrokeSide::default()),
+                Direction::Rtl => (StrokeSide::default(), line.clone()),
+            };
+            let track = |orientation| {
+                theme
+                    .scrollbar
+                    .track(StyleQuery::new(WidgetState::NONE).orientation(orientation))
+                    .stroke
+            };
+            assert_eq!(
+                track(Orientation::Vertical),
+                Stroke::sides(
+                    StrokeSide::default(),
+                    right,
+                    StrokeSide::default(),
+                    left,
+                    StrokeAlign::Inside
+                ),
+                "{scheme:?} {direction:?}"
+            );
+            assert_eq!(
+                track(Orientation::Horizontal),
+                Stroke::sides(
+                    line,
+                    StrokeSide::default(),
+                    StrokeSide::default(),
+                    StrokeSide::default(),
+                    StrokeAlign::Inside
+                ),
+                "{scheme:?} {direction:?}"
+            );
+        }
+    }
+}
+
+/// `S2`, the handle's outline: a `PenWidth::Frame` pen of 1.001 px centred on
+/// the handle's edge in the handle's own colour at alpha frameContrast
+/// (`Helper::renderScrollBarHandle`, breezehelper.cpp:1274-1287, and
+/// `scrollBarHandleColor`, :277-303 at breeze f0b1d75): WindowText,
+/// #23262933 / #fcfcfc33, in a view without the focus, with the pointer on
+/// the bar too; DecorationFocus, #3daee933, in the view that has it;
+/// DecorationHover, #3daee933, hovered and pressed in every view.
+#[test]
+fn the_handle_s_outline_is_its_own_colour_at_frame_contrast() {
+    let [light, dark] = both_schemes();
+    for (theme, text) in [(light, 0x2326_2933), (dark, 0xfcfc_fc33)] {
+        let scheme = theme.context.scheme;
+        let pen = |rgba| Stroke::uniform_aligned(1.001, srgb8(rgba), StrokeAlign::Center);
+        let stroke = |state| theme.scrollbar.thumb(state).stroke;
+        assert_eq!(stroke(WidgetState::NONE), pen(0x3dae_e933), "{scheme:?}");
+        for state in [WidgetState::UNFOCUSED_VIEW, BAR_HOVER_UNFOCUSED] {
+            assert_eq!(stroke(state), pen(text), "{scheme:?} {state:?}");
+        }
+        for state in [WidgetState::HOVER, WidgetState::PRESSED] {
+            for view in [WidgetState::NONE, WidgetState::UNFOCUSED_VIEW] {
+                assert_eq!(
+                    stroke(state.union(view)),
+                    pen(0x3dae_e933),
+                    "{scheme:?} {state:?} {view:?}"
+                );
+            }
+        }
+    }
+}
+
+/// `L4`, a row's padding: a text-only row's content inset from the row's
+/// rectangle, 7 left and right (the highlight's margin 2, Breeze's
+/// `ItemView_ItemPaddingWidth` 2 and Qt's text margin 3) and 3 above and
+/// below (the margin 1 and `ItemView_ItemPaddingHeight` 2)
+/// (breezehelper.cpp:1759-1799, breezemetrics.h:157-165, breezestyle.cpp:1060-1084
+/// at breeze f0b1d75; qcommonstyle.cpp:1002-1007 at qtbase v6.11.0).
+#[test]
+fn a_row_s_content_is_inset_by_the_margin_breeze_s_padding_and_qt_s_text_margin() {
+    for theme in both_schemes() {
+        for alternate in [false, true] {
+            let row = theme
+                .list
+                .row(ListQuery::new(WidgetState::NONE).alternate(alternate));
+            assert_eq!(row.padding, Edges::symmetric(3.0, 7.0), "{alternate}");
+            assert!(row.stated.contains(
+                PartStated::PADDING_TOP
+                    | PartStated::PADDING_RIGHT
+                    | PartStated::PADDING_BOTTOM
+                    | PartStated::PADDING_LEFT
+            ));
+        }
+    }
+}
+
+/// `Z2`: no source gives KDE's dialog size limits (spec §5, "Issue #4's
+/// leftovers and their homes"), so the panel states neither.
+#[test]
+fn the_dialog_states_no_size_limits() {
+    for theme in both_schemes() {
+        assert_eq!(theme.dialog.panel.min_size, [None, None]);
+        assert_eq!(theme.dialog.panel.max_size, [None, None]);
     }
 }

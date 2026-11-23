@@ -45,9 +45,15 @@
 //!   view draws its rows from the Inactive group
 //!   (`docs/issues/0004_kde-leftovers-rationale.md`, L2); the selection's fill
 //!   over both, and neither hover outline on a selected row, as Breeze fills
-//!   and outlines "a hovered, unselected row" (the rationale, E5); a table's
-//!   square corners over the highlight's radius, the table's rule last (E5:
-//!   "Breeze rounds a list's highlight 4.5 and draws a table's square");
+//!   and outlines "a hovered, unselected row" (the rationale, E5); the
+//!   hovered selection's fill (`SELECTED | HOVER`, `L3`) over the selection's;
+//!   the selection of a view without the focus (`SELECTED | UNFOCUSED_VIEW`)
+//!   over both, and its hovered selection over that, as such a view draws its
+//!   rows from the Inactive group (L2), whose Highlight is the inactive
+//!   selection; a table's square corners over the highlight's radius, the
+//!   table's rule last (E5: "Breeze rounds a list's highlight 4.5 and draws a
+//!   table's square"). The row's label: the text of a view without the focus's
+//!   selection over the selection's, the disabled colour over both;
 //! - the scroll bar's handle: the handle of a view without the focus with the
 //!   pointer on the bar but off the handle (`HOVER_WITHIN | UNFOCUSED_VIEW`)
 //!   over that view's handle (`UNFOCUSED_VIEW`), its rule after that one;
@@ -56,7 +62,11 @@
 //!   one colour whatever the view's focus (`scrollbar.thumb_hover_color`:
 //!   platform-facts.md (§2.8)). In the view that has the focus no source
 //!   states the handle with the pointer on the bar but off the handle: that
-//!   query (`HOVER_WITHIN`) returns the focused view's handle at rest;
+//!   query (`HOVER_WITHIN`) returns the focused view's handle at rest. The
+//!   handle's outline (`S2`) follows the same rules: DecorationFocus's pen at
+//!   rest, WindowText's in a view without the focus, DecorationHover's on the
+//!   hovered and the pressed handle, as `scrollBarHandleColor` picks the
+//!   handle's colour (breezehelper.cpp:277-303 at breeze f0b1d75);
 //! - the text field's frame: the focus outline over the hover outline, as
 //!   Breeze's focus colour "takes precedence over hover" (`focus_border_color`:
 //!   platform-facts.md (§2.4));
@@ -112,10 +122,21 @@
 //!   half-covered pixel) and the row's fill within one 8-bit step (#edf6fc /
 //!   #16232a over the view, measured #ecf5fb / #16232b); that residual is
 //!   not explained.
-//! - `L4`, a row's own box: its highlight margins in the row's base, and the
-//!   highlight's 4.5 corners on the rules that draw a highlight (the hovered
-//!   rows and the selection), so a row at rest, an alternate row's stripe
-//!   too, states no corners.
+//! - `L3`, a selected row under the pointer: `Highlight.lighter(110)`
+//!   (breezestyle.cpp:4876 at breeze f0b1d75), through the clean-room
+//!   `qt_lighter`, on Breeze's colours and on the system's; in a view without
+//!   the focus, of the inactive selection (derived, not measured).
+//! - `L4`, a row's own box: its highlight margins in the highlight's base,
+//!   and the highlight's 4.5 corners on the rules that draw a highlight (the
+//!   hovered rows and the selection), so a row at rest, an alternate row's
+//!   stripe too, states no corners; the row's padding, 7 left and right and 3
+//!   above and below, a text-only row's content inset under the unframed
+//!   margins (Breeze's margins and `ItemView_ItemPadding*`, Qt's text margin).
+//!   Breeze's shrinking of that inset for a long text, the first row's extra
+//!   top margin, a framed view's narrower margins and a table's missing
+//!   vertical padding are not carried.
+//! - `S1`, the scroll bar's line along its inner edge, and `S2`, the
+//!   handle's outline: their sources are on the builder's `scrollbar`.
 //! - `S3`, the handle in the view that has the focus: Breeze's measured
 //!   colour. Under the system's colours the handle at rest is the plain
 //!   handle in every view, as 0.7.2 draws it: Breeze's rule, `focusColor()`
@@ -126,6 +147,8 @@
 //!   bar but off the handle: the idle handle's overlay at the factor 1
 //!   instead of 0.7 (platform-facts.md (§2.8)), from the window's colours
 //!   where they are stated.
+//! - `Z2`, the dialog's size limits: unstated, as no source gives KDE's
+//!   (spec §5); 0.7.2's are uncited, a listed difference of the parity tests.
 //!
 //! The system's scheme-independent settings apply wherever given: the UI,
 //! monospace and caption fonts (with the headings derived from the UI font),
@@ -145,14 +168,16 @@
 //! `src/resolve/validate_helpers.rs`) where 0.7.2 fills a value the TOML does
 //! not state; `docs/issues/0004_kde-leftovers-rationale.md` for issue #4's
 //! states 0.7.2 has no field for (spec §5, "Issue #4's leftovers and their
-//! homes": `L2`, `L4`, `S3`, `S4`).
+//! homes": `L2`, `L3`, `L4`, `S3`, `S4`, `Z2`); Breeze's `kstyle/` at
+//! f0b1d75 and qtbase at v6.11.0, each cited where used, for `L3`, `L4`'s
+//! padding, `S1` and `S2`.
 
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use crate::IconSet;
 use crate::next::color::Color;
-use crate::next::geometry::{Corners, Edges, Stroke};
+use crate::next::geometry::{Corners, Edges, Stroke, StrokeAlign, StrokeSide};
 use crate::next::icons::{IconSizes, IconThemeSpec};
 use crate::next::layout::{ArrowSide, DialogButtonOrder, LayoutMetrics, TabIndicatorSide};
 use crate::next::motion::{CaretSpec, DialogEntranceStyle, MotionTokens, UiTimings};
@@ -163,10 +188,11 @@ use crate::next::platform::kcu_overlay::kcu_overlay;
 use crate::next::platform::kde_selection_inactive::kde_selection_inactive;
 use crate::next::platform::kde_shade::{KdeShadeRole, kde_shade};
 use crate::next::platform::kirigami_lerp::kirigami_lerp;
+use crate::next::platform::qt_lighter::qt_lighter;
 use crate::next::platform::qt_tint::{qt_tint, tint_stored};
 use crate::next::preset::{Preset, ResolveInputs};
 use crate::next::query::{
-    ButtonVariant, Contrast, ListVariant, Orientation, Scheme, ThemeContext, WidgetState,
+    ButtonVariant, Contrast, Direction, ListVariant, Orientation, Scheme, ThemeContext, WidgetState,
 };
 use crate::next::reader::{OsColors, OsFont, SystemOverrides};
 use crate::next::roles::{
@@ -311,6 +337,9 @@ struct SchemeColors {
     /// The expander's arrow: the preset's colour, which 0.7.2's KDE reader
     /// does not replace.
     expander_arrow: Color,
+    /// `kdeglobals` `[KDE] frameContrast`: the system's where it states it,
+    /// else KColorScheme's default ([`FRAME_CONTRAST_DEFAULT`]).
+    frame_contrast: f64,
 }
 
 /// The light scheme's constants.
@@ -732,6 +761,7 @@ const LIGHT: SchemeColors = SchemeColors {
     card_border: srgb8(0xced1_d4ff),
     // `expander.arrow_color`: 0.7.2 kde-breeze.toml (uncited)
     expander_arrow: srgb8(0x2326_29ff),
+    frame_contrast: FRAME_CONTRAST_DEFAULT,
 };
 
 /// The dark scheme's constants.
@@ -1158,6 +1188,7 @@ const DARK: SchemeColors = SchemeColors {
     card_border: srgb8(0x3c41_46ff),
     // `expander.arrow_color`: 0.7.2 kde-breeze.toml (uncited)
     expander_arrow: srgb8(0xfcfc_fcff),
+    frame_contrast: FRAME_CONTRAST_DEFAULT,
 };
 
 /// The UI font's family.
@@ -1383,6 +1414,23 @@ const LIST_ROW_MARGIN_VERTICAL: f32 = 1.0;
 // highlight 4.5 and draws a table's square
 const LIST_ROW_RADIUS: f32 = 4.5;
 
+/// Breeze's padding of an item-view row's content beyond the highlight's
+/// margin, left and right: `ItemView_ItemPaddingWidth` (spec §5, `L4`).
+// `list.row` padding: breezemetrics.h:164, breezestyle.cpp:1060-1084 at breeze f0b1d75
+const LIST_ITEM_PADDING_WIDTH: f32 = 2.0;
+
+/// Breeze's padding of an item-view row's content beyond the highlight's
+/// margin, above and below: `ItemView_ItemPaddingHeight` (spec §5, `L4`).
+// `list.row` padding: breezemetrics.h:165, breezestyle.cpp:3902-3916 at breeze f0b1d75
+const LIST_ITEM_PADDING_HEIGHT: f32 = 2.0;
+
+/// Qt's margin of an item's text left and right inside its text rectangle:
+/// `PM_FocusFrameHMargin` + 1, Breeze's `PM_FocusFrameHMargin` being 2
+/// (spec §5, `L4`).
+// `list.row` padding: qcommonstyle.cpp:1002-1007 at qtbase v6.11.0 (`viewItemDrawText`),
+// breezestyle.cpp:737-739 at breeze f0b1d75
+const LIST_TEXT_MARGIN: f32 = 3.0;
+
 /// The groove's thickness across the bar.
 // `scrollbar.groove_width`: 0.7.2 kde-breeze.toml (uncited)
 const SCROLLBAR_GROOVE_WIDTH: f32 = 21.0;
@@ -1398,6 +1446,16 @@ const SCROLLBAR_MIN_THUMB_LENGTH: f32 = 20.0;
 /// Whether the bar overlays the content.
 // `scrollbar.overlay_mode`: 0.7.2 kde-breeze.toml (uncited)
 const SCROLLBAR_OVERLAY: bool = false;
+
+/// The width of the scroll bar's line along its inner edge (spec §5, `S1`):
+/// `PenWidth::Frame`, 1.001, as the extent of an integer `QRect`, so 1 px.
+// `scrollbar.track` stroke: breezestyle.cpp:8213-8232, breezemetrics.h:25 at breeze f0b1d75
+const SCROLLBAR_LINE_WIDTH: f32 = 1.0;
+
+/// The width of the pen of the scroll bar handle's outline (spec §5, `S2`):
+/// `PenWidth::Frame`.
+// `scrollbar.thumb` stroke: breezehelper.cpp:1274-1287, breezemetrics.h:25 at breeze f0b1d75
+const SCROLLBAR_HANDLE_PEN_WIDTH: f32 = 1.001;
 
 /// A tooltip's padding left and right.
 // `tooltip.border.padding.left`: platform-facts.md (§2.7): ToolTip_FrameWidth = 3
@@ -1680,22 +1738,6 @@ const SWITCH_THUMB_DIAMETER: f32 = 18.0;
 // default 1 (SwitchIndicator.qml:65-79)
 const SWITCH_THUMB_BORDER_WIDTH: f32 = 1.0;
 
-/// A dialog's least width.
-// `dialog.min_width`: 0.7.2 kde-breeze.toml (uncited)
-const DIALOG_MIN_WIDTH: f32 = 320.0;
-
-/// A dialog's greatest width.
-// `dialog.max_width`: 0.7.2 kde-breeze.toml (uncited)
-const DIALOG_MAX_WIDTH: f32 = 560.0;
-
-/// A dialog's least height.
-// `dialog.min_height`: 0.7.2 kde-breeze.toml (uncited)
-const DIALOG_MIN_HEIGHT: f32 = 140.0;
-
-/// A dialog's greatest height.
-// `dialog.max_height`: 0.7.2 kde-breeze.toml (uncited)
-const DIALOG_MAX_HEIGHT: f32 = 600.0;
-
 /// The gap between a dialog's buttons.
 // `dialog.button_gap`: 0.7.2 kde-breeze.toml (uncited)
 const DIALOG_BUTTON_GAP: f32 = 6.0;
@@ -1903,6 +1945,11 @@ const HEADER_SECTION_MIX: f64 = 0.2;
 /// §2.15).
 const LIST_HOVER_OUTLINE_ALPHA: f32 = 0.8;
 
+/// The factor of `QColor::lighter` that fills a hovered, selected item-view
+/// row, `Highlight.lighter(110)` (breezestyle.cpp:4876 at breeze f0b1d75;
+/// docs/issues/0004_kde-leftovers-rationale.md, L3: #44bfff, measured).
+const LIST_SELECTED_HOVER_LIGHTER: i32 = 110;
+
 /// The alpha a Breeze scroll-bar handle's colour is filled with over the
 /// window, `overlayColors(bg, alphaColor(fg, 0.5))` (breezehelper.cpp:1284
 /// at breeze f0b1d75; docs/platform-facts.md §2.8).
@@ -2019,6 +2066,7 @@ fn lay_system_over(c: &mut SchemeColors, os: &OsColors) {
     );
 
     // The settings, each where stated.
+    c.frame_contrast = frame_contrast;
     replace(&mut c.window_background, window_bg);
     replace(&mut c.window_foreground, window_fg);
     replace(&mut c.window_foreground_muted, window.foreground_muted);
@@ -2315,6 +2363,12 @@ fn translucent(c: Color, alpha: f32) -> Color {
     eight_bit(rgba(c.with_alpha(alpha)))
 }
 
+/// `QColor::lighter(factor)` of `c` held in 8 bits ([`qt_lighter`]).
+fn lighter(c: Color, factor: i32) -> Color {
+    let [r, g, b, a] = qt_lighter(c.to_srgb8(), factor);
+    Color::from_srgb8(r, g, b, a)
+}
+
 /// Breeze's keyboard focus band in the selection colour `highlight`: that
 /// colour at [`BLEND_VALUE`] (breezestyle.cpp:6776-6779, breezemetrics.h:176
 /// at breeze f0b1d75; docs/platform-facts.md §2.1.5).
@@ -2487,7 +2541,7 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
         button: button(c, &colors, &typography, &layout),
         checkbox: checkbox(c, &colors, &typography, &layout),
         radio: radio(c, &colors, &typography, &layout),
-        scrollbar: scrollbar(c),
+        scrollbar: scrollbar(c, ctx.direction),
         list: list(c, &colors, &typography, &layout),
         tab: tab(c, &colors, &typography),
         menu: menu(c, &menu_font, &layout),
@@ -3034,10 +3088,12 @@ fn radio(
 /// (`list.background_color`: platform-facts.md (§2.15), `[Colors:View]`
 /// BackgroundNormal, the source of the view role; 0.7.2: `list.border.color`
 /// is `defaults.border.color` where unstated); rows with the alternate row's
-/// fill; over them the highlight with Breeze's margins and radius (a table's
-/// square), the hovered row's tint and outline, in a view without the focus
-/// from the inactive selection colour, and the selection (0.7.2: `list.selection_background` and
-/// `selection_text_color` are the selection's where unstated); the view's
+/// fill and Breeze's content padding; over them the highlight with Breeze's
+/// margins and radius (a table's square), the hovered row's tint and outline,
+/// in a view without the focus from the inactive selection colour, and the
+/// selection (0.7.2: `list.selection_background` and `selection_text_color`
+/// are the selection's where unstated), lighter under the pointer, in a view
+/// without the focus the inactive selection with its text; the view's
 /// text, which a hovered row keeps (`list.hover_text_color`: "←
 /// item_font.color"); headers in Button's colours. 0.7.2 states no row or
 /// header height ("sizes to content").
@@ -3066,9 +3122,17 @@ fn list(
     // pixel exact and the fill's within one 8-bit step, a residual not explained.
     let unfocused_hover = WidgetState::HOVER.union(WidgetState::UNFOCUSED_VIEW);
     let inactive_highlight = c.selection_unfocused_background;
+    // `L4`: a text-only row's content inset from the row's rectangle, the highlight's margin,
+    // Breeze's item padding and, left and right, Qt's text margin.
     let row = RuleBuilder::new(PartStyle::default())
+        .base([PartProp::Padding(Edges::symmetric(
+            LIST_ROW_MARGIN_VERTICAL + LIST_ITEM_PADDING_HEIGHT,
+            LIST_ROW_MARGIN_HORIZONTAL + LIST_ITEM_PADDING_WIDTH + LIST_TEXT_MARGIN,
+        ))])
         .rule(alternate, [fill(c.list_alternate_row)])
         .build();
+    let selected_hover = WidgetState::SELECTED.union(WidgetState::HOVER);
+    let unfocused_selected = WidgetState::SELECTED.union(WidgetState::UNFOCUSED_VIEW);
     // `L4`: the highlight is inset by Breeze's margins; its corners are stated only by the rules
     // that draw one.
     let highlight_corners = PartProp::Corners(Corners::uniform(LIST_ROW_RADIUS));
@@ -3104,12 +3168,37 @@ fn list(
             RuleSelector::on(WidgetState::SELECTED),
             [fill(roles.selection.background), highlight_corners],
         )
+        // `L3`: a hovered, selected row is filled with `Highlight.lighter(110)`; a view without
+        // the focus draws its rows from the Inactive group (L2), whose Highlight is the inactive
+        // selection, so its selected row takes that colour, lighter under the pointer.
+        .rule(
+            RuleSelector::on(selected_hover),
+            [fill(lighter(
+                roles.selection.background,
+                LIST_SELECTED_HOVER_LIGHTER,
+            ))],
+        )
+        .rule(
+            RuleSelector::on(unfocused_selected),
+            [fill(inactive_highlight)],
+        )
+        .rule(
+            RuleSelector::on(unfocused_selected.union(WidgetState::HOVER)),
+            [fill(lighter(
+                inactive_highlight,
+                LIST_SELECTED_HOVER_LIGHTER,
+            ))],
+        )
         .rule(table, [PartProp::Corners(Corners::NONE)])
         .build();
     let item_label = RuleBuilder::new(label(&typography.body, roles.view.foreground))
         .rule(
             RuleSelector::on(WidgetState::SELECTED),
             [TextProp::Color(roles.selection.foreground)],
+        )
+        .rule(
+            RuleSelector::on(unfocused_selected),
+            [TextProp::Color(c.selection_unfocused_foreground)],
         )
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
@@ -3152,21 +3241,77 @@ fn list(
 /// the hovered one serves the pressed one too (`scrollbar.thumb_active_color`:
 /// platform-facts.md (§2.8), "no pressed colour of its own, the hovered
 /// one").
-fn scrollbar(c: &SchemeColors) -> ScrollbarWidget {
+///
+/// `S1`: the groove's 1 px line, `Text` at alpha frameContrast, on the bar's
+/// own outermost row or column: the top row of a horizontal bar in both
+/// directions, the left column of a vertical bar from left to right and the
+/// right column from right to left (`Style::drawScrollBarComplexControl`,
+/// breezestyle.cpp:8213-8232 at breeze f0b1d75, `QStyle::alignedRect`
+/// through `visualAlignment`, qstyle.cpp:2180-2212 and
+/// qguiapplication_p.h:176-186 at qtbase v6.11.0; measured from left to right
+/// on a vertical bar, docs/evidence/breeze-offscreen/2026-11-13/). `S2`: the
+/// handle's outline, the handle's own colour at alpha frameContrast in every
+/// state, centred on its edge (`Helper::renderScrollBarHandle`,
+/// breezehelper.cpp:1274-1287, `transparentize` :134-139 at breeze f0b1d75;
+/// measured, the same evidence): WindowText in a view without the focus,
+/// DecorationFocus in the view that has it, DecorationHover on the hovered
+/// and the pressed handle (`scrollBarHandleColor`, breezehelper.cpp:277-303).
+fn scrollbar(c: &SchemeColors, direction: Direction) -> ScrollbarWidget {
+    let frame_contrast = c.frame_contrast as f32;
+    let line = StrokeSide {
+        width: SCROLLBAR_LINE_WIDTH,
+        paint: Paint::Solid(translucent(c.view_foreground, frame_contrast)),
+    };
+    let (left, right) = match direction {
+        Direction::Ltr => (line.clone(), StrokeSide::default()),
+        Direction::Rtl => (StrokeSide::default(), line.clone()),
+    };
     let track = across(
         RuleBuilder::new(PartStyle::default()).base([fill(c.scrollbar_track)]),
         SCROLLBAR_GROOVE_WIDTH,
     )
+    .rule(
+        RuleSelector::on(WidgetState::NONE).orientation(Orientation::Vertical),
+        [PartProp::Stroke(Stroke::sides(
+            StrokeSide::default(),
+            right,
+            StrokeSide::default(),
+            left,
+            StrokeAlign::Inside,
+        ))],
+    )
+    .rule(
+        RuleSelector::on(WidgetState::NONE).orientation(Orientation::Horizontal),
+        [PartProp::Stroke(Stroke::sides(
+            line,
+            StrokeSide::default(),
+            StrokeSide::default(),
+            StrokeSide::default(),
+            StrokeAlign::Inside,
+        ))],
+    )
     .build();
-    let unfocused_view = c
-        .scrollbar_thumb_focused
-        .map(|_| RuleSelector::on(WidgetState::UNFOCUSED_VIEW));
+    let pen = |color: Color| {
+        PartProp::Stroke(Stroke::uniform_aligned(
+            SCROLLBAR_HANDLE_PEN_WIDTH,
+            translucent(color, frame_contrast),
+            StrokeAlign::Center,
+        ))
+    };
     let thumb = across(
-        RuleBuilder::with_exclusive(PartStyle::default(), PRESSED_HOVER)
-            .base([fill(c.scrollbar_thumb_focused.unwrap_or(c.scrollbar_thumb))]),
+        RuleBuilder::with_exclusive(PartStyle::default(), PRESSED_HOVER).base([
+            fill(c.scrollbar_thumb_focused.unwrap_or(c.scrollbar_thumb)),
+            pen(c.accent),
+        ]),
         SCROLLBAR_THUMB_WIDTH,
     )
-    .rules(unfocused_view, [fill(c.scrollbar_thumb)])
+    .rule(
+        RuleSelector::on(WidgetState::UNFOCUSED_VIEW),
+        c.scrollbar_thumb_focused
+            .map(|_| fill(c.scrollbar_thumb))
+            .into_iter()
+            .chain([pen(c.window_foreground)]),
+    )
     .rules(
         c.scrollbar_thumb_bar_hover.map(|_| {
             RuleSelector::on(WidgetState::HOVER_WITHIN.union(WidgetState::UNFOCUSED_VIEW))
@@ -3178,7 +3323,7 @@ fn scrollbar(c: &SchemeColors) -> ScrollbarWidget {
             RuleSelector::on(WidgetState::HOVER),
             RuleSelector::on(WidgetState::PRESSED),
         ],
-        [fill(c.scrollbar_thumb_hover)],
+        [fill(c.scrollbar_thumb_hover), pen(c.decoration_hover)],
     )
     .build();
     ScrollbarWidget::new(
@@ -3950,8 +4095,10 @@ fn switch(c: &SchemeColors, roles: &ColorRoles) -> SwitchWidget {
 /// `defaults.background_color` where unstated, `resolve_safety_nets`) in the
 /// default line with the large radius (0.7.2: `dialog.border`'s colour,
 /// width and radius are `defaults.border`'s with `corner_radius_lg` where
-/// unstated), Layout_TopLevelMarginWidth's padding and the preset's size
-/// limits; title and body in the UI font (0.7.2: `dialog.title_font` and
+/// unstated) and Layout_TopLevelMarginWidth's padding, with no size limits
+/// (spec §5, `Z2`: no source gives KDE's; 0.7.2's 320 / 560 / 140 / 600 are
+/// uncited, a listed difference of the parity tests); title and body in the
+/// UI font (0.7.2: `dialog.title_font` and
 /// `body_font` are `defaults.font` where unstated); KStyle's message box
 /// icon size; the buttons' gap and order and Kirigami's entrance.
 fn dialog(roles: &ColorRoles, typography: &Typography, layout: &LayoutMetrics) -> DialogWidget {
@@ -3968,8 +4115,6 @@ fn dialog(roles: &ColorRoles, typography: &Typography, layout: &LayoutMetrics) -
                 DIALOG_PADDING_VERTICAL,
                 DIALOG_PADDING_HORIZONTAL,
             )),
-            PartProp::MinSize([Some(DIALOG_MIN_WIDTH), Some(DIALOG_MIN_HEIGHT)]),
-            PartProp::MaxSize([Some(DIALOG_MAX_WIDTH), Some(DIALOG_MAX_HEIGHT)]),
         ])
     {
         panel.apply(&prop);

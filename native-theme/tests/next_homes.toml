@@ -2355,22 +2355,38 @@ note = "0.7.2 safety net: unset = defaults.background_color"
 [[row]]
 key = "dialog.min_width"
 homes = ["dialog.panel.min_size[0]"]
-note = "spec §5 (Z2): no source; listed differences, if any, are M2's"
+note = "spec §5 (Z2): no source"
+difference_presets = ["kde-breeze"]
+difference_reason = "issue #4 `Z2`: no source"
+difference_citation = "docs/issues/0004_kde-leftovers-rationale.md §3 (Sizes that are not minimums, or have no source); docs/v0.8.0-spec.md §5, notes to the table (Z2)"
+difference_values = { "kde-breeze" = "unstated" }
 
 [[row]]
 key = "dialog.max_width"
 homes = ["dialog.panel.max_size[0]"]
 note = "Z2, as min_width"
+difference_presets = ["kde-breeze"]
+difference_reason = "issue #4 `Z2`: no source"
+difference_citation = "docs/issues/0004_kde-leftovers-rationale.md §3 (Sizes that are not minimums, or have no source); docs/v0.8.0-spec.md §5, notes to the table (Z2)"
+difference_values = { "kde-breeze" = "unstated" }
 
 [[row]]
 key = "dialog.min_height"
 homes = ["dialog.panel.min_size[1]"]
 note = "Z2"
+difference_presets = ["kde-breeze"]
+difference_reason = "issue #4 `Z2`: no source"
+difference_citation = "docs/issues/0004_kde-leftovers-rationale.md §3 (Sizes that are not minimums, or have no source); docs/v0.8.0-spec.md §5, notes to the table (Z2)"
+difference_values = { "kde-breeze" = "unstated" }
 
 [[row]]
 key = "dialog.max_height"
 homes = ["dialog.panel.max_size[1]"]
 note = "Z2"
+difference_presets = ["kde-breeze"]
+difference_reason = "issue #4 `Z2`: no source"
+difference_citation = "docs/issues/0004_kde-leftovers-rationale.md §3 (Sizes that are not minimums, or have no source); docs/v0.8.0-spec.md §5, notes to the table (Z2)"
+difference_values = { "kde-breeze" = "unstated" }
 
 [[row]]
 key = "dialog.button_gap"
