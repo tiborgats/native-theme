@@ -44,7 +44,7 @@ use serde_json::Value;
 use super::{HOMES, NullMeans, Row, RowContext, Table};
 use crate::IconSet;
 use crate::next::color::Color;
-use crate::next::geometry::{CornerCurve, CornerRadius, Stroke, StrokeAlign};
+use crate::next::geometry::{CornerCurve, CornerRadius, Stroke};
 use crate::next::layout::{ArrowSide, DialogButtonOrder, TabIndicatorSide};
 use crate::next::motion::DialogEntranceStyle;
 use crate::next::paint::Paint;
@@ -1365,15 +1365,12 @@ fn stroke_field(stroke: &Stroke, field: &str) -> Option<Got> {
     })
 }
 
-/// A part's stroke field: as [`stroke_field`], but a `Stroke::Uniform` lies inside the edge, as 0.7.2's
-/// padding (measured from the stroke's inner edge, spec §2) implies, or it is a form no 0.7.2 field holds;
-/// and no stroke is the width 0.0 (and no colour).
+/// A part's stroke field: as [`stroke_field`] in every alignment, as the stroke is a band of its width
+/// inside the part's box whatever its `align`, which says only how far the fill runs under it (spec §2,
+/// "Fill and stroke"); and no stroke is the width 0.0 (and no colour).
 fn part_stroke(stroke: &Stroke, field: &str) -> Option<Got> {
     Some(match (stroke, field) {
         (Stroke::None, "width") => Got::F32(0.0),
-        (Stroke::Uniform { align, .. }, "color" | "width") if *align != StrokeAlign::Inside => {
-            Got::Other(format!("{stroke:?}"))
-        }
         _ => return stroke_field(stroke, field),
     })
 }

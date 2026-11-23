@@ -1039,7 +1039,8 @@
         "fill": "#a1a9b1",
         "stroke": {
           "width": 1.0,
-          "color": "#eff0f133"
+          "color": "#eff0f133",
+          "align": "center"
         },
         "corners": 5.0,
         "shadows": "none",
@@ -1161,7 +1162,8 @@
           "width": 1.001,
           "color": "#f6740033",
           "align": "center"
-        }
+        },
+        "corners": "pill"
       },
       "rules": [
         {

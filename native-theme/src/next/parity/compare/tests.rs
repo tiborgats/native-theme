@@ -2,7 +2,7 @@ use super::*;
 use serde_json::json;
 use std::sync::Arc;
 
-use crate::next::geometry::{Corners, Edges, ShadowLayer, StrokeSide};
+use crate::next::geometry::{Corners, Edges, ShadowLayer, StrokeAlign, StrokeSide};
 use crate::next::paint::{BlendMode, GradientStop, PaintLayer};
 use crate::next::preset::nothing_stated;
 use crate::next::rules::{
@@ -1032,6 +1032,19 @@ fn a_part_property_of_a_form_0_7_2_does_not_hold_mismatches() -> TestResult {
             color.clone(),
             true,
         ),
+        // A uniform stroke in every alignment: the band inside the box is the same.
+        (
+            PartProp::Stroke(Stroke::uniform_aligned(1.0, c, StrokeAlign::Center)),
+            "stroke.width",
+            json!(1.0),
+            true,
+        ),
+        (
+            PartProp::Stroke(Stroke::uniform_aligned(1.0, c, StrokeAlign::Outside)),
+            "stroke.color",
+            color.clone(),
+            true,
+        ),
         // The forms it does not.
         (PartProp::Fill(gradient), "fill", color.clone(), false),
         (PartProp::Fill(layered), "fill", color.clone(), false),
@@ -1051,18 +1064,6 @@ fn a_part_property_of_a_form_0_7_2_does_not_hold_mismatches() -> TestResult {
         (PartProp::Corners(per_corner), "corners", json!(5.0), false),
         (
             PartProp::Stroke(Stroke::None),
-            "stroke.color",
-            color.clone(),
-            false,
-        ),
-        (
-            PartProp::Stroke(Stroke::uniform_aligned(1.0, c, StrokeAlign::Center)),
-            "stroke.width",
-            json!(1.0),
-            false,
-        ),
-        (
-            PartProp::Stroke(Stroke::uniform_aligned(1.0, c, StrokeAlign::Outside)),
             "stroke.color",
             color.clone(),
             false,
