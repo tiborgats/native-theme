@@ -1148,6 +1148,40 @@ fn the_handle_s_outline_is_its_own_colour_at_frame_contrast() {
     }
 }
 
+/// The handle is a pill in every state (breezehelper.cpp:1274-1287 at breeze
+/// f0b1d75), and the progress bar groove's outline is centred on its fill
+/// (breezehelper.cpp:1215).
+#[test]
+fn the_handle_is_a_pill_and_the_progress_groove_s_outline_is_centred() {
+    for theme in both_schemes() {
+        for state in [
+            WidgetState::NONE,
+            WidgetState::UNFOCUSED_VIEW,
+            BAR_HOVER_UNFOCUSED,
+            WidgetState::HOVER,
+            WidgetState::PRESSED,
+        ] {
+            assert_eq!(
+                theme.scrollbar.thumb(state).corners,
+                Corners::pill(),
+                "{state:?}"
+            );
+        }
+        let track = theme.progress_bar.track(WidgetState::NONE);
+        assert!(
+            matches!(
+                track.stroke,
+                Stroke::Uniform {
+                    align: StrokeAlign::Center,
+                    ..
+                }
+            ),
+            "{:?}",
+            track.stroke
+        );
+    }
+}
+
 /// `L4`, a row's padding: a text-only row's content inset from the row's
 /// rectangle, 7 left and right (the highlight's margin 2, Breeze's
 /// `ItemView_ItemPaddingWidth` 2 and Qt's text margin 3) and 3 above and

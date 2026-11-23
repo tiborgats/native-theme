@@ -3296,11 +3296,15 @@ fn list(
 /// qguiapplication_p.h:176-186 at qtbase v6.11.0; measured from left to right
 /// on a vertical bar, docs/evidence/breeze-offscreen/2026-11-13/). `S2`: the
 /// handle's outline, the handle's own colour at alpha frameContrast in every
-/// state, centred on its edge (`Helper::renderScrollBarHandle`,
-/// breezehelper.cpp:1274-1287, `transparentize` :134-139 at breeze f0b1d75;
+/// state, centred on the fill's edge half a pen inside the handle
+/// (`Helper::renderScrollBarHandle`, breezehelper.cpp:1274-1287,
+/// `transparentize` :134-139, `strokedRect` :1747-1757 at breeze f0b1d75;
 /// measured, the same evidence): WindowText in a view without the focus,
 /// DecorationFocus in the view that has it, DecorationHover on the hovered
 /// and the pressed handle (`scrollBarHandleColor`, breezehelper.cpp:277-303).
+/// The handle is a pill: its radius is half the least of its width, its
+/// length and `ScrollBar_SliderWidth`, the handle's thickness
+/// (breezehelper.cpp:1274-1287 at breeze f0b1d75).
 fn scrollbar(c: &SchemeColors, direction: Direction) -> ScrollbarWidget {
     let frame_contrast = c.frame_contrast as f32;
     let line = StrokeSide {
@@ -3347,6 +3351,8 @@ fn scrollbar(c: &SchemeColors, direction: Direction) -> ScrollbarWidget {
         RuleBuilder::with_exclusive(PartStyle::default(), PRESSED_HOVER).base([
             fill(c.scrollbar_thumb_focused.unwrap_or(c.scrollbar_thumb)),
             pen(c.accent),
+            // `scrollbar.thumb` corners: breezehelper.cpp:1274-1287 at breeze f0b1d75
+            PartProp::Corners(Corners::pill()),
         ]),
         SCROLLBAR_THUMB_WIDTH,
     )
@@ -3658,14 +3664,19 @@ fn slider(c: &SchemeColors, roles: &ColorRoles) -> SliderWidget {
 /// outlined in the window text at the frame contrast, at the default radius
 /// (`progress_bar.border.corner_radius`: `defaults.border.corner_radius`),
 /// no shadow and no padding, of an exact thickness and a least length; the
-/// fill in the accent over the window. No indeterminate period is stated.
+/// fill in the accent over the window. The outline is centred on the
+/// groove's fill, as Breeze draws the groove with one path of a translucent
+/// pen and a brush (`Helper::renderProgressBarGroove`, breezehelper.cpp:1215
+/// at breeze f0b1d75). No indeterminate period is stated.
 fn progress_bar(c: &SchemeColors, roles: &ColorRoles, layout: &LayoutMetrics) -> ProgressBarWidget {
     let track = RuleBuilder::new(PartStyle::default())
         .base(roles.window.foreground_muted.map(fill))
         .base([
-            PartProp::Stroke(Stroke::uniform(
+            // `progress_bar.track` stroke alignment: breezehelper.cpp:1215 at breeze f0b1d75
+            PartProp::Stroke(Stroke::uniform_aligned(
                 PROGRESS_BAR_BORDER_WIDTH,
                 c.list_header_separator,
+                StrokeAlign::Center,
             )),
             corners(layout),
             // `progress_bar.border.shadow_enabled`: platform-facts.md (§2.10): no shadow
@@ -4388,5 +4399,7 @@ fn expander(
     )
 }
 
+#[cfg(all(test, feature = "serde"))]
+mod snapshots;
 #[cfg(test)]
 mod tests;
