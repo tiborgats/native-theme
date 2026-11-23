@@ -354,10 +354,10 @@ pub fn button(
 
 /// What the button styles read from the theme, of either model: each
 /// field's 0.7.2 name, soft options as `None` where unset. A hover layer no
-/// rule states is `None`, the idle fill under the pointer, as the theme's
-/// cascade states it, and never that fill composited over itself; the
-/// disabled look where the theme states no opacity is iced's own (spec §10,
-/// rule 0). The 0.7.2 model states both.
+/// rule states is `None`, and the hovered button is then iced's own
+/// (spec §2, `from_state`), never the idle fill composited over itself; the
+/// disabled look where the theme states no opacity is iced's own too
+/// (spec §10, rule 0). The 0.7.2 model states both.
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct ButtonSource {
     pub background: Color,
@@ -438,14 +438,11 @@ impl ButtonSource {
     /// The hovered and the pressed fill: each layer over the idle fill.
     /// `active_background` is a soft option: `None` is the platform saying
     /// the pressed state has no fill of its own, so it copies the hover
-    /// layer; with no hover layer either, the button keeps its idle fill,
-    /// which is what the theme states for those states then.
-    fn layered(&self) -> (Color, Color) {
-        let over = |layer: Option<Color>| {
-            layer.map_or(self.background, |layer| {
-                composite_over(layer, self.background)
-            })
-        };
+    /// layer. With no hover layer either, the theme states nothing for the
+    /// state, and its fill is `None`: iced's own for that status (spec §2,
+    /// `from_state`; spec §10, rule 0).
+    fn layered(&self) -> (Option<Color>, Option<Color>) {
+        let over = |layer: Option<Color>| layer.map(|layer| composite_over(layer, self.background));
         (
             over(self.hover_background),
             over(self.active_background.or(self.hover_background)),
@@ -492,29 +489,46 @@ pub(crate) fn button_from(
     let pressed_label = b.active_label;
     let opacity = b.disabled_opacity;
 
-    move |_theme, status| {
+    move |theme, status| {
         let iced = Style::default();
         let outline = source.outline_at(status);
-        let (background, text_color, border) = match status {
-            Status::Active => (idle, label, outline.over(idle)),
-            Status::Hovered => (hovered, hovered_label, outline.over(hovered)),
-            Status::Pressed => (pressed, pressed_label, outline.over(pressed)),
+        // A state the theme states no fill for is painted as iced's own
+        // neutral class paints it.
+        let own = |fill: Option<Color>| {
+            fill.map_or_else(
+                || iced_widget::button::secondary(theme, status).background,
+                |fill| Some(Background::Color(fill)),
+            )
+        };
+        let (background, text_color) = match status {
+            Status::Active => (Some(Background::Color(idle)), label),
+            Status::Hovered => (own(hovered), hovered_label),
+            Status::Pressed => (own(pressed), pressed_label),
             // A translucent disabled fill replaces the idle one and lets the
             // window through, so it is emitted as given rather than
             // composited.
-            Status::Disabled => disabled_button(
-                source.disabled_background,
-                idle,
-                source.disabled_label,
-                label,
-                outline,
-                opacity,
-            ),
+            Status::Disabled => {
+                let (fill, label, border) = disabled_button(
+                    source.disabled_background,
+                    idle,
+                    source.disabled_label,
+                    label,
+                    outline,
+                    opacity,
+                );
+                return Style {
+                    background: Some(Background::Color(fill)),
+                    text_color: label,
+                    border,
+                    shadow: iced.shadow,
+                    snap: iced.snap,
+                };
+            }
         };
         Style {
-            background: Some(Background::Color(background)),
+            background,
             text_color,
-            border,
+            border: outline.over(painted(background)),
             shadow: iced.shadow,
             snap: iced.snap,
         }
@@ -561,7 +575,6 @@ pub(crate) fn button_toggle_from(
     let plain = button_from(b);
 
     let source = *b;
-    let (_, pressed) = b.layered();
     let label = b.checked_label.unwrap_or(b.active_label);
     let opacity = b.disabled_opacity;
 
@@ -570,7 +583,9 @@ pub(crate) fn button_toggle_from(
         if !checked {
             return style;
         }
-        let fill = source.checked_background.unwrap_or(pressed);
+        let fill = source
+            .checked_background
+            .unwrap_or_else(|| painted(plain(theme, Status::Pressed).background));
         let outline = source.outline_at(status);
         let (background, text_color, border) = match status {
             Status::Active | Status::Hovered | Status::Pressed => (fill, label, outline.over(fill)),
@@ -705,19 +720,16 @@ pub(crate) fn toolbar_button_from(
     use iced_widget::button::{Status, Style};
 
     // The layers are painted as given: a toolbar button has no fill at rest
-    // for them to lie over. Where the theme states a hover layer for neither
-    // the toolbar nor the button, the button's own hovered fill is its idle
-    // one, which is what is painted then.
-    let hovered = t
-        .hover_background
-        .or(b.hover_background)
-        .unwrap_or(b.background);
+    // for them to lie over. Where the theme states a layer for neither the
+    // toolbar nor the button, the state is [`button`]'s, which is iced's own
+    // there.
+    let plain = button_from(b);
+    let hovered = t.hover_background.or(b.hover_background);
     let pressed = t
         .active_background
         .or(b.active_background)
-        .or(b.hover_background)
-        .unwrap_or(b.background);
-    let fill = t.checked_background.unwrap_or(pressed);
+        .or(b.hover_background);
+    let checked_fill = t.checked_background;
 
     let label = b.label;
     let hovered_label = b.hover_label;
@@ -739,8 +751,12 @@ pub(crate) fn toolbar_button_from(
     };
     let t = *t;
 
-    move |_theme, status| {
+    move |theme, status| {
         let iced = Style::default();
+        let plain_fill = |status| painted(plain(theme, status).background);
+        let hovered = hovered.unwrap_or_else(|| plain_fill(Status::Hovered));
+        let pressed = pressed.unwrap_or_else(|| plain_fill(Status::Pressed));
+        let fill = checked_fill.unwrap_or(pressed);
         let (background, text_color, line) = match (checked, status) {
             (false, Status::Active) => (Color::TRANSPARENT, label, None),
             (false, Status::Hovered) => (hovered, hovered_label, t.hover_border_color),
@@ -1057,7 +1073,7 @@ pub fn button_link(
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct LinkSource {
     pub background: Color,
-    /// The hover layer; `None` keeps the idle fill under the pointer.
+    /// The hover layer; `None` is iced's own text button's hover.
     pub hover_background: Option<Color>,
     pub label: Color,
     pub hover_label: Color,
@@ -1072,10 +1088,10 @@ pub(crate) fn button_link_from(
 ) -> impl Fn(&Theme, iced_widget::button::Status) -> iced_widget::button::Style + Clone + use<> {
     use iced_widget::button::{Status, Style};
 
-    let idle = l.background;
+    let idle = Some(Background::Color(l.background));
     let hovered = l
         .hover_background
-        .map_or(idle, |hover| composite_over(hover, idle));
+        .map(|hover| Background::Color(composite_over(hover, l.background)));
 
     let label = l.label;
     let hovered_label = l.hover_label;
@@ -1084,14 +1100,15 @@ pub(crate) fn button_link_from(
 
     move |theme, status| {
         let iced = iced_widget::button::text(theme, status);
+        // A hover the theme states no fill for is iced's own text button's.
         let (background, text_color) = match status {
             Status::Active => (idle, label),
-            Status::Hovered => (hovered, hovered_label),
+            Status::Hovered => (hovered.or(iced.background), hovered_label),
             Status::Pressed => (idle, pressed_label),
             Status::Disabled => (idle, disabled_label),
         };
         Style {
-            background: Some(Background::Color(background)),
+            background,
             text_color,
             border: iced.border,
             shadow: iced.shadow,
@@ -1410,63 +1427,74 @@ pub fn checkbox(
     checkbox_over(resolved, to_color(resolved.defaults.background_color))
 }
 
-/// The fills and the border colours a box, or a radio, that is not disabled
+/// The fills and the border strokes a box, or a radio, that is not disabled
 /// shows, of either model: the 0.7.2 model states one `CheckboxTheme` for
-/// both controls. The three hover options are soft, `None` where unset.
+/// both controls. The three hover values are `None` where the theme states
+/// nothing for the hovered box, which is then iced's own (spec §2,
+/// `from_state`); the 0.7.2 model's unset soft options are the platform
+/// saying the box looks as it does at rest, and its reads state that.
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct CheckFills {
     pub checked: Color,
     /// The unchecked fill: `checkbox.unchecked_background`, or the box's own
     /// fill where that is unset.
     pub unchecked: Color,
-    /// The hover layer of an unchecked box.
-    pub hover_background: Option<Color>,
-    pub checked_border: Color,
+    /// The fill of an unchecked box under the pointer: its hover layer over
+    /// the unchecked fill.
+    pub hover_fill: Option<Color>,
+    pub checked_border: Line,
     /// `checkbox.unchecked_border_color`, or the box's own border colour
     /// where that is unset.
-    pub unchecked_border: Color,
+    pub unchecked_border: Line,
     /// The border of an unchecked box under the pointer.
-    pub hover_border: Option<Color>,
+    pub hover_border: Option<Line>,
     /// The border of a checked box under the pointer.
-    pub checked_hover_border: Option<Color>,
+    pub checked_hover_border: Option<Line>,
 }
 
 impl CheckFills {
     /// The 0.7.2 model's reads.
-    fn of(c: &ResolvedCheckboxTheme) -> Self {
+    pub(crate) fn of(c: &ResolvedCheckboxTheme) -> Self {
         // The four soft options are the platform saying the box looks no
         // different: unchecked, it has the checkbox's own fill and border;
         // under the pointer, the fill and the border it has at rest.
+        let line = |c: Rgba| Line::outside(to_color(c));
+        let unchecked = to_color(c.unchecked_background.unwrap_or(c.background_color));
+        let unchecked_border = line(c.unchecked_border_color.unwrap_or(c.border.color));
+        let checked_border = line(c.border.color);
         Self {
             checked: to_color(c.checked_background),
-            unchecked: to_color(c.unchecked_background.unwrap_or(c.background_color)),
-            hover_background: c.hover_background.map(to_color),
-            checked_border: to_color(c.border.color),
-            unchecked_border: to_color(c.unchecked_border_color.unwrap_or(c.border.color)),
-            hover_border: c.hover_border_color.map(to_color),
-            checked_hover_border: c.hover_border_color.map(to_color),
+            unchecked,
+            hover_fill: Some(c.hover_background.map_or(unchecked, |hover| {
+                composite_over(to_color(hover), unchecked)
+            })),
+            checked_border,
+            unchecked_border,
+            hover_border: Some(c.hover_border_color.map_or(unchecked_border, line)),
+            checked_hover_border: Some(c.hover_border_color.map_or(checked_border, line)),
         }
     }
 
     /// The fill and the border colour of a box that is checked or not, under
-    /// the pointer or not. Under the pointer an unchecked box takes the hover
-    /// fill and a checked one keeps its own, and either takes the hover
-    /// border where the theme states one.
-    fn at(&self, is_checked: bool, is_hovered: bool) -> (Color, Color) {
-        match (is_checked, is_hovered) {
-            (true, false) => (self.checked, self.checked_border),
-            (true, true) => (
-                self.checked,
-                self.checked_hover_border.unwrap_or(self.checked_border),
-            ),
-            (false, false) => (self.unchecked, self.unchecked_border),
-            (false, true) => (
-                self.hover_background.map_or(self.unchecked, |hover| {
-                    composite_over(hover, self.unchecked)
-                }),
-                self.hover_border.unwrap_or(self.unchecked_border),
-            ),
-        }
+    /// the pointer or not, the stroke laid over that fill ([`Line::over`]).
+    /// Under the pointer an unchecked box takes the hover fill and a checked
+    /// one keeps its own, and either takes the hover border; each the theme
+    /// states nothing for is `iced`'s, iced's own fill and border colour for
+    /// the status.
+    fn at(
+        &self,
+        is_checked: bool,
+        is_hovered: bool,
+        iced: impl Fn() -> (Color, Color),
+    ) -> (Color, Color) {
+        let (fill, line) = match (is_checked, is_hovered) {
+            (true, false) => (Some(self.checked), Some(self.checked_border)),
+            (true, true) => (Some(self.checked), self.checked_hover_border),
+            (false, false) => (Some(self.unchecked), Some(self.unchecked_border)),
+            (false, true) => (self.hover_fill, self.hover_border),
+        };
+        let fill = fill.unwrap_or_else(|| iced().0);
+        (fill, line.map_or_else(|| iced().1, |line| line.over(fill)))
     }
 }
 
@@ -1478,7 +1506,7 @@ pub(crate) struct CheckboxSource {
     /// options.
     pub disabled_background: Option<Color>,
     pub checked_disabled_background: Option<Color>,
-    pub disabled_opacity: f32,
+    pub disabled_opacity: Option<f32>,
     /// The check mark.
     pub mark: Color,
     pub label: Color,
@@ -1489,13 +1517,13 @@ pub(crate) struct CheckboxSource {
 
 impl CheckboxSource {
     /// The 0.7.2 model's reads.
-    fn of(resolved: &ResolvedTheme) -> Self {
+    pub(crate) fn of(resolved: &ResolvedTheme) -> Self {
         let c = &resolved.checkbox;
         Self {
             fills: CheckFills::of(c),
             disabled_background: c.disabled_background.map(to_color),
             checked_disabled_background: c.disabled_background.map(to_color),
-            disabled_opacity: c.disabled_opacity,
+            disabled_opacity: Some(c.disabled_opacity),
             mark: to_color(c.indicator_color),
             label: to_color(c.font.color),
             disabled_label: to_color(c.disabled_text_color),
@@ -1541,14 +1569,27 @@ pub(crate) fn checkbox_from(
     let border_width = c.border_width;
     let border_radius = Radius::new(c.border_radius);
 
-    move |_theme, status| {
+    move |theme, status| {
+        let iced = || {
+            let own = iced_widget::checkbox::primary(theme, status);
+            let fill = match own.background {
+                Background::Color(c) => c,
+                Background::Gradient(_) => Color::TRANSPARENT,
+            };
+            (fill, own.border.color)
+        };
+        // A box the theme states no opacity for is drawn in the colours it
+        // states, not faded.
+        let fade = |under: Color, color: Color| {
+            opacity.map_or(color, |opacity| faded_as_one(ground, under, color, opacity))
+        };
         let (background, border_color, text_color, icon_color) = match status {
             Status::Active { is_checked } => {
-                let (fill, border) = fills.at(is_checked, false);
+                let (fill, border) = fills.at(is_checked, false, iced);
                 (fill, border, label, mark)
             }
             Status::Hovered { is_checked } => {
-                let (fill, border) = fills.at(is_checked, true);
+                let (fill, border) = fills.at(is_checked, true, iced);
                 (fill, border, label, mark)
             }
             // The platform states one disabled fill for both, and the box
@@ -1561,11 +1602,10 @@ pub(crate) fn checkbox_from(
             // box is then faded by `checkbox.disabled_opacity` as one widget
             // over the ground: the border and the mark on the fill.
             Status::Disabled { is_checked } => {
-                let (at_rest, border) = fills.at(is_checked, false);
-                let disabled = if is_checked {
-                    checked_disabled
+                let (at_rest, line, disabled) = if is_checked {
+                    (fills.checked, fills.checked_border, checked_disabled)
                 } else {
-                    disabled
+                    (fills.unchecked, fills.unchecked_border, disabled)
                 };
                 let (background, mark) = match disabled {
                     Some(fill) => (fill, disabled_label),
@@ -1573,10 +1613,10 @@ pub(crate) fn checkbox_from(
                 };
                 let fill = composite_over(background, ground);
                 (
-                    faded_as_one(ground, ground, background, opacity),
-                    faded_as_one(ground, fill, border, opacity),
-                    faded_as_one(ground, ground, disabled_label, opacity),
-                    faded_as_one(ground, fill, mark, opacity),
+                    fade(ground, background),
+                    fade(fill, line.over(background)),
+                    fade(ground, disabled_label),
+                    fade(fill, mark),
                 )
             }
         };
@@ -1647,10 +1687,18 @@ pub(crate) fn radio_from(
 ) -> impl Fn(&Theme, iced_widget::radio::Status) -> iced_widget::radio::Style + Clone + use<> {
     use iced_widget::radio::{Status, Style};
 
-    move |_theme, status| {
+    move |theme, status| {
+        let iced = || {
+            let own = iced_widget::radio::default(theme, status);
+            let fill = match own.background {
+                Background::Color(c) => c,
+                Background::Gradient(_) => Color::TRANSPARENT,
+            };
+            (fill, own.border_color)
+        };
         let (background, border_color) = match status {
-            Status::Active { is_selected } => fills.at(is_selected, false),
-            Status::Hovered { is_selected } => fills.at(is_selected, true),
+            Status::Active { is_selected } => fills.at(is_selected, false, iced),
+            Status::Hovered { is_selected } => fills.at(is_selected, true, iced),
         };
         Style {
             background: Background::Color(background),

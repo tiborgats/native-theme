@@ -16,11 +16,11 @@ use crate::styles::{
     self as old, ButtonSource, InputSource, LinkSource, Outline, ToolbarButtonSource,
 };
 
-/// [`ButtonSource`] of the 0.8.0 model. A hover fill no `HOVER` rule states
-/// is `None`: the query then returns the resting fill, which the hovered
-/// button keeps rather than that fill composited over itself. A button that
-/// states no disabled opacity takes iced's own disabled look (spec §10,
-/// rule 0).
+/// [`ButtonSource`] of the 0.8.0 model. A state option no rule states for
+/// its state (its `from_state` bit clear) is `None`, and the state is then
+/// iced's own for that status (spec §2, `from_state`). A button that states
+/// no disabled opacity takes iced's own disabled look for each colour the
+/// theme leaves to iced (spec §10, rule 0).
 fn button_source(r: &ResolvedTheme) -> Mapped<ButtonSource> {
     let b = &r.button;
     let rest = b.body(WidgetState::NONE);
@@ -236,7 +236,7 @@ pub fn button_warning(
 
 /// [`crate::styles::button_link`]: faded when disabled by the theme's
 /// `colors.disabled_opacity`, the link stating none of its own. A hover
-/// fill no `HOVER` rule states keeps the resting fill under the pointer.
+/// fill no `HOVER` rule states is iced's own text button's.
 ///
 /// # Errors
 ///
