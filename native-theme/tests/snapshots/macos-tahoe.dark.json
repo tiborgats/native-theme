@@ -338,6 +338,23 @@
           }
         },
         {
+          "states": [
+            "checked"
+          ],
+          "body": {
+            "fill": "srgb(0.025, 0.4914706, 1, 1)"
+          }
+        },
+        {
+          "states": [
+            "pressed",
+            "checked"
+          ],
+          "body": {
+            "fill": "srgb(0.12, 0.5410196, 1, 1)"
+          }
+        },
+        {
           "variant": "primary",
           "body": {
             "fill": "#007aff"
@@ -349,6 +366,15 @@
           ],
           "body": {
             "fill": "#ffffff0a"
+          }
+        },
+        {
+          "states": [
+            "disabled",
+            "checked"
+          ],
+          "body": {
+            "fill": "srgb(0.04, 0.4992941, 1, 0.44)"
           }
         }
       ]
@@ -366,6 +392,14 @@
       },
       "rules": [
         {
+          "states": [
+            "checked"
+          ],
+          "label": {
+            "color": "#ffffff"
+          }
+        },
+        {
           "variant": "primary",
           "label": {
             "color": "#ffffff"
@@ -377,6 +411,15 @@
           ],
           "label": {
             "color": "#ffffff3f"
+          }
+        },
+        {
+          "states": [
+            "disabled",
+            "checked"
+          ],
+          "label": {
+            "color": "#ffffff20"
           }
         }
       ]

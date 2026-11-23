@@ -1027,7 +1027,8 @@ fn problems(table: &Table, keys: &BTreeSet<String>) -> Vec<String> {
         }
 
         // A listed difference states its presets, its reason, its citation and, for each of its presets
-        // and no other, the value 0.8.0 has at the homes: "unstated" or a single value, not a table or array.
+        // and no other, the value 0.8.0 has at the homes: "unstated" or a single value, or a table of
+        // exactly `light` and `dark`, each a single value, where the two schemes differ.
         match (
             &row.difference_presets,
             &row.difference_reason,
@@ -1045,10 +1046,22 @@ fn problems(table: &Table, keys: &BTreeSet<String>) -> Vec<String> {
                         "`{key}`: difference_values must name exactly the difference_presets"
                     ));
                 }
+                let single =
+                    |v: &toml::Value| !matches!(v, toml::Value::Table(_) | toml::Value::Array(_));
                 for (preset, value) in values {
-                    if matches!(value, toml::Value::Table(_) | toml::Value::Array(_)) {
+                    let valid = match value {
+                        toml::Value::Table(schemes) => {
+                            schemes.len() == 2
+                                && ["light", "dark"]
+                                    .iter()
+                                    .all(|s| schemes.get(*s).is_some_and(single))
+                        }
+                        other => single(other),
+                    };
+                    if !valid {
                         found.push(format!(
-                            "`{key}`: difference_values for `{preset}` is not a single value"
+                            "`{key}`: difference_values for `{preset}` is not a single value \
+                             or a table of `light` and `dark`"
                         ));
                     }
                 }
@@ -1158,6 +1171,14 @@ fn the_checks_catch_what_they_check() -> TestResult {
         key = "button.gone"
         homes = ["button.body(NONE).min_size[1]", "button.body(NONE).stroke.width"]
         null_means = "none"
+
+        [[row]]
+        key = "button.gone"
+        homes = ["button.body(CHECKED).fill"]
+        difference_presets = ["kde-breeze"]
+        difference_reason = "a reason"
+        difference_citation = "a citation"
+        difference_values = { "kde-breeze" = { light = "unstated" } }
         "#,
     )?;
     for bad in [
@@ -1182,6 +1203,8 @@ fn the_checks_catch_what_they_check() -> TestResult {
         "`button.gone`: no home on `kde-breeze`",
         "`button.gone`: null_means needs a part's stroke at every home, \
          not `button.body(NONE).min_size[1]`",
+        "`button.gone`: difference_values for `kde-breeze` is not a single value \
+         or a table of `light` and `dark`",
     ] {
         assert!(
             found.iter().any(|p| p.contains(expected)),
@@ -3270,6 +3293,14 @@ pub(crate) fn macos_cases() -> Vec<(
     // D-R4 (spec §8, "The macOS part", *Derived by the macOS builders*): 0.7.2 takes the disabled on
     // switch's alpha from the running version, the builder from its own generation.
     const PINNED: &[&str] = &["switch.disabled_checked_background"];
+    // M2.FS3 (spec §8, "The macOS part", *Derived by the macOS builders*): `macos-tahoe`'s checked
+    // button fill is the accent in force mixed by the measured weight; the table's listed difference
+    // gives it under the default accent alone.
+    const TAHOE_ACCENT: &[&str] = &["button.checked_background"];
+    const PINNED_TAHOE_ACCENT: &[&str] = &[
+        "button.checked_background",
+        "switch.disabled_checked_background",
+    ];
     let base = default_macos_settings;
     let every = || MacosSettings {
         light: Some(every_macos_colour(100)),
@@ -3313,7 +3344,7 @@ pub(crate) fn macos_cases() -> Vec<(
                 ..every()
             },
             None,
-            &[],
+            TAHOE_ACCENT,
         ),
         (
             "macOS 26, every colour, dark",
@@ -3323,7 +3354,7 @@ pub(crate) fn macos_cases() -> Vec<(
                 ..every()
             },
             None,
-            &[],
+            TAHOE_ACCENT,
         ),
         (
             "macOS 13, no insertion point colour",
@@ -3362,7 +3393,7 @@ pub(crate) fn macos_cases() -> Vec<(
                 ..base()
             },
             None,
-            &[],
+            TAHOE_ACCENT,
         ),
         (
             "other fonts",
@@ -3471,7 +3502,7 @@ pub(crate) fn macos_cases() -> Vec<(
                 ..every()
             },
             Some(Preset::MacosTahoe),
-            PINNED,
+            PINNED_TAHOE_ACCENT,
         ),
     ]
 }

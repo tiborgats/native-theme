@@ -384,6 +384,22 @@ const DIFFERENCES: &[Difference] = &[
                  keeps gpui-component's own (docs/v0.8.0-spec.md §10, rule 0); every other \
                  field of the refinement is equal",
     },
+    Difference {
+        leaf: "geometry::button_checked",
+        presets: &["macos-tahoe", "ios-13"],
+        reason: "0.7.2 states no button.checked_background or checked_text_color on these \
+                 presets, so its refinement of a checked button is the pressed pair that \
+                 stands in for them (crate::geometry::button_checked: on macos-tahoe the \
+                 pressed label and no fill, on ios-13 the pressed fill and label); the 0.8.0 \
+                 presets state the measured checked toggle \
+                 (docs/v0.8.0-spec.md §10, rule 0a; docs/platform-facts.md §2.3; \
+                 native-theme/tests/next_homes.toml, rows button.checked_background and \
+                 button.checked_text_color, listed differences): on macos-tahoe the accent \
+                 mixed with black (light) or white (dark) by 0.025 and a white label, on \
+                 ios-13 the default tint at alpha 0x2e (light) or 0x40 (dark) with its label \
+                 in the tint, so the refinement's background and text colour are those; every \
+                 other field of the refinement is equal",
+    },
 ];
 
 /// The presets of [`DIFFERENCES`]' `geometry::group_box_content` entries
@@ -909,7 +925,39 @@ fn compare_builders(
     builder!(report, old, new, button_label);
     builder!(report, old, new, toggle);
     builder!(report, old, new, button_disabled);
-    builder!(report, old, new, button_checked);
+    let button_checked = "geometry::button_checked";
+    match report.listed(button_checked) {
+        Some(listed) => {
+            if let Some(n) = report.mapped(button_checked, super::builders::button_checked(new)) {
+                use native_theme::next::{PartStated, TextStated, WidgetState};
+                report.count(button_checked);
+                let o = crate::geometry::button_checked(Native::unscaled(old));
+                let mut corrected = o.clone();
+                corrected.background = n.background.clone();
+                corrected.text.color = n.text.color;
+                let unstated = old.button.checked_background.is_none()
+                    && old.button.checked_text_color.is_none();
+                let stated = new
+                    .button
+                    .body(WidgetState::CHECKED)
+                    .from_state
+                    .contains(PartStated::FILL)
+                    && new
+                        .button
+                        .label(WidgetState::CHECKED)
+                        .from_state
+                        .contains(TextStated::COLOR);
+                if !unstated || !stated || corrected != n {
+                    report.failures.push(format!(
+                        "{}: {button_checked}: the listed difference ({}) no longer \
+                         describes it: 0.7.2 {o:?}, 0.8.0 {n:?}",
+                        report.label, listed.reason
+                    ));
+                }
+            }
+        }
+        None => builder!(report, old, new, button_checked),
+    }
     builder!(report, old, new, default_button_rest);
     builder!(report, old, new, checkbox);
     builder!(report, old, new, radio);
