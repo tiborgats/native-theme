@@ -266,18 +266,37 @@ struct Difference {
 /// names.
 const KDE_BREEZE_BUTTON_HEIGHT_PX: f32 = 32.0;
 
+/// The padding 0.8.0's kde-breeze gives a list row's content beyond 0.7.2's
+/// (`list.row(NONE).padding`, issue #4 L4: Breeze's `ItemView_ItemPaddingWidth`
+/// and `ItemView_ItemPaddingHeight` 2 with Qt's text margin `PM_FocusFrameHMargin`
+/// 2 + 1 at the sides; Breeze `kstyle/breezemetrics.h` and Qt `qcommonstyle.cpp`
+/// v6.11.0), as `[top, right, bottom, left]` in px; the connector adds it to the
+/// highlight's margins, which 0.7.2 already applied.
+const KDE_BREEZE_ROW_PADDING_PX: [f32; 4] = [3.0, 7.0, 3.0, 7.0];
+
 /// The listed differences.
-const DIFFERENCES: &[Difference] = &[Difference {
-    leaf: "geometry::button",
-    presets: &["kde-breeze"],
-    reason: "0.7.2 states button.min_height 32, the height of a button at the default \
+const DIFFERENCES: &[Difference] = &[
+    Difference {
+        leaf: "geometry::list_item",
+        presets: &["kde-breeze"],
+        reason: "0.7.2 pads a list row only by Breeze's highlight margins (list.border.padding \
+                 2 / 1); 0.8.0's kde-breeze also states the row's own content padding (issue \
+                 #4 L4: 7 px at the sides and 3 px above and below, from Breeze's and Qt's \
+                 constants), so the refinement's padding is the margins plus that padding; \
+                 every other field of the refinement is equal",
+    },
+    Difference {
+        leaf: "geometry::button",
+        presets: &["kde-breeze"],
+        reason: "0.7.2 states button.min_height 32, the height of a button at the default \
              font rather than a minimum (issue #4 Z1, \
              docs/issues/0004_kde-leftovers-rationale.md, sizes that are not minimums); \
              the 0.8.0 kde-breeze leaves button.body(NONE).min_size[1] unstated, so the \
              0.8.0 refinement sets no height (`size.height`, which 0.7.2 sets to 32 px \
              at a text scale of 1) and the button keeps gpui-component's own; every \
              other field of the refinement is equal",
-}];
+    },
+];
 
 /// A leaf that, on the presets named, compares only the connector's own
 /// fallback: the 0.7.2 field it reads is unset there, and the 0.8.0 home
@@ -653,7 +672,37 @@ fn compare_builders(
     builder!(report, old, new, scrollbar_gutter);
     builder!(report, old, new, input_group_button);
     builder!(report, old, new, editor);
-    builder!(report, old, new, list_item);
+    let list_item = "geometry::list_item";
+    if let Some(n) = report.mapped(list_item, super::builders::list_item(new)) {
+        let o = crate::geometry::list_item(Native::unscaled(old));
+        match report.listed(list_item) {
+            Some(listed) => {
+                report.count(list_item);
+                let [top, right, bottom, left] = KDE_BREEZE_ROW_PADDING_PX;
+                let grown = |side: Option<gpui::DefiniteLength>, by: f32| {
+                    side.and_then(|length| match length {
+                        gpui::DefiniteLength::Absolute(gpui::AbsoluteLength::Pixels(p)) => {
+                            Some(gpui::DefiniteLength::from(px(f32::from(p) + by)))
+                        }
+                        _ => None,
+                    })
+                };
+                let mut corrected = o.clone();
+                corrected.padding.top = grown(o.padding.top, top);
+                corrected.padding.right = grown(o.padding.right, right);
+                corrected.padding.bottom = grown(o.padding.bottom, bottom);
+                corrected.padding.left = grown(o.padding.left, left);
+                if corrected != n {
+                    report.failures.push(format!(
+                        "{}: {list_item}: the listed difference ({}) no longer describes \
+                         it: 0.7.2 {o:?}, 0.8.0 {n:?}",
+                        report.label, listed.reason
+                    ));
+                }
+            }
+            None => report.leaf(list_item, o, n),
+        }
+    }
     layout_metric!(report, layout, new, widget_gap);
     layout_metric!(report, layout, new, container_margin);
     layout_metric!(report, layout, new, window_margin);
