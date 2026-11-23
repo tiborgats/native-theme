@@ -345,22 +345,6 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
         "link",
         "link.font's family, size, weight and style, defaults.line_height as the line height, link.background_color as the fill, which upstream paints none of (gpui-component/link.rs, RenderOnce for Link), and no underline where link.underline_enabled is false: upstream underlines a link at rest before the refinement (gpui-component/link.rs, RenderOnce for Link: text_decoration_1 then refine_style), and a zero thickness paints none",
     ),
-    (
-        "widget_gap",
-        "layout.widget_gap, the space between adjacent widgets; none where the platform specifies none (platform-facts §2.20)",
-    ),
-    (
-        "container_margin",
-        "layout.container_margin, the padding inside containers; none where the platform specifies none (platform-facts §2.20)",
-    ),
-    (
-        "window_margin",
-        "layout.window_margin, the padding inside the main window; none where the platform specifies none (platform-facts §2.20)",
-    ),
-    (
-        "section_gap",
-        "layout.section_gap, the space between major content sections; none where the platform specifies none (platform-facts §2.20)",
-    ),
 ];
 
 /// [`GEOMETRY_NOTES`] for the builders of `native_theme_gpui::next::geometry`

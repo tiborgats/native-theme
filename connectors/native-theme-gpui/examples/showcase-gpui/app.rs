@@ -51,7 +51,7 @@ use native_theme_gpui::icons::{ThemeIcons, WidgetIcons, WidgetIconsReport};
 use native_theme_gpui::icons::{
     animated_frames_to_image_sources_for, mask_drawable, to_image_source,
 };
-use native_theme_gpui::{AccessibilityPreferences, ActiveNativeTheme as _, geometry};
+use native_theme_gpui::{AccessibilityPreferences, ActiveNativeTheme as _};
 use native_theme_showcase_support::rows;
 
 use crate::chrome;
@@ -63,7 +63,7 @@ use crate::support::{
     CAROUSEL_SLIDES, ChatMessage, ChromeIcon, DIFF_SAMPLE, DialogIcons, EDITOR_SAMPLE, GPUI_ICONS,
     GRID_LAYOUT_ITEMS, IconEntry, IconSource, PresetDelegate, SampleIcon, SampleListDelegate,
     SampleTableDelegate, SharedDialogIcons, initial_chat_messages, load_all_icons, load_gpui_icons,
-    parse_icon_set_choice, release_sources, role_for_gpui_icon,
+    next_metric, parse_icon_set_choice, release_sources, role_for_gpui_icon,
 };
 use crate::{
     CHROME_HANDLE, CONTENT_ALERT, CONTENT_PANEL, CONTENT_SCROLL, LEFT_PANEL_WIDTH, PAGE_ROOT,
@@ -452,7 +452,7 @@ pub(crate) struct Showcase {
     /// window.rs:6755-6763), out of the view's handlers' reach.
     _refocus: Subscription,
 
-    /// `geometry::widget_gap` of `layout`, set as each frame starts, for the
+    /// The installed 0.8.0 theme's `layout.widget_gap`, set as each frame starts, for the
     /// overlays: gpui-component's `WindowState` root plugin builds them anew
     /// for every frame from builders that cannot borrow the view (root.rs,
     /// `WindowState::dialog_layer`), so this
@@ -2775,7 +2775,10 @@ impl Showcase {
 
 impl Render for Showcase {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        self.overlay_gap.set(geometry::widget_gap(&self.layout));
+        self.overlay_gap.set(next_metric(
+            cx,
+            native_theme_gpui::next::geometry::widget_gap,
+        ));
         // Before the inspector, a child view, renders and borrows it.
         if self.panel_look.is_none() {
             self.panel_look = PanelLook::of(self, cx);

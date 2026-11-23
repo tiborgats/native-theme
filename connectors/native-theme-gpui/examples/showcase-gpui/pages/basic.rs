@@ -19,7 +19,7 @@ use gpui::{
 use gpui_component::{IconName, h_flex, v_flex};
 
 use native_theme::icons::IconRole;
-use native_theme_gpui::geometry;
+use native_theme_gpui::{geometry, next};
 
 use crate::app::Showcase;
 use crate::demo::{
@@ -27,7 +27,7 @@ use crate::demo::{
     SeparatorKind, SpinnerKind, StepIcons, TypeRole,
 };
 use crate::elements;
-use crate::support::{native_value, with_gap, with_padding};
+use crate::support::{native_value, next_metric, with_gap, with_padding};
 
 /// The width, in logical pixels, of the Basic page's text fields, drop-down,
 /// number input, slider and progress bar. The model states no such width;
@@ -352,12 +352,12 @@ impl Showcase {
         let wide = px(BASIC_WIDE);
         let list_height = self.basic_list_height(window, cx, wide);
         let ui = &self.info_ui;
-        let widget_gap = geometry::widget_gap(&self.layout);
+        let widget_gap = next_metric(cx, next::geometry::widget_gap);
         // The space between the columns, between the groups, and round the
         // page: the theme's section gap and window margin, as the iced and
         // egui Basic pages lay them out.
-        let section_gap = geometry::section_gap(&self.layout);
-        let window_margin = geometry::window_margin(&self.layout);
+        let section_gap = next_metric(cx, next::geometry::section_gap);
+        let window_margin = next_metric(cx, next::geometry::window_margin);
         let width = px(BASIC_WIDTH);
         let tool_gap = native_value(cx, |n| n.resolved.toolbar.item_gap)
             .flatten()
@@ -776,7 +776,7 @@ impl Showcase {
                     "basic-card-text",
                     "Card content",
                     wide,
-                    geometry::container_margin(&self.layout),
+                    next_metric(cx, next::geometry::container_margin),
                 )
                 .into_any_element(),
             ],

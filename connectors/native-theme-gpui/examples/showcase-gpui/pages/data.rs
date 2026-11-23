@@ -3,12 +3,12 @@
 use gpui::{Context, IntoElement, ParentElement, SharedString, Styled, Window, prelude::*, px};
 use gpui_component::{IconName, attachment::AttachmentStatus, h_flex, v_flex};
 
-use native_theme_gpui::geometry;
+use native_theme_gpui::next;
 
 use crate::app::Showcase;
 use crate::demo::{self, BubbleKind, DemoAttachment, DemoPagination};
-use crate::pages::page_root;
-use crate::support::{ChatMessage, PAGE_COUNT, next_attachment_status, with_gap};
+use crate::pages::next_page_root;
+use crate::support::{ChatMessage, PAGE_COUNT, next_attachment_status, next_metric, with_gap};
 use crate::{
     DATA_PAGINATION, DATA_PAGINATION_COMPACT, PROBE_ATTACHMENT, PROBE_CHAT_SEND, PROBE_PAGINATION,
     probe,
@@ -24,7 +24,7 @@ impl Showcase {
         cx: &mut Context<Self>,
     ) -> impl IntoElement + InteractiveElement {
         let ui = &self.info_ui;
-        let widget_gap = geometry::widget_gap(&self.layout);
+        let widget_gap = next_metric(cx, next::geometry::widget_gap);
         let on_page = cx.listener(|this, page: &usize, _w, cx| {
             this.page = *page;
             cx.notify();
@@ -49,7 +49,7 @@ impl Showcase {
             cx.notify();
         });
 
-        page_root(&self.layout)
+        next_page_root(cx)
             .flex_1()
             .child(demo::heading(
                 ui,

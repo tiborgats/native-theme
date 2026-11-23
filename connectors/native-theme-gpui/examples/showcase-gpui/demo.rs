@@ -119,8 +119,8 @@ use crate::support::{
     CAROUSEL_SLIDES, ChatMessage, ChromeIcon, DIFF_DECORATED_LINE, DIFF_DECORATED_PATH,
     GRID_LAYOUT_ITEMS, NativeStyled as _, PresetDelegate, STEPPER_STEPS, SampleIcon,
     SampleListDelegate, SampleTableDelegate, contrast_held, native_geometry, native_value,
-    next_geometry, next_resolved, next_value, old_native, refined, requested_preferences,
-    toolbar_variant, with_gap, with_padding,
+    next_geometry, next_metric, next_resolved, next_value, old_native, refined,
+    requested_preferences, toolbar_variant, with_gap, with_padding,
 };
 use crate::{
     CHROME_APP_MENU_BAR, CHROME_SIDE_PANEL, CHROME_SIDE_PANEL_CONTENT, CHROME_SIDE_PANEL_SCROLL,
@@ -1332,10 +1332,10 @@ pub(crate) fn toolbar(
         },
     );
     if leaves_a_side_unstated(&stated) && container_margin.is_some() {
-        row_info = row_info.geometry("container_margin");
+        row_info = row_info.next_geometry("container_margin");
     }
     if item_gap.is_none() && widget_gap.is_some() {
-        row_info = row_info.geometry("widget_gap");
+        row_info = row_info.next_geometry("widget_gap");
     }
     let row = h_flex()
         .p(container_margin.unwrap_or(TOOLBAR_PADDING))
@@ -1918,7 +1918,7 @@ pub(crate) fn theme_settings<const N: usize>(
     let gap = widget_gap.unwrap_or(THEME_SETTINGS_GAP);
     let mut settings_info = info::theme_settings(widget_gap, THEME_SETTINGS_GAP);
     if widget_gap.is_some() {
-        settings_info = settings_info.geometry("widget_gap");
+        settings_info = settings_info.next_geometry("widget_gap");
     }
     v_flex()
         .w_full()
@@ -1998,7 +1998,7 @@ pub(crate) fn side_panel(
     let own = sidebar_padding(cx);
     let mut panel_info = info::side_panel(cx.theme(), container_margin, own);
     if container_margin.is_some() && own.as_ref().is_none_or(leaves_a_side_unstated) {
-        panel_info = panel_info.geometry("container_margin");
+        panel_info = panel_info.next_geometry("container_margin");
     }
     // The model's sidebar: `sidebar.background_color` and `sidebar.font`'s
     // colour, which the connector installs as the `sidebar` and
@@ -2286,7 +2286,7 @@ pub(crate) fn tab_bar(
     let mut bar_info = info::tab_font(bar_info, resolved)
         .instance("padding", info::tab_bar_padding(container_margin));
     if container_margin.is_some() {
-        bar_info = bar_info.geometry("container_margin");
+        bar_info = bar_info.next_geometry("container_margin");
     }
     let labels: Vec<&'static str> = tabs.iter().map(|&(label, _)| label).collect();
     let on_click = Rc::new(on_click);
@@ -2400,7 +2400,7 @@ fn native_tab_bar(
         .instance("padding", info::tab_bar_padding(container_margin))
         .instance("click", "selects the tab; the showcase keeps the state. A tab the bar clips is scrolled just into view (widgets::TabBar, ScrollHandle::scroll_to_item)");
     if container_margin.is_some() {
-        bar_info = bar_info.geometry("container_margin");
+        bar_info = bar_info.next_geometry("container_margin");
     }
     if menu && menu_icon.is_some() {
         bar_info = bar_info.geometry("icon_size_small");
@@ -3208,7 +3208,7 @@ pub(crate) fn about(
         &mut dialog_info,
     );
     if gap.is_some() {
-        dialog_info = dialog_info.geometry("widget_gap");
+        dialog_info = dialog_info.next_geometry("widget_gap");
     }
     let title = title
         .info(ui, "overlay-about-title", dialog_info.clone())
@@ -5220,7 +5220,7 @@ pub(crate) fn radio_column(
     if let Some(r) = next_resolved(cx) {
         let mut group_info = info::inputs::native_radio_column(r, labels, selected);
         if gap.is_some() {
-            group_info = group_info.geometry("widget_gap");
+            group_info = group_info.next_geometry("widget_gap");
         }
         let on_click = Rc::new(on_click);
         let total = labels.len();
@@ -5268,7 +5268,7 @@ pub(crate) fn radio_column(
         &mut group_info,
     );
     if gap.is_some() {
-        group_info = group_info.geometry("widget_gap");
+        group_info = group_info.next_geometry("widget_gap");
     }
     let on_click = Rc::new(on_click);
     with_gap(v_flex(), gap)
@@ -6058,7 +6058,7 @@ pub(crate) fn pagination(
     };
     let pagination = match gap {
         Some(gap) => {
-            pagination_info = pagination_info.geometry("widget_gap");
+            pagination_info = pagination_info.next_geometry("widget_gap");
             pagination.gap(gap)
         }
         None => pagination,
@@ -8283,7 +8283,7 @@ pub(crate) fn card(
         (Some(n), Some(margin)) => {
             let padding = &n.resolved.card.border.padding;
             if leaves_a_side_unstated(padding) {
-                card_info = card_info.geometry("container_margin");
+                card_info = card_info.next_geometry("container_margin");
             }
             padded(content_style, padding, Some(margin), Some(margin))
         }
@@ -9239,7 +9239,8 @@ pub(crate) fn overlay_button(
 }
 
 /// The Overlays page's Dialog: `dialog`, titled, holding `icon`, of the
-/// chosen icon theme, beside a description, `gap` apart -- the description
+/// chosen icon theme, beside a description, the installed 0.8.0 theme's
+/// `layout.widget_gap` apart, read as each frame builds it -- the description
 /// alone where that theme has none -- over a footer whose Close Button
 /// closes it.
 ///
@@ -9249,9 +9250,9 @@ pub(crate) fn confirm_dialog(
     ui: &Entity<InfoRegistry>,
     cx: &App,
     dialog: Dialog,
-    gap: Option<Pixels>,
     icon: &SampleIcon,
 ) -> Dialog {
+    let gap = next_metric(cx, next::geometry::widget_gap);
     let styled = next_applies(cx, next::geometry::dialog);
     let described = next_applies(cx, next::geometry::dialog_description);
     let entrance = next_themed_entrance(cx);
@@ -9283,7 +9284,7 @@ pub(crate) fn confirm_dialog(
         );
     }
     if icon.shown() && gap.is_some() {
-        dialog_info = dialog_info.geometry("widget_gap");
+        dialog_info = dialog_info.next_geometry("widget_gap");
     }
     let footer = next_native_info(
         DialogFooter::new(),
@@ -9493,7 +9494,7 @@ pub(crate) fn popover(
     )
     .trigger(trigger);
     if gap.is_some() {
-        popover_info = popover_info.geometry("widget_gap");
+        popover_info = popover_info.next_geometry("widget_gap");
     }
     let (content_ui, content_info) = (ui.clone(), popover_info.clone());
     popover
@@ -9557,7 +9558,7 @@ pub(crate) fn hover_card(
     )
     .trigger(trigger);
     if gap.is_some() {
-        card_info = card_info.geometry("widget_gap");
+        card_info = card_info.next_geometry("widget_gap");
     }
     let (content_ui, content_info) = (ui.clone(), card_info.clone());
     card.content(move |_state, _window, cx| {

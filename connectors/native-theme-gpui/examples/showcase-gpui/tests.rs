@@ -13,7 +13,7 @@ use gpui::{
 };
 use gpui_base::ScrollbarHandle as _;
 use gpui_component::{Colorize as _, IconName, Root, WindowExt as _, theme::Theme};
-use native_theme_gpui::{ActiveNativeTheme, geometry};
+use native_theme_gpui::{ActiveNativeTheme, geometry, next};
 use std::{rc::Rc, time::Duration};
 
 use crate::app::{
@@ -1708,9 +1708,7 @@ fn the_toolbar_is_padded_where_the_theme_states_none(cx: &mut TestAppContext) {
         Some(native_theme::theme::ResolvedPadding::default()),
         "ios-13 states a toolbar padding side, so the fallback is not what is measured"
     );
-    let margin = read(&mut cx, &showcase, |this, _| {
-        geometry::container_margin(&this.layout)
-    });
+    let margin = next_layout_metric(&mut cx, &showcase, next::geometry::container_margin);
     assert!(
         margin.is_some(),
         "ios-13 states no container_margin, so the showcase's constant is measured twice"
@@ -1722,14 +1720,7 @@ fn the_toolbar_is_padded_where_the_theme_states_none(cx: &mut TestAppContext) {
         "ios-13 + nord: the toolbar is not padded by layout.container_margin"
     );
 
-    cx.update(|_window, cx| {
-        showcase.update(cx, |this, cx| {
-            this.layout = native_theme::theme::LayoutTheme::default();
-            cx.notify();
-        });
-    });
-    cx.run_until_parked();
-    draw(&mut cx);
+    install_unstated_layout(&mut cx, &showcase);
     assert_eq!(
         inset(&mut cx),
         (crate::demo::TOOLBAR_PADDING, crate::demo::TOOLBAR_PADDING),
@@ -1953,9 +1944,7 @@ fn the_side_panel_holds_the_theme_settings_and_the_inspector(cx: &mut TestAppCon
                 "{at}: the theme settings at {settings:?} are not in the side panel's content at \
                  {content:?}"
             );
-            let gap = read(&mut cx, &showcase, |this, _| {
-                geometry::widget_gap(&this.layout)
-            });
+            let gap = next_layout_metric(&mut cx, &showcase, next::geometry::widget_gap);
             assert!(gap.is_some(), "{preset} states no widget_gap");
             let mut above: Option<Bounds<Pixels>> = None;
             for (label, control) in rows {
@@ -2036,7 +2025,7 @@ fn the_side_panel_holds_the_theme_settings_and_the_inspector(cx: &mut TestAppCon
             let body = read(&mut cx, &showcase, |this, cx| {
                 let margin = crate::demo::side_panel_content_margin(
                     cx,
-                    geometry::container_margin(&this.layout),
+                    crate::support::next_metric(cx, next::geometry::container_margin),
                 );
                 this.panel_look
                     .as_ref()
@@ -2102,14 +2091,7 @@ fn the_side_panel_holds_the_theme_settings_and_the_inspector(cx: &mut TestAppCon
     // is in, `a_target_larger_than_the_one_it_is_in_wins`).
     for text_scale in [2.0, 1.0] {
         scale_text(&mut cx, &showcase, text_scale);
-        cx.update(|_window, cx| {
-            showcase.update(cx, |this, cx| {
-                this.layout = native_theme::theme::LayoutTheme::default();
-                cx.notify();
-            });
-        });
-        cx.run_until_parked();
-        draw(&mut cx);
+        install_unstated_layout(&mut cx, &showcase);
         let at = format!("at text scale {text_scale}");
         let (label, control) = (
             bounds_of(&mut cx, CHROME_LABEL_MODE),
@@ -3675,9 +3657,7 @@ fn the_expander_and_the_card_take_the_themes_sizes(cx: &mut TestAppContext) {
                 "{preset}: {icon} is not expander.arrow_icon_size"
             );
         }
-        let margin = read(&mut cx, &showcase, |this, _| {
-            geometry::container_margin(&this.layout)
-        });
+        let margin = next_layout_metric(&mut cx, &showcase, next::geometry::container_margin);
         let (Some(inset), card, text) = (
             card_padding.left.map(px).or(margin),
             bounds_of(&mut cx, "basic-card"),
@@ -3721,9 +3701,7 @@ fn the_card_and_the_group_boxes_name_the_container_margin_where_it_pads(cx: &mut
             let preset = preset.as_str();
             use_preset(&mut cx, &showcase, preset);
             let p = resolved_theme(&mut cx, &showcase).card.border.padding;
-            let margin = read(&mut cx, &showcase, |this, _| {
-                geometry::container_margin(&this.layout)
-            });
+            let margin = next_layout_metric(&mut cx, &showcase, next::geometry::container_margin);
             let pads = margin.is_some()
                 && [p.top, p.right, p.bottom, p.left]
                     .iter()
@@ -3869,21 +3847,12 @@ fn the_native_expanders_info_says_what_it_frames_and_pads(cx: &mut TestAppContex
     ] {
         use_preset(&mut cx, &showcase, preset);
         if no_gap {
-            cx.update(|_window, cx| {
-                showcase.update(cx, |this, cx| {
-                    this.layout.widget_gap = None;
-                    cx.notify();
-                });
-            });
-            cx.run_until_parked();
-            draw(&mut cx);
+            install_next_layout(&mut cx, &showcase, |layout| layout.widget_gap = None);
         }
         show(&mut cx, &showcase, Page::Basic);
         let r = resolved_theme(&mut cx, &showcase);
         let e = &r.expander;
-        let gap = read(&mut cx, &showcase, |this, _| {
-            geometry::widget_gap(&this.layout)
-        });
+        let gap = next_layout_metric(&mut cx, &showcase, next::geometry::widget_gap);
         let info = settle_on(&mut cx, &showcase, "basic-expander-header-0")
             .unwrap_or_else(|| panic!("{preset}: the expander's item shows no info"));
         let framed = e.frame_enabled != Some(false) && e.border.line_width > 0.0;
@@ -4147,9 +4116,7 @@ fn the_tab_bars_are_inset_by_the_container_margin(cx: &mut TestAppContext) {
     let slack = device_pixel(&mut cx);
     for preset in ["kde-breeze", "adwaita"] {
         use_preset(&mut cx, &showcase, preset);
-        let margin = read(&mut cx, &showcase, |this, _| {
-            geometry::container_margin(&this.layout)
-        });
+        let margin = next_layout_metric(&mut cx, &showcase, next::geometry::container_margin);
         let Some(margin) = margin else {
             panic!("{preset} states no layout.container_margin");
         };
@@ -4255,8 +4222,8 @@ fn side_panel_padding(
     cx: &mut VisualTestContext,
     showcase: &Entity<Showcase>,
 ) -> gpui::Edges<Pixels> {
-    read(cx, showcase, |this, cx| {
-        let margin = geometry::container_margin(&this.layout);
+    read(cx, showcase, |_, cx| {
+        let margin = crate::support::next_metric(cx, next::geometry::container_margin);
         crate::demo::sidebar_padding(cx).map(|p| {
             let side = |v: Option<f32>| v.map(px).or(margin).unwrap_or_default();
             gpui::Edges {
@@ -4673,9 +4640,7 @@ fn a_page_change_keeps_the_chromes_info(cx: &mut TestAppContext) {
 /// page's own root). The theme has to state the margin, as every bundled
 /// preset does, or the page has no padding to point at.
 fn in_page_padding(cx: &mut VisualTestContext, showcase: &Entity<Showcase>) -> Point<Pixels> {
-    let margin = read(cx, showcase, |this, _| {
-        geometry::window_margin(&this.layout)
-    });
+    let margin = next_layout_metric(cx, showcase, next::geometry::window_margin);
     assert!(
         margin.is_some_and(|m| m > px(0.)),
         "the theme states no layout.window_margin ({margin:?}), so a page root has no padding \
@@ -5488,7 +5453,7 @@ fn the_status_bar_items_abut(
         // The toggle and the environment are one item, `layout.widget_gap`
         // apart (demo::status_bar); the bar's regions stay `gap_2` apart.
         let widget_gap =
-            read(cx, showcase, |this, _| geometry::widget_gap(&this.layout)).unwrap_or(px(0.));
+            next_layout_metric(cx, showcase, next::geometry::widget_gap).unwrap_or(px(0.));
         for (ix, pair) in drawn.windows(2).enumerate() {
             if let [(a, before), (b, after)] = pair {
                 let expected = if ix == 0 { widget_gap } else { gap };
@@ -8823,7 +8788,7 @@ fn a_dialog_reads_the_themes_entrance_once(cx: &mut TestAppContext) {
         }),
         ("the Overlays page's Dialog", |(ui, _, icon, _), cx| {
             let dialog = gpui_component::dialog::Dialog::new(cx);
-            let _ = crate::demo::confirm_dialog(ui, cx, dialog, None, icon);
+            let _ = crate::demo::confirm_dialog(ui, cx, dialog, icon);
         }),
         ("the Overlays page's AlertDialog", |(ui, _, _, icon), cx| {
             let alert = gpui_component::dialog::AlertDialog::new(cx);
@@ -11537,6 +11502,48 @@ fn next_theme(
     read(cx, showcase, |_, cx| {
         crate::support::next_resolved(cx).cloned()
     })
+}
+
+/// The installed 0.8.0 theme installed again with none of the layout's four
+/// metrics stated (`layout.widget_gap`, `container_margin`, `window_margin`,
+/// `section_gap`), as a theme that leaves them to the platform would; the
+/// frame it produced drawn.
+fn install_unstated_layout(cx: &mut VisualTestContext, showcase: &Entity<Showcase>) {
+    install_next_layout(cx, showcase, |layout| {
+        layout.widget_gap = None;
+        layout.container_margin = None;
+        layout.window_margin = None;
+        layout.section_gap = None;
+    });
+}
+
+/// The installed 0.8.0 theme installed again with its layout metrics as
+/// `edit` changes them; the frame it produced drawn.
+fn install_next_layout(
+    cx: &mut VisualTestContext,
+    showcase: &Entity<Showcase>,
+    edit: impl FnOnce(&mut native_theme::next::LayoutMetrics),
+) {
+    let r = next_theme(cx, showcase);
+    assert!(r.is_some(), "no 0.8.0 theme is installed");
+    let Some(mut r) = r else {
+        return;
+    };
+    edit(&mut r.layout);
+    install_next(cx, &r);
+}
+
+/// The installed 0.8.0 theme's layout metric `build` reads
+/// (`next::geometry::widget_gap`, `container_margin`, `window_margin` or
+/// `section_gap`), as the pages read it.
+fn next_layout_metric(
+    cx: &mut VisualTestContext,
+    showcase: &Entity<Showcase>,
+    build: fn(
+        &native_theme::next::ResolvedTheme,
+    ) -> native_theme_gpui::next::Mapped<Option<Pixels>>,
+) -> Option<Pixels> {
+    read(cx, showcase, |_, cx| crate::support::next_metric(cx, build))
 }
 
 /// Install `r` as the 0.8.0 theme, as an application that changed the
@@ -15860,12 +15867,10 @@ fn hiding_the_side_panel_clears_what_left_the_screen(cx: &mut TestAppContext) {
 fn the_toolbar_items_are_spaced_where_the_theme_states_no_gap(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     use_preset_with_palette(&mut cx, &showcase, "ios-13", "nord");
-    let (item_gap, widget_gap) = read(&mut cx, &showcase, |this, cx| {
-        (
-            crate::support::old_native(cx).map(|n| n.resolved.toolbar.item_gap),
-            geometry::widget_gap(&this.layout),
-        )
+    let item_gap = read(&mut cx, &showcase, |_, cx| {
+        crate::support::old_native(cx).map(|n| n.resolved.toolbar.item_gap)
     });
+    let widget_gap = next_layout_metric(&mut cx, &showcase, next::geometry::widget_gap);
     assert_eq!(
         item_gap,
         Some(None),
@@ -15908,14 +15913,7 @@ fn the_toolbar_items_are_spaced_where_the_theme_states_no_gap(cx: &mut TestAppCo
         "ios-13 + nord: the toolbar's info does not say its gap is layout.widget_gap: {line:?}"
     );
 
-    cx.update(|_window, cx| {
-        showcase.update(cx, |this, cx| {
-            this.layout = native_theme::theme::LayoutTheme::default();
-            cx.notify();
-        });
-    });
-    cx.run_until_parked();
-    draw(&mut cx);
+    install_unstated_layout(&mut cx, &showcase);
     assert_eq!(
         gap(&mut cx),
         crate::demo::TOOLBAR_GAP,
@@ -16819,7 +16817,7 @@ fn the_about_dialog_follows_a_theme_switch(cx: &mut TestAppContext) {
         bounds_of(cx, OVERLAY_ABOUT_TEXT).top() - bounds_of(cx, OVERLAY_ABOUT_NAME).bottom()
     };
     let gap_of = |cx: &mut VisualTestContext, showcase: &Entity<Showcase>| {
-        read(cx, showcase, |this, _| geometry::widget_gap(&this.layout))
+        next_layout_metric(cx, showcase, next::geometry::widget_gap)
     };
     use_preset(&mut cx, &showcase, "kde-breeze");
     run_menu_item(&mut cx, "Help", "About");
@@ -18297,9 +18295,7 @@ fn the_side_panel_takes_the_sidebars_padding(cx: &mut TestAppContext) {
             .zip(settings)
             .map(|(p, s)| (s.left() - p.left(), s.top() - p.top()))
     };
-    let margin = read(&mut cx, &showcase, |this, _| {
-        geometry::container_margin(&this.layout)
-    });
+    let margin = next_layout_metric(&mut cx, &showcase, next::geometry::container_margin);
     assert!(margin.is_some(), "kde-breeze states no container_margin");
     assert_eq!(
         place(&mut cx),
@@ -18367,11 +18363,10 @@ fn the_side_panels_info_names_the_padding_it_draws(cx: &mut TestAppContext) {
         ("adwaita", None),
     ] {
         use_preset(&mut cx, &showcase, preset);
-        let margin = read(&mut cx, &showcase, |this, _| {
-            geometry::container_margin(&this.layout)
-        });
+        let margin = next_layout_metric(&mut cx, &showcase, next::geometry::container_margin);
+        assert!(margin.is_some(), "{preset} states no container_margin");
         let Some(margin) = margin else {
-            panic!("{preset} states no container_margin");
+            return;
         };
         if let Some(padding) = splice {
             let mut theme = resolved_theme(&mut cx, &showcase);
@@ -18381,17 +18376,7 @@ fn the_side_panels_info_names_the_padding_it_draws(cx: &mut TestAppContext) {
                 "{preset} now states a sidebar padding; the spliced cases need another preset"
             );
             theme.sidebar.border.padding = padding;
-            cx.update(|_window, cx| {
-                let prefs = native_theme::AccessibilityPreferences::default();
-                native_theme_gpui::apply(
-                    native_theme_gpui::to_theme(&theme, preset, false, &prefs),
-                    &theme,
-                    &prefs,
-                    cx,
-                );
-            });
-            cx.run_until_parked();
-            draw(&mut cx);
+            keep_old_beside_next(&mut cx, &theme);
         }
         let padding = resolved_theme(&mut cx, &showcase).sidebar.border.padding;
         let at = format!("{preset}, sidebar.border.padding {padding:?}");
@@ -21869,9 +21854,14 @@ fn page_offset(cx: &mut VisualTestContext, selector: &'static str) -> (Pixels, P
 fn each_page_is_padded_and_spaced_by_the_theme(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     use_preset(&mut cx, &showcase, "kde-breeze");
-    let layout = read(&mut cx, &showcase, |this, _| this.layout.clone());
-    let (Some(margin), Some(gap)) = (layout.window_margin, layout.section_gap) else {
-        panic!("kde-breeze states no window_margin or section_gap: {layout:?}");
+    let margin = next_layout_metric(&mut cx, &showcase, next::geometry::window_margin);
+    let gap = next_layout_metric(&mut cx, &showcase, next::geometry::section_gap);
+    assert!(
+        margin.is_some() && gap.is_some(),
+        "kde-breeze states no window_margin or section_gap: {margin:?}, {gap:?}"
+    );
+    let (Some(margin), Some(gap)) = (margin.map(f32::from), gap.map(f32::from)) else {
+        return;
     };
     let mut wrong = Vec::new();
     for (page, first, (upper, lower)) in PAGE_SECTIONS {
@@ -21938,35 +21928,9 @@ fn each_page_is_padded_and_spaced_by_the_theme(cx: &mut TestAppContext) {
 /// is invented to fill a role the theme leaves unstated.
 #[gpui::test]
 fn an_unstated_layout_spaces_no_page(cx: &mut TestAppContext) {
-    let unstated = native_theme::theme::LayoutTheme::default();
-    let mut root = crate::pages::page_root(&unstated);
-    let style = root.style();
-    assert_eq!(
-        (
-            style.padding.top,
-            style.padding.right,
-            style.padding.bottom,
-            style.padding.left
-        ),
-        (None, None, None, None),
-        "a page root is padded where the theme states no window_margin"
-    );
-    assert_eq!(
-        (style.gap.width, style.gap.height),
-        (None, None),
-        "a page root spaces its sections where the theme states no section_gap"
-    );
-
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     use_preset(&mut cx, &showcase, "kde-breeze");
-    cx.update(|_window, cx| {
-        showcase.update(cx, |this, cx| {
-            this.layout = native_theme::theme::LayoutTheme::default();
-            cx.notify();
-        });
-    });
-    cx.run_until_parked();
-    draw(&mut cx);
+    install_unstated_layout(&mut cx, &showcase);
 
     show(&mut cx, &showcase, Page::Buttons);
     assert_eq!(
@@ -22272,17 +22236,11 @@ fn a_badges_count_is_a_widget_gap_from_the_next(cx: &mut TestAppContext) {
     use_preset(&mut cx, &showcase, "kde-breeze");
     for stated in [true, false] {
         if !stated {
-            cx.update(|_window, cx| {
-                showcase.update(cx, |this, cx| {
-                    this.layout.widget_gap = None;
-                    cx.notify();
-                });
-            });
-            cx.run_until_parked();
-            draw(&mut cx);
+            install_next_layout(&mut cx, &showcase, |layout| layout.widget_gap = None);
         }
         show(&mut cx, &showcase, Page::Feedback);
-        let gap = read(&mut cx, &showcase, |this, _| this.layout.widget_gap).map_or(px(0.), px);
+        let gap =
+            next_layout_metric(&mut cx, &showcase, next::geometry::widget_gap).unwrap_or(px(0.));
         assert_eq!(stated, gap > px(0.), "kde-breeze states no widget_gap");
         // Messages (5) before Notifications (99): one digit; Notifications
         // before Updates (a dot): two.

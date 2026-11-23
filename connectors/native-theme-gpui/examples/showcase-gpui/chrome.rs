@@ -5,7 +5,7 @@ use gpui::{
     Menu, MenuItem, Pixels, SharedString, Styled as _, StyledText, Window, px,
 };
 use gpui_component::{ActiveTheme as _, IconName, WindowExt as _};
-use native_theme_gpui::geometry;
+use native_theme_gpui::next;
 use native_theme_showcase_support::status;
 
 use crate::Page;
@@ -15,7 +15,7 @@ use crate::app::{
     ToggleSidePanel, Zoom,
 };
 use crate::demo::{SeparatorKind, TabBarKind};
-use crate::support::preset_items;
+use crate::support::{next_metric, preset_items};
 use crate::{
     CHROME_LABEL_ICON_THEME, CHROME_LABEL_MODE, CHROME_LABEL_PALETTE, CHROME_LABEL_THEME,
     CHROME_MENU_BAR, CHROME_PAGE_TABS, CHROME_SIDE_PANEL, CHROME_SIDE_PANEL_SEPARATOR,
@@ -166,7 +166,7 @@ fn menu_bar(app: &Showcase, cx: &App) -> impl IntoElement {
     demo::menu_bar(
         &app.info_ui,
         cx,
-        geometry::container_margin(&app.layout),
+        next_metric(cx, next::geometry::container_margin),
         &app.menus,
     )
     .debug_selector(|| CHROME_MENU_BAR.into())
@@ -199,8 +199,8 @@ pub(crate) fn toolbar(app: &Showcase, cx: &App) -> impl IntoElement {
     demo::toolbar(
         ui,
         cx,
-        geometry::container_margin(&app.layout),
-        geometry::widget_gap(&app.layout),
+        next_metric(cx, next::geometry::container_margin),
+        next_metric(cx, next::geometry::widget_gap),
         [
             demo::toolbar_button(
                 ui,
@@ -259,11 +259,11 @@ pub(crate) fn toolbar(app: &Showcase, cx: &App) -> impl IntoElement {
 /// scroll, on `side_panel_scroll`, where they are taller than the panel.
 pub(crate) fn side_panel(app: &Showcase, cx: &Context<Showcase>) -> impl IntoElement {
     let ui = &app.info_ui;
-    let margin = geometry::container_margin(&app.layout);
+    let margin = next_metric(cx, next::geometry::container_margin);
     let settings = demo::theme_settings(
         ui,
         cx,
-        geometry::widget_gap(&app.layout),
+        next_metric(cx, next::geometry::widget_gap),
         [
             (
                 CHROME_LABEL_THEME,
@@ -326,7 +326,7 @@ pub(crate) fn page_tabs(app: &Showcase, cx: &App) -> impl IntoElement {
         &app.info_ui,
         cx,
         TabBarKind::Pages,
-        geometry::container_margin(&app.layout),
+        next_metric(cx, next::geometry::container_margin),
         Page::ALL.map(|page| (page.label(), page.tab())),
         app.active_page.index(),
         Some(&app.sample_icon(IconName::ChevronDown)),
@@ -385,7 +385,7 @@ pub(crate) fn status_bar(
         environment,
         environment_text,
         shown,
-        geometry::widget_gap(&app.layout),
+        next_metric(cx, next::geometry::widget_gap),
     )
     .rounded_bl(corners.bottom_left)
     .rounded_br(corners.bottom_right)

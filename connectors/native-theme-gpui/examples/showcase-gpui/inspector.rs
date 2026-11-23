@@ -16,7 +16,7 @@ use gpui_component::{
     label::Label,
     v_flex, window_paddings,
 };
-use native_theme_gpui::{ActiveNativeTheme as _, geometry, variants};
+use native_theme_gpui::{ActiveNativeTheme as _, next, variants};
 use native_theme_showcase_support::info::ListedInfo;
 use native_theme_showcase_support::status::{DrawnFamily, defined_size};
 use native_theme_showcase_support::values;
@@ -27,7 +27,7 @@ use crate::app::Showcase;
 use crate::demo::TabBarKind;
 use crate::elements;
 use crate::info::{InfoRegistry, Note, WidgetInfo, as_rgba, leaves, stated};
-use crate::support::{NativeStyled, frame_drawer, with_gap, with_padding};
+use crate::support::{NativeStyled, frame_drawer, next_metric, with_gap, with_padding};
 use crate::{
     INSPECTOR_COPY, INSPECTOR_INFO, INSPECTOR_PANEL, INSPECTOR_TABS, INSPECTOR_TITLE,
     INSPECTOR_TOKENS_NOTE, demo, probe,
@@ -993,11 +993,12 @@ impl Render for Inspector {
             .upgrade()
             .map(|showcase| {
                 let showcase = showcase.read(cx);
-                let layout = &showcase.layout;
-                let margin =
-                    demo::side_panel_content_margin(cx, geometry::container_margin(layout));
+                let margin = demo::side_panel_content_margin(
+                    cx,
+                    next_metric(cx, next::geometry::container_margin),
+                );
                 (
-                    geometry::widget_gap(layout),
+                    next_metric(cx, next::geometry::widget_gap),
                     margin,
                     showcase
                         .panel_look
