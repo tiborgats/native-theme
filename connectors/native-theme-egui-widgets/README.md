@@ -38,12 +38,12 @@ transparent and a stroke stated as none is no outline (rule 2).
 |---|---|---|
 | `switch::Switch` | `switch.track` and `switch.thumb`: fills, outlines, sizes and the track's corners, at rest, checked, hovered and disabled; the label's colour (`switch.label`, else `typography.body.color`), its size (`switch.label(NONE).size_px`) and `switch.label_gap` | no track or checked thumb size or fill, or track corners egui cannot draw as one radius: egui's `Checkbox` |
 | `radio_button::RadioButton` | `radio.dot` and `radio.indicator` widths, `radio.label_gap`; `radio.indicator`'s fill and stroke at rest, hovered and pressed, `radio.dot`'s fill, `radio.label`'s colour and `radio.disabled_opacity`, laid over its `Role::Checkbox` cell | its `Role::Checkbox` cell's circle, dot, label colour and `icon_spacing` |
-| `progress_bar::ProgressBar` | `progress_bar.track`: its least width, corners and outline | egui's bar |
+| `progress_bar::ProgressBar` | `progress_bar.track`: its least width, corners and outline | each its own: egui's floor, egui's radius (half the bar's height), no outline |
 | `spinner::Spinner` | `spinner.color`, `diameter`, `stroke_width`; `colors.window.foreground` for a freedesktop indicator's `currentColor` | egui's own text colour for the indicator |
 | `slider::Slider` | `slider.track`, `active_track` and `thumb` fills at rest and disabled, the thumb's hover fill and its outline at rest, hovered and focused, the thumb's and the rail's sizes | no rail, filled rail or knob fill or size: egui's `Slider` |
 | `segmented_control::SegmentedControl` | the hover fill of `segmented_control.segment`, whether it states vertical padding, `colors.window.background` as the ground a disabled control fades over | no ground: egui's own fade of a disabled `Ui` |
 | `links::link`, `links::hyperlink` | `link.label`'s colour at rest, hovered, pressed, visited and disabled, and its underline; `link.container`'s fill and hover fill | egui's link colour, no background |
-| `combo_box::ComboBox` | `combo_box.field`'s left and right padding and its stroke's width, `combo_box.arrow_area_width` | no stroke, or one per side: egui's padding and arrow place |
+| `combo_box::ComboBox` | `combo_box.field`'s left and right padding and its stroke's width, `combo_box.arrow_area_width` | each its own: egui's padding and arrow place; for a stroke unstated or per side, the scope's outline width |
 | `expander::Expander` | `expander.arrow_side`, `arrow_gap`, `content_indent`, `frame_enabled`; the header's padding, the arrow's size and colour; above a text scale of 1 the title's size (which holds the scale already) times `typography.line_height_multiplier` | none of the four layout fields: egui's `CollapsingHeader` in the expander's scope, its arrow `next::expander_icon`'s |
 
 Limits under the 0.8.0 model:

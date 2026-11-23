@@ -230,7 +230,7 @@ fn compare_all(report: &mut Report, old: &ResolvedTheme, new: &native_theme::nex
         Bar,
         Some(Bar::of(old)),
         Some(Bar::next_of(new)),
-        [min_width, frame]
+        [min_width, radius, outline]
     );
     compare!(
         report,

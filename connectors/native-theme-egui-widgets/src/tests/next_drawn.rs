@@ -712,14 +712,13 @@ fn a_progress_bar_track_stated_as_none_has_no_outline() -> TestResult {
     let mut outlined = 0;
     for &(_, preset) in crate::next::parity::PRESETS {
         let stock = Bar::next_of(&patched(preset, "")?);
-        if !matches!(stock.frame, Some((_, Some(_)))) {
+        if stock.outline.is_none() {
             continue;
         }
         outlined += 1;
         let bar = Bar::next_of(&patched(preset, none)?);
-        let (radius, outline) = bar.frame.ok_or("no frame")?;
-        assert_eq!(outline, None, "{preset:?}");
-        assert_eq!(Some(radius), stock.frame.map(|(r, _)| r), "{preset:?}");
+        assert_eq!(bar.outline, None, "{preset:?}");
+        assert_eq!(bar.radius, stock.radius, "{preset:?}");
     }
     assert!(
         outlined > 0,
@@ -728,8 +727,40 @@ fn a_progress_bar_track_stated_as_none_has_no_outline() -> TestResult {
     let pill = "[[widgets.progress_bar.rules]]\nstates = []\ntrack.corners = \"pill\"\n\
                 track.min_size = [100.0, 6.0]\n";
     let bar = Bar::next_of(&patched(Preset::KdeBreeze, pill)?);
-    assert_eq!(bar.frame.map(|(r, _)| r), Some(3.0));
+    assert_eq!(bar.radius, Some(3.0));
     assert_eq!(bar.min_width, Some(100.0));
+    Ok(())
+}
+
+/// A progress bar whose corners egui cannot draw as one radius keeps egui's own, half its
+/// height, and is still outlined as stated (spec §10, rule 0, per property).
+#[test]
+fn a_progress_bar_outline_stays_where_its_corners_are_egui_s() -> TestResult {
+    use crate::progress_bar::Bar;
+    let patch = "[[widgets.progress_bar.rules]]\nstates = []\n\
+                 track.corners = { radius = 8.0, curve = \"continuous\" }\n\
+                 track.stroke = { width = 2.0, color = \"#ff00ff\" }\n";
+    let magenta = egui::Color32::from_rgb(255, 0, 255);
+    let bar = Bar::next_of(&patched(Preset::KdeBreeze, patch)?);
+    assert_eq!(bar.radius, None);
+    assert_eq!(bar.outline, Some((2.0, magenta)));
+    let ctx = patched_installed(Preset::KdeBreeze, patch)?;
+    let add = |ui: &mut egui::Ui| ui.add(ProgressBar::new(0.4).desired_width(200.0));
+    let _ = response(&ctx, at(1.0), add);
+    let (out, r) = response(&ctx, at(1.0), add);
+    let outline = flat(&out.shapes)
+        .into_iter()
+        .find_map(|s| match s {
+            egui::Shape::Rect(rect) if rect.stroke.color == magenta => Some(rect),
+            _ => None,
+        })
+        .ok_or("no outline drawn")?;
+    assert_eq!(outline.rect, r.rect);
+    assert_eq!(outline.stroke.width, 2.0);
+    assert_eq!(
+        outline.corner_radius,
+        egui::CornerRadius::from(0.5 * r.rect.height())
+    );
     Ok(())
 }
 
@@ -843,6 +874,35 @@ fn a_segmented_control_takes_its_stated_padding_and_hover_layer() -> TestResult 
     Ok(())
 }
 
+/// A drop-down field stroked per side, which egui cannot draw as one outline, keeps egui's
+/// border width and the theme's stated padding and arrow column (spec §10, rule 0, per
+/// property).
+#[test]
+fn a_combo_box_field_stroked_per_side_keeps_its_stated_sides() -> TestResult {
+    use crate::combo_box::Sides;
+    let per_side = "[[widgets.combo_box.rules]]\nstates = []\nfield.stroke = { top = { width = 1.0, paint = \"#ff0000\" }, right = { width = 0.0, paint = \"none\" }, bottom = { width = 2.0, paint = \"#00ff00\" }, left = { width = 0.0, paint = \"none\" } }\n";
+    let mut padded = 0;
+    for &(_, preset) in crate::next::parity::PRESETS {
+        let stock = Sides::next_of(&patched(preset, "")?).ok_or("no stock sides")?;
+        if stock.left.is_none() && stock.right.is_none() && stock.column.is_none() {
+            continue;
+        }
+        padded += 1;
+        let sides = Sides::next_of(&patched(preset, per_side)?).ok_or("no sides")?;
+        assert_eq!(sides.border, None, "{preset:?}");
+        assert_eq!(
+            (sides.left, sides.right, sides.column),
+            (stock.left, stock.right, stock.column),
+            "{preset:?}"
+        );
+    }
+    assert!(
+        padded > 0,
+        "no preset states the field's sides: the test proves nothing"
+    );
+    Ok(())
+}
+
 /// A drop-down field's stroke stated as none is no border: its text is inset by the padding
 /// alone.
 #[test]
@@ -852,12 +912,12 @@ fn a_combo_box_field_stated_as_none_has_no_border() -> TestResult {
     let mut bordered = 0;
     for &(_, preset) in crate::next::parity::PRESETS {
         let stock = Sides::next_of(&patched(preset, "")?);
-        if !stock.is_some_and(|s| s.border > 0.0) {
+        if !stock.is_some_and(|s| s.border.is_some_and(|w| w > 0.0)) {
             continue;
         }
         bordered += 1;
         let sides = Sides::next_of(&patched(preset, none)?).ok_or("no sides")?;
-        assert_eq!(sides.border, 0.0, "{preset:?}");
+        assert_eq!(sides.border, Some(0.0), "{preset:?}");
         assert_eq!(
             (sides.left, sides.right),
             stock.map(|s| (s.left, s.right)).ok_or("no stock sides")?,
