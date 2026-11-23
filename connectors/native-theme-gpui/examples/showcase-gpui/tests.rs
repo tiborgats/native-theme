@@ -7824,9 +7824,9 @@ fn two_heading_levels_show_different_infos(cx: &mut TestAppContext) {
 /// `typography.monospace` (M9-014), as the Basic page's Monospace type line
 /// does: its family, size (`Theme::mono_font_size`, the stated size the
 /// text scale scales, then rounds where the platform's sizes are whole
-/// pixels), weight and line box (kde-breeze's monospace states no line
-/// height, so its size by `typography.line_height_multiplier`), at text
-/// scale 1 and 1.5; and its info's size line names that size.
+/// pixels), weight and line box (kde-breeze's monospace states its line
+/// height, the multiplier times its size by spec §4), at text scale 1 and
+/// 1.5; and its info's size line names that size.
 #[gpui::test]
 fn the_mono_sample_takes_the_mono_font(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
@@ -7849,10 +7849,9 @@ fn the_mono_sample_takes_the_mono_font(cx: &mut TestAppContext) {
         let Some(r) = r else { return };
         let mono = &r.typography.monospace;
         assert!(
-            !mono
-                .stated
+            mono.stated
                 .contains(native_theme::next::TextStated::LINE_HEIGHT),
-            "kde-breeze's monospace now states a line height: compare the sample's line box with it"
+            "kde-breeze's monospace states no line height"
         );
         let size = theme.mono_font_size;
         assert_eq!(
@@ -7873,7 +7872,7 @@ fn the_mono_sample_takes_the_mono_font(cx: &mut TestAppContext) {
                 native_theme_gpui::next::mono_font_weight(&r)
                     .ok()
                     .map(|weight| gpui::FontWeight(f32::from(weight))),
-                Some((size * r.typography.line_height_multiplier).into()),
+                Some(px(mono.line_height).into()),
             ),
             "at text scale {scale} the monospace sample does not take typography.monospace's family, size, weight and line box"
         );
@@ -7893,10 +7892,10 @@ fn the_mono_sample_takes_the_mono_font(cx: &mut TestAppContext) {
 
 /// Where the installed theme's `typography.monospace` states a line height,
 /// the monospace sample's line box is that line height, not its size by
-/// `typography.line_height_multiplier` (`demo::next_text_in`). No bundled
-/// preset states one for it, so the theme is kde-breeze's with a line
-/// height stated by hand: its size plus its size by the multiplier, which
-/// is neither of the two the sample could otherwise take.
+/// `typography.line_height_multiplier` (`demo::next_text_in`). The theme is
+/// kde-breeze's with its monospace line height replaced by hand: its size
+/// plus its size by the multiplier, which is neither the preset's line
+/// height nor the size by the multiplier.
 #[gpui::test]
 fn a_stated_mono_line_height_is_the_samples_line_box(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
@@ -7904,13 +7903,12 @@ fn a_stated_mono_line_height_is_the_samples_line_box(cx: &mut TestAppContext) {
         .resolve(&native_theme::next::ThemeContext::default());
     let mono = &mut r.typography.monospace;
     let multiplier = r.typography.line_height_multiplier;
-    assert!(
-        !mono
-            .stated
-            .contains(native_theme::next::TextStated::LINE_HEIGHT),
-        "kde-breeze's monospace states a line height of its own: hand-build none"
-    );
     let stated = mono.size_px + mono.size_px * multiplier;
+    assert!(
+        (stated - mono.line_height).abs() > 1.0,
+        "the hand-built line height {stated} is kde-breeze's own {}",
+        mono.line_height
+    );
     mono.line_height = stated;
     mono.stated |= native_theme::next::TextStated::LINE_HEIGHT;
     let installed = cx.update(|_window, cx| native_theme_gpui::next::apply(&r, cx));

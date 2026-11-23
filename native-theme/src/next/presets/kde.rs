@@ -3157,6 +3157,15 @@ fn typography(
         None => text_scale_entry(FontSize::Pt(size), weight, units),
     };
     let caption = system.and_then(|s| s.caption_font.as_ref());
+    // The monospace font's line height, which no source states: the multiplier times its size
+    // (spec §4, `Typography`: `body` and `monospace` follow a slot's rule).
+    let mono = system.and_then(|s| s.monospace_font.as_ref());
+    let mono_size = mono
+        .and_then(|f| f.size)
+        .unwrap_or(FontSize::Pt(MONO_SIZE_PT));
+    let mut monospace = font(mono, (MONO_FAMILY, mono_size, MONO_WEIGHT), text, units);
+    monospace.line_height = line_height_px(mono_size, units);
+    monospace.stated |= TextStated::LINE_HEIGHT;
     Typography {
         display: None,
         title1: Some(heading(
@@ -3180,12 +3189,7 @@ fn typography(
             caption.and_then(|f| f.weight).unwrap_or(CAPTION_WEIGHT),
             units,
         )),
-        monospace: font(
-            system.and_then(|s| s.monospace_font.as_ref()),
-            (MONO_FAMILY, FontSize::Pt(MONO_SIZE_PT), MONO_WEIGHT),
-            text,
-            units,
-        ),
+        monospace,
         line_height_multiplier: LINE_HEIGHT,
         fallbacks: Arc::from([]),
         emoji_family: None,

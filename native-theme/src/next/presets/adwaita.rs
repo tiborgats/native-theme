@@ -1780,6 +1780,25 @@ fn typography(c: &SchemeColors, system: Option<&SystemOverrides>, text_scale: f3
     );
     body.line_height = line_height_px(body_size, units);
     body.stated |= TextStated::LINE_HEIGHT;
+    // The monospace font's line height, which no source states: the multiplier times its size
+    // (spec §4, `Typography`: `body` and `monospace` follow a slot's rule).
+    let mono = system.and_then(|s| s.monospace_font.as_ref());
+    let mono_size = mono
+        .and_then(|f| f.size)
+        .unwrap_or(FontSize::Pt(MONO_SIZE_PT));
+    let mut monospace = laid_over(
+        font(
+            MONO_FAMILY,
+            FontSize::Pt(MONO_SIZE_PT),
+            MONO_WEIGHT,
+            text,
+            units,
+        ),
+        mono,
+        units,
+    );
+    monospace.line_height = line_height_px(mono_size, units);
+    monospace.stated |= TextStated::LINE_HEIGHT;
     Typography {
         display: Some(text_scale_entry(
             title_size(ui_size, TITLE_1_FACTOR, DISPLAY_SIZE_PT),
@@ -1803,17 +1822,7 @@ fn typography(c: &SchemeColors, system: Option<&SystemOverrides>, text_scale: f3
         body,
         callout: None,
         subheadline: None,
-        monospace: laid_over(
-            font(
-                MONO_FAMILY,
-                FontSize::Pt(MONO_SIZE_PT),
-                MONO_WEIGHT,
-                text,
-                units,
-            ),
-            system.and_then(|s| s.monospace_font.as_ref()),
-            units,
-        ),
+        monospace,
         line_height_multiplier: LINE_HEIGHT,
         fallbacks: Arc::from([]),
         emoji_family: None,

@@ -2499,6 +2499,20 @@ fn typography(
     let line_size = ui.and_then(|f| f.size).unwrap_or(body_size);
     body.line_height = line_height_px(line_size, g.line_height, units);
     body.stated |= TextStated::LINE_HEIGHT;
+    // The monospace font's line height, which no source states: the multiplier times its size
+    // (spec §4, `Typography`: `body` and `monospace` follow a slot's rule).
+    let mono_size = FontSize::Pt(g.mono_size_pt);
+    let mut monospace = laid_over(
+        font(g.mono_family, mono_size, g.mono_weight, text, units),
+        mono,
+        units,
+    );
+    monospace.line_height = line_height_px(
+        mono.and_then(|f| f.size).unwrap_or(mono_size),
+        g.line_height,
+        units,
+    );
+    monospace.stated |= TextStated::LINE_HEIGHT;
     let entry = |size, weight| Some(text_scale_entry(g, size, weight, units));
     Typography {
         display: entry(g.display_size_pt, g.display_weight),
@@ -2511,17 +2525,7 @@ fn typography(
         callout: None,
         subheadline: None,
         caption: entry(g.caption_size_pt, g.caption_weight),
-        monospace: laid_over(
-            font(
-                g.mono_family,
-                FontSize::Pt(g.mono_size_pt),
-                g.mono_weight,
-                text,
-                units,
-            ),
-            mono,
-            units,
-        ),
+        monospace,
         line_height_multiplier: g.line_height,
         fallbacks: Arc::from([]),
         emoji_family: None,

@@ -1245,6 +1245,15 @@ fn typography(colors: &ColorRoles, units: FontUnits) -> Typography {
         units,
     );
     body.stated |= TextStated::LINE_HEIGHT;
+    // The monospace font's line height, which no source states: the multiplier times its size
+    // (spec §4, `Typography`: `body` and `monospace` follow a slot's rule).
+    let mut monospace = font(MONO_FAMILY, MONO_SIZE_PT, MONO_WEIGHT, text, units);
+    monospace.line_height = font_px(
+        FontSize::Pt(LINE_HEIGHT * MONO_SIZE_PT),
+        TextRole::Body,
+        units,
+    );
+    monospace.stated |= TextStated::LINE_HEIGHT;
     Typography {
         display: Some(text_scale_entry(
             TextRole::LargeTitle,
@@ -1280,7 +1289,7 @@ fn typography(colors: &ColorRoles, units: FontUnits) -> Typography {
             CAPTION_LINE_HEIGHT_PT,
             units,
         )),
-        monospace: font(MONO_FAMILY, MONO_SIZE_PT, MONO_WEIGHT, text, units),
+        monospace,
         line_height_multiplier: LINE_HEIGHT,
         fallbacks: Arc::from([]),
         emoji_family: None,

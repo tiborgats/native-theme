@@ -183,6 +183,7 @@
       "size_px": 20.0,
       "weight": 400,
       "style": "normal",
+      "line_height": 24.200003,
       "defined_size": {
         "pt": 10.0
       }
