@@ -1475,6 +1475,21 @@ impl CheckFills {
         }
     }
 
+    /// Every stroke where it lies `align`, and the hover options `hover`
+    /// names unset, for the parity test's expected values.
+    #[cfg(test)]
+    pub(crate) fn listed(self, align: LineAlign, hover: crate::next::parity::Hover) -> Self {
+        let line = |l: Option<Line>| l.map(|l| l.aligned(align)).filter(|_| !hover.stroke);
+        Self {
+            checked_border: self.checked_border.aligned(align),
+            unchecked_border: self.unchecked_border.aligned(align),
+            hover_fill: self.hover_fill.filter(|_| !hover.fill),
+            hover_border: line(self.hover_border),
+            checked_hover_border: line(self.checked_hover_border),
+            ..self
+        }
+    }
+
     /// The fill and the border colour of a box that is checked or not, under
     /// the pointer or not, the stroke laid over that fill ([`Line::over`]).
     /// Under the pointer an unchecked box takes the hover fill and a checked
@@ -1529,6 +1544,16 @@ impl CheckboxSource {
             disabled_label: to_color(c.disabled_text_color),
             border_width: c.border.line_width,
             border_radius: c.border.corner_radius,
+        }
+    }
+
+    /// [`CheckFills::listed`] of the box's fills, for the parity test's
+    /// expected values.
+    #[cfg(test)]
+    pub(crate) fn listed(self, align: LineAlign, hover: crate::next::parity::Hover) -> Self {
+        Self {
+            fills: self.fills.listed(align, hover),
+            ..self
         }
     }
 }
@@ -1718,7 +1743,9 @@ pub(crate) fn radio_from(
 ///
 /// The track is `switch.checked_background` or `.unchecked_background` by
 /// `is_toggled`, with `.hover_*` layered over it where the theme states one
-/// and `.disabled_*` replacing it, as given. The thumb is
+/// (where it states nothing for the hovered switch, the 0.8.0 model's track
+/// is iced's own for the status, spec §2 `from_state`; 0.7.2's unset hover
+/// is the track at rest) and `.disabled_*` replacing it, as given. The thumb is
 /// `switch.thumb_background`, a thumb and so emitted as given in every state
 /// -- `.unchecked_thumb_background`, where the theme states one, while not
 /// toggled -- and `.disabled_thumb_color` whenever the switch is disabled,
@@ -1759,9 +1786,10 @@ pub(crate) fn radio_from(
 /// a border whose colour or width the theme leaves unset is iced's own, none
 /// (`docs/platform-facts.md` §2.21: libadwaita and macOS outline neither,
 /// WinUI and Material only the off track). iced draws both inside their
-/// quads, in place of the fill under them, so the track's outline is emitted
-/// composited over the track's fill in each state, as the platforms stroke
-/// it. `text_color` has no native source and comes from
+/// quads, in place of the fill under them, so each outline is emitted over
+/// the fill under it in each state as it lies ([`Line::over`]): the 0.7.2
+/// model's track outline inside the track, as the platforms stroke it, and
+/// its thumb outline as given. `text_color` has no native source and comes from
 /// `toggler::default(theme, status)`: the model states no font for a switch,
 /// and iced's `None` inherits the surrounding one.
 #[must_use = "this returns the style function; it does not apply it"]
@@ -1785,11 +1813,18 @@ pub fn toggler_over(
 /// field's 0.7.2 name, soft options as `None` where unset.
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct SwitchSource {
-    pub disabled_opacity: f32,
+    /// `None` where the theme states no disabled opacity: a disabled switch
+    /// is then drawn in the colours it states, not faded.
+    pub disabled_opacity: Option<f32>,
     pub checked_background: Color,
     pub unchecked_background: Color,
-    pub hover_checked_background: Option<Color>,
-    pub hover_unchecked_background: Option<Color>,
+    /// The track of a switch under the pointer, on and off: its hover layer
+    /// over the track at rest. `None` where the theme states nothing for the
+    /// hovered switch, which is then iced's own (spec §2, `from_state`); the
+    /// 0.7.2 model's unset hover layers are the platform saying the track
+    /// looks as it does at rest, and its reads state that.
+    pub hovered_checked_background: Option<Color>,
+    pub hovered_unchecked_background: Option<Color>,
     pub disabled_checked_background: Option<Color>,
     pub disabled_unchecked_background: Option<Color>,
     pub thumb_background: Color,
@@ -1799,15 +1834,15 @@ pub(crate) struct SwitchSource {
     /// The thumb of a disabled switch, on and off.
     pub disabled_thumb_color: Option<Color>,
     pub disabled_unchecked_thumb_color: Option<Color>,
-    /// The track's outline on and off, as stated (width, colour), where the
+    /// The track's outline on and off, as stated (width, stroke), where the
     /// theme states both.
-    pub checked_track_border: Option<(f32, Color)>,
-    pub unchecked_track_border: Option<(f32, Color)>,
+    pub checked_track_border: Option<(f32, Line)>,
+    pub unchecked_track_border: Option<(f32, Line)>,
     /// The disabled track's outline, where stated; `None` keeps the one at
     /// rest.
-    pub disabled_checked_track_border: Option<(f32, Color)>,
-    pub disabled_unchecked_track_border: Option<(f32, Color)>,
-    pub thumb_border: Option<(f32, Color)>,
+    pub disabled_checked_track_border: Option<(f32, Line)>,
+    pub disabled_unchecked_track_border: Option<(f32, Line)>,
+    pub thumb_border: Option<(f32, Line)>,
     pub track_radius: Option<f32>,
     pub track_height: Option<f32>,
     pub thumb_diameter: Option<f32>,
@@ -1817,45 +1852,72 @@ pub(crate) struct SwitchSource {
 }
 
 impl SwitchSource {
-    /// The 0.7.2 model's reads.
-    fn of(resolved: &ResolvedTheme) -> Self {
+    /// The 0.7.2 model's reads. The 0.7.2 connector laid the track's outline
+    /// over the track's fill and handed the thumb's to iced as given: the
+    /// one is read as a stroke inside the track, the other as one outside
+    /// the thumb.
+    pub(crate) fn of(resolved: &ResolvedTheme) -> Self {
         let s = &resolved.switch;
-        let outline = |colour: Option<Rgba>, width: Option<f32>| {
-            colour
-                .zip(width)
-                .map(|(colour, width)| (width, to_color(colour)))
+        let outline = |colour: Option<Rgba>, width: Option<f32>, align: LineAlign| {
+            colour.zip(width).map(|(colour, width)| {
+                (
+                    width,
+                    Line {
+                        color: to_color(colour),
+                        align,
+                    },
+                )
+            })
         };
+        let track = |colour| outline(colour, s.track_border_line_width, LineAlign::Inside);
         let unchecked_thumb = s.unchecked_thumb_background.unwrap_or(s.thumb_background);
+        let checked = to_color(s.checked_background);
+        let unchecked = to_color(s.unchecked_background);
+        let hovered = |layer: Option<Rgba>, track: Color| {
+            Some(layer.map_or(track, |layer| composite_over(to_color(layer), track)))
+        };
         Self {
-            disabled_opacity: s.disabled_opacity,
-            checked_background: to_color(s.checked_background),
-            unchecked_background: to_color(s.unchecked_background),
-            hover_checked_background: s.hover_checked_background.map(to_color),
-            hover_unchecked_background: s.hover_unchecked_background.map(to_color),
+            disabled_opacity: Some(s.disabled_opacity),
+            checked_background: checked,
+            unchecked_background: unchecked,
+            hovered_checked_background: hovered(s.hover_checked_background, checked),
+            hovered_unchecked_background: hovered(s.hover_unchecked_background, unchecked),
             disabled_checked_background: s.disabled_checked_background.map(to_color),
             disabled_unchecked_background: s.disabled_unchecked_background.map(to_color),
             thumb_background: to_color(s.thumb_background),
             unchecked_thumb_background: to_color(unchecked_thumb),
             disabled_thumb_color: s.disabled_thumb_color.map(to_color),
             disabled_unchecked_thumb_color: s.disabled_thumb_color.map(to_color),
-            checked_track_border: outline(s.checked_track_border_color, s.track_border_line_width),
-            unchecked_track_border: outline(
-                s.unchecked_track_border_color,
-                s.track_border_line_width,
+            checked_track_border: track(s.checked_track_border_color),
+            unchecked_track_border: track(s.unchecked_track_border_color),
+            disabled_checked_track_border: track(s.disabled_checked_track_border_color),
+            disabled_unchecked_track_border: track(s.disabled_unchecked_track_border_color),
+            thumb_border: outline(
+                s.thumb_border_color,
+                s.thumb_border_line_width,
+                LineAlign::Outside,
             ),
-            disabled_checked_track_border: outline(
-                s.disabled_checked_track_border_color,
-                s.track_border_line_width,
-            ),
-            disabled_unchecked_track_border: outline(
-                s.disabled_unchecked_track_border_color,
-                s.track_border_line_width,
-            ),
-            thumb_border: outline(s.thumb_border_color, s.thumb_border_line_width),
             track_radius: Some(s.track_radius),
             track_height: Some(s.track_height),
             thumb_diameter: Some(s.thumb_diameter),
             unchecked_thumb_diameter: Some(s.unchecked_thumb_diameter.unwrap_or(s.thumb_diameter)),
+        }
+    }
+
+    /// Every stroke where it lies `align`, and the hover options `hover`
+    /// names unset, for the parity test's expected values.
+    #[cfg(test)]
+    pub(crate) fn listed(self, align: LineAlign, hover: crate::next::parity::Hover) -> Self {
+        let edge = |e: Option<(f32, Line)>| e.map(|(width, line)| (width, line.aligned(align)));
+        Self {
+            hovered_checked_background: self.hovered_checked_background.filter(|_| !hover.fill),
+            hovered_unchecked_background: self.hovered_unchecked_background.filter(|_| !hover.fill),
+            checked_track_border: edge(self.checked_track_border),
+            unchecked_track_border: edge(self.unchecked_track_border),
+            disabled_checked_track_border: edge(self.disabled_checked_track_border),
+            disabled_unchecked_track_border: edge(self.disabled_unchecked_track_border),
+            thumb_border: edge(self.thumb_border),
+            ..self
         }
     }
 }
@@ -1872,14 +1934,10 @@ pub(crate) fn toggler_from(
 
     let checked = s.checked_background;
     let unchecked = s.unchecked_background;
-    // Each hover layer is a soft option: where it is unset the hovered track
-    // is the track at rest.
-    let hovered_checked = s
-        .hover_checked_background
-        .map_or(checked, |hover| composite_over(hover, checked));
-    let hovered_unchecked = s
-        .hover_unchecked_background
-        .map_or(unchecked, |hover| composite_over(hover, unchecked));
+    // Where the theme states nothing for the hovered switch, its track is
+    // iced's own for the status.
+    let hovered_checked = s.hovered_checked_background;
+    let hovered_unchecked = s.hovered_unchecked_background;
     let disabled_checked = s.disabled_checked_background.unwrap_or(checked);
     let disabled_unchecked = s.disabled_unchecked_background.unwrap_or(unchecked);
 
@@ -1890,11 +1948,15 @@ pub(crate) fn toggler_from(
     let disabled_unchecked_thumb = s.disabled_unchecked_thumb_color.unwrap_or(unchecked_thumb);
 
     // A disabled switch is faded by `switch.disabled_opacity` as one widget
-    // over the ground: the thumb on its track (see `faded_as_one`).
+    // over the ground: the thumb on its track (see `faded_as_one`). A switch
+    // the theme states no opacity for is drawn in the colours it states.
+    let fade = move |under: Color, color: Color| {
+        opacity.map_or(color, |opacity| faded_as_one(ground, under, color, opacity))
+    };
     let disabled_as_one = |track: Color, thumb: Color| {
         (
-            faded_as_one(ground, ground, track, opacity),
-            faded_as_one(ground, composite_over(track, ground), thumb, opacity),
+            fade(ground, track),
+            fade(composite_over(track, ground), thumb),
         )
     };
     let disabled_on = disabled_as_one(disabled_checked, disabled_thumb);
@@ -1902,25 +1964,16 @@ pub(crate) fn toggler_from(
 
     // The outlines, where the theme states a colour and a width: the track's
     // per state over that state's fill, a disabled one faded as one with it
-    // over the ground, and the thumb's over the track (docs/platform-facts.md
-    // §2.21). The platforms stroke the track's outline over its fill (WinUI's
-    // `ToggleSwitchStrokeOff` a shape stroke, Material's `track-outline` a
-    // border over a `border-box` background), while iced's quad paints its
-    // border in place of the fill under it, as for the inset focus ring of
-    // `InputColors::new`, so a translucent outline is composited over the
-    // track here.
-    let over_track = |edge: Option<(f32, Color)>, track: Color| {
-        edge.map(|(width, edge)| (width, composite_over(edge, track)))
-    };
+    // over the ground, and the thumb's over the thumb (docs/platform-facts.md
+    // §2.21). iced's quad paints its border in place of the fill under it,
+    // so each stroke is handed to iced as it lies over the fill painted
+    // under it ([`Line::over`]).
+    let over =
+        |edge: Option<(f32, Line)>, fill: Color| edge.map(|(width, line)| (width, line.over(fill)));
     let rest_edge_on = s.checked_track_border;
     let rest_edge_off = s.unchecked_track_border;
-    let edge_on = over_track(rest_edge_on, checked);
-    let edge_off = over_track(rest_edge_off, unchecked);
-    let hovered_edge_on = over_track(rest_edge_on, hovered_checked);
-    let hovered_edge_off = over_track(rest_edge_off, hovered_unchecked);
-    let disabled_edge = |edge: Option<(f32, Color)>, rest: Option<(f32, Color)>, track: Color| {
-        over_track(edge.or(rest), track)
-            .map(|(width, edge)| (width, faded_as_one(ground, ground, edge, opacity)))
+    let disabled_edge = |edge: Option<(f32, Line)>, rest: Option<(f32, Line)>, track: Color| {
+        over(edge.or(rest), track).map(|(width, edge)| (width, fade(ground, edge)))
     };
     let disabled_edge_on = disabled_edge(
         s.disabled_checked_track_border,
@@ -1933,16 +1986,12 @@ pub(crate) fn toggler_from(
         disabled_unchecked,
     );
     let thumb_edge = s.thumb_border;
-    let disabled_thumb_edge = |track: Color| {
-        thumb_edge.map(|(width, edge)| {
-            (
-                width,
-                faded_as_one(ground, composite_over(track, ground), edge, opacity),
-            )
-        })
+    let disabled_thumb_edge = |track: Color, thumb: Color| {
+        over(thumb_edge, thumb)
+            .map(|(width, edge)| (width, fade(composite_over(track, ground), edge)))
     };
-    let disabled_thumb_edge_on = disabled_thumb_edge(disabled_checked);
-    let disabled_thumb_edge_off = disabled_thumb_edge(disabled_unchecked);
+    let disabled_thumb_edge_on = disabled_thumb_edge(disabled_checked, disabled_thumb);
+    let disabled_thumb_edge_off = disabled_thumb_edge(disabled_unchecked, disabled_unchecked_thumb);
 
     let track_radius = s.track_radius.map(Radius::new);
     // Guarded so that a track with no height, or a thumb taller than its
@@ -1973,11 +2022,15 @@ pub(crate) fn toggler_from(
                 }
             }
             Status::Hovered { is_toggled } => {
-                if is_toggled {
+                let (hovered, thumb) = if is_toggled {
                     (hovered_checked, thumb)
                 } else {
                     (hovered_unchecked, unchecked_thumb)
-                }
+                };
+                (
+                    hovered.unwrap_or_else(|| painted(Some(iced.background))),
+                    thumb,
+                )
             }
             Status::Disabled { is_toggled } => {
                 if is_toggled {
@@ -2000,10 +2053,14 @@ pub(crate) fn toggler_from(
         let (track_edge, thumb_edge) = match status {
             Status::Disabled { is_toggled: true } => (disabled_edge_on, disabled_thumb_edge_on),
             Status::Disabled { is_toggled: false } => (disabled_edge_off, disabled_thumb_edge_off),
-            Status::Hovered { is_toggled: true } => (hovered_edge_on, thumb_edge),
-            Status::Hovered { is_toggled: false } => (hovered_edge_off, thumb_edge),
-            Status::Active { is_toggled: true } => (edge_on, thumb_edge),
-            Status::Active { is_toggled: false } => (edge_off, thumb_edge),
+            Status::Active { is_toggled } | Status::Hovered { is_toggled } => {
+                let rest = if is_toggled {
+                    rest_edge_on
+                } else {
+                    rest_edge_off
+                };
+                (over(rest, background), over(thumb_edge, foreground))
+            }
         };
         let (background_border_width, background_border_color) =
             track_edge.unwrap_or((iced.background_border_width, iced.background_border_color));
@@ -2033,7 +2090,10 @@ pub(crate) fn toggler_from(
 /// over it -- a soft option, whose `None` is the platform saying a hovered
 /// field looks no different -- its label is `combo_box.font.color` and its
 /// border is `combo_box.border.*`, its colour `.hover_border_color` under the
-/// pointer where the theme states one. The placeholder is
+/// pointer where the theme states one, the stroke over the fill it lies on
+/// ([`Line::over`]). Where the 0.8.0 model states nothing for the hovered
+/// field, its fill and stroke colour are iced's own for the status (spec §2,
+/// `from_state`). The placeholder is
 /// `input.placeholder_color`: the model states it once, for every field that
 /// has one.
 ///
@@ -2059,17 +2119,7 @@ pub fn pick_list(
     resolved: &ResolvedTheme,
 ) -> impl Fn(&Theme, iced_widget::pick_list::Status) -> iced_widget::pick_list::Style + Clone + use<>
 {
-    let c = &resolved.combo_box;
-    pick_list_from(&PickListSource {
-        background: to_color(c.background_color),
-        hover_background: c.hover_background.map(to_color),
-        label: to_color(c.font.color),
-        placeholder: to_color(resolved.input.placeholder_color),
-        open_background: c.open_background.map(to_color),
-        border: border_of(&c.border),
-        hover_border_color: c.hover_border_color.map(to_color),
-        open_border_color: c.open_border_color.map(to_color),
-    })
+    pick_list_from(&PickListSource::of(resolved))
 }
 
 /// What the drop-down field's style reads from the theme, of either model:
@@ -2077,13 +2127,59 @@ pub fn pick_list(
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct PickListSource {
     pub background: Color,
-    pub hover_background: Option<Color>,
+    /// The field under the pointer: its hover layer over the idle fill.
+    /// `None` where the theme states nothing for the hovered field, which is
+    /// then iced's own (spec §2, `from_state`); the 0.7.2 model's unset hover
+    /// layer is the platform saying the field looks as it does at rest, and
+    /// its reads state that.
+    pub hovered_background: Option<Color>,
     pub label: Color,
     pub placeholder: Color,
+    /// The open field's layer over the idle fill; `None` follows the
+    /// pointer.
     pub open_background: Option<Color>,
-    pub border: Border,
-    pub hover_border_color: Option<Color>,
-    pub open_border_color: Option<Color>,
+    pub border: Outline,
+    /// The border under the pointer, `None` as the hover fill.
+    pub hover_border_color: Option<Line>,
+    /// The open field's border; `None` follows the pointer.
+    pub open_border_color: Option<Line>,
+}
+
+impl PickListSource {
+    /// The 0.7.2 model's reads.
+    pub(crate) fn of(resolved: &ResolvedTheme) -> Self {
+        let c = &resolved.combo_box;
+        let idle = to_color(c.background_color);
+        let border = Outline::of(&c.border);
+        let line = |c: Rgba| Line::outside(to_color(c));
+        Self {
+            background: idle,
+            hovered_background: Some(
+                c.hover_background
+                    .map_or(idle, |hover| composite_over(to_color(hover), idle)),
+            ),
+            label: to_color(c.font.color),
+            placeholder: to_color(resolved.input.placeholder_color),
+            open_background: c.open_background.map(to_color),
+            border,
+            hover_border_color: Some(c.hover_border_color.map_or(border.line, line)),
+            open_border_color: c.open_border_color.map(line),
+        }
+    }
+
+    /// Every stroke where it lies `align`, and the hover options `hover`
+    /// names unset, for the parity test's expected values.
+    #[cfg(test)]
+    pub(crate) fn listed(self, align: LineAlign, hover: crate::next::parity::Hover) -> Self {
+        let line = |l: Option<Line>| l.map(|l| l.aligned(align));
+        Self {
+            hovered_background: self.hovered_background.filter(|_| !hover.fill),
+            border: self.border.aligned(align),
+            hover_border_color: line(self.hover_border_color).filter(|_| !hover.stroke),
+            open_border_color: line(self.open_border_color),
+            ..self
+        }
+    }
 }
 
 /// [`pick_list`] of what it reads.
@@ -2094,9 +2190,7 @@ pub(crate) fn pick_list_from(
     use iced_widget::pick_list::{Status, Style};
 
     let idle = c.background;
-    let hovered = c
-        .hover_background
-        .map_or(idle, |hover| composite_over(hover, idle));
+    let hovered = c.hovered_background;
 
     let label = c.label;
     let placeholder = c.placeholder;
@@ -2104,30 +2198,35 @@ pub(crate) fn pick_list_from(
     let open = c.open_background.map(|fill| composite_over(fill, idle));
 
     let border = c.border;
-    let hovered_border = c.hover_border_color.unwrap_or(border.color);
+    let hovered_border = c.hover_border_color;
     let open_border = c.open_border_color;
 
     move |theme, status| {
         let iced = iced_widget::pick_list::default(theme, status);
-        let (background, color) = match status {
-            Status::Active => (idle, border.color),
-            Status::Hovered => (hovered, hovered_border),
-            Status::Opened { is_hovered } => {
-                let (fill, line) = if is_hovered {
-                    (hovered, hovered_border)
-                } else {
-                    (idle, border.color)
-                };
-                (open.unwrap_or(fill), open_border.unwrap_or(line))
+        // The fill and the stroke the pointer gives; an open field takes its
+        // own where the theme states them. Each the theme states nothing for
+        // is iced's own for the status.
+        let (fill, line) = match status {
+            Status::Active | Status::Opened { is_hovered: false } => {
+                (Some(idle), Some(border.line))
             }
+            Status::Hovered | Status::Opened { is_hovered: true } => (hovered, hovered_border),
         };
-        let border = Border { color, ..border };
+        let (fill, line) = match status {
+            Status::Opened { .. } => (open.or(fill), open_border.or(line)),
+            Status::Active | Status::Hovered => (fill, line),
+        };
+        let background = fill.unwrap_or_else(|| painted(Some(iced.background)));
+        let color = line.map_or(iced.border.color, |line| line.over(background));
         Style {
             text_color: label,
             placeholder_color: placeholder,
             handle_color: iced.handle_color,
             background: Background::Color(background),
-            border,
+            border: Border {
+                color,
+                ..border.over(background)
+            },
         }
     }
 }

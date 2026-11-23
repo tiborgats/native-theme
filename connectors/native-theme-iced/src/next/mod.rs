@@ -54,7 +54,7 @@ pub(crate) mod borders;
 pub mod styles;
 
 #[cfg(test)]
-mod parity;
+pub(crate) mod parity;
 
 use std::fmt;
 

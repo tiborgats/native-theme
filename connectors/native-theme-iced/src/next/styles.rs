@@ -7,13 +7,16 @@
 
 use iced_core::theme::Theme;
 use native_theme::next::{
-    ButtonQuery, PartStated, ResolvedTheme, Stroke, WidgetState, WindowState,
+    ButtonQuery, IconStated, PartStated, PartStyle, ResolvedTheme, Stroke, WidgetState, WindowState,
 };
 
-use super::borders::{outline, outline_or_iced, state_line};
+use super::borders::{
+    line, line_or_none, outline, outline_or_iced, radius, state_line, stroke_width,
+};
 use super::{Mapped, Unmapped, fill, state_fill, state_text_color, stated, text_color, to_color};
 use crate::styles::{
-    self as old, ButtonSource, InputSource, LinkSource, Outline, ToolbarButtonSource,
+    self as old, ButtonSource, CheckFills, CheckboxSource, InputSource, Line, LinkSource, Outline,
+    PickListSource, SwitchSource, ToolbarButtonSource,
 };
 
 /// [`ButtonSource`] of the 0.8.0 model. A state option no rule states for
@@ -341,6 +344,326 @@ pub fn text_editor(
         text_area,
         "text_area"
     )?))
+}
+
+/// A part's fill where a rule states it for `$flag` (the query with that
+/// flag alone, spec §2, `from_state`), read at `$query`; `None` where none
+/// does. A value a rule for another flag of `$query` states (a checked box's
+/// fill under the pointer) is not this state's.
+macro_rules! flag_fill {
+    ($w:expr, $part:ident, $flag:expr, $query:expr, $home:expr) => {
+        if $w.$part($flag).from_state.contains(PartStated::FILL) {
+            fill(&$w.$part($query), $home).map(Some)
+        } else {
+            Ok(None)
+        }
+    };
+}
+
+/// [`flag_fill`] of the stroke.
+macro_rules! flag_line {
+    ($w:expr, $part:ident, $flag:expr, $query:expr, $home:expr) => {
+        if $w.$part($flag).from_state.contains(PartStated::STROKE) {
+            line(&$w.$part($query), $home).map(Some)
+        } else {
+            Ok(None)
+        }
+    };
+}
+
+/// [`CheckFills`] of the 0.8.0 model, of the indicator of `$w` (the check
+/// box's or the radio's), every home under `$home`.
+macro_rules! check_fills {
+    ($w:expr, $home:literal) => {{
+        let w = $w;
+        let unchecked = fill(
+            &w.indicator(WidgetState::NONE),
+            concat!($home, ".indicator(NONE).fill"),
+        )?;
+        Ok::<CheckFills, Unmapped>(CheckFills {
+            checked: fill(
+                &w.indicator(WidgetState::CHECKED),
+                concat!($home, ".indicator(CHECKED).fill"),
+            )?,
+            unchecked,
+            hover_fill: state_fill(
+                &w.indicator(WidgetState::HOVER),
+                concat!($home, ".indicator(HOVER).fill"),
+            )?
+            .map(|hover| old::composite_over(hover, unchecked)),
+            checked_border: line_or_none(
+                &w.indicator(WidgetState::CHECKED),
+                concat!($home, ".indicator(CHECKED).stroke.color"),
+            )?,
+            unchecked_border: line_or_none(
+                &w.indicator(WidgetState::NONE),
+                concat!($home, ".indicator(NONE).stroke.color"),
+            )?,
+            hover_border: state_line(
+                &w.indicator(WidgetState::HOVER),
+                concat!($home, ".indicator(HOVER).stroke.color"),
+            )?,
+            checked_hover_border: flag_line!(
+                w,
+                indicator,
+                WidgetState::HOVER,
+                WidgetState::HOVER | WidgetState::CHECKED,
+                concat!($home, ".indicator(HOVER|CHECKED).stroke.color")
+            )?,
+        })
+    }};
+}
+
+/// [`CheckboxSource`] of the 0.8.0 model.
+fn checkbox_source(r: &ResolvedTheme) -> Mapped<CheckboxSource> {
+    let c = &r.checkbox;
+    let rest = c.indicator(WidgetState::NONE);
+    let mark = c.checkmark(WidgetState::CHECKED);
+    if !mark.stated.contains(IconStated::COLOR) {
+        return Err(Unmapped("checkbox.checkmark(CHECKED).color"));
+    }
+    Ok(CheckboxSource {
+        fills: check_fills!(c, "checkbox")?,
+        disabled_background: state_fill(
+            &c.indicator(WidgetState::DISABLED),
+            "checkbox.indicator(DISABLED).fill",
+        )?,
+        checked_disabled_background: flag_fill!(
+            c,
+            indicator,
+            WidgetState::DISABLED,
+            WidgetState::DISABLED | WidgetState::CHECKED,
+            "checkbox.indicator(DISABLED|CHECKED).fill"
+        )?,
+        disabled_opacity: c.disabled_opacity,
+        mark: to_color(mark.color),
+        label: text_color(&c.label(WidgetState::NONE), "checkbox.label(NONE).color")?,
+        disabled_label: text_color(
+            &c.label(WidgetState::DISABLED),
+            "checkbox.label(DISABLED).color",
+        )?,
+        border_width: stroke_width(&rest, "checkbox.indicator(NONE).stroke.width")?,
+        border_radius: radius(&rest, "checkbox.indicator(NONE).corners")?,
+    })
+}
+
+/// [`crate::styles::checkbox`]: a disabled box faded as one widget over the
+/// window.
+///
+/// # Errors
+///
+/// [`super::Unmapped`] where the theme states no value the box needs.
+pub fn checkbox(
+    r: &ResolvedTheme,
+) -> Mapped<
+    impl Fn(&Theme, iced_widget::checkbox::Status) -> iced_widget::checkbox::Style + Clone + use<>,
+> {
+    let window = stated(r.colors.window.background, "colors.window.background")?;
+    checkbox_over(r, to_color(window))
+}
+
+/// [`crate::styles::checkbox_over`].
+///
+/// # Errors
+///
+/// [`super::Unmapped`] where the theme states no value the box needs.
+pub fn checkbox_over(
+    r: &ResolvedTheme,
+    backdrop: iced_core::Color,
+) -> Mapped<
+    impl Fn(&Theme, iced_widget::checkbox::Status) -> iced_widget::checkbox::Style + Clone + use<>,
+> {
+    Ok(old::checkbox_from(&checkbox_source(r)?, backdrop))
+}
+
+/// [`crate::styles::radio`]: the radio's own indicator, dot and label.
+///
+/// # Errors
+///
+/// [`super::Unmapped`] where the theme states no value the radio needs.
+pub fn radio(
+    r: &ResolvedTheme,
+) -> Mapped<impl Fn(&Theme, iced_widget::radio::Status) -> iced_widget::radio::Style + Clone + use<>>
+{
+    let w = &r.radio;
+    Ok(old::radio_from(
+        check_fills!(w, "radio")?,
+        fill(&w.dot(WidgetState::CHECKED), "radio.dot(CHECKED).fill")?,
+        text_color(&w.label(WidgetState::NONE), "radio.label(NONE).color")?,
+        stroke_width(
+            &w.indicator(WidgetState::NONE),
+            "radio.indicator(NONE).stroke.width",
+        )?,
+    ))
+}
+
+/// A part's outline as the switch takes it, its width and its stroke, where
+/// the theme states a stroke; `None` where it states none or no stroke,
+/// iced's own (none) then drawn.
+fn edge(part: &PartStyle, home: &'static str) -> Mapped<Option<(f32, Line)>> {
+    if !part.stated.contains(PartStated::STROKE) || matches!(part.stroke, Stroke::None) {
+        return Ok(None);
+    }
+    Ok(Some((stroke_width(part, home)?, line(part, home)?)))
+}
+
+/// [`edge`] where a rule states the stroke for `$flag`, as [`flag_fill`]
+/// reads a fill.
+macro_rules! flag_edge {
+    ($w:expr, $part:ident, $flag:expr, $query:expr, $home:expr) => {
+        if $w.$part($flag).from_state.contains(PartStated::STROKE) {
+            edge(&$w.$part($query), $home)
+        } else {
+            Ok(None)
+        }
+    };
+}
+
+/// A part's corner radius where stated; `None`, iced's own, where not.
+fn radius_or_iced(part: &PartStyle, home: &'static str) -> Mapped<Option<f32>> {
+    if part.stated.contains(PartStated::CORNERS) {
+        radius(part, home).map(Some)
+    } else {
+        Ok(None)
+    }
+}
+
+/// [`SwitchSource`] of the 0.8.0 model.
+fn switch_source(r: &ResolvedTheme) -> Mapped<SwitchSource> {
+    let s = &r.switch;
+    let off = s.track(WidgetState::NONE);
+    let on = s.track(WidgetState::CHECKED);
+    let thumb_on = s.thumb(WidgetState::CHECKED);
+    let thumb_off = s.thumb(WidgetState::NONE);
+    let checked = fill(&on, "switch.track(CHECKED).fill")?;
+    let unchecked = fill(&off, "switch.track(NONE).fill")?;
+    let [_, track_height] = off.min_size;
+    let [thumb_diameter, _] = thumb_on.min_size;
+    let [unchecked_thumb_diameter, _] = thumb_off.min_size;
+    Ok(SwitchSource {
+        disabled_opacity: s.disabled_opacity,
+        checked_background: checked,
+        unchecked_background: unchecked,
+        hovered_checked_background: flag_fill!(
+            s,
+            track,
+            WidgetState::HOVER,
+            WidgetState::HOVER | WidgetState::CHECKED,
+            "switch.track(HOVER|CHECKED).fill"
+        )?
+        .map(|hover| old::composite_over(hover, checked)),
+        hovered_unchecked_background: state_fill(
+            &s.track(WidgetState::HOVER),
+            "switch.track(HOVER).fill",
+        )?
+        .map(|hover| old::composite_over(hover, unchecked)),
+        disabled_checked_background: flag_fill!(
+            s,
+            track,
+            WidgetState::DISABLED,
+            WidgetState::DISABLED | WidgetState::CHECKED,
+            "switch.track(DISABLED|CHECKED).fill"
+        )?,
+        disabled_unchecked_background: state_fill(
+            &s.track(WidgetState::DISABLED),
+            "switch.track(DISABLED).fill",
+        )?,
+        thumb_background: fill(&thumb_on, "switch.thumb(CHECKED).fill")?,
+        unchecked_thumb_background: fill(&thumb_off, "switch.thumb(NONE).fill")?,
+        disabled_thumb_color: flag_fill!(
+            s,
+            thumb,
+            WidgetState::DISABLED,
+            WidgetState::DISABLED | WidgetState::CHECKED,
+            "switch.thumb(DISABLED|CHECKED).fill"
+        )?,
+        disabled_unchecked_thumb_color: state_fill(
+            &s.thumb(WidgetState::DISABLED),
+            "switch.thumb(DISABLED).fill",
+        )?,
+        checked_track_border: edge(&on, "switch.track(CHECKED).stroke")?,
+        unchecked_track_border: edge(&off, "switch.track(NONE).stroke")?,
+        disabled_checked_track_border: flag_edge!(
+            s,
+            track,
+            WidgetState::DISABLED,
+            WidgetState::DISABLED | WidgetState::CHECKED,
+            "switch.track(DISABLED|CHECKED).stroke"
+        )?,
+        disabled_unchecked_track_border: flag_edge!(
+            s,
+            track,
+            WidgetState::DISABLED,
+            WidgetState::DISABLED,
+            "switch.track(DISABLED).stroke"
+        )?,
+        thumb_border: edge(&thumb_off, "switch.thumb(NONE).stroke")?,
+        track_radius: radius_or_iced(&off, "switch.track(NONE).corners")?,
+        track_height,
+        thumb_diameter,
+        unchecked_thumb_diameter,
+    })
+}
+
+/// [`crate::styles::toggler`]: a disabled switch faded as one widget over
+/// the window.
+///
+/// # Errors
+///
+/// [`super::Unmapped`] where the theme states no value the switch needs.
+pub fn toggler(
+    r: &ResolvedTheme,
+) -> Mapped<
+    impl Fn(&Theme, iced_widget::toggler::Status) -> iced_widget::toggler::Style + Clone + use<>,
+> {
+    let window = stated(r.colors.window.background, "colors.window.background")?;
+    toggler_over(r, to_color(window))
+}
+
+/// [`crate::styles::toggler_over`].
+///
+/// # Errors
+///
+/// [`super::Unmapped`] where the theme states no value the switch needs.
+pub fn toggler_over(
+    r: &ResolvedTheme,
+    backdrop: iced_core::Color,
+) -> Mapped<
+    impl Fn(&Theme, iced_widget::toggler::Status) -> iced_widget::toggler::Style + Clone + use<>,
+> {
+    Ok(old::toggler_from(&switch_source(r)?, backdrop))
+}
+
+/// [`crate::styles::pick_list`]: the combo box's field, its label and the
+/// input's placeholder.
+///
+/// # Errors
+///
+/// [`super::Unmapped`] where the theme states no value the field needs.
+pub fn pick_list(
+    r: &ResolvedTheme,
+) -> Mapped<
+    impl Fn(&Theme, iced_widget::pick_list::Status) -> iced_widget::pick_list::Style + Clone + use<>,
+> {
+    let c = &r.combo_box;
+    let rest = c.field(WidgetState::NONE);
+    let hover = c.field(WidgetState::HOVER);
+    let open = c.field(WidgetState::OPEN);
+    let idle = fill(&rest, "combo_box.field(NONE).fill")?;
+    Ok(old::pick_list_from(&PickListSource {
+        background: idle,
+        hovered_background: state_fill(&hover, "combo_box.field(HOVER).fill")?
+            .map(|hover| old::composite_over(hover, idle)),
+        label: text_color(&c.label(WidgetState::NONE), "combo_box.label(NONE).color")?,
+        placeholder: text_color(
+            &r.input.placeholder(WidgetState::NONE),
+            "input.placeholder(NONE).color",
+        )?,
+        open_background: state_fill(&open, "combo_box.field(OPEN).fill")?,
+        border: outline!(rest, "combo_box.field(NONE)")?,
+        hover_border_color: state_line(&hover, "combo_box.field(HOVER).stroke.color")?,
+        open_border_color: state_line(&open, "combo_box.field(OPEN).stroke.color")?,
+    }))
 }
 
 /// [`crate::styles::progress_bar`].

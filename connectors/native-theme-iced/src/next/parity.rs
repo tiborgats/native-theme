@@ -22,11 +22,13 @@
 //!
 //! A difference is allowed only as an entry of [`DIFFERENCES`], with its
 //! reason: a style function whose 0.8.0 stroke lies inside or across the
-//! widget's edge, where 0.7.2 stated no alignment. The entry asserts the
-//! value the 0.8.0 side must give: the 0.7.2 side's own output with each of
-//! its strokes laid where the entry says ([`crate::styles::Line::aligned`]),
-//! so the stroke is composited over the fill each status paints, or over it
-//! at half its alpha; any other value fails. Each (style function, preset)
+//! widget's edge, where 0.7.2 stated no alignment; one whose hovered fill or
+//! stroke the 0.8.0 theme states nothing for, which is iced's own (spec §2,
+//! `from_state`). The entry asserts the value the 0.8.0 side must give: the
+//! 0.7.2 side's own output with each of its strokes laid where the entry
+//! says ([`crate::styles::Line::aligned`]), so the stroke is composited over
+//! the fill each status paints, or over it at half its alpha, and with the
+//! hover options the entry names unset ([`Listed`]); any other value fails. Each (style function, preset)
 //! pair an entry lists must differ in some status, or the entry is stale and
 //! fails.
 
@@ -50,12 +52,39 @@ const PRESETS: &[(&str, Preset)] = &[
 ];
 
 /// A listed difference (plan, section 1, rule 2): the style function, the
-/// presets on which it differs, where the 0.8.0 stroke lies, and why.
+/// presets on which it differs, how the 0.8.0 side differs, and why.
 struct Difference {
     leaf: &'static str,
     presets: &'static [&'static str],
-    align: LineAlign,
-    reason: &'static str,
+    listed: Listed,
+    reason: &'static [&'static str],
+}
+
+/// How a listed style function's 0.8.0 side differs from the 0.7.2 side:
+/// where its strokes lie, and which of its hover options the 0.8.0 theme
+/// leaves to iced. The expected value is the 0.7.2 side's output with its
+/// strokes laid there and those options unset.
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct Listed {
+    pub align: LineAlign,
+    pub hover: Hover,
+}
+
+/// The hover options of a style function's source that the 0.8.0 theme
+/// states nothing for (spec §2, `from_state`), each then iced's own for the
+/// status: the hovered fill, the hovered stroke.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct Hover {
+    pub fill: bool,
+    pub stroke: bool,
+}
+
+impl Hover {
+    /// No hover option left to iced.
+    const STATED: Self = Self {
+        fill: false,
+        stroke: false,
+    };
 }
 
 /// The reason of a translucent stroke the theme lays inside the box.
@@ -82,15 +111,58 @@ const MACOS: &[&str] = &["macos-monterey", "macos-tahoe"];
 /// outside it, `StrokeAlign::Outside`, and do not differ).
 const MACOS_WINDOWS: &[&str] = &["windows-11", "macos-monterey", "macos-tahoe"];
 
+/// The reason of a hovered status the 0.8.0 theme states nothing for.
+const HOVER: &str = "the theme states no value for the hovered widget: 0.7.2 leaves the \
+     soft option unset (docs/inheritance-rules.toml, [no_inheritance]: no rule fills it, \
+     None keeps the look at rest), which its connector drew as the widget at rest; the \
+     0.8.0 theme has no rule for HOVER (the from_state bit clear when queried with HOVER \
+     alone), and the connector keeps iced's own style for that status (docs/v0.8.0-spec.md \
+     §2, from_state; §10, rule 0)";
+
 /// A style function whose stroke lies inside the box on `presets`.
 const fn inside(leaf: &'static str, presets: &'static [&'static str]) -> Difference {
     Difference {
         leaf,
         presets,
-        align: LineAlign::Inside,
-        reason: INSIDE,
+        listed: Listed {
+            align: LineAlign::Inside,
+            hover: Hover::STATED,
+        },
+        reason: &[INSIDE],
     }
 }
+
+/// A style function whose hovered fill (`fill`) or stroke (`stroke`) the
+/// theme states nothing for on `presets`, its strokes laid at `align`.
+const fn hover(
+    leaf: &'static str,
+    presets: &'static [&'static str],
+    align: LineAlign,
+    fill: bool,
+    stroke: bool,
+) -> Difference {
+    Difference {
+        leaf,
+        presets,
+        listed: Listed {
+            align,
+            hover: Hover { fill, stroke },
+        },
+        reason: match align {
+            LineAlign::Outside => &[HOVER],
+            LineAlign::Inside => &[INSIDE, HOVER],
+            LineAlign::Center => &[CENTER, HOVER],
+        },
+    }
+}
+
+/// The presets on which a check box and a radio state a hover fill and no
+/// hover stroke, the stroke outside the box.
+const HOVER_FILL_ONLY: &[&str] = &["adwaita", "material-3", "ios-13"];
+
+/// The presets on which a check box, a radio and a drop-down field state a
+/// hover fill and no hover stroke, the stroke inside the box.
+const HOVER_FILL_ONLY_INSIDE: &[&str] = &["windows-11", "macos-monterey"];
 
 /// The listed differences.
 const DIFFERENCES: &[Difference] = &[
@@ -125,9 +197,63 @@ const DIFFERENCES: &[Difference] = &[
     Difference {
         leaf: "progress_bar",
         presets: &["kde-breeze"],
-        align: LineAlign::Center,
-        reason: CENTER,
+        listed: Listed {
+            align: LineAlign::Center,
+            hover: Hover::STATED,
+        },
+        reason: &[CENTER],
     },
+    // checkbox.indicator and radio.indicator: the hovered fill and stroke
+    // (`indicator(HOVER)`, `indicator(HOVER|CHECKED)`), the strokes of
+    // windows-11 and the macOS presets inside the box. On the macOS presets
+    // that is the transparent unchecked stroke too, which iced is handed as
+    // the fill under it (0.7.2's `checkbox.unchecked_border_color` is
+    // `#00000000`, the home's stroke the same colour, Inside).
+    hover("checkbox", &["kde-breeze"], LineAlign::Outside, true, false),
+    hover("checkbox", HOVER_FILL_ONLY, LineAlign::Outside, false, true),
+    hover(
+        "checkbox",
+        HOVER_FILL_ONLY_INSIDE,
+        LineAlign::Inside,
+        false,
+        true,
+    ),
+    hover("checkbox", &["macos-tahoe"], LineAlign::Inside, true, true),
+    hover("radio", &["kde-breeze"], LineAlign::Outside, true, false),
+    hover("radio", HOVER_FILL_ONLY, LineAlign::Outside, false, true),
+    hover(
+        "radio",
+        HOVER_FILL_ONLY_INSIDE,
+        LineAlign::Inside,
+        false,
+        true,
+    ),
+    hover("radio", &["macos-tahoe"], LineAlign::Inside, true, true),
+    // combo_box.field: the hovered fill and stroke (`field(HOVER)`).
+    hover(
+        "pick_list",
+        &["kde-breeze"],
+        LineAlign::Outside,
+        true,
+        false,
+    ),
+    hover(
+        "pick_list",
+        &["adwaita", "ios-13"],
+        LineAlign::Outside,
+        false,
+        true,
+    ),
+    hover(
+        "pick_list",
+        HOVER_FILL_ONLY_INSIDE,
+        LineAlign::Inside,
+        false,
+        true,
+    ),
+    hover("pick_list", &["macos-tahoe"], LineAlign::Inside, true, true),
+    // switch.track(HOVER): macos-tahoe states no hovered track.
+    hover("toggler", &["macos-tahoe"], LineAlign::Outside, true, false),
 ];
 
 /// The leaves compared and the differences found, for one preset and scheme.
@@ -161,7 +287,7 @@ impl Report {
         leaf: &str,
         old: T,
         new: T,
-        expected: impl Fn(LineAlign) -> T,
+        expected: impl Fn(Listed) -> T,
     ) {
         self.compared += 1;
         if old == new {
@@ -177,14 +303,16 @@ impl Report {
                 .push(format!("{}: {leaf}: {diff}", self.label));
             return;
         };
-        let align = DIFFERENCES.get(i).map_or(LineAlign::Outside, |d| d.align);
-        let expected = expected(align);
+        let Some(listed) = DIFFERENCES.get(i).map(|d| d.listed) else {
+            return;
+        };
+        let expected = expected(listed);
         if expected == new {
             self.listed_seen.push((i, function.to_owned(), self.preset));
         } else {
             let diff = debug_diff(&format!("{expected:?}"), &format!("{new:?}"));
             self.failures.push(format!(
-                "{}: {leaf}: listed as {align:?}, but not the expected value (expected -> \
+                "{}: {leaf}: listed as {listed:?}, but not the expected value (expected -> \
                  0.8.0): {diff}",
                 self.label
             ));
@@ -298,16 +426,35 @@ fn compare_theme(report: &mut Report, old: &Theme, new: &super::Mapped<Theme>) {
 #[cfg(feature = "widgets")]
 macro_rules! style {
     ($report:expr, $themes:expr, $name:literal, $old:expr, $new:expr, $aligned:expr, $statuses:expr) => {{
+        let aligned = $aligned;
+        listed_style!(
+            $report,
+            $themes,
+            $name,
+            $old,
+            $new,
+            move |listed: Listed| aligned(listed.align),
+            $statuses
+        )
+    }};
+}
+
+/// [`style`] of a style function that has hover options the 0.8.0 theme
+/// can leave to iced: `$listed` gives the 0.7.2 side's function as the
+/// whole [`Listed`] says.
+#[cfg(feature = "widgets")]
+macro_rules! listed_style {
+    ($report:expr, $themes:expr, $name:literal, $old:expr, $new:expr, $listed:expr, $statuses:expr) => {{
         let (old_theme, new_theme): (&Theme, &Theme) = $themes;
         let old = $old;
-        let aligned = $aligned;
+        let listed = $listed;
         if let Some(new) = $report.mapped($name, $new) {
             for status in $statuses {
                 $report.leaf(
                     &format!("{}({status:?})", $name),
                     old(old_theme, status),
                     new(new_theme, status),
-                    |align| aligned(align)(old_theme, status),
+                    |l: Listed| listed(l)(old_theme, status),
                 );
             }
         }
@@ -348,7 +495,10 @@ fn compare_styles(
     new: &native_theme::next::ResolvedTheme,
 ) {
     use crate::palette::to_color;
-    use crate::styles::{self as o, ButtonSource, InputSource, Outline, ToolbarButtonSource};
+    use crate::styles::{
+        self as o, ButtonSource, CheckFills, CheckboxSource, InputSource, Outline, PickListSource,
+        SwitchSource, ToolbarButtonSource,
+    };
     use iced_widget::button::Status::{Active, Disabled, Hovered, Pressed};
 
     use super::styles as n;
@@ -440,7 +590,7 @@ fn compare_styles(
                     &format!("{name}({status:?})"),
                     old_fn(old_theme, status),
                     new_fn(new_theme, status),
-                    |a| class_old(Some(a))(old_theme, status),
+                    |l: Listed| class_old(Some(l.align))(old_theme, status),
                 );
             }
         }
@@ -492,6 +642,93 @@ fn compare_styles(
             n::text_editor(new),
             |a| o::text_editor_from(&i.aligned(a)),
             field
+        );
+    }
+
+    {
+        use iced_widget::checkbox::Status;
+        let boxes = [false, true].into_iter().flat_map(|is_checked| {
+            [
+                Status::Active { is_checked },
+                Status::Hovered { is_checked },
+                Status::Disabled { is_checked },
+            ]
+        });
+        let c = CheckboxSource::of(old);
+        let window = to_color(old.defaults.background_color);
+        listed_style!(
+            report,
+            themes,
+            "checkbox",
+            o::checkbox(old),
+            n::checkbox(new),
+            |l: Listed| o::checkbox_from(&c.listed(l.align, l.hover), window),
+            boxes
+        );
+    }
+    {
+        use iced_widget::radio::Status;
+        let circles = [false, true].into_iter().flat_map(|is_selected| {
+            [
+                Status::Active { is_selected },
+                Status::Hovered { is_selected },
+            ]
+        });
+        let c = &old.checkbox;
+        let fills = CheckFills::of(c);
+        listed_style!(
+            report,
+            themes,
+            "radio",
+            o::radio(old),
+            n::radio(new),
+            |l: Listed| o::radio_from(
+                fills.listed(l.align, l.hover),
+                to_color(c.indicator_color),
+                to_color(c.font.color),
+                c.border.line_width,
+            ),
+            circles
+        );
+    }
+    {
+        use iced_widget::toggler::Status;
+        let switches = [false, true].into_iter().flat_map(|is_toggled| {
+            [
+                Status::Active { is_toggled },
+                Status::Hovered { is_toggled },
+                Status::Disabled { is_toggled },
+            ]
+        });
+        let s = SwitchSource::of(old);
+        let window = to_color(old.defaults.background_color);
+        listed_style!(
+            report,
+            themes,
+            "toggler",
+            o::toggler(old),
+            n::toggler(new),
+            |l: Listed| o::toggler_from(&s.listed(l.align, l.hover), window),
+            switches
+        );
+    }
+    {
+        use iced_widget::pick_list::Status;
+        let fields = [
+            Status::Active,
+            Status::Hovered,
+            Status::Opened { is_hovered: false },
+            Status::Opened { is_hovered: true },
+        ];
+        let c = PickListSource::of(old);
+        listed_style!(
+            report,
+            themes,
+            "pick_list",
+            o::pick_list(old),
+            n::pick_list(new),
+            |l: Listed| o::pick_list_from(&c.listed(l.align, l.hover)),
+            fields
         );
     }
 

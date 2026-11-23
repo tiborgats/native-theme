@@ -35,6 +35,17 @@ pub(crate) fn line(part: &PartStyle, home: &'static str) -> Mapped<Line> {
     }
 }
 
+/// [`line`], or, where the part states no stroke (`Stroke::None`), iced's
+/// own border colour, which no width shows.
+pub(crate) fn line_or_none(part: &PartStyle, home: &'static str) -> Mapped<Line> {
+    match part.stroke {
+        Stroke::None if part.stated.contains(PartStated::STROKE) => {
+            Ok(Line::outside(Border::default().color))
+        }
+        _ => line(part, home),
+    }
+}
+
 /// A part's stroke where a rule states it for the queried state, as
 /// [`line`] reads it; `None` where none does.
 pub(crate) fn state_line(part: &PartStyle, home: &'static str) -> Mapped<Option<Line>> {
