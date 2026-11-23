@@ -6490,6 +6490,74 @@ fn a_theme_drawn_spinner_claims_the_homes_it_draws_from() {
     );
 }
 
+/// The Basic page's icon buttons, drop-down box and List frame read the
+/// installed 0.8.0 theme, not the 0.7.2 one kept beside it: over kde-breeze
+/// light with `toolbar.item_gap` patched a `layout.widget_gap` wider, the
+/// drop-down's `combo_box.field(NONE).min_size[0]` a `layout.widget_gap`
+/// past the box's width, and `list.container(NONE).stroke` twice as wide,
+/// the first two icon buttons are the new gap apart, the drop-down's box is
+/// the new width, and the List is three rows and the new frame tall.
+#[gpui::test]
+fn the_basic_icons_drop_down_and_list_frame_follow_the_installed_theme(cx: &mut TestAppContext) {
+    use native_theme::next::{ComboBoxRule, ListRule, PartPatch, Stroke, ThemePatch, WidgetState};
+    use native_theme_gpui::next::{stroke_color_of, stroke_width_of};
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    use_light_preset(&mut cx, &showcase, "kde-breeze");
+    show(&mut cx, &showcase, Page::Basic);
+    let before = bounds_of(&mut cx, "basic-select").size.width;
+    let r = next_theme(&mut cx, &showcase);
+    let Some(mut r) = r else {
+        assert!(r.is_some(), "no 0.8.0 theme is installed");
+        return;
+    };
+    let widget_gap = r.layout.widget_gap;
+    let container = r.list.container(WidgetState::NONE);
+    let frame = stroke_width_of(&container).filter(|w| *w > 0.0);
+    let edge = stroke_color_of(&container).map(|c| {
+        let c = gpui::Rgba::from(c);
+        native_theme::next::Color::new(c.r, c.g, c.b, c.a)
+    });
+    assert!(
+        widget_gap.is_some_and(|g| g > 0.0) && frame.is_some() && edge.is_some(),
+        "kde-breeze light states no widget gap or no List frame to patch"
+    );
+    let (Some(widget_gap), Some(frame), Some(edge)) = (widget_gap, frame, edge) else {
+        return;
+    };
+    let gap = r.toolbar.item_gap.unwrap_or(widget_gap) + widget_gap;
+    let width = before.as_f32() + widget_gap;
+    r.toolbar.item_gap = Some(gap);
+    r.apply_patch(
+        &ThemePatch::new()
+            .combo_box(ComboBoxRule::new().field(PartPatch::new().min_size([Some(width), None])))
+            .list(
+                ListRule::new()
+                    .container(PartPatch::new().stroke(Stroke::uniform(frame + frame, edge))),
+            ),
+    );
+    install_next(&mut cx, &r);
+    show(&mut cx, &showcase, Page::Basic);
+    let copy = bounds_of(&mut cx, "basic-icon-copy");
+    let paste = bounds_of(&mut cx, "basic-icon-paste");
+    assert_eq!(
+        paste.left() - copy.right(),
+        px(gap),
+        "the icon buttons are not the patched toolbar.item_gap apart"
+    );
+    assert_eq!(
+        bounds_of(&mut cx, "basic-select").size.width,
+        px(width),
+        "the drop-down's box is not the patched combo_box.field(NONE).min_size[0] wide"
+    );
+    let list = bounds_of(&mut cx, "basic-list");
+    let row = bounds_of(&mut cx, "basic-list-row-0");
+    assert_eq!(
+        list.size.height,
+        row.size.height * 3. + px(4. * frame),
+        "the List is not three rows and the patched frame tall"
+    );
+}
+
 /// The Basic List shows three of its eight rows: its box is three rows and
 /// its frame tall, so the rest scroll.
 #[gpui::test]

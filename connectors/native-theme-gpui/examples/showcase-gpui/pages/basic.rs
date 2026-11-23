@@ -368,9 +368,7 @@ impl Showcase {
         let section_gap = next_metric(cx, next::geometry::section_gap);
         let window_margin = next_metric(cx, next::geometry::window_margin);
         let width = px(BASIC_WIDTH);
-        let tool_gap = native_value(cx, |n| n.resolved.toolbar.item_gap)
-            .flatten()
-            .map(px);
+        let tool_gap = next_value(cx, |r| r.toolbar.item_gap).flatten().map(px);
 
         let on_radio = cx.listener(|this, ix: &usize, _w, cx| {
             this.basic_radio = Some(*ix);
@@ -529,11 +527,17 @@ impl Showcase {
                         "basic-select",
                         &self.basic_select,
                         "Pick a fruit",
-                        // At least `combo_box.min_width`, which `geometry::select`
-                        // sets on the trigger inside: the box round it too, as
+                        // At least `combo_box.field(NONE).min_size[0]`, which
+                        // `next::geometry::select` sets on the trigger inside
+                        // where the theme states it: the box round it too, as
                         // the iced and egui pages size theirs.
-                        native_value(cx, |n| px(BASIC_WIDTH.max(n.resolved.combo_box.min_width)))
-                            .unwrap_or(width),
+                        next_value(cx, |r| {
+                            r.combo_box
+                                .field(native_theme::next::WidgetState::NONE)
+                                .min_size[0]
+                        })
+                        .flatten()
+                        .map_or(width, |min| px(BASIC_WIDTH.max(min))),
                     )
                     .into_any_element(),
                 ],
@@ -927,7 +931,9 @@ impl Showcase {
     /// frame. A row is measured as the List measures its own
     /// (list/list.rs, `ListState::prepare_items_if_needed`), `wide` wide, so
     /// the height is the row the theme gives, stated or not; the frame is
-    /// `list.border.line_width` above and below.
+    /// `list.container(NONE).stroke.width` above and below, which
+    /// `next::geometry::list` draws, none where the theme states no width
+    /// gpui can take.
     fn basic_list_height(
         &self,
         window: &mut Window,
@@ -941,7 +947,11 @@ impl Showcase {
             window,
             cx,
         );
-        let frame = px(native_value(cx, |n| n.resolved.list.border.line_width).unwrap_or_default());
+        let frame = px(next_value(cx, |r| {
+            crate::info::stroke_width_of(&r.list.container(native_theme::next::WidgetState::NONE))
+        })
+        .flatten()
+        .unwrap_or_default());
         px(f32::from(measured.height) * BASIC_LIST_VISIBLE + f32::from(frame) + f32::from(frame))
     }
 }
