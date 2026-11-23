@@ -50,14 +50,57 @@ fn resolve(
     Ok((old, new))
 }
 
-/// A listed difference: the function, the preset's key, and why.
+/// A listed difference: the function, the preset's key, the 0.8.0 side's
+/// value it asserts there (its `Debug` form), and why.
 struct Difference {
     name: &'static str,
     preset: &'static str,
+    new: &'static str,
     reason: &'static str,
 }
 
-const DIFFERENCES: &[Difference] = &[];
+/// The reason of Breeze's dialog size limits.
+const Z2: &str = "the 0.8.0 theme states no dialog size limits where no source gives them \
+     (docs/v0.8.0-spec.md §5, issue #4's leftovers, Z2: `dialog.panel.min_size` / `max_size`, \
+     `None`); 0.7.2's kde-breeze preset states values no source gives";
+
+/// The reason of Breeze's button height floor.
+const Z1: &str = "the 0.8.0 theme states a button's minimum width and no minimum height \
+     (docs/v0.8.0-spec.md §5, issue #4's leftovers, Z1: `button.body.min_size`, \
+     `[Some(w), None]`); 0.7.2's kde-breeze preset states a height";
+
+const DIFFERENCES: &[Difference] = &[
+    Difference {
+        name: "dialog_max_width",
+        preset: "kde-breeze",
+        new: "None",
+        reason: Z2,
+    },
+    Difference {
+        name: "dialog_max_height",
+        preset: "kde-breeze",
+        new: "None",
+        reason: Z2,
+    },
+    Difference {
+        name: "dialog_min_width",
+        preset: "kde-breeze",
+        new: "None",
+        reason: Z2,
+    },
+    Difference {
+        name: "dialog_min_height",
+        preset: "kde-breeze",
+        new: "None",
+        reason: Z2,
+    },
+    Difference {
+        name: "button_content_min_size",
+        preset: "kde-breeze",
+        new: "Ok([Some(68.0), None])",
+        reason: Z1,
+    },
+];
 
 /// The pairs compared on one preset and scheme.
 struct Pairs {
@@ -73,10 +116,9 @@ impl Pairs {
         if old == new {
             return;
         }
-        if DIFFERENCES
-            .iter()
-            .any(|d| d.name == name && d.preset == self.preset && !d.reason.is_empty())
-        {
+        if DIFFERENCES.iter().any(|d| {
+            d.name == name && d.preset == self.preset && d.new == new && !d.reason.is_empty()
+        }) {
             self.seen.push((name, self.preset));
             return;
         }
@@ -198,6 +240,158 @@ fn accessors(p: &mut Pairs, old: &crate::ResolvedTheme, new: &native_theme::next
     );
 }
 
+/// The crate root's helpers.
+fn helpers(p: &mut Pairs, old: &crate::ResolvedTheme, new: &native_theme::next::ResolvedTheme) {
+    p.pair(
+        "border_color",
+        ok(crate::border_color(old)),
+        super::border_color(new),
+    );
+    p.pair(
+        "border_corner_radius",
+        crate::border_corner_radius(old),
+        super::border_corner_radius(new),
+    );
+    p.pair(
+        "border_corner_radius_lg",
+        crate::border_corner_radius_lg(old),
+        super::border_corner_radius_lg(new),
+    );
+    p.pair(
+        "focus_ring_color",
+        crate::focus_ring_color(old),
+        super::focus_ring_color(new),
+    );
+    p.pair("link_color", crate::link_color(old), super::link_color(new));
+    p.pair(
+        "selection_background",
+        crate::selection_background(old),
+        super::selection_background(new),
+    );
+    p.pair("info_color", crate::info_color(old), super::info_color(new));
+    p.pair(
+        "info_text_color",
+        crate::info_text_color(old),
+        super::info_text_color(new),
+    );
+    p.pair(
+        "warning_text_color",
+        crate::warning_text_color(old),
+        super::warning_text_color(new),
+    );
+    p.pair(
+        "dialog_title_font_color",
+        ok(crate::dialog_title_font_color(old)),
+        super::dialog_title_font_color(new),
+    );
+    p.pair(
+        "expander_arrow_color",
+        ok(crate::expander_arrow_color(old)),
+        super::expander_arrow_color(new),
+    );
+    p.pair(
+        "font_family",
+        crate::font_family(old),
+        super::font_family(new),
+    );
+    p.pair(
+        "mono_font_family",
+        crate::mono_font_family(old),
+        super::mono_font_family(new),
+    );
+    let prefs = crate::AccessibilityPreferences::default();
+    p.pair(
+        "font_size",
+        crate::font_size(old, &prefs),
+        super::font_size(new),
+    );
+    p.pair(
+        "mono_font_size",
+        crate::mono_font_size(old, &prefs),
+        super::mono_font_size(new),
+    );
+    p.pair(
+        "dialog_max_width",
+        Some(crate::dialog_max_width(old)),
+        super::dialog_max_width(new),
+    );
+    p.pair(
+        "dialog_max_height",
+        Some(crate::dialog_max_height(old)),
+        super::dialog_max_height(new),
+    );
+    p.pair(
+        "dialog_min_width",
+        Some(crate::dialog_min_width(old)),
+        super::dialog_min_width(new),
+    );
+    p.pair(
+        "dialog_min_height",
+        Some(crate::dialog_min_height(old)),
+        super::dialog_min_height(new),
+    );
+    p.pair(
+        "list_header_height",
+        crate::list_header_height(old),
+        super::list_header_height(new),
+    );
+    p.pair(
+        "toolbar_bar_height",
+        crate::toolbar_bar_height(old),
+        super::toolbar_bar_height(new),
+    );
+    p.pair(
+        "toolbar_item_gap",
+        crate::toolbar_item_gap(old),
+        super::toolbar_item_gap(new),
+    );
+    p.pair(
+        "toolbar_border_line_width",
+        ok(crate::toolbar_border_line_width(old)),
+        super::toolbar_border_line_width(new),
+    );
+    let own = iced_core::Padding::new(1.0);
+    p.pair(
+        "dialog_padding",
+        ok(crate::dialog_padding(old, own)),
+        super::dialog_padding(new, own),
+    );
+    p.pair(
+        "toolbar_padding",
+        crate::toolbar_padding(old, own),
+        super::toolbar_padding(new, own),
+    );
+    #[cfg(feature = "widgets")]
+    {
+        p.pair(
+            "button_padding",
+            ok(crate::button_padding(old)),
+            super::button_padding(new),
+        );
+        p.pair(
+            "input_padding",
+            ok(crate::input_padding(old)),
+            super::input_padding(new),
+        );
+        p.pair(
+            "text_area_padding",
+            ok(crate::text_area_padding(old)),
+            super::text_area_padding(new),
+        );
+        p.pair(
+            "combo_box_padding",
+            ok(crate::combo_box_padding(old)),
+            super::combo_box_padding(new),
+        );
+        let s = crate::button_content_min_size(old);
+        p.pair(
+            "button_content_min_size",
+            ok([Some(s.width), Some(s.height)]),
+            super::button_content_min_size(new),
+        );
+    }
+}
+
 #[test]
 fn the_crate_roots_functions_agree_on_both_models() -> crate::Result<()> {
     let mut failures = Vec::new();
@@ -212,11 +406,16 @@ fn the_crate_roots_functions_agree_on_both_models() -> crate::Result<()> {
                 seen: Vec::new(),
             };
             accessors(&mut p, &old, &new);
+            helpers(&mut p, &old, &new);
             failures.extend(p.failures);
             seen.extend(p.seen);
         }
     }
     for d in DIFFERENCES {
+        // The button's helpers are compared with the `widgets` feature only.
+        if d.name == "button_content_min_size" && !cfg!(feature = "widgets") {
+            continue;
+        }
         if !seen.contains(&(d.name, d.preset)) {
             failures.push(format!(
                 "{} on {}: listed, but differs nowhere",

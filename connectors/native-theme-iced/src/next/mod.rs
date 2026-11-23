@@ -63,8 +63,8 @@ use std::time::Duration;
 
 use iced_core::Color as IcedColor;
 use native_theme::next::{
-    Color, DialogButtonOrder, IconSizes, InputQuery, Orientation, Paint, PartStated, PartStyle,
-    ResolvedTheme, Scheme, Stroke, StyleQuery, TextStated, TextStyle, WidgetState,
+    Color, DialogButtonOrder, IconSizes, IconStated, InputQuery, Orientation, Paint, PartStated,
+    PartStyle, ResolvedTheme, Scheme, Stroke, StyleQuery, TextStated, TextStyle, WidgetState,
 };
 
 use crate::ColorMode;
@@ -434,4 +434,364 @@ pub fn tooltip_show_delay(r: &ResolvedTheme) -> Option<Duration> {
     r.timings
         .tooltip_show_ms
         .map(|ms| Duration::from_millis(u64::from(ms)))
+}
+
+// ---------------------------------------------------------------------------
+// The crate root's helpers, each read at its home in the table of homes
+// ---------------------------------------------------------------------------
+
+/// [`crate::border_color`]: the border and divider colour
+/// (`colors.window.border`), into which the model has already folded the
+/// border opacity.
+///
+/// # Errors
+///
+/// [`Unmapped`] where the theme states no window border colour.
+pub fn border_color(r: &ResolvedTheme) -> Mapped<IcedColor> {
+    stated(r.colors.window.border, "colors.window.border").map(to_color)
+}
+
+/// [`crate::border_corner_radius`]: the default corner radius
+/// (`layout.corner_radius`).
+#[must_use]
+pub fn border_corner_radius(r: &ResolvedTheme) -> f32 {
+    r.layout.corner_radius
+}
+
+/// [`crate::border_corner_radius_lg`]: the default large corner radius
+/// (`layout.corner_radius_lg`).
+#[must_use]
+pub fn border_corner_radius_lg(r: &ResolvedTheme) -> f32 {
+    r.layout.corner_radius_lg
+}
+
+/// [`crate::focus_ring_color`]: the focus indicator's colour
+/// (`colors.focus_ring`).
+#[must_use]
+pub fn focus_ring_color(r: &ResolvedTheme) -> IcedColor {
+    to_color(r.colors.focus_ring)
+}
+
+/// [`crate::link_color`]: the hyperlink colour (`colors.link`).
+#[must_use]
+pub fn link_color(r: &ResolvedTheme) -> IcedColor {
+    to_color(r.colors.link)
+}
+
+/// [`crate::selection_background`]: the selection's fill
+/// (`colors.selection.background`).
+#[must_use]
+pub fn selection_background(r: &ResolvedTheme) -> IcedColor {
+    to_color(r.colors.selection.background)
+}
+
+/// [`crate::info_color`]: the info colour (`colors.info.fill`), which iced's
+/// extended palette has no family for.
+#[must_use]
+pub fn info_color(r: &ResolvedTheme) -> IcedColor {
+    to_color(r.colors.info.fill)
+}
+
+/// [`crate::info_text_color`]: the text colour on an info fill
+/// (`colors.info.foreground`).
+#[must_use]
+pub fn info_text_color(r: &ResolvedTheme) -> IcedColor {
+    to_color(r.colors.info.foreground)
+}
+
+/// [`crate::warning_text_color`]: the text colour on a warning fill
+/// (`colors.warning.foreground`).
+#[must_use]
+pub fn warning_text_color(r: &ResolvedTheme) -> IcedColor {
+    to_color(r.colors.warning.foreground)
+}
+
+/// [`crate::dialog_title_font_color`]: the colour of a dialog's title
+/// (`dialog.title.color`).
+///
+/// # Errors
+///
+/// [`Unmapped`] where the theme states no title colour.
+pub fn dialog_title_font_color(r: &ResolvedTheme) -> Mapped<IcedColor> {
+    text_color(&r.dialog.title, "dialog.title.color")
+}
+
+/// [`crate::expander_arrow_color`]: the colour of an expander's disclosure
+/// arrow (`expander.arrow(NONE).color`), and the header label's
+/// (`expander.header_label(NONE).color`) where the theme states none.
+///
+/// # Errors
+///
+/// [`Unmapped`] where the theme states neither.
+pub fn expander_arrow_color(r: &ResolvedTheme) -> Mapped<IcedColor> {
+    let x = &r.expander;
+    let arrow = x.arrow(WidgetState::NONE);
+    if arrow.stated.contains(IconStated::COLOR) {
+        return Ok(to_color(arrow.color));
+    }
+    text_color(
+        &x.header_label(WidgetState::NONE),
+        "expander.header_label(NONE).color",
+    )
+}
+
+/// [`crate::font_family`]: the body text's family as stated
+/// (`typography.body.family`).
+#[must_use]
+pub fn font_family(r: &ResolvedTheme) -> &str {
+    &r.typography.body.family
+}
+
+/// [`crate::mono_font_family`]: the monospace text's family as stated
+/// (`typography.monospace.family`).
+#[must_use]
+pub fn mono_font_family(r: &ResolvedTheme) -> &str {
+    &r.typography.monospace.family
+}
+
+/// [`crate::font_size`]: the body text's size in logical pixels
+/// (`typography.body.size_px`), already scaled by the text scale the theme
+/// was resolved for, so no preferences are passed.
+#[must_use]
+pub fn font_size(r: &ResolvedTheme) -> f32 {
+    r.typography.body.size_px
+}
+
+/// [`crate::mono_font_size`]: the monospace text's size in logical pixels
+/// (`typography.monospace.size_px`), already scaled as [`font_size`]'s.
+#[must_use]
+pub fn mono_font_size(r: &ResolvedTheme) -> f32 {
+    r.typography.monospace.size_px
+}
+
+/// [`crate::dialog_max_width`]: a dialog's greatest width in logical pixels
+/// (`dialog.panel.max_size[0]`), `None` where the theme states none.
+#[must_use]
+pub fn dialog_max_width(r: &ResolvedTheme) -> Option<f32> {
+    r.dialog.panel.max_size[0]
+}
+
+/// [`crate::dialog_max_height`]: a dialog's greatest height in logical
+/// pixels (`dialog.panel.max_size[1]`), `None` where the theme states none.
+#[must_use]
+pub fn dialog_max_height(r: &ResolvedTheme) -> Option<f32> {
+    r.dialog.panel.max_size[1]
+}
+
+/// [`crate::dialog_min_width`]: a dialog's least width in logical pixels
+/// (`dialog.panel.min_size[0]`), `None` where the theme states none.
+#[must_use]
+pub fn dialog_min_width(r: &ResolvedTheme) -> Option<f32> {
+    r.dialog.panel.min_size[0]
+}
+
+/// [`crate::dialog_min_height`]: a dialog's least height in logical pixels
+/// (`dialog.panel.min_size[1]`), `None` where the theme states none.
+#[must_use]
+pub fn dialog_min_height(r: &ResolvedTheme) -> Option<f32> {
+    r.dialog.panel.min_size[1]
+}
+
+/// [`crate::list_header_height`]: a table header row's height in logical
+/// pixels (`list.header(NONE).min_size[1]`), `None` where the theme states
+/// none.
+#[must_use]
+pub fn list_header_height(r: &ResolvedTheme) -> Option<f32> {
+    r.list.header(WidgetState::NONE).min_size[1]
+}
+
+/// [`crate::toolbar_bar_height`]: a toolbar's least outer height in logical
+/// pixels (`toolbar.bar(NONE).min_size[1]`), `None` where the theme states
+/// none.
+#[must_use]
+pub fn toolbar_bar_height(r: &ResolvedTheme) -> Option<f32> {
+    r.toolbar.bar(WidgetState::NONE).min_size[1]
+}
+
+/// [`crate::toolbar_item_gap`]: the space between a toolbar's items in
+/// logical pixels (`toolbar.item_gap`).
+#[must_use]
+pub fn toolbar_item_gap(r: &ResolvedTheme) -> Option<f32> {
+    r.toolbar.item_gap
+}
+
+/// [`crate::toolbar_border_line_width`]: the height of the rule under a
+/// toolbar in logical pixels (`toolbar.bar(NONE).stroke.width`).
+///
+/// # Errors
+///
+/// [`Unmapped`] where the theme states no stroke for the bar, or a stroke
+/// per side.
+pub fn toolbar_border_line_width(r: &ResolvedTheme) -> Mapped<f32> {
+    let bar = r.toolbar.bar(WidgetState::NONE);
+    if !bar.stated.contains(PartStated::STROKE) {
+        return Err(Unmapped("toolbar.bar(NONE).stroke.width"));
+    }
+    line_width(&bar, "toolbar.bar(NONE).stroke.width")
+}
+
+/// A part's stroke width as iced outlines it: the stated one, a stated
+/// `Stroke::None` no width, and the width of iced's own border,
+/// `Border::default()`, where the theme states none (spec §10, rule 0).
+fn line_width(part: &PartStyle, home: &'static str) -> Mapped<f32> {
+    if !part.stated.contains(PartStated::STROKE) {
+        return Ok(iced_core::Border::default().width);
+    }
+    match &part.stroke {
+        Stroke::None => Ok(0.0),
+        Stroke::Uniform { width, .. } => Ok(*width),
+        _ => Err(Unmapped(home)),
+    }
+}
+
+/// A part's padding, each side the stated side plus `extra`, and
+/// `default`'s side where the theme states none.
+fn padding_with(part: &PartStyle, extra: f32, default: iced_core::Padding) -> iced_core::Padding {
+    let side = |bit: PartStated, v: f32, own: f32| {
+        if part.stated.contains(bit) {
+            v + extra
+        } else {
+            own
+        }
+    };
+    let p = &part.padding;
+    iced_core::Padding {
+        top: side(PartStated::PADDING_TOP, p.top, default.top),
+        right: side(PartStated::PADDING_RIGHT, p.right, default.right),
+        bottom: side(PartStated::PADDING_BOTTOM, p.bottom, default.bottom),
+        left: side(PartStated::PADDING_LEFT, p.left, default.left),
+    }
+}
+
+/// [`crate::padding_inside_border`] of a part: each stated side plus the
+/// part's stroke width ([`line_width`]), `default`'s side where the theme
+/// states none.
+fn padding_inside(
+    part: &PartStyle,
+    default: iced_core::Padding,
+    home: &'static str,
+) -> Mapped<iced_core::Padding> {
+    Ok(padding_with(part, line_width(part, home)?, default))
+}
+
+/// [`crate::dialog_padding`]: the padding inside a dialog's border
+/// (`dialog.panel`'s padding and stroke width), `default`'s side where the
+/// theme states none.
+///
+/// # Errors
+///
+/// [`Unmapped`] where the panel's stroke is per side.
+pub fn dialog_padding(
+    r: &ResolvedTheme,
+    default: iced_core::Padding,
+) -> Mapped<iced_core::Padding> {
+    padding_inside(&r.dialog.panel, default, "dialog.panel.stroke.width")
+}
+
+/// [`crate::toolbar_padding`]: the padding of a toolbar's bar
+/// (`toolbar.bar(NONE).padding`), `default`'s side where the theme states
+/// none; the bar's edge is the rule under it, so no line width is added.
+#[must_use]
+pub fn toolbar_padding(r: &ResolvedTheme, default: iced_core::Padding) -> iced_core::Padding {
+    padding_with(&r.toolbar.bar(WidgetState::NONE), 0.0, default)
+}
+
+/// [`crate::button_padding`]: the padding inside a button's border
+/// (`button.body(NONE)`), iced's `button::DEFAULT_PADDING` side where the
+/// theme states none.
+///
+/// # Errors
+///
+/// [`Unmapped`] where the body's stroke is per side.
+#[cfg(feature = "widgets")]
+pub fn button_padding(r: &ResolvedTheme) -> Mapped<iced_core::Padding> {
+    padding_inside(
+        &r.button.body(WidgetState::NONE),
+        iced_widget::button::DEFAULT_PADDING,
+        "button.body(NONE).stroke.width",
+    )
+}
+
+/// [`crate::input_padding`]: the padding inside a text input's border
+/// (`input.field(NONE)`), iced's `text_input::DEFAULT_PADDING` side where
+/// the theme states none.
+///
+/// # Errors
+///
+/// [`Unmapped`] where the field's stroke is per side.
+#[cfg(feature = "widgets")]
+pub fn input_padding(r: &ResolvedTheme) -> Mapped<iced_core::Padding> {
+    padding_inside(
+        &r.input.field(InputQuery::from(WidgetState::NONE)),
+        iced_widget::text_input::DEFAULT_PADDING,
+        "input.field(NONE).stroke.width",
+    )
+}
+
+/// [`crate::text_area_padding`]: the padding inside a text editor's border
+/// (`text_area.field(NONE)`), the text editor's own padding on a side the
+/// theme states none for.
+///
+/// # Errors
+///
+/// [`Unmapped`] where the field's stroke is per side.
+#[cfg(feature = "widgets")]
+pub fn text_area_padding(r: &ResolvedTheme) -> Mapped<iced_core::Padding> {
+    padding_inside(
+        &r.text_area.field(InputQuery::from(WidgetState::NONE)),
+        iced_core::Padding::new(crate::TEXT_EDITOR_PADDING),
+        "text_area.field(NONE).stroke.width",
+    )
+}
+
+/// [`crate::combo_box_padding`]: the padding inside a drop-down's border
+/// (`combo_box.field(NONE)`), iced's `button::DEFAULT_PADDING` side where
+/// the theme states none, the right side widened to centre the chevron
+/// (`combo_box.chevron(NONE).size`) in its column
+/// (`combo_box.arrow_area_width`) where the theme states both the column
+/// and the right side.
+///
+/// # Errors
+///
+/// [`Unmapped`] where the field's stroke is per side.
+#[cfg(feature = "widgets")]
+pub fn combo_box_padding(r: &ResolvedTheme) -> Mapped<iced_core::Padding> {
+    let c = &r.combo_box;
+    let field = c.field(WidgetState::NONE);
+    let pad = padding_inside(
+        &field,
+        iced_widget::button::DEFAULT_PADDING,
+        "combo_box.field(NONE).stroke.width",
+    )?;
+    let chevron = c.chevron(WidgetState::NONE);
+    Ok(
+        match (
+            field.stated.contains(PartStated::PADDING_RIGHT),
+            c.arrow_area_width,
+        ) {
+            (true, Some(column)) => {
+                pad.right(pad.right + crate::arrow_column_margin(column, chevron.size))
+            }
+            _ => pad,
+        },
+    )
+}
+
+/// [`crate::button_content_min_size`]: a button's least size on each axis
+/// (`button.body(NONE).min_size`) less its padding ([`button_padding`]),
+/// no less than 0, for [`crate::at_least`]'s floor; `None` on an axis the
+/// theme states no minimum for (issue #4's `Z1`: a minimum width and no
+/// minimum height).
+///
+/// # Errors
+///
+/// [`Unmapped`] where the body's stroke is per side.
+#[cfg(feature = "widgets")]
+pub fn button_content_min_size(r: &ResolvedTheme) -> Mapped<[Option<f32>; 2]> {
+    let [width, height] = r.button.body(WidgetState::NONE).min_size;
+    let p = button_padding(r)?;
+    Ok([
+        width.map(|w| (w - p.left - p.right).max(0.0)),
+        height.map(|h| (h - p.top - p.bottom).max(0.0)),
+    ])
 }

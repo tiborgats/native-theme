@@ -305,6 +305,12 @@ name = "dialog_padding"
 kind = "absent"
 reason = "the atlas writes `dialog.border.padding` to the dialog surface's `inner_margin` (src/mapping.md, `dialog.border.padding.*`: SCOPED), the frame `native_frame(Surface::Dialog)` returns"
 
+[[exception]]
+connector = "gpui"
+name = ["next::border_color", "next::border_corner_radius", "next::border_corner_radius_lg", "next::button_content_min_size", "next::button_padding", "next::combo_box_padding", "next::dialog_max_height", "next::dialog_max_width", "next::dialog_min_height", "next::dialog_min_width", "next::dialog_padding", "next::dialog_title_font_color", "next::expander_arrow_color", "next::focus_ring_color", "next::font_family", "next::font_size", "next::info_color", "next::info_text_color", "next::input_padding", "next::link_color", "next::list_header_height", "next::mono_font_family", "next::mono_font_size", "next::selection_background", "next::text_area_padding", "next::toolbar_bar_height", "next::toolbar_border_line_width", "next::toolbar_item_gap", "next::toolbar_padding", "next::warning_text_color"]
+kind = "absent"
+reason = "iced's `next` gives each of iced's crate-root helpers a twin on the 0.8.0 model, and gpui's crate root has none of them, each for the reason its entry above gives for the root name: gpui-component takes the value through the `Theme` that `to_theme` writes, or through a `geometry` builder; gpui's `next` gives its own `to_theme` and each `geometry` builder a twin of the same name on the 0.8.0 model (connectors/native-theme-gpui/src/next/mod.rs, the module's doc), so it has the same receivers and needs none of these"
+
 # ── installing a theme, and watching the OS ─────────────────────────────────
 
 [[exception]]
