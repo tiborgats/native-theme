@@ -2867,6 +2867,7 @@ pub(crate) fn windows_cases() -> Vec<(
         AccessibilityData, AllFonts, CARET_BLINK_NONE, SysColors, WidgetSizing, WindowsSettings,
     };
     const WHITE: crate::Rgba = crate::Rgba::rgb(255, 255, 255);
+    const HIGH_CONTRAST: &[&str] = &["button.hover_border_color", "expander.hover_background"];
     let shades = || [1, 2, 3, 4, 5, 6].map(|b| Some(crate::Rgba::rgb(0, 0, b)));
     let named_fonts = || {
         let spec = |size, weight| crate::model::FontSpec {
@@ -2995,12 +2996,15 @@ pub(crate) fn windows_cases() -> Vec<(
             },
             &[],
         ),
+        // M2.FS4: the button's hover outline and the expander header's fill are listed differences
+        // of the table (`next_homes.toml`), whose values are the preset's colours, which high
+        // contrast replaces.
         (
             "high contrast, light",
             high_contrast(crate::Rgba::rgb(0, 0, 0)),
-            &[],
+            HIGH_CONTRAST,
         ),
-        ("high contrast, dark", high_contrast(WHITE), &[]),
+        ("high contrast, dark", high_contrast(WHITE), HIGH_CONTRAST),
         (
             "a caret blink time",
             WindowsSettings {

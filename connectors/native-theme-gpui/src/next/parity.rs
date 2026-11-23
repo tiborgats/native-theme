@@ -400,6 +400,37 @@ const DIFFERENCES: &[Difference] = &[
                  in the tint, so the refinement's background and text colour are those; every \
                  other field of the refinement is equal",
     },
+    Difference {
+        leaf: "geometry::accordion_hover",
+        presets: &["kde-breeze", "windows-11"],
+        reason: "0.7.2 states no expander.hover_background, so its refinement sets no \
+                 background and the header keeps gpui-component's own; the 0.8.0 presets \
+                 state the header's look under the pointer (spec §2, from_state; \
+                 native-theme/tests/next_homes.toml, row expander.hover_background, a listed \
+                 difference): on kde-breeze no fill, transparent, KCollapsibleGroupBox \
+                 painting the arrow and the title only (docs/platform-facts.md §2.27, \
+                 hover_background; kcollapsiblegroupbox.cpp:153-182 at kwidgetsaddons \
+                 v6.30.0), on windows-11 the header's rest fill \
+                 CardBackgroundFillColorDefault, which no PointerOver state sets \
+                 (Expander.xaml:111, Expander_themeresources.xaml:29, :5, :122-165 at \
+                 microsoft-ui-xaml 8463f45), so the refinement's background is that fill; it \
+                 sets nothing else",
+    },
+    Difference {
+        leaf: "variants::bordered_button",
+        presets: &["adwaita", "windows-11"],
+        reason: "0.7.2 states no button.hover_border_color, so the bordered variant gets no \
+                 hover border (`None`) and the caller keeps gpui-component's Default variant, \
+                 which draws the input token there (gpui-component 0.10.0 \
+                 button/button.rs:1100-1102); the 0.8.0 presets state the rest outline for HOVER, \
+                 where the platform keeps it (spec §2, from_state; \
+                 native-theme/tests/next_homes.toml, row button.hover_border_color, a listed \
+                 difference): adwaita, whose raised button's :hover sets only the background \
+                 (_buttons.scss:28-42 at libadwaita 1.10.0), and windows-11, whose \
+                 ButtonBorderBrushPointerOver is the rest brush (Button_themeresources.xaml:137, \
+                 :136 at microsoft-ui-xaml 8463f45); so the hover outline is \
+                 button.body(NONE)'s stroke colour",
+    },
 ];
 
 /// The presets of [`DIFFERENCES`]' `geometry::group_box_content` entries
@@ -1045,7 +1076,28 @@ fn compare_builders(
     }
     builder!(report, old, new, accordion_title);
     builder!(report, old, new, accordion);
-    builder!(report, old, new, accordion_hover);
+    let accordion_hover = "geometry::accordion_hover";
+    match report.listed(accordion_hover) {
+        Some(listed) => {
+            if let Some(n) = report.mapped(accordion_hover, super::builders::accordion_hover(new)) {
+                use native_theme::next::WidgetState;
+                report.count(accordion_hover);
+                let o = crate::geometry::accordion_hover(Native::unscaled(old));
+                let stated = super::state_fill_of(&new.expander.header(WidgetState::HOVER));
+                if old.expander.hover_background.is_some()
+                    || stated.is_none()
+                    || n != crate::geometry::accordion_hover_from(stated)
+                {
+                    report.failures.push(format!(
+                        "{}: {accordion_hover}: the listed difference ({}) no longer \
+                         describes it: 0.7.2 {o:?}, 0.8.0 {n:?}",
+                        report.label, listed.reason
+                    ));
+                }
+            }
+        }
+        None => builder!(report, old, new, accordion_hover),
+    }
     builder!(report, old, new, spinner_size);
     builder!(report, old, new, link);
     compare_mapped(
@@ -1129,12 +1181,30 @@ fn compare_builders(
     layout_metric!(report, layout, new, container_margin);
     layout_metric!(report, layout, new, window_margin);
     layout_metric!(report, layout, new, section_gap);
-    compare_mapped(
-        report,
-        "variants::bordered_button",
-        crate::variants::hover_border(Native::unscaled(old)),
-        super::builders::hover_border(new),
-    );
+    let bordered = "variants::bordered_button";
+    match report.listed(bordered) {
+        Some(listed) => {
+            if let Some(n) = report.mapped(bordered, super::builders::hover_border(new)) {
+                use native_theme::next::WidgetState;
+                report.count(bordered);
+                let o = crate::variants::hover_border(Native::unscaled(old));
+                let rest = super::stroke_color_of(&new.button.body(WidgetState::NONE));
+                if o.is_some() || n.is_none() || n != rest {
+                    report.failures.push(format!(
+                        "{}: {bordered}: the listed difference ({}) no longer describes \
+                         it: 0.7.2 {o:?}, 0.8.0 {n:?}",
+                        report.label, listed.reason
+                    ));
+                }
+            }
+        }
+        None => compare_mapped(
+            report,
+            bordered,
+            crate::variants::hover_border(Native::unscaled(old)),
+            super::builders::hover_border(new),
+        ),
+    }
     compare_mapped(
         report,
         "variants::default_button",

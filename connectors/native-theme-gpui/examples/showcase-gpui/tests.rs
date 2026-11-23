@@ -19185,36 +19185,73 @@ fn a_refined_buttons_info_claims_an_edge_only_where_one_is_drawn() {
     );
 }
 
-/// A Bordered Button is built as the stock `Default` one where no rule of
-/// the installed 0.8.0 theme states a hovered button's stroke,
-/// `button.body(HOVER).stroke.color` (adwaita, both modes), so its info is
-/// `Default`'s, and as itself where one does (kde-breeze).
+/// A Bordered Button is built as itself under every bundled 0.8.0 theme a
+/// rule of which states a hovered button's stroke,
+/// `button.body(HOVER).stroke.color`, and as the stock `Default` one under
+/// one that states none; at least one preset states it. Where no bundled
+/// preset leaves it unstated, `a_bordered_button_is_the_default_one_where_no_hover_border_is_stated`
+/// tests that branch on `ButtonKind::built_with`.
 #[gpui::test]
-fn a_bordered_button_is_the_default_one_where_no_hover_border_is_stated(cx: &mut TestAppContext) {
+fn a_bordered_button_is_itself_where_a_hover_border_is_stated(cx: &mut TestAppContext) {
     use crate::demo::ButtonKind;
-    use native_theme::next::{Preset, Scheme, Theme as NextTheme, ThemeContext};
+    use native_theme::next::{
+        PartStated, Preset, Scheme, Theme as NextTheme, ThemeContext, WidgetState,
+    };
     cx.update(|cx| {
         gpui_kit::init(cx);
-        for (preset, built) in [
-            (Preset::Adwaita, ButtonKind::Default),
-            (Preset::KdeBreeze, ButtonKind::Bordered),
-        ] {
+        let mut bordered = 0usize;
+        for &preset in Preset::ALL {
             for is_dark in [false, true] {
                 let scheme = if is_dark { Scheme::Dark } else { Scheme::Light };
                 let r =
                     NextTheme::preset(preset).resolve(&ThemeContext::default().with_scheme(scheme));
                 let installed = native_theme_gpui::next::apply(&r, cx);
                 assert!(installed.is_ok(), "{preset:?}/{is_dark}: {installed:?}");
+                let stated = r
+                    .button
+                    .body(WidgetState::HOVER)
+                    .from_state
+                    .contains(PartStated::STROKE);
+                let expected = if stated {
+                    bordered += 1;
+                    ButtonKind::Bordered
+                } else {
+                    ButtonKind::Default
+                };
                 let got = ButtonKind::Bordered.built(cx);
                 assert!(
-                    got == built,
+                    got == expected,
                     "{preset:?}/{is_dark}: a Bordered Button is built as {}, not {}",
                     got.name(),
-                    built.name()
+                    expected.name()
                 );
             }
         }
+        assert!(
+            bordered > 0,
+            "no bundled 0.8.0 preset states button.body(HOVER).stroke, so a Bordered Button is never built as itself"
+        );
     });
+}
+
+/// A Bordered Button is built as the stock `Default` one where the theme
+/// states no hover border, as a user theme may, and as itself where it
+/// states one; every other kind is built as itself either way.
+#[test]
+fn a_bordered_button_is_the_default_one_where_no_hover_border_is_stated() {
+    use crate::demo::ButtonKind;
+    assert!(ButtonKind::Bordered.built_with(false) == ButtonKind::Default);
+    assert!(ButtonKind::Bordered.built_with(true) == ButtonKind::Bordered);
+    for kind in [ButtonKind::Default, ButtonKind::Primary, ButtonKind::Ghost] {
+        for hover_border in [false, true] {
+            assert!(
+                kind.built_with(hover_border) == kind,
+                "a {} Button is built as {}",
+                kind.name(),
+                kind.built_with(hover_border).name()
+            );
+        }
+    }
 }
 
 /// A disabled refined Button's info prints the fade `geometry::button_disabled`

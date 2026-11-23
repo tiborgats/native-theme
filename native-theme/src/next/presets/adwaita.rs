@@ -145,6 +145,7 @@ use crate::next::platform::adw_standalone::adw_standalone;
 use crate::next::preset::{Preset, ResolveInputs};
 use crate::next::presets::helpers::{
     Motion, dialog_entrance, linear_font_px, motion, motion_tokens, physical_edges,
+    rest_color_rules,
 };
 use crate::next::query::{
     ButtonVariant, Contrast, Direction, Orientation, Scheme, ThemeContext, WidgetState,
@@ -202,6 +203,11 @@ struct SchemeColors {
     button_hover: Color,
     button_pressed: Color,
     checkbox_background: Color,
+    button_active_layer: Color,
+    trough_active: Color,
+    view_active: Color,
+    active_layer: Color,
+    hover_layer: Color,
     frame: Color,
     row_hover: Color,
     list_alternate_row: Color,
@@ -343,6 +349,24 @@ const LIGHT: SchemeColors = SchemeColors {
     // `checkbox.unchecked_background`: no disabled_background / disabled_text_color:
     // platform-facts.md (§2.1.6), a disabled check is its enabled self at disabled_opacity
     checkbox_background: srgb8(0xffff_ffff),
+    // a pressed drop-down's trigger, a raised button: :active, $button_active_color, the window
+    // text rgb(0 0 6 / 80%) at 30 %, a layer (_buttons.scss:3, :39-42, _dropdowns.scss:1-12,
+    // _colors.scss:33 at libadwaita 1.10.0)
+    button_active_layer: srgb8(0x0000_063d),
+    // a pressed unchecked check box's and off switch's fill: $trough_active_color, the text at
+    // 25 % (_checks.scss:42-44, _switch.scss:9, _colors.scss:282)
+    trough_active: srgb8(0x0000_0633),
+    // a pressed activatable row's fill, a list's and a boxed list's (the expander's header):
+    // $view_active_color and %boxed_list_row's :active, the text at 8 % (_lists.scss:75-78,
+    // :352-360, :524-526, _colors.scss:275)
+    view_active: srgb8(0x0000_0610),
+    // a pressed toggle's and sidebar row's fill: $active_color, the text at 16 %
+    // (_toggle-group.scss:69-70, _sidebars.scss:126-129, _colors.scss:269, :49)
+    active_layer: srgb8(0x0000_0621),
+    // `tab.hover_background`: a notebook tab hovered or pressed, `&:hover, &:active {
+    // background-color: $hover_color }`, the text at 7 % (_notebook.scss:127-129,
+    // _colors.scss:268)
+    hover_layer: srgb8(0x0000_060e),
     // `checkbox.unchecked_border_color`, `separator.line_color`, `splitter.hover_color`,
     // `switch.unchecked_background`: 0.7.2 adwaita.toml (uncited)
     frame: srgb8(0xd5d5_d5ff),
@@ -352,7 +376,7 @@ const LIGHT: SchemeColors = SchemeColors {
     list_alternate_row: srgb8(0xf5f5_f5ff),
     // `input.placeholder_color`: 0.7.2 adwaita.toml (uncited)
     placeholder: srgb8(0x9295_95ff),
-    // `menu.hover_background`, `tab.hover_background`: 0.7.2 adwaita.toml (uncited)
+    // `menu.hover_background`: 0.7.2 adwaita.toml (uncited)
     menu_hover: srgb8(0xe8e8_e8ff),
     // `popover.background_color`: 0.7.2 adwaita.toml (uncited)
     popover_background: srgb8(0xffff_ffff),
@@ -489,6 +513,24 @@ const DARK: SchemeColors = SchemeColors {
     // `checkbox.unchecked_background`: no disabled_background / disabled_text_color:
     // platform-facts.md (§2.1.6), a disabled check is its enabled self at disabled_opacity
     checkbox_background: srgb8(0x3030_34ff),
+    // a pressed drop-down's trigger, a raised button: :active, $button_active_color, the window
+    // text white at 30 %, a layer (_buttons.scss:3, :39-42, _dropdowns.scss:1-12, _colors.scss:96
+    // at libadwaita 1.10.0)
+    button_active_layer: Color::new(1.0, 1.0, 1.0, 0.3),
+    // a pressed unchecked check box's and off switch's fill: $trough_active_color, the text at
+    // 25 % (_checks.scss:42-44, _switch.scss:9, _colors.scss:282)
+    trough_active: srgb8(0xffff_ff40),
+    // a pressed activatable row's fill, a list's and a boxed list's (the expander's header):
+    // $view_active_color and %boxed_list_row's :active, the text at 8 % (_lists.scss:75-78,
+    // :352-360, :524-526, _colors.scss:275)
+    view_active: srgb8(0xffff_ff14),
+    // a pressed toggle's and sidebar row's fill: $active_color, the text at 16 %
+    // (_toggle-group.scss:69-70, _sidebars.scss:126-129, _colors.scss:269, :111)
+    active_layer: srgb8(0xffff_ff29),
+    // `tab.hover_background`: a notebook tab hovered or pressed, `&:hover, &:active {
+    // background-color: $hover_color }`, the text at 7 % (_notebook.scss:127-129,
+    // _colors.scss:268)
+    hover_layer: srgb8(0xffff_ff12),
     // `checkbox.unchecked_border_color`, `separator.line_color`, `splitter.hover_color`,
     // `switch.unchecked_background`: 0.7.2 adwaita.toml (uncited)
     frame: srgb8(0x4a4a_4eff),
@@ -498,7 +540,7 @@ const DARK: SchemeColors = SchemeColors {
     list_alternate_row: srgb8(0x2a2a_2eff),
     // `input.placeholder_color`: 0.7.2 adwaita.toml (uncited)
     placeholder: srgb8(0x8b8b_8bff),
-    // `menu.hover_background`, `tab.hover_background`: 0.7.2 adwaita.toml (uncited)
+    // `menu.hover_background`: 0.7.2 adwaita.toml (uncited)
     menu_hover: srgb8(0x3a3a_3eff),
     // `popover.background_color`: 0.7.2 adwaita.toml (uncited)
     popover_background: srgb8(0x3636_3aff),
@@ -1859,6 +1901,20 @@ fn button(
             RuleSelector::on(WidgetState::PRESSED),
             [fill(c.button_pressed)],
         )
+        // Hovered and pressed, the outline as at rest: a raised button's :hover and :active set
+        // only its background (_buttons.scss:28-42 at libadwaita 1.10.0), stated for each state
+        // (spec §2, `from_state`).
+        .rules(
+            border(roles, BUTTON_BORDER_WIDTH)
+                .into_iter()
+                .flat_map(|_| {
+                    [
+                        RuleSelector::on(WidgetState::HOVER),
+                        RuleSelector::on(WidgetState::PRESSED),
+                    ]
+                }),
+            border(roles, BUTTON_BORDER_WIDTH),
+        )
         .rule(primary(), [fill(roles.accent.fill)])
         .build();
     // `button.hover_text_color`, `active_text_color`: 0.7.2 adwaita.toml (uncited);
@@ -1948,17 +2004,34 @@ fn checkbox(
     typography: &Typography,
     layout: &LayoutMetrics,
 ) -> CheckboxWidget {
+    // Hovered and pressed, the mark as at rest: a checked check's `color:
+    // var(--accent-fg-color)` holds in every state, :hover and :active lay a layer over the box,
+    // not the mark (_checks.scss:52-60, :70 at libadwaita 1.10.0).
     let checkmark = RuleBuilder::new(IconStyle::default())
         .base([
             IconProp::Color(roles.accent.foreground),
             IconProp::StrokeWidth(Some(CHECK_MARK_STROKE_WIDTH)),
         ])
+        .rules(
+            [
+                RuleSelector::on(WidgetState::HOVER),
+                RuleSelector::on(WidgetState::PRESSED),
+            ],
+            [IconProp::Color(roles.accent.foreground)],
+        )
+        .build();
+    // An unchecked box pressed: $trough_active_color and no outline (_checks.scss:42-44). A
+    // checked box keeps its checked look.
+    let indicator = indicator(c, roles, layout)
+        .base([corners(CHECKBOX_CORNER_RADIUS)])
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED).except(WidgetState::CHECKED),
+            [fill(c.trough_active), PartProp::Stroke(Stroke::None)],
+        )
         .build();
     CheckboxWidget::new(
         WidgetOrigin::Native,
-        indicator(c, roles, layout)
-            .base([corners(CHECKBOX_CORNER_RADIUS)])
-            .build(),
+        indicator,
         checkmark,
         check_label(roles, typography),
         CHECKBOX_LABEL_GAP,
@@ -2030,6 +2103,11 @@ fn list(
         .build();
     let highlight = RuleBuilder::new(PartStyle::default())
         .rule(RuleSelector::on(WidgetState::HOVER), [fill(c.row_hover)])
+        // `row.activatable:active`: $view_active_color (_lists.scss:75-78 at libadwaita 1.10.0).
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED),
+            [fill(c.view_active)],
+        )
         .rule(
             RuleSelector::on(WidgetState::SELECTED),
             [fill(roles.selection.background)],
@@ -2244,7 +2322,16 @@ fn input(
             [stroke(INPUT_BORDER_WIDTH, roles.focus_ring)],
         )
         .build();
+    // Hovered and pressed, the text as at rest: an entry has no :hover or :active rule of its
+    // own, only its icons' opacity (_entries.scss:1-60 at libadwaita 1.10.0).
     let text = RuleBuilder::new(label(&typography.body, Some(c.window_foreground)))
+        .rules(
+            [
+                RuleSelector::on(WidgetState::HOVER),
+                RuleSelector::on(WidgetState::PRESSED),
+            ],
+            [TextProp::Color(c.window_foreground)],
+        )
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
             [TextProp::Color(roles.disabled_text)],
@@ -2495,7 +2582,13 @@ fn tab(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> TabWidg
             // AdwTabBar draw no outline on a tab, line width 0
             PartProp::Stroke(Stroke::None),
         ])
-        .rule(RuleSelector::on(WidgetState::HOVER), [fill(c.menu_hover)])
+        .rules(
+            [
+                RuleSelector::on(WidgetState::HOVER),
+                RuleSelector::on(WidgetState::PRESSED),
+            ],
+            [fill(c.hover_layer)],
+        )
         .rule(
             RuleSelector::on(WidgetState::SELECTED),
             [fill(c.window_background)],
@@ -2512,11 +2605,13 @@ fn tab(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> TabWidg
         )
         .build();
     // `tab.active_text_color`, `hover_text_color`: 0.7.2 adwaita.toml (uncited), each stated for
-    // its state (spec §2, `from_state`).
+    // its state (spec §2, `from_state`); pressed the same: a notebook tab's :hover and :active
+    // set only background-color (_notebook.scss:127-129 at libadwaita 1.10.0).
     let tab_label = RuleBuilder::new(label(&typography.body, Some(c.window_foreground)))
         .rules(
             [
                 RuleSelector::on(WidgetState::HOVER),
+                RuleSelector::on(WidgetState::PRESSED),
                 RuleSelector::on(WidgetState::SELECTED),
             ],
             [TextProp::Color(c.window_foreground)],
@@ -2578,11 +2673,19 @@ fn toolbar(
     let button_icon = RuleBuilder::new(IconStyle::default())
         .base([IconProp::Size(ICON_TOOLBAR)])
         .build();
+    // Hovered and pressed, the label as at rest: a raised button's :hover and :active
+    // (_buttons.scss:35-42 at libadwaita 1.10.0) and a flat one's (:250-257; a toolbar flattens
+    // its arrow, image and image-text buttons, _toolbars.scss:1-8) set only the background.
+    let button_label = label(&typography.body, None);
+    let (selectors, color) =
+        rest_color_rules(&button_label, [WidgetState::HOVER, WidgetState::PRESSED]);
     ToolbarWidget::new(
         WidgetOrigin::Native,
         bar,
         button,
-        RuleBuilder::new(label(&typography.body, None)).build(),
+        RuleBuilder::new(button_label)
+            .rules(selectors, color)
+            .build(),
         button_icon,
         RuleBuilder::new(PartStyle::default()).build(),
         Some(TOOLBAR_ITEM_GAP),
@@ -2647,17 +2750,32 @@ fn sidebar(
             direction,
         ))])
         .build();
+    // Pressed: `.navigation-sidebar row.activatable:active`, $active_color of the sidebar's text
+    // (_sidebars.scss:126-129 at libadwaita 1.10.0).
     let item = RuleBuilder::new(PartStyle::default())
         .rule(
             RuleSelector::on(WidgetState::HOVER),
             [fill(c.sidebar_hover)],
         )
         .rule(
+            RuleSelector::on(WidgetState::PRESSED),
+            [fill(c.active_layer)],
+        )
+        .rule(
             RuleSelector::on(WidgetState::SELECTED),
             [fill(roles.selection.background)],
         )
         .build();
+    // Hovered and pressed, the label as at rest: the row's :hover and :active set only
+    // background-color (_sidebars.scss:126-132).
     let item_label = RuleBuilder::new(label(&typography.body, Some(c.window_foreground)))
+        .rules(
+            [
+                RuleSelector::on(WidgetState::HOVER),
+                RuleSelector::on(WidgetState::PRESSED),
+            ],
+            [TextProp::Color(c.window_foreground)],
+        )
         .rule(
             RuleSelector::on(WidgetState::SELECTED),
             [TextProp::Color(roles.selection.foreground)],
@@ -2725,6 +2843,12 @@ fn switch(c: &SchemeColors, roles: &ColorRoles) -> SwitchWidget {
         .rule(
             RuleSelector::on(WidgetState::HOVER | WidgetState::CHECKED),
             [fill(c.switch_hover_on)],
+        )
+        // `switch:active`: $trough_active_color (_switch.scss:9 at libadwaita 1.10.0); a checked
+        // switch keeps its checked look.
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED).except(WidgetState::CHECKED),
+            [fill(c.trough_active)],
         )
         .build();
     let thumb = RuleBuilder::new(PartStyle::default())
@@ -2844,8 +2968,21 @@ fn combo_box(
             PartProp::MinSize([Some(COMBO_BOX_MIN_WIDTH), Some(COMBO_BOX_MIN_HEIGHT)]),
         ])
         .rule(RuleSelector::on(WidgetState::HOVER), [fill(c.button_hover)])
+        // Pressed: the trigger is a raised button, `&:active { background-color:
+        // $button_active_color }` (_buttons.scss:39-42; _dropdowns.scss:1-12 adds no fill, at
+        // libadwaita 1.10.0).
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED),
+            [fill(c.button_active_layer)],
+        )
         .build();
-    let label = RuleBuilder::new(label(&typography.body, None))
+    // Hovered and pressed, the label as at rest: no button rule sets `color` under :hover or
+    // :active (_buttons.scss:28-56).
+    let rest_label = label(&typography.body, None);
+    let (selectors, color) =
+        rest_color_rules(&rest_label, [WidgetState::HOVER, WidgetState::PRESSED]);
+    let label = RuleBuilder::new(rest_label)
+        .rules(selectors, color)
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
             [TextProp::Color(roles.disabled_text)],
@@ -2895,12 +3032,24 @@ fn segmented_control(
             )),
         ])
         .rule(RuleSelector::on(WidgetState::HOVER), [fill(c.button_hover)])
+        // Pressed: AdwToggleGroup's toggle :active, $active_color (_toggle-group.scss:69-70 at
+        // libadwaita 1.10.0).
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED),
+            [fill(c.active_layer)],
+        )
         .rule(
             RuleSelector::on(WidgetState::SELECTED),
             [fill(c.segment_selected)],
         )
         .build();
-    let label = RuleBuilder::new(label(&typography.body, None))
+    // Hovered and pressed, the label as at rest: the toggle sets `color` only when :checked
+    // (_toggle-group.scss:65-81).
+    let rest_label = label(&typography.body, None);
+    let (selectors, color) =
+        rest_color_rules(&rest_label, [WidgetState::HOVER, WidgetState::PRESSED]);
+    let label = RuleBuilder::new(rest_label)
+        .rules(selectors, color)
         .rule(
             RuleSelector::on(WidgetState::SELECTED),
             [TextProp::Color(c.segment_selected_foreground)],
@@ -2949,6 +3098,12 @@ fn expander(c: &SchemeColors, typography: &Typography, direction: Direction) -> 
             )),
         ])
         .rule(RuleSelector::on(WidgetState::HOVER), [fill(c.row_hover)])
+        // Pressed: the header is a %boxed_list_row (_lists.scss:524-526), whose activatable
+        // :active fill is the text at 8 % (_lists.scss:352-360 at libadwaita 1.10.0).
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED),
+            [fill(c.view_active)],
+        )
         .build();
     let arrow = RuleBuilder::new(IconStyle::default())
         .base([
@@ -2956,11 +3111,15 @@ fn expander(c: &SchemeColors, typography: &Typography, direction: Direction) -> 
             IconProp::Color(c.window_foreground),
         ])
         .build();
+    // Hovered and pressed, the title as at rest: %boxed_list_row's :hover and :active set only
+    // background-color (_lists.scss:352-360).
+    let title = label(&typography.body, None);
+    let (selectors, color) = rest_color_rules(&title, [WidgetState::HOVER, WidgetState::PRESSED]);
     ExpanderWidget::new(
         WidgetOrigin::Native,
         container,
         header,
-        RuleBuilder::new(label(&typography.body, None)).build(),
+        RuleBuilder::new(title).rules(selectors, color).build(),
         arrow,
         Some(EXPANDER_ARROW_SIDE),
         Some(EXPANDER_ARROW_GAP),

@@ -521,6 +521,10 @@ homes = [
     "button.body(PRESSED).stroke.color",
 ]
 note = "a pressed button keeps the hover border (0.7.2's field doc)"
+difference_presets = ["adwaita", "windows-11"]
+difference_reason = "0.7.2 leaves it unset (the rest outline by inheritance, no rule); 0.8.0 states the rest outline for the state, where the platform keeps it (spec §2, from_state): adwaita for HOVER and PRESSED, windows-11 for HOVER (its PRESSED home keeps the rest outline unstated)"
+difference_citation = "adwaita: _buttons.scss:28-42 at libadwaita 1.10.0, a raised button's :hover and :active set only the background; windows-11: ButtonBorderBrushPointerOver is the rest brush (Button_themeresources.xaml:137, :136 at microsoft-ui-xaml 8463f45)"
+difference_values = { "adwaita" = { light = "#dcdcde", dark = "#434347" }, "windows-11" = { light = "#0000000f", dark = "#00000019" } }
 
 [[row]]
 key = "button.focus_border_color"
@@ -679,6 +683,10 @@ homes = [
     "checkbox.indicator(HOVER).fill",
     "radio.indicator(HOVER).fill",
 ]
+difference_presets = ["kde-breeze"]
+difference_reason = "0.7.2 leaves it unset (the rest fill by inheritance, no rule); 0.8.0 states the rest fill for the check box's HOVER, where Breeze keeps it (spec §2, from_state); the radio button's HOVER keeps the rest fill unstated"
+difference_citation = "docs/platform-facts.md §2.5 (hover_background): no hover fill, the box keeps palette.button() (breezehelper.cpp:862 at breeze f0b1d75)"
+difference_values = { "kde-breeze" = { light = "#fcfcfc", dark = "#292c30" } }
 
 [[row]]
 key = "checkbox.hover_border_color"
@@ -1471,6 +1479,10 @@ homes = ["slider.disabled_opacity"]
 [[row]]
 key = "slider.thumb_hover_color"
 homes = ["slider.thumb(HOVER).fill"]
+difference_presets = ["kde-breeze", "windows-11"]
+difference_reason = "0.7.2 leaves it unset (the rest fill by inheritance, no rule); 0.8.0 states the thumb's rest fill for HOVER, where the platform keeps it (spec §2, from_state)"
+difference_citation = "kde-breeze: docs/platform-facts.md §2.9 (thumb_hover_color), the handle's fill is QPalette::Button in every state (breezestyle.cpp:8122 at breeze f0b1d75); windows-11: SliderOuterThumbBackground has no PointerOver variant (Slider_themeresources.xaml:123, Border :198 at microsoft-ui-xaml 8463f45)"
+difference_values = { "kde-breeze" = { light = "#fcfcfc", dark = "#292c30" }, "windows-11" = { light = "#ffffff", dark = "#454545" } }
 
 [[row]]
 key = "slider.disabled_fill_color"
@@ -1842,6 +1854,10 @@ note = "0.7.2 R-W: unset = tab.font.color, never null"
 [[row]]
 key = "tab.hover_background"
 homes = ["tab.tab(HOVER).fill"]
+difference_presets = ["adwaita"]
+difference_reason = "0.7.2's #e8e8e8 / #3a3a3e is its uncited menu hover; 0.8.0 states libadwaita's notebook tab hover, $hover_color, the window text at 7 %, a layer (the same fill a pressed tab takes)"
+difference_citation = "_notebook.scss:127-129 (`&:hover, &:active { background-color: $hover_color }`), _colors.scss:268, :33, :96 at libadwaita 1.10.0"
+difference_values = { "adwaita" = { light = "#0000060e", dark = "#ffffff12" } }
 
 [[row]]
 key = "tab.font.family"
@@ -2534,6 +2550,10 @@ homes = ["combo_box.label(DISABLED).color"]
 [[row]]
 key = "combo_box.hover_background"
 homes = ["combo_box.field(HOVER).fill"]
+difference_presets = ["kde-breeze"]
+difference_reason = "0.7.2 leaves it unset (the rest fill by inheritance, no rule); 0.8.0 states the rest fill for HOVER, where Breeze keeps it (spec §2, from_state)"
+difference_citation = "docs/platform-facts.md §2.24 (hover_background): a non-editable combo box is a button frame whose hover turns only the pen Highlight (breezehelper.cpp:710-712 at breeze f0b1d75)"
+difference_values = { "kde-breeze" = { light = "#fcfcfc", dark = "#292c30" } }
 
 [[row]]
 key = "combo_box.hover_border_color"
@@ -2766,6 +2786,10 @@ homes = ["expander.arrow(NONE).size"]
 [[row]]
 key = "expander.hover_background"
 homes = ["expander.header(HOVER).fill"]
+difference_presets = ["kde-breeze", "windows-11"]
+difference_reason = "0.7.2 leaves it unset (no rule); 0.8.0 states the header's look under the pointer: on kde-breeze no fill (transparent), on windows-11 the header's rest fill CardBackgroundFillColorDefault, which 0.8.0 states at rest too"
+difference_citation = "kde-breeze: docs/platform-facts.md §2.27 (hover_background), KCollapsibleGroupBox paints the arrow and the title only (kcollapsiblegroupbox.cpp:153-182 at kwidgetsaddons v6.30.0); windows-11: ExpanderHeaderBackground = CardBackgroundFillColorDefault, which no PointerOver or Pressed state sets (Expander.xaml:111; Expander_themeresources.xaml:29, :5, :122-165 at microsoft-ui-xaml 8463f45)"
+difference_values = { "kde-breeze" = "#00000000", "windows-11" = { light = "#ffffffb3", dark = "#ffffff0d" } }
 
 [[row]]
 key = "expander.arrow_color"

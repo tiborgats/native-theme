@@ -185,6 +185,7 @@ use crate::next::palette::Palette;
 use crate::next::preset::{Preset, ResolveInputs};
 use crate::next::presets::helpers::{
     Motion, dialog_entrance, linear_font_px, motion, motion_tokens, physical_edges,
+    rest_color_rules,
 };
 use crate::next::query::{
     ButtonVariant, Contrast, Direction, Orientation, Scheme, ThemeContext, WidgetState,
@@ -255,6 +256,9 @@ struct SchemeColors {
     strong_fill_disabled: Color,
     subtle_fill: Color,
     subtle_fill_pressed: Color,
+    alt_fill_quarternary: Color,
+    accent_text_secondary: Color,
+    tab_pressed: Color,
     checkbox_hover: Color,
     tab_hover: Color,
     tab_selected: Color,
@@ -539,6 +543,19 @@ const LIGHT: SchemeColors = SchemeColors {
     // `toolbar.button_active_background`: platform-facts.md (§2.13): AppBarButtonBackgroundPressed
     // = SubtleFillColorTertiary (AppBarButton_themeresources.xaml:7)
     subtle_fill_pressed: srgb8(0x0000_0006),
+    // a pressed unchecked check box's fill, CheckBoxCheckBackgroundFillUncheckedPressed
+    // (CheckBox_themeresources.xaml:231), and a pressed off switch's track, ToggleSwitchFillOffPressed
+    // (ToggleSwitch_themeresources.xaml:137): ControlAltFillColorQuarternary #18000000
+    // (Common_themeresources_any.xaml:236 at microsoft-ui-xaml 8463f45)
+    alt_fill_quarternary: srgb8(0x0000_0018),
+    // a pressed checked box's mark, CheckBoxCheckGlyphForegroundCheckedPressed =
+    // TextOnAccentFillColorSecondary #B3FFFFFF (CheckBox_themeresources.xaml:247;
+    // Common_themeresources_any.xaml:217)
+    accent_text_secondary: srgb8(0xffff_ffb3),
+    // a pressed tab, TabViewItemHeaderBackgroundPressed = LayerOnMicaBaseAltFillColorDefault
+    // #B3FFFFFF (TabView_themeresources.xaml:10; TabView.xaml:327;
+    // Common_themeresources_any.xaml:268)
+    tab_pressed: srgb8(0xffff_ffb3),
     // `checkbox.hover_background`: soft_option: Fluent checkbox hover fill
     checkbox_hover: srgb8(0x0000_000a),
     // `tab.hover_background`: soft_option: TabViewItemHeaderBackgroundPointerOver =
@@ -867,6 +884,19 @@ const DARK: SchemeColors = SchemeColors {
     // `toolbar.button_active_background`: platform-facts.md (§2.13): AppBarButtonBackgroundPressed
     // = SubtleFillColorTertiary (AppBarButton_themeresources.xaml:7)
     subtle_fill_pressed: srgb8(0xffff_ff0a),
+    // a pressed unchecked check box's fill, CheckBoxCheckBackgroundFillUncheckedPressed
+    // (CheckBox_themeresources.xaml:55), and a pressed off switch's track, ToggleSwitchFillOffPressed
+    // (ToggleSwitch_themeresources.xaml:17): ControlAltFillColorQuarternary #12FFFFFF
+    // (Common_themeresources_any.xaml:32 at microsoft-ui-xaml 8463f45)
+    alt_fill_quarternary: srgb8(0xffff_ff12),
+    // a pressed checked box's mark, CheckBoxCheckGlyphForegroundCheckedPressed =
+    // TextOnAccentFillColorSecondary #80000000 (CheckBox_themeresources.xaml:71;
+    // Common_themeresources_any.xaml:13)
+    accent_text_secondary: srgb8(0x0000_0080),
+    // a pressed tab, TabViewItemHeaderBackgroundPressed = LayerOnMicaBaseAltFillColorDefault
+    // #733A3A3A (TabView_themeresources.xaml:88; TabView.xaml:327;
+    // Common_themeresources_any.xaml:64)
+    tab_pressed: srgb8(0x3a3a_3a73),
     // `checkbox.hover_background`: soft_option: Fluent checkbox hover fill
     checkbox_hover: srgb8(0xffff_ff0f),
     // `tab.hover_background`: soft_option: TabViewItemHeaderBackgroundPointerOver =
@@ -2248,6 +2278,18 @@ fn button(
             RuleSelector::on(WidgetState::PRESSED),
             [fill(c.control_fill_pressed)],
         )
+        // Hovered, the outline as at rest: ButtonBorderBrushPointerOver is the rest brush
+        // (Button_themeresources.xaml:137, :136 at microsoft-ui-xaml 8463f45).
+        .rules(
+            roles
+                .window
+                .border
+                .map(|_| RuleSelector::on(WidgetState::HOVER)),
+            roles
+                .window
+                .border
+                .map(|color| outside_stroke(layout.border_width, color)),
+        )
         .rule(
             primary(),
             [fill(c.accent_fill)]
@@ -2353,14 +2395,38 @@ fn checkbox(
     typography: &Typography,
     layout: &LayoutMetrics,
 ) -> CheckboxWidget {
+    // Hovered, the mark as at rest: CheckBoxCheckGlyphForegroundCheckedPointerOver =
+    // TextOnAccentFillColorPrimary, the rest brush (CheckBox_themeresources.xaml:246, :245 at
+    // microsoft-ui-xaml 8463f45); pressed, TextOnAccentFillColorSecondary (:247).
     let checkmark = RuleBuilder::new(IconStyle::default())
         .base([IconProp::Color(roles.accent.foreground)])
+        .rule(
+            RuleSelector::on(WidgetState::HOVER),
+            [IconProp::Color(roles.accent.foreground)],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED),
+            [IconProp::Color(c.accent_text_secondary)],
+        )
+        .build();
+    // An unchecked box pressed: CheckBoxCheckBackgroundFillUncheckedPressed =
+    // ControlAltFillColorQuarternary (CheckBox_themeresources.xaml:231 at microsoft-ui-xaml
+    // 8463f45) in CheckBoxCheckBackgroundStrokeUncheckedPressed = ControlStrongStrokeColorDisabled
+    // (:219). A checked box keeps its checked look; a disabled one its own.
+    let indicator = indicator(c, roles, layout)
+        .base([corners(layout.corner_radius)])
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED)
+                .except(WidgetState::CHECKED | WidgetState::DISABLED),
+            [
+                fill(c.alt_fill_quarternary),
+                stroke(layout.border_width, c.strong_stroke_disabled),
+            ],
+        )
         .build();
     CheckboxWidget::new(
         WidgetOrigin::Native,
-        indicator(c, roles, layout)
-            .base([corners(layout.corner_radius)])
-            .build(),
+        indicator,
         checkmark,
         check_label(c, typography),
         CHECKBOX_LABEL_GAP,
@@ -2441,6 +2507,12 @@ fn list(
         .build();
     let highlight = RuleBuilder::new(PartStyle::default())
         .rule(RuleSelector::on(WidgetState::HOVER), [fill(c.subtle_fill)])
+        // ListViewItemBackgroundPressed = SubtleFillColorTertiary (ListViewItem_themeresources.xaml:171,
+        // PressedBackground :256 at microsoft-ui-xaml 8463f45).
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED),
+            [fill(c.subtle_fill_pressed)],
+        )
         .rule(
             RuleSelector::on(WidgetState::SELECTED),
             [fill(hc.highlight.unwrap_or(c.subtle_fill))],
@@ -2706,15 +2778,23 @@ fn input(
             [fill(c.control_fill_disabled)],
         )
         .build();
-    let text = RuleBuilder::new(label(
-        &typography.body,
-        Some(hc.button_text.unwrap_or(c.window_foreground)),
-    ))
-    .rule(
-        RuleSelector::on(WidgetState::DISABLED),
-        [TextProp::Color(c.input_disabled_text)],
-    )
-    .build();
+    // Hovered and pressed, the text as at rest: TextControlForegroundPointerOver =
+    // TextFillColorPrimary, the rest brush (TextBox_themeresources.xaml:139, :138 at
+    // microsoft-ui-xaml 8463f45), and the TextBox has no Pressed state (:255-291).
+    let text_color = hc.button_text.unwrap_or(c.window_foreground);
+    let text = RuleBuilder::new(label(&typography.body, Some(text_color)))
+        .rules(
+            [
+                RuleSelector::on(WidgetState::HOVER),
+                RuleSelector::on(WidgetState::PRESSED),
+            ],
+            [TextProp::Color(text_color)],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED),
+            [TextProp::Color(c.input_disabled_text)],
+        )
+        .build();
     let placeholder = RuleBuilder::new(TextStyle::default())
         .base([TextProp::Color(
             hc.window_text.unwrap_or(c.window_foreground_muted),
@@ -2798,12 +2878,22 @@ fn slider(c: &SchemeColors, roles: &ColorRoles) -> SliderWidget {
             [fill(c.accent_fill_disabled)],
         )
         .build();
+    // Hovered and pressed, the outer thumb as at rest: SliderOuterThumbBackground has no
+    // PointerOver or Pressed variant (Slider_themeresources.xaml:123, Border :198 at
+    // microsoft-ui-xaml 8463f45); what changes is the inner ellipse (:119-120).
     let thumb = RuleBuilder::new(PartStyle::default())
         .base([
             fill(c.slider_thumb),
             PartProp::MinSize([Some(SLIDER_THUMB_DIAMETER); 2]),
             PartProp::MaxSize([Some(SLIDER_THUMB_DIAMETER); 2]),
         ])
+        .rules(
+            [
+                RuleSelector::on(WidgetState::HOVER),
+                RuleSelector::on(WidgetState::PRESSED),
+            ],
+            [fill(c.slider_thumb)],
+        )
         .build();
     SliderWidget::new(
         WidgetOrigin::Native,
@@ -2871,6 +2961,16 @@ fn separator(c: &SchemeColors, roles: &ColorRoles, layout: &LayoutMetrics) -> Se
 fn splitter(roles: &ColorRoles) -> SplitterWidget {
     let handle = RuleBuilder::new(PartStyle::default())
         .base(roles.window.border.map(fill))
+        // `splitter.hover_color`: platform-facts.md (§2.17), Windows has no draggable divider
+        // control and SplitView's pane edge no pointer-over resource: the divider as at rest,
+        // stated for `HOVER` (spec §2, `from_state`).
+        .rules(
+            roles
+                .window
+                .border
+                .map(|_| RuleSelector::on(WidgetState::HOVER)),
+            roles.window.border.map(fill),
+        )
         .build();
     SplitterWidget::new(WidgetOrigin::Native, handle, SPLITTER_DIVIDER_WIDTH)
 }
@@ -3003,6 +3103,10 @@ fn tab(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> TabWidg
         ])
         .rule(RuleSelector::on(WidgetState::HOVER), [fill(c.tab_hover)])
         .rule(
+            RuleSelector::on(WidgetState::PRESSED),
+            [fill(c.tab_pressed)],
+        )
+        .rule(
             RuleSelector::on(WidgetState::SELECTED),
             [
                 fill(c.tab_selected),
@@ -3018,6 +3122,12 @@ fn tab(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> TabWidg
         .rule(
             RuleSelector::on(WidgetState::HOVER),
             [TextProp::Color(c.window_foreground_muted)],
+        )
+        // TabViewItemHeaderForegroundPressed = TextFillColorTertiary (TabView_themeresources.xaml:13;
+        // TabView.xaml:328; Common_themeresources_any.xaml:211).
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED),
+            [TextProp::Color(c.inactive_title)],
         )
         .rule(
             RuleSelector::on(WidgetState::SELECTED),
@@ -3084,11 +3194,23 @@ fn toolbar(
     let button_icon = RuleBuilder::new(IconStyle::default())
         .base([IconProp::Size(ICON_TOOLBAR)])
         .build();
+    // Hovered, the label as at rest: AppBarButtonForegroundPointerOver = TextFillColorPrimary
+    // (AppBarButton_themeresources.xaml:80, :79 at microsoft-ui-xaml 8463f45); pressed,
+    // AppBarButtonForegroundPressed = TextFillColorSecondary (:81, set :257-259).
+    let button_label = label(&typography.body, None);
+    let (selectors, color) = rest_color_rules(&button_label, [WidgetState::HOVER]);
+    let button_label = RuleBuilder::new(button_label)
+        .rules(selectors, color)
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED),
+            [TextProp::Color(c.window_foreground_muted)],
+        )
+        .build();
     ToolbarWidget::new(
         WidgetOrigin::Native,
         bar,
         button,
-        RuleBuilder::new(label(&typography.body, None)).build(),
+        button_label,
         button_icon,
         RuleBuilder::new(PartStyle::default()).build(),
         Some(TOOLBAR_ITEM_GAP),
@@ -3145,8 +3267,14 @@ fn sidebar(
             EdgeFlags::LEFT | EdgeFlags::RIGHT,
         )])
         .build();
+    // Pressed: NavigationViewItemBackgroundPressed = SubtleFillColorTertiary
+    // (NavigationView_themeresources.xaml:77 at microsoft-ui-xaml 8463f45).
     let item = RuleBuilder::new(PartStyle::default())
         .rule(RuleSelector::on(WidgetState::HOVER), [fill(c.subtle_fill)])
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED),
+            [fill(c.subtle_fill_pressed)],
+        )
         .rule(
             RuleSelector::on(WidgetState::SELECTED),
             [fill(c.subtle_fill)],
@@ -3158,8 +3286,18 @@ fn sidebar(
         item,
         // `sidebar.selection_text_color`: platform-facts.md (§2.12),
         // NavigationViewItemForegroundSelected = TextFillColorPrimary, the window's text, stated
-        // for `SELECTED` (spec §2, `from_state`).
+        // for `SELECTED` (spec §2, `from_state`); hovered the same,
+        // NavigationViewItemForegroundPointerOver (NavigationView_themeresources.xaml:88), pressed
+        // NavigationViewItemForegroundPressed = TextFillColorSecondary (:89).
         RuleBuilder::new(label(&typography.body, Some(c.window_foreground)))
+            .rule(
+                RuleSelector::on(WidgetState::HOVER),
+                [TextProp::Color(c.window_foreground)],
+            )
+            .rule(
+                RuleSelector::on(WidgetState::PRESSED),
+                [TextProp::Color(c.window_foreground_muted)],
+            )
             .rule(
                 RuleSelector::on(WidgetState::SELECTED),
                 [TextProp::Color(c.window_foreground)],
@@ -3232,6 +3370,13 @@ fn switch(c: &SchemeColors) -> SwitchWidget {
         .rule(
             RuleSelector::on(WidgetState::HOVER | WidgetState::CHECKED),
             [fill(c.switch_hover_on)],
+        )
+        // ToggleSwitchFillOffPressed = ControlAltFillColorQuarternary (ToggleSwitch_themeresources.xaml:137,
+        // the Pressed state :294 at microsoft-ui-xaml 8463f45); a checked switch keeps its checked
+        // look.
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED).except(WidgetState::CHECKED),
+            [fill(c.alt_fill_quarternary)],
         )
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
@@ -3360,12 +3505,29 @@ fn combo_box(
             RuleSelector::on(WidgetState::HOVER),
             [fill(c.control_fill_hover)],
         )
+        // ComboBoxBackgroundPressed = ControlFillColorTertiary (ComboBox_themeresources.xaml:244,
+        // Pressed state :433 at microsoft-ui-xaml 8463f45), flattened as `button.active_background`.
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED),
+            [fill(c.control_fill_pressed)],
+        )
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
             [fill(c.control_fill_disabled)],
         )
         .build();
+    // Hovered, the label as at rest: ComboBoxForegroundPointerOver = TextFillColorPrimary
+    // (ComboBox_themeresources.xaml:251, :250); pressed, ComboBoxForegroundPressed =
+    // TextFillColorSecondary (:252, Pressed state :439).
     let label = RuleBuilder::new(label(&typography.body, Some(c.window_foreground)))
+        .rule(
+            RuleSelector::on(WidgetState::HOVER),
+            [TextProp::Color(c.window_foreground)],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED),
+            [TextProp::Color(c.window_foreground_muted)],
+        )
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
             [TextProp::Color(c.disabled_text)],
@@ -3420,6 +3582,12 @@ fn segmented_control(
             )),
         ])
         .rule(RuleSelector::on(WidgetState::HOVER), [fill(c.subtle_fill)])
+        // SegmentedItemBackgroundPressed = SubtleFillColorTertiary (SegmentedItem.xaml:132 at
+        // Windows Community Toolkit v8.2.251219).
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED),
+            [fill(c.subtle_fill_pressed)],
+        )
         .rule(
             RuleSelector::on(WidgetState::SELECTED),
             [fill(hc.highlight.unwrap_or(c.control_fill))],
@@ -3428,9 +3596,18 @@ fn segmented_control(
     // `segmented_control.active_text_color`: platform-facts.md (§2.25), the selected item lettered
     // TextFillColorPrimary, the rest colour, under high contrast the highlight's text; stated for
     // `SELECTED` (spec §2, `from_state`).
+    // Hovered, the rest colour: SegmentedItemForegroundPointerOver = TextFillColorPrimary
+    // (SegmentedItem.xaml:152, :150); pressed, SegmentedItemForegroundPressed =
+    // TextFillColorSecondary (:156).
     let segment_text = label(&typography.body, hc.button_text);
     let selected_text = hc.highlight_text.unwrap_or(segment_text.color);
+    let (selectors, color) = rest_color_rules(&segment_text, [WidgetState::HOVER]);
     let segment_label = RuleBuilder::new(segment_text)
+        .rules(selectors, color)
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED),
+            [TextProp::Color(c.window_foreground_muted)],
+        )
         .rule(
             RuleSelector::on(WidgetState::SELECTED),
             [TextProp::Color(selected_text)],
@@ -3499,17 +3676,35 @@ fn expander(
                 ),
                 direction,
             )),
+            // `expander.hover_background`: platform-facts.md (§2.27), the header's Background is
+            // ExpanderHeaderBackground = CardBackgroundFillColorDefault (Expander.xaml:111;
+            // Expander_themeresources.xaml:29; Common_themeresources_any.xaml:260 at
+            // microsoft-ui-xaml 8463f45), which neither the PointerOver nor the Pressed state
+            // sets (Expander_themeresources.xaml:122-165)
+            fill(c.view_background),
         ])
+        .rules(
+            [
+                RuleSelector::on(WidgetState::HOVER),
+                RuleSelector::on(WidgetState::PRESSED),
+            ],
+            [fill(c.view_background)],
+        )
         .build();
     let arrow = RuleBuilder::new(IconStyle::default())
         .base([IconProp::Size(EXPANDER_ARROW_SIZE)])
         .base([IconProp::Color(c.window_foreground)])
         .build();
+    // Hovered and pressed, the title as at rest: ExpanderHeaderForegroundPointerOver and
+    // ExpanderHeaderForegroundPressed = TextFillColorPrimary (Expander_themeresources.xaml:31-32,
+    // :30).
+    let title = label(&typography.body, None);
+    let (selectors, color) = rest_color_rules(&title, [WidgetState::HOVER, WidgetState::PRESSED]);
     ExpanderWidget::new(
         WidgetOrigin::Native,
         container,
         header,
-        RuleBuilder::new(label(&typography.body, None)).build(),
+        RuleBuilder::new(title).rules(selectors, color).build(),
         arrow,
         Some(EXPANDER_ARROW_SIDE),
         Some(EXPANDER_ARROW_GAP),

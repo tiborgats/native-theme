@@ -51,21 +51,33 @@ struct Difference {
 }
 
 /// The listed differences.
-const DIFFERENCES: &[Difference] = &[Difference {
-    leaf: "SwitchLook::label disabled",
-    presets: &[
-        "kde-breeze",
-        "adwaita",
-        "windows-11",
-        "macos-monterey",
-        "macos-tahoe",
-        "material-3",
-        "ios-13",
-    ],
-    reason: "no 0.8.0 preset states switch.label, so a disabled switch's label is \
-             gpui-component's own, muted_foreground, colors.window.foreground_muted \
-             (spec §10, rule 0), where the 0.7.2 look took defaults.disabled_text_color",
-}];
+const DIFFERENCES: &[Difference] = &[
+    Difference {
+        leaf: "SwitchLook::label disabled",
+        presets: &[
+            "kde-breeze",
+            "adwaita",
+            "windows-11",
+            "macos-monterey",
+            "macos-tahoe",
+            "material-3",
+            "ios-13",
+        ],
+        reason: "no 0.8.0 preset states switch.label, so a disabled switch's label is \
+                 gpui-component's own, muted_foreground, colors.window.foreground_muted \
+                 (spec §10, rule 0), where the 0.7.2 look took defaults.disabled_text_color",
+    },
+    Difference {
+        leaf: "TabLook::hover",
+        presets: &["adwaita"],
+        reason: "0.7.2's tab.hover_background #e8e8e8 / #3a3a3e is its uncited menu hover; \
+                 0.8.0's adwaita states libadwaita's notebook tab hover, $hover_color, the \
+                 window text at 7 % (#0000060e / #ffffff12), a layer the look composites \
+                 over the bar (_notebook.scss:127-129, _colors.scss:268, :33, :96 at \
+                 libadwaita 1.10.0; native-theme/tests/next_homes.toml, row \
+                 tab.hover_background, a listed difference)",
+    },
+];
 
 /// The leaves compared and the differences found, for one preset and scheme.
 struct Report {
@@ -183,7 +195,25 @@ fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Resul
         SpinnerLook::of(&old),
         SpinnerLook::next_of(&new),
     );
-    r.leaf("TabLook", "", TabLook::of(&old), TabLook::next_of(&new));
+    let (old_tab, new_tab) = (TabLook::of(&old), TabLook::next_of(&new));
+    // The hover fill apart, so a listed difference of it leaves the rest of
+    // the look compared.
+    let unhovered = |look: TabLook| TabLook {
+        hover: gpui::transparent_black(),
+        ..look
+    };
+    r.leaf(
+        "TabLook",
+        "",
+        old_tab.map(unhovered),
+        new_tab.map(unhovered),
+    );
+    r.leaf(
+        "TabLook::hover",
+        "",
+        old_tab.map(|look| look.hover),
+        new_tab.map(|look| look.hover),
+    );
     for disabled in [false, true] {
         let state = format!(" disabled={disabled}");
         r.leaf(
