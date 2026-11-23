@@ -27,12 +27,14 @@
 //! - The notes (`Note`) name the leaf whose value was sanitised, saturated or transparent, a
 //!   0.7.2 leaf on one side and its 0.8.0 home on the other: not compared.
 //!
-//! Compared so far: the base style and each role's `Normal` cell. A difference is allowed only
+//! Compared so far: the base style, each role's `Normal` cell and its `Selected`, `Disabled`
+//! and `SelectedDisabled` cells where the role has them. A difference is allowed only
 //! as a listed one, per leaf (a `*` segment standing for any one, an entry naming the leaf
 //! itself taken first) and preset, with its cause, from which the test computes the value the
 //! 0.8.0 side must hold there; an entry that differs nowhere on a preset it names is stale and
 //! fails. A cell's leaf that holds its base style's value on both sides differs as the base
-//! does, which the base's comparison lists and checks.
+//! does, which the base's comparison lists and checks; a variant cell's leaf that holds the
+//! value of the cell it is copied from (`Normal`, for `SelectedDisabled` `Selected`) likewise.
 //! A difference that is rule 0 on a state ([`Cause::Rule0`], [`Cause::StateKeepsBase`]) is a
 //! model gap, listed in [`RULE_0_ON_A_PRESET`] with the 0.8.0 home the preset leaves unstated;
 //! every other one in [`DIFFERENCES`].
@@ -40,13 +42,14 @@
 use egui::style::{WidgetVisuals, Widgets};
 use native_theme::next::Preset;
 
-use super::build::{base_source, cell_source};
+use super::build::{base_source, cell_source, variant_source};
 use super::root_parity::{PRESETS, resolve};
 use crate::convert::to_color32;
 use crate::style::base::{BaseSource, base_style_from};
 use crate::style::cells::CellSource;
 use crate::style::line::{Line, LineAlign};
 use crate::style::roles::{CellInput, role_cell_from};
+use crate::style::variants::{VariantSource, disabled_cell, selected_cell, selected_disabled_cell};
 use crate::{AccessibilityPreferences, Role};
 
 /// Why a leaf differs, which gives the value the 0.8.0 side holds there.
@@ -226,6 +229,27 @@ const DIFFERENCES: &[Difference] = &[
         "Checkbox",
         &[W, M, T],
         WIDGET_STROKES,
+        Cause::OverFill,
+        INSIDE,
+    ),
+    d(
+        "Checkbox/Selected",
+        &[W, M, T],
+        WIDGET_STROKES,
+        Cause::OverFill,
+        INSIDE,
+    ),
+    d(
+        "Button/Disabled",
+        &[M, T],
+        ".visuals.widgets.inactive.bg_stroke.color",
+        Cause::OverFill,
+        INSIDE,
+    ),
+    d(
+        "ComboBox/Disabled",
+        &[M],
+        ".visuals.widgets.inactive.bg_stroke.color",
         Cause::OverFill,
         INSIDE,
     ),
@@ -438,6 +462,19 @@ const RULE_0_ON_A_PRESET: &[Gap] = &[
     r0(
         "Checkbox",
         &[K, A, W, M, T, M3],
+        ".visuals.widgets.active.bg_stroke.color",
+        "checkbox.indicator(PRESSED).stroke.color",
+    ),
+    // the checked box's hover and press outline, the state asked alone (spec §2, `from_state`)
+    r0(
+        "Checkbox/Selected",
+        &[A, W, M, T, M3],
+        ".visuals.widgets.hovered.bg_stroke.color",
+        "checkbox.indicator(HOVER).stroke.color",
+    ),
+    r0(
+        "Checkbox/Selected",
+        &[A, W, M, T, M3],
         ".visuals.widgets.active.bg_stroke.color",
         "checkbox.indicator(PRESSED).stroke.color",
     ),
@@ -831,6 +868,33 @@ fn outline_of(role: Role, src: &CellSource) -> Option<(LineAlign, Option<bool>)>
     })
 }
 
+/// The variant cells compared, in [`variant_cells`]' order.
+const VARIANTS: [&str; 3] = ["Selected", "Disabled", "SelectedDisabled"];
+
+/// A role's `Selected`, `Disabled` and `SelectedDisabled` cells from its `Normal` cell, as
+/// `style::compile` builds them; `None` where the role has none of its own.
+fn variant_cells(
+    role: Role,
+    normal: &egui::Style,
+    src: &VariantSource,
+    scheme: egui::Theme,
+    rule_0: bool,
+) -> [Option<egui::Style>; 3] {
+    let input = CellInput {
+        scheme,
+        row_height: None,
+        defs: None,
+        rule_0,
+    };
+    let mut notes = Vec::new();
+    let selected = selected_cell(role, normal, src, &input, &mut notes);
+    let both = selected
+        .as_ref()
+        .and_then(|s| selected_disabled_cell(role, s, src, &mut notes));
+    let disabled = disabled_cell(role, normal, src, &mut notes);
+    [selected, disabled, both]
+}
+
 #[test]
 fn the_mapping_agrees_on_both_models() -> crate::Result<()> {
     let mut failures = Vec::new();
@@ -912,6 +976,8 @@ fn the_mapping_agrees_on_both_models() -> crate::Result<()> {
             let defs = egui::FontDefinitions::default();
             let old_cells = CellSource::old(&old, &AccessibilityPreferences::default());
             let new_cells = cell_source(&new);
+            let old_variant_src = VariantSource::old(&old);
+            let new_variant_src = variant_source(&new);
             for role in Role::all() {
                 let what = format!("{role:?}");
                 let cell = |base: &egui::Style, src: &CellSource, rule_0, row| {
@@ -973,6 +1039,71 @@ fn the_mapping_agrees_on_both_models() -> crate::Result<()> {
                     &mut failures,
                     &mut seen,
                 );
+                let old_normal_leaves = leaves(&format!("{old_cell:#?}"));
+                let old_variants = variant_cells(*role, &old_cell, &old_variant_src, scheme, false);
+                let new_variants = variant_cells(*role, &new_cell, &new_variant_src, scheme, true);
+                let old_selected_leaves =
+                    old_variants[0].as_ref().map(|s| leaves(&format!("{s:#?}")));
+                let new_selected_leaves =
+                    new_variants[0].as_ref().map(|s| leaves(&format!("{s:#?}")));
+                for (i, (name, (o, n))) in VARIANTS
+                    .iter()
+                    .zip(old_variants.iter().zip(&new_variants))
+                    .enumerate()
+                {
+                    let what = format!("{role:?}/{name}");
+                    let (Some(o), Some(n)) = (o, n) else {
+                        if o.is_some() != n.is_some() {
+                            failures.push(format!("{label}: {what}: a cell on one model only"));
+                        }
+                        continue;
+                    };
+                    // `SelectedDisabled` is copied from `Selected`, the others from `Normal`
+                    let (old_from, new_from) = match (i, &old_selected_leaves, &new_selected_leaves)
+                    {
+                        (2, Some(o), Some(n)) => (o, n),
+                        _ => (&old_normal_leaves, &new_cell_leaves),
+                    };
+                    let n_leaves = leaves(&format!("{n:#?}"));
+                    let checked = i != 1;
+                    let variant_expected = |path: &str, cause: Cause| match cause {
+                        Cause::Rule0 | Cause::Egui => leaf_at(&own, path),
+                        Cause::StateKeepsBase | Cause::Base => leaf_at(&new_leaves, path),
+                        Cause::OverFill => {
+                            let (align, weak) = if checked {
+                                (new_variant_src.checked.align, Some(false))
+                            } else {
+                                outline_of(*role, &new_cells)?
+                            };
+                            let painted = entry(&n.visuals.widgets, path)?;
+                            let line = Line {
+                                color: entry(&o.visuals.widgets, path)?.bg_stroke.color,
+                                align,
+                            };
+                            let fill = weak.map(|weak| {
+                                if weak {
+                                    painted.weak_bg_fill
+                                } else {
+                                    painted.bg_fill
+                                }
+                            });
+                            Some(format!("{:?}", line.over(fill)))
+                        }
+                        Cause::RestingStroke => None,
+                        Cause::AsHovered => path
+                            .contains(".active.")
+                            .then(|| pressed(path))
+                            .flatten()
+                            .and_then(|hovered| leaf_at(&n_leaves, &hovered)),
+                    };
+                    let side = Side {
+                        what: &what,
+                        preset: key,
+                        label: &label,
+                        bases: Some((old_from, new_from)),
+                    };
+                    compare(&side, o, n, &variant_expected, &mut failures, &mut seen);
+                }
             }
         }
     }

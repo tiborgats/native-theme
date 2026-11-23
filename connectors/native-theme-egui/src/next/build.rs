@@ -20,6 +20,7 @@ use crate::style::cells::{
 };
 use crate::style::line::LineAlign;
 use crate::style::states::Edge;
+use crate::style::variants::{CheckedBox, Disabled, VariantSource};
 
 /// A colour of the 0.8.0 model as the 0.7.2 model's: its 8-bit sRGB channels with straight
 /// alpha, which the builders convert as they convert a 0.7.2 colour.
@@ -740,5 +741,84 @@ pub(crate) fn cell_source(r: &ResolvedTheme) -> CellSource {
             width: Some((r.splitter.divider_width, "splitter.divider_width")),
         },
         scaled_up: r.context.text_scale > 1.0,
+    }
+}
+
+/// A role's disabled look: the label's and the fill's values a rule states for the disabled
+/// state, and the role's resting outline that fill is drawn under.
+fn disabled(label: &TextStyle, part: &PartStyle, home: &'static str, rest: &PartStyle) -> Disabled {
+    let (outline, align) = edge(rest);
+    Disabled {
+        text: state_text_color(label),
+        fill: state_fill_at(part, home),
+        outline: outline.color,
+        align,
+    }
+}
+
+/// [`VariantSource`] of the 0.8.0 model. A disabled or checked value is the one a rule states
+/// for that state. The checked box under the pointer or pressed keeps egui's own treatment of
+/// the hover or the press unless the theme states one for it (spec §2, `from_state`: the
+/// state asked alone), and is then the combined state's value; a checked box's disabled fill
+/// likewise.
+pub(crate) fn variant_source(r: &ResolvedTheme) -> VariantSource {
+    use WidgetState as S;
+    let b = &r.button;
+    let cb = &r.combo_box;
+    let k = &r.checkbox;
+    let i = &r.input;
+    let checked = k.indicator(S::CHECKED);
+    let (checked_outline, checked_align) = edge(&checked);
+    // the combined state's outline where a rule states one for `state` alone
+    let checked_state_line = |state: WidgetState| {
+        state_line(&k.indicator(state)).and_then(|_| line(&k.indicator(state | S::CHECKED)))
+    };
+    VariantSource {
+        button: disabled(
+            &b.label(S::DISABLED),
+            &b.body(S::DISABLED),
+            "button.body(DISABLED).fill",
+            &b.body(S::NONE),
+        ),
+        primary: state_fill(&b.body(S::DISABLED)),
+        combo_box: disabled(
+            &cb.label(S::DISABLED),
+            &cb.field(S::DISABLED),
+            "combo_box.field(DISABLED).fill",
+            &cb.field(S::NONE),
+        ),
+        checkbox: disabled(
+            &k.label(S::DISABLED),
+            &k.indicator(S::DISABLED),
+            "checkbox.indicator(DISABLED).fill",
+            &k.indicator(S::NONE),
+        ),
+        checked: CheckedBox {
+            fill: state_fill_at(&checked, "checkbox.indicator(CHECKED).fill"),
+            outline: checked_outline.color,
+            align: checked_align,
+            state_border: [checked_state_line(S::HOVER), checked_state_line(S::PRESSED)],
+            disabled_fill: state_fill(&k.indicator(S::DISABLED)).and_then(|_| {
+                fill_at(
+                    &k.indicator(S::DISABLED | S::CHECKED),
+                    "checkbox.indicator(DISABLED|CHECKED).fill",
+                )
+            }),
+        },
+        input: Disabled {
+            text: state_text_color(&i.text(S::DISABLED)),
+            fill: state_fill_at(&i.field(S::DISABLED), "input.field(DISABLED).fill"),
+            outline: None,
+            align: LineAlign::Outside,
+        },
+        slider_track: state_fill_at(&r.slider.track(S::DISABLED), "slider.track(DISABLED).fill"),
+        slider_fill: state_fill(&r.slider.active_track(S::DISABLED)),
+        switch: [
+            state_fill(&r.switch.track(S::DISABLED)),
+            state_fill(&r.switch.track(S::DISABLED | S::CHECKED)),
+        ],
+        menu: state_text_color(&r.menu.item_label(S::DISABLED)),
+        list: state_text_color(&r.list.item_label(S::DISABLED)),
+        link: state_text_color(&r.link.label(S::DISABLED)),
     }
 }

@@ -8,7 +8,7 @@ mod frames;
 pub(crate) mod line;
 pub(crate) mod roles;
 pub(crate) mod states;
-mod variants;
+pub(crate) mod variants;
 
 pub(crate) use roles::menu_bar_titles;
 
@@ -74,6 +74,7 @@ pub(crate) fn compile(input: &BuildInput<'_>, notes: &mut Vec<Note>) -> SchemeSt
     let base = Arc::new(base::base_style(input, notes));
     let source = cells::CellSource::old(input.theme, input.prefs);
     let cell_input = roles::CellInput::old(input);
+    let variant_source = variants::VariantSource::old(input.theme);
     let mut cells: [[Arc<egui::Style>; 4]; 25] = std::array::from_fn(|_| {
         [
             Arc::clone(&base),
@@ -88,13 +89,14 @@ pub(crate) fn compile(input: &BuildInput<'_>, notes: &mut Vec<Note>) -> SchemeSt
             finish(&mut style, input);
             Arc::new(style)
         };
-        let selected = variants::selected_cell(*role, &normal, input, notes);
+        let selected = variants::selected_cell(*role, &normal, &variant_source, &cell_input, notes);
         let selected_disabled = selected
             .as_ref()
-            .and_then(|s| variants::selected_disabled_cell(*role, s, input, notes))
+            .and_then(|s| variants::selected_disabled_cell(*role, s, &variant_source, notes))
             .map(finished);
         let selected = selected.map(finished);
-        let disabled = variants::disabled_cell(*role, &normal, input, notes).map(finished);
+        let disabled =
+            variants::disabled_cell(*role, &normal, &variant_source, notes).map(finished);
         finish(&mut normal, input);
         let normal = Arc::new(normal);
         let disabled = disabled.unwrap_or_else(|| Arc::clone(&normal));
