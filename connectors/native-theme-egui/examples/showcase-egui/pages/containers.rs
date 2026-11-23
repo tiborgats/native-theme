@@ -6,7 +6,8 @@
 //! (`nested_panels`).
 
 use egui::emath::TSTransform;
-use native_theme_egui::{PanelSide, Role, RoleVariant, Surface, expander_icon};
+use native_theme_egui::next::expander_icon;
+use native_theme_egui::{PanelSide, Role, RoleVariant, Surface};
 
 use super::{DemoState, caption};
 use crate::app::OldAtlas;
@@ -16,7 +17,7 @@ use crate::demo::{self, Registry};
 const SCROLL_ROWS: usize = 100;
 
 pub(crate) fn show(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, ui: &mut egui::Ui) {
-    let t = atlas.old_resolved(ui.ctx().theme());
+    let r = atlas.next_shown(ui.ctx());
     let normal = RoleVariant::Normal;
 
     caption(
@@ -63,10 +64,13 @@ pub(crate) fn show(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, 
         normal,
         "CollapsingHeader (expander_icon)",
         |ui| {
-            egui::CollapsingHeader::new("CollapsingHeader with expander_icon")
-                .icon(expander_icon(t))
-                .show(ui, |ui| ui.label("The body"))
-                .header_response
+            // `next::expander_icon` of the installed 0.8.0 theme; without one, egui's own icon
+            let header = egui::CollapsingHeader::new("CollapsingHeader with expander_icon");
+            let header = match r {
+                Some(r) => header.icon(expander_icon(r)),
+                None => header,
+            };
+            header.show(ui, |ui| ui.label("The body")).header_response
         },
     );
     demo::scoped(reg, ui, Role::Expander, normal, "ui.collapsing", |ui| {

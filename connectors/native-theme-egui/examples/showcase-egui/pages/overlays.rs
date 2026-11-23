@@ -6,10 +6,11 @@ use egui::Button;
 use egui::containers::menu::SubMenuButton;
 use native_theme::icons::IconRole;
 use native_theme::icons::IconSet;
-use native_theme_egui::{
-    DialogButtonOrder, Role, RoleVariant, Surface, dialog_button_order, window_title_bar_font,
-    window_title_bar_text_color,
+use native_theme::next::{DialogButtonOrder, IconStated, ResolvedTheme, WidgetState};
+use native_theme_egui::next::{
+    dialog_button_order, window_title_bar_font, window_title_bar_text_color,
 };
+use native_theme_egui::{Role, RoleVariant, Surface};
 
 use super::{DemoState, button_min_size, caption, inner_extent};
 use crate::app::OldAtlas;
@@ -18,6 +19,35 @@ use crate::demo::{self, Registry};
 /// The lines the window scrolls: a datum.
 const WINDOW_LINES: usize = 30;
 
+/// The modal's two buttons in `order`, the platform's (`dialog.button_order`), and its message;
+/// where the theme states no order, egui having none of its own, the buttons in the order the
+/// page writes them, and the message says so.
+pub(crate) fn modal_buttons(order: Option<DialogButtonOrder>) -> ([&'static str; 2], &'static str) {
+    match order {
+        Some(DialogButtonOrder::PrimaryRight) => (
+            ["Cancel", "OK"],
+            "A modal dialog, its two buttons in the platform's order.",
+        ),
+        Some(DialogButtonOrder::PrimaryLeft) => (
+            ["OK", "Cancel"],
+            "A modal dialog, its two buttons in the platform's order.",
+        ),
+        None => (
+            ["OK", "Cancel"],
+            "A modal dialog; the theme states no dialog.button_order, so its two buttons \
+             stand in the order the page writes them.",
+        ),
+    }
+}
+
+/// The size of a menu's item icon, `menu.icon(NONE).size` of the installed 0.8.0 theme `r`;
+/// `None` where it states none, and the menu's icons are then not drawn and their button says
+/// so.
+pub(crate) fn menu_icon_size(r: Option<&ResolvedTheme>) -> Option<f32> {
+    let icon = r?.menu.icon(WidgetState::NONE);
+    icon.stated.contains(IconStated::SIZE).then_some(icon.size)
+}
+
 pub(crate) fn show(
     reg: &mut Registry,
     state: &mut DemoState,
@@ -25,9 +55,9 @@ pub(crate) fn show(
     ui: &mut egui::Ui,
     chosen: &(IconSet, Option<String>),
 ) {
-    let t = atlas.old_resolved(ui.ctx().theme());
+    let r = atlas.next_shown(ui.ctx());
     let normal = RoleVariant::Normal;
-    let min = button_min_size(atlas.next_shown(ui.ctx()));
+    let min = button_min_size(r);
 
     caption(
         reg,
@@ -40,9 +70,15 @@ pub(crate) fn show(
     if open.clicked() {
         state.window_open = true;
     }
-    let title = egui::RichText::new("A window")
-        .font(window_title_bar_font(t, atlas.accessibility()))
-        .color(window_title_bar_text_color(t, true));
+    // `window.title(normal)`'s size and colour, each egui's own (`TextStyle::Heading`, the
+    // window's text colour) where the theme states it not
+    let mut title = egui::RichText::new("A window");
+    if let Some(font) = r.and_then(|r| window_title_bar_font(r).ok()) {
+        title = title.font(font);
+    }
+    if let Some(color) = r.and_then(|r| window_title_bar_text_color(r).ok()) {
+        title = title.color(color);
+    }
     let window_open = &mut state.window_open;
     demo::surfaced(
         reg,
@@ -90,13 +126,10 @@ pub(crate) fn show(
         state.modal_open = true;
     }
     if state.modal_open {
-        let order = dialog_button_order(t);
-        let extents = [
-            t.dialog.min_width,
-            t.dialog.max_width,
-            t.dialog.min_height,
-            t.dialog.max_height,
-        ];
+        let (labels, message) = modal_buttons(r.and_then(|r| dialog_button_order(r).ok()));
+        let ([min_w, min_h], [max_w, max_h]) = r.map_or(([None; 2], [None; 2]), |r| {
+            (r.dialog.panel.min_size, r.dialog.panel.max_size)
+        });
         let modal_open = &mut state.modal_open;
         demo::surfaced(
             reg,
@@ -107,13 +140,14 @@ pub(crate) fn show(
             "modal",
             |ui, chrome, reg| {
                 // The four extents egui's `Modal` never reads, per call, as the command palette
-                // takes them (`src/mapping.md`: DERIVED): each the frame's outer size, less its
-                // margins and stroke.
-                let [min_w, max_w, min_h, max_h] = extents;
-                let min_w = inner_extent(min_w, &chrome.frame, true);
-                let max_w = inner_extent(max_w, &chrome.frame, true);
-                let min_h = inner_extent(min_h, &chrome.frame, false);
-                let max_h = inner_extent(max_h, &chrome.frame, false);
+                // takes them (`src/mapping.md`: DERIVED), `dialog.panel.min_size` and
+                // `max_size`: each the frame's outer size, less its margins and stroke; one the
+                // theme states not, egui's own, none.
+                let inner = |stated: Option<f32>, horizontal| {
+                    stated.and_then(|s| inner_extent(s, &chrome.frame, horizontal))
+                };
+                let (min_w, max_w) = (inner(min_w, true), inner(max_w, true));
+                let (min_h, max_h) = (inner(min_h, false), inner(max_h, false));
                 let out = egui::Modal::new(egui::Id::unique("overlays/modal"))
                     .frame(chrome.frame)
                     .show(ui.ctx(), |ui| {
@@ -130,13 +164,7 @@ pub(crate) fn show(
                         if let Some(h) = max_h {
                             ui.set_max_height(h);
                         }
-                        body.add(reg, ui, "modal message", |ui| {
-                            ui.label("A modal dialog, its two buttons in the platform's order.")
-                        });
-                        let labels = match order {
-                            DialogButtonOrder::PrimaryRight => ["Cancel", "OK"],
-                            DialogButtonOrder::PrimaryLeft => ["OK", "Cancel"],
-                        };
+                        body.add(reg, ui, "modal message", |ui| ui.label(message));
                         let mut clicked = false;
                         ui.horizontal(|ui| {
                             for label in labels {
@@ -271,7 +299,7 @@ pub(crate) fn show(
     });
 
     caption(reg, ui, "Menus in a page MenuBar (Role::Menu)");
-    let menu_icon_size = t.menu.icon_size;
+    let icon_size = menu_icon_size(r);
     let (set, icon_theme) = chosen;
     demo::menu_bar(
         reg,
@@ -306,38 +334,39 @@ pub(crate) fn show(
                         "egui's triangle, in the button's text colour, in a square \
                          spacing.icon_width on a side, so checkbox.indicator_width \
                          (egui-0.37.0 src/containers/menu.rs:492-505, \
-                         SubMenuButton::arrow_atom); menu.icon_size does not size it",
+                         SubMenuButton::arrow_atom); menu.icon(NONE).size does not size it",
                     );
                 });
                 menu.record(reg, &r.response, "menu button");
 
-                let image = demo::role_image(
-                    ui,
-                    IconRole::ActionEdit,
-                    *set,
-                    icon_theme.as_deref(),
-                    menu_icon_size,
-                );
+                let image = icon_size.map(|size| {
+                    demo::role_image(ui, IconRole::ActionEdit, *set, icon_theme.as_deref(), size)
+                });
                 let r = match image {
-                    Some(image) => ui.menu_button((image, "With icon"), |ui| {
+                    Some(Some(image)) => ui.menu_button((image, "With icon"), |ui| {
                         demo::styled(reg, ui, Role::Menu, normal, "icon menu (open)");
                         demo::scoped(reg, ui, Role::Menu, normal, "menu item", |ui| {
                             ui.button("An item")
                         });
                     }),
-                    None => ui.menu_button("With icon (not in this set)", |ui| {
+                    Some(None) => ui.menu_button("With icon (not in this set)", |ui| {
+                        demo::styled(reg, ui, Role::Menu, normal, "icon menu (open)");
+                    }),
+                    None => ui.menu_button("With icon (no menu.icon(NONE).size stated)", |ui| {
                         demo::styled(reg, ui, Role::Menu, normal, "icon menu (open)");
                     }),
                 };
                 menu.record(reg, &r.response, "menu button (image and text)");
 
-                let image = demo::role_image(
-                    ui,
-                    IconRole::ActionSettings,
-                    *set,
-                    icon_theme.as_deref(),
-                    menu_icon_size,
-                );
+                let image = icon_size.and_then(|size| {
+                    demo::role_image(
+                        ui,
+                        IconRole::ActionSettings,
+                        *set,
+                        icon_theme.as_deref(),
+                        size,
+                    )
+                });
                 if let Some(image) = image {
                     let r = ui.menu_image_button(image, |ui| {
                         demo::styled(reg, ui, Role::Menu, normal, "image menu (open)");
@@ -347,13 +376,15 @@ pub(crate) fn show(
                     });
                     menu.record(reg, &r.response, "ui.menu_image_button");
                 }
-                let image = demo::role_image(
-                    ui,
-                    IconRole::ActionSearch,
-                    *set,
-                    icon_theme.as_deref(),
-                    menu_icon_size,
-                );
+                let image = icon_size.and_then(|size| {
+                    demo::role_image(
+                        ui,
+                        IconRole::ActionSearch,
+                        *set,
+                        icon_theme.as_deref(),
+                        size,
+                    )
+                });
                 if let Some(image) = image {
                     let r = ui.menu_image_text_button(image, "Image and text", |ui| {
                         demo::styled(reg, ui, Role::Menu, normal, "image text menu (open)");

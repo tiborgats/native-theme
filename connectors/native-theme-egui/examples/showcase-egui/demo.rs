@@ -6,7 +6,7 @@ use native_theme::Rgba;
 use native_theme::icons::{AnimatedIcon, FreedesktopLoader, IconProvider, IconRole, IconSet};
 use native_theme::theme::ResolvedFontSpec;
 use native_theme_egui::{
-    NativeThemeUiExt as _, Note, Role, RoleVariant, Surface, ThemeAtlas, icons, menu_bar_modifier,
+    NativeThemeUiExt as _, Note, Role, RoleVariant, Surface, icons, menu_bar_modifier,
     role_modifier,
 };
 use native_theme_showcase_support::status::DrawnFamily;
@@ -1526,19 +1526,20 @@ pub(crate) fn weighted_family(ui: &egui::Ui, weight: u16, body_weight: u16) -> e
     }
 }
 
-/// A page's or the inspector's section heading, in the theme's section-heading role
-/// (`text_scale.section_heading`, the section divider of `docs/platform-facts.md` §2.19): its
-/// size and line height through `text_role_font` and `text_role_line_height`, its weight
-/// through [`weighted_family`], in the text colour — as the iced showcase's section titles
-/// are. Without an installed atlas, egui's `Body` size, semibold.
+/// A page's or the inspector's section heading, in the installed 0.8.0 theme's section-heading
+/// role (`typography.headline`, the section divider of `docs/platform-facts.md` §2.19): its
+/// size and line height through `next::text_role_font` and `next::text_role_line_height`, its
+/// weight through [`weighted_family`], in the text colour ([`next_role_text`]) — as the iced
+/// showcase's section titles are. Without an installed 0.8.0 theme, egui's `Body` size,
+/// semibold.
 pub(crate) fn heading_text(ui: &egui::Ui, text: impl Into<String>) -> egui::RichText {
-    if ThemeAtlas::from_ctx(ui.ctx()).is_none() {
+    if next_value(ui, |_| ()).is_none() {
         let size = egui::TextStyle::Body.resolve(ui.style()).size;
         return egui::RichText::new(text)
             .font(semibold_font(ui, size))
             .color(ui.visuals().text_color());
     }
-    role_text(ui, native_theme_egui::TextRole::SectionHeading, text)
+    next_role_text(ui, native_theme_egui::TextRole::SectionHeading, text)
 }
 
 /// `text` one line box tall: the size of the font `ui` sets a widget's text in (its
@@ -1634,13 +1635,6 @@ pub(crate) fn next_grown(
 /// (`OldAtlas::next_shown`: the scheme egui draws, for an inactive window while it is not
 /// focused), as the gpui showcase's `support::next_value`; `None` without an installed 0.8.0
 /// theme.
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "the page groups call it as they move to the 0.8.0 model"
-    )
-)]
 pub(crate) fn next_value<T>(
     ui: &egui::Ui,
     build: impl FnOnce(&native_theme::next::ResolvedTheme) -> T,
@@ -1693,13 +1687,6 @@ pub(crate) fn next_unstated_as(
 /// size and line height through `next::text_role_font` and `next::text_role_line_height`, which
 /// the theme's resolve has scaled already, its weight through [`weighted_family`], in the text
 /// colour; without an installed 0.8.0 theme, egui's `Body` text.
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "the page groups call it as they move to the 0.8.0 model"
-    )
-)]
 pub(crate) fn next_role_text(
     ui: &egui::Ui,
     role: native_theme_egui::TextRole,

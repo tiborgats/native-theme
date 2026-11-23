@@ -3617,6 +3617,68 @@ fn the_icons_page_has_the_gpui_showcases_sections() {
     }
 }
 
+/// A freedesktop icon theme name no icon theme is installed under, so the Icons page draws its
+/// placeholders.
+#[cfg(all(target_os = "linux", feature = "system-icons"))]
+const ABSENT_ICON_THEME: &str = "native-theme-test-no-such-icon-theme";
+
+/// The Icons page's placeholder for an icon the set lacks is filled with the installed 0.8.0
+/// theme's `button.body(NONE).fill`, as gpui's skeleton is: under [`TEST_PRESET`] with a
+/// freedesktop icon theme no host has ([`ABSENT_ICON_THEME`]), whose roles are absent, and that
+/// fill patched to `colors.window.border`, a colour of the same theme the 0.7.2
+/// `button.background_color` beside it is not, every `Image (absent)` square is filled with it.
+#[cfg(all(target_os = "linux", feature = "system-icons"))]
+#[test]
+fn the_icons_placeholder_takes_the_08_button_fill() -> Result<(), String> {
+    use native_theme::next::{ButtonRule, Paint, PartPatch, ThemePatch, WidgetState};
+    let (mut harness, r) = open_patched(Page::Icons, egui::Theme::Light, TEST_PRESET, |r| {
+        Some(ThemePatch::new().button(
+            ButtonRule::new().body(PartPatch::new().fill(Paint::Solid(r.colors.window.border?))),
+        ))
+    })?;
+    harness.state_mut().settings.icon = IconSetChoice::Freedesktop(ABSENT_ICON_THEME.to_owned());
+    harness.run_steps(SETTLE);
+    let fill = native_theme_egui::next::fill_of(&r.button.body(WidgetState::NONE))
+        .ok_or("the patch states no button.body(NONE).fill")?;
+    let old = native_theme_egui::convert::to_color32(
+        harness
+            .state()
+            .atlas
+            .old_resolved(egui::Theme::Light)
+            .button
+            .background_color,
+    );
+    assert_ne!(
+        fill, old,
+        "the patched fill is the 0.7.2 button.background_color"
+    );
+    let absent: Vec<egui::Rect> = harness
+        .state()
+        .registry
+        .records()
+        .iter()
+        .filter(|r| r.info.kind == "Image (absent)")
+        .map(|r| r.rect)
+        .collect();
+    if absent.is_empty() {
+        return Err(
+            "the preset's icon choice lacks no role, so no placeholder is drawn".to_owned(),
+        );
+    }
+    let shapes = harness.output().shapes.clone();
+    for rect in absent {
+        let filled = shapes.iter().any(|clipped| match &clipped.shape {
+            egui::Shape::Rect(shape) => shape.fill == fill && rect.contains_rect(shape.rect),
+            _ => false,
+        });
+        assert!(
+            filled,
+            "the placeholder at {rect:?} is not filled with {fill:?}"
+        );
+    }
+    Ok(())
+}
+
 /// Parity items 19 and 21: the command palette and About are titled, as gpui-component's
 /// `Dialog` is, and the close button of the title row closes them.
 #[test]
@@ -3957,8 +4019,8 @@ fn the_basic_page_applies_the_per_call_leaves() {
 /// M9-106 and M9-108: the per-call leaves the connector leaves to the application
 /// (`src/mapping.md`, `dialog.min_width` … `input.min_height`, DERIVED) reach the palette pages
 /// as they reach Basic. Under windows-11 set directly, which states every one: the Overlays
-/// page's modal is at least `dialog.min_width` × `dialog.min_height` and at most the max
-/// extents; every `Role::Button` kind of the Buttons and Overlays pages built with
+/// page's modal is at least the 0.8.0 theme's `dialog.panel.min_size` and at most its
+/// `max_size`, under a patch whose least width is past the 0.7.2 `dialog.max_width`; every `Role::Button` kind of the Buttons and Overlays pages built with
 /// `Button::new` is at least the 0.8.0 theme's `button.body(NONE).min_size[0]` wide, there and
 /// under kde-breeze, whose minimum is wider than egui's buttons; and every `TextEdit (…)` of the
 /// Inputs page at least `input.field(NONE).min_size[1]` tall, there and under adwaita and
@@ -4041,13 +4103,40 @@ fn the_palette_pages_apply_the_per_call_leaves() -> Result<(), String> {
         }
     }
 
-    let mut harness = open_page_under(Page::Overlays, egui::Theme::Light, "windows-11");
-    let t = harness
+    // windows-11's `dialog.panel` widths patched past the 0.7.2 `dialog.max_width`, so a modal
+    // sized by the 0.7.2 extents is too narrow
+    let old = open_page_under(Page::Overlays, egui::Theme::Light, "windows-11")
         .state()
         .atlas
         .old_resolved(egui::Theme::Light)
+        .dialog
         .clone();
-    let d = &t.dialog;
+    let (mut harness, r) = open_patched(Page::Overlays, egui::Theme::Light, "windows-11", |r| {
+        use native_theme::next::{DialogPatch, PartPatch, ThemePatch, WidgetPatchMap};
+        let [max_w, _] = r.dialog.panel.max_size;
+        let min_w = max_w? + 50.0;
+        Some(
+            ThemePatch::new().widget_rules(
+                WidgetPatchMap::new().dialog(
+                    DialogPatch::new().panel(
+                        PartPatch::new()
+                            .min_size([Some(min_w), r.dialog.panel.min_size[1]])
+                            .max_size([Some(min_w + 50.0), r.dialog.panel.max_size[1]]),
+                    ),
+                ),
+            ),
+        )
+    })?;
+    let panel = &r.dialog.panel;
+    let ([Some(min_w), Some(min_h)], [Some(max_w), Some(max_h)]) = (panel.min_size, panel.max_size)
+    else {
+        return Err("windows-11 states not every dialog.panel extent".to_owned());
+    };
+    assert!(
+        min_w > old.max_width,
+        "the patched dialog.panel.min_size[0] {min_w} is not past the 0.7.2 dialog.max_width {}",
+        old.max_width
+    );
     wide_enough(
         &harness,
         &[
@@ -4062,17 +4151,13 @@ fn the_palette_pages_apply_the_per_call_leaves() -> Result<(), String> {
     wide_enough(&harness, &["modal button"])?;
     for modal in rects(&harness, "modal") {
         assert!(
-            modal.width() >= d.min_width - 0.01
-                && modal.width() <= d.max_width + 0.01
-                && modal.height() >= d.min_height - 0.01
-                && modal.height() <= d.max_height + 0.01,
-            "the modal is {:?}, outside dialog.min_width..max_width {}..{} x \
-             min_height..max_height {}..{}",
+            modal.width() >= min_w - 0.01
+                && modal.width() <= max_w + 0.01
+                && modal.height() >= min_h - 0.01
+                && modal.height() <= max_h + 0.01,
+            "the modal is {:?}, outside dialog.panel.min_size..max_size {min_w}..{max_w} x \
+             {min_h}..{max_h}",
             modal.size(),
-            d.min_width,
-            d.max_width,
-            d.min_height,
-            d.max_height
         );
     }
     harness.key_press(egui::Key::Escape);
@@ -4119,6 +4204,125 @@ fn the_palette_pages_apply_the_per_call_leaves() -> Result<(), String> {
             assert_noted(&harness, kind, "input.field(NONE).min_size[1]");
         }
     }
+    Ok(())
+}
+
+/// The Overlays page's modal lays its buttons out in the installed 0.8.0 theme's
+/// `dialog.button_order`: `modal_buttons` puts the primary "OK" at the end each order names, and
+/// where the theme states none, as no bundled preset does, the buttons in the page's order with
+/// a message that says so; under kde-breeze (primary left) patched to primary right, which the
+/// 0.7.2 theme beside it is not, "Cancel" is drawn left of "OK".
+#[test]
+fn the_modal_takes_the_08_button_order_or_says_it_is_unstated() -> Result<(), String> {
+    use crate::pages::overlays::modal_buttons;
+    use native_theme::next::{DialogButtonOrder, DialogPatch, ThemePatch, WidgetPatchMap};
+    assert_eq!(
+        modal_buttons(Some(DialogButtonOrder::PrimaryRight)).0,
+        ["Cancel", "OK"]
+    );
+    assert_eq!(
+        modal_buttons(Some(DialogButtonOrder::PrimaryLeft)).0,
+        ["OK", "Cancel"]
+    );
+    let (labels, message) = modal_buttons(None);
+    assert_eq!(labels, ["OK", "Cancel"]);
+    assert!(
+        message.contains("states no dialog.button_order"),
+        "the message does not say the order is unstated: {message}"
+    );
+    for (_, said) in [
+        modal_buttons(Some(DialogButtonOrder::PrimaryRight)),
+        modal_buttons(Some(DialogButtonOrder::PrimaryLeft)),
+    ] {
+        assert!(!said.contains("states no"), "a stated order said unstated");
+    }
+
+    let old = open_page_under(Page::Overlays, egui::Theme::Light, "kde-breeze")
+        .state()
+        .atlas
+        .old_resolved(egui::Theme::Light)
+        .dialog
+        .button_order;
+    assert_eq!(
+        old,
+        native_theme_egui::DialogButtonOrder::PrimaryLeft,
+        "the 0.7.2 kde-breeze is not primary left, so the patch proves nothing"
+    );
+    let (mut harness, r) = open_patched(Page::Overlays, egui::Theme::Light, "kde-breeze", |_| {
+        Some(
+            ThemePatch::new().widget_rules(
+                WidgetPatchMap::new()
+                    .dialog(DialogPatch::new().button_order(DialogButtonOrder::PrimaryRight)),
+            ),
+        )
+    })?;
+    assert_eq!(r.dialog.button_order, Some(DialogButtonOrder::PrimaryRight));
+    harness.get_by_label("Open modal").click();
+    harness.run_steps(SETTLE);
+    let (cancel, ok) = (
+        harness.get_by_label("Cancel").rect(),
+        harness.get_by_label("OK").rect(),
+    );
+    assert!(
+        cancel.center().x < ok.center().x,
+        "Cancel at {cancel:?} is not left of OK at {ok:?} under the patched primary right"
+    );
+    Ok(())
+}
+
+/// The Overlays page's menu-bar icons are drawn at the installed 0.8.0 theme's
+/// `menu.icon(NONE).size`: under kde-breeze with the bundled Material set and the size patched to
+/// twice the preset's own, which the 0.7.2 `menu.icon_size` beside it is not, the
+/// `ui.menu_image_button`, an icon alone in its button, is wider than unpatched by what the icon
+/// grows; and without an installed 0.8.0 theme no size is taken.
+#[cfg(feature = "material-icons")]
+#[test]
+fn the_menu_icons_take_the_08_menu_icon_size() -> Result<(), String> {
+    use crate::pages::overlays::menu_icon_size;
+    use native_theme::next::{IconPatch, MenuRule, ThemePatch, WidgetState};
+    assert_eq!(menu_icon_size(None), None);
+    let width = |harness: &Harness<'_, App>| -> Result<f32, String> {
+        harness
+            .state()
+            .registry
+            .records()
+            .iter()
+            .find(|r| r.info.kind == "ui.menu_image_button")
+            .map(|r| r.rect.width())
+            .ok_or_else(|| "no ui.menu_image_button drawn".to_owned())
+    };
+    let material = |harness: &mut Harness<'static, App>| {
+        harness.state_mut().settings.icon = IconSetChoice::Material;
+        harness.run_steps(SETTLE);
+    };
+
+    let mut plain = open_page_under(Page::Overlays, egui::Theme::Light, "kde-breeze");
+    material(&mut plain);
+    let old = plain
+        .state()
+        .atlas
+        .old_resolved(egui::Theme::Light)
+        .menu
+        .icon_size;
+    let (mut harness, r) = open_patched(Page::Overlays, egui::Theme::Light, "kde-breeze", |r| {
+        let size = menu_icon_size(Some(r))?;
+        Some(ThemePatch::new().menu(MenuRule::new().icon(IconPatch::new().size(2.0 * size))))
+    })?;
+    material(&mut harness);
+    let size = menu_icon_size(Some(&r)).ok_or("the patch states no menu.icon(NONE).size")?;
+    assert_eq!(size, r.menu.icon(WidgetState::NONE).size);
+    assert!(
+        (size - old).abs() > 0.5,
+        "the patched {size} is the 0.7.2 menu.icon_size {old}"
+    );
+    // the button holds its icon and padding alone, so it grows by what the icon grows
+    let (unpatched, patched) = (width(&plain)?, width(&harness)?);
+    assert!(
+        (patched - unpatched - size / 2.0).abs() < 0.5,
+        "the image button grows from {unpatched} to {patched}, not by the icon's growth from \
+         the preset's {} to the patched menu.icon(NONE).size {size}",
+        size / 2.0
+    );
     Ok(())
 }
 
@@ -4530,37 +4734,63 @@ fn the_tables_headers_take_the_patched_08_header_label() -> Result<(), String> {
     Ok(())
 }
 
-/// M9-107: the Text page's text-role labels are drawn at the weight they name, as the Basic
-/// page's Typography lines are (`demo::role_text`): under windows-11 (`text_scale.display.weight`
-/// 600 over a 400 body) "Display, weight 600" is in the face registered at 600, and each role's
-/// label at its role's size and line height. The faces at the roles' weights are held on every
-/// host ([`hold_weights`]), so a label drawn at the body's weight fails here whatever faces the
-/// OS has.
+/// M9-107: the Text page's text-role labels are drawn at the weight they name, of the installed
+/// 0.8.0 theme (`demo::next_role_text`): under windows-11, whose display weight is not its
+/// body's, each role's label names the 0.8.0 weight, which for some role the 0.7.2 theme beside
+/// it does not, and is drawn in the face registered at it, at its role's size. The faces at the
+/// roles' weights are held on every host ([`hold_weights`]), so a label drawn at the body's
+/// weight fails here whatever faces the OS has.
 #[test]
-fn the_text_role_labels_are_drawn_at_their_weight() {
+fn the_text_role_labels_are_drawn_at_their_weight() -> Result<(), String> {
     use native_theme_egui::TextRole;
+    use native_theme_egui::next;
     const ROLES: [(TextRole, &str); 4] = [
         (TextRole::Caption, "Caption"),
         (TextRole::SectionHeading, "Section heading"),
         (TextRole::DialogTitle, "Dialog title"),
         (TextRole::Display, "Display"),
     ];
-    let mut harness = open_scaled("windows-11", "text", 1.0);
+    let mut harness = open_page_scaled(Page::Text, "windows-11", 1.0);
     let t = harness
         .state()
         .atlas
         .old_resolved(egui::Theme::Light)
         .clone();
+    let r = harness
+        .state()
+        .atlas
+        .next_resolved(egui::Theme::Light)
+        .ok_or("no 0.8.0 theme installed")?
+        .clone();
     let weights: Vec<u16> = ROLES
         .iter()
-        .map(|(role, _)| native_theme_egui::text_role_weight(&t, *role))
+        .map(|(role, _)| next::text_role_weight(&r, *role))
         .collect();
     hold_weights(&mut harness, &weights);
-    let prefs = harness.state().atlas.accessibility().clone();
+    let body = next::font_weight(&r).map_err(|e| e.to_string())?;
     assert_ne!(
-        t.text_scale.display.weight, t.defaults.font.weight,
+        next::text_role_weight(&r, TextRole::Display),
+        body,
         "windows-11's display weight is not the body's"
     );
+    // the bundled presets' weights are the same in both models, so the 0.7.2 atlas alone
+    // installed (`open_scaled`, no 0.8.0 themes) tells them apart: the labels name no weight
+    let old_only = open_scaled("windows-11", "text", 1.0);
+    let old_labels: Vec<egui::Rect> = old_only
+        .state()
+        .registry
+        .records()
+        .iter()
+        .filter(|r| r.info.kind == "text role label")
+        .map(|r| r.rect)
+        .collect();
+    assert_eq!(
+        native_theme_egui::text_role_weight(&t, TextRole::Display),
+        next::text_role_weight(&r, TextRole::Display)
+    );
+    for (_, name) in ROLES {
+        galley_font(&old_only, name, &old_labels);
+    }
     let labels: Vec<egui::Rect> = harness
         .state()
         .registry
@@ -4570,14 +4800,12 @@ fn the_text_role_labels_are_drawn_at_their_weight() {
         .map(|r| r.rect)
         .collect();
     for (role, name) in ROLES {
-        let weight = native_theme_egui::text_role_weight(&t, role);
+        let weight = next::text_role_weight(&r, role);
         let text = format!("{name}, weight {weight}");
-        let want = egui::FontId::new(
-            native_theme_egui::text_role_font(&t, role, &prefs).size,
-            weighted(weight, t.defaults.font.weight),
-        );
+        let want = egui::FontId::new(next::text_role_font(&r, role).size, weighted(weight, body));
         assert_eq!(galley_font(&harness, &text, &labels), want, "{text}");
     }
+    Ok(())
 }
 
 /// The tables' header rows are `list_header_height` tall where the theme states one
@@ -6364,6 +6592,62 @@ fn the_expander_header_is_its_stated_height_by_the_row_rule() {
         }
     }
     assert!(faults.is_empty(), "{faults:#?}");
+}
+
+/// The Containers page's `CollapsingHeader` draws its arrow with `next::expander_icon` of the
+/// installed 0.8.0 theme: under kde-breeze with `expander.arrow(NONE).color` patched to
+/// `colors.window.border`, a colour of the same theme the 0.7.2 `expander.arrow_color` beside it
+/// is not, a shape in the header is filled with it.
+#[test]
+fn the_containers_expander_takes_the_08_arrow_colour() -> Result<(), String> {
+    use native_theme::next::{ExpanderRule, IconPatch, ThemePatch};
+    const KIND: &str = "CollapsingHeader (expander_icon)";
+    let (mut harness, r) =
+        open_patched(Page::Containers, egui::Theme::Light, "kde-breeze", |r| {
+            Some(ThemePatch::new().expander(
+                ExpanderRule::new().arrow(IconPatch::new().color(r.colors.window.border?)),
+            ))
+        })?;
+    let colour = native_theme_egui::next::border_color(&r).map_err(|e| e.to_string())?;
+    let old = harness
+        .state()
+        .atlas
+        .old_resolved(egui::Theme::Light)
+        .expander
+        .arrow_color
+        .map(native_theme_egui::convert::to_color32);
+    assert_ne!(
+        Some(colour),
+        old,
+        "the patched arrow is the 0.7.2 expander.arrow_color"
+    );
+    harness
+        .get_by_label("CollapsingHeader with expander_icon")
+        .scroll_to_me();
+    harness.run_steps(4);
+    let header = harness
+        .state()
+        .registry
+        .records()
+        .iter()
+        .find(|r| r.info.kind == KIND)
+        .map(|r| r.rect)
+        .ok_or("the expander header is not recorded")?;
+    let drawn = harness
+        .output()
+        .shapes
+        .iter()
+        .any(|clipped| match &clipped.shape {
+            egui::Shape::Path(path) => {
+                path.fill == colour && path.points.iter().all(|p| header.expand(0.5).contains(*p))
+            }
+            _ => false,
+        });
+    assert!(
+        drawn,
+        "no arrow in {colour:?} inside the header at {header:?}"
+    );
+    Ok(())
 }
 
 /// The kinds drawn with egui's own selectable button (`Button::selectable`, frameless at rest
@@ -8318,11 +8602,16 @@ fn a_set_preference_is_a_selected_switch() {
 /// which would push every icon row below the fold.
 #[cfg(feature = "lucide-icons")]
 #[test]
-fn the_icons_page_image_is_icon_sized() {
+fn the_icons_page_image_is_icon_sized() -> Result<(), String> {
     let harness = open_page(Page::Icons, egui::Theme::Light);
-    let t = harness.state().atlas.old_resolved(harness.ctx.theme());
+    let r = harness
+        .state()
+        .atlas
+        .next_resolved(harness.ctx.theme())
+        .ok_or("no 0.8.0 theme installed")?;
     let size =
-        native_theme_egui::icons::icon_size(t, native_theme_egui::icons::IconContext::Toolbar);
+        native_theme_egui::next::icon_size(r, native_theme_egui::icons::IconContext::Toolbar)
+            .map_err(|e| e.to_string())?;
     let rect = harness
         .state()
         .registry
@@ -8330,11 +8619,12 @@ fn the_icons_page_image_is_icon_sized() {
         .iter()
         .find(|r| r.info.kind == "ui.image")
         .map(|r| r.rect)
-        .expect("the preset's Lucide set has ActionSave");
+        .ok_or("the preset's Lucide set has no ActionSave")?;
     assert!(
         rect.width() <= size + 1.0 && rect.height() <= size + 1.0,
         "ui.image is {rect:?}, the toolbar icon size {size}"
     );
+    Ok(())
 }
 
 fn manifest_and_json(harness: &Harness<'_, App>) -> (Manifest, serde_json::Value) {
