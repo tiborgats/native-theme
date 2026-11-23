@@ -305,6 +305,7 @@ pub struct ReadmeDoctests;
 
 use gpui::{App, Global, Hsla, SharedString, px};
 use gpui_base::input::CursorBlink;
+use gpui_component::highlighter::HighlightThemeStyle;
 use gpui_component::scroll::ScrollbarMode;
 use gpui_component::theme::{Theme as GpuiTheme, ThemeMode as GpuiThemeMode};
 use std::borrow::Cow;
@@ -381,29 +382,6 @@ pub fn to_theme(
         &mut theme,
         &ThemeScalars::from_resolved(resolved, is_dark, prefs),
     );
-    // The corner radius of a client-decorated window, which gpui-component's
-    // WindowBorder, Root and TitleBar round (gpui-component
-    // src/window_border.rs:28-29): the window's own, `window.border`'s.
-    theme.window_radius = px(resolved.window.border.corner_radius);
-
-    // Rationale B5: the theme's caret blink; where it states none, upstream's
-    // default stays, and `apply` installs the application's.
-    if let Some(blink) = caret_blink(resolved) {
-        theme.cursor_blink = blink;
-    }
-
-    // Issue 43/44: the highlight theme follows is_dark, so syntax highlighting
-    // takes the mode's colours. Its style is config::highlight_style's, the one
-    // the config below carries, which fills the code editor and its gutter
-    // from the platform's field fill.
-    let highlight = if is_dark {
-        gpui_component::highlighter::HighlightTheme::default_dark()
-    } else {
-        gpui_component::highlighter::HighlightTheme::default_light()
-    };
-    let mut highlight = (*highlight).clone();
-    highlight.style = config::highlight_style(resolved, mode);
-    theme.highlight_theme = std::sync::Arc::new(highlight);
 
     // Store config for gpui-component's theme switching
     let config: Rc<_> = Rc::new(config::to_theme_config(resolved, name, mode, prefs));
@@ -415,9 +393,8 @@ pub fn to_theme(
     theme
 }
 
-/// The values of the global theme that [`to_theme`] and
-/// [`config::to_theme_config`] take from the first slice of the 0.8.0 work
-/// (its globals), read from a 0.7.2 resolved theme by
+/// The values of the global theme beside its colours that [`to_theme`] and
+/// [`config::to_theme_config`] write, read from a 0.7.2 resolved theme by
 /// [`ThemeScalars::from_resolved`] and from the 0.8.0 model by the
 /// connector's `next` module: the families as [`font_family`] gives them,
 /// the sizes already scaled.
@@ -435,6 +412,14 @@ pub(crate) struct ThemeScalars {
     pub(crate) focus_band: bool,
     /// Whether the platform draws overlay scrollbars.
     pub(crate) overlay_scrollbars: bool,
+    /// The corner radius of a client-decorated window.
+    pub(crate) window_radius: f32,
+    /// The caret's blink, `None` where the theme states none
+    /// ([`caret_blink_of`]).
+    pub(crate) cursor_blink: Option<CursorBlink>,
+    /// The highlighter style of the theme's mode
+    /// ([`config::highlight_style_of`]).
+    pub(crate) highlight: HighlightThemeStyle,
 }
 
 impl ThemeScalars {
@@ -456,18 +441,27 @@ impl ThemeScalars {
             shadow: d.border.shadow_enabled,
             focus_band: crate::colors::focus_band_on(d),
             overlay_scrollbars: resolved.scrollbar.overlay_mode,
+            window_radius: resolved.window.border.corner_radius,
+            cursor_blink: caret_blink(resolved),
+            highlight: config::highlight_style(resolved, mode_of(is_dark)),
         }
     }
 }
 
-/// Write `s` onto `theme`: its `mode`, fonts, radii, `shadow`, `focus_ring`
-/// and `scrollbar_mode`.
-pub(crate) fn apply_scalars(theme: &mut GpuiTheme, s: &ThemeScalars) {
-    theme.mode = if s.is_dark {
+/// gpui-component's mode of a dark (`is_dark`) or light theme.
+fn mode_of(is_dark: bool) -> GpuiThemeMode {
+    if is_dark {
         GpuiThemeMode::Dark
     } else {
         GpuiThemeMode::Light
-    };
+    }
+}
+
+/// Write `s` onto `theme`: its `mode`, fonts, radii, `shadow`, `focus_ring`,
+/// `scrollbar_mode`, `window_radius`, `cursor_blink` where `s` states a
+/// blink, and `highlight_theme`.
+pub(crate) fn apply_scalars(theme: &mut GpuiTheme, s: &ThemeScalars) {
+    theme.mode = mode_of(s.is_dark);
     theme.font_family = s.font_family.clone();
     // §3.4: gpui-component's `WindowState` root plugin sets the window rem
     // to font_size (gpui-component 0.10.0 src/root.rs:725), so scaling these two sizes scales every rem-relative
@@ -491,6 +485,30 @@ pub(crate) fn apply_scalars(theme: &mut GpuiTheme, s: &ThemeScalars) {
     } else {
         ScrollbarMode::Always
     };
+
+    // The corner radius of a client-decorated window, which gpui-component's
+    // WindowBorder, Root and TitleBar round (gpui-component
+    // src/window_border.rs:28-29): the window's own.
+    theme.window_radius = px(s.window_radius);
+
+    // Rationale B5: the theme's caret blink; where it states none, upstream's
+    // default stays, and `apply` installs the application's.
+    if let Some(blink) = s.cursor_blink {
+        theme.cursor_blink = blink;
+    }
+
+    // Issue 43/44: the highlight theme follows the mode, so syntax
+    // highlighting takes the mode's colours. Its style is the one the config
+    // carries, which fills the code editor and its gutter from the
+    // platform's field fill.
+    let highlight = if s.is_dark {
+        gpui_component::highlighter::HighlightTheme::default_dark()
+    } else {
+        gpui_component::highlighter::HighlightTheme::default_light()
+    };
+    let mut highlight = (*highlight).clone();
+    highlight.style = s.highlight.clone();
+    theme.highlight_theme = std::sync::Arc::new(highlight);
 }
 
 /// Load a bundled preset and convert it to a gpui-component [`GpuiTheme`] in one call.
@@ -1094,17 +1112,31 @@ pub fn tooltip_show_delay(resolved: &ResolvedTheme) -> Option<Duration> {
 /// validation rejects, gives `None`.
 fn caret_blink(resolved: &ResolvedTheme) -> Option<CursorBlink> {
     let input = &resolved.input;
-    match input.caret_blink_off? {
+    caret_blink_of(
+        input.caret_blink_on,
+        input.caret_blink_off,
+        input.caret_blink_timeout,
+    )
+}
+
+/// [`caret_blink`] of the durations `on`, `off` and `timeout`, in
+/// milliseconds, each `None` where unstated.
+pub(crate) fn caret_blink_of(
+    on: Option<u32>,
+    off: Option<u32>,
+    timeout: Option<u32>,
+) -> Option<CursorBlink> {
+    match off? {
         0 => Some(CursorBlink::steady()),
         off => {
-            let on = input.caret_blink_on?;
+            let on = on?;
             let half_sum = Duration::from_micros(
                 u64::from(on)
                     .saturating_add(u64::from(off))
                     .saturating_mul(500),
             );
             let blink = CursorBlink::blinking(half_sum);
-            Some(match input.caret_blink_timeout {
+            Some(match timeout {
                 Some(timeout) => blink.with_idle_timeout(Duration::from_millis(u64::from(timeout))),
                 None => blink,
             })

@@ -1,9 +1,10 @@
 //! Connector parity of the 0.8.0 work (docs/v0.8.0-plan.md, section 1, rule
 //! 2; M0, step 4, and M4, step 1): what the connector hands to gpui, computed
 //! from the 0.7.2 model by the connector's public mapping and from the 0.8.0
-//! model by [`super`], is equal leaf by leaf: every `ThemeColor` field, the
-//! global theme's values the slice of M0 feeds (its globals), the scroll bar,
-//! and every public builder of `src/geometry.rs` and `src/variants.rs`.
+//! model by [`super`], is equal leaf by leaf: every field of the
+//! gpui-component theme and of its stored configs, the scroll bar and the
+//! resize handles, and every public builder of `src/geometry.rs` and
+//! `src/variants.rs`.
 //!
 //! Presets covered: kde-breeze, light and dark ([`PRESETS`]). The 0.7.2 side
 //! is resolved as the connector's tests resolve it
@@ -15,20 +16,26 @@
 //! The form of comparison per toolkit type:
 //!
 //! - `gpui_component::Theme` has no `PartialEq`, and its `Serialize` skips
-//!   `notification`, `motion` and `cursor_blink`; it is compared leaf by leaf,
-//!   since the 0.8.0 side feeds only the leaves compared here, each leaf by the
-//!   `PartialEq` of its own type, which every leaf compared here has: the
+//!   `notification`, `motion` and `cursor_blink`; it is compared field by
+//!   field, each by the `PartialEq` of its own type where it has one: the
 //!   `ThemeColor` fields (`Hsla`, equal when its four `f32` are, by
 //!   `total_cmp`) and the `ThemeToken` gpui-component derives from each;
 //!   `mode` (`ThemeMode`); the families (`SharedString`); the sizes and radii
 //!   (`Pixels`); `shadow` and `focus_ring` (`bool`); `scrollbar_mode`
-//!   (`ScrollbarMode`); and the `ThemeConfig` in the slot of the theme's
-//!   mode, by its fields (`ThemeMode`, `Option` of `SharedString`, `f32`,
-//!   `usize` and `bool`, its colours as hex strings). A difference is printed
-//!   in the `Debug` form of both values.
-//! - The scroll bar, which goes into gpui-base's global, a type with neither
-//!   `Debug` nor `PartialEq`: through the connector's `ScrollbarGeometry`,
-//!   field by field (`Pixels`, `Hsla`).
+//!   (`ScrollbarMode`); `cursor_blink` (`CursorBlink`); `highlight_theme`
+//!   (`HighlightTheme`); `transparent` (`Hsla`); and the `ThemeConfig` in
+//!   the slot of the theme's mode, by its fields (`bool`, `ThemeMode`,
+//!   `SharedString`, `Option` of `SharedString`, `f32`, `usize`, `bool` and
+//!   `HighlightThemeStyle`, its colours as hex strings). `notification`,
+//!   `list`, `sheet` and `motion`, and the config in the other slot, have no
+//!   `PartialEq` and are compared in their `Debug` form; so is the whole
+//!   theme last, where no field differed, for what no field compared names.
+//!   A difference is printed in the `Debug` form of both values.
+//! - The scroll bar and the resize handles, which go into gpui-base's global,
+//!   a type with neither `Debug` nor `PartialEq`: the scroll bar through the
+//!   connector's `ScrollbarGeometry`, field by field (`Pixels`, `Hsla`), and
+//!   the handles by `ResizableTheme`'s two fields (`Option<Hsla>`). The rest
+//!   of that global is what gpui-component projects from its own theme.
 //! - The `geometry` builders: `StyleRefinement`, `gpui_component::Size`,
 //!   `Option<Pixels>`, `Pixels` and `Option<DialogEntrance>`, each by its
 //!   `PartialEq`; `input_fill` and `combo_box_fill` at rest and disabled, as
@@ -400,14 +407,15 @@ impl Report {
     }
 }
 
-/// The two resolved themes of `preset` for `is_dark`, and 0.7.2's layout,
-/// which its theme holds beside the variants.
+/// The two resolved themes of `preset` for `is_dark`, and 0.7.2's name and
+/// layout, which its theme holds beside the variants.
 fn resolve(
     key: &str,
     preset: Preset,
     is_dark: bool,
 ) -> crate::Result<(
     ResolvedTheme,
+    String,
     LayoutTheme,
     native_theme::next::ResolvedTheme,
 )> {
@@ -417,12 +425,13 @@ fn resolve(
         (ColorMode::Light, ThemeContext::light())
     };
     let theme = crate::Theme::preset(key)?;
+    let name = theme.name.to_string();
     let layout = theme.layout.clone();
     let old = theme
         .into_variant(mode)?
         .into_resolved(&native_theme::ResolutionContext::for_tests())?;
     let new = native_theme::next::Theme::preset(preset).resolve(&ctx);
-    Ok((old, layout, new))
+    Ok((old, name, layout, new))
 }
 
 /// The 0.8.0 theme of `preset` for `is_dark`, resolved for an inactive
@@ -438,26 +447,31 @@ fn resolve_inactive(preset: Preset, is_dark: bool) -> native_theme::next::Resolv
     native_theme::next::Theme::preset(preset).resolve(&ctx)
 }
 
-/// The theme's leaves the 0.8.0 side feeds: the colours, their tokens and
-/// config strings, the theme's values and its config's.
+/// The theme's leaves: the colours, their tokens and config strings, the
+/// theme's other fields, the config's in the slot of its mode and the other
+/// slot's, and then the whole theme in its `Debug` form, which also holds
+/// what no field compared here names (the base palette `ThemeConfigColors`
+/// keeps private, a field upstream adds).
 fn compare_theme(
     report: &mut Report,
     old: &ResolvedTheme,
+    name: &str,
     new: &native_theme::next::ResolvedTheme,
     is_dark: bool,
 ) {
-    let old_theme = crate::to_theme(old, "", is_dark, &AccessibilityPreferences::DEFAULT);
+    let old_theme = crate::to_theme(old, name, is_dark, &AccessibilityPreferences::DEFAULT);
     let Some(new_theme) = report.mapped("to_theme", super::to_theme(new)) else {
         return;
     };
-    let config = |t: &GpuiTheme| {
-        if is_dark {
+    let failures = report.failures.len();
+    let config = |t: &GpuiTheme, own: bool| {
+        if is_dark == own {
             t.dark_theme.clone()
         } else {
             t.light_theme.clone()
         }
     };
-    let (old_config, new_config) = (config(&old_theme), config(&new_theme));
+    let (old_config, new_config) = (config(&old_theme, true), config(&new_theme, true));
     for slot in SLOTS {
         report.leaf(
             &format!("colors.{}", slot.name),
@@ -488,6 +502,29 @@ fn compare_theme(
     report.leaf("shadow", o.shadow, n.shadow);
     report.leaf("focus_ring", o.focus_ring, n.focus_ring);
     report.leaf("scrollbar_mode", o.scrollbar_mode, n.scrollbar_mode);
+    report.leaf("window_radius", o.window_radius, n.window_radius);
+    report.leaf("cursor_blink", o.cursor_blink, n.cursor_blink);
+    report.leaf("highlight_theme", &*o.highlight_theme, &*n.highlight_theme);
+    report.leaf("transparent", o.transparent, n.transparent);
+    // `NotificationSettings`, `ListSettings`, `SheetSettings` and
+    // `MotionTokens` have no `PartialEq`: compared in their `Debug` form.
+    report.leaf(
+        "notification",
+        format!("{:?}", o.notification),
+        format!("{:?}", n.notification),
+    );
+    report.leaf("list", format!("{:?}", o.list), format!("{:?}", n.list));
+    report.leaf("sheet", format!("{:?}", o.sheet), format!("{:?}", n.sheet));
+    report.leaf(
+        "motion",
+        format!("{:?}", o.motion),
+        format!("{:?}", n.motion),
+    );
+    report.leaf(
+        "other_config",
+        format!("{:?}", config(o, false)),
+        format!("{:?}", config(n, false)),
+    );
     // `variants::ghost_button` reads these three fields and nothing else.
     let ghost = |t: &GpuiTheme| {
         (
@@ -498,6 +535,8 @@ fn compare_theme(
     };
     report.leaf("variants::ghost_button", ghost(o), ghost(n));
     let (o, n) = (&old_config, &new_config);
+    report.leaf("config.is_default", o.is_default, n.is_default);
+    report.leaf("config.name", &o.name, &n.name);
     report.leaf("config.mode", o.mode, n.mode);
     report.leaf("config.font_family", &o.font_family, &n.font_family);
     report.leaf("config.font_size", o.font_size, n.font_size);
@@ -509,7 +548,52 @@ fn compare_theme(
     report.leaf("config.mono_font_size", o.mono_font_size, n.mono_font_size);
     report.leaf("config.radius", o.radius, n.radius);
     report.leaf("config.radius_lg", o.radius_lg, n.radius_lg);
+    report.leaf("config.window_radius", o.window_radius, n.window_radius);
     report.leaf("config.shadow", o.shadow, n.shadow);
+    report.leaf(
+        "config.colors.group_box_title_foreground",
+        &o.colors.group_box_title_foreground,
+        &n.colors.group_box_title_foreground,
+    );
+    report.leaf("config.highlight", &o.highlight, &n.highlight);
+    let whole = "to_theme (Debug form)";
+    report.count(whole);
+    let (o, n) = (format!("{old_theme:?}"), format!("{new_theme:?}"));
+    if report.failures.len() == failures && o != n {
+        let at = o.bytes().zip(n.bytes()).take_while(|(a, b)| a == b).count();
+        let around = |s: &str| {
+            s.get(at.saturating_sub(80)..)
+                .unwrap_or("")
+                .chars()
+                .take(160)
+                .collect::<String>()
+        };
+        report.failures.push(format!(
+            "{}: {whole}: differs beyond the leaves compared, at byte {at}: 0.7.2 …{}…, \
+             0.8.0 …{}…",
+            report.label,
+            around(&o),
+            around(&n)
+        ));
+    }
+}
+
+/// The resize handles' colours, field by field.
+fn compare_resizable(
+    report: &mut Report,
+    old: &ResolvedTheme,
+    new: &native_theme::next::ResolvedTheme,
+) {
+    let o = crate::base_layer::resizable_theme(old);
+    let Some(n) = report.mapped("ResizableTheme", super::resizable_theme(new)) else {
+        return;
+    };
+    report.leaf("ResizableTheme.handle", o.handle, n.handle);
+    report.leaf(
+        "ResizableTheme.active_handle",
+        o.active_handle,
+        n.active_handle,
+    );
 }
 
 /// The scroll bar's geometry, field by field.
@@ -805,10 +889,11 @@ fn compare_builders(
 
 /// Every leaf of `preset` for `is_dark`, compared.
 fn compare_all(key: &'static str, preset: Preset, is_dark: bool) -> crate::Result<Report> {
-    let (old, layout, new) = resolve(key, preset, is_dark)?;
+    let (old, name, layout, new) = resolve(key, preset, is_dark)?;
     let mut report = Report::new(key, is_dark);
-    compare_theme(&mut report, &old, &new, is_dark);
+    compare_theme(&mut report, &old, &name, &new, is_dark);
     compare_scrollbar(&mut report, &old, &new);
+    compare_resizable(&mut report, &old, &new);
     compare_builders(
         &mut report,
         &old,

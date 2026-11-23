@@ -1,18 +1,17 @@
 //! The 0.8.0 mapping, under construction: what the connector hands to gpui,
-//! computed from the 0.8.0 model (`native_theme::next`): every `ThemeColor`
-//! field, the global theme's values of the first slice of the 0.8.0 work (its
-//! globals, docs/v0.8.0-plan.md, M0, step 4), the scroll bar, and every
-//! `geometry` and `variants` builder (M4, step 1).
+//! computed from the 0.8.0 model (`native_theme::next`): the whole
+//! gpui-component theme, with every `ThemeColor` field and its stored
+//! config, the scroll bar's and the resize handles' values for gpui-base,
+//! and every `geometry` and `variants` builder (docs/v0.8.0-plan.md, M4,
+//! step 1).
 //!
 //! Each function reads the model where the table of homes
 //! (`native-theme/tests/next_homes.toml`) places the 0.7.2 field the old
 //! mapping reads, by the query its row names, and hands the values to the
 //! function the old mapping hands its own reads to, so the two share
-//! everything after the read. A leaf of the global theme outside these
-//! (`window_radius`, `cursor_blink`, the highlight theme and the stored
-//! config's other fields) is not mapped here yet. `parity` proves the leaves equal to
-//! the old mapping's (plan, section 1, rule 2). Not exported; the connector
-//! is ported onto it in M4, and the 0.7.2 path is removed at the 0.8.0 cut.
+//! everything after the read. `parity` proves the leaves equal to the old
+//! mapping's (plan, section 1, rule 2). Not exported; the connector is
+//! ported onto it in M4, and the 0.7.2 path is removed at the 0.8.0 cut.
 //!
 //! A 0.7.2 field that is a soft option of a state (`button.active_background`,
 //! `scrollbar.thumb_active_color`, `button.checked_background`, ...) is unset
@@ -28,19 +27,20 @@ mod parity;
 
 use std::rc::Rc;
 
-use gpui::Hsla;
-use gpui_component::theme::{Theme as GpuiTheme, ThemeColor, ThemeConfig};
+use gpui::{Hsla, SharedString};
+use gpui_base::ResizableTheme;
+use gpui_component::theme::{Theme as GpuiTheme, ThemeColor, ThemeConfig, ThemeMode};
 use native_theme::next::{
     ButtonQuery, Color, CornerCurve, CornerRadius, FocusTrigger, FontStyle, ListQuery, Orientation,
     Paint, PartStated, PartStyle, ResolvedTheme, Stroke, StrokeAlign, StyleQuery, TextStated,
     TextStyle, WidgetState, WindowState,
 };
 
-use crate::base_layer::{ScrollbarGeometry, ScrollbarSource, geometry_of};
+use crate::base_layer::{ScrollbarGeometry, ScrollbarSource, geometry_of, resizable_theme_of};
 use crate::colors::{SliceColors, WidgetColors, channels_to_hsla, focus_band, theme_color_of};
-use crate::config::{apply_config_scalars, theme_color_to_config_colors};
+use crate::config::{apply_config_scalars, highlight_style_of, theme_color_to_config_colors};
 use crate::geometry::Font;
-use crate::{ThemeScalars, apply_scalars, font_family};
+use crate::{ThemeScalars, apply_scalars, caret_blink_of, font_family};
 
 /// A source a leaf needs that the theme leaves unstated, or states in a form
 /// no 0.7.2 field holds (a gradient fill, a centred stroke, a pill): its home
@@ -414,9 +414,13 @@ pub(crate) fn theme_color(r: &ResolvedTheme) -> Mapped<ThemeColor> {
     ))
 }
 
-/// The global theme's values the slice feeds. The sizes are the model's,
-/// which its text scale has already scaled.
+/// The global theme's values beside its colours. The sizes are the model's,
+/// which its text scale has already scaled. The window's corner radius is
+/// its frame's; the caret's blink, `None` where the theme states none, the
+/// caret's; the highlighter style fills the code editor from the text
+/// field's fill, over the window's.
 pub(crate) fn theme_scalars(r: &ResolvedTheme) -> Mapped<ThemeScalars> {
+    let frame = r.window.frame(normal_window());
     let t = &r.typography;
     let body = &t.body;
     let mono = &t.monospace;
@@ -437,19 +441,42 @@ pub(crate) fn theme_scalars(r: &ResolvedTheme) -> Mapped<ThemeScalars> {
         shadow: r.layout.shadow_enabled,
         focus_band: focus_band_of(r)?,
         overlay_scrollbars: r.scrollbar.overlay_mode,
+        window_radius: radius(&frame, "window.frame(normal).corners")?,
+        cursor_blink: caret_blink_of(
+            r.caret.blink_on_ms,
+            r.caret.blink_off_ms,
+            r.caret.blink_timeout_ms,
+        ),
+        highlight: highlight_style_of(
+            fill(&r.input.field(WidgetState::NONE), "input.field(NONE).fill")?,
+            fill(&frame, "window.frame(normal).fill")?,
+            theme_mode(r),
+        ),
     })
+}
+
+/// gpui-component's mode of the theme's scheme.
+fn theme_mode(r: &ResolvedTheme) -> ThemeMode {
+    if r.is_dark() {
+        ThemeMode::Dark
+    } else {
+        ThemeMode::Light
+    }
 }
 
 /// The gpui-component theme: [`theme_color`]'s colours and the tokens
 /// gpui-component derives from them, [`theme_scalars`]' values, and, in the
-/// slot of its mode, a `ThemeConfig` of the same values and colours. Every
-/// other leaf is gpui-component's default.
+/// slot of its mode, a `ThemeConfig` of the theme's name and the same values
+/// and colours. `transparent`, `notification`, `list`, `sheet` and `motion`,
+/// which the model states nothing for, `cursor_blink` where the theme states
+/// no blink, and the other mode's slot are gpui-component's defaults.
 pub(crate) fn to_theme(r: &ResolvedTheme) -> Mapped<GpuiTheme> {
     let tc = theme_color(r)?;
     let scalars = theme_scalars(r)?;
     let mut theme = GpuiTheme::from(&tc);
     apply_scalars(&mut theme, &scalars);
     let mut config = ThemeConfig::default();
+    config.name = SharedString::from(r.name.to_string());
     config.mode = theme.mode;
     apply_config_scalars(&mut config, &scalars);
     config.colors = theme_color_to_config_colors(&tc);
@@ -485,6 +512,17 @@ pub(crate) fn scrollbar_geometry(r: &ResolvedTheme) -> Mapped<ScrollbarGeometry>
             "scrollbar.thumb(PRESSED).fill",
         )?,
     }))
+}
+
+/// The resize handles' colours for gpui-base: the splitter's handle at rest
+/// and under the pointer, whose fill a theme without a rule for `HOVER`
+/// keeps from rest.
+pub(crate) fn resizable_theme(r: &ResolvedTheme) -> Mapped<ResizableTheme> {
+    let s = &r.splitter;
+    Ok(resizable_theme_of(
+        fill(&s.handle(WidgetState::NONE), "splitter.handle(NONE).fill")?,
+        fill(&s.handle(WidgetState::HOVER), "splitter.handle(HOVER).fill")?,
+    ))
 }
 
 #[cfg(test)]
