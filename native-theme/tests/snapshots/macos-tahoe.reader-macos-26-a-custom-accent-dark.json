@@ -685,6 +685,22 @@
       "rules": [
         {
           "states": [
+            "checked"
+          ],
+          "thumb": {
+            "fill": "#ffffffdd",
+            "min_size": [
+              20.0,
+              20.0
+            ],
+            "max_size": [
+              20.0,
+              20.0
+            ]
+          }
+        },
+        {
+          "states": [
             "disabled"
           ],
           "thumb": {

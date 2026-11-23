@@ -2259,32 +2259,31 @@ fn button(
             [fill(c.control_fill_disabled)],
         )
         .build();
-    let mut label = RuleBuilder::new(label(
+    // `button.hover_text_color`: ButtonForegroundPointerOver = TextFillColorPrimary
+    // (Button_themeresources.xaml:133 at microsoft-ui-xaml 8463f45), the window's text, which high
+    // contrast does not change; stated for `HOVER` (spec §2, `from_state`).
+    let label = RuleBuilder::new(label(
         &typography.body,
         Some(hc.button_text.unwrap_or(c.window_foreground)),
-    ));
-    // `button.hover_text_color`, the window's text, which high contrast does not change.
-    if hc.button_text.is_some() {
-        label = label.rule(
-            RuleSelector::on(WidgetState::HOVER),
-            [TextProp::Color(c.window_foreground)],
-        );
-    }
-    let label = label
-        .rule(
-            RuleSelector::on(WidgetState::CHECKED),
-            [TextProp::Color(roles.accent.foreground)],
-        )
-        .rule(
-            RuleSelector::on(WidgetState::PRESSED),
-            [TextProp::Color(c.window_foreground_muted)],
-        )
-        .rule(primary(), [TextProp::Color(roles.accent.foreground)])
-        .rule(
-            RuleSelector::on(WidgetState::DISABLED),
-            [TextProp::Color(c.disabled_text)],
-        )
-        .build();
+    ))
+    .rule(
+        RuleSelector::on(WidgetState::HOVER),
+        [TextProp::Color(c.window_foreground)],
+    )
+    .rule(
+        RuleSelector::on(WidgetState::CHECKED),
+        [TextProp::Color(roles.accent.foreground)],
+    )
+    .rule(
+        RuleSelector::on(WidgetState::PRESSED),
+        [TextProp::Color(c.window_foreground_muted)],
+    )
+    .rule(primary(), [TextProp::Color(roles.accent.foreground)])
+    .rule(
+        RuleSelector::on(WidgetState::DISABLED),
+        [TextProp::Color(c.disabled_text)],
+    )
+    .build();
     ButtonWidget::new(
         WidgetOrigin::Native,
         body,
@@ -2447,21 +2446,26 @@ fn list(
             [fill(hc.highlight.unwrap_or(c.subtle_fill))],
         )
         .build();
-    let mut item_label = RuleBuilder::new(label(&typography.body, None));
-    // `list.hover_text_color`, the window's text, which high contrast does not change.
-    if hc.window_text.is_some() {
-        item_label = item_label.rule(
+    // `list.hover_text_color`: ListViewItemForegroundPointerOver = TextFillColorPrimary
+    // (ListViewItem_themeresources.xaml:176 at microsoft-ui-xaml 8463f45), the window's text,
+    // which high contrast does not change; `selection_text_color`: platform-facts.md (§2.15),
+    // ListViewItemForegroundSelected = TextFillColorPrimary, the window's text, under high
+    // contrast the highlight's text; each stated for its state (spec §2, `from_state`).
+    let hover_text = match hc.window_text {
+        Some(_) => c.window_foreground,
+        None => typography.body.color,
+    };
+    let item_label = RuleBuilder::new(label(&typography.body, None))
+        .rule(
             RuleSelector::on(WidgetState::HOVER),
-            [TextProp::Color(c.window_foreground)],
-        );
-    }
-    if let Some(text) = hc.highlight_text {
-        item_label = item_label.rule(
+            [TextProp::Color(hover_text)],
+        )
+        .rule(
             RuleSelector::on(WidgetState::SELECTED),
-            [TextProp::Color(text)],
-        );
-    }
-    let item_label = item_label
+            [TextProp::Color(
+                hc.highlight_text.unwrap_or(typography.body.color),
+            )],
+        )
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
             [TextProp::Color(c.disabled_text)],
@@ -2662,7 +2666,7 @@ fn input(
     padding: Edges,
     min_height: Option<f32>,
 ) -> InputWidget {
-    let mut field = RuleBuilder::new(PartStyle::default())
+    let field = RuleBuilder::new(PartStyle::default())
         .base([fill(hc.button_face.unwrap_or(c.control_fill))])
         .base(
             roles
@@ -2677,15 +2681,19 @@ fn input(
             PartProp::Padding(padding),
         ])
         .base(min_height.map(|height| PartProp::MinSize([None, Some(height)])));
-    // `input.hover_border_color`, the preset's border colour, which high contrast does not
-    // change.
-    if hc.window_text.is_some() {
-        field = field.rule(
-            RuleSelector::on(WidgetState::HOVER),
-            [outside_stroke(layout.border_width, c.window_border)],
-        );
-    }
+    // `input.hover_border_color`: TextControlBorderBrushPointerOver is the rest brush,
+    // TextControlElevationBorderBrush (TextBox_themeresources.xaml:135, :134 at microsoft-ui-xaml
+    // 8463f45), the preset's border colour, which high contrast does not change; stated for
+    // `HOVER` (spec §2, `from_state`).
+    let hover_border = match hc.window_text {
+        Some(_) => Some(c.window_border),
+        None => roles.window.border,
+    };
     let field = field
+        .rules(
+            hover_border.map(|_| RuleSelector::on(WidgetState::HOVER)),
+            hover_border.map(|color| outside_stroke(layout.border_width, color)),
+        )
         .rule(
             RuleSelector::on(WidgetState::FOCUSED),
             [outside_stroke(
@@ -2908,22 +2916,26 @@ fn menu(
         ))])
         .rule(RuleSelector::on(WidgetState::HOVER), [fill(c.subtle_fill)])
         .build();
-    let mut item_label = RuleBuilder::new(laid_over(
+    let item_text = laid_over(
         label(
             &typography.body,
             Some(hc.button_text.unwrap_or(c.window_foreground)),
         ),
         os,
         units,
-    ));
-    // `menu.hover_text_color`, the window's text, which high contrast does not change.
-    if hc.button_text.is_some() {
-        item_label = item_label.rule(
+    );
+    // `menu.hover_text_color`: MenuFlyoutItemForegroundPointerOver = TextFillColorPrimary
+    // (MenuFlyout_themeresources.xaml:178 at microsoft-ui-xaml 8463f45), the window's text, which
+    // high contrast does not change; stated for `HOVER` (spec §2, `from_state`).
+    let hover_text = match hc.button_text {
+        Some(_) => c.window_foreground,
+        None => item_text.color,
+    };
+    let item_label = RuleBuilder::new(item_text)
+        .rule(
             RuleSelector::on(WidgetState::HOVER),
-            [TextProp::Color(c.window_foreground)],
-        );
-    }
-    let item_label = item_label
+            [TextProp::Color(hover_text)],
+        )
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
             [TextProp::Color(c.disabled_text)],
@@ -2996,7 +3008,14 @@ fn tab(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> TabWidg
             ],
         )
         .build();
+    // `tab.hover_text_color`: TabViewItemHeaderForegroundPointerOver = TextFillColorSecondary
+    // (TabView_themeresources.xaml:15 at microsoft-ui-xaml 8463f45), the rest colour, stated for
+    // `HOVER` (spec §2, `from_state`), before the selected rule.
     let label = RuleBuilder::new(label(&typography.body, Some(c.window_foreground_muted)))
+        .rule(
+            RuleSelector::on(WidgetState::HOVER),
+            [TextProp::Color(c.window_foreground_muted)],
+        )
         .rule(
             RuleSelector::on(WidgetState::SELECTED),
             [TextProp::Color(c.window_foreground)],
@@ -3134,7 +3153,15 @@ fn sidebar(
         WidgetOrigin::Native,
         container,
         item,
-        RuleBuilder::new(label(&typography.body, Some(c.window_foreground))).build(),
+        // `sidebar.selection_text_color`: platform-facts.md (§2.12),
+        // NavigationViewItemForegroundSelected = TextFillColorPrimary, the window's text, stated
+        // for `SELECTED` (spec §2, `from_state`).
+        RuleBuilder::new(label(&typography.body, Some(c.window_foreground)))
+            .rule(
+                RuleSelector::on(WidgetState::SELECTED),
+                [TextProp::Color(c.window_foreground)],
+            )
+            .build(),
         RuleBuilder::new(IconStyle::default()).build(),
         RuleBuilder::new(TextStyle::default()).build(),
         None,
@@ -3222,9 +3249,15 @@ fn switch(c: &SchemeColors) -> SwitchWidget {
             PartProp::MinSize([Some(SWITCH_THUMB_DIAMETER); 2]),
             PartProp::MaxSize([Some(SWITCH_THUMB_DIAMETER); 2]),
         ])
+        // The on thumb's diameter, `switch.thumb_diameter` (the constant's citation), stated for
+        // `CHECKED` (spec §2, `from_state`).
         .rule(
             RuleSelector::on(WidgetState::CHECKED),
-            [fill(c.accent_foreground)],
+            [
+                fill(c.accent_foreground),
+                PartProp::MinSize([Some(SWITCH_THUMB_DIAMETER); 2]),
+                PartProp::MaxSize([Some(SWITCH_THUMB_DIAMETER); 2]),
+            ],
         )
         .build();
     SwitchWidget::new(
@@ -3389,18 +3422,22 @@ fn segmented_control(
             [fill(hc.highlight.unwrap_or(c.control_fill))],
         )
         .build();
-    let mut segment_label = RuleBuilder::new(label(&typography.body, hc.button_text));
-    if let Some(text) = hc.highlight_text {
-        segment_label = segment_label.rule(
+    // `segmented_control.active_text_color`: platform-facts.md (§2.25), the selected item lettered
+    // TextFillColorPrimary, the rest colour, under high contrast the highlight's text; stated for
+    // `SELECTED` (spec §2, `from_state`).
+    let segment_text = label(&typography.body, hc.button_text);
+    let selected_text = hc.highlight_text.unwrap_or(segment_text.color);
+    let segment_label = RuleBuilder::new(segment_text)
+        .rule(
             RuleSelector::on(WidgetState::SELECTED),
-            [TextProp::Color(text)],
-        );
-    }
+            [TextProp::Color(selected_text)],
+        )
+        .build();
     SegmentedControlWidget::new(
         WidgetOrigin::Native,
         track,
         segment,
-        segment_label.build(),
+        segment_label,
         RuleBuilder::new(PartStyle::default()).build(),
         SEGMENT_SEPARATOR_WIDTH,
         Some(SEGMENT_DISABLED_OPACITY),

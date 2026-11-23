@@ -4,11 +4,12 @@
 //! its look ([`ThemeSource`]: the ground it is faded over, its focus ring, the
 //! focus ring's trigger, its label's font, the switch's body text and the
 //! spinner's colours), on the presets the connector parity covers, kde-breeze,
-//! adwaita, windows-11, macos-monterey, macos-tahoe and material-3, light and
-//! dark, in every state each constructor takes.
+//! adwaita, windows-11, macos-monterey, macos-tahoe, material-3 and ios-13,
+//! light and dark, in every state each constructor takes.
 //!
 //! The 0.7.2 side is resolved as the connector's tests resolve it
-//! (`ResolutionContext::for_tests`, on the macOS presets at macOS's font DPI,
+//! (`ResolutionContext::for_tests`, on the macOS presets and ios-13 at
+//! Apple's font DPI,
 //! `next::parity::old_context`) and read unscaled; the 0.8.0 side for the
 //! scheme's default context, whose text scale is 1. Every look is given on
 //! these presets, so a 0.7.2 constructor's `None` or a 0.8.0 one's `Unmapped`
@@ -38,6 +39,7 @@ const PRESETS: &[(&str, Preset)] = &[
     ("macos-monterey", Preset::MacosMonterey),
     ("macos-tahoe", Preset::MacosTahoe),
     ("material-3", Preset::Material3),
+    ("ios-13", Preset::Ios13),
 ];
 
 /// A listed difference (plan, section 1, rule 2): the leaf, the presets on

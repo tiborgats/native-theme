@@ -1861,7 +1861,18 @@ fn button(
         )
         .rule(primary(), [fill(roles.accent.fill)])
         .build();
+    // `button.hover_text_color`, `active_text_color`: 0.7.2 adwaita.toml (uncited);
+    // `checked_text_color`: platform-facts.md (§2.3), "no :checked rule sets a label colour"; each
+    // stated for its state (spec §2, `from_state`).
     let label = RuleBuilder::new(label(&typography.body, Some(c.window_foreground)))
+        .rules(
+            [
+                RuleSelector::on(WidgetState::HOVER),
+                RuleSelector::on(WidgetState::PRESSED),
+                RuleSelector::on(WidgetState::CHECKED),
+            ],
+            [TextProp::Color(c.window_foreground)],
+        )
         .rule(primary(), [TextProp::Color(roles.accent.foreground)])
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
@@ -2024,7 +2035,13 @@ fn list(
             [fill(roles.selection.background)],
         )
         .build();
+    // `list.hover_text_color`: 0.7.2 adwaita.toml (uncited), stated for `HOVER` (spec §2,
+    // `from_state`), before the rules of the states that replace it.
     let item_label = RuleBuilder::new(label(&typography.body, None))
+        .rule(
+            RuleSelector::on(WidgetState::HOVER),
+            [TextProp::Color(typography.body.color)],
+        )
         .rule(
             RuleSelector::on(WidgetState::SELECTED),
             [TextProp::Color(roles.selection.foreground)],
@@ -2258,12 +2275,23 @@ fn link(roles: &ColorRoles, typography: &Typography) -> LinkWidget {
             [fill(LINK_BACKGROUND)],
         )
         .build();
+    // `link.hover_text_color`, `active_text_color`: 0.7.2 adwaita.toml (uncited);
+    // `disabled_text_color`: platform-facts.md (§2.1.6), the enabled link colour, at
+    // `disabled_opacity`; each stated for its state (spec §2, `from_state`).
     let label = RuleBuilder::new(label(&typography.body, Some(roles.link)))
         .base([TextProp::Decoration(TextDecoration {
             kind: LINK_DECORATION,
             color: None,
             thickness: None,
         })])
+        .rules(
+            [
+                RuleSelector::on(WidgetState::HOVER),
+                RuleSelector::on(WidgetState::PRESSED),
+                RuleSelector::on(WidgetState::DISABLED),
+            ],
+            [TextProp::Color(roles.link)],
+        )
         .build();
     LinkWidget::new(WidgetOrigin::Native, container, label)
 }
@@ -2397,7 +2425,13 @@ fn menu(
         ])
         .rule(RuleSelector::on(WidgetState::HOVER), [fill(c.menu_hover)])
         .build();
+    // `menu.hover_text_color`: 0.7.2 adwaita.toml (uncited), stated for `HOVER` (spec §2,
+    // `from_state`), before the disabled rule.
     let item_label = RuleBuilder::new(label(&typography.body, Some(c.window_foreground)))
+        .rule(
+            RuleSelector::on(WidgetState::HOVER),
+            [TextProp::Color(c.window_foreground)],
+        )
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
             [TextProp::Color(roles.disabled_text)],
@@ -2474,11 +2508,22 @@ fn tab(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> TabWidg
             ],
         )
         .build();
+    // `tab.active_text_color`, `hover_text_color`: 0.7.2 adwaita.toml (uncited), each stated for
+    // its state (spec §2, `from_state`).
+    let tab_label = RuleBuilder::new(label(&typography.body, Some(c.window_foreground)))
+        .rules(
+            [
+                RuleSelector::on(WidgetState::HOVER),
+                RuleSelector::on(WidgetState::SELECTED),
+            ],
+            [TextProp::Color(c.window_foreground)],
+        )
+        .build();
     TabWidget::new(
         WidgetOrigin::Native,
         bar,
         tab,
-        RuleBuilder::new(label(&typography.body, Some(c.window_foreground))).build(),
+        tab_label,
         indicator,
         RuleBuilder::new(PartStyle::default()).build(),
         RuleBuilder::new(IconStyle::default()).build(),
@@ -2686,9 +2731,15 @@ fn switch(c: &SchemeColors, roles: &ColorRoles) -> SwitchWidget {
             PartProp::MinSize([Some(SWITCH_THUMB_DIAMETER); 2]),
             PartProp::MaxSize([Some(SWITCH_THUMB_DIAMETER); 2]),
         ])
+        // The on thumb's diameter, `switch.thumb_diameter` (the constant's citation), stated for
+        // `CHECKED` (spec §2, `from_state`).
         .rule(
             RuleSelector::on(WidgetState::CHECKED),
-            [fill(c.switch_thumb)],
+            [
+                fill(c.switch_thumb),
+                PartProp::MinSize([Some(SWITCH_THUMB_DIAMETER); 2]),
+                PartProp::MaxSize([Some(SWITCH_THUMB_DIAMETER); 2]),
+            ],
         )
         .build();
     SwitchWidget::new(

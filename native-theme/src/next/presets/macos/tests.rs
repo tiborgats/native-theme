@@ -3,6 +3,7 @@ use super::*;
 use crate::next::motion::DialogEntranceStyle;
 use crate::next::preset::Theme;
 use crate::next::query::{ButtonQuery, ListQuery, MotionPreference};
+use crate::next::style::PartStated;
 use crate::next::window::WindowState;
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
@@ -260,11 +261,12 @@ fn the_switch_s_disabled_look_wins_and_no_track_has_an_outline() {
                 "{preset:?} {state:?}"
             );
         }
-        assert_eq!(
-            theme.switch.thumb(on_disabled),
-            theme.switch.thumb(off_disabled),
-            "{preset:?}"
-        );
+        // The same look; the on thumb's size is the `CHECKED` rule's, so its bits differ.
+        let look = |state: WidgetState| PartStyle {
+            from_state: PartStated::default(),
+            ..theme.switch.thumb(state)
+        };
+        assert_eq!(look(on_disabled), look(off_disabled), "{preset:?}");
     }
 }
 

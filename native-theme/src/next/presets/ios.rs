@@ -736,7 +736,7 @@ const SLIDER_TRACK_HEIGHT: f32 = 4.0;
 // UISlider's (M2c-21)
 const SLIDER_THUMB_DIAMETER: f32 = 28.0;
 // `slider.tick_mark_length`: no UIKit source. The same range control's ticks are 1 x 3, under a
-// FIXME that says the values need correcting (RenderThemeIOS.mm:796-800)
+// WebKit comment that says the values need correcting (RenderThemeIOS.mm:796-800)
 const SLIDER_TICK_LENGTH: f32 = 4.0;
 
 // `spinner.diameter`: 0.7.2 ios-13.toml (uncited)
@@ -1346,7 +1346,13 @@ fn button(
             [fill(c.disabled_fill)],
         )
         .build();
+    // `button.active_text_color`: (WebKit) systemBlue, a pressed iOS button keeps its blue text
+    // (html.css:901-906), stated for `PRESSED` (spec §2, `from_state`).
     let label = RuleBuilder::new(label(&typography.body, Some(c.system_blue)))
+        .rule(
+            RuleSelector::on(WidgetState::PRESSED),
+            [TextProp::Color(c.system_blue)],
+        )
         .rule(primary(), [TextProp::Color(roles.accent.foreground)])
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
@@ -1500,7 +1506,13 @@ fn list(
             [fill(roles.selection.background)],
         )
         .build();
+    // `list.hover_text_color`: 0.7.2 ios-13.toml (uncited), the rest colour, stated for `HOVER`
+    // (spec §2, `from_state`), before the rules of the states that replace it.
     let item_label = RuleBuilder::new(label(&typography.body, None))
+        .rule(
+            RuleSelector::on(WidgetState::HOVER),
+            [TextProp::Color(typography.body.color)],
+        )
         .rule(
             RuleSelector::on(WidgetState::SELECTED),
             [TextProp::Color(roles.selection.foreground)],
@@ -1695,6 +1707,12 @@ fn link(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> LinkWi
             color: None,
             thickness: None,
         })])
+        // `link.hover_text_color`: 0.7.2 ios-13.toml (uncited), the rest colour, stated for
+        // `HOVER` (spec §2, `from_state`), before the rules of the states that replace it.
+        .rule(
+            RuleSelector::on(WidgetState::HOVER),
+            [TextProp::Color(roles.link)],
+        )
         .rule(
             RuleSelector::on(WidgetState::PRESSED),
             [TextProp::Color(c.link_pressed)],
@@ -1908,7 +1926,13 @@ fn tab(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> TabWidg
             [fill(c.background)],
         )
         .build();
+    // `tab.hover_text_color`: 0.7.2 ios-13.toml (uncited), the rest colour, stated for `HOVER`
+    // (spec §2, `from_state`), before the selected rule.
     let label = RuleBuilder::new(label(&typography.body, None))
+        .rule(
+            RuleSelector::on(WidgetState::HOVER),
+            [TextProp::Color(typography.body.color)],
+        )
         .rule(
             RuleSelector::on(WidgetState::SELECTED),
             [TextProp::Color(roles.accent.fill)],
@@ -2089,6 +2113,19 @@ fn switch(c: &SchemeColors, roles: &ColorRoles) -> SwitchWidget {
             PartProp::MinSize(thumb_size),
             PartProp::MaxSize(thumb_size),
         ])
+        // The on thumb, `switch.thumb_background`: (WebKit) white (RenderThemeCocoa.mm:763), and
+        // `thumb_diameter` (the constant's citation); `disabled_thumb_color`: (WebKit) the thumb is
+        // white, disabled too (RenderThemeCocoa.mm:763); each stated for its state (spec §2,
+        // `from_state`).
+        .rule(
+            RuleSelector::on(WidgetState::CHECKED),
+            [
+                fill(c.white),
+                PartProp::MinSize(thumb_size),
+                PartProp::MaxSize(thumb_size),
+            ],
+        )
+        .rule(RuleSelector::on(WidgetState::DISABLED), [fill(c.white)])
         .build();
     SwitchWidget::new(
         WidgetOrigin::Native,

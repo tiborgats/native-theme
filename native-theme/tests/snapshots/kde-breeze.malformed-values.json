@@ -330,6 +330,14 @@
       "rules": [
         {
           "states": [
+            "hover"
+          ],
+          "body": {
+            "fill": "#292c30"
+          }
+        },
+        {
+          "states": [
             "checked"
           ],
           "body": {
@@ -417,6 +425,30 @@
         }
       },
       "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "label": {
+            "color": "#fcfcfc"
+          }
+        },
+        {
+          "states": [
+            "checked"
+          ],
+          "label": {
+            "color": "#fcfcfc"
+          }
+        },
+        {
+          "states": [
+            "default"
+          ],
+          "label": {
+            "color": "#fcfcfc"
+          }
+        },
         {
           "variant": "primary",
           "label": {
@@ -685,7 +717,17 @@
       "base": {
         "color": "#fcfcfc",
         "stroke_width": 2.0
-      }
+      },
+      "rules": [
+        {
+          "states": [
+            "checked"
+          ],
+          "checkmark": {
+            "color": "#fcfcfc"
+          }
+        }
+      ]
     },
     "label": {
       "base": {
@@ -782,7 +824,17 @@
           6.0,
           6.0
         ]
-      }
+      },
+      "rules": [
+        {
+          "states": [
+            "checked"
+          ],
+          "dot": {
+            "fill": "#fcfcfc"
+          }
+        }
+      ]
     },
     "label": {
       "base": {
@@ -830,6 +882,14 @@
         ]
       },
       "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "track": {
+            "fill": "#3e4144"
+          }
+        },
         {
           "states": [
             "checked"
@@ -886,6 +946,26 @@
         ]
       },
       "rules": [
+        {
+          "states": [
+            "checked"
+          ],
+          "thumb": {
+            "fill": "#292c30",
+            "stroke": {
+              "width": 1.0,
+              "color": "#4e5359"
+            },
+            "min_size": [
+              18.0,
+              18.0
+            ],
+            "max_size": [
+              18.0,
+              18.0
+            ]
+          }
+        },
         {
           "states": [
             "disabled"
@@ -1197,6 +1277,7 @@
             "unfocused_view"
           ],
           "thumb": {
+            "fill": "#46494b",
             "stroke": {
               "width": 1.001,
               "color": "#fcfcfc33",
@@ -1403,6 +1484,14 @@
         }
       },
       "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "item_label": {
+            "color": "#fcfcfc"
+          }
+        },
         {
           "states": [
             "pressed"
@@ -1642,6 +1731,14 @@
         }
       },
       "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "item_label": {
+            "color": "#fcfcfc"
+          }
+        },
         {
           "states": [
             "selected"

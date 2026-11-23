@@ -7,10 +7,10 @@
 //! `src/variants.rs`.
 //!
 //! Presets covered: kde-breeze, adwaita, windows-11, macos-monterey,
-//! macos-tahoe and material-3, light and dark ([`PRESETS`]). The 0.7.2 side
-//! is resolved as the connector's tests resolve it
-//! (`ResolutionContext::for_tests`), on the macOS presets at macOS's font DPI
-//! ([`old_context`]), with no accessibility scaling; the
+//! macos-tahoe, material-3 and ios-13, light and dark ([`PRESETS`]). The
+//! 0.7.2 side is resolved as the connector's tests resolve it
+//! (`ResolutionContext::for_tests`), on the macOS presets and ios-13 at
+//! Apple's font DPI ([`old_context`]), with no accessibility scaling; the
 //! 0.8.0 side for the scheme's default context, whose text scale is 1, and,
 //! for `geometry::title_bar_inactive`, for that context with an inactive
 //! window as well.
@@ -80,6 +80,7 @@ const PRESETS: &[(&str, Preset)] = &[
     ("macos-monterey", Preset::MacosMonterey),
     ("macos-tahoe", Preset::MacosTahoe),
     ("material-3", Preset::Material3),
+    ("ios-13", Preset::Ios13),
 ];
 
 /// One `ThemeColor` field: its colour, the token
@@ -366,11 +367,28 @@ const DIFFERENCES: &[Difference] = &[
                  own (docs/v0.8.0-spec.md §10, rule 0); every other field of the refinement \
                  is equal",
     },
+    Difference {
+        leaf: "geometry::group_box_content",
+        presets: &["ios-13"],
+        reason: "0.7.2's ios-13.toml states no card.border.color, line_width or corner_radius \
+                 (its [light.card] and [dark.card] tables are empty; docs/platform-facts.md \
+                 §2.26 has no iOS column, and its macOS one publishes no box border), and \
+                 0.7.2's validation \
+                 fills them with transparent, 0 and 0 \
+                 (native-theme/src/resolve/validate_helpers.rs), values no source gives; the \
+                 0.8.0 ios-13 leaves card.container(NONE).stroke and its corners unstated \
+                 (native-theme/src/next/presets/ios.rs, `card`; native-theme/tests/\
+                 next_homes.toml, rows card.border.color, card.border.line_width and \
+                 card.border.corner_radius, unstated_if_unset), so the 0.8.0 refinement sets \
+                 no border width, no border colour and no corner radius and the group box \
+                 keeps gpui-component's own (docs/v0.8.0-spec.md §10, rule 0); every other \
+                 field of the refinement is equal",
+    },
 ];
 
 /// The presets of [`DIFFERENCES`]' `geometry::group_box_content` entries
 /// whose card leaves its corners unstated beside its stroke.
-const UNSTATED_CARD_CORNERS: &[&str] = &["macos-monterey", "macos-tahoe"];
+const UNSTATED_CARD_CORNERS: &[&str] = &["macos-monterey", "macos-tahoe", "ios-13"];
 
 /// The leaf of [`DIFFERENCES`]' entry for a hovered list or table row: the
 /// `ThemeColor` slots `list_hover` and `table_hover`, their tokens and their
@@ -529,13 +547,16 @@ const MACOS_FONT_DPI: f32 = 72.0;
 
 /// The context the 0.7.2 side is resolved in: `ResolutionContext::for_tests`,
 /// on the macOS presets with the font DPI of the platform they describe
-/// ([`MACOS_FONT_DPI`]), so a size in points is the size 0.7.2 gives there.
+/// ([`MACOS_FONT_DPI`]), so a size in points is the size 0.7.2 gives there;
+/// on ios-13 with the same, the model parity's `IOS_RESOLUTION_CONTEXT`.
 pub(crate) fn old_context(preset: Preset) -> native_theme::ResolutionContext {
     match preset {
-        Preset::MacosMonterey | Preset::MacosTahoe => native_theme::ResolutionContext {
-            font_dpi: MACOS_FONT_DPI,
-            ..native_theme::ResolutionContext::for_tests()
-        },
+        Preset::MacosMonterey | Preset::MacosTahoe | Preset::Ios13 => {
+            native_theme::ResolutionContext {
+                font_dpi: MACOS_FONT_DPI,
+                ..native_theme::ResolutionContext::for_tests()
+            }
+        }
         _ => native_theme::ResolutionContext::for_tests(),
     }
 }

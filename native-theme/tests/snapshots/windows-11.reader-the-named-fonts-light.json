@@ -393,6 +393,14 @@
       "rules": [
         {
           "states": [
+            "hover"
+          ],
+          "label": {
+            "color": "#000000e4"
+          }
+        },
+        {
+          "states": [
             "checked"
           ],
           "label": {
@@ -452,6 +460,18 @@
         ]
       },
       "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "field": {
+            "stroke": {
+              "width": 1.0,
+              "color": "#0000000f",
+              "align": "outside"
+            }
+          }
+        },
         {
           "states": [
             "focused"
@@ -526,6 +546,18 @@
         }
       },
       "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "field": {
+            "stroke": {
+              "width": 1.0,
+              "color": "#0000000f",
+              "align": "outside"
+            }
+          }
+        },
         {
           "states": [
             "focused"
@@ -840,7 +872,15 @@
             "checked"
           ],
           "thumb": {
-            "fill": "#ffffff"
+            "fill": "#ffffff",
+            "min_size": [
+              12.0,
+              12.0
+            ],
+            "max_size": [
+              12.0,
+              12.0
+            ]
           }
         }
       ]
@@ -1102,6 +1142,14 @@
       "rules": [
         {
           "states": [
+            "hover"
+          ],
+          "label": {
+            "color": "#0000009e"
+          }
+        },
+        {
+          "states": [
             "selected"
           ],
           "label": {
@@ -1160,6 +1208,14 @@
         }
       },
       "rules": [
+        {
+          "states": [
+            "hover"
+          ],
+          "item_label": {
+            "color": "#000000e4"
+          }
+        },
         {
           "states": [
             "disabled"
@@ -1272,6 +1328,22 @@
       "rules": [
         {
           "states": [
+            "hover"
+          ],
+          "item_label": {
+            "color": "#000000e4"
+          }
+        },
+        {
+          "states": [
+            "selected"
+          ],
+          "item_label": {
+            "color": "#000000e4"
+          }
+        },
+        {
+          "states": [
             "disabled"
           ],
           "item_label": {
@@ -1348,7 +1420,17 @@
         "defined_size": {
           "pt": 9.0
         }
-      }
+      },
+      "rules": [
+        {
+          "states": [
+            "selected"
+          ],
+          "item_label": {
+            "color": "#000000e4"
+          }
+        }
+      ]
     },
     "item_icon": {
       "base": {}
@@ -1580,7 +1662,17 @@
         "defined_size": {
           "pt": 9.0
         }
-      }
+      },
+      "rules": [
+        {
+          "states": [
+            "selected"
+          ],
+          "label": {
+            "color": "#000000e4"
+          }
+        }
+      ]
     },
     "separator": {
       "base": {}

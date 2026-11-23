@@ -12,7 +12,13 @@
 //! property at the reference state, `NONE` or the row's `null_reference` where the home's state holds it,
 //! and so must its `from_state` bit, which is clear at `NONE` (spec §2: a value stated for the state, even
 //! one equal to the reference's, is a rule for it; a `null_reference` state's own rule sets the bit at both).
-//! An old value at such a home is compared as any other, whatever its `from_state` bit. Spec §5's notes add the special homes: a part's `shadows` against 0.7.2's
+//! An old value at such a home is compared as any other; where the unresolved 0.7.2 theme
+//! ([`Extra::unresolved`], read as for `unstated_if_unset`) states the row's key, the value is a rule for
+//! the home's state, so the property's `from_state` bit must be set there too (spec §2; a value only 0.7.2's
+//! resolver fills in is no rule, and is compared by its value alone). The bit says that a rule for some flag
+//! of the home's query wrote the value, not for which one: at a combined state it can be the reference
+//! state's rule. A home at the row's `null_reference` state is not checked for it, nor is any home where
+//! no unresolved theme is given. Spec §5's notes add the special homes: a part's `shadows` against 0.7.2's
 //! `border.shadow_enabled` (`false` is `SHADOWS` stated with `shadows = None`, `true` is `SHADOWS`
 //! unstated), a part's stroke colour and width read out of `Stroke::Uniform` inside the edge (`Stroke::None`
 //! is the width 0.0 and no colour) and a corner radius out of `CornerRadius::Uniform` with circular corners
@@ -307,7 +313,8 @@ impl fmt::Display for Report {
 #[derive(Default)]
 pub(super) struct Extra<'a> {
     /// The JSON serialisation of the unresolved 0.7.2 theme that `old` was resolved from (the variant of
-    /// its scheme), which the `unstated_if_unset` rows read; a field it leaves `None` is absent from it.
+    /// its scheme), which the `unstated_if_unset` rows and the `from_state` check of a home under a state
+    /// read; a field it leaves `None` is absent from it.
     pub(super) unresolved: Option<&'a Value>,
     /// The 0.8.0 theme resolved with a row's `context` in place of the defaults, which the `context` rows
     /// read their homes from.
@@ -493,6 +500,21 @@ fn compare_row(
                 new: got.to_string(),
             });
         }
+        if let Some(unresolved) = extra.unresolved
+            && unresolved_states(unresolved, &row.key)
+            && under_a_state(home, row.null_reference.as_deref())?
+            && from_state_at(home, new)? == Some(false)
+        {
+            mismatches.push(Mismatch {
+                key: row.key.clone(),
+                home: home.clone(),
+                old: format!(
+                    "{}, stated for the state: a rule, `from_state` set",
+                    show_old(&value)
+                ),
+                new: format!("{got}, `from_state` clear"),
+            });
+        }
     }
     let outcome = if mismatches.is_empty() {
         Outcome::Equal
@@ -511,18 +533,8 @@ fn compare_row(
 /// holds all its flags and more, else `NONE`; the axes are kept. `None` for any other home (no query, or the
 /// state `NONE`), where an old `null` is "unstated".
 fn reference_home(home: &str, reference: Option<&str>) -> Result<Option<String>, String> {
-    if home.starts_with(WINDOW_PREFIX) {
+    let Some((head, states, axes, property)) = split_ruled_home(home) else {
         return Ok(None);
-    }
-    let Some((head, after)) = home.split_once('(') else {
-        return Ok(None);
-    };
-    let Some((query, property)) = after.split_once(").") else {
-        return Ok(None);
-    };
-    let (states, axes) = match query.split_once("; ") {
-        Some((states, axes)) => (states, Some(axes)),
-        None => (query, None),
     };
     let state = Query::parse(states)?.state;
     if state.is_empty() {
@@ -543,6 +555,35 @@ fn reference_home(home: &str, reference: Option<&str>) -> Result<Option<String>,
     Ok(Some(format!("{head}({reference}{axes}).{property}")))
 }
 
+/// A ruled part's home `<head>(<states>[; <axes>]).<property>` in its four pieces; `None` for any other
+/// home (a global, a metric, a static part, a window's getter).
+fn split_ruled_home(home: &str) -> Option<(&str, &str, Option<&str>, &str)> {
+    if home.starts_with(WINDOW_PREFIX) {
+        return None;
+    }
+    let (head, after) = home.split_once('(')?;
+    let (query, property) = after.split_once(").")?;
+    let (states, axes) = match query.split_once("; ") {
+        Some((states, axes)) => (states, Some(axes)),
+        None => (query, None),
+    };
+    Some((head, states, axes, property))
+}
+
+/// Whether `home` is a ruled part's property under a state, one that is neither `NONE` nor `reference`
+/// (a row's `null_reference`): where the unresolved 0.7.2 theme states the row's key, a rule for that
+/// state (spec §2, `from_state`; plan §2, "The connector's own fallbacks").
+fn under_a_state(home: &str, reference: Option<&str>) -> Result<bool, String> {
+    let Some((_, states, _, _)) = split_ruled_home(home) else {
+        return Ok(false);
+    };
+    let state = Query::parse(states)?.state;
+    let reference = reference
+        .map(|text| Query::parse(text).map(|q| q.state))
+        .transpose()?;
+    Ok(!state.is_empty() && reference != Some(state))
+}
+
 /// The value at the dotted `key` of `old`.
 fn lookup<'a>(old: &'a Value, key: &str) -> Option<&'a Value> {
     key.split('.')
@@ -556,19 +597,30 @@ const BORDER_SERDE_NAMES: [(&str, &str); 3] = [
     ("line_width", "line_width_px"),
 ];
 
+/// The suffixes of the serde names of 0.7.2's fields that are not their fields' names: every such
+/// `#[serde(rename)]` of a field in `model/` is `<field>_px` or `<field>_ms`.
+const UNIT_SUFFIXES: [&str; 2] = ["_px", "_ms"];
+
 /// Whether the unresolved 0.7.2 theme `unresolved` states the field of `key`: the field's path there is
-/// the key's, a border's leaf by its serde name; a field the theme leaves `None` is absent.
+/// the key's, a border's leaf by its serde name, any other leaf by its name or by its name with a unit
+/// suffix (a struct serialises a field under one of them only); a field the theme leaves `None` is
+/// absent.
 fn unresolved_states(unresolved: &Value, key: &str) -> bool {
-    let path = match key.rsplit_once('.') {
+    let stated = |path: &str| lookup(unresolved, path).is_some_and(|v| !v.is_null());
+    match key.rsplit_once('.') {
         Some((parent, leaf)) if parent == "border" || parent.ends_with(".border") => {
             match BORDER_SERDE_NAMES.iter().find(|(name, _)| *name == leaf) {
-                Some((_, serde_name)) => format!("{parent}.{serde_name}"),
-                None => key.to_owned(),
+                Some((_, serde_name)) => stated(&format!("{parent}.{serde_name}")),
+                None => stated(key),
             }
         }
-        _ => key.to_owned(),
-    };
-    lookup(unresolved, &path).is_some_and(|v| !v.is_null())
+        _ => {
+            stated(key)
+                || UNIT_SUFFIXES
+                    .iter()
+                    .any(|suffix| stated(&format!("{key}{suffix}")))
+        }
+    }
 }
 
 /// `value`, the old value of `row`'s key, or where it is null the value its `if_null` chain ends in: the

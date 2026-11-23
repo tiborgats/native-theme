@@ -1751,10 +1751,20 @@ fn button(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> Butt
             [fill(c.disabled_container)],
         )
         .build();
+    // `button.hover_text_color`, `active_text_color`: 0.7.2 material-3.toml (uncited), the rest
+    // colour, each stated for its state (spec §2, `from_state`), before the rules of the states
+    // that replace it.
     let label = RuleBuilder::new(weighted(
         label(&typography.body, Some(c.on_secondary_container)),
         BUTTON_FONT_WEIGHT,
     ))
+    .rules(
+        [
+            RuleSelector::on(WidgetState::HOVER),
+            RuleSelector::on(WidgetState::PRESSED),
+        ],
+        [TextProp::Color(c.on_secondary_container)],
+    )
     .rule(
         RuleSelector::on(WidgetState::CHECKED),
         [TextProp::Color(c.on_secondary)],
@@ -1900,7 +1910,14 @@ fn list(
             [fill(roles.selection.background)],
         )
         .build();
+    // `list.hover_text_color`: list-item-hover-label-text-color = on-surface
+    // (_md-comp-list.scss:81), the rest colour, stated for `HOVER` (spec §2, `from_state`), before
+    // the rules of the states that replace it.
     let item_label = RuleBuilder::new(label(&typography.body, None))
+        .rule(
+            RuleSelector::on(WidgetState::HOVER),
+            [TextProp::Color(typography.body.color)],
+        )
         .rule(
             RuleSelector::on(WidgetState::SELECTED),
             [TextProp::Color(roles.selection.foreground)],
@@ -2138,6 +2155,12 @@ fn link(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> LinkWi
             color: None,
             thickness: None,
         })])
+        // `link.hover_text_color`: 0.7.2 material-3.toml (uncited), the rest colour, stated for
+        // `HOVER` (spec §2, `from_state`), before the rules of the states that replace it.
+        .rule(
+            RuleSelector::on(WidgetState::HOVER),
+            [TextProp::Color(roles.link)],
+        )
         .rule(
             RuleSelector::on(WidgetState::PRESSED),
             [TextProp::Color(c.link_pressed)],
@@ -2178,6 +2201,9 @@ fn slider(c: &SchemeColors, roles: &ColorRoles) -> SliderWidget {
             PartProp::MinSize([Some(SLIDER_THUMB_DIAMETER); 2]),
             PartProp::MaxSize([Some(SLIDER_THUMB_DIAMETER); 2]),
         ])
+        // `slider.thumb_hover_color`: 0.7.2 material-3.toml (uncited), the rest colour, stated for
+        // `HOVER` (spec §2, `from_state`), before the disabled rule.
+        .rule(RuleSelector::on(WidgetState::HOVER), [fill(c.primary)])
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
             [fill(c.disabled_content)],
@@ -2279,7 +2305,14 @@ fn menu(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> MenuWi
         ])
         .rule(RuleSelector::on(WidgetState::HOVER), [fill(c.hover_layer)])
         .build();
+    // `menu.hover_text_color`: platform-facts.md (§2.6), list-item-hover-label-text-color =
+    // on-surface, the rest colour, stated for `HOVER` (spec §2, `from_state`), before the disabled
+    // rule.
     let item_label = RuleBuilder::new(weighted(label(&typography.body, None), MENU_FONT_WEIGHT))
+        .rule(
+            RuleSelector::on(WidgetState::HOVER),
+            [TextProp::Color(typography.body.color)],
+        )
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
             [TextProp::Color(roles.disabled_text)],
@@ -2534,6 +2567,13 @@ fn switch(c: &SchemeColors, roles: &ColorRoles) -> SwitchWidget {
             PartProp::MinSize(size),
             PartProp::MaxSize(size),
         ])
+        // `switch.hover_unchecked_background`: unselected-hover-track-color =
+        // surface-container-highest (_md-comp-switch.scss:116), the rest fill, stated for `HOVER`
+        // (spec §2, `from_state`), before the rules of the states that replace it.
+        .rule(
+            RuleSelector::on(WidgetState::HOVER),
+            [fill(c.surface_container_highest)],
+        )
         .rule(
             RuleSelector::on(WidgetState::CHECKED),
             [fill(roles.accent.fill), PartProp::Stroke(Stroke::None)],

@@ -681,7 +681,25 @@
           20.0,
           20.0
         ]
-      }
+      },
+      "rules": [
+        {
+          "states": [
+            "checked"
+          ],
+          "thumb": {
+            "fill": "#ffffff",
+            "min_size": [
+              20.0,
+              20.0
+            ],
+            "max_size": [
+              20.0,
+              20.0
+            ]
+          }
+        }
+      ]
     },
     "label": {
       "base": {}

@@ -736,8 +736,11 @@ fn the_handle_of_the_focused_view_and_of_a_view_without_the_focus() {
 /// handle's overlay, does not reproduce it (#d0e4ef / #253b48 on Breeze's
 /// colours), so the handle at rest is filled as the plain handle in every
 /// view, as 0.7.2 draws it; its outline (`S2`) follows the view's focus, from
-/// the system's DecorationFocus. A system without window colours states no
-/// `S4`: that query returns the plain handle. No rule is dead.
+/// the system's DecorationFocus. 0.7.2's `scrollbar.thumb_color` is the
+/// handle in a view without the focus, so that state's rule states the fill
+/// (spec §2, `from_state`), and no rule the view with the focus. A system
+/// without window colours states no `S4`: that query returns the plain
+/// handle. No rule is dead.
 #[test]
 fn the_handle_at_rest_is_the_plain_handle_under_the_system_s_colours() {
     let theme = with_system(None);
@@ -751,7 +754,11 @@ fn the_handle_at_rest_is_the_plain_handle_under_the_system_s_colours() {
     ] {
         let thumb = theme.scrollbar.thumb(state);
         assert_eq!(thumb.fill, plain.fill, "{state:?}");
-        assert!(!thumb.from_state.contains(PartStated::FILL), "{state:?}");
+        assert_eq!(
+            thumb.from_state.contains(PartStated::FILL),
+            state.contains(WidgetState::UNFOCUSED_VIEW),
+            "{state:?}"
+        );
     }
     assert_eq!(
         theme.scrollbar.thumb(WidgetState::NONE).stroke,
