@@ -2804,5 +2804,7 @@ fn expander(
     )
 }
 
+#[cfg(all(test, feature = "serde"))]
+mod snapshots;
 #[cfg(test)]
 mod tests;
