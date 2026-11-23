@@ -1771,12 +1771,33 @@ fn the_theme_settings_switch_the_preset(cx: &mut TestAppContext) {
     );
 }
 
+/// The context the self-tests that measure sizes resolve a preset's 0.7.2
+/// theme in, the same on every host (`Showcase::resolution_context_for_test`):
+/// a preset of an Apple platform at 72 DPI, where a point is a pixel, every
+/// other at 96, the font DPI `ResolutionContext::from_system` gives on its
+/// own platform (native-theme src/resolve/context.rs,
+/// `ResolutionContext::font_dpi`), as the seams test resolves the native
+/// presets (tests/seams.rs, `NATIVE`). A preset of an Apple platform is one
+/// whose `platforms` name `macos` or `ios` (`Theme::list_presets`).
+fn preset_resolution_context(preset: &str) -> native_theme::ResolutionContext {
+    let apple = native_theme::theme::Theme::list_presets()
+        .iter()
+        .filter(|info| info.key == preset)
+        .any(|info| info.platforms.iter().any(|p| *p == "macos" || *p == "ios"));
+    native_theme::ResolutionContext {
+        font_dpi: if apple { 72.0 } else { 96.0 },
+        ..native_theme::ResolutionContext::for_tests()
+    }
+}
+
 /// Install `preset` as `use_preset` does, with the OS's accessibility
 /// preferences the defaults, not the host's (`os_preferences_for_test`):
 /// the host's would scale the text by whatever the desktop the test runs on
-/// is set to. Then scale the text by `text_scale` as the Preferences sheet
-/// scales it ([`scale_text`]), so the showcase resolves the 0.8.0 theme
-/// again for that context and installs it (`Showcase::install`).
+/// is set to; and its 0.7.2 theme resolved at its own platform's font DPI,
+/// not the host's ([`preset_resolution_context`]). Then scale the text by
+/// `text_scale` as the Preferences sheet scales it ([`scale_text`]), so the
+/// showcase resolves the 0.8.0 theme again for that context and installs it
+/// (`Showcase::install`).
 fn use_preset_scaled(
     cx: &mut VisualTestContext,
     showcase: &Entity<Showcase>,
@@ -1785,7 +1806,8 @@ fn use_preset_scaled(
 ) {
     cx.update(|_window, cx| {
         showcase.update(cx, |this, _| {
-            this.os_preferences_for_test = Some(native_theme::AccessibilityPreferences::default())
+            this.os_preferences_for_test = Some(native_theme::AccessibilityPreferences::default());
+            this.resolution_context_for_test = Some(preset_resolution_context(preset));
         })
     });
     use_preset(cx, showcase, preset);
@@ -1829,16 +1851,18 @@ fn settings_trigger_min_width(
 /// (`settings_trigger_min_width`). Checked under every platform preset
 /// (`native_theme::next::Preset::ALL`; a palette laid over one changes its
 /// colours alone, none of the sizes measured here), whose font sizes differ
-/// -- at a text scale of 1, whatever the host's, so the measurement is the
+/// -- at a text scale of 1, whatever the host's, and at the font DPI of the
+/// preset's own platform, whatever the host's, so the measurement is the
 /// same on every machine (`use_preset_scaled`) -- and again at a text scale
 /// of 2, where every text grows. The window's size is fixed, so every
 /// control stays reachable by scrolling: the settings, the Separator and the
 /// inspector are one content in a scroll area that fills the panel, which
 /// stays in the window; each row and the inspector's TabBar are inside that
 /// content, which is at least the area's height, the inspector filling the
-/// rest of it, never shorter than its TabBar and the first lines of its
-/// info (`PanelLook::body_min_height`), and the area scrolls exactly where
-/// the content is taller than it.
+/// rest of it, never shorter than its TabBar and its info down to the first
+/// row (`PanelLook::body_min_height`) -- with the pointer settled on a
+/// Button, that row ends inside the inspector's scroll area -- and the area
+/// scrolls exactly where the content is taller than it.
 #[gpui::test]
 fn the_side_panel_holds_the_theme_settings_and_the_inspector(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
@@ -1981,69 +2005,93 @@ fn the_side_panel_holds_the_theme_settings_and_the_inspector(cx: &mut TestAppCon
                 inspector.bottom(),
                 content.bottom(),
             );
-            let body = read(&mut cx, &showcase, |this, _| {
+            let body = read(&mut cx, &showcase, |this, cx| {
+                let margin = crate::demo::side_panel_content_margin(
+                    cx,
+                    geometry::container_margin(&this.layout),
+                );
                 this.panel_look
                     .as_ref()
-                    .map(crate::inspector::PanelLook::body_min_height)
+                    .map(|look| look.body_min_height(margin))
             });
             // Within half a pixel: gpui rounds the layout to whole pixels.
             assert!(
                 body.is_some_and(|body| inspector.size.height >= tabs.size.height + body - px(0.5)),
                 "{at}: the inspector at {inspector:?} is shorter than its TabBar at {tabs:?} and \
-                 the first lines of its info, {body:?}"
+                 its info down to the first row, {body:?}"
+            );
+            let _ = settle_on(&mut cx, &showcase, "basic-button");
+            let (row, room) = read(&mut cx, &showcase, |this, cx| {
+                let drawn = this.info_ui.read(cx).layout_drawn();
+                (
+                    drawn.get("chrome.info.row_1").copied(),
+                    drawn.get("chrome.side_panel.inspector").copied(),
+                )
+            });
+            assert!(
+                row.zip(room)
+                    .is_some_and(|(row, room)| row.top() >= room.top()
+                        && row.bottom() <= room.bottom() + px(0.5)),
+                "{at}: the inspector's first info row at {row:?} does not end inside its scroll \
+                 area at {room:?}"
             );
         }
     }
 
     // With widget_gap unstated, the gaps are the showcase's own, and the
-    // settings' info says so. At text scale 1, where the settings are
-    // shorter than the side panel: the inspector shows the hovered target
-    // with the smallest area (`InfoRegistry::choose`), and settings that
-    // scroll, taller than the panel around them, would lose to the panel.
-    scale_text(&mut cx, &showcase, 1.0);
-    cx.update(|_window, cx| {
-        showcase.update(cx, |this, cx| {
-            this.layout = native_theme::theme::LayoutTheme::default();
-            cx.notify();
+    // settings' info says so, at text scale 2 and at 1: the inspector shows
+    // the settings, inside the side panel's scroll area, not the panel
+    // around them (`InfoRegistry::choose`; a target larger than the one it
+    // is in, `a_target_larger_than_the_one_it_is_in_wins`).
+    for text_scale in [2.0, 1.0] {
+        scale_text(&mut cx, &showcase, text_scale);
+        cx.update(|_window, cx| {
+            showcase.update(cx, |this, cx| {
+                this.layout = native_theme::theme::LayoutTheme::default();
+                cx.notify();
+            });
         });
-    });
-    cx.run_until_parked();
-    draw(&mut cx);
-    let (label, control) = (
-        bounds_of(&mut cx, CHROME_LABEL_MODE),
-        bounds_of(&mut cx, PROBE_COLOR_MODE),
-    );
-    assert_eq!(
-        control.top() - label.bottom(),
-        crate::demo::THEME_SETTINGS_GAP,
-        "with widget_gap unstated, the settings' gap is not the showcase's own THEME_SETTINGS_GAP"
-    );
-    // The Palette row is the one above the Mode row.
-    let above = bounds_of(&mut cx, PROBE_PALETTE);
-    assert_eq!(
-        label.top() - above.bottom(),
-        crate::demo::THEME_SETTINGS_GAP,
-        "with widget_gap unstated, the settings' rows are not THEME_SETTINGS_GAP apart"
-    );
-    // Right of the Mode label, which is as wide as its text: the settings'
-    // own ground.
-    hover(&mut cx, point(label.right() + px(8.), label.center().y));
-    settle(&mut cx);
-    draw(&mut cx);
-    let gaps = read(&mut cx, &showcase, |this, cx| {
-        this.info_ui.read(cx).shown().and_then(|info| {
-            info.instance
-                .iter()
-                .find(|n| n.what == "gaps")
-                .map(|n| n.text.clone())
-        })
-    });
-    assert!(
-        gaps.as_deref()
-            .is_some_and(|g| g.contains("THEME_SETTINGS_GAP") && g.contains("the showcase's own")),
-        "the settings' info does not say its gaps are the showcase's own THEME_SETTINGS_GAP: \
-         {gaps:?}"
-    );
+        cx.run_until_parked();
+        draw(&mut cx);
+        let at = format!("at text scale {text_scale}");
+        let (label, control) = (
+            bounds_of(&mut cx, CHROME_LABEL_MODE),
+            bounds_of(&mut cx, PROBE_COLOR_MODE),
+        );
+        assert_eq!(
+            control.top() - label.bottom(),
+            crate::demo::THEME_SETTINGS_GAP,
+            "{at}: with widget_gap unstated, the settings' gap is not the showcase's own \
+             THEME_SETTINGS_GAP"
+        );
+        // The Palette row is the one above the Mode row.
+        let above = bounds_of(&mut cx, PROBE_PALETTE);
+        assert_eq!(
+            label.top() - above.bottom(),
+            crate::demo::THEME_SETTINGS_GAP,
+            "{at}: with widget_gap unstated, the settings' rows are not THEME_SETTINGS_GAP apart"
+        );
+        // Right of the Mode label, which is as wide as its text: the
+        // settings' own ground.
+        hover(&mut cx, point(label.right() + px(8.), label.center().y));
+        settle(&mut cx);
+        draw(&mut cx);
+        let gaps = read(&mut cx, &showcase, |this, cx| {
+            this.info_ui.read(cx).shown().and_then(|info| {
+                info.instance
+                    .iter()
+                    .find(|n| n.what == "gaps")
+                    .map(|n| n.text.clone())
+            })
+        });
+        assert!(
+            gaps.as_deref().is_some_and(
+                |g| g.contains("THEME_SETTINGS_GAP") && g.contains("the showcase's own")
+            ),
+            "{at}: the settings' info does not say its gaps are the showcase's own \
+             THEME_SETTINGS_GAP: {gaps:?}"
+        );
+    }
 }
 
 /// The side panel and its Separator report themselves (spec S2): the
@@ -12137,8 +12185,9 @@ fn a_family_gpui_finds_no_face_of_is_named_by_its_fallback() {
                 let next = this
                     .next_system
                     .take()
+                    .and_then(Result::ok)
                     .unwrap_or_else(native_theme::next::Theme::from_system_or_default);
-                this.next_system = Some(next_overlay(next));
+                this.next_system = Some(Ok(next_overlay(next)));
                 this.install_system(overlay, window, cx)
             })
         });
@@ -14167,10 +14216,20 @@ fn the_command_line_installs_what_it_accepts(cx: &mut TestAppContext) {
 /// `--palette` lays the bundled palette it names over the theme installed,
 /// as the palette Select does, and the Select shows it; beside `--theme`,
 /// over that theme. `none` takes the palette away; a name the Select does
-/// not offer is reported and changes nothing.
+/// not offer is reported and changes nothing: `Dracula`, which a match
+/// ignoring case would take for `dracula`, given where no palette is laid,
+/// leaves none laid (`cli::palette_key` matches the name as given).
 #[gpui::test]
 fn the_palette_flag_lays_what_the_palette_select_offers(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    // The OS's preferences the test's, all unset: the host's High contrast
+    // would set a palette aside under a preset with a High level.
+    cx.update(|_window, cx| {
+        showcase.update(cx, |this, _| {
+            this.os_preferences_for_test =
+                Some(native_theme_gpui::AccessibilityPreferences::DEFAULT.clone())
+        })
+    });
     use_preset(&mut cx, &showcase, "kde-breeze");
     let state = |cx: &mut VisualTestContext| {
         read(cx, &showcase, |this, cx| {
@@ -14190,7 +14249,8 @@ fn the_palette_flag_lays_what_the_palette_select_offers(cx: &mut TestAppContext)
     assert!(dracula.is_some(), "dracula is not bundled");
     let cases = [
         (None, "dracula", "kde-breeze", Some("dracula")),
-        (None, "Dracula", "kde-breeze", Some("dracula")),
+        (None, crate::support::NO_PALETTE, "kde-breeze", None),
+        (None, "Dracula", "kde-breeze", None),
         (Some("adwaita"), "nord", "adwaita", Some("nord")),
         (None, crate::support::NO_PALETTE, "adwaita", None),
     ];
@@ -14223,6 +14283,40 @@ fn the_palette_flag_lays_what_the_palette_select_offers(cx: &mut TestAppContext)
             );
         }
     }
+}
+
+/// A failed read of the desktop's settings by the 0.8.0 model is kept
+/// (`Showcase::next_system`), as a read that succeeded is: a preset switch
+/// does not read the desktop again, and a reload does
+/// (`reload_system_theme`).
+#[gpui::test]
+fn a_failed_desktop_read_is_kept_until_a_reload(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_preset(&mut cx, &showcase, "kde-breeze");
+    let failed = "Failed to load OS theme: the test's failed read".to_string();
+    cx.update(|_window, cx| {
+        showcase.update(cx, |this, _| this.next_system = Some(Err(failed.clone())))
+    });
+    let kept = |cx: &mut VisualTestContext| {
+        read(cx, &showcase, |this, _| {
+            this.next_system
+                .as_ref()
+                .and_then(|read| read.as_ref().err().cloned())
+        })
+    };
+    use_preset(&mut cx, &showcase, "adwaita");
+    assert_eq!(
+        kept(&mut cx),
+        Some(failed.clone()),
+        "a preset switch read the desktop's settings again after a failed read"
+    );
+    cx.update(|window, cx| window.dispatch_action(Box::new(ReloadTheme), cx));
+    cx.run_until_parked();
+    assert_ne!(
+        kept(&mut cx),
+        Some(failed),
+        "a reload did not read the desktop's settings again"
+    );
 }
 
 /// Make `names` the installed freedesktop themes the icon-theme Select
@@ -15111,7 +15205,10 @@ fn a_preference_reaches_the_installed_theme(cx: &mut TestAppContext) {
 /// kde-breeze, which defines no High level, it reads on while the theme
 /// stays at Normal contrast, and its info says why. Under adwaita, which
 /// defines High, with a palette laid over it, High is taken and the palette
-/// suspended: no reason is given.
+/// suspended: no reason is given, and the palette Select and the switch say
+/// the palette is set aside while High contrast is on. Under a theme that
+/// has High for the palette's scheme alone, the palette holds High back,
+/// and the switch says so.
 #[gpui::test]
 fn the_high_contrast_switch_shows_what_was_asked_and_says_why_it_is_not_used(
     cx: &mut TestAppContext,
@@ -15183,6 +15280,113 @@ fn the_high_contrast_switch_shows_what_was_asked_and_says_why_it_is_not_used(
         (asked, used, held),
         (Some(true), Some(native_theme::next::Contrast::High), None),
         "adwaita under dracula, High asked for"
+    );
+    // The palette is set aside while High contrast is on: the palette
+    // Select, which still shows it, and the High contrast switch say so.
+    let note = |info: Option<WidgetInfo>, what: &str| {
+        info.and_then(|i| i.instance.into_iter().find(|n| n.what == what))
+            .map(|n| n.text)
+    };
+    let set_aside = "the palette dracula is set aside while High contrast is on";
+    assert_eq!(
+        read(&mut cx, &showcase, |_this, cx| {
+            crate::support::palette_set_aside(cx)
+        }),
+        Some("dracula"),
+        "adwaita under dracula, High asked for: the palette is not reported set aside"
+    );
+    let said = note(settle_on(&mut cx, &showcase, PROBE_PALETTE), "set aside");
+    assert!(
+        said.as_deref()
+            .is_some_and(|said| said.starts_with(set_aside)),
+        "the palette Select's info does not say High contrast set dracula aside: {said:?}"
+    );
+    press(&mut cx, "secondary-,");
+    let said = note(settle_on(&mut cx, &showcase, PREF_HIGH_CONTRAST), "palette");
+    assert!(
+        said.as_deref()
+            .is_some_and(|said| said.starts_with(set_aside)),
+        "the High contrast switch's info does not say High contrast set dracula aside: {said:?}"
+    );
+    press(&mut cx, "escape");
+
+    // The palette holds High back where the theme has it for the palette's
+    // scheme alone: the desktop's settings as the 0.8.0 model reads them,
+    // here kde-breeze with the system's High colours for the dark scheme
+    // only, in the light mode, under dracula, a dark palette. The 0.7.2
+    // theme of `default` is this host's, where it has one to read (always
+    // on Linux).
+    let Ok(mut system) = system_theme() else {
+        return;
+    };
+    system.accessibility = native_theme_gpui::AccessibilityPreferences::DEFAULT.clone();
+    let mut colors = native_theme::next::OsColors::default();
+    colors.accent = Some(native_theme::next::Color::WHITE);
+    let mut overrides = native_theme::next::SystemOverrides::default();
+    overrides.color_schemes.push((
+        (
+            native_theme::next::Scheme::Dark,
+            native_theme::next::Contrast::High,
+        ),
+        colors,
+    ));
+    let next = native_theme::next::Theme::preset(native_theme::next::Preset::KdeBreeze)
+        .with_system_overrides(overrides);
+    cx.update(|_window, cx| {
+        showcase.update(cx, |this, _| {
+            this.system = Some(system);
+            this.next_system = Some(Ok(next));
+        })
+    });
+    apply_cli(
+        &mut cx,
+        &showcase,
+        &crate::CliArgs {
+            theme: Some("default".into()),
+            variant: Some("light".into()),
+            ..Default::default()
+        },
+    );
+    assert_eq!(
+        read(&mut cx, &showcase, |this, _| (
+            this.current_theme_name.clone(),
+            this.palette
+        )),
+        ("default".to_string(), Some("dracula")),
+        "the desktop's theme under dracula did not install"
+    );
+    let (asked, used, held) = state(&mut cx);
+    assert_eq!(
+        (asked, used, held),
+        (
+            Some(true),
+            Some(native_theme::next::Contrast::Normal),
+            Some(crate::support::ContrastHeld {
+                asked: native_theme::next::Contrast::High,
+                used: native_theme::next::Contrast::Normal,
+                by_palette: true,
+            })
+        ),
+        "the desktop's theme with High for the dark scheme alone, light, under dracula"
+    );
+    assert_eq!(
+        read(&mut cx, &showcase, |_this, cx| {
+            crate::support::palette_set_aside(cx)
+        }),
+        None,
+        "a palette that holds High back is reported set aside"
+    );
+    press(&mut cx, "secondary-,");
+    let why = note(
+        settle_on(&mut cx, &showcase, PREF_HIGH_CONTRAST),
+        "resolved",
+    );
+    assert!(
+        why.as_deref().is_some_and(|why| why.starts_with(
+            "the theme is resolved at Normal contrast, not the High asked for: the palette laid \
+             over the theme holds High back"
+        )),
+        "the High contrast switch's info does not say the palette holds High back: {why:?}"
     );
 }
 
@@ -15725,6 +15929,55 @@ fn open_nested(
     let ui = cx.update(|_window, cx| view.read(cx).ui.clone());
     draw(cx);
     (view, ui, cx)
+}
+
+/// Two targets for the registry's tests, one inside the other and larger
+/// than it, as a scroll area's content taller than its viewport is: an
+/// outer 200×200 target at (20, 20) that clips what it holds, and in it a
+/// 200×600 target at its top.
+struct Overflowing {
+    ui: Entity<InfoRegistry>,
+}
+
+impl Render for Overflowing {
+    fn render(
+        &mut self,
+        _window: &mut gpui::Window,
+        _cx: &mut gpui::Context<Self>,
+    ) -> impl IntoElement {
+        gpui::div().relative().size_full().child(
+            gpui::div()
+                .relative()
+                .size_full()
+                .overflow_hidden()
+                .child(
+                    gpui::div()
+                        .info(&self.ui, "content", WidgetInfo::new("Content"))
+                        .w(px(200.))
+                        .h(px(600.)),
+                )
+                .info(&self.ui, "viewport", WidgetInfo::new("Viewport"))
+                .absolute()
+                .left(px(20.))
+                .top(px(20.))
+                .size(px(200.)),
+        )
+    }
+}
+
+/// A target inside another and larger than it wins over the one it is in,
+/// whose area is the smaller (`InfoRegistry::choose`): the pointer is on
+/// the part of it the outer one shows.
+#[gpui::test]
+fn a_target_larger_than_the_one_it_is_in_wins(cx: &mut TestAppContext) {
+    let (view, cx) = cx.add_window_view(|_window, cx| Overflowing {
+        ui: cx.new(|_| InfoRegistry::new()),
+    });
+    let ui = cx.update(|_window, cx| view.read(cx).ui.clone());
+    draw(cx);
+    hover(cx, INNER);
+    settle(cx);
+    assert_eq!(shown(cx, &ui).as_deref(), Some("Content"));
 }
 
 /// Move the pointer to `at` and let the hover handlers run.

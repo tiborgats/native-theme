@@ -1496,17 +1496,20 @@ fn settings_tooltip(cx: &App, control: Stateful<Div>, text: SharedString) -> Sta
 /// What the palette Select's tooltip says: what is drawn from which model
 /// under a palette, which has no 0.7.2 equivalent.
 pub(crate) const PALETTE_TOOLTIP: &str = "A palette recolours the preset (0.8.0 model): \
-     gpui-component's colours and the connector's own widgets are drawn from the 0.8.0 theme \
-     with the palette. The showcase's own refinements -- its colours, geometry, menus and the \
-     side panel's padding and label font -- still read the 0.7.2 preset, which has no \
-     palettes, until their pages move to the 0.8.0 model.";
+     gpui-component's theme colours and the connector's own widgets are drawn from the 0.8.0 \
+     theme with the palette. Still read from the 0.7.2 preset, which has no palettes, until \
+     their pages move to the 0.8.0 model: the button variants the showcase gives the Buttons \
+     page's Bordered Button and a dialog's default button, the checked track of the Switches \
+     built without the widgets feature (Basic, Inputs and Preferences), and the showcase's own \
+     refinements -- its colours, geometry, menus and the side panel's padding and label font.";
 
 /// The palette Select over `state`, refined by `geometry::select`, as wide
 /// as the theme settings it is in: `none`, the theme's own colours, and the
 /// bundled palettes (`support::palette_rows`); the choice installs the theme
 /// again with the palette laid over it (`Showcase::choose_palette`). Its
 /// tooltip says what the pages still on the 0.7.2 model show under a
-/// palette ([`PALETTE_TOOLTIP`]).
+/// palette ([`PALETTE_TOOLTIP`]); its info says where High contrast set the
+/// palette chosen aside (`support::palette_set_aside`).
 pub(crate) fn palette_select(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -1514,6 +1517,10 @@ pub(crate) fn palette_select(
 ) -> Stateful<Div> {
     let native = old_native(cx);
     let mut select_info = info::palette_select(cx.theme(), native.as_ref().map(|n| n.resolved));
+    if let Some(palette) = crate::support::palette_set_aside(cx) {
+        select_info =
+            select_info.instance("set aside", crate::support::palette_set_aside_text(palette));
+    }
     let select = native_info(
         Select::new(state),
         cx,
@@ -1919,9 +1926,9 @@ fn sidebar_label(
 /// The three are one content, scrolled on `scroll` where it is taller than
 /// the panel ([`crate::support::gutter_scroll`], `relayout` its frame's
 /// relayout): the inspector then keeps its own height, its TabBar's and its
-/// info's first lines' (`inspector::PanelLook::body_min_height`), so
-/// every control stays reachable at every text scale in the fixed window,
-/// and the panel never runs past its bounds.
+/// info's down to the first row (`inspector::PanelLook::body_min_height`),
+/// so every control stays reachable at every text scale in the fixed
+/// window, and the panel never runs past its bounds.
 /// Where the theme states any side of `sidebar.border.padding`
 /// ([`sidebar_padding`]), the whole panel is padded by it, a side it leaves
 /// unstated by `container_margin`, and the content adds none; where it
@@ -3243,11 +3250,20 @@ pub(crate) const REDUCE_MOTION_DESCRIPTION: &str = "reduce_motion: forwarded to 
 
 /// `info` with the reason the installed theme's contrast is lower than the
 /// preferences ask, where `pref` is High contrast and it is
-/// (`support::contrast_held`): the switch shows what was asked for.
+/// (`support::contrast_held`): the switch shows what was asked for. Where
+/// High contrast set the palette chosen aside
+/// (`support::palette_set_aside`), the High contrast switch's info says so.
 fn with_contrast_held(info: WidgetInfo, pref: Preference, cx: &App) -> WidgetInfo {
-    match (pref, contrast_held(cx)) {
-        (Preference::HighContrast, Some(held)) => info.instance("resolved", held.text()),
-        _ => info,
+    if !matches!(pref, Preference::HighContrast) {
+        return info;
+    }
+    let info = match contrast_held(cx) {
+        Some(held) => info.instance("resolved", held.text()),
+        None => info,
+    };
+    match crate::support::palette_set_aside(cx) {
+        Some(palette) => info.instance("palette", crate::support::palette_set_aside_text(palette)),
+        None => info,
     }
 }
 

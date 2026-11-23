@@ -267,13 +267,15 @@ impl gpui::Global for NextInactive {}
 /// What the installed 0.8.0 theme was asked for (`Showcase::try_install`):
 /// the preferences it was installed with -- the OS's with the user's over
 /// them (`demo::PreferenceOverrides`) -- which the Preferences sheet and the
-/// status bar show, and why the theme's contrast is lower than they ask,
-/// where it is. The connector reads back the context the theme was resolved
+/// status bar show, why the theme's contrast is lower than they ask, where
+/// it is, and the palette chosen that High contrast set aside, where it set
+/// one aside. The connector reads back the context the theme was resolved
 /// to (`NativeTheme::accessibility`), whose contrast level the theme may have
 /// lowered (docs/v0.8.0-spec.md §6, resolution step 1).
 pub(crate) struct Requested {
     pub(crate) preferences: AccessibilityPreferences,
     pub(crate) contrast_held: Option<ContrastHeld>,
+    pub(crate) palette_set_aside: Option<&'static str>,
 }
 
 impl gpui::Global for Requested {}
@@ -331,6 +333,27 @@ pub(crate) fn requested_preferences(cx: &App) -> Option<AccessibilityPreferences
 pub(crate) fn contrast_held(cx: &App) -> Option<&ContrastHeld> {
     cx.native_theme()?.next_resolved(cx)?;
     cx.try_global::<Requested>()?.contrast_held.as_ref()
+}
+
+/// The palette chosen that High contrast set aside in the installed 0.8.0
+/// theme ([`Requested`]): `High` was asked for and the theme has it for the
+/// scheme asked, so the theme is resolved without the palette, which comes
+/// back once High contrast is off (docs/v0.8.0-spec.md §6, resolution step
+/// 1). `None` where no palette is set aside, or no 0.8.0 theme is installed.
+pub(crate) fn palette_set_aside(cx: &App) -> Option<&'static str> {
+    cx.native_theme()?.next_resolved(cx)?;
+    cx.try_global::<Requested>()?.palette_set_aside
+}
+
+/// The sentence the palette Select and the High contrast switch say that
+/// High contrast set `palette` aside in ([`palette_set_aside`]).
+pub(crate) fn palette_set_aside_text(palette: &str) -> String {
+    format!(
+        "the palette {palette} is set aside while High contrast is on: the theme has a High \
+         level for the scheme asked, and a palette is not laid over it there, so the theme is \
+         drawn in its own High contrast colours; {palette} is laid over it again once High \
+         contrast is off (docs/v0.8.0-spec.md §6, resolution step 1)"
+    )
 }
 
 /// What the pages still on the 0.7.2 model read where they read
@@ -1470,8 +1493,9 @@ pub(crate) fn preset_items(default_preset: &str) -> Vec<PresetItem> {
         .collect()
 }
 
-/// The palette Select's row for no palette: the preset's own colours.
-pub(crate) const NO_PALETTE: &str = "none";
+/// The palette Select's row for no palette: the preset's own colours, the
+/// value `--palette` takes for it.
+pub(crate) use native_theme_showcase_support::cli::NO_PALETTE;
 
 /// The palette Select's rows: [`NO_PALETTE`], then every bundled palette
 /// (`Palette::BUNDLED_NAMES`), by its name.
@@ -1482,13 +1506,13 @@ pub(crate) fn palette_rows() -> Vec<SharedString> {
         .collect()
 }
 
-/// The bundled palette of the palette Select's row `row`: `None` for
-/// [`NO_PALETTE`] and for a name `Palette::BUNDLED_NAMES` does not hold.
+/// The bundled palette of the palette Select's row `row`, as `--palette`
+/// takes it (`cli::palette_key`): `None` for [`NO_PALETTE`] and for a name
+/// `Palette::BUNDLED_NAMES` does not hold.
 pub(crate) fn palette_of_row(row: &str) -> Option<&'static str> {
-    Palette::BUNDLED_NAMES
-        .iter()
-        .copied()
-        .find(|name| *name == row)
+    native_theme_showcase_support::cli::palette_key(row)
+        .ok()
+        .flatten()
 }
 
 impl SearchableListItem for PresetItem {

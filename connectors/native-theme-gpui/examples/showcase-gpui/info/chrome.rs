@@ -1174,7 +1174,7 @@ pub fn palette_select(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
         )
         .instance(
             "old model",
-            "under a palette, gpui-component's colours and the connector's widgets::* are drawn from the 0.8.0 theme with the palette; the showcase's own refinements -- native_color, native_geometry, MenuLook and the side panel's padding and label font (sidebar.border.padding, sidebar.font) -- read the 0.7.2 theme of the same choice, which has no palettes, so they show the preset alone, in the palette's scheme (support::OldModel), until their page group moves to the 0.8.0 model; the tooltip says so",
+            "under a palette, gpui-component's theme colours and the connector's widgets::* are drawn from the 0.8.0 theme with the palette; the 0.7.2 theme of the same choice, which has no palettes, so the preset alone, in the palette's scheme (support::OldModel), gives until its page group moves to the 0.8.0 model: the button variants of variants::bordered_button (the Buttons page's Bordered Button) and of variants::default_button with geometry::default_button_rest (a dialog's default button), variants::switch_color (the checked track of the Switches built without the widgets feature: Basic, Inputs and Preferences), and the showcase's own refinements -- native_color, native_geometry, MenuLook and the side panel's padding and label font (sidebar.border.padding, sidebar.font); the tooltip says so",
         )
         .instance(
             "width",
