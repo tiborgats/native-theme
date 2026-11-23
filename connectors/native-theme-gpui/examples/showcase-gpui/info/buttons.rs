@@ -668,7 +668,7 @@ pub fn dialog_default(t: &Theme, b: &ResolvedButtonTheme) -> WidgetInfo {
         "bg",
         "default_button_background",
         b.default_button_background,
-        "native-theme-gpui/geometry.rs:1757",
+        "native-theme-gpui/geometry.rs:1890",
     ));
     let info = match stated_claim(
         "text",
@@ -689,7 +689,7 @@ pub fn dialog_default(t: &Theme, b: &ResolvedButtonTheme) -> WidgetInfo {
         "default_button_border_color",
         b.default_button_border_color,
         width,
-        "native-theme-gpui/geometry.rs:1758",
+        "native-theme-gpui/geometry.rs:1891",
     )
     .or_else(|| {
         edge_claim(
@@ -697,7 +697,7 @@ pub fn dialog_default(t: &Theme, b: &ResolvedButtonTheme) -> WidgetInfo {
             "border",
             Some(b.border.color),
             width,
-            "native-theme-gpui/geometry.rs:1759",
+            "native-theme-gpui/geometry.rs:1892",
         )
     });
     let hovered = edge_claim(
@@ -913,7 +913,7 @@ fn toolbar_checked(info: WidgetInfo, t: &Theme, native: Option<&ResolvedTheme>) 
         "checked fill",
         "button_checked_background",
         native.and_then(|r| r.toolbar.button_checked_background),
-        "native-theme-gpui/geometry.rs:1733",
+        "native-theme-gpui/geometry.rs:1866",
     );
     let info = match (checked_fill, native) {
         (Some(fill), Some(r)) => {
@@ -921,14 +921,14 @@ fn toolbar_checked(info: WidgetInfo, t: &Theme, native: Option<&ResolvedTheme>) 
                 "checked text",
                 "checked_text_color",
                 r.button.checked_text_color,
-                "native-theme-gpui/geometry.rs:1728",
+                "native-theme-gpui/geometry.rs:1861",
             ) {
                 Some(text) => text,
                 None => claim(
                     "checked text",
                     "active_text_color",
                     stated(r.button.active_text_color),
-                    "native-theme-gpui/geometry.rs:1728",
+                    "native-theme-gpui/geometry.rs:1861",
                 ),
             };
             info.color(fill).color(text)
@@ -967,7 +967,7 @@ fn toolbar_checked(info: WidgetInfo, t: &Theme, native: Option<&ResolvedTheme>) 
                 .button_hover_border_color
                 .map(|_| r.button.border.line_width)
         }),
-        "native-theme-gpui/geometry.rs:1799",
+        "native-theme-gpui/geometry.rs:1932",
     ));
     info.not_themeable(
         "hover outline while checked",

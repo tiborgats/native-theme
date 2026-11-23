@@ -427,13 +427,49 @@ pub fn toggle(n: Native<'_>) -> StyleRefinement {
 #[must_use]
 pub fn input(n: Native<'_>) -> StyleRefinement {
     let i = &n.resolved.input;
-    let r = with_height_rule(StyleRefinement::default(), Some(i.min_height), n);
-    with_coloured_text(
-        with_padding(r, &i.border.padding)
-            .rounded(px(i.border.corner_radius))
-            .border(px(i.border.line_width)),
-        &i.font,
-        n,
+    input_from(
+        &FieldFrame {
+            min_height: Some(i.min_height),
+            padding: sides_of(&i.border.padding),
+            radius: i.border.corner_radius,
+            border_width: i.border.line_width,
+        },
+        &font_of(&i.font, n),
+        n.resolved.defaults.line_height,
+        n.accessibility.text_scale_factor(),
+    )
+}
+
+/// The theme's values a field's frame is made of, read from either model:
+/// its stated height ([`input`], [`select`], [`combobox`]; none for
+/// [`text_area`]), the padding sides it states, its corner radius and its
+/// border width.
+pub(crate) struct FieldFrame {
+    pub(crate) min_height: Option<f32>,
+    pub(crate) padding: [Option<f32>; 4],
+    pub(crate) radius: f32,
+    pub(crate) border_width: f32,
+}
+
+/// `r` with the frame `f`, its height by the control-height rule at the
+/// text-scaling factor `text_scale`.
+fn field_frame(r: StyleRefinement, f: &FieldFrame, text_scale: f32) -> StyleRefinement {
+    padding(height_rule(r, f.min_height, text_scale), f.padding)
+        .rounded(px(f.radius))
+        .border(px(f.border_width))
+}
+
+/// [`input`] of the frame `f` and the font `font`.
+pub(crate) fn input_from(
+    f: &FieldFrame,
+    font: &Font<'_>,
+    line_height: f32,
+    text_scale: f32,
+) -> StyleRefinement {
+    coloured_text(
+        field_frame(StyleRefinement::default(), f, text_scale),
+        font,
+        line_height,
     )
 }
 
@@ -464,24 +500,39 @@ pub fn input(n: Native<'_>) -> StyleRefinement {
 #[must_use]
 pub fn text_area(n: Native<'_>) -> StyleRefinement {
     let a = &n.resolved.text_area;
-    let p = &a.border.padding;
+    text_area_from(
+        &FieldFrame {
+            min_height: None,
+            padding: sides_of(&a.border.padding),
+            radius: a.border.corner_radius,
+            border_width: a.border.line_width,
+        },
+        &font_of(&n.resolved.input.font, n),
+        n.resolved.defaults.line_height,
+    )
+}
+
+/// [`text_area`] of the frame `f`, whose padding is the stated one, and the
+/// font `font`; `f`'s height is not read.
+pub(crate) fn text_area_from(f: &FieldFrame, font: &Font<'_>, line_height: f32) -> StyleRefinement {
+    let [top, right, bottom, left] = f.padding;
     let (across, down) = (
         f32::from(Size::Medium.input_px()),
         f32::from(Size::Medium.input_py()),
     );
     let rest = |stated: Option<f32>, editor: f32| stated.map(|v| (v - editor).max(0.0));
-    let root = ResolvedPadding {
-        top: rest(p.top, down),
-        right: rest(p.right, across),
-        bottom: rest(p.bottom, down),
-        left: rest(p.left, across),
-    };
-    with_coloured_text(
-        with_padding(StyleRefinement::default(), &root)
-            .rounded(px(a.border.corner_radius))
-            .border(px(a.border.line_width)),
-        &n.resolved.input.font,
-        n,
+    let root = [
+        rest(top, down),
+        rest(right, across),
+        rest(bottom, down),
+        rest(left, across),
+    ];
+    coloured_text(
+        padding(StyleRefinement::default(), root)
+            .rounded(px(f.radius))
+            .border(px(f.border_width)),
+        font,
+        line_height,
     )
 }
 
@@ -1085,20 +1136,58 @@ pub fn radio(n: Native<'_>) -> StyleRefinement {
 /// The edge is `combo_box.border.line_width` wide, over upstream's `border_1`
 /// (`select.rs:569`, `combobox.rs:1005`): a platform whose trigger has no line
 /// at rest (adwaita's 0, `docs/platform-facts.md` §2.24) draws none.
-fn combo_box_metrics(n: Native<'_>) -> StyleRefinement {
+fn combo_box_metrics(n: Native<'_>) -> ComboFrame {
     let c = &n.resolved.combo_box;
-    let r = with_height_rule(StyleRefinement::default(), Some(c.min_height), n);
-    let padding = match c.arrow_area_width {
-        Some(_) => ResolvedPadding {
-            right: None,
-            ..c.border.padding
+    ComboFrame {
+        field: FieldFrame {
+            min_height: Some(c.min_height),
+            padding: sides_of(&c.border.padding),
+            radius: c.border.corner_radius,
+            border_width: c.border.line_width,
         },
-        None => c.border.padding,
+        arrow_area: c.arrow_area_width.is_some(),
+        min_width: c.min_width,
+    }
+}
+
+/// The theme's values a combo box trigger's frame is made of, read from
+/// either model: the field's frame, whether the theme states an arrow
+/// column, and the minimum width.
+pub(crate) struct ComboFrame {
+    pub(crate) field: FieldFrame,
+    pub(crate) arrow_area: bool,
+    pub(crate) min_width: f32,
+}
+
+/// [`combo_box_metrics`]' refinement of the frame `c`.
+fn combo_frame(c: &ComboFrame, text_scale: f32) -> StyleRefinement {
+    let [top, right, bottom, left] = c.field.padding;
+    let right = if c.arrow_area { None } else { right };
+    let f = FieldFrame {
+        padding: [top, right, bottom, left],
+        ..c.field
     };
-    with_padding(r, &padding)
-        .min_w(px(c.min_width))
-        .rounded(px(c.border.corner_radius))
-        .border(px(c.border.line_width))
+    field_frame(StyleRefinement::default(), &f, text_scale).min_w(px(c.min_width))
+}
+
+/// [`select`] of the frame `c` and the font `font`.
+pub(crate) fn select_from(
+    c: &ComboFrame,
+    font: &Font<'_>,
+    line_height: f32,
+    text_scale: f32,
+) -> StyleRefinement {
+    coloured_text(combo_frame(c, text_scale), font, line_height)
+}
+
+/// [`combobox`] of the frame `c` and the font `font`.
+pub(crate) fn combobox_from(
+    c: &ComboFrame,
+    font: &Font<'_>,
+    line_height: f32,
+    text_scale: f32,
+) -> StyleRefinement {
+    text(combo_frame(c, text_scale), font, line_height)
 }
 
 /// `Select` (`src/select.rs:569-579` → `:580`); the arrow is an inner element,
@@ -1125,7 +1214,12 @@ fn combo_box_metrics(n: Native<'_>) -> StyleRefinement {
 /// when disabled (`select.rs:511-513`) and a child wins over the trigger.
 #[must_use]
 pub fn select(n: Native<'_>) -> StyleRefinement {
-    with_coloured_text(combo_box_metrics(n), &n.resolved.combo_box.font, n)
+    select_from(
+        &combo_box_metrics(n),
+        &font_of(&n.resolved.combo_box.font, n),
+        n.resolved.defaults.line_height,
+        n.accessibility.text_scale_factor(),
+    )
 }
 
 /// `Combobox` (`src/combobox.rs:999-1015` → `:1016`): [`select`]'s metrics, and
@@ -1145,7 +1239,12 @@ pub fn select(n: Native<'_>) -> StyleRefinement {
 /// [`combo_box_fill`] instead.
 #[must_use]
 pub fn combobox(n: Native<'_>) -> StyleRefinement {
-    with_text(combo_box_metrics(n), &n.resolved.combo_box.font, n)
+    combobox_from(
+        &combo_box_metrics(n),
+        &font_of(&n.resolved.combo_box.font, n),
+        n.resolved.defaults.line_height,
+        n.accessibility.text_scale_factor(),
+    )
 }
 
 /// `TitleBar` (`src/title_bar.rs:339` → `:349`); the height has no theme field.
@@ -1482,10 +1581,23 @@ pub fn dialog_max_width(n: Native<'_>) -> Pixels {
 /// platform's.
 #[must_use]
 pub fn input_height(n: Native<'_>) -> StyleRefinement {
-    with_height_rule(
-        with_line_height(StyleRefinement::default(), n),
+    input_height_from(
         Some(n.resolved.input.min_height),
-        n,
+        n.resolved.defaults.line_height,
+        n.accessibility.text_scale_factor(),
+    )
+}
+
+/// [`input_height`] of the stated height `min_height`.
+pub(crate) fn input_height_from(
+    min_height: Option<f32>,
+    line_height: f32,
+    text_scale: f32,
+) -> StyleRefinement {
+    height_rule(
+        line_height_of(StyleRefinement::default(), line_height),
+        min_height,
+        text_scale,
     )
 }
 
@@ -1520,15 +1632,37 @@ pub fn input_height(n: Native<'_>) -> StyleRefinement {
 #[must_use]
 pub fn input_fill(n: Native<'_>, disabled: bool) -> StyleRefinement {
     let i = &n.resolved.input;
+    field_fill(
+        &FieldFill {
+            rest: rgba_to_hsla(i.background_color),
+            disabled_fill: i.disabled_background.map(rgba_to_hsla),
+            disabled_text: rgba_to_hsla(i.disabled_text_color),
+            disabled_opacity: i.disabled_opacity,
+        },
+        disabled,
+    )
+}
+
+/// The theme's values a field's fill is made of ([`input_fill`],
+/// [`combo_box_fill`]), read from either model: the fill at rest, the
+/// disabled fill where the theme states one, the disabled text colour and
+/// opacity.
+pub(crate) struct FieldFill {
+    pub(crate) rest: Hsla,
+    pub(crate) disabled_fill: Option<Hsla>,
+    pub(crate) disabled_text: Hsla,
+    pub(crate) disabled_opacity: f32,
+}
+
+/// [`input_fill`] and [`combo_box_fill`] of the fill `f`.
+pub(crate) fn field_fill(f: &FieldFill, disabled: bool) -> StyleRefinement {
     if disabled {
         StyleRefinement::default()
-            .bg(rgba_to_hsla(
-                i.disabled_background.unwrap_or(i.background_color),
-            ))
-            .text_color(rgba_to_hsla(i.disabled_text_color))
-            .opacity(unit(i.disabled_opacity))
+            .bg(f.disabled_fill.unwrap_or(f.rest))
+            .text_color(f.disabled_text)
+            .opacity(unit(f.disabled_opacity))
     } else {
-        StyleRefinement::default().bg(rgba_to_hsla(i.background_color))
+        StyleRefinement::default().bg(f.rest)
     }
 }
 
@@ -1560,16 +1694,15 @@ pub fn input_fill(n: Native<'_>, disabled: bool) -> StyleRefinement {
 #[must_use]
 pub fn combo_box_fill(n: Native<'_>, disabled: bool) -> StyleRefinement {
     let c = &n.resolved.combo_box;
-    if disabled {
-        StyleRefinement::default()
-            .bg(rgba_to_hsla(
-                c.disabled_background.unwrap_or(c.background_color),
-            ))
-            .text_color(rgba_to_hsla(c.disabled_text_color))
-            .opacity(unit(c.disabled_opacity))
-    } else {
-        StyleRefinement::default().bg(rgba_to_hsla(c.background_color))
-    }
+    field_fill(
+        &FieldFill {
+            rest: rgba_to_hsla(c.background_color),
+            disabled_fill: c.disabled_background.map(rgba_to_hsla),
+            disabled_text: rgba_to_hsla(c.disabled_text_color),
+            disabled_opacity: c.disabled_opacity,
+        },
+        disabled,
+    )
 }
 
 /// An opacity for gpui: clamped to 0–1, and 1 (no fade) where it is not a

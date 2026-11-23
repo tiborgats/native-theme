@@ -318,8 +318,6 @@ const FALLBACK_ONLY: &[FallbackOnly] = &[
 /// field outside the slice, each with one such field: not mapped by the
 /// 0.8.0 side yet.
 const BUILDERS_OUTSIDE_SLICE: &[(&str, &str)] = &[
-    ("geometry::input", "input.min_height"),
-    ("geometry::text_area", "text_area.border.padding"),
     ("geometry::menu_item", "menu.row_height"),
     ("geometry::popover", "popover.border.padding"),
     ("geometry::status_bar", "status_bar.font"),
@@ -333,8 +331,6 @@ const BUILDERS_OUTSIDE_SLICE: &[(&str, &str)] = &[
     ("geometry::accordion_title", "expander.header_height"),
     ("geometry::accordion", "expander.border.color"),
     ("geometry::accordion_hover", "expander.hover_background"),
-    ("geometry::select", "combo_box.font"),
-    ("geometry::combobox", "combo_box.font"),
     ("geometry::title_bar", "window.title_bar_font"),
     (
         "geometry::title_bar_inactive",
@@ -344,9 +340,6 @@ const BUILDERS_OUTSIDE_SLICE: &[(&str, &str)] = &[
     ("geometry::spinner_size", "spinner.diameter"),
     ("geometry::icon_size_toolbar", "toolbar.icon_size"),
     ("geometry::dialog_max_width", "dialog.max_width"),
-    ("geometry::input_height", "input.min_height"),
-    ("geometry::input_fill", "input.background_color"),
-    ("geometry::combo_box_fill", "combo_box.background_color"),
     (
         "geometry::toolbar_button_rest",
         "toolbar.button_hover_border_color",
@@ -600,6 +593,22 @@ macro_rules! builder {
     };
 }
 
+/// Compare a fill builder's two outputs, at rest and disabled, as one leaf.
+macro_rules! fill_builder {
+    ($report:expr, $old:expr, $new:expr, $name:ident) => {
+        compare_mapped(
+            $report,
+            concat!("geometry::", stringify!($name)),
+            (
+                crate::geometry::$name(Native::unscaled($old), false),
+                crate::geometry::$name(Native::unscaled($old), true),
+            ),
+            super::builders::$name($new, false)
+                .and_then(|rest| Ok((rest, super::builders::$name($new, true)?))),
+        )
+    };
+}
+
 /// Compare a layout metric's two values.
 macro_rules! layout_metric {
     ($report:expr, $layout:expr, $new:expr, $name:ident) => {
@@ -661,6 +670,13 @@ fn compare_builders(
     builder!(report, old, new, scrollbar_gutter);
     builder!(report, old, new, input_group_button);
     builder!(report, old, new, editor);
+    builder!(report, old, new, input);
+    builder!(report, old, new, text_area);
+    builder!(report, old, new, input_height);
+    builder!(report, old, new, select);
+    builder!(report, old, new, combobox);
+    fill_builder!(report, old, new, input_fill);
+    fill_builder!(report, old, new, combo_box_fill);
     let list_item = "geometry::list_item";
     if let Some(n) = report.mapped(list_item, super::builders::list_item(new)) {
         let o = crate::geometry::list_item(Native::unscaled(old));

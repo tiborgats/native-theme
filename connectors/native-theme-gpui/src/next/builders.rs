@@ -342,6 +342,133 @@ pub(crate) fn section_gap(r: &ResolvedTheme) -> Mapped<Option<Pixels>> {
     Ok(geometry::layout_metric(r.layout.section_gap))
 }
 
+/// [`crate::geometry::input`].
+pub(crate) fn input(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    let field = r.input.field(WidgetState::NONE);
+    Ok(geometry::input_from(
+        &geometry::FieldFrame {
+            min_height: field.min_size[1],
+            padding: padding(&field),
+            radius: radius(&field, "input.field(NONE).corners")?,
+            border_width: stroke_width(&field, "input.field(NONE).stroke.width")?,
+        },
+        &font(&r.input.text(WidgetState::NONE), "input.text(NONE)")?,
+        line_height(r),
+        r.context.text_scale,
+    ))
+}
+
+/// [`crate::geometry::text_area`]: the multi-line field's frame, the
+/// single-line field's font, as the 0.7.2 builder reads them.
+pub(crate) fn text_area(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    let field = r.text_area.field(WidgetState::NONE);
+    Ok(geometry::text_area_from(
+        &geometry::FieldFrame {
+            min_height: None,
+            padding: padding(&field),
+            radius: radius(&field, "text_area.field(NONE).corners")?,
+            border_width: stroke_width(&field, "text_area.field(NONE).stroke.width")?,
+        },
+        &font(&r.input.text(WidgetState::NONE), "input.text(NONE)")?,
+        line_height(r),
+    ))
+}
+
+/// [`crate::geometry::input_height`].
+pub(crate) fn input_height(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    Ok(geometry::input_height_from(
+        r.input.field(WidgetState::NONE).min_size[1],
+        line_height(r),
+        r.context.text_scale,
+    ))
+}
+
+/// [`crate::geometry::input_fill`]: `input.disabled_background`, a soft
+/// option, where a rule states it for `DISABLED` (module doc of `next`), else
+/// unset, so the fill at rest stands in as on the 0.7.2 path.
+pub(crate) fn input_fill(r: &ResolvedTheme, disabled: bool) -> Mapped<StyleRefinement> {
+    let i = &r.input;
+    Ok(geometry::field_fill(
+        &geometry::FieldFill {
+            rest: fill(&i.field(WidgetState::NONE), "input.field(NONE).fill")?,
+            disabled_fill: state_fill(
+                &i.field(WidgetState::DISABLED),
+                "input.field(DISABLED).fill",
+            )?,
+            disabled_text: text_color(
+                &i.text(WidgetState::DISABLED),
+                "input.text(DISABLED).color",
+            )?,
+            disabled_opacity: stated(i.disabled_opacity, "input.disabled_opacity")?,
+        },
+        disabled,
+    ))
+}
+
+/// The combo box trigger's frame, as [`crate::geometry::select`] and
+/// [`crate::geometry::combobox`] read it.
+fn combo_frame(r: &ResolvedTheme) -> Mapped<geometry::ComboFrame> {
+    let c = &r.combo_box;
+    let field = c.field(WidgetState::NONE);
+    Ok(geometry::ComboFrame {
+        field: geometry::FieldFrame {
+            min_height: field.min_size[1],
+            padding: padding(&field),
+            radius: radius(&field, "combo_box.field(NONE).corners")?,
+            border_width: stroke_width(&field, "combo_box.field(NONE).stroke.width")?,
+        },
+        arrow_area: c.arrow_area_width.is_some(),
+        min_width: stated(field.min_size[0], "combo_box.field(NONE).min_size[0]")?,
+    })
+}
+
+/// [`crate::geometry::select`].
+pub(crate) fn select(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    Ok(geometry::select_from(
+        &combo_frame(r)?,
+        &font(
+            &r.combo_box.label(WidgetState::NONE),
+            "combo_box.label(NONE)",
+        )?,
+        line_height(r),
+        r.context.text_scale,
+    ))
+}
+
+/// [`crate::geometry::combobox`].
+pub(crate) fn combobox(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    Ok(geometry::combobox_from(
+        &combo_frame(r)?,
+        &uncoloured_font(
+            &r.combo_box.label(WidgetState::NONE),
+            "combo_box.label(NONE)",
+        )?,
+        line_height(r),
+        r.context.text_scale,
+    ))
+}
+
+/// [`crate::geometry::combo_box_fill`]: `combo_box.disabled_background` as
+/// [`input_fill`] reads the input's.
+pub(crate) fn combo_box_fill(r: &ResolvedTheme, disabled: bool) -> Mapped<StyleRefinement> {
+    let c = &r.combo_box;
+    Ok(geometry::field_fill(
+        &geometry::FieldFill {
+            rest: fill(&c.field(WidgetState::NONE), "combo_box.field(NONE).fill")?,
+            disabled_fill: state_fill(
+                &c.field(WidgetState::DISABLED),
+                "combo_box.field(DISABLED).fill",
+            )?,
+            disabled_text: text_color(
+                &c.label(WidgetState::DISABLED),
+                "combo_box.label(DISABLED).color",
+            )?,
+            disabled_opacity: stated(c.disabled_opacity, "combo_box.disabled_opacity")?,
+        },
+        disabled,
+    ))
+}
+
 /// [`crate::variants::hover_border`], the colour of
 /// [`crate::variants::bordered_button`]'s variant: `button.hover_border_color`
 /// at the hovered body's stroke, a soft option, where a rule states it for
