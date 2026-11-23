@@ -8,8 +8,10 @@
 //! unset dimension of `min_size`); and the snapshot form of a resolved theme:
 //! a part style as the properties it states, a ruled widget per part as its
 //! exclusive state groups, its base's stated properties and its rules in
-//! evaluation order, each rule spelled like a `[[widgets.<widget>.rules]]`
-//! entry.
+//! evaluation order, each rule's selector keys spelled as in a
+//! `[[widgets.<widget>.rules]]` entry. The snapshot is write-only: nothing
+//! reads it back, and a rule that states only some sides of a padding or a
+//! margin, or a text's `defined_size`, is not an entry a patch reads.
 
 use std::fmt;
 use std::marker::PhantomData;

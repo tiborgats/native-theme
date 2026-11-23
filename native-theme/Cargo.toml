@@ -21,6 +21,8 @@ targets = [
 [features]
 # No feature is needed to load, merge and resolve presets and TOML files.
 # Each OS-specific dependency is compiled only on its own target.
+# At the cut, when the 0.7.2 model is removed, `default` returns to
+# `["palettes"]` (spec §9): `serde` and `toml` become opt-in.
 default = ["palettes", "serde", "toml"]
 
 # The 15 bundled community colour palettes (`next::Palette::from_name`).

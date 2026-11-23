@@ -147,13 +147,19 @@ fn resolved_theme_serializes() -> TestResult {
         .as_array()
         .ok_or("the button's body has no rules")?;
     assert!(!rules.is_empty());
-    let text = toml::to_string(&theme)?;
-    assert!(text.contains("[button.body]"), "{text}");
+    #[cfg(feature = "toml")]
+    {
+        let text = toml::to_string(&theme)?;
+        assert!(text.contains("[button.body]"), "{text}");
+    }
     Ok(())
 }
 
-/// Each rule of the snapshot reads back as a patch's rule, which states
-/// the same properties: the snapshot spells a rule as a theme file does.
+/// The snapshot is write-only, but each rule of kde-breeze's button,
+/// which states no partial padding or margin and no `defined_size`, reads
+/// back as a patch's rule that states the same properties. A rule that
+/// states only some sides of a padding or a margin, or a text's
+/// `defined_size`, is not an entry a patch reads.
 #[test]
 fn snapshot_rules_read_as_patch_rules() -> TestResult {
     let value = serde_json::to_value(breeze().button)?;

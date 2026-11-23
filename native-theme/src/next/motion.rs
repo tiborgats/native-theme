@@ -23,7 +23,7 @@ pub struct Transition {
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
-    serde(rename_all = "snake_case")
+    serde(rename_all = "snake_case", deny_unknown_fields)
 )]
 pub enum Timing {
     /// Linear.
@@ -235,5 +235,29 @@ mod tests {
             assert_eq!(transition, None);
         }
         assert_eq!(theme_change, None);
+    }
+
+    #[cfg(feature = "serde")]
+    #[test]
+    fn a_spring_timing_rejects_an_unknown_key() -> Result<(), serde_json::Error> {
+        let spring =
+            serde_json::json!({ "spring": { "mass": 1.0, "stiffness": 2.0, "damping": 3.0 } });
+        assert_eq!(
+            serde_json::from_value::<Timing>(spring)?,
+            Timing::Spring {
+                mass: 1.0,
+                stiffness: 2.0,
+                damping: 3.0,
+            }
+        );
+        let unknown = serde_json::json!({
+            "spring": { "mass": 1.0, "stiffness": 2.0, "damping": 3.0, "bounce": 0.5 }
+        });
+        let error = serde_json::from_value::<Timing>(unknown).err();
+        assert!(
+            error.is_some_and(|e| e.to_string().contains("unknown field `bounce`")),
+            "an unknown key of a spring timing was accepted"
+        );
+        Ok(())
     }
 }

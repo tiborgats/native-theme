@@ -6,7 +6,7 @@ use crate::next::geometry::{
 };
 use crate::next::paint::{BlendMode, ComplexPaint, GradientStop, MaterialKind, Paint, PaintLayer};
 use crate::next::patch::{ButtonRule, IconPatch, PartPatch, TextPatch};
-use crate::next::query::{ButtonShape, ButtonVariant, Scheme, WidgetState};
+use crate::next::query::{ButtonShape, ButtonVariant, Scheme, ThemeContext, WidgetState};
 use crate::next::style::{FocusIndicator, FocusKind, FontWidth};
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
@@ -226,6 +226,17 @@ fn spec_example_dual_scheme_reads() -> TestResult {
         .replace("# dark =", "dark =");
     let theme = Theme::from_toml(&text)?;
     assert_eq!(&*theme.resolve_current().name, "Neon Glass");
+    // Each context takes its own scheme's palette, and with it the palette's
+    // scheme; the file's `[colors.window]` stands in both.
+    let background = Some(Color::from_hex("#0b0d14")?);
+    for (ctx, scheme) in [
+        (ThemeContext::light(), Scheme::Light),
+        (ThemeContext::dark(), Scheme::Dark),
+    ] {
+        let resolved = theme.resolve(&ctx);
+        assert_eq!(resolved.context.scheme, scheme);
+        assert_eq!(resolved.colors.window.background, background);
+    }
     Ok(())
 }
 
@@ -559,10 +570,69 @@ fn inline_palettes() -> TestResult {
         "name = \"x\"\nbase = \"adwaita\"\n[palette]\n{inline}"
     ))?;
     assert_eq!(theme.resolve_current().context.scheme, Scheme::Dark);
-    let pair = format!(
-        "name = \"x\"\nbase = \"adwaita\"\n[palettes.light]\n{inline}\n[palettes.dark]\n{inline}"
-    );
-    Theme::from_toml(&pair)?;
+    let light_palette = Palette {
+        name: Arc::from("Sample Light"),
+        scheme: Scheme::Light,
+        window_bg: Color::from_srgb8(0xf0, 0xf1, 0xf2, 0xff),
+        ..sample_palette()
+    };
+    let light = toml::to_string(&light_palette)?;
+    let pair = Theme::from_toml(&format!(
+        "name = \"x\"\nbase = \"kde-breeze\"\n[palettes.light]\n{light}\n[palettes.dark]\n{inline}"
+    ))?;
+    // The builder does not apply a palette's colours yet (plan, M2): each
+    // context resolves in its palette's scheme, with kde-breeze's window
+    // background of that scheme.
+    let breeze = Theme::preset(Preset::KdeBreeze);
+    let light_bg = breeze
+        .resolve(&ThemeContext::light())
+        .colors
+        .window
+        .background;
+    let dark_bg = breeze
+        .resolve(&ThemeContext::dark())
+        .colors
+        .window
+        .background;
+    assert_ne!(light_bg, dark_bg);
+    for (ctx, palette, background) in [
+        (ThemeContext::light(), &light_palette, light_bg),
+        (ThemeContext::dark(), &sample_palette(), dark_bg),
+    ] {
+        let resolved = pair.resolve(&ctx);
+        assert_eq!(resolved.context.scheme, palette.scheme);
+        assert_eq!(resolved.colors.window.background, background);
+    }
+    Ok(())
+}
+
+#[test]
+fn theme_file_palettes_and_accent_are_checked() -> TestResult {
+    let reason = |result: Result<Theme, Error>| match result {
+        Err(Error::InvalidTheme { reason, .. }) => Ok(reason),
+        other => Err(format!("not InvalidTheme: {other:?}")),
+    };
+    let missing = reason(Theme::from_toml(
+        "name = \"x\"\nbase = \"kde-breeze\"\n[palettes]\nlight = \"nord\"",
+    ))?;
+    assert!(missing.contains("missing field `dark`"), "{missing}");
+    let accent = reason(Theme::from_toml(
+        "name = \"x\"\nbase = \"kde-breeze\"\naccent = \"not a colour\"",
+    ))?;
+    assert!(accent.contains("not a colour"), "{accent}");
+    // A colour that is not finite does not parse.
+    invalid(Theme::from_toml(
+        "name = \"x\"\nbase = \"kde-breeze\"\naccent = \"srgb(inf, 0, 0, 1)\"",
+    ))?;
+    let inline = toml::to_string(&sample_palette())?
+        .replace("caret = \"#ffffff\"", "caret = \"srgb(1, inf, 1, 1)\"");
+    invalid(Theme::from_toml(&format!(
+        "name = \"x\"\nbase = \"kde-breeze\"\n[palette]\n{inline}"
+    )))?;
+    let partial = reason(Theme::from_toml(
+        "name = \"x\"\nbase = \"kde-breeze\"\n[palette]\nname = \"p\"\nscheme = \"dark\"",
+    ))?;
+    assert!(partial.contains("missing field"), "{partial}");
     Ok(())
 }
 
