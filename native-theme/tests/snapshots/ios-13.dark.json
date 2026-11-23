@@ -345,6 +345,23 @@
           }
         },
         {
+          "states": [
+            "checked"
+          ],
+          "body": {
+            "fill": "#0a84ff40"
+          }
+        },
+        {
+          "states": [
+            "pressed",
+            "checked"
+          ],
+          "body": {
+            "fill": "#0a84ff2d"
+          }
+        },
+        {
           "variant": "primary",
           "body": {
             "fill": "#0a84ff"
@@ -375,6 +392,14 @@
         {
           "states": [
             "pressed"
+          ],
+          "label": {
+            "color": "#0a84ff"
+          }
+        },
+        {
+          "states": [
+            "checked"
           ],
           "label": {
             "color": "#0a84ff"

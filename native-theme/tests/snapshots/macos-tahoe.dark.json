@@ -338,6 +338,14 @@
           }
         },
         {
+          "states": [
+            "checked"
+          ],
+          "body": {
+            "fill": "srgb(0.025, 0.4914706, 1, 1)"
+          }
+        },
+        {
           "variant": "primary",
           "body": {
             "fill": "#007aff"
@@ -365,6 +373,14 @@
         }
       },
       "rules": [
+        {
+          "states": [
+            "checked"
+          ],
+          "label": {
+            "color": "#ffffff"
+          }
+        },
         {
           "variant": "primary",
           "label": {
