@@ -21,10 +21,18 @@ targets = [
 [features]
 # No feature is needed to load, merge and resolve presets and TOML files.
 # Each OS-specific dependency is compiled only on its own target.
-default = ["palettes"]
+default = ["palettes", "serde", "toml"]
 
 # The 15 bundled community colour palettes (`next::Palette::from_name`).
 palettes = []
+# `Serialize`/`Deserialize` on the 0.8.0 model's input types and `Serialize`
+# on `next::ResolvedTheme`. Until the 0.7.2 model is removed, `serde` and
+# `toml` stay unconditional dependencies (the 0.7.2 model needs them) and
+# these features gate only the `next` model's code.
+serde = []
+# `next::Theme::from_toml`, `next::Palette::from_toml` and
+# `next::ThemePatch::from_toml`.
+toml = ["serde"]
 
 # The KDE Plasma reader: kdeglobals (Linux).
 kde = ["dep:configparser"]

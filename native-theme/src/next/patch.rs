@@ -47,8 +47,45 @@ use super::widgets::{
 /// fills), `all` (a nested patch the setter replaces), `list` (rules the
 /// setter `rule` appends to) or `selector` (a rule's [`RuleSelector`], whose
 /// setter and the setters of its states and axes write it).
+///
+/// With the `serde` feature the struct derives `Serialize` and `Deserialize`
+/// (every field may be left out, an unknown key is an error, a field that
+/// states nothing is not written), unless it begins with `manual_serde`: a
+/// rule, whose selector's fields its own impls spell.
 macro_rules! sparse {
     (
+        manual_serde
+        $(#[$meta:meta])*
+        pub struct $name:ident {
+            $( $(#[$fmeta:meta])* $field:ident : $kind:ident $ty:ty ),* $(,)?
+        }
+    ) => {
+        sparse! {
+            @struct [cfg_attr(any(), allow(unused))] [cfg_attr(any(), allow(unused))]
+            $(#[$meta])*
+            pub struct $name { $( $(#[$fmeta])* $field : $kind $ty, )* }
+        }
+    };
+    (
+        $(#[$meta:meta])*
+        pub struct $name:ident {
+            $( $(#[$fmeta:meta])* $field:ident : $kind:ident $ty:ty ),* $(,)?
+        }
+    ) => {
+        sparse! {
+            @struct
+            [cfg_attr(
+                feature = "serde",
+                derive(serde::Serialize, serde::Deserialize),
+                serde(default, deny_unknown_fields)
+            )]
+            [cfg_attr(feature = "serde", serde(skip_serializing_if = "crate::next::serial::Skip::skip"))]
+            $(#[$meta])*
+            pub struct $name { $( $(#[$fmeta])* $field : $kind $ty, )* }
+        }
+    };
+    (
+        @struct [$smeta:meta] [$fattr:meta]
         $(#[$meta:meta])*
         pub struct $name:ident {
             $( $(#[$fmeta:meta])* $field:ident : $kind:ident $ty:ty ),* $(,)?
@@ -56,9 +93,17 @@ macro_rules! sparse {
     ) => {
         $(#[$meta])*
         #[derive(Clone, Debug, Default, PartialEq)]
+        #[$smeta]
         #[non_exhaustive]
         pub struct $name {
-            $( $(#[$fmeta])* pub $field: sparse!(@type $kind $ty), )*
+            $( $(#[$fmeta])* #[$fattr] pub $field: sparse!(@type $kind $ty), )*
+        }
+
+        #[cfg(feature = "serde")]
+        impl crate::next::serial::Skip for $name {
+            fn skip(&self) -> bool {
+                *self == Self::default()
+            }
         }
 
         impl $name {
@@ -166,6 +211,7 @@ macro_rules! widget_patch {
         }
     ) => {
         sparse! {
+            manual_serde
             #[doc = concat!(
                 "A rule appended to the parts of `", stringify!($widget),
                 "`: where its selector matches, each part's patch applies, after the preset's rules."
@@ -236,6 +282,64 @@ macro_rules! widget_patch {
         impl RescaledWidget for $Widget {
             fn rescale(&mut self, rescale: &Rescale) {
                 $( rescale.rules(&mut self.$part); )*
+            }
+        }
+
+        /// A `[[widgets.<widget>.rules]]` entry: the selector's fields that
+        /// limit the rule, then each part's patch that states anything.
+        #[cfg(feature = "serde")]
+        impl serde::Serialize for $Rule {
+            fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+                use serde::ser::SerializeMap;
+
+                let mut map = s.serialize_map(None)?;
+                crate::next::serial::write_selector(&mut map, &self.selector)?;
+                $(
+                    if self.$part != $PartPatch::default() {
+                        map.serialize_entry(stringify!($part), &self.$part)?;
+                    }
+                )*
+                map.end()
+            }
+        }
+
+        /// A `[[widgets.<widget>.rules]]` entry; an unknown key is an error.
+        #[cfg(feature = "serde")]
+        impl<'de> serde::Deserialize<'de> for $Rule {
+            fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+                struct V;
+
+                impl<'de> serde::de::Visitor<'de> for V {
+                    type Value = $Rule;
+
+                    fn expecting(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        f.write_str(concat!("a rule of `", stringify!($widget), "`"))
+                    }
+
+                    fn visit_map<A: serde::de::MapAccess<'de>>(
+                        self,
+                        mut map: A,
+                    ) -> Result<$Rule, A::Error> {
+                        let mut rule = $Rule::default();
+                        while let Some(key) = map.next_key::<String>()? {
+                            if crate::next::serial::read_selector(&mut rule.selector, &key, &mut map)? {
+                                continue;
+                            }
+                            match key.as_str() {
+                                $( stringify!($part) => rule.$part = map.next_value()?, )*
+                                _ => {
+                                    return Err(serde::de::Error::custom(format_args!(
+                                        "unknown field `{key}` in a rule of `{}`",
+                                        stringify!($widget)
+                                    )));
+                                }
+                            }
+                        }
+                        Ok(rule)
+                    }
+                }
+
+                d.deserialize_map(V)
             }
         }
     };
@@ -320,6 +424,7 @@ sparse! {
         /// `corners`.
         corners: opt Corners,
         /// `shadows`.
+        #[cfg_attr(feature = "serde", serde(with = "crate::next::serial::nullable"))]
         shadows: opt Option<Arc<[ShadowLayer]>>,
         /// `opacity`.
         opacity: opt f32,
@@ -330,14 +435,19 @@ sparse! {
         /// `margin`, all four sides.
         margin: opt Edges,
         /// `min_size`, per dimension: a `Some` replaces, a `None` keeps.
+        #[cfg_attr(feature = "serde", serde(with = "crate::next::serial::dims"))]
         min_size: opt [Option<f32>; 2],
         /// `max_size`, per dimension: a `Some` replaces, a `None` keeps.
+        #[cfg_attr(feature = "serde", serde(with = "crate::next::serial::dims"))]
         max_size: opt [Option<f32>; 2],
         /// `focus`.
+        #[cfg_attr(feature = "serde", serde(with = "crate::next::serial::nullable"))]
         focus: opt Option<Arc<FocusIndicator>>,
         /// `ripple`.
+        #[cfg_attr(feature = "serde", serde(with = "crate::next::serial::nullable"))]
         ripple: opt Option<Arc<RippleSpec>>,
         /// `transition`.
+        #[cfg_attr(feature = "serde", serde(with = "crate::next::serial::nullable"))]
         transition: opt Option<Transition>,
         /// `cursor`.
         cursor: opt Cursor,
@@ -436,6 +546,7 @@ sparse! {
         /// `letter_spacing`.
         letter_spacing: opt f32,
         /// `optical_size`.
+        #[cfg_attr(feature = "serde", serde(with = "crate::next::serial::nullable"))]
         optical_size: opt Option<f32>,
         /// `decoration`.
         decoration: opt TextDecoration,
@@ -509,6 +620,7 @@ sparse! {
         /// `rendering_mode`.
         rendering_mode: opt IconRenderingMode,
         /// `stroke_width`.
+        #[cfg_attr(feature = "serde", serde(with = "crate::next::serial::nullable"))]
         stroke_width: opt Option<f32>,
         /// `blend_mode`.
         blend_mode: opt BlendMode,
@@ -1593,6 +1705,11 @@ impl ResolvedTheme {
 /// ThemePatch::new().button(ButtonRule::new().variant(Primary).states(HOVER).body(PartPatch::new().fill(..)))
 /// ```
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(from = "PatchFile", into = "PatchFile")
+)]
 #[non_exhaustive]
 pub struct ThemePatch {
     /// The factor of every concrete corner radius.
@@ -1616,6 +1733,85 @@ pub struct ThemePatch {
     pub custom_colors: BTreeMap<String, Color>,
     /// The application's own metric tokens, merged into the resolved theme's.
     pub custom_metrics: BTreeMap<String, f32>,
+}
+
+/// A theme patch as a TOML file lays it out (spec §7): `[metrics]`,
+/// `[typography]`, `[colors]`, `[widgets]`, `[custom_colors]` and
+/// `[custom_metrics]`, each may be left out.
+#[cfg(feature = "serde")]
+#[derive(Clone, Default, serde::Serialize, serde::Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub(crate) struct PatchFile {
+    #[serde(skip_serializing_if = "crate::next::serial::is_default")]
+    pub(crate) metrics: MetricsSection,
+    #[serde(skip_serializing_if = "crate::next::serial::is_default")]
+    pub(crate) typography: TypographySection,
+    #[serde(skip_serializing_if = "crate::next::serial::is_default")]
+    pub(crate) colors: ColorPatch,
+    #[serde(skip_serializing_if = "crate::next::serial::is_default")]
+    pub(crate) widgets: WidgetPatchMap,
+    #[serde(skip_serializing_if = "BTreeMap::is_empty")]
+    pub(crate) custom_colors: BTreeMap<String, Color>,
+    #[serde(skip_serializing_if = "BTreeMap::is_empty")]
+    pub(crate) custom_metrics: BTreeMap<String, f32>,
+}
+
+/// The `[metrics]` section.
+#[cfg(feature = "serde")]
+#[derive(Clone, Default, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub(crate) struct MetricsSection {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    corner_scale: Option<f32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    spacing_scale: Option<f32>,
+}
+
+/// The `[typography]` section.
+#[cfg(feature = "serde")]
+#[derive(Clone, Default, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub(crate) struct TypographySection {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    font_family: Option<Arc<str>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    monospace_family: Option<Arc<str>>,
+}
+
+#[cfg(feature = "serde")]
+impl From<PatchFile> for ThemePatch {
+    fn from(file: PatchFile) -> Self {
+        Self {
+            corner_scale: file.metrics.corner_scale,
+            spacing_scale: file.metrics.spacing_scale,
+            font_family: file.typography.font_family,
+            monospace_family: file.typography.monospace_family,
+            color_overrides: file.colors,
+            widget_rules: file.widgets,
+            custom_colors: file.custom_colors,
+            custom_metrics: file.custom_metrics,
+        }
+    }
+}
+
+#[cfg(feature = "serde")]
+impl From<ThemePatch> for PatchFile {
+    fn from(patch: ThemePatch) -> Self {
+        Self {
+            metrics: MetricsSection {
+                corner_scale: patch.corner_scale,
+                spacing_scale: patch.spacing_scale,
+            },
+            typography: TypographySection {
+                font_family: patch.font_family,
+                monospace_family: patch.monospace_family,
+            },
+            colors: patch.color_overrides,
+            widgets: patch.widget_rules,
+            custom_colors: patch.custom_colors,
+            custom_metrics: patch.custom_metrics,
+        }
+    }
 }
 
 /// A scale as the setters take it: clamped to the finite values `>= 0.0`, and

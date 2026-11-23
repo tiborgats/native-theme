@@ -10,6 +10,7 @@ use crate::IconSet;
 /// The icons of a resolved theme.
 #[derive(Clone, Debug, PartialEq)]
 #[non_exhaustive]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct IconThemeSpec {
     /// The icon set.
     pub set: IconSet,
@@ -28,6 +29,7 @@ pub struct IconThemeSpec {
 /// 0.7.2.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 #[non_exhaustive]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct IconSizes {
     /// Toolbar buttons' icons.
     pub toolbar: Option<f32>,

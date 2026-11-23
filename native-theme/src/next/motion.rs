@@ -3,6 +3,11 @@
 
 /// A property transition of a part.
 #[derive(Clone, Copy, Debug, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields)
+)]
 pub struct Transition {
     /// The duration, in milliseconds.
     pub duration_ms: u32,
@@ -15,6 +20,11 @@ pub struct Transition {
 /// A timing curve.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 #[non_exhaustive]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "snake_case")
+)]
 pub enum Timing {
     /// Linear.
     #[default]
@@ -43,6 +53,7 @@ pub enum Timing {
 /// [`ColorRoles::caret`]: crate::next::ColorRoles::caret
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 #[non_exhaustive]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct CaretSpec {
     /// The width, in logical pixels; `None` where unstated (0.7.2 has none).
     pub width: Option<f32>, // None where unstated (0.7.2 has none)
@@ -64,6 +75,11 @@ pub struct CaretSpec {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 // no `Default`: the type stands only in `Option` fields, where a default would be an invented value
 #[non_exhaustive]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize),
+    serde(rename_all = "snake_case")
+)]
 pub enum CaretShape {
     /// A vertical bar.
     Bar,
@@ -77,6 +93,7 @@ pub enum CaretShape {
 /// nor the live system states it; the toolkit's own value then applies.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 #[non_exhaustive]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct UiTimings {
     /// The delay before a tooltip shows, in milliseconds.
     pub tooltip_show_ms: Option<u32>,
@@ -103,6 +120,7 @@ pub struct UiTimings {
 /// dialog's entrance: each is `None` until a source states it.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 #[non_exhaustive]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct MotionTokens {
     /// A fast transition.
     pub fast: Option<Transition>,
@@ -122,6 +140,11 @@ pub struct MotionTokens {
 /// only; its durations and curves are the toolkit's.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "snake_case")
+)]
 pub enum DialogEntranceStyle {
     /// Fades in while scaling up to its full size: Windows, GNOME, Material.
     ScaleFade,
@@ -136,6 +159,11 @@ pub enum DialogEntranceStyle {
 /// How a change of theme is shown.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize),
+    serde(rename_all = "snake_case")
+)]
 pub enum ThemeChangePolicy {
     /// At once.
     Instant,

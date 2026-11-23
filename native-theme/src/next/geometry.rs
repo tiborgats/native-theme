@@ -8,6 +8,11 @@ use super::paint::Paint;
 
 /// Four side lengths in logical pixels: padding, margins, insets.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields)
+)]
 pub struct Edges {
     /// The top side.
     pub top: f32,
@@ -140,6 +145,11 @@ pub enum CornerRadius {
 /// The curve of a rounded corner.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 #[non_exhaustive]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "snake_case")
+)]
 pub enum CornerCurve {
     /// A circular arc.
     #[default]
@@ -225,6 +235,11 @@ pub struct ComplexStroke {
 
 /// One side of a [`ComplexStroke`].
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields)
+)]
 pub struct StrokeSide {
     /// The width, in logical pixels.
     pub width: f32,
@@ -235,6 +250,11 @@ pub struct StrokeSide {
 /// Where a stroke lies relative to the part's edge.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 #[non_exhaustive]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "snake_case")
+)]
 pub enum StrokeAlign {
     /// Inside the edge.
     #[default]
@@ -247,6 +267,11 @@ pub enum StrokeAlign {
 
 /// One shadow of a part.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(default, deny_unknown_fields)
+)]
 pub struct ShadowLayer {
     /// The horizontal offset, in logical pixels.
     pub offset_x: f32,
@@ -264,6 +289,11 @@ pub struct ShadowLayer {
 
 /// A 2D transform of a part about an origin.
 #[derive(Clone, Copy, Debug, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(default, deny_unknown_fields)
+)]
 pub struct Transform {
     /// The horizontal and vertical scale.
     pub scale: [f32; 2], // default [1.0, 1.0]
@@ -303,6 +333,11 @@ impl Default for Transform {
 /// The pointer cursor over a part.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 #[non_exhaustive]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "snake_case")
+)]
 pub enum Cursor {
     /// The platform's default arrow.
     #[default]

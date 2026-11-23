@@ -19,6 +19,7 @@ use super::style::TextStyle;
 /// `text_scale` entry); `body` follows it too.
 #[derive(Clone, Debug, PartialEq)]
 #[non_exhaustive]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct Typography {
     /// The largest display text.
     pub display: Option<TextStyle>,
@@ -63,6 +64,7 @@ pub struct Typography {
 /// system states it.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 #[non_exhaustive]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct TextRendering {
     /// The antialiasing.
     pub antialiasing: Option<Antialiasing>,
@@ -96,6 +98,11 @@ impl TextRendering {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 // no `Default`: the type stands only in `Option` fields, where a default would be an invented value
 #[non_exhaustive]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize),
+    serde(rename_all = "snake_case")
+)]
 pub enum Antialiasing {
     /// None.
     None,
@@ -109,6 +116,11 @@ pub enum Antialiasing {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 // no `Default`: the type stands only in `Option` fields, where a default would be an invented value
 #[non_exhaustive]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize),
+    serde(rename_all = "snake_case")
+)]
 pub enum FontHinting {
     /// None.
     None,
@@ -124,6 +136,11 @@ pub enum FontHinting {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 // no `Default`: the type stands only in `Option` fields, where a default would be an invented value
 #[non_exhaustive]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize),
+    serde(rename_all = "snake_case")
+)]
 pub enum SubpixelOrder {
     /// No subpixel order.
     None,

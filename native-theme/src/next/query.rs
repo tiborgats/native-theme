@@ -5,6 +5,11 @@
 /// accessibility settings.
 #[derive(Clone, Debug, PartialEq)]
 #[non_exhaustive]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields)
+)]
 pub struct ThemeContext {
     /// Light or dark.
     pub scheme: Scheme,
@@ -150,6 +155,11 @@ impl ThemeContext {
 
 /// Light or dark.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "snake_case")
+)]
 pub enum Scheme {
     /// Light.
     #[default]
@@ -161,6 +171,11 @@ pub enum Scheme {
 /// A contrast level.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 #[non_exhaustive]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "snake_case")
+)]
 pub enum Contrast {
     /// The platform's normal contrast.
     #[default]
@@ -174,6 +189,11 @@ pub enum Contrast {
 /// A motion preference.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 #[non_exhaustive]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "snake_case")
+)]
 pub enum MotionPreference {
     /// Full motion.
     #[default]
@@ -186,6 +206,11 @@ pub enum MotionPreference {
 
 /// A reading direction.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "snake_case")
+)]
 pub enum Direction {
     /// Left to right.
     #[default]
@@ -253,6 +278,11 @@ bit_set!(WidgetState, u32);
 /// The size of a control.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 #[non_exhaustive]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "snake_case")
+)]
 pub enum ControlSize {
     /// Mini.
     Mini,
@@ -270,6 +300,11 @@ pub enum ControlSize {
 /// The surface a part is drawn on.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 #[non_exhaustive]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "snake_case")
+)]
 pub enum Surface {
     /// A window's background.
     #[default]
@@ -298,6 +333,11 @@ pub enum Surface {
 /// the right-hand ones.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 #[non_exhaustive]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "snake_case")
+)]
 pub enum GroupPosition {
     /// Not in a group.
     #[default]
@@ -312,6 +352,11 @@ pub enum GroupPosition {
 
 /// An orientation.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "snake_case")
+)]
 pub enum Orientation {
     /// Horizontal.
     #[default]
@@ -413,6 +458,11 @@ impl<V: Default> From<WidgetState> for StyleQuery<V> {
 /// A button's variant.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 #[non_exhaustive]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "snake_case")
+)]
 pub enum ButtonVariant {
     /// The standard button.
     #[default]
@@ -436,6 +486,11 @@ pub enum ButtonVariant {
 /// A button's shape.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 #[non_exhaustive]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "snake_case")
+)]
 pub enum ButtonShape {
     /// The platform's default shape.
     #[default]
@@ -537,6 +592,11 @@ impl From<ButtonVariant> for ButtonQuery {
 /// A text input's variant.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 #[non_exhaustive]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "snake_case")
+)]
 pub enum InputVariant {
     /// The standard field.
     #[default]
@@ -563,6 +623,11 @@ impl From<InputVariant> for InputQuery {
 /// A tab's variant.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 #[non_exhaustive]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "snake_case")
+)]
 pub enum TabVariant {
     /// The standard tab.
     #[default]
@@ -587,6 +652,11 @@ impl From<TabVariant> for TabQuery {
 /// A list's variant.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 #[non_exhaustive]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "snake_case")
+)]
 pub enum ListVariant {
     /// A plain list.
     #[default]

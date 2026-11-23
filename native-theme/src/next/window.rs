@@ -32,6 +32,11 @@ bit_set!(EdgeFlags, u8);
 /// A button of a window's title bar.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "snake_case")
+)]
 pub enum CaptionButtonKind {
     /// Closes the window.
     Close,
@@ -47,6 +52,7 @@ pub enum CaptionButtonKind {
 /// `button-layout`, KDE's `kwinrc`).
 #[derive(Clone, Debug, PartialEq)]
 #[non_exhaustive]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct CaptionLayout {
     /// The buttons at the leading end.
     pub leading: Arc<[CaptionButtonKind]>,
@@ -308,6 +314,34 @@ fn square_tiled_corners(corners: Corners, tiled: EdgeFlags) -> Corners {
             bottom_left: keep(bottom_left, EdgeFlags::BOTTOM, EdgeFlags::LEFT),
         },
         ..corners
+    }
+}
+
+/// Its fields in order: a frame as its style (the inset shadows split off
+/// it are derived), the caption rule sets as a ruled widget's parts.
+#[cfg(feature = "serde")]
+impl serde::Serialize for WindowChrome {
+    fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        use super::serial::RulesView;
+        use serde::ser::SerializeMap;
+
+        let mut map = s.serialize_map(None)?;
+        map.serialize_entry("origin", &self.origin)?;
+        map.serialize_entry("caption_layout", &self.caption_layout)?;
+        map.serialize_entry("frame", &self.frame.style)?;
+        map.serialize_entry("frame_maximized", &self.frame_maximized.style)?;
+        map.serialize_entry("title_bar", &self.title_bar)?;
+        map.serialize_entry("title_bar_maximized", &self.title_bar_maximized)?;
+        map.serialize_entry("title", &self.title)?;
+        map.serialize_entry(
+            "caption_button",
+            &RulesView::new("caption_button", &self.caption_button),
+        )?;
+        map.serialize_entry(
+            "caption_icon",
+            &RulesView::new("caption_icon", &self.caption_icon),
+        )?;
+        map.end()
     }
 }
 

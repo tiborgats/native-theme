@@ -6,6 +6,7 @@ use std::sync::Arc;
 /// The global layout metrics of a resolved theme.
 #[derive(Clone, Debug, PartialEq)]
 #[non_exhaustive]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct LayoutMetrics {
     // The four gaps are 0.7.2's `layout.*`: each `None` where neither the platform nor the preset states it
     // (`platform-facts.md` §2.20; `macos-tahoe` states two of the four).
@@ -42,6 +43,11 @@ pub struct LayoutMetrics {
 /// Which end of a dialog's button row the primary button takes: a platform
 /// convention, not styling.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "snake_case")
+)]
 pub enum DialogButtonOrder {
     /// Primary button at the trailing (right) end: GNOME, macOS, iOS.
     PrimaryRight,
@@ -53,6 +59,11 @@ pub enum DialogButtonOrder {
 /// (`platform-facts.md` §2.27, `arrow_side`). Leading and trailing are the
 /// reading direction's.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "snake_case")
+)]
 pub enum ArrowSide {
     /// Before the title, at the row's start: KDE, macOS.
     Leading,
@@ -64,6 +75,11 @@ pub enum ArrowSide {
 /// above their pages (`platform-facts.md` §2.11, `active_indicator_side`).
 /// Tabs below their pages mirror it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "snake_case")
+)]
 pub enum TabIndicatorSide {
     /// Along the tab's top edge, away from its page: KDE.
     Top,

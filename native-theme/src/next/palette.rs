@@ -41,6 +41,11 @@ mod bundled;
 ///   Night, `B` Gruvbox, `O` One), followed by its reason.
 #[derive(Clone, Debug, PartialEq)]
 #[non_exhaustive]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields)
+)]
 pub struct Palette {
     /// The palette's name, the resolved theme's name where the theme has no
     /// explicit name.

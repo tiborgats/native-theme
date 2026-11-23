@@ -8,6 +8,7 @@ use super::query::Surface;
 /// it for that surface.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 #[non_exhaustive]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct SurfaceColors {
     /// The background.
     pub background: Option<Color>,
@@ -44,6 +45,7 @@ impl SurfaceColors {
 /// The colours of a selection.
 #[derive(Clone, Copy, Debug, PartialEq)]
 #[non_exhaustive]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct SelectionColors {
     /// The selection's background.
     pub background: Color,
@@ -76,6 +78,7 @@ impl SelectionColors {
 /// The accent colours.
 #[derive(Clone, Copy, Debug, PartialEq)]
 #[non_exhaustive]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct AccentColors {
     /// The accent's fill.
     pub fill: Color,
@@ -94,6 +97,11 @@ pub struct AccentColors {
 /// for `error` and HCT harmonisation toward the primary colour (`Harmonized`)
 /// for `warning`, `success` and `info`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize),
+    serde(rename_all = "snake_case")
+)]
 pub enum RoleOrigin {
     /// The platform's own token for the role.
     Native,
@@ -108,6 +116,7 @@ pub enum RoleOrigin {
 /// The colours of one status role.
 #[derive(Clone, Copy, Debug, PartialEq)]
 #[non_exhaustive]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct StatusColors {
     /// The role's fill.
     pub fill: Color,
@@ -123,6 +132,7 @@ pub struct StatusColors {
 /// The semantic colour roles of a resolved theme.
 #[derive(Clone, Debug, PartialEq)]
 #[non_exhaustive]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct ColorRoles {
     // 9 named surfaces (`window` always populates `background`, `foreground`, `foreground_muted`, `border`
     // on every bundled preset; every other surface slot stays `None` where no cited source states it)

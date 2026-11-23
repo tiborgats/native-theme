@@ -8,6 +8,7 @@ use crate::next::style::{PartStyle, TextStyle};
 /// own (spec §5, notes to the table, "the menu's popup frame").
 #[derive(Clone, Debug, PartialEq)]
 #[non_exhaustive]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct PopoverWidget {
     /// Native or synthesized.
     pub origin: WidgetOrigin,

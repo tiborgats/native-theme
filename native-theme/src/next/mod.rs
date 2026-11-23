@@ -123,6 +123,8 @@ mod query;
 mod reader;
 mod roles;
 mod rules;
+#[cfg(feature = "serde")]
+mod serial;
 mod style;
 mod typography;
 mod widgets;

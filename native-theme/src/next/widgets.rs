@@ -29,6 +29,11 @@ use super::window::WindowChrome;
 /// Whether a widget is the platform's own control or one the crate
 /// synthesizes for a platform that lacks it (spec §5).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize),
+    serde(rename_all = "snake_case")
+)]
 pub enum WidgetOrigin {
     /// The platform's own control, styled from its sources.
     Native,
@@ -591,6 +596,7 @@ impl ListWidget {
 /// A tooltip. Its greatest width is `panel.max_size[0]`.
 #[derive(Clone, Debug, PartialEq)]
 #[non_exhaustive]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct TooltipWidget {
     /// Native or synthesized.
     pub origin: WidgetOrigin,
@@ -629,6 +635,7 @@ impl TooltipWidget {
 /// widgets.
 #[derive(Clone, Debug, PartialEq)]
 #[non_exhaustive]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct ResolvedTheme {
     /// The theme's name.
     pub name: Arc<str>,

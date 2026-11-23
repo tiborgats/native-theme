@@ -11,6 +11,11 @@ use super::paint::{BlendMode, Paint};
 /// How a part shows that it has the focus.
 #[derive(Clone, Debug, PartialEq)]
 #[non_exhaustive]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields)
+)]
 pub struct FocusIndicator {
     /// The indicator's shape.
     pub kind: FocusKind,
@@ -51,6 +56,11 @@ impl FocusIndicator {
 /// The shape of a [`FocusIndicator`].
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 #[non_exhaustive]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "snake_case")
+)]
 pub enum FocusKind {
     /// A ring around the part.
     #[default]
@@ -70,6 +80,11 @@ pub enum FocusKind {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 // no `Default`: the type stands only in `Option` fields, where a default would be an invented value
 #[non_exhaustive]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "snake_case")
+)]
 pub enum FocusTrigger {
     /// Only when the focus came from the keyboard.
     KeyboardOnly,
@@ -80,6 +95,11 @@ pub enum FocusTrigger {
 /// A touch ripple.
 #[derive(Clone, Copy, Debug, PartialEq)]
 #[non_exhaustive]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields)
+)]
 pub struct RippleSpec {
     /// The ripple's colour.
     pub color: Color,
@@ -354,6 +374,11 @@ bit_set!(TextStated, u16);
 
 /// A line drawn with text.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields)
+)]
 pub struct TextDecoration {
     /// Which line.
     pub kind: DecorationKind,
@@ -366,6 +391,11 @@ pub struct TextDecoration {
 /// The line of a [`TextDecoration`].
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 #[non_exhaustive]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "snake_case")
+)]
 pub enum DecorationKind {
     /// No line.
     #[default]
@@ -381,6 +411,11 @@ pub enum DecorationKind {
 /// The slant of a font.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 #[non_exhaustive]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "snake_case")
+)]
 pub enum FontStyle {
     /// Upright.
     #[default]
@@ -395,6 +430,11 @@ pub enum FontStyle {
 /// preset's point or pixel constant, a `QFont` string's point or pixel size.
 #[derive(Clone, Copy, Debug, PartialEq)]
 // no `Default`: the type stands only in `Option` fields, where a default would be an invented value
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "snake_case")
+)]
 pub enum FontSize {
     /// Typographic points (1/72 inch).
     Pt(f32),
@@ -528,6 +568,11 @@ bit_set!(IconStated, u8);
 /// How a symbol icon's layers are coloured.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 #[non_exhaustive]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "snake_case")
+)]
 pub enum IconRenderingMode {
     /// One colour.
     #[default]

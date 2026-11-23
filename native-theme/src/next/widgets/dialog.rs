@@ -9,6 +9,7 @@ use crate::next::style::{IconStyle, PartStyle, TextStyle};
 /// `panel.max_size`.
 #[derive(Clone, Debug, PartialEq)]
 #[non_exhaustive]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct DialogWidget {
     /// Native or synthesized.
     pub origin: WidgetOrigin,

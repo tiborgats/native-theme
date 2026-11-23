@@ -6,6 +6,7 @@ use crate::next::style::{PartStyle, TextStyle};
 /// A window's status bar.
 #[derive(Clone, Debug, PartialEq)]
 #[non_exhaustive]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct StatusBarWidget {
     /// Native or synthesized.
     pub origin: WidgetOrigin,

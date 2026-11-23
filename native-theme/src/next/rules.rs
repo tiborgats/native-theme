@@ -324,6 +324,33 @@ impl<T, P, M> RuleSet<T, P, M> {
         self.props = Arc::from(props);
     }
 
+    /// The base style.
+    #[cfg(feature = "serde")]
+    pub(crate) fn base(&self) -> &T {
+        &self.base
+    }
+
+    /// The ordered exclusive state groups.
+    #[cfg(feature = "serde")]
+    pub(crate) fn exclusive(&self) -> &'static [&'static [WidgetState]] {
+        self.exclusive
+    }
+
+    /// The rules in evaluation order, each its selector and the properties
+    /// it applies; a rule whose stored range is not in the property list
+    /// applies none.
+    #[cfg(feature = "serde")]
+    pub(crate) fn entries(&self) -> impl Iterator<Item = (&RuleSelector<M>, &[P])> {
+        self.rules.iter().map(|entry| {
+            let props = usize::try_from(entry.start)
+                .ok()
+                .zip(usize::try_from(entry.len).ok())
+                .and_then(|(start, len)| self.props.get(start..start.saturating_add(len)))
+                .unwrap_or_default();
+            (&entry.selector, props)
+        })
+    }
+
     /// Steps 0 to 4 of the evaluation contract, applying each property with
     /// `apply`, told whether the rule as written requires a state.
     fn eval_with<V>(&self, query: &StyleQuery<V>, apply: fn(&mut T, &P, bool)) -> T

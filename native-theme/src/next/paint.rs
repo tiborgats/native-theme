@@ -138,6 +138,11 @@ impl PaintLayer {
 
 /// A colour stop of a gradient.
 #[derive(Clone, Copy, Debug, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields)
+)]
 pub struct GradientStop {
     /// The stop's position along the gradient, `0.0..=1.0`.
     pub offset: f32,
@@ -148,6 +153,11 @@ pub struct GradientStop {
 /// How a layer blends with what lies below it.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 #[non_exhaustive]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "snake_case")
+)]
 pub enum BlendMode {
     /// Source-over.
     #[default]
@@ -213,6 +223,11 @@ impl MaterialSpec {
 /// The platform material a [`MaterialSpec`] stands for.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "snake_case")
+)]
 pub enum MaterialKind {
     /// Windows 11 Mica.
     Mica,
