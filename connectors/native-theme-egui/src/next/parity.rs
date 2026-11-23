@@ -911,7 +911,7 @@ const STATED_ON_A_PRESET: &[Difference] = &[
         "Checkbox/SelectedDisabled",
         &[M3],
         ".visuals.widgets.inactive.fg_stroke.color",
-        home!(checkbox.label(CHECKED | DISABLED).color),
+        home!(checkbox.checkmark(DISABLED | CHECKED).color),
     ),
     s(
         "ComboBox",

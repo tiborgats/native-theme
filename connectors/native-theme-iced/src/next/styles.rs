@@ -475,6 +475,14 @@ fn checkbox_source(r: &ResolvedTheme) -> Mapped<CheckboxSource> {
         )?,
         disabled_opacity: c.disabled_opacity,
         mark: to_color(mark.color),
+        disabled_mark: {
+            let checked = c.checkmark(WidgetState::DISABLED | WidgetState::CHECKED);
+            (c.checkmark(WidgetState::DISABLED)
+                .from_state
+                .contains(IconStated::COLOR)
+                && checked.stated.contains(IconStated::COLOR))
+            .then(|| to_color(checked.color))
+        },
         label: text_color(&c.label(WidgetState::NONE), "checkbox.label(NONE).color")?,
         disabled_label: text_color(
             &c.label(WidgetState::DISABLED),

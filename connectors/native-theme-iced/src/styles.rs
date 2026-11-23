@@ -1877,6 +1877,9 @@ pub(crate) struct CheckboxSource {
     pub disabled_opacity: Option<f32>,
     /// The check mark.
     pub mark: Color,
+    /// The checked disabled box's mark, where the theme states a disabled
+    /// mark.
+    pub disabled_mark: Option<Color>,
     pub label: Color,
     pub disabled_label: Color,
     pub border_width: f32,
@@ -1893,6 +1896,7 @@ impl CheckboxSource {
             checked_disabled_background: c.disabled_background.map(to_color),
             disabled_opacity: Some(c.disabled_opacity),
             mark: to_color(c.indicator_color),
+            disabled_mark: None,
             label: to_color(c.font.color),
             disabled_label: to_color(c.disabled_text_color),
             border_width: c.border.line_width,
@@ -1941,6 +1945,7 @@ pub(crate) fn checkbox_from(
     let opacity = c.disabled_opacity;
 
     let mark = c.mark;
+    let disabled_mark = c.disabled_mark;
     let label = c.label;
     let disabled_label = c.disabled_label;
 
@@ -1984,7 +1989,8 @@ pub(crate) fn checkbox_from(
             // on-accent color, and a disabled box no longer shows the accent,
             // so the mark takes the one foreground the platform states for
             // everything it dims -- the same field the disabled label takes.
-            // With no disabled fill stated the box is its enabled self. The
+            // With no disabled fill stated the box is its enabled self. A
+            // disabled mark the theme states is drawn in its own colour. The
             // box is then faded by `checkbox.disabled_opacity` as one widget
             // over the ground: the border and the mark on the fill.
             Status::Disabled { is_checked } => {
@@ -1997,6 +2003,7 @@ pub(crate) fn checkbox_from(
                     Some(fill) => (fill, disabled_label),
                     None => (at_rest, mark),
                 };
+                let mark = disabled_mark.filter(|_| is_checked).unwrap_or(mark);
                 let fill = composite_over(background, ground);
                 (
                     fade(ground, background),

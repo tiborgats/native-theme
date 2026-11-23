@@ -1191,20 +1191,44 @@ const CHECK_DISABLED_LABEL: Home = Home {
 const CHECK_DISABLED_MARK: Home = Home {
     path: "checkbox.label(DISABLED).color on checkbox.indicator(DISABLED).fill, faded as one \
            over colors.window.background by checkbox.disabled_opacity",
-    value: |t| disabled_mark(t, WidgetState::DISABLED),
+    value: |t| {
+        let color = super::text_color_of(&t.checkbox.label(WidgetState::DISABLED))?;
+        disabled_mark(t, WidgetState::DISABLED, color)
+    },
 };
 
-/// [`CHECK_DISABLED_MARK`] of a checked box, on
-/// `checkbox.indicator(DISABLED|CHECKED)` where a rule for DISABLED states
-/// its fill.
+/// The mark of a disabled checked box whose disabled mark and fill the theme
+/// states (`checkbox.checkmark(DISABLED)`, `checkbox.indicator(DISABLED)`):
+/// the mark's own colour on the checked box's disabled fill, faded as one
+/// widget over the window.
 const CHECKED_DISABLED_MARK: Home = Home {
-    path: "checkbox.label(DISABLED).color on checkbox.indicator(DISABLED|CHECKED).fill, faded \
-           as one over colors.window.background by checkbox.disabled_opacity",
-    value: |t| disabled_mark(t, WidgetState::DISABLED.union(WidgetState::CHECKED)),
+    path: "checkbox.checkmark(DISABLED|CHECKED).color on \
+           checkbox.indicator(DISABLED|CHECKED).fill, faded as one over \
+           colors.window.background by checkbox.disabled_opacity",
+    value: |t| {
+        use native_theme::next::IconStated;
+        let c = &t.checkbox;
+        let state = WidgetState::DISABLED.union(WidgetState::CHECKED);
+        let mark = c.checkmark(state);
+        if !c
+            .checkmark(WidgetState::DISABLED)
+            .from_state
+            .contains(IconStated::COLOR)
+            || !mark.stated.contains(IconStated::COLOR)
+        {
+            return None;
+        }
+        disabled_mark(t, state, super::to_color(mark.color))
+    },
 };
 
-/// [`CHECK_DISABLED_MARK`] at `state`.
-fn disabled_mark(t: &native_theme::next::ResolvedTheme, state: WidgetState) -> Option<Value> {
+/// A disabled box's mark in `color` on `checkbox.indicator(state)`, where a
+/// rule for DISABLED states the box's fill.
+fn disabled_mark(
+    t: &native_theme::next::ResolvedTheme,
+    state: WidgetState,
+    color: iced_core::Color,
+) -> Option<Value> {
     let c = &t.checkbox;
     if !c
         .indicator(WidgetState::DISABLED)
@@ -1214,7 +1238,7 @@ fn disabled_mark(t: &native_theme::next::ResolvedTheme, state: WidgetState) -> O
         return None;
     }
     Some(Value::Faded {
-        color: super::text_color_of(&c.label(WidgetState::DISABLED))?,
+        color,
         under: Some(super::fill_of(&c.indicator(state))?),
         ground: super::to_color(t.colors.window.background?),
         opacity: c.disabled_opacity,

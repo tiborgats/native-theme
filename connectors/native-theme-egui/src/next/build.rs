@@ -944,6 +944,8 @@ pub(crate) fn variant_source(r: &ResolvedTheme) -> VariantSource {
                     "checkbox.indicator(DISABLED|CHECKED).fill",
                 )
             }),
+            disabled_mark: state_icon_color(&k.checkmark(S::DISABLED))
+                .and_then(|_| icon_color(&k.checkmark(S::DISABLED | S::CHECKED))),
         },
         input: Disabled {
             text: state_text_color(&i.text(S::DISABLED)),
