@@ -5586,51 +5586,117 @@ fn tab_style(
     }
 }
 
-/// A list row, as the model's list (platform-facts §2.15): no fill of its
-/// own over `list.background_color`, its label `list.item_font.color`;
-/// `list.selection_background` and `.selection_text_color` while selected;
-/// `list.hover_background` and `.hover_text_color` under the pointer and
-/// pressed, an unselected row outlined there in `list.hover_border_color`
-/// where the theme states it, `defaults.border.line_width` wide, its colour
-/// composited over the hover fill, as iced paints a border in place of the
-/// fill under it; `list.disabled_text_color` disabled. Square: the model
-/// rounds the list's frame, not its rows; the Basic list paints this fill
-/// and its outline itself, rounded where it meets the frame
-/// ([`list_row_fill`]). A selected row's pair follows the window's state,
-/// `window_active` ([`selection_pair`]).
+/// The state bit a part of a view is asked with besides its own, in a
+/// window `window_active` or not: `UNFOCUSED_VIEW` while the window is not
+/// active, as every view of an inactive window lacks the keyboard focus and
+/// a connector sets the bit there (spec §3, `WidgetState`); none while it
+/// is. The theme resolved for an inactive window does not swap a list's
+/// selection itself (spec §6, step 2: the window's state swaps backdrop
+/// materials alone); the list's rules under `UNFOCUSED_VIEW` state it
+/// (spec §5, the list's `highlight`).
+fn view_focus(window_active: bool) -> WidgetState {
+    if window_active {
+        WidgetState::NONE
+    } else {
+        WidgetState::UNFOCUSED_VIEW
+    }
+}
+
+/// What a list row in `state` is drawn in where a rule states it for the
+/// state (spec §2, `from_state`): `list.highlight(state).fill`, its stroke
+/// as iced draws it over that fill ([`next_edge`]), and
+/// `list.item_label(state).color`; each `None` where no rule states it.
+fn list_lit(
+    l: &native_theme::next::ListWidget,
+    state: WidgetState,
+) -> (Option<Color>, Option<iced::Border>, Option<Color>) {
+    let part = l.highlight(state);
+    let fill = iced_next::state_fill_of(&part);
+    let edge = part
+        .from_state
+        .contains(PartStated::STROKE)
+        .then(|| next_edge(&part, fill.unwrap_or(Color::TRANSPARENT)))
+        .flatten();
+    let text = iced_next::state_text_color_of(&l.item_label(state));
+    (fill, edge, text)
+}
+
+/// A list row, as the model's list (spec §5, the list's `highlight`): no
+/// fill of its own over the list's ([`list_frame`]), its label
+/// `list.item_label(NONE).color`; while selected
+/// `list.highlight(SELECTED).fill` and `list.item_label(SELECTED).color`
+/// ([`next_selection_pair`]); under the pointer and pressed
+/// `list.highlight(HOVER).fill` and `list.item_label(HOVER).color`, outlined
+/// by `list.highlight(HOVER).stroke` where a rule states it, its colour
+/// composited over the fill as the stroke's alignment lays it, as iced
+/// paints a border in place of the fill under it ([`next_edge`]); a
+/// selected row under the pointer in `SELECTED | HOVER`;
+/// `list.item_label(DISABLED).color` disabled. Each state is asked with
+/// `UNFOCUSED_VIEW` too while the window is not active, `window_active`
+/// false ([`view_focus`]). Each property a status leaves unstated is iced's
+/// own flat button's, `button::text` ([`in_state`]). Square: the Basic list
+/// paints this fill and its outline itself, rounded where it meets the
+/// frame ([`list_row_fill`]).
 fn list_row(
-    resolved: &ResolvedTheme,
+    r: &native_theme::next::ResolvedTheme,
     selected: bool,
     window_active: bool,
 ) -> impl Fn(&Theme, button::Status) -> button::Style + use<> {
-    let l = &resolved.list;
-    let label = to_color(l.item_font.color);
-    let (selection, selection_label) = selection_pair(resolved, window_active);
-    let hover = to_color(l.hover_background);
-    let hover_label = to_color(l.hover_text_color);
-    let disabled_label = to_color(l.disabled_text_color);
-    let edge = l
-        .hover_border_color
-        .map(|c| iced::Border {
-            color: styles::composite_over(to_color(c), hover),
-            width: resolved.defaults.border.line_width,
-            ..iced::Border::default()
-        })
-        .unwrap_or_default();
-    move |_theme, status| {
-        let (background, text_color, border) = match status {
-            button::Status::Disabled => (None, disabled_label, iced::Border::default()),
-            _ if selected => (Some(selection), selection_label, iced::Border::default()),
-            button::Status::Hovered | button::Status::Pressed => (Some(hover), hover_label, edge),
-            button::Status::Active => (None, label, iced::Border::default()),
+    let l = &r.list;
+    let view = view_focus(window_active);
+    let own_state = if selected {
+        WidgetState::SELECTED.union(view)
+    } else {
+        view
+    };
+    let label = iced_next::text_color_of(&l.item_label(view));
+    let at_rest = if selected {
+        list_lit(l, own_state)
+    } else {
+        (None, None, None)
+    };
+    let hovered = list_lit(l, own_state.union(WidgetState::HOVER));
+    let disabled_label =
+        iced_next::state_text_color_of(&l.item_label(WidgetState::DISABLED.union(view)));
+    move |theme, status| {
+        let rest = button::text(theme, button::Status::Active);
+        let own = button::text(theme, status);
+        let (fill, edge, text) = match status {
+            button::Status::Disabled => (None, None, disabled_label),
+            button::Status::Active => at_rest,
+            button::Status::Hovered | button::Status::Pressed => hovered,
         };
         button::Style {
-            background: background.map(iced::Background::Color),
-            text_color,
-            border,
-            ..button::Style::default()
+            background: in_state(
+                fill.map(|fill| Some(iced::Background::Color(fill))),
+                None,
+                (rest.background, own.background),
+            ),
+            text_color: in_state(
+                text,
+                label.unwrap_or(rest.text_color),
+                (rest.text_color, own.text_color),
+            ),
+            border: edge.unwrap_or(own.border),
+            ..own
         }
     }
+}
+
+/// The fill and the text colour of a selected list row on the 0.8.0
+/// model, `list.highlight(SELECTED).fill` and
+/// `list.item_label(SELECTED).color`, asked with `UNFOCUSED_VIEW` too while
+/// the window is not active, `window_active` false ([`view_focus`]); each
+/// `None` where no rule states it. The 0.7.2 table's is [`selection_pair`].
+fn next_selection_pair(
+    r: &native_theme::next::ResolvedTheme,
+    window_active: bool,
+) -> (Option<Color>, Option<Color>) {
+    let (fill, _, text) = list_lit(
+        &r.list,
+        WidgetState::SELECTED.union(view_focus(window_active)),
+    );
+    (fill, text)
 }
 
 /// The fill and the text colour of a selected list or table row:
@@ -5656,21 +5722,48 @@ fn selection_pair(resolved: &ResolvedTheme, window_active: bool) -> (Color, Colo
     }
 }
 
-/// A list's frame: its fill, `list.background_color`, which shows under
-/// rows with no fill of their own ([`list_row`]), framed by `list.border`'s
-/// colour, width and radius.
-fn list_frame(resolved: &ResolvedTheme) -> impl Fn(&Theme) -> container::Style + use<> {
-    let l = &resolved.list;
-    let fill = to_color(l.background_color);
-    let border = iced::Border {
-        color: to_color(l.border.color),
-        width: l.border.line_width,
-        radius: l.border.corner_radius.into(),
-    };
-    move |_theme| container::Style {
-        background: Some(iced::Background::Color(fill)),
-        border,
-        ..container::Style::default()
+/// A list's frame: its fill, `list.container(NONE).fill`, which shows under
+/// rows with no fill of their own ([`list_row`]), framed by
+/// [`list_frame_border`]. iced's own container, which has no fill, where
+/// the theme states none.
+fn list_frame(
+    r: &native_theme::next::ResolvedTheme,
+) -> impl Fn(&Theme) -> container::Style + use<> {
+    let fill = iced_next::fill_of(&r.list.container(WidgetState::NONE));
+    let border = list_frame_border(r);
+    move |_theme| {
+        let own = container::Style::default();
+        container::Style {
+            background: fill.map(iced::Background::Color).or(own.background),
+            border,
+            ..own
+        }
+    }
+}
+
+/// The border of a list's frame: `list.container(NONE)`'s stroke, its
+/// colour composited over the frame's fill as its alignment lays it
+/// ([`next_edge`]), rounded by its corners; iced's own container's border,
+/// none and square, for what the theme leaves unstated. The Basic list pads
+/// its rows by its width, inside the line iced paints over the padding.
+fn list_frame_border(r: &native_theme::next::ResolvedTheme) -> iced::Border {
+    let frame = r.list.container(WidgetState::NONE);
+    let own = container::Style::default().border;
+    let fill = iced_next::fill_of(&frame).unwrap_or(Color::TRANSPARENT);
+    let border = next_edge(&frame, fill).unwrap_or(own);
+    iced_next::radius_of(&frame).map_or(border, |radius| border.rounded(radius))
+}
+
+/// The radius of a list frame's inside on the 0.8.0 model: the radius of
+/// [`list_frame_border`] less its width, as [`inner_radius`] takes it from
+/// the 0.7.2 list, which the Basic table and the list's scroll bar read.
+fn next_inner_radius(r: &native_theme::next::ResolvedTheme) -> f32 {
+    let border = list_frame_border(r);
+    let radius = border.radius.top_left - border.width;
+    if radius.is_finite() {
+        radius.max(0.0)
+    } else {
+        0.0
     }
 }
 
@@ -5852,19 +5945,19 @@ type UnderPaint<'a> = Box<
 /// [`list_row`] fills them alike; the rows always take `on_press`, so the
 /// button is never `Disabled`, the one state the cursor does not decide and
 /// [`list_row`] fills none in), over the part of the row the list shows,
-/// rounded by the frame's inner radius where it meets the frame's inside
-/// ([`shown_fill`]), as egui's list rows are. The rows draw in the
-/// scrollable's shown part moved by its scroll (iced_widget 0.14.2
-/// `src/scrollable.rs:1152`, `:1198-1202`), so the frame's inside, the
-/// scrollable's bounds ([`ListView`]), moves with it.
+/// rounded by the frame's inner radius ([`next_inner_radius`]) where it
+/// meets the frame's inside ([`shown_fill`]), as egui's list rows are. The
+/// rows draw in the scrollable's shown part moved by its scroll (iced_widget
+/// 0.14.2 `src/scrollable.rs:1152`, `:1198-1202`), so the frame's inside,
+/// the scrollable's bounds ([`ListView`]), moves with it.
 fn list_row_fill(
-    resolved: &ResolvedTheme,
+    r: &native_theme::next::ResolvedTheme,
     selected: bool,
     window_active: bool,
     view: ListView,
 ) -> UnderPaint<'static> {
-    let style = list_row(resolved, selected, window_active);
-    let radius = inner_radius(&resolved.list);
+    let style = list_row(r, selected, window_active);
+    let radius = next_inner_radius(r);
     Box::new(move |renderer, theme, bounds, cursor, viewport| {
         use iced::advanced::Renderer as _;
         let status = if cursor.is_over(bounds) {
@@ -9099,6 +9192,102 @@ fn tab_route(r: &native_theme::next::ResolvedTheme, leaf: &str) -> Option<String
     Some(route.to_owned())
 }
 
+/// The route of a colour leaf `leaf` of the Basic list under `r`, of its
+/// frame where `frame` ([`list_frame`]), else of a row ([`list_row`]): what
+/// the function draws of the leaf's 0.8.0 home, naming it, or that the home
+/// is unstated and what is drawn in its place. `None` for a leaf neither
+/// reads.
+fn list_route(r: &native_theme::next::ResolvedTheme, leaf: &str, frame: bool) -> Option<String> {
+    let l = &r.list;
+    let fill = |state: WidgetState| iced_next::state_fill_of(&l.highlight(state)).is_some();
+    let ink = |state: WidgetState| iced_next::state_text_color_of(&l.item_label(state)).is_some();
+    let (hover, selected) = (WidgetState::HOVER, WidgetState::SELECTED);
+    let container = l.container(WidgetState::NONE);
+    let (active, inactive) = (next_selection_pair(r, true), next_selection_pair(r, false));
+    let route = match leaf {
+        "list.background_color" if iced_next::fill_of(&container).is_none() => {
+            "not drawn: list.container(NONE).fill is unstated, so the frame is iced's own \
+             container, which has no fill"
+        }
+        "list.background_color" if frame => {
+            "list_frame: the list container's background, list.container(NONE).fill"
+        }
+        "list.background_color" => {
+            "list_frame: the list container's background, under the row, \
+             list.container(NONE).fill"
+        }
+        "list.border.color"
+            if iced_next::stroke_color_of(&container).is_none()
+                || !iced_next::stroke_width_of(&container).is_some_and(|width| width > 0.0) =>
+        {
+            "not drawn: list.container(NONE).stroke is unstated or none, so the frame has no line"
+        }
+        "list.border.color" => {
+            "list_frame: the frame container's border.color, list.container(NONE).stroke.color"
+        }
+        "list.item_font.color"
+            if iced_next::text_color_of(&l.item_label(WidgetState::NONE)).is_none() =>
+        {
+            "not drawn: list.item_label(NONE).color is unstated, so a row's label at rest is \
+             iced's own flat button's (button::text)"
+        }
+        "list.item_font.color" => "list_row: text_color at rest, list.item_label(NONE).color",
+        "list.selection_background" if !fill(selected) => {
+            "not drawn: list.highlight(SELECTED).fill is unstated, and iced's own flat button \
+             (button::text) has no fill"
+        }
+        "list.selection_background" => {
+            "list_row: the selected row's fill, list.highlight(SELECTED).fill"
+        }
+        "list.selection_text_color" if !ink(selected) => {
+            "not drawn: list.item_label(SELECTED).color is unstated, so the selected row's label \
+             is iced's own flat button's (button::text)"
+        }
+        "list.selection_text_color" => {
+            "list_row: the selected row's text_color, list.item_label(SELECTED).color"
+        }
+        "list.hover_background" if !fill(hover) => {
+            "not drawn: list.highlight(HOVER).fill is unstated, and iced's own flat button \
+             (button::text) has no fill"
+        }
+        "list.hover_background" => "list_row: the Hovered fill, list.highlight(HOVER).fill",
+        "list.hover_text_color" if !ink(hover) => {
+            "not drawn: list.item_label(HOVER).color is unstated, so the Hovered label is iced's \
+             own flat button's (button::text)"
+        }
+        "list.hover_text_color" => "list_row: the Hovered text_color, list.item_label(HOVER).color",
+        "list.hover_border_color"
+            if !l.highlight(hover).from_state.contains(PartStated::STROKE) =>
+        {
+            "not drawn: list.highlight(HOVER).stroke is unstated, and list_row outlines no row, \
+             as iced's own flat button (button::text) outlines none"
+        }
+        "list.hover_border_color" => {
+            "list_row: the Hovered border, list.highlight(HOVER).stroke.color"
+        }
+        "defaults.selection_inactive_background" if inactive.0 == active.0 => {
+            "not drawn: list.highlight(SELECTED|UNFOCUSED_VIEW).fill is unstated, or stated as \
+             list.highlight(SELECTED).fill, so a selected row keeps its fill while the window is \
+             not active"
+        }
+        "defaults.selection_inactive_background" => {
+            "list_row: the selected row's fill while the window is not active, \
+             list.highlight(SELECTED|UNFOCUSED_VIEW).fill"
+        }
+        "defaults.selection_inactive_text_color" if inactive.1 == active.1 => {
+            "not drawn: list.item_label(SELECTED|UNFOCUSED_VIEW).color is unstated, or stated as \
+             list.item_label(SELECTED).color, so a selected row keeps its label while the window \
+             is not active"
+        }
+        "defaults.selection_inactive_text_color" => {
+            "list_row: the selected row's text_color while the window is not active, \
+             list.item_label(SELECTED|UNFOCUSED_VIEW).color"
+        }
+        _ => return None,
+    };
+    Some(route.to_owned())
+}
+
 /// The route of a window menu's colour leaf `leaf` under `r`, of a title of
 /// the menu bar where `title` ([`menu_title`]), else of a menu's row or
 /// panel ([`menu_row`], [`menu_bar_style`]): what the function draws of
@@ -9403,6 +9592,15 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
     };
     if table == "tab"
         && let Some(route) = tab_route(state.next_shown(), leaf)
+    {
+        return if route.starts_with("not drawn") {
+            route
+        } else {
+            format!("iced: {route}")
+        };
+    }
+    if under("basic.list.")
+        && let Some(route) = list_route(state.next_shown(), leaf, under("basic.list.frame"))
     {
         return if route.starts_with("not drawn") {
             route
@@ -10111,8 +10309,8 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         }
         ("list", "hover_border_color") => "list_row: the Hovered border".into(),
         ("defaults", "border.line_width_px") if under("basic.list.") => {
-            "list_row_fill: the hovered row's outline width, where list.hover_border_color \
-             is stated (list_row's border)"
+            "list_row_fill: the hovered row's outline width, list.highlight(HOVER).stroke.width, \
+             where a HOVER rule states the stroke (list_row's border)"
                 .into()
         }
         ("list", "border.color") if under("basic.table.") => {
@@ -10133,7 +10331,8 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         }
         ("list", "border.corner_radius_px") if under("basic.list.row_") => {
             "list_row_fill: the row's fill rounded where it meets the frame's inside, by the \
-             frame's inner radius, this less list.border.line_width (inner_radius)"
+             frame's inner radius, list.container(NONE).corners less its stroke's width \
+             (next_inner_radius)"
                 .into()
         }
         ("list", "border.line_width_px")
@@ -10144,8 +10343,17 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
                 .into()
         }
         ("list", "border.line_width_px") if under("basic.list.row_") => {
-            "list_row_fill: taken from list.border.corner_radius for the fill's rounded \
-             corners (inner_radius)"
+            "list_row_fill: list.container(NONE).stroke.width, taken from the frame's corners \
+             for the fill's rounded corners (next_inner_radius)"
+                .into()
+        }
+        ("list", "border.corner_radius_px") if under("basic.list.") => {
+            "the frame container's border.radius, list.container(NONE).corners (list_frame)"
+                .into()
+        }
+        ("list", "border.line_width_px") if under("basic.list.") => {
+            "the frame container's border.width and padding, list.container(NONE).stroke.width \
+             (list_frame_border)"
                 .into()
         }
         ("list", "border.corner_radius_px") => "the frame container's border.radius".into(),
@@ -10848,7 +11056,7 @@ fn command_palette(state: &State) -> Element<'_, Message> {
             button(text(entry.label).themed(&l.item_font, resolved, a11y))
                 .padding(row_pad)
                 .width(Fill)
-                .style(list_row(resolved, false, state.window_active))
+                .style(list_row(state.next_shown(), false, state.window_active))
                 .on_press(Message::PaletteRun(Box::new(entry.action)))
                 .into()
         })));
@@ -13148,7 +13356,7 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
             .style({
                 // The fill and its outline are `list_row_fill`'s, so the
                 // button draws neither.
-                let row = list_row(resolved, selected, state.window_active);
+                let row = list_row(state.next_shown(), selected, state.window_active);
                 move |theme, status| {
                     let style = button::Style {
                         background: None,
@@ -13162,7 +13370,12 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
                 }
             })
             .on_press(Message::BasicListSelected(i)),
-            list_row_fill(resolved, selected, state.window_active, list_view.clone()),
+            list_row_fill(
+                state.next_shown(),
+                selected,
+                state.window_active,
+                list_view.clone(),
+            ),
         );
         // The label is the button's container's text (the row's `Underlay`
         // lays its button out as it is).
@@ -13220,9 +13433,9 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
                     },
                 ),
             ))
-            .padding(list_t.border.line_width)
+            .padding(list_frame_border(state.next_shown()).width)
             .width(Length::Fixed(BASIC_WIDE))
-            .style(list_frame(resolved)),
+            .style(list_frame(state.next_shown())),
         )
         // A floating bar is drawn under the pointer only (`styles::scrollable`),
         // so at rest, which the layout dump records, it is not there, as
@@ -23334,6 +23547,7 @@ mod tests {
         ("button::text", "fn menu_row("),
         ("button::text", "fn menu_title("),
         ("button::text", "fn tab_style("),
+        ("button::text", "fn list_row("),
     ];
 
     /// Whether the use of `class` at `at` in `source` lies in the body of a
@@ -25034,7 +25248,6 @@ mod tests {
             AppColorMode::Light
         ));
         let r = state.current_resolved.clone();
-        let theme = native_theme_iced::to_theme(&r, "unfocused");
         let unfocused = (
             to_color(native_theme::Rgba::rgb(0xc2, 0xe0, 0xf5)),
             to_color(native_theme::Rgba::rgb(0x23, 0x26, 0x29)),
@@ -25057,7 +25270,12 @@ mod tests {
                 want,
                 "the table's selected row, window active: {active}"
             );
-            let row = list_row(&r, true, active)(&theme, button::Status::Active);
+            let next = if active {
+                &state.next_resolved
+            } else {
+                &state.next_inactive
+            };
+            let row = list_row(next, true, active)(&state.current_theme, button::Status::Active);
             assert_eq!(
                 (row.background, row.text_color),
                 (Some(iced::Background::Color(want.0)), want.1),
@@ -25209,13 +25427,19 @@ mod tests {
     /// `defaults.selection_inactive_background` and
     /// `defaults.selection_inactive_text_color` say they are not drawn
     /// exactly where the theme's inactive fill is its selection's, where a
-    /// selected row keeps the list's pair ([`selection_pair`]).
+    /// selected row keeps the list's pair: the table's on the 0.7.2 theme
+    /// ([`selection_pair`]), the list's where the 0.8.0 theme's
+    /// `list.highlight(SELECTED|UNFOCUSED_VIEW).fill` and
+    /// `list.item_label(SELECTED|UNFOCUSED_VIEW).color` are its
+    /// `SELECTED` ones ([`next_selection_pair`]), which only kde-breeze
+    /// states apart among the presets.
     #[test]
     fn the_unfocused_pairs_routes_say_where_it_is_not_drawn() {
         let leaves = [
             "defaults.selection_inactive_background",
             "defaults.selection_inactive_text_color",
         ];
+        let mut list_swapped = BTreeSet::new();
         let elements: Vec<_> = elements::elements()
             .iter()
             .filter(|e| e.leaves.iter().any(|l| leaves.contains(&l.as_str())))
@@ -25244,14 +25468,35 @@ mod tests {
                     state.error_message
                 );
                 let d = &state.current_resolved.defaults;
-                let swaps = d.selection_inactive_background != d.selection_background;
-                seen.insert(swaps);
+                let table_swaps = d.selection_inactive_background != d.selection_background;
+                let (active, inactive) = (
+                    next_selection_pair(state.next_shown(), true),
+                    next_selection_pair(state.next_shown(), false),
+                );
+                let list_swaps = |leaf: &str| {
+                    if leaf.ends_with("_background") {
+                        inactive.0 != active.0
+                    } else {
+                        inactive.1 != active.1
+                    }
+                };
+                seen.insert(("table", table_swaps));
+                let list_fill_swaps = list_swaps("defaults.selection_inactive_background");
+                seen.insert(("list", list_fill_swaps));
+                if list_fill_swaps {
+                    list_swapped.insert(format!("{}/{mode:?}", preset.key));
+                }
                 for element in &elements {
                     for leaf in element
                         .leaves
                         .iter()
                         .filter(|l| leaves.contains(&l.as_str()))
                     {
+                        let swaps = if element.id.starts_with("basic.list.") {
+                            list_swaps(leaf)
+                        } else {
+                            table_swaps
+                        };
                         let route = iced_route(&state, element, leaf);
                         if route.starts_with("not drawn: ") == swaps {
                             faults.push(format!(
@@ -25263,8 +25508,17 @@ mod tests {
                 }
             }
         }
-        assert_eq!(seen.len(), 2, "both cases among the presets: {seen:?}");
+        assert_eq!(
+            seen.len(),
+            4,
+            "both cases of each among the presets: {seen:?}"
+        );
         assert!(faults.is_empty(), "{faults:#?}");
+        assert_eq!(
+            list_swapped.into_iter().collect::<Vec<_>>(),
+            ["kde-breeze/Dark", "kde-breeze/Light"],
+            "the presets whose selected list rows swap"
+        );
     }
 
     /// M9-158: the Basic table's and list's fills keep inside their frames'
@@ -28275,6 +28529,49 @@ mod tests {
         })
     }
 
+    /// The home of the Basic list's colour leaf `leaf`, which [`list_frame`]
+    /// reads where its `bool` is true, else [`list_row`]: `None` for a leaf
+    /// neither reads.
+    fn list_home(leaf: &str) -> Option<(&'static str, bool)> {
+        Some(match leaf {
+            "list.background_color" => ("list.container(NONE).fill", true),
+            "list.border.color" => ("list.container(NONE).stroke.color", true),
+            "list.item_font.color" => ("list.item_label(NONE).color", false),
+            "list.selection_background" => ("list.highlight(SELECTED).fill", false),
+            "list.selection_text_color" => ("list.item_label(SELECTED).color", false),
+            "list.hover_background" => ("list.highlight(HOVER).fill", false),
+            "list.hover_text_color" => ("list.item_label(HOVER).color", false),
+            "list.hover_border_color" => ("list.highlight(HOVER).stroke.color", false),
+            "defaults.selection_inactive_background" => {
+                ("list.highlight(SELECTED|UNFOCUSED_VIEW).fill", false)
+            }
+            "defaults.selection_inactive_text_color" => {
+                ("list.item_label(SELECTED|UNFOCUSED_VIEW).color", false)
+            }
+            _ => return None,
+        })
+    }
+
+    /// What the Basic list draws under `r`, as text: its frame's style
+    /// where `frame` ([`list_frame`]), else a row's ([`list_row`]) selected
+    /// and not, in a window active and not, in every status.
+    fn list_drawn(r: &native_theme::next::ResolvedTheme, frame: bool) -> String {
+        let theme = match native_theme_iced::next::to_theme(r) {
+            Ok(theme) => theme,
+            Err(error) => return format!("no iced theme: {error:?}"),
+        };
+        if frame {
+            return format!("{:?}", list_frame(r)(&theme));
+        }
+        [false, true]
+            .map(|selected| {
+                [true, false]
+                    .map(|active| next_buttons(&theme, &list_row(r, selected, active)))
+                    .join("/")
+            })
+            .join("|")
+    }
+
     /// `r` with its colour leaf `leaf` set to a colour no bundled theme
     /// states; `None` where the theme leaves the leaf unstated, so that
     /// nothing draws it.
@@ -28479,6 +28776,8 @@ mod tests {
             "tab_style" => [false, true]
                 .map(|selected| next_buttons(&theme, &tab_style(r, selected)))
                 .join("|"),
+            "list_row" => list_drawn(r, false),
+            "list_frame" => list_drawn(r, true),
             "menu_bar_style" => {
                 let style = menu_bar_style(r);
                 AW_STATUSES
@@ -28908,6 +29207,18 @@ mod tests {
                 }) {
                     fault(&format!("tab_style: {what}"));
                 }
+            }
+        }
+        if id.starts_with("basic.list.")
+            && let Some((home, frame)) = list_home(leaf)
+        {
+            let route_on = |patched: &native_theme::next::ResolvedTheme| {
+                list_route(patched, leaf, id == "basic.list.frame").unwrap_or_default()
+            };
+            for what in home_route_faults(state.next_shown(), home, route, route_on, |r| {
+                list_drawn(r, frame)
+            }) {
+                fault(&format!("the Basic list: {what}"));
             }
         }
         if element.name == "Spinner" && state.basic_spinner.is_indicator() {
@@ -32534,14 +32845,6 @@ mod tests {
             "styles::toolbar_button" => [false, true]
                 .map(|checked| buttons(&styles::toolbar_button(r, checked)))
                 .join("|"),
-            "list_row" => [false, true]
-                .map(|selected| {
-                    [true, false]
-                        .map(|active| buttons(&list_row(r, selected, active)))
-                        .join("/")
-                })
-                .join("|"),
-            "list_frame" => format!("{:?}", list_frame(r)(&theme)),
             "basic_table" => [true, false]
                 .map(|active| format!("{:?}", TableColours::of(r, active)))
                 .join("|"),
@@ -33077,15 +33380,21 @@ mod tests {
                 ..State::default()
             };
             assert!(state.install_in_mode(ThemeChoice::Preset(preset.to_owned()), mode));
-            let r = state.current_resolved.clone();
+            let r = state.next_shown().clone();
             let label = format!("{preset} {mode:?}");
-            let l = &r.list;
-            let hover = to_color(l.hover_background);
-            let want = l.hover_border_color.map(|c| iced::Border {
-                color: styles::composite_over(to_color(c), hover),
-                width: 1.0,
-                ..iced::Border::default()
-            });
+            let lit = r.list.highlight(WidgetState::HOVER);
+            let Some(hover) = iced_next::state_fill_of(&lit) else {
+                failures.push(format!("{label}: no hovered row's fill is stated"));
+                continue;
+            };
+            let want = lit
+                .from_state
+                .contains(PartStated::STROKE)
+                .then(|| next_edge(&lit, hover))
+                .flatten();
+            if preset == "kde-breeze" && want.map(|b| b.width) != Some(1.0) {
+                failures.push(format!("{label}: the outline is {want:?}"));
+            }
             if preset == "kde-breeze"
                 && want.map(|b| b.color)
                     != Some(styles::composite_over(
@@ -33155,13 +33464,13 @@ mod tests {
                     "{label}: a row button, {status:?}, draws {border:?}"
                 ));
             }
-            let theme = native_theme_iced::to_theme(&r, "rows");
-            let palette = list_row(&r, false, true)(&theme, button::Status::Hovered).border;
+            let theme = &state.current_theme;
+            let palette = list_row(&r, false, true)(theme, button::Status::Hovered).border;
             if palette != want.unwrap_or_default() {
                 failures.push(format!("{label}: a hovered palette row draws {palette:?}"));
             }
             for status in [button::Status::Hovered, button::Status::Pressed] {
-                let selected = list_row(&r, true, true)(&theme, status).border;
+                let selected = list_row(&r, true, true)(theme, status).border;
                 if selected.width != 0.0 {
                     failures.push(format!("{label}: a selected row, {status:?}, is outlined"));
                 }
