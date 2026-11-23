@@ -1431,8 +1431,21 @@ fn old_kde_reader(
     } else {
         ColorMode::Light
     };
+    let (old, unresolved) = old_merged_reader(&reader, mode, &accessibility)?;
+    Ok((old, unresolved, reader.name.to_string()))
+}
+
+/// A 0.7.2 reader's theme `reader` merged over `kde-breeze`, resolved for `mode` with the rows written by
+/// hand ([`old_resolved`]) and the reader's `accessibility` block at its key, and unresolved
+/// ([`old_unresolved`]).
+#[cfg(all(target_os = "linux", feature = "kde"))]
+fn old_merged_reader(
+    reader: &Theme,
+    mode: ColorMode,
+    accessibility: &crate::AccessibilityPreferences,
+) -> Result<(serde_json::Value, serde_json::Value), Box<dyn std::error::Error>> {
     let mut merged = Theme::preset(PRESET)?;
-    merged.merge(&reader);
+    merged.merge(reader);
     let mut old = old_resolved(&merged, mode)?;
     let unresolved = old_unresolved(&merged, mode)?;
     let map = old
@@ -1447,7 +1460,7 @@ fn old_kde_reader(
             "reduce_transparency": accessibility.reduce_transparency,
         }),
     );
-    Ok((old, unresolved, reader.name.to_string()))
+    Ok((old, unresolved))
 }
 
 /// Reader parity of the kde-breeze builder: for every file of `tests/fixtures/kde/`, the 0.7.2 reader
@@ -1488,13 +1501,30 @@ fn reader_parity_on(
     content: &str,
     table: &Table,
 ) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
-    use crate::next::preset::{Preset, Theme as NextTheme};
     use crate::next::reader::kde::snapshot_from_kdeglobals;
 
     let (old, unresolved, old_name) = old_kde_reader(content)?;
     let mut ini = crate::kde::create_kde_parser();
     crate::kde::read_kconfig(&mut ini, content);
     let snapshot = snapshot_from_kdeglobals(&ini, None, None);
+    assert_reader_parity(name, &old, &unresolved, &old_name, &snapshot, table)?;
+    Ok(old)
+}
+
+/// Reader parity of the kde-breeze builder given `snapshot` against the 0.7.2 reader path's theme `old`
+/// (`unresolved` before its resolution, `old_name` its name), as [`reader_parity_kde`] states it for each
+/// file.
+#[cfg(all(target_os = "linux", feature = "kde"))]
+fn assert_reader_parity(
+    name: &str,
+    old: &serde_json::Value,
+    unresolved: &serde_json::Value,
+    old_name: &str,
+    snapshot: &crate::next::reader::SystemSnapshot,
+    table: &Table,
+) -> TestResult {
+    use crate::next::preset::{Preset, Theme as NextTheme};
+
     // 0.7.2 applies neither the motion setting nor the text scale to the theme: the theme is
     // resolved with both at their defaults and the animation scale unset, and the settings are
     // compared through their own rows (spec §8, "The KDE part", *Context*).
@@ -1510,11 +1540,11 @@ fn reader_parity_on(
     let new = theme.resolve(&context);
     let with_context = |row: RowContext| theme.resolve(&row.applied_to(&context));
     let extra = compare::Extra {
-        unresolved: Some(&unresolved),
+        unresolved: Some(unresolved),
         with_context: Some(&with_context),
     };
     let report = compare::compare(
-        &old,
+        old,
         &new,
         Some(&snapshot.context),
         Preset::KdeBreeze,
@@ -1555,7 +1585,55 @@ fn reader_parity_on(
             );
         }
     }
-    Ok(old)
+    Ok(())
+}
+
+/// The live check of plan `M3`, gate item 3: the theme from the live KDE desktop through the 0.7.2 path
+/// (the reader 0.7.2's `from_system` chooses, its theme merged over `kde-breeze` as its pipeline merges
+/// it) and through the 0.8.0 path (`Theme::from_system`), compared as [`reader_parity_kde`] compares a
+/// fixture's. It prints the comparator's report and the 0.8.0 reader's diagnostics, and fails where the
+/// two differ. Run on the maintainer's KDE desktop:
+/// `cargo nextest run -p native-theme --features kde,portal live_system_parity_kde --run-ignored only --no-capture`.
+#[cfg(all(target_os = "linux", feature = "kde"))]
+#[test]
+#[ignore = "reads the live KDE desktop: the live check of plan M3"]
+fn live_system_parity_kde() -> TestResult {
+    use crate::next::preset::{Preset, Theme as NextTheme};
+    use crate::next::reader::SystemSnapshot;
+
+    let table: Table = toml::from_str(HOMES)?;
+    let selected = pollster::block_on(crate::pipeline::select_reader())
+        .ok_or("0.7.2 chooses no reader on this desktop")?;
+    if selected.preset != PRESET {
+        return Err(format!("0.7.2 chooses the preset {}, not {PRESET}", selected.preset).into());
+    }
+    let result = pollster::block_on(selected.reader.read())?;
+    let reader = result
+        .output
+        .to_theme(&result.name, result.icon_set, &result.layout);
+    let (old, unresolved) =
+        old_merged_reader(&reader, result.output.mode(), &result.accessibility)?;
+    let theme = NextTheme::from_system()?;
+    println!("0.8.0 diagnostics: {:?}", theme.diagnostics());
+    assert_eq!(theme.preset_id(), Preset::KdeBreeze);
+    let overrides = theme
+        .system_overrides()
+        .ok_or("the theme from the system has no system settings")?;
+    let snapshot = SystemSnapshot::new(
+        theme.preset_id(),
+        theme.context().clone(),
+        overrides.clone(),
+    );
+    assert_reader_parity(
+        "the live desktop",
+        &old,
+        &unresolved,
+        &result.name,
+        &snapshot,
+        &table,
+    )?;
+    println!("the live desktop: equal through the 0.7.2 and the 0.8.0 path");
+    Ok(())
 }
 
 /// Reader parity on kdeglobals texts that move off their defaults the settings no fixture
