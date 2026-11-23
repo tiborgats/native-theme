@@ -1549,8 +1549,14 @@ fn the_toolbar_is_the_models_toolbar(cx: &mut TestAppContext) {
     for preset in ["kde-breeze", "adwaita"] {
         use_preset(&mut cx, &showcase, preset);
         let model = read(&mut cx, &showcase, |_this, cx| {
-            crate::support::old_native(cx)
-                .map(|n| (n.resolved.toolbar.bar_height, n.resolved.toolbar.item_gap))
+            crate::support::next_value(cx, |r| {
+                (
+                    r.toolbar
+                        .bar(native_theme::next::WidgetState::NONE)
+                        .min_size[1],
+                    r.toolbar.item_gap,
+                )
+            })
         });
         assert!(
             model.is_some(),
@@ -5657,9 +5663,11 @@ fn a_panel_toggle_the_set_has_no_icon_for_is_labelled(cx: &mut TestAppContext) {
         // Padded by the theme's button padding where it states a side, and
         // by the Small Button's own `px_2` where not (demo::tool_button_box).
         let sides = cx.update(|_, cx| {
-            native_value(cx, |n| {
-                let p = &n.resolved.button.border.padding;
-                (p.left, p.right)
+            crate::support::next_value(cx, |r| {
+                let [_, right, _, left] = native_theme_gpui::next::padding_of(
+                    &r.button.body(native_theme::next::WidgetState::NONE),
+                );
+                (left, right)
             })
         });
         let upstream = cx.update(|window, _| rems(0.5).to_pixels(window.rem_size()));
@@ -11074,29 +11082,37 @@ fn a_menu_title_takes_the_bars_fills_and_padding(cx: &mut TestAppContext) {
     click(&mut cx, title);
 }
 
-/// Where `defaults.border.line_width` is 0, no row is outlined under the
-/// pointer, whatever the theme's outline colours: under kde-breeze light,
-/// which states `menu.hover_border_color` and `list.hover_border_color`,
-/// with the width set to 0, the Theme menu's System row (`MenuLook::of`),
-/// the Overlays page's first menu row, the Basic List's first row
-/// (`list_hover_edge`) and the Basic table's first row (`files_table`),
-/// each hovered, draw no outline, each filled with its hover fill
-/// (`menu.hover_background`, `list.hover_background`), so the pointer is
-/// on it.
+/// Where the hovered row's outline is 0 wide, no row is outlined under the
+/// pointer, whatever its colour: under kde-breeze light, which outlines a
+/// hovered menu row (`menu.item(HOVER).stroke`) and a hovered list row
+/// (`list.highlight(HOVER).stroke`), the Theme menu's System row
+/// (`MenuLook::next_of`), the Overlays page's first menu row
+/// (`MenuRowsPaint::of`) and the Basic List's first row (`list_hover_edge`),
+/// each hovered, draw an outline; with both strokes patched to 0 wide in
+/// their own colours, each draws none, filled as before, so the pointer is
+/// on it. The Basic table (`files_table`) still reads the 0.7.2 theme.
 #[gpui::test]
 fn no_row_is_outlined_where_the_line_width_is_0(cx: &mut TestAppContext) {
-    use crate::info::stated;
+    use native_theme::next::{ListRule, MenuRule, PartPatch, Stroke, ThemePatch, WidgetState};
+    use native_theme_gpui::next::state_stroke_color_of;
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     use_light_preset(&mut cx, &showcase, "kde-breeze");
-    let mut r = resolved_theme(&mut cx, &showcase);
+    let r = next_theme(&mut cx, &showcase);
+    assert!(r.is_some(), "no 0.8.0 theme is installed");
+    let Some(mut r) = r else { return };
+    let to_model = |c: gpui::Hsla| {
+        let c = gpui::Rgba::from(c);
+        native_theme::next::Color::new(c.r, c.g, c.b, c.a)
+    };
+    let menu_edge = state_stroke_color_of(&r.menu.item(WidgetState::HOVER)).map(to_model);
+    let list_edge = state_stroke_color_of(&r.list.highlight(WidgetState::HOVER)).map(to_model);
     assert!(
-        r.menu.hover_border_color.is_some() && r.list.hover_border_color.is_some(),
-        "kde-breeze light no longer states the menu's and the list's hover outlines, which this test clears the width of"
+        menu_edge.is_some() && list_edge.is_some(),
+        "kde-breeze light no longer outlines its hovered menu and list rows, which this test clears the width of"
     );
-    r.defaults.border.line_width = 0.;
-    install_breeze_light(&mut cx, &r);
-    let menu_hover = Some(stated(r.menu.hover_background));
-    let list_hover = Some(stated(r.list.hover_background));
+    let (Some(menu_edge), Some(list_edge)) = (menu_edge, list_edge) else {
+        return;
+    };
     let far = point(px(1200.), px(8900.));
     let hovered = |cx: &mut VisualTestContext, row: &'static str| {
         hover(cx, far);
@@ -11106,26 +11122,48 @@ fn no_row_is_outlined_where_the_line_width_is_0(cx: &mut TestAppContext) {
         draw(cx);
         (painted_fill(cx, row), last_edge_inside(cx, row))
     };
-    open_menu(&mut cx, &showcase, "theme");
-    assert_eq!(
-        hovered(&mut cx, "menu-row-System"),
-        (menu_hover, None),
-        "the hovered System row is not filled with menu.hover_background, or is outlined at a line width of 0"
+    let drawn = |cx: &mut VisualTestContext| {
+        let mut rows = Vec::new();
+        open_menu(cx, &showcase, "theme");
+        rows.push(("menu-row-System", hovered(cx, "menu-row-System")));
+        cx.simulate_keystrokes("escape");
+        cx.run_until_parked();
+        show(cx, &showcase, Page::Overlays);
+        rows.push((
+            "overlays-menu-row-undo",
+            hovered(cx, "overlays-menu-row-undo"),
+        ));
+        show(cx, &showcase, Page::Basic);
+        rows.push(("basic-list-row-0", hovered(cx, "basic-list-row-0")));
+        rows
+    };
+    let outlined = drawn(&mut cx);
+    for (row, (fill, edge)) in &outlined {
+        assert!(
+            fill.is_some() && edge.is_some(),
+            "{row} under the pointer under kde-breeze light is not filled or not outlined, so the patched case proves nothing: {fill:?}, {edge:?}"
+        );
+    }
+    r.apply_patch(
+        &ThemePatch::new()
+            .menu(
+                MenuRule::new()
+                    .states(WidgetState::HOVER)
+                    .item(PartPatch::new().stroke(Stroke::uniform(0., menu_edge))),
+            )
+            .list(
+                ListRule::new()
+                    .states(WidgetState::HOVER)
+                    .highlight(PartPatch::new().stroke(Stroke::uniform(0., list_edge))),
+            ),
     );
-    cx.simulate_keystrokes("escape");
-    cx.run_until_parked();
-    show(&mut cx, &showcase, Page::Overlays);
-    assert_eq!(
-        hovered(&mut cx, "overlays-menu-row-undo"),
-        (menu_hover, None),
-        "the Overlays page's hovered first menu row is not filled with menu.hover_background, or is outlined at a line width of 0"
-    );
-    show(&mut cx, &showcase, Page::Basic);
-    for row in ["basic-list-row-0", "basic-table-row-0"] {
+    install_next(&mut cx, &r);
+    let unlined = drawn(&mut cx);
+    for ((row, (fill, _)), (_, after)) in outlined.iter().zip(&unlined) {
         assert_eq!(
-            hovered(&mut cx, row),
-            (list_hover, None),
-            "{row} under the pointer is not filled with list.hover_background, or is outlined at a line width of 0"
+            *after,
+            (*fill, None),
+            "{row} under the pointer is not filled as before, or is outlined at a width of 0"
         );
     }
 }
@@ -12872,9 +12910,10 @@ fn the_menu_popups_rows_are_refined_as_geometry_menu_item() {
 /// panel's labels, the tab rows' labels without `widgets`, the segments, the
 /// native expander's titles and the Basic table's cells) takes the font as
 /// the connector's `with_text` sets it (M9-013, M9-040): family, size,
-/// weight and style as `geometry::menu_item` sets `menu.font`, and its line
-/// box, the scaled size by `defaults.line_height`, read from a fixture whose
-/// font is italic in a family other than the window's.
+/// weight and style as `geometry::table` sets `list.item_font`, the Basic
+/// table cells' font, and its line box, the scaled size by
+/// `defaults.line_height`, read from a fixture whose font is italic in a
+/// family other than the window's.
 #[test]
 fn a_label_in_a_widgets_font_takes_it_as_with_text_does() {
     use native_theme_gpui::Native;
@@ -12892,8 +12931,8 @@ fn a_label_in_a_widgets_font_takes_it_as_with_text_does() {
         family, resolved.defaults.font.family,
         "kde-breeze's mono family is now the window's, which this test needs apart"
     );
-    resolved.menu.font.family = family;
-    resolved.menu.font.style = native_theme::theme::FontStyle::Italic;
+    resolved.list.item_font.family = family;
+    resolved.list.item_font.style = native_theme::theme::FontStyle::Italic;
     let line_height = resolved.defaults.line_height;
     for scale in [1.0, 2.0] {
         let mut prefs = native_theme_gpui::AccessibilityPreferences::default();
@@ -12902,8 +12941,8 @@ fn a_label_in_a_widgets_font_takes_it_as_with_text_does() {
             resolved: &resolved,
             accessibility: &prefs,
         };
-        let expected = geometry::menu_item(n).text;
-        let mut label = crate::demo::text_in(&n, &resolved.menu.font, "label");
+        let expected = geometry::table(n).text;
+        let mut label = crate::demo::text_in(&n, &resolved.list.item_font, "label");
         let text = label.style().text.clone();
         assert_eq!(
             (
@@ -12930,7 +12969,7 @@ fn a_label_in_a_widgets_font_takes_it_as_with_text_does() {
             Some(gpui::relative(line_height)),
             "with_text no longer sets defaults.line_height as a fraction of the size"
         );
-        let size = native_theme_gpui::scaled_text_size(resolved.menu.font.size, &prefs);
+        let size = native_theme_gpui::scaled_text_size(resolved.list.item_font.size, &prefs);
         assert_eq!(
             text.line_height,
             Some(px(size * line_height).into()),
@@ -12941,7 +12980,8 @@ fn a_label_in_a_widgets_font_takes_it_as_with_text_does() {
 
 /// `demo::text_in` maps every `FontStyle` to gpui's as the connector's own
 /// `font_style` does (native-theme-gpui `src/lib.rs`, private to the crate),
-/// read through `geometry::menu_item`, which applies it.
+/// read through `geometry::table`, which applies it to `list.item_font`, the
+/// Basic table cells' font.
 #[test]
 fn text_ins_style_is_the_connectors_on_every_font_style() {
     use native_theme::theme::FontStyle;
@@ -12957,13 +12997,13 @@ fn text_ins_style_is_the_connectors_on_every_font_style() {
     let Some(mut resolved) = resolved else { return };
     let prefs = native_theme_gpui::AccessibilityPreferences::default();
     for style in [FontStyle::Normal, FontStyle::Italic, FontStyle::Oblique] {
-        resolved.menu.font.style = style;
+        resolved.list.item_font.style = style;
         let n = Native {
             resolved: &resolved,
             accessibility: &prefs,
         };
-        let connector = geometry::menu_item(n).text.font_style;
-        let mut label = crate::demo::text_in(&n, &resolved.menu.font, "label");
+        let connector = geometry::table(n).text.font_style;
+        let mut label = crate::demo::text_in(&n, &resolved.list.item_font, "label");
         assert_eq!(
             label.style().text.font_style,
             connector,
@@ -15884,7 +15924,7 @@ fn the_toolbar_items_are_spaced_where_the_theme_states_no_gap(cx: &mut TestAppCo
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     use_preset_with_palette(&mut cx, &showcase, "ios-13", "nord");
     let item_gap = read(&mut cx, &showcase, |_, cx| {
-        crate::support::old_native(cx).map(|n| n.resolved.toolbar.item_gap)
+        crate::support::next_value(cx, |r| r.toolbar.item_gap)
     });
     let widget_gap = next_layout_metric(&mut cx, &showcase, next::geometry::widget_gap);
     assert_eq!(
@@ -21336,32 +21376,36 @@ fn the_tab_and_side_panel_labels_name_their_homes_or_upstreams() {
 }
 
 /// The Basic page's icon buttons claim no edge at rest (review of M9a T7):
-/// they are toolbar buttons the showcase gives only `button.border`'s radius
-/// and padding (`demo::tool_box_of`), not `geometry::button`, and upstream
-/// gives a custom variant no border width. Under kde-breeze light, which
-/// states the toolbar's outline, the Copy button claims one edge, the
-/// outline under the pointer and while pressed, `geometry::toolbar_button_rest`'s
-/// border in `toolbar.button_hover_border_color`; under windows-11 light,
-/// which states none, it claims no edge. Both edge a Button `geometry::button`
-/// refines (`button.border.line_width` above 0), and under both no config
-/// line names `geometry::button`.
+/// they are toolbar buttons the showcase gives only `button.body(NONE)`'s
+/// radius and padding (`demo::tool_box_of`), not `geometry::button`, and
+/// upstream gives a custom variant no border width. Under kde-breeze light,
+/// which states the toolbar's outline, the Copy button claims one edge, the
+/// outline under the pointer and while pressed,
+/// `next::geometry::toolbar_button_rest`'s border in
+/// `toolbar.button(HOVER).stroke.color`; under windows-11 light, which states
+/// none, it claims no edge. Both edge a Button `geometry::button` refines
+/// (`button.body(NONE).stroke.width` above 0), and under both no config line
+/// names `geometry::button`.
 #[gpui::test]
 fn the_basic_pages_icon_buttons_claim_no_edge_at_rest(cx: &mut TestAppContext) {
-    use crate::info::stated;
+    use native_theme::next::WidgetState;
+    use native_theme_gpui::next::{state_stroke_color_of, stroke_width_of};
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     for preset in ["kde-breeze", "windows-11"] {
         use_light_preset(&mut cx, &showcase, preset);
         show(&mut cx, &showcase, Page::Basic);
-        let r = resolved_theme(&mut cx, &showcase);
+        let r = next_theme(&mut cx, &showcase);
+        assert!(r.is_some(), "{preset}: no 0.8.0 theme is installed");
+        let Some(r) = r else { return };
         assert!(
-            r.button.border.line_width > 0.0,
+            stroke_width_of(&r.button.body(WidgetState::NONE)).is_some_and(|w| w > 0.0),
             "{preset} no longer edges its buttons, so this test cannot tell an edge claim from none"
         );
-        let outline = r.toolbar.button_hover_border_color.map(stated);
+        let outline = state_stroke_color_of(&r.toolbar.button(WidgetState::HOVER));
         assert_eq!(
             outline.is_some(),
             preset == "kde-breeze",
-            "{preset}: toolbar.button_hover_border_color is stated by kde-breeze alone"
+            "{preset}: toolbar.button(HOVER).stroke.color is stated by kde-breeze alone"
         );
         let info = settle_on(&mut cx, &showcase, "basic-icon-copy");
         assert!(
@@ -21379,7 +21423,7 @@ fn the_basic_pages_icon_buttons_claim_no_edge_at_rest(cx: &mut TestAppContext) {
             .map(|outline| {
                 (
                     "border, hovered or pressed",
-                    "button_hover_border_color",
+                    "toolbar.button(HOVER).stroke.color",
                     outline,
                 )
             })
@@ -21399,72 +21443,100 @@ fn the_basic_pages_icon_buttons_claim_no_edge_at_rest(cx: &mut TestAppContext) {
 }
 
 /// A tool button's box keeps its size with the toolbar's outline: under
-/// kde-breeze light, which states `toolbar.button_hover_border_color`, the
-/// Basic page's Copy button lies where it lies under kde-breeze light with
-/// that leaf cleared, where `geometry::toolbar_button_rest` gives it no
-/// border, since the border's width comes out of its padding. The cleared
-/// theme is kept beside the installed 0.8.0 one, which
-/// `geometry::toolbar_button_rest` does not read yet, so both boxes are laid
-/// out under one label font.
+/// windows-11 light, which states no `toolbar.button(HOVER).stroke.color`,
+/// so `next::geometry::toolbar_button_rest` gives the Basic page's Copy
+/// button no border, the button lies where it lies under windows-11 light
+/// with that outline patched in at `button.body(NONE).stroke.width`, since
+/// the border's width comes out of its padding.
 #[gpui::test]
 fn a_tool_buttons_box_keeps_its_size_with_the_outline(cx: &mut TestAppContext) {
+    use native_theme::next::{PartPatch, Stroke, ThemePatch, ToolbarRule, WidgetState};
+    use native_theme_gpui::next::{padding_of, state_stroke_color_of, stroke_width_of};
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
-    use_light_preset(&mut cx, &showcase, "kde-breeze");
+    use_light_preset(&mut cx, &showcase, "windows-11");
     show(&mut cx, &showcase, Page::Basic);
-    let mut r = resolved_theme(&mut cx, &showcase);
+    let r = next_theme(&mut cx, &showcase);
+    assert!(r.is_some(), "no 0.8.0 theme is installed");
+    let Some(mut r) = r else { return };
+    let body = r.button.body(WidgetState::NONE);
+    let width = stroke_width_of(&body).filter(|&w| w > 0.0);
+    assert!(width.is_some(), "windows-11 no longer edges its buttons");
+    let Some(width) = width else { return };
     assert!(
-        r.toolbar.button_hover_border_color.is_some() && r.button.border.line_width > 0.0,
-        "kde-breeze no longer outlines its toolbar buttons, so this test proves nothing"
+        state_stroke_color_of(&r.toolbar.button(WidgetState::HOVER)).is_none()
+            && padding_of(&body)
+                .iter()
+                .all(|side| side.is_some_and(|v| v >= width)),
+        "windows-11 now outlines its toolbar buttons, or pads a side by less than the edge, so this test proves nothing"
     );
     let rest = |cx: &mut VisualTestContext| {
-        cx.update(|_w, cx| native_geometry(cx, geometry::toolbar_button_rest))
+        cx.update(|_w, cx| {
+            crate::support::next_geometry(
+                cx,
+                native_theme_gpui::next::geometry::toolbar_button_rest,
+            )
+        })
     };
-    let refined = rest(&mut cx);
-    assert!(
-        refined
-            .as_ref()
-            .is_some_and(|s| *s != gpui::StyleRefinement::default()),
-        "geometry::toolbar_button_rest gives the outlined Copy button nothing, so this test compares nothing: {refined:?}"
-    );
-    let button = "basic-icon-copy";
-    let outlined = bounds_of(&mut cx, button);
-    r.toolbar.button_hover_border_color = None;
-    keep_old_beside_next(&mut cx, &r);
-    show(&mut cx, &showcase, Page::Basic);
     assert_eq!(
         rest(&mut cx),
-        Some(gpui::StyleRefinement::default()),
-        "with the toolbar's outline cleared geometry::toolbar_button_rest still refines the Copy button"
+        Some(Ok(gpui::StyleRefinement::default())),
+        "with no outline next::geometry::toolbar_button_rest refines the Copy button"
+    );
+    let button = "basic-icon-copy";
+    let plain = bounds_of(&mut cx, button);
+    let outline = r.colors.window.border;
+    assert!(
+        outline.is_some(),
+        "windows-11 light states no window border colour"
+    );
+    let Some(outline) = outline else { return };
+    r.apply_patch(
+        &ThemePatch::new().toolbar(
+            ToolbarRule::new()
+                .states(WidgetState::HOVER)
+                .button(PartPatch::new().stroke(Stroke::uniform(width, outline))),
+        ),
+    );
+    install_next(&mut cx, &r);
+    show(&mut cx, &showcase, Page::Basic);
+    let refined = rest(&mut cx);
+    assert!(
+        refined.as_ref().is_some_and(|s| s
+            .as_ref()
+            .is_ok_and(|s| *s != gpui::StyleRefinement::default())),
+        "next::geometry::toolbar_button_rest gives the outlined Copy button nothing, so this test compares nothing: {refined:?}"
     );
     assert_eq!(
         bounds_of(&mut cx, button),
-        outlined,
+        plain,
         "the toolbar's outline moved the Copy button's box"
     );
 }
 
 /// A Basic icon button under the pointer is edged in the toolbar's outline,
-/// `toolbar.button_hover_border_color`, under kde-breeze light: with the
+/// `toolbar.button(HOVER).stroke.color`, under kde-breeze light: with the
 /// pointer away no box over the Copy button is edged in it; hovered, the
 /// box over it is, and is not filled (the toolbar's hover fill,
-/// `toolbar.button_hover_background`, is transparent).
+/// `toolbar.button(HOVER).fill`, is transparent).
 #[gpui::test]
 fn a_hovered_tool_button_takes_the_toolbars_outline(cx: &mut TestAppContext) {
-    use crate::info::stated;
+    use native_theme::next::WidgetState;
+    use native_theme_gpui::next::{state_fill_of, state_stroke_color_of, stroke_width_of};
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     use_light_preset(&mut cx, &showcase, "kde-breeze");
     show(&mut cx, &showcase, Page::Basic);
-    let r = resolved_theme(&mut cx, &showcase);
-    let outline = r.toolbar.button_hover_border_color.map(stated);
+    let r = next_theme(&mut cx, &showcase);
+    assert!(r.is_some(), "no 0.8.0 theme is installed");
+    let Some(r) = r else { return };
+    let outline = state_stroke_color_of(&r.toolbar.button(WidgetState::HOVER));
     assert!(
-        outline.is_some() && r.button.border.line_width > 0.0,
+        outline.is_some()
+            && stroke_width_of(&r.button.body(WidgetState::NONE)).is_some_and(|w| w > 0.0),
         "kde-breeze no longer outlines its toolbar buttons, so this test proves nothing"
     );
     let Some(outline) = outline else { return };
     assert!(
-        r.toolbar
-            .button_hover_background
-            .is_some_and(|fill| fill.a == 0),
+        state_fill_of(&r.toolbar.button(WidgetState::HOVER)).is_some_and(|fill| fill.a == 0.),
         "kde-breeze's toolbar hover fill is no longer transparent, which this test reads"
     );
     let button = "basic-icon-copy";
@@ -21485,7 +21557,7 @@ fn a_hovered_tool_button_takes_the_toolbars_outline(cx: &mut TestAppContext) {
     assert_eq!(
         over_the_button(&mut cx),
         0,
-        "a tool button at rest is edged in toolbar.button_hover_border_color"
+        "a tool button at rest is edged in toolbar.button(HOVER).stroke.color"
     );
     let at = bounds_of(&mut cx, button).center();
     hover(&mut cx, at);
@@ -21493,7 +21565,7 @@ fn a_hovered_tool_button_takes_the_toolbars_outline(cx: &mut TestAppContext) {
     assert_eq!(
         painted_edge(&mut cx, button),
         Some(outline),
-        "a hovered tool button is not edged in toolbar.button_hover_border_color"
+        "a hovered tool button is not edged in toolbar.button(HOVER).stroke.color"
     );
     assert_eq!(
         painted_fill(&mut cx, button),
@@ -21504,8 +21576,8 @@ fn a_hovered_tool_button_takes_the_toolbars_outline(cx: &mut TestAppContext) {
 
 /// The Basic page's edit-mode switch is checked at start and a click
 /// switches it: under kde-breeze light and windows-11 light it is filled
-/// with `toolbar.button_checked_background` and its info, titled a checked
-/// toolbar Button, claims `button.checked_text_color` as the checked text
+/// with `toolbar.button(CHECKED).fill` and its info, titled a checked
+/// toolbar Button, claims `button.label(CHECKED).color` as the checked text
 /// and no colour but the checked fill and text, and the checked pen where
 /// the theme states it with the toolbar's outline (kde-breeze) (upstream
 /// paints no hover or press on a selected Button); a click turns it off, and with the pointer
@@ -21517,16 +21589,21 @@ fn a_hovered_tool_button_takes_the_toolbars_outline(cx: &mut TestAppContext) {
 /// variant's text.
 #[gpui::test]
 fn the_basic_edit_button_is_checked_and_switches(cx: &mut TestAppContext) {
-    use crate::info::stated;
+    use native_theme::next::WidgetState;
+    use native_theme_gpui::next::{
+        state_fill_of, state_stroke_color_of, state_text_color_of, stroke_width_of,
+    };
     let button = "basic-icon-edit";
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     let away = point(px(4.), px(4.));
     for preset in ["kde-breeze", "windows-11"] {
         use_light_preset(&mut cx, &showcase, preset);
         show(&mut cx, &showcase, Page::Basic);
-        let r = resolved_theme(&mut cx, &showcase);
-        let fill = r.toolbar.button_checked_background.map(stated);
-        let text = r.button.checked_text_color.map(stated);
+        let r = next_theme(&mut cx, &showcase);
+        assert!(r.is_some(), "{preset}: no 0.8.0 theme is installed");
+        let Some(r) = r else { return };
+        let fill = state_fill_of(&r.toolbar.button(WidgetState::CHECKED));
+        let text = state_text_color_of(&r.button.label(WidgetState::CHECKED));
         assert!(
             fill.is_some() && text.is_some(),
             "{preset} no longer states the checked toolbar fill and text, so this test proves nothing"
@@ -21540,14 +21617,14 @@ fn the_basic_edit_button_is_checked_and_switches(cx: &mut TestAppContext) {
         assert_eq!(
             painted_fill(&mut cx, button),
             fill,
-            "{preset}: the checked edit button is not filled with toolbar.button_checked_background"
+            "{preset}: the checked edit button is not filled with toolbar.button(CHECKED).fill"
         );
         let info = settle_on(&mut cx, &showcase, button);
         assert_eq!(
             info.as_ref()
-                .and_then(|info| claim_of(info, "checked_text_color")),
+                .and_then(|info| claim_of(info, "button.label(CHECKED).color")),
             text,
-            "{preset}: the checked edit button's info does not claim button.checked_text_color: {info:?}"
+            "{preset}: the checked edit button's info does not claim button.label(CHECKED).color: {info:?}"
         );
         assert!(
             info.as_ref().is_some_and(|info| {
@@ -21561,9 +21638,9 @@ fn the_basic_edit_button_is_checked_and_switches(cx: &mut TestAppContext) {
             .map(|info| info.colors.iter().map(|c| c.role).collect())
             .unwrap_or_default();
         roles.sort_unstable();
-        let pen = r.toolbar.button_checked_border_color.is_some()
-            && r.toolbar.button_hover_border_color.is_some()
-            && r.button.border.line_width > 0.0;
+        let pen = state_stroke_color_of(&r.toolbar.button(WidgetState::CHECKED)).is_some()
+            && state_stroke_color_of(&r.toolbar.button(WidgetState::HOVER)).is_some()
+            && stroke_width_of(&r.button.body(WidgetState::NONE)).is_some_and(|w| w > 0.0);
         assert_eq!(
             pen,
             preset == "kde-breeze",
@@ -21622,18 +21699,20 @@ fn the_basic_edit_button_is_checked_and_switches(cx: &mut TestAppContext) {
         assert_eq!(
             painted_fill(&mut cx, button),
             fill,
-            "{preset}: the edit button checked again is not filled with toolbar.button_checked_background"
+            "{preset}: the edit button checked again is not filled with toolbar.button(CHECKED).fill"
         );
     }
 
     use_light_preset(&mut cx, &showcase, "macos-tahoe");
     show(&mut cx, &showcase, Page::Basic);
-    let r = resolved_theme(&mut cx, &showcase);
+    let r = next_theme(&mut cx, &showcase);
+    assert!(r.is_some(), "macos-tahoe: no 0.8.0 theme is installed");
+    let Some(r) = r else { return };
     assert!(
-        r.toolbar.button_checked_background.is_none()
-            && r.toolbar.button_active_background.is_none()
-            && r.button.active_background.is_none(),
-        "macos-tahoe now states a fill toolbar_button_checked takes, so this part proves nothing"
+        state_fill_of(&r.toolbar.button(WidgetState::CHECKED)).is_none()
+            && state_fill_of(&r.toolbar.button(WidgetState::PRESSED)).is_none()
+            && state_fill_of(&r.button.body(WidgetState::PRESSED)).is_none(),
+        "macos-tahoe now states a fill next::geometry::toolbar_button_checked takes, so this part proves nothing"
     );
     assert!(read(&mut cx, &showcase, |this, _| this.basic_edit));
     hover(&mut cx, away);
@@ -22400,22 +22479,26 @@ fn words(text: &str) -> std::collections::BTreeSet<&str> {
         .collect()
 }
 
-/// Under a theme that states `button.border.padding`, the toolbar's buttons
-/// and the status bar's toggle are that padding round their icon, with no
-/// fixed height where a top or bottom side is stated, and rounded by
-/// `button.border.corner_radius` (`demo::tool_box_of`): their info names
+/// Under a theme that states `button.body(NONE)`'s padding, the toolbar's
+/// buttons and the status bar's toggle are that padding round their icon,
+/// with no fixed height where a top or bottom side is stated, and rounded by
+/// `button.body(NONE).corners` (`demo::tool_box_of`): their info names
 /// upstream's height (`h_8`, `h_6`) and side padding (`px_2p5`, `px_2`) only
 /// for what the theme leaves unstated (M9-035).
 #[gpui::test]
 fn the_tool_buttons_info_names_upstreams_size_only_where_unstated(cx: &mut TestAppContext) {
+    use native_theme::next::WidgetState;
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     use_preset(&mut cx, &showcase, "adwaita");
-    let padding = cx.update(|_window, cx| native_value(cx, |n| n.resolved.button.border.padding));
+    let padding = next_theme(&mut cx, &showcase)
+        .map(|r| native_theme_gpui::next::padding_of(&r.button.body(WidgetState::NONE)));
     assert!(
-        padding.is_some_and(|p| p.top.is_some() || p.bottom.is_some()),
-        "adwaita states no vertical button.border.padding side, which this test needs: {padding:?}"
+        padding.is_some_and(|[top, _, bottom, _]| top.is_some() || bottom.is_some()),
+        "adwaita states no vertical button.body(NONE) padding side, which this test needs: {padding:?}"
     );
-    let Some(p) = padding else { return };
+    let Some([top, right, bottom, left]) = padding else {
+        return;
+    };
     for (selector, height, across) in [
         (CHROME_TOOLBAR_PALETTE, "h_8", "px_2p5"),
         (CHROME_SIDE_PANEL_TOGGLE, "h_6", "px_2"),
@@ -22427,34 +22510,39 @@ fn the_tool_buttons_info_names_upstreams_size_only_where_unstated(cx: &mut TestA
             text.starts_with("Button"),
             "{selector} shows another widget's info: {text}"
         );
+        let p = [top, right, bottom, left];
         assert_eq!(
             said.contains(height),
-            p.top.is_none() && p.bottom.is_none(),
+            top.is_none() && bottom.is_none(),
             "{selector}: upstream's {height} is named against the stated padding {p:?}:\n{text}"
         );
         assert_eq!(
             said.contains(across),
-            p.left.is_none() || p.right.is_none(),
+            left.is_none() || right.is_none(),
             "{selector}: upstream's {across} is named against the stated padding {p:?}:\n{text}"
         );
         assert!(
-            text.contains("button.border.padding") && text.contains("button.border.corner_radius"),
-            "{selector}: the info does not name button.border.padding and corner_radius:\n{text}"
+            text.contains("button.body(NONE).padding")
+                && text.contains("button.body(NONE).corners"),
+            "{selector}: the info does not name button.body(NONE)'s padding and corners:\n{text}"
         );
     }
 }
 
-/// The tool buttons' size notes under every bundled preset in both modes,
-/// and with no native theme: upstream's height where no top or bottom side
-/// of `button.border.padding` is stated, its side padding where a left or
-/// right one is not, `button.border.corner_radius` and the stated sides
-/// named wherever a native theme is installed (M9-035) -- for the toolbar's
+/// The tool buttons' size notes under every 0.8.0 preset in both schemes,
+/// and with no native theme: upstream's height where no top or bottom
+/// padding side of `button.body(NONE)` is stated, its side padding where a
+/// left or right one is not, `button.body(NONE).corners` (or the Theme's
+/// radius where it states none gpui can draw) and the stated sides named
+/// wherever a native theme is installed (M9-035) -- for the toolbar's
 /// buttons, the status bar's toggle, the Buttons page's toolbar items and
 /// the Basic page's icon buttons, which `demo::tool_box_of` sizes alike.
 #[test]
 fn every_tool_buttons_size_note_follows_the_stated_padding() {
+    use native_theme::next::WidgetState;
+    use native_theme_gpui::next::{padding_of, radius_of};
     let icon = ChromeIcon::Builtin("Search".into());
-    let infos = |t: &Theme, native: Option<&native_theme_gpui::ResolvedTheme>| {
+    let infos = |t: &Theme, native: Option<&native_theme::next::ResolvedTheme>| {
         [
             (
                 "toolbar button",
@@ -22481,7 +22569,7 @@ fn every_tool_buttons_size_note_follows_the_stated_padding() {
                     },
                     false,
                     None,
-                    native.map(|r| &r.button),
+                    native,
                 ),
             ),
             (
@@ -22498,40 +22586,45 @@ fn every_tool_buttons_size_note_follows_the_stated_padding() {
             ),
         ]
     };
-    let variants = every_bundled_variant();
+    let variants = every_next_variant();
     for (name, r, t) in &variants {
-        let p = r.button.border.padding;
+        let body = r.button.body(WidgetState::NONE);
+        let p = padding_of(&body);
+        let [top, right, bottom, left] = p;
         for (which, height, across, info) in infos(t, Some(r)) {
             let text = info.to_text();
             let said = words(&text);
             assert_eq!(
                 said.contains(height),
-                p.top.is_none() && p.bottom.is_none(),
+                top.is_none() && bottom.is_none(),
                 "{name}: the {which}'s info names {height} against {p:?}:\n{text}"
             );
             assert_eq!(
                 said.contains(across),
-                p.left.is_none() || p.right.is_none(),
+                left.is_none() || right.is_none(),
                 "{name}: the {which}'s info names {across} against {p:?}:\n{text}"
             );
-            let corners = format!(
-                "button.border.corner_radius, {}px",
-                crate::info::px_text(r.button.border.corner_radius.max(0.))
-            );
+            let corners = match radius_of(&body) {
+                Some(radius) => format!(
+                    "button.body(NONE).corners, {}px",
+                    crate::info::px_text(radius.max(0.))
+                ),
+                None => "the Theme's radius upstream rounds a Button by".to_string(),
+            };
             assert!(
                 text.contains(&corners),
                 "{name}: the {which}'s info does not round it by {corners}:\n{text}"
             );
             for (side, v) in [
-                ("top", p.top),
-                ("right", p.right),
-                ("bottom", p.bottom),
-                ("left", p.left),
+                ("top", top),
+                ("right", right),
+                ("bottom", bottom),
+                ("left", left),
             ] {
                 if let Some(v) = v {
                     let stated = format!("{side} {}px", crate::info::px_text(v));
                     assert!(
-                        text.contains("button.border.padding") && text.contains(&stated),
+                        text.contains("button.body(NONE).padding") && text.contains(&stated),
                         "{name}: the {which}'s info does not name the stated {stated}:\n{text}"
                     );
                 }
@@ -22781,18 +22874,22 @@ fn the_outward_corner_routes_name_what_draws_them() {
     }
 }
 
-/// The shapes of `button.border.padding` no bundled preset states, spliced
-/// into one: across only (upstream's height stays), up and down only (its
-/// side padding stays), one vertical side (the other none, under no fixed
-/// height), and one horizontal side (upstream's side padding on the other).
-/// Each tool button's size note says what `demo::tool_box_of` leaves of
-/// upstream's, and no more (M9-035).
+/// The shapes of `button.body(NONE)`'s padding no bundled preset states,
+/// each given to the size note as the box a theme states
+/// (`info::buttons::ToolBox`; a patch states all four sides at once): across
+/// only (upstream's height stays), up and down only (its side padding
+/// stays), one vertical side (the other none, under no fixed height), and
+/// one horizontal side (upstream's side padding on the other). Each tool
+/// button's size note says what `demo::tool_box_of` leaves of upstream's,
+/// and no more (M9-035).
 #[test]
 fn a_partly_stated_tool_button_padding_leaves_upstream_the_rest() {
-    let variants = every_bundled_variant();
-    let Some((name, r, t)) = variants.first() else {
+    use crate::info::buttons::{ToolBox, ToolSize, tool_box_size};
+    let variants = every_next_variant();
+    let Some((name, r, _)) = variants.first() else {
         return;
     };
+    let radius = ToolBox::of(r).radius;
     // One spliced padding, [top, right, bottom, left], and the words the
     // size note holds, those the info does not hold, and what the radius
     // and padding line says.
@@ -22849,18 +22946,19 @@ fn a_partly_stated_tool_button_padding_leaves_upstream_the_rest() {
     ];
     for Shape {
         name: shape,
-        sides: [top, right, bottom, left],
+        sides,
         said,
         unsaid,
         config,
     } in shapes
     {
-        let mut theme = r.clone();
-        theme.button.border.padding.top = top;
-        theme.button.border.padding.right = right;
-        theme.button.border.padding.bottom = bottom;
-        theme.button.border.padding.left = left;
-        let info = crate::info::buttons::icon_button(t, true, None, Some(&theme));
+        let info = tool_box_size(
+            WidgetInfo::new("Button"),
+            ToolSize::Medium,
+            true,
+            Some(ToolBox { sides, radius }),
+            None,
+        );
         let note = shown_note(Some(&info), "size");
         let note_words = note.as_deref().map(words).unwrap_or_default();
         assert_eq!(

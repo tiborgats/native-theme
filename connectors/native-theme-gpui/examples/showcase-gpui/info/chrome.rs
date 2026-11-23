@@ -5,7 +5,7 @@ use std::time::Duration;
 use gpui::Pixels;
 use gpui_component::{Colorize as _, theme::Theme};
 use native_theme::next::{ResolvedTheme as NextTheme, WidgetState};
-use native_theme::theme::{ResolvedButtonTheme, ResolvedPadding};
+use native_theme::theme::ResolvedPadding;
 use native_theme_gpui::ResolvedTheme;
 use native_theme_gpui::next::{self, fill_of, state_fill_of, state_text_color_of, text_color_of};
 
@@ -735,14 +735,15 @@ pub fn toolbar(
 /// `spec.set`, selected while its panel is `spec.open`, which `spec.state`
 /// describes. Its icon-size line is recorded where `demo::panel_toggle`
 /// applies the builder; `tooltip_delay` is the delay its tooltip is given,
-/// the theme's `tooltip.show_delay_ms`; it is sized as
-/// `buttons::tool_button_size` says under `native`'s `button`.
+/// the theme's `timings.tooltip_show_ms`; it is sized as
+/// `buttons::tool_button_size` says under the installed 0.8.0 theme
+/// `native`.
 pub fn panel_toggle(
     t: &Theme,
     spec: &PanelToggle<'_>,
     tooltip_styled: bool,
     tooltip_delay: Option<Duration>,
-    native: Option<&ResolvedButtonTheme>,
+    native: Option<&NextTheme>,
 ) -> WidgetInfo {
     let (icon, set, open) = (&spec.drawn, spec.set, spec.open);
     let drawn = !matches!(icon, ChromeIcon::Missing(_) | ChromeIcon::Unlisted(_));
@@ -1340,9 +1341,10 @@ pub fn icon_set_select(
 /// One of the toolbar's icon Buttons (spec §2.3), running `action` and
 /// showing `icon` of the icon theme named `set`, coloured as
 /// `buttons::native_toolbar` says and sized as `buttons::tool_button_size`
-/// says under `native`'s `button`. Its icon-size line is recorded where
-/// `demo::toolbar_button` applies the builder; `tooltip_delay` is the delay
-/// its tooltip is given, the theme's `tooltip.show_delay_ms`.
+/// says under the installed 0.8.0 theme `native`. Its icon-size line is
+/// recorded where `demo::toolbar_button` applies the builder;
+/// `tooltip_delay` is the delay its tooltip is given, the theme's
+/// `timings.tooltip_show_ms`.
 pub fn toolbar_button(
     t: &Theme,
     action: &'static str,
@@ -1350,7 +1352,7 @@ pub fn toolbar_button(
     set: &str,
     tooltip_styled: bool,
     tooltip_delay: Option<Duration>,
-    native: Option<&ResolvedTheme>,
+    native: Option<&NextTheme>,
 ) -> WidgetInfo {
     let drawn = !matches!(icon, ChromeIcon::Missing(_) | ChromeIcon::Unlisted(_));
     let info = WidgetInfo::new("Button").variant(if drawn {
@@ -1374,7 +1376,7 @@ pub fn toolbar_button(
         info,
         ToolSize::Medium,
         drawn,
-        native.map(|r| &r.button),
+        native,
         super::buttons::rest_border(native),
     )
     .instance(

@@ -166,27 +166,27 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.page_tabs.menu",
         "button.border.corner_radius_px",
-        "gpui: rounds the tool button's box (demo::tool_button_box)",
+        "gpui: button.body(NONE).corners rounds the tool button's box where stated (demo::tool_button_box)",
     ),
     (
         "chrome.page_tabs.menu",
         "button.border.padding_top_px",
-        "gpui: pads the icon, where stated, for the Size's own (demo::tool_button_box)",
+        "gpui: button.body(NONE)'s padding side pads the icon, where stated, for the Size's own (demo::tool_button_box)",
     ),
     (
         "chrome.page_tabs.menu",
         "button.border.padding_right_px",
-        "gpui: pads the icon, where stated, for the Size's own (demo::tool_button_box)",
+        "gpui: button.body(NONE)'s padding side pads the icon, where stated, for the Size's own (demo::tool_button_box)",
     ),
     (
         "chrome.page_tabs.menu",
         "button.border.padding_bottom_px",
-        "gpui: pads the icon, where stated, for the Size's own (demo::tool_button_box)",
+        "gpui: button.body(NONE)'s padding side pads the icon, where stated, for the Size's own (demo::tool_button_box)",
     ),
     (
         "chrome.page_tabs.menu",
         "button.border.padding_left_px",
-        "gpui: pads the icon, where stated, for the Size's own (demo::tool_button_box)",
+        "gpui: button.body(NONE)'s padding side pads the icon, where stated, for the Size's own (demo::tool_button_box)",
     ),
     (
         "chrome.page_tabs.menu",
@@ -207,17 +207,17 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "basic.icons.edit",
         "toolbar.button_checked_background",
-        "gpui: geometry::toolbar_button_checked's bg, over the selected toolbar Button",
+        "gpui: toolbar.button(CHECKED).fill, next::geometry::toolbar_button_checked's bg, over the selected toolbar Button",
     ),
     (
         "basic.icons.edit",
         "button.checked_text_color",
-        "gpui: geometry::toolbar_button_checked's text colour, where the toolbar's checked fill is stated",
+        "gpui: button.label(CHECKED).color, next::geometry::toolbar_button_checked's text colour, where a rule states the toolbar's checked fill, toolbar.button(CHECKED).fill",
     ),
     (
         "basic.icons.edit",
         "toolbar.button_checked_border_color",
-        "gpui: geometry::toolbar_button_checked's border colour, at geometry::toolbar_button_rest's width, kept under the pointer and pressed: a selected Button takes no hover or press style (gpui-component 0.10.0 button/button.rs:733, selected; gpui-component 0.10.0 button/button.rs:758, selected)",
+        "gpui: toolbar.button(CHECKED).stroke.color, next::geometry::toolbar_button_checked's border colour, at next::geometry::toolbar_button_rest's width, kept under the pointer and pressed: a selected Button takes no hover or press style (gpui-component 0.10.0 button/button.rs:733, selected; gpui-component 0.10.0 button/button.rs:758, selected)",
     ),
     (
         "chrome.status_bar.toggle",
@@ -242,12 +242,12 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.toolbar.",
         "button.hover_background",
-        "gpui: variants::toolbar_button's hover where toolbar.button_hover_background is unset, ThemeColor secondary_hover (colors.rs)",
+        "gpui: next::variants::toolbar_button's hover where no rule states toolbar.button(HOVER).fill, ThemeColor secondary_hover (colors.rs)",
     ),
     (
         "basic.icons.",
         "button.hover_background",
-        "gpui: variants::toolbar_button's hover where toolbar.button_hover_background is unset, ThemeColor secondary_hover (colors.rs)",
+        "gpui: next::variants::toolbar_button's hover where no rule states toolbar.button(HOVER).fill, ThemeColor secondary_hover (colors.rs)",
     ),
     (
         "chrome.status_bar.toggle",
@@ -272,127 +272,127 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.toolbar.",
         "button.active_background",
-        "gpui: variants::toolbar_button's active where toolbar.button_active_background is unset, ThemeColor secondary_active (colors.rs)",
+        "gpui: next::variants::toolbar_button's active where no rule states toolbar.button(PRESSED).fill, ThemeColor secondary_active (colors.rs)",
     ),
     (
         "basic.icons.",
         "button.active_background",
-        "gpui: variants::toolbar_button's active where toolbar.button_active_background is unset, ThemeColor secondary_active (colors.rs)",
+        "gpui: next::variants::toolbar_button's active where no rule states toolbar.button(PRESSED).fill, ThemeColor secondary_active (colors.rs)",
     ),
     (
         "chrome.toolbar.",
         "button.border.corner_radius_px",
-        "gpui: rounds the tool button's box (demo::tool_button_box)",
+        "gpui: button.body(NONE).corners rounds the tool button's box where stated (demo::tool_button_box)",
     ),
     (
         "basic.icons.",
         "button.border.corner_radius_px",
-        "gpui: rounds the tool button's box (demo::tool_button_box)",
+        "gpui: button.body(NONE).corners rounds the tool button's box where stated (demo::tool_button_box)",
     ),
     (
         "chrome.status_bar.toggle",
         "button.border.corner_radius_px",
-        "gpui: rounds the tool button's box (demo::tool_button_box)",
+        "gpui: button.body(NONE).corners rounds the tool button's box where stated (demo::tool_button_box)",
     ),
     (
         "chrome.toolbar.",
         "button.border.padding_top_px",
-        "gpui: pads the icon, where stated, for the Size's own (demo::tool_button_box)",
+        "gpui: button.body(NONE)'s padding side pads the icon, where stated, for the Size's own (demo::tool_button_box)",
     ),
     (
         "chrome.toolbar.",
         "button.border.padding_right_px",
-        "gpui: pads the icon, where stated, for the Size's own (demo::tool_button_box)",
+        "gpui: button.body(NONE)'s padding side pads the icon, where stated, for the Size's own (demo::tool_button_box)",
     ),
     (
         "chrome.toolbar.",
         "button.border.padding_bottom_px",
-        "gpui: pads the icon, where stated, for the Size's own (demo::tool_button_box)",
+        "gpui: button.body(NONE)'s padding side pads the icon, where stated, for the Size's own (demo::tool_button_box)",
     ),
     (
         "chrome.toolbar.",
         "button.border.padding_left_px",
-        "gpui: pads the icon, where stated, for the Size's own (demo::tool_button_box)",
+        "gpui: button.body(NONE)'s padding side pads the icon, where stated, for the Size's own (demo::tool_button_box)",
     ),
     (
         "basic.icons.",
         "button.border.padding_top_px",
-        "gpui: pads the icon, where stated, for the Size's own (demo::tool_button_box)",
+        "gpui: button.body(NONE)'s padding side pads the icon, where stated, for the Size's own (demo::tool_button_box)",
     ),
     (
         "basic.icons.",
         "button.border.padding_right_px",
-        "gpui: pads the icon, where stated, for the Size's own (demo::tool_button_box)",
+        "gpui: button.body(NONE)'s padding side pads the icon, where stated, for the Size's own (demo::tool_button_box)",
     ),
     (
         "basic.icons.",
         "button.border.padding_bottom_px",
-        "gpui: pads the icon, where stated, for the Size's own (demo::tool_button_box)",
+        "gpui: button.body(NONE)'s padding side pads the icon, where stated, for the Size's own (demo::tool_button_box)",
     ),
     (
         "basic.icons.",
         "button.border.padding_left_px",
-        "gpui: pads the icon, where stated, for the Size's own (demo::tool_button_box)",
+        "gpui: button.body(NONE)'s padding side pads the icon, where stated, for the Size's own (demo::tool_button_box)",
     ),
     (
         "chrome.toolbar.",
         "button.border.line_width_px",
-        "gpui: geometry::toolbar_button_rest's border width, where toolbar.button_hover_border_color is stated",
+        "gpui: button.body(NONE).stroke.width, next::geometry::toolbar_button_rest's border width, where a rule states toolbar.button(HOVER).stroke.color",
     ),
     (
         "basic.icons.",
         "button.border.line_width_px",
-        "gpui: geometry::toolbar_button_rest's border width, where toolbar.button_hover_border_color is stated",
+        "gpui: button.body(NONE).stroke.width, next::geometry::toolbar_button_rest's border width, where a rule states toolbar.button(HOVER).stroke.color",
     ),
     (
         "chrome.toolbar.",
         "toolbar.button_hover_background",
-        "gpui: variants::toolbar_button's hover",
+        "gpui: toolbar.button(HOVER).fill, next::variants::toolbar_button's hover",
     ),
     (
         "basic.icons.",
         "toolbar.button_hover_background",
-        "gpui: variants::toolbar_button's hover",
+        "gpui: toolbar.button(HOVER).fill, next::variants::toolbar_button's hover",
     ),
     (
         "chrome.toolbar.",
         "toolbar.button_active_background",
-        "gpui: variants::toolbar_button's pressed fill",
+        "gpui: toolbar.button(PRESSED).fill, next::variants::toolbar_button's pressed fill",
     ),
     (
         "basic.icons.",
         "toolbar.button_active_background",
-        "gpui: variants::toolbar_button's pressed fill",
+        "gpui: toolbar.button(PRESSED).fill, next::variants::toolbar_button's pressed fill",
     ),
     (
         "chrome.toolbar.",
         "toolbar.button_hover_border_color",
-        "gpui: variants::toolbar_button's edge under the pointer",
+        "gpui: toolbar.button(HOVER).stroke.color, next::variants::toolbar_button's edge under the pointer",
     ),
     (
         "basic.icons.",
         "toolbar.button_hover_border_color",
-        "gpui: variants::toolbar_button's edge under the pointer",
+        "gpui: toolbar.button(HOVER).stroke.color, next::variants::toolbar_button's edge under the pointer",
     ),
     (
         "chrome.status_bar.toggle",
         "button.border.padding_top_px",
-        "gpui: pads the icon, where stated, for the Size's own (demo::tool_button_box)",
+        "gpui: button.body(NONE)'s padding side pads the icon, where stated, for the Size's own (demo::tool_button_box)",
     ),
     (
         "chrome.status_bar.toggle",
         "button.border.padding_right_px",
-        "gpui: pads the icon, where stated, for the Size's own (demo::tool_button_box)",
+        "gpui: button.body(NONE)'s padding side pads the icon, where stated, for the Size's own (demo::tool_button_box)",
     ),
     (
         "chrome.status_bar.toggle",
         "button.border.padding_bottom_px",
-        "gpui: pads the icon, where stated, for the Size's own (demo::tool_button_box)",
+        "gpui: button.body(NONE)'s padding side pads the icon, where stated, for the Size's own (demo::tool_button_box)",
     ),
     (
         "chrome.status_bar.toggle",
         "button.border.padding_left_px",
-        "gpui: pads the icon, where stated, for the Size's own (demo::tool_button_box)",
+        "gpui: button.body(NONE)'s padding side pads the icon, where stated, for the Size's own (demo::tool_button_box)",
     ),
     // --- button: a Default Button refined by geometry::button ------------------
     (
@@ -840,7 +840,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.menu.",
         "defaults.border.line_width_px",
-        "gpui: the width of the highlighted row's outline in menu.hover_border_color (MenuLook::edge, MenuBar::popup)",
+        "not applied: the highlighted row's outline is the stroke a rule states for menu.item(HOVER), at that stroke's own width (MenuLook::next_of, MenuBar::popup)",
     ),
     (
         "basic.list.",
@@ -940,7 +940,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "defaults.icon_sizes.toolbar_px",
-        "gpui: geometry::icon_size_toolbar, toolbar.icon_size, which inherits it",
+        "gpui: next::geometry::icon_size_toolbar, toolbar.button_icon(NONE).size",
     ),
     (
         "basic.spinner",
@@ -1070,17 +1070,17 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.menu.theme.preferences.shortcut",
         "defaults.line_height",
-        "gpui: the row's line height, which the plain Kbd text inherits (MenuLook; gpui-component/kbd.rs:236-238, appearance)",
+        "gpui: typography.line_height_multiplier, the row's line height as next::geometry::menu_item sets it, which the plain Kbd text inherits (MenuLook::next_of; gpui-component/kbd.rs:236-238, appearance)",
     ),
     (
         "chrome.menu.",
         "defaults.line_height",
-        "gpui: the row's line height (MenuLook)",
+        "gpui: typography.line_height_multiplier, the row's line height as next::geometry::menu_item sets it (MenuLook::next_of)",
     ),
     (
         "chrome.menu_bar.",
         "defaults.line_height",
-        "gpui: the title's line height (MenuLook)",
+        "gpui: typography.line_height_multiplier, the title's line height as next::geometry::menu_item sets it (MenuLook::title)",
     ),
     (
         "chrome.status_bar",
@@ -1727,97 +1727,97 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.menu.theme.preferences.shortcut",
         "menu.font",
-        "gpui: the row's font, which the plain Kbd text inherits (MenuLook; gpui-component/kbd.rs:236-238, appearance)",
+        "gpui: menu.item_label(NONE), the row's font as next::geometry::menu_item sets it, which the plain Kbd text inherits (MenuLook::next_of; gpui-component/kbd.rs:236-238, appearance)",
     ),
     (
         "chrome.menu_bar",
         "toolbar.background_color",
-        "gpui: the menu bar's fill, as the model fills a menu bar (demo::menu_bar)",
+        "gpui: menu_bar.bar(NONE).fill, the menu bar's fill (demo::menu_bar)",
     ),
     (
         "chrome.menu_bar.",
         "menu.border.padding_top_px",
-        "gpui: pads the title by the stated side where menu.bar_padding_vertical is unstated, else MENU_TITLE_PADDING_Y (demo::MenuTitle)",
+        "gpui: menu.item(NONE)'s padding side pads the title where menu_bar.item(NONE) states none, else MENU_TITLE_PADDING_Y (MenuLook::title, demo::MenuTitle)",
     ),
     (
         "chrome.menu_bar.",
         "menu.border.padding_right_px",
-        "gpui: pads the title by the stated side where menu.bar_padding_horizontal is unstated, else MENU_TITLE_PADDING_X (demo::MenuTitle)",
+        "gpui: menu.item(NONE)'s padding side pads the title where menu_bar.item(NONE) states none, else MENU_TITLE_PADDING_X (MenuLook::title, demo::MenuTitle)",
     ),
     (
         "chrome.menu_bar.",
         "menu.border.padding_bottom_px",
-        "gpui: pads the title by the stated side where menu.bar_padding_vertical is unstated, else MENU_TITLE_PADDING_Y (demo::MenuTitle)",
+        "gpui: menu.item(NONE)'s padding side pads the title where menu_bar.item(NONE) states none, else MENU_TITLE_PADDING_Y (MenuLook::title, demo::MenuTitle)",
     ),
     (
         "chrome.menu_bar.",
         "menu.border.padding_left_px",
-        "gpui: pads the title by the stated side where menu.bar_padding_horizontal is unstated, else MENU_TITLE_PADDING_X (demo::MenuTitle)",
+        "gpui: menu.item(NONE)'s padding side pads the title where menu_bar.item(NONE) states none, else MENU_TITLE_PADDING_X (MenuLook::title, demo::MenuTitle)",
     ),
     (
         "chrome.menu_bar.",
         "menu.bar_padding_horizontal_px",
-        "gpui: pads the title's left and right, over menu.border.padding (MenuLook::title)",
+        "gpui: menu_bar.item(NONE)'s left and right padding pads the title, over menu.item(NONE)'s (MenuLook::title)",
     ),
     (
         "chrome.menu_bar.",
         "menu.bar_padding_vertical_px",
-        "gpui: pads the title's top and bottom, over menu.border.padding (MenuLook::title)",
+        "gpui: menu_bar.item(NONE)'s top and bottom padding pads the title, over menu.item(NONE)'s (MenuLook::title)",
     ),
     (
         "chrome.menu_bar.",
         "menu.hover_background",
-        "gpui: the title's fill under the pointer where menu.bar_hover_background is unstated, and while open where menu.bar_open_background is unstated too (demo::MenuTitle)",
+        "gpui: menu.item(HOVER).fill, the title's fill under the pointer where no rule states menu_bar.item(HOVER).fill, and while open where none states menu_bar.item(OPEN).fill either (MenuLook::next_of, demo::MenuTitle)",
     ),
     (
         "chrome.menu_bar.",
         "menu.hover_text_color",
-        "gpui: the title's text under the pointer and while open where menu.bar_hover_text_color is unstated (demo::MenuTitle)",
+        "gpui: menu.item_label(HOVER).color, the title's text under the pointer where no rule states menu_bar.item_label(HOVER).color, and while open where none states menu_bar.item_label(OPEN).color either (MenuLook::next_of, demo::MenuTitle)",
     ),
     (
         "chrome.menu_bar.",
         "menu.bar_hover_background",
-        "gpui: the title's fill under the pointer, and while open where menu.bar_open_background is unstated (MenuLook::title)",
+        "gpui: menu_bar.item(HOVER).fill where a rule states it, the title's fill under the pointer, and while open where none states menu_bar.item(OPEN).fill (MenuLook::next_of, MenuLook::title)",
     ),
     (
         "chrome.menu_bar.",
         "menu.bar_open_background",
-        "gpui: the title's fill while its menu is open, under the pointer too (MenuLook::title)",
+        "gpui: menu_bar.item(OPEN).fill where a rule states it, the title's fill while its menu is open, under the pointer too (MenuLook::next_of, MenuLook::title)",
     ),
     (
         "chrome.menu_bar.",
         "menu.bar_hover_text_color",
-        "gpui: the title's text under the pointer and while open (MenuLook::title)",
+        "gpui: menu_bar.item_label(HOVER).color where a rule states it, the title's text under the pointer, and while open where none states menu_bar.item_label(OPEN).color (MenuLook::next_of, MenuLook::title)",
     ),
     (
         "chrome.menu_bar.",
         "menu.border.corner_radius_px",
-        "gpui: rounds the title's fill (MenuLook::title)",
+        "gpui: menu.item(NONE).corners rounds the title's fill where stated (MenuLook::title)",
     ),
     (
         "chrome.menu.",
         "menu.border.corner_radius_px",
-        "gpui: rounds the highlighted row's fill and its outline (MenuLook)",
+        "gpui: menu.item(NONE).corners rounds the highlighted row's fill and its outline where stated (MenuLook::next_of)",
     ),
     (
         "chrome.menu.",
         "menu.hover_border_color",
-        "gpui: the highlighted row's outline, a box over the row and its padding, so nothing moves (MenuLook::edge, MenuBar::popup)",
+        "gpui: menu.item(HOVER).stroke.color where a rule states it, the highlighted row's outline, a box over the row and its padding, so nothing moves (MenuLook::next_of, MenuBar::popup)",
     ),
     (
         "chrome.menu.theme",
         "menu.panel_padding_horizontal_px",
-        "gpui: insets the rows at the left and right inside the popup's frame line, over popover.border.padding (MenuLook, MenuBar::popup)",
+        "gpui: menu.panel(NONE)'s left and right padding insets the rows inside the popup's frame line, over popover.panel's (MenuLook::next_of, MenuBar::popup)",
     ),
     (
         "chrome.menu.theme",
         "menu.panel_padding_vertical_px",
-        "gpui: insets the rows at the top and bottom inside the popup's frame line, over popover.border.padding, and leaves no gap between them (MenuLook, MenuBar::popup)",
+        "gpui: menu.panel(NONE)'s top and bottom padding insets the rows inside the popup's frame line, over popover.panel's, and leaves no gap between them (MenuLook::next_of, MenuBar::popup)",
     ),
     (
         "chrome.menu.",
         "menu.min_row_height_px",
-        "gpui: the row's least height where menu.row_height is unstated, the content growing past it (geometry::menu_item)",
+        "gpui: menu.item(NONE).min_size[1], the row's least height where menu.item(NONE).max_size[1] is unstated, the content growing past it (next::geometry::menu_item)",
     ),
     (
         "chrome.menu.",
@@ -1827,67 +1827,67 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.menu.",
         "menu.active_background",
-        "gpui: the row's fill while the mouse button is held on it, its outline hidden (MenuLook::pressed, MenuLook::edge)",
+        "gpui: menu.item(PRESSED).fill where a rule states it for the pressed state, the row's fill while the mouse button is held on it (MenuLook::next_of, MenuLook::pressed)",
     ),
     (
         "chrome.menu.",
         "menu.active_text_color",
-        "gpui: the row's text while the mouse button is held on it, its shortcut's too (MenuLook::pressed)",
+        "gpui: menu.item_label(PRESSED).color where a rule states it for the pressed state, the row's text while the mouse button is held on it, its shortcut's too (MenuLook::next_of, MenuLook::pressed)",
     ),
     (
         "",
         "menu.background_color",
-        "gpui: the popup's fill (MenuLook, MenuBar::popup)",
+        "gpui: menu.panel(NONE).fill, the popup's fill (MenuLook::next_of, MenuBar::popup)",
     ),
     (
         "",
         "menu.border.padding_top_px",
-        "gpui: pads the row by the stated side (geometry::menu_item, MenuBar::popup)",
+        "gpui: menu.item(NONE)'s padding side pads the row where stated (next::geometry::menu_item, MenuBar::popup)",
     ),
     (
         "",
         "menu.border.padding_right_px",
-        "gpui: pads the row by the stated side (geometry::menu_item), else MENU_ROW_PADDING_X (MenuBar::popup)",
+        "gpui: menu.item(NONE)'s padding side pads the row where stated (next::geometry::menu_item), else MENU_ROW_PADDING_X (MenuLook::row, MenuBar::popup)",
     ),
     (
         "",
         "menu.border.padding_bottom_px",
-        "gpui: pads the row by the stated side (geometry::menu_item, MenuBar::popup)",
+        "gpui: menu.item(NONE)'s padding side pads the row where stated (next::geometry::menu_item, MenuBar::popup)",
     ),
     (
         "",
         "menu.border.padding_left_px",
-        "gpui: pads the row by the stated side (geometry::menu_item), else MENU_ROW_PADDING_X (MenuBar::popup)",
+        "gpui: menu.item(NONE)'s padding side pads the row where stated (next::geometry::menu_item), else MENU_ROW_PADDING_X (MenuLook::row, MenuBar::popup)",
     ),
     (
         "",
         "menu.font",
-        "gpui: family, size, weight and style as geometry::menu_item sets them (demo::MenuTitle, MenuBar::popup)",
+        "gpui: menu.item_label(NONE)'s family, size, weight and style as next::geometry::menu_item sets them (demo::MenuTitle, MenuBar::popup)",
     ),
     (
         "",
         "menu.font.color",
-        "gpui: the text colour from MenuLook (demo::MenuTitle, MenuBar::popup)",
+        "gpui: menu.item_label(NONE).color, the text colour from MenuLook::next_of (demo::MenuTitle, MenuBar::popup)",
     ),
     (
         "",
         "menu.hover_background",
-        "gpui: the highlighted row's fill (MenuBar::popup)",
+        "gpui: menu.item(HOVER).fill, the highlighted row's fill (MenuLook::next_of, MenuBar::popup)",
     ),
     (
         "",
         "menu.hover_text_color",
-        "gpui: the highlighted row's text (MenuBar::popup)",
+        "gpui: menu.item_label(HOVER).color, the highlighted row's text (MenuLook::next_of, MenuBar::popup)",
     ),
     (
         "",
         "menu.row_height_px",
-        "gpui: the row's height by geometry::menu_item's control-height rule where stated: the height at a text scale of 1 or less, a minimum above (MenuBar::popup)",
+        "gpui: menu.item(NONE).max_size[1], the row's height by next::geometry::menu_item's control-height rule where stated: the height at a text scale of 1 or less, a minimum above (MenuBar::popup)",
     ),
     (
         "",
         "menu.separator_color",
-        "gpui: the separator row's fill (MenuLook)",
+        "gpui: menu.separator(NONE).fill, the separator row's fill (MenuLook::next_of)",
     ),
     // --- popover: the Theme menu's popup ----------------------------------------
     (
@@ -2606,57 +2606,57 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.toolbar.",
         "toolbar.font",
-        "gpui: set on the row (geometry::toolbar); the button draws an icon only",
+        "gpui: toolbar.button_label(NONE), set on the row (next::geometry::toolbar); the button draws an icon only",
     ),
     (
         "",
         "toolbar.background_color",
-        "gpui: geometry::toolbar's fill",
+        "gpui: toolbar.bar(NONE).fill, next::geometry::toolbar's fill",
     ),
     (
         "",
         "toolbar.bar_height_px",
-        "gpui: geometry::toolbar's min_h where stated",
+        "gpui: toolbar.bar(NONE).min_size[1], next::geometry::toolbar's min_h where stated",
     ),
     (
         "",
         "toolbar.border.color",
-        "gpui: geometry::toolbar's bottom edge colour",
+        "gpui: toolbar.bar(NONE).stroke.color, next::geometry::toolbar's bottom edge colour",
     ),
     (
         "",
         "toolbar.border.line_width_px",
-        "gpui: geometry::toolbar's bottom edge, inside the bar",
+        "gpui: toolbar.bar(NONE).stroke.width, next::geometry::toolbar's bottom edge, inside the bar",
     ),
     (
         "",
         "toolbar.border.padding_top_px",
-        "gpui: geometry::toolbar pads the stated side; container_margin the rest (demo::toolbar)",
+        "gpui: toolbar.bar(NONE)'s padding side, next::geometry::toolbar pads the stated side; layout.container_margin the rest (demo::toolbar)",
     ),
     (
         "",
         "toolbar.border.padding_right_px",
-        "gpui: geometry::toolbar pads the stated side; container_margin the rest (demo::toolbar)",
+        "gpui: toolbar.bar(NONE)'s padding side, next::geometry::toolbar pads the stated side; layout.container_margin the rest (demo::toolbar)",
     ),
     (
         "",
         "toolbar.border.padding_bottom_px",
-        "gpui: geometry::toolbar pads the stated side; container_margin the rest (demo::toolbar)",
+        "gpui: toolbar.bar(NONE)'s padding side, next::geometry::toolbar pads the stated side; layout.container_margin the rest (demo::toolbar)",
     ),
     (
         "",
         "toolbar.border.padding_left_px",
-        "gpui: geometry::toolbar pads the stated side; container_margin the rest (demo::toolbar)",
+        "gpui: toolbar.bar(NONE)'s padding side, next::geometry::toolbar pads the stated side; layout.container_margin the rest (demo::toolbar)",
     ),
     (
         "",
         "toolbar.icon_size_px",
-        "gpui: geometry::icon_size_toolbar sizes the icon",
+        "gpui: toolbar.button_icon(NONE).size, next::geometry::icon_size_toolbar sizes the icon",
     ),
     (
         "",
         "toolbar.item_gap_px",
-        "gpui: geometry::toolbar's gap where stated, else layout.widget_gap (demo::toolbar)",
+        "gpui: toolbar.item_gap, next::geometry::toolbar's gap where stated, else layout.widget_gap (demo::toolbar)",
     ),
     // --- tooltip: demo::built_tooltip_button --------------------------------------
     (

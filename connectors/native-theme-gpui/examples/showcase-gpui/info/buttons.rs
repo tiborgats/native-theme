@@ -3,14 +3,16 @@
 use gpui_component::{Colorize as _, Size, theme::Theme};
 use native_theme::next::{ResolvedTheme as NextTheme, WidgetState};
 use native_theme::theme::ResolvedButtonTheme;
-use native_theme_gpui::ResolvedTheme;
 use native_theme_gpui::next::geometry::button_disabled;
+use native_theme_gpui::next::{
+    self, padding_of, state_fill_of, state_text_color_of, text_color_of,
+};
 
 use super::{
     ColorClaim, WidgetInfo,
     chrome::{GhostContent, chrome_icon_note, ghost_colours, input_background},
-    claim, edge_claim, percent_text, px_text, state_stroke_color_of, stated, stated_claim,
-    stroke_color_of, stroke_width_of,
+    claim, edge_claim, percent_text, px_text, radius_of, state_stroke_color_of, stated,
+    stated_claim, stroke_color_of, stroke_width_of,
 };
 use crate::demo::{ButtonKind, ButtonState};
 use crate::support::ChromeIcon;
@@ -798,22 +800,22 @@ pub(super) fn native_ghost(info: WidgetInfo, t: &Theme) -> WidgetInfo {
 /// The variant line of a tool Button built with
 /// `native_theme_gpui::variants::toolbar_button`.
 fn toolbar_variant(info: WidgetInfo) -> WidgetInfo {
-    info.instance("variant", "native_theme_gpui::variants::toolbar_button: native_theme_gpui::variants::ghost_button with the platform's toolbar button states where the theme states them, toolbar.button_hover_background, button_active_background and the outline button_hover_border_color, ghost_button's colour for each fill it leaves unstated, and no edge where it states no outline. It goes into a Toolbar by content, not child, which would make it a .ghost() again (toolbar.rs, ToolbarItem; button/button.rs, Button::prepare_for_toolbar)")
+    info.instance("variant", "native_theme_gpui::next::variants::toolbar_button: native_theme_gpui::variants::ghost_button with the platform's toolbar button states where a rule of the theme states them for the state, toolbar.button(HOVER).fill, toolbar.button(PRESSED).fill and the outline toolbar.button(HOVER).stroke.color, ghost_button's colour for each fill it leaves unstated, and no edge where it states no outline (support::toolbar_variant). It goes into a Toolbar by content, not child, which would make it a .ghost() again (toolbar.rs, ToolbarItem; button/button.rs, Button::prepare_for_toolbar)")
 }
 
 /// `info` with what a tool Button built with
-/// `native_theme_gpui::variants::toolbar_button` paints, and its variant
-/// line: the hover and pressed fills `toolbar.button_hover_background` and
-/// `toolbar.button_active_background` where `native` states them, else the
-/// Ghost's tokens, and the outline under the pointer and while pressed,
-/// `toolbar.button_hover_border_color`, at `button.border.line_width`, the
-/// width `geometry::toolbar_button_rest` gives the border. The window's
-/// toolbar buttons, the Buttons page's toolbar items and the Basic page's
-/// icon buttons take it from here so they cannot drift apart.
+/// `native_theme_gpui::next::variants::toolbar_button` paints, and its
+/// variant line: the hover and pressed fills `toolbar.button(HOVER).fill`
+/// and `toolbar.button(PRESSED).fill` where a rule of `native` states them
+/// for the state, else the Ghost's tokens, and the outline under the pointer
+/// and while pressed, `toolbar.button(HOVER).stroke.color`, at the width
+/// `next::geometry::toolbar_button_rest` gives the border ([`rest_border`]).
+/// The window's toolbar buttons, the Buttons page's toolbar items and the
+/// Basic page's icon buttons take it from here so they cannot drift apart.
 pub(super) fn native_toolbar(
     info: WidgetInfo,
     t: &Theme,
-    native: Option<&ResolvedTheme>,
+    native: Option<&NextTheme>,
 ) -> WidgetInfo {
     let info = info.color(claim(
         "text",
@@ -823,9 +825,9 @@ pub(super) fn native_toolbar(
     ));
     let info = match stated_claim(
         "hover bg",
-        "button_hover_background",
-        native.and_then(|r| r.toolbar.button_hover_background),
-        "native-theme-gpui/variants.rs:171",
+        "toolbar.button(HOVER).fill",
+        native.and_then(|r| state_fill_of(&r.toolbar.button(WidgetState::HOVER))),
+        "native-theme-gpui/next/builders.rs:712",
     ) {
         Some(hover) => info.color(hover),
         None => info.color(claim(
@@ -837,9 +839,9 @@ pub(super) fn native_toolbar(
     };
     let info = match stated_claim(
         "active bg",
-        "button_active_background",
-        native.and_then(|r| r.toolbar.button_active_background),
-        "native-theme-gpui/variants.rs:173",
+        "toolbar.button(PRESSED).fill",
+        native.and_then(|r| state_fill_of(&r.toolbar.button(WidgetState::PRESSED))),
+        "native-theme-gpui/next/builders.rs:716",
     ) {
         Some(active) => info.color(active),
         None => info.color(claim(
@@ -849,47 +851,48 @@ pub(super) fn native_toolbar(
             "native-theme-gpui/variants.rs:64",
         )),
     };
-    let edge = native.and_then(|r| {
-        edge_claim(
-            "border, hovered or pressed",
-            "button_hover_border_color",
-            r.toolbar.button_hover_border_color,
-            Some(r.button.border.line_width),
-            "native-theme-gpui/variants.rs:172",
-        )
-    });
+    let edge = edge_claim(
+        "border, hovered or pressed",
+        "toolbar.button(HOVER).stroke.color",
+        native.and_then(|r| state_stroke_color_of(&r.toolbar.button(WidgetState::HOVER))),
+        rest_border(native),
+        "native-theme-gpui/next/builders.rs:713",
+    );
     toolbar_variant(info.colors(edge))
 }
 
-/// The width of the transparent border `geometry::toolbar_button_rest` gives
-/// a tool Button under `native`, `button.border.line_width`, where it states
-/// the toolbar's outline; `None` where it gives none.
-pub(super) fn rest_border(native: Option<&ResolvedTheme>) -> Option<f32> {
+/// The width of the transparent border `next::geometry::toolbar_button_rest`
+/// gives a tool Button under `native`, `button.body(NONE).stroke.width`,
+/// where a rule states the toolbar's outline,
+/// `toolbar.button(HOVER).stroke.color`, and the builder applies; `None`
+/// where it gives none.
+pub(super) fn rest_border(native: Option<&NextTheme>) -> Option<f32> {
     native
-        .filter(|r| r.toolbar.button_hover_border_color.is_some())
-        .map(|r| r.button.border.line_width)
+        .filter(|r| next::geometry::toolbar_button_rest(r).is_ok())
+        .filter(|r| state_stroke_color_of(&r.toolbar.button(WidgetState::HOVER)).is_some())
+        .and_then(|r| stroke_width_of(&r.button.body(WidgetState::NONE)))
 }
 
 /// The "fill" note of a tool Button built with
-/// `native_theme_gpui::variants::toolbar_button`: what it fills with at rest,
-/// under the pointer and while pressed under `native`, each state the
-/// toolbar field where `native` states it, else the Ghost's token, as
-/// [`native_toolbar`] claims them.
-pub(super) fn toolbar_fill(native: Option<&ResolvedTheme>) -> String {
-    let toolbar = native.map(|r| &r.toolbar);
-    let hover = if toolbar.is_some_and(|t| t.button_hover_background.is_some()) {
-        "toolbar.button_hover_background"
+/// `native_theme_gpui::next::variants::toolbar_button`: what it fills with
+/// at rest, under the pointer and while pressed under `native`, each state
+/// the toolbar's home where a rule of `native` states it, else the Ghost's
+/// token, as [`native_toolbar`] claims them.
+pub(super) fn toolbar_fill(native: Option<&NextTheme>) -> String {
+    let ruled = |state| native.is_some_and(|r| state_fill_of(&r.toolbar.button(state)).is_some());
+    let hover = if ruled(WidgetState::HOVER) {
+        "toolbar.button(HOVER).fill"
     } else {
         "ghost_button's secondary_hover"
     };
-    let pressed = if toolbar.is_some_and(|t| t.button_active_background.is_some()) {
-        "toolbar.button_active_background"
+    let pressed = if ruled(WidgetState::PRESSED) {
+        "toolbar.button(PRESSED).fill"
     } else {
         "ghost_button's secondary_active"
     };
-    if toolbar.is_some_and(|t| t.button_hover_border_color.is_some()) {
+    if rest_border(native).is_some() {
         format!(
-            "none at rest: geometry::toolbar_button_rest's transparent fill replaces the variant's own, its colour toolbar.button_hover_border_color mixed toward transparent (button/button.rs, ButtonVariant::bg_color); under the pointer {hover}, and pressed {pressed}"
+            "none at rest: next::geometry::toolbar_button_rest's transparent fill replaces the variant's own, its colour toolbar.button(HOVER).stroke.color mixed toward transparent (button/button.rs, ButtonVariant::bg_color); under the pointer {hover}, and pressed {pressed}"
         )
     } else {
         format!(
@@ -925,45 +928,58 @@ pub(super) fn native_ghost_selected(info: WidgetInfo, t: &Theme) -> WidgetInfo {
 
 /// `info` with what a checked tool Button paints, in place of what
 /// [`native_toolbar`] claims for an unchecked one:
-/// `geometry::toolbar_button_checked`'s fill and text where `native` states
-/// the toolbar's checked fill; else, as [`native_ghost_selected`] says, the
-/// variant's active colour as the selected fill, which that builder sets
-/// too, under the variant's one foreground; and its pen,
-/// `toolbar.button_checked_border_color`, where `native` states it. Upstream
-/// draws no hover or press style on a selected Button, so it claims no hover
-/// or pressed fill, and the edge stays the rest one under the pointer.
-fn toolbar_checked(info: WidgetInfo, t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
+/// `next::geometry::toolbar_button_checked`'s fill and text where a rule of
+/// `native` states the toolbar's checked fill, `toolbar.button(CHECKED).fill`;
+/// else the selected fill that builder sets, `toolbar.button(PRESSED).fill`,
+/// else `button.body(PRESSED).fill`, or, as [`native_ghost_selected`] says,
+/// the variant's active colour, under the variant's one foreground; and its
+/// pen, `toolbar.button(CHECKED).stroke.color`, where a rule states it, at
+/// [`rest_border`]'s width. Where the builder lacks a home it reads, it is
+/// not applied, and the variant's selected style stands. Upstream draws no
+/// hover or press style on a selected Button, so it claims no hover or
+/// pressed fill, and the edge stays the rest one under the pointer.
+fn toolbar_checked(info: WidgetInfo, t: &Theme, native: Option<&NextTheme>) -> WidgetInfo {
+    let applied = native.filter(|r| next::geometry::toolbar_button_checked(r).is_ok());
     let checked_fill = stated_claim(
         "checked fill",
-        "button_checked_background",
-        native.and_then(|r| r.toolbar.button_checked_background),
-        "native-theme-gpui/geometry.rs:2072",
+        "toolbar.button(CHECKED).fill",
+        applied.and_then(|r| state_fill_of(&r.toolbar.button(WidgetState::CHECKED))),
+        "native-theme-gpui/next/builders.rs:679",
     );
-    let info = match (checked_fill, native) {
+    let info = match (checked_fill, applied) {
         (Some(fill), Some(r)) => {
-            let text = match stated_claim(
+            // The builder applies, so it states the pressed text it falls
+            // back to.
+            let text = stated_claim(
                 "checked text",
-                "checked_text_color",
-                r.button.checked_text_color,
-                "native-theme-gpui/geometry.rs:2068",
-            ) {
-                Some(text) => text,
-                None => claim(
+                "button.label(CHECKED).color",
+                state_text_color_of(&r.button.label(WidgetState::CHECKED)),
+                "native-theme-gpui/next/builders.rs:690",
+            )
+            .or_else(|| {
+                stated_claim(
                     "checked text",
-                    "active_text_color",
-                    stated(r.button.active_text_color),
-                    "native-theme-gpui/geometry.rs:2068",
-                ),
-            };
-            info.color(fill).color(text)
+                    "button.label(PRESSED).color",
+                    text_color_of(&r.button.label(WidgetState::PRESSED)),
+                    "native-theme-gpui/next/builders.rs:694",
+                )
+            });
+            info.color(fill).colors(text)
         }
         _ => {
-            let info = match stated_claim(
+            let pressed = stated_claim(
                 "selected bg",
-                "button_active_background",
-                native.and_then(|r| r.toolbar.button_active_background),
-                "native-theme-gpui/variants.rs:173",
-            ) {
+                "toolbar.button(PRESSED).fill",
+                native.and_then(|r| state_fill_of(&r.toolbar.button(WidgetState::PRESSED))),
+                "native-theme-gpui/next/builders.rs:716",
+            );
+            let body = stated_claim(
+                "selected bg",
+                "button.body(PRESSED).fill",
+                applied.and_then(|r| state_fill_of(&r.button.body(WidgetState::PRESSED))),
+                "native-theme-gpui/next/builders.rs:698",
+            );
+            let info = match pressed.or(body) {
                 Some(active) => info.color(active),
                 None => info.color(claim(
                     "selected bg",
@@ -984,14 +1000,10 @@ fn toolbar_checked(info: WidgetInfo, t: &Theme, native: Option<&ResolvedTheme>) 
     // toolbar's hover outline is stated.
     let info = info.colors(edge_claim(
         "checked edge",
-        "button_checked_border_color",
-        native.and_then(|r| r.toolbar.button_checked_border_color),
-        native.and_then(|r| {
-            r.toolbar
-                .button_hover_border_color
-                .map(|_| r.button.border.line_width)
-        }),
-        "native-theme-gpui/geometry.rs:2135",
+        "toolbar.button(CHECKED).stroke.color",
+        applied.and_then(|r| state_stroke_color_of(&r.toolbar.button(WidgetState::CHECKED))),
+        rest_border(native),
+        "native-theme-gpui/next/builders.rs:686",
     ));
     info.not_themeable(
         "hover outline while checked",
@@ -1020,21 +1032,55 @@ impl ToolSize {
 }
 
 /// `info` given a tool button's size and corners, a Ghost at `size` refined
-/// by `demo::tool_box_of` where `native` is installed: rounded by
-/// `button.border.corner_radius` and padded by the `button.border.padding`
-/// sides it states, with no fixed height where a top or bottom side is
-/// stated, upstream's height and side padding standing only for what it
-/// leaves unstated; with no native theme, upstream's whole. `icon_child` is
-/// whether the icon is the Button's child, which has upstream lay it out as
-/// a labelled Button. `outline` is the width of the transparent border
-/// `geometry::toolbar_button_rest` gives the Button, which it takes off each
+/// by `demo::tool_box_of` where the 0.8.0 theme `native` is installed:
+/// rounded by `button.body(NONE).corners` where stated, and padded by the
+/// `button.body(NONE)` padding sides it states, with no fixed height where a
+/// top or bottom side is stated, upstream's height, side padding and radius
+/// standing only for what it leaves unstated; with no native theme,
+/// upstream's whole. `icon_child` is whether the icon is the Button's child,
+/// which has upstream lay it out as a labelled Button. `outline` is the
+/// width of the transparent border
+/// `next::geometry::toolbar_button_rest` gives the Button, which it takes off each
 /// stated side, where the theme states the toolbar's outline
 /// ([`rest_border`]).
 pub(crate) fn tool_button_size(
     info: WidgetInfo,
     size: ToolSize,
     icon_child: bool,
-    native: Option<&ResolvedButtonTheme>,
+    native: Option<&NextTheme>,
+    outline: Option<f32>,
+) -> WidgetInfo {
+    tool_box_size(info, size, icon_child, native.map(ToolBox::of), outline)
+}
+
+/// What a 0.8.0 theme states of the box `demo::tool_box_of` gives a tool
+/// button: `button.body(NONE)`'s padding sides (top, right, bottom, left)
+/// and its corner radius, each `None` where unstated or in a form gpui
+/// cannot draw.
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct ToolBox {
+    pub sides: [Option<f32>; 4],
+    pub radius: Option<f32>,
+}
+
+impl ToolBox {
+    /// The box `r` states.
+    pub(crate) fn of(r: &NextTheme) -> Self {
+        let body = r.button.body(WidgetState::NONE);
+        Self {
+            sides: padding_of(&body),
+            radius: radius_of(&body),
+        }
+    }
+}
+
+/// [`tool_button_size`] of the box the theme states, `stated`, `None` where
+/// no native theme is installed.
+pub(crate) fn tool_box_size(
+    info: WidgetInfo,
+    size: ToolSize,
+    icon_child: bool,
+    stated: Option<ToolBox>,
     outline: Option<f32>,
 ) -> WidgetInfo {
     let (height, across, at) = size.upstream();
@@ -1049,40 +1095,43 @@ pub(crate) fn tool_button_size(
             "{what} -- rems, so the platform's font{labelled} (button/button.rs, RenderOnce for Button)"
         )
     };
-    let Some(b) = native else {
+    let Some(ToolBox {
+        sides: [top, right, bottom, left],
+        radius,
+    }) = stated
+    else {
         return info.not_themeable(
             "size",
             upstream_size(format!("{height} with {across} at {at}")),
         );
     };
-    let p = &b.border.padding;
     let stated: Vec<String> = [
-        ("top", p.top),
-        ("right", p.right),
-        ("bottom", p.bottom),
-        ("left", p.left),
+        ("top", top),
+        ("right", right),
+        ("bottom", bottom),
+        ("left", left),
     ]
     .into_iter()
     .filter_map(|(side, v)| v.map(|v| format!("{side} {}px", px_text(v))))
     .collect();
-    let vertical = p.top.is_some() || p.bottom.is_some();
-    let radius = format!(
-        "button.border.corner_radius, {}px",
-        px_text(b.border.corner_radius.max(0.))
-    );
+    let vertical = top.is_some() || bottom.is_some();
+    let radius = match radius {
+        Some(radius) => format!("button.body(NONE).corners, {}px", px_text(radius.max(0.))),
+        None => "the Theme's radius upstream rounds a Button by (button/button.rs, RenderOnce for Button), where button.body(NONE).corners states none gpui can draw".to_string(),
+    };
     let sets = "which the showcase sets on the Button (demo::tool_box_of)";
     let text = match (stated.is_empty(), vertical) {
         (true, _) => {
-            format!("{radius}, {sets}; the theme states no button.border.padding side")
+            format!("{radius}, {sets}; the theme states no button.body(NONE).padding side")
         }
         (false, false) => format!(
-            "{radius}, and button.border.padding: {}, {sets}",
+            "{radius}, and button.body(NONE).padding: {}, {sets}",
             stated.join(", ")
         ),
         (false, true) => format!(
-            "{radius}, and button.border.padding: {}, {sets}, with no fixed height: the content's, padded by the stated top and bottom (h_auto){}",
+            "{radius}, and button.body(NONE).padding: {}, {sets}, with no fixed height: the content's, padded by the stated top and bottom (h_auto){}",
             stated.join(", "),
-            if p.top.is_none() || p.bottom.is_none() {
+            if top.is_none() || bottom.is_none() {
                 ", an unstated one none, as upstream pads a Button only across"
             } else {
                 ""
@@ -1092,16 +1141,16 @@ pub(crate) fn tool_button_size(
     let text = match outline {
         Some(w) => {
             let grows: Vec<&str> = [
-                ("top", p.top, vertical),
-                ("right", p.right, true),
-                ("bottom", p.bottom, vertical),
-                ("left", p.left, true),
+                ("top", top, vertical),
+                ("right", right, true),
+                ("bottom", bottom, vertical),
+                ("left", left, true),
             ]
             .into_iter()
             .filter(|&(_, v, laid)| laid && w > 0. && v.is_none_or(|v| v < w))
             .map(|(side, _, _)| side)
             .collect();
-            let width = format!("button.border.line_width, {}px", px_text(w));
+            let width = format!("button.body(NONE).stroke.width, {}px", px_text(w));
             let tail = if grows.is_empty() {
                 "so the outer box is unchanged".to_string()
             } else {
@@ -1109,18 +1158,18 @@ pub(crate) fn tool_button_size(
             };
             if stated.is_empty() {
                 format!(
-                    "{text}; geometry::toolbar_button_rest gives the Button a transparent border {width} wide, {tail}"
+                    "{text}; next::geometry::toolbar_button_rest gives the Button a transparent border {width} wide, {tail}"
                 )
             } else {
                 format!(
-                    "{text}; each stated side less {width}, floored at 0, the width of the transparent border geometry::toolbar_button_rest gives the Button, {tail}"
+                    "{text}; each stated side less {width}, floored at 0, the width of the transparent border next::geometry::toolbar_button_rest gives the Button, {tail}"
                 )
             }
         }
         None => text,
     };
     let info = info.config("radius and padding", text);
-    let unstated_across = match (p.left.is_none(), p.right.is_none()) {
+    let unstated_across = match (left.is_none(), right.is_none()) {
         (true, true) => Some(across.to_string()),
         (true, false) => Some(format!("{across} on the left")),
         (false, true) => Some(format!("{across} on the right")),
@@ -1136,7 +1185,7 @@ pub(crate) fn tool_button_size(
         Some(what) => info.not_themeable(
             "size",
             upstream_size(format!(
-                "{what} at {at}, upstream's for what button.border.padding leaves unstated"
+                "{what} at {at}, upstream's for what button.body(NONE).padding leaves unstated"
             )),
         ),
         None => info,
@@ -1273,12 +1322,12 @@ pub fn clipboard(t: &Theme, value: &'static str, label: Option<&'static str>) ->
 }
 
 /// The Buttons page's component `Toolbar` (spec §8.2): gpui-component's own
-/// at its default Small Size, refined by `geometry::toolbar`, whose line
-/// `demo::component_toolbar` records; `item_gap` is the `toolbar.item_gap`
-/// the theme states, and `native` the theme the builder refined it from,
-/// where a native theme is installed. Its Buttons report themselves
-/// (`toolbar_item`).
-pub fn toolbar(item_gap: Option<f32>, native: Option<&ResolvedTheme>) -> WidgetInfo {
+/// at its default Small Size, refined by `next::geometry::toolbar`, whose
+/// line `demo::component_toolbar` records; `item_gap` is the
+/// `toolbar.item_gap` the theme states, and `native` the installed 0.8.0
+/// theme the builder refined it from, where it applies. Its Buttons report
+/// themselves (`toolbar_item`).
+pub fn toolbar(item_gap: Option<f32>, native: Option<&NextTheme>) -> WidgetInfo {
     let group_gap = match item_gap {
         Some(g) => format!("{}px, toolbar.item_gap", px_text(g)),
         None => "gap_1, the Toolbar's own Small gap, which the showcase gives each group: the theme states no toolbar.item_gap, and a ToolbarGroup spaces nothing itself (gpui-base/toolbar.rs, RenderOnce for ToolbarGroup)".to_string(),
@@ -1287,7 +1336,7 @@ pub fn toolbar(item_gap: Option<f32>, native: Option<&ResolvedTheme>) -> WidgetI
         .variant("Small, two ToolbarGroups")
         .not_themeable(
             "size",
-            "min_h_8, p_1, gap_1 and text_sm at its default Small Size (gpui-component/toolbar.rs, RenderOnce for Toolbar), set before the caller's style, so geometry::toolbar sets the height to the content's and the minimum to toolbar.bar_height where stated, else to auto, and replaces each other one the theme states: the gap by toolbar.item_gap; the padding by toolbar.border's stated sides; the text by toolbar.font's size and weight",
+            "min_h_8, p_1, gap_1 and text_sm at its default Small Size (gpui-component/toolbar.rs, RenderOnce for Toolbar), set before the caller's style, so next::geometry::toolbar sets the height to the content's and the minimum to toolbar.bar(NONE).min_size[1] where stated, else to auto, and replaces each other one the theme states: the gap by toolbar.item_gap; the padding by toolbar.bar(NONE)'s stated sides; the text by toolbar.button_label(NONE)'s size and weight",
         )
         .not_themeable(
             "items",
@@ -1296,26 +1345,27 @@ pub fn toolbar(item_gap: Option<f32>, native: Option<&ResolvedTheme>) -> WidgetI
     let info = match native {
         Some(_) => info.config(
             "fill",
-            "toolbar.background_color, through geometry::toolbar: upstream's Toolbar is transparent and leaves its surface to the caller (gpui-component/toolbar.rs, Toolbar)",
+            "toolbar.bar(NONE).fill, through next::geometry::toolbar: upstream's Toolbar is transparent and leaves its surface to the caller (gpui-component/toolbar.rs, Toolbar)",
         ),
         None => info.not_themeable(
             "fill",
             "none of its own: upstream's Toolbar is transparent and leaves its surface to the caller (gpui-component/toolbar.rs, Toolbar)",
         ),
     };
-    let info = match native {
-        Some(r) if r.toolbar.border.line_width > 0.0 => info.config(
+    let edge = native.and_then(|r| stroke_width_of(&r.toolbar.bar(WidgetState::NONE)));
+    let info = match (native, edge) {
+        (Some(_), Some(width)) if width > 0.0 => info.config(
             "edge",
             format!(
-                "the bar's bottom rule, toolbar.border.color at toolbar.border.line_width, {}px, inside the bar, through geometry::toolbar: upstream's Toolbar draws no edge of its own (gpui-component/toolbar.rs, RenderOnce for Toolbar)",
-                px_text(r.toolbar.border.line_width)
+                "the bar's bottom rule, toolbar.bar(NONE).stroke.color at toolbar.bar(NONE).stroke.width, {}px, inside the bar, through next::geometry::toolbar: upstream's Toolbar draws no edge of its own (gpui-component/toolbar.rs, RenderOnce for Toolbar)",
+                px_text(width)
             ),
         ),
-        Some(_) => info.config(
+        (Some(_), _) => info.config(
             "edge",
-            "none: toolbar.border.line_width is 0, so geometry::toolbar draws no rule, and upstream's Toolbar draws no edge of its own (gpui-component/toolbar.rs, RenderOnce for Toolbar)",
+            "none: toolbar.bar(NONE).stroke.width is 0, so next::geometry::toolbar draws no rule, and upstream's Toolbar draws no edge of its own (gpui-component/toolbar.rs, RenderOnce for Toolbar)",
         ),
-        None => info.not_themeable(
+        (None, _) => info.not_themeable(
             "edge",
             "none of its own (gpui-component/toolbar.rs, RenderOnce for Toolbar)",
         ),
@@ -1329,21 +1379,21 @@ pub fn toolbar(item_gap: Option<f32>, native: Option<&ResolvedTheme>) -> WidgetI
 
 /// One of the Basic page's icon buttons (`demo::icon_button`), showing its
 /// icon where `drawn`, else its name: the toolbar button the window's
-/// toolbar buttons are, given `native`'s `button.border` radius and stated
-/// padding sides by the showcase (`demo::tool_box_of`) where a native theme
-/// is installed, as [`tool_button_size`] says -- not `geometry::button`, so
-/// it has no edge at rest; where `native` states the toolbar's outline,
-/// `geometry::toolbar_button_rest` gives it a transparent one, coloured
-/// under the pointer and while pressed. `checked` is `Some(on)` for the
-/// edit-mode switch (`Showcase::basic_edit`), `None` for a button that
-/// switches nothing; while on, the Button is selected and refined by
-/// `geometry::toolbar_button_checked`, and claims only what that paints
-/// ([`toolbar_checked`]).
+/// toolbar buttons are, given the 0.8.0 theme `native`'s `button.body(NONE)`
+/// radius and stated padding sides by the showcase (`demo::tool_box_of`)
+/// where one is installed, as [`tool_button_size`] says -- not
+/// `geometry::button`, so it has no edge at rest; where `native` states the
+/// toolbar's outline, `next::geometry::toolbar_button_rest` gives it a
+/// transparent one, coloured under the pointer and while pressed. `checked`
+/// is `Some(on)` for the edit-mode switch (`Showcase::basic_edit`), `None`
+/// for a button that switches nothing; while on, the Button is selected and
+/// refined by `next::geometry::toolbar_button_checked`, and claims only what
+/// that paints ([`toolbar_checked`]).
 pub fn icon_button(
     t: &Theme,
     drawn: bool,
     checked: Option<bool>,
-    native: Option<&ResolvedTheme>,
+    native: Option<&NextTheme>,
 ) -> WidgetInfo {
     let info = WidgetInfo::new("Button").variant(match (checked, drawn) {
         (None | Some(false), true) => "Toolbar, icon",
@@ -1357,18 +1407,20 @@ pub fn icon_button(
         Some(false) => native_toolbar(info.instance("state", switch), t, native),
         None => native_toolbar(info, t, native),
     };
-    let outlined = native.is_some_and(|r| r.toolbar.button_hover_border_color.is_some());
-    let pen = native.is_some_and(|r| r.toolbar.button_checked_border_color.is_some());
+    let outlined = rest_border(native).is_some();
+    let pen = native
+        .filter(|r| next::geometry::toolbar_button_checked(r).is_ok())
+        .is_some_and(|r| state_stroke_color_of(&r.toolbar.button(WidgetState::CHECKED)).is_some());
     let info = match (outlined, checked) {
         (true, Some(true)) if pen => info.config(
             "edge",
-            "the checked pen, toolbar.button_checked_border_color, which geometry::toolbar_button_checked sets on geometry::toolbar_button_rest's border, button.border.line_width wide, and which stays under the pointer and while pressed (the hover outline while checked)",
+            "the checked pen, toolbar.button(CHECKED).stroke.color, which next::geometry::toolbar_button_checked sets on next::geometry::toolbar_button_rest's border, button.body(NONE).stroke.width wide, and which stays under the pointer and while pressed (the hover outline while checked)",
         ),
         _ => info.not_themeable(
             "edge",
             match (outlined, checked) {
-                (true, Some(true)) => "none: geometry::toolbar_button_rest's border is transparent, button.border.line_width wide, and stays so while checked (the hover outline while checked)",
-                (true, _) => "none at rest: geometry::toolbar_button_rest's border is transparent, button.border.line_width wide, and takes the variant's colour under the pointer and while pressed (the border, hovered or pressed)",
+                (true, Some(true)) => "none: next::geometry::toolbar_button_rest's border is transparent, button.body(NONE).stroke.width wide, and stays so while checked (the hover outline while checked)",
+                (true, _) => "none at rest: next::geometry::toolbar_button_rest's border is transparent, button.body(NONE).stroke.width wide, and takes the variant's colour under the pointer and while pressed (the border, hovered or pressed)",
                 (false, _) => "none: upstream gives a border width only to a Default or an outlined Button, and a Ghost is a custom variant (button/button.rs, RenderOnce for Button); the showcase sets none",
             },
         ),
@@ -1377,24 +1429,19 @@ pub fn icon_button(
         Some(_) => info,
         None => info.config("border-radius", format!("radius: {}px", t.radius.as_f32())),
     };
-    tool_button_size(
-        info,
-        ToolSize::Medium,
-        drawn,
-        native.map(|r| &r.button),
-        rest_border(native),
-    )
+    tool_button_size(info, ToolSize::Medium, drawn, native, rest_border(native))
 }
 
 /// One of the component `Toolbar`'s flat Buttons, showing `icon` of the
 /// icon theme named `set`, coloured as [`native_toolbar`] says and sized as
-/// [`tool_button_size`] says under `native`'s `button`; it runs nothing. Its
-/// icon-size line is recorded where `demo::toolbar_item` applies the builder.
+/// [`tool_button_size`] says under the 0.8.0 theme `native`; it runs
+/// nothing. Its icon-size line is recorded where `demo::toolbar_item`
+/// applies the builder.
 pub fn toolbar_item(
     t: &Theme,
     icon: &ChromeIcon,
     set: &str,
-    native: Option<&ResolvedTheme>,
+    native: Option<&NextTheme>,
 ) -> WidgetInfo {
     let drawn = !matches!(icon, ChromeIcon::Missing(_) | ChromeIcon::Unlisted(_));
     let info = WidgetInfo::new("Button").variant(if drawn {
@@ -1408,19 +1455,13 @@ pub fn toolbar_item(
     } else {
         info
     };
-    tool_button_size(
-        info,
-        ToolSize::Medium,
-        drawn,
-        native.map(|r| &r.button),
-        rest_border(native),
-    )
-    .instance(
-        "icon",
-        chrome_icon_note(icon, set, "the button shows its name as its label instead"),
-    )
-    .instance(
-        "action",
-        "none: the section shows the Toolbar, so its Buttons run nothing",
-    )
+    tool_button_size(info, ToolSize::Medium, drawn, native, rest_border(native))
+        .instance(
+            "icon",
+            chrome_icon_note(icon, set, "the button shows its name as its label instead"),
+        )
+        .instance(
+            "action",
+            "none: the section shows the Toolbar, so its Buttons run nothing",
+        )
 }

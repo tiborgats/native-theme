@@ -319,6 +319,16 @@ fn next_sized_glyph(
     }
 }
 
+/// `glyph` at `size`, the size `info::next_native_value` gives a
+/// `next::geometry` icon-size builder (recording its line), or at its own
+/// where that is `None`.
+fn glyph_at(glyph: Glyph, size: Option<Size>) -> Glyph {
+    match size {
+        Some(size) => glyph.with_size(size),
+        None => glyph,
+    }
+}
+
 /// A `TitleBar` refined by `next::geometry::title_bar`, reading `label`,
 /// holding the application's menus (`app_menus`) where the platform has no
 /// menu bar of its own, and quitting the application from its close button:
@@ -1665,7 +1675,6 @@ pub(crate) fn toolbar_button(
     } = spec;
     let (tip, styled) = action_tooltip(cx, tooltip, action);
     let delay = next_tooltip_delay(cx);
-    let native = old_native(cx);
     let mut button_info = info::toolbar_button(
         cx.theme(),
         about,
@@ -1673,24 +1682,28 @@ pub(crate) fn toolbar_button(
         set,
         styled,
         delay,
-        native.as_ref().map(|n| n.resolved),
+        next_resolved(cx),
     );
     if styled {
         button_info = button_info.next_geometry("tooltip");
     }
-    let icon = chrome_glyph(&drawn, &icon)
-        .map(|icon| native_sized_glyph(cx, icon, geometry::icon_size_toolbar));
-    if icon.is_some() && native_value(cx, geometry::icon_size_toolbar).is_some() {
-        button_info = button_info.geometry("icon_size_toolbar");
-    }
+    let icon = chrome_glyph(&drawn, &icon).map(|icon| {
+        let size = info::next_native_value(
+            cx,
+            next::geometry::icon_size_toolbar,
+            "icon_size_toolbar",
+            &mut button_info,
+        );
+        glyph_at(icon, size)
+    });
     let dispatched = action.boxed_clone();
-    let button = native_info(
+    let button = next_native_info(
         refined(
             Button::new(id).custom(toolbar_variant(cx)),
             tool_button_box(cx).as_ref(),
         ),
         cx,
-        geometry::toolbar_button_rest,
+        next::geometry::toolbar_button_rest,
         "toolbar_button_rest",
         &mut button_info,
     )
@@ -1742,7 +1755,7 @@ pub(crate) fn component_toolbar(
     edit: Vec<ToolItem>,
     view: Vec<ToolItem>,
 ) -> Stateful<Div> {
-    let item_gap = native_value(cx, |n| n.resolved.toolbar.item_gap).flatten();
+    let item_gap = next_value(cx, |r| r.toolbar.item_gap).flatten();
     let group = |id: &'static str, label: &'static str, items: Vec<ToolItem>| {
         let group = ToolbarGroup::new(id).label(label);
         let group = match item_gap {
@@ -1753,12 +1766,12 @@ pub(crate) fn component_toolbar(
             group.content(toolbar_item(ui, cx, set, item))
         })
     };
-    let native = old_native(cx);
-    let mut toolbar_info = info::buttons::toolbar(item_gap, native.as_ref().map(|n| n.resolved));
-    let toolbar = native_info(
+    let refined_by = next_resolved(cx).filter(|r| next::geometry::toolbar(r).is_ok());
+    let mut toolbar_info = info::buttons::toolbar(item_gap, refined_by);
+    let toolbar = next_native_info(
         Toolbar::new("buttons-toolbar-row"),
         cx,
-        geometry::toolbar,
+        next::geometry::toolbar,
         "toolbar",
         &mut toolbar_info,
     )
@@ -1785,21 +1798,23 @@ fn toolbar_item(ui: &Entity<InfoRegistry>, cx: &App, set: &str, item: ToolItem) 
         drawn,
         label,
     } = item;
-    let native = old_native(cx);
-    let mut button_info =
-        info::buttons::toolbar_item(cx.theme(), &drawn, set, native.as_ref().map(|n| n.resolved));
-    let icon = chrome_glyph(&drawn, &icon)
-        .map(|icon| native_sized_glyph(cx, icon, geometry::icon_size_toolbar));
-    if icon.is_some() && native_value(cx, geometry::icon_size_toolbar).is_some() {
-        button_info = button_info.geometry("icon_size_toolbar");
-    }
-    let button = native_info(
+    let mut button_info = info::buttons::toolbar_item(cx.theme(), &drawn, set, next_resolved(cx));
+    let icon = chrome_glyph(&drawn, &icon).map(|icon| {
+        let size = info::next_native_value(
+            cx,
+            next::geometry::icon_size_toolbar,
+            "icon_size_toolbar",
+            &mut button_info,
+        );
+        glyph_at(icon, size)
+    });
+    let button = next_native_info(
         refined(
             Button::new(id).custom(toolbar_variant(cx)),
             tool_button_box(cx).as_ref(),
         ),
         cx,
-        geometry::toolbar_button_rest,
+        next::geometry::toolbar_button_rest,
         "toolbar_button_rest",
         &mut button_info,
     )
@@ -1896,14 +1911,7 @@ pub(crate) fn panel_toggle(
 ) -> Stateful<Div> {
     let (tip, styled) = action_tooltip(cx, spec.tooltip, spec.action);
     let delay = next_tooltip_delay(cx);
-    let native = old_native(cx);
-    let mut button_info = info::panel_toggle(
-        cx.theme(),
-        &spec,
-        styled,
-        delay,
-        native.as_ref().map(|n| &n.resolved.button),
-    );
+    let mut button_info = info::panel_toggle(cx.theme(), &spec, styled, delay, next_resolved(cx));
     let PanelToggle {
         button_id: id,
         icon,
@@ -1916,11 +1924,15 @@ pub(crate) fn panel_toggle(
     if styled {
         button_info = button_info.next_geometry("tooltip");
     }
-    let icon = chrome_glyph(&drawn, &icon)
-        .map(|icon| native_sized_glyph(cx, icon, geometry::icon_size_small));
-    if icon.is_some() && native_value(cx, geometry::icon_size_small).is_some() {
-        button_info = button_info.geometry("icon_size_small");
-    }
+    let icon = chrome_glyph(&drawn, &icon).map(|icon| {
+        let size = info::next_native_value(
+            cx,
+            next::geometry::icon_size_small,
+            "icon_size_small",
+            &mut button_info,
+        );
+        glyph_at(icon, size)
+    });
     let dispatched = action.boxed_clone();
     let button = refined(
         ButtonKind::Ghost.apply(Button::new(id), cx).small(),
@@ -2456,7 +2468,7 @@ fn native_tab_bar(
     let labels: Vec<&'static str> = tabs.iter().map(|&(label, _)| label).collect();
     let on_click: TabClick = Rc::new(on_click);
     let on_tab = on_click.clone();
-    let tool_box = Some(tool_box_of(*n));
+    let tool_box = tool_button_box(cx);
     let ghost = variants::ghost_button(cx);
     let menu = menu.then(|| {
         // The chosen set's ChevronDown at `geometry::icon_size_small`, where
@@ -10811,31 +10823,35 @@ fn listed_icon(
 }
 
 /// A tool button's box where the theme states the button's padding: its
-/// icon and the `button.border.padding` sides the theme states round it, in
-/// place of the height and the side padding upstream gives a Button of its
-/// Size (button/button.rs, `RenderOnce for Button`: `h_6`/`h_8`,
-/// `px_2`/`px_2p5`); a side the theme leaves unstated keeps upstream's. It
-/// is rounded by `button.border.corner_radius` in place of the Theme's
-/// radius the Button takes (the same, `rounding`). A
-/// Ghost Button draws no border at rest (the same, `border_l_1` and its
-/// siblings go to the Default and outline variants alone; under a theme that
-/// states the toolbar's outline, `geometry::toolbar_button_rest`'s border is
-/// transparent at rest). `None` before `apply` ran.
+/// icon and the padding sides the installed 0.8.0 theme states for
+/// `button.body(NONE)` round it, in place of the height and the side padding
+/// upstream gives a Button of its Size (button/button.rs, `RenderOnce for
+/// Button`: `h_6`/`h_8`, `px_2`/`px_2p5`); a side the theme leaves unstated
+/// keeps upstream's. It is rounded by `button.body(NONE).corners` where the
+/// theme states a radius gpui can draw, in place of the Theme's radius the
+/// Button takes (the same, `rounding`), which stands otherwise. A Ghost
+/// Button draws no border at rest (the same, `border_l_1` and its siblings
+/// go to the Default and outline variants alone; under a theme that states
+/// the toolbar's outline, `next::geometry::toolbar_button_rest`'s border is
+/// transparent at rest). `None` before `next::apply` ran.
 fn tool_button_box(cx: &App) -> Option<StyleRefinement> {
-    native_value(cx, tool_box_of)
+    next_value(cx, tool_box_of)
 }
 
-/// [`tool_button_box`] under the native theme `n`.
-fn tool_box_of(n: Native<'_>) -> StyleRefinement {
-    let b = &n.resolved.button.border;
-    let p = &b.padding;
-    let style = StyleRefinement::default().rounded(px(b.corner_radius.max(0.)));
-    let style = if p.top.is_some() || p.bottom.is_some() {
+/// [`tool_button_box`] under the 0.8.0 theme `r`.
+fn tool_box_of(r: &native_theme::next::ResolvedTheme) -> StyleRefinement {
+    let info::buttons::ToolBox { sides, radius } = info::buttons::ToolBox::of(r);
+    let style = match radius {
+        Some(radius) => StyleRefinement::default().rounded(px(radius.max(0.))),
+        None => StyleRefinement::default(),
+    };
+    let [top, _, bottom, _] = sides;
+    let style = if top.is_some() || bottom.is_some() {
         style.h_auto()
     } else {
         style
     };
-    padded(style, p, None::<Pixels>, None)
+    next_padded(style, sides, None::<Pixels>, None)
 }
 
 /// A toggle button that is on: a Default Button reading `label`, refined by
@@ -11010,15 +11026,14 @@ pub(crate) fn icon_button(
         listed,
         selected,
     } = spec;
-    let native = old_native(cx);
     let icon = role_glyph_of(drawn);
     let mut button_info = info::buttons::icon_button(
         cx.theme(),
         icon.is_some(),
         on_click.as_ref().map(|_| selected),
-        native.as_ref().map(|n| n.resolved),
+        next_resolved(cx),
     )
-    .instance("icon", format!("{name}, at toolbar.icon_size"));
+    .instance("icon", format!("{name}, at toolbar.button_icon(NONE).size"));
     if drawn.0.is_raster() {
         button_info = button_info.instance(
             "icon colour",
@@ -11028,25 +11043,30 @@ pub(crate) fn icon_button(
             ),
         );
     }
-    let icon = icon.map(|icon| native_sized_glyph(cx, icon, geometry::icon_size_toolbar));
-    if icon.is_some() && native_value(cx, geometry::icon_size_toolbar).is_some() {
-        button_info = button_info.geometry("icon_size_toolbar");
-    }
-    let button = native_info(
+    let icon = icon.map(|icon| {
+        let size = info::next_native_value(
+            cx,
+            next::geometry::icon_size_toolbar,
+            "icon_size_toolbar",
+            &mut button_info,
+        );
+        glyph_at(icon, size)
+    });
+    let button = next_native_info(
         refined(
             Button::new(id).custom(toolbar_variant(cx)),
             tool_button_box(cx).as_ref(),
         ),
         cx,
-        geometry::toolbar_button_rest,
+        next::geometry::toolbar_button_rest,
         "toolbar_button_rest",
         &mut button_info,
     );
     let button = if selected {
-        native_info(
+        next_native_info(
             button.selected(true),
             cx,
-            geometry::toolbar_button_checked,
+            next::geometry::toolbar_button_checked,
             "toolbar_button_checked",
             &mut button_info,
         )
