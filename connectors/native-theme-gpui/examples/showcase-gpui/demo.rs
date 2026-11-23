@@ -2034,7 +2034,7 @@ fn sidebar_label(
 /// info's down to the first row (`inspector::PanelLook::body_min_height`),
 /// so every control stays reachable at every text scale in the fixed
 /// window, and the panel never runs past its bounds.
-/// Where the theme states any side of `sidebar.border.padding`
+/// Where the theme states any padding side of `sidebar.container(NONE)`
 /// ([`sidebar_padding`]), the whole panel is padded by it, a side it leaves
 /// unstated by `container_margin`, and the content adds none; where it
 /// states no side, `container_margin` pads the settings
@@ -2057,18 +2057,18 @@ pub(crate) fn side_panel(
 ) -> Stateful<Div> {
     let own = sidebar_padding(cx);
     let mut panel_info = info::side_panel(cx.theme(), container_margin, own);
-    if container_margin.is_some() && own.as_ref().is_none_or(leaves_a_side_unstated) {
+    if container_margin.is_some() && own.is_none_or(|sides| sides.iter().any(Option::is_none)) {
         panel_info = panel_info.next_geometry("container_margin");
     }
-    // The model's sidebar: `sidebar.background_color` and `sidebar.font`'s
-    // colour, which the connector installs as the `sidebar` and
-    // `sidebar_foreground` tokens.
+    // The model's sidebar: `sidebar.container(NONE).fill` and
+    // `sidebar.item_label(NONE).color`, which the connector installs as the
+    // `sidebar` and `sidebar_foreground` tokens.
     v_flex()
         .size_full()
         .bg(cx.theme().sidebar)
         .text_color(cx.theme().sidebar_foreground)
-        .when_some(own, |panel, p| {
-            padded(panel, &p, container_margin, container_margin)
+        .when_some(own, |panel, sides| {
+            next_padded(panel, sides, container_margin, container_margin)
         })
         .child(
             crate::support::gutter_scroll(
@@ -2106,17 +2106,17 @@ pub(crate) fn side_panel(
         .size_full()
 }
 
-/// `sidebar.border.padding`, where the theme states any side of it: the
-/// side panel's own padding. It then pads the whole panel, a side it leaves
+/// `sidebar.container(NONE)`'s padding sides (top, right, bottom, left) in
+/// the installed 0.8.0 theme, where it states any side of them: the side
+/// panel's own padding. It then pads the whole panel, a side it leaves
 /// unstated by `layout.container_margin`, and the panel's content adds none
 /// ([`side_panel_content_margin`]), as the egui showcase's side panel takes
 /// it. `None` where it states no side.
-pub(crate) fn sidebar_padding(cx: &App) -> Option<ResolvedPadding> {
-    native_value(cx, |n| n.resolved.sidebar.border.padding).filter(|p| {
-        [p.top, p.right, p.bottom, p.left]
-            .iter()
-            .any(Option::is_some)
+pub(crate) fn sidebar_padding(cx: &App) -> Option<[Option<f32>; 4]> {
+    next_value(cx, |r| {
+        next::padding_of(&r.sidebar.container(WidgetState::NONE))
     })
+    .filter(|sides| sides.iter().any(Option::is_some))
 }
 
 /// The padding of the side panel's settings and of the inspector's content:

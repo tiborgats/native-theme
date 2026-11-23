@@ -1353,7 +1353,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.side_panel.inspector_tabs",
         "layout.container_margin_px",
-        "gpui: the tab bar's side inset where sidebar.border.padding states no side (none where that is unstated); where it states any, the side panel's padding insets it (demo::native_tab_bar)",
+        "gpui: the tab bar's side inset where sidebar.container(NONE) states no padding side (none where that is unstated); where it states any, the side panel's padding insets it (demo::native_tab_bar)",
     ),
     (
         "chrome.page_tabs",
@@ -1363,7 +1363,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.side_panel.inspector",
         "layout.container_margin_px",
-        "gpui: pads the inspector's content where sidebar.border.padding states no side (none where that is unstated); where it states any, the side panel's padding pads it (inspector.rs)",
+        "gpui: pads the inspector's content where sidebar.container(NONE) states no padding side (none where that is unstated); where it states any, the side panel's padding pads it (inspector.rs)",
     ),
     (
         "chrome.status_bar",
@@ -1378,7 +1378,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "layout.container_margin_px",
-        "gpui: the margin (none where that is unstated) pads the theme settings where sidebar.border.padding states no side, and where it states any, a side of the side panel the padding leaves unstated (demo::side_panel)",
+        "gpui: the margin (none where that is unstated) pads the theme settings where sidebar.container(NONE) states no padding side, and where it states any, a side of the side panel the padding leaves unstated (demo::side_panel)",
     ),
     (
         "chrome.info",
@@ -2118,27 +2118,27 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "sidebar.background_color",
-        "gpui: ThemeColor sidebar (colors.rs): the side panel's fill (demo::side_panel)",
+        "gpui: sidebar.container(NONE).fill, ThemeColor sidebar (next/mod.rs): the side panel's fill (demo::side_panel)",
     ),
     (
         "",
         "sidebar.border.padding_top_px",
-        "gpui: pads the side panel where any side is stated, a side it leaves unstated by layout.container_margin (none where that is unstated); where no side is stated, layout.container_margin pads the settings, the inspector's tab row and its content (none where that is unstated) (demo::side_panel)",
+        "gpui: sidebar.container(NONE)'s padding side pads the side panel where any side is stated, a side it leaves unstated by layout.container_margin (none where that is unstated); where no side is stated, layout.container_margin pads the settings, the inspector's tab row and its content (none where that is unstated) (demo::side_panel)",
     ),
     (
         "",
         "sidebar.border.padding_right_px",
-        "gpui: pads the side panel where any side is stated, a side it leaves unstated by layout.container_margin (none where that is unstated); where no side is stated, layout.container_margin pads the settings, the inspector's tab row and its content (none where that is unstated) (demo::side_panel)",
+        "gpui: sidebar.container(NONE)'s padding side pads the side panel where any side is stated, a side it leaves unstated by layout.container_margin (none where that is unstated); where no side is stated, layout.container_margin pads the settings, the inspector's tab row and its content (none where that is unstated) (demo::side_panel)",
     ),
     (
         "",
         "sidebar.border.padding_bottom_px",
-        "gpui: pads the side panel where any side is stated, a side it leaves unstated by layout.container_margin (none where that is unstated); where no side is stated, layout.container_margin pads the settings, the inspector's tab row and its content (none where that is unstated) (demo::side_panel)",
+        "gpui: sidebar.container(NONE)'s padding side pads the side panel where any side is stated, a side it leaves unstated by layout.container_margin (none where that is unstated); where no side is stated, layout.container_margin pads the settings, the inspector's tab row and its content (none where that is unstated) (demo::side_panel)",
     ),
     (
         "",
         "sidebar.border.padding_left_px",
-        "gpui: pads the side panel where any side is stated, a side it leaves unstated by layout.container_margin (none where that is unstated); where no side is stated, layout.container_margin pads the settings, the inspector's tab row and its content (none where that is unstated) (demo::side_panel)",
+        "gpui: sidebar.container(NONE)'s padding side pads the side panel where any side is stated, a side it leaves unstated by layout.container_margin (none where that is unstated); where no side is stated, layout.container_margin pads the settings, the inspector's tab row and its content (none where that is unstated) (demo::side_panel)",
     ),
     (
         "chrome.info",

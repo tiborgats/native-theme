@@ -4106,7 +4106,7 @@ fn hover_box(cx: &mut VisualTestContext, at: Point<Pixels>) -> Option<Bounds<Pix
 /// container it is in. So the page TabBar is inset by
 /// `layout.container_margin`, and the inspector's by what pads the side
 /// panel's content: the panel's own padding where the theme states a
-/// `sidebar.border.padding` (adwaita), a side it leaves unstated taking
+/// padding side of `sidebar.container(NONE)` (adwaita), a side it leaves unstated taking
 /// `layout.container_margin`, else `layout.container_margin` on the content
 /// (kde-breeze) -- read from the theme installed. Its first tab starts that
 /// far from the edge of its panel, not against the resize handle's line or
@@ -4221,7 +4221,7 @@ fn the_tab_bars_are_inset_by_the_container_margin(cx: &mut TestAppContext) {
 
 /// The side panel's own padding per side, as `demo::side_panel` draws it
 /// under the theme installed: where the theme states any side of
-/// `sidebar.border.padding`, that side, else `layout.container_margin`, else
+/// `sidebar.container(NONE)`'s padding, that side, else `layout.container_margin`, else
 /// none; where it states no side, none (the margin then pads the content,
 /// `demo::side_panel_content_margin`).
 fn side_panel_padding(
@@ -4230,13 +4230,13 @@ fn side_panel_padding(
 ) -> gpui::Edges<Pixels> {
     read(cx, showcase, |_, cx| {
         let margin = crate::support::next_metric(cx, next::geometry::container_margin);
-        crate::demo::sidebar_padding(cx).map(|p| {
+        crate::demo::sidebar_padding(cx).map(|[top, right, bottom, left]| {
             let side = |v: Option<f32>| v.map(px).or(margin).unwrap_or_default();
             gpui::Edges {
-                top: side(p.top),
-                right: side(p.right),
-                bottom: side(p.bottom),
-                left: side(p.left),
+                top: side(top),
+                right: side(right),
+                bottom: side(bottom),
+                left: side(left),
             }
         })
     })
@@ -6874,7 +6874,7 @@ fn only_an_interactive_run_follows_the_os() {
 }
 
 /// The chrome takes what the theme states: the side panel is filled with
-/// `sidebar.background_color`; the splitter is `splitter.divider_width`
+/// `sidebar.container(NONE).fill`; the splitter is `splitter.divider_width`
 /// wide in `splitter.divider_color`; a menu title under the pointer fills
 /// with `menu.hover_background`, opens its menu, and a row of it runs its
 /// action; and a page tab is at least `tab.min_width` by `tab.min_height`.
@@ -6892,19 +6892,22 @@ fn the_chrome_follows_the_theme(cx: &mut TestAppContext) {
                 native_color(cx, |n| pick(n.resolved))
             })
         };
-    let sidebar = stated(&mut cx, |r| r.sidebar.background_color);
-    assert!(sidebar.is_some(), "no native theme is installed");
-    assert_eq!(
-        painted_fill(&mut cx, CHROME_SIDE_PANEL),
-        sidebar,
-        "the side panel is not filled with sidebar.background_color"
-    );
     let next = next_theme(&mut cx, &showcase);
     let next_fill =
         |part: fn(&native_theme::next::ResolvedTheme) -> native_theme::next::PartStyle| {
             next.as_ref()
                 .and_then(|r| native_theme_gpui::next::fill_of(&part(r)))
         };
+    let sidebar = next_fill(|r| r.sidebar.container(native_theme::next::WidgetState::NONE));
+    assert!(
+        sidebar.is_some(),
+        "no 0.8.0 theme is installed, or it states no sidebar fill"
+    );
+    assert_eq!(
+        painted_fill(&mut cx, CHROME_SIDE_PANEL),
+        sidebar,
+        "the side panel is not filled with sidebar.container(NONE).fill"
+    );
     let drop_down = next_fill(|r| r.combo_box.field(native_theme::next::WidgetState::NONE));
     let text_area = next_fill(|r| r.text_area.field(native_theme::next::WidgetState::NONE));
     assert!(
@@ -10549,37 +10552,6 @@ fn install_breeze_light(cx: &mut VisualTestContext, r: &native_theme_gpui::Resol
             &prefs,
             cx,
         );
-    });
-    cx.run_until_parked();
-    draw(cx);
-}
-
-/// Keep `r` as the 0.7.2 theme beside the installed 0.8.0 one
-/// (`support::OldModel`), as the theme settings' choice keeps it for the
-/// readers not yet on the 0.8.0 model, and draw the frame it produced. The
-/// installed 0.8.0 theme and gpui-component's theme stay, so what reads them
-/// (the ported label font among them) is drawn as before.
-fn keep_old_beside_next(cx: &mut VisualTestContext, r: &native_theme_gpui::ResolvedTheme) {
-    cx.update(|window, cx| {
-        assert!(
-            crate::support::next_resolved(cx).is_some(),
-            "no 0.8.0 theme is installed to keep the 0.7.2 one beside"
-        );
-        let accessibility = cx
-            .try_global::<crate::support::OldModel>()
-            .map(|old| old.accessibility.clone());
-        assert!(
-            accessibility.is_some(),
-            "the installed 0.8.0 theme has no 0.7.2 theme kept beside it"
-        );
-        let Some(accessibility) = accessibility else {
-            return;
-        };
-        cx.set_global(crate::support::OldModel {
-            resolved: r.clone(),
-            accessibility,
-        });
-        window.refresh();
     });
     cx.run_until_parked();
     draw(cx);
@@ -18335,10 +18307,12 @@ fn the_basic_list_labels_are_recorded_centred_down_their_rows(cx: &mut TestAppCo
 }
 
 /// The side panel's settings are padded by `layout.container_margin` where
-/// the theme states no `sidebar.border.padding`, and by the stated sides of
-/// it where it states them, the content then adding none.
+/// the installed 0.8.0 theme states no padding side of
+/// `sidebar.container(NONE)` (kde-breeze), and by the stated sides where a
+/// patch states them, the content then adding none.
 #[gpui::test]
 fn the_side_panel_takes_the_sidebars_padding(cx: &mut TestAppContext) {
+    use native_theme::next::{Edges, PartPatch, SidebarRule, ThemePatch, WidgetState};
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     use_preset(&mut cx, &showcase, "kde-breeze");
     let place = |cx: &mut VisualTestContext| {
@@ -18358,28 +18332,19 @@ fn the_side_panel_takes_the_sidebars_padding(cx: &mut TestAppContext) {
         margin.map(|m| (m, m)),
         "unstated sidebar padding: the settings are not container_margin in"
     );
-    let resolved = native_theme::theme::Theme::preset("kde-breeze")
-        .ok()
-        .and_then(|t| t.into_variant(native_theme::theme::ColorMode::Light).ok())
-        .and_then(|v| {
-            v.into_resolved(&native_theme::ResolutionContext::for_tests())
-                .ok()
-        });
-    assert!(resolved.is_some(), "kde-breeze light does not resolve");
-    let Some(mut resolved) = resolved else { return };
-    resolved.sidebar.border.padding.top = Some(3.0);
-    resolved.sidebar.border.padding.left = Some(7.0);
-    cx.update(|_window, cx| {
-        let prefs = native_theme::AccessibilityPreferences::default();
-        native_theme_gpui::apply(
-            native_theme_gpui::to_theme(&resolved, "kde-breeze", false, &prefs),
-            &resolved,
-            &prefs,
-            cx,
-        );
-    });
-    cx.run_until_parked();
-    draw(&mut cx);
+    let r = next_theme(&mut cx, &showcase);
+    assert!(r.is_some(), "no 0.8.0 theme is installed");
+    let Some(mut r) = r else { return };
+    assert!(
+        native_theme_gpui::next::padding_of(&r.sidebar.container(WidgetState::NONE))
+            .iter()
+            .all(Option::is_none),
+        "kde-breeze now pads its sidebar, so the unstated case above proves nothing"
+    );
+    r.apply_patch(&ThemePatch::new().sidebar(
+        SidebarRule::new().container(PartPatch::new().padding(Edges::new(3.0, 5.0, 4.0, 7.0))),
+    ));
+    install_next(&mut cx, &r);
     assert_eq!(
         place(&mut cx),
         Some((px(7.), px(3.))),
@@ -18387,36 +18352,33 @@ fn the_side_panel_takes_the_sidebars_padding(cx: &mut TestAppContext) {
     );
 }
 
-/// The side panel's info says what pads it (M9-011): with no
-/// `sidebar.border.padding` stated, `layout.container_margin` around the
+/// The side panel's info says what pads it (M9-011): with no padding side of
+/// `sidebar.container(NONE)` stated, `layout.container_margin` around the
 /// theme settings, its geometry line recorded; with every side stated, each
-/// side by `sidebar.border`'s value and no `container_margin` line, the
-/// margin padding nothing; with some sides stated, those by `sidebar.border`
+/// side by `sidebar.container(NONE)`'s value and no `container_margin` line,
+/// the margin padding nothing; with some sides stated, those by its value
 /// and the rest by `layout.container_margin`, whose line is then recorded.
-/// The paddings are spliced into kde-breeze, which states none, and adwaita
-/// states all four sides itself.
+/// kde-breeze states none, a patch over it states all four, and adwaita
+/// states all four itself; a patch states all four sides at once, so the
+/// case of some sides is the info built for them (`info::side_panel`).
 #[gpui::test]
 fn the_side_panels_info_names_the_padding_it_draws(cx: &mut TestAppContext) {
     use crate::info::px_text;
-    use native_theme::theme::ResolvedPadding;
+    use native_theme::next::{Edges, PartPatch, SidebarRule, ThemePatch, WidgetState};
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    let all = ResolvedPadding {
-        top: Some(3.0),
-        right: Some(5.0),
-        bottom: Some(4.0),
-        left: Some(7.0),
-    };
-    let some = ResolvedPadding {
-        top: Some(3.0),
-        left: Some(7.0),
-        ..Default::default()
+    let all = ThemePatch::new().sidebar(
+        SidebarRule::new().container(PartPatch::new().padding(Edges::new(3.0, 5.0, 4.0, 7.0))),
+    );
+    let some = [Some(3.0), None, None, Some(7.0)];
+    let stated_sides = |r: &native_theme::next::ResolvedTheme| {
+        native_theme_gpui::next::padding_of(&r.sidebar.container(WidgetState::NONE))
     };
     let mut bundled_all = false;
-    for (preset, splice) in [
-        ("kde-breeze", Some(ResolvedPadding::default())),
-        ("kde-breeze", Some(all)),
-        ("kde-breeze", Some(some)),
-        ("adwaita", None),
+    for (preset, patch, built) in [
+        ("kde-breeze", None, false),
+        ("kde-breeze", Some(&all), false),
+        ("kde-breeze", None, true),
+        ("adwaita", None, false),
     ] {
         use_preset(&mut cx, &showcase, preset);
         let margin = next_layout_metric(&mut cx, &showcase, next::geometry::container_margin);
@@ -18424,34 +18386,44 @@ fn the_side_panels_info_names_the_padding_it_draws(cx: &mut TestAppContext) {
         let Some(margin) = margin else {
             return;
         };
-        if let Some(padding) = splice {
-            let mut theme = resolved_theme(&mut cx, &showcase);
-            assert_eq!(
-                theme.sidebar.border.padding,
-                ResolvedPadding::default(),
+        let r = next_theme(&mut cx, &showcase);
+        assert!(r.is_some(), "{preset}: no 0.8.0 theme is installed");
+        let Some(mut r) = r else { return };
+        if preset == "kde-breeze" {
+            assert!(
+                stated_sides(&r).iter().all(Option::is_none),
                 "{preset} now states a sidebar padding; the spliced cases need another preset"
             );
-            theme.sidebar.border.padding = padding;
-            keep_old_beside_next(&mut cx, &theme);
         }
-        let padding = resolved_theme(&mut cx, &showcase).sidebar.border.padding;
-        let at = format!("{preset}, sidebar.border.padding {padding:?}");
-        let info = settle_on(&mut cx, &showcase, CHROME_SIDE_PANEL);
+        if let Some(patch) = patch {
+            r.apply_patch(patch);
+            install_next(&mut cx, &r);
+        }
+        let padding = if built { some } else { stated_sides(&r) };
+        let at = format!("{preset}, sidebar.container(NONE) padding {padding:?}");
+        let info = if built {
+            let t = cx.update(|_, cx| Theme::global(cx).clone());
+            Some(crate::info::side_panel(&t, Some(margin), Some(some)))
+        } else {
+            settle_on(&mut cx, &showcase, CHROME_SIDE_PANEL)
+        };
         let Some(info) = info else {
             panic!("{at}: the side panel shows no info");
         };
+        let [top, right, bottom, left] = padding;
         let sides = [
-            ("top", padding.top),
-            ("right", padding.right),
-            ("bottom", padding.bottom),
-            ("left", padding.left),
+            ("top", top),
+            ("right", right),
+            ("bottom", bottom),
+            ("left", left),
         ];
         let stated = sides.iter().any(|(_, v)| v.is_some());
         let unstated = sides.iter().any(|(_, v)| v.is_none());
-        bundled_all |= splice.is_none() && !unstated;
-        assert_eq!(
-            names_the_container_margin(&info),
-            unstated,
+        bundled_all |= preset == "adwaita" && !unstated;
+        // `demo::side_panel` records the margin's line, which the info built
+        // alone does not.
+        assert!(
+            built || names_the_container_margin(&info) == unstated,
             "{at}: the side panel's info {} geometry::container_margin, which pads {} side: \
              {info:?}",
             if unstated {
@@ -18466,7 +18438,7 @@ fn the_side_panels_info_names_the_padding_it_draws(cx: &mut TestAppContext) {
             sides
                 .iter()
                 .map(|(side, v)| match v {
-                    Some(v) => format!("{side} {}px, sidebar.border's", px_text(*v)),
+                    Some(v) => format!("{side} {}px, sidebar.container(NONE)'s", px_text(*v)),
                     None => format!(
                         "{side} {}px, layout.container_margin",
                         px_text(margin.as_f32())
@@ -18488,25 +18460,30 @@ fn the_side_panels_info_names_the_padding_it_draws(cx: &mut TestAppContext) {
     }
     assert!(
         bundled_all,
-        "adwaita no longer states every side of sidebar.border.padding, the bundled case of a \
-         side panel the margin pads nothing of"
+        "adwaita no longer states every padding side of sidebar.container(NONE), the bundled \
+         case of a side panel the margin pads nothing of"
     );
 }
 
 /// The side panel's Widget Info routes each `sidebar.border.padding_*` leaf
 /// as `demo::side_panel` draws it (Addendum I S2): under windows-11, which
-/// states the sidebar's left and right padding alone, the panel's top is
-/// padded by `layout.container_margin`, and the route the inspector shows
-/// and copies for `sidebar.border.padding_top_px` says that a side the
-/// padding leaves unstated takes the margin, not that the margin pads the
-/// content, which the panel then leaves unpadded.
+/// states the sidebar's left and right padding alone
+/// (`sidebar.container(NONE)`), the panel's top is padded by
+/// `layout.container_margin`, and the route the inspector shows and copies
+/// for `sidebar.border.padding_top_px` says that a side the padding leaves
+/// unstated takes the margin, not that the margin pads the content, which
+/// the panel then leaves unpadded.
 #[gpui::test]
 fn the_side_panels_padding_routes_name_the_margin_on_an_unstated_side(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     use_preset(&mut cx, &showcase, "windows-11");
-    let p = resolved_theme(&mut cx, &showcase).sidebar.border.padding;
+    let p = next_theme(&mut cx, &showcase).map(|r| {
+        native_theme_gpui::next::padding_of(
+            &r.sidebar.container(native_theme::next::WidgetState::NONE),
+        )
+    });
     assert!(
-        p.top.is_none() && p.left.is_some(),
+        p.is_some_and(|[top, _, _, left]| top.is_none() && left.is_some()),
         "windows-11 no longer states its sidebar's left padding without its top: {p:?}"
     );
     let info = settle_on(&mut cx, &showcase, CHROME_SIDE_PANEL);

@@ -5,7 +5,6 @@ use std::time::Duration;
 use gpui::Pixels;
 use gpui_component::{Colorize as _, theme::Theme};
 use native_theme::next::{ResolvedTheme as NextTheme, WidgetState};
-use native_theme::theme::ResolvedPadding;
 use native_theme_gpui::ResolvedTheme;
 use native_theme_gpui::next::{self, fill_of, state_fill_of, state_text_color_of, text_color_of};
 
@@ -788,15 +787,16 @@ pub fn panel_toggle(
 }
 
 /// The side panel (spec S2): the theme settings, a Separator and the
-/// inspector. `sidebar` is `sidebar.border.padding` where the theme states
-/// any side of it, which then pads the whole panel, and `container_margin`
-/// the installed layout's, which pads a side `sidebar` leaves unstated, or
-/// the settings where there is no `sidebar`. Its geometry line is recorded
-/// where `demo::side_panel` pads with the margin.
+/// inspector. `sidebar` is `sidebar.container(NONE)`'s padding sides (top,
+/// right, bottom, left) where the installed 0.8.0 theme states any of them,
+/// which then pad the whole panel, and `container_margin` the installed
+/// layout's, which pads a side `sidebar` leaves unstated, or the settings
+/// where there is no `sidebar`. Its geometry line is recorded where
+/// `demo::side_panel` pads with the margin.
 pub fn side_panel(
     t: &Theme,
     container_margin: Option<Pixels>,
-    sidebar: Option<ResolvedPadding>,
+    sidebar: Option<[Option<f32>; 4]>,
 ) -> WidgetInfo {
     WidgetInfo::new("Side panel")
         .not_themeable(
@@ -812,7 +812,7 @@ pub fn side_panel(
         ))
         .config(
             "colours",
-            "sidebar.background_color and sidebar.font's colour, the sidebar and sidebar_foreground tokens the connector installs, which the showcase paints the panel with",
+            "sidebar.container(NONE).fill and sidebar.item_label(NONE).color, the sidebar and sidebar_foreground tokens the connector installs, which the showcase paints the panel with",
         )
         .instance(
             "holds",
@@ -821,20 +821,20 @@ pub fn side_panel(
         .instance(
             "padding",
             match (sidebar, container_margin) {
-                (Some(p), _) => {
+                (Some([top, right, bottom, left]), _) => {
                     let side = |name: &str, stated: Option<f32>| match (stated, container_margin) {
-                        (Some(v), _) => format!("{name} {}px, sidebar.border's", px_text(v)),
+                        (Some(v), _) => format!("{name} {}px, sidebar.container(NONE)'s", px_text(v)),
                         (None, Some(m)) => {
                             format!("{name} {}px, layout.container_margin", px_text(m.as_f32()))
                         }
-                        (None, None) => format!("{name} none: sidebar.border.padding and layout.container_margin leave it unstated"),
+                        (None, None) => format!("{name} none: sidebar.container(NONE) and layout.container_margin leave it unstated"),
                     };
                     format!(
-                        "the whole panel, by sidebar.border.padding, a side it leaves unstated by layout.container_margin: {}; {}; {}; {}. The theme settings, the inspector's tab row and its content add none",
-                        side("top", p.top),
-                        side("right", p.right),
-                        side("bottom", p.bottom),
-                        side("left", p.left),
+                        "the whole panel, by sidebar.container(NONE)'s padding, a side it leaves unstated by layout.container_margin: {}; {}; {}; {}. The theme settings, the inspector's tab row and its content add none",
+                        side("top", top),
+                        side("right", right),
+                        side("bottom", bottom),
+                        side("left", left),
                     )
                 }
                 (None, Some(margin)) => format!(
