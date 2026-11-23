@@ -3551,38 +3551,28 @@ fn the_empty_states_info_prints_its_icons_size(cx: &mut TestAppContext) {
     );
 }
 
-/// Both tables draw their header row `list.header_height` tall where the
-/// theme states it (adwaita, 30), and as tall as a body row is drawn where it
-/// does not (kde-breeze, which states no header height): the Data page's
-/// `DataTable` at `next::geometry::data_table_size`'s row height (its header
-/// at `list.header(NONE).min_size[1]`), the Basic page's
-/// table at `list.row_height`, or else its padding and the header font's line,
-/// on the pixel grid.
+/// Both tables draw their header row `list.header(NONE).min_size[1]` tall
+/// where the theme states it (adwaita, 30), and as tall as a body row is
+/// drawn where it does not (kde-breeze, which states no header height): the
+/// Data page's `DataTable` at `next::geometry::data_table_size`'s row height,
+/// the Basic page's table at `list.row(NONE).min_size[1]`, or else its
+/// cells' padding (`table_cell_padding_y`) and the header label's line, on
+/// the pixel grid -- each read from the installed 0.8.0 theme.
 #[gpui::test]
 fn the_tables_headers_take_the_themes_header_height(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     for preset in ["adwaita", "kde-breeze"] {
         use_preset(&mut cx, &showcase, preset);
-        // The Basic page's table still reads the 0.7.2 theme.
-        let (stated, basic_row) = read(&mut cx, &showcase, |_, cx| {
-            native_value(cx, |n| {
-                let l = &n.resolved.list;
-                let pad = &l.border.padding;
-                let line = native_theme_gpui::scaled_text_size(l.header_font.size, n.accessibility)
-                    * n.resolved.defaults.line_height;
-                (
-                    geometry::list_header_height(n),
-                    px(l.row_height
-                        .unwrap_or(pad.top.unwrap_or(0.) + line + pad.bottom.unwrap_or(0.))),
-                )
-            })
-        })
-        .unwrap_or_else(|| panic!("{preset}: no native theme is installed"));
-        assert_eq!(
-            stated.is_some(),
-            preset == "adwaita",
-            "precondition: {preset}'s header height"
-        );
+        let r = next_theme(&mut cx, &showcase);
+        assert!(r.is_some(), "{preset}: no 0.8.0 theme is installed");
+        let Some(r) = r else { return };
+        let header = r.list.header_label(native_theme::next::WidgetState::NONE);
+        let line = crate::demo::line_box(&r.typography, &header);
+        let padding = table_cell_padding_y(&r);
+        assert!(padding.is_some(), "{preset}: no table cell padding");
+        let Some((top, bottom)) = padding else { return };
+        let basic_row = r.list.row(native_theme::next::WidgetState::NONE).min_size[1]
+            .map_or(px(top + line + bottom), px);
         // The DataTable reads the installed 0.8.0 theme.
         let next = read(&mut cx, &showcase, |_, cx| {
             crate::support::next_resolved(cx).map(|r| {
@@ -3614,7 +3604,7 @@ fn the_tables_headers_take_the_themes_header_height(cx: &mut TestAppContext) {
         // Laid out on the pixel grid: a padding-and-line height rounds.
         let (drawn, want) = (
             bounds_of(&mut cx, "basic-table-header").size.height,
-            stated.unwrap_or(basic_row),
+            next_stated.unwrap_or(basic_row),
         );
         assert!(
             (drawn.as_f32() - want.as_f32()).abs() < 0.5,
@@ -10607,22 +10597,6 @@ fn edges_inside(cx: &mut VisualTestContext, selector: &'static str, colour: gpui
         .count()
 }
 
-/// Install `r` as kde-breeze's light variant, as an application that changed
-/// leaves of the resolved theme would, and draw the frame it produced.
-fn install_breeze_light(cx: &mut VisualTestContext, r: &native_theme_gpui::ResolvedTheme) {
-    cx.update(|_window, cx| {
-        let prefs = native_theme::AccessibilityPreferences::default();
-        native_theme_gpui::apply(
-            native_theme_gpui::to_theme(r, "kde-breeze", false, &prefs),
-            r,
-            &prefs,
-            cx,
-        );
-    });
-    cx.run_until_parked();
-    draw(cx);
-}
-
 /// A Basic check box under the pointer is framed by
 /// `checkbox.indicator(HOVER).stroke.color`, at rest by its own stroke, under
 /// kde-breeze, which states the hover edge: the unchecked box at rest by
@@ -10720,18 +10694,6 @@ fn a_hovered_checkbox_takes_the_hover_border(cx: &mut TestAppContext) {
         Some(next_stated(sentinel)),
         "a hovered checked box is not edged in checkbox.indicator(HOVER|CHECKED).stroke.color"
     );
-}
-
-/// Every leaf under `value` with its dotted path from `at`.
-fn colour_leaves(value: &serde_json::Value, at: &str, out: &mut Vec<(String, serde_json::Value)>) {
-    match value {
-        serde_json::Value::Object(map) => {
-            for (key, value) in map {
-                colour_leaves(value, &format!("{at}.{key}"), out);
-            }
-        }
-        leaf => out.push((at.to_owned(), leaf.clone())),
-    }
 }
 
 /// A Basic drop-down under the pointer takes
@@ -11125,10 +11087,10 @@ fn a_menu_title_takes_the_bars_fills_and_padding(cx: &mut TestAppContext) {
 /// hovered menu row (`menu.item(HOVER).stroke`) and a hovered list row
 /// (`list.highlight(HOVER).stroke`), the Theme menu's System row
 /// (`MenuLook::next_of`), the Overlays page's first menu row
-/// (`MenuRowsPaint::of`) and the Basic List's first row (`list_hover_edge`),
-/// each hovered, draw an outline; with both strokes patched to 0 wide in
-/// their own colours, each draws none, filled as before, so the pointer is
-/// on it. The Basic table (`files_table`) still reads the 0.7.2 theme.
+/// (`MenuRowsPaint::of`), the Basic List's first row (`list_hover_edge`) and
+/// the Basic table's first row (`TableLook`), each hovered, draw an outline;
+/// with both strokes patched to 0 wide in their own colours, each draws
+/// none, filled as before, so the pointer is on it.
 #[gpui::test]
 fn no_row_is_outlined_where_the_line_width_is_0(cx: &mut TestAppContext) {
     use native_theme::next::{ListRule, MenuRule, PartPatch, Stroke, ThemePatch, WidgetState};
@@ -11173,6 +11135,7 @@ fn no_row_is_outlined_where_the_line_width_is_0(cx: &mut TestAppContext) {
         ));
         show(cx, &showcase, Page::Basic);
         rows.push(("basic-list-row-0", hovered(cx, "basic-list-row-0")));
+        rows.push(("basic-table-row-0", hovered(cx, "basic-table-row-0")));
         rows
     };
     let outlined = drawn(&mut cx);
@@ -11395,25 +11358,28 @@ fn the_theme_menu_has_breezes_geometry(cx: &mut TestAppContext) {
 }
 
 /// E7: the Basic table's header draws its section line and its bottom line
-/// in `list.header_separator_color` where the theme states it, laid over
+/// in `list.header_separator(NONE).fill` where the theme states it, laid over
 /// the header's fill, and a body row its column line in `list.grid_color`:
 /// under kde-breeze light, the header's two lines (#23262933) and the first
 /// row's line (#c4c8cc); under adwaita, which states no header separator,
 /// the header's lines in `list.grid_color` too.
 #[gpui::test]
 fn the_table_headers_separators_take_their_colour(cx: &mut TestAppContext) {
-    use crate::info::stated;
+    use native_theme::next::WidgetState;
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     for preset in ["kde-breeze", "adwaita"] {
         use_light_preset(&mut cx, &showcase, preset);
         show(&mut cx, &showcase, Page::Basic);
-        let r = resolved_theme(&mut cx, &showcase);
-        let grid = stated(r.list.grid_color);
-        let header_line = r.list.header_separator_color.map(stated);
+        let r = next_theme(&mut cx, &showcase);
+        assert!(r.is_some(), "{preset}: no 0.8.0 theme is installed");
+        let Some(r) = r else { return };
+        let grid = crate::info::next_stated(r.list.grid_color);
+        let header_line =
+            native_theme_gpui::next::fill_of(&r.list.header_separator(WidgetState::NONE));
         assert_eq!(
             header_line.is_some(),
             preset == "kde-breeze",
-            "{preset}: list.header_separator_color is stated by kde-breeze alone"
+            "{preset}: list.header_separator(NONE).fill is stated by kde-breeze alone"
         );
         let line = header_line.unwrap_or(grid);
         hover(&mut cx, point(px(1200.), px(8900.)));
@@ -11527,19 +11493,25 @@ fn a_hovered_tree_row_takes_the_hover_border(cx: &mut TestAppContext) {
 }
 
 /// The Basic table's unselected row under the pointer is outlined in
-/// `list.hover_border_color` at `defaults.border.line_width`, a box over the
-/// row (`demo::files_table`), and at rest it is not: under kde-breeze light,
+/// `list.highlight(HOVER)`'s stroke, a box over the row
+/// (`demo::files_table`), and at rest it is not: under kde-breeze light,
 /// row 1; the selected row 2 never.
 #[gpui::test]
 fn a_hovered_table_row_takes_the_hover_border(cx: &mut TestAppContext) {
-    use crate::info::stated;
+    use native_theme::next::WidgetState;
+    use native_theme_gpui::next::{state_stroke_color_of, stroke_width_of};
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     use_light_preset(&mut cx, &showcase, "kde-breeze");
     show(&mut cx, &showcase, Page::Basic);
-    let r = resolved_theme(&mut cx, &showcase);
-    let edge = r.list.hover_border_color.map(stated);
-    assert!(edge.is_some(), "kde-breeze states list.hover_border_color");
-    let expected = edge.map(|e| (e, r.defaults.border.line_width));
+    let r = next_theme(&mut cx, &showcase);
+    let expected = r.as_ref().and_then(|r| {
+        let hovered = r.list.highlight(WidgetState::HOVER);
+        Some((state_stroke_color_of(&hovered)?, stroke_width_of(&hovered)?))
+    });
+    assert!(
+        expected.is_some_and(|(_, width)| width > 0.0),
+        "kde-breeze states list.highlight(HOVER)'s stroke"
+    );
     let far = point(px(1200.), px(8900.));
     for (row, outlined) in [("basic-table-row-0", true), ("basic-table-row-1", false)] {
         hover(&mut cx, far);
@@ -11555,7 +11527,7 @@ fn a_hovered_table_row_takes_the_hover_border(cx: &mut TestAppContext) {
         assert_eq!(
             last_edge_inside(&mut cx, row),
             expected.filter(|_| outlined),
-            "{row} under the pointer: the outline is not list.hover_border_color on an unselected row alone"
+            "{row} under the pointer: the outline is not list.highlight(HOVER)'s stroke on an unselected row alone"
         );
     }
 }
@@ -11589,6 +11561,27 @@ fn resolved_theme(
         native_value(cx, |n| n.resolved.clone())
     })
     .expect("a native theme is installed")
+}
+
+/// The top and bottom padding of a Basic table cell under `r`, as
+/// `demo::files_table` pads it: the side `next::geometry::list_item` sets,
+/// else gpui-component's own table cell padding; `None` where the builder
+/// gives no value or a side in other than pixels.
+fn table_cell_padding_y(r: &native_theme::next::ResolvedTheme) -> Option<(f32, f32)> {
+    use gpui::{AbsoluteLength, DefiniteLength};
+    let own = gpui_component::Size::default().table_cell_padding();
+    let padding = native_theme_gpui::next::geometry::list_item(r)
+        .ok()?
+        .padding;
+    let side = |side: Option<DefiniteLength>, own: Pixels| match side {
+        None => Some(f32::from(own)),
+        Some(DefiniteLength::Absolute(AbsoluteLength::Pixels(p))) => Some(f32::from(p)),
+        Some(_) => None,
+    };
+    Some((
+        side(padding.top, own.top)?,
+        side(padding.bottom, own.bottom)?,
+    ))
 }
 
 /// The installed 0.8.0 theme, which the test installed; `None` before one
@@ -13889,19 +13882,23 @@ fn the_native_number_field_reports_what_it_draws(cx: &mut TestAppContext) {
     );
 }
 
-/// The Basic page's table under a native theme -- the showcase's own rows,
-/// header and frame -- reports what it paints (M9-003), under kde-breeze
-/// light: the selected row `list.selection_background` and
-/// `selection_text_color`, the others `list.item_font`'s colour and the
-/// `list.hover_*` pair, no row a top edge, a row's line `list.grid_color`,
-/// the header `list.header_background` and `header_font`, its sections'
-/// `header_hover_background` and `header_active_background` and its lines'
-/// `header_separator_color`, the frame
-/// `list.border` round `list.background_color`. The fill painted on the
+/// The Basic page's table under the installed 0.8.0 theme -- the showcase's
+/// own rows, header and frame -- reports what it paints (M9-003), under
+/// kde-breeze light: the selected row `list.highlight(SELECTED).fill` and
+/// `list.item_label(SELECTED).color`, the others `list.item_label(NONE)`'s
+/// colour and the hovered pair, no row a top edge, a row's line
+/// `list.grid_color`, the header `list.header(NONE).fill` and
+/// `list.header_label(NONE)`'s colour, its sections' hovered and pressed
+/// fills and its lines' `list.header_separator(NONE).fill`, the frame
+/// `list.container(NONE)`'s stroke round its fill. The fill painted on the
 /// selected row is its claim.
 #[gpui::test]
 fn the_basic_tables_infos_report_what_it_draws(cx: &mut TestAppContext) {
-    use crate::info::stated;
+    use native_theme::next::WidgetState;
+    use native_theme_gpui::next::{
+        fill_of, state_fill_of, state_text_color_of, stroke_color_of, stroke_width_of,
+        text_color_of,
+    };
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     // kde-breeze's inactive fill differs from its selection, so in an
     // inactive window the selected row would paint
@@ -13911,13 +13908,18 @@ fn the_basic_tables_infos_report_what_it_draws(cx: &mut TestAppContext) {
     activate(&mut cx);
     use_light_preset(&mut cx, &showcase, "kde-breeze");
     show(&mut cx, &showcase, Page::Basic);
-    let r = resolved_theme(&mut cx, &showcase);
+    let r = next_theme(&mut cx, &showcase);
+    assert!(r.is_some(), "no 0.8.0 theme is installed");
+    let Some(r) = r else { return };
     let l = &r.list;
+    let container = l.container(WidgetState::NONE);
+    let frame_width = stroke_width_of(&container).unwrap_or_default();
     assert!(
-        l.border.line_width > 0.0 && r.separator.line_width > 0.0,
+        frame_width > 0.0 && r.separator.thickness > 0.0,
         "kde-breeze no longer frames its list or rules its grid, which this test reads"
     );
-    let grid = Some(stated(l.grid_color));
+    let grid = Some(crate::info::next_stated(l.grid_color));
+    let header_line = fill_of(&l.header_separator(WidgetState::NONE));
     let no_upstream_row = |info: &WidgetInfo, what: &str| {
         assert!(
             info.colors.iter().all(|c| !c.role.contains("top")
@@ -13927,85 +13929,115 @@ fn the_basic_tables_infos_report_what_it_draws(cx: &mut TestAppContext) {
     };
     let selected =
         settle_on(&mut cx, &showcase, "basic-table-row-1").expect("the selected row shows an info");
+    let hovered = l.highlight(WidgetState::HOVER);
+    assert!(
+        [
+            fill_of(&l.highlight(WidgetState::SELECTED)),
+            text_color_of(&l.item_label(WidgetState::SELECTED)),
+            fill_of(&hovered),
+            state_text_color_of(&l.item_label(WidgetState::HOVER)),
+            state_fill_of(&l.header(WidgetState::HOVER)),
+            state_fill_of(&l.header(WidgetState::PRESSED)),
+            header_line,
+        ]
+        .iter()
+        .all(Option::is_some),
+        "kde-breeze light no longer states a fill or colour this test reads"
+    );
     for (leaf, want) in [
-        ("selection_background", Some(stated(l.selection_background))),
-        ("selection_text_color", Some(stated(l.selection_text_color))),
-        ("grid_color", grid),
+        (
+            "list.highlight(SELECTED).fill",
+            fill_of(&l.highlight(WidgetState::SELECTED)),
+        ),
+        (
+            "list.item_label(SELECTED).color",
+            text_color_of(&l.item_label(WidgetState::SELECTED)),
+        ),
+        ("list.grid_color", grid),
     ] {
         assert_eq!(
             claim_of(&selected, leaf),
             want,
-            "the selected row's info does not claim list.{leaf}: {selected:?}"
+            "the selected row's info does not claim {leaf}: {selected:?}"
         );
     }
     no_upstream_row(&selected, "selected row");
-    let other =
-        settle_on(&mut cx, &showcase, "basic-table-row-0").expect("the first row shows an info");
+    let other = settle_on(&mut cx, &showcase, "basic-table-row-0");
+    assert!(other.is_some(), "the first row shows no info");
+    let Some(other) = other else { return };
     for (leaf, want) in [
-        ("item_font", Some(stated(l.item_font.color))),
-        ("hover_background", Some(stated(l.hover_background))),
-        ("hover_text_color", Some(stated(l.hover_text_color))),
-        ("grid_color", grid),
+        (
+            "list.item_label(NONE).color",
+            text_color_of(&l.item_label(WidgetState::NONE)),
+        ),
+        ("list.highlight(HOVER).fill", fill_of(&hovered)),
+        (
+            "list.item_label(HOVER).color",
+            state_text_color_of(&l.item_label(WidgetState::HOVER)),
+        ),
+        ("list.grid_color", grid),
     ] {
         assert_eq!(
             claim_of(&other, leaf),
             want,
-            "the unselected row's info does not claim list.{leaf}: {other:?}"
+            "the unselected row's info does not claim {leaf}: {other:?}"
         );
     }
     no_upstream_row(&other, "unselected row");
-    let header =
-        settle_on(&mut cx, &showcase, "basic-table-header").expect("the header shows an info");
+    let header = settle_on(&mut cx, &showcase, "basic-table-header");
+    assert!(header.is_some(), "the header shows no info");
+    let Some(header) = header else { return };
     for (leaf, want) in [
-        ("header_background", Some(stated(l.header_background))),
-        ("header_font", Some(stated(l.header_font.color))),
         (
-            "header_hover_background",
-            l.header_hover_background.map(stated),
+            "list.header(NONE).fill",
+            fill_of(&l.header(WidgetState::NONE)),
         ),
         (
-            "header_active_background",
-            l.header_active_background.map(stated),
+            "list.header_label(NONE).color",
+            text_color_of(&l.header_label(WidgetState::NONE)),
         ),
         (
-            "header_separator_color",
-            l.header_separator_color
-                .map(stated)
-                .filter(|_| grid.is_some()),
+            "list.header(HOVER).fill",
+            state_fill_of(&l.header(WidgetState::HOVER)),
         ),
         (
-            "grid_color",
-            grid.filter(|_| l.header_separator_color.is_none()),
+            "list.header(PRESSED).fill",
+            state_fill_of(&l.header(WidgetState::PRESSED)),
         ),
+        ("list.header_separator(NONE).fill", header_line),
+        ("list.grid_color", None),
     ] {
         assert_eq!(
             claim_of(&header, leaf),
             want,
-            "the header's info does not claim list.{leaf}: {header:?}"
+            "the header's info does not claim {leaf}: {header:?}"
         );
     }
     // The frame's own target: inside its edge, which no row reaches.
     let frame = bounds_of(&mut cx, "basic-table");
-    let inside_edge = point(
-        frame.left() + px(l.border.line_width / 2.),
-        frame.center().y,
-    );
-    let table = settle_at(&mut cx, &showcase, inside_edge).expect("the frame shows an info");
+    let inside_edge = point(frame.left() + px(frame_width / 2.), frame.center().y);
+    let table = settle_at(&mut cx, &showcase, inside_edge);
+    assert!(table.is_some(), "the frame shows no info");
+    let Some(table) = table else { return };
     for (leaf, want) in [
-        ("background_color", Some(stated(l.background_color))),
-        ("border", Some(stated(l.border.color))),
+        ("list.container(NONE).fill", fill_of(&container)),
+        (
+            "list.container(NONE).stroke.color",
+            stroke_color_of(&container),
+        ),
     ] {
+        assert!(want.is_some(), "kde-breeze light states no {leaf}");
         assert_eq!(
             claim_of(&table, leaf),
             want,
-            "the table frame's info does not claim list.{leaf}: {table:?}"
+            "the table frame's info does not claim {leaf}: {table:?}"
         );
     }
     hover(&mut cx, point(px(4.), px(4.)));
     draw(&mut cx);
     assert_eq!(
         painted_fill(&mut cx, "basic-table-row-1"),
-        claim_of(&selected, "selection_background"),
+        claim_of(&selected, "list.highlight(SELECTED).fill"),
         "the fill painted on the selected row is not the fill its info claims"
     );
 }
@@ -14022,7 +14054,7 @@ fn the_basic_tables_infos_report_what_it_draws(cx: &mut TestAppContext) {
 /// `defaults.selection_inactive_text_color` in the inactive one.
 #[gpui::test]
 fn the_basic_tables_selected_row_follows_the_windows_state(base: &mut TestAppContext) {
-    use crate::info::stated;
+    use crate::info::next_stated;
     #[cfg(feature = "gpui-fast")]
     let mut app = TestAppContext::build_with_text_system(
         base.dispatcher.clone(),
@@ -14034,28 +14066,35 @@ fn the_basic_tables_selected_row_follows_the_windows_state(base: &mut TestAppCon
     let (showcase, _root, mut cx) = open(base, WINDOW_SIZE);
     use_light_preset(&mut cx, &showcase, "kde-breeze");
     show(&mut cx, &showcase, Page::Basic);
-    let r = resolved_theme(&mut cx, &showcase);
+    let r = next_theme(&mut cx, &showcase);
+    assert!(r.is_some(), "no 0.8.0 theme is installed");
+    let Some(r) = r else { return };
     assert!(
-        crate::demo::inactive_selection_differs(&r),
+        crate::demo::inactive_selection_differs(&r).is_some(),
         "kde-breeze's inactive selection fill is its selection's, so this test would see no swap"
     );
     let info = settle_on(&mut cx, &showcase, "basic-table-row-1");
     assert!(info.is_some(), "the selected row shows no info");
     let Some(info) = info else { return };
     let claimed = [
-        "selection_background",
-        "selection_text_color",
-        "selection_inactive_background",
-        "selection_inactive_text_color",
+        "list.highlight(SELECTED).fill",
+        "list.item_label(SELECTED).color",
+        "colors.selection.unfocused_background",
+        "colors.selection.unfocused_foreground",
     ]
     .map(|field| claim_of(&info, field));
+    let selection = &r.colors.selection;
     assert_eq!(
         claimed,
         [
-            Some(stated(r.list.selection_background)),
-            Some(stated(r.list.selection_text_color)),
-            Some(stated(r.defaults.selection_inactive_background)),
-            Some(stated(r.defaults.selection_inactive_text_color)),
+            native_theme_gpui::next::fill_of(
+                &r.list.highlight(native_theme::next::WidgetState::SELECTED)
+            ),
+            native_theme_gpui::next::text_color_of(
+                &r.list.item_label(native_theme::next::WidgetState::SELECTED)
+            ),
+            selection.unfocused_background.map(next_stated),
+            selection.unfocused_foreground.map(next_stated),
         ],
         "the selected row's info does not claim both pairs: {info:?}"
     );
@@ -14125,35 +14164,46 @@ fn the_basic_tables_selected_row_follows_the_windows_state(base: &mut TestAppCon
     }
 }
 
-/// On every bundled combination, `selection_pair` gives the list's own pair
-/// in an active window, and in an inactive one the unfocused selection's
-/// pair on exactly the combinations whose
-/// `defaults.selection_inactive_background` differs from
-/// `defaults.selection_background` -- kde-breeze's and the two macOS
+/// On every bundled 0.8.0 combination, `selection_pair` gives the list's own
+/// pair in an active window, and in an inactive one the unfocused
+/// selection's pair on exactly the combinations that state a
+/// `colors.selection.unfocused_background` other than
+/// `colors.selection.background` -- kde-breeze's and the two macOS
 /// presets', in both modes (7.H.2) -- and the list's own pair on the others.
 #[test]
 fn the_selection_pair_swaps_only_where_the_inactive_fill_differs() {
     use crate::demo::selection_pair;
-    use crate::info::stated;
+    use crate::info::next_stated;
+    use native_theme::next::WidgetState;
+    use native_theme_gpui::next::{fill_of, text_color_of};
     let mut swapped = Vec::new();
     let mut wrong = Vec::new();
-    for (name, r, _) in every_bundled_variant() {
+    for (name, r, _) in every_next_variant() {
         let list = (
-            stated(r.list.selection_background),
-            stated(r.list.selection_text_color),
+            fill_of(&r.list.highlight(WidgetState::SELECTED)),
+            text_color_of(&r.list.item_label(WidgetState::SELECTED)),
         );
-        let inactive = (
-            stated(r.defaults.selection_inactive_background),
-            stated(r.defaults.selection_inactive_text_color),
-        );
-        if selection_pair(&r, true) != list {
+        let Some(list) = list.0.zip(list.1) else {
+            wrong.push(format!("{name}: no selected row's pair"));
+            continue;
+        };
+        let s = &r.colors.selection;
+        let inactive = s.unfocused_background.map(|fill| {
+            (
+                next_stated(fill),
+                s.unfocused_foreground.map_or(list.1, next_stated),
+            )
+        });
+        if selection_pair(&r, true) != Ok(list) {
             wrong.push(format!(
                 "{name}: the active window's pair is not the list's"
             ));
         }
-        let differs = r.defaults.selection_inactive_background != r.defaults.selection_background;
-        let want = if differs { inactive } else { list };
-        if selection_pair(&r, false) != want {
+        let differs = s
+            .unfocused_background
+            .is_some_and(|fill| fill != s.background);
+        let want = inactive.filter(|_| differs).unwrap_or(list);
+        if selection_pair(&r, false) != Ok(want) {
             wrong.push(format!(
                 "{name}: the inactive window's pair is not the {}",
                 if differs {
@@ -14172,12 +14222,12 @@ fn the_selection_pair_swaps_only_where_the_inactive_fill_differs() {
     assert_eq!(
         swapped,
         [
-            "kde-breeze dark",
-            "kde-breeze light",
-            "macos-monterey dark",
-            "macos-monterey light",
-            "macos-tahoe dark",
-            "macos-tahoe light",
+            "kde-breeze Dark",
+            "kde-breeze Light",
+            "macos-monterey Dark",
+            "macos-monterey Light",
+            "macos-tahoe Dark",
+            "macos-tahoe Light",
         ],
         "the combinations whose inactive selection fill differs from the selection's"
     );
@@ -14186,17 +14236,17 @@ fn the_selection_pair_swaps_only_where_the_inactive_fill_differs() {
 /// Where the theme strokes no line, the native number field's and the
 /// Basic table's infos claim none (M9-001, M9-003). Under adwaita light the
 /// field's `input.field(NONE)` stroke is 0 wide: its info claims no edge,
-/// says so, and no edge is painted round it. adwaita states the list's and
-/// the separator's widths (1px, inherited), so the table's infos run their
-/// 0-width branches on its resolved theme with those two widths set to 0:
-/// no frame edge, no grid line.
+/// says so, and no edge is painted round it. adwaita strokes its list frame
+/// and states the separator's thickness, so the table's infos run their
+/// 0-width branches on its installed 0.8.0 theme with the frame's stroke
+/// patched to 0 wide and the thickness set to 0: no frame edge, no grid
+/// line.
 #[gpui::test]
 fn an_unstroked_edge_is_claimed_by_no_native_info(cx: &mut TestAppContext) {
     use crate::info::data::{native_table_frame, native_table_header, native_table_row};
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     use_light_preset(&mut cx, &showcase, "adwaita");
     show(&mut cx, &showcase, Page::Basic);
-    let mut r = resolved_theme(&mut cx, &showcase);
     let next = next_theme(&mut cx, &showcase);
     assert!(
         next.is_some_and(|next| {
@@ -14238,22 +14288,42 @@ fn an_unstroked_edge_is_claimed_by_no_native_info(cx: &mut TestAppContext) {
         None,
         "an edge is painted round the number field, whose info claims none"
     );
-    r.list.border.line_width = 0.0;
-    r.separator.line_width = 0.0;
-    let frame = native_table_frame(&r, 2);
+    let Some(mut next) = next_theme(&mut cx, &showcase) else {
+        return;
+    };
+    let container = next.list.container(native_theme::next::WidgetState::NONE);
+    let edge = crate::info::stroke_color_of(&container);
     assert!(
-        claim_of(&frame, "border").is_none()
-            && config(&frame, "edge").as_deref() == Some("none: list.border.line_width is 0"),
+        edge.is_some() && crate::info::stroke_width_of(&container).is_some_and(|w| w > 0.0),
+        "adwaita no longer strokes its list frame, so the patched 0 width proves nothing"
+    );
+    let Some(edge) = edge else { return };
+    let edge = gpui::Rgba::from(edge);
+    next.apply_patch(&native_theme::next::ThemePatch::new().list(
+        native_theme::next::ListRule::new().container(native_theme::next::PartPatch::new().stroke(
+            native_theme::next::Stroke::uniform(
+                0.,
+                native_theme::next::Color::new(edge.r, edge.g, edge.b, edge.a),
+            ),
+        )),
+    ));
+    next.separator.thickness = 0.0;
+    let t = cx.update(|_, cx| Theme::global(cx).clone());
+    let frame = native_table_frame(&next, 2);
+    assert!(
+        claim_of(&frame, "list.container(NONE).stroke.color").is_none()
+            && config(&frame, "edge").as_deref()
+                == Some("none: list.container(NONE).stroke.width is 0"),
         "the table frame claims an edge at a 0 width: {frame:?}"
     );
     for info in [
-        native_table_header(&r, "Name, Size"),
-        native_table_row(&r, true, "b.png, 20 KB"),
-        native_table_row(&r, false, "a.txt, 1 KB"),
+        native_table_header(&next, "Name, Size"),
+        native_table_row(&next, &t, true, "b.png, 20 KB"),
+        native_table_row(&next, &t, false, "a.txt, 1 KB"),
     ] {
         assert!(
-            claim_of(&info, "grid_color").is_none()
-                && config(&info, "grid").as_deref() == Some("none: separator.line_width is 0"),
+            claim_of(&info, "list.grid_color").is_none()
+                && config(&info, "grid").as_deref() == Some("none: separator.thickness is 0"),
             "a table row claims a grid line at a 0 width: {info:?}"
         );
     }
@@ -18740,7 +18810,7 @@ fn the_row_fill_corner_routes_say_the_fills_are_rounded() {
 }
 
 /// The fill of a row that meets a rounded list frame is rounded where it meets it, by the
-/// frame's inner radius (`list.border.corner_radius` less `list.border.line_width`), as the egui
+/// frame's inner radius (`list.container(NONE)`'s corner radius less its stroke width), as the egui
 /// (M9c T9) and iced (T9b) Basic pages round theirs, on either core: under adwaita the Basic
 /// table's header fill on its top corners, its last (selected) row's on its bottom corners,
 /// and the List's first row, hovered, on its top corners; each square on its other corners.
@@ -18751,13 +18821,14 @@ fn the_row_fills_are_rounded_where_they_meet_the_frame(cx: &mut TestAppContext) 
     show(&mut cx, &showcase, Page::Basic);
     use_preset(&mut cx, &showcase, "adwaita");
     without_motion(&mut cx);
-    let inner = f32::from(crate::demo::list_inner_radius(
-        &resolved_theme(&mut cx, &showcase).list.border,
-    ));
+    let inner = next_theme(&mut cx, &showcase)
+        .and_then(|r| crate::demo::next_list_inner_radius(&r))
+        .map(f32::from);
     assert!(
-        inner > 0.0,
+        inner.is_some_and(|inner| inner > 0.0),
         "adwaita's list frame is rounded inside its line"
     );
+    let Some(inner) = inner else { return };
     let row = bounds_of(&mut cx, "basic-list-row-0");
     hover(&mut cx, row.center());
     draw(&mut cx);
@@ -18793,52 +18864,89 @@ fn the_row_fills_are_rounded_where_they_meet_the_frame(cx: &mut TestAppContext) 
     assert!(wrong.is_empty(), "{}", wrong.join("\n"));
 }
 
+/// A Basic table header section that a rule fills under the pointer but no
+/// rule fills pressed takes its hovered fill pressed, being under the
+/// pointer, and one no rule fills either way takes none in either state
+/// (`demo::SectionFills::of`), the branches no bundled preset reaches; a
+/// stated pressed fill stands.
+#[test]
+fn a_pressed_section_without_a_fill_keeps_the_hovered_one() {
+    use crate::demo::SectionFills;
+    let (hover, press) = (gpui::red(), gpui::blue());
+    assert_eq!(
+        [
+            SectionFills::of(Some(hover), None),
+            SectionFills::of(None, None),
+            SectionFills::of(Some(hover), Some(press)),
+        ],
+        [
+            SectionFills {
+                hover: Some(hover),
+                active: Some(hover),
+            },
+            SectionFills {
+                hover: None,
+                active: None,
+            },
+            SectionFills {
+                hover: Some(hover),
+                active: Some(press),
+            },
+        ]
+    );
+}
+
 /// Each of the Basic table's two header sections is filled on its own
-/// under the pointer with `list.header_hover_background`, and pressed with
-/// `list.header_active_background`, else with the hovered fill (7.H.1,
-/// decision 19), under kde-breeze light: the fill is the quad of the
-/// section's own bounds, rounded by the frame's inner radius where it meets
-/// the frame -- the first section's top-left corner, the last's top-right --
-/// and square elsewhere, by the method of
+/// under the pointer with `list.header(HOVER).fill`, and pressed with
+/// `list.header(PRESSED).fill` (7.H.1, decision 19), under kde-breeze light:
+/// the fill is the quad of the section's own bounds, rounded by the frame's
+/// inner radius where it meets the frame -- the first section's top-left
+/// corner, the last's top-right -- and square elsewhere, by the method of
 /// `the_row_fills_are_rounded_where_they_meet_the_frame`. Breeze states one
 /// colour for both fills, and a pressed section is still under the pointer,
-/// so the test runs twice on the theme it installs: with the pressed fill
-/// replaced by a sentinel no other `list.*` leaf of the theme holds, and
-/// with no pressed fill. A pressed section is read with the pointer on it
-/// and again dragged off it, where the hovered fill no longer applies.
+/// so the test patches the installed 0.8.0 theme's pressed fill to a
+/// sentinel no colour the header paints holds. A pressed section is read
+/// with the pointer on it and again dragged off it, where the hovered fill
+/// no longer applies. A patch cannot leave the pressed fill unstated, so
+/// the hovered fill a section takes pressed where no rule states one is
+/// `a_pressed_section_without_a_fill_keeps_the_hovered_one`'s.
 #[gpui::test]
 fn the_tables_header_sections_take_the_hovered_and_pressed_fills(cx: &mut TestAppContext) {
-    use crate::info::stated;
+    use native_theme::next::{ListRule, Paint, PartPatch, ThemePatch, WidgetState};
+    use native_theme_gpui::next::{fill_of, state_fill_of};
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     use_light_preset(&mut cx, &showcase, "kde-breeze");
     show(&mut cx, &showcase, Page::Basic);
     without_motion(&mut cx);
-    let mut r = resolved_theme(&mut cx, &showcase);
-    let inner = f32::from(crate::demo::list_inner_radius(&r.list.border));
+    let r = next_theme(&mut cx, &showcase);
+    assert!(r.is_some(), "no 0.8.0 theme is installed");
+    let Some(mut r) = r else { return };
+    let inner = crate::demo::next_list_inner_radius(&r).map(f32::from);
     assert!(
-        inner > 0.0,
+        inner.is_some_and(|inner| inner > 0.0),
         "kde-breeze's list frame is rounded inside its line"
     );
-    let hovered = r.list.header_hover_background.map(stated);
+    let Some(inner) = inner else { return };
+    let l = &r.list;
+    let hovered = state_fill_of(&l.header(WidgetState::HOVER));
     assert!(
         hovered.is_some(),
         "kde-breeze states the header's hovered fill, which this test reads"
     );
-    let sentinel = native_theme::color::Rgba::new(0x12, 0x34, 0x56, 0xff);
-    let leaves = serde_json::to_value(&r.list).unwrap_or_default();
-    let mut held = Vec::new();
-    colour_leaves(&leaves, "list", &mut held);
-    let sentinel_text = serde_json::to_value(sentinel).unwrap_or_default();
+    let sentinel = native_theme::next::Color::new(0.07, 0.2, 0.34, 1.);
+    let painted = [
+        fill_of(&l.header(WidgetState::NONE)),
+        hovered,
+        state_fill_of(&l.header(WidgetState::PRESSED)),
+        fill_of(&l.header_separator(WidgetState::NONE)),
+        Some(crate::info::next_stated(l.grid_color)),
+        fill_of(&l.container(WidgetState::NONE)),
+    ];
     assert!(
-        held.iter()
-            .any(|(leaf, _)| leaf == "list.header_active_background"),
-        "the list's leaves did not serialise with their names: {held:?}"
-    );
-    assert!(
-        held.iter().all(
-            |(leaf, value)| leaf == "list.header_active_background" || *value != sentinel_text
-        ),
-        "a list leaf of kde-breeze light holds the sentinel, so the test could not tell it from the pressed fill: {held:?}"
+        painted
+            .iter()
+            .all(|c| *c != Some(crate::info::next_stated(sentinel))),
+        "a colour kde-breeze light paints the header with is the sentinel, so the test could not tell it from the pressed fill: {painted:?}"
     );
     let section_quad = |cx: &mut VisualTestContext, selector: &'static str| {
         let bounds = bounds_of(cx, selector);
@@ -18864,13 +18972,17 @@ fn the_tables_header_sections_take_the_hovered_and_pressed_fills(cx: &mut TestAp
     };
     let away = point(px(4.), px(4.));
     let mut wrong = Vec::new();
-    for (case, active) in [
-        ("a sentinel pressed fill", Some(sentinel)),
-        ("no pressed fill", None),
-    ] {
-        r.list.header_active_background = active;
-        install_breeze_light(&mut cx, &r);
-        let pressed = active.map(stated).or(hovered);
+    {
+        let case = "a sentinel pressed fill";
+        r.apply_patch(
+            &ThemePatch::new().list(
+                ListRule::new()
+                    .states(WidgetState::PRESSED)
+                    .header(PartPatch::new().fill(Paint::Solid(sentinel))),
+            ),
+        );
+        install_next(&mut cx, &r);
+        let pressed = Some(crate::info::next_stated(sentinel));
         for (selector, want) in [
             ("basic-table-header-0", [inner, 0.0, 0.0, 0.0]),
             ("basic-table-header-1", [0.0, inner, 0.0, 0.0]),

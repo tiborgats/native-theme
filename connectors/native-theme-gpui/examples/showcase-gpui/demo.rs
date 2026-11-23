@@ -5994,7 +5994,9 @@ impl<E: ChildElement + 'static> RenderOnce for Reported<E> {
 
 /// A declarative `Table` named `label`, refined by `next::geometry::table`:
 /// a header reading `head` above a body row for each of `rows`. The header
-/// and every body row report themselves.
+/// and every body row report themselves; where it stands in for the
+/// showcase's own table, `unthemed` is the home the installed theme states
+/// no value gpui can take at ([`files_table`]), which its info names.
 pub(crate) fn table(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -6002,9 +6004,16 @@ pub(crate) fn table(
     label: &'static str,
     head: [&'static str; 2],
     rows: &[[&'static str; 2]],
+    unthemed: Option<&'static str>,
 ) -> Stateful<Div> {
     let t = cx.theme();
     let mut table_info = info::data::table(t, rows.len());
+    if let Some(home) = unthemed {
+        table_info = table_info.instance(
+            "drawn by",
+            format!("gpui-component's own Table: the theme states no value gpui can take at {home}, which the showcase's own table needs (spec §10, rule 0)"),
+        );
+    }
     let table = next_native_info(
         Table::new(),
         cx,
@@ -6338,7 +6347,7 @@ fn list_gutter(cx: &App) -> Option<Pixels> {
 /// fill where a row meets the frame is rounded by it on the corners it meets
 /// (`ListRow::at_edges`), as [`list_inner_radius`] rounds it on the 0.7.2
 /// model.
-fn next_list_inner_radius(r: &native_theme::next::ResolvedTheme) -> Option<Pixels> {
+pub(crate) fn next_list_inner_radius(r: &native_theme::next::ResolvedTheme) -> Option<Pixels> {
     let container = r.list.container(WidgetState::NONE);
     let radius = info::radius_of(&container)?;
     let width = info::stroke_width_of(&container)?;
@@ -11152,12 +11161,14 @@ struct TableLine<'a> {
     listed: [Option<&'static str>; 2],
     /// The first part of each cell's element id, its column the second.
     cell_id: &'static str,
-    font: &'a ResolvedFontSpec,
+    font: &'a native_theme::next::TextStyle,
+    /// `font`'s home, which [`next_text_in`] names.
+    font_home: &'static str,
     text: Hsla,
     fill: Option<Hsla>,
     /// The line down the first cell's right edge and, where `closed`, the
     /// one along the bottom: `list.grid_color` in a body row, the header's
-    /// `list.header_separator_color`, else that.
+    /// `list.header_separator(NONE).fill`, else that.
     line: Hsla,
     closed: bool,
     /// The row's height where it is not a body row's.
@@ -11167,12 +11178,26 @@ struct TableLine<'a> {
 }
 
 /// The fills a header section of [`files_table`] takes on its own, each
-/// where the theme states one: under the pointer `list.header_hover_background`;
-/// pressed `list.header_active_background`, else the hovered fill.
-#[derive(Clone, Copy)]
-struct SectionFills {
-    hover: Option<Hsla>,
-    active: Option<Hsla>,
+/// where a rule states one for its state: under the pointer
+/// `list.header(HOVER).fill`; pressed `list.header(PRESSED).fill`, else the
+/// hovered fill, a pressed section being under the pointer. Where none is
+/// stated a section keeps the header's fill: gpui-component's own table
+/// header has no hover or pressed style (table/state.rs, `render_th`).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) struct SectionFills {
+    pub hover: Option<Hsla>,
+    pub active: Option<Hsla>,
+}
+
+impl SectionFills {
+    /// The fills of a section `hover` fills under the pointer and `pressed`
+    /// fills pressed, each `None` where no rule states it.
+    pub(crate) fn of(hover: Option<Hsla>, pressed: Option<Hsla>) -> Self {
+        Self {
+            hover,
+            active: pressed.or(hover),
+        }
+    }
 }
 
 /// Which row of [`files_table`] is selected, and whether its window is
@@ -11183,34 +11208,46 @@ pub(crate) struct TableSelection {
     pub window_active: bool,
 }
 
-/// Whether `r` gives the selection of a view without the focus a fill of its
-/// own: `defaults.selection_inactive_background` other than
-/// `defaults.selection_background`. Only then does a selected row change
-/// with the window's state (`selection_pair`).
-pub(crate) fn inactive_selection_differs(r: &native_theme_gpui::ResolvedTheme) -> bool {
-    r.defaults.selection_inactive_background != r.defaults.selection_background
+/// The fill `r` gives the selection of a view without the focus, where it
+/// states one other than the selection's: `colors.selection
+/// .unfocused_background` other than `colors.selection.background`. Only
+/// then does a selected row change with the window's state
+/// (`selection_pair`); where the theme states none the row keeps the list's
+/// pair, as gpui-component paints a selected row alike in an active and an
+/// inactive window (list/list_item.rs, `ListItem::render`).
+pub(crate) fn inactive_selection_differs(
+    r: &native_theme::next::ResolvedTheme,
+) -> Option<native_theme::next::Color> {
+    let s = &r.colors.selection;
+    s.unfocused_background.filter(|fill| *fill != s.background)
 }
 
-/// The fill and text colour of a selected row of [`files_table`] under `r`:
-/// while the window is not active and the theme's inactive fill differs
-/// from its selection's ([`inactive_selection_differs`]),
-/// `defaults.selection_inactive_background` lettered
-/// `defaults.selection_inactive_text_color`; otherwise the list's own pair,
-/// `list.selection_background` and `list.selection_text_color`.
+/// The fill and text colour of a selected row of [`files_table`] under `r`,
+/// or the home it leaves without a value gpui can take: while the window is
+/// not active and the theme's inactive fill differs from its selection's
+/// ([`inactive_selection_differs`]), `colors.selection.unfocused_background`
+/// lettered `colors.selection.unfocused_foreground`, or the list's selected
+/// text where the theme states no unfocused text (gpui-component letters a
+/// selected row alike in either state, list/list_item.rs,
+/// `ListItem::render`); otherwise the list's own pair,
+/// `list.highlight(SELECTED).fill` and `list.item_label(SELECTED).color`.
 pub(crate) fn selection_pair(
-    r: &native_theme_gpui::ResolvedTheme,
+    r: &native_theme::next::ResolvedTheme,
     window_active: bool,
-) -> (Hsla, Hsla) {
-    if !window_active && inactive_selection_differs(r) {
-        (
-            info::stated(r.defaults.selection_inactive_background),
-            info::stated(r.defaults.selection_inactive_text_color),
-        )
-    } else {
-        (
-            info::stated(r.list.selection_background),
-            info::stated(r.list.selection_text_color),
-        )
+) -> Result<(Hsla, Hsla), &'static str> {
+    let fill = next::fill_of(&r.list.highlight(WidgetState::SELECTED))
+        .ok_or("list.highlight(SELECTED).fill")?;
+    let text = next::text_color_of(&r.list.item_label(WidgetState::SELECTED))
+        .ok_or("list.item_label(SELECTED).color")?;
+    match inactive_selection_differs(r).filter(|_| !window_active) {
+        Some(inactive) => Ok((
+            info::next_stated(inactive),
+            r.colors
+                .selection
+                .unfocused_foreground
+                .map_or(text, info::next_stated),
+        )),
+        None => Ok((fill, text)),
     }
 }
 
@@ -11218,41 +11255,142 @@ pub(crate) fn selection_pair(
 /// hover its outline follows (`files_table`).
 const TABLE_ROW_GROUP: &str = "showcase-table-row";
 
-/// The inner radius of `geometry::list`'s frame, whose list border is
-/// `border`: its `corner_radius` less its `line_width`, none below zero. A
-/// fill where a row meets the frame is rounded by it on the corners it meets
-/// (`ListRow::at_edges`, `files_table`).
-pub(crate) fn list_inner_radius(border: &native_theme::theme::ResolvedWidgetBorder) -> Pixels {
-    px((border.corner_radius - border.line_width).max(0.0))
+/// What [`files_table`] paints under a 0.8.0 theme, each value read at its
+/// home: where the theme states no value gpui can take at a home the frame,
+/// the header or a row needs, [`TableLook::next_of`] names it and the Basic
+/// page shows gpui-component's own table instead (spec §10, rule 0).
+struct TableLook<'a> {
+    typography: &'a native_theme::next::Typography,
+    /// `next::geometry::list`: `list.container(NONE)`'s fill, edge and
+    /// corners on the frame.
+    frame: StyleRefinement,
+    /// The frame's inner radius ([`next_list_inner_radius`]).
+    inner: Pixels,
+    /// The padding sides `next::geometry::list_item` gives a List row, which
+    /// pad each cell over gpui-component's own table cell padding on a side
+    /// the theme states none for (table/table.rs, `TableCell::render`).
+    padding: StyleRefinement,
+    /// `list.row(NONE).min_size[1]`; where the theme states none a row is
+    /// as tall as its cells, as gpui-component's own table row is, which
+    /// sets no height (table/table.rs, `TableRow::render`).
+    row_height: Option<Pixels>,
+    /// `next::geometry::list_header_height`; where it gives none the header
+    /// is as tall as a body row is.
+    header_height: Option<Pixels>,
+    header_label: native_theme::next::TextStyle,
+    item_label: native_theme::next::TextStyle,
+    /// `list.header(NONE).fill`, `list.header_label(NONE).color`.
+    header: (Hsla, Hsla),
+    sections: SectionFills,
+    /// `list.grid_color`.
+    grid: Hsla,
+    /// `list.header_separator(NONE).fill`, else `list.grid_color`, the
+    /// colour the connector gives gpui-component's own table lines
+    /// (`table_row_border`).
+    header_line: Hsla,
+    /// `list.item_label(NONE).color`.
+    item_text: Hsla,
+    /// `list.highlight(HOVER).fill`, `None` where the theme states none,
+    /// where an unselected row under the pointer takes the `list_hover`
+    /// token a hovered ListItem paints (list/list_item.rs,
+    /// `ListItem::render`).
+    hover_fill: Option<Hsla>,
+    /// `list.item_label(HOVER).color` where a rule states it for `HOVER`;
+    /// else a hovered row keeps its text, as a ListItem's hover sets its
+    /// fill alone (list/list_item.rs, `ListItem::render`).
+    hover_text: Option<Hsla>,
+    /// `list.highlight(HOVER)`'s stroke, where a rule states it for `HOVER`
+    /// and its width is above 0; else no outline, as gpui-component draws
+    /// none round a hovered row.
+    hover_edge: Option<(Hsla, Pixels)>,
+    /// The selected row's fill and text ([`selection_pair`]).
+    selected: (Hsla, Hsla),
+}
+
+impl<'a> TableLook<'a> {
+    /// The table's look under `r` in a window that is `window_active` or
+    /// not, or the home `r` leaves without a value gpui can take that it
+    /// needs.
+    fn next_of(
+        r: &'a native_theme::next::ResolvedTheme,
+        window_active: bool,
+    ) -> Result<Self, &'static str> {
+        let l = &r.list;
+        let header_label = l.header_label(WidgetState::NONE);
+        let item_label = l.item_label(WidgetState::NONE);
+        if let Some(unmapped) = next::label_font_unmapped(&header_label, "list.header_label(NONE)")
+            .or_else(|| next::label_font_unmapped(&item_label, "list.item_label(NONE)"))
+        {
+            return Err(unmapped.home());
+        }
+        let mut padding = StyleRefinement::default();
+        padding.padding = next::geometry::list_item(r)
+            .map_err(|unstated| unstated.home())?
+            .padding;
+        let section_hover = next::state_fill_of(&l.header(WidgetState::HOVER));
+        let hovered = l.highlight(WidgetState::HOVER);
+        let grid = info::next_stated(l.grid_color);
+        Ok(Self {
+            typography: &r.typography,
+            frame: next::geometry::list(r).map_err(|unstated| unstated.home())?,
+            inner: next_list_inner_radius(r).ok_or("list.container(NONE).corners")?,
+            padding,
+            row_height: l.row(WidgetState::NONE).min_size[1].map(px),
+            header_height: next::geometry::list_header_height(r)
+                .map_err(|unstated| unstated.home())?,
+            header: (
+                next::fill_of(&l.header(WidgetState::NONE)).ok_or("list.header(NONE).fill")?,
+                next::text_color_of(&header_label).ok_or("list.header_label(NONE).color")?,
+            ),
+            sections: SectionFills::of(
+                section_hover,
+                next::state_fill_of(&l.header(WidgetState::PRESSED)),
+            ),
+            grid,
+            header_line: next::fill_of(&l.header_separator(WidgetState::NONE)).unwrap_or(grid),
+            item_text: next::text_color_of(&item_label).ok_or("list.item_label(NONE).color")?,
+            hover_fill: next::fill_of(&hovered),
+            hover_text: next::state_text_color_of(&l.item_label(WidgetState::HOVER)),
+            hover_edge: info::stroke_width_of(&hovered)
+                .filter(|width| *width > 0.0)
+                .and_then(|width| Some((next::state_stroke_color_of(&hovered)?, px(width)))),
+            selected: selection_pair(r, window_active)?,
+            header_label,
+            item_label,
+        })
+    }
 }
 
 /// The Basic page's table, `width` wide across its outer border, laid out
 /// as the iced and egui showcases lay theirs out, a table none of the three
 /// toolkits' own tables can style so (gpui-component's `TableRow` draws a
 /// line of its own between rows, after the caller's style: table/table.rs,
-/// `TableRow::render`): two columns, each half the width inside the frame;
-/// a header row reading `head` over a row for each of `rows`; every cell
-/// padded by the four `list.border.padding` sides (none on a side the theme
-/// leaves unstated) and every row `list.row_height` tall where the theme
-/// states it, else its line -- its font's size by `defaults.line_height` --
-/// and that padding, the header `list.header_height` tall where the theme
-/// states it (`geometry::list_header_height`), else as a row is; the header
-/// in `list.header_background` and
-/// `list.header_font`, each of its two sections filled on its own under the
-/// pointer and pressed where the theme states those fills (`SectionFills`),
-/// which gpui-component's own table header has no style for
-/// (table/state.rs, `render_th`); the rows in `list.item_font`, the row at
+/// `TableRow::render`), on the installed 0.8.0 theme ([`TableLook`]): two
+/// columns, each half the width inside the frame; a header row reading
+/// `head` over a row for each of `rows`; every cell padded as
+/// `next::geometry::list_item` pads a List row, and every row
+/// `list.row(NONE).min_size[1]` tall where the theme states it, else as
+/// tall as its cells, its padding and one line of its font (`next_text_in`);
+/// the header `next::geometry::list_header_height` tall where that gives a
+/// height, else as a row is; the header in `list.header(NONE).fill` and
+/// `list.header_label(NONE)`, each of its two sections filled on its own
+/// under the pointer and pressed where the theme states those fills
+/// (`SectionFills`); the rows in `list.item_label(NONE)`, the row at
 /// `selected` in `selection_pair`'s fill and text colour, which follow the
-/// window's state, every other row outlined in `list.hover_border_color`
-/// under the pointer; a line `separator.line_width` wide inside the
-/// header's bottom edge and one down the first column's right edge through
-/// every row, each a `widgets::Separator` recoloured, so one device pixel at
-/// least (M9-165), laid over the cell's and a section's fill: in
-/// `list.grid_color`, the header's in `list.header_separator_color` where
-/// the theme states it (platform-facts §2.15: the last section has none of
-/// its own, and the two half-width columns leave no space after it); the
-/// whole framed by `list.border` on `list.background_color`. The header, its two cells and every row report
-/// themselves. Without a native theme, the Data page's declarative `Table`.
+/// window's state, every other row filled and lettered as
+/// [`TableLook`] says under the pointer and outlined in
+/// `list.highlight(HOVER)`'s stroke; a line `separator.thickness` wide
+/// inside the header's bottom edge and one down the first column's right
+/// edge through every row, each a `widgets::Separator` recoloured, so one
+/// device pixel at least (M9-165), laid over the cell's and a section's
+/// fill: in `list.grid_color`, the header's in
+/// `list.header_separator(NONE).fill` where the theme states it
+/// (platform-facts §2.15: the last section has none of its own, and the
+/// two half-width columns leave no space after it); the whole framed and
+/// filled by `next::geometry::list`. The header, its two cells and every
+/// row report themselves. Without a 0.8.0 theme, or where it leaves a home
+/// the look needs without a value gpui can take, the Data page's
+/// declarative `Table`.
 pub(crate) fn files_table(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -11262,31 +11400,25 @@ pub(crate) fn files_table(
     selected: TableSelection,
     width: Pixels,
 ) -> Stateful<Div> {
-    let Some(n) = old_native(cx) else {
-        let [(first, _), (second, _)] = head;
-        return table(ui, cx, id, "Files", [first, second], rows);
+    let looked = next_resolved(cx).map(|r| (r, TableLook::next_of(r, selected.window_active)));
+    let (r, look) = match looked {
+        Some((r, Ok(look))) => (r, look),
+        unthemed => {
+            let [(first, _), (second, _)] = head;
+            let home = unthemed.and_then(|(_, look)| look.err());
+            return table(ui, cx, id, "Files", [first, second], rows, home);
+        }
     };
-    let r = n.resolved;
-    let l = &r.list;
-    let colour = info::stated;
-    let grid = colour(l.grid_color);
-    let pad = &l.border.padding;
-    let side = |v: Option<f32>| v.map_or(px(0.), px);
-    let height = |line_height: Pixels| {
-        l.row_height.map_or(
-            px(f32::from(side(pad.top)) + f32::from(line_height) + f32::from(side(pad.bottom))),
-            px,
-        )
-    };
+    let own = Size::default().table_cell_padding();
     // A fill where a row meets the frame is rounded by the frame's inner
-    // radius (`list_inner_radius`) on the corners it meets: the header's top
-    // ones and the last row's bottom ones, as the egui and iced Basic tables
-    // round theirs. GPUI Fast clips the frame's children to its curved
+    // radius (`next_list_inner_radius`) on the corners it meets: the header's
+    // top ones and the last row's bottom ones, as the egui and iced Basic
+    // tables round theirs. GPUI Fast clips the frame's children to its curved
     // padding edge (gpui-fast 0.1.15 src/fast/rounded_clip.rs:68-104), so a
     // square fill would be cut at the curve; gpui-pre clips them to its
     // rectangle (gpui-pre 0.3.12 src/window.rs:2453-2461, ContentMask), so a
     // square fill would show past the curve there.
-    let inner = list_inner_radius(&l.border);
+    let inner = look.inner;
     let row =
         |spec: TableLine<'_>| {
             let (cell_id, sections) = (spec.cell_id, spec.sections);
@@ -11299,11 +11431,17 @@ pub(crate) fn files_table(
                         .h_full()
                         .flex()
                         .items_center()
-                        .pt(side(pad.top))
-                        .pr(side(pad.right))
-                        .pb(side(pad.bottom))
-                        .pl(side(pad.left))
-                        .child(text_in(&n, spec.font, content))
+                        .pt(own.top)
+                        .pr(own.right)
+                        .pb(own.bottom)
+                        .pl(own.left)
+                        .refine_style(&look.padding)
+                        .children(next_text_in(
+                            look.typography,
+                            spec.font,
+                            spec.font_home,
+                            content,
+                        ))
                         .when(ix == 0, |cell| {
                             cell.child(
                                 div()
@@ -11334,9 +11472,7 @@ pub(crate) fn files_table(
             h_flex()
                 .relative()
                 .w_full()
-                .h(spec
-                    .height
-                    .unwrap_or_else(|| height(line_height_of(&n, spec.font))))
+                .when_some(spec.height, |row, height| row.h(height))
                 .text_color(spec.text)
                 .when_some(spec.fill, |row, fill| row.bg(fill))
                 .children(cells)
@@ -11352,28 +11488,24 @@ pub(crate) fn files_table(
                 })
         };
     let [first, second] = head;
-    let header_height = geometry::list_header_height(n);
     let header_info = info::data::native_table_header(r, &format!("{}, {}", first.0, second.0));
-    let header_info = if header_height.is_some() {
-        header_info.geometry("list_header_height")
+    let header_info = if look.header_height.is_some() {
+        header_info.next_geometry("list_header_height")
     } else {
         header_info
     };
-    let section_hover = l.header_hover_background.map(colour);
     let header = row(TableLine {
         cells: [first.0, second.0],
         listed: [Some(first.1), Some(second.1)],
         cell_id: "table-head",
-        font: &l.header_font,
-        text: colour(l.header_font.color),
-        fill: Some(colour(l.header_background)),
-        line: l.header_separator_color.map(colour).unwrap_or(grid),
+        font: &look.header_label,
+        font_home: "list.header_label(NONE)",
+        text: look.header.1,
+        fill: Some(look.header.0),
+        line: look.header_line,
         closed: true,
-        height: header_height,
-        sections: Some(SectionFills {
-            hover: section_hover,
-            active: l.header_active_background.map(colour).or(section_hover),
-        }),
+        height: look.header_height.or(look.row_height),
+        sections: Some(look.sections),
     })
     .rounded_tl(inner)
     .rounded_tr(inner)
@@ -11384,32 +11516,29 @@ pub(crate) fn files_table(
     // An unselected row's outline under the pointer, a box over the row
     // (`hover_edge`): square but on the last row's bottom corners, which
     // meet the frame.
-    let edge_width = r.defaults.border.line_width;
-    let edge = l
-        .hover_border_color
-        .filter(|_| edge_width > 0.0)
-        .map(colour);
+    let edge = look.hover_edge;
+    // Under the pointer, a row that is not the selected one takes the
+    // list's hover fill and text colour (`TableLook`).
+    let hover = look.hover_fill.unwrap_or(cx.theme().list_hover);
+    let hover_text = look.hover_text;
     let body = rows.iter().enumerate().map(|(ix, cells)| {
         let is_selected = ix == selected.row;
         let (fill, text) = if is_selected {
-            let (fill, text) = selection_pair(r, selected.window_active);
-            (Some(fill), text)
+            (Some(look.selected.0), look.selected.1)
         } else {
-            (None, colour(l.item_font.color))
+            (None, look.item_text)
         };
-        // Under the pointer, a row that is not the selected one takes the
-        // list's hover fill and text colour.
-        let (hover, hover_text) = (colour(l.hover_background), colour(l.hover_text_color));
         row(TableLine {
             cells: *cells,
             listed: [None, None],
             cell_id: "table-cell",
-            font: &l.item_font,
+            font: &look.item_label,
+            font_home: "list.item_label(NONE)",
             text,
             fill,
-            line: grid,
+            line: look.grid,
             closed: false,
-            height: None,
+            height: look.row_height,
             sections: None,
         })
         .id(("table-row", ix))
@@ -11417,32 +11546,39 @@ pub(crate) fn files_table(
             row.rounded_bl(inner).rounded_br(inner)
         })
         .when(!is_selected, |row| {
-            row.hover(move |s| s.bg(hover).text_color(hover_text))
+            row.hover(move |s| {
+                let s = s.bg(hover);
+                match hover_text {
+                    Some(text) => s.text_color(text),
+                    None => s,
+                }
+            })
         })
-        .when_some(edge.filter(|_| !is_selected), |row, edge| {
+        .when_some(edge.filter(|_| !is_selected), |row, (edge, width)| {
             row.group(TABLE_ROW_GROUP).child(
-                hover_edge(cx, edge, px(edge_width), TABLE_ROW_GROUP)
+                hover_edge(cx, edge, width, TABLE_ROW_GROUP)
                     .when(Some(ix) == last, |b| b.rounded_bl(inner).rounded_br(inner)),
             )
         })
         .info(
             ui,
             SharedString::from(format!("{id}-row-{ix}")),
-            info::data::native_table_row(r, is_selected, &cells.join(", ")),
+            info::data::native_table_row(r, cx.theme(), is_selected, &cells.join(", ")),
         )
         .debug_selector(move || format!("{id}-row-{ix}"))
         .w_full()
     });
     v_flex()
         .w(width)
-        .bg(colour(l.background_color))
-        .border(px(l.border.line_width))
-        .border_color(colour(l.border.color))
-        .rounded(px(l.border.corner_radius.max(0.0)))
+        .refine_style(&look.frame)
         .overflow_hidden()
         .child(header)
         .children(body)
-        .info(ui, id, info::data::native_table_frame(r, rows.len()))
+        .info(
+            ui,
+            id,
+            info::data::native_table_frame(r, rows.len()).next_geometry("list"),
+        )
         .self_start()
         .debug_selector(move || id.into())
 }

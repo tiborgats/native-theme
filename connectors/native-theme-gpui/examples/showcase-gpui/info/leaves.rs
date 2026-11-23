@@ -850,7 +850,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "basic.table",
         "defaults.border.line_width_px",
-        "gpui: the width of an unselected row's outline under the pointer in list.hover_border_color (demo::files_table)",
+        "gpui: none: an unselected row's outline under the pointer is list.highlight(HOVER)'s stroke at its own width (demo::files_table, TableLook)",
     ),
     (
         "",
@@ -1045,7 +1045,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "basic.table",
         "defaults.line_height",
-        "gpui: each row's line box, the font's size by it (demo::files_table)",
+        "gpui: typography.line_height_multiplier, each row's line box, its label's size by it where the label states no line height (demo::files_table, demo::next_text_in)",
     ),
     (
         "basic.typography.link",
@@ -1470,12 +1470,12 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "basic.table",
         "list.header_height_px",
-        "gpui: geometry::list_header_height, the header row's height where stated, else a row's (demo::files_table)",
+        "gpui: list.header(NONE).min_size[1] through next::geometry::list_header_height, the header row's height where stated, else a row's (demo::files_table)",
     ),
     (
         "basic.table.header",
         "list.row_height_px",
-        "gpui: the header row's height where list.header_height is unstated and this is stated, else padding and line (demo::files_table)",
+        "gpui: list.row(NONE).min_size[1], the header row's height where list.header(NONE).min_size[1] is unstated and this is stated, else padding and line (demo::files_table)",
     ),
     (
         "basic.table",
@@ -1520,22 +1520,22 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "basic.table",
         "list.border.padding_top_px",
-        "gpui: pads each cell, none where unstated (demo::files_table)",
+        "gpui: list.row(NONE).padding with list.highlight(NONE).margin, as next::geometry::list_item pads a List row, pads each cell, gpui-component's own table cell padding where unstated (demo::files_table)",
     ),
     (
         "basic.table",
         "list.border.padding_right_px",
-        "gpui: pads each cell, none where unstated (demo::files_table)",
+        "gpui: list.row(NONE).padding with list.highlight(NONE).margin, as next::geometry::list_item pads a List row, pads each cell, gpui-component's own table cell padding where unstated (demo::files_table)",
     ),
     (
         "basic.table",
         "list.border.padding_bottom_px",
-        "gpui: pads each cell, none where unstated (demo::files_table)",
+        "gpui: list.row(NONE).padding with list.highlight(NONE).margin, as next::geometry::list_item pads a List row, pads each cell, gpui-component's own table cell padding where unstated (demo::files_table)",
     ),
     (
         "basic.table",
         "list.border.padding_left_px",
-        "gpui: pads each cell, none where unstated (demo::files_table)",
+        "gpui: list.row(NONE).padding with list.highlight(NONE).margin, as next::geometry::list_item pads a List row, pads each cell, gpui-component's own table cell padding where unstated (demo::files_table)",
     ),
     (
         "basic.table",
@@ -2092,7 +2092,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "basic.table",
         "separator.line_width_px",
-        "gpui: the width of the header's bottom line and the column line, in list.grid_color, the header's in list.header_separator_color where stated (demo::files_table)",
+        "gpui: separator.thickness, the width of the header's bottom line and the column line, in list.grid_color, the header's in list.header_separator(NONE).fill where stated (demo::files_table)",
     ),
     (
         "chrome.page_tabs.rule",
