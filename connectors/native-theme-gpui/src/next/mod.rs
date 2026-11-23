@@ -506,18 +506,33 @@ fn button_hover_fill(part: &PartStyle, rest: Hsla, upstream: &ThemeColor) -> Map
     state_fill_or(part, "button.body(HOVER).fill", own)
 }
 
+/// A pressed push button's fill, `secondary_active`, which gpui-component
+/// paints a pressed button in (gpui-component 0.10.0 `button/button.rs:1278`,
+/// `theme/schema.rs:855`): `button.body(PRESSED).fill` where a rule states it
+/// for `PRESSED` (spec §2, `from_state`), else gpui-component's own treatment
+/// (spec §10, rule 0): its theme's `secondary_active` where that theme turns
+/// a button pressed (its `secondary_active` is not its `secondary`), else the
+/// button at rest, `rest`, as that theme leaves it. Always `Some`: the 0.7.2
+/// model's `None`, the connector's darkening of the rest fill
+/// (`colors::assign_secondary`), is not the 0.8.0 model's.
+fn button_pressed_fill(
+    part: &PartStyle,
+    rest: Hsla,
+    upstream: &ThemeColor,
+) -> Mapped<Option<Hsla>> {
+    let own = if upstream.secondary_active == upstream.secondary {
+        rest
+    } else {
+        upstream.secondary_active
+    };
+    state_fill_or(part, "button.body(PRESSED).fill", own).map(Some)
+}
+
 /// A part's fill where a rule states it for the queried state
 /// ([`state_fill`]), else `upstream`, gpui-component's own (spec §10,
 /// rule 0).
 fn state_fill_or(part: &PartStyle, home: &'static str, upstream: Hsla) -> Mapped<Hsla> {
     Ok(state_fill(part, home)?.unwrap_or(upstream))
-}
-
-/// A text colour where a rule states it for the queried state
-/// ([`state_text_color`]), else `upstream`, gpui-component's own (spec §10,
-/// rule 0).
-fn state_text_color_or(text: &TextStyle, home: &'static str, upstream: Hsla) -> Mapped<Hsla> {
-    Ok(state_text_color(text, home)?.unwrap_or(upstream))
 }
 
 /// The slice's colours of a 0.8.0 resolved theme.
@@ -574,7 +589,11 @@ pub(crate) fn slice_colors(r: &ResolvedTheme) -> Mapped<SliceColors> {
             secondary,
             &upstream_colors(r),
         )?,
-        button_active_bg: state_fill(&b.body(WidgetState::PRESSED), "button.body(PRESSED).fill")?,
+        button_active_bg: button_pressed_fill(
+            &b.body(WidgetState::PRESSED),
+            secondary,
+            &upstream_colors(r),
+        )?,
         list_hover_bg: list_row_hover(r)?,
         list_selection_bg: fill(
             &l.highlight(WidgetState::SELECTED),
@@ -1309,8 +1328,8 @@ mod tests {
     }
 
     /// `button.active_background`: the pressed body's fill without a rule
-    /// for the state is unset, so `assign_secondary` derives
-    /// `secondary_active` as for 0.7.2's `None`.
+    /// for the state is unset, so [`button_pressed_fill`] takes
+    /// gpui-component's own treatment.
     #[test]
     fn a_pressed_button_fill_without_a_state_rule_is_unset() -> Mapped<()> {
         assert_eq!(state_fill(&filled(RED, false), "pressed")?, None);
@@ -1557,9 +1576,16 @@ mod tests {
         let mut label = TextStyle::default();
         label.color = GREEN;
         label.stated = TextStated::COLOR;
-        assert_eq!(state_text_color_or(&label, "label", upstream)?, upstream);
+        let unfilled = filled(GREEN, false);
+        assert_eq!(
+            menu_hover_label(&unfilled, &label, &label, upstream)?,
+            upstream
+        );
         label.from_state = TextStated::COLOR;
-        assert_eq!(state_text_color_or(&label, "label", upstream)?, hsla(GREEN));
+        assert_eq!(
+            menu_hover_label(&unfilled, &label, &label, upstream)?,
+            hsla(GREEN)
+        );
 
         for scheme in [Scheme::Light, Scheme::Dark] {
             let mut r = Theme::preset(Preset::KdeBreeze)
@@ -1648,6 +1674,78 @@ mod tests {
             let tc = theme_color(&r)?;
             assert_eq!(tc.secondary_hover, hsla(BLUE), "{scheme:?}");
             assert_eq!(tc.button_hover, hsla(BLUE), "{scheme:?}");
+        }
+        Ok(())
+    }
+
+    /// Spec §10 rule 0 for a pressed push button: its fill where a rule
+    /// states it for `PRESSED`, else gpui-component's own `secondary_active`
+    /// where its theme turns a button pressed, else the button at rest, not
+    /// the connector's darkening of the rest fill. Every preset states its
+    /// push button's pressed fill, so none reaches the unstated case; on any
+    /// that would, the pressed slots are gpui-component's own, and a patched
+    /// theme's stated pressed fill reaches them.
+    #[test]
+    fn an_unstated_button_press_is_gpui_components_own() -> Mapped<()> {
+        use native_theme::next::{
+            ButtonRule, PartPatch, Preset, Scheme, Theme, ThemeContext, ThemePatch,
+        };
+        let rest = hsla(GREEN);
+        let mut turning = *ThemeColor::light();
+        turning.secondary = hsla(RED);
+        turning.secondary_active = hsla(BLUE);
+        let mut keeping = turning;
+        keeping.secondary_active = keeping.secondary;
+        let unstated = filled(GREEN, false);
+        assert_eq!(
+            button_pressed_fill(&unstated, rest, &turning)?,
+            Some(hsla(BLUE))
+        );
+        assert_eq!(button_pressed_fill(&unstated, rest, &keeping)?, Some(rest));
+        let stated = filled(RED, true);
+        for upstream in [&turning, &keeping] {
+            assert_eq!(
+                button_pressed_fill(&stated, rest, upstream)?,
+                Some(hsla(RED))
+            );
+        }
+
+        for preset in Preset::ALL {
+            for scheme in [Scheme::Light, Scheme::Dark] {
+                let mut r =
+                    Theme::preset(*preset).resolve(&ThemeContext::default().with_scheme(scheme));
+                let b = &r.button;
+                if state_fill(&b.body(WidgetState::PRESSED), "button.body(PRESSED).fill")?.is_some()
+                {
+                    continue;
+                }
+                let rest = fill(&b.body(WidgetState::NONE), "button.body(NONE).fill")?;
+                let upstream = upstream_colors(&r);
+                let own = if upstream.secondary_active == upstream.secondary {
+                    rest
+                } else {
+                    upstream.secondary_active
+                };
+                let tc = theme_color(&r)?;
+                assert_eq!(
+                    [tc.button_active, tc.button_secondary_active],
+                    [own; 2],
+                    "{preset:?} {scheme:?}"
+                );
+                r.apply_patch(
+                    &ThemePatch::new().button(
+                        ButtonRule::new()
+                            .states(WidgetState::PRESSED)
+                            .body(PartPatch::new().fill(Paint::Solid(BLUE))),
+                    ),
+                );
+                let tc = theme_color(&r)?;
+                assert_eq!(
+                    [tc.button_active, tc.button_secondary_active],
+                    [hsla(BLUE); 2],
+                    "{preset:?} {scheme:?}"
+                );
+            }
         }
         Ok(())
     }
