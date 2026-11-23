@@ -135,7 +135,12 @@ impl egui::Widget for RadioButton {
         let Some(atlas) = ThemeAtlas::from_ctx(ui.ctx()) else {
             return ui.add_enabled(enabled, egui::RadioButton::new(checked, text));
         };
-        let resolved = atlas.resolved_for(ui.ctx().theme());
+        // An atlas of the 0.8.0 model: egui's own radio button in the role's cell.
+        let Some(resolved) = atlas.resolved_for(ui.ctx().theme()) else {
+            return scope::open_faded(ui, Role::Checkbox, checked, enabled, None, |ui| {
+                ui.add(egui::RadioButton::new(checked, text))
+            });
+        };
         let checkbox = &resolved.checkbox;
         let dot = checkbox.radio_dot_diameter.and_then(scope::length);
         let width = checkbox.radio_indicator_width.and_then(scope::length);

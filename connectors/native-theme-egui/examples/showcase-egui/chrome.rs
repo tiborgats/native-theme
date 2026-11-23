@@ -194,7 +194,7 @@ pub(crate) fn chrome_bar(app: &mut App, ui: &mut egui::Ui) {
     let margin = app.atlas.layout().container_margin;
     let stated = app
         .atlas
-        .resolved_for(ui.ctx().theme())
+        .old_resolved(ui.ctx().theme())
         .toolbar
         .border
         .padding;
@@ -208,7 +208,7 @@ pub(crate) fn chrome_bar(app: &mut App, ui: &mut egui::Ui) {
     // showcases lay their padding inside the stated height.
     let stated_height = app
         .atlas
-        .resolved_for(ui.ctx().theme())
+        .old_resolved(ui.ctx().theme())
         .toolbar
         .bar_height
         .is_some();
@@ -247,7 +247,7 @@ pub(crate) fn chrome_bar(app: &mut App, ui: &mut egui::Ui) {
         app.registry
             .note_element("chrome.toolbar", "padding", &note);
     }
-    let t = app.atlas.resolved_for(ui.ctx().theme());
+    let t = app.atlas.old_resolved(ui.ctx().theme());
     if t.toolbar.item_gap.is_none() && app.atlas.layout().widget_gap.is_none() {
         app.registry.note_element(
             "chrome.toolbar",
@@ -274,7 +274,7 @@ fn fit_row(ui: &mut egui::Ui, shrink: f32) {
 /// theme states no such margin, as the gpui showcase's menu bar; no line under it.
 #[cfg(not(all(target_os = "macos", not(test))))]
 fn menu_panel(app: &mut App, ui: &mut egui::Ui) {
-    let t = app.atlas.resolved_for(ui.ctx().theme());
+    let t = app.atlas.old_resolved(ui.ctx().theme());
     let margin = app.atlas.layout().container_margin;
     let side = Some(margin.unwrap_or(MENU_BAR_PADDING));
     let sides = native_theme::theme::ResolvedPadding {
@@ -555,7 +555,7 @@ fn toolbar(app: &mut App, ui: &mut egui::Ui, shrink: f32) {
         icon_cache,
         ..
     } = app;
-    let t = atlas.resolved_for(theme);
+    let t = atlas.old_resolved(theme);
     let icon_size = t.toolbar.icon_size;
     let layout = atlas.layout();
     let toolbar_row = |ui: &mut egui::Ui, bar: demo::Applied, registry: &mut Registry| {
@@ -712,7 +712,7 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
     );
     let stated = app
         .atlas
-        .resolved_for(ui.ctx().theme())
+        .old_resolved(ui.ctx().theme())
         .status_bar
         .border
         .padding;
@@ -734,7 +734,7 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
             let bar = seams.enter(ui);
             let environment = environment(app, ui.ctx()).join(" · ");
             let title = app.status_title();
-            let t = app.atlas.resolved_for(ui.ctx().theme());
+            let t = app.atlas.old_resolved(ui.ctx().theme());
             let icon_size = t.defaults.icon_sizes.small;
             let padding = t.button.border.padding;
             // The model states no status-bar height: the bar sizes to its content, one line of
@@ -845,10 +845,10 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
 /// rounds a padding before layout, a half toward zero (gpui-pre 0.3.12 `src/taffy.rs:534-538`,
 /// `round_to_device_pixel`; `src/util.rs:130-133`, `round_half_toward_zero`): at a scale of 1
 /// the two bars are padded alike, 3 px above and below a 14 px font, a quarter of it 3.5.
-fn status_bar_padding(atlas: &native_theme_egui::ThemeAtlas, theme: egui::Theme) -> (f32, f32) {
+fn status_bar_padding(atlas: &crate::app::OldAtlas, theme: egui::Theme) -> (f32, f32) {
     let rem = atlas
         .accessibility()
-        .scaled(atlas.resolved_for(theme).defaults.font.size);
+        .scaled(atlas.old_resolved(theme).defaults.font.size);
     let whole = |length: f32| (length.abs() - 0.5).ceil().copysign(length);
     (whole(rem / 4.0), whole(rem / 2.0))
 }
@@ -859,7 +859,7 @@ fn status_bar_padding(atlas: &native_theme_egui::ThemeAtlas, theme: egui::Theme)
 /// the text-scaling factor and the flags that are set.
 pub(crate) fn environment(app: &App, ctx: &egui::Context) -> Vec<String> {
     let theme = ctx.theme();
-    let t = app.atlas.resolved_for(theme);
+    let t = app.atlas.old_resolved(theme);
     let mode = if theme == egui::Theme::Dark {
         "dark"
     } else {
@@ -893,7 +893,7 @@ pub(crate) fn environment(app: &App, ctx: &egui::Context) -> Vec<String> {
 pub(crate) fn side_panel(app: &mut App, ui: &mut egui::Ui) {
     let padding = app
         .atlas
-        .resolved_for(ui.ctx().theme())
+        .old_resolved(ui.ctx().theme())
         .sidebar
         .border
         .padding;
@@ -1282,7 +1282,7 @@ fn setting<T: Clone + PartialEq>(
 /// `container_margin`, their rule from edge to edge: the gpui showcase's inspector `TabBar`
 /// (`showcase-gpui/inspector.rs:958-973`).
 fn inspector_tabs(app: &mut App, ui: &mut egui::Ui, margin: Option<f32>) {
-    let t = app.atlas.resolved_for(ui.ctx().theme());
+    let t = app.atlas.old_resolved(ui.ctx().theme());
     let picked = demo::tab_bar(
         &mut app.registry,
         ui,
@@ -1336,7 +1336,7 @@ fn inspector_content(app: &mut App, ui: &mut egui::Ui) {
             });
             crate::info::widget_tab(
                 ui,
-                app.atlas.resolved_for(theme),
+                app.atlas.old_resolved(theme),
                 app.atlas.layout(),
                 view,
                 &mut app.registry,
@@ -1365,7 +1365,7 @@ pub(crate) fn page_tabs(app: &mut App, ui: &mut egui::Ui) {
         atlas,
         ..
     } = app;
-    let t = atlas.resolved_for(theme);
+    let t = atlas.old_resolved(theme);
     let caret_size = t.defaults.icon_sizes.small;
     let tabs: Vec<(Page, &'static str)> = Page::ALL.map(|page| (page, page.label())).to_vec();
     let current = settings.page;
@@ -1435,7 +1435,7 @@ pub(crate) fn page_tabs(app: &mut App, ui: &mut egui::Ui) {
 /// The rule under the page tabs, across the content: a separator line, `separator.line_width`
 /// tall in `separator.line_color`, between the tab row and the page.
 fn page_rule(app: &mut App, ui: &mut egui::Ui) {
-    let t = app.atlas.resolved_for(ui.ctx().theme());
+    let t = app.atlas.old_resolved(ui.ctx().theme());
     let width = t.separator.line_width;
     let (rect, response) = ui.allocate_exact_size(
         egui::vec2(ui.available_width(), width),
@@ -1506,7 +1506,7 @@ fn theme_error_banner(app: &mut App, ui: &mut egui::Ui, error: String) {
     let (set, icon_theme) = app.chosen_icons();
     let size = app
         .atlas
-        .resolved_for(ui.ctx().theme())
+        .old_resolved(ui.ctx().theme())
         .defaults
         .icon_sizes
         .small;
@@ -1660,7 +1660,7 @@ pub(crate) fn command_palette(app: &mut App, ui: &mut egui::Ui) {
     let Some(palette) = app.palette.clone() else {
         return;
     };
-    let t = app.atlas.resolved_for(ui.ctx().theme());
+    let t = app.atlas.old_resolved(ui.ctx().theme());
     // The four dialog extents are required sizes (`f32` on the resolved theme).
     let extents = [
         t.dialog.min_width,
@@ -1683,7 +1683,7 @@ pub(crate) fn command_palette(app: &mut App, ui: &mut egui::Ui) {
         atlas,
         ..
     } = app;
-    let t = atlas.resolved_for(ui.ctx().theme());
+    let t = atlas.old_resolved(ui.ctx().theme());
     demo::surfaced(
         registry,
         ui,
@@ -1931,7 +1931,7 @@ pub(crate) fn preferences(app: &mut App, ui: &mut egui::Ui) {
         return;
     }
     let ctx = ui.ctx().clone();
-    let t = app.atlas.resolved_for(ctx.theme());
+    let t = app.atlas.old_resolved(ctx.theme());
     let title = egui::RichText::new("Preferences")
         .font(window_title_bar_font(t, app.atlas.accessibility()))
         .color(window_title_bar_text_color(t, true));
@@ -2112,7 +2112,7 @@ pub(crate) fn about(app: &mut App, ui: &mut egui::Ui) {
         return;
     }
     let ctx = ui.ctx().clone();
-    let t = app.atlas.resolved_for(ctx.theme());
+    let t = app.atlas.old_resolved(ctx.theme());
     // The primary button is Close: at the trailing end on PrimaryRight, the leading on PrimaryLeft.
     let labels = match dialog_button_order(t) {
         DialogButtonOrder::PrimaryRight => ["Copy version", "Close"],

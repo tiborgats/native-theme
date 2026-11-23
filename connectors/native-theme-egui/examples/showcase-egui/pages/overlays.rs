@@ -7,11 +7,12 @@ use egui::containers::menu::SubMenuButton;
 use native_theme::icons::IconRole;
 use native_theme::theme::IconSet;
 use native_theme_egui::{
-    DialogButtonOrder, Role, RoleVariant, Surface, ThemeAtlas, dialog_button_order,
-    window_title_bar_font, window_title_bar_text_color,
+    DialogButtonOrder, Role, RoleVariant, Surface, dialog_button_order, window_title_bar_font,
+    window_title_bar_text_color,
 };
 
 use super::{DemoState, button_min_size, caption, inner_extent};
+use crate::app::OldAtlas;
 use crate::demo::{self, Registry};
 
 /// The lines the window scrolls: a datum.
@@ -20,11 +21,11 @@ const WINDOW_LINES: usize = 30;
 pub(crate) fn show(
     reg: &mut Registry,
     state: &mut DemoState,
-    atlas: &ThemeAtlas,
+    atlas: &OldAtlas,
     ui: &mut egui::Ui,
     chosen: &(IconSet, Option<String>),
 ) {
-    let t = atlas.resolved_for(ui.ctx().theme());
+    let t = atlas.old_resolved(ui.ctx().theme());
     let normal = RoleVariant::Normal;
     let min = button_min_size(t);
 

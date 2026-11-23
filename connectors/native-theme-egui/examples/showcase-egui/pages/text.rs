@@ -3,9 +3,10 @@
 //! and egui_extras's code view in the base style.
 
 use egui_extras::syntax_highlighting::{CodeTheme, code_view_ui};
-use native_theme_egui::{Role, RoleVariant, TextRole, ThemeAtlas, text_role_weight};
+use native_theme_egui::{Role, RoleVariant, TextRole, text_role_weight};
 
 use super::{DemoState, caption};
+use crate::app::OldAtlas;
 use crate::demo::{self, Registry};
 
 const LONG: &str = "A label long enough to wrap onto a second line where the page is narrow, \
@@ -18,13 +19,8 @@ const TEXT_ROLES: [(TextRole, &str); 4] = [
     (TextRole::Display, "Display"),
 ];
 
-pub(crate) fn show(
-    reg: &mut Registry,
-    state: &mut DemoState,
-    atlas: &ThemeAtlas,
-    ui: &mut egui::Ui,
-) {
-    let t = atlas.resolved_for(ui.ctx().theme());
+pub(crate) fn show(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, ui: &mut egui::Ui) {
+    let t = atlas.old_resolved(ui.ctx().theme());
     let normal = RoleVariant::Normal;
 
     caption(reg, ui, "Label (the base style)");

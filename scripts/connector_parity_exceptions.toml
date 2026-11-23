@@ -794,3 +794,9 @@ connector = ["iced", "gpui"]
 name = ["next::list_header_font", "next::role_font_is_italic", "next::role_font_weight", "next::text_role_font", "next::text_role_line_height", "next::text_role_weight", "next::toolbar_button_checked_background", "next::toolbar_button_checked_border_color", "next::window_title_bar_font", "next::window_title_bar_text_color"]
 kind = "absent"
 reason = "egui's `next` gives each function of egui's crate root a twin on the 0.8.0 model, and iced's and gpui's crate roots have none of these, each for the reason its entry above gives for the root name"
+
+[[exception]]
+connector = "egui"
+name = "next::to_theme"
+kind = "unlike"
+reason = "an egui atlas holds both schemes, as the crate root's `ThemeAtlas::builder` takes a light and a dark theme, and its `WindowTitleBar` frame fills from the theme resolved for a window that is not active, which the caller passes beside each scheme's theme as gpui's `next::geometry::title_bar_inactive` takes it, so that patches, system overrides and the accent stay in it (connectors/native-theme-egui/src/next/mod.rs, `to_theme`'s doc); iced's and gpui's `next::to_theme` build one theme of one scheme and read no inactive window"

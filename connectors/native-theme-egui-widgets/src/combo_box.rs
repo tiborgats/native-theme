@@ -160,13 +160,16 @@ impl ComboBox {
         };
         let popup_style =
             popup_style.unwrap_or_else(|| atlas.role_modifier(theme, Role::ComboBox, variant));
-        let c = &atlas.resolved_for(theme).combo_box;
-        // Where the border's width is not finite, egui's own padding and arrow place stand.
-        let sides = scope::length(c.border.line_width).map(|border| Sides {
-            left: c.border.padding.left.and_then(scope::length),
-            right: c.border.padding.right.and_then(scope::length),
-            border,
-            column: c.arrow_area_width.and_then(scope::length),
+        // Where the border's width is not finite, or the atlas holds no 0.7.2 theme, egui's own
+        // padding and arrow place stand.
+        let sides = atlas.resolved_for(theme).and_then(|t| {
+            let c = &t.combo_box;
+            scope::length(c.border.line_width).map(|border| Sides {
+                left: c.border.padding.left.and_then(scope::length),
+                right: c.border.padding.right.and_then(scope::length),
+                border,
+                column: c.arrow_area_width.and_then(scope::length),
+            })
         });
         scope::open(ui, Role::ComboBox, enabled, |ui| {
             // The text `combo_box.border.padding.left` inside the border: egui pads its button by

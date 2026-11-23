@@ -13,6 +13,7 @@ use native_theme::next::{
 use super::{padding_of, radius_of, stroke_width_of};
 use crate::convert::Rgba;
 use crate::plugin::FocusRingSource;
+use crate::style::Sources;
 use crate::style::base::{BaseSource, ButtonStates, Read, Sides};
 use crate::style::cells::{
     ButtonCell, CellSource, CheckboxCell, ComboBoxCell, DialogCell, ExpanderCell, InputCell,
@@ -76,7 +77,7 @@ pub(crate) fn line(part: &PartStyle) -> Option<Rgba> {
     }
 }
 
-/// [`line`] where a rule states it for the queried state (its `from_state` bit).
+/// [`line()`] where a rule states it for the queried state (its `from_state` bit).
 pub(crate) fn state_line(part: &PartStyle) -> Option<Rgba> {
     part.from_state
         .contains(PartStated::STROKE)
@@ -895,6 +896,19 @@ pub(crate) fn frame_source(r: &ResolvedTheme, inactive: &ResolvedTheme) -> Frame
         status_bar: surface(&r.status_bar.bar, homes!("status_bar.bar")),
         shadow_color: rgba(r.colors.shadow),
         window_margin: r.layout.window_margin,
+    }
+}
+
+/// Every source of one scheme's styles from the 0.8.0 model, an unstated hover or press taking
+/// egui's own treatment (spec §10, rule 0); `inactive` as [`frame_source`] takes it.
+pub(crate) fn sources(r: &ResolvedTheme, inactive: &ResolvedTheme) -> Sources {
+    Sources {
+        base: base_source(r),
+        cells: cell_source(r),
+        variants: variant_source(r),
+        frames: frame_source(r, inactive),
+        focus_ring: focus_ring_source(r),
+        rule_0: true,
     }
 }
 

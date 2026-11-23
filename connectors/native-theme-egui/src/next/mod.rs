@@ -21,11 +21,7 @@
 //! stated values as egui takes them, `None` where the theme states none,
 //! for a reader that shows egui's own there.
 
-#[cfg_attr(
-    not(test),
-    expect(dead_code, reason = "`to_theme`, built next in M4.E2, calls it")
-)]
-mod build;
+pub(crate) mod build;
 #[cfg(test)]
 mod parity;
 #[cfg(test)]
@@ -38,8 +34,9 @@ use std::time::Duration;
 
 use egui::{Color32, FontId};
 use native_theme::next::{
-    CornerCurve, CornerRadius, DialogButtonOrder, FontStyle, Orientation, Paint, PartStated,
-    PartStyle, ResolvedTheme, Stroke, StyleQuery, TextStated, TextStyle, WidgetState, WindowState,
+    Contrast, CornerCurve, CornerRadius, DialogButtonOrder, FontStyle, MotionPreference,
+    Orientation, Paint, PartStated, PartStyle, ResolvedTheme, Stroke, StyleQuery, TextStated,
+    TextStyle, WidgetState, WindowState,
 };
 
 use crate::accessors::text_size_or_stock;
@@ -251,6 +248,60 @@ fn text_size(text: &TextStyle, home: &'static str) -> Mapped<f32> {
             .then_some(text.size_px),
         home,
     )
+}
+
+// ---------------------------------------------------------------------------
+// The atlas
+// ---------------------------------------------------------------------------
+
+/// [`crate::to_theme`]: the atlas of `light` in egui's light scheme and of
+/// `dark` in its dark one (one theme in both for a single variant, as the
+/// crate root puts it). `light_inactive` and `dark_inactive` are the same
+/// themes resolved for a window that is not active
+/// (`ThemeContext::window_active` false), which each scheme's
+/// `WindowTitleBar` frame fills from.
+///
+/// Each style, cell, frame and the focus ring is read from the theme at the
+/// homes the table of homes names and built by the crate root's builders, a
+/// value the theme states nothing for keeping egui's own (spec §10, rule 0).
+/// Each scheme is compiled with its theme's context as 0.7.2's preferences
+/// (reduced motion where the motion is other than `Full`; the text sizes are
+/// already scaled). The atlas holds `light`'s name, preferences
+/// ([`crate::ThemeAtlas::accessibility`]), layout gaps and icon set, each
+/// scheme's icon theme, egui's default faces and no OS colour mode;
+/// [`crate::ThemeAtlas::next_resolved_for`] returns each scheme's theme, and
+/// [`crate::ThemeAtlas::resolved_for`] `None`.
+///
+/// # Errors
+///
+/// None at present: every value the mapping reads is optional, egui's own
+/// standing in where the theme states none. The `Result` is the siblings'
+/// shape.
+pub fn to_theme(
+    light: &ResolvedTheme,
+    light_inactive: &ResolvedTheme,
+    dark: &ResolvedTheme,
+    dark_inactive: &ResolvedTheme,
+) -> Mapped<crate::ThemeAtlas> {
+    Ok(crate::atlas::from_next(
+        light,
+        light_inactive,
+        dark,
+        dark_inactive,
+    ))
+}
+
+/// The accessibility preferences a 0.8.0 theme was resolved for, as 0.7.2's
+/// (the table of homes, `accessibility.*`: `reduce_motion` is a motion other
+/// than `Full`, `high_contrast` a contrast other than `Normal`).
+pub(crate) fn accessibility_of(r: &ResolvedTheme) -> crate::AccessibilityPreferences {
+    let ctx = &r.context;
+    let mut prefs = crate::AccessibilityPreferences::DEFAULT.clone();
+    prefs.text_scaling_factor = ctx.text_scale;
+    prefs.reduce_motion = ctx.motion != MotionPreference::Full;
+    prefs.high_contrast = ctx.contrast != Contrast::Normal;
+    prefs.reduce_transparency = ctx.reduced_transparency;
+    prefs
 }
 
 // ---------------------------------------------------------------------------

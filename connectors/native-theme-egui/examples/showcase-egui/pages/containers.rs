@@ -6,21 +6,17 @@
 //! (`nested_panels`).
 
 use egui::emath::TSTransform;
-use native_theme_egui::{PanelSide, Role, RoleVariant, Surface, ThemeAtlas, expander_icon};
+use native_theme_egui::{PanelSide, Role, RoleVariant, Surface, expander_icon};
 
 use super::{DemoState, caption};
+use crate::app::OldAtlas;
 use crate::demo::{self, Registry};
 
 /// The rows the scroll areas scroll: a datum.
 const SCROLL_ROWS: usize = 100;
 
-pub(crate) fn show(
-    reg: &mut Registry,
-    state: &mut DemoState,
-    atlas: &ThemeAtlas,
-    ui: &mut egui::Ui,
-) {
-    let t = atlas.resolved_for(ui.ctx().theme());
+pub(crate) fn show(reg: &mut Registry, state: &mut DemoState, atlas: &OldAtlas, ui: &mut egui::Ui) {
+    let t = atlas.old_resolved(ui.ctx().theme());
     let normal = RoleVariant::Normal;
 
     caption(

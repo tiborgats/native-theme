@@ -143,8 +143,8 @@ impl SchemeStyles {
 /// `Send + Sync`).
 pub(crate) struct AtlasInner {
     pub(crate) name: String,
-    pub(crate) light: ResolvedTheme,
-    pub(crate) dark: ResolvedTheme,
+    pub(crate) light: SchemeTheme,
+    pub(crate) dark: SchemeTheme,
     pub(crate) schemes: [SchemeStyles; 2],
     pub(crate) accessibility: AccessibilityPreferences,
     pub(crate) layout: LayoutTheme,
@@ -171,6 +171,21 @@ impl AtlasInner {
             egui::Theme::Dark => &self.schemes[1],
         }
     }
+
+    /// The theme one scheme was built from.
+    pub(crate) fn source(&self, theme: egui::Theme) -> &SchemeTheme {
+        match theme {
+            egui::Theme::Light => &self.light,
+            egui::Theme::Dark => &self.dark,
+        }
+    }
+}
+
+/// The theme one scheme of an atlas was built from: a 0.7.2 [`ResolvedTheme`]
+/// ([`ThemeAtlas::builder`]) or a 0.8.0 one ([`crate::next::to_theme`]).
+pub(crate) enum SchemeTheme {
+    Old(Box<ResolvedTheme>),
+    Next(Box<native_theme::next::ResolvedTheme>),
 }
 
 /// Every `TextStyle::Name` key of `from` that `into` lacks, with its font (spec §7.5).
@@ -292,12 +307,28 @@ impl ThemeAtlas {
     }
 
     /// The source [`ResolvedTheme`] for an `egui::Theme` — pass `ctx.theme()` for the scheme
-    /// egui is drawing. Total: every atlas holds both.
+    /// egui is drawing — or `None` for an atlas built from the 0.8.0 model
+    /// ([`next::to_theme`](crate::next::to_theme)), whose theme [`Self::next_resolved_for`]
+    /// returns.
     #[must_use]
-    pub fn resolved_for(&self, theme: egui::Theme) -> &ResolvedTheme {
-        match theme {
-            egui::Theme::Light => &self.0.light,
-            egui::Theme::Dark => &self.0.dark,
+    pub fn resolved_for(&self, theme: egui::Theme) -> Option<&ResolvedTheme> {
+        match self.0.source(theme) {
+            SchemeTheme::Old(t) => Some(t),
+            SchemeTheme::Next(_) => None,
+        }
+    }
+
+    /// The source [`native_theme::next::ResolvedTheme`] for an `egui::Theme`, or `None` for an
+    /// atlas built from the 0.7.2 model ([`Self::builder`]), whose theme [`Self::resolved_for`]
+    /// returns.
+    #[must_use]
+    pub fn next_resolved_for(
+        &self,
+        theme: egui::Theme,
+    ) -> Option<&native_theme::next::ResolvedTheme> {
+        match self.0.source(theme) {
+            SchemeTheme::Old(_) => None,
+            SchemeTheme::Next(t) => Some(t),
         }
     }
 
@@ -677,6 +708,15 @@ impl ThemeAtlas {
         self.0.scheme(theme).focus_ring.as_ref()
     }
 
+    /// The text colour of one scheme's theme: 0.7.2's `defaults.text_color`, or the 0.8.0
+    /// model's `colors.window.foreground`, `None` where that theme states none.
+    pub(crate) fn text_color(&self, theme: egui::Theme) -> Option<crate::convert::Rgba> {
+        match self.0.source(theme) {
+            SchemeTheme::Old(t) => Some(t.defaults.text_color),
+            SchemeTheme::Next(t) => t.colors.window.foreground.map(crate::next::build::rgba),
+        }
+    }
+
     /// The widest glyph of the faces the atlas installs (M7-04).
     pub(crate) fn widest_glyph(&self) -> Option<crate::fonts::WidestGlyph> {
         self.0.widest_glyph
@@ -885,8 +925,8 @@ impl<'a> Builder<'a> {
         );
         ThemeAtlas(Arc::new(AtlasInner {
             name: self.name.to_owned(),
-            light: self.light.clone(),
-            dark: self.dark.clone(),
+            light: SchemeTheme::Old(Box::new(self.light.clone())),
+            dark: SchemeTheme::Old(Box::new(self.dark.clone())),
             schemes: [light, dark],
             accessibility: prefs,
             layout,
@@ -940,4 +980,53 @@ fn compile_scheme(
         sources,
         notes,
     )
+}
+
+/// The atlas of 0.8.0 themes ([`crate::next::to_theme`]): `light` into the light scheme and
+/// `dark` into the dark one, each beside the same theme resolved for a window that is not
+/// active, which its `WindowTitleBar` frame fills from, each scheme compiled with the
+/// preferences of its own theme's context (`next::accessibility_of`), on egui's default faces.
+/// What the atlas holds once (its name, preferences, layout gaps and icon set) is `light`'s;
+/// its icon theme is each scheme's own; it holds no OS colour mode.
+pub(crate) fn from_next(
+    light: &native_theme::next::ResolvedTheme,
+    light_inactive: &native_theme::next::ResolvedTheme,
+    dark: &native_theme::next::ResolvedTheme,
+    dark_inactive: &native_theme::next::ResolvedTheme,
+) -> ThemeAtlas {
+    let mut notes = Vec::new();
+    let defs = egui::FontDefinitions::default();
+    let widest_glyph = crate::fonts::widest_glyph(&defs);
+    let mut compiled = |scheme, theme, inactive| {
+        let prefs = crate::next::accessibility_of(theme);
+        let sources = crate::next::build::sources(theme, inactive);
+        compile_scheme(scheme, &sources, &prefs, &defs, &mut notes, None)
+    };
+    let schemes = [
+        compiled(egui::Theme::Light, light, light_inactive),
+        compiled(egui::Theme::Dark, dark, dark_inactive),
+    ];
+    let gaps = &light.layout;
+    let icon_theme =
+        |t: &native_theme::next::ResolvedTheme| t.icons.theme.as_deref().map(str::to_owned);
+    ThemeAtlas(Arc::new(AtlasInner {
+        name: light.name.to_string(),
+        light: SchemeTheme::Next(Box::new(light.clone())),
+        dark: SchemeTheme::Next(Box::new(dark.clone())),
+        schemes,
+        accessibility: crate::next::accessibility_of(light),
+        layout: LayoutTheme {
+            widget_gap: gaps.widget_gap,
+            container_margin: gaps.container_margin,
+            window_margin: gaps.window_margin,
+            section_gap: gaps.section_gap,
+        },
+        os_mode: None,
+        icon_set: light.icons.set,
+        icon_theme: [icon_theme(light), icon_theme(dark)],
+        fonts: None,
+        widest_glyph,
+        text_size_cap: AtomicU32::new(f32::INFINITY.to_bits()),
+        notes,
+    }))
 }

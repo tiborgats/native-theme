@@ -131,7 +131,8 @@ pub(crate) fn compile(input: &BuildInput<'_>, notes: &mut Vec<Note>) -> SchemeSt
     compile_from(&input.scheme_input(), &sources, notes)
 }
 
-/// [`compile`] from the sources of either model.
+/// One scheme's styles (`compile`, of the 0.7.2 model, in the tests) from the sources of
+/// either model.
 pub(crate) fn compile_from(
     input: &SchemeInput<'_>,
     src: &Sources,

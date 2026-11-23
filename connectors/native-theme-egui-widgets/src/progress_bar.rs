@@ -88,7 +88,9 @@ impl egui::Widget for ProgressBar {
             animate,
         } = self;
         let atlas = ThemeAtlas::from_ctx(ui.ctx());
-        let resolved = atlas.as_ref().map(|a| a.resolved_for(ui.ctx().theme()));
+        let resolved = atlas
+            .as_ref()
+            .and_then(|a| a.resolved_for(ui.ctx().theme()));
         let theme = resolved.map(|t| (&t.progress_bar, Look::of(t)));
         let min_width = theme.and_then(|(p, _)| scope::length(p.min_width));
         let still = atlas

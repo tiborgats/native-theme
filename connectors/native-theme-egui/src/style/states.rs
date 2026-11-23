@@ -187,7 +187,8 @@ pub(crate) fn write_states(widgets: &mut Widgets, src: &StateSource, notes: &mut
     write_states_with(widgets, src, Unstated::Copy, notes);
 }
 
-/// [`write_states`], a hover or press the source leaves `None` taking what `unstated` gives.
+/// §6.1's policy for one widget (`write_states`, the 0.7.2 model's copy, in the tests), a hover
+/// or press the source leaves `None` taking what `unstated` gives.
 pub(crate) fn write_states_with(
     widgets: &mut Widgets,
     src: &StateSource,

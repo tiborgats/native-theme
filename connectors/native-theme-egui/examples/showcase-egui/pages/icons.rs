@@ -7,10 +7,11 @@
 use native_theme::icons::{IconRole, TransformAnimation};
 use native_theme::theme::IconSet;
 use native_theme_egui::icons::{self, IconContext};
-use native_theme_egui::{ThemeAtlas, border_color, border_corner_radius};
+use native_theme_egui::{border_color, border_corner_radius};
 use native_theme_showcase_support::rows;
 
 use super::{DemoState, caption};
+use crate::app::OldAtlas;
 use crate::demo::{self, IconCache, Registry};
 
 /// The contexts `defaults.icon_sizes` names, in the gpui showcase's order and by its names
@@ -27,12 +28,12 @@ pub(crate) fn show(
     reg: &mut Registry,
     _state: &mut DemoState,
     cache: &mut IconCache,
-    atlas: &ThemeAtlas,
+    atlas: &OldAtlas,
     ui: &mut egui::Ui,
     chosen: &(IconSet, Option<String>),
     detect_icon_theme: fn() -> native_theme::Result<String>,
 ) {
-    let t = atlas.resolved_for(ui.ctx().theme());
+    let t = atlas.old_resolved(ui.ctx().theme());
     let (set, icon_theme) = chosen;
     let set_label = set_label(*set, icon_theme.as_deref(), detect_icon_theme);
     let pad = atlas.layout().container_margin;
@@ -236,12 +237,12 @@ fn native_here(set: IconSet) -> bool {
 fn icons_indicator(
     reg: &mut Registry,
     cache: &mut IconCache,
-    atlas: &ThemeAtlas,
+    atlas: &OldAtlas,
     ui: &mut egui::Ui,
     chosen: &(IconSet, Option<String>),
     set_label: &str,
 ) {
-    let t = atlas.resolved_for(ui.ctx().theme());
+    let t = atlas.old_resolved(ui.ctx().theme());
     let (set, icon_theme) = chosen;
     let reduce_motion = atlas.accessibility().reduce_motion;
     // The icon theme is in the key for the cache alone: `icons::to_image` colours by the set

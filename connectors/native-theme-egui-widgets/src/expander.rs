@@ -150,7 +150,13 @@ impl Expander {
         let Some(atlas) = atlas else {
             return own(ui, self, None, None, add_body);
         };
-        let t = atlas.resolved_for(ui.ctx().theme());
+        // An atlas of the 0.8.0 model: the role's cell, egui's own header in it.
+        let Some(t) = atlas.resolved_for(ui.ctx().theme()) else {
+            let enabled = self.enabled;
+            return scope::open(ui, Role::Expander, enabled, |ui| {
+                own(ui, self, None, None, add_body)
+            });
+        };
         let e = &t.expander;
         let line = scaled_line(t, atlas.accessibility());
         let enabled = self.enabled;

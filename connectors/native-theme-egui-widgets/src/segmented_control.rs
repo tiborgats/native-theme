@@ -143,8 +143,12 @@ impl egui::Widget for SegmentedControl<'_> {
             wrap,
             backdrop,
         } = self;
-        if let Some(atlas) = ThemeAtlas::from_ctx(ui.ctx()) {
-            let t = atlas.resolved_for(ui.ctx().theme());
+        // Without an atlas of the 0.7.2 model, egui's own row.
+        let atlas = ThemeAtlas::from_ctx(ui.ctx());
+        if let Some(t) = atlas
+            .as_ref()
+            .and_then(|a| a.resolved_for(ui.ctx().theme()))
+        {
             let padding = &t.segmented_control.border.padding;
             let unstated = padding.top.is_none() && padding.bottom.is_none();
             let look = Look::of(t);

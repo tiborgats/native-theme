@@ -206,7 +206,7 @@ impl egui::Widget for Switch<'_> {
         // takes back.
         let as_one = (!enabled && ui.is_enabled()) || crate::fade::outer_fade(ui).is_some();
         let paint = ThemeAtlas::from_ctx(ui.ctx()).and_then(|atlas| {
-            let t = atlas.resolved_for(ui.ctx().theme());
+            let t = atlas.resolved_for(ui.ctx().theme())?;
             let sw = Look::of(t);
             Geometry::of(&t.switch).map(|geometry| Paint {
                 geometry,
