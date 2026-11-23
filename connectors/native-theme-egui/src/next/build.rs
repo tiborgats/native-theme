@@ -5,12 +5,12 @@
 //! rule 0); a place a note names is the home's.
 
 use native_theme::next::{
-    ButtonQuery, Color, FocusTrigger, IconStated, IconStyle, ListQuery, Orientation, Paint,
-    PartStated, PartStyle, ResolvedTheme, Stroke, StyleQuery, TextStated, TextStyle, WidgetState,
-    WindowState,
+    ButtonQuery, Color, FocusKind, FocusTrigger, IconStated, IconStyle, ListQuery, Orientation,
+    PartStated, PartStyle, Preset, ResolvedTheme, Stroke, StyleQuery, TextStated, TextStyle,
+    WidgetState, WindowState,
 };
 
-use super::{padding_of, radius_of, stroke_width_of};
+use super::{Mapped, Unmapped, padding_of, radius_of, reads, stroke_width_of};
 use crate::convert::Rgba;
 use crate::plugin::FocusRingSource;
 use crate::style::Sources;
@@ -33,25 +33,14 @@ pub(crate) fn rgba(c: Color) -> Rgba {
     Rgba { r, g, b, a }
 }
 
-/// A part's fill, where stated: its one colour, transparent for a fill stated as none, and a
-/// layered paint's fallback colour (spec §10, rule 2); `None` for a layered paint without one.
+/// A part's fill, where stated ([`reads::fill`]).
 pub(crate) fn fill(part: &PartStyle) -> Option<Rgba> {
-    if !part.stated.contains(PartStated::FILL) {
-        return None;
-    }
-    match &part.fill {
-        Paint::None => Some(Rgba::TRANSPARENT),
-        Paint::Solid(c) => Some(rgba(*c)),
-        paint @ Paint::Complex(_) => paint.fallback_color().map(rgba),
-    }
+    reads::fill(part).map(rgba)
 }
 
-/// [`fill`] where a rule states it for the queried state (its `from_state` bit).
+/// [`fill`] where a rule states it for the queried state ([`reads::state_fill`]).
 pub(crate) fn state_fill(part: &PartStyle) -> Option<Rgba> {
-    part.from_state
-        .contains(PartStated::FILL)
-        .then(|| fill(part))
-        .flatten()
+    reads::state_fill(part).map(rgba)
 }
 
 /// [`fill`] with the home a note names it by.
@@ -68,10 +57,8 @@ fn state_fill_at(part: &PartStyle, home: &'static str) -> Read<Rgba> {
 /// connector knows.
 pub(crate) fn line(part: &PartStyle) -> Option<Rgba> {
     match &part.stroke {
-        Stroke::Uniform { color, align, .. }
-            if part.stated.contains(PartStated::STROKE) && LineAlign::of(*align).is_some() =>
-        {
-            Some(rgba(*color))
+        Stroke::Uniform { align, .. } if LineAlign::of(*align).is_some() => {
+            reads::stroke(part).map(rgba)
         }
         _ => None,
     }
@@ -116,17 +103,12 @@ pub(crate) fn edge(part: &PartStyle) -> (Edge, LineAlign) {
 
 /// A text style's colour, where stated.
 pub(crate) fn text_color(text: &TextStyle) -> Option<Rgba> {
-    text.stated
-        .contains(TextStated::COLOR)
-        .then(|| rgba(text.color))
+    reads::text(text).map(rgba)
 }
 
-/// [`text_color`] where a rule states it for the queried state (its `from_state` bit).
+/// [`text_color`] where a rule states it for the queried state ([`reads::state_text`]).
 pub(crate) fn state_text_color(text: &TextStyle) -> Option<Rgba> {
-    text.from_state
-        .contains(TextStated::COLOR)
-        .then(|| text_color(text))
-        .flatten()
+    reads::state_text(text).map(rgba)
 }
 
 /// A text style's size in logical pixels, where stated, with its home.
@@ -318,16 +300,17 @@ fn outline(part: &PartStyle, paths: [&'static str; 2]) -> Outline {
     Outline { edge, paths, align }
 }
 
-/// The menu item's outline: its corners where stated, else the panel's, the home the table of
-/// homes names for `menu.border.corner_radius` on a theme that rounds the panel alone
-/// (material-3), as iced's menu reads them.
-fn menu_outline(item: &PartStyle, panel: &PartStyle) -> Outline {
+/// The menu item's outline: its corners where stated, else, on the preset the table of homes
+/// names `menu.panel(NONE).corners` the home of `menu.border.corner_radius` on (material-3,
+/// whose menu rounds the panel alone), the panel's.
+fn menu_outline(r: &ResolvedTheme) -> Outline {
+    let m = &r.menu;
     let mut outline = outline(
-        item,
+        &m.item(WidgetState::NONE),
         ["menu.item(NONE).corners", "menu.item(NONE).stroke.width"],
     );
-    if outline.edge.radius.is_none() {
-        outline.edge.radius = radius_of(panel);
+    if outline.edge.radius.is_none() && r.preset == Preset::Material3 {
+        outline.edge.radius = radius_of(&m.panel(WidgetState::NONE));
         outline.paths[0] = "menu.panel(NONE).corners";
     }
     outline
@@ -351,17 +334,12 @@ fn text(t: &TextStyle, home: &'static str) -> Text {
 
 /// An icon's colour, where stated.
 fn icon_color(icon: &IconStyle) -> Option<Rgba> {
-    icon.stated
-        .contains(IconStated::COLOR)
-        .then(|| rgba(icon.color))
+    reads::icon(icon).map(rgba)
 }
 
-/// [`icon_color`] where a rule states it for the queried state (its `from_state` bit).
+/// [`icon_color`] where a rule states it for the queried state ([`reads::state_icon`]).
 fn state_icon_color(icon: &IconStyle) -> Option<Rgba> {
-    icon.from_state
-        .contains(IconStated::COLOR)
-        .then(|| icon_color(icon))
-        .flatten()
+    reads::state_icon(icon).map(rgba)
 }
 
 /// A text style's hovered and pressed colours where a rule states them for the state, the
@@ -447,7 +425,7 @@ pub(crate) fn cell_source(r: &ResolvedTheme) -> CellSource {
                 text_color(&m.item_label(S::NONE)),
                 state_text_color(&m.item_label(S::HOVER)),
             ],
-            outline: menu_outline(&item, &m.panel(S::NONE)),
+            outline: menu_outline(r),
             hover_border: state_line_color(&m.item(S::HOVER)),
             bar_padding: [
                 bar_left.map(|v| (v, "menu_bar.item(NONE).padding.left")),
@@ -614,6 +592,10 @@ pub(crate) fn cell_source(r: &ResolvedTheme) -> CellSource {
                     "tab.tab(SELECTED).stroke.width",
                 ],
             ),
+            state_border: [
+                state_line(&tb.tab(S::HOVER), "tab.tab(HOVER).stroke.width"),
+                state_line(&tb.tab(S::PRESSED), "tab.tab(PRESSED).stroke.width"),
+            ],
             selected_fill: state_fill(&tb.tab(S::SELECTED)),
             selected_text: state_text_color(&tb.label(S::SELECTED)),
             bar_fill: fill(&tb.bar(S::NONE)),
@@ -777,6 +759,16 @@ pub(crate) fn cell_source(r: &ResolvedTheme) -> CellSource {
                     "segmented_control.track(NONE).stroke.width",
                 ],
             ),
+            state_border: [
+                state_line(
+                    &sc.segment(S::HOVER),
+                    "segmented_control.segment(HOVER).stroke.width",
+                ),
+                state_line(
+                    &sc.segment(S::PRESSED),
+                    "segmented_control.segment(PRESSED).stroke.width",
+                ),
+            ],
             selected_fill: state_fill(&sc.segment(S::SELECTED)),
             selected_text: state_text_color(&sc.label(S::SELECTED)),
             height: segment.min_size[1].map(|v| (v, "segmented_control.segment(NONE).min_size[1]")),
@@ -994,31 +986,45 @@ pub(crate) fn frame_source(r: &ResolvedTheme, inactive: &ResolvedTheme) -> Frame
 
 /// Every source of one scheme's styles from the 0.8.0 model, an unstated hover or press taking
 /// egui's own treatment (spec §10, rule 0); `inactive` as [`frame_source`] takes it.
-pub(crate) fn sources(r: &ResolvedTheme, inactive: &ResolvedTheme) -> Sources {
-    Sources {
+///
+/// # Errors
+///
+/// [`focus_ring_source`]'s.
+pub(crate) fn sources(r: &ResolvedTheme, inactive: &ResolvedTheme) -> Mapped<Sources> {
+    Ok(Sources {
         base: base_source(r),
         cells: cell_source(r),
         variants: variant_source(r),
         frames: frame_source(r, inactive),
-        focus_ring: focus_ring_source(r),
+        focus_ring: focus_ring_source(r)?,
         rule_0: true,
-    }
+    })
 }
 
 /// [`FocusRingSource`] of the 0.8.0 model: the ring's stroke where it is one stroke of one
 /// colour (a stroke stated as none is a zero width, no ring; a per-side one gives no ring, as
-/// [`super::focus_ring_width`] cannot map it), its offset, and its trigger.
-pub(crate) fn focus_ring_source(r: &ResolvedTheme) -> FocusRingSource {
+/// [`super::focus_ring_width`] cannot map it), its offset, and its trigger. The plugin draws
+/// one stroke around the widget: the ring's inner stroke, its own corners, its alignment and
+/// the shadow geometry the model states are not drawn (README, what egui cannot draw).
+///
+/// # Errors
+///
+/// [`Unmapped`] `focus_ring.kind` where the indicator is not a ring (a fill, an underline),
+/// which the plugin's ring cannot draw.
+pub(crate) fn focus_ring_source(r: &ResolvedTheme) -> Mapped<FocusRingSource> {
     let ring = &r.focus_ring;
+    if ring.kind != FocusKind::Ring {
+        return Err(Unmapped("focus_ring.kind"));
+    }
     let (color, width) = match &ring.stroke {
         Stroke::None => (None, Some(0.0)),
         Stroke::Uniform { color, width, .. } => (Some(rgba(*color)), Some(*width)),
         _ => (None, None),
     };
-    FocusRingSource {
+    Ok(FocusRingSource {
         color,
         width: width.map(|v| (v, "focus_ring.stroke.width")),
         offset: Some((ring.offset, "focus_ring.offset")),
         keyboard_only: ring.trigger == Some(FocusTrigger::KeyboardOnly),
-    }
+    })
 }

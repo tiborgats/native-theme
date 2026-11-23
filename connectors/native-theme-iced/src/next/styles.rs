@@ -9,8 +9,8 @@ use iced_core::border::Radius;
 use iced_core::theme::Theme;
 use iced_core::{Shadow, Vector};
 use native_theme::next::{
-    ButtonQuery, IconStated, Orientation, Paint, PartStated, PartStyle, ResolvedTheme, Stroke,
-    StyleQuery, WidgetState, WindowState,
+    ButtonQuery, FocusKind, IconStated, Orientation, Paint, PartStated, PartStyle, ResolvedTheme,
+    Stroke, StyleQuery, WidgetState, WindowState,
 };
 
 use super::borders::{
@@ -325,6 +325,10 @@ macro_rules! input_source {
         let r: &ResolvedTheme = $r;
         let i = &r.$w;
         let ring = &r.focus_ring;
+        // a fill or an underline is no ring the field can draw, as `ring_look` finds
+        if ring.kind != FocusKind::Ring {
+            return Err(Unmapped("focus_ring.kind"));
+        }
         // A ring the theme states none of is 0 wide, which no field draws
         // ([`crate::styles::text_input`]'s inset ring), so its colour is
         // never shown.
@@ -375,7 +379,8 @@ macro_rules! input_source {
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no value the field needs.
+/// [`super::Unmapped`] where the theme states no value the field needs, or
+/// its focus indicator is not a ring (`focus_ring.kind`).
 pub fn text_input(
     r: &ResolvedTheme,
 ) -> Mapped<
@@ -390,7 +395,8 @@ pub fn text_input(
 ///
 /// # Errors
 ///
-/// [`super::Unmapped`] where the theme states no value the field needs.
+/// [`super::Unmapped`] where the theme states no value the field needs, or
+/// its focus indicator is not a ring (`focus_ring.kind`).
 pub fn text_editor(
     r: &ResolvedTheme,
 ) -> Mapped<

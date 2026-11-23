@@ -29,23 +29,29 @@
 //! - The notes (`Note`) name the leaf whose value was sanitised, saturated or transparent, a
 //!   0.7.2 leaf on one side and its 0.8.0 home on the other: not compared.
 //!
-//! Compared, per scheme of the two atlases: the base style, each role's `Normal` cell and its
+//! Compared, per preset, what the atlas holds once (its accessibility preferences, layout gaps
+//! and icon set) and each scheme's icon theme, the 0.7.2 atlas given the icon set and themes
+//! `from_preset` gives it; and per scheme of the two atlases: the base style, each role's
+//! `Normal` cell and its
 //! `Selected`, `Disabled` and `SelectedDisabled` cells where the role has one of its own (the
 //! atlas sharing the `Normal` cell, for `SelectedDisabled` the `Disabled` one, in place of a
 //! cell a role has none of, which is then the same on both sides), each surface's frame, the
 //! `WindowTitleBar`'s from the theme resolved for an inactive window as well, the focus ring and
-//! the menu bar's titles. A difference is allowed only as a listed one, per leaf (a `*` segment standing for
-//! any one, an entry naming the leaf itself taken first) and preset, with its cause, from which
-//! the test computes the value the 0.8.0 side must hold there; an entry that differs nowhere
-//! on a preset it names is stale and fails. A cell's leaf that holds its base style's value on
-//! both sides differs as the base does, which the base's comparison lists and checks; a
-//! variant cell's leaf that holds the value of the cell it is copied from (`Normal`, for
-//! `SelectedDisabled` `Selected`) likewise, and a frame's leaf that holds egui's own frame's
-//! over each side's base style.
+//! the menu bar's titles. A difference is allowed only as a listed one, per leaf (a `*` segment
+//! standing for any one, a `{a,b}` segment for each it names, an entry naming the leaf itself
+//! taken first) and preset, with its cause, from which the test computes the value the 0.8.0
+//! side must hold there; an entry is stale and fails where a leaf it names on a preset it
+//! names differs nowhere. A cell's leaf that holds its base style's value on both sides, and
+//! that neither side's role writes (each side's role built over the other side's base style
+//! holds that base's value there), differs as the base does, which the base's comparison lists
+//! and checks; a variant cell's leaf that holds the value of the cell it is copied from
+//! (`Normal`, for `SelectedDisabled` `Selected`) likewise, and a frame's leaf that holds egui's
+//! own frame's over each side's base style. A leaf either side writes is compared.
 //! A difference that is rule 0 on a state ([`Cause::Rule0`], [`Cause::StateKeepsBase`]) is a
 //! model gap, listed in [`RULE_0_ON_A_PRESET`] with the 0.8.0 home the preset leaves unstated;
 //! every other one in [`DIFFERENCES`].
 
+use std::collections::HashSet;
 use std::sync::Arc;
 
 use egui::style::{WidgetVisuals, Widgets};
@@ -53,14 +59,17 @@ use native_theme::next::{
     IconStated, IconStyle, PartStated, Preset, ResolvedTheme, TextStated, TextStyle, ThemeContext,
     ThemePatch, WidgetState,
 };
+use native_theme::theme::ColorMode;
 
-use super::build::{base_source, cell_source, frame_source, variant_source};
+use super::build::{base_source, cell_source, variant_source};
 use super::root_parity::{PRESETS, resolve};
 use crate::atlas::SchemeStyles;
 use crate::convert::to_color32;
 use crate::style::cells::CellSource;
-use crate::style::frames::FrameSource;
+use crate::style::frames::{FrameSource, surface_frame_from};
 use crate::style::line::{Line, LineAlign};
+use crate::style::roles::{CellInput, role_cell_from};
+use crate::style::variants::{disabled_cell, selected_cell, selected_disabled_cell};
 use crate::{AccessibilityPreferences, Role, RoleVariant, Surface};
 
 /// Why a leaf differs, which gives the value the 0.8.0 side holds there.
@@ -170,6 +179,16 @@ const WIDTH_RULE_0: &str = "the 0.8.0 theme states no text-stroke width, and egu
 const INSIDE: &str = "the part's translucent border lies inside it in the 0.8.0 theme \
      (macOS's and WinUI's controls), where 0.7.2 stated no alignment";
 
+const BUTTON_MIN_HEIGHT: &str = "button.min_height: 0.7.2's 32 is the height at the default \
+     font, not a minimum (issue #4 Z1); button.body(NONE).min_size[1] is unstated on kde-breeze \
+     (the table of homes' listed difference)";
+
+/// A role's resting outline, beside its hovered and pressed one that rule 0 gives.
+const OUTLINE_AT_REST: &str = ".visuals.widgets.{noninteractive,inactive,open}.bg_stroke.color";
+
+/// The hovered and pressed outline a role keeps at rest.
+const STATE_STROKES: &str = ".visuals.widgets.{hovered,active}.bg_stroke.color";
+
 const RESTING: &str = "the role keeps its resting stroke under the pointer and on a press, the \
      base style's: macOS's push-button border over its fill";
 
@@ -220,28 +239,26 @@ const DIFFERENCES: &[Difference] = &[
         &[K],
         ".spacing.interact_size",
         Cause::Egui,
-        "button.min_height: 0.7.2's 32 is the height at the default font, not a minimum \
-         (issue #4 Z1); button.body(NONE).min_size[1] is unstated on kde-breeze (the table of \
-         homes' listed difference)",
+        BUTTON_MIN_HEIGHT,
+    ),
+    d(
+        "Button",
+        &[K],
+        ".spacing.interact_size",
+        Cause::Egui,
+        BUTTON_MIN_HEIGHT,
     ),
     d(
         "base",
         &[M, T],
-        ".visuals.widgets.inactive.bg_stroke.color",
-        Cause::OverFill,
-        INSIDE,
-    ),
-    d(
-        "base",
-        &[M, T],
-        ".visuals.widgets.open.bg_stroke.color",
+        ".visuals.widgets.{inactive,open}.bg_stroke.color",
         Cause::OverFill,
         INSIDE,
     ),
     d(
         "Button",
         &[M, T],
-        ".visuals.widgets.noninteractive.bg_stroke.color",
+        ".visuals.widgets.{noninteractive,inactive,open}.bg_stroke.color",
         Cause::OverFill,
         INSIDE,
     ),
@@ -276,26 +293,26 @@ const DIFFERENCES: &[Difference] = &[
     d(
         "ComboBox",
         &[W, M, T],
-        WIDGET_STROKES,
+        OUTLINE_AT_REST,
         Cause::OverFill,
         INSIDE,
     ),
     d(
         "SegmentedControl",
         &[W, M, T],
-        WIDGET_STROKES,
+        OUTLINE_AT_REST,
         Cause::OverFill,
         INSIDE,
     ),
     d(
         "Expander",
         &[A, W, M, T],
-        WIDGET_STROKES,
+        ".visuals.widgets.{noninteractive,hovered,active}.bg_stroke.color",
         Cause::OverFill,
         "the expander's frame (expander.container(NONE)) is a translucent stroke laid inside \
          it in the 0.8.0 theme, where 0.7.2 stated no alignment",
     ),
-    d("Tab", &[W], WIDGET_STROKES, Cause::OverFill, INSIDE),
+    d("Tab", &[W], OUTLINE_AT_REST, Cause::OverFill, INSIDE),
     d(
         "Tab",
         &[A, M, T, M3, I],
@@ -320,13 +337,13 @@ const DIFFERENCES: &[Difference] = &[
     d(
         "Menu",
         &[A, W, M, T, I],
-        ".visuals.widgets.*.corner_radius.*",
+        ".visuals.widgets.{inactive,hovered,active,open}.corner_radius.*",
         Cause::Base,
         MENU_CORNERS,
     ),
     d(
         "StatusBar",
-        &[K, A, W, M3, I],
+        ALL,
         ".visuals.widgets.hovered.fg_stroke.color",
         Cause::Egui,
         STATUS_BAR_LABEL,
@@ -341,56 +358,56 @@ const DIFFERENCES: &[Difference] = &[
     d(
         "Slider",
         ALL,
-        ".visuals.widgets.*.expansion",
+        ".visuals.widgets.{hovered,active}.expansion",
         Cause::Knob,
         KNOB,
     ),
     d(
         "List",
         &[M, T],
-        ".visuals.widgets.*.bg_stroke.color",
+        STATE_STROKES,
         Cause::RestingStroke,
         RESTING,
     ),
     d(
         "Scrollbar",
         &[M, T],
-        WIDGET_STROKES,
+        STATE_STROKES,
         Cause::RestingStroke,
         RESTING,
     ),
     d(
         "Sidebar",
         &[M, T],
-        WIDGET_STROKES,
+        STATE_STROKES,
         Cause::RestingStroke,
         RESTING,
     ),
     d(
         "Slider",
         &[M, T],
-        WIDGET_STROKES,
+        STATE_STROKES,
         Cause::RestingStroke,
         RESTING,
     ),
     d(
         "StatusBar",
         &[M, T],
-        WIDGET_STROKES,
+        STATE_STROKES,
         Cause::RestingStroke,
         RESTING,
     ),
     d(
         "Switch",
         &[M, T],
-        WIDGET_STROKES,
+        STATE_STROKES,
         Cause::RestingStroke,
         RESTING,
     ),
     d(
         "Toolbar",
         &[M, T],
-        WIDGET_STROKES,
+        STATE_STROKES,
         Cause::RestingStroke,
         RESTING,
     ),
@@ -599,26 +616,26 @@ const RULE_0_ON_A_PRESET: &[Gap] = &[
     ),
     r0(
         "Checkbox",
-        &[A, W, M, T, M3],
+        &[A, W, M, T, M3, I],
         ".visuals.widgets.hovered.bg_stroke.color",
         home!(checkbox.indicator(HOVER).stroke.color),
     ),
     r0(
         "Checkbox",
-        &[K, A, W, M, T, M3],
+        ALL,
         ".visuals.widgets.active.bg_stroke.color",
         home!(checkbox.indicator(PRESSED).stroke.color),
     ),
     // the checked box's hover and press outline, the state asked alone (spec §2, `from_state`)
     r0(
         "Checkbox/Selected",
-        &[A, W, M, T, M3],
+        &[A, W, M, T, M3, I],
         ".visuals.widgets.hovered.bg_stroke.color",
         home!(checkbox.indicator(HOVER).stroke.color),
     ),
     r0(
         "Checkbox/Selected",
-        &[A, W, M, T, M3],
+        ALL,
         ".visuals.widgets.active.bg_stroke.color",
         home!(checkbox.indicator(PRESSED).stroke.color),
     ),
@@ -661,13 +678,13 @@ const RULE_0_ON_A_PRESET: &[Gap] = &[
     ),
     r0(
         "ComboBox",
-        &[K, M3],
+        ALL,
         ".visuals.widgets.active.bg_stroke.color",
         home!(combo_box.field(PRESSED).stroke.color),
     ),
     r0(
         "ComboBox",
-        &[K, A, W, M3],
+        ALL,
         ".visuals.widgets.hovered.fg_stroke.color",
         home!(combo_box.label(HOVER).color),
     ),
@@ -691,7 +708,7 @@ const RULE_0_ON_A_PRESET: &[Gap] = &[
     ),
     r0(
         "Expander",
-        &[K, A, W, M3, I],
+        ALL,
         ".visuals.widgets.hovered.fg_stroke.color",
         home!(expander.header_label(HOVER).color),
     ),
@@ -703,7 +720,7 @@ const RULE_0_ON_A_PRESET: &[Gap] = &[
     ),
     r0(
         "Input",
-        &[K, M3, I],
+        ALL,
         ".visuals.widgets.active.bg_stroke.color",
         home!(input.field(PRESSED).stroke.color),
     ),
@@ -745,7 +762,7 @@ const RULE_0_ON_A_PRESET: &[Gap] = &[
     ),
     r0(
         "SegmentedControl",
-        &[K, A, W, M3, I],
+        ALL,
         ".visuals.widgets.hovered.fg_stroke.color",
         home!(segmented_control.label(HOVER).color),
     ),
@@ -769,7 +786,7 @@ const RULE_0_ON_A_PRESET: &[Gap] = &[
     ),
     r0(
         "Sidebar",
-        &[K, A, W, M3, I],
+        ALL,
         ".visuals.widgets.hovered.fg_stroke.color",
         home!(sidebar.item_label(HOVER).color),
     ),
@@ -823,7 +840,7 @@ const RULE_0_ON_A_PRESET: &[Gap] = &[
     ),
     r0(
         "Toolbar",
-        &[K, A, W, M3, I],
+        ALL,
         ".visuals.widgets.hovered.fg_stroke.color",
         home!(toolbar.button_label(HOVER).color),
     ),
@@ -873,15 +890,167 @@ const RULE_0_ON_A_PRESET: &[Gap] = &[
     ),
     r0(
         "Checkbox",
-        &[M3],
+        &[M, T, M3, I],
         ".visuals.widgets.hovered.bg_stroke.width",
         home!(checkbox.indicator(HOVER).stroke.width),
     ),
     r0(
         "Checkbox",
-        &[M3],
+        &[M, T, M3, I],
         ".visuals.widgets.active.bg_stroke.width",
         home!(checkbox.indicator(PRESSED).stroke.width),
+    ),
+    r0(
+        "Checkbox/Selected",
+        &[M, T, M3, I],
+        ".visuals.widgets.hovered.bg_stroke.width",
+        home!(checkbox.indicator(HOVER).stroke.width),
+    ),
+    r0(
+        "Checkbox/Selected",
+        &[M, T, M3, I],
+        ".visuals.widgets.active.bg_stroke.width",
+        home!(checkbox.indicator(PRESSED).stroke.width),
+    ),
+    // the Button cell writes the button's states as the base style does
+    r0(
+        "Button",
+        &[A, W, M, T, M3, I],
+        ".visuals.widgets.hovered.bg_stroke.color",
+        home!(button.body(HOVER).stroke.color),
+    ),
+    r0(
+        "Button",
+        &[A, W, M, T, M3, I],
+        ".visuals.widgets.active.bg_stroke.color",
+        home!(button.body(PRESSED).stroke.color),
+    ),
+    r0(
+        "Button",
+        &[A, M, T, M3, I],
+        ".visuals.widgets.hovered.bg_stroke.width",
+        home!(button.body(HOVER).stroke.width),
+    ),
+    r0(
+        "Button",
+        &[A, M, T, M3, I],
+        ".visuals.widgets.active.bg_stroke.width",
+        home!(button.body(PRESSED).stroke.width),
+    ),
+    r0(
+        "Button",
+        &[M, T, I],
+        ".visuals.widgets.hovered.fg_stroke.color",
+        home!(button.label(HOVER).color),
+    ),
+    r0(
+        "Button",
+        &[T],
+        ".visuals.widgets.active.weak_bg_fill",
+        home!(button.body(PRESSED).fill),
+    ),
+    r0(
+        "ComboBox",
+        &[A, W, M, T, I],
+        ".visuals.widgets.hovered.bg_stroke.color",
+        home!(combo_box.field(HOVER).stroke.color),
+    ),
+    r0(
+        "ComboBox",
+        &[A, M, T, I],
+        ".visuals.widgets.hovered.bg_stroke.width",
+        home!(combo_box.field(HOVER).stroke.width),
+    ),
+    r0(
+        "ComboBox",
+        &[A, M, T, I],
+        ".visuals.widgets.active.bg_stroke.width",
+        home!(combo_box.field(PRESSED).stroke.width),
+    ),
+    r0(
+        "Input",
+        &[A, M, T],
+        ".visuals.widgets.hovered.bg_stroke.color",
+        home!(input.field(HOVER).stroke.color),
+    ),
+    r0(
+        "Input",
+        &[A, M, T],
+        ".visuals.widgets.hovered.bg_stroke.width",
+        home!(input.field(HOVER).stroke.width),
+    ),
+    r0(
+        "Input",
+        &[A, M, T, I],
+        ".visuals.widgets.active.bg_stroke.width",
+        home!(input.field(PRESSED).stroke.width),
+    ),
+    // the Scrollbar cell's thumb is the base style's `bg_fill` (`base_style_from`, §5.9)
+    r0(
+        "Scrollbar",
+        &[T],
+        ".visuals.widgets.hovered.bg_fill",
+        home!(scrollbar.thumb(HOVER).fill),
+    ),
+    r0(
+        "Scrollbar",
+        &[W, T],
+        ".visuals.widgets.active.bg_fill",
+        home!(scrollbar.thumb(PRESSED).fill),
+    ),
+    r0(
+        "SegmentedControl",
+        ALL,
+        ".visuals.widgets.hovered.bg_stroke.color",
+        home!(segmented_control.segment(HOVER).stroke.color),
+    ),
+    r0(
+        "SegmentedControl",
+        ALL,
+        ".visuals.widgets.active.bg_stroke.color",
+        home!(segmented_control.segment(PRESSED).stroke.color),
+    ),
+    r0(
+        "SegmentedControl",
+        &[M, T, I],
+        ".visuals.widgets.hovered.bg_stroke.width",
+        home!(segmented_control.segment(HOVER).stroke.width),
+    ),
+    r0(
+        "SegmentedControl",
+        &[M, T, I],
+        ".visuals.widgets.active.bg_stroke.width",
+        home!(segmented_control.segment(PRESSED).stroke.width),
+    ),
+    r0(
+        "Tab",
+        &[K, W],
+        ".visuals.widgets.hovered.bg_stroke.color",
+        home!(tab.tab(HOVER).stroke.color),
+    ),
+    r0(
+        "Tab",
+        &[K, W],
+        ".visuals.widgets.active.bg_stroke.color",
+        home!(tab.tab(PRESSED).stroke.color),
+    ),
+    r0(
+        "Tab",
+        &[A, M3],
+        ".visuals.widgets.hovered.bg_stroke.width",
+        home!(tab.tab(HOVER).stroke.width),
+    ),
+    r0(
+        "Tab",
+        &[A, M3],
+        ".visuals.widgets.active.bg_stroke.width",
+        home!(tab.tab(PRESSED).stroke.width),
+    ),
+    r0(
+        "Tab",
+        &[M, T],
+        ".visuals.widgets.hovered.fg_stroke.color",
+        home!(tab.label(HOVER).color),
     ),
 ];
 
@@ -892,16 +1061,30 @@ fn listed() -> impl Iterator<Item = &'static Difference> {
         .chain(RULE_0_ON_A_PRESET.iter().map(|g| &g.diff))
 }
 
-/// Whether `path` is the leaf `pattern` names, a `*` segment standing for any one.
+/// Whether `path` is the leaf `pattern` names, a `*` segment standing for any one and a
+/// `{a,b}` segment for each it names.
 fn matches(pattern: &str, path: &str) -> bool {
     let (mut p, mut l) = (pattern.split('.'), path.split('.'));
     loop {
         match (p.next(), l.next()) {
             (None, None) => return true,
-            (Some(a), Some(b)) if a == "*" || a == b => {}
+            (Some(a), Some(b)) if a == "*" || a == b || one_of(a, b) => {}
             _ => return false,
         }
     }
+}
+
+/// Whether `segment` is one of those a `{a,b}` pattern segment names.
+fn one_of(pattern: &str, segment: &str) -> bool {
+    pattern
+        .strip_prefix('{')
+        .and_then(|p| p.strip_suffix('}'))
+        .is_some_and(|names| names.split(',').any(|n| n == segment))
+}
+
+/// Whether a listed path names one leaf, not a pattern of several.
+fn names_one(path: &str) -> bool {
+    !path.contains('*') && !path.contains('{')
 }
 
 /// A `Debug` form's leaves: each one's path and value.
@@ -942,75 +1125,139 @@ fn leaf_at(leaves: &Leaves, path: &str) -> Option<String> {
         .map(|(_, v)| v.clone())
 }
 
+/// What a compared value was copied from on each side, and the same build over the other
+/// side's: a role cell's base styles, a variant cell's `Normal` (or `Selected`) cell, a
+/// frame's egui preset over each side's base style.
+struct Bases<'a> {
+    old: &'a Leaves,
+    new: &'a Leaves,
+    /// The 0.7.2 side's build over the 0.8.0 side's base, and the 0.8.0 side's over the 0.7.2
+    /// side's; `None` where it cannot be built, which compares every leaf.
+    swapped: Option<(&'a Leaves, &'a Leaves)>,
+}
+
+impl Bases<'_> {
+    /// Whether the leaf at `path`, `o` on the 0.7.2 side and `n` on the 0.8.0 side, holds its
+    /// base's value on both sides and neither side's build writes it: each build over the other
+    /// side's base holds that base's value there.
+    fn neither_writes(&self, path: &str, o: &str, n: &str) -> bool {
+        let at = |l: &Leaves| leaf_at(l, path);
+        let Some((old_swapped, new_swapped)) = self.swapped else {
+            return false;
+        };
+        at(self.old).as_deref() == Some(o)
+            && at(self.new).as_deref() == Some(n)
+            && at(old_swapped).as_deref() == Some(n)
+            && at(new_swapped).as_deref() == Some(o)
+    }
+}
+
 /// One comparison: what is compared, the preset and scheme.
 struct Side<'a> {
     what: &'a str,
     preset: &'static str,
     label: &'a str,
-    /// For a role cell, the leaves of the base styles it was copied from, 0.7.2's and 0.8.0's.
-    bases: Option<(&'a Leaves, &'a Leaves)>,
+    bases: Option<Bases<'a>>,
+}
+
+/// A model gap's difference where it occurs: the gap's place in [`RULE_0_ON_A_PRESET`], the
+/// preset and scheme, the leaf, and its 0.7.2 and 0.8.0 values.
+struct GapHit {
+    gap: usize,
+    label: String,
+    path: String,
+    old: String,
+    new: String,
+}
+
+/// What the comparisons found: the failures; each listed entry's leaves that differ as listed
+/// (`seen`) and every leaf it claims (`claimed`), by the entry's place in [`listed`], the
+/// preset and the leaf's path; and the model gaps' differences.
+#[derive(Default)]
+struct Tally {
+    failures: Vec<String>,
+    seen: HashSet<(usize, &'static str, String)>,
+    claimed: HashSet<(usize, &'static str, String)>,
+    gaps: Vec<GapHit>,
 }
 
 /// The leaves in which `old` and `new` differ where no entry lists the difference, or where
 /// the 0.8.0 side's value is not the one the entry's cause gives (`expected`, `None` where the
-/// cause does not apply); the listed ones `seen` records, by the entry's place in [`listed`].
-/// An unlisted difference names the causes that would give its value.
+/// cause does not apply), into `tally`'s failures; the listed ones into its `seen`, and each
+/// leaf an entry claims, differing or not, into its `claimed`. A leaf both sides hold at
+/// their bases' values, which neither side's build writes ([`Bases::neither_writes`]), differs
+/// as the bases do and is not compared. An unlisted difference names the causes that would
+/// give its value.
 fn compare(
     side: &Side<'_>,
     old: &impl std::fmt::Debug,
     new: &impl std::fmt::Debug,
     expected: &dyn Fn(&str, Cause) -> Option<String>,
-    failures: &mut Vec<String>,
-    seen: &mut Vec<(usize, &'static str)>,
+    tally: &mut Tally,
 ) {
     let (old, new) = (leaves(&format!("{old:#?}")), leaves(&format!("{new:#?}")));
     let label = side.label;
     let what = side.what;
     if old.len() != new.len() {
-        failures.push(format!(
+        tally.failures.push(format!(
             "{label}: {what}: the Debug forms differ in shape: {} lines against {}",
             old.len(),
             new.len()
         ));
     }
+    let entries: Vec<(usize, &Difference)> = listed()
+        .enumerate()
+        .filter(|(_, d)| d.what == what && d.presets.contains(&side.preset))
+        .collect();
     for ((path, o), (new_path, n)) in old.iter().zip(&new) {
         if path != new_path {
-            failures.push(format!("{label}: {what}: {path} against {new_path}"));
+            tally
+                .failures
+                .push(format!("{label}: {what}: {path} against {new_path}"));
             return;
-        }
-        if o == n {
-            continue;
-        }
-        if let Some((old_base, new_base)) = side.bases
-            && leaf_at(old_base, path).as_ref() == Some(o)
-            && leaf_at(new_base, path).as_ref() == Some(n)
-        {
-            continue;
         }
         // an entry naming the leaf itself before one whose pattern matches it
         let listing = |exact: bool| {
-            listed().enumerate().find(|(_, d)| {
-                d.what == what
-                    && d.presets.contains(&side.preset)
-                    && d.path.contains('*') != exact
-                    && matches(d.path, path)
-            })
+            entries
+                .iter()
+                .find(|(_, d)| names_one(d.path) == exact && matches(d.path, path))
         };
-        let Some((i, d)) = listing(true).or_else(|| listing(false)) else {
+        let entry = listing(true).or_else(|| listing(false));
+        if let Some((i, _)) = entry {
+            tally.claimed.insert((*i, side.preset, path.clone()));
+        }
+        if o == n
+            || side
+                .bases
+                .as_ref()
+                .is_some_and(|b| b.neither_writes(path, o, n))
+        {
+            continue;
+        }
+        let Some(&(i, d)) = entry else {
             let causes: Vec<Cause> = Cause::ALL
                 .into_iter()
                 .filter(|c| expected(path, *c).as_ref() == Some(n))
                 .collect();
-            failures.push(format!(
+            tally.failures.push(format!(
                 "{label}: {what}: {path}: 0.7.2 {o}, 0.8.0 {n}; the causes that give it: {causes:?}"
             ));
             continue;
         };
         let want = expected(path, d.cause);
         if want.as_ref() == Some(n) && !d.reason.is_empty() {
-            seen.push((i, side.preset));
+            tally.seen.insert((i, side.preset, path.clone()));
+            if let Some(gap) = i.checked_sub(DIFFERENCES.len()) {
+                tally.gaps.push(GapHit {
+                    gap,
+                    label: label.to_owned(),
+                    path: path.clone(),
+                    old: o.clone(),
+                    new: n.clone(),
+                });
+            }
         } else {
-            failures.push(format!(
+            tally.failures.push(format!(
                 "{label}: {what}: {path}: listed ({:?}), but 0.8.0 {n}, the cause gives {want:?}",
                 d.cause
             ));
@@ -1085,26 +1332,37 @@ fn selected_leaves(styles: &SchemeStyles, role: Role) -> Option<Vec<(String, Str
 
 #[test]
 fn the_atlas_agrees_on_both_models() -> Result<(), Box<dyn std::error::Error>> {
-    let mut failures = Vec::new();
-    let mut seen = Vec::new();
+    let mut tally = Tally::default();
     if PRESETS.iter().map(|(key, _)| *key).ne(ALL.iter().copied()) {
-        failures.push("ALL is not the presets compared".to_owned());
+        tally
+            .failures
+            .push("ALL is not the presets compared".to_owned());
     }
     for d in DIFFERENCES.iter().filter(|d| d.cause.is_gap()) {
-        failures.push(format!(
+        tally.failures.push(format!(
             "{} {}: a model gap's cause, listed outside RULE_0_ON_A_PRESET",
             d.what, d.path
         ));
     }
     for g in RULE_0_ON_A_PRESET.iter().filter(|g| !g.diff.cause.is_gap()) {
-        failures.push(format!(
+        tally.failures.push(format!(
             "{} {}: not a model gap's cause",
             g.diff.what, g.home.path
         ));
     }
     let prefs = AccessibilityPreferences::default();
+    let defs = egui::FontDefinitions::default();
     for &(key, preset) in PRESETS {
-        let layout = native_theme::theme::Theme::preset(key)?.layout;
+        let spec = native_theme::theme::Theme::preset(key)?;
+        let layout = spec.layout.clone();
+        // the icon set and themes as `from_preset` hands them to the 0.7.2 builder
+        let context = native_theme::ResolutionContext::for_tests();
+        let old_icons = [ColorMode::Light, ColorMode::Dark]
+            .map(|mode| spec.resolve_with(mode, &context))
+            .map(|r| r.map(|r| (r.icon_set, r.icon_theme)));
+        let [old_light_icons, old_dark_icons] = old_icons;
+        let ((icon_set, light_icon_theme), (_, dark_icon_theme)) =
+            (old_light_icons?, old_dark_icons?);
         let (old_light, new_light) = resolve(key, preset, false)?;
         let (old_dark, new_dark) = resolve(key, preset, true)?;
         let resolve_inactive = |ctx: ThemeContext| {
@@ -1112,11 +1370,59 @@ fn the_atlas_agrees_on_both_models() -> Result<(), Box<dyn std::error::Error>> {
         };
         let light_inactive = resolve_inactive(ThemeContext::light());
         let dark_inactive = resolve_inactive(ThemeContext::dark());
-        let old_atlas = crate::ThemeAtlas::builder(key, &old_light, &old_dark)
+        let mut builder = crate::ThemeAtlas::builder(key, &old_light, &old_dark)
             .layout(&layout)
             .accessibility(&prefs)
-            .build();
+            .icon_set(icon_set);
+        if let Some(name) = light_icon_theme.as_deref() {
+            builder = builder.icon_theme(egui::Theme::Light, name);
+        }
+        if let Some(name) = dark_icon_theme.as_deref() {
+            builder = builder.icon_theme(egui::Theme::Dark, name);
+        }
+        let old_atlas = builder.build();
         let new_atlas = super::to_theme(&new_light, &light_inactive, &new_dark, &dark_inactive)?;
+        // what the atlas holds once, and each scheme's icon theme
+        let side = |what| Side {
+            what,
+            preset: key,
+            label: key,
+            bases: None,
+        };
+        let none = |_: &str, _: Cause| None;
+        compare(
+            &side("Accessibility"),
+            old_atlas.accessibility(),
+            new_atlas.accessibility(),
+            &none,
+            &mut tally,
+        );
+        compare(
+            &side("Layout"),
+            old_atlas.layout(),
+            new_atlas.layout(),
+            &none,
+            &mut tally,
+        );
+        compare(
+            &side("IconSet"),
+            &old_atlas.icon_set(),
+            &new_atlas.icon_set(),
+            &none,
+            &mut tally,
+        );
+        for (what, scheme) in [
+            ("IconTheme/light", egui::Theme::Light),
+            ("IconTheme/dark", egui::Theme::Dark),
+        ] {
+            compare(
+                &side(what),
+                &old_atlas.icon_theme(scheme),
+                &new_atlas.icon_theme(scheme),
+                &none,
+                &mut tally,
+            );
+        }
         for (is_dark, scheme, old, new, inactive) in [
             (
                 false,
@@ -1134,8 +1440,18 @@ fn the_atlas_agrees_on_both_models() -> Result<(), Box<dyn std::error::Error>> {
             ),
         ] {
             let label = format!("{key}/{}", if is_dark { "dark" } else { "light" });
-            let seen_before = seen.len();
+            let gaps_before = tally.gaps.len();
             let (old_styles, new_styles) = (old_atlas.scheme(scheme), new_atlas.scheme(scheme));
+            // each side's sources and cell input as its atlas compiled them
+            let old_sources = crate::style::Sources::old(old, &prefs, &layout);
+            let new_sources = super::build::sources(new, inactive)?;
+            let cell_input = |sources: &crate::style::Sources| CellInput {
+                scheme,
+                row_height: crate::atlas::row_height(scheme, sources, &defs),
+                defs: Some(&defs),
+                rule_0: sources.rule_0,
+            };
+            let (old_input, new_input) = (cell_input(&old_sources), cell_input(&new_sources));
             let (old_base, new_base) = (&*old_styles.base, &*new_styles.base);
             let new_src = base_source(new);
             let own = leaves(&format!("{:#?}", scheme.default_style()));
@@ -1166,14 +1482,7 @@ fn the_atlas_agrees_on_both_models() -> Result<(), Box<dyn std::error::Error>> {
                 label: &label,
                 bases: None,
             };
-            compare(
-                &side,
-                old_base,
-                new_base,
-                &base_expected,
-                &mut failures,
-                &mut seen,
-            );
+            compare(&side, old_base, new_base, &base_expected, &mut tally);
             let new_cells = cell_source(new);
             let new_variant_src = variant_source(new);
             for role in Role::all() {
@@ -1215,20 +1524,26 @@ fn the_atlas_agrees_on_both_models() -> Result<(), Box<dyn std::error::Error>> {
                         Some(format!("{:?}", rest - outline))
                     }
                 };
+                // each side's role over the other side's base
+                let swapped = |sources: &crate::style::Sources,
+                               input: &CellInput<'_>,
+                               base: &egui::Style| {
+                    let cell = role_cell_from(*role, base, &sources.cells, input, &mut Vec::new());
+                    leaves(&format!("{cell:#?}"))
+                };
+                let old_swapped = swapped(&old_sources, &old_input, new_base);
+                let new_swapped = swapped(&new_sources, &new_input, old_base);
                 let side = Side {
                     what: &what,
                     preset: key,
                     label: &label,
-                    bases: Some((&old_leaves, &new_leaves)),
+                    bases: Some(Bases {
+                        old: &old_leaves,
+                        new: &new_leaves,
+                        swapped: Some((&old_swapped, &new_swapped)),
+                    }),
                 };
-                compare(
-                    &side,
-                    old_cell,
-                    new_cell,
-                    &cell_expected,
-                    &mut failures,
-                    &mut seen,
-                );
+                compare(&side, old_cell, new_cell, &cell_expected, &mut tally);
                 let old_normal_leaves = leaves(&format!("{old_cell:#?}"));
                 let old_selected_leaves = selected_leaves(old_styles, *role);
                 let new_selected_leaves = selected_leaves(new_styles, *role);
@@ -1236,7 +1551,9 @@ fn the_atlas_agrees_on_both_models() -> Result<(), Box<dyn std::error::Error>> {
                     let what = format!("{role:?}/{name}");
                     let has = own_cell(old_styles, *role, variant);
                     if has != own_cell(new_styles, *role, variant) {
-                        failures.push(format!("{label}: {what}: a cell on one model only"));
+                        tally
+                            .failures
+                            .push(format!("{label}: {what}: a cell on one model only"));
                     }
                     if !has {
                         continue;
@@ -1251,6 +1568,36 @@ fn the_atlas_agrees_on_both_models() -> Result<(), Box<dyn std::error::Error>> {
                             (RoleVariant::SelectedDisabled, Some(o), Some(n)) => (o, n),
                             _ => (&old_normal_leaves, &new_cell_leaves),
                         };
+                    // each side's variant over the other side's cell it is copied from
+                    let from_variant = match variant {
+                        RoleVariant::SelectedDisabled => RoleVariant::Selected,
+                        _ => RoleVariant::Normal,
+                    };
+                    let swapped = |sources: &crate::style::Sources,
+                                   input: &CellInput<'_>,
+                                   from: &egui::Style| {
+                        let v = &sources.variants;
+                        let notes = &mut Vec::new();
+                        let cell = match variant {
+                            RoleVariant::Normal => None,
+                            RoleVariant::Selected => selected_cell(*role, from, v, input, notes),
+                            RoleVariant::Disabled => disabled_cell(*role, from, v, notes),
+                            RoleVariant::SelectedDisabled => {
+                                selected_disabled_cell(*role, from, v, notes)
+                            }
+                        };
+                        cell.map(|c| leaves(&format!("{c:#?}")))
+                    };
+                    let old_swapped = swapped(
+                        &old_sources,
+                        &old_input,
+                        new_styles.cell(*role, from_variant),
+                    );
+                    let new_swapped = swapped(
+                        &new_sources,
+                        &new_input,
+                        old_styles.cell(*role, from_variant),
+                    );
                     let checked = variant != RoleVariant::Disabled;
                     let variant_expected = |path: &str, cause: Cause| match cause {
                         Cause::Rule0 | Cause::Egui => leaf_at(&own, path),
@@ -1281,26 +1628,33 @@ fn the_atlas_agrees_on_both_models() -> Result<(), Box<dyn std::error::Error>> {
                         what: &what,
                         preset: key,
                         label: &label,
-                        bases: Some((old_from, new_from)),
+                        bases: Some(Bases {
+                            old: old_from,
+                            new: new_from,
+                            swapped: old_swapped.as_deref().zip(new_swapped.as_deref()),
+                        }),
                     };
-                    compare(&side, o, n, &variant_expected, &mut failures, &mut seen);
+                    compare(&side, o, n, &variant_expected, &mut tally);
                 }
             }
             // a model gap seen in this scheme: its home unstated for its state on the preset
-            let gaps = seen
-                .get(seen_before..)
+            let gaps = tally
+                .gaps
+                .get(gaps_before..)
                 .unwrap_or_default()
                 .iter()
-                .filter_map(|(i, _)| RULE_0_ON_A_PRESET.get(i.checked_sub(DIFFERENCES.len())?));
+                .filter_map(|hit| RULE_0_ON_A_PRESET.get(hit.gap));
+            let mut stated = Vec::new();
             for g in gaps {
                 if (g.home.stated)(new) {
-                    failures.push(format!(
+                    stated.push(format!(
                         "{label}: {} {}: a model gap, but a rule states {} for its state",
                         g.diff.what, g.diff.path, g.home.path
                     ));
                 }
             }
-            let new_frames = frame_source(new, inactive);
+            tally.failures.extend(stated);
+            let new_frames = &new_sources.frames;
             let own_style = scheme.default_style();
             for surface in Surface::all() {
                 let what = format!("{surface:?}");
@@ -1311,7 +1665,7 @@ fn the_atlas_agrees_on_both_models() -> Result<(), Box<dyn std::error::Error>> {
                 };
                 let (old_preset, new_preset) = (preset_leaves(old_base), preset_leaves(new_base));
                 let own_preset = preset_leaves(&own_style);
-                let align = frame_align(*surface, &new_frames);
+                let align = frame_align(*surface, new_frames);
                 let frame_expected = |path: &str, cause: Cause| match (cause, align) {
                     (Cause::Egui, _) => leaf_at(&own_preset, path),
                     (Cause::Base, _) => leaf_at(&new_preset, path),
@@ -1324,64 +1678,94 @@ fn the_atlas_agrees_on_both_models() -> Result<(), Box<dyn std::error::Error>> {
                     }
                     _ => None,
                 };
+                // each side's frame over the other side's base, against egui's preset there
+                let swapped = |sources: &crate::style::Sources, base: &egui::Style| {
+                    let frame = surface_frame_from(
+                        *surface,
+                        base,
+                        &sources.frames,
+                        scheme,
+                        &mut Vec::new(),
+                    );
+                    leaves(&format!("{frame:#?}"))
+                };
+                let old_swapped = swapped(&old_sources, new_base);
+                let new_swapped = swapped(&new_sources, old_base);
                 let side = Side {
                     what: &what,
                     preset: key,
                     label: &label,
-                    bases: Some((&old_preset, &new_preset)),
+                    bases: Some(Bases {
+                        old: &old_preset,
+                        new: &new_preset,
+                        swapped: Some((&old_swapped, &new_swapped)),
+                    }),
                 };
-                compare(
-                    &side,
-                    &old_frame,
-                    &new_frame,
-                    &frame_expected,
-                    &mut failures,
-                    &mut seen,
-                );
+                compare(&side, &old_frame, &new_frame, &frame_expected, &mut tally);
             }
-            let side = Side {
-                what: "FocusRing",
+            let side = |what| Side {
+                what,
                 preset: key,
                 label: &label,
                 bases: None,
             };
             compare(
-                &side,
+                &side("FocusRing"),
                 &old_styles.focus_ring,
                 &new_styles.focus_ring,
                 &|_, _| None,
-                &mut failures,
-                &mut seen,
+                &mut tally,
             );
-            let side = Side {
-                what: "MenuBar",
-                preset: key,
-                label: &label,
-                bases: None,
-            };
             compare(
-                &side,
+                &side("MenuBar"),
                 &old_styles.menu_bar,
                 &new_styles.menu_bar,
                 &|_, _| None,
-                &mut failures,
-                &mut seen,
+                &mut tally,
             );
         }
     }
+    let Tally {
+        mut failures,
+        seen,
+        claimed,
+        gaps,
+    } = tally;
     for preset in Preset::ALL {
         if !PRESETS.iter().any(|(_, p)| p == preset) {
             failures.push(format!("{preset:?}: not compared"));
         }
     }
+    // each leaf a listed entry claims on a preset it names differs there as listed
     for (i, d) in listed().enumerate() {
         for key in d.presets {
-            if !seen.iter().any(|(j, p)| *j == i && p == key) {
+            let mut stale: Vec<&str> = claimed
+                .iter()
+                .filter(|claim| claim.0 == i && claim.1 == *key && !seen.contains(*claim))
+                .map(|(_, _, path)| path.as_str())
+                .collect();
+            stale.sort_unstable();
+            if !claimed.iter().any(|(j, p, _)| *j == i && p == key) {
                 failures.push(format!(
-                    "{} {} on {key}: listed, but differs nowhere: remove the entry",
+                    "{} {} on {key}: listed, but no leaf is at the path: remove the entry",
+                    d.what, d.path
+                ));
+            } else if !stale.is_empty() {
+                failures.push(format!(
+                    "{} {} on {key}: listed, but differs nowhere at {stale:?}",
                     d.what, d.path
                 ));
             }
+        }
+    }
+    // the model gaps, for the facts task that fixes the presets (M2.FS4b)
+    println!("RULE_0_ON_A_PRESET, as found:");
+    for hit in &gaps {
+        if let Some(g) = RULE_0_ON_A_PRESET.get(hit.gap) {
+            println!(
+                "{}\t{}\t{}\t{}\t{:?}\t0.7.2 {}\t0.8.0 {}",
+                hit.label, g.diff.what, g.home.path, hit.path, g.diff.cause, hit.old, hit.new
+            );
         }
     }
     assert!(

@@ -693,17 +693,20 @@ and each crate-root accessor has a twin there. Where egui has a receiver,
 listed here, and a value the theme leaves unstated is egui's own
 (docs/v0.8.0-spec.md §10, rule 0).
 
-- **The focus ring's second stroke, kind and corners.** The install plugin
-  paints one ring: one `Stroke` round the focused widget's rect, outside it
-  at the ring's offset, its corners the widget's `widgets.active`
-  corner radius grown by the offset (src/plugin.rs, `paint_focus_ring`;
-  `Painter::rect_stroke` with `StrokeKind::Outside`,
+- **The focus ring's second stroke, kind, corners and alignment.** The
+  install plugin paints one ring: one `Stroke` round the focused widget's
+  rect, outside it at the ring's offset, its corners the widget's
+  `widgets.active` corner radius grown by the offset (src/plugin.rs,
+  `paint_focus_ring`; `Painter::rect_stroke` with `StrokeKind::Outside`,
   `egui-0.37.0/src/painter.rs`). It takes `focus_ring.stroke`'s colour and
   width, `focus_ring.offset` and `focus_ring.trigger`. `inner_stroke`, a
   second line inside the first (WinUI's white and black ring), is not
-  drawn; a `kind` of `Fill` or `Underline` is drawn as the ring; and the
-  `corners` the theme states are not drawn, the ring keeping the widget's.
-  A ring whose stroke the theme states per side is no ring.
+  drawn; the `corners` the theme states are not drawn, the ring keeping the
+  widget's; and the stroke's alignment is not drawn, the ring lying outside
+  at the offset whatever the theme states. A `kind` of `Fill` or
+  `Underline` cannot be drawn as a ring: `next::to_theme` returns
+  `Unmapped("focus_ring.kind")` for it. A ring whose stroke the theme
+  states per side is no ring.
 - **A stroke per side.** egui strokes a rect with one `Stroke`, one width
   and colour on all four sides (`epaint-0.37.0/src/shapes/rect_shape.rs`,
   `RectShape::stroke`). Where the theme states a part's stroke per side

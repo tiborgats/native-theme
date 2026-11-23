@@ -1017,8 +1017,17 @@ where
 /// (`radio.dot(CHECKED).fill`).
 #[cfg(feature = "widgets")]
 pub(crate) fn radio_look(r: &ResolvedTheme) -> Mapped<crate::RadioLook> {
+    radio_look_of(r, &r.radio.indicator(WidgetState::NONE))
+}
+
+/// [`radio_look`] of the resting circle `indicator`.
+#[cfg(feature = "widgets")]
+fn radio_look_of(
+    r: &ResolvedTheme,
+    indicator: &native_theme::next::PartStyle,
+) -> Mapped<crate::RadioLook> {
     let w = &r.radio;
-    let [own, _] = w.indicator(WidgetState::NONE).min_size;
+    let [own, _] = indicator.min_size;
     let [dot, _] = w.dot(WidgetState::NONE).min_size;
     let dot = match dot {
         Some(d) => Some((

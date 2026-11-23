@@ -354,6 +354,50 @@ fn a_radio_of_no_stated_width_is_iceds_own_size() -> TestResult {
     Ok(())
 }
 
+/// A field's focus indicator that is not a ring is none the field can draw: the text input
+/// and the text editor are `Unmapped` at `focus_ring.kind`, as the ring is.
+#[test]
+fn a_fields_focus_indicator_that_is_not_a_ring_is_unmapped() -> TestResult {
+    use native_theme::next::FocusKind;
+
+    for (preset, mut r) in every_preset() {
+        assert!(super::styles::text_input(&r).is_ok(), "{preset:?}");
+        for kind in [FocusKind::Fill, FocusKind::Underline] {
+            r.focus_ring.kind = kind;
+            let unmapped = Some(Unmapped("focus_ring.kind"));
+            assert_eq!(
+                super::styles::text_input(&r).err(),
+                unmapped,
+                "{preset:?} {kind:?}"
+            );
+            assert_eq!(
+                super::styles::text_editor(&r).err(),
+                unmapped,
+                "{preset:?} {kind:?}"
+            );
+        }
+    }
+    Ok(())
+}
+
+/// A radio whose circle states no width is iced's own size, the check box's stated width
+/// notwithstanding: 0.7.2's fallback to the check box is the table of homes', not the
+/// mapping's.
+#[cfg(feature = "widgets")]
+#[test]
+fn a_radio_of_no_stated_width_takes_not_the_check_boxs() -> TestResult {
+    use native_theme::next::WidgetState;
+
+    for (preset, r) in every_preset() {
+        let [checkbox, _] = r.checkbox.indicator(WidgetState::NONE).min_size;
+        assert!(checkbox.is_some(), "{preset:?}: the check box's width");
+        let mut circle = r.radio.indicator(WidgetState::NONE);
+        circle.min_size = [None, None];
+        assert_eq!(super::radio_look_of(&r, &circle)?.width, None, "{preset:?}");
+    }
+    Ok(())
+}
+
 /// A chevron the theme states no size for widens no padding and sizes no
 /// handle: the drop-down's right side stays the theme's, and the handle is
 /// at the size iced gives its own (`Icon::size` `None`).

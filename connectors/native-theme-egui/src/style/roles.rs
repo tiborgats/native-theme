@@ -1,5 +1,6 @@
 //! The 25 `Normal` role cells (§3.4, §4.4): a copy of the base style plus the role's writes.
 
+use egui::style::Widgets;
 use egui::{FontFamily, FontId, TextStyle};
 
 use native_theme::theme::ResolvedPadding;
@@ -12,8 +13,8 @@ use super::base::{
 use super::cells::{CellSource, Outline, PanelEdge, Text};
 use super::push_note;
 use super::states::{
-    BorderEntries, BorderSource, FillField, FillSource, Layer, OpenFrom, StateSource, TextSource,
-    Unstated, state_borders, write_states_with,
+    BorderEntries, BorderSource, FillField, FillSource, Layer, OpenFrom, StateLine, StateSource,
+    TextSource, Unstated, state_borders, write_states_with,
 };
 use crate::convert::{
     Rgba, button_padding_outside, clamp_length, composite_over, padding_with_line, to_color32,
@@ -428,7 +429,9 @@ fn menu(
     w.active.weak_bg_fill = w.hovered.weak_bg_fill;
     w.active.fg_stroke.color = w.hovered.fg_stroke.color;
     // E1: the base's `window_stroke.width` is `defaults.border.line_width`, sanitised; egui lays
-    // the stroke inside the padding (egui-0.37.0/src/theme/default_style.rs:68-71): nothing moves
+    // the stroke inside the padding (egui-0.37.0/src/theme/default_style.rs:68-71): nothing moves.
+    // Unstated, the item keeps its resting outline in every state: egui's own menu entries
+    // (`menu_style`) stroke no item in any state, so rule 0 keeps the rest (spec §10)
     if let Some(c) = m.hover_border {
         let line = egui::Stroke::new(own.visuals.window_stroke.width, to_color32(c));
         let w = &mut s.visuals.widgets;
@@ -794,6 +797,37 @@ fn progress_bar(s: &mut egui::Style, own: &egui::Style, src: &CellSource, notes:
     );
 }
 
+/// A role's hovered and pressed outline over its fill (`weak_bg_fill`), each property apart, as
+/// [`state_borders`] writes it, except that a property the role states at none of rest, hover
+/// and press keeps the base's in both entries (M4.E2c).
+fn role_state_borders(
+    widgets: &mut Widgets,
+    lines: [Option<StateLine>; 2],
+    outline: &Outline,
+    unstated: Unstated<'_>,
+    notes: &mut Vec<Note>,
+) {
+    let base = [widgets.hovered.bg_stroke, widgets.active.bg_stroke];
+    state_borders(
+        widgets,
+        lines,
+        outline.align,
+        Some(FillField::Weak),
+        unstated,
+        notes,
+    );
+    let entries = [&mut widgets.hovered, &mut widgets.active];
+    for ((entry, base), line) in entries.into_iter().zip(base).zip(lines) {
+        let line = line.unwrap_or_default();
+        if outline.edge.color.is_none() && line.color.is_none() {
+            entry.bg_stroke.color = base.color;
+        }
+        if outline.edge.width.is_none() && line.width.is_none() {
+            entry.bg_stroke.width = base.width;
+        }
+    }
+}
+
 fn tab(
     s: &mut egui::Style,
     own: &egui::Style,
@@ -823,6 +857,14 @@ fn tab(
             border: border_all(&tb.outline),
             open: OpenFrom::Inactive,
         },
+        cx.unstated,
+        notes,
+    );
+    // a tab is drawn as a button (§6.2): its hovered and pressed outline as the button's
+    role_state_borders(
+        &mut s.visuals.widgets,
+        tb.state_border,
+        &tb.outline,
         cx.unstated,
         notes,
     );
@@ -1149,6 +1191,13 @@ fn segmented_control(
             border: border_all(&sc.outline),
             open: OpenFrom::Inactive,
         },
+        cx.unstated,
+        notes,
+    );
+    role_state_borders(
+        &mut s.visuals.widgets,
+        sc.state_border,
+        &sc.outline,
         cx.unstated,
         notes,
     );

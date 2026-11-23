@@ -959,21 +959,11 @@ fn compile_scheme(
     notes: &mut Vec<Note>,
     patch: Option<&dyn Fn(&mut egui::Style)>,
 ) -> SchemeStyles {
-    let [_, body, ..] = sources.base.sizes;
-    let row_height = scheme
-        .default_style()
-        .text_styles
-        .get(&egui::TextStyle::Body)
-        .zip(body)
-        .and_then(|(own, (size, path))| {
-            let body = sanitised_size(path, size, own.size, &mut Vec::new());
-            crate::fonts::body_row_height(defs, body)
-        });
     compile_from(
         &SchemeInput {
             scheme,
             prefs,
-            row_height,
+            row_height: row_height(scheme, sources, defs),
             defs: Some(defs),
             patch,
         },
@@ -982,34 +972,58 @@ fn compile_scheme(
     )
 }
 
+/// The Body row [`compile_scheme`] measures on `defs` for one scheme's sources.
+pub(crate) fn row_height(
+    scheme: egui::Theme,
+    sources: &Sources,
+    defs: &egui::FontDefinitions,
+) -> Option<f32> {
+    let [_, body, ..] = sources.base.sizes;
+    scheme
+        .default_style()
+        .text_styles
+        .get(&egui::TextStyle::Body)
+        .zip(body)
+        .and_then(|(own, (size, path))| {
+            let body = sanitised_size(path, size, own.size, &mut Vec::new());
+            crate::fonts::body_row_height(defs, body)
+        })
+}
+
 /// The atlas of 0.8.0 themes ([`crate::next::to_theme`]): `light` into the light scheme and
 /// `dark` into the dark one, each beside the same theme resolved for a window that is not
 /// active, which its `WindowTitleBar` frame fills from, each scheme compiled with the
 /// preferences of its own theme's context (`next::accessibility_of`), on egui's default faces.
 /// What the atlas holds once (its name, preferences, layout gaps and icon set) is `light`'s;
 /// its icon theme is each scheme's own; it holds no OS colour mode.
+///
+/// # Errors
+///
+/// `next::build::sources`'s.
 pub(crate) fn from_next(
     light: &native_theme::next::ResolvedTheme,
     light_inactive: &native_theme::next::ResolvedTheme,
     dark: &native_theme::next::ResolvedTheme,
     dark_inactive: &native_theme::next::ResolvedTheme,
-) -> ThemeAtlas {
+) -> crate::next::Mapped<ThemeAtlas> {
     let mut notes = Vec::new();
     let defs = egui::FontDefinitions::default();
     let widest_glyph = crate::fonts::widest_glyph(&defs);
     let mut compiled = |scheme, theme, inactive| {
         let prefs = crate::next::accessibility_of(theme);
-        let sources = crate::next::build::sources(theme, inactive);
-        compile_scheme(scheme, &sources, &prefs, &defs, &mut notes, None)
+        let sources = crate::next::build::sources(theme, inactive)?;
+        Ok(compile_scheme(
+            scheme, &sources, &prefs, &defs, &mut notes, None,
+        ))
     };
     let schemes = [
-        compiled(egui::Theme::Light, light, light_inactive),
-        compiled(egui::Theme::Dark, dark, dark_inactive),
+        compiled(egui::Theme::Light, light, light_inactive)?,
+        compiled(egui::Theme::Dark, dark, dark_inactive)?,
     ];
     let gaps = &light.layout;
     let icon_theme =
         |t: &native_theme::next::ResolvedTheme| t.icons.theme.as_deref().map(str::to_owned);
-    ThemeAtlas(Arc::new(AtlasInner {
+    Ok(ThemeAtlas(Arc::new(AtlasInner {
         name: light.name.to_string(),
         light: SchemeTheme::Next(Box::new(light.clone())),
         dark: SchemeTheme::Next(Box::new(dark.clone())),
@@ -1028,5 +1042,5 @@ pub(crate) fn from_next(
         widest_glyph,
         text_size_cap: AtomicU32::new(f32::INFINITY.to_bits()),
         notes,
-    }))
+    })))
 }

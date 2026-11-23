@@ -134,6 +134,8 @@ pub(crate) struct TabCell {
     /// The label at rest, hovered and pressed.
     pub text: [Option<Rgba>; 3],
     pub outline: Outline,
+    /// The hovered and pressed tab's outline where stated.
+    pub state_border: [Option<StateLine>; 2],
     pub selected_fill: Option<Rgba>,
     pub selected_text: Option<Rgba>,
     pub bar_fill: Option<Rgba>,
@@ -230,6 +232,8 @@ pub(crate) struct SegmentedControlCell {
     /// The label hovered and pressed.
     pub text_states: [Option<Rgba>; 2],
     pub outline: Outline,
+    /// The hovered and pressed segment's outline where stated.
+    pub state_border: [Option<StateLine>; 2],
     pub selected_fill: Option<Rgba>,
     pub selected_text: Option<Rgba>,
     pub height: Read<f32>,
@@ -539,6 +543,7 @@ impl CellSource {
                     &tb.border,
                     ["tab.border.corner_radius", "tab.border.line_width"],
                 ),
+                state_border: [None; 2],
                 selected_fill: Some(tb.active_background),
                 selected_text: Some(tb.active_text_color),
                 bar_fill: Some(tb.bar_background),
@@ -685,6 +690,7 @@ impl CellSource {
                         "segmented_control.border.line_width",
                     ],
                 ),
+                state_border: [None; 2],
                 selected_fill: Some(sc.active_background),
                 selected_text: Some(sc.active_text_color),
                 height: Some((sc.segment_height, "segmented_control.segment_height")),

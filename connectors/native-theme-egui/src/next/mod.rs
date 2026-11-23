@@ -34,9 +34,9 @@ use std::time::Duration;
 
 use egui::{Color32, FontId};
 use native_theme::next::{
-    Contrast, CornerCurve, CornerRadius, DialogButtonOrder, FontStyle, IconStated,
-    MotionPreference, Orientation, Paint, PartStated, PartStyle, ResolvedTheme, Stroke, StyleQuery,
-    TextStated, TextStyle, WidgetState, WindowState,
+    Contrast, CornerCurve, CornerRadius, DialogButtonOrder, FontStyle, MotionPreference,
+    Orientation, PartStated, PartStyle, ResolvedTheme, Scheme, Stroke, StyleQuery, TextStated,
+    TextStyle, WidgetState, WindowState,
 };
 
 use crate::accessors::text_size_or_stock;
@@ -84,6 +84,88 @@ pub(crate) fn to_color32(c: native_theme::next::Color) -> Color32 {
     Color32::from_rgba_unmultiplied_const(r, g, b, a)
 }
 
+/// The colour reads every reader of this module and of [`build`] is built
+/// on, in the model's own colour, each `None` where the theme states none;
+/// a `state_*` read where a rule states the value for the queried state
+/// (its `from_state` bit; the rule is for some flag of the query, not a
+/// given one: spec §2, `from_state`).
+pub(crate) mod reads {
+    use native_theme::next::{
+        Color, IconStated, IconStyle, Paint, PartStated, PartStyle, Stroke, TextStated, TextStyle,
+    };
+
+    /// A part's fill, where stated: its one colour, transparent for a fill
+    /// stated as none, and a layered paint's fallback colour (spec §10,
+    /// rule 2); `None` for a layered paint without one.
+    pub(crate) fn fill(part: &PartStyle) -> Option<Color> {
+        if !part.stated.contains(PartStated::FILL) {
+            return None;
+        }
+        match &part.fill {
+            Paint::None => Some(Color::TRANSPARENT),
+            Paint::Solid(c) => Some(*c),
+            paint @ Paint::Complex(_) => paint.fallback_color(),
+        }
+    }
+
+    /// [`fill`] where a rule states it for the queried state.
+    pub(crate) fn state_fill(part: &PartStyle) -> Option<Color> {
+        part.from_state
+            .contains(PartStated::FILL)
+            .then(|| fill(part))
+            .flatten()
+    }
+
+    /// A part's stroke colour, where stated as one stroke of one colour, in
+    /// any alignment; `None` for a per-side stroke.
+    pub(crate) fn stroke(part: &PartStyle) -> Option<Color> {
+        match &part.stroke {
+            Stroke::Uniform { color, .. } if part.stated.contains(PartStated::STROKE) => {
+                Some(*color)
+            }
+            _ => None,
+        }
+    }
+
+    /// [`stroke`] where a rule states it for the queried state.
+    pub(crate) fn state_stroke(part: &PartStyle) -> Option<Color> {
+        part.from_state
+            .contains(PartStated::STROKE)
+            .then(|| stroke(part))
+            .flatten()
+    }
+
+    /// A text style's colour, where stated.
+    pub(crate) fn text(text: &TextStyle) -> Option<Color> {
+        text.stated
+            .contains(TextStated::COLOR)
+            .then_some(text.color)
+    }
+
+    /// [`text`] where a rule states it for the queried state.
+    pub(crate) fn state_text(t: &TextStyle) -> Option<Color> {
+        t.from_state
+            .contains(TextStated::COLOR)
+            .then(|| text(t))
+            .flatten()
+    }
+
+    /// An icon's colour, where stated.
+    pub(crate) fn icon(icon: &IconStyle) -> Option<Color> {
+        icon.stated
+            .contains(IconStated::COLOR)
+            .then_some(icon.color)
+    }
+
+    /// [`icon`] where a rule states it for the queried state.
+    pub(crate) fn state_icon(i: &IconStyle) -> Option<Color> {
+        i.from_state
+            .contains(IconStated::COLOR)
+            .then(|| icon(i))
+            .flatten()
+    }
+}
+
 // ---------------------------------------------------------------------------
 // A part's and a text style's stated values
 // ---------------------------------------------------------------------------
@@ -102,14 +184,7 @@ pub(crate) fn fill(part: &PartStyle, home: &'static str) -> Mapped<Color32> {
 /// rule 2).
 #[must_use]
 pub fn fill_of(part: &PartStyle) -> Option<Color32> {
-    if !part.stated.contains(PartStated::FILL) {
-        return None;
-    }
-    match &part.fill {
-        Paint::None => Some(Color32::TRANSPARENT),
-        Paint::Solid(c) => Some(to_color32(*c)),
-        paint @ Paint::Complex(_) => paint.fallback_color().map(to_color32),
-    }
+    reads::fill(part).map(to_color32)
 }
 
 /// A part's fill where a rule states it for the queried state (its
@@ -129,10 +204,7 @@ pub(crate) fn state_fill(part: &PartStyle, home: &'static str) -> Mapped<Option<
 /// (spec §2, `from_state`).
 #[must_use]
 pub fn state_fill_of(part: &PartStyle) -> Option<Color32> {
-    part.from_state
-        .contains(PartStated::FILL)
-        .then(|| fill_of(part))
-        .flatten()
+    reads::state_fill(part).map(to_color32)
 }
 
 /// A part's stroke colour as stated, where stated as one stroke of one
@@ -142,12 +214,7 @@ pub fn state_fill_of(part: &PartStyle) -> Option<Color32> {
 /// connector hands egui it composited over the fill under it.
 #[must_use]
 pub fn stroke_color_of(part: &PartStyle) -> Option<Color32> {
-    match &part.stroke {
-        Stroke::Uniform { color, .. } if part.stated.contains(PartStated::STROKE) => {
-            Some(to_color32(*color))
-        }
-        _ => None,
-    }
+    reads::stroke(part).map(to_color32)
 }
 
 /// A part's stroke colour as [`stroke_color_of`] reads it, `None` where no
@@ -155,10 +222,7 @@ pub fn stroke_color_of(part: &PartStyle) -> Option<Color32> {
 /// query, not a given one (spec §2, `from_state`).
 #[must_use]
 pub fn state_stroke_color_of(part: &PartStyle) -> Option<Color32> {
-    part.from_state
-        .contains(PartStated::STROKE)
-        .then(|| stroke_color_of(part))
-        .flatten()
+    reads::state_stroke(part).map(to_color32)
 }
 
 /// A part's stroke width, where stated as one stroke, in any alignment, or
@@ -214,9 +278,7 @@ pub(crate) fn text_color(text: &TextStyle, home: &'static str) -> Mapped<Color32
 /// stated.
 #[must_use]
 pub fn text_color_of(text: &TextStyle) -> Option<Color32> {
-    text.stated
-        .contains(TextStated::COLOR)
-        .then(|| to_color32(text.color))
+    reads::text(text).map(to_color32)
 }
 
 /// A text style's colour as `text_color` reads it, `None` where no rule
@@ -224,10 +286,7 @@ pub fn text_color_of(text: &TextStyle) -> Option<Color32> {
 /// some flag of the query, not a given one (spec §2, `from_state`).
 #[must_use]
 pub fn state_text_color_of(text: &TextStyle) -> Option<Color32> {
-    text.from_state
-        .contains(TextStated::COLOR)
-        .then(|| text_color_of(text))
-        .flatten()
+    reads::state_text(text).map(to_color32)
 }
 
 /// A text style's weight, where stated.
@@ -274,21 +333,17 @@ fn text_size(text: &TextStyle, home: &'static str) -> Mapped<f32> {
 ///
 /// # Errors
 ///
-/// None at present: every value the mapping reads is optional, egui's own
-/// standing in where the theme states none. The `Result` is the siblings'
-/// shape.
+/// [`Unmapped`] `focus_ring.kind` where either theme's focus indicator is
+/// not a ring (a fill, an underline), which the install plugin's ring
+/// cannot draw. Every other value the mapping reads is optional, egui's own
+/// standing in where the theme states none.
 pub fn to_theme(
     light: &ResolvedTheme,
     light_inactive: &ResolvedTheme,
     dark: &ResolvedTheme,
     dark_inactive: &ResolvedTheme,
 ) -> Mapped<crate::ThemeAtlas> {
-    Ok(crate::atlas::from_next(
-        light,
-        light_inactive,
-        dark,
-        dark_inactive,
-    ))
+    crate::atlas::from_next(light, light_inactive, dark, dark_inactive)
 }
 
 /// The accessibility preferences a 0.8.0 theme was resolved for, as 0.7.2's
@@ -813,32 +868,38 @@ fn padded(part: &PartStyle, width_home: &'static str) -> Mapped<crate::accessors
 /// colour at `button.body(NONE)`'s width, and under the pointer and focused
 /// the frame colours a rule states for `button.body(HOVER)` and
 /// `button.body(FOCUS_VISIBLE)`. A stroke stated as none is transparent, at
-/// no width. `None` where no rule states the fill.
+/// no width. A label colour, frame colour or frame width the theme states
+/// none of is egui's own resting button's in the theme's scheme (its
+/// `inactive` entry), a hovered or focused frame colour egui's own hovered
+/// or `active` entry's where it differs from the resting one, else the
+/// frame's (spec §10, rule 0). `None` where no rule states the fill.
 ///
 /// # Errors
 ///
-/// [`Unmapped`] where the theme states a default fill but no label colour,
-/// frame colour or frame width, or states one in a form egui cannot draw (a
-/// layered fill with no fallback colour, a per-side stroke).
+/// [`Unmapped`] where the theme states the fill or a stroke in a form egui
+/// cannot draw (a layered fill with no fallback colour, a per-side stroke).
 pub fn default_button(r: &ResolvedTheme) -> Mapped<Option<crate::DefaultButton>> {
     let b = &r.button;
     let body = b.body(WidgetState::DEFAULT);
     let Some(fill) = state_fill(&body, "button.body(DEFAULT).fill")? else {
         return Ok(None);
     };
-    let width = stated(
-        stroke_width_of(&b.body(WidgetState::NONE)),
-        "button.body(NONE).stroke.width",
-    )?;
+    let own = egui_scheme(r).default_style();
+    let stock = &own.visuals.widgets;
+    let width = line_width(&b.body(WidgetState::NONE), "button.body(NONE).stroke.width")?
+        .unwrap_or(stock.inactive.bg_stroke.width);
+    let frame = if body.stated.contains(PartStated::STROKE) {
+        line_color(&body, "button.body(DEFAULT).stroke.color")?
+    } else {
+        stock.inactive.bg_stroke.color
+    };
     Ok(Some(crate::accessors::default_button_from(
         &crate::accessors::DefaultButtonSource {
             fill,
-            text: text_color(
-                &b.label(WidgetState::DEFAULT),
-                "button.label(DEFAULT).color",
-            )?,
+            text: text_color_of(&b.label(WidgetState::DEFAULT))
+                .unwrap_or(stock.inactive.fg_stroke.color),
             width,
-            frame: line_color(&body, "button.body(DEFAULT).stroke.color")?,
+            frame,
             hover: state_line_color(
                 &b.body(WidgetState::HOVER),
                 "button.body(HOVER).stroke.color",
@@ -848,7 +909,16 @@ pub fn default_button(r: &ResolvedTheme) -> Mapped<Option<crate::DefaultButton>>
                 "button.body(FOCUS_VISIBLE).stroke.color",
             )?,
         },
+        crate::style::states::Unstated::Egui(stock),
     )))
+}
+
+/// egui's scheme of the one a theme was resolved for.
+fn egui_scheme(r: &ResolvedTheme) -> egui::Theme {
+    match r.scheme() {
+        Scheme::Light => egui::Theme::Light,
+        Scheme::Dark => egui::Theme::Dark,
+    }
 }
 
 /// [`crate::input_margin`]: the margin of a single-line `TextEdit`, from
@@ -951,11 +1021,7 @@ pub fn text_area_frame(ui: &egui::Ui, id: egui::Id, r: &ResolvedTheme) -> Mapped
 /// The arrow's colour [`expander_icon`] paints in,
 /// `expander.arrow(NONE).color`; `None` where the theme states none.
 pub(crate) fn expander_arrow(r: &ResolvedTheme) -> Option<Color32> {
-    let arrow = r.expander.arrow(WidgetState::NONE);
-    arrow
-        .stated
-        .contains(IconStated::COLOR)
-        .then(|| to_color32(arrow.color))
+    reads::icon(&r.expander.arrow(WidgetState::NONE)).map(to_color32)
 }
 
 /// [`crate::expander_icon`]: the expander's arrow for
