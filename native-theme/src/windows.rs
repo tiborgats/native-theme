@@ -760,7 +760,7 @@ pub(crate) fn apply_caret_blink_time(input: &mut crate::model::InputTheme, time:
 }
 
 /// Apply the caret blink `time` `GetCaretBlinkTime` returned to the variant
-/// [`build_theme`] filled in `result`, by [`apply_caret_blink_time`]'s
+/// `build_theme` filled in `result`, by [`apply_caret_blink_time`]'s
 /// mapping (microsoft-ui-xaml 2.5.1
 /// `src/dxaml/xcp/core/text/TextBox/TextBoxHelpers.cpp:55-89`), and to both
 /// variants of a reader output that holds two, the blink being one setting
