@@ -1647,7 +1647,6 @@ fn old_kde_reader(
 /// A 0.7.2 reader's theme `reader` merged over the 0.7.2 preset `preset`, resolved for `mode` with the
 /// rows written by hand ([`old_resolved`]) and the reader's `accessibility` block at its key, and
 /// unresolved ([`old_unresolved`]).
-#[cfg(all(target_os = "linux", any(feature = "kde", feature = "portal")))]
 fn old_merged_reader(
     preset: &str,
     reader: &Theme,
@@ -1732,7 +1731,6 @@ fn reader_parity_on(
 /// What reader parity expects of a preset's builder on one input: its totals in the ported groups
 /// (`[rows, compared, equal, mismatching, skipped]`), the reason a row is skipped for, and the keys of
 /// the rows that differ, each a listed difference with its reason given where the input is stated.
-#[cfg(all(target_os = "linux", any(feature = "kde", feature = "portal")))]
 struct ReaderExpected<'a> {
     /// The totals in the ported groups.
     totals: [usize; 5],
@@ -1755,7 +1753,6 @@ const KDE_READER_EXPECTED: ReaderExpected<'static> = ReaderExpected {
 /// Reader parity of the builder of `snapshot`'s preset given `snapshot` against the 0.7.2 reader path's
 /// theme `old` (`unresolved` before its resolution, `old_name` its name), as [`reader_parity_kde`] states
 /// it for each file, with `expected`'s totals, skips and listed differences.
-#[cfg(all(target_os = "linux", any(feature = "kde", feature = "portal")))]
 fn assert_reader_parity(
     name: &str,
     old: &serde_json::Value,
@@ -2355,3 +2352,351 @@ const UI_FONT_SIZE_KEYS: &[&str] = &[
 /// `checkbox.background_color` and `menu.min_row_height`, skipped.
 #[cfg(all(target_os = "linux", feature = "portal"))]
 const GNOME_READER_ROWS: [usize; 2] = [563, 561];
+
+// ---------------------------------------------------------------------------------------------------------
+// Reader parity (plan, section 1, rule 2) on Windows: the theme the 0.7.2 Windows reader path produces from
+// the settings it read (`windows::reader_result`), and the windows-11 builder fed the same settings as
+// `SystemOverrides` (`reader::windows::snapshot_from_settings`). On every host through the pure entry with
+// recorded settings; the live comparison runs on Windows (`live_system_parity_windows`).
+// ---------------------------------------------------------------------------------------------------------
+
+/// The rows of the ported groups on every Windows case and the rows of them compared: all but
+/// `checkbox.background_color`, skipped.
+const WINDOWS_READER_ROWS: [usize; 2] = [563, 562];
+
+/// The 0.7.2 Windows reader path on the settings `settings`, as the comparator reads it, and the name it
+/// gives the theme: the reader's pure function (`windows::reader_result`), its theme merged over
+/// `windows-11` as the pipeline merges a reader's result, resolved for the reader's scheme with the rows
+/// written by hand and the reader's `accessibility` block ([`old_merged_reader`]); also the merged
+/// theme's variant unresolved.
+fn old_windows_reader(
+    settings: &crate::windows::WindowsSettings,
+) -> Result<(serde_json::Value, serde_json::Value, String), Box<dyn std::error::Error>> {
+    let result = crate::windows::reader_result(settings);
+    let reader = result
+        .output
+        .to_theme(&result.name, result.icon_set, &result.layout);
+    let (old, unresolved) = old_merged_reader(
+        "windows-11",
+        &reader,
+        result.output.mode(),
+        &result.accessibility,
+    )?;
+    Ok((old, unresolved, result.name.to_string()))
+}
+
+/// The settings of 0.7.2's Windows reader tests (`windows.rs`, `light_reader`): light (a black
+/// foreground), the accent `#0078D7`, no shade, no font, no icon size, no accessibility setting, no
+/// system colour; the scrollbar and border metrics of the reader's test stub (`read_widget_sizing`) and
+/// no caret blink time.
+fn default_windows_settings() -> crate::windows::WindowsSettings {
+    use crate::windows::{AllFonts, CARET_BLINK_FAILED, WidgetSizing, WindowsSettings};
+    WindowsSettings {
+        accent: crate::Rgba::rgb(0, 120, 215),
+        foreground: crate::Rgba::rgb(0, 0, 0),
+        accent_shades: [None; 6],
+        fonts: AllFonts {
+            msg: crate::model::FontSpec::default(),
+            caption: crate::model::FontSpec::default(),
+            menu: crate::model::FontSpec::default(),
+            status: crate::model::FontSpec::default(),
+        },
+        sizing: WidgetSizing {
+            scrollbar_width: 17.0,
+            min_thumb_length: 17.0,
+            border_width: 1.0,
+        },
+        icon_sizes: None,
+        accessibility: None,
+        sys_colors: None,
+        caret_blink_time: CARET_BLINK_FAILED,
+    }
+}
+
+/// The cases of Windows' reader parity: the data of 0.7.2's Windows reader tests (`windows.rs`: its
+/// `SHADES`, `named_fonts`, `distinct_sys_colors`, `reader_with_high_contrast` and caret times), and,
+/// where those tests use the preset's own value, another test input so that equality proves the builder
+/// reads the setting; each named, with the keys of the rows that differ, each a listed difference.
+pub(crate) fn windows_cases() -> Vec<(
+    &'static str,
+    crate::windows::WindowsSettings,
+    &'static [&'static str],
+)> {
+    use crate::windows::{
+        AccessibilityData, AllFonts, CARET_BLINK_NONE, SysColors, WidgetSizing, WindowsSettings,
+    };
+    const WHITE: crate::Rgba = crate::Rgba::rgb(255, 255, 255);
+    let shades = || [1, 2, 3, 4, 5, 6].map(|b| Some(crate::Rgba::rgb(0, 0, b)));
+    let named_fonts = || {
+        let spec = |size, weight| crate::model::FontSpec {
+            family: Some("Segoe UI".into()),
+            size: Some(crate::model::font::FontSize::Pt(size)),
+            weight: Some(weight),
+            ..Default::default()
+        };
+        AllFonts {
+            msg: spec(9.0, 400),
+            caption: spec(9.0, 700),
+            menu: spec(9.0, 400),
+            status: spec(8.0, 400),
+        }
+    };
+    let high_contrast = |foreground| WindowsSettings {
+        foreground,
+        accent_shades: [Some(crate::Rgba::rgb(0, 90, 170)); 6],
+        accessibility: Some(AccessibilityData {
+            text_scaling_factor: None,
+            high_contrast: Some(true),
+            reduce_motion: None,
+            advanced_effects_enabled: None,
+        }),
+        sys_colors: Some(SysColors {
+            window_bg: crate::Rgba::rgb(1, 1, 1),
+            window_text: crate::Rgba::rgb(2, 2, 2),
+            btn_face: crate::Rgba::rgb(3, 3, 3),
+            btn_text: crate::Rgba::rgb(4, 4, 4),
+            highlight: crate::Rgba::rgb(5, 5, 5),
+            highlight_text: crate::Rgba::rgb(6, 6, 6),
+            hotlight: crate::Rgba::rgb(8, 8, 8),
+            gray_text: crate::Rgba::rgb(7, 7, 7),
+        }),
+        ..default_windows_settings()
+    };
+    let base = default_windows_settings;
+    vec![
+        ("light, no shade", base(), &[]),
+        (
+            "dark, no shade",
+            WindowsSettings {
+                foreground: WHITE,
+                ..base()
+            },
+            &[],
+        ),
+        (
+            "light, the shades",
+            WindowsSettings {
+                accent_shades: shades(),
+                ..base()
+            },
+            &[],
+        ),
+        (
+            "dark, the shades",
+            WindowsSettings {
+                foreground: WHITE,
+                accent_shades: shades(),
+                ..base()
+            },
+            &[],
+        ),
+        (
+            "light, AccentDark1 unread",
+            WindowsSettings {
+                accent_shades: {
+                    let mut s = shades();
+                    s[0] = None;
+                    s
+                },
+                ..base()
+            },
+            &[],
+        ),
+        (
+            "dark, AccentLight2 and AccentLight3 unread",
+            WindowsSettings {
+                foreground: WHITE,
+                accent_shades: {
+                    let mut s = shades();
+                    s[4] = None;
+                    s[5] = None;
+                    s
+                },
+                ..base()
+            },
+            &[],
+        ),
+        (
+            "the named fonts, light",
+            WindowsSettings {
+                fonts: named_fonts(),
+                ..base()
+            },
+            &[],
+        ),
+        (
+            "the named fonts, dark",
+            WindowsSettings {
+                foreground: WHITE,
+                fonts: named_fonts(),
+                ..base()
+            },
+            &[],
+        ),
+        (
+            "the icon sizes",
+            WindowsSettings {
+                icon_sizes: Some((16.0, 32.0)),
+                ..base()
+            },
+            &[],
+        ),
+        (
+            "other icon sizes and metrics",
+            WindowsSettings {
+                icon_sizes: Some((20.0, 40.0)),
+                sizing: WidgetSizing {
+                    scrollbar_width: 21.0,
+                    min_thumb_length: 23.0,
+                    border_width: 2.0,
+                },
+                ..base()
+            },
+            &[],
+        ),
+        (
+            "high contrast, light",
+            high_contrast(crate::Rgba::rgb(0, 0, 0)),
+            &[],
+        ),
+        ("high contrast, dark", high_contrast(WHITE), &[]),
+        (
+            "a caret blink time",
+            WindowsSettings {
+                caret_blink_time: 530,
+                ..base()
+            },
+            &[],
+        ),
+        (
+            "another caret blink time",
+            WindowsSettings {
+                caret_blink_time: 1200,
+                ..base()
+            },
+            &[],
+        ),
+        (
+            "a caret that does not blink",
+            WindowsSettings {
+                caret_blink_time: CARET_BLINK_NONE,
+                ..base()
+            },
+            &[],
+        ),
+        (
+            "animations and transparency off, a text scale",
+            WindowsSettings {
+                accessibility: Some(AccessibilityData {
+                    text_scaling_factor: Some(1.5),
+                    high_contrast: Some(false),
+                    reduce_motion: Some(true),
+                    advanced_effects_enabled: Some(false),
+                }),
+                ..base()
+            },
+            &[],
+        ),
+    ]
+}
+
+/// Reader parity of the windows-11 builder: for every case of [`windows_cases`], the 0.7.2 reader path
+/// ([`old_windows_reader`]) against `Theme::preset(Preset::Windows11)` given the case's `SystemOverrides`
+/// and resolved for its context (its motion level and text scale at their defaults, as 0.7.2 applies
+/// neither), over the table of homes, the snapshot's context compared. Over every row of the ported
+/// groups: the rows of the case's listed differences differ, every other row is equal or skipped for its
+/// named reason (`checkbox.background_color`, as in the model parity), the four `accessibility.*` rows
+/// compared and equal; the resolved theme's name is the reader's.
+#[test]
+fn reader_parity_windows() -> TestResult {
+    use crate::next::reader::windows::snapshot_from_settings;
+
+    let table: Table = toml::from_str(HOMES)?;
+    for (name, settings, listed) in windows_cases() {
+        let (old, unresolved, old_name) = old_windows_reader(&settings)?;
+        let snapshot = snapshot_from_settings(&settings);
+        assert_reader_parity(
+            name,
+            &old,
+            &unresolved,
+            &old_name,
+            &snapshot,
+            &table,
+            &windows_reader_expected(listed),
+        )?;
+    }
+    Ok(())
+}
+
+/// What Windows' reader parity expects of a case whose listed differences are `listed`: every other row of
+/// the ported groups compared and equal but `checkbox.background_color`, skipped where
+/// `checkbox.unchecked_background` is stated.
+fn windows_reader_expected<'a>(listed: &'a [&'a str]) -> ReaderExpected<'a> {
+    let [rows, compared] = WINDOWS_READER_ROWS;
+    ReaderExpected {
+        totals: [
+            rows,
+            compared,
+            compared.saturating_sub(listed.len()),
+            listed.len(),
+            rows.saturating_sub(compared),
+        ],
+        skip: |key| (key == "checkbox.background_color").then_some(compare::Skip::OtherKeyStated),
+        listed,
+    }
+}
+
+/// The live check on Windows: the theme from the live system through the 0.7.2 path (the reader 0.7.2's
+/// `from_system` chooses, its theme merged over `windows-11` as its pipeline merges it) and through the
+/// 0.8.0 path (`Theme::from_system`), compared as [`reader_parity_windows`] compares a case's, with no
+/// listed difference. It prints the comparator's report and the 0.8.0 reader's diagnostics, and fails
+/// where the two differ. Runs on every Windows test run with the `windows` feature (the CI runners).
+#[cfg(all(target_os = "windows", feature = "windows"))]
+#[test]
+fn live_system_parity_windows() -> TestResult {
+    use crate::next::preset::{Preset, Theme as NextTheme};
+    use crate::next::reader::SystemSnapshot;
+
+    let table: Table = toml::from_str(HOMES)?;
+    let selected = pollster::block_on(crate::pipeline::select_reader())
+        .ok_or("0.7.2 chooses no reader on this system")?;
+    if selected.preset != "windows-11" {
+        return Err(format!(
+            "0.7.2 chooses the preset {}, not windows-11",
+            selected.preset
+        )
+        .into());
+    }
+    let result = pollster::block_on(selected.reader.read())?;
+    let reader = result
+        .output
+        .to_theme(&result.name, result.icon_set, &result.layout);
+    let (old, unresolved) = old_merged_reader(
+        "windows-11",
+        &reader,
+        result.output.mode(),
+        &result.accessibility,
+    )?;
+    let theme = NextTheme::from_system()?;
+    println!("0.8.0 diagnostics: {:?}", theme.diagnostics());
+    assert_eq!(theme.preset_id(), Preset::Windows11);
+    let overrides = theme
+        .system_overrides()
+        .ok_or("the theme from the system has no system settings")?;
+    let snapshot = SystemSnapshot::new(
+        theme.preset_id(),
+        theme.context().clone(),
+        overrides.clone(),
+    );
+    assert_reader_parity(
+        "the live system",
+        &old,
+        &unresolved,
+        &result.name,
+        &snapshot,
+        &table,
+        &windows_reader_expected(&[]),
+    )?;
+    println!("the live system: equal through the 0.7.2 and the 0.8.0 path");
+    Ok(())
+}
