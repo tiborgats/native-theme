@@ -2915,5 +2915,7 @@ fn expander(c: &SchemeColors, typography: &Typography, direction: Direction) -> 
     )
 }
 
+#[cfg(all(test, feature = "serde"))]
+mod snapshots;
 #[cfg(test)]
 mod tests;

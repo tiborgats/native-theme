@@ -1979,7 +1979,7 @@ fn portal_accent((r, g, b): (u8, u8, u8)) -> Option<(f64, f64, f64)> {
 /// named, with the keys of the rows that differ, each a listed difference. The accents are libadwaita's
 /// blue and purple (`#3584e4`, `#9141ac`, the tests' documented accents).
 #[cfg(all(target_os = "linux", feature = "portal"))]
-fn gnome_cases() -> Vec<(
+pub(crate) fn gnome_cases() -> Vec<(
     &'static str,
     crate::gnome::GnomePortalData,
     &'static [&'static str],
