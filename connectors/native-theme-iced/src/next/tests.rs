@@ -356,6 +356,7 @@ fn a_radio_of_no_stated_width_is_iceds_own_size() -> TestResult {
 
 /// A field's focus indicator that is not a ring is none the field can draw: the text input
 /// and the text editor are `Unmapped` at `focus_ring.kind`, as the ring is.
+#[cfg(feature = "widgets")]
 #[test]
 fn a_fields_focus_indicator_that_is_not_a_ring_is_unmapped() -> TestResult {
     use native_theme::next::FocusKind;

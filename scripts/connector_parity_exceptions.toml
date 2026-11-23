@@ -806,3 +806,17 @@ connector = "egui"
 name = "next::to_theme"
 kind = "unlike"
 reason = "an egui atlas holds both schemes, as the crate root's `ThemeAtlas::builder` takes a light and a dark theme, and its `WindowTitleBar` frame fills from the theme resolved for a window that is not active, which the caller passes beside each scheme's theme as gpui's `next::geometry::title_bar_inactive` takes it, so that patches, system overrides and the accent stay in it (connectors/native-theme-egui/src/next/mod.rs, `to_theme`'s doc); iced's and gpui's `next::to_theme` build one theme of one scheme and read no inactive window"
+
+# ── gpui's label-font checks ────────────────────────────────────────────────
+
+[[exception]]
+connector = "egui"
+name = ["next::body_text_unmapped", "next::label_font_unmapped"]
+kind = "absent"
+reason = "gpui's checks of whether a theme-drawn widget's label has a font gpui can letter it in, where gpui shows gpui-component's own control in its place (connectors/native-theme-gpui/src/next/mod.rs, `label_font_unmapped`'s and `body_text_unmapped`'s doc). egui gives no widget way over a font: where the theme leaves a font property unstated egui keeps its own (spec §10, rule 0). The atlas writes a text slot's size only where the theme states it, else egui's own slot size stays (src/style/base.rs, `base_style_from`, the five `text_styles` slots; src/next/build.rs, `size`), the font plan asks for a face only where family, weight and slant are all stated, else egui's own face stays (src/next/mod.rs, `face_request`), and native-theme-egui-widgets reads no text style's font: it lays its labels out in the font egui's style gives them (connectors/native-theme-egui-widgets/src/switch.rs, `switch_ui`, and src/radio_button.rs, `RadioButton::ui`: `egui::FontSelection::Default`; src/combo_box.rs, `show_ui`: the scope's `override_font_id`, else the `Body` slot)"
+
+[[exception]]
+connector = "iced"
+name = ["next::body_text_unmapped", "next::label_font_unmapped"]
+kind = "absent"
+reason = "gpui's checks of whether a theme-drawn widget's label has a font gpui can letter it in, where gpui shows gpui-component's own control in its place (connectors/native-theme-gpui/src/next/mod.rs, `label_font_unmapped`'s and `body_text_unmapped`'s doc). iced's connector sets no widget's font: its style builders give a label only its colour (src/next/styles.rs, `button_source`: `button.label(..).color`), and the application sets each text's font and size itself (src/lib.rs, `radio`'s doc: \"Set the label's `text_size` and `font` on `radio` before passing it\"), from `next::font`, which returns `Unmapped` where the style states no family, weight or slant, or a slant iced has no face for (src/next/mod.rs, `face_style`), and `next::font_size`"
