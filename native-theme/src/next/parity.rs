@@ -2194,7 +2194,8 @@ fn old_merged_reader_in(
 /// path ([`old_kde_reader`]) against `Theme::preset(Preset::KdeBreeze)` given the file's
 /// `SystemOverrides` and resolved for the file's context (its motion level and text scale at their
 /// defaults, its animation scale unset, as 0.7.2 applies neither), over the table of homes, the
-/// snapshot's context compared. Zero mismatches over every row of [`PORTED_GROUPS`], the four `snapshot.context.*` rows
+/// snapshot's context compared. Zero mismatches over every row of [`PORTED_GROUPS`] but [`KDE_BUTTON_HOVER`]'s
+/// on [`KDE_FIXTURES_OTHER_BUTTON`], the four `snapshot.context.*` rows
 /// compared and equal, the one skip for its named reason; the other rows counted and reported, the two
 /// counts making the whole table; the resolved theme's name is the reader's.
 #[cfg(all(target_os = "linux", feature = "kde"))]
@@ -2209,7 +2210,12 @@ fn reader_parity_kde() -> TestResult {
     assert_eq!(paths.len(), KDE_FIXTURES, "the files of {dir:?}");
     for path in &paths {
         let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
-        reader_parity_on(name, &std::fs::read_to_string(path)?, &table)?;
+        let listed = if KDE_FIXTURES_OTHER_BUTTON.contains(&name) {
+            KDE_BUTTON_HOVER
+        } else {
+            &[]
+        };
+        reader_parity_on(name, &std::fs::read_to_string(path)?, &table, listed)?;
     }
     Ok(())
 }
@@ -2221,12 +2227,14 @@ fn kde_fixtures() -> std::path::PathBuf {
 }
 
 /// Reader parity of the kde-breeze builder on the kdeglobals `content` named `name`, as
-/// [`reader_parity_kde`] states it for each file; the 0.7.2 reader path's theme.
+/// [`reader_parity_kde`] states it for each file, with the listed differences `listed`; the 0.7.2
+/// reader path's theme.
 #[cfg(all(target_os = "linux", feature = "kde"))]
 fn reader_parity_on(
     name: &str,
     content: &str,
     table: &Table,
+    listed: &[&str],
 ) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
     use crate::next::reader::kde::snapshot_from_kdeglobals;
 
@@ -2241,7 +2249,7 @@ fn reader_parity_on(
         &old_name,
         &snapshot,
         table,
-        &KDE_READER_EXPECTED,
+        &kde_reader_expected(listed),
     )?;
     Ok(old)
 }
@@ -2258,15 +2266,48 @@ struct ReaderExpected<'a> {
     listed: &'a [&'a str],
 }
 
-/// The kde-breeze builder's reader parity on every KDE fixture: every row of the ported groups equal but
-/// `checkbox.background_color`, skipped where `checkbox.unchecked_background` is stated (the table's
-/// listed differences).
+/// The kde-breeze builder's reader parity on a KDE input whose listed differences are `listed`: every
+/// other row of the ported groups compared and equal but `checkbox.background_color`, skipped where
+/// `checkbox.unchecked_background` is stated (the table's listed differences).
 #[cfg(all(target_os = "linux", feature = "kde"))]
-const KDE_READER_EXPECTED: ReaderExpected<'static> = ReaderExpected {
-    totals: READER_TOTALS,
-    skip: |key| (key == "checkbox.background_color").then_some(compare::Skip::OtherKeyStated),
-    listed: &[],
-};
+fn kde_reader_expected<'a>(listed: &'a [&'a str]) -> ReaderExpected<'a> {
+    let [rows, compared, ..] = READER_TOTALS;
+    ReaderExpected {
+        totals: [
+            rows,
+            compared,
+            compared.saturating_sub(listed.len()),
+            listed.len(),
+            rows.saturating_sub(compared),
+        ],
+        skip: |key| (key == "checkbox.background_color").then_some(compare::Skip::OtherKeyStated),
+        listed,
+    }
+}
+
+/// M2.FS4: the rows the kde-breeze builder fills in the colour scheme's Button background,
+/// `[Colors:Button] BackgroundNormal`, where 0.7.2's reader leaves the preset's Breeze-default
+/// constant: the hovered check box and radio (platform-facts.md (§2.5) `hover_background`, the box
+/// keeps palette.button(), breezehelper.cpp:862 at breeze f0b1d75), slider handle (platform-facts.md
+/// (§2.9) `thumb_hover_color`, QPalette::Button in every state, breezestyle.cpp:8122) and combo box
+/// (platform-facts.md (§2.24) `hover_background`, a button frame whose hover turns only the pen,
+/// breezehelper.cpp:710-712). They differ on a fixture whose Button background is not Breeze's.
+#[cfg(all(target_os = "linux", feature = "kde"))]
+const KDE_BUTTON_HOVER: &[&str] = &[
+    "checkbox.hover_background",
+    "slider.thumb_hover_color",
+    "combo_box.hover_background",
+];
+
+/// The KDE fixtures whose `[Colors:Button] BackgroundNormal` (49,54,59) is not the kde-breeze preset's
+/// Button background (#292c30 dark, #fcfcfc light): [`KDE_BUTTON_HOVER`] is listed on them.
+#[cfg(all(target_os = "linux", feature = "kde"))]
+const KDE_FIXTURES_OTHER_BUTTON: &[&str] = &[
+    "breeze-dark.ini",
+    "custom-accent.ini",
+    "high-dpi.ini",
+    "missing-groups.ini",
+];
 
 /// Reader parity of the builder of `snapshot`'s preset given `snapshot` against the 0.7.2 reader path's
 /// theme `old` (`unresolved` before its resolution, `old_name` its name), as [`reader_parity_kde`] states
@@ -2390,7 +2431,7 @@ fn live_system_parity_kde() -> TestResult {
         &result.name,
         &snapshot,
         &table,
-        &KDE_READER_EXPECTED,
+        &kde_reader_expected(&[]),
     )?;
     println!("the live desktop: equal through the 0.7.2 and the 0.8.0 path");
     Ok(())
@@ -2410,7 +2451,7 @@ fn reader_parity_kde_settings() -> TestResult {
     ];
     let table: Table = toml::from_str(HOMES)?;
     let plain = std::fs::read_to_string(kde_fixtures().join("breeze-light.ini"))?;
-    let base = reader_parity_on("breeze-light.ini", &plain, &table)?;
+    let base = reader_parity_on("breeze-light.ini", &plain, &table, &[])?;
     let contrasts = plain.replacen("[KDE]\n", "[KDE]\nframeContrast=0.5\ncontrast=3\n", 1);
     assert_ne!(contrasts, plain, "no [KDE] group in breeze-light.ini");
     let settings = format!("{contrasts}\n[ColorEffects:Inactive]\nChangeSelectionColor=false\n");
@@ -2444,7 +2485,7 @@ fn reader_parity_kde_settings() -> TestResult {
             INACTIVE_SELECTION.to_vec(),
         ),
     ] {
-        let old = reader_parity_on(name, &content, &table)?;
+        let old = reader_parity_on(name, &content, &table, &[])?;
         for key in fed {
             let pointer = format!("/{}", key.replace('.', "/"));
             let got = old.pointer(&pointer);
