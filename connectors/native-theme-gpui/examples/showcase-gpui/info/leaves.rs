@@ -63,7 +63,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "basic.buttons.dialog_default",
         "button.hover_border_color",
-        "gpui: variants::default_button's color, the border under the pointer and pressed, where the theme states button.default_button_background; elsewhere the Button is .primary(), whose hover and press border is the primary token (gpui-component 0.10.0 button/button.rs:1104, primary) and whose rest border is geometry::button's button.border.color (native-theme-gpui/geometry.rs:294, border_color)",
+        "gpui: variants::default_button's color, the border under the pointer and pressed, where the theme states button.default_button_background; elsewhere the Button is .primary(), whose hover and press border is the primary token (gpui-component 0.10.0 button/button.rs:1104, primary) and whose rest border is geometry::button's button.border.color (native-theme-gpui/geometry.rs:289, border_color)",
     ),
     (
         "basic.buttons.dialog_default",
@@ -94,7 +94,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "basic.buttons.primary",
         "button.hover_border_color",
-        "not reachable: a Primary Button's hover and press border is the primary token (gpui-component 0.10.0 button/button.rs:1104, primary); at rest it is geometry::button's button.border.color (native-theme-gpui/geometry.rs:294, border_color)",
+        "not reachable: a Primary Button's hover and press border is the primary token (gpui-component 0.10.0 button/button.rs:1104, primary); at rest it is geometry::button's button.border.color (native-theme-gpui/geometry.rs:289, border_color)",
     ),
     // --- button: the Copy box of Widget Info -----------------------------------
     (

@@ -8,9 +8,12 @@
 //! context, where the 0.7.2 builders take it from the accessibility
 //! preferences.
 
-use gpui::{Hsla, Pixels, StyleRefinement};
+use gpui::{Hsla, Pixels, StyleRefinement, px};
 use gpui_component::Size;
-use native_theme::next::{PartStated, PartStyle, ResolvedTheme, TextStated, WidgetState};
+use gpui_component::dialog::DialogEntrance;
+use native_theme::next::{
+    DialogEntranceStyle, PartStated, PartStyle, ResolvedTheme, TextStated, WidgetState,
+};
 
 use super::{
     Mapped, Unmapped, fill, font, hsla, padding, radius, scrollbar_geometry, state_fill,
@@ -467,6 +470,100 @@ pub(crate) fn combo_box_fill(r: &ResolvedTheme, disabled: bool) -> Mapped<StyleR
         },
         disabled,
     ))
+}
+
+/// [`crate::geometry::menu_item`]: `menu.row_height` at the item's maximum
+/// height, an exact height being stated as both, and `menu.min_row_height`
+/// at its minimum, which the height rule takes only where no exact height is
+/// stated, as 0.7.2's builder does.
+pub(crate) fn menu_item(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    let m = &r.menu;
+    let item = m.item(WidgetState::NONE);
+    Ok(geometry::menu_item_from(
+        &geometry::MenuRow {
+            row_height: item.max_size[1],
+            min_row_height: item.min_size[1],
+            padding: padding(&item),
+            icon_text_gap: m.icon_text_gap,
+        },
+        &uncoloured_font(&m.item_label(WidgetState::NONE), "menu.item_label(NONE)")?,
+        line_height(r),
+        r.context.text_scale,
+    ))
+}
+
+/// [`crate::geometry::popover`].
+pub(crate) fn popover(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    let panel = &r.popover.panel;
+    Ok(geometry::popover_from(
+        padding(panel),
+        radius(panel, "popover.panel.corners")?,
+        stroke_width(panel, "popover.panel.stroke.width")?,
+        stroke_color(panel, "popover.panel.stroke.color")?,
+    ))
+}
+
+/// [`crate::geometry::dialog`]: the panel's sizes where stated.
+pub(crate) fn dialog(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    let panel = &r.dialog.panel;
+    Ok(geometry::dialog_from(&geometry::DialogFrame {
+        padding: padding(panel),
+        min_width: panel.min_size[0],
+        min_height: panel.min_size[1],
+        max_height: panel.max_size[1],
+        radius: radius(panel, "dialog.panel.corners")?,
+        background: fill(panel, "dialog.panel.fill")?,
+        border_color: stroke_color(panel, "dialog.panel.stroke.color")?,
+    }))
+}
+
+/// [`crate::geometry::dialog_entrance`]: the two styles 0.7.2 has as its
+/// builder maps them, and the two it lacks as the gpui-component entrances
+/// that draw them (gpui-component 0.10.0 `src/dialog/entrance.rs:14-27`):
+/// `Fade`, a fade in place, as `DialogEntrance::Fade`, and `None`, no
+/// motion, as `DialogEntrance::None`.
+pub(crate) fn dialog_entrance(r: &ResolvedTheme) -> Mapped<Option<DialogEntrance>> {
+    let Some(style) = r.dialog.entrance else {
+        return Ok(None);
+    };
+    match style {
+        DialogEntranceStyle::ScaleFade
+        | DialogEntranceStyle::FadeRise
+        | DialogEntranceStyle::Fade => Ok(Some(DialogEntrance::Fade)),
+        DialogEntranceStyle::None => Ok(Some(DialogEntrance::None)),
+        _ => Err(Unmapped("dialog.entrance")),
+    }
+}
+
+/// [`crate::geometry::dialog_footer`].
+pub(crate) fn dialog_footer(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    Ok(geometry::dialog_footer_from(r.dialog.button_gap))
+}
+
+/// [`crate::geometry::dialog_title`].
+pub(crate) fn dialog_title(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    Ok(geometry::coloured_text(
+        StyleRefinement::default(),
+        &font(&r.dialog.title, "dialog.title")?,
+        line_height(r),
+    ))
+}
+
+/// [`crate::geometry::dialog_description`].
+pub(crate) fn dialog_description(r: &ResolvedTheme) -> Mapped<StyleRefinement> {
+    Ok(geometry::coloured_text(
+        StyleRefinement::default(),
+        &font(&r.dialog.body, "dialog.body")?,
+        line_height(r),
+    ))
+}
+
+/// [`crate::geometry::dialog_max_width`].
+pub(crate) fn dialog_max_width(r: &ResolvedTheme) -> Mapped<Pixels> {
+    Ok(px(stated(
+        r.dialog.panel.max_size[0],
+        "dialog.panel.max_size[0]",
+    )?))
 }
 
 /// [`crate::variants::hover_border`], the colour of

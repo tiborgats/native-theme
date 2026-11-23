@@ -255,12 +255,7 @@ pub(crate) fn padding(
 /// height at a text-scaling factor of 1 or less; above 1 it is its minimum
 /// and the height is automatic, so layout grows the control around its drawn
 /// text and padding. Without a stated height the control keeps the toolkit's
-/// own height.
-fn with_height_rule(r: StyleRefinement, stated: Option<f32>, n: Native<'_>) -> StyleRefinement {
-    height_rule(r, stated, n.accessibility.text_scale_factor())
-}
-
-/// [`with_height_rule`] at the text-scaling factor `text_scale`.
+/// own height. `text_scale` is the text-scaling factor.
 pub(crate) fn height_rule(
     r: StyleRefinement,
     stated: Option<f32>,
@@ -565,11 +560,39 @@ pub fn editor(n: Native<'_>) -> StyleRefinement {
 #[must_use]
 pub fn menu_item(n: Native<'_>) -> StyleRefinement {
     let m = &n.resolved.menu;
-    let r = row_height_rule(m.row_height, m.min_row_height, n);
-    with_text(
-        with_padding(r, &m.border.padding).gap_x(px(m.icon_text_gap)),
-        &m.font,
-        n,
+    menu_item_from(
+        &MenuRow {
+            row_height: m.row_height,
+            min_row_height: m.min_row_height,
+            padding: sides_of(&m.border.padding),
+            icon_text_gap: m.icon_text_gap,
+        },
+        &font_of(&m.font, n),
+        n.resolved.defaults.line_height,
+        n.accessibility.text_scale_factor(),
+    )
+}
+
+/// The theme's values [`menu_item`] is made of, read from either model.
+pub(crate) struct MenuRow {
+    pub(crate) row_height: Option<f32>,
+    pub(crate) min_row_height: Option<f32>,
+    pub(crate) padding: [Option<f32>; 4],
+    pub(crate) icon_text_gap: f32,
+}
+
+/// [`menu_item`] of the row `m` and the font `font`.
+pub(crate) fn menu_item_from(
+    m: &MenuRow,
+    font: &Font<'_>,
+    line_height: f32,
+    text_scale: f32,
+) -> StyleRefinement {
+    let r = row_height_rule(m.row_height, m.min_row_height, text_scale);
+    text(
+        padding(r, m.padding).gap_x(px(m.icon_text_gap)),
+        font,
+        line_height,
     )
 }
 
@@ -780,10 +803,25 @@ const TOOLTIP_UPSTREAM_PX_REM: f32 = 0.5;
 #[must_use]
 pub fn popover(n: Native<'_>) -> StyleRefinement {
     let p = &n.resolved.popover;
-    with_padding(StyleRefinement::default(), &p.border.padding)
-        .rounded(px(p.border.corner_radius))
-        .border(px(p.border.line_width))
-        .border_color(rgba_to_hsla(p.border.color))
+    popover_from(
+        sides_of(&p.border.padding),
+        p.border.corner_radius,
+        p.border.line_width,
+        rgba_to_hsla(p.border.color),
+    )
+}
+
+/// [`popover`] of the padding sides, radius and border it is made of.
+pub(crate) fn popover_from(
+    sides: [Option<f32>; 4],
+    radius: f32,
+    border_width: f32,
+    border_color: Hsla,
+) -> StyleRefinement {
+    padding(StyleRefinement::default(), sides)
+        .rounded(px(radius))
+        .border(px(border_width))
+        .border_color(border_color)
 }
 
 /// `StatusBar` (`src/status_bar.rs:88-90` → `:96`).
@@ -838,13 +876,45 @@ pub fn status_bar(n: Native<'_>) -> StyleRefinement {
 #[must_use]
 pub fn dialog(n: Native<'_>) -> StyleRefinement {
     let d = &n.resolved.dialog;
-    with_padding(StyleRefinement::default(), &d.border.padding)
-        .min_w(px(d.min_width))
-        .min_h(px(d.min_height))
-        .max_h(px(d.max_height))
-        .rounded(px(d.border.corner_radius))
-        .bg(rgba_to_hsla(d.background_color))
-        .border_color(rgba_to_hsla(d.border.color))
+    dialog_from(&DialogFrame {
+        padding: sides_of(&d.border.padding),
+        min_width: Some(d.min_width),
+        min_height: Some(d.min_height),
+        max_height: Some(d.max_height),
+        radius: d.border.corner_radius,
+        background: rgba_to_hsla(d.background_color),
+        border_color: rgba_to_hsla(d.border.color),
+    })
+}
+
+/// The theme's values [`dialog`] is made of, read from either model; a size
+/// the theme leaves unstated is `None`, and the dialog keeps upstream's.
+pub(crate) struct DialogFrame {
+    pub(crate) padding: [Option<f32>; 4],
+    pub(crate) min_width: Option<f32>,
+    pub(crate) min_height: Option<f32>,
+    pub(crate) max_height: Option<f32>,
+    pub(crate) radius: f32,
+    pub(crate) background: Hsla,
+    pub(crate) border_color: Hsla,
+}
+
+/// [`dialog`] of the frame `d`.
+pub(crate) fn dialog_from(d: &DialogFrame) -> StyleRefinement {
+    let mut r = padding(StyleRefinement::default(), d.padding)
+        .rounded(px(d.radius))
+        .bg(d.background)
+        .border_color(d.border_color);
+    if let Some(w) = d.min_width {
+        r = r.min_w(px(w));
+    }
+    if let Some(h) = d.min_height {
+        r = r.min_h(px(h));
+    }
+    if let Some(h) = d.max_height {
+        r = r.max_h(px(h));
+    }
+    r
 }
 
 /// For `Dialog::entrance` and `AlertDialog::entrance`
@@ -894,7 +964,12 @@ pub(crate) fn input_group_button_from(radius: f32) -> StyleRefinement {
 /// `DialogFooter` (`src/dialog/footer.rs:52` → `:56`).
 #[must_use]
 pub fn dialog_footer(n: Native<'_>) -> StyleRefinement {
-    StyleRefinement::default().gap(px(n.resolved.dialog.button_gap))
+    dialog_footer_from(n.resolved.dialog.button_gap)
+}
+
+/// [`dialog_footer`] of the gap between the buttons `gap`.
+pub(crate) fn dialog_footer_from(gap: f32) -> StyleRefinement {
+    StyleRefinement::default().gap(px(gap))
 }
 
 /// `DialogTitle` (`src/dialog/title.rs:42-43` → `:45`): the platform's line
@@ -1910,14 +1985,14 @@ pub(crate) fn default_button_rest_from(
 }
 
 /// A row's height for [`menu_item`]: `stated`, a fixed height, by the
-/// control-height rule ([`with_height_rule`]); where it is `None`, at least
+/// control-height rule ([`height_rule`]); where it is `None`, at least
 /// `least`, a least height the content grows past (`min_h` is the border
 /// box); nothing where both are `None`. A stated `menu.row_height` wins over
 /// `menu.min_row_height` (docs/platform-facts.md §2.6).
-fn row_height_rule(stated: Option<f32>, least: Option<f32>, n: Native<'_>) -> StyleRefinement {
+fn row_height_rule(stated: Option<f32>, least: Option<f32>, text_scale: f32) -> StyleRefinement {
     match (stated, least) {
         (None, Some(least)) => StyleRefinement::default().min_h(px(least)),
-        _ => with_height_rule(StyleRefinement::default(), stated, n),
+        _ => height_rule(StyleRefinement::default(), stated, text_scale),
     }
 }
 

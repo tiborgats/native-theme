@@ -285,7 +285,29 @@ const DIFFERENCES: &[Difference] = &[
              at a text scale of 1) and the button keeps gpui-component's own; every \
              other field of the refinement is equal",
     },
+    Difference {
+        leaf: "geometry::dialog",
+        presets: &["kde-breeze"],
+        reason: "0.7.2 states dialog.min_width, min_height and max_height, which have no \
+                 source (issue #4 Z2, docs/issues/0004_kde-leftovers-rationale.md §3, sizes \
+                 that are not minimums or have no source; docs/v0.8.0-spec.md §5, notes to \
+                 the table); the 0.8.0 kde-breeze leaves dialog.panel's min_size and \
+                 max_size[1] unstated, so the 0.8.0 refinement sets no `min_size` and no \
+                 `max_size.height` and the dialog keeps gpui-component's own; every other \
+                 field of the refinement is equal",
+    },
+    Difference {
+        leaf: "geometry::dialog_max_width",
+        presets: &["kde-breeze"],
+        reason: "0.7.2 states dialog.max_width, which has no source (issue #4 Z2, as \
+                 geometry::dialog's entry); the 0.8.0 kde-breeze leaves \
+                 dialog.panel.max_size[0] unstated, so the 0.8.0 side has no width to give",
+    },
 ];
+
+/// The home the 0.8.0 kde-breeze leaves unstated, which [`DIFFERENCES`]'
+/// `geometry::dialog_max_width` entry names.
+const DIALOG_MAX_WIDTH_HOME: &str = "dialog.panel.max_size[0]";
 
 /// A leaf that, on the presets named, compares only the connector's own
 /// fallback: the 0.7.2 field it reads is unset there, and the 0.8.0 home
@@ -318,14 +340,7 @@ const FALLBACK_ONLY: &[FallbackOnly] = &[
 /// field outside the slice, each with one such field: not mapped by the
 /// 0.8.0 side yet.
 const BUILDERS_OUTSIDE_SLICE: &[(&str, &str)] = &[
-    ("geometry::menu_item", "menu.row_height"),
-    ("geometry::popover", "popover.border.padding"),
     ("geometry::status_bar", "status_bar.font"),
-    ("geometry::dialog", "dialog.min_width"),
-    ("geometry::dialog_entrance", "dialog.entrance"),
-    ("geometry::dialog_footer", "dialog.button_gap"),
-    ("geometry::dialog_title", "dialog.title_font"),
-    ("geometry::dialog_description", "dialog.body_font"),
     ("geometry::progress", "progress_bar.track_height"),
     ("geometry::group_box_content", "card.border.padding"),
     ("geometry::accordion_title", "expander.header_height"),
@@ -339,7 +354,6 @@ const BUILDERS_OUTSIDE_SLICE: &[(&str, &str)] = &[
     ("geometry::toolbar", "toolbar.font"),
     ("geometry::spinner_size", "spinner.diameter"),
     ("geometry::icon_size_toolbar", "toolbar.icon_size"),
-    ("geometry::dialog_max_width", "dialog.max_width"),
     (
         "geometry::toolbar_button_rest",
         "toolbar.button_hover_border_color",
@@ -677,6 +691,53 @@ fn compare_builders(
     builder!(report, old, new, combobox);
     fill_builder!(report, old, new, input_fill);
     fill_builder!(report, old, new, combo_box_fill);
+    builder!(report, old, new, menu_item);
+    builder!(report, old, new, popover);
+    let dialog = "geometry::dialog";
+    match report.listed(dialog) {
+        Some(listed) => {
+            if let Some(n) = report.mapped(dialog, super::builders::dialog(new)) {
+                report.count(dialog);
+                let o = crate::geometry::dialog(Native::unscaled(old));
+                let mut corrected = o.clone();
+                corrected.min_size.width = None;
+                corrected.min_size.height = None;
+                corrected.max_size.height = None;
+                let stated = o.min_size.width.is_some()
+                    && o.min_size.height.is_some()
+                    && o.max_size.height.is_some();
+                if !stated || corrected != n {
+                    report.failures.push(format!(
+                        "{}: {dialog}: the listed difference ({}) no longer describes \
+                         it: 0.7.2 {o:?}, 0.8.0 {n:?}",
+                        report.label, listed.reason
+                    ));
+                }
+            }
+        }
+        None => builder!(report, old, new, dialog),
+    }
+    builder!(report, old, new, dialog_entrance);
+    builder!(report, old, new, dialog_footer);
+    builder!(report, old, new, dialog_title);
+    builder!(report, old, new, dialog_description);
+    let max_width = "geometry::dialog_max_width";
+    match report.listed(max_width) {
+        Some(listed) => {
+            report.count(max_width);
+            let n = super::builders::dialog_max_width(new);
+            if n != Err(super::Unmapped(DIALOG_MAX_WIDTH_HOME)) {
+                report.failures.push(format!(
+                    "{}: {max_width}: the listed difference ({}) no longer describes it: \
+                     0.7.2 {:?}, 0.8.0 {n:?}",
+                    report.label,
+                    listed.reason,
+                    crate::geometry::dialog_max_width(Native::unscaled(old))
+                ));
+            }
+        }
+        None => builder!(report, old, new, dialog_max_width),
+    }
     let list_item = "geometry::list_item";
     if let Some(n) = report.mapped(list_item, super::builders::list_item(new)) {
         let o = crate::geometry::list_item(Native::unscaled(old));
