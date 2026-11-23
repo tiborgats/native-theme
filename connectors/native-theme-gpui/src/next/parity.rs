@@ -475,10 +475,10 @@ const DIFFERENCES: &[Difference] = &[
                  same run, macOS 26, layers-key-push.toml \
                  `key.push.<appearance>.pressed.regular-plain.fill`); native-theme/tests/\
                  next_homes.toml, rows button.hover_background and button.active_background, \
-                 listed differences. So secondary_hover is the rest fill and secondary_active \
-                 the pressed one, and button_hover, button_active, button_secondary_hover and \
-                 button_secondary_active those composited over the rest fill as the connector \
-                 layers every state (crate::colors::assign_buttons), their tokens and their \
+                 listed differences. So secondary_hover, button_hover and \
+                 button_secondary_hover are the rest fill and secondary_active, button_active \
+                 and button_secondary_active the pressed one, each the whole fill of its state \
+                 (spec §9, step 2; crate::colors::assign_buttons), their tokens and their \
                  stored config strings; every other leaf of the theme is equal",
     },
     Difference {
@@ -588,25 +588,25 @@ const STATE_SLOTS: [StateSlot; 6] = [
         color: |c| &mut c.button_hover,
         token: |t| &mut t.button_hover,
         config: |s| &mut s.button_hover,
-        derived: |hover, _| crate::colors::over(hover, hover),
+        derived: |hover, _| hover,
     },
     StateSlot {
         color: |c| &mut c.button_active,
         token: |t| &mut t.button_active,
         config: |s| &mut s.button_active,
-        derived: crate::colors::over,
+        derived: |_, pressed| pressed,
     },
     StateSlot {
         color: |c| &mut c.button_secondary_hover,
         token: |t| &mut t.button_secondary_hover,
         config: |s| &mut s.button_secondary_hover,
-        derived: |hover, _| crate::colors::over(hover, hover),
+        derived: |hover, _| hover,
     },
     StateSlot {
         color: |c| &mut c.button_secondary_active,
         token: |t| &mut t.button_secondary_active,
         config: |s| &mut s.button_secondary_active,
-        derived: crate::colors::over,
+        derived: |_, pressed| pressed,
     },
 ];
 

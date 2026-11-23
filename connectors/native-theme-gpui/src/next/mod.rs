@@ -434,11 +434,47 @@ fn list_row_hover(r: &ResolvedTheme) -> Mapped<Hsla> {
     let home = "list.highlight(HOVER).fill";
     match stated_fill(&r.list.highlight(WidgetState::HOVER), home)? {
         Some(hover) => Ok(hover),
-        None => Ok(
-            fill(&r.menu.item(WidgetState::HOVER), "menu.item(HOVER).fill")?
-                .opacity(UPSTREAM_LIST_HOVER_ACCENT_OPACITY),
-        ),
+        None => Ok(menu_hover_fill(r)?.opacity(UPSTREAM_LIST_HOVER_ACCENT_OPACITY)),
     }
+}
+
+/// gpui-component's own colours of the theme's scheme, its default theme's
+/// (`ThemeColor::light()` and `dark()`, gpui-component 0.10.0
+/// `theme/theme_color.rs:552-561`, `theme/default-theme.json`): what a
+/// widget shows in a state the theme states nothing for (spec §10, rule 0).
+fn upstream_colors(r: &ResolvedTheme) -> std::sync::Arc<ThemeColor> {
+    if r.is_dark() {
+        ThemeColor::dark()
+    } else {
+        ThemeColor::light()
+    }
+}
+
+/// A hovered menu item's fill, `accent`, which gpui-component paints a
+/// hovered item in over its unfilled rest (gpui-component 0.10.0
+/// `menu/menu_item.rs:134-137`): `menu.item(HOVER).fill` where a rule states
+/// it for `HOVER` (spec §2, `from_state`), else gpui-component's own `accent`
+/// (spec §10, rule 0).
+fn menu_hover_fill(r: &ResolvedTheme) -> Mapped<Hsla> {
+    state_fill_or(
+        &r.menu.item(WidgetState::HOVER),
+        "menu.item(HOVER).fill",
+        upstream_colors(r).accent,
+    )
+}
+
+/// A part's fill where a rule states it for the queried state
+/// ([`state_fill`]), else `upstream`, gpui-component's own (spec §10,
+/// rule 0).
+fn state_fill_or(part: &PartStyle, home: &'static str, upstream: Hsla) -> Mapped<Hsla> {
+    Ok(state_fill(part, home)?.unwrap_or(upstream))
+}
+
+/// A text colour where a rule states it for the queried state
+/// ([`state_text_color`]), else `upstream`, gpui-component's own (spec §10,
+/// rule 0).
+fn state_text_color_or(text: &TextStyle, home: &'static str, upstream: Hsla) -> Mapped<Hsla> {
+    Ok(state_text_color(text, home)?.unwrap_or(upstream))
 }
 
 /// The slice's colours of a 0.8.0 resolved theme.
@@ -513,10 +549,13 @@ pub(crate) fn widget_colors(r: &ResolvedTheme) -> Mapped<WidgetColors> {
     let link = &r.link;
     Ok(WidgetColors {
         bg: fill(&frame, "window.frame(normal).fill")?,
-        menu_hover_bg: fill(&r.menu.item(WidgetState::HOVER), "menu.item(HOVER).fill")?,
-        menu_hover_fg: text_color(
+        menu_hover_bg: menu_hover_fill(r)?,
+        // gpui-component 0.10.0 `menu/menu_item.rs:122, 134-137`: a hovered
+        // item's text turns from `foreground` to `accent_foreground`.
+        menu_hover_fg: state_text_color_or(
             &r.menu.item_label(WidgetState::HOVER),
             "menu.item_label(HOVER).color",
+            upstream_colors(r).accent_foreground,
         )?,
         sidebar_selection_bg: fill(
             &r.sidebar.item(WidgetState::SELECTED),
@@ -578,6 +617,11 @@ pub(crate) fn widget_colors(r: &ResolvedTheme) -> Mapped<WidgetColors> {
             "progress_bar.fill(NONE).fill",
         )?,
         input_caret: hsla(r.colors.caret),
+        // A link button's text turns from `link` to `link_hover` and
+        // `link_active` (gpui-component 0.10.0 `button/button.rs:1240, 1316`),
+        // which gpui-component's own theme leaves at `link`
+        // (`theme/schema.rs:977-978`): unstated for the state, the label's
+        // rest colour is gpui-component's own treatment (spec §10, rule 0).
         link_hover_fg: text_color(&link.label(WidgetState::HOVER), "link.label(HOVER).color")?,
         link_active_fg: text_color(
             &link.label(WidgetState::PRESSED),
@@ -589,14 +633,33 @@ pub(crate) fn widget_colors(r: &ResolvedTheme) -> Mapped<WidgetColors> {
     })
 }
 
-/// The `ThemeColor` fields, written by the old mapping's [`theme_color_of`].
+/// The `ThemeColor` fields, written by the old mapping's [`theme_color_of`],
+/// but for the push button's hovered and pressed slots ([`button_states`]).
 pub(crate) fn theme_color(r: &ResolvedTheme) -> Mapped<ThemeColor> {
-    Ok(theme_color_of(
+    let mut tc = theme_color_of(
         &slice_colors(r)?,
         &widget_colors(r)?,
         r.is_dark(),
         r.context.reduced_transparency,
-    ))
+    );
+    button_states(&mut tc);
+    Ok(tc)
+}
+
+/// The filled buttons' hovered and pressed slots, `button_hover`,
+/// `button_active` and their `button_secondary_*` pair: the state's own fill,
+/// `secondary_hover` and `secondary_active` as the read gives them. The 0.8.0
+/// model states each state's whole fill, any state layer pre-baked into it
+/// (spec §9, step 2), and gpui-component paints it in place of the rest fill,
+/// over what lies under the button as the rest fill is; the old mapping
+/// composites the 0.7.2 model's state layer over the rest fill instead
+/// (`colors::assign_buttons`, spec §3.2, C17), which drew a hovered button
+/// whose hover is its translucent rest fill darker than at rest.
+fn button_states(tc: &mut ThemeColor) {
+    tc.button_hover = tc.secondary_hover;
+    tc.button_active = tc.secondary_active;
+    tc.button_secondary_hover = tc.secondary_hover;
+    tc.button_secondary_active = tc.secondary_active;
 }
 
 /// The global theme's values beside its colours. The sizes are the model's,
@@ -1369,6 +1432,119 @@ mod tests {
         assert_eq!(state_stroke_color(&hovered, "hover")?, None);
         hovered.from_state = PartStated::STROKE;
         assert_eq!(state_stroke_color(&hovered, "hover")?, Some(hsla(RED)));
+        Ok(())
+    }
+
+    /// Spec §9, step 2, on the macOS presets, whose push button draws
+    /// nothing on hover (the hovered fill is the rest fill): in both schemes
+    /// the filled buttons' hovered slots are the rest fill and their pressed
+    /// slots the stated pressed fill, translucent ones included, never the
+    /// state's fill composited over the rest fill.
+    #[test]
+    fn a_hovered_macos_button_is_filled_as_at_rest() -> Mapped<()> {
+        use native_theme::next::{Preset, Scheme, Theme, ThemeContext};
+        let mut layered_would_differ = 0;
+        for preset in [Preset::MacosMonterey, Preset::MacosTahoe] {
+            for scheme in [Scheme::Light, Scheme::Dark] {
+                let r = Theme::preset(preset).resolve(&ThemeContext::default().with_scheme(scheme));
+                let b = &r.button;
+                let rest = fill(&b.body(WidgetState::NONE), "button.body(NONE).fill")?;
+                let pressed = state_fill(&b.body(WidgetState::PRESSED), "button.body(PRESSED)")?
+                    .ok_or(Unmapped("button.body(PRESSED).fill, for the state"))?;
+                if crate::colors::over(rest, rest) != rest {
+                    layered_would_differ += 1;
+                }
+                let tc = theme_color(&r)?;
+                assert_eq!(
+                    [tc.button, tc.button_hover, tc.button_secondary_hover],
+                    [rest; 3],
+                    "{preset:?} {scheme:?}"
+                );
+                assert_eq!(
+                    [tc.button_active, tc.button_secondary_active],
+                    [pressed; 2],
+                    "{preset:?} {scheme:?}"
+                );
+            }
+        }
+        assert!(
+            layered_would_differ > 0,
+            "no macOS scheme's rest fill is translucent, so the test cannot tell a whole fill from a layered one"
+        );
+        Ok(())
+    }
+
+    /// Spec §10 rule 0 for a hovered menu item: its fill and label where a
+    /// rule states them for `HOVER`, else gpui-component's own `accent` and
+    /// `accent_foreground`, not the item at rest; a patched theme's stated
+    /// hover reaches `accent`.
+    #[test]
+    fn an_unstated_menu_hover_is_gpui_components_own() -> Mapped<()> {
+        use native_theme::next::{
+            MenuRule, PartPatch, Preset, Scheme, Theme, ThemeContext, ThemePatch,
+        };
+        let upstream = hsla(BLUE);
+        assert_eq!(
+            state_fill_or(&filled(GREEN, false), "item", upstream)?,
+            upstream
+        );
+        assert_eq!(
+            state_fill_or(&filled(GREEN, true), "item", upstream)?,
+            hsla(GREEN)
+        );
+        let mut label = TextStyle::default();
+        label.color = GREEN;
+        label.stated = TextStated::COLOR;
+        assert_eq!(state_text_color_or(&label, "label", upstream)?, upstream);
+        label.from_state = TextStated::COLOR;
+        assert_eq!(state_text_color_or(&label, "label", upstream)?, hsla(GREEN));
+
+        for scheme in [Scheme::Light, Scheme::Dark] {
+            let mut r = Theme::preset(Preset::KdeBreeze)
+                .resolve(&ThemeContext::default().with_scheme(scheme));
+            r.apply_patch(
+                &ThemePatch::new().menu(
+                    MenuRule::new()
+                        .states(WidgetState::HOVER)
+                        .item(PartPatch::new().fill(Paint::Solid(RED))),
+                ),
+            );
+            assert_eq!(widget_colors(&r)?.menu_hover_bg, hsla(RED), "{scheme:?}");
+            assert_eq!(theme_color(&r)?.accent, hsla(RED), "{scheme:?}");
+        }
+        Ok(())
+    }
+
+    /// A hovered fill a rule states, opaque or translucent, is the hovered
+    /// button's whole fill, over macos-tahoe light's translucent rest fill.
+    #[test]
+    fn a_stated_hover_fill_is_the_hovered_buttons_whole_fill() -> Mapped<()> {
+        use native_theme::next::{
+            ButtonRule, PartPatch, Preset, Scheme, Theme, ThemeContext, ThemePatch,
+        };
+        let mut r = Theme::preset(Preset::MacosTahoe)
+            .resolve(&ThemeContext::default().with_scheme(Scheme::Light));
+        let rest = fill(&r.button.body(WidgetState::NONE), "button.body(NONE).fill")?;
+        assert!(
+            rest.a < 1.0,
+            "macos-tahoe light's button is opaque: {rest:?}"
+        );
+        for hover in [RED, BLUE.with_alpha(0.5)] {
+            r.apply_patch(
+                &ThemePatch::new().button(
+                    ButtonRule::new()
+                        .states(WidgetState::HOVER)
+                        .body(PartPatch::new().fill(Paint::Solid(hover))),
+                ),
+            );
+            let tc = theme_color(&r)?;
+            assert_eq!(tc.button, rest);
+            assert_eq!(
+                [tc.button_hover, tc.button_secondary_hover],
+                [hsla(hover); 2],
+                "{hover:?}"
+            );
+        }
         Ok(())
     }
 }
