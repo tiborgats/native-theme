@@ -539,29 +539,31 @@ fn linux_backend(desktop: crate::LinuxDesktop) -> Option<LinuxBackend> {
 mod tests {
     use super::*;
 
-    /// The callback the watcher runs sees the detection caches cleared: an
-    /// accessibility block stored before the event is gone when it runs.
+    /// The callback the watcher runs comes after the detection caches are
+    /// cleared: a platform read that began before the event cannot store its
+    /// now stale block afterwards. The cache is process-wide and `cargo test`
+    /// runs tests as threads of one process, so other tests may fill it with
+    /// the machine's own settings meanwhile; the assertions hold whatever
+    /// they store, since no other test stores the stale block used here.
     #[test]
     fn the_callback_runs_after_the_caches_are_cleared() {
-        let scaled = |text_scaling_factor: f32| crate::AccessibilityPreferences {
-            text_scaling_factor,
+        let stale = crate::AccessibilityPreferences {
+            text_scaling_factor: 1.75,
             ..crate::AccessibilityPreferences::default()
         };
         let detection = crate::detect::system();
-        assert_eq!(
-            detection.reader_accessibility_with(|| scaled(1.5)),
-            scaled(1.5)
-        );
+        let read_before_the_event = detection.begin_reader_accessibility();
         let seen = std::sync::Arc::new(std::sync::Mutex::new(None));
         let seen_by_callback = std::sync::Arc::clone(&seen);
         let callback = invalidating_caches_first(move |event| {
-            let block = crate::detect::system().reader_accessibility_with(|| scaled(2.0));
-            *seen_by_callback.lock().unwrap() = Some((event, block));
+            *seen_by_callback.lock().unwrap() = Some(event);
         });
         callback(ThemeChangeEvent::Changed);
-        assert_eq!(
-            *seen.lock().unwrap(),
-            Some((ThemeChangeEvent::Changed, scaled(2.0)))
+        assert_eq!(*seen.lock().unwrap(), Some(ThemeChangeEvent::Changed));
+        detection.store_reader_accessibility(read_before_the_event, stale.clone());
+        assert_ne!(
+            detection.reader_accessibility_with(crate::AccessibilityPreferences::default),
+            stale
         );
     }
 
