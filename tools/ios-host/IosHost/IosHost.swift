@@ -884,7 +884,8 @@ func cellReads(_ cells: [UIView], in root: UIView, traits: UITraitCollection) ->
 /// held touch in the press mode (`pressed`, its rest beside it): a plain
 /// UITableView's first row; the middle segment of a UISegmentedControl of
 /// three (the first selected); a `.sidebar` list's first row; the middle item
-/// of a UITabBar of three (the first selected); a `.sidebar` list's
+/// of a UITabBar of three (the first selected); a UISlider's thumb at the
+/// value 0.5 (its centre, where the touch lands); a `.sidebar` list's
 /// outline-disclosure header (`headerMode = .firstItemInSection`, the
 /// accessory's `.header` style, expanded); the switch of an `.insetGrouped`
 /// list row (the cell's default content configuration "Label", the switch its
@@ -963,6 +964,27 @@ func listSpecimens() -> [Specimen] {
                     view: bar, spansWidth: true, pressView: { bar }, pressTarget: { middle() },
                     highlighted: { (middle() as? UIControl)?.isHighlighted ?? false },
                     reset: { bar.selectedItem = items.first })
+            }),
+        Specimen(
+            name: "slider", kind: "slider", style: "default", variant: [], sizes: [noSize], states: pressStates,
+            make: { _ in
+                let slider = UISlider()
+                slider.value = 0.5
+                return Sample(
+                    view: slider, control: slider, harnessSize: CGSize(width: 0, height: 44), spansWidth: true,
+                    pressView: { slider }, pressTarget: { slider },
+                    highlighted: { slider.isHighlighted || slider.isTracking },
+                    reset: { slider.setValue(0.5, animated: false) },
+                    applyState: { state in
+                        slider.value = 0.5
+                        return state == .normal || state == .pressed
+                    },
+                    reads: { _ in
+                        let track = slider.trackRect(forBounds: slider.bounds)
+                        let thumb = slider.thumbRect(forBounds: slider.bounds, trackRect: track, value: slider.value)
+                        return "slider_track_rect_pt = \(rectangle(track))\nslider_thumb_rect_pt = \(rectangle(thumb))\n"
+                            + "slider_value = \(slider.value)\n"
+                    })
             }),
     ]
     for (name, outline) in [("sidebar_row", false), ("outline_header", true)] {
