@@ -6086,3 +6086,32 @@ fn a_next_themes_body_text_is_none_where_its_size_or_weight_is_unstated() {
         assert_eq!(ThemeSource::Next(&r).body_text(), None, "{home}");
     }
 }
+
+/// A checked disabled box's mark is read where a rule states it for
+/// `DISABLED` and its colour is stated at `DISABLED|CHECKED`, as the radio's
+/// disabled dot is; a stated rule with the checked mark's colour unstated
+/// names that home, and no rule for `DISABLED` is no disabled mark.
+#[test]
+fn a_checked_disabled_mark_is_read_only_where_stated() {
+    use native_theme::next::{Color, IconStated, IconStyle};
+    let red = Color::rgb(1.0, 0.0, 0.0);
+    let mut checked = IconStyle::default();
+    checked.color = red;
+    checked.stated = IconStated::COLOR;
+    let mut disabled = IconStyle::default();
+    disabled.from_state = IconStated::COLOR;
+    assert_eq!(
+        checkbox::checked_disabled_mark(&disabled, &checked),
+        Ok(Some(crate::next::hsla(red)))
+    );
+    assert_eq!(
+        checkbox::checked_disabled_mark(&IconStyle::default(), &checked),
+        Ok(None)
+    );
+    let mut unstated = checked.clone();
+    unstated.stated = IconStated::default();
+    assert_eq!(
+        checkbox::checked_disabled_mark(&disabled, &unstated),
+        Err(Unmapped("checkbox.checkmark(DISABLED|CHECKED).color"))
+    );
+}

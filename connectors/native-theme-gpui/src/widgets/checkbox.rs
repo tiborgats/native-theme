@@ -407,10 +407,10 @@ impl CheckboxLook {
                         }
                     } else {
                         let mark = |state| r.checkbox.checkmark(state);
-                        mark(WidgetState::DISABLED)
-                            .from_state
-                            .contains(IconStated::COLOR)
-                            .then(|| hsla(mark(WidgetState::DISABLED | WidgetState::CHECKED).color))
+                        checked_disabled_mark(
+                            &mark(WidgetState::DISABLED),
+                            &mark(WidgetState::DISABLED | WidgetState::CHECKED),
+                        )?
                     },
                 },
                 checked,
@@ -681,6 +681,31 @@ const CHECK_VIEW_BOX: f32 = 24.;
 /// box and stroked at the width the theme states, where the icon file
 /// strokes it at its own two view-box units. Its round caps and joins are
 /// discs as wide as the line on the points.
+/// A checked disabled box's mark, `checked`
+/// (`checkbox.checkmark(DISABLED|CHECKED)`), where a rule states the mark's
+/// colour for `DISABLED` (`disabled`, spec §2, `from_state`); `None` where
+/// none does.
+///
+/// # Errors
+///
+/// [`crate::next::Unmapped`] where a rule states it for `DISABLED` but the
+/// checked disabled mark's colour is unstated.
+pub(super) fn checked_disabled_mark(
+    disabled: &native_theme::next::IconStyle,
+    checked: &native_theme::next::IconStyle,
+) -> Mapped<Option<Hsla>> {
+    use native_theme::next::IconStated;
+    if !disabled.from_state.contains(IconStated::COLOR) {
+        return Ok(None);
+    }
+    if !checked.stated.contains(IconStated::COLOR) {
+        return Err(crate::next::Unmapped(
+            "checkbox.checkmark(DISABLED|CHECKED).color",
+        ));
+    }
+    Ok(Some(crate::next::hsla(checked.color)))
+}
+
 fn stroked_check(
     points: &'static [(f32, f32)],
     size: Pixels,

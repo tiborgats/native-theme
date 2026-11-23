@@ -192,9 +192,10 @@ impl SwitchLook {
     ///
     /// A checked track's hover is read at `HOVER|CHECKED` where a rule states
     /// the hovered track's fill, as the query with that flag alone says
-    /// (`switch.track(HOVER).from_state`, spec §2): a value stated equal to
-    /// the checked track's is a hover layer too, and none is drawn where no
-    /// rule states one.
+    /// (`switch.track(HOVER).from_state`, spec §2). The stated value is the
+    /// hovered track's whole fill, drawn in place of the track's (spec §9,
+    /// step 2), one stated equal to the checked track's included; where no
+    /// rule states one the hovered track is the track without the pointer.
     ///
     /// # Errors
     ///

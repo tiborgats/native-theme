@@ -1688,6 +1688,7 @@ fn a_macos_buttons_hovered_fill_is_its_resting_one() -> TestResult {
     use iced_widget::button::Status;
 
     let mut tried = 0;
+    let mut layered_would_differ = 0;
     for preset in [Preset::MacosMonterey, Preset::MacosTahoe] {
         for ctx in [ThemeContext::light(), ThemeContext::dark()] {
             let r = Theme::preset(preset).resolve(&ctx);
@@ -1697,6 +1698,9 @@ fn a_macos_buttons_hovered_fill_is_its_resting_one() -> TestResult {
                 continue;
             }
             tried += 1;
+            if crate::styles::composite_over(rest, rest) != rest {
+                layered_would_differ += 1;
+            }
             let theme = to_theme(&r)?;
             let style = super::button(&r)?;
             assert_eq!(
@@ -1707,5 +1711,9 @@ fn a_macos_buttons_hovered_fill_is_its_resting_one() -> TestResult {
         }
     }
     assert!(tried > 0, "no macOS preset states its hover as rest");
+    assert!(
+        layered_would_differ > 0,
+        "no macOS scheme's rest fill is translucent, so the test cannot tell a whole fill from a layered one"
+    );
     Ok(())
 }

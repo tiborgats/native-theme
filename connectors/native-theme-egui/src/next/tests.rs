@@ -1046,6 +1046,7 @@ fn a_state_fill_stated_as_none_is_transparent() -> Result<(), Box<dyn std::error
 #[test]
 fn a_macos_buttons_hovered_fill_is_its_resting_one() -> Result<(), Box<dyn std::error::Error>> {
     let mut tried = Vec::new();
+    let mut layered_would_differ = 0;
     for preset in [Preset::MacosMonterey, Preset::MacosTahoe] {
         for (scheme, ctx) in [
             (egui::Theme::Light, ThemeContext::light()),
@@ -1054,8 +1055,14 @@ fn a_macos_buttons_hovered_fill_is_its_resting_one() -> Result<(), Box<dyn std::
             let r = Theme::preset(preset).resolve(&ctx);
             let body = |s| super::build::state_fill(&r.button.body(s));
             let rest = super::build::fill(&r.button.body(WidgetState::NONE));
+            let Some(rest_fill) = rest else { continue };
             if body(WidgetState::HOVER).is_none() || body(WidgetState::HOVER) != rest {
                 continue;
+            }
+            if crate::convert::composite_over(rest_fill, rest_fill)
+                != crate::convert::to_color32(rest_fill)
+            {
+                layered_would_differ += 1;
             }
             tried.push((preset, scheme));
             let atlas = patched_light(preset, "")?;
@@ -1069,6 +1076,10 @@ fn a_macos_buttons_hovered_fill_is_its_resting_one() -> Result<(), Box<dyn std::
     assert!(
         !tried.is_empty(),
         "no macOS preset states its hover as rest"
+    );
+    assert!(
+        layered_would_differ > 0,
+        "no macOS scheme's rest fill is translucent, so the test cannot tell a whole fill from a layered one"
     );
     Ok(())
 }
