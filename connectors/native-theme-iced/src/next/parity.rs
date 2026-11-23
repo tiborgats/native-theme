@@ -128,7 +128,7 @@ const fn set(at: WidgetState, field: Field, home: Home) -> Stated {
 /// colour is laid over the fill as set before it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 enum Field {
-    /// `background`.
+    /// `background` (a tab bar's `tab_label_background`).
     Background,
     /// A slider's `handle.background`.
     HandleBackground,
@@ -1772,14 +1772,6 @@ const DIFFERENCES: &[Difference] = &[
     inside("aw::card", &["windows-11"]),
     aw(
         "aw::card",
-        &["adwaita", "material-3"],
-        LineAlign::Outside,
-        States::STATED,
-        (true, false),
-        &[CARD_STROKE],
-    ),
-    aw(
-        "aw::card",
         &["macos-monterey", "macos-tahoe", "ios-13"],
         LineAlign::Outside,
         States::STATED,
@@ -1795,6 +1787,16 @@ const DIFFERENCES: &[Difference] = &[
     // iced_aw: tab.tab(SELECTED)'s and tab.tab(NONE)'s strokes and
     // tab.tab(HOVER)'s fill.
     inside("aw::tab_bar", &["windows-11"]),
+    stated_fields(
+        "aw::tab_bar",
+        &["adwaita"],
+        LineAlign::Outside,
+        &[&[set(
+            at!(HOVER),
+            Field::Background,
+            home!(fill, tab.tab(HOVER)),
+        )]],
+    ),
     aw(
         "aw::tab_bar",
         &["macos-monterey", "ios-13"],
@@ -1891,28 +1893,31 @@ impl Report {
     }
 
     /// [`Self::leaf`] of a style a [`Stated`] can set fields of, in a
-    /// status of state `at`: the expected value is `expected`'s with each
-    /// field the entry states at `at` set to its home's value on `theme`.
+    /// status of state `at` (`None` for a status the widget never asks
+    /// for, in which no field is set), compared in the form `form` gives:
+    /// the expected value is `expected`'s with each field the entry states
+    /// at `at` set to its home's value on `theme`.
     #[cfg(feature = "widgets")]
-    fn stated_leaf<T: PartialEq + Debug + Fields>(
+    fn stated_leaf<S: Fields, T: PartialEq + Debug>(
         &mut self,
         leaf: &str,
-        at: WidgetState,
+        at: Option<WidgetState>,
         (old, new): (T, T),
-        expected: impl Fn(Listed) -> T,
+        expected: impl Fn(Listed) -> S,
+        form: impl Fn(S) -> T,
         theme: &native_theme::next::ResolvedTheme,
     ) {
         self.compare(leaf, old, new, |d| {
             let mut style = expected(d.listed);
             for field in Field::ALL {
-                let here = |s: &&Stated| s.at == at && s.field == field;
+                let here = |s: &&Stated| Some(s.at) == at && s.field == field;
                 for s in d.stated.iter().copied().flatten().filter(here) {
                     let value = (s.home.value)(theme)
                         .ok_or_else(|| format!("{:?} names {:?}, unstated", s.field, s.home))?;
                     style.set(field, value)?;
                 }
             }
-            Ok(style)
+            Ok(form(style))
         });
     }
 
@@ -2132,9 +2137,10 @@ macro_rules! stated_style {
             for status in $statuses {
                 $report.stated_leaf(
                     &format!("{}({status:?})", $name),
-                    status.at() | $flags,
+                    Some(status.at() | $flags),
                     (old(old_theme, status), new(new_theme, status)),
                     |l: Listed| listed(l)(old_theme, status),
+                    |style| style,
                     $resolved,
                 );
             }
@@ -2374,6 +2380,39 @@ impl Fields for iced_widget::slider::Style {
     }
 }
 
+#[cfg(feature = "iced_aw")]
+impl Fields for iced_aw::style::tab_bar::Style {
+    fn set(&mut self, field: Field, value: Value) -> Result<(), String> {
+        use iced_core::Background;
+        match field {
+            Field::Background => {
+                self.tab_label_background = Background::Color(color_of(field, &value)?);
+            }
+            Field::HandleBackground
+            | Field::TextColor
+            | Field::IconColor
+            | Field::BorderWidth
+            | Field::BorderColor => return no_field(field, "tab_bar::Style"),
+        }
+        Ok(())
+    }
+}
+
+/// A tab bar's status as the state the 0.8.0 theme is queried with, as
+/// `iced_aw` spells a tab's states (`crate::styles::aw::tab_bar`): the tab
+/// under the pointer, the selected tab (`Active`) and a tab not selected
+/// (`Disabled`); `None` for a status a tab bar never asks for.
+#[cfg(feature = "iced_aw")]
+fn tab_at(status: iced_aw::style::Status) -> Option<WidgetState> {
+    use iced_aw::style::Status;
+    match status {
+        Status::Hovered => Some(WidgetState::HOVER),
+        Status::Active => Some(WidgetState::SELECTED),
+        Status::Disabled => Some(WidgetState::NONE),
+        Status::Pressed | Status::Focused | Status::Selected => None,
+    }
+}
+
 /// Compare a style function that has no stroke the theme aligns: an
 /// unlisted difference fails.
 #[cfg(feature = "widgets")]
@@ -2523,9 +2562,10 @@ fn compare_styles(
             for status in button {
                 report.stated_leaf(
                     &format!("{name}({status:?})"),
-                    status.at(),
+                    Some(status.at()),
                     (old_fn(old_theme, status), new_fn(new_theme, status)),
                     |l: Listed| class_old(Some(l))(old_theme, status),
+                    |style| style,
                     new,
                 );
             }
@@ -3142,15 +3182,23 @@ fn compare_aw(
         statuses
     );
     let tab = TabBarSource::of(old);
-    listed_style!(
-        report,
-        themes,
-        "aw::tab_bar",
-        leaves(o::tab_bar(old), aw_leaves::tab_bar),
-        n::tab_bar(new).map(|f| leaves(f, aw_leaves::tab_bar)),
-        |l: Listed| leaves(o::tab_bar_from(&tab.listed(l)), aw_leaves::tab_bar),
-        statuses
-    );
+    if let Some(tab_bar) = report.mapped("aw::tab_bar", n::tab_bar(new)) {
+        let (old_theme, new_theme) = themes;
+        let old_tab_bar = o::tab_bar(old);
+        for status in statuses {
+            report.stated_leaf(
+                &format!("aw::tab_bar({status:?})"),
+                tab_at(status),
+                (
+                    aw_leaves::tab_bar(old_tab_bar(old_theme, status)),
+                    aw_leaves::tab_bar(tab_bar(new_theme, status)),
+                ),
+                |l: Listed| o::tab_bar_from(&tab.listed(l))(old_theme, status),
+                aw_leaves::tab_bar,
+                new,
+            );
+        }
+    }
     let sidebar = ListSource::of_sidebar(old);
     listed_style!(
         report,
