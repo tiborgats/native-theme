@@ -85,7 +85,11 @@
 //!   selection's fill and `hover_background` in the hovered widgets' fill
 //!   (`connectors/native-theme-egui/src/mapping.md`) and egui fills a
 //!   selected item with the selection's fill over its hovered look (egui
-//!   0.37.0 `src/style.rs`, `Style::interact_selectable`).
+//!   0.37.0 `src/style.rs`, `Style::interact_selectable`);
+//! - the switch's track: the disabled on track (`DISABLED | CHECKED`), whose
+//!   colours 0.7.2 states apart (`switch.disabled_checked_background`,
+//!   `disabled_checked_track_border_color`), over the disabled and the
+//!   checked track, its rule last.
 //!
 //! An inactive window (`ThemeContext::window_active` false) has the `[WM]`
 //! inactive title bar and title colours.
@@ -142,8 +146,8 @@ use crate::IconSet;
 use crate::next::color::Color;
 use crate::next::geometry::{Corners, Edges, Stroke};
 use crate::next::icons::{IconSizes, IconThemeSpec};
-use crate::next::layout::{LayoutMetrics, TabIndicatorSide};
-use crate::next::motion::{CaretSpec, MotionTokens, UiTimings};
+use crate::next::layout::{DialogButtonOrder, LayoutMetrics, TabIndicatorSide};
+use crate::next::motion::{CaretSpec, DialogEntranceStyle, MotionTokens, UiTimings};
 use crate::next::paint::Paint;
 use crate::next::platform::KdeRoleKind;
 use crate::next::platform::kcu_mix::{kcu_mix_of_mix, kcu_mix_qreal};
@@ -281,6 +285,13 @@ struct SchemeColors {
     toolbar_button_checked: Color,
     sidebar_hover: Color,
     popover_border: Color,
+    switch_off: Color,
+    switch_on: Color,
+    switch_frame: Color,
+    switch_disabled_off: Color,
+    switch_disabled_on: Color,
+    switch_disabled_frame: Color,
+    switch_disabled_on_frame: Color,
 }
 
 /// The light scheme's constants.
@@ -328,6 +339,8 @@ const LIGHT: SchemeColors = SchemeColors {
     // `toolbar.button_hover_border_color`: platform-facts.md (§2.13): [Colors:Selection]
     // BackgroundNormal 61,174,233 (BreezeLight.colors:87, breeze v6.7.5), the pen of a hovered,
     // focused or pressed flat button (breezehelper.cpp:710-712 at breeze f0b1d75)
+    // `switch.checked_track_border_color`: platform-facts.md (§2.21): highlightColor,
+    // [Colors:Selection] BackgroundNormal 61,174,233 (SwitchIndicator.qml:27; BreezeLight.colors:87)
     selection_background: srgb8(0x3dae_e9ff),
     // `defaults.selection_text_color`, also `defaults.accent_text_color`: platform-facts.md
     // (§2.1.3): [Colors:Selection] ForegroundNormal 255,255,255 (BreezeLight.colors:95, breeze
@@ -400,6 +413,8 @@ const LIGHT: SchemeColors = SchemeColors {
     // `slider.thumb_color`: platform-facts.md (§2.9): Breeze fills the handle with
     // QPalette::Button, [Colors:Button] BackgroundNormal #fcfcfc (breezestyle.cpp:8122,
     // breezehelper.cpp:1191-1195; BreezeLight.colors:31, breeze v6.7.5)
+    // `switch.thumb_background`: platform-facts.md (§2.21): [Colors:Button] BackgroundNormal
+    // 252,252,252 (BreezeLight.colors:31, breeze v6.7.5)
     button_background: srgb8(0xfcfc_fcff),
     // `button.font.color`: platform-facts.md (§2.3): [Colors:Button] ForegroundNormal 35,38,41
     // (BreezeLight.colors:39, breeze v6.7.5)
@@ -452,6 +467,8 @@ const LIGHT: SchemeColors = SchemeColors {
     // `checkbox.disabled_background`: platform-facts.md (§2.1.6): Disabled [Colors:Button]
     // BackgroundNormal (the box) / [Colors:Window] ForegroundNormal (the label), KColorScheme
     // 6.31.0
+    // `switch.disabled_thumb_color`: platform-facts.md (§2.21): the handle in the Disabled group,
+    // Disabled [Colors:Button] BackgroundNormal, KColorScheme 6.31.0
     button_disabled_background: srgb8(0xf0f0_f0ff),
     // `button.disabled_text_color`: 0.7.2 kde-breeze.toml (uncited)
     button_disabled_foreground: srgb8(0xa8a9_aaff),
@@ -638,6 +655,36 @@ const LIGHT: SchemeColors = SchemeColors {
     // strokes linearInterpolation(backgroundColor, textColor, frameContrast 0.2) of the Window set
     // (Popup.qml:50, colorutils.cpp:61-80), #c2c5c9
     popover_border: srgb8(0xc2c5_c9ff),
+    // `switch.unchecked_background`: platform-facts.md (§2.21): qqc2-desktop-style's
+    // SwitchIndicator, the off track Qt.tint(textColor, Qt.alpha(backgroundColor, 0.9)) of the
+    // Button set (SwitchIndicator.qml:21, :32-35, :49), #e6e7e7
+    // `switch.hover_unchecked_background`: platform-facts.md (§2.21): the same, the rest fill
+    switch_off: srgb8(0xe6e7_e7ff),
+    // `switch.checked_background`: platform-facts.md (§2.21): the off track with
+    // Qt.alpha(highlightColor, 0.5) laid over it up to the handle (SwitchIndicator.qml:53-63),
+    // #92cae8: an accent-derived blend, not the accent
+    // `switch.hover_checked_background`: platform-facts.md (§2.21): no fill reads `hovered`
+    // (SwitchIndicator.qml:49, :62, :77), so the rest fill
+    switch_on: srgb8(0x92ca_e8ff),
+    // `switch.unchecked_track_border_color`: platform-facts.md (§2.21): handleBorderColor,
+    // linearInterpolation(backgroundColor, textColor, frameContrast 0.2) of the Button set
+    // (SwitchIndicator.qml:21, :27, :30, :50), Button #fcfcfc / #232629
+    // `switch.thumb_border_color`: platform-facts.md (§2.21): handleBorderColor, the off track's
+    // (SwitchIndicator.qml:78)
+    switch_frame: srgb8(0xcccf_d2ff),
+    // `switch.disabled_unchecked_background`: platform-facts.md (§2.21): the off track's tint
+    // from the Disabled group
+    switch_disabled_off: srgb8(0xe9e9_e9ff),
+    // `switch.disabled_checked_background`: platform-facts.md (§2.21): the checked track's
+    // composition from the Disabled group (plasmadesktoptheme.cpp:267-274), Disabled Button and
+    // Selection, KColorScheme 6.30.0
+    switch_disabled_on: srgb8(0xe6e7_e8ff),
+    // `switch.disabled_unchecked_track_border_color`: platform-facts.md (§2.21):
+    // handleBorderColor in the Disabled group (plasmadesktoptheme.cpp:267-274)
+    switch_disabled_frame: srgb8(0xe2e2_e2ff),
+    // `switch.disabled_checked_track_border_color`: platform-facts.md (§2.21): highlightColor in
+    // the Disabled group, Disabled Selection
+    switch_disabled_on_frame: srgb8(0xe3e5_e7ff),
 };
 
 /// The dark scheme's constants.
@@ -686,6 +733,8 @@ const DARK: SchemeColors = SchemeColors {
     // `toolbar.button_hover_border_color`: platform-facts.md (§2.13): [Colors:Selection]
     // BackgroundNormal 61,174,233 (BreezeDark.colors:88, breeze v6.7.5), the pen of a hovered,
     // focused or pressed flat button (breezehelper.cpp:710-712 at breeze f0b1d75)
+    // `switch.checked_track_border_color`: platform-facts.md (§2.21): highlightColor,
+    // [Colors:Selection] BackgroundNormal 61,174,233 (SwitchIndicator.qml:27; BreezeDark.colors:88)
     selection_background: srgb8(0x3dae_e9ff),
     // `defaults.selection_text_color`, also `defaults.accent_text_color`: platform-facts.md
     // (§2.1.3): [Colors:Selection] ForegroundNormal 252,252,252 (BreezeDark.colors:96, breeze
@@ -758,6 +807,8 @@ const DARK: SchemeColors = SchemeColors {
     // `slider.thumb_color`: platform-facts.md (§2.9): Breeze fills the handle with
     // QPalette::Button, [Colors:Button] BackgroundNormal #292c30 (breezestyle.cpp:8122,
     // breezehelper.cpp:1191-1195; BreezeDark.colors:32, breeze v6.7.5)
+    // `switch.thumb_background`: platform-facts.md (§2.21): [Colors:Button] BackgroundNormal
+    // 41,44,48 (BreezeDark.colors:32, breeze v6.7.5)
     button_background: srgb8(0x292c_30ff),
     // `button.font.color`: platform-facts.md (§2.3): [Colors:Button] ForegroundNormal 252,252,252
     // (BreezeDark.colors:40, breeze v6.7.5)
@@ -810,6 +861,8 @@ const DARK: SchemeColors = SchemeColors {
     // `checkbox.disabled_background`: platform-facts.md (§2.1.6): Disabled [Colors:Button]
     // BackgroundNormal (the box) / [Colors:Window] ForegroundNormal (the label), KColorScheme
     // 6.31.0
+    // `switch.disabled_thumb_color`: platform-facts.md (§2.21): the handle in the Disabled group,
+    // Disabled [Colors:Button] BackgroundNormal, KColorScheme 6.31.0
     button_disabled_background: srgb8(0x272a_2eff),
     // `button.disabled_text_color`: 0.7.2 kde-breeze.toml (uncited)
     button_disabled_foreground: srgb8(0x6d6f_72ff),
@@ -1000,6 +1053,36 @@ const DARK: SchemeColors = SchemeColors {
     // strokes linearInterpolation(backgroundColor, textColor, frameContrast 0.2) of the Window set
     // (Popup.qml:50, colorutils.cpp:61-80), #474c51
     popover_border: srgb8(0x474c_51ff),
+    // `switch.unchecked_background`: platform-facts.md (§2.21): qqc2-desktop-style's
+    // SwitchIndicator, the off track Qt.tint(textColor, Qt.alpha(backgroundColor, 0.9)) of the
+    // Button set (SwitchIndicator.qml:21, :32-35, :49), #3e4144
+    // `switch.hover_unchecked_background`: platform-facts.md (§2.21): the same, the rest fill
+    switch_off: srgb8(0x3e41_44ff),
+    // `switch.checked_background`: platform-facts.md (§2.21): the off track with
+    // Qt.alpha(highlightColor, 0.5) laid over it up to the handle (SwitchIndicator.qml:53-63),
+    // #3e7797: an accent-derived blend, not the accent
+    // `switch.hover_checked_background`: platform-facts.md (§2.21): no fill reads `hovered`
+    // (SwitchIndicator.qml:49, :62, :77), so the rest fill
+    switch_on: srgb8(0x3e77_97ff),
+    // `switch.unchecked_track_border_color`: platform-facts.md (§2.21): handleBorderColor,
+    // linearInterpolation(backgroundColor, textColor, frameContrast 0.2) of the Button set
+    // (SwitchIndicator.qml:21, :27, :30, :50), Button #292c30 / #fcfcfc
+    // `switch.thumb_border_color`: platform-facts.md (§2.21): handleBorderColor, the off track's
+    // (SwitchIndicator.qml:78)
+    switch_frame: srgb8(0x4e53_59ff),
+    // `switch.disabled_unchecked_background`: platform-facts.md (§2.21): the off track's tint
+    // from the Disabled group
+    switch_disabled_off: srgb8(0x2e31_35ff),
+    // `switch.disabled_checked_background`: platform-facts.md (§2.21): the checked track's
+    // composition from the Disabled group (plasmadesktoptheme.cpp:267-274), Disabled Button and
+    // Selection, KColorScheme 6.30.0
+    switch_disabled_on: srgb8(0x2629_2cff),
+    // `switch.disabled_unchecked_track_border_color`: platform-facts.md (§2.21):
+    // handleBorderColor in the Disabled group (plasmadesktoptheme.cpp:267-274)
+    switch_disabled_frame: srgb8(0x3437_3bff),
+    // `switch.disabled_checked_track_border_color`: platform-facts.md (§2.21): highlightColor in
+    // the Disabled group, Disabled Selection
+    switch_disabled_on_frame: srgb8(0x1f21_24ff),
 };
 
 /// The UI font's family.
@@ -1492,6 +1575,78 @@ const POPOVER_PADDING_HORIZONTAL: f32 = 12.0;
 /// A popover's padding above and below.
 // `popover.border.padding.top`: 0.7.2 kde-breeze.toml (uncited)
 const POPOVER_PADDING_VERTICAL: f32 = 12.0;
+
+/// The length of a switch's track.
+// `switch.track_width`: 0.7.2 kde-breeze.toml (uncited)
+const SWITCH_TRACK_WIDTH: f32 = 36.0;
+
+/// The thickness of a switch's track.
+// `switch.track_height`: platform-facts.md (§2.21): the indicator's gridUnit 18 less
+// Math.floor(18 / 6) = 3 above and below (SwitchIndicator.qml:15, :41-46)
+const SWITCH_TRACK_HEIGHT: f32 = 12.0;
+
+/// The radius of a switch track's corners.
+// `switch.track_radius`: platform-facts.md (§2.21): Math.round(12 / 2) (SwitchIndicator.qml:48)
+const SWITCH_TRACK_RADIUS: f32 = 6.0;
+
+/// The width of a switch track's outline.
+// `switch.track_border_line_width`: platform-facts.md (§2.21): no border.width, Qt Quick's
+// default 1 (SwitchIndicator.qml:38-51)
+const SWITCH_TRACK_BORDER_WIDTH: f32 = 1.0;
+
+/// The diameter of a switch's handle.
+// `switch.thumb_diameter`: platform-facts.md (§2.21): the handle is the indicator's height
+// (SwitchIndicator.qml:65-76), overhanging the track by 3 above and below, flush with its ends
+// (:68)
+const SWITCH_THUMB_DIAMETER: f32 = 18.0;
+
+/// The width of a switch handle's outline.
+// `switch.thumb_border_line_width`: platform-facts.md (§2.21): no border.width, Qt Quick's
+// default 1 (SwitchIndicator.qml:65-79)
+const SWITCH_THUMB_BORDER_WIDTH: f32 = 1.0;
+
+/// A dialog's least width.
+// `dialog.min_width`: 0.7.2 kde-breeze.toml (uncited)
+const DIALOG_MIN_WIDTH: f32 = 320.0;
+
+/// A dialog's greatest width.
+// `dialog.max_width`: 0.7.2 kde-breeze.toml (uncited)
+const DIALOG_MAX_WIDTH: f32 = 560.0;
+
+/// A dialog's least height.
+// `dialog.min_height`: 0.7.2 kde-breeze.toml (uncited)
+const DIALOG_MIN_HEIGHT: f32 = 140.0;
+
+/// A dialog's greatest height.
+// `dialog.max_height`: 0.7.2 kde-breeze.toml (uncited)
+const DIALOG_MAX_HEIGHT: f32 = 600.0;
+
+/// The gap between a dialog's buttons.
+// `dialog.button_gap`: 0.7.2 kde-breeze.toml (uncited)
+const DIALOG_BUTTON_GAP: f32 = 6.0;
+
+/// The size of a dialog's icon.
+// `dialog.icon_size`: platform-facts.md (§2.22): PM_MessageBoxIconSize, which Breeze leaves to
+// KStyle: KIconLoader::SizeHuge, 64 (frameworkintegration src/kstyle/kstyle.cpp:449-451 at
+// v6.31.0; measured 64); QMessageBox and KMessageBox use it
+const DIALOG_ICON_SIZE: f32 = 64.0;
+
+/// The order of a dialog's buttons.
+// `dialog.button_order`: 0.7.2 kde-breeze.toml (uncited)
+const DIALOG_BUTTON_ORDER: DialogButtonOrder = DialogButtonOrder::PrimaryLeft;
+
+/// How a dialog appears.
+// `dialog.entrance`: platform-facts.md (§2.22): Kirigami.Dialog fades in while rising 2 grid
+// units into place (Dialog.qml:303, :306-311)
+const DIALOG_ENTRANCE: DialogEntranceStyle = DialogEntranceStyle::FadeRise;
+
+/// A dialog's padding left and right.
+// `dialog.border.padding.left`: platform-facts.md (§2.22): Layout_TopLevelMarginWidth = 10
+const DIALOG_PADDING_HORIZONTAL: f32 = 10.0;
+
+/// A dialog's padding above and below.
+// `dialog.border.padding.top`: 0.7.2 kde-breeze.toml (uncited)
+const DIALOG_PADDING_VERTICAL: f32 = 10.0;
 
 /// The state precedence of a part with rules for disabled, pressed and
 /// hover: disabled over pressed over hover (spec §3's example; 0.7.2's
@@ -2031,9 +2186,9 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
         separator: separator(c, &layout),
         spinner: spinner(&colors),
         popover: popover(c, &colors, &typography, &layout),
+        switch: switch(c, &colors),
+        dialog: dialog(&colors, &typography, &layout),
         // Stated by the plan's M2, KDE unit ("the rest of `kde-breeze`"): nothing yet.
-        switch: SwitchWidget::unstated(WidgetOrigin::Native),
-        dialog: DialogWidget::unstated(WidgetOrigin::Native),
         combo_box: ComboBoxWidget::unstated(WidgetOrigin::Native),
         segmented_control: SegmentedControlWidget::unstated(WidgetOrigin::Native),
         card: CardWidget::unstated(WidgetOrigin::Native),
@@ -3359,6 +3514,111 @@ fn popover(
         panel,
         PartStyle::default(),
         label(&typography.body, None),
+    )
+}
+
+/// The switch: qqc2-desktop-style's SwitchIndicator, a track of an exact
+/// size and radius, off in the Button set's tint and on in Highlight laid
+/// over it, outlined in handleBorderColor off and in Highlight on; a round
+/// handle of an exact diameter in the Button set's background, outlined in
+/// handleBorderColor whether on or off (0.7.2: `unchecked_thumb_background`
+/// and `unchecked_thumb_diameter` are the on handle's where unstated);
+/// disabled, the Disabled group's colours for the track, its outline and the
+/// handle, the on track's apart (0.7.2: `switch.disabled_opacity` is
+/// `defaults.disabled_opacity` where unstated). No fill reads the pointer, so
+/// no hover rule.
+fn switch(c: &SchemeColors, roles: &ColorRoles) -> SwitchWidget {
+    let track_outline = |color| PartProp::Stroke(Stroke::uniform(SWITCH_TRACK_BORDER_WIDTH, color));
+    let track = RuleBuilder::new(PartStyle::default())
+        .base([
+            fill(c.switch_off),
+            track_outline(c.switch_frame),
+            PartProp::Corners(Corners::uniform(SWITCH_TRACK_RADIUS)),
+            PartProp::MinSize([Some(SWITCH_TRACK_WIDTH), Some(SWITCH_TRACK_HEIGHT)]),
+            PartProp::MaxSize([Some(SWITCH_TRACK_WIDTH), Some(SWITCH_TRACK_HEIGHT)]),
+        ])
+        .rule(
+            RuleSelector::on(WidgetState::CHECKED),
+            [fill(c.switch_on), track_outline(c.selection_background)],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED),
+            [
+                fill(c.switch_disabled_off),
+                track_outline(c.switch_disabled_frame),
+            ],
+        )
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED | WidgetState::CHECKED),
+            [
+                fill(c.switch_disabled_on),
+                track_outline(c.switch_disabled_on_frame),
+            ],
+        )
+        .build();
+    let thumb = RuleBuilder::new(PartStyle::default())
+        .base([
+            fill(c.button_background),
+            PartProp::Stroke(Stroke::uniform(SWITCH_THUMB_BORDER_WIDTH, c.switch_frame)),
+            PartProp::MinSize([Some(SWITCH_THUMB_DIAMETER), Some(SWITCH_THUMB_DIAMETER)]),
+            PartProp::MaxSize([Some(SWITCH_THUMB_DIAMETER), Some(SWITCH_THUMB_DIAMETER)]),
+        ])
+        .rule(
+            RuleSelector::on(WidgetState::DISABLED),
+            [fill(c.button_disabled_background)],
+        )
+        .build();
+    SwitchWidget::new(
+        WidgetOrigin::Native,
+        track,
+        thumb,
+        RuleBuilder::new(TextStyle::default()).build(),
+        None,
+        None,
+        // 0.7.2: `switch.disabled_opacity` is `defaults.disabled_opacity` where unstated.
+        Some(roles.disabled_opacity),
+    )
+}
+
+/// The dialog: the window's background (0.7.2: `dialog.background_color` is
+/// `defaults.background_color` where unstated, `resolve_safety_nets`) in the
+/// default line with the large radius (0.7.2: `dialog.border`'s colour,
+/// width and radius are `defaults.border`'s with `corner_radius_lg` where
+/// unstated), Layout_TopLevelMarginWidth's padding and the preset's size
+/// limits; title and body in the UI font (0.7.2: `dialog.title_font` and
+/// `body_font` are `defaults.font` where unstated); KStyle's message box
+/// icon size; the buttons' gap and order and Kirigami's entrance.
+fn dialog(roles: &ColorRoles, typography: &Typography, layout: &LayoutMetrics) -> DialogWidget {
+    let mut panel = PartStyle::default();
+    for prop in roles
+        .window
+        .background
+        .map(fill)
+        .into_iter()
+        .chain(roles.window.border.map(|border| outline(layout, border)))
+        .chain([
+            PartProp::Corners(Corners::uniform(layout.corner_radius_lg)),
+            PartProp::Padding(Edges::symmetric(
+                DIALOG_PADDING_VERTICAL,
+                DIALOG_PADDING_HORIZONTAL,
+            )),
+            PartProp::MinSize([Some(DIALOG_MIN_WIDTH), Some(DIALOG_MIN_HEIGHT)]),
+            PartProp::MaxSize([Some(DIALOG_MAX_WIDTH), Some(DIALOG_MAX_HEIGHT)]),
+        ])
+    {
+        panel.apply(&prop);
+    }
+    let mut icon = IconStyle::default();
+    icon.apply(&IconProp::Size(DIALOG_ICON_SIZE));
+    DialogWidget::new(
+        WidgetOrigin::Native,
+        panel,
+        label(&typography.body, None),
+        label(&typography.body, None),
+        icon,
+        DIALOG_BUTTON_GAP,
+        Some(DIALOG_BUTTON_ORDER),
+        Some(DIALOG_ENTRANCE),
     )
 }
 
