@@ -64,7 +64,7 @@ pub fn card(
 /// and rounded by its own stroke and corners where the theme states them,
 /// else by the popover's (spec §5, notes to the table, the menu's popup
 /// frame), its shadow the first outset layer of the menu's or else the
-/// popover's shadows ([`shadow`]); the highlight under the pointer and its
+/// popover's shadows (`shadow`); the highlight under the pointer and its
 /// outline where a `HOVER` rule states them. Each value the theme leaves
 /// unstated is `iced_aw`'s own.
 ///
@@ -123,7 +123,7 @@ pub fn menu(
 /// and hovered, the selected tab's outline (spec §5, `tab.border`: the
 /// selected tab's stroke and corners) and a tab's not selected
 /// (`tab.tab(NONE)`). A hovered fill or label no `HOVER` rule states is as
-/// [`crate::styles::in_state`] gives it, and an outline the theme leaves
+/// `crate::styles::in_state` gives it, and an outline the theme leaves
 /// unstated is `iced_aw`'s own.
 ///
 /// # Errors
