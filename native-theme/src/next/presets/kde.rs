@@ -308,6 +308,9 @@ struct SchemeColors {
     switch_disabled_on_frame: Color,
     segment_hover: Color,
     card_border: Color,
+    /// The expander's arrow: the preset's colour, which 0.7.2's KDE reader
+    /// does not replace.
+    expander_arrow: Color,
 }
 
 /// The light scheme's constants.
@@ -325,7 +328,6 @@ const LIGHT: SchemeColors = SchemeColors {
     // `menu.hover_text_color`: platform-facts.md (§2.6): [Colors:Window] ForegroundNormal
     // 35,38,41 (BreezeLight.colors:137, breeze v6.7.5): a hovered item keeps the window text;
     // only a pressed one is HighlightedText (breezestyle.cpp:6155 at breeze f0b1d75; measured)
-    // `expander.arrow_color`: 0.7.2 kde-breeze.toml (uncited)
     window_foreground: srgb8(0x2326_29ff),
     // `defaults.muted_color`: platform-facts.md (§2.1.3): [Colors:Window] ForegroundInactive
     // 112,125,138 (BreezeLight.colors:133, breeze v6.7.5)
@@ -728,6 +730,8 @@ const LIGHT: SchemeColors = SchemeColors {
     // textColor, frameContrast 0.2) of the View set (DefaultCardBackground.qml:70, :86-89;
     // colorutils.cpp:61-80), #ced1d4
     card_border: srgb8(0xced1_d4ff),
+    // `expander.arrow_color`: 0.7.2 kde-breeze.toml (uncited)
+    expander_arrow: srgb8(0x2326_29ff),
 };
 
 /// The dark scheme's constants.
@@ -745,7 +749,6 @@ const DARK: SchemeColors = SchemeColors {
     // `menu.hover_text_color`: platform-facts.md (§2.6): [Colors:Window] ForegroundNormal
     // 252,252,252 (BreezeDark.colors:138, breeze v6.7.5): a hovered item keeps the window text;
     // only a pressed one is HighlightedText (breezestyle.cpp:6155 at breeze f0b1d75; measured)
-    // `expander.arrow_color`: 0.7.2 kde-breeze.toml (uncited)
     window_foreground: srgb8(0xfcfc_fcff),
     // `defaults.muted_color`: platform-facts.md (§2.1.3): [Colors:Window] ForegroundInactive
     // 161,169,177 (BreezeDark.colors:134, breeze v6.7.5)
@@ -1153,6 +1156,8 @@ const DARK: SchemeColors = SchemeColors {
     // textColor, frameContrast 0.2) of the View set (DefaultCardBackground.qml:70, :86-89;
     // colorutils.cpp:61-80), #3c4146
     card_border: srgb8(0x3c41_46ff),
+    // `expander.arrow_color`: 0.7.2 kde-breeze.toml (uncited)
+    expander_arrow: srgb8(0xfcfc_fcff),
 };
 
 /// The UI font's family.
@@ -2391,6 +2396,10 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
     let c = &scheme_colors;
     let colors = roles(c, os, system.and_then(|s| s.accent));
     let typography = typography(&colors, system);
+    let widget_font = |os: Option<&OsFont>| laid_over(&typography.body, os, typography.font_dpi);
+    let menu_font = widget_font(system.and_then(|s| s.menu_font.as_ref()));
+    let toolbar_font = widget_font(system.and_then(|s| s.toolbar_font.as_ref()));
+    let title_font = widget_font(system.and_then(|s| s.title_bar_font.as_ref()));
     let layout = LayoutMetrics {
         widget_gap: Some(WIDGET_GAP),
         container_margin: Some(CONTAINER_MARGIN),
@@ -2481,18 +2490,18 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
         scrollbar: scrollbar(c),
         list: list(c, &colors, &typography, &layout),
         tab: tab(c, &colors, &typography),
-        menu: menu(c, &typography, &layout),
+        menu: menu(c, &menu_font, &layout),
         menu_bar: menu_bar(c),
         sidebar: sidebar(c, &colors, &typography, &layout),
         toolbar: toolbar(
             c,
-            &typography,
+            &toolbar_font,
             &layout,
             icon_size(|s| s.toolbar, ICON_TOOLBAR),
         ),
         status_bar: status_bar(&colors, &typography, &layout),
         tooltip: tooltip(&colors, &typography, &layout),
-        window: window(c, &colors, &typography, &layout, ctx.window_active),
+        window: window(c, &colors, &title_font, &layout, ctx.window_active),
         input: input(
             c,
             &colors,
@@ -2691,6 +2700,32 @@ fn font(
     if let Some(color) = color {
         font.color = color;
         font.stated |= TextStated::COLOR;
+    }
+    font
+}
+
+/// A widget's font as 0.7.2 resolves it: the system's font `os` for the
+/// widget laid over the UI font `base` field by field, its family, size,
+/// weight and style where `os` gives them (0.7.2's `kde/fonts.rs`,
+/// `populate_fonts`; a widget font's unstated fields are `defaults.font`'s,
+/// `resolve_font_inheritance`); the size converted at the font DPI `dpi`.
+fn laid_over(base: &TextStyle, os: Option<&OsFont>, dpi: f32) -> TextStyle {
+    let mut font = base.clone();
+    let Some(os) = os else {
+        return font;
+    };
+    if let Some(family) = &os.family {
+        font.family = family.clone();
+    }
+    if let Some(size) = os.size {
+        font.size_px = font_px(size, dpi);
+        font.defined_size = Some(size);
+    }
+    if let Some(weight) = os.weight {
+        font.weight = weight;
+    }
+    if let Some(style) = os.style {
+        font.style = style;
     }
     font
 }
@@ -3190,14 +3225,15 @@ fn tooltip(roles: &ColorRoles, typography: &Typography, layout: &LayoutMetrics) 
 /// default border and the large radius (0.7.2: `window.background_color` is
 /// `defaults.background_color` and `window.border` `defaults.border` with
 /// `corner_radius_lg` where unstated); the title bar in the `[WM]` colours;
-/// the title in the UI font (0.7.2: `window.title_bar_font` is
-/// `defaults.font` where unstated), in the inactive title colour in an
-/// inactive window. A maximized or full-screen window has no data of its
-/// own and takes the normal window's styles; no caption button is stated.
+/// the title in the title font `font` (0.7.2: `window.title_bar_font` is
+/// `defaults.font` where unstated), in `[WM] activeForeground` in an active
+/// window where the system states it and in the inactive title colour in an
+/// inactive one. A maximized or full-screen window has no data of its own
+/// and takes the normal window's styles; no caption button is stated.
 fn window(
     c: &SchemeColors,
     roles: &ColorRoles,
-    typography: &Typography,
+    font: &TextStyle,
     layout: &LayoutMetrics,
     active: bool,
 ) -> WindowChrome {
@@ -3229,7 +3265,7 @@ fn window(
         frame,
         title_bar.clone(),
         title_bar,
-        label(&typography.body, title_color),
+        label(font, title_color),
         RuleBuilder::new(PartStyle::default()).build(),
         RuleBuilder::new(IconStyle::default()).build(),
     )
@@ -3508,10 +3544,11 @@ fn spinner(roles: &ColorRoles) -> SpinnerWidget {
 /// blend alpha and outlined at the default border width, as 0.7.2's
 /// connectors draw `menu.hover_border_color` (gpui: at
 /// `defaults.border.line_width`), pressed in the opaque DecorationFocus;
-/// the UI font in the window text (0.7.2: `menu.font` is `defaults.font`
-/// where unstated), HighlightedText when pressed, the disabled window text
-/// when disabled; 16 px icons; separators in `separatorColor()`.
-fn menu(c: &SchemeColors, typography: &Typography, layout: &LayoutMetrics) -> MenuWidget {
+/// the menu font `font` in the window text (0.7.2: `menu.font` is
+/// `defaults.font` where unstated), HighlightedText when pressed, the
+/// disabled window text when disabled; 16 px icons; separators in
+/// `separatorColor()`.
+fn menu(c: &SchemeColors, font: &TextStyle, layout: &LayoutMetrics) -> MenuWidget {
     let panel = RuleBuilder::new(PartStyle::default())
         .base([
             fill(c.menu_background),
@@ -3538,7 +3575,7 @@ fn menu(c: &SchemeColors, typography: &Typography, layout: &LayoutMetrics) -> Me
         )
         .rule(RuleSelector::on(WidgetState::PRESSED), [fill(c.accent)])
         .build();
-    let item_label = RuleBuilder::new(label(&typography.body, Some(c.window_foreground)))
+    let item_label = RuleBuilder::new(label(font, Some(c.window_foreground)))
         .rule(
             RuleSelector::on(WidgetState::PRESSED),
             [TextProp::Color(c.selection_foreground)],
@@ -3674,13 +3711,13 @@ fn tab(c: &SchemeColors, roles: &ColorRoles, typography: &Typography) -> TabWidg
 /// 0.125 in the plain button pen, outlined in Highlight under the pointer and
 /// pressed (0.7.2's `button_checked_border_color`); each outline at the
 /// default border width (0.7.2: drawn at `button.border.line_width`, which
-/// is `defaults.border.line_width` where unstated). The labels in the UI
-/// font (0.7.2: `toolbar.font` is `defaults.font` where unstated), the icons
-/// at the toolbar's icon size `icon_size` (0.7.2: `toolbar.icon_size` is
-/// `defaults.icon_sizes.toolbar` where unstated).
+/// is `defaults.border.line_width` where unstated). The labels in the
+/// toolbar font `font` (0.7.2: `toolbar.font` is `defaults.font` where
+/// unstated), the icons at the toolbar's icon size `icon_size` (0.7.2:
+/// `toolbar.icon_size` is `defaults.icon_sizes.toolbar` where unstated).
 fn toolbar(
     c: &SchemeColors,
-    typography: &Typography,
+    font: &TextStyle,
     layout: &LayoutMetrics,
     icon_size: f32,
 ) -> ToolbarWidget {
@@ -3730,7 +3767,7 @@ fn toolbar(
         WidgetOrigin::Native,
         bar,
         button,
-        RuleBuilder::new(label(&typography.body, None)).build(),
+        RuleBuilder::new(label(font, None)).build(),
         button_icon,
         RuleBuilder::new(PartStyle::default()).build(),
         Some(TOOLBAR_ITEM_GAP),
@@ -4122,7 +4159,7 @@ fn expander(
     let arrow = RuleBuilder::new(IconStyle::default())
         .base([
             IconProp::Size(EXPANDER_ARROW_SIZE),
-            IconProp::Color(c.window_foreground),
+            IconProp::Color(c.expander_arrow),
         ])
         .build();
     ExpanderWidget::new(

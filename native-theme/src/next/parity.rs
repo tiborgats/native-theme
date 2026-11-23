@@ -1403,29 +1403,11 @@ fn model_parity_kde_breeze() -> TestResult {
 // from a kdeglobals file, and the kde-breeze builder fed the same file as `SystemOverrides`.
 // ---------------------------------------------------------------------------------------------------------
 
-/// The ported groups whose values the kde-breeze builder also derives from the system's settings, which
-/// reader parity asserts; the other ported groups state the preset's values only so far (plan, M2's KDE
-/// unit) and are counted with the groups not ported yet.
+/// The totals of the rows of [`PORTED_GROUPS`] on every fixture, `[rows, compared, equal, mismatching,
+/// skipped]`: every row equal but `checkbox.background_color`, skipped where
+/// `checkbox.unchecked_background` is stated (the table's listed differences).
 #[cfg(all(target_os = "linux", feature = "kde"))]
-const READER_PORTED_GROUPS: &[&str] = &[
-    "defaults",
-    "text_scale",
-    "Resolved",
-    "layout",
-    "accessibility",
-    "button",
-    "checkbox",
-    "list",
-    "scrollbar",
-    "tooltip",
-];
-
-/// The totals of the rows of [`READER_PORTED_GROUPS`] on every fixture, `[rows, compared, equal,
-/// mismatching, skipped]`: every row equal but `checkbox.background_color`, skipped where
-/// `checkbox.unchecked_background` is stated (the table's listed differences). The other rows are counted,
-/// not asserted.
-#[cfg(all(target_os = "linux", feature = "kde"))]
-const READER_TOTALS: [usize; 5] = [200, 199, 199, 0, 1];
+const READER_TOTALS: [usize; 5] = [563, 562, 562, 0, 1];
 
 /// The number of files in `tests/fixtures/kde/`: breeze-dark.ini, breeze-index.theme, breeze-light.ini,
 /// custom-accent.ini, high-dpi.ini, malformed-values.ini, minimal.ini, missing-groups.ini.
@@ -1471,9 +1453,9 @@ fn old_kde_reader(
 /// Reader parity of the kde-breeze builder: for every file of `tests/fixtures/kde/`, the 0.7.2 reader
 /// path ([`old_kde_reader`]) against `Theme::preset(Preset::KdeBreeze)` given the file's
 /// `SystemOverrides` and resolved for the file's context, over the table of homes, the snapshot's context
-/// compared. Zero mismatches over every row of [`READER_PORTED_GROUPS`], the four `snapshot.context.*`
-/// rows compared and equal, the one skip for its named reason; the other rows counted and reported, the
-/// two counts making the whole table; the resolved theme's name is the reader's.
+/// compared. Zero mismatches over every row of [`PORTED_GROUPS`], the four `snapshot.context.*` rows
+/// compared and equal, the one skip for its named reason; the other rows counted and reported, the two
+/// counts making the whole table; the resolved theme's name is the reader's.
 #[cfg(all(target_os = "linux", feature = "kde"))]
 #[test]
 fn reader_parity_kde() -> TestResult {
@@ -1530,8 +1512,8 @@ fn reader_parity_on(
     println!("{name}: {report}");
     assert_eq!(report.totals.rows, table.row.len(), "{name}");
     assert_eq!(&*new.name, old_name, "{name}");
-    let totals = totals_in(&report, READER_PORTED_GROUPS, true);
-    let not_ported = totals_in(&report, READER_PORTED_GROUPS, false);
+    let totals = totals_in(&report, PORTED_GROUPS, true);
+    let not_ported = totals_in(&report, PORTED_GROUPS, false);
     println!(
         "{name}: [rows, compared, equal, mismatching, skipped] in the ported groups {totals:?}, \
          in the groups not ported yet {not_ported:?}"
@@ -1545,7 +1527,7 @@ fn reader_parity_on(
     for row in report
         .rows
         .iter()
-        .filter(|row| in_groups(&row.key, READER_PORTED_GROUPS))
+        .filter(|row| in_groups(&row.key, PORTED_GROUPS))
     {
         let skip = match row.outcome {
             compare::Outcome::Skipped(skip) => Some(skip),
@@ -1590,6 +1572,13 @@ fn reader_parity_kde_settings() -> TestResult {
         "checkbox.unchecked_border_color",
         "list.header_separator_color",
         "list.grid_color",
+        "progress_bar.border.color",
+        "menu.separator_color",
+        "toolbar.border.color",
+        "popover.border.color",
+        "card.border.color",
+        "switch.unchecked_track_border_color",
+        "switch.thumb_border_color",
     ]
     .into_iter()
     .chain(INACTIVE_SELECTION)
