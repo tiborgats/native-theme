@@ -205,6 +205,7 @@ fn compare_all(report: &mut Report, old: &ResolvedTheme, new: &native_theme::nex
             thumb_border,
             checked_thumb_border,
             label_gap,
+            label_size,
         ]
     );
     compare!(

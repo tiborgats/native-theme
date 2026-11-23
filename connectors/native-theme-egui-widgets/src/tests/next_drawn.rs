@@ -522,6 +522,46 @@ fn a_switch_label_is_at_the_stated_gap_in_the_stated_colour() -> TestResult {
     Ok(())
 }
 
+/// `switch.label(NONE).size_px`, which no preset states, letters the label at that size in egui's
+/// `Proportional` family, as the connector's role fonts are; a size that is not positive sends
+/// the switch to egui's own counterpart.
+#[test]
+fn a_switch_label_takes_its_stated_size() -> TestResult {
+    use crate::switch::Geometry;
+    let font = |shapes: &[egui::Shape]| {
+        shapes.iter().find_map(|s| match s {
+            egui::Shape::Text(t) => t
+                .galley
+                .job
+                .sections
+                .first()
+                .map(|section| section.format.font_id.clone()),
+            _ => None,
+        })
+    };
+    let stock = Geometry::next_of(&patched(Preset::KdeBreeze, "")?).ok_or("no geometry")?;
+    assert_eq!(stock.label_size, None);
+    let (_, shapes) = drawn_switch(&patched_installed(Preset::KdeBreeze, "")?);
+    let own = font(&shapes).ok_or("no label drawn")?;
+    assert!(
+        own.size != 31.0,
+        "egui's own size is the stated one: the test proves nothing"
+    );
+    let patch = "[[widgets.switch.rules]]\nstates = []\nlabel.size_px = 31.0\n";
+    let g = Geometry::next_of(&patched(Preset::KdeBreeze, patch)?).ok_or("no geometry")?;
+    assert_eq!(g.label_size, Some(31.0));
+    let (parts, shapes) = drawn_switch(&patched_installed(Preset::KdeBreeze, patch)?);
+    assert_eq!(
+        font(&shapes).ok_or("no label drawn")?,
+        egui::FontId::proportional(31.0)
+    );
+    let label = parts.get("label").ok_or("no label")?;
+    assert!(label.height() >= 31.0, "{label:?}");
+    let zero = "[[widgets.switch.rules]]\nstates = []\nlabel.size_px = 0.0\n";
+    assert_eq!(Geometry::next_of(&patched(Preset::KdeBreeze, zero)?), None);
+    Ok(())
+}
+
 /// A checked switch reads its own states: a disabled checked track and thumb at
 /// `DISABLED|CHECKED`, from a rule for that state alone, and a checked thumb's outline at
 /// `thumb(CHECKED)`, drawn so.

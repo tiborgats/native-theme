@@ -3,7 +3,9 @@
 use native_theme_egui::convert::{composite_over, to_color32, to_corner_radius};
 use native_theme_egui::egui::{self, accesskit};
 use native_theme_egui::native_theme::color::Rgba;
-use native_theme_egui::native_theme::next::{ResolvedTheme as NextResolvedTheme, WidgetState};
+use native_theme_egui::native_theme::next::{
+    ResolvedTheme as NextResolvedTheme, TextStated, WidgetState,
+};
 use native_theme_egui::native_theme::theme::ResolvedSwitchTheme;
 use native_theme_egui::{ResolvedTheme, Role, ThemeAtlas, register_focus_shape};
 
@@ -53,12 +55,16 @@ use crate::{next, scope};
 ///
 /// Under an atlas of the 0.8.0 model each of these is read at its home: `switch.track` and
 /// `switch.thumb` at the switch's state, the label in `switch.label`'s colour where stated, else
-/// the body text's, `switch.label_gap` after the track where stated, else egui's own
-/// `icon_spacing`; a track or thumb stroke stated as none is no outline.
+/// the body text's, at `switch.label(NONE)`'s size where stated, else egui's own, in egui's
+/// `Proportional` family as the connector's role fonts are (a family, weight or slant the
+/// label states is not drawn: the crate's README, *Limits under the 0.8.0 model*),
+/// `switch.label_gap` after the track where stated, else egui's own `icon_spacing`; a track or
+/// thumb stroke stated as none is no outline.
 ///
 /// With no atlas installed, a switch size that is not finite, or a 0.8.0 theme that states no
-/// track size, checked thumb size, track or checked thumb fill, or corners egui can draw, it
-/// adds `egui::Checkbox`, egui's own two-state control.
+/// track size, checked thumb size, track or checked thumb fill, or corners egui can draw, or
+/// states a label size that is not a positive finite number, it adds `egui::Checkbox`, egui's
+/// own two-state control.
 #[must_use = "You should put this widget in a ui with `ui.add(widget);`"]
 pub struct Switch<'a> {
     on: &'a mut bool,
@@ -118,17 +124,26 @@ pub(crate) struct Geometry {
     pub(crate) checked_thumb_border: Option<f32>,
     /// The space between the track and the label; `None`, egui's own `Spacing::icon_spacing`.
     pub(crate) label_gap: Option<f32>,
+    /// The label's size, the 0.8.0 theme's `switch.label(NONE).size_px`; `None`, egui's own.
+    pub(crate) label_size: Option<f32>,
 }
 
 impl Geometry {
     /// The geometry of a switch of a 0.8.0 theme: the track's minimum size and corners at
     /// rest, the thumb's minimum width checked and at rest (the checked one where the theme
     /// states none at rest), the outlines' widths at rest and the thumb's checked (a stroke
-    /// stated as none is no outline) and `switch.label_gap`; `None` where the theme states no
-    /// track or checked thumb size, or corners egui cannot draw as one radius, which sends the
-    /// switch to egui's own counterpart.
+    /// stated as none is no outline), `switch.label_gap` and the label's size at rest; `None`
+    /// where the theme states no track or checked thumb size, corners egui cannot draw as one
+    /// radius, or a label size that is not a positive finite number, which sends the switch to
+    /// egui's own counterpart.
     pub(crate) fn next_of(r: &NextResolvedTheme) -> Option<Self> {
         let sw = &r.switch;
+        let label = sw.label(WidgetState::NONE);
+        let label_size = if label.stated.contains(TextStated::SIZE_PX) {
+            Some(scope::length(label.size_px).filter(|size| *size > 0.0)?)
+        } else {
+            None
+        };
         let track = sw.track(WidgetState::NONE);
         let rest_thumb = sw.thumb(WidgetState::NONE);
         let checked_thumb = sw.thumb(WidgetState::CHECKED);
@@ -154,6 +169,7 @@ impl Geometry {
             thumb_border: border(next::stroke_width(&rest_thumb))?,
             checked_thumb_border: border(next::stroke_width(&checked_thumb))?,
             label_gap: border(sw.label_gap)?,
+            label_size,
         })
     }
 
@@ -179,6 +195,7 @@ impl Geometry {
             thumb_border: border(sw.thumb_border_line_width)?,
             checked_thumb_border: border(sw.thumb_border_line_width)?,
             label_gap: None,
+            label_size: None,
         })
     }
 }
@@ -342,6 +359,10 @@ struct Paint {
     /// or under a disabled calling `Ui`; `None` where it is enabled, or nothing is to be faded
     /// as one (`crate::fade::outer_fade`).
     ground: Option<egui::Color32>,
+    /// The label's font: [`Geometry::label_size`] in egui's `Proportional` family, which holds
+    /// the face the atlas's font plan installed for the body text, as the connector's role fonts
+    /// are (`next::text_role_font`), lowered to the atlas's `text_size_cap`; `None`, egui's own.
+    font: Option<egui::FontId>,
 }
 
 impl egui::Widget for Switch<'_> {
@@ -364,12 +385,16 @@ impl egui::Widget for Switch<'_> {
                     (Look::next_of(r)?, Geometry::next_of(r)?)
                 }
             };
+            let cap = atlas.text_size_cap();
             Some(Paint {
                 geometry,
                 sw,
                 ground: as_one
                     .then(|| backdrop.or_else(|| sw.background.map(to_color32)))
                     .flatten(),
+                font: geometry
+                    .label_size
+                    .map(|size| egui::FontId::proportional(cap.map_or(size, |cap| size.min(cap)))),
             })
         });
         match paint {
@@ -399,7 +424,11 @@ fn switch_ui(
         geometry: g,
         sw,
         ground,
+        font,
     } = paint;
+    if let Some(font) = font {
+        ui.style_mut().override_font_id = Some(font.clone());
+    }
     // Faded as one over `ground` (the painter's opacity kept), or not at all here: where the
     // platform dims by colour alone (`disabled_alpha` 1) the colours are as stated.
     let alpha = ui.visuals().disabled_alpha();
