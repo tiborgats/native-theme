@@ -24,6 +24,48 @@ in the colour scheme egui is drawing, and contains no colour, radius or
 metric of its own. With no atlas installed, each renders as egui's own
 counterpart.
 
+## Under an atlas of the 0.8.0 model
+
+Under an atlas the connector builds from the 0.8.0 model
+(`native_theme_egui::next::to_theme`), every widget reads its
+`native_theme::next::ResolvedTheme`, in the colour scheme egui is drawing,
+where the table of homes (`native-theme/tests/next_homes.toml`) places the
+0.7.2 fields it reads: each value where the theme states it, egui's own where
+it does not (docs/v0.8.0-spec.md §10, rule 0). A fill stated as none is
+transparent and a stroke stated as none is no outline (rule 2).
+
+| widget | what it reads | where the theme states none |
+|---|---|---|
+| `switch::Switch` | `switch.track` and `switch.thumb`: fills, outlines, sizes and the track's corners, at rest, checked, hovered and disabled; the label's colour (`switch.label`, else `typography.body.color`) and `switch.label_gap` | no track or checked thumb size or fill, or track corners egui cannot draw as one radius: egui's `Checkbox` |
+| `radio_button::RadioButton` | `radio.dot` and `radio.indicator` widths, `radio.label_gap` | its `Role::Checkbox` cell's circle, dot and `icon_spacing` |
+| `progress_bar::ProgressBar` | `progress_bar.track`: its least width, corners and outline | egui's bar |
+| `spinner::Spinner` | `spinner.color`, `diameter`, `stroke_width`; `colors.window.foreground` for a freedesktop indicator's `currentColor` | egui's own text colour for the indicator |
+| `slider::Slider` | `slider.track`, `active_track` and `thumb` fills at rest and disabled, the thumb's hover fill and its outline at rest, hovered and focused, the thumb's and the rail's sizes | no rail, filled rail or knob fill or size: egui's `Slider` |
+| `segmented_control::SegmentedControl` | the hover fill of `segmented_control.segment`, whether it states vertical padding, `colors.window.background` as the ground a disabled control fades over | no ground: egui's own fade of a disabled `Ui` |
+| `links::link`, `links::hyperlink` | `link.label`'s colour at rest, hovered, pressed, visited and disabled, and its underline; `link.container`'s fill and hover fill | egui's link colour, no background |
+| `combo_box::ComboBox` | `combo_box.field`'s left and right padding and its stroke's width, `combo_box.arrow_area_width` | no stroke, or one per side: egui's padding and arrow place |
+| `expander::Expander` | `expander.arrow_side`, `arrow_gap`, `content_indent`, `frame_enabled`; the header's padding, the arrow's size and colour; above a text scale of 1 the title's size (which holds the scale already) times `typography.line_height_multiplier` | none of the four layout fields: egui's `CollapsingHeader` in the expander's scope, its arrow `next::expander_icon`'s |
+
+Limits under the 0.8.0 model:
+
+* The switch's label lies after its track, at `switch.label_gap`, and does
+  not stretch: the model this version builds on states no label side and no
+  stretching gap.
+* Four outline colours are drawn otherwise than under the 0.7.2 model, each
+  the stroke of the widget's connector cell: the radio button's circle
+  (windows-11, macos-monterey, macos-tahoe), the drop-down's border and the
+  segmented control's frame and dividers (the same three presets), and the
+  expander's frame (adwaita, windows-11, the presets that frame it). The
+  0.8.0 theme lays these translucent borders inside the part, and egui ends a
+  rect's fill at its stroke's inner edge (`epaint-0.37.0/src/tessellator.rs`,
+  `stroke_and_fill_path`), so the connector hands egui each one composited
+  over the part's fill: an opaque colour where 0.7.2 gave the translucent one
+  (the connector's
+  [What the 0.8.0 model states that egui cannot draw](../native-theme-egui/README.md#what-the-080-model-states-that-egui-cannot-draw)).
+  Over the radio's, the drop-down's and the segments' fill that colour looks
+  the same; the expander's frame has no fill of its own, so it is the
+  composite colour over whatever lies under it.
+
 ## Compatibility
 
 Built for egui 0.37.0, which it reaches through the connector, with

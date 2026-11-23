@@ -312,112 +312,6 @@ fn next_installed(preset: Preset) -> egui::Context {
     ctx
 }
 
-/// egui's own `add`, in `role`'s scope of the installed atlas where `role` is given, and
-/// disabled once where `enabled` is false: in that scope's `Disabled` variant, `Selected` or
-/// `SelectedDisabled` where `selected`, as the widgets' `scope::open_faded` opens it.
-fn in_scope(
-    ui: &mut egui::Ui,
-    role: Option<Role>,
-    selected: bool,
-    enabled: bool,
-    add: impl FnOnce(&mut egui::Ui) -> egui::Response,
-) -> egui::Response {
-    let Some(role) = role else {
-        return ui.add_enabled_ui(enabled, add).inner;
-    };
-    let variant = match (enabled, selected) {
-        (false, true) => RoleVariant::SelectedDisabled,
-        (false, false) => RoleVariant::Disabled,
-        (true, true) => RoleVariant::Selected,
-        (true, false) => RoleVariant::Normal,
-    };
-    ui.native_scope(role, variant, |ui| {
-        if !enabled {
-            ui.disable();
-        }
-        add(ui)
-    })
-    .inner
-}
-
-/// Under an atlas of the 0.8.0 model, which holds no 0.7.2 theme, each widget not yet drawn
-/// from it (`next_drawn` tests those that are), enabled and
-/// disabled, paints what egui's own counterpart paints: in the caller's `Ui`, or in its
-/// role's scope where the widget opens one. A widget with no `enabled` of its own is disabled
-/// by its calling `Ui`. The disabled expander is faded once, by its scope's `Ui::disable`, not
-/// again by `CollapsingHeader::enabled`.
-#[test]
-fn under_a_next_atlas_every_widget_is_its_egui_counterpart() {
-    type Add = Box<dyn Fn(&mut egui::Ui, bool) -> egui::Response>;
-    let cases: Vec<(&str, Add, Add)> = vec![(
-        "expander",
-        Box::new(|ui, enabled| {
-            Expander::new("Details")
-                .default_open(true)
-                .enabled(enabled)
-                .show(ui, |ui| ui.label("Body"))
-                .header_response
-        }),
-        Box::new(|ui, enabled| {
-            let outer = std::sync::Arc::clone(ui.style());
-            in_scope(ui, Some(Role::Expander), false, enabled, |ui| {
-                egui::CollapsingHeader::new("Details")
-                    .default_open(true)
-                    .show(ui, |ui| {
-                        ui.set_style(outer);
-                        ui.label("Body")
-                    })
-                    .header_response
-            })
-        }),
-    )];
-    let mut faded_twice_differs = Vec::new();
-    for &preset in Preset::ALL {
-        for enabled in [true, false] {
-            for (name, ours, egui_s) in &cases {
-                let at_ = format!("{preset:?} {name}, enabled {enabled}");
-                let ours_ctx = next_installed(preset);
-                let egui_ctx = next_installed(preset);
-                // two passes: the expander's body shows from the second
-                let _ = response(&ours_ctx, at(1.0), |ui| ours(ui, enabled));
-                let _ = response(&egui_ctx, at(1.0), |ui| egui_s(ui, enabled));
-                let (a, ra) = response(&ours_ctx, at(1.0), |ui| ours(ui, enabled));
-                let (b, rb) = response(&egui_ctx, at(1.0), |ui| egui_s(ui, enabled));
-                assert!(ra.rect.is_finite(), "{at_}");
-                let (a, b) = (flat(&a.shapes), flat(&b.shapes));
-                assert_eq!(ra.rect, rb.rect, "{at_}: a different size from egui's");
-                assert_eq!(a, b, "{at_}: not egui's pixels");
-            }
-        }
-        // where the scope fades, a header faded twice differs
-        let twice = |ui: &mut egui::Ui| {
-            in_scope(ui, Some(Role::Expander), false, false, |ui| {
-                egui::CollapsingHeader::new("Details")
-                    .default_open(true)
-                    .enabled(false)
-                    .show(ui, |ui| ui.label("Body"))
-                    .header_response
-            })
-        };
-        let once = |ui: &mut egui::Ui| {
-            Expander::new("Details")
-                .default_open(true)
-                .enabled(false)
-                .show(ui, |ui| ui.label("Body"))
-                .header_response
-        };
-        let (a, _) = response(&next_installed(preset), at(1.0), once);
-        let (b, _) = response(&next_installed(preset), at(1.0), twice);
-        if flat(&a.shapes) != flat(&b.shapes) {
-            faded_twice_differs.push(preset);
-        }
-    }
-    assert!(
-        !faded_twice_differs.is_empty(),
-        "no preset fades a disabled expander, or the fade check proves nothing"
-    );
-}
-
 // ---- T2: a hostile theme -----------------------------------------------------------------------
 
 fn hostile(v: f32) -> ResolvedTheme {
@@ -935,8 +829,7 @@ fn an_expander_with_no_stated_frame_outlines_nothing() {
 /// expander's header cell (round 4 review, item 17 I1): under catppuccin-mocha, which reaches
 /// egui's own `CollapsingHeader`, and kde-breeze, which the crate lays out, a `Button` in the
 /// open body keeps the base style's button outline, where the header cell's is 0 wide (M9-178);
-/// and so under kde-breeze's atlas of the 0.8.0 model, whose expander is egui's own header in
-/// the role's scope.
+/// and so under kde-breeze's atlas of the 0.8.0 model, whose expander the crate lays out too.
 #[test]
 fn a_widget_in_the_body_keeps_the_callers_style() {
     let prefs = AccessibilityPreferences::default();
@@ -3603,71 +3496,237 @@ fn looks(t: &ResolvedTheme) -> Vec<(&'static str, String)> {
     ]
 }
 
+/// A colour leaf a widget draws in: the 0.7.2 field its `of` reads, and the 0.8.0 homes its
+/// `next_of` reads in its place.
+type Read = (&'static str, &'static [&'static str]);
+
 /// The colour leaves each widget draws in, beyond the atlas's cells, which the connector's
-/// `mapping.toml` rows. `ComboBox` reads no colour of the theme's: its colours are its cell's.
-const WIDGET_READS: &[(&str, &[&str])] = &[
-    ("Spinner", &["spinner.fill_color", "defaults.text_color"]),
+/// `mapping.toml` rows, each 0.7.2 field beside the homes the widget's 0.8.0 reads take it
+/// from: of the field's homes in the table of homes (`native-theme/tests/next_homes.toml`),
+/// those the widget reads (a 0.7.2 colour of two states is read in the state the widget
+/// draws). `ComboBox` reads no colour of the theme's: its colours are its cell's.
+const WIDGET_READS: &[(&str, &[Read])] = &[
+    (
+        "Spinner",
+        &[
+            ("spinner.fill_color", &["spinner.color"]),
+            ("defaults.text_color", &["colors.window.foreground"]),
+        ],
+    ),
     (
         "Switch",
         &[
-            "switch.checked_background",
-            "switch.hover_checked_background",
-            "switch.unchecked_background",
-            "switch.hover_unchecked_background",
-            "switch.disabled_checked_background",
-            "switch.disabled_unchecked_background",
-            "switch.thumb_background",
-            "switch.unchecked_thumb_background",
-            "switch.disabled_thumb_color",
-            "switch.unchecked_track_border_color",
-            "switch.checked_track_border_color",
-            "switch.disabled_unchecked_track_border_color",
-            "switch.disabled_checked_track_border_color",
-            "switch.thumb_border_color",
-            "defaults.font.color",
-            "defaults.disabled_text_color",
-            "defaults.background_color",
+            ("switch.checked_background", &["switch.track(CHECKED).fill"]),
+            (
+                "switch.hover_checked_background",
+                &["switch.track(HOVER|CHECKED).fill"],
+            ),
+            ("switch.unchecked_background", &["switch.track(NONE).fill"]),
+            (
+                "switch.hover_unchecked_background",
+                &["switch.track(HOVER).fill"],
+            ),
+            (
+                "switch.disabled_checked_background",
+                &["switch.track(DISABLED|CHECKED).fill"],
+            ),
+            (
+                "switch.disabled_unchecked_background",
+                &["switch.track(DISABLED).fill"],
+            ),
+            ("switch.thumb_background", &["switch.thumb(CHECKED).fill"]),
+            (
+                "switch.unchecked_thumb_background",
+                &["switch.thumb(NONE).fill"],
+            ),
+            (
+                "switch.disabled_thumb_color",
+                &["switch.thumb(DISABLED).fill"],
+            ),
+            (
+                "switch.unchecked_track_border_color",
+                &["switch.track(NONE).stroke.color"],
+            ),
+            (
+                "switch.checked_track_border_color",
+                &["switch.track(CHECKED).stroke.color"],
+            ),
+            (
+                "switch.disabled_unchecked_track_border_color",
+                &["switch.track(DISABLED).stroke.color"],
+            ),
+            (
+                "switch.disabled_checked_track_border_color",
+                &["switch.track(DISABLED|CHECKED).stroke.color"],
+            ),
+            (
+                "switch.thumb_border_color",
+                &["switch.thumb(NONE).stroke.color"],
+            ),
+            ("defaults.font.color", &["typography.body.color"]),
+            ("defaults.disabled_text_color", &["colors.disabled_text"]),
+            ("defaults.background_color", &["colors.window.background"]),
         ],
     ),
     (
         "Slider",
         &[
-            "slider.track_color",
-            "slider.fill_color",
-            "slider.thumb_color",
-            "slider.thumb_hover_color",
-            "slider.disabled_track_color",
-            "slider.disabled_fill_color",
-            "slider.disabled_thumb_color",
-            "slider.thumb_border_color",
-            "slider.thumb_hover_border_color",
-            "slider.thumb_focus_border_color",
-            "defaults.background_color",
+            ("slider.track_color", &["slider.track(NONE).fill"]),
+            ("slider.fill_color", &["slider.active_track(NONE).fill"]),
+            ("slider.thumb_color", &["slider.thumb(NONE).fill"]),
+            ("slider.thumb_hover_color", &["slider.thumb(HOVER).fill"]),
+            (
+                "slider.disabled_track_color",
+                &["slider.track(DISABLED).fill"],
+            ),
+            (
+                "slider.disabled_fill_color",
+                &["slider.active_track(DISABLED).fill"],
+            ),
+            (
+                "slider.disabled_thumb_color",
+                &["slider.thumb(DISABLED).fill"],
+            ),
+            (
+                "slider.thumb_border_color",
+                &["slider.thumb(NONE).stroke.color"],
+            ),
+            (
+                "slider.thumb_hover_border_color",
+                &["slider.thumb(HOVER).stroke.color"],
+            ),
+            (
+                "slider.thumb_focus_border_color",
+                &["slider.thumb(FOCUSED).stroke.color"],
+            ),
+            ("defaults.background_color", &["colors.window.background"]),
         ],
     ),
     (
         "links",
         &[
-            "link.font.color",
-            "link.background_color",
-            "link.hover_background",
-            "link.hover_text_color",
-            "link.active_text_color",
-            "link.visited_text_color",
-            "link.disabled_text_color",
+            ("link.font.color", &["link.label(NONE).color"]),
+            ("link.background_color", &["link.container(NONE).fill"]),
+            ("link.hover_background", &["link.container(HOVER).fill"]),
+            ("link.hover_text_color", &["link.label(HOVER).color"]),
+            ("link.active_text_color", &["link.label(PRESSED).color"]),
+            ("link.visited_text_color", &["link.label(VISITED).color"]),
+            ("link.disabled_text_color", &["link.label(DISABLED).color"]),
         ],
     ),
-    ("ProgressBar", &["progress_bar.border.color"]),
-    ("RadioButton", &["defaults.background_color"]),
+    (
+        "ProgressBar",
+        &[(
+            "progress_bar.border.color",
+            &["progress_bar.track(NONE).stroke.color"],
+        )],
+    ),
+    (
+        "RadioButton",
+        &[("defaults.background_color", &["colors.window.background"])],
+    ),
     (
         "SegmentedControl",
         &[
-            "defaults.background_color",
-            "segmented_control.hover_background",
+            ("defaults.background_color", &["colors.window.background"]),
+            (
+                "segmented_control.hover_background",
+                &["segmented_control.segment(HOVER).fill"],
+            ),
         ],
     ),
-    ("Expander", &["expander.arrow_color"]),
+    (
+        "Expander",
+        &[("expander.arrow_color", &["expander.arrow(NONE).color"])],
+    ),
 ];
+
+/// The rows of the table of homes (`native-theme/tests/next_homes.toml`): each 0.7.2 key with
+/// its `homes`, read line by line, an array over one line or several.
+fn table_of_homes() -> std::io::Result<Vec<(String, Vec<String>)>> {
+    let path =
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../native-theme/tests/next_homes.toml");
+    let text = std::fs::read_to_string(path)?;
+    let mut rows = Vec::new();
+    let mut key = None;
+    let mut lines = text.lines();
+    while let Some(line) = lines.next() {
+        if let Some(k) = line.strip_prefix("key = ") {
+            key = Some(k.trim_matches('"').to_owned());
+            continue;
+        }
+        let Some(rest) = line.strip_prefix("homes = [") else {
+            continue;
+        };
+        let mut array = rest.to_owned();
+        let homes = loop {
+            if let Some(homes) = quoted_to_bracket(&array) {
+                break homes;
+            }
+            match lines.next() {
+                Some(more) => array.push_str(more),
+                None => break Vec::new(),
+            }
+        };
+        if let Some(key) = key.take() {
+            rows.push((key, homes));
+        }
+    }
+    Ok(rows)
+}
+
+/// The strings quoted in `s` before its first `]` outside a string; `None` where it has none.
+fn quoted_to_bracket(s: &str) -> Option<Vec<String>> {
+    let mut quoted = Vec::new();
+    let mut open: Option<String> = None;
+    for c in s.chars() {
+        match open.take() {
+            Some(text) if c == '"' => quoted.push(text),
+            Some(mut text) => {
+                text.push(c);
+                open = Some(text);
+            }
+            None if c == '"' => open = Some(String::new()),
+            None if c == ']' => return Some(quoted),
+            None => {}
+        }
+    }
+    None
+}
+
+/// Every 0.8.0 home `WIDGET_READS` lists beside a 0.7.2 field is one of that field's homes in
+/// the table of homes, and every field lists one at least.
+#[test]
+fn every_listed_home_is_its_fields_home_in_the_table() -> std::io::Result<()> {
+    let table = table_of_homes()?;
+    assert!(table.len() > 500, "only {} rows read", table.len());
+    let mut failures = Vec::new();
+    for (widget, reads) in WIDGET_READS {
+        for (field, homes) in *reads {
+            let Some((_, table_homes)) = table.iter().find(|(key, _)| key == field) else {
+                failures.push(format!("{widget}: {field} has no row in the table"));
+                continue;
+            };
+            if homes.is_empty() {
+                failures.push(format!("{widget}: {field} lists no home"));
+            }
+            for home in *homes {
+                if !table_homes.iter().any(|h| h == home) {
+                    failures.push(format!(
+                        "{widget}: {field}: {home} is not one of its homes {table_homes:?}"
+                    ));
+                }
+            }
+        }
+    }
+    assert!(
+        failures.is_empty(),
+        "{} listed home(s) do not hold:\n{}",
+        failures.len(),
+        failures.join("\n")
+    );
+    Ok(())
+}
 
 /// Every widget's `Look` is spliced: the crate's sources define as many `pub(crate) struct Look`
 /// as `looks` reads, and `WIDGET_READS` has a row for each widget `looks` names. It counts the
@@ -3789,9 +3848,9 @@ fn each_widget_draws_in_the_colour_leaves_it_lists() {
                         if *before == after {
                             continue;
                         }
-                        let listed = WIDGET_READS
-                            .iter()
-                            .any(|(w, leaves)| w == widget && leaves.contains(&leaf.as_str()));
+                        let listed = WIDGET_READS.iter().any(|(w, reads)| {
+                            w == widget && reads.iter().any(|(field, _)| *field == leaf)
+                        });
                         if !listed && moved.insert((widget, leaf.clone())) {
                             failures.push(format!(
                                 "{widget} draws in {leaf} (on {} {}), which WIDGET_READS does \
@@ -3807,8 +3866,8 @@ fn each_widget_draws_in_the_colour_leaves_it_lists() {
         }
     }
     assert!(bases > 20, "only {bases} preset/mode combinations read");
-    for (widget, leaves) in WIDGET_READS {
-        for leaf in *leaves {
+    for (widget, reads) in WIDGET_READS {
+        for (leaf, _) in *reads {
             if !moved.contains(&(*widget, (*leaf).to_owned())) {
                 failures.push(format!(
                     "{widget} lists {leaf}, which moves its Look in no combination"

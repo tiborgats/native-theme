@@ -63,7 +63,35 @@ const DIFFERENCES: &[Difference] = &[
         presets: &["windows-11", "macos-monterey", "macos-tahoe"],
         reason: SEGMENTED_CELL,
     },
+    Difference {
+        case: "expander closed",
+        presets: &["adwaita", "windows-11"],
+        reason: EXPANDER_CELL,
+    },
+    Difference {
+        case: "expander open",
+        presets: &["adwaita", "windows-11"],
+        reason: EXPANDER_CELL,
+    },
+    Difference {
+        case: "expander closed disabled",
+        presets: &["adwaita", "windows-11"],
+        reason: EXPANDER_CELL,
+    },
+    Difference {
+        case: "expander open disabled",
+        presets: &["adwaita", "windows-11"],
+        reason: EXPANDER_CELL,
+    },
 ];
+
+/// The expander's frame, drawn where `frame_enabled` is true (adwaita, windows-11), is
+/// outlined in its cell's stroke.
+const EXPANDER_CELL: &str = "the frame's colour alone differs: it is the connector's Expander \
+     cell's noninteractive bg_stroke, whose translucent border lies inside the part in the 0.8.0 \
+     theme and is composited over its fill (native-theme-egui, next::parity, the Expander entry \
+     of its differences); a disabled expander fades that colour; the macOS presets, which it \
+     lists too, draw no frame";
 
 /// The drop-down is egui's `ComboBox`, outlined in its cell's stroke.
 const COMBO_CELL: &str = "the button's outline colour alone differs: it is the connector's \
@@ -345,6 +373,31 @@ fn the_combo_box_draws_alike_from_both_models() -> TestResult {
     };
     let (on, off) = (combo(true), combo(false));
     assert_drawn_alike(&[("combo box", &on), ("combo box disabled", &off)])
+}
+
+#[test]
+fn the_expander_draws_alike_from_both_models() -> TestResult {
+    let expander = |open: bool, enabled: bool| {
+        move |ui: &mut egui::Ui| {
+            Expander::new("Details")
+                .default_open(open)
+                .enabled(enabled)
+                .show(ui, |ui| ui.label("Body"))
+                .header_response
+        }
+    };
+    let (closed, open, closed_disabled, open_disabled) = (
+        expander(false, true),
+        expander(true, true),
+        expander(false, false),
+        expander(true, false),
+    );
+    assert_drawn_alike(&[
+        ("expander closed", &closed),
+        ("expander open", &open),
+        ("expander closed disabled", &closed_disabled),
+        ("expander open disabled", &open_disabled),
+    ])
 }
 
 // ---- patched themes: the branches no preset reaches ---------------------------------------------
@@ -629,6 +682,198 @@ fn a_combo_box_field_stated_as_none_has_no_border() -> TestResult {
     assert!(
         bordered > 0,
         "no preset borders its field: the test proves nothing"
+    );
+    Ok(())
+}
+
+/// A context drawn light with the atlas of `preset` installed, its themes resolved for the
+/// text scale `scale`, with no font plan.
+fn scaled_installed(
+    preset: Preset,
+    scale: f32,
+) -> Result<egui::Context, Box<dyn std::error::Error>> {
+    let theme = NextTheme::preset(preset);
+    let [light, light_inactive, dark, dark_inactive] = [
+        ThemeContext::light(),
+        ThemeContext::light().with_window_active(false),
+        ThemeContext::dark(),
+        ThemeContext::dark().with_window_active(false),
+    ]
+    .map(|ctx| theme.resolve(&ctx.with_text_scale(scale)));
+    let ctx = egui::Context::default();
+    ThemeAtlas::next_builder(&light, &light_inactive, &dark, &dark_inactive)
+        .build()?
+        .install(&ctx);
+    ctx.set_theme(egui::Theme::Light);
+    Ok(ctx)
+}
+
+/// The expander's header response and parts, drawn open, in the second of two passes.
+fn drawn_expander(ctx: &egui::Context) -> (egui::FullOutput, egui::Response, Parts) {
+    let add = |ui: &mut egui::Ui| {
+        Expander::new("Details")
+            .default_open(true)
+            .show(ui, |ui| ui.label("Body"))
+            .header_response
+    };
+    let _ = response(ctx, at(1.0), add);
+    let (out, r) = response(ctx, at(1.0), add);
+    let parts = Parts::of(&r).unwrap_or_default();
+    (out, r, parts)
+}
+
+/// Above a text scale of 1 the header is the row rule's height of the 0.8.0 theme, on the
+/// painted header (kde-breeze, adwaita) and on egui's own (material-3): the stated
+/// `expander.header(NONE)` height grown to the line box of `expander.header_label(NONE)`'s size
+/// times `typography.line_height_multiplier`, rounded up, and the padding above and below it.
+/// That size holds the text scale already (it is rounded after scaling, so it is not 0.7.2's
+/// unrounded scaled size), so a header that scaled it a second time would be taller.
+#[test]
+fn the_expander_header_grows_by_its_line_box_once() -> TestResult {
+    use crate::expander::Layout;
+    use native_theme_egui::native_theme::next::WidgetState;
+    let mut faults = Vec::new();
+    let mut grown = 0;
+    for preset in [Preset::KdeBreeze, Preset::Adwaita, Preset::Material3] {
+        let at_one = drawn_expander(&scaled_installed(preset, 1.0)?)
+            .1
+            .rect
+            .height();
+        for scale in [1.5, 2.0] {
+            let r =
+                NextTheme::preset(preset).resolve(&ThemeContext::light().with_text_scale(scale));
+            let layout = Layout::next_of(&r);
+            let title = r.expander.header_label(WidgetState::NONE);
+            let line = (title.size_px * r.typography.line_height_multiplier).ceil();
+            let [_, stated] = r.expander.header(WidgetState::NONE).min_size;
+            let stated = stated.ok_or("no stated header height")?;
+            let ctx = scaled_installed(preset, scale)?;
+            let mut own = 0.0;
+            let _ = pass(&ctx, at(1.0), |ui| {
+                own = ui
+                    .native_scope(Role::Expander, RoleVariant::Normal, |ui| {
+                        ui.spacing().button_padding.y
+                    })
+                    .inner;
+            });
+            let padding = if layout.lays_out() {
+                layout.padding.top.unwrap_or(own) + layout.padding.bottom.unwrap_or(own)
+            } else {
+                own + own
+            };
+            let want = stated.max(line + padding);
+            let got = drawn_expander(&ctx).1.rect.height();
+            if layout.line != Some(line) || got != want {
+                faults.push(format!(
+                    "{preset:?} at {scale}: the header is {got}, its line box {:?}; want {want}, \
+                     {line}",
+                    layout.line
+                ));
+            }
+            if got > at_one {
+                grown += 1;
+            }
+        }
+    }
+    assert!(faults.is_empty(), "{faults:#?}");
+    assert!(
+        grown > 0,
+        "no header grows above a text scale of 1: the test proves nothing"
+    );
+    Ok(())
+}
+
+/// A stated arrow colour fills the arrow, on the painted header and on egui's own, and a
+/// stated arrow size is the painted arrow's box.
+#[test]
+fn an_expander_arrow_takes_its_stated_colour_and_size() -> TestResult {
+    use crate::expander::{Layout, Look};
+    let magenta = egui::Color32::from_rgb(255, 0, 255);
+    let patch = "[[widgets.expander.rules]]\nstates = []\narrow.color = \"#ff00ff\"\n\
+                 arrow.size = 23.0\n";
+    let mut painted = 0;
+    for &(_, preset) in crate::next::parity::PRESETS {
+        let stock = patched(preset, "")?;
+        assert_ne!(
+            Look::next_of(&stock).arrow_color,
+            Some(Rgba::new(255, 0, 255, 255)),
+            "{preset:?}: the stated colour is the preset's: the test proves nothing"
+        );
+        assert_ne!(
+            Layout::next_of(&stock).arrow_size,
+            Some(23.0),
+            "{preset:?}: the stated size is the preset's: the test proves nothing"
+        );
+        let (out, _, parts) = drawn_expander(&patched_installed(preset, patch)?);
+        let filled = flat(&out.shapes).iter().any(|s| match s {
+            egui::Shape::Path(p) => p.fill == magenta,
+            _ => false,
+        });
+        assert!(filled, "{preset:?}: no arrow filled in the stated colour");
+        if Layout::next_of(&patched(preset, patch)?).lays_out() {
+            painted += 1;
+            let arrow = parts.get("arrow").ok_or("no arrow")?;
+            assert_eq!(arrow.size(), egui::vec2(23.0, 23.0), "{preset:?}");
+        }
+    }
+    assert!(
+        painted > 0,
+        "no preset paints its header: the test proves nothing"
+    );
+    Ok(())
+}
+
+/// The stated frame, body indent and arrow gap lay the expander out, on every preset, those
+/// whose own header is egui's included; a trailing arrow lies after the title.
+#[test]
+fn an_expander_takes_its_stated_frame_indent_gap_and_side() -> TestResult {
+    use crate::expander::Layout;
+    let leading = "[widgets.expander]\narrow_side = \"leading\"\narrow_gap = 23.0\n\
+                   content_indent = 31.0\nframe_enabled = true\n";
+    let trailing = "[widgets.expander]\narrow_side = \"trailing\"\n";
+    let mut unframed = 0;
+    for &(_, preset) in crate::next::parity::PRESETS {
+        let stock = Layout::next_of(&patched(preset, "")?);
+        assert!(
+            stock.arrow_gap != Some(23.0) && stock.content_indent != Some(31.0),
+            "{preset:?}: the stated gap or indent is the preset's: the test proves nothing"
+        );
+        if stock.frame_enabled != Some(true) {
+            unframed += 1;
+        }
+        let ctx = patched_installed(preset, leading)?;
+        let mut body = None;
+        let mut add = |ui: &mut egui::Ui| {
+            let r = Expander::new("Details")
+                .default_open(true)
+                .show(ui, |ui| ui.label("Body"));
+            body = r.body_returned.map(|l| l.rect);
+            r.header_response
+        };
+        let _ = response(&ctx, at(1.0), &mut add);
+        let (_, header) = response(&ctx, at(1.0), &mut add);
+        let body = body.ok_or("no body")?;
+        let parts = Parts::of(&header).ok_or("no parts")?;
+        let (arrow, title) = (
+            parts.get("arrow").ok_or("no arrow")?,
+            parts.get("title").ok_or("no title")?,
+        );
+        assert!(parts.get("frame").is_some(), "{preset:?}: no frame");
+        assert_eq!(body.left() - header.rect.left(), 31.0, "{preset:?}");
+        assert_eq!(title.left() - arrow.right(), 23.0, "{preset:?}");
+        let (_, _, parts) = drawn_expander(&patched_installed(preset, trailing)?);
+        let (arrow, title) = (
+            parts.get("arrow").ok_or("no arrow")?,
+            parts.get("title").ok_or("no title")?,
+        );
+        assert!(
+            arrow.left() > title.right(),
+            "{preset:?}: {arrow:?} {title:?}"
+        );
+    }
+    assert!(
+        unframed > 0,
+        "every preset frames its expander: the test proves nothing"
     );
     Ok(())
 }

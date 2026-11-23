@@ -22,6 +22,7 @@ use native_theme_egui::native_theme;
 use native_theme_egui::native_theme::next::{Preset, ThemeContext};
 
 use crate::combo_box::Sides;
+use crate::expander::{Layout as ExpanderLayout, Look as ExpanderLook};
 use crate::links::Look as LinkLook;
 use crate::progress_bar::Bar;
 use crate::radio_button::{Geometry as RadioGeometry, Look as RadioLook};
@@ -295,6 +296,33 @@ fn compare_all(report: &mut Report, old: &ResolvedTheme, new: &native_theme::nex
         Sides::of(old),
         Sides::next_of(new),
         [left, right, border, column]
+    );
+    compare!(
+        report,
+        "expander::Look",
+        ExpanderLook,
+        Some(ExpanderLook::of(old)),
+        Some(ExpanderLook::next_of(new)),
+        [arrow_color]
+    );
+    compare!(
+        report,
+        "expander::Layout",
+        ExpanderLayout,
+        Some(ExpanderLayout::of(
+            old,
+            &native_theme_egui::AccessibilityPreferences::default()
+        )),
+        Some(ExpanderLayout::next_of(new)),
+        [
+            trailing,
+            arrow_gap,
+            content_indent,
+            frame_enabled,
+            padding,
+            arrow_size,
+            line,
+        ]
     );
 }
 

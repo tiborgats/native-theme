@@ -12,8 +12,8 @@ pub(crate) mod parity;
 
 use native_theme_egui::native_theme::color::Rgba;
 use native_theme_egui::native_theme::next::{
-    Color, CornerCurve, CornerRadius, Paint, PartStated, PartStyle, ResolvedTheme, Stroke,
-    TextStated, TextStyle,
+    Color, CornerCurve, CornerRadius, IconStated, IconStyle, Paint, PartStated, PartStyle,
+    ResolvedTheme, Stroke, TextStated, TextStyle,
 };
 
 /// A colour of the 0.8.0 model as the 0.7.2 model's: its 8-bit sRGB channels with straight
@@ -95,6 +95,11 @@ pub(crate) fn radius(part: &PartStyle, width: Option<f32>, height: Option<f32>) 
 /// A text style's colour, where stated.
 pub(crate) fn text(t: &TextStyle) -> Option<Rgba> {
     t.stated.contains(TextStated::COLOR).then(|| rgba(t.color))
+}
+
+/// An icon's colour, where stated.
+pub(crate) fn icon(i: &IconStyle) -> Option<Rgba> {
+    i.stated.contains(IconStated::COLOR).then(|| rgba(i.color))
 }
 
 /// [`text`] where a rule states it for the queried state.
