@@ -1568,7 +1568,7 @@ fn the_checkbox_label_takes_the_stated_family_and_style() {
         (FontStyle::Oblique, gpui::FontStyle::Oblique),
     ] {
         r.checkbox.font.style = style;
-        let mut label = font_text(&r.checkbox.font, crate::Native::unscaled(&r));
+        let mut label = LabelFont::old(&r.checkbox.font, crate::Native::unscaled(&r)).text();
         let text = label.text_style();
         assert_eq!(
             text.font_family,
@@ -1600,7 +1600,7 @@ fn the_tab_label_takes_the_stated_family_and_style() {
         (FontStyle::Oblique, gpui::FontStyle::Oblique),
     ] {
         r.tab.font.style = style;
-        let mut label = font_text(&r.tab.font, crate::Native::unscaled(&r));
+        let mut label = LabelFont::old(&r.tab.font, crate::Native::unscaled(&r)).text();
         let text = label.text_style();
         assert_eq!(
             text.font_family,
@@ -5832,4 +5832,143 @@ fn a_checked_toolbar_button_takes_the_checked_pen(cx: &mut TestAppContext) {
             "kde-breeze {mode:?}: the checked button's edges {edges:?} are not the checked pen, 1 px wide"
         );
     }
+}
+
+// ---------------------------------------------------------------------------
+// A 0.8.0 theme installed through `next::apply`
+// ---------------------------------------------------------------------------
+
+/// A window drawing `build` under `preset`'s 0.8.0 theme for `ctx`, installed
+/// through `next::apply`.
+fn window_with_next<'a>(
+    cx: &'a mut TestAppContext,
+    preset: native_theme::next::Preset,
+    ctx: &native_theme::next::ThemeContext,
+    build: Build,
+) -> &'a mut VisualTestContext {
+    let r = native_theme::next::Theme::preset(preset).resolve(ctx);
+    let applied = cx.update(|cx| {
+        gpui_component::init(cx);
+        crate::next::apply(&r, cx)
+    });
+    assert_eq!(applied, Ok(()), "{preset:?}: the preset maps");
+    let (_, cx) = cx.add_window_view(|_, _| Harness { build });
+    cx.update(|window, cx| window.draw(cx).clear(cx));
+    cx
+}
+
+/// Under a 0.8.0 theme installed through `next::apply`, which leaves no 0.7.2
+/// theme for `cx.native()`, every theme-drawn control is drawn from the theme,
+/// not as gpui-component's own: each lays out the part only its theme-drawn
+/// form has, on the presets the connector parity covers, light and dark.
+#[gpui::test]
+fn every_control_takes_its_look_from_a_next_theme(cx: &mut TestAppContext) {
+    use native_theme::next::{Preset, ThemeContext};
+    let state = cx.new(|_| SliderState::new().default_value(30.));
+    for preset in [Preset::KdeBreeze, Preset::Adwaita, Preset::Windows11] {
+        for ctx in [ThemeContext::light(), ThemeContext::dark()] {
+            let s = state.clone();
+            let controls: [(&str, &str, Build); 9] = [
+                (
+                    "separator",
+                    "native-separator",
+                    Box::new(|_, _| Separator::horizontal().into_any_element()),
+                ),
+                (
+                    "progress bar",
+                    "native-progress",
+                    Box::new(|_, _| ProgressBar::new("p").value(40.).into_any_element()),
+                ),
+                (
+                    "spinner",
+                    "native-spinner",
+                    Box::new(|_, _| Spinner::new("s").into_any_element()),
+                ),
+                (
+                    "slider",
+                    "native-slider",
+                    Box::new(move |_, _| Slider::new(&s).w(px(140.)).into_any_element()),
+                ),
+                (
+                    "switch",
+                    "native-switch-row",
+                    Box::new(|_, _| Switch::new("w").label("W").into_any_element()),
+                ),
+                (
+                    "checkbox",
+                    "native-checkbox-row",
+                    Box::new(|_, _| {
+                        Checkbox::new("c")
+                            .label("C")
+                            .checked(true)
+                            .into_any_element()
+                    }),
+                ),
+                (
+                    "radio",
+                    "native-checkbox-row",
+                    Box::new(|_, _| Radio::new("r").label("R").checked(true).into_any_element()),
+                ),
+                (
+                    "radio group",
+                    "native-checkbox-row",
+                    Box::new(|_, _| {
+                        RadioGroup::new("g")
+                            .children([Radio::new("a").label("A"), Radio::new("b").label("B")])
+                            .into_any_element()
+                    }),
+                ),
+                (
+                    "tab bar",
+                    "native-tab-bar",
+                    Box::new(|_, _| {
+                        TabBar::new("t")
+                            .children([Tab::new("A"), Tab::new("B")])
+                            .selected_index(0)
+                            .into_any_element()
+                    }),
+                ),
+            ];
+            for (name, selector, build) in controls {
+                let cx = window_with_next(cx, preset, &ctx, build);
+                let (old, next) = cx.update(|_, cx| {
+                    (
+                        cx.native().is_some(),
+                        cx.native_theme()
+                            .and_then(|nt| nt.next_resolved(cx))
+                            .is_some(),
+                    )
+                });
+                assert!(
+                    !old && next,
+                    "{preset:?} {:?} {name}: a 0.7.2 theme {old}, a 0.8.0 one {next}",
+                    ctx.scheme
+                );
+                assert!(
+                    cx.debug_bounds(selector).is_some(),
+                    "{preset:?} {:?} {name}: drawn as gpui-component's own",
+                    ctx.scheme
+                );
+            }
+        }
+    }
+}
+
+/// A focused theme-drawn control draws the 0.8.0 theme's focus ring: adwaita
+/// shows its ring for any focus.
+#[gpui::test]
+fn a_focused_control_draws_a_next_themes_ring(cx: &mut TestAppContext) {
+    let cx = window_with_next(
+        cx,
+        native_theme::next::Preset::Adwaita,
+        &native_theme::next::ThemeContext::light(),
+        Box::new(|_, _| Checkbox::new("c").label("C").into_any_element()),
+    );
+    assert!(cx.debug_bounds(FOCUS_RING_SELECTOR).is_none());
+    focus_next(cx);
+    redraw(cx);
+    assert!(
+        cx.debug_bounds(FOCUS_RING_SELECTOR).is_some(),
+        "no ring once focused"
+    );
 }

@@ -23,12 +23,12 @@
 //! separator joins them because gpui-component's draws its line a literal
 //! `px(1.)` thick (`separator.rs:78-82`).
 //!
-//! Each widget reads the variant [`apply`](crate::apply) installed for the
-//! current mode at render, through
-//! [`ActiveNativeTheme::native`](crate::ActiveNativeTheme::native). With none
-//! installed, or with a length that is not finite, it renders
-//! gpui-component's own control instead, so nothing here ever paints a value
-//! no source gives.
+//! Each widget reads the variant [`apply`](crate::apply) or
+//! [`next::apply`](crate::next::apply) installed for the current mode at
+//! render, of either model (`ThemeSource`). With none installed, a length
+//! that is not finite, or a value the look needs that a 0.8.0 theme leaves
+//! unstated, it renders gpui-component's own control instead, so nothing here
+//! ever paints a value no source gives.
 //!
 //! Rules, from `docs/archive/todo_gpui-widgets-spec.md`:
 //!
@@ -100,7 +100,7 @@ use std::rc::Rc;
 use gpui::{
     A11ySubtreeBuilder, App, Bounds, Element, ElementId, FontWeight, GlobalElementId, Hsla,
     InspectorElementId, InteractiveElement, Interactivity, IntoElement, LayoutId, Pixels,
-    Styled as _, Window, accesskit, canvas, div, px, relative,
+    SharedString, Styled as _, Window, accesskit, canvas, div, px, relative,
 };
 use native_theme::color::Rgba;
 use native_theme::theme::ResolvedFontSpec;
@@ -352,6 +352,20 @@ impl FocusRing {
         })
     }
 
+    /// The ring a 0.8.0 theme states, as [`FocusRing::of`] reads it from the
+    /// homes of its fields: `colors.focus_ring`, `focus_ring.stroke.width`
+    /// (none where the ring has no stroke, and no ring where its stroke is per
+    /// side) and `focus_ring.offset`.
+    fn next_of(r: &native_theme::next::ResolvedTheme) -> Option<Self> {
+        let width = crate::next::focus_ring_width(r).ok()?;
+        let offset = r.focus_ring.offset;
+        (width.is_finite() && offset.is_finite() && width > 0.0).then(|| Self {
+            color: crate::next::hsla(r.colors.focus_ring),
+            width,
+            offset,
+        })
+    }
+
     /// `element` with the ring round it, or with its border in the ring's
     /// colour where the ring lies inset at its edge.
     fn draw<E: gpui::Styled + gpui::ParentElement>(self, mut element: E, window: &Window) -> E {
@@ -485,6 +499,16 @@ fn disabled_opacity(disabled: bool, opacity: f32) -> f32 {
     }
 }
 
+/// [`disabled_opacity`] of a 0.8.0 widget's `disabled_opacity`, which is
+/// `None` where no source states a whole-widget fade: the control is then not
+/// faded, 1, as where the platform dims by its disabled colours alone.
+fn next_disabled_opacity(disabled: bool, opacity: Option<f32>) -> f32 {
+    match opacity {
+        Some(opacity) => disabled_opacity(disabled, opacity),
+        None => 1.,
+    }
+}
+
 /// A stated length in pixels, or `None` when it is not a finite,
 /// non-negative number: the widget then falls back to gpui-component's own
 /// control (spec §1.1).
@@ -492,21 +516,201 @@ fn length(v: f32) -> Option<Pixels> {
     (v.is_finite() && v >= 0.0).then(|| px(v))
 }
 
-/// The text of a widget's label in `font`: its family, size, weight and
-/// style (gpui's of the same name), one line tall -- its size by
-/// `defaults.line_height`, the line box the model states.
-fn font_text(font: &ResolvedFontSpec, n: Native<'_>) -> gpui::Div {
-    let mut text = div()
-        .font_family(crate::font_family(&font.family))
-        .text_size(text_size(font.size, n))
-        .font_weight(FontWeight(f32::from(font.weight)))
-        .line_height(relative(n.resolved.defaults.line_height));
-    text.text_style().font_style = Some(crate::font_style(font.style));
-    text
+/// A look a 0.8.0 constructor builds, or `Unmapped(home)` where a length the
+/// theme gives at `home` is not a finite, non-negative number: the
+/// counterpart of the 0.7.2 constructor's `None`.
+fn finite<T>(look: Option<T>, home: &'static str) -> Mapped<T> {
+    look.ok_or(Unmapped(home))
+}
+
+/// A colour of the 0.8.0 model as the 0.7.2 model's, its channels rounded to
+/// eight bits ([`Color::to_srgb8`](native_theme::next::Color::to_srgb8)).
+fn rgba(c: native_theme::next::Color) -> Rgba {
+    let [r, g, b, a] = c.to_srgb8();
+    Rgba::new(r, g, b, a)
+}
+
+/// The font a widget letters its label in: its family, size, weight and
+/// style (gpui's of the same name), and the line box the model states.
+#[derive(Clone, Debug, PartialEq)]
+struct LabelFont {
+    family: SharedString,
+    size: Pixels,
+    weight: FontWeight,
+    style: gpui::FontStyle,
+    /// The line height, a multiple of the size.
+    line_height: f32,
+}
+
+impl LabelFont {
+    /// `font` of a 0.7.2 theme, its size scaled by `n`'s text-scaling factor,
+    /// one line `defaults.line_height` tall.
+    fn old(font: &ResolvedFontSpec, n: Native<'_>) -> Self {
+        Self {
+            family: crate::font_family(&font.family),
+            size: text_size(font.size, n),
+            weight: FontWeight(f32::from(font.weight)),
+            style: crate::font_style(font.style),
+            line_height: n.resolved.defaults.line_height,
+        }
+    }
+
+    /// `text` of a 0.8.0 theme, whose size its text scale has already scaled,
+    /// one line `line_height` (`typography.line_height_multiplier`) tall; or
+    /// `Unmapped(home)` where it leaves its family, size, weight or slant
+    /// unstated.
+    fn next(text: &TextStyle, line_height: f32, home: &'static str) -> Mapped<Self> {
+        let font = crate::next::uncoloured_font(text, home)?;
+        Ok(Self {
+            family: crate::font_family(font.family),
+            size: px(font.size),
+            weight: FontWeight(f32::from(font.weight)),
+            style: font.style,
+            line_height,
+        })
+    }
+
+    /// The text of a label in this font, one line tall.
+    fn text(&self) -> gpui::Div {
+        let mut text = div()
+            .font_family(self.family.clone())
+            .text_size(self.size)
+            .font_weight(self.weight)
+            .line_height(relative(self.line_height));
+        text.text_style().font_style = Some(self.style);
+        text
+    }
 }
 
 /// A font size the text-scaling factor scales, as the `geometry` builders
 /// scale theirs.
 fn text_size(size: f32, n: Native<'_>) -> Pixels {
     px(crate::scaled_text_size(size, n.accessibility))
+}
+
+// ---------------------------------------------------------------------------
+// The installed theme, of either model
+// ---------------------------------------------------------------------------
+
+use native_theme::next::{FocusTrigger, TextStated, TextStyle};
+
+use crate::ActiveNativeTheme as _;
+use crate::next::{Mapped, Unmapped};
+
+#[cfg(test)]
+mod parity;
+
+/// The theme a theme-drawn control takes its look from: the variant installed
+/// for the current mode, a 0.7.2 one [`apply`](crate::apply) installed, read
+/// through [`ActiveNativeTheme::native`](crate::ActiveNativeTheme::native), or a
+/// 0.8.0 one [`next::apply`](crate::next::apply) installed, read through
+/// [`NativeTheme::next_resolved`](crate::NativeTheme::next_resolved). Every
+/// control reads its look, its focus ring and the ground it is faded over
+/// through it, so each is drawn from the theme of either model.
+#[derive(Clone, Copy, Debug)]
+enum ThemeSource<'a> {
+    /// A 0.7.2 theme, with the preferences that scale its text sizes.
+    Old(Native<'a>),
+    /// A 0.8.0 theme, whose text sizes its text scale has already scaled.
+    Next(&'a native_theme::next::ResolvedTheme),
+}
+
+impl<'a> ThemeSource<'a> {
+    /// The theme installed for the current mode, or `None` where none is.
+    fn of(cx: &'a App) -> Option<Self> {
+        let installed = cx.native_theme()?;
+        match installed.native(cx) {
+            Some(n) => Some(Self::Old(n)),
+            None => installed.next_resolved(cx).map(Self::Next),
+        }
+    }
+
+    /// The look `old` gives a 0.7.2 theme, or `next` a 0.8.0 one: `None`
+    /// where the constructor gives none, and the control is then drawn as
+    /// gpui-component's own.
+    fn look<T>(
+        self,
+        old: impl FnOnce(&native_theme::theme::ResolvedTheme) -> Option<T>,
+        next: impl FnOnce(&native_theme::next::ResolvedTheme) -> Mapped<T>,
+    ) -> Option<T> {
+        match self {
+            Self::Old(n) => old(n.resolved),
+            Self::Next(r) => next(r).ok(),
+        }
+    }
+
+    /// The window's background, the ground a control is faded over where its
+    /// caller gives none: `defaults.background_color`
+    /// (`colors.window.background`); `None` where the 0.8.0 theme states none.
+    fn background(self) -> Option<Hsla> {
+        match self {
+            Self::Old(n) => Some(color(n.resolved.defaults.background_color)),
+            Self::Next(r) => r.colors.window.background.map(crate::next::hsla),
+        }
+    }
+
+    /// The theme's focus ring ([`FocusRing::of`], [`FocusRing::next_of`]).
+    fn focus_ring(self) -> Option<FocusRing> {
+        match self {
+            Self::Old(n) => FocusRing::of(n.resolved),
+            Self::Next(r) => FocusRing::next_of(r),
+        }
+    }
+
+    /// Whether the platform shows its focus ring for keyboard focus only:
+    /// `defaults.focus_ring_keyboard_only == Some(true)`
+    /// (`focus_ring.trigger == Some(FocusTrigger::KeyboardOnly)`).
+    fn keyboard_only(self) -> bool {
+        match self {
+            Self::Old(n) => n.resolved.defaults.focus_ring_keyboard_only == Some(true),
+            Self::Next(r) => r.focus_ring.trigger == Some(FocusTrigger::KeyboardOnly),
+        }
+    }
+
+    /// A label's font: the 0.7.2 font spec `old` picks, or the 0.8.0 text
+    /// style `next` gives, at its home `home` ([`LabelFont`]).
+    fn label_font(
+        self,
+        old: impl FnOnce(&native_theme::theme::ResolvedTheme) -> &ResolvedFontSpec,
+        next: impl FnOnce(&native_theme::next::ResolvedTheme) -> TextStyle,
+        home: &'static str,
+    ) -> Option<LabelFont> {
+        match self {
+            Self::Old(n) => Some(LabelFont::old(old(n.resolved), n)),
+            Self::Next(r) => {
+                LabelFont::next(&next(r), r.typography.line_height_multiplier, home).ok()
+            }
+        }
+    }
+
+    /// The body text's size, line height and weight, for a label `SwitchTheme`
+    /// gives no font of its own: `defaults.font.size`, scaled by the
+    /// text-scaling factor, `defaults.line_height` and `defaults.font.weight`
+    /// (`typography.body.size_px`, `typography.line_height_multiplier`,
+    /// `typography.body.weight`); `None` where the 0.8.0 theme states no body
+    /// size or weight.
+    fn body_text(self) -> Option<(Pixels, f32, FontWeight)> {
+        match self {
+            Self::Old(n) => {
+                let d = &n.resolved.defaults;
+                Some((
+                    text_size(d.font.size, n),
+                    d.line_height,
+                    FontWeight(f32::from(d.font.weight)),
+                ))
+            }
+            Self::Next(r) => {
+                let body = &r.typography.body;
+                if !body.stated.contains(TextStated::SIZE_PX) {
+                    return None;
+                }
+                let weight = crate::next::font_weight(r).ok()?;
+                Some((
+                    px(body.size_px),
+                    r.typography.line_height_multiplier,
+                    FontWeight(f32::from(weight)),
+                ))
+            }
+        }
+    }
 }

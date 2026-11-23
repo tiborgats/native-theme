@@ -90,17 +90,17 @@ pub type Mapped<T> = Result<T, Unmapped>;
 
 /// A colour of the model as gpui's: the connector's conversion
 /// ([`channels_to_hsla`]).
-fn hsla(c: Color) -> Hsla {
+pub(crate) fn hsla(c: Color) -> Hsla {
     channels_to_hsla([c.r, c.g, c.b, c.a])
 }
 
 /// `v`, or `Unmapped(home)` where it is `None`.
-fn stated<T>(v: Option<T>, home: &'static str) -> Mapped<T> {
+pub(crate) fn stated<T>(v: Option<T>, home: &'static str) -> Mapped<T> {
     v.ok_or(Unmapped(home))
 }
 
 /// A part's fill, where stated as one colour.
-fn fill(part: &PartStyle, home: &'static str) -> Mapped<Hsla> {
+pub(crate) fn fill(part: &PartStyle, home: &'static str) -> Mapped<Hsla> {
     match &part.fill {
         Paint::Solid(c) if part.stated.contains(PartStated::FILL) => Ok(hsla(*c)),
         _ => Err(Unmapped(home)),
@@ -121,7 +121,7 @@ fn fill(part: &PartStyle, home: &'static str) -> Mapped<Hsla> {
 /// part as one style refinement, which gpui paints as one quad, so gpui's
 /// extent stays and the connector's README records the limit (spec §10,
 /// rule 4).
-fn stroke_color(part: &PartStyle, home: &'static str) -> Mapped<Hsla> {
+pub(crate) fn stroke_color(part: &PartStyle, home: &'static str) -> Mapped<Hsla> {
     match &part.stroke {
         Stroke::Uniform { color, .. } if part.stated.contains(PartStated::STROKE) => {
             Ok(hsla(*color))
@@ -133,7 +133,7 @@ fn stroke_color(part: &PartStyle, home: &'static str) -> Mapped<Hsla> {
 /// A part's stroke width, where stated as one stroke, in any alignment (the
 /// band lies inside the part's box in each, spec §2), or as none, which is
 /// no width.
-fn stroke_width(part: &PartStyle, home: &'static str) -> Mapped<f32> {
+pub(crate) fn stroke_width(part: &PartStyle, home: &'static str) -> Mapped<f32> {
     if !part.stated.contains(PartStated::STROKE) {
         return Err(Unmapped(home));
     }
@@ -146,7 +146,7 @@ fn stroke_width(part: &PartStyle, home: &'static str) -> Mapped<f32> {
 
 /// A part's corner radius, where stated as one circular radius, or as square
 /// corners, which are no radius.
-fn radius(part: &PartStyle, home: &'static str) -> Mapped<f32> {
+pub(crate) fn radius(part: &PartStyle, home: &'static str) -> Mapped<f32> {
     if !part.stated.contains(PartStated::CORNERS) {
         return Err(Unmapped(home));
     }
@@ -159,7 +159,7 @@ fn radius(part: &PartStyle, home: &'static str) -> Mapped<f32> {
 
 /// A part's padding, top, right, bottom, left, each side where stated, as
 /// 0.7.2's per-side padding.
-fn padding(part: &PartStyle) -> [Option<f32>; 4] {
+pub(crate) fn padding(part: &PartStyle) -> [Option<f32>; 4] {
     let side = |bit: PartStated, v: f32| part.stated.contains(bit).then_some(v);
     let p = &part.padding;
     [
@@ -171,7 +171,7 @@ fn padding(part: &PartStyle) -> [Option<f32>; 4] {
 }
 
 /// A text style's colour, where stated.
-fn text_color(text: &TextStyle, home: &'static str) -> Mapped<Hsla> {
+pub(crate) fn text_color(text: &TextStyle, home: &'static str) -> Mapped<Hsla> {
     if text.stated.contains(TextStated::COLOR) {
         Ok(hsla(text.color))
     } else {
@@ -182,7 +182,7 @@ fn text_color(text: &TextStyle, home: &'static str) -> Mapped<Hsla> {
 /// A part's fill where a rule states it for the queried state (its
 /// `from_state` bit), as [`fill`] reads it; `None` where none does, a soft
 /// option's unset value.
-fn state_fill(part: &PartStyle, home: &'static str) -> Mapped<Option<Hsla>> {
+pub(crate) fn state_fill(part: &PartStyle, home: &'static str) -> Mapped<Option<Hsla>> {
     if part.from_state.contains(PartStated::FILL) {
         fill(part, home).map(Some)
     } else {
@@ -192,7 +192,7 @@ fn state_fill(part: &PartStyle, home: &'static str) -> Mapped<Option<Hsla>> {
 
 /// A part's stroke colour where a rule states it for the queried state, as
 /// [`stroke_color`] reads it; `None` where none does.
-fn state_stroke_color(part: &PartStyle, home: &'static str) -> Mapped<Option<Hsla>> {
+pub(crate) fn state_stroke_color(part: &PartStyle, home: &'static str) -> Mapped<Option<Hsla>> {
     if part.from_state.contains(PartStated::STROKE) {
         stroke_color(part, home).map(Some)
     } else {
@@ -240,7 +240,7 @@ fn font<'a>(text: &'a TextStyle, home: &'static str) -> Mapped<Font<'a>> {
 /// and slant are stated: for the builders that hand it to
 /// `geometry::text`, which sets no colour and does not read the font's. The
 /// colour carried is the style's, stated or not.
-fn uncoloured_font<'a>(text: &'a TextStyle, home: &'static str) -> Mapped<Font<'a>> {
+pub(crate) fn uncoloured_font<'a>(text: &'a TextStyle, home: &'static str) -> Mapped<Font<'a>> {
     font_of(text, home, TextStated::default())
 }
 

@@ -16,8 +16,8 @@ use gpui_component::{
 };
 use native_theme::theme::ResolvedTheme;
 
-use super::{FocusRing, Part, PartBounds, color, faded, font_text, length, over, part_bounds};
-use crate::ActiveNativeTheme;
+use super::{Part, PartBounds, ThemeSource, color, faded, finite, length, over, part_bounds};
+use crate::next::Mapped;
 
 /// The group name the indicator's hover style listens to: the whole row
 /// (indicator and label) is the control the pointer hovers, as on the
@@ -183,6 +183,275 @@ impl CheckboxLook {
         })
     }
 
+    /// The look of a check box of a 0.8.0 theme, `checked` or not, `disabled`
+    /// or not, as [`CheckboxLook::of`] reads its 0.7.2 fields, each at its home
+    /// in `checkbox` ([`CheckboxLook::next_radio`] says where).
+    ///
+    /// # Errors
+    ///
+    /// [`Unmapped`](crate::next::Unmapped) where the theme leaves one of them
+    /// unstated, states it in a form gpui cannot draw, or gives a length that
+    /// is not finite.
+    pub fn next_of(
+        r: &native_theme::next::ResolvedTheme,
+        checked: bool,
+        disabled: bool,
+    ) -> Mapped<Self> {
+        Self::next_sized(r, false, checked, disabled)
+    }
+
+    /// A radio's look of a 0.8.0 theme, as [`CheckboxLook::radio`] reads its
+    /// 0.7.2 fields: the indicator's minimum width, an exact width being
+    /// stated as its minimum and maximum, its fill at rest, checked, hovered
+    /// where a rule states it for `HOVER`, and disabled where one states it
+    /// for `DISABLED` (at the control's checked state), its stroke at rest
+    /// (width, and the unchecked control's colour), checked, and hovered where
+    /// a rule states it, and its padding, of `radio.indicator`; the dot's
+    /// colour, `radio.dot(CHECKED).fill`; the label's colour at rest and
+    /// disabled, `radio.label`; and `radio.label_gap` and
+    /// `radio.disabled_opacity`. The fields 0.7.2 keeps for both controls in
+    /// one place, the corner radius, the check mark's stroke and the dot's
+    /// diameter, are read at their one home: `checkbox.indicator(NONE)
+    /// .corners`, `checkbox.checkmark(NONE).stroke_width` and the minimum
+    /// width of `radio.dot(NONE)`. A check box reads the same of `checkbox`,
+    /// its mark's colour at `checkbox.checkmark(CHECKED).color`.
+    ///
+    /// # Errors
+    ///
+    /// As [`CheckboxLook::next_of`]'s.
+    pub fn next_radio(
+        r: &native_theme::next::ResolvedTheme,
+        checked: bool,
+        disabled: bool,
+    ) -> Mapped<Self> {
+        Self::next_sized(r, true, checked, disabled)
+    }
+
+    fn next_sized(
+        r: &native_theme::next::ResolvedTheme,
+        radio: bool,
+        checked: bool,
+        disabled: bool,
+    ) -> Mapped<Self> {
+        use crate::next::{
+            fill as part_fill, hsla, padding, radius, state_fill, stated, stroke_color,
+            stroke_width, text_color,
+        };
+        use native_theme::next::{IconStated, PartStated, WidgetState};
+        let at = |checkbox: &'static str, radio_home: &'static str| {
+            if radio { radio_home } else { checkbox }
+        };
+        let indicator = |state: WidgetState| {
+            if radio {
+                r.radio.indicator(state)
+            } else {
+                r.checkbox.indicator(state)
+            }
+        };
+        let label = |state: WidgetState| {
+            if radio {
+                r.radio.label(state)
+            } else {
+                r.checkbox.label(state)
+            }
+        };
+        let rest = indicator(WidgetState::NONE);
+        let on = indicator(WidgetState::CHECKED);
+        let shown = if checked {
+            WidgetState::CHECKED
+        } else {
+            WidgetState::NONE
+        };
+        let disabled_fill = if indicator(WidgetState::DISABLED)
+            .from_state
+            .contains(PartStated::FILL)
+        {
+            Some(part_fill(
+                &indicator(WidgetState::DISABLED | shown),
+                match (radio, checked) {
+                    (false, false) => "checkbox.indicator(DISABLED).fill",
+                    (false, true) => "checkbox.indicator(DISABLED|CHECKED).fill",
+                    (true, false) => "radio.indicator(DISABLED).fill",
+                    (true, true) => "radio.indicator(DISABLED|CHECKED).fill",
+                },
+            )?)
+        } else {
+            None
+        };
+        let hover_border = if indicator(WidgetState::HOVER)
+            .from_state
+            .contains(PartStated::STROKE)
+        {
+            Some(stroke_color(
+                &indicator(WidgetState::HOVER | shown),
+                match (radio, checked) {
+                    (false, false) => "checkbox.indicator(HOVER).stroke.color",
+                    (false, true) => "checkbox.indicator(HOVER|CHECKED).stroke.color",
+                    (true, false) => "radio.indicator(HOVER).stroke.color",
+                    (true, true) => "radio.indicator(HOVER|CHECKED).stroke.color",
+                },
+            )?)
+        } else {
+            None
+        };
+        let mark = if radio {
+            part_fill(
+                &r.radio.dot(WidgetState::CHECKED),
+                "radio.dot(CHECKED).fill",
+            )?
+        } else {
+            let check = r.checkbox.checkmark(WidgetState::CHECKED);
+            if !check.stated.contains(IconStated::COLOR) {
+                return Err(crate::next::Unmapped("checkbox.checkmark(CHECKED).color"));
+            }
+            hsla(check.color)
+        };
+        let check = r.checkbox.checkmark(WidgetState::NONE);
+        finite(
+            Self::from_reads(
+                &CheckboxReads {
+                    indicator_width: stated(
+                        rest.min_size[0],
+                        at(
+                            "checkbox.indicator(NONE).min_size[0]",
+                            "radio.indicator(NONE).min_size[0]",
+                        ),
+                    )?,
+                    unchecked: part_fill(
+                        &rest,
+                        at(
+                            "checkbox.indicator(NONE).fill",
+                            "radio.indicator(NONE).fill",
+                        ),
+                    )?,
+                    checked: part_fill(
+                        &on,
+                        at(
+                            "checkbox.indicator(CHECKED).fill",
+                            "radio.indicator(CHECKED).fill",
+                        ),
+                    )?,
+                    disabled_fill,
+                    hover: state_fill(
+                        &indicator(WidgetState::HOVER),
+                        at(
+                            "checkbox.indicator(HOVER).fill",
+                            "radio.indicator(HOVER).fill",
+                        ),
+                    )?,
+                    border: stroke_color(
+                        &on,
+                        at(
+                            "checkbox.indicator(CHECKED).stroke.color",
+                            "radio.indicator(CHECKED).stroke.color",
+                        ),
+                    )?,
+                    unchecked_border: stroke_color(
+                        &rest,
+                        at(
+                            "checkbox.indicator(NONE).stroke.color",
+                            "radio.indicator(NONE).stroke.color",
+                        ),
+                    )?,
+                    hover_border,
+                    mark,
+                    label: text_color(
+                        &label(WidgetState::NONE),
+                        at("checkbox.label(NONE).color", "radio.label(NONE).color"),
+                    )?,
+                    disabled_text: text_color(
+                        &label(WidgetState::DISABLED),
+                        at(
+                            "checkbox.label(DISABLED).color",
+                            "radio.label(DISABLED).color",
+                        ),
+                    )?,
+                    disabled_opacity: if radio {
+                        r.radio.disabled_opacity
+                    } else {
+                        r.checkbox.disabled_opacity
+                    },
+                    border_width: stroke_width(
+                        &rest,
+                        at(
+                            "checkbox.indicator(NONE).stroke.width",
+                            "radio.indicator(NONE).stroke.width",
+                        ),
+                    )?,
+                    padding: padding(&rest),
+                    dot: r.radio.dot(WidgetState::NONE).min_size[0],
+                    radius: radius(
+                        &r.checkbox.indicator(WidgetState::NONE),
+                        "checkbox.indicator(NONE).corners",
+                    )?,
+                    mark_stroke: check
+                        .stroke_width
+                        .filter(|_| check.stated.contains(IconStated::STROKE_WIDTH)),
+                    label_gap: if radio {
+                        r.radio.label_gap
+                    } else {
+                        r.checkbox.label_gap
+                    },
+                },
+                checked,
+                disabled,
+            ),
+            at("checkbox.indicator(NONE)", "radio.indicator(NONE)"),
+        )
+    }
+
+    fn from_reads(c: &CheckboxReads, checked: bool, disabled: bool) -> Option<Self> {
+        let enabled_fill = if checked { c.checked } else { c.unchecked };
+        let fill = match (disabled, c.disabled_fill) {
+            (true, Some(fill)) => fill,
+            _ => enabled_fill,
+        };
+        let hover_fill = (!checked && !disabled).then(|| {
+            c.hover
+                .map_or(c.unchecked, |hover| over(c.unchecked, hover))
+        });
+        let border = if checked {
+            c.border
+        } else {
+            c.unchecked_border
+        };
+        let (mark, label) = match (disabled, c.disabled_fill) {
+            (true, Some(_)) => (c.disabled_text, c.disabled_text),
+            (true, None) => (c.mark, c.disabled_text),
+            (false, _) => (c.mark, c.label),
+        };
+        let opacity = super::next_disabled_opacity(disabled, c.disabled_opacity);
+        let hover_border = c.hover_border.filter(|_| !disabled);
+        let indicator = length(c.indicator_width)?;
+        let border_width = length(c.border_width)?;
+        let [top, right, bottom, left] = c.padding;
+        let inset = |side: Option<f32>| {
+            side.filter(|v| v.is_finite() && *v >= 0.0)
+                .unwrap_or(c.border_width)
+        };
+        let across = c.indicator_width - inset(left) - inset(right);
+        let down = c.indicator_width - inset(top) - inset(bottom);
+        let mark_size = length(across.min(down).max(0.0))?;
+        let mark_padded = c.padding.iter().any(Option::is_some);
+        Some(Self {
+            indicator,
+            dot: c.dot.and_then(length),
+            radius: length(c.radius)?,
+            border_width,
+            fill,
+            hover_fill,
+            hover_border,
+            border,
+            mark,
+            mark_stroke: c.mark_stroke.and_then(length),
+            mark_size,
+            mark_padded,
+            label,
+            label_gap: length(c.label_gap)?,
+            opacity,
+        })
+    }
+
     /// This look faded as one control over `ground`, the colour it is drawn
     /// on: where [`opacity`](Self::opacity) is below 1, each colour composited
     /// over what lies under it -- the fill over `ground`, the border and the
@@ -207,6 +476,31 @@ impl CheckboxLook {
             ..self
         }
     }
+}
+
+/// The values a 0.8.0 constructor of [`CheckboxLook`] builds the look from: the
+/// indicator's fills (the disabled one at the control's checked state, where
+/// stated), its strokes, the mark's and the label's colours, and the sizes;
+/// the padding top, right, bottom, left.
+struct CheckboxReads {
+    indicator_width: f32,
+    unchecked: Hsla,
+    checked: Hsla,
+    disabled_fill: Option<Hsla>,
+    hover: Option<Hsla>,
+    border: Hsla,
+    unchecked_border: Hsla,
+    hover_border: Option<Hsla>,
+    mark: Hsla,
+    label: Hsla,
+    disabled_text: Hsla,
+    disabled_opacity: Option<f32>,
+    border_width: f32,
+    padding: [Option<f32>; 4],
+    dot: Option<f32>,
+    radius: f32,
+    mark_stroke: Option<f32>,
+    label_gap: f32,
 }
 
 type ChangeHandler = Rc<dyn Fn(&bool, &mut Window, &mut App)>;
@@ -262,7 +556,6 @@ impl Parts {
     /// its checkbox out (checkbox.rs, `flex_row_dir`).
     fn render<E>(
         mut self,
-        of: fn(&ResolvedTheme, bool, bool) -> Option<CheckboxLook>,
         round: bool,
         window: &mut Window,
         cx: &mut App,
@@ -271,23 +564,42 @@ impl Parts {
     where
         E: Styled + ParentElement + InteractiveElement + IntoElement,
     {
-        let Some(n) = cx.native() else {
+        let (checked, disabled) = (self.checked || self.indeterminate, self.disabled);
+        let Some(theme) = ThemeSource::of(cx) else {
             return Err(Box::new(self));
         };
-        let Some(look) = of(
-            n.resolved,
-            self.checked || self.indeterminate,
-            self.disabled,
-        ) else {
+        let looks = if round {
+            theme.look(
+                |r| CheckboxLook::radio(r, checked, disabled),
+                |r| CheckboxLook::next_radio(r, checked, disabled),
+            )
+        } else {
+            theme.look(
+                |r| CheckboxLook::of(r, checked, disabled),
+                |r| CheckboxLook::next_of(r, checked, disabled),
+            )
+        };
+        let font = if round {
+            theme.label_font(
+                |r| &r.checkbox.font,
+                |r| r.radio.label(native_theme::next::WidgetState::NONE),
+                "radio.label(NONE)",
+            )
+        } else {
+            theme.label_font(
+                |r| &r.checkbox.font,
+                |r| r.checkbox.label(native_theme::next::WidgetState::NONE),
+                "checkbox.label(NONE)",
+            )
+        };
+        let ground = self.backdrop.or_else(|| theme.background());
+        let (Some(look), Some(ground), Some(font)) = (looks, ground, font) else {
             return Err(Box::new(self));
         };
-        let look = look.faded_over(
-            self.backdrop
-                .unwrap_or_else(|| color(n.resolved.defaults.background_color)),
-        );
-        let text = font_text(&n.resolved.checkbox.font, n);
-        let ring = FocusRing::of(n.resolved);
-        let keyboard_only = n.resolved.defaults.focus_ring_keyboard_only == Some(true);
+        let look = look.faded_over(ground);
+        let text = font.text();
+        let ring = theme.focus_ring();
+        let keyboard_only = theme.keyboard_only();
         let (indicator, label) = indicator_and_label(&self, &look, round, text, window, cx);
         let focus_handle = window
             .use_keyed_state(self.id.clone(), cx, |_, cx| cx.focus_handle())
@@ -729,26 +1041,25 @@ impl Checkbox {
     /// The theme-drawn row on gpui-base's checkbox, or the parts back where
     /// gpui-component's checkbox is drawn instead.
     pub(super) fn row(self, window: &mut Window, cx: &mut App) -> Result<BaseCheckbox, Box<Parts>> {
-        self.parts
-            .render(CheckboxLook::of, false, window, cx, |parts, focus| {
-                BaseCheckbox::new(parts.id)
-                    .checked(parts.checked)
-                    .indeterminate(parts.indeterminate)
-                    .disabled(parts.disabled)
-                    .track_focus(focus)
-                    .tab_stop(parts.tab_stop)
-                    .tab_index(parts.tab_index)
-                    .when_some(
-                        parts.accessibility_label.or(parts.label),
-                        |checkbox, name| checkbox.accessibility_label(name),
-                    )
-                    .when_some(parts.on_change, |checkbox, on_change| {
-                        checkbox.on_change(move |next, _, window, cx| {
-                            window.prevent_default();
-                            on_change(&(next == gpui_base::CheckboxState::Checked), window, cx);
-                        })
+        self.parts.render(false, window, cx, |parts, focus| {
+            BaseCheckbox::new(parts.id)
+                .checked(parts.checked)
+                .indeterminate(parts.indeterminate)
+                .disabled(parts.disabled)
+                .track_focus(focus)
+                .tab_stop(parts.tab_stop)
+                .tab_index(parts.tab_index)
+                .when_some(
+                    parts.accessibility_label.or(parts.label),
+                    |checkbox, name| checkbox.accessibility_label(name),
+                )
+                .when_some(parts.on_change, |checkbox, on_change| {
+                    checkbox.on_change(move |next, _, window, cx| {
+                        window.prevent_default();
+                        on_change(&(next == gpui_base::CheckboxState::Checked), window, cx);
                     })
-            })
+                })
+        })
     }
 }
 
@@ -893,27 +1204,26 @@ impl Radio {
     /// gpui-component's radio is drawn instead.
     pub(super) fn row(self, window: &mut Window, cx: &mut App) -> Result<BaseRadio, Box<Parts>> {
         let position = self.position;
-        self.parts
-            .render(CheckboxLook::radio, true, window, cx, |parts, focus| {
-                BaseRadio::new(parts.id)
-                    .checked(parts.checked)
-                    .disabled(parts.disabled)
-                    .track_focus(focus)
-                    .tab_stop(parts.tab_stop)
-                    .tab_index(parts.tab_index)
-                    .when_some(parts.accessibility_label.or(parts.label), |radio, name| {
-                        radio.accessibility_label(name)
+        self.parts.render(true, window, cx, |parts, focus| {
+            BaseRadio::new(parts.id)
+                .checked(parts.checked)
+                .disabled(parts.disabled)
+                .track_focus(focus)
+                .tab_stop(parts.tab_stop)
+                .tab_index(parts.tab_index)
+                .when_some(parts.accessibility_label.or(parts.label), |radio, name| {
+                    radio.accessibility_label(name)
+                })
+                .when_some(position, |radio, (position, size)| {
+                    radio.set_position(position, size)
+                })
+                .when_some(parts.on_change, |radio, on_change| {
+                    radio.on_change(move |next, _, window, cx| {
+                        window.prevent_default();
+                        on_change(&next, window, cx);
                     })
-                    .when_some(position, |radio, (position, size)| {
-                        radio.set_position(position, size)
-                    })
-                    .when_some(parts.on_change, |radio, on_change| {
-                        radio.on_change(move |next, _, window, cx| {
-                            window.prevent_default();
-                            on_change(&next, window, cx);
-                        })
-                    })
-            })
+                })
+        })
     }
 }
 

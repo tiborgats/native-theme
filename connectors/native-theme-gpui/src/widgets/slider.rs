@@ -14,8 +14,8 @@ use gpui_base::{
 use gpui_component::{ActiveTheme as _, StyledExt as _};
 use native_theme::theme::ResolvedTheme;
 
-use super::{A11yDisabled, FocusRing, Part, PartBounds, color, faded, length, over, part_bounds};
-use crate::ActiveNativeTheme;
+use super::{A11yDisabled, Part, PartBounds, ThemeSource, color, faded, length, over, part_bounds};
+use crate::next::{Mapped, Unmapped, fill, hsla, state_fill, state_stroke_color, stated};
 
 /// The alpha of the thumb's outline, which `SliderTheme` does not state:
 /// gpui-component's own, its fill colour at half alpha round the thumb
@@ -174,6 +174,68 @@ impl ThumbOutline {
         })
     }
 
+    /// The outline of a slider's thumb of a 0.8.0 theme, `disabled` or not,
+    /// read at the homes of [`ThumbOutline::of`]'s fields: the thumb's stroke
+    /// at rest (`slider.thumb(NONE).stroke`, its width and colour; no stroke
+    /// is a width of 0), and its colour where a rule states it for `HOVER` and
+    /// for `FOCUSED`. `None` where the theme leaves the stroke at rest
+    /// unstated.
+    ///
+    /// # Errors
+    ///
+    /// [`Unmapped`] where a stroke is stated per side
+    /// or its width is not finite.
+    pub fn next_of(r: &native_theme::next::ResolvedTheme, disabled: bool) -> Mapped<Option<Self>> {
+        use native_theme::next::{PartStated, Stroke, WidgetState};
+        let s = &r.slider;
+        let rest = s.thumb(WidgetState::NONE);
+        if !rest.stated.contains(PartStated::STROKE) {
+            return Ok(None);
+        }
+        let (width, colour) = match &rest.stroke {
+            Stroke::None => (0.0, None),
+            Stroke::Uniform { width, color, .. } => (*width, Some(hsla(*color))),
+            _ => return Err(Unmapped("slider.thumb(NONE).stroke")),
+        };
+        super::finite(
+            Self::from_reads(
+                width,
+                colour,
+                state_stroke_color(
+                    &s.thumb(WidgetState::HOVER),
+                    "slider.thumb(HOVER).stroke.color",
+                )?,
+                state_stroke_color(
+                    &s.thumb(WidgetState::FOCUSED),
+                    "slider.thumb(FOCUSED).stroke.color",
+                )?,
+                disabled,
+            ),
+            "slider.thumb(NONE).stroke.width",
+        )
+        .map(Some)
+    }
+
+    fn from_reads(
+        width: f32,
+        rest: Option<Hsla>,
+        hover: Option<Hsla>,
+        focus: Option<Hsla>,
+        disabled: bool,
+    ) -> Option<Self> {
+        let width = length(width)?;
+        let drawn = |c: Option<Hsla>| c.filter(|_| width > px(0.));
+        let rest = drawn(rest);
+        let hover = drawn(hover).or(rest);
+        let focus = drawn(focus).or(rest);
+        Some(Self {
+            width,
+            rest,
+            hover: hover.filter(|_| !disabled),
+            focus: focus.filter(|_| !disabled),
+        })
+    }
+
     /// This outline faded over `ground` with `look`, the slider's look
     /// before its own fade ([`SliderLook::faded_over`]): where
     /// [`opacity`](SliderLook::opacity) is below 1, `rest` faded by it over
@@ -191,6 +253,102 @@ impl ThumbOutline {
             ..self
         }
     }
+}
+
+impl SliderLook {
+    /// The look of a slider of a 0.8.0 theme, `disabled` or not, each field
+    /// read at its home: the rail, the filled stretch and the thumb at the
+    /// slider's state (`slider.track`, `active_track` and `thumb`, at
+    /// `DISABLED` where disabled, where a theme without a rule for the state
+    /// gives the enabled part, the disabled colour's `None`), the hovered
+    /// thumb's fill where a rule states it for `HOVER`, the rail's thickness
+    /// (its minimum height, an exact thickness being stated as its minimum
+    /// and maximum), the thumb's minimum width and `slider.disabled_opacity`.
+    ///
+    /// # Errors
+    ///
+    /// [`Unmapped`] where the theme leaves one of them
+    /// unstated, states a fill gpui cannot draw, or gives a length that is
+    /// not finite.
+    pub fn next_of(r: &native_theme::next::ResolvedTheme, disabled: bool) -> Mapped<Self> {
+        use native_theme::next::WidgetState;
+        let s = &r.slider;
+        let state = if disabled {
+            WidgetState::DISABLED
+        } else {
+            WidgetState::NONE
+        };
+        let at = |none: &'static str, off: &'static str| if disabled { off } else { none };
+        let rest_thumb = s.thumb(WidgetState::NONE);
+        super::finite(
+            Self::from_reads(
+                &SliderReads {
+                    track: fill(
+                        &s.track(state),
+                        at("slider.track(NONE).fill", "slider.track(DISABLED).fill"),
+                    )?,
+                    fill: fill(
+                        &s.active_track(state),
+                        at(
+                            "slider.active_track(NONE).fill",
+                            "slider.active_track(DISABLED).fill",
+                        ),
+                    )?,
+                    thumb: fill(
+                        &s.thumb(state),
+                        at("slider.thumb(NONE).fill", "slider.thumb(DISABLED).fill"),
+                    )?,
+                    rest_thumb: fill(&rest_thumb, "slider.thumb(NONE).fill")?,
+                    hover: state_fill(&s.thumb(WidgetState::HOVER), "slider.thumb(HOVER).fill")?,
+                    track_height: stated(
+                        s.track(WidgetState::NONE).min_size[1],
+                        "slider.track(NONE).min_size[1]",
+                    )?,
+                    thumb_diameter: stated(
+                        rest_thumb.min_size[0],
+                        "slider.thumb(NONE).min_size[0]",
+                    )?,
+                    disabled_opacity: s.disabled_opacity,
+                },
+                disabled,
+            ),
+            "slider.track(NONE).min_size[1]",
+        )
+    }
+
+    fn from_reads(s: &SliderReads, disabled: bool) -> Option<Self> {
+        let hover_thumb = (!disabled).then(|| {
+            s.hover
+                .map_or(s.rest_thumb, |hover| over(s.rest_thumb, hover))
+        });
+        let track_height = length(s.track_height)?;
+        let thumb_diameter = length(s.thumb_diameter)?;
+        Some(Self {
+            track_height,
+            thumb: thumb_diameter,
+            height: thumb_diameter.max(track_height),
+            track: s.track,
+            fill: s.fill,
+            thumb_color: s.thumb,
+            hover_thumb,
+            outline: s.fill.opacity(THUMB_OUTLINE_ALPHA),
+            opacity: super::next_disabled_opacity(disabled, s.disabled_opacity),
+        })
+    }
+}
+
+/// The values [`SliderLook::next_of`] builds the look from: the rail, the
+/// filled stretch and the thumb at the slider's state, the thumb at rest and
+/// its hover layer.
+struct SliderReads {
+    track: Hsla,
+    fill: Hsla,
+    thumb: Hsla,
+    rest_thumb: Hsla,
+    hover: Option<Hsla>,
+    track_height: f32,
+    thumb_diameter: f32,
+    disabled_opacity: Option<f32>,
 }
 
 /// A slider over a gpui-base `SliderState` whose rail, fill and thumbs are
@@ -426,23 +584,31 @@ fn thumb(
 
 impl RenderOnce for Slider {
     fn render(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let Some(n) = cx.native() else {
+        let disabled = self.disabled;
+        let Some(theme) = ThemeSource::of(cx) else {
             return self.fallback();
         };
-        let Some(look) = SliderLook::of(n.resolved, self.disabled) else {
+        let Some(look) = theme.look(
+            |r| SliderLook::of(r, disabled),
+            |r| SliderLook::next_of(r, disabled),
+        ) else {
             return self.fallback();
         };
-        let ring = FocusRing::of(n.resolved);
-        let keyboard_only = n.resolved.defaults.focus_ring_keyboard_only == Some(true);
-        let ground = self
-            .backdrop
-            .unwrap_or_else(|| color(n.resolved.defaults.background_color));
-        let outline =
-            ThumbOutline::of(n.resolved, self.disabled).map(|o| o.faded_over(ground, &look));
+        let Some(ground) = self.backdrop.or_else(|| theme.background()) else {
+            return self.fallback();
+        };
+        let ring = theme.focus_ring();
+        let keyboard_only = theme.keyboard_only();
+        let outline = theme
+            .look(
+                |r| Some(ThumbOutline::of(r, disabled)),
+                |r| ThumbOutline::next_of(r, disabled),
+            )
+            .flatten()
+            .map(|o| o.faded_over(ground, &look));
         let look = look.faded_over(ground);
         let axis = self.axis;
         let vertical = axis == Axis::Vertical;
-        let disabled = self.disabled;
         let label = self.accessibility_label.take();
         let observer = self.observer.as_ref();
         let state = self.state.clone();

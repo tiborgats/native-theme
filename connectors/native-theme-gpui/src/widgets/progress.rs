@@ -15,8 +15,8 @@ use gpui_base::{
 use gpui_component::{ActiveTheme as _, StyledExt as _};
 use native_theme::theme::ResolvedTheme;
 
-use super::{Part, PartBounds, color, length, part_bounds};
-use crate::ActiveNativeTheme;
+use super::{Part, PartBounds, ThemeSource, color, finite, length, part_bounds};
+use crate::next::{Mapped, fill, radius, stated, stroke_color, stroke_width};
 
 /// The period of an indeterminate bar's sweep, which the model does not
 /// state: gpui-component's `Animation::new(Duration::from_secs(1)).repeat()`
@@ -80,6 +80,58 @@ impl ProgressBarLook {
             fill: color(p.fill_color),
         })
     }
+
+    /// The look of a progress bar of a 0.8.0 theme, each field read at its
+    /// home: the track's `progress_bar.track(NONE)` (its minimum height, an
+    /// exact height being stated as its minimum and maximum, its minimum
+    /// width, corners, stroke and fill) and the fill's
+    /// `progress_bar.fill(NONE).fill`.
+    ///
+    /// # Errors
+    ///
+    /// [`Unmapped`](crate::next::Unmapped) where the theme leaves one of them
+    /// unstated, states it in a form gpui cannot draw, or gives a length that
+    /// is not finite.
+    pub fn next_of(r: &native_theme::next::ResolvedTheme) -> Mapped<Self> {
+        use native_theme::next::WidgetState;
+        let p = &r.progress_bar;
+        let track = p.track(WidgetState::NONE);
+        finite(
+            Self::from_reads(&ProgressBarReads {
+                height: stated(track.min_size[1], "progress_bar.track(NONE).min_size[1]")?,
+                min_width: stated(track.min_size[0], "progress_bar.track(NONE).min_size[0]")?,
+                radius: radius(&track, "progress_bar.track(NONE).corners")?,
+                border_width: stroke_width(&track, "progress_bar.track(NONE).stroke.width")?,
+                border: stroke_color(&track, "progress_bar.track(NONE).stroke.color")?,
+                track: fill(&track, "progress_bar.track(NONE).fill")?,
+                fill: fill(&p.fill(WidgetState::NONE), "progress_bar.fill(NONE).fill")?,
+            }),
+            "progress_bar.track(NONE)",
+        )
+    }
+
+    fn from_reads(p: &ProgressBarReads) -> Option<Self> {
+        Some(Self {
+            height: length(p.height)?,
+            min_width: length(p.min_width)?,
+            radius: length(p.radius)?,
+            border_width: length(p.border_width)?,
+            border: p.border,
+            track: p.track,
+            fill: p.fill,
+        })
+    }
+}
+
+/// The values [`ProgressBarLook::next_of`] builds the look from.
+struct ProgressBarReads {
+    height: f32,
+    min_width: f32,
+    radius: f32,
+    border_width: f32,
+    border: Hsla,
+    track: Hsla,
+    fill: Hsla,
 }
 
 /// A progress bar whose track, fill and frame are `ProgressBarTheme`'s
@@ -176,10 +228,9 @@ impl Styled for ProgressBar {
 
 impl RenderOnce for ProgressBar {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let Some(n) = cx.native() else {
-            return self.fallback();
-        };
-        let Some(look) = ProgressBarLook::of(n.resolved) else {
+        let Some(look) =
+            ThemeSource::of(cx).and_then(|t| t.look(ProgressBarLook::of, ProgressBarLook::next_of))
+        else {
             return self.fallback();
         };
         let motion = cx.theme().motion_tokens();

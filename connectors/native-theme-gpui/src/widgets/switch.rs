@@ -4,16 +4,16 @@
 use std::rc::Rc;
 
 use gpui::{
-    AnyElement, App, ElementId, FontWeight, Hsla, InteractiveElement, IntoElement, ParentElement,
-    Pixels, RenderOnce, SharedString, StyleRefinement, Styled, Window, div,
-    prelude::FluentBuilder as _, px, rems,
+    AnyElement, App, ElementId, Hsla, InteractiveElement, IntoElement, ParentElement, Pixels,
+    RenderOnce, SharedString, StyleRefinement, Styled, Window, div, prelude::FluentBuilder as _,
+    px, rems,
 };
 use gpui_base::{LogicalStyledExt as _, Switch as BaseSwitch, SwitchThumb, SwitchTrack, spring};
 use gpui_component::{ActiveTheme as _, Disableable as _, FocusableExt as _, StyledExt as _};
 use native_theme::theme::ResolvedTheme;
 
-use super::{FocusRing, Part, PartBounds, color, faded, length, over, part_bounds, text_size};
-use crate::ActiveNativeTheme;
+use super::{Part, PartBounds, ThemeSource, color, faded, finite, length, over, part_bounds};
+use crate::next::{Mapped, Unmapped, fill, hsla, radius, state_fill, stated};
 
 /// The space between the track and the label, which `SwitchTheme` does not
 /// state: gpui-component's own, `gap_2` (switch.rs:247).
@@ -168,6 +168,142 @@ impl SwitchLook {
         })
     }
 
+    /// The look of a switch of a 0.8.0 theme, `checked` or not, `disabled` or
+    /// not, each field read at its home: the track and the thumb at the
+    /// switch's state (`switch.track` and `switch.thumb` at `CHECKED` where
+    /// checked and `DISABLED` where disabled, where a theme without a rule
+    /// for a disabled state gives the enabled part, the disabled colour's
+    /// `None`), the hovered track's fill where a rule states it, the track's
+    /// and the thumb's strokes (the colour at the state, the width at rest; no
+    /// stroke is no outline), the track's minimum size and corners, the
+    /// thumb's minimum width at the checked state, the window's text colour
+    /// (`colors.window.foreground`, and `colors.disabled_text` disabled) and
+    /// `switch.disabled_opacity`.
+    ///
+    /// A checked track's hover is read at `HOVER|CHECKED`, where a theme with
+    /// no rule for the hover gives the checked track (the table of homes,
+    /// `switch.hover_checked_background`, `null_reference`), so it is a
+    /// hover layer where it differs from that track.
+    ///
+    /// # Errors
+    ///
+    /// [`Unmapped`] where the theme leaves one of them
+    /// unstated, states it in a form gpui cannot draw, or gives a length that
+    /// is not finite.
+    pub fn next_of(
+        r: &native_theme::next::ResolvedTheme,
+        checked: bool,
+        disabled: bool,
+    ) -> Mapped<Self> {
+        use native_theme::next::WidgetState;
+        // The home `switch.<part>(<state>).<property>` at the switch's
+        // state, for `Unmapped`.
+        macro_rules! home {
+            ($checked:expr, $disabled:expr, $part:literal, $prop:literal) => {
+                match ($checked, $disabled) {
+                    (false, false) => concat!("switch.", $part, "(NONE).", $prop),
+                    (true, false) => concat!("switch.", $part, "(CHECKED).", $prop),
+                    (false, true) => concat!("switch.", $part, "(DISABLED).", $prop),
+                    (true, true) => concat!("switch.", $part, "(DISABLED|CHECKED).", $prop),
+                }
+            };
+        }
+        let s = &r.switch;
+        let rest = if checked {
+            WidgetState::CHECKED
+        } else {
+            WidgetState::NONE
+        };
+        let state = if disabled {
+            rest | WidgetState::DISABLED
+        } else {
+            rest
+        };
+        let base = fill(&s.track(rest), home!(checked, false, "track", "fill"))?;
+        let hover = if checked {
+            let hovered = fill(
+                &s.track(WidgetState::HOVER | WidgetState::CHECKED),
+                "switch.track(HOVER|CHECKED).fill",
+            )?;
+            (hovered != base).then_some(hovered)
+        } else {
+            state_fill(&s.track(WidgetState::HOVER), "switch.track(HOVER).fill")?
+        };
+        let track = s.track(WidgetState::NONE);
+        let thumb = s.thumb(rest);
+        let label = if disabled {
+            hsla(r.colors.disabled_text)
+        } else {
+            hsla(stated(
+                r.colors.window.foreground,
+                "colors.window.foreground",
+            )?)
+        };
+        finite(
+            Self::from_reads(
+                &SwitchReads {
+                    base,
+                    track: fill(&s.track(state), home!(checked, disabled, "track", "fill"))?,
+                    hover,
+                    thumb: fill(&s.thumb(state), home!(checked, disabled, "thumb", "fill"))?,
+                    track_border: outline_color(
+                        &s.track(state),
+                        home!(checked, disabled, "track", "stroke.color"),
+                    )?,
+                    track_border_width: outline_width(&track, "switch.track(NONE).stroke.width")?,
+                    thumb_border: outline_color(
+                        &thumb,
+                        home!(checked, false, "thumb", "stroke.color"),
+                    )?,
+                    thumb_border_width: outline_width(
+                        &s.thumb(WidgetState::NONE),
+                        "switch.thumb(NONE).stroke.width",
+                    )?,
+                    label,
+                    track_width: stated(track.min_size[0], "switch.track(NONE).min_size[0]")?,
+                    track_height: stated(track.min_size[1], "switch.track(NONE).min_size[1]")?,
+                    track_radius: radius(&track, "switch.track(NONE).corners")?,
+                    thumb_diameter: stated(
+                        thumb.min_size[0],
+                        home!(checked, false, "thumb", "min_size[0]"),
+                    )?,
+                    disabled_opacity: s.disabled_opacity,
+                },
+                disabled,
+            ),
+            "switch.track(NONE).min_size",
+        )
+    }
+
+    fn from_reads(s: &SwitchReads, disabled: bool) -> Option<Self> {
+        let hover_track = (!disabled).then(|| s.hover.map_or(s.base, |hover| over(s.base, hover)));
+        let outline = |colour: Option<Hsla>, width: Option<f32>| match colour.zip(width) {
+            Some((colour, width)) => length(width).map(|width| (Some(colour), width)),
+            None => Some((None, px(0.))),
+        };
+        let (track_border, track_border_width) = outline(s.track_border, s.track_border_width)?;
+        let (thumb_border, thumb_border_width) = outline(s.thumb_border, s.thumb_border_width)?;
+        let track_height = length(s.track_height)?;
+        let thumb = length(s.thumb_diameter)?;
+        Some(Self {
+            track_width: length(s.track_width)?,
+            track_height,
+            track_radius: length(s.track_radius)?,
+            thumb,
+            inset: px((f32::from(track_height) - f32::from(thumb)) / 2.),
+            end_inset: px(((f32::from(track_height) - f32::from(thumb)) / 2.).max(0.)),
+            track: s.track,
+            hover_track,
+            track_border,
+            track_border_width,
+            thumb_color: s.thumb,
+            thumb_border,
+            thumb_border_width,
+            label: s.label,
+            opacity: super::next_disabled_opacity(disabled, s.disabled_opacity),
+        })
+    }
+
     /// This look faded as one control over `ground`, the colour it is drawn
     /// on: where [`opacity`](Self::opacity) is below 1, the track composited
     /// over `ground`, the thumb and both outlines over the track and the
@@ -204,6 +340,56 @@ impl SwitchLook {
         } else {
             self.end_inset
         }
+    }
+}
+
+/// The values [`SwitchLook::next_of`] builds the look from: the track at rest
+/// in the checked state and at the switch's state, its hover layer, the thumb
+/// at the switch's state, the outlines' colours and widths (an outline where
+/// both are stated), the label's colour and the sizes.
+struct SwitchReads {
+    base: Hsla,
+    track: Hsla,
+    hover: Option<Hsla>,
+    thumb: Hsla,
+    track_border: Option<Hsla>,
+    track_border_width: Option<f32>,
+    thumb_border: Option<Hsla>,
+    thumb_border_width: Option<f32>,
+    label: Hsla,
+    track_width: f32,
+    track_height: f32,
+    track_radius: f32,
+    thumb_diameter: f32,
+    disabled_opacity: Option<f32>,
+}
+
+/// A part's stroke colour, where stated as one stroke; `None` where it has
+/// none or the theme states none (no outline, as gpui-component's switch
+/// draws none).
+fn outline_color(part: &native_theme::next::PartStyle, home: &'static str) -> Mapped<Option<Hsla>> {
+    use native_theme::next::{PartStated, Stroke};
+    if !part.stated.contains(PartStated::STROKE) {
+        return Ok(None);
+    }
+    match &part.stroke {
+        Stroke::None => Ok(None),
+        Stroke::Uniform { color, .. } => Ok(Some(hsla(*color))),
+        _ => Err(Unmapped(home)),
+    }
+}
+
+/// A part's stroke width, where stated as one stroke; `None` where it has
+/// none or the theme states none.
+fn outline_width(part: &native_theme::next::PartStyle, home: &'static str) -> Mapped<Option<f32>> {
+    use native_theme::next::{PartStated, Stroke};
+    if !part.stated.contains(PartStated::STROKE) {
+        return Ok(None);
+    }
+    match &part.stroke {
+        Stroke::None => Ok(None),
+        Stroke::Uniform { width, .. } => Ok(Some(*width)),
+        _ => Err(Unmapped(home)),
     }
 }
 
@@ -371,22 +557,23 @@ impl Switch {
     /// The theme-drawn row on gpui-base's switch, or the switch back where
     /// gpui-component's switch is drawn instead.
     pub(super) fn row(self, window: &mut Window, cx: &mut App) -> Result<BaseSwitch, Box<Self>> {
-        let Some(n) = cx.native() else {
+        let (checked, disabled) = (self.checked, self.disabled);
+        let Some(theme) = ThemeSource::of(cx) else {
             return Err(Box::new(self));
         };
-        let Some(look) = SwitchLook::of(n.resolved, self.checked, self.disabled) else {
-            return Err(Box::new(self));
-        };
-        let look = look.faded_over(
-            self.backdrop
-                .unwrap_or_else(|| color(n.resolved.defaults.background_color)),
+        let looks = theme.look(
+            |r| SwitchLook::of(r, checked, disabled),
+            |r| SwitchLook::next_of(r, checked, disabled),
         );
-        let checked = self.checked;
+        let ground = self.backdrop.or_else(|| theme.background());
+        let (Some(look), Some(ground), Some((label_size, label_line, label_weight))) =
+            (looks, ground, theme.body_text())
+        else {
+            return Err(Box::new(self));
+        };
+        let look = look.faded_over(ground);
         let observer = self.observer.as_ref();
-        let label_size = text_size(n.resolved.defaults.font.size, n);
-        let label_line = n.resolved.defaults.line_height;
-        let label_weight = FontWeight(f32::from(n.resolved.defaults.font.weight));
-        let keyboard_only = n.resolved.defaults.focus_ring_keyboard_only == Some(true);
+        let keyboard_only = theme.keyboard_only();
         let thumb_left = spring(
             (self.id.clone(), "thumb"),
             look.thumb_left(checked),
@@ -467,7 +654,7 @@ impl Switch {
     ) -> SwitchTrack {
         let observer = self.observer.as_ref();
         let ring = (focused && !self.disabled && self.focus_ring)
-            .then(|| cx.native().and_then(|n| FocusRing::of(n.resolved)))
+            .then(|| ThemeSource::of(cx).and_then(ThemeSource::focus_ring))
             .flatten();
         SwitchTrack::new((self.id.clone(), "track"))
             .checked(self.checked)

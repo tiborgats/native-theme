@@ -7,8 +7,8 @@ use gpui::{
 use gpui_component::StyledExt as _;
 use native_theme::theme::ResolvedTheme;
 
-use super::{color, length};
-use crate::ActiveNativeTheme;
+use super::{ThemeSource, color, finite, length};
+use crate::next::{Mapped, hsla};
 
 /// What a separator paints, from `SeparatorTheme`.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -30,6 +30,24 @@ impl SeparatorLook {
             color: color(s.line_color),
             width: length(s.line_width)?,
         })
+    }
+
+    /// The look of a separator of a 0.8.0 theme, read at the homes of
+    /// [`SeparatorLook::of`]'s fields: `separator.color` and
+    /// `separator.thickness`.
+    ///
+    /// # Errors
+    ///
+    /// [`Unmapped`](crate::next::Unmapped) where the thickness is not finite.
+    pub fn next_of(r: &native_theme::next::ResolvedTheme) -> Mapped<Self> {
+        let s = &r.separator;
+        finite(
+            length(s.thickness).map(|width| Self {
+                color: hsla(s.color),
+                width,
+            }),
+            "separator.thickness",
+        )
     }
 }
 
@@ -84,7 +102,9 @@ impl Styled for Separator {
 
 impl RenderOnce for Separator {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let Some(look) = cx.native().and_then(|n| SeparatorLook::of(n.resolved)) else {
+        let Some(look) =
+            ThemeSource::of(cx).and_then(|t| t.look(SeparatorLook::of, SeparatorLook::next_of))
+        else {
             return self.fallback();
         };
         // The line is a box filled in its colour, at least one device pixel

@@ -14,8 +14,8 @@ use gpui_base::{LayoutDirection, LogicalStyledExt as _, Tab as BaseTab, Tabs as 
 use gpui_component::StyledExt as _;
 use native_theme::theme::{ResolvedTheme, TabIndicatorSide};
 
-use super::{Part, PartBounds, color, font_text, length, outer_edge, over, part_bounds_above};
-use crate::ActiveNativeTheme;
+use super::{Part, PartBounds, ThemeSource, color, length, outer_edge, over, part_bounds_above};
+use crate::next::{Mapped, Unmapped, fill, hsla, padding, radius, state_fill, stated, text_color};
 
 /// A tab's side padding where `tab.border.padding` states none:
 /// gpui-component's for a tab at the default `Size` (tab/tab.rs:112-118,
@@ -252,6 +252,146 @@ impl TabLook {
                 .filter(|r| *r > px(0.)),
         })
     }
+
+    /// The look of a tab bar of a 0.8.0 theme, each field read at its home:
+    /// the bar's `tab.bar(NONE)` fill; an unselected tab's `tab.tab(NONE)`
+    /// fill, minimum size and padding and its `tab.label(NONE)` colour; a
+    /// hovered one's fill where a rule states it for `HOVER`, and its label's
+    /// colour; the selected tab's `tab.tab(SELECTED)` fill, its stroke where
+    /// stated (no outline where not), its corners where stated (gpui-component's
+    /// square ones where not) and its label's colour; the selected tab's
+    /// indicator, `tab.indicator(SELECTED)`, its fill where stated and its
+    /// minimum height, an exact thickness being stated as its minimum and
+    /// maximum; and `tab.item_gap`, `tab.indicator_side` and
+    /// `tab.active_outward_corner_radius`.
+    ///
+    /// # Errors
+    ///
+    /// [`Unmapped`] where the theme leaves one of the
+    /// others unstated, states one in a form gpui cannot draw, or gives a
+    /// length that is not finite.
+    pub fn next_of(r: &native_theme::next::ResolvedTheme) -> Mapped<Self> {
+        use native_theme::next::{PartStated, WidgetState};
+        let t = &r.tab;
+        let tab = t.tab(WidgetState::NONE);
+        let selected = t.tab(WidgetState::SELECTED);
+        let line = t.indicator(WidgetState::SELECTED);
+        let (border, border_width) = selected_outline(&selected)?;
+        super::finite(
+            Self::from_reads(&TabReads {
+                bar: fill(&t.bar(WidgetState::NONE), "tab.bar(NONE).fill")?,
+                idle: fill(&tab, "tab.tab(NONE).fill")?,
+                idle_text: text_color(&t.label(WidgetState::NONE), "tab.label(NONE).color")?,
+                hover: state_fill(&t.tab(WidgetState::HOVER), "tab.tab(HOVER).fill")?,
+                hover_text: text_color(&t.label(WidgetState::HOVER), "tab.label(HOVER).color")?,
+                active: fill(&selected, "tab.tab(SELECTED).fill")?,
+                active_text: text_color(
+                    &t.label(WidgetState::SELECTED),
+                    "tab.label(SELECTED).color",
+                )?,
+                border,
+                border_width,
+                radius: if selected.stated.contains(PartStated::CORNERS) {
+                    radius(&selected, "tab.tab(SELECTED).corners")?
+                } else {
+                    TAB_RADIUS
+                },
+                min_width: stated(tab.min_size[0], "tab.tab(NONE).min_size[0]")?,
+                min_height: stated(tab.min_size[1], "tab.tab(NONE).min_size[1]")?,
+                padding: padding(&tab),
+                item_gap: t.item_gap,
+                indicator_color: line
+                    .stated
+                    .contains(PartStated::FILL)
+                    .then(|| fill(&line, "tab.indicator(SELECTED).fill"))
+                    .transpose()?,
+                indicator_width: line.min_size[1],
+                indicator_side: t.indicator_side.map(|side| match side {
+                    native_theme::next::TabIndicatorSide::Top => TabIndicatorSide::Top,
+                    native_theme::next::TabIndicatorSide::Bottom => TabIndicatorSide::Bottom,
+                }),
+                outward_radius: t.active_outward_corner_radius,
+            }),
+            "tab.tab(NONE)",
+        )
+    }
+
+    fn from_reads(t: &TabReads) -> Option<Self> {
+        let unstated = px(TAB_PADDING);
+        let [top, right, bottom, left] = t.padding;
+        Some(Self {
+            bar: t.bar,
+            idle: t.idle,
+            idle_text: t.idle_text,
+            hover: t.hover.map_or(t.idle, |hover| over(t.bar, hover)),
+            hover_text: t.hover_text,
+            active: t.active,
+            active_text: t.active_text,
+            border: t.border,
+            border_width: length(t.border_width)?,
+            radius: length(t.radius)?,
+            min_width: length(t.min_width)?,
+            min_height: length(t.min_height)?,
+            padding_left: side(left).ok()?.unwrap_or(unstated),
+            padding_right: side(right).ok()?.unwrap_or(unstated),
+            padding_top: side(top).ok()?,
+            padding_bottom: side(bottom).ok()?,
+            gap: side(t.item_gap).ok()?.unwrap_or(px(TAB_GAP)),
+            indicator: match (
+                t.indicator_color,
+                side(t.indicator_width).ok()?,
+                t.indicator_side,
+            ) {
+                (Some(color), Some(width), Some(side)) => Some(TabIndicator { color, width, side }),
+                _ => None,
+            },
+            outward_radius: side(t.outward_radius).ok()?.filter(|r| *r > px(0.)),
+        })
+    }
+}
+
+/// The selected tab's corner radius where a 0.8.0 theme states none:
+/// gpui-component's square corners for its default variant, `TabVariant::Tab`
+/// (gpui-component 0.10.0 tab/tab.rs:410-419, `TabVariant::radius`).
+const TAB_RADIUS: f32 = 0.;
+
+/// The selected tab's outline of a 0.8.0 theme, as its colour and width: the
+/// stroke of `tab.tab(SELECTED)` where stated as one; none where the theme
+/// states no stroke or states that it has none, a width of 0 and a colour no
+/// border of no width paints, transparent.
+fn selected_outline(part: &native_theme::next::PartStyle) -> Mapped<(Hsla, f32)> {
+    use native_theme::next::{PartStated, Stroke};
+    if !part.stated.contains(PartStated::STROKE) {
+        return Ok((transparent_black(), 0.));
+    }
+    match &part.stroke {
+        Stroke::None => Ok((transparent_black(), 0.)),
+        Stroke::Uniform { color, width, .. } => Ok((hsla(*color), *width)),
+        _ => Err(Unmapped("tab.tab(SELECTED).stroke")),
+    }
+}
+
+/// The values [`TabLook::next_of`] builds the look from; the padding top,
+/// right, bottom, left.
+struct TabReads {
+    bar: Hsla,
+    idle: Hsla,
+    idle_text: Hsla,
+    hover: Option<Hsla>,
+    hover_text: Hsla,
+    active: Hsla,
+    active_text: Hsla,
+    border: Hsla,
+    border_width: f32,
+    radius: f32,
+    min_width: f32,
+    min_height: f32,
+    padding: [Option<f32>; 4],
+    item_gap: Option<f32>,
+    indicator_color: Option<Hsla>,
+    indicator_width: Option<f32>,
+    indicator_side: Option<TabIndicatorSide>,
+    outward_radius: Option<f32>,
 }
 
 /// The selected tab's indicator: a strip `line.width` thick across the tab's
@@ -499,7 +639,8 @@ impl Styled for TabBar {
 
 impl RenderOnce for TabBar {
     fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let Some(look) = cx.native().and_then(|n| TabLook::of(n.resolved)) else {
+        let Some(look) = ThemeSource::of(cx).and_then(|t| t.look(TabLook::of, TabLook::next_of))
+        else {
             return self.fallback();
         };
         // Without a tracked handle the bar keeps one, to reveal a clicked
@@ -551,11 +692,18 @@ impl RenderOnce for TabBar {
         // edge until it overflows (below).
         let push_end = rtl && !self.wrap;
         // Read again: the keyed handles took `cx` mutably.
-        let Some(n) = cx.native() else {
+        let Some(theme) = ThemeSource::of(cx) else {
             return self.fallback();
         };
-        let keyboard_only = n.resolved.defaults.focus_ring_keyboard_only == Some(true);
-        let ring = super::FocusRing::of(n.resolved).filter(|_| !keyboard_only || by_key);
+        let Some(font) = theme.label_font(
+            |r| &r.tab.font,
+            |r| r.tab.label(native_theme::next::WidgetState::NONE),
+            "tab.label(NONE)",
+        ) else {
+            return self.fallback();
+        };
+        let keyboard_only = theme.keyboard_only();
+        let ring = theme.focus_ring().filter(|_| !keyboard_only || by_key);
         // The tab's sides from its start edge: the left in a left-to-right
         // layout, the right in a right-to-left one.
         let (pad_left, pad_right) = if rtl {
@@ -618,7 +766,7 @@ impl RenderOnce for TabBar {
                             .hover(move |style| style.bg(look.hover).text_color(look.hover_text))
                     }
                 })
-                .child(font_text(&n.resolved.tab.font, n).child(tab.label))
+                .child(font.text().child(tab.label))
                 .when_some(look.indicator.filter(|_| is_selected), |tab, line| {
                     tab.relative().child(indicator(line, &look, bottom))
                 })
