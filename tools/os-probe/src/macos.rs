@@ -1,11 +1,26 @@
 //! macOS: NSProcessInfo, NSFont, NSColor in both appearances, AppKit control
 //! sizes and cell geometry for every NSControlSize, PNG renders of each
 //! control at regular size, and, last, a key window's captures: a sidebar
-//! material, a table header and a selected segment, sampled per appearance.
-//! The calls objc2-app-kit 0.3 marks `unsafe` are in [`ffi`]; this file has
-//! none.
+//! material, a table header and a selected segment, sampled per appearance,
+//! and a table's selected row ([`selection`]); the fonts' descriptors and
+//! line heights are read in [`text`].
+//! With `--button-pass`, only the buttons in titled windows per state and
+//! condition ([`buttons`], its pixel work in [`layer`]); with `--symbols`,
+//! only the symbol configuration and image size each place gives an SF
+//! Symbol ([`symbols`]); with `--reads`, only the reads that need no control
+//! pass ([`reads`]). The calls
+//! objc2-app-kit 0.3 marks `unsafe` are in [`ffi`]; this file has none.
 
+mod buttons;
+mod colors;
 mod ffi;
+mod layer;
+mod reads;
+mod selection;
+mod symbols;
+mod text;
+
+pub(crate) use buttons::Mode as ButtonMode;
 
 use std::cell::RefCell;
 use std::path::Path;
@@ -15,19 +30,20 @@ use objc2::rc::Retained;
 use objc2::runtime::{AnyObject, Sel};
 use objc2::{ClassType, MainThreadMarker, MainThreadOnly, Message, sel};
 use objc2_app_kit::{
-    NSAppearance, NSAppearanceCustomization, NSApplication, NSApplicationActivationPolicy,
-    NSBezelStyle, NSBitmapFormat, NSBitmapImageRep, NSBox, NSBoxType, NSButton, NSButtonType,
-    NSColor, NSColorSpace, NSComboBox, NSControl, NSControlSize, NSControlStateValueOff,
-    NSControlStateValueOn, NSEventMask, NSFont, NSMenu, NSMenuItem, NSOutlineView, NSPopUpButton,
-    NSProgressIndicator, NSProgressIndicatorStyle, NSScreen, NSScrollView, NSScroller,
-    NSScrollerStyle, NSSearchField, NSSegmentedControl, NSSlider, NSSliderCell, NSSplitView,
-    NSSplitViewDividerStyle, NSStepper, NSSwitch, NSTableColumn, NSTableView, NSTableViewStyle,
-    NSTextField, NSTextView, NSTitlePosition, NSView, NSVisualEffectBlendingMode,
+    NSAnimationContext, NSAppearance, NSAppearanceCustomization, NSApplication,
+    NSApplicationActivationPolicy, NSBezelStyle, NSBitmapFormat, NSBitmapImageRep, NSBox,
+    NSBoxType, NSButton, NSButtonType, NSColor, NSColorSpace, NSComboBox, NSControl, NSControlSize,
+    NSControlStateValueOff, NSControlStateValueOn, NSEvent, NSEventMask, NSFont,
+    NSFontDescriptorSymbolicTraits, NSLineBreakMode, NSMenu, NSMenuItem, NSOutlineView,
+    NSPopUpButton, NSProgressIndicator, NSProgressIndicatorStyle, NSScreen, NSScrollView,
+    NSScroller, NSScrollerStyle, NSSearchField, NSSegmentedControl, NSSlider, NSSliderCell,
+    NSSplitView, NSSplitViewDividerStyle, NSStepper, NSSwitch, NSTableColumn, NSTableView,
+    NSTableViewStyle, NSTextField, NSTextView, NSTitlePosition, NSView, NSVisualEffectBlendingMode,
     NSVisualEffectMaterial, NSVisualEffectState, NSVisualEffectView, NSWindow, NSWorkspace,
 };
 use objc2_foundation::{
     NSArray, NSData, NSDate, NSDictionary, NSEdgeInsets, NSNumber, NSOperatingSystemVersion,
-    NSPoint, NSProcessInfo, NSRect, NSSize, NSString,
+    NSPoint, NSProcessInfo, NSRect, NSSize, NSString, NSUserDefaults,
 };
 use toml::{Table, Value};
 
@@ -95,6 +111,8 @@ pub(crate) fn probe(doc: &mut Table, out_dir: &Path, not_key: bool) {
             out::put_table(&mut env, "accessibility", accessibility_table());
             out::put_table(&mut mac, "environment", env);
             out::put_table(&mut mac, "metrics", metrics_table(mtm));
+            out::put_table(&mut mac, "tokens", tokens_table(mtm));
+            out::put_table(&mut mac, "line_height", text::line_height_table(mtm));
             out::put_table(&mut mac, "controls", controls_table(mtm, &version, out_dir));
             // Last: it makes the application regular and active, which no
             // earlier section may see.
@@ -103,13 +121,114 @@ pub(crate) fn probe(doc: &mut Table, out_dir: &Path, not_key: bool) {
                 "key_window",
                 key_window_table(mtm, &app, out_dir, not_key),
             );
+            out::put_table(
+                &mut mac,
+                "selection",
+                selection::selection_table(mtm, &app, out_dir),
+            );
         }
         _ => {
             let reason = out::unavailable("not on the main thread (MainThreadMarker::new is None)");
             out::put(&mut mac, "environment", reason.clone());
             out::put(&mut mac, "metrics", reason.clone());
+            out::put(&mut mac, "tokens", reason.clone());
+            out::put(&mut mac, "line_height", reason.clone());
             out::put(&mut mac, "controls", reason.clone());
-            out::put(&mut mac, "key_window", reason);
+            out::put(&mut mac, "key_window", reason.clone());
+            out::put(&mut mac, "selection", reason);
+        }
+    }
+    out::put_table(doc, "macos", mac);
+}
+
+/// `--button-pass`: fill `doc` with `[os]`, `[probe]`, the environment and
+/// the button pass in `mode` only; its captures go under
+/// `out_dir/<appearance>`.
+pub(crate) fn button_probe(doc: &mut Table, out_dir: &Path, mode: ButtonMode) {
+    let (os, version) = os_table();
+    out::put_table(doc, "os", os);
+    out::put_table(doc, "probe", crate::probe_table());
+    let mut mac = Table::new();
+    match MainThreadMarker::new() {
+        Some(mtm) => {
+            let app = NSApplication::sharedApplication(mtm);
+            let mut env = Table::new();
+            out::put(
+                &mut env,
+                "effectiveAppearance",
+                out::text(app.effectiveAppearance().name().to_string()),
+            );
+            out::put_table(&mut env, "mainScreen", screen_table(mtm));
+            out::put_table(&mut env, "accessibility", accessibility_table());
+            out::put_table(&mut mac, "environment", env);
+            out::put_table(
+                &mut mac,
+                "button_pass",
+                buttons::button_pass_table(mtm, &app, out_dir, &version, mode),
+            );
+        }
+        None => {
+            let reason = out::unavailable("not on the main thread (MainThreadMarker::new is None)");
+            out::put(&mut mac, "environment", reason.clone());
+            out::put(&mut mac, "button_pass", reason);
+        }
+    }
+    out::put_table(doc, "macos", mac);
+}
+
+/// `--symbols`: fill `doc` with `[os]`, `[probe]`, the environment and the
+/// symbols pass only; its renders go under `out_dir`.
+pub(crate) fn symbols_probe(doc: &mut Table, out_dir: &Path) {
+    single_pass(doc, "symbols", |mtm, app, version| {
+        symbols::symbols_table(mtm, app, out_dir, version)
+    });
+}
+
+/// `--reads`: fill `doc` with `[os]`, `[probe]`, the environment and the
+/// reads pass only; its renders and captures go under `out_dir`.
+pub(crate) fn reads_probe(doc: &mut Table, out_dir: &Path) {
+    single_pass(doc, "reads", |mtm, app, _| {
+        reads::reads_table(mtm, app, out_dir)
+    });
+}
+
+/// `--colors`: fill `doc` with `[os]`, `[probe]`, the environment and the
+/// colours pass only; its captures go under `out_dir/color_space`.
+pub(crate) fn colors_probe(doc: &mut Table, out_dir: &Path) {
+    single_pass(doc, "colors", |mtm, app, _| {
+        colors::colors_pass_table(mtm, app, out_dir)
+    });
+}
+
+/// Fill `doc` with `[os]`, `[probe]`, the environment and `[macos.<key>]`
+/// from `pass`.
+fn single_pass(
+    doc: &mut Table,
+    key: &str,
+    pass: impl FnOnce(MainThreadMarker, &NSApplication, &NSOperatingSystemVersion) -> Table,
+) {
+    let (os, version) = os_table();
+    out::put_table(doc, "os", os);
+    out::put_table(doc, "probe", crate::probe_table());
+    let mut mac = Table::new();
+    match MainThreadMarker::new() {
+        Some(mtm) => {
+            let app = NSApplication::sharedApplication(mtm);
+            let mut env = Table::new();
+            out::put(
+                &mut env,
+                "effectiveAppearance",
+                out::text(app.effectiveAppearance().name().to_string()),
+            );
+            out::put_table(&mut env, "mainScreen", screen_table(mtm));
+            out::put_table(&mut env, "accessibility", accessibility_table());
+            out::put_table(&mut mac, "environment", env);
+            out::put_table(&mut mac, key, pass(mtm, &app, &version));
+        }
+        None => {
+            let reason = out::unavailable("not on the main thread (MainThreadMarker::new is None)");
+            out::put(&mut mac, "environment", reason.clone());
+            out::put(&mut mac, key, reason);
         }
     }
     out::put_table(doc, "macos", mac);
@@ -185,7 +304,7 @@ fn fonts_table() -> Table {
         &mut named,
         "arguments",
         out::text(
-            "size 0.0 (the default size); the monospaced fonts at systemFontSize and NSFontWeightRegular",
+            "size 0.0 (the default size); the monospaced fonts at systemFontSize and NSFontWeightRegular; systemFontOfSize_smallSystemFontSize at smallSystemFontSize",
         ),
     );
     let class_fonts: [(&str, FontOfSize); 10] = [
@@ -232,14 +351,38 @@ fn fonts_table() -> Table {
             Err(reason) => out::put(&mut named, name, out::unavailable(reason)),
         }
     }
+    let small = NSFont::smallSystemFontSize();
+    out::put_table(
+        &mut named,
+        "systemFontOfSize_smallSystemFontSize",
+        font_table(&NSFont::systemFontOfSize(small)),
+    );
     out::put_table(&mut t, "named", named);
 
     let mut styles = Table::new();
+    let mut emphasized = Table::new();
+    out::put(
+        &mut emphasized,
+        "method",
+        out::text(
+            "the text style's preferredFontForTextStyle:options: font's fontDescriptor, fontDescriptorWithSymbolicTraits: of its symbolicTraits with NSFontDescriptorTraitBold added, then fontWithDescriptor:size: 0 (the descriptor's size)",
+        ),
+    );
     match ffi::text_styles() {
         Ok(text_styles) => {
             for (name, style) in text_styles {
                 match ffi::preferred_font(style) {
-                    Ok(font) => out::put_table(&mut styles, name, font_table(&font)),
+                    Ok(font) => {
+                        out::put_table(&mut styles, name, font_table(&font));
+                        match emphasized_font(&font) {
+                            Some(f) => out::put_table(&mut emphasized, name, font_table(&f)),
+                            None => out::put(
+                                &mut emphasized,
+                                name,
+                                out::unavailable("fontWithDescriptor:size: is nil"),
+                            ),
+                        }
+                    }
                     Err(reason) => out::put(&mut styles, name, out::unavailable(reason)),
                 }
             }
@@ -247,7 +390,24 @@ fn fonts_table() -> Table {
         Err(reason) => out::put(&mut styles, "error", out::unavailable(reason)),
     }
     out::put_table(&mut t, "preferredFontForTextStyle", styles);
+    out::put_table(&mut t, "preferredFontForTextStyle_emphasized", emphasized);
+    out::put(
+        &mut t,
+        "descriptor_method",
+        out::text(text::DESCRIPTOR_METHOD),
+    );
     t
+}
+
+/// A text style's emphasized font: its fontDescriptor with
+/// NSFontDescriptorTraitBold added to its symbolicTraits, at the
+/// descriptor's size; `None` where fontWithDescriptor:size: is nil.
+fn emphasized_font(font: &NSFont) -> Option<Retained<NSFont>> {
+    let descriptor = font.fontDescriptor();
+    let bold = descriptor.fontDescriptorWithSymbolicTraits(
+        descriptor.symbolicTraits() | NSFontDescriptorSymbolicTraits::TraitBold,
+    );
+    NSFont::fontWithDescriptor_size(&bold, 0.0)
 }
 
 fn font_table(font: &NSFont) -> Table {
@@ -260,36 +420,64 @@ fn font_table(font: &NSFont) -> Table {
     );
     out::put(&mut t, "fontName", out::text(font.fontName().to_string()));
     out::put(&mut t, "pointSize", out::float(font.pointSize()));
-    out::put(&mut t, "weightTrait", weight_trait(font));
+    let weight = weight_trait_value(font);
+    out::put(
+        &mut t,
+        "weightTrait",
+        weight.clone().map_or_else(out::unavailable, out::float),
+    );
+    out::put(
+        &mut t,
+        "weightTrait_nearest_NSFontWeight",
+        weight.map_or_else(out::unavailable, nearest_weight),
+    );
     out::put(&mut t, "ascender", out::float(font.ascender()));
     out::put(&mut t, "descender", out::float(font.descender()));
     out::put(&mut t, "leading", out::float(font.leading()));
     out::put(&mut t, "capHeight", out::float(font.capHeight()));
     out::put(&mut t, "xHeight", out::float(font.xHeight()));
+    out::put_table(&mut t, "descriptor", text::descriptor_table(font));
     t
 }
 
 /// NSFontWeightTrait from the font descriptor's traits dictionary.
-fn weight_trait(font: &NSFont) -> Value {
-    let (traits_key, weight_key) = match ffi::font_trait_keys() {
-        Ok(keys) => keys,
+fn weight_trait_value(font: &NSFont) -> Result<f64, String> {
+    let (traits_key, weight_key) = ffi::font_trait_keys()?;
+    let descriptor = font.fontDescriptor();
+    let traits = descriptor
+        .objectForKey(traits_key)
+        .ok_or_else(|| "no NSFontTraitsAttribute".to_owned())?;
+    let dict = traits
+        .downcast_ref::<NSDictionary>()
+        .ok_or_else(|| "NSFontTraitsAttribute is not a dictionary".to_owned())?;
+    let key: &AnyObject = weight_key.as_ref();
+    let weight = dict
+        .objectForKey(key)
+        .ok_or_else(|| "no NSFontWeightTrait".to_owned())?;
+    weight
+        .downcast_ref::<NSNumber>()
+        .map(|n| n.doubleValue())
+        .ok_or_else(|| "NSFontWeightTrait is not a number".to_owned())
+}
+
+/// The `NSFontWeight` constant nearest to a weight trait: its name, its
+/// value as AppKit reports it, and the trait's difference from it.
+fn nearest_weight(trait_value: f64) -> Value {
+    let weights = match ffi::font_weights() {
+        Ok(weights) => weights,
         Err(reason) => return out::unavailable(reason),
     };
-    let descriptor = font.fontDescriptor();
-    let Some(traits) = descriptor.objectForKey(traits_key) else {
-        return out::unavailable("no NSFontTraitsAttribute");
+    let nearest = weights
+        .iter()
+        .min_by(|(_, a), (_, b)| (a - trait_value).abs().total_cmp(&(b - trait_value).abs()));
+    let Some((name, value)) = nearest else {
+        return out::unavailable("no NSFontWeight constants");
     };
-    let Some(dict) = traits.downcast_ref::<NSDictionary>() else {
-        return out::unavailable("NSFontTraitsAttribute is not a dictionary");
-    };
-    let key: &AnyObject = weight_key.as_ref();
-    let Some(weight) = dict.objectForKey(key) else {
-        return out::unavailable("no NSFontWeightTrait");
-    };
-    match weight.downcast_ref::<NSNumber>() {
-        Some(n) => out::float(n.doubleValue()),
-        None => out::unavailable("NSFontWeightTrait is not a number"),
-    }
+    let mut t = Table::new();
+    out::put(&mut t, "name", out::text(*name));
+    out::put(&mut t, "value", out::float(*value));
+    out::put(&mut t, "difference", out::float(trait_value - value));
+    Value::Table(t)
 }
 
 // ── Colours ─────────────────────────────────────────────────────────────────
@@ -472,6 +660,114 @@ fn color_value(color: &NSColor, srgb: &NSColorSpace) -> Value {
             color
         )),
     }
+}
+
+// ── Tokens ──────────────────────────────────────────────────────────────────
+
+/// The user defaults the tokens read, as `-[NSUserDefaults objectForKey:]`
+/// of the standard defaults (the global domain included) gives them.
+const TOKEN_DEFAULTS: [&str; 6] = [
+    "NSTextInsertionPointBlinkPeriodOn",
+    "NSTextInsertionPointBlinkPeriodOff",
+    "NSTextInsertionPointBlinkPeriod",
+    "InitialKeyRepeat",
+    "KeyRepeat",
+    "AppleKeyboardUIMode",
+];
+
+/// Timing values the theme tokens take: key repeat, double click, the caret
+/// blink defaults, the default animation duration and a continuous button's
+/// periodic delay.
+fn tokens_table(mtm: MainThreadMarker) -> Table {
+    let mut t = Table::new();
+    let mut event = Table::new();
+    out::put(
+        &mut event,
+        "keyRepeatDelay_s",
+        out::float(NSEvent::keyRepeatDelay()),
+    );
+    out::put(
+        &mut event,
+        "keyRepeatInterval_s",
+        out::float(NSEvent::keyRepeatInterval()),
+    );
+    out::put(
+        &mut event,
+        "doubleClickInterval_s",
+        out::float(NSEvent::doubleClickInterval()),
+    );
+    out::put_table(&mut t, "NSEvent", event);
+
+    let defaults = NSUserDefaults::standardUserDefaults();
+    let mut d = Table::new();
+    for key in TOKEN_DEFAULTS {
+        let value = match defaults.objectForKey(&ns(key)) {
+            None => out::text("absent (objectForKey: is nil)"),
+            Some(obj) => default_value(&obj),
+        };
+        out::put(&mut d, key, value);
+    }
+    out::put_table(&mut t, "user_defaults", d);
+
+    let mut animation = Table::new();
+    out::put(
+        &mut animation,
+        "currentContext_duration_s",
+        out::float(NSAnimationContext::currentContext().duration()),
+    );
+    NSAnimationContext::beginGrouping();
+    out::put(
+        &mut animation,
+        "in_beginGrouping_duration_s",
+        out::float(NSAnimationContext::currentContext().duration()),
+    );
+    NSAnimationContext::endGrouping();
+    out::put_table(&mut t, "NSAnimationContext", animation);
+
+    let mut periodic = Table::new();
+    out::put(
+        &mut periodic,
+        "method",
+        out::text(
+            "a new NSButton, buttonType momentaryPushIn, bezelStyle push: its cell's getPeriodicDelay:interval: as made and after setContinuous: YES",
+        ),
+    );
+    let button = NSButton::new(mtm);
+    button.setButtonType(NSButtonType::MomentaryPushIn);
+    button.setBezelStyle(NSBezelStyle::Push);
+    let read = |b: &NSButton| -> Value {
+        match b.cell() {
+            Some(cell) => {
+                let (delay, interval) = ffi::periodic_delay(&cell);
+                out::floats(&[f64::from(delay), f64::from(interval)])
+            }
+            None => out::unavailable("no cell"),
+        }
+    };
+    out::put(
+        &mut periodic,
+        "isContinuous_default",
+        out::boolean(button.isContinuous()),
+    );
+    out::put(&mut periodic, "default_delay_interval_s", read(&button));
+    button.setContinuous(true);
+    out::put(&mut periodic, "continuous_delay_interval_s", read(&button));
+    out::put_table(&mut t, "NSButton_periodic", periodic);
+    t
+}
+
+/// A user default's value: a number, a string, or its class.
+fn default_value(obj: &AnyObject) -> Value {
+    if let Some(n) = obj.downcast_ref::<NSNumber>() {
+        return out::float(n.doubleValue());
+    }
+    if let Some(s) = obj.downcast_ref::<NSString>() {
+        return out::text(s.to_string());
+    }
+    out::text(format!(
+        "an object of class {}",
+        obj.class().name().to_string_lossy()
+    ))
 }
 
 // ── Environment ─────────────────────────────────────────────────────────────
@@ -1058,7 +1354,7 @@ fn controls_table(
         &mut t,
         "method",
         out::text(format!(
-            "each control alone in an offscreen borderless NSWindow (buffered, never ordered front) whose appearance is set per run; NSControls get setControlSize: and the systemFontOfSize: of systemFontSizeForControlSize:; measured before and after sizeToFit; controls that stretch are widened to {STRETCH_WIDTH} pt after sizeToFit when narrower; cell rects are for the control's bounds after that"
+            "each control alone in an offscreen borderless NSWindow (buffered, never ordered front) whose appearance is set per run; NSControls get setControlSize: and the systemFontOfSize: of systemFontSizeForControlSize:; measured before and after sizeToFit; controls that stretch are widened to {STRETCH_WIDTH} pt after sizeToFit when narrower; cell rects are for the control's bounds after that; each cell's lineBreakMode, wraps, truncatesLastVisibleLine, usesSingleLineMode and isScrollable, and the control's lineBreakMode and usesSingleLineMode, as made (lineBreakMode as [raw, the NSParagraphStyle.h constant's name])"
         )),
     );
     out::put(
@@ -1415,6 +1711,33 @@ fn cell_table(control: &NSControl, view: &NSView) -> Value {
         "imageRectForBounds_xywh",
         rect(cell.imageRectForBounds(bounds)),
     );
+    out::put(
+        &mut c,
+        "lineBreakMode",
+        line_break_mode_value(cell.lineBreakMode()),
+    );
+    out::put(&mut c, "wraps", out::boolean(cell.wraps()));
+    out::put(
+        &mut c,
+        "truncatesLastVisibleLine",
+        out::boolean(cell.truncatesLastVisibleLine()),
+    );
+    out::put(
+        &mut c,
+        "usesSingleLineMode",
+        out::boolean(cell.usesSingleLineMode()),
+    );
+    out::put(&mut c, "isScrollable", out::boolean(cell.isScrollable()));
+    out::put(
+        &mut c,
+        "control_lineBreakMode",
+        line_break_mode_value(control.lineBreakMode()),
+    );
+    out::put(
+        &mut c,
+        "control_usesSingleLineMode",
+        out::boolean(control.usesSingleLineMode()),
+    );
     let cell_obj: &AnyObject = cell.as_ref();
     if let Some(slider_cell) = cell_obj.downcast_ref::<NSSliderCell>() {
         let flipped = view.isFlipped();
@@ -1446,6 +1769,33 @@ fn cell_table(control: &NSControl, view: &NSView) -> Value {
         out::put(&mut c, "rectOfTickMarkAtIndex_0_xywh", tick0);
     }
     Value::Table(c)
+}
+
+/// An `NSLineBreakMode` as `[raw, name]`, the name the SDK's constant has
+/// (`NSParagraphStyle.h`), or the raw value alone where none matches.
+fn line_break_mode_value(mode: NSLineBreakMode) -> Value {
+    let names = [
+        (NSLineBreakMode::ByWordWrapping, "NSLineBreakByWordWrapping"),
+        (NSLineBreakMode::ByCharWrapping, "NSLineBreakByCharWrapping"),
+        (NSLineBreakMode::ByClipping, "NSLineBreakByClipping"),
+        (
+            NSLineBreakMode::ByTruncatingHead,
+            "NSLineBreakByTruncatingHead",
+        ),
+        (
+            NSLineBreakMode::ByTruncatingTail,
+            "NSLineBreakByTruncatingTail",
+        ),
+        (
+            NSLineBreakMode::ByTruncatingMiddle,
+            "NSLineBreakByTruncatingMiddle",
+        ),
+    ];
+    let raw = i64::try_from(mode.0).map_or_else(|_| out::text(mode.0.to_string()), Value::Integer);
+    match names.iter().find(|(m, _)| *m == mode) {
+        Some((_, name)) => out::array(vec![raw, out::text(*name)]),
+        None => out::array(vec![raw]),
+    }
 }
 
 /// Place `view` at the render margin and size its container around it.
@@ -1972,6 +2322,7 @@ fn key_window_table(
                 &mut run,
                 &window,
                 &dir,
+                "renders/key_window",
                 key,
                 window_frame.size,
                 &points,
@@ -2145,15 +2496,17 @@ fn system_expected(appearance: &NSAppearance, system: &[SystemPatch]) -> Vec<(St
     expected
 }
 
-/// Capture `window` to `<dir>/<key>.png` with `screencapture` and sample it
-/// at `points` and at the calibration `patches`, given in points from the
-/// window frame's top left; each patch's sample is checked against what it
-/// is filled with (`expected`).
+/// Capture `window` to `<dir>/<key>.png` (`<rel>/<key>.png` from the
+/// output directory) with `screencapture` and sample it at `points` and at
+/// the calibration `patches`, given in points from the window frame's top
+/// left; each patch's sample is checked against what it is filled with
+/// (`expected`).
 #[allow(clippy::too_many_arguments)]
 fn capture(
     run: &mut Table,
     window: &NSWindow,
     dir: &Path,
+    rel: &str,
     key: &str,
     frame_points: NSSize,
     points: &[(&str, NSPoint)],
@@ -2161,22 +2514,7 @@ fn capture(
     expected: &[(String, String)],
 ) {
     let path = dir.join(format!("{key}.png"));
-    let child = std::process::Command::new("screencapture")
-        .arg("-x")
-        .arg("-o")
-        .arg("-l")
-        .arg(window.windowNumber().to_string())
-        .arg(&path)
-        .stdout(std::process::Stdio::null())
-        .stderr(std::process::Stdio::null())
-        .spawn();
-    let failure = match child {
-        Ok(child) => wait_or_kill(child)
-            .err()
-            .map(|reason| format!("screencapture {reason}")),
-        Err(e) => Some(format!("cannot run screencapture: {e}")),
-    };
-    if let Some(reason) = failure {
+    if let Err(reason) = screencapture(window.windowNumber(), &path) {
         out::put(run, "capture", out::unavailable(reason));
         return;
     }
@@ -2191,11 +2529,7 @@ fn capture(
             return;
         }
     };
-    out::put(
-        run,
-        "file",
-        out::text(format!("renders/key_window/{key}.png")),
-    );
+    out::put(run, "file", out::text(format!("{rel}/{key}.png")));
     let data = NSData::with_bytes(&bytes);
     let Some(rep) = NSBitmapImageRep::imageRepWithData(&data) else {
         out::put(
@@ -2271,6 +2605,24 @@ fn capture(
         out::put_table(&mut calibration, name, s);
     }
     out::put_table(run, "calibration", calibration);
+}
+
+/// Capture the window numbered `window_number`, without its shadow, to
+/// `path` with `screencapture`; `Err` says why it failed.
+fn screencapture(window_number: isize, path: &Path) -> Result<(), String> {
+    let child = std::process::Command::new("screencapture")
+        .arg("-x")
+        .arg("-o")
+        .arg("-l")
+        .arg(window_number.to_string())
+        .arg(path)
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .spawn();
+    match child {
+        Ok(child) => wait_or_kill(child).map_err(|reason| format!("screencapture {reason}")),
+        Err(e) => Err(format!("cannot run screencapture: {e}")),
+    }
 }
 
 /// How the capture's bytes are laid out, which `raw` reads them by, and the

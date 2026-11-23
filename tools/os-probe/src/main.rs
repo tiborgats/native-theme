@@ -10,10 +10,27 @@
 //! or `not probed: …`) and the run goes on. On any other OS the probe prints
 //! that it supports macOS and Windows only and exits with success.
 //!
-//! Usage: `native-theme-os-probe [--out <dir>] [--not-key]`. `--out` (or
-//! `--out=<dir>`) names the output directory, `os-probe-out` by default;
-//! `--not-key`, macOS only, makes the key-window section capture its window
-//! after a second window has taken the key.
+//! Usage: `native-theme-os-probe [--out <dir>] [--not-key] [--button-pass
+//! [--focus | --focus-transition | --not-key | --inactive | --key-not-main |
+//! --main-not-key | --motion | --events]] [--symbols | --reads | --colors]`. `--out` (or `--out=<dir>`) names the
+//! output directory, `os-probe-out` by default; `--not-key`, macOS only,
+//! makes the key-window section capture its window after a second window has
+//! taken the key; `--button-pass`, macOS only, runs the button pass alone:
+//! buttons in titled windows, captured per state, control size and
+//! appearance over the window's background and three opaque backdrops, with
+//! the window key, or with each button focused (`--focus`), a second window
+//! key (`--not-key`) or another application active (`--inactive`); with
+//! `--focus-transition` it records the screen instead while two buttons are
+//! focused and unfocused. `--symbols`, macOS only, runs the symbols pass
+//! alone: the SF Symbol configuration and image size each place gives a
+//! symbol image; `--reads`, macOS only, the reads pass alone: the media
+//! timing functions, the route button's colours and renders, and the ring
+//! round a plain focusable view. `--button-pass --motion` records presses,
+//! radio buttons, a search field's cancel button, interrupted focus rings
+//! and carets; `--button-pass --events` posts clicks, drags, hovers and
+//! typing and reads what AppKit made of them; `--colors`, macOS only, the
+//! colours pass alone: every NSColor and Core Animation's colour
+//! interpolation.
 
 #![deny(unsafe_code)]
 #![deny(
@@ -49,7 +66,7 @@ mod windows;
 use std::path::PathBuf;
 use std::process::ExitCode;
 
-const USAGE: &str = "usage: native-theme-os-probe [--out <dir>] [--not-key]   (default: os-probe-out; --not-key, macOS only: the key-window section captures its window after another window took the key)";
+const USAGE: &str = "usage: native-theme-os-probe [--out <dir>] [--not-key] [--button-pass [--focus | --focus-transition | --not-key | --inactive | --key-not-main | --main-not-key | --motion | --events]] [--symbols | --reads | --colors]   (default: os-probe-out; --not-key, macOS only: the key-window section, or the button pass, captures its windows after another window took the key; --button-pass, macOS only: the button pass alone; --focus, --focus-transition and --inactive, with --button-pass only: each button focused in turn, the screen recorded while two buttons are focused and unfocused, or another application active; --key-not-main and --main-not-key, with --button-pass only: each sheet a panel that is key while another window is main, or each sheet's window main while a panel is key; --motion and --events, with --button-pass only: scripted screen recordings of presses, radios, a search field and carets, or posted clicks, drags, hovers and typing; --symbols, macOS only: the symbols pass alone; --reads, macOS only: the reads pass alone; --colors, macOS only: the colours pass alone)";
 
 /// What the command line asks for.
 #[derive(Debug, PartialEq, Eq)]
@@ -59,6 +76,28 @@ struct Options {
     /// Whether the macOS key-window section captures its window after a
     /// second window has taken the key.
     not_key: bool,
+    /// Whether the macOS probe runs the button pass alone.
+    button_pass: bool,
+    /// Whether the button pass focuses each button in turn.
+    focus: bool,
+    /// Whether the button pass captures with another application active.
+    inactive: bool,
+    /// Whether the button pass records the focus ring's transition instead.
+    focus_transition: bool,
+    /// Whether the button pass's sheets are key but not main.
+    key_not_main: bool,
+    /// Whether the button pass's sheets are main but not key.
+    main_not_key: bool,
+    /// Whether the macOS probe runs the symbols pass alone.
+    symbols: bool,
+    /// Whether the macOS probe runs the reads pass alone.
+    reads: bool,
+    /// Whether the button pass records its motion scripts instead.
+    motion: bool,
+    /// Whether the button pass posts its events scripts instead.
+    events: bool,
+    /// Whether the macOS probe runs the colours pass alone.
+    colors: bool,
 }
 
 /// The options from the command line, or the usage error.
@@ -69,15 +108,52 @@ fn parse_args() -> Result<Options, String> {
 /// The options from `args`, the command line after the program's name, in
 /// any order, or the usage error. An argument starting with `-psn_`, the
 /// process serial number LaunchServices may pass an application `open`
-/// starts, is ignored.
+/// starts, is ignored, and so are `-AppleLanguages`, `-AppleLocale`,
+/// `-AppleTextDirection` and `-NSForceRightToLeftWritingDirection`, each with
+/// its value: defaults AppKit reads from the arguments.
 fn parse_args_from(args: impl IntoIterator<Item = std::ffi::OsString>) -> Result<Options, String> {
     let mut out = PathBuf::from("os-probe-out");
     let mut not_key = false;
+    let mut button_pass = false;
+    let mut focus = false;
+    let mut inactive = false;
+    let mut focus_transition = false;
+    let mut key_not_main = false;
+    let mut main_not_key = false;
+    let mut symbols = false;
+    let mut reads = false;
+    let mut motion = false;
+    let mut events = false;
+    let mut colors = false;
     let mut args = args.into_iter();
     while let Some(arg) = args.next() {
         match arg.to_str() {
             Some(s) if s.starts_with("-psn_") => {}
+            // An argument-domain default (NSUserDefaults.h's
+            // NSArgumentDomain): AppKit reads it from the process's
+            // arguments itself, so the probe takes the pair and ignores it.
+            Some(
+                "-AppleLanguages"
+                | "-AppleLocale"
+                | "-AppleTextDirection"
+                | "-NSForceRightToLeftWritingDirection",
+            ) => {
+                if args.next().is_none() {
+                    return Err(format!("{} needs a value\n{USAGE}", arg.to_string_lossy()));
+                }
+            }
             Some("--not-key") => not_key = true,
+            Some("--button-pass") => button_pass = true,
+            Some("--focus") => focus = true,
+            Some("--inactive") => inactive = true,
+            Some("--focus-transition") => focus_transition = true,
+            Some("--key-not-main") => key_not_main = true,
+            Some("--main-not-key") => main_not_key = true,
+            Some("--symbols") => symbols = true,
+            Some("--reads") => reads = true,
+            Some("--motion") => motion = true,
+            Some("--events") => events = true,
+            Some("--colors") => colors = true,
             Some("--out") => match args.next() {
                 Some(dir) => out = PathBuf::from(dir),
                 None => return Err(format!("--out needs a directory\n{USAGE}")),
@@ -94,7 +170,55 @@ fn parse_args_from(args: impl IntoIterator<Item = std::ffi::OsString>) -> Result
             }
         }
     }
-    Ok(Options { out, not_key })
+    if (focus || inactive || focus_transition || key_not_main || main_not_key || motion || events)
+        && !button_pass
+    {
+        return Err(format!(
+            "--focus, --focus-transition, --inactive, --key-not-main, --main-not-key, --motion and --events need --button-pass\n{USAGE}"
+        ));
+    }
+    if [
+        focus,
+        inactive,
+        not_key,
+        focus_transition,
+        key_not_main,
+        main_not_key,
+        motion,
+        events,
+    ]
+    .iter()
+    .filter(|set| **set)
+    .count()
+        > 1
+        && button_pass
+    {
+        return Err(format!(
+            "the button pass takes one of --focus, --focus-transition, --not-key, --inactive, --key-not-main, --main-not-key, --motion and --events\n{USAGE}"
+        ));
+    }
+    if [symbols, reads, colors].iter().filter(|set| **set).count() > 1
+        || ((symbols || reads || colors) && (button_pass || not_key))
+    {
+        return Err(format!(
+            "--symbols, --reads and --colors each run alone, without --button-pass, --not-key or each other\n{USAGE}"
+        ));
+    }
+    Ok(Options {
+        out,
+        not_key,
+        button_pass,
+        focus,
+        inactive,
+        focus_transition,
+        key_not_main,
+        main_not_key,
+        symbols,
+        reads,
+        motion,
+        events,
+        colors,
+    })
 }
 
 fn main() -> ExitCode {
@@ -127,7 +251,36 @@ fn run(options: &Options) -> ExitCode {
 
     let mut doc = toml::Table::new();
     #[cfg(target_os = "macos")]
-    macos::probe(&mut doc, out_dir, options.not_key);
+    if options.symbols {
+        macos::symbols_probe(&mut doc, out_dir);
+    } else if options.reads {
+        macos::reads_probe(&mut doc, out_dir);
+    } else if options.colors {
+        macos::colors_probe(&mut doc, out_dir);
+    } else if options.button_pass {
+        let mode = if options.focus {
+            macos::ButtonMode::Focus
+        } else if options.focus_transition {
+            macos::ButtonMode::FocusTransition
+        } else if options.inactive {
+            macos::ButtonMode::Inactive
+        } else if options.key_not_main {
+            macos::ButtonMode::KeyNotMain
+        } else if options.main_not_key {
+            macos::ButtonMode::MainNotKey
+        } else if options.motion {
+            macos::ButtonMode::Motion
+        } else if options.events {
+            macos::ButtonMode::Events
+        } else if options.not_key {
+            macos::ButtonMode::NotKey
+        } else {
+            macos::ButtonMode::Key
+        };
+        macos::button_probe(&mut doc, out_dir, mode);
+    } else {
+        macos::probe(&mut doc, out_dir, options.not_key);
+    }
     #[cfg(target_os = "windows")]
     windows::probe(&mut doc);
 
@@ -180,6 +333,17 @@ mod tests {
         Ok(Options {
             out: PathBuf::from(out),
             not_key,
+            button_pass: false,
+            focus: false,
+            inactive: false,
+            focus_transition: false,
+            key_not_main: false,
+            main_not_key: false,
+            symbols: false,
+            reads: false,
+            motion: false,
+            events: false,
+            colors: false,
         })
     }
 
@@ -223,5 +387,131 @@ mod tests {
             parse(&["-psn_0_7", "--not-key", "--out=/tmp/nk"]),
             options("/tmp/nk", true)
         );
+    }
+
+    /// `--button-pass` is taken before or after `--out`.
+    #[test]
+    fn button_pass_is_taken_in_any_order() {
+        let pass = |out: &str| -> Result<Options, String> {
+            Ok(Options {
+                out: PathBuf::from(out),
+                not_key: false,
+                button_pass: true,
+                focus: false,
+                inactive: false,
+                focus_transition: false,
+                key_not_main: false,
+                main_not_key: false,
+                symbols: false,
+                reads: false,
+                motion: false,
+                events: false,
+                colors: false,
+            })
+        };
+        assert_eq!(parse(&["--button-pass"]), pass("os-probe-out"));
+        assert_eq!(
+            parse(&["--out", "/tmp/bp", "--button-pass"]),
+            pass("/tmp/bp")
+        );
+        assert_eq!(parse(&["--button-pass", "--out=/tmp/bp"]), pass("/tmp/bp"));
+    }
+
+    /// The button pass's conditions come one at a time, with
+    /// `--button-pass` only.
+    #[test]
+    fn a_button_condition_needs_the_button_pass_and_comes_alone() {
+        let with = |focus: bool, not_key: bool, inactive: bool| -> Result<Options, String> {
+            Ok(Options {
+                out: PathBuf::from("os-probe-out"),
+                not_key,
+                button_pass: true,
+                focus,
+                inactive,
+                focus_transition: false,
+                key_not_main: false,
+                main_not_key: false,
+                symbols: false,
+                reads: false,
+                motion: false,
+                events: false,
+                colors: false,
+            })
+        };
+        assert_eq!(
+            parse(&["--button-pass", "--focus"]),
+            with(true, false, false)
+        );
+        assert_eq!(
+            parse(&["--inactive", "--button-pass"]),
+            with(false, false, true)
+        );
+        assert_eq!(
+            parse(&["--button-pass", "--not-key"]),
+            with(false, true, false)
+        );
+        assert_eq!(
+            parse(&["--focus-transition", "--button-pass"]),
+            Ok(Options {
+                out: PathBuf::from("os-probe-out"),
+                not_key: false,
+                button_pass: true,
+                focus: false,
+                inactive: false,
+                focus_transition: true,
+                key_not_main: false,
+                main_not_key: false,
+                symbols: false,
+                reads: false,
+                motion: false,
+                events: false,
+                colors: false,
+            })
+        );
+        assert!(parse(&["--focus"]).is_err());
+        assert!(parse(&["--focus-transition"]).is_err());
+        assert!(parse(&["--button-pass", "--focus", "--focus-transition"]).is_err());
+        assert!(parse(&["--inactive"]).is_err());
+        assert!(parse(&["--button-pass", "--focus", "--inactive"]).is_err());
+        assert!(parse(&["--button-pass", "--focus", "--not-key"]).is_err());
+    }
+
+    /// `--symbols` is taken in any order, and alone.
+    #[test]
+    fn symbols_is_taken_alone() {
+        assert_eq!(
+            parse(&["--symbols", "--out", "/tmp/s"]),
+            Ok(Options {
+                out: PathBuf::from("/tmp/s"),
+                not_key: false,
+                button_pass: false,
+                focus: false,
+                inactive: false,
+                focus_transition: false,
+                key_not_main: false,
+                main_not_key: false,
+                symbols: true,
+                reads: false,
+                motion: false,
+                events: false,
+                colors: false,
+            })
+        );
+        assert!(parse(&["--symbols", "--button-pass"]).is_err());
+        assert!(parse(&["--not-key", "--symbols"]).is_err());
+        assert!(parse(&["--symbols", "--reads"]).is_err());
+        assert!(parse(&["--reads", "--button-pass"]).is_err());
+        assert!(parse(&["--reads", "-AppleLanguages", "(he)"]).is_ok());
+        assert!(parse(&["--reads", "-AppleLanguages"]).is_err());
+        assert!(parse(&["--key-not-main"]).is_err());
+        assert!(parse(&["--button-pass", "--key-not-main", "--main-not-key"]).is_err());
+        assert!(parse(&["--button-pass", "--main-not-key"]).is_ok());
+        assert!(parse(&["--button-pass", "--motion"]).is_ok());
+        assert!(parse(&["--button-pass", "--events"]).is_ok());
+        assert!(parse(&["--motion"]).is_err());
+        assert!(parse(&["--button-pass", "--motion", "--events"]).is_err());
+        assert!(parse(&["--colors"]).is_ok());
+        assert!(parse(&["--colors", "--reads"]).is_err());
+        assert!(parse(&["--colors", "--button-pass"]).is_err());
     }
 }
