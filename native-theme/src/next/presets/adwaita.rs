@@ -6,10 +6,17 @@
 //! and the globals made from them; the widgets derived from the roles, the
 //! globals and the colours. A widget's colour that is a role's colour is
 //! taken from the roles, not from a second copy of the constant. The system's
-//! settings ([`ResolveInputs::system`]), the active palette
+//! settings ([`ResolveInputs::system`]) are laid over the constants where
+//! given, and what 0.7.2's portal reader derives from them the builder
+//! derives (spec §8, "The GNOME part"): from the accent, the accent's fill,
+//! the selection, the tab's indicator, the info status and the focus ring
+//! (libadwaita's standalone colour, through the `adw_standalone` kernel);
+//! from the UI font, the body and the type scale libadwaita sizes as a share
+//! of it; the monospace and the title bar fonts, the overlay scroll bars, the
+//! icon theme and the caret's blink as given. The active palette
 //! ([`ResolveInputs::palette`]) and an explicit accent
-//! ([`ResolveInputs::accent`]) are not read yet: what 0.7.2's portal reader
-//! derives from the system is the next task of the plan's GNOME unit.
+//! ([`ResolveInputs::accent`]) are not read yet: they are the next task of
+//! the plan's GNOME unit.
 //!
 //! Defined by the preset (spec §1, "Axis values without data"): the variant
 //! `ButtonVariant::Primary` (0.7.2's `primary_*` fields), a list's alternate
@@ -101,6 +108,7 @@ use crate::next::icons::{IconSizes, IconThemeSpec};
 use crate::next::layout::{ArrowSide, DialogButtonOrder, LayoutMetrics, TabIndicatorSide};
 use crate::next::motion::{CaretSpec, DialogEntranceStyle, MotionTokens, UiTimings};
 use crate::next::paint::Paint;
+use crate::next::platform::adw_standalone::adw_standalone;
 use crate::next::preset::{Preset, ResolveInputs};
 use crate::next::presets::helpers::{
     Motion, dialog_entrance, linear_font_px, motion, motion_tokens, physical_edges,
@@ -108,6 +116,7 @@ use crate::next::presets::helpers::{
 use crate::next::query::{
     ButtonVariant, Contrast, Direction, Orientation, Scheme, ThemeContext, WidgetState,
 };
+use crate::next::reader::{OsFont, SystemOverrides};
 use crate::next::roles::{
     AccentColors, ColorRoles, RoleOrigin, SelectionColors, StatusColors, SurfaceColors,
 };
@@ -616,6 +625,12 @@ const FOCUS_RING_WIDTH: f32 = 2.0;
 /// The focus ring's offset from the control's edge.
 // `defaults.focus_ring_offset`: 0.7.2 adwaita.toml (uncited)
 const FOCUS_RING_OFFSET: f32 = -2.0;
+
+/// The focus ring's alpha: libadwaita's `$focus_border_color`, the
+/// standalone accent at 50 % (libadwaita 1.10.0 `_colors.scss:260`, `:307`;
+/// `_drawing.scss:20`), as 0.7.2's GNOME reader states it for the system's
+/// accent (`src/gnome/accent.rs`, `focus_ring`).
+const FOCUS_RING_ALPHA: f32 = 0.5;
 
 /// The focus ring's alpha under `Contrast::High`: libadwaita's
 /// `$focus_border_color_hc`, the standalone accent at 80 % where it draws
@@ -1182,6 +1197,50 @@ fn translucent(c: Color, alpha: f32) -> Color {
     Color::from_srgb8(r, g, b, a)
 }
 
+/// libadwaita's `.caption`: 82 % of the base font, platform-facts.md
+/// (§1.4.1), the size of `typography.caption` under the system's UI font (spec
+/// §8, "The GNOME part").
+const CAPTION_FACTOR: f32 = 0.82;
+
+/// libadwaita's `.title-2`: 136 % of the base font, platform-facts.md
+/// (§1.4.1), the size of `typography.title1` and of the dialog's title under
+/// the system's UI font.
+const TITLE_2_FACTOR: f32 = 1.36;
+
+/// libadwaita's `.title-1`: 181 % of the base font, platform-facts.md
+/// (§1.4.1), the size of `typography.display` under the system's UI font.
+const TITLE_1_FACTOR: f32 = 1.81;
+
+/// `size` times `factor`, in `size`'s unit.
+fn scaled(size: FontSize, factor: f32) -> FontSize {
+    match size {
+        FontSize::Pt(v) => FontSize::Pt(v * factor),
+        FontSize::Px(v) => FontSize::Px(v * factor),
+    }
+}
+
+/// A title's size: the system's UI font size `ui_size` times `factor`, in
+/// its unit, where given, else the preset's `preset_pt` points (spec §8,
+/// "The GNOME part"; 0.7.2's `gnome::apply_type_scale`).
+fn title_size(ui_size: Option<FontSize>, factor: f32, preset_pt: f32) -> FontSize {
+    ui_size.map_or(FontSize::Pt(preset_pt), |size| scaled(size, factor))
+}
+
+/// Lays the system's accent `accent` over the scheme's colours `c` for
+/// `scheme` (spec §8, "The GNOME part", *Derived by the `adwaita`
+/// builder*; 0.7.2's `gnome::apply_gnome_accent`): it is the accent's fill,
+/// the selection's background, the tab's active indicator and the info
+/// status's fill, and the focus ring's colour, which the focused text
+/// field's outline takes too, is libadwaita's standalone colour of the
+/// accent for `scheme` ([`adw_standalone`]), clamped and held in 8 bits as
+/// 0.7.2 holds it, at [`FOCUS_RING_ALPHA`] ([`roles`] takes it to
+/// [`FOCUS_RING_ALPHA_HIGH`] under `Contrast::High`).
+fn lay_accent_over(c: &mut SchemeColors, accent: Color, scheme: Scheme) {
+    c.accent = accent;
+    let [r, g, b, a] = adw_standalone([accent.r, accent.g, accent.b, accent.a], scheme);
+    c.focus_ring = translucent(Color::new(r, g, b, a), FOCUS_RING_ALPHA);
+}
+
 // ---------------------------------------------------------------------------
 // The builder
 // ---------------------------------------------------------------------------
@@ -1192,21 +1251,35 @@ fn translucent(c: Color, alpha: f32) -> Color {
 pub(crate) const CONTRAST_LEVELS: &[Contrast] = &[Contrast::Normal, Contrast::High];
 
 /// The theme of `adwaita` for `ctx.scheme` and `ctx.contrast`, from the
-/// preset's constants.
-// `inputs` is not read yet: the system's settings, the palette's and the
-// accent's derivations (`adw_standalone`, spec §6, resolution step 2; spec
-// §8, "The GNOME part") are the next task of the plan's GNOME unit.
-pub(crate) fn resolve(ctx: &ThemeContext, _inputs: &ResolveInputs<'_>) -> ResolvedTheme {
-    let c = match ctx.scheme {
-        Scheme::Light => &LIGHT,
-        Scheme::Dark => &DARK,
+/// preset's constants with the system's settings `inputs.system` laid over
+/// them (spec §8, "The GNOME part"): the accent ([`lay_accent_over`]), the
+/// fonts ([`typography`]; the title bar's, [`window`]), the overlay scroll
+/// bars, the icon theme and the caret's blink.
+// The palette and the explicit accent (spec §6, resolution step 2) are not
+// read yet: they are the next task of the plan's GNOME unit.
+pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> ResolvedTheme {
+    let system = inputs.system;
+    let mut scheme_colors = match ctx.scheme {
+        Scheme::Light => LIGHT,
+        Scheme::Dark => DARK,
     };
+    if let Some(accent) = system.and_then(|s| s.accent) {
+        lay_accent_over(&mut scheme_colors, accent, ctx.scheme);
+    }
+    let c = &scheme_colors;
     let colors = roles(c, ctx.contrast);
-    let typography = typography(c, ctx.text_scale);
+    let typography = typography(c, system, ctx.text_scale);
     let units = FontUnits {
         dpi: typography.font_dpi,
         text_scale: ctx.text_scale,
     };
+    let ui_size = system.and_then(|s| s.ui_font.as_ref()?.size);
+    // The system's icon theme, unless the system was read in the other
+    // scheme (spec §6, resolution step 2); the sizes stay the preset's.
+    let icon_theme = system
+        .filter(|s| s.scheme.is_none_or(|scheme| scheme == ctx.scheme))
+        .and_then(|s| s.icon_theme.clone())
+        .unwrap_or_else(|| Arc::from(ICON_THEME));
     // No source the builder reads states a policy of GNOME's for reduced motion: `Reduced`
     // runs as `Full`.
     let motion = motion(ctx.motion, None);
@@ -1229,7 +1302,7 @@ pub(crate) fn resolve(ctx: &ThemeContext, _inputs: &ResolveInputs<'_>) -> Resolv
         context: ctx.clone(),
         icons: IconThemeSpec {
             set: ICON_SET,
-            theme: Some(Arc::from(ICON_THEME)),
+            theme: Some(icon_theme),
             // 0.7.2's `Resolved::icon_theme_explicit`: the TOML states the theme
             // (`src/model/resolved.rs`).
             theme_explicit: true,
@@ -1274,16 +1347,28 @@ pub(crate) fn resolve(ctx: &ThemeContext, _inputs: &ResolveInputs<'_>) -> Resolv
         ),
         caret: CaretSpec {
             width: None,
-            blink_on_ms: Some(CARET_BLINK_ON_MS),
-            blink_off_ms: Some(CARET_BLINK_OFF_MS),
-            blink_timeout_ms: Some(CARET_BLINK_TIMEOUT_MS),
+            blink_on_ms: system
+                .and_then(|s| s.caret_blink_on_ms)
+                .or(Some(CARET_BLINK_ON_MS)),
+            blink_off_ms: system
+                .and_then(|s| s.caret_blink_off_ms)
+                .or(Some(CARET_BLINK_OFF_MS)),
+            blink_timeout_ms: system
+                .and_then(|s| s.caret_blink_timeout_ms)
+                .or(Some(CARET_BLINK_TIMEOUT_MS)),
             shape: None,
         },
         elevations: Arc::from([]),
         button: button(c, &colors, &typography, &layout),
         checkbox: checkbox(c, &colors, &typography, &layout),
         radio: radio(c, &colors, &typography, &layout),
-        scrollbar: scrollbar(c, &colors),
+        scrollbar: scrollbar(
+            c,
+            &colors,
+            system
+                .and_then(|s| s.overlay_scrollbars)
+                .unwrap_or(SCROLLBAR_OVERLAY),
+        ),
         list: list(c, &colors, &typography, &layout),
         tab: tab(c, &colors, &typography),
         menu: menu(c, &colors, &typography, ctx.direction),
@@ -1292,7 +1377,15 @@ pub(crate) fn resolve(ctx: &ThemeContext, _inputs: &ResolveInputs<'_>) -> Resolv
         toolbar: toolbar(c, &colors, &typography, &layout),
         status_bar: status_bar(&colors, &typography, &layout, ctx.direction),
         tooltip: tooltip(&colors, &typography, &layout),
-        window: window(c, &colors, &typography, &layout, ctx.window_active),
+        window: window(
+            c,
+            &colors,
+            &typography,
+            system.and_then(|s| s.title_bar_font.as_ref()),
+            units,
+            &layout,
+            ctx.window_active,
+        ),
         input: input(
             c,
             &colors,
@@ -1317,7 +1410,15 @@ pub(crate) fn resolve(ctx: &ThemeContext, _inputs: &ResolveInputs<'_>) -> Resolv
         spinner: spinner(&colors),
         popover: popover(c, &typography, &layout),
         switch: switch(c, &colors),
-        dialog: dialog(&colors, &typography, units, &layout, ctx.direction, motion),
+        dialog: dialog(
+            &colors,
+            &typography,
+            title_size(ui_size, TITLE_2_FACTOR, DIALOG_TITLE_SIZE_PT),
+            units,
+            &layout,
+            ctx.direction,
+            motion,
+        ),
         combo_box: combo_box(c, &colors, &typography, &layout, ctx.direction),
         segmented_control: segmented_control(c, &colors, &typography, &layout, ctx.direction),
         card: card(c, &colors),
@@ -1471,27 +1572,45 @@ fn text_scale_entry(size: FontSize, weight: u16, units: FontUnits) -> TextStyle 
 /// `resolve_text_scale_entry`): the caption its weight, the section heading
 /// (`headline`) its size; the dialog title is `title1` and the display style
 /// `display` (spec §4). The body's line height follows the text-scale rule
-/// (spec §4). Sizes convert at [`FONT_DPI`] and scale by `text_scale` (spec
-/// §6, resolution step 2); each keeps its unscaled size as its
-/// `defined_size`.
-fn typography(c: &SchemeColors, text_scale: f32) -> Typography {
-    let units = FontUnits {
-        dpi: FONT_DPI,
-        text_scale,
-    };
+/// (spec §4). Sizes convert at the system's font DPI where given, else at
+/// [`FONT_DPI`], and scale by `text_scale` (spec §6, resolution step 2); each
+/// keeps its unscaled size as its `defined_size`.
+///
+/// The system's fonts in `system` are laid over the preset's (spec §8, "The
+/// GNOME part"; 0.7.2's `gnome::build_gnome_variant_pure`, merged over the
+/// preset): the UI font over the body, and with it what takes the body's
+/// size or weight; the monospace font over the monospace style. Where the UI
+/// font's size is given, the caption, `title1` and `display` are that size
+/// times [`CAPTION_FACTOR`], [`TITLE_2_FACTOR`] and [`TITLE_1_FACTOR`], in its
+/// unit, their weights the preset's ([`title_size`]).
+fn typography(c: &SchemeColors, system: Option<&SystemOverrides>, text_scale: f32) -> Typography {
+    let dpi = system.and_then(|s| s.font_dpi).unwrap_or(FONT_DPI);
+    let units = FontUnits { dpi, text_scale };
     let text = c.window_foreground;
-    let body_size = FontSize::Pt(FONT_SIZE_PT);
-    let mut body = font(FONT_FAMILY, body_size, FONT_WEIGHT, text, units);
+    let ui = system.and_then(|s| s.ui_font.as_ref());
+    let ui_size = ui.and_then(|f| f.size);
+    let body_size = ui_size.unwrap_or(FontSize::Pt(FONT_SIZE_PT));
+    let mut body = laid_over(
+        font(
+            FONT_FAMILY,
+            FontSize::Pt(FONT_SIZE_PT),
+            FONT_WEIGHT,
+            text,
+            units,
+        ),
+        ui,
+        units,
+    );
     body.line_height = line_height_px(body_size, units);
     body.stated |= TextStated::LINE_HEIGHT;
     Typography {
         display: Some(text_scale_entry(
-            FontSize::Pt(DISPLAY_SIZE_PT),
+            title_size(ui_size, TITLE_1_FACTOR, DISPLAY_SIZE_PT),
             DISPLAY_WEIGHT,
             units,
         )),
         title1: Some(text_scale_entry(
-            FontSize::Pt(TITLE1_SIZE_PT),
+            title_size(ui_size, TITLE_2_FACTOR, TITLE1_SIZE_PT),
             TITLE1_WEIGHT,
             units,
         )),
@@ -1499,28 +1618,56 @@ fn typography(c: &SchemeColors, text_scale: f32) -> Typography {
         title3: None,
         title4: None,
         headline: Some(text_scale_entry(body_size, HEADLINE_WEIGHT, units)),
+        caption: Some(text_scale_entry(
+            title_size(ui_size, CAPTION_FACTOR, CAPTION_SIZE_PT),
+            body.weight,
+            units,
+        )),
         body,
         callout: None,
         subheadline: None,
-        caption: Some(text_scale_entry(
-            FontSize::Pt(CAPTION_SIZE_PT),
-            FONT_WEIGHT,
-            units,
-        )),
-        monospace: font(
-            MONO_FAMILY,
-            FontSize::Pt(MONO_SIZE_PT),
-            MONO_WEIGHT,
-            text,
+        monospace: laid_over(
+            font(
+                MONO_FAMILY,
+                FontSize::Pt(MONO_SIZE_PT),
+                MONO_WEIGHT,
+                text,
+                units,
+            ),
+            system.and_then(|s| s.monospace_font.as_ref()),
             units,
         ),
         line_height_multiplier: LINE_HEIGHT,
         fallbacks: Arc::from([]),
         emoji_family: None,
         rendering: TextRendering::default(),
-        font_dpi: FONT_DPI,
+        font_dpi: dpi,
         font_whole_pixels: None,
     }
+}
+
+/// `base` with the system's font `os` laid over it, where given: each of
+/// its family, size, weight and style that `os` states replaces `base`'s,
+/// as 0.7.2 merges a reader's font over the preset's (`Theme::merge`).
+fn laid_over(base: TextStyle, os: Option<&OsFont>, units: FontUnits) -> TextStyle {
+    let mut font = base;
+    let Some(os) = os else {
+        return font;
+    };
+    if let Some(family) = &os.family {
+        font.family = family.clone();
+    }
+    if let Some(size) = os.size {
+        font.size_px = font_px(size, units);
+        font.defined_size = Some(size);
+    }
+    if let Some(weight) = os.weight {
+        font.weight = weight;
+    }
+    if let Some(style) = os.style {
+        font.style = style;
+    }
+    font
 }
 
 // ---------------------------------------------------------------------------
@@ -1825,8 +1972,9 @@ fn across(
 /// `scrollbar.track_color` where unstated, `resolve_safety_nets`) and a
 /// handle in the muted foreground (0.7.2: `scrollbar.thumb_color` is
 /// `defaults.muted_color` where unstated), each of an exact thickness across
-/// the bar; the hovered and the pressed handle's own colours.
-fn scrollbar(c: &SchemeColors, roles: &ColorRoles) -> ScrollbarWidget {
+/// the bar; the hovered and the pressed handle's own colours. It overlays the
+/// content where `overlay` (the system's setting, else the preset's).
+fn scrollbar(c: &SchemeColors, roles: &ColorRoles, overlay: bool) -> ScrollbarWidget {
     let track = across(
         RuleBuilder::new(PartStyle::default()).base(roles.window.background.map(fill)),
         SCROLLBAR_GROOVE_WIDTH,
@@ -1851,7 +1999,7 @@ fn scrollbar(c: &SchemeColors, roles: &ColorRoles) -> ScrollbarWidget {
         track,
         thumb,
         SCROLLBAR_MIN_THUMB_LENGTH,
-        SCROLLBAR_OVERLAY,
+        overlay,
     )
 }
 
@@ -1891,11 +2039,15 @@ fn tooltip(roles: &ColorRoles, typography: &Typography, layout: &LayoutMetrics) 
 /// `defaults.surface_color` where unstated); the inactive one in its own
 /// colour; the title in the UI font at its weight, in the window's text,
 /// active or not (0.7.2: `window.inactive_title_bar_text_color` is
-/// `window.title_bar_font.color` where unstated).
+/// `window.title_bar_font.color` where unstated), with the system's title
+/// bar font `title_font` laid over it where given ([`laid_over`]; 0.7.2's
+/// reader states `window.title_bar_font`).
 fn window(
     c: &SchemeColors,
     roles: &ColorRoles,
     typography: &Typography,
+    title_font: Option<&OsFont>,
+    units: FontUnits,
     layout: &LayoutMetrics,
     active: bool,
 ) -> WindowChrome {
@@ -1921,6 +2073,7 @@ fn window(
     }
     let mut title = label(&typography.body, Some(c.window_foreground));
     title.weight = WINDOW_TITLE_WEIGHT;
+    let title = laid_over(title, title_font, units);
     WindowChrome::new(
         WidgetOrigin::Native,
         None,
@@ -2445,12 +2598,14 @@ fn switch(c: &SchemeColors, roles: &ColorRoles) -> SwitchWidget {
 /// The dialog: its panel in the window's background (0.7.2's
 /// `dialog.background_color` where unstated, `resolve_safety_nets`) with the
 /// default border (`resolve_border_inheritance`), its own corners, padding
-/// and size limits; its title in the UI font at its own size and weight, its
-/// body in the UI font (0.7.2: `dialog.title_font` and `body_font` are
+/// and size limits; its title in the UI font at `title_size` (the preset's,
+/// or derived from the system's UI font, [`title_size`]) and its own weight,
+/// its body in the UI font (0.7.2: `dialog.title_font` and `body_font` are
 /// `defaults.font` where unstated).
 fn dialog(
     roles: &ColorRoles,
     typography: &Typography,
+    title_size: FontSize,
     units: FontUnits,
     layout: &LayoutMetrics,
     direction: Direction,
@@ -2481,7 +2636,6 @@ fn dialog(
         panel.apply(&prop);
     }
     let mut title = label(&typography.body, None);
-    let title_size = FontSize::Pt(DIALOG_TITLE_SIZE_PT);
     title.size_px = font_px(title_size, units);
     title.defined_size = Some(title_size);
     title.weight = DIALOG_TITLE_WEIGHT;
