@@ -1497,8 +1497,12 @@ on KDE Plasma, `adwaita` on Linux, `windows-11` on Windows, `macos-monterey`,
 lays one of the bundled palettes (`Palette::BUNDLED_NAMES`: the Catppuccin
 four, Dracula, Alucard, Nord, Solarized, Tokyo Night, Gruvbox and One, each
 for one scheme) over it, or `none`, the preset's own colours, and locks the
-mode to the palette's scheme. The pages not yet on the 0.8.0 model show the
-preset alone under a palette, which the palette's tooltip says. The content panel shows the page, with a tab per
+mode to the palette's scheme. Under a palette, gpui-component's colours and
+the connector's own widgets are drawn from the 0.8.0 theme with the palette;
+the showcase's own refinements -- its colours and geometry, its menus, and
+the side panel's padding and label font -- still read the 0.7.2 preset,
+which has no palettes, until their pages move to the 0.8.0 model, as the
+palette's tooltip says. The content panel shows the page, with a tab per
 page above it. A status bar has the side panel's toggle at its left end.
 Resting the pointer on any widget shows in the inspector what the theme sets
 on it, with the upstream line each colour is read at. Two parts report
@@ -1509,7 +1513,8 @@ what it shows.
 
 Flags: `--theme NAME` (`default` or a preset the Theme setting offers; a
 community preset of 0.7.2, such as `nord`, is reported, its colours being a
-palette), `--variant light|dark|system`,
+palette), `--palette NAME` (`none` or a palette the Palette setting offers),
+`--variant light|dark|system`,
 `--tab PAGE` (`basic`, `buttons`, `inputs`, `data`, `feedback`, `typography`,
 `layout`, `overlays`, `charts`, `icons`, `theme-map`),
 `--icon-set default|material|lucide|gpui-builtin|system|freedesktop|<installed theme>`

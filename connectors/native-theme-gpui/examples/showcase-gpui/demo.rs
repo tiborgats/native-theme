@@ -114,8 +114,9 @@ use crate::info::{self, InfoExt, InfoRegistry, WidgetInfo, as_rgba, native_info}
 use crate::support::{
     CAROUSEL_SLIDES, ChatMessage, ChromeIcon, DIFF_DECORATED_LINE, DIFF_DECORATED_PATH,
     GRID_LAYOUT_ITEMS, NativeStyled as _, PresetDelegate, STEPPER_STEPS, SampleIcon,
-    SampleListDelegate, SampleTableDelegate, native_color, native_geometry, native_value,
-    next_resolved, old_native, old_resolved, refined, toolbar_variant, with_gap, with_padding,
+    SampleListDelegate, SampleTableDelegate, contrast_held, native_color, native_geometry,
+    native_value, next_resolved, old_native, old_resolved, refined, requested_preferences,
+    toolbar_variant, with_gap, with_padding,
 };
 use crate::{
     CHROME_APP_MENU_BAR, CHROME_SIDE_PANEL, CHROME_SIDE_PANEL_CONTENT, CHROME_SIDE_PANEL_SCROLL,
@@ -1492,12 +1493,13 @@ fn settings_tooltip(cx: &App, control: Stateful<Div>, text: SharedString) -> Sta
         })
 }
 
-/// What the palette Select's tooltip says: a palette has no 0.7.2
-/// equivalent, so the pages not yet on the 0.8.0 model show the preset
-/// alone under one.
-pub(crate) const PALETTE_TOOLTIP: &str = "A palette recolours the preset (0.8.0 model). The pages \
-     not yet ported to the 0.8.0 model read the 0.7.2 model, which has no palettes: under a \
-     palette they show the preset alone.";
+/// What the palette Select's tooltip says: what is drawn from which model
+/// under a palette, which has no 0.7.2 equivalent.
+pub(crate) const PALETTE_TOOLTIP: &str = "A palette recolours the preset (0.8.0 model): \
+     gpui-component's colours and the connector's own widgets are drawn from the 0.8.0 theme \
+     with the palette. The showcase's own refinements -- its colours, geometry, menus and the \
+     side panel's padding and label font -- still read the 0.7.2 preset, which has no \
+     palettes, until their pages move to the 0.8.0 model.";
 
 /// The palette Select over `state`, refined by `geometry::select`, as wide
 /// as the theme settings it is in: `none`, the theme's own colours, and the
@@ -1916,7 +1918,8 @@ fn sidebar_label(
 /// filled with the model's sidebar colour and lettered in its font's colour.
 /// The three are one content, scrolled on `scroll` where it is taller than
 /// the panel ([`crate::support::gutter_scroll`], `relayout` its frame's
-/// relayout): the inspector then keeps its own height, its TabBar's, so
+/// relayout): the inspector then keeps its own height, its TabBar's and its
+/// info's first lines' (`inspector::PanelLook::body_min_height`), so
 /// every control stays reachable at every text scale in the fixed window,
 /// and the panel never runs past its bounds.
 /// Where the theme states any side of `sidebar.border.padding`
@@ -3168,12 +3171,6 @@ impl Preference {
     }
 }
 
-/// The accessibility preferences the installed native theme carries; `None`
-/// before one is installed.
-fn installed_preferences(cx: &App) -> Option<AccessibilityPreferences> {
-    cx.native_theme().map(|nt| nt.accessibility().clone())
-}
-
 /// The accessibility preferences the user set in the Preferences sheet, each
 /// `None` until set there. Every theme install reads the OS's preferences
 /// and puts these over them (`PreferenceOverrides::over`), so a preference
@@ -3224,7 +3221,7 @@ pub(crate) fn change_preferences(
     cx: &mut App,
     change: impl FnOnce(&mut PreferenceOverrides),
 ) {
-    if installed_preferences(cx).is_some() {
+    if cx.native_theme().is_some() {
         let mut overrides = PreferenceOverrides::of(cx);
         change(&mut overrides);
         cx.set_global(overrides);
@@ -3244,9 +3241,22 @@ const TEXT_SCALE_STEP: f64 = 0.25;
 /// The Reduce motion row's description in the Preferences sheet.
 pub(crate) const REDUCE_MOTION_DESCRIPTION: &str = "reduce_motion: forwarded to gpui's own reduce-motion flag; off is no request, so an OS request keeps motion reduced whatever the switch shows";
 
+/// `info` with the reason the installed theme's contrast is lower than the
+/// preferences ask, where `pref` is High contrast and it is
+/// (`support::contrast_held`): the switch shows what was asked for.
+fn with_contrast_held(info: WidgetInfo, pref: Preference, cx: &App) -> WidgetInfo {
+    match (pref, contrast_held(cx)) {
+        (Preference::HighContrast, Some(held)) => info.instance("resolved", held.text()),
+        _ => info,
+    }
+}
+
 /// A row whose field is one of the showcase's own Switches, built as
 /// upstream's switch field builds one (setting/fields/bool.rs, `BoolField`)
-/// but wrapped in its info, which upstream's field has no room for.
+/// but wrapped in its info, which upstream's field has no room for. The
+/// switch shows the preference the installed theme was asked for
+/// (`support::requested_preferences`), not the level the theme resolved to,
+/// which its info gives where it is lower.
 fn preference_item(
     ui: &Entity<InfoRegistry>,
     title: &'static str,
@@ -3256,13 +3266,16 @@ fn preference_item(
 ) -> SettingItem {
     let ui = ui.clone();
     let field = SettingField::render(move |options, _window, cx| {
-        let checked = installed_preferences(cx).is_some_and(|p| pref.get(&p));
+        let checked = requested_preferences(cx).is_some_and(|p| pref.get(&p));
         let selector = pref.selector();
         let clicked = ui.clone();
         #[cfg(feature = "widgets")]
         if let Some(r) = old_resolved(cx) {
-            let switch_info =
-                info::inputs::native_switch(r, pref.field(), checked, options.is_disabled());
+            let switch_info = with_contrast_held(
+                info::inputs::native_switch(r, pref.field(), checked, options.is_disabled()),
+                pref,
+                cx,
+            );
             return widgets::Switch::new(selector)
                 .checked(checked)
                 .disabled(options.is_disabled())
@@ -3287,12 +3300,16 @@ fn preference_item(
             .info(
                 &ui,
                 selector,
-                info::preference_switch(
-                    cx.theme(),
-                    pref.field(),
-                    checked,
-                    options.is_disabled(),
-                    resolved,
+                with_contrast_held(
+                    info::preference_switch(
+                        cx.theme(),
+                        pref.field(),
+                        checked,
+                        options.is_disabled(),
+                        resolved,
+                    ),
+                    pref,
+                    cx,
                 ),
             )
             .debug_selector(move || selector.into())
@@ -3303,9 +3320,11 @@ fn preference_item(
 }
 
 /// The Preferences sheet (spec §2.8): `sheet`, `width` wide, holding a
-/// Settings page with the four accessibility preferences. A change goes
-/// through `native_theme_gpui::apply_accessibility`. Without a native theme
-/// there is nothing to re-install, and the rows are disabled.
+/// Settings page with the four accessibility preferences. A change is
+/// recorded (`change_preferences`), and the showcase's `_preferences`
+/// observer installs the theme again, resolved for the context it makes
+/// (`Showcase::install`, through `native_theme_gpui::next::apply`). Without
+/// a native theme there is nothing to re-install, and the rows are disabled.
 ///
 /// The Sheet reports itself on its title, the one part of it the showcase
 /// builds; the Settings below report theirs.
@@ -3328,7 +3347,7 @@ pub(crate) fn preferences(
             },
             |cx| {
                 f64::from(
-                    installed_preferences(cx)
+                    requested_preferences(cx)
                         .unwrap_or_default()
                         .text_scaling_factor,
                 )
@@ -3360,7 +3379,7 @@ pub(crate) fn preferences(
     .item(preference_item(
         ui,
         "High contrast",
-        "high_contrast: stored with the theme, which the connector builds no differently for it",
+        "high_contrast: the theme is resolved at High contrast where it defines that level; the switch's info says where it does not",
         Preference::HighContrast,
         disabled,
     ))
@@ -3373,7 +3392,9 @@ pub(crate) fn preferences(
     ));
     let settings = Settings::new("preferences").page(
         SettingPage::new("Accessibility")
-            .description("Installed with native_theme_gpui::apply_accessibility")
+            .description(
+                "The theme is resolved again for them and installed with native_theme_gpui::next::apply",
+            )
             .resettable(false)
             .default_open(true)
             .group(group),

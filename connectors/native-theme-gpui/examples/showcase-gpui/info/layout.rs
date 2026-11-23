@@ -1159,7 +1159,7 @@ pub fn carousel(t: &Theme, reduce_motion: bool) -> WidgetInfo {
         .config("focus_ring", format!("{}", t.focus_ring))
         .not_themeable("slide fill", "none: a Carousel paints no slide background. The one theme colour it draws is the focus ring, on an overlay the size of the frame while focus is visible (carousel/carousel.rs, Carousel)")
         .not_themeable("snap motion", "Theme::motion's spring_move (carousel/carousel.rs, spring_move); ResolvedTheme has no motion field")
-        .not_themeable("reduced motion", "gpui's App::reduce_motion, forwarded by apply_system_theme -- the spring jumps straight to its target (gpui-base/motion.rs, spring)")
+        .not_themeable("reduced motion", "gpui's App::reduce_motion, which native_theme_gpui::next::apply switches on where the installed theme's motion is reduced (the showcase installs every theme through it) -- the spring jumps straight to its target (gpui-base/motion.rs, spring)")
         .not_themeable("slide controls", "outline Buttons the widget builds itself, disabled at the ends (carousel/carousel.rs, carousel_control)")
         .instance("animation", if reduce_motion {
             "none: reduced motion is on, so a change of slide jumps straight to it (gpui-base/motion.rs, spring)"

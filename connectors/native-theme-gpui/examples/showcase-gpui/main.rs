@@ -992,11 +992,16 @@ fn screenshot(cx: &mut App, window: AnyWindowHandle, path: String, outputs: RunO
 }
 
 /// Put the showcase `main` opened into the state the command line asks for:
-/// its colour mode, theme, page, icons and open menu.
+/// its colour mode, theme, palette, page, icons and open menu.
 ///
 /// Each flag takes exactly what its Select offers, through the shared
 /// crate's one validator per flag (`cli`): `--variant` a row of the
-/// colour-mode Select, `--theme` one of the preset switch, `--icon-set` one
+/// colour-mode Select, `--theme` one of the preset switch
+/// (`cli::next_theme_key`: `default` and this platform's presets of the
+/// 0.8.0 model; a community preset of the 0.7.2 model is reported, its
+/// colours being a palette), `--palette` one of the palette Select
+/// (`cli::palette_key`: `none` or a bundled palette, laid over the theme
+/// installed, as `Showcase::choose_palette` lays it), `--icon-set` one
 /// of the icon-theme Select. A value it does not offer is reported on stderr
 /// and ignored (`cli::reported`), so the setting stays what it would have
 /// been without the flag: a rejected `--theme` leaves `--variant` to install
@@ -1024,8 +1029,11 @@ fn apply_cli_args(
     let theme = cli_args
         .theme
         .as_deref()
-        .and_then(|name| reported(cli::theme_key(name)))
-        .and_then(|key| reported(offered_theme(key)));
+        .and_then(|name| reported(cli::next_theme_key(name)))
+        .map(|key| match key {
+            ThemeKey::Default => "default".to_string(),
+            ThemeKey::Preset(preset) => preset,
+        });
     match (theme, mode) {
         (theme, Some(mode)) => {
             let theme = theme.unwrap_or_else(|| s.current_theme_name.clone());
@@ -1035,6 +1043,16 @@ fn apply_cli_args(
             s.apply_theme_by_name(&theme, window, cx);
         }
         (None, None) => {}
+    }
+    // `--palette` lays its palette over the theme now installed, as a choice
+    // in the palette Select does, which it then shows.
+    if let Some(palette) = cli_args
+        .palette
+        .as_deref()
+        .and_then(|name| reported(cli::palette_key(name)))
+    {
+        s.choose_palette(palette.unwrap_or(support::NO_PALETTE), window, cx);
+        s.show_palette(window, cx);
     }
 
     if let Some(page) = cli_args
@@ -1071,23 +1089,6 @@ fn apply_cli_args(
             menus.open_named(name, cfg!(target_os = "macos"), window, cx)
         });
         reported(opened);
-    }
-}
-
-/// The theme settings' key of the theme `--theme` names: `default`, or a
-/// preset the preset switch offers (`support::preset_items`). A community
-/// preset of the 0.7.2 model, which `cli::theme_key` takes, is reported:
-/// the showcase offers its colours as a palette, in the theme settings.
-fn offered_theme(key: ThemeKey) -> Result<String, String> {
-    match key {
-        ThemeKey::Default => Ok("default".to_string()),
-        ThemeKey::Preset(preset) if native_theme::next::Preset::from_name(&preset).is_some() => {
-            Ok(preset)
-        }
-        ThemeKey::Preset(preset) => Err(format!(
-            "--theme {preset}: a community preset of the 0.7.2 model, which this showcase \
-             offers as a palette over a platform preset, chosen in the theme settings"
-        )),
     }
 }
 

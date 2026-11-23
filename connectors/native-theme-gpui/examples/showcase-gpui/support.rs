@@ -23,7 +23,7 @@ use native_theme::icons::{
     FreedesktopLoader, IconData, IconRole, IconSetChoice, LucideLoader, MaterialLoader,
     SegoeFluentLoader, SfSymbolsLoader,
 };
-use native_theme::next::{Palette, Preset};
+use native_theme::next::{Contrast, Palette, Preset};
 use native_theme::theme::IconSet;
 use native_theme_gpui::icons::{IconUse, load_gpui_icon, mask_drawable};
 use native_theme_gpui::next::Mapped;
@@ -264,6 +264,75 @@ pub(crate) struct NextInactive(
 
 impl gpui::Global for NextInactive {}
 
+/// What the installed 0.8.0 theme was asked for (`Showcase::try_install`):
+/// the preferences it was installed with -- the OS's with the user's over
+/// them (`demo::PreferenceOverrides`) -- which the Preferences sheet and the
+/// status bar show, and why the theme's contrast is lower than they ask,
+/// where it is. The connector reads back the context the theme was resolved
+/// to (`NativeTheme::accessibility`), whose contrast level the theme may have
+/// lowered (docs/v0.8.0-spec.md §6, resolution step 1).
+pub(crate) struct Requested {
+    pub(crate) preferences: AccessibilityPreferences,
+    pub(crate) contrast_held: Option<ContrastHeld>,
+}
+
+impl gpui::Global for Requested {}
+
+/// A contrast level the installed 0.8.0 theme was asked for and not resolved
+/// at (docs/v0.8.0-spec.md §6, resolution step 1): the level asked, the one
+/// used, and whether the palette laid over the theme holds `High` back,
+/// which the theme without it reaches in the palette's scheme. Otherwise the
+/// theme defines the level asked for in none of its sources, its preset's
+/// levels or the system's settings, for the scheme resolved.
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct ContrastHeld {
+    pub(crate) asked: Contrast,
+    pub(crate) used: Contrast,
+    pub(crate) by_palette: bool,
+}
+
+impl ContrastHeld {
+    /// The sentence the Preferences sheet's High contrast switch says it in.
+    pub(crate) fn text(&self) -> String {
+        let Self {
+            asked,
+            used,
+            by_palette,
+        } = self;
+        let why = if *by_palette {
+            "the palette laid over the theme holds High back: a palette stays where High is not \
+             taken, and the theme without it has High in the palette's scheme"
+        } else {
+            "the theme defines no such level for the scheme it is resolved in -- neither its \
+             preset nor the system's settings state one -- so the nearest level below it is used"
+        };
+        format!(
+            "the theme is resolved at {used:?} contrast, not the {asked:?} asked for: {why} \
+             (docs/v0.8.0-spec.md §6, resolution step 1)"
+        )
+    }
+}
+
+/// The accessibility preferences the installed theme was asked for: the
+/// 0.7.2 theme's own, where one is installed (`native_theme_gpui::apply`
+/// keeps them as given), else the installed 0.8.0 theme's ([`Requested`]);
+/// `None` before a theme was installed.
+pub(crate) fn requested_preferences(cx: &App) -> Option<AccessibilityPreferences> {
+    cx.native().map(|n| n.accessibility.clone()).or_else(|| {
+        cx.native_theme()?.next_resolved(cx)?;
+        cx.try_global::<Requested>()
+            .map(|requested| requested.preferences.clone())
+    })
+}
+
+/// Why the installed 0.8.0 theme's contrast is lower than its preferences
+/// ask ([`Requested`]); `None` where it is not, or no 0.8.0 theme is
+/// installed.
+pub(crate) fn contrast_held(cx: &App) -> Option<&ContrastHeld> {
+    cx.native_theme()?.next_resolved(cx)?;
+    cx.try_global::<Requested>()?.contrast_held.as_ref()
+}
+
 /// What the pages still on the 0.7.2 model read where they read
 /// `cx.native()`: the 0.7.2 theme installed, where one is
 /// (`native_theme_gpui::apply`), else the 0.7.2 theme of the choice the
@@ -370,7 +439,7 @@ pub(crate) fn next_geometry<
 /// `native_theme_gpui::next::apply` ran, or where the theme states no such
 /// colour (`pick` gives `None`).
 #[cfg_attr(
-    not(test),
+    not(all(test, feature = "gpui-fast")),
     expect(
         dead_code,
         reason = "the page groups call it as they move to the 0.8.0 model"

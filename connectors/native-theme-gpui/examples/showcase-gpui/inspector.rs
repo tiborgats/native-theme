@@ -611,6 +611,12 @@ const NO_ROUTE: &str = "gpui: no route recorded";
 /// section names, in all three showcases.
 const SEMIBOLD: gpui::FontWeight = gpui::FontWeight(600.);
 
+/// How many of its info's lines the inspector keeps in view when the side
+/// panel's content scrolls (`PanelLook::body_min_height`): the title, the
+/// first section's name and that section's first row. The showcase's own
+/// count; their heights are the theme's.
+const INFO_FIRST_LINES: f32 = 3.;
+
 /// What Widget Info is drawn in under a native theme, the same in the three
 /// showcases (docs/showcase-elements.toml, "The Widget Info format"): every
 /// text in `sidebar.font`'s family and size, one line of it tall
@@ -702,6 +708,15 @@ impl PanelLook {
             icon_theme: showcase.current_icon_theme.clone(),
             families,
         })
+    }
+
+    /// The least height the inspector's content keeps below its TabBar,
+    /// where the side panel's content scrolls (`demo::side_panel`): its
+    /// info's first [`INFO_FIRST_LINES`] lines, each one line of the panel's
+    /// type tall (`sidebar.font`'s size by `defaults.line_height`), with
+    /// `layout.widget_gap` between them, as the rows are spaced.
+    pub(crate) fn body_min_height(&self) -> gpui::Pixels {
+        self.line * INFO_FIRST_LINES + self.row_gap * (INFO_FIRST_LINES - 1.)
     }
 
     /// `text` in the panel's type: `sidebar.font` at its line height.
@@ -963,14 +978,16 @@ fn info_sections(info: &WidgetInfo, gap: Option<gpui::Pixels>, cx: &gpui::App) -
 
 impl Render for Inspector {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let (gap, container_margin) = self
+        let (gap, container_margin, body_min) = self
             .showcase
             .upgrade()
             .map(|showcase| {
-                let layout = &showcase.read(cx).layout;
+                let showcase = showcase.read(cx);
+                let layout = &showcase.layout;
                 (
                     geometry::widget_gap(layout),
                     geometry::container_margin(layout),
+                    showcase.panel_look.as_ref().map(PanelLook::body_min_height),
                 )
             })
             .unwrap_or_default();
@@ -1015,7 +1032,7 @@ impl Render for Inspector {
                     cx,
                 )
                 .flex_1()
-                .min_h_0()
+                .min_h(body_min.unwrap_or_default())
                 // The room below the tabs, its scroll bar's included.
                 .child(elements::record(&self.ui, "chrome.side_panel.inspector")),
             )

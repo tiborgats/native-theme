@@ -18601,14 +18601,21 @@ fn main() -> iced::Result {
 }
 
 /// Why the command line `cli` is refused before the window opens: a
-/// `--pointer` value that is not `X,Y`, or `--screenshot` where the window
-/// cannot be captured with its frame (`cli::screenshot_support`: Linux,
-/// where iced's own capture is its content alone).
+/// `--pointer` value that is not `X,Y`, `--palette`, which this showcase on
+/// the 0.7.2 model does not take (`cli::palette_support`), or `--screenshot`
+/// where the window cannot be captured with its frame
+/// (`cli::screenshot_support`: Linux, where iced's own capture is its
+/// content alone).
 fn refusal(cli: &CliArgs) -> Option<String> {
     if let Some(value) = &cli.bad_pointer {
         return Some(format!(
             "--pointer {value:?}: not X,Y in whole logical pixels"
         ));
+    }
+    if cli.palette.is_some()
+        && let Err(error) = cli::palette_support(Kind::Iced)
+    {
+        return Some(error);
     }
     cli.screenshot
         .as_ref()

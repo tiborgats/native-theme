@@ -343,9 +343,10 @@ pub(crate) struct Showcase {
     /// which only a reload (Reload System Theme, the theme watcher) does.
     pub(crate) system: Option<native_theme::SystemTheme>,
     /// The desktop's settings as the 0.8.0 model reads them
-    /// (`next::Theme::from_system_or_default`), kept as `system` is and read
-    /// again where `system` is: what `default` installs, and the context
-    /// every theme is resolved in starts from (`Showcase::next_context`).
+    /// (`next::Theme::from_system`), kept as `system` is and read again
+    /// where `system` is: what `default` installs, and the context every
+    /// theme is resolved in starts from (`Showcase::next_context`). `None`
+    /// before a read and where the last one failed.
     pub(crate) next_system: Option<native_theme::next::Theme>,
     /// The palette chosen in the theme settings' palette Select, laid over
     /// whichever theme is installed: a name of `Palette::BUNDLED_NAMES`, or
@@ -2045,15 +2046,20 @@ impl Showcase {
             #[cfg(feature = "watch")]
             _theme_watcher,
         };
-        match system {
-            Ok(system) => {
-                showcase.install_system(system, window, cx);
-            }
+        // Where the desktop's theme does not install -- its 0.7.2 read failed,
+        // or its 0.8.0 one, or it cannot be installed -- the error is reported
+        // (`Showcase::install` reports the last two) and gpui-component's
+        // built-in theme stays, in the system's mode.
+        let installed = match system {
+            Ok(system) => showcase.install_system(system, window, cx),
             Err(e) => {
-                Theme::sync_system_appearance(Some(window), cx);
-                showcase.current_icon_theme = system_icon_theme().ok();
                 showcase.error_message = Some(format!("Failed to load OS theme: {e}"));
+                false
             }
+        };
+        if !installed {
+            Theme::sync_system_appearance(Some(window), cx);
+            showcase.current_icon_theme = system_icon_theme().ok();
         }
         showcase.show_window_appearance(cx);
         showcase.show_icon_choice(window, cx);
@@ -2129,15 +2135,25 @@ impl Showcase {
         installed
     }
 
-    /// The desktop's settings as the 0.8.0 model reads them, read where none
-    /// are kept (`Showcase::next_system`).
-    fn next_system(&mut self) -> &native_theme::next::Theme {
-        self.next_system
-            .get_or_insert_with(native_theme::next::Theme::from_system_or_default)
+    /// The desktop's settings as the 0.8.0 model reads them
+    /// (`next::Theme::from_system`), read where none are kept
+    /// (`Showcase::next_system`); the error to report, as the 0.7.2 read's
+    /// is reported, where the read fails, which keeps nothing, so the next
+    /// install reads again. No preset stands in for the desktop's settings.
+    fn next_system(&mut self) -> Result<&native_theme::next::Theme, String> {
+        let system = match self.next_system.take() {
+            Some(system) => system,
+            None => native_theme::next::Theme::from_system()
+                .map_err(|e| format!("Failed to load OS theme: {e}"))?,
+        };
+        Ok(self.next_system.insert(system))
     }
 
     /// The context a theme is installed in (spec §6): the desktop's, as the
-    /// 0.8.0 model read it, in the mode shown (`is_dark`), for an active
+    /// 0.8.0 model read it -- where the read fails, the default context
+    /// every preset alone is resolved in (`next::Theme::preset`), which only
+    /// a preset is installed in: `default` reports the failed read
+    /// (`next_theme`) -- in the mode shown (`is_dark`), for an active
     /// window, left to right as the showcase lays itself out (`main`), with
     /// `prefs` as its text scale, motion, contrast and reduced transparency:
     /// the accessibility preferences the 0.7.2 theme of the same choice is
@@ -2146,7 +2162,10 @@ impl Showcase {
     /// contrast `Increased`, a motion `None`); the connector reads the
     /// context back as these preferences (`NativeTheme::accessibility`).
     fn next_context(&mut self, prefs: &AccessibilityPreferences) -> ThemeContext {
-        let mut ctx = self.next_system().context().clone();
+        let mut ctx = self
+            .next_system()
+            .map(|system| system.context().clone())
+            .unwrap_or_default();
         ctx.scheme = if self.is_dark {
             Scheme::Dark
         } else {
@@ -2174,22 +2193,58 @@ impl Showcase {
     /// palette chosen laid over it (`Theme::with_palette`, which locks the
     /// scheme to the palette's); the error to report where there is none.
     fn next_theme(&mut self, name: &str) -> Result<native_theme::next::Theme, String> {
-        let theme = if name == "default" {
-            self.next_system().clone()
-        } else {
-            let preset = Preset::from_name(name).ok_or_else(|| {
-                format!(
-                    "Failed to load preset '{name}': the 0.8.0 model has no preset of that name"
-                )
-            })?;
-            native_theme::next::Theme::preset(preset)
-        };
+        let theme = self.next_theme_alone(name)?;
         match self.palette {
             None => Ok(theme),
             Some(palette) => Palette::from_name(palette)
                 .map(|palette| theme.with_palette(palette))
                 .ok_or_else(|| format!("Failed to load palette '{palette}': no bundled palette")),
         }
+    }
+
+    /// The 0.8.0 theme of `name`, as [`next_theme`](Self::next_theme) builds
+    /// it, without the palette.
+    fn next_theme_alone(&mut self, name: &str) -> Result<native_theme::next::Theme, String> {
+        if name == "default" {
+            return self.next_system().cloned();
+        }
+        let preset = Preset::from_name(name).ok_or_else(|| {
+            format!("Failed to load preset '{name}': the 0.8.0 model has no preset of that name")
+        })?;
+        Ok(native_theme::next::Theme::preset(preset))
+    }
+
+    /// Why `resolved`, the 0.8.0 theme of `name` with the palette chosen
+    /// resolved in `ctx`, is at a lower contrast level than `ctx` asks for
+    /// (docs/v0.8.0-spec.md §6, resolution step 1): the palette holds `High`
+    /// back where the theme without it, resolved in the palette's scheme,
+    /// reaches `High`; else the theme defines the level for none of its
+    /// sources. `None` where it is at the level asked.
+    fn contrast_held(
+        &mut self,
+        name: &str,
+        ctx: &ThemeContext,
+        resolved: &native_theme::next::ResolvedTheme,
+    ) -> Result<Option<crate::support::ContrastHeld>, String> {
+        let (asked, used) = (ctx.contrast, resolved.context.contrast);
+        if used == asked {
+            return Ok(None);
+        }
+        let by_palette = asked == Contrast::High && self.palette.is_some() && {
+            let mut alone = ctx.clone();
+            alone.scheme = resolved.context.scheme;
+            self.next_theme_alone(name)?
+                .with_context(alone)
+                .resolve_current()
+                .context
+                .contrast
+                == Contrast::High
+        };
+        Ok(Some(crate::support::ContrastHeld {
+            asked,
+            used,
+            by_palette,
+        }))
     }
 
     /// Install the theme of `name` -- `default`, the desktop's own, or a
@@ -2202,9 +2257,11 @@ impl Showcase {
     /// under a palette, which the 0.7.2 model has no equivalent of -- is
     /// resolved in that scheme and kept beside it for the pages not yet on
     /// the 0.8.0 model (`support::OldModel`), with the 0.8.0 theme resolved
-    /// for an inactive window (`support::NextInactive`). Where either model
-    /// cannot build it nothing is installed or changed, the error is
-    /// reported and false is returned.
+    /// for an inactive window (`support::NextInactive`), and the preferences
+    /// asked for, with why the theme's contrast is lower than they ask where
+    /// it is (`support::Requested`). Where either model cannot build it
+    /// nothing is installed or changed, the error is reported and false is
+    /// returned.
     fn install(&mut self, name: &str, window: &mut Window, cx: &mut Context<Self>) -> bool {
         match self.try_install(name, window, cx) {
             Ok(()) => {
@@ -2251,7 +2308,8 @@ impl Showcase {
         let mut inactive_ctx = ctx.clone();
         inactive_ctx.window_active = false;
         let inactive = theme.resolve(&inactive_ctx);
-        let resolved = theme.with_context(ctx).resolve_current();
+        let resolved = theme.with_context(ctx.clone()).resolve_current();
+        let contrast_held = self.contrast_held(name, &ctx, &resolved)?;
         let mode = color_mode_of(resolved.is_dark());
         let old = match old {
             OldChoice::System(system) => OldResolved::System(system),
@@ -2269,6 +2327,10 @@ impl Showcase {
             OldResolved::System(system) => self.keep_system(*system, window, cx),
             OldResolved::Preset(nt, shown) => self.keep_preset(&nt, *shown),
         };
+        cx.set_global(crate::support::Requested {
+            preferences: prefs.clone(),
+            contrast_held,
+        });
         cx.set_global(crate::support::OldModel {
             resolved: old,
             accessibility: prefs,

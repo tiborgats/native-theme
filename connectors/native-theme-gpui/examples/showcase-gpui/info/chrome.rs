@@ -1174,7 +1174,7 @@ pub fn palette_select(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
         )
         .instance(
             "old model",
-            "the pages not yet on the 0.8.0 model read the 0.7.2 theme of the same choice, which has no palettes: under a palette they show the preset alone, in the palette's scheme (support::OldModel); the tooltip says so",
+            "under a palette, gpui-component's colours and the connector's widgets::* are drawn from the 0.8.0 theme with the palette; the showcase's own refinements -- native_color, native_geometry, MenuLook and the side panel's padding and label font (sidebar.border.padding, sidebar.font) -- read the 0.7.2 theme of the same choice, which has no palettes, so they show the preset alone, in the palette's scheme (support::OldModel), until their page group moves to the 0.8.0 model; the tooltip says so",
         )
         .instance(
             "width",
@@ -1865,7 +1865,7 @@ pub fn preferences_settings(t: &Theme) -> WidgetInfo {
         )
         .instance(
             "preferences",
-            "the four AccessibilityPreferences fields of the installed native theme; a change is installed with native_theme_gpui::apply_accessibility, which rebuilds the theme from its stored variant (native-theme-gpui lib.rs, apply_accessibility). The desktop's own settings are not changed. A preference set here stays across theme switches and reloads; the others are the desktop's, read again at every theme install, so a change made on the desktop while the showcase runs lands with the next switch or reload",
+            "the four AccessibilityPreferences fields the installed native theme was asked for; a change is recorded, and the showcase's _preferences observer installs the theme again: resolved for the context they make and installed with native_theme_gpui::next::apply (Showcase::install). A theme without the contrast level asked for is resolved at the nearest level below it, which the High contrast switch's info says. The desktop's own settings are not changed. A preference set here stays across theme switches and reloads; the others are the desktop's, read again at every theme install, so a change made on the desktop while the showcase runs lands with the next switch or reload",
         )
         .instance(
             "text scale",
@@ -1929,7 +1929,7 @@ pub fn preference_switch(
     .instance(
         "preference",
         match field {
-            "reduce_motion" => "reduce_motion: a click installs the preferences with it flipped, and apply_accessibility forwards it to gpui's reduced motion; off is no request: it undoes only the connector's own switch (native-theme-gpui lib.rs, forward_reduce_motion), so an OS request keeps motion reduced whatever the switch shows",
+            "reduce_motion" => "reduce_motion: a click installs the preferences with it flipped: the theme is resolved again with its motion reduced or full, and native_theme_gpui::next::apply forwards it to gpui's reduced motion; off is no request: it undoes only the connector's own switch (native-theme-gpui lib.rs, forward_reduce_motion), so an OS request keeps motion reduced whatever the switch shows",
             "high_contrast" => "high_contrast: a click installs the preferences with it flipped",
             _ => "reduce_transparency: a click installs the preferences with it flipped",
         },

@@ -5,7 +5,7 @@ use gpui::{
     Menu, MenuItem, Pixels, SharedString, Styled as _, StyledText, Window, px,
 };
 use gpui_component::{ActiveTheme as _, IconName, WindowExt as _};
-use native_theme_gpui::{ActiveNativeTheme as _, geometry};
+use native_theme_gpui::geometry;
 use native_theme_showcase_support::status;
 
 use crate::Page;
@@ -398,14 +398,16 @@ pub(crate) fn status_bar(
 /// placeholder where no theme could be read) by the family gpui draws and
 /// the size in the unit its source stated, and, once a native theme is
 /// installed, its text-scale factor and each of its accessibility
-/// preferences that is set, by its field name. The drawn family is
+/// preferences that is set, by its field name: the preferences it was asked
+/// for (`support::requested_preferences`), not the level the theme resolved
+/// to, which the Preferences sheet's High contrast switch gives where it is
+/// lower. The drawn family is
 /// `inspector::DrawnFamilies::drawn` of the stated one and
 /// `Theme::font_family`, the connector's `font_family` of it, once a native
 /// theme is installed; before that no preferences are installed, and the
 /// placeholder is named alone.
 pub(crate) fn status_environment(app: &Showcase, cx: &App) -> Vec<String> {
     let (preset, mode) = preset_and_mode(app);
-    let native = cx.native_theme();
     let families = crate::inspector::DrawnFamilies::installed(app, cx);
     let asked = &cx.theme().font_family;
     let drawn = families
@@ -413,13 +415,8 @@ pub(crate) fn status_environment(app: &Showcase, cx: &App) -> Vec<String> {
         .map_or(status::DrawnFamily::Stated, |families| {
             families.drawn(&app.original_font.family, asked)
         });
-    status::environment_drawn(
-        &preset,
-        mode,
-        &app.original_font,
-        drawn,
-        native.map(|nt| nt.accessibility()),
-    )
+    let prefs = crate::support::requested_preferences(cx);
+    status::environment_drawn(&preset, mode, &app.original_font, drawn, prefs.as_ref())
 }
 
 // ---------------------------------------------------------------------------
