@@ -121,8 +121,8 @@ use crate::support::{
     CAROUSEL_SLIDES, ChatMessage, ChromeIcon, DIFF_DECORATED_LINE, DIFF_DECORATED_PATH,
     GRID_LAYOUT_ITEMS, NativeStyled as _, PresetDelegate, STEPPER_STEPS, SampleIcon,
     SampleListDelegate, SampleTableDelegate, contrast_held, native_color, native_geometry,
-    native_value, next_geometry, next_resolved, next_value, old_native, refined,
-    requested_preferences, toolbar_variant, with_gap, with_padding,
+    native_value, next_geometry, next_resolved, old_native, refined, requested_preferences,
+    toolbar_variant, with_gap, with_padding,
 };
 use crate::{
     CHROME_APP_MENU_BAR, CHROME_SIDE_PANEL, CHROME_SIDE_PANEL_CONTENT, CHROME_SIDE_PANEL_SCROLL,
@@ -4095,30 +4095,23 @@ fn text_field(
     tokens: bool,
 ) -> Stateful<Div> {
     let theme = next_resolved(cx);
-    // The platform's fill for the state the field is built in, after
-    // upstream's (input/input.rs:800, then :808), and what the field is
-    // drawn over: a refined field's, where the theme states all of it.
-    let fill = match field {
-        InputField::Refined => next_value(cx, |r| next::geometry::input_fill(r, disabled)),
+    let built = match field {
+        InputField::Refined => theme.map(|r| RefinedField::of(r, disabled)),
         InputField::HeightOnly => None,
     };
-    let ground = match (theme, &fill) {
-        (Some(r), Some(Ok(fill))) if next::geometry::input(r).is_ok() => {
-            let rest = r.input.field(WidgetState::NONE);
-            if disabled {
-                SurfaceLine::of(&rest).map(|line| FieldGround::Faded(Box::new(fill.clone()), line))
-            } else {
-                FieldSurface::of(&rest, &r.input.field(WidgetState::HOVER))
-                    .map(FieldGround::Surface)
-            }
-        }
-        _ => None,
+    let taken = match (field, &built) {
+        (InputField::Refined, built) => info::inputs::FieldTaken {
+            builder: built.as_ref().is_some_and(|built| built.applied),
+            fill: built.as_ref().is_some_and(|built| built.fill.is_ok()),
+            surface: built.as_ref().is_some_and(|built| built.ground.is_some()),
+        },
+        (InputField::HeightOnly, _) => info::inputs::FieldTaken {
+            builder: theme.is_some_and(|r| next::geometry::input_height(r).is_ok()),
+            fill: false,
+            surface: false,
+        },
     };
-    let styled = match field {
-        InputField::Refined => ground.is_some(),
-        InputField::HeightOnly => theme.is_some_and(|r| next::geometry::input_height(r).is_ok()),
-    };
-    let mut input_info = info::inputs::input(cx.theme(), field, styled);
+    let mut input_info = info::inputs::input(cx.theme(), field, taken);
     if disabled {
         input_info = input_info.variant("disabled");
     }
@@ -4136,23 +4129,26 @@ fn text_field(
         InputField::Refined => {
             let input =
                 next_native_info(input, cx, next::geometry::input, "input", &mut input_info);
+            let (fill, ground) = match built {
+                Some(RefinedField { fill, ground, .. }) => (Some(fill), ground),
+                None => (None, None),
+            };
             match &fill {
                 Some(Err(unstated)) => {
                     input_info = input_info.next_unmapped("input_fill", *unstated);
                 }
-                Some(Ok(_)) if ground.is_none() => {
-                    input_info = input_info.config("surface", NO_FIELD_SURFACE);
+                Some(Ok(_)) => {
+                    input_info = input_info.next_geometry("input_fill");
+                    if ground.is_none() {
+                        input_info = input_info.config("surface", NO_INPUT_SURFACE);
+                    }
                 }
-                _ => {}
+                None => {}
             }
             let none = cx.theme().transparent;
             match (ground, theme) {
                 (Some(FieldGround::Faded(fill, line)), Some(r)) => {
-                    input_info = info::inputs::disabled_input_surface(
-                        input_info.next_geometry("input_fill"),
-                        r,
-                        fill.opacity,
-                    );
+                    input_info = info::inputs::disabled_input_surface(input_info, r, fill.opacity);
                     // The fill goes under the field; the disabled text
                     // colour stays on it, where the editor reads it.
                     let input = match fill.text.color {
@@ -4165,17 +4161,16 @@ fn text_field(
                         .debug_selector(move || id.into());
                 }
                 (Some(FieldGround::Surface(surface)), Some(r)) => {
-                    input_info = info::inputs::input_surface(
-                        input_info.next_geometry("input_fill"),
-                        r,
-                        surface.line.width,
-                    );
+                    input_info = info::inputs::input_surface(input_info, r, surface.line.width);
                     return input_surface(&surface, input.bg(none).border_color(none))
                         .w(width)
                         .info(ui, id, input_info)
                         .debug_selector(move || id.into());
                 }
-                _ => input,
+                // The platform's fill for the state the field is built in,
+                // after upstream's (input/input.rs:800, then :808), on the
+                // field itself where no surface is drawn under it.
+                _ => refined(input, fill.and_then(Result::ok).as_ref()),
             }
         }
         // Through the caller's style, which Input applies after its own
@@ -4193,26 +4188,73 @@ fn text_field(
         .debug_selector(move || id.into())
 }
 
-/// The "surface" line of a field whose surface the showcase does not draw,
-/// though the theme states its fill.
-const NO_FIELD_SURFACE: &str = "none: the showcase draws the field's surface only where geometry::input (geometry::text_area for a text area) and geometry::input_fill apply and the field's part at rest states its fill, its stroke and its corners in a form gpui can take; the field keeps upstream's fill and edge";
+/// The "surface" line of a refined field whose surface the showcase does
+/// not draw, though `geometry::input_fill` applies.
+const NO_INPUT_SURFACE: &str = "none: the showcase draws the field's surface only where geometry::input and geometry::input_fill apply and input.field(NONE) states its fill, its stroke and its corners in a form gpui can take; the field takes geometry::input_fill's refinement over upstream's fill, after it (input/input.rs, Input::render), and keeps upstream's edge colour";
+
+/// The "surface" line of a text area whose surface the showcase does not
+/// draw under an installed 0.8.0 theme.
+const NO_TEXT_AREA_SURFACE: &str = "none: the showcase draws the text area's surface only where geometry::text_area applies and text_area.field(NONE) states its fill, its stroke and its corners in a form gpui can take; the text area keeps upstream's fill and edge colour";
+
+/// What a refined field built `disabled` or not takes of a 0.8.0 theme
+/// ([`RefinedField::of`]).
+#[derive(Debug)]
+pub(crate) struct RefinedField {
+    /// Whether `geometry::input` applies.
+    pub(crate) applied: bool,
+    /// `geometry::input_fill`'s refinement for the field's state, or the
+    /// home it lacks.
+    pub(crate) fill: next::Mapped<StyleRefinement>,
+    /// What the field is drawn over, where both builders apply and
+    /// `input.field(NONE)` states its surface; `None` where the field is
+    /// drawn without one, taking `fill` itself where it applies.
+    pub(crate) ground: Option<FieldGround>,
+}
+
+impl RefinedField {
+    /// What a refined field built `disabled` or not takes of `r`.
+    pub(crate) fn of(r: &native_theme::next::ResolvedTheme, disabled: bool) -> Self {
+        let applied = next::geometry::input(r).is_ok();
+        let fill = next::geometry::input_fill(r, disabled);
+        let ground = match &fill {
+            Ok(fill) if applied => {
+                let rest = r.input.field(WidgetState::NONE);
+                if disabled {
+                    SurfaceLine::of(&rest)
+                        .map(|line| FieldGround::Faded(Box::new(fill.clone()), line))
+                } else {
+                    FieldSurface::of(&rest, &r.input.field(WidgetState::HOVER))
+                        .map(FieldGround::Surface)
+                }
+            }
+            _ => None,
+        };
+        Self {
+            applied,
+            fill,
+            ground,
+        }
+    }
+}
 
 /// What a refined field is drawn over: a disabled one, its
 /// `geometry::input_fill` inside the line of its part at rest
 /// ([`faded_surface`]); an enabled one, its surface ([`input_surface`]).
-enum FieldGround {
+#[derive(Debug)]
+pub(crate) enum FieldGround {
     Faded(Box<gpui::StyleRefinement>, SurfaceLine),
     Surface(FieldSurface),
 }
 
 /// The surface an enabled, refined field is drawn over ([`input_surface`]).
-struct FieldSurface {
+#[derive(Debug)]
+pub(crate) struct FieldSurface {
     /// The fill of the field's part at rest.
-    fill: Hsla,
+    pub(crate) fill: Hsla,
     /// The line of the field's part at rest.
-    line: SurfaceLine,
-    /// The edge colour under the pointer.
-    hover: Hsla,
+    pub(crate) line: SurfaceLine,
+    /// The edge colour under the pointer, `None` where the line has none.
+    pub(crate) hover: Option<Hsla>,
 }
 
 impl FieldSurface {
@@ -4222,14 +4264,14 @@ impl FieldSurface {
     /// it. Under the pointer the edge is the hovered part's where a rule
     /// states it for the state; a soft option the theme leaves unstated
     /// keeps the edge it would cover.
-    fn of(
+    pub(crate) fn of(
         rest: &native_theme::next::PartStyle,
         hovered: &native_theme::next::PartStyle,
     ) -> Option<Self> {
         let line = SurfaceLine::of(rest)?;
         Some(Self {
             fill: next::fill_of(rest)?,
-            hover: next::state_stroke_color_of(hovered).unwrap_or(line.colour),
+            hover: next::state_stroke_color_of(hovered).or(line.colour),
             line,
         })
     }
@@ -4261,8 +4303,10 @@ fn input_surface(surface: &FieldSurface, field: impl IntoElement) -> Div {
                 .rounded(px(line.radius.max(0.0)))
                 .bg(surface.fill)
                 .border(px(line.width))
-                .border_color(line.colour)
-                .group_hover(INPUT_GROUP, move |style| style.border_color(hover)),
+                .when_some(line.colour, |edge, colour| edge.border_color(colour))
+                .when_some(hover, |edge, hover| {
+                    edge.group_hover(INPUT_GROUP, move |style| style.border_color(hover))
+                }),
         )
         .child(field)
 }
@@ -4277,20 +4321,23 @@ fn button_theme(cx: &App) -> Option<&native_theme::next::ResolvedTheme> {
 
 /// The line [`faded_surface`] draws round a disabled control: the control's
 /// edge width, corner radius and edge colour.
+#[derive(Debug)]
 pub(crate) struct SurfaceLine {
-    width: f32,
-    radius: f32,
-    colour: Hsla,
+    pub(crate) width: f32,
+    pub(crate) radius: f32,
+    /// `None` where the stroke is stated as none, 0 wide.
+    pub(crate) colour: Option<Hsla>,
 }
 
 impl SurfaceLine {
     /// The line of a part of the 0.8.0 model, where the theme states its
-    /// stroke as one width and colour and its corners as one radius.
-    fn of(part: &native_theme::next::PartStyle) -> Option<Self> {
+    /// stroke as one width and colour, or as none, which is no line, 0 wide
+    /// and of no colour (spec §10, rule 2), and its corners as one radius.
+    pub(crate) fn of(part: &native_theme::next::PartStyle) -> Option<Self> {
         Some(Self {
             width: info::stroke_width_of(part)?,
             radius: info::radius_of(part)?,
-            colour: info::stroke_color_of(part)?,
+            colour: info::stroke_color_of(part),
         })
     }
 }
@@ -4336,7 +4383,7 @@ fn faded_surface(
                 .inset_0()
                 .rounded(px(radius))
                 .border(px(line))
-                .border_color(border.colour),
+                .when_some(border.colour, |edge, colour| edge.border_color(colour)),
         )
         .child(field)
 }
@@ -4355,7 +4402,7 @@ pub(crate) fn textarea(
     width: Pixels,
     height: Pixels,
 ) -> Stateful<Div> {
-    let info = info::inputs::textarea(cx.theme(), text_area_surface(cx).is_some());
+    let info = info::inputs::textarea(cx.theme(), text_area_taken(cx));
     surfaced_textarea(ui, cx, id, state, width, Some(height), info)
 }
 
@@ -4371,20 +4418,33 @@ pub(crate) fn rows_textarea(
     state: &Entity<TextareaState>,
     width: Pixels,
 ) -> Stateful<Div> {
-    let info = info::inputs::rows_textarea(cx.theme(), text_area_surface(cx).is_some());
+    let info = info::inputs::rows_textarea(cx.theme(), text_area_taken(cx));
     surfaced_textarea(ui, cx, id, state, width, None, info)
+}
+
+/// What a text area takes of the installed 0.8.0 theme: `geometry::text_area`
+/// where it applies, and the surface it is drawn over
+/// ([`text_area_surface`]), whose fill is the one it takes.
+fn text_area_taken(cx: &App) -> info::inputs::FieldTaken {
+    let surface = text_area_surface(cx).is_some();
+    info::inputs::FieldTaken {
+        builder: next_resolved(cx).is_some_and(|r| next::geometry::text_area(r).is_ok()),
+        fill: surface,
+        surface,
+    }
 }
 
 /// The surface a text area is drawn over under the installed 0.8.0 theme
 /// ([`input_surface`]): its own field's, `text_area.field(NONE)` and
-/// `text_area.field(HOVER)`, where `geometry::text_area` and
-/// `geometry::input_fill` apply and the field at rest states its fill and
-/// its line.
+/// `text_area.field(HOVER)`, where `geometry::text_area` applies and the
+/// field at rest states its fill and its line.
 fn text_area_surface(cx: &App) -> Option<FieldSurface> {
-    let r = next_resolved(cx)?;
-    if next::geometry::text_area(r).is_err() || next::geometry::input_fill(r, false).is_err() {
-        return None;
-    }
+    next_resolved(cx).and_then(text_area_surface_of)
+}
+
+/// [`text_area_surface`] of `r`.
+pub(crate) fn text_area_surface_of(r: &native_theme::next::ResolvedTheme) -> Option<FieldSurface> {
+    next::geometry::text_area(r).ok()?;
     FieldSurface::of(
         &r.text_area.field(WidgetState::NONE),
         &r.text_area.field(WidgetState::HOVER),
@@ -4392,8 +4452,8 @@ fn text_area_surface(cx: &App) -> Option<FieldSurface> {
 }
 
 /// A `Textarea` over `state`, `width` wide and `height` tall, or as tall as
-/// its rows where `height` is `None`, refined by `geometry::text_area` and
-/// `geometry::input_fill`, reporting `textarea_info`. Under a 0.8.0 theme
+/// its rows where `height` is `None`, refined by `geometry::text_area`,
+/// reporting `textarea_info`. Under a 0.8.0 theme
 /// that states its surface ([`text_area_surface`]) it is drawn as an
 /// enabled text input is ([`input_surface`]), over its own field's surface,
 /// its own fill and edge colour left transparent.
@@ -4414,14 +4474,8 @@ fn surfaced_textarea(
         &mut textarea_info,
     );
     let surface = text_area_surface(cx);
-    match next_value(cx, |r| next::geometry::input_fill(r, false)) {
-        Some(Err(unstated)) => {
-            textarea_info = textarea_info.next_unmapped("input_fill", unstated);
-        }
-        Some(Ok(_)) if surface.is_none() => {
-            textarea_info = textarea_info.config("surface", NO_FIELD_SURFACE);
-        }
-        _ => {}
+    if surface.is_none() && next_resolved(cx).is_some() {
+        textarea_info = textarea_info.config("surface", NO_TEXT_AREA_SURFACE);
     }
     match height {
         Some(height) => textarea = Styled::h(textarea, height),
@@ -4432,11 +4486,7 @@ fn surfaced_textarea(
         }
     }
     if let (Some(surface), Some(r)) = (surface, next_resolved(cx)) {
-        textarea_info = info::inputs::text_area_surface(
-            textarea_info.next_geometry("input_fill"),
-            r,
-            surface.line.width,
-        );
+        textarea_info = info::inputs::text_area_surface(textarea_info, r, surface.line.width);
         let none = cx.theme().transparent;
         return input_surface(&surface, textarea.bg(none).border_color(none))
             .w(width)
@@ -4583,7 +4633,8 @@ pub(crate) struct StepIcons {
 /// caller reaches: the frame is `input.field(NONE)`'s fill edged by its
 /// stroke and corners at `geometry::input`'s height, in
 /// `input.field(HOVER).stroke.color` under the pointer and
-/// `input.field(FOCUSED).stroke.color` while focused; the value is an
+/// `input.field(FOCUSED).stroke.color` while focused, upstream's `ring`
+/// where no rule states it ([`number_edge`]); the value is an
 /// `Input` padded by the sides `input.field(NONE)` states, in
 /// `input.text(NONE)`. Upstream's
 /// fills its frame with its `input_background` (:125-126) and pads its value
@@ -4613,10 +4664,7 @@ pub(crate) fn number_input(
     let (r, number) = match (theme, frame) {
         (Some(r), Some(Ok(number))) => (r, number),
         (_, frame) => {
-            let mut number_info = info::inputs::number_input(cx.theme());
-            if let Some(Err(home)) = frame {
-                number_info = number_info.config("drawn", format!("by gpui-component: the theme states no value gpui can take at {home}, which the field the showcase draws needs"));
-            }
+            let number_info = info::inputs::number_input(cx.theme(), frame.and_then(Result::err));
             return NumberInput::new(state)
                 .accessibility_label(label)
                 .placeholder("Enter a number")
@@ -4636,6 +4684,7 @@ pub(crate) fn number_input(
     let focused = gpui::Focusable::focus_handle(state.read(cx), cx).is_focused(window);
     let mut number_info = info::inputs::native_number_input(
         r,
+        cx.theme(),
         focused,
         &steps.up,
         &steps.down,
@@ -4647,11 +4696,7 @@ pub(crate) fn number_input(
     if (steps.up.shown() || steps.down.shown()) && glyph.at_icon_size_small() {
         number_info = number_info.next_geometry("icon_size_small");
     }
-    // A soft option the theme leaves unstated keeps the edge it would cover.
-    let edge = match (focused, focus) {
-        (true, Some(focus)) => focus,
-        _ => line.colour,
-    };
+    let edge = number_edge(focused, focus, line.colour, cx.theme().ring);
     let hover = surface.hover;
     // The frame: the field's height, radius and edge width, no padding --
     // that is the value's, inside the buttons.
@@ -4687,8 +4732,11 @@ pub(crate) fn number_input(
             .items_center()
             .justify_center()
             .text_color(foreground)
-            .hover(move |this| this.bg(tint.opacity(NUMBER_STEP_HOVER)))
-            .active(move |this| this.bg(tint.opacity(NUMBER_STEP_ACTIVE)))
+            .when_some(tint, |button, tint| {
+                button
+                    .hover(move |this| this.bg(tint.opacity(NUMBER_STEP_HOVER)))
+                    .active(move |this| this.bg(tint.opacity(NUMBER_STEP_ACTIVE)))
+            })
             .min_w_8()
             .debug_selector(move || format!("{id}-step-{label}"))
             .children(icon)
@@ -4713,11 +4761,30 @@ pub(crate) fn number_input(
         .w(width)
         .bg(surface.fill)
         .refine_style(&frame)
-        .border_color(edge)
-        .when(!focused, |el| el.hover(move |s| s.border_color(hover)))
+        .when_some(edge, |el, edge| el.border_color(edge))
+        .when_some(hover.filter(|_| !focused), |el, hover| {
+            el.hover(move |s| s.border_color(hover))
+        })
         .child(spin)
         .info(ui, id, number_info)
         .debug_selector(move || id.into())
+}
+
+/// The edge colour of the number field's frame ([`number_input`]),
+/// `focused` or not: at rest `rest`, the line's, none where the stroke is
+/// stated as none; focused, `focus`, the `input.field(FOCUSED).stroke.color`
+/// a rule states, else `ring`, upstream's: gpui-component's `NumberInput`
+/// edges its frame in `input` at rest and in `ring` while focused
+/// (input/number_input.rs:138-142, :230-231), so the toolkit changes the
+/// edge colour between rest and focus, and where the theme states none for
+/// focus its own focused value stands (spec §10, rule 0).
+pub(crate) fn number_edge(
+    focused: bool,
+    focus: Option<Hsla>,
+    rest: Option<Hsla>,
+    ring: Hsla,
+) -> Option<Hsla> {
+    if focused { focus.or(Some(ring)) } else { rest }
 }
 
 /// What the number field the showcase draws ([`number_input`]) reads of the
@@ -5205,9 +5272,10 @@ fn select_drawn(
 /// installed 0.8.0 theme ([`combo_fill`], [`combo_surface`]).
 pub(crate) struct ComboLook {
     /// `geometry::combo_box_fill`'s fill, `combo_box.field(NONE).fill`.
-    background: Option<gpui::Fill>,
-    /// `combo_box.field(NONE).stroke.color`.
-    edge: Hsla,
+    background: Hsla,
+    /// `combo_box.field(NONE).stroke.color`, `None` where the stroke is
+    /// stated as none.
+    edge: Option<Hsla>,
     /// `combo_box.field(NONE).stroke.width`.
     width: f32,
     /// `combo_box.field(NONE)`'s corner radius.
@@ -5222,22 +5290,27 @@ pub(crate) struct ComboLook {
 /// The [`ComboLook`] `r` states, or the home it leaves without a value gpui
 /// can take, which the trigger then keeps upstream's fill and edge for.
 pub(crate) fn combo_look(r: &native_theme::next::ResolvedTheme) -> Result<ComboLook, &'static str> {
-    let fill = next::geometry::combo_box_fill(r, false).map_err(|unstated| unstated.home())?;
+    // The builder sets an enabled trigger's fill alone, the one read below
+    // (geometry::field_fill); it applies where the theme states every home
+    // it reads.
+    next::geometry::combo_box_fill(r, false).map_err(|unstated| unstated.home())?;
     let rest = r.combo_box.field(WidgetState::NONE);
     let hovered = r.combo_box.field(WidgetState::HOVER);
-    let rest_fill = next::fill_of(&rest).ok_or("combo_box.field(NONE).fill")?;
+    let background = next::fill_of(&rest).ok_or("combo_box.field(NONE).fill")?;
     Ok(ComboLook {
-        background: fill.background,
-        edge: next::stroke_color_of(&rest).ok_or("combo_box.field(NONE).stroke.color")?,
-        width: next::stroke_width_of(&rest).ok_or("combo_box.field(NONE).stroke.width")?,
+        background,
+        edge: next::stroke_color_of(&rest),
+        width: next::stroke_width_of(&rest).ok_or("combo_box.field(NONE).stroke")?,
         radius: next::radius_of(&rest).ok_or("combo_box.field(NONE).corners")?,
         hover: next::state_fill_of(&hovered)
-            .map(|hover| native_theme_gpui::layer_over(rest_fill, hover)),
+            .map(|hover| native_theme_gpui::layer_over(background, hover)),
         hover_edge: next::state_stroke_color_of(&hovered),
     })
 }
 
-/// A drop-down trigger's edge, `combo_box.field(NONE).stroke.color`, and no
+/// A drop-down trigger's edge, `combo_box.field(NONE).stroke.color` (none
+/// where the stroke is stated as none, which `geometry::select` and
+/// `geometry::combobox` draw 0 wide), and no
 /// fill of its own, for a `Select` or a `Combobox` that is not disabled,
 /// under a 0.8.0 theme that states its [`ComboLook`]; `None` otherwise:
 /// [`combo_surface`] paints `geometry::combo_box_fill`'s fill under it. The
@@ -5249,7 +5322,11 @@ fn combo_fill(cx: &App) -> Option<StyleRefinement> {
     // with (select.rs:570).
     let none = cx.theme().transparent;
     let look = next_resolved(cx).and_then(|r| combo_look(r).ok())?;
-    Some(StyleRefinement::default().bg(none).border_color(look.edge))
+    let fill = StyleRefinement::default().bg(none);
+    Some(match look.edge {
+        Some(edge) => fill.border_color(edge),
+        None => fill,
+    })
 }
 
 /// The surface under a drop-down `trigger` refined by [`combo_fill`]:
@@ -5284,7 +5361,7 @@ fn combo_surface(cx: &App, trigger: impl IntoElement) -> Div {
             let edge = look.hover_edge.filter(|_| width > px(0.0));
             div()
                 .rounded(radius)
-                .when_some(fill, |surface, fill| surface.bg(fill))
+                .bg(fill)
                 .when_some(hover, |surface, hover| {
                     surface.hover(move |style| style.bg(hover))
                 })

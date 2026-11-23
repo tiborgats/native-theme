@@ -7066,7 +7066,12 @@ fn the_height_only_fields_note_follows_the_native_theme(cx: &mut TestAppContext)
     let (_showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     let theme = cx.update(|_w, cx| Theme::global(cx).clone());
     let height = |styled: bool| {
-        crate::info::inputs::input(&theme, crate::demo::InputField::HeightOnly, styled)
+        let taken = crate::info::inputs::FieldTaken {
+            builder: styled,
+            fill: false,
+            surface: false,
+        };
+        crate::info::inputs::input(&theme, crate::demo::InputField::HeightOnly, taken)
             .instance
             .into_iter()
             .find(|n| n.what == "height")
@@ -9897,7 +9902,7 @@ fn a_widgets_own_icons_are_named_gpui_components(cx: &mut TestAppContext) {
             buttons::dropdown_button(&t, ButtonKind::Primary),
         ),
         ("Clipboard", buttons::clipboard(&t, "value", None)),
-        ("NumberInput", inputs::number_input(&t)),
+        ("NumberInput", inputs::number_input(&t, None)),
         ("Checkbox", inputs::checkbox(&t, "label", true, false)),
         ("Rating", inputs::rating(&t, 3, false)),
         ("Select", inputs::select(&t, None)),
@@ -11501,6 +11506,391 @@ fn a_text_area_is_framed_by_its_own_edge_colour(cx: &mut TestAppContext) {
             "{field} at rest is not framed by text_area.field(NONE).stroke.color"
         );
     }
+}
+
+/// kde-breeze light's 0.8.0 theme with `patch` laid over it, installed
+/// through `next::apply` beside the unchanged 0.7.2 theme the preset switch
+/// keeps, and `page` shown: a reader of the 0.7.2 theme would paint the
+/// unpatched value. `None` where no 0.8.0 theme is installed.
+fn install_patched_breeze(
+    cx: &mut VisualTestContext,
+    showcase: &Entity<Showcase>,
+    page: Page,
+    patch: impl FnOnce(&native_theme::next::ResolvedTheme) -> Option<native_theme::next::ThemePatch>,
+) -> Option<native_theme::next::ResolvedTheme> {
+    use_light_preset(cx, showcase, "kde-breeze");
+    let r = next_theme(cx, showcase);
+    assert!(r.is_some(), "no 0.8.0 theme is installed");
+    let mut r = r?;
+    let patch = patch(&r);
+    assert!(
+        patch.is_some(),
+        "kde-breeze light states no colour the patch is made of"
+    );
+    r.apply_patch(&patch?);
+    install_next(cx, &r);
+    show(cx, showcase, page);
+    Some(r)
+}
+
+/// The Basic text field's surface reads the installed 0.8.0 theme: with
+/// `input.field(NONE).fill` patched to `colors.window.border` and
+/// `input.field(HOVER).stroke.color` to `colors.window.foreground`, colours
+/// of the same theme that differ from the field's, the field is filled with
+/// the one, edged in the other under the pointer, and its info claims both.
+#[gpui::test]
+fn a_fields_surface_takes_the_patched_fill_and_hover_edge(cx: &mut TestAppContext) {
+    use crate::info::{state_stroke_color_of, stroke_width_of};
+    use native_theme::next::{InputRule, Paint, PartPatch, Stroke, ThemePatch, WidgetState};
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let mut before = None;
+    let r = install_patched_breeze(&mut cx, &showcase, Page::Basic, |r| {
+        let rest = r.input.field(WidgetState::NONE);
+        before = Some((
+            native_theme_gpui::next::fill_of(&rest),
+            state_stroke_color_of(&r.input.field(WidgetState::HOVER)),
+        ));
+        let width = stroke_width_of(&rest).filter(|width| *width > 0.0)?;
+        Some(
+            ThemePatch::new()
+                .input(
+                    InputRule::new()
+                        .field(PartPatch::new().fill(Paint::Solid(r.colors.window.border?))),
+                )
+                .input(InputRule::new().states(WidgetState::HOVER).field(
+                    PartPatch::new().stroke(Stroke::uniform(width, r.colors.window.foreground?)),
+                )),
+        )
+    });
+    let Some(r) = r else { return };
+    let fill = native_theme_gpui::next::fill_of(&r.input.field(WidgetState::NONE));
+    let hovered = state_stroke_color_of(&r.input.field(WidgetState::HOVER));
+    assert!(
+        fill.is_some() && hovered.is_some(),
+        "the patch does not state the field's fill or the hovered field's edge"
+    );
+    assert!(
+        before.is_some_and(|(rest, hover)| rest != fill && hover != hovered),
+        "kde-breeze light's field is filled or edged in the patched colours, so the test could not tell them apart"
+    );
+    let field = "basic-input-placeholder";
+    hover(&mut cx, point(px(4.), px(4.)));
+    draw(&mut cx);
+    assert_eq!(
+        painted_fill(&mut cx, field),
+        fill,
+        "the field is not filled with the patched input.field(NONE).fill"
+    );
+    let info = settle_on(&mut cx, &showcase, field);
+    assert!(info.is_some(), "the field shows no info");
+    let Some(info) = info else { return };
+    assert_eq!(
+        claim_of(&info, "input.field(HOVER).stroke.color"),
+        hovered,
+        "the field's info does not claim the patched hover edge: {info:?}"
+    );
+    let at = bounds_of(&mut cx, field).center();
+    hover(&mut cx, at);
+    draw(&mut cx);
+    assert_eq!(
+        painted_edge(&mut cx, field),
+        hovered,
+        "a hovered field is not edged in the patched input.field(HOVER).stroke.color"
+    );
+}
+
+/// The number field the showcase draws reads the installed 0.8.0 theme:
+/// with `input.field(NONE).fill` patched to `colors.window.border`, its
+/// frame is filled with it and its info claims it.
+#[gpui::test]
+fn the_number_frame_takes_the_patched_fill(cx: &mut TestAppContext) {
+    use native_theme::next::{InputRule, Paint, PartPatch, ThemePatch, WidgetState};
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let mut before = None;
+    let r = install_patched_breeze(&mut cx, &showcase, Page::Basic, |r| {
+        before = Some(native_theme_gpui::next::fill_of(
+            &r.input.field(WidgetState::NONE),
+        ));
+        Some(ThemePatch::new().input(
+            InputRule::new().field(PartPatch::new().fill(Paint::Solid(r.colors.window.border?))),
+        ))
+    });
+    let Some(r) = r else { return };
+    let fill = native_theme_gpui::next::fill_of(&r.input.field(WidgetState::NONE));
+    assert!(
+        fill.is_some() && before.is_some_and(|rest| rest != fill),
+        "kde-breeze light's field is filled in its window border colour, so the test could not tell them apart"
+    );
+    let field = "basic-number";
+    hover(&mut cx, point(px(4.), px(4.)));
+    draw(&mut cx);
+    assert_eq!(
+        painted_fill(&mut cx, field),
+        fill,
+        "the number frame is not filled with the patched input.field(NONE).fill"
+    );
+    let info = settle_on(&mut cx, &showcase, field);
+    assert_eq!(
+        info.as_ref()
+            .and_then(|info| claim_of(info, "input.field(NONE).fill")),
+        fill,
+        "the number field's info does not claim the patched fill: {info:?}"
+    );
+}
+
+/// A drop-down's surface reads the installed 0.8.0 theme: with
+/// `combo_box.field(NONE).fill` patched to `colors.window.border`, the Basic
+/// Select is filled with it and its info claims it.
+#[gpui::test]
+fn a_drop_downs_surface_takes_the_patched_fill(cx: &mut TestAppContext) {
+    use native_theme::next::{ComboBoxRule, Paint, PartPatch, ThemePatch, WidgetState};
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let mut before = None;
+    let r = install_patched_breeze(&mut cx, &showcase, Page::Basic, |r| {
+        before = Some(native_theme_gpui::next::fill_of(
+            &r.combo_box.field(WidgetState::NONE),
+        ));
+        Some(ThemePatch::new().combo_box(
+            ComboBoxRule::new().field(PartPatch::new().fill(Paint::Solid(r.colors.window.border?))),
+        ))
+    });
+    let Some(r) = r else { return };
+    let fill = native_theme_gpui::next::fill_of(&r.combo_box.field(WidgetState::NONE));
+    assert!(
+        fill.is_some() && before.is_some_and(|rest| rest != fill),
+        "kde-breeze light's drop-down is filled in its window border colour, so the test could not tell them apart"
+    );
+    let field = "basic-select";
+    hover(&mut cx, point(px(4.), px(4.)));
+    draw(&mut cx);
+    assert_eq!(
+        painted_fill(&mut cx, field),
+        fill,
+        "the drop-down is not filled with the patched combo_box.field(NONE).fill"
+    );
+    let info = settle_on(&mut cx, &showcase, field);
+    assert_eq!(
+        info.as_ref()
+            .and_then(|info| claim_of(info, "combo_box.field(NONE).fill")),
+        fill,
+        "the drop-down's info does not claim the patched fill: {info:?}"
+    );
+}
+
+/// A field whose stroke the theme states as none (spec §10, rule 2: no
+/// stroke, 0 wide) keeps every builder that applies: `geometry::input`
+/// applies, the field takes `geometry::input_fill`, and it is drawn over
+/// its stated fill with no line, enabled or disabled; its info says the
+/// builder refines its text and that the stroke is none; a text area and a
+/// drop-down so stroked keep their surfaces too. No bundled preset states
+/// such a stroke, so it is laid over kde-breeze light's by a patch and the
+/// choices are read off the theme, not installed: the connector's `input`
+/// token reads the field's stroke colour.
+#[gpui::test]
+fn a_field_stroked_as_none_keeps_its_fill_and_builder(cx: &mut TestAppContext) {
+    use crate::demo::{FieldGround, RefinedField, combo_look, text_area_surface_of};
+    use crate::info::inputs::{FieldTaken, input, input_surface};
+    use native_theme::next::{
+        ComboBoxRule, InputRule, PartPatch, Preset, Scheme, Stroke, Theme as NextTheme,
+        ThemeContext, ThemePatch, WidgetState,
+    };
+    let (_showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let theme = cx.update(|_w, cx| Theme::global(cx).clone());
+    let mut r = NextTheme::preset(Preset::KdeBreeze)
+        .resolve(&ThemeContext::default().with_scheme(Scheme::Light));
+    let none = || PartPatch::new().stroke(Stroke::None);
+    r.apply_patch(
+        &ThemePatch::new()
+            .input(InputRule::new().field(none()))
+            .text_area(InputRule::new().field(none()))
+            .combo_box(ComboBoxRule::new().field(none())),
+    );
+    let rest = r.input.field(WidgetState::NONE);
+    assert!(
+        matches!(rest.stroke, Stroke::None),
+        "the patch does not state the field's stroke as none"
+    );
+    let fill = native_theme_gpui::next::fill_of(&rest);
+    let enabled = RefinedField::of(&r, false);
+    assert!(
+        enabled.applied && enabled.fill.is_ok(),
+        "geometry::input or geometry::input_fill does not apply to a field stroked as none: {enabled:?}"
+    );
+    match &enabled.ground {
+        Some(FieldGround::Surface(surface)) => {
+            assert_eq!(Some(surface.fill), fill, "{surface:?}");
+            assert_eq!(surface.line.width, 0.0, "{surface:?}");
+            assert_eq!(surface.line.colour, None, "{surface:?}");
+            assert_eq!(surface.hover, None, "{surface:?}");
+        }
+        ground => panic!("an enabled field stroked as none is drawn over no surface: {ground:?}"),
+    }
+    match &RefinedField::of(&r, true).ground {
+        Some(FieldGround::Faded(fill, line)) => {
+            assert!(fill.background.is_some(), "{fill:?}");
+            assert_eq!(line.width, 0.0, "{line:?}");
+            assert_eq!(line.colour, None, "{line:?}");
+        }
+        ground => panic!("a disabled field stroked as none is drawn over no surface: {ground:?}"),
+    }
+    let taken = FieldTaken {
+        builder: enabled.applied,
+        fill: enabled.fill.is_ok(),
+        surface: enabled.ground.is_some(),
+    };
+    let info = input_surface(
+        input(&theme, crate::demo::InputField::Refined, taken),
+        &r,
+        0.0,
+    );
+    assert!(
+        info.colors
+            .iter()
+            .all(|c| c.field != "foreground" && c.field != "input"),
+        "the field's info claims upstream's text or edge, which the builder and the surface replace: {info:?}"
+    );
+    assert!(
+        info.instance
+            .iter()
+            .any(|n| n.what == "text" && n.text.starts_with("input.text(NONE).color")),
+        "the field's info does not say geometry::input letters it: {info:?}"
+    );
+    assert!(
+        info.config.iter().all(|n| n.what != "border-radius"),
+        "the field's info names upstream's radius, which geometry::input replaces: {info:?}"
+    );
+    assert_eq!(
+        note_of(&info.config, "edge"),
+        Some("none: input.field(NONE).stroke is none"),
+        "the field's info does not say its stroke is none: {info:?}"
+    );
+    let area = text_area_surface_of(&r);
+    assert!(
+        area.as_ref().is_some_and(|area| area.line.width == 0.0
+            && area.line.colour.is_none()
+            && Some(area.fill)
+                == native_theme_gpui::next::fill_of(&r.text_area.field(WidgetState::NONE))),
+        "a text area stroked as none is drawn over no surface: {area:?}"
+    );
+    assert!(
+        combo_look(&r).is_ok(),
+        "a drop-down stroked as none keeps upstream's fill and edge"
+    );
+}
+
+/// The number field's edge picks what the theme states: at rest the line's
+/// colour, none where the stroke is none; focused the focused edge a rule
+/// states, else upstream's `ring`.
+#[test]
+fn the_number_edge_is_upstreams_ring_where_no_focus_edge_is_stated() {
+    use crate::demo::number_edge;
+    let [rest, focus, ring] = [0.1, 0.4, 0.7].map(|h| gpui::hsla(h, 0.5, 0.5, 1.0));
+    assert_eq!(
+        number_edge(false, Some(focus), Some(rest), ring),
+        Some(rest)
+    );
+    assert_eq!(number_edge(false, Some(focus), None, ring), None);
+    assert_eq!(
+        number_edge(true, Some(focus), Some(rest), ring),
+        Some(focus)
+    );
+    assert_eq!(number_edge(true, None, Some(rest), ring), Some(ring));
+}
+
+/// Under the macOS presets, which state no `input.field(FOCUSED)` edge, the
+/// focused number field the showcase draws is edged in upstream's `ring`,
+/// as gpui-component's own NumberInput edges its focused frame
+/// (input/number_input.rs:230-231), and its info claims it there.
+#[gpui::test]
+fn a_focused_number_field_takes_upstreams_ring_under_macos(cx: &mut TestAppContext) {
+    use crate::info::{state_stroke_color_of, stroke_width_of};
+    use native_theme::next::WidgetState;
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    for preset in ["macos-monterey", "macos-tahoe"] {
+        use_light_preset(&mut cx, &showcase, preset);
+        show(&mut cx, &showcase, Page::Basic);
+        let r = next_theme(&mut cx, &showcase);
+        assert!(r.is_some(), "{preset}: no 0.8.0 theme is installed");
+        let Some(r) = r else { return };
+        assert!(
+            state_stroke_color_of(&r.input.field(WidgetState::FOCUSED)).is_none()
+                && stroke_width_of(&r.input.field(WidgetState::NONE))
+                    .is_some_and(|width| width > 0.0),
+            "{preset} now states a focused field edge, or strokes no field, so this test no longer runs the unstated case"
+        );
+        let ring = cx.update(|_w, cx| Theme::global(cx).ring);
+        assert_ne!(
+            crate::info::stroke_color_of(&r.input.field(WidgetState::NONE)),
+            Some(ring),
+            "{preset}'s field edge is upstream's ring, so the test could not tell the focused edge from the one at rest"
+        );
+        let field = "basic-number";
+        click(&mut cx, field);
+        draw(&mut cx);
+        assert_eq!(
+            painted_edge(&mut cx, field),
+            Some(ring),
+            "{preset}: the focused number field is not edged in upstream's ring"
+        );
+        let info = settle_on(&mut cx, &showcase, field);
+        assert_eq!(
+            info.as_ref().and_then(|info| claim_of(info, "ring")),
+            Some(ring),
+            "{preset}: the focused number field's info does not claim upstream's ring: {info:?}"
+        );
+        click_at(&mut cx, point(px(4.), px(4.)));
+    }
+}
+
+/// The branches no bundled preset reaches, read off what the theme states:
+/// a theme-drawn checkbox or radio draws gpui-component's own where the
+/// theme leaves its look, the window's colour or its label font without a
+/// value gpui can take, and says at which home; the number field and a
+/// drop-down keep upstream's and say at which home.
+#[gpui::test]
+fn the_unstated_homes_fall_back_to_upstream_and_say_where(cx: &mut TestAppContext) {
+    use crate::info::inputs::{number_input, unstated_combo_fill};
+    let (_showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let theme = cx.update(|_w, cx| Theme::global(cx).clone());
+    #[cfg(feature = "widgets")]
+    {
+        use crate::info::inputs::{drawn_by_upstream, drawn_or_upstream};
+        let ground = Some(theme.background);
+        let look = "checkbox.indicator(NONE).fill";
+        let font = "checkbox.label(NONE)";
+        assert_eq!(drawn_or_upstream::<()>(Err(look), ground, None), Err(look));
+        assert_eq!(
+            drawn_or_upstream(Ok(()), None, None),
+            Err("colors.window.background")
+        );
+        assert_eq!(drawn_or_upstream(Ok(()), ground, Some(font)), Err(font));
+        assert_eq!(
+            drawn_or_upstream(Ok(()), ground, None),
+            Ok(((), theme.background))
+        );
+        let line = drawn_by_upstream(WidgetInfo::new("Checkbox"), "Checkbox", font);
+        assert!(
+            note_of(&line.config, "drawn by").is_some_and(|text| text.contains(font)),
+            "{line:?}"
+        );
+    }
+    let home = "input.field(NONE)'s fill, stroke or corners";
+    let number = number_input(&theme, Some(home));
+    assert!(
+        note_of(&number.config, "drawn").is_some_and(|text| text.contains(home))
+            && claim_of(&number, "input") == Some(theme.input),
+        "the number field gpui-component draws does not say at which home or claims no upstream edge: {number:?}"
+    );
+    let home = "combo_box.field(NONE).corners";
+    let combo = unstated_combo_fill(WidgetInfo::new("Select"), &theme, false, home);
+    assert!(
+        note_of(&combo.config, "surface").is_some_and(|text| text.contains(home))
+            && combo
+                .colors
+                .iter()
+                .any(|c| c.role == "trigger border" && c.value == theme.input),
+        "a drop-down that keeps upstream's surface does not say at which home or claims no upstream edge: {combo:?}"
+    );
 }
 
 /// Where the theme strokes no field line, a refined, enabled Input's info
@@ -20000,13 +20390,25 @@ fn a_disabled_fields_edge_swatch_is_its_faded_edge(cx: &mut TestAppContext) {
                 .is_some_and(|width| width > 0.0)
                 && r.input.disabled_opacity.is_some_and(|fade| fade < 1.0)
         })
-        .and_then(|(name, _, _)| name.strip_suffix(" Light").map(str::to_string));
+        .and_then(|(name, r, _)| {
+            let faded =
+                crate::info::stroke_color_of(&r.input.field(native_theme::next::WidgetState::NONE))
+                    .zip(r.input.disabled_opacity)
+                    .map(|(edge, fade)| edge.opacity(fade));
+            Some((name.strip_suffix(" Light")?.to_string(), faded))
+        });
     assert!(
         preset.is_some(),
         "no preset the preset switch installs strokes and fades a disabled field, which this \
          test reads"
     );
-    let Some(preset) = preset else { return };
+    let Some((preset, faded)) = preset else {
+        return;
+    };
+    assert!(
+        faded.is_some(),
+        "{preset} light states no input.field(NONE).stroke.color for the edge"
+    );
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     use_light_preset(&mut cx, &showcase, &preset);
     show(&mut cx, &showcase, Page::Basic);
@@ -20023,6 +20425,10 @@ fn a_disabled_fields_edge_swatch_is_its_faded_edge(cx: &mut TestAppContext) {
     assert!(
         claimed.is_some(),
         "the disabled field claims no edge: {info:?}"
+    );
+    assert_eq!(
+        claimed, faded,
+        "the disabled field's edge swatch is not input.field(NONE).stroke.color faded by input.disabled_opacity: {info:?}"
     );
     assert_eq!(
         claimed,

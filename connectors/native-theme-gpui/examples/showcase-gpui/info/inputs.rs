@@ -5,7 +5,7 @@ use gpui::{Hsla, Pixels};
 use gpui_component::theme::Theme;
 #[cfg(feature = "widgets")]
 use native_theme::next::{FocusTrigger, PartStated, TextStated, TextStyle};
-use native_theme::next::{ResolvedTheme as NextTheme, WidgetState};
+use native_theme::next::{ResolvedTheme as NextTheme, Stroke, WidgetState};
 #[cfg(feature = "widgets")]
 use native_theme_gpui::ResolvedTheme;
 use native_theme_gpui::next::{fill_of, padding_of, state_fill_of, text_color_of};
@@ -41,7 +41,8 @@ pub fn input_surface(info: WidgetInfo, r: &NextTheme, width: f32) -> WidgetInfo 
             Some(width),
             "showcase",
         ));
-    surface(info, width, "input")
+    let unstroked = matches!(r.input.field(WidgetState::NONE).stroke, Stroke::None);
+    surface(info, width, unstroked, "input")
 }
 
 /// A text area's surface, which the showcase draws under it
@@ -64,20 +65,24 @@ pub fn text_area_surface(info: WidgetInfo, r: &NextTheme, width: f32) -> WidgetI
             Some(width),
             "showcase",
         ));
-    surface(info, width, "text_area")
+    let unstroked = matches!(r.text_area.field(WidgetState::NONE).stroke, Stroke::None);
+    surface(info, width, unstroked, "text_area")
 }
 
 /// The surface line of a field of `widget` (`input` or `text_area`) over
-/// its surface, stroked `width` wide. A 0 width draws no edge in either
-/// state, and the line then names none.
-fn surface(info: WidgetInfo, width: f32, widget: &str) -> WidgetInfo {
+/// its surface, stroked `width` wide, `unstroked` where its stroke is
+/// stated as none. A 0 width draws no edge in either state, and the line
+/// then names none.
+fn surface(info: WidgetInfo, width: f32, unstroked: bool, widget: &str) -> WidgetInfo {
+    let why = if unstroked {
+        format!("{widget}.field(NONE).stroke is none")
+    } else {
+        format!("{widget}.field(NONE).stroke.width is 0")
+    };
     let info = if width > 0.0 {
         info
     } else {
-        info.config(
-            "edge",
-            format!("none: {widget}.field(NONE).stroke.width is 0"),
-        )
+        info.config("edge", format!("none: {why}"))
     };
     // The frame is named only where one is stroked.
     let fill = if width > 0.0 {
@@ -85,9 +90,7 @@ fn surface(info: WidgetInfo, width: f32, widget: &str) -> WidgetInfo {
             "{widget}.field(NONE).fill framed by its stroke, and under the pointer by {widget}.field(HOVER).stroke.color, where a rule states it"
         )
     } else {
-        format!(
-            "{widget}.field(NONE).fill, unframed in every state ({widget}.field(NONE).stroke.width is 0)"
-        )
+        format!("{widget}.field(NONE).fill, unframed in every state ({why})")
     };
     info.config("surface", format!("{fill}, drawn by the showcase under the field, which it leaves without a fill or an edge of its own: Input is Styled only and its root's one state is focused (input/input.rs, Input::render), where its own border in ring still shows over the surface"))
 }
@@ -112,16 +115,32 @@ pub fn disabled_input_surface(info: WidgetInfo, r: &NextTheme, fade: Option<f32>
     });
     info.colors(faded)
     .instance("disabled text", "input.text(DISABLED).color, which geometry::input_fill gives a disabled field's root in place of geometry::input's input.text(NONE).color, at half its alpha: the editor halves the alpha of a disabled field's text whatever its colour (gpui-base/input/base/element.rs, prepaint)")
-        .config("surface", "geometry::input_fill's fill inside input.field(NONE)'s stroke, none where its width is 0, drawn by the showcase under the field, which it leaves without a fill or an edge of its own, the whole faded by input.disabled_opacity: gpui fades each quad on its own (gpui-pre/window.rs, paint_quad) and draws a quad's border over its own fill (gpui-pre-wgpu shaders.wgsl, fs_quad), so a fill under the line would show through the faded line")
+        .config("surface", "geometry::input_fill's fill inside input.field(NONE)'s stroke, none where it is none or 0 wide, drawn by the showcase under the field, which it leaves without a fill or an edge of its own, the whole faded by input.disabled_opacity: gpui fades each quad on its own (gpui-pre/window.rs, paint_quad) and draws a quad's border over its own fill (gpui-pre-wgpu shaders.wgsl, fs_quad), so a fill under the line would show through the faded line")
 }
 
-/// A single-line `Input` taking the refinement `field` names. `styled` is
-/// whether the installed 0.8.0 theme refined it: a `Refined` field by
-/// `geometry::input` and `geometry::input_fill` over the surface the
-/// showcase draws under it, a `HeightOnly` one by `geometry::input_height`.
-/// Its geometry lines are recorded where `demo::text_field` applies the
-/// builders.
-pub fn input(t: &Theme, field: InputField, styled: bool) -> WidgetInfo {
+/// What a field takes of the installed 0.8.0 theme, for its info.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct FieldTaken {
+    /// Its geometry builder applies: `geometry::input` on a refined field,
+    /// `geometry::input_height` on a height-only one, `geometry::text_area`
+    /// on a text area.
+    pub builder: bool,
+    /// It takes the theme's fill: `geometry::input_fill`'s on a refined
+    /// field, its surface's on a text area.
+    pub fill: bool,
+    /// The showcase draws its surface under it, leaving it without a fill
+    /// or an edge colour of its own (`demo::input_surface`,
+    /// `demo::faded_surface`).
+    pub surface: bool,
+}
+
+/// A single-line `Input` taking the refinement `field` names, with what it
+/// takes of the installed 0.8.0 theme, `taken`: a `Refined` field
+/// `geometry::input` and `geometry::input_fill`, over the surface the
+/// showcase draws under it where both apply, a `HeightOnly` one
+/// `geometry::input_height`. Its geometry lines are recorded where
+/// `demo::text_field` applies the builders.
+pub fn input(t: &Theme, field: InputField, taken: FieldTaken) -> WidgetInfo {
     let info = WidgetInfo::new("Input");
     let info = match field {
         InputField::Refined => info,
@@ -129,11 +148,12 @@ pub fn input(t: &Theme, field: InputField, styled: bool) -> WidgetInfo {
     };
     // geometry::input_fill gives a refined field the platform's fill, in
     // place of upstream's (input/input.rs:800, then :808); its geometry line
-    // names the fields. The showcase then leaves the field without a fill or
-    // an edge colour of its own over a surface of its own (demo::text_field),
-    // whose info claims the edge.
-    let filled = field == InputField::Refined && styled;
-    let info = if filled {
+    // names the fields. Where the showcase draws the field's surface, it
+    // leaves the field without a fill or an edge colour of its own
+    // (demo::text_field), and the surface's info claims the edge.
+    let styled = taken.builder;
+    let filled = taken.fill;
+    let info = if taken.surface {
         info
     } else {
         info.color(claim(
@@ -142,13 +162,17 @@ pub fn input(t: &Theme, field: InputField, styled: bool) -> WidgetInfo {
             t.input,
             "gpui-component/input/input.rs:817",
         ))
-        .color(input_background(t))
+    };
+    let info = if filled {
+        info
+    } else {
+        info.color(input_background(t))
     };
     // Input takes only the fill from input_style and drops its foreground
     // (input/input.rs:715), so the text is the colour of the root: the one
     // geometry::input refines it with, or else the colour the showcase sets
     // on its window.
-    let info = if filled {
+    let info = if field == InputField::Refined && styled {
         info.instance("text", "input.text(NONE).color, which geometry::input refines the root with: Input sets no text colour of its own and the editor paints the field's text in the root's (input/input.rs, Input::render; gpui-base/input/base/element.rs, prepaint)")
     } else {
         info.color(claim(
@@ -177,10 +201,10 @@ pub fn input(t: &Theme, field: InputField, styled: bool) -> WidgetInfo {
     } else {
         info.not_themeable("fill", "input_background(): the window background in light mode, and input mixed toward transparent in dark -- one accessor, two sources (theme/mod.rs); geometry::input_fill gives a refined field the platform's")
     };
-    let info = if filled {
+    let info = if field == InputField::Refined && styled {
         info
     } else {
-        info.not_themeable("text colour", "none of its own: Input takes only the fill from input_style and drops its foreground (input/input.rs, Input::render), so the text takes the colour the showcase sets on its window; geometry::input gives a refined field input.text(NONE).color")
+        info.not_themeable("text colour","none of its own: Input takes only the fill from input_style and drops its foreground (input/input.rs, Input::render), so the text takes the colour the showcase sets on its window; geometry::input gives a refined field input.text(NONE).color")
     };
     let info = info
         .not_themeable("focus ring", "the connector uses the platform's focus_ring_width and focus_ring_keyboard_only only as a switch: upstream drops the ring where Theme::focus_ring is off, which the connector leaves off where the width is 0 or the theme says keyboard only, there but for a focus that followed a key press in a window under Root (styled.rs, FocusableExt::focus_ring_style), and draws it 3px wide with the ring colour's alpha set to 0.5 where it is on (styled.rs, FOCUS_RING_WIDTH), so the platform's width itself is Tier U. The ring is `ring` with that alpha, shown on the InputGroup's info; the OtpInput and Select show `ring` only as their focused border");
@@ -218,34 +242,43 @@ pub fn input(t: &Theme, field: InputField, styled: bool) -> WidgetInfo {
     }
 }
 
-/// A `Textarea`, drawn over its field's surface or not (`filled`,
-/// `demo::text_area_surface`). Its geometry
-/// lines are recorded where `demo::surfaced_textarea` applies the builders,
-/// and a filled one's surface where it draws the surface.
-pub fn textarea(t: &Theme, filled: bool) -> WidgetInfo {
+/// A `Textarea`, with what it takes of the installed 0.8.0 theme, `taken`:
+/// `geometry::text_area`, and the surface of its own field it is drawn over
+/// (`demo::text_area_surface`). Its geometry line is recorded where
+/// `demo::surfaced_textarea` applies the builder, and its surface's lines
+/// where it draws the surface.
+pub fn textarea(t: &Theme, taken: FieldTaken) -> WidgetInfo {
     let info = WidgetInfo::new("Textarea");
     // geometry::text_area letters the field in input.text(NONE).color, over
     // the window's it inherits (a Textarea renders as an Input,
     // input/textarea.rs:221, which drops input_style's foreground,
-    // input/input.rs:715): its geometry line names it. A filled field has
-    // no fill or edge colour of its own over the showcase's surface, whose
-    // info claims the edge.
-    let info = if filled {
+    // input/input.rs:715): its geometry line names it. A field over the
+    // showcase's surface has no fill or edge colour of its own, and the
+    // surface's info claims the edge.
+    let info = if taken.fill {
         info
     } else {
         info.color(input_background(t))
-            .color(claim(
-                "text, inherited",
-                "foreground",
-                t.foreground,
-                "showcase",
-            ))
-            .color(claim(
-                "border",
-                "input",
-                t.input,
-                "gpui-component/input/input.rs:817",
-            ))
+    };
+    let info = if taken.builder {
+        info
+    } else {
+        info.color(claim(
+            "text, inherited",
+            "foreground",
+            t.foreground,
+            "showcase",
+        ))
+    };
+    let info = if taken.surface {
+        info
+    } else {
+        info.color(claim(
+            "border",
+            "input",
+            t.input,
+            "gpui-component/input/input.rs:817",
+        ))
     };
     info.color(claim(
             "focused border",
@@ -261,8 +294,8 @@ pub fn textarea(t: &Theme, filled: bool) -> WidgetInfo {
 
 /// A `Textarea` as tall as the rows its state shows: [`textarea`]'s, with
 /// the height its rows give it.
-pub fn rows_textarea(t: &Theme, filled: bool) -> WidgetInfo {
-    let mut info = textarea(t, filled);
+pub fn rows_textarea(t: &Theme, taken: FieldTaken) -> WidgetInfo {
+    let mut info = textarea(t, taken);
     info.instance.retain(|note| note.what != "height");
     info.instance("height", "the rows its state was built to show, three, each the row height above, the three rounded up to a whole device pixel: geometry::text_area sets no height, so the state's rows size it (gpui-base/input/base/state.rs, InputBaseState::auto_grow; gpui-base/input/base/element.rs, ceil_to_device_pixel)")
 }
@@ -313,9 +346,16 @@ pub fn input_groups(t: &Theme) -> WidgetInfo {
 }
 
 /// A `NumberInput`. Its geometry line is recorded where `demo::number_input`
-/// applies the builder.
-pub fn number_input(t: &Theme) -> WidgetInfo {
-    WidgetInfo::new("NumberInput")
+/// applies the builder. `unstated` is the home an installed 0.8.0 theme
+/// leaves without a value gpui can take, which the field the showcase draws
+/// in its place needs (`demo::number_input`); `None` where no 0.8.0 theme
+/// is installed.
+pub fn number_input(t: &Theme, unstated: Option<&str>) -> WidgetInfo {
+    let info = match unstated {
+        Some(home) => WidgetInfo::new("NumberInput").config("drawn", format!("by gpui-component: the theme states no value gpui can take at {home}, which the field the showcase draws needs")),
+        None => WidgetInfo::new("NumberInput"),
+    };
+    info
         .color(claim(
             "border",
             "input",
@@ -381,10 +421,14 @@ impl StepGlyph {
 /// field (`demo::number_input` under a 0.8.0 theme): its own frame round
 /// gpui-base's NumberInput, `focused` or not, its line `width` wide and
 /// rounded by `radius`, its step buttons showing `up` and `down`, of the
-/// chosen icon theme, at `glyph`'s side. Its geometry lines are recorded
-/// where `demo::number_input` applies the builders.
+/// chosen icon theme, at `glyph`'s side; focused, where `r` states no
+/// focused edge, edged in `t`'s `ring`, as upstream's (`demo::number_edge`).
+/// Its geometry lines are recorded where `demo::number_input` applies the
+/// builders.
+#[allow(clippy::too_many_arguments)]
 pub fn native_number_input(
     r: &NextTheme,
+    t: &Theme,
     focused: bool,
     up: &SampleIcon,
     down: &SampleIcon,
@@ -405,10 +449,18 @@ pub fn native_number_input(
             "showcase",
         ));
     // The frame takes geometry::input's stroke width; a 0 width draws no
-    // edge in any state.
+    // edge in any state. Where the theme states no focused edge, the
+    // focused frame is edged in upstream's ring, as gpui-component's
+    // NumberInput edges its own: the toolkit changes the edge colour between
+    // rest and focus (spec §10, rule 0).
     let drawn = Some(width);
+    let focus = state_stroke_color_of(&r.input.field(WidgetState::FOCUSED));
     let info = if width <= 0.0 {
-        info.config("edge", "none: input.field(NONE).stroke.width is 0")
+        if matches!(r.input.field(WidgetState::NONE).stroke, Stroke::None) {
+            info.config("edge", "none: input.field(NONE).stroke is none")
+        } else {
+            info.config("edge", "none: input.field(NONE).stroke.width is 0")
+        }
     } else if focused {
         info.colors(
             edge_claim(
@@ -419,11 +471,11 @@ pub fn native_number_input(
                 "showcase",
             )
             .or(edge_claim(
-                "edge, focused: no focused edge stated, so the edge at rest",
-                "input.field(NONE).stroke.color",
-                stroke_color_of(&r.input.field(WidgetState::NONE)),
+                "edge, focused: no focused edge stated, so upstream's",
+                "ring",
+                focus.is_none().then_some(t.ring),
                 drawn,
-                "showcase",
+                "gpui-component/input/number_input.rs:231",
             )),
         )
         .config(
@@ -445,13 +497,22 @@ pub fn native_number_input(
             drawn,
             "showcase",
         ))
-        .colors(edge_claim(
-            "focused edge",
-            "input.field(FOCUSED).stroke.color",
-            state_stroke_color_of(&r.input.field(WidgetState::FOCUSED)),
-            drawn,
-            "showcase",
-        ))
+        .colors(
+            edge_claim(
+                "focused edge",
+                "input.field(FOCUSED).stroke.color",
+                state_stroke_color_of(&r.input.field(WidgetState::FOCUSED)),
+                drawn,
+                "showcase",
+            )
+            .or(edge_claim(
+                "focused edge, none stated: upstream's",
+                "ring",
+                focus.is_none().then_some(t.ring),
+                drawn,
+                "gpui-component/input/number_input.rs:231",
+            )),
+        )
     };
     // The step buttons take upstream's colours, through the homes its
     // tokens carry under a 0.8.0 theme: secondary_foreground is the button
@@ -678,8 +739,8 @@ pub fn radio_column(t: &Theme, labels: &[&'static str], selected: Option<usize>)
 }
 
 /// A `Switch` reading `label`, `checked` or not, `disabled` or not, its
-/// checked track handed `native`'s `switch.checked_background` where a
-/// native theme is installed.
+/// checked track handed `native`'s `switch.track(CHECKED).fill` through
+/// `next::variants::switch_color` where a 0.8.0 theme it maps is installed.
 pub fn switch(
     t: &Theme,
     label: &'static str,
@@ -880,11 +941,31 @@ fn unstated_label_font(text: &TextStyle, home: &'static str) -> Option<&'static 
     (!text.stated.contains(needed)).then_some(home)
 }
 
+/// What a theme-drawn checkbox or radio is drawn from: its `look`, where the
+/// theme states it, over `ground`, the window's colour, with its label
+/// font stated (`unstated_font` none); else the first home the theme leaves
+/// without a value gpui can take, the look's, the ground's or the label
+/// font's, and the widget draws gpui-component's own control in its place
+/// ([`drawn_by_upstream`]).
+#[cfg(feature = "widgets")]
+pub(crate) fn drawn_or_upstream<L>(
+    look: Result<L, &'static str>,
+    ground: Option<Hsla>,
+    unstated_font: Option<&'static str>,
+) -> Result<(L, Hsla), &'static str> {
+    let look = look?;
+    let ground = ground.ok_or("colors.window.background")?;
+    match unstated_font {
+        Some(home) => Err(home),
+        None => Ok((look, ground)),
+    }
+}
+
 /// The `drawn by` line of a theme-drawn `control` that draws
 /// gpui-component's own in its place, the theme stating no value gpui can
 /// take at `home` (native-theme-gpui/widgets/checkbox.rs, `Parts::render`).
 #[cfg(feature = "widgets")]
-fn drawn_by_upstream(info: WidgetInfo, control: &str, home: &str) -> WidgetInfo {
+pub(crate) fn drawn_by_upstream(info: WidgetInfo, control: &str, home: &str) -> WidgetInfo {
     info.config(
         "drawn by",
         format!(
@@ -955,16 +1036,11 @@ fn drawn_checkbox(
 ) -> WidgetInfo {
     let info = WidgetInfo::new("Checkbox");
     let text = r.checkbox.label(WidgetState::NONE);
-    let drawn = CheckboxLook::next_of(r, checked, disabled)
-        .map_err(|unstated| unstated.home())
-        .and_then(|rest| {
-            next_ground(r)
-                .map(|ground| (rest, ground))
-                .ok_or("colors.window.background")
-        })
-        .and_then(|drawn| {
-            unstated_label_font(&text, "checkbox.label(NONE)").map_or(Ok(drawn), Err)
-        });
+    let drawn = drawn_or_upstream(
+        CheckboxLook::next_of(r, checked, disabled).map_err(|unstated| unstated.home()),
+        next_ground(r),
+        unstated_label_font(&text, "checkbox.label(NONE)"),
+    );
     let (rest, ground) = match drawn {
         Ok(drawn) => drawn,
         Err(home) => {
@@ -1430,19 +1506,14 @@ pub fn native_radio_column(
         .unwrap_or("none");
     let info = WidgetInfo::new("RadioGroup").variant("vertical");
     let radios = labels.join(", ");
-    let drawn = CheckboxLook::next_radio(r, true, false)
-        .and_then(|on| CheckboxLook::next_radio(r, false, false).map(|off| (on, off)))
-        .map_err(|unstated| unstated.home())
-        .and_then(|(on, off)| {
-            next_ground(r)
-                .map(|ground| (on, off, ground))
-                .ok_or("colors.window.background")
-        })
-        .and_then(|drawn| {
-            unstated_label_font(&r.radio.label(WidgetState::NONE), "radio.label(NONE)")
-                .map_or(Ok(drawn), Err)
-        });
-    let (on, off, ground) = match drawn {
+    let drawn = drawn_or_upstream(
+        CheckboxLook::next_radio(r, true, false)
+            .and_then(|on| CheckboxLook::next_radio(r, false, false).map(|off| (on, off)))
+            .map_err(|unstated| unstated.home()),
+        next_ground(r),
+        unstated_label_font(&r.radio.label(WidgetState::NONE), "radio.label(NONE)"),
+    );
+    let ((on, off), ground) = match drawn {
         Ok(drawn) => drawn,
         Err(home) => {
             return drawn_by_upstream(info, "Radio", home)
@@ -1929,7 +2000,7 @@ pub fn match_highlight(info: WidgetInfo, t: &Theme, native: bool) -> WidgetInfo 
         .instance("highlight", "typed into its search field, the query filters the rows, and each row's text that matches it, case-insensitively, is drawn in list_highlight_foreground; the rest of the row keeps the row's own colour (gpui-component/label.rs, highlight_matches; searchable_list/delegate.rs, render_highlighted)")
         .not_themeable("search field", "at the top of its open list, with a rule in border under it: gpui-component's own Input without its frame, led by a Search icon in muted_foreground, gpui-component's own whichever icon theme is chosen, and cleanable (gpui-component/list/list.rs:720-740, query_input)");
     if native {
-        info.config("match colour", "list_highlight_foreground, which the connector fills with the resting text colour, defaults.text_color: the model states no colour for a match (native-theme-gpui/colors.rs, list_highlight_foreground). So the match reads as the rest of the row at rest only: a hovered row and the selected row alike are lettered accent_foreground, the connector's menu.hover_text_color (gpui-component/searchable_list/item.rs, SearchableListItemElement), and on both the match stands out in the resting colour")
+        info.config("match colour", "list_highlight_foreground, which the connector fills with the window's text colour, colors.window.foreground: the model states no colour for a match (native-theme-gpui/next/mod.rs, slice_colors; native-theme-gpui/colors.rs, assign_list_table_slice). So the match reads as the rest of the row at rest only: a hovered row and the selected row alike are lettered accent_foreground, which the connector fills with menu.item_label(HOVER).color (native-theme-gpui/next/mod.rs, widget_colors; native-theme-gpui/colors.rs, assign_core; gpui-component/searchable_list/item.rs, SearchableListItemElement), and on both the match stands out in the resting colour")
             .not_themeable("match limit", "no one colour reads in all three row states on every preset: this one never falls below a contrast of 1.5 at rest or hovered, and does on the selected row in 7 of the 34 bundled preset and mode combinations, against 20 for the info colour, 10 of them invisible. Upstream's highlight replaces the row's text colour with the one colour; SearchableListItem::render_highlighted is the way to draw a match that keeps the row's text colour")
     } else {
         info.not_themeable("match colour", "list_highlight_foreground, gpui-component's own: no native theme is installed, so its built-in theme's, blue-600 in light mode and blue-400 in dark (gpui-component/theme/default-theme.json), where a theme that states none falls back to its blue (gpui-component/theme/schema.rs, apply_config)")
@@ -1984,12 +2055,25 @@ pub fn combo_fill(
                 .next_geometry("combo_box_fill");
             info.config("fill", "geometry::combo_box_fill's combo_box.field(NONE).fill, and combo_box.field(HOVER).fill over it under the pointer where a rule states it, which the showcase paints on the element under the trigger and leaves the trigger without a fill: upstream's trigger sets no hover and is not an InteractiveElement (gpui-component/select.rs, Select::render; gpui-component/combobox.rs, Combobox::render); the trigger's edge is combo_box.field(NONE)'s stroke, none where it is 0 wide, over the input edge it paints first, which the showcase sets: geometry::select and geometry::combobox carry no edge colour, since the trigger of a Select or Combobox built with appearance(false) keeps a transparent edge the refinement would colour (gpui-component/select.rs, Select::render; gpui-component/combobox.rs, Combobox::render); and, where a rule states it, combo_box.field(HOVER).stroke.color as an edge the showcase lays over the trigger's under the pointer, for the same reason")
         }
-        Some((_, Err(home))) => upstream_combo_fill(info, t, combobox).config(
-            "surface",
-            format!("none: the theme states no value gpui can take at {home}, which the trigger's fill and edge the showcase draws need; the trigger keeps upstream's"),
-        ),
+        Some((_, Err(home))) => unstated_combo_fill(info, t, combobox, home),
         None => upstream_combo_fill(info, t, combobox),
     }
+}
+
+/// [`combo_fill`] where an installed 0.8.0 theme leaves `home` without a
+/// value gpui can take, which the trigger's surface needs
+/// (`demo::combo_look`): the trigger keeps upstream's fill and edge, and
+/// says at which home.
+pub(crate) fn unstated_combo_fill(
+    info: WidgetInfo,
+    t: &Theme,
+    combobox: bool,
+    home: &str,
+) -> WidgetInfo {
+    upstream_combo_fill(info, t, combobox).config(
+        "surface",
+        format!("none: the theme states no value gpui can take at {home}, which the trigger's fill and edge the showcase draws need; the trigger keeps upstream's"),
+    )
 }
 
 /// [`combo_fill`] where the trigger keeps upstream's fill and edge.
