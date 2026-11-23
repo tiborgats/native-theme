@@ -4,7 +4,7 @@
 //! the settings of a parsed `kdeglobals`, each as read, parsed by the 0.7.2
 //! reader's functions, but the fonts by the clean-room `QFont` parser
 //! ([`qfont_from_string`]) and the scheme by the clean-room dark/light rule
-//! ([`kde_color_scheme`]) (plan, Appendix B). Nothing but [`read`] reads a
+//! ([`kde_color_scheme()`]) (plan, Appendix B). Nothing but [`read`] reads a
 //! file or D-Bus, and nothing is derived: what the 0.7.2 reader derives from
 //! these settings the `kde-breeze` builder derives.
 
@@ -170,7 +170,7 @@ pub(crate) fn overrides_from_kdeglobals(
 }
 
 /// The scheme Plasma reports for `ini` by the clean-room rule
-/// ([`kde_color_scheme`], its table `tests/vectors/reader.kde_color_scheme.tsv`):
+/// ([`kde_color_scheme()`], its table `tests/vectors/reader.kde_color_scheme.tsv`):
 /// dark where the grey of `[Colors:Window] BackgroundNormal` is below 192,
 /// else light, Breeze Light's window colour standing in where the entry is
 /// absent or not a colour KConfig reads. It replaces 0.7.2's
