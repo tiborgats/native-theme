@@ -292,20 +292,27 @@ fn thumb(r: &ResolvedTheme) -> [Read<Rgba>; 3] {
 }
 
 /// A part's outline with the homes of its corners and stroke width.
-#[cfg_attr(
-    test,
-    expect(dead_code, reason = "the role cells' parity (M4.E2c) calls it")
-)]
 fn outline(part: &PartStyle, paths: [&'static str; 2]) -> Outline {
     let (edge, align) = edge(part);
     Outline { edge, paths, align }
 }
 
+/// The menu item's outline: its corners where stated, else the panel's, the home the table of
+/// homes names for `menu.border.corner_radius` on a theme that rounds the panel alone
+/// (material-3), as iced's menu reads them.
+fn menu_outline(item: &PartStyle, panel: &PartStyle) -> Outline {
+    let mut outline = outline(
+        item,
+        ["menu.item(NONE).corners", "menu.item(NONE).stroke.width"],
+    );
+    if outline.edge.radius.is_none() {
+        outline.edge.radius = radius_of(panel);
+        outline.paths[0] = "menu.panel(NONE).corners";
+    }
+    outline
+}
+
 /// A panel part's separator line, with the home of its width.
-#[cfg_attr(
-    test,
-    expect(dead_code, reason = "the role cells' parity (M4.E2c) calls it")
-)]
 fn panel_edge(part: &PartStyle, width_path: &'static str) -> PanelEdge {
     PanelEdge {
         color: line(part),
@@ -314,10 +321,6 @@ fn panel_edge(part: &PartStyle, width_path: &'static str) -> PanelEdge {
 }
 
 /// A text style's colour and size, with the home of the size.
-#[cfg_attr(
-    test,
-    expect(dead_code, reason = "the role cells' parity (M4.E2c) calls it")
-)]
 fn text(t: &TextStyle, home: &'static str) -> Text {
     Text {
         color: text_color(t),
@@ -326,10 +329,6 @@ fn text(t: &TextStyle, home: &'static str) -> Text {
 }
 
 /// An icon's colour, where stated.
-#[cfg_attr(
-    test,
-    expect(dead_code, reason = "the role cells' parity (M4.E2c) calls it")
-)]
 fn icon_color(icon: &IconStyle) -> Option<Rgba> {
     icon.stated
         .contains(IconStated::COLOR)
@@ -337,10 +336,6 @@ fn icon_color(icon: &IconStyle) -> Option<Rgba> {
 }
 
 /// An icon's size, where stated, with its home.
-#[cfg_attr(
-    test,
-    expect(dead_code, reason = "the role cells' parity (M4.E2c) calls it")
-)]
 fn icon_size(icon: &IconStyle, home: &'static str) -> Read<f32> {
     icon.stated
         .contains(IconStated::SIZE)
@@ -348,20 +343,12 @@ fn icon_size(icon: &IconStyle, home: &'static str) -> Read<f32> {
 }
 
 /// A widget's disabled opacity, where stated, with its home.
-#[cfg_attr(
-    test,
-    expect(dead_code, reason = "the role cells' parity (M4.E2c) calls it")
-)]
 fn opacity_at(v: Option<f32>, home: &'static str) -> Read<f32> {
     v.map(|v| (v, home))
 }
 
 /// [`CellSource`] of the 0.8.0 model. A checked, selected or open state's value is the one a
 /// rule states for that state; a hover's or a press's as [`state_fill`] reads it.
-#[cfg_attr(
-    test,
-    expect(dead_code, reason = "the role cells' parity (M4.E2c) calls it")
-)]
 pub(crate) fn cell_source(r: &ResolvedTheme) -> CellSource {
     use WidgetState as S;
     let b = &r.button;
@@ -393,6 +380,7 @@ pub(crate) fn cell_source(r: &ResolvedTheme) -> CellSource {
     let cb_field = cb.field(S::NONE);
     let sc = &r.segmented_control;
     let segment = sc.segment(S::NONE);
+    let sc_track = sc.track(S::NONE);
     let x = &r.expander;
     let header = x.header(S::NONE);
     CellSource {
@@ -421,10 +409,7 @@ pub(crate) fn cell_source(r: &ResolvedTheme) -> CellSource {
                 text_color(&m.item_label(S::NONE)),
                 state_text_color(&m.item_label(S::HOVER)),
             ],
-            outline: outline(
-                &item,
-                ["menu.item(NONE).corners", "menu.item(NONE).stroke.width"],
-            ),
+            outline: menu_outline(&item, &m.panel(S::NONE)),
             hover_border: state_line(&m.item(S::HOVER)),
             bar_padding: [
                 bar_left.map(|v| (v, "menu_bar.item(NONE).padding.left")),
@@ -558,9 +543,13 @@ pub(crate) fn cell_source(r: &ResolvedTheme) -> CellSource {
                 text_color(&tb.label(S::NONE)),
                 state_text_color(&tb.label(S::HOVER)),
             ],
+            // the selected tab's outline is the tab's (the table of homes' `tab.border` rows)
             outline: outline(
-                &tab,
-                ["tab.tab(NONE).corners", "tab.tab(NONE).stroke.width"],
+                &tb.tab(S::SELECTED),
+                [
+                    "tab.tab(SELECTED).corners",
+                    "tab.tab(SELECTED).stroke.width",
+                ],
             ),
             selected_fill: state_fill(&tb.tab(S::SELECTED)),
             selected_text: state_text_color(&tb.label(S::SELECTED)),
@@ -689,7 +678,7 @@ pub(crate) fn cell_source(r: &ResolvedTheme) -> CellSource {
         },
         segmented_control: SegmentedControlCell {
             fill: [
-                fill_at(&segment, "segmented_control.segment(NONE).fill"),
+                fill_at(&sc_track, "segmented_control.track(NONE).fill"),
                 state_fill_at(
                     &sc.segment(S::HOVER),
                     "segmented_control.segment(HOVER).fill",
@@ -697,10 +686,10 @@ pub(crate) fn cell_source(r: &ResolvedTheme) -> CellSource {
             ],
             text: text(&sc.label(S::NONE), "segmented_control.label(NONE).size_px"),
             outline: outline(
-                &segment,
+                &sc_track,
                 [
-                    "segmented_control.segment(NONE).corners",
-                    "segmented_control.segment(NONE).stroke.width",
+                    "segmented_control.track(NONE).corners",
+                    "segmented_control.track(NONE).stroke.width",
                 ],
             ),
             selected_fill: state_fill(&sc.segment(S::SELECTED)),
@@ -725,10 +714,10 @@ pub(crate) fn cell_source(r: &ResolvedTheme) -> CellSource {
                 "expander.header_label(NONE).size_px",
             ),
             outline: outline(
-                &header,
+                &x.container(S::NONE),
                 [
-                    "expander.header(NONE).corners",
-                    "expander.header(NONE).stroke.width",
+                    "expander.container(NONE).corners",
+                    "expander.container(NONE).stroke.width",
                 ],
             ),
             header_height: header.min_size[1].map(|v| (v, "expander.header(NONE).min_size[1]")),

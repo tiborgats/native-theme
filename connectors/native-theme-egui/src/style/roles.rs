@@ -417,6 +417,11 @@ fn menu(
         cx.unstated,
         notes,
     );
+    // S6 whatever the theme states of the pressed item: `active` is the hover look, not
+    // egui's own pressed one, which a keyboard-selected item would show
+    let w = &mut s.visuals.widgets;
+    w.active.weak_bg_fill = w.hovered.weak_bg_fill;
+    w.active.fg_stroke.color = w.hovered.fg_stroke.color;
     // E1: the base's `window_stroke.width` is `defaults.border.line_width`, sanitised; egui lays
     // the stroke inside the padding (egui-0.37.0/src/theme/default_style.rs:68-71): nothing moves
     if let Some(c) = m.hover_border {
