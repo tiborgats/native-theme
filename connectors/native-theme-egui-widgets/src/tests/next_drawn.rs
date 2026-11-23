@@ -606,7 +606,8 @@ fn a_link_takes_its_stated_underline_and_hover_layer() -> TestResult {
     Ok(())
 }
 
-/// A slider thumb's stroke stated as none is no outline, on every preset whose thumb has one.
+/// A slider thumb's stroke stated as none is no outline (spec §10, rule 2): a width of 0, so the
+/// knob is not given egui's own `fg_stroke`, on every preset whose thumb has one.
 #[test]
 fn a_slider_thumb_stated_as_none_has_no_outline() -> TestResult {
     use crate::slider::{Geometry, Look};
@@ -616,7 +617,7 @@ fn a_slider_thumb_stated_as_none_has_no_outline() -> TestResult {
         let stock = patched(preset, "")?;
         if Geometry::next_of(&stock, 1.0)
             .and_then(|g| g.outline)
-            .is_none()
+            .is_none_or(|w| w == 0.0)
         {
             continue;
         }
@@ -624,11 +625,23 @@ fn a_slider_thumb_stated_as_none_has_no_outline() -> TestResult {
         let r = patched(preset, none)?;
         assert_eq!(
             Geometry::next_of(&r, 1.0).ok_or("no geometry")?.outline,
-            None,
+            Some(0.0),
             "{preset:?}"
         );
         let look = Look::next_of(&r).ok_or("no look")?;
         assert_eq!(look.thumb_border_color, None, "{preset:?}");
+        let ctx = patched_installed(preset, none)?;
+        let add = |ui: &mut egui::Ui| ui.add(Slider::new(&mut 0.5, 0.0..=1.0));
+        let _ = response(&ctx, at(1.0), add);
+        let (out, _) = response(&ctx, at(1.0), add);
+        let knob = flat(&out.shapes)
+            .into_iter()
+            .find_map(|s| match s {
+                egui::Shape::Circle(c) => Some(c),
+                _ => None,
+            })
+            .ok_or("no knob drawn")?;
+        assert_eq!(knob.stroke, egui::Stroke::NONE, "{preset:?}");
     }
     assert!(
         outlined > 0,

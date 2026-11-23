@@ -8,6 +8,7 @@ use native_theme_egui::egui::{self, accesskit};
 use native_theme_egui::native_theme::color::Rgba;
 use native_theme_egui::native_theme::next::{ResolvedTheme as NextResolvedTheme, WidgetState};
 use native_theme_egui::native_theme::theme::ResolvedSliderTheme;
+use native_theme_egui::next::stroke_width_of;
 use native_theme_egui::{NativeThemeUiExt as _, ResolvedTheme, Role, RoleVariant, ThemeAtlas};
 
 use crate::parts::Parts;
@@ -229,14 +230,14 @@ impl Geometry {
 
     /// The sizes of a slider of a 0.8.0 theme, `width` wide: `slider.thumb(NONE)`'s minimum
     /// width, `slider.track(NONE)`'s minimum height and the thumb's outline width where it is
-    /// stated as one stroke. `None` where the theme states no thumb or track size, which sends
+    /// stated as one stroke, or as none, a width of 0 (spec §10, rule 2). `None` where the theme states no thumb or track size, which sends
     /// the slider to egui's own.
     pub(crate) fn next_of(r: &NextResolvedTheme, width: f32) -> Option<Self> {
         let sl = &r.slider;
         let thumb = sl.thumb(WidgetState::NONE);
         let [diameter, _] = thumb.min_size;
         let [_, rail] = sl.track(WidgetState::NONE).min_size;
-        Self::checked(diameter?, rail?, width, next::stroke_width(&thumb))
+        Self::checked(diameter?, rail?, width, stroke_width_of(&thumb))
     }
 
     /// The sizes, `None` where one is not finite.
