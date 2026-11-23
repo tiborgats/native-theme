@@ -580,28 +580,16 @@ fn inline_palettes() -> TestResult {
     let pair = Theme::from_toml(&format!(
         "name = \"x\"\nbase = \"kde-breeze\"\n[palettes.light]\n{light}\n[palettes.dark]\n{inline}"
     ))?;
-    // The builder does not apply a palette's colours yet (plan, M2): each
-    // context resolves in its palette's scheme, with kde-breeze's window
-    // background of that scheme.
-    let breeze = Theme::preset(Preset::KdeBreeze);
-    let light_bg = breeze
-        .resolve(&ThemeContext::light())
-        .colors
-        .window
-        .background;
-    let dark_bg = breeze
-        .resolve(&ThemeContext::dark())
-        .colors
-        .window
-        .background;
-    assert_ne!(light_bg, dark_bg);
-    for (ctx, palette, background) in [
-        (ThemeContext::light(), &light_palette, light_bg),
-        (ThemeContext::dark(), &sample_palette(), dark_bg),
+    // Each context resolves in its palette's scheme, with that palette's
+    // window background.
+    assert_ne!(light_palette.window_bg, sample_palette().window_bg);
+    for (ctx, palette) in [
+        (ThemeContext::light(), &light_palette),
+        (ThemeContext::dark(), &sample_palette()),
     ] {
         let resolved = pair.resolve(&ctx);
         assert_eq!(resolved.context.scheme, palette.scheme);
-        assert_eq!(resolved.colors.window.background, background);
+        assert_eq!(resolved.colors.window.background, Some(palette.window_bg));
     }
     Ok(())
 }

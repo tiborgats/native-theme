@@ -2,10 +2,6 @@
 //! plan, M1 item 6), through the public API on `kde-breeze`: the live
 //! system over the preset, the palette over the system, the patch over
 //! both, the transforms last.
-//!
-//! `kde-breeze`'s builder does not apply a palette's colours or an explicit
-//! accent yet (plan, M2): the palette's layer shows here in the scheme and
-//! the name it sets; the explicit accent's layer is not observable yet.
 
 use std::sync::Arc;
 
@@ -83,17 +79,23 @@ fn a_palette_lays_over_the_system() {
     let resolved = theme.resolve(&ThemeContext::dark());
     assert_eq!(resolved.context.scheme, Scheme::Light);
     assert_eq!(&*resolved.name, "Light Palette");
-    // The system's colours are the dark scheme's: the light resolve takes
-    // the preset's.
-    assert_eq!(
-        resolved.colors.window.background,
-        breeze()
-            .resolve(&ThemeContext::light())
-            .colors
-            .window
-            .background
-    );
-    assert_ne!(resolved.colors.window.background, Some(GREEN));
+    assert_eq!(resolved.colors.window.background, Some(BLUE));
+    // Over the system's colours of the scheme resolved too.
+    let light = breeze()
+        .with_system_overrides(system(Scheme::Light, GREEN))
+        .with_palette(palette("Light Palette", Scheme::Light, BLUE))
+        .resolve(&ThemeContext::light());
+    assert_eq!(light.colors.window.background, Some(BLUE));
+}
+
+#[test]
+fn an_explicit_accent_lays_over_the_palette() {
+    let theme = breeze().with_palette(palette("Light Palette", Scheme::Light, BLUE));
+    let ctx = ThemeContext::light();
+    assert_eq!(theme.resolve(&ctx).colors.accent.fill, BLUE);
+    let accented = theme.with_accent(RED).resolve(&ctx);
+    assert_eq!(accented.colors.accent.fill, RED);
+    assert_eq!(accented.colors.window.background, Some(BLUE));
 }
 
 #[test]
@@ -103,7 +105,7 @@ fn a_patch_lays_over_the_palette_and_the_system() {
         .with_palette(palette("Light Palette", Scheme::Light, BLUE));
     let ctx = ThemeContext::light();
     let unpatched = layered.resolve(&ctx);
-    assert_eq!(unpatched.colors.window.background, Some(GREEN));
+    assert_eq!(unpatched.colors.window.background, Some(BLUE));
     assert_eq!(&*unpatched.typography.body.family, "System Sans");
     let patched = layered.with_patch(patch(RED)).resolve(&ctx);
     assert_eq!(patched.colors.window.background, Some(RED));

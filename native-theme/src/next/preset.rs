@@ -4,6 +4,7 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use super::color::Color;
+use super::error::Error;
 use super::geometry::Stroke;
 use super::icons::{IconSizes, IconThemeSpec};
 use super::layout::LayoutMetrics;
@@ -12,7 +13,7 @@ use super::palette::Palette;
 use super::patch::ThemePatch;
 use super::presets::kde;
 use super::query::{Contrast, Scheme, ThemeContext, sanitized_text_scale};
-use super::reader::{OsColors, SystemOverrides};
+use super::reader::{DiagnosticEntry, OsColors, SystemOverrides, SystemSnapshot};
 use super::roles::{
     AccentColors, ColorRoles, RoleOrigin, SelectionColors, StatusColors, SurfaceColors,
 };
@@ -211,9 +212,6 @@ impl Palettes {
 /// is written, and it does not apply the palette or the accent yet; every
 /// other preset resolves to a theme that states nothing (plan, M1, M2):
 /// scaffolding until each preset's builder lands, not a theme to draw with.
-//
-// Not built yet, each with its milestone (plan, M1): `from_system`,
-// `from_system_with_preset`, `from_system_or_default`; `diagnostics`.
 #[derive(Clone)]
 pub struct Theme {
     preset: Preset,
@@ -269,6 +267,89 @@ impl Theme {
     #[must_use]
     pub fn for_current_platform() -> Self {
         Self::preset(Preset::detect())
+    }
+
+    /// The theme of the system's settings (spec §8): the platform's preset
+    /// ([`Preset::detect`]) read by that platform's reader, and the theme of
+    /// the snapshot it returns: the snapshot's preset, its context as the
+    /// theme's [context](Self::context) and its settings as the theme's
+    /// [system settings](Self::system_overrides), whose non-fatal fallbacks
+    /// [`diagnostics`](Self::diagnostics) returns.
+    ///
+    /// Only the KDE reader is written (the `kde` feature, on Linux); each
+    /// other platform's comes with its preset's builder (plan, M2).
+    ///
+    /// # Errors
+    ///
+    /// [`Error::FeatureDisabled`] where the platform's reader feature is off,
+    /// [`Error::PlatformUnsupported`] where the platform has no reader yet,
+    /// and the reader's error where it fails.
+    pub fn from_system() -> Result<Self, Error> {
+        Self::from_read(Self::read_system(Preset::detect()), None)
+    }
+
+    /// The theme [`from_system`](Self::from_system) reads, with `preset` in
+    /// place of the snapshot's.
+    ///
+    /// # Errors
+    ///
+    /// As [`from_system`](Self::from_system).
+    pub fn from_system_with_preset(preset: Preset) -> Result<Self, Error> {
+        Self::from_read(Self::read_system(Preset::detect()), Some(preset))
+    }
+
+    /// The theme [`from_system`](Self::from_system) reads, else, where that
+    /// fails, [`for_current_platform`](Self::for_current_platform)'s.
+    #[must_use]
+    pub fn from_system_or_default() -> Self {
+        Self::from_system().unwrap_or_else(|_| Self::for_current_platform())
+    }
+
+    /// The theme of `read`, a reader's snapshot, with `preset` in place of
+    /// its preset where given; `read`'s error where it failed.
+    fn from_read(
+        read: Result<SystemSnapshot, Error>,
+        preset: Option<Preset>,
+    ) -> Result<Self, Error> {
+        let snapshot = read?;
+        Ok(Self::preset(preset.unwrap_or(snapshot.preset))
+            .with_context(snapshot.context)
+            .with_system_overrides(snapshot.overrides))
+    }
+
+    /// The system's settings, read by the reader of `detected`, the
+    /// platform's preset: KDE's for `kde-breeze`. The other platforms'
+    /// readers are not written yet (plan, M2): `PlatformUnsupported`.
+    fn read_system(detected: Preset) -> Result<SystemSnapshot, Error> {
+        match detected {
+            Preset::KdeBreeze => Self::read_kde(),
+            _ => Err(Error::PlatformUnsupported {
+                platform: std::env::consts::OS,
+            }),
+        }
+    }
+
+    /// The KDE reader's snapshot (`reader::kde::read`): on Linux with the
+    /// `kde` feature; `FeatureDisabled` on Linux without it,
+    /// `PlatformUnsupported` elsewhere.
+    fn read_kde() -> Result<SystemSnapshot, Error> {
+        #[cfg(all(target_os = "linux", feature = "kde"))]
+        {
+            super::reader::kde::read()
+        }
+        #[cfg(all(target_os = "linux", not(feature = "kde")))]
+        {
+            Err(Error::FeatureDisabled {
+                feature: "kde",
+                needed_for: "reading the KDE desktop's settings",
+            })
+        }
+        #[cfg(not(target_os = "linux"))]
+        {
+            Err(Error::PlatformUnsupported {
+                platform: std::env::consts::OS,
+            })
+        }
     }
 
     /// This theme with the explicit name `name`, which names every resolved
@@ -390,6 +471,15 @@ impl Theme {
     #[must_use]
     pub fn preset_id(&self) -> Preset {
         self.preset
+    }
+
+    /// The non-fatal fallbacks the reader reported with the system's
+    /// settings; empty where the theme has none.
+    #[must_use]
+    pub fn diagnostics(&self) -> &[DiagnosticEntry] {
+        self.system
+            .as_deref()
+            .map_or(&[], |system| system.diagnostics.as_slice())
     }
 
     /// The theme resolved for `ctx` (spec §6, "Resolution Algorithm"): the
@@ -540,13 +630,6 @@ pub(crate) struct ResolveInputs<'a> {
     /// The active palette, where there is one.
     pub(crate) palette: Option<&'a Palette>,
     /// An explicit accent.
-    #[cfg_attr(
-        not(test),
-        expect(
-            dead_code,
-            reason = "read by the builders' accent derivations (plan, M2)"
-        )
-    )]
     pub(crate) accent: Option<Color>,
 }
 
@@ -783,6 +866,128 @@ mod tests {
     fn for_current_platform_is_the_detected_preset() {
         let theme = Theme::for_current_platform();
         assert_eq!(theme.preset_id(), Preset::detect());
+    }
+
+    /// The kdeglobals files of `tests/fixtures/kde/`: breeze-dark, breeze-light, custom-accent,
+    /// high-dpi, malformed-values, minimal, missing-groups.
+    #[cfg(all(target_os = "linux", feature = "kde"))]
+    const KDE_KDEGLOBALS_FIXTURES: usize = 7;
+
+    /// On every KDE fixture, the theme of the KDE reader's snapshot (`from_system`'s pure part) is
+    /// the snapshot's preset with its context and settings, and resolves as that preset given
+    /// them; with a preset given (`from_system_with_preset`'s), that preset, the rest unchanged.
+    #[cfg(all(target_os = "linux", feature = "kde"))]
+    #[test]
+    fn the_theme_of_a_kde_snapshot_on_the_fixtures() -> Result<(), Box<dyn std::error::Error>> {
+        use super::super::reader::kde::snapshot_from_kdeglobals;
+
+        let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/kde");
+        let mut files = 0usize;
+        for entry in std::fs::read_dir(&dir)? {
+            let path = entry?.path();
+            if path.extension().is_none_or(|ext| ext != "ini") {
+                continue;
+            }
+            files = files.saturating_add(1);
+            let mut ini = crate::kde::create_kde_parser();
+            crate::kde::read_kconfig(&mut ini, &std::fs::read_to_string(&path)?);
+            let snapshot = snapshot_from_kdeglobals(&ini, None, None);
+            let theme = Theme::from_read(Ok(snapshot.clone()), None)?;
+            assert_eq!(theme.preset_id(), Preset::KdeBreeze, "{path:?}");
+            assert_eq!(theme.context(), &snapshot.context, "{path:?}");
+            assert_eq!(
+                theme.system_overrides(),
+                Some(&snapshot.overrides),
+                "{path:?}"
+            );
+            assert_eq!(
+                theme.diagnostics(),
+                snapshot.overrides.diagnostics.as_slice(),
+                "{path:?}"
+            );
+            let expected = Theme::preset(Preset::KdeBreeze)
+                .with_system_overrides(snapshot.overrides.clone())
+                .resolve(&snapshot.context);
+            assert_eq!(theme.resolve_current(), expected, "{path:?}");
+            let pinned = Theme::from_read(Ok(snapshot.clone()), Some(Preset::Adwaita))?;
+            assert_eq!(pinned.preset_id(), Preset::Adwaita, "{path:?}");
+            assert_eq!(pinned.context(), &snapshot.context, "{path:?}");
+            assert_eq!(
+                pinned.system_overrides(),
+                Some(&snapshot.overrides),
+                "{path:?}"
+            );
+        }
+        assert_eq!(
+            files, KDE_KDEGLOBALS_FIXTURES,
+            "the kdeglobals files of {dir:?}"
+        );
+        Ok(())
+    }
+
+    /// `diagnostics` returns what the snapshot's settings carry, and nothing for a preset alone.
+    #[test]
+    fn diagnostics_are_the_snapshots() -> Result<(), Box<dyn std::error::Error>> {
+        assert!(Theme::preset(Preset::KdeBreeze).diagnostics().is_empty());
+        let entry = DiagnosticEntry::new("kde", "no colour scheme file".to_owned());
+        let overrides = SystemOverrides {
+            diagnostics: vec![entry.clone()],
+            ..SystemOverrides::default()
+        };
+        let snapshot = SystemSnapshot::new(Preset::KdeBreeze, ThemeContext::dark(), overrides);
+        let theme = Theme::from_read(Ok(snapshot), None)?;
+        assert_eq!(theme.diagnostics(), [entry].as_slice());
+        assert_eq!(theme.context(), &ThemeContext::dark());
+        Ok(())
+    }
+
+    /// A platform without a written reader, every preset but `kde-breeze`, is unsupported, and
+    /// both entry points' pure part passes the reader's error on.
+    #[test]
+    fn a_platform_without_a_reader_is_unsupported() {
+        for preset in Preset::ALL.iter().filter(|p| **p != Preset::KdeBreeze) {
+            let read = Theme::read_system(*preset);
+            assert!(
+                matches!(
+                    read,
+                    Err(Error::PlatformUnsupported { platform }) if platform == std::env::consts::OS
+                ),
+                "{preset:?}: {read:?}"
+            );
+            for pinned in [None, Some(Preset::KdeBreeze)] {
+                let theme = Theme::from_read(Theme::read_system(*preset), pinned);
+                assert!(
+                    matches!(theme, Err(Error::PlatformUnsupported { .. })),
+                    "{preset:?}, {pinned:?}: {theme:?}"
+                );
+            }
+        }
+    }
+
+    /// On Linux without the `kde` feature, the KDE desktop's reader is a disabled feature.
+    #[cfg(all(target_os = "linux", not(feature = "kde")))]
+    #[test]
+    fn kde_without_its_feature_is_a_disabled_feature() {
+        let read = Theme::read_system(Preset::KdeBreeze);
+        assert!(
+            matches!(read, Err(Error::FeatureDisabled { feature: "kde", .. })),
+            "{read:?}"
+        );
+    }
+
+    /// Where no reader reads the desktop (no `kde` feature, or not Linux), `from_system` fails
+    /// without a read and `from_system_or_default` is the platform's preset alone, which
+    /// resolves.
+    #[cfg(not(all(target_os = "linux", feature = "kde")))]
+    #[test]
+    fn from_system_or_default_falls_back_to_the_platform_preset() {
+        assert!(Theme::from_system().is_err());
+        assert!(Theme::from_system_with_preset(Preset::Adwaita).is_err());
+        let theme = Theme::from_system_or_default();
+        assert_eq!(theme.preset_id(), Preset::detect());
+        assert!(theme.system_overrides().is_none());
+        assert!(theme.diagnostics().is_empty());
+        assert_eq!(theme.resolve_current().context, *theme.context());
     }
 
     /// A palette named `name` for `scheme`, its colours the defaults.

@@ -11,7 +11,12 @@
 //! scheme and contrast resolved for; what 0.7.2's KDE reader derives from
 //! them, the builder derives (spec §8, "The KDE part"). The active palette
 //! ([`ResolveInputs::palette`]) and an explicit accent
-//! ([`ResolveInputs::accent`]) are not read yet.
+//! ([`ResolveInputs::accent`]) are laid over them in turn as two more
+//! colour schemes (spec §8, *Palette* and *Explicit accent*): each replaces
+//! the settings it names, the accent's through Plasma's `applyScheme()`
+//! (`kde_accent`), and a derived colour that reads a replaced setting is
+//! derived again from the settings in force; under either the system's
+//! accent, focus ring and text selection are not applied.
 //!
 //! Defined by the preset (spec §1, "Axis values without data"): the variant
 //! `ButtonVariant::Primary` (0.7.2's `primary_*` fields), a list's alternate
@@ -138,8 +143,9 @@
 //! - `S1`, the scroll bar's line along its inner edge, and `S2`, the
 //!   handle's outline: their sources are on the builder's `scrollbar`.
 //! - `S3`, the handle in the view that has the focus: Breeze's measured
-//!   colour. Under the system's colours the handle at rest is the plain
-//!   handle in every view, as 0.7.2 draws it: Breeze's rule, `focusColor()`
+//!   colour. Under the system's colours, a palette or an explicit accent the
+//!   handle at rest is the plain handle in every view, as 0.7.2 draws it
+//!   under the system's colours: Breeze's rule, `focusColor()`
 //!   (platform-facts.md (§2.8)), through the idle handle's overlay gives
 //!   #d0e4ef / #253b48 on Breeze's colours, not the measured #b1d9ef /
 //!   #2a546b, so no derivation from another scheme's colours is stated.
@@ -197,9 +203,14 @@ use crate::next::icons::{IconSizes, IconThemeSpec};
 use crate::next::layout::{ArrowSide, DialogButtonOrder, LayoutMetrics, TabIndicatorSide};
 use crate::next::motion::{CaretSpec, DialogEntranceStyle, MotionTokens, UiTimings};
 use crate::next::paint::Paint;
+use crate::next::palette::Palette;
 use crate::next::platform::KdeRoleKind;
 use crate::next::platform::kcu_mix::{kcu_mix_of_mix, kcu_mix_qreal};
 use crate::next::platform::kcu_overlay::kcu_overlay;
+use crate::next::platform::kde_accent::{
+    AccentGroup, AccentKey, AccentKeys, AccentSet, AccentSetInput, AccentSets, KdeAccentInput,
+    kde_accent, kde_has_accent,
+};
 use crate::next::platform::kde_selection_inactive::kde_selection_inactive;
 use crate::next::platform::kde_shade::{KdeShadeRole, kde_shade};
 use crate::next::platform::kirigami_lerp::kirigami_lerp;
@@ -251,7 +262,8 @@ use crate::next::window::WindowChrome;
 /// channels ([`srgb8`]); where the system's colours apply, each replaced by
 /// the system's setting where the system states it, and each colour 0.7.2's
 /// KDE reader derives replaced by that derivation where the system states
-/// every colour it reads ([`lay_system_over`]).
+/// every colour it reads ([`lay_system_over`]); then the palette's and the
+/// explicit accent's settings laid over them in turn ([`lay_layer_3_over`]).
 #[derive(Clone, Copy)]
 struct SchemeColors {
     window_background: Color,
@@ -301,7 +313,7 @@ struct SchemeColors {
     selection_unfocused_foreground: Color,
     /// The handle in the view that has the focus: Breeze's measured colour,
     /// which no derivation from the scheme's colours reproduces, so none
-    /// where the system's colours apply.
+    /// where the system's colours, a palette or an explicit accent apply.
     scrollbar_thumb_focused: Option<Color>,
     /// The handle of a view without the focus with the pointer on the bar
     /// but off the handle: no constant; [`resolve`] computes it from the
@@ -358,6 +370,14 @@ struct SchemeColors {
     /// `kdeglobals` `[KDE] frameContrast`: the system's where it states it,
     /// else KColorScheme's default ([`FRAME_CONTRAST_DEFAULT`]).
     frame_contrast: f64,
+    /// `[KDE] contrast`: Breeze's own ([`BREEZE_CONTRAST`]) in the preset's
+    /// settings; over a system's `kdeglobals`, the system's where it states
+    /// it, else KColorScheme's default ([`CONTRAST_DEFAULT`]).
+    contrast: i32,
+    /// Whether an inactive window's selection is built from the Window set:
+    /// the system's where its effects state it, else KColorScheme's default
+    /// ([`CHANGE_SELECTION_COLOR_DEFAULT`]).
+    change_selection_color: bool,
 }
 
 /// The light scheme's constants.
@@ -780,6 +800,8 @@ const LIGHT: SchemeColors = SchemeColors {
     // `expander.arrow_color`: 0.7.2 kde-breeze.toml (uncited)
     expander_arrow: srgb8(0x2326_29ff),
     frame_contrast: FRAME_CONTRAST_DEFAULT,
+    contrast: BREEZE_CONTRAST,
+    change_selection_color: CHANGE_SELECTION_COLOR_DEFAULT,
 };
 
 /// The dark scheme's constants.
@@ -1207,6 +1229,8 @@ const DARK: SchemeColors = SchemeColors {
     // `expander.arrow_color`: 0.7.2 kde-breeze.toml (uncited)
     expander_arrow: srgb8(0xfcfc_fcff),
     frame_contrast: FRAME_CONTRAST_DEFAULT,
+    contrast: BREEZE_CONTRAST,
+    change_selection_color: CHANGE_SELECTION_COLOR_DEFAULT,
 };
 
 /// The UI font's family.
@@ -1919,8 +1943,16 @@ const FRAME_CONTRAST_DEFAULT: f64 = 0.2;
 /// `kdeglobals` `[KDE] contrast` where it is unset or not an integer,
 /// KColorScheme's own default: `contrastF` is `0.1 * readEntry("contrast", 7)`
 /// (kcolorscheme.cpp:519-527 at kcolorscheme v6.31.0; docs/platform-facts.md
-/// §2.15).
+/// §2.15). The system path keeps it, as 0.7.2's KDE reader does, for a
+/// `kdeglobals` that does not state `[KDE] contrast` (`src/kde/colors.rs`,
+/// `contrast`).
 const CONTRAST_DEFAULT: i32 = 7;
+
+/// Breeze's own `[KDE] contrast`: both of its colour schemes state 4
+/// (BreezeLight.colors:195, BreezeDark.colors:202, `colors/` at breeze
+/// f0b1d7534aa2356d7336241d0c7051522e8a6b68). The preset's settings carry it,
+/// so its static values and every layer-3 recomputation over them read it.
+const BREEZE_CONTRAST: i32 = 4;
 
 /// Whether KColorScheme builds an inactive window's selection from the Window
 /// set where kdeglobals states neither `[ColorEffects:Inactive]
@@ -2052,7 +2084,9 @@ const fn srgb8(rgba: u32) -> Color {
 /// replaces the constant it is the setting of; a colour 0.7.2 derives is
 /// derived, with the same inputs, kernel and arguments, only where the system
 /// states every colour it reads, else the constant stays. A missing
-/// `kde_frame_contrast` or `kde_contrast` is KColorScheme's default, and a
+/// `kde_frame_contrast` or `kde_contrast` is KColorScheme's default, as in
+/// 0.7.2's reader (not Breeze's own contrast, which only the preset's
+/// settings carry: [`BREEZE_CONTRAST`]), and a
 /// missing `kde_effects` changes the selection as KColorScheme's default does
 /// ([`CHANGE_SELECTION_COLOR_DEFAULT`]).
 fn lay_system_over(c: &mut SchemeColors, os: &OsColors) {
@@ -2066,11 +2100,6 @@ fn lay_system_over(c: &mut SchemeColors, os: &OsColors) {
     let title_bar_inactive = surfaces.title_bar_inactive.unwrap_or_default();
     let selection = os.selection.unwrap_or_default();
     let [error, warning, success, info] = os.status.unwrap_or_default();
-    let frame_contrast = os.kde_frame_contrast.unwrap_or(FRAME_CONTRAST_DEFAULT);
-    let contrast = os.kde_contrast.unwrap_or(CONTRAST_DEFAULT);
-    let change_selection = os
-        .kde_effects
-        .map_or(CHANGE_SELECTION_COLOR_DEFAULT, |e| e.change_selection_color);
     let (window_bg, window_fg) = (window.background, window.foreground);
     let (view_bg, view_fg) = (view.background, view.foreground);
     let (button_bg, button_fg) = (button.background, button.foreground);
@@ -2084,7 +2113,11 @@ fn lay_system_over(c: &mut SchemeColors, os: &OsColors) {
     );
 
     // The settings, each where stated.
-    c.frame_contrast = frame_contrast;
+    c.frame_contrast = os.kde_frame_contrast.unwrap_or(FRAME_CONTRAST_DEFAULT);
+    c.contrast = os.kde_contrast.unwrap_or(CONTRAST_DEFAULT);
+    c.change_selection_color = os
+        .kde_effects
+        .map_or(CHANGE_SELECTION_COLOR_DEFAULT, |e| e.change_selection_color);
     replace(&mut c.window_background, window_bg);
     replace(&mut c.window_foreground, window_fg);
     replace(&mut c.window_foreground_muted, window.foreground_muted);
@@ -2122,52 +2155,255 @@ fn lay_system_over(c: &mut SchemeColors, os: &OsColors) {
     // Breeze's measured pixel is not another scheme's colour.
     c.scrollbar_thumb_focused = None;
 
-    // The derived colours, each where every colour it reads is stated.
-    replace(&mut c.focus_ring, highlight.map(focus_ring_of));
-    replace(
-        &mut c.selection_unfocused_background,
-        inactive_selection(
-            highlight,
-            window_bg,
-            highlight,
-            KdeRoleKind::Background,
-            change_selection,
-        ),
+    derive(
+        c,
+        &Settings {
+            window_bg: Laid::stated(window_bg),
+            window_fg: Laid::stated(window_fg),
+            view_bg: Laid::stated(view_bg),
+            view_fg: Laid::stated(view_fg),
+            button_bg: Laid::stated(button_bg),
+            button_fg: Laid::stated(button_fg),
+            highlight: Laid::stated(highlight),
+            highlight_fg: Laid::stated(highlight_fg),
+            focus: Laid::stated(focus),
+            hover: Laid::stated(hover),
+            header_bg: Laid::stated(header_bg),
+            header_fg: Laid::stated(header_fg),
+        },
+        Recompute::WhereEveryInputIsLaid,
     );
-    replace(
-        &mut c.selection_unfocused_foreground,
-        inactive_selection(
-            highlight_fg,
-            window_fg,
-            highlight,
-            KdeRoleKind::Foreground,
-            change_selection,
-        ),
+}
+
+/// The active palette `palette` and the explicit accent `accent` (layer 3,
+/// spec §6, resolution step 2) laid over the settings in force in `c`, as
+/// spec §8, "The KDE part", *Palette* and *Explicit accent*, state: each
+/// setting a slot names replaced by the slot's colour, then the six settings
+/// Plasma writes from the accent replaced by what it writes over them
+/// ([`lay_accent_over`]); a derived colour that reads a replaced setting is
+/// derived again from the settings in force, every other one kept. Under
+/// either the handle of the view that has the focus (`S3`) is unstated:
+/// Breeze's measured pixel is not another scheme's colour.
+fn lay_layer_3_over(c: &mut SchemeColors, palette: Option<&Palette>, accent: Option<Color>) {
+    let by_palette = palette.is_some();
+    if let Some(p) = palette {
+        lay_palette_over(c, p);
+    }
+    if let Some(accent) = accent {
+        lay_accent_over(c, accent, !by_palette);
+    }
+    if !by_palette && accent.is_none() {
+        return;
+    }
+    let laid = |value: Color, by: bool| Laid {
+        value: Some(value),
+        laid: by,
+    };
+    c.scrollbar_thumb_focused = None;
+    // The selection's pair and the two decorations: both layers state them.
+    derive(
+        c,
+        &Settings {
+            window_bg: laid(c.window_background, by_palette),
+            window_fg: laid(c.window_foreground, by_palette),
+            view_bg: laid(c.view_background, by_palette),
+            view_fg: laid(c.view_foreground, by_palette),
+            button_bg: laid(c.button_background, false),
+            button_fg: laid(c.button_foreground, false),
+            highlight: laid(c.selection_background, true),
+            highlight_fg: laid(c.selection_foreground, true),
+            focus: laid(c.accent, true),
+            hover: laid(c.decoration_hover, true),
+            header_bg: laid(c.toolbar_background, by_palette),
+            header_fg: Laid {
+                value: palette.map(|p| p.foreground),
+                laid: by_palette,
+            },
+        },
+        Recompute::WhereAnInputIsLaid,
     );
+}
+
+/// The palette `p` laid over the settings in `c` (spec §8, "The KDE part",
+/// *Palette*): the Window, View, Tooltip and Header sets' backgrounds, their
+/// one text colour, the Window and the View set's muted text (so the
+/// placeholder too), the selection's pair, DecorationFocus and
+/// DecorationHover from `accent`, the link and the four status colours of
+/// the View set; `[WM]` from the Header set and the text, as Plasma writes it
+/// for a scheme that states none; the border, every line drawn in
+/// `defaults.border.color`; the caret its own slot.
+fn lay_palette_over(c: &mut SchemeColors, p: &Palette) {
+    c.window_background = p.window_bg;
+    c.view_background = p.view_bg;
+    c.tooltip_background = p.tooltip_bg;
+    c.toolbar_background = p.header_bg;
+    c.title_bar_background = p.header_bg;
+    c.title_bar_inactive_background = p.header_bg;
+    c.window_foreground = p.foreground;
+    c.view_foreground = p.foreground;
+    c.tooltip_foreground = p.foreground;
+    c.title_bar_foreground = Some(p.foreground);
+    c.title_bar_inactive_foreground = p.foreground;
+    c.window_foreground_muted = p.foreground_muted;
+    c.view_foreground_muted = Some(p.foreground_muted);
+    c.placeholder = p.foreground_muted;
+    c.selection_background = p.selection_bg;
+    c.selection_foreground = p.selection_fg;
+    c.accent = p.accent;
+    c.decoration_hover = p.accent;
+    c.link = p.link;
+    c.error = p.error;
+    c.warning = p.warning;
+    c.success = p.success;
+    c.info = p.info;
+    c.window_border = p.border;
+    c.caret = Some(p.caret);
+}
+
+/// The explicit accent `accent` laid over the settings in `c` (spec §8, "The
+/// KDE part", *Explicit accent*): the six settings Plasma's `applyScheme()`
+/// writes from it ([`kde_accent`], the Active group, no tint, no
+/// accent-coloured title bar, over the View set's background in force), each
+/// held in 8 bits as kdeglobals holds it; the caret DecorationFocus where
+/// `caret` is true (no palette states the caret).
+fn lay_accent_over(c: &mut SchemeColors, accent: Color, caret: bool) {
+    let view = AccentSetInput {
+        active: AccentKeys {
+            background_normal: rgba(c.view_background),
+            ..AccentKeys::default()
+        },
+        has_group: true,
+        ..AccentSetInput::default()
+    };
+    let input = KdeAccentInput {
+        sets: AccentSets {
+            view,
+            ..AccentSets::default()
+        },
+        accent: rgba(accent),
+        tint_factor: None,
+        titlebar_is_accent_colored: false,
+    };
+    let written = |set, key| eight_bit(kde_accent(&input, set, key, AccentGroup::Active));
+    c.accent = written(AccentSet::View, AccentKey::DecorationFocus);
+    c.decoration_hover = written(AccentSet::View, AccentKey::DecorationHover);
+    c.info = written(AccentSet::View, AccentKey::ForegroundActive);
+    c.link = written(AccentSet::View, AccentKey::ForegroundLink);
+    c.selection_background = written(AccentSet::Selection, AccentKey::BackgroundNormal);
+    c.selection_foreground = written(AccentSet::Selection, AccentKey::ForegroundNormal);
+    if caret {
+        c.caret = Some(c.accent);
+    }
+}
+
+/// A setting a derived colour reads: its value in force where known, and
+/// whether the layer being laid states it.
+#[derive(Clone, Copy)]
+struct Laid {
+    value: Option<Color>,
+    laid: bool,
+}
+
+impl Laid {
+    /// `value`, stated by the layer where given.
+    fn stated(value: Option<Color>) -> Self {
+        Laid {
+            value,
+            laid: value.is_some(),
+        }
+    }
+}
+
+/// The settings the derived colours read, as [`derive()`] takes them.
+struct Settings {
+    window_bg: Laid,
+    window_fg: Laid,
+    view_bg: Laid,
+    view_fg: Laid,
+    button_bg: Laid,
+    button_fg: Laid,
+    highlight: Laid,
+    highlight_fg: Laid,
+    focus: Laid,
+    hover: Laid,
+    header_bg: Laid,
+    header_fg: Laid,
+}
+
+/// Where a layer derives a colour again: the system's colours only where
+/// they state every setting it reads (spec §8, *Derived values*), layer 3
+/// where it replaced at least one of them, from the settings in force (spec
+/// §8, *Palette*, *Derived values*).
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Recompute {
+    WhereEveryInputIsLaid,
+    WhereAnInputIsLaid,
+}
+
+impl Recompute {
+    /// The values of `inputs` where the derivation that reads them runs.
+    fn given<const N: usize>(self, inputs: [Laid; N]) -> Option<[Color; N]> {
+        let runs = match self {
+            Recompute::WhereEveryInputIsLaid => inputs.iter().all(|input| input.laid),
+            Recompute::WhereAnInputIsLaid => inputs.iter().any(|input| input.laid),
+        };
+        if !runs {
+            return None;
+        }
+        let mut values = [Color::default(); N];
+        for (value, input) in values.iter_mut().zip(inputs) {
+            *value = input.value?;
+        }
+        Some(values)
+    }
+}
+
+/// The colours 0.7.2's KDE reader derives, each derived from the settings
+/// `s` with the same kernel and arguments where `rule` runs it, else kept;
+/// the scalars are `c`'s.
+fn derive(c: &mut SchemeColors, s: &Settings, rule: Recompute) {
+    let (frame_contrast, contrast) = (c.frame_contrast, c.contrast);
+    let (background, foreground) = (KdeRoleKind::Background, KdeRoleKind::Foreground);
+    let (unfocused_background, unfocused_foreground) = if c.change_selection_color {
+        (
+            rule.given([s.window_bg, s.highlight])
+                .map(|[w, hl]| inactive_selection(w, w, hl, background, true)),
+            rule.given([s.window_fg])
+                .map(|[w]| inactive_selection(w, w, w, foreground, true)),
+        )
+    } else {
+        (
+            rule.given([s.highlight])
+                .map(|[hl]| inactive_selection(hl, hl, hl, background, false)),
+            rule.given([s.highlight_fg])
+                .map(|[fg]| inactive_selection(fg, fg, fg, foreground, false)),
+        )
+    };
+    replace(
+        &mut c.focus_ring,
+        rule.given([s.highlight]).map(|[hl]| focus_ring_of(hl)),
+    );
+    replace(&mut c.selection_unfocused_background, unfocused_background);
+    replace(&mut c.selection_unfocused_foreground, unfocused_foreground);
     replace(
         &mut c.button_checked,
-        button_bg
-            .zip(button_fg)
-            .map(|(bg, fg)| mix(bg, fg, CHECKED_BUTTON_MIX)),
+        rule.given([s.button_bg, s.button_fg])
+            .map(|[bg, fg]| mix(bg, fg, CHECKED_BUTTON_MIX)),
     );
     replace(
         &mut c.button_pressed,
-        button_bg
-            .zip(highlight)
-            .map(|(bg, hl)| mix(bg, hl, PRESSED_BUTTON_MIX)),
+        rule.given([s.button_bg, s.highlight])
+            .map(|[bg, hl]| mix(bg, hl, PRESSED_BUTTON_MIX)),
     );
     replace(
         &mut c.button_default,
-        button_bg
-            .zip(highlight)
-            .map(|(bg, hl)| mix(bg, hl, DEFAULT_BUTTON_MIX)),
+        rule.given([s.button_bg, s.highlight])
+            .map(|[bg, hl]| mix(bg, hl, DEFAULT_BUTTON_MIX)),
     );
     replace(
         &mut c.button_default_frame,
-        button_bg
-            .zip(button_fg)
-            .zip(highlight)
-            .map(|((bg, fg), hl)| {
+        rule.given([s.button_bg, s.button_fg, s.highlight])
+            .map(|[bg, fg, hl]| {
                 eight_bit(kcu_mix_of_mix(
                     rgba(hl),
                     rgba(bg),
@@ -2179,136 +2415,132 @@ fn lay_system_over(c: &mut SchemeColors, os: &OsColors) {
     );
     replace(
         &mut c.button_frame,
-        button_bg
-            .zip(button_fg)
-            .map(|(bg, fg)| mix(bg, fg, frame_contrast)),
+        rule.given([s.button_bg, s.button_fg])
+            .map(|[bg, fg]| mix(bg, fg, frame_contrast)),
     );
     replace(
         &mut c.checkbox_checked,
-        button_bg
-            .zip(highlight)
-            .map(|(bg, hl)| over(translucent(hl, BLEND_VALUE), bg)),
+        rule.given([s.button_bg, s.highlight])
+            .map(|[bg, hl]| over(translucent(hl, BLEND_VALUE), bg)),
     );
     replace(
         &mut c.checkbox_frame,
-        window_bg
-            .zip(window_fg)
-            .map(|(bg, fg)| mix(bg, fg, frame_contrast)),
+        rule.given([s.window_bg, s.window_fg])
+            .map(|[bg, fg]| mix(bg, fg, frame_contrast)),
     );
     replace(
         &mut c.list_grid,
-        window_bg.map(|bg| eight_bit(kde_shade(rgba(bg), KdeShadeRole::Mid, contrast as f32))),
+        rule.given([s.window_bg])
+            .map(|[bg]| eight_bit(kde_shade(rgba(bg), KdeShadeRole::Mid, contrast as f32))),
     );
     replace(
         &mut c.list_row_hover,
-        highlight.map(|hl| translucent(hl, BLEND_VALUE)),
+        rule.given([s.highlight])
+            .map(|[hl]| translucent(hl, BLEND_VALUE)),
     );
     replace(
         &mut c.list_row_hover_frame,
-        highlight.map(|hl| translucent(hl, LIST_HOVER_OUTLINE_ALPHA)),
+        rule.given([s.highlight])
+            .map(|[hl]| translucent(hl, LIST_HOVER_OUTLINE_ALPHA)),
     );
     replace(
         &mut c.list_header_hover,
-        button_bg
-            .zip(hover)
-            .map(|(bg, hv)| mix(bg, hv, HEADER_SECTION_MIX)),
+        rule.given([s.button_bg, s.hover])
+            .map(|[bg, hv]| mix(bg, hv, HEADER_SECTION_MIX)),
     );
     replace(
         &mut c.list_header_pressed,
-        button_bg
-            .zip(focus)
-            .map(|(bg, fc)| mix(bg, fc, HEADER_SECTION_MIX)),
+        rule.given([s.button_bg, s.focus])
+            .map(|[bg, fc]| mix(bg, fc, HEADER_SECTION_MIX)),
     );
     replace(
         &mut c.list_header_separator,
-        window_fg.map(|fg| translucent(fg, frame_contrast as f32)),
+        rule.given([s.window_fg])
+            .map(|[fg]| translucent(fg, frame_contrast as f32)),
     );
     replace(
         &mut c.scrollbar_thumb_hover,
-        window_bg
-            .zip(hover)
-            .map(|(bg, hv)| overlay(bg, hv, SCROLLBAR_HANDLE_ALPHA)),
+        rule.given([s.window_bg, s.hover])
+            .map(|[bg, hv]| overlay(bg, hv, SCROLLBAR_HANDLE_ALPHA)),
     );
     replace(
         &mut c.scrollbar_thumb,
-        window_bg
-            .zip(window_fg)
-            .map(|(bg, fg)| overlay(bg, fg, SCROLLBAR_IDLE_HANDLE_ALPHA)),
+        rule.given([s.window_bg, s.window_fg])
+            .map(|[bg, fg]| overlay(bg, fg, SCROLLBAR_IDLE_HANDLE_ALPHA)),
     );
-    c.scrollbar_thumb_bar_hover = window_bg
-        .zip(window_fg)
-        .map(|(bg, fg)| bar_hover_handle(bg, fg));
+    // Unstated under the system's colours where they do not state both.
+    let bar_hover = rule
+        .given([s.window_bg, s.window_fg])
+        .map(|[bg, fg]| bar_hover_handle(bg, fg));
+    if bar_hover.is_some() || rule == Recompute::WhereEveryInputIsLaid {
+        c.scrollbar_thumb_bar_hover = bar_hover;
+    }
     replace(
         &mut c.progress_fill,
-        window_bg
-            .zip(highlight)
-            .map(|(bg, hl)| overlay(bg, hl, PROGRESS_FILL_ALPHA)),
+        rule.given([s.window_bg, s.highlight])
+            .map(|[bg, hl]| overlay(bg, hl, PROGRESS_FILL_ALPHA)),
     );
     replace(
         &mut c.tab_hover,
-        hover.map(|hv| translucent(hv, TAB_HOVER_ALPHA)),
+        rule.given([s.hover])
+            .map(|[hv]| translucent(hv, TAB_HOVER_ALPHA)),
     );
     replace(
         &mut c.toolbar_border,
-        header_bg
-            .zip(header_fg)
-            .map(|(bg, fg)| mix(bg, fg, frame_contrast)),
+        rule.given([s.header_bg, s.header_fg])
+            .map(|[bg, fg]| mix(bg, fg, frame_contrast)),
     );
     replace(
         &mut c.toolbar_button_pressed,
-        highlight.map(|hl| translucent(hl, BLEND_VALUE)),
+        rule.given([s.highlight])
+            .map(|[hl]| translucent(hl, BLEND_VALUE)),
     );
     replace(
         &mut c.toolbar_button_checked,
-        button_fg.map(|fg| translucent(fg, FLAT_CHECKED_ALPHA)),
+        rule.given([s.button_fg])
+            .map(|[fg]| translucent(fg, FLAT_CHECKED_ALPHA)),
     );
     replace(
         &mut c.menu_background,
-        window_bg
-            .zip(view_bg)
-            .map(|(window, base)| mix(window, base, MENU_PANEL_MIX)),
+        rule.given([s.window_bg, s.view_bg])
+            .map(|[window, base]| mix(window, base, MENU_PANEL_MIX)),
     );
     replace(
         &mut c.menu_hover,
-        focus.map(|fc| translucent(fc, BLEND_VALUE)),
+        rule.given([s.focus])
+            .map(|[fc]| translucent(fc, BLEND_VALUE)),
     );
     replace(
         &mut c.menu_hover_frame,
-        focus
-            .zip(window_fg)
-            .map(|(fc, fg)| mix(fc, fg, MENU_HOVER_OUTLINE_MIX)),
+        rule.given([s.focus, s.window_fg])
+            .map(|[fc, fg]| mix(fc, fg, MENU_HOVER_OUTLINE_MIX)),
     );
     replace(
         &mut c.popover_border,
-        window_bg
-            .zip(window_fg)
-            .and_then(|(bg, fg)| interpolate(bg, fg, frame_contrast)),
+        rule.given([s.window_bg, s.window_fg])
+            .and_then(|[bg, fg]| interpolate(bg, fg, frame_contrast)),
     );
     replace(
         &mut c.card_border,
-        view_bg
-            .zip(view_fg)
-            .and_then(|(bg, fg)| interpolate(bg, fg, frame_contrast)),
+        rule.given([s.view_bg, s.view_fg])
+            .and_then(|[bg, fg]| interpolate(bg, fg, frame_contrast)),
     );
     replace(
         &mut c.switch_frame,
-        button_bg
-            .zip(button_fg)
-            .and_then(|(bg, fg)| interpolate(bg, fg, frame_contrast)),
+        rule.given([s.button_bg, s.button_fg])
+            .and_then(|[bg, fg]| interpolate(bg, fg, frame_contrast)),
     );
     replace(
         &mut c.switch_off,
-        button_bg.zip(button_fg).map(|(bg, fg)| {
+        rule.given([s.button_bg, s.button_fg]).map(|[bg, fg]| {
             let [r, g, b, a] = qt_tint(fg.to_srgb8(), bg.to_srgb8(), SWITCH_OFF_TINT_ALPHA);
             Color::from_srgb8(r, g, b, a)
         }),
     );
     replace(
         &mut c.switch_on,
-        button_bg
-            .zip(button_fg)
-            .zip(highlight)
-            .map(|((bg, fg), hl)| {
+        rule.given([s.button_bg, s.button_fg, s.highlight])
+            .map(|[bg, fg, hl]| {
                 let off = tint_stored(fg.to_srgb8(), bg.to_srgb8(), SWITCH_OFF_TINT_ALPHA);
                 switch_on_track(off, hl)
             }),
@@ -2406,36 +2638,25 @@ fn overlay(under: Color, paint: Color, alpha: f32) -> Color {
 }
 
 /// KColorScheme's inactive Selection colour of a role of `kind`, before any
-/// inactive effect ([`kde_selection_inactive`]), where every colour the
-/// kernel reads on its branch is given: the role's own `selection` colour
-/// where `change` is false; else `window`, and for a background role
-/// `selection_background` too. A colour the branch does not read may be
-/// missing (0.7.2's `inactive_selection`); the kernel is handed a read one in
-/// its place.
+/// inactive effect ([`kde_selection_inactive`]), held in 8 bits. The kernel
+/// reads, on its branch, the role's own colour `own` where `change` is
+/// false; else `window`, and for a background role `selection_background`
+/// too; a colour the branch does not read is handed a read one in its place
+/// (0.7.2's `inactive_selection`).
 fn inactive_selection(
-    selection: Option<Color>,
-    window: Option<Color>,
-    selection_background: Option<Color>,
+    own: Color,
+    window: Color,
+    selection_background: Color,
     kind: KdeRoleKind,
     change: bool,
-) -> Option<Color> {
-    let (own, window, selection_background) = if !change {
-        let own = selection?;
-        (own, own, own)
-    } else if kind == KdeRoleKind::Background {
-        let (window, selection_background) = (window?, selection_background?);
-        (window, window, selection_background)
-    } else {
-        let window = window?;
-        (window, window, window)
-    };
-    Some(eight_bit(kde_selection_inactive(
+) -> Color {
+    eight_bit(kde_selection_inactive(
         rgba(own),
         rgba(window),
         rgba(selection_background),
         kind,
         change,
-    )))
+    ))
 }
 
 // ---------------------------------------------------------------------------
@@ -2446,11 +2667,11 @@ fn inactive_selection(
 /// data"): `Normal` only, as the module documentation says.
 pub(crate) const CONTRAST_LEVELS: &[Contrast] = &[Contrast::Normal];
 
-/// The theme of `kde-breeze` for `ctx.scheme`, from the preset's constants
-/// and the system's settings in `inputs`, where given.
-// `inputs.palette` and `inputs.accent` are not applied yet: the palette's
-// and the accent's derivations (`kde_accent`, spec §6, resolution step 2)
-// are the KDE unit of the plan's M2.
+/// The theme of `kde-breeze` for `ctx.scheme`, from the preset's constants,
+/// the system's settings, the active palette and the explicit accent in
+/// `inputs`, where given, each layer over the one below it (spec §6,
+/// resolution step 2). An accent that stores as all zeros (`#00000000`) is
+/// Plasma's "accent from the colour scheme": no accent.
 pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> ResolvedTheme {
     let mut scheme_colors = match ctx.scheme {
         Scheme::Light => LIGHT,
@@ -2465,8 +2686,19 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
     if let Some(os) = os {
         lay_system_over(&mut scheme_colors, os);
     }
+    let palette = inputs.palette;
+    let accent = inputs.accent.filter(|accent| kde_has_accent(rgba(*accent)));
+    lay_layer_3_over(&mut scheme_colors, palette, accent);
     let c = &scheme_colors;
-    let colors = roles(c, os, system.and_then(|s| s.accent));
+    // Layer 3 restates the accent, the focus ring and the text selection.
+    let below_layer_3 = palette.is_none() && accent.is_none();
+    let colors = roles(
+        c,
+        os.filter(|_| below_layer_3),
+        system.and_then(|s| s.accent).filter(|_| below_layer_3),
+        palette,
+        accent.is_some(),
+    );
     let typography = typography(&colors, system, ctx.text_scale);
     let units = FontUnits {
         dpi: typography.font_dpi,
@@ -2571,8 +2803,8 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
         scrollbar: scrollbar(c, ctx.direction),
         list: list(c, &colors, &typography, &layout),
         tab: tab(c, &colors, &typography),
-        menu: menu(c, &menu_font, &layout, ctx.direction),
-        menu_bar: menu_bar(c),
+        menu: menu(c, &colors, &menu_font, &layout, ctx.direction),
+        menu_bar: menu_bar(c, &colors),
         sidebar: sidebar(c, &colors, &typography, &layout),
         toolbar: toolbar(
             c,
@@ -2633,16 +2865,44 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
 /// `[Colors:Tooltip]`), the view's muted foreground and the disabled text's
 /// colour `[Colors:View]` ForegroundInactive where the system states it (spec
 /// §8, "Disabled text"), else the preset's disabled colour.
-fn roles(c: &SchemeColors, os: Option<&OsColors>, system_accent: Option<Color>) -> ColorRoles {
+///
+/// The active palette `palette`, whose settings `c` holds already, states
+/// the roles its slots name (spec §7, "The roles a palette states"): the
+/// header's, the sidebar's, the card's, the dialog's and the popover's
+/// backgrounds with its one text colour, the window's divider, the accent's
+/// text and the four status colours' origin. The accent's text is the
+/// selection's foreground under an explicit accent (`explicit_accent`), as
+/// Plasma writes it (spec §8, *Explicit accent*).
+fn roles(
+    c: &SchemeColors,
+    os: Option<&OsColors>,
+    system_accent: Option<Color>,
+    palette: Option<&Palette>,
+    explicit_accent: bool,
+) -> ColorRoles {
+    let origin = if palette.is_some() {
+        RoleOrigin::Custom
+    } else {
+        RoleOrigin::Native
+    };
     // `defaults.{danger,warning,success,info}_text_color`: platform-facts.md (§2.1.4), each
     // [Colors:Window] ForegroundNormal, the window's foreground.
     let status = |fill| StatusColors {
         fill,
         foreground: c.window_foreground,
         standalone: None,
-        origin: RoleOrigin::Native,
+        origin,
     };
     let unstated = SurfaceColors::default();
+    let surface = |background: fn(&Palette) -> Color| {
+        palette.map_or(unstated, |p| {
+            SurfaceColors::new(Some(background(p)), Some(p.foreground), None, None, None)
+        })
+    };
+    let accent_foreground = match palette {
+        Some(p) if !explicit_accent => p.accent_fg,
+        _ => c.selection_foreground,
+    };
     let accent = os.and_then(|os| os.accent).or(system_accent);
     let selection_background = accent.unwrap_or(c.selection_background);
     let text_selection = os.and_then(|os| os.text_selection).unwrap_or_default();
@@ -2652,7 +2912,7 @@ fn roles(c: &SchemeColors, os: Option<&OsColors>, system_accent: Option<Color>) 
             Some(c.window_foreground),
             Some(c.window_foreground_muted),
             Some(c.window_border),
-            None,
+            palette.map(|p| p.divider),
         ),
         view: SurfaceColors::new(
             Some(c.view_background),
@@ -2661,11 +2921,11 @@ fn roles(c: &SchemeColors, os: Option<&OsColors>, system_accent: Option<Color>) 
             None,
             None,
         ),
-        header: unstated,
-        sidebar: unstated,
-        card: unstated,
-        dialog: unstated,
-        popover: unstated,
+        header: surface(|p| p.header_bg),
+        sidebar: surface(|p| p.sidebar_bg),
+        card: surface(|p| p.surface_bg),
+        dialog: surface(|p| p.surface_bg),
+        popover: surface(|p| p.surface_bg),
         tooltip: SurfaceColors::new(
             Some(c.tooltip_background),
             Some(c.tooltip_foreground),
@@ -2694,7 +2954,7 @@ fn roles(c: &SchemeColors, os: Option<&OsColors>, system_accent: Option<Color>) 
         // ForegroundNormal, the selection's foreground.
         accent: AccentColors {
             fill: accent.unwrap_or(c.accent),
-            foreground: c.selection_foreground,
+            foreground: accent_foreground,
             standalone: None,
         },
         focus_ring: os
@@ -3746,12 +4006,13 @@ fn spinner(roles: &ColorRoles) -> SpinnerWidget {
 /// connectors draw `menu.hover_border_color` (gpui: at
 /// `defaults.border.line_width`), pressed in the opaque DecorationFocus;
 /// the menu font `font` in the window text (0.7.2: `menu.font` is
-/// `defaults.font` where unstated), HighlightedText when pressed, the
-/// disabled window text when disabled; 16 px icons; separators in
-/// `separatorColor()`. The item's padding is on the physical sides of
-/// `direction`.
+/// `defaults.font` where unstated), the accent's text on the pressed
+/// DecorationFocus (spec §8, *Text on a fill*), the disabled window text
+/// when disabled; 16 px icons; separators in `separatorColor()`. The item's
+/// padding is on the physical sides of `direction`.
 fn menu(
     c: &SchemeColors,
+    roles: &ColorRoles,
     font: &TextStyle,
     layout: &LayoutMetrics,
     direction: Direction,
@@ -3788,7 +4049,7 @@ fn menu(
     let item_label = RuleBuilder::new(label(font, Some(c.window_foreground)))
         .rule(
             RuleSelector::on(WidgetState::PRESSED),
-            [TextProp::Color(c.selection_foreground)],
+            [TextProp::Color(roles.accent.foreground)],
         )
         .rule(
             RuleSelector::on(WidgetState::DISABLED),
@@ -3815,11 +4076,11 @@ fn menu(
 }
 
 /// The menu bar's titles: Breeze's margins; a hovered title filled in
-/// DecorationHover and an open one in DecorationFocus, both lettered
-/// HighlightedText. The bar's fill is the toolbar's (spec §5,
-/// `toolbar.background_color`); a title's font has no 0.7.2 field, so none
-/// is stated.
-fn menu_bar(c: &SchemeColors) -> MenuBarWidget {
+/// DecorationHover and an open one in DecorationFocus, both lettered in the
+/// accent's text (spec §8, *Text on a fill*). The bar's fill is the
+/// toolbar's (spec §5, `toolbar.background_color`); a title's font has no
+/// 0.7.2 field, so none is stated.
+fn menu_bar(c: &SchemeColors, roles: &ColorRoles) -> MenuBarWidget {
     let bar = RuleBuilder::new(PartStyle::default())
         .base([fill(c.toolbar_background)])
         .build();
@@ -3840,7 +4101,7 @@ fn menu_bar(c: &SchemeColors) -> MenuBarWidget {
                 RuleSelector::on(WidgetState::HOVER),
                 RuleSelector::on(WidgetState::OPEN),
             ],
-            [TextProp::Color(c.selection_foreground)],
+            [TextProp::Color(roles.accent.foreground)],
         )
         .build();
     MenuBarWidget::new(WidgetOrigin::Native, bar, item, item_label, None)
@@ -4022,9 +4283,9 @@ fn status_bar(
     )
 }
 
-/// The sidebar: the view's background in the default line (0.7.2: the
-/// colour and width of `sidebar.border` are `defaults.border`'s where
-/// unstated); a hovered item in the preset's hover fill, the selected one in
+/// The sidebar: the sidebar's background where a palette states it, else
+/// the view's, in the default line (0.7.2: the colour and width of
+/// `sidebar.border` are `defaults.border`'s where unstated); a hovered item in the preset's hover fill, the selected one in
 /// the selection's colours (0.7.2: `sidebar.selection_background` and
 /// `selection_text_color` are `defaults.selection_background` and
 /// `selection_text_color` where unstated); the UI font in the view's text
@@ -4036,7 +4297,7 @@ fn sidebar(
     layout: &LayoutMetrics,
 ) -> SidebarWidget {
     let container = RuleBuilder::new(PartStyle::default())
-        .base([fill(c.view_background)])
+        .base([fill(roles.sidebar.background.unwrap_or(c.view_background))])
         .base(roles.window.border.map(|border| outline(layout, border)))
         .build();
     let item = RuleBuilder::new(PartStyle::default())
@@ -4066,8 +4327,9 @@ fn sidebar(
     )
 }
 
-/// The popover: the window's background (0.7.2: `popover.background_color`
-/// is `defaults.background_color` where unstated, `resolve_safety_nets`) in
+/// The popover: the popover's background where a palette states it, else the
+/// window's (0.7.2: `popover.background_color` is
+/// `defaults.background_color` where unstated, `resolve_safety_nets`) in
 /// the Popup's line at the default width with the large radius (0.7.2:
 /// `popover.border`'s width and radius are `defaults.border`'s line width
 /// and `corner_radius_lg` where unstated) and the Popup's padding; the UI
@@ -4079,7 +4341,8 @@ fn popover(
     layout: &LayoutMetrics,
 ) -> PopoverWidget {
     let mut panel = PartStyle::default();
-    for prop in roles.window.background.map(fill).into_iter().chain([
+    let background = roles.popover.background.or(roles.window.background);
+    for prop in background.map(fill).into_iter().chain([
         outline(layout, c.popover_border),
         PartProp::Corners(Corners::uniform(layout.corner_radius_lg)),
         PartProp::Padding(Edges::symmetric(
@@ -4160,7 +4423,8 @@ fn switch(c: &SchemeColors, roles: &ColorRoles) -> SwitchWidget {
     )
 }
 
-/// The dialog: the window's background (0.7.2: `dialog.background_color` is
+/// The dialog: the dialog's background where a palette states it, else the
+/// window's (0.7.2: `dialog.background_color` is
 /// `defaults.background_color` where unstated, `resolve_safety_nets`) in the
 /// default line with the large radius (0.7.2: `dialog.border`'s colour,
 /// width and radius are `defaults.border`'s with `corner_radius_lg` where
@@ -4179,8 +4443,9 @@ fn dialog(
 ) -> DialogWidget {
     let mut panel = PartStyle::default();
     for prop in roles
-        .window
+        .dialog
         .background
+        .or(roles.window.background)
         .map(fill)
         .into_iter()
         .chain(roles.window.border.map(|border| outline(layout, border)))
@@ -4284,8 +4549,9 @@ fn combo_box(
 /// `defaults.background_color`, and `border`'s colour, width and radius
 /// `defaults.border`'s, where unstated) with no shadow; segments of a least
 /// height, hovered in the preset's hover fill, the selected one in Highlight
-/// lettered in the accent's text (0.7.2: `active_text_color` is
-/// `defaults.accent_text_color` where unstated); the UI font (0.7.2:
+/// lettered in the selection's text (spec §8, *Text on a fill*; 0.7.2's
+/// `active_text_color` is `defaults.accent_text_color` where unstated, the
+/// same colour without a palette); the UI font (0.7.2:
 /// `segmented_control.font` is `defaults.font` where unstated); the line
 /// between segments of the preset's width (0.7.2:
 /// `segmented_control.disabled_opacity` is `defaults.disabled_opacity` where
@@ -4319,7 +4585,7 @@ fn segmented_control(
     let label = RuleBuilder::new(label(&typography.body, None))
         .rule(
             RuleSelector::on(WidgetState::SELECTED),
-            [TextProp::Color(roles.accent.foreground)],
+            [TextProp::Color(roles.selection.foreground)],
         )
         .build();
     SegmentedControlWidget::new(
@@ -4335,14 +4601,14 @@ fn segmented_control(
     )
 }
 
-/// The card: Kirigami's card in the view's background (0.7.2:
-/// `card.background_color` is `defaults.surface_color` where unstated) with
-/// its own line, radius and padding; its shadow, which 0.7.2 states as
-/// `shadow_enabled` without its geometry, is left to the connector (spec §5,
-/// notes to the table).
+/// The card: Kirigami's card in the card's background where a palette
+/// states it, else the view's (0.7.2: `card.background_color` is
+/// `defaults.surface_color` where unstated) with its own line, radius and
+/// padding; its shadow, which 0.7.2 states as `shadow_enabled` without its
+/// geometry, is left to the connector (spec §5, notes to the table).
 fn card(c: &SchemeColors, roles: &ColorRoles) -> CardWidget {
     let container = RuleBuilder::new(PartStyle::default())
-        .base(roles.view.background.map(fill))
+        .base(roles.card.background.or(roles.view.background).map(fill))
         .base([
             PartProp::Stroke(Stroke::uniform(CARD_BORDER_WIDTH, c.card_border)),
             PartProp::Corners(Corners::uniform(CARD_CORNER_RADIUS)),

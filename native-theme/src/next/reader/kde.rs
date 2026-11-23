@@ -42,10 +42,6 @@ const UNNAMED_SCHEME: &str = "KDE";
 /// `GnomePortalKdeReader`), as [`snapshot_from_kdeglobals`] takes them. An
 /// icon theme whose `index.theme` is not found states no sizes. No read
 /// fails: what cannot be read is not stated.
-#[expect(
-    dead_code,
-    reason = "called by `Theme::from_system` (plan, M3); a test would read the live desktop"
-)]
 pub(crate) fn read() -> Result<SystemSnapshot, Error> {
     let ini = read_kdeglobals().unwrap_or_else(create_kde_parser);
     let icon_sizes = icon_theme(&ini)
