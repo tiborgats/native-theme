@@ -13,10 +13,42 @@
 //! (libadwaita's standalone colour, through the `adw_standalone` kernel);
 //! from the UI font, the body and the type scale libadwaita sizes as a share
 //! of it; the monospace and the title bar fonts, the overlay scroll bars, the
-//! icon theme and the caret's blink as given. The active palette
-//! ([`ResolveInputs::palette`]) and an explicit accent
-//! ([`ResolveInputs::accent`]) are not read yet: they are the next task of
-//! the plan's GNOME unit.
+//! icon theme and the caret's blink as given.
+//!
+//! The active palette ([`ResolveInputs::palette`]) and then an explicit
+//! accent ([`ResolveInputs::accent`]) are laid over the system's settings
+//! (spec §6, resolution step 2, layer 3). A palette states the roles its
+//! slots name (spec §7, "The roles a palette states"), and each slot whose
+//! libadwaita colour has the slot's name replaces that colour and every
+//! widget colour the preset takes from it (libadwaita 1.10.0
+//! `src/stylesheet/_colors.scss:12-71`): `window_bg` is `window_bg_color`,
+//! so also the inactive title bar (`headerbar_backdrop_color`,
+//! `_colors.scss:43`); `view_bg` is `view_bg_color`; `header_bg` is
+//! `headerbar_bg_color`, the active title bar; `sidebar_bg` is
+//! `sidebar_bg_color`; `surface_bg` is `card_bg_color`, `dialog_bg_color`
+//! and `popover_bg_color`, the card's, the dialog's and the popover's
+//! panels; `foreground` is every `*_fg_color` of those surfaces, the window
+//! text the preset letters its widgets in, and the tooltip's text with
+//! `tooltip_bg` (§7: one text colour for the eight surfaces); `accent` is
+//! `accent_bg_color`, the accent's fill and the tab's active indicator, from
+//! which the focus ring is derived again through `adw_standalone`; `error`,
+//! `warning` and `success` are `destructive_bg_color`, `warning_bg_color`
+//! and `success_bg_color`. A slot with no libadwaita colour of its name
+//! states its role alone (§7): `foreground_muted`, `border` (the default
+//! border, and so every outline drawn in it), `divider`, `accent_fg`,
+//! `selection_bg`, `selection_fg`, `link`, `caret` and `info`; the
+//! selection's slots stand over the accent the preset would take them from
+//! (spec §6: a derivation never replaces a colour a palette states in a slot
+//! of its own), and the unfocused and the text selection, which the preset
+//! takes from the selection, follow them, as the disabled text follows the
+//! window text. Every other colour keeps the preset's value: the fills the
+//! preset states as libadwaita's translucent layers already laid over its
+//! own window (the buttons', the entries', the hover fills), the
+//! placeholder, the switch's and the slider's colours, the status colours'
+//! text. An explicit accent is libadwaita's accent as the system's accent
+//! is ([`lay_accent_over`]), the later statement of layer 3: it replaces the
+//! palette's `accent`, `selection_bg`, `info`, and with the accent its text
+//! (`accent_fg`, `selection_fg`), which are then the preset's.
 //!
 //! Defined by the preset (spec §1, "Axis values without data"): the variant
 //! `ButtonVariant::Primary` (0.7.2's `primary_*` fields), a list's alternate
@@ -108,6 +140,7 @@ use crate::next::icons::{IconSizes, IconThemeSpec};
 use crate::next::layout::{ArrowSide, DialogButtonOrder, LayoutMetrics, TabIndicatorSide};
 use crate::next::motion::{CaretSpec, DialogEntranceStyle, MotionTokens, UiTimings};
 use crate::next::paint::Paint;
+use crate::next::palette::Palette;
 use crate::next::platform::adw_standalone::adw_standalone;
 use crate::next::preset::{Preset, ResolveInputs};
 use crate::next::presets::helpers::{
@@ -1243,6 +1276,30 @@ fn lay_accent_over(c: &mut SchemeColors, accent: Color, scheme: Scheme) {
     c.focus_ring = translucent(Color::new(r, g, b, a), FOCUS_RING_ALPHA);
 }
 
+/// Lays the palette `p` over the scheme's colours `c` for `scheme`: each
+/// slot whose libadwaita colour has its name replaces that colour, and the
+/// accent is laid as the system's is ([`lay_accent_over`]), so the focus
+/// ring is derived again from it, as the module documentation lists; the
+/// slots that state only their roles are read by [`roles`].
+fn lay_palette_over(c: &mut SchemeColors, p: &Palette, scheme: Scheme) {
+    c.window_background = p.window_bg;
+    c.view_background = p.view_bg;
+    c.title_bar_background = Some(p.header_bg);
+    c.sidebar_background = p.sidebar_bg;
+    c.card_background = Some(p.surface_bg);
+    c.popover_background = p.surface_bg;
+    c.tooltip_background = p.tooltip_bg;
+    c.window_foreground = p.foreground;
+    c.tooltip_foreground = p.foreground;
+    c.window_foreground_muted = p.foreground_muted;
+    c.window_border = p.border;
+    c.link = p.link;
+    c.error = p.error;
+    c.warning = p.warning;
+    c.success = p.success;
+    lay_accent_over(c, p.accent, scheme);
+}
+
 // ---------------------------------------------------------------------------
 // The builder
 // ---------------------------------------------------------------------------
@@ -1256,9 +1313,9 @@ pub(crate) const CONTRAST_LEVELS: &[Contrast] = &[Contrast::Normal, Contrast::Hi
 /// preset's constants with the system's settings `inputs.system` laid over
 /// them (spec §8, "The GNOME part"): the accent ([`lay_accent_over`]), the
 /// fonts ([`typography`]; the title bar's, [`window`]), the overlay scroll
-/// bars, the icon theme and the caret's blink.
-// The palette and the explicit accent (spec §6, resolution step 2) are not
-// read yet: they are the next task of the plan's GNOME unit.
+/// bars, the icon theme and the caret's blink; then the active palette
+/// ([`lay_palette_over`]) and the explicit accent, each over the layer below
+/// it (spec §6, resolution step 2).
 pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> ResolvedTheme {
     let system = inputs.system;
     let mut scheme_colors = match ctx.scheme {
@@ -1268,8 +1325,14 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
     if let Some(accent) = system.and_then(|s| s.accent) {
         lay_accent_over(&mut scheme_colors, accent, ctx.scheme);
     }
+    if let Some(p) = inputs.palette {
+        lay_palette_over(&mut scheme_colors, p, ctx.scheme);
+    }
+    if let Some(accent) = inputs.accent {
+        lay_accent_over(&mut scheme_colors, accent, ctx.scheme);
+    }
     let c = &scheme_colors;
-    let colors = roles(c, ctx.contrast);
+    let colors = roles(c, ctx.contrast, inputs.palette, inputs.accent.is_some());
     let typography = typography(c, system, ctx.text_scale);
     let units = FontUnits {
         dpi: typography.font_dpi,
@@ -1443,28 +1506,63 @@ pub(crate) fn resolve(ctx: &ThemeContext, inputs: &ResolveInputs<'_>) -> Resolve
 /// the disabled text are the window's text (`input.caret_color`,
 /// `defaults.disabled_text_color`); the info status is the accent. Under
 /// `Contrast::High` the focus ring is its colour at [`FOCUS_RING_ALPHA_HIGH`].
-fn roles(c: &SchemeColors, contrast: Contrast) -> ColorRoles {
+///
+/// The active palette `palette`, whose colours `c` holds already, states
+/// the roles its slots name (spec §7, "The roles a palette states"): the
+/// view's, the header's, the sidebar's, the card's, the dialog's and the
+/// popover's surfaces with its one text colour, the window's divider, the
+/// caret, the four status colours' origin, and, unless an explicit accent
+/// (`explicit_accent`) replaces them, the accent's text, the selection's
+/// pair, which the unfocused and the text selection take too, and the info
+/// status's fill.
+fn roles(
+    c: &SchemeColors,
+    contrast: Contrast,
+    palette: Option<&Palette>,
+    explicit_accent: bool,
+) -> ColorRoles {
+    let origin = if palette.is_some() {
+        RoleOrigin::Custom
+    } else {
+        RoleOrigin::Native
+    };
     let status = |fill, foreground| StatusColors {
         fill,
         foreground,
         standalone: None,
-        origin: RoleOrigin::Native,
+        origin,
     };
     let unstated = SurfaceColors::default();
+    let surface = |background: fn(&Palette) -> Color| {
+        palette.map_or(unstated, |p| {
+            SurfaceColors::new(Some(background(p)), Some(p.foreground), None, None, None)
+        })
+    };
+    let accent_slots = palette.filter(|_| !explicit_accent);
+    let (selection_background, selection_foreground) = accent_slots
+        .map_or((c.accent, c.accent_foreground), |p| {
+            (p.selection_bg, p.selection_fg)
+        });
     ColorRoles {
         window: SurfaceColors::new(
             Some(c.window_background),
             Some(c.window_foreground),
             Some(c.window_foreground_muted),
             Some(c.window_border),
+            palette.map(|p| p.divider),
+        ),
+        view: SurfaceColors::new(
+            Some(c.view_background),
+            palette.map(|p| p.foreground),
+            None,
+            None,
             None,
         ),
-        view: SurfaceColors::new(Some(c.view_background), None, None, None, None),
-        header: unstated,
-        sidebar: unstated,
-        card: unstated,
-        dialog: unstated,
-        popover: unstated,
+        header: surface(|p| p.header_bg),
+        sidebar: surface(|p| p.sidebar_bg),
+        card: surface(|p| p.surface_bg),
+        dialog: surface(|p| p.surface_bg),
+        popover: surface(|p| p.surface_bg),
         tooltip: SurfaceColors::new(
             Some(c.tooltip_background),
             Some(c.tooltip_foreground),
@@ -1474,24 +1572,29 @@ fn roles(c: &SchemeColors, contrast: Contrast) -> ColorRoles {
         ),
         osd: unstated,
         selection: SelectionColors::new(
-            c.accent,
-            c.accent_foreground,
-            Some(c.accent),
-            Some(c.accent_foreground),
+            selection_background,
+            selection_foreground,
+            Some(selection_background),
+            Some(selection_foreground),
         ),
-        text_selection: SelectionColors::new(c.accent, c.accent_foreground, None, None),
+        text_selection: SelectionColors::new(
+            selection_background,
+            selection_foreground,
+            None,
+            None,
+        ),
         find_highlight: None,
         scrim: None,
         accent: AccentColors {
             fill: c.accent,
-            foreground: c.accent_foreground,
+            foreground: accent_slots.map_or(c.accent_foreground, |p| p.accent_fg),
             standalone: None,
         },
         focus_ring: match contrast {
             Contrast::High => translucent(c.focus_ring, FOCUS_RING_ALPHA_HIGH),
             Contrast::Normal | Contrast::Increased => c.focus_ring,
         },
-        caret: c.window_foreground,
+        caret: palette.map_or(c.window_foreground, |p| p.caret),
         link: c.link,
         // 0.7.2: `link.visited_text_color` is `defaults.link_color` where unstated.
         link_visited: None,
@@ -1501,7 +1604,10 @@ fn roles(c: &SchemeColors, contrast: Contrast) -> ColorRoles {
         error: status(c.error, c.error_foreground),
         warning: status(c.warning, c.warning_foreground),
         success: status(c.success, c.success_foreground),
-        info: status(c.accent, c.accent_foreground),
+        info: status(
+            accent_slots.map_or(c.accent, |p| p.info),
+            c.accent_foreground,
+        ),
     }
 }
 
@@ -2597,7 +2703,8 @@ fn switch(c: &SchemeColors, roles: &ColorRoles) -> SwitchWidget {
     )
 }
 
-/// The dialog: its panel in the window's background (0.7.2's
+/// The dialog: its panel in the dialog's background where a palette states
+/// it (`dialog_bg_color`), else the window's (0.7.2's
 /// `dialog.background_color` where unstated, `resolve_safety_nets`) with the
 /// default border (`resolve_border_inheritance`), its own corners, padding
 /// and size limits; its title in the UI font at `title_size` (the preset's,
@@ -2615,8 +2722,9 @@ fn dialog(
 ) -> DialogWidget {
     let mut panel = PartStyle::default();
     for prop in roles
-        .window
+        .dialog
         .background
+        .or(roles.window.background)
         .map(fill)
         .into_iter()
         .chain(border(roles, layout.border_width))

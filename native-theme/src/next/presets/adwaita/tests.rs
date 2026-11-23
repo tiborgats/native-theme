@@ -249,3 +249,308 @@ fn no_motion_removes_the_dialog_s_entrance() {
         assert_eq!(theme.motion_tokens, MotionTokens::default(), "{motion:?}");
     }
 }
+
+// ---------------------------------------------------------------------------
+// The palette and the explicit accent (spec §6, resolution step 2; §7)
+// ---------------------------------------------------------------------------
+
+/// libadwaita's blue and purple accents (libadwaita 1.10.0
+/// `doc/css-variables.md`, the table `src/gnome/accent.rs` tests against).
+const BLUE: Color = srgb8(0x3584_e4ff);
+const PURPLE: Color = srgb8(0x9141_acff);
+
+/// The focus ring of [`PURPLE`]: its documented standalone colour on a light
+/// and on a dark background, at 50 % (`src/gnome/accent.rs`, `DOCUMENTED`).
+const PURPLE_RING_LIGHT: Color = srgb8(0x8939_a480);
+const PURPLE_RING_DARK: Color = srgb8(0xfba7_ff80);
+
+/// The 8-bit opaque colour `0xRRGGBB`.
+fn hex(rgb: u32) -> Color {
+    let [_, r, g, b] = rgb.to_be_bytes();
+    Color::from_srgb8(r, g, b, u8::MAX)
+}
+
+/// A palette for `scheme` whose every slot has a colour of its own.
+fn distinct_palette(scheme: Scheme) -> Palette {
+    Palette {
+        name: Arc::from("distinct"),
+        scheme,
+        window_bg: hex(0xf0e0d0),
+        view_bg: hex(0xfaf5f0),
+        surface_bg: hex(0xe8f0e8),
+        header_bg: hex(0xd8d0f0),
+        sidebar_bg: hex(0xe0f0f8),
+        tooltip_bg: hex(0xf8f0c0),
+        foreground: hex(0x201810),
+        foreground_muted: hex(0x605850),
+        border: hex(0xa09080),
+        divider: hex(0xb0a8a0),
+        accent: hex(0x8020c0),
+        accent_fg: hex(0xfff8e0),
+        selection_bg: hex(0x40a060),
+        selection_fg: hex(0x002010),
+        link: hex(0x1040a0),
+        caret: hex(0xc04010),
+        error: hex(0xc00020),
+        warning: hex(0xc08000),
+        success: hex(0x208020),
+        info: hex(0x2080c0),
+    }
+}
+
+/// The preset's constants of `scheme`.
+fn constants(scheme: Scheme) -> SchemeColors {
+    match scheme {
+        Scheme::Light => LIGHT,
+        Scheme::Dark => DARK,
+    }
+}
+
+/// The focus ring of `accent` for `scheme`: its standalone colour at 50 %.
+fn ring_of(accent: Color, scheme: Scheme) -> Color {
+    let mut c = constants(scheme);
+    lay_accent_over(&mut c, accent, scheme);
+    c.focus_ring
+}
+
+/// The colour of a solid paint.
+fn solid(paint: &Paint) -> Option<Color> {
+    match paint {
+        Paint::Solid(color) => Some(*color),
+        _ => None,
+    }
+}
+
+/// A palette states the roles its slots name (spec §7); the focus ring is
+/// derived again from its accent, and the disabled text follows its text.
+#[test]
+fn a_palette_states_its_roles() {
+    for scheme in [Scheme::Light, Scheme::Dark] {
+        let p = distinct_palette(scheme);
+        let theme = Theme::preset(Preset::Adwaita)
+            .with_palette(p.clone())
+            .resolve(&ThemeContext::default().with_scheme(scheme));
+        let colors = &theme.colors;
+        for (name, surface, background) in [
+            ("window", colors.window, p.window_bg),
+            ("view", colors.view, p.view_bg),
+            ("header", colors.header, p.header_bg),
+            ("sidebar", colors.sidebar, p.sidebar_bg),
+            ("card", colors.card, p.surface_bg),
+            ("dialog", colors.dialog, p.surface_bg),
+            ("popover", colors.popover, p.surface_bg),
+            ("tooltip", colors.tooltip, p.tooltip_bg),
+        ] {
+            assert_eq!(surface.background, Some(background), "{scheme:?} {name}");
+            assert_eq!(surface.foreground, Some(p.foreground), "{scheme:?} {name}");
+        }
+        assert_eq!(colors.window.foreground_muted, Some(p.foreground_muted));
+        assert_eq!(colors.window.border, Some(p.border));
+        assert_eq!(colors.window.divider, Some(p.divider));
+        assert_eq!(colors.accent.fill, p.accent);
+        assert_eq!(colors.accent.foreground, p.accent_fg);
+        assert_eq!(
+            colors.selection,
+            SelectionColors::new(
+                p.selection_bg,
+                p.selection_fg,
+                Some(p.selection_bg),
+                Some(p.selection_fg)
+            )
+        );
+        assert_eq!(
+            colors.text_selection,
+            SelectionColors::new(p.selection_bg, p.selection_fg, None, None)
+        );
+        assert_eq!(colors.focus_ring, ring_of(p.accent, scheme));
+        assert_ne!(colors.focus_ring, constants(scheme).focus_ring);
+        assert_eq!(colors.link, p.link);
+        assert_eq!(colors.caret, p.caret);
+        assert_eq!(colors.disabled_text, p.foreground);
+        let c = constants(scheme);
+        for (status, fill, foreground) in [
+            (colors.error, p.error, c.error_foreground),
+            (colors.warning, p.warning, c.warning_foreground),
+            (colors.success, p.success, c.success_foreground),
+            (colors.info, p.info, c.accent_foreground),
+        ] {
+            assert_eq!(status.fill, fill, "{scheme:?}");
+            assert_eq!(status.foreground, foreground, "{scheme:?}");
+            assert_eq!(status.origin, RoleOrigin::Custom, "{scheme:?}");
+        }
+        assert_eq!(colors.shadow, c.shadow);
+        assert_eq!(theme.name.as_ref(), "distinct");
+    }
+}
+
+/// The widgets the preset draws in a colour a slot replaces take the slot's
+/// colour; the fills the preset states as libadwaita's layers over its own
+/// window, the placeholder and the switch's hover colour keep the preset's.
+#[test]
+fn a_palette_recolours_the_widgets_of_its_colours() {
+    for scheme in [Scheme::Light, Scheme::Dark] {
+        let p = distinct_palette(scheme);
+        let ctx = ThemeContext::default().with_scheme(scheme);
+        let theme = Theme::preset(Preset::Adwaita)
+            .with_palette(p.clone())
+            .resolve(&ctx);
+        let inactive = Theme::preset(Preset::Adwaita)
+            .with_palette(p.clone())
+            .resolve(&ctx.clone().with_window_active(false));
+        let normal = WindowState::default();
+        let none = WidgetState::NONE;
+        for (name, got, want) in [
+            (
+                "window frame",
+                solid(&theme.window.frame(normal).fill),
+                p.window_bg,
+            ),
+            (
+                "active title bar",
+                solid(&theme.window.title_bar(normal).fill),
+                p.header_bg,
+            ),
+            (
+                "inactive title bar",
+                solid(&inactive.window.title_bar(normal).fill),
+                p.window_bg,
+            ),
+            (
+                "sidebar",
+                solid(&theme.sidebar.container(none).fill),
+                p.sidebar_bg,
+            ),
+            (
+                "card",
+                solid(&theme.card.container(none).fill),
+                p.surface_bg,
+            ),
+            ("popover", solid(&theme.popover.panel.fill), p.surface_bg),
+            ("dialog", solid(&theme.dialog.panel.fill), p.surface_bg),
+            ("tooltip", solid(&theme.tooltip.panel.fill), p.tooltip_bg),
+            (
+                "selected tab's indicator",
+                solid(&theme.tab.indicator(WidgetState::SELECTED).fill),
+                p.accent,
+            ),
+            (
+                "selected list row",
+                solid(
+                    &theme
+                        .list
+                        .highlight(ListQuery::new(WidgetState::SELECTED))
+                        .fill,
+                ),
+                p.selection_bg,
+            ),
+        ] {
+            assert_eq!(got, Some(want), "{scheme:?} {name}");
+        }
+        assert_eq!(theme.typography.body.color, p.foreground);
+        assert_eq!(theme.tooltip.text.color, p.foreground);
+        assert_eq!(
+            theme.button.label(ButtonQuery::new(none)).color,
+            p.foreground
+        );
+        assert_eq!(
+            theme.button.label(ButtonQuery::primary()).color,
+            p.accent_fg
+        );
+        assert_eq!(
+            theme.input.field(WidgetState::FOCUSED).stroke,
+            Stroke::uniform(INPUT_BORDER_WIDTH, ring_of(p.accent, scheme))
+        );
+        let c = constants(scheme);
+        assert_eq!(
+            solid(&theme.button.body(ButtonQuery::new(none)).fill),
+            Some(c.button_background)
+        );
+        assert_eq!(theme.input.placeholder(none).color, c.placeholder);
+        assert_eq!(
+            solid(
+                &theme
+                    .switch
+                    .track(WidgetState::HOVER | WidgetState::CHECKED)
+                    .fill
+            ),
+            Some(c.switch_hover_on)
+        );
+    }
+}
+
+/// An explicit accent is libadwaita's accent as the system's is: the
+/// accent's fill, the selection, the info status and the tab's indicator,
+/// and the focus ring its standalone colour through `adw_standalone`; it
+/// stands over the system's accent.
+#[test]
+fn an_explicit_accent_is_libadwaita_s_accent() {
+    for (scheme, ring) in [
+        (Scheme::Light, PURPLE_RING_LIGHT),
+        (Scheme::Dark, PURPLE_RING_DARK),
+    ] {
+        let ctx = ThemeContext::default().with_scheme(scheme);
+        let explicit = Theme::preset(Preset::Adwaita)
+            .with_accent(PURPLE)
+            .resolve(&ctx);
+        assert_eq!(explicit.colors.accent.fill, PURPLE);
+        assert_eq!(explicit.colors.selection.background, PURPLE);
+        assert_eq!(explicit.colors.info.fill, PURPLE);
+        assert_eq!(explicit.colors.focus_ring, ring);
+        assert_eq!(
+            solid(&explicit.tab.indicator(WidgetState::SELECTED).fill),
+            Some(PURPLE)
+        );
+        let mut system = SystemOverrides::default();
+        system.accent = Some(PURPLE);
+        let by_system = Theme::preset(Preset::Adwaita)
+            .with_system_overrides(system)
+            .resolve(&ctx);
+        assert_eq!(explicit, by_system, "{scheme:?}");
+        let mut system = SystemOverrides::default();
+        system.accent = Some(BLUE);
+        let over_system = Theme::preset(Preset::Adwaita)
+            .with_system_overrides(system)
+            .with_accent(PURPLE)
+            .resolve(&ctx);
+        assert_eq!(over_system, explicit, "{scheme:?}");
+    }
+}
+
+/// An explicit accent over a palette replaces the palette's accent, its
+/// selection and its info colour, and with the accent its text, which are
+/// then the preset's; every other slot of the palette stands.
+#[test]
+fn an_explicit_accent_replaces_the_palette_s_accent_slots() {
+    for scheme in [Scheme::Light, Scheme::Dark] {
+        let p = distinct_palette(scheme);
+        let ctx = ThemeContext::default().with_scheme(scheme);
+        let theme = Theme::preset(Preset::Adwaita)
+            .with_palette(p.clone())
+            .with_accent(PURPLE)
+            .resolve(&ctx);
+        let palette_only = Theme::preset(Preset::Adwaita)
+            .with_palette(p.clone())
+            .resolve(&ctx);
+        let c = constants(scheme);
+        let colors = &theme.colors;
+        assert_eq!(colors.accent.fill, PURPLE);
+        assert_eq!(colors.accent.foreground, c.accent_foreground);
+        assert_eq!(
+            colors.selection,
+            SelectionColors::new(
+                PURPLE,
+                c.accent_foreground,
+                Some(PURPLE),
+                Some(c.accent_foreground)
+            )
+        );
+        assert_eq!(colors.info.fill, PURPLE);
+        assert_eq!(colors.focus_ring, ring_of(PURPLE, scheme));
+        assert_eq!(colors.window, palette_only.colors.window);
+        assert_eq!(colors.card, palette_only.colors.card);
+        assert_eq!(colors.link, p.link);
+        assert_eq!(colors.caret, p.caret);
+        assert_eq!(colors.error, palette_only.colors.error);
+        assert_eq!(colors.info.origin, RoleOrigin::Custom);
+    }
+}
