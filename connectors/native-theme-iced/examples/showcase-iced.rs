@@ -5095,15 +5095,15 @@ fn chrome_icon<'a>(
     }
 }
 
-/// The colour [`icon_button`] gives a bundled set's icon: the label's,
-/// `button.font.color`, or `button.active_text_color` while `selected`, as
-/// [`ghost_button`] gives a label. A selected `toolbar` button's is the
-/// checked label `styles::toolbar_button` gives it: `button.checked_text_color`
+/// The colour [`icon_button`] gives a bundled set's icon on a tool button:
+/// the label's, `button.font.color`, or, while `selected`, the checked
+/// label `styles::toolbar_button` gives it: `button.checked_text_color`
 /// where the theme states `toolbar.button_checked_background` and it, else
-/// `button.active_text_color`. An OS icon theme's icons keep theirs.
-fn icon_colour(resolved: &ResolvedTheme, selected: bool, toolbar: bool) -> Color {
+/// `button.active_text_color`. A flat button's is [`icon_colour`]'s. An OS
+/// icon theme's icons keep theirs.
+fn tool_icon_colour(resolved: &ResolvedTheme, selected: bool) -> Color {
     let b = &resolved.button;
-    let checked_fill = toolbar && resolved.toolbar.button_checked_background.is_some();
+    let checked_fill = resolved.toolbar.button_checked_background.is_some();
     to_color(match (selected, checked_fill) {
         (true, true) => b.checked_text_color.unwrap_or(b.active_text_color),
         (true, false) => b.active_text_color,
@@ -5111,41 +5111,79 @@ fn icon_colour(resolved: &ResolvedTheme, selected: bool, toolbar: bool) -> Color
     })
 }
 
+/// The colour [`icon_button`] gives a bundled set's icon on a flat button:
+/// the label [`ghost_button`] gives it at rest, which is its label in every
+/// status while `selected`. An OS icon theme's icons keep theirs.
+fn icon_colour(r: &native_theme::next::ResolvedTheme, theme: &Theme, selected: bool) -> Color {
+    ghost_button(r, selected)(theme, button::Status::Active).text_color
+}
+
+/// One property of a widget in a status, as the connector's own treatment
+/// of a state (`native_theme_iced::styles`, `in_state`, which it does not
+/// export): `stated`, what the theme states for the status's state, where it
+/// states it; else iced's own value in the status (`iced.1`) where it
+/// differs from iced's own at rest (`iced.0`), and the theme's value at
+/// rest (`rest`) where iced makes no change (spec §10, rule 0).
+fn in_state<T: PartialEq>(stated: Option<T>, rest: T, iced: (T, T)) -> T {
+    match stated {
+        Some(value) => value,
+        None if iced.1 == iced.0 => rest,
+        None => iced.1,
+    }
+}
+
 /// A flat button in the platform's button state colours, built from the
-/// leaves the gpui connector's `variants::ghost_button` takes: no fill and no
-/// frame at rest, its label `button.font.color`; `button.hover_background`
-/// and `.hover_text_color` under the pointer; `button.active_background`
-/// (the hover fill where the theme states none) and `.active_text_color`
+/// homes the gpui connector's `variants::ghost_button` takes: no fill and no
+/// frame at rest, its label `button.label(NONE).color`;
+/// `button.body(HOVER).fill` and `button.label(HOVER).color` under the
+/// pointer; `button.body(PRESSED).fill` and `button.label(PRESSED).color`
 /// while pressed, and while `selected`, as a toggle that is on;
-/// `button.disabled_text_color` disabled; rounded by
-/// `button.border.corner_radius`. The model states no flat button, so it
-/// takes the button's own states. The toolbar's buttons take
-/// `styles::toolbar_button`, which falls back to these leaves.
+/// `button.label(DISABLED).color` disabled; rounded by
+/// `button.body(NONE).corners`. The model states no flat button, so it
+/// takes the button's own states. Each property the theme leaves unstated
+/// in a status is iced's own flat button's, `button::text` ([`in_state`]:
+/// iced's value where it changes the property in that status, else the
+/// theme's at rest). The toolbar's buttons take `styles::toolbar_button`.
 fn ghost_button(
-    resolved: &ResolvedTheme,
+    r: &native_theme::next::ResolvedTheme,
     selected: bool,
 ) -> impl Fn(&Theme, button::Status) -> button::Style + use<> {
-    let b = &resolved.button;
-    let label = to_color(b.font.color);
-    let hover = to_color(b.hover_background);
-    let hover_label = to_color(b.hover_text_color);
-    let pressed = to_color(b.active_background.unwrap_or(b.hover_background));
-    let pressed_label = to_color(b.active_text_color);
-    let disabled_label = to_color(b.disabled_text_color);
-    let radius = b.border.corner_radius;
-    move |_theme, status| {
-        let (background, text_color) = match status {
-            button::Status::Disabled => (None, disabled_label),
-            _ if selected => (Some(pressed), pressed_label),
-            button::Status::Pressed => (Some(pressed), pressed_label),
-            button::Status::Hovered => (Some(hover), hover_label),
-            button::Status::Active => (None, label),
+    let b = &r.button;
+    let label = iced_next::text_color_of(&b.label(WidgetState::NONE));
+    let hover = iced_next::state_fill_of(&b.body(WidgetState::HOVER));
+    let hover_label = iced_next::state_text_color_of(&b.label(WidgetState::HOVER));
+    let pressed = iced_next::state_fill_of(&b.body(WidgetState::PRESSED));
+    let pressed_label = iced_next::state_text_color_of(&b.label(WidgetState::PRESSED));
+    let disabled_label = iced_next::state_text_color_of(&b.label(WidgetState::DISABLED));
+    let radius = iced_next::radius_of(&b.body(WidgetState::NONE));
+    move |theme, status| {
+        let shown = match status {
+            button::Status::Disabled => status,
+            _ if selected => button::Status::Pressed,
+            _ => status,
         };
+        let rest = button::text(theme, button::Status::Active);
+        let own = button::text(theme, shown);
+        let (fill, text) = match shown {
+            button::Status::Active => (None, None),
+            button::Status::Hovered => (hover, hover_label),
+            button::Status::Pressed => (pressed, pressed_label),
+            button::Status::Disabled => (None, disabled_label),
+        };
+        let border = radius.map_or(own.border, |radius| own.border.rounded(radius));
         button::Style {
-            background: background.map(iced::Background::Color),
-            text_color,
-            border: iced::Border::default().rounded(radius),
-            ..button::Style::default()
+            background: in_state(
+                fill.map(|fill| Some(iced::Background::Color(fill))),
+                None,
+                (rest.background, own.background),
+            ),
+            text_color: in_state(
+                text,
+                label.unwrap_or(rest.text_color),
+                (rest.text_color, own.text_color),
+            ),
+            border,
+            ..own
         }
     }
 }
@@ -6006,7 +6044,12 @@ struct IconButton<'a> {
 
 fn icon_button<'a>(state: &'a State, spec: IconButton<'a>) -> Element<'a, Message> {
     let resolved = &state.current_resolved;
-    let color = icon_colour(resolved, spec.selected, spec.toolbar);
+    let r = state.next_shown();
+    let color = if spec.toolbar {
+        tool_icon_colour(resolved, spec.selected)
+    } else {
+        icon_colour(r, &state.current_theme, spec.selected)
+    };
     let button = match spec
         .icon
         .as_ref()
@@ -6021,7 +6064,7 @@ fn icon_button<'a>(state: &'a State, spec: IconButton<'a>) -> Element<'a, Messag
             if spec.toolbar {
                 button.style(styles::toolbar_button(resolved, spec.selected))
             } else {
-                button.style(ghost_button(resolved, spec.selected))
+                button.style(ghost_button(r, spec.selected))
             }
         }
         None => {
@@ -6030,7 +6073,7 @@ fn icon_button<'a>(state: &'a State, spec: IconButton<'a>) -> Element<'a, Messag
             if spec.toolbar {
                 button.style(styles::toolbar_button(resolved, spec.selected))
             } else {
-                button.style(ghost_button(resolved, spec.selected))
+                button.style(ghost_button(r, spec.selected))
             }
         }
     }
@@ -7204,7 +7247,7 @@ fn page_menu(state: &State) -> Element<'_, Message> {
                 icon,
                 size,
                 state.chrome_icons.system,
-                to_color(resolved.button.font.color),
+                icon_colour(state.next_shown(), &state.current_theme, false),
             )
         })
         .map(|icon| Element::from(tagged("chrome.page_tabs.menu.icon", icon)))
@@ -7256,7 +7299,7 @@ fn page_menu(state: &State) -> Element<'_, Message> {
             "chrome.page_tabs.menu",
             button(caret)
                 .padding(ghost_padding(resolved))
-                .style(ghost_button(resolved, false))
+                .style(ghost_button(state.next_shown(), false))
                 .on_press(Message::MenuOpened),
         ),
         Menu::new(rows)
@@ -7771,7 +7814,7 @@ fn element_info_view<'a>(
             &b.border.padding,
             Padding::ZERO,
         ))
-        .style(copy_button(ghost_button(resolved, false), resolved))
+        .style(copy_button(ghost_button(r, false), r))
         .on_press(Message::Copy(copied.to_owned()));
     let mut body = column![
         row![
@@ -7858,17 +7901,18 @@ fn element_info_view<'a>(
 }
 
 /// Widget Info's Copy button: flat, `ghost` (a [`ghost_button`]), its label
-/// the side panel's text colour at rest, `sidebar.font.color`, where the
-/// other flat buttons' is `button.font.color`.
+/// the side panel's text colour at rest, `sidebar.item_label(NONE).color`,
+/// where the other flat buttons' is `button.label(NONE).color`; `ghost`'s
+/// own where the theme leaves it unstated.
 fn copy_button(
     ghost: impl Fn(&Theme, button::Status) -> button::Style,
-    resolved: &ResolvedTheme,
+    r: &native_theme::next::ResolvedTheme,
 ) -> impl Fn(&Theme, button::Status) -> button::Style {
-    let label = to_color(resolved.sidebar.font.color);
+    let label = iced_next::text_color_of(&r.sidebar.item_label(WidgetState::NONE));
     move |theme, status| {
         let style = ghost(theme, status);
-        match status {
-            button::Status::Active => button::Style {
+        match (status, label) {
+            (button::Status::Active, Some(label)) => button::Style {
                 text_color: label,
                 ..style
             },
@@ -8589,6 +8633,127 @@ const ICON_FOR_LABEL: &str = "not drawn: the set's icon stands in for the label,
 /// theme's, which keeps the colours its loader gives it.
 const OS_ICON_COLOURS: &str = "not drawn: an OS icon theme's icon keeps the colours it loads in";
 
+/// The home of a flat button's colour leaf `leaf`, which [`ghost_button`]
+/// reads: `None` for a leaf it does not read.
+#[cfg(test)]
+fn ghost_home(leaf: &str) -> Option<&'static str> {
+    Some(match leaf {
+        "button.font.color" => "button.label(NONE).color",
+        "button.hover_background" => "button.body(HOVER).fill",
+        "button.hover_text_color" => "button.label(HOVER).color",
+        "button.active_background" => "button.body(PRESSED).fill",
+        "button.active_text_color" => "button.label(PRESSED).color",
+        _ => return None,
+    })
+}
+
+/// The route of a flat button's colour leaf `leaf` under `r`: what
+/// [`ghost_button`] draws of its home ([`ghost_home`]), `selected` or not,
+/// where its label shows or, `icon`, the set's icon in its place, which
+/// [`icon_colour`] colours as it loads, an OS icon theme's (`os_icon`)
+/// keeping its own. A home the theme leaves unstated is iced's own flat
+/// button's, `button::text`, which has no fill, dims its label under the
+/// pointer and keeps it pressed ([`in_state`]).
+fn ghost_route(
+    r: &native_theme::next::ResolvedTheme,
+    leaf: &str,
+    selected: bool,
+    icon: bool,
+    os_icon: bool,
+) -> String {
+    let b = &r.button;
+    let label = iced_next::text_color_of(&b.label(WidgetState::NONE)).is_some();
+    let hover = iced_next::state_fill_of(&b.body(WidgetState::HOVER)).is_some();
+    let hover_label = iced_next::state_text_color_of(&b.label(WidgetState::HOVER)).is_some();
+    let pressed = iced_next::state_fill_of(&b.body(WidgetState::PRESSED)).is_some();
+    let pressed_label = iced_next::state_text_color_of(&b.label(WidgetState::PRESSED)).is_some();
+    let route = match leaf {
+        "button.font.color" => match (icon, selected) {
+            (true, _) if os_icon => OS_ICON_COLOURS,
+            _ if !label => {
+                "not drawn: button.label(NONE).color is unstated, so the label at rest is iced's \
+                 own flat button's (button::text)"
+            }
+            (true, true) if pressed_label => {
+                "not drawn: the toggle is selected, and icon_colour colours its icon in \
+                 button.label(PRESSED).color"
+            }
+            (true, true) => {
+                "icon_colour: the icon's colour while selected, button.label(NONE).color, \
+                 where button.label(PRESSED).color is unstated"
+            }
+            (true, false) => {
+                "icon_colour: the icon's colour, set as the icon loads, button.label(NONE).color"
+            }
+            (false, true) if pressed_label => {
+                "not drawn: the toggle is selected, and ghost_button gives its label \
+                 button.label(PRESSED).color"
+            }
+            (false, true) => {
+                "ghost_button: the label's text_color while selected, in every status, \
+                 button.label(NONE).color, where button.label(PRESSED).color is unstated"
+            }
+            (false, false) => {
+                "ghost_button: the label's text_color at rest, and pressed where \
+                 button.label(PRESSED).color is unstated, button.label(NONE).color"
+            }
+        },
+        "button.hover_background" => match (selected, hover) {
+            (true, _) => {
+                "not drawn: the toggle is selected, and ghost_button keeps its pressed fill \
+                 under the pointer"
+            }
+            (false, false) => {
+                "not drawn: button.body(HOVER).fill is unstated, and iced's own flat button \
+                 (button::text) has no fill"
+            }
+            (false, true) => "ghost_button: the Hovered fill, button.body(HOVER).fill",
+        },
+        "button.hover_text_color" => match (selected, icon) {
+            (true, _) => {
+                "not drawn: the toggle is selected, and ghost_button keeps its pressed label \
+                 under the pointer"
+            }
+            (false, true) if os_icon => OS_ICON_COLOURS,
+            (false, true) => ICON_FOR_LABEL,
+            (false, false) if !hover_label => {
+                "not drawn: button.label(HOVER).color is unstated, so the Hovered label is \
+                 iced's own flat button's (button::text)"
+            }
+            (false, false) => "ghost_button: the Hovered text_color, button.label(HOVER).color",
+        },
+        "button.active_background" => match (selected, pressed) {
+            (_, false) => {
+                "not drawn: button.body(PRESSED).fill is unstated, and iced's own flat button \
+                 (button::text) has no fill"
+            }
+            (true, true) => {
+                "ghost_button: the fill while selected, in every status, \
+                 button.body(PRESSED).fill"
+            }
+            (false, true) => "ghost_button: the Pressed fill, button.body(PRESSED).fill",
+        },
+        "button.active_text_color" => match (selected, icon) {
+            (_, true) if os_icon => OS_ICON_COLOURS,
+            _ if !pressed_label => {
+                "not drawn: button.label(PRESSED).color is unstated, so ghost_button keeps \
+                 the label at rest pressed, as iced's own flat button (button::text) does"
+            }
+            (true, true) => {
+                "icon_colour: the icon's colour while selected, button.label(PRESSED).color"
+            }
+            (false, true) => ICON_FOR_LABEL,
+            (true, false) => {
+                "ghost_button: the label's text_color while selected, in every status, \
+                 button.label(PRESSED).color"
+            }
+            (false, false) => "ghost_button: the Pressed text_color, button.label(PRESSED).color",
+        },
+        _ => "not drawn: ghost_button reads no such colour",
+    };
+    route.to_owned()
+}
+
 /// The icon the flat button of the list with id `id` shows in its label's
 /// place under `state`, where the icon set has one iced can draw
 /// ([`chrome_icon`]): the toolbar's, the Basic page's icon buttons', the
@@ -8742,7 +8907,6 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
     let icon = ghost_icon(state, id).filter(|_| ghost || tool);
     let os_icon = icon.is_some() && state.chrome_icons.system;
     let selected = checked || (id == "chrome.status_bar.toggle" && state.side_panel_visible);
-    let pressed_fill = resolved.button.active_background;
     // A checked tool button is lettered `button.checked_text_color` where
     // the theme states it and the toolbar's checked fill, as
     // `styles::toolbar_button` letters it.
@@ -8816,71 +8980,23 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
                              toolbar.button_checked_background is stated"
                 .into(),
         },
-        ("button", "font.color") if ghost => match (icon.is_some(), selected) {
-            (true, _) if os_icon => OS_ICON_COLOURS.into(),
-            (true, true) => {
-                "not drawn: the toggle is selected, and icon_button colours its icon in \
-                 button.active_text_color"
-                    .into()
-            }
-            (true, false) => "icon_button: the icon's colour, set as the icon loads".into(),
-            (false, true) => {
-                "not drawn: the toggle is selected, and ghost_button gives its label \
-                 button.active_text_color"
-                    .into()
-            }
-            (false, false) => "ghost_button: the label's text_color at rest".into(),
-        },
+        ("button", "font.color") if ghost => {
+            ghost_route(state.next_shown(), leaf, selected, icon.is_some(), os_icon).into()
+        }
         ("button", "min_width_px" | "min_height_px") => {
             "at_least(label, button_content_min_size): the minimum less button_padding".into()
         }
-        ("button", "hover_background") => match (selected, pressed_fill) {
-            (true, Some(_)) => {
-                "not drawn: the toggle is selected, and ghost_button keeps its fill, \
-                 button.active_background, under the pointer"
-                    .into()
-            }
-            (true, None) => {
-                "ghost_button: the fill while selected, in every status, where \
-                 button.active_background is unstated"
-                    .into()
-            }
-            (false, Some(_)) => "ghost_button: the Hovered fill".into(),
-            (false, None) => {
-                "ghost_button: the Hovered fill, and the Pressed one, where \
-                 button.active_background is unstated"
-                    .into()
-            }
-        },
-        ("button", "hover_text_color") => match (selected, icon) {
-            (true, _) => {
-                "not drawn: the toggle is selected, and ghost_button keeps \
-                 button.active_text_color under the pointer"
-                    .into()
-            }
-            (false, Some(_)) if os_icon => OS_ICON_COLOURS.into(),
-            (false, Some(_)) => ICON_FOR_LABEL.into(),
-            (false, None) => "ghost_button: the Hovered text_color".into(),
-        },
-        ("button", "active_background") => match (selected, pressed_fill) {
-            (_, None) => {
-                "not drawn: unstated; ghost_button takes button.hover_background in its place"
-                    .into()
-            }
-            (true, Some(_)) => "ghost_button: the fill while selected, in every status".into(),
-            (false, Some(_)) => "ghost_button: the Pressed fill".into(),
-        },
-        ("button", "active_text_color") => match (selected, icon) {
-            (_, Some(_)) if os_icon => OS_ICON_COLOURS.into(),
-            (true, Some(_)) => "icon_button: the icon's colour while selected".into(),
-            (false, Some(_)) => ICON_FOR_LABEL.into(),
-            (true, None) => {
-                "ghost_button: the label's text_color while selected, in every status".into()
-            }
-            (false, None) => "ghost_button: the Pressed text_color".into(),
-        },
+        (
+            "button",
+            "hover_background" | "hover_text_color" | "active_background" | "active_text_color",
+        ) => ghost_route(state.next_shown(), leaf, selected, icon.is_some(), os_icon).into(),
         ("button", "disabled_opacity") => {
             "styles::button: the Disabled colours' alpha times it (iced has no widget opacity)"
+                .into()
+        }
+        ("button", "border.corner_radius_px") if ghost => {
+            "ghost_button: button::Style::border.radius, button.body(NONE).corners, iced's own \
+             flat button's (button::text) where unstated"
                 .into()
         }
         ("button", "border.corner_radius_px") => {
@@ -9286,7 +9402,15 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         }
         ("sidebar", "font") => "the text's size and theme_font".into(),
         ("sidebar", "font.color") if id == "chrome.info.copy" => {
-            "copy_button: the label at rest".into()
+            if iced_next::text_color_of(&state.next_shown().sidebar.item_label(WidgetState::NONE))
+                .is_some()
+            {
+                "copy_button: the label at rest, sidebar.item_label(NONE).color".into()
+            } else {
+                "not drawn: sidebar.item_label(NONE).color is unstated, so the label at rest is \
+                 ghost_button's"
+                    .into()
+            }
         }
         ("sidebar", "font.color") if under("chrome.info.") => {
             "info_inks: the text's colour, sidebar.item_label(NONE).color".into()
@@ -9985,7 +10109,7 @@ fn inspector_widget(state: &State) -> Element<'_, Message> {
     let copy =
         button(text("Copy").role(&resolved.text_scale.caption, resolved, &state.accessibility))
             .padding(Padding::ZERO.left(pad.left).right(pad.right))
-            .style(ghost_button(resolved, false))
+            .style(ghost_button(r, false))
             .on_press(Message::Copy(info.to_owned()));
     let mut body = column![
         row![
@@ -19777,7 +19901,7 @@ mod tests {
         );
         if let Some(text) = checked_text {
             assert_eq!(
-                icon_colour(&r, true, true),
+                tool_icon_colour(&r, true),
                 to_color(text),
                 "the checked tool button's icon is not button.checked_text_color"
             );
@@ -22770,6 +22894,29 @@ mod tests {
         "container::rounded_box",
     ];
 
+    /// The showcase functions that read one of [`REPLACED`] for iced's own
+    /// value of each property the theme leaves unstated in a status (spec
+    /// §10, rule 0), as `(class, function)`: the widget wears the function,
+    /// not the class.
+    const RULE_0_SOURCES: &[(&str, &str)] = &[("button::text", "fn ghost_button(")];
+
+    /// Whether the use of `class` at `at` in `source` lies in the body of a
+    /// function of [`RULE_0_SOURCES`] that reads it: after the function's
+    /// signature and before the next item at the file's top level.
+    fn reads_for_rule_0(source: &str, class: &str, at: usize) -> bool {
+        RULE_0_SOURCES
+            .iter()
+            .filter(|(read, _)| *read == class)
+            .any(|(_, function)| {
+                source.find(function).is_some_and(|start| {
+                    let end = source[start..]
+                        .find("\n}\n")
+                        .map_or(source.len(), |end| start + end);
+                    (start..end).contains(&at)
+                })
+            })
+    }
+
     /// Constructors a connector function dresses itself, as
     /// `(constructor, the style it applies, the function)`:
     /// `native_theme_iced::radio(resolved, radio(..), ..)` applies
@@ -22807,7 +22954,10 @@ mod tests {
         let source = strip_comments_and_strings(SHOWCASE);
 
         for replaced in REPLACED {
-            if let Some(at) = source.find(replaced) {
+            if let Some((at, _)) = source
+                .match_indices(replaced)
+                .find(|(at, _)| !reads_for_rule_0(&source, replaced, *at))
+            {
                 panic!(
                     "{replaced} is still used at showcase-iced.rs:{}",
                     line_at(&source, at)
@@ -27802,6 +27952,22 @@ mod tests {
             .collect()
     }
 
+    /// What the button style `style` draws on `theme` in every status, as
+    /// text.
+    fn next_buttons(
+        theme: &Theme,
+        style: &dyn Fn(&Theme, button::Status) -> button::Style,
+    ) -> String {
+        [
+            button::Status::Active,
+            button::Status::Hovered,
+            button::Status::Pressed,
+            button::Status::Disabled,
+        ]
+        .map(|status| format!("{:?}", style(theme, status)))
+        .join(";")
+    }
+
     /// What `function`, a showcase function on the 0.8.0 model a
     /// hand-written colour route names, draws on `r`, in every state it
     /// draws, as text: what a colour stated at a home it reads must move.
@@ -27818,6 +27984,16 @@ mod tests {
             "info_inks" => format!("{:?}", info_inks(r)),
             "swatch_frame" => format!("{:?}", swatch_frame(r)),
             "splitter" => format!("{:?}", [false, true].map(|h| splitter_colour(r, h))),
+            "ghost_button" => [false, true]
+                .map(|selected| next_buttons(&theme, &ghost_button(r, selected)))
+                .join("|"),
+            "copy_button" => next_buttons(&theme, &copy_button(ghost_button(r, false), r)),
+            // The colour it gives a bundled set's icon on a flat button; its
+            // label is `ghost_button`'s, which the route names as well.
+            "icon_colour" => format!(
+                "{:?}",
+                [false, true].map(|selected| icon_colour(r, &theme, selected))
+            ),
             _ => return None,
         })
     }
@@ -27934,8 +28110,11 @@ mod tests {
     /// text: the fill in each status a pointer can give it, the label's
     /// colour where the label shows, the icon's where `icon_button` colours
     /// it.
-    fn ghost_drawn(r: &ResolvedTheme, selected: bool, shows: Shows) -> String {
-        let theme = native_theme_iced::to_theme(r, "splice");
+    fn ghost_drawn(r: &native_theme::next::ResolvedTheme, selected: bool, shows: Shows) -> String {
+        let theme = match native_theme_iced::next::to_theme(r) {
+            Ok(theme) => theme,
+            Err(error) => return format!("no iced theme: {error:?}"),
+        };
         let style = ghost_button(r, selected);
         let mut drawn = String::new();
         for status in [
@@ -27950,9 +28129,68 @@ mod tests {
             }
         }
         if shows == Shows::BundledIcon {
-            drawn.push_str(&format!("{:?}", icon_colour(r, selected, false)));
+            drawn.push_str(&format!("{:?}", icon_colour(r, &theme, selected)));
         }
         drawn
+    }
+
+    /// [`in_state`], which [`ghost_button`] gives each property: the stated
+    /// value; else iced's own where iced changes it in the status; else the
+    /// theme's at rest.
+    #[test]
+    fn a_flat_buttons_unstated_state_is_iceds_change_or_the_rest() {
+        assert_eq!(in_state(Some(3), 1, (5, 7)), 3);
+        assert_eq!(in_state(None, 1, (5, 7)), 7);
+        assert_eq!(in_state(None, 1, (5, 5)), 1);
+    }
+
+    /// What the route `route` of a flat button's colour leaf `leaf` gets
+    /// wrong under `r`, the 0.8.0 theme shown, the button `selected` or not,
+    /// showing `shows`: a route that says the leaf's home, `home`
+    /// ([`ghost_home`]), is drawn where stating it in two colours in turn
+    /// moves nothing [`ghost_drawn`] draws, or not drawn where it does, or
+    /// that does not name it; one that calls the home unstated where stating
+    /// it does not change the route; and the same of [`ghost_route`]'s
+    /// route on `r` with the home stated, so that a home `r` leaves
+    /// unstated is tested too.
+    fn flat_route_faults(
+        r: &native_theme::next::ResolvedTheme,
+        leaf: &str,
+        home: &str,
+        route: &str,
+        selected: bool,
+        shows: Shows,
+    ) -> Vec<String> {
+        let (icon, os_icon) = (shows != Shows::Label, shows == Shows::OsIcon);
+        let Some(patched) = with_home(r, home, "#13579b") else {
+            return vec![format!("no patch reaches {home}")];
+        };
+        let stated = ghost_route(&patched, leaf, selected, icon, os_icon);
+        let check = |theme: &native_theme::next::ResolvedTheme, route: &str, on: &str| {
+            let moved = home_moves(theme, home, |r| ghost_drawn(r, selected, shows));
+            let drawn = !route.starts_with("not drawn");
+            let mut faults = Vec::new();
+            if moved != Some(drawn) {
+                faults.push(format!("{on}: the flat button's drawing, \"{route}\""));
+            }
+            if drawn && !route.contains(home) {
+                faults.push(format!("{on}: \"{route}\" names no {home}"));
+            }
+            faults
+        };
+        let mut faults = check(&patched, &stated, "with the home stated");
+        let not_drawn = route.starts_with("not drawn");
+        if not_drawn && route.contains(" is unstated") {
+            if stated == route {
+                faults.push(format!("stating {home} does not change \"{route}\""));
+            }
+        } else if !not_drawn || !home.contains("(NONE)") {
+            // A home at rest is patched by a rule every state's query
+            // matches, which restates the other states too: only a route
+            // that draws it is held to what that patch moves.
+            faults.extend(check(r, route, "as shown"));
+        }
+        faults
     }
 
     /// What `styles::toolbar_button` and the icon draw of a tool button
@@ -27975,7 +28213,7 @@ mod tests {
             }
         }
         if shows == Shows::BundledIcon {
-            drawn.push_str(&format!("{:?}", icon_colour(r, checked, true)));
+            drawn.push_str(&format!("{:?}", tool_icon_colour(r, checked)));
         }
         drawn
     }
@@ -28096,7 +28334,9 @@ mod tests {
             if shows != Shows::Label && claims_text {
                 fault("the icon's colour is set as it loads");
             }
-            if shows == Shows::OsIcon && route.contains("icon_button") {
+            if shows == Shows::OsIcon
+                && (route.contains("icon_button") || route.contains("icon_colour"))
+            {
                 fault("an OS icon theme's icon is not coloured by icon_button");
             }
             if tool_button(id) {
@@ -28105,14 +28345,12 @@ mod tests {
                 {
                     fault("the tool button's drawing");
                 }
-            } else if BUTTON_COLOURS.contains(&leaf)
-                && moves(r, leaf, |r| ghost_drawn(r, selected, shows)) == not_drawn
-            {
-                fault(if selected {
-                    "the selected toggle's drawing"
-                } else {
-                    "the flat button's drawing"
-                });
+            } else if let Some(home) = ghost_home(leaf) {
+                for what in
+                    flat_route_faults(state.next_shown(), leaf, home, route, selected, shows)
+                {
+                    fault(&what);
+                }
             }
         }
         if let Some(&open) = opens.get(id) {
@@ -31710,13 +31948,9 @@ mod tests {
                 .join(";")
         };
         Some(match function {
-            "ghost_button" => [false, true]
-                .map(|selected| buttons(&ghost_button(r, selected)))
-                .join("|"),
             "styles::toolbar_button" => [false, true]
                 .map(|checked| buttons(&styles::toolbar_button(r, checked)))
                 .join("|"),
-            "copy_button" => buttons(&copy_button(ghost_button(r, false), r)),
             "menu_row" => buttons(&menu_row(r)),
             "menu_title" => [false, true]
                 .map(|open| buttons(&menu_title(r, open)))
@@ -31753,14 +31987,10 @@ mod tests {
             "header_section_style" => [true, false]
                 .map(|first| buttons(&header_section_style(r, first)))
                 .join("|"),
-            // The colour it gives a bundled set's icon; its label is
-            // `ghost_button`'s or `styles::toolbar_button`'s, which the route
-            // names as well.
-            "icon_button" => format!(
-                "{:?}",
-                [(false, false), (true, false), (false, true), (true, true)]
-                    .map(|(s, t)| icon_colour(r, s, t))
-            ),
+            // The colour it gives a bundled set's icon on a tool button; its
+            // label is `styles::toolbar_button`'s, which the route names as
+            // well.
+            "icon_button" => format!("{:?}", [false, true].map(|s| tool_icon_colour(r, s))),
             "CheckMark" => format!(
                 "{:?}",
                 [(true, true), (true, false), (false, true), (false, false)]
